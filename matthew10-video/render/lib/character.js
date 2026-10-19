@@ -14,7 +14,7 @@ const POSE_DEFAULTS = {
   yaw: 0, pitch: 0, roll: 0, headX: 0, headY: 0, bodyYaw: 0, lean: 0, slump: 0, shoulderUp: 0, breath: 0,
   gazeX: 0, gazeY: 0, blink: 0, lid: 0, lidL: 0, lidR: 0, squint: 0, squintL: 0, squintR: 0, wide: 0, wet: 0, pupil: 0,
   browIn: 0, browOut: 0, browKnit: 0, browAsym: 0, browInL: 0, browInR: 0, browOutL: 0, browOutR: 0, browTalk: 0,
-  smile: 0, open: 0, wide2: 0, round: 0, press: 0, asym: 0, jawOpen: 0, teeth: 0, blush: 0, tired: 0,
+  smile: 0, open: 0, mouthWide: 0, round: 0, press: 0, asym: 0, jawOpen: 0, teeth: 0, blush: 0, tired: 0,
 };
 function normalizePose(P) {
   const out = { ...POSE_DEFAULTS };

@@ -173,5 +173,5 @@ module.exports = function call(env) {
   }
   const subY = (t) => (shots(t).name === 'split' && t < tHang + 0.6 ? 960 : 1440);
   const subs = (t) => shots(t).name !== 'screen' && shots(t).name !== 'phone';
-  return { id: 'call', start: sc.start, end: sc.end, draw, subY, subs };
+  return { id: 'call', start: sc.start, end: sc.end, draw, subY, subs, actors: { maya, mom, ai }, shotAt: shots, tHang, msgs, drawPhoneInsert };
 };

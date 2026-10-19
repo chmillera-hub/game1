@@ -164,5 +164,5 @@ module.exports = function office(env) {
       default: break;
     }
   }
-  return { id: 'office', start: sc.start, end: sc.end, draw, tOver };
+  return { id: 'office', start: sc.start, end: sc.end, draw, tOver, actors: { maya, greg }, shotAt: shots };
 };

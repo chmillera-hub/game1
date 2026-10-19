@@ -166,5 +166,5 @@ module.exports = function cross(env) {
     }
   }
 
-  return { id: 'cross', start: sc.start, end: sc.end, draw };
+  return { id: 'cross', start: sc.start, end: sc.end, draw, actors: { maskA, trueA, moon }, shotAt: (t) => (t < n5.start - 0.5 ? { name: 'mirror', t0: sc.start, t1: n5.start - 0.5 } : { name: 'moon', t0: n5.start - 0.5, t1: sc.end }), tCrack, tFall, tFound, shards };
 };

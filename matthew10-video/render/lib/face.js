@@ -343,7 +343,7 @@ function mouthGeom(A, P, R) {
   const open = clamp((P.open || 0) * 0.105 + (P.jawOpen || 0) * 0.075, 0, 0.16);
   const round = clamp(P.round || 0, 0, 1);
   const press = clamp(P.press || 0, 0, 1);
-  const mw = 0.1 * (A.mouthW || 1) * (1 + 0.22 * (P.wide || 0) + 0.16 * Math.max(0, smile) - 0.32 * round - 0.08 * press);
+  const mw = 0.1 * (A.mouthW || 1) * (1 + 0.22 * (P.mouthWide || 0) + 0.16 * Math.max(0, smile) - 0.32 * round - 0.08 * press);
   const my = 0.3 + (A.mouthY || 0) + (P.jawOpen || 0) * 0.012;
   const asym = P.asym || 0;
   const cornerL = my - smile * 0.042 + (asym < 0 ? asym * 0.026 : 0);

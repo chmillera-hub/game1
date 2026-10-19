@@ -290,5 +290,5 @@ module.exports = function table(env) {
     S.vignette(ctx, 0.5);
   }
 
-  return { id: 'table', start: sc.start, end: sc.end, draw, actors: { maya, mom, dad, jordan } };
+  return { id: 'table', start: sc.start, end: sc.end, draw, actors: { maya, mom, dad, jordan }, shotAt: shots };
 };

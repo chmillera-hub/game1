@@ -109,5 +109,5 @@ module.exports = function park(env) {
   function draw(ctx, t) {
     if (shots(t).name === 'cu') drawCU(ctx, t); else drawWide(ctx, t);
   }
-  return { id: 'park', start: sc.start, end: sc.end, draw };
+  return { id: 'park', start: sc.start, end: sc.end, draw, actors: { maya, ai }, shotAt: shots };
 };

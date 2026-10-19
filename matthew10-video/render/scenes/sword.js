@@ -170,5 +170,5 @@ module.exports = function sword(env) {
     ctx.restore();
   }
 
-  return { id: 'sword', start: sc.start, end: sc.end, draw };
+  return { id: 'sword', start: sc.start, end: sc.end, draw, actors: { mom, dad, jordan, maya }, shotAt: (t) => ({ name: t >= tCU ? 'mayaCU' : 'table', t0: t >= tCU ? tCU : sc.start, t1: t >= tCU ? sc.end : tCU }), tStrike };
 };

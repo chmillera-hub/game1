@@ -49,12 +49,13 @@ if has frames; then
     B=$(python3 -c "print(round($DUR * ($i + 1) / $JOBS + (0.5 if $i == $JOBS - 1 else 0), 3))")
     # snap segment edges to whole frames so the pieces join exactly
     A=$(python3 -c "print(round($A * 24) / 24)"); B=$(python3 -c "print(round($B * 24) / 24)")
-    ( node render/main.js --build "$BUILD" --from "$A" --to "$B" --fps 24 2>"$BUILD/seg/log$i.txt" |
-        ffmpeg -v error -y -f rawvideo -pix_fmt rgba -s 1080x1920 -r 24 -i - \
+    ( set -o pipefail
+      node --expose-gc render/main.js --build "$BUILD" --from "$A" --to "$B" --fps 24 2>"$BUILD/seg/log$i.txt" |
+        ffmpeg -v error -y -f image2pipe -c:v mjpeg -framerate 24 -i - \
           -c:v libx264 -preset veryfast -crf 8 -pix_fmt yuv420p "$BUILD/seg/seg$i.mp4" ) &
     pids+=($!)
   done
-  for p in "${pids[@]}"; do wait "$p"; done
+  for p in "${pids[@]}"; do wait "$p" || { echo "render segment failed (see $BUILD/seg/log*.txt)"; exit 1; }; done
 fi
 if has master; then
   : > "$BUILD/seg/list.txt"

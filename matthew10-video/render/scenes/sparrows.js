@@ -100,5 +100,5 @@ module.exports = function sparrows(env) {
     const a7 = clamp((t - n7.start + 0.3) / 0.5);
     if (a7 > 0) drawVerse(ctx, n7, t, { y: 300, size: 58, cite: 'Matthew 10:29–31', alpha: a7 });
   }
-  return { id: 'sparrows', start: sc.start, end: sc.end, draw };
+  return { id: 'sparrows', start: sc.start, end: sc.end, draw, actors: { maya }, shotAt: (t) => (t < n7.start - 0.6 ? { name: 'flock', t0: sc.start, t1: n7.start - 0.6 } : { name: 'shoulder', t0: n7.start - 0.6, t1: sc.end }), tLand };
 };

@@ -169,5 +169,5 @@ module.exports = function epilogue(env) {
     }
   }
   const subs = (t) => !shots(t).name.startsWith('phone');
-  return { id: 'epilogue', start: sc.start, end: sc.end, draw, subs };
+  return { id: 'epilogue', start: sc.start, end: sc.end, draw, subs, actors: { maya, priya }, shotAt: shots, tBuzz, tWindow, drawPhone, n9 };
 };

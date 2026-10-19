@@ -51,5 +51,5 @@ module.exports = function road(env) {
     S.vignette(ctx, 0.5);
     drawVerse(ctx, n8, t, { y: 380, size: 54, cite: 'Matthew 10:22–23', alpha: clamp((t - sc.start) / 0.6) });
   }
-  return { id: 'road', start: sc.start, end: sc.end, draw };
+  return { id: 'road', start: sc.start, end: sc.end, draw, actors: {}, shotAt: () => ({ name: 'road', t0: sc.start, t1: sc.end }) };
 };

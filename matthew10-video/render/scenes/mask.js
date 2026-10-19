@@ -212,5 +212,5 @@ module.exports = function mask(env) {
 
   // the chat screen already shows the words being typed, so hide subtitles there
   const subs = (t) => shots(t).name !== 'screen';
-  return { id: 'mask', start: sc.start, end: sc.end, draw, subs, mirrorRect, actors: { real, refl, bed } };
+  return { id: 'mask', start: sc.start, end: sc.end, draw, subs, mirrorRect, actors: { real, refl, bed, ai }, shotAt: shots, msgs, bedStart };
 };

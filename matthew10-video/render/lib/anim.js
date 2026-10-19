@@ -165,7 +165,7 @@ class Actor {
     const sp = this.speechAt(t);
     if (sp.open > 0 || sp.speaking) {
       P.open = clamp((P.open || 0) + sp.open * (P.mouthAmp ?? 1));
-      P.wide = (P.wide2 || 0) + sp.wide * 0.6;
+      P.mouthWide = sp.wide * 0.6;   // lip-sync mouth width; P.wide stays the eye-widening expression
       const beat = clamp(sp.open - sp.slow, -0.4, 0.6);
       P.pitch += -0.06 * beat * this.talkAmp;
       P.browTalk = (P.browTalk || 0) + Math.max(0, beat) * 0.35 * this.talkAmp;
