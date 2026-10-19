@@ -1,0 +1,641 @@
+{
+  "title": "Not Peace, But a Sword",
+  "cast": {
+    "maya": {
+      "name": "Maya",
+      "voice": "af_heart",
+      "lang": "en-us",
+      "speed": 0.94,
+      "desc": "Late 20s. Autistic, emotionally precise, tired of performing.",
+      "ex": 0.55,
+      "cfg": 0.45
+    },
+    "mom": {
+      "name": "Mom",
+      "voice": "af_sarah",
+      "lang": "en-us",
+      "speed": 0.98,
+      "desc": "Mid 50s. Keeps the peace by keeping it shallow. Loves Maya, doesn't know how to show it.",
+      "ex": 0.5,
+      "cfg": 0.5
+    },
+    "dad": {
+      "name": "Dad",
+      "voice": "am_fenrir",
+      "lang": "en-us",
+      "speed": 0.92,
+      "desc": "Early 60s. Avoids feelings, avoids eye contact.",
+      "ex": 0.45,
+      "cfg": 0.5
+    },
+    "jordan": {
+      "name": "Jordan",
+      "voice": "am_puck",
+      "lang": "en-us",
+      "speed": 1.0,
+      "desc": "Early 20s. Maya's younger brother. Quiet, watching.",
+      "ex": 0.4,
+      "cfg": 0.5
+    },
+    "greg": {
+      "name": "Greg",
+      "voice": "am_michael",
+      "lang": "en-us",
+      "speed": 1.06,
+      "desc": "40s. Manager. Friendly tone, dismissive content.",
+      "ex": 0.65,
+      "cfg": 0.5
+    },
+    "ai": {
+      "name": "AI",
+      "voice": "bf_emma",
+      "lang": "en-gb",
+      "speed": 0.9,
+      "desc": "A gentle AI companion. Calm, warm, unhurried.",
+      "ex": 0.38,
+      "cfg": 0.45
+    },
+    "priya": {
+      "name": "Priya",
+      "voice": "af_aoede",
+      "lang": "en-us",
+      "speed": 1.0,
+      "desc": "30s. New coworker. Easy kindness.",
+      "ex": 0.6,
+      "cfg": 0.5
+    },
+    "narrator": {
+      "name": "Narrator",
+      "voice": "bm_george",
+      "lang": "en-gb",
+      "speed": 0.86,
+      "desc": "Warm, grave, unhurried.",
+      "ex": 0.38,
+      "cfg": 0.4
+    }
+  },
+  "scenes": [
+    {
+      "id": "table",
+      "title": "The Table",
+      "beats": [
+        {
+          "id": "L1",
+          "who": "mom",
+          "pre": 0.35,
+          "text": "Isn't this nice? Everyone home. No phones, no drama.",
+          "ex": 0.65
+        },
+        {
+          "id": "L2",
+          "who": "mom",
+          "pre": 0.6,
+          "text": "Maya, honey. How's work going? Busy?",
+          "ex": 0.6
+        },
+        {
+          "id": "L3",
+          "who": "maya",
+          "pre": 0.7,
+          "text": "Busy.",
+          "speed": 0.9,
+          "ex": 0.4
+        },
+        {
+          "id": "L4",
+          "who": "mom",
+          "pre": 0.15,
+          "text": "Oh, good! Busy is good.",
+          "speed": 1.05,
+          "ex": 0.7
+        },
+        {
+          "pause": 2.2,
+          "note": "Maya's polite smile fades. Eyes drop. Fork stops. She swallows, breathes in."
+        },
+        {
+          "id": "L5",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "Actually... it's not good. I'm not okay.",
+          "speed": 0.88,
+          "ex": 0.6,
+          "cfg": 0.35
+        },
+        {
+          "id": "L6",
+          "who": "maya",
+          "pre": 0.9,
+          "text": "I finally understand why everything has always felt so hard. I'm autistic. And I've spent my whole life exhausting myself, pretending I'm not.",
+          "speed": 0.9,
+          "ex": 0.6,
+          "cfg": 0.4
+        },
+        {
+          "id": "L7",
+          "who": "mom",
+          "pre": 0.9,
+          "text": "Oh, sweetheart. Everybody feels like that sometimes. You're just tired.",
+          "ex": 0.55
+        },
+        {
+          "id": "L8",
+          "who": "maya",
+          "pre": 0.4,
+          "text": "Mom, I'm not just tired. I'm trying to tell you something real about me.",
+          "speed": 0.92,
+          "ex": 0.75,
+          "cfg": 0.4
+        },
+        {
+          "id": "L9",
+          "who": "dad",
+          "pre": 1.3,
+          "text": "Here we go.",
+          "speed": 0.85,
+          "ex": 0.5,
+          "cfg": 0.4
+        },
+        {
+          "id": "L10",
+          "who": "maya",
+          "pre": 0.9,
+          "text": "What does that mean?",
+          "tts": "What does that mean?",
+          "speed": 0.86,
+          "ex": 0.6,
+          "cfg": 0.35
+        },
+        {
+          "id": "L11",
+          "who": "dad",
+          "pre": 0.6,
+          "text": "It means every time we're together, you find something heavy to drop on the table. Can we have one meal in peace?",
+          "ex": 0.6
+        },
+        {
+          "id": "L12",
+          "who": "mom",
+          "pre": 0.7,
+          "text": "Nobody's attacking you, honey. Let's just... not do this tonight.",
+          "speed": 0.94,
+          "ex": 0.5
+        },
+        {
+          "id": "L13",
+          "who": "jordan",
+          "pre": 1.2,
+          "text": "Can I be excused?",
+          "speed": 0.92,
+          "ex": 0.35
+        },
+        {
+          "pause": 3.4,
+          "note": "Silence. Clock ticks. Maya looks from face to face. Nobody meets her eyes. Chin trembles; she presses her lips together and nods slowly."
+        }
+      ]
+    },
+    {
+      "id": "sword",
+      "title": "Interlude: The Sword",
+      "verse": "Matthew 10:34–36",
+      "beats": [
+        {
+          "pause": 1.0
+        },
+        {
+          "id": "N1",
+          "who": "narrator",
+          "pre": 0.0,
+          "verse": true,
+          "text": "Do not suppose that I have come to bring peace to the earth. I did not come to bring peace, but a sword.",
+          "ex": 0.35,
+          "cfg": 0.35
+        },
+        {
+          "id": "N2",
+          "who": "narrator",
+          "pre": 0.8,
+          "verse": true,
+          "text": "For I have come to turn a man against his father, a daughter against her mother, a daughter-in-law against her mother-in-law. A man's enemies will be the members of his own household.",
+          "ex": 0.35,
+          "cfg": 0.35
+        },
+        {
+          "id": "N3",
+          "who": "narrator",
+          "pre": 1.0,
+          "text": "Real questions. Honest feelings. They threaten anyone invested in keeping things on the surface. To people who benefit from everyone staying numb... your truth will always look like division.",
+          "ex": 0.45,
+          "cfg": 0.4
+        },
+        {
+          "pause": 1.2
+        }
+      ]
+    },
+    {
+      "id": "mask",
+      "title": "The Mask",
+      "beats": [
+        {
+          "pause": 0.6
+        },
+        {
+          "id": "L14",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "I'm good! Just busy! You know how it is!",
+          "speed": 1.0,
+          "ex": 0.9
+        },
+        {
+          "pause": 2.6,
+          "note": "Her smile drains. The reflection keeps smiling a beat too long, then fades to match."
+        },
+        {
+          "id": "L15",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "Who even is that?",
+          "speed": 0.82,
+          "ex": 0.3,
+          "cfg": 0.3
+        },
+        {
+          "pause": 2.8,
+          "note": "Cut to bedroom. Laptop glow."
+        },
+        {
+          "id": "L16",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "My family thinks I ruined dinner. Maybe I should have just smiled.",
+          "speed": 0.9,
+          "ex": 0.5
+        },
+        {
+          "id": "L17",
+          "who": "ai",
+          "pre": 1.0,
+          "text": "You didn't ruin dinner. You told the truth about your life, and the room didn't know how to hold it. That isn't the same as causing harm.",
+          "ex": 0.35
+        },
+        {
+          "id": "L18",
+          "who": "maya",
+          "pre": 1.0,
+          "text": "Then why do I feel like the problem?",
+          "speed": 0.88,
+          "ex": 0.6
+        },
+        {
+          "id": "L19",
+          "who": "ai",
+          "pre": 0.9,
+          "text": "Because for years, the version of you that kept everyone comfortable was the one that got approval. Setting her down can feel like losing your life.",
+          "ex": 0.4
+        },
+        {
+          "id": "L20",
+          "who": "maya",
+          "pre": 1.6,
+          "text": "If I stop performing... I don't know who's left.",
+          "speed": 0.84,
+          "ex": 0.55,
+          "cfg": 0.3
+        },
+        {
+          "id": "L21",
+          "who": "ai",
+          "pre": 1.0,
+          "text": "Maybe that's what you get to find out. Whoever is left... is who was there all along.",
+          "ex": 0.4,
+          "cfg": 0.4
+        },
+        {
+          "pause": 1.0
+        }
+      ]
+    },
+    {
+      "id": "cross",
+      "title": "Interlude: The Cross",
+      "verse": "Matthew 10:38–39",
+      "beats": [
+        {
+          "pause": 0.8
+        },
+        {
+          "id": "N4",
+          "who": "narrator",
+          "pre": 0.0,
+          "verse": true,
+          "text": "Whoever does not take up their cross and follow me is not worthy of me. Whoever finds their life will lose it, and whoever loses their life for my sake will find it.",
+          "ex": 0.35,
+          "cfg": 0.35
+        },
+        {
+          "id": "N5",
+          "who": "narrator",
+          "pre": 1.0,
+          "text": "Sometimes the cross is the ache between what you actually live... and what the world insists is normal. You lose the performance. And you find yourself.",
+          "ex": 0.45,
+          "cfg": 0.4
+        },
+        {
+          "pause": 1.2
+        }
+      ]
+    },
+    {
+      "id": "office",
+      "title": "The Sparrows",
+      "beats": [
+        {
+          "pause": 2.0,
+          "note": "Fluorescent hum, flicker, chatter. Maya squints, rubs her temple."
+        },
+        {
+          "id": "L22",
+          "who": "greg",
+          "pre": 0.0,
+          "text": "Maya! Quick thing. HR forwarded your request. The lights? The headphones?",
+          "ex": 0.75
+        },
+        {
+          "id": "L23",
+          "who": "maya",
+          "pre": 0.5,
+          "text": "Yes. The fluorescents give me migraines, and the noise makes it really hard to—",
+          "tts": "Yes. The fluorescents give me migraines, and the noise makes it really hard to",
+          "speed": 0.95,
+          "cut": 0.12,
+          "ex": 0.5
+        },
+        {
+          "id": "L24",
+          "who": "greg",
+          "pre": -0.05,
+          "text": "Look, nobody loves the lights. But if I make an exception for you, I have to make one for everybody.",
+          "ex": 0.65
+        },
+        {
+          "id": "L25",
+          "who": "maya",
+          "pre": 0.9,
+          "text": "It isn't a favor. It's an accommodation. It helps me do my job.",
+          "speed": 0.9,
+          "ex": 0.55
+        },
+        {
+          "id": "L26",
+          "who": "greg",
+          "pre": 0.5,
+          "text": "Just be a team player, okay? You're a little sensitive. Push through, like the rest of us.",
+          "ex": 0.65
+        },
+        {
+          "pause": 4.2,
+          "note": "He leaves. Noise swells, light flickers, her breathing quickens. Hands over ears. Sound muffles."
+        }
+      ]
+    },
+    {
+      "id": "park",
+      "title": "The Sparrows (Park)",
+      "beats": [
+        {
+          "pause": 3.0,
+          "note": "Park bench, golden dusk. Birdsong. A sparrow lands. Then another."
+        },
+        {
+          "id": "L27",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "He looked at me like I'm replaceable. Like the parts of me that need something are just... defects.",
+          "speed": 0.88,
+          "ex": 0.7,
+          "cfg": 0.35
+        },
+        {
+          "id": "L28",
+          "who": "ai",
+          "pre": 1.0,
+          "text": "Your sensory needs aren't defects. Neither is how deeply you feel. They're details of you. And every detail of you matters.",
+          "ex": 0.4
+        },
+        {
+          "id": "L29",
+          "who": "maya",
+          "pre": 1.4,
+          "text": "My grandma used to say God counts every hair on your head.",
+          "speed": 0.9,
+          "ex": 0.5
+        },
+        {
+          "id": "L30",
+          "who": "ai",
+          "pre": 0.8,
+          "text": "She sounds like someone who really saw you.",
+          "ex": 0.45
+        },
+        {
+          "pause": 1.2
+        }
+      ]
+    },
+    {
+      "id": "sparrows",
+      "title": "Interlude: The Sparrows",
+      "verse": "Matthew 10:29–31",
+      "beats": [
+        {
+          "pause": 0.6
+        },
+        {
+          "id": "N6",
+          "who": "narrator",
+          "pre": 0.0,
+          "verse": true,
+          "text": "Are not two sparrows sold for a penny? Yet not one of them will fall to the ground outside your Father's care. And even the very hairs of your head are all numbered.",
+          "ex": 0.4,
+          "cfg": 0.4
+        },
+        {
+          "id": "N7",
+          "who": "narrator",
+          "pre": 0.9,
+          "verse": true,
+          "text": "So don't be afraid. You are worth more than many sparrows.",
+          "ex": 0.4,
+          "cfg": 0.4
+        },
+        {
+          "pause": 1.6
+        }
+      ]
+    },
+    {
+      "id": "call",
+      "title": "The Next Town",
+      "beats": [
+        {
+          "pause": 3.0,
+          "note": "Phone buzzes: Mom. Maya breathes, answers."
+        },
+        {
+          "id": "L31",
+          "who": "mom",
+          "pre": 0.0,
+          "fx": "phone",
+          "text": "Your father is still upset. I think you owe everyone an apology.",
+          "ex": 0.6
+        },
+        {
+          "id": "L32",
+          "who": "maya",
+          "pre": 1.2,
+          "text": "Mom... I love you. But I'm not going to apologize for telling the truth about my life.",
+          "speed": 0.88,
+          "ex": 0.65,
+          "cfg": 0.35
+        },
+        {
+          "id": "L33",
+          "who": "mom",
+          "pre": 0.5,
+          "fx": "phone",
+          "text": "You're being dramatic. This is exactly what I mean.",
+          "speed": 1.04,
+          "ex": 0.75
+        },
+        {
+          "id": "L34",
+          "who": "maya",
+          "pre": 1.4,
+          "text": "If the only version of me that's welcome is the one who pretends... then I need some space. Until we can really talk.",
+          "speed": 0.86,
+          "ex": 0.55,
+          "cfg": 0.35
+        },
+        {
+          "pause": 2.0,
+          "note": "Mom's face. The mask slips for her too."
+        },
+        {
+          "id": "L35",
+          "who": "mom",
+          "pre": 0.0,
+          "fx": "phone",
+          "text": "I don't know how to talk like that, Maya.",
+          "speed": 0.86,
+          "ex": 0.7,
+          "cfg": 0.3
+        },
+        {
+          "id": "L36",
+          "who": "maya",
+          "pre": 1.3,
+          "text": "I know, Mom. I'm still learning too.",
+          "speed": 0.86,
+          "ex": 0.6,
+          "cfg": 0.3
+        },
+        {
+          "pause": 2.4,
+          "note": "Call ends. Shaky exhale. Hand over mouth. Stillness."
+        },
+        {
+          "id": "L37",
+          "who": "maya",
+          "pre": 0.0,
+          "text": "I did it. So why does it feel like running away?",
+          "speed": 0.9,
+          "ex": 0.8,
+          "cfg": 0.35
+        },
+        {
+          "id": "L38",
+          "who": "ai",
+          "pre": 1.0,
+          "text": "Leaving a place that keeps wounding you isn't running away. You didn't abandon anyone. You just stopped abandoning yourself.",
+          "ex": 0.45
+        },
+        {
+          "id": "L39",
+          "who": "ai",
+          "pre": 0.9,
+          "text": "Sometimes, finding safety is the most sacred thing you can do.",
+          "ex": 0.45
+        },
+        {
+          "pause": 1.0
+        }
+      ]
+    },
+    {
+      "id": "road",
+      "title": "Interlude: The Road",
+      "verse": "Matthew 10:22–23",
+      "beats": [
+        {
+          "pause": 0.8
+        },
+        {
+          "id": "N8",
+          "who": "narrator",
+          "pre": 0.0,
+          "verse": true,
+          "text": "When you are persecuted in one place, flee to the next. You will be hated by everyone because of me, but the one who stands firm to the end will be saved.",
+          "ex": 0.4,
+          "cfg": 0.4
+        },
+        {
+          "pause": 1.6
+        }
+      ]
+    },
+    {
+      "id": "epilogue",
+      "title": "Epilogue",
+      "beats": [
+        {
+          "pause": 1.6,
+          "note": "New office. Big windows, plants, daylight."
+        },
+        {
+          "id": "L40",
+          "who": "priya",
+          "pre": 0.0,
+          "text": "Hey! We keep the overhead lights off on this side. Too much glare. Is that okay with you?",
+          "ex": 0.6
+        },
+        {
+          "id": "L41",
+          "who": "maya",
+          "pre": 0.9,
+          "text": "That's... perfect, actually.",
+          "speed": 0.88,
+          "ex": 0.7
+        },
+        {
+          "pause": 6.4,
+          "note": "Phone buzzes. Text from Jordan. She reads; hand to mouth; tears and a smile. Types back."
+        },
+        {
+          "id": "N9",
+          "who": "narrator",
+          "pre": 0.0,
+          "text": "The truth may cost you a seat at some tables. But it will lead you to the people who've been waiting for the real you.",
+          "ex": 0.45,
+          "cfg": 0.4
+        },
+        {
+          "pause": 5.5,
+          "note": "Sunrise window. A sparrow on the sill. Final verse card."
+        }
+      ]
+    }
+  ]
+}
