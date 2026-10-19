@@ -17,9 +17,10 @@ NEG = ("cartoon, anime, illustration, painting, drawing, 3d render, cgi, plastic
 
 MAYA = ("a 28-year-old Black woman with warm brown skin, shoulder-length dark curly hair, soft round face, "
         "full lips, expressive dark brown eyes, natural makeup")
-MOM = ("a Black woman in her late fifties with medium brown skin, a graying chin-length bob, soft smile lines around "
-       "her eyes, small pearl stud earrings, a pearl necklace and a high-necked dusty rose blouse")
-MOM_NEG = "young, youthful, glamorous, cleavage, dangling earrings"
+# Realism checkpoints default to young faces: age goes first and is spelled out.
+MOM = ("a 60-year-old Black woman, mature face with visible wrinkles and smile lines, salt-and-pepper gray hair in a "
+       "chin-length bob, medium brown skin, small pearl stud earrings, a pearl necklace and a dusty rose blouse")
+MOM_NEG = "young, youthful, glamorous, cleavage, dangling earrings, smooth skin, headscarf, turban, hat"
 DAD = ("a 62-year-old Black man with dark brown skin, short gray hair with a receding hairline, a gray mustache, "
        "rectangular glasses, navy sweater over a white collared shirt")
 JORDAN = "a 22-year-old Black young man with brown skin, short messy dark hair, a dark green hoodie"
@@ -30,9 +31,24 @@ CU = "neutral relaxed expression, mouth closed, eyes open"
 W, H = 768, 1344
 
 
-def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg=""):
-    return {"id": id, "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "negative": f"{NEG}, {neg}" if neg else NEG,
-            "faces": list(faces), "ref": ref, "seed": seed, "w": w, "h": h, "ip": ip}
+LAYOUT = "/opt/work/real/layout"   # raw 2D frames (render/main.js --stills T --raw 1)
+
+
+def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg="", init=None, strength=0.75, inpaint=None):
+    s = {"id": id, "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "negative": f"{NEG}, {neg}" if neg else NEG,
+         "faces": list(faces), "ref": ref, "seed": seed, "w": w, "h": h, "ip": ip}
+    if init:
+        s.update(init=f"{LAYOUT}/still_{init}.png", strength=strength)
+    if inpaint:
+        s["inpaint"] = inpaint
+    return s
+
+
+def region(box, prompt, seed, strength=0.9, ref=None, ip=0.6):
+    r = {"box": list(box), "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "seed": seed, "strength": strength}
+    if ref:
+        r.update(ref=ref, ip=ip)
+    return r
 
 
 SHOTS = [
@@ -40,20 +56,31 @@ SHOTS = [
     shot("ref_maya", f"close-up studio portrait of {MAYA}, wearing a cream top, soft window light, plain warm gray background, "
          f"looking at the camera, {CU}", seed=11, w=896, h=1152),
 
+    shot("ref_mom", f"close-up portrait of {MOM}, soft window light, plain warm gray background, looking at the camera, "
+         f"{CU}", seed=12, w=896, h=1152, neg=MOM_NEG),
+
     # 1. the table
-    # (SDXL loses track of three described people in one long sentence; short, ordered descriptions work better)
-    shot("table_wide", "wide shot of a Black family of three at a dinner table in a cozy dining room at night, seen from "
-         "across the table, all three seated side by side facing the camera: on the left a mother in her late fifties "
-         "with a graying bob and a dusty rose blouse, in the middle an older father with gray hair, glasses and a gray "
-         "mustache in a navy sweater, on the right a young adult son with short hair in a dark green hoodie, plates of "
-         "roast dinner, candles, wine glasses, warm pendant lamp above the table, a window with blue dusk light behind them",
-         faces=[("table", "mom"), ("table", "dad"), ("table", "jordan")], seed=21, neg=MOM_NEG),
+    # Group shots are photo-realized from the 2D frames (img2img): SDXL cannot place
+    # three described people from text alone (it merges them).
+    shot("table_wide", "a Black family at a dinner table at night in a cozy dining room with warm wood paneled walls, "
+         "on the left a mother in her late fifties with a graying bob in a dusty rose blouse, in the middle an older "
+         "father with gray hair, glasses and a gray mustache in a navy sweater, on the right a young adult son in a dark "
+         "green hoodie, all three facing the camera, plates of roast dinner, a warm pendant lamp above the table, a window "
+         "with blue dusk light and red curtains, a wall clock and a framed family photo, the back of a young woman's "
+         "dark curly hair in the blurred foreground", faces=[("table", "mom"), ("table", "dad"), ("table", "jordan")],
+         seed=21, neg=MOM_NEG, init="0.10",
+         inpaint=[region((0, 650, 215, 915), "an elegant 60-year-old Black woman with a short salt-and-pepper gray bob "
+                         "haircut, a pearl necklace and a dusty rose blouse, sitting at the end of a dinner table at night, "
+                         "smiling warmly, facing the camera, warm lamp light", 15, 1.0),
+                  region((250, 680, 515, 910), f"{DAD}, sitting at a dinner table at night, facing the camera, warm lamp light", 6),
+                  region((540, 670, 760, 910), f"{JORDAN}, sitting at a dinner table at night, facing the camera, warm lamp "
+                         "light", 7)]),
     shot("table_maya", f"close-up portrait of {MAYA}, wearing a mustard yellow cardigan over a cream top, sitting at a dinner "
          f"table at night, warm lamp light from above, blurred dining room with warm bokeh lights behind her, {CU}, "
          "looking slightly to the left of the camera", faces=[("table", "maya")], ref="ref_maya", seed=22),
     shot("table_mom", f"close-up portrait of {MOM}, sitting at a dinner table at night, warm lamp light, blurred window with "
          f"blue dusk and red curtains behind her, pleasant {CU}, looking slightly to the right of the camera",
-         faces=[("table", "mom")], seed=23, neg=MOM_NEG),
+         faces=[("table", "mom")], ref="ref_mom", seed=23, neg=MOM_NEG),
     shot("table_dad", f"close-up portrait of {DAD}, sitting at a dinner table at night, warm lamp light, blurred wall with a "
          f"framed photo behind him, stern {CU}, looking slightly down", faces=[("table", "dad")], seed=24),
     shot("table_jordan", f"close-up portrait of {JORDAN}, sitting at a dinner table at night, warm lamp light, blurred dining "
@@ -91,11 +118,16 @@ SHOTS = [
          f"{CU}, serene", faces=[("cross", "moon")], ref="ref_maya", seed=52),
 
     # 3. the office
-    shot("office_two", "an open-plan office under harsh fluorescent lights, two coworkers: on the left a white man in his "
-         "forties with sandy blond hair, a light blue shirt and a navy tie, standing and leaning on a gray cubicle wall, "
-         "looking down at her; on the right a young Black woman with dark curly hair in a teal sweater with a red lanyard, "
-         "seated at her desk and looking up at him, computer monitor, cool greenish fluorescent tones",
-         faces=[("office", "greg"), ("office", "maya")], seed=61),
+    shot("office_two", "an open-plan office under harsh fluorescent lights, a white man in his forties with sandy blond "
+         "hair, a light blue shirt and a navy tie standing behind a gray cubicle wall and leaning over it, looking down at "
+         "a young Black woman with dark curly hair in a teal sweater with a red lanyard and headphones around her neck, "
+         "seated at her desk in the foreground, computer monitor, cool greenish fluorescent tones",
+         faces=[("office", "greg"), ("office", "maya")], seed=61, init="158.60",
+         # his whole upper body: repainting only the head left two collars and ties
+         inpaint=[region([(40, 170, 480, 570), (40, 565, 372, 835)], "a 45-year-old white man with short neatly combed "
+                         "sandy blond hair, clean shaven, square jaw, light blue dress shirt and navy tie, standing behind "
+                         "a cubicle wall in an open-plan office under fluorescent lights, looking down", 18, 1.0)],
+         neg="woman, long hair, curly hair, two ties, extra arms"),
     shot("office_maya", f"close-up of {MAYA}, wearing a teal sweater with a red lanyard and headphones around her neck, "
          f"sitting at an office desk under harsh fluorescent lights, blurred open office behind her, tired {CU}, "
          "looking slightly up", faces=[("office", "maya")], ref="ref_maya", seed=62),
@@ -128,7 +160,7 @@ SHOTS = [
          f"sofa in her living room at night, warm table lamp light, bookshelf blurred behind her, anxious {CU}",
          faces=[("call", "maya")], ref="ref_maya", seed=91),
     shot("call_mom", f"close-up of {MOM}, holding a phone to her ear in her kitchen in the evening, warm kitchen light, "
-         f"cabinets blurred behind her, tight {CU}", faces=[("call", "mom")], seed=92, neg=MOM_NEG),
+         f"cabinets blurred behind her, tight {CU}", faces=[("call", "mom")], ref="ref_mom", seed=92, neg=MOM_NEG),
     shot("call_maya_mouth", f"close-up of {MAYA}, wearing a lavender gray hoodie, sitting on a sofa at night with one hand "
          "pressed over her mouth, eyes glistening with tears, warm lamp light, bookshelf blurred behind her",
          faces=[("call", "maya")], ref="ref_maya", seed=93),
@@ -144,10 +176,12 @@ SHOTS = [
          seed=101),
 
     # epilogue
-    shot("epi_two", "a bright modern office with large windows and green plants in morning sunlight, two coworkers at "
-         "neighboring desks: on the left a South Asian woman in her thirties with a long dark braid, round glasses and an "
-         "olive green sweater, smiling warmly; on the right a young Black woman with dark curly hair in a rust orange "
-         "sweater, warm natural light", faces=[("epilogue", "priya"), ("epilogue", "maya")], seed=111),
+    shot("epi_two", "a bright modern office with large windows and green plants in morning sunlight, two coworkers side "
+         "by side: on the left a South Asian woman in her thirties with a long dark braid over her shoulder, round glasses "
+         "and an olive green sweater, on the right a young Black woman with dark curly hair in a rust orange sweater, "
+         "warm natural light", faces=[("epilogue", "priya"), ("epilogue", "maya")], seed=111, init="291.60",
+         inpaint=[region((365, 520, 745, 905), f"{MAYA}, no glasses, a rust orange sweater, in a bright office in morning "
+                         "light, gentle expression, mouth closed", 17, 0.9, ref="ref_maya")], neg="glasses"),
     shot("epi_maya", f"close-up of {MAYA}, wearing a rust orange sweater, in a bright office with plants and windows, soft "
          f"morning light, gentle {CU}, looking slightly to the left", faces=[("epilogue", "maya")], ref="ref_maya", seed=112),
     shot("epi_window", f"close-up of {MAYA}, wearing a rust orange sweater, standing by a window at sunrise, warm golden light "

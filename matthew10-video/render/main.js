@@ -1,6 +1,6 @@
 'use strict';
 // 2D renderer.
-//   node main.js --build DIR --stills 1.5,20,33 --outdir DIR     (PNG previews)
+//   node main.js --build DIR --stills 1.5,20,33 --outdir DIR [--raw 1]   (PNG previews; raw = scene only)
 //   node --expose-gc main.js --build DIR --from 0 --to 30 --fps 24 | ffmpeg -f image2pipe -c:v mjpeg -framerate 24 -i - ...
 //   node main.js --build DIR --export-poses poses.jsonl           (per-frame performance for the realistic version)
 const fs = require('fs');
@@ -55,7 +55,13 @@ if (args['export-poses']) {
   for (const s of args.stills.split(',')) {
     const t = parseFloat(s);
     const f = path.join(out, `still_${t.toFixed(2)}.png`);
-    fs.writeFileSync(f, renderFrame(t).toBuffer('image/png'));
+    if (args.raw) {
+      // the scene alone: no title, subtitles or transitions (layouts for the realistic stills)
+      fctx.setTransform(1, 0, 0, 1, 0, 0);
+      fctx.fillStyle = '#000'; fctx.fillRect(0, 0, S.W, S.H);
+      scenes[sceneAt(t)].draw(fctx, t);
+    } else renderFrame(t);
+    fs.writeFileSync(f, frame.toBuffer('image/png'));
     console.error('wrote', f);
   }
 } else {

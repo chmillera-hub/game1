@@ -21,6 +21,39 @@ from src.utils.cropper import Cropper  # noqa: E402
 
 torch.set_num_threads(4)
 
+# On CPU the warp and decoder are ~90% convolutions; in bfloat16 they run on the
+# AMX units at about twice the speed. Sampling stays in float32 so the warp's
+# sub-pixel positions (hair edges) do not shimmer from frame to frame, and 3D
+# average pooling has no bfloat16 kernel.
+_grid_sample = torch.nn.functional.grid_sample
+
+
+def _grid_sample_f32(inp, grid, *a, **k):
+    if inp.dtype == torch.bfloat16 or grid.dtype == torch.bfloat16:
+        return _grid_sample(inp.float(), grid.float(), *a, **k).to(inp.dtype)
+    return _grid_sample(inp, grid, *a, **k)
+
+
+torch.nn.functional.grid_sample = _grid_sample_f32
+
+
+class _Pool32(torch.nn.Module):
+    def __init__(self, pool):
+        super().__init__()
+        self.pool = pool
+
+    def forward(self, x):
+        return self.pool(x.float()).to(x.dtype)
+
+
+def _bf16(module):
+    for name, child in module.named_children():
+        if isinstance(child, torch.nn.AvgPool3d):
+            setattr(module, name, _Pool32(child))
+        else:
+            _bf16(child)
+    return module.to(torch.bfloat16)
+
 
 class Engine:
     def __init__(self, crop_scale=2.1):
@@ -28,6 +61,8 @@ class Engine:
         self.crop_cfg = CropConfig(flag_force_cpu=True, scale=crop_scale)
         self.w = LivePortraitWrapper(self.inf)
         self.cropper = Cropper(crop_cfg=self.crop_cfg, flag_force_cpu=True, image_type="human_face")
+        self.warp = _bf16(self.w.warping_module)
+        self.decode = _bf16(self.w.spade_generator)
 
     def faces(self, img_rgb, min_size=48):
         bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
@@ -44,7 +79,7 @@ class Engine:
             f_s = self.w.extract_feature_3d(I_s)
             x_s = self.w.transform_keypoint(info)
         mask = prepare_paste_back(self.inf.mask_crop, crop["M_c2o"], dsize=(img_rgb.shape[1], img_rgb.shape[0]))
-        return {"info": info, "f_s": f_s, "x_s": x_s, "M_c2o": crop["M_c2o"], "mask": mask,
+        return {"info": info, "f_s": f_s.to(torch.bfloat16), "x_s": x_s, "M_c2o": crop["M_c2o"], "mask": mask,
                 "bbox": face.bbox.copy()}
 
     def exp_of(self, img_rgb):
@@ -60,9 +95,8 @@ class Engine:
         x_d = info["scale"][..., None] * (info["kp"] @ R + info["exp"] + delta)
         x_d[:, :, :2] += info["t"][:, None, :2]
         x_d = self.w.stitching(src["x_s"], x_d)
-        with torch.autocast("cpu", dtype=torch.bfloat16):
-            out = self.w.warp_decode(src["f_s"], src["x_s"], x_d)
-        return self.w.parse_output(out["out"].float())[0]
+        o = self.warp(src["f_s"], kp_source=src["x_s"].to(torch.bfloat16), kp_driving=x_d.to(torch.bfloat16))
+        return self.w.parse_output(self.decode(feature=o["out"]).float())[0]
 
     def paste(self, frame, src, crop_img):
         return paste_back(crop_img, src["M_c2o"], frame, src["mask"])
@@ -134,7 +168,7 @@ def clamp(v, a=0.0, b=1.0):
 # rig turns to screen right, nods down, tilts clockwise, looks right / down).
 # Gains are below the 2D rig's, which exaggerates for legibility.
 CAL = {"yaw": -18.0, "pitch": 13.0, "roll": 50.0, "pupil_x": 11.0, "pupil_y": -9.0, "mouth": 62.0,
-       "eee": 9.0, "woo": 9.0, "close": 15.0, "brow": 9.0, "emo": 1.0}
+       "eee": 9.0, "woo": 9.0, "close": 15.0, "brow": 9.0, "emo": 1.4}
 
 
 def pose_to_controls(P):

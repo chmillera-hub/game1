@@ -1,6 +1,7 @@
 """Final encode under a size budget, with quality measured against the master.
 
 Usage: python encode.py BUILD_DIR OUT.mp4 [--budget-bytes 14500000] [--abr 80]
+                         [--master MASTER.mp4] [--work DIR] [--tune animation|film] [--sizes 1080:1920,720:1280]
 
 Steps: loudness-normalise the mix (EBU R128, -14 LUFS, -1.5 dBTP), encode AAC,
 derive the video bitrate that fits the budget, two-pass H.264 at 1080x1920 and
@@ -53,8 +54,8 @@ def ssim(dist, ref, scale_to=None):
     return float(m.group(1)) if m else 0.0
 
 
-def x264(src, dst, kbps, size, work):
-    common = ["-vf", f"scale={size}:flags=lanczos", "-c:v", "libx264", "-preset", "veryslow", "-tune", "animation",
+def x264(src, dst, kbps, size, work, tune="animation"):
+    common = ["-vf", f"scale={size}:flags=lanczos", "-c:v", "libx264", "-preset", "veryslow", "-tune", tune,
               "-b:v", f"{kbps}k", "-maxrate", f"{int(kbps * 2.2)}k", "-bufsize", f"{int(kbps * 4)}k",
               "-g", "240", "-keyint_min", "24", "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1",
               "-x264-params", "aq-mode=3"]
@@ -66,11 +67,14 @@ def x264(src, dst, kbps, size, work):
 def main():
     build, out = Path(sys.argv[1]), Path(sys.argv[2])
     args = sys.argv[3:]
-    budget = int(args[args.index("--budget-bytes") + 1]) if "--budget-bytes" in args else 14_500_000
-    abr = int(args[args.index("--abr") + 1]) if "--abr" in args else 80
-    work = build / "enc"
-    work.mkdir(exist_ok=True)
-    master = build / "master_video.mp4"
+    opt = lambda k, d: args[args.index(k) + 1] if k in args else d  # noqa: E731
+    budget = int(opt("--budget-bytes", 14_500_000))
+    abr = int(opt("--abr", 80))
+    work = Path(opt("--work", build / "enc"))
+    work.mkdir(parents=True, exist_ok=True)
+    master = Path(opt("--master", build / "master_video.mp4"))
+    tune = opt("--tune", "animation")
+    sizes = opt("--sizes", "1080:1920,720:1280").split(",")
     dur = duration(master)
 
     meas = loudnorm(build / "mix.wav", work / "mix_norm.wav")
@@ -82,9 +86,9 @@ def main():
     print(f"duration {dur:.1f}s  audio {audio_bytes/1e6:.2f} MB  -> video budget {vkbps} kbps")
 
     results = []
-    for size in ["1080:1920", "720:1280"]:
+    for size in sizes:
         dst = work / f"v_{size.replace(':', 'x')}.mp4"
-        x264(master, dst, vkbps, size, work)
+        x264(master, dst, vkbps, size, work, tune)
         s = ssim(dst, master, scale_to="1080:1920" if size != "1080:1920" else None)
         results.append({"size": size, "path": str(dst), "bytes": dst.stat().st_size, "ssim": s})
         print(f"  {size}: {dst.stat().st_size/1e6:.2f} MB  SSIM {s:.4f}")
@@ -98,7 +102,9 @@ def main():
     yavg = ImageStat.Stat(Image.open(ff).convert("L")).mean[0]
     report = {"output": str(out), "bytes": out.stat().st_size, "duration": dur, "video": best,
               "candidates": results, "audio_kbps": abr, "loudness_in": meas, "first_frame_yavg": round(yavg, 1)}
-    (build / "encode_report.json").write_text(json.dumps(report, indent=1))
+    (work / "encode_report.json").write_text(json.dumps(report, indent=1))
+    if work == build / "enc":
+        (build / "encode_report.json").write_text(json.dumps(report, indent=1))
     print(json.dumps(report, indent=1))
 
 

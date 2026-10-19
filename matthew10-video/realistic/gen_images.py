@@ -2,8 +2,14 @@
 
 Usage: python gen_images.py shots.json OUT_DIR [shot_id ...]
 Shots with a `ref` use IP-Adapter Plus-Face with a face crop of that reference
-image, so Maya stays the same person across scenes. Existing images are kept.
+image, so Maya stays the same person across scenes. Shots with an `init` image
+(a raw frame of the 2D version) are photo-realized from it with img2img, which
+keeps the staging of group shots that text prompts alone cannot place; their
+people are then repainted one by one (`inpaint` boxes, each with its own prompt)
+so each keeps their own age, look and clothes. Existing images are kept.
 """
+import ctypes
+import gc
 import json
 import os
 import sys
@@ -13,8 +19,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from diffusers import DPMSolverMultistepScheduler, StableDiffusionXLPipeline
-from PIL import Image
+from diffusers import (DPMSolverMultistepScheduler, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline,
+                       StableDiffusionXLPipeline)
+from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, "/opt/real/LivePortrait")
 from src.utils.face_analysis_diy import FaceAnalysisDIY  # noqa: E402
@@ -65,6 +72,52 @@ def encode_long(pipe, prompt, negative):
             "pooled_prompt_embeds": pooled[0], "negative_pooled_prompt_embeds": pooled[1]}
 
 
+def cover(img, w, h):
+    """Scale and centre-crop img to exactly w x h."""
+    k = max(w / img.width, h / img.height)
+    img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+    x, y = (img.width - w) // 2, (img.height - h) // 2
+    return img.crop((x, y, x + w, y + h))
+
+
+def inpaint(pipe, img, regions, neg, embs, refs=None):
+    """Repaint each region (box + prompt, optionally a face reference) on an upscaled
+    crop around it, then blend it back. refs: reference faces when the IP-Adapter is loaded."""
+    inp = StableDiffusionXLInpaintPipeline(**pipe.components)
+    inp.set_progress_bar_config(disable=True)
+    for r in regions:
+        boxes = r["box"] if isinstance(r["box"][0], (list, tuple)) else [r["box"]]   # one rect or a union of rects
+        kw = {}
+        if refs:
+            # while the adapter is loaded every call needs an image; scale 0 switches it off
+            inp.set_ip_adapter_scale(r.get("ip", 0.6) if r.get("ref") else 0.0)
+            kw["ip_adapter_image"] = refs[r["ref"]] if r.get("ref") else next(iter(refs.values()))
+        x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+        x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+        m = 96
+        X0, Y0 = max(0, x0 - m), max(0, y0 - m)
+        X1, Y1 = min(img.width, x1 + m), min(img.height, y1 + m)
+        crop = img.crop((X0, Y0, X1, Y1))
+        k = max(1.0, 832 / max(crop.size))
+        w8, h8 = int(crop.width * k) // 8 * 8, int(crop.height * k) // 8 * 8
+        big = crop.resize((w8, h8), Image.LANCZOS)
+        mask = Image.new("L", (w8, h8), 0)
+        sx, sy = w8 / crop.width, h8 / crop.height
+        for b in boxes:
+            ImageDraw.Draw(mask).rounded_rectangle(((b[0] - X0) * sx, (b[1] - Y0) * sy, (b[2] - X0) * sx, (b[3] - Y0) * sy),
+                                                   radius=int(28 * sx), fill=255)
+        emb = embs[(r["prompt"], neg)]
+        t = time.time()
+        with torch.inference_mode():
+            out = inp(image=big, mask_image=mask, width=w8, height=h8, strength=r.get("strength", 0.9),
+                      num_inference_steps=8, guidance_scale=CFG, generator=torch.Generator().manual_seed(r.get("seed", 1)),
+                      **emb, **kw).images[0]
+        soft = mask.filter(ImageFilter.GaussianBlur(10 * sx)).resize(crop.size, Image.LANCZOS)
+        img.paste(Image.composite(out.resize(crop.size, Image.LANCZOS), crop, soft), (X0, Y0))
+        print(f"   inpaint {r['box']} {time.time() - t:5.1f}s", flush=True)
+    return img
+
+
 def face_detector():
     fa = FaceAnalysisDIY(name="buffalo_l", root="/opt/real/LivePortrait/pretrained_weights/insightface",
                          providers=["CPUExecutionProvider"])
@@ -91,7 +144,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     only = set(sys.argv[3:])
     todo = [s for s in shots if (not only or s["id"] in only) and not (out / f"{s['id']}.png").exists()]
-    todo.sort(key=lambda s: bool(s.get("ref")))   # load the IP-Adapter once, after the reference exists
+    def need_ip(s):
+        return bool(s.get("ref")) or any(r.get("ref") for r in s.get("inpaint", []))
+
+    todo.sort(key=need_ip)   # load the IP-Adapter once, after the references exist
     if not todo:
         print("nothing to do")
         return
@@ -101,37 +157,66 @@ def main():
                                                              use_karras_sigmas=True)
     pipe.set_progress_bar_config(disable=True)
     print(f"loaded in {time.time() - t:.0f}s", flush=True)
+
+    # Encode every prompt now, then drop the text encoders (1.6 GB): with the
+    # IP-Adapter loaded the process otherwise sits near the machine's memory limit.
+    def negative(s):
+        return s["negative"].replace("open mouth, teeth, frown lines, ", "") if s["id"].startswith("expr_") else s["negative"]
+
+    embs = {}
+    for s in todo:
+        for p in [s["prompt"]] + [r["prompt"] for r in s.get("inpaint", [])]:
+            embs[(p, negative(s))] = encode_long(pipe, p, negative(s))
+    pipe.register_modules(text_encoder=None, text_encoder_2=None)
+    gc.collect()
+    ctypes.CDLL("libc.so.6").malloc_trim(0)
     fa = None
+    i2i = None
     ip_loaded = False
     refs = {}
     for s in todo:
         kw = {}
-        if s.get("ref"):
+        if need_ip(s):
             if not ip_loaded:
                 pipe.load_ip_adapter(IPA, subfolder="sdxl_models", weight_name="ip-adapter-plus-face_sdxl_vit-h.safetensors",
                                      image_encoder_folder="models/image_encoder", torch_dtype=torch.bfloat16)
                 ip_loaded = True
-            if s["ref"] not in refs:
-                fa = fa or face_detector()
-                refs[s["ref"]] = face_crop(fa, out / f"{s['ref']}.png")
-                refs[s["ref"]].save(out / f"{s['ref']}_face.png")
-            pipe.set_ip_adapter_scale(s.get("ip", 0.6))
-            kw["ip_adapter_image"] = refs[s["ref"]]
+            for ref in {s.get("ref")} | {r.get("ref") for r in s.get("inpaint", [])}:
+                if ref and ref not in refs:
+                    fa = fa or face_detector()
+                    refs[ref] = face_crop(fa, out / f"{ref}.png")
+                    refs[ref].save(out / f"{ref}_face.png")
+            pipe.set_ip_adapter_scale(s.get("ip", 0.6) if s.get("ref") else 0.0)
+            kw["ip_adapter_image"] = refs[s["ref"]] if s.get("ref") else next(iter(refs.values()))
         elif ip_loaded:
             pipe.unload_ip_adapter()
             ip_loaded = False
         tf = os.environ.get("THREADS_FILE")
         if tf and os.path.exists(tf):
             torch.set_num_threads(int(open(tf).read().strip()))   # adjustable while running
-        neg = s["negative"]
-        if s["id"].startswith("expr_"):
-            neg = neg.replace("open mouth, teeth, frown lines, ", "")
+        neg = negative(s)
         t = time.time()
         g = torch.Generator().manual_seed(s["seed"])
+        base_path = out / f"{s['id']}_base.png"
+        if s.get("inpaint") and base_path.exists():
+            img = inpaint(pipe, Image.open(base_path).convert("RGB"), s["inpaint"], neg, embs, refs if ip_loaded else None)
+            img.save(out / f"{s['id']}.png")
+            print(f"{s['id']:20s} {time.time() - t:6.1f}s (inpainted)", flush=True)
+            continue
         with torch.inference_mode():
-            emb = encode_long(pipe, s["prompt"], neg)
-            img = pipe(width=s["w"], height=s["h"], num_inference_steps=STEPS, guidance_scale=CFG, generator=g,
-                       **emb, **kw).images[0]
+            emb = embs[(s["prompt"], neg)]
+            if s.get("init"):
+                i2i = i2i or StableDiffusionXLImg2ImgPipeline(**pipe.components)
+                i2i.set_progress_bar_config(disable=True)
+                init = cover(Image.open(s["init"]).convert("RGB"), s["w"], s["h"])
+                img = i2i(image=init, strength=s.get("strength", 0.75), num_inference_steps=8, guidance_scale=CFG,
+                          generator=g, **emb, **kw).images[0]
+            else:
+                img = pipe(width=s["w"], height=s["h"], num_inference_steps=STEPS, guidance_scale=CFG, generator=g,
+                           **emb, **kw).images[0]
+        if s.get("inpaint"):
+            img.save(base_path)
+            img = inpaint(pipe, img, s["inpaint"], neg, embs, refs if ip_loaded else None)
         img.save(out / f"{s['id']}.png")
         print(f"{s['id']:20s} {time.time() - t:6.1f}s", flush=True)
 

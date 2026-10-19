@@ -13,6 +13,7 @@ Usage:
   python render_faces.py base   IMG_DIR OUT shots.json            (photos, face boxes, emotion basis)
   python render_faces.py calib  IMG_DIR OUT NAME                  (contact sheet of the controls)
   python render_faces.py plates IMG_DIR OUT shots.json poses.jsonl [NAME ...]
+  python render_faces.py plan   IMG_DIR OUT shots.json poses.jsonl          (render counts only)
 """
 import json
 import os
@@ -68,6 +69,9 @@ def cmd_base(img_dir, out, shots_path):
     for s in shots:
         if s["id"].startswith(("expr_", "ref_")):
             continue
+        if not (img_dir / f"{s['id']}.png").exists():
+            print(f"-- {s['id']}: no image yet")
+            continue
         img = read_rgb(img_dir / f"{s['id']}.png")
         faces = pick_faces(eng, img, len(s["faces"])) if s["faces"] else []
         if len(faces) < len(s["faces"]):
@@ -78,6 +82,9 @@ def cmd_base(img_dir, out, shots_path):
         (out / "base" / f"{s['id']}.json").write_text(json.dumps(meta))
         print(f"{s['id']:20s} {len(faces)} face(s)", flush=True)
     # emotion basis: (emotion - neutral) in LivePortrait's expression space
+    if not (img_dir / "expr_neutral.png").exists():
+        print("-- no expression photos yet, emotion basis skipped")
+        return
     neutral = eng.exp_of(read_rgb(img_dir / "expr_neutral.png"))
     basis = {}
     for k in EMOTIONS:
@@ -89,6 +96,8 @@ def cmd_base(img_dir, out, shots_path):
 
 
 def load_basis(out):
+    if not (out / "basis.json").exists():
+        return {}
     raw = json.loads((out / "basis.json").read_text())
     w = torch.full((21, 1), 0.6)
     w[EYES] = 1.0
@@ -120,15 +129,17 @@ class Photo:
             M[1, 2] -= by0
             s["M_box"] = M[:2]
 
-    def patch(self, deltas):
-        """deltas: per face (delta, rot) or None to keep it as photographed."""
+    def render_face(self, i, delta):
+        """LivePortrait crop for face i: delta = (keypoint offsets, rotation)."""
+        return sharpen(self.eng.render(self.srcs[i], delta[0], delta[1]))
+
+    def compose(self, crops):
+        """The patch with each face's crop (None = as photographed) blended in."""
         bx0, by0, bx1, by1 = self.box
         out = self.base_patch.copy()
-        for s, d in zip(self.srcs, deltas):
-            if d is None:
+        for s, crop in zip(self.srcs, crops):
+            if crop is None:
                 continue
-            crop = self.eng.render(s, d[0], d[1])
-            crop = sharpen(crop)
             warped = cv2.warpAffine(crop, s["M_box"], (bx1 - bx0, by1 - by0), flags=cv2.INTER_CUBIC,
                                     borderMode=cv2.BORDER_REPLICATE).astype(np.float32)
             m = s["mask_box"]
@@ -160,7 +171,51 @@ def controls(P, mean, lim):
     return c
 
 
-def cmd_plates(img_dir, out, shots_path, poses_path, only):
+# Re-render a face only when its controls have moved: speech on twos, anything
+# sudden (a blink, a saccade, a cut) at once. Frames without a patch are filled
+# by the compositor, which crossfades from one patch to the next when the next
+# was a small step (smooth drift) and holds otherwise (a blink must not start
+# early). plates/NAME/index.json lists the saved frames and why each was saved.
+STEP, JUMP, HOLD = 0.02, 0.15, 48
+
+
+def cvec(c):
+    v = [c["eyes"] / 15, c["eyebrow"] / 9, c["pupil_x"] / 11, c["pupil_y"] / 9, c["mouth"] / 62, c["eee"] / 9,
+         c["woo"] / 9, c["smile"], c["rot"][0] / 13, c["rot"][1] / 18, c["rot"][2] / 50]
+    return np.array(v + [c["weights"][k] for k in sorted(c["weights"])])
+
+
+def schedule(frames, nf, means, lim):
+    """Per frame: faces to re-render (list of (i, controls)) and why a patch is saved
+    ('run' first frame of a run, 'jump', 'step', 'hold'; None = no patch)."""
+    last = [None] * nf
+    last_f = [-99] * nf
+    saved, prev_f = -999, -999
+    plan = []
+    for f, poses in frames:
+        new_run = f != prev_f + 1
+        todo = []
+        jump = False
+        for i in range(nf):
+            P = poses[i] if i < len(poses) else None
+            if P is None:
+                continue
+            c = controls(P, means[i], lim)
+            v = cvec(c)
+            dv = np.abs(v - last[i]).max() if last[i] is not None else 9.0
+            if new_run or dv > JUMP or (dv > STEP and f - last_f[i] >= 2):
+                todo.append((i, c))
+                jump |= dv > JUMP
+                last[i], last_f[i] = v, f
+        why = "run" if new_run else "jump" if jump else "step" if todo else "hold" if f - saved >= HOLD else None
+        if why:
+            saved = f
+        plan.append((f, todo, why))
+        prev_f = f
+    return plan
+
+
+def cmd_plates(img_dir, out, shots_path, poses_path, only, dry=False):
     shots = {s["id"]: s for s in json.loads(Path(shots_path).read_text())}
     # frames per photograph, with the poses of the people in it
     jobs = {}
@@ -186,46 +241,58 @@ def cmd_plates(img_dir, out, shots_path, poses_path, only):
                 if all(p is None for p in poses):
                     continue
                 jobs.setdefault(name, []).append((r["f"], poses))
+
+    def means_of(frames, nf):
+        ms = []
+        for i in range(nf):
+            ps = [p[i] for _, p in frames if i < len(p) and p[i] is not None]
+            ms.append({k: float(np.mean([p[k] for p in ps])) for k in ("yaw", "pitch", "roll", "gazeX", "gazeY")} if ps else {})
+        return ms
+
+    plans = {name: schedule(fr, len(shots[name]["faces"]), means_of(fr, len(shots[name]["faces"])), LIMITS.get(name, {}))
+             for name, fr in jobs.items()}
+    total = sum(sum(len(t) for _, t, _ in p) for p in plans.values())
+    print(f"{sum(len(v) for v in jobs.values())} photo-frames, {total} face renders", flush=True)
+    if dry:
+        for name, p in sorted(plans.items(), key=lambda kv: -len(kv[1])):
+            print(f"  {name:20s} {len(p):5d} frames {sum(len(t) for _, t, _ in p):5d} renders")
+        return
     basis = load_basis(out)
     eng = lp.Engine()
-    total = sum(len(v) for v in jobs.values())
     done, t_start = 0, time.time()
-    for name, frames in sorted(jobs.items(), key=lambda kv: -len(kv[1])):
+    for name, plan in sorted(plans.items(), key=lambda kv: -len(kv[1])):
+        if (out / "plates" / name / "index.json").exists():
+            print(f"-- {name}: already rendered (delete plates/{name} to redo)")
+            continue
+        if not (out / "base" / f"{name}.json").exists():
+            print(f"-- {name}: no photo yet")
+            continue
         meta = json.loads((out / "base" / f"{name}.json").read_text())
         img = read_rgb(out / "base" / f"{name}.jpg")
-        faces = pick_faces(eng, img, len(shots[name]["faces"]))
-        if not faces:
-            print(f"!! {name}: no faces, skipped")
+        nf = len(shots[name]["faces"])
+        faces = pick_faces(eng, img, nf)
+        if len(faces) < nf:
+            print(f"!! {name}: {len(faces)} of {nf} faces found, skipped")
             continue
         photo = Photo(eng, img, faces)
         pdir = out / "plates" / name
         pdir.mkdir(parents=True, exist_ok=True)
         (pdir / "box.json").write_text(json.dumps({"box": photo.box, "w": meta["w"], "h": meta["h"]}))
-        nf = len(faces)
-        # average pose of each person while this photo is on screen
-        means = []
-        for i in range(nf):
-            ps = [p[i] for _, p in frames if p[i] is not None]
-            means.append({k: float(np.mean([p[k] for p in ps])) for k in ("yaw", "pitch", "roll", "gazeX", "gazeY")} if ps else {})
-        lim = LIMITS.get(name, {})
-        for f, poses in frames:
-            dst = pdir / f"{f:05d}.jpg"
-            if dst.exists():
-                continue
-            deltas = []
-            for i in range(nf):
-                P = poses[i] if i < len(poses) else None
-                if P is None:
-                    deltas.append(None)
-                    continue
-                c = controls(P, means[i], lim)
-                deltas.append(lp.controls_to_delta(c, basis))
-            write_jpg(dst, photo.patch(deltas), 93)
-            done += 1
-            if done % 50 == 0:
-                el = time.time() - t_start
-                print(f"{name:20s} f{f:5d}  {done}/{total}  {el / done:.2f}s/patch  "
-                      f"eta {el / done * (total - done) / 60:.0f} min", flush=True)
+        crops = [None] * nf
+        index = {"frames": [], "why": []}
+        for f, todo, why in plan:
+            for i, c in todo:
+                crops[i] = photo.render_face(i, lp.controls_to_delta(c, basis))
+                done += 1
+                if done % 50 == 0:
+                    el = time.time() - t_start
+                    print(f"{name:20s} f{f:5d}  {done}/{total}  {el / done:.2f}s/render  "
+                          f"eta {el / done * (total - done) / 60:.0f} min", flush=True)
+            if why:
+                write_jpg(pdir / f"{f:05d}.jpg", photo.compose(crops), 93)
+                index["frames"].append(f)
+                index["why"].append(why)
+        (pdir / "index.json").write_text(json.dumps(index))
 
 
 # ------------------------------------------------------------------ calibration
@@ -274,5 +341,5 @@ if __name__ == "__main__":
         cmd_base(img_dir, out, sys.argv[4])
     elif cmd == "calib":
         cmd_calib(img_dir, out, sys.argv[4])
-    elif cmd == "plates":
-        cmd_plates(img_dir, out, sys.argv[4], sys.argv[5], set(sys.argv[6:]))
+    elif cmd in ("plates", "plan"):
+        cmd_plates(img_dir, out, sys.argv[4], sys.argv[5], set(sys.argv[6:]), dry=cmd == "plan")

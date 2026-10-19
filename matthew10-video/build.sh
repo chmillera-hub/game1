@@ -5,6 +5,11 @@
 #                              (default: select prepare music mix frames master final)
 #   Rebuild from the voices stored in assets/voice: ./build.sh prepare music mix frames master final
 #
+#   Realistic version (same soundtrack; needs the 2D build above):
+#     ./build.sh real-poses real-images real-faces real-frames real-final
+#   real-images generates the photographs (SDXL on CPU, ~1.5 min each), real-faces
+#   animates every face with LivePortrait (the longest step), real-frames composites.
+#
 # Environment (defaults match the session that made it):
 #   WORK=/opt/work  KVENV=/opt/vvenv (Kokoro, faster-whisper, mido)  CBVENV=/opt/cbvenv (Chatterbox)
 #   JOBS=4  SF2=/usr/share/sounds/sf2/FluidR3_GM.sf2
@@ -15,7 +20,9 @@ KVENV=${KVENV:-/opt/vvenv}
 CBVENV=${CBVENV:-/opt/cbvenv}
 JOBS=${JOBS:-4}
 SF2=${SF2:-/usr/share/sounds/sf2/FluidR3_GM.sf2}
+RVENV=${RVENV:-/opt/rvenv}
 BUILD=$WORK/build_final
+REAL=$WORK/real
 STAGES=${*:-select prepare music mix frames master final}
 has() { [[ " $STAGES " == *" $1 "* ]]; }
 
@@ -67,4 +74,43 @@ if has pack; then
 fi
 if has final; then
   "$KVENV/bin/python" tools/encode.py "$BUILD" "$(pwd)/NotPeaceButASword.mp4"
+fi
+
+# ---------------------------------------------------------------- realistic version
+SHOTS=$WORK/real_shots.json
+if has real-poses; then
+  node render/main.js --build "$BUILD" --export-poses "$WORK/poses.jsonl"
+fi
+if has real-images; then
+  "$RVENV/bin/python" realistic/shots.py "$SHOTS"
+  # raw 2D frames that the group shots are photo-realized from
+  T=$(python3 -c "import json;print(','.join(sorted({s['init'].rsplit('still_',1)[1][:-4] for s in json.load(open('$SHOTS')) if s.get('init')})))")
+  node render/main.js --build "$BUILD" --stills "$T" --outdir "$REAL/layout" --raw 1
+  "$RVENV/bin/python" realistic/gen_images.py "$SHOTS" "$REAL/img"
+fi
+if has real-faces; then
+  "$RVENV/bin/python" realistic/render_faces.py base "$REAL/img" "$REAL" "$SHOTS"
+  "$RVENV/bin/python" realistic/render_faces.py plates "$REAL/img" "$REAL" "$SHOTS" "$WORK/poses.jsonl"
+fi
+if has real-frames; then
+  DUR=$(python3 -c "import json;print(json.load(open('$BUILD/timeline.json'))['duration'])")
+  mkdir -p "$REAL/seg"
+  pids=()
+  for i in $(seq 0 $((JOBS - 1))); do
+    A=$(python3 -c "print(round(round($DUR * $i / $JOBS, 3) * 24) / 24)")
+    B=$(python3 -c "print(round(round($DUR * ($i + 1) / $JOBS + (0.5 if $i == $JOBS - 1 else 0), 3) * 24) / 24)")
+    ( set -o pipefail
+      node --expose-gc render/main_real.js --build "$BUILD" --real "$REAL" --from "$A" --to "$B" 2>"$REAL/seg/log$i.txt" |
+        ffmpeg -v error -y -f image2pipe -c:v mjpeg -framerate 24 -i - \
+          -c:v libx264 -preset veryfast -crf 10 -pix_fmt yuv420p "$REAL/seg/seg$i.mp4" ) &
+    pids+=($!)
+  done
+  for p in "${pids[@]}"; do wait "$p" || { echo "render segment failed (see $REAL/seg/log*.txt)"; exit 1; }; done
+  : > "$REAL/seg/list.txt"
+  for i in $(seq 0 $((JOBS - 1))); do echo "file 'seg$i.mp4'" >> "$REAL/seg/list.txt"; done
+  ffmpeg -v error -y -f concat -safe 0 -i "$REAL/seg/list.txt" -c copy "$REAL/master_video.mp4"
+fi
+if has real-final; then
+  "$KVENV/bin/python" tools/encode.py "$BUILD" "$(pwd)/NotPeaceButASword_realistic.mp4" \
+    --master "$REAL/master_video.mp4" --work "$REAL/enc" --tune film
 fi

@@ -8,10 +8,11 @@ const path = require('path');
 const { createCanvas, Image } = require('@napi-rs/canvas');
 const S = require('./lib/stage');
 const N = require('./lib/sets_night');
-const { loadProject, streamFrames } = require('./lib/project');
+const { loadProject } = require('./lib/project');
 const { realLayers } = require('./realistic/cuts');
 const { drawVerse, drawEndCard } = require('./lib/text');
 const { clamp, smooth, lerp, easeOut, fbm } = require('./lib/util');
+const { roundRect } = require('./lib/body');
 
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1];
@@ -20,12 +21,23 @@ const { timeline, env, scenes, compose } = project;
 const REAL = args.real || '/opt/work/real';
 const FPS = 24;
 const W = S.W, H = S.H;
-const byId = Object.fromEntries(scenes.map((s) => [s.id, s]));
 
 // ------------------------------------------------------------------ images
 // Photos stay at their generated size and are cover-fitted onto the frame; an
 // animated frame is the photo with that frame's face patch on top.
-function loadImg(p) { const img = new Image(); img.src = fs.readFileSync(p); return img; }
+// Images decode off-thread: width/height are known at once but the pixels only
+// after onload, so drawing in the same tick paints nothing. Photos are preloaded;
+// a frame that needs a not-yet-decoded patch is drawn again once it is ready.
+const pending = new Set();
+function loadImg(p) {
+  const img = new Image();
+  img.ready = false;
+  const pr = new Promise((resolve) => { img.onload = () => { img.ready = true; resolve(); }; img.onerror = () => resolve(); });
+  pending.add(pr);
+  pr.then(() => pending.delete(pr));
+  img.src = fs.readFileSync(p);
+  return img;
+}
 const baseCache = new Map();
 const meta = {};
 function base(name) {
@@ -43,28 +55,50 @@ function fit(img) {
   const s = Math.max(W / img.width, H / img.height);
   return { s, ox: (W - img.width * s) / 2, oy: (H - img.height * s) / 2 };
 }
-// The animated photo for frame f. During dissolves a scene may be drawn past its
-// last rendered frame, so fall back to the nearest earlier patch, then the photo.
+// The animated photo for frame f: the photo with the face patch saved at or
+// before f. Between two patches the face crossfades when the later one was a
+// small step (smooth drift, speech on twos) and holds when it was a jump (a
+// blink must not start early) or begins a new run. During dissolves a scene is
+// drawn a little past its last patch; it holds that patch.
 const plates = new Map();
+const patchCache = new Map();
+function patchImg(name, f) {
+  const p = path.join(REAL, 'plates', name, String(f).padStart(5, '0') + '.jpg');
+  let img = patchCache.get(p);
+  if (!img) {
+    img = loadImg(p);
+    patchCache.set(p, img);
+    if (patchCache.size > 24) patchCache.delete(patchCache.keys().next().value);
+  }
+  return img;
+}
 function plate(name, f) {
   const b = base(name);
-  const dir = path.join(REAL, 'plates', name);
   let e = plates.get(name);
   if (e === undefined) {
-    const bp = path.join(dir, 'box.json');
-    e = fs.existsSync(bp) ? { box: JSON.parse(fs.readFileSync(bp, 'utf8')).box, f: -1, cv: null } : null;
+    const dir = path.join(REAL, 'plates', name);
+    const ip = path.join(dir, 'index.json');
+    e = fs.existsSync(ip) ? { ...JSON.parse(fs.readFileSync(ip, 'utf8')), box: JSON.parse(fs.readFileSync(path.join(dir, 'box.json'), 'utf8')).box, key: '', cv: null } : null;
     plates.set(name, e);
   }
-  if (!e) return b;
-  let ff = -1;
-  for (let k = 0; k < 72 && ff < 0; k++) if (fs.existsSync(path.join(dir, String(f - k).padStart(5, '0') + '.jpg'))) ff = f - k;
-  if (ff < 0) return b;
-  if (e.f !== ff) {
+  if (!e || !e.frames.length || f < e.frames[0]) return b;
+  // last saved patch at or before f
+  let lo = 0, hi = e.frames.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (e.frames[mid] <= f) lo = mid; else hi = mid - 1; }
+  const f0 = e.frames[lo];
+  if (f - f0 > 72) return b;
+  const f1 = e.frames[lo + 1];
+  const blend = f1 !== undefined && f > f0 && (e.why[lo + 1] === 'step' || e.why[lo + 1] === 'hold') ? (f - f0) / (f1 - f0) : 0;
+  const key = f0 + ':' + blend.toFixed(3);
+  if (e.key !== key) {
     e.cv ||= createCanvas(b.width, b.height);
     const c = e.cv.getContext('2d');
+    c.globalAlpha = 1;
     c.drawImage(b, 0, 0);
-    c.drawImage(loadImg(path.join(dir, String(ff).padStart(5, '0') + '.jpg')), e.box[0], e.box[1]);
-    e.f = ff;
+    const p0 = patchImg(name, f0), p1 = blend > 0 ? patchImg(name, f1) : null;
+    c.drawImage(p0, e.box[0], e.box[1]);
+    if (p1) { c.globalAlpha = blend; c.drawImage(p1, e.box[0], e.box[1]); c.globalAlpha = 1; }
+    e.key = p0.ready && (!p1 || p1.ready) ? key : '';
   }
   return e.cv;
 }
@@ -118,6 +152,45 @@ function drawBlade(ctx, x, tipY, t) {
   ctx.fillRect(x - 85, top + 120, 170, 22);
   ctx.fillRect(x - 9, top, 18, 120);
   ctx.beginPath(); ctx.arc(x, top - 6, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// Phone screens float over a blurred, dimmed photo of the room they are in.
+// drawUI paints the 2D phone screen; only the phone body (clip) is kept.
+function blurredPhoto(ctx, name, dim) {
+  ctx.drawImage(S.cachedBg('real:' + name, (c) => {
+    const img = base(name);
+    const { s, ox, oy } = fit(img);
+    c.drawImage(img, ox, oy, img.width * s, img.height * s);
+  }, 28), 0, 0);
+  ctx.fillStyle = `rgba(0,0,0,${dim})`; ctx.fillRect(0, 0, W, H);
+}
+function phoneOver(ctx, bgName, drawUI, clip, extra) {
+  blurredPhoto(ctx, bgName, 0.4);
+  const [x, y, w, h, r] = clip;
+  ctx.save(); ctx.filter = 'blur(28px)'; ctx.fillStyle = 'rgba(0,0,0,0.55)'; roundRect(ctx, x + 14, y + 40, w, h, r); ctx.fill(); ctx.restore();
+  const L = S.layer();
+  drawUI(L.getContext('2d'));
+  ctx.save(); roundRect(ctx, x, y, w, h, r); ctx.clip(); ctx.drawImage(L, 0, 0);
+  if (extra) extra(ctx);
+  ctx.restore();
+  S.release(L);
+  S.vignette(ctx, 0.4);
+}
+// The AI chat, floating over the blurred room it is read in.
+function chatOver(ctx, bgName, sc, t) {
+  blurredPhoto(ctx, bgName, 0.5);
+  ctx.save(); ctx.filter = 'blur(28px)'; ctx.fillStyle = 'rgba(0,0,0,0.55)'; roundRect(ctx, 74, 270, 960, 1480, 30); ctx.fill(); ctx.restore();
+  N.chatScreen(ctx, { x: 60, y: 230, w: 960, h: 1480 }, t, sc.msgs, { level: sc.actors.ai.speechAt(t).open });
+  S.vignette(ctx, 0.5);
+}
+// A round contact photo cut from a face in one of the photographs.
+function avatar(ctx, name, cx, cy, r) {
+  const img = base(name);
+  const b = faceInfo(name).faces[0].bbox;
+  const fx = (b[0] + b[2]) / 2, fy = (b[1] + b[3]) / 2, half = (b[2] - b[0]) * 0.95;
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+  ctx.drawImage(img, fx - half, fy - half, half * 2, half * 2, cx - r, cy - r, r * 2, r * 2);
   ctx.restore();
 }
 
@@ -218,13 +291,14 @@ function drawCross(ctx, sc, sh, t, f) {
 }
 
 function drawCall(ctx, sc, sh, layers, t, f) {
-  if (sh.name === 'phone') { sc.drawPhoneInsert(ctx, t); return; }
-  if (sh.name === 'screen') {
-    ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, W, H);
-    N.chatScreen(ctx, { x: 60, y: 230, w: 960, h: 1480 }, t, sc.msgs, { level: sc.actors.ai.speechAt(t).open });
-    S.vignette(ctx, 0.5);
+  if (sh.name === 'phone') {
+    // same buzz as the 2D insert, so the photo avatar shakes with the phone
+    const buzz = Math.sin(t * 60) * 6 * (Math.sin(t * 9) > 0 ? 1 : 0);
+    phoneOver(ctx, 'call_maya_after', (c) => sc.drawPhoneInsert(c, t), [190 + buzz, 240, 700, 1440, 70],
+      (c) => avatar(c, 'table_mom', 540 + buzz, 640, 124));
     return;
   }
+  if (sh.name === 'screen') { chatOver(ctx, 'call_maya_after', sc, t); return; }
   if (layers.length === 2) {
     // split screen: Mom above, Maya below; Mom's half slides away when the call ends
     const close = smooth((t - sc.tHang) / 1.2);
@@ -259,13 +333,11 @@ function drawCall(ctx, sc, sh, layers, t, f) {
 function drawDefault(ctx, sc, sh, layers, t, f) {
   const L0 = layers[0];
   if (!L0) return;
-  if (L0.ui === 'chat') {
-    ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, W, H);
-    N.chatScreen(ctx, { x: 60, y: 230, w: 960, h: 1480 }, t, sc.msgs, { level: sc.actors.ai.speechAt(t).open });
-    S.vignette(ctx, 0.5);
+  if (L0.ui === 'chat') { chatOver(ctx, 'bed_cu', sc, t); return; }
+  if (L0.ui === 'phoneJordan' || L0.ui === 'phoneJordanReply') {
+    phoneOver(ctx, 'epi_two', (c) => sc.drawPhone(c, t, L0.ui === 'phoneJordanReply'), [150, 200, 780, 1520, 80]);
     return;
   }
-  if (L0.ui === 'phoneJordan' || L0.ui === 'phoneJordanReply') { sc.drawPhone(ctx, t, L0.ui === 'phoneJordanReply'); return; }
   const name = L0.img;
   const wide = /wide|two|flock/.test(name);
   drawPhoto(ctx, plate(name, f), push(name, t, sh.t0, sh.t1 + (sc.id === 'epilogue' && sh.name === 'window' ? 4 : 0), wide ? 1.04 : 1.07));
@@ -335,19 +407,39 @@ function renderFrame(t) {
   compose(fctx, t, (ctx, sc, tt) => drawReal(ctx, sc, tt));
   return frame;
 }
-
-if (args.stills) {
-  const out = args.outdir || '/opt/work/real_stills';
-  fs.mkdirSync(out, { recursive: true });
-  for (const s of args.stills.split(',')) {
-    const t = parseFloat(s);
-    const p = path.join(out, `real_${t.toFixed(2)}.png`);
-    fs.writeFileSync(p, renderFrame(t).toBuffer('image/png'));
-    console.error('wrote', p);
+async function frameAt(t) {
+  renderFrame(t);
+  if (pending.size) {
+    await Promise.all([...pending]);
+    renderFrame(t);
   }
-} else {
+  return frame;
+}
+
+async function main() {
+  // every photograph decoded before the first frame
+  for (const f of fs.readdirSync(path.join(REAL, 'base'))) if (f.endsWith('.jpg')) base(f.slice(0, -4));
+  await Promise.all([...pending]);
+  if (args.stills) {
+    const out = args.outdir || '/opt/work/real_stills';
+    fs.mkdirSync(out, { recursive: true });
+    for (const s of args.stills.split(',')) {
+      const t = parseFloat(s);
+      const p = path.join(out, `real_${t.toFixed(2)}.png`);
+      fs.writeFileSync(p, (await frameAt(t)).toBuffer('image/png'));
+      console.error('wrote', p);
+    }
+    return;
+  }
+  // frames [from, to) as JPEG to stdout (see streamFrames in lib/project.js)
   const from = parseFloat(args.from || 0);
   const to = Math.min(parseFloat(args.to || timeline.duration), timeline.duration + 0.5);
-  streamFrames(renderFrame, from, to, FPS);
+  const n0 = Math.round(from * FPS), n1 = Math.round(to * FPS);
+  const t0 = Date.now();
+  for (let n = n0; n < n1; n++) {
+    fs.writeSync(1, (await frameAt(n / FPS)).encodeSync('jpeg', 97));
+    if (global.gc && n % 12 === 0) global.gc();
+    if ((n - n0) % 120 === 0) console.error(`frame ${n} (${((Date.now() - t0) / Math.max(1, n - n0 + 1)).toFixed(0)} ms/f, rss ${(process.memoryUsage().rss / 1e9).toFixed(2)} GB)`);
+  }
 }
-void byId;
+main().catch((e) => { console.error(e); process.exit(1); });
