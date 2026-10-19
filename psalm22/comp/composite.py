@@ -124,6 +124,9 @@ def vec3(v):
     return np.asarray(v if isinstance(v, (list, tuple, np.ndarray)) else [v] * 3, np.float32)
 
 
+SHADOW_LIFT = float(os.environ.get("SHADOW_LIFT", "0.10"))
+
+
 def grade(F, p):
     """Per-shot grade on a display-referred float RGB image (in place where possible)."""
     t, tn, ex = float(p["temperature"]), float(p["tint"]), float(p["exposure"])
@@ -157,6 +160,11 @@ def grade(F, p):
         F *= s
         F += L
     np.maximum(F, 0, out=F)
+    # global shadow lift: the darkest tones come up ~10% so silhouettes in the dark scenes keep readable form
+    # on phone screens; mids/highlights barely move ((1-x)^6 falls off fast). Override per shot: "shadow_lift".
+    a = float(p.get("shadow_lift", SHADOW_LIFT)) if hasattr(p, "get") else SHADOW_LIFT
+    if a > 0:
+        F += a * np.power(np.clip(1.0 - F, 0, 1), 6)
     m = F > 0.86
     if m.any():
         F[m] = 0.86 + 0.14 * np.tanh((F[m] - 0.86) / 0.14)

@@ -673,7 +673,10 @@ def _compute_masks(p):
     m_back = _smooth(f, earf - 0.008 * sc, earf + 0.002 * sc)
     lips_d = _dist_to(co, co[(w["lips"] > 0.4) & (w["body"] > 0.5)], mask=head)
     m_lips = _smooth(lips_d, 0.0012 * sc, 0.0035 * sc)
-    beard = m_up * m_lo * m_back * m_lips * head
+    # keep the nostrils / nose base clear: under the nose the beard stops a few mm below the subnasale
+    nose_zone = 1 - _smooth(lat, 0.014 * sc, 0.022 * sc)
+    m_nose = 1 - nose_zone * _smooth(z, sub - 0.004 * sc, sub - 0.001 * sc)
+    beard = m_up * m_lo * m_back * m_lips * m_nose * head
     # ---------------- crown / brow blood zone (1 at the crown line .. 0 at the brows) -----
     crown_z = E.z + 0.055 * sc
     brow_z = E.z + 0.012 * sc
@@ -1420,6 +1423,10 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     lipz = lm["mouth_top"] + 0.0012 * sc
     over = (np.abs(pts[:, :, 0]) < mw + 0.004 * sc) & (pts[:, :, 2] < lipz) & (roots[:, None, 2] > lm["mouth_bot"])
     pts[:, :, 2] = np.where(over, lipz, pts[:, :, 2])
+    # ...and below the nostrils: no strand point in the nose band may rise above the subnasale margin
+    nz = lm["subnasale"] - 0.0025 * sc
+    upn = (np.abs(pts[:, :, 0]) < 0.020 * sc) & (pts[:, :, 2] > nz) & (roots[:, None, 2] < lm["subnasale"])
+    pts[:, :, 2] = np.where(upn, nz, pts[:, :, 2])
     # --- curves datablock
     cv = bpy.data.hair_curves.new(p.name + ".beard")
     cv.add_curves([K] * N)

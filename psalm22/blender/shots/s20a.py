@@ -141,7 +141,8 @@ def build(ctx):
     for p, gz in ((G, gz_g), (Ch, gz_c)):
         p.update()
         P.pose(p, "sit", ground_z=gz)
-        _hide_thighs(p)
+        if p is G:          # only the grandfather's long robe covers his knees; the boy's shins stay visible
+            _hide_thighs(p)
     gs = _find("grandfather_seat")
     if gs is not None:
         gs.scale.x *= 0.72
