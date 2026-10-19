@@ -674,8 +674,10 @@ def _compute_masks(p):
     lips_d = _dist_to(co, co[(w["lips"] > 0.4) & (w["body"] > 0.5)], mask=head)
     m_lips = _smooth(lips_d, 0.0012 * sc, 0.0035 * sc)
     # keep the nostrils / nose base clear: under the nose the beard stops a few mm below the subnasale
-    nose_zone = 1 - _smooth(lat, 0.014 * sc, 0.022 * sc)
-    m_nose = 1 - nose_zone * _smooth(z, sub - 0.004 * sc, sub - 0.001 * sc)
+    nose_zone = 1 - _smooth(lat, 0.016 * sc, 0.024 * sc)
+    m_nose = 1 - nose_zone * _smooth(z, sub + 0.0012 * sc, sub + 0.003 * sc)
+    # the moustache fills the whole upper lip: under the nose the beard reaches right up to the nostril rim
+    m_up = np.maximum(m_up, nose_zone * (1 - _smooth(z, sub + 0.0005 * sc, sub + 0.0025 * sc)))
     beard = m_up * m_lo * m_back * m_lips * m_nose * head
     # ---------------- crown / brow blood zone (1 at the crown line .. 0 at the brows) -----
     crown_z = E.z + 0.055 * sc
@@ -1419,14 +1421,25 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
         h = ((pts[:, k] - roots) * nrm).sum(1)
         push = np.maximum(0.0, off - h)
         pts[:, k] += nrm * push[:, None] * (1.0 - 0.6 * T[k])
-    # keep moustache hair off the lips: no strand point over the mouth may drop below the upper-lip line
+    # moustache: keep hair off the lips and out of the nostrils by SHORTENING strands (scaled toward the root),
+    # never by flattening points onto a line (that left a bare upper lip with a thin hair line)
     lipz = lm["mouth_top"] + 0.0012 * sc
-    over = (np.abs(pts[:, :, 0]) < mw + 0.004 * sc) & (pts[:, :, 2] < lipz) & (roots[:, None, 2] > lm["mouth_bot"])
-    pts[:, :, 2] = np.where(over, lipz, pts[:, :, 2])
-    # ...and below the nostrils: no strand point in the nose band may rise above the subnasale margin
-    nz = lm["subnasale"] - 0.0025 * sc
-    upn = (np.abs(pts[:, :, 0]) < 0.020 * sc) & (pts[:, :, 2] > nz) & (roots[:, None, 2] < lm["subnasale"])
-    pts[:, :, 2] = np.where(upn, nz, pts[:, :, 2])
+    nz = lm["subnasale"] + 0.0015 * sc
+    rel = pts - roots[:, None]
+    rz = roots[:, 2]
+    fac = np.ones(N)
+    band = np.abs(roots[:, 0]) < mw + 0.006 * sc
+    lipr = band & (rz > lipz)
+    drop = np.maximum(0.0, -rel[:, :, 2].min(1))
+    allow = rz - lipz
+    m1 = lipr & (drop > allow)
+    fac[m1] = np.maximum(0.12, allow[m1] / np.maximum(drop[m1], 1e-6))
+    noser = (np.abs(roots[:, 0]) < 0.024 * sc) & (rz < nz)
+    rise = np.maximum(0.0, rel[:, :, 2].max(1))
+    allow2 = nz - rz
+    m2 = noser & (rise > allow2)
+    fac[m2] = np.minimum(fac[m2], np.maximum(0.12, allow2[m2] / np.maximum(rise[m2], 1e-6)))
+    pts = roots[:, None] + rel * fac[:, None, None]
     # --- curves datablock
     cv = bpy.data.hair_curves.new(p.name + ".beard")
     cv.add_curves([K] * N)
