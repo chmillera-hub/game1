@@ -889,6 +889,12 @@ def skin_material(p, name=None):
         g = float(s.get("grey", 0))
         hc = hc.lerp(Vector(HAIR_COLORS["grey"]), g * 0.8)
         col = T.mix(col, tuple(hc * 1.6), bf)
+        if beard_style in ("short", "full", "long"):
+            # dense beard base: the skin under a real beard reads as hair colour, not skin between strands
+            bsh = T.n("ShaderNodeMapRange", **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.75, "To Max": 1.0})
+            T.link(n_mid.outputs["Fac"], bsh.inputs["Value"])
+            bb = T.math("MULTIPLY", T.math("POWER", beard_m, 0.55), bsh.outputs[0])
+            col = T.mix(col, tuple(hc * 0.9), T.math("MULTIPLY", bb, 0.94, True))
     # --- hair-coloured scalp under the hair shell / strands (short hair no longer reads as a cap on skin)
     if s.get("hair") and s["hair"] != "none":
         scalp_m = T.n("ShaderNodeAttribute", _attribute_name="cmask_b").outputs["Alpha"]
@@ -1310,7 +1316,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     tm = beard_m[tv].mean(1) * inb[tv].all(1)
     sel = np.nonzero(tm > 0.03)[0]
     wts = area[sel] * tm[sel] ** 1.3
-    N = int(cfg["count"] * density * sc ** 2)
+    N = int(cfg["count"] * density * sc ** 2 * 1.5)   # denser so it reads as a beard, not strands
     ti = sel[rng.choice(len(sel), N, p=wts / wts.sum())]
     r1, r2 = rng.random(N), rng.random(N)
     s1 = np.sqrt(r1)
@@ -1326,7 +1332,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     # --- growth direction field
     d = np.tile(np.array([0.0, -0.15, -1.0]), (N, 1))
     must = (z > lm["mouth_top"] - 0.003 * sc) & (lat < mw + 0.012 * sc)
-    d[must] = np.stack([np.sign(x[must]) * 0.9, np.full(must.sum(), -0.1), np.full(must.sum(), -1.0)], 1)
+    d[must] = np.stack([np.sign(x[must]) * 1.6, np.full(must.sum(), -0.15), np.full(must.sum(), -0.55)], 1)
     under = nrm[:, 2] < -0.35
     d[under] = np.array([0.0, -0.8, -0.6])
     d = _norm(d)
@@ -1339,7 +1345,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     lenf = np.full(N, 0.55)
     lenf += 0.45 * chinc * (z < lm["mouth_bot"])
     lenf = np.where(z > lm["mouth_bot"], 0.42, lenf)            # cheeks / jaw above the mouth line
-    lenf = np.where(must, 0.24, lenf)
+    lenf = np.where(must, 0.14, lenf)
     lenf = np.where(under, 0.8, lenf)
     side = np.clip((lat - 0.04 * sc) / (0.03 * sc), 0, 1)
     lenf *= 1 - 0.35 * side
@@ -1410,11 +1416,15 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
         h = ((pts[:, k] - roots) * nrm).sum(1)
         push = np.maximum(0.0, off - h)
         pts[:, k] += nrm * push[:, None] * (1.0 - 0.6 * T[k])
+    # keep moustache hair off the lips: no strand point over the mouth may drop below the upper-lip line
+    lipz = lm["mouth_top"] + 0.0012 * sc
+    over = (np.abs(pts[:, :, 0]) < mw + 0.004 * sc) & (pts[:, :, 2] < lipz) & (roots[:, None, 2] > lm["mouth_bot"])
+    pts[:, :, 2] = np.where(over, lipz, pts[:, :, 2])
     # --- curves datablock
     cv = bpy.data.hair_curves.new(p.name + ".beard")
     cv.add_curves([K] * N)
     cv.position_data.foreach_set("vector", pts.astype(np.float32).ravel())
-    rad = np.tile(np.linspace(1.0, 0.45, K), N) * 0.00012 * (0.8 + 0.4 * rng.random(N)).repeat(K)
+    rad = np.tile(np.linspace(1.0, 0.45, K), N) * 0.00024 * (0.8 + 0.4 * rng.random(N)).repeat(K)
     if "radius" not in cv.attributes:
         cv.attributes.new("radius", "FLOAT", "POINT")
     cv.attributes["radius"].data.foreach_set("value", rad.astype(np.float32))

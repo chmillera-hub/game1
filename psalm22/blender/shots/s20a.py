@@ -107,6 +107,16 @@ def seat_under(p, seat, gz, back=0.03):
     return top
 
 
+def _hide_thighs(p):
+    """Seated knees poked through the robe lap: hide the thigh/knee skin that the robe covers anyway."""
+    from lib import wardrobe as W
+    body = p.body
+    gi = {g.index for g in body.vertex_groups
+          if g.name.startswith(("upperleg01", "upperleg02", "lowerleg01", "pelvis"))}
+    idx = [v.index for v in body.data.vertices if any(x.group in gi and x.weight > 0.25 for x in v.groups)]
+    W.hide_body(p, idx)
+
+
 def build(ctx):
     N = ctx.render_frames
     nf = ctx.nframes
@@ -131,6 +141,7 @@ def build(ctx):
     for p, gz in ((G, gz_g), (Ch, gz_c)):
         p.update()
         P.pose(p, "sit", ground_z=gz)
+        _hide_thighs(p)
     gs = _find("grandfather_seat")
     if gs is not None:
         gs.scale.x *= 0.72
