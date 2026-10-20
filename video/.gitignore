@@ -1,0 +1,3 @@
+# large render intermediates live outside the repo (/opt/work)
+*.blend1
+__pycache__/
