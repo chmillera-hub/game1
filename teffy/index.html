@@ -22,6 +22,7 @@
   --calm-soft: #d9eee2;
   --heart: #b8305f;
   --scrim: rgba(22, 27, 38, 0.42);
+  --dim: 0.4;
   --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -43,6 +44,7 @@
     --calm-soft: #15301f;
     --heart: #ff7aa3;
     --scrim: rgba(0, 0, 0, 0.6);
+    --dim: 0.6;
     color-scheme: dark;
   }
 }
@@ -62,12 +64,13 @@
   --calm-soft: #15301f;
   --heart: #ff7aa3;
   --scrim: rgba(0, 0, 0, 0.6);
+  --dim: 0.6;
   color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { height: 100%; }
+html { height: 100%; overflow: hidden; }
 body {
   height: 100%;
   margin: 0;
@@ -105,6 +108,7 @@ button { cursor: pointer; }
   background: transparent;
   color: var(--muted);
   border-radius: 999px;
+  min-height: 40px;
   padding: 0.38rem 0.85rem;
   font-size: 0.88rem;
   font-weight: 700;
@@ -135,7 +139,10 @@ button { cursor: pointer; }
   background: var(--surface);
   font-size: 0.88rem;
 }
+.notice { display: flex; align-items: flex-start; gap: 8px; }
+.notice-body { flex: 1; min-width: 0; }
 .notice b { font-weight: 700; }
+.notice .close { appearance: none; flex: none; width: 32px; height: 32px; margin: -6px -6px 0 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; }
 .notice .row { margin-top: 8px; }
 
 /* Council strip (phones) */
@@ -220,6 +227,7 @@ button { cursor: pointer; }
 .stage { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
 .chamber { display: none; }
 .thread {
+  position: relative;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -233,6 +241,7 @@ button { cursor: pointer; }
 /* Conversation messages */
 .msg { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; }
 .msg > .ava, .msg > button.ava { width: 36px; height: 36px; font-size: 18px; padding: 0; }
+.msg > button.ava::after { content: ""; position: absolute; inset: -5px; }
 .msg-main { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
 .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 0.78rem; color: var(--muted); }
 .msg-name { font-weight: 700; color: var(--ink); }
@@ -291,7 +300,7 @@ button { cursor: pointer; }
 }
 .decide summary::-webkit-details-marker { display: none; }
 .faces { display: inline-flex; gap: 2px; font-size: 0.95rem; }
-.faces .hold { opacity: 0.35; filter: grayscale(0.7); }
+.faces .hold { opacity: var(--dim); filter: grayscale(0.5); }
 .decide summary::after { content: "Why"; font-weight: 700; color: var(--accent); }
 .decide[open] summary::after { content: "Hide"; }
 .decide ul { list-style: none; margin: 6px 0 2px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -324,6 +333,8 @@ button { cursor: pointer; }
 .final-plan { font-size: 1.02rem; }
 .final .tally-line { font-family: var(--f-mono); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .final .tally-line b { color: var(--ink); font-weight: 600; }
+.for-you { padding: 10px 12px; border-radius: 12px; background: var(--sunken); }
+.for-you ul { margin: 4px 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 2px; }
 .final-voices { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .final-voices li { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px; border-radius: 999px; background: var(--sunken); font-size: 0.8rem; }
 .closing { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: 6px; }
@@ -431,6 +442,7 @@ button { cursor: pointer; }
 .run-row .live { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .run-row .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--calm); animation: blink 1.6s ease-in-out infinite; }
 .run-row .dot.off { background: var(--muted); animation: none; }
+.run-row .btn { min-height: 40px; }
 @keyframes blink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 .modes { display: flex; flex-wrap: wrap; gap: 6px; }
 .mode {
@@ -444,7 +456,7 @@ button { cursor: pointer; }
   font-size: 0.85rem;
 }
 .mode[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.add-voice { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.add-voice { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 3px; }
 .add-voice::-webkit-scrollbar { display: none; }
 .add-voice .k { flex: none; }
 .add-voice button {
@@ -453,8 +465,9 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.82rem;
+  min-height: 36px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
   white-space: nowrap;
 }
 .entry { display: flex; align-items: flex-end; gap: 8px; }
@@ -472,6 +485,7 @@ button { cursor: pointer; }
   line-height: 1.35;
 }
 #input:focus { border-color: var(--accent); outline: none; }
+#input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .send {
   appearance: none;
   flex: none;
@@ -553,7 +567,7 @@ button { cursor: pointer; }
   line-height: 1;
   transition: transform 0.25s ease, border-color 0.25s, background-color 0.25s;
 }
-.seat-emoji { filter: saturate(0.3); opacity: 0.5; }
+.seat-emoji { filter: saturate(0.4); opacity: var(--dim); }
 .seat[data-state="suffer"] { border-color: var(--suffer); background: var(--suffer-soft); animation: pulse 2.4s ease-in-out infinite; }
 .seat[data-state="soothed"] { border-color: var(--calm); background: var(--calm-soft); }
 .seat[data-state="calm"] { border-color: var(--calm); }
@@ -627,8 +641,14 @@ button { cursor: pointer; }
 .swatch.soothed { border-color: var(--calm); background: var(--calm-soft); }
 .legend .heart { color: var(--heart); }
 
+@media (max-height: 600px) {
+  /* The soft keyboard is open: give the conversation the room. */
+  .notice, .strip, .hint { display: none !important; }
+}
 @media (min-width: 960px) {
   .strip { display: none; }
+  .sheet { top: 50%; bottom: auto; transform: translate(-50%, -50%); width: min(520px, 92vw); max-height: 80vh; border-radius: 20px; padding-bottom: 20px; }
+  .sheet-grip { display: none; }
   .stage { grid-template-columns: 330px minmax(0, 1fr); gap: 32px; }
   .chamber { display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; padding-block: 16px; scrollbar-width: thin; }
   .thread { padding-right: 8px; }
@@ -666,7 +686,7 @@ button { cursor: pointer; }
         <li><span class="heart" aria-hidden="true">♥</span>Sadness's pick</li>
       </ul>
     </aside>
-    <main class="thread" id="thread" tabindex="-1" aria-label="Conversation"></main>
+    <main class="thread" id="thread" tabindex="-1" role="tabpanel" aria-labelledby="tab-chat"></main>
   </div>
   <form class="composer" id="composer" autocomplete="off">
     <div class="run-row" id="runRow" hidden></div>
@@ -1031,7 +1051,7 @@ button { cursor: pointer; }
     return rounds
       .filter(r => isObj(r) && typeof r.input === "string" && typeof r.id === "string")
       .map(r => {
-        r.events = (Array.isArray(r.events) ? r.events : []).filter(e => isObj(e) && typeof e.t === "string");
+        r.events = (Array.isArray(r.events) ? r.events : []).filter(e => isObj(e) && typeof e.t === "string" && (e.emotion == null || findEmotion(e.emotion)));
         if (typeof r.raw !== "string") r.raw = "";
         if (!has(MODE_TAG, r.mode)) r.mode = "reevaluate";
         if (!["done", "stopped", "error", "paste", "streaming"].includes(r.status)) r.status = "stopped";
@@ -1049,11 +1069,25 @@ button { cursor: pointer; }
     const fresh = E.newCouncil(s.thought);
     const c = Object.assign(fresh, s);
     c.participants = c.participants.filter(n => findEmotion(n)).map(n => findEmotion(n).name);
-    c.messages = c.messages.filter(m => isObj(m) && typeof m.kind === "string");
-    for (const k of ["scores", "start", "ever"]) if (!isObj(c[k])) c[k] = {};
+    const text = v => typeof v === "string" && v.trim();
+    c.messages = c.messages.filter(m => {
+      if (!isObj(m) || typeof m.kind !== "string") return false;
+      if (m.kind === "emotion") return !!findEmotion(m.from) && text(m.text);
+      if (m.kind === "user" || m.kind === "consciousness" || m.kind === "note") return text(m.text);
+      if (m.kind === "decide") return Array.isArray(m.items);
+      return m.kind === "final";
+    });
+    for (const m of c.messages) {
+      if (m.kind === "emotion") { m.from = findEmotion(m.from).name; if (m.to != null && typeof m.to !== "string") m.to = "all"; }
+      if (m.kind === "decide") m.items = m.items.filter(d => isObj(d) && findEmotion(d.emotion));
+    }
+    for (const k of ["scores", "start", "ever", "scoredAt", "lastWhy"]) if (!isObj(c[k])) c[k] = {};
+    c.conditions = Array.isArray(c.conditions) ? c.conditions.filter(x => isObj(x) && findEmotion(x.emotion) && typeof x.text === "string") : [];
+    c.forYou = Array.isArray(c.forYou) ? c.forYou.filter(x => typeof x === "string") : [];
+    for (const k of ["plan", "idea", "neglected", "askedOf"]) if (typeof c[k] !== "string") c[k] = "";
     if (c.status === "running" || c.status === "new") {
-      c.status = c.participants.length ? "paused" : "new";
-      if (c.participants.length) c.messages.push({ kind: "note", text: "Paused when the page reloaded." });
+      c.status = "paused";
+      c.messages.push({ kind: "note", text: "Paused when the page reloaded." });
     }
     return c;
   }
@@ -1070,9 +1104,10 @@ button { cursor: pointer; }
     sample: undefined,       // undefined while connecting; null when Claude can't answer here; else the sample function
     blocked: "",             // an error code that turned Claude off for this view
     // 7 steps
-    busy: false, ctl: null, startedAt: 0,
+    busy: false, stepCtl: null, startedAt: 0,
     // council chat
-    chatBusy: false, activity: null, pauseAsked: false,
+    chatBusy: false, chatCtl: null, activity: null, pauseAsked: false,
+    noticeHidden: "",
     openDecides: new Set(),
     confirmNew: false,
   };
@@ -1136,7 +1171,7 @@ button { cursor: pointer; }
   function askJSON(sample, prompt) {
     const engine = chatEngine();
     const ctl = new AbortController();
-    state.ctl = ctl;
+    state.chatCtl = ctl;
     const opts = { cache: false, signal: ctl.signal, model: engine.model, modelTier: engine.modelTier, effort: engine.effort };
     const viaText = () => sample(prompt, opts).then(r => {
       const objs = scanObjects(r && r.text);
@@ -1183,7 +1218,7 @@ button { cursor: pointer; }
     if (typeof sample !== "function" || state.blocked || state.engine === "manual") {
       state.chatBusy = false;
       state.activity = null;
-      s.status = s.participants.length ? "paused" : "new";
+      s.status = "paused";
       saveCouncil();
       renderAll();
       return;
@@ -1209,7 +1244,7 @@ button { cursor: pointer; }
       }
     } catch (e) {
       const code = errCode(e);
-      s.status = s.participants.length ? "paused" : "new";
+      s.status = "paused";
       if (code !== "cancelled") {
         s.messages.push({ kind: "note", text: ERR[code] || ERR.upstream_error, error: true });
         announce(ERR[code] || ERR.upstream_error);
@@ -1218,7 +1253,7 @@ button { cursor: pointer; }
     } finally {
       state.chatBusy = false;
       state.activity = null;
-      state.ctl = null;
+      state.chatCtl = null;
       state.pauseAsked = false;
       saveCouncil();
       renderAll();
@@ -1227,7 +1262,7 @@ button { cursor: pointer; }
   function pauseChat() {
     if (!state.chatBusy) return;
     state.pauseAsked = true;
-    if (state.ctl) state.ctl.abort();
+    if (state.chatCtl) state.chatCtl.abort();
     renderComposer();
   }
 
@@ -1279,7 +1314,7 @@ button { cursor: pointer; }
     if (isManual()) { startPaste(round); return; }
 
     const ctl = new AbortController();
-    state.ctl = ctl;
+    state.stepCtl = ctl;
     state.busy = true;
     state.startedAt = Date.now();
     saveRounds();
@@ -1292,7 +1327,7 @@ button { cursor: pointer; }
       round.status = "stopped";
       round.error = "cancelled";
       state.busy = false;
-      state.ctl = null;
+      state.stepCtl = null;
       stopTicker();
       saveRounds();
       renderAll();
@@ -1300,7 +1335,7 @@ button { cursor: pointer; }
     }
     if (typeof sample !== "function" || state.blocked) {
       state.busy = false;
-      state.ctl = null;
+      state.stepCtl = null;
       stopTicker();
       startPaste(round);
       return;
@@ -1341,7 +1376,7 @@ button { cursor: pointer; }
       if (OFF_CODES.has(code)) state.blocked = code;
     } finally {
       state.busy = false;
-      state.ctl = null;
+      state.stepCtl = null;
       stopTicker();
       saveRounds();
       renderAll();
@@ -1404,7 +1439,7 @@ button { cursor: pointer; }
     return `to ${emo(to).emoji} ${to}`;
   }
   function seatState(s, n) {
-    const v = s.scores[n];
+    const v = n === "Sadness" && s.status !== "done" ? 0 : s.scores[n];
     return v < 0 ? "suffer" : s.ever && s.ever[n] ? "soothed" : "calm";
   }
 
@@ -1446,7 +1481,7 @@ button { cursor: pointer; }
         const summaryText = speaker
           ? `${speaker.name} takes the floor${wants.length > 1 ? `, ${wants.length - 1} more wanted in` : ""} · ${held} held back`
           : `Nobody wanted to add anything new`;
-        const det = h("details", { class: "decide" },
+        const det = h("details", { class: "decide", "data-i": String(i) },
           h("summary", null,
             h("span", { class: "faces", "aria-hidden": "true" }, items.map(d => h("span", { class: d.reply ? "" : "hold" }, emo(d.emotion).emoji))),
             h("span", null, summaryText)),
@@ -1467,8 +1502,10 @@ button { cursor: pointer; }
         return h("section", { class: "final" + (hurting ? " hurting" : ""), "aria-label": "Final plan" },
           h("h3", null, hurting ? `The plan, with ${still.length === 1 ? "one voice" : still.length + " voices"} still hurting` : "The plan everyone can live with"),
           h("p", { class: "final-plan" }, m.plan || s.plan),
+          Array.isArray(m.forYou) && m.forYou.length ? h("div", { class: "for-you" }, h("span", { class: "k" }, "For you to settle"),
+            h("ul", null, m.forYou.filter(x => typeof x === "string").map(x => h("li", null, x)))) : null,
           h("p", { class: "tally-line" }, "Suffering voices ", h("b", null, String(m.start || 0)), " → ", h("b", null, String(m.end || 0))),
-          h("ul", { class: "final-voices", "aria-label": "Where everyone landed" }, s.participants.map(n => h("li", null, emo(n).emoji, " ", n, " ", pill(s.scores[n])))),
+          h("ul", { class: "final-voices", "aria-label": "Where everyone landed" }, s.participants.map(n => h("li", null, emo(n).emoji, " ", n, " ", pill((isObj(m.scores) ? m.scores : s.scores)[n])))),
           m.text ? h("div", { class: "closing" }, h("span", { "aria-hidden": "true" }, "🧠"), h("p", null, m.text)) : null);
       }
       default:
@@ -1515,19 +1552,42 @@ button { cursor: pointer; }
       const act = activityNode(s);
       if (act) nodes.push(act);
       if (!s.example && !state.chatBusy && s.status === "paused") {
-        nodes.push(h("div", { class: "banner" }, h("b", null, "Paused. "), "Continue when you're ready, or add something first.",
-          h("div", { class: "row" }, h("button", { type: "button", class: "btn btn-primary btn-small", disabled: isManual() ? true : null, onclick: () => runChat() }, "Continue"))));
+        nodes.push(h("div", { class: "banner" }, h("b", null, "Paused. "), s.participants.length ? "Press Continue below when you're ready, or add something first." : "Press Continue below to try again."));
       }
     }
     thread.replaceChildren(...nodes);
   }
+  // Live updates rebuild the conversation; put keyboard focus back on the same control afterwards.
+  function focusKey() {
+    const a = document.activeElement;
+    if (!a || a === document.body) return null;
+    const dec = a.closest && a.closest(".decide");
+    if (dec) return { sel: `.decide[data-i="${dec.dataset.i}"] summary` };
+    if (a.classList && a.classList.contains("member")) return { sel: `.member[data-name="${a.dataset.name}"]` };
+    return null;
+  }
+  function restoreFocus(k) {
+    if (!k) return;
+    const el = document.querySelector(k.sel);
+    if (el) el.focus({ preventScroll: true });
+  }
+  let announcedCount = 0;
   function renderChatLive() {
     if (state.view !== "chat") { renderCouncilView(); renderComposer(); return; }
     const stick = nearBottom();
+    const k = focusKey();
     renderChat();
     renderCouncilView();
     renderComposer();
+    restoreFocus(k);
     if (stick) scrollThreadToEnd();
+    // Read each new message aloud for screen readers.
+    const s = state.council;
+    if (s && s.messages.length > announcedCount) {
+      const fresh = s.messages.slice(announcedCount).filter(m => m.kind === "emotion" || m.kind === "consciousness");
+      announcedCount = s.messages.length;
+      if (fresh.length) { const m = fresh[fresh.length - 1]; announce(`${m.kind === "emotion" ? m.from : "Consciousness"}: ${m.text}`); }
+    }
   }
 
   // ---------- Rendering: 7 steps ----------
@@ -1732,7 +1792,7 @@ button { cursor: pointer; }
   function scrollToRound(r) {
     requestAnimationFrame(() => {
       const node = document.getElementById("round-" + r.id);
-      if (node) node.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" });
+      if (node) thread.scrollTo({ top: Math.max(0, node.offsetTop - 8), behavior: reducedMotion() ? "auto" : "smooth" });
     });
   }
   function nearBottom() { return thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120; }
@@ -1747,7 +1807,7 @@ button { cursor: pointer; }
       const s = councilShown();
       if (!s || !s.participants.length) return null;
       const a = state.activity;
-      const seats = new Map(s.participants.map(n => [n, { score: s.scores[n] < 0 ? -1 : 0, state: seatState(s, n) }]));
+      const seats = new Map(s.participants.map(n => [n, { score: seatState(s, n) === "suffer" ? -1 : 0, state: seatState(s, n) }]));
       const t = E.tally(s);
       let core;
       if (a && a.busy === "speak" && a.who) core = { label: `${emo(a.who).emoji} ${a.who}`, text: "is typing…" };
@@ -1793,16 +1853,15 @@ button { cursor: pointer; }
   function renderCouncilView() {
     const m = councilModel();
     // Strip
-    if (!m || !m.order.length) {
-      strip.replaceChildren(h("p", { class: "strip-hint" }, m && m.live ? "Gathering your council…" : "Your council gathers here when you share a thought."));
-    } else {
+    strip.hidden = !m || !m.order.length;
+    if (!strip.hidden) {
       strip.replaceChildren(
-        h("div", { class: "strip-tally", "aria-label": `Suffering voices: ${m.start} at the start, ${m.now} now` },
-          h("span", null, "−1 voices"), h("b", null, `${m.start} → ${m.now}`)),
+        h("div", { class: "strip-tally", role: "img", "aria-label": `Suffering voices: ${m.start} at the start, ${m.now} now`, title: "Suffering voices: at the start → now" },
+          h("span", { "aria-hidden": "true" }, "Hurting"), h("b", { "aria-hidden": "true" }, `${m.start} → ${m.now}`)),
         ...m.order.map(n => {
           const s = m.seats.get(n);
           return h("button", {
-            type: "button", class: "member" + (m.speaking === n ? " typing" : ""), "data-state": s.state,
+            type: "button", class: "member" + (m.speaking === n ? " typing" : ""), "data-state": s.state, "data-name": n,
             "aria-label": `${n}: ${STATE_LABEL[s.state]}${m.picked === n ? ", Sadness's pick" : ""}`,
             onclick: () => openProfile(n),
           },
@@ -1850,7 +1909,8 @@ button { cursor: pointer; }
   const scrim = $("#scrim");
   let sheetReturn = null;
   function openSheet(build) {
-    sheetReturn = document.activeElement;
+    const a = document.activeElement;
+    sheetReturn = a && a.dataset && a.dataset.name ? `[data-name="${a.dataset.name}"]` : a && a.id ? "#" + a.id : "#input";
     sheet.replaceChildren(h("div", { class: "sheet-grip", "aria-hidden": "true" }), ...build());
     sheet.hidden = false;
     scrim.hidden = false;
@@ -1861,7 +1921,8 @@ button { cursor: pointer; }
     if (sheet.hidden) return;
     sheet.hidden = true;
     scrim.hidden = true;
-    if (sheetReturn && sheetReturn.focus) sheetReturn.focus();
+    const back = (sheetReturn && [...document.querySelectorAll(sheetReturn)].find(el => el.offsetParent !== null)) || input;
+    back.focus();
   }
   function openProfile(name) {
     const e = findEmotion(name);
@@ -1935,6 +1996,12 @@ button { cursor: pointer; }
   const input = $("#input");
   const sendBtn = $("#sendBtn");
   const runRow = $("#runRow");
+  const runDot = h("span", { class: "dot", "aria-hidden": "true" });
+  const runText = h("span");
+  const runBtn = h("button", { type: "button", class: "btn btn-small" });
+  let runAction = null;
+  runBtn.addEventListener("click", () => { if (runAction) runAction(); });
+  runRow.append(h("span", { class: "live", "aria-live": "off" }, runDot, runText), runBtn);
   const modeBtns = [...document.querySelectorAll(".mode")];
   const addVoice = $("#addVoice");
   EMOTIONS.forEach(em => addVoice.append(h("button", { type: "button", onclick: () => speakAs(em.name) }, `${em.emoji} ${em.name}`)));
@@ -1946,7 +2013,8 @@ button { cursor: pointer; }
     const end = typeof input.selectionEnd === "number" ? input.selectionEnd : v.length;
     const before = v.slice(0, start);
     const glue = before && !/\s$/.test(before) ? " " : "";
-    input.value = before + glue + phrase + v.slice(end);
+    const after = v.slice(end);
+    input.value = before + glue + (/^\s/.test(after) ? phrase.trimEnd() : phrase) + after;
     const caret = (before + glue + phrase).length;
     input.focus();
     try { input.setSelectionRange(caret, caret); } catch { /* not focusable yet */ }
@@ -1962,7 +2030,7 @@ button { cursor: pointer; }
 
   const PLACEHOLDER = {
     chatNew: "What are you thinking of doing?",
-    chatMore: "Jump in anytime, or answer the council…",
+    chatMore: "Jump in anytime…",
     evaluate: "I want to go disc golf this morning, but…",
     reevaluate: "My doubt says… what if my friend thinks I don't want to go?",
     talk: "Talk to your Consciousness…",
@@ -1980,24 +2048,27 @@ button { cursor: pointer; }
     const hasRounds = threadStarted();
     $("#modes").hidden = chat || !hasRounds;
     const mode = hasRounds ? state.mode : "evaluate";
-    modeBtns.forEach(b => b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
+    modeBtns.forEach(b => { b.setAttribute("aria-checked", String(b.dataset.mode === mode)); b.tabIndex = b.dataset.mode === mode ? 0 : -1; });
     input.placeholder = chat ? (state.council && !state.showCouncilExample ? PLACEHOLDER.chatMore : PLACEHOLDER.chatNew) : PLACEHOLDER[mode];
 
     // Live status row
-    runRow.replaceChildren();
     if (chat && state.council && !state.showCouncilExample && (state.chatBusy || state.council.status === "paused")) {
       const s = state.council;
       const live = state.chatBusy;
-      runRow.append(
-        h("span", { class: "live" }, h("span", { class: "dot" + (live ? "" : " off"), "aria-hidden": "true" }),
-          live ? (state.pauseAsked ? "Pausing…" : `Live · ${chatEngine().label} · ${s.calls} calls`) : `Paused · ${s.calls} calls so far`),
-        live
-          ? h("button", { type: "button", class: "btn btn-small", disabled: state.pauseAsked ? true : null, onclick: pauseChat }, "Pause")
-          : h("button", { type: "button", class: "btn btn-primary btn-small", disabled: manual ? true : null, onclick: () => runChat() }, "Continue"));
+      runDot.className = "dot" + (live ? "" : " off");
+      runText.textContent = live ? (state.pauseAsked ? "Pausing…" : `Live · ${chatEngine().label} · ${s.calls} calls`) : `Paused · ${s.calls} calls so far`;
+      runBtn.textContent = live ? "Pause" : "Continue";
+      runBtn.className = "btn btn-small" + (live ? "" : " btn-primary");
+      runBtn.disabled = live ? state.pauseAsked : manual;
+      runAction = live ? pauseChat : () => runChat();
       runRow.hidden = false;
     } else if (!chat && state.busy) {
-      runRow.append(h("span", { class: "live" }, h("span", { class: "dot", "aria-hidden": "true" }), "Council is meeting · ", h("span", { class: "elapsed" }, seconds() + "s")),
-        h("button", { type: "button", class: "btn btn-small", onclick: () => { if (state.ctl) state.ctl.abort(); } }, "Stop"));
+      runDot.className = "dot";
+      runText.textContent = `Council is meeting · ${seconds()}s`;
+      runBtn.textContent = "Stop";
+      runBtn.className = "btn btn-small";
+      runBtn.disabled = false;
+      runAction = () => { if (state.stepCtl) state.stepCtl.abort(); };
       runRow.hidden = false;
     } else {
       runRow.hidden = true;
@@ -2024,8 +2095,12 @@ button { cursor: pointer; }
       msg = [h("b", null, "Council chat runs on Claude. "), "Copy & paste only works in 7 steps.",
         h("div", { class: "row" }, h("button", { type: "button", class: "btn btn-small btn-primary", onclick: () => { state.engine = DEFAULT_ENGINE; store.set("teffy.engine.v2", state.engine); renderAll(); } }, "Use Haiku · low effort"))];
     }
-    n.hidden = !msg;
-    n.replaceChildren(...(msg || []));
+    const key = msg ? (state.blocked || (state.sample === null ? "absent" : "manual")) + ":" + state.view : "";
+    n.hidden = !msg || state.noticeHidden === key;
+    n.replaceChildren(...(msg ? [
+      h("div", { class: "notice-body" }, ...msg),
+      h("button", { type: "button", class: "close", "aria-label": "Dismiss", onclick: () => { state.noticeHidden = key; renderNotice(); } }, "×"),
+    ] : []));
   }
 
   function renderTabs() {
@@ -2034,6 +2109,7 @@ button { cursor: pointer; }
       t.setAttribute("aria-selected", String(on));
       t.tabIndex = on ? 0 : -1;
     });
+    thread.setAttribute("aria-labelledby", "tab-" + state.view);
   }
 
   function renderAll() {
@@ -2053,7 +2129,10 @@ button { cursor: pointer; }
   let ticker = 0;
   function startTicker() {
     stopTicker();
-    ticker = setInterval(() => document.querySelectorAll(".elapsed").forEach(el => { el.textContent = seconds() + "s"; }), 1000);
+    ticker = setInterval(() => {
+      document.querySelectorAll(".elapsed").forEach(el => { el.textContent = seconds() + "s"; });
+      if (state.busy && state.view === "steps") runText.textContent = `Council is meeting · ${seconds()}s`;
+    }, 1000);
   }
   function stopTicker() { if (ticker) clearInterval(ticker); ticker = 0; }
 
@@ -2098,11 +2177,22 @@ button { cursor: pointer; }
   });
   $("#menuBtn").addEventListener("click", openSettings);
   scrim.addEventListener("click", closeSheet);
+  sheet.addEventListener("keydown", ev => {
+    if (ev.key !== "Tab") return;
+    const f = [...sheet.querySelectorAll("button, select, textarea, [href]")].filter(el => !el.disabled);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+  });
   document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeSheet(); });
 
   // ---------- Start ----------
 
   input.value = store.get("teffy.draft", "") || "";
+  // Phones: Enter makes a new line, so the key should say so; the send button sends.
+  if (!(window.matchMedia && window.matchMedia("(pointer: fine)").matches)) input.setAttribute("enterkeyhint", "enter");
+  announcedCount = state.council ? state.council.messages.length : 0;
   renderAll();
   autoGrow();
   // An example opens at its start so its label shows; a real conversation opens at the newest message.
