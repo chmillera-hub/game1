@@ -27,7 +27,9 @@ It has two tabs.
 
 ## Ways to use it
 
-1. **On claude.ai (recommended).** Open the published artifact. The first time
+1. **On claude.ai (recommended).** Open the published artifact,
+   <https://claude.ai/artifact/75gKkgh8gwtHt6aPwoKVGs> (private to its owner
+   until shared). The first time
    you send a thought, Claude asks you to allow the page. Answers count against
    your own Claude plan, like chat messages.
 2. **Any chatbot, by copy and paste (7 steps only).** Pick "Copy & paste · any
