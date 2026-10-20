@@ -145,7 +145,7 @@ var TeffyEngine = (function () {
     consolidateEvery: 3,     // the Consciousness updates the plan after this many emotion messages
     maxCalls: 40,            // Claude calls per stretch, a hard stop
     societyGap: 3,           // emotion messages between Society's chimes
-    societyMax: 2,           // Society's chimes per stretch
+    societyMax: 2,           // Society's chimes per chat; each later user message allows one more
     window: 16,              // chat lines each prompt sees
   };
 
@@ -175,6 +175,7 @@ var TeffyEngine = (function () {
       userNamed: [],           // emotions the user's latest message named ("my doubt says…"); they answer first
       societyEarly: false,     // Society's first chime-in right after the openings
       settledChecks: 0,
+      lenses: {},              // name -> lenses it has used to come back to an unmet need
       askedOf: "",             // the emotion the Consciousness just asked a question
       consolidations: 0,
       messages: [],            // user | consciousness | emotion | decide | note | final
@@ -241,7 +242,7 @@ var TeffyEngine = (function () {
     s.emotionMsgs = 0;
     s.callsRun = 0;
     s.quiet = 0;
-    s.societyCount = 0;
+    s.societyCount = Math.min(s.societyCount || 0, COUNCIL.societyMax - 1);
     s.societyAt = -99;
     s.fresh = true;
     if (s.status === "done") { s.status = "running"; s.scores.Sadness = 0; }
@@ -302,13 +303,24 @@ var TeffyEngine = (function () {
   // How every voice in the council talks, whatever its emotion.
   const CARE = [
     "Be radically non-violent and pro-human: never insult, blame, label, shame or threaten anyone (the user, the other people in their life, or the other emotions), and never put a moral label on the user's options (\"a lie\", \"lazy\"). Speak to specific actions and their effects, the need behind your feeling, and a request that respects everyone involved. Even angry, be firm and clear, never harsh.",
-    "Be precise and actionable: name your specific barrier (exactly what you can't live with) and a doable request: who does what, and when, within the user's real timeframe (if it's happening this morning, nothing can be done \"tonight\"). If you ask for a limit or amount, propose a number; if only the user can know it, say so. If it's a message to someone, give the actual words.",
+    "Be specific: a generic line like \"I need my boundaries respected\" or \"that doesn't help my boundaries\" is never enough; say which moment, which behavior, what exactly. Be precise and actionable: name your specific barrier (exactly what you can't live with) and a doable request: who does what, and when, within the user's real timeframe (if it's happening this morning, nothing can be done \"tonight\"). If you ask for a limit or amount, propose a number; if only the user can know it, say so. If it's a message to someone, give the actual words.",
     "Humor, slang or a quick \"lol that sucks\" is fine, as long as the same message says what you mean by it and what you want the Consciousness to do.",
     "If you ask a question, say why you're asking and what answer would settle you. Never just wonder out loud (\"should we? idk\"): name what you don't know or fear, and what would settle it.",
   ].join("\n- ");
   const PARAGRAPH = "ONE paragraph: usually 2 to 4 sentences, never more than 6. No line breaks, lists or headings.";
   // Chat bubbles hold one paragraph.
   const oneParagraph = t => cleanQuote(t).replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+  // An emotion whose need is still unmet may come back to it, each time through a lens it hasn't used yet.
+  const LENSES = [
+    { key: "mechanism", label: "why the advice misses", ask: "Explain the mechanism: what the latest advice or plan step actually changes, and why that leaves your need untouched." },
+    { key: "scene", label: "the concrete moment", ask: "Paint the concrete moment: the specific moment in the user's situation where your need gets crossed (who does what, when), so everyone can see it." },
+    { key: "stakes", label: "what it costs", ask: "Name the stakes: what concretely happens to the user, and to which other emotion, if this stays unmet." },
+    { key: "test", label: "what met looks like", ask: "Define met: what would observably be different if your need were met, a test anyone could check." },
+    { key: "smallest", label: "the smallest real version", ask: "Shrink it: the smallest version of your need that would still be real, and what you'd let go of to get it." },
+    { key: "help", label: "asking for help", ask: "Ask for help: ask one specific emotion to address your need from its own angle, saying exactly what you need from it and why it's the right one to ask." },
+  ];
+  const lensFor = key => LENSES.find(l => l.key === key);
+  const nextLens = (s, name) => LENSES.find(l => !((s.lenses || {})[name] || []).includes(l.key)) || null;
   const SAFETY = "If the user seems to be in danger or in crisis, the plan must put their safety first and include reaching out to someone they trust or a crisis line.";
   const SOCIETY_NOTE = "🦜 Society is not an emotion: it's advice the user has absorbed from people and the culture and never examined (\"try deep breathing\", \"have you tried yoga\", \"take a nap\", \"don't make waves\"). It also previews the pushback the user may hear from real coworkers, friends or family. When its advice misses an emotion's specific need, that emotion, or another whose angle sees why it misses (Annoyance spots vague reasoning, Anger spots a need being minimized), calls it out: what the advice misses and what the real need is, and, when it helps, the short line the user could say back if a real person tells them this. Society's advice never becomes part of the plan unless an emotion turns it into something specific.";
   const USER_ONLY = "Some things only the user can supply (their own numbers, a person's name, whether someone else will say yes). The council can't produce them, so nobody should keep asking for them. A plan step that tells the user to get or decide that thing answers the objection, as long as the plan also says what the answer must meet (\"savings cover ___ months, at least six\").";
@@ -325,7 +337,8 @@ var TeffyEngine = (function () {
       "",
       "Decide who joins the chat.",
       "- \"idea\": the user's plan exactly as they stated it, as a bare first-person action (\"I push through all weekend to catch up\"), one sentence, without \"I'm thinking about\". Don't fix anything yet. If they described a feeling rather than a plan, the idea is what they're inclined to do about it.",
-      "- \"suffering\": every emotion whose need THIS idea, as stated, fails right now (score -1). If the idea already serves an emotion's need, it is not suffering. Any emotion the user mentions as objecting belongs here.",
+      "- \"suffering\": every emotion whose need THIS idea, as stated, fails right now (score -1). If the idea already serves an emotion's need, it is not suffering, except the emotion behind a feeling the user named (anxious or scared: Fear; exhausted: Tiredness): it is always here, and its need is what would let it face the thing, not only avoid it. Any emotion the user mentions as objecting belongs here.",
+      "- When someone keeps doing something to the user (piling on work, canceling, talking over them), the emotion that guards that boundary (Anger or Annoyance) gets a need about that person's behavior in its own words, never a role as another emotion's bodyguard.",
       `- For at most ${COUNCIL.maxOpeners} of them, with clearly different needs, write "says": an opening chat message of two or three sentences about the user's actual situation: the exact part of the idea that fails its need, and one concrete request (one option, no either/or; what, how much in numbers, when; if it involves a person, the words to say). A request is a plain request, not "Could you…?". Give every other suffering emotion "says": "" (it speaks later). Merge overlapping worries into whichever emotion says it best: rest, sleep and a day off overlap; \"will it work\" and \"will the money last\" overlap; \"rehearse\" and \"fix the slides\" overlap. No two openings start or end the same way.`,
       "- \"need\": for each suffering emotion, what would bring it to 0.",
       "- \"helpers\": up to 3 emotions at 0 that could help the suffering ones' core needs from their own angle, with needs that differ from each other (never two that overlap, like Wellness and Tiredness). Always include, here or under suffering, the emotion that speaks for what the user actually wants (Impulsivity for fun, Loneliness for company, Anger or Annoyance for a boundary the user wants to set, and so on): it guards that want when the plan starts to water it down.",
@@ -365,8 +378,8 @@ var TeffyEngine = (function () {
       "For EVERY emotion in the chat, decide from that emotion's own point of view:",
       "- \"score\": its honest score for THE PLAN RIGHT NOW.",
       "  · -1 becomes 0 only if the plan now answers that emotion's FIRST objection (see \"first:\") as well as its latest one. Moving toward its topic isn't enough. Before saying the plan skips something, check the plan's text: if it's there, it's covered.",
-      "  · 0 becomes -1 only if the plan itself now works against its own need (for example a step it accepted on was dropped). A step that was already in the plan when it accepted never counts. It doesn't take on a grievance another emotion raised for it.",
-      "  · For the emotion that speaks for what the user wants: if that want is now delayed, put behind something else, replaced by a softer step, or made to depend on conditions that may never be met, the plan works against its need.",
+      "  · 0 becomes -1 only if the plan itself now works against its own need (for example a step it accepted on was dropped, shortened, or made skippable by a fallback). A step that was already in the plan when it accepted never counts. It doesn't take on a grievance another emotion raised for it.",
+      "  · For the emotion that speaks for what the user wants: if that want is now delayed past when the user could still do it, put behind something else, replaced by a softer step, or made to depend on conditions that may never be met, the plan works against its need.",
       "  · An emotion at 0 never says it can't live with the plan; if it has a step that would make the plan better, it replies with that.",
       "  · If nothing changed since it set its score (\"no\" above), it keeps that score.",
       "  · " + USER_ONLY,
@@ -374,15 +387,17 @@ var TeffyEngine = (function () {
       "- \"reply\": true only if it has something NEW to say right now:",
       "  · answering someone who spoke to it or asked it a question;",
       "  · pushing back because someone's advice or proposal, whoever it was meant for, or a plan change shrinks, swaps or misses what it actually asked for (set \"pushback\": true);",
-      "  · a suffering emotion that has something to add beyond its last message (a number, a trade-off, a reply to someone). If it would only restate its request, false: the Consciousness answers it next;",
-      "  · a helper at 0 that can give a suffering emotion a concrete step from its own angle that the plan lacks, or whose own need the plan is missing or now works against;",
+      "  · a suffering emotion whose need is still unmet, when something new since its last message (advice, a plan change, Society) still misses it: it comes back to that need with a NEW angle and new specifics, never the same words (set \"pushback\": true, and say in why what the new thing misses). If nothing new happened since it last spoke, false: the Consciousness answers it next;",
+      "  · a helper at 0 that can give a suffering emotion a concrete step from its own angle that the plan lacks (above all an answer to the latest reason an emotion gave when it came back to an unmet need), or whose own need the plan is missing or now works against. Never just to say another emotion is unheard or talked over: Sadness covers that, and before the Consciousness has updated the plan once, nobody is being ignored;",
+      "  · a suffering emotion whose request clashes with another suffering emotion's (length, tone, order, timing): it names the clash and offers a trade-off (set \"pushback\": true);",
+      "  · a suffering emotion whose objection the Consciousness answered only in its chat message, not in THE PLAN RIGHT NOW: it says so (set \"pushback\": true);",
       "  · the emotion behind what the user actually wants, when a new step shrinks, delays or swaps that want: it names the cost and offers a trade-off (set \"pushback\": true);",
       "  · any emotion whose angle sees the plan drop or swap something the user themselves asked for (in their thought or a later message): it names the swap (set \"pushback\": true);",
       "  · an emotion that just came round and has a condition that isn't in the plan text yet.",
-      "  false if another emotion already made its point (even in other words) and it has nothing to build on, if it would only agree (\"deal\"), if it already made the same demand twice and only the user can settle it, or if someone just told it it's looping. Usually one or two emotions want in.",
-      "- \"why\": under 15 words, in that emotion's voice, the specific point it would make or why it holds back. No gestures or stage directions. Don't reuse the wording of its last turn, and stick to what \"Has said\" shows.",
+      "  false if another emotion already made its point (even in other words) and it has nothing to build on, if it would only agree (\"deal\"), if only the user can settle it, or if nothing new has happened since it last spoke. Usually one or two emotions want in.",
+      "- \"why\": under 15 words, in that emotion's voice, the specific point it would make or why it holds back. No gestures or stage directions. Never reuse the wording of \"Last turn it thought\"; if it still wants in with the same point, say so briefly in new words. Stick to what \"Has said\" shows.",
       s.messages.some(m => m.kind === "society") ? "- " + SOCIETY_NOTE + " Calling Society out is never repeating yourself (set \"pushback\": true)." : "",
-      "Sadness never gets a score. Also give \"neglected\": the emotion at -1 that has been heard and answered least so far (never Sadness), or \"\" if nobody is at -1.",
+      "Sadness never gets a score. It replies true only if one suffering emotion has been answered clearly less than the others; its why names that emotion in the third person and counts only what \"Has said\" shows. Also give \"neglected\": the emotion at -1 that has been heard and answered least so far (never Sadness), or \"\" if nobody is at -1.",
       "",
       `"council" lists all ${s.participants.length}: ${s.participants.join(", ")}.`,
       "",
@@ -412,8 +427,8 @@ var TeffyEngine = (function () {
       "",
       `THE USER'S SITUATION: "${s.thought}"`,
       `THE PLAN RIGHT NOW (don't propose what it already says): ${s.plan}`,
-      sad ? "" : `WHERE YOU STAND: ${score < 0 ? "you still can't live with the plan" : "you can live with the plan"}.`,
-      !sad && score === 0 && hurting.length ? `STILL HURTING: ${hurting.join(", ")}. Since you can live with the plan, your job is to make one of their fixes work for YOUR need too (cheaper, faster, more fun, safer, whatever you care about), or to name how it clashes with your need and offer a trade-off. Don't tighten or extend their demand on their behalf, and don't add a wish of your own.` : "",
+      sad ? "" : `WHERE YOU STAND: ${score < 0 ? "you still can't live with the plan, so never call it fine: say what still fails" : "you can live with the plan, so never write that you can't: give your step as an improvement"}.`,
+      !sad && score === 0 && hurting.length ? `STILL HURTING: ${hurting.join(", ")}. Since you can live with the plan, your job is to help from YOUR angle, never as their bodyguard. First check whether one step could serve your need and theirs at once (doing it together, merging two steps); that beats a trade-off. Otherwise make one of their fixes work for YOUR need too (cheaper, faster, more fun, safer, whatever you care about), or to name how it clashes with your need and offer a trade-off. If one of them came back to an unmet need, answer the latest reason it gave, never advice it already turned down. Don't tighten or extend their demand on their behalf, and don't add a wish of your own.` : "",
       `YOUR POINT (make this point, but don't copy these words): ${why || "you have something to add"}`,
       toMe,
       "",
@@ -428,10 +443,24 @@ var TeffyEngine = (function () {
     const avoid = `Don't open with "Same", "Nah", "Fine", "Okay", "Honestly", "Grudgingly", "I hear you", "I'm with", "I can live with" or "I still can't live with"${openers.length ? `, or the way the last messages opened (${openers.map(w => `"${w}"`).join(", ")})` : ""}. Don't use the shape "X works for me, what I can't live with is…, so I need…". Write like texting a friend: contractions, a quick reaction, then your point.`;
     if (mode === "callout") {
       const soc = [...s.messages].reverse().find(m => m.kind === "society");
+      const earlier = emotionMessages(s).filter(m => m.from === name && m.callout).map(m => `"${m.text}"`);
       lines.push(
-        `Society 🦜 just told you: "${soc ? soc.text : ""}". Your message is the call-out: say why that advice misses your specific need (humor welcome), and what would actually meet it in a few words. Then, if it fits, add the one short, kind, firm line the user could say back to a real person who tells them this. Don't repeat your earlier request beyond naming the need. Call out the advice, never insult anyone. ${PARAGRAPH}`,
+        `Society 🦜 just told you: "${soc ? soc.text : ""}". Your message is the call-out, the way a friend pushes back in a text: react in your own way first (a joke, disbelief, a quick "lol no", then what you mean by it). Then say exactly why that advice misses: quote or closely paraphrase its actual words (never pin on it a claim it didn't make), name the detail of the user's situation it ignores, and why the advice leaves that untouched. A generic "that doesn't help my boundaries" isn't enough. Name your need as it stands NOW in a few words (what's still open, not a request the plan already has). If it's new and fits, add one short, kind, firm line the user could say to a friend, relative or coworker who tells them this (never to Society, never to the person the plan is about). Name only your own need; don't bundle other emotions' steps. Call out the advice, never insult anyone. ${PARAGRAPH}`,
+        earlier.length ? `YOUR EARLIER CALL-OUTS (never reuse a sentence, joke or reply line from them):\n${earlier.join("\n")}` : "",
         "- " + VOICE,
-        "- " + avoid);
+        "- " + avoid + " Never open with \"Society\" or \"That advice\".");
+    } else if (mode && mode.startsWith("again:")) {
+      const lens = lensFor(mode.slice(6));
+      const used = ((s.lenses || {})[name] || []).map(k => lensFor(k).label);
+      lines.push(
+        "Your need is still unmet, and you're coming back to it. That's allowed, but never with the same words or the same reasons: everyone already heard those. " + PARAGRAPH,
+        `- This time, come at it through a new lens. ${lens.ask}`,
+        used.length ? `- Lenses you already used (don't reuse their content): ${used.join(", ")}.` : "",
+        "- Open by naming the specific thing that just missed (whose advice, which plan step) and why, in a few words.",
+        "- " + VOICE,
+        "- " + CARE,
+        "- " + avoid,
+        "- \"score\": -1 unless the plan now meets your need.");
     } else if (mode === "accept") {
       lines.push(
         `You just came round: you can live with the plan now. Write one or two sentences in your own words saying so, and, only if one exists, the one condition from YOUR OWN need (${e.need.split(/[.;]/)[0].trim()}) that is not already written in the plan. Never restate the plan's steps, times or numbers, never repeat a condition another emotion already gave, and never add a new wish.`,
@@ -439,7 +468,7 @@ var TeffyEngine = (function () {
         "- " + avoid);
     } else if (sad) {
       lines.push(
-        `Write your next message: speak TO ${s.neglected || "the emotion that has been heard least"} with warmth. Quote or paraphrase one specific thing it said, name the feeling under its need in plain words, and ask the Consciousness to answer its request as it stated it. Never choose between its options, add a backup, restate its request's details, speak for it or give it feelings it didn't express, and make no plan proposals of your own. ${PARAGRAPH}`,
+        `Write your next message: speak TO ${s.neglected || "the emotion that has been heard least"} with warmth. Quote or paraphrase one specific thing it said, say in plain everyday words what it stands to lose (no metaphors like "a kind of ache"), and ask the Consciousness to answer its request as it stated it. Never choose between its options, add a backup, restate its request's details, speak for it or give it feelings it didn't express, and make no plan proposals of your own. ${PARAGRAPH}`,
         "- " + VOICE,
         "- " + CARE,
         "- " + avoid);
@@ -461,7 +490,7 @@ var TeffyEngine = (function () {
     }
     lines.push(
       "- \"to\": the emotion you're answering, \"Consciousness\", or \"all\".",
-      sad || mode === "accept" || mode === "callout" ? "- \"proposal\": \"\"." : "- \"proposal\": the single change that would bring YOU to 0, only if nobody has asked for it yet (check the plan and every message, even in other words). Most messages have none. If you already asked for it, leave this \"\" rather than adding a new condition.",
+      sad || mode === "accept" || mode === "callout" ? "- \"proposal\": \"\"." : (mode || "").startsWith("again:") ? "- \"proposal\": the one concrete change that would meet the need through this lens, or \"\"." : "- \"proposal\": the single change that would bring YOU to 0, only if nobody has asked for it yet (check the plan and every message, even in other words). Most messages have none. If you already asked for it, leave this \"\" rather than adding a new condition.",
       "",
       "Reply with only this JSON:",
       `{"to":"${mode === "callout" ? "Society" : "all"}","text":"...","score":${sad ? 0 : mode === "accept" ? 0 : score},"proposal":""}`);
@@ -496,10 +525,23 @@ var TeffyEngine = (function () {
   }
   const userWords = s => s.messages.filter(m => m.kind === "user").map(m => `"${m.text}"`).join(" ");
 
+  // Suffering emotions that came back to an unmet need since the plan last changed: their latest reason.
+  function comebacks(s) {
+    let i = s.messages.length - 1;
+    while (i >= 0 && !(s.messages[i].kind === "consciousness" && s.messages[i].planUpdate)) i--;
+    const latest = {};
+    s.messages.slice(i + 1).forEach(m => { if (m.kind === "emotion" && m.lens && s.scores[m.from] < 0) latest[m.from] = m; });
+    return Object.values(latest).map(m => `- ${m.from}, through ${lensFor(m.lens).label}: "${m.text}"`).join("\n");
+  }
+  // Why each suffering emotion still can't live with the plan, from the last turn-taking call.
+  const stillWhy = s => suffering(s).filter(n => n !== "Sadness" && s.lastWhy && s.lastWhy[n]).map(n => `- ${n}: ${s.lastWhy[n]}`).join("\n");
+
   function consolidatePrompt(s) {
     const userLine = userJustSaid(s);
     const promised = conditionLines(s);
     const mine = myEarlier(s);
+    const back = comebacks(s);
+    const why = stillWhy(s);
     return [
       `You are the 🧠 Consciousness in Teffy's Emotional Council. Your emotions have been talking about the plan in a group chat. You listen to all of them, especially the ones still suffering${s.neglected ? ` and ${s.neglected}, the one heard least` : ""}.`,
       "",
@@ -511,18 +553,22 @@ var TeffyEngine = (function () {
       proposalsOpen(s).join("\n") || "(none)",
       heldBack(s) ? `POINTS EMOTIONS RAISED WHILE HOLDING BACK (fold in any concrete one that fits, as your own call; never say that emotion asked for it):\n${heldBack(s)}` : "",
       promised ? `CONDITIONS EMOTIONS ACCEPTED ON (keep every one):\n${promised}` : "",
+      back ? `NEEDS THAT CAME BACK UNMET SINCE YOUR LAST UPDATE (answer each one first, by name, in its own terms: adopt its change or a helper's fix for it, or say in one clause why not; never re-offer advice it already turned down):\n${back}` : "",
+      why ? `WHY THE SUFFERING ONES STILL CAN'T LIVE WITH IT (latest):\n${why}` : "",
       (s.forYou || []).length ? `ALREADY LEFT FOR THE USER TO SETTLE: ${s.forYou.join("; ")}` : "",
       userLine ? `THE USER JUST SAID: "${userLine}" (answer this first. Any specific thing they say they want, like a food, a stop or a person, is now part of what they want: put it in the plan and adjust the other steps around it, or say in one sentence why it truly can't fit.)` : "",
-      mine ? `YOUR EARLIER MESSAGES (never ask the same question again or reuse their wording):\n${mine}` : "",
+      mine ? `YOUR EARLIER MESSAGES (never ask the same question again, reuse their wording or open the way they opened):\n${mine}` : "",
       "",
       "THE CHAT SO FAR (oldest first):",
       transcript(s),
       "",
       "Update the plan, but don't just stack every request:",
       "- Adopt changes that help a suffering emotion. Prefer one step that serves two needs at once. Drop add-ons from emotions already at 0 unless they cost nothing; a shorter plan beats a stacked one. When a request offers alternatives, pick one.",
-      "- Keep every condition an emotion accepted on, and keep the specific things the user said they want (adjust around them rather than swapping in a substitute). Never drop or weaken those unless the owner agreed in its own message. The user's core want survives in some form with a firm trigger (by when, and what happens if a condition fails), never depending only on someone else cooperating.",
+      "- Keep every condition an emotion accepted on, and keep the specific things the user said they want (adjust around them rather than swapping in a substitute). Never drop or weaken those unless the owner agreed in its own message. The user's core want survives in some form with a firm trigger (by when, and what happens if a condition fails), never depending only on someone else cooperating: never add a step that waits for, or cancels, what the user wants if another person doesn't reply; let them go ahead after a set window, with words that tell the person.",
       "- If an emotion objected to a step already in the plan, change or remove that step, or say in one clause why you kept it. Never say a step answers an emotion if its latest message says it doesn't.",
-      "- When a request offers alternatives, adopt exactly one and say which you dropped. A backup runs only if the main step fails; never also tell the user to do the backup now.",
+      "- If an emotion came back to the same unmet need, answer the specific reason it gave most recently (the moment, the mechanism, the test it named), and never re-offer advice it already turned down. If an emotion that can't live with the plan asked what to do if X happens, the plan itself holds the answer as an if-then clause; an answer only in your text doesn't count.",
+      "- When Sadness speaks up for an emotion, answer that emotion by name, not Sadness. Never reuse a line written as a reply to Society as the answer to a different objection.",
+      "- When a request offers alternatives, adopt exactly one and say which you dropped. A backup runs only if the main step fails; never also tell the user to do the backup now. Every fallback's trigger can be known before the fallback has to happen. A fallback that cuts or shrinks a step another emotion accepted on keeps a smaller version of it, and you name that emotion.",
       "- Timing: a step that relieves a deadline or a worry happens at the earliest realistic moment (today or tomorrow), before the thing it protects.",
       "- Never make what the user wants to do wait on, or depend on, another emotion's step: fit that step around it. Never answer a worry by bringing back the user's avoidance in a softer form (postponing, delegating or shrinking the thing they're anxious about) unless the user asked for it. Never give the same decision to both the user and someone else.",
       "- Keep exact words an emotion supplied for the user to say, or say which you replaced and why. Each step is one action with one duration, and never mentions a call, meeting or reply that isn't itself a step. If the plan grows past three steps for one evening, merge or drop one.",
@@ -536,11 +582,11 @@ var TeffyEngine = (function () {
       "- " + USER_ONLY + " List those in \"forYou\" and put a step in the plan telling the user to settle them; don't ask an emotion for them.",
       "- If you didn't take an emotion's request, or took only part of it, say so plainly and why. Only say an emotion agreed or asked for something if its own message says so.",
       "- Be honest about the trade-off: what the user gives up, and the fallback if a step fails (a genuinely different path, not a step already in the plan). For a big decision, name the go/no-go test precisely: what counts, by when.",
-      "- Read the new plan as the user would: steps in the order they actually happen, every step fits the main decision, nothing contradicts, nothing left over from the old plan, everything doable in the user's real timeframe.",
-      "- \"plan\": written to the user in plain second person (\"Text Sam now…\"), at most three short sentences. No emotion names and no chat logistics. Any message the user sends someone appears in quotes with the actual words, and those words answer the feeling the user named about that person. Radically non-violent and pro-human: fair to everyone involved. " + SAFETY,
-      "- \"text\": your message to the chat, one paragraph of at most 4 sentences, no line breaks, in one voice. Open with the decision you just made or the worry you're answering, in your own words (never an emotion's wording, never a general \"that's a lot\" or \"I hear you\"). Don't recap steps that didn't change; if a new step delays or shrinks what the user wanted, name that trade-off plainly. Never ask an emotion about timing, order or wording you can decide yourself. Don't start with your name, don't do a roll call: name at most two emotions. If the user just spoke, answer them. Ask a question only if its answer would change the plan, then ask ONE emotion that still can't live with the plan (the one heard least) and say why; otherwise just state the decision. Never mention scores.",
+      "- Read the new plan as the user would: steps in the order they actually happen, every step serves the main decision (if the plan skips something, it has no prep for it; never give a reason against one option that applies just as much to the option you keep), nothing contradicts, nothing left over from the old plan, everything doable in the user's real timeframe.",
+      "- \"plan\": written to the user in plain second person (\"Text Sam now…\"), at most three short sentences (four if a fallback needs its own). No emotion names and no chat logistics. Any message the user sends someone appears in quotes with the actual words, and those words answer the feeling the user named about that person. If the user's own words to someone are a label or an accusation (\"I'm done being your backup plan\"), keep their boundary but write the message as what happened, how it felt and the request; never open it with a label or a \"why did you\" question. Radically non-violent and pro-human: fair to everyone involved. " + SAFETY,
+      "- \"text\": your message to the chat, one paragraph of at most 4 sentences, no line breaks, in one voice. Open with the decision you just made or the worry you're answering, in your own words (never an emotion's wording, never a general \"that's a lot\" or \"I hear you\"). Don't recap steps that didn't change; if a new step delays or shrinks what the user wanted, name that trade-off plainly. Only describe steps that are in your plan, and the plan holds every step and fallback your text promises, each stated once. Never ask an emotion about timing, order or wording you can decide yourself. Never mention Society or its advice. Don't start with your name, don't do a roll call: name at most two emotions. If the user just spoke, answer them. Ask a question only if its answer would change the plan, then ask ONE emotion that still can't live with the plan (the one heard least) and say why; otherwise just state the decision. Never mention scores.",
       "- \"ask\": the emotion you asked, or \"\".",
-      "- \"forYou\": short facts or choices only the user can supply now, each under 12 words, never an action already written in the plan or what someone else will answer later; at most 3, or [].",
+      "- \"forYou\": the complete list of facts only the user can supply now, each under 12 words: carry over every item in ALREADY LEFT FOR THE USER TO SETTLE that is still open, drop any the plan now settles or decides, and add new ones. Never an action already written in the plan, a choice the plan already made, or what someone else will answer later; at most 3, or [].",
       "",
       "Reply with only this JSON:",
       "{\"plan\":\"...\",\"text\":\"...\",\"ask\":\"\",\"forYou\":[]}",
@@ -576,35 +622,40 @@ var TeffyEngine = (function () {
       transcript(s),
       "",
       "Write:",
-      "- \"plan\": the final plan, to the user in plain second person, at most three short sentences, keeping every accepted condition and the specific things the user said they want. No emotion names. Any message to someone appears in quotes with the actual words, kept exactly as in THE PLAN RIGHT NOW unless an emotion asked to change them, never dropping the feeling the user named. Radically non-violent and pro-human. " + SAFETY,
-      heard.length ? `- "heard": one entry per piece of Society advice below, in order. "advice" is the advice as a real person might say it to the user (short), and "reply" is one sentence the user could say back: kind, firm, radically non-violent, in first person, naming the actual need the emotions identified (use the call-out) and answering everything the advice said. These prepare the user for the pushback they may get when they open up to people.\nSOCIETY'S ADVICE AND THE CALL-OUTS:\n${heard.map(h => `- Society to ${h.to}: "${h.advice}"${h.callout ? `\n  Called out by ${h.callout}` : ""}`).join("\n")}` : "",
-      "- \"text\": your closing message to the user, in first person, one paragraph of at most 4 sentences, no line breaks, in the emotional personification language. Speak to anyone in STILL SUFFERING (how the plan still looks after them), and name at most two emotions and the specific step each one added. Sadness is only ever listed because the emotion it spoke up for is still hurting: say so, and never give Sadness a grievance of its own. Only mention a concern an emotion actually said in the chat. Add the one thing your last message didn't say (the fallback, or the next concrete step) instead of restating the plan. If the final plan changes or delays what the user said they wanted, say so plainly: what they still get, and when. Never credit an emotion with a step or a cost that came from someone else. Never use the words score, council, -1, 0 or \"still suffering\". No filler (\"I'll keep checking in\", \"your feelings are valid\", \"that's what makes it real\").",
+      "- \"plan\": the final plan, to the user in plain second person, at most three short sentences, keeping every accepted condition, the specific things the user said they want, and every number, time and amount THE PLAN RIGHT NOW already decided (never turn a decided number back into ___). No emotion names. Any message to someone appears in quotes with the actual words, kept exactly as in THE PLAN RIGHT NOW unless an emotion asked to change them, never dropping the feeling the user named. Radically non-violent and pro-human. " + SAFETY,
+      heard.length ? `- "heard": one entry per piece of Society advice below, in order. "advice" is Society's line quoted word for word or trimmed (never reworded; fix only an obviously garbled word), and "reply" is one sentence of at most 25 words, with no quotes inside it, that the user could say to the friend, relative or coworker who gives that advice (never to Society, never about the other person as "her" or "him"): kind, firm, radically non-violent, in first person, answering the advice in its plainest form and naming the actual need the emotions identified (use the call-out). These prepare the user for the pushback they may get when they open up to people.\nSOCIETY'S ADVICE AND THE CALL-OUTS:\n${heard.map(h => `- Society to ${h.to}: "${h.advice}"${h.callout ? `\n  Called out by ${h.callout}` : ""}`).join("\n")}` : "",
+      "- \"text\": your closing message to the user, in first person, one paragraph of at most 4 sentences, no line breaks, in the emotional personification language. Sadness is only ever listed in STILL SUFFERING because the emotion it spoke up for is still hurting: say so (\"<that emotion> is still uneasy because <its exact objection>\"), and never give Sadness a grievance of its own. Speak to anyone in STILL SUFFERING (how the plan still looks after them), and name at most two emotions and the specific step each one added. Never claim the plan avoids something it still contains. Only mention a concern an emotion actually said in the chat. Add the one thing your last message didn't say (the fallback, or the next concrete step) instead of restating the plan. If the final plan changes or delays what the user said they wanted, say so plainly: what they still get, and when. Never credit an emotion with a step or a cost that came from someone else. Never use the words score, council, -1, 0 or \"still suffering\". No filler (\"I'll keep checking in\", \"your feelings are valid\", \"that's what makes it real\").",
+      (s.forYou || []).length ? "- \"forYou\": the items from FOR THE USER TO SETTLE that the final plan still needs, dropping any it settles or decides." : "",
       "",
       "Reply with only this JSON:",
-      heard.length ? "{\"plan\":\"...\",\"heard\":[{\"advice\":\"...\",\"reply\":\"...\"}],\"text\":\"...\"}" : "{\"plan\":\"...\",\"text\":\"...\"}",
+      `{"plan":"...",${heard.length ? "\"heard\":[{\"advice\":\"...\",\"reply\":\"...\"}]," : ""}${(s.forYou || []).length ? "\"forYou\":[],"  : ""}"text":"..."}`,
     ].filter(l => l !== "").join("\n").replace(/\n(THE CHAT SO FAR|Write:)/g, "\n\n$1");
   }
 
   function societyPrompt(s, toName) {
     const e = emo(toName);
     const said = [...emotionMessages(s)].reverse().find(m => m.from === toName);
+    const asked = [...emotionMessages(s)].reverse().find(m => m.from === toName && m.proposal);
+    const before = s.messages.filter(m => m.kind === "society").map(m => `"${m.text}"`);
     return [
       "You are 🦜 Society in a comedy bit inside Teffy, an app where the user's personified emotions talk through a plan in a group chat. Society is not an emotion: it's the advice the user has absorbed over the years from coworkers, friends, family and the internet, repeated without ever checking whether it meets the need. It sounds well-meaning but stays on the surface. It also previews the pushback the user may hear when they open up to real people.",
       "",
       `THE USER'S SITUATION: "${s.thought}"`,
       `${e.name.toUpperCase()} ${e.emoji} JUST SAID: "${said ? said.text : ""}"`,
-      `What ${e.name} actually needs: ${e.need}`,
+      asked ? `WHAT ${e.name.toUpperCase()} IS ASKING FOR: ${asked.proposal}` : `What ${e.name} actually needs: ${e.need}`,
       "",
       "THE CHAT SO FAR (oldest first):",
       transcript(s, 8),
       "",
-      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences. First pick what a real coworker, friend, relative or the internet would actually say to someone in THIS situation (a work boundary: "don't make waves", "pick your battles", "that's just how meetings go"; a friend letting you down: "life's too short", "just let it go", "they're probably just busy"; overload: "just push through", "everyone's swamped"; nerves: "just picture them in their underwear", "fake it till you make it"; anything: "have you tried yoga", "take a nap", "look on the bright side"). Aim it squarely at the need ${e.name} just stated, refer to what it said accurately, and let it sound kind while sidestepping exactly that. Make it a little funny, but plausible enough that the user might really hear it. Don't reuse a cliché Society already said in the chat.`,
-      "- No pet names (\"sweetie\", \"honey\"). Never cruel, never an insult, never about the user's body, weight, identity or worth. Nothing dangerous (no substances, no risky stunts). It should be harmless-sounding and simply beside the point.",
+      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences that a real coworker, friend, relative or the internet has actually said to someone in THIS situation, sincerely (no sarcasm, irony or exaggeration: the comedy is how confidently generic it is). Pick from the right family (a work boundary: "don't make waves", "pick your battles", "that's just how meetings go"; a friend letting you down: "life's too short", "just let it go", "they're probably just busy"; overload: "just push through", "everyone's swamped"; nerves: "just picture them in their underwear", "fake it till you make it"; habits and exercise: "consistency is key", "one skipped day turns into a week", "you'll feel better once you go"; anything: "have you tried yoga", "take a nap", "sleep on it", "look on the bright side"). It sounds kind but sidesteps exactly what ${e.name} is asking for; it never simply argues for the other side of the user's decision.`,
+      "- Only mention things already in the chat or the user's situation: never invent meetings, emails, gimmicks or new ideas, and never suggest a specific step, food, time or order (it must not work as a plan step). If you can't picture a real person saying it word for word, pick another.",
+      before.length ? `- Society already said ${before.join(" and ")}. Use a different cliché family with different key words, and don't open the same way.` : "",
+      "- No pet names (\"sweetie\", \"honey\") and don't open with \"Honestly\" or \"Look\". Never cruel, never an insult, never about the user's body, weight, identity or worth. Nothing dangerous (no substances, no risky stunts). It should be harmless-sounding and simply beside the point.",
       "- One paragraph, no line breaks, under 30 words. No emoji except at most one.",
       "",
       "Reply with only this JSON:",
       "{\"text\":\"...\"}",
-    ].join("\n");
+    ].join("\n").replace(/\n{3,}/g, "\n\n");
   }
 
   // ---------- Applying replies ----------
@@ -702,7 +753,6 @@ var TeffyEngine = (function () {
     const last = lastReal && lastReal.kind === "emotion" && !lastReal.opening ? lastReal : null;   // the openings are one burst, not a double post
     const recent = said.filter(m => !m.opening).slice(-2).map(m => m.from);
     const spoke = n => said.filter(m => m.from === n).length;
-    const lastHeard = n => { for (let i = said.length - 1; i >= 0; i--) if (said[i].from === n) return said.length - i; return 99; };
     const addressed = lastAny && (lastAny.kind === "emotion" || lastAny.kind === "society") ? lastAny.to : "";
     // Messages since the plan last changed, per emotion: a voice repeating its demand to an unchanged plan is stalling.
     let since = s.messages.length - 1;
@@ -710,10 +760,14 @@ var TeffyEngine = (function () {
     const sinceUpdate = n => s.messages.slice(since + 1).filter(m => m.kind === "emotion" && !m.opening && m.from === n).length;
     const lastTwoHurting = said.filter(m => !m.opening).slice(-2);
     const hurtingStreak = lastTwoHurting.length === 2 && lastTwoHurting.every(m => m.score < 0);
-    // Sadness speaks up only for a suffering emotion that has spoken and then gone unanswered for a while.
-    const neglectedAsked = s.neglected && said.some(m => m.from === s.neglected);
+    // Sadness speaks up only for a suffering emotion that has spoken and then gone unanswered for a while,
+    // and only once the Consciousness has had a chance to answer anyone. Being spoken to counts as being heard.
+    const neglectedAsked = s.neglected && said.some(m => m.from === s.neglected) && s.consolidations > 0;
     let neglectedLast = -1;
-    s.messages.forEach((m, i) => { if (m.kind === "emotion" && m.from === s.neglected) neglectedLast = i; });
+    s.messages.forEach((m, i) => {
+      if ((m.kind === "emotion" || m.kind === "consciousness") && (m.from === s.neglected || m.to === s.neglected)) neglectedLast = i;
+    });
+    const unheardFor = s.messages.slice(neglectedLast + 1).filter(m => m.kind === "emotion").length;   // emotion messages since
     const sadnessSpokeSince = s.messages.slice(neglectedLast + 1).some(m => m.kind === "emotion" && m.from === "Sadness");
     const weight = d => {
       const n = d.emotion;
@@ -729,8 +783,12 @@ var TeffyEngine = (function () {
       if (d.prev < 0 && d.score === 0) v += 2;                         // just came round: let it say so
       if (n !== "Sadness" && !said.some(m => m.from === n && !m.opening)) v += 2;   // hasn't had a real turn yet
       if (!hurting && n !== "Sadness" && hurtingStreak) v += 3;                     // let a helper in after two complaints
-      if (n === "Sadness") v += neglectedAsked && !sadnessSpokeSince && lastHeard(s.neglected) > 2 && s.scores[s.neglected] < 0 ? 4 : -6;
+      if (!hurting && n !== "Sadness" && last && last.lens) v += 3;                 // a need came back unmet: a helper takes it up
+      if (n === "Sadness") v += neglectedAsked && !sadnessSpokeSince && unheardFor >= 2 && s.scores[s.neglected] < 0 ? 4 : -6;
+      if (n !== "Sadness") v += 2 * Math.min(3, (s.waited || {})[n] || 0);   // kept its hand up, unpicked, round after round
       if (hurting && sinceUpdate(n) >= 1 && !d.pushback && addressed !== n) v -= 6;   // one message per version of the plan
+      if (hurting && d.pushback && !nextLens(s, n) && addressed !== n) v -= 6;          // every angle used: nothing new left to say
+      if (s.restUntil && s.restUntil[n] > s.emotionMsgs) v -= 8;                        // just had nothing new: sits out a moment
       v -= 3 * Math.max(0, spoke(n) - 2);                              // nobody takes over the chat
       if (recent.includes(n)) v -= 4;
       if (last && last.from === n) v -= 8;                             // no double posting
@@ -754,6 +812,11 @@ var TeffyEngine = (function () {
     if (t.includes("user") || t === "you" || t === "me") return "You";
     return "all";
   }
+  function useLens(s, name, key) {
+    if (!s.lenses) s.lenses = {};
+    const list = s.lenses[name] || (s.lenses[name] = []);
+    if (!list.includes(key)) list.push(key);
+  }
   function applySpeak(s, name, m, why, mode) {
     if (!m || typeof m !== "object") throw badShape("speak");
     let text = oneParagraph(m.text)
@@ -765,7 +828,10 @@ var TeffyEngine = (function () {
     if (!text) throw badShape("speak");
     const mine = emotionMessages(s).filter(x => x.from === name).slice(-3);
     const others = emotionMessages(s).filter(x => x.from !== name).slice(-4);
-    if (mine.concat(others).some(x => similar(x.text, text))) throw { code: "repeat", message: `${name} repeated what was already said` };
+    if (mine.concat(others).some(x => similar(x.text, text)) ||
+        (mode === "callout" && emotionMessages(s).some(x => x.from === name && x.callout && similar(x.text, text, 0.6)))) {
+      throw { code: "repeat", message: `${name} repeated what was already said` };
+    }
     const prev = name === "Sadness" ? null : s.scores[name] < 0 ? -1 : 0;
     if (name !== "Sadness" && mode !== "callout") {
       const v = toScore(m.score);
@@ -787,7 +853,9 @@ var TeffyEngine = (function () {
     }
     if (s.askedOf === name) s.askedOf = "";
     if (s.userNamed) s.userNamed = s.userNamed.filter(n => n !== name);
-    if (mode === "callout") s.messages[s.messages.length - 1].callout = true;
+    const posted = s.messages[s.messages.length - 1];
+    if (mode === "callout") { posted.callout = true; useLens(s, name, "mechanism"); }
+    if (mode && mode.startsWith("again:")) { posted.lens = mode.slice(6); useLens(s, name, posted.lens); }
     s.emotionMsgs++;
     s.sinceConsolidate++;
   }
@@ -823,7 +891,11 @@ var TeffyEngine = (function () {
       if (!m) {
         s.messages.push({ kind: "note", text: repeated ? `${name} had nothing new to add.` : `${name} started typing, then stopped.` });
         if (s.askedOf === name) s.askedOf = "";
+        if (mode && mode.startsWith("again:")) useLens(s, name, mode.slice(6));   // that angle is spent either way
+        if (!s.restUntil) s.restUntil = {};
+        s.restUntil[name] = s.emotionMsgs + 3;   // sits out the next couple of turns
         s.emotionMsgs++;            // a skipped turn still counts toward the chat's length
+        s.sinceConsolidate++;       // and toward the Consciousness stepping in
       }
       io.update({});
     };
@@ -831,12 +903,14 @@ var TeffyEngine = (function () {
     // Society 🦜 chimes in at an emotion that just said what it needs, and that emotion calls it out right away.
     const societyAt = async (target) => {
       io.update({ busy: "society" });
-      const r = await soft(() => ask(societyPrompt(s, target), "society"));
-      const text = r && oneParagraph(r.text).replace(/^(?:oh\s+)?(?:sweetie|honey|hon|dear|sweetheart)[,!.]?\s*/i, "");
-      if (!text || s.messages.some(m => m.kind === "society" && similar(m.text, text))) { io.update({}); return; }
-      s.messages.push({ kind: "society", to: target, text: text[0].toUpperCase() + text.slice(1) });
-      s.societyCount++;
+      s.societyCount++;               // an attempt counts toward the limit even if its line gets thrown out
       s.societyAt = s.emotionMsgs;
+      const r = await soft(() => ask(societyPrompt(s, target), "society"));
+      const text = r && oneParagraph(r.text)
+        .replace(/^(?:oh\s+)?(?:sweetie|honey|hon|dear|sweetheart)\b[,!.]?\s*/i, "")       // pet names, not "Honestly"
+        .replace(/^(?:honestly|look|listen|okay|ok|oh|well)\s*[,.!:—-]+\s*/i, "");          // stock openers
+      if (!text || s.messages.some(m => m.kind === "society" && similar(m.text, text, 0.5))) { io.update({}); return; }
+      s.messages.push({ kind: "society", to: target, text: text[0].toUpperCase() + text.slice(1) });
       io.update({});
       if (!io.stopped()) await speak(target, "call out Society's advice", "callout");
     };
@@ -845,7 +919,21 @@ var TeffyEngine = (function () {
       if (s.societyCount >= COUNCIL.societyMax || s.emotionMsgs - s.societyAt < COUNCIL.societyGap) return;
       const lastM = s.messages[s.messages.length - 1];
       if (!lastM || lastM.kind !== "emotion" || lastM.opening || lastM.callout || lastM.from === "Sadness" || !(lastM.score < 0)) return;
+      // Spread it around: not the same emotion again while another suffering one hasn't had a turn as the target.
+      const aimedAt = n => s.messages.some(m => m.kind === "society" && m.to === n);
+      if (aimedAt(lastM.from) && suffering(s).some(n => n !== lastM.from && n !== "Sadness" && !aimedAt(n))) return;
       await societyAt(lastM.from);
+    };
+    // How an emotion speaks this turn: acceptance, coming back to an unmet need through a new lens, or plain.
+    const speakMode = d => {
+      if (d.prev < 0 && d.score === 0) return "accept";
+      const n = d.emotion;
+      const cameBefore = emotionMessages(s).some(m => m.from === n);
+      if (n !== "Sadness" && s.scores[n] < 0 && cameBefore) {
+        const lens = nextLens(s, n);
+        if (lens) return "again:" + lens.key;
+      }
+      return "";
     };
     // Wrap up; true when the chat is really over (no user message arrived during the wrap-up).
     const finish = async () => {
@@ -895,6 +983,8 @@ var TeffyEngine = (function () {
       if (!speaker && s.askedOf && s.participants.includes(s.askedOf)) speaker = s.askedOf;
       if (speaker && s.askedOf && speaker !== s.askedOf && suffering(s).length) s.askedOf = "";   // it passed on answering
       if ((s.userCount || 0) === seenUsers) s.fresh = false;   // a message sent during the call is still unheard
+      if (!s.waited) s.waited = {};
+      decisions.forEach(d => { s.waited[d.emotion] = d.reply && d.emotion !== speaker ? (s.waited[d.emotion] || 0) + 1 : 0; });
       const decideMsg = { kind: "decide", items: decisions, speaker: speaker || "" };
       s.messages.push(decideMsg);
       io.update({});
@@ -908,7 +998,7 @@ var TeffyEngine = (function () {
         decideMsg.speaker = name;
         if (name) {
           const dd = decisions.find(x => x.emotion === name) || {};
-          await speak(name, dd.why || "", dd.prev < 0 && dd.score === 0 ? "accept" : "");
+          await speak(name, dd.why || "", speakMode(dd));
         }
         s.askedOf = "";
         if (suffering(s).length || io.stopped()) continue;
@@ -930,7 +1020,7 @@ var TeffyEngine = (function () {
           // The Consciousness just spoke and nothing new came in: don't restate the plan, let the best raised hand talk.
           const pick = handsUp.find(d => d.emotion !== "Sadness") || handsUp[0];
           decideMsg.speaker = pick.emotion;
-          await speak(pick.emotion, pick.why || "", pick.prev < 0 && pick.score === 0 ? "accept" : "");
+          await speak(pick.emotion, pick.why || "", speakMode(pick));
           continue;
         }
         if (fresh || handsUp.length) { s.quiet = 0; await consolidate(s, io, ask, soft); continue; }
@@ -944,30 +1034,38 @@ var TeffyEngine = (function () {
       }
       s.quiet = 0;
       const d = decisions.find(x => x.emotion === speaker) || {};
-      await speak(speaker, d.why || "", d.prev < 0 && d.score === 0 ? "accept" : "");
+      await speak(speaker, d.why || "", speakMode(d));
       const said = s.messages[s.messages.length - 1];
       // The user's guardian pushing back with a concrete change gets folded in right away.
       if (d.pushback && speaker === s.guardian && said && said.kind === "emotion" && said.proposal) s.consolidateNext = true;
+      // A need that came back unmet gets one helper's answer, then the Consciousness answers it.
+      if (said && said.kind === "emotion" && said.from === speaker) {
+        if (said.lens) s.answerDue = speaker;
+        else if (s.answerDue) { s.answerDue = ""; s.consolidateNext = true; }
+      }
       await maybeSociety();
     }
     s.status = "paused";
     io.update({});
   }
 
+  const forYouList = list => arr(list).map(x => clip(oneParagraph(x), 90))
+    .filter((x, i, all) => x && !all.slice(0, i).some(y => similar(x, y, 0.6))).slice(0, 3);
+
   async function consolidate(s, io, ask, soft) {
     io.update({ busy: "consolidate" });
     const c = await soft(() => ask(consolidatePrompt(s), "consolidate"));
     s.sinceConsolidate = 0;
     s.consolidations = (s.consolidations || 0) + 1;
+    s.answerDue = "";
     if (!c) { s.quiet++; io.update({}); return; }
     const plan = oneParagraph(c.plan);
     const text = oneParagraph(c.text) || "Here's where the plan stands now.";
     const lastC = [...s.messages].reverse().find(m => m.kind === "consciousness");
     if (lastC && similar(lastC.text, text) && (!plan || plan === lastC.plan)) { s.quiet++; io.update({}); return; }   // nothing new to say
     if (plan && plan !== s.plan) { s.prevPlan = s.plan; s.plan = plan; s.planVersion = (s.planVersion || 0) + 1; }
-    const items = arr(c.forYou).map(x => clip(oneParagraph(x), 90)).filter(Boolean);
-    items.forEach(x => { if (!s.forYou.some(y => similar(x, y, 0.6))) s.forYou.push(x); });
-    s.forYou = s.forYou.slice(-3);
+    // forYou comes back as the complete list, so items the plan has since settled drop out.
+    if (Array.isArray(c.forYou)) s.forYou = forYouList(c.forYou);
     const asked = findEmotion(c.ask);
     s.askedOf = asked && asked.name !== "Sadness" && s.participants.includes(asked.name) ? asked.name : "";
     s.messages.push({ kind: "consciousness", text, plan: s.plan, planUpdate: !!plan, to: s.askedOf || "" });
@@ -986,10 +1084,11 @@ var TeffyEngine = (function () {
     const f = await soft(() => ask(finalPrompt(s), "final"));
     const plan = oneParagraph(f && f.plan);
     if (plan) s.plan = plan;
+    if (f && Array.isArray(f.forYou) && (s.forYou || []).length) s.forYou = forYouList(f.forYou);
     const t = tally(s);
     const heard = arr(f && f.heard)
       .map(x => ({ advice: oneParagraph(x && x.advice), reply: oneParagraph(x && x.reply) }))
-      .filter(x => x.advice && x.reply).slice(0, COUNCIL.societyMax);
+      .filter(x => x.advice && x.reply).slice(0, societyLines(s).length);
     s.messages.push({
       kind: "final", plan: s.plan, text: oneParagraph(f && f.text), start: t.start, end: t.now, still: suffering(s),
       scores: Object.assign({}, s.scores), forYou: (s.forYou || []).slice(), heard,
@@ -1004,6 +1103,7 @@ var TeffyEngine = (function () {
     COUNCIL, newCouncil, addUserMessage, runCouncil, suffering, tally, mentionedEmotions, isParseFail,
     // exposed for tests
     SOCIETY,
+    LENSES,
     _internal: { convenePrompt, pulsePrompt, speakPrompt, consolidatePrompt, finalPrompt, societyPrompt, applyConvene, applyPulse, applySpeak, pickSpeaker, transcript },
   };
 })();

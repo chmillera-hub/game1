@@ -257,6 +257,7 @@ button { cursor: pointer; }
 }
 .msg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
 .msg-meta .asks { font-style: italic; }
+.lens-tag { margin-top: 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; color: var(--accent); }
 .msg.me { grid-template-columns: minmax(0, 1fr); justify-items: end; }
 .msg.me .msg-main { align-items: flex-end; }
 .msg.me .bubble { background: var(--accent); border-color: var(--accent); color: var(--on-accent); border-radius: 16px 4px 16px 16px; }
@@ -1444,6 +1445,7 @@ button { cursor: pointer; }
   const thread = $("#thread");
   const MOVE_WORD = { 0: "can live with it", "-1": "not okay" };
 
+  const lensLabel = key => { const l = (E.LENSES || []).find(x => x.key === key); return l ? l.label : ""; };
   function nameTarget(to) {
     if (!to || to === "all") return null;
     if (to === "You") return "to you";
@@ -1483,7 +1485,9 @@ button { cursor: pointer; }
             h("p", { class: "bubble" }, m.text),
             h("div", { class: "msg-meta" },
               moved ? h("span", { class: "shift", "aria-label": `${m.prev < 0 ? "minus one" : "zero"} to ${m.score < 0 ? "minus one" : "zero"}` }, pill(m.prev), "→", pill(m.score), MOVE_WORD[m.score]) : pill(m.score),
-              m.proposal && !m.opening ? h("span", { class: "asks" }, `Asks: ${m.proposal}`) : null)));
+              m.proposal && !m.opening ? h("span", { class: "asks" }, `Asks: ${m.proposal}`) : null),
+            m.callout ? h("span", { class: "lens-tag" }, "🦜 calling out Society") :
+            m.lens && lensLabel(m.lens) ? h("span", { class: "lens-tag", title: "Its need is still unmet, so it comes back to it from a new angle instead of repeating itself" }, `↻ coming back to it: ${lensLabel(m.lens)}`) : null));
       }
       case "decide": {
         const items = Array.isArray(m.items) ? m.items.filter(d => isObj(d) && findEmotion(d.emotion)) : [];

@@ -75,6 +75,23 @@ Each turn, `engine.js` makes up to two calls:
    transcript, so it doesn't repeat itself and can take the hint when its idea
    was turned down.
 
+**Coming back to an unmet need.** An emotion whose need still isn't met may
+raise it again, but never with the same words or reasons. Each time it comes
+back through a lens it hasn't used yet:
+- why the latest advice misses;
+- the concrete moment;
+- what it costs;
+- what "met" would look like;
+- the smallest real version;
+- asking a specific emotion for help.
+
+These messages are tagged "↻ coming back to it" in the chat. One helper then
+gets the floor to address it from its own angle. After that, the Consciousness
+answers that latest reason in the plan itself, never re-offering advice the
+emotion already turned down. A call-out of Society quotes what Society actually
+said and names the exact detail it ignores; "that doesn't help my boundaries"
+isn't enough.
+
 A score only moves when something changed for that emotion: the plan, a user
 message, or the emotion saying so itself. That keeps emotions from quietly
 flipping to 0 without a reason. The chat ends when nobody is suffering after
