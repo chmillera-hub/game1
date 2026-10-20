@@ -112,8 +112,10 @@ def chunks(line, maxc=34):
     for tk, tt in zip(toks, times):
         trial = " ".join(cur + [tk])
         if len(trial) > maxc * 2 - 2 and cur:
-            out.append((cur, cur_t))
-            cur, cur_t = [], []
+            # prefer breaking after the last comma in the second half of the chunk
+            cut = max([i + 1 for i, w in enumerate(cur) if w.endswith(",") and i + 1 >= len(cur) // 2] or [len(cur)])
+            out.append((cur[:cut], cur_t[:cut]))
+            cur, cur_t = cur[cut:], cur_t[cut:]
         cur.append(tk)
         cur_t.append(tt)
         if re.search(r"[.?!;]$", tk) and len(" ".join(cur)) > maxc * 0.9:
