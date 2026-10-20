@@ -57,13 +57,15 @@ def _hide_face(p):
 
 
 def build(ctx):
+    import os
+    DBG = os.environ.get("S16_DBG", "")
     N, R = ctx.nframes, ctx.render_frames
     f1a, f1b = ctx.phrase_frames(0)
     f2a, f2b = ctx.phrase_frames(1)
     f3a, f3b = ctx.phrase_frames(2)
 
     # ---------------- sky + ground ----------------
-    p = E.sky_preset("sunrise", sun_az=SUN_AZ, strength=0.4, sat=1.45, tint=(1.0, 0.84, 0.66))
+    p = E.sky_preset("sunrise", sun_az=SUN_AZ, strength=0.24, sat=1.45, tint=(1.0, 0.84, 0.66))
     sk = E.sky(cfg=p, ctx=ctx)
     sun = sk["sun"]
     gm = E.ground_material("S16Ground", style="plain")
@@ -72,23 +74,29 @@ def build(ctx):
                                                  path=np.zeros_like(Z), cav=np.zeros_like(Z), dust=np.zeros_like(Z)))
     gr = E.grass_protos("dry", height=0.45) + E.grass_protos("green", height=0.35)
     # crest grass (silhouetted against the sun) + slope grass + dark foreground tufts
-    E.scatter(gr, count=3200, seed=4, scale=(0.7, 1.5), align=0.6, sink=0.02, region=(-9, 15, 9, 26),
+    E.scatter(gr, count=2200, seed=4, scale=(0.7, 1.5), align=0.6, sink=0.02, region=(-9, 15, 9, 26),
               name="S16GrassCrest", realize=False, shadows=False)
-    E.scatter(gr, count=3000, seed=5, scale=(0.6, 1.3), align=0.6, sink=0.02, region=(-7, -1, 7, 15),
+    E.scatter(gr, count=1700, seed=5, scale=(0.6, 1.3), align=0.6, sink=0.02, region=(-7, -1, 7, 15),
               name="S16GrassSlope", realize=False, shadows=False)
+    E.scatter(E.grass_protos("short", height=0.3), count=2600, seed=15, scale=(0.7, 1.4), align=0.7, sink=0.02,
+              region=(-6, 0, 6, 22), name="S16GrassShort", realize=False, shadows=False)
     E.scatter(E.rock_protos("rocks"), count=120, seed=8, scale=(0.4, 1.2), align=0.9, sink=-0.3,
               region=(-8, 0, 8, 24), name="S16Rocks", realize=False, shadows=False)
     sh = [E.shrub_blob(seed=i, size=1.0 + 0.3 * i) for i in range(3)]
     E.scatter(sh, count=160, seed=6, scale=(0.8, 1.6), align=0.3, sink=0.05, region=("ring", 0, 20, 40, 400),
               name="S16Shrubs", realize=False, shadows=False)
 
+    if "nograss" in DBG:
+        for o in bpy.data.objects:
+            if o.name.startswith("S16Grass"):
+                o.hide_render = True
     # ---------------- people ----------------
     P.AUTO_DRAPE = False
     rnd = random.Random(16)
     people = []
 
-    def person(name, preset, seed, x, y, colors, **spec):
-        pr = P.make_person(name, preset, seed=seed, lod="mid", pose=None, hair_strands=False,
+    def person(name, preset, seed, x, y, colors, lod="mid", **spec):
+        pr = P.make_person(name, preset, seed=seed, lod=lod, pose=None, hair_strands=False,
                            outfit_colors=colors, **spec)
         z = _gz(x, y)
         pr.rig.location = (x, y, z)
@@ -105,14 +113,14 @@ def build(ctx):
         P.key_pose(pr, fa + dur, "arms_raised", ground_z=z, spread=spread, head=head)
 
     # near pair (phrase 1)
-    a, za = person("s16_near_m", "CROWD_MAN", 3, -0.75, 6.4, {"tunic": "oatmeal", "mantle": "brown"},
+    a, za = person("s16_near_m", "CROWD_MAN", 3, -0.8, 7.4, {"tunic": "camel", "mantle": "dark_brown"},
                    age_years=34, height_cm=176, build="average", beard="full", hair="short02")
     raise_arms(a, za, f1a + 2, dur=30, spread=30)
-    b, zb = person("s16_near_w", "CROWD_WOMAN", 5, 0.8, 7.6, {"tunic": "umber", "veil": "sand"},
+    b, zb = person("s16_near_w", "CROWD_WOMAN", 5, 0.95, 8.7, {"tunic": "umber", "veil": "brown"},
                    age_years=30, height_cm=160)
     raise_arms(b, zb, f1a + 14, dur=30, spread=40)
     # elder in the middle distance: hands raised already on phrase 1-2, kneels + bows on phrase 3
-    e, ze = person("s16_elder", "CROWD_MAN", 11, -0.45, 12.0, {"tunic": "linen", "mantle": "camel"},
+    e, ze = person("s16_elder", "CROWD_MAN", 11, -0.35, 12.8, {"tunic": "brown", "mantle": "camel"},
                    age_years=66, height_cm=170, build="lean", beard="long", outfit=["tunic"],
                    outfit_opts={"tunic": {"length": "below_knee", "sleeves": "long"}})
     raise_arms(e, ze, f1b - 6, dur=34, spread=28)
@@ -124,13 +132,13 @@ def build(ctx):
     # crest: sources + clones, a wave of raised hands on phrase 2
     srcs = []
     for k, (pre, sd, cols, extra) in enumerate((
-            ("CROWD_MAN", 21, {"tunic": "linen", "mantle": "dark_brown"}, {}),
-            ("CROWD_WOMAN", 22, {"tunic": "sand", "veil": "oatmeal"}, {}),
-            ("CROWD_MAN", 23, {"tunic": "brown", "mantle": "umber"}, dict(age_years=24)),
-            ("CHILD", 24, {"tunic": "oatmeal"}, dict(lod="mid", hair_strands=False)))):
+            ("CROWD_MAN", 21, {"tunic": "camel", "mantle": "dark_brown"}, dict(lod="far")),
+            ("CROWD_WOMAN", 22, {"tunic": "brown", "veil": "sand"}, dict(lod="far")),
+            ("CROWD_MAN", 23, {"tunic": "brown", "mantle": "umber"}, dict(age_years=24, lod="far")),
+            ("CHILD", 24, {"tunic": "oatmeal"}, {}))):
         x, y = (-2.2, -0.4, 1.6, 3.2)[k], CREST_Y + (0.4, -0.3, 0.2, -0.5)[k]
         if pre == "CHILD":
-            pr = P.make_person("s16_crest%d" % k, "CHILD", lod="mid", pose=None, hair_strands=False, outfit_colors=cols,
+            pr = P.make_person("s16_crest%d" % k, "CHILD", lod="far", pose=None, hair_strands=False, outfit_colors=cols,
                                expression="neutral")
             z = _gz(x, y)
             pr.rig.location = (x, y, z)
@@ -144,7 +152,8 @@ def build(ctx):
         srcs.append((pr, z, fa))
     # clones further along the crest (same body / outfit, other places, offset timing)
     for k, (x, dy, src, off) in enumerate(((-3.8, 0.8, 0, 26), (0.7, 0.9, 2, -20), (-1.3, 1.6, 1, 34),
-                                           (4.6, 0.6, 1, 8), (2.6, 1.4, 0, 46))):
+                                           (4.6, 0.6, 1, 8), (2.6, 1.4, 0, 46), (-5.3, 0.2, 2, 52),
+                                           (5.9, -0.2, 0, 60))):
         pr, z0, fa0 = srcs[src]
         y = CREST_Y + dy
         z = _gz(x, y)
@@ -152,6 +161,10 @@ def build(ctx):
                     name="s16_cl%d" % k, action_offset=off)
         people.append(c)
 
+    if "nopeople" in DBG:
+        for pr in people:
+            for o in pr.objects():
+                o.hide_render = True
     # ---------------- light ----------------
     # rim lights: from behind the people towards the camera, a little off the sun axis (left / right)
     for k, (x, y, z, en) in enumerate(((-3.2, 15.0, 4.2, 420.0), (3.4, 15.5, 3.8, 360.0))):
@@ -166,7 +179,7 @@ def build(ctx):
 
     # ---------------- camera ----------------
     z0 = _gz(0.0, 0.0)
-    cam = C.camera((0.3, 0.0, z0 + 1.0), (0.0, 30.0, 2.4), lens=50, fstop=5.6, focus=12.0)
+    cam = C.camera((0.3, 0.0, z0 + 1.0), (0.0, 30.0, 2.4), lens=42, fstop=5.6, focus=12.0)
 
     def cfn(f):
         u = C.ease_in_out(min(1.0, max(0.0, (f - 1) / (R - 1))))
@@ -178,7 +191,7 @@ def build(ctx):
     cam.data.dof.focus_distance = 12.0
 
     ctx.samples = 4
-    ctx.render_opts = {"volumetrics": "low"}
+    ctx.render_opts = {"volumetrics": "low", "shadow_scale": 0.5}
     ctx.interp = True
     ctx.post = {"grade": "warm", "bloom": 0.42, "bloom_radius": 1.4, "halation": 0.1, "vignette": 0.22,
                 "contrast": 1.05, "caption": {"ink": "light", "halo": 1.2}}
