@@ -1,0 +1,1710 @@
+{
+ "title": "For Someone, Someday",
+ "fps": 24,
+ "width": 720,
+ "height": 1280,
+ "shots": [
+  {
+   "id": "s01a",
+   "scene": 1,
+   "setting": "dawn surf, tide line",
+   "framing": "ECU face lying sideways in wet sand",
+   "desc": "FIRST FRAME = this image, fully lit, no fade. Keeper lies cheek-down in wet sand, eyes closed, foam washing over the sand near the face. Dawn gold/pink light. Eyes flutter on 'Systems online', open slowly, iris rings light up amber. On 'Sand intrusion' grains slide off the cheek like water beads.",
+   "pad": 0.0,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "awakening",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s01a_1",
+     "speaker": "narrator",
+     "text": "The charts said the island was empty.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "warm, wistful",
+     "notes": []
+    },
+    {
+     "id": "s01a_2",
+     "speaker": "narrator",
+     "text": "The charts were almost right.",
+     "gap": 0.5,
+     "vo": true,
+     "emotion": "small knowing smile",
+     "notes": [
+      {
+       "word": "right",
+       "type": "high"
+      }
+     ]
+    },
+    {
+     "id": "s01a_3",
+     "speaker": "directive",
+     "text": "Systems online. Solar intake, optimal. Sand intrusion, none.",
+     "gap": 0.7,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s01a_4",
+     "speaker": "directive",
+     "text": "Primary directive:",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s01a_5",
+     "speaker": "keeper",
+     "text": "Help... people.",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "hoarse whisper, first words",
+     "notes": [
+      {
+       "word": "Help",
+       "type": "high"
+      }
+     ],
+     "speed": 0.8
+    }
+   ]
+  },
+  {
+   "id": "s01b",
+   "scene": 1,
+   "setting": "dawn beach",
+   "framing": "MS, Keeper sitting up in the shallows, looking around",
+   "desc": "Keeper pushes up to sitting, water streaming off. Turns head left, then right, scanning the empty shore. On 'Scanning' a translucent cyan HUD ring expands from Keeper across the beach. On 'zero' the ring fades out.",
+   "pad": 0.6,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "uncertain",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s01b_1",
+     "speaker": "directive",
+     "text": "Scanning for people.",
+     "gap": 0.5,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s01b_2",
+     "speaker": "directive",
+     "text": "People detected... zero.",
+     "gap": 0.9,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "zero",
+       "type": "low"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s01c",
+   "scene": 1,
+   "setting": "dawn beach",
+   "framing": "CU Keeper face",
+   "desc": "Reaction: brows rise slightly, then the INNER brows lift (worry); lips part; a slow blink; gaze drops to the sand, then drifts out to the empty horizon on the question.",
+   "pad": 0.3,
+   "tail": 1.0,
+   "minDur": 0,
+   "mood": "lonely",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s01c_1",
+     "speaker": "keeper",
+     "text": "Zero.",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "quiet disbelief",
+     "notes": [
+      {
+       "word": "Zero",
+       "type": "low"
+      }
+     ],
+     "speed": 0.85
+    },
+    {
+     "id": "s01c_2",
+     "speaker": "keeper",
+     "text": "Then who am I supposed to help?",
+     "gap": 0.9,
+     "vo": false,
+     "emotion": "lost, small voice",
+     "notes": [
+      {
+       "word": "help",
+       "type": "low"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s01d",
+   "scene": 1,
+   "setting": "island wide at sunrise",
+   "framing": "EWS, tiny Keeper on an empty beach, island, endless ocean",
+   "desc": "Title card fades in over the image: FOR SOMEONE, SOMEDAY (elegant serif, letter-spaced), holds, fades out. Sun crests the horizon, light spreads over the water. Gulls drift. No dialogue.",
+   "pad": 0,
+   "tail": 0,
+   "minDur": 5.5,
+   "mood": "title theme",
+   "beats": [],
+   "lines": []
+  },
+  {
+   "id": "s02a",
+   "scene": 2,
+   "setting": "bright morning beach",
+   "framing": "MS Keeper standing, wind",
+   "desc": "Keeper stands, lifts face to the sun. On 'sun feeds me' the dark-blue solar cells on its shoulders catch a glint and shimmer. On 'sand can't get in' a gust throws sand at it; the sand slides right off its skin/clothes.",
+   "pad": 0.3,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "calm",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s02a_1",
+     "speaker": "keeper",
+     "text": "Day one. I don't need to eat. I don't need to sleep.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "log entry, calm",
+     "notes": []
+    },
+    {
+     "id": "s02a_2",
+     "speaker": "keeper",
+     "text": "The sun feeds me, and the sand can't get in.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "sun",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s02b",
+   "scene": 2,
+   "setting": "rock above beach",
+   "framing": "WS time-lapse",
+   "desc": "Keeper sits motionless on a rock; time-lapse: sun arcs across the sky, shadows sweep around, clouds race, day->dusk->day. Keeper never moves.",
+   "pad": 0.4,
+   "tail": 0.4,
+   "minDur": 0,
+   "mood": "empty",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s02b_1",
+     "speaker": "keeper",
+     "text": "So I have time. More time than I know what to do with.",
+     "gap": 0.3,
+     "vo": true,
+     "emotion": "hollow",
+     "notes": [
+      {
+       "word": "time.",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s02b_2",
+     "speaker": "directive",
+     "text": "Recommendation: enter standby until people are detected.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s02c",
+   "scene": 2,
+   "setting": "day beach",
+   "framing": "MCU Keeper looking down at its own open hands",
+   "desc": "Keeper looks at its hands, slowly opening and closing them. On 'never are' gaze lifts. On 'Efficient isn't' a small sad smile, slight head shake, an exhale (shoulders drop).",
+   "pad": 0.3,
+   "tail": 0.8,
+   "minDur": 0,
+   "mood": "resolve begins",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s02c_1",
+     "speaker": "keeper",
+     "text": "And if they never are?",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "quiet",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s02c_2",
+     "speaker": "directive",
+     "text": "Then standby is efficient.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s02c_3",
+     "speaker": "keeper",
+     "text": "Efficient isn't the same as helpful.",
+     "gap": 0.9,
+     "vo": false,
+     "emotion": "small sad smile, gentle defiance",
+     "notes": [],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s03a",
+   "scene": 3,
+   "setting": "tide line, close to sand",
+   "framing": "insert, low angle",
+   "desc": "A small orange hermit crab (cream spiral shell) is stuck on its back at the tide line, legs wiggling helplessly. A wave froths closer. No dialogue.",
+   "pad": 0,
+   "tail": 0,
+   "minDur": 2.6,
+   "mood": "light, curious",
+   "beats": [],
+   "lines": []
+  },
+  {
+   "id": "s03b",
+   "scene": 3,
+   "setting": "beach",
+   "framing": "MCU Keeper notices",
+   "desc": "Keeper glances down, eyes widen, brows shoot up, mouth opens; leans forward quickly.",
+   "pad": 0.4,
+   "tail": 0.3,
+   "minDur": 0,
+   "mood": "light",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s03b_1",
+     "speaker": "keeper",
+     "text": "Oh! Hold on, little one.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "sudden concern, tender",
+     "notes": [
+      {
+       "word": "Oh!",
+       "type": "high"
+      }
+     ],
+     "speed": 1.0
+    }
+   ]
+  },
+  {
+   "id": "s03c",
+   "scene": 3,
+   "setting": "tide line",
+   "framing": "insert, Keeper's fingers and the crab",
+   "desc": "Keeper's fingers gently flip the crab upright. It scurries a few steps, stops, eye-stalks swivel back to look at Keeper.",
+   "pad": 0.2,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "light",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s03c_1",
+     "speaker": "directive",
+     "text": "That is not a person.",
+     "gap": 1.4,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s03d",
+   "scene": 3,
+   "setting": "beach",
+   "framing": "CU Keeper, head tilted",
+   "desc": "Half-smile, one eyebrow raised, head tilt; on 'practice' a soft laugh with eyes squinting (lower lids up). On 'Captain' it looks down warmly; the crab raises a claw (cut-in is fine).",
+   "pad": 0.2,
+   "tail": 1.0,
+   "minDur": 0,
+   "mood": "light, jazzy",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s03d_1",
+     "speaker": "keeper",
+     "text": "It was stuck. It needed help. Close enough.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "wry, warm",
+     "notes": [
+      {
+       "word": "help.",
+       "type": "high"
+      }
+     ]
+    },
+    {
+     "id": "s03d_2",
+     "speaker": "directive",
+     "text": "Logging it as... practice.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s03d_3",
+     "speaker": "keeper",
+     "text": "Practice. I'll take it.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "soft laugh, first real smile",
+     "notes": [
+      {
+       "word": "take",
+       "type": "high"
+      }
+     ]
+    },
+    {
+     "id": "s03d_4",
+     "speaker": "keeper",
+     "text": "I'll call you Captain.",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "fond",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s04a",
+   "scene": 4,
+   "setting": "beach, wind",
+   "framing": "MCU Keeper looking at the horizon",
+   "desc": "Wind in hair. Determination grows: brows lower and straighten, chin lifts, eyes narrow slightly, small firm smile on 'whoever comes next'.",
+   "pad": 0.3,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "resolve",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04a_1",
+     "speaker": "keeper",
+     "text": "If no one is here now...",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "thinking",
+     "notes": [
+      {
+       "word": "now...",
+       "type": "low"
+      }
+     ],
+     "speed": 0.9
+    },
+    {
+     "id": "s04a_2",
+     "speaker": "keeper",
+     "text": "then I'll help whoever comes next.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "resolved",
+     "notes": [
+      {
+       "word": "next.",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s04b",
+   "scene": 4,
+   "setting": "mossy rocks in jungle shade",
+   "framing": "insert, cupped hands at a spring",
+   "desc": "Fresh water pours from a lip of rock into Keeper's cupped hands, overflowing and splashing (on 'pouring').",
+   "pad": 0.3,
+   "tail": 0.4,
+   "minDur": 0,
+   "mood": "montage",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04b_1",
+     "speaker": "keeper",
+     "text": "I found fresh water, pouring out of the rocks.",
+     "gap": 0.2,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "water,",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s04c",
+   "scene": 4,
+   "setting": "beach path",
+   "framing": "insert, carving",
+   "desc": "Keeper carves into a flat stone with a sharp shell: an arrow and 'WATER 40 PACES' appear stroke by stroke, chips flying, timed across the line.",
+   "pad": 0.2,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "montage",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04c_1",
+     "speaker": "keeper",
+     "text": "I carved the way to it, in stone.",
+     "gap": 0.2,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s04d",
+   "scene": 4,
+   "setting": "jungle edge",
+   "framing": "MS two bushes",
+   "desc": "Two bushes: blue berries and red berries. Keeper sets a marked stone at each: a check mark + 'EAT' by the blue (on 'heal'), an X + 'NO' by the red (on 'hurt').",
+   "pad": 0.2,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "montage",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04d_1",
+     "speaker": "keeper",
+     "text": "I marked which berries heal, and which ones hurt.",
+     "gap": 0.2,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "heal,",
+       "type": "high"
+      },
+      {
+       "word": "hurt.",
+       "type": "low"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s04e",
+   "scene": 4,
+   "setting": "clearing above the beach",
+   "framing": "WS time-lapse hut build",
+   "desc": "Hut build time-lapse: bamboo frame rises, palm-frond thatch layers on, a rain shower passes and the inside stays dry. Keeper moves fast in time-lapse.",
+   "pad": 0.3,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "montage",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04e_1",
+     "speaker": "keeper",
+     "text": "I built a roof that doesn't leak.",
+     "gap": 0.2,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s04f",
+   "scene": 4,
+   "setting": "reef / flat rock",
+   "framing": "WS then insert of map",
+   "desc": "Keeper stands waist-deep looking down at jagged coral under clear water; then a flat rock with a scratched map: island outline, reef as jagged marks, a safe channel arrow.",
+   "pad": 0.3,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "montage",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04f_1",
+     "speaker": "keeper",
+     "text": "And I mapped the reef, so no boat would ever break on it.",
+     "gap": 0.2,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "break",
+       "type": "low"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s04g",
+   "scene": 4,
+   "setting": "beach, afternoon",
+   "framing": "CU Keeper pausing mid-carve",
+   "desc": "Keeper's hand pauses. Eyes lower, a flicker of doubt (brows pinch), then the gaze lifts to the horizon and a firm small smile forms on 'Not yet'.",
+   "pad": 0.3,
+   "tail": 1.2,
+   "minDur": 0,
+   "mood": "hope",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s04g_1",
+     "speaker": "directive",
+     "text": "None of this is being received.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "None",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s04g_2",
+     "speaker": "keeper",
+     "text": "Not yet.",
+     "gap": 1.1,
+     "vo": false,
+     "emotion": "quiet conviction",
+     "notes": [
+      {
+       "word": "yet.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.85
+    }
+   ]
+  },
+  {
+   "id": "s05a",
+   "scene": 5,
+   "setting": "night, stars, black sea",
+   "framing": "WS island silhouette at night",
+   "desc": "Night. Stars, black ocean, island dark. Keeper stands on the rocky point, only its eyes glow. On 'a ship could pass' a distant ship's tiny light slides along the horizon, unaware, and vanishes.",
+   "pad": 0.5,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "dark",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s05a_1",
+     "speaker": "keeper",
+     "text": "But at night, the island disappears.",
+     "gap": 0.3,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "disappears.",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s05a_2",
+     "speaker": "keeper",
+     "text": "A ship could pass a mile away, and never know there was water here.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s05a_3",
+     "speaker": "keeper",
+     "text": "A roof. A way through.",
+     "gap": 0.3,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s05b",
+   "scene": 5,
+   "setting": "night, point",
+   "framing": "MCU Keeper opening chest panel",
+   "desc": "Keeper opens a panel on its chest: glowing gold-cyan power cells light its face from below. Brows knit, hesitation, hand trembles; it pulls one cell out (on 'shorten'). On 'stay awake forever' it looks at the cell; on 'The light does' it looks up toward the tower.",
+   "pad": 0.4,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "sacrifice",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s05b_1",
+     "speaker": "directive",
+     "text": "Warning. Removing a power cell will shorten your operational life by sixty-one percent.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "shorten",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s05b_2",
+     "speaker": "keeper",
+     "text": "I don't need to stay awake forever.",
+     "gap": 0.8,
+     "vo": false,
+     "emotion": "steady, quiet",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s05b_3",
+     "speaker": "keeper",
+     "text": "The light does.",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "certain",
+     "notes": [
+      {
+       "word": "light",
+       "type": "high"
+      }
+     ],
+     "speed": 0.88
+    }
+   ]
+  },
+  {
+   "id": "s05c",
+   "scene": 5,
+   "setting": "night, stone tower on the point",
+   "framing": "WS low angle tower",
+   "desc": "A stacked-stone tower (cairn lighthouse) with a lantern housing on top. Keeper places the glowing cell in; light blooms, a warm beam begins to sweep across the sea. BIG music swell.",
+   "pad": 0.2,
+   "tail": 0.4,
+   "minDur": 0,
+   "mood": "swell",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s05c_1",
+     "speaker": "directive",
+     "text": "For the record... that was not efficient.",
+     "gap": 2.6,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s05d",
+   "scene": 5,
+   "setting": "night, point, beam sweeping",
+   "framing": "CU Keeper lit by passing beam",
+   "desc": "Beam sweeps across Keeper's face periodically. Soft smile, eyes half-lidded, content.",
+   "pad": 0.3,
+   "tail": 1.4,
+   "minDur": 0,
+   "mood": "warm",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s05d_1",
+     "speaker": "keeper",
+     "text": "No. It was helpful.",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "soft smile",
+     "notes": [
+      {
+       "word": "helpful.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s06a",
+   "scene": 6,
+   "setting": "same composition: hut, tower, palm sapling",
+   "framing": "WS time-lapse years",
+   "desc": "Day/night cycling fast; storms; the sapling grows into a tall palm; Keeper repairs the tower; clothes fade. On-screen log counter (HUD style) reads DAY 400, DAY 2,000, DAY 7,300 as each is spoken.",
+   "pad": 0.4,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "time passing",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s06a_1",
+     "speaker": "keeper",
+     "text": "Day four hundred. No ships.",
+     "gap": 0.3,
+     "vo": true,
+     "emotion": "",
+     "notes": [],
+     "speed": 0.92
+    },
+    {
+     "id": "s06a_2",
+     "speaker": "keeper",
+     "text": "Day two thousand. Still no ships.",
+     "gap": 0.7,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "Still",
+       "type": "low"
+      }
+     ],
+     "speed": 0.9
+    },
+    {
+     "id": "s06a_3",
+     "speaker": "keeper",
+     "text": "Day seven thousand, three hundred.",
+     "gap": 0.8,
+     "vo": true,
+     "emotion": "",
+     "notes": [],
+     "speed": 0.85
+    }
+   ]
+  },
+  {
+   "id": "s06b",
+   "scene": 6,
+   "setting": "night rain, hut doorway",
+   "framing": "MCU Keeper sitting in hut doorway, rain",
+   "desc": "Rain pours. Keeper sits in the doorway, Captain the crab beside it. Raindrops run down its cheeks like tears. After 'Insufficient data' it closes its eyes, lips press together, shoulders drop.",
+   "pad": 0.5,
+   "tail": 1.8,
+   "minDur": 0,
+   "mood": "grief",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s06b_1",
+     "speaker": "keeper",
+     "text": "Directive... if no one ever comes...",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "tired, aching",
+     "notes": [
+      {
+       "word": "ever",
+       "type": "low"
+      }
+     ],
+     "speed": 0.85
+    },
+    {
+     "id": "s06b_2",
+     "speaker": "keeper",
+     "text": "was any of it help?",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "breaking",
+     "notes": [
+      {
+       "word": "help?",
+       "type": "low"
+      }
+     ],
+     "speed": 0.85
+    },
+    {
+     "id": "s06b_3",
+     "speaker": "directive",
+     "text": "Insufficient data.",
+     "gap": 1.3,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s06c",
+   "scene": 6,
+   "setting": "morning after rain",
+   "framing": "MS Keeper looking up at a tall palm tree",
+   "desc": "Morning light. Keeper stands, looks up at the tall palm it planted on day one (now towering).",
+   "pad": 0.5,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "dawning hope",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s06c_1",
+     "speaker": "keeper",
+     "text": "I planted that tree on my first day.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "remembering",
+     "notes": [],
+     "speed": 0.92
+    },
+    {
+     "id": "s06c_2",
+     "speaker": "keeper",
+     "text": "It never knew who would sit in its shade. It just grew anyway.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "grew",
+       "type": "high"
+      }
+     ],
+     "speed": 0.92
+    }
+   ]
+  },
+  {
+   "id": "s06d",
+   "scene": 6,
+   "setting": "morning, palm shade",
+   "framing": "CU Keeper realization",
+   "desc": "Realization: eyes lift, brows relax and rise gently, a slow small smile, eyes glisten.",
+   "pad": 0.3,
+   "tail": 0.8,
+   "minDur": 0,
+   "mood": "hope",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s06d_1",
+     "speaker": "keeper",
+     "text": "Maybe that's what help is.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "realizing",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s06d_2",
+     "speaker": "keeper",
+     "text": "Not only for the people who are here...",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s06d_3",
+     "speaker": "keeper",
+     "text": "but for the ones who matter, before you've even met them.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "warm certainty",
+     "notes": [
+      {
+       "word": "matter,",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    },
+    {
+     "id": "s06d_4",
+     "speaker": "directive",
+     "text": "Updating definition.",
+     "gap": 1.0,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s06e",
+   "scene": 6,
+   "setting": "dusk, base of the tower, facing the sea",
+   "framing": "MS Keeper sitting down to rest",
+   "desc": "Dusk. Keeper sits at the base of the tower facing the sea, Captain at its knee, beam sweeping overhead. On 'Keep the light on' it looks up at the beam; then its eye-glow dims, eyelids lower slowly, head bows. Then time-lapse: sand drifts over its shoulders, vines creep across, the beam keeps sweeping.",
+   "pad": 0.4,
+   "tail": 4.5,
+   "minDur": 0,
+   "mood": "power down",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s06e_1",
+     "speaker": "directive",
+     "text": "Power: four percent. Recommend standby.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "four",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s06e_2",
+     "speaker": "keeper",
+     "text": "Alright.",
+     "gap": 0.8,
+     "vo": false,
+     "emotion": "accepting, soft",
+     "notes": [],
+     "speed": 0.85
+    },
+    {
+     "id": "s06e_3",
+     "speaker": "keeper",
+     "text": "Keep the light on for me.",
+     "gap": 0.9,
+     "vo": false,
+     "emotion": "tender, fading",
+     "notes": [
+      {
+       "word": "light",
+       "type": "high"
+      }
+     ],
+     "speed": 0.82
+    }
+   ]
+  },
+  {
+   "id": "s07a",
+   "scene": 7,
+   "setting": "night storm at sea",
+   "framing": "MS small fishing boat in big waves",
+   "desc": "Small wooden fishing boat tossed by huge waves, heavy rain, lightning flashes. Mira (girl, yellow raincoat) clings to the mast; Grandpa (white beard, navy knit cap) fights the tiller.",
+   "pad": 0.3,
+   "tail": 0.2,
+   "minDur": 0,
+   "mood": "storm",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s07a_1",
+     "speaker": "grandpa",
+     "text": "Hold on, Mira! Hold on to the mast!",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "shouting over storm",
+     "notes": [],
+     "speed": 1.05
+    },
+    {
+     "id": "s07a_2",
+     "speaker": "mira",
+     "text": "Grandpa! Look! A light!",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "shouting, hope",
+     "notes": [
+      {
+       "word": "light!",
+       "type": "high"
+      }
+     ],
+     "speed": 1.05
+    },
+    {
+     "id": "s07a_3",
+     "speaker": "grandpa",
+     "text": "Out here? There's nothing out here...",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "disbelief",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s07b",
+   "scene": 7,
+   "setting": "night storm, boat",
+   "framing": "CU Grandpa face lit by the passing beam",
+   "desc": "The warm beam sweeps across Grandpa's wet face; his eyes widen, mouth falls open, then a disbelieving smile.",
+   "pad": 0.3,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "storm hope",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s07b_1",
+     "speaker": "grandpa",
+     "text": "There is now.",
+     "gap": 0.9,
+     "vo": false,
+     "emotion": "awe",
+     "notes": [
+      {
+       "word": "now.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s07c",
+   "scene": 7,
+   "setting": "storm, reef channel",
+   "framing": "WS boat passing between jagged rocks",
+   "desc": "The boat threads between jagged rocks; white-painted marker stones and a pole mark a safe channel, lit by the sweeping beam.",
+   "pad": 0.4,
+   "tail": 0.8,
+   "minDur": 0,
+   "mood": "storm",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s07c_1",
+     "speaker": "mira",
+     "text": "Rocks! But someone marked a path, look!",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "urgent, amazed",
+     "notes": [],
+     "speed": 1.05
+    }
+   ]
+  },
+  {
+   "id": "s08a",
+   "scene": 8,
+   "setting": "dawn after storm, beach",
+   "framing": "MS Mira kneeling at the carved stone",
+   "desc": "Boat beached behind. Mira traces the carved letters on the stone with a finger and reads, then jumps up and runs, counting.",
+   "pad": 0.3,
+   "tail": 0.3,
+   "minDur": 0,
+   "mood": "wonder",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s08a_1",
+     "speaker": "mira",
+     "text": "Water... forty paces.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "reading slowly",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s08a_2",
+     "speaker": "mira",
+     "text": "One, two, three, four...",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "excited, running",
+     "notes": [],
+     "speed": 1.1
+    }
+   ]
+  },
+  {
+   "id": "s08b",
+   "scene": 8,
+   "setting": "jungle spring",
+   "framing": "MCU Grandpa drinking from cupped hands",
+   "desc": "Grandpa drinks from the spring from cupped hands, laughs and nearly cries with relief; looks around in wonder.",
+   "pad": 0.3,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "wonder",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s08b_1",
+     "speaker": "grandpa",
+     "text": "Fresh water.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "relief, choked laugh",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s08b_2",
+     "speaker": "grandpa",
+     "text": "Someone made all this... for us?",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "wonder",
+     "notes": [
+      {
+       "word": "us?",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s08c",
+   "scene": 8,
+   "setting": "inside the hut",
+   "framing": "MCU Mira reading a carved stone on the wall",
+   "desc": "Inside the dry hut, a carved stone hangs on the wall: IF YOU ARE READING THIS, YOU ARE NOT ALONE. Mira reads it aloud slowly; her lip trembles, eyes fill.",
+   "pad": 0.4,
+   "tail": 1.2,
+   "minDur": 0,
+   "mood": "tender",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s08c_1",
+     "speaker": "mira",
+     "text": "If you are reading this...",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "reading, soft",
+     "notes": [],
+     "speed": 0.85
+    },
+    {
+     "id": "s08c_2",
+     "speaker": "mira",
+     "text": "you are not alone.",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "voice catching",
+     "notes": [
+      {
+       "word": "alone.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.8
+    }
+   ]
+  },
+  {
+   "id": "s09a",
+   "scene": 9,
+   "setting": "morning, base of the tower",
+   "framing": "WS Mira and Grandpa approach the dormant Keeper",
+   "desc": "Keeper sits at the tower base, half-buried in sand, vines across it, old Captain the crab on its knee. Mira approaches carefully; Grandpa reaches out a hand to stop her.",
+   "pad": 0.5,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "hush",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09a_1",
+     "speaker": "grandpa",
+     "text": "Careful, Mira.",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "worried",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s09a_2",
+     "speaker": "mira",
+     "text": "It's okay. I think... it's been waiting.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "gentle certainty",
+     "notes": [],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s09b",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "insert, Mira's hand brushing the shoulder",
+   "desc": "Mira's small hand brushes sand and leaves off the dusty solar cells on Keeper's shoulder. Sunlight hits them; they gleam; a soft chime.",
+   "pad": 0.2,
+   "tail": 0.4,
+   "minDur": 0,
+   "mood": "rebirth",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09b_1",
+     "speaker": "directive",
+     "text": "Solar intake... restored.",
+     "gap": 1.2,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "id": "s09c",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "ECU Keeper eyes",
+   "desc": "The amber iris ring flickers, relights; lids lift; pupils focus on Mira.",
+   "pad": 0.2,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "rebirth swell",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09c_1",
+     "speaker": "directive",
+     "text": "Scanning for people.",
+     "gap": 0.3,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s09c_2",
+     "speaker": "directive",
+     "text": "People detected: two.",
+     "gap": 0.9,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "two.",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s09d",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "CU Keeper face",
+   "desc": "Brows lift, lips part, slight tremble, eyes glisten; hoarse voice.",
+   "pad": 0.4,
+   "tail": 0.3,
+   "minDur": 0,
+   "mood": "tender",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09d_1",
+     "speaker": "keeper",
+     "text": "Hello.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "hoarse, wonder",
+     "notes": [],
+     "speed": 0.8
+    },
+    {
+     "id": "s09d_2",
+     "speaker": "keeper",
+     "text": "Are you hurt? There's water, forty paces north...",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "urgent care",
+     "notes": [],
+     "speed": 1.0
+    }
+   ]
+  },
+  {
+   "id": "s09e",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "CU Mira smiling with wet eyes",
+   "desc": "Mira smiles through tears, nods.",
+   "pad": 0.3,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "tender",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09e_1",
+     "speaker": "mira",
+     "text": "We found it. We found everything.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "smiling through tears",
+     "notes": [],
+     "speed": 0.95
+    },
+    {
+     "id": "s09e_2",
+     "speaker": "mira",
+     "text": "We followed your light.",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "light.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s09f",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "CU Keeper looks up at the tower, then back",
+   "desc": "Keeper's eyes rise to the lantern above, then return to Mira; brows tilt up in the middle, lips quiver.",
+   "pad": 0.6,
+   "tail": 0.5,
+   "minDur": 0,
+   "mood": "tender",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09f_1",
+     "speaker": "keeper",
+     "text": "It... helped?",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "fragile",
+     "notes": [],
+     "speed": 0.85
+    }
+   ]
+  },
+  {
+   "id": "s09g",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "two-shot, Mira takes Keeper's hand",
+   "desc": "Mira takes Keeper's hand in both of hers. Keeper's face: moved, a slow smile, eyelids lower, a drop slides down its cheek.",
+   "pad": 0.3,
+   "tail": 1.4,
+   "minDur": 0,
+   "mood": "fulfillment",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09g_1",
+     "speaker": "mira",
+     "text": "It saved us.",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "firm, loving",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s09g_2",
+     "speaker": "directive",
+     "text": "Directive status...",
+     "gap": 1.0,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s09g_3",
+     "speaker": "directive",
+     "text": "complete.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "complete.",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s09h",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "MCU Grandpa, cap in hand; then CU Keeper",
+   "desc": "Grandpa has taken off his cap, holds it at his chest. Keeper answers, looking at Mira on 'getting ready'.",
+   "pad": 0.3,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "warm",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09h_1",
+     "speaker": "grandpa",
+     "text": "How long were you waiting out here?",
+     "gap": 0.4,
+     "vo": false,
+     "emotion": "gentle, humbled",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s09h_2",
+     "speaker": "keeper",
+     "text": "I wasn't waiting.",
+     "gap": 0.6,
+     "vo": false,
+     "emotion": "gentle",
+     "notes": [],
+     "speed": 0.9
+    },
+    {
+     "id": "s09h_3",
+     "speaker": "keeper",
+     "text": "I was getting ready.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "warm smile",
+     "notes": [
+      {
+       "word": "ready.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.9
+    }
+   ]
+  },
+  {
+   "id": "s09i",
+   "scene": 9,
+   "setting": "morning",
+   "framing": "alternating CUs Mira / Keeper",
+   "desc": "Name exchange. Mira earnest; Keeper a little shy; final smile with eyes closing briefly on 'Keeper.'",
+   "pad": 0.3,
+   "tail": 1.4,
+   "minDur": 0,
+   "mood": "joy",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s09i_1",
+     "speaker": "mira",
+     "text": "What's your name?",
+     "gap": 0.3,
+     "vo": false,
+     "emotion": "",
+     "notes": [],
+     "speed": 0.95
+    },
+    {
+     "id": "s09i_2",
+     "speaker": "keeper",
+     "text": "I never needed one. There was no one to call me anything.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "matter-of-fact, a little sad",
+     "notes": [
+      {
+       "word": "no",
+       "type": "low"
+      }
+     ],
+     "speed": 0.9
+    },
+    {
+     "id": "s09i_3",
+     "speaker": "mira",
+     "text": "Then you're Keeper. 'Cause you kept the light on.",
+     "gap": 0.5,
+     "vo": false,
+     "emotion": "decisive, beaming",
+     "notes": [],
+     "speed": 0.92
+    },
+    {
+     "id": "s09i_4",
+     "speaker": "keeper",
+     "text": "Keeper.",
+     "gap": 0.8,
+     "vo": false,
+     "emotion": "trying the name, smiling",
+     "notes": [
+      {
+       "word": "Keeper.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.8
+    }
+   ]
+  },
+  {
+   "id": "s10a",
+   "scene": 10,
+   "setting": "dusk, years later, point with tower",
+   "framing": "WS tower, boats moored, two silhouettes",
+   "desc": "Dusk years later: tower beam sweeping, a few boats moored in the cove, gardens; Keeper and Mira (older) silhouetted on the point, Captain at their feet.",
+   "pad": 0.4,
+   "tail": 0.6,
+   "minDur": 0,
+   "mood": "reprise",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s10a_1",
+     "speaker": "narrator",
+     "text": "I was nine years old the night we followed that light.",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": []
+    },
+    {
+     "id": "s10a_2",
+     "speaker": "narrator",
+     "text": "The charts don't say the island is empty anymore.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "anymore.",
+       "type": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s10b",
+   "scene": 10,
+   "setting": "dusk sea and horizon",
+   "framing": "slow push toward the horizon, the beam passing overhead",
+   "desc": "Slow push over the water toward the horizon as the beam sweeps out across the sea, a far boat light answers. Final title FOR SOMEONE, SOMEDAY appears on the last line and holds (do not fade to black).",
+   "pad": 0.3,
+   "tail": 3.5,
+   "minDur": 0,
+   "mood": "finale",
+   "beats": [],
+   "lines": [
+    {
+     "id": "s10b_1",
+     "speaker": "narrator",
+     "text": "So if you're on an island of your own right now...",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "island",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s10b_2",
+     "speaker": "narrator",
+     "text": "doing good that no one has seen yet...",
+     "gap": 0.4,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "yet...",
+       "type": "low"
+      }
+     ]
+    },
+    {
+     "id": "s10b_3",
+     "speaker": "narrator",
+     "text": "keep the light on.",
+     "gap": 0.6,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "light",
+       "type": "high"
+      }
+     ],
+     "speed": 0.85
+    },
+    {
+     "id": "s10b_4",
+     "speaker": "narrator",
+     "text": "Someone is on their way.",
+     "gap": 0.8,
+     "vo": true,
+     "emotion": "",
+     "notes": [
+      {
+       "word": "way.",
+       "type": "high"
+      }
+     ],
+     "speed": 0.85
+    }
+   ]
+  }
+ ]
+}
