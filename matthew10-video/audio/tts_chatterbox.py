@@ -7,6 +7,7 @@ Usage: python tts_chatterbox.py script.json REF_DIR OUT_DIR [line_id ...]
 Writes OUT_DIR/<id>_t<k>.wav. Existing takes are skipped, so it can resume.
 """
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -16,7 +17,7 @@ import soundfile as sf
 import torch
 from chatterbox.tts import ChatterboxTTS
 
-torch.set_num_threads(4)
+torch.set_num_threads(int(os.environ.get("THREADS", "4")))
 
 # Narration is long and steady, so two takes are enough; dialogue gets three.
 TAKES = {"narrator": 2}

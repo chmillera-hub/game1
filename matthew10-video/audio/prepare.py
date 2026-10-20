@@ -1,8 +1,9 @@
 """Build the master timeline and lip-sync envelopes from the chosen line audio.
 
-Usage: python prepare.py script.json SELECTION_JSON OUT_DIR
+Usage: python prepare.py script.json SELECTION_JSON OUT_DIR [FALLBACK_DIR]
   SELECTION_JSON maps line id -> {"path": wav, "words": [[start, end, word], ...]}
-  (lines missing from it fall back to /opt/work/tts/<id>.wav with no word timings)
+  (lines missing from it fall back to FALLBACK_DIR/<id>.wav, default /opt/work/tts,
+  with no word timings)
 Writes OUT_DIR/timeline.json, OUT_DIR/lipsync.json and OUT_DIR/lines/<id>.wav
 (trimmed, level-matched 24 kHz mono).
 """
@@ -102,6 +103,7 @@ def main():
         if "path" in entry and not Path(entry["path"]).is_absolute():
             entry["path"] = str(sel_path.parent / entry["path"])
     out = Path(sys.argv[3])
+    fallback = sys.argv[4] if len(sys.argv) > 4 else "/opt/work/tts"
     (out / "lines").mkdir(parents=True, exist_ok=True)
     lips, lines, scenes = {}, [], []
     t = 0.0
@@ -113,7 +115,7 @@ def main():
                 continue
             lid = b["id"]
             entry = sel.get(lid, {})
-            a = load(entry.get("path", f"/opt/work/tts/{lid}.wav"))
+            a = load(entry.get("path", f"{fallback}/{lid}.wav"))
             a = level(trim(a))
             if b.get("cut"):
                 a = a[: max(1, len(a) - int(b["cut"] * SR))]

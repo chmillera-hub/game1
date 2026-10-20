@@ -235,7 +235,9 @@ def cmd_plates(img_dir, out, shots_path, poses_path, only, dry=False):
                     last_mask[name] = r["f"]
                     poses = [r["actors"].get("maskA")]
                 else:
-                    poses = [r["actors"].get(who) if scene == r["scene"] else None for scene, who in shots[name]["faces"]]
+                    # actors are keyed "scene:who" (fantasy) or by name within the frame's scene (realistic)
+                    poses = [r["actors"].get(f"{scene}:{who}") or (r["actors"].get(who) if scene == r["scene"] else None)
+                             for scene, who in shots[name]["faces"]]
                 if all(p is None for p in poses):
                     continue
                 jobs.setdefault(name, []).append((r["f"], poses))

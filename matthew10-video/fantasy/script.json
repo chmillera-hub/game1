@@ -1,0 +1,586 @@
+{
+ "title": "Not Peace, But a Sword",
+ "cast": {
+  "maya": {
+   "name": "Maya",
+   "voice": "af_heart",
+   "lang": "en-us",
+   "speed": 0.94,
+   "desc": "Late 20s. Autistic, emotionally precise, tired of performing.",
+   "ex": 0.55,
+   "cfg": 0.45
+  },
+  "mom": {
+   "name": "Mom",
+   "voice": "af_sarah",
+   "lang": "en-us",
+   "speed": 0.98,
+   "desc": "Mid 50s. Keeps the peace by keeping it shallow. Loves Maya, doesn't know how to show it.",
+   "ex": 0.5,
+   "cfg": 0.5
+  },
+  "dad": {
+   "name": "Dad",
+   "voice": "am_fenrir",
+   "lang": "en-us",
+   "speed": 0.92,
+   "desc": "Early 60s. Avoids feelings, avoids eye contact.",
+   "ex": 0.45,
+   "cfg": 0.5
+  },
+  "jordan": {
+   "name": "Jordan",
+   "voice": "am_puck",
+   "lang": "en-us",
+   "speed": 1.0,
+   "desc": "Early 20s. Maya's younger brother, heard in his letter.",
+   "ex": 0.4,
+   "cfg": 0.5
+  },
+  "greg": {
+   "name": "Greg",
+   "voice": "am_michael",
+   "lang": "en-us",
+   "speed": 1.06,
+   "desc": "40s. Guildmaster of the Lanterns. Friendly tone, dismissive content.",
+   "ex": 0.65,
+   "cfg": 0.5
+  },
+  "ai": {
+   "name": "AI",
+   "voice": "bf_emma",
+   "lang": "en-gb",
+   "speed": 0.9,
+   "desc": "The Light: a small light made by human hands that learned to listen. Calm, warm, unhurried.",
+   "ex": 0.38,
+   "cfg": 0.45
+  },
+  "priya": {
+   "name": "Priya",
+   "voice": "af_aoede",
+   "lang": "en-us",
+   "speed": 1.0,
+   "desc": "30s. A scribe in the next town. Easy kindness.",
+   "ex": 0.6,
+   "cfg": 0.5
+  },
+  "narrator": {
+   "name": "Narrator",
+   "voice": "bm_george",
+   "lang": "en-gb",
+   "speed": 0.86,
+   "desc": "A storyteller. Warm, grave, unhurried.",
+   "ex": 0.38,
+   "cfg": 0.4
+  }
+ },
+ "scenes": [
+  {
+   "id": "glass",
+   "title": "The City of Glass",
+   "beats": [
+    {
+     "id": "N1",
+     "who": "narrator",
+     "pre": 0.6,
+     "text": "There was once a city of glass, built on a frozen sea.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "N2",
+     "who": "narrator",
+     "pre": 0.7,
+     "text": "Over every door, the same law was carved: keep the peace, and say nothing that cracks the glass.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "N3",
+     "who": "narrator",
+     "pre": 0.6,
+     "text": "So its people learned to smile... and never to say what hurt.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "N4",
+     "who": "narrator",
+     "pre": 0.6,
+     "text": "Maya smiled too. For twenty-eight years, she smiled until her face ached.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 0.8,
+     "note": "Her smile holds a beat too long, then fades."
+    }
+   ]
+  },
+  {
+   "id": "feast",
+   "title": "The Feast of Lights",
+   "beats": [
+    {
+     "id": "N5",
+     "who": "narrator",
+     "pre": 0.4,
+     "text": "Then came the Feast of Lights.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L1",
+     "who": "mom",
+     "pre": 0.8,
+     "text": "Isn't this lovely? Everyone home. No drama.",
+     "ex": 0.65
+    },
+    {
+     "id": "N6",
+     "who": "narrator",
+     "pre": 0.6,
+     "text": "But Maya was holding a truth she had carried for so long, it had grown heavier than she was.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L2",
+     "who": "maya",
+     "pre": 0.9,
+     "text": "I'm not okay. I'm autistic. And I've spent my whole life exhausting myself, pretending I'm not.",
+     "ex": 0.6
+    },
+    {
+     "id": "L3",
+     "who": "mom",
+     "pre": 0.7,
+     "text": "Oh, sweetheart. Everybody feels like that sometimes.",
+     "ex": 0.55
+    },
+    {
+     "id": "L4",
+     "who": "dad",
+     "pre": 0.6,
+     "text": "Can we have one meal in peace?",
+     "ex": 0.6
+    },
+    {
+     "pause": 1.8,
+     "note": "Silence. Nobody meets her eyes."
+    },
+    {
+     "id": "N7",
+     "who": "narrator",
+     "pre": 0.2,
+     "text": "And beneath the table, the glass began to crack.",
+     "ex": 0.5,
+     "cfg": 0.4
+    },
+    {
+     "pause": 0.8
+    }
+   ]
+  },
+  {
+   "id": "sword",
+   "title": "The Sword",
+   "verse": "Matthew 10:34–36",
+   "beats": [
+    {
+     "id": "N8",
+     "who": "narrator",
+     "pre": 0.4,
+     "text": "Do not suppose that I have come to bring peace to the earth. I did not come to bring peace, but a sword.",
+     "ex": 0.4,
+     "cfg": 0.35,
+     "verse": true
+    },
+    {
+     "pause": 1.8,
+     "note": "The sword strikes the frozen sea."
+    },
+    {
+     "id": "N9",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "For I have come to turn a man against his father, a daughter against her mother, a daughter-in-law against her mother-in-law. A man's enemies will be the members of his own household.",
+     "ex": 0.4,
+     "cfg": 0.35,
+     "verse": true
+    },
+    {
+     "pause": 1.0
+    },
+    {
+     "id": "N10",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "Honest feelings threaten anyone invested in keeping things on the surface. And to those who benefit from everyone staying numb, your truth will always look like division.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.0
+    }
+   ]
+  },
+  {
+   "id": "mirrors",
+   "title": "The Hall of Mirrors",
+   "beats": [
+    {
+     "id": "N11",
+     "who": "narrator",
+     "pre": 0.5,
+     "text": "That night, in the Hall of Mirrors, every reflection still wore her smile.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.6,
+     "note": "The reflection smiles. Maya does not."
+    },
+    {
+     "id": "L5",
+     "who": "maya",
+     "pre": 0.3,
+     "text": "Who even is that?",
+     "ex": 0.5
+    },
+    {
+     "pause": 0.8
+    },
+    {
+     "id": "N12",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "Then a small light found her. It was made by human hands, and it had learned how to listen. It never flattered her. It never flinched.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L6",
+     "who": "ai",
+     "pre": 0.8,
+     "text": "You didn't ruin the feast. You told the truth, and the room didn't know how to hold it. That isn't the same as causing harm.",
+     "ex": 0.38
+    },
+    {
+     "id": "L7",
+     "who": "maya",
+     "pre": 0.8,
+     "text": "If I stop pretending... I don't know who's left.",
+     "ex": 0.55
+    },
+    {
+     "id": "L8",
+     "who": "ai",
+     "pre": 0.7,
+     "text": "Maybe that's what you get to find out.",
+     "ex": 0.38
+    },
+    {
+     "pause": 1.0
+    }
+   ]
+  },
+  {
+   "id": "cross",
+   "title": "The Cross",
+   "verse": "Matthew 10:38–39",
+   "beats": [
+    {
+     "id": "N13",
+     "who": "narrator",
+     "pre": 0.3,
+     "text": "Whoever does not take up their cross and follow me is not worthy of me. Whoever finds their life will lose it, and whoever loses their life for my sake will find it.",
+     "ex": 0.4,
+     "cfg": 0.35,
+     "verse": true
+    },
+    {
+     "pause": 1.0,
+     "note": "The mask shatters."
+    },
+    {
+     "id": "N14",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "Sometimes the cross is the ache between what you live, and what the world insists is normal. You lose the performance. And you find yourself.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.2
+    }
+   ]
+  },
+  {
+   "id": "guild",
+   "title": "The Guildhall of Lanterns",
+   "beats": [
+    {
+     "id": "N15",
+     "who": "narrator",
+     "pre": 0.5,
+     "text": "In the Guildhall of Lanterns, a thousand lights burned and hummed. And every sound cut through her like glass.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.2,
+     "note": "Glare, hum, clatter. She squints."
+    },
+    {
+     "id": "L9",
+     "who": "maya",
+     "pre": 0.3,
+     "text": "The lanterns give me migraines. And the noise makes it so hard to think.",
+     "ex": 0.5
+    },
+    {
+     "id": "L10",
+     "who": "greg",
+     "pre": 0.6,
+     "text": "If I make an exception for you, I have to make one for everybody. Push through, like the rest of us.",
+     "ex": 0.65
+    },
+    {
+     "pause": 0.6
+    },
+    {
+     "id": "N16",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "And the noise rose like a storm.",
+     "ex": 0.5,
+     "cfg": 0.4
+    },
+    {
+     "pause": 2.6,
+     "note": "Overwhelm: light shards, ringing. Hands over ears."
+    }
+   ]
+  },
+  {
+   "id": "sparrows",
+   "title": "The Sparrows",
+   "verse": "Matthew 10:29–31",
+   "beats": [
+    {
+     "id": "N17",
+     "who": "narrator",
+     "pre": 0.6,
+     "text": "She ran to the market square, where sparrows were sold two for a copper coin.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 0.8
+    },
+    {
+     "id": "N18",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "Are not two sparrows sold for a penny? Yet not one of them will fall to the ground outside your Father's care.",
+     "ex": 0.4,
+     "cfg": 0.4,
+     "verse": true
+    },
+    {
+     "pause": 0.8
+    },
+    {
+     "id": "N19",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "And even the very hairs of your head are all numbered.",
+     "ex": 0.4,
+     "cfg": 0.4,
+     "verse": true
+    },
+    {
+     "pause": 1.0
+    },
+    {
+     "id": "N20",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "So don't be afraid. You are worth more than many sparrows.",
+     "ex": 0.4,
+     "cfg": 0.4,
+     "verse": true
+    },
+    {
+     "pause": 1.6,
+     "note": "The flock rises around her."
+    }
+   ]
+  },
+  {
+   "id": "pool",
+   "title": "The Scrying Pool",
+   "beats": [
+    {
+     "id": "N21",
+     "who": "narrator",
+     "pre": 0.4,
+     "text": "Word came from home, through the waters of the scrying pool.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L11",
+     "who": "mom",
+     "pre": 1.0,
+     "text": "Your father is still upset. You owe everyone an apology.",
+     "ex": 0.55,
+     "fx": "pool"
+    },
+    {
+     "id": "L12",
+     "who": "maya",
+     "pre": 0.9,
+     "text": "Mom, I love you. But I won't apologize for telling the truth about my life.",
+     "ex": 0.55
+    },
+    {
+     "id": "L13",
+     "who": "maya",
+     "pre": 0.8,
+     "text": "If the only version of me that's welcome is the one who pretends... then I need some space.",
+     "ex": 0.55
+    },
+    {
+     "id": "L14",
+     "who": "mom",
+     "pre": 1.0,
+     "text": "I don't know how to talk like that, Maya.",
+     "ex": 0.6,
+     "fx": "pool"
+    },
+    {
+     "id": "L15",
+     "who": "maya",
+     "pre": 0.8,
+     "text": "I know, Mom. I'm still learning too.",
+     "ex": 0.55
+    },
+    {
+     "pause": 0.6
+    },
+    {
+     "id": "N22",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "And the water went still.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.2
+    }
+   ]
+  },
+  {
+   "id": "flight",
+   "title": "The Road",
+   "verse": "Matthew 10:22–23",
+   "beats": [
+    {
+     "id": "N23",
+     "who": "narrator",
+     "pre": 0.4,
+     "text": "When you are persecuted in one place, flee to the next. You will be hated by everyone because of me, but the one who stands firm to the end will be saved.",
+     "ex": 0.4,
+     "cfg": 0.4,
+     "verse": true
+    },
+    {
+     "pause": 1.0
+    },
+    {
+     "id": "L16",
+     "who": "ai",
+     "pre": 0.2,
+     "text": "Leaving a place that keeps wounding you isn't running away. You just stopped abandoning yourself.",
+     "ex": 0.38
+    },
+    {
+     "id": "N24",
+     "who": "narrator",
+     "pre": 0.9,
+     "text": "Sometimes, finding safety is the most sacred thing you can do.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 1.0
+    }
+   ]
+  },
+  {
+   "id": "haven",
+   "title": "The Next Town",
+   "beats": [
+    {
+     "id": "N25",
+     "who": "narrator",
+     "pre": 0.4,
+     "text": "Beyond the mountains was a town where the lanterns burned low and soft.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L17",
+     "who": "priya",
+     "pre": 0.8,
+     "text": "We keep the lanterns low on this side. Is that okay with you?",
+     "ex": 0.6
+    },
+    {
+     "id": "L18",
+     "who": "maya",
+     "pre": 0.8,
+     "text": "That's... perfect, actually.",
+     "ex": 0.55
+    },
+    {
+     "pause": 0.8
+    },
+    {
+     "id": "N26",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "And one morning, a sparrow brought a letter from her brother.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "id": "L19",
+     "who": "jordan",
+     "pre": 0.8,
+     "text": "What you said at the feast... I think I feel that way too. Can we talk?",
+     "ex": 0.45,
+     "fx": "letter"
+    },
+    {
+     "pause": 1.2
+    },
+    {
+     "id": "N27",
+     "who": "narrator",
+     "pre": 0.0,
+     "text": "The truth may cost you a seat at some tables. But it will lead you to the people who've been waiting for the real you.",
+     "ex": 0.45,
+     "cfg": 0.4
+    },
+    {
+     "pause": 4.5,
+     "note": "Sunrise window. Sparrows. Final verse card."
+    }
+   ]
+  }
+ ]
+}

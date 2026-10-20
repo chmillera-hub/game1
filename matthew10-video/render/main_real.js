@@ -5,7 +5,7 @@
 //   node main_real.js --build DIR --real DIR --stills 1,20 --outdir DIR
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, Image } = require('@napi-rs/canvas');
+const { createCanvas } = require('@napi-rs/canvas');
 const S = require('./lib/stage');
 const N = require('./lib/sets_night');
 const { loadProject } = require('./lib/project');
@@ -13,6 +13,7 @@ const { realLayers } = require('./realistic/cuts');
 const { drawVerse, drawEndCard } = require('./lib/text');
 const { clamp, smooth, lerp, easeOut, fbm } = require('./lib/util');
 const { roundRect } = require('./lib/body');
+const { photos } = require('./lib/photos');
 
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1];
@@ -23,112 +24,8 @@ const FPS = 24;
 const W = S.W, H = S.H;
 
 // ------------------------------------------------------------------ images
-// Photos stay at their generated size and are cover-fitted onto the frame; an
-// animated frame is the photo with that frame's face patch on top.
-// Images decode off-thread: width/height are known at once but the pixels only
-// after onload, so drawing in the same tick paints nothing. Photos are preloaded;
-// a frame that needs a not-yet-decoded patch is drawn again once it is ready.
-const pending = new Set();
-function loadImg(p) {
-  const img = new Image();
-  img.ready = false;
-  const pr = new Promise((resolve) => { img.onload = () => { img.ready = true; resolve(); }; img.onerror = () => resolve(); });
-  pending.add(pr);
-  pr.then(() => pending.delete(pr));
-  img.src = fs.readFileSync(p);
-  return img;
-}
-const baseCache = new Map();
-const meta = {};
-function base(name) {
-  if (!baseCache.has(name)) {
-    const p = path.join(REAL, 'base', name + '.jpg');
-    if (fs.existsSync(p)) baseCache.set(name, loadImg(p));
-    else {
-      // previews while photos are still being made: a gray stand-in
-      console.error('missing photo', name);
-      const c = createCanvas(768, 1344); const x = c.getContext('2d');
-      x.fillStyle = '#3a3a40'; x.fillRect(0, 0, 768, 1344);
-      baseCache.set(name, c);
-    }
-  }
-  return baseCache.get(name);
-}
-function faceInfo(name) {
-  if (!(name in meta)) {
-    const p = path.join(REAL, 'base', name + '.json');
-    meta[name] = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : { faces: [] };
-  }
-  return meta[name];
-}
-function fit(img) {
-  const s = Math.max(W / img.width, H / img.height);
-  return { s, ox: (W - img.width * s) / 2, oy: (H - img.height * s) / 2 };
-}
-// The animated photo for frame f: the photo with the face patch saved at or
-// before f. Between two patches the face crossfades when the later one was a
-// small step (smooth drift, speech on twos) and holds when it was a jump (a
-// blink must not start early) or begins a new run. During dissolves a scene is
-// drawn a little past its last patch; it holds that patch.
-const plates = new Map();
-const patchCache = new Map();
-function patchImg(name, f) {
-  const p = path.join(REAL, 'plates', name, String(f).padStart(5, '0') + '.jpg');
-  let img = patchCache.get(p);
-  if (!img) {
-    img = loadImg(p);
-    patchCache.set(p, img);
-    if (patchCache.size > 24) patchCache.delete(patchCache.keys().next().value);
-  }
-  return img;
-}
-function plate(name, f) {
-  const b = base(name);
-  let e = plates.get(name);
-  if (e === undefined) {
-    const dir = path.join(REAL, 'plates', name);
-    const ip = path.join(dir, 'index.json');
-    e = fs.existsSync(ip) ? { ...JSON.parse(fs.readFileSync(ip, 'utf8')), box: JSON.parse(fs.readFileSync(path.join(dir, 'box.json'), 'utf8')).box, key: '', cv: null } : null;
-    plates.set(name, e);
-  }
-  if (!e || !e.frames.length || f < e.frames[0]) return b;
-  // last saved patch at or before f
-  let lo = 0, hi = e.frames.length - 1;
-  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (e.frames[mid] <= f) lo = mid; else hi = mid - 1; }
-  const f0 = e.frames[lo];
-  if (f - f0 > 72) return b;
-  const f1 = e.frames[lo + 1];
-  const blend = f1 !== undefined && f > f0 && (e.why[lo + 1] === 'step' || e.why[lo + 1] === 'hold') ? (f - f0) / (f1 - f0) : 0;
-  const key = f0 + ':' + blend.toFixed(3);
-  if (e.key !== key) {
-    e.cv ||= createCanvas(b.width, b.height);
-    const c = e.cv.getContext('2d');
-    c.globalAlpha = 1;
-    c.drawImage(b, 0, 0);
-    const p0 = patchImg(name, f0), p1 = blend > 0 ? patchImg(name, f1) : null;
-    c.drawImage(p0, e.box[0], e.box[1]);
-    if (p1) { c.globalAlpha = blend; c.drawImage(p1, e.box[0], e.box[1]); c.globalAlpha = 1; }
-    e.key = p0.ready && (!p1 || p1.ready) ? key : '';
-  }
-  return e.cv;
-}
-function drawPhoto(ctx, img, cam) {
-  S.applyCam(ctx, cam);
-  const { s, ox, oy } = fit(img);
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-}
-// Focus point for a push-in (frame coordinates): the first face, else upper middle.
-function focus(name) {
-  const m = faceInfo(name);
-  if (m.faces && m.faces.length) {
-    const b = m.faces[0].bbox;
-    const s = Math.max(W / m.w, H / m.h), ox = (W - m.w * s) / 2, oy = (H - m.h * s) / 2;
-    return [ox + s * (b[0] + b[2]) / 2, oy + s * ((b[1] + b[3]) / 2 + (b[3] - b[1]) * 0.3)];
-  }
-  return [W / 2, H * 0.45];
-}
+const P = photos(REAL);
+const { base, faceInfo, fit, plate, drawPhoto, focus } = P;
 function push(name, t, t0, t1, z1 = 1.06) {
   const [fx, fy] = focus(name);
   return S.push(t, t0, t1, 1.0, z1, fx, fy);
@@ -463,17 +360,15 @@ function renderFrame(t) {
 }
 async function frameAt(t) {
   renderFrame(t);
-  if (pending.size) {
-    await Promise.all([...pending]);
+  if (P.pending.size) {
+    await P.settle();
     renderFrame(t);
   }
   return frame;
 }
 
 async function main() {
-  // every photograph decoded before the first frame
-  for (const f of fs.readdirSync(path.join(REAL, 'base'))) if (f.endsWith('.jpg')) base(f.slice(0, -4));
-  await Promise.all([...pending]);
+  await P.preload();
   if (args.stills) {
     const out = args.outdir || '/opt/work/real_stills';
     fs.mkdirSync(out, { recursive: true });
