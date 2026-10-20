@@ -34,6 +34,7 @@ EMOTIONS = ["sad", "cry", "joy", "surprise", "anger", "worry", "tender"]
 # Expression keypoints by region (LivePortrait's own retargeting groups).
 EYES = [1, 2, 11, 13, 15, 16, 18]
 LIPS = [6, 12, 14, 17, 19, 20]
+EYE_LIDS = [11, 13, 15, 16]   # upper and lower lid of either eye
 
 # Photos whose hands or props sit on the face: hold back the controls that
 # would drag them along.
@@ -103,7 +104,14 @@ def load_basis(out):
     w = torch.full((21, 1), 0.6)
     w[EYES] = 1.0
     w[LIPS] = 0.45
-    return {k: (torch.tensor(v) * w)[None] for k, v in raw.items()}
+    basis = {}
+    for k, v in raw.items():
+        d = torch.tensor(v)
+        # The expression photos never close both eyes alike or look quite straight: the
+        # lids come from the rig (eye retargeting) and so does the gaze, or emotions wink.
+        d[EYE_LIDS, :2] = 0.0
+        basis[k] = (d * w)[None]
+    return basis
 
 
 # ------------------------------------------------------------------ patches
@@ -132,7 +140,7 @@ class Photo:
 
     def render_face(self, i, delta):
         """LivePortrait crop for face i: delta = (keypoint offsets, rotation)."""
-        return sharpen(self.eng.render(self.srcs[i], delta[0], delta[1]))
+        return sharpen(self.eng.render(self.srcs[i], *delta))
 
     def compose(self, crops):
         """The patch with each face's crop (None = as photographed) blended in."""
@@ -328,7 +336,8 @@ def cmd_calib(img_dir, out, name):
              ("pitch+12", {"rot": (12, 0, 0)}), ("roll+15", {"rot": (0, 0, 15)}),
              ("pupil_x+12", {"pupil_x": 12}), ("pupil_y+10", {"pupil_y": 10}), ("eyes-15", {"eyes": -15}),
              ("eyes+5", {"eyes": 5}), ("brow+10", {"eyebrow": 10}), ("brow-10", {"eyebrow": -10}),
-             ("mouth+50", {"mouth": 50}), ("eee+12", {"eee": 12}), ("woo+12", {"woo": 12}), ("smile+1", {"smile": 1.0})]
+             ("mouth+50", {"mouth": 50}), ("eee+12", {"eee": 12}), ("woo+12", {"woo": 12}), ("smile+1", {"smile": 1.0}),
+             ("lids 0.5", {"close": 0.5}), ("lids 1", {"close": 1.0})]
     basis = load_basis(out) if (out / "basis.json").exists() else {}
     tests += [(f"emo:{k}", {"emo": k}) for k in basis]
     tiles = []
@@ -338,7 +347,7 @@ def cmd_calib(img_dir, out, name):
         if "emo" in kw:
             d = d + basis[kw["emo"]]
         rot = kw.get("rot", (0, 0, 0))
-        crop = eng.render(src, d, (rot[0] + extra, rot[1], rot[2]))
+        crop = eng.render(src, d, (rot[0] + extra, rot[1], rot[2]), kw.get("close"))
         full = eng.paste(img.copy(), src, crop)
         t = cv2.resize(full[box[1]:box[3], box[0]:box[2]], (320, 320), interpolation=cv2.INTER_AREA)
         cv2.putText(t, label, (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)

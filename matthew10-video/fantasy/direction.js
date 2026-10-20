@@ -96,7 +96,9 @@ function loadDirection(BUILD, REAL) {
     .look(start('L6', -0.2), { gazeX: 0.25, yaw: 0.08 }, 0.6);
 
   const cm = actor('cross:maya', 'maya');
-  cm.expr(0, 'crying', 0.01).expr(at('N14', 'performance'), 'cracking', 0.8).expr(at('N14', 'find') - 0.2, 'relief', 1.2);
+  // her own face, eyes open: raw, then moved, then at peace with it
+  cm.expr(0, 'vulnerable', 0.01).expr(at('N14', 'performance'), 'moved', 0.8)
+    .expr(at('N14', 'find') - 0.2, 'soft_smile', 1.2).set('wet', at('N14', 'find'), 0.5, 1.2);
 
   const gm = actor('guild:maya', 'maya');
   gm.expr(0, 'overwhelmed', 0.01).expr(start('L9', -0.3), 'earnest', 0.5).expr(start('L10', 0.6), 'stung', 0.6)

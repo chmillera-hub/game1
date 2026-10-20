@@ -18,6 +18,7 @@ from src.live_portrait_wrapper import LivePortraitWrapper  # noqa: E402
 from src.utils.camera import get_rotation_matrix  # noqa: E402
 from src.utils.crop import crop_image, paste_back, prepare_paste_back  # noqa: E402
 from src.utils.cropper import Cropper  # noqa: E402
+from src.utils.retargeting_utils import calc_eye_close_ratio  # noqa: E402
 
 torch.set_num_threads(4)
 
@@ -79,8 +80,11 @@ class Engine:
             f_s = self.w.extract_feature_3d(I_s)
             x_s = self.w.transform_keypoint(info)
         mask = prepare_paste_back(self.inf.mask_crop, crop["M_c2o"], dsize=(img_rgb.shape[1], img_rgb.shape[0]))
+        # how open each eye is in the photo (203-point landmarks), for the eye retargeting
+        lmk = self.cropper.human_landmark_runner.run(img_rgb, face.landmark_2d_106)
+        eye_ratio = torch.from_numpy(calc_eye_close_ratio(lmk[None])).float()
         return {"info": info, "f_s": f_s.to(torch.bfloat16), "x_s": x_s, "M_c2o": crop["M_c2o"], "mask": mask,
-                "bbox": face.bbox.copy()}
+                "bbox": face.bbox.copy(), "eye_ratio": eye_ratio}
 
     def exp_of(self, img_rgb):
         fs = self.faces(img_rgb)
@@ -88,12 +92,25 @@ class Engine:
         return self.prepare(img_rgb, f)["info"]["exp"].clone()
 
     @torch.no_grad()
-    def render(self, src, delta, rot):
-        """delta: 1x21x3 expression offset; rot: (pitch, yaw, roll) degrees added to the source pose."""
+    def eye_delta(self, src, close):
+        """Keypoint offset that sets both eyes to the same openness: close 0 = as open as
+        the photo's eyes on average, 1 = shut. LivePortrait's eye retargeting measures
+        each eye, so lids close alike even on a turned head (offsets on the eye
+        keypoints close one eye before the other)."""
+        r = src["eye_ratio"]
+        target = (r.mean() * (1.0 - close)).reshape(1, 1)
+        return self.w.retarget_eye(src["x_s"], torch.cat([r, target], dim=1))
+
+    @torch.no_grad()
+    def render(self, src, delta, rot, close=None):
+        """delta: 1x21x3 expression offset; rot: (pitch, yaw, roll) degrees added to the source pose;
+        close: lids (see eye_delta), None = as photographed."""
         info = src["info"]
         R = get_rotation_matrix(info["pitch"] + rot[0], info["yaw"] + rot[1], info["roll"] + rot[2])
         x_d = info["scale"][..., None] * (info["kp"] @ R + info["exp"] + delta)
         x_d[:, :, :2] += info["t"][:, None, :2]
+        if close is not None:
+            x_d = x_d + self.eye_delta(src, close)
         x_d = self.w.stitching(src["x_s"], x_d)
         o = self.warp(src["f_s"], kp_source=src["x_s"].to(torch.bfloat16), kp_driving=x_d.to(torch.bfloat16))
         return self.w.parse_output(self.decode(feature=o["out"]).float())[0]
@@ -196,9 +213,13 @@ def pose_to_controls(P):
 
 
 def controls_to_delta(c, basis):
-    d, extra_pitch = fe_delta(c["eyes"], c["eyebrow"], c["pupil_x"], c["pupil_y"], c["mouth"], c["eee"], c["woo"], c["smile"])
+    """-> (keypoint offset, rotation, lids): closing lids go to the eye retargeting,
+    widening stays a keypoint offset."""
+    eyes = c["eyes"]
+    close = min(1.0, max(0.0, -eyes / CAL["close"]))
+    d, extra_pitch = fe_delta(max(eyes, 0.0), c["eyebrow"], c["pupil_x"], c["pupil_y"], c["mouth"], c["eee"], c["woo"], c["smile"])
     for k, wk in c["weights"].items():
         if wk > 0 and k in basis:
             d = d + basis[k] * (wk * CAL["emo"])
     p, y, r = c["rot"]
-    return d, (p + extra_pitch, y, r)
+    return d, (p + extra_pitch, y, r), close
