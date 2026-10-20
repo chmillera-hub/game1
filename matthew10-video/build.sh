@@ -112,5 +112,5 @@ if has real-frames; then
 fi
 if has real-final; then
   "$KVENV/bin/python" tools/encode.py "$BUILD" "$(pwd)/NotPeaceButASword_realistic.mp4" \
-    --master "$REAL/master_video.mp4" --work "$REAL/enc" --tune film
+    --master "$REAL/master_video.mp4" --work "$REAL/enc" --tune film --sizes 720:1280   # 720p measured better at this bitrate
 fi

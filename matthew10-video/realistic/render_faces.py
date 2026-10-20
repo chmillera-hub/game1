@@ -38,10 +38,8 @@ LIPS = [6, 12, 14, 17, 19, 20]
 # Photos whose hands or props sit on the face: hold back the controls that
 # would drag them along.
 LIMITS = {
-    "call_maya_mouth": {"mouth": 0.0, "smile": 0.0, "rot": 0.3},
-    "office_overwhelm": {"mouth": 0.3, "eyes": 0.0, "rot": 0.3},
-    "office_temple": {"rot": 0.4, "eyes": 0.5},
-    "call_maya": {"rot": 0.5},
+    "office_overwhelm": {"rot": 0.5},        # hands at her collar: small head turns only
+    "call_maya": {"rot": 0.5},               # phone at her ear
     "mirror_reflection": {"rot": 0.8},
 }
 
@@ -260,12 +258,23 @@ def cmd_plates(img_dir, out, shots_path, poses_path, only, dry=False):
     basis = load_basis(out)
     eng = lp.Engine()
     done, t_start = 0, time.time()
-    for name, plan in sorted(plans.items(), key=lambda kv: -len(kv[1])):
+    # several workers can share the job list: each photo is claimed with a lock dir
+    order = sorted(plans.items(), key=lambda kv: -len(kv[1]))
+    if os.environ.get("ORDER") == "reverse":
+        order.reverse()
+    for name, plan in order:
         if (out / "plates" / name / "index.json").exists():
             print(f"-- {name}: already rendered (delete plates/{name} to redo)")
             continue
         if not (out / "base" / f"{name}.json").exists():
             print(f"-- {name}: no photo yet")
+            continue
+        (out / "plates").mkdir(parents=True, exist_ok=True)
+        lock = out / "plates" / f".{name}.lock"
+        try:
+            lock.mkdir()
+        except FileExistsError:
+            print(f"-- {name}: taken by another worker")
             continue
         meta = json.loads((out / "base" / f"{name}.json").read_text())
         img = read_rgb(out / "base" / f"{name}.jpg")
@@ -293,6 +302,7 @@ def cmd_plates(img_dir, out, shots_path, poses_path, only, dry=False):
                 index["frames"].append(f)
                 index["why"].append(why)
         (pdir / "index.json").write_text(json.dumps(index))
+        lock.rmdir()
 
 
 # ------------------------------------------------------------------ calibration

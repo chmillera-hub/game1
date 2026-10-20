@@ -13,7 +13,8 @@ STYLE_HEAD = "cinematic film still, photorealistic, 35mm photograph"
 STYLE = "natural skin texture, soft cinematic lighting, shallow depth of field, high detail, color graded"
 NEG = ("cartoon, anime, illustration, painting, drawing, 3d render, cgi, plastic skin, deformed, disfigured, "
        "extra fingers, bad hands, extra limbs, text, watermark, logo, lowres, blurry face, oversaturated, "
-       "open mouth, teeth, frown lines, cross-eyed")
+       "open mouth, teeth, frown lines, cross-eyed, cleavage, low neckline, revealing clothing, nsfw, "
+       "two heads, duplicate face, stacked faces")
 
 MAYA = ("a 28-year-old Black woman with warm brown skin, shoulder-length dark curly hair, soft round face, "
         "full lips, expressive dark brown eyes, natural makeup")
@@ -34,11 +35,14 @@ W, H = 768, 1344
 LAYOUT = "/opt/work/real/layout"   # raw 2D frames (render/main.js --stills T --raw 1)
 
 
-def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg="", init=None, strength=0.75, inpaint=None):
+def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg="", init=None, strength=0.75, inpaint=None,
+         init_box=None):
     s = {"id": id, "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "negative": f"{NEG}, {neg}" if neg else NEG,
          "faces": list(faces), "ref": ref, "seed": seed, "w": w, "h": h, "ip": ip}
     if init:
         s.update(init=f"{LAYOUT}/still_{init}.png", strength=strength)
+    if init_box:
+        s["init_box"] = list(init_box)
     if inpaint:
         s["inpaint"] = inpaint
     return s
@@ -56,8 +60,9 @@ SHOTS = [
     shot("ref_maya", f"close-up studio portrait of {MAYA}, wearing a cream top, soft window light, plain warm gray background, "
          f"looking at the camera, {CU}", seed=11, w=896, h=1152),
 
+    # neutral on purpose: the reference's expression carries into every shot it anchors
     shot("ref_mom", f"close-up portrait of {MOM}, soft window light, plain warm gray background, looking at the camera, "
-         f"{CU}", seed=12, w=896, h=1152, neg=MOM_NEG),
+         "calm neutral expression, lips closed, no smile", seed=12, w=896, h=1152, neg=f"{MOM_NEG}, smile, smiling, teeth"),
 
     # 1. the table
     # Group shots are photo-realized from the 2D frames (img2img): SDXL cannot place
@@ -71,7 +76,7 @@ SHOTS = [
          seed=21, neg=MOM_NEG, init="0.10",
          inpaint=[region((0, 650, 215, 915), "an elegant 60-year-old Black woman with a short salt-and-pepper gray bob "
                          "haircut, a pearl necklace and a dusty rose blouse, sitting at the end of a dinner table at night, "
-                         "smiling warmly, facing the camera, warm lamp light", 15, 1.0),
+                         "a gentle closed-mouth smile, facing the camera, warm lamp light", 15, 1.0),
                   region((250, 680, 515, 910), f"{DAD}, sitting at a dinner table at night, facing the camera, warm lamp light", 6),
                   region((540, 670, 760, 910), f"{JORDAN}, sitting at a dinner table at night, facing the camera, warm lamp "
                          "light", 7)]),
@@ -91,29 +96,31 @@ SHOTS = [
          "a lone young woman silhouette seated at the far right end, a dark room glowing with firelight from below, "
          "floating embers and smoke, deep red and orange tones, a single candle on the table, epic cinematic composition",
          seed=31),
-    shot("sword_maya", f"close-up portrait of {MAYA}, in a dark room lit by warm orange firelight from the left side, glowing "
+    shot("sword_maya", f"close-up portrait of {MAYA}, wearing a cream cardigan over a mustard yellow top, in a dark room lit "
+         "by warm orange firelight from the left side, glowing "
          f"embers floating in the dark background, solemn {CU}, looking slightly down",
          faces=[("sword", "maya")], ref="ref_maya", seed=32),
 
     # 2. the mask
-    shot("mirror_reflection", f"close-up of a bathroom mirror showing the reflection of {MAYA}, wearing a lavender gray hoodie, "
-         f"cool white vanity light, teal tiles, she faces the mirror, {CU}, looking straight ahead",
-         faces=[("mask", "refl")], ref="ref_maya", seed=41),
-    shot("mirror_real", f"close-up of {MAYA}, wearing a lavender gray hoodie, standing in a dim bathroom at night, cool light "
+    # the compositor adds the glass (asking for a mirror duplicates the person)
+    shot("mirror_reflection", f"close-up of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, standing in a "
+         f"bathroom at night facing the camera as if looking into a mirror, cool white vanity light "
+         f"from above, teal tiles behind her, {CU}, looking straight ahead", faces=[("mask", "refl")], ref="ref_maya", seed=41),
+    shot("mirror_real", f"close-up of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, standing in a dim bathroom at night, cool light "
          f"from a vanity lamp on one side of her face, teal tiles blurred behind, {CU}, looking slightly to the left",
          faces=[("mask", "real")], ref="ref_maya", seed=42),
-    shot("bed_wide", "a young Black woman with curly hair in a lavender hoodie sitting on her bed at night in a dark bedroom, "
+    shot("bed_wide", "a young Black woman with curly hair in a lavender sweater sitting on her bed at night in a dark bedroom, "
          "her face lit by a laptop screen, warm string fairy lights on the wall, city lights through the window, "
          "cozy blue and warm tones, wide shot", faces=[("mask", "bed")], seed=43),
-    shot("bed_cu", f"close-up of {MAYA}, wearing a lavender gray hoodie, sitting on her bed at night with her knees pulled up, "
+    shot("bed_cu", f"close-up of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, sitting on her bed at night with her knees pulled up, "
          f"her face lit by cool blue laptop screen light from below, warm fairy lights bokeh behind her, {CU}, "
          "looking down slightly", faces=[("mask", "bed")], ref="ref_maya", seed=44),
 
     # interlude: the cross
-    shot("cross_true", f"close-up portrait of {MAYA}, wearing a lavender gray hoodie, glowing warm golden light on her face, "
+    shot("cross_true", f"head and shoulders portrait of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, glowing warm golden light on her face, "
          f"dark background with floating golden embers, {CU}, looking at the camera",
-         faces=[("cross", "trueA")], ref="ref_maya", seed=51),
-    shot("cross_moon", f"close-up of {MAYA}, wearing a lavender gray hoodie, in a dark bedroom at night, cool blue moonlight "
+         faces=[("cross", "trueA")], ref="ref_maya", seed=53),
+    shot("cross_moon", f"close-up of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, in a dark bedroom at night, cool blue moonlight "
          "through a window casting the shadow of the window frame, a cross shaped shadow across her face and chest, "
          f"{CU}, serene", faces=[("cross", "moon")], ref="ref_maya", seed=52),
 
@@ -151,20 +158,21 @@ SHOTS = [
     # interlude: the sparrows
     shot("sparrows_flock", "a flock of small brown sparrows flying across a golden sunset sky, glowing clouds, warm light, "
          "wide cinematic composition", seed=81),
-    shot("sparrows_shoulder", f"close-up of {MAYA}, wearing a teal sweater, at golden hour with a small brown sparrow perched "
-         f"on her shoulder, warm sunlight, soft bokeh, serene {CU}, looking slightly to the right",
-         faces=[("sparrows", "maya")], ref="ref_maya", seed=82),
+    # Close-ups from 2D frames keep cartoon proportions below ~0.9 strength; at 0.9 only the
+    # pose survives (here the phones at their ears, from the two halves of the split screen).
+    shot("sparrows_shoulder", f"close-up of {MAYA}, wearing a teal sweater with a red lanyard, at golden hour in a park, a "
+         f"small brown sparrow perched on her shoulder, warm sunset light, soft bokeh, serene {CU}, looking slightly to the "
+         "right", faces=[("sparrows", "maya")], ref="ref_maya", seed=82),
 
     # 4. the call
-    shot("call_maya", f"close-up of {MAYA}, wearing a lavender gray hoodie, holding a smartphone to her right ear, sitting on a "
-         f"sofa in her living room at night, warm table lamp light, bookshelf blurred behind her, anxious {CU}",
-         faces=[("call", "maya")], ref="ref_maya", seed=91),
-    shot("call_mom", f"close-up of {MOM}, holding a phone to her ear in her kitchen in the evening, warm kitchen light, "
-         f"cabinets blurred behind her, tight {CU}", faces=[("call", "mom")], ref="ref_mom", seed=92, neg=MOM_NEG),
-    shot("call_maya_mouth", f"close-up of {MAYA}, wearing a lavender gray hoodie, sitting on a sofa at night with one hand "
-         "pressed over her mouth, eyes glistening with tears, warm lamp light, bookshelf blurred behind her",
-         faces=[("call", "maya")], ref="ref_maya", seed=93),
-    shot("call_maya_after", f"close-up of {MAYA}, wearing a lavender gray hoodie, sitting on a sofa at night holding a phone "
+    shot("call_maya", f"close-up of {MAYA}, wearing a cozy lavender gray knit sweater, holding a smartphone to her ear, on a "
+         "phone call, sitting on a sofa in her living room at night, warm table lamp light, bookshelf blurred behind her, "
+         f"anxious {CU}", faces=[("call", "maya")], ref="ref_maya", seed=91, init="236.00", init_box=(0, 960, 1080, 1920),
+         strength=0.9),
+    shot("call_mom", f"close-up of {MOM}, holding a phone to her ear, on a phone call in her kitchen in the evening, warm "
+         f"kitchen light, cabinets blurred behind her, tight {CU}", faces=[("call", "mom")], ref="ref_mom", seed=92,
+         neg=MOM_NEG, init="236.00", init_box=(0, 0, 1080, 960), strength=0.9),
+    shot("call_maya_after", f"close-up of {MAYA}, wearing a cozy lavender gray knit turtleneck sweater, sitting on a sofa at night holding a phone "
          f"in her lap, its screen softly lighting her face, warm lamp light, bookshelf blurred behind her, {CU}, "
          "looking down", faces=[("call", "maya")], ref="ref_maya", seed=94),
 
@@ -184,9 +192,10 @@ SHOTS = [
                          "light, gentle expression, mouth closed", 17, 0.9, ref="ref_maya")], neg="glasses"),
     shot("epi_maya", f"close-up of {MAYA}, wearing a rust orange sweater, in a bright office with plants and windows, soft "
          f"morning light, gentle {CU}, looking slightly to the left", faces=[("epilogue", "maya")], ref="ref_maya", seed=112),
-    shot("epi_window", f"close-up of {MAYA}, wearing a rust orange sweater, standing by a window at sunrise, warm golden light "
-         f"on her face, a small brown sparrow perched on the windowsill beside her, rooftops outside, peaceful {CU}, "
-         "looking slightly to the right", faces=[("epilogue", "maya")], ref="ref_maya", seed=113),
+    shot("epi_window", f"close-up of {MAYA}, wearing a rust orange crew-neck sweater, standing by a window at sunrise, warm "
+         "golden light on her face, a small brown sparrow perched on the windowsill beside her, city rooftops outside, "
+         f"peaceful {CU}, looking slightly to the right", faces=[("epilogue", "maya")], ref="ref_maya", seed=113,
+         init="307.00", strength=0.9),
 ]
 
 # Expression references: one woman, one seed, different emotions. LivePortrait

@@ -41,7 +41,17 @@ function loadImg(p) {
 const baseCache = new Map();
 const meta = {};
 function base(name) {
-  if (!baseCache.has(name)) baseCache.set(name, loadImg(path.join(REAL, 'base', name + '.jpg')));
+  if (!baseCache.has(name)) {
+    const p = path.join(REAL, 'base', name + '.jpg');
+    if (fs.existsSync(p)) baseCache.set(name, loadImg(p));
+    else {
+      // previews while photos are still being made: a gray stand-in
+      console.error('missing photo', name);
+      const c = createCanvas(768, 1344); const x = c.getContext('2d');
+      x.fillStyle = '#3a3a40'; x.fillRect(0, 0, 768, 1344);
+      baseCache.set(name, c);
+    }
+  }
   return baseCache.get(name);
 }
 function faceInfo(name) {
@@ -132,6 +142,16 @@ function grade(ctx, rgb, a) {
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
+// A soft dark band behind the scripture at the top of the frame: photographs
+// are brighter and busier there than the 2D backdrops were.
+function verseShade(ctx, a, y1 = 900) {
+  if (a <= 0) return;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, 0, y1);
+  g.addColorStop(0, `rgba(0,0,0,${0.62 * a})`); g.addColorStop(0.6, `rgba(0,0,0,${0.4 * a})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, y1);
+  ctx.restore();
+}
 function flash(ctx, k, rgb = [255, 235, 200]) {
   if (k <= 0) return;
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -152,6 +172,21 @@ function drawBlade(ctx, x, tipY, t) {
   ctx.fillRect(x - 85, top + 120, 170, 22);
   ctx.fillRect(x - 9, top, 18, 120);
   ctx.beginPath(); ctx.arc(x, top - 6, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// The reflection is seen through glass: cooler, a soft sheen, the mirror's edge.
+function mirrorGlass(ctx) {
+  grade(ctx, [150, 190, 225], 0.2);
+  ctx.save();
+  const g = ctx.createLinearGradient(0, 0, W, H * 0.7);
+  g.addColorStop(0, 'rgba(255,255,255,0.12)'); g.addColorStop(0.3, 'rgba(255,255,255,0)');
+  g.addColorStop(0.52, 'rgba(255,255,255,0.06)'); g.addColorStop(0.6, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const fr = ctx.createLinearGradient(0, 0, 40, 0);
+  fr.addColorStop(0, '#1d2126'); fr.addColorStop(0.45, '#8e979f'); fr.addColorStop(0.75, '#cdd4da'); fr.addColorStop(1, '#3d434a');
+  ctx.fillStyle = fr; ctx.fillRect(0, 0, 40, H);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(40, 0, 6, H);
   ctx.restore();
 }
 
@@ -225,6 +260,7 @@ function drawSword(ctx, sc, sh, t, f) {
   flash(ctx, clamp(1 - (t - tStrike) / 0.7) * (t >= tStrike ? 1 : 0));
   S.vignette(ctx, 0.5);
   const va = (a0, a1) => clamp((t - a0) / 0.6) * (1 - clamp((t - a1) / 0.6));
+  verseShade(ctx, Math.max(va(sc.start, n2.start - 0.8), va(n2.start - 0.8, n3.start - 0.2)), 1050);
   if (t < n2.start - 0.2) drawVerse(ctx, n1, t, { y: 470, size: 58, alpha: va(sc.start, n2.start - 0.8) });
   if (t > n2.start - 0.8 && t < n3.start + 0.5) drawVerse(ctx, n2, t, { y: 470, size: 54, cite: 'Matthew 10:34–36', alpha: va(n2.start - 0.8, n3.start - 0.2) });
 }
@@ -287,7 +323,9 @@ function drawCross(ctx, sc, sh, t, f) {
   const bloom = clamp((t - sc.tFound) / 1.5) * (1 - clamp((t - n5.start + 0.6) / 0.6));
   if (bloom > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; S.glowDisc(ctx, 540, 820, 900, [255, 200, 140], 0.22 * bloom); ctx.restore(); }
   S.vignette(ctx, 0.6);
-  drawVerse(ctx, n4, t, { y: 300, size: 52, cite: 'Matthew 10:38–39', alpha: clamp((t - sc.start) / 0.6) * (1 - clamp((t - n5.start + 0.5) / 0.6)) });
+  const a4 = clamp((t - sc.start) / 0.6) * (1 - clamp((t - n5.start + 0.5) / 0.6));
+  verseShade(ctx, a4, 800);
+  drawVerse(ctx, n4, t, { y: 300, size: 52, cite: 'Matthew 10:38–39', alpha: a4 });
 }
 
 function drawCall(ctx, sc, sh, layers, t, f) {
@@ -321,6 +359,17 @@ function drawCall(ctx, sc, sh, layers, t, f) {
       ctx.fillStyle = g; ctx.fillRect(0, half + off - 160, W, 160);
       ctx.restore();
       ctx.fillStyle = 'rgba(255,236,210,0.85)'; ctx.fillRect(0, half + off - 3, W, 6);
+      // call badge on the divider: green dot, call time
+      const secs = Math.max(0, Math.floor(t - sh.t0));
+      const label = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+      ctx.save();
+      ctx.globalAlpha = 1 - close;
+      ctx.font = '34px InterSemi';
+      const tw = ctx.measureText(label).width, bw = tw + 84, bx = W / 2 - bw / 2, by = half + off - 30;
+      ctx.fillStyle = 'rgba(12,12,16,0.78)'; roundRect(ctx, bx, by, bw, 60, 30); ctx.fill();
+      ctx.fillStyle = '#4fbf6a'; ctx.beginPath(); ctx.arc(bx + 32, by + 30, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f2f2f5'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(label, bx + 56, by + 31);
+      ctx.restore();
     }
     S.vignette(ctx, 0.4);
     return;
@@ -343,7 +392,10 @@ function drawDefault(ctx, sc, sh, layers, t, f) {
   drawPhoto(ctx, plate(name, f), push(name, t, sh.t0, sh.t1 + (sc.id === 'epilogue' && sh.name === 'window' ? 4 : 0), wide ? 1.04 : 1.07));
   switch (sc.id) {
     case 'table': S.vignette(ctx, 0.45); break;
-    case 'mask': S.vignette(ctx, 0.55); break;
+    case 'mask':
+      if (name === 'mirror_reflection') mirrorGlass(ctx);
+      S.vignette(ctx, 0.55);
+      break;
     case 'office': {
       const tOver = sc.tOver;
       const fl = 0.5 + 0.5 * Math.sin(t * 37) * Math.sin(t * 11.3);
@@ -362,8 +414,9 @@ function drawDefault(ctx, sc, sh, layers, t, f) {
       S.vignette(ctx, 0.4, [50, 15, 20]);
       const n6 = env.L('N6'), n7 = env.L('N7');
       const a6 = clamp((t - sc.start) / 0.6) * (1 - clamp((t - n7.start + 0.4) / 0.5));
-      if (a6 > 0) drawVerse(ctx, n6, t, { y: 330, size: 54, alpha: a6 });
       const a7 = clamp((t - n7.start + 0.3) / 0.5);
+      verseShade(ctx, Math.max(a6, a7), 900);
+      if (a6 > 0) drawVerse(ctx, n6, t, { y: 330, size: 54, alpha: a6 });
       if (a7 > 0) drawVerse(ctx, n7, t, { y: 300, size: 58, cite: 'Matthew 10:29–31', alpha: a7 });
       break;
     }
@@ -385,6 +438,7 @@ function drawRoad(ctx, sc, t) {
   drawPhoto(ctx, base('road_night'), cam);
   ctx.save(); ctx.globalAlpha = smooth(u) * 0.95; drawPhoto(ctx, base('road_dawn'), cam); ctx.restore();
   S.vignette(ctx, 0.5);
+  verseShade(ctx, clamp((t - sc.start) / 0.6), 950);
   drawVerse(ctx, env.L('N8'), t, { y: 380, size: 54, cite: 'Matthew 10:22–23', alpha: clamp((t - sc.start) / 0.6) });
 }
 

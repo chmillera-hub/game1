@@ -45,11 +45,9 @@ function realLayers(env, sc, sh, t) {
       if (sh.name === 'screen') return [{ ui: 'chat' }];
       if (sh.name === 'split') {
         if (t < sc.tHang + 1.2) return [{ img: 'call_mom', region: 'top' }, { img: 'call_maya', region: 'bottom' }];
-        return [{ img: 'call_maya_mouth' }];
+        return [{ img: 'call_maya_after' }];
       }
-      // before answering she looks at the phone in her lap; after the call, hand to her mouth
-      if (t < L('L31').start) return [{ img: 'call_maya_after' }];
-      if (t < L('L37').start + 1.0) return [{ img: 'call_maya_mouth' }];
+      // before answering and after the call: on the sofa, phone in hand
       return [{ img: 'call_maya_after' }];
     }
     case 'road':

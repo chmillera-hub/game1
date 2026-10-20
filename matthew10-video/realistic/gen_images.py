@@ -125,7 +125,7 @@ def face_detector():
     return fa
 
 
-def face_crop(fa, path, pad=0.45):
+def face_crop(fa, path, pad=0.2):
     img = np.array(Image.open(path).convert("RGB"))
     faces = fa.get(cv2.cvtColor(img, cv2.COLOR_RGB2BGR), flag_do_landmark_2d_106=False)
     if not faces:
@@ -133,7 +133,7 @@ def face_crop(fa, path, pad=0.45):
     x0, y0, x1, y1 = faces[0].bbox
     w, h = x1 - x0, y1 - y0
     s = max(w, h) * (1 + pad * 2)
-    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 - h * 0.08
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 - h * 0.12   # face and hair only: clothing in the reference leaks into shots
     box = [int(max(0, cx - s / 2)), int(max(0, cy - s / 2)), int(min(img.shape[1], cx + s / 2)), int(min(img.shape[0], cy + s / 2))]
     return Image.fromarray(img[box[1]:box[3], box[0]:box[2]]).resize((448, 448), Image.LANCZOS)
 
@@ -171,7 +171,6 @@ def main():
     gc.collect()
     ctypes.CDLL("libc.so.6").malloc_trim(0)
     fa = None
-    i2i = None
     ip_loaded = False
     refs = {}
     for s in todo:
@@ -206,9 +205,13 @@ def main():
         with torch.inference_mode():
             emb = embs[(s["prompt"], neg)]
             if s.get("init"):
-                i2i = i2i or StableDiffusionXLImg2ImgPipeline(**pipe.components)
+                # built from the current components so it carries the IP-Adapter when loaded
+                i2i = StableDiffusionXLImg2ImgPipeline(**pipe.components)
                 i2i.set_progress_bar_config(disable=True)
-                init = cover(Image.open(s["init"]).convert("RGB"), s["w"], s["h"])
+                init = Image.open(s["init"]).convert("RGB")
+                if s.get("init_box"):
+                    init = init.crop(tuple(s["init_box"]))   # e.g. one half of the split-screen call
+                init = cover(init, s["w"], s["h"])
                 img = i2i(image=init, strength=s.get("strength", 0.75), num_inference_steps=8, guidance_scale=CFG,
                           generator=g, **emb, **kw).images[0]
             else:
