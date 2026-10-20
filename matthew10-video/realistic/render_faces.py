@@ -264,7 +264,10 @@ def cmd_plates(img_dir, out, shots_path, poses_path, only, dry=False):
     eng = lp.Engine()
     done, t_start = 0, time.time()
     # several workers can share the job list: each photo is claimed with a lock dir
+    # (ORDER=reverse: smallest photos first; ORDER=renders: most face renders first)
     order = sorted(plans.items(), key=lambda kv: -len(kv[1]))
+    if os.environ.get("ORDER") == "renders":
+        order = sorted(plans.items(), key=lambda kv: -sum(len(t) for _, t, _ in kv[1]))
     if os.environ.get("ORDER") == "reverse":
         order.reverse()
     for name, plan in order:
