@@ -52,6 +52,7 @@ the lanterns burn low. The narrator tells it; the screen shows what the words sa
 | Direction | `fantasy/direction.js`: every cut lands on a word of the narration, with its camera move, effects and the faces' performances |
 | Motion | Depth parallax (Depth Anything V2: near layers move faster during push-ins), animated faces (LivePortrait), and effects in `fantasy/vfx.js`: snow, aurora, embers, god rays, the Light, cracks spreading, the hall splitting, a shockwave, shattering glass, sensory-overload glare, a rising flock, water |
 | Sound | A new score (`fantasy/music.py`: choir, brass, harp, flute) and sound design (`fantasy/mix.py`) |
+| Encode | 720×1280 under the same budget: 14.5 MB, 4:34, SSIM 0.963 against the full-resolution master |
 
 Rebuild with `fantasy/build.sh` (stages: voices select prepare music mix images faces depth frames final).
 
