@@ -1,8 +1,8 @@
 """s06b - He trusts in the Lord: '"He trusts in the Lord," they say, "let the Lord rescue him.
 Let him deliver him, since he delights in him."'
 
-Low angle in the crowd at the foot of the centre cross. A chief priest in rich robes, prayer shawl and
-turban plays to the onlookers: he waves a contemptuous hand back at the crucified ("He trusts in the
+Low angle in the crowd at the foot of the centre cross. A chief priest in rich robes, fine robe and
+mantle plays to the onlookers: he waves a contemptuous hand back at the crucified ("He trusts in the
 Lord"), flings an open palm up at the darkened sky ("let the Lord rescue him"), then spreads both arms
 in mock piety and laughs ("since he delights in him"). Two other leaders nod beside him; Roman
 soldiers laugh at the foot of the cross behind. Above everything the dark cross with the placard
@@ -253,7 +253,7 @@ def build(ctx):
     # ------------------------------------------------------------------ the other leaders (nodding)
     leaders = []
     for k, (xy, spec, nodf) in enumerate([
-            ((priest_xy.x - 0.85, priest_xy.y + 1.9), dict(seed=31, outfit=["robe_rich", "turban"], age_years=62,
+            ((priest_xy.x - 0.85, priest_xy.y + 1.9), dict(seed=31, outfit=["robe_rich"], age_years=62,
                                                          beard="long", build="heavy",
                                                          outfit_colors={"mantle": "camel", "turban": "oatmeal",
                                                                        "shawl": "linen"}), 0),

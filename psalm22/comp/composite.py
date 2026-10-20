@@ -124,8 +124,8 @@ def vec3(v):
     return np.asarray(v if isinstance(v, (list, tuple, np.ndarray)) else [v] * 3, np.float32)
 
 
-SHADOW_LIFT = float(os.environ.get("SHADOW_LIFT", "0.05"))
-SHADOW_STRETCH = float(os.environ.get("SHADOW_STRETCH", "1.8"))
+SHADOW_LIFT = float(os.environ.get("SHADOW_LIFT", "0.0"))
+SHADOW_STRETCH = float(os.environ.get("SHADOW_STRETCH", "0.0"))
 
 
 def grade(F, p):

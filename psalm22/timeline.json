@@ -655,10 +655,10 @@
    "visual": "Resurrection morning: the great round stone rolls aside from a rock-cut tomb, dawn light floods in; inside, the folded linen grave cloths lie on the stone bench; the tomb is empty. Camera moves in.",
    "mood": "glory, wonder",
    "start_frame": 3906,
-   "nframes": 419,
-   "tail": 14,
-   "render_frames": 433,
-   "seconds": 17.46,
+   "nframes": 171,
+   "tail": 0,
+   "render_frames": 171,
+   "seconds": 7.12,
    "phrases": [
     {
      "text": "I will declare your name to my people;",
@@ -669,21 +669,37 @@
      "text": "in the assembly I will praise you.",
      "start": 3.463,
      "end": 5.907
-    },
+    }
+   ]
+  },
+  {
+   "id": "s16a",
+   "block": "b16",
+   "from": 0,
+   "transition_in": "cut",
+   "title": "Praise him",
+   "visual": "A multitude on a hillside at sunrise raise their hands in praise, robes and scarves moving in the wind; the camera cranes up over them toward the sun.",
+   "mood": "jubilant",
+   "start_frame": 4077,
+   "nframes": 248,
+   "tail": 14,
+   "render_frames": 262,
+   "seconds": 10.33,
+   "phrases": [
     {
      "text": "You who fear the Lord, praise him!",
-     "start": 7.707,
-     "end": 9.778
+     "start": 0.582,
+     "end": 2.653
     },
     {
      "text": "All you descendants of Jacob, honor him!",
-     "start": 10.378,
-     "end": 13.4
+     "start": 3.253,
+     "end": 6.275
     },
     {
      "text": "Revere him, all you descendants of Israel!",
-     "start": 14.0,
-     "end": 17.223
+     "start": 6.875,
+     "end": 10.098
     }
    ]
   },
@@ -722,10 +738,10 @@
    "visual": "The sun emerges fully from the clouds and warm light washes over the face of the risen Jesus, peaceful, eyes opening and lifting (bookend of the opening close-up), no crown of thorns.",
    "mood": "peace, answered",
    "start_frame": 4458,
-   "nframes": 586,
+   "nframes": 150,
    "tail": 14,
-   "render_frames": 600,
-   "seconds": 24.42,
+   "render_frames": 164,
+   "seconds": 6.25,
    "phrases": [
     {
      "text": "he has not hidden his face from him",
@@ -736,31 +752,63 @@
      "text": "but has listened to his cry for help.",
      "start": 2.804,
      "end": 5.036
-    },
+    }
+   ]
+  },
+  {
+   "id": "s17a",
+   "block": "b17",
+   "from": 0,
+   "transition_in": "dissolve",
+   "title": "Great assembly",
+   "visual": "A great assembly gathered in a stone courtyard at dusk, hundreds of oil lamps glowing, people standing and singing, faces lit warmly; camera glides over them.",
+   "mood": "communal praise",
+   "start_frame": 4608,
+   "nframes": 218,
+   "tail": 14,
+   "render_frames": 232,
+   "seconds": 9.08,
+   "phrases": [
     {
      "text": "From you comes the theme of my praise in the great assembly;",
-     "start": 6.836,
-     "end": 10.923
+     "start": 0.586,
+     "end": 4.673
     },
     {
      "text": "before those who fear you I will fulfill my vows.",
-     "start": 11.343,
-     "end": 15.153
-    },
+     "start": 5.093,
+     "end": 8.903
+    }
+   ]
+  },
+  {
+   "id": "s17b",
+   "block": "b17",
+   "from": 2,
+   "transition_in": "dissolve",
+   "title": "Bread broken",
+   "visual": "Close: hands break a round loaf of flatbread at a rough wooden table in warm lamplight, steam rising; many hands reach in and receive pieces; a clay cup of wine.",
+   "mood": "satisfied, grace",
+   "start_frame": 4826,
+   "nframes": 218,
+   "tail": 14,
+   "render_frames": 232,
+   "seconds": 9.08,
+   "phrases": [
     {
      "text": "The poor will eat and be satisfied;",
-     "start": 15.703,
-     "end": 18.127
+     "start": 0.37,
+     "end": 2.794
     },
     {
      "text": "those who seek the Lord will praise him—",
-     "start": 18.547,
-     "end": 21.017
+     "start": 3.214,
+     "end": 5.684
     },
     {
      "text": "may your hearts live forever!",
-     "start": 21.317,
-     "end": 23.232
+     "start": 5.984,
+     "end": 7.899
     }
    ]
   },

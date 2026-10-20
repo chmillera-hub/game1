@@ -2,7 +2,7 @@
 
 Cut in from s05 (the camera rising up the cross towards the crucified figure). Reverse angle: his
 point of view from the cross, looking steeply down into the crowd packed on the plateau below him.
-Religious leaders in rich robes, prayer shawls and turbans, onlookers in mantles, head cloths and veils
+Religious leaders in rich robes, fine robes and mantles, onlookers in mantles, head cloths and veils
 fill the frame; they look up into the lens, sneer, point and laugh, and on "shaking their heads" the
 heads shake. Harsh, dim, red-brown light of the darkened sun from behind the cross, dust in the air.
 A dozen animated people (fore/mid ground) placed by where their faces fall in the frame, baked
@@ -72,7 +72,7 @@ CAST = [
     ("shout", "CROWD_MAN", dict(seed=21, outfit=["tunic", "mantle", "headcloth"], age_years=34, beard_color="brown",
                                 outfit_colors={"tunic": "oatmeal", "mantle": "umber", "headcloth": "sand"}),
      -0.55, 0.47, "point"),
-    ("lead2", "CROWD_MAN", dict(seed=31, outfit=["robe_rich", "turban"], age_years=60, beard="long", build="heavy",
+    ("lead2", "CROWD_MAN", dict(seed=31, outfit=["robe_rich"], age_years=60, beard="long", build="heavy",
                                 outfit_colors={"mantle": "camel", "turban": "oatmeal", "shawl": "linen"}), -0.18, 0.28, "shake"),
     ("woman1", "CROWD_WOMAN", dict(seed=5, outfit_colors={"tunic": "linen", "veil": "madder"}), 0.62, 0.25, "laugh"),
     ("fist", "CROWD_MAN", dict(seed=8, age_years=27, beard="short", beard_color="dark_brown",

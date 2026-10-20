@@ -157,7 +157,7 @@ MARY_OLD = dict(gender=0.0, age_years=48, build="average", height_cm=156, ethnic
                 pose="mourn", dirt=0.15, wrinkles=0.6, redness=0.5)
 PRIEST = dict(gender=1.0, age_years=56, build="heavy", height_cm=172, ethnicity="judean", hair="short02",
               hair_color="black", grey=0.55, beard="full", eye_color="dark_brown", eyebrows="eyebrow003",
-              expression="sneer", outfit=["robe_rich", "turban"], pose="stand", wrinkles=0.7)
+              expression="sneer", outfit=["robe_rich"], pose="stand", wrinkles=0.7)
 ELDER = dict(gender=1.0, age_years=72, build="frail", height_cm=168, ethnicity="judean", hair="short01",
              hair_color="white", grey=0.9, beard="long", beard_length=0.16, eye_color="brown", eyebrows="eyebrow003",
              expression="neutral", outfit=["robe"], outfit_colors={"tunic": "oatmeal", "mantle": "brown"},

@@ -3283,8 +3283,8 @@ def part_segmentata(person, B, rnd, detail="hero", metal="iron", name="lorica_se
 
 
 def outfit_robe_rich(person, B, rnd, colors, detail="hero"):
-    """Priest: fine white linen ankle tunic (embroidered hem), long sleeves, striped sash, open outer robe
-    in a rich dye with embroidered edges, and a striped prayer shawl with tzitzit."""
+    """Well-to-do man: fine white linen ankle tunic (embroidered hem), long sleeves, plain sash, open outer robe
+    in a rich dye with embroidered edges. Deliberately generic: no prayer shawl / religious markers."""
     out = []
     gs, G = part_tunic(person, B, rnd, _pick(colors, "tunic", rnd, "white_linen"), fabric="fine_linen", length="ankle",
                        sleeves="long", belt=None, detail=detail, ease=0.028, flare=0.06, name="tunic", fold=0.012,
@@ -3292,12 +3292,11 @@ def outfit_robe_rich(person, B, rnd, colors, detail="hero"):
     out += gs
     zb = _waist_z(B) + 0.01
     out.append(part_belt(person, B, rnd, _pick(colors, "belt", rnd, "madder"), G["V"], zb, kind="sash",
-                         detail=detail, name="sash", stripes=True))
+                         detail=detail, name="sash", stripes=False))
     gs, G2 = part_mantle(person, B, rnd, _pick(colors, "mantle", rnd, rnd.choice(["tekhelet", "purple", "indigo", "plum"])),
                          detail=detail, style="cloak", length="calf", fabric="wool", name="robe_outer", fold=0.014,
                          embroidery=True, wear=0.6)
     out += gs
-    out += part_tallit(person, B, rnd, _pick(colors, "shawl", rnd, "bleached"), detail=detail)
     return out
 
 
