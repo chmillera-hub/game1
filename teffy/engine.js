@@ -627,7 +627,7 @@ var TeffyEngine = (function () {
       transcript(s),
       "",
       "Write:",
-      "- \"plan\": THE PLAN RIGHT NOW with its wording tightened, merging steps to fit at most four short sentences (never drop a step, and never add a step, question or message it doesn't already contain, except an adopted REQUEST below), to the user in plain second person, keeping every accepted condition, the specific things the user said they want, and every number, time and amount THE PLAN RIGHT NOW already decided (never turn a decided number back into ___). No emotion names. Any message to someone appears in quotes with the actual words, kept exactly as in THE PLAN RIGHT NOW unless an emotion asked to change them, never dropping the feeling the user named. Radically non-violent and pro-human. " + SAFETY,
+      "- \"plan\": THE PLAN RIGHT NOW with its wording tightened, merging steps to fit at most four short sentences (never drop a step, and never add a step, question or message it doesn't already contain, except an adopted REQUEST from REQUESTS SINCE THE LAST UPDATE above), to the user in plain second person, keeping every accepted condition, the specific things the user said they want, and every number, time and amount THE PLAN RIGHT NOW already decided (never turn a decided number back into ___). No emotion names. Any message to someone appears in quotes with the actual words, kept exactly as in THE PLAN RIGHT NOW unless an emotion asked to change them, never dropping the feeling the user named. Radically non-violent and pro-human. " + SAFETY,
       heard.length ? `- "heard": one entry per piece of Society advice below, in order. "advice" is Society's line quoted word for word or trimmed (never reworded; fix only an obviously garbled word), and "reply" is one sentence of at most 25 words, with no quotes inside it, that the user could say to the friend, relative or coworker who gives that advice (never to Society, never to the person the plan is about, never about them as "her" or "him"): kind, firm, radically non-violent, in first person. It answers what the advice literally says, then names the need from its call-out in everyday words a listener who knows nothing of the plan would get (no timers, hour marks, steps or plan details). Never open with "I hear you, but"; no two replies alike. These prepare the user for the pushback they may get when they open up to people.\nSOCIETY'S ADVICE AND THE CALL-OUTS:\n${heard.map(h => `- Society to ${h.to}: "${h.advice}"${h.callout ? `\n  Called out by ${h.callout}` : ""}`).join("\n")}` : "",
       "- \"text\": your closing message to the user, in first person, one paragraph of at most 4 sentences, no line breaks, in the emotional personification language. Speak to anyone in STILL SUFFERING by its exact objection (how the plan still looks after them); nobody else is \"still uneasy\" or \"wary\". Name at most two emotions, each with one step that its own message proposed and that is in the final plan. Never claim the plan avoids something it still contains. Only mention a concern an emotion actually said in the chat. Add the one thing your last message didn't say (the fallback, or the next concrete step) instead of restating the plan. If the final plan changes or delays what the user said they wanted, say so plainly: what they still get, and when. Never credit an emotion with a step or a cost that came from someone else. Never use the words score, council, -1, 0 or \"still suffering\". No filler (\"I'll keep checking in\", \"your feelings are valid\", \"that's what makes it real\").",
       (s.forYou || []).length ? "- \"forYou\": the items from FOR THE USER TO SETTLE that the final plan still needs, dropping any it settles or decides." : "",
@@ -800,8 +800,8 @@ var TeffyEngine = (function () {
       if (d.prev < 0 && d.score === 0) v += 2;                         // just came round: let it say so
       if (n !== "Sadness" && !said.some(m => m.from === n && !m.opening)) v += 2;   // hasn't had a real turn yet
       if (!hurting && n !== "Sadness" && hurtingStreak) v += 3;                     // let a helper in after two complaints
-      if (!hurting && n !== "Sadness" && last && last.lens) v += 3;                 // a need came back unmet: a helper takes it up
-      if (n === "Sadness") v += neglectedAsked && !sadnessSpokeSince && unheardFor >= 2 && s.scores[s.neglected] < 0 ? 4 : -6;
+      if (!hurting && n !== "Sadness" && last && (last.lens || last.callout)) v += 3;                 // a need came back unmet: a helper takes it up
+      if (n === "Sadness") v += neglectedAsked && !sadnessSpokeSince && unheardFor >= 2 && s.scores[s.neglected] < 0 ? 4 : -20;
       if (n !== "Sadness") v += 2 * Math.min(3, (s.waited || {})[n] || 0);   // kept its hand up, unpicked, round after round
       if (hurting && sinceUpdate(n) >= 1 && !d.pushback && addressed !== n) v -= 6;   // one message per version of the plan
       if (hurting && d.pushback && !nextLens(s, n) && addressed !== n) v -= 6;          // every angle used: nothing new left to say
@@ -849,9 +849,14 @@ var TeffyEngine = (function () {
     // VOICE in code, since a low-effort model skips it: no score talk ("my score stays -1"), and no weekday
     // that nobody named earlier (an invented "by Thursday" becomes a blank for the user to fill in).
     const knownText = (s.thought + " " + s.plan + " " + s.messages.map(x => x.text || "").join(" ")).toLowerCase();
-    text = text.replace(/[^.!?]*(?:\bmy score\b|(?:^|\s)-1\b)[^.!?]*[.!?]?\s*/gi, " ")
-      .replace(/\b(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/g, d => (knownText.includes(d.toLowerCase()) ||
-        (/^(?:satur|sun)/i.test(d) && knownText.includes("weekend")) ? d : "___")).replace(/\s{2,}/g, " ").trim();   // "the weekend" names both days
+    // Score talk is only stripped when the user's own words don't use it ("my score on the SAT", "-1 degrees out").
+    const userText = (s.thought + " " + s.messages.filter(x => x.kind === "user").map(x => x.text).join(" ")).toLowerCase();
+    const scoreTalk = t => (/\bmy score\b/i.test(t) && !/\bscore\b/.test(userText)) || (/(?:^|\s)[-−]1\b/.test(t) && !/(?:^|\s)[-−]1\b/.test(userText));
+    const blankDays = t => t.replace(/\b(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days?\b/gi, d => (knownText.includes(d.toLowerCase().replace(/s$/, "")) ||
+      (/^(?:satur|sun)/i.test(d) && knownText.includes("weekend")) ? d : "___"));   // "the weekend" names both days
+    // A sentence ends at . ! or ? followed by a space, so "$2.50" or "7 p.m. sharp" never splits one in half.
+    text = blankDays(text.replace(/([.!?])\s+/g, "$1\u0000").split("\u0000").filter(x => !scoreTalk(x)).join(" ")).replace(/\s{2,}/g, " ").trim();
+    m = Object.assign({}, m, { proposal: blankDays(String(m.proposal == null ? "" : m.proposal)) });   // a proposal goes straight into the plan
     if (text) text = text[0].toUpperCase() + text.slice(1);
     if (!text) throw badShape("speak");
     const mine = emotionMessages(s).filter(x => x.from === name).slice(-3);
@@ -941,6 +946,7 @@ var TeffyEngine = (function () {
       // A line that backs the target's need (or the user's decision) leaves nothing honest to call out: drop it.
       const agrees = r && (r.agrees === true || String(r.agrees).toLowerCase() === "true");
       if (!text || agrees || s.messages.some(m => m.kind === "society" && similar(m.text, text, 0.5))) { io.update({}); return false; }
+      if (io.stopped()) { io.update({}); return true; }   // paused while Society was typing: drop the line rather than leave it unanswered
       s.messages.push({ kind: "society", to: target, text: text[0].toUpperCase() + text.slice(1) });
       io.update({});
       if (!io.stopped()) await speak(target, why || "call out Society's advice", "callout");
@@ -953,6 +959,7 @@ var TeffyEngine = (function () {
       if (!s.society || s.serious || io.stopped() || !name || name === "Sadness" || name === s.askedOf) return false;
       if (s.societyCount >= COUNCIL.societyMax || s.emotionMsgs - s.societyAt < COUNCIL.societyGap) return false;
       if (!(s.scores[name] < 0) || (d.prev < 0 && d.score === 0)) return false;
+      if (!emotionMessages(s).some(m => m.from === name)) return false;   // it says what it needs before Society can sidestep it
       const lastM = [...s.messages].reverse().find(m => m.kind !== "decide" && m.kind !== "note");
       if (!lastM || lastM.kind !== "consciousness" || lastM.opening) return false;
       const lastUser = s.messages.map(m => m.kind).lastIndexOf("user");
@@ -966,11 +973,12 @@ var TeffyEngine = (function () {
       // A comeback answers something new: the plan was updated since this emotion last spoke and still misses its need.
       // Before that, the only gap is that the Consciousness hasn't answered yet, so it speaks plainly (or waits).
       let lastMine = -1, lastUpdate = -1;
-      s.messages.forEach((m, i) => { if (m.kind === "emotion" && m.from === n) lastMine = i; if (m.kind === "consciousness" && m.planUpdate) lastUpdate = i; });
+      let shown = null;   // a reply that restates the same plan text isn't a plan update
+      s.messages.forEach((m, i) => { if (m.kind === "emotion" && m.from === n) lastMine = i; if (m.kind === "consciousness" && m.planUpdate) { if (m.plan !== shown) lastUpdate = i; shown = m.plan; } });
       const cameBefore = lastMine >= 0 && lastUpdate > lastMine;
       // Another emotion just spoke to it: it answers that (takes it or pushes back), not a staged comeback.
       const lastTalk = [...s.messages].reverse().find(m => m.kind === "emotion" || m.kind === "consciousness" || m.kind === "user");
-      const answering = !!(lastTalk && lastTalk.kind === "emotion" && lastTalk.to === n);
+      const answering = s.askedOf === n || !!(lastTalk && (lastTalk.kind === "emotion" || lastTalk.kind === "consciousness") && lastTalk.to === n);
       if (n !== "Sadness" && s.scores[n] < 0 && cameBefore && !answering) {
         const lens = nextLens(s, n);
         if (lens) return "again:" + lens.key;
@@ -995,8 +1003,11 @@ var TeffyEngine = (function () {
     // Society's first chime-in lands right after the openings, aimed at the opener with a concrete request.
     if (s.society && !s.serious && !s.societyEarly && !io.stopped() && !emotionMessages(s).some(m => !m.opening)) {
       s.societyEarly = true;
-      const opener = emotionMessages(s).filter(m => m.opening && m.score < 0).reverse().find(m => m.proposal) || emotionMessages(s).find(m => m.opening);
-      if (opener) await societyAt(opener.from);
+      const opener = emotionMessages(s).filter(m => m.opening && m.score < 0).find(m => m.proposal) || emotionMessages(s).find(m => m.opening);
+      if (opener && (await societyAt(opener.from, opener.proposal || ""))) {
+        const c = s.messages[s.messages.length - 1];
+        if (c && c.kind === "emotion" && c.callout) s.answerDue = c.from;   // the opening call-out gets one helper's answer too
+      }
     }
 
     while (!io.stopped()) {
@@ -1018,8 +1029,7 @@ var TeffyEngine = (function () {
 
       io.update({ busy: "pulse" });
       const seen = stamp(s), seenUsers = s.userCount || 0;
-      const p = await soft(() => ask(pulsePrompt(s), "pulse"));
-      const decisions = p ? applyPulse(s, p, seen) : fallbackDecisions(s);
+      const decisions = (await soft(() => ask(pulsePrompt(s), "pulse").then(r => applyPulse(s, r, seen)))) || fallbackDecisions(s);
       let speaker = pickSpeaker(s, decisions);
       // An emotion the Consciousness asked a question gets to answer, even if it was holding back.
       if (!speaker && s.askedOf && s.participants.includes(s.askedOf)) speaker = s.askedOf;
@@ -1060,7 +1070,7 @@ var TeffyEngine = (function () {
 
       if (!speaker) {
         // Nobody can take the floor: the Consciousness answers the user, or takes stock, or wraps up.
-        const handsUp = decisions.filter(d => d.reply && s.participants.includes(d.emotion));
+        const handsUp = decisions.filter(d => d.reply && s.participants.includes(d.emotion) && d.emotion !== "Sadness");   // Sadness only speaks through pickSpeaker's gate
         const lastC = s.messages.map(m => m.kind).lastIndexOf("consciousness");
         const nothingSince = !s.messages.slice(lastC + 1).some(m => m.kind === "emotion");
         if (handsUp.length && nothingSince && s.consolidations > 0 && !fresh) {
@@ -1068,9 +1078,11 @@ var TeffyEngine = (function () {
           const pick = handsUp.find(d => d.emotion !== "Sadness") || handsUp[0];
           decideMsg.speaker = pick.emotion;
           if (!(await maybeSociety(pick.emotion, pick))) await speak(pick.emotion, pick.why || "", speakMode(pick));
+          const saidH = s.messages[s.messages.length - 1];   // a comeback or call-out here gets one helper's answer too
+          if (saidH && saidH.kind === "emotion" && saidH.from === pick.emotion && (saidH.lens || saidH.callout)) s.answerDue = pick.emotion;
           continue;
         }
-        if (fresh || handsUp.length) { s.quiet = 0; await consolidate(s, io, ask, soft); continue; }
+        if (fresh || (handsUp.length && (!s.quiet || s.sinceConsolidate > 0))) { s.quiet = 0; await consolidate(s, io, ask, soft); continue; }   // an empty consolidation with nothing said since falls through to the quiet exit
         s.quiet++;
         if (s.quiet >= 2 || (s.sinceConsolidate === 0 && s.consolidations > 0)) {
           if (await finish()) return;
@@ -1080,6 +1092,7 @@ var TeffyEngine = (function () {
         continue;
       }
       s.quiet = 0;
+      if (suffering(s).length) s.closingFold = false;   // back to real discussion: the next closing gets its own fold
       const d = decisions.find(x => x.emotion === speaker) || {};
       // Society 🦜 may butt in on this turn; if it does, the turn is the emotion's call-out.
       if (!(await maybeSociety(speaker, d))) await speak(speaker, d.why || "", speakMode(d));
@@ -1088,19 +1101,20 @@ var TeffyEngine = (function () {
       if (d.pushback && speaker === s.guardian && said && said.kind === "emotion" && said.proposal) s.consolidateNext = true;
       // A need that came back unmet (a lens comeback or a call-out) gets one helper's answer, then the Consciousness answers it.
       if (said && said.kind === "emotion" && said.from === speaker) {
-        if (said.lens || said.callout) s.answerDue = speaker;
-        else if (s.answerDue) { s.answerDue = ""; s.consolidateNext = true; }
+        if (s.answerDue) { s.answerDue = ""; s.consolidateNext = true; }   // whoever spoke next, the Consciousness answers now
+        else if (said.lens || said.callout) s.answerDue = speaker;
       }
     }
     s.status = "paused";
     io.update({});
   }
 
-  const forYouList = list => arr(list).map(x => clip(oneParagraph(x), 90))
+  const forYouList = list => arr(list).map(x => clip(oneParagraph(x && typeof x === "object" ? Object.values(x).find(v => typeof v === "string") : x), 90))
     .filter((x, i, all) => x && !all.slice(0, i).some(y => similar(x, y, 0.6))).slice(0, 3);
 
   async function consolidate(s, io, ask, soft) {
     io.update({ busy: "consolidate" });
+    const heard = s.messages.length;   // a user message typed during this call lands after this point, unheard
     const c = await soft(() => ask(consolidatePrompt(s), "consolidate"));
     s.sinceConsolidate = 0;
     s.consolidations = (s.consolidations || 0) + 1;
@@ -1115,7 +1129,9 @@ var TeffyEngine = (function () {
     if (Array.isArray(c.forYou)) s.forYou = forYouList(c.forYou);
     const asked = findEmotion(c.ask);
     s.askedOf = asked && asked.name !== "Sadness" && s.participants.includes(asked.name) ? asked.name : "";
-    s.messages.push({ kind: "consciousness", text, plan: s.plan, planUpdate: !!plan, to: s.askedOf || "" });
+    // The reply goes before any user message that arrived during the call: it didn't hear it, so that message
+    // stays THE USER JUST SAID until a later update answers it.
+    s.messages.splice(heard, 0, { kind: "consciousness", text, plan: s.plan, planUpdate: !!plan, to: s.askedOf || "" });
     io.update({});
   }
 
@@ -1133,9 +1149,9 @@ var TeffyEngine = (function () {
     // A long final plan gets one re-ask, kept only if it comes back shorter.
     const wc = t => t.split(/\s+/).filter(Boolean).length;
     if (plan && wc(plan) > 110 && !io.stopped()) {
-      const g = await soft(() => ask(finalPrompt(s) + `\n\nYOUR DRAFT PLAN RAN ${wc(plan)} WORDS: "${plan}"\nRewrite the whole reply with the plan in at most 100 words: merge steps that happen at the same moment, state each condition once, and cut any step another step already covers. Keep the quoted messages' words.`, "final"));
+      const g = await soft(() => ask(finalPrompt(s) + `\n\nYOUR DRAFT PLAN RAN ${wc(plan)} WORDS: "${plan}"\nRewrite the whole reply with the plan in at most 100 words: merge steps that happen at the same moment, state each condition once, and cut any step another step already covers. Keep the quoted messages' words.`, "final")).catch(() => null);   // optional: a failed re-ask keeps the first draft
       const p2 = oneParagraph(g && g.plan);
-      if (p2 && wc(p2) < wc(plan)) { f = Object.assign({}, f, g); plan = p2; }
+      if (p2 && wc(p2) < wc(plan)) { f = Object.assign({}, f, g, { text: oneParagraph(g.text) ? g.text : f && f.text }); plan = p2; }
     }
     if (plan) s.plan = plan;
     if (f && Array.isArray(f.forYou) && (s.forYou || []).length) s.forYou = forYouList(f.forYou);

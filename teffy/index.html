@@ -1604,7 +1604,8 @@ button { cursor: pointer; }
     const el = document.querySelector(k.sel);
     if (el) el.focus({ preventScroll: true });
   }
-  let announcedCount = 0;
+  // Messages already read aloud, by identity: a reply can land before a message typed while it was being written.
+  let announced = new WeakSet();
   function renderChatLive() {
     if (state.view !== "chat") { renderCouncilView(); renderComposer(); return; }
     const stick = nearBottom();
@@ -1616,9 +1617,9 @@ button { cursor: pointer; }
     if (stick) scrollThreadToEnd();
     // Read each new message aloud for screen readers.
     const s = state.council;
-    if (s && s.messages.length > announcedCount) {
-      const fresh = s.messages.slice(announcedCount).filter(m => m.kind === "emotion" || m.kind === "consciousness");
-      announcedCount = s.messages.length;
+    if (s) {
+      const fresh = s.messages.filter(m => !announced.has(m) && (m.kind === "emotion" || m.kind === "consciousness"));
+      s.messages.forEach(m => announced.add(m));
       if (fresh.length) { const m = fresh[fresh.length - 1]; announce(`${m.kind === "emotion" ? m.from : "Consciousness"}: ${m.text}`); }
     }
   }
@@ -2258,7 +2259,7 @@ button { cursor: pointer; }
   input.value = store.get("teffy.draft", "") || "";
   // Phones: Enter makes a new line, so the key should say so; the send button sends.
   if (!(window.matchMedia && window.matchMedia("(pointer: fine)").matches)) input.setAttribute("enterkeyhint", "enter");
-  announcedCount = state.council ? state.council.messages.length : 0;
+  if (state.council) state.council.messages.forEach(m => announced.add(m));
   renderAll();
   autoGrow();
   // An example opens at its start so its label shows; a real conversation opens at the newest message.
