@@ -261,6 +261,12 @@ button { cursor: pointer; }
 .msg.me .msg-main { align-items: flex-end; }
 .msg.me .bubble { background: var(--accent); border-color: var(--accent); color: var(--on-accent); border-radius: 16px 4px 16px 16px; }
 .msg.consc .bubble { background: var(--accent-soft); border-color: transparent; }
+.msg.society .bubble { background: var(--sunken); border-style: dashed; border-color: var(--muted); }
+.msg.society .ava { border-style: dashed; border-color: var(--muted); }
+.tag-not { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0.05rem 0.4rem; }
+.member.society .ava { border-style: dashed; border-color: var(--muted); }
+.switch { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; cursor: pointer; }
+.switch input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
 .plan-card {
   margin-top: 6px;
   max-width: min(100%, 31rem);
@@ -824,12 +830,11 @@ button { cursor: pointer; }
       say("Wellness", "Hunger", "Peanut butter toast and a banana. Five minutes, eat it in the car.", 0, { proposal: "Toast and a banana in the car" }),
       decide("Hunger", { Hunger: [1, "Toast? I should answer that."], Embarrassment: [0, "Food first, then me."], Tiredness: [0, "Still tired. Still listening."], Wellness: [0, "Made my suggestion."], Annoyance: [0, "Fine so far."], Sadness: [0, "Still watching."] }),
       say("Hunger", "Wellness", "…fine. Toast counts. I'm in.", 0),
-      decide("Wellness", { Embarrassment: [0, "Waiting to see if anyone gets it."], Wellness: [1, "Embarrassment sounds stressed. Maybe calming down helps."], Annoyance: [0, "Let's see where this goes."], Sadness: [0, "Embarrassment is the one to watch."] }),
-      say("Wellness", "Embarrassment", "Have you tried a few deep breaths? Being a little late isn't the end of the world.", 0),
-      decide("Embarrassment", { Embarrassment: [1, "Breathing doesn't fix a friendship."], Wellness: [0, "Said mine. Let them answer."], Annoyance: [1, "That advice dodged the actual problem."], Sadness: [0, "Let Embarrassment speak for itself."] }),
-      say("Embarrassment", "Wellness", "Bro, breathing doesn't fix this. Sam waited on us last week. My problem is the friendship, not my lungs.", -1),
-      decide("Annoyance", { Embarrassment: [0, "Said it."], Wellness: [0, "Breathing missed. Their problem is social, not mine to fix."], Annoyance: [1, "Nobody has said to just tell Sam."], Sadness: [1, "Embarrassment has been hurting longest."] }),
-      say("Annoyance", "Embarrassment", "Then text Sam now. Real ETA, own last week. A vague 'omw' is what actually makes people mad.", 0, { proposal: "Text Sam now with an honest ETA and an apology for last week" }),
+      { kind: "society", to: "Embarrassment", text: "Being a little late is totally normal! Take a few deep breaths and remember, everyone's busy these days. 🌸" },
+      decide("Embarrassment", { Embarrassment: [1, "Breathing doesn't fix a friendship."], Wellness: [0, "Society's tip isn't mine to defend."], Annoyance: [1, "\"Everyone's busy\" dodges the actual problem."], Sadness: [0, "Let Embarrassment speak for itself."] }),
+      say("Embarrassment", "Society", "Bro, breathing doesn't fix this. Sam waited on us last week, so my problem is the friendship, not my lungs. What I need is a real text with a real time.", -1),
+      decide("Annoyance", { Embarrassment: [0, "Said it."], Wellness: [0, "Their problem is social, not mine to fix."], Annoyance: [1, "Nobody has written the actual text to Sam."], Sadness: [1, "Embarrassment has been hurting longest."] }),
+      say("Annoyance", "Embarrassment", "\"Everyone's busy\" is exactly the vague stuff that makes people feel brushed off. Text Sam now: \"Running late again, I'm sorry, especially after last week. Leaving in 10, there by 9:40. Still really want to play.\"", 0, { proposal: "Text Sam now with an honest ETA, an apology for last week, and that you still want to play" }),
       decide("Sadness", { Embarrassment: [0, "Thinking about that text."], Annoyance: [0, "Made my point."], Sadness: [1, "Embarrassment needs to hear the friendship is safe."] }),
       say("Sadness", "Embarrassment", "Embarrassment has been hiding in its hoodie since last week. Can Sam hear the apology before anything else happens?", 0),
       { kind: "consciousness", text: "Okay. Embarrassment, the text to Sam goes out first: honest ETA, sorry about last week. Hunger gets toast in the car. Tiredness, coffee on the way. Does that work?", plan: "Text Sam right now with an honest ETA and an apology for last week. Toast and a banana in the car, coffee on the way, leave in 10 minutes.", planUpdate: true },
@@ -1073,7 +1078,7 @@ button { cursor: pointer; }
     c.messages = c.messages.filter(m => {
       if (!isObj(m) || typeof m.kind !== "string") return false;
       if (m.kind === "emotion") return !!findEmotion(m.from) && text(m.text);
-      if (m.kind === "user" || m.kind === "consciousness" || m.kind === "note") return text(m.text);
+      if (m.kind === "user" || m.kind === "consciousness" || m.kind === "note" || m.kind === "society") return text(m.text);
       if (m.kind === "decide") return Array.isArray(m.items);
       return m.kind === "final";
     });
@@ -1108,6 +1113,7 @@ button { cursor: pointer; }
     // council chat
     chatBusy: false, chatCtl: null, activity: null, pauseAsked: false,
     noticeHidden: "",
+    society: store.get("teffy.society", true) !== false,
     openDecides: new Set(),
     confirmNew: false,
   };
@@ -1193,7 +1199,7 @@ button { cursor: pointer; }
     if (!state.council || state.showCouncilExample) {
       state.showCouncilExample = false;
       state.openDecides.clear();
-      state.council = E.newCouncil(text);
+      state.council = E.newCouncil(text, { society: state.society });
       state.council.messages.push({ kind: "user", text });
     } else {
       E.addUserMessage(state.council, text);
@@ -1436,6 +1442,7 @@ button { cursor: pointer; }
     if (!to || to === "all") return null;
     if (to === "You") return "to you";
     if (to === "Consciousness") return "to 🧠";
+    if (to === "Society") return "to 🦜 Society";
     return `to ${emo(to).emoji} ${to}`;
   }
   function seatState(s, n) {
@@ -1494,6 +1501,12 @@ button { cursor: pointer; }
         det.addEventListener("toggle", () => { if (det.open) state.openDecides.add(i); else state.openDecides.delete(i); });
         return det;
       }
+      case "society":
+        return h("div", { class: "msg society" },
+          h("button", { type: "button", class: "ava", "aria-label": "About Society", onclick: () => openProfile("Society") }, E.SOCIETY.emoji),
+          h("div", { class: "msg-main" },
+            h("div", { class: "msg-head" }, h("span", { class: "msg-name" }, "Society"), h("span", { class: "tag-not" }, "not an emotion"), nameTarget(m.to) ? h("span", null, nameTarget(m.to)) : null),
+            h("p", { class: "bubble" }, m.text)));
       case "note":
         return h("p", { class: "note-line" + (m.error ? " err" : "") }, m.text);
       case "final": {
@@ -1516,6 +1529,13 @@ button { cursor: pointer; }
   function activityNode(s) {
     const a = state.activity;
     if (!a) return null;
+    if (a.busy === "society") {
+      return h("div", { class: "msg society typing", "aria-label": "Society is typing" },
+        h("span", { class: "ava", "aria-hidden": "true" }, E.SOCIETY.emoji),
+        h("div", { class: "msg-main" },
+          h("div", { class: "msg-head" }, h("span", { class: "msg-name" }, "Society"), h("span", null, "has some advice")),
+          h("p", { class: "bubble" }, h("span", { class: "typing-dots", "aria-hidden": "true" }, h("i"), h("i"), h("i")))));
+    }
     if (a.busy === "speak" && a.who) {
       const e = emo(a.who);
       return h("div", { class: "msg emo typing", "aria-label": `${e.name} is typing` },
@@ -1802,6 +1822,8 @@ button { cursor: pointer; }
 
   // ---------- Rendering: who is in the council (strip on phones, ring on wide screens) ----------
 
+  const replaceKids = (el, ...kids) => el.replaceChildren(...kids.flat().filter(Boolean));
+
   function councilModel() {
     if (state.view === "chat") {
       const s = councilShown();
@@ -1812,9 +1834,10 @@ button { cursor: pointer; }
       let core;
       if (a && a.busy === "speak" && a.who) core = { label: `${emo(a.who).emoji} ${a.who}`, text: "is typing…" };
       else if (a && (a.busy === "consolidate" || a.busy === "final")) core = { label: "Consciousness", text: a.busy === "final" ? "is wrapping up…" : "is updating the plan…" };
+      else if (a && a.busy === "society") core = { label: "🦜 Society", text: "has some advice…" };
       else if (a) core = { label: "Council", text: a.busy === "pulse" ? "deciding who speaks…" : "gathering…" };
       else core = { big: [t.start, t.now] };
-      return { order: s.participants, seats, picked: s.neglected, speaking: a && a.busy === "speak" ? a.who : "", live: state.chatBusy && !s.example, start: t.start, now: t.now, core };
+      return { order: s.participants, society: s.society !== false && !s.serious, seats, picked: s.neglected, speaking: a && a.busy === "speak" ? a.who : "", live: state.chatBusy && !s.example, start: t.start, now: t.now, core };
     }
     const r = latestRound();
     if (!r) return null;
@@ -1855,7 +1878,7 @@ button { cursor: pointer; }
     // Strip
     strip.hidden = !m || !m.order.length;
     if (!strip.hidden) {
-      strip.replaceChildren(
+      replaceKids(strip,
         h("div", { class: "strip-tally", role: "img", "aria-label": `Suffering voices: ${m.start} at the start, ${m.now} now`, title: "Suffering voices: at the start → now" },
           h("span", { "aria-hidden": "true" }, "Hurting"), h("b", { "aria-hidden": "true" }, `${m.start} → ${m.now}`)),
         ...m.order.map(n => {
@@ -1869,7 +1892,10 @@ button { cursor: pointer; }
               h("span", { class: "badge " + (s.score < 0 ? "neg" : "zero") }, s.score < 0 ? "−1" : "0"),
               m.picked === n ? h("span", { class: "heart" }, "♥") : null),
             h("span", { class: "member-name", "aria-hidden": "true" }, n));
-        }));
+        }),
+        m.society ? h("button", { type: "button", class: "member society", "data-name": "Society", "aria-label": "Society: not an emotion, parrots generic advice", onclick: () => openProfile("Society") },
+          h("span", { class: "ava", "aria-hidden": "true" }, E.SOCIETY.emoji),
+          h("span", { class: "member-name", "aria-hidden": "true" }, "Society")) : null);
     }
     // Ring
     for (const btn of seatEls) {
@@ -1925,6 +1951,19 @@ button { cursor: pointer; }
     back.focus();
   }
   function openProfile(name) {
+    if (name === "Society") {
+      const S = E.SOCIETY;
+      openSheet(() => [
+        h("section", null,
+          h("div", { class: "pf-head" },
+            h("span", { class: "ava", "aria-hidden": "true" }, S.emoji),
+            h("div", null, h("h2", { id: "sheetTitle" }, "Society"), h("p", { class: "pf-line" }, h("q", null, S.line), " ", h("span", { class: "tag-not" }, "not an emotion")))),
+          h("p", null, S.about),
+          h("p", { class: "note" }, "It sits out when things are serious. You can turn it off in Settings."),
+          h("div", { class: "row" }, h("button", { type: "button", class: "btn", onclick: closeSheet }, "Close"))),
+      ]);
+      return;
+    }
     const e = findEmotion(name);
     if (!e) return;
     openSheet(() => [
@@ -1962,13 +2001,27 @@ button { cursor: pointer; }
         h("h2", { id: "sheetTitle" }, "Settings"),
         h("label", { class: "field" }, h("span", { class: "k" }, "Council runs on"), sel),
         h("p", { class: "note" }, "Haiku at low effort is the lightest option. Council chat makes many small calls; 7 steps makes one bigger call. Copy & paste works in 7 steps only, with any chatbot."),
+        societySwitch(),
         h("div", { class: "row" }, newBtn, h("button", { type: "button", class: "btn btn-quiet", onclick: closeSheet }, "Done"))),
       h("section", null,
         h("h2", null, "How Teffy works"),
         h("p", null, "Council chat: each emotion is its own chatbot. After every message the council decides who wants to reply and why, so voices take turns, push back, help each other, and don't repeat themselves. The Consciousness folds their asks into the plan until everyone can live with it."),
+        h("p", null, "🦜 Society isn't an emotion. Now and then it parrots the culture's well-meaning but surface-level advice, and your emotions call it out when it misses their actual need."),
         h("p", null, "7 steps: the original template in one answer, with reactions, two pathways, Sadness's pick and the updated plan."),
         h("p", { class: "note" }, "Your conversations are saved in this browser only.")),
     ]);
+  }
+  function societySwitch() {
+    const box = h("input", { type: "checkbox", id: "societyToggle" });
+    box.checked = state.society;
+    box.addEventListener("change", () => {
+      state.society = box.checked;
+      store.set("teffy.society", state.society);
+      if (state.council) { state.council.society = state.society; saveCouncil(); }
+      renderCouncilView();
+    });
+    return h("label", { class: "switch", for: "societyToggle" }, box,
+      h("span", null, h("b", null, "🦜 Society chimes in"), h("br"), h("span", { class: "note" }, "A parrot of the culture's surface-level advice (\"have you tried yoga?\") that your emotions call out. Adds a few small calls per chat.")));
   }
   function startOver() {
     if (state.view === "chat") {

@@ -87,7 +87,13 @@ var TeffyEngine = (function () {
     const k = String(v == null ? "" : v).toLowerCase().replace(/[^a-z]/g, "");
     return BY_NAME.get(k) || BY_NAME.get(ALIASES[k]) || null;
   }
-  const emo = name => findEmotion(name) || { name: String(name), emoji: "•" };
+  // Society isn't an emotion. It parrots the culture's well-meaning, surface-level advice; the emotions call it out.
+  const SOCIETY = {
+    name: "Society", emoji: "🦜",
+    line: "Have you tried yoga?",
+    about: "The cultural zeitgeist. It parrots advice that sounds well-meaning but stays on the surface (\"try deep breathing\", \"take a nap\", \"don't make waves\") and skips the actual need. It isn't an emotion: it never gets a score and never gets a say in the plan. Your emotions call it out when its advice misses.",
+  };
+  const emo = name => (name === "Society" ? SOCIETY : findEmotion(name) || { name: String(name), emoji: "•" });
 
   // ---------- Reading replies ----------
 
@@ -138,12 +144,18 @@ var TeffyEngine = (function () {
     maxEmotionMessages: 14,  // emotion messages per stretch; a user message opens a new stretch
     consolidateEvery: 3,     // the Consciousness updates the plan after this many emotion messages
     maxCalls: 40,            // Claude calls per stretch, a hard stop
+    societyGap: 3,           // emotion messages between Society's chimes
+    societyMax: 3,           // Society's chimes per stretch
     window: 16,              // chat lines each prompt sees
   };
 
-  function newCouncil(thought) {
+  function newCouncil(thought, opts) {
     return {
       thought: String(thought || "").trim(),
+      society: !(opts && opts.society === false),   // Society 🦜 chimes in (off in serious moments)
+      serious: false,
+      societyCount: 0,
+      societyAt: -99,          // emotionMsgs when Society last spoke
       status: "new",           // new | running | paused | done
       idea: "",
       plan: "",
@@ -223,6 +235,8 @@ var TeffyEngine = (function () {
     s.emotionMsgs = 0;
     s.callsRun = 0;
     s.quiet = 0;
+    s.societyCount = 0;
+    s.societyAt = -99;
     s.fresh = true;
     if (s.status === "done") { s.status = "running"; s.scores.Sadness = 0; }
   }
@@ -239,6 +253,7 @@ var TeffyEngine = (function () {
       if (m.kind === "user") lines.push(`User: ${m.text}`);
       else if (m.kind === "consciousness") lines.push(`🧠 Consciousness${m.to ? " → " + m.to : ""}: ${m.text}`);
       else if (m.kind === "emotion") lines.push(`${who(m.from)}${m.to && m.to !== "all" ? " → " + (m.to === "You" ? "user" : m.to) : ""}: ${m.text}`);
+      else if (m.kind === "society") lines.push(`🦜 Society (not an emotion)${m.to ? " → " + m.to : ""}: ${m.text}`);
     }
     return lines.slice(-(limit || COUNCIL.window)).join("\n") || "(nobody has spoken yet)";
   }
@@ -258,6 +273,8 @@ var TeffyEngine = (function () {
       if (m.kind === "emotion") {
         if (m.from === name) out.push(`You said${m.to && m.to !== "all" ? " to " + m.to : ""}: "${m.text}"`);
         else if (m.to === name || new RegExp(`\\b${name}\\b`).test(m.text)) out.push(`${m.from} said${m.to === name ? " to you" : " about you"}: "${m.text}"`);
+      } else if (m.kind === "society" && m.to === name) {
+        out.push(`Society 🦜 said to you: "${m.text}"`);
       } else if (m.kind === "consciousness" && (m.to === name || new RegExp(`\\b${name}\\b`).test(m.text))) {
         out.push(`The Consciousness${m.to === name ? " asked you" : " said"}: "${m.text}"`);
       }
@@ -286,6 +303,7 @@ var TeffyEngine = (function () {
   // Chat bubbles hold one paragraph.
   const oneParagraph = t => cleanQuote(t).replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
   const SAFETY = "If the user seems to be in danger or in crisis, the plan must put their safety first and include reaching out to someone they trust or a crisis line.";
+  const SOCIETY_NOTE = "🦜 Society is not an emotion: it parrots the culture's generic, surface-level advice (\"try deep breathing\", \"have you tried yoga\", \"take a nap\", \"don't make waves\"). When its advice misses an emotion's specific need, that emotion, or another whose angle sees why it misses (Annoyance spots vague reasoning, Anger spots a need being minimized), calls it out: what the advice misses and what the real need is. Society's advice never becomes part of the plan unless an emotion turns it into something specific.";
   const USER_ONLY = "Some things only the user can supply (their own numbers, a person's name, what someone else will answer). The council can't produce them, so nobody should keep asking for them. A plan step that tells the user to get or decide that thing answers the objection.";
 
   function convenePrompt(s) {
@@ -309,8 +327,10 @@ var TeffyEngine = (function () {
       "- Openings are radically non-violent: no blaming, labeling or shaming the user, other people or other emotions.",
       "- " + SAFETY,
       "",
+      "- \"serious\": true if the user seems to be in danger, in crisis, or in deep grief (no jokes belong in this chat), else false.",
+      "",
       "Reply with only this JSON:",
-      "{\"idea\":\"...\",\"suffering\":[{\"emotion\":\"Overwhelm\",\"says\":\"...\",\"need\":\"...\"}],\"helpers\":[\"Efficiency\"]}",
+      "{\"idea\":\"...\",\"suffering\":[{\"emotion\":\"Overwhelm\",\"says\":\"...\",\"need\":\"...\"}],\"helpers\":[\"Efficiency\"],\"serious\":false}",
     ].join("\n");
   }
 
@@ -349,6 +369,7 @@ var TeffyEngine = (function () {
       "  · the emotion behind what the user actually wants, when a new step shrinks or swaps that want: it names the cost and offers a trade-off (set \"pushback\": true).",
       "  false if another emotion already made its point (even in other words) and it has nothing to build on, if it would only agree (\"deal\"), if it already made the same demand twice and only the user can settle it, or if someone just told it it's looping. Usually one or two emotions want in.",
       "- \"why\": under 15 words, in that emotion's voice, the specific point it would make or why it holds back. Don't reuse the wording of its last turn.",
+      s.messages.some(m => m.kind === "society") ? "- " + SOCIETY_NOTE + " Calling Society out is never repeating yourself (set \"pushback\": true)." : "",
       "Sadness never gets a score. Also give \"neglected\": the emotion at -1 that has been heard and answered least so far (never Sadness), or \"\" if nobody is at -1.",
       "",
       "Reply with only this JSON:",
@@ -359,7 +380,10 @@ var TeffyEngine = (function () {
   function speakPrompt(s, name, why, mode) {
     const e = emo(name);
     const last = [...s.messages].reverse().find(m => m.kind === "emotion" || m.kind === "user" || m.kind === "consciousness");
-    const toMe = last && last.to === name ? `${last.kind === "consciousness" ? "THE CONSCIOUSNESS" : last.from.toUpperCase()} JUST SAID TO YOU: "${last.text}" (your first sentence answers this concretely)` : "";
+    const lastAny = [...s.messages].reverse().find(m => m.kind === "emotion" || m.kind === "user" || m.kind === "consciousness" || m.kind === "society");
+    const toMe = lastAny && lastAny.kind === "society" && lastAny.to === name
+      ? `SOCIETY 🦜 JUST SAID TO YOU: "${lastAny.text}"`
+      : last && last.to === name ? `${last.kind === "consciousness" ? "THE CONSCIOUSNESS" : last.from.toUpperCase()} JUST SAID TO YOU: "${last.text}" (your first sentence answers this concretely)` : "";
     const sad = name === "Sadness";
     const score = s.scores[name] < 0 ? -1 : 0;
     const hurting = suffering(s).filter(n => n !== name);
@@ -411,6 +435,7 @@ var TeffyEngine = (function () {
         "- If your request is already on the table and the plan hasn't changed since, don't just repeat it: add something new (a trade-off, an answer to someone, a detail) or say you'll wait for the Consciousness.",
         "- If your need clashes with another emotion's, name the clash and suggest a trade-off. Your proposal must not lock in a part of the plan another suffering emotion objects to.",
         "- Don't argue for another emotion's need; if it matters, name that emotion so it can speak for itself.",
+        "- " + SOCIETY_NOTE + " If Society just gave you (or someone whose need you understand) advice that misses, call it out in your own words, with humor if you like: why it doesn't solve the actual problem, and what would. Call out the advice, never insult anyone.",
         "- " + USER_ONLY,
         "- \"score\": -1 if the plan still fails your need, 0 if you can live with it now (grudgingly is fine). If you were already at 0, you stay at 0 unless the plan itself changed against your need, and don't say you're \"coming round\". Getting what you asked for never lowers it. Don't fake agreement.");
     }
@@ -481,6 +506,7 @@ var TeffyEngine = (function () {
       "- If an emotion objects to how the user worded something, keep what the user means in fair words instead of dropping it, and say which part you kept.",
       "- If a step means someone else's expectation won't be met (a deadline slips, a plan is cancelled), the plan includes the words to tell them and when. Whether another person goes along with a step is the user's to settle: put it in forYou and keep the plan working if they say no.",
       "- Name whose idea a step was when it came from an emotion other than the one it helps.",
+      "- 🦜 Society is not an emotion; never adopt its generic advice unless an emotion turned it into something specific.",
       "- " + USER_ONLY + " List those in \"forYou\" and put a step in the plan telling the user to settle them; don't ask an emotion for them.",
       "- If you didn't take an emotion's request, or took only part of it, say so plainly and why. Only say an emotion agreed or asked for something if its own message says so.",
       "- Be honest about the trade-off: what the user gives up, and the fallback if a step fails (a genuinely different path, not a step already in the plan). For a big decision, name the go/no-go test precisely: what counts, by when.",
@@ -520,6 +546,28 @@ var TeffyEngine = (function () {
     ].filter(l => l !== "").join("\n").replace(/\n(THE CHAT SO FAR|Write:)/g, "\n\n$1");
   }
 
+  function societyPrompt(s, toName) {
+    const e = emo(toName);
+    const said = [...emotionMessages(s)].reverse().find(m => m.from === toName);
+    return [
+      "You are 🦜 Society in a comedy bit inside Teffy, an app where the user's personified emotions talk through a plan in a group chat. Society is not an emotion: it's the cultural zeitgeist, a cheerful parrot of advice that sounds well-meaning but stays on the surface and skips the real need.",
+      "",
+      `THE USER'S SITUATION: "${s.thought}"`,
+      `${e.name.toUpperCase()} ${e.emoji} JUST SAID: "${said ? said.text : ""}"`,
+      `What ${e.name} actually needs: ${e.need}`,
+      "",
+      "THE CHAT SO FAR (oldest first):",
+      transcript(s, 8),
+      "",
+      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences of generic advice the culture repeats (self-care clichés, "just relax", "have you tried yoga", "take a nap", "everyone's busy", "don't make waves", "look on the bright side", "it'll all work out") that sounds kind but sidesteps exactly what ${e.name} just asked for. Make it a little funny, the way a too-chipper relative is. Don't reuse a cliché Society already said in the chat.`,
+      "- Never cruel, never an insult, never about the user's body, weight, identity or worth. Nothing dangerous (no substances, no risky stunts). It should be harmless-sounding and simply beside the point.",
+      "- One paragraph, no line breaks, under 30 words. No emoji except at most one.",
+      "",
+      "Reply with only this JSON:",
+      "{\"text\":\"...\"}",
+    ].join("\n");
+  }
+
   // ---------- Applying replies ----------
 
   // Rough sameness of two messages: share of words in common. Used to drop a speaker repeating itself.
@@ -551,6 +599,7 @@ var TeffyEngine = (function () {
       .slice(0, COUNCIL.maxHelpers);
 
     s.idea = cleanQuote(c.idea) || s.thought;
+    s.serious = c.serious === true || c.serious === "true";
     s.plan = s.idea;
     opening.forEach(x => addParticipant(s, x.name, -1));
     helpers.forEach(em => addParticipant(s, em.name, 0));
@@ -602,13 +651,13 @@ var TeffyEngine = (function () {
     if (!wants.length) return null;
     if (s.askedOf && wants.some(d => d.emotion === s.askedOf)) return s.askedOf;   // a direct question always gets its answer
     const said = emotionMessages(s);
-    const spokenAll = s.messages.filter(m => m.kind === "emotion" || m.kind === "consciousness" || m.kind === "user");
+    const spokenAll = s.messages.filter(m => m.kind === "emotion" || m.kind === "consciousness" || m.kind === "user" || m.kind === "society");
     const lastAny = spokenAll[spokenAll.length - 1];
     const last = lastAny && lastAny.kind === "emotion" && !lastAny.opening ? lastAny : null;   // the openings are one burst, not a double post
     const recent = said.filter(m => !m.opening).slice(-2).map(m => m.from);
     const spoke = n => said.filter(m => m.from === n).length;
     const lastHeard = n => { for (let i = said.length - 1; i >= 0; i--) if (said[i].from === n) return said.length - i; return 99; };
-    const addressed = lastAny && lastAny.kind === "emotion" ? lastAny.to : "";
+    const addressed = lastAny && (lastAny.kind === "emotion" || lastAny.kind === "society") ? lastAny.to : "";
     // Messages since the plan last changed, per emotion: a voice repeating its demand to an unchanged plan is stalling.
     let since = s.messages.length - 1;
     while (since >= 0 && !(s.messages[since].kind === "consciousness" && s.messages[since].planUpdate)) since--;
@@ -644,6 +693,7 @@ var TeffyEngine = (function () {
       if (s.participants.includes(em.name)) return em.name;
     }
     const t = String(v || "").toLowerCase();
+    if (t.includes("society")) return "Society";
     if (t.includes("conscious")) return "Consciousness";
     if (t.includes("user") || t === "you" || t === "me") return "You";
     return "all";
@@ -651,8 +701,8 @@ var TeffyEngine = (function () {
   function applySpeak(s, name, m, why) {
     if (!m || typeof m !== "object") throw badShape("speak");
     let text = oneParagraph(m.text)
-      .replace(new RegExp(`^(?:${name}|[\\w-]+(?:[- ][\\w-]+)?)\\s+here[,.:!—-]*\\s+`, "i"), "")     // "Frugality here, …"
-      .replace(/^(?:same|nah|fine|okay|ok|grudgingly|i hear you)\b[,.!:—-]*\s*/i, "");               // stock openers
+      .replace(new RegExp(`^(?:${name}|[\\w-]+(?:-[\\w-]+)?)\\s+here\\s*[,.:!—-]+\\s*`, "i"), "")    // "Frugality here, …"
+      .replace(/^(?:same|nah|fine|okay|ok|grudgingly|i hear you)\s*[,.!:—-]+\s*/i, "");             // stock openers ("Fine, …")
     if (text) text = text[0].toUpperCase() + text.slice(1);
     if (!text) throw badShape("speak");
     const mine = emotionMessages(s).filter(x => x.from === name).slice(-3);
@@ -714,6 +764,22 @@ var TeffyEngine = (function () {
         s.messages.push({ kind: "note", text: repeated ? `${name} had nothing new to add.` : `${name} started typing, then stopped.` });
         if (s.askedOf === name) s.askedOf = "";
         s.emotionMsgs++;            // a skipped turn still counts toward the chat's length
+      }
+      io.update({});
+    };
+    // Society 🦜 chimes in now and then, right after a suffering emotion says what it needs.
+    const maybeSociety = async () => {
+      if (!s.society || s.serious || io.stopped()) return;
+      if (s.societyCount >= COUNCIL.societyMax || s.emotionMsgs - s.societyAt < COUNCIL.societyGap) return;
+      const lastM = s.messages[s.messages.length - 1];
+      if (!lastM || lastM.kind !== "emotion" || lastM.opening || lastM.from === "Sadness" || !(lastM.score < 0)) return;
+      io.update({ busy: "society" });
+      const r = await soft(() => ask(societyPrompt(s, lastM.from), "society"));
+      const text = r && oneParagraph(r.text);
+      if (text && !s.messages.some(m => m.kind === "society" && similar(m.text, text))) {
+        s.messages.push({ kind: "society", to: lastM.from, text });
+        s.societyCount++;
+        s.societyAt = s.emotionMsgs;
       }
       io.update({});
     };
@@ -790,6 +856,7 @@ var TeffyEngine = (function () {
       s.quiet = 0;
       const d = decisions.find(x => x.emotion === speaker) || {};
       await speak(speaker, d.why || "", d.prev < 0 && d.score === 0 ? "accept" : "");
+      await maybeSociety();
     }
     s.status = "paused";
     io.update({});
@@ -841,6 +908,7 @@ var TeffyEngine = (function () {
     EMOTIONS, findEmotion, emo, scanObjects, cleanQuote, toScore,
     COUNCIL, newCouncil, addUserMessage, runCouncil, suffering, tally, mentionedEmotions, isParseFail,
     // exposed for tests
-    _internal: { convenePrompt, pulsePrompt, speakPrompt, consolidatePrompt, finalPrompt, applyConvene, applyPulse, applySpeak, pickSpeaker, transcript },
+    SOCIETY,
+    _internal: { convenePrompt, pulsePrompt, speakPrompt, consolidatePrompt, finalPrompt, societyPrompt, applyConvene, applyPulse, applySpeak, pickSpeaker, transcript },
   };
 })();
