@@ -14,12 +14,16 @@ It has two tabs.
   folds their asks into the plan and asks a suffering emotion a question. ❤️
   Sadness watches for the emotion whose need is least met. You can jump in at
   any time, speak for any emotion ("My doubt says…"), pause and continue.
-- **🦜 Society.** Not an emotion: the cultural zeitgeist. A few times per chat,
-  right after an emotion says what it specifically needs, Society chimes in with
-  the well-meaning but beside-the-point advice the culture repeats ("have you
-  tried yoga?", "maybe take a nap"). The emotions call it out: what the advice
-  misses and what the real need is. It never gets a score or a say in the plan,
-  sits out when things are serious, and can be turned off in Settings.
+- **🦜 Society.** Not an emotion, so it never gets a score: it's the advice
+  you've absorbed from coworkers, friends, family and the internet without
+  checking whether it meets the need. A few times per chat, right after an
+  emotion says what it specifically needs, Society chimes in with that
+  well-meaning but beside-the-point advice ("have you tried yoga?", "maybe take
+  a nap"). The emotions call it out: what it misses and what the real need is.
+  Because it previews the pushback you may get when you open up to real people,
+  the final plan lists each piece of advice with a kind, firm reply you could
+  say back. It never gets a say in the plan, sits out when things are serious,
+  and can be turned off in Settings.
 - **7 steps.** The original template in one answer: reactions, what you're
   tempted to overlook, the challenges, two pathways, Sadness's pick, and the
   updated plan. Add an objection and the template runs again.

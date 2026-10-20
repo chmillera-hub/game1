@@ -91,7 +91,7 @@ var TeffyEngine = (function () {
   const SOCIETY = {
     name: "Society", emoji: "🦜",
     line: "Have you tried yoga?",
-    about: "The cultural zeitgeist. It parrots advice that sounds well-meaning but stays on the surface (\"try deep breathing\", \"take a nap\", \"don't make waves\") and skips the actual need. It isn't an emotion: it never gets a score and never gets a say in the plan. Your emotions call it out when its advice misses.",
+    about: "Advice you've absorbed from the people around you and the culture: coworkers, friends, family, the internet. It sounds well-meaning (\"try deep breathing\", \"take a nap\", \"don't make waves\") but nobody ever checked whether it meets the need. It isn't a feeling, so it never gets a score or a say in the plan. Your emotions call it out, and its lines preview the pushback you may hear when you open up to real people, so the final plan gives you a reply ready for each one.",
   };
   const emo = name => (name === "Society" ? SOCIETY : findEmotion(name) || { name: String(name), emoji: "•" });
 
@@ -303,7 +303,7 @@ var TeffyEngine = (function () {
   // Chat bubbles hold one paragraph.
   const oneParagraph = t => cleanQuote(t).replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
   const SAFETY = "If the user seems to be in danger or in crisis, the plan must put their safety first and include reaching out to someone they trust or a crisis line.";
-  const SOCIETY_NOTE = "🦜 Society is not an emotion: it parrots the culture's generic, surface-level advice (\"try deep breathing\", \"have you tried yoga\", \"take a nap\", \"don't make waves\"). When its advice misses an emotion's specific need, that emotion, or another whose angle sees why it misses (Annoyance spots vague reasoning, Anger spots a need being minimized), calls it out: what the advice misses and what the real need is. Society's advice never becomes part of the plan unless an emotion turns it into something specific.";
+  const SOCIETY_NOTE = "🦜 Society is not an emotion: it's advice the user has absorbed from people and the culture and never examined (\"try deep breathing\", \"have you tried yoga\", \"take a nap\", \"don't make waves\"). It also previews the pushback the user may hear from real coworkers, friends or family. When its advice misses an emotion's specific need, that emotion, or another whose angle sees why it misses (Annoyance spots vague reasoning, Anger spots a need being minimized), calls it out: what the advice misses and what the real need is, and, when it helps, the short line the user could say back if a real person tells them this. Society's advice never becomes part of the plan unless an emotion turns it into something specific.";
   const USER_ONLY = "Some things only the user can supply (their own numbers, a person's name, what someone else will answer). The council can't produce them, so nobody should keep asking for them. A plan step that tells the user to get or decide that thing answers the objection.";
 
   function convenePrompt(s) {
@@ -435,7 +435,7 @@ var TeffyEngine = (function () {
         "- If your request is already on the table and the plan hasn't changed since, don't just repeat it: add something new (a trade-off, an answer to someone, a detail) or say you'll wait for the Consciousness.",
         "- If your need clashes with another emotion's, name the clash and suggest a trade-off. Your proposal must not lock in a part of the plan another suffering emotion objects to.",
         "- Don't argue for another emotion's need; if it matters, name that emotion so it can speak for itself.",
-        "- " + SOCIETY_NOTE + " If Society just gave you (or someone whose need you understand) advice that misses, call it out in your own words, with humor if you like: why it doesn't solve the actual problem, and what would. Call out the advice, never insult anyone.",
+        "- " + SOCIETY_NOTE + " If Society just gave you (or someone whose need you understand) advice that misses, call it out in your own words, with humor if you like: why it doesn't solve the actual problem, and what would. If it fits, add the one short, kind, firm line the user could say back to a real person who tells them this. Call out the advice, never insult anyone.",
         "- " + USER_ONLY,
         "- \"score\": -1 if the plan still fails your need, 0 if you can live with it now (grudgingly is fine). If you were already at 0, you stay at 0 unless the plan itself changed against your need, and don't say you're \"coming round\". Getting what you asked for never lowers it. Don't fake agreement.");
     }
@@ -521,9 +521,20 @@ var TeffyEngine = (function () {
     ].filter(l => l !== "").join("\n").replace(/\n(THE CHAT SO FAR|Update the plan)/g, "\n\n$1");
   }
 
+  // Each Society line with the call-out that answered it.
+  function societyLines(s) {
+    const out = [];
+    s.messages.forEach((m, i) => {
+      if (m.kind !== "society") return;
+      const reply = s.messages.slice(i + 1).find(x => x.kind === "emotion" && (x.to === "Society" || x.from === m.to));
+      out.push({ advice: m.text, to: m.to, callout: reply ? `${reply.from}: "${reply.text}"` : "" });
+    });
+    return out;
+  }
   function finalPrompt(s) {
     const still = suffering(s);
     const promised = conditionLines(s);
+    const heard = societyLines(s);
     return [
       "You are the 🧠 Consciousness in Teffy's Emotional Council. The conversation is wrapping up.",
       "",
@@ -539,10 +550,11 @@ var TeffyEngine = (function () {
       "",
       "Write:",
       "- \"plan\": the final plan, to the user in plain second person, at most three short sentences, keeping every accepted condition and the specific things the user said they want. No emotion names. Any message to someone appears in quotes with the actual words. Radically non-violent and pro-human. " + SAFETY,
+      heard.length ? `- "heard": one entry per piece of Society advice below, in order. "advice" is the advice as a real person might say it to the user (short), and "reply" is one sentence the user could say back: kind, firm, radically non-violent, in first person, naming the actual need the emotions identified (use the call-out). These prepare the user for the pushback they may get when they open up to people.\nSOCIETY'S ADVICE AND THE CALL-OUTS:\n${heard.map(h => `- Society to ${h.to}: "${h.advice}"${h.callout ? `\n  Called out by ${h.callout}` : ""}`).join("\n")}` : "",
       "- \"text\": your closing message to the user, in first person, one paragraph of at most 4 sentences, no line breaks, in the emotional personification language. Speak to anyone in STILL SUFFERING (how the plan still looks after them), and name at most two emotions and the specific step each one added. Sadness is only ever listed because the emotion it spoke up for is still hurting: say so, and never give Sadness a grievance of its own. Only mention a concern an emotion actually said in the chat. Add the one thing your last message didn't say (the fallback, or the next concrete step) instead of restating the plan. Never use the words score, council, -1, 0 or \"still suffering\". No filler (\"I'll keep checking in\", \"your feelings are valid\").",
       "",
       "Reply with only this JSON:",
-      "{\"plan\":\"...\",\"text\":\"...\"}",
+      heard.length ? "{\"plan\":\"...\",\"heard\":[{\"advice\":\"...\",\"reply\":\"...\"}],\"text\":\"...\"}" : "{\"plan\":\"...\",\"text\":\"...\"}",
     ].filter(l => l !== "").join("\n").replace(/\n(THE CHAT SO FAR|Write:)/g, "\n\n$1");
   }
 
@@ -550,7 +562,7 @@ var TeffyEngine = (function () {
     const e = emo(toName);
     const said = [...emotionMessages(s)].reverse().find(m => m.from === toName);
     return [
-      "You are 🦜 Society in a comedy bit inside Teffy, an app where the user's personified emotions talk through a plan in a group chat. Society is not an emotion: it's the cultural zeitgeist, a cheerful parrot of advice that sounds well-meaning but stays on the surface and skips the real need.",
+      "You are 🦜 Society in a comedy bit inside Teffy, an app where the user's personified emotions talk through a plan in a group chat. Society is not an emotion: it's the advice the user has absorbed over the years from coworkers, friends, family and the internet, repeated without ever checking whether it meets the need. It sounds well-meaning but stays on the surface. It also previews the pushback the user may hear when they open up to real people.",
       "",
       `THE USER'S SITUATION: "${s.thought}"`,
       `${e.name.toUpperCase()} ${e.emoji} JUST SAID: "${said ? said.text : ""}"`,
@@ -559,7 +571,7 @@ var TeffyEngine = (function () {
       "THE CHAT SO FAR (oldest first):",
       transcript(s, 8),
       "",
-      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences of generic advice the culture repeats (self-care clichés, "just relax", "have you tried yoga", "take a nap", "everyone's busy", "don't make waves", "look on the bright side", "it'll all work out") that sounds kind but sidesteps exactly what ${e.name} just asked for. Make it a little funny, the way a too-chipper relative is. Don't reuse a cliché Society already said in the chat.`,
+      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences of the generic advice people actually say (self-care clichés, "just relax", "have you tried yoga", "take a nap", "everyone's busy", "don't make waves", "look on the bright side", "it'll all work out"), phrased the way a coworker, a friend, a relative or the internet would say it to someone in the user's situation. It sounds kind but sidesteps exactly what ${e.name} just asked for. Make it a little funny, the way a too-chipper relative is. Don't reuse a cliché Society already said in the chat.`,
       "- Never cruel, never an insult, never about the user's body, weight, identity or worth. Nothing dangerous (no substances, no risky stunts). It should be harmless-sounding and simply beside the point.",
       "- One paragraph, no line breaks, under 30 words. No emoji except at most one.",
       "",
@@ -895,9 +907,12 @@ var TeffyEngine = (function () {
     const plan = oneParagraph(f && f.plan);
     if (plan) s.plan = plan;
     const t = tally(s);
+    const heard = arr(f && f.heard)
+      .map(x => ({ advice: oneParagraph(x && x.advice), reply: oneParagraph(x && x.reply) }))
+      .filter(x => x.advice && x.reply).slice(0, COUNCIL.societyMax);
     s.messages.push({
       kind: "final", plan: s.plan, text: oneParagraph(f && f.text), start: t.start, end: t.now, still: suffering(s),
-      scores: Object.assign({}, s.scores), forYou: (s.forYou || []).slice(),
+      scores: Object.assign({}, s.scores), forYou: (s.forYou || []).slice(), heard,
     });
     s.sinceConsolidate = 0;
     s.askedOf = "";

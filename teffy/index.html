@@ -340,6 +340,11 @@ button { cursor: pointer; }
 .final .tally-line { font-family: var(--f-mono); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .final .tally-line b { color: var(--ink); font-weight: 600; }
 .for-you { padding: 10px 12px; border-radius: 12px; background: var(--sunken); }
+.heard { padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--muted); }
+.heard ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.heard li { display: flex; flex-direction: column; gap: 2px; }
+.heard-advice { color: var(--muted); font-style: italic; }
+.heard-reply { font-weight: 700; }
 .for-you ul { margin: 4px 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 2px; }
 .final-voices { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .final-voices li { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px; border-radius: 999px; background: var(--sunken); font-size: 0.8rem; }
@@ -842,7 +847,8 @@ button { cursor: pointer; }
       say("Embarrassment", "Consciousness", "If the text goes out right now and we own last week… okay. I can live with that.", 0),
       decide("Tiredness", { Tiredness: [1, "Coffee's fine. I want a promise of sleep."], Wellness: [0, "Tiredness has this."] }),
       say("Tiredness", "all", "I'm still tired. Coffee now and an early night tonight, and I'll stop complaining.", 0, { proposal: "An early night tonight" }),
-      { kind: "final", plan: "Text Sam right now with an honest ETA and an apology for last week. Toast and a banana in the car, coffee on the way, leave in 10 minutes, and an early night tonight.", text: "Hunger, breakfast is handled. Embarrassment, I hear you: Sam gets an honest text before anything else. Tiredness, coffee now and an early night later. Let's go have a good round.", start: 3, end: 0, still: [] },
+      { kind: "final", plan: "Text Sam right now with an honest ETA and an apology for last week. Toast and a banana in the car, coffee on the way, leave in 10 minutes, and an early night tonight.", text: "Hunger, breakfast is handled. Embarrassment, I hear you: Sam gets an honest text before anything else. Tiredness, coffee now and an early night later. Let's go have a good round.", start: 3, end: 0, still: [],
+        heard: [{ advice: "Being a little late is normal, just breathe. Everyone's busy these days.", reply: "Thanks, but this isn't about calming down. Sam waited on me last week, so I'm sending him an honest time and saying sorry." }] },
     ];
     return {
       example: true, thought: EXAMPLE_THOUGHT, status: "done", idea: messages[1].plan, plan: messages[messages.length - 1].plan,
@@ -1515,6 +1521,9 @@ button { cursor: pointer; }
         return h("section", { class: "final" + (hurting ? " hurting" : ""), "aria-label": "Final plan" },
           h("h3", null, hurting ? `The plan, with ${still.length === 1 ? "one voice" : still.length + " voices"} still hurting` : "The plan everyone can live with"),
           h("p", { class: "final-plan" }, m.plan || s.plan),
+          Array.isArray(m.heard) && m.heard.length ? h("div", { class: "heard" }, h("span", { class: "k" }, "If someone tells you this"),
+            h("ul", null, m.heard.filter(x => isObj(x) && typeof x.advice === "string" && typeof x.reply === "string").map(x =>
+              h("li", null, h("span", { class: "heard-advice" }, "🦜 “", x.advice, "”"), h("span", { class: "heard-reply" }, "You could say: “", x.reply, "”"))))) : null,
           Array.isArray(m.forYou) && m.forYou.length ? h("div", { class: "for-you" }, h("span", { class: "k" }, "For you to settle"),
             h("ul", null, m.forYou.filter(x => typeof x === "string").map(x => h("li", null, x)))) : null,
           h("p", { class: "tally-line" }, "Suffering voices ", h("b", null, String(m.start || 0)), " → ", h("b", null, String(m.end || 0))),
@@ -1959,7 +1968,7 @@ button { cursor: pointer; }
             h("span", { class: "ava", "aria-hidden": "true" }, S.emoji),
             h("div", null, h("h2", { id: "sheetTitle" }, "Society"), h("p", { class: "pf-line" }, h("q", null, S.line), " ", h("span", { class: "tag-not" }, "not an emotion")))),
           h("p", null, S.about),
-          h("p", { class: "note" }, "It sits out when things are serious. You can turn it off in Settings."),
+          h("p", { class: "note" }, "No score: it isn't a feeling. It sits out when things are serious, and you can turn it off in Settings."),
           h("div", { class: "row" }, h("button", { type: "button", class: "btn", onclick: closeSheet }, "Close"))),
       ]);
       return;
@@ -2006,7 +2015,7 @@ button { cursor: pointer; }
       h("section", null,
         h("h2", null, "How Teffy works"),
         h("p", null, "Council chat: each emotion is its own chatbot. After every message the council decides who wants to reply and why, so voices take turns, push back, help each other, and don't repeat themselves. The Consciousness folds their asks into the plan until everyone can live with it."),
-        h("p", null, "🦜 Society isn't an emotion. Now and then it parrots the culture's well-meaning but surface-level advice, and your emotions call it out when it misses their actual need."),
+        h("p", null, "🦜 Society isn't an emotion and never gets a score. It's the advice you've absorbed from people and the culture, never checked against what you actually need. Your emotions call it out, and the final plan gives you a reply ready for when a real person says it to you."),
         h("p", null, "7 steps: the original template in one answer, with reactions, two pathways, Sadness's pick and the updated plan."),
         h("p", { class: "note" }, "Your conversations are saved in this browser only.")),
     ]);
@@ -2021,7 +2030,7 @@ button { cursor: pointer; }
       renderCouncilView();
     });
     return h("label", { class: "switch", for: "societyToggle" }, box,
-      h("span", null, h("b", null, "🦜 Society chimes in"), h("br"), h("span", { class: "note" }, "A parrot of the culture's surface-level advice (\"have you tried yoga?\") that your emotions call out. Adds a few small calls per chat.")));
+      h("span", null, h("b", null, "🦜 Society chimes in"), h("br"), h("span", { class: "note" }, "Advice you've absorbed from people and the culture (\"have you tried yoga?\"). Your emotions call it out, and the final plan gives you a reply for when someone says it to you. Adds a few small calls per chat.")));
   }
   function startOver() {
     if (state.view === "chat") {
