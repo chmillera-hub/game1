@@ -20,18 +20,39 @@ There is no stock footage, and no copyrighted characters or artwork.
 | Sound design and mix | Clock, cutlery, fire, glass, fluorescent hum, office noise, birdsong and wings, phone buzzes, footsteps, all synthesized. Room reverb per scene, a phone filter on the call, music ducked under speech, loudness at −14 LUFS (`audio/mix.py`, `tools/encode.py`) |
 | Encode | Two-pass H.264 (animation tuning) + AAC at a bitrate calculated to stay under 15 MB, with SSIM measured against a near-lossless master (`tools/encode.py`) |
 
+## The realistic version
+
+[`NotPeaceButASword_realistic.mp4`](NotPeaceButASword_realistic.mp4) is the same film (same soundtrack,
+timing, shots, scripture and subtitles) with photographic images:
+
+| Piece | How |
+|---|---|
+| Photographs | One generated still per shot (`realistic/shots.py`): [RealVisXL V5.0 Lightning](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning) (SDXL) on CPU with long-prompt encoding. Maya and Mom keep one face across scenes through an [IP-Adapter](https://github.com/tencent-ailab/IP-Adapter) Plus-Face reference portrait. Group shots are photo-realized from the 2D frames (img2img keeps the staging), then each person is repainted on their own so they keep their age, look and clothes; the call close-ups and the closing window shot take their framing from the 2D frames the same way (`realistic/gen_images.py`) |
+| Faces | [LivePortrait](https://github.com/KwaiVGI/LivePortrait) used as a face rig: every frame of every face is re-rendered from the 2D performance (head turns relative to the photo, gaze, blinks and lids, brows, lip-sync shapes, and emotion blends measured from generated expression photos). Faces re-render only when their pose moves; the compositor crossfades small steps and holds before blinks (`realistic/lp_engine.py`, `realistic/render_faces.py`) |
+| Compositing | `render/main_real.js`: slow push-ins on the faces, light effects for the interludes, phone screens over blurred photos, and the 2D version's transitions, title, scripture and subtitles (`render/lib/project.js` is shared) |
+| Encode | Same soundtrack and budget; photographic frames measured better at 720×1280 than 1080×1920 at this bitrate (SSIM 0.967 against the full-resolution master), 14.5 MB |
+
+Bodies and backgrounds are still photographs; the acting is in the faces and the camera. Where a
+photograph could not be made to match the 2D staging, the realistic version adapts: the phone call
+plays as a split screen with a call badge rather than phones at ears, and the sparrows are in the
+sky shots rather than on Maya's shoulder.
+
 ## Changing it
 
 - **Words or pacing**: edit `script.json`, then rebuild from `voices` (`./build.sh voices select prepare music mix frames master final`).
 - **Acting and staging**: edit the scene in `render/scenes/`. Expressions live in `render/lib/expressions.js` and character designs in `render/lib/cast.js`. Preview stills with
   `node render/main.js --build /opt/work/build_final --stills 12.5,40 --outdir /tmp/stills`.
 - **Music**: edit the cues in `audio/music.py`, then `./build.sh music mix final`.
+- **Realistic shots**: edit a prompt in `realistic/shots.py`, delete that image from `/opt/work/real/img`
+  (and its `plates/` folder), then `./build.sh real-images real-faces real-frames real-final`.
 
 `build.sh` lists every stage and the tool locations it expects.
 
 ## Credits and licences of the tools used
 
 Kokoro-82M (Apache-2.0), Chatterbox (MIT), faster-whisper (MIT), FluidR3 GM soundfont (MIT),
-EB Garamond and Inter (SIL OFL), @napi-rs/canvas (MIT), FFmpeg (LGPL/GPL). Scripture quotations
+EB Garamond and Inter (SIL OFL), @napi-rs/canvas (MIT), FFmpeg (LGPL/GPL). Realistic version:
+RealVisXL V5.0 Lightning (CreativeML Open RAIL++-M), IP-Adapter (Apache-2.0), LivePortrait (MIT), whose
+face detector comes from InsightFace (models licensed for non-commercial research use). Scripture quotations
 follow the wording supplied for the piece (NIV-style); citations: Matthew 10:34–36, 10:38–39,
 10:29–31, 10:22–23.

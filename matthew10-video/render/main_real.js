@@ -359,13 +359,13 @@ function drawCall(ctx, sc, sh, layers, t, f) {
       ctx.fillStyle = g; ctx.fillRect(0, half + off - 160, W, 160);
       ctx.restore();
       ctx.fillStyle = 'rgba(255,236,210,0.85)'; ctx.fillRect(0, half + off - 3, W, 6);
-      // call badge on the divider: green dot, call time
+      // call badge: green dot, call time
       const secs = Math.max(0, Math.floor(t - sh.t0));
       const label = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
       ctx.save();
       ctx.globalAlpha = 1 - close;
       ctx.font = '34px InterSemi';
-      const tw = ctx.measureText(label).width, bw = tw + 84, bx = W / 2 - bw / 2, by = half + off - 30;
+      const tw = ctx.measureText(label).width, bw = tw + 84, bx = W / 2 - bw / 2, by = 56 + off;   // top of the call, clear of the subtitles
       ctx.fillStyle = 'rgba(12,12,16,0.78)'; roundRect(ctx, bx, by, bw, 60, 30); ctx.fill();
       ctx.fillStyle = '#4fbf6a'; ctx.beginPath(); ctx.arc(bx + 32, by + 30, 9, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#f2f2f5'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(label, bx + 56, by + 31);
