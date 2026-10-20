@@ -42,7 +42,9 @@ def audio(kbps):
     af = ("loudnorm=I=-14:TP=-1.5:LRA=9:measured_I={input_i}:measured_TP={input_tp}:measured_LRA={input_lra}:"
           "measured_thresh={input_thresh}:offset={target_offset}:linear=true").format(**js)
     out = os.path.join(BUILD, f"audio_{kbps}k.m4a")
-    run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-af", af + ",aresample=48000", "-c:a", "aac",
+    # brick-wall the peaks so AAC overshoot at low bitrates stays under 0 dBFS
+    af += ",aresample=192000,alimiter=limit=0.56:attack=1:release=80:level=false,aresample=48000"
+    run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-af", af, "-c:a", "aac",
          "-b:a", f"{kbps}k", "-ac", "2", out])
     return out
 
@@ -88,6 +90,7 @@ def main():
     ap.add_argument("--audio-kbps", type=int, default=64)
     ap.add_argument("--preset", default="slower")
     ap.add_argument("--name", default="too_mom_halloween.mp4")
+    ap.add_argument("--remux", action="store_true", help="reuse the encoded video, redo audio + mux only")
     args = ap.parse_args()
     os.makedirs(OUTDIR, exist_ok=True)
     m = master()
@@ -96,7 +99,9 @@ def main():
     vkbps = int((total_kbps - args.audio_kbps) * 0.985)
     print(f"duration {dur:.2f}s  total {total_kbps:.0f} kbps  video {vkbps} kbps")
     a = audio(args.audio_kbps)
-    v = video(m, args.height, vkbps, args.preset, f"{args.height}p")
+    v = os.path.join(BUILD, f"video_{args.height}p.mp4")
+    if not (args.remux and os.path.exists(v)):
+        v = video(m, args.height, vkbps, args.preset, f"{args.height}p")
     out = os.path.join(OUTDIR, args.name)
     mux(v, a, out)
     size = os.path.getsize(out)

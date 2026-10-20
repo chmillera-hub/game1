@@ -9,7 +9,11 @@ that drawings get thrown away; the mice decide the "TOO" was never a mistake
 ("I love you, *too*"); a horned monster on the stairs turns out to be Mom in
 hair curlers — and she answers: *"I love you too, baby. With two O's."*
 
-The finished video is `out/too_mom_halloween.mp4`.
+The finished video is `out/too_mom_halloween.mp4`:
+1080×1920 H.264 (24 fps) + AAC stereo, 4:58, **14.4 MB**, SSIM **0.987** against
+the lossless render, audio normalised to −14.5 LUFS (true peak −0.6 dBTP).
+The first frame is the title shot itself (no fade from black), so social
+previews show the moonlit kitchen and the title.
 
 ## How it is made
 
