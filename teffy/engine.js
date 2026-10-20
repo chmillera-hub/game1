@@ -257,6 +257,16 @@ var TeffyEngine = (function () {
     return t;
   }
   const VOICE = "Text like a real person in a group chat: casual, direct, specific. Don't quote your catchphrase. Use only facts the user gave or that came up in the chat; never invent numbers, history or what someone said. Call the user \"you\", or \"we\"/\"us\" since you're part of them.";
+  // How every voice in the council talks, whatever its emotion.
+  const CARE = [
+    "Be radically non-violent and pro-human: never insult, blame, label, shame or threaten anyone (the user, the other people in their life, or the other emotions). Speak to specific actions and their effects, the need behind your feeling, and a request that respects everyone involved. Even angry, be firm and clear, never harsh.",
+    "Be precise and actionable: name your specific barrier (exactly what keeps you from 0) and a doable request: who does what, and when. If it's a message to someone, give the actual words.",
+    "Humor, slang or a quick \"lol that sucks\" is fine, as long as the same message says what you mean by it and what you want the Consciousness to do.",
+    "If you ask a question, say why you're asking and what answer would bring you to 0. Never just wonder out loud (\"should we? idk\"): name what you don't know or fear, and what would settle it.",
+  ].join("\n- ");
+  const PARAGRAPH = "ONE paragraph: usually 2 to 4 sentences, never more than 6. No line breaks, lists or headings.";
+  // Chat bubbles hold one paragraph.
+  const oneParagraph = t => cleanQuote(t).replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
   const SAFETY = "If the user seems to be in danger or in crisis, the plan must put their safety first and include reaching out to someone they trust or a crisis line.";
 
   function convenePrompt(s) {
@@ -272,11 +282,12 @@ var TeffyEngine = (function () {
       "Decide who joins the chat.",
       "- \"idea\": the user's plan exactly as they stated it, in first person, one sentence. Don't fix anything yet. If they described a feeling rather than a plan, the idea is what they're inclined to do about it.",
       "- \"suffering\": every emotion whose need THIS idea, as stated, fails right now (score -1). If the idea already serves an emotion's need, it is not suffering. Any emotion the user mentions as objecting belongs here.",
-      `- For at most ${COUNCIL.maxOpeners} of them, with clearly different needs, write "says": a short opening chat message (under 25 words) about the user's actual situation. Give every other suffering emotion "says": "" (it speaks later). Merge overlapping worries (rest, sleep, a day off) into whichever emotion says it best.`,
+      `- For at most ${COUNCIL.maxOpeners} of them, with clearly different needs, write "says": an opening chat message of one or two sentences about the user's actual situation: what exactly in the idea fails its need, and what it would want instead. Give every other suffering emotion "says": "" (it speaks later). Merge overlapping worries (rest, sleep, a day off) into whichever emotion says it best.`,
       "- \"need\": for each suffering emotion, what would bring it to 0.",
       "- \"helpers\": up to 3 emotions at 0 that could help the suffering ones from their own angle. Include the emotion that drives what the user wants to do (Impulsivity for fun, Loneliness for company, and so on) if it isn't suffering.",
       "- Scores are only -1 or 0. Never invent an emotion. Never leave a suffering emotion out to make things look calmer. Sadness joins on its own, so don't list it.",
       "- " + VOICE,
+      "- Openings are radically non-violent: no blaming, labeling or shaming the user, other people or other emotions.",
       "- " + SAFETY,
       "",
       "Reply with only this JSON:",
@@ -346,16 +357,18 @@ var TeffyEngine = (function () {
     lines.push("", "THE CHAT SO FAR (oldest first):", transcript(s), "");
     if (mode === "accept") {
       lines.push(
-        "You just came round to 0. Write a short message (under 25 words) saying you can live with the plan now, and on what condition, grudgingly if that's how you feel. Don't repeat the plan back.",
+        "You just came round to 0. Write a short message (one or two sentences) saying you can live with the plan now, and on what condition, grudgingly if that's how you feel. Don't repeat the plan back.",
         "- " + VOICE);
     } else if (sad) {
       lines.push(
-        `Write your next message: speak TO ${s.neglected || "the emotion whose need is least met"} with warmth. Reflect what it actually said, in a few words, and ask the Consciousness or the others to take it seriously. Never speak for it or give it feelings it didn't express. No plan proposals of your own. Under 35 words.`,
-        "- " + VOICE);
+        `Write your next message: speak TO ${s.neglected || "the emotion whose need is least met"} with warmth. Reflect what it actually said, name the part of its need the plan still misses, and ask the Consciousness or a specific emotion to address exactly that. Never speak for it or give it feelings it didn't express. No plan proposals of your own. ${PARAGRAPH}`,
+        "- " + VOICE,
+        "- " + CARE);
     } else {
       lines.push(
-        "Write your next message in the chat, under 35 words.",
+        "Write your next message in the chat. " + PARAGRAPH,
         "- " + VOICE,
+        "- " + CARE,
         "- Respond to what was actually said. Stand up for your own need, or help a suffering emotion with something concrete from your own angle.",
         "- If someone already proposed what you want, back it in a few words (\"same, as long as…\") and add only your condition. Never repeat a suggestion that was already made or turned down. If your idea was turned down, take the hint: try a different angle or back off.",
         "- If someone spoke for you or gave you advice that misses your real problem, say so plainly (\"nah, that's not it, my problem is…\").",
@@ -409,7 +422,8 @@ var TeffyEngine = (function () {
       "- If you didn't take an emotion's request, or took only part of it, say so plainly and why.",
       "- Be honest about the trade-off: what the user gives up, or what happens if a step fails (and the fallback).",
       "- \"plan\": written to the user in plain second person (\"Text Sam now…\"), at most three short sentences, realistic for their real situation. No emotion names and no chat logistics in the plan. " + SAFETY,
-      "- \"text\": your message to the chat, under 45 words. Don't start with your name. Talk to one or two emotions, not a roll call. If the user just spoke, answer them. End with ONE specific question to ONE suffering emotion, if any is left.",
+      "- \"text\": your message to the chat, one paragraph of at most 5 sentences, no line breaks. Don't start with your name. Talk to one or two emotions, not a roll call. If the user just spoke, answer them. End with ONE specific question to ONE suffering emotion, if any is left, saying why you're asking.",
+      "- Radically non-violent and pro-human: the plan treats everyone involved fairly, including the other people in the user's life. No blaming, labeling or shaming. Steps are precise: who does what, when, and the actual words for any message.",
       "- \"ask\": the emotion you asked, or \"\".",
       "",
       "Reply with only this JSON:",
@@ -431,7 +445,7 @@ var TeffyEngine = (function () {
       "",
       "Write:",
       "- \"plan\": the final plan, to the user in plain second person, at most three short sentences, with the changes the council agreed on. No emotion names. Never change what an emotion asked for unless it accepted the change in the chat. " + SAFETY,
-      "- \"text\": your closing message to the user, in first person, under 55 words, in the emotional personification language. Speak to at most three emotions by name: anyone in STILL SUFFERING (and how you'll look after them), and whoever gave the most ground. Only call an emotion still suffering if it is listed in STILL SUFFERING. End with the one concrete next step. No filler like \"I'll keep checking in\", and don't repeat your last message.",
+      "- \"text\": your closing message to the user, in first person, one paragraph of at most 5 sentences, no line breaks, in the emotional personification language. Speak to at most three emotions by name: anyone in STILL SUFFERING (and how you'll look after them), and whoever gave the most ground. Only call an emotion still suffering if it is listed in STILL SUFFERING. End with the one concrete next step. No filler like \"I'll keep checking in\", and don't repeat your last message.",
       "",
       "Reply with only this JSON:",
       "{\"plan\":\"...\",\"text\":\"...\"}",
@@ -446,7 +460,7 @@ var TeffyEngine = (function () {
     for (const x of arr(c.suffering)) {
       const em = findEmotion(x && x.emotion);
       if (!em || em.name === "Sadness" || sufferers.some(y => y.name === em.name)) continue;
-      sufferers.push({ name: em.name, says: cleanQuote(x.says), need: cleanQuote(x.need) });
+      sufferers.push({ name: em.name, says: oneParagraph(x.says), need: cleanQuote(x.need) });
     }
     // Emotions the user named as objecting are suffering even if the reply missed them.
     for (const n of mentionedEmotions(s.thought)) {
@@ -542,7 +556,7 @@ var TeffyEngine = (function () {
   }
   function applySpeak(s, name, m, why) {
     if (!m || typeof m !== "object") throw badShape("speak");
-    const text = cleanQuote(m.text);
+    const text = oneParagraph(m.text);
     if (!text) throw badShape("speak");
     const prev = name === "Sadness" ? null : s.scores[name] < 0 ? -1 : 0;
     if (name !== "Sadness") setScore(s, name, toScore(m.score));
@@ -650,7 +664,7 @@ var TeffyEngine = (function () {
     if (plan && plan !== s.plan) { s.plan = plan; s.planVersion = (s.planVersion || 0) + 1; }
     const asked = findEmotion(c.ask);
     s.askedOf = asked && asked.name !== "Sadness" && s.participants.includes(asked.name) ? asked.name : "";
-    s.messages.push({ kind: "consciousness", text: cleanQuote(c.text) || "Here's where the plan stands now.", plan: s.plan, planUpdate: !!plan, to: s.askedOf || "" });
+    s.messages.push({ kind: "consciousness", text: oneParagraph(c.text) || "Here's where the plan stands now.", plan: s.plan, planUpdate: !!plan, to: s.askedOf || "" });
     io.update({});
   }
 
@@ -667,7 +681,7 @@ var TeffyEngine = (function () {
     const plan = cleanQuote(f && f.plan);
     if (plan) s.plan = plan;
     const t = tally(s);
-    s.messages.push({ kind: "final", plan: s.plan, text: cleanQuote(f && f.text), start: t.start, end: t.now, still: suffering(s) });
+    s.messages.push({ kind: "final", plan: s.plan, text: oneParagraph(f && f.text), start: t.start, end: t.now, still: suffering(s) });
     s.sinceConsolidate = 0;
     s.askedOf = "";
     io.update({});
