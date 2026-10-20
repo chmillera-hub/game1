@@ -16,10 +16,12 @@ It has two tabs.
   any time, speak for any emotion ("My doubt says…"), pause and continue.
 - **🦜 Society.** Not an emotion, so it never gets a score: it's the advice
   you've absorbed from coworkers, friends, family and the internet without
-  checking whether it meets the need. A few times per chat, right after an
-  emotion says what it specifically needs, Society chimes in with that
+  checking whether it meets the need. Right after the openings, and once or
+  twice later on a suffering emotion's turn, Society chimes in with that
   well-meaning but beside-the-point advice ("have you tried yoga?", "maybe take
-  a nap"). The emotions call it out: what it misses and what the real need is.
+  a nap", "just push through"). It never agrees with the need it's aimed at.
+  The emotion calls it out: it quotes what Society said, names the exact detail
+  of your situation it skips, and says what's still open.
   Because it previews the pushback you may get when you open up to real people,
   the final plan lists each piece of advice with a kind, firm reply you could
   say back. It never gets a say in the plan, sits out when things are serious,
@@ -85,10 +87,15 @@ back through a lens it hasn't used yet:
 - the smallest real version;
 - asking a specific emotion for help.
 
-These messages are tagged "↻ coming back to it" in the chat. One helper then
-gets the floor to address it from its own angle. After that, the Consciousness
-answers that latest reason in the plan itself, never re-offering advice the
-emotion already turned down. A call-out of Society quotes what Society actually
+These messages are tagged "↻ coming back to it" in the chat. A comeback only
+happens after the plan has changed since that emotion last spoke and still
+misses its need. Until then it waits for the Consciousness's answer instead of
+repeating itself. Each comeback stays on the emotion's own first request, with
+a new specific each time. One helper then gets the floor to address it from its
+own angle. After that, the Consciousness answers that latest reason in the plan
+itself, never re-offering advice the emotion already turned down. When an
+emotion comes round to 0, what it accepted on is recorded and the plan keeps
+it. A call-out of Society quotes what Society actually
 said and names the exact detail it ignores; "that doesn't help my boundaries"
 isn't enough.
 
