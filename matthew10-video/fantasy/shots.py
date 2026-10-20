@@ -25,12 +25,18 @@ PRIYA = ("a 34-year-old South Asian woman with a long dark braid over her should
 W, H = 768, 1344
 
 
-def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg="", init=None, strength=0.75):
+def shot(id, prompt, faces=(), ref=None, seed=1, w=W, h=H, ip=0.6, neg="", init=None, strength=0.75, inpaint=None):
     s = {"id": id, "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "negative": f"{NEG_F}, {neg}" if neg else NEG_F,
          "faces": list(faces), "ref": ref, "seed": seed, "w": w, "h": h, "ip": ip}
     if init:
         s.update(init=init, strength=strength)
+    if inpaint:
+        s["inpaint"] = inpaint
     return s
+
+
+def region(box, prompt, seed, strength=0.9):
+    return {"box": list(box), "prompt": f"{STYLE_HEAD}, {prompt}, {STYLE}", "seed": seed, "strength": strength}
 
 
 M = MAYA   # her face; costumes are given per shot
@@ -38,8 +44,9 @@ SHOTS = [
     # ---------------------------------------------------------------- the city of glass
     shot("city_wide", "a city of glass towers rising from a vast frozen sea at dusk, warm golden light glowing inside the "
          "glass, a green aurora in a deep blue sky, snow mist drifting over the ice, epic wide shot", seed=201),
-    shot("law_door", "a towering arched doorway of frosted glass and silver in a fantasy city, an arch of glowing runes "
-         "carved above it, falling snow, warm lantern light, low angle", seed=202),
+    shot("law_door", "a towering arched doorway carved from translucent blue ice and glass in a fantasy city, a band of "
+         "glowing golden runes carved along the arch above it, frost, falling snow, warm lanterns on either side, low "
+         "angle", seed=212),
     shot("smiling_crowd", "elegant people in winter fantasy cloaks walking across a plaza of clear glass at dusk, every "
          "face wearing the same calm polite smile, lanterns, slightly uncanny, medium wide shot", seed=203),
     shot("maya_smile", f"close-up portrait of {M}, wearing a deep blue wool cloak over a cream linen dress with a high "
@@ -53,7 +60,15 @@ SHOTS = [
          "with gray hair, round spectacles and a gray mustache in a navy coat, on the right a young man in a dark green "
          "tunic, the back of a young woman's dark curly hair in the foreground",
          faces=[("feast", "mom"), ("feast", "dad"), ("feast", "jordan")], seed=205,
-         init="/opt/work/real/img/table_wide.png", strength=0.6),
+         # strong enough to turn the dining room into an ice hall; each person is then repainted in place
+         init="/opt/work/real/img/table_wide.png", strength=0.8,
+         inpaint=[region((0, 650, 215, 915), "an elegant 60-year-old Black woman with a short salt-and-pepper gray bob, "
+                         "a pearl necklace and a rose velvet gown, seated at the end of a candlelit feast table in a hall "
+                         "of ice, a gentle closed-mouth smile, facing the camera", 15, 1.0),
+                  region((250, 680, 515, 910), f"{DAD}, seated at a candlelit feast table in a hall of ice, facing the "
+                         "camera", 6),
+                  region((540, 670, 760, 910), "a 22-year-old Black young man with short dark hair in a dark green "
+                         "tunic, seated at a candlelit feast table in a hall of ice, facing the camera", 7)]),
     shot("mom_feast", f"close-up portrait of {MOM}, wearing a rose velvet gown with a high collar and a pearl circlet in "
          "her hair, seated at a feast in a hall of ice and candles, warm candlelight, pleasant expression, lips closed",
          faces=[("feast", "mom")], ref="ref_mom", seed=206, neg="young, smile with teeth"),

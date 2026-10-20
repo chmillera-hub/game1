@@ -41,6 +41,9 @@ LIMITS = {
     "office_overwhelm": {"rot": 0.5},        # hands at her collar: small head turns only
     "call_maya": {"rot": 0.5},               # phone at her ear
     "mirror_reflection": {"rot": 0.8},
+    # fantasy version
+    "overwhelm": {"rot": 0.4},               # hands over her ears
+    "maya_ember": {"rot": 0.6},              # cupped hands under her chin
 }
 
 

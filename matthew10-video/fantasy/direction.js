@@ -11,7 +11,7 @@ const S = lib('stage');
 const { Actor } = lib('anim');
 const { BASE } = lib('cast');
 const { wordTimes } = lib('text');
-const { clamp, smooth } = lib('util');
+const { clamp, smooth, lerp } = lib('util');
 const V = require('./vfx');
 
 const W = S.W, H = S.H;
@@ -127,6 +127,10 @@ function loadDirection(BUILD, REAL) {
     .expr(start('L19', 0.2), 'moved', 1.0).set('wet', start('L19', 1.0), 0.4, 1.5)
     .expr(start('N27', 0.4), 'tender', 1.2).expr(at('N27', 'people') - 0.3, 'soft_smile', 1.4);
 
+  // a point of the picture (frame coordinates at zoom 1) as it appears through the camera
+  const proj = (cam, x, y) => (cam ? [W / 2 + cam.dx + cam.z * (x - cam.x), H / 2 + cam.dy + cam.z * (y - cam.y)] : [x, y]);
+  const zoom = (cam) => (cam ? cam.z : 1);
+
   // ------------------------------------------------------------ shots
   // cam: zoom z0 -> z1 toward a focus (default: the first face, else the centre),
   // optionally panning to f1. Shots cut on words; the scene changes dissolve.
@@ -156,13 +160,13 @@ function loadDirection(BUILD, REAL) {
   const feastFx = (ctx, t) => V.flicker(ctx, t, { amount: 0.07 });
   cut(sc.feast.start, 'feast_hall', { trans: ['dissolve', 1.0], cam: { z0: 1.0, z1: 1.07, f: [540, 1050] }, fx: feastFx });
   cut(start('L1', -0.35), 'mom_feast', { cam: { z0: 1.02, z1: 1.08 }, fx: feastFx });
-  const emberFx = (ctx, t) => {
+  const emberFx = (ctx, t, sh, cam) => {
     feastFx(ctx, t);
     const f = face('maya_ember');
-    const x = f ? f.cx : W / 2, y = f ? f.y1 + f.h * 1.0 : H * 0.62;
+    const [x, y] = proj(cam, f ? f.cx : W / 2, f ? f.y1 + f.h * 1.0 : H * 0.62);
     // the truth burns brighter while she says it
     const k = 0.55 + 0.45 * smooth((t - start('L2')) / 1.5) - 0.25 * smooth((t - end('L2', 0.5)) / 2);
-    V.ember(ctx, t, { x, y, r: f ? f.w * 0.16 : 50, k });
+    V.ember(ctx, t, { x, y, r: (f ? f.w * 0.16 : 50) * zoom(cam), k });
   };
   cut(start('N6', -0.3), 'maya_ember', { cam: { z0: 1.0, z1: 1.12 }, fx: emberFx });
   cut(start('L3', -0.35), 'mom_feast', { cam: { z0: 1.06, z1: 1.1 }, fx: feastFx });
@@ -170,9 +174,10 @@ function loadDirection(BUILD, REAL) {
   cut(end('L4', 0.4), 'feast_hall', { cam: { z0: 1.08, z1: 1.12, f: [540, 1050] }, fx: feastFx });   // the silence
   cut(start('N7', -0.1), 'crack_floor', {
     cam: { z0: 1.0, z1: 1.1, f: [540, 1150] },
-    fx: (ctx, t) => {
+    fx: (ctx, t, sh, cam) => {
       feastFx(ctx, t);
-      V.cracks(ctx, t, { x: 540, y: 1180, t0: at('N7', 'glass') - 0.4, dur: 1.8, n: 8, len: 1000, seed: 21 });
+      const [x, y] = proj(cam, 540, 1180);
+      V.cracks(ctx, t, { x, y, t0: at('N7', 'glass') - 0.4, dur: 1.8, n: 8, len: 1000 * zoom(cam), seed: 21 });
     },
     shake: [[at('N7', 'crack') - 0.1, 0.8, 6]],
   });
@@ -181,8 +186,16 @@ function loadDirection(BUILD, REAL) {
   const tStrike = wi('N8', 'sword').e;
   cut(start('N8', -0.2), 'sword_sky', {
     cam: { z0: 1.0, z1: 1.14, f: [540, 700], f1: [540, 1050] },
-    fx: (ctx, t) => {
+    fx: (ctx, t, sh, cam) => {
       V.lightning(ctx, t, [start('N8', 1.0), at('N8', 'did') - 0.3, at('N8', 'peace', 0) + 2.2]);
+      // the sword's light runs down the blade into the strike
+      const u = clamp((t - start('N8')) / (tStrike - start('N8')));
+      V.withAdd(ctx, () => {
+        const [x, y] = proj(cam, 530, lerp(380, 1500, u * u)), r = 260 * zoom(cam);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(235,245,255,${0.5 * u})`); g.addColorStop(1, 'rgba(235,245,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      });
       V.motes(ctx, t, { n: 30, rgb: [220, 230, 255], alpha: 0.5, rise: -60, seed: 9 });
       V.flash(ctx, clamp((t - (tStrike - 0.35)) / 0.35) * 0.9);
     },
@@ -190,8 +203,9 @@ function loadDirection(BUILD, REAL) {
   cut(tStrike, 'sword_impact', {
     trans: ['flash', 0.5],
     cam: { z0: 1.12, z1: 1.04, f: [540, 1000] },
-    fx: (ctx, t) => {
-      V.shockwave(ctx, t, { x: 540, y: 1250, t0: tStrike, dur: 1.6 });
+    fx: (ctx, t, sh, cam) => {
+      const [x, y] = proj(cam, 540, 1250);
+      V.shockwave(ctx, t, { x, y, t0: tStrike, dur: 1.6 });
       V.snow(ctx, t, { n: 90, speed: -60, wind: 0, alpha: 0.6, seed: 12 });
       V.motes(ctx, t, { n: 40, rgb: [255, 240, 220], alpha: 0.6, rise: 40, seed: 13 });
     },
@@ -200,7 +214,8 @@ function loadDirection(BUILD, REAL) {
   // the hall splits: the family on one side, Maya on the other
   const tSplit = at('N9', 'turn') - 0.2;
   cut(start('N9', -0.1), 'feast_hall', {
-    cam: { z0: 1.12, z1: 1.04, f: [540, 1050] }, split: { t0: tSplit, x: 520 },
+    // across the table: the family on the far side, Maya's chair in the foreground
+    cam: { z0: 1.12, z1: 1.04, f: [540, 1050] }, split: { t0: tSplit, y: 1270 },
     fx: (ctx, t) => { V.flicker(ctx, t, { amount: 0.06, rgb: [150, 190, 255] }); },
     shake: [[tSplit, 1.0, 10]],
   });
@@ -229,15 +244,19 @@ function loadDirection(BUILD, REAL) {
     return f ? [f.cx + f.w * 0.95, f.cy + f.h * 0.15] : [W * 0.7, H * 0.42];
   };
   const tOrb = at('N12', 'light') - 0.4;
-  const lightFx = (ctx, t) => {
-    const [x, y] = orbAt('maya_light');
-    V.orb(ctx, t, { x, y, r: 30, level: light.speechAt(t).open, alpha: smooth((t - tOrb) / 1.2) });
+  const lightFx = (ctx, t, sh, cam) => {
+    const [x, y] = proj(cam, ...orbAt('maya_light'));
+    V.orb(ctx, t, { x, y, r: 30 * zoom(cam), level: light.speechAt(t).open, alpha: smooth((t - tOrb) / 1.2) });
   };
   cut(start('N12', -0.2), 'maya_light', { cam: { z0: 1.0, z1: 1.06 }, fx: lightFx });
   // the Light's first answer: out to the hall (the orb small beside her), back in for "That isn't the same"
   cut(at('L6', 'room') - 0.2, 'mirror_hall', {
     cam: { z0: 1.12, z1: 1.2, f: [540, 1050] },
-    fx: (ctx, t) => { V.flicker(ctx, t, { amount: 0.05 }); V.orb(ctx, t, { x: 610, y: 980, r: 12, level: light.speechAt(t).open }); },
+    fx: (ctx, t, sh, cam) => {
+      V.flicker(ctx, t, { amount: 0.05 });
+      const [x, y] = proj(cam, 610, 980);
+      V.orb(ctx, t, { x, y, r: 12 * zoom(cam), level: light.speechAt(t).open });
+    },
   });
   cut(at('L6', 'that') - 0.2, 'maya_light', { cam: { z0: 1.12, z1: 1.18 }, fx: lightFx });
   cut(start('L7', -0.3), 'maya_light', { cam: { z0: 1.22, z1: 1.28 }, fx: lightFx });
@@ -297,10 +316,11 @@ function loadDirection(BUILD, REAL) {
   });
   cut(start('N19', -0.2), 'hair_stars', {
     cam: { z0: 1.0, z1: 1.08 },
-    fx: (ctx, t) => {
+    fx: (ctx, t, sh, cam) => {
       const f = face('hair_stars');
       if (!f) return;
-      V.twinkles(ctx, t, { cx: f.cx, cy: f.y0 - f.h * 0.05, rx: f.w * 1.25, ry: f.h * 0.75, n: 46, k: (t - at('N19', 'hairs') + 0.3) / 1.2 });
+      const [cx, cy] = proj(cam, f.cx, f.y0 - f.h * 0.05), z = zoom(cam);
+      V.twinkles(ctx, t, { cx, cy, rx: f.w * 1.25 * z, ry: f.h * 0.75 * z, n: 46, k: (t - at('N19', 'hairs') + 0.3) / 1.2 });
     },
   });
   cut(start('N20', -0.2), 'flock_rise', {
@@ -309,7 +329,11 @@ function loadDirection(BUILD, REAL) {
   });
 
   // ---- the scrying pool
-  const poolFx = (ctx, t) => { V.rings(ctx, t, { x: 540, y: 1180, rmax: 360 }); V.motes(ctx, t, { n: 20, rgb: [190, 220, 255], alpha: 0.35, rise: 14, seed: 24 }); };
+  const poolFx = (ctx, t, sh, cam) => {
+    const [x, y] = proj(cam, 540, 1180);
+    V.rings(ctx, t, { x, y, rmax: 360 * zoom(cam) });
+    V.motes(ctx, t, { n: 20, rgb: [190, 220, 255], alpha: 0.35, rise: 14, seed: 24 });
+  };
   cut(sc.pool.start, 'pool', { trans: ['dissolve', 1.0], cam: { z0: 1.0, z1: 1.08, f: [540, 1100] }, fx: poolFx });
   const momPool = { cam: { z0: 1.0, z1: 1.05 }, water: true, fx: (ctx) => V.grade(ctx, [70, 120, 200], 0.12) };
   const mayaPool = { cam: { z0: 1.0, z1: 1.06 }, fx: (ctx, t) => V.motes(ctx, t, { n: 16, rgb: [190, 220, 255], alpha: 0.3, rise: 14, seed: 25 }) };
@@ -317,14 +341,23 @@ function loadDirection(BUILD, REAL) {
   cut(start('L12', -0.35), 'maya_pool', mayaPool);
   cut(start('L14', -0.35), 'mom_pool', { ...momPool, cam: { z0: 1.06, z1: 1.1 } });
   cut(start('L15', -0.35), 'maya_pool', { ...mayaPool, cam: { z0: 1.08, z1: 1.14 } });
-  cut(start('N22', -0.3), 'pool', { trans: ['dissolve', 0.6], cam: { z0: 1.08, z1: 1.14, f: [540, 1100] }, fx: (ctx, t) => V.rings(ctx, t, { x: 540, y: 1180, rmax: 360, alpha: 0.35 * (1 - smooth((t - start('N22')) / 2)) }) });
+  cut(start('N22', -0.3), 'pool', {
+    trans: ['dissolve', 0.6], cam: { z0: 1.08, z1: 1.14, f: [540, 1100] },
+    fx: (ctx, t, sh, cam) => {
+      const [x, y] = proj(cam, 540, 1180);
+      V.rings(ctx, t, { x, y, rmax: 360 * zoom(cam), alpha: 0.35 * (1 - smooth((t - start('N22')) / 2)) });   // the water stills
+    },
+  });
 
   // ---- the road
   cut(sc.flight.start, 'gate_night', {
     trans: ['dissolve', 1.0], cam: { z0: 1.0, z1: 1.1, f: [540, 1000] },
     fx: (ctx, t) => V.snow(ctx, t, { n: 130, speed: 80, wind: 20, alpha: 0.7, seed: 26 }),
   });
-  const bridgeOrb = (ctx, t) => V.orb(ctx, t, { x: 560, y: 820, r: 16, level: light.speechAt(t).open });
+  const bridgeOrb = (ctx, t, sh, cam) => {
+    const [x, y] = proj(cam, 560, 820);
+    V.orb(ctx, t, { x, y, r: 16 * zoom(cam), level: light.speechAt(t).open });
+  };
   cut(at('N23', 'hated') - 0.7, 'bridge', { trans: ['dissolve', 0.8], cam: { z0: 1.0, z1: 1.1, f: [540, 900] }, fx: bridgeOrb });
   cut(at('N23', 'stands') - 0.4, 'figure_dawn', {
     trans: ['dissolve', 0.8], cam: { z0: 1.0, z1: 1.12, f: [540, 950] },
@@ -332,7 +365,10 @@ function loadDirection(BUILD, REAL) {
   });
   cut(start('L16', -0.3), 'maya_road', {
     cam: { z0: 1.0, z1: 1.08 },
-    fx: (ctx, t) => { const [x, y] = orbAt('maya_road'); V.orb(ctx, t, { x, y, r: 24, level: light.speechAt(t).open }); },
+    fx: (ctx, t, sh, cam) => {
+      const [x, y] = proj(cam, ...orbAt('maya_road'));
+      V.orb(ctx, t, { x, y, r: 24 * zoom(cam), level: light.speechAt(t).open });
+    },
   });
   cut(start('N24', -0.2), 'figure_dawn', {
     cam: { z0: 1.12, z1: 1.2, f: [540, 950] },

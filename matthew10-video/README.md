@@ -37,6 +37,24 @@ photograph could not be made to match the 2D staging, the realistic version adap
 plays as a split screen with a call badge rather than phones at ears, and the sparrows are in the
 sky shots rather than on Maya's shoulder.
 
+## The fantasy version
+
+[`NotPeaceButASword_fantasy.mp4`](NotPeaceButASword_fantasy.mp4) retells the story as a narrated fantasy
+allegory (screenplay: [`fantasy/SCREENPLAY.md`](fantasy/SCREENPLAY.md)): a city of glass where no one may say
+what hurts, a sword of light that splits the feast hall in two, a Hall of Mirrors where a small Light made by
+human hands keeps her company, sparrows caught by a hand of light, a scrying pool, and the road to a town where
+the lanterns burn low. The narrator tells it; the screen shows what the words say.
+
+| Piece | How |
+|---|---|
+| Script and voices | `fantasy/script.json`, voiced with the same cast and pipeline as the 2D film |
+| Stills | 43 photoreal fantasy images (`fantasy/shots.py`), generated like the realistic version; the people keep their faces from it |
+| Direction | `fantasy/direction.js`: every cut lands on a word of the narration, with its camera move, effects and the faces' performances |
+| Motion | Depth parallax (Depth Anything V2: near layers move faster during push-ins), animated faces (LivePortrait), and effects in `fantasy/vfx.js`: snow, aurora, embers, god rays, the Light, cracks spreading, the hall splitting, a shockwave, shattering glass, sensory-overload glare, a rising flock, water |
+| Sound | A new score (`fantasy/music.py`: choir, brass, harp, flute) and sound design (`fantasy/mix.py`) |
+
+Rebuild with `fantasy/build.sh` (stages: voices select prepare music mix images faces depth frames final).
+
 ## Changing it
 
 - **Words or pacing**: edit `script.json`, then rebuild from `voices` (`./build.sh voices select prepare music mix frames master final`).
@@ -53,6 +71,7 @@ sky shots rather than on Maya's shoulder.
 Kokoro-82M (Apache-2.0), Chatterbox (MIT), faster-whisper (MIT), FluidR3 GM soundfont (MIT),
 EB Garamond and Inter (SIL OFL), @napi-rs/canvas (MIT), FFmpeg (LGPL/GPL). Realistic version:
 RealVisXL V5.0 Lightning (CreativeML Open RAIL++-M), IP-Adapter (Apache-2.0), LivePortrait (MIT), whose
-face detector comes from InsightFace (models licensed for non-commercial research use). Scripture quotations
+face detector comes from InsightFace (models licensed for non-commercial research use). Fantasy version:
+also Depth Anything V2 Small (Apache-2.0). Scripture quotations
 follow the wording supplied for the piece (NIV-style); citations: Matthew 10:34–36, 10:38–39,
 10:29–31, 10:22–23.
