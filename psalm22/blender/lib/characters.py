@@ -119,8 +119,8 @@ BEARDS = {        # length (m), strand count, points per strand, stiffness (0 dr
     "none": None,
     "stubble": None,
     "short": dict(length=0.012, count=9000, points=5, stiff=0.75, curl=0.0012, lift=0.45),
-    "full": dict(length=0.034, count=11000, points=7, stiff=0.45, curl=0.0026, lift=0.35),
-    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.011, lift=0.3),
+    "full": dict(length=0.034, count=11000, points=7, stiff=0.45, curl=0.0005, lift=0.30),
+    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.003, lift=0.3),
 }
 
 DEFAULT_SPEC = dict(
@@ -453,11 +453,12 @@ def make_person(name, preset=None, **spec):
         _mouth_occluder(p)
     T.append(("materials", time.time()))
     if s["beard"] in BEARDS and BEARDS[s["beard"]]:
-        if hero:
-            make_beard(p)
+        if hero or s["lod"] == "mid":
+            make_beard_shell(p)            # the beard mass (reads as a beard, skin never shows through)
+            fr = SHELL.get(s["beard"], SHELL["full"])["strands"] * (1.0 if hero else 0.5)
+            if fr > 0:
+                make_beard(p, density=fr)  # a light fringe of straight strands softens the outline
             T.append(("beard", time.time()))
-        elif s["lod"] == "mid":
-            make_beard(p, density=0.35)
     covered = any(g in (s.get("outfit") or []) for g in ("veil", "headcloth", "turban", "hood", "roman_soldier"))
     if hero and s.get("hair_strands", (not covered) and s["hair"] in ("long01", "bob01", "bob02", "ponytail01", "braid01")) and "hair" in parts:
         make_hair_strands(p)
@@ -1409,7 +1410,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
         gpos = guides[owner, k0] * (1 - a) + guides[owner, k0 + 1] * a
         off = (roots - guides[owner, 0]) * (1 - clump * T[k] ** 0.7)[:, None]
         pts[:, k] = gpos + off
-    frizz = rng.normal(0, 1, (N, K, 3)) * (0.0009 * sc) * (T ** 1.5)[None, :, None]
+    frizz = rng.normal(0, 1, (N, K, 3)) * (0.00025 * sc) * (T ** 1.5)[None, :, None]   # straight, combed
     pts += frizz
     if L > 0.06:      # long beards taper to a soft point below the chin
         below = np.clip((lm["chin_bot"] - pts[:, :, 2]) / L, 0, 1)
@@ -1463,6 +1464,174 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     p.parts["beard"] = ob
     p.mats["beard"] = mat
     return ob
+
+
+SHELL = {   # beard shell: thickness on the cheeks / extra at the chin (m, adult scale)
+    "short": dict(base=0.0030, chin=0.0025, must=0.0022, strands=0.35),
+    "full": dict(base=0.0052, chin=0.0085, must=0.0034, strands=0.55),
+    "long": dict(base=0.0070, chin=0.0150, must=0.0040, strands=0.55),
+}
+
+
+def make_beard_shell(p, style=None, color=None, grey=None):
+    """Sculpted beard mass: the beard region of the face offset outward (thicker at the chin), with a
+    hair-streak material and soft broken edges, so a beard reads as one mass of hair rather than
+    individual strands. Deforms with the rig (copied weights) and the face expressions (shape keys).
+    Returns the mesh object (p.parts['beard_shell'])."""
+    s = p.spec
+    style = style or s["beard"]
+    cfg = SHELL.get(style, SHELL["full"])
+    co, lm, me = p._co, p.lm, p.body.data
+    sc = lm["io"] / 0.062
+    bmask = p.masks["beard"]
+    inb = p._w["body"] > 0.5
+    faces = [tuple(pl.vertices) for pl in me.polygons
+             if all(inb[v] for v in pl.vertices) and max(bmask[v] for v in pl.vertices) > 0.10
+             and min(bmask[v] for v in pl.vertices) > 0.005]
+    if not faces:
+        return None
+    vids = np.array(sorted({v for f in faces for v in f}), np.int64)
+    remap = {int(v): i for i, v in enumerate(vids)}
+    V = co[vids].astype(np.float64)
+    F = [tuple(remap[v] for v in f) for f in faces]
+    m = bmask[vids].astype(np.float64)
+    x, z = V[:, 0], V[:, 2]
+    lat = np.abs(x)
+    chinc = np.exp(-(lat / (0.030 * sc)) ** 2) * (z < lm["mouth_bot"])
+    must = (z > lm["mouth_top"] - 0.002 * sc) & (lat < lm["mouth_w"] + 0.012 * sc)
+    th = np.where(must, cfg["must"], cfg["base"] + cfg["chin"] * chinc) * sc
+    # vertex normals of the shell surface
+    mesh = bpy.data.meshes.new(p.name + ".beard_shell")
+    mesh.from_pydata([tuple(v) for v in V], [], F)
+    mesh.update()
+    vn = np.zeros(len(V) * 3, np.float32)
+    mesh.vertices.foreach_get("normal", vn)
+    vn = vn.reshape(-1, 3).astype(np.float64)
+    th *= np.where(vn[:, 2] < -0.35, 1.25, 1.0)            # fuller under the jaw
+    th *= np.clip(m, 0, 1) ** 1.1                          # taper to the skin at the beard edge
+    # smooth the thickness field over the mesh (no lumps)
+    nb = [[] for _ in range(len(V))]
+    for e in mesh.edges:
+        a, b = e.vertices
+        nb[a].append(b)
+        nb[b].append(a)
+    for _ in range(4):
+        th = np.array([0.5 * th[i] + 0.5 * (th[n].mean() if n else th[i]) for i, n in enumerate(nb)])
+    off = V + vn * th[:, None]
+    # long beards hang: below the mouth the mass drops and gathers toward the chin
+    if style == "long":
+        L = float(s.get("beard_length") or BEARDS["long"]["length"])
+        hang = np.clip((lm["mouth_bot"] - z) / (0.03 * sc), 0, 1) * chinc
+        off[:, 2] -= hang * L * 0.35
+        off[:, 0] *= 1 - 0.25 * hang
+    mesh.vertices.foreach_set("co", off.astype(np.float32).ravel())
+    mesh.update()
+    for pl in mesh.polygons:
+        pl.use_smooth = True
+    a = mesh.attributes.new("bmask", "FLOAT", "POINT")
+    a.data.foreach_set("value", m.astype(np.float32))
+    ob = bpy.data.objects.new(p.name + ".beard_shell", mesh)
+    for c in p.body.users_collection:
+        c.objects.link(ob)
+    ob.parent = p.rig
+    # rig weights copied from the same body vertices
+    body = p.body
+    gname = {g.index: g.name for g in body.vertex_groups}
+    groups = {}
+    for i, v in enumerate(vids):
+        for gw in body.data.vertices[int(v)].groups:
+            if gw.weight > 0.0:
+                groups.setdefault(gname[gw.group], []).append((i, gw.weight))
+    for gn, lst in groups.items():
+        g = ob.vertex_groups.new(name=gn)
+        for i, w in lst:
+            g.add([i], w, "REPLACE")
+    am = ob.modifiers.new("Armature", "ARMATURE")
+    am.object = p.rig
+    sub = ob.modifiers.new("Subdivision", "SUBSURF")
+    sub.levels, sub.render_levels = 0, 1
+    # follow the facial expressions: same shape-key deltas as the body vertices it was made from
+    pm = _proxy_maps(p)
+    idx = np.stack([vids, vids, vids], 1).astype(np.int32)
+    wt = np.tile(np.array([1.0, 0.0, 0.0], np.float32), (len(vids), 1))
+    pm["beard_shell"] = (ob, idx, wt)
+    if body.data.shape_keys and p.expr_keys:
+        basis = _coords(body.data)
+        ob.shape_key_add(name="Basis", from_mix=False)
+        for u, kname in p.expr_keys.items():
+            kb = body.data.shape_keys.key_blocks.get(kname)
+            if kb is None:
+                continue
+            kc = np.zeros(len(basis) * 3, np.float32)
+            kb.data.foreach_get("co", kc)
+            d = kc.reshape(-1, 3)[vids] - basis[vids]
+            pk = ob.shape_key_add(name="ex-" + u, from_mix=False)
+            pk.data.foreach_set("co", (off + d).astype(np.float32).ravel())
+            pk.value = kb.value
+    hc = hair_color_rgb(color or s["beard_color"], 0.0)
+    g = grey if grey is not None else s.get("grey", 0)
+    mesh.materials.append(beard_shell_material(p.name + ".beard_shell_mat", hc, g))
+    p.parts["beard_shell"] = ob
+    return ob
+
+
+def beard_shell_material(name, color, grey=0.0):
+    """Hair-mass shading: flowing locks (wavy vertical bands) and fine streaks drive colour, highlights and
+    bump; the alpha edge fades gradually and is broken up along the locks, so the outline reads as hair."""
+    m, T = _new_mat(name)
+    out = T.n("ShaderNodeOutputMaterial")
+    c = Vector(color[:3]).lerp(Vector(HAIR_COLORS["grey"]), float(grey) * 0.8)
+
+    def mad(a, b, cc):
+        n = T.n("ShaderNodeMath", _operation="MULTIPLY_ADD")
+        T.set(n.inputs[0], a)
+        T.set(n.inputs[1], b)
+        T.set(n.inputs[2], cc)
+        return n.outputs[0]
+    tc = T.n("ShaderNodeTexCoord")
+    # locks: noise stretched along Z = irregular downward streaks of varying width (not regular bands)
+    mpw = T.n("ShaderNodeMapping", Scale=(240.0, 240.0, 22.0))
+    T.link(tc.outputs["Object"], mpw.inputs["Vector"])
+    wv = T.n("ShaderNodeTexNoise", Scale=1.0, Detail=3.0, Roughness=0.55, Distortion=0.6)
+    T.link(mpw.outputs[0], wv.inputs["Vector"])
+    # fine strands inside the locks
+    mps = T.n("ShaderNodeMapping", Scale=(700.0, 700.0, 90.0))
+    T.link(tc.outputs["Object"], mps.inputs["Vector"])
+    st = T.n("ShaderNodeTexNoise", Scale=1.0, Detail=5.0, Roughness=0.6)
+    T.link(mps.outputs[0], st.inputs["Vector"])
+    big = T.n("ShaderNodeTexNoise", Scale=60.0, Detail=2.0)
+    T.link(tc.outputs["Object"], big.inputs["Vector"])
+    lockn = T.n("ShaderNodeMapRange", **{"From Min": 0.32, "From Max": 0.68})
+    T.link(wv.outputs["Fac"], lockn.inputs["Value"])
+    lock = lockn.outputs[0]
+    hair = T.math("MULTIPLY", mad(lock, 0.45, 0.55), mad(st.outputs["Fac"], 0.9, 0.55))
+    v = mad(hair, 1.0, 0.18)
+    v = T.math("MULTIPLY", v, mad(big.outputs["Fac"], 0.6, 0.7))
+    dark = tuple(c * 0.55) + (1.0,)
+    lite = tuple(c * 1.6) + (1.0,)
+    col = T.mix(dark, lite, v)
+    b = T.n("ShaderNodeBsdfPrincipled")
+    T.link(col, b.inputs["Base Color"])
+    rough = mad(hair, -0.2, 0.78)
+    T.link(rough, b.inputs["Roughness"])
+    b.inputs["Specular IOR Level"].default_value = 0.3
+    b.inputs["Sheen Weight"].default_value = 0.25
+    b.inputs["Sheen Tint"].default_value = (*(c * 1.6), 1.0)
+    bump = T.n("ShaderNodeBump", Strength=0.38, Distance=0.002)
+    T.link(hair, bump.inputs["Height"])
+    T.link(bump.outputs[0], b.inputs["Normal"])
+    at = T.n("ShaderNodeAttribute", _attribute_name="bmask")
+    edge = T.n("ShaderNodeMapRange", **{"From Min": 0.05, "From Max": 1.0})
+    T.link(at.outputs["Fac"], edge.inputs["Value"])
+    # broken edge: where the mask fades, only the locks survive (hair tufts, not a cut-out line)
+    brk = mad(lock, 1.3, 0.15)
+    alpha = T.math("SUBTRACT", T.math("MULTIPLY", edge.outputs[0], 1.6), T.math("MULTIPLY", T.math("SUBTRACT", 1.0, brk), 0.9))
+    alpha = T.math("MAXIMUM", alpha, 0.0)
+    alpha = T.math("MINIMUM", alpha, 1.0)
+    T.link(alpha, b.inputs["Alpha"])
+    T.link(b.outputs[0], out.inputs["Surface"])
+    m.surface_render_method = "DITHERED"
+    return m
 
 
 def _deform_on_surface_group():
@@ -2909,7 +3078,7 @@ def _ensure_units(p, units):
 
 def _shape_objects(p):
     out = [p.body]
-    for key in ("eyebrows", "eyelashes"):
+    for key in ("eyebrows", "eyelashes", "beard_shell"):
         if key in p.parts and p.parts[key].data.shape_keys:
             out.append(p.parts[key])
     return out
