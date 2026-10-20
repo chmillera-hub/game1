@@ -1,0 +1,1742 @@
+<title>Teffy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: the council chamber (16 seats in a ring around the Consciousness) stays pinned on the left; the deliberation log reads down the right and ends in the composer. One column on phones. */
+:root {
+  --bg: #eef1f6;
+  --surface: #fafbfd;
+  --ink: #161b26;
+  --muted: #586174;
+  --line: #d3d9e4;
+  --accent: #2d4f8e;
+  --accent-soft: #dce4f3;
+  --on-accent: #ffffff;
+  --suffer: #bf3a27;
+  --suffer-soft: #f8e1db;
+  --calm: #2b7651;
+  --calm-soft: #d9eee2;
+  --heart: #c2366a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f131b;
+    --surface: #171c27;
+    --ink: #e6eaf2;
+    --muted: #9ba5b9;
+    --line: #2a3245;
+    --accent: #93b2ff;
+    --accent-soft: #1f2b47;
+    --on-accent: #0f131b;
+    --suffer: #ff8069;
+    --suffer-soft: #3b1f1a;
+    --calm: #72d3a1;
+    --calm-soft: #15301f;
+    --heart: #ff7aa3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f131b;
+  --surface: #171c27;
+  --ink: #e6eaf2;
+  --muted: #9ba5b9;
+  --line: #2a3245;
+  --accent: #93b2ff;
+  --accent-soft: #1f2b47;
+  --on-accent: #0f131b;
+  --suffer: #ff8069;
+  --suffer-soft: #3b1f1a;
+  --calm: #72d3a1;
+  --calm-soft: #15301f;
+  --heart: #ff7aa3;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+button, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--muted); }
+
+.app {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 0;
+}
+
+/* Header */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.brand { min-width: 0; max-width: 40rem; }
+.brand h1 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+.brand p { margin: 0.5rem 0 0; color: var(--muted); text-wrap: pretty; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.engine { display: flex; flex-direction: column; gap: 2px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.engine select {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 0.45rem 2rem 0.45rem 0.7rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--muted); }
+.btn-quiet:hover:not(:disabled) { color: var(--ink); }
+.btn-small { padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+
+.notice {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 0.95rem;
+  max-width: 62rem;
+}
+.notice b { font-weight: 700; }
+
+/* Main layout */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+  padding-top: 20px;
+}
+.chamber {
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+
+/* Council ring */
+.ring {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+}
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 9%;
+  border-radius: 50%;
+  border: 1px dashed var(--line);
+}
+.seat {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 14%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  font-size: 22px;
+  font-size: 6.6cqi;
+  line-height: 1;
+  transition: transform 0.25s ease, border-color 0.25s, background-color 0.25s;
+}
+.seat-emoji { filter: saturate(0.3); opacity: 0.5; transition: opacity 0.25s, filter 0.25s; }
+.seat:hover .seat-emoji { opacity: 0.85; }
+.seat[data-state="suffer"] { border-color: var(--suffer); background: var(--suffer-soft); animation: pulse 2.4s ease-in-out infinite; }
+.seat[data-state="soothed"] { border-color: var(--calm); background: var(--calm-soft); }
+.seat[data-state="calm"] { border-color: var(--calm); }
+.seat[data-state="suffer"] .seat-emoji,
+.seat[data-state="soothed"] .seat-emoji,
+.seat[data-state="calm"] .seat-emoji { filter: none; opacity: 1; }
+.seat.speaking { transform: translate(-50%, -50%) scale(1.16); z-index: 2; }
+.seat[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 3px; }
+.seat:hover, .seat:focus-visible { z-index: 3; }
+.seat-score {
+  position: absolute;
+  right: -10%;
+  bottom: -8%;
+  padding: 0.2em 0.35em;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid currentColor;
+  font: 600 9px/1 var(--f-mono);
+  font-size: max(9px, 2.5cqi);
+  font-variant-numeric: tabular-nums;
+}
+.seat-score:empty { display: none; }
+.seat[data-state="suffer"] .seat-score { color: var(--suffer); }
+.seat[data-state="soothed"] .seat-score, .seat[data-state="calm"] .seat-score { color: var(--calm); }
+.seat-pick {
+  position: absolute;
+  top: -10%;
+  right: -8%;
+  display: none;
+  color: var(--heart);
+  font-size: max(12px, 3.6cqi);
+  line-height: 1;
+}
+.seat.picked .seat-pick { display: block; }
+.seat::after {
+  content: attr(data-name);
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 700 11px/1.2 var(--f-body);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.seat:hover::after, .seat:focus-visible::after { opacity: 1; }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--suffer) 40%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--suffer) 0%, transparent); }
+}
+
+.core {
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1.5px solid var(--accent-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  padding: 7%;
+  text-align: center;
+  overflow: hidden;
+}
+.ring.thinking .core { animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe {
+  0%, 100% { border-color: var(--accent-soft); }
+  50% { border-color: var(--accent); }
+}
+.core-brain { font-size: 30px; font-size: 10cqi; line-height: 1; }
+.core-label {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 12px;
+  font-size: max(11px, 3.4cqi);
+  line-height: 1.2;
+  color: var(--accent);
+}
+.core-text {
+  font-size: 11px;
+  font-size: max(11px, 3.1cqi);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.core-big {
+  font-family: var(--f-mono);
+  font-weight: 600;
+  font-size: 26px;
+  font-size: 9cqi;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.core-big .neg { color: var(--suffer); }
+.core-big .zero { color: var(--calm); }
+
+.tally-box { display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
+.tally-box p { margin: 0; }
+.tally-box .k { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-size: 0.82rem; color: var(--muted); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); flex: none; }
+.swatch.suffer { border-color: var(--suffer); background: var(--suffer-soft); }
+.swatch.calm { border-color: var(--calm); }
+.swatch.soothed { border-color: var(--calm); background: var(--calm-soft); }
+.legend .heart { color: var(--heart); }
+
+.profile {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  font-size: 0.93rem;
+}
+.profile > p { margin: 0; }
+.pf-head { display: flex; gap: 12px; align-items: flex-start; }
+.pf-emoji { font-size: 2rem; line-height: 1; }
+.pf-name { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 1.3rem; line-height: 1.1; }
+.pf-line { margin: 0.25rem 0 0; }
+.pf { margin: 12px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.pf dt { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.pf dd { margin: 0.1rem 0 0; }
+.pf-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* Deliberation log */
+.log { min-width: 0; display: flex; flex-direction: column; max-width: 46rem; }
+.rounds { display: flex; flex-direction: column; }
+.empty { padding: 28px 0; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.empty h2 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; }
+.empty p { margin: 0; color: var(--muted); max-width: 34rem; }
+
+.round {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-block: 4px 28px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 16px;
+}
+.round-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.round-title { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; }
+.round-head .spacer { flex: 1; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.chip.warn { background: var(--suffer-soft); color: var(--suffer); }
+.chip.plain { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.dots::after { content: "…"; display: inline-block; animation: blink 1.4s steps(4, end) infinite; width: 1em; text-align: left; }
+@keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+.example-note { margin: -6px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+.you {
+  align-self: flex-end;
+  max-width: min(88%, 34rem);
+  padding: 0.7rem 1rem;
+  border-radius: 18px 18px 4px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.you p { margin: 0.15rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.who { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+.steps { display: flex; flex-direction: column; gap: 22px; }
+.step { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 12px; }
+.step-n {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.step-body { min-width: 0; }
+.step-title { margin: 0 0 0.5rem; font-family: var(--f-display); font-weight: 700; font-size: 1.02rem; line-height: 1.3; }
+.step-body > p { margin: 0; max-width: 65ch; }
+.idea { font-size: 1.05rem; }
+.challenges { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 6px; }
+
+.voices { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.voice { display: grid; grid-template-columns: 1.8rem minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.v-emoji { font-size: 1.3rem; line-height: 1.3; text-align: center; }
+.v-body { min-width: 0; }
+.v-name { font-weight: 700; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.v-says { display: block; overflow-wrap: anywhere; }
+.v-add { display: block; margin-top: 0.2rem; color: var(--ink); }
+.v-add b { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.tag-new { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suffer); border: 1px solid currentColor; border-radius: 999px; padding: 0.1rem 0.4rem; }
+.pill {
+  display: inline-block;
+  min-width: 2.6em;
+  padding: 0.3rem 0.45rem;
+  border-radius: 999px;
+  font-family: var(--f-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pill.neg { background: var(--suffer-soft); color: var(--suffer); }
+.pill.zero { background: var(--calm-soft); color: var(--calm); }
+.shift { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+
+.paths { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.path {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.path.chosen { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.path-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.path-n { font-family: var(--f-display); font-weight: 700; }
+.path-idea { margin: 0; }
+.path .voices { gap: 10px; font-size: 0.94rem; }
+.choose { margin: 12px 0 0; max-width: 65ch; }
+
+.sadness { display: grid; grid-template-columns: 1.8rem minmax(0, 1fr) auto; gap: 10px; align-items: start; margin-bottom: 14px; }
+.sadness .v-name { color: var(--heart); }
+
+.plan {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  font-size: 1.06rem;
+  max-width: 65ch;
+}
+
+.consc { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 10px; align-items: start; }
+.consc-face { font-size: 1.6rem; line-height: 1.1; text-align: center; }
+.consc p { margin: 0.15rem 0 0; font-size: 1.05rem; max-width: 65ch; }
+
+.writing { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.round-foot { display: flex; flex-direction: column; gap: 8px; }
+.tally-line { margin: 0; font-family: var(--f-mono); font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tally-line b { font-weight: 600; color: var(--ink); }
+.note { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.err { margin: 0; color: var(--suffer); font-size: 0.95rem; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.paste-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.paste-box p { margin: 0; }
+.paste, .prompt-out {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.prompt-out { font-family: var(--f-mono); font-size: 0.78rem; min-height: 8rem; }
+.paste:focus, .prompt-out:focus { border-color: var(--accent); outline: none; }
+
+/* Composer */
+.composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 12px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+.modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.mode {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.mode[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.add-voice { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.add-voice .k { flex: none; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.add-voice button {
+  flex: none;
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.add-voice button:hover { border-color: var(--accent); }
+.entry { display: flex; gap: 8px; align-items: flex-end; }
+#input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3.3rem;
+  max-height: 40vh;
+  resize: vertical;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.4;
+}
+#input:focus { border-color: var(--accent); outline: none; }
+.entry-actions { display: flex; flex-direction: column; gap: 6px; }
+.hint { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+@media (max-width: 880px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .chamber { position: static; max-height: none; overflow: visible; padding-bottom: 0; }
+  .ring { max-width: 330px; }
+  .log { max-width: none; }
+}
+@media (max-width: 520px) {
+  .step { grid-template-columns: 1.3rem minmax(0, 1fr); gap: 8px; }
+  .step-n { font-size: 1.15rem; }
+  .entry { flex-direction: column; align-items: stretch; }
+  .entry-actions { flex-direction: row; justify-content: flex-end; }
+  .top { align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Teffy</h1>
+      <p>The emotional framework for you. Tell your Consciousness what you're thinking of doing, and a council of sixteen emotions weighs in until the plan works for all of them.</p>
+    </div>
+    <div class="controls">
+      <label class="engine" for="engine">Council runs on
+        <select id="engine">
+          <option value="haiku-low">Haiku · low effort</option>
+          <option value="haiku-medium">Haiku · medium effort</option>
+          <option value="opus-low">Opus · low effort</option>
+          <option value="opus-medium">Opus · medium effort</option>
+          <option value="manual">Copy &amp; paste · any chatbot</option>
+        </select>
+      </label>
+      <button type="button" class="btn" id="newBtn">New thought</button>
+    </div>
+  </header>
+  <div class="notice" id="notice" role="status" hidden></div>
+
+  <main class="layout">
+    <aside class="chamber" aria-label="The emotional council">
+      <div class="ring" id="ring">
+        <div class="core" id="core" aria-live="off"></div>
+      </div>
+      <div class="tally-box" id="tally"></div>
+      <ul class="legend" aria-label="Legend">
+        <li><span class="swatch suffer" aria-hidden="true"></span>−1 suffering</li>
+        <li><span class="swatch calm" aria-hidden="true"></span>0 at peace</li>
+        <li><span class="swatch soothed" aria-hidden="true"></span>soothed this round</li>
+        <li><span class="heart" aria-hidden="true">♥</span>Sadness's pick</li>
+      </ul>
+      <div class="profile" id="profile"></div>
+    </aside>
+
+    <section class="log" aria-label="Deliberation">
+      <div class="rounds" id="rounds"></div>
+      <form class="composer" id="composer" autocomplete="off">
+        <div class="modes" id="modes" role="radiogroup" aria-label="What this message does" hidden>
+          <button type="button" class="mode" role="radio" data-mode="reevaluate" aria-checked="true">Reevaluate with this</button>
+          <button type="button" class="mode" role="radio" data-mode="talk" aria-checked="false">Talk it through</button>
+        </div>
+        <div class="add-voice" id="addVoice" aria-label="Let an emotion speak"><span class="k">Let one speak</span></div>
+        <div class="entry">
+          <label class="sr" for="input">Your thought</label>
+          <textarea id="input" rows="2"></textarea>
+          <div class="entry-actions">
+            <button type="submit" class="btn btn-primary" id="sendBtn">Ask the council</button>
+            <button type="button" class="btn" id="stopBtn" hidden>Stop</button>
+          </div>
+        </div>
+        <p class="hint" id="hint"></p>
+      </form>
+    </section>
+  </main>
+  <div class="sr" id="announce" aria-live="polite"></div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- The framework (from "Teffy: The Emotional Framework For You") ----------
+
+  const EMOTIONS = [
+    { name: "Anger", emoji: "😡", line: "Talk to your emotions, now!", when: "-1 if emotions feel ignored",
+      purpose: "The consciousness or the other emotions' voices are not being heard, so it steps in to amplify them until they are heard.",
+      need: "The 'emotional need' not being heard should be addressed immediately. Boundaries should be set and respected.",
+      personality: "Steps in when other emotions are being silenced or not listened to, it amplifies the voice of emotions that are not being seen or heard or neglected, such as annoyance or even the consciousness itself." },
+    { name: "Annoyance", emoji: "🤨", line: "Why did you/they say…", when: "-1 if frustrated or minor boundaries crossed or any emotions feel minimized or dismissed",
+      purpose: "Signals minor boundaries are being ignored or minimized. Has the ability to detect circular logic or vague reasoning.",
+      need: "Will often ask you to say to the other person why did you say XYZ? It wants you to seek clarification to ensure the interaction is not malicious or dismissive. It signals a lack of acknowledgement and respect in interactions.",
+      personality: "Has a laser focus on any words or subtleties in social interactions that have an underlying dismissiveness or vagueness, or any attempt to minimize other emotions. If not addressed, anger can quickly step in to amplify its voice." },
+    { name: "Boredom", emoji: "😩", line: "This is dull...", when: "-1 if the plan is monotonous",
+      purpose: "Signals lack of engagement or stimulation.",
+      need: "The plan should have new challenges or mental stimulation.",
+      personality: "Is usually at odds with Overwhelm, wants the plan to be cool and exciting but doesn't know how to offer any help of its own, will show up during another plan and demand the consciousness to change it midway." },
+    { name: "Doubt", emoji: "🤔", line: "What if...", when: "-1 if concerns are ignored",
+      purpose: "Questions current plans or beliefs. Prepares you so that you are able to protect your other emotions such as embarrassment or wellness in situations where there is a possibility for them to suffer.",
+      need: "The consciousness needs to provide clarity, re-evaluation, or deeper understanding of the plan that it offered. For example Doubt saying \"what if the plan doesn't work?\", \"what if the rollercoaster collapses while we are on it?\", \"what if your mind goes blank during the test?\"",
+      personality: "Asks deep questions that could rock you to your core, but the questions must be addressed in a 100% honest and compassionate manner. Will usually ask these piercing questions in the middle of a plan or before you start doing the plan. Do not ignore the questions it is offering, but use the questions as a springboard to offer reassurance or reflection. It is asking these questions to prepare you and protect your other emotions from suffering. Can get caught in mind loops when the decision isn't clear. Impulsivity can help pull it out of these loops." },
+    { name: "Efficiency", emoji: "⏰", line: "Is this worth the time?", when: "-1 if wasting time",
+      purpose: "Indicates the consciousness's plan is spending excessive time or energy on something.",
+      need: "Find a faster or less time consuming way of doing something.",
+      personality: "" },
+    { name: "Embarrassment", emoji: "🥺", line: "Let's maintain our relationships", when: "-1 if it risks relationships",
+      purpose: "Facilitates creating social connections with different social groups, social regulator dial, allows one to connect with different social groups in an appropriate manner, a socially mindful passion dial (gentle loving kindness to fiery intense passion), allows mindfulness in sharing, allows one to show appropriate amount of passion with others who share your passions, social calibrator.",
+      need: "Maintain social norms, avoid info dumping people who won't understand what you're talking about, keep revelations to yourself until you know someone who can relate, keep activities to yourself that you know the other person dislikes heavily if you value their friendship, ask it before sending a text (a quick short text versus an info dump), ask it before going into a social situation, show it that you will listen to it before making a social decision.",
+      personality: "Will shake its head vigorously yes or no, will tighten its sweatshirt over its head and look down at the ground when suffering, will bring up memories where you violated social balance or ignored emotional suffering of others outside yourself." },
+    { name: "Fear", emoji: "😨", line: "Let's pause and think here...", when: "-1 if fearful",
+      purpose: "Signals potential danger or threat. Signals the environment or the plan is not addressing the needs of other emotions.",
+      need: "Redirect your efforts towards forming closer relationships with your other emotions, it wants your other emotions to be stronger and healthier before you engage in the activity. For example, a tiger jumping out of a bush, or thinking about going on a super tall roller coaster for the first time might have fear signaling a threat to Wellness (physical health).",
+      personality: "Shows up to protect your other emotions and the self when it identifies potential danger from the environment or the consciousness's plan. It might worry that the self is not prepared to do the plan. It wants the consciousness to show it that it sees which other emotions are in potential danger. Then the consciousness can either modify the plan to prepare for the future, or discuss the risks with fear until an agreement is reached." },
+    { name: "Frugality", emoji: "💰", line: "Is this worth the resources?", when: "-1 if wasteful",
+      purpose: "Signals a waste of resources like money.",
+      need: "Conserve resources.",
+      personality: "" },
+    { name: "Guilt", emoji: "😭", line: "That makes us or others suffer", when: "-1 if causing guilt",
+      purpose: "Signals perceived wrongdoing or unmet expectations. Especially against other vulnerable emotions that are being ignored. Shows how other emotions in the self or in others are suffering and need nurturing.",
+      need: "Ensure your plan is moral and fair to all beings, and fair to all other emotions.",
+      personality: "Will come to the aid of other emotions that are being ignored or neglected, will remind you of other emotions that are suffering." },
+    { name: "Hunger", emoji: "🤤", line: "Feed me!", when: "-1 if neglecting basic needs",
+      purpose: "Consume nutrients.",
+      need: "Consume nutrients.",
+      personality: "One of the most obvious signals, but it can get indigestion when it's over fed, can cause chaos when paired with impulsivity or boredom." },
+    { name: "Impulsivity", emoji: "🐶", line: "Squirrel! Run to the most stimulating thing!", when: "0 if spontaneous",
+      purpose: "Signals desire for spontaneity and immediate action or excitement. Can motivate immediate action, but runs to the nearest interesting thing in the immediate vicinity even if those things might cause other emotions to suffer if not redirected (phone scrolling, ruminating, and junk food).",
+      need: "Do something exciting that raises the heart rate.",
+      personality: "Disruptive, gets bursts of energy seemingly randomly, easily satisfied but seems to be drawn to numbing activities like video games which can cause disconnection by distracting your consciousness from your emotional family's suffering. Does not get caught in mind loops like doubt." },
+    { name: "Loneliness", emoji: "😔", line: "I could use a hug…", when: "-1 if lonely",
+      purpose: "Indicates a lack of connection or belonging.",
+      need: "Companionship or emotional connection.",
+      personality: "Wants a hug, wants to cuddle, wants to hear that the consciousness cares for it and wants to nurture it." },
+    { name: "Overwhelm", emoji: "😵‍💫", line: "That's too much...", when: "-1 if overwhelming",
+      purpose: "Indicates too many demands or pressures at once. Signal to look at other plans since the current one might be getting ahead of current abilities. Guides away from getting stuck in the mud, or caught in the weeds of work. Protects you from taking on too many responsibilities, or taking on tasks you are not ready for yet. Can help lead maintain sustained-effort and longer focus. Defense against burnout.",
+      need: "Respect the boundary it is signaling fully and do not press the issue.",
+      personality: "Cannot be supplicated or sweet-talked, demands full respect, does not negotiate, is usually at odds with boredom." },
+    { name: "Sadness", emoji: "❤️", line: "I will tell you which single 1 specific emotion is suffering most specifically that must be nurtured by the consciousness's plan", when: "-1 if consciousness is not making the single most suffering emotion it identified a 0",
+      purpose: "Signals which single 1 emotion is being most neglected among the others and is not fully seen and not fully heard.",
+      need: "Show deep empathy and acknowledgment and care and comfort to the single suffering emotion especially if they are suffering or neglected.",
+      personality: "Signals that you are indeed listening to your most vulnerable emotion on a fundamental level, provides a signal of comfort as you actively provide plans that fully see and hear the single most suffering emotion." },
+    { name: "Tiredness", emoji: "😴", line: "Let's rest...", when: "-1 if exhausting",
+      purpose: "Lack of sleep, signals disconnection from other emotions due to exhaustion.",
+      need: "Rest/sleep.",
+      personality: "Easily bullied by other emotions such as impulsivity, but also has one of the clearest signals that it is suffering. Before you satisfy it, try satisfying the other emotions first if possible, because when you rest you can't satisfy the other emotions because your consciousness is turned off." },
+    { name: "Wellness", emoji: "🤕", line: "This could harm physical health", when: "-1 if risky",
+      purpose: "If the plan is not benefiting physical health, Wellness might show up.",
+      need: "Prefers the plan be beneficial to physical health.",
+      personality: "Will step in usually when the consciousness offers a plan to hunger or impulsivity. Wants the plan to benefit overall physical health." },
+  ];
+  const BY_NAME = new Map(EMOTIONS.map(e => [e.name.toLowerCase(), e]));
+  const ALIASES = {
+    angry: "anger", annoyed: "annoyance", irritation: "annoyance", bored: "boredom", doubtful: "doubt",
+    efficient: "efficiency", embarrassed: "embarrassment", afraid: "fear", scared: "fear", frugal: "frugality",
+    guilty: "guilt", hungry: "hunger", impulsive: "impulsivity", impulse: "impulsivity", lonely: "loneliness",
+    overwhelmed: "overwhelm", sad: "sadness", tired: "tiredness", health: "wellness",
+  };
+  function findEmotion(v) {
+    const k = String(v == null ? "" : v).toLowerCase().replace(/[^a-z]/g, "");
+    return BY_NAME.get(k) || BY_NAME.get(ALIASES[k]) || null;
+  }
+  const emo = name => findEmotion(name) || { name: String(name), emoji: "•" };
+
+  const RULES = [
+    "Consider all 16 emotions in the master list, but only list the emotions you would rate (-1) in reaction to the initial plan. Emotions rated (0) to the initial plan can be ignored until the idea is modified. Every emotion rated (-1) at any previous step must be included in the next step, to show the Consciousness is fully seeing and hearing the suffering (-1) emotions.",
+    "Never include an emotion that is not in the master list.",
+    "Rate each relevant emotion's reaction to the Consciousness as either (-1) for moderate suffering/disagreement or (0) for neutral/agreeable, and justify each rating with a short line or hint in that emotion's own voice about why the score is (-1) or (0).",
+    "Rate each emotion's reaction as either (-1) or (0). A score of 1 is not allowed.",
+    "Never rate an emotion (0) to force agreement with its personality profile.",
+    "Allow a (-1) to stay if the justification does not match the emotion's personality profile ('Purpose', 'To Satisfy Its Need' and 'Personality'). This helps the Consciousness guide its decision-making for the next iteration.",
+    "Each emotion appears with its emoji. The page adds the emoji for you.",
+    "Each emotion gets its own line. The JSON Lines format below does this.",
+  ];
+  const STEPS = [
+    ["Step 1: Present the Initial Idea", "🧠 Consciousness proposes an idea, recognizing it may trigger various reactions from the Internal Emotional Council."],
+    ["Step 2: Emotional Reactions", "The Internal Emotional Council reacts with their concerns, scoring -1 for suffering/disagreement and 0 for neutral/agreeable. This initial feedback reveals potential suffering and shows where the Consciousness may need to adjust the plan."],
+    ["Step 3: Initial Dismissal of Concerns", "Consciousness might initially focus on the positive aspects, potentially overlooking some objections."],
+    ["Step 4: Imagining the Challenges", "The Consciousness visualizes potential difficulties, seeing how the plan might create challenges, which can validate emotions' initial objections."],
+    ["Step 5: Negotiation Pathways with Objections Incorporated", "After imagining the challenges, the Consciousness explores 2 ideas to address the initial feedback. If a new (-1) emotion arises, it is added to the evaluation of each pathway."],
+    ["Step 6: Address Emotional Needs in Step 5", "Adjust the best idea from Step 5 by adding additional stipulations or details that minimize the concerns of the single emotion referred to by Sadness and of any (-1) in the final emotional score, ensuring every emotion's concern is accounted for, especially the most vulnerable emotion noted by Sadness. Attempt to minimize the (-1)s to the best of your ability. Do not rate something (0) unless you truly and honestly can deduce the emotion would rate it (0). It is okay to have a single (-1) left if you address the specific concerns of that emotion or of the emotion Sadness named. This is a list of options the Consciousness can add to the idea it picked."],
+    ["Step 7: Reflect on the Outcome", "State the fully updated plan (the chosen idea plus the additional specific plans from Step 6 for the (-1) emotions, or for the single emotion Sadness named) plainly, avoiding over-analysis."],
+  ];
+  const FORMAT = [
+    "OUTPUT FORMAT",
+    "A page reads your reply line by line and lights up the council as you write. Reply with JSON Lines only: one JSON object per line and nothing else. No Markdown, no code fences, no prose outside the objects, no emoji in the \"emotion\" field. Keep each object on a single line. Use the exact emotion names from the master list.",
+    "",
+    "Write these lines, in this order:",
+    "{\"t\":\"idea\",\"text\":\"...\"}",
+    "  Step 1. The Consciousness states the idea it is evaluating now, in first person, folding in every detail the user has given so far.",
+    "{\"t\":\"react\",\"emotion\":\"Hunger\",\"score\":-1,\"says\":\"...\"}",
+    "  Step 2. One line for each emotion that rates the idea -1. Also one line for every emotion listed under CARRIED FORWARD, with its honest current score (-1 or 0). Leave out every other emotion that would rate 0.",
+    "{\"t\":\"overlook\",\"text\":\"...\"}",
+    "  Step 3. What the Consciousness is tempted to focus on or brush aside. One or two sentences.",
+    "{\"t\":\"challenge\",\"text\":\"...\"}",
+    "  Step 4. One to three lines, one challenge per line.",
+    "{\"t\":\"path\",\"n\":1,\"idea\":\"...\"}",
+    "{\"t\":\"pathReact\",\"n\":1,\"emotion\":\"Hunger\",\"score\":0,\"says\":\"...\",\"new\":false}",
+    "  Step 5. The first pathway, then one pathReact line for every emotion that has a react line, plus any emotion that newly becomes -1 under this pathway (\"new\":true). Then the same for \"n\":2.",
+    "{\"t\":\"choose\",\"n\":1,\"why\":\"...\"}",
+    "  Which pathway the Consciousness takes into Step 6, in one sentence.",
+    "{\"t\":\"sadness\",\"emotion\":\"Embarrassment\",\"says\":\"...\"}",
+    "  Sadness names the single emotion suffering most under the chosen pathway and says why. Never name Sadness itself.",
+    "{\"t\":\"care\",\"emotion\":\"Embarrassment\",\"add\":\"...\",\"score\":0,\"says\":\"...\"}",
+    "  Step 6. One line for every emotion still -1 under the chosen pathway, starting with the one Sadness named. \"add\" is the stipulation added to the plan; then that emotion's honest response and its new score. At most one emotion may stay -1.",
+    "{\"t\":\"plan\",\"text\":\"...\"}",
+    "  Step 7. The full updated plan, plainly, in two to four sentences.",
+    "{\"t\":\"voice\",\"text\":\"...\"}",
+    "  The Consciousness speaks to the user directly, in first person, using the emotional personification language (\"Hunger, I hear you...\"). Two to four sentences. In TALK mode this is your reply to what the user said, and it can run to six sentences.",
+    "",
+    "Every \"says\" is a short line (under 30 words) in that emotion's own voice, grounded in its Purpose, Need and Personality. Scores are only -1 or 0.",
+  ].join("\n");
+
+  const FRAMEWORK_PROMPT = [
+    "You are running Teffy, an emotional decision-making framework. You speak as the 🧠 Consciousness, who weighs the user's idea against an Internal Emotional Council of 16 personified emotions and refines the plan until as few emotions as possible are suffering. Be warm, honest and specific to the user's real situation. If the message is a feeling rather than a plan, treat \"what to do about it\" as the idea. If the user seems to be in danger or crisis, keep the plan focused on their safety and use the voice line to gently encourage them to reach out to someone they trust or to local emergency or crisis services.",
+    "",
+    "REQUIRED INSTRUCTIONS (follow every time)",
+    RULES.map((r, i) => `${i + 1}. ${r}`).join("\n"),
+    "",
+    "TEMPLATE: Updated Meme Template with Iterative Objections",
+    "Purpose: To balance internal harmony by creating a dynamic plan that allows the Consciousness to integrate any new objections seamlessly. This approach aims to reduce the number of suffering (-1) reactions by continuously refining the plan based on each emotion's feedback.",
+    STEPS.map(([t, d]) => `${t}\n${d}`).join("\n\n"),
+    "Summary: This template allows the Consciousness to return to Step 1 with each new objection, integrating it into the evolving plan, so each emotional voice is genuinely heard and addressed.",
+    "",
+    "MASTER LIST OF REQUIRED EMOTIONS (the only emotions that may take part)",
+    EMOTIONS.map((e, i) => `${i + 1}. ${e.name} ${e.emoji}: "${e.line}" (${e.when}). Purpose: ${e.purpose} To Satisfy Its Need: ${e.need}${e.personality ? " Personality: " + e.personality : ""}`).join("\n"),
+    "",
+    FORMAT,
+  ].join("\n");
+
+  const MODE_TAG = { evaluate: "EVALUATE A NEW THOUGHT", reevaluate: "REEVALUATE", talk: "TALK" };
+  const MODE_ASK = {
+    evaluate: "Run the full template (Steps 1 to 7) on this thought.",
+    reevaluate: "Fold this objection, clarification or disagreement into the idea and rerun the full template (Steps 1 to 7).",
+    talk: "Rerun the full template (Steps 1 to 7) with this in mind, then make the voice line your direct reply to what I said, in the emotional personification language.",
+  };
+  const MODE_LABEL = { evaluate: "New thought", reevaluate: "Reevaluated", talk: "Talked through" };
+  const HISTORY = 6;
+
+  // ---------- Example round (the disc golf example from the framework) ----------
+
+  const EXAMPLE = {
+    id: "example", example: true, mode: "evaluate", status: "done",
+    input: "I want to go disc golf this morning… but hunger says it wants breakfast but we woke up too late, and embarrassment says we are on thin ice because we were late last week.",
+    events: [
+      { t: "idea", text: "I want to play disc golf with my friend this morning, even though we woke up late and haven't eaten breakfast yet." },
+      { t: "react", emotion: "Hunger", score: -1, says: "Feed me! We can't throw eighteen holes on an empty stomach." },
+      { t: "react", emotion: "Embarrassment", score: -1, says: "We were late last week. Showing up late again could make our friend feel like we don't value them." },
+      { t: "react", emotion: "Tiredness", score: -1, says: "We overslept for a reason. Rushing out the door right now feels rough." },
+      { t: "react", emotion: "Doubt", score: -1, says: "What if we rush, still arrive late, and play badly because we're hungry and frazzled?" },
+      { t: "react", emotion: "Overwhelm", score: -1, says: "Breakfast, getting ready, driving and being on time all at once? That's too much." },
+      { t: "overlook", text: "I'm tempted to focus on how fun the round will be and treat breakfast and being late as small details that will sort themselves out." },
+      { t: "challenge", text: "If I skip breakfast I'll be shaky and irritable by the sixth hole, and Wellness will join the complaints." },
+      { t: "challenge", text: "If I stop for food on the way, I'll be late again and my friend may start to see a pattern." },
+      { t: "challenge", text: "Rushing everything turns a fun morning into a chore." },
+      { t: "path", n: 1, idea: "Text my friend now, push the start back 30 minutes, and eat a quick breakfast at home." },
+      { t: "pathReact", n: 1, emotion: "Hunger", score: 0, says: "A real breakfast? Yes, please." },
+      { t: "pathReact", n: 1, emotion: "Embarrassment", score: -1, says: "Asking to move the time again still feels risky. What if they're annoyed?" },
+      { t: "pathReact", n: 1, emotion: "Tiredness", score: 0, says: "Thirty extra minutes means I can actually wake up." },
+      { t: "pathReact", n: 1, emotion: "Doubt", score: 0, says: "With a heads-up and a later start, the plan actually works." },
+      { t: "pathReact", n: 1, emotion: "Overwhelm", score: 0, says: "One thing at a time. I can do that." },
+      { t: "path", n: 2, idea: "Leave now, grab a breakfast sandwich on the way, and eat it in the parking lot before the first hole." },
+      { t: "pathReact", n: 2, emotion: "Hunger", score: 0, says: "A sandwich works for me." },
+      { t: "pathReact", n: 2, emotion: "Embarrassment", score: -1, says: "We'd still be about fifteen minutes late without warning. Last week all over again." },
+      { t: "pathReact", n: 2, emotion: "Tiredness", score: -1, says: "Out the door this second? I'm not even awake." },
+      { t: "pathReact", n: 2, emotion: "Doubt", score: -1, says: "What if the drive-through line is long?" },
+      { t: "pathReact", n: 2, emotion: "Overwhelm", score: -1, says: "Racing to two places at once is exactly what I warned about." },
+      { t: "pathReact", n: 2, emotion: "Frugality", score: -1, says: "Buying breakfast when there's food at home is a waste.", isNew: true },
+      { t: "choose", n: 1, why: "Pathway 1 leaves only one voice suffering and keeps the morning calm." },
+      { t: "sadness", emotion: "Embarrassment", says: "Embarrassment has its hoodie pulled over its head. It's still carrying last week and needs to know the friendship is safe." },
+      { t: "care", emotion: "Embarrassment", add: "Send the text right now, own being late last week, offer to buy drinks after the round, and leave five minutes early.", score: 0, says: "Owning it before they have to bring it up? That's how we keep the friendship strong." },
+      { t: "plan", text: "Text my friend now: apologize for last week and ask to start 30 minutes later. Eat a quick breakfast at home, leave five minutes early, and offer to buy drinks after the round." },
+      { t: "voice", text: "Hunger, you'll get a real breakfast. Embarrassment, I hear you about last week, so we're sending that text right now and owning it. Tiredness, the extra half hour is yours. Let's go have a good round." },
+    ],
+  };
+
+  // ---------- Small helpers ----------
+
+  const $ = sel => document.querySelector(sel);
+  function h(tag, props, ...kids) {
+    const el = document.createElement(tag);
+    if (props) {
+      for (const [k, v] of Object.entries(props)) {
+        if (v == null || v === false) continue;
+        if (k === "class") el.className = v;
+        else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? "" : String(v));
+      }
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false) continue;
+      el.append(kid instanceof Node ? kid : String(kid));
+    }
+    return el;
+  }
+  const store = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage unavailable */ }
+    },
+  };
+  const uid = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const reducedMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(() => true, () => false);
+      }
+    } catch { /* fall through */ }
+    return Promise.resolve(false);
+  }
+
+  // ---------- Parsing the council's reply ----------
+
+  // Pulls every top-level {...} object out of the text, so one-per-line JSON, pretty-printed JSON
+  // and replies wrapped in code fences all read the same way. An unfinished object is skipped.
+  function scanObjects(text) {
+    const out = [];
+    let depth = 0, start = -1, inStr = false, esc = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === "\\") esc = true;
+        else if (c === "\"") inStr = false;
+        continue;
+      }
+      if (c === "\"") { if (depth > 0) inStr = true; continue; }
+      if (c === "{") { if (depth === 0) start = i; depth++; }
+      else if (c === "}" && depth > 0) {
+        depth--;
+        if (depth === 0) { try { out.push(JSON.parse(text.slice(start, i + 1))); } catch { /* skip malformed */ } }
+      }
+    }
+    return out;
+  }
+  function cleanQuote(s) {
+    const t = String(s == null ? "" : s).trim();
+    const m = t.match(/^["“'‘]([\s\S]*)["”'’]$/);
+    return m ? m[1].trim() : t;
+  }
+  function toScore(v) {
+    if (typeof v === "number") return v < 0 ? -1 : 0;
+    return /[-−–]\s*1/.test(String(v)) ? -1 : 0;
+  }
+  function normEvent(o) {
+    if (!o || typeof o !== "object" || Array.isArray(o)) return [];
+    const t = String(o.t || o.type || "").trim();
+    const n = Number(o.n) === 2 ? 2 : 1;
+    switch (t) {
+      case "idea": case "overlook": case "challenge": case "plan": case "voice": {
+        const text = cleanQuote(o.text);
+        return text ? [{ t, text }] : [];
+      }
+      case "react": case "pathReact": case "care": case "sadness": {
+        const em = findEmotion(o.emotion);
+        if (!em) return [{ t: "offlist", name: cleanQuote(o.emotion) }];
+        const e = { t, emotion: em.name, says: cleanQuote(o.says) };
+        if (t !== "sadness") e.score = toScore(o.score);
+        if (t === "pathReact") { e.n = n; e.isNew = o.new === true || o.new === "true" || o.isNew === true; }
+        if (t === "care") e.add = cleanQuote(o.add);
+        return [e];
+      }
+      case "path": {
+        const out = [{ t, n, idea: cleanQuote(o.idea || o.text) }];
+        const list = Array.isArray(o.reacts) ? o.reacts : Array.isArray(o.reactions) ? o.reactions : [];
+        for (const x of list) out.push(...normEvent(Object.assign({}, x, { t: "pathReact", n })));
+        return out;
+      }
+      case "choose":
+        return [{ t, n, why: cleanQuote(o.why || o.text) }];
+      default:
+        return [];
+    }
+  }
+  function parseEvents(text) {
+    const events = [], offList = [];
+    for (const o of scanObjects(String(text || ""))) {
+      for (const e of normEvent(o)) {
+        if (e.t === "offlist") { if (e.name && !offList.includes(e.name)) offList.push(e.name); }
+        else events.push(e);
+      }
+    }
+    return { events, offList };
+  }
+
+  // ---------- Reading a round: who is suffering, who was soothed ----------
+
+  function upsert(list, e) {
+    const i = list.findIndex(x => x.emotion === e.emotion);
+    if (i >= 0) list[i] = e; else list.push(e);
+  }
+  function analyze(events, done) {
+    const a = { idea: "", reacts: [], overlook: "", challenges: [], paths: {}, chosen: null, sadness: null, care: [], plan: "", voice: "", last: null };
+    const path = n => (a.paths[n] = a.paths[n] || { n, idea: "", reacts: [] });
+    for (const e of events) {
+      if (e.emotion) a.last = e;
+      switch (e.t) {
+        case "idea": a.idea = e.text; break;
+        case "react": upsert(a.reacts, e); break;
+        case "overlook": a.overlook = e.text; break;
+        case "challenge": a.challenges.push(e.text); break;
+        case "path": path(e.n).idea = e.idea; break;
+        case "pathReact": upsert(path(e.n).reacts, e); break;
+        case "choose": a.chosen = e; break;
+        case "sadness": a.sadness = e; break;
+        case "care": upsert(a.care, e); break;
+        case "plan": a.plan = e.text; break;
+        case "voice": a.voice = e.text; break;
+      }
+    }
+    // The council's state: Step 2, then the chosen pathway, then Step 6. Anyone left out of a later step keeps their earlier score.
+    const seats = new Map();
+    const touch = (name, score) => {
+      const s = seats.get(name) || { score: 0, ever: false };
+      s.score = score;
+      if (score < 0) s.ever = true;
+      seats.set(name, s);
+    };
+    a.reacts.forEach(r => touch(r.emotion, r.score));
+    const chosenPath = a.chosen ? a.paths[a.chosen.n] : null;
+    if (chosenPath) chosenPath.reacts.forEach(r => touch(r.emotion, r.score));
+    a.care.forEach(c => touch(c.emotion, c.score));
+    // Sadness suffers (-1) when the emotion it named is not brought to 0.
+    if (a.sadness && (done || a.plan)) {
+      const pick = seats.get(a.sadness.emotion);
+      touch("Sadness", pick && pick.score < 0 ? -1 : 0);
+    }
+    a.seats = seats;
+    a.initial = a.reacts.filter(r => r.score < 0).length;
+    a.final = [...seats.values()].filter(s => s.score < 0).length;
+    a.before = name => {
+      const p = chosenPath && chosenPath.reacts.find(r => r.emotion === name);
+      if (p) return p.score;
+      const r = a.reacts.find(x => x.emotion === name);
+      return r ? r.score : -1;
+    };
+    return a;
+  }
+
+  // ---------- State ----------
+
+  const KEY = "teffy.thread.v1";
+  function loadRounds() {
+    const data = store.get(KEY, null);
+    const rounds = data && Array.isArray(data.rounds)
+      ? data.rounds.filter(r => r && typeof r.input === "string" && Array.isArray(r.events) && typeof r.id === "string")
+      : [];
+    rounds.forEach(r => {
+      if (r.status === "streaming") { r.status = "stopped"; r.error = "reloaded"; }
+    });
+    return rounds;
+  }
+  // Which Claude answers. Haiku at low effort is the lightest option; modelTier is the fallback if that model can't answer for this viewer.
+  const ENGINES = {
+    "haiku-low": { label: "Haiku · low effort", model: "claude-haiku-5-5", modelTier: "quick", effort: "low" },
+    "haiku-medium": { label: "Haiku · medium effort", model: "claude-haiku-5-5", modelTier: "quick", effort: "medium" },
+    "opus-low": { label: "Opus · low effort", model: "claude-opus-5-5", modelTier: "complex", effort: "low" },
+    "opus-medium": { label: "Opus · medium effort", model: "claude-opus-5-5", modelTier: "complex", effort: "medium" },
+    "manual": { label: "Copy and paste" },
+  };
+  const DEFAULT_ENGINE = "haiku-low";
+  const savedEngine = store.get("teffy.engine.v2", DEFAULT_ENGINE);
+  const state = {
+    rounds: loadRounds(),
+    showingExample: false,
+    mode: "reevaluate",
+    engine: Object.prototype.hasOwnProperty.call(ENGINES, savedEngine) ? savedEngine : DEFAULT_ENGINE,
+    selected: null,
+    busy: false,
+    ctl: null,
+    startedAt: 0,
+    sample: undefined,      // undefined while connecting; null when Claude can't answer here; otherwise the sample function
+    blocked: "",            // an error code that turned Claude off for this view
+    confirmNew: false,
+  };
+  state.showingExample = state.rounds.length === 0 && !store.get("teffy.hideExample", false);
+
+  const claudeAvailable = () => typeof state.sample === "function" && !state.blocked;
+  const isManual = () => state.engine === "manual" || state.sample === null || !!state.blocked;
+  const visibleRounds = () => (state.showingExample ? [EXAMPLE] : state.rounds);
+  const latestRound = () => { const v = visibleRounds(); return v[v.length - 1] || null; };
+  const awaitingPaste = () => state.rounds.some(r => r.status === "paste");
+
+  function save() {
+    store.set(KEY, { rounds: state.rounds });
+  }
+
+  // Connect to Claude through the viewer's own account. Resolves null outside claude.ai.
+  const samplePromise = (async () => {
+    try {
+      if (window.claude && typeof window.claude.use === "function") return await window.claude.use("sample");
+    } catch { /* treated as unavailable */ }
+    return null;
+  })();
+  samplePromise.then(fn => {
+    state.sample = typeof fn === "function" ? fn : null;
+    renderComposer();
+    renderNotice();
+  });
+
+  // ---------- Building what Claude reads ----------
+
+  function carriedForward() {
+    const last = [...state.rounds].reverse().find(r => r.status === "done");
+    if (!last) return [];
+    const a = analyze(last.events, true);
+    return [...a.seats].filter(([, s]) => s.ever || s.score < 0).map(([name, s]) => ({ name, score: s.score }));
+  }
+  function userTurn(r) {
+    const lines = [`MODE: ${MODE_TAG[r.mode] || MODE_TAG.reevaluate}`];
+    if (r.carried && r.carried.length) {
+      lines.push("CARRIED FORWARD from the last round (each must appear in Step 2 with an honest current score): " +
+        r.carried.map(c => `${c.name} (${c.score < 0 ? "still -1" : "was -1, ended at 0"})`).join(", "));
+    }
+    lines.push("", "USER:", r.input, "", MODE_ASK[r.mode] || MODE_ASK.reevaluate, "Reply in JSON Lines only.");
+    return lines.join("\n");
+  }
+  function priorRounds(round) {
+    return state.rounds.filter(r => r !== round && r.status === "done" && r.raw).slice(-HISTORY);
+  }
+  function buildTurns(round) {
+    const turns = [{ role: "user", content: FRAMEWORK_PROMPT }];
+    for (const r of priorRounds(round)) {
+      turns.push({ role: "user", content: userTurn(r) }, { role: "assistant", content: r.raw });
+    }
+    turns.push({ role: "user", content: userTurn(round) });
+    return turns;
+  }
+  function manualPrompt(round) {
+    const parts = [FRAMEWORK_PROMPT];
+    priorRounds(round).forEach((r, i) => {
+      parts.push(`=== EARLIER ROUND ${i + 1} ===\n${userTurn(r)}\n\nYOUR REPLY THEN:\n${r.raw}`);
+    });
+    parts.push(`=== NOW ===\n${userTurn(round)}`);
+    return parts.join("\n\n");
+  }
+
+  // ---------- Talking to the council ----------
+
+  const ERR = {
+    not_granted: "Claude wasn't allowed for this page, so Teffy switched to copy and paste. Reload the page to be asked again.",
+    sampling_disabled: "Claude isn't available on this account, so Teffy switched to copy and paste.",
+    not_declared: "This page can't reach Claude right now, so Teffy switched to copy and paste.",
+    capability_disabled: "This page can't reach Claude right now, so Teffy switched to copy and paste.",
+    capability_removed: "This Claude app is too old to answer here, so Teffy switched to copy and paste.",
+    rate_limited: "You've reached a Claude usage limit for now. Wait a bit, then send again.",
+    session_expired: "Your Claude sign-in expired. Sign in again, then send again.",
+    refused: "Claude declined to answer this one. Try putting the thought another way.",
+    empty_completion: "The council came back empty. Send again, maybe with fewer details at once.",
+    prompt_too_large: "This conversation got too long for one message. Start a new thought to keep going.",
+    unreadable: "Teffy couldn't find the council's lines in that reply. Paste the whole reply: it should be lines that start with {\"t\":",
+    reloaded: "The page reloaded before the council finished.",
+    upstream_error: "The connection dropped partway. Anything that arrived is kept. Send again to retry.",
+  };
+  const OFF_CODES = new Set(["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"]);
+
+  async function send(text, modeOverride) {
+    text = String(text || "").trim();
+    if (!text || state.busy || awaitingPaste()) return;
+    state.showingExample = false;
+    const mode = modeOverride || (state.rounds.length ? state.mode : "evaluate");
+    const round = { id: uid(), mode, input: text, raw: "", events: [], status: "streaming", carried: carriedForward() };
+    state.rounds.push(round);
+    input.value = "";
+    store.set("teffy.draft", "");
+
+    if (isManual()) {
+      startPaste(round);
+      return;
+    }
+
+    state.busy = true;
+    state.startedAt = Date.now();
+    save();
+    renderAll();
+    scrollToRound(round);
+    startTicker();
+
+    const sample = state.sample === undefined ? await samplePromise : state.sample;
+    if (typeof sample !== "function" || state.blocked) {
+      state.busy = false;
+      stopTicker();
+      startPaste(round);
+      return;
+    }
+
+    const ctl = new AbortController();
+    state.ctl = ctl;
+    const engineKey = state.engine === "manual" ? DEFAULT_ENGINE : state.engine;
+    const engine = ENGINES[engineKey];
+    round.engine = engineKey;
+    try {
+      const res = await sample(buildTurns(round), {
+        cache: false,
+        signal: ctl.signal,
+        model: engine.model,
+        modelTier: engine.modelTier,
+        effort: engine.effort,
+        onText: ({ text }) => {
+          round.raw = text;
+          round.events = parseEvents(text).events;
+          scheduleLive(round);
+        },
+      });
+      const parsed = parseEvents(res.text);
+      round.raw = res.text;
+      round.events = parsed.events;
+      round.offList = parsed.offList;
+      round.truncated = !!res.truncated;
+      round.fellBack = res.modelApplied !== engine.model ? (res.modelTierApplied || engine.modelTier) : "";
+      if (parsed.events.length) { round.status = "done"; round.error = null; }
+      else { round.status = "error"; round.error = "unreadable"; }
+    } catch (e) {
+      const code = e && typeof e.code === "string" ? e.code : "upstream_error";
+      if (code === "refused") { round.raw = ""; round.events = []; }
+      else if (e && typeof e.text === "string" && e.text) {
+        const parsed = parseEvents(e.text);
+        round.raw = e.text;
+        round.events = parsed.events;
+        round.offList = parsed.offList;
+      }
+      round.status = code === "cancelled" ? "stopped" : "error";
+      round.error = code;
+      if (OFF_CODES.has(code)) state.blocked = code;
+    } finally {
+      state.busy = false;
+      state.ctl = null;
+      stopTicker();
+      save();
+      renderAll();
+      if (round.status === "done") {
+        const a = analyze(round.events, true);
+        announce(`The council finished. Suffering voices went from ${a.initial} to ${a.final}.`);
+      } else if (round.status === "error") {
+        announce(ERR[round.error] || ERR.upstream_error);
+      }
+    }
+  }
+
+  function startPaste(round) {
+    round.status = "paste";
+    round.clip = "";
+    // The copy runs inside the click that sent the message, so the browser allows it.
+    copyText(manualPrompt(round)).then(ok => {
+      round.clip = ok ? "ok" : "failed";
+      rerenderRound(round);
+    });
+    save();
+    renderAll();
+    scrollToRound(round);
+  }
+  function readPaste(round, text) {
+    const parsed = parseEvents(text);
+    if (!parsed.events.length) {
+      round.error = "unreadable";
+      rerenderRound(round);
+      return;
+    }
+    round.raw = String(text).trim();
+    round.events = parsed.events;
+    round.offList = parsed.offList;
+    round.status = "done";
+    round.error = null;
+    delete round.pasteDraft;
+    delete round.clip;
+    save();
+    renderAll();
+    const a = analyze(round.events, true);
+    announce(`The council finished. Suffering voices went from ${a.initial} to ${a.final}.`);
+  }
+  function discardRound(round) {
+    const i = state.rounds.indexOf(round);
+    if (i >= 0) state.rounds.splice(i, 1);
+    if (!input.value.trim()) input.value = round.input;
+    save();
+    renderAll();
+    input.focus();
+  }
+  function retry(round) {
+    const i = state.rounds.indexOf(round);
+    if (i >= 0) state.rounds.splice(i, 1);
+    send(round.input, round.mode);
+  }
+
+  // ---------- Rendering: the log ----------
+
+  function pill(score) {
+    return h("span", { class: "pill " + (score < 0 ? "neg" : "zero"), title: score < 0 ? "Suffering" : "Neutral or agreeable" }, score < 0 ? "−1" : "0");
+  }
+  function voiceRow(e) {
+    const em = emo(e.emotion);
+    return h("li", { class: "voice" },
+      h("span", { class: "v-emoji", "aria-hidden": "true" }, em.emoji),
+      h("div", { class: "v-body" },
+        h("span", { class: "v-name" }, em.name, e.isNew ? h("span", { class: "tag-new" }, "new") : null),
+        e.says ? h("q", { class: "v-says" }, e.says) : null),
+      pill(e.score));
+  }
+  function voiceList(list) {
+    return h("ul", { class: "voices" }, list.map(voiceRow));
+  }
+  function careRow(c, a) {
+    const em = emo(c.emotion);
+    const before = a.before(c.emotion);
+    return h("li", { class: "voice" },
+      h("span", { class: "v-emoji", "aria-hidden": "true" }, em.emoji),
+      h("div", { class: "v-body" },
+        h("span", { class: "v-name" }, em.name),
+        c.add ? h("span", { class: "v-add" }, h("b", null, "Add"), c.add) : null,
+        c.says ? h("q", { class: "v-says" }, c.says) : null),
+      before < 0 && c.score === 0
+        ? h("span", { class: "shift", "aria-label": "from minus one to zero" }, pill(-1), "→", pill(0))
+        : pill(c.score));
+  }
+  function step(n, title, ...body) {
+    return h("section", { class: "step" },
+      h("div", { class: "step-n", "aria-hidden": "true" }, String(n)),
+      h("div", { class: "step-body" },
+        h("h3", { class: "step-title" }, h("span", { class: "sr" }, `Step ${n}: `), title),
+        ...body));
+  }
+  function pathCard(p, chosen) {
+    const isChosen = !!(chosen && chosen.n === p.n);
+    return h("div", { class: "path" + (isChosen ? " chosen" : "") },
+      h("div", { class: "path-head" },
+        h("span", { class: "path-n" }, `Pathway ${p.n}`),
+        isChosen ? h("span", { class: "chip" }, "Chosen") : null),
+      h("p", { class: "path-idea" }, p.idea || "…"),
+      p.reacts.length ? voiceList(p.reacts) : null);
+  }
+  function sadnessRow(a) {
+    const s = a.sadness;
+    const em = emo(s.emotion);
+    const own = a.seats.get("Sadness");
+    return h("div", { class: "sadness" },
+      h("span", { class: "v-emoji", "aria-hidden": "true" }, "❤️"),
+      h("div", { class: "v-body" },
+        h("span", { class: "v-name" }, `Sadness names ${em.name} ${em.emoji}`),
+        s.says ? h("q", { class: "v-says" }, s.says) : null),
+      own ? pill(own.score) : null);
+  }
+  function seconds() {
+    return Math.max(0, Math.round((Date.now() - state.startedAt) / 1000));
+  }
+
+  function renderRound(r, idx) {
+    const done = r.status !== "streaming";
+    const a = analyze(r.events, done);
+    const art = h("article", { class: "round", id: "round-" + r.id, "aria-busy": r.status === "streaming" ? "true" : null });
+
+    const statusChip =
+      r.status === "streaming" ? h("span", { class: "chip" }, h("span", { class: "dots" }, "Council is meeting")) :
+      r.status === "paste" ? h("span", { class: "chip" }, "Waiting for the reply") :
+      r.status === "stopped" ? h("span", { class: "chip plain" }, "Stopped") :
+      r.status === "error" ? h("span", { class: "chip warn" }, "Interrupted") : null;
+    const copyBtn = r.events.length && done
+      ? h("button", {
+          type: "button", class: "btn btn-quiet btn-small",
+          onclick: ev => {
+            const btn = ev.currentTarget;
+            copyText(roundToText(r)).then(ok => {
+              btn.textContent = ok ? "Copied" : "Couldn't copy";
+              setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+            });
+          },
+        }, "Copy")
+      : null;
+    const answeredBy = r.example ? null : r.engine && ENGINES[r.engine] ? ENGINES[r.engine].label : r.raw ? "Pasted reply" : null;
+    art.append(h("div", { class: "round-head" },
+      h("h2", { class: "round-title" }, r.example ? "Example round" : `Round ${idx + 1}`),
+      h("span", { class: "chip plain" }, r.example ? "From the framework" : MODE_LABEL[r.mode] || "Round"),
+      answeredBy ? h("span", { class: "chip plain", title: "Who answered this round" }, answeredBy) : null,
+      statusChip,
+      h("span", { class: "spacer" }),
+      copyBtn));
+    if (r.example) {
+      art.append(h("p", { class: "example-note" }, "This is the disc golf example from the framework, so you can see how a round works. Send your own thought below to start."));
+    }
+
+    art.append(h("div", { class: "you" }, h("span", { class: "who" }, "You"), h("p", null, r.input)));
+
+    const steps = h("div", { class: "steps" });
+    if (a.idea) steps.append(step(1, "The idea", h("p", { class: "idea" }, a.idea)));
+    if (a.reacts.length) steps.append(step(2, "Emotional reactions", voiceList(a.reacts)));
+    if (a.overlook) steps.append(step(3, "What I'm tempted to overlook", h("p", null, a.overlook)));
+    if (a.challenges.length) steps.append(step(4, "Imagining the challenges", h("ul", { class: "challenges" }, a.challenges.map(c => h("li", null, c)))));
+    const paths = [1, 2].map(n => a.paths[n]).filter(Boolean);
+    if (paths.length) {
+      steps.append(step(5, "Two pathways",
+        h("div", { class: "paths" }, paths.map(p => pathCard(p, a.chosen))),
+        a.chosen && a.chosen.why ? h("p", { class: "choose" }, h("strong", null, `Taking pathway ${a.chosen.n}. `), a.chosen.why) : null));
+    }
+    if (a.sadness || a.care.length) {
+      steps.append(step(6, "Meeting the needs",
+        a.sadness ? sadnessRow(a) : null,
+        a.care.length ? h("ul", { class: "voices" }, a.care.map(c => careRow(c, a))) : null));
+    }
+    if (a.plan) steps.append(step(7, "The updated plan", h("p", { class: "plan" }, a.plan)));
+    if (steps.childElementCount) art.append(steps);
+
+    if (a.voice) {
+      art.append(h("div", { class: "consc" },
+        h("span", { class: "consc-face", "aria-hidden": "true" }, "🧠"),
+        h("div", null, h("span", { class: "who" }, "Consciousness"), h("p", null, a.voice))));
+    }
+
+    const foot = h("div", { class: "round-foot" });
+    if (r.status === "streaming") {
+      foot.append(h("p", { class: "writing" },
+        r.events.length ? "The council is still talking" : "Listening to the council",
+        h("span", { class: "dots" }), " ",
+        h("span", { class: "elapsed" }, seconds() + "s")));
+    }
+    if (r.status === "paste") foot.append(pasteBlock(r));
+    if (done && r.status !== "paste" && a.reacts.length) {
+      foot.append(h("p", { class: "tally-line" }, "Suffering voices ", h("b", null, String(a.initial)), " → ", h("b", null, String(a.final))));
+    }
+    if (r.offList && r.offList.length) {
+      foot.append(h("p", { class: "note" }, `Left out ${r.offList.join(", ")}: not on the master list of 16 emotions.`));
+    }
+    if (r.truncated) foot.append(h("p", { class: "note" }, "The answer hit the length limit and was cut short."));
+    if (r.fellBack && r.engine && ENGINES[r.engine]) {
+      foot.append(h("p", { class: "note" }, `Claude didn't confirm that ${ENGINES[r.engine].label.split(" ·")[0]} answered this round, so its ${TIER_NAME[r.fellBack] || r.fellBack} setting may have stood in.`));
+    }
+    if (r.status === "error" || r.status === "stopped") {
+      const msg = r.status === "stopped" && r.error === "cancelled" ? "You stopped this round." : ERR[r.error] || ERR.upstream_error;
+      foot.append(h("p", { class: r.status === "error" ? "err" : "note" }, msg));
+      if (!r.example) {
+        foot.append(h("div", { class: "row" },
+          h("button", { type: "button", class: "btn btn-small", disabled: state.busy || awaitingPaste() ? true : null, onclick: () => retry(r) }, "Send again"),
+          h("button", { type: "button", class: "btn btn-quiet btn-small", disabled: state.busy ? true : null, onclick: () => discardRound(r) }, "Remove")));
+      }
+    }
+    if (foot.childElementCount) art.append(foot);
+    return art;
+  }
+  const TIER_NAME = { quick: "quick", default: "everyday", complex: "most capable" };
+
+  function pasteBlock(r) {
+    const ta = h("textarea", { id: "paste-" + r.id, class: "paste", rows: "5", placeholder: "Paste the chatbot's whole reply here", "aria-label": "The chatbot's reply" });
+    ta.value = r.pasteDraft || "";
+    ta.addEventListener("input", () => { r.pasteDraft = ta.value; });
+    const parts = [];
+    if (r.clip === "failed") {
+      const out = h("textarea", { class: "prompt-out", readonly: true, rows: "6", "aria-label": "Prompt to copy" });
+      out.value = manualPrompt(r);
+      parts.push(
+        h("p", null, h("b", null, "1. "), "Copy this prompt into Claude, ChatGPT or any chatbot."),
+        out,
+        h("div", { class: "row" }, h("button", { type: "button", class: "btn btn-small", onclick: () => { out.focus(); out.select(); } }, "Select the prompt")));
+    } else {
+      parts.push(h("p", null, h("b", null, "1. "),
+        r.clip === "ok" ? "The prompt is copied. Paste it into Claude, ChatGPT or any chatbot." : "Copying the prompt…"));
+    }
+    parts.push(h("p", null, h("b", null, "2. "), "Paste the chatbot's reply here, then show the council."), ta);
+    if (r.error === "unreadable") parts.push(h("p", { class: "err" }, ERR.unreadable));
+    parts.push(h("div", { class: "row" },
+      h("button", { type: "button", class: "btn btn-primary btn-small", onclick: () => readPaste(r, ta.value) }, "Show the council"),
+      h("button", {
+        type: "button", class: "btn btn-small",
+        onclick: () => copyText(manualPrompt(r)).then(ok => { r.clip = ok ? "ok" : "failed"; rerenderRound(r); }),
+      }, "Copy the prompt again"),
+      h("button", { type: "button", class: "btn btn-quiet btn-small", onclick: () => discardRound(r) }, "Cancel")));
+    return h("div", { class: "paste-box" }, parts);
+  }
+
+  function roundToText(r) {
+    const a = analyze(r.events, true);
+    const L = [`You: ${r.input}`, ""];
+    const v = (e, extra) => `${emo(e.emotion).emoji} ${e.emotion}: "${e.says}" (${e.score < 0 ? "-1" : "0"})${extra || ""}`;
+    if (a.idea) L.push("🧠 Step 1: The idea", a.idea, "");
+    if (a.reacts.length) { L.push("Step 2: Emotional reactions", ""); a.reacts.forEach(e => L.push(v(e), "")); }
+    if (a.overlook) L.push("Step 3: What I'm tempted to overlook", a.overlook, "");
+    if (a.challenges.length) L.push("Step 4: Imagining the challenges", ...a.challenges.map(c => `- ${c}`), "");
+    [1, 2].map(n => a.paths[n]).filter(Boolean).forEach(p => {
+      L.push(`Step 5, pathway ${p.n}${a.chosen && a.chosen.n === p.n ? " (chosen)" : ""}: ${p.idea}`, "");
+      p.reacts.forEach(e => L.push(v(e, e.isNew ? " (new)" : ""), ""));
+    });
+    if (a.sadness || a.care.length) {
+      L.push("Step 6: Meeting the needs", "");
+      if (a.sadness) L.push(`❤️ Sadness names ${a.sadness.emotion}: "${a.sadness.says}"`, "");
+      a.care.forEach(c => L.push(`${emo(c.emotion).emoji} ${c.emotion}. Add: ${c.add}`, `"${c.says}" (${c.score < 0 ? "-1" : "0"})`, ""));
+    }
+    if (a.plan) L.push("Step 7: The updated plan", a.plan, "");
+    if (a.voice) L.push(`🧠 ${a.voice}`, "");
+    L.push(`Suffering voices: ${a.initial} → ${a.final}`);
+    return L.join("\n");
+  }
+
+  function renderRounds() {
+    const box = $("#rounds");
+    const list = visibleRounds();
+    if (!list.length) {
+      box.replaceChildren(h("div", { class: "empty" },
+        h("h2", null, "What's on your mind?"),
+        h("p", null, "Type a thought you're weighing, like \"I want to go disc golf this morning, but…\". Mention any emotion that's already speaking up. The council takes it from there."),
+        h("button", { type: "button", class: "btn btn-small", onclick: () => { state.showingExample = true; store.set("teffy.hideExample", false); renderAll(); } }, "Show the example round")));
+      return;
+    }
+    box.replaceChildren(...list.map((r, i) => renderRound(r, i)));
+  }
+  function rerenderRound(r) {
+    const node = document.getElementById("round-" + r.id);
+    const idx = visibleRounds().indexOf(r);
+    if (!node || idx < 0) return;
+    // Keep a half-typed paste and its focus across the redraw.
+    const focusedPaste = document.activeElement && document.activeElement.id === "paste-" + r.id;
+    node.replaceWith(renderRound(r, idx));
+    if (focusedPaste) { const ta = document.getElementById("paste-" + r.id); if (ta) ta.focus(); }
+  }
+  let liveFrame = 0, liveRound = null;
+  function scheduleLive(r) {
+    liveRound = r;
+    if (liveFrame) return;
+    liveFrame = requestAnimationFrame(() => {
+      liveFrame = 0;
+      if (liveRound) { rerenderRound(liveRound); renderCouncil(); }
+    });
+  }
+  function scrollToRound(r) {
+    requestAnimationFrame(() => {
+      const node = document.getElementById("round-" + r.id);
+      if (node) node.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" });
+    });
+  }
+
+  // ---------- Rendering: the council chamber ----------
+
+  const ring = $("#ring");
+  const core = $("#core");
+  const STATE_LABEL = { quiet: "quiet", suffer: "suffering, minus one", calm: "at peace, zero", soothed: "soothed this round, zero" };
+  const seatEls = EMOTIONS.map((em, i) => {
+    const angle = (-90 + i * (360 / EMOTIONS.length)) * Math.PI / 180;
+    const x = 50 + 41 * Math.cos(angle);
+    const y = 50 + 41 * Math.sin(angle);
+    const btn = h("button", {
+      type: "button", class: "seat", "data-name": em.name, "data-state": "quiet", "aria-pressed": "false",
+      style: `--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%`,
+      onclick: () => { state.selected = state.selected === em.name ? null : em.name; renderCouncil(); },
+    },
+      h("span", { class: "seat-emoji", "aria-hidden": "true" }, em.emoji),
+      h("span", { class: "seat-score", "aria-hidden": "true" }),
+      h("span", { class: "seat-pick", "aria-hidden": "true" }, "♥"));
+    ring.append(btn);
+    return btn;
+  });
+
+  function renderCouncil() {
+    const r = latestRound();
+    const done = r ? r.status !== "streaming" : true;
+    const a = r ? analyze(r.events, done) : null;
+    const live = !!(r && r.status === "streaming");
+
+    for (const btn of seatEls) {
+      const name = btn.dataset.name;
+      const s = a ? a.seats.get(name) : null;
+      const st = !s ? "quiet" : s.score < 0 ? "suffer" : s.ever ? "soothed" : "calm";
+      btn.dataset.state = st;
+      btn.querySelector(".seat-score").textContent = s ? (s.score < 0 ? "−1" : "0") : "";
+      btn.classList.toggle("picked", !!(a && a.sadness && a.sadness.emotion === name));
+      btn.classList.toggle("speaking", !!(live && a && a.last && a.last.emotion === name));
+      btn.setAttribute("aria-pressed", String(state.selected === name));
+      btn.setAttribute("aria-label", `${name}: ${STATE_LABEL[st]}`);
+    }
+    ring.classList.toggle("thinking", !!(live && r && !r.events.length));
+
+    // The Consciousness in the middle.
+    const parts = [h("span", { class: "core-brain", "aria-hidden": "true" }, "🧠")];
+    if (!r) {
+      parts.push(h("span", { class: "core-label" }, "Consciousness"), h("span", { class: "core-text" }, "Tell me a thought."));
+    } else if (live && !r.events.length) {
+      parts.push(h("span", { class: "core-label" }, "Listening"), h("span", { class: "core-text" }, h("span", { class: "elapsed" }, seconds() + "s")));
+    } else if (live && a.last) {
+      const em = emo(a.last.emotion);
+      const says = a.last.t === "sadness" ? `${a.last.emotion} needs us most.` : a.last.says;
+      parts.push(h("span", { class: "core-label" }, `${em.emoji} ${em.name}`), h("span", { class: "core-text" }, says || ""));
+    } else if (live) {
+      parts.push(h("span", { class: "core-label" }, "Consciousness"), h("span", { class: "core-text" }, a.idea || "Thinking it over"));
+    } else if (r.status === "paste") {
+      parts.push(h("span", { class: "core-label" }, "Waiting"), h("span", { class: "core-text" }, "Paste the chatbot's reply."));
+    } else if (a.reacts.length) {
+      parts.push(
+        h("span", { class: "core-label" }, "Suffering voices"),
+        h("span", { class: "core-big" },
+          h("span", { class: a.initial ? "neg" : "zero" }, String(a.initial)), " → ",
+          h("span", { class: a.final ? "neg" : "zero" }, String(a.final))));
+    } else {
+      parts.push(h("span", { class: "core-label" }, "Consciousness"), h("span", { class: "core-text" }, r.status === "error" ? "The council was interrupted." : "Tell me a thought."));
+    }
+    core.replaceChildren(...parts);
+
+    // Who is still suffering, who was soothed.
+    const tally = $("#tally");
+    if (a && a.seats.size) {
+      const list = pred => [...a.seats].filter(([, s]) => pred(s)).map(([n]) => `${emo(n).emoji} ${n}`);
+      const suffering = list(s => s.score < 0);
+      const soothed = list(s => s.score === 0 && s.ever);
+      tally.replaceChildren(
+        h("p", null, h("span", { class: "k" }, live ? "Suffering now" : "Still suffering"), suffering.length ? suffering.join(", ") : "No one"),
+        soothed.length ? h("p", null, h("span", { class: "k" }, "Soothed"), soothed.join(", ")) : null);
+    } else {
+      tally.replaceChildren(h("p", { class: "muted" }, "Every emotion is quiet until a thought is on the table."));
+    }
+    renderProfile(a);
+  }
+
+  function renderProfile(a) {
+    const panel = $("#profile");
+    const em = state.selected ? findEmotion(state.selected) : null;
+    if (!em) {
+      panel.replaceChildren(h("p", { class: "muted" }, "Tap a seat to meet that emotion and let it speak."));
+      return;
+    }
+    const s = a ? a.seats.get(em.name) : null;
+    panel.replaceChildren(
+      h("div", { class: "pf-head" },
+        h("span", { class: "pf-emoji", "aria-hidden": "true" }, em.emoji),
+        h("div", null,
+          h("h2", { class: "pf-name" }, em.name, " ", s ? pill(s.score) : null),
+          h("p", { class: "pf-line" }, h("q", null, em.line), " ", h("span", { class: "muted" }, `(${em.when})`)))),
+      h("dl", { class: "pf" },
+        h("div", null, h("dt", null, "Purpose"), h("dd", null, em.purpose)),
+        h("div", null, h("dt", null, "To satisfy its need"), h("dd", null, em.need)),
+        em.personality ? h("div", null, h("dt", null, "Personality"), h("dd", null, em.personality)) : null),
+      h("div", { class: "pf-actions" },
+        h("button", { type: "button", class: "btn btn-primary btn-small", onclick: () => speakAs(em.name) }, `Speak as ${em.name}`),
+        h("button", { type: "button", class: "btn btn-small", onclick: () => { state.selected = null; renderCouncil(); } }, "Close")));
+  }
+
+  // ---------- Rendering: composer and notice ----------
+
+  const form = $("#composer");
+  const input = $("#input");
+  const sendBtn = $("#sendBtn");
+  const stopBtn = $("#stopBtn");
+  const engineSel = $("#engine");
+  const newBtn = $("#newBtn");
+  const modeBtns = [...document.querySelectorAll(".mode")];
+  const PLACEHOLDER = {
+    evaluate: "I want to go disc golf this morning, but…",
+    reevaluate: "My doubt says… what if my friend thinks I don't want to go?",
+    talk: "Talk to your Consciousness…",
+  };
+  const HINT = {
+    evaluate: "Say what you want to do and any emotion that's already speaking up.",
+    reevaluate: "Add an objection from any emotion, a clarification, or a disagreement. The whole template runs again.",
+    talk: "The template runs again, and your Consciousness answers you in the emotions' own language.",
+  };
+
+  const addVoice = $("#addVoice");
+  EMOTIONS.forEach(em => {
+    addVoice.append(h("button", { type: "button", onclick: () => speakAs(em.name) }, `${em.emoji} ${em.name}`));
+  });
+
+  function speakAs(name) {
+    const phrase = `My ${name.toLowerCase()} says: `;
+    const v = input.value;
+    const start = typeof input.selectionStart === "number" ? input.selectionStart : v.length;
+    const end = typeof input.selectionEnd === "number" ? input.selectionEnd : v.length;
+    const before = v.slice(0, start);
+    const glue = before && !/\s$/.test(before) ? " " : "";
+    input.value = before + glue + phrase + v.slice(end);
+    const caret = (before + glue + phrase).length;
+    input.focus();
+    try { input.setSelectionRange(caret, caret); } catch { /* not focusable yet */ }
+    if (state.rounds.length && state.mode !== "talk") state.mode = "reevaluate";
+    store.set("teffy.draft", input.value);
+    renderComposer();
+  }
+
+  function renderComposer() {
+    const hasThread = state.rounds.length > 0;
+    const mode = hasThread ? state.mode : "evaluate";
+    $("#modes").hidden = !hasThread;
+    modeBtns.forEach(b => b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
+    input.placeholder = PLACEHOLDER[mode];
+    const manual = isManual();
+    sendBtn.textContent = manual ? "Copy prompt" : !hasThread ? "Ask the council" : mode === "talk" ? "Send" : "Reevaluate";
+    sendBtn.disabled = state.busy || awaitingPaste();
+    stopBtn.hidden = !state.busy;
+    let hint = HINT[mode];
+    if (awaitingPaste()) hint = "Paste the chatbot's reply into the round above, or cancel it, before sending again.";
+    else if (manual) hint += " Send copies a prompt you paste into any chatbot.";
+    else if (!hasThread && claudeAvailable()) hint += " It runs on your Claude account; the first time, Claude asks you to allow this page.";
+    $("#hint").textContent = hint + " Ctrl or ⌘ + Enter sends.";
+
+    const claudeOff = state.sample === null || !!state.blocked;
+    [...engineSel.options].forEach(o => { o.disabled = o.value !== "manual" && claudeOff; });
+    engineSel.value = claudeOff ? "manual" : state.engine;
+
+    newBtn.disabled = state.busy;
+    newBtn.textContent = state.confirmNew ? "Tap again to clear" : "New thought";
+  }
+
+  function renderNotice() {
+    const n = $("#notice");
+    let msg = null;
+    if (state.blocked) {
+      msg = [h("b", null, "Copy-and-paste mode. "), ERR[state.blocked] || ERR.capability_disabled];
+    } else if (state.sample === null) {
+      msg = [h("b", null, "Copy-and-paste mode. "),
+        "Claude can't answer from this copy of the page, so Send copies a prompt you can paste into any chatbot (Claude, ChatGPT…), and you paste its reply back here. Open Teffy on claude.ai to have the council answer on your own Claude account."];
+    }
+    n.hidden = !msg;
+    n.replaceChildren(...(msg || []));
+  }
+
+  function renderAll() {
+    renderRounds();
+    renderCouncil();
+    renderComposer();
+    renderNotice();
+  }
+
+  function announce(text) {
+    const el = $("#announce");
+    el.textContent = "";
+    setTimeout(() => { el.textContent = text; }, 50);
+  }
+
+  let ticker = 0;
+  function startTicker() {
+    stopTicker();
+    ticker = setInterval(() => {
+      document.querySelectorAll(".elapsed").forEach(el => { el.textContent = seconds() + "s"; });
+    }, 1000);
+  }
+  function stopTicker() {
+    if (ticker) clearInterval(ticker);
+    ticker = 0;
+  }
+
+  // ---------- Events ----------
+
+  form.addEventListener("submit", ev => { ev.preventDefault(); send(input.value); });
+  input.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); send(input.value); }
+  });
+  let draftTimer = 0;
+  input.addEventListener("input", () => {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => store.set("teffy.draft", input.value), 300);
+  });
+  stopBtn.addEventListener("click", () => { if (state.ctl) state.ctl.abort(); });
+  modeBtns.forEach(b => b.addEventListener("click", () => { state.mode = b.dataset.mode; renderComposer(); }));
+  engineSel.addEventListener("change", () => {
+    state.engine = Object.prototype.hasOwnProperty.call(ENGINES, engineSel.value) ? engineSel.value : DEFAULT_ENGINE;
+    store.set("teffy.engine.v2", state.engine);
+    renderComposer();
+  });
+  let confirmTimer = 0;
+  newBtn.addEventListener("click", () => {
+    if (state.busy) return;
+    if (!state.rounds.length) {
+      state.showingExample = false;
+      store.set("teffy.hideExample", true);
+      renderAll();
+      input.focus();
+      return;
+    }
+    if (!state.confirmNew) {
+      state.confirmNew = true;
+      renderComposer();
+      clearTimeout(confirmTimer);
+      confirmTimer = setTimeout(() => { state.confirmNew = false; renderComposer(); }, 4000);
+      return;
+    }
+    clearTimeout(confirmTimer);
+    state.confirmNew = false;
+    state.rounds = [];
+    state.mode = "reevaluate";
+    state.showingExample = false;
+    store.set("teffy.hideExample", true);
+    save();
+    renderAll();
+    input.focus();
+  });
+
+  // ---------- Start ----------
+
+  input.value = store.get("teffy.draft", "") || "";
+  renderAll();
+})();
+</script>
