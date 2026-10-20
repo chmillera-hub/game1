@@ -341,7 +341,7 @@ var TeffyEngine = (function () {
       "- When someone keeps doing something to the user (piling on work, canceling, talking over them), the emotion that guards that boundary (Anger or Annoyance) gets a need about that person's behavior in its own words, never a role as another emotion's bodyguard.",
       `- For at most ${COUNCIL.maxOpeners} of them, with clearly different needs, write "says": an opening chat message of two or three sentences about the user's actual situation: the exact part of the idea that fails its need, and one concrete request (one option, no either/or; what, how much in numbers, when; if it involves a person, the words to say). A request is a plain request, not "Could you…?". Give every other suffering emotion "says": "" (it speaks later). Merge overlapping worries into whichever emotion says it best: rest, sleep and a day off overlap; \"will it work\" and \"will the money last\" overlap; \"rehearse\" and \"fix the slides\" overlap. No two openings start or end the same way.`,
       "- \"need\": for each suffering emotion, what would bring it to 0.",
-      "- \"helpers\": up to 3 emotions at 0 that could help the suffering ones' core needs from their own angle, with needs that differ from each other (never two that overlap, like Wellness and Tiredness). Always include, here or under suffering, the emotion that speaks for what the user actually wants (Impulsivity for fun, Loneliness for company, Anger or Annoyance for a boundary the user wants to set, and so on): it guards that want when the plan starts to water it down.",
+      "- \"helpers\": up to 3 emotions at 0 that could help the suffering ones' core needs from their own angle, with needs that differ from each other (never two that overlap, like Wellness and Tiredness). Always include, here or under suffering, the emotion that speaks for what the user actually wants (Impulsivity for fun, Loneliness for company, Anger or Annoyance for a boundary the user wants to set, and so on): it guards that want when the plan starts to water it down. When the idea is an escape (calling in sick, hiding, skipping), that is the emotion that speaks for the relief the user is after (Wellness for a mental break, Tiredness for rest), so the relief gets argued as well as facing the thing.",
       "- Scores are only -1 or 0. Never invent an emotion. Never leave a suffering emotion out to make things look calmer. Sadness joins on its own, so don't list it.",
       "- " + VOICE,
       "- Openings are radically non-violent: no blaming, labeling or shaming the user, other people or other emotions.",
@@ -517,12 +517,6 @@ var TeffyEngine = (function () {
     }
     return "";
   }
-  // The latest turn-taking reasons of emotions that wanted in but didn't get the floor.
-  function heldBack(s) {
-    const d = [...s.messages].reverse().find(m => m.kind === "decide");
-    if (!d) return "";
-    return d.items.filter(x => x.reply && x.emotion !== d.speaker && x.why).map(x => `- ${x.emotion}: ${x.why}`).join("\n");
-  }
   function myEarlier(s) {
     return s.messages.filter(m => m.kind === "consciousness" && !m.opening).slice(-3).map(m => `- "${m.text}"`).join("\n");
   }
@@ -554,7 +548,6 @@ var TeffyEngine = (function () {
       `SCORES: ${scoreList(s)}`,
       "CHANGES THE EMOTIONS ASKED FOR SINCE THE LAST UPDATE:",
       proposalsOpen(s).join("\n") || "(none)",
-      heldBack(s) ? `POINTS EMOTIONS RAISED WHILE HOLDING BACK (fold in any concrete one that fits, as your own call; never say that emotion asked for it):\n${heldBack(s)}` : "",
       promised ? `CONDITIONS EMOTIONS ACCEPTED ON (keep every one):\n${promised}` : "",
       back ? `NEEDS THAT CAME BACK UNMET SINCE YOUR LAST UPDATE (answer each one first, by name, in its own terms: adopt its change or a helper's fix for it, or say in one clause why not; never re-offer advice it already turned down):\n${back}` : "",
       why ? `WHY THE SUFFERING ONES STILL CAN'T LIVE WITH IT (latest):\n${why}` : "",
@@ -567,7 +560,7 @@ var TeffyEngine = (function () {
       "",
       "Update the plan as a small edit of THE PLAN RIGHT NOW, not a rewrite:",
       "- Keep every sentence of THE PLAN RIGHT NOW as it is except the ones a request since your last update needs changed (the first time, it is only the user's idea: rewrite it as needed). Adopt changes that help a suffering emotion, preferring one step that serves two needs; skip new add-ons from emotions at 0 unless they cost nothing. When a request offers alternatives, pick one. Never invent a food, item, deadline, waiting window, ultimatum, penalty or lockout nobody in the chat proposed.",
-      "- Never drop or weaken a step an emotion accepted on or asked for (even one at 0), or a specific thing the user said they want, unless that emotion (or the user) agreed in its own message. You may reword or merge such a step to fit another need as long as it still does what its owner asked; to save space, merge steps, never drop them. The user's core want survives in some form with a firm trigger, never depending only on someone else cooperating: never add a step that waits for, or cancels, what the user wants if another person doesn't reply; let them go ahead by a time the user sets (\"by ___\"), with words that tell the person.",
+      "- Never drop or weaken a step an emotion accepted on or asked for (even one at 0), or a specific thing the user said they want, unless that emotion (or the user) agreed in its own message. You may reword or merge such a step to fit another need as long as it still does what its owner asked; to save space, merge steps, never drop them. The user's core want survives in some form with a firm trigger (if the plan replaces their idea, it says what the want behind it still gets: the relief, rest or fun it was after), never depending only on someone else cooperating: never add a step that waits for, or cancels, what the user wants if another person doesn't reply; let them go ahead by a time the user sets (\"by ___\"), with words that tell the person.",
       "- If an emotion objects to a step, first check its claim against the plan's exact words: if the plan doesn't say what it claims, quote that step in one clause and keep it. Otherwise change the step or say in one clause why you kept it, but never by breaking a step another emotion accepted on: find a version that serves both, or keep it and name the trade-off. Never say a step answers an emotion if its latest message says it doesn't.",
       "- If an emotion came back to the same unmet need, answer the specific reason it gave most recently (the moment, the mechanism, the test it named), and never re-offer advice it already turned down. If an emotion that can't live with the plan asked what to do if X happens, the plan itself holds the answer as an if-then clause; an answer only in your text doesn't count.",
       "- When Sadness speaks up for an emotion, answer that emotion by name, not Sadness. Never reuse a line written as a reply to Society as the answer to a different objection.",
@@ -586,7 +579,7 @@ var TeffyEngine = (function () {
       "- If you didn't take an emotion's request, or took only part of it, say so plainly and why. Only say an emotion agreed or asked for something if its own message says so.",
       "- Be honest about the trade-off: what the user gives up, and the fallback if a step fails (a genuinely different path, not a step already in the plan). For a big decision, name the go/no-go test precisely: what counts, by when.",
       "- Read the new plan as the user would: steps in the order they actually happen, every step serves the main decision (if the plan skips something, it has no prep for it; never give a reason against one option that applies just as much to the option you keep), nothing contradicts (every item a fallback uses is packed or bought in an earlier step), every relative time names its anchor (\"48 hours after you send it\"), no step falls after a deadline it protects (if only the user knows that date, list it in forYou), everything doable in the user's real timeframe.",
-      "- \"plan\": written to the user in plain second person (\"Text Sam now…\"), at most three short sentences (four if a fallback needs its own). No emotion names and no chat logistics. Any message the user sends someone appears in quotes with the actual words, and those words answer the feeling the user named about that person. If the user's own words to someone are a label or an accusation (\"I'm done being your backup plan\"), keep their boundary but write the message as what happened, how it felt and the request; never open it with a label or a \"why did you\" question. Radically non-violent and pro-human: fair to everyone involved. " + SAFETY,
+      "- \"plan\": written to the user in plain second person (\"Text Sam now…\"), at most three short sentences (four if a fallback needs its own). No emotion names and no chat logistics. Any message the user sends someone appears in quotes with the actual words, and those words answer the feeling the user named about that person. If the user's own words to someone are a label or an accusation (\"I'm done being your backup plan\"), keep their boundary but write the message as what happened, how it felt and the request; never open it with a label. A question to them names what happened neutrally and assumes no motive (\"Why did you cancel an hour before?\" is fine; \"Why did you take my idea?\" is not). Radically non-violent and pro-human: fair to everyone involved. " + SAFETY,
       "- \"text\": your message to the chat, one paragraph of at most 4 sentences, no line breaks, in one voice. Open with the decision you just made or the worry you're answering, in your own words (never an emotion's wording, never a general \"that's a lot\" or \"I hear you\"). Don't recap steps that didn't change; if a new step delays or shrinks what the user wanted, name that trade-off plainly. Only describe steps that are in your plan, and the plan holds every step and fallback your text promises, each stated once. Never ask an emotion about timing, order or wording you can decide yourself. Never mention Society or its advice. Don't start with your name, don't do a roll call: name at most two emotions. If the user just spoke, answer them. Ask a question only if its answer would change the plan, then ask ONE emotion that still can't live with the plan (the one heard least) and say why; otherwise just state the decision. Never mention scores.",
       "- \"ask\": the emotion you asked, or \"\".",
       "- \"forYou\": the complete list of facts only the user can supply now, each under 12 words: carry over every item in ALREADY LEFT FOR THE USER TO SETTLE that is still open, drop any the plan now settles or decides, and add new ones. Never an action already written in the plan, a choice the plan already made, or what someone else will answer later; at most 3, or [].",
@@ -652,13 +645,13 @@ var TeffyEngine = (function () {
       "THE CHAT SO FAR (oldest first):",
       transcript(s, 8),
       "",
-      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences that a real coworker, friend, relative or the internet has actually said to someone in THIS situation, sincerely (no sarcasm, irony or exaggeration: the comedy is how confidently generic it is). It must SKIP PAST what ${e.name} needs, offering an easy fix for some other problem: never agree with that need (to someone asking for a bedtime, not "rest up"; to someone asking for a workout, not "consistency is key"), never take a side on the user's decision (not "skipping is fine", not "give her the benefit of the doubt"), no compliments, no questions about motives. Pick from the right family (a work boundary: "don't make waves", "pick your battles", "that's just how meetings go"; a friend letting you down: "life's too short", "just let it go", "they're probably just busy"; overload: "just push through", "everyone's swamped"; nerves: "just picture them in their underwear", "fake it till you make it"; lateness: "better late than never", "they'll understand"; anything: "have you tried yoga", "take a nap", "everything happens for a reason", "look on the bright side").`,
+      `Write Society's one chime-in to ${e.name}: one or two short, breezy sentences that a real coworker, friend, relative or the internet has actually said to someone in THIS situation, sincerely (no sarcasm, irony or exaggeration: the comedy is how confidently generic it is). It must SKIP PAST what ${e.name} needs, offering an easy fix for some other problem: never agree with that need (to someone asking for a bedtime, not "rest up"; to someone asking for a workout, not "consistency is key"), no compliments, no questions about motives. Backing the user's own idea is fine ("just push through" to someone who wants the load cut) as long as it skips the need. Pick from the right family (a work boundary: "don't make waves", "pick your battles", "that's just how meetings go"; a friend letting you down: "life's too short", "just let it go", "they're probably just busy"; overload: "just push through", "everyone's swamped"; nerves: "just picture them in their underwear", "fake it till you make it"; lateness: "better late than never", "they'll understand"; anything: "have you tried yoga", "take a nap", "everything happens for a reason", "look on the bright side").`,
       "- Only mention things already in the chat or the user's situation: never invent meetings, emails, gimmicks or new ideas, and never suggest a specific step, food, time or order (it must not work as a plan step). If you can't picture a real person saying it word for word, pick another.",
       before.length ? `- Society already said ${before.join(" and ")}. Use a different cliché family with different key words, and don't open the same way.` : "",
       "- No pet names (\"sweetie\", \"honey\") and don't open with \"Honestly\" or \"Look\". Never cruel, never an insult, never about the user's body, weight, identity or worth. Nothing dangerous (no substances, no risky stunts). It should be harmless-sounding and simply beside the point.",
       "- One paragraph, no line breaks, under 30 words. No emoji except at most one.",
       "",
-      `Reply with only this JSON ("need": what ${e.name} needs, in five words; "agrees": true if a real person saying your text would be backing that need or the user's decision):`,
+      `Reply with only this JSON ("need": what ${e.name} needs, in five words; "agrees": true only if a real person saying your text would be backing what ${e.name} needs):`,
       "{\"need\":\"...\",\"text\":\"...\",\"agrees\":false}",
     ].join("\n").replace(/\n{3,}/g, "\n\n");
   }
@@ -853,7 +846,7 @@ var TeffyEngine = (function () {
     const userText = (s.thought + " " + s.messages.filter(x => x.kind === "user").map(x => x.text).join(" ")).toLowerCase();
     const scoreTalk = t => (/\bmy score\b/i.test(t) && !/\bscore\b/.test(userText)) || (/(?:^|\s)[-−]1\b/.test(t) && !/(?:^|\s)[-−]1\b/.test(userText));
     const blankDays = t => t.replace(/\b(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days?\b/gi, d => (knownText.includes(d.toLowerCase().replace(/s$/, "")) ||
-      (/^(?:satur|sun)/i.test(d) && knownText.includes("weekend")) ? d : "___"));   // "the weekend" names both days
+      (/^(?:fri|satur|sun)/i.test(d) && knownText.includes("weekend")) ? d : "___"));   // "the weekend" covers Friday night to Sunday
     // A sentence ends at . ! or ? followed by a space, so "$2.50" or "7 p.m. sharp" never splits one in half.
     text = blankDays(text.replace(/([.!?])\s+/g, "$1\u0000").split("\u0000").filter(x => !scoreTalk(x)).join(" ")).replace(/\s{2,}/g, " ").trim();
     m = Object.assign({}, m, { proposal: blankDays(String(m.proposal == null ? "" : m.proposal)) });   // a proposal goes straight into the plan
@@ -1054,8 +1047,8 @@ var TeffyEngine = (function () {
           const mode = speakMode(dd), before = s.messages.length;
           await speak(name, dd.why || "", mode);
           const said = s.messages[s.messages.length - 1];
-          // A closing "I can live with it, as long as…" carries a new condition: the Consciousness vets it, not the wrap-up.
-          accepted = mode === "accept" && s.messages.length > before && said.kind === "emotion" && said.from === name;
+          // A closing turn ("I can live with it, as long as…", or one last fix) gets answered: the Consciousness vets it, not the wrap-up.
+          accepted = s.messages.length > before && said.kind === "emotion" && said.from === name;
         }
         s.askedOf = "";
         if (suffering(s).length || io.stopped()) continue;
