@@ -16,9 +16,10 @@ TL = json.load(open("/opt/work/timeline.json"))
 LINES = {l["id"]: l for l in TL["lines"]}
 DUR = TL["duration"]
 NF = int(round(DUR * FPS))
-FRAMES = "/opt/work/frames"
+FRAMES = os.environ.get("FRAMES", "/opt/work/frames")
 OUTDIR = "/home/user/game1/video"
-MASTER = "/opt/work/master.mkv"
+MASTER = os.environ.get("MASTER", "/opt/work/master.mkv")
+ROUGH = os.environ.get("ROUGH") == "1"
 
 GRADE = {  # (lift rgb, gain rgb, saturation, contrast)
     "colonnade": ((0.012, 0.016, 0.022), (1.00, 0.99, 0.97), 0.95, 1.06),
@@ -216,7 +217,7 @@ def build_master():
         f0 = int(round(t0 * FPS))
         f1 = int(round(t1 * FPS))
         n = max(1, int(round((t1 - t0) * FPS)))
-        step = shot.get("frame_step", 1)
+        step = 2 if ROUGH else shot.get("frame_step", 1)
         for k in range(f1 - f0):
             f = min(n, k + 1)
             img = shot_frame(shot["id"], f, n, step)
@@ -232,10 +233,10 @@ def build_master():
 
 
 # ----------------------------------------------------------------------------- delivery encodes
-def encode(target_mb=14.2, audio_kbps=80, codec="h264"):
+def encode(target_mb=14.2, audio_kbps=80, codec="h264", name=None):
     dur = DUR
     video_kbps = int((target_mb * 8 * 1024 * 1024 / 1000 - audio_kbps * dur - 60) / dur)
-    out = f"{OUTDIR}/one_john10_john17{'_hevc' if codec == 'hevc' else ''}.mp4"
+    out = f"{OUTDIR}/{name}.mp4" if name else f"{OUTDIR}/one_john10_john17{'_hevc' if codec == 'hevc' else ''}.mp4"
     if codec == "h264":
         venc = ["-c:v", "libx264", "-preset", "veryslow", "-tune", "animation", "-profile:v", "high",
                 "-x264-params", "aq-mode=3:aq-strength=0.9:psy-rd=0.8,0.0:deblock=-1,-1:ref=6:bframes=5"]
@@ -265,6 +266,8 @@ def encode(target_mb=14.2, audio_kbps=80, codec="h264"):
 if __name__ == "__main__":
     if "--encode-only" not in sys.argv:
         build_master()
-    if "--master-only" not in sys.argv:
+    if ROUGH:
+        encode(codec="h264", target_mb=12.0, name="one_john10_john17_ROUGH")
+    elif "--master-only" not in sys.argv:
         encode(codec="h264")
         encode(codec="hevc", target_mb=11.0)
