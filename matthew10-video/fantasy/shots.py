@@ -14,7 +14,7 @@ from shots import MAYA, MOM, NEG  # noqa: E402
 
 STYLE_HEAD = "epic fantasy film still, photorealistic, cinematic, 35mm photograph"
 STYLE = ("dramatic volumetric lighting, atmospheric, highly detailed, rich color grading, shallow depth of field")
-NEG_F = NEG + ", modern clothing, phone, car, glasses on a young woman"
+NEG_F = NEG + ", modern clothing, phone, car, glasses on a young woman, v-neck, deep neckline"
 CU = "neutral relaxed expression, mouth closed, eyes open"
 DAD = ("a 62-year-old Black man with dark brown skin, short gray hair, a gray mustache and round wire spectacles, "
        "a navy wool coat with silver buttons over a white high-collared shirt")
@@ -72,9 +72,16 @@ SHOTS = [
     shot("mom_feast", f"close-up portrait of {MOM}, wearing a rose velvet gown with a high collar and a pearl circlet in "
          "her hair, seated at a feast in a hall of ice and candles, warm candlelight, pleasant expression, lips closed",
          faces=[("feast", "mom")], ref="ref_mom", seed=206, neg="young, smile with teeth"),
-    shot("maya_ember", f"close-up of {M}, wearing a dark green velvet gown with a high neckline, seated at a candlelit "
-         "feast in a hall of ice, holding a small glowing ember of golden light cupped in her hands below her chin, the "
-         "glow lighting her face, troubled expression, mouth closed", faces=[("feast", "maya")], ref="ref_maya", seed=207),
+    # gowns default to plunging necklines: the collar is spelled out
+    # dresses kept coming out with plunging necklines: a cloak clasped at the throat covers it
+    shot("maya_ember", f"medium close-up of {M}, wearing a dark green hooded wool cloak fastened at the throat with a "
+         "silver clasp over a cream high-necked blouse, seated at a candlelit feast, holding a small glowing ember of "
+         "golden light cupped in both hands in front of her chest, the glow lighting her face from below, troubled "
+         "expression, mouth closed", faces=[("feast", "maya")], ref="ref_maya", seed=209,
+         neg="v-neck, deep neckline, bare chest, cleavage",
+         # it still came out open at the chest: the neck and chest are repainted, hands and light kept
+         inpaint=[region((215, 525, 570, 1060), "a dark green wool cloak over a high-necked cream linen blouse buttoned "
+                         "up to the throat, fabric, modest", 31, 1.0)]),
     shot("dad_feast", f"close-up portrait of {DAD}, seated at a feast in a hall of ice and candles, warm candlelight, "
          "stern expression, mouth closed", faces=[("feast", "dad")], ref="ref_dad", seed=208),
     shot("crack_floor", "close-up of a floor of clear glass beneath a candlelit feast table, reflections of candle "
@@ -87,22 +94,22 @@ SHOTS = [
          "racing across the ice toward a city of glass, a shockwave of snow and light", seed=211),
     shot("shadows_wall", "enormous looming shadows of a family cast by candlelight onto a wall of ice, a lone young woman "
          "with dark curly hair standing small before them, seen from behind, dramatic", seed=212),
-    shot("frozen_faces", "serene faces of people frozen just beneath clear ice, eyes closed, faint polite smiles, pale "
-         "blue light, eerie, close-up", seed=213),
-    shot("ice_floe", "a lone young woman in a deep blue cloak standing on a small ice floe drifting on a black sea at "
-         "night, a green aurora overhead, a glowing sword of light standing upright in the ice beside her, a distant "
-         "glass city", seed=214),
+    shot("frozen_faces", "a silent crowd of people in a frozen city square turned into statues of clear ice, covered in "
+         "frost, eyes closed, calm polite smiles, pale blue moonlight, snow, eerie", seed=218),
+    # (a glowing blade beside her read as a toy laser sword: the ice and the distance carry it alone)
+    shot("ice_floe", "a lone young woman in a deep blue cloak standing on a small ice floe drifting away across a black "
+         "sea at night, a green aurora overhead, the lights of a glass city far behind her, wide shot", seed=219),
 
     # ---------------------------------------------------------------- the hall of mirrors
     shot("mirror_hall", "an endless hall of ornate gilded mirrors lit by candles, a young Black woman with dark curly "
          "hair in a deep blue cloak walking alone down the middle, reflections repeating into the distance", seed=215),
-    shot("mirror_refl", f"close-up of {M}, wearing a cream linen dress with a high neckline, framed in an ornate gilded "
+    shot("mirror_refl", f"close-up of {M}, wearing a long-sleeved cream linen dress with a high collar, framed in an ornate gilded "
          "mirror, candlelight, a perfect polite smile, lips closed", faces=[("mirrors", "refl")], ref="ref_maya",
          seed=216),
-    shot("maya_mirror", f"close-up of {M}, wearing a cream linen dress with a high neckline, in a dark candlelit hall of "
+    shot("maya_mirror", f"close-up of {M}, wearing a deep blue wool cloak fastened at the throat over a cream linen dress, in a dark candlelit hall of "
          "mirrors, sad expression, eyes glistening, mouth closed", faces=[("mirrors", "maya")], ref="ref_maya",
          seed=217),
-    shot("maya_light", f"close-up of {M}, wearing a cream linen dress with a high neckline, in a dark hall, her face "
+    shot("maya_light", f"close-up of {M}, wearing a long-sleeved cream linen dress with a high collar, in a dark hall, her face "
          "softly lit by cool blue-white light from a small glowing orb floating in front of her, mouth closed",
          faces=[("mirrors", "maya")], ref="ref_maya", seed=218),
 
@@ -110,9 +117,11 @@ SHOTS = [
     shot("figure_cross", "a tall robed figure made of radiant white light, face hidden in glowing light, walking up a "
          "misty mountain path at dawn carrying a heavy wooden cross on his shoulder, a young woman in a deep blue cloak "
          "following behind him lifting a wooden cross onto her own shoulder", seed=219),
-    shot("mask_shatter", "a white porcelain mask with a painted smile shattering into pieces in mid-air, glowing "
-         "shards, dark background, dramatic light", seed=220),
-    shot("true_face", f"close-up of {M}, tears on her cheeks, warm golden light pouring over her face, looking upward, "
+    # (with a person in it this shot came out as a stranger or undressed: the mask alone)
+    shot("mask_shatter", "a delicate white porcelain face mask with a gentle painted closed-lip smile lying cracked on a "
+         "dark stone floor, broken pieces scattered around it, warm golden light glowing through the cracks, dramatic",
+         seed=223, neg="teeth, grin, horror, creepy, open mouth, person, skin"),
+    shot("true_face", f"close-up of {M}, wearing a deep blue cloak, tears on her cheeks, warm golden light pouring over her face, looking upward, "
          "eyes open, dark background with floating golden motes, mouth closed", faces=[("cross", "maya")],
          ref="ref_maya", seed=221),
 
@@ -124,7 +133,8 @@ SHOTS = [
          faces=[("guild", "maya")], ref="ref_maya", seed=223),
     shot("guildmaster", f"low angle close-up of {GREG}, in a lantern-lit workshop, a condescending smile, mouth closed",
          faces=[("guild", "greg")], ref="ref_greg", seed=224),
-    shot("overwhelm", f"close-up of {M}, wearing a brown leather work apron, pressing both hands over her ears, eyes "
+    shot("overwhelm", f"close-up of {M}, wearing a brown leather work apron over a long-sleeved cream linen dress with "
+         "a high collar, pressing both hands over her ears, eyes "
          "squeezed shut, distressed, harsh glaring lantern light", faces=[("guild", "maya")], ref="ref_maya", seed=225),
 
     # ---------------------------------------------------------------- the sparrows
@@ -148,12 +158,14 @@ SHOTS = [
     shot("mom_pool", f"close-up of {MOM}, wearing a rose velvet gown and a pearl circlet, in a dim castle chamber, lit "
          "by cool blue light from below as if from water, tense expression, lips closed", faces=[("pool", "mom")],
          ref="ref_mom", seed=233, neg="young, smile with teeth"),
-    shot("maya_pool", f"close-up of {M}, wearing a deep blue cloak, leaning over a basin of glowing water at night, cool "
-         "blue light from below on her face, sad, mouth closed", faces=[("pool", "maya")], ref="ref_maya", seed=234),
+    # no basin in frame: she came out sitting in it
+    shot("maya_pool", f"close-up of {M}, wearing a deep blue wool cloak fastened at the throat with a silver clasp, in a "
+         "dark stone chamber at night, her face lit from below by cool blue light reflected from water, sad, mouth closed",
+         faces=[("pool", "maya")], ref="ref_maya", seed=244, neg="bathing, bathtub, in water, bare shoulders, straps"),
 
     # ---------------------------------------------------------------- the road
-    shot("gate_night", "a young woman in a deep blue cloak carrying a lantern walking out through the great gate of a "
-         "glass city at night, snow falling, cold blue light, seen from behind", seed=235),
+    shot("gate_night", f"{M}, wearing a deep blue cloak and carrying a lantern, walking out through the great arched "
+         "gate of a glass city at night, snow falling, cold blue light, full figure", ref="ref_maya", seed=235),
     shot("bridge", "a long narrow stone bridge over a deep misty chasm, a lone cloaked woman crossing it, a small glowing "
          "orb of light floating ahead of her, golden sunrise ahead, storm clouds behind, epic wide shot", seed=236),
     shot("figure_dawn", "a tall robed figure made of radiant white light, face hidden in glowing light, standing at the "
@@ -168,12 +180,12 @@ SHOTS = [
          "sparrows on the rooftops, peaceful", seed=239),
     shot("priya", f"close-up portrait of {PRIYA}, in a cozy library with soft dim lanterns, warm smile, mouth closed",
          faces=[("haven", "priya")], ref="ref_priya", seed=240),
-    shot("maya_haven", f"close-up of {M}, wearing a rust orange wool dress with a high neckline, in a cozy room with "
+    shot("maya_haven", f"close-up of {M}, wearing a long-sleeved rust orange wool dress with a high collar, in a cozy room with "
          "soft lantern light, gentle smile, eyes glistening, mouth closed", faces=[("haven", "maya")], ref="ref_maya",
          seed=241),
     shot("sparrow_letter", "a small brown sparrow perched on a wooden windowsill with a tiny rolled parchment letter "
          "tied to its leg with red thread, sunrise light, close-up", seed=242),
-    shot("maya_window", f"close-up of {M}, wearing a rust orange wool dress with a high neckline, standing by a window "
+    shot("maya_window", f"close-up of {M}, wearing a long-sleeved rust orange wool dress with a high collar, standing by a window "
          "at sunrise, warm golden light on her face, a small sparrow on the windowsill, peaceful, mouth closed",
          faces=[("haven", "maya")], ref="ref_maya", seed=243),
 ]

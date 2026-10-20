@@ -183,7 +183,7 @@ function loadDirection(BUILD, REAL) {
   });
 
   // ---- the sword
-  const tStrike = wi('N8', 'sword').e;
+  const tStrike = end('N8', 0.05);                 // right after "...but a sword" (as in music.py and mix.py)
   cut(start('N8', -0.2), 'sword_sky', {
     cam: { z0: 1.0, z1: 1.14, f: [540, 700], f1: [540, 1050] },
     fx: (ctx, t, sh, cam) => {
@@ -241,12 +241,12 @@ function loadDirection(BUILD, REAL) {
   cut(start('L5', -0.5), 'maya_mirror', { cam: { z0: 1.0, z1: 1.08 }, fx: (ctx, t) => V.flicker(ctx, t, { amount: 0.05 }) });
   const orbAt = (img) => {
     const f = face(img);
-    return f ? [f.cx + f.w * 0.95, f.cy + f.h * 0.15] : [W * 0.7, H * 0.42];
+    return f ? [Math.min(W - 150, f.cx + f.w * 0.62), f.cy + f.h * 0.1] : [W * 0.7, H * 0.42];   // beside her face, inside the frame
   };
   const tOrb = at('N12', 'light') - 0.4;
   const lightFx = (ctx, t, sh, cam) => {
     const [x, y] = proj(cam, ...orbAt('maya_light'));
-    V.orb(ctx, t, { x, y, r: 30 * zoom(cam), level: light.speechAt(t).open, alpha: smooth((t - tOrb) / 1.2) });
+    V.orb(ctx, t, { x, y, r: 40 * zoom(cam), level: light.speechAt(t).open, alpha: smooth((t - tOrb) / 1.2) });
   };
   cut(start('N12', -0.2), 'maya_light', { cam: { z0: 1.0, z1: 1.06 }, fx: lightFx });
   // the Light's first answer: out to the hall (the orb small beside her), back in for "That isn't the same"
@@ -312,7 +312,18 @@ function loadDirection(BUILD, REAL) {
   const tCatch = at('N18', 'outside') - 0.2;
   cut(tCatch, 'hand_catch', {
     trans: ['dissolve', 0.5], cam: { z0: 1.04, z1: 1.12 },
-    fx: (ctx, t) => { V.rays(ctx, t, { x: 540, y: 700, angle: -Math.PI / 2, spread: 6.2, n: 12, len: 1400, alpha: 0.12, seed: 23 }); warmDust(ctx, t); },
+    fx: (ctx, t, sh, cam) => {
+      // the bird held in light: a radiance gathers beneath it and rays open out
+      const k = smooth((t - tCatch) / 0.8);
+      const [x, y] = proj(cam, 590, 1180), z = zoom(cam);
+      V.withAdd(ctx, () => {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 520 * z);
+        g.addColorStop(0, `rgba(255,214,140,${0.55 * k})`); g.addColorStop(0.45, `rgba(255,190,110,${0.22 * k})`); g.addColorStop(1, 'rgba(255,190,110,0)');
+        ctx.fillStyle = g; ctx.fillRect(x - 520 * z, y - 520 * z, 1040 * z, 1040 * z);
+      });
+      V.rays(ctx, t, { x, y, angle: -Math.PI / 2, spread: 6.2, n: 12, len: 1400, alpha: 0.12 * k, seed: 23 });
+      warmDust(ctx, t);
+    },
   });
   cut(start('N19', -0.2), 'hair_stars', {
     cam: { z0: 1.0, z1: 1.08 },
@@ -367,7 +378,7 @@ function loadDirection(BUILD, REAL) {
     cam: { z0: 1.0, z1: 1.08 },
     fx: (ctx, t, sh, cam) => {
       const [x, y] = proj(cam, ...orbAt('maya_road'));
-      V.orb(ctx, t, { x, y, r: 24 * zoom(cam), level: light.speechAt(t).open });
+      V.orb(ctx, t, { x, y, r: 34 * zoom(cam), level: light.speechAt(t).open });
     },
   });
   cut(start('N24', -0.2), 'figure_dawn', {

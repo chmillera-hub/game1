@@ -80,16 +80,16 @@ def compose(tl):
 
     # ------------------------------------------------ 3. the sword (choir, brass, timpani)
     a, b = sc["sword"]["start"], sc["sword"]["end"]
-    strike = wt("N8", "sword") + 0.25
+    strike = en("N8") + 0.05                         # right after "...but a sword"
     S.cc("choir", a, 11, 70)
-    S.ramp("choir", a, strike, 62, 100)
+    S.ramp("choir", a, strike, 58, 84)
     pad("choir", a, strike, ["D3 F3 A3 D4", "Bb2 F3 Bb3 D4", "F2 A3 C4 F4", "C3 G3 C4 E4"], 44, 3.6)
     pad("strings", a, strike, ["D3 A3 D4 F4", "Bb2 F3 D4 F4", "F2 C4 F4 A4", "C3 G3 E4 G4"], 36, 3.6)
     for t in [a + 0.5, a + 4.1, a + 7.7]:
         if t < strike - 0.8:
             S.n("timp", t, 1.2, "D2", 56)
-    for k in range(8):                                                       # timpani roll into the strike
-        S.n("timp", strike - 1.0 + k * 0.12, 0.2, "A1", 50 + k * 8)
+    for k in range(5):                                                       # timpani roll into the strike
+        S.n("timp", strike - 0.6 + k * 0.12, 0.2, "A1", 44 + k * 9)
     S.chord("brass", strike, 2.4, "D3 A3 D4 F4", 100)
     S.chord("choir", strike, 2.8, "D3 A3 D4 F4 A4", 100)
     S.n("timp", strike, 2.5, "D2", 112)

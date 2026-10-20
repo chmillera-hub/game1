@@ -122,9 +122,9 @@ def main():
     s0, s1 = sc["sword"]["start"], sc["sword"]["end"]
     place(sfx, wind(s1 - s0 + 1, 120, 800, 1.0, 3), s0 - 0.5, db(-40))
     for t in [st("N8") + 1.0, wt("N8", "did") - 0.3]:
-        place(sfx, thunder(3.0, 1.0, int(t * 10)), t + 0.15, db(-31))
-    strike = wt("N8", "sword") + 0.25
-    place(sfx, whoosh(1.6, 1.0, False), strike - 1.5, db(-24))
+        place(sfx, thunder(3.0, 1.0, int(t * 10)), t + 0.15, db(-35))
+    strike = en("N8") + 0.05                         # right after "...but a sword" (same moment in music.py, direction.js)
+    place(sfx, whoosh(1.2, 1.0, False), strike - 1.0, db(-31))
     place(sfx, impact(1.0), strike, db(-14))
     place(sfx, glass(False, 1.0, 31), strike + 0.05, db(-18))
     place(sfx, thunder(2.6, 1.0, 77), strike, db(-22))

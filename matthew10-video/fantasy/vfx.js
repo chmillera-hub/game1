@@ -97,7 +97,11 @@ function orb(ctx, t, { x, y, r = 34, level = 0, alpha = 1, rgb = [200, 228, 255]
   const X = x + sway, Y = y + bob;
   const pulse = 1 + 0.08 * Math.sin(t * 2.1) + level * 0.5;
   withAdd(ctx, () => {
-    for (const [rr, a] of [[r * 9 * pulse, 0.10], [r * 4 * pulse, 0.22], [r * 1.8 * pulse, 0.5], [r * pulse, 0.9]]) {
+    // a wide cool spill on the scene, then halo, glow and core
+    const sp = ctx.createRadialGradient(X, Y, 0, X, Y, r * 22);
+    sp.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.10 * alpha})`); sp.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+    ctx.fillStyle = sp; ctx.fillRect(X - r * 22, Y - r * 22, r * 44, r * 44);
+    for (const [rr, a] of [[r * 10 * pulse, 0.16], [r * 4.5 * pulse, 0.3], [r * 1.8 * pulse, 0.6], [r * pulse, 1.0]]) {
       const g = ctx.createRadialGradient(X, Y, 0, X, Y, rr);
       g.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a * alpha})`); g.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
       ctx.fillStyle = g; ctx.fillRect(X - rr, Y - rr, rr * 2, rr * 2);

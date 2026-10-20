@@ -110,14 +110,16 @@ function paintSplit(ctx, sh, t, img, cam) {
     const off = fbm(u * 0.004, 9) * 70 + Math.sin(u * 0.013) * 18;
     seam.push(horiz ? [u, at0 + off] : [at0 + off, u]);
   }
+  // each piece carries its own edge of the seam with it, so a gap opens between them
   const piece = (side) => {
     ctx.save();
+    if (horiz) ctx.translate(0, side * sp); else ctx.translate(side * sp, 0);
     ctx.beginPath();
     if (horiz) ctx.moveTo(-20, side < 0 ? -10 : H + 10); else ctx.moveTo(side < 0 ? -10 : W + 10, -20);
     for (const [x, y] of seam) ctx.lineTo(x, y);
     if (horiz) ctx.lineTo(W + 20, side < 0 ? -10 : H + 10); else ctx.lineTo(side < 0 ? -10 : W + 10, H + 20);
     ctx.closePath(); ctx.clip();
-    if (horiz) ctx.drawImage(Lr, 0, side * sp); else ctx.drawImage(Lr, side * sp, 0);
+    ctx.drawImage(Lr, 0, 0);
     ctx.restore();
   };
   if (sp > 0.5) {
