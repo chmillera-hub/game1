@@ -24,8 +24,11 @@ SOUND_CAPTIONS = {
 
 
 class Subs:
-    def __init__(self, T):
+    def __init__(self, T, base_y=None, captions=None, prefer_latest=False):
         self.T = T
+        self.prefer_latest = prefer_latest   # back-to-back sung lines: a new line replaces the old one
+        self.base_y = BASE_Y if base_y is None else base_y
+        self.captions = SOUND_CAPTIONS if captions is None else captions
         self.f = font(TEXT_FONT, SIZE)
         self.ftag = font(TAG_FONT, 50)
         self.fcap = font(TAG_FONT, 54)
@@ -63,7 +66,7 @@ class Subs:
     def draw(self, c, t, alpha=1.0):
         T = self.T
         drawn = False
-        for d in T.lines:
+        for d in (reversed(T.lines) if self.prefer_latest else T.lines):
             if not (d["start"] - 0.2 <= t <= d["end"] + 0.5):
                 continue
             words = d["words"]
@@ -83,7 +86,7 @@ class Subs:
             if drawn:
                 break
         if not drawn:
-            for bid, caps in SOUND_CAPTIONS.items():
+            for bid, caps in self.captions.items():
                 b = T.items.get(bid)
                 if not b:
                     continue
@@ -96,7 +99,7 @@ class Subs:
     def _caption(self, c, txt, a):
         w = self.fcap.measureText(txt)
         x = W / 2 - w / 2
-        y = BASE_Y + 10
+        y = self.base_y + 10
         c.drawRoundRect(skia.Rect.MakeLTRB(x - 30, y - 62, x + w + 30, y + 26), 26, 26, fill((6, 4, 12), 0.45 * a))
         c.drawString(txt, x, y, self.fcap, stroke((8, 6, 14), 9, a))
         c.drawString(txt, x, y, self.fcap, fill((214, 206, 236), a))
@@ -109,7 +112,7 @@ class Subs:
         for ln in lines:
             widths.append(sum(f.measureText(words[i]["text"]) for i in ln) + sp * (len(ln) - 1))
         box_w = max(widths)
-        y0 = BASE_Y
+        y0 = self.base_y
         top = y0 - SIZE - 22
         bottom = y0 + LINE_H * (len(lines) - 1) + 24
         if d["who"] != "NARRATOR":
