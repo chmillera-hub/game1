@@ -1440,7 +1440,7 @@ def beat_grid(grid, bar_from, bar_to, extra_downbeats=()):
     for t in extra_downbeats:
         downs.append(round(t, 3))
         beats.append(round(t, 3))
-    return sorted(set(beats)), sorted(set(downs))
+    return sorted({b for b in beats if b >= 0}), sorted({d for d in downs if d >= 0})
 
 
 def make_piece(name, lines, grid, chords, arrange, log):
