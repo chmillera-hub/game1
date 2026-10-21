@@ -20,6 +20,42 @@ Feature-animation polish ("fancy cartoon"): rich light, depth, texture, appealin
 secondary motion — think a premium 2D animated short / illustrated storybook, warm and witty, never
 grimdark, never MMO-gritty.
 
+### 0.1 PERIOD RULE — it is "back in the day", NOT a modern city (user requirement, overrides everything)
+
+> "Ensure the script isn't taking place in a modern city but back in the day, like Medieval Times —
+> like the movie Shrek or Robin Hood, that kind of era."
+
+The world is a storybook **medieval kingdom** — think Disney's *Robin Hood* (animals in medieval
+Nottingham) and *Shrek*'s fairy-tale kingdom: thatched and half-timbered cottages, cobbles and mud
+lanes, a castle with banners on the hill, market stalls, wells, wooden carts, candles, torches, oil
+lanterns, hearth fires, leaded diamond-pane windows, wood, iron, stone, wool, linen, leather, parchment.
+**Banned anywhere on screen:** electric lights or bulbs, neon, power lines, plastic, cars, asphalt,
+modern glass storefronts, modern signage/typography (no sans-serif shop signs — signs are carved or
+painted wood with storybook serif/uncial lettering), modern clothes (hoodies, tees, sneakers, baseball
+caps, jeans), modern devices (phones, earbuds, headphones, cameras, screens), modern packaging,
+reflective safety gear, zippers.
+The script's modern ideas survive only as **in-world magical/medieval equivalents** (that's the comedy,
+Shrek-style): the "phone" is an enchanted speaking stone, the "earbuds" are humming enchanted
+sea-shells, the "phones raised to film" are scrying crystals, the "dryers" are enchanted tumbling
+drums, the "string lights" are strings of candle-lanterns, the "register" is a brass till with a bell.
+Any glow from magic objects is soft and arcane (runes, wisps), never a modern screen/UI look: on-screen
+text (the speaking stone's menu, the "on hold" timer) is glowing calligraphic rune-lettering or
+illuminated script, and the timer is an hourglass. Clothing is medieval: tunics, cloaks, hoods, aprons,
+kirtles, jerkins, shawls, boots. Captions (outside the world) may stay in Inter.
+
+**Superseding notes (if any earlier instruction says otherwise, THIS wins):**
+- The dwarf's "work vest" is a **sturdy orange-brown tanned-leather work vest** with brass buckles and
+  tool loops — NOT a high-visibility/reflective vest.
+- The teen faun wears a **red wool hood/cowl and a patched tunic**, a little wooden reed-pipe on a cord
+  around his neck and a satchel — NO headphones.
+- The elf wears a **hooded travelling cloak/kirtle** (not a hoodie); her "earbuds" are tiny glowing
+  enchanted sea-shells in her ears.
+- The griffin courier wears a **courier's felt cap with a feather** and a leather parcel satchel with
+  a wax seal (royal post), not a modern cap.
+- The stone troll wears a **leather jerkin**, not a modern vest or tee.
+- Lantern posts are iron posts with **candle/oil flames** in a glass-and-iron lantern; the tavern's
+  "string lights" are strings of small paper/candle lanterns.
+
 **Thematic gift of the translation:** the city keeps handing him *stones* — his "phone" is a speaking
 rune-stone, the bouncer is a stone troll, the remedies are crystals and cold glass — until a tiny
 gnome grandmother hands him *bread*.
@@ -154,15 +190,15 @@ a scene, an insert close-up (note, stamp, sign) may be a hard cut or a quick pus
 **The script's modern things → fantasy equivalents (dialogue unchanged):**
 - dryers → enchanted tumbling drums (clothes visibly tumbling behind round glass); sign SELF-SERVICE
   is a painted wooden plaque.
-- earbuds + phone → glowing ear-shells + a glowing hand-mirror / scrying shard she scrolls.
+- earbuds + phone → tiny humming enchanted sea-shells in her ears + a glowing hand-mirror / scrying shard she gazes into (its runes scroll).
 - pharmacy items → labelled clearly in storybook lettering: **SLEEP DRAUGHT** (blue potion), **VITAMINS**
   (jar of glowing pills/berries), **CALM** stress-relief candle (in a jar), and the coloring book
   **MINDFUL COLORING FOR ADULTS** (parchment cover with a mandala/rose-window design). The note is a
   little parchment scrap: *"Something for loneliness?"*
 - phone → **the speaking stone**: a smooth palm-sized rune-stone that glows when active, with numbered
-  rune keys; he holds it to his ear. The phone-menu text floats as glowing rune-UI text. The hold music
+  rune keys; he holds it to his ear. The phone-menu text floats as glowing calligraphic rune-lettering (illuminated-script look, never a modern UI). The hold music
   is a tinny music-box of **four notes** looping.
-- the bar's string lights → strings of small paper lanterns / fairy-lights; the stamp is a rubber/wood
+- the bar's string lights → strings of small candle-lit paper lanterns; the stamp is a rubber/wood
   stamp, ink reads **SMILE** in pink.
 - phones raised to film → **scrying crystals / hand-mirrors raised**, glowing, with a tiny red
   "recording" rune; the fight is visible reflected in them.
@@ -187,12 +223,12 @@ expressions, stylised proportions). Everyone gets idle secondary motion.
   green skirt, little boots, a cloth satchel holding a round crusty loaf (golden-brown, scored top).
   Twinkly, dry humour.
 - **THE ELF — laundromat stranger.** Elegant, aloof, long pointed ears with glowing ear-shells
-  ("earbuds"), oversized hooded tunic, face lit cold by a glowing hand-mirror she scrolls.
+  ("earbuds"), hooded travelling cloak over a long kirtle, face lit cold by a glowing hand-mirror she scrolls.
 - **THE LIONESS — the pharmacist (PHARMACIST).** Kind, tidy, half-moon spectacles on a chain, apothecary
   robe/apron over a white blouse, tail tuft; moves gracefully along the shelves.
 - **THE SPEAKING STONE — phone voice (PHONE).** The rune-stone itself; its runes pulse with the voice.
 - **THE STONE TROLL — bouncer (BOUNCER).** Huge, mossy grey stone skin, small tusks, tiny bored eyes, a
-  leather vest straining over his chest, the stamp in his huge fist.
+  leather jerkin straining over his chest, the stamp in his huge fist.
 - **Tavern crowd:** dwarves, goblins, satyrs, elves, a minotaur — all with tankards, all laughing in
   perfect sync at the same volume (uncanny).
 - **The two fighters (S5):** an **ORC** (green, tusks, red leather jerkin) and a **MINOTAUR** (big horns,
@@ -200,12 +236,12 @@ expressions, stylised proportions). Everyone gets idle secondary motion.
 - **Street crowd (S5):** mixed creatures (goblins, kobolds, elves, dwarves, a harpy, a pixie) with
   scrying crystals raised. **"Someone in the crowd" (CROWD)** is a sneering young **pixie** (tiny,
   buzzing wings).
-- **The teenager (S7):** a gangly teen **faun** (goat legs, little horns, red hood, shell-headphones
-  around the neck, satchel).
-- **The tired delivery driver (S7):** a **griffin courier** (eagle head, lion body, courier cap, parcel
-  satchel, droopy-eyed yawn); sits on his haunches.
-- **The man in a work vest (S7):** a stout **dwarf** labourer — orange high-visibility-style work vest
-  over a tunic, braided beard, soot smudges, helmet with a candle-lamp in hand. He drags the second bench.
+- **The teenager (S7):** a gangly teen **faun** (goat legs, little horns, red wool hood/cowl, patched tunic,
+  a wooden reed-pipe on a cord around his neck, satchel).
+- **The tired delivery driver (S7):** a **griffin courier** (eagle head, lion body, a royal-post courier's felt cap
+  with a feather, a leather parcel satchel with a wax seal, droopy-eyed yawn); sits on his haunches.
+- **The man in a work vest (S7):** a stout **dwarf** labourer — sturdy orange-brown tanned-leather work vest
+  (brass buckles, tool loops) over a tunic, braided beard, soot smudges, a miner's leather cap with a candle-lamp in hand. He drags the second bench.
 - **Pigeons:** plump grey pigeons, iridescent green-purple necks, coral feet; peck, hop, flap, and do the
   synchronized head-swivel gag (S6). (They're the one "ordinary" animal — it's funny that they're the
   same in every world.)
@@ -290,7 +326,7 @@ Line ids `sN_lK`; beat ids `sN_<name>`. ("He/him" below = the dragon.)
 - `s3_l2` ~3.6 PHONE: "For a new account, press two."
 - `s3_l3` ~6.6 PHONE: "For loneliness… please hold."  (the word "loneliness" lands with a beat)
 - `s3_hold` ~10.0–20.0: hold music — the same four notes, over and over (visual: four floating glowing
-  music notes looping, a little "On hold" sand-timer/counter). He slows down.
+  music notes looping, a little hourglass marked "On hold" that keeps flipping). He slows down.
 - `s3_l4` ~14.3 MAN: "I've been on hold my whole life."
 - 17–20: he stands under a lantern post in the rain, the music-box loop going on and on.
 
