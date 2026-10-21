@@ -99,6 +99,24 @@ the hook uses the film's FOUR-NOTE MOTIF, the same four notes as the hold music 
 
 Lyrics are captioned in italics with a ♪ at start and end of each line (`"sung": true` lines).
 
+### 0.3 WHY THIS FILM EXISTS (the user's intent — let it guide every creative choice)
+
+> "I'm here to create something I can share with others … that could help people learn about their
+> emotions and spirituality. If things are difficult, don't give up — be more creative, more
+> experimental."
+
+This is a gentle parable about loneliness and communion: the world offers stones (products, distractions,
+"keep it light") to a hunger that only shared bread — presence, honesty, kindness — can feed (Matthew
+7:9). Viewers should *feel* the arc in their body: numb cold isolation → being misunderstood → a small,
+funny, honest connection → warmth spreading from one broken loaf to a whole bench. So:
+- **Emotional truth over gags.** The humour is dry and kind; never mock the lonely. Let silences breathe.
+  The acting (eyes, posture, wings, the pause before a line) carries the meaning.
+- **Light and color are the emotional score**: cold, hard, isolated light in S1–S5; the first warm light
+  is his laugh's embers (S6); warmth physically spreads with the bread in S7; one warm pool in the dark in S8.
+- **Sincere, never preachy.** The scripture appears only on the end card; the film earns it.
+- **When something is hard, be inventive** rather than settling for a placeholder — try a bolder
+  staging, a cleverer visual metaphor, a different technique; keep the version that moves people.
+
 **Thematic gift of the translation:** the city keeps handing him *stones* — his "phone" is a speaking
 rune-stone, the bouncer is a stone troll, the remedies are crystals and cold glass — until a tiny
 gnome grandmother hands him *bread*.
