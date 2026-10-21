@@ -6,7 +6,7 @@ const BW = 960, BH = 420;                 // wall image buffer (full quality)
 const SPOT_SIGMA = 1.3, SLIT_H = 30;      // mm
 const C_LIGHT = 2.998e11;                 // mm/s
 
-const DEFAULTS = { target: 'prism', wave: 'sine', slideH: 0, turnH: 0, fH: 100, slideV: 0, turnV: 0, fV: 100, phase: 90,
+const DEFAULTS = { target: 'prism', pattern: 'axes', wave: 'sine', slideH: 0, turnH: 0, fH: 100, slideV: 0, turnV: 0, fV: 100, phase: 90,
   light: 'white', beam: 'spot', theta: 64, dist: 1.0 };
 const PRESETS = [
   { id: 'still', name: 'Still prism', s: {},
@@ -37,6 +37,21 @@ const PRESETS = [
     note: '<b>A phone camera reads its sensor row by row</b> over about 25 ms. With the prism rocking 240 times a second, each row sees the rainbow at a different moment, and straight bands become snakes. Set the speed to 30 per second to see the camera make fast shaking look slow.' },
 ];
 
+const MD436 = +minDevIncidence(435.8).toFixed(2);
+PRESETS.push(
+  { id: 'pcircle', group: 'pattern', name: 'Circles going opposite ways', s: { pattern: 'circle', wave: 'triangle', turnH: 3, turnV: 1, theta: MD436, light: 'mercury' }, view: 'slow',
+    note: '<b>The prism moves in one circle, but the colours disagree about which way round it goes.</b> The violet line (405 nm) goes round clockwise and the green and yellow lines go counter-clockwise, so violet\'s D-shape is a mirror image of theirs. The blue line (436 nm) folds into a curved stroke that it traces back and forth. The prism is rocking about 436 nm\'s minimum-deviation angle, so turning it left and right pushes the colours on either side in opposite directions.' },
+  { id: 'psquare', group: 'pattern', name: 'Mercury squares', s: { pattern: 'square', wave: 'triangle', target: 'light', turnH: 1, turnV: 1, light: 'mercury', theta: 64 },
+    note: '<b>Each mercury line draws its own square</b>, and no two match. The violet square is about 30% wider than the yellow one, because violet is more sensitive to the beam\'s angle. The top and bottom edges sag slightly, the "smile" effect from aiming the light up and down. Where the green and yellow squares overlap, their light adds to yellow-green.' },
+  { id: 'ptriangle', group: 'pattern', name: 'Rainbow triangles', s: { pattern: 'triangle', wave: 'triangle', turnH: 2, turnV: 2, theta: 75 },
+    note: '<b>Every wavelength traces its own triangle</b>, and with white light the triangles overlap into a fan. The flat bottom edges of all the triangles line up into one bright, sharp rainbow, while the slanted sides of different colours cross and mix into pale pinks and greys. Violet\'s triangle is the tallest, because nodding the prism lifts violet the most.' },
+  { id: 'peight', group: 'pattern', name: 'Figure 8', s: { pattern: 'figure8', wave: 'triangle', turnH: 2.5, turnV: 2, theta: 75 },
+    note: '<b>A figure-of-eight for every colour, smeared across the spectrum.</b> The path turns around at its left and right ends, so each colour lingers there and leaves a bright vertical stripe. The stripes of neighbouring colours overlap and mix. Try it with the mercury lamp to see separate figure-8s.' },
+  { id: 'pstar', group: 'pattern', name: 'Mercury stars', s: { pattern: 'star', wave: 'triangle', target: 'light', turnH: 1.2, turnV: 1.2, light: 'mercury', theta: 64 },
+    note: '<b>Five-pointed stars, one per spectral line</b>, each a different size and stretched differently left to right. Switch to Slow motion to watch them being drawn.' },
+  { id: 'psnap', group: 'pattern', name: 'Snap around a square', s: { pattern: 'square', wave: 'square', turnH: 4.5, turnV: 1.5, theta: 75 },
+    note: '<b>Four rainbows at once.</b> The prism jumps between the four corners of a square, so your eye sees four still rainbows in a 2 × 2 grid. Within each row the two rainbows overlap, and vivid magenta appears where one\'s red meets the other\'s violet. The rows slant in opposite directions, because nodding the prism lifts violet more than red.' },
+);
 let S = { ...DEFAULTS, ...PRESETS[4].s };
 let view = 'eye';
 let activePreset = 'rock';
@@ -47,7 +62,7 @@ const sToF = s => { const f = Math.pow(10, s / 100 * 3); return f < 10 ? Math.ro
 const sliders = ['slideH', 'turnH', 'fH', 'slideV', 'turnV', 'fV', 'phase', 'theta', 'dist'];
 function writeControls() {
   for (const k of sliders) $(k).value = (k === 'fH' || k === 'fV') ? fToS(S[k]) : S[k];
-  for (const g of ['target', 'wave', 'light', 'beam']) $(`${g}-${S[g]}`).checked = true;
+  for (const g of ['target', 'pattern', 'wave', 'light', 'beam']) $(`${g}-${S[g]}`).checked = true;
   $(`view-${view}`).checked = true;
   writeOutputs();
 }
@@ -57,7 +72,12 @@ function writeOutputs() {
   $('slideV-o').textContent = `±${S.slideV.toFixed(1)} mm`;
   $('turnH-o').textContent = `±${S.turnH.toFixed(1)}°`;
   $('turnV-o').textContent = `±${S.turnV.toFixed(1)}°`;
-  $('fH-o').textContent = `${S.fH} per second`;
+  const pat = S.pattern !== 'axes';
+  $('fH-o').textContent = pat ? `${S.fH} laps per second` : `${S.fH} per second`;
+  $('fH-l').textContent = pat ? 'Speed round the pattern' : 'Speed';
+  $('fV-row').hidden = pat; $('phase-row').hidden = pat;
+  $('hNote').textContent = pat ? 'sets the pattern width' : '';
+  $('vNote').textContent = pat ? 'sets the pattern height' : '';
   $('fV-o').textContent = `${S.fV} per second`;
   $('phase-o').textContent = S.phase === 0 ? 'together' : S.phase === 90 ? '¼ cycle apart' : S.phase === 180 ? 'opposite' : `${S.phase}°`;
   $('theta-o').textContent = `${S.theta.toFixed(1)}°`;
@@ -84,6 +104,7 @@ function onInput(e) {
   const k = e.target.id;
   if (sliders.includes(k)) S[k] = (k === 'fH' || k === 'fV') ? sToF(+e.target.value) : +e.target.value;
   else if (e.target.name === 'view') { view = e.target.value; writeOutputs(); invalidate(false); return; }
+  else if (e.target.name === 'pattern' && e.target.value !== 'axes' && !activeH() && !activeV()) { S.pattern = e.target.value; S.turnH = S.turnV = 1; writeControls(); }
   else if (e.target.name) S[e.target.name] = e.target.value;
   activePreset = null;
   markPreset();
@@ -95,26 +116,54 @@ document.querySelector('.wall-head').addEventListener('input', onInput);
 function applyPreset(p) {
   S = { ...DEFAULTS, ...p.s };
   delete S.view;
-  view = p.s.view || (view === 'cam' ? 'eye' : view);
+  view = p.s.view || p.view || (view === 'cam' ? 'eye' : view);
   activePreset = p.id;
   writeControls(); markPreset(); invalidate(false);
 }
 function markPreset() {
-  for (const b of $('presets').children) b.setAttribute('aria-pressed', String(b.dataset.id === activePreset));
+  for (const b of [...$('presets').children, ...$('presets2').children]) b.setAttribute('aria-pressed', String(b.dataset.id === activePreset));
 }
 for (const p of PRESETS) {
   const b = document.createElement('button');
   b.type = 'button'; b.textContent = p.name; b.dataset.id = p.id;
   b.addEventListener('click', () => applyPreset(p));
-  $('presets').appendChild(b);
+  $(p.group === 'pattern' ? 'presets2' : 'presets').appendChild(b);
 }
 
 // ---------- motion
 const activeH = () => S.slideH > 0 || S.turnH > 0;
 const activeV = () => S.slideV > 0 || S.turnV > 0;
+// closed patterns, each spanning -1..1 in both directions
+const SHAPES = {
+  square: [[1, 1], [-1, 1], [-1, -1], [1, -1]],
+  triangle: [[0, 1], [-1, -1], [1, -1]],
+  star: [0, 2, 4, 1, 3].map(k => { const a = Math.PI / 2 + k * TAU / 5; return [Math.cos(a), (Math.sin(a) + 0.095) / 1.095]; }),
+};
+function patternAt(kind, s, mode) {
+  // s in [0,1): position round the pattern. mode: sine = eases into corners, triangle = steady, square = jumps
+  s -= Math.floor(s);
+  if (kind === 'circle' || kind === 'figure8') {
+    if (mode === 'square') s = Math.floor(s * 8) / 8;
+    const a = TAU * s;
+    return kind === 'circle' ? [Math.cos(a), Math.sin(a)] : [Math.sin(a), Math.sin(2 * a)];
+  }
+  const P = SHAPES[kind], n = P.length, x = s * n, k = Math.floor(x) % n;
+  let f = x - Math.floor(x);
+  if (mode === 'square') f = 0;
+  else if (mode === 'sine') f = (1 - Math.cos(Math.PI * f)) / 2;
+  const A = P[k], B = P[(k + 1) % n];
+  return [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f];
+}
 function motionAt(t) {
-  const h = activeH() ? wave(S.wave, TAU * S.fH * t) : 0;
-  const v = activeV() ? wave(S.wave, TAU * S.fV * t + S.phase * DEG) : 0;
+  let h, v;
+  if (S.pattern !== 'axes') {
+    [h, v] = patternAt(S.pattern, S.fH * t, S.wave);
+    if (!activeH()) h = 0;
+    if (!activeV()) v = 0;
+  } else {
+    h = activeH() ? wave(S.wave, TAU * S.fH * t) : 0;
+    v = activeV() ? wave(S.wave, TAU * S.fV * t + S.phase * DEG) : 0;
+  }
   return { target: S.target, slideH: S.slideH * h, turnH: S.turnH * DEG * h, slideV: S.slideV * v, turnV: S.turnV * DEG * v, h, v };
 }
 function gcd(a, b) { a = Math.round(a); b = Math.round(b); while (b) [a, b] = [b, a % b]; return Math.max(1, a); }
@@ -122,14 +171,15 @@ function sampleTimes(quality) {
   const H = activeH(), V = activeV();
   let T, N;
   if (!H && !V) return [0];
-  if (H && V && S.fH !== S.fV) {
+  if (S.pattern !== 'axes') { T = 1 / S.fH; N = 1440; }
+  else if (H && V && S.fH !== S.fV) {
     const g = gcd(S.fH, S.fV);
     T = 1 / g; N = Math.min(9000, Math.max(720, Math.round(360 * Math.max(S.fH, S.fV) / g)));
   } else { T = 1 / (H ? S.fH : S.fV); N = 720; }
   N = Math.max(48, Math.round(N * quality));
   return Array.from({ length: N }, (_, k) => (k + 0.5) / N * T);
 }
-const fastest = () => Math.max(activeH() ? S.fH : 0, activeV() ? S.fV : 0);
+const fastest = () => S.pattern !== 'axes' ? ((activeH() || activeV()) ? S.fH : 0) : Math.max(activeH() ? S.fH : 0, activeV() ? S.fV : 0);
 
 // ---------- simulation cache
 let src, bench, times, hits, still, win, exposureStill, readoutLams;
@@ -446,7 +496,10 @@ function drawPath(t) {
   const parts = [];
   if (H_) parts.push(`left↔right ${S.slideH ? `±${S.slideH} mm` : ''}${S.slideH && S.turnH ? ' + ' : ''}${S.turnH ? `±${S.turnH}°` : ''} at ${S.fH}/s`);
   if (V_) parts.push(`up↕down ${S.slideV ? `±${S.slideV} mm` : ''}${S.slideV && S.turnV ? ' + ' : ''}${S.turnV ? `±${S.turnV}°` : ''} at ${S.fV}/s`);
-  $('pathCap').textContent = `${who} motion, seen from behind the light: ${parts.length ? parts.join('; ') : 'still'}. Each axis is scaled to fill the box.`;
+  const what = S.pattern !== 'axes' && (H_ || V_)
+    ? `${S.pattern === 'figure8' ? 'figure-8' : S.pattern} pattern, ${S.fH} laps/s; width: ${[S.slideH && `±${S.slideH} mm`, S.turnH && `±${S.turnH}°`].filter(Boolean).join(' + ') || '0'}, height: ${[S.slideV && `±${S.slideV} mm`, S.turnV && `±${S.turnV}°`].filter(Boolean).join(' + ') || '0'}`
+    : (parts.length ? parts.join('; ') : 'still');
+  $('pathCap').textContent = `${who} motion, seen from behind the light: ${what}. Each axis is scaled to fill the box.`;
 }
 
 // ---------- readouts
@@ -486,7 +539,7 @@ function updateReadout() {
 }
 
 // ---------- scheduling
-let dirty = true, refineTimer = null, avgCache = null, exStill = 1, camFrame = 0;
+let dirty = true, refineTimer = null, avgCache = null, exStill = 1, camFrame = 0, trail = null;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function invalidate(dragging) {
   dirty = true;
@@ -501,6 +554,7 @@ function frame(now) {
     avgCache = null;
     exStill = stillExposure(view === 'eye' ? 1 : 0.5);
     updateReadout();
+    trail = null;
     dirty = false;
   }
   const slowF = fastest() > 0 ? 0.35 / fastest() : 0;
@@ -508,7 +562,12 @@ function frame(now) {
   if (view === 'eye') {
     if (!avgCache) { const r = renderAverage(quality < 1 ? 0.5 : 1); r.ex = autoExposure(r.rgb); avgCache = r; drawWall(r.rgb, r.w, r.h, r.ex); }
   } else if (view === 'slow') {
-    const r = renderInstant(tau, 0.5); drawWall(r.rgb, r.w, r.h, exStill, fastest() ? `slow motion: one swing every ${(1 / 0.35).toFixed(1)} s` : '');
+    const r = renderInstant(tau, 0.5);
+    if (!trail || trail.length !== r.rgb.length) trail = new Float32Array(r.rgb.length);
+    const disp = new Float32Array(r.rgb.length);
+    for (let i = 0; i < r.rgb.length; i++) { trail[i] = trail[i] * 0.985 + r.rgb[i]; disp[i] = r.rgb[i] + 0.35 * trail[i]; }
+    const lap = S.pattern !== 'axes' ? 'one lap' : 'one swing';
+    drawWall(disp, r.w, r.h, exStill, fastest() ? `slow motion: ${lap} every ${(1 / 0.35).toFixed(1)} s, with fading trails` : '');
     avgCache = null;
   } else {
     const r = renderCamera(camFrame / 30, 0.5); camFrame++;
