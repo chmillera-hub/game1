@@ -481,50 +481,62 @@ def _head(q, draw=True):
         _liripipe(q, P, W, D, behind=True)
     else:
         _horns(q, P, [s for s in (-1.0, 1.0) if side_behind[s]])
-    # ---- the head: neck + cranium + cheeks + goat muzzle + jaw, one union
+    # ---- the skull: neck + cranium + cheeks, one union
     nb, nt = S["neck_base"], S["neck_top"]
     groups = (F.blob_pts(proj, nb, 13.0, 8.0, 12.0) + F.blob_pts(proj, nt, 12.0, 8.0, 11.0),
-              _bp(P, (0.0, -14.0, -4.0), 30.0, 28.0, 30.0, 16), _bp(P, (0.0, 4.0, 6.0), 28.0, 18.0, 22.0),
-              _bp(P, (0.0, 13.0, 27.0), 16.0, 12.0, 15.0), F.ellipsoid2d(lambda v: P(J(v)), (0.0, 21.0, 18.0), 15.0, 8.0, 16.0))
+              _bp(P, (0.0, -14.0, -4.0), 30.0, 28.0, 30.0, 16), _bp(P, (0.0, 4.0, 6.0), 28.0, 18.0, 22.0))
     if hood_up and not facing_away:         # the hood's dark inside, seen round the face
         face = _bp(P, (0.0, -1.0, 22.0), 34.0, 38.0, 15.0, 16)
         cr.new_path()
         core.smooth_closed(cr, face, 0.9)
         core.src(cr, q.P(M["hood_in"]).shadow)
         cr.fill()
-    hulls = [core.convex_hull(g) for g in groups]
-    cr.new_path()
-    for hh in hulls:
-        core.smooth_closed(cr, B.offset_closed(hh, lw), 0.85)
-    core.src(cr, pal.line)
-    cr.fill()
-    paths = []
-    for hh in hulls:
-        core.smooth_closed(cr, hh, 0.85)
-        paths.append(Path(cr))
-    for pth in paths[:3]:
-        pth.add(cr)
-    q.shade(Path(cr), M["fur"], outline=False, size=70.0)
+    skull, _sp = F.hull_union(q, groups, M["fur"], 70.0)
+    hole = None
+    if hood_up:                             # the hood over the skull, the face showing through
+        hole = _hood(q, P, nz, facing_away)
     if not facing_away:
-        # pale muzzle + chin over the face, the mouth, the nose
-        if jaw_open > 0.04:
-            ip = [P((sd * 11.0, 19.0, z)) for sd in (-1.0, 1.0) for z in (18.0, 32.0)] + [P((0.0, 20.0, 38.0))]
-            ip += [P(J((sd * 10.0, 22.0, z))) for sd in (-1.0, 1.0) for z in (18.0, 30.0)] + [P(J((0.0, 23.0, 34.0)))]
+        # eyes + brows (inside the hood's opening: clipped to it)
+        if hole is not None:
+            cr.save()
+            cr.new_path()
+            core.smooth_closed(cr, hole, 0.9)
+            cr.clip()
+        eyes = []
+        for s in (far, near):
+            ec = F.eye_at(q, P, nz, s, e, (s * 15.0, -8.0, 24.0), 11.0 * HS, 13.0 * HS, iris=FAUN_COLORS["eye"],
+                          iris_hi=FAUN_COLORS["eye_hi"], skin=FAUN_COLORS["fur"], pupil="#1d120c",
+                          crease=0.2 if q.detail >= 2 else 0.0, line=pal.line, normal=(s * 0.45, -0.1, 0.88))
+            eyes.append(ec or P((s * 15.0, -8.0, 24.0)))
+        pts["eyes"] = eyes
+        _brows(q, P, nz, e, near, [skull])
+        if hole is not None:
+            cr.restore()
+        # the pale goat muzzle + chin: protrudes from the hood, so drawn over it
+        mz = [_bp(P, (0.0, 13.0, 27.0), 16.0, 12.0, 15.0), F.ellipsoid2d(lambda v: P(J(v)), (0.0, 21.0, 18.0), 15.0, 8.0, 16.0)]
+        _msh, mpal = F.hull_union(q, mz, M["muzzle"], 26.0, rim=0.3)
+        if jaw_open > 0.04 and nz((0.0, 0.4, 0.9)) > -0.1:
+            # the open mouth at the front of the muzzle, between the lip and the dropped chin
+            ip = [P((sd * 10.0, 17.0, z)) for sd in (-1.0, 1.0) for z in (26.0, 36.0)] + [P((0.0, 17.5, 40.0))]
+            ip += [P(J((sd * 9.0, 19.0, z))) for sd in (-1.0, 1.0) for z in (26.0, 34.0)] + [P(J((0.0, 20.0, 37.0)))]
             mh = core.convex_hull(ip)
             cr.new_path()
             core.smooth_closed(cr, B.offset_closed(mh, lw * 0.8), 0.8)
-            core.src(cr, pal.line)
+            core.src(cr, mpal.line)
             cr.fill()
             core.smooth_closed(cr, mh, 0.8)
+            mp = Path(cr)
+            mp.add(cr)
             core.src(cr, B.pal(q.light, FAUN_COLORS["mouth"]).lit)
             cr.fill()
-            tg = P(J((0.0, 22.0, 28.0)))
+            cr.save()
+            mp.add(cr)
+            cr.clip()
+            tg = P(J((0.0, 20.0, 31.0)))
             core.src(cr, B.pal(q.light, FAUN_COLORS["tongue"], sss=0.4).lit)
-            core.ellipse(cr, tg[0], tg[1], 8.0, 2.0 + 3.5 * jaw_open)
+            core.ellipse(cr, tg[0], tg[1] + 1.5, 8.0, 2.0 + 3.0 * jaw_open)
             cr.fill()
-        paths[3].add(cr)
-        paths[4].add(cr)
-        mpal = q.shade(Path(cr), M["muzzle"], outline=False, size=26.0, rim=0.0)
+            cr.restore()
         fz = nz((0.0, 0.1, 1.0))
         if fz > -0.2:                       # dark rounded nose + the split lip line
             n0 = P((0.0, 7.0, 41.0))
@@ -543,25 +555,16 @@ def _head(q, draw=True):
                         lines.append([P((0.0, 16.0, 39.0)), P((s * 6.0, 18.0 - sm * 2.0, 37.0)), P((s * 12.0, 17.0 - sm * 5.0, 31.0))])
             B.detail_lines(cr, lines, lw * 1.1, mpal.line, 0.95, taper=(0.6, 1.0, 0.5))
         _goatee(q, P, J, nz)
-        eyes = []
-        for s in (far, near):
-            ec = F.eye_at(q, P, nz, s, e, (s * 15.0, -8.0, 24.0), 11.0 * HS, 13.0 * HS, iris=FAUN_COLORS["eye"],
-                          iris_hi=FAUN_COLORS["eye_hi"], skin=FAUN_COLORS["fur"], pupil="#1d120c",
-                          crease=0.2 if q.detail >= 2 else 0.0, line=pal.line, normal=(s * 0.45, -0.1, 0.88))
-            eyes.append(ec or P((s * 15.0, -8.0, 24.0)))
-        pts["eyes"] = eyes
-        _brows(q, P, nz, e, near, paths[1:3])
     else:
         pts["eyes"] = []
     if hood_up:
-        _hood(q, P, nz, facing_away)
+        if not facing_away:
+            _fringe(q, P, nz, under_hood=True)
         _liripipe(q, P, W, D, behind=False)
     else:
         _fringe(q, P, nz)
     _ears(q, P, e, [s for s in (-1.0, 1.0) if not side_behind[s]], nz)
     _horns(q, P, [s for s in (-1.0, 1.0) if (hood_up or not side_behind[s])])
-    if hood_up and not facing_away:
-        _fringe(q, P, nz, under_hood=True)
     return pts
 
 
@@ -673,6 +676,7 @@ def _hood(q, P, nz, facing_away):
         core.smooth_closed(cr, hole, 0.9)
     hood = Path(cr)
     q.shade(hood, q.M["hood"], outline=False, size=60.0, shadow=0.75)
+    ret = hole
     if q.detail >= 1:                       # a seam over the crown + soft folds at the back
         lines = [[P((0.0, -48.0, 10.0)), P((0.0, -50.0, -10.0)), P((0.0, -42.0, -30.0))]]
         if q.detail >= 2:
@@ -682,6 +686,7 @@ def _hood(q, P, nz, facing_away):
         cr.clip()
         B.detail_lines(cr, lines, lw * 0.9, pal.line, 0.45, taper=(0.1, 1.0, 0.2))
         cr.restore()
+    return ret
 
 
 # ----------------------------------------------------------------------------------------

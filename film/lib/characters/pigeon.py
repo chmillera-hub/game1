@@ -197,13 +197,16 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
 
     # ---- legs (behind the body; tucked in flight / at the top of a hop)
     tuck = max(fly, 0.8 * math.sin(math.pi * hop))
+    air = clamp(max(-body_dy, 0.0) / 6.0)          # off the ground: the feet dangle under the body
     legs = []
     for k, side in enumerate((-1.0, 1.0)):
         u = (ph + 0.5 * k) % 1.0
         stp = math.sin(TAU * u) * 4.5 * walk
         up = max(0.0, math.cos(TAU * u)) * 3.5 * walk
         top = BP(side * 1.5 + 1.0, -9.0)
-        foot = (side * 1.8 + stp, -up + lift - body_dy * 0.0 - (body_dy - 1.2 * walk * abs(math.sin(TAU * ph))))
+        ground = (side * 1.8 + stp, -up - body_dy)      # the ground line in this (lifted) frame
+        hang = (top[0] - 1.5 + side * 1.0, top[1] + 8.5)
+        foot = (lerp(ground[0], hang[0], air), lerp(ground[1], hang[1], air))
         if tuck > 0:
             foot = (lerp(foot[0], top[0] - 4.0, tuck), lerp(foot[1], top[1] + 3.5, tuck))
         legs.append((top, foot))
@@ -314,7 +317,7 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
             cr.restore()
 
     # ---- head details: beak (+ cere), eye(s) -- the head swivels in 3D-lite
-    look = (fs if pose.look is None else clamp(pose.look)) * fs        # -> local terms (+1 forward)
+    look = (fs if pose.look is None else clamp(pose.look, -1.0, 1.0)) * fs   # -> local terms (+1 forward)
     phi = (1.0 - look) * 0.5 * math.pi                                  # 0 beak forward .. pi back
     tilt = pose.tilt + 0.1 * math.sin(t * 0.9 + seed) * (1.0 - walk)
     head_rig = _head_details(q, M, hc, phi, tilt, pose, t, detail, fs)
@@ -337,28 +340,41 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
 
 
 def _wing(q, M, BP, up, far, detail):
-    """An open wing seen from the side: raised from the shoulder by `up` (0 folded .. 1 high)."""
+    """An open wing seen from the side, raised from the shoulder: up 0 = swept back along the
+    body .. 1 = straight up. Leading edge, fingered primaries, a soft trailing edge."""
     cr = q["cr"]
-    ang = -0.35 - 1.5 * up                     # rad from pointing back, upward
-    sx, sy = BP(4.0, -24.0)
-    L = 30.0
-    tip = (sx + math.cos(math.pi + ang * -1.0) * 0.0 - L * math.cos(ang) * 0.85, sy + L * math.sin(ang))
-    mid = (sx - L * 0.5 * math.cos(ang * 0.8), sy + L * 0.55 * math.sin(ang * 0.8))
-    pts = [(sx + 3.0, sy + 2.0), (sx - 1.0, sy - 3.0), mid, tip, (tip[0] + 6.0, tip[1] + 7.0),
-           (mid[0] + 8.0, mid[1] + 8.0), (sx + 4.0, sy + 6.0)]
-    off = (-3.0, -2.0) if far else (0.0, 0.0)
-    pts = [(p[0] + off[0], p[1] + off[1]) for p in pts]
+    sx, sy = BP(3.0, -24.0)
+    ang = math.pi + up * (math.pi * 0.5 + 0.35)            # from pointing back to up-and-over
+    if far:
+        ang -= 0.25                                           # the far wing peeks out behind
+    L = 31.0
+    ca, sa = math.cos(ang), math.sin(ang)
+    side = -1.0 if math.sin(ang) < 0 else 1.0
+
+    def W(u, v):        # u along the wing, v toward the trailing edge (below/behind the leading edge)
+        nx, ny = -sa, ca
+        if ny < 0:
+            nx, ny = -nx, -ny
+        return (sx + ca * u * L + nx * v * L * 0.55, sy + sa * u * L + ny * v * L * 0.55)
+
+    pts = [W(-0.04, -0.05), W(0.42, -0.08), W(0.78, -0.05), W(1.0, 0.04), W(0.98, 0.13), W(0.9, 0.2), W(0.93, 0.27),
+           W(0.82, 0.32), W(0.84, 0.4), W(0.68, 0.44), W(0.45, 0.46), W(0.2, 0.4), W(0.02, 0.28)]
     mat = M["bar"] if far else M["wing"]
-    sh, p = _shape(q, pts, mat, size=10, rim=0.5, shade=not far)
+    sh, p = _shape(q, pts, mat, size=11, rim=0.5, shade=not far)
     if not far and detail >= 1:
         bp_ = B.palette(q["light"], M["bar"])
         cr.save()
         sh.add(cr)
         cr.clip()
-        core.src(cr, bp_.lit)
-        core.polygon(cr, [mid, tip, (tip[0] + 7.0, tip[1] + 8.0), (mid[0] + 9.0, mid[1] + 9.0)])
+        core.src(cr, bp_.lit)            # dark primaries at the tip + the two wing bars
+        core.polygon(cr, [W(0.7, -0.2), W(1.2, -0.2), W(1.2, 0.6), W(0.66, 0.6)])
+        cr.fill()
+        cr.new_path()
+        for u0 in (0.3, 0.42):
+            core.tapered(cr, [W(u0, 0.0), W(u0 - 0.04, 0.42)], 2.4, 2.0)
         cr.fill()
         cr.restore()
+    del side
 
 
 def _head_details(q, M, hc, phi, tilt, pose, t, detail, fs):
