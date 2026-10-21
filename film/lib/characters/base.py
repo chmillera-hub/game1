@@ -1445,3 +1445,43 @@ class LineupItem:
     name: str
     draw: object
     width: float = 200.0
+
+
+# ========================================================================================
+# Shared helpers added for the supporting cast (gnome, elf, lioness, troll, pigeon, ...)
+# ========================================================================================
+
+
+def ellipsoid_pts(project, c, rx, ry, rz, n=10):
+    """Silhouette points of an ellipsoid (three orthogonal rings) through `project`, any
+    callable 3D -> 2D: a body projection (`proj.xy`) or a head-space one. Feed them to
+    hull_paths / core.convex_hull for round volumes that turn continuously (cf. dragon._blob)."""
+    pts = []
+    for i in range(n):
+        a = TAU * i / n
+        ca, sa = math.cos(a), math.sin(a)
+        pts.append(project((c[0] + ca * rx, c[1] + sa * ry, c[2])))
+        pts.append(project((c[0] + ca * rx, c[1], c[2] + sa * rz)))
+        pts.append(project((c[0], c[1] + ca * ry, c[2] + sa * rz)))
+    return pts
+
+
+# Character-sheet backdrops per scene light (top, bottom), shared by every cast module's sheets.
+SHEET_BG = {
+    "neutral": ("#6f7a86", "#4b545e"), "washhouse": ("#1d3a3d", "#0e1f22"),
+    "apothecary": ("#d9e6e0", "#a9bdb6"), "street_night": ("#1b2340", "#0b1022"),
+    "tavern": ("#5a2440", "#2a1020"), "square": ("#4a5668", "#2c3442"),
+    "dusk": ("#a98aa6", "#e0a98a"), "golden": ("#e6b070", "#a8704a"),
+    "blue_hour": ("#3a4a78", "#1e2848"), "lantern_night": ("#141c34", "#070a16"),
+}
+
+
+def sheet_bg(cr, w, h, light="neutral", floor=None):
+    """Fill a sheet cell (0, 0, w, h) with the backdrop for a LIGHTS preset name; `floor` (y)
+    darkens a ground band below it."""
+    top, bot = SHEET_BG.get(light, SHEET_BG["neutral"])
+    core.vgrad(cr, 0, 0, w, h, [top, bot])
+    if floor is not None:
+        cr.set_source_rgba(0, 0, 0, 0.12)
+        cr.rectangle(0, floor, w, h - floor)
+        cr.fill()

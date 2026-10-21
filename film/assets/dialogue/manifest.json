@@ -1,0 +1,679 @@
+{
+ "s1_l1": {
+  "hash": "55d3d8dddeaeff19",
+  "speaker": "MAN",
+  "text": "Self-service.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Self-service.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 12676,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s1_l2": {
+  "hash": "b04b74ef49c844d0",
+  "speaker": "MAN",
+  "text": "That's the whole city, isn't it.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "That's the whole city, isn't it.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 4687,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s2_l1": {
+  "hash": "3f66c5d210db3b35",
+  "speaker": "PHARMACIST",
+  "text": "Try these. Lots of people swear by them.",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 515,
+    "say": "Try these.",
+    "ls": 1.06,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 11687,
+    "pause": 0.42,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 515,
+    "say": "Lots of people swear by them.",
+    "ls": 1.06,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 12724,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s2_l2": {
+  "hash": "c500cc73ed07b6de",
+  "speaker": "MAN",
+  "text": "Do any of them talk back?",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Do any of them talk back?",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 10698,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s3_l1": {
+  "hash": "dbad1b29209b5d1a",
+  "speaker": "PHONE",
+  "text": "For billing, press one.",
+  "parts": [
+   {
+    "model": "en_US-lessac-high",
+    "speaker_id": null,
+    "say": "For billing, press one.",
+    "ls": 1.0,
+    "ns": 0.5,
+    "nw": 0.5,
+    "seed": 8698,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s3_l2": {
+  "hash": "7d402b253bfc9115",
+  "speaker": "PHONE",
+  "text": "For a new account, press two.",
+  "parts": [
+   {
+    "model": "en_US-lessac-high",
+    "speaker_id": null,
+    "say": "For a new account, press two.",
+    "ls": 1.0,
+    "ns": 0.5,
+    "nw": 0.5,
+    "seed": 13709,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s3_l3": {
+  "hash": "3419719bd00e6749",
+  "speaker": "PHONE",
+  "text": "For loneliness… please hold.",
+  "parts": [
+   {
+    "model": "en_US-lessac-high",
+    "speaker_id": null,
+    "say": "For loneliness,",
+    "ls": 1.0,
+    "ns": 0.5,
+    "nw": 0.5,
+    "seed": 13720,
+    "pause": 0.62,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-lessac-high",
+    "speaker_id": null,
+    "say": "please hold.",
+    "ls": 1.0,
+    "ns": 0.5,
+    "nw": 0.5,
+    "seed": 9757,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s3_l4": {
+  "hash": "83e767c7c9ad4f98",
+  "speaker": "MAN",
+  "text": "I've been on hold my whole life.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "I've been on hold my whole life.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 11731,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s4_l1": {
+  "hash": "22c4c145e7e79816",
+  "speaker": "MAN",
+  "text": "Can I tell you something? Lately I—",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Can I tell you something?",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 5709,
+    "pause": 0.38,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Lately I feel",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 9746,
+    "pause": 0.0,
+    "cut": {
+     "gap": "longest",
+     "keep": 0.03,
+     "fade": 0.01
+    },
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s4_l2": {
+  "hash": "ba403facc67af70f",
+  "speaker": "BOUNCER",
+  "text": "Keep it light, buddy.",
+  "parts": [
+   {
+    "model": "en_GB-vctk-medium",
+    "speaker_id": 102,
+    "say": "Keep it light, buddy.",
+    "ls": 1.18,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 7720,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s5_l1": {
+  "hash": "75699383fc318a61",
+  "speaker": "CROWD",
+  "text": "Ew. What is he doing?",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 448,
+    "say": "Eew.",
+    "ls": 0.92,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 4720,
+    "pause": 0.35,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 448,
+    "say": "What is he doing?",
+    "ls": 0.92,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 11757,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s5_l2": {
+  "hash": "980267c6404c438c",
+  "speaker": "MAN",
+  "text": "We'll film a fight.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "We'll film a fight.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 11731,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s5_l3": {
+  "hash": "b6f6d4465c3a4bb6",
+  "speaker": "MAN",
+  "text": "But someone gets gentle, and everybody looks away.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "But someone gets gentle, and everybody looks away.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 12742,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s6_l1": {
+  "hash": "fa4927d0aff90ec5",
+  "speaker": "OLD_WOMAN",
+  "text": "They tell you to try that too?",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 510,
+    "say": "They tell you to try that too?",
+    "ls": 1.15,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 7731,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s6_l2": {
+  "hash": "bcbb1cfb5daacd0c",
+  "speaker": "MAN",
+  "text": "Candles. Vitamins. Yoga.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Candles.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 11742,
+    "pause": 0.45,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Vitamins.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 10779,
+    "pause": 0.45,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Yoga.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 6816,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s6_l3": {
+  "hash": "7a269ada5578483e",
+  "speaker": "OLD_WOMAN",
+  "text": "They told me to get a cat. I got the cat.",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 510,
+    "say": "They told me to get a cat.",
+    "ls": 1.15,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 9753,
+    "pause": 0.72,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   },
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 510,
+    "say": "I got the cat.",
+    "ls": 1.15,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 6790,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s6_l4": {
+  "hash": "4cbf0746cc255f5d",
+  "speaker": "OLD_WOMAN",
+  "text": "The cat sleeps through every story about my day.",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 510,
+    "say": "The cat sleeps through every story about my day.",
+    "ls": 1.15,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 10764,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s6_laugh": {
+  "hash": "71be2dffdc7006a9",
+  "speaker": "MAN",
+  "text": "(laughs)",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "[[hˈʌ!]]",
+    "ls": 0.7,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 96104,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": {
+     "vowel": 0.14,
+     "ioi": 0.235
+    }
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "[[hˈʌ.]]",
+    "ls": 0.8,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 100202,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": -1.2,
+    "pulse": {
+     "vowel": 0.12,
+     "ioi": 0.22
+    }
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "[[hˈɑ!]]",
+    "ls": 0.6,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 95000,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": -2.6,
+    "pulse": {
+     "vowel": 0.11,
+     "ioi": 0.215
+    }
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Ha.",
+    "ls": 0.7,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 93105,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": -4.0,
+    "pulse": {
+     "vowel": 0.11,
+     "ioi": 0.235
+    }
+   },
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "Ha.",
+    "ls": 0.8,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 93204,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": -6.0,
+    "pulse": {
+     "vowel": 0.19,
+     "ioi": 0.0
+    }
+   }
+  ]
+ },
+ "s7_l1": {
+  "hash": "8520991e00b1d686",
+  "speaker": "MAN",
+  "text": "You know what's funny?",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "You know what's funny?",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 12742,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s7_l2": {
+  "hash": "4b2da48de42415b1",
+  "speaker": "MAN",
+  "text": "All that stuff they gave me was for being alone.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "All that stuff they gave me was for being alone.",
+    "ls": 1.05,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 13753,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s7_l3": {
+  "hash": "92e9d5d2003b2247",
+  "speaker": "OLD_WOMAN",
+  "text": "And all this costs is a loaf of bread.",
+  "parts": [
+   {
+    "model": "en_US-libritts_r-medium",
+    "speaker_id": 510,
+    "say": "And all this costs is a loaf of bread.",
+    "ls": 1.15,
+    "ns": 0.5,
+    "nw": 0.6,
+    "seed": 7764,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s8_l1": {
+  "hash": "b2133f327f34cf77",
+  "speaker": "MAN",
+  "text": "They kept handing me stones.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "They kept handing me stones.",
+    "ls": 1.12,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 13753,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s8_l2": {
+  "hash": "50bdc722b4e3ff48",
+  "speaker": "MAN",
+  "text": "We were hungry for bread the whole time.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "We were hungry for bread the whole time.",
+    "ls": 1.12,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 10764,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ },
+ "s8_l3": {
+  "hash": "1e64cd45b8d81a92",
+  "speaker": "MAN",
+  "text": "All it took was somebody to break it.",
+  "parts": [
+   {
+    "model": "en_US-hfc_male-medium",
+    "speaker_id": null,
+    "say": "All it took was somebody to break it.",
+    "ls": 1.12,
+    "ns": 0.667,
+    "nw": 0.8,
+    "seed": 12775,
+    "pause": 0.0,
+    "cut": null,
+    "widen": null,
+    "gain_db": 0.0,
+    "pulse": null
+   }
+  ]
+ }
+}

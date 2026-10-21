@@ -85,19 +85,65 @@ TOTAL = 210.0
 # ================================================================================================
 # CAST -- chosen by objective analysis (film/build/cast_scan.py + cast_deep.py; see notes)
 # ================================================================================================
+#   Measures: median F0 / F0 SD in semitones (YIN), speaking rate (syllables/s), HNR / H1-H2 / CPP
+#   (breathiness), spectral centroid + LTAS tilt (warmth), Whisper small.en word errors + log-prob
+#   (intelligibility), DNSMOS P.835 OVRL (quality), audeering wav2vec2 perceived age / gender.
+#   Pool: all 14 single-speaker voices, all 904 LibriTTS-R and all 109 VCTK speakers (broad scan),
+#   then role shortlists rendered on the role's own lines with several seeds.
 CAST = {
-    "MAN": dict(character="the dragon", model="en_US-hfc_male-medium", speaker_id=None,
-                length_scale=1.05, noise_scale=0.667, noise_w=0.8, notes=""),
-    "PHARMACIST": dict(character="the lioness", model="en_US-amy-medium", speaker_id=None,
-                       length_scale=1.0, noise_scale=0.667, noise_w=0.8, notes=""),
-    "PHONE": dict(character="the speaking stone", model="en_US-lessac-high", speaker_id=None,
-                  length_scale=1.0, noise_scale=0.5, noise_w=0.5, notes=""),
-    "BOUNCER": dict(character="the stone troll", model="en_GB-vctk-medium", speaker_id=76,
-                    length_scale=1.15, noise_scale=0.5, noise_w=0.5, notes=""),
-    "CROWD": dict(character="the pixie", model="en_US-libritts_r-medium", speaker_id=448,
-                  length_scale=0.92, noise_scale=0.6, noise_w=0.7, notes=""),
-    "OLD_WOMAN": dict(character="the gnome grandmother", model="en_US-libritts_r-medium", speaker_id=575,
-                      length_scale=1.15, noise_scale=0.6, noise_w=0.7, notes=""),
+    "MAN": dict(
+        character="the dragon", model="en_US-hfc_male-medium", speaker_id=None,
+        length_scale=1.05, noise_scale=0.667, noise_w=0.8,
+        notes="US male (HiFi-Captain). Best of 26 male candidates rendered on 11 of his lines: median F0 "
+              "~118 Hz (target 95-125), the most expressive of the field (F0 SD 4.1 st, not monotone), "
+              "clearest diction (Whisper: 0 word errors, best mean log-prob -0.07) and best DNSMOS OVRL 3.43; "
+              "perceived age ~34. Dialogue length_scale 1.05; the scene-8 voice-over uses 1.12 (vo=true, "
+              "fx='vo': intimate, a touch of room reverb). Bright-ish timbre: a gentle -2 dB shelf above ~5 kHz "
+              "warms the dragon in the mix. s4_l1 (fx='drowned') is cut off on purpose mid-breath "
+              "('Lately I f-'); the tavern music swells from beat s4_swell to bury it. s6_laugh is five "
+              "'hah' pulses of this same voice assembled into a real laugh bout (~1.2 s, pitch stepping down "
+              "from ~196 to ~146 Hz, decrescendo): keep it MODERATE in the mix, about -3 to -4 dB under his "
+              "dialogue level, never louder than the lines around it."),
+    "PHARMACIST": dict(
+        character="the lioness", model="en_US-libritts_r-medium", speaker_id=515,
+        length_scale=1.06, noise_scale=0.5, noise_w=0.6,
+        notes="LibriTTS-R reader 5139. Soft and warm: dark timbre (spectral centroid ~300 Hz, LTAS tilt "
+              "-10.8 dB/oct) with soft, breathy phonation (H1-H2 +7.4 dB), median F0 ~196 Hz, perceived age "
+              "~30, kind contour (F0 SD ~2.9 st). The only soft LibriTTS voice that never turned 'Try these' "
+              "into 'Fry these' (6/6 Whisper-perfect renditions vs 3-4/6). Distinct from the gnome (30 Hz "
+              "higher, ~25 years younger-sounding, darker, smoother) and from the stone (far less pitch "
+              "movement, darker). length_scale 1.06, noise 0.5/0.6."),
+    "PHONE": dict(
+        character="the speaking stone", model="en_US-lessac-high", speaker_id=None,
+        length_scale=1.0, noise_scale=0.5, noise_w=0.5,
+        notes="US announcer-style female (high quality): crisp, very articulate menu voice (Whisper 0 errors, "
+              "log-prob -0.08, DNSMOS 3.47), bright sing-song IVR contour (F0 SD ~5.8 st), median F0 ~185 Hz. "
+              "noise 0.5/0.5 for a controlled, regular read. Captions off (scene 3 shows its words as glowing "
+              "rune-text). Mix fx='phone': stone-phone band-pass (~300-3400 Hz) plus a faint magical shimmer; "
+              "that, its pitch movement and brightness keep it well apart from the pharmacist."),
+    "BOUNCER": dict(
+        character="the stone troll", model="en_GB-vctk-medium", speaker_id=102,
+        length_scale=1.18, noise_scale=0.5, noise_w=0.6,
+        notes="VCTK speaker p237 (Scottish male). The deepest + flattest + slowest combination of 26 male "
+              "candidates: median F0 ~77-81 Hz, F0 SD ~0.75 st (a flat, bored monotone), ~3.3 syl/s at "
+              "length_scale 1.18; 'Keep it light, buddy.' recognised perfectly in 6/6 renditions. Dark "
+              "timbre (centroid ~210 Hz). noise 0.5/0.6."),
+    "CROWD": dict(
+        character="the pixie", model="en_US-libritts_r-medium", speaker_id=448,
+        length_scale=0.92, noise_scale=0.5, noise_w=0.6,
+        notes="LibriTTS-R reader 4807: young (perceived ~27), high (median F0 ~244 Hz -- a tiny pixie), quick "
+              "(fastest finalist, ~5.8 syl/s) and expressive (F0 SD ~3.9 st) for the sneer. 'Ew.' is fed as "
+              "'Eew.' (/iːw/): espeak reads 'Ew.' as /juː/ = 'you' (Whisper heard 'You, what is he doing?' in "
+              "0/4 'Ew.' renditions vs 'Ew' in 4/4 with 'Eew.'). length_scale 0.92, noise 0.5/0.6."),
+    "OLD_WOMAN": dict(
+        character="the gnome grandmother", model="en_US-libritts_r-medium", speaker_id=510,
+        length_scale=1.15, noise_scale=0.5, noise_w=0.6,
+        notes="LibriTTS-R reader 4800: the oldest-sounding clean female voice found (perceived age ~54 after "
+              "an age scan of all ~600 female-pitched LibriTTS-R/VCTK speakers; several 'older' candidates "
+              "were high-pitched men and were rejected). Warm and twinkly (F0 SD ~3.9 st), the roughest/"
+              "breathiest phonation of the finalists (HNR ~10 dB, the most F0 micro-perturbation -- an older "
+              "voice quality), Whisper-perfect on 15/15 renditions. length_scale 1.15 (slow, dry), noise "
+              "0.5/0.6."),
 }
 
 
@@ -138,42 +184,42 @@ class Line:
 
 LINES = [
     # ---- S1 the wash-house
-    Line("s1_l1", 1, "MAN", "Self-service.", 11.8, [Part("Self-service.")], lo=11.3),
+    Line("s1_l1", 1, "MAN", "Self-service.", 11.8, [Part("Self-service.", seed=12676)], lo=11.3),
     Line("s1_l2", 1, "MAN", "That's the whole city, isn't it.", 18.5,
-         [Part("That's the whole city, isn't it.")]),
+         [Part("That's the whole city, isn't it.", seed=4687)]),
     # ---- S2 the apothecary
     Line("s2_l1", 2, "PHARMACIST", "Try these. Lots of people swear by them.", 17.0,
-         [Part("Try these.", pause=0.42), Part("Lots of people swear by them.")]),
-    Line("s2_l2", 2, "MAN", "Do any of them talk back?", 20.3, [Part("Do any of them talk back?")],
+         [Part("Try these.", seed=11687, pause=0.42), Part("Lots of people swear by them.", seed=12724)]),
+    Line("s2_l2", 2, "MAN", "Do any of them talk back?", 20.3, [Part("Do any of them talk back?", seed=10698)],
          reply=(0.45, 0.9)),
     # ---- S3 the speaking stone
-    Line("s3_l1", 3, "PHONE", "For billing, press one.", 1.0, [Part("For billing, press one.")],
+    Line("s3_l1", 3, "PHONE", "For billing, press one.", 1.0, [Part("For billing, press one.", seed=8698)],
          caption=False, fx="phone"),
-    Line("s3_l2", 3, "PHONE", "For a new account, press two.", 3.6, [Part("For a new account, press two.")],
+    Line("s3_l2", 3, "PHONE", "For a new account, press two.", 3.6, [Part("For a new account, press two.", seed=13709)],
          caption=False, fx="phone"),
     Line("s3_l3", 3, "PHONE", "For loneliness… please hold.", 6.6,
-         [Part("For loneliness,", pause=0.62), Part("please hold.")], caption=False, fx="phone"),
-    Line("s3_l4", 3, "MAN", "I've been on hold my whole life.", 14.3, [Part("I've been on hold my whole life.")]),
+         [Part("For loneliness,", seed=13720, pause=0.62), Part("please hold.", seed=9757)], caption=False, fx="phone"),
+    Line("s3_l4", 3, "MAN", "I've been on hold my whole life.", 14.3, [Part("I've been on hold my whole life.", seed=11731)]),
     # ---- S4 the tavern door
     Line("s4_l1", 4, "MAN", "Can I tell you something? Lately I—", 10.0,
-         [Part("Can I tell you something?", pause=0.38),
-          Part("Lately I feel", cut={"gap": "longest", "keep": 0.030, "fade": 0.010})],
+         [Part("Can I tell you something?", seed=5709, pause=0.38),
+          Part("Lately I feel", seed=9746, cut={"gap": "longest", "keep": 0.030, "fade": 0.010})],
          fx="drowned"),
-    Line("s4_l2", 4, "BOUNCER", "Keep it light, buddy.", 15.5, [Part("Keep it light, buddy.")]),
+    Line("s4_l2", 4, "BOUNCER", "Keep it light, buddy.", 15.5, [Part("Keep it light, buddy.", seed=7720)]),
     # ---- S5 the crowd
     Line("s5_l1", 5, "CROWD", "Ew. What is he doing?", 13.4,
-         [Part("Eew.", pause=0.35), Part("What is he doing?")]),
-    Line("s5_l2", 5, "MAN", "We'll film a fight.", 16.3, [Part("We'll film a fight.")], reply=(0.5, 1.4)),
+         [Part("Eew.", seed=4720, pause=0.35), Part("What is he doing?", seed=11757)]),
+    Line("s5_l2", 5, "MAN", "We'll film a fight.", 16.3, [Part("We'll film a fight.", seed=11731)], reply=(0.5, 1.4)),
     Line("s5_l3", 5, "MAN", "But someone gets gentle, and everybody looks away.", 18.8,
-         [Part("But someone gets gentle, and everybody looks away.")], min_gap=0.6),
+         [Part("But someone gets gentle, and everybody looks away.", seed=12742)], min_gap=0.6),
     # ---- S6 the bench
-    Line("s6_l1", 6, "OLD_WOMAN", "They tell you to try that too?", 13.2, [Part("They tell you to try that too?")]),
+    Line("s6_l1", 6, "OLD_WOMAN", "They tell you to try that too?", 13.2, [Part("They tell you to try that too?", seed=7731)]),
     Line("s6_l2", 6, "MAN", "Candles. Vitamins. Yoga.", 16.0,
-         [Part("Candles.", pause=0.45), Part("Vitamins.", pause=0.45), Part("Yoga.")], reply=(0.5, 1.0)),
+         [Part("Candles.", seed=11742, pause=0.45), Part("Vitamins.", seed=10779, pause=0.45), Part("Yoga.", seed=6816)], reply=(0.5, 1.0)),
     Line("s6_l3", 6, "OLD_WOMAN", "They told me to get a cat. I got the cat.", 19.0,
-         [Part("They told me to get a cat.", pause=0.72), Part("I got the cat.")], reply=(0.45, 0.9)),
+         [Part("They told me to get a cat.", seed=9753, pause=0.72), Part("I got the cat.", seed=6790)], reply=(0.45, 0.9)),
     Line("s6_l4", 6, "OLD_WOMAN", "The cat sleeps through every story about my day.", 23.4,
-         [Part("The cat sleeps through every story about my day.")], reply=(0.8, 1.3), min_gap=0.7),
+         [Part("The cat sleeps through every story about my day.", seed=10764)], reply=(0.8, 1.3), min_gap=0.7),
     # The laugh: five 'hah' pulses synthesized in the dragon's own voice, assembled like a real laugh bout
     # (film/build/laugh_pulses.py + laugh_pick.py): ~4.4 pulses/s, each an F0 arch, starting ~+9 st above
     # his speaking pitch and stepping down (196 -> 181 -> 168 -> 155 -> 146 Hz), decrescendo, breathy /h/
@@ -186,18 +232,18 @@ LINES = [
           Part("Ha.", seed=93204, ls=0.8, ns=0.667, nw=0.8, gain_db=-6.0, pulse={"vowel": 0.19, "ioi": 0.0})],
          caption=False, reply=(0.3, 0.7), min_gap=0.25),
     # ---- S7 the bread
-    Line("s7_l1", 7, "MAN", "You know what's funny?", 18.6, [Part("You know what's funny?")]),
+    Line("s7_l1", 7, "MAN", "You know what's funny?", 18.6, [Part("You know what's funny?", seed=12742)]),
     Line("s7_l2", 7, "MAN", "All that stuff they gave me was for being alone.", 20.6,
-         [Part("All that stuff they gave me was for being alone.")], min_gap=0.5),
+         [Part("All that stuff they gave me was for being alone.", seed=13753)], min_gap=0.5),
     Line("s7_l3", 7, "OLD_WOMAN", "And all this costs is a loaf of bread.", 24.6,
-         [Part("And all this costs is a loaf of bread.")], reply=(0.6, 1.4)),
+         [Part("And all this costs is a loaf of bread.", seed=7764)], reply=(0.6, 1.4)),
     # ---- S8 close (voice-over)
-    Line("s8_l1", 8, "MAN", "They kept handing me stones.", 2.5, [Part("They kept handing me stones.", ls=1.12)],
+    Line("s8_l1", 8, "MAN", "They kept handing me stones.", 2.5, [Part("They kept handing me stones.", seed=13753, ls=1.12)],
          vo=True, fx="vo"),
     Line("s8_l2", 8, "MAN", "We were hungry for bread the whole time.", 7.0,
-         [Part("We were hungry for bread the whole time.", ls=1.12)], vo=True, fx="vo", min_gap=0.8),
+         [Part("We were hungry for bread the whole time.", seed=10764, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
     Line("s8_l3", 8, "MAN", "All it took was somebody to break it.", 11.8,
-         [Part("All it took was somebody to break it.", ls=1.12)], vo=True, fx="vo", min_gap=0.8),
+         [Part("All it took was somebody to break it.", seed=12775, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
 ]
 
 REQUIRED_LINES = ["s1_l1", "s1_l2", "s2_l1", "s2_l2", "s3_l1", "s3_l2", "s3_l3", "s3_l4", "s4_l1", "s4_l2",
@@ -332,9 +378,13 @@ def synth_job(job: dict):
     syn = SynthesisConfig(speaker_id=job["speaker_id"], length_scale=job["ls"], noise_scale=job["ns"],
                           noise_w_scale=job["nw"], normalize_audio=False)
     chunks, phon = [], []
-    for ch in voice.synthesize(job["say"], syn):
-        chunks.append(np.asarray(ch.audio_float_array, np.float32))
-        phon.append("".join(ch.phonemes))
+    # == PiperVoice.synthesize() sentence by sentence, minus its hard clip to [-1, 1] (we normalise later)
+    for phonemes in voice.phonemize(job["say"]):
+        if not phonemes:
+            continue
+        audio = voice.phoneme_ids_to_audio(voice.phonemes_to_ids(phonemes), syn)
+        chunks.append(np.asarray(audio, np.float32).reshape(-1))
+        phon.append("".join(phonemes))
     audio = np.concatenate(chunks) if chunks else np.zeros(1, np.float32)
     return audio, int(cfg["audio"]["sample_rate"]), phon
 
@@ -768,7 +818,7 @@ def place_scene(lines: list, durs: dict, scene_dur: float, step: float = 0.01) -
         pair = np.where(gap >= cur.min_gap - 1e-9, 0.0, np.inf)
         if cur.reply:
             lo_p, hi_p = cur.reply
-            pair = pair + 4.0 * (np.maximum(0, lo_p - gap) ** 2 + np.maximum(0, gap - hi_p) ** 2)
+            pair = pair + 40.0 * (np.maximum(0, lo_p - gap) ** 2 + np.maximum(0, gap - hi_p) ** 2)
         tot = acc[:, None] + pair
         bk = np.argmin(tot, axis=0)
         acc = tot[bk, np.arange(len(grids[i]))] + unary[i]
@@ -794,7 +844,7 @@ def median_f0(speaker: str, wavs: dict) -> float:
             continue
         y = wavs[ln.id]
         lo, hi = (50.0, 300.0) if speaker in ("MAN", "BOUNCER") else (90.0, 520.0)
-        _, f0, v = yin(y[:: 2], SR // 2, lo, hi)      # 24 kHz is plenty for F0
+        _, f0, v = yin(resample(y, SR, 16000), 16000, lo, hi)      # 16 kHz is plenty for F0
         vals.append(f0[v])
     allv = np.concatenate(vals) if vals else np.zeros(1)
     return round(float(np.median(allv)), 1) if len(allv) else 0.0
@@ -960,6 +1010,8 @@ def check(path: str = TIMELINE) -> bool:
     need(sorted(ids) == sorted(REQUIRED_LINES) and len(set(ids)) == len(ids), f"line ids {ids}")
     with open(SCRIPT_MD, encoding="utf-8") as fh:
         script = fh.read()
+    with open(os.path.join(FILM, "SPEC.md"), encoding="utf-8") as fh:
+        script += fh.read()          # s4_l1's drowned words are written in SPEC section 6
     by_scene = {}
     for d in tl["lines"]:
         need(set(d) == {"id", "scene", "speaker", "text", "start", "end", "global_start", "global_end", "wav",
@@ -970,7 +1022,7 @@ def check(path: str = TIMELINE) -> bool:
         need(d["scene"] == ln.scene and d["speaker"] == ln.speaker and d["text"] == ln.text, f"{d['id']} identity")
         need(d["speaker"] in tl["cast"], f"{d['id']} speaker")
         if d["id"] != "s6_laugh":
-            need(d["text"] in script, f"{d['id']} text not verbatim in SCRIPT.md: {d['text']!r}")
+            need(d["text"] in script, f"{d['id']} text not verbatim in SCRIPT.md / SPEC.md: {d['text']!r}")
         need(0.0 <= d["start"] < d["end"], f"{d['id']} start/end")
         need(d["end"] <= sdur[d["scene"]] - END_GUARD + 1e-6, f"{d['id']} ends too late ({d['end']})")
         need(abs(d["start"] - ln.target) <= NUDGE + 1e-6, f"{d['id']} moved > {NUDGE}s from target")
