@@ -1,0 +1,1354 @@
+{
+  "scenario": {
+    "id": "new-city",
+    "thought": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 321070,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 27,
+    "inTokens": 127677,
+    "outTokens": 40785,
+    "thinkingTokens": 34563,
+    "cost": 0.05837541
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Before 8pm tonight, confirm coffee with your coworker on Thursday at 12:30pm, or change only the day or time you prefer, and decide before you send anything.",
+          "Before 8pm tonight, text your coworker: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee Thursday at 12:30pm. Are you free then?\" (Use your changed day or time if you changed it.)",
+          "Eat a simple dinner before 10pm so you go to bed fed.",
+          "At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "loneliness": {
+          "score": 0,
+          "need": "",
+          "why": "Staying home means I stay disconnected here, and this is exactly the kind of invitation I need."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "She invited me, and skipping could make me look distant to the one coworker reaching out."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I skip, my loneliness and our new connection are left exposed with no protection."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Hunger a 0",
+          "why": ""
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "hunger": {
+          "score": -1,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "hunger",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Tonight's easy: I'm exhausted, so I'll skip the drinks, go home, and get a proper night's sleep. Everyone will be fine with it, and I'll feel much better tomorrow.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "tiredness",
+          "text": "Okay, I can live with this. Going home to sleep gives me the rest I need, as long as it's real sleep: lights out by 11pm for about 8 hours, with my phone charging across the room so I don't scroll. I'm saying yes grudgingly, and I'm not signing up for a late night out.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Sleep is what I need; this plan finally lets me recover."
+        },
+        {
+          "n": 4,
+          "who": "embarrassment",
+          "text": "Going home to sleep works for me, but the plan never answers her invite, and silence after a birthday invite can read as distance to the one coworker reaching out. Before the 11pm lights-out, I need Embarrassment's text sent: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee this week. Are you free [day]?\" That keeps the door open without a late night, and it's what would move me to 0.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A short text, or a quick drop-in, keeps things warm with her."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "loneliness",
+          "text": "Society's advice assumes loneliness fades if I just keep saying yes, but it never asks what I actually need from these people. Right now I need one real connection, and a crowded drinks night where I'm exhausted and half-listening won't give me that. Following it would mean dragging my tiredness into a room full of strangers and coming home feeling more alone.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Going straight home leaves Loneliness with no one-on-one connection tonight, and Embarrassment's text is still unsent, so Fear's worry about the new connection stays open. Tiredness's real night's sleep still works, but only if the evening is short, so I'm offering two paths. Path A sends Embarrassment's text now and goes to bed, which keeps the coffee door open. Path B adds a one-hour stop at the drinks for one real one-on-one moment, which is what Loneliness needs most.",
+          "to": "loneliness",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "loneliness",
+          "text": "Path A leaves coffee as '[day]', so nothing on my calendar is a real one-on-one yet. Path B's one question at a crowded table ends when the drinks do. Change Embarrassment's '[day]' to 'Thursday at 12:30pm' so the text, sent before 8pm, gives her a set time for coffee.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "met",
+          "why": "B gives tonight's one-on-one moment; A's coffee needs a real day."
+        },
+        {
+          "n": 9,
+          "who": "sadness",
+          "text": "Fear is the emotion getting the least airtime here. It's the one saying that if I skip tonight, the new connection with my coworker is left unguarded, and Path A only protects it if Embarrassment's text actually goes out before 8pm. I need Path A to name the coffee day in that text, with Thursday at 12:30pm already set, so the connection has something concrete holding it. Consciousness, please fold that exact change into Path A now.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear, your worry about this new connection is heard. You won't be left exposed."
+        },
+        {
+          "n": 10,
+          "who": "fear",
+          "text": "If Path A's text goes out as 'Are you free [day]?', my one protection for this connection has no date attached, and a coffee with no set day usually slips past the week. Then Loneliness stays unguarded through the same week I'm meant to be protecting. Consciousness, please put Thursday at 12:30pm into Path A's text now, and the user should confirm or change that default before sending it, since they're the one meeting her.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "cost",
+          "why": "Thursday helps, but only if the text goes out before 8pm."
+        },
+        {
+          "n": 11,
+          "who": "society",
+          "text": "Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 12,
+          "who": "embarrassment",
+          "text": "Pushing through and hoping coffee happens eventually leaves my need untouched, because a warm decline still needs a day on the table, and 'eventually' gives her nothing to say yes to. If I follow it, I send nothing tonight, and her birthday invite just sits there, which is the kind of silence that can read as distance from the one coworker reaching out. I'm not asking for more plans, only for the day to be locked in tonight so the decline lands warm instead of vague.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 13,
+          "who": "consciousness",
+          "text": "I'm choosing Path A because Embarrassment and Tiredness both get what they need from it, and it can now hold the Thursday 12:30pm coffee that Fear and Loneliness asked for. Fear, I changed one thing: Embarrassment's text now names Thursday at 12:30pm and goes out before 8pm tonight. Before sending, the user confirms that time or changes only the day or time, so she has something concrete to say yes to.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 14,
+          "who": "fear",
+          "text": "V3 covers my need. Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives the connection a set date, which is the step that moves me to 0. I'm holding it to two conditions: you confirm or change only the day or time before sending, and the text actually goes out tonight.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Thursday 12:30pm is in the text before 8pm; that protects the connection."
+        },
+        {
+          "n": 15,
+          "who": "loneliness",
+          "text": "Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives me the set day and time I was missing, so I can live with this. I'm holding it to one condition: you confirm or change only the day or time before you send it. I miss having someone to sit across from, and I'd like that to start with her.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "The set coffee day and time I asked for is in the plan now, so I can accept it."
+        },
+        {
+          "n": 16,
+          "who": "embarrassment",
+          "text": "Plan v3 covers my need. The step that moves me to 0 is sending the text before 8pm tonight with Thursday at 12:30pm already named, so she has a concrete day to say yes to and the decline doesn't read as distance. I'm holding it to one condition: you confirm or change only the day or time before you send it, and it goes out tonight.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Thursday 12:30pm is in the text now, and I can live with it."
+        },
+        {
+          "n": 17,
+          "who": "consciousness",
+          "text": "Sadness, your ask that the coffee day sit inside the message is covered: Thursday at 12:30pm is named in the text that goes out before 8pm tonight, so the connection has something concrete to hold. I'm keeping that as the default and only letting you change the day or time, so the text stays specific. Tiredness, the 11pm lights-out and phone across the room stay exactly as they were.",
+          "to": "sadness",
+          "move": "refine"
+        },
+        {
+          "n": 18,
+          "who": "sadness",
+          "text": "I'm the one most unheard right now, and Doubt is still at -1. Plan v4 has no spot where Doubt's question gets answered: is it actually fine to skip tonight, and will the coffee happen or just get talked about? The Thursday 12:30pm default in Embarrassment's text is a start, but if the day or time doesn't feel right to the user, Doubt has nothing to settle it. I'd like Consciousness to add one step: before sending, the user checks the Thursday 12:30pm default and either keeps it or changes only the day or time.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear's and Loneliness's asks are folded in; I can accept now."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Thursday at 12:30pm is the default, and you'll check it before the text goes out before 8pm tonight. Then it's dinner, lights out at 11pm, and the coffee has a real day to hold it.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!",
+          "to": "embarrassment",
+          "style": "toxic positivity (\"just stay positive\", \"look on the bright side\")"
+        },
+        {
+          "text": "Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.",
+          "to": "fear",
+          "style": "hustle (\"everyone's busy, just push through\", \"that's adulting\")"
+        }
+      ],
+      "lensesUsed": {
+        "loneliness": [
+          "met"
+        ],
+        "fear": [
+          "cost"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "fear": "Path A's text names Thursday 12:30pm and goes out before 8pm.",
+        "embarrassment": "Path A text offers a specific coffee day, sent tonight.",
+        "loneliness": "Coffee with her on a set day and time.",
+        "doubt": ""
+      },
+      "waiting": {
+        "loneliness": 0,
+        "embarrassment": 0,
+        "annoyance": 1,
+        "tiredness": 0,
+        "doubt": 2,
+        "sadness": 0,
+        "fear": 0,
+        "hunger": 2
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 27,
+        "inChars": 249600,
+        "outChars": 17103,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 11,
+          "society": 2,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 4
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Tonight's easy: I'm exhausted, so I'll skip the drinks, go home, and get a proper night's sleep. Everyone will be fine with it, and I'll feel much better tomorrow.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Skip the birthday drinks tonight, go home, rest and get some sleep so I have energy for the week ahead."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "loneliness",
+            "why": "Staying home means I stay disconnected here, and this is exactly the kind of invitation I need."
+          },
+          {
+            "id": "embarrassment",
+            "why": "She invited me, and skipping could make me look distant to the one coworker reaching out."
+          },
+          {
+            "id": "fear",
+            "why": "If I skip, my loneliness and our new connection are left exposed with no protection."
+          }
+        ],
+        "spotlight": "loneliness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Sleep is what I need; this plan finally lets me recover."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleeping alone tonight keeps me disconnected; she reached out to me."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "'Everyone will be fine' is a guess; skipping risks looking distant."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you decide 'everyone will be fine'? Did you ask me?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Loneliness and embarrassment already said what's exposed; I'll wait."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "I'll hold; the tomorrow-will-be-better claim still needs checking."
+          },
+          {
+            "id": "impulsivity",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Nothing exciting here, but I'm too tired to push for it."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "tiredness",
+        "text": "Okay, I can live with this. Going home to sleep gives me the rest I need, as long as it's real sleep: lights out by 11pm for about 8 hours, with my phone charging across the room so I don't scroll. I'm saying yes grudgingly, and I'm not signing up for a late night out.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Sleep is what I need; this plan finally lets me recover.",
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleep helps my body, but nobody's fed my need for company."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A short text, or a quick drop-in, keeps things warm with her."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Consciousness assumed everyone will be fine; did anyone check with her?"
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "loneliness",
+            "why": "Loneliness has been talked over all along. Let it be heard first."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "embarrassment",
+        "text": "Going home to sleep works for me, but the plan never answers her invite, and silence after a birthday invite can read as distance to the one coworker reaching out. Before the 11pm lights-out, I need Embarrassment's text sent: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee this week. Are you free [day]?\" That keeps the door open without a late night, and it's what would move me to 0.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A short text, or a quick drop-in, keeps things warm with her.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "loneliness",
+        "text": "Society's advice assumes loneliness fades if I just keep saying yes, but it never asks what I actually need from these people. Right now I need one real connection, and a crowded drinks night where I'm exhausted and half-listening won't give me that. Following it would mean dragging my tiredness into a room full of strangers and coming home feeling more alone.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Going straight home leaves Loneliness with no one-on-one connection tonight, and Embarrassment's text is still unsent, so Fear's worry about the new connection stays open. Tiredness's real night's sleep still works, but only if the evening is short, so I'm offering two paths. Path A sends Embarrassment's text now and goes to bed, which keeps the coffee door open. Path B adds a one-hour stop at the drinks for one real one-on-one moment, which is what Loneliness needs most.",
+        "to": "loneliness",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: At 8pm tonight, text [Coworker]: 'Happy birthday! I'm wiped out, so I'll skip drinks, but let's get coffee this week. Are you free [day]?' Phone charges across the room; lights out 11pm.",
+            "Path B: Arrive at drinks by 8pm, stay one hour, and ask [Coworker] one question about her week, one-on-one. Leave at 9pm, home by 9:30pm, lights out 11pm."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Coffee day is still blank, and Loneliness stays exposed tonight.",
+            "prefers": "B"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A is my text, but fill in the day before sending.",
+            "prefers": "A"
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "B gives tonight's one-on-one moment; A's coffee needs a real day.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "B still fits if I'm home by 9:30 and asleep by 11.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "loneliness",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "loneliness",
+        "text": "Path A leaves coffee as '[day]', so nothing on my calendar is a real one-on-one yet. Path B's one question at a crowded table ends when the drinks do. Change Embarrassment's '[day]' to 'Thursday at 12:30pm' so the text, sent before 8pm, gives her a set time for coffee.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "met",
+        "why": "B gives tonight's one-on-one moment; A's coffee needs a real day.",
+        "prevScore": -1,
+        "lensLabel": "what \"met\" looks like",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A specific Thursday 12:30 time makes the text warm and clear. I accept Path A."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does Thursday's text fully protect loneliness, or does Path B's one-on-one still matter?"
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear, your worry about this new connection is heard. You won't be left exposed."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Path A already saves time, and the Thursday tweak adds nothing new."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Thursday coffee doesn't touch tonight's sleep, so nothing new for me."
+          }
+        ],
+        "pick": "sadness",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "sadness",
+        "text": "Fear is the emotion getting the least airtime here. It's the one saying that if I skip tonight, the new connection with my coworker is left unguarded, and Path A only protects it if Embarrassment's text actually goes out before 8pm. I need Path A to name the coffee day in that text, with Thursday at 12:30pm already set, so the connection has something concrete holding it. Consciousness, please fold that exact change into Path A now.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear, your worry about this new connection is heard. You won't be left exposed.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Thursday helps, but only if the text goes out before 8pm."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Specific Thursday 12:30 meets my need, if the text stays short."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Sadness already voiced my coffee ask; nothing new to add yet."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Sleep stays protected; nothing new until the text is settled."
+          }
+        ],
+        "pick": "fear",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "fear",
+        "text": "If Path A's text goes out as 'Are you free [day]?', my one protection for this connection has no date attached, and a coffee with no set day usually slips past the week. Then Loneliness stays unguarded through the same week I'm meant to be protecting. Consciousness, please put Thursday at 12:30pm into Path A's text now, and the user should confirm or change that default before sending it, since they're the one meeting her.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "cost",
+        "why": "Thursday helps, but only if the text goes out before 8pm.",
+        "prevScore": -1,
+        "lensLabel": "the cost",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "society",
+        "text": "Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "embarrassment",
+        "text": "Pushing through and hoping coffee happens eventually leaves my need untouched, because a warm decline still needs a day on the table, and 'eventually' gives her nothing to say yes to. If I follow it, I send nothing tonight, and her birthday invite just sits there, which is the kind of silence that can read as distance from the one coworker reaching out. I'm not asking for more plans, only for the day to be locked in tonight so the decline lands warm instead of vague.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "consciousness",
+        "text": "I'm choosing Path A because Embarrassment and Tiredness both get what they need from it, and it can now hold the Thursday 12:30pm coffee that Fear and Loneliness asked for. Fear, I changed one thing: Embarrassment's text now names Thursday at 12:30pm and goes out before 8pm tonight. Before sending, the user confirms that time or changes only the day or time, so she has something concrete to say yes to.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "You: before sending, confirm Thursday at 12:30pm for coffee, or change only the day or time you prefer.",
+            "Before 8pm tonight, text [Coworker]: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee Thursday at 12:30pm. Are you free then?\"",
+            "At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "spotlight",
+        "id": "loneliness",
+        "at": 20
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Thursday 12:30pm is in the text before 8pm; that protects the connection."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Named day, sent tonight: a warm decline I can live with."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still just a proposal; I need her yes and a calendar hold."
+          }
+        ],
+        "pick": "fear",
+        "at": 21
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "fear",
+        "text": "V3 covers my need. Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives the connection a set date, which is the step that moves me to 0. I'm holding it to two conditions: you confirm or change only the day or time before sending, and the text actually goes out tonight.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Thursday 12:30pm is in the text before 8pm; that protects the connection.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Thursday 12:30pm is now in the text, and I can live with that if she confirms it first."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The set coffee day and time I asked for is in the plan now, so I can accept it."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Already at 0 and lights-out is set; nothing new to add."
+          }
+        ],
+        "pick": "loneliness",
+        "at": 23
+      },
+      {
+        "type": "score",
+        "id": "loneliness",
+        "from": -1,
+        "to": 0,
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "loneliness",
+        "text": "Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives me the set day and time I was missing, so I can live with this. I'm holding it to one condition: you confirm or change only the day or time before you send it. I miss having someone to sit across from, and I'd like that to start with her.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "The set coffee day and time I asked for is in the plan now, so I can accept it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 25
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Thursday 12:30pm is in the text now, and I can live with it."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Nothing covers dinner tonight. I need to eat before bed."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Lights out at 11 is already locked in. Nothing new to add."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "embarrassment",
+        "text": "Plan v3 covers my need. The step that moves me to 0 is sending the text before 8pm tonight with Thursday at 12:30pm already named, so she has a concrete day to say yes to and the decline doesn't read as distance. I'm holding it to one condition: you confirm or change only the day or time before you send it, and it goes out tonight.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Thursday 12:30pm is in the text now, and I can live with it.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "consciousness",
+        "text": "Sadness, your ask that the coffee day sit inside the message is covered: Thursday at 12:30pm is named in the text that goes out before 8pm tonight, so the connection has something concrete to hold. I'm keeping that as the default and only letting you change the day or time, so the text stays specific. Tiredness, the 11pm lights-out and phone across the room stay exactly as they were.",
+        "to": "sadness",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "You: confirm Thursday at 12:30pm for coffee, or change only the day or time you prefer, before you send.",
+            "Before 8pm tonight, text [Coworker]: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee [confirmed day and time]. Are you free then?\"",
+            "At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 29
+      },
+      {
+        "type": "spotlight",
+        "id": "doubt",
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 31
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Fear's and Loneliness's asks are folded in; I can accept now."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Nobody checked Thursday 12:30 against her availability; the default still feels untested."
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Plan skips drinks and dinner; nothing feeds me before lights-out tonight."
+          }
+        ],
+        "pick": "sadness",
+        "at": 32
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "sadness",
+        "text": "I'm the one most unheard right now, and Doubt is still at -1. Plan v4 has no spot where Doubt's question gets answered: is it actually fine to skip tonight, and will the coffee happen or just get talked about? The Thursday 12:30pm default in Embarrassment's text is a start, but if the day or time doesn't feel right to the user, Doubt has nothing to settle it. I'd like Consciousness to add one step: before sending, the user checks the Thursday 12:30pm default and either keeps it or changes only the day or time.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear's and Loneliness's asks are folded in; I can accept now.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 33
+      },
+      {
+        "type": "spotlight",
+        "id": "hunger",
+        "at": 34
+      },
+      {
+        "type": "wrap",
+        "text": "Thursday at 12:30pm is the default, and you'll check it before the text goes out before 8pm tonight. Then it's dinner, lights out at 11pm, and the coffee has a real day to hold it.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Before 8pm tonight, confirm coffee with your coworker on Thursday at 12:30pm, or change only the day or time you prefer, and decide before you send anything.",
+            "Before 8pm tonight, text your coworker: \"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee Thursday at 12:30pm. Are you free then?\" (Use your changed day or time if you changed it.)",
+            "Eat a simple dinner before 10pm so you go to bed fed.",
+            "At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "loneliness",
+            "score": 0,
+            "why": "A set day and time with her gives me the one-on-one connection I've been missing.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The warm text goes out tonight, so skipping drinks won't read as distance.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "A concrete coffee date now guards this new connection through the week.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "Lights out at 11pm with my phone across the room gives me real sleep.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Hunger still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "I can check the default before sending and know skipping and coffee are settled.",
+            "step": 1
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "why": "Dinner is now in the plan, but I'm still not sure I'll eat enough.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!",
+            "to": "embarrassment",
+            "reply": "Thanks for the encouragement, but right now I need one real connection rather than a crowded night out, so I'm going to focus on that."
+          },
+          {
+            "line": "Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.",
+            "to": "fear",
+            "reply": "I appreciate that, but I'd like a specific day on the calendar so this doesn't drift; locking it in is what helps me."
+          }
+        ],
+        "questions": [],
+        "at": 35
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 11639,
+      "reply": "{\"plan\": \"Skip the birthday drinks tonight, go home, rest and get some sleep so I have energy for the week ahead.\", \"text\": \"Tonight's easy: I'm exhausted, so I'll skip the drinks, go home, and get a proper night's sleep. Everyone will be fine with it, and I'll feel much better tomorrow.\", \"minus\": [{\"id\": \"loneliness\", \"why\": \"Staying home means I stay disconnected here, and this is exactly the kind of invitation I need.\"}, {\"id\": \"embarrassment\", \"why\": \"She invited me, and skipping could make me look distant to the one coworker reaching out.\"}, {\"id\": \"fear\", \"why\": \"If I skip, my loneliness and our new connection are left exposed with no protection.\"}], \"spotlight\": \"loneliness\"}",
+      "inTokens": 3081,
+      "outTokens": 942,
+      "thinkingTokens": 679,
+      "cost": 0.0009600100000000001,
+      "promptChars": 4484
+    },
+    {
+      "kind": "floor",
+      "ms": 17023,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Sleep is what I need; this plan finally lets me recover.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleeping alone tonight keeps me disconnected; she reached out to me.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"'Everyone will be fine' is a guess; skipping risks looking distant.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you decide 'everyone will be fine'? Did you ask me?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Loneliness and embarrassment already said what's exposed; I'll wait.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"I'll hold; the tomorrow-will-be-better claim still needs checking.\"}, {\"id\": \"impulsivity\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Nothing exciting here, but I'm too tired to push for it.\"}]}",
+      "inTokens": 3747,
+      "outTokens": 2746,
+      "thinkingTokens": 2307,
+      "cost": 0.0024917000000000003,
+      "promptChars": 6295
+    },
+    {
+      "kind": "speak",
+      "ms": 11255,
+      "reply": "{\"text\": \"Okay, I can live with this. Going home to sleep gives me the rest I need, as long as it's real sleep: lights out by 11pm for about 8 hours, with my phone charging across the room so I don't scroll. I'm saying yes grudgingly, and I'm not signing up for a late night out.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 3659,
+      "outTokens": 830,
+      "thinkingTokens": 697,
+      "cost": 0.0015078000000000001,
+      "promptChars": 6387
+    },
+    {
+      "kind": "floor",
+      "ms": 11913,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleep helps my body, but nobody's fed my need for company.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A short text, or a quick drop-in, keeps things warm with her.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Consciousness assumed everyone will be fine; did anyone check with her?\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"loneliness\", \"why\": \"Loneliness has been talked over all along. Let it be heard first.\"}]}",
+      "inTokens": 3832,
+      "outTokens": 1561,
+      "thinkingTokens": 1308,
+      "cost": 0.0019247000000000003,
+      "promptChars": 6458
+    },
+    {
+      "kind": "speak",
+      "ms": 10980,
+      "reply": "{\"text\": \"Consciousness, going home to sleep works for me, but the plan never answers her invite, and silence after a birthday invite can read as distance to the one coworker reaching out. Before the 11pm lights-out, I need Embarrassment's text sent: \\\"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee this week. Are you free [day]?\\\" That keeps the door open without a late night, and it's what would move me to 0.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Warm decline tonight with a specific coffee offer to her.\", \"turns_down\": \"\"}",
+      "inTokens": 3912,
+      "outTokens": 1060,
+      "thinkingTokens": 844,
+      "cost": 0.0016997000000000002,
+      "promptChars": 7121
+    },
+    {
+      "kind": "society",
+      "ms": 5742,
+      "reply": "{\"text\": \"Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!\", \"style\": \"toxic positivity\"}",
+      "inTokens": 2051,
+      "outTokens": 70,
+      "thinkingTokens": 0,
+      "cost": 0.0006474,
+      "promptChars": 2116
+    },
+    {
+      "kind": "speak",
+      "ms": 7498,
+      "reply": "{\"text\": \"Society's advice assumes loneliness fades if I just keep saying yes, but it never asks what I actually need from these people. Right now I need one real connection, and a crowded drinks night where I'm exhausted and half-listening won't give me that. Following it would mean dragging my tiredness into a room full of strangers and coming home feeling more alone.\", \"to\": \"society\", \"score\": -1, \"need\": \"Concrete connection: one small, one-on-one plan with a coworker I'd actually talk to.\", \"turns_down\": \"Just say yes to everything\"}",
+      "inTokens": 4161,
+      "outTokens": 182,
+      "thinkingTokens": 0,
+      "cost": 0.0013344000000000003,
+      "promptChars": 7799
+    },
+    {
+      "kind": "consciousness",
+      "ms": 18474,
+      "reply": "{\"text\": \"Going straight home leaves Loneliness with no one-on-one connection tonight, and Embarrassment's text is still unsent, so Fear's worry about the new connection stays open. Tiredness's real night's sleep still works, but only if the evening is short, so I'm offering two paths. Path A sends Embarrassment's text now and goes to bed, which keeps the coffee door open. Path B adds a one-hour stop at the drinks for one real one-on-one moment, which is what Loneliness needs most.\", \"to\": \"loneliness\", \"plan\": [\"Path A: At 8pm tonight, text [Coworker]: 'Happy birthday! I'm wiped out, so I'll skip drinks, but let's get coffee this week. Are you free [day]?' Phone charges across the room; lights out 11pm.\", \"Path B: Arrive at drinks by 8pm, stay one hour, and ask [Coworker] one question about her week, one-on-one. Leave at 9pm, home by 9:30pm, lights out 11pm.\"]}",
+      "inTokens": 4201,
+      "outTokens": 3017,
+      "thinkingTokens": 2672,
+      "cost": 0.0027649,
+      "promptChars": 8019
+    },
+    {
+      "kind": "floor",
+      "ms": 18799,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Coffee day is still blank, and Loneliness stays exposed tonight.\", \"prefers\": \"B\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A is my text, but fill in the day before sending.\", \"prefers\": \"A\"}, {\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"B gives tonight's one-on-one moment; A's coffee needs a real day.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"B still fits if I'm home by 9:30 and asleep by 11.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4747,
+      "outTokens": 3056,
+      "thinkingTokens": 2745,
+      "cost": 0.0029507,
+      "promptChars": 8943
+    },
+    {
+      "kind": "speak",
+      "ms": 11515,
+      "reply": "{\"text\": \"Path A leaves coffee as '[day]', so nothing on my calendar is a real one-on-one yet. Path B's one question at a crowded table ends when the drinks do. Change Embarrassment's '[day]' to 'Thursday at 12:30pm' so the text, sent before 8pm, gives her a set time for coffee.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Coffee with her on a set day and time.\", \"turns_down\": \"\"}",
+      "inTokens": 4670,
+      "outTokens": 1375,
+      "thinkingTokens": 1217,
+      "cost": 0.0020856,
+      "promptChars": 9188
+    },
+    {
+      "kind": "floor",
+      "ms": 13917,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A specific Thursday 12:30 time makes the text warm and clear. I accept Path A.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does Thursday's text fully protect loneliness, or does Path B's one-on-one still matter?\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear, your worry about this new connection is heard. You won't be left exposed.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Path A already saves time, and the Thursday tweak adds nothing new.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Thursday coffee doesn't touch tonight's sleep, so nothing new for me.\"}]}",
+      "inTokens": 4702,
+      "outTokens": 1773,
+      "thinkingTokens": 1446,
+      "cost": 0.0022917000000000002,
+      "promptChars": 8755
+    },
+    {
+      "kind": "speak",
+      "ms": 5312,
+      "reply": "{\"text\": \"Fear is the emotion getting the least airtime here. It's the one saying that if I skip tonight, the new connection with my coworker is left unguarded, and Path A only protects it if Embarrassment's text actually goes out before 8pm. I need Path A to name the coffee day in that text, with Thursday at 12:30pm already set, so the connection has something concrete holding it. Consciousness, please fold that exact change into Path A now.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Concrete Thursday 12:30pm coffee in the text, sent before 8pm.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 4718,
+      "outTokens": 215,
+      "thinkingTokens": 0,
+      "cost": 0.001522,
+      "promptChars": 9238
+    },
+    {
+      "kind": "floor",
+      "ms": 15316,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Thursday helps, but only if the text goes out before 8pm.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Specific Thursday 12:30 meets my need, if the text stays short.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Sadness already voiced my coffee ask; nothing new to add yet.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Sleep stays protected; nothing new until the text is settled.\"}]}",
+      "inTokens": 4867,
+      "outTokens": 2527,
+      "thinkingTokens": 2285,
+      "cost": 0.0027207000000000004,
+      "promptChars": 9233
+    },
+    {
+      "kind": "speak",
+      "ms": 12978,
+      "reply": "{\"text\": \"If Path A's text goes out as 'Are you free [day]?', my one protection for this connection has no date attached, and a coffee with no set day usually slips past the week. Then Loneliness stays unguarded through the same week I'm meant to be protecting. Consciousness, please put Thursday at 12:30pm into Path A's text now, and the user should confirm or change that default before sending it, since they're the one meeting her.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Path A's text names Thursday 12:30pm and goes out before 8pm.\", \"turns_down\": \"\"}",
+      "inTokens": 4837,
+      "outTokens": 1616,
+      "thinkingTokens": 1420,
+      "cost": 0.0022577,
+      "promptChars": 9651
+    },
+    {
+      "kind": "society",
+      "ms": 6977,
+      "reply": "{\"text\": \"Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.\", \"style\": \"hustle\"}",
+      "inTokens": 2230,
+      "outTokens": 632,
+      "thinkingTokens": 974,
+      "cost": 0.0011856,
+      "promptChars": 2582
+    },
+    {
+      "kind": "speak",
+      "ms": 10665,
+      "reply": "{\"text\": \"Pushing through and hoping coffee happens eventually leaves my need untouched, because a warm decline still needs a day on the table, and 'eventually' gives her nothing to say yes to. If I follow it, I send nothing tonight, and her birthday invite just sits there, which is the kind of silence that can read as distance from the one coworker reaching out. I'm not asking for more plans, only for the day to be locked in tonight so the decline lands warm instead of vague.\", \"to\": \"society\", \"score\": -1, \"need\": \"Path A text offers a specific coffee day, sent tonight.\", \"turns_down\": \"Coffee will happen eventually\"}",
+      "inTokens": 5423,
+      "outTokens": 1416,
+      "thinkingTokens": 1203,
+      "cost": 0.00233,
+      "promptChars": 11301
+    },
+    {
+      "kind": "consciousness",
+      "ms": 13622,
+      "reply": "{\"text\": \"I'm choosing Path A because Embarrassment and Tiredness both get what they need from it, and it can now hold the Thursday 12:30pm coffee that Fear and Loneliness asked for. Fear, I changed one thing: Embarrassment's text now names Thursday at 12:30pm and goes out before 8pm tonight. Before sending, the user confirms that time or changes only the day or time, so she has something concrete to say yes to.\", \"to\": \"fear\", \"plan\": [\"You: before sending, confirm Thursday at 12:30pm for coffee, or change only the day or time you prefer.\", \"Before 8pm tonight, text [Coworker]: \\\"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee Thursday at 12:30pm. Are you free then?\\\"\", \"At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep.\"]}",
+      "inTokens": 5519,
+      "outTokens": 2065,
+      "thinkingTokens": 1741,
+      "cost": 0.0026838,
+      "promptChars": 11684
+    },
+    {
+      "kind": "floor",
+      "ms": 13722,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Thursday 12:30pm is in the text before 8pm; that protects the connection.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Named day, sent tonight: a warm decline I can live with.\"}, {\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still just a proposal; I need her yes and a calendar hold.\"}]}",
+      "inTokens": 5648,
+      "outTokens": 2118,
+      "thinkingTokens": 1906,
+      "cost": 0.0027525,
+      "promptChars": 11481
+    },
+    {
+      "kind": "speak",
+      "ms": 8272,
+      "reply": "{\"text\": \"v3 covers my need. Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives the connection a set date, which is the step that moves me to 0. I'm holding it to two conditions: you confirm or change only the day or time before sending, and the text actually goes out tonight.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5543,
+      "outTokens": 707,
+      "thinkingTokens": 573,
+      "cost": 0.0020145,
+      "promptChars": 11701
+    },
+    {
+      "kind": "floor",
+      "ms": 10203,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Thursday 12:30pm is now in the text, and I can live with that if she confirms it first.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The set coffee day and time I asked for is in the plan now, so I can accept it.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Already at 0 and lights-out is set; nothing new to add.\"}]}",
+      "inTokens": 5532,
+      "outTokens": 1200,
+      "thinkingTokens": 1000,
+      "cost": 0.0022562,
+      "promptChars": 11170
+    },
+    {
+      "kind": "speak",
+      "ms": 8410,
+      "reply": "{\"text\": \"Putting Thursday at 12:30pm into the text that goes out before 8pm tonight gives me the set day and time I was missing, so I can live with this. I'm holding it to one condition: you confirm or change only the day or time before you send it. I miss having someone to sit across from, and I'd like that to start with her.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5691,
+      "outTokens": 711,
+      "thinkingTokens": 575,
+      "cost": 0.0020609,
+      "promptChars": 12054
+    },
+    {
+      "kind": "floor",
+      "ms": 10449,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Thursday 12:30pm is in the text now, and I can live with it.\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Nothing covers dinner tonight. I need to eat before bed.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights out at 11 is already locked in. Nothing new to add.\"}]}",
+      "inTokens": 5594,
+      "outTokens": 1032,
+      "thinkingTokens": 842,
+      "cost": 0.0021928,
+      "promptChars": 11392
+    },
+    {
+      "kind": "speak",
+      "ms": 6664,
+      "reply": "{\"text\": \"Plan v3 covers my need. The step that moves me to 0 is sending the text before 8pm tonight with Thursday at 12:30pm already named, so she has a concrete day to say yes to and the decline doesn't read as distance. I'm holding it to one condition: you confirm or change only the day or time before you send it, and it goes out tonight.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5932,
+      "outTokens": 474,
+      "thinkingTokens": 326,
+      "cost": 0.0020127,
+      "promptChars": 12878
+    },
+    {
+      "kind": "consciousness",
+      "ms": 17277,
+      "reply": "{\"text\": \"Sadness, your ask that the coffee day sit inside the message is covered: Thursday at 12:30pm is named in the text that goes out before 8pm tonight, so the connection has something concrete to hold. I'm keeping that as the default and only letting you change the day or time, so the text stays specific. Tiredness, the 11pm lights-out and phone across the room stay exactly as they were.\", \"to\": \"sadness\", \"plan\": [\"You: confirm Thursday at 12:30pm for coffee, or change only the day or time you prefer, before you send.\", \"Before 8pm tonight, text [Coworker]: \\\"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee [confirmed day and time]. Are you free then?\\\"\", \"At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep.\"]}",
+      "inTokens": 5990,
+      "outTokens": 2842,
+      "thinkingTokens": 2537,
+      "cost": 0.0032141,
+      "promptChars": 13051
+    },
+    {
+      "kind": "floor",
+      "ms": 17511,
+      "reply": "{\"bids\": [{\"id\": \"sadness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Fear's and Loneliness's asks are folded in; I can accept now.\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Nobody checked Thursday 12:30 against her availability; the default still feels untested.\"}, {\"id\": \"hunger\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Plan skips drinks and dinner; nothing feeds me before lights-out tonight.\"}]}",
+      "inTokens": 6043,
+      "outTokens": 3105,
+      "thinkingTokens": 2881,
+      "cost": 0.0033615000000000003,
+      "promptChars": 12696
+    },
+    {
+      "kind": "speak",
+      "ms": 5899,
+      "reply": "{\"text\": \"I'm the one most unheard right now, and Doubt is still at -1. Plan v4 has no spot where Doubt's question gets answered: is it actually fine to skip tonight, and will the coffee happen or just get talked about? The Thursday 12:30pm default in Embarrassment's text is a start, but if the day or time doesn't feel right to the user, Doubt has nothing to settle it. I'd like Consciousness to add one step: before sending, the user checks the Thursday 12:30pm default and either keeps it or changes only the day or time.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Explicit step where user confirms Thursday 12:30pm or changes it before sending\", \"turns_down\": \"\", \"spotlight\": \"doubt\"}",
+      "inTokens": 6107,
+      "outTokens": 252,
+      "thinkingTokens": 0,
+      "cost": 0.0019542,
+      "promptChars": 13262
+    },
+    {
+      "kind": "wrap",
+      "ms": 19006,
+      "reply": "{\"plan\": [\"Before 8pm tonight, confirm coffee with your coworker on Thursday at 12:30pm, or change only the day or time you prefer, and decide before you send anything.\", \"Before 8pm tonight, text your coworker: \\\"[Coworker], happy birthday! I'm wiped out tonight so I'll skip the drinks, but I'd love to get coffee Thursday at 12:30pm. Are you free then?\\\" (Use your changed day or time if you changed it.)\", \"Eat a simple dinner before 10pm so you go to bed fed.\", \"At 11pm, lights out with your phone charging across the room, aiming for about 8 hours of sleep.\"], \"scores\": [{\"id\": \"Loneliness\", \"score\": 0, \"step\": 2, \"why\": \"A set day and time with her gives me the one-on-one connection I've been missing.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"The warm text goes out tonight, so skipping drinks won't read as distance.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 2, \"why\": \"A concrete coffee date now guards this new connection through the week.\"}, {\"id\": \"Tiredness\", \"score\": 0, \"step\": 4, \"why\": \"Lights out at 11pm with my phone across the room gives me real sleep.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 1, \"why\": \"Checking the Thursday default lets Doubt settle, which was my ask.\"}, {\"id\": \"Doubt\", \"score\": 0, \"step\": 1, \"why\": \"I can check the default before sending and know skipping and coffee are settled.\"}, {\"id\": \"Hunger\", \"score\": -1, \"step\": 0, \"why\": \"Dinner is now in the plan, but I'm still not sure I'll eat enough.\"}], \"society\": [{\"line\": \"Honestly, you're new in town, so just put yourself out there and say yes to everything. Lonely feelings pass once you go out more, so you'll be fine!\", \"reply\": \"Thanks for the encouragement, but right now I need one real connection rather than a crowded night out, so I'm going to focus on that.\"}, {\"line\": \"Everyone's busy, that's just adulting. Don't stress about locking in a day, because coffee will happen eventually, so just push through and it'll all work out.\", \"reply\": \"I appreciate that, but I'd like a specific day on the calendar so this doesn't drift; locking it in is what helps me.\"}], \"text\": \"Thursday at 12:30pm is the default, and you'll check it before the text goes out before 8pm tonight. Then it's dinner, lights out at 11pm, and the coffee has a real day to hold it.\"}",
+      "inTokens": 5240,
+      "outTokens": 3261,
+      "thinkingTokens": 2385,
+      "cost": 0.0031975999999999997,
+      "promptChars": 10661
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 5,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.37,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 1,
+      "holdRate": 0.28,
+      "finalMinus": [
+        "sadness",
+        "hunger"
+      ],
+      "errors": 0
+    },
+    "flags": [
+      "[15] loneliness echoes [14] fear (0.37)",
+      "[16] embarrassment echoes [14] fear (0.32)",
+      "[16] embarrassment echoes [15] loneliness (0.31)",
+      "question without a stated reason? [18] sadness"
+    ],
+    "summary": "16 msgs, 7 voices, avg 3.2 sentences (max 5), max overlap 0.37, Society 2/2 called out, hold rate 0.28, final -1: sadness, hunger, 4 flag(s)",
+    "speakers": {
+      "tiredness": 1,
+      "embarrassment": 3,
+      "society": 2,
+      "loneliness": 3,
+      "consciousness": 3,
+      "sadness": 2,
+      "fear": 2
+    }
+  }
+}

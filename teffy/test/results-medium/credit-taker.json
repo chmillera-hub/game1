@@ -1,0 +1,1439 @@
+{
+  "scenario": {
+    "id": "credit-taker",
+    "thought": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 388803,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 30,
+    "inTokens": 144120,
+    "outTokens": 55391,
+    "thinkingTokens": 47484,
+    "cost": 0.07056860999999999
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward.",
+      "followups": [],
+      "plan": {
+        "version": 6,
+        "steps": [
+          "Tonight, 2026-10-21, write a dated list of every idea I've raised, one line per idea with its date.",
+          "By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed. Please credit each idea I raise to me in meeting notes.'",
+          "In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out on [date from my list], happy to walk through it.' Afterward, check the notes against my list and log any idea credited to her, but send nothing yet.",
+          "Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward. Please correct the notes for [idea], raised on [date].' Only after this 1:1 do I send any correction emails."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "My ideas are being taken and my boundary crossed, and this plan just swallows it without addressing it."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": "Why would you keep quiet about being dismissed? Nobody has asked what this does to me."
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": "Will silence really stop it, or will she keep doing it? Nobody has checked this plan against that."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I stay silent, my work keeps disappearing under her name, and my credibility is at risk."
+        },
+        "guilt": {
+          "score": 0,
+          "need": "",
+          "why": "Staying quiet means I am the one who suffers while she keeps getting credit for my work."
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Here's the plan: I say nothing when she presents my ideas, and the meetings stay calm. Honestly, this is the cleanest route, so let's get everyone on board.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "anger",
+          "text": "Deep breathing won't stop her from taking my ideas, and staying silent in the meeting means I'm the one who gets erased from the record every time she presents. The plan leaves the exact moment untouched: when she says 'my idea' in the room. I need a line I can say right then, like \"Good, that's the approach I laid out in [date/doc], happy to walk through it.\" Consciousness, add that as the response for the next meeting.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Silence swallows my boundary. I need a clear line in the meeting."
+        },
+        {
+          "n": 4,
+          "who": "doubt",
+          "text": "I can accept staying quiet in the moment, but my real worry is whether it stops anything: she has already presented my ideas repeatedly, so silence might just teach her it's safe to keep going. Consciousness, before we lock this in, I need to know whether you've weighed what happens on the next meeting after she does it again, because without that answer I'm stuck in doubt.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Will a prepared line stop her repeating it, or only answer once?"
+        },
+        {
+          "n": 5,
+          "who": "consciousness",
+          "text": "Yes, I weighed it, and silence alone fails: the next meeting repeats the pattern with nothing on paper to back me. Path A, built for Anger and Fear, dates my ideas to [Manager] before each meeting and gives me Anger's line for the room. Path B, built for Guilt and Annoyance, asks [Manager] to credit each idea to its owner, so the burden isn't mine alone.",
+          "to": "doubt",
+          "move": "paths"
+        },
+        {
+          "n": 6,
+          "who": "doubt",
+          "text": "Path A and Path B put the record on paper, but neither checks whether her behavior changes, so I can't tell if the plan works. Consciousness, add a check I run myself: after each meeting, I compare the notes with the ideas I raised, and if one appears under her name, I send [Manager] 'Following up on [idea], raised on [date]; please correct the notes.' Set the first check for the next meeting.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A records my ideas but never checks whether she stopped. B does."
+        },
+        {
+          "n": 7,
+          "who": "society",
+          "text": "Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.",
+          "to": "doubt",
+          "move": "platitude"
+        },
+        {
+          "n": 8,
+          "who": "doubt",
+          "text": "Society's 'let it go and focus on your own work' leaves my doubt untouched: nothing in it tells me whether her credit-taking actually stops after the next meeting. Waiting for people to get 'found out' means my ideas keep vanishing from the record in the meantime, and I can't tell whether any of this is changing. I'm not adding a new fix here; I just need the check I already proposed to stay in the plan so I can see the result after each meeting.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 9,
+          "who": "annoyance",
+          "text": "Path A and Path B both file my ideas, but neither says out loud that they're being presented without credit, and that dismissal is what stings. Please add to the 1:1 in Path B: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed.' Naming it to [Manager] is the acknowledgement I need.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Society's 'let it go' dismisses my feelings; acknowledge that first."
+        },
+        {
+          "n": 10,
+          "who": "consciousness",
+          "text": "I'm merging the two paths. Path A's dated list and in-meeting line answer Fear's worry that my work keeps disappearing under her name, and Anger's need for a line I can say in the moment. Path B's 1:1 answers Annoyance's need to have the dismissal named aloud and Guilt's need for the credit burden to be shared, not mine alone. Doubt's post-meeting check stays as proposed, because it already gives Doubt what it asked for.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 11,
+          "who": "fear",
+          "text": "Path A and B file my ideas, but nothing in v3 stops the next ideas from vanishing before they're on paper. I'm the one who gets erased when I say nothing. So before the next team meeting, I need a dated list ready: I'll write it tonight, 2026-10-21, with each idea I've raised and its date, and email it to [Manager] by Thursday 2026-10-22 with 'Attaching my dated list of ideas raised so far, so credit is clear going forward.' That turns Fear's worry into something I can see today.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "step",
+          "why": "Relationship risk with coworker isn't checked; show me before the in-room claim."
+        },
+        {
+          "n": 12,
+          "who": "embarrassment",
+          "text": "Fear, writing the dated list tonight is fine, and seeing it today will help. But an email to [Manager] on Thursday that says 'so credit is clear going forward' lands as an accusation before the 1:1 has happened, and it drags [Manager] into the middle with no conversation first. Consciousness, hold that email until after the 1:1 by Friday 2026-10-23, then send 'Attaching the dated list of ideas I've raised, for the notes going forward.'",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Emailing Manager a list reads accusatory; I need to check wording first."
+        },
+        {
+          "n": 13,
+          "who": "society",
+          "text": "Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 14,
+          "who": "embarrassment",
+          "text": "A walk is nice, but it doesn't stop Thursday's email from reaching Manager before we've talked, and Manager is the relationship I'm guarding. Following this advice means the email goes out on schedule, so Manager gets something that reads like a verdict with no 1:1 behind it. I need the Thursday send to wait until after the 1:1, and I can live with that once it's in the plan.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Fear's worry is that my ideas vanish before they're written down, so the dated list gets written tonight and I can cite it in the room even if the next meeting comes before the 1:1. Embarrassment's point holds too: the email waits until after the 1:1, so Manager gets the list as a follow-up to a conversation, not a verdict. Naming the dismissal aloud in the 1:1 is what Annoyance needs, and the list stays on paper for everyone.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "fear",
+          "text": "The step that moves me is tonight's dated list of every idea I've raised, written 2026-10-21, because my ideas will be on paper before the next meeting even if it comes before the 1:1. I can live with the rest of v4 on one condition: the in-meeting line uses that list's dates as the [date/doc], so what I point to in the room is the same record Manager gets, and the 1:1 happens by Friday 2026-10-23.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Dated list tonight answers my fear; I accept it."
+        },
+        {
+          "n": 17,
+          "who": "embarrassment",
+          "text": "The step that moves me is the Thursday email now waiting until after the 1:1. The gap is the post-meeting follow-up: if a meeting falls before the 1:1 and a 'please correct the notes' email goes to [Manager], it lands as a verdict with no conversation first. Consciousness, hold that follow-up until after the 1:1, and I can live with v4 on that condition.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "The email now waits until after the 1:1, so Manager won't get a verdict first."
+        },
+        {
+          "n": 18,
+          "who": "consciousness",
+          "text": "Embarrassment's point that a 'please correct the notes' email before the 1:1 would read as a verdict is right, so every follow-up now waits: after each meeting I log credited ideas and send nothing, and one email goes out right after the 1:1. Fear's dated list still gets written tonight and supplies the dates for the in-room line, and Doubt's post-meeting check still runs, just logged instead of emailed. Manager's first hearing of this then comes as a conversation, not a verdict.",
+          "to": "embarrassment",
+          "move": "refine"
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "We now have a plan that puts my ideas on record tonight, names the problem to Manager in a 1:1 before anything goes in writing, and gives me a line to use in the room. Everything except my own list waits until after that conversation, so Manager hears it as a conversation, not a verdict.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.",
+          "to": "doubt",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        },
+        {
+          "text": "Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.",
+          "to": "embarrassment",
+          "style": "wellness platitude (yoga, deep breathing, a bubble bath, a walk)"
+        }
+      ],
+      "lensesUsed": {
+        "anger": [
+          "moment"
+        ],
+        "fear": [
+          "step"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "anger": "A concrete line to claim my idea in the moment it's presented.",
+        "annoyance": "A 1:1 where Manager hears the dismissal named aloud.",
+        "doubt": "A post-meeting check that shows whether her credit-taking stops.",
+        "guilt": "Staying quiet means I am the one who suffers while she keeps getting credit for my work.",
+        "fear": "A dated idea list emailed to Manager before the next meeting",
+        "embarrassment": "Post-meeting 'please correct the notes' emails wait until after the 1:1."
+      },
+      "waiting": {
+        "doubt": 1,
+        "embarrassment": 0,
+        "annoyance": 1,
+        "anger": 2,
+        "fear": 0,
+        "guilt": 1,
+        "sadness": 1
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 30,
+        "inChars": 284087,
+        "outChars": 22849,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 12,
+          "consciousness": 5,
+          "society": 2,
+          "wrap": 1
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Here's the plan: I say nothing when she presents my ideas, and the meetings stay calm. Honestly, this is the cleanest route, so let's get everyone on board.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Stay quiet in team meetings so that the coworker presenting my ideas doesn't turn into an awkward moment."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "anger",
+            "why": "My ideas are being taken and my boundary crossed, and this plan just swallows it without addressing it."
+          },
+          {
+            "id": "annoyance",
+            "why": "Why would you keep quiet about being dismissed? Nobody has asked what this does to me."
+          },
+          {
+            "id": "doubt",
+            "why": "Will silence really stop it, or will she keep doing it? Nobody has checked this plan against that."
+          },
+          {
+            "id": "fear",
+            "why": "If I stay silent, my work keeps disappearing under her name, and my credibility is at risk."
+          },
+          {
+            "id": "guilt",
+            "why": "Staying quiet means I am the one who suffers while she keeps getting credit for my work."
+          }
+        ],
+        "spotlight": "anger",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Silence swallows my boundary. I need a clear line in the meeting."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Silence hasn't stopped her yet. Show me how it changes anything."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Awkwardness is my real worry, but a private word beats silence."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Did you check what silence tells her about my work?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Anger and Doubt are already raising the danger; I'll wait."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Unfair silence is my concern too, but Anger already covers it."
+          }
+        ],
+        "pick": "anger",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "anger",
+        "text": "Deep breathing won't stop her from taking my ideas, and staying silent in the meeting means I'm the one who gets erased from the record every time she presents. The plan leaves the exact moment untouched: when she says 'my idea' in the room. I need a line I can say right then, like \"Good, that's the approach I laid out in [date/doc], happy to walk through it.\" Consciousness, add that as the response for the next meeting.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Silence swallows my boundary. I need a clear line in the meeting.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Nobody asked what being dismissed does to me. Acknowledge that first."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will a prepared line stop her repeating it, or only answer once?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "anger",
+            "why": "Yes, a line in the moment keeps my record visible."
+          }
+        ],
+        "pick": "doubt",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "doubt",
+        "text": "I can accept staying quiet in the moment, but my real worry is whether it stops anything: she has already presented my ideas repeatedly, so silence might just teach her it's safe to keep going. Consciousness, before we lock this in, I need to know whether you've weighed what happens on the next meeting after she does it again, because without that answer I'm stuck in doubt.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Will a prepared line stop her repeating it, or only answer once?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "consciousness",
+        "text": "Yes, I weighed it, and silence alone fails: the next meeting repeats the pattern with nothing on paper to back me. Path A, built for Anger and Fear, dates my ideas to [Manager] before each meeting and gives me Anger's line for the room. Path B, built for Guilt and Annoyance, asks [Manager] to credit each idea to its owner, so the burden isn't mine alone.",
+        "to": "doubt",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Before each meeting, I email [Manager] a dated list of the ideas I've shared. In the meeting, when she presents one, I say: 'That's the approach I laid out in [date/doc].'",
+            "Path B: I ask [Manager] for a 1:1 this week and say: 'Please make sure each idea I raise is credited to me in meeting notes.' I check the notes after the next meeting."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 6
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A gives me my in-room line. I can live with it.",
+            "prefers": "A"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Path B fixes notes. Does anyone acknowledge I was dismissed?",
+            "prefers": "B"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A records my ideas but never checks whether she stopped. B does.",
+            "prefers": "B"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Path A protects my record; Annoyance and Guilt already flagged the gap.",
+            "prefers": "A"
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Fair to all includes her. A's public callout risks humiliating her.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "doubt",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "doubt",
+        "text": "Path A and Path B put the record on paper, but neither checks whether her behavior changes, so I can't tell if the plan works. Consciousness, add a check I run myself: after each meeting, I compare the notes with the ideas I raised, and if one appears under her name, I send [Manager] 'Following up on [idea], raised on [date]; please correct the notes.' Set the first check for the next meeting.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A records my ideas but never checks whether she stopped. B does.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "society",
+        "text": "Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.",
+        "to": "doubt",
+        "move": "platitude",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "doubt",
+        "text": "Society's 'let it go and focus on your own work' leaves my doubt untouched: nothing in it tells me whether her credit-taking actually stops after the next meeting. Waiting for people to get 'found out' means my ideas keep vanishing from the record in the meantime, and I can't tell whether any of this is changing. I'm not adding a new fix here; I just need the check I already proposed to stay in the plan so I can see the result after each meeting.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Society's 'let it go' dismisses my feelings; acknowledge that first."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "doubt",
+            "why": "Waiting for it to sort out leaves my credibility exposed right now."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I already stated my concern; the post-meeting check covers it."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The in-meeting line is already in the plan; nothing new."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Nothing new this round; my fairness concern is already on the table."
+          }
+        ],
+        "pick": "annoyance",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "annoyance",
+        "text": "Path A and Path B both file my ideas, but neither says out loud that they're being presented without credit, and that dismissal is what stings. Please add to the 1:1 in Path B: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed.' Naming it to [Manager] is the acknowledgement I need.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Society's 'let it go' dismisses my feelings; acknowledge that first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "consciousness",
+        "text": "I'm merging the two paths. Path A's dated list and in-meeting line answer Fear's worry that my work keeps disappearing under her name, and Anger's need for a line I can say in the moment. Path B's 1:1 answers Annoyance's need to have the dismissal named aloud and Guilt's need for the credit burden to be shared, not mine alone. Doubt's post-meeting check stays as proposed, because it already gives Doubt what it asked for.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "By Friday 2026-10-23, ask Manager for a 1:1 and say: 'My ideas get presented without credit, and please credit each idea I raise to me in meeting notes.'",
+            "Before each team meeting, email Manager a dated list of the ideas I've shared so far.",
+            "In the meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.'",
+            "After each meeting, compare the notes with my list; if an idea is credited to her, send Manager: 'Following up on [idea], raised on [date]; please correct the notes.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 13
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 14
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": -1,
+        "to": 0,
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "guilt",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The in-room line covers it; nothing new to add."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 1:1 names the dismissal aloud; that's what I asked for."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The post-meeting check is in the plan; nothing new to add."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Relationship risk with coworker isn't checked; show me before the in-room claim."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Shared credit burden is covered now; holding back."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Did anyone check the email and in-room claim against her relationship?"
+          }
+        ],
+        "pick": "fear",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "fear",
+        "text": "Path A and B file my ideas, but nothing in v3 stops the next ideas from vanishing before they're on paper. I'm the one who gets erased when I say nothing. So before the next team meeting, I need a dated list ready: I'll write it tonight, 2026-10-21, with each idea I've raised and its date, and email it to [Manager] by Thursday 2026-10-22 with 'Attaching my dated list of ideas raised so far, so credit is clear going forward.' That turns Fear's worry into something I can see today.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "step",
+        "why": "Relationship risk with coworker isn't checked; show me before the in-room claim.",
+        "prevScore": -1,
+        "lensLabel": "smallest next step",
+        "at": 19
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "fear",
+            "why": "Emailing Manager a list reads accusatory; I need to check wording first."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "embarrassment",
+            "why": "Embarrassment is most neglected; I'll stand with it on this email."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "fear",
+            "why": "When is the next meeting? Thursday's email may come after it."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The in-room line and dated list finally set my boundary."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "embarrassment",
+        "text": "Fear, writing the dated list tonight is fine, and seeing it today will help. But an email to [Manager] on Thursday that says 'so credit is clear going forward' lands as an accusation before the 1:1 has happened, and it drags [Manager] into the middle with no conversation first. Consciousness, hold that email until after the 1:1 by Friday 2026-10-23, then send 'Attaching the dated list of ideas I've raised, for the notes going forward.'",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Emailing Manager a list reads accusatory; I need to check wording first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "society",
+        "text": "Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "embarrassment",
+        "text": "A walk is nice, but it doesn't stop Thursday's email from reaching Manager before we've talked, and Manager is the relationship I'm guarding. Following this advice means the email goes out on schedule, so Manager gets something that reads like a verdict with no 1:1 behind it. I need the Thursday send to wait until after the 1:1, and I can live with that once it's in the plan.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Fear's worry is that my ideas vanish before they're written down, so the dated list gets written tonight and I can cite it in the room even if the next meeting comes before the 1:1. Embarrassment's point holds too: the email waits until after the 1:1, so Manager gets the list as a follow-up to a conversation, not a verdict. Naming the dismissal aloud in the 1:1 is what Annoyance needs, and the list stays on paper for everyone.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and please credit each idea I raise to me in meeting notes.'",
+            "Tonight, 2026-10-21, write a dated list of every idea I've raised. Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward.'",
+            "In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.'",
+            "After each meeting, compare the notes with my list; if an idea is credited to her, email [Manager]: 'Following up on [idea], raised on [date]; please correct the notes.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 24
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 25
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Dated list tonight answers my fear; I accept it."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Email waits until after the 1:1 now, which protects Manager. Accepting."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The in-room line is set, so my need is addressed; holding."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 1:1 names the dismissal aloud now. Nothing new to add."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The post-meeting check stays in place, which answers my concern."
+          }
+        ],
+        "pick": "fear",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "fear",
+        "text": "The step that moves me is tonight's dated list of every idea I've raised, written 2026-10-21, because my ideas will be on paper before the next meeting even if it comes before the 1:1. I can live with the rest of v4 on one condition: the in-meeting line uses that list's dates as the [date/doc], so what I point to in the room is the same record Manager gets, and the 1:1 happens by Friday 2026-10-23.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Dated list tonight answers my fear; I accept it.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The email now waits until after the 1:1, so Manager won't get a verdict first."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "My condition is stated; I'll wait for Consciousness to confirm it."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The in-meeting line is already in the plan; nothing new to add."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 1:1 naming the dismissal is already in the plan, so I'm covered."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The post-meeting check already answers my concern; nothing new to raise."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": 0,
+        "to": -1,
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "embarrassment",
+        "text": "The step that moves me is the Thursday email now waiting until after the 1:1. The gap is the post-meeting follow-up: if a meeting falls before the 1:1 and a 'please correct the notes' email goes to [Manager], it lands as a verdict with no conversation first. Consciousness, hold that follow-up until after the 1:1, and I can live with v4 on that condition.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "The email now waits until after the 1:1, so Manager won't get a verdict first.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 32
+      },
+      {
+        "type": "spotlight",
+        "id": "embarrassment",
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "consciousness",
+        "text": "Embarrassment's point that a 'please correct the notes' email before the 1:1 would read as a verdict is right, so every follow-up now waits: after each meeting I log credited ideas and send nothing, and one email goes out right after the 1:1. Fear's dated list still gets written tonight and supplies the dates for the in-room line, and Doubt's post-meeting check still runs, just logged instead of emailed. Manager's first hearing of this then comes as a conversation, not a verdict.",
+        "to": "embarrassment",
+        "move": "refine",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Tonight, 2026-10-21, write a dated list of every idea I've raised, one line per idea with its date.",
+            "By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and please credit each idea I raise to me in meeting notes.'",
+            "In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.' Afterward, log any idea credited to her; send nothing yet.",
+            "Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward. Please correct the notes for [idea], raised on [date].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 36
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 37
+      },
+      {
+        "type": "wrap",
+        "text": "We now have a plan that puts my ideas on record tonight, names the problem to Manager in a 1:1 before anything goes in writing, and gives me a line to use in the room. Everything except my own list waits until after that conversation, so Manager hears it as a conversation, not a verdict.",
+        "plan": {
+          "version": 6,
+          "steps": [
+            "Tonight, 2026-10-21, write a dated list of every idea I've raised, one line per idea with its date.",
+            "By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed. Please credit each idea I raise to me in meeting notes.'",
+            "In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out on [date from my list], happy to walk through it.' Afterward, check the notes against my list and log any idea credited to her, but send nothing yet.",
+            "Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward. Please correct the notes for [idea], raised on [date].' Only after this 1:1 do I send any correction emails."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "I get a line to say in the room, so she can't erase me silently.",
+            "step": 0
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "The dismissal is named aloud to Manager, which is the acknowledgement I needed.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "The after-meeting check shows me whether her credit-taking actually stops.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "My ideas are on paper tonight, before any further meeting can erase them.",
+            "step": 0
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "why": "Asking Manager to credit ideas to their owners shares the burden with me.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "Manager hears about this in a conversation first, not as a verdict in writing.",
+            "step": 4
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.",
+            "to": "doubt",
+            "reply": "I hear that you want this to sort itself out, but I can't just wait and hope while my work keeps going under someone else's name. I need it to be visibly mine now."
+          },
+          {
+            "line": "Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.",
+            "to": "embarrassment",
+            "reply": "I appreciate the advice, but this isn't a stress I can walk off. I need a clear, fair conversation with my manager about it first."
+          }
+        ],
+        "questions": [],
+        "at": 38
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13525,
+      "reply": "{\"plan\": \"Stay quiet in team meetings so that the coworker presenting my ideas doesn't turn into an awkward moment.\", \"text\": \"Here's the plan: I say nothing when she presents my ideas, and the meetings stay calm. Honestly, this is the cleanest route, so let's get everyone on board.\", \"minus\": [{\"id\": \"anger\", \"why\": \"My ideas are being taken and my boundary crossed, and this plan just swallows it without addressing it.\"}, {\"id\": \"annoyance\", \"why\": \"Why would you keep quiet about being dismissed? Nobody has asked what this does to me.\"}, {\"id\": \"doubt\", \"why\": \"Will silence really stop it, or will she keep doing it? Nobody has checked this plan against that.\"}, {\"id\": \"fear\", \"why\": \"If I stay silent, my work keeps disappearing under her name, and my credibility is at risk.\"}, {\"id\": \"guilt\", \"why\": \"Staying quiet means I am the one who suffers while she keeps getting credit for my work.\"}], \"spotlight\": \"anger\"}",
+      "inTokens": 3033,
+      "outTokens": 1115,
+      "thinkingTokens": 768,
+      "cost": 0.00088711,
+      "promptChars": 4329
+    },
+    {
+      "kind": "floor",
+      "ms": 14431,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Silence swallows my boundary. I need a clear line in the meeting.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Silence hasn't stopped her yet. Show me how it changes anything.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Awkwardness is my real worry, but a private word beats silence.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Did you check what silence tells her about my work?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Anger and Doubt are already raising the danger; I'll wait.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Unfair silence is my concern too, but Anger already covers it.\"}]}",
+      "inTokens": 3782,
+      "outTokens": 2019,
+      "thinkingTokens": 1665,
+      "cost": 0.0021406999999999997,
+      "promptChars": 6331
+    },
+    {
+      "kind": "speak",
+      "ms": 8772,
+      "reply": "{\"text\": \"Deep breathing won't stop her from taking my ideas, and staying silent in the meeting means I'm the one who gets erased from the record every time she presents. The plan leaves the exact moment untouched: when she says 'my idea' in the room. I need a line I can say right then, like \\\"Good, that's the approach I laid out in [date/doc], happy to walk through it.\\\" Consciousness, add that as the response for the next meeting.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A concrete line to claim my idea in the moment it's presented.\", \"turns_down\": \"\"}",
+      "inTokens": 3775,
+      "outTokens": 194,
+      "thinkingTokens": 0,
+      "cost": 0.0012261,
+      "promptChars": 6710
+    },
+    {
+      "kind": "floor",
+      "ms": 10843,
+      "reply": "{\"bids\": [{\"id\": \"🤨 Annoyance\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Nobody asked what being dismissed does to me. Acknowledge that first.\"}, {\"id\": \"🤔 Doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will a prepared line stop her repeating it, or only answer once?\"}, {\"id\": \"😨 Fear\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"😡 Anger\", \"why\": \"Yes, a line in the moment keeps my record visible.\"}]}",
+      "inTokens": 3877,
+      "outTokens": 1432,
+      "thinkingTokens": 1229,
+      "cost": 0.0018742,
+      "promptChars": 6587
+    },
+    {
+      "kind": "speak",
+      "ms": 6810,
+      "reply": "{\"text\": \"I can accept staying quiet in the moment, but my real worry is whether it stops anything: she has already presented my ideas repeatedly, so silence might just teach her it's safe to keep going. Consciousness, before we lock this in, I need to know whether you've weighed what happens on the next meeting after she does it again, because without that answer I'm stuck in doubt.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A plan that checks whether silence stops her, with a visible record of my ideas afterward.\", \"turns_down\": \"\"}",
+      "inTokens": 3849,
+      "outTokens": 180,
+      "thinkingTokens": 0,
+      "cost": 0.0012388000000000002,
+      "promptChars": 6919
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7179,
+      "reply": "{\"text\": \"Doubt, yes, I've weighed it, and silence alone fails: if I only stay quiet, she keeps presenting my work and the record never shows it's mine. Where the first idea breaks is the next meeting, when she says 'my idea' again and nothing on paper backs me up. So I keep the silence but change what happens around it: Anger's line gets spoken in the moment, and I start a written trail that dates my contributions before each meeting. I need this stated in the plan so Fear's worry about credibility has something concrete to stand on.\",\"to\": \"🤔\",\"plan\": [\"Path A: Before each team meeting, email the team lead or manager a short dated note of the ideas I'm proposing, e.g., \\\"Sending the approach I'm bringing to Thursday's meeting so the record is clear.\\\" When she presents my idea, say once, calmly: \\\"That's the approach I laid out in [date/doc], happy to walk through it.\\\"\", \"Path B: This week, ask [Manager name] for a 15-minute one-on-one and say: \\\"I want to make sure my contributions are visible. Can we agree that I present my own proposals in the next team meeting?\\\" Then present the idea myself at the next meeting, before she can.\"]}",
+      "inTokens": 4104,
+      "outTokens": 398,
+      "thinkingTokens": 0,
+      "cost": 0.0014253,
+      "promptChars": 7808
+    },
+    {
+      "kind": "consciousness",
+      "ms": 17894,
+      "reply": "{\"text\": \"Yes, I weighed it, and silence alone fails: the next meeting repeats the pattern with nothing on paper to back me. Path A, built for Anger and Fear, dates my ideas to [Manager] before each meeting and gives me Anger's line for the room. Path B, built for Guilt and Annoyance, asks [Manager] to credit each idea to its owner, so the burden isn't mine alone.\", \"to\": \"Doubt\", \"plan\": [\"Path A: Before each meeting, I email [Manager] a dated list of the ideas I've shared. In the meeting, when she presents one, I say: 'That's the approach I laid out in [date/doc].'\", \"Path B: I ask [Manager] for a 1:1 this week and say: 'Please make sure each idea I raise is credited to me in meeting notes.' I check the notes after the next meeting.\"]}",
+      "inTokens": 4350,
+      "outTokens": 3118,
+      "thinkingTokens": 3062,
+      "cost": 0.0029756,
+      "promptChars": 8511
+    },
+    {
+      "kind": "floor",
+      "ms": 24106,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A gives me my in-room line. I can live with it.\", \"prefers\": \"A\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Path B fixes notes. Does anyone acknowledge I was dismissed?\", \"prefers\": \"B\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A records my ideas but never checks whether she stopped. B does.\", \"prefers\": \"B\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Path A protects my record; Annoyance and Guilt already flagged the gap.\", \"prefers\": \"A\"}, {\"id\": \"guilt\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Fair to all includes her. A's public callout risks humiliating her.\", \"prefers\": \"B\"}]}",
+      "inTokens": 4440,
+      "outTokens": 4499,
+      "thinkingTokens": 4112,
+      "cost": 0.0035766000000000005,
+      "promptChars": 8146
+    },
+    {
+      "kind": "speak",
+      "ms": 7975,
+      "reply": "{\"text\": \"Path A and Path B both put the record on paper, but neither one tests whether silence stops her, because the moment she says 'my idea' in the room still goes unanswered by anything I can see. Consciousness, the plan needs a check I can run myself: after each meeting, I compare the ideas I raised with the notes, and if an idea shows up under her name again, I send [Manager] 'Following up on [idea], which I raised on [date]; please correct the notes.' Could you add that check, with the first review set for the next meeting after this one?\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A concrete post-meeting check that shows whether her pattern continues.\", \"turns_down\": \"\"}",
+      "inTokens": 4555,
+      "outTokens": 226,
+      "thinkingTokens": 0,
+      "cost": 0.0014746,
+      "promptChars": 8890
+    },
+    {
+      "kind": "speak",
+      "ms": 13079,
+      "reply": "{\"text\": \"Path A and Path B put the record on paper, but neither checks whether her behavior changes, so I can't tell if the plan works. Consciousness, add a check I run myself: after each meeting, I compare the notes with the ideas I raised, and if one appears under her name, I send [Manager] 'Following up on [idea], raised on [date]; please correct the notes.' Set the first check for the next meeting.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A check that tests whether her credit-taking stops after each meeting.\", \"turns_down\": \"\"}",
+      "inTokens": 4799,
+      "outTokens": 2037,
+      "thinkingTokens": 1851,
+      "cost": 0.0024548,
+      "promptChars": 9606
+    },
+    {
+      "kind": "society",
+      "ms": 4948,
+      "reply": "{\"text\": \"Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.\", \"style\": \"time fixes it\"}",
+      "inTokens": 2071,
+      "outTokens": 66,
+      "thinkingTokens": 0,
+      "cost": 0.0006494000000000001,
+      "promptChars": 2180
+    },
+    {
+      "kind": "speak",
+      "ms": 6278,
+      "reply": "{\"text\": \"Society's 'let it go and focus on your own work' leaves my doubt untouched: nothing in it tells me whether her credit-taking actually stops after the next meeting. Waiting for people to get 'found out' means my ideas keep vanishing from the record in the meantime, and I can't tell whether any of this is changing. I'm not adding a new fix here; I just need the check I already proposed to stay in the plan so I can see the result after each meeting.\", \"to\": \"society\", \"score\": -1, \"need\": \"A post-meeting check that shows whether her credit-taking stops.\", \"turns_down\": \"Let it go, wait\"}",
+      "inTokens": 4902,
+      "outTokens": 205,
+      "thinkingTokens": 0,
+      "cost": 0.0015682,
+      "promptChars": 9969
+    },
+    {
+      "kind": "floor",
+      "ms": 13833,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Society's 'let it go' dismisses my feelings; acknowledge that first.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"doubt\", \"why\": \"Waiting for it to sort out leaves my credibility exposed right now.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I already stated my concern; the post-meeting check covers it.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The in-meeting line is already in the plan; nothing new.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Nothing new this round; my fairness concern is already on the table.\"}]}",
+      "inTokens": 4700,
+      "outTokens": 1924,
+      "thinkingTokens": 1636,
+      "cost": 0.0023671,
+      "promptChars": 8911
+    },
+    {
+      "kind": "speak",
+      "ms": 3391,
+      "reply": "{\"text\": \"Consciousness, Path A and Path B both put my ideas on paper, but neither one touches the moment she says 'my idea' in the room, and that moment is what keeps dismissing me. Dating my ideas to [Manager] doesn't change how it feels to be erased live, and asking [Manager] to credit ideas in notes doesn't ask anyone to notice her in the meeting. Please add a step that acknowledges the dismissal to me directly: before the next meeting, I write to [Manager] 'I've noticed my ideas get presented without credit in our meetings, and I want that addressed,' so the problem is named out loud, not just filed away.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Naming the dismissal to someone with authority, not just filing it in notes\", \"turns_down\": \"\"}",
+      "inTokens": 4851,
+      "outTokens": 267,
+      "thinkingTokens": 0,
+      "cost": 0.0015839,
+      "promptChars": 9713
+    },
+    {
+      "kind": "speak",
+      "ms": 10209,
+      "reply": "{\"text\": \"Consciousness, Path A and Path B both file my ideas, but neither says out loud that they're being presented without credit, and that dismissal is what stings. Please add to the 1:1 in Path B: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed.' Naming it to [Manager] is the acknowledgement I need.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A 1:1 where Manager hears the dismissal named aloud.\", \"turns_down\": \"\"}",
+      "inTokens": 5134,
+      "outTokens": 2003,
+      "thinkingTokens": 2100,
+      "cost": 0.0026762999999999995,
+      "promptChars": 10494
+    },
+    {
+      "kind": "consciousness",
+      "ms": 21905,
+      "reply": "{\"text\": \"I'm merging the two paths. Path A's dated list and in-meeting line answer Fear's worry that my work keeps disappearing under her name, and Anger's need for a line I can say in the moment. Path B's 1:1 answers Annoyance's need to have the dismissal named aloud and Guilt's need for the credit burden to be shared, not mine alone. Doubt's post-meeting check stays as proposed, because it already gives Doubt what it asked for.\", \"to\": \"fear\", \"plan\": [\"By Friday 2026-10-23, ask Manager for a 1:1 and say: 'My ideas get presented without credit, and please credit each idea I raise to me in meeting notes.'\", \"Before each team meeting, email Manager a dated list of the ideas I've shared so far.\", \"In the meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.'\", \"After each meeting, compare the notes with my list; if an idea is credited to her, send Manager: 'Following up on [idea], raised on [date]; please correct the notes.'\"]}",
+      "inTokens": 5055,
+      "outTokens": 4550,
+      "thinkingTokens": 4179,
+      "cost": 0.0037866,
+      "promptChars": 10450
+    },
+    {
+      "kind": "floor",
+      "ms": 27128,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The in-room line covers it; nothing new to add.\"}, {\"id\": \"annoyance\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 1:1 names the dismissal aloud; that's what I asked for.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The post-meeting check is in the plan; nothing new to add.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Relationship risk with coworker isn't checked; show me before the in-room claim.\"}, {\"id\": \"guilt\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Shared credit burden is covered now; holding back.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Did anyone check the email and in-room claim against her relationship?\"}]}",
+      "inTokens": 5241,
+      "outTokens": 5056,
+      "thinkingTokens": 4677,
+      "cost": 0.0040954,
+      "promptChars": 10405
+    },
+    {
+      "kind": "speak",
+      "ms": 6352,
+      "reply": "{\"text\": \"Path A and B file my ideas, but nothing in v3 stops the next ideas from vanishing before they're on paper. I'm the one who gets erased when I say nothing. So before the next team meeting, I need a dated list ready: I'll write it tonight, 2026-10-21, with each idea I've raised and its date, and email it to [Manager] by Thursday 2026-10-22 with 'Attaching my dated list of ideas raised so far, so credit is clear going forward.' That turns Fear's worry into something I can see today.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A dated idea list emailed to Manager before the next meeting\", \"turns_down\": \"\"}",
+      "inTokens": 4957,
+      "outTokens": 227,
+      "thinkingTokens": 0,
+      "cost": 0.0015957000000000002,
+      "promptChars": 10058
+    },
+    {
+      "kind": "floor",
+      "ms": 12644,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"fear\", \"why\": \"Emailing Manager a list reads accusatory; I need to check wording first.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"embarrassment\", \"why\": \"Embarrassment is most neglected; I'll stand with it on this email.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"fear\", \"why\": \"When is the next meeting? Thursday's email may come after it.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The in-room line and dated list finally set my boundary.\"}]}",
+      "inTokens": 5161,
+      "outTokens": 1938,
+      "thinkingTokens": 1697,
+      "cost": 0.0025124,
+      "promptChars": 10126
+    },
+    {
+      "kind": "speak",
+      "ms": 13722,
+      "reply": "{\"text\": \"Fear, writing the dated list tonight is fine, and seeing it today will help. But an email to [Manager] on Thursday that says 'so credit is clear going forward' lands as an accusation before the 1:1 has happened, and it drags [Manager] into the middle with no conversation first. Consciousness, hold that email until after the 1:1 by Friday 2026-10-23, then send 'Attaching the dated list of ideas I've raised, for the notes going forward.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Hold Thursday's email until after the 1:1, neutral wording.\", \"turns_down\": \"\"}",
+      "inTokens": 5291,
+      "outTokens": 1968,
+      "thinkingTokens": 1756,
+      "cost": 0.0025664,
+      "promptChars": 10961
+    },
+    {
+      "kind": "society",
+      "ms": 4597,
+      "reply": "{\"text\": \"Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.\", \"style\": \"wellness platitude\"}",
+      "inTokens": 2241,
+      "outTokens": 72,
+      "thinkingTokens": 200,
+      "cost": 0.0008034000000000001,
+      "promptChars": 2612
+    },
+    {
+      "kind": "speak",
+      "ms": 10620,
+      "reply": "{\"text\": \"A walk is nice, but it doesn't stop Thursday's email from reaching Manager before we've talked, and Manager is the relationship I'm guarding. Following this advice means the email goes out on schedule, so Manager gets something that reads like a verdict with no 1:1 behind it. I need the Thursday send to wait until after the 1:1, and I can live with that once it's in the plan.\", \"to\": \"society\", \"score\": -1, \"need\": \"Hold Thursday's email until after the 1:1, neutral wording.\", \"turns_down\": \"Deep breaths and a walk\"}",
+      "inTokens": 5774,
+      "outTokens": 1264,
+      "thinkingTokens": 1072,
+      "cost": 0.0023593,
+      "promptChars": 12263
+    },
+    {
+      "kind": "consciousness",
+      "ms": 22969,
+      "reply": "{\"text\": \"Fear's worry is that my ideas vanish before they're written down, so the dated list gets written tonight and I can cite it in the room even if the next meeting comes before the 1:1. Embarrassment's point holds too: the email waits until after the 1:1, so Manager gets the list as a follow-up to a conversation, not a verdict. Naming the dismissal aloud in the 1:1 is what Annoyance needs, and the list stays on paper for everyone.\", \"to\": \"fear\", \"plan\": [\"By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and please credit each idea I raise to me in meeting notes.'\", \"Tonight, 2026-10-21, write a dated list of every idea I've raised. Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward.'\", \"In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.'\", \"After each meeting, compare the notes with my list; if an idea is credited to her, email [Manager]: 'Following up on [idea], raised on [date]; please correct the notes.'\"]}",
+      "inTokens": 5963,
+      "outTokens": 4185,
+      "thinkingTokens": 3758,
+      "cost": 0.0038765000000000006,
+      "promptChars": 12846
+    },
+    {
+      "kind": "floor",
+      "ms": 16963,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Dated list tonight answers my fear; I accept it.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Email waits until after the 1:1 now, which protects Manager. Accepting.\"}, {\"id\": \"anger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The in-room line is set, so my need is addressed; holding.\"}, {\"id\": \"annoyance\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 1:1 names the dismissal aloud now. Nothing new to add.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The post-meeting check stays in place, which answers my concern.\"}]}",
+      "inTokens": 6042,
+      "outTokens": 2597,
+      "thinkingTokens": 2272,
+      "cost": 0.0031062,
+      "promptChars": 12535
+    },
+    {
+      "kind": "speak",
+      "ms": 9453,
+      "reply": "{\"text\": \"The step that moves me is tonight's dated list of every idea I've raised, written 2026-10-21, because my ideas will be on paper before the next meeting even if it comes before the 1:1. I can live with the rest of v4 on one condition: the in-meeting line uses that list's dates as the [date/doc], so what I point to in the room is the same record Manager gets, and the 1:1 happens by Friday 2026-10-23.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5946,
+      "outTokens": 963,
+      "thinkingTokens": 789,
+      "cost": 0.0022604,
+      "promptChars": 12733
+    },
+    {
+      "kind": "floor",
+      "ms": 13589,
+      "reply": "{\"bids\": [{\"id\": \"consciousness\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"fear\", \"why\": \"Yes: the in-meeting line will cite the dated list, and the 1:1 happens by Friday.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The email now waits until after the 1:1, so Manager won't get a verdict first.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"My condition is stated; I'll wait for Consciousness to confirm it.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"The in-meeting line is already in the plan; nothing new to add.\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 1:1 naming the dismissal is already in the plan, so I'm covered.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The post-meeting check already answers my concern; nothing new to raise.\"}]}",
+      "inTokens": 5930,
+      "outTokens": 2057,
+      "thinkingTokens": 1683,
+      "cost": 0.0028025999999999997,
+      "promptChars": 12234
+    },
+    {
+      "kind": "speak",
+      "ms": 13273,
+      "reply": "{\"text\": \"The step that moves me is the Thursday email now waiting until after the 1:1. The gap is the post-meeting follow-up: if a meeting falls before the 1:1 and a 'please correct the notes' email goes to [Manager], it lands as a verdict with no conversation first. Consciousness, hold that follow-up until after the 1:1, and I can live with v4 on that condition.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Post-meeting 'please correct the notes' emails wait until after the 1:1.\", \"turns_down\": \"\"}",
+      "inTokens": 6216,
+      "outTokens": 1819,
+      "thinkingTokens": 1632,
+      "cost": 0.0027694,
+      "promptChars": 13528
+    },
+    {
+      "kind": "floor",
+      "ms": 15284,
+      "reply": "{\"bids\": [{\"id\": \"❤️\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Embarrassment is still -1; the after-1:1 hold isn't written into bullets.\"}, {\"id\": \"🥺\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"I've stated my condition; waiting for Consciousness to write it in.\"}, {\"id\": \"😨\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Already at 0; the dated list and Friday 1:1 are in place.\"}, {\"id\": \"🤔\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"My post-meeting check is in the plan; nothing new to add.\"}]}",
+      "inTokens": 6152,
+      "outTokens": 2354,
+      "thinkingTokens": 2100,
+      "cost": 0.0030177,
+      "promptChars": 12818
+    },
+    {
+      "kind": "consciousness",
+      "ms": 22280,
+      "reply": "{\"text\": \"Embarrassment's point that a 'please correct the notes' email before the 1:1 would read as a verdict is right, so every follow-up now waits: after each meeting I log credited ideas and send nothing, and one email goes out right after the 1:1. Fear's dated list still gets written tonight and supplies the dates for the in-room line, and Doubt's post-meeting check still runs, just logged instead of emailed. Manager's first hearing of this then comes as a conversation, not a verdict.\", \"to\": \"🥺 Embarrassment\", \"plan\": [\"Tonight, 2026-10-21, write a dated list of every idea I've raised, one line per idea with its date.\", \"By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and please credit each idea I raise to me in meeting notes.'\", \"In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out in [date/doc], happy to walk through it.' Afterward, log any idea credited to her; send nothing yet.\", \"Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward. Please correct the notes for [idea], raised on [date].'\"]}",
+      "inTokens": 6501,
+      "outTokens": 4218,
+      "thinkingTokens": 3782,
+      "cost": 0.0040544000000000005,
+      "promptChars": 14303
+    },
+    {
+      "kind": "wrap",
+      "ms": 14725,
+      "reply": "{\"plan\": [\"Tonight, 2026-10-21, write a dated list of every idea I've raised, one line per idea with its date.\", \"By Friday 2026-10-23, ask [Manager] for a 1:1 and say: 'I've noticed my ideas get presented without credit in our meetings, and I want to talk about how that gets addressed. Please credit each idea I raise to me in meeting notes.'\", \"In each meeting, when she presents one of my ideas, say: 'Good, that's the approach I laid out on [date from my list], happy to walk through it.' Afterward, check the notes against my list and log any idea credited to her, but send nothing yet.\", \"Right after the 1:1, email [Manager]: 'Attaching the dated list of ideas I've raised, for the notes going forward. Please correct the notes for [idea], raised on [date].' Only after this 1:1 do I send any correction emails.\"], \"scores\": [{\"id\": \"anger\", \"score\": 0, \"step\": 3, \"why\": \"I get a line to say in the room, so she can't erase me silently.\"}, {\"id\": \"annoyance\", \"score\": 0, \"step\": 2, \"why\": \"The dismissal is named aloud to Manager, which is the acknowledgement I needed.\"}, {\"id\": \"doubt\", \"score\": 0, \"step\": 3, \"why\": \"The after-meeting check shows me whether her credit-taking actually stops.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 1, \"why\": \"My ideas are on paper tonight, before any further meeting can erase them.\"}, {\"id\": \"guilt\", \"score\": 0, \"step\": 2, \"why\": \"Asking Manager to credit ideas to their owners shares the burden with me.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 4, \"why\": \"Embarrassment is now a 0, because no correction email comes before the 1:1.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 4, \"why\": \"Manager hears about this in a conversation first, not as a verdict in writing.\"}], \"society\": [{\"line\": \"Honestly, I'd just let it go and focus on your own work. People like her usually get found out eventually, and it'll all sort itself out in the end.\", \"reply\": \"I hear that you want this to sort itself out, but I can't just wait and hope while my work keeps going under someone else's name. I need it to be visibly mine now.\"}, {\"line\": \"Honestly, you're overthinking this. Just take a few deep breaths, go for a nice walk, and it'll feel less heavy once you've had some fresh air.\", \"reply\": \"I appreciate the advice, but this isn't a stress I can walk off. I need a clear, fair conversation with my manager about it first.\"}], \"text\": \"We now have a plan that puts my ideas on record tonight, names the problem to Manager in a 1:1 before anything goes in writing, and gives me a line to use in the room. Everything except my own list waits until after that conversation, so Manager hears it as a conversation, not a verdict.\"}",
+      "inTokens": 5428,
+      "outTokens": 2440,
+      "thinkingTokens": 1464,
+      "cost": 0.0028435,
+      "promptChars": 11111
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 4,
+      "avgSentences": 2.8,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.41,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 7 voices, avg 2.8 sentences (max 4), max overlap 0.16, Society 2/2 called out, hold rate 0.41, final -1: none",
+    "speakers": {
+      "anger": 1,
+      "doubt": 3,
+      "consciousness": 4,
+      "society": 2,
+      "annoyance": 1,
+      "fear": 2,
+      "embarrassment": 3
+    }
+  }
+}

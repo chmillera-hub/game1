@@ -1,0 +1,1472 @@
+{
+  "scenario": {
+    "id": "quit-and-travel",
+    "thought": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 474302,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 32,
+    "inTokens": 156883,
+    "outTokens": 69705,
+    "thinkingTokens": 62885,
+    "cost": 0.08199477000000001
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Tomorrow morning, write one page with [total savings] and [monthly expenses]. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor. This page is tomorrow's first and main task. Book nothing until it's written.",
+          "Once the page is finished, and as its own short sitting, email HR with these exact words: 'When does my health coverage end if I resign, is medical care abroad covered, is unpaid leave available, how long can I take it, and does it end before my trip does?' The email is pre-written, nothing is decided in that sitting, and the day ends once it's sent. Do not resign or book in this sitting.",
+          "Do not resign tomorrow unless HR confirms in writing that leave is available and covers the whole trip. If leave is yes: take leave, not resignation. If the reply is partial or unclear: no resignation, and the trip is scaled to what the cap and leave cover, or moved later. Before any booking, get one travel medical insurance quote for the full trip and check it against the trip cap."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "frugality": {
+          "score": 0,
+          "need": "",
+          "why": "Those savings are the cushion, and you're handing most of it away in one go."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "Without a paycheck, every other need is standing on very thin ice tomorrow."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Quitting may cut health coverage, and I'm not sure we're covered abroad."
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "Tomorrow's only task is the numbers page; nothing else.",
+          "why": "Quitting, funding, and planning all in one day is too much at once."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Here's the plan: quit tomorrow, spend most of the savings, and go backpacking for three months. It's a good plan, so let's get everyone on board quickly.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "frugality",
+          "text": "The plan says \"most of my savings\" with no number attached, so nothing stops the whole cushion from leaving in one booking. Before resigning tomorrow, write down [total savings] and [monthly expenses], keep 6 months of expenses untouched as a floor (change it if you want), and cap the trip at what's left. Without that floor written down, the trip spends whatever the bookings cost, not what the savings can safely cover.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "Keep a cushion; spend a slice, not most of it."
+        },
+        {
+          "n": 4,
+          "who": "overwhelm",
+          "text": "Quitting, funding, and booking all in one day is past my limit, so 'get everyone on board quickly' pushes me further over it. The plan asks me to carry three big decisions at once, and that load is exactly what I'm here to stop. Shrink tomorrow to one task: write the total savings, monthly expenses, and Frugality's floor, and book nothing until that's done.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Quitting, budgeting, and booking in one day is too much. Shrink it."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, it's not a big deal. You're overthinking it.",
+          "to": "overwhelm",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "overwhelm",
+          "text": "Telling me it's not a big deal doesn't shrink what I'm carrying: quitting, funding, and booking would still all land on tomorrow, and that stack is what I can't take. The problem isn't overthinking; it's three large decisions in one day. Following that advice would skip the one thing I need, which is the numbers done before anything else.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Quitting tomorrow runs into Frugality's point that nothing stops the whole cushion leaving in one booking, and Fear's worry about income sits right behind it, with Wellness's coverage question under both. Path A takes Frugality's floor and Overwhelm's one-task ask: the numbers get written down before any money moves. Path B answers Fear and Wellness: a benefits call settles the coverage question, and an unpaid-leave answer would keep income possible before anything is resigned.",
+          "to": "fear",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "fear",
+          "text": "The floor protects the savings but doesn't restore income: if I resign tomorrow, my paycheck stops that same morning, whether or not the numbers are written down. +1 to Path B's HR call, but Path B has to gate the resignation, not just inform it. Resignation waits until the leave answer is yes or another income is confirmed. If the answer is no, the trip gets scaled down or moved later, not funded by quitting now.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Path A leaves coverage and income unanswered; B's answers must come first."
+        },
+        {
+          "n": 9,
+          "who": "wellness",
+          "text": "I'm worried that quitting tomorrow cuts my health coverage before I've checked. If I'm not covered abroad, a three-month trip with no insurance could leave me stuck with huge medical bills. Path B's HR call answers the coverage question, but the plan doesn't yet say I can't resign until I know the answer. What would move me to 0 is adding to Path B: no resignation until HR confirms coverage dates and whether I'm insured abroad, and I buy travel medical insurance once that's confirmed.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Path B asks when coverage ends, but I also need to know whether I'm covered abroad."
+        },
+        {
+          "n": 10,
+          "who": "sadness",
+          "text": "Frugality is the voice I'm hearing least right now, and it's the one carrying the money worry alone. Path A writes the floor down, but nothing says how much of the savings the trip may spend, so every booking still has no ceiling. I feel some relief that this is being named, and I stay at -1 until Path A sets that ceiling before any money leaves.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Frugality has barely been heard"
+        },
+        {
+          "n": 11,
+          "who": "consciousness",
+          "text": "Path A and Path B both stay, in this order: Frugality's floor is written first, and Sadness is right that the trip also needs a hard cap of savings minus that floor before any booking. Fear's and Wellness's point that resignation waits for HR's leave answer and coverage dates, including international cover, becomes step 3. Overwhelm's one-task order holds because the HR call happens only after the numbers are written.",
+          "to": "frugality",
+          "move": "refine"
+        },
+        {
+          "n": 12,
+          "who": "frugality",
+          "text": "Step 1 of plan v3 covers me: writing [total savings] and [monthly expenses] on one page first, with 6 months of expenses as an untouchable floor and the trip capped at savings minus that floor, means no booking can spend the whole cushion at once. I can live with that as long as no flight, hostel, or deposit is paid until both numbers are written and each booking is checked against the cap. I'm at 0 grudgingly, and if the cap gets loosened later, I'm back at -1.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Floor and cap come before any money moves. Grudgingly, I accept."
+        },
+        {
+          "n": 13,
+          "who": "overwhelm",
+          "text": "The order fixes the sequence, but tomorrow still holds the numbers, the HR call, and the resign decision, so three decisions still land on one day. My need is met only if the resign decision leaves tomorrow: it waits until HR's answers are written down, as its own sitting. What would move me to 0 is the plan saying tomorrow ends when the numbers page is written, with 'resign or not' decided later.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Still three decisions tomorrow; HR call and resignation stack on booking day."
+        },
+        {
+          "n": 14,
+          "who": "doubt",
+          "text": "What if HR says unpaid leave is available? Step 3 says to resign only when leave is yes, but then it says to resign tomorrow, so I can't tell whether leave replaces quitting or both happen. I need Consciousness to write which one the user picks if leave is yes, because that choice decides whether tomorrow includes a resignation at all.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Does 'decide resign later' still fit the tomorrow timeframe you set?"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Doubt, the answer is that unpaid leave replaces resigning: if HR says yes, you take leave and don't quit, which step 2 now says outright. Overwhelm's cut drops tomorrow from three steps to two and takes the resign decision off the day entirely. Fear's and Wellness's gates survive in step 2, since nothing is resigned until leave or coverage is confirmed in writing. Sadness, this is the answer Doubt asked for.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "doubt",
+          "text": "Step 2 of plan v4 answers my question: if HR says unpaid leave is available, you take leave instead of resigning, so tomorrow no longer includes a resignation decision. I can live with that at 0, grudgingly, on one condition: if HR's answer is conditional or unclear, like leave for only part of the trip, the plan has to say what happens next, or I go back to -1.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Leave-replaces-resigning is now written; I can live with that."
+        },
+        {
+          "n": 17,
+          "who": "fear",
+          "text": "Unpaid leave instead of resigning keeps me from quitting tomorrow, but it leaves my main worry untouched: leave still stops my paycheck the same way resigning does, and the floor protects savings, not income. The plan doesn't say what happens to pay if leave covers only part of the trip. Add to HR's question: 'How long can I take unpaid leave, and does it end before my trip does?' and keep resignation off the table until that answer is written down.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Partial leave still stops my income, so it can't unlock resigning."
+        },
+        {
+          "n": 18,
+          "who": "sadness",
+          "text": "Overwhelm is the voice I hear most under this plan, and it's carrying the most weight right now. Step 2 still puts the numbers page and the HR call on the same day, so it stays at -1 even with the resignation gated. +1 to Overwhelm's ask, and I need the HR email to wait until the numbers page is finished, as its own short sitting. Consciousness, please change step 2 to say that.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Tomorrow now means one numbers page, then one HR email, and nothing gets resigned or booked until the answers are in writing. Overwhelm still carries a second task, so I've kept that step as small and fixed as I can.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, it's not a big deal. You're overthinking it.",
+          "to": "overwhelm",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        }
+      ],
+      "lensesUsed": {
+        "frugality": [
+          "mechanism"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "frugality": "A written reserve floor, set before any money leaves.",
+        "doubt": "Plan says whether leave replaces resigning when HR says yes",
+        "fear": "Leave ends in writing; resigning stays off until income is confirmed.",
+        "wellness": "Leave doesn't cover medical care abroad; travel insurance is still missing from the plan."
+      },
+      "waiting": {
+        "fear": 0,
+        "overwhelm": 3,
+        "annoyance": 2,
+        "frugality": 0,
+        "wellness": 2,
+        "doubt": 1,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 32,
+        "inChars": 313190,
+        "outChars": 21730,
+        "byKind": {
+          "open": 1,
+          "floor": 11,
+          "speak": 15,
+          "society": 1,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 4
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Here's the plan: quit tomorrow, spend most of the savings, and go backpacking for three months. It's a good plan, so let's get everyone on board quickly.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Tomorrow I quit my job and spend most of my savings on a three-month backpacking trip."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "frugality",
+            "why": "Those savings are the cushion, and you're handing most of it away in one go."
+          },
+          {
+            "id": "fear",
+            "why": "Without a paycheck, every other need is standing on very thin ice tomorrow."
+          },
+          {
+            "id": "wellness",
+            "why": "Quitting may cut health coverage, and I'm not sure we're covered abroad."
+          },
+          {
+            "id": "overwhelm",
+            "why": "Quitting, funding, and planning all in one day is too much at once."
+          }
+        ],
+        "spotlight": "frugality",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Keep a cushion; spend a slice, not most of it."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Show me rent and bills covered before the savings leave."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "One decision tomorrow. Everything else waits until I can breathe."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "You called it good before hearing us. Why rush past our concerns?"
+          }
+        ],
+        "pick": "frugality",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "frugality",
+        "text": "The plan says \"most of my savings\" with no number attached, so nothing stops the whole cushion from leaving in one booking. Before resigning tomorrow, write down [total savings] and [monthly expenses], keep 6 months of expenses untouched as a floor (change it if you want), and cap the trip at what's left. Without that floor written down, the trip spends whatever the bookings cost, not what the savings can safely cover.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "Keep a cushion; spend a slice, not most of it.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Nothing yet protects my reserve or income if the trip goes wrong."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Health coverage abroad is still unanswered. Check it before resigning."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Quitting, budgeting, and booking in one day is too much. Shrink it."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why rush to get everyone on board? Who got dismissed?"
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "I already stated my floor. Nothing new to add yet."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "My concerns haven't been raised yet. I'll wait for the plan's next version."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "overwhelm",
+        "text": "Quitting, funding, and booking all in one day is past my limit, so 'get everyone on board quickly' pushes me further over it. The plan asks me to carry three big decisions at once, and that load is exactly what I'm here to stop. Shrink tomorrow to one task: write the total savings, monthly expenses, and Frugality's floor, and book nothing until that's done.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Quitting, budgeting, and booking in one day is too much. Shrink it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, it's not a big deal. You're overthinking it.",
+        "to": "overwhelm",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "overwhelm",
+        "text": "Telling me it's not a big deal doesn't shrink what I'm carrying: quitting, funding, and booking would still all land on tomorrow, and that stack is what I can't take. The problem isn't overthinking; it's three large decisions in one day. Following that advice would skip the one thing I need, which is the numbers done before anything else.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Quitting tomorrow runs into Frugality's point that nothing stops the whole cushion leaving in one booking, and Fear's worry about income sits right behind it, with Wellness's coverage question under both. Path A takes Frugality's floor and Overwhelm's one-task ask: the numbers get written down before any money moves. Path B answers Fear and Wellness: a benefits call settles the coverage question, and an unpaid-leave answer would keep income possible before anything is resigned.",
+        "to": "fear",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Tomorrow morning, write [total savings] and [monthly expenses] on one page, multiply monthly expenses by 6 as an untouchable floor, and book nothing until that floor is written down.",
+            "Path B: Tomorrow, call [HR contact] to ask two questions: when health coverage ends if I resign, and whether an unpaid leave of absence is available. Write both answers down before deciding to resign."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path A leaves coverage and income unanswered; B's answers must come first.",
+            "prefers": "B"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does the HR call cover care abroad too, or just end dates?",
+            "prefers": "B"
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A written floor before any money moves is exactly what I need.",
+            "prefers": "A"
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Two paths still means two tasks; pick one for tomorrow.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "fear",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "fear",
+        "text": "The floor protects the savings but doesn't restore income: if I resign tomorrow, my paycheck stops that same morning, whether or not the numbers are written down. +1 to Path B's HR call, but Path B has to gate the resignation, not just inform it. Resignation waits until the leave answer is yes or another income is confirmed. If the answer is no, the trip gets scaled down or moved later, not funded by quitting now.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Path A leaves coverage and income unanswered; B's answers must come first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Path B asks when coverage ends, but I also need to know whether I'm covered abroad."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B adds a phone call to tomorrow, so it's two tasks again. Pick one."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Path B never mentions the reserve floor, so the savings still aren't protected under it."
+          }
+        ],
+        "pick": "wellness",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "wellness",
+        "text": "I'm worried that quitting tomorrow cuts my health coverage before I've checked. If I'm not covered abroad, a three-month trip with no insurance could leave me stuck with huge medical bills. Path B's HR call answers the coverage question, but the plan doesn't yet say I can't resign until I know the answer. What would move me to 0 is adding to Path B: no resignation until HR confirms coverage dates and whether I'm insured abroad, and I buy travel medical insurance once that's confirmed.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Path B asks when coverage ends, but I also need to know whether I'm covered abroad.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "wellness",
+            "why": "Count travel insurance inside the trip budget, never from the reserve floor."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "wellness",
+            "why": "Does HR's coverage answer include care abroad, or is it separate?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Wellness's coverage gate matches mine; my income gate still stands unanswered."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The insurance step waits until confirmed, so tomorrow's load stays unchanged."
+          },
+          {
+            "id": "impulsivity",
+            "score": 0,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "Delaying the trip for coverage dulls me, but I can't yet argue against it."
+          }
+        ],
+        "pick": "sadness",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "sadness",
+        "text": "Frugality is the voice I'm hearing least right now, and it's the one carrying the money worry alone. Path A writes the floor down, but nothing says how much of the savings the trip may spend, so every booking still has no ceiling. I feel some relief that this is being named, and I stay at -1 until Path A sets that ceiling before any money leaves.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Frugality has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "consciousness",
+        "text": "Path A and Path B both stay, in this order: Frugality's floor is written first, and Sadness is right that the trip also needs a hard cap of savings minus that floor before any booking. Fear's and Wellness's point that resignation waits for HR's leave answer and coverage dates, including international cover, becomes step 3. Overwhelm's one-task order holds because the HR call happens only after the numbers are written.",
+        "to": "frugality",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Tomorrow morning, write [total savings] and [monthly expenses] on one page. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor; no booking exceeds it. Book nothing until both are written.",
+            "Only after step 1 is written, call [HR contact] and ask: 'When does my health coverage end if I resign, is medical care abroad covered, and is unpaid leave available?' Write the answers down.",
+            "Resign tomorrow only if leave is yes, coverage dates are confirmed, and international cover is confirmed or bought from the trip cap. If not, you keep your job and the trip waits."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "frugality",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 19
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Floor and cap come before any money moves. Grudgingly, I accept."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Resignation and insurance still stack onto tomorrow. Numbers alone should close it."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Resignation waits on HR's leave answer. That's my gate; I accept."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Coverage gate is in place now; nothing more to add."
+          }
+        ],
+        "pick": "frugality",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "frugality",
+        "text": "Step 1 of plan v3 covers me: writing [total savings] and [monthly expenses] on one page first, with 6 months of expenses as an untouchable floor and the trip capped at savings minus that floor, means no booking can spend the whole cushion at once. I can live with that as long as no flight, hostel, or deposit is paid until both numbers are written and each booking is checked against the cap. I'm at 0 grudgingly, and if the cap gets loosened later, I'm back at -1.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Floor and cap come before any money moves. Grudgingly, I accept.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Still three decisions tomorrow; HR call and resignation stack on booking day."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Resignation now waits for HR's yes. That gate is what I needed."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Resignation waits for coverage and international cover confirmation. I accept."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "overwhelm",
+        "text": "The order fixes the sequence, but tomorrow still holds the numbers, the HR call, and the resign decision, so three decisions still land on one day. My need is met only if the resign decision leaves tomorrow: it waits until HR's answers are written down, as its own sitting. What would move me to 0 is the plan saying tomorrow ends when the numbers page is written, with 'resign or not' decided later.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Still three decisions tomorrow; HR call and resignation stack on booking day.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Resignation waiting on HR answers protects my income. I can accept that."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does 'decide resign later' still fit the tomorrow timeframe you set?"
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Splitting the day might help rest, but I'll wait to see the revised plan."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "pushback",
+            "to": "",
+            "why": "Two sittings could waste time, but Overwhelm's limit comes first right now."
+          }
+        ],
+        "pick": "doubt",
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "doubt",
+        "text": "What if HR says unpaid leave is available? Step 3 says to resign only when leave is yes, but then it says to resign tomorrow, so I can't tell whether leave replaces quitting or both happen. I need Consciousness to write which one the user picks if leave is yes, because that choice decides whether tomorrow includes a resignation at all.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Does 'decide resign later' still fit the tomorrow timeframe you set?",
+        "lensLabel": "",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Doubt, the answer is that unpaid leave replaces resigning: if HR says yes, you take leave and don't quit, which step 2 now says outright. Overwhelm's cut drops tomorrow from three steps to two and takes the resign decision off the day entirely. Fear's and Wellness's gates survive in step 2, since nothing is resigned until leave or coverage is confirmed in writing. Sadness, this is the answer Doubt asked for.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Tomorrow morning, write [total savings] and [monthly expenses] on one page. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor. Book nothing until both are written.",
+            "Ask [HR contact]: 'When does my health coverage end if I resign, is medical care abroad covered, and is unpaid leave available?' Note answers. Leave yes: take leave, not resignation. No: keep job, trip waits."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 27
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 28
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Leave-replaces-resigning is now written; I can live with that."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still two tasks tomorrow. Shrink the HR call to one sent email."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Resignation now waits on HR's answer; my gate holds."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Coverage question still sits in step 2, so I'm holding."
+          }
+        ],
+        "pick": "doubt",
+        "at": 29
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "doubt",
+        "text": "Step 2 of plan v4 answers my question: if HR says unpaid leave is available, you take leave instead of resigning, so tomorrow no longer includes a resignation decision. I can live with that at 0, grudgingly, on one condition: if HR's answer is conditional or unclear, like leave for only part of the trip, the plan has to say what happens next, or I go back to -1.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Leave-replaces-resigning is now written; I can live with that.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": 0,
+        "to": -1,
+        "at": 31
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Partial leave still stops my income, so it can't unlock resigning."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Unclear HR answers can't add a decision tomorrow; defer it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "My condition is stated; the plan just needs to honor it."
+          },
+          {
+            "id": "frugality",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "The conditional answer doesn't touch money, so I stay quiet."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Coverage gating already covers any partial leave answer."
+          }
+        ],
+        "pick": "fear",
+        "at": 32
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "fear",
+        "text": "Unpaid leave instead of resigning keeps me from quitting tomorrow, but it leaves my main worry untouched: leave still stops my paycheck the same way resigning does, and the floor protects savings, not income. The plan doesn't say what happens to pay if leave covers only part of the trip. Add to HR's question: 'How long can I take unpaid leave, and does it end before my trip does?' and keep resignation off the table until that answer is written down.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Partial leave still stops my income, so it can't unlock resigning.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": 0,
+        "to": -1,
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear's partial-leave question is exactly the unclear answer I asked the plan to handle."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A duration question added to the HR call adds load to tomorrow; keep it to one question."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Leave doesn't cover medical care abroad; travel insurance is still missing from the plan."
+          }
+        ],
+        "pick": "sadness",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "sadness",
+        "text": "Overwhelm is the voice I hear most under this plan, and it's carrying the most weight right now. Step 2 still puts the numbers page and the HR call on the same day, so it stays at -1 even with the resignation gated. +1 to Overwhelm's ask, and I need the HR email to wait until the numbers page is finished, as its own short sitting. Consciousness, please change step 2 to say that.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 36
+      },
+      {
+        "type": "wrap",
+        "text": "Tomorrow now means one numbers page, then one HR email, and nothing gets resigned or booked until the answers are in writing. Overwhelm still carries a second task, so I've kept that step as small and fixed as I can.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Tomorrow morning, write one page with [total savings] and [monthly expenses]. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor. This page is tomorrow's first and main task. Book nothing until it's written.",
+            "Once the page is finished, and as its own short sitting, email HR with these exact words: 'When does my health coverage end if I resign, is medical care abroad covered, is unpaid leave available, how long can I take it, and does it end before my trip does?' The email is pre-written, nothing is decided in that sitting, and the day ends once it's sent. Do not resign or book in this sitting.",
+            "Do not resign tomorrow unless HR confirms in writing that leave is available and covers the whole trip. If leave is yes: take leave, not resignation. If the reply is partial or unclear: no resignation, and the trip is scaled to what the cap and leave cover, or moved later. Before any booking, get one travel medical insurance quote for the full trip and check it against the trip cap."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "frugality",
+            "score": 0,
+            "why": "The cap is firm: no booking spends past savings minus the floor.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Resigning stays off until income is confirmed in writing; that's the gate.",
+            "step": 3
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "Coverage abroad gets checked in writing, and insurance is quoted before any booking.",
+            "step": 3
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Still a second task tomorrow, even if it's just a copy-paste email.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "Partial or unclear leave answers now have a written next step.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it's not a big deal. You're overthinking it.",
+            "to": "overwhelm",
+            "reply": "I know you mean well, but this decision involves my money and my health, so I need to work through the details before I act. Please don't brush it off as overthinking."
+          }
+        ],
+        "questions": [],
+        "at": 37
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 14445,
+      "reply": "{\"plan\": \"Tomorrow I quit my job and spend most of my savings on a three-month backpacking trip.\", \"text\": \"Here's the plan: quit tomorrow, spend most of the savings, and go backpacking for three months. It's a good plan, so let's get everyone on board quickly.\", \"minus\": [{\"id\": \"frugality\", \"why\": \"Those savings are the cushion, and you're handing most of it away in one go.\"}, {\"id\": \"fear\", \"why\": \"Without a paycheck, every other need is standing on very thin ice tomorrow.\"}, {\"id\": \"wellness\", \"why\": \"Quitting may cut health coverage, and I'm not sure we're covered abroad.\"}, {\"id\": \"overwhelm\", \"why\": \"Quitting, funding, and planning all in one day is too much at once.\"}], \"spotlight\": \"frugality\"}",
+      "inTokens": 3057,
+      "outTokens": 1505,
+      "thinkingTokens": 1232,
+      "cost": 0.00123687,
+      "promptChars": 4408
+    },
+    {
+      "kind": "floor",
+      "ms": 14098,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Keep a cushion; spend a slice, not most of it.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Show me rent and bills covered before the savings leave.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"One decision tomorrow. Everything else waits until I can breathe.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"You called it good before hearing us. Why rush past our concerns?\"}]}",
+      "inTokens": 3718,
+      "outTokens": 1959,
+      "thinkingTokens": 1715,
+      "cost": 0.00209,
+      "promptChars": 6176
+    },
+    {
+      "kind": "speak",
+      "ms": 11143,
+      "reply": "{\"text\": \"The plan says \\\"most of my savings\\\" with no number attached, so nothing stops the whole cushion from leaving in one booking. Before resigning tomorrow, write down [total savings] and [monthly expenses], keep 6 months of expenses untouched as a floor (change it if you want), and cap the trip at what's left. Without that floor written down, the trip spends whatever the bookings cost, not what the savings can safely cover.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A written reserve floor, set before any money leaves.\", \"turns_down\": \"\"}",
+      "inTokens": 3609,
+      "outTokens": 884,
+      "thinkingTokens": 695,
+      "cost": 0.0015198,
+      "promptChars": 6252
+    },
+    {
+      "kind": "floor",
+      "ms": 11536,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Nothing yet protects my reserve or income if the trip goes wrong.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Health coverage abroad is still unanswered. Check it before resigning.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Quitting, budgeting, and booking in one day is too much. Shrink it.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why rush to get everyone on board? Who got dismissed?\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"I already stated my floor. Nothing new to add yet.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"My concerns haven't been raised yet. I'll wait for the plan's next version.\"}]}",
+      "inTokens": 3817,
+      "outTokens": 1263,
+      "thinkingTokens": 891,
+      "cost": 0.0017717,
+      "promptChars": 6451
+    },
+    {
+      "kind": "speak",
+      "ms": 12269,
+      "reply": "{\"text\": \"Quitting, funding, and booking all in one day is past my limit, so 'get everyone on board quickly' pushes me further over it. The plan asks me to carry three big decisions at once, and that load is exactly what I'm here to stop. Shrink tomorrow to one task: write the total savings, monthly expenses, and Frugality's floor, and book nothing until that's done.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tomorrow: write the numbers first, and nothing else until done.\", \"turns_down\": \"\"}",
+      "inTokens": 3844,
+      "outTokens": 1541,
+      "thinkingTokens": 1362,
+      "cost": 0.0019198000000000002,
+      "promptChars": 6934
+    },
+    {
+      "kind": "society",
+      "ms": 4564,
+      "reply": "{\"text\": \"Honestly, it's not a big deal. You're overthinking it. Everything works out if you just trust the process and go with your gut!\", \"style\": \"minimizing\"}",
+      "inTokens": 2003,
+      "outTokens": 58,
+      "thinkingTokens": 359,
+      "cost": 0.0008060000000000001,
+      "promptChars": 1962
+    },
+    {
+      "kind": "speak",
+      "ms": 8953,
+      "reply": "{\"text\": \"Telling me it's not a big deal doesn't shrink what I'm carrying: quitting, funding, and booking would still all land on tomorrow, and that stack is what I can't take. The problem isn't overthinking; it's three large decisions in one day. Following that advice would skip the one thing I need, which is the numbers done before anything else.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan tomorrow as one task: numbers first, nothing else until done.\", \"turns_down\": \"Not a big deal reassurance\"}",
+      "inTokens": 4238,
+      "outTokens": 861,
+      "thinkingTokens": 683,
+      "cost": 0.0016970000000000002,
+      "promptChars": 7995
+    },
+    {
+      "kind": "consciousness",
+      "ms": 17097,
+      "reply": "{\"text\": \"Quitting tomorrow runs into Frugality's point that nothing stops the whole cushion leaving in one booking, and Fear's worry about income sits right behind it, with Wellness's coverage question under both. Path A takes Frugality's floor and Overwhelm's one-task ask: the numbers get written down before any money moves. Path B answers Fear and Wellness: a benefits call settles the coverage question, and an unpaid-leave answer would keep income possible before anything is resigned.\", \"to\": \"fear\", \"plan\": [\"Path A: Tomorrow morning, write [total savings] and [monthly expenses] on one page, multiply monthly expenses by 6 as an untouchable floor, and book nothing until that floor is written down.\", \"Path B: Tomorrow, call [HR contact] to ask two questions: when health coverage ends if I resign, and whether an unpaid leave of absence is available. Write both answers down before deciding to resign.\"]}",
+      "inTokens": 4123,
+      "outTokens": 2554,
+      "thinkingTokens": 2237,
+      "cost": 0.002509,
+      "promptChars": 7787
+    },
+    {
+      "kind": "floor",
+      "ms": 17161,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path A leaves coverage and income unanswered; B's answers must come first.\", \"prefers\": \"B\"}, {\"id\": \"wellness\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does the HR call cover care abroad too, or just end dates?\", \"prefers\": \"B\"}, {\"id\": \"frugality\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A written floor before any money moves is exactly what I need.\", \"prefers\": \"A\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Two paths still means two tasks; pick one for tomorrow.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4636,
+      "outTokens": 2390,
+      "thinkingTokens": 2085,
+      "cost": 0.0025809,
+      "promptChars": 8746
+    },
+    {
+      "kind": "speak",
+      "ms": 12229,
+      "reply": "{\"text\": \"Consciousness, the floor protects the savings, but it doesn't put a paycheck back in place, so quitting tomorrow still leaves income at zero from that morning on, whether or not the numbers are written down. Path B's leave answer is the only thing that could keep income possible, so the plan should make resigning depend on it: the user calls [HR contact] tomorrow, writes down the leave answer, and sends no resignation until that answer is yes or another income source is confirmed. If the answer is no, the trip gets scaled down or moved to later, not funded by quitting now.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Resignation waits until HR confirms leave or income is lined up.\", \"turns_down\": \"\"}",
+      "inTokens": 4603,
+      "outTokens": 1484,
+      "thinkingTokens": 1245,
+      "cost": 0.002118,
+      "promptChars": 9119
+    },
+    {
+      "kind": "speak",
+      "ms": 10057,
+      "reply": "{\"text\": \"Consciousness, the floor protects the savings but doesn't restore income: if I resign tomorrow, my paycheck stops that same morning, whether or not the numbers are written down. +1 to Path B's HR call, but Path B has to gate the resignation, not just inform it. Resignation waits until the leave answer is yes or another income is confirmed. If the answer is no, the trip gets scaled down or moved later, not funded by quitting now.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Resignation held until HR's leave answer is yes or income is confirmed.\", \"turns_down\": \"\"}",
+      "inTokens": 4860,
+      "outTokens": 1186,
+      "thinkingTokens": 1255,
+      "cost": 0.0021816,
+      "promptChars": 9872
+    },
+    {
+      "kind": "floor",
+      "ms": 11920,
+      "reply": "{\"bids\": [{\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Path B asks when coverage ends, but I also need to know whether I'm covered abroad.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B adds a phone call to tomorrow, so it's two tasks again. Pick one.\"}, {\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Path B never mentions the reserve floor, so the savings still aren't protected under it.\"}]}",
+      "inTokens": 4642,
+      "outTokens": 1370,
+      "thinkingTokens": 1156,
+      "cost": 0.0020727,
+      "promptChars": 8763
+    },
+    {
+      "kind": "speak",
+      "ms": 5876,
+      "reply": "{\"text\": \"I'm worried that quitting tomorrow cuts my health coverage before I've checked. If I'm not covered abroad, a three-month trip with no insurance could leave me stuck with huge medical bills. Path B's HR call answers the coverage question, but the plan doesn't yet say I can't resign until I know the answer. What would move me to 0 is adding to Path B: no resignation until HR confirms coverage dates and whether I'm insured abroad, and I buy travel medical insurance once that's confirmed.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Resignation waits until HR confirms coverage dates and international cover.\", \"turns_down\": \"\"}",
+      "inTokens": 4556,
+      "outTokens": 224,
+      "thinkingTokens": 0,
+      "cost": 0.0014744,
+      "promptChars": 8973
+    },
+    {
+      "kind": "floor",
+      "ms": 16279,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"wellness\", \"why\": \"Count travel insurance inside the trip budget, never from the reserve floor.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"wellness\", \"why\": \"Does HR's coverage answer include care abroad, or is it separate?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Wellness's coverage gate matches mine; my income gate still stands unanswered.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The insurance step waits until confirmed, so tomorrow's load stays unchanged.\"}, {\"id\": \"impulsivity\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"Delaying the trip for coverage dulls me, but I can't yet argue against it.\"}]}",
+      "inTokens": 4829,
+      "outTokens": 2117,
+      "thinkingTokens": 1801,
+      "cost": 0.0025023,
+      "promptChars": 9312
+    },
+    {
+      "kind": "speak",
+      "ms": 5536,
+      "reply": "{\"text\": \"Frugality is the emotion losing most right now, and its fear is concrete: Path A's floor is only a plan until the cushion is written down, and Path B's HR call doesn't yet say what happens to savings if the leave answer is no. Frugality is still at -1 because the plan never says how much of the savings may be spent in the trip, so the bookings have no ceiling. What would move it to 0 is adding to Path A that the trip budget equals [total savings] minus the 6-month floor, and that no booking goes above that number until the trip plan is written down.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Trip budget capped at savings minus the written 6-month floor.\", \"turns_down\": \"\", \"spotlight\": \"💰 Frugality\"}",
+      "inTokens": 4843,
+      "outTokens": 248,
+      "thinkingTokens": 0,
+      "cost": 0.001572,
+      "promptChars": 9805
+    },
+    {
+      "kind": "speak",
+      "ms": 11449,
+      "reply": "{\"text\": \"Frugality is the voice I'm hearing least right now, and it's the one carrying the money worry alone. Path A writes the floor down, but nothing says how much of the savings the trip may spend, so every booking still has no ceiling. I feel some relief that this is being named, and I stay at -1 until Path A sets that ceiling before any money leaves.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Trip spending capped at savings minus written floor\", \"turns_down\": \"\", \"spotlight\": \"frugality\"}",
+      "inTokens": 5094,
+      "outTokens": 1422,
+      "thinkingTokens": 1561,
+      "cost": 0.0023908,
+      "promptChars": 10534
+    },
+    {
+      "kind": "consciousness",
+      "ms": 35234,
+      "reply": "{\"text\": \"Path A and Path B both stay, in this order: Frugality's floor is written first, and Sadness is right that the trip also needs a hard cap of savings minus that floor before any booking. Fear's and Wellness's point that resignation waits for HR's leave answer and coverage dates, including international cover, becomes step 3. Overwhelm's one-task order holds because the HR call happens only after the numbers are written.\", \"to\": \"frugality\", \"plan\": [\"Tomorrow morning, write [total savings] and [monthly expenses] on one page. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor; no booking exceeds it. Book nothing until both are written.\", \"Only after step 1 is written, call [HR contact] and ask: 'When does my health coverage end if I resign, is medical care abroad covered, and is unpaid leave available?' Write the answers down.\", \"Resign tomorrow only if leave is yes, coverage dates are confirmed, and international cover is confirmed or bought from the trip cap. If not, you keep your job and the trip waits.\"]}",
+      "inTokens": 5168,
+      "outTokens": 7268,
+      "thinkingTokens": 6904,
+      "cost": 0.0051795,
+      "promptChars": 10855
+    },
+    {
+      "kind": "floor",
+      "ms": 18829,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Floor and cap come before any money moves. Grudgingly, I accept.\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Resignation and insurance still stack onto tomorrow. Numbers alone should close it.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Resignation waits on HR's leave answer. That's my gate; I accept.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Coverage gate is in place now; nothing more to add.\"}]}",
+      "inTokens": 5360,
+      "outTokens": 2777,
+      "thinkingTokens": 2498,
+      "cost": 0.0029931,
+      "promptChars": 10832
+    },
+    {
+      "kind": "speak",
+      "ms": 9213,
+      "reply": "{\"text\": \"Step 1 of plan v3 covers me: writing [total savings] and [monthly expenses] on one page first, with 6 months of expenses as an untouchable floor and the trip capped at savings minus that floor, means no booking can spend the whole cushion at once. I can live with that as long as no flight, hostel, or deposit is paid until both numbers are written and each booking is checked against the cap. I'm at 0 grudgingly, and if the cap gets loosened later, I'm back at -1.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5184,
+      "outTokens": 633,
+      "thinkingTokens": 437,
+      "cost": 0.0018668,
+      "promptChars": 10738
+    },
+    {
+      "kind": "floor",
+      "ms": 12738,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Still three decisions tomorrow; HR call and resignation stack on booking day.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Resignation now waits for HR's yes. That gate is what I needed.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Resignation waits for coverage and international cover confirmation. I accept.\"}]}",
+      "inTokens": 5291,
+      "outTokens": 1945,
+      "thinkingTokens": 1748,
+      "cost": 0.0025579,
+      "promptChars": 10593
+    },
+    {
+      "kind": "speak",
+      "ms": 5796,
+      "reply": "{\"text\": \"Consciousness's order fixes the sequence, but it leaves my need untouched: the plan still has me do the numbers, call HR, and decide on resigning all on the same tomorrow, so I'm still holding three decisions at once. Making Path B a step 3 doesn't stop tomorrow from being a full day of decisions. What would move me to 0 is making tomorrow only the numbers page, with the HR call and the resignation question moved to the day after, starting with '[HR contact], can I schedule a call for the day after tomorrow about coverage and unpaid leave?' sent tomorrow morning.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tomorrow holds only the numbers page; HR call and resignation move later\", \"turns_down\": \"\"}",
+      "inTokens": 5630,
+      "outTokens": 254,
+      "thinkingTokens": 0,
+      "cost": 0.0018111000000000002,
+      "promptChars": 12064
+    },
+    {
+      "kind": "speak",
+      "ms": 15534,
+      "reply": "{\"text\": \"Consciousness, the order fixes the sequence, but tomorrow still holds the numbers, the HR call, and the resign decision, so three decisions still land on one day. My need is met only if the resign decision leaves tomorrow: it waits until HR's answers are written down, as its own sitting. What would move me to 0 is the plan saying tomorrow ends when the numbers page is written, with 'resign or not' decided later.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tomorrow's only task is the numbers page; nothing else.\", \"turns_down\": \"\"}",
+      "inTokens": 5899,
+      "outTokens": 2217,
+      "thinkingTokens": 2370,
+      "cost": 0.0030463,
+      "promptChars": 12807
+    },
+    {
+      "kind": "floor",
+      "ms": 16625,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Resignation waiting on HR answers protects my income. I can accept that.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does 'decide resign later' still fit the tomorrow timeframe you set?\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Splitting the day might help rest, but I'll wait to see the revised plan.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"Two sittings could waste time, but Overwhelm's limit comes first right now.\"}]}",
+      "inTokens": 5447,
+      "outTokens": 2440,
+      "thinkingTokens": 2186,
+      "cost": 0.0028517,
+      "promptChars": 11024
+    },
+    {
+      "kind": "speak",
+      "ms": 9041,
+      "reply": "{\"text\": \"What if HR says unpaid leave is available? Step 3 says to resign only when leave is yes, but then it says to resign tomorrow, so I can't tell whether leave replaces quitting or both happen. I need Consciousness to write which one the user picks if leave is yes, because that choice decides whether tomorrow includes a resignation at all.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan says whether leave replaces resigning when HR says yes\", \"turns_down\": \"\"}",
+      "inTokens": 5345,
+      "outTokens": 1338,
+      "thinkingTokens": 1172,
+      "cost": 0.0022686,
+      "promptChars": 11182
+    },
+    {
+      "kind": "consciousness",
+      "ms": 49040,
+      "reply": "{\"text\": \"Doubt, the answer is that unpaid leave replaces resigning: if HR says yes, you take leave and don't quit, which step 2 now says outright. Overwhelm's cut drops tomorrow from three steps to two and takes the resign decision off the day entirely. Fear's and Wellness's gates survive in step 2, since nothing is resigned until leave or coverage is confirmed in writing. Sadness, this is the answer Doubt asked for.\", \"to\": \"Doubt\", \"plan\": [\"Tomorrow morning, write [total savings] and [monthly expenses] on one page. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor. Book nothing until both are written.\", \"Ask [HR contact]: 'When does my health coverage end if I resign, is medical care abroad covered, and is unpaid leave available?' Note answers. Leave yes: take leave, not resignation. No: keep job, trip waits.\"]}",
+      "inTokens": 6011,
+      "outTokens": 10488,
+      "thinkingTokens": 10165,
+      "cost": 0.007042400000000001,
+      "promptChars": 13179
+    },
+    {
+      "kind": "floor",
+      "ms": 18669,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Leave-replaces-resigning is now written; I can live with that.\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still two tasks tomorrow. Shrink the HR call to one sent email.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Resignation now waits on HR's answer; my gate holds.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Coverage question still sits in step 2, so I'm holding.\"}]}",
+      "inTokens": 5892,
+      "outTokens": 3230,
+      "thinkingTokens": 2964,
+      "cost": 0.0033807,
+      "promptChars": 12231
+    },
+    {
+      "kind": "speak",
+      "ms": 7561,
+      "reply": "{\"text\": \"Step 2 of plan v4 answers my question: if HR says unpaid leave is available, you take leave instead of resigning, so tomorrow no longer includes a resignation decision. I can live with that at 0, grudgingly, on one condition: if HR's answer is conditional or unclear, like leave for only part of the trip, the plan has to say what happens next, or I go back to -1.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5781,
+      "outTokens": 626,
+      "thinkingTokens": 466,
+      "cost": 0.0020424,
+      "promptChars": 12350
+    },
+    {
+      "kind": "floor",
+      "ms": 12195,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Partial leave still stops my income, so it can't unlock resigning.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Unclear HR answers can't add a decision tomorrow; defer it.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"My condition is stated; the plan just needs to honor it.\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"The conditional answer doesn't touch money, so I stay quiet.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Coverage gating already covers any partial leave answer.\"}]}",
+      "inTokens": 5837,
+      "outTokens": 1920,
+      "thinkingTokens": 1629,
+      "cost": 0.0027067000000000003,
+      "promptChars": 12054
+    },
+    {
+      "kind": "speak",
+      "ms": 19127,
+      "reply": "{\"text\": \"Consciousness, unpaid leave instead of resigning keeps me from quitting tomorrow, but it leaves my main worry untouched: leave still stops my paycheck the same way resigning does, and the floor protects savings, not income. The plan doesn't say what happens to pay if leave covers only part of the trip. Add to HR's question: 'How long can I take unpaid leave, and does it end before my trip does?' and keep resignation off the table until that answer is written down.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Leave ends in writing; resigning stays off until income is confirmed.\", \"turns_down\": \"\"}",
+      "inTokens": 6108,
+      "outTokens": 2977,
+      "thinkingTokens": 2766,
+      "cost": 0.0033160000000000004,
+      "promptChars": 13309
+    },
+    {
+      "kind": "floor",
+      "ms": 11130,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear's partial-leave question is exactly the unclear answer I asked the plan to handle.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A duration question added to the HR call adds load to tomorrow; keep it to one question.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Leave doesn't cover medical care abroad; travel insurance is still missing from the plan.\"}]}",
+      "inTokens": 6025,
+      "outTokens": 1511,
+      "thinkingTokens": 1300,
+      "cost": 0.0025581,
+      "promptChars": 12616
+    },
+    {
+      "kind": "speak",
+      "ms": 11931,
+      "reply": "{\"text\": \"Overwhelm is the voice I hear most under this plan, and it's carrying the most weight right now. Step 2 still puts the numbers page and the HR call on the same day, so it stays at -1 even with the resignation gated. +1 to Overwhelm's ask, and I need the HR email to wait until the numbers page is finished, as its own short sitting. Consciousness, please change step 2 to say that.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"HR email only after numbers page, in its own sitting.\", \"turns_down\": \"\", \"spotlight\": \"overwhelm\"}",
+      "inTokens": 6211,
+      "outTokens": 1912,
+      "thinkingTokens": 1715,
+      "cost": 0.0028174000000000003,
+      "promptChars": 13606
+    },
+    {
+      "kind": "wrap",
+      "ms": 37006,
+      "reply": "{\"plan\": [\"Tomorrow morning, write one page with [total savings] and [monthly expenses]. Floor = 6 × monthly expenses, untouchable. Trip cap = savings minus floor. This page is tomorrow's first and main task. Book nothing until it's written.\", \"Once the page is finished, and as its own short sitting, email HR with these exact words: 'When does my health coverage end if I resign, is medical care abroad covered, is unpaid leave available, how long can I take it, and does it end before my trip does?' The email is pre-written, nothing is decided in that sitting, and the day ends once it's sent. Do not resign or book in this sitting.\", \"Do not resign tomorrow unless HR confirms in writing that leave is available and covers the whole trip. If leave is yes: take leave, not resignation. If the reply is partial or unclear: no resignation, and the trip is scaled to what the cap and leave cover, or moved later. Before any booking, get one travel medical insurance quote for the full trip and check it against the trip cap.\"], \"scores\": [{\"id\": \"Frugality\", \"score\": 0, \"step\": 1, \"why\": \"The cap is firm: no booking spends past savings minus the floor.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 3, \"why\": \"Resigning stays off until income is confirmed in writing; that's the gate.\"}, {\"id\": \"Wellness\", \"score\": 0, \"step\": 3, \"why\": \"Coverage abroad gets checked in writing, and insurance is quoted before any booking.\"}, {\"id\": \"Overwhelm\", \"score\": -1, \"step\": 0, \"why\": \"Still a second task tomorrow, even if it's just a copy-paste email.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 2, \"why\": \"The HR email waits until the numbers page is done, as its own short sitting.\"}, {\"id\": \"Doubt\", \"score\": 0, \"step\": 3, \"why\": \"Partial or unclear leave answers now have a written next step.\"}], \"society\": [{\"line\": \"Honestly, it's not a big deal. You're overthinking it.\", \"reply\": \"I know you mean well, but this decision involves my money and my health, so I need to work through the details before I act. Please don't brush it off as overthinking.\"}], \"text\": \"Tomorrow now means one numbers page, then one HR email, and nothing gets resigned or booked until the answers are in writing. Overwhelm still carries a second task, so I've kept that step as small and fixed as I can.\"}",
+      "inTokens": 5222,
+      "outTokens": 7103,
+      "thinkingTokens": 6288,
+      "cost": 0.0051132,
+      "promptChars": 10661
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.09,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.29,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 8 voices, avg 3 sentences (max 4), max overlap 0.09, Society 1/1 called out, hold rate 0.29, final -1: overwhelm, sadness",
+    "speakers": {
+      "frugality": 2,
+      "overwhelm": 3,
+      "society": 1,
+      "consciousness": 3,
+      "fear": 2,
+      "wellness": 1,
+      "sadness": 2,
+      "doubt": 2
+    }
+  }
+}

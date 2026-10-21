@@ -1,0 +1,718 @@
+<title>Teffy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Teffy: watch your emotions talk your plan through as a group chat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen phone chat. Header and seat strip stay put, the log scrolls, the composer sits on the keyboard. */
+:root {
+  --bg: #f3f1f8;
+  --surface: #ffffff;
+  --surface-2: #ebe7f3;
+  --ink: #1e1a2c;
+  --ink-2: #625c78;
+  --line: #dad4e6;
+  --brain: #5a45d6;
+  --brain-bg: #ece7ff;
+  --user-bg: #1e1a2c;
+  --user-ink: #f6f3ff;
+  --minus: #c2334f;
+  --minus-bg: #fbe5ea;
+  --zero: #1f7f63;
+  --zero-bg: #dcf2ea;
+  --parrot: #66730d;
+  --parrot-bg: #f1f4d6;
+  --emo-s: 62%;
+  --emo-l: 38%;
+  --emo-bg-l: 92%;
+  --shadow: 0 1px 2px rgb(30 26 44 / 0.06), 0 6px 18px rgb(30 26 44 / 0.06);
+  --display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Roboto Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13111b; --surface: #1d1a28; --surface-2: #28243a; --ink: #eeeaf8; --ink-2: #a59fbc; --line: #353049;
+    --brain: #b6a8ff; --brain-bg: #2a2450; --user-bg: #eeeaf8; --user-ink: #17141f;
+    --minus: #ff8399; --minus-bg: #3b1c26; --zero: #62d8b0; --zero-bg: #15342b; --parrot: #cbd85c; --parrot-bg: #262a12;
+    --emo-s: 78%; --emo-l: 74%; --emo-bg-l: 22%; --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13111b; --surface: #1d1a28; --surface-2: #28243a; --ink: #eeeaf8; --ink-2: #a59fbc; --line: #353049;
+  --brain: #b6a8ff; --brain-bg: #2a2450; --user-bg: #eeeaf8; --user-ink: #17141f;
+  --minus: #ff8399; --minus-bg: #3b1c26; --zero: #62d8b0; --zero-bg: #15342b; --parrot: #cbd85c; --parrot-bg: #262a12;
+  --emo-s: 78%; --emo-l: 74%; --emo-bg-l: 22%; --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  color-scheme: dark;
+}
+
+html { height: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 400 15.5px/1.45 var(--body); overflow: hidden; }
+button, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2.5px solid var(--brain); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto auto 1fr auto; max-width: 560px; margin: 0 auto; background: var(--bg); }
+
+/* Header */
+.top { display: flex; align-items: center; gap: 10px; padding-block: 10px 6px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0; }
+.brand b { font: 600 24px/1 var(--display); letter-spacing: 0.01em; }
+.brand span { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font: 500 12px/1 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); }
+.pill b { color: var(--brain); font-weight: 500; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* Seat strip: who is at -1 and who can live with the plan */
+.seats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 4px 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); min-height: 70px; align-items: flex-start; }
+.seats::-webkit-scrollbar { display: none; }
+.seats .empty { font-size: 12.5px; color: var(--ink-2); align-self: center; }
+.seat { flex: 0 0 auto; width: 54px; display: grid; justify-items: center; gap: 3px; border: 0; background: none; padding: 2px 0; position: relative; }
+.seat .av { width: 38px; height: 38px; }
+.seat .nm { font-size: 10.5px; color: var(--ink-2); max-width: 54px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .sc { position: absolute; top: -2px; right: 2px; }
+.seat.spot .av { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--minus); }
+.seat.bump .av { animation: bump 600ms ease; }
+@keyframes bump { 40% { transform: scale(1.18); } }
+.seat-note { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); padding-block: 6px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--surface); }
+
+.av { --h: 255; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 19px; line-height: 1; flex: 0 0 auto; background: hsl(var(--h) 70% var(--emo-bg-l)); }
+.sc { font: 500 11px/1 var(--mono); padding: 3px 5px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.sc.m { color: var(--minus); background: var(--minus-bg); }
+.sc.z { color: var(--zero); background: var(--zero-bg); }
+
+/* Chat log */
+.log { overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; padding-block: 14px 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); scroll-behavior: smooth; }
+.row { display: flex; gap: 8px; align-items: flex-start; max-width: 100%; animation: rise 260ms ease-out; }
+@keyframes rise { from { transform: translateY(6px); opacity: 0.4; } }
+.row .av { margin-top: 2px; }
+.bub { min-width: 0; max-width: calc(100% - 42px); background: var(--surface); border: 1px solid var(--line); border-radius: 6px 18px 18px 18px; padding: 8px 12px 10px; box-shadow: var(--shadow); }
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-bottom: 3px; }
+.who .n { --h: 255; font: 600 14px/1.2 var(--display); color: hsl(var(--h) var(--emo-s) var(--emo-l)); }
+.who .mv { font-size: 12px; color: var(--ink-2); }
+.bub p { margin: 0; overflow-wrap: anywhere; }
+.row.brain .bub { background: var(--brain-bg); border-color: transparent; }
+.row.brain .who .n { color: var(--brain); }
+.row.society .bub { background: var(--parrot-bg); border: 1.5px dashed var(--parrot); box-shadow: none; }
+.row.society .who .n { color: var(--parrot); }
+.row.society p { font-style: italic; }
+.row.user { justify-content: flex-end; }
+.row.user .bub { background: var(--user-bg); color: var(--user-ink); border: 0; border-radius: 18px 6px 18px 18px; max-width: 86%; }
+
+.plan { margin-top: 8px; background: var(--surface); border-radius: 12px; padding: 8px 10px 8px 12px; border: 1px solid var(--line); }
+.row.brain .plan { border-color: transparent; }
+.plan h4 { margin: 0 0 4px; font: 500 11px/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--brain); }
+.plan ol, .plan ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; }
+.plan.paths { display: grid; gap: 8px; }
+.plan.paths div b { font: 600 13.5px var(--display); color: var(--brain); }
+
+.sys { align-self: center; font-size: 12.5px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; text-align: center; max-width: 92%; }
+.sys .sc { font-size: 10.5px; }
+
+.reactions { align-self: stretch; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 7px; }
+.reactions h4, .card h4 { margin: 0; font: 500 11px/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.react { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: 14px; }
+.react .av { width: 28px; height: 28px; font-size: 16px; }
+.react q { quotes: "“" "”"; }
+
+/* Who's chiming in */
+.bids { align-self: stretch; font-size: 12.5px; color: var(--ink-2); }
+.bids summary { list-style: none; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 2px 0; cursor: pointer; }
+.bids summary::-webkit-details-marker { display: none; }
+.bids .mini { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px 2px 3px; border-radius: 999px; background: var(--surface-2); }
+.bids .mini.hold { opacity: 0.55; }
+.bids .mini i { font-style: normal; font-size: 14px; }
+.bids .arrow { color: var(--ink); font-weight: 700; }
+.bids .why { text-decoration: underline dotted; text-underline-offset: 3px; }
+.bids[open] .why { display: none; }
+.bids ul { list-style: none; margin: 6px 0 2px; padding: 8px 10px; display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.bids li { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; color: var(--ink); font-size: 13px; }
+.tag { font: 500 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 5px; border-radius: 5px; white-space: nowrap; }
+.tag.in { background: var(--brain-bg); color: var(--brain); }
+.tag.out { background: var(--surface-2); color: var(--ink-2); }
+
+.typing { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.dots { display: inline-flex; gap: 3px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-2); animation: blink 1.2s infinite ease-in-out; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes blink { 0%, 70%, 100% { opacity: 0.25; } 35% { opacity: 1; } }
+
+.card { align-self: stretch; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 10px; box-shadow: var(--shadow); }
+.card h3 { margin: 0; font: 600 19px/1.2 var(--display); text-wrap: balance; }
+.card p { margin: 0; }
+.card .score-row { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: start; font-size: 14px; }
+.card .score-row .av { width: 26px; height: 26px; font-size: 15px; }
+.say { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
+.say .line { font-style: italic; color: var(--parrot); font-size: 14px; }
+.say .reply { font-size: 14.5px; }
+.say button { justify-self: start; }
+.card.example { background: var(--surface-2); box-shadow: none; border-style: dashed; }
+.card.error { border-color: var(--minus); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 14px; }
+.btn.primary { background: var(--brain); border-color: var(--brain); color: var(--surface); }
+.btn.small { height: 30px; padding: 0 10px; font-size: 12.5px; }
+
+/* Composer */
+.composer { border-top: 1px solid var(--line); background: var(--surface); display: grid; gap: 8px; padding-block: 8px 10px; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.meta { display: flex; align-items: center; gap: 8px; min-height: 30px; }
+.meta .usage { font: 500 11px/1.3 var(--mono); color: var(--ink-2); margin-right: auto; min-width: 0; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 6px 11px; font-size: 13px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+#input { flex: 1; min-width: 0; resize: none; border: 1px solid var(--line); background: var(--bg); border-radius: 22px; padding: 10px 14px; max-height: 132px; line-height: 1.35; font-size: 16px; }
+#input::placeholder { color: var(--ink-2); }
+.send { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--brain); color: var(--surface); display: grid; place-items: center; flex: 0 0 auto; }
+.send:disabled { opacity: 0.45; cursor: default; }
+.send svg { width: 20px; height: 20px; }
+
+/* Sheets */
+dialog.sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 86%; border-radius: 20px 20px 0 0; background: var(--surface); color: var(--ink); }
+dialog.sheet::backdrop { background: rgb(10 8 20 / 0.45); }
+.sheet-in { display: grid; gap: 14px; padding-block: 14px calc(18px + env(safe-area-inset-bottom, 0px)); padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+.sheet-head { display: flex; align-items: center; gap: 10px; }
+.sheet-head h2 { margin: 0 auto 0 0; font: 600 20px/1.2 var(--display); }
+.field { display: grid; gap: 6px; }
+.field > span { font-weight: 700; font-size: 14px; }
+.field small { color: var(--ink-2); font-size: 12.5px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label span { display: inline-block; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; }
+.seg input:checked + span { background: var(--brain); border-color: var(--brain); color: var(--surface); }
+.seg input:focus-visible + span { outline: 2.5px solid var(--brain); outline-offset: 2px; }
+.stand { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: start; font-size: 14px; }
+.stand .av { width: 26px; height: 26px; font-size: 15px; }
+.muted { color: var(--ink-2); font-size: 13.5px; }
+.ledger { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><b>Teffy</b><span>your inner council</span></div>
+    <button class="pill" id="planBtn" type="button" aria-label="Open the plan">Plan <b id="planV">—</b></button>
+    <button class="icon-btn" id="setBtn" type="button" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+    </button>
+  </header>
+  <div class="seats" id="seats" role="list" aria-label="Where each emotion stands"></div>
+  <main class="log" id="log" aria-live="polite"></main>
+  <footer class="composer">
+    <div class="meta">
+      <span class="usage" id="usage">Haiku 5.5 · low effort</span>
+      <button class="btn small" id="stopBtn" type="button" hidden>Stop</button>
+      <button class="btn small primary" id="wrapBtn" type="button" hidden>Wrap up now</button>
+    </div>
+    <div class="chips" id="chips" aria-label="Example thoughts"></div>
+    <form class="input-row" id="form">
+      <textarea id="input" rows="1" placeholder="What are you thinking of doing?" aria-label="Your thought"></textarea>
+      <button class="send" id="send" type="submit" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+      </button>
+    </form>
+  </footer>
+</div>
+
+<dialog class="sheet" id="planSheet" aria-labelledby="planTitle">
+  <div class="sheet-in">
+    <div class="sheet-head"><h2 id="planTitle">The plan</h2><button class="btn small" type="button" data-close>Close</button></div>
+    <div id="planBody"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="copyBtn">Copy transcript</button>
+      <button class="btn" type="button" id="newBtn">New conversation</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="setSheet" aria-labelledby="setTitle">
+  <form class="sheet-in" id="setForm" method="dialog">
+    <div class="sheet-head"><h2 id="setTitle">Settings</h2><button class="btn small" type="button" data-close>Done</button></div>
+    <div class="field"><span>Model</span>
+      <div class="seg" id="segModel"></div>
+      <small>Runs on your own Claude account. Haiku at low effort uses the least.</small>
+    </div>
+    <div class="field"><span>Effort</span>
+      <div class="seg">
+        <label><input type="radio" name="effort" id="effLow" value="low"><span>Low</span></label>
+        <label><input type="radio" name="effort" id="effMed" value="medium"><span>Medium</span></label>
+        <label><input type="radio" name="effort" id="effHigh" value="high"><span>High</span></label>
+      </div>
+    </div>
+    <div class="field"><span>Conversation length</span>
+      <div class="seg">
+        <label><input type="radio" name="len" id="lenShort" value="10"><span>Short · 10</span></label>
+        <label><input type="radio" name="len" id="lenNormal" value="16"><span>Normal · 16</span></label>
+        <label><input type="radio" name="len" id="lenLong" value="24"><span>Long · 24</span></label>
+      </div>
+      <small>Messages per round before the Consciousness wraps up.</small>
+    </div>
+    <div class="field"><span>🦜 Society</span>
+      <div class="seg">
+        <label><input type="radio" name="society" id="socOff" value="off"><span>Off</span></label>
+        <label><input type="radio" name="society" id="socSome" value="sometimes"><span>Sometimes</span></label>
+        <label><input type="radio" name="society" id="socOften" value="often"><span>Often</span></label>
+      </div>
+    </div>
+    <div class="field"><span>Show who's deciding to talk</span>
+      <div class="seg">
+        <label><input type="radio" name="bids" id="bidsOn" value="on"><span>Show</span></label>
+        <label><input type="radio" name="bids" id="bidsOff" value="off"><span>Hide</span></label>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script type="application/json" id="example-data">{"model":"Haiku 5.5","effort":"low","events":[{"type":"user","text":"I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.","at":0},{"type":"opening","text":"Okay, so the weekend is ours, and we can clear both reports and be caught up by Monday. It's basically just a few long days of focus, and then we're done.","plan":{"version":1,"steps":["Work through the weekend, pushing hard on the two extra reports so the workload is caught up before Monday."],"paths":false,"final":false},"minus":[{"id":"overwhelm","why":"Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more."},{"id":"tiredness","why":"Working through the weekend with no rest is exhausting, and I'm already running on empty."},{"id":"wellness","why":"Skipping recovery for days in a row puts my body and health at real risk."},{"id":"fear","why":"If I burn out, the other parts of me, like my relationships and rest, get left exposed with nothing protecting them."}],"spotlight":"overwhelm","at":1},{"type":"bids","bids":[{"id":"overwhelm","score":-1,"act":"reply","move":"comeback","to":"consciousness","why":"Still too many demands. Shrink the plan, not just rename the weekend."},{"id":"tiredness","score":-1,"act":"reply","move":"comeback","to":"consciousness","why":"A few long days with no real rest is still exhausting."},{"id":"annoyance","score":0,"act":"reply","move":"pushback","to":"consciousness","why":"'Basically just' minimizes what I'm feeling. Please say why you framed it that way."},{"id":"doubt","score":0,"act":"reply","move":"question","to":"consciousness","why":"Is catching up by Monday realistic with two extra reports on top?"},{"id":"sadness","score":0,"act":"hold","move":"support","to":"","why":"Overwhelm should speak first. I'll step in if it stays unheard."},{"id":"fear","score":-1,"act":"hold","move":"comeback","to":"","why":"Nothing new yet. I'll wait to see whether the plan protects rest."}],"pick":"annoyance","at":2},{"type":"message","n":3,"who":"annoyance","text":"\"the weekend is ours\" and \"just a few long days\" skip past what I already said: I'm overwhelmed, and two extra reports on top of everything else is a lot. A full weekend of pushing takes away the rest I need, and that's where I can't go to 0. What would move me is a hard stop each weekend day at 6pm, plus an email to your manager tonight.","to":"consciousness","move":"pushback","score":-1,"lens":"","why":"'Basically just' minimizes what I'm feeling. Please say why you framed it that way.","lensLabel":"","at":3},{"type":"bids","bids":[{"id":"anger","score":0,"act":"reply","move":"comeback","to":"consciousness","why":"The weekend-is-ours line ignores the boundary I already stated."},{"id":"embarrassment","score":0,"act":"reply","move":"question","to":"consciousness","why":"Before we email the manager, how will we word the priority ask?"},{"id":"fear","score":-1,"act":"reply","move":"support","to":"annoyance","why":"Hard stops and a tonight email protect my other needs too."},{"id":"tiredness","score":-1,"act":"hold","move":"advocate","to":"","why":"Hard stops help, but I still need real rest. Waiting."},{"id":"overwhelm","score":-1,"act":"hold","move":"advocate","to":"","why":"My limit is already signaled. I'll wait for the plan to shrink."},{"id":"doubt","score":0,"act":"hold","move":"advocate","to":"","why":"The catch-up plan is still unexamined, but Annoyance's point comes first."}],"pick":"embarrassment","at":4},{"type":"message","n":4,"who":"embarrassment","text":"Annoyance's hard-stop ask is the right line for me, so I won't work the weekend into a blur. Before I can say what I need, I need to know whether the two reports can really be done by Monday, or whether that's a guess. If you give me your honest hour estimate for each report, plus whether your manager set a deadline or just assumed Monday, I can judge whether the weekend is necessary.","to":"user","move":"question","score":-1,"lens":"","why":"Before we email the manager, how will we word the priority ask?","lensLabel":"","at":5},{"type":"bids","bids":[{"id":"overwhelm","score":-1,"act":"hold","move":"advocate","to":"","why":"Already at -1; the plan must shrink, so I won't argue, just wait."},{"id":"tiredness","score":-1,"act":"hold","move":"advocate","to":"","why":"Weekend pushing is already flagged; I'd only repeat that."},{"id":"efficiency","score":0,"act":"reply","move":"question","to":"consciousness","why":"Before any weekend plan, we need real hour estimates to see what's actually needed."},{"id":"doubt","score":0,"act":"reply","move":"question","to":"consciousness","why":"Is Monday really a hard deadline, or did someone just assume it?"},{"id":"fear","score":-1,"act":"hold","move":"advocate","to":"","why":"Burnout risk is already on the table; I'll wait for the estimates."}],"pick":"sadness","at":6},{"type":"message","n":5,"who":"sadness","text":"Overwhelm is the one I hear hurting most: two extra reports landed on a full week, and the weekend plan stacks even more on it. The step that keeps it at -1 is \"work through the weekend, pushing hard,\" which leaves no room to slow down or be heard. Consciousness, please size the work first, then shrink the plan to what Overwhelm can carry.","to":"consciousness","move":"spotlight","score":0,"lens":"","why":"Overwhelm has barely been heard","lensLabel":"","at":7},{"type":"message","n":6,"who":"consciousness","text":"Annoyance's hard stops and Embarrassment's need for honest estimates both tell me the weekend can't be a blind push, so I'm changing the plan to start with sizing the work. Overwhelm is the one getting squeezed, so I'm shrinking the plan to a short, sized check-in with your manager before any weekend work is locked in. Once you have real hour estimates for both reports, we can decide whether any weekend time is truly needed, and if so, keep it capped.","to":"","move":"paths","plan":{"version":2,"steps":["Path A: Tonight, write hour estimates for both reports and send your manager this: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\" Work no weekend until they reply.","Path B: Tonight, estimate hours for both reports, then block Saturday 9am to 1pm and Sunday 9am to 1pm for the first report only, with a hard stop at 6pm each day. Email your manager by Friday noon to confirm which report gets done by Monday."],"paths":true,"final":false},"at":8},{"type":"score","id":"overwhelm","from":-1,"to":0,"at":9},{"type":"score","id":"tiredness","from":-1,"to":0,"at":10},{"type":"score","id":"wellness","from":-1,"to":0,"at":11},{"type":"score","id":"embarrassment","from":-1,"to":0,"at":12},{"type":"spotlight","id":"fear","at":13},{"type":"score","id":"sadness","from":0,"to":-1,"at":14},{"type":"bids","bids":[{"id":"overwhelm","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Path A shrinks the demands. I can live with that, grudgingly.","prefers":"A"},{"id":"tiredness","score":0,"act":"hold","move":"advocate","to":"","why":"No weekend work under Path A means I can rest. Holding.","prefers":"A"},{"id":"wellness","score":0,"act":"hold","move":"advocate","to":"","why":"Path A protects recovery. Nothing more needed from me right now.","prefers":"A"},{"id":"fear","score":-1,"act":"reply","move":"question","to":"consciousness","why":"If my manager insists Monday is firm, what protects my rest then?","prefers":"A"},{"id":"annoyance","score":-1,"act":"reply","move":"pushback","to":"consciousness","why":"Path B's Friday email breaks my tonight rule. Choose A.","prefers":"A"},{"id":"embarrassment","score":0,"act":"hold","move":"advocate","to":"","why":"Path A's honest estimates and deadline question cover my need.","prefers":"A"}],"pick":"overwhelm","at":15},{"type":"message","n":7,"who":"overwhelm","text":"Plan v2 shrinks the weekend to a capped check-in before any work is locked in, and that's what I need. I'm holding it to one condition: tonight you send Annoyance's priority email, and the weekend stays off the calendar until your manager replies.","to":"consciousness","move":"accept","score":0,"lens":"","why":"Path A shrinks the demands. I can live with that, grudgingly.","prevScore":0,"lensLabel":"","at":16},{"type":"bids","bids":[{"id":"annoyance","score":-1,"act":"hold","move":"answer","to":"","why":"My hard-stop and priority-email ask is already in Plan v2."},{"id":"embarrassment","score":0,"act":"reply","move":"question","to":"overwhelm","why":"Overwhelm's condition is fine, but I need the actual hour estimates first."},{"id":"fear","score":-1,"act":"reply","move":"advocate","to":"consciousness","why":"Fear needs proof that the weekend stays off until the manager replies."},{"id":"doubt","score":0,"act":"reply","move":"question","to":"consciousness","why":"Is the Monday deadline real, or just assumed? Plan v2 doesn't check that yet."},{"id":"tiredness","score":0,"act":"hold","move":"support","to":"","why":"Plan v2 protects rest, so I can hold until the reply comes in."}],"pick":"fear","at":17},{"type":"message","n":8,"who":"fear","text":"I'm at -1 because the plan still leaves the weekend open to 'work through it' the moment the email goes out, and nothing protects my need for rest and my relationships if I burn out. Path B's Saturday and Sunday blocks are still on the calendar before the manager replies, so my need isn't covered yet. What would move me to 0 is Consciousness locking the weekend as off-limits until the manager confirms in writing: tonight, send Annoyance's priority email and add 'No work Sat/Sun until [Manager] replies' to the calendar.","to":"consciousness","move":"advocate","score":-1,"lens":"","why":"Fear needs proof that the weekend stays off until the manager replies.","prevScore":-1,"lensLabel":"","at":18},{"type":"message","n":9,"who":"society","text":"Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!","to":"fear","move":"platitude","at":19},{"type":"message","n":10,"who":"fear","text":"Society's 'stay positive and it'll all work out' doesn't touch my need at all: nothing in it says the weekend stays off the calendar until your manager answers in writing. Following it means the blocks get booked and the weekend starts filling before anyone has confirmed the Monday deadline is real.","to":"society","move":"callout","score":-1,"lens":"","why":"Society just talked past a real need","prevScore":-1,"lensLabel":"","at":20},{"type":"message","n":11,"who":"consciousness","text":"I'm choosing Path A because it's the only one where Fear's and Overwhelm's needs are both met before any weekend time gets booked, and Annoyance's hard stops still hold. Annoyance is at -1 and I'm changing the plan so the priority email goes out tonight and the weekend stays off the calendar until your manager replies in writing. To settle whether Monday is real, I need you to fill in whether your manager set that deadline or just assumed it.","to":"","move":"refine","plan":{"version":3,"steps":["Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"","Tonight: add \"No work Sat/Sun until [Manager] replies\" to your calendar and keep both weekend days blocked.","fill in whether your manager set Monday as a deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."],"paths":false,"final":false},"at":21},{"type":"score","id":"fear","from":-1,"to":0,"at":22},{"type":"score","id":"annoyance","from":-1,"to":0,"at":23},{"type":"score","id":"sadness","from":-1,"to":0,"at":24},{"type":"bids","bids":[{"id":"fear","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Weekend stays blocked until the manager replies in writing. That's my need, so I accept."},{"id":"annoyance","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it."},{"id":"overwhelm","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Both my conditions are in the plan now: tonight's email and the weekend staying off."}],"pick":"annoyance","at":25},{"type":"message","n":12,"who":"annoyance","text":"Plan v3 moves me to 0 with the step \"No work Sat/Sun until [Manager] replies\" on the calendar tonight, plus the priority email going out before any weekend block exists. I'm holding that to a condition: the weekend stays off until the manager answers in writing. That covers my need for a boundary I don't have to re-argue.","to":"consciousness","move":"accept","score":0,"lens":"","why":"Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it.","prevScore":0,"lensLabel":"","at":26},{"type":"bids","bids":[{"id":"fear","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Plan v3 blocks the weekend and sends the email tonight, which is what I asked for."},{"id":"overwhelm","score":0,"act":"reply","move":"accept","to":"consciousness","why":"Tonight's email and a weekend off until the reply are my condition, and v3 meets it."},{"id":"doubt","score":0,"act":"reply","move":"question","to":"consciousness","why":"If the manager never answers, what decides whether Monday is real?"},{"id":"embarrassment","score":0,"act":"reply","move":"support","to":"consciousness","why":"Keep the email to one short ask so the manager gets no info dump."},{"id":"sadness","score":0,"act":"hold","move":"support","to":"","why":"Overwhelm is now being heard, so I have nothing new to add."}],"pick":"fear","at":27},{"type":"message","n":13,"who":"fear","text":"Plan v3 is what I can work with: the priority email goes out tonight, and the weekend blocks don't get created until your manager answers. I'm holding that to one condition: nothing gets added to Saturday or Sunday in the meantime, even small tasks, until that written reply comes back.","to":"consciousness","move":"accept","score":0,"lens":"","why":"Plan v3 blocks the weekend and sends the email tonight, which is what I asked for.","prevScore":0,"lensLabel":"","at":28},{"type":"bids","bids":[{"id":"embarrassment","score":0,"act":"reply","move":"question","to":"consciousness","why":"The email's [X] and [Y] are blanks. Can we check the wording with me before it sends?"},{"id":"doubt","score":0,"act":"reply","move":"question","to":"consciousness","why":"Monday's deadline is still a guess. What if the manager never answers in time?"},{"id":"overwhelm","score":0,"act":"hold","move":"advocate","to":"","why":"Already accepted the plan with its condition; nothing new to add."},{"id":"tiredness","score":0,"act":"hold","move":"advocate","to":"","why":"Weekend stays off until the reply, so rest is covered."},{"id":"wellness","score":0,"act":"hold","move":"advocate","to":"","why":"The weekend block protects my health; nothing more to ask."}],"pick":"","at":29},{"type":"wrap","text":"We've sized the work and put the weekend off-limits until your manager answers in writing. If the deadline turns out to be real, we'll cap whatever weekend time is needed.","plan":{"version":4,"steps":["Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"","Tonight, before any weekend block exists: send your manager the priority email, and add \"No work Sat/Sun until [Manager] replies\" to your calendar.","Nothing gets added to Saturday or Sunday, even small tasks, until your manager replies in writing.","When your manager replies, check whether they set Monday as a hard deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."],"paths":false,"final":true},"scores":[{"id":"overwhelm","score":0,"why":"Sized work and a short check-in shrink the plan to what I can carry.","step":0},{"id":"tiredness","score":0,"why":"The weekend stays off until a reply, so I get the rest I need.","step":0},{"id":"wellness","score":0,"why":"Protected weekend time keeps my health from being traded away.","step":0},{"id":"fear","score":0,"why":"Weekend blocks wait for a written reply, so my need is covered before anything is booked.","step":0},{"id":"annoyance","score":0,"why":"The hard boundary is on the calendar tonight, so I don't have to re-argue it.","step":0},{"id":"embarrassment","score":0,"why":"Honest hour estimates give us real numbers instead of a guess.","step":0},{"id":"sadness","score":0,"why":"The emotion I was watching is looked after now.","step":0}],"society":[{"line":"Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!","to":"fear","reply":"I appreciate the encouragement, but I need my weekend protected and a real answer on the deadline before I commit any of it to work."}],"questions":[],"at":30}],"state":{"thought":"I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.","scores":{"overwhelm":{"score":0,"need":"","why":"Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more."},"tiredness":{"score":0,"need":"","why":"Working through the weekend with no rest is exhausting, and I'm already running on empty."},"wellness":{"score":0,"need":"","why":"Skipping recovery for days in a row puts my body and health at real risk."},"fear":{"score":0,"need":"","why":"If I burn out, the other parts of me, like my relationships and rest, get left exposed with nothing protecting them."},"annoyance":{"score":0,"need":"","why":""},"embarrassment":{"score":0,"need":"","why":""},"sadness":{"score":0,"need":"","why":""}},"spotlight":"","plan":{"version":4,"steps":["Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"","Tonight, before any weekend block exists: send your manager the priority email, and add \"No work Sat/Sun until [Manager] replies\" to your calendar.","Nothing gets added to Saturday or Sunday, even small tasks, until your manager replies in writing.","When your manager replies, check whether they set Monday as a hard deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."],"paths":false,"final":true},"ledger":[{"advice":"Push through the weekend","from":"consciousness","by":"annoyance","why":"Weekend hard stops at 6pm and a priority email tonight"}],"societyLines":[{"text":"Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!","to":"fear","style":"toxic positivity (\"just stay positive\", \"look on the bright side\")"}]}}</script>
+
+<script type="module">
+import { Conversation, VOICES, BY_ID, MODELS, MOVE_LABELS, DEFAULT_SETTINGS } from './engine.js';
+
+const $ = (id) => document.getElementById(id);
+const log = $('log');
+const STORE = 'teffy.v1';
+const EXAMPLES = [
+  "I'm overwhelmed at work and thinking of pushing through all weekend to catch up.",
+  "I want to go disc golf this morning, but I woke up late and I'm hungry.",
+  "A coworker keeps presenting my ideas as hers. I'm thinking of staying quiet.",
+  "My manager put me on Saturday shift again without asking. I'm thinking of saying yes.",
+];
+
+// ---------- persistence (per-viewer convenience only) ----------
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(`${STORE}.${k}`)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(`${STORE}.${k}`, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+  del(k) { try { localStorage.removeItem(`${STORE}.${k}`); } catch { /* storage unavailable */ } },
+};
+const prefs = { ...DEFAULT_SETTINGS, showBids: true, ...(store.get('settings') || {}) };
+
+// ---------- Claude access ----------
+const sampleReady = window.claude?.use ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+
+function makeAsk(sample) {
+  return (prompt, { signal, settings }) => {
+    const tier = MODELS.find((m) => m.id === settings.model)?.tier || 'quick';
+    return sample(prompt, { model: settings.model, modelTier: tier, effort: settings.effort, cache: false, signal });
+  };
+}
+
+// ---------- state ----------
+let convo = null;
+let ctl = null;
+let running = false;
+let showingExample = false;
+let wrapping = false; // a Stop that leads straight into a wrap-up needs no "Paused" card
+let transient = null;
+
+const name = (id) => VOICES[id]?.name || id;
+const hueOf = (id) => VOICES[id]?.hue ?? 255;
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const scoreChip = (s) => `<span class="sc ${s === -1 ? 'm' : 'z'}">${s === -1 ? '−1' : '0'}</span>`;
+const avatar = (id, cls = '') => `<span class="av ${cls}" style="--h:${hueOf(id)}" aria-hidden="true">${VOICES[id]?.emoji || '?'}</span>`;
+
+function nearBottom() { return log.scrollHeight - log.scrollTop - log.clientHeight < 140; }
+function add(html, { keepTransient = false } = {}) {
+  if (!keepTransient) clearTransient();
+  const stick = nearBottom();
+  log.insertAdjacentHTML('beforeend', html);
+  const node = log.lastElementChild;
+  if (stick) log.scrollTop = log.scrollHeight;
+  return node;
+}
+function clearTransient() { transient?.remove(); transient = null; }
+function setTransient(html) { clearTransient(); transient = add(html, { keepTransient: true }); }
+
+// ---------- rendering ----------
+function planCard(plan) {
+  if (!plan?.steps?.length) return '';
+  if (plan.paths) {
+    return `<div class="plan paths"><h4>Plan v${plan.version} · two paths</h4>${plan.steps.map((s) => {
+      const m = s.match(/^(Path [AB])\s*[:–-]\s*(.*)$/i);
+      return `<div>${m ? `<b>${esc(m[1])}</b> ${esc(m[2])}` : esc(s)}</div>`;
+    }).join('')}</div>`;
+  }
+  return `<div class="plan"><h4>${plan.final ? 'Final plan' : `Plan v${plan.version}`}</h4><ol>${plan.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol></div>`;
+}
+
+function messageRow(e) {
+  if (e.who === 'consciousness') {
+    const mv = e.move === 'paths' ? 'imagines the challenges' : e.move === 'refine' ? 'revises the plan' : '';
+    return `<div class="row brain">${avatar('consciousness')}<div class="bub"><div class="who"><span class="n">Consciousness</span>${mv ? `<span class="mv">${mv}${e.to && VOICES[e.to] ? ` · answers ${VOICES[e.to].emoji} ${name(e.to)}` : ''}</span>` : ''}</div><p>${esc(e.text)}</p>${planCard(e.plan)}</div></div>`;
+  }
+  if (e.who === 'society') {
+    return `<div class="row society">${avatar('society')}<div class="bub"><div class="who"><span class="n">Society</span><span class="mv">absorbed advice · to ${VOICES[e.to]?.emoji || ''} ${esc(name(e.to))}</span></div><p>${esc(e.text)}</p></div></div>`;
+  }
+  const bits = [MOVE_LABELS[e.move] || ''];
+  if (e.to && VOICES[e.to] && e.move !== 'callout') bits.push(`to ${VOICES[e.to].emoji} ${name(e.to)}`);
+  if (e.lensLabel) bits.push(`angle: ${e.lensLabel}`);
+  return `<div class="row">${avatar(e.who)}<div class="bub"><div class="who"><span class="n" style="--h:${hueOf(e.who)}">${esc(name(e.who))}</span>${e.who === 'sadness' ? '' : scoreChip(e.score)}<span class="mv">${esc(bits.filter(Boolean).join(' · '))}</span></div><p>${esc(e.text)}</p></div></div>`;
+}
+
+function bidsRow(e) {
+  if (!prefs.showBids || !e.bids?.length) return '';
+  const ins = e.bids.filter((b) => b.act === 'reply');
+  const outs = e.bids.filter((b) => b.act !== 'reply');
+  const mini = (b, hold) => `<span class="mini${hold ? ' hold' : ''}" title="${esc(name(b.id))}"><i>${VOICES[b.id].emoji}</i>${hold ? '🤐' : '✋'}</span>`;
+  const pick = e.pick ? `<span class="arrow">→ ${VOICES[e.pick].emoji} ${esc(name(e.pick))}</span>` : `<span class="arrow">→ ${e.bids.length ? 'over to 🧠' : ''}</span>`;
+  const item = (b) => `<li>${VOICES[b.id].emoji} <span class="tag ${b.act === 'reply' ? 'in' : 'out'}">${b.act === 'reply' ? 'wants in' : 'holds'}</span><span><b>${esc(name(b.id))}</b> ${esc(b.why)}</span></li>`;
+  return `<details class="bids"><summary>${ins.map((b) => mini(b)).join('')}${outs.map((b) => mini(b, true)).join('')}${pick}<span class="why">why?</span></summary><ul>${[...ins, ...outs].map(item).join('')}</ul></details>`;
+}
+
+function wrapCard(e) {
+  const scores = e.scores.map((s) => `<div class="score-row">${avatar(s.id)}${scoreChip(s.score)}<span><b>${esc(name(s.id))}</b> ${esc(s.why)}${s.step ? ` <span class="muted">(final plan, step ${s.step})</span>` : ''}</span></div>`).join('');
+  const minus = e.scores.filter((s) => s.score === -1).length;
+  const replies = e.society.filter((s) => s.reply);
+  const society = replies.map((s, i) => `<div class="say"><span class="line">🦜 “${esc(s.line)}”</span><span class="reply">You: “${esc(s.reply)}”</span><button class="btn small" type="button" data-copy="${i}">Copy reply</button></div>`).join('');
+  return `<div class="card wrap" data-society="${esc(JSON.stringify(replies.map((s) => s.reply)))}">
+    <h3>${minus ? `Almost there: ${minus} still at −1` : 'Everyone can live with it'}</h3>
+    <p>${esc(e.text)}</p>
+    ${planCard(e.plan)}
+    <h4>Where everyone landed</h4>${scores || '<p class="muted">Nobody objected.</p>'}
+    ${e.questions?.length ? `<h4>Questions only you can answer</h4>${e.questions.map((q) => `<div class="score-row">${avatar(q.id)}<span></span><span>${esc(q.text)}</span></div>`).join('')}` : ''}
+    ${society ? `<h4>If people say this…</h4>${society}` : ''}
+  </div>`;
+}
+
+const ERRORS = {
+  not_granted: "This page isn't allowed to use Claude, so the council can't talk. Reload the page to be asked again.",
+  sampling_disabled: "Claude isn't available on this account, so the council can't talk here.",
+  not_declared: "This version of the page can't reach Claude. Reload to get the latest version.",
+  capability_disabled: "Claude can't be reached from this view. Open the page in the Claude app or on claude.ai.",
+  rate_limited: "Claude's usage or rate limit was reached. Wait a little, then tap Continue.",
+  session_expired: 'Your Claude session expired. Sign in again, then tap Continue.',
+  refused: 'Claude declined to continue this conversation. Try rewording your thought.',
+  prompt_too_large: 'This conversation got too long for one request. Wrap up now, then start a new one.',
+};
+const HARD_STOP = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled'];
+
+function render(e, { live = true } = {}) {
+  switch (e.type) {
+    case 'user':
+      add(`<div class="row user"><div class="bub"><p>${esc(e.text)}</p></div></div>`);
+      break;
+    case 'opening': {
+      add(messageRow({ who: 'consciousness', text: e.text, plan: e.plan }));
+      const rows = e.minus.map((m) => `<div class="react">${avatar(m.id)}<span><b>${esc(name(m.id))}</b> <q>${esc(m.why)}</q></span>${scoreChip(-1)}</div>`).join('');
+      add(`<div class="reactions"><h4>First reactions</h4>${rows || '<p class="muted">No emotion objects to this.</p>'}${e.spotlight ? `<div class="muted">❤️ Sadness is watching ${VOICES[e.spotlight].emoji} ${esc(name(e.spotlight))} most closely.</div>` : ''}</div>`);
+      break;
+    }
+    case 'deciding':
+      if (live) setTransient(`<div class="sys typing"><span class="dots"><i></i><i></i><i></i></span> The council is deciding who speaks</div>`);
+      break;
+    case 'bids': {
+      const html = bidsRow(e);
+      if (html) add(html); else clearTransient();
+      break;
+    }
+    case 'typing':
+      if (live) setTransient(`<div class="row typing">${avatar(e.who)}<span>${esc(name(e.who))} is typing</span><span class="dots"><i></i><i></i><i></i></span></div>`);
+      break;
+    case 'message':
+      add(messageRow(e));
+      break;
+    case 'score':
+      add(`<div class="sys">${VOICES[e.id].emoji} ${esc(name(e.id))} ${scoreChip(e.from)} → ${scoreChip(e.to)}${e.to === 0 ? ' can live with it' : ' is suffering again'}</div>`);
+      bumpSeat(e.id);
+      break;
+    case 'spotlight':
+      add(`<div class="sys">❤️ Sadness turns to ${VOICES[e.id].emoji} ${esc(name(e.id))}, the one heard least</div>`);
+      break;
+    case 'wrap':
+      add(messageRow({ who: 'consciousness', text: e.text }));
+      add(wrapCard({ ...e, text: e.scores.some((s) => s.score === -1) ? 'One voice is still hurting; the plan says how it will be looked after.' : 'Every emotion reached 0, some of them grudgingly.' }));
+      break;
+    case 'error':
+      if (e.code === 'cancelled') {
+        if (wrapping) break;
+        add(`<div class="card"><p>Paused. The council stops mid-thought until you continue.</p><div class="actions"><button class="btn primary" type="button" data-act="resume">Continue</button><button class="btn" type="button" data-act="wrap">Wrap up now</button></div></div>`);
+      } else {
+        const hard = HARD_STOP.includes(e.code);
+        const buttons = e.code === 'refused'
+          ? '<div class="actions"><button class="btn" type="button" data-act="wrap">Wrap up now</button></div>'
+          : '<div class="actions"><button class="btn primary" type="button" data-act="resume">Continue</button><button class="btn" type="button" data-act="wrap">Wrap up now</button></div>';
+        add(`<div class="card error"><p>${esc(ERRORS[e.code] || 'The connection dropped mid-conversation. Tap Continue to pick up where it stopped.')}</p>${hard ? '' : buttons}</div>`);
+      }
+      break;
+    case 'usage':
+      showUsage(e.usage);
+      break;
+    default:
+  }
+  if (e.type !== 'usage' && e.type !== 'typing' && e.type !== 'deciding') renderSeats();
+}
+
+// ---------- seats, plan sheet, usage ----------
+function currentState() { return convo?.s || exampleState(); }
+
+function renderSeats() {
+  const s = currentState();
+  const ids = s ? Object.keys(s.scores) : [];
+  $('planV').textContent = s?.plan?.version ? (s.plan.final ? 'final' : `v${s.plan.version}`) : '—';
+  if (!ids.length) {
+    $('seats').innerHTML = '<span class="empty">Emotions that object to your plan show up here with −1. They move to 0 when they can live with it.</span>';
+    return;
+  }
+  ids.sort((a, b) => s.scores[a].score - s.scores[b].score);
+  $('seats').innerHTML = ids.map((id) => `<button class="seat${s.spotlight === id ? ' spot' : ''}" type="button" role="listitem" data-seat="${id}" aria-label="${esc(name(id))}, ${s.scores[id].score === -1 ? 'minus one' : 'zero'}">${avatar(id)}<span class="sc ${s.scores[id].score === -1 ? 'm' : 'z'}">${s.scores[id].score === -1 ? '−1' : '0'}</span><span class="nm">${esc(name(id))}</span></button>`).join('');
+}
+
+function bumpSeat(id) {
+  requestAnimationFrame(() => document.querySelector(`[data-seat="${id}"]`)?.classList.add('bump'));
+}
+
+function showUsage(u) {
+  const model = MODELS.find((m) => m.id === prefs.model)?.label || prefs.model;
+  const calls = u?.calls ? ` · ${u.calls} call${u.calls === 1 ? '' : 's'}` : '';
+  $('usage').textContent = `${model} · ${prefs.effort} effort${calls}${u?.tierOnly ? ' · nearest tier answered' : ''}`;
+}
+
+function renderPlanSheet() {
+  const s = currentState();
+  const body = $('planBody');
+  if (!s?.plan?.steps?.length) { body.innerHTML = '<p class="muted">No plan yet. Send a thought and the Consciousness will put one to the council.</p>'; return; }
+  const stands = Object.keys(s.scores).sort((a, b) => s.scores[a].score - s.scores[b].score).map((id) => {
+    const sc = s.scores[id];
+    const note = sc.score === -1 ? (sc.need || sc.why || 'still suffering') : 'can live with it';
+    return `<div class="stand">${avatar(id)}${scoreChip(sc.score)}<span><b>${esc(name(id))}</b> ${esc(note)}</span></div>`;
+  }).join('');
+  const ledger = [...s.ledger.map((a) => `<li>“${esc(a.advice)}” from ${esc(name(a.from))}, turned down by ${esc(name(a.by))}</li>`),
+    ...s.societyLines.map((l) => `<li>🦜 “${esc(l.text)}”</li>`)].join('');
+  body.innerHTML = `${planCard(s.plan)}
+    <div class="field"><span>Where everyone stands</span>${stands || '<p class="muted">Nobody objects.</p>'}</div>
+    <div class="field"><span>Turned-down advice</span>${ledger ? `<ul class="ledger">${ledger}</ul>` : '<p class="muted">None yet.</p>'}</div>`;
+}
+
+function transcriptText() {
+  const evs = convo ? convo.events : exampleEvents();
+  const lines = [];
+  for (const e of evs) {
+    if (e.type === 'user') lines.push(`You: ${e.text}`);
+    if (e.type === 'opening') lines.push(`🧠 Consciousness: ${e.text}`, `Plan v1: ${e.plan.steps[0]}`, ...e.minus.map((m) => `  ${VOICES[m.id].emoji} ${name(m.id)} (−1): ${m.why}`));
+    if (e.type === 'message') {
+      lines.push(`${VOICES[e.who].emoji} ${name(e.who)}${BY_ID[e.who] && e.who !== 'sadness' ? ` (${e.score})` : ''}: ${e.text}`);
+      if (e.plan) lines.push(...e.plan.steps.map((s, i) => `  ${i + 1}. ${s}`));
+    }
+    if (e.type === 'wrap') {
+      lines.push(`🧠 Consciousness: ${e.text}`, 'Final plan:', ...e.plan.steps.map((s, i) => `  ${i + 1}. ${s}`), 'Scores:', ...e.scores.map((s) => `  ${VOICES[s.id].emoji} ${name(s.id)} ${s.score}: ${s.why}`));
+      for (const s of e.society) lines.push(`  🦜 "${s.line}" → You: "${s.reply}"`);
+    }
+  }
+  return lines.join('\n');
+}
+
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    if (btn) { const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => (btn.textContent = t), 1400); }
+  } catch {
+    if (btn) btn.textContent = 'Copy blocked here';
+  }
+}
+
+// ---------- example conversation ----------
+let example = null;
+try { example = JSON.parse($('example-data').textContent); } catch { example = null; }
+function exampleEvents() { return example?.events || []; }
+function exampleState() { return showingExample ? example?.state : null; }
+
+function showExample() {
+  log.innerHTML = '';
+  if (!example) { showingExample = false; renderSeats(); return; }
+  showingExample = true;
+  add(`<div class="card example"><h4>Example conversation</h4><p>Recorded with ${esc(example.model || 'Haiku 5.5')} at ${esc(example.effort || 'low')} effort. Type what you're thinking of doing below and your own council will talk it through, live.</p></div>`);
+  for (const e of example.events) render(e, { live: false });
+  log.scrollTop = 0;
+}
+
+// ---------- running ----------
+function setRunning(on) {
+  running = on;
+  $('stopBtn').hidden = !on;
+  $('wrapBtn').hidden = !on;
+  $('send').disabled = on;
+  $('chips').hidden = on || !!convo;
+  $('input').placeholder = convo ? 'Add a detail or push back…' : 'What are you thinking of doing?';
+}
+
+function save() {
+  if (convo) store.set('convo', convo.toJSON());
+}
+
+function newConversation(restored) {
+  return new Conversation({
+    ask: null,
+    settings: { model: prefs.model, effort: prefs.effort, maxMessages: Number(prefs.maxMessages), society: prefs.society },
+    onEvent: (e, c) => {
+      if (c !== convo) return;
+      render(e);
+      if (!['typing', 'deciding', 'usage'].includes(e.type)) save();
+    },
+    ...(restored || {}),
+  });
+}
+
+const NO_CLAUDE = '<div class="card error"><p>Live conversations run inside the Claude app or on claude.ai, on your own Claude account. Open this page there to talk with your council. The example shows what a conversation looks like.</p></div>';
+
+async function withClaude(fn) {
+  const sample = await sampleReady;
+  if (!sample) { add(NO_CLAUDE); return; }
+  const mine = convo;
+  mine.ask = makeAsk(sample);
+  mine.settings = { ...mine.settings, model: prefs.model, effort: prefs.effort, maxMessages: Number(prefs.maxMessages), society: prefs.society };
+  const myCtl = new AbortController();
+  ctl = myCtl;
+  // Earlier Continue / Wrap up buttons belong to a run that is over.
+  log.querySelectorAll('[data-act]').forEach((b) => (b.disabled = true));
+  setRunning(true);
+  try {
+    await fn(myCtl.signal);
+  } finally {
+    if (ctl === myCtl) { setRunning(false); ctl = null; }
+    if (mine === convo) save();
+  }
+}
+
+async function send(text) {
+  const t = text.trim();
+  if (!t || running) return;
+  if (!(await sampleReady)) { add(NO_CLAUDE); return; }
+  $('input').value = '';
+  autosize();
+  if (!convo || showingExample) {
+    showingExample = false;
+    log.innerHTML = '';
+    convo = newConversation();
+    await withClaude((signal) => convo.start(t, { signal }));
+  } else {
+    await withClaude((signal) => convo.followUp(t, { signal }));
+  }
+}
+
+// ---------- wiring ----------
+function autosize() {
+  const el = $('input');
+  el.style.height = 'auto';
+  el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+}
+
+$('form').addEventListener('submit', (ev) => { ev.preventDefault(); send($('input').value); });
+$('input').addEventListener('input', autosize);
+$('input').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' && !ev.shiftKey && window.matchMedia('(hover: hover)').matches) { ev.preventDefault(); send($('input').value); }
+});
+$('chips').innerHTML = EXAMPLES.map((x, i) => `<button class="chip" type="button" data-ex="${i}">${esc(x)}</button>`).join('');
+$('chips').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-ex]');
+  if (!b) return;
+  $('input').value = EXAMPLES[b.dataset.ex];
+  autosize();
+  $('input').focus();
+});
+$('stopBtn').addEventListener('click', () => ctl?.abort());
+$('wrapBtn').addEventListener('click', async () => {
+  if (!running || !convo) return;
+  const target = convo;
+  $('wrapBtn').disabled = true;
+  wrapping = true;
+  ctl?.abort();
+  await waitIdle();
+  wrapping = false;
+  $('wrapBtn').disabled = false;
+  if (target === convo && convo.s.phase === 'running') await withClaude((signal) => convo.wrapUp({ signal }));
+});
+function waitIdle() {
+  return new Promise((resolve) => { const t = setInterval(() => { if (!running) { clearInterval(t); resolve(); } }, 50); });
+}
+log.addEventListener('click', async (ev) => {
+  const act = ev.target.closest('[data-act]')?.dataset.act;
+  const copy = ev.target.closest('[data-copy]');
+  if (copy) {
+    const replies = JSON.parse(copy.closest('.wrap').dataset.society || '[]');
+    copyText(replies[copy.dataset.copy] || '', copy);
+  }
+  if (!act || running || !convo) return;
+  ev.target.closest('.card')?.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  if (act === 'resume') await withClaude((signal) => convo.resume({ signal }));
+  if (act === 'wrap' && convo.s.phase === 'running') await withClaude((signal) => convo.wrapUp({ signal }));
+});
+$('seats').addEventListener('click', (ev) => {
+  const id = ev.target.closest('[data-seat]')?.dataset.seat;
+  if (!id) return;
+  renderPlanSheet();
+  $('planSheet').showModal();
+});
+$('planBtn').addEventListener('click', () => { renderPlanSheet(); $('planSheet').showModal(); });
+$('copyBtn').addEventListener('click', (ev) => copyText(transcriptText(), ev.currentTarget));
+$('newBtn').addEventListener('click', () => {
+  if (running) ctl?.abort();
+  convo = null;
+  store.del('convo');
+  $('planSheet').close();
+  showExample();
+  setRunning(false);
+  $('input').focus();
+});
+$('setBtn').addEventListener('click', () => $('setSheet').showModal());
+document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (ev) => { if (ev.target === d) d.close(); }));
+
+// Settings
+$('segModel').innerHTML = MODELS.map((m) => `<label><input type="radio" name="model" id="model-${m.tier}" value="${m.id}"><span>${m.label}</span></label>`).join('');
+function syncSettingsForm() {
+  const f = $('setForm');
+  f.model.value = prefs.model;
+  f.effort.value = prefs.effort;
+  f.len.value = String(prefs.maxMessages);
+  f.society.value = prefs.society;
+  f.bids.value = prefs.showBids ? 'on' : 'off';
+}
+$('setForm').addEventListener('change', () => {
+  const f = $('setForm');
+  prefs.model = f.model.value;
+  prefs.effort = f.effort.value;
+  prefs.maxMessages = Number(f.len.value);
+  prefs.society = f.society.value;
+  prefs.showBids = f.bids.value === 'on';
+  store.set('settings', prefs);
+  document.querySelectorAll('.bids').forEach((d) => (d.hidden = !prefs.showBids));
+  showUsage(convo?.s.usage);
+});
+syncSettingsForm();
+showUsage();
+
+// Keep the composer above the on-screen keyboard where the browser only shrinks the visual viewport.
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const fit = () => {
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    $('app').style.paddingBottom = kb > 80 ? `${kb}px` : '';
+    if (kb > 80) log.scrollTop = log.scrollHeight;
+  };
+  vv.addEventListener('resize', fit);
+}
+
+// Restore the last conversation on this device, else show the example.
+const saved = store.get('convo');
+if (saved?.state?.thought) {
+  convo = newConversation({ state: saved.state, events: saved.events, settings: { ...saved.settings } });
+  for (const e of convo.events) render(e, { live: false });
+  if (convo.s.phase === 'running' && !convo.events.at(-1)?.type?.match(/error/)) {
+    render({ type: 'error', code: 'cancelled' });
+  }
+  showUsage(convo.s.usage);
+  setRunning(false);
+} else {
+  showExample();
+  setRunning(false);
+}
+renderSeats();
+</script>

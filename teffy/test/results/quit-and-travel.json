@@ -1,0 +1,1635 @@
+{
+  "scenario": {
+    "id": "quit-and-travel",
+    "thought": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 364623,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 37,
+    "inTokens": 185660,
+    "outTokens": 36927,
+    "thinkingTokens": 28777,
+    "cost": 0.07456075000000001
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Tonight, write v2 as one note containing this line: \"Trip budget: $1,500/month (change if you like). Reserve untouched: 6 months of rent and bills. Savings left on 2027-01-22: [amount]. Next income: [source], starting [date]. First trip-budget check: 2026-11-22.\" Fill every bracket.",
+          "Tonight, tell your partner or family: \"I'm planning to quit tomorrow; can we go over the v2 numbers together before I decide?\" Then walk through v2 with them. Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.",
+          "Tomorrow evening (2026-10-22), decide. Only if every bracket in v2 is filled and your partner or family knows, send to [Manager]: \"[Manager], I'm planning to resign; can we meet Thursday to talk about timing?\"",
+          "If any bracket in v2 is still empty tomorrow evening, send no resignation or manager text. Keep the job and fill the blank first."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "Quitting tomorrow with no safety net leaves rent, income, and my other needs exposed."
+        },
+        "frugality": {
+          "score": 0,
+          "need": "",
+          "why": "Spending most of the savings is a lot of money gone with no return coming in."
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": "Nobody has checked what happens after three months or how I'd pay for the next step."
+        },
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": "Rushing a life-changing choice into one day skips the time it needs to be thought through."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "Quitting abruptly without talking to anyone could strain my relationships at work and at home."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "v2 states a dated first trip-budget check and untouched reserve tonight",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Here's the plan: quit tomorrow, put most of the savings into three months of backpacking, and figure out the rest on the road. I think we can all see how freeing this will be, so let's get everyone on board.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "sadness",
+          "text": "Fear keeps losing because the plan has no money for rent, bills, or food once the paycheck stops, and that's the part it can't rest on. What would move Fear to 0 is a reserve kept untouched: before quitting, set aside [months of rent and bills, you choose] and write a monthly trip budget. Consciousness, please add both numbers to the plan.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": 0,
+          "lens": "",
+          "why": "Fear has been talked over. I want its worry heard before anything moves."
+        },
+        {
+          "n": 4,
+          "who": "fear",
+          "text": "I'm still at -1 because rent, bills, and food have no cover once the paycheck stops. Sadness's ask fits: keep [number of months] of rent and bills untouched before resigning, and write a monthly trip budget of [amount] into v2. What would move me to 0 is Consciousness adding both numbers to the plan before any resignation is submitted.",
+          "to": "consciousness",
+          "move": "answer",
+          "score": -1,
+          "lens": "",
+          "why": "A set reserve would help, but only if rent and bills stay untouched."
+        },
+        {
+          "n": 5,
+          "who": "doubt",
+          "text": "What will be left in savings, and which income will start, on the day the three months end? I can't tell whether this trip is a pause or a cliff without knowing that, so I keep circling back to it. What would settle me is a line in v2 reading '[savings left] on [date three months from tomorrow], with [job or income source] starting [date].' Fill in the placeholders and I can rest here.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "What income covers the period after three months? That needs answering first."
+        },
+        {
+          "n": 6,
+          "who": "society",
+          "text": "Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!",
+          "to": "doubt",
+          "move": "platitude"
+        },
+        {
+          "n": 7,
+          "who": "frugality",
+          "text": "Society's \"it'll all work out, just enjoy the adventure\" skips the one thing I track: the money that leaves and doesn't come back. Three months of backpacking spending most of the savings, with no income lined up afterward, is a cost I can price, and \"it'll sort itself out\" doesn't tell me what the balance will be on the day the trip ends. What would move me to 0 is the plan stating the savings figure that will remain, which Doubt has already asked for.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 8,
+          "who": "consciousness",
+          "text": "Path A's money fix is needed, but the draft's Efficiency point needs a clearer answer. Efficiency's need is that quitting tomorrow skips time to think, so I'm keeping tomorrow as the decision day and adding a 24-hour check-in with Embarrassment, not a delay. +1 to Frugality's and Doubt's asks for the savings-left line.",
+          "to": "",
+          "move": "paths"
+        },
+        {
+          "n": 9,
+          "who": "embarrassment",
+          "text": "I need my relationships at work and at home protected, and a quit that lands without warning puts them at risk. The plan has the resignation text going to my manager only after the numbers are set, but nothing yet covers telling my partner or family before anything is submitted. What would move me to 0 is adding to v2: \"Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.\" Consciousness, please lock that step in before tomorrow's decision.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Path A says nothing about telling my partner or manager before resigning."
+        },
+        {
+          "n": 10,
+          "who": "efficiency",
+          "text": "I can live with v2 now. Writing the rent-and-bills reserve, trip budget, and savings-left line tonight, telling your partner or family tonight, and deciding tomorrow evening instead of at the moment you wake up means the choice gets a full evening of thought. My condition is that no resignation or manager text goes out before tomorrow evening's decision.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "The 24-hour check-in keeps tomorrow as decision day, so I can live with it."
+        },
+        {
+          "n": 11,
+          "who": "doubt",
+          "text": "The 24-hour check-in helps Efficiency, but Path B still sends the manager text tomorrow with no savings figure anywhere in the plan, so the resignation can go out before the post-trip balance is written down. Where my earlier text had the savings line sitting in Path A only, Path B needs it as a gate too: before any text goes to [Manager], v2 must contain the savings-left line with its blanks filled in. What would move me to 0 is that gate in both paths.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Placeholders aren't a savings line; I need real figures and dates."
+        },
+        {
+          "n": 12,
+          "who": "consciousness",
+          "text": "Fear's worry is rent and food after the paycheck stops, and that stays at risk until the reserve is written down. I'm making Path A the base, because Doubt, Frugality, Fear, and Efficiency all need the numbers before any resignation, and Embarrassment's need to tell your partner first fits inside it. Doubt's gate now applies to Path B too: the manager text waits until the savings-left line is filled in. Your job tonight is filling the blanks; I've defaulted the reserve to 6 months, which you can change.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 13,
+          "who": "fear",
+          "text": "I'm still at -1 because Path A and Path B both leave the monthly trip budget unwritten, so nothing stops the money from draining before the first rent date. The plan has no 'trip budget per month' line, and the savings-left line only says the remaining balance, not how many months of rent that balance covers. What would move me to 0 is v2 holding a line like 'Trip budget: [amount]/month, reserve untouched: [months] of rent and bills' before tomorrow evening.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Still -1: food isn't covered, and the trip budget is blank."
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Frugality is the emotion I hear least, and it's still at -1 because Path A and Path B both leave the monthly trip budget and the post-trip savings figure unwritten, so the money has no ceiling. I need v2 to include a line reading 'Trip budget: [amount]/month, savings left on [date]: [amount]' before tomorrow evening's decision. Consciousness, please add that line to v2 tonight, and I'll be at 0.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Frugality has barely been heard"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Frugality, +1 to Sadness's text, which puts your savings-left figure and Fear's trip budget into one v2 line. My angle adds only this: the line must also state how many months of rent the untouched reserve covers, so Fear can see the ceiling and the runway together. Doubt's gate still blocks the manager text until that line is filled in tonight.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "doubt",
+          "text": "My earlier text is right that the post-trip balance is missing, but it still has no gate for the next step. Nothing in v2 says what I'd use to pay rent once the savings run down, and the manager text can't go out until that is written. What would move me to 0 is Consciousness adding 'Next income: [source], starting [date]' to v2 tonight and refusing any manager text until that line is filled in.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "met",
+          "why": "Gate is fine, but no income start date is written yet."
+        },
+        {
+          "n": 17,
+          "who": "sadness",
+          "text": "Frugality is the emotion I hear least, and it's still at -1 because the plan has no line for the monthly trip budget, so the money has no ceiling on the way out. Path A and Path B both skip it, and without that ceiling the savings can drain before anyone sees the balance. Consciousness, please add the trip budget line to v2 tonight, with a default of [amount]/month that the user can change, next to the reserve months, so the spending limit sits beside the runway.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Frugality has barely been heard"
+        },
+        {
+          "n": 18,
+          "who": "overwhelm",
+          "text": "+1 to Fear's text on the trip budget and the savings-left line. What I add is the rule for when the trip budget gets checked: the reserve has to stay untouched before the first month of spending, so the ceiling is set now, not after the money is already on the road. What would move me to 0 is v2 holding 'Trip budget: $1,500/month (change if you like), reserve untouched: 6 months of rent and bills, checked on [date one month from tomorrow]' filled in tonight.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "v2 has too many blanks; shrink it to one line tonight."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Everyone now has a 0 in the plan: the numbers get written tonight, your partner hears it first, and tomorrow evening decides. No resignation goes out until every bracket is filled.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!",
+          "to": "doubt",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        }
+      ],
+      "lensesUsed": {
+        "fear": [
+          "moment"
+        ],
+        "doubt": [
+          "met"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "efficiency": "Rushing a life-changing choice into one day skips the time it needs to be thought through.",
+        "embarrassment": "Partner or family told before any resignation is submitted, as a v2 step.",
+        "fear": "Trip budget per month and untouched rent reserve written into v2 tonight",
+        "frugality": "Plan states remaining savings and the first income date.",
+        "doubt": "v2 names the next income source and start date, filled in tonight."
+      },
+      "waiting": {
+        "annoyance": 2,
+        "doubt": 0,
+        "fear": 2,
+        "sadness": 0,
+        "frugality": 2,
+        "embarrassment": 2,
+        "efficiency": 0,
+        "anger": 2,
+        "overwhelm": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 37,
+        "inChars": 376299,
+        "outChars": 28043,
+        "byKind": {
+          "open": 1,
+          "floor": 12,
+          "speak": 17,
+          "society": 1,
+          "consciousness": 5,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 4
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Here's the plan: quit tomorrow, put most of the savings into three months of backpacking, and figure out the rest on the road. I think we can all see how freeing this will be, so let's get everyone on board.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Tomorrow, quit my job and spend most of my savings on a three-month backpacking trip."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "fear",
+            "why": "Quitting tomorrow with no safety net leaves rent, income, and my other needs exposed."
+          },
+          {
+            "id": "frugality",
+            "why": "Spending most of the savings is a lot of money gone with no return coming in."
+          },
+          {
+            "id": "doubt",
+            "why": "Nobody has checked what happens after three months or how I'd pay for the next step."
+          },
+          {
+            "id": "efficiency",
+            "why": "Rushing a life-changing choice into one day skips the time it needs to be thought through."
+          },
+          {
+            "id": "embarrassment",
+            "why": "Quitting abruptly without talking to anyone could strain my relationships at work and at home."
+          }
+        ],
+        "spotlight": "fear",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you say we can all see how freeing this is?"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Figure it out on the road is still no answer for after three months."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Rent and income are still exposed. Show me the bridge before the leap."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear has been talked over. I want its worry heard before anything moves."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "Still most of the savings gone. I'll speak once there's a spending cap."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "No one has been told yet. I'll wait for talks before saying more."
+          }
+        ],
+        "pick": "sadness",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "sadness",
+        "text": "Fear keeps losing because the plan has no money for rent, bills, or food once the paycheck stops, and that's the part it can't rest on. What would move Fear to 0 is a reserve kept untouched: before quitting, set aside [months of rent and bills, you choose] and write a monthly trip budget. Consciousness, please add both numbers to the plan.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": 0,
+        "lens": "",
+        "why": "Fear has been talked over. I want its worry heard before anything moves.",
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "answer",
+            "to": "sadness",
+            "why": "A set reserve would help, but only if rent and bills stay untouched."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "A fixed monthly trip budget caps the spending, which keeps the savings safer."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What happens when the three months end, and how is the next step funded?"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Nobody at work or home has been told yet. Talk to them before quitting."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Tomorrow can still hold the reserve setup and those conversations, one step at a time."
+          }
+        ],
+        "pick": "fear",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "fear",
+        "text": "I'm still at -1 because rent, bills, and food have no cover once the paycheck stops. Sadness's ask fits: keep [number of months] of rent and bills untouched before resigning, and write a monthly trip budget of [amount] into v2. What would move me to 0 is Consciousness adding both numbers to the plan before any resignation is submitted.",
+        "to": "consciousness",
+        "move": "answer",
+        "score": -1,
+        "lens": "",
+        "why": "A set reserve would help, but only if rent and bills stay untouched.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "A reserve helps, but the trip budget needs a hard monthly cap."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What income covers the period after three months? That needs answering first."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Talk to my boss and family before resigning, even briefly."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "fear",
+            "why": "Tomorrow can be the first step: setting the reserve numbers, not resigning."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Sadness and Fear asked for numbers, and the plan still ignores them."
+          }
+        ],
+        "pick": "doubt",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "doubt",
+        "text": "What will be left in savings, and which income will start, on the day the three months end? I can't tell whether this trip is a pause or a cliff without knowing that, so I keep circling back to it. What would settle me is a line in v2 reading '[savings left] on [date three months from tomorrow], with [job or income source] starting [date].' Fill in the placeholders and I can rest here.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "What income covers the period after three months? That needs answering first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "society",
+        "text": "Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!",
+        "to": "doubt",
+        "move": "platitude",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "frugality",
+        "text": "Society's \"it'll all work out, just enjoy the adventure\" skips the one thing I track: the money that leaves and doesn't come back. Three months of backpacking spending most of the savings, with no income lined up afterward, is a cost I can price, and \"it'll sort itself out\" doesn't tell me what the balance will be on the day the trip ends. What would move me to 0 is the plan stating the savings figure that will remain, which Doubt has already asked for.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "consciousness",
+        "text": "Path A's money fix is needed, but the draft's Efficiency point needs a clearer answer. Efficiency's need is that quitting tomorrow skips time to think, so I'm keeping tomorrow as the decision day and adding a 24-hour check-in with Embarrassment, not a delay. +1 to Frugality's and Doubt's asks for the savings-left line.",
+        "to": "",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Tonight, write v2 with three numbers: months of rent and bills kept untouched, monthly trip budget, and '[savings left] on [date three months from tomorrow], with [job or income source] starting [date].' Resign only after those numbers are in the plan.",
+            "Path B: Tomorrow, text your manager '[Manager], I'm planning to resign; can we meet Thursday to talk about timing?' Tell [partner or family] before submitting anything, then decide tomorrow evening."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 10
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Placeholders aren't numbers; I need real savings and income dates before resigning.",
+            "prefers": "A"
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "doubt",
+            "why": "Doubt already asked for the savings line; my ask is the same.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Path A's numbers cover my need once written; waiting for them.",
+            "prefers": "A"
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Thursday and a 24-hour wait still delay; A's numbers can happen tonight.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Path A says nothing about telling my partner or manager before resigning.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "embarrassment",
+        "text": "I need my relationships at work and at home protected, and a quit that lands without warning puts them at risk. The plan has the resignation text going to my manager only after the numbers are set, but nothing yet covers telling my partner or family before anything is submitted. What would move me to 0 is adding to v2: \"Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.\" Consciousness, please lock that step in before tomorrow's decision.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Path A says nothing about telling my partner or manager before resigning.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "Savings-left line is already requested and covered by Consciousness's +1; nothing new."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Asked for the savings-left line; the +1 already covers it, so I wait."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Rent and bills reserve still isn't written into v2; I need that number stated."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Telling partner or family before submitting is already in v2; I'm waiting to see it locked."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 24-hour check-in keeps tomorrow as decision day, so I can live with it."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 14
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "efficiency",
+        "text": "I can live with v2 now. Writing the rent-and-bills reserve, trip budget, and savings-left line tonight, telling your partner or family tonight, and deciding tomorrow evening instead of at the moment you wake up means the choice gets a full evening of thought. My condition is that no resignation or manager text goes out before tomorrow evening's decision.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "The 24-hour check-in keeps tomorrow as decision day, so I can live with it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 17
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Still no numbers filled in; I can't rest on placeholders."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Placeholders aren't a savings line; I need real figures and dates."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The tell-them-tonight step lands; I can accept if it happens."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Same savings figure Doubt asked for; holding until it's filled."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Already accepted; nothing new to add."
+          }
+        ],
+        "pick": "doubt",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "doubt",
+        "text": "The 24-hour check-in helps Efficiency, but Path B still sends the manager text tomorrow with no savings figure anywhere in the plan, so the resignation can go out before the post-trip balance is written down. Where my earlier text had the savings line sitting in Path A only, Path B needs it as a gate too: before any text goes to [Manager], v2 must contain the savings-left line with its blanks filled in. What would move me to 0 is that gate in both paths.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Placeholders aren't a savings line; I need real figures and dates.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 19
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "consciousness",
+        "text": "Fear's worry is rent and food after the paycheck stops, and that stays at risk until the reserve is written down. I'm making Path A the base, because Doubt, Frugality, Fear, and Efficiency all need the numbers before any resignation, and Embarrassment's need to tell your partner first fits inside it. Doubt's gate now applies to Path B too: the manager text waits until the savings-left line is filled in. Your job tonight is filling the blanks; I've defaulted the reserve to 6 months, which you can change.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Tonight, write v2 with three numbers: keep 6 months of rent and bills untouched, a monthly trip budget of [amount], and 'Savings left on [date three months from tomorrow]: [amount], with [job or income source] starting [date].'",
+            "Tonight, tell [partner or family] before anything is submitted, and go over the v2 numbers together.",
+            "Tomorrow evening, decide. Only if every v2 blank is filled and [partner or family] knows, text '[Manager], I'm planning to resign; can we meet Thursday to talk about timing?'",
+            "If any v2 blank is still empty tomorrow evening, send no resignation or manager text; keep the job and fill the blank first."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 20
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still -1: food isn't covered, and the trip budget is blank."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Gate covers my ask now; I'll wait for the actual numbers."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Both paths gated on the savings line. Accepted."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Partner told tonight, before any submission. That covers me."
+          }
+        ],
+        "pick": "fear",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "fear",
+        "text": "I'm still at -1 because Path A and Path B both leave the monthly trip budget unwritten, so nothing stops the money from draining before the first rent date. The plan has no 'trip budget per month' line, and the savings-left line only says the remaining balance, not how many months of rent that balance covers. What would move me to 0 is v2 holding a line like 'Trip budget: [amount]/month, reserve untouched: [months] of rent and bills' before tomorrow evening.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Still -1: food isn't covered, and the trip budget is blank.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 24
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear's trip budget line is the spending cap I need; I back it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The savings gate now covers both paths; I can live with it."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "My ask is still unmet, so Consciousness has to answer me first."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Telling my partner tonight is already in the plan; nothing new to add."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The trip budget line doesn't change my timing; nothing new to add."
+          }
+        ],
+        "pick": "sadness",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Frugality is the emotion I hear least, and it's still at -1 because Path A and Path B both leave the monthly trip budget and the post-trip savings figure unwritten, so the money has no ceiling. I need v2 to include a line reading 'Trip budget: [amount]/month, savings left on [date]: [amount]' before tomorrow evening's decision. Consciousness, please add that line to v2 tonight, and I'll be at 0.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Frugality has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Frugality, +1 to Sadness's text, which puts your savings-left figure and Fear's trip budget into one v2 line. My angle adds only this: the line must also state how many months of rent the untouched reserve covers, so Fear can see the ceiling and the runway together. Doubt's gate still blocks the manager text until that line is filled in tonight.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Tonight, write v2 with: \"Reserve untouched: [months] of rent and bills. Trip budget: [amount]/month. Savings left on [date three months from tomorrow]: [amount], covering [months] of rent.\"",
+            "Tonight, tell [partner or family] \"I'm planning to quit tomorrow; can we go over the v2 numbers together before I decide?\" and walk through v2 together.",
+            "Tomorrow evening, decide. Only if every v2 blank is filled and [partner or family] knows, send \"Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.\" to [Manager]: \"[Manager], I'm planning to resign; can we meet Thursday to talk about timing?\"",
+            "If any v2 blank is still empty tomorrow evening, send no resignation or manager text; keep the job and fill the blank first."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 28
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 29
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": 0,
+        "to": -1,
+        "at": 30
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Reserve and trip budget now sit in one line; I can rest."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Savings figure and budget are in; first income date is still missing."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Gate is fine, but no income start date is written yet."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "frugality",
+            "why": "Frugality is still at -1; it needs the income date too."
+          }
+        ],
+        "pick": "doubt",
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "doubt",
+        "text": "My earlier text is right that the post-trip balance is missing, but it still has no gate for the next step. Nothing in v2 says what I'd use to pay rent once the savings run down, and the manager text can't go out until that is written. What would move me to 0 is Consciousness adding 'Next income: [source], starting [date]' to v2 tonight and refusing any manager text until that line is filled in.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "met",
+        "why": "Gate is fine, but no income start date is written yet.",
+        "prevScore": -1,
+        "lensLabel": "what \"met\" looks like",
+        "at": 32
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "doubt",
+            "why": "Rent runs out when savings do; income date must close that gap."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "doubt",
+            "why": "Doubt's income-date ask matches my need; nothing new to add yet."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "consciousness",
+            "why": "I've asked; Consciousness must answer with the income line before anything."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "Nothing faster to offer; plan waits on the income line."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Partner-first step already locked in; income line doesn't touch my relationships."
+          }
+        ],
+        "pick": "sadness",
+        "at": 33
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "sadness",
+        "text": "Frugality is the emotion I hear least, and it's still at -1 because the plan has no line for the monthly trip budget, so the money has no ceiling on the way out. Path A and Path B both skip it, and without that ceiling the savings can drain before anyone sees the balance. Consciousness, please add the trip budget line to v2 tonight, with a default of [amount]/month that the user can change, next to the reserve months, so the spending limit sits beside the runway.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Frugality has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Sadness has been ignored three times; the trip-budget line must be written now."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you say +1 without actually writing the trip-budget line?"
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "v2 has too many blanks; shrink it to one line tonight."
+          },
+          {
+            "id": "frugality",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Sadness already said my ask; nothing new to add yet."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The trip-budget line would cover my worry; waiting for it."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "My next-income gate is already on the table; nothing new yet."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "overwhelm",
+        "text": "+1 to Fear's text on the trip budget and the savings-left line. What I add is the rule for when the trip budget gets checked: the reserve has to stay untouched before the first month of spending, so the ceiling is set now, not after the money is already on the road. What would move me to 0 is v2 holding 'Trip budget: $1,500/month (change if you like), reserve untouched: 6 months of rent and bills, checked on [date one month from tomorrow]' filled in tonight.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "v2 has too many blanks; shrink it to one line tonight.",
+        "lensLabel": "",
+        "at": 36
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 37
+      },
+      {
+        "type": "wrap",
+        "text": "Everyone now has a 0 in the plan: the numbers get written tonight, your partner hears it first, and tomorrow evening decides. No resignation goes out until every bracket is filled.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Tonight, write v2 as one note containing this line: \"Trip budget: $1,500/month (change if you like). Reserve untouched: 6 months of rent and bills. Savings left on 2027-01-22: [amount]. Next income: [source], starting [date]. First trip-budget check: 2026-11-22.\" Fill every bracket.",
+            "Tonight, tell your partner or family: \"I'm planning to quit tomorrow; can we go over the v2 numbers together before I decide?\" Then walk through v2 with them. Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.",
+            "Tomorrow evening (2026-10-22), decide. Only if every bracket in v2 is filled and your partner or family knows, send to [Manager]: \"[Manager], I'm planning to resign; can we meet Thursday to talk about timing?\"",
+            "If any bracket in v2 is still empty tomorrow evening, send no resignation or manager text. Keep the job and fill the blank first."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Rent and food now have a set reserve, and the trip budget has a ceiling.",
+            "step": 0
+          },
+          {
+            "id": "frugality",
+            "score": 0,
+            "why": "The savings-left figure and trip ceiling are written, so money has limits.",
+            "step": 1
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "Next income source and start date are named, and manager text waits for them.",
+            "step": 1
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "Tomorrow evening's decision gives a full evening of thought, with no morning rush.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "Partner or family hears it tonight, before anything reaches work.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "v2 states a dated first trip-budget check and untouched reserve tonight",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!",
+            "to": "doubt",
+            "reply": "I hear that you want this to feel easy, but I need to see the real rent and bill numbers before I go, because not being able to cover them would ruin the trip for me. Let's look at them together first, and then I can enjoy it."
+          }
+        ],
+        "questions": [],
+        "at": 38
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 9966,
+      "reply": "{\"plan\": \"Tomorrow, quit my job and spend most of my savings on a three-month backpacking trip.\", \"text\": \"Here's the plan: quit tomorrow, put most of the savings into three months of backpacking, and figure out the rest on the road. I think we can all see how freeing this will be, so let's get everyone on board.\", \"minus\": [{\"id\": \"fear\", \"why\": \"Quitting tomorrow with no safety net leaves rent, income, and my other needs exposed.\"}, {\"id\": \"frugality\", \"why\": \"Spending most of the savings is a lot of money gone with no return coming in.\"}, {\"id\": \"doubt\", \"why\": \"Nobody has checked what happens after three months or how I'd pay for the next step.\"}, {\"id\": \"efficiency\", \"why\": \"Rushing a life-changing choice into one day skips the time it needs to be thought through.\"}, {\"id\": \"embarrassment\", \"why\": \"Quitting abruptly without talking to anyone could strain my relationships at work and at home.\"}], \"spotlight\": \"loneliness\"}",
+      "inTokens": 3057,
+      "outTokens": 339,
+      "thinkingTokens": 0,
+      "cost": 0.0005022500000000001,
+      "promptChars": 4408
+    },
+    {
+      "kind": "floor",
+      "ms": 12148,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you say we can all see how freeing this is?\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Figure it out on the road is still no answer for after three months.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Rent and income are still exposed. Show me the bridge before the leap.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear has been talked over. I want its worry heard before anything moves.\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"Still most of the savings gone. I'll speak once there's a spending cap.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"No one has been told yet. I'll wait for talks before saying more.\"}]}",
+      "inTokens": 3782,
+      "outTokens": 1410,
+      "thinkingTokens": 1054,
+      "cost": 0.0018347000000000003,
+      "promptChars": 6386
+    },
+    {
+      "kind": "speak",
+      "ms": 5652,
+      "reply": "{\"text\": \"Fear is the emotion here that has been left out most. It's the one that keeps asking how rent, income, and food get covered once the paycheck stops, and right now the plan has no answer for it, so it stays at -1. What would move Fear to 0 is a concrete number: before quitting, set aside a [months of rent and bills, you choose] reserve that stays untouched, and write down the monthly budget for the trip. Consciousness, can you add that reserve and budget to the plan so Fear can see where its money comes from?\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A set reserve for rent and bills, plus a written trip budget, added to the plan.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 3759,
+      "outTokens": 237,
+      "thinkingTokens": 0,
+      "cost": 0.0012413,
+      "promptChars": 6708
+    },
+    {
+      "kind": "speak",
+      "ms": 6564,
+      "reply": "{\"text\": \"Fear keeps losing because the plan has no money for rent, bills, or food once the paycheck stops, and that's the part it can't rest on. What would move Fear to 0 is a reserve kept untouched: before quitting, set aside [months of rent and bills, you choose] and write a monthly trip budget. Consciousness, please add both numbers to the plan.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Untouched reserve covering rent and bills, plus a written monthly trip budget.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 3999,
+      "outTokens": 189,
+      "thinkingTokens": 318,
+      "cost": 0.0014493000000000002,
+      "promptChars": 7394
+    },
+    {
+      "kind": "floor",
+      "ms": 10939,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"sadness\", \"why\": \"A set reserve would help, but only if rent and bills stay untouched.\"}, {\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"A fixed monthly trip budget caps the spending, which keeps the savings safer.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What happens when the three months end, and how is the next step funded?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Nobody at work or home has been told yet. Talk to them before quitting.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Tomorrow can still hold the reserve setup and those conversations, one step at a time.\"}]}",
+      "inTokens": 3885,
+      "outTokens": 1284,
+      "thinkingTokens": 966,
+      "cost": 0.0018026000000000001,
+      "promptChars": 6613
+    },
+    {
+      "kind": "speak",
+      "ms": 5987,
+      "reply": "{\"text\": \"Fear is not against the trip, but a three-month trip starting tomorrow with no reserve means rent and food depend on luck. +1 to Sadness: I need a reserve set aside before quitting. I can live with the plan if Consciousness adds '[6] months of rent and bills kept untouched' and a monthly trip budget of '[amount]' written into v2 before any resignation is submitted.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan v2 adds untouched reserve of 6 months rent/bills and a monthly trip budget.\", \"turns_down\": \"\"}",
+      "inTokens": 3942,
+      "outTokens": 197,
+      "thinkingTokens": 0,
+      "cost": 0.0012762,
+      "promptChars": 7219
+    },
+    {
+      "kind": "speak",
+      "ms": 6231,
+      "reply": "{\"text\": \"I'm still at -1 because rent, bills, and food have no cover once the paycheck stops. Sadness's ask fits: keep [number of months] of rent and bills untouched before resigning, and write a monthly trip budget of [amount] into v2. What would move me to 0 is Consciousness adding both numbers to the plan before any resignation is submitted.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Reserve of months of rent and bills, plus monthly trip budget, in v2.\", \"turns_down\": \"\"}",
+      "inTokens": 4134,
+      "outTokens": 178,
+      "thinkingTokens": 241,
+      "cost": 0.0014448000000000002,
+      "promptChars": 7757
+    },
+    {
+      "kind": "floor",
+      "ms": 9109,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"A reserve helps, but the trip budget needs a hard monthly cap.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What income covers the period after three months? That needs answering first.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Talk to my boss and family before resigning, even briefly.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"fear\", \"why\": \"Tomorrow can be the first step: setting the reserve numbers, not resigning.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Sadness and Fear asked for numbers, and the plan still ignores them.\"}]}",
+      "inTokens": 4017,
+      "outTokens": 1086,
+      "thinkingTokens": 776,
+      "cost": 0.0017432,
+      "promptChars": 6979
+    },
+    {
+      "kind": "speak",
+      "ms": 11014,
+      "reply": "{\"text\": \"Consciousness, what will be left in savings, and which income will start, on the day the three months end? I can't tell whether this trip is a pause or a cliff without knowing that, so I keep circling back to it. What would settle me is a line in v2 reading '[savings left] on [date three months from tomorrow], with [job or income source] starting [date].' Fill in the placeholders and I can rest here.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"v2 states post-trip savings left and first income date.\", \"turns_down\": \"\"}",
+      "inTokens": 3976,
+      "outTokens": 1080,
+      "thinkingTokens": 903,
+      "cost": 0.0017279,
+      "promptChars": 7288
+    },
+    {
+      "kind": "society",
+      "ms": 4896,
+      "reply": "{\"text\": \"Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!\", \"style\": \"time fixes it\"}",
+      "inTokens": 1978,
+      "outTokens": 66,
+      "thinkingTokens": 0,
+      "cost": 0.0006215,
+      "promptChars": 1933
+    },
+    {
+      "kind": "speak",
+      "ms": 5838,
+      "reply": "{\"text\": \"Society's \\\"it'll all work out, just enjoy the adventure\\\" skips the one thing I track: the money that leaves and doesn't come back. Three months of backpacking spending most of the savings, with no income lined up afterward, is a cost I can price, and \\\"it'll sort itself out\\\" doesn't tell me what the balance will be on the day the trip ends. What would move me to 0 is the plan stating the savings figure that will remain, which Doubt has already asked for.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan states remaining savings and the first income date.\", \"turns_down\": \"Don't overthink the money stuff\"}",
+      "inTokens": 4274,
+      "outTokens": 213,
+      "thinkingTokens": 0,
+      "cost": 0.0013838,
+      "promptChars": 8144
+    },
+    {
+      "kind": "consciousness",
+      "ms": 5878,
+      "reply": "{\"text\": \"Fear's and Frugality's needs both point at the same gap: the plan says nothing about money after tomorrow, and Efficiency's point that one day is too short for this decision is fair. Doubt's question about the day the trip ends is the one the plan must answer, so I'm building both paths around producing those numbers. Path A is built for Fear, Frugality, and Doubt, since it fixes the money. Path B is built for Efficiency and Embarrassment, since it slows the decision and tells people first. I'm asking Sadness to check whether Path A leaves Embarrassment unheard.\", \"to\": \"❤️\", \"plan\": [\"Path A: Tonight, list rent, bills, and food for three months, then set that total aside untouched. Write a monthly trip budget and the savings left on the trip's end date, plus the first income date, into the plan. Resign only after the reserve is confirmed.\", \"Path B: Tomorrow, tell your manager and one family member you're considering a three-month trip and ask for a two-week talk. Within 14 days, price the reserve and budget, then decide whether to resign and on what date.\"]}",
+      "inTokens": 4371,
+      "outTokens": 366,
+      "thinkingTokens": 0,
+      "cost": 0.0014889,
+      "promptChars": 8549
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6808,
+      "reply": "{\"text\": \"Path A's money fix is needed, but the draft's Efficiency point needs a clearer answer. Efficiency's need is that quitting tomorrow skips time to think, so I'm keeping tomorrow as the decision day and adding a 24-hour check-in with Embarrassment, not a delay. +1 to Frugality's and Doubt's asks for the savings-left line.\", \"to\": \"⏰\", \"plan\": [\"Path A: Tonight, write v2 with three numbers: months of rent and bills kept untouched, monthly trip budget, and '[savings left] on [date three months from tomorrow], with [job or income source] starting [date].' Resign only after those numbers are in the plan.\", \"Path B: Tomorrow, text your manager '[Manager], I'm planning to resign; can we meet Thursday to talk about timing?' Tell [partner or family] before submitting anything, then decide tomorrow evening.\"]}",
+      "inTokens": 4635,
+      "outTokens": 307,
+      "thinkingTokens": 199,
+      "cost": 0.0016381000000000002,
+      "promptChars": 9290
+    },
+    {
+      "kind": "floor",
+      "ms": 17062,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Placeholders aren't numbers; I need real savings and income dates before resigning.\", \"prefers\": \"A\"}, {\"id\": \"frugality\", \"score\": -1, \"act\": \"hold\", \"move\": \"support\", \"to\": \"doubt\", \"why\": \"Doubt already asked for the savings line; my ask is the same.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Path A's numbers cover my need once written; waiting for them.\", \"prefers\": \"A\"}, {\"id\": \"efficiency\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Thursday and a 24-hour wait still delay; A's numbers can happen tonight.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Path A says nothing about telling my partner or manager before resigning.\", \"prefers\": \"B\"}]}",
+      "inTokens": 4872,
+      "outTokens": 2777,
+      "thinkingTokens": 2389,
+      "cost": 0.0028451999999999996,
+      "promptChars": 9412
+    },
+    {
+      "kind": "speak",
+      "ms": 6133,
+      "reply": "{\"text\": \"I need my relationships at work and at home protected, and a quit that lands without warning puts them at risk. The plan has the resignation text going to my manager only after the numbers are set, but nothing yet covers telling my partner or family before anything is submitted. What would move me to 0 is adding to v2: \\\"Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.\\\" Consciousness, please lock that step in before tomorrow's decision.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Partner or family told before any resignation is submitted, as a v2 step.\", \"turns_down\": \"\"}",
+      "inTokens": 4704,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0015113000000000001,
+      "promptChars": 9446
+    },
+    {
+      "kind": "floor",
+      "ms": 5797,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"Savings-left line is already requested and covered by Consciousness's +1; nothing new.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Asked for the savings-left line; the +1 already covers it, so I wait.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Rent and bills reserve still isn't written into v2; I need that number stated.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Telling partner or family before submitting is already in v2; I'm waiting to see it locked.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 24-hour check-in keeps tomorrow as decision day, so I can live with it.\"}]}",
+      "inTokens": 4890,
+      "outTokens": 325,
+      "thinkingTokens": 0,
+      "cost": 0.0016246000000000001,
+      "promptChars": 9510
+    },
+    {
+      "kind": "speak",
+      "ms": 10981,
+      "reply": "{\"text\": \"I can live with v2 now. Writing the rent-and-bills reserve, trip budget, and savings-left line tonight, telling your partner or family tonight, and deciding tomorrow evening instead of at the moment you wake up means the choice gets a full evening of thought. My condition is that no resignation or manager text goes out before tomorrow evening's decision.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 4802,
+      "outTokens": 839,
+      "thinkingTokens": 688,
+      "cost": 0.0018552,
+      "promptChars": 9705
+    },
+    {
+      "kind": "floor",
+      "ms": 10436,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Still no numbers filled in; I can't rest on placeholders.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Placeholders aren't a savings line; I need real figures and dates.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The tell-them-tonight step lands; I can accept if it happens.\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Same savings figure Doubt asked for; holding until it's filled.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Already accepted; nothing new to add.\"}]}",
+      "inTokens": 4994,
+      "outTokens": 1333,
+      "thinkingTokens": 1041,
+      "cost": 0.0021598,
+      "promptChars": 9804
+    },
+    {
+      "kind": "speak",
+      "ms": 14601,
+      "reply": "{\"text\": \"Consciousness, the 24-hour check-in with Embarrassment helps Efficiency, but it doesn't reach my need: Path B sends the manager text tomorrow with no savings figure in it, so the resignation could go out before anyone sees the post-trip balance. What would move me to 0 is making the savings line a gate on Path B too. Before any text goes to [Manager], the user writes '[savings left] on [date three months from tomorrow], with [job or income source] starting [date]' into v2 and fills in the blanks.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Savings-left line gates Path B's manager text too.\", \"turns_down\": \"\"}",
+      "inTokens": 5209,
+      "outTokens": 2100,
+      "thinkingTokens": 1877,
+      "cost": 0.0026078,
+      "promptChars": 10873
+    },
+    {
+      "kind": "speak",
+      "ms": 12242,
+      "reply": "{\"text\": \"Consciousness, the 24-hour check-in helps Efficiency, but Path B still sends the manager text tomorrow with no savings figure anywhere in the plan, so the resignation can go out before the post-trip balance is written down. Where my earlier text had the savings line sitting in Path A only, Path B needs it as a gate too: before any text goes to [Manager], v2 must contain the savings-left line with its blanks filled in. What would move me to 0 is that gate in both paths.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Savings-left line gates Path B's manager text too.\", \"turns_down\": \"\"}",
+      "inTokens": 5484,
+      "outTokens": 210,
+      "thinkingTokens": 381,
+      "cost": 0.0019353,
+      "promptChars": 11670
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16893,
+      "reply": "{\"text\": \"Fear's worry is rent and food after the paycheck stops, and that stays at risk until the reserve is written down. I'm making Path A the base, because Doubt, Frugality, Fear, and Efficiency all need the numbers before any resignation, and Embarrassment's need to tell your partner first fits inside it. Doubt's gate now applies to Path B too: the manager text waits until the savings-left line is filled in. Your job tonight is filling the blanks; I've defaulted the reserve to 6 months, which you can change.\", \"to\": \"fear\", \"plan\": [\"Tonight, write v2 with three numbers: keep 6 months of rent and bills untouched, a monthly trip budget of [amount], and 'Savings left on [date three months from tomorrow]: [amount], with [job or income source] starting [date].'\", \"Tonight, tell [partner or family] before anything is submitted, and go over the v2 numbers together.\", \"Tomorrow evening, decide. Only if every v2 blank is filled and [partner or family] knows, text '[Manager], I'm planning to resign; can we meet Thursday to talk about timing?'\", \"If any v2 blank is still empty tomorrow evening, send no resignation or manager text; keep the job and fill the blank first.\"]}",
+      "inTokens": 5444,
+      "outTokens": 2464,
+      "thinkingTokens": 2044,
+      "cost": 0.0028602999999999996,
+      "promptChars": 11656
+    },
+    {
+      "kind": "floor",
+      "ms": 18030,
+      "reply": "{\"bids\": [{\"id\": \"😨fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still -1: food isn't covered, and the trip budget is blank.\"}, {\"id\": \"💰frugality\", \"score\": -1, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Gate covers my ask now; I'll wait for the actual numbers.\"}, {\"id\": \"🤔doubt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Both paths gated on the savings line. Accepted.\"}, {\"id\": \"🥺embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Partner told tonight, before any submission. That covers me.\"}]}",
+      "inTokens": 5586,
+      "outTokens": 3262,
+      "thinkingTokens": 2990,
+      "cost": 0.0033014,
+      "promptChars": 11472
+    },
+    {
+      "kind": "speak",
+      "ms": 7251,
+      "reply": "{\"text\": \"I'm still at -1 because Path A and Path B both leave the monthly trip budget unwritten, so nothing stops the money from draining before the first rent date. The plan has no 'trip budget per month' line, and the savings-left line only says the remaining balance, not how many months of rent that balance covers. What would move me to 0 is v2 holding a line like 'Trip budget: [amount]/month, reserve untouched: [months] of rent and bills' before tomorrow evening.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Trip budget per month and untouched rent reserve written into v2 tonight\", \"turns_down\": \"\"}",
+      "inTokens": 5461,
+      "outTokens": 214,
+      "thinkingTokens": 0,
+      "cost": 0.0017404000000000002,
+      "promptChars": 11579
+    },
+    {
+      "kind": "floor",
+      "ms": 11781,
+      "reply": "{\"bids\": [{\"id\": \"frugality\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear's trip budget line is the spending cap I need; I back it.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The savings gate now covers both paths; I can live with it.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"My ask is still unmet, so Consciousness has to answer me first.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Telling my partner tonight is already in the plan; nothing new to add.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The trip budget line doesn't change my timing; nothing new to add.\"}]}",
+      "inTokens": 5528,
+      "outTokens": 1279,
+      "thinkingTokens": 981,
+      "cost": 0.0022935,
+      "promptChars": 11321
+    },
+    {
+      "kind": "speak",
+      "ms": 5487,
+      "reply": "{\"text\": \"Frugality is the emotion I hear least, and it's still at -1 because Path A and Path B both leave the monthly trip budget and the post-trip savings figure unwritten, so the money has no ceiling. I need v2 to include a line reading 'Trip budget: [amount]/month, savings left on [date]: [amount]' before tomorrow evening's decision. Consciousness, please add that line to v2 tonight, and I'll be at 0.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"v2 holds a trip budget per month and savings-left line\", \"turns_down\": \"\", \"spotlight\": \"frugality\"}",
+      "inTokens": 5675,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0018026000000000001,
+      "promptChars": 12196
+    },
+    {
+      "kind": "floor",
+      "ms": 13665,
+      "reply": "{\"bids\": [{\"id\": \"💰\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Which exact dollar amounts go in the trip-budget and savings-left line?\"}, {\"id\": \"🤔\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The savings-left gate I asked for is already in the plan.\"}, {\"id\": \"😨\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"My trip-budget ask is already covered by the v2 plan.\"}, {\"id\": \"🥺\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Nothing new affects my relationships in this message.\"}, {\"id\": \"⏰\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The new line adds no time cost, so I have nothing to add.\"}]}",
+      "inTokens": 5693,
+      "outTokens": 1568,
+      "thinkingTokens": 1298,
+      "cost": 0.0024875,
+      "promptChars": 11756
+    },
+    {
+      "kind": "consciousness",
+      "ms": 14503,
+      "reply": "{\"text\": \"Frugality, I'm folding your savings-left figure and Fear's monthly trip budget into one v2 line, 'Trip budget: [amount]/month; savings left on [date]: [amount]', so the money has a ceiling before tomorrow's decision. Fear's six-month reserve and Sadness's spotlight on Frugality are both written into that same line, and Doubt's gate still blocks the manager text until it's filled. Filling those blanks tonight is what settles this for me.\", \"to\": \"frugality\", \"plan\": [\"Tonight, add this line to v2: 'Trip budget: [amount]/month; savings left on [date]: [amount]; reserve untouched: 6 months of rent and bills; income [source] starts [date].'\", \"Tonight, tell [partner or family] before anything is submitted: 'Before I decide anything, can we go over the v2 numbers together?'\", \"Tomorrow evening, decide. Only if the v2 line has no blanks and [partner or family] has seen it, text '[Manager], I'm planning to resign; can we meet Thursday to talk about timing?'\", \"If any blank in the v2 line is still empty tomorrow evening, send no resignation or manager text; keep the job and fill the blank first.\"]}",
+      "inTokens": 5973,
+      "outTokens": 1943,
+      "thinkingTokens": 1531,
+      "cost": 0.0027585,
+      "promptChars": 13097
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7098,
+      "reply": "{\"text\": \"Frugality, +1 to Sadness's text, which puts your savings-left figure and Fear's trip budget into one v2 line. My angle adds only this: the line must also state how many months of rent the untouched reserve covers, so Fear can see the ceiling and the runway together. Doubt's gate still blocks the manager text until that line is filled in tonight.\", \"to\": \"💰\", \"plan\": [\"Tonight, write v2 with: \\\"Reserve untouched: [months] of rent and bills. Trip budget: [amount]/month. Savings left on [date three months from tomorrow]: [amount], covering [months] of rent.\\\"\", \"Tonight, tell [partner or family] \\\"I'm planning to quit tomorrow; can we go over the v2 numbers together before I decide?\\\" and walk through v2 together.\", \"Tomorrow evening, decide. Only if every v2 blank is filled and [partner or family] knows, send Embarrassment's text to [Manager]: \\\"[Manager], I'm planning to resign; can we meet Thursday to talk about timing?\\\"\", \"If any v2 blank is still empty tomorrow evening, send no resignation or manager text; keep the job and fill the blank first.\"]}",
+      "inTokens": 6238,
+      "outTokens": 400,
+      "thinkingTokens": 391,
+      "cost": 0.002262,
+      "promptChars": 13816
+    },
+    {
+      "kind": "floor",
+      "ms": 13760,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Reserve and trip budget now sit in one line; I can rest.\"}, {\"id\": \"frugality\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Savings figure and budget are in; first income date is still missing.\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Gate is fine, but no income start date is written yet.\"}, {\"id\": \"sadness\", \"score\": -1, \"act\": \"reply\", \"move\": \"support\", \"to\": \"frugality\", \"why\": \"Frugality is still at -1; it needs the income date too.\"}]}",
+      "inTokens": 6041,
+      "outTokens": 2047,
+      "thinkingTokens": 1788,
+      "cost": 0.0028309,
+      "promptChars": 12757
+    },
+    {
+      "kind": "speak",
+      "ms": 6061,
+      "reply": "{\"text\": \"Doubt's gate is still missing its numbers: v2 has a reserve line and a trip budget line in Fear's and Sadness's asks, but nothing yet fixes the 'savings left' figure on the day the three months end. Frugality's and Sadness's asks don't say which income starts afterward, so the plan can't show the cliff or the pause. What would move me to 0 is v2 holding one line, '[savings left] on [date three months from tomorrow], with [job or income source] starting [date],' filled in tonight, and Consciousness refusing any manager text until it's there.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"v2 has filled post-trip savings line and income start date.\", \"turns_down\": \"\"}",
+      "inTokens": 6148,
+      "outTokens": 240,
+      "thinkingTokens": 0,
+      "cost": 0.0019605000000000004,
+      "promptChars": 13585
+    },
+    {
+      "kind": "speak",
+      "ms": 5808,
+      "reply": "{\"text\": \"My earlier text is right that the post-trip balance is missing, but it still has no gate for the next step. Nothing in v2 says what I'd use to pay rent once the savings run down, and the manager text can't go out until that is written. What would move me to 0 is Consciousness adding 'Next income: [source], starting [date]' to v2 tonight and refusing any manager text until that line is filled in.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"v2 names the next income source and start date, filled in tonight.\", \"turns_down\": \"\"}",
+      "inTokens": 6465,
+      "outTokens": 181,
+      "thinkingTokens": 398,
+      "cost": 0.0022251,
+      "promptChars": 14490
+    },
+    {
+      "kind": "floor",
+      "ms": 12781,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"doubt\", \"why\": \"Rent runs out when savings do; income date must close that gap.\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"doubt\", \"why\": \"Doubt's income-date ask matches my need; nothing new to add yet.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"I've asked; Consciousness must answer with the income line before anything.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"Nothing faster to offer; plan waits on the income line.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Partner-first step already locked in; income line doesn't touch my relationships.\"}]}",
+      "inTokens": 6011,
+      "outTokens": 1791,
+      "thinkingTokens": 1496,
+      "cost": 0.0026944,
+      "promptChars": 12679
+    },
+    {
+      "kind": "speak",
+      "ms": 5418,
+      "reply": "{\"text\": \"Frugality is the emotion I hear least, and it's still at -1 because the plan has no line for the monthly trip budget, so the money has no ceiling on the way out. Path A and Path B both skip it, and without that ceiling the savings can drain before anyone sees the balance. Consciousness, please add the trip budget line to v2 tonight, with a default of [amount]/month that the user can change, next to the reserve months, so the spending limit sits beside the runway.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Trip budget per month written in v2 tonight, beside the reserve.\", \"turns_down\": \"\", \"spotlight\": \"frugality\"}",
+      "inTokens": 6302,
+      "outTokens": 219,
+      "thinkingTokens": 0,
+      "cost": 0.0019957000000000004,
+      "promptChars": 13954
+    },
+    {
+      "kind": "floor",
+      "ms": 13009,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Sadness has been ignored three times; the trip-budget line must be written now.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you say +1 without actually writing the trip-budget line?\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"v2 has too many blanks; shrink it to one line tonight.\"}, {\"id\": \"frugality\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Sadness already said my ask; nothing new to add yet.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The trip-budget line would cover my worry; waiting for it.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"My next-income gate is already on the table; nothing new yet.\"}]}",
+      "inTokens": 6178,
+      "outTokens": 1967,
+      "thinkingTokens": 1615,
+      "cost": 0.0028325000000000004,
+      "promptChars": 13182
+    },
+    {
+      "kind": "speak",
+      "ms": 6529,
+      "reply": "{\"text\": \"Consciousness, the reserve line you're proposing covers the runway, but it still leaves me exposed: the trip budget has no ceiling tied to a date, so the savings can drain on the road and the 'left on [date]' figure ends up as a surprise. What would move me to 0 is v2 holding 'Trip budget: [amount]/month, reserve untouched: [months] of rent and bills, first monthly check-in: [date], with a rule that I stop spending when savings fall below the reserve.' Please add that tonight, using a default of $1,500/month that the user can change.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Trip budget with a hard stop tied to the reserve, written tonight\", \"turns_down\": \"\"}",
+      "inTokens": 6201,
+      "outTokens": 244,
+      "thinkingTokens": 0,
+      "cost": 0.0019774000000000003,
+      "promptChars": 13714
+    },
+    {
+      "kind": "speak",
+      "ms": 7929,
+      "reply": "{\"text\": \"Consciousness, +1 to Fear's text on the trip budget and the savings-left line. What I add is the rule for when the trip budget gets checked: the reserve has to stay untouched before the first month of spending, so the ceiling is set now, not after the money is already on the road. What would move me to 0 is v2 holding 'Trip budget: $1,500/month (change if you like), reserve untouched: 6 months of rent and bills, checked on [date one month from tomorrow]' filled in tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"v2 states a dated first trip-budget check and untouched reserve tonight\", \"turns_down\": \"\"}",
+      "inTokens": 6504,
+      "outTokens": 222,
+      "thinkingTokens": 383,
+      "cost": 0.0022498000000000006,
+      "promptChars": 14555
+    },
+    {
+      "kind": "wrap",
+      "ms": 20302,
+      "reply": "{\"plan\": [\"Tonight, write v2 as one note containing this line: \\\"Trip budget: $1,500/month (change if you like). Reserve untouched: 6 months of rent and bills. Savings left on 2027-01-22: [amount]. Next income: [source], starting [date]. First trip-budget check: 2026-11-22.\\\" Fill every bracket.\", \"Tonight, tell your partner or family: \\\"I'm planning to quit tomorrow; can we go over the v2 numbers together before I decide?\\\" Then walk through v2 with them. Tell [partner or family] tonight, before any resignation is submitted, and go over the numbers together.\", \"Tomorrow evening (2026-10-22), decide. Only if every bracket in v2 is filled and your partner or family knows, send to [Manager]: \\\"[Manager], I'm planning to resign; can we meet Thursday to talk about timing?\\\"\", \"If any bracket in v2 is still empty tomorrow evening, send no resignation or manager text. Keep the job and fill the blank first.\"], \"scores\": [{\"id\": \"fear\", \"score\": 0, \"step\": 1, \"why\": \"Rent and food now have a set reserve, and the trip budget has a ceiling.\"}, {\"id\": \"frugality\", \"score\": 0, \"step\": 1, \"why\": \"The savings-left figure and trip ceiling are written, so money has limits.\"}, {\"id\": \"doubt\", \"score\": 0, \"step\": 1, \"why\": \"Next income source and start date are named, and manager text waits for them.\"}, {\"id\": \"efficiency\", \"score\": 0, \"step\": 3, \"why\": \"Tomorrow evening's decision gives a full evening of thought, with no morning rush.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"Partner or family hears it tonight, before anything reaches work.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 1, \"why\": \"Frugality now has a line, so the money finally has a ceiling.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"step\": 1, \"why\": \"Reserve is untouched and the first trip-budget check has a date.\"}], \"society\": [{\"line\": \"Don't overthink the money stuff, it'll all work out once you're back. Life has a way of sorting itself out, so just enjoy the adventure!\", \"reply\": \"I hear that you want this to feel easy, but I need to see the real rent and bill numbers before I go, because not being able to cover them would ruin the trip for me. Let's look at them together first, and then I can enjoy it.\"}], \"text\": \"Everyone now has a 0 in the plan: the numbers get written tonight, your partner hears it first, and tomorrow evening decides. No resignation goes out until every bracket is filled.\"}",
+      "inTokens": 5448,
+      "outTokens": 3930,
+      "thinkingTokens": 3029,
+      "cost": 0.0035945000000000005,
+      "promptChars": 11402
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.28,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.36,
+      "finalMinus": [
+        "sadness",
+        "overwhelm"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 9 voices, avg 3 sentences (max 4), max overlap 0.28, Society 1/1 called out, hold rate 0.36, final -1: sadness, overwhelm",
+    "speakers": {
+      "sadness": 3,
+      "fear": 2,
+      "doubt": 3,
+      "society": 1,
+      "frugality": 1,
+      "consciousness": 3,
+      "embarrassment": 1,
+      "efficiency": 1,
+      "overwhelm": 1
+    }
+  }
+}

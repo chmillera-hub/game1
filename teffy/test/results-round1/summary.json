@@ -1,0 +1,229 @@
+{
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "society": "sometimes",
+  "summary": [
+    {
+      "id": "credit-taker",
+      "calls": 28,
+      "seconds": 243,
+      "cost": 0.0507,
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 5,
+      "avgSentences": 3.4,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.34,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 2,
+      "bareQuestions": 1,
+      "holdRate": 0.23,
+      "finalMinus": [
+        "doubt"
+      ],
+      "errors": 0,
+      "flags": [
+        "[6] anger echoes [4] anger (0.32)",
+        "[16] embarrassment echoes [14] embarrassment (0.30)",
+        "[18] sadness echoes [4] anger (0.31)",
+        "[18] sadness echoes [14] embarrassment (0.34)",
+        "question without a stated reason? [3] doubt"
+      ]
+    },
+    {
+      "id": "weekend-overwhelm",
+      "calls": 25,
+      "seconds": 244,
+      "cost": 0.047,
+      "messages": 14,
+      "voices": 7,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.38,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 5,
+      "bareQuestions": 4,
+      "holdRate": 0.32,
+      "finalMinus": [],
+      "errors": 0,
+      "flags": [
+        "[8] sadness echoes [5] anger (0.31)",
+        "[8] sadness echoes [7] anger (0.38)",
+        "[12] fear echoes [10] fear (0.37)",
+        "question without a stated reason? [5] anger",
+        "question without a stated reason? [7] anger",
+        "question without a stated reason? [8] sadness",
+        "question without a stated reason? [14] consciousness"
+      ]
+    },
+    {
+      "id": "quit-and-travel",
+      "calls": 30,
+      "seconds": 245,
+      "cost": 0.0522,
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.15,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 3,
+      "bareQuestions": 3,
+      "holdRate": 0.35,
+      "finalMinus": [],
+      "errors": 0,
+      "flags": [
+        "question without a stated reason? [3] annoyance",
+        "question without a stated reason? [4] fear",
+        "question without a stated reason? [14] impulsivity"
+      ]
+    },
+    {
+      "id": "exam-all-nighter",
+      "calls": 27,
+      "seconds": 253,
+      "cost": 0.0524,
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.18,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 1,
+      "holdRate": 0.37,
+      "finalMinus": [
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": [
+        "question without a stated reason? [13] fear"
+      ]
+    },
+    {
+      "id": "new-city",
+      "calls": 28,
+      "seconds": 276,
+      "cost": 0.0561,
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 5,
+      "avgSentences": 3.4,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.32,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 8,
+      "bareQuestions": 5,
+      "holdRate": 0.21,
+      "finalMinus": [
+        "loneliness",
+        "sadness",
+        "doubt"
+      ],
+      "errors": 0,
+      "flags": [
+        "[15] anger echoes [14] loneliness (0.32)",
+        "question without a stated reason? [6] tiredness",
+        "question without a stated reason? [8] sadness",
+        "question without a stated reason? [11] embarrassment",
+        "question without a stated reason? [14] loneliness",
+        "question without a stated reason? [15] anger"
+      ]
+    },
+    {
+      "id": "third-saturday",
+      "calls": 28,
+      "seconds": 285,
+      "cost": 0.0563,
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 6,
+      "avgSentences": 3.6,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.26,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 2,
+      "bareQuestions": 0,
+      "holdRate": 0.34,
+      "finalMinus": [
+        "tiredness"
+      ],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "sister-comments",
+      "calls": 29,
+      "seconds": 304,
+      "cost": 0.0589,
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 6,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.38,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 2,
+      "bareQuestions": 1,
+      "holdRate": 0.23,
+      "finalMinus": [
+        "loneliness",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": [
+        "[4] embarrassment echoes [3] loneliness (0.31)",
+        "[15] sadness echoes [14] fear (0.38)",
+        "question without a stated reason? [14] fear"
+      ]
+    },
+    {
+      "id": "disc-golf",
+      "calls": 58,
+      "seconds": 616,
+      "cost": 0.1481,
+      "messages": 32,
+      "voices": 9,
+      "maxSentences": 5,
+      "avgSentences": 3.4,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.35,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 6,
+      "bareQuestions": 3,
+      "holdRate": 0.31,
+      "finalMinus": [
+        "efficiency",
+        "doubt",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": [
+        "[9] sadness echoes [4] embarrassment (0.35)",
+        "[14] embarrassment echoes [9] sadness (0.35)",
+        "question without a stated reason? [3] annoyance",
+        "question without a stated reason? [12] tiredness",
+        "question without a stated reason? [18] doubt"
+      ]
+    }
+  ]
+}

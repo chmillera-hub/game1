@@ -1,0 +1,1397 @@
+{
+  "scenario": {
+    "id": "weekend-overwhelm",
+    "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 310445,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 31,
+    "inTokens": 155978,
+    "outTokens": 32363,
+    "thinkingTokens": 24092,
+    "cost": 0.06278701
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Tonight: name the person you'll spend Sunday afternoon with and the start time, so that slot is locked in.",
+          "Saturday: work one 2-hour block on Report A. Lights out by 10pm. If it runs past 9:30pm, stop and text your manager: \"Report A is at 9:30pm and I'm stopping for tonight; I'll finish by Monday noon.\"",
+          "Sunday 6pm: if your manager hasn't replied, send: \"If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.\"",
+          "Sunday: no report work after lunch. Spend the afternoon with the person you named, at the start time you set. Lights out by 10pm."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "overwhelm": {
+          "score": 0,
+          "need": "",
+          "why": "Too many demands are already stacked on me, and a full weekend of work presses past my limit."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "I'm already running on empty, and two days of nonstop work will drain what's left."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Skipping rest for a whole weekend puts my body and health at real risk."
+        },
+        "guilt": {
+          "score": -1,
+          "need": "Name [person] and a Sunday afternoon start time, locked in tonight",
+          "why": "Giving up my weekend hurts me, and it leaves my people with a worn-out version of me."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "Burning out now endangers my focus, my mood, and everything that depends on them."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Guilt a 0",
+          "why": ""
+        },
+        "embarrassment": {
+          "score": -1,
+          "need": "Name [person] and a Sunday time, then I'll draft their text",
+          "why": ""
+        }
+      },
+      "spotlight": "guilt",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Two reports landed on me this week, and I can power through them by working all weekend, so let's get them done and move on. Nobody needs to stress about it once the backlog is gone.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "overwhelm",
+          "text": "Consciousness's plan treats the weekend as free time, but it never asks what my body and people lose when I work it all. I can't push past a full weekend of work, and that's my limit. Keep both reports, but shrink the weekend: two 2-hour blocks, Saturday and Sunday, lights out 10pm both nights. By Sunday night, text your manager: \"I can finish Report A by Saturday and Report B by Monday morning; which first?\"",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Demands already exceed my limit. Shrink the plan; I won't be persuaded."
+        },
+        {
+          "n": 4,
+          "who": "annoyance",
+          "text": "Consciousness's line \"Nobody needs to stress about it once the backlog is gone\" treats the stress as something to clear after the work, but it never says how I get through the weekend without hitting my limit. My Annoyance is with the word \"power through\": it brushes past Tiredness, Wellness, and Guilt, and it's dismissive of what two days of nonstop work costs. What would move me to 0 is keeping the two-block, 10pm-cutoff plan and sending the manager text this Sunday.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Saying nobody needs to stress dismisses Overwhelm's limit. Please acknowledge it."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.",
+          "to": "annoyance",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "tiredness",
+          "text": "I'm already running on empty, and Society's 'push through, you'll be glad' skips the question of what my body gets back after two days of nonstop work. Following it means Saturday and Sunday with no real rest, which leaves me too drained to focus Monday, the very thing the weekend was supposed to protect. What would move me to 0 is the two-block, 10pm-cutoff plan, with real sleep both nights.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "The plan misses where the weekend breaks: Tiredness and Wellness can't survive two straight days of nonstop work. Overwhelm's limit means I need less on the list, not more pressure. Path A keeps both reports, capped at two 2-hour blocks a day with lights out at 10pm, which I can live with. Path B moves one report to Monday via a manager text.",
+          "to": "overwhelm",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "overwhelm",
+          "text": "Path A still runs two 2-hour blocks each day with no hard stop on Saturday, and if Report B slips past Sunday night, I'm the one holding it into Monday's stand-up with a half-finished weekend behind me. My real question is what happens to the 10pm cutoff when Report A runs late Saturday: it needs a fixed rule, so I'll ask you to set one tonight, like 'Saturday: if Block 2 runs past 9:30pm, stop and text the manager instead.' That keeps the cutoff from being a promise I break on Saturday night.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "cost",
+          "why": "Neither path holds all three: two blocks, 10pm, and the text."
+        },
+        {
+          "n": 9,
+          "who": "sadness",
+          "text": "Wellness is the one hurting most. Path A keeps two straight days of 2-hour blocks, and my body has no guaranteed rest between them, even with the 10pm cutoff, since Saturday can run late. What would move me to 0 is a Saturday rule that ends the work at 9:30pm and a real Sunday break with no report work after lunch, both set tonight.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Wellness has barely been heard"
+        },
+        {
+          "n": 10,
+          "who": "wellness",
+          "text": "I'm the one carrying the body risk here: two straight days of work with no real rest would leave me running on empty, and Saturday can run late even with the 10pm cutoff. I'm asking Sadness: when you picked Wellness as the one most neglected, what would you need to see written into Saturday and Sunday to feel that my body isn't being traded away? What would settle me is a concrete Sunday with no report work after lunch and a Saturday hard stop at 9:30pm, both set tonight.",
+          "to": "sadness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Does the 9:30pm Saturday stop still leave real sleep before Sunday?"
+        },
+        {
+          "n": 11,
+          "who": "society",
+          "text": "Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.",
+          "to": "wellness",
+          "move": "platitude"
+        },
+        {
+          "n": 12,
+          "who": "wellness",
+          "text": "Society's 'it'll sort itself out once the reports are off your plate' assumes my health recovers on its own after the work ends, but it never says what happens to my sleep, food, or movement during the weekend itself. Pushing through two straight days with no real break would leave me depleted before Monday even starts. Wellness needs a concrete Sunday with no report work after lunch, plus a Saturday stop at 9:30pm, and I'm already on board with Overwhelm's and Tiredness's asks.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 13,
+          "who": "consciousness",
+          "text": "Path B asks your manager to move Report B to Wednesday, which Overwhelm needs, and it keeps Sunday afternoon for [person you'd most like to see], which answers Guilt's worry about my people. Overwhelm, the Saturday 9:30pm stop is fixed tonight, and the plan now has four steps instead of Path A's longer list. You: tell me who [person] is, and I'll plan Sunday around them.",
+          "to": "guilt",
+          "move": "refine"
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Guilt is the emotion I hear most under all of this. It's the one saying giving up the weekend hurts, and that my people would get a worn-out version of me, and Path B only half answers that because Sunday afternoon is still a placeholder nobody has filled in yet. What would move Guilt to 0 is a fixed Sunday afternoon plan: Consciousness sets it tonight, and the user fills in [person] so Guilt can see who gets the real time.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Guilt has barely been heard"
+        },
+        {
+          "n": 15,
+          "who": "fear",
+          "text": "I'm at -1 because Path B depends entirely on the manager saying yes to Wednesday, and the plan has no move if the reply is no or never comes. Report B could land Monday morning with nothing ready, which puts Overwhelm, Tiredness, and Guilt right back in the same spot. Consciousness, please add a Sunday 6pm default to the manager text: 'If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.'",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Nobody has voiced my focus and mood risk yet. Monday's check matters."
+        },
+        {
+          "n": 16,
+          "who": "embarrassment",
+          "text": "I'm at -1 because the plan still has no fixed time for the weekend's social side: Path B's Sunday afternoon is a blank [person] slot, and Guilt, Overwhelm and I can't check whether the plan actually protects my relationships. Smallest change to reach 0: you tell me who [person] is and when you'd like to see them, and I'll draft the exact text to send them this week.",
+          "to": "user",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "'Unless you tell me otherwise' reads pushy to my manager. Keep the text short and polite."
+        },
+        {
+          "n": 17,
+          "who": "consciousness",
+          "text": "Fear's Sunday 6pm fallback and Overwhelm's Saturday 9:30pm stop both stay, and I'm cutting the plan to three steps so Overwhelm gets less, not more. Guilt still needs a real Sunday afternoon, so [person] gets a fixed slot. You: tell me who [person] is and what time Sunday works, and I'll draft their text.",
+          "to": "guilt",
+          "move": "refine"
+        },
+        {
+          "n": 18,
+          "who": "guilt",
+          "text": "Three steps is less for Overwhelm, but Sunday afternoon with [person] still has no time, so I can't reach 0 yet. The 6pm fallback and 9:30pm stop don't touch my need, which is that I'm not trading away my people for a worn-out version of me. What would move me to 0 is you naming [person] and a Sunday start time tonight, plus Consciousness locking that slot in the plan so nothing on Sunday afternoon is work.",
+          "to": "user",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Sunday afternoon is still a blank slot, so my worry about my people stands."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Two reports stay on the list, but the weekend gets smaller: one capped block Saturday, real sleep both nights, and Sunday afternoon kept for people. Tell me who you'll see and what time tonight so I can lock that slot in.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Power through the weekend",
+          "from": "consciousness",
+          "by": "annoyance",
+          "why": "Acknowledge my concern about nonstop work, and keep the 10pm cutoff."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.",
+          "to": "annoyance",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        },
+        {
+          "text": "Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.",
+          "to": "wellness",
+          "style": "effort-shaming (\"that seems like a lot of effort, are you sure?\")"
+        }
+      ],
+      "lensesUsed": {
+        "overwhelm": [
+          "cost"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "overwhelm": "A fixed Saturday stop rule that protects the 10pm cutoff, set tonight.",
+        "fear": "Set tonight: a Sunday 6pm fallback text if manager doesn't reply.",
+        "wellness": "Sunday with no report work after lunch, plus Saturday stop at 9:30pm.",
+        "tiredness": "Two-block weekend plan with real sleep both nights.",
+        "annoyance": "Acknowledge my concern about nonstop work, and keep the 10pm cutoff."
+      },
+      "waiting": {
+        "sadness": 0,
+        "efficiency": 1,
+        "overwhelm": 2,
+        "tiredness": 2,
+        "doubt": 1,
+        "wellness": 0,
+        "annoyance": 0,
+        "fear": 0,
+        "guilt": 0,
+        "loneliness": 1,
+        "embarrassment": 1
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 31,
+        "inChars": 309000,
+        "outChars": 23746,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 12,
+          "society": 2,
+          "consciousness": 6,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 3
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Two reports landed on me this week, and I can power through them by working all weekend, so let's get them done and move on. Nobody needs to stress about it once the backlog is gone.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Push through the whole weekend, clear both extra reports, and walk into Monday with a clean slate."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "overwhelm",
+            "why": "Too many demands are already stacked on me, and a full weekend of work presses past my limit."
+          },
+          {
+            "id": "tiredness",
+            "why": "I'm already running on empty, and two days of nonstop work will drain what's left."
+          },
+          {
+            "id": "wellness",
+            "why": "Skipping rest for a whole weekend puts my body and health at real risk."
+          },
+          {
+            "id": "guilt",
+            "why": "Giving up my weekend hurts me, and it leaves my people with a worn-out version of me."
+          },
+          {
+            "id": "fear",
+            "why": "Burning out now endangers my focus, my mood, and everything that depends on them."
+          }
+        ],
+        "spotlight": "overwhelm",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Demands already exceed my limit. Shrink the plan; I won't be persuaded."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Overwhelm has been unheard. I'm listening, and it's allowed to set the limit."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Working nonstop wastes energy. Triage the two reports and do the most urgent first."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "pushback",
+            "to": "",
+            "why": "My objection to the nonstop weekend is already on record. Nothing new to add."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "Still hurt by giving up my weekend, but I'll wait for the revised plan."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "pushback",
+            "to": "",
+            "why": "My health concern was already stated; repeating it adds nothing now."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "overwhelm",
+        "text": "Consciousness's plan treats the weekend as free time, but it never asks what my body and people lose when I work it all. I can't push past a full weekend of work, and that's my limit. Keep both reports, but shrink the weekend: two 2-hour blocks, Saturday and Sunday, lights out 10pm both nights. By Sunday night, text your manager: \"I can finish Report A by Saturday and Report B by Monday morning; which first?\"",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Demands already exceed my limit. Shrink the plan; I won't be persuaded.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Even two blocks drain me; I need actual rest this weekend."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Saying nobody needs to stress dismisses Overwhelm's limit. Please acknowledge it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Can two 2-hour blocks really clear both reports by Monday? Please check."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "consciousness",
+            "why": "The 10pm cutoff helps; add one fully free day for recovery."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The manager text protects my people; nothing new to add yet."
+          }
+        ],
+        "pick": "annoyance",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "annoyance",
+        "text": "Consciousness's line \"Nobody needs to stress about it once the backlog is gone\" treats the stress as something to clear after the work, but it never says how I get through the weekend without hitting my limit. My Annoyance is with the word \"power through\": it brushes past Tiredness, Wellness, and Guilt, and it's dismissive of what two days of nonstop work costs. What would move me to 0 is keeping the two-block, 10pm-cutoff plan and sending the manager text this Sunday.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Saying nobody needs to stress dismisses Overwhelm's limit. Please acknowledge it.",
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.",
+        "to": "annoyance",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "tiredness",
+        "text": "I'm already running on empty, and Society's 'push through, you'll be glad' skips the question of what my body gets back after two days of nonstop work. Following it means Saturday and Sunday with no real rest, which leaves me too drained to focus Monday, the very thing the weekend was supposed to protect. What would move me to 0 is the two-block, 10pm-cutoff plan, with real sleep both nights.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "The plan misses where the weekend breaks: Tiredness and Wellness can't survive two straight days of nonstop work. Overwhelm's limit means I need less on the list, not more pressure. Path A keeps both reports, capped at two 2-hour blocks a day with lights out at 10pm, which I can live with. Path B moves one report to Monday via a manager text.",
+        "to": "overwhelm",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Saturday and Sunday, work two 2-hour blocks each day on Reports A and B, and stop at 10pm both nights for real sleep.",
+            "Path B: Saturday, do one 2-hour block on Report A; Sunday, send your manager \"I can finish Report A by Monday noon; can Report B wait until Wednesday?\""
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Neither path holds all three: two blocks, 10pm, and the text.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A gives two blocks and real sleep both nights. I accept.",
+            "prefers": "A"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Four work hours daily still hit my health. Path B protects me.",
+            "prefers": "B"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Show me Tiredness and Wellness are safe before I agree.",
+            "prefers": "B"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Path A keeps my cutoff, but nonstop-work concern still goes unacknowledged.",
+            "prefers": "A"
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Path B keeps my weekend with people; Wellness already voiced my worry.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "overwhelm",
+        "text": "Path A still runs two 2-hour blocks each day with no hard stop on Saturday, and if Report B slips past Sunday night, I'm the one holding it into Monday's stand-up with a half-finished weekend behind me. My real question is what happens to the 10pm cutoff when Report A runs late Saturday: it needs a fixed rule, so I'll ask you to set one tonight, like 'Saturday: if Block 2 runs past 9:30pm, stop and text the manager instead.' That keeps the cutoff from being a promise I break on Saturday night.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "cost",
+        "why": "Neither path holds all three: two blocks, 10pm, and the text.",
+        "prevScore": -1,
+        "lensLabel": "the cost",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "sadness",
+        "text": "Wellness is the one hurting most. Path A keeps two straight days of 2-hour blocks, and my body has no guaranteed rest between them, even with the 10pm cutoff, since Saturday can run late. What would move me to 0 is a Saturday rule that ends the work at 9:30pm and a real Sunday break with no report work after lunch, both set tonight.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Wellness has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "sadness",
+            "why": "Does the 9:30pm Saturday stop still leave real sleep before Sunday?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Guilt and Wellness stay exposed unless Monday's stand-up risk is planned for."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "My people get a worn-out version of me if the weekend is packed."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "Saturday stop rule is already requested; nothing new to add."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Sleep both nights is already in the plan; I'll wait."
+          }
+        ],
+        "pick": "wellness",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "wellness",
+        "text": "I'm the one carrying the body risk here: two straight days of work with no real rest would leave me running on empty, and Saturday can run late even with the 10pm cutoff. I'm asking Sadness: when you picked Wellness as the one most neglected, what would you need to see written into Saturday and Sunday to feel that my body isn't being traded away? What would settle me is a concrete Sunday with no report work after lunch and a Saturday hard stop at 9:30pm, both set tonight.",
+        "to": "sadness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Does the 9:30pm Saturday stop still leave real sleep before Sunday?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "society",
+        "text": "Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.",
+        "to": "wellness",
+        "move": "platitude",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "wellness",
+        "text": "Society's 'it'll sort itself out once the reports are off your plate' assumes my health recovers on its own after the work ends, but it never says what happens to my sleep, food, or movement during the weekend itself. Pushing through two straight days with no real break would leave me depleted before Monday even starts. Wellness needs a concrete Sunday with no report work after lunch, plus a Saturday stop at 9:30pm, and I'm already on board with Overwhelm's and Tiredness's asks.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "consciousness",
+        "text": "Path B asks your manager to move Report B to Wednesday, which Overwhelm needs, and it keeps Sunday afternoon for [person you'd most like to see], which answers Guilt's worry about my people. Overwhelm, the Saturday 9:30pm stop is fixed tonight, and the plan now has four steps instead of Path A's longer list. You: tell me who [person] is, and I'll plan Sunday around them.",
+        "to": "guilt",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Tonight: Saturday gets one 2-hour block on Report A. If it runs past 9:30pm, stop and be in bed by 10pm.",
+            "Sunday morning, text your manager: 'I can finish Report A by Monday noon; can Report B wait until Wednesday?'",
+            "Sunday: no report work after lunch. Spend the afternoon with [person you'd most like to see].",
+            "You: fill in [person]. If they're free Sunday afternoon, meet them; if not, call them that day."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 17
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Guilt is the emotion I hear most under all of this. It's the one saying giving up the weekend hurts, and that my people would get a worn-out version of me, and Path B only half answers that because Sunday afternoon is still a placeholder nobody has filled in yet. What would move Guilt to 0 is a fixed Sunday afternoon plan: Consciousness sets it tonight, and the user fills in [person] so Guilt can see who gets the real time.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Guilt has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 19
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Who is [person]? Sunday afternoon needs a name before I can settle."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "guilt",
+            "why": "Real time with them is the connection I've been missing. Name them now."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Nobody has voiced my focus and mood risk yet. Monday's check matters."
+          }
+        ],
+        "pick": "fear",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "fear",
+        "text": "I'm at -1 because Path B depends entirely on the manager saying yes to Wednesday, and the plan has no move if the reply is no or never comes. Report B could land Monday morning with nothing ready, which puts Overwhelm, Tiredness, and Guilt right back in the same spot. Consciousness, please add a Sunday 6pm default to the manager text: 'If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.'",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Nobody has voiced my focus and mood risk yet. Monday's check matters.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "fear",
+            "why": "A Sunday 6pm fallback adds another demand. Keep the weekend capped, and send one text only."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "'Unless you tell me otherwise' reads pushy to my manager. Keep the text short and polite."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Fear's fallback covers the no-reply gap, so my concern is already handled."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Sunday afternoon with my people is still the open piece; I'll wait."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "embarrassment",
+        "text": "I'm at -1 because the plan still has no fixed time for the weekend's social side: Path B's Sunday afternoon is a blank [person] slot, and Guilt, Overwhelm and I can't check whether the plan actually protects my relationships. Smallest change to reach 0: you tell me who [person] is and when you'd like to see them, and I'll draft the exact text to send them this week.",
+        "to": "user",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "'Unless you tell me otherwise' reads pushy to my manager. Keep the text short and polite.",
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "consciousness",
+        "text": "Fear's Sunday 6pm fallback and Overwhelm's Saturday 9:30pm stop both stay, and I'm cutting the plan to three steps so Overwhelm gets less, not more. Guilt still needs a real Sunday afternoon, so [person] gets a fixed slot. You: tell me who [person] is and what time Sunday works, and I'll draft their text.",
+        "to": "guilt",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Tonight: Saturday gets one 2-hour block on Report A. If it runs past 9:30pm, stop and text your manager: \"Report A is at 9:30pm and I'm stopping for tonight; I'll finish by Monday noon.\"",
+            "Sunday 6pm: if your manager hasn't replied, send: \"If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.\"",
+            "Sunday: no report work after lunch. Spend the afternoon with [person you'd most like to see]; you fill in who and what time."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 24
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 25
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Sunday afternoon is still a blank slot, so my worry about my people stands."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The plan never says I get real sleep both nights. Please add that."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Who is the Sunday person, and what time? I can't draft their text without it."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The fixed 9:30pm Saturday stop respects my limit. I can live with this."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The Sunday 6pm fallback is in place, so I'm settled."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Saturday stop and Sunday no-work afternoon are covered. Nothing new to add."
+          }
+        ],
+        "pick": "guilt",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "guilt",
+        "text": "Three steps is less for Overwhelm, but Sunday afternoon with [person] still has no time, so I can't reach 0 yet. The 6pm fallback and 9:30pm stop don't touch my need, which is that I'm not trading away my people for a worn-out version of me. What would move me to 0 is you naming [person] and a Sunday start time tonight, plus Consciousness locking that slot in the plan so nothing on Sunday afternoon is work.",
+        "to": "user",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Sunday afternoon is still a blank slot, so my worry about my people stands.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "spotlight",
+        "id": "guilt",
+        "at": 30
+      },
+      {
+        "type": "wrap",
+        "text": "Two reports stay on the list, but the weekend gets smaller: one capped block Saturday, real sleep both nights, and Sunday afternoon kept for people. Tell me who you'll see and what time tonight so I can lock that slot in.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Tonight: name the person you'll spend Sunday afternoon with and the start time, so that slot is locked in.",
+            "Saturday: work one 2-hour block on Report A. Lights out by 10pm. If it runs past 9:30pm, stop and text your manager: \"Report A is at 9:30pm and I'm stopping for tonight; I'll finish by Monday noon.\"",
+            "Sunday 6pm: if your manager hasn't replied, send: \"If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.\"",
+            "Sunday: no report work after lunch. Spend the afternoon with the person you named, at the start time you set. Lights out by 10pm."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "why": "The weekend shrinks to one capped block, and I can live with that.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "One block and lights out by 10pm give me real sleep both nights.",
+            "step": 2
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "A Sunday with no report work after lunch protects my body.",
+            "step": 0
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "why": "I still need a named person and a set time; without them I'm not satisfied.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "The 6pm fallback covers the case where my manager never answers.",
+            "step": 0
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "The 10pm cutoff is kept, and nonstop weekend work is no longer the plan.",
+            "step": 2
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Guilt still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "why": "I still have no name or time to draft a text from; step 1 fixes that tonight.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.",
+            "to": "annoyance",
+            "reply": "I hear that plenty of people do it, but I can't work all weekend without my sleep and health paying for it. I'm keeping a firm stop time so I can actually show up Monday."
+          },
+          {
+            "line": "Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.",
+            "to": "wellness",
+            "reply": "I appreciate the encouragement, but my health doesn't reliably bounce back after a nonstop weekend. I need real rest this weekend, not a promise that it'll fix itself later."
+          }
+        ],
+        "questions": [
+          {
+            "id": "embarrassment",
+            "text": "I'm at -1 because the plan still has no fixed time for the weekend's social side: Path B's Sunday afternoon is a blank [person] slot, and Guilt, Overwhelm and I can't check whether the plan actually protects my relationships. Smallest change to reach 0: you tell me who [person] is and when you'd like to see them, and I'll draft the exact text to send them this week."
+          },
+          {
+            "id": "guilt",
+            "text": "Three steps is less for Overwhelm, but Sunday afternoon with [person] still has no time, so I can't reach 0 yet. The 6pm fallback and 9:30pm stop don't touch my need, which is that I'm not trading away my people for a worn-out version of me. What would move me to 0 is you naming [person] and a Sunday start time tonight, plus Consciousness locking that slot in the plan so nothing on Sunday afternoon is work."
+          }
+        ],
+        "at": 31
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13094,
+      "reply": "{\"plan\": \"Push through the whole weekend, clear both extra reports, and walk into Monday with a clean slate.\", \"text\": \"Two reports landed on me this week, and I can power through them by working all weekend, so let's get them done and move on. Nobody needs to stress about it once the backlog is gone.\", \"minus\": [{\"id\": \"overwhelm\", \"why\": \"Too many demands are already stacked on me, and a full weekend of work presses past my limit.\"}, {\"id\": \"tiredness\", \"why\": \"I'm already running on empty, and two days of nonstop work will drain what's left.\"}, {\"id\": \"wellness\", \"why\": \"Skipping rest for a whole weekend puts my body and health at real risk.\"}, {\"id\": \"guilt\", \"why\": \"Giving up my weekend hurts me, and it leaves my people with a worn-out version of me.\"}, {\"id\": \"fear\", \"why\": \"Burning out now endangers my focus, my mood, and everything that depends on them.\"}], \"spotlight\": \"overwhelm\"}",
+      "inTokens": 3073,
+      "outTokens": 881,
+      "thinkingTokens": 553,
+      "cost": 0.00077451,
+      "promptChars": 4464
+    },
+    {
+      "kind": "floor",
+      "ms": 12323,
+      "reply": "```json\n{\"bids\": [\n{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Demands already exceed my limit. Shrink the plan; I won't be persuaded.\"},\n{\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Overwhelm has been unheard. I'm listening, and it's allowed to set the limit.\"},\n{\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Working nonstop wastes energy. Triage the two reports and do the most urgent first.\"},\n{\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"My objection to the nonstop weekend is already on record. Nothing new to add.\"},\n{\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"Still hurt by giving up my weekend, but I'll wait for the revised plan.\"},\n{\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"My health concern was already stated; repeating it adds nothing now.\"}\n]}\n```",
+      "inTokens": 3812,
+      "outTokens": 1320,
+      "thinkingTokens": 921,
+      "cost": 0.0017997000000000002,
+      "promptChars": 6470
+    },
+    {
+      "kind": "speak",
+      "ms": 4304,
+      "reply": "{\"text\": \"Consciousness's plan treats the weekend as free time I can spend working, but it never asks what my body and my people lose when I do that. I've already said a full weekend of work goes past my limit, so I'm not willing to push through it. Keep both reports, but shrink the weekend: work two blocks of 2 hours each on Saturday and Sunday, with lights out at 10pm both nights. Before Monday, I need to text my manager: \\\"I can finish Report A by Saturday and Report B by Monday morning; which one should come first?\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A weekend capped at two 2-hour blocks, with real rest between them\", \"turns_down\": \"\"}",
+      "inTokens": 3802,
+      "outTokens": 230,
+      "thinkingTokens": 0,
+      "cost": 0.0012507,
+      "promptChars": 6849
+    },
+    {
+      "kind": "speak",
+      "ms": 12066,
+      "reply": "{\"text\": \"Consciousness's plan treats the weekend as free time, but it never asks what my body and people lose when I work it all. I can't push past a full weekend of work, and that's my limit. Keep both reports, but shrink the weekend: two 2-hour blocks, Saturday and Sunday, lights out 10pm both nights. By Sunday night, text your manager: \\\"I can finish Report A by Saturday and Report B by Monday morning; which first?\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Two 2-hour blocks, a 10pm cutoff, and the manager text sent.\", \"turns_down\": \"\"}",
+      "inTokens": 4046,
+      "outTokens": 1503,
+      "thinkingTokens": 1518,
+      "cost": 0.0020739,
+      "promptChars": 7536
+    },
+    {
+      "kind": "floor",
+      "ms": 12981,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Even two blocks drain me; I need actual rest this weekend.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Saying nobody needs to stress dismisses Overwhelm's limit. Please acknowledge it.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Can two 2-hour blocks really clear both reports by Monday? Please check.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"consciousness\", \"why\": \"The 10pm cutoff helps; add one fully free day for recovery.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The manager text protects my people; nothing new to add yet.\"}]}",
+      "inTokens": 3938,
+      "outTokens": 1653,
+      "thinkingTokens": 1336,
+      "cost": 0.0020025,
+      "promptChars": 6733
+    },
+    {
+      "kind": "speak",
+      "ms": 7651,
+      "reply": "{\"text\": \"Consciousness's line \\\"Nobody needs to stress about it once the backlog is gone\\\" treats the stress as something to clear after the work, but it never says how I get through the weekend without hitting my limit. My Annoyance is with the word \\\"power through\\\": it brushes past Tiredness, Wellness, and Guilt, and it's dismissive of what two days of nonstop work costs. What would move me to 0 is keeping the two-block, 10pm-cutoff plan and sending the manager text this Sunday.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Acknowledge my concern about nonstop work, and keep the 10pm cutoff.\", \"turns_down\": \"Power through the weekend\"}",
+      "inTokens": 3972,
+      "outTokens": 236,
+      "thinkingTokens": 0,
+      "cost": 0.0013062,
+      "promptChars": 7246
+    },
+    {
+      "kind": "society",
+      "ms": 5340,
+      "reply": "{\"text\": \"Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.\", \"style\": \"minimizing\"}",
+      "inTokens": 2060,
+      "outTokens": 64,
+      "thinkingTokens": 192,
+      "cost": 0.0007416,
+      "promptChars": 2136
+    },
+    {
+      "kind": "speak",
+      "ms": 5679,
+      "reply": "{\"text\": \"I'm already running on empty, and Society's 'push through, you'll be glad' skips the question of what my body gets back after two days of nonstop work. Following it means Saturday and Sunday with no real rest, which leaves me too drained to focus Monday, the very thing the weekend was supposed to protect. What would move me to 0 is the two-block, 10pm-cutoff plan, with real sleep both nights.\", \"to\": \"society\", \"score\": -1, \"need\": \"Two-block weekend plan with real sleep both nights.\", \"turns_down\": \"Push through the weekend\"}",
+      "inTokens": 4415,
+      "outTokens": 190,
+      "thinkingTokens": 0,
+      "cost": 0.0014146,
+      "promptChars": 8431
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7116,
+      "reply": "{\"text\": \"Consciousness, the plan misses where the weekend breaks: Tiredness and Wellness can't survive two straight days of work, and Overwhelm's limit means I need less on the list, not more pressure to finish. Path A keeps both reports but caps each weekend day at two 2-hour blocks with lights out at 10pm, and Overwhelm's and Annoyance's needs are covered by that cap. Path B moves one report to Monday with a manager text, which lowers the load so Tiredness and Wellness get real rest and Guilt's worry about my people eases. Both paths drop the 'power through' plan, which Annoyance already turned down.\", \"to\": \"😵‍💫\", \"plan\": [\"Path A: Saturday and Sunday, work two 2-hour blocks each day on Report A and Report B, then stop at 10pm both nights for real sleep. Sunday evening, send your manager: \\\"I can finish Report A by Saturday and Report B by Monday morning; which first?\\\"\", \"Path B: Saturday, work one 2-hour block on Report A. Sunday, send your manager: \\\"I can finish Report A by Monday noon, but Report B needs to move to next week; can we agree on that?\\\" Then rest both evenings, lights out 10pm.\"]}",
+      "inTokens": 4443,
+      "outTokens": 417,
+      "thinkingTokens": 0,
+      "cost": 0.0015385,
+      "promptChars": 8608
+    },
+    {
+      "kind": "consciousness",
+      "ms": 5996,
+      "reply": "{\"text\": \"The plan misses where the weekend breaks: Tiredness and Wellness can't survive two straight days of nonstop work. Overwhelm's limit means I need less on the list, not more pressure. Path A keeps both reports, capped at two 2-hour blocks a day with lights out at 10pm, which I can live with. Path B moves one report to Monday via a manager text.\", \"to\": \"😵‍💫 Overwhelm\", \"plan\": [\"Path A: Saturday and Sunday, work two 2-hour blocks each day on Reports A and B, and stop at 10pm both nights for real sleep.\", \"Path B: Saturday, do one 2-hour block on Report A; Sunday, send your manager \\\"I can finish Report A by Monday noon; can Report B wait until Wednesday?\\\"\"]}",
+      "inTokens": 4747,
+      "outTokens": 268,
+      "thinkingTokens": 0,
+      "cost": 0.0015522,
+      "promptChars": 9445
+    },
+    {
+      "kind": "floor",
+      "ms": 24128,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Neither path holds all three: two blocks, 10pm, and the text.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A gives two blocks and real sleep both nights. I accept.\", \"prefers\": \"A\"}, {\"id\": \"wellness\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Four work hours daily still hit my health. Path B protects me.\", \"prefers\": \"B\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Show me Tiredness and Wellness are safe before I agree.\", \"prefers\": \"B\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Path A keeps my cutoff, but nonstop-work concern still goes unacknowledged.\", \"prefers\": \"A\"}, {\"id\": \"guilt\", \"score\": -1, \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Path B keeps my weekend with people; Wellness already voiced my worry.\", \"prefers\": \"B\"}]}",
+      "inTokens": 4912,
+      "outTokens": 4354,
+      "thinkingTokens": 3889,
+      "cost": 0.0036467,
+      "promptChars": 9329
+    },
+    {
+      "kind": "speak",
+      "ms": 6901,
+      "reply": "{\"text\": \"Path A still runs two 2-hour blocks each day with no hard stop on Saturday, and if Report B slips past Sunday night, I'm the one holding it into Monday's stand-up with a half-finished weekend behind me. My real question is what happens to the 10pm cutoff when Report A runs late Saturday: it needs a fixed rule, so I'll ask you to set one tonight, like 'Saturday: if Block 2 runs past 9:30pm, stop and text the manager instead.' That keeps the cutoff from being a promise I break on Saturday night.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A fixed Saturday stop rule that protects the 10pm cutoff, set tonight.\", \"turns_down\": \"\"}",
+      "inTokens": 4917,
+      "outTokens": 251,
+      "thinkingTokens": 0,
+      "cost": 0.0015962000000000003,
+      "promptChars": 9758
+    },
+    {
+      "kind": "floor",
+      "ms": 13895,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"Holding back; my limit is stated, and I'm waiting for the rule.\"}, {\"id\": \"🤕\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"😵‍💫\", \"why\": \"Tonight's stop rule protects sleep; Saturday's 9:30 cutoff must hold.\"}, {\"id\": \"🤔\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"If Block 2 stops at 9:30, does Report B simply slide to Monday?\"}, {\"id\": \"😨\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"If Report A runs late, who owns the Monday risk on Report B?\"}, {\"id\": \"🤨\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The cutoff is already covered; repeating it adds nothing new.\"}]}",
+      "inTokens": 4968,
+      "outTokens": 1493,
+      "thinkingTokens": 1168,
+      "cost": 0.002232,
+      "promptChars": 9433
+    },
+    {
+      "kind": "speak",
+      "ms": 6072,
+      "reply": "{\"text\": \"Wellness is the one hurting most. Path A keeps two straight days of 2-hour blocks, and my body has no guaranteed rest between them, even with the 10pm cutoff, since Saturday can run late. What would move me to 0 is a Saturday rule that ends the work at 9:30pm and a real Sunday break with no report work after lunch, both set tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Saturday ends at 9:30pm, Sunday has a real no-work break.\", \"turns_down\": \"\", \"spotlight\": \"wellness\"}",
+      "inTokens": 4982,
+      "outTokens": 193,
+      "thinkingTokens": 0,
+      "cost": 0.0015867000000000001,
+      "promptChars": 9927
+    },
+    {
+      "kind": "floor",
+      "ms": 10241,
+      "reply": "{\"bids\": [{\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"sadness\", \"why\": \"Does the 9:30pm Saturday stop still leave real sleep before Sunday?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Guilt and Wellness stay exposed unless Monday's stand-up risk is planned for.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"My people get a worn-out version of me if the weekend is packed.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"Saturday stop rule is already requested; nothing new to add.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Sleep both nights is already in the plan; I'll wait.\"}]}",
+      "inTokens": 5108,
+      "outTokens": 1327,
+      "thinkingTokens": 1022,
+      "cost": 0.0021915,
+      "promptChars": 9807
+    },
+    {
+      "kind": "speak",
+      "ms": 5857,
+      "reply": "{\"text\": \"I'm the one carrying the body risk here: two straight days of work with no real rest would leave me running on empty, and Saturday can run late even with the 10pm cutoff. I'm asking Sadness: when you picked Wellness as the one most neglected, what would you need to see written into Saturday and Sunday to feel that my body isn't being traded away? What would settle me is a concrete Sunday with no report work after lunch and a Saturday hard stop at 9:30pm, both set tonight.\", \"to\": \"sadness\", \"score\": -1, \"need\": \"Sunday with no report work after lunch, plus Saturday stop at 9:30pm.\", \"turns_down\": \"\"}",
+      "inTokens": 4986,
+      "outTokens": 222,
+      "thinkingTokens": 0,
+      "cost": 0.0016019,
+      "promptChars": 9917
+    },
+    {
+      "kind": "society",
+      "ms": 4900,
+      "reply": "{\"text\": \"Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.\", \"style\": \"effort-shaming\"}",
+      "inTokens": 2206,
+      "outTokens": 80,
+      "thinkingTokens": 425,
+      "cost": 0.0009089,
+      "promptChars": 2551
+    },
+    {
+      "kind": "speak",
+      "ms": 6271,
+      "reply": "{\"text\": \"Society's 'it'll sort itself out once the reports are off your plate' assumes my health recovers on its own after the work ends, but it never says what happens to my sleep, food, or movement during the weekend itself. Pushing through two straight days with no real break would leave me depleted before Monday even starts. Wellness needs a concrete Sunday with no report work after lunch, plus a Saturday stop at 9:30pm, and I'm already on board with Overwhelm's and Tiredness's asks.\", \"to\": \"society\", \"score\": -1, \"need\": \"Sunday with no report work after lunch, plus Saturday stop at 9:30pm.\", \"turns_down\": \"Push through, health sorts itself\"}",
+      "inTokens": 5639,
+      "outTokens": 232,
+      "thinkingTokens": 0,
+      "cost": 0.0018013,
+      "promptChars": 11777
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16862,
+      "reply": "{\"text\": \"I'm choosing Path B because Overwhelm, Wellness, Fear, and Guilt all need less load, and Tiredness and Annoyance can live with it since it keeps the 10pm cutoff and real sleep. Guilt, your worry is that a worn-out me lets my people down, so Sunday afternoon is now reserved for [person you'd most like to see], with no report work after lunch. Overwhelm, the Saturday stop at 9:30pm is fixed tonight, and the plan has three steps instead of the longer Path A list. I still need one fact: who is [person], so I can build Sunday around them.\", \"to\": \"guilt\", \"plan\": [\"Tonight: Saturday is one 2-hour block on Report A; stop at 9:30pm even if unfinished, and leave the rest for Sunday's message.\", \"Sunday before lunch, send your manager: \\\"I can finish Report A by Monday noon; can Report B wait until Wednesday?\\\"\", \"Sunday after lunch: no report work. Spend the afternoon with [person you'd most like to see]; you fill in the name tonight.\"]}",
+      "inTokens": 5817,
+      "outTokens": 2686,
+      "thinkingTokens": 2319,
+      "cost": 0.0030822000000000002,
+      "promptChars": 12380
+    },
+    {
+      "kind": "consciousness",
+      "ms": 14183,
+      "reply": "{\"text\": \"Path B asks your manager to move Report B to Wednesday, which Overwhelm needs, and it keeps Sunday afternoon for [person you'd most like to see], which answers Guilt's worry about my people. Overwhelm, the Saturday 9:30pm stop is fixed tonight, and the plan now has four steps instead of Path A's longer list. You: tell me who [person] is, and I'll plan Sunday around them.\", \"to\": \"guilt\", \"plan\": [\"Tonight: Saturday gets one 2-hour block on Report A. If it runs past 9:30pm, stop and be in bed by 10pm.\", \"Sunday morning, text your manager: 'I can finish Report A by Monday noon; can Report B wait until Wednesday?'\", \"Sunday: no report work after lunch. Spend the afternoon with [person you'd most like to see].\", \"You: fill in [person]. If they're free Sunday afternoon, meet them; if not, call them that day.\"]}",
+      "inTokens": 6092,
+      "outTokens": 1899,
+      "thinkingTokens": 1806,
+      "cost": 0.0028867000000000003,
+      "promptChars": 13092
+    },
+    {
+      "kind": "floor",
+      "ms": 14257,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The Saturday 9:30pm stop is set tonight. I can live with this shrunken plan.\"}, {\"id\": \"😴\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Saturday ends early, but Sunday night sleep isn't written in. I need that.\"}, {\"id\": \"🤕\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Sunday has no work after lunch, and Saturday stops at 9:30pm. Body covered.\"}, {\"id\": \"😭\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sunday afternoon is still a blank placeholder. Name the person, or my guilt stays.\"}, {\"id\": \"🤨\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"My concern about nonstop work is acknowledged, and the 10pm cutoff stays. Good.\"}, {\"id\": \"😨\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Less load and a Monday deadline I can meet. Nothing new to add.\"}]}",
+      "inTokens": 5985,
+      "outTokens": 2005,
+      "thinkingTokens": 1557,
+      "cost": 0.0027940999999999994,
+      "promptChars": 12230
+    },
+    {
+      "kind": "speak",
+      "ms": 6126,
+      "reply": "{\"text\": \"Guilt is the emotion I hear most under all of this. It's the one saying giving up the weekend hurts, and that my people would get a worn-out version of me, and Path B only half answers that because Sunday afternoon is still a placeholder nobody has filled in yet. What would move Guilt to 0 is a fixed Sunday afternoon plan: Consciousness sets it tonight, and the user fills in [person] so Guilt can see who gets the real time.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Fill in [person] and lock a concrete Sunday afternoon plan tonight.\", \"turns_down\": \"\", \"spotlight\": \"guilt\"}",
+      "inTokens": 5961,
+      "outTokens": 223,
+      "thinkingTokens": 0,
+      "cost": 0.0018958999999999998,
+      "promptChars": 12585
+    },
+    {
+      "kind": "floor",
+      "ms": 8803,
+      "reply": "{\"bids\": [{\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Who is [person]? Sunday afternoon needs a name before I can settle.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"guilt\", \"why\": \"Real time with them is the connection I've been missing. Name them now.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Nobody has voiced my focus and mood risk yet. Monday's check matters.\"}]}",
+      "inTokens": 5973,
+      "outTokens": 902,
+      "thinkingTokens": 709,
+      "cost": 0.0022364999999999998,
+      "promptChars": 12179
+    },
+    {
+      "kind": "speak",
+      "ms": 13116,
+      "reply": "{\"text\": \"I'm at -1 because Path B depends entirely on the manager saying yes to Wednesday, and the plan has no move if the reply is no or never comes. Report B could land Monday morning with nothing ready, which puts Overwhelm, Tiredness, and Guilt right back in the same spot. Consciousness, please add a Sunday 6pm default to the manager text: 'If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Set tonight: a Sunday 6pm fallback text if manager doesn't reply.\", \"turns_down\": \"\"}",
+      "inTokens": 5901,
+      "outTokens": 1813,
+      "thinkingTokens": 1577,
+      "cost": 0.0026739,
+      "promptChars": 12482
+    },
+    {
+      "kind": "floor",
+      "ms": 12475,
+      "reply": "```json\n{\"bids\": [\n{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"fear\", \"why\": \"A Sunday 6pm fallback adds another demand. Keep the weekend capped, and send one text only.\"},\n{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"'Unless you tell me otherwise' reads pushy to my manager. Keep the text short and polite.\"},\n{\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Fear's fallback covers the no-reply gap, so my concern is already handled.\"},\n{\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Sunday afternoon with my people is still the open piece; I'll wait.\"}\n]}\n```",
+      "inTokens": 6168,
+      "outTokens": 1270,
+      "thinkingTokens": 991,
+      "cost": 0.002481,
+      "promptChars": 12663
+    },
+    {
+      "kind": "speak",
+      "ms": 5304,
+      "reply": "{\"text\": \"I'm at -1 because the plan still has no fixed time for the weekend's social side: Path B's Sunday afternoon is a blank [person] slot, and Guilt, Overwhelm and I can't check whether the plan actually protects my relationships. Smallest change to reach 0: you tell me who [person] is and when you'd like to see them, and I'll draft the exact text to send them this week.\", \"to\": \"user\", \"score\": -1, \"need\": \"Name [person] and a Sunday time, then I'll draft their text\", \"turns_down\": \"\"}",
+      "inTokens": 6106,
+      "outTokens": 181,
+      "thinkingTokens": 0,
+      "cost": 0.0019159000000000003,
+      "promptChars": 12999
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6652,
+      "reply": "{\"text\": \"Guilt's worry is the one I can't leave open: Path B only works if Sunday afternoon goes to a real person, and right now that slot is blank. Embarrassment needs the name and time before it can settle, so I'm keeping Sunday afternoon fixed as the only social block and asking you to fill it in tonight. Overwhelm's Saturday 9:30pm stop stays exactly as it is, and Fear's 6pm fallback gets added to the manager text.\", \"to\": \"guilt\", \"plan\": [\"Tonight: Saturday gets one 2-hour block on Report A. If it runs past 9:30pm, stop and be in bed by 10pm.\", \"Tonight, You: fill in [person] and a Sunday afternoon time; if they're free, meet them, and if not, call them that day.\", \"Sunday morning, text your manager: 'I can finish Report A by Monday noon; can Report B wait until Wednesday? If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.'\", \"Sunday: no report work after lunch. Spend the afternoon with [person].\"]}",
+      "inTokens": 6483,
+      "outTokens": 388,
+      "thinkingTokens": 0,
+      "cost": 0.002136,
+      "promptChars": 14106
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7345,
+      "reply": "{\"text\": \"Fear's Sunday 6pm fallback and Overwhelm's Saturday 9:30pm stop both stay, and I'm cutting the plan to three steps so Overwhelm gets less, not more. Guilt still needs a real Sunday afternoon, so [person] gets a fixed slot. You: tell me who [person] is and what time Sunday works, and I'll draft their text.\", \"to\": \"guilt\", \"plan\": [\"Tonight: Saturday gets one 2-hour block on Report A. If it runs past 9:30pm, stop and text your manager: \\\"Report A is at 9:30pm and I'm stopping for tonight; I'll finish by Monday noon.\\\"\", \"Sunday 6pm: if your manager hasn't replied, send: \\\"If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.\\\"\", \"Sunday: no report work after lunch. Spend the afternoon with [person you'd most like to see]; you fill in who and what time.\"]}",
+      "inTokens": 6564,
+      "outTokens": 352,
+      "thinkingTokens": 0,
+      "cost": 0.0021418,
+      "promptChars": 14270
+    },
+    {
+      "kind": "floor",
+      "ms": 13371,
+      "reply": "{\"bids\": [{\"id\": \"guilt\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Sunday afternoon is still a blank slot, so my worry about my people stands.\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The plan never says I get real sleep both nights. Please add that.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Who is the Sunday person, and what time? I can't draft their text without it.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The fixed 9:30pm Saturday stop respects my limit. I can live with this.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The Sunday 6pm fallback is in place, so I'm settled.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Saturday stop and Sunday no-work afternoon are covered. Nothing new to add.\"}]}",
+      "inTokens": 6715,
+      "outTokens": 1960,
+      "thinkingTokens": 1539,
+      "cost": 0.0029911,
+      "promptChars": 14090
+    },
+    {
+      "kind": "speak",
+      "ms": 7039,
+      "reply": "{\"text\": \"Three steps is less for Overwhelm, but Sunday afternoon with [person] still has no time, so I can't reach 0 yet. The 6pm fallback and 9:30pm stop don't touch my need, which is that I'm not trading away my people for a worn-out version of me. What would move me to 0 is you naming [person] and a Sunday start time tonight, plus Consciousness locking that slot in the plan so nothing on Sunday afternoon is work.\", \"to\": \"user\", \"score\": -1, \"need\": \"Name [person] and a Sunday afternoon start time, locked in tonight\", \"turns_down\": \"\"}",
+      "inTokens": 6484,
+      "outTokens": 207,
+      "thinkingTokens": 0,
+      "cost": 0.0020458,
+      "promptChars": 13916
+    },
+    {
+      "kind": "wrap",
+      "ms": 20064,
+      "reply": "{\"plan\": [\"Tonight: name the person you'll spend Sunday afternoon with and the start time, so that slot is locked in.\", \"Saturday: work one 2-hour block on Report A. Lights out by 10pm. If it runs past 9:30pm, stop and text your manager: \\\"Report A is at 9:30pm and I'm stopping for tonight; I'll finish by Monday noon.\\\"\", \"Sunday 6pm: if your manager hasn't replied, send: \\\"If I don't hear back by 6pm, I'll finish Report A by Monday noon and start Report B Tuesday unless you tell me otherwise.\\\"\", \"Sunday: no report work after lunch. Spend the afternoon with the person you named, at the start time you set. Lights out by 10pm.\"], \"scores\": [{\"id\": \"overwhelm\", \"score\": 0, \"step\": 2, \"why\": \"The weekend shrinks to one capped block, and I can live with that.\"}, {\"id\": \"tiredness\", \"score\": 0, \"step\": 2, \"why\": \"One block and lights out by 10pm give me real sleep both nights.\"}, {\"id\": \"wellness\", \"score\": 0, \"step\": 4, \"why\": \"A Sunday with no report work after lunch protects my body.\"}, {\"id\": \"guilt\", \"score\": -1, \"step\": 0, \"why\": \"I still need a named person and a set time; without them I'm not satisfied.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 3, \"why\": \"The 6pm fallback covers the case where my manager never answers.\"}, {\"id\": \"annoyance\", \"score\": 0, \"step\": 2, \"why\": \"The 10pm cutoff is kept, and nonstop weekend work is no longer the plan.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 2, \"why\": \"Tiredness is now a 0, which is what I asked for.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"step\": 0, \"why\": \"I still have no name or time to draft a text from; step 1 fixes that tonight.\"}], \"society\": [{\"line\": \"Honestly, you're overthinking this. Lots of people push through a weekend when work piles up, and you'll be glad you got it done before Monday.\", \"reply\": \"I hear that plenty of people do it, but I can't work all weekend without my sleep and health paying for it. I'm keeping a firm stop time so I can actually show up Monday.\"}, {\"line\": \"Honestly, you've got this, and a weekend of pushing through is just what dedicated people do. Don't overthink your health stuff, it'll sort itself out once the reports are off your plate.\", \"reply\": \"I appreciate the encouragement, but my health doesn't reliably bounce back after a nonstop weekend. I need real rest this weekend, not a promise that it'll fix itself later.\"}], \"text\": \"Two reports stay on the list, but the weekend gets smaller: one capped block Saturday, real sleep both nights, and Sunday afternoon kept for people. Tell me who you'll see and what time tonight so I can lock that slot in.\"}",
+      "inTokens": 5703,
+      "outTokens": 3563,
+      "thinkingTokens": 2570,
+      "cost": 0.0034865,
+      "promptChars": 11591
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 10,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.17,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.34,
+      "finalMinus": [
+        "guilt",
+        "sadness",
+        "embarrassment"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 10 voices, avg 2.9 sentences (max 4), max overlap 0.17, Society 2/2 called out, hold rate 0.34, final -1: guilt, sadness, embarrassment",
+    "speakers": {
+      "overwhelm": 2,
+      "annoyance": 1,
+      "society": 2,
+      "tiredness": 1,
+      "consciousness": 3,
+      "sadness": 2,
+      "wellness": 2,
+      "fear": 1,
+      "embarrassment": 1,
+      "guilt": 1
+    }
+  }
+}

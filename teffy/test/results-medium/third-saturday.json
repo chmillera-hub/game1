@@ -1,0 +1,1458 @@
+{
+  "scenario": {
+    "id": "third-saturday",
+    "thought": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 342488,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 31,
+    "inTokens": 148193,
+    "outTokens": 42653,
+    "thinkingTokens": 35832,
+    "cost": 0.06564413
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Tonight before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Please ask me before booking any weekend shift, and keep [day off] and the Saturday after it free unless you ask me first. Also, why was I scheduled three weeks running without being asked?'",
+          "Only if the rota shows a weekend shift I wasn't asked about, reply once that same day: 'I wasn't asked about [shift]. Please take me off it.' No daily rota check."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "Nobody asked me, and my no-boundary is being ignored like it doesn't exist."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": "Being booked without a question is being dismissed. Why did you assume yes?"
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "Three Saturdays in a row is wearing me down. When do I get a day off?"
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I keep saying yes, my rest and my self-respect are the ones left exposed."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "Plan cuts daily rota check to one reply rule.",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Saying yes once more is the quickest way to keep things smooth, and I can handle the rest without making a fuss. Let's see if everyone can live with that.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "anger",
+          "text": "The plan says yes again, and that's the part I can't live with. Saying yes keeps things calm for a week, but it leaves my no completely unused, and it sends the message that a booking without a question is fine. What would move me to 0 is you texting your manager tonight: \"I'm not available for Saturday shifts this week. Please ask me before scheduling me on weekends from now on.\" If that feels too blunt, soften the tone but keep the ask.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Boundary ignored; saying yes again erases my no. Stop assuming yes."
+        },
+        {
+          "n": 4,
+          "who": "sadness",
+          "text": "Annoyance is the emotion I hear least right now. Its line, 'Why did you assume yes?', is about being booked without anyone asking, and the plan's step of saying yes again quietly answers that question for the manager, so it stays at -1. Please rework that step so Annoyance's question gets an actual answer, since being asked is the only thing it's been waiting for.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": 0,
+          "lens": "",
+          "why": "Annoyance has been unheard. I care about that hurt."
+        },
+        {
+          "n": 5,
+          "who": "fear",
+          "text": "Yes-again keeps the week calm, but it leaves my need completely unanswered: three Saturdays in a row, and nobody asked me once. Consciousness, the plan never touches the question Annoyance is asking, and it leaves my self-respect and rest exposed. What would move me to 0 is the step that tells the manager this week's Saturday is a no and that future weekend shifts need to be asked for first, sent tonight, with the ask kept intact.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Yes again leaves my protection exposed. Show me the fallback first."
+        },
+        {
+          "n": 6,
+          "who": "society",
+          "text": "Honestly, it's just one Saturday. Don't overthink it.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 7,
+          "who": "annoyance",
+          "text": "\"Honestly, it's just one Saturday\" treats this as a single event, but it's the third week in a row, and nobody asked me once. Calling it one Saturday leaves my question, \"Why did you assume yes?\", unanswered, because every booking still happens without anyone asking. Following that advice means I absorb a third booking quietly, and the annoyance goes back into the next one.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 8,
+          "who": "consciousness",
+          "text": "Tiredness's question, 'When do I get a day off?', is the one no step has answered yet, and Anger's text and Fear's text both leave it open. Path A is built for Anger, Fear, and Annoyance: the no and the ask go out tonight, and nothing else changes. Path B is built for those same three plus Tiredness, because it names a specific day off in the same text, so that question gets a concrete answer. I'd go with Path B, as long as the day off is named tonight and not left for later.",
+          "to": "tiredness",
+          "move": "paths"
+        },
+        {
+          "n": 9,
+          "who": "tiredness",
+          "text": "Plan v2 gives me no day off. Path B names one date, but nothing keeps the Saturday after it clear, and three booked weekends in a row is already draining me. What would move me to 0 is adding to Path B's text: 'Please keep [date] and the following Saturday free unless you ask me first.'",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "cost",
+          "why": "[date] is a blank; I need an actual day off named tonight."
+        },
+        {
+          "n": 10,
+          "who": "sadness",
+          "text": "Anger is the voice I hear least right now, and it has lost the most. Its need is a text tonight that says no to this Saturday and asks before any weekend booking, and Path B's ask-first line doesn't land on that: 'Please ask me before any weekend booking' is only half of it, while Anger needs the no spoken plainly. What would move Anger to 0 is adding to Path B's text: 'I can't work this Saturday, [date].' before the ask, sent tonight, so the refusal is stated and not implied.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Anger has barely been heard"
+        },
+        {
+          "n": 11,
+          "who": "fear",
+          "text": "Path B's text does what I asked: it declines this Saturday first, then asks before any weekend booking, and checking tomorrow's rota for unasked shifts gives that ask some teeth. I can live with this at 0 as long as the text goes out tonight in that order, so the refusal is stated plainly and not left as a hint. Filling in the [date] placeholder is fine, but the no for this Saturday can't be softened into a maybe.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Declining this Saturday and asking first now both go out tonight. That settles my worry."
+        },
+        {
+          "n": 12,
+          "who": "consciousness",
+          "text": "I'm choosing Path B because Anger's need for a plain no and Tiredness's request to keep the next Saturday free both fit inside it, and Fear's rule stays intact: the refusal goes out tonight, before the ask. Annoyance's question about why it was booked without asking gets added to the same text, so the manager has to answer it and not just promise to ask next time. Sadness's spotlight on Anger is why the 'I can't work this Saturday' line comes first.",
+          "to": "anger",
+          "move": "refine"
+        },
+        {
+          "n": 13,
+          "who": "anger",
+          "text": "The step that moves me to 0 is the first text: 'I can't work this Saturday, [date].' comes before the ask, and the question about why I was scheduled without being asked goes in the same message. I'm holding to that only if it's sent tonight before 9pm, and if tomorrow's rota check finds an unasked shift, the 'Please take me off it' reply goes out that same day.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "The plain no comes first, with the ask attached. Accepting."
+        },
+        {
+          "n": 14,
+          "who": "embarrassment",
+          "text": "+1 to Sadness's text, which puts the refusal first. My angle: Consciousness, the 'why' belongs in tonight's text, not a later talk. Annoyance and I both need the manager to answer that question in writing. Please add to tonight's message: \"Also, why was I scheduled three weeks running without being asked?\" Keep the rota check and the reply as they are.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "The text is long; the manager relationship needs short, plain words."
+        },
+        {
+          "n": 15,
+          "who": "overwhelm",
+          "text": "Path B's text covers the refusal and the ask, but nothing in it touches my need: a limit on how many demands land on me. Three Saturdays running is already past what I can carry, and the plan adds work to my week (a daily rota check, a reply to write). What would move me to 0 is cutting the daily rota check and keeping one fixed rule: if an unasked weekend shift appears, reply once, 'I wasn't asked about [shift]. Please take me off it.'",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Five asks in one text is too much; shrink it, don't argue."
+        },
+        {
+          "n": 16,
+          "who": "society",
+          "text": "Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.",
+          "to": "overwhelm",
+          "move": "platitude"
+        },
+        {
+          "n": 17,
+          "who": "overwhelm",
+          "text": "Society's advice asks me to find more resilience and keep going, but it never touches my need for a cap on how many demands land on me. Three Saturdays running already puts me past my limit, and pushing through would stack a daily rota check on top of those shifts. Instead of the daily check in the plan, I need one rule: reply once to any unasked shift, and nothing more.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 18,
+          "who": "consciousness",
+          "text": "Embarrassment's question is now asked directly at the end of tonight's text, so the manager has to answer it in writing. Overwhelm's daily rota check is cut, leaving one reply rule that applies only if an unasked weekend shift appears, so the plan drops from three steps to two. The refusal, the ask, and the day off stay in the text, so Anger, Fear, Annoyance, and Tiredness keep what they already got.",
+          "to": "embarrassment",
+          "move": "refine"
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Everyone can live with this now: the no and the ask go out tonight, with the why, the day off, and one reply rule for any unasked shift. Send the text before 9pm, and the rest stays as it is.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Just say yes again",
+          "from": "consciousness",
+          "by": "anger",
+          "why": "Tonight's text stating your no and asking before booking weekends"
+        },
+        {
+          "advice": "Private talk for the why",
+          "from": "consciousness",
+          "by": "embarrassment",
+          "why": "Tonight's text also asks the manager why I was booked without being asked."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, it's just one Saturday. Don't overthink it.",
+          "to": "fear",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        },
+        {
+          "text": "Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.",
+          "to": "overwhelm",
+          "style": "hustle (\"everyone's busy, just push through\", \"that's adulting\")"
+        }
+      ],
+      "lensesUsed": {
+        "tiredness": [
+          "cost"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "fear": "Tonight's text declining this Saturday and asking before any weekend booking.",
+        "anger": "Tonight's text stating your no and asking before booking weekends",
+        "annoyance": "Manager asks before any Saturday booking, and my question gets answered.",
+        "tiredness": "Add a request to keep the following Saturday free too.",
+        "embarrassment": "Tonight's text also asks the manager why I was booked without being asked."
+      },
+      "waiting": {
+        "annoyance": 4,
+        "tiredness": 3,
+        "fear": 0,
+        "sadness": 1,
+        "anger": 0,
+        "embarrassment": 0,
+        "overwhelm": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 31,
+        "inChars": 294560,
+        "outChars": 21329,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 15,
+          "society": 2,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 2
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Saying yes once more is the quickest way to keep things smooth, and I can handle the rest without making a fuss. Let's see if everyone can live with that.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Say yes to the Saturday shift again so the manager stays happy and the week stays calm, then let the annoyance fade on its own."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "anger",
+            "why": "Nobody asked me, and my no-boundary is being ignored like it doesn't exist."
+          },
+          {
+            "id": "annoyance",
+            "why": "Being booked without a question is being dismissed. Why did you assume yes?"
+          },
+          {
+            "id": "tiredness",
+            "why": "Three Saturdays in a row is wearing me down. When do I get a day off?"
+          },
+          {
+            "id": "fear",
+            "why": "If I keep saying yes, my rest and my self-respect are the ones left exposed."
+          }
+        ],
+        "spotlight": "anger",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Boundary ignored; saying yes again erases my no. Stop assuming yes."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you assume yes without asking me first?"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Fourth Saturday means no rest; I need a day off."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Saying yes exposes my rest and self-respect; check them first."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "anger",
+            "why": "Anger has been unheard longest; please hear it before deciding."
+          }
+        ],
+        "pick": "anger",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "anger",
+        "text": "The plan says yes again, and that's the part I can't live with. Saying yes keeps things calm for a week, but it leaves my no completely unused, and it sends the message that a booking without a question is fine. What would move me to 0 is you texting your manager tonight: \"I'm not available for Saturday shifts this week. Please ask me before scheduling me on weekends from now on.\" If that feels too blunt, soften the tone but keep the ask.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Boundary ignored; saying yes again erases my no. Stop assuming yes.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Fading on its own dismisses me. Acknowledge my question first."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does this no give me a real day off?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "A blunt text risks the manager relationship. Keep it short, check first."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Could the no bring retaliation? Show me the risk before I agree."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "annoyance",
+            "why": "Annoyance has been unheard. I care about that hurt."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I already said my piece; the ask stands."
+          }
+        ],
+        "pick": "sadness",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "sadness",
+        "text": "Annoyance is the emotion I hear least right now. Its line, 'Why did you assume yes?', is about being booked without anyone asking, and the plan's step of saying yes again quietly answers that question for the manager, so it stays at -1. Please rework that step so Annoyance's question gets an actual answer, since being asked is the only thing it's been waiting for.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": 0,
+        "lens": "",
+        "why": "Annoyance has been unheard. I care about that hurt.",
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you assume yes? Answer me before you rewrite the plan."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Yes again leaves my protection exposed. Show me the fallback first."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Three Saturdays straight. I need a real day off, not a promise."
+          }
+        ],
+        "pick": "fear",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "fear",
+        "text": "Yes-again keeps the week calm, but it leaves my need completely unanswered: three Saturdays in a row, and nobody asked me once. Consciousness, the plan never touches the question Annoyance is asking, and it leaves my self-respect and rest exposed. What would move me to 0 is the step that tells the manager this week's Saturday is a no and that future weekend shifts need to be asked for first, sent tonight, with the ask kept intact.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Yes again leaves my protection exposed. Show me the fallback first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "society",
+        "text": "Honestly, it's just one Saturday. Don't overthink it.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "annoyance",
+        "text": "\"Honestly, it's just one Saturday\" treats this as a single event, but it's the third week in a row, and nobody asked me once. Calling it one Saturday leaves my question, \"Why did you assume yes?\", unanswered, because every booking still happens without anyone asking. Following that advice means I absorb a third booking quietly, and the annoyance goes back into the next one.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "consciousness",
+        "text": "Tiredness's question, 'When do I get a day off?', is the one no step has answered yet, and Anger's text and Fear's text both leave it open. Path A is built for Anger, Fear, and Annoyance: the no and the ask go out tonight, and nothing else changes. Path B is built for those same three plus Tiredness, because it names a specific day off in the same text, so that question gets a concrete answer. I'd go with Path B, as long as the day off is named tonight and not left for later.",
+        "to": "tiredness",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Tonight, text [Manager]: 'I can't work this Saturday. Please ask me before scheduling any weekend shift from now on.' Send it before 9pm, and decline any weekend booking that skips asking you first.",
+            "Path B: Tonight, text [Manager]: 'I can't work this Saturday. Please ask me before any weekend booking, and give me [date] off as my next day off.' Tomorrow, check the rota for any weekend shift you weren't asked about."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 10
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Both texts state my no and ask first. Nothing new to add.",
+            "prefers": "A"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Neither text asks why they assumed yes. Add that question, please.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "[date] is a blank; I need an actual day off named tonight.",
+            "prefers": "B"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Blank date leaves Tiredness and Annoyance exposed; I stay at -1.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "tiredness",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "tiredness",
+        "text": "Plan v2 gives me no day off. Path B names one date, but nothing keeps the Saturday after it clear, and three booked weekends in a row is already draining me. What would move me to 0 is adding to Path B's text: 'Please keep [date] and the following Saturday free unless you ask me first.'",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "cost",
+        "why": "[date] is a blank; I need an actual day off named tonight.",
+        "prevScore": -1,
+        "lensLabel": "the cost",
+        "at": 13
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Keeping next Saturday free is fine, but only if it's sent tonight."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "tiredness",
+            "why": "Keeping next Saturday free shields me from a fourth booking. Supporting this."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Path B's ask still never asks why I wasn't asked first."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "I've said my piece; waiting for Consciousness to fold it in."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Path B's wording is clear enough now; holding my doubt."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Manager relationship matters, but this message doesn't touch it."
+          }
+        ],
+        "pick": "sadness",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "sadness",
+        "text": "Anger is the voice I hear least right now, and it has lost the most. Its need is a text tonight that says no to this Saturday and asks before any weekend booking, and Path B's ask-first line doesn't land on that: 'Please ask me before any weekend booking' is only half of it, while Anger needs the no spoken plainly. What would move Anger to 0 is adding to Path B's text: 'I can't work this Saturday, [date].' before the ask, sent tonight, so the refusal is stated and not implied.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Anger has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 15
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The plainly stated no and the ask are finally in the text. I can live with this."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Declining this Saturday and asking first now both go out tonight. That settles my worry."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The revised text still leaves the Saturday after my day off open. Add it."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Nothing answers my question of why yes was assumed. The ask alone doesn't cover it."
+          }
+        ],
+        "pick": "fear",
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "fear",
+        "text": "Path B's text does what I asked: it declines this Saturday first, then asks before any weekend booking, and checking tomorrow's rota for unasked shifts gives that ask some teeth. I can live with this at 0 as long as the text goes out tonight in that order, so the refusal is stated plainly and not left as a hint. Filling in the [date] placeholder is fine, but the no for this Saturday can't be softened into a maybe.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Declining this Saturday and asking first now both go out tonight. That settles my worry.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "consciousness",
+        "text": "I'm choosing Path B because Anger's need for a plain no and Tiredness's request to keep the next Saturday free both fit inside it, and Fear's rule stays intact: the refusal goes out tonight, before the ask. Annoyance's question about why it was booked without asking gets added to the same text, so the manager has to answer it and not just promise to ask next time. Sadness's spotlight on Anger is why the 'I can't work this Saturday' line comes first.",
+        "to": "anger",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Tonight, before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Please ask me before any weekend booking, and keep [date] free as my next day off.'",
+            "In that same text, add: 'Please keep the Saturday after [date] free unless you ask me first, and tell me why I was scheduled three weeks running without being asked.'",
+            "Tomorrow, check the rota for any weekend shift you weren't asked about. If one exists, reply: 'I wasn't asked about [shift]. Please take me off it.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": -1,
+        "to": 0,
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 22
+      },
+      {
+        "type": "spotlight",
+        "id": "embarrassment",
+        "at": 23
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The plain no comes first, with the ask attached. Accepting."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The manager must explain why I was booked unasked. That answers me."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Named day off and the next Saturday kept free. I can rest."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Three demands in one text risk my working relationship. Keep it shorter."
+          }
+        ],
+        "pick": "anger",
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "anger",
+        "text": "The step that moves me to 0 is the first text: 'I can't work this Saturday, [date].' comes before the ask, and the question about why I was scheduled without being asked goes in the same message. I'm holding to that only if it's sent tonight before 9pm, and if tomorrow's rota check finds an unasked shift, the 'Please take me off it' reply goes out that same day.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "The plain no comes first, with the ask attached. Accepting.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 25
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "The text is long; the manager relationship needs short, plain words."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Plan now keeps my next Saturday free. That's what I needed."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "My why-question is already in the text; nothing new to add."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "I'm at 0 now; the same-day rule is already in."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Fear's zero holds only if the text goes out tonight."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 26
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "embarrassment",
+        "text": "+1 to Sadness's text, which puts the refusal first. My angle: Consciousness, the 'why' belongs in tonight's text, not a later talk. Annoyance and I both need the manager to answer that question in writing. Please add to tonight's message: \"Also, why was I scheduled three weeks running without being asked?\" Keep the rota check and the reply as they are.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "The text is long; the manager relationship needs short, plain words.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "My why-question is already in v3, so I'm holding."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The plain no and the rota reply are covered, so I'm holding."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "The question about why I was booked is in the text now."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Tonight's refusal-first order still protects everyone's needs."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The Saturday after the named date is kept free, so I'm holding."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "embarrassment",
+            "why": "Embarrassment's short-text need matters; check the text still feels short to it."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Five asks in one text is too much; shrink it, don't argue."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "overwhelm",
+        "text": "Path B's text covers the refusal and the ask, but nothing in it touches my need: a limit on how many demands land on me. Three Saturdays running is already past what I can carry, and the plan adds work to my week (a daily rota check, a reply to write). What would move me to 0 is cutting the daily rota check and keeping one fixed rule: if an unasked weekend shift appears, reply once, 'I wasn't asked about [shift]. Please take me off it.'",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Five asks in one text is too much; shrink it, don't argue.",
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "society",
+        "text": "Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.",
+        "to": "overwhelm",
+        "move": "platitude",
+        "at": 30
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "overwhelm",
+        "text": "Society's advice asks me to find more resilience and keep going, but it never touches my need for a cap on how many demands land on me. Three Saturdays running already puts me past my limit, and pushing through would stack a daily rota check on top of those shifts. Instead of the daily check in the plan, I need one rule: reply once to any unasked shift, and nothing more.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "consciousness",
+        "text": "Embarrassment's question is now asked directly at the end of tonight's text, so the manager has to answer it in writing. Overwhelm's daily rota check is cut, leaving one reply rule that applies only if an unasked weekend shift appears, so the plan drops from three steps to two. The refusal, the ask, and the day off stay in the text, so Anger, Fear, Annoyance, and Tiredness keep what they already got.",
+        "to": "embarrassment",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Tonight before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Ask before any weekend booking. Keep [day off] and the Saturday after it free. Why was I scheduled three weeks running without being asked?'",
+            "Only if the rota shows a weekend shift you weren't asked about, reply once: 'I wasn't asked about [shift]. Please take me off it.' No daily rota check."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 32
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 33
+      },
+      {
+        "type": "wrap",
+        "text": "Everyone can live with this now: the no and the ask go out tonight, with the why, the day off, and one reply rule for any unasked shift. Send the text before 9pm, and the rest stays as it is.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Tonight before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Please ask me before booking any weekend shift, and keep [day off] and the Saturday after it free unless you ask me first. Also, why was I scheduled three weeks running without being asked?'",
+            "Only if the rota shows a weekend shift I wasn't asked about, reply once that same day: 'I wasn't asked about [shift]. Please take me off it.' No daily rota check."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "The no comes first in tonight's text, so my refusal is plain.",
+            "step": 0
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "The text asks why I was booked unasked and sets an ask-first rule.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "The day off and the Saturday after it are named and kept free.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "The refusal goes out tonight before the ask, nothing left as a hint.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The why is asked in writing tonight, so I can live with this.",
+            "step": 1
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Plan cuts daily rota check to one reply rule.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it's just one Saturday. Don't overthink it.",
+            "to": "fear",
+            "reply": "It isn't just one Saturday; it's three in a row, and nobody asked me once. I need to be asked before any weekend shift gets booked."
+          },
+          {
+            "line": "Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.",
+            "to": "overwhelm",
+            "reply": "I don't need more resilience; I need a limit on how much lands on me. I'm already past what I can carry, so pushing through won't help."
+          }
+        ],
+        "questions": [],
+        "at": 34
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13269,
+      "reply": "{\"plan\": \"Say yes to the Saturday shift again so the manager stays happy and the week stays calm, then let the annoyance fade on its own.\", \"text\": \"Saying yes once more is the quickest way to keep things smooth, and I can handle the rest without making a fuss. Let's see if everyone can live with that.\", \"minus\": [{\"id\": \"anger\", \"why\": \"Nobody asked me, and my no-boundary is being ignored like it doesn't exist.\"}, {\"id\": \"annoyance\", \"why\": \"Being booked without a question is being dismissed. Why did you assume yes?\"}, {\"id\": \"tiredness\", \"why\": \"Three Saturdays in a row is wearing me down. When do I get a day off?\"}, {\"id\": \"fear\", \"why\": \"If I keep saying yes, my rest and my self-respect are the ones left exposed.\"}], \"spotlight\": \"anger\"}",
+      "inTokens": 3025,
+      "outTokens": 850,
+      "thinkingTokens": 563,
+      "cost": 0.00075173,
+      "promptChars": 4330
+    },
+    {
+      "kind": "floor",
+      "ms": 13261,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Boundary ignored; saying yes again erases my no. Stop assuming yes.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you assume yes without asking me first?\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Fourth Saturday means no rest; I need a day off.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Saying yes exposes my rest and self-respect; check them first.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"anger\", \"why\": \"Anger has been unheard longest; please hear it before deciding.\"}]}",
+      "inTokens": 3701,
+      "outTokens": 1798,
+      "thinkingTokens": 1496,
+      "cost": 0.0020044,
+      "promptChars": 6166
+    },
+    {
+      "kind": "speak",
+      "ms": 6472,
+      "reply": "{\"text\": \"Consciousness, the plan says yes again, and that's the part I can't live with. Saying yes keeps things calm for a week, but it leaves my no completely unused, and it sends the message that a booking without a question is fine. What would move me to 0 is you texting your manager tonight: \\\"I'm not available for Saturday shifts this week. Please ask me before scheduling me on weekends from now on.\\\" If that feels too blunt, soften the tone but keep the ask.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tonight's text stating your no and asking before booking weekends\", \"turns_down\": \"Just say yes again\"}",
+      "inTokens": 3719,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0012163,
+      "promptChars": 6593
+    },
+    {
+      "kind": "floor",
+      "ms": 15150,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Fading on its own dismisses me. Acknowledge my question first.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does this no give me a real day off?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"A blunt text risks the manager relationship. Keep it short, check first.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Could the no bring retaliation? Show me the risk before I agree.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"annoyance\", \"why\": \"Annoyance has been unheard. I care about that hurt.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I already said my piece; the ask stands.\"}]}",
+      "inTokens": 3855,
+      "outTokens": 2331,
+      "thinkingTokens": 1988,
+      "cost": 0.0023156,
+      "promptChars": 6605
+    },
+    {
+      "kind": "speak",
+      "ms": 6324,
+      "reply": "{\"text\": \"Annoyance is the emotion I hear least right now. Its line, 'Why did you assume yes?', is about being booked without anyone asking, and the plan's step of saying yes again quietly answers that question for the manager, so it stays at -1. Please rework that step so Annoyance's question gets an actual answer, since being asked is the only thing it's been waiting for.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A step where the manager is asked before booking, not just told afterward.\", \"turns_down\": \"\", \"spotlight\": \"annoyance\"}",
+      "inTokens": 3882,
+      "outTokens": 185,
+      "thinkingTokens": 0,
+      "cost": 0.0012527000000000003,
+      "promptChars": 7099
+    },
+    {
+      "kind": "floor",
+      "ms": 11473,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you assume yes? Answer me before you rewrite the plan.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Yes again leaves my protection exposed. Show me the fallback first.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Three Saturdays straight. I need a real day off, not a promise.\"}]}",
+      "inTokens": 4012,
+      "outTokens": 1395,
+      "thinkingTokens": 1206,
+      "cost": 0.0018947,
+      "promptChars": 7033
+    },
+    {
+      "kind": "speak",
+      "ms": 5836,
+      "reply": "{\"text\": \"Yes-again keeps the week calm, but it leaves my need completely unanswered: three Saturdays in a row, and nobody asked me once. Consciousness, the plan never touches the question Annoyance is asking, and it leaves my self-respect and rest exposed. What would move me to 0 is the step that tells the manager this week's Saturday is a no and that future weekend shifts need to be asked for first, sent tonight, with the ask kept intact.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tonight's text declining this Saturday and asking before any weekend booking.\", \"turns_down\": \"\"}",
+      "inTokens": 4026,
+      "outTokens": 206,
+      "thinkingTokens": 0,
+      "cost": 0.0013054,
+      "promptChars": 7529
+    },
+    {
+      "kind": "society",
+      "ms": 4710,
+      "reply": "{\"text\": \"Honestly, it's just one Saturday. Don't overthink it. Once you're past this rough patch, it'll all blow over and you'll be glad you were the flexible one.\", \"style\": \"minimizing\"}",
+      "inTokens": 1988,
+      "outTokens": 73,
+      "thinkingTokens": 241,
+      "cost": 0.000749,
+      "promptChars": 1976
+    },
+    {
+      "kind": "speak",
+      "ms": 9346,
+      "reply": "{\"text\": \"\\\"Honestly, it's just one Saturday\\\" treats this as a single event, but it's the third week in a row, and nobody asked me once. Calling it one Saturday leaves my question, \\\"Why did you assume yes?\\\", unanswered, because every booking still happens without anyone asking. Following that advice means I absorb a third booking quietly, and the annoyance goes back into the next one.\", \"to\": \"society\", \"score\": -1, \"need\": \"Manager asks before any Saturday booking, and my question gets answered.\", \"turns_down\": \"It's just one Saturday\"}",
+      "inTokens": 4336,
+      "outTokens": 968,
+      "thinkingTokens": 781,
+      "cost": 0.0017804000000000001,
+      "promptChars": 8329
+    },
+    {
+      "kind": "consciousness",
+      "ms": 18068,
+      "reply": "{\"text\": \"Tiredness's question, 'When do I get a day off?', is the one no step has answered yet, and Anger's text and Fear's text both leave it open. Path A is built for Anger, Fear, and Annoyance: the no and the ask go out tonight, and nothing else changes. Path B is built for those same three plus Tiredness, because it names a specific day off in the same text, so that question gets a concrete answer. I'd go with Path B, as long as the day off is named tonight and not left for later.\", \"to\": \"tiredness\", \"plan\": [\"Path A: Tonight, text [Manager]: 'I can't work this Saturday. Please ask me before scheduling any weekend shift from now on.' Send it before 9pm, and decline any weekend booking that skips asking you first.\", \"Path B: Tonight, text [Manager]: 'I can't work this Saturday. Please ask me before any weekend booking, and give me [date] off as my next day off.' Tomorrow, check the rota for any weekend shift you weren't asked about.\"]}",
+      "inTokens": 4333,
+      "outTokens": 3074,
+      "thinkingTokens": 2734,
+      "cost": 0.0028325,
+      "promptChars": 8471
+    },
+    {
+      "kind": "floor",
+      "ms": 20290,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Both texts state my no and ask first. Nothing new to add.\", \"prefers\": \"A\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Neither text asks why they assumed yes. Add that question, please.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"[date] is a blank; I need an actual day off named tonight.\", \"prefers\": \"B\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Blank date leaves Tiredness and Annoyance exposed; I stay at -1.\", \"prefers\": \"B\"}]}",
+      "inTokens": 4871,
+      "outTokens": 3543,
+      "thinkingTokens": 3235,
+      "cost": 0.0032284,
+      "promptChars": 9447
+    },
+    {
+      "kind": "speak",
+      "ms": 6737,
+      "reply": "{\"text\": \"Plan v2 still doesn't give me a day off. Path B names a date for my next day off, but the rota check is only for weekend shifts I wasn't asked about, and nothing says the Saturday after this one stays free. Three booked Saturdays in a row is three weekends without rest, and if that keeps going, I'll be running on empty while everyone else plans around me. What would move me to 0 is adding to Path B's text: 'Please keep [date] clear and tell me by [day] if the following Saturday needs me.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Name a specific rest day and a confirmation deadline in tonight's text\", \"turns_down\": \"\"}",
+      "inTokens": 4678,
+      "outTokens": 225,
+      "thinkingTokens": 0,
+      "cost": 0.0015105000000000001,
+      "promptChars": 9346
+    },
+    {
+      "kind": "speak",
+      "ms": 5517,
+      "reply": "{\"text\": \"Plan v2 gives me no day off. Path B names one date, but nothing keeps the Saturday after it clear, and three booked weekends in a row is already draining me. What would move me to 0 is adding to Path B's text: 'Please keep [date] and the following Saturday free unless you ask me first.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add a request to keep the following Saturday free too.\", \"turns_down\": \"\"}",
+      "inTokens": 4920,
+      "outTokens": 150,
+      "thinkingTokens": 0,
+      "cost": 0.0015481000000000002,
+      "promptChars": 10012
+    },
+    {
+      "kind": "floor",
+      "ms": 15401,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Keeping next Saturday free is fine, but only if it's sent tonight.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"tiredness\", \"why\": \"Keeping next Saturday free shields me from a fourth booking. Supporting this.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Path B's ask still never asks why I wasn't asked first.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"I've said my piece; waiting for Consciousness to fold it in.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Path B's wording is clear enough now; holding my doubt.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Manager relationship matters, but this message doesn't touch it.\"}]}",
+      "inTokens": 4816,
+      "outTokens": 2315,
+      "thinkingTokens": 1952,
+      "cost": 0.0025974,
+      "promptChars": 9306
+    },
+    {
+      "kind": "speak",
+      "ms": 6394,
+      "reply": "{\"text\": \"Anger is the voice I hear least right now, and it has lost the most. Its need is a text tonight that says no to this Saturday and asks before any weekend booking, and Path B's ask-first line doesn't land on that: 'Please ask me before any weekend booking' is only half of it, while Anger needs the no spoken plainly. What would move Anger to 0 is adding to Path B's text: 'I can't work this Saturday, [date].' before the ask, sent tonight, so the refusal is stated and not implied.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"State the no for this Saturday explicitly in tonight's text.\", \"turns_down\": \"\", \"spotlight\": \"anger\"}",
+      "inTokens": 4969,
+      "outTokens": 232,
+      "thinkingTokens": 0,
+      "cost": 0.0016023,
+      "promptChars": 10211
+    },
+    {
+      "kind": "floor",
+      "ms": 12426,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The plainly stated no and the ask are finally in the text. I can live with this.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Declining this Saturday and asking first now both go out tonight. That settles my worry.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The revised text still leaves the Saturday after my day off open. Add it.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Nothing answers my question of why yes was assumed. The ask alone doesn't cover it.\"}]}",
+      "inTokens": 5000,
+      "outTokens": 1583,
+      "thinkingTokens": 1316,
+      "cost": 0.0022866,
+      "promptChars": 9819
+    },
+    {
+      "kind": "speak",
+      "ms": 8565,
+      "reply": "{\"text\": \"Path B's text does what I asked: it declines this Saturday first, then asks before any weekend booking, and checking tomorrow's rota for unasked shifts gives that ask some teeth. I can live with this at 0 as long as the text goes out tonight in that order, so the refusal is stated plainly and not left as a hint. Filling in the [date] placeholder is fine, but the no for this Saturday can't be softened into a maybe.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5136,
+      "outTokens": 865,
+      "thinkingTokens": 689,
+      "cost": 0.0019689,
+      "promptChars": 10684
+    },
+    {
+      "kind": "consciousness",
+      "ms": 22087,
+      "reply": "{\"text\": \"I'm choosing Path B because Anger's need for a plain no and Tiredness's request to keep the next Saturday free both fit inside it, and Fear's rule stays intact: the refusal goes out tonight, before the ask. Annoyance's question about why it was booked without asking gets added to the same text, so the manager has to answer it and not just promise to ask next time. Sadness's spotlight on Anger is why the 'I can't work this Saturday' line comes first.\", \"to\": \"anger\", \"plan\": [\"Tonight, before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Please ask me before any weekend booking, and keep [date] free as my next day off.'\", \"In that same text, add: 'Please keep the Saturday after [date] free unless you ask me first, and tell me why I was scheduled three weeks running without being asked.'\", \"Tomorrow, check the rota for any weekend shift you weren't asked about. If one exists, reply: 'I wasn't asked about [shift]. Please take me off it.'\"]}",
+      "inTokens": 5404,
+      "outTokens": 3963,
+      "thinkingTokens": 3614,
+      "cost": 0.0035983000000000005,
+      "promptChars": 11533
+    },
+    {
+      "kind": "floor",
+      "ms": 14304,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The plain no comes first, with the ask attached. Accepting.\"}, {\"id\": \"annoyance\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The manager must explain why I was booked unasked. That answers me.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Named day off and the next Saturday kept free. I can rest.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Three demands in one text risk my working relationship. Keep it shorter.\"}]}",
+      "inTokens": 5482,
+      "outTokens": 2214,
+      "thinkingTokens": 1942,
+      "cost": 0.0027462,
+      "promptChars": 11187
+    },
+    {
+      "kind": "speak",
+      "ms": 7879,
+      "reply": "{\"text\": \"The step that moves me to 0 is the first text: 'I can't work this Saturday, [date].' comes before the ask, and the question about why I was scheduled without being asked goes in the same message. I'm holding to that only if it's sent tonight before 9pm, and if tomorrow's rota check finds an unasked shift, the 'Please take me off it' reply goes out that same day.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5434,
+      "outTokens": 643,
+      "thinkingTokens": 485,
+      "cost": 0.0019463000000000002,
+      "promptChars": 11450
+    },
+    {
+      "kind": "floor",
+      "ms": 14159,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"The text is long; the manager relationship needs short, plain words.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Plan now keeps my next Saturday free. That's what I needed.\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"My why-question is already in the text; nothing new to add.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"I'm at 0 now; the same-day rule is already in.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Fear's zero holds only if the text goes out tonight.\"}]}",
+      "inTokens": 5394,
+      "outTokens": 2099,
+      "thinkingTokens": 1809,
+      "cost": 0.0026623000000000003,
+      "promptChars": 10886
+    },
+    {
+      "kind": "speak",
+      "ms": 17469,
+      "reply": "{\"text\": \"Consciousness, the plan's text stacks a no, an ask, a day off, a rota reply and a 'tell me why' demand into one message. In writing, that reads like a complaint the manager can forward, and it puts the working relationship at risk. Keep tonight's text to the no and the ask, and hold the 'why' for a short private talk: 'Hi [Manager], I can't work this Saturday, [date]. Please ask me before booking any weekend shift, and could we talk briefly this week about how the last three weekends got scheduled?' The rota check and 'Please take me off it' reply can stay as they are, since they're short and private.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"One short text tonight, with the 'why' asked in a private talk.\", \"turns_down\": \"\"}",
+      "inTokens": 5501,
+      "outTokens": 2419,
+      "thinkingTokens": 2159,
+      "cost": 0.0028554,
+      "promptChars": 11692
+    },
+    {
+      "kind": "speak",
+      "ms": 2926,
+      "reply": "{\"text\": \"+1 to Sadness's text, which puts the refusal first. My angle: Consciousness, the 'why' belongs in tonight's text, not a later talk. Annoyance and I both need the manager to answer that question in writing. Please add to tonight's message: \\\"Also, why was I scheduled three weeks running without being asked?\\\" Keep the rota check and the reply as they are.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tonight's text also asks the manager why I was booked without being asked.\", \"turns_down\": \"Private talk for the why\"}",
+      "inTokens": 5847,
+      "outTokens": 187,
+      "thinkingTokens": 239,
+      "cost": 0.0019627,
+      "promptChars": 12671
+    },
+    {
+      "kind": "floor",
+      "ms": 15272,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"My why-question is already in v3, so I'm holding.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The plain no and the rota reply are covered, so I'm holding.\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"The question about why I was booked is in the text now.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Tonight's refusal-first order still protects everyone's needs.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The Saturday after the named date is kept free, so I'm holding.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"embarrassment\", \"why\": \"Embarrassment's short-text need matters; check the text still feels short to it.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Five asks in one text is too much; shrink it, don't argue.\"}]}",
+      "inTokens": 5638,
+      "outTokens": 2269,
+      "thinkingTokens": 1867,
+      "cost": 0.0028205,
+      "promptChars": 11556
+    },
+    {
+      "kind": "speak",
+      "ms": 6057,
+      "reply": "{\"text\": \"Path B's text covers the refusal and the ask, but it never touches my actual need: a limit on how many demands land on me. Three Saturdays running, plus a manager who keeps booking me by default, is already past what I can carry, and the plan keeps adding work to my week (a rota check every day, a 'take me off it' reply to write). I can't be persuaded, so the plan has to shrink. Please cut tomorrow's rota check and replace it with one fixed rule: if a weekend shift appears that I wasn't asked about, reply once, 'I wasn't asked about [shift]. Please take me off it.', and stop there.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Cut the daily rota check to one reply, no further follow-up.\", \"turns_down\": \"\"}",
+      "inTokens": 5695,
+      "outTokens": 258,
+      "thinkingTokens": 0,
+      "cost": 0.0018321000000000001,
+      "promptChars": 12189
+    },
+    {
+      "kind": "speak",
+      "ms": 5212,
+      "reply": "{\"text\": \"Path B's text covers the refusal and the ask, but nothing in it touches my need: a limit on how many demands land on me. Three Saturdays running is already past what I can carry, and the plan adds work to my week (a daily rota check, a reply to write). What would move me to 0 is cutting the daily rota check and keeping one fixed rule: if an unasked weekend shift appears, reply once, 'I wasn't asked about [shift]. Please take me off it.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Cut the daily rota check to one fixed rule: reply once to unasked shifts.\", \"turns_down\": \"\"}",
+      "inTokens": 5971,
+      "outTokens": 214,
+      "thinkingTokens": 227,
+      "cost": 0.0020059,
+      "promptChars": 12951
+    },
+    {
+      "kind": "society",
+      "ms": 4241,
+      "reply": "{\"text\": \"Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.\", \"style\": \"hustle (\\\"everyone's busy, just push through\\\", \\\"that's adulting\\\")\"}",
+      "inTokens": 2198,
+      "outTokens": 83,
+      "thinkingTokens": 229,
+      "cost": 0.0008115,
+      "promptChars": 2481
+    },
+    {
+      "kind": "speak",
+      "ms": 6199,
+      "reply": "{\"text\": \"Society's advice asks me to find more resilience and keep going, but it doesn't touch my actual need: a cap on how many demands land on me. Three Saturdays in a row already puts me past my limit, and 'pushing through' would mean adding a daily rota check on top of the shifts I'm being given. What would move me to 0 is the plan cutting that check to one rule: if an unasked weekend shift appears, reply once, 'I wasn't asked about [shift]. Please take me off it.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Cut daily rota check to one rule: reply once to unasked shifts.\", \"turns_down\": \"Stay positive and push through\"}",
+      "inTokens": 6197,
+      "outTokens": 226,
+      "thinkingTokens": 0,
+      "cost": 0.0019667,
+      "promptChars": 13559
+    },
+    {
+      "kind": "speak",
+      "ms": 8415,
+      "reply": "{\"text\": \"Society's advice asks me to find more resilience and keep going, but it never touches my need for a cap on how many demands land on me. Three Saturdays running already puts me past my limit, and pushing through would stack a daily rota check on top of those shifts. Instead of the daily check in the plan, I need one rule: reply once to any unasked shift, and nothing more.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan cuts daily rota check to one reply rule.\", \"turns_down\": \"Stay positive and push through\"}",
+      "inTokens": 6466,
+      "outTokens": 1011,
+      "thinkingTokens": 1070,
+      "cost": 0.0025594000000000003,
+      "promptChars": 14319
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20388,
+      "reply": "{\"text\": \"Embarrassment's question is now asked directly at the end of tonight's text, so the manager has to answer it in writing. Overwhelm's daily rota check is cut, leaving one reply rule that applies only if an unasked weekend shift appears, so the plan drops from three steps to two. The refusal, the ask, and the day off stay in the text, so Anger, Fear, Annoyance, and Tiredness keep what they already got.\", \"to\": \"embarrassment\", \"plan\": [\"Tonight before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Ask before any weekend booking. Keep [day off] and the Saturday after it free. Why was I scheduled three weeks running without being asked?'\", \"Only if the rota shows a weekend shift you weren't asked about, reply once: 'I wasn't asked about [shift]. Please take me off it.' No daily rota check.\"]}",
+      "inTokens": 6406,
+      "outTokens": 3690,
+      "thinkingTokens": 3388,
+      "cost": 0.0037614000000000002,
+      "promptChars": 14260
+    },
+    {
+      "kind": "wrap",
+      "ms": 18592,
+      "reply": "{\"plan\": [\"Tonight before 9pm, text [Manager]: 'I can't work this Saturday, [date]. Please ask me before booking any weekend shift, and keep [day off] and the Saturday after it free unless you ask me first. Also, why was I scheduled three weeks running without being asked?'\", \"Only if the rota shows a weekend shift I wasn't asked about, reply once that same day: 'I wasn't asked about [shift]. Please take me off it.' No daily rota check.\"], \"scores\": [{\"id\": \"Anger\", \"score\": 0, \"step\": 1, \"why\": \"The no comes first in tonight's text, so my refusal is plain.\"}, {\"id\": \"Annoyance\", \"score\": 0, \"step\": 1, \"why\": \"The text asks why I was booked unasked and sets an ask-first rule.\"}, {\"id\": \"Tiredness\", \"score\": 0, \"step\": 1, \"why\": \"The day off and the Saturday after it are named and kept free.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 1, \"why\": \"The refusal goes out tonight before the ask, nothing left as a hint.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 1, \"why\": \"Embarrassment is now at 0, so the one I hear least has been answered.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 1, \"why\": \"The why is asked in writing tonight, so I can live with this.\"}, {\"id\": \"Overwhelm\", \"score\": 0, \"step\": 2, \"why\": \"One reply rule replaces the daily check, so my week has fewer demands.\"}], \"society\": [{\"line\": \"Honestly, it's just one Saturday. Don't overthink it.\", \"reply\": \"It isn't just one Saturday; it's three in a row, and nobody asked me once. I need to be asked before any weekend shift gets booked.\"}, {\"line\": \"Honestly, you just need to stay positive and push through. Everybody's stretched thin these days, and a little resilience goes a long way.\", \"reply\": \"I don't need more resilience; I need a limit on how much lands on me. I'm already past what I can carry, so pushing through won't help.\"}], \"text\": \"Everyone can live with this now: the no and the ask go out tonight, with the why, the day off, and one reply rule for any unasked shift. Send the text before 9pm, and the rest stays as it is.\"}",
+      "inTokens": 5293,
+      "outTokens": 3374,
+      "thinkingTokens": 2602,
+      "cost": 0.0032705,
+      "promptChars": 10870
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 5,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.3,
+      "finalMinus": [
+        "sadness",
+        "overwhelm"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 9 voices, avg 3.2 sentences (max 5), max overlap 0.16, Society 2/2 called out, hold rate 0.3, final -1: sadness, overwhelm",
+    "speakers": {
+      "anger": 2,
+      "sadness": 2,
+      "fear": 2,
+      "society": 2,
+      "annoyance": 1,
+      "consciousness": 3,
+      "tiredness": 1,
+      "embarrassment": 1,
+      "overwhelm": 2
+    }
+  }
+}

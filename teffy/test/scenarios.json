@@ -1,0 +1,37 @@
+[
+  {
+    "id": "weekend-overwhelm",
+    "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+  },
+  {
+    "id": "disc-golf",
+    "thought": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+    "followups": [
+      "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+    ]
+  },
+  {
+    "id": "credit-taker",
+    "thought": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward."
+  },
+  {
+    "id": "third-saturday",
+    "thought": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again."
+  },
+  {
+    "id": "new-city",
+    "thought": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it."
+  },
+  {
+    "id": "quit-and-travel",
+    "thought": "I want to quit my job tomorrow and spend most of my savings on a three-month backpacking trip."
+  },
+  {
+    "id": "sister-comments",
+    "thought": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going."
+  },
+  {
+    "id": "exam-all-nighter",
+    "thought": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks."
+  }
+]

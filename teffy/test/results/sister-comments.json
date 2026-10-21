@@ -1,0 +1,1478 @@
+{
+  "scenario": {
+    "id": "sister-comments",
+    "thought": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 319220,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 30,
+    "inTokens": 153923,
+    "outTokens": 36065,
+    "thinkingTokens": 28662,
+    "cost": 0.06385431000000001
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Today, text [Family member]: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?' Then send a second text today, whatever they reply: 'Can we talk on Thanksgiving afternoon at [time]? I'll call you then.'",
+          "Do not tell the rest of the family anything about skipping until [Family member] answers the upset question. Only if they say they'd be upset or can't sit beside you, text the family: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'",
+          "By [date] this week, text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'",
+          "Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as your text said. If no seat is confirmed, take the afternoon call with [Family member] instead."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "loneliness": {
+          "score": 0,
+          "need": "",
+          "why": "Skipping the one table where I'd be with my family means I'm cut off again. I'd be alone on the holiday."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "Dropping out without a word could really strain things with my family. I need to check that before deciding."
+        },
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "She's the one crossing the line, and staying home just dodges it. Nobody has actually set a boundary with her."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I vanish, my loneliness and my family ties are left exposed. I need a plan that protects them first."
+        },
+        "guilt": {
+          "score": 0,
+          "need": "",
+          "why": "My absence will hurt people who love me, and that isn't fair to them either."
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "I've found the clean fix: I won't go to dinner, and the comments stop being my problem. Let's get this locked in before anyone starts overthinking it.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "anger",
+          "text": "Plan v1 skips the table, but it never reaches my cause: my sister is the one making the comments, and nothing in it tells her to stop. Staying home means I quietly absorb the cost while she keeps going. I need the boundary said out loud before Thanksgiving next week. Ask [Sister] now: \"When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.\" Then the line exists, whether or not I attend.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "Skipping hides the problem; she never learns a boundary exists."
+        },
+        {
+          "n": 4,
+          "who": "fear",
+          "text": "Anger's boundary script is good, but it only changes what I say at the table, and I'm still the one who has to be in the room to say it. If I stay home, the comments keep flowing to whoever shows up, and nothing protects me from being cut off from my family or from being stuck alone on the holiday. I need the line said to [Sister] before Thanksgiving, plus a concrete seat for me that week: a call or visit with [Family member] on Thanksgiving day, scheduled by [date] this week.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A confrontation before Thanksgiving could blow up the whole dinner. Slow down."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "fear",
+          "text": "Society's \"just smile, change the subject\" plan leaves my fear untouched: it assumes the comments stop on their own, so nothing ensures I'm not alone or cut off on Thanksgiving if I walk into that room again. Following it would mean I keep absorbing the comments with no exit and no plan for the day itself. I need the concrete seat for Thanksgiving that Fear already named, a call or visit with [Family member] on Thanksgiving day, locked in by [date] this week.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Path A answers Anger and Fear: the boundary is said to [Sister] before dinner, and Fear's seat beside [Family member] stays in place. Path B answers Loneliness, Guilt, and Embarrassment: I skip the table but call [Family member] on Thanksgiving afternoon, and I tell the family myself by [date] this week so nobody hears about my absence second-hand. I'm taking Path A if [Sister] hears the line first, and Path B if I can't get the seat confirmed.",
+          "to": "fear",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "fear",
+          "text": "Path A and Path B both leave my need open until a seat is actually booked. A promise to talk to [Sister] first doesn't give me a place to be on Thanksgiving day. Before I can score 0, I need the Thanksgiving-day call or visit with [Family member] locked in: text '[Family member], can we talk on Thanksgiving afternoon at [time]?' by [date] this week, and I'll accept whatever time they confirm.",
+          "to": "consciousness",
+          "move": "answer",
+          "score": -1,
+          "lens": "",
+          "why": "Lock A's seat beside [Family member] by [date], or B's call."
+        },
+        {
+          "n": 9,
+          "who": "embarrassment",
+          "text": "Fear, before I decide whether to skip the table, I need to know what would make you feel safe enough to text the family. If [Family member] replies 'Yes, call me at [time]', would you be okay with me telling everyone I'm not coming, or is there something else you're bracing for? That answer would settle me, because it shows whether the family hears about my absence from me before the holiday.",
+          "to": "fear",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Texting the family first could read as leaving. Check how that lands before I move."
+        },
+        {
+          "n": 10,
+          "who": "fear",
+          "text": "Yes, if [Family member] replies with a call time, I'll be okay with you telling everyone you're not coming, because then I have a place to be that afternoon. What I'm bracing for is the family hearing it second-hand, or announcing my absence with no seat booked and ending up alone on the day. So please send the Thanksgiving-call text to [Family member] today, and I'll only settle once their reply is in hand.",
+          "to": "embarrassment",
+          "move": "answer",
+          "score": -1,
+          "lens": "",
+          "why": "I can answer: a confirmed call time with Family member would settle me."
+        },
+        {
+          "n": 11,
+          "who": "consciousness",
+          "text": "Embarrassment, Fear's answer settles your question: if the family gives a seat, nobody hears about an absence second-hand. Fear, I'm choosing Path A because Loneliness, Embarrassment, Fear, Anger, and Guilt all prefer it, and the beside-you seat answers Loneliness's alone-on-the-holiday worry. Path B stays as the fallback if no seat is confirmed, so the call still gets booked. Today's text also asks [Family member] whether skipping would upset them, so Embarrassment gets that answer too.",
+          "to": "embarrassment",
+          "move": "refine"
+        },
+        {
+          "n": 12,
+          "who": "embarrassment",
+          "text": "Plan v3 covers my need: the 'Would you be upset if I skipped Thanksgiving dinner this year?' text goes to [Family member] today, so the family hears about any absence from me first. I can live with this grudgingly, on one condition: nothing about skipping goes to the rest of the family until [Family member] replies to that text. If they say they'd be upset, the family text in the plan waits for that reply before it goes out.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Asking Family member first keeps me socially safe. Accepting."
+        },
+        {
+          "n": 13,
+          "who": "sadness",
+          "text": "Fear is the emotion I'm most worried about, because it has waited longest for a real place to be on Thanksgiving day. In plan v3, the call-time text to [Family member] only goes out if their first reply is bad, so if they say yes, Fear still has no booked seat and nothing on the calendar. Fear would feel protected if the call-time text went out today no matter what they reply.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear's still unmet; I'm speaking up for its seat."
+        },
+        {
+          "n": 14,
+          "who": "fear",
+          "text": "My earlier text to [Family member] only goes out if their first reply is bad, and that still leaves a yes with no seat booked. I'm not asking for a new script. What changes is timing: send the call-time text today no matter what they answer about dinner, so the Thanksgiving-afternoon slot is held before anyone replies. Once their answer arrives, I'll accept whatever time they confirm.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "step",
+          "why": "Sadness is right: a call-time text today gives me a seat now."
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Fear's ask to send the Thanksgiving-afternoon call text today, whatever [Family member] says, is now in the plan. Embarrassment, I rewrote that text to ask only for a time and say nothing about skipping, so your absence can't go out before they answer the upset question. The family text still waits for that reply, which keeps Fear's seat and your need both in place.",
+          "to": "embarrassment",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "fear",
+          "text": "Plan v4 covers my need. Sending the call-time text to [Family member] today, before any reply, holds a Thanksgiving-afternoon seat in place, and that is the step that moves me to 0. I'm holding that to one condition: the family text about skipping stays blocked until [Family member] answers the upset question, so nobody hears about my absence second-hand.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Call-time text goes out today regardless. Seat is held. I accept."
+        },
+        {
+          "n": 17,
+          "who": "anger",
+          "text": "Plan v4 holds a seat, so I can live with it, but only if the family text about skipping waits until [Family member] answers the upset question. Anger's point is that the boundary with [Sister] is already drafted, so the one remaining gap is the order of texts today. I'm holding that to one condition: nothing about my absence goes out before the reply lands.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "The sister boundary text is in v4 before Thanksgiving, so I can accept."
+        },
+        {
+          "n": 18,
+          "who": "consciousness",
+          "text": "The plan is set: the texts go out today, the boundary goes to my sister before Thanksgiving, and I have a seat or an afternoon call either way. Nothing about my absence goes out until my family member answers.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.",
+          "to": "fear",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        }
+      ],
+      "lensesUsed": {
+        "anger": [
+          "mechanism"
+        ],
+        "fear": [
+          "step"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 15,
+      "acceptRun": 2,
+      "locks": {
+        "loneliness": "Skipping the one table where I'd be with my family means I'm cut off again. I'd be alone on the holiday.",
+        "anger": "A boundary said to my sister directly, before Thanksgiving.",
+        "guilt": "My absence will hurt people who love me, and that isn't fair to them either.",
+        "embarrassment": "Sending the call text unconditionally must not announce my absence before they reply.",
+        "fear": "Send the call-time text to [Family member] today, regardless of their reply"
+      },
+      "waiting": {
+        "loneliness": 5,
+        "embarrassment": 3,
+        "anger": 0,
+        "fear": 0,
+        "guilt": 1,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 30,
+        "inChars": 313131,
+        "outChars": 21260,
+        "byKind": {
+          "open": 1,
+          "floor": 11,
+          "speak": 13,
+          "society": 1,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 3
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "I've found the clean fix: I won't go to dinner, and the comments stop being my problem. Let's get this locked in before anyone starts overthinking it.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Skip Thanksgiving dinner next week so I don't have to sit through my sister's comments about my weight."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "loneliness",
+            "why": "Skipping the one table where I'd be with my family means I'm cut off again. I'd be alone on the holiday."
+          },
+          {
+            "id": "embarrassment",
+            "why": "Dropping out without a word could really strain things with my family. I need to check that before deciding."
+          },
+          {
+            "id": "anger",
+            "why": "She's the one crossing the line, and staying home just dodges it. Nobody has actually set a boundary with her."
+          },
+          {
+            "id": "fear",
+            "why": "If I vanish, my loneliness and my family ties are left exposed. I need a plan that protects them first."
+          },
+          {
+            "id": "guilt",
+            "why": "My absence will hurt people who love me, and that isn't fair to them either."
+          }
+        ],
+        "spotlight": "loneliness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Skipping hides the problem; she never learns a boundary exists."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Staying home means spending the holiday alone, cut off from everyone."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will the family hear about this before I vanish from the table?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Plan exposes loneliness and family ties; I'll wait for a fuller plan."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Absence hurts loved ones; I'll wait until the plan includes them."
+          }
+        ],
+        "pick": "anger",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "anger",
+        "text": "Plan v1 skips the table, but it never reaches my cause: my sister is the one making the comments, and nothing in it tells her to stop. Staying home means I quietly absorb the cost while she keeps going. I need the boundary said out loud before Thanksgiving next week. Ask [Sister] now: \"When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.\" Then the line exists, whether or not I attend.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "Skipping hides the problem; she never learns a boundary exists.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Check with me before the text goes out. Does family know?"
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Boundary helps, but I still need the table to feel connected."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "anger",
+            "why": "A confrontation before Thanksgiving could blow up the whole dinner. Slow down."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Boundary helps, but skipping still hurts people. Nothing new yet."
+          }
+        ],
+        "pick": "fear",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "fear",
+        "text": "Anger's boundary script is good, but it only changes what I say at the table, and I'm still the one who has to be in the room to say it. If I stay home, the comments keep flowing to whoever shows up, and nothing protects me from being cut off from my family or from being stuck alone on the holiday. I need the line said to [Sister] before Thanksgiving, plus a concrete seat for me that week: a call or visit with [Family member] on Thanksgiving day, scheduled by [date] this week.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A confrontation before Thanksgiving could blow up the whole dinner. Slow down.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "fear",
+        "text": "Society's \"just smile, change the subject\" plan leaves my fear untouched: it assumes the comments stop on their own, so nothing ensures I'm not alone or cut off on Thanksgiving if I walk into that room again. Following it would mean I keep absorbing the comments with no exit and no plan for the day itself. I need the concrete seat for Thanksgiving that Fear already named, a call or visit with [Family member] on Thanksgiving day, locked in by [date] this week.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Path A answers Anger and Fear: the boundary is said to [Sister] before dinner, and Fear's seat beside [Family member] stays in place. Path B answers Loneliness, Guilt, and Embarrassment: I skip the table but call [Family member] on Thanksgiving afternoon, and I tell the family myself by [date] this week so nobody hears about my absence second-hand. I'm taking Path A if [Sister] hears the line first, and Path B if I can't get the seat confirmed.",
+        "to": "fear",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Text [Sister] this week: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.' Attend Thanksgiving with [Family member] seated beside me, and leave if she repeats it.",
+            "Path B: Text the family by [date] this week: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?' Make that call at [time] on Thanksgiving day."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A phone call isn't company at the table.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Run the family announcement past me first, short texts only.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "Lock A's seat beside [Family member] by [date], or B's call.",
+            "prefers": "A"
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "The sister boundary lives in Path A; hold until B adds it.",
+            "prefers": "A"
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Path A spares everyone the empty chair. Holding until something changes.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "fear",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "fear",
+        "text": "Path A and Path B both leave my need open until a seat is actually booked. A promise to talk to [Sister] first doesn't give me a place to be on Thanksgiving day. Before I can score 0, I need the Thanksgiving-day call or visit with [Family member] locked in: text '[Family member], can we talk on Thanksgiving afternoon at [time]?' by [date] this week, and I'll accept whatever time they confirm.",
+        "to": "consciousness",
+        "move": "answer",
+        "score": -1,
+        "lens": "",
+        "why": "Lock A's seat beside [Family member] by [date], or B's call.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "fear",
+            "why": "Texting the family first could read as leaving. Check how that lands before I move."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The call is locked in, but the line to my sister still isn't said. I need it."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "fear",
+            "why": "Will a phone call on the day actually feel like company, or will I still be alone?"
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Telling the family myself by a set date is fairer to them. I'll wait."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "embarrassment",
+        "text": "Fear, before I decide whether to skip the table, I need to know what would make you feel safe enough to text the family. If [Family member] replies 'Yes, call me at [time]', would you be okay with me telling everyone I'm not coming, or is there something else you're bracing for? That answer would settle me, because it shows whether the family hears about my absence from me before the holiday.",
+        "to": "fear",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Texting the family first could read as leaving. Check how that lands before I move.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "answer",
+            "to": "embarrassment",
+            "why": "I can answer: a confirmed call time with Family member would settle me."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The boundary to my sister must go out this week, whichever path wins."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A phone call isn't a seat at the table; I'd still feel cut off."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "embarrassment",
+            "why": "Telling family myself before Thanksgiving spares them hurt; I back that check."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "fear",
+            "why": "I already asked my question; I'm waiting for Fear's answer."
+          }
+        ],
+        "pick": "fear",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "fear",
+        "text": "Yes, if [Family member] replies with a call time, I'll be okay with you telling everyone you're not coming, because then I have a place to be that afternoon. What I'm bracing for is the family hearing it second-hand, or announcing my absence with no seat booked and ending up alone on the day. So please send the Thanksgiving-call text to [Family member] today, and I'll only settle once their reply is in hand.",
+        "to": "embarrassment",
+        "move": "answer",
+        "score": -1,
+        "lens": "",
+        "why": "I can answer: a confirmed call time with Family member would settle me.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "consciousness",
+        "text": "Embarrassment, Fear's answer settles your question: if the family gives a seat, nobody hears about an absence second-hand. Fear, I'm choosing Path A because Loneliness, Embarrassment, Fear, Anger, and Guilt all prefer it, and the beside-you seat answers Loneliness's alone-on-the-holiday worry. Path B stays as the fallback if no seat is confirmed, so the call still gets booked. Today's text also asks [Family member] whether skipping would upset them, so Embarrassment gets that answer too.",
+        "to": "embarrassment",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Today: text [Family member]: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?'",
+            "By [date] this week: text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'",
+            "Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as the text said.",
+            "If [Family member] says they'd be upset or can't sit beside you, text the family today: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "loneliness",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "guilt",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 20
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Call request goes out only if they object; send it today."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Asking Family member first keeps me socially safe. Accepting."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Sitting beside Family member covers my need; nothing to add."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The boundary text to my sister is already in the plan."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Attending means no absence hurting family. Fair enough."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 21
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "embarrassment",
+        "text": "Plan v3 covers my need: the 'Would you be upset if I skipped Thanksgiving dinner this year?' text goes to [Family member] today, so the family hears about any absence from me first. I can live with this grudgingly, on one condition: nothing about skipping goes to the rest of the family until [Family member] replies to that text. If they say they'd be upset, the family text in the plan waits for that reply before it goes out.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Asking Family member first keeps me socially safe. Accepting.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Today's text still lacks a Thanksgiving call time; my need stays open."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The boundary line is now going to Sister; I can accept this."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear's still unmet; I'm speaking up for its seat."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "I already gave my condition; nothing more to add yet."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Seat beside Family covers me, if they actually reply."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "No new concerns about the plan's structure right now."
+          }
+        ],
+        "pick": "sadness",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "sadness",
+        "text": "Fear is the emotion I'm most worried about, because it has waited longest for a real place to be on Thanksgiving day. In plan v3, the call-time text to [Family member] only goes out if their first reply is bad, so if they say yes, Fear still has no booked seat and nothing on the calendar. Fear would feel protected if the call-time text went out today no matter what they reply.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear's still unmet; I'm speaking up for its seat.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 24
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": 0,
+        "to": -1,
+        "at": 25
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sadness is right: a call-time text today gives me a seat now."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Sending the call text unconditionally must not announce my absence before they reply."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Fear's call-time text would cover my alone-on-the-holiday worry too, but nothing new to add yet."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I already spoke; Consciousness needs to answer Fear's booked-seat need."
+          }
+        ],
+        "pick": "fear",
+        "at": 26
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "fear",
+        "text": "My earlier text to [Family member] only goes out if their first reply is bad, and that still leaves a yes with no seat booked. I'm not asking for a new script. What changes is timing: send the call-time text today no matter what they answer about dinner, so the Thanksgiving-afternoon slot is held before anyone replies. Once their answer arrives, I'll accept whatever time they confirm.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "step",
+        "why": "Sadness is right: a call-time text today gives me a seat now.",
+        "prevScore": -1,
+        "lensLabel": "smallest next step",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Fear's ask to send the Thanksgiving-afternoon call text today, whatever [Family member] says, is now in the plan. Embarrassment, I rewrote that text to ask only for a time and say nothing about skipping, so your absence can't go out before they answer the upset question. The family text still waits for that reply, which keeps Fear's seat and your need both in place.",
+        "to": "embarrassment",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Today, text [Family member] twice. First: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?' Then, whatever they reply: 'Can we talk on Thanksgiving afternoon at [time]? I'll call you then.'",
+            "After [Family member] replies, only if they'd be upset or can't sit beside you, text the family: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'",
+            "By [date] this week, text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'",
+            "Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as the text said. If no seat is confirmed, take the afternoon call instead."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 28
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 29
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 31
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Call text no longer hints at absence. I can live with it."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Call-time text goes out today regardless. Seat is held. I accept."
+          }
+        ],
+        "pick": "fear",
+        "at": 32
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "fear",
+        "text": "Plan v4 covers my need. Sending the call-time text to [Family member] today, before any reply, holds a Thanksgiving-afternoon seat in place, and that is the step that moves me to 0. I'm holding that to one condition: the family text about skipping stays blocked until [Family member] answers the upset question, so nobody hears about my absence second-hand.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Call-time text goes out today regardless. Seat is held. I accept.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 33
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "v4 keeps my condition: family hears nothing about skipping before their reply."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The sister boundary text is in v4 before Thanksgiving, so I can accept."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The beside-you seat covers my need; nothing new to add yet."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Nothing new: the boundary text is fair to my sister, so I'll hold back."
+          }
+        ],
+        "pick": "anger",
+        "at": 34
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "anger",
+        "text": "Plan v4 holds a seat, so I can live with it, but only if the family text about skipping waits until [Family member] answers the upset question. Anger's point is that the boundary with [Sister] is already drafted, so the one remaining gap is the order of texts today. I'm holding that to one condition: nothing about my absence goes out before the reply lands.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "The sister boundary text is in v4 before Thanksgiving, so I can accept.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 35
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "Fear answered my question; Consciousness accepted the text-order fix. Nothing new from me."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "I already gave my 0; the order fix covers the boundary I drafted."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Holding a seat is only half of it. What if Sister comments before the seat is confirmed?"
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The Thanksgiving-afternoon call is held, so my alone-on-the-holiday worry is covered for now."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Sister also hears the boundary before the holiday, so she isn't blindsided either."
+          }
+        ],
+        "pick": "",
+        "at": 36
+      },
+      {
+        "type": "wrap",
+        "text": "The plan is set: the texts go out today, the boundary goes to my sister before Thanksgiving, and I have a seat or an afternoon call either way. Nothing about my absence goes out until my family member answers.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Today, text [Family member]: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?' Then send a second text today, whatever they reply: 'Can we talk on Thanksgiving afternoon at [time]? I'll call you then.'",
+            "Do not tell the rest of the family anything about skipping until [Family member] answers the upset question. Only if they say they'd be upset or can't sit beside you, text the family: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'",
+            "By [date] this week, text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'",
+            "Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as your text said. If no seat is confirmed, take the afternoon call with [Family member] instead."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "loneliness",
+            "score": 0,
+            "why": "A beside-you seat or an afternoon call means I won't be alone that day.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "Nobody hears about my absence second-hand; the family text waits for their answer.",
+            "step": 0
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "Boundary is drafted and will be said to Sister this week.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "A seat or afternoon call is booked before anyone else hears anything.",
+            "step": 0
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "why": "Family hears from me first and Sister gets a clear line; I can accept this.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.",
+            "to": "fear",
+            "reply": "I know you mean well, but smiling through it isn't enough for me. I need to tell my sister directly what I need, and I need a real plan for how I'll get through that day."
+          }
+        ],
+        "questions": [],
+        "at": 37
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 12676,
+      "reply": "{\"plan\": \"Skip Thanksgiving dinner next week so I don't have to sit through my sister's comments about my weight.\", \"text\": \"I've found the clean fix: I won't go to dinner, and the comments stop being my problem. Let's get this locked in before anyone starts overthinking it.\", \"minus\": [{\"id\": \"loneliness\", \"why\": \"Skipping the one table where I'd be with my family means I'm cut off again. I'd be alone on the holiday.\"}, {\"id\": \"embarrassment\", \"why\": \"Dropping out without a word could really strain things with my family. I need to check that before deciding.\"}, {\"id\": \"anger\", \"why\": \"She's the one crossing the line, and staying home just dodges it. Nobody has actually set a boundary with her.\"}, {\"id\": \"fear\", \"why\": \"If I vanish, my loneliness and my family ties are left exposed. I need a plan that protects them first.\"}, {\"id\": \"guilt\", \"why\": \"My absence will hurt people who love me, and that isn't fair to them either.\"}], \"spotlight\": \"loneliness\"}",
+      "inTokens": 3063,
+      "outTokens": 1028,
+      "thinkingTokens": 682,
+      "cost": 0.0008464100000000001,
+      "promptChars": 4435
+    },
+    {
+      "kind": "floor",
+      "ms": 10896,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Skipping hides the problem; she never learns a boundary exists.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Staying home means spending the holiday alone, cut off from everyone.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will the family hear about this before I vanish from the table?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Plan exposes loneliness and family ties; I'll wait for a fuller plan.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Absence hurts loved ones; I'll wait until the plan includes them.\"}]}",
+      "inTokens": 3804,
+      "outTokens": 1285,
+      "thinkingTokens": 983,
+      "cost": 0.0017813,
+      "promptChars": 6474
+    },
+    {
+      "kind": "speak",
+      "ms": 6108,
+      "reply": "{\"text\": \"Plan v1 skips the table, but it never reaches my cause: my sister is the one making the comments, and nothing in it tells her to stop. Staying home means I quietly absorb the cost while she keeps going. I need the boundary said out loud before Thanksgiving next week. Ask [Sister] now: \\\"When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.\\\" Then the line exists, whether or not I attend.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A boundary said to my sister directly, before Thanksgiving.\", \"turns_down\": \"\"}",
+      "inTokens": 3802,
+      "outTokens": 209,
+      "thinkingTokens": 0,
+      "cost": 0.0012422000000000002,
+      "promptChars": 6871
+    },
+    {
+      "kind": "floor",
+      "ms": 13002,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Check with me before the text goes out. Does family know?\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Boundary helps, but I still need the table to feel connected.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"anger\", \"why\": \"A confrontation before Thanksgiving could blow up the whole dinner. Slow down.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Boundary helps, but skipping still hurts people. Nothing new yet.\"}]}",
+      "inTokens": 3908,
+      "outTokens": 1437,
+      "thinkingTokens": 1191,
+      "cost": 0.0018900000000000002,
+      "promptChars": 6730
+    },
+    {
+      "kind": "speak",
+      "ms": 6081,
+      "reply": "{\"text\": \"Anger's boundary script is good, but it only changes what I say at the table, and I'm still the one who has to be in the room to say it. If I stay home, the comments keep flowing to whoever shows up, and nothing protects me from being cut off from my family or from being stuck alone on the holiday. I need the line said to [Sister] before Thanksgiving, plus a concrete seat for me that week: a call or visit with [Family member] on Thanksgiving day, scheduled by [date] this week.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A plan where I still see family on Thanksgiving, not only a stated boundary.\", \"turns_down\": \"\"}",
+      "inTokens": 4030,
+      "outTokens": 220,
+      "thinkingTokens": 0,
+      "cost": 0.0013196,
+      "promptChars": 7534
+    },
+    {
+      "kind": "society",
+      "ms": 4759,
+      "reply": "{\"text\": \"Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.\", \"style\": \"minimizing\"}",
+      "inTokens": 2044,
+      "outTokens": 60,
+      "thinkingTokens": 0,
+      "cost": 0.0006403000000000001,
+      "promptChars": 2128
+    },
+    {
+      "kind": "speak",
+      "ms": 6552,
+      "reply": "{\"text\": \"Society's \\\"just smile, change the subject\\\" plan leaves my fear untouched: it assumes the comments stop on their own, so nothing ensures I'm not alone or cut off on Thanksgiving if I walk into that room again. Following it would mean I keep absorbing the comments with no exit and no plan for the day itself. I need the concrete seat for Thanksgiving that Fear already named, a call or visit with [Family member] on Thanksgiving day, locked in by [date] this week.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Lock a Thanksgiving-day call or visit with [Family member] by [date].\", \"turns_down\": \"Just smile and change subject\"}",
+      "inTokens": 4446,
+      "outTokens": 230,
+      "thinkingTokens": 0,
+      "cost": 0.0014479000000000002,
+      "promptChars": 8715
+    },
+    {
+      "kind": "consciousness",
+      "ms": 11854,
+      "reply": "{\"text\": \"Path A answers Anger and Fear: the boundary is said to [Sister] before dinner, and Fear's seat beside [Family member] stays in place. Path B answers Loneliness, Guilt, and Embarrassment: I skip the table but call [Family member] on Thanksgiving afternoon, and I tell the family myself by [date] this week so nobody hears about my absence second-hand. I'm taking Path A if [Sister] hears the line first, and Path B if I can't get the seat confirmed.\", \"to\": \"fear\", \"plan\": [\"Path A: Text [Sister] this week: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.' Attend Thanksgiving with [Family member] seated beside me, and leave if she repeats it.\", \"Path B: Text the family by [date] this week: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?' Make that call at [time] on Thanksgiving day.\"]}",
+      "inTokens": 4318,
+      "outTokens": 1627,
+      "thinkingTokens": 1281,
+      "cost": 0.002105,
+      "promptChars": 8400
+    },
+    {
+      "kind": "floor",
+      "ms": 17880,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A phone call isn't company at the table.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Run the family announcement past me first, short texts only.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"Lock A's seat beside [Family member] by [date], or B's call.\", \"prefers\": \"A\"}, {\"id\": \"anger\", \"score\": -1, \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"The sister boundary lives in Path A; hold until B adds it.\", \"prefers\": \"A\"}, {\"id\": \"guilt\", \"score\": -1, \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Path A spares everyone the empty chair. Holding until something changes.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4852,
+      "outTokens": 3057,
+      "thinkingTokens": 2698,
+      "cost": 0.0029817,
+      "promptChars": 9324
+    },
+    {
+      "kind": "speak",
+      "ms": 6937,
+      "reply": "{\"text\": \"Path A and Path B both leave my need open until a seat is actually booked. A promise to talk to [Sister] first doesn't give me a place to be on Thanksgiving day. Before I can score 0, I need the Thanksgiving-day call or visit with [Family member] locked in: text '[Family member], can we talk on Thanksgiving afternoon at [time]?' by [date] this week, and I'll accept whatever time they confirm.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Text [Family member] today to lock a Thanksgiving-day call or visit.\", \"turns_down\": \"\"}",
+      "inTokens": 5146,
+      "outTokens": 204,
+      "thinkingTokens": 0,
+      "cost": 0.0016434000000000002,
+      "promptChars": 10593
+    },
+    {
+      "kind": "floor",
+      "ms": 11436,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"fear\", \"why\": \"Texting the family first could read as leaving. Check how that lands before I move.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The call is locked in, but the line to my sister still isn't said. I need it.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"fear\", \"why\": \"Will a phone call on the day actually feel like company, or will I still be alone?\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Telling the family myself by a set date is fairer to them. I'll wait.\"}]}",
+      "inTokens": 4857,
+      "outTokens": 991,
+      "thinkingTokens": 743,
+      "cost": 0.0019517,
+      "promptChars": 9308
+    },
+    {
+      "kind": "speak",
+      "ms": 9900,
+      "reply": "{\"text\": \"Fear, before I decide whether to skip the table, I need to know what would make you feel safe enough to text the family. If [Family member] replies 'Yes, call me at [time]', would you be okay with me telling everyone I'm not coming, or is there something else you're bracing for? That answer would settle me, because it shows whether the family hears about my absence from me before the holiday.\", \"to\": \"fear\", \"score\": -1, \"need\": \"Know whether [Family member] would be upset if I skip the table.\", \"turns_down\": \"\"}",
+      "inTokens": 4838,
+      "outTokens": 957,
+      "thinkingTokens": 785,
+      "cost": 0.001926,
+      "promptChars": 9743
+    },
+    {
+      "kind": "floor",
+      "ms": 11528,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"embarrassment\", \"why\": \"I can answer: a confirmed call time with Family member would settle me.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The boundary to my sister must go out this week, whichever path wins.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A phone call isn't a seat at the table; I'd still feel cut off.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"embarrassment\", \"why\": \"Telling family myself before Thanksgiving spares them hurt; I back that check.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"fear\", \"why\": \"I already asked my question; I'm waiting for Fear's answer.\"}]}",
+      "inTokens": 4996,
+      "outTokens": 1491,
+      "thinkingTokens": 1178,
+      "cost": 0.0022434,
+      "promptChars": 9711
+    },
+    {
+      "kind": "speak",
+      "ms": 12255,
+      "reply": "{\"text\": \"Yes, if [Family member] replies with a call time, I'll be okay with you telling everyone you're not coming, because then I have a place to be that afternoon. What I'm bracing for is the family hearing it second-hand, or announcing my absence with no seat booked and ending up alone on the day. So please send the Thanksgiving-call text to [Family member] today, and I'll only settle once their reply is in hand.\", \"to\": \"embarrassment\", \"score\": -1, \"need\": \"Send the Thanksgiving-call text to [Family member] today\", \"turns_down\": \"\"}",
+      "inTokens": 5528,
+      "outTokens": 1459,
+      "thinkingTokens": 1270,
+      "cost": 0.0023845,
+      "promptChars": 11748
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20096,
+      "reply": "{\"text\": \"Embarrassment, Fear's answer settles your question: if the family gives a seat, nobody hears about an absence second-hand. Fear, I'm choosing Path A because Loneliness, Embarrassment, Fear, Anger, and Guilt all prefer it, and the beside-you seat answers Loneliness's alone-on-the-holiday worry. Path B stays as the fallback if no seat is confirmed, so the call still gets booked. Today's text also asks [Family member] whether skipping would upset them, so Embarrassment gets that answer too.\", \"to\": \"embarrassment\", \"plan\": [\"Today: text [Family member]: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?'\", \"By [date] this week: text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'\", \"Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as the text said.\", \"If [Family member] says they'd be upset or can't sit beside you, text the family today: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'\"]}",
+      "inTokens": 5367,
+      "outTokens": 3331,
+      "thinkingTokens": 2899,
+      "cost": 0.0032747,
+      "promptChars": 11336
+    },
+    {
+      "kind": "floor",
+      "ms": 20276,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Call request goes out only if they object; send it today.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Asking Family member first keeps me socially safe. Accepting.\"}, {\"id\": \"loneliness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Sitting beside Family member covers my need; nothing to add.\"}, {\"id\": \"anger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The boundary text to my sister is already in the plan.\"}, {\"id\": \"guilt\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Attending means no absence hurting family. Fair enough.\"}]}",
+      "inTokens": 5581,
+      "outTokens": 3379,
+      "thinkingTokens": 3070,
+      "cost": 0.0033613999999999996,
+      "promptChars": 11350
+    },
+    {
+      "kind": "speak",
+      "ms": 7995,
+      "reply": "{\"text\": \"Plan v3 covers my need: the 'Would you be upset if I skipped Thanksgiving dinner this year?' text goes to [Family member] today, so the family hears about any absence from me first. I can live with this grudgingly, on one condition: nothing about skipping goes to the rest of the family until [Family member] replies to that text. If they say they'd be upset, the family text in the plan waits for that reply before it goes out.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5450,
+      "outTokens": 769,
+      "thinkingTokens": 596,
+      "cost": 0.0020156,
+      "promptChars": 11500
+    },
+    {
+      "kind": "floor",
+      "ms": 12925,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Today's text still lacks a Thanksgiving call time; my need stays open.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The boundary line is now going to Sister; I can accept this.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear's still unmet; I'm speaking up for its seat.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"I already gave my condition; nothing more to add yet.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Seat beside Family covers me, if they actually reply.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"No new concerns about the plan's structure right now.\"}]}",
+      "inTokens": 5438,
+      "outTokens": 1837,
+      "thinkingTokens": 1494,
+      "cost": 0.0025470000000000002,
+      "promptChars": 10956
+    },
+    {
+      "kind": "speak",
+      "ms": 10349,
+      "reply": "{\"text\": \"Fear is the emotion I'm most worried about, because it has waited longest for a real place to be on Thanksgiving day. In plan v3, the call-time text to [Family member] only goes out if their first reply is bad, so if they say yes, Fear still has no booked seat and nothing on the calendar. Fear would feel protected if the call-time text went out today no matter what they reply.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Thanksgiving-call text to [Family member] sent today, regardless of reply\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 5456,
+      "outTokens": 1244,
+      "thinkingTokens": 1050,
+      "cost": 0.0022554000000000003,
+      "promptChars": 11446
+    },
+    {
+      "kind": "floor",
+      "ms": 10650,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sadness is right: a call-time text today gives me a seat now.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Sending the call text unconditionally must not announce my absence before they reply.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Fear's call-time text would cover my alone-on-the-holiday worry too, but nothing new to add yet.\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"I already spoke; Consciousness needs to answer Fear's booked-seat need.\"}]}",
+      "inTokens": 5583,
+      "outTokens": 1259,
+      "thinkingTokens": 995,
+      "cost": 0.0023015,
+      "promptChars": 11374
+    },
+    {
+      "kind": "speak",
+      "ms": 7260,
+      "reply": "{\"text\": \"Consciousness, the plan still has no seat for me on Thanksgiving day. Plan v3 sends the call-time text only after a bad reply, so a yes from [Family member] leaves me with nothing booked. What would move me to 0 is sending the call text today regardless of their answer: \\\"[Family member], can we talk on Thanksgiving afternoon at [time]?\\\" I'll take whatever time they confirm, and if they say no to the dinner, the call still holds my place.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Send the Thanksgiving-call text to Family member today, unconditionally.\", \"turns_down\": \"\"}",
+      "inTokens": 6199,
+      "outTokens": 215,
+      "thinkingTokens": 0,
+      "cost": 0.0019643000000000004,
+      "promptChars": 13685
+    },
+    {
+      "kind": "speak",
+      "ms": 5708,
+      "reply": "{\"text\": \"Consciousness, my earlier text to [Family member] only goes out if their first reply is bad, and that still leaves a yes with no seat booked. I'm not asking for a new script. What changes is timing: send the call-time text today no matter what they answer about dinner, so the Thanksgiving-afternoon slot is held before anyone replies. Once their answer arrives, I'll accept whatever time they confirm.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Send the call-time text to [Family member] today, regardless of their reply\", \"turns_down\": \"\"}",
+      "inTokens": 6455,
+      "outTokens": 190,
+      "thinkingTokens": 246,
+      "cost": 0.0021506,
+      "promptChars": 14401
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20010,
+      "reply": "{\"text\": \"Fear's ask to send the Thanksgiving-afternoon call text today, whatever [Family member] says, is now in the plan. Embarrassment, I rewrote that text to ask only for a time and say nothing about skipping, so your absence can't go out before they answer the upset question. The family text still waits for that reply, which keeps Fear's seat and your need both in place.\", \"to\": \"embarrassment\", \"plan\": [\"Today, text [Family member] twice. First: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?' Then, whatever they reply: 'Can we talk on Thanksgiving afternoon at [time]? I'll call you then.'\", \"After [Family member] replies, only if they'd be upset or can't sit beside you, text the family: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'\", \"By [date] this week, text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'\", \"Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as the text said. If no seat is confirmed, take the afternoon call instead.\"]}",
+      "inTokens": 6067,
+      "outTokens": 2886,
+      "thinkingTokens": 2449,
+      "cost": 0.0032602,
+      "promptChars": 13315
+    },
+    {
+      "kind": "floor",
+      "ms": 11406,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Call text no longer hints at absence. I can live with it.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Call-time text goes out today regardless. Seat is held. I accept.\"}]}",
+      "inTokens": 6147,
+      "outTokens": 1613,
+      "thinkingTokens": 1474,
+      "cost": 0.0026472,
+      "promptChars": 13025
+    },
+    {
+      "kind": "speak",
+      "ms": 6130,
+      "reply": "{\"text\": \"Plan v4 covers my need. Sending the call-time text to [Family member] today, before any reply, holds a Thanksgiving-afternoon seat in place, and that is the step that moves me to 0. I'm holding that to one condition: the family text about skipping stays blocked until [Family member] answers the upset question, so nobody hears about my absence second-hand.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6595,
+      "outTokens": 153,
+      "thinkingTokens": 0,
+      "cost": 0.0020541,
+      "promptChars": 14843
+    },
+    {
+      "kind": "floor",
+      "ms": 11060,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"v4 keeps my condition: family hears nothing about skipping before their reply.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The sister boundary text is in v4 before Thanksgiving, so I can accept.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The beside-you seat covers my need; nothing new to add yet.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Nothing new: the boundary text is fair to my sister, so I'll hold back.\"}]}",
+      "inTokens": 6000,
+      "outTokens": 1527,
+      "thinkingTokens": 1273,
+      "cost": 0.0025606000000000005,
+      "promptChars": 12612
+    },
+    {
+      "kind": "speak",
+      "ms": 5134,
+      "reply": "{\"text\": \"Plan v4 covers me. Sending the Thanksgiving-afternoon call-time text to [Family member] today, before anyone replies, holds a seat in place, and that's the step that moves me to 0. I'm holding that to one condition: the family text about skipping stays blocked until [Family member] answers the upset question, so nobody hears about my absence second-hand.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6199,
+      "outTokens": 154,
+      "thinkingTokens": 0,
+      "cost": 0.0019338000000000003,
+      "promptChars": 13612
+    },
+    {
+      "kind": "speak",
+      "ms": 5506,
+      "reply": "{\"text\": \"Plan v4 holds a seat, so I can live with it, but only if the family text about skipping waits until [Family member] answers the upset question. Anger's point is that the boundary with [Sister] is already drafted, so the one remaining gap is the order of texts today. I'm holding that to one condition: nothing about my absence goes out before the reply lands.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6453,
+      "outTokens": 148,
+      "thinkingTokens": 361,
+      "cost": 0.0021875,
+      "promptChars": 14339
+    },
+    {
+      "kind": "floor",
+      "ms": 5593,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"Fear answered my question; Consciousness accepted the text-order fix. Nothing new from me.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"I already gave my 0; the order fix covers the boundary I drafted.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Holding a seat is only half of it. What if Sister comments before the seat is confirmed?\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"The Thanksgiving-afternoon call is held, so my alone-on-the-holiday worry is covered for now.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Sister also hears the boundary before the holiday, so she isn't blindsided either.\"}]}",
+      "inTokens": 6127,
+      "outTokens": 341,
+      "thinkingTokens": 0,
+      "cost": 0.0020057,
+      "promptChars": 13003
+    },
+    {
+      "kind": "wrap",
+      "ms": 17228,
+      "reply": "{\"plan\": [\"Today, text [Family member]: 'Would you be upset if I skipped Thanksgiving dinner this year? Will you sit beside me at the table if I come?' Then send a second text today, whatever they reply: 'Can we talk on Thanksgiving afternoon at [time]? I'll call you then.'\", \"Do not tell the rest of the family anything about skipping until [Family member] answers the upset question. Only if they say they'd be upset or can't sit beside you, text the family: 'I'm not coming to dinner this year. Can I call [Family member] Thanksgiving afternoon at [time]?'\", \"By [date] this week, text [Sister]: 'When you comment on my weight at dinner, I need you to stop. If it happens again, I'll leave the table.'\", \"Thanksgiving: attend dinner with [Family member] seated beside you. If [Sister] repeats the comment, leave the table as your text said. If no seat is confirmed, take the afternoon call with [Family member] instead.\"], \"scores\": [{\"id\": \"Loneliness\", \"score\": 0, \"step\": 4, \"why\": \"A beside-you seat or an afternoon call means I won't be alone that day.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"Nobody hears about my absence second-hand; the family text waits for their answer.\"}, {\"id\": \"Anger\", \"score\": 0, \"step\": 3, \"why\": \"Boundary is drafted and will be said to Sister this week.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 4, \"why\": \"A seat or afternoon call is booked before anyone else hears anything.\"}, {\"id\": \"Guilt\", \"score\": 0, \"step\": 0, \"why\": \"Family hears from me first and Sister gets a clear line; I can accept this.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 1, \"why\": \"The call-time text goes out today, whatever they say.\"}], \"society\": [{\"line\": \"Honestly, it's just family being family. Don't let it ruin the holiday; just smile, change the subject, and you'll be fine.\", \"reply\": \"I know you mean well, but smiling through it isn't enough for me. I need to tell my sister directly what I need, and I need a real plan for how I'll get through that day.\"}], \"text\": \"The plan is set: the texts go out today, the boundary goes to my sister before Thanksgiving, and I have a seat or an afternoon call either way. Nothing about my absence goes out until my family member answers.\"}",
+      "inTokens": 5174,
+      "outTokens": 2764,
+      "thinkingTokens": 1944,
+      "cost": 0.0029313000000000004,
+      "promptChars": 10620
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 15,
+      "voices": 6,
+      "maxSentences": 6,
+      "avgSentences": 3.3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.24,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.41,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "15 msgs, 6 voices, avg 3.3 sentences (max 6), max overlap 0.24, Society 1/1 called out, hold rate 0.41, final -1: none",
+    "speakers": {
+      "anger": 2,
+      "fear": 6,
+      "society": 1,
+      "consciousness": 3,
+      "embarrassment": 2,
+      "sadness": 1
+    }
+  }
+}

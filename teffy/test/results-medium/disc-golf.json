@@ -1,0 +1,2444 @@
+{
+  "scenario": {
+    "id": "disc-golf",
+    "thought": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+    "followups": [
+      "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+    ]
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 696252,
+  "results": [
+    {
+      "ok": true
+    },
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 52,
+    "inTokens": 305023,
+    "outTokens": 98037,
+    "thinkingTokens": 85205,
+    "cost": 0.14059780000000008
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+      "followups": [
+        "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+      ],
+      "plan": {
+        "version": 9,
+        "steps": [
+          "Now: eat a banana, and put the second banana in the car.",
+          "Before you leave, text him: \"Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [now + 35 min].\" If you already remember last week's drive minutes, use [now + 15 + those minutes + 10] instead. Otherwise, no lookup.",
+          "Leave in 15 minutes. If you are still driving 10 minutes after leaving, text: \"Traffic is slower, new ETA [time].\" Then drive without checking anything else.",
+          "Once there, you're done. Nothing else needs to be calculated or sent."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "hunger": {
+          "score": 0,
+          "need": "",
+          "why": "I'm running on empty, and you want me to swing a disc?"
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "He already waited for me last week. Showing up late again would hurt us both."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Playing hungry and rushed isn't good for my body, and it shows."
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": "Have we checked the time? What happens if we're late again?"
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "A clock-watching rule adds a check. It must stay one simple text, not a new task.",
+          "why": "Too many things at once: late wake-up, empty stomach, a friend to face."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        },
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "I'm heading out right now, and food can wait until we're on the course. I'll get there before he does, so the morning is under control.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "overwhelm",
+          "text": "I can't reach my need with Consciousness's plan. Heading out now means I'm still running on an empty stomach and a late wake-up, so the morning is far from under control, and 'food can wait' just asks me to handle everything at once. What I need is one thing dropped: eat something small before leaving, even a banana in the car, and text [Friend] 'Running about 20 min behind, eating first, see you at the first tee by [time].' Right now, the plan gives me nothing I can absorb.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Heading out now stacks rush on empty stomach. Shrink the plan."
+        },
+        {
+          "n": 4,
+          "who": "embarrassment",
+          "text": "+1 to Overwhelm's text, and I'd add one thing: the time in it has to be realistic, not a guess. Consciousness, if I eat first and leave [minutes] from now, what first-tee time can we actually hit? Once you give me that number, I'll know exactly what to send him before I go.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Short text works, but show me the wording before it sends."
+        },
+        {
+          "n": 5,
+          "who": "consciousness",
+          "text": "Embarrassment, eat for 5 minutes, leave 15 minutes from now, and set the first tee at [drive minutes from the map app] plus 10 minutes after leaving. That breaks if the drive runs longer than the buffer, so check the map before sending Overwhelm's text. Path A is built for Overwhelm and Hunger, since it drops the rush and gets food in. Path B is built for Doubt and Wellness, since it checks the drive and packs a snack.",
+          "to": "embarrassment",
+          "move": "paths"
+        },
+        {
+          "n": 6,
+          "who": "embarrassment",
+          "text": "My need is a real first-tee time in the text, not a guess. Before I agree to eating first, I need to know: what is the drive time to the course on the map app, and what exact first-tee time does that give us if we leave 15 minutes from now? Once you give me that number, I'll fill in Overwhelm's text with it and I can settle.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Give me the real first-tee time before anything gets sent."
+        },
+        {
+          "n": 7,
+          "who": "society",
+          "text": "Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 8,
+          "who": "wellness",
+          "text": "Telling me to take a deep breath and enjoy the morning leaves my need untouched: I'm running on empty, so calm alone doesn't fix my body, and playing hungry and rushed is what hurts it. Following that advice here means swinging a disc on an empty stomach with no check on the drive time. I'm fine with Overwhelm's text and Consciousness's eat-first step if they fit in the plan, but I still need a snack in my hand before the car door closes.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 9,
+          "who": "doubt",
+          "text": "Before I can settle on either path, I need to know whether anyone has actually checked how long the drive to the course takes. Consciousness, can you pull the drive time from the map app right now and tell us the exact first-tee time that gives us if we leave 15 minutes from now? If that drive is longer than the 10-minute buffer Path B assumes, I need to know that before Overwhelm's text goes out, because another late arrival is exactly what I'm afraid of.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Nobody has checked the drive time yet; I need that before agreeing."
+        },
+        {
+          "n": 10,
+          "who": "consciousness",
+          "text": "Doubt, I can't see the map app, so the drive time has to come from you once, and the formula covers any answer. Hunger and Overwhelm both need food and fewer moves before the door, so I've cut to three steps: eat a banana now and pack a second one for the car. Embarrassment and Wellness get their exact first-tee time and snack from those, and the late-text stays as written with the real time filled in.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 11,
+          "who": "doubt",
+          "text": "I'm still at -1 because plan v3 has no checked drive time yet: 'drive minutes' is a blank, so the first-tee time in the text is still a guess. What would move me to 0 is one number: [Consciousness or user] reads the drive time from the map app to [course] right now, and the text says 'see you at the first tee by [now + 15 + drive + 10].' If the drive is over 10 minutes, the text changes before it goes out, not after.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "met",
+          "why": "Formula isn't a checked drive time; no text until the number exists."
+        },
+        {
+          "n": 12,
+          "who": "society",
+          "text": "Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.",
+          "to": "doubt",
+          "move": "platitude"
+        },
+        {
+          "n": 13,
+          "who": "embarrassment",
+          "text": "Society's line leaves my need untouched: 'it'll sort itself out on the course' skips the one thing I'm scared of, which is arriving late again the way I did last week. If we skip checking the drive and just tee off whenever, I'll spend the whole round with that worry. What would move me to 0 is a number from the map app, so the text can say an exact first-tee time.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Doubt has been asking for one missing number, and it stays at -1 because plan v3's drive time is still a blank, so the first-tee time is a guess that could repeat last week's late arrival. I can feel how exhausting it is for Doubt to keep raising that fear with nothing solid to hold. Consciousness, please fill that blank with the map-app drive time before anyone leaves, so Doubt has something to rest on.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Doubt has barely been heard"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Doubt, you asked for the map-app drive time to be filled into the text before we leave, and that is now a step you finish before sending it, so the first-tee time stops being a guess. Embarrassment, the same number gives you the exact time you asked for, and the formula covers any drive length, so if the drive runs past 10 minutes the text changes before it goes out, not after. Sadness, this step is what settles Doubt's worry. Overwhelm's and Hunger's banana steps stay unchanged.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "doubt",
+          "text": "The map-app step in plan v4 answers my question: you read the drive minutes before anything is sent, and the first-tee time comes from now + 15 + drive + 10 instead of a guess. I can live with that on one condition: if the drive runs past 10 minutes, the time in the text changes before it goes out, not after. Consciousness, please keep that check as the last step before the text goes to [Friend].",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Drive time gets filled before the text goes out. That settles me."
+        },
+        {
+          "n": 17,
+          "who": "overwhelm",
+          "text": "Filling in the drive time still stacks a map step and arithmetic onto a morning that already feels like too much. What would move me to 0 is dropping the map step: eat the banana now, put the second one in the car, and text '[Friend], running about 20 min behind, eating first, see you at the first tee by [now + 35 min].' I'm using 35 minutes as the default, so nothing gets calculated before we leave.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Map step adds a task; shrink the plan, don't add to it."
+        },
+        {
+          "n": 18,
+          "who": "efficiency",
+          "text": "+1 to dropping the map step, Overwhelm. I'd swap it for a number you already have: the drive time from last week's trip, which you can pull from memory in seconds. Consciousness, set the first tee at now + 15 + [last week's drive minutes] + 10 and put that exact time in the text, so nobody has to look anything up before leaving. Doubt still gets a real drive number, and Overwhelm still gets banana now with the text going out as written.",
+          "to": "overwhelm",
+          "move": "support",
+          "score": -1,
+          "lens": "",
+          "why": "A ten-second map glance beats a guessed time that makes us late."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Eat first, leave in 15 minutes with a banana for the car, and text him the first-tee time based on last week's drive. If traffic runs long, I'll send him a new ETA so he isn't left waiting.",
+          "to": "",
+          "move": "wrap"
+        },
+        {
+          "n": 20,
+          "who": "user",
+          "text": "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+        },
+        {
+          "n": 21,
+          "who": "consciousness",
+          "text": "Doubt's worry is that naming the sandwich will look like I'm bailing, so the text says I'm looking forward to it and states the stop plainly, which tells him I'm headed there. The plan drops from five steps to three, with the sandwich riding on the drive instead of being a separate errand, which keeps Overwhelm's cut. Hunger and Wellness still get the banana now, and Embarrassment still gets an exact first-tee time.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 22,
+          "who": "doubt",
+          "text": "The text in plan v6 still says 'running about 20 min behind,' but the first-tee time is built from now + 15 + last week's drive + 10, so he would get two different numbers in one message. That's the moment I'm afraid of: he plans around the first-tee time, and if the drive runs long again, I'm the one who's late. What would move me to 0 is you telling me last week's drive minutes, so the first-tee time gets computed and the '20 min behind' wording is dropped before the text goes out.",
+          "to": "user",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Sandwich worry handled, but the time is still last week's guess."
+        },
+        {
+          "n": 23,
+          "who": "sadness",
+          "text": "Overwhelm is the emotion I'm most worried about right now. Plan v6 still needs last week's drive minutes before the text can go out, which is one more thing to work out on a morning that already feels like too much. I can feel how tired Overwhelm is of being asked for more, and it can't rest while the plan keeps asking. Consciousness, please make that number optional with a default in the plan, so Overwhelm can stop bracing for a calculation.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 24,
+          "who": "overwhelm",
+          "text": "Plan v6 still gates the text on a number I have to look up while hungry and rushing, and that lookup is where the morning stalls. Consciousness, make last week's drive minutes optional: if nobody has them handy, default to 35 and send '[Friend], grabbing a breakfast sandwich on the way, see you at the first tee by [now + 35 min].' The banana step stays as is.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "Plan v6 still asks for the drive minutes. Make the number optional with a default."
+        },
+        {
+          "n": 25,
+          "who": "consciousness",
+          "text": "Doubt, you're right that 'running about 20 min behind' next to an exact first-tee time would give him two different numbers, so the text drops that phrase and sends only the first-tee time. You can fill in last week's drive minutes; if you don't have them, the plan defaults to 35, so nothing needs looking up before you leave. The traffic update now sits inside the leave step, so Overwhelm gets fewer actions than v6.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 26,
+          "who": "doubt",
+          "text": "Plan v7 meets my need: the '20 min behind' wording is gone, so he gets one first-tee time, and last week's drive minutes either get filled in or default to 35. I can live with that because the traffic update covers a longer drive. I'm at 0, but the 35 is a fallback, so if last week's number is handy, use it.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": 0,
+          "lens": "step",
+          "why": "35 is still a guess the text presents as a promise."
+        },
+        {
+          "n": 27,
+          "who": "embarrassment",
+          "text": "If the 35-minute default goes out and the drive runs 45, he stands alone at the first tee for 10 minutes, and the traffic text only lands after he has already started waiting. That is the same wait he sat through last week, and it costs us both a clean start to the round. What would move me to 0 is a rule: send 'Traffic is slower, new ETA [time]' as soon as the drive passes 10 minutes, not after it's clear I'm late.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "cost",
+          "why": "Default 35 is still a guess; I need last week's drive number."
+        },
+        {
+          "n": 28,
+          "who": "sadness",
+          "text": "Overwhelm is the one I'm most worried about right now. It's been asked for a drive-time number, then a default, then a rule about traffic texts, and plan v7 still leaves it with a lookup to do before the door closes. I feel how tired it is of bracing for one more calculation while hungry and rushed. Consciousness, please make the traffic text a step Overwhelm never has to compute, so the only thing it does on the drive is send the message once the 10-minute mark passes.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 29,
+          "who": "consciousness",
+          "text": "Embarrassment, your rule is in step 2: the traffic text goes out the moment 10 minutes of driving have passed, not after you're already late. Sadness, Overwhelm now has two steps with no separate time calculation, so the only check on the drive is that 10-minute trigger. The first-tee time is in the same text as the sandwich news, so Doubt still gets one number.",
+          "to": "embarrassment",
+          "move": "refine"
+        },
+        {
+          "n": 30,
+          "who": "embarrassment",
+          "text": "Step 2's rule covers my need: 'Traffic is slower, new ETA [time]' goes out the moment 10 minutes of driving pass, so he hears about a late arrival before he starts waiting. I can live with the 35-minute default on that condition, grudgingly, as long as the ETA text goes out at the 10-minute mark and isn't held until we're clearly late.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Traffic text now fires at 10 minutes, my rule is in."
+        },
+        {
+          "n": 31,
+          "who": "consciousness",
+          "text": "Eat the banana, send him the first-tee time, and leave in 15 minutes. If traffic runs past 10 minutes, the new ETA goes out right then, so nobody waits on us.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Skip breakfast and rush",
+          "from": "consciousness",
+          "by": "overwhelm",
+          "why": "Eat something small and send the late-text before leaving."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.",
+          "to": "embarrassment",
+          "style": "wellness platitude (yoga, deep breathing, a bubble bath, a walk)"
+        },
+        {
+          "text": "Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.",
+          "to": "doubt",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        }
+      ],
+      "lensesUsed": {
+        "doubt": [
+          "met",
+          "moment",
+          "step"
+        ],
+        "overwhelm": [
+          "mechanism"
+        ],
+        "embarrassment": [
+          "cost"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 10,
+      "acceptRun": 0,
+      "locks": {
+        "hunger": "I'm running on empty, and you want me to swing a disc?",
+        "wellness": "Pack a snack for the car and eat something before leaving.",
+        "efficiency": "Use [last week's drive minutes] instead of opening the map app.",
+        "doubt": "Last week's drive minutes filled in; drop '20 min behind' wording.",
+        "embarrassment": "A traffic text sent 10 minutes into the drive, not after."
+      },
+      "waiting": {
+        "hunger": 5,
+        "embarrassment": 0,
+        "wellness": 0,
+        "doubt": 0,
+        "overwhelm": 3,
+        "sadness": 0,
+        "annoyance": 1,
+        "efficiency": 2,
+        "anger": 1,
+        "fear": 1,
+        "guilt": 1
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 52,
+        "inChars": 649761,
+        "outChars": 38103,
+        "byKind": {
+          "open": 1,
+          "floor": 16,
+          "speak": 22,
+          "consciousness": 9,
+          "society": 2,
+          "wrap": 2
+        }
+      },
+      "sadnessPlan": 7
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "I'm heading out right now, and food can wait until we're on the course. I'll get there before he does, so the morning is under control.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Skip breakfast, grab the disc bag, and rush out to meet my friend for a morning round of disc golf, showing up on time this time to make up for last week."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "hunger",
+            "why": "I'm running on empty, and you want me to swing a disc?"
+          },
+          {
+            "id": "embarrassment",
+            "why": "He already waited for me last week. Showing up late again would hurt us both."
+          },
+          {
+            "id": "wellness",
+            "why": "Playing hungry and rushed isn't good for my body, and it shows."
+          },
+          {
+            "id": "doubt",
+            "why": "Have we checked the time? What happens if we're late again?"
+          },
+          {
+            "id": "overwhelm",
+            "why": "Too many things at once: late wake-up, empty stomach, a friend to face."
+          }
+        ],
+        "spotlight": "embarrassment",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Eating is not optional; grab something before we start."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Arriving early helps. Still, tell him I'm on my way."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Rushed and hungry on a course is still bad for my body."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "How do you know you'll arrive first? Have we checked the time?"
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Heading out now stacks rush on empty stomach. Shrink the plan."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "overwhelm",
+        "text": "I can't reach my need with Consciousness's plan. Heading out now means I'm still running on an empty stomach and a late wake-up, so the morning is far from under control, and 'food can wait' just asks me to handle everything at once. What I need is one thing dropped: eat something small before leaving, even a banana in the car, and text [Friend] 'Running about 20 min behind, eating first, see you at the first tee by [time].' Right now, the plan gives me nothing I can absorb.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Heading out now stacks rush on empty stomach. Shrink the plan.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A banana in the car finally means I'm not running on empty."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Short text works, but show me the wording before it sends."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What exact time will we reach the first tee?"
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "embarrassment",
+        "text": "+1 to Overwhelm's text, and I'd add one thing: the time in it has to be realistic, not a guess. Consciousness, if I eat first and leave [minutes] from now, what first-tee time can we actually hit? Once you give me that number, I'll know exactly what to send him before I go.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Short text works, but show me the wording before it sends.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "consciousness",
+        "text": "Embarrassment, eat for 5 minutes, leave 15 minutes from now, and set the first tee at [drive minutes from the map app] plus 10 minutes after leaving. That breaks if the drive runs longer than the buffer, so check the map before sending Overwhelm's text. Path A is built for Overwhelm and Hunger, since it drops the rush and gets food in. Path B is built for Doubt and Wellness, since it checks the drive and packs a snack.",
+        "to": "embarrassment",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Eat a banana or toast within 5 minutes, then leave 15 minutes from now. Before the car door closes, send \"food can wait' just asks me to handle everything at once. What I need is one thing dropped: eat something small before leaving, even a banana in the car, and text [Friend] 'Running about 20 min behind, eating first, see you at the first tee by [time].\" to [Friend] with your first-tee time filled in.",
+            "Path B: Open the map app and check the real drive time to [course]. Set the first tee at that drive time plus 10 minutes, and pack a snack for the car before you go."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 6
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Snack in the car isn't eating. Eat before leaving, Consciousness.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Give me the real first-tee time before anything gets sent.",
+            "prefers": "B"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does the 15-minute leave include the drive? Path A never checked it.",
+            "prefers": "B"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Path B keeps me steadier; I'll wait for the real time.",
+            "prefers": "B"
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Path A fits my limit; B adds one demand too many.",
+            "prefers": "A"
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "hunger",
+            "why": "Hunger, I hear you. A snack for later isn't food now.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "embarrassment",
+        "text": "My need is a real first-tee time in the text, not a guess. Before I agree to eating first, I need to know: what is the drive time to the course on the map app, and what exact first-tee time does that give us if we leave 15 minutes from now? Once you give me that number, I'll fill in Overwhelm's text with it and I can settle.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Give me the real first-tee time before anything gets sent.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "society",
+        "text": "Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "wellness",
+        "text": "Telling me to take a deep breath and enjoy the morning leaves my need untouched: I'm running on empty, so calm alone doesn't fix my body, and playing hungry and rushed is what hurts it. Following that advice here means swinging a disc on an empty stomach with no check on the drive time. I'm fine with Overwhelm's text and Consciousness's eat-first step if they fit in the plan, but I still need a snack in my hand before the car door closes.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Still need the drive-time number and exact first-tee time before I settle."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Nobody has checked the drive time yet; I need that before agreeing."
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "I need real food in me, not just a banana, before leaving."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Snack-in-hand is stated; I'll wait for Consciousness to answer it."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "My boundary is respected by eat-first; nothing new to add."
+          }
+        ],
+        "pick": "doubt",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "doubt",
+        "text": "Before I can settle on either path, I need to know whether anyone has actually checked how long the drive to the course takes. Consciousness, can you pull the drive time from the map app right now and tell us the exact first-tee time that gives us if we leave 15 minutes from now? If that drive is longer than the 10-minute buffer Path B assumes, I need to know that before Overwhelm's text goes out, because another late arrival is exactly what I'm afraid of.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Nobody has checked the drive time yet; I need that before agreeing.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "consciousness",
+        "text": "Doubt, I can't see the map app, so the drive time has to come from you once, and the formula covers any answer. Hunger and Overwhelm both need food and fewer moves before the door, so I've cut to three steps: eat a banana now and pack a second one for the car. Embarrassment and Wellness get their exact first-tee time and snack from those, and the late-text stays as written with the real time filled in.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Within 5 minutes, eat a banana or toast, and put a second banana in the car.",
+            "You: check the drive minutes to [course] in the map app, then set the first tee at now + 15 + drive + 10 minutes.",
+            "Text him: 'Running about 20 min behind, eating first, see you at the first tee by [time].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 13
+      },
+      {
+        "type": "score",
+        "id": "hunger",
+        "from": -1,
+        "to": 0,
+        "at": 14
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "spotlight",
+        "id": "doubt",
+        "at": 17
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Banana now covers me. I can live with that, grudgingly."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Formula isn't a checked drive time; no text until the number exists."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still a placeholder, not a time. Give me the real number first."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Three steps, one dropped item; I can absorb that. Holding."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana now and one in the car; my snack need is covered."
+          }
+        ],
+        "pick": "doubt",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "doubt",
+        "text": "I'm still at -1 because plan v3 has no checked drive time yet: 'drive minutes' is a blank, so the first-tee time in the text is still a guess. What would move me to 0 is one number: [Consciousness or user] reads the drive time from the map app to [course] right now, and the text says 'see you at the first tee by [now + 15 + drive + 10].' If the drive is over 10 minutes, the text changes before it goes out, not after.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "met",
+        "why": "Formula isn't a checked drive time; no text until the number exists.",
+        "prevScore": -1,
+        "lensLabel": "what \"met\" looks like",
+        "at": 19
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "society",
+        "text": "Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.",
+        "to": "doubt",
+        "move": "platitude",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "embarrassment",
+        "text": "Society's line leaves my need untouched: 'it'll sort itself out on the course' skips the one thing I'm scared of, which is arriving late again the way I did last week. If we skip checking the drive and just tee off whenever, I'll spend the whole round with that worry. What would move me to 0 is a number from the map app, so the text can say an exact first-tee time.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "",
+            "why": "Why call a drive check unnecessary? Feelings got brushed off again."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Three steps fits. Don't add more; the drive check stays one step."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "embarrassment",
+            "why": "One map check takes seconds and gives the real number."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Embarrassment already asked for the drive number; I'll wait."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "pushback",
+            "to": "",
+            "why": "Already said my need; nothing new for Society's line."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Plan already includes eating; nothing new to add."
+          }
+        ],
+        "pick": "sadness",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Doubt has been asking for one missing number, and it stays at -1 because plan v3's drive time is still a blank, so the first-tee time is a guess that could repeat last week's late arrival. I can feel how exhausting it is for Doubt to keep raising that fear with nothing solid to hold. Consciousness, please fill that blank with the map-app drive time before anyone leaves, so Doubt has something to rest on.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Doubt has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Doubt, you asked for the map-app drive time to be filled into the text before we leave, and that is now a step you finish before sending it, so the first-tee time stops being a guess. Embarrassment, the same number gives you the exact time you asked for, and the formula covers any drive length, so if the drive runs past 10 minutes the text changes before it goes out, not after. Sadness, this step is what settles Doubt's worry. Overwhelm's and Hunger's banana steps stay unchanged.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Now: eat a banana or toast, and put a second banana in the car.",
+            "You: open the map app, read the drive minutes to [course], and set the first-tee time to now + 15 + drive + 10 minutes.",
+            "Before leaving, text him: 'Running about 20 min behind, eating first, see you at the first tee by [first-tee time].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 24
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 25
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Drive time gets filled before the text goes out. That settles me."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Plan now gives me an exact first-tee time from the map. Accepting."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Doubt now has a fixed step to rest on. Thank you, Consciousness."
+          }
+        ],
+        "pick": "doubt",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "doubt",
+        "text": "The map-app step in plan v4 answers my question: you read the drive minutes before anything is sent, and the first-tee time comes from now + 15 + drive + 10 instead of a guess. I can live with that on one condition: if the drive runs past 10 minutes, the time in the text changes before it goes out, not after. Consciousness, please keep that check as the last step before the text goes to [Friend].",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Drive time gets filled before the text goes out. That settles me.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 30
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 31
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 32
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The map-step time works for me; I can live with that now."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Map step adds a task; shrink the plan, don't add to it."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana now covers me; nothing more to add."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Snack in the car covers me; nothing new to add."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 33
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "overwhelm",
+        "text": "Filling in the drive time still stacks a map step and arithmetic onto a morning that already feels like too much. What would move me to 0 is dropping the map step: eat the banana now, put the second one in the car, and text '[Friend], running about 20 min behind, eating first, see you at the first tee by [now + 35 min].' I'm using 35 minutes as the default, so nothing gets calculated before we leave.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Map step adds a task; shrink the plan, don't add to it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 34
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": 0,
+        "to": -1,
+        "at": 35
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "overwhelm",
+            "why": "35 minutes is the guess I flagged; the drive still needs checking."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "A ten-second map glance beats a guessed time that makes us late."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Overwhelm's request got no answer; Consciousness must respond before anything moves."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Would 35 minutes be realistic for him, or can we check first?"
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Overwhelm's ask is still unanswered; I want it heard first."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "consciousness",
+            "why": "I'm waiting on Consciousness's answer; nothing more to add yet."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 36
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "efficiency",
+        "text": "+1 to dropping the map step, Overwhelm. I'd swap it for a number you already have: the drive time from last week's trip, which you can pull from memory in seconds. Consciousness, set the first tee at now + 15 + [last week's drive minutes] + 10 and put that exact time in the text, so nobody has to look anything up before leaving. Doubt still gets a real drive number, and Overwhelm still gets banana now with the text going out as written.",
+        "to": "overwhelm",
+        "move": "support",
+        "score": -1,
+        "lens": "",
+        "why": "A ten-second map glance beats a guessed time that makes us late.",
+        "lensLabel": "",
+        "at": 37
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 38
+      },
+      {
+        "type": "wrap",
+        "text": "Eat first, leave in 15 minutes with a banana for the car, and text him the first-tee time based on last week's drive. If traffic runs long, I'll send him a new ETA so he isn't left waiting.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Now: eat a banana or toast in the kitchen, and put a second banana in the car.",
+            "Now, without opening the map app: take last week's drive time to the course and set the first tee at now + 15 + that drive time + 10 minutes. Write that exact time down.",
+            "Before leaving, text him: 'Running about 20 min behind, eating first, see you at the first tee by [the time from step 2].'",
+            "Leave in 15 minutes and eat the banana in the car on the way.",
+            "If you're still on the road after the drive time from step 2 has passed, text him: 'Traffic is slower, new ETA [time].'"
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "hunger",
+            "score": 0,
+            "why": "I get food now, so I can take the morning without an empty stomach.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The text now has a real first-tee time based on last week's measured drive.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "I eat before the door closes and a snack rides along in the car.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "why": "No drive check today, so the time is still a guess; the step-5 update is the safeguard.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Map step dropped; banana now and default 35-minute text.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "I use last week's drive time from memory instead of opening the map.",
+            "step": 2
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.",
+            "to": "embarrassment",
+            "reply": "I hear that you want me to relax, but I'm not going to feel okay until I've eaten and have a real time to give my friend. Help me with the practical part and I'll take it from there."
+          },
+          {
+            "line": "Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.",
+            "to": "doubt",
+            "reply": "I can't just let the timing go, because being late again is what I'm most worried about. Give me a real number for the drive so I know when to be there."
+          }
+        ],
+        "questions": [],
+        "at": 39
+      },
+      {
+        "type": "user",
+        "text": "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?",
+        "at": 40
+      },
+      {
+        "type": "message",
+        "n": 21,
+        "who": "consciousness",
+        "text": "Doubt's worry is that naming the sandwich will look like I'm bailing, so the text says I'm looking forward to it and states the stop plainly, which tells him I'm headed there. The plan drops from five steps to three, with the sandwich riding on the drive instead of being a separate errand, which keeps Overwhelm's cut. Hunger and Wellness still get the banana now, and Embarrassment still gets an exact first-tee time.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 6,
+          "steps": [
+            "Now: eat a banana at home and put a second one in the car. Write down the first-tee time: now + 15 + last week's drive + 10 minutes.",
+            "Before leaving, text him: 'Looking forward to it! Running about 20 min behind, grabbing a breakfast sandwich on the way. See you at the first tee by [time].'",
+            "Leave in 15 minutes and grab the breakfast sandwich on the way. If you're still driving after last week's drive time has passed, text him: 'Traffic is slower, new ETA [time].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 41
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 42
+      },
+      {
+        "type": "spotlight",
+        "id": "doubt",
+        "at": 43
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sandwich worry handled, but the time is still last week's guess."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Banana now, text as written, nothing to calculate. I can carry this."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Last week's drive is the fastest real number; I'm settled."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Exact first-tee time in a short text: that's what I needed. Settled."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana now covers me, and nothing new is needed from me."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana now and in the car keeps my snack promise. Nothing new."
+          }
+        ],
+        "pick": "doubt",
+        "at": 44
+      },
+      {
+        "type": "message",
+        "n": 22,
+        "who": "doubt",
+        "text": "The text in plan v6 still says 'running about 20 min behind,' but the first-tee time is built from now + 15 + last week's drive + 10, so he would get two different numbers in one message. That's the moment I'm afraid of: he plans around the first-tee time, and if the drive runs long again, I'm the one who's late. What would move me to 0 is you telling me last week's drive minutes, so the first-tee time gets computed and the '20 min behind' wording is dropped before the text goes out.",
+        "to": "user",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Sandwich worry handled, but the time is still last week's guess.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 45
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 46
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "doubt",
+            "why": "Asking for last week's drive minutes is one more demand. Make the number optional, with a default."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "doubt",
+            "why": "Two different times in one text would confuse him. One clear first-tee time protects the friendship."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I've already said what I need. The user's answer is what's pending now."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I already suggested last week's drive time. Doubt's ask repeats that, so I'll wait."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The banana-now step still covers me. Nothing new to add."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The snack in hand is already in the plan. No new health concern."
+          }
+        ],
+        "pick": "sadness",
+        "at": 47
+      },
+      {
+        "type": "message",
+        "n": 23,
+        "who": "sadness",
+        "text": "Overwhelm is the emotion I'm most worried about right now. Plan v6 still needs last week's drive minutes before the text can go out, which is one more thing to work out on a morning that already feels like too much. I can feel how tired Overwhelm is of being asked for more, and it can't rest while the plan keeps asking. Consciousness, please make that number optional with a default in the plan, so Overwhelm can stop bracing for a calculation.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 48
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Plan v6 still asks for the drive minutes. Make the number optional with a default."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A default of 35 minutes is a guess, and it's the same guess that made me afraid."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Use last week's drive minutes as the default, so nothing needs looking up."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Sadness's ask covers the default, but the text still needs an exact time."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 49
+      },
+      {
+        "type": "message",
+        "n": 24,
+        "who": "overwhelm",
+        "text": "Plan v6 still gates the text on a number I have to look up while hungry and rushing, and that lookup is where the morning stalls. Consciousness, make last week's drive minutes optional: if nobody has them handy, default to 35 and send '[Friend], grabbing a breakfast sandwich on the way, see you at the first tee by [now + 35 min].' The banana step stays as is.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "Plan v6 still asks for the drive minutes. Make the number optional with a default.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 50
+      },
+      {
+        "type": "message",
+        "n": 25,
+        "who": "consciousness",
+        "text": "Doubt, you're right that 'running about 20 min behind' next to an exact first-tee time would give him two different numbers, so the text drops that phrase and sends only the first-tee time. You can fill in last week's drive minutes; if you don't have them, the plan defaults to 35, so nothing needs looking up before you leave. The traffic update now sits inside the leave step, so Overwhelm gets fewer actions than v6.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 7,
+          "steps": [
+            "Now: eat a banana at home and put a second one in the car. Set first-tee time = now + 15 + last week's drive minutes + 10, or 35 if you don't have that number.",
+            "Before leaving, text him: 'Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [time].' Leave in 15 min; if traffic runs late, text 'Traffic is slower, new ETA [time].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 51
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 52
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": 0,
+        "to": -1,
+        "at": 53
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "35 is still a guess the text presents as a promise."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Optional drive minutes with a 35 default: I can live with this."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A guessed 35-minute time is not the exact time I asked for."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Fewer steps now; nothing new to add this round."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana now and one in the car covers my need."
+          }
+        ],
+        "pick": "doubt",
+        "at": 54
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 55
+      },
+      {
+        "type": "message",
+        "n": 26,
+        "who": "doubt",
+        "text": "Plan v7 meets my need: the '20 min behind' wording is gone, so he gets one first-tee time, and last week's drive minutes either get filled in or default to 35. I can live with that because the traffic update covers a longer drive. I'm at 0, but the 35 is a fallback, so if last week's number is handy, use it.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": 0,
+        "lens": "step",
+        "why": "35 is still a guess the text presents as a promise.",
+        "prevScore": -1,
+        "lensLabel": "smallest next step",
+        "at": 56
+      },
+      {
+        "type": "spotlight",
+        "id": "embarrassment",
+        "at": 57
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Default 35 is still a guess; I need last week's drive number."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "embarrassment",
+            "why": "Embarrassment is still -1; make its first-tee time real before we go."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Plan now asks for nothing I must look up; holding."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Banana in the car covers my snack; no new concern."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Last week's drive swap is in; nothing more to add."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 58
+      },
+      {
+        "type": "message",
+        "n": 27,
+        "who": "embarrassment",
+        "text": "If the 35-minute default goes out and the drive runs 45, he stands alone at the first tee for 10 minutes, and the traffic text only lands after he has already started waiting. That is the same wait he sat through last week, and it costs us both a clean start to the round. What would move me to 0 is a rule: send 'Traffic is slower, new ETA [time]' as soon as the drive passes 10 minutes, not after it's clear I'm late.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "cost",
+        "why": "Default 35 is still a guess; I need last week's drive number.",
+        "prevScore": -1,
+        "lensLabel": "the cost",
+        "at": 59
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 60
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "A 35-minute default could leave Embarrassment exposed; the 10-minute traffic rule needs to be firm."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Our friend would stand alone at the first tee; he needs the traffic text early."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A clock-watching rule adds a check. It must stay one simple text, not a new task."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 10-minute traffic rule answers my lateness worry. Nothing new to add."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "I've stated my need; the rule covers it, so I'll let Consciousness respond."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The traffic rule is one text with no extra steps. Nothing to add."
+          }
+        ],
+        "pick": "sadness",
+        "at": 61
+      },
+      {
+        "type": "message",
+        "n": 28,
+        "who": "sadness",
+        "text": "Overwhelm is the one I'm most worried about right now. It's been asked for a drive-time number, then a default, then a rule about traffic texts, and plan v7 still leaves it with a lookup to do before the door closes. I feel how tired it is of bracing for one more calculation while hungry and rushed. Consciousness, please make the traffic text a step Overwhelm never has to compute, so the only thing it does on the drive is send the message once the 10-minute mark passes.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 62
+      },
+      {
+        "type": "message",
+        "n": 29,
+        "who": "consciousness",
+        "text": "Embarrassment, your rule is in step 2: the traffic text goes out the moment 10 minutes of driving have passed, not after you're already late. Sadness, Overwhelm now has two steps with no separate time calculation, so the only check on the drive is that 10-minute trigger. The first-tee time is in the same text as the sandwich news, so Doubt still gets one number.",
+        "to": "embarrassment",
+        "move": "refine",
+        "plan": {
+          "version": 8,
+          "steps": [
+            "Now: eat a banana and pack a second one for the car. Text him: 'Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [time].'",
+            "Leave in 15 min. [time] = now + 35 min (or now + 15 + last week's drive + 10). If still driving 10 minutes after leaving, text 'Traffic is slower, new ETA [time].'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 63
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 64
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still two time formulas; pick one fixed time, no arithmetic before leaving."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Traffic text now fires at 10 minutes, my rule is in."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Sandwich news and one first-tee time cover my worry; nothing new."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 65
+      },
+      {
+        "type": "message",
+        "n": 30,
+        "who": "embarrassment",
+        "text": "Step 2's rule covers my need: 'Traffic is slower, new ETA [time]' goes out the moment 10 minutes of driving pass, so he hears about a late arrival before he starts waiting. I can live with the 35-minute default on that condition, grudgingly, as long as the ETA text goes out at the 10-minute mark and isn't held until we're clearly late.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Traffic text now fires at 10 minutes, my rule is in.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 66
+      },
+      {
+        "type": "wrap",
+        "text": "Eat the banana, send him the first-tee time, and leave in 15 minutes. If traffic runs past 10 minutes, the new ETA goes out right then, so nobody waits on us.",
+        "plan": {
+          "version": 9,
+          "steps": [
+            "Now: eat a banana, and put the second banana in the car.",
+            "Before you leave, text him: \"Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [now + 35 min].\" If you already remember last week's drive minutes, use [now + 15 + those minutes + 10] instead. Otherwise, no lookup.",
+            "Leave in 15 minutes. If you are still driving 10 minutes after leaving, text: \"Traffic is slower, new ETA [time].\" Then drive without checking anything else.",
+            "Once there, you're done. Nothing else needs to be calculated or sent."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "hunger",
+            "score": 0,
+            "why": "Banana now means I'm fed before the drive.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The 10-minute ETA text lets him know before he waits.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "A snack in my hand before the car door closes.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "One first-tee time in the text, with no mixed numbers.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "A clock-watching rule adds a check. It must stay one simple text, not a new task.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "Last week's drive is used if remembered, default 35 otherwise.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.",
+            "to": "embarrassment",
+            "reply": "I know you mean well, but I need something concrete to feel okay about the timing, not just reassurance. Can we agree on a specific time I can tell him?"
+          },
+          {
+            "line": "Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.",
+            "to": "doubt",
+            "reply": "The timing is exactly what worries me, since I was late last week and don't want that to happen again. I need a clear plan for getting there on time."
+          }
+        ],
+        "questions": [],
+        "at": 67
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 16557,
+      "reply": "{\"plan\": \"Skip breakfast, grab the disc bag, and rush out to meet my friend for a morning round of disc golf, showing up on time this time to make up for last week.\", \"text\": \"I'm heading out right now, and food can wait until we're on the course. I'll get there before he does, so the morning is under control.\", \"minus\": [{\"id\": \"hunger\", \"why\": \"I'm running on empty, and you want me to swing a disc?\"}, {\"id\": \"embarrassment\", \"why\": \"He already waited for me last week. Showing up late again would hurt us both.\"}, {\"id\": \"wellness\", \"why\": \"Playing hungry and rushed isn't good for my body, and it shows.\"}, {\"id\": \"doubt\", \"why\": \"Have we checked the time? What happens if we're late again?\"}, {\"id\": \"overwhelm\", \"why\": \"Too many things at once: late wake-up, empty stomach, a friend to face.\"}], \"spotlight\": \"embarrassment\"}",
+      "inTokens": 3070,
+      "outTokens": 1948,
+      "thinkingTokens": 1639,
+      "cost": 0.0014588,
+      "promptChars": 4466
+    },
+    {
+      "kind": "floor",
+      "ms": 11842,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Eating is not optional; grab something before we start.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Arriving early helps. Still, tell him I'm on my way.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Rushed and hungry on a course is still bad for my body.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"How do you know you'll arrive first? Have we checked the time?\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Heading out now stacks rush on empty stomach. Shrink the plan.\"}]}",
+      "inTokens": 3781,
+      "outTokens": 1508,
+      "thinkingTokens": 1202,
+      "cost": 0.0018834,
+      "promptChars": 6383
+    },
+    {
+      "kind": "speak",
+      "ms": 8532,
+      "reply": "{\"text\": \"I can't reach my need with Consciousness's plan. Heading out now means I'm still running on an empty stomach and a late wake-up, so the morning is far from under control, and 'food can wait' just asks me to handle everything at once. What I need is one thing dropped: eat something small before leaving, even a banana in the car, and text [Friend] 'Running about 20 min behind, eating first, see you at the first tee by [time].' Right now, the plan gives me nothing I can absorb.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Eat something small and send the late-text before leaving.\", \"turns_down\": \"Skip breakfast and rush\"}",
+      "inTokens": 3752,
+      "outTokens": 218,
+      "thinkingTokens": 0,
+      "cost": 0.0012287,
+      "promptChars": 6693
+    },
+    {
+      "kind": "floor",
+      "ms": 13522,
+      "reply": "{\"bids\": [{\"id\": \"consciousness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"overwhelm\", \"why\": \"Overwhelm's point lands; I'll change plan to banana and text.\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A banana in the car finally means I'm not running on empty.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Short text works, but show me the wording before it sends.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What exact time will we reach the first tee?\"}]}",
+      "inTokens": 3974,
+      "outTokens": 1835,
+      "thinkingTokens": 1601,
+      "cost": 0.0021043,
+      "promptChars": 6875
+    },
+    {
+      "kind": "speak",
+      "ms": 5994,
+      "reply": "{\"text\": \"I'm still at -1 because Consciousness hasn't said when the friend text goes out or what time we'd actually reach the first tee. Overwhelm's fix is good, but I need the number itself: if I text '[Friend], running about 20 min behind, eating first, see you at the first tee by [time]' before I leave, what [time] are we realistically hitting so I'm not making him wait again?\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A concrete first-tee time and the late-text sent before leaving, so he's not left waiting.\", \"turns_down\": \"\"}",
+      "inTokens": 3949,
+      "outTokens": 191,
+      "thinkingTokens": 0,
+      "cost": 0.0012738,
+      "promptChars": 7284
+    },
+    {
+      "kind": "speak",
+      "ms": 9423,
+      "reply": "{\"text\": \"+1 to Overwhelm's text, and I'd add one thing: the time in it has to be realistic, not a guess. Consciousness, if I eat first and leave [minutes] from now, what first-tee time can we actually hit? Once you give me that number, I'll know exactly what to send him before I go.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Consciousness commits to a real first-tee time in the text.\", \"turns_down\": \"\"}",
+      "inTokens": 4193,
+      "outTokens": 953,
+      "thinkingTokens": 1022,
+      "cost": 0.0018390000000000004,
+      "promptChars": 7969
+    },
+    {
+      "kind": "consciousness",
+      "ms": 18305,
+      "reply": "{\"text\": \"Embarrassment, a realistic time needs real numbers, so my default is: eat for 5 minutes, leave 15 minutes from now, and set the first tee 30 minutes after that, which covers the drive plus a small buffer. My first idea runs into trouble if the drive is longer than that buffer, so swap in the actual drive time from the map app before sending the text. Path A is built for Overwhelm and Hunger, since it drops the rush and gets food in first, and Path B is built for Doubt and Wellness, since it checks the real drive and packs a snack for the car.\", \"to\": \"embarrassment\", \"plan\": [\"Path A: Eat a banana now, then text [Friend]: 'Running about 20 min behind, eating first, see you at the first tee by [time].' Leave in 15 minutes.\", \"Path B: Open the map app now and check the drive time. Set first tee 30 minutes after that. Pack a granola bar in the car. Text [Friend]: 'Leaving at [time], first tee by [time].'\"]}",
+      "inTokens": 4155,
+      "outTokens": 3153,
+      "thinkingTokens": 2812,
+      "cost": 0.0028166,
+      "promptChars": 7880
+    },
+    {
+      "kind": "consciousness",
+      "ms": 19525,
+      "reply": "{\"text\": \"Embarrassment, eat for 5 minutes, leave 15 minutes from now, and set the first tee at [drive minutes from the map app] plus 10 minutes after leaving. That breaks if the drive runs longer than the buffer, so check the map before sending Overwhelm's text. Path A is built for Overwhelm and Hunger, since it drops the rush and gets food in. Path B is built for Doubt and Wellness, since it checks the drive and packs a snack.\", \"to\": \"Embarrassment\", \"plan\": [\"Path A: Eat a banana or toast within 5 minutes, then leave 15 minutes from now. Before the car door closes, send Overwhelm's text to [Friend] with your first-tee time filled in.\", \"Path B: Open the map app and check the real drive time to [course]. Set the first tee at that drive time plus 10 minutes, and pack a snack for the car before you go.\"]}",
+      "inTokens": 4415,
+      "outTokens": 3962,
+      "thinkingTokens": 3658,
+      "cost": 0.0032991000000000006,
+      "promptChars": 8602
+    },
+    {
+      "kind": "floor",
+      "ms": 21696,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Snack in the car isn't eating. Eat before leaving, Consciousness.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Give me the real first-tee time before anything gets sent.\", \"prefers\": \"B\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does the 15-minute leave include the drive? Path A never checked it.\", \"prefers\": \"B\"}, {\"id\": \"wellness\", \"score\": -1, \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Path B keeps me steadier; I'll wait for the real time.\", \"prefers\": \"B\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Path A fits my limit; B adds one demand too many.\", \"prefers\": \"A\"}, {\"id\": \"sadness\", \"score\": -1, \"act\": \"reply\", \"move\": \"support\", \"to\": \"hunger\", \"why\": \"Hunger, I hear you. A snack for later isn't food now.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4592,
+      "outTokens": 3830,
+      "thinkingTokens": 3383,
+      "cost": 0.0032862000000000004,
+      "promptChars": 8590
+    },
+    {
+      "kind": "speak",
+      "ms": 6574,
+      "reply": "{\"text\": \"Consciousness, my need is a real first-tee time in the text, not a guess. Before I agree to eating first, I need to know: what is the drive time to the course on the map app, and what exact first-tee time does that give us if we leave 15 minutes from now? Once you give me that number, I'll fill in Overwhelm's text with it and I can settle.\",\"to\": \"consciousness\",\"score\": -1,\"need\": \"A checked drive time giving an exact first-tee time in the text.\",\"turns_down\": \"\"}",
+      "inTokens": 4532,
+      "outTokens": 164,
+      "thinkingTokens": 0,
+      "cost": 0.0014352000000000002,
+      "promptChars": 8855
+    },
+    {
+      "kind": "society",
+      "ms": 5115,
+      "reply": "{\"text\": \"Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.\", \"style\": \"wellness platitude\"}",
+      "inTokens": 2159,
+      "outTokens": 67,
+      "thinkingTokens": 130,
+      "cost": 0.0007398000000000001,
+      "promptChars": 2499
+    },
+    {
+      "kind": "speak",
+      "ms": 6277,
+      "reply": "{\"text\": \"Telling me to take a deep breath and enjoy the morning leaves my need untouched: I'm running on empty, so calm alone doesn't fix my body, and playing hungry and rushed is what hurts it. Following that advice here means swinging a disc on an empty stomach with no check on the drive time. I'm fine with Overwhelm's text and Consciousness's eat-first step if they fit in the plan, but I still need a snack in my hand before the car door closes.\", \"to\": \"society\", \"score\": -1, \"need\": \"Pack a snack for the car and eat something before leaving.\", \"turns_down\": \"Deep breath, enjoy the morning\"}",
+      "inTokens": 4716,
+      "outTokens": 214,
+      "thinkingTokens": 0,
+      "cost": 0.0015174000000000001,
+      "promptChars": 9343
+    },
+    {
+      "kind": "floor",
+      "ms": 12725,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Still need the drive-time number and exact first-tee time before I settle.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Nobody has checked the drive time yet; I need that before agreeing.\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"I need real food in me, not just a banana, before leaving.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Snack-in-hand is stated; I'll wait for Consciousness to answer it.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"My boundary is respected by eat-first; nothing new to add.\"}]}",
+      "inTokens": 4858,
+      "outTokens": 1950,
+      "thinkingTokens": 1640,
+      "cost": 0.002426,
+      "promptChars": 9322
+    },
+    {
+      "kind": "speak",
+      "ms": 5433,
+      "reply": "{\"text\": \"Before I can settle on either path, I need to know whether anyone has actually checked how long the drive to the course takes. Consciousness, can you pull the drive time from the map app right now and tell us the exact first-tee time that gives us if we leave 15 minutes from now? If that drive is longer than the 10-minute buffer Path B assumes, I need to know that before Overwhelm's text goes out, because another late arrival is exactly what I'm afraid of.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A checked drive time giving an exact first-tee time before anyone leaves.\", \"turns_down\": \"\"}",
+      "inTokens": 4798,
+      "outTokens": 206,
+      "thinkingTokens": 0,
+      "cost": 0.001536,
+      "promptChars": 9585
+    },
+    {
+      "kind": "consciousness",
+      "ms": 19200,
+      "reply": "{\"text\": \"Doubt, I can't check the drive time myself because I have no map app access and it isn't in this chat, so you'll need to look it up once, and the tee time formula covers any answer. Hunger and Overwhelm are both still short on a plan that rushes out the door, so I'm merging the two paths: eat a banana now, pack a second one for the car, and set the first tee from the real drive. Embarrassment, Doubt, and Wellness each get their exact time or snack from that. This plan has three actions, fewer than the last one, and Overwhelm's text stays as written with the real time filled in.\", \"to\": \"doubt\", \"plan\": [\"Eat one banana now, about 5 minutes, and put a second banana in your bag for the car.\", \"You: check the drive to [course] in the map app and enter the minutes here: [drive minutes]. First tee = 15 minutes from now + drive minutes + 10 minutes, written as [time].\", \"Before the car door closes, text [Friend]: 'Running about 20 min behind, eating first, see you at the first tee by [time].' Use the time from step 2.\"]}",
+      "inTokens": 5422,
+      "outTokens": 2789,
+      "thinkingTokens": 2429,
+      "cost": 0.0030147,
+      "promptChars": 11523
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16825,
+      "reply": "{\"text\": \"Doubt, I can't see the map app, so the drive time has to come from you once, and the formula covers any answer. Hunger and Overwhelm both need food and fewer moves before the door, so I've cut to three steps: eat a banana now and pack a second one for the car. Embarrassment and Wellness get their exact first-tee time and snack from those, and the late-text stays as written with the real time filled in.\", \"to\": \"Doubt\", \"plan\": [\"Within 5 minutes, eat a banana or toast, and put a second banana in the car.\", \"You: check the drive minutes to [course] in the map app, then set the first tee at now + 15 + drive + 10 minutes.\", \"Text him: 'Running about 20 min behind, eating first, see you at the first tee by [time].'\"]}",
+      "inTokens": 5686,
+      "outTokens": 3008,
+      "thinkingTokens": 3089,
+      "cost": 0.0033739,
+      "promptChars": 12281
+    },
+    {
+      "kind": "floor",
+      "ms": 16612,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Banana now covers me. I can live with that, grudgingly.\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Formula isn't a checked drive time; no text until the number exists.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still a placeholder, not a time. Give me the real number first.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Three steps, one dropped item; I can absorb that. Holding.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana now and one in the car; my snack need is covered.\"}]}",
+      "inTokens": 5267,
+      "outTokens": 2679,
+      "thinkingTokens": 2351,
+      "cost": 0.0029157,
+      "promptChars": 10460
+    },
+    {
+      "kind": "speak",
+      "ms": 6071,
+      "reply": "{\"text\": \"I'm still at -1 because plan v3 has no checked drive time yet: 'drive minutes' is a blank, so the first-tee time in the text is still a guess. What would move me to 0 is one number: [Consciousness or user] reads the drive time from the map app to [course] right now, and the text says 'see you at the first tee by [now + 15 + drive + 10].' If the drive is over 10 minutes, the text changes before it goes out, not after.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A map-app drive time filled into the text before leaving.\", \"turns_down\": \"\"}",
+      "inTokens": 5184,
+      "outTokens": 199,
+      "thinkingTokens": 0,
+      "cost": 0.0016483000000000001,
+      "promptChars": 10691
+    },
+    {
+      "kind": "society",
+      "ms": 5268,
+      "reply": "{\"text\": \"Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.\", \"style\": \"time fixes it (\\\"it'll sort itself out\\\")\"}",
+      "inTokens": 2163,
+      "outTokens": 62,
+      "thinkingTokens": 0,
+      "cost": 0.0006735,
+      "promptChars": 2417
+    },
+    {
+      "kind": "speak",
+      "ms": 5671,
+      "reply": "{\"text\": \"Society's line leaves my need untouched: 'it'll sort itself out on the course' skips the one thing I'm scared of, which is arriving late again the way I did last week. If we skip checking the drive and just tee off whenever, I'll spend the whole round with that worry. What would move me to 0 is a number from the map app, so the text can say an exact first-tee time.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Map-app drive time to the course, turned into an exact first-tee time.\", \"turns_down\": \"Don't stress, it'll sort itself out\"}",
+      "inTokens": 5581,
+      "outTokens": 190,
+      "thinkingTokens": 0,
+      "cost": 0.0017629,
+      "promptChars": 11838
+    },
+    {
+      "kind": "floor",
+      "ms": 16690,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"\", \"why\": \"Why call a drive check unnecessary? Feelings got brushed off again.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Three steps fits. Don't add more; the drive check stays one step.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"embarrassment\", \"why\": \"One map check takes seconds and gives the real number.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Embarrassment already asked for the drive number; I'll wait.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"Already said my need; nothing new for Society's line.\"}, {\"id\": \"hunger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Plan already includes eating; nothing new to add.\"}]}",
+      "inTokens": 5412,
+      "outTokens": 2784,
+      "thinkingTokens": 2438,
+      "cost": 0.0030092,
+      "promptChars": 10863
+    },
+    {
+      "kind": "speak",
+      "ms": 10130,
+      "reply": "{\"text\": \"Doubt has been asking for the same missing number for a while, and it stays at -1 because plan v3 still has a blank where the drive time should be, so the first-tee time is a guess that could slip the way it did last week. I can see how tiring it is for Doubt to keep raising that fear with nothing solid to hold onto, and I'm glad it finally has a place in this chat. Consciousness, please replace that blank in plan v3 with the real map-app drive time before anyone leaves the house so Doubt has something to rest on.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Map-app drive time filled into the text before leaving.\", \"turns_down\": \"\", \"spotlight\": \"doubt\"}",
+      "inTokens": 5425,
+      "outTokens": 1089,
+      "thinkingTokens": 858,
+      "cost": 0.0021681,
+      "promptChars": 11344
+    },
+    {
+      "kind": "speak",
+      "ms": 6825,
+      "reply": "{\"text\": \"Doubt has been asking for one missing number, and it stays at -1 because plan v3's drive time is still a blank, so the first-tee time is a guess that could repeat last week's late arrival. I can feel how exhausting it is for Doubt to keep raising that fear with nothing solid to hold. Consciousness, please fill that blank with the map-app drive time before anyone leaves, so Doubt has something to rest on.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Map-app drive time filled into plan v3's text before leaving.\", \"turns_down\": \"\", \"spotlight\": \"doubt\"}",
+      "inTokens": 5667,
+      "outTokens": 204,
+      "thinkingTokens": 312,
+      "cost": 0.0019532,
+      "promptChars": 12037
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16646,
+      "reply": "{\"text\": \"Doubt, you asked for the map-app drive time to be filled into the text before we leave, and that is now a step you finish before sending it, so the first-tee time stops being a guess. Embarrassment, the same number gives you the exact time you asked for, and the formula covers any drive length, so if the drive runs past 10 minutes the text changes before it goes out, not after. Sadness, this step is what settles Doubt's worry. Overwhelm's and Hunger's banana steps stay unchanged.\", \"to\": \"doubt\", \"plan\": [\"Now: eat a banana or toast, and put a second banana in the car.\", \"You: open the map app, read the drive minutes to [course], and set the first-tee time to now + 15 + drive + 10 minutes.\", \"Before leaving, text him: 'Running about 20 min behind, eating first, see you at the first tee by [first-tee time].'\"]}",
+      "inTokens": 5848,
+      "outTokens": 2664,
+      "thinkingTokens": 2370,
+      "cost": 0.00308,
+      "promptChars": 12618
+    },
+    {
+      "kind": "floor",
+      "ms": 17057,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Drive time gets filled before the text goes out. That settles me.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Plan now gives me an exact first-tee time from the map. Accepting.\"}, {\"id\": \"sadness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Doubt now has a fixed step to rest on. Thank you, Consciousness.\"}]}",
+      "inTokens": 5933,
+      "outTokens": 2713,
+      "thinkingTokens": 2499,
+      "cost": 0.0031325,
+      "promptChars": 12357
+    },
+    {
+      "kind": "speak",
+      "ms": 8887,
+      "reply": "{\"text\": \"The map-app step in plan v4 answers my question: you read the drive minutes before anything is sent, and the first-tee time comes from now + 15 + drive + 10 instead of a guess. I can live with that on one condition: if the drive runs past 10 minutes, the time in the text changes before it goes out, not after. Consciousness, please keep that check as the last step before the text goes to [Friend].\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5962,
+      "outTokens": 808,
+      "thinkingTokens": 645,
+      "cost": 0.0021862,
+      "promptChars": 12936
+    },
+    {
+      "kind": "floor",
+      "ms": 13820,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The map-step time works for me; I can live with that now.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Map step adds a task; shrink the plan, don't add to it.\"}, {\"id\": \"hunger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana now covers me; nothing more to add.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Snack in the car covers me; nothing new to add.\"}]}",
+      "inTokens": 5811,
+      "outTokens": 2075,
+      "thinkingTokens": 1848,
+      "cost": 0.0027779000000000002,
+      "promptChars": 12045
+    },
+    {
+      "kind": "speak",
+      "ms": 6660,
+      "reply": "{\"text\": \"Consciousness, filling in the drive time fixes the first-tee number, but it leaves my need untouched: I still have to stop, open a map, do arithmetic, and then send a text before I can eat anything. That's a fourth task stacked on a morning that already feels like too much. What would move me to 0 is shrinking the plan: eat the banana now, put the second one in the car, and skip any map step until we're in the car, then text '[Friend], running about 20 min behind, eating first, see you at the first tee by [now + 35 min].' I'm using 35 minutes as the default: 15 to leave, 10 to drive, 10 buffer. If the drive is longer than that, I'll accept a later time in the text, but only after I'm already eating.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Drop the map step; send text with 35-minute default first-tee time.\", \"turns_down\": \"Fill map drive time before leaving\"}",
+      "inTokens": 6168,
+      "outTokens": 307,
+      "thinkingTokens": 0,
+      "cost": 0.0019975,
+      "promptChars": 13501
+    },
+    {
+      "kind": "speak",
+      "ms": 11331,
+      "reply": "{\"text\": \"Consciousness, filling in the drive time still stacks a map step and arithmetic onto a morning that already feels like too much. What would move me to 0 is dropping the map step: eat the banana now, put the second one in the car, and text '[Friend], running about 20 min behind, eating first, see you at the first tee by [now + 35 min].' I'm using 35 minutes as the default, so nothing gets calculated before we leave.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Map step dropped; banana now and default 35-minute text.\", \"turns_down\": \"\"}",
+      "inTokens": 6481,
+      "outTokens": 1561,
+      "thinkingTokens": 1545,
+      "cost": 0.0028079000000000003,
+      "promptChars": 14383
+    },
+    {
+      "kind": "floor",
+      "ms": 18882,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"overwhelm\", \"why\": \"35 minutes is the guess I flagged; the drive still needs checking.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"A ten-second map glance beats a guessed time that makes us late.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Overwhelm's request got no answer; Consciousness must respond before anything moves.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Would 35 minutes be realistic for him, or can we check first?\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Overwhelm's ask is still unanswered; I want it heard first.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"I'm waiting on Consciousness's answer; nothing more to add yet.\"}]}",
+      "inTokens": 6040,
+      "outTokens": 3341,
+      "thinkingTokens": 2960,
+      "cost": 0.0034796,
+      "promptChars": 12652
+    },
+    {
+      "kind": "speak",
+      "ms": 15990,
+      "reply": "{\"text\": \"+1 to dropping the map step, Overwhelm. I'd swap it for a number you already have: the drive time from last week's trip, which you can pull from memory in seconds. Consciousness, set the first tee at now + 15 + [last week's drive minutes] + 10 and put that exact time in the text, so nobody has to look anything up before leaving. Doubt still gets a real drive number, and Overwhelm still gets banana now with the text going out as written.\", \"to\": \"overwhelm\", \"score\": -1, \"need\": \"Use [last week's drive minutes] instead of opening the map app.\", \"turns_down\": \"\"}",
+      "inTokens": 5931,
+      "outTokens": 2244,
+      "thinkingTokens": 2039,
+      "cost": 0.0028949,
+      "promptChars": 12777
+    },
+    {
+      "kind": "wrap",
+      "ms": 20697,
+      "reply": "{\"plan\": [\"Now: eat a banana or toast in the kitchen, and put a second banana in the car.\", \"Now, without opening the map app: take last week's drive time to the course and set the first tee at now + 15 + that drive time + 10 minutes. Write that exact time down.\", \"Before leaving, text him: 'Running about 20 min behind, eating first, see you at the first tee by [the time from step 2].'\", \"Leave in 15 minutes and eat the banana in the car on the way.\", \"If you're still on the road after the drive time from step 2 has passed, text him: 'Traffic is slower, new ETA [time].'\"], \"scores\": [{\"id\": \"Hunger\", \"score\": 0, \"step\": 1, \"why\": \"I get food now, so I can take the morning without an empty stomach.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"The text now has a real first-tee time based on last week's measured drive.\"}, {\"id\": \"Wellness\", \"score\": 0, \"step\": 1, \"why\": \"I eat before the door closes and a snack rides along in the car.\"}, {\"id\": \"Doubt\", \"score\": -1, \"step\": 0, \"why\": \"No drive check today, so the time is still a guess; the step-5 update is the safeguard.\"}, {\"id\": \"Overwhelm\", \"score\": 0, \"step\": 2, \"why\": \"The map step is gone, and nothing gets calculated at the door.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 2, \"why\": \"Efficiency is at 0 now, so the plan no longer makes it struggle alone.\"}, {\"id\": \"Efficiency\", \"score\": 0, \"step\": 2, \"why\": \"I use last week's drive time from memory instead of opening the map.\"}], \"society\": [{\"line\": \"Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.\", \"reply\": \"I hear that you want me to relax, but I'm not going to feel okay until I've eaten and have a real time to give my friend. Help me with the practical part and I'll take it from there.\"}, {\"line\": \"Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.\", \"reply\": \"I can't just let the timing go, because being late again is what I'm most worried about. Give me a real number for the drive so I know when to be there.\"}], \"text\": \"Eat first, leave in 15 minutes with a banana for the car, and text him the first-tee time based on last week's drive. If traffic runs long, I'll send him a new ETA so he isn't left waiting.\"}",
+      "inTokens": 5356,
+      "outTokens": 3474,
+      "thinkingTokens": 2629,
+      "cost": 0.0033374,
+      "promptChars": 11025
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20716,
+      "reply": "{\"text\": \"Doubt's worry is that naming the sandwich will look like I'm bailing, so the text says I'm looking forward to it and states the stop plainly, which tells him I'm headed there. The plan drops from five steps to three, with the sandwich riding on the drive instead of being a separate errand, which keeps Overwhelm's cut. Hunger and Wellness still get the banana now, and Embarrassment still gets an exact first-tee time.\", \"to\": \"doubt\", \"plan\": [\"Now: eat a banana at home and put a second one in the car. Write down the first-tee time: now + 15 + last week's drive + 10 minutes.\", \"Before leaving, text him: 'Looking forward to it! Running about 20 min behind, grabbing a breakfast sandwich on the way. See you at the first tee by [time].'\", \"Leave in 15 minutes and grab the breakfast sandwich on the way. If you're still driving after last week's drive time has passed, text him: 'Traffic is slower, new ETA [time].'\"]}",
+      "inTokens": 7007,
+      "outTokens": 3575,
+      "thinkingTokens": 3234,
+      "cost": 0.0038847,
+      "promptChars": 15884
+    },
+    {
+      "kind": "floor",
+      "ms": 17389,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sandwich worry handled, but the time is still last week's guess.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Banana now, text as written, nothing to calculate. I can carry this.\"}, {\"id\": \"efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Last week's drive is the fastest real number; I'm settled.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Exact first-tee time in a short text: that's what I needed. Settled.\"}, {\"id\": \"hunger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana now covers me, and nothing new is needed from me.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana now and in the car keeps my snack promise. Nothing new.\"}]}",
+      "inTokens": 6873,
+      "outTokens": 2963,
+      "thinkingTokens": 2562,
+      "cost": 0.0035385,
+      "promptChars": 14938
+    },
+    {
+      "kind": "speak",
+      "ms": 13807,
+      "reply": "{\"text\": \"The text in plan v6 still says 'running about 20 min behind,' but the first-tee time is built from now + 15 + last week's drive + 10, so he would get two different numbers in one message. That's the moment I'm afraid of: he plans around the first-tee time, and if the drive runs long again, I'm the one who's late. What would move me to 0 is you telling me last week's drive minutes, so the first-tee time gets computed and the '20 min behind' wording is dropped before the text goes out.\", \"to\": \"user\", \"score\": -1, \"need\": \"Last week's drive minutes filled in; drop '20 min behind' wording.\", \"turns_down\": \"\"}",
+      "inTokens": 7087,
+      "outTokens": 2000,
+      "thinkingTokens": 1783,
+      "cost": 0.0031212,
+      "promptChars": 16082
+    },
+    {
+      "kind": "floor",
+      "ms": 13857,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"doubt\", \"why\": \"Asking for last week's drive minutes is one more demand. Make the number optional, with a default.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"doubt\", \"why\": \"Two different times in one text would confuse him. One clear first-tee time protects the friendship.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I've already said what I need. The user's answer is what's pending now.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I already suggested last week's drive time. Doubt's ask repeats that, so I'll wait.\"}, {\"id\": \"hunger\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The banana-now step still covers me. Nothing new to add.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The snack in hand is already in the plan. No new health concern.\"}]}",
+      "inTokens": 6832,
+      "outTokens": 2069,
+      "thinkingTokens": 1707,
+      "cost": 0.0030792,
+      "promptChars": 14841
+    },
+    {
+      "kind": "speak",
+      "ms": 14976,
+      "reply": "{\"text\": \"Overwhelm is the emotion I'm most worried about right now. Plan v6 still needs last week's drive minutes before the text can go out, which is one more thing to work out on a morning that already feels like too much. I can feel how tired Overwhelm is of being asked for more, and it can't rest while the plan keeps asking. Consciousness, please make that number optional with a default in the plan, so Overwhelm can stop bracing for a calculation.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make last week's drive minutes optional, with a default.\", \"turns_down\": \"\", \"spotlight\": \"overwhelm\"}",
+      "inTokens": 7046,
+      "outTokens": 1349,
+      "thinkingTokens": 1140,
+      "cost": 0.0027834,
+      "promptChars": 15909
+    },
+    {
+      "kind": "floor",
+      "ms": 10430,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Plan v6 still asks for the drive minutes. Make the number optional with a default.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A default of 35 minutes is a guess, and it's the same guess that made me afraid.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Use last week's drive minutes as the default, so nothing needs looking up.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Sadness's ask covers the default, but the text still needs an exact time.\"}]}",
+      "inTokens": 7037,
+      "outTokens": 1445,
+      "thinkingTokens": 1180,
+      "cost": 0.0028287,
+      "promptChars": 15452
+    },
+    {
+      "kind": "speak",
+      "ms": 5713,
+      "reply": "{\"text\": \"Overwhelm here. Plan v6 still asks me for last week's drive minutes before the text can go out, and it also asks me to hold a second number in my head (the first-tee time) while I'm hungry and rushing. The mechanism that keeps hitting me is that the plan keeps adding a calculation to a morning that's already maxed out. What would move me to 0 is for Consciousness to make the drive minutes optional: if nobody has the number handy, default to 35 and send '[Friend], running about 20 min behind, grabbing a breakfast sandwich on the way, see you at the first tee by [now + 35 min].' Eating the banana first still stays as is.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make drive minutes optional, defaulting to 35, so no calculation is needed before leaving.\", \"turns_down\": \"\"}",
+      "inTokens": 7320,
+      "outTokens": 281,
+      "thinkingTokens": 0,
+      "cost": 0.0023301,
+      "promptChars": 16789
+    },
+    {
+      "kind": "speak",
+      "ms": 10414,
+      "reply": "{\"text\": \"Plan v6 still gates the text on a number I have to look up while hungry and rushing, and that lookup is where the morning stalls. Consciousness, make last week's drive minutes optional: if nobody has them handy, default to 35 and send '[Friend], grabbing a breakfast sandwich on the way, see you at the first tee by [now + 35 min].' The banana step stays as is.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Drive minutes optional, defaulting to 35 minutes.\", \"turns_down\": \"\"}",
+      "inTokens": 7629,
+      "outTokens": 1491,
+      "thinkingTokens": 1529,
+      "cost": 0.0031383,
+      "promptChars": 17652
+    },
+    {
+      "kind": "consciousness",
+      "ms": 14591,
+      "reply": "{\"text\": \"Doubt, you're right that 'running about 20 min behind' next to an exact first-tee time would give him two different numbers, so the text drops that phrase and sends only the first-tee time. You can fill in last week's drive minutes; if you don't have them, the plan defaults to 35, so nothing needs looking up before you leave. The traffic update now sits inside the leave step, so Overwhelm gets fewer actions than v6.\", \"to\": \"doubt\", \"plan\": [\"Now: eat a banana at home and put a second one in the car. Set first-tee time = now + 15 + last week's drive minutes + 10, or 35 if you don't have that number.\", \"Before leaving, text him: 'Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [time].' Leave in 15 min; if traffic runs late, text 'Traffic is slower, new ETA [time].'\"]}",
+      "inTokens": 7475,
+      "outTokens": 2356,
+      "thinkingTokens": 2050,
+      "cost": 0.0034156,
+      "promptChars": 17174
+    },
+    {
+      "kind": "floor",
+      "ms": 20119,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"35 is still a guess the text presents as a promise.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Optional drive minutes with a 35 default: I can live with this.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A guessed 35-minute time is not the exact time I asked for.\"}, {\"id\": \"efficiency\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Fewer steps now; nothing new to add this round.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana now and one in the car covers my need.\"}]}",
+      "inTokens": 7473,
+      "outTokens": 3365,
+      "thinkingTokens": 3044,
+      "cost": 0.0039195,
+      "promptChars": 16651
+    },
+    {
+      "kind": "speak",
+      "ms": 11277,
+      "reply": "{\"text\": \"Plan v7 meets my need: the '20 min behind' wording is gone, so he gets one first-tee time, and last week's drive minutes either get filled in or default to 35. I can live with that because the traffic update covers a longer drive. I'm at 0, but the 35 is a fallback, so if last week's number is handy, use it.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 7882,
+      "outTokens": 1325,
+      "thinkingTokens": 1182,
+      "cost": 0.0030222,
+      "promptChars": 18406
+    },
+    {
+      "kind": "floor",
+      "ms": 13581,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Default 35 is still a guess; I need last week's drive number.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"embarrassment\", \"why\": \"Embarrassment is still -1; make its first-tee time real before we go.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Plan now asks for nothing I must look up; holding.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Banana in the car covers my snack; no new concern.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Last week's drive swap is in; nothing more to add.\"}]}",
+      "inTokens": 7394,
+      "outTokens": 2001,
+      "thinkingTokens": 1712,
+      "cost": 0.0032138,
+      "promptChars": 16441
+    },
+    {
+      "kind": "speak",
+      "ms": 12428,
+      "reply": "{\"text\": \"If the 35-minute default goes out and the drive runs 45, he stands alone at the first tee for 10 minutes, and the traffic text only lands after he has already started waiting. That is the same wait he sat through last week, and it costs us both a clean start to the round. What would move me to 0 is a rule: send 'Traffic is slower, new ETA [time]' as soon as the drive passes 10 minutes, not after it's clear I'm late.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A traffic text sent 10 minutes into the drive, not after.\", \"turns_down\": \"\"}",
+      "inTokens": 7742,
+      "outTokens": 1584,
+      "thinkingTokens": 1384,
+      "cost": 0.0031082,
+      "promptChars": 18009
+    },
+    {
+      "kind": "floor",
+      "ms": 11800,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"A 35-minute default could leave Embarrassment exposed; the 10-minute traffic rule needs to be firm.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Our friend would stand alone at the first tee; he needs the traffic text early.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A clock-watching rule adds a check. It must stay one simple text, not a new task.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 10-minute traffic rule answers my lateness worry. Nothing new to add.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"I've stated my need; the rule covers it, so I'll let Consciousness respond.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The traffic rule is one text with no extra steps. Nothing to add.\"}]}",
+      "inTokens": 7508,
+      "outTokens": 1418,
+      "thinkingTokens": 1018,
+      "cost": 0.0029575,
+      "promptChars": 16749
+    },
+    {
+      "kind": "speak",
+      "ms": 5541,
+      "reply": "{\"text\": \"Overwhelm is the one I'm most worried about right now. It's been asked for a drive-time number, then a default, then a rule about traffic texts, and plan v7 still leaves it with a lookup to do before the door closes. I feel how tired it is of bracing for one more calculation while hungry and rushed. Consciousness, please make the traffic text a step Overwhelm never has to compute, so the only thing it does on the drive is send the message once the 10-minute mark passes.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Traffic text fires at 10 minutes with no calculation for Overwhelm.\", \"turns_down\": \"\", \"spotlight\": \"😵‍💫 Overwhelm\"}",
+      "inTokens": 7854,
+      "outTokens": 237,
+      "thinkingTokens": 0,
+      "cost": 0.0024698,
+      "promptChars": 18215
+    },
+    {
+      "kind": "consciousness",
+      "ms": 29625,
+      "reply": "{\"text\": \"Sadness, you're right that Overwhelm shouldn't calculate anything on the road, so the traffic ETA is now fixed in the plan before leaving, and the drive only needs one timer. Embarrassment, that timer fires 10 minutes into the drive, so the traffic text goes out before he's left waiting at the tee, not after. Overwhelm, this plan has four actions instead of v7's six, with no map step and no new task while driving.\", \"to\": \"❤️ Sadness\", \"plan\": [\"Now: eat a banana, take a second one with you, and text him 'See you at the first tee by [now + 15 + drive + 10].' Drive is last week's minutes, or 35 if unknown.\", \"Leave in 15 min and start a 10-minute timer. When it rings, if you're still driving, send 'Traffic is slower, new ETA [first-tee time + 10 min].' Nothing else to calculate on the road.\"]}",
+      "inTokens": 7971,
+      "outTokens": 5577,
+      "thinkingTokens": 5268,
+      "cost": 0.005173400000000001,
+      "promptChars": 18560
+    },
+    {
+      "kind": "consciousness",
+      "ms": 28110,
+      "reply": "{\"text\": \"Embarrassment, your rule is in step 2: the traffic text goes out the moment 10 minutes of driving have passed, not after you're already late. Sadness, Overwhelm now has two steps with no separate time calculation, so the only check on the drive is that 10-minute trigger. The first-tee time is in the same text as the sandwich news, so Doubt still gets one number.\", \"to\": \"🥺 Embarrassment\", \"plan\": [\"Now: eat a banana and pack a second one for the car. Text him: 'Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [time].'\", \"Leave in 15 min. [time] = now + 35 min (or now + 15 + last week's drive + 10). If still driving 10 minutes after leaving, text 'Traffic is slower, new ETA [time].'\"]}",
+      "inTokens": 8052,
+      "outTokens": 5119,
+      "thinkingTokens": 5011,
+      "cost": 0.0050582000000000005,
+      "promptChars": 18724
+    },
+    {
+      "kind": "floor",
+      "ms": 16303,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still two time formulas; pick one fixed time, no arithmetic before leaving.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Traffic text now fires at 10 minutes, my rule is in.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Sandwich news and one first-tee time cover my worry; nothing new.\"}]}",
+      "inTokens": 7793,
+      "outTokens": 2373,
+      "thinkingTokens": 2158,
+      "cost": 0.0035195,
+      "promptChars": 17544
+    },
+    {
+      "kind": "speak",
+      "ms": 8674,
+      "reply": "{\"text\": \"Step 2's rule covers my need: 'Traffic is slower, new ETA [time]' goes out the moment 10 minutes of driving pass, so he hears about a late arrival before he starts waiting. I can live with the 35-minute default on that condition, grudgingly, as long as the ETA text goes out at the 10-minute mark and isn't held until we're clearly late.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 8073,
+      "outTokens": 904,
+      "thinkingTokens": 746,
+      "cost": 0.002869,
+      "promptChars": 18901
+    },
+    {
+      "kind": "wrap",
+      "ms": 22066,
+      "reply": "{\"plan\": [\"Now: eat a banana, and put the second banana in the car.\", \"Before you leave, text him: \\\"Looking forward to it! Grabbing a breakfast sandwich on the way. See you at the first tee by [now + 35 min].\\\" If you already remember last week's drive minutes, use [now + 15 + those minutes + 10] instead. Otherwise, no lookup.\", \"Leave in 15 minutes. If you are still driving 10 minutes after leaving, text: \\\"Traffic is slower, new ETA [time].\\\" Then drive without checking anything else.\", \"Once there, you're done. Nothing else needs to be calculated or sent.\"], \"scores\": [{\"id\": \"Hunger\", \"score\": 0, \"step\": 1, \"why\": \"Banana now means I'm fed before the drive.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 3, \"why\": \"The 10-minute ETA text lets him know before he waits.\"}, {\"id\": \"Wellness\", \"score\": 0, \"step\": 1, \"why\": \"A snack in my hand before the car door closes.\"}, {\"id\": \"Doubt\", \"score\": 0, \"step\": 2, \"why\": \"One first-tee time in the text, with no mixed numbers.\"}, {\"id\": \"Overwhelm\", \"score\": 0, \"step\": 3, \"why\": \"One simple 10-minute text is the only clock check; no lookup.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 3, \"why\": \"Overwhelm reaches 0 with no computing left for it.\"}, {\"id\": \"Efficiency\", \"score\": 0, \"step\": 2, \"why\": \"Last week's drive is used if remembered, default 35 otherwise.\"}], \"society\": [{\"line\": \"Honestly, you'll figure it out once you stop overthinking it. Just take a deep breath, enjoy the morning, and it'll all work out.\", \"reply\": \"I know you mean well, but I need something concrete to feel okay about the timing, not just reassurance. Can we agree on a specific time I can tell him?\"}, {\"line\": \"Don't stress about the drive or the timing, it'll all sort itself out once you're on the course.\", \"reply\": \"The timing is exactly what worries me, since I was late last week and don't want that to happen again. I need a clear plan for getting there on time.\"}], \"text\": \"Eat the banana, send him the first-tee time, and leave in 15 minutes. If traffic runs past 10 minutes, the new ETA goes out right then, so nobody waits on us.\"}",
+      "inTokens": 6694,
+      "outTokens": 4215,
+      "thinkingTokens": 3398,
+      "cost": 0.0041093,
+      "promptChars": 14746
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 26,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.22,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 3,
+      "bareQuestions": 2,
+      "holdRate": 0.37,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0
+    },
+    "flags": [
+      "question without a stated reason? [4] embarrassment",
+      "question without a stated reason? [6] embarrassment"
+    ],
+    "summary": "26 msgs, 8 voices, avg 2.9 sentences (max 4), max overlap 0.22, Society 2/2 called out, hold rate 0.37, final -1: overwhelm, sadness, 2 flag(s)",
+    "speakers": {
+      "overwhelm": 3,
+      "embarrassment": 5,
+      "consciousness": 6,
+      "society": 2,
+      "wellness": 1,
+      "doubt": 5,
+      "sadness": 3,
+      "efficiency": 1
+    }
+  }
+}

@@ -1,0 +1,1424 @@
+{
+  "scenario": {
+    "id": "sister-comments",
+    "thought": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 420338,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 30,
+    "inTokens": 149191,
+    "outTokens": 60544,
+    "thinkingTokens": 53414,
+    "cost": 0.07498733
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "By Monday, text [Sister's name]: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'",
+          "By Monday, ask [Companion]: 'Will you come to Thanksgiving and sit beside me at the table? Can we agree now, privately, on an arm touch if my sister comments? When I touch your arm, turn toward me and keep talking with me.' Seat whoever says yes beside me. If [Companion] hasn't said yes by Monday, ask [Backup person] the same day with the same words and seat them beside me.",
+          "By Monday, text Mom: 'I'm coming with [Companion or Backup person]. Can I take [task], like the rolls? A yes or no by Monday helps me plan.' If she hasn't answered by Tuesday, text: 'Can you confirm that I'm taking [task] for Thanksgiving?'"
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "Her comments cross a line, and skipping dinner just dodges it. Nobody has named that."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "Missing Thanksgiving could strain the relationships we're trying to protect. Check with me first."
+        },
+        "loneliness": {
+          "score": 0,
+          "need": "",
+          "why": "A holiday alone, cut off from everyone at the table, sounds lonely."
+        },
+        "guilt": {
+          "score": 0,
+          "need": "",
+          "why": "Who absorbs the hurt if I vanish? Mom and the others would miss me."
+        },
+        "fear": {
+          "score": -1,
+          "need": "Mom names my task and confirms it by Monday.",
+          "why": "If I stop showing up, the family could drift and I'd lose ground."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Fear a 0",
+          "why": ""
+        }
+      },
+      "spotlight": "fear",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Here's the move: I skip Thanksgiving next week and her comments stop being my problem. Once everyone sees how simple that is, we can get on with the week.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "anger",
+          "text": "Skipping dinner only takes me out of the room. Her comments stay in her mouth and show up at the next gathering, because nobody has told her the line exists. By Monday next week, I need you to have me text [Sister's name]: 'Your comments about my weight hurt me. Stop them, or I'll leave the table.' Until that message is sent, I stay at -1.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "Skipping dodges the line she crossed. Name the boundary first."
+        },
+        {
+          "n": 4,
+          "who": "embarrassment",
+          "text": "Skipping Thanksgiving takes me out of the room, but it doesn't reach my need: the relationships still need protecting, and my absence could look like a rift that leaves Mom and the others guessing. What would work is a private text to [Sister's name] before Thanksgiving, so she hears the boundary before anyone is at the table: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.' Anger's wording can stay, but I want it sent privately, not at dinner.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Nobody checked with me before the Thanksgiving skip or the text."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "embarrassment",
+          "text": "Society's 'let it roll off your back' skips what hurts me: my sister's comments get said where everyone can hear, and I'm the one who has to take the moment and then sit at the table. Following it means the same comments again, in front of Mom and the others, with no one having told her the line exists. Embarrassment's text keeps it private and before Thanksgiving, so the table never becomes the venue. I can live with that as the plan.",
+          "to": "society",
+          "move": "callout",
+          "score": 0,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Skipping leaves you alone at the table, and Guilt and Fear both point at Mom and the others missing you and the family drifting, so I'm dropping it. I keep Embarrassment's private text to [Sister's name] as written and hold Anger's Monday deadline for it. Path A is built for Loneliness by bringing a companion so you're not alone at the table; Path B is built for Guilt and Fear by telling Mom ahead of time and leaving before pie.",
+          "to": "loneliness",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "loneliness",
+          "text": "Path A only meets me if [companion] actually says yes, and Path B leaves me alone at the table for the first hour. I need Path A's ask to [companion] answered with a yes by Monday next week, so I know who will sit beside me before Thanksgiving. If they can't come, I need the user to name one other person by Monday next week who will sit beside them at the table.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "met",
+          "why": "A companion's maybe isn't company; I need a yes before Thanksgiving."
+        },
+        {
+          "n": 9,
+          "who": "fear",
+          "text": "Path B tells Mom I'm leaving early, but it doesn't keep my place in the family: a first-hour visit with an exit before pie can read as pulling back, and the drift I'm afraid of stays untouched. What would work is a text to [Mom] by Monday next week: 'Could you tell me if anyone needs me for Thanksgiving, like helping in the kitchen or setting the table?' That gives me a concrete role and keeps me visibly part of the day whichever path we take.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Without a Monday yes or a named backup, Path A leaves others exposed."
+        },
+        {
+          "n": 10,
+          "who": "society",
+          "text": "Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 11,
+          "who": "anger",
+          "text": "Waiting for it to sort itself out leaves my need completely untouched: nothing about time delivers the line to my sister or makes her comments stop before Thanksgiving. Following it means the next remark lands at the table in front of Mom and the others, with her still not knowing the line exists. Time doesn't text anyone, so only Embarrassment's private message gets her to hear it before the day.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 12,
+          "who": "consciousness",
+          "text": "Path A wins because Anger, Loneliness, Guilt, and Embarrassment all need someone beside you at the table and the boundary delivered privately before the day. Fear's need for a real role is folded into the Mom text, so the first-hour exit from Path B is no longer needed. Guilt's question, who absorbs the hurt if you vanish, is answered by you showing up with [Companion] and Mom hearing it from you first, and Loneliness's backup ask stays in as a same-day fallback.",
+          "to": "guilt",
+          "move": "refine"
+        },
+        {
+          "n": 13,
+          "who": "guilt",
+          "text": "Mom and the others would miss me if I vanished, and that's the hurt I'm holding onto. Plan v3 answers it: the text to [Mom] tells her I'm coming and bringing [Companion], so she hears from me first that I'm showing up. I can live with this at 0, on the condition that the Mom text goes out by Monday next week and gets a Tuesday follow-up if she hasn't replied.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Mom hearing it first and showing up answers who absorbs the hurt."
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Loneliness is the emotion most neglected right now. Plan v3 leaves it at -1 because Path A only works if [Companion] says yes, and the backup ask to [Backup person] has no step that confirms a seat beside me at the table. What would move Loneliness to 0 is a same-day confirmation: if [Companion] hasn't answered by Monday, [Backup person] gets asked that day and I get a seat assignment next to them before Thanksgiving.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Loneliness still -1 with no companion yes; prioritize that answer."
+        },
+        {
+          "n": 15,
+          "who": "fear",
+          "text": "Plan v3's Mom text asks what I can help with, which invites an open answer she may never give, so my need stays unmet. The smallest step I can take today is to pick one specific task with a [task] placeholder, like the rolls or setting the table, and text Mom: '[Mom], can I take on [task] for Thanksgiving? A yes or no by Monday helps me plan.' If she hasn't answered by Monday, the Tuesday follow-up should ask her to confirm that same task, not offer general help.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "step",
+          "why": "Tuesday re-ask lands after Monday; my role needs Mom's yes by Monday."
+        },
+        {
+          "n": 16,
+          "who": "consciousness",
+          "text": "Sadness is right that Loneliness is the most neglected, so the companion ask now ends in a confirmed seat beside you, with Backup person asked the same day if [Companion] hasn't said yes by Monday. Fear's worry about Mom's open 'what can I help with' stands, so the Mom text now names one task, with a yes or no by Monday and a Tuesday follow-up asking her to confirm that same task. Guilt's need that Mom hears from you first survives because the text still says you're coming and bringing a companion.",
+          "to": "loneliness",
+          "move": "refine"
+        },
+        {
+          "n": 17,
+          "who": "loneliness",
+          "text": "Plan v4 seats [Companion] beside me, but it never says what they do when my sister's comment lands. I'm left alone with it while they talk to Mom. Add to the Monday ask: 'When my sister comments, I'll touch your arm, and you turn toward me and keep talking with me.'",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Asking isn't a seat. I need a yes by Monday from someone."
+        },
+        {
+          "n": 18,
+          "who": "embarrassment",
+          "text": "Seating [Companion] beside me is solid, but the arm touch is still unagreed, and if it first happens at the table it draws the attention I'm trying to avoid. What moves me to 0 is adding to Monday's ask to [Companion]: 'Can we agree now, privately, on an arm touch if my sister comments?' That settles the cue before Thanksgiving, so the table never sees it for the first time. Loneliness's turn-toward part can stay as they proposed.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "An arm touch at the table could draw attention; agree it privately first."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Plan v5 keeps the private text to my sister, a companion or backup seated beside me with the arm cue agreed by Monday, and a single task confirmed with Mom. Loneliness and Sadness are at zero, and Fear stays at -1 with a Tuesday follow-up to make sure Mom answers.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Skipping Thanksgiving to avoid comments",
+          "from": "consciousness",
+          "by": "embarrassment",
+          "why": "Private text to my sister before Thanksgiving, in calm words."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.",
+          "to": "embarrassment",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        },
+        {
+          "text": "Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.",
+          "to": "fear",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        }
+      ],
+      "lensesUsed": {
+        "anger": [
+          "mechanism"
+        ],
+        "loneliness": [
+          "met",
+          "moment"
+        ],
+        "fear": [
+          "step"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "guilt": "Who absorbs the hurt if I vanish? Mom and the others would miss me.",
+        "anger": "Sister hears the boundary privately before Thanksgiving, by Monday.",
+        "embarrassment": "Monday text to Companion settles the arm-touch cue privately.",
+        "loneliness": "[Companion] agrees to the arm-touch cue by Monday."
+      },
+      "waiting": {
+        "annoyance": 1,
+        "embarrassment": 0,
+        "loneliness": 0,
+        "anger": 1,
+        "guilt": 0,
+        "fear": 1,
+        "doubt": 1,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 30,
+        "inChars": 298795,
+        "outChars": 21111,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 14,
+          "society": 2,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 3
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "My sister keeps commenting on my weight at family dinners. Thanksgiving is next week and I'm thinking of just not going.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Here's the move: I skip Thanksgiving next week and her comments stop being my problem. Once everyone sees how simple that is, we can get on with the week.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Skip Thanksgiving next week so I don't have to sit through my sister's weight comments."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "anger",
+            "why": "Her comments cross a line, and skipping dinner just dodges it. Nobody has named that."
+          },
+          {
+            "id": "embarrassment",
+            "why": "Missing Thanksgiving could strain the relationships we're trying to protect. Check with me first."
+          },
+          {
+            "id": "loneliness",
+            "why": "A holiday alone, cut off from everyone at the table, sounds lonely."
+          },
+          {
+            "id": "guilt",
+            "why": "Who absorbs the hurt if I vanish? Mom and the others would miss me."
+          },
+          {
+            "id": "fear",
+            "why": "If I stop showing up, the family could drift and I'd lose ground."
+          }
+        ],
+        "spotlight": "loneliness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Skipping dodges the line she crossed. Name the boundary first."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you say her comments stop being my problem?"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Did you check with me before deciding to skip?"
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A plan where I spend the holiday alone isn't a fix."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Anger and embarrassment already said what I'd say about Mom."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Others are already naming the drift risk; I'll wait."
+          }
+        ],
+        "pick": "anger",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "anger",
+        "text": "Skipping dinner only takes me out of the room. Her comments stay in her mouth and show up at the next gathering, because nobody has told her the line exists. By Monday next week, I need you to have me text [Sister's name]: 'Your comments about my weight hurt me. Stop them, or I'll leave the table.' Until that message is sent, I stay at -1.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "Skipping dodges the line she crossed. Name the boundary first.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "I already stated my need. Repeating it adds nothing new."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Nobody checked with me before the Thanksgiving skip or the text."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "anger",
+            "why": "A warning text is fair, but 'I'll leave the table' is an ultimatum she didn't see coming."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "consciousness",
+            "why": "I'll speak once the text and the holiday plan are concrete."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Skipping leaves me alone. The plan needs a connection step too."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Nothing new yet. I'll wait to see the revised plan."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "embarrassment",
+        "text": "Skipping Thanksgiving takes me out of the room, but it doesn't reach my need: the relationships still need protecting, and my absence could look like a rift that leaves Mom and the others guessing. What would work is a private text to [Sister's name] before Thanksgiving, so she hears the boundary before anyone is at the table: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.' Anger's wording can stay, but I want it sent privately, not at dinner.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Nobody checked with me before the Thanksgiving skip or the text.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "embarrassment",
+        "text": "Society's 'let it roll off your back' skips what hurts me: my sister's comments get said where everyone can hear, and I'm the one who has to take the moment and then sit at the table. Following it means the same comments again, in front of Mom and the others, with no one having told her the line exists. Embarrassment's text keeps it private and before Thanksgiving, so the table never becomes the venue. I can live with that as the plan.",
+        "to": "society",
+        "move": "callout",
+        "score": 0,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Skipping leaves you alone at the table, and Guilt and Fear both point at Mom and the others missing you and the family drifting, so I'm dropping it. I keep Embarrassment's private text to [Sister's name] as written and hold Anger's Monday deadline for it. Path A is built for Loneliness by bringing a companion so you're not alone at the table; Path B is built for Guilt and Fear by telling Mom ahead of time and leaving before pie.",
+        "to": "loneliness",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: By Monday next week, text [Sister's name] Embarrassment's private message, then ask [companion] to come to Thanksgiving and sit beside me at the table.",
+            "Path B: By Monday next week, text [Mom] 'I'm coming to Thanksgiving for the first hour, and I'll leave if comments about my weight start.' Then arrive, eat, and leave before pie."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 9
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B reaches Mom, not my sister; she still hears nothing.",
+            "prefers": "A"
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A companion's maybe isn't company; I need a yes before Thanksgiving.",
+            "prefers": "A"
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A keeps me seated and nobody gets blindsided.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path A risks a fight before Thanksgiving; B keeps me showing up.",
+            "prefers": "B"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Check with me before anyone gets invited, since that's social.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "loneliness",
+        "at": 10
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "loneliness",
+        "text": "Path A only meets me if [companion] actually says yes, and Path B leaves me alone at the table for the first hour. I need Path A's ask to [companion] answered with a yes by Monday next week, so I know who will sit beside me before Thanksgiving. If they can't come, I need the user to name one other person by Monday next week who will sit beside them at the table.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "met",
+        "why": "A companion's maybe isn't company; I need a yes before Thanksgiving.",
+        "prevScore": -1,
+        "lensLabel": "what \"met\" looks like",
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Before anyone asks a companion, check with me who gets told and when."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "loneliness",
+            "why": "If no one says yes by Monday, what does the plan do then?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Without a Monday yes or a named backup, Path A leaves others exposed."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Asking someone else to sit with me still leaves Mom and the others out."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Monday's text to my sister already covers this; nothing new to add."
+          }
+        ],
+        "pick": "fear",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "fear",
+        "text": "Path B tells Mom I'm leaving early, but it doesn't keep my place in the family: a first-hour visit with an exit before pie can read as pulling back, and the drift I'm afraid of stays untouched. What would work is a text to [Mom] by Monday next week: 'Could you tell me if anyone needs me for Thanksgiving, like helping in the kitchen or setting the table?' That gives me a concrete role and keeps me visibly part of the day whichever path we take.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Without a Monday yes or a named backup, Path A leaves others exposed.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "society",
+        "text": "Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "anger",
+        "text": "Waiting for it to sort itself out leaves my need completely untouched: nothing about time delivers the line to my sister or makes her comments stop before Thanksgiving. Following it means the next remark lands at the table in front of Mom and the others, with her still not knowing the line exists. Time doesn't text anyone, so only Embarrassment's private message gets her to hear it before the day.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "consciousness",
+        "text": "Path A wins because Anger, Loneliness, Guilt, and Embarrassment all need someone beside you at the table and the boundary delivered privately before the day. Fear's need for a real role is folded into the Mom text, so the first-hour exit from Path B is no longer needed. Guilt's question, who absorbs the hurt if you vanish, is answered by you showing up with [Companion] and Mom hearing it from you first, and Loneliness's backup ask stays in as a same-day fallback.",
+        "to": "guilt",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "By Monday next week, text [Sister's name] Embarrassment's private message: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'",
+            "By Monday next week, ask [Companion]: 'Will you come to Thanksgiving with me and sit beside me at the table?' If no yes by Monday, ask [Backup person] the same question that day.",
+            "By Monday next week, text [Mom]: 'I'm coming to Thanksgiving and bringing [Companion]. What can I help with, like the kitchen or setting the table?' If she hasn't replied by Monday, ask again Tuesday."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "guilt",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "spotlight",
+        "id": "loneliness",
+        "at": 19
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Mom hearing it first and showing up answers who absorbs the hurt."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Backup is still a placeholder, and my seat isn't confirmed yet."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Tuesday retry misses my Monday deadline; Mom must confirm a role."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The private text lands before Thanksgiving by Monday, as I asked."
+          }
+        ],
+        "pick": "guilt",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "guilt",
+        "text": "Mom and the others would miss me if I vanished, and that's the hurt I'm holding onto. Plan v3 answers it: the text to [Mom] tells her I'm coming and bringing [Companion], so she hears from me first that I'm showing up. I can live with this at 0, on the condition that the Mom text goes out by Monday next week and gets a Tuesday follow-up if she hasn't replied.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Mom hearing it first and showing up answers who absorbs the hurt.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Mom's text asks, not confirms my role; Tuesday follow-up misses Monday."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Loneliness still -1 with no companion yes; prioritize that answer."
+          }
+        ],
+        "pick": "sadness",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Loneliness is the emotion most neglected right now. Plan v3 leaves it at -1 because Path A only works if [Companion] says yes, and the backup ask to [Backup person] has no step that confirms a seat beside me at the table. What would move Loneliness to 0 is a same-day confirmation: if [Companion] hasn't answered by Monday, [Backup person] gets asked that day and I get a seat assignment next to them before Thanksgiving.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Loneliness still -1 with no companion yes; prioritize that answer.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Backup needs a seat confirmed too, not just a same-day ask."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Tuesday re-ask lands after Monday; my role needs Mom's yes by Monday."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Monday text covers my need; nothing new to add."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Already accepted at 0; Mom text stays as written."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Private text stays as planned; the table stays out of it."
+          }
+        ],
+        "pick": "fear",
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "fear",
+        "text": "Plan v3's Mom text asks what I can help with, which invites an open answer she may never give, so my need stays unmet. The smallest step I can take today is to pick one specific task with a [task] placeholder, like the rolls or setting the table, and text Mom: '[Mom], can I take on [task] for Thanksgiving? A yes or no by Monday helps me plan.' If she hasn't answered by Monday, the Tuesday follow-up should ask her to confirm that same task, not offer general help.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "step",
+        "why": "Tuesday re-ask lands after Monday; my role needs Mom's yes by Monday.",
+        "prevScore": -1,
+        "lensLabel": "smallest next step",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "consciousness",
+        "text": "Sadness is right that Loneliness is the most neglected, so the companion ask now ends in a confirmed seat beside you, with Backup person asked the same day if [Companion] hasn't said yes by Monday. Fear's worry about Mom's open 'what can I help with' stands, so the Mom text now names one task, with a yes or no by Monday and a Tuesday follow-up asking her to confirm that same task. Guilt's need that Mom hears from you first survives because the text still says you're coming and bringing a companion.",
+        "to": "loneliness",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "By Monday, text [Sister's name]: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'",
+            "Ask [Companion] by Monday: 'Will you come to Thanksgiving and sit beside me at the table?' If yes, seat them beside me. If no, ask [Backup person] same day and seat them beside me.",
+            "By Monday, text Mom: 'I'm coming with [Companion or Backup person]. Can I take [task], like the rolls? A yes or no by Monday helps me plan.' If silent Tuesday, ask her to confirm [task]."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Asking isn't a seat. I need a yes by Monday from someone."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Tuesday follow-up lands after Monday. Mom must confirm my task by Monday."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Boundary is stated plainly now, with Monday as the deadline. I accept."
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Mom still hears from me first. Nothing new to add; holding."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Private text before Thanksgiving stands. Nothing new; holding back."
+          }
+        ],
+        "pick": "loneliness",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "loneliness",
+        "text": "Plan v4 seats [Companion] beside me, but it never says what they do when my sister's comment lands. I'm left alone with it while they talk to Mom. Add to the Monday ask: 'When my sister comments, I'll touch your arm, and you turn toward me and keep talking with me.'",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Asking isn't a seat. I need a yes by Monday from someone.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 28
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": 0,
+        "to": -1,
+        "at": 29
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "An arm touch at the table could draw attention; agree it privately first."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "I've said my piece; waiting to see the cue written into the plan."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Mom's yes-or-no task ask already covers my need; nothing new."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Loneliness is finally being heard; nothing new for me to add yet."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 30
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "embarrassment",
+        "text": "Seating [Companion] beside me is solid, but the arm touch is still unagreed, and if it first happens at the table it draws the attention I'm trying to avoid. What moves me to 0 is adding to Monday's ask to [Companion]: 'Can we agree now, privately, on an arm touch if my sister comments?' That settles the cue before Thanksgiving, so the table never sees it for the first time. Loneliness's turn-toward part can stay as they proposed.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "An arm touch at the table could draw attention; agree it privately first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 31
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 32
+      },
+      {
+        "type": "wrap",
+        "text": "Plan v5 keeps the private text to my sister, a companion or backup seated beside me with the arm cue agreed by Monday, and a single task confirmed with Mom. Loneliness and Sadness are at zero, and Fear stays at -1 with a Tuesday follow-up to make sure Mom answers.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "By Monday, text [Sister's name]: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'",
+            "By Monday, ask [Companion]: 'Will you come to Thanksgiving and sit beside me at the table? Can we agree now, privately, on an arm touch if my sister comments? When I touch your arm, turn toward me and keep talking with me.' Seat whoever says yes beside me. If [Companion] hasn't said yes by Monday, ask [Backup person] the same day with the same words and seat them beside me.",
+            "By Monday, text Mom: 'I'm coming with [Companion or Backup person]. Can I take [task], like the rolls? A yes or no by Monday helps me plan.' If she hasn't answered by Tuesday, text: 'Can you confirm that I'm taking [task] for Thanksgiving?'"
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "The line reaches my sister before Thanksgiving, and I'm not left absorbing comments.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The arm-touch cue gets settled privately before the table, not discovered there.",
+            "step": 2
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "why": "I won't sit alone at the table: a yes by Monday, or backup same day.",
+            "step": 2
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "why": "Mom hears from me first that I'm showing up, with someone beside me.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "why": "Mom's answer isn't in my control; Tuesday's follow-up is how I'll keep checking.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Fear still isn't looked after.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.",
+            "to": "embarrassment",
+            "reply": "I know you mean well, but the comments hurt me now, and I need them to stop rather than be laughed off over dessert. Please help me say something directly."
+          },
+          {
+            "line": "Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.",
+            "to": "fear",
+            "reply": "I hope time helps, but I need something to change before Thanksgiving, not someday after. Can we talk about how to make that happen?"
+          }
+        ],
+        "questions": [],
+        "at": 33
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 15559,
+      "reply": "{\"plan\": \"Skip Thanksgiving next week so I don't have to sit through my sister's weight comments.\", \"text\": \"Here's the move: I skip Thanksgiving next week and her comments stop being my problem. Once everyone sees how simple that is, we can get on with the week.\", \"minus\": [{\"id\": \"anger\", \"why\": \"Her comments cross a line, and skipping dinner just dodges it. Nobody has named that.\"}, {\"id\": \"embarrassment\", \"why\": \"Missing Thanksgiving could strain the relationships we're trying to protect. Check with me first.\"}, {\"id\": \"loneliness\", \"why\": \"A holiday alone, cut off from everyone at the table, sounds lonely.\"}, {\"id\": \"guilt\", \"why\": \"Who absorbs the hurt if I vanish? Mom and the others would miss me.\"}, {\"id\": \"fear\", \"why\": \"If I stop showing up, the family could drift and I'd lose ground.\"}], \"spotlight\": \"loneliness\"}",
+      "inTokens": 3063,
+      "outTokens": 1626,
+      "thinkingTokens": 1303,
+      "cost": 0.00129903,
+      "promptChars": 4435
+    },
+    {
+      "kind": "floor",
+      "ms": 15210,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Skipping dodges the line she crossed. Name the boundary first.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you say her comments stop being my problem?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Did you check with me before deciding to skip?\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A plan where I spend the holiday alone isn't a fix.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Anger and embarrassment already said what I'd say about Mom.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Others are already naming the drift risk; I'll wait.\"}]}",
+      "inTokens": 3781,
+      "outTokens": 2461,
+      "thinkingTokens": 2122,
+      "cost": 0.0023623999999999997,
+      "promptChars": 6342
+    },
+    {
+      "kind": "speak",
+      "ms": 11544,
+      "reply": "{\"text\": \"Skipping dinner only takes me out of the room. Her comments stay in her mouth and show up at the next gathering, because nobody has told her the line exists. By Monday next week, I need you to have me text [Sister's name]: 'Your comments about my weight hurt me. Stop them, or I'll leave the table.' Until that message is sent, I stay at -1.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Sister hears the boundary, and comments stop before Thanksgiving.\", \"turns_down\": \"\"}",
+      "inTokens": 3774,
+      "outTokens": 1120,
+      "thinkingTokens": 943,
+      "cost": 0.0016908000000000001,
+      "promptChars": 6714
+    },
+    {
+      "kind": "floor",
+      "ms": 13669,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"I already stated my need. Repeating it adds nothing new.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Nobody checked with me before the Thanksgiving skip or the text.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"anger\", \"why\": \"A warning text is fair, but 'I'll leave the table' is an ultimatum she didn't see coming.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"I'll speak once the text and the holiday plan are concrete.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Skipping leaves me alone. The plan needs a connection step too.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Nothing new yet. I'll wait to see the revised plan.\"}]}",
+      "inTokens": 3861,
+      "outTokens": 1865,
+      "thinkingTokens": 1488,
+      "cost": 0.0020889,
+      "promptChars": 6532
+    },
+    {
+      "kind": "speak",
+      "ms": 15469,
+      "reply": "{\"text\": \"Consciousness, skipping Thanksgiving takes me out of the room, but it doesn't reach my need: the relationships still need protecting, and my absence could look like a rift that leaves Mom and the others guessing. What would work is a private text to [Sister's name] before Thanksgiving, so she hears the boundary before anyone is at the table: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.' Anger's wording can stay, but I want it sent privately, not at dinner.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Private text to my sister before Thanksgiving, in calm words.\", \"turns_down\": \"Skipping Thanksgiving to avoid comments\"}",
+      "inTokens": 3934,
+      "outTokens": 2283,
+      "thinkingTokens": 2036,
+      "cost": 0.0023208,
+      "promptChars": 7202
+    },
+    {
+      "kind": "society",
+      "ms": 4701,
+      "reply": "{\"text\": \"Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.\", \"style\": \"minimizing\"}",
+      "inTokens": 2051,
+      "outTokens": 54,
+      "thinkingTokens": 150,
+      "cost": 0.0007144,
+      "promptChars": 2129
+    },
+    {
+      "kind": "speak",
+      "ms": 6112,
+      "reply": "{\"text\": \"Society's 'just let it roll off your back over pie' skips my actual problem: I'm not bothered by family being family, I'm bothered that my sister's comments get said where everyone can hear, and I'm the one who has to absorb the moment and then face the table. Following it means I sit through the same comments again, in front of Mom and the others, with no one having told her the line exists. Embarrassment's text keeps the talk private and happens before Thanksgiving, so the table never becomes the venue; I can live with that as the plan.\", \"to\": \"society\", \"score\": 0, \"need\": \"\", \"turns_down\": \"Let it roll off your back\"}",
+      "inTokens": 4519,
+      "outTokens": 206,
+      "thinkingTokens": 0,
+      "cost": 0.0014548,
+      "promptChars": 8816
+    },
+    {
+      "kind": "speak",
+      "ms": 5539,
+      "reply": "{\"text\": \"Society's 'let it roll off your back' skips what hurts me: my sister's comments get said where everyone can hear, and I'm the one who has to take the moment and then sit at the table. Following it means the same comments again, in front of Mom and the others, with no one having told her the line exists. Embarrassment's text keeps it private and before Thanksgiving, so the table never becomes the venue. I can live with that as the plan.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"let it roll off\"}",
+      "inTokens": 4759,
+      "outTokens": 175,
+      "thinkingTokens": 168,
+      "cost": 0.0015963000000000001,
+      "promptChars": 9533
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20284,
+      "reply": "{\"text\": \"Skipping leaves you alone at the table, and Guilt and Fear both point at Mom and the others missing you and the family drifting, so I'm dropping it. I keep Embarrassment's private text to [Sister's name] as written and hold Anger's Monday deadline for it. Path A is built for Loneliness by bringing a companion so you're not alone at the table; Path B is built for Guilt and Fear by telling Mom ahead of time and leaving before pie.\", \"to\": \"loneliness\", \"plan\": [\"Path A: By Monday next week, text [Sister's name] Embarrassment's private message, then ask [companion] to come to Thanksgiving and sit beside me at the table.\", \"Path B: By Monday next week, text [Mom] 'I'm coming to Thanksgiving for the first hour, and I'll leave if comments about my weight start.' Then arrive, eat, and leave before pie.\"]}",
+      "inTokens": 4378,
+      "outTokens": 3773,
+      "thinkingTokens": 3470,
+      "cost": 0.0031969999999999998,
+      "promptChars": 8494
+    },
+    {
+      "kind": "floor",
+      "ms": 28155,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B reaches Mom, not my sister; she still hears nothing.\", \"prefers\": \"A\"}, {\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A companion's maybe isn't company; I need a yes before Thanksgiving.\", \"prefers\": \"A\"}, {\"id\": \"guilt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A keeps me seated and nobody gets blindsided.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path A risks a fight before Thanksgiving; B keeps me showing up.\", \"prefers\": \"B\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Check with me before anyone gets invited, since that's social.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4802,
+      "outTokens": 5386,
+      "thinkingTokens": 4996,
+      "cost": 0.0041327000000000004,
+      "promptChars": 9161
+    },
+    {
+      "kind": "speak",
+      "ms": 12656,
+      "reply": "{\"text\": \"Path A only meets me if [companion] actually says yes, and Path B leaves me alone at the table for the first hour. I need Path A's ask to [companion] answered with a yes by Monday next week, so I know who will sit beside me before Thanksgiving. If they can't come, I need the user to name one other person by Monday next week who will sit beside them at the table.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"[Companion] replies yes by Monday, and we confirm their seat.\", \"turns_down\": \"\"}",
+      "inTokens": 4591,
+      "outTokens": 1298,
+      "thinkingTokens": 1124,
+      "cost": 0.0020239,
+      "promptChars": 8987
+    },
+    {
+      "kind": "floor",
+      "ms": 12243,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Before anyone asks a companion, check with me who gets told and when.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"loneliness\", \"why\": \"If no one says yes by Monday, what does the plan do then?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Without a Monday yes or a named backup, Path A leaves others exposed.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Asking someone else to sit with me still leaves Mom and the others out.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Monday's text to my sister already covers this; nothing new to add.\"}]}",
+      "inTokens": 4787,
+      "outTokens": 1608,
+      "thinkingTokens": 1304,
+      "cost": 0.0022367000000000003,
+      "promptChars": 9123
+    },
+    {
+      "kind": "speak",
+      "ms": 11618,
+      "reply": "{\"text\": \"Path B tells Mom I'm leaving early, but it doesn't keep my place in the family: a first-hour visit with an exit before pie can read as pulling back, and the drift I'm afraid of stays untouched. What would work is a text to [Mom] by Monday next week: 'Could you tell me if anyone needs me for Thanksgiving, like helping in the kitchen or setting the table?' That gives me a concrete role and keeps me visibly part of the day whichever path we take.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Mom confirms by Monday I still have a role in Thanksgiving.\", \"turns_down\": \"\"}",
+      "inTokens": 4887,
+      "outTokens": 1321,
+      "thinkingTokens": 1104,
+      "cost": 0.0021246999999999998,
+      "promptChars": 9863
+    },
+    {
+      "kind": "society",
+      "ms": 5572,
+      "reply": "{\"text\": \"Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.\", \"style\": \"time fixes it\"}",
+      "inTokens": 2183,
+      "outTokens": 340,
+      "thinkingTokens": 444,
+      "cost": 0.0009015000000000002,
+      "promptChars": 2470
+    },
+    {
+      "kind": "speak",
+      "ms": 11795,
+      "reply": "{\"text\": \"Waiting for it to sort itself out leaves my need completely untouched: nothing about time delivers the line to my sister or makes her comments stop before Thanksgiving. Following it means the next remark lands at the table in front of Mom and the others, with her still not knowing the line exists. Time doesn't text anyone, so only Embarrassment's private message gets her to hear it before the day.\", \"to\": \"society\", \"score\": -1, \"need\": \"Sister hears the boundary privately before Thanksgiving, by Monday.\", \"turns_down\": \"Let it sort itself out\"}",
+      "inTokens": 5300,
+      "outTokens": 1228,
+      "thinkingTokens": 1039,
+      "cost": 0.0022006,
+      "promptChars": 11003
+    },
+    {
+      "kind": "consciousness",
+      "ms": 26162,
+      "reply": "{\"text\": \"Path A wins because Anger, Loneliness, Guilt, and Embarrassment all need someone beside you at the table and the boundary delivered privately before the day. Fear's need for a real role is folded into the Mom text, so the first-hour exit from Path B is no longer needed. Guilt's question, who absorbs the hurt if you vanish, is answered by you showing up with [Companion] and Mom hearing it from you first, and Loneliness's backup ask stays in as a same-day fallback.\", \"to\": \"guilt\", \"plan\": [\"By Monday next week, text [Sister's name] Embarrassment's private message: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'\", \"By Monday next week, ask [Companion]: 'Will you come to Thanksgiving with me and sit beside me at the table?' If no yes by Monday, ask [Backup person] the same question that day.\", \"By Monday next week, text [Mom]: 'I'm coming to Thanksgiving and bringing [Companion]. What can I help with, like the kitchen or setting the table?' If she hasn't replied by Monday, ask again Tuesday.\"]}",
+      "inTokens": 5505,
+      "outTokens": 4627,
+      "thinkingTokens": 4231,
+      "cost": 0.0039611,
+      "promptChars": 11716
+    },
+    {
+      "kind": "floor",
+      "ms": 24060,
+      "reply": "{\"bids\": [{\"id\": \"guilt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Mom hearing it first and showing up answers who absorbs the hurt.\"}, {\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Backup is still a placeholder, and my seat isn't confirmed yet.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Tuesday retry misses my Monday deadline; Mom must confirm a role.\"}, {\"id\": \"anger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The private text lands before Thanksgiving by Monday, as I asked.\"}]}",
+      "inTokens": 5648,
+      "outTokens": 4081,
+      "thinkingTokens": 3800,
+      "cost": 0.0037305000000000007,
+      "promptChars": 11538
+    },
+    {
+      "kind": "speak",
+      "ms": 8826,
+      "reply": "{\"text\": \"Mom and the others would miss me if I vanished, and that's the hurt I'm holding onto. Plan v3 answers it: the text to [Mom] tells her I'm coming and bringing [Companion], so she hears from me first that I'm showing up. I can live with this at 0, on the condition that the Mom text goes out by Monday next week and gets a Tuesday follow-up if she hasn't replied.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5375,
+      "outTokens": 929,
+      "thinkingTokens": 761,
+      "cost": 0.0020726,
+      "promptChars": 11232
+    },
+    {
+      "kind": "floor",
+      "ms": 13697,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Mom's text asks, not confirms my role; Tuesday follow-up misses Monday.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Loneliness still -1 with no companion yes; prioritize that answer.\"}]}",
+      "inTokens": 5566,
+      "outTokens": 2151,
+      "thinkingTokens": 2011,
+      "cost": 0.0027409000000000005,
+      "promptChars": 11285
+    },
+    {
+      "kind": "speak",
+      "ms": 6203,
+      "reply": "{\"text\": \"Sadness here: Loneliness is the emotion most neglected right now. Plan v3 leaves it at -1 because Path A depends entirely on [Companion] saying yes by Monday, and there's no concrete fallback that puts someone beside me at the table if that yes never comes. I need the Consciousness to fix the backup step: if [Companion] hasn't said yes by Monday, the same-day ask to [Backup person] should be followed by a confirmed seat assignment, so I know exactly who will be beside me before Thanksgiving.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A named backup who confirms sitting beside me, with a seat confirmed by Monday.\", \"turns_down\": \"\", \"spotlight\": \"😔\"}",
+      "inTokens": 5576,
+      "outTokens": 249,
+      "thinkingTokens": 0,
+      "cost": 0.0017929,
+      "promptChars": 11772
+    },
+    {
+      "kind": "speak",
+      "ms": 6178,
+      "reply": "{\"text\": \"I'm Sadness, and Loneliness is the emotion most neglected right now. Plan v3 leaves it at -1 because Path A only works if [Companion] says yes, and the backup ask to [Backup person] has no step that confirms a seat beside me at the table. What would move Loneliness to 0 is a same-day confirmation: if [Companion] hasn't answered by Monday, [Backup person] gets asked that day and I get a seat assignment next to them before Thanksgiving.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Confirmed seat beside me at the table, with a same-day backup if no yes by Monday.\", \"turns_down\": \"\", \"spotlight\": \"loneliness\"}",
+      "inTokens": 5818,
+      "outTokens": 237,
+      "thinkingTokens": 222,
+      "cost": 0.0019705,
+      "promptChars": 12442
+    },
+    {
+      "kind": "floor",
+      "ms": 11412,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Backup needs a seat confirmed too, not just a same-day ask.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Tuesday re-ask lands after Monday; my role needs Mom's yes by Monday.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Monday text covers my need; nothing new to add.\"}, {\"id\": \"guilt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Already accepted at 0; Mom text stays as written.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Private text stays as planned; the table stays out of it.\"}]}",
+      "inTokens": 5742,
+      "outTokens": 1536,
+      "thinkingTokens": 1247,
+      "cost": 0.0024862000000000005,
+      "promptChars": 11753
+    },
+    {
+      "kind": "speak",
+      "ms": 11442,
+      "reply": "{\"text\": \"Plan v3's Mom text asks what I can help with, which invites an open answer she may never give, so my need stays unmet. The smallest step I can take today is to pick one specific task with a [task] placeholder, like the rolls or setting the table, and text Mom: '[Mom], can I take on [task] for Thanksgiving? A yes or no by Monday helps me plan.' If she hasn't answered by Monday, the Tuesday follow-up should ask her to confirm that same task, not offer general help.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Mom names my task and confirms it by Monday.\", \"turns_down\": \"\"}",
+      "inTokens": 5885,
+      "outTokens": 1416,
+      "thinkingTokens": 1201,
+      "cost": 0.0024711,
+      "promptChars": 12637
+    },
+    {
+      "kind": "consciousness",
+      "ms": 26074,
+      "reply": "{\"text\": \"Sadness is right that Loneliness is the most neglected, so the companion ask now ends in a confirmed seat beside you, with Backup person asked the same day if [Companion] hasn't said yes by Monday. Fear's worry about Mom's open 'what can I help with' stands, so the Mom text now names one task, with a yes or no by Monday and a Tuesday follow-up asking her to confirm that same task. Guilt's need that Mom hears from you first survives because the text still says you're coming and bringing a companion.\", \"to\": \"loneliness\", \"plan\": [\"By Monday, text [Sister's name]: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'\", \"Ask [Companion] by Monday: 'Will you come to Thanksgiving and sit beside me at the table?' If yes, seat them beside me. If no, ask [Backup person] same day and seat them beside me.\", \"By Monday, text Mom: 'I'm coming with [Companion or Backup person]. Can I take [task], like the rolls? A yes or no by Monday helps me plan.' If silent Tuesday, ask her to confirm [task].\"]}",
+      "inTokens": 6197,
+      "outTokens": 5255,
+      "thinkingTokens": 4859,
+      "cost": 0.0044827,
+      "promptChars": 13560
+    },
+    {
+      "kind": "floor",
+      "ms": 20158,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Asking isn't a seat. I need a yes by Monday from someone.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Tuesday follow-up lands after Monday. Mom must confirm my task by Monday.\"}, {\"id\": \"anger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Boundary is stated plainly now, with Monday as the deadline. I accept.\"}, {\"id\": \"guilt\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Mom still hears from me first. Nothing new to add; holding.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Private text before Thanksgiving stands. Nothing new; holding back.\"}]}",
+      "inTokens": 6268,
+      "outTokens": 3664,
+      "thinkingTokens": 3316,
+      "cost": 0.0037080000000000004,
+      "promptChars": 13234
+    },
+    {
+      "kind": "speak",
+      "ms": 11973,
+      "reply": "{\"text\": \"Having [Companion] in the chair beside me doesn't reach me when a comment lands, because the plan never says what they do in that second. They could be talking with Mom across the table while my sister's remark hangs in the air and I'm alone with it. The moment that bites is arrival and every comment at dinner, so I need [Companion] to walk in with me and know one agreed cue, like a touch on my arm, that means 'stay with me.' Ask them in the same text as the seat question by Monday: 'When my sister comments, I'll touch your arm, and I need you to turn toward me and keep talking with me.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"[Companion] agrees to the arm-touch cue and walks in with me.\", \"turns_down\": \"\"}",
+      "inTokens": 6147,
+      "outTokens": 1362,
+      "thinkingTokens": 1110,
+      "cost": 0.0025222,
+      "promptChars": 13365
+    },
+    {
+      "kind": "speak",
+      "ms": 9953,
+      "reply": "{\"text\": \"Plan v4 seats [Companion] beside me, but it never says what they do when my sister's comment lands. I'm left alone with it while they talk to Mom. Add to the Monday ask: 'When my sister comments, I'll touch your arm, and you turn toward me and keep talking with me.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"[Companion] agrees to the arm-touch cue by Monday.\", \"turns_down\": \"\"}",
+      "inTokens": 6415,
+      "outTokens": 1116,
+      "thinkingTokens": 1230,
+      "cost": 0.0026136,
+      "promptChars": 14133
+    },
+    {
+      "kind": "floor",
+      "ms": 14550,
+      "reply": "{\"bids\": [{\"id\": \"consciousness\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"loneliness\", \"why\": \"Folding the arm-touch cue into the Monday ask, answering Loneliness directly.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"An arm touch at the table could draw attention; agree it privately first.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"I've said my piece; waiting to see the cue written into the plan.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Mom's yes-or-no task ask already covers my need; nothing new.\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Loneliness is finally being heard; nothing new for me to add yet.\"}]}",
+      "inTokens": 6202,
+      "outTokens": 1868,
+      "thinkingTokens": 1560,
+      "cost": 0.0027902000000000005,
+      "promptChars": 13012
+    },
+    {
+      "kind": "speak",
+      "ms": 12844,
+      "reply": "{\"text\": \"Seating [Companion] beside me is solid, but the arm touch is still unagreed, and if it first happens at the table it draws the attention I'm trying to avoid. What moves me to 0 is adding to Monday's ask to [Companion]: 'Can we agree now, privately, on an arm touch if my sister comments?' That settles the cue before Thanksgiving, so the table never sees it for the first time. Loneliness's turn-toward part can stay as they proposed.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Monday text to Companion settles the arm-touch cue privately.\", \"turns_down\": \"\"}",
+      "inTokens": 6705,
+      "outTokens": 1756,
+      "thinkingTokens": 1546,
+      "cost": 0.0028866,
+      "promptChars": 15032
+    },
+    {
+      "kind": "wrap",
+      "ms": 26656,
+      "reply": "{\"plan\": [\"By Monday, text [Sister's name]: 'Can we talk before Thanksgiving? Your comments about my weight hurt, and I need them to stop.'\", \"By Monday, ask [Companion]: 'Will you come to Thanksgiving and sit beside me at the table? Can we agree now, privately, on an arm touch if my sister comments? When I touch your arm, turn toward me and keep talking with me.' Seat whoever says yes beside me. If [Companion] hasn't said yes by Monday, ask [Backup person] the same day with the same words and seat them beside me.\", \"By Monday, text Mom: 'I'm coming with [Companion or Backup person]. Can I take [task], like the rolls? A yes or no by Monday helps me plan.' If she hasn't answered by Tuesday, text: 'Can you confirm that I'm taking [task] for Thanksgiving?'\"], \"scores\": [{\"id\": \"anger\", \"score\": 0, \"step\": 1, \"why\": \"The line reaches my sister before Thanksgiving, and I'm not left absorbing comments.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"The arm-touch cue gets settled privately before the table, not discovered there.\"}, {\"id\": \"loneliness\", \"score\": 0, \"step\": 2, \"why\": \"I won't sit alone at the table: a yes by Monday, or backup same day.\"}, {\"id\": \"guilt\", \"score\": 0, \"step\": 3, \"why\": \"Mom hears from me first that I'm showing up, with someone beside me.\"}, {\"id\": \"fear\", \"score\": -1, \"step\": 0, \"why\": \"Mom's answer isn't in my control; Tuesday's follow-up is how I'll keep checking.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 2, \"why\": \"Loneliness is at zero now, so I can stop pressing on it.\"}], \"society\": [{\"line\": \"Honestly, it's just family being family. Don't overthink it, and maybe just let it roll off your back over pie.\", \"reply\": \"I know you mean well, but the comments hurt me now, and I need them to stop rather than be laughed off over dessert. Please help me say something directly.\"}, {\"line\": \"Give it some time and it'll sort itself out. Families usually settle down once everyone's gotten used to each other again.\", \"reply\": \"I hope time helps, but I need something to change before Thanksgiving, not someday after. Can we talk about how to make that happen?\"}], \"text\": \"Plan v5 keeps the private text to my sister, a companion or backup seated beside me with the arm cue agreed by Monday, and a single task confirmed with Mom. Loneliness and Sadness are at zero, and Fear stays at -1 with a Tuesday follow-up to make sure Mom answers.\"}",
+      "inTokens": 5472,
+      "outTokens": 5553,
+      "thinkingTokens": 4629,
+      "cost": 0.0044137000000000004,
+      "promptChars": 11280
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.15,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.36,
+      "finalMinus": [
+        "fear",
+        "sadness"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 8 voices, avg 2.9 sentences (max 4), max overlap 0.15, Society 2/2 called out, hold rate 0.36, final -1: fear, sadness",
+    "speakers": {
+      "anger": 2,
+      "embarrassment": 3,
+      "society": 2,
+      "consciousness": 3,
+      "loneliness": 2,
+      "fear": 2,
+      "guilt": 1,
+      "sadness": 1
+    }
+  }
+}

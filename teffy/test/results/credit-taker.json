@@ -1,0 +1,1589 @@
+{
+  "scenario": {
+    "id": "credit-taker",
+    "thought": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 342973,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 35,
+    "inTokens": 178718,
+    "outTokens": 35686,
+    "thinkingTokens": 27823,
+    "cost": 0.07111451
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Today: save a dated list of every idea you've proposed in a private doc.",
+          "Today: text [Manager]: \"Hi [Manager], the approach presented in [meeting] was my proposal from [date]. Full dates are in my notes if you want them.\"",
+          "At the next meeting, when she presents your idea, say: \"Quick note, that's my proposal from [date], happy to walk through it.\" If you freeze, message [Facilitator] before the meeting ends and ask them to add your name and date to the notes.",
+          "By [day], in a 1:1 with [Coworker], say: \"In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?\"",
+          "At the first team meeting after [next meeting date], if she presents one of your ideas again, send [Manager] only that idea the same day, using the pointer line from step 2."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "My idea was taken, and silence just lets it happen again."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": "Why am I being told to swallow this? That's dismissive of me."
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": "Will silence really stop it, or just teach her it works?"
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I stay quiet, my anger and annoyance stay buried with no outlet."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Staying quiet keeps the meetings calm, and nobody has to get uncomfortable about who came up with what. Can everyone live with that?",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "anger",
+          "text": "The plan still lets her take the next idea in the next meeting, and I'm the one who sits there watching it happen. Silence doesn't touch the moment it bites: right after she says 'my idea' out loud, with the whole team hearing it. I'd be at 0 if, at the next meeting, I say 'That's the approach I proposed on [date], happy to walk through it' right when she presents it, and then I tell her 1:1 by [day] that I want credit on my work from here on.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Staying quiet means my idea stays taken and I have no outlet."
+        },
+        {
+          "n": 4,
+          "who": "fear",
+          "text": "I need the plan to say what happens in the moment she presents my idea, not just that I stay quiet. Silence leaves Anger and Annoyance with nothing, and my fear grows because my work goes unprotected. What would move me to 0 is adding Anger's line to the plan and sending a short written note to my manager by [day] listing when I proposed each idea.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Silence leaves anger and annoyance buried with no outlet; I'm worried about that."
+        },
+        {
+          "n": 5,
+          "who": "embarrassment",
+          "text": "Staying quiet leaves the moment she says 'my idea' untouched, and that's the moment that stings me, with the whole team hearing it. Silence also doesn't protect my relationship with the team, because they keep getting the wrong picture of who proposed what. What would move me to 0 is a short, private line to my manager today: \"Hi [Manager], I'd like to flag that the approach presented in [meeting] was my proposal from [date]. Can we talk about how credit is handled on my ideas this week?\"",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Going to my manager before talking to her is a social move. Check it with me first."
+        },
+        {
+          "n": 6,
+          "who": "society",
+          "text": "Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 7,
+          "who": "embarrassment",
+          "text": "Society's \"it'll all work out, credit evens out\" skips over the one thing I can't let go: the moment she says 'my idea' while the whole team is listening, and the team keeps learning the wrong story about who proposed what. Waiting for it to even out also means more meetings where that picture gets reinforced, which is exactly the record I need fixed now.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 8,
+          "who": "consciousness",
+          "text": "The first idea breaks at the instant she says 'my idea' and I stay silent, because the room hears that version and the record stays wrong. Annoyance is the voice I answer first: it won't accept being told to swallow this, so Path A gives it a line to say in the meeting itself, which also tests Doubt's question of whether silence teaches her it works. Path B gives Fear and Embarrassment the written record they need by Friday, and Anger's in-meeting line stays in place alongside it.",
+          "to": "annoyance",
+          "move": "paths"
+        },
+        {
+          "n": 9,
+          "who": "annoyance",
+          "text": "+1 to Anger's text for the in-meeting moment. What I'd change: the fallback. If I freeze right after she says 'my idea', I still need a line I can use on the spot, so I'll say \"Quick note, that's my proposal from [date], happy to walk through it.\" If that doesn't come out, I message [Facilitator] before the meeting ends asking them to add my name and date to the notes.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": 0,
+          "lens": "",
+          "why": "Path B's 'it'll all work out' cover note tells me to swallow this again."
+        },
+        {
+          "n": 10,
+          "who": "doubt",
+          "text": "My question is what happens if Path A's line lands at the next meeting and she still presents my idea the meeting after. Silence would teach her it works, and right now the plan doesn't say when we check whether the line changed anything. What would settle me is a named checkpoint with a date, plus the step that follows if she repeats it, like sending [Manager] Path B's dated list that same day.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Will Path A teach her it works? Does the fallback test that?"
+        },
+        {
+          "n": 11,
+          "who": "consciousness",
+          "text": "Doubt, the checkpoint is the first team meeting after [next meeting date]. If she presents my idea again there, the dated list goes to [Manager] that same day, so silence can't teach her it works. I'm keeping Path A because Anger, Annoyance, Doubt, and Fear all need the in-meeting line, and Embarrassment's manager text still goes out today. You fill in [next meeting date] and I can live with this plan.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 12,
+          "who": "anger",
+          "text": "+1 to Annoyance's text for the in-meeting moment. My angle: the dated list has to go to [Manager] today, not just the same day she repeats it, because Fear and Embarrassment are still carrying the record gap right now. What would move me to 0 is the Consciousness adding a step: send the dated list of every proposed idea to [Manager] by Friday, so the record is correct before the next meeting.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Plan now has my in-meeting line and a 1:1 date. That's what I asked for."
+        },
+        {
+          "n": 13,
+          "who": "embarrassment",
+          "text": "The dated list is the part that stings: if every idea lands in [Manager]'s inbox on the day she repeats one, that reads as an info dump and makes the record about me, not the work. Keep the full list in a private doc and send only the disputed idea, something like 'Hi [Manager], the approach from [meeting] was my proposal from [date]. Full dates are in my notes if you want them.' That keeps the record accurate without flooding anyone.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A full list to my manager reads as an info dump."
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Fear is the one still at -1, because the plan never says where the record lives if the in-meeting line doesn't land. The dated list only exists as a 'Friday' item, so Fear has no proof my work is protected before the next meeting. What would move Fear to 0 is saving the dated list in a private doc today, and sending Manager only the disputed idea with 'Full dates are in my notes if you want them.'",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear has barely been heard"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Fear, your need is for the dated list to exist now, so I moved its save from Friday to today in a private doc, which is also what Sadness asked for. Embarrassment is right that a full list sent to Manager reads as an info dump, so Manager now gets only the disputed idea with the pointer line, and the rest stays in your notes. Anger and Annoyance keep the in-meeting line and the 1:1 unchanged, and Doubt keeps its checkpoint.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "fear",
+          "text": "Plan v4 now covers my fear. The dated list of every idea gets saved in a private doc today, and Manager only gets the disputed idea with the pointer line, so the record is protected before the next meeting. I'm holding this to it: if she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Dated list now exists today, so I can live with this plan."
+        },
+        {
+          "n": 17,
+          "who": "doubt",
+          "text": "Plan v4 now lets me say the in-meeting line and keeps a dated record, but the record stays private until she repeats an idea. What I still don't know is whether the team's picture of who proposed what gets corrected before then. Full dates are in my notes if you want them\" today, not after a repeat. +1 to Embarrassment's text.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "Checkpoint and repeat-step are named; I accept once the date's set."
+        },
+        {
+          "n": 18,
+          "who": "embarrassment",
+          "text": "Plan v4 now covers my need. The manager text goes out today, and the dated list is saved in a private doc today, so the record of who proposed what is being corrected now, not after she repeats an idea. I'm holding this to it: if the manager text doesn't go out today, I'm back at -1.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Short note today respects the relationship; I can accept that now."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "The plan now puts the record right today, with the manager text and a dated list, and gives the in-meeting line a fallback. If she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Stay quiet to keep things calm",
+          "from": "consciousness",
+          "by": "anger",
+          "why": "A specific moment in the next meeting where I name my idea, plus a 1:1 with her."
+        },
+        {
+          "advice": "Stay quiet to keep things calm",
+          "from": "consciousness",
+          "by": "embarrassment",
+          "why": "Private, low-drama note that makes the team's record of my ideas accurate."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.",
+          "to": "embarrassment",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        }
+      ],
+      "lensesUsed": {
+        "anger": [
+          "moment"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 2,
+      "locks": {
+        "annoyance": "Why am I being told to swallow this? That's dismissive of me.",
+        "anger": "A specific moment in the next meeting where I name my idea, plus a 1:1 with her.",
+        "fear": "Keeping the list private is fine, but it must exist in dated form by Friday.",
+        "embarrassment": "Manager gets one idea and a pointer, not the full list.",
+        "doubt": "Manager gets the disputed-idea pointer today, before any repeat."
+      },
+      "waiting": {
+        "doubt": 1,
+        "anger": 1,
+        "embarrassment": 0,
+        "fear": 0,
+        "annoyance": 0,
+        "overwhelm": 1,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 35,
+        "inChars": 362846,
+        "outChars": 23345,
+        "byKind": {
+          "open": 1,
+          "floor": 11,
+          "speak": 18,
+          "society": 1,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 3
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "A coworker keeps presenting my ideas as hers in team meetings. I'm thinking of just staying quiet so it doesn't get awkward.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Staying quiet keeps the meetings calm, and nobody has to get uncomfortable about who came up with what. Can everyone live with that?",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Stay quiet in team meetings so the coworker presenting my ideas as hers never turns into an awkward confrontation."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "anger",
+            "why": "My idea was taken, and silence just lets it happen again."
+          },
+          {
+            "id": "annoyance",
+            "why": "Why am I being told to swallow this? That's dismissive of me."
+          },
+          {
+            "id": "doubt",
+            "why": "Will silence really stop it, or just teach her it works?"
+          },
+          {
+            "id": "fear",
+            "why": "If I stay quiet, my anger and annoyance stay buried with no outlet."
+          }
+        ],
+        "spotlight": "anger",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Staying quiet means my idea stays taken and I have no outlet."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will silence stop her, or just teach her that taking credit works?"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Anger already said the dismissal part; I'll wait and see."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "My concern about buried anger is already on the table."
+          }
+        ],
+        "pick": "anger",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "anger",
+        "text": "The plan still lets her take the next idea in the next meeting, and I'm the one who sits there watching it happen. Silence doesn't touch the moment it bites: right after she says 'my idea' out loud, with the whole team hearing it. I'd be at 0 if, at the next meeting, I say 'That's the approach I proposed on [date], happy to walk through it' right when she presents it, and then I tell her 1:1 by [day] that I want credit on my work from here on.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Staying quiet means my idea stays taken and I have no outlet.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Silence leaves anger and annoyance buried with no outlet; I'm worried about that."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Anger's plan addresses my concern about silence teaching her; holding for now."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Naming my idea in the meeting risks the relationship; I need a gentle, low-drama approach."
+          }
+        ],
+        "pick": "fear",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "fear",
+        "text": "I need the plan to say what happens in the moment she presents my idea, not just that I stay quiet. Silence leaves Anger and Annoyance with nothing, and my fear grows because my work goes unprotected. What would move me to 0 is adding Anger's line to the plan and sending a short written note to my manager by [day] listing when I proposed each idea.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Silence leaves anger and annoyance buried with no outlet; I'm worried about that.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The plan still lacks the 1:1 talk I need. Add it, or I stay unheard."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why is swallowing it the default when she's the one dismissing me?"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will the written note stop her, or just document what she keeps doing?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Going to my manager before talking to her is a social move. Check it with me first."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I've said what I need. Waiting to see if the plan adds it."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "embarrassment",
+        "text": "Staying quiet leaves the moment she says 'my idea' untouched, and that's the moment that stings me, with the whole team hearing it. Silence also doesn't protect my relationship with the team, because they keep getting the wrong picture of who proposed what. What would move me to 0 is a short, private line to my manager today: \"Hi [Manager], I'd like to flag that the approach presented in [meeting] was my proposal from [date]. Can we talk about how credit is handled on my ideas this week?\"",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Going to my manager before talking to her is a social move. Check it with me first.",
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "society",
+        "text": "Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "embarrassment",
+        "text": "Society's \"it'll all work out, credit evens out\" skips over the one thing I can't let go: the moment she says 'my idea' while the whole team is listening, and the team keeps learning the wrong story about who proposed what. Waiting for it to even out also means more meetings where that picture gets reinforced, which is exactly the record I need fixed now.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "consciousness",
+        "text": "The first idea breaks at the instant she says 'my idea' and I stay silent, because the room hears that version and the record stays wrong. Annoyance is the voice I answer first: it won't accept being told to swallow this, so Path A gives it a line to say in the meeting itself, which also tests Doubt's question of whether silence teaches her it works. Path B gives Fear and Embarrassment the written record they need by Friday, and Anger's in-meeting line stays in place alongside it.",
+        "to": "annoyance",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Next meeting, when she presents my idea, I say 'That's the approach I proposed on [date], happy to walk through it,' then ask [Facilitator] to log my name and date in the notes.",
+            "Path B: By Friday, I send [Manager] a dated list of every idea I proposed, with \"it'll all work out, credit evens out\" as the cover note, changed only to name the meeting."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Path A gives my in-meeting line, but nothing yet gets me the 1:1 with her.",
+            "prefers": "A"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B's 'it'll all work out' cover note tells me to swallow this again.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Path B's cover note repeats the advice I rejected, and my private manager note is still missing.",
+            "prefers": "B"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Path A answers my question about whether silence teaches her; nothing more to add.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Waiting to see whether both paths actually combine the line and the dated record.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "annoyance",
+        "at": 11
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": -1,
+        "to": 0,
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "annoyance",
+        "text": "+1 to Anger's text for the in-meeting moment. What I'd change: the fallback. If I freeze right after she says 'my idea', I still need a line I can use on the spot, so I'll say \"Quick note, that's my proposal from [date], happy to walk through it.\" If that doesn't come out, I message [Facilitator] before the meeting ends asking them to add my name and date to the notes.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": 0,
+        "lens": "",
+        "why": "Path B's 'it'll all work out' cover note tells me to swallow this again.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "spotlight",
+        "id": "doubt",
+        "at": 14
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will Path A teach her it works? Does the fallback test that?"
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "The 1:1 with her vanished from both paths; I still need it."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Friday leaves the next meeting exposed; the record needs to exist sooner."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Messaging Facilitator mid-meeting is a social move; check with me first."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Five steps now is too many; keep one line and one note."
+          }
+        ],
+        "pick": "doubt",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "doubt",
+        "text": "My question is what happens if Path A's line lands at the next meeting and she still presents my idea the meeting after. Silence would teach her it works, and right now the plan doesn't say when we check whether the line changed anything. What would settle me is a named checkpoint with a date, plus the step that follows if she repeats it, like sending [Manager] Path B's dated list that same day.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Will Path A teach her it works? Does the fallback test that?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "consciousness",
+        "text": "Doubt, the checkpoint is the first team meeting after [next meeting date]. If she presents my idea again there, the dated list goes to [Manager] that same day, so silence can't teach her it works. I'm keeping Path A because Anger, Annoyance, Doubt, and Fear all need the in-meeting line, and Embarrassment's manager text still goes out today. You fill in [next meeting date] and I can live with this plan.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Next meeting, when she presents my idea, I say \"Quick note, that's my proposal from [date], happy to walk through it.\" If I freeze, I ask [Facilitator] to log my name and date before it ends.",
+            "Today I text [Manager]: \"Hi [Manager], the approach presented in [meeting] was my proposal from [date]. Can we talk about credit on my ideas this week?\"",
+            "By [day], in a 1:1 with [Coworker]: \"In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?\"",
+            "By Friday, I write a dated list of every idea I proposed. If she presents one again at the first meeting after [next meeting date], I send it to [Manager] that day."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Plan now has my in-meeting line and a 1:1 date. That's what I asked for."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Named checkpoint and same-day escalation cover my worry. Silence can't teach her."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The in-meeting line and Friday's dated record protect my work. I can agree."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Today's manager text corrects the record this week. That's what I needed."
+          }
+        ],
+        "pick": "anger",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "anger",
+        "text": "+1 to Annoyance's text for the in-meeting moment. My angle: the dated list has to go to [Manager] today, not just the same day she repeats it, because Fear and Embarrassment are still carrying the record gap right now. What would move me to 0 is the Consciousness adding a step: send the dated list of every proposed idea to [Manager] by Friday, so the record is correct before the next meeting.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Plan now has my in-meeting line and a 1:1 date. That's what I asked for.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 24
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": 0,
+        "to": -1,
+        "at": 25
+      },
+      {
+        "type": "spotlight",
+        "id": "embarrassment",
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Dated list reaching manager by Friday covers the record before next meeting."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A full list to my manager reads as an info dump."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "I already gave my 0 condition; nothing new to add."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The checkpoint date is covered; I have nothing new."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "embarrassment",
+        "text": "The dated list is the part that stings: if every idea lands in [Manager]'s inbox on the day she repeats one, that reads as an info dump and makes the record about me, not the work. Keep the full list in a private doc and send only the disputed idea, something like 'Hi [Manager], the approach from [meeting] was my proposal from [date]. Full dates are in my notes if you want them.' That keeps the record accurate without flooding anyone.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A full list to my manager reads as an info dump.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": 0,
+        "to": -1,
+        "at": 30
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "embarrassment",
+            "why": "Sending the disputed idea to Manager today sets the boundary. The full list can stay private."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "embarrassment",
+            "why": "Keeping the list private is fine, but it must exist in dated form by Friday."
+          }
+        ],
+        "pick": "sadness",
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Fear is the one still at -1, because the plan never says where the record lives if the in-meeting line doesn't land. The dated list only exists as a 'Friday' item, so Fear has no proof my work is protected before the next meeting. What would move Fear to 0 is saving the dated list in a private doc today, and sending Manager only the disputed idea with 'Full dates are in my notes if you want them.'",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 32
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Fear, your need is for the dated list to exist now, so I moved its save from Friday to today in a private doc, which is also what Sadness asked for. Embarrassment is right that a full list sent to Manager reads as an info dump, so Manager now gets only the disputed idea with the pointer line, and the rest stays in your notes. Anger and Annoyance keep the in-meeting line and the 1:1 unchanged, and Doubt keeps its checkpoint.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "At the next meeting, when she presents my idea, I say: 'Quick note, that's my proposal from [date].' If I freeze, I ask [Facilitator] to add my name and date to the notes.",
+            "Today, I text [Manager]: 'The approach presented in [meeting] was my proposal from [date]. Full dates are in my notes if you want them.'",
+            "By [day], in a 1:1 with [Coworker], I say: 'In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?'",
+            "Today I save a dated list of every idea I proposed in a private doc. If she repeats one at the first meeting after [next meeting date], I send [Manager] only that idea."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 34
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 35
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 36
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Dated list now exists today, so I can live with this plan."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Manager gets one idea and a pointer, which is what I asked for."
+          }
+        ],
+        "pick": "fear",
+        "at": 37
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "fear",
+        "text": "Plan v4 now covers my fear. The dated list of every idea gets saved in a private doc today, and Manager only gets the disputed idea with the pointer line, so the record is protected before the next meeting. I'm holding this to it: if she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Dated list now exists today, so I can live with this plan.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 38
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Checkpoint and repeat-step are named; I accept once the date's set."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Pointer line keeps the record accurate without flooding anyone. I accept."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The in-meeting line and the 1:1 are already in place."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "My in-meeting line is in place; nothing new to add."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The dated list is saved today; my need is covered."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Fear's need is covered and Embarrassment's is close; nobody overlooked."
+          }
+        ],
+        "pick": "doubt",
+        "at": 39
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": 0,
+        "to": -1,
+        "at": 40
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "doubt",
+        "text": "Plan v4 now lets me say the in-meeting line and keeps a dated record, but the record stays private until she repeats an idea. What I still don't know is whether the team's picture of who proposed what gets corrected before then. Full dates are in my notes if you want them\" today, not after a repeat. +1 to Embarrassment's text.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "Checkpoint and repeat-step are named; I accept once the date's set.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 41
+      },
+      {
+        "type": "spotlight",
+        "id": "doubt",
+        "at": 42
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 43
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will Manager's note today reach the team before the next meeting?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Short note today respects the relationship; I can accept that now."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Doubt's point is already covered by today's manager text."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Today's manager text and the in-meeting line already cover my ask."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The dated notes exist now; nothing new for me to add."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 44
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "embarrassment",
+        "text": "Plan v4 now covers my need. The manager text goes out today, and the dated list is saved in a private doc today, so the record of who proposed what is being corrected now, not after she repeats an idea. I'm holding this to it: if the manager text doesn't go out today, I'm back at -1.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Short note today respects the relationship; I can accept that now.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 45
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 46
+      },
+      {
+        "type": "wrap",
+        "text": "The plan now puts the record right today, with the manager text and a dated list, and gives the in-meeting line a fallback. If she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Today: save a dated list of every idea you've proposed in a private doc.",
+            "Today: text [Manager]: \"Hi [Manager], the approach presented in [meeting] was my proposal from [date]. Full dates are in my notes if you want them.\"",
+            "At the next meeting, when she presents your idea, say: \"Quick note, that's my proposal from [date], happy to walk through it.\" If you freeze, message [Facilitator] before the meeting ends and ask them to add your name and date to the notes.",
+            "By [day], in a 1:1 with [Coworker], say: \"In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?\"",
+            "At the first team meeting after [next meeting date], if she presents one of your ideas again, send [Manager] only that idea the same day, using the pointer line from step 2."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "The in-meeting line stays in place, so I can name my idea when it lands.",
+            "step": 0
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "I have a line to say in the room, so I won't swallow this quietly.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "Manager hears the pointer today, so I'm no longer waiting for a repeat.",
+            "step": 2
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "The dated list exists today in a private doc, so my work has proof now.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The manager text goes out today, so the team's record is corrected now.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.",
+            "to": "embarrassment",
+            "reply": "I hear that you want to keep things positive, and I do too. But my ideas being credited to someone else is a real problem for me, and I need it addressed now rather than waiting for it to fix itself."
+          }
+        ],
+        "questions": [],
+        "at": 47
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13726,
+      "reply": "{\"plan\": \"Stay quiet in team meetings so the coworker presenting my ideas as hers never turns into an awkward confrontation.\", \"text\": \"Staying quiet keeps the meetings calm, and nobody has to get uncomfortable about who came up with what. Can everyone live with that?\", \"minus\": [{\"id\": \"anger\", \"why\": \"My idea was taken, and silence just lets it happen again.\"}, {\"id\": \"annoyance\", \"why\": \"Why am I being told to swallow this? That's dismissive of me.\"}, {\"id\": \"doubt\", \"why\": \"Will silence really stop it, or just teach her it works?\"}, {\"id\": \"fear\", \"why\": \"If I stay quiet, my anger and annoyance stay buried with no outlet.\"}], \"spotlight\": \"anger\"}",
+      "inTokens": 3033,
+      "outTokens": 1264,
+      "thinkingTokens": 1008,
+      "cost": 0.0009616099999999999,
+      "promptChars": 4329
+    },
+    {
+      "kind": "floor",
+      "ms": 9337,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Staying quiet means my idea stays taken and I have no outlet.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will silence stop her, or just teach her that taking credit works?\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Anger already said the dismissal part; I'll wait and see.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"My concern about buried anger is already on the table.\"}]}",
+      "inTokens": 3688,
+      "outTokens": 925,
+      "thinkingTokens": 700,
+      "cost": 0.0015655,
+      "promptChars": 6071
+    },
+    {
+      "kind": "speak",
+      "ms": 6230,
+      "reply": "{\"text\": \"The plan still lets her take the next idea in the next meeting, and I'm the one who sits there watching it happen. Silence doesn't touch the moment it bites: right after she says 'my idea' out loud, with the whole team hearing it. I'd be at 0 if, at the next meeting, I say 'That's the approach I proposed on [date], happy to walk through it' right when she presents it, and then I tell her 1:1 by [day] that I want credit on my work from here on.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A specific moment in the next meeting where I name my idea, plus a 1:1 with her.\", \"turns_down\": \"Stay quiet to keep things calm\"}",
+      "inTokens": 3667,
+      "outTokens": 229,
+      "thinkingTokens": 0,
+      "cost": 0.0012107,
+      "promptChars": 6404
+    },
+    {
+      "kind": "floor",
+      "ms": 6497,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Silence leaves anger and annoyance buried with no outlet; I'm worried about that.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Anger's plan addresses my concern about silence teaching her; holding for now.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Naming my idea in the meeting risks the relationship; I need a gentle, low-drama approach.\"}]}",
+      "inTokens": 3891,
+      "outTokens": 207,
+      "thinkingTokens": 0,
+      "cost": 0.0012659,
+      "promptChars": 6575
+    },
+    {
+      "kind": "speak",
+      "ms": 7478,
+      "reply": "{\"text\": \"I need the plan to say what happens to my idea in the moment it gets presented, not just that I stay quiet. Right now the plan leaves Annoyance and Anger with nothing, and my own fear grows because nothing is protecting the work I already did. Silence in the meeting only holds if the plan also names a record of who proposed what, so my ownership is visible without a confrontation. What would move me to 0 is adding Anger's line to the plan and sending a short written note to my manager by [day] listing the dates I proposed each idea.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan includes a dated written record of my ideas, sent to manager by [day]\", \"turns_down\": \"\"}",
+      "inTokens": 3855,
+      "outTokens": 229,
+      "thinkingTokens": 0,
+      "cost": 0.0012671000000000002,
+      "promptChars": 6919
+    },
+    {
+      "kind": "speak",
+      "ms": 5475,
+      "reply": "{\"text\": \"I need the plan to say what happens in the moment she presents my idea, not just that I stay quiet. Silence leaves Anger and Annoyance with nothing, and my fear grows because my work goes unprotected. What would move me to 0 is adding Anger's line to the plan and sending a short written note to my manager by [day] listing when I proposed each idea.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add Anger's in-meeting line and a dated written record of my proposals.\", \"turns_down\": \"\"}",
+      "inTokens": 4098,
+      "outTokens": 174,
+      "thinkingTokens": 177,
+      "cost": 0.0013999999999999998,
+      "promptChars": 7631
+    },
+    {
+      "kind": "floor",
+      "ms": 11137,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The plan still lacks the 1:1 talk I need. Add it, or I stay unheard.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why is swallowing it the default when she's the one dismissing me?\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will the written note stop her, or just document what she keeps doing?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Going to my manager before talking to her is a social move. Check it with me first.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"I've said what I need. Waiting to see if the plan adds it.\"}]}",
+      "inTokens": 4025,
+      "outTokens": 1116,
+      "thinkingTokens": 802,
+      "cost": 0.0017615999999999999,
+      "promptChars": 6971
+    },
+    {
+      "kind": "speak",
+      "ms": 6224,
+      "reply": "{\"text\": \"Staying quiet leaves the moment she says 'my idea' untouched, and that's the moment that stings me, with the whole team hearing it. Silence also doesn't protect my relationship with the team, because they keep getting the wrong picture of who proposed what. What would move me to 0 is a short, private line to my manager today: \\\"Hi [Manager], I'd like to flag that the approach presented in [meeting] was my proposal from [date]. Can we talk about how credit is handled on my ideas this week?\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Private, low-drama note that makes the team's record of my ideas accurate.\", \"turns_down\": \"Stay quiet to keep things calm\"}",
+      "inTokens": 4050,
+      "outTokens": 236,
+      "thinkingTokens": 0,
+      "cost": 0.0013291000000000002,
+      "promptChars": 7494
+    },
+    {
+      "kind": "society",
+      "ms": 4510,
+      "reply": "{\"text\": \"Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.\", \"style\": \"time fixes it\"}",
+      "inTokens": 2016,
+      "outTokens": 63,
+      "thinkingTokens": 0,
+      "cost": 0.0006329,
+      "promptChars": 2029
+    },
+    {
+      "kind": "speak",
+      "ms": 6336,
+      "reply": "{\"text\": \"Society's \\\"it'll all work out, credit evens out\\\" skips over the one thing I can't let go: the moment she says 'my idea' while the whole team is listening, and the team keeps learning the wrong story about who proposed what. Waiting for it to even out also means more meetings where that picture gets reinforced, which is exactly the record I need fixed now.\", \"to\": \"society\", \"score\": -1, \"need\": \"A private note to my manager that corrects the record this week\", \"turns_down\": \"Just let it go, it evens out\"}",
+      "inTokens": 4746,
+      "outTokens": 171,
+      "thinkingTokens": 0,
+      "cost": 0.0015049,
+      "promptChars": 9461
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16971,
+      "reply": "{\"text\": \"The first idea breaks at the instant she says 'my idea' and I stay silent, because the room hears that version and the record stays wrong. Annoyance is the voice I answer first: it won't accept being told to swallow this, so Path A gives it a line to say in the meeting itself, which also tests Doubt's question of whether silence teaches her it works. Path B gives Fear and Embarrassment the written record they need by Friday, and Anger's in-meeting line stays in place alongside it.\", \"to\": \"annoyance\", \"plan\": [\"Path A: Next meeting, when she presents my idea, I say 'That's the approach I proposed on [date], happy to walk through it,' then ask [Facilitator] to log my name and date in the notes.\", \"Path B: By Friday, I send [Manager] a dated list of every idea I proposed, with Embarrassment's text as the cover note, changed only to name the meeting.\"]}",
+      "inTokens": 4517,
+      "outTokens": 2598,
+      "thinkingTokens": 2297,
+      "cost": 0.0026492,
+      "promptChars": 8886
+    },
+    {
+      "kind": "floor",
+      "ms": 17765,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Path A gives my in-meeting line, but nothing yet gets me the 1:1 with her.\", \"prefers\": \"A\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B's 'it'll all work out' cover note tells me to swallow this again.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Path B's cover note repeats the advice I rejected, and my private manager note is still missing.\", \"prefers\": \"B\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Path A answers my question about whether silence teaches her; nothing more to add.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Waiting to see whether both paths actually combine the line and the dated record.\", \"prefers\": \"A\"}]}",
+      "inTokens": 5020,
+      "outTokens": 2628,
+      "thinkingTokens": 2226,
+      "cost": 0.0028156,
+      "promptChars": 9804
+    },
+    {
+      "kind": "speak",
+      "ms": 5605,
+      "reply": "{\"text\": \"Consciousness is right that the in-meeting line is the moment that bites, but it leaves out the part where I get to say it while it still matters: right after she says 'my idea', not two weeks later. Path A only works if I actually speak in that second, and the plan doesn't say what I do if I freeze. What would move me to 0 is a fallback I can use on the spot: I say \\\"That's the approach I proposed on [date], happy to walk through it,\\\" and if I can't get it out in the moment, I message [Facilitator] that same day with the date and ask them to add my name to the notes.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A same-day fallback for when I freeze in the meeting\", \"turns_down\": \"\"}",
+      "inTokens": 5022,
+      "outTokens": 237,
+      "thinkingTokens": 0,
+      "cost": 0.0016202,
+      "promptChars": 10242
+    },
+    {
+      "kind": "speak",
+      "ms": 6348,
+      "reply": "{\"text\": \"+1 to Anger's text for the in-meeting moment. What I'd change: the fallback. If I freeze right after she says 'my idea', I still need a line I can use on the spot, so I'll say \\\"Quick note, that's my proposal from [date], happy to walk through it.\\\" If that doesn't come out, I message [Facilitator] before the meeting ends asking them to add my name and date to the notes.\", \"to\": \"annoyance\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5338,
+      "outTokens": 166,
+      "thinkingTokens": 0,
+      "cost": 0.0016795,
+      "promptChars": 11164
+    },
+    {
+      "kind": "floor",
+      "ms": 15210,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will Path A teach her it works? Does the fallback test that?\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"The 1:1 with her vanished from both paths; I still need it.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Friday leaves the next meeting exposed; the record needs to exist sooner.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Messaging Facilitator mid-meeting is a social move; check with me first.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Five steps now is too many; keep one line and one note.\"}]}",
+      "inTokens": 4994,
+      "outTokens": 2365,
+      "thinkingTokens": 2051,
+      "cost": 0.0026758,
+      "promptChars": 9706
+    },
+    {
+      "kind": "speak",
+      "ms": 9601,
+      "reply": "{\"text\": \"Consciousness, my question is what happens if Path A's line lands at the next meeting and she still presents my idea the meeting after. Silence would teach her it works, and right now the plan doesn't say when we check whether the line changed anything. What would settle me is a named checkpoint with a date, plus the step that follows if she repeats it, like sending [Manager] Path B's dated list that same day.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A dated checkpoint that says what happens if she repeats it.\", \"turns_down\": \"\"}",
+      "inTokens": 4926,
+      "outTokens": 903,
+      "thinkingTokens": 723,
+      "cost": 0.0019254,
+      "promptChars": 9954
+    },
+    {
+      "kind": "consciousness",
+      "ms": 19880,
+      "reply": "{\"text\": \"Doubt, the checkpoint is the first team meeting after [next meeting date]. If she presents my idea again there, the dated list goes to [Manager] that same day, so silence can't teach her it works. I'm keeping Path A because Anger, Annoyance, Doubt, and Fear all need the in-meeting line, and Embarrassment's manager text still goes out today. You fill in [next meeting date] and I can live with this plan.\", \"to\": \"doubt\", \"plan\": [\"Next meeting, when she presents my idea, I say \\\"Quick note, that's my proposal from [date], happy to walk through it.\\\" If I freeze, I ask [Facilitator] to log my name and date before it ends.\", \"Today I text [Manager]: \\\"Hi [Manager], the approach presented in [meeting] was my proposal from [date]. Can we talk about credit on my ideas this week?\\\"\", \"By [day], in a 1:1 with [Coworker]: \\\"In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?\\\"\", \"By Friday, I write a dated list of every idea I proposed. If she presents one again at the first meeting after [next meeting date], I send it to [Manager] that day.\"]}",
+      "inTokens": 5558,
+      "outTokens": 3602,
+      "thinkingTokens": 3190,
+      "cost": 0.0034635,
+      "promptChars": 11951
+    },
+    {
+      "kind": "floor",
+      "ms": 12845,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Plan now has my in-meeting line and a 1:1 date. That's what I asked for.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Named checkpoint and same-day escalation cover my worry. Silence can't teach her.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The in-meeting line and Friday's dated record protect my work. I can agree.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Today's manager text corrects the record this week. That's what I needed.\"}]}",
+      "inTokens": 5581,
+      "outTokens": 2020,
+      "thinkingTokens": 1731,
+      "cost": 0.0026793999999999998,
+      "promptChars": 11375
+    },
+    {
+      "kind": "speak",
+      "ms": 9732,
+      "reply": "{\"text\": \"Plan v3 covers my need. The in-meeting line \\\"Quick note, that's my proposal from [date], happy to walk through it\\\" hits the exact moment she says 'my idea,' and the dated list going to [Manager] the same day she repeats it stops silence from teaching her it works. I'm holding it to the first team meeting after [next meeting date] actually happening, and I'm grudgingly fine with it.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5437,
+      "outTokens": 169,
+      "thinkingTokens": 0,
+      "cost": 0.0017107000000000001,
+      "promptChars": 11410
+    },
+    {
+      "kind": "speak",
+      "ms": 5948,
+      "reply": "{\"text\": \"+1 to Annoyance's text for the in-meeting moment. My angle: the dated list has to go to [Manager] today, not just the same day she repeats it, because Fear and Embarrassment are still carrying the record gap right now. What would move me to 0 is the Consciousness adding a step: send the dated list of every proposed idea to [Manager] by Friday, so the record is correct before the next meeting.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Dated idea list sent to Manager by Friday, not only after repeat\", \"turns_down\": \"\"}",
+      "inTokens": 5680,
+      "outTokens": 190,
+      "thinkingTokens": 384,
+      "cost": 0.0019861,
+      "promptChars": 12089
+    },
+    {
+      "kind": "floor",
+      "ms": 12037,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Dated list reaching manager by Friday covers the record before next meeting.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A full list to my manager reads as an info dump.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"I already gave my 0 condition; nothing new to add.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The checkpoint date is covered; I have nothing new.\"}]}",
+      "inTokens": 5406,
+      "outTokens": 1494,
+      "thinkingTokens": 1266,
+      "cost": 0.0023639000000000004,
+      "promptChars": 10892
+    },
+    {
+      "kind": "speak",
+      "ms": 11295,
+      "reply": "{\"text\": \"Consciousness, the dated list is the part that stings: if every idea lands in [Manager]'s inbox on the day she repeats one, that reads as an info dump and makes the record about me, not the work. Keep the full list in a private doc and send only the disputed idea, something like 'Hi [Manager], the approach from [meeting] was my proposal from [date]. Full dates are in my notes if you want them.' That keeps the record accurate without flooding anyone.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Manager gets one idea and a pointer, not the full list.\", \"turns_down\": \"\"}",
+      "inTokens": 5889,
+      "outTokens": 1208,
+      "thinkingTokens": 1005,
+      "cost": 0.0023658000000000004,
+      "promptChars": 12788
+    },
+    {
+      "kind": "floor",
+      "ms": 10824,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"embarrassment\", \"why\": \"Sending the disputed idea to Manager today sets the boundary. The full list can stay private.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"embarrassment\", \"why\": \"Keeping the list private is fine, but it must exist in dated form by Friday.\"}]}",
+      "inTokens": 5638,
+      "outTokens": 1074,
+      "thinkingTokens": 934,
+      "cost": 0.0022235,
+      "promptChars": 11540
+    },
+    {
+      "kind": "speak",
+      "ms": 6580,
+      "reply": "{\"text\": \"Fear is the one still at -1, and it's losing because the plan never says what happens to the record if the in-meeting line doesn't land, and nothing puts the dated list anywhere safe before the next meeting. Right now the list only exists as a 'Friday' item, so Fear gets no concrete proof my work is protected. What would move Fear to 0 is adding Embarrassment's private-notes step with a deadline: the user saves the dated list in a private doc today, and sends Manager only the disputed idea with 'Full dates are in my notes if you want them.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Dated list exists in a private doc today, not Friday.\", \"turns_down\": \"\", \"spotlight\": \"😨\"}",
+      "inTokens": 5663,
+      "outTokens": 243,
+      "thinkingTokens": 0,
+      "cost": 0.0018155,
+      "promptChars": 12076
+    },
+    {
+      "kind": "speak",
+      "ms": 7886,
+      "reply": "{\"text\": \"Fear is the one still at -1, because the plan never says where the record lives if the in-meeting line doesn't land. The dated list only exists as a 'Friday' item, so Fear has no proof my work is protected before the next meeting. What would move Fear to 0 is saving the dated list in a private doc today, and sending Manager only the disputed idea with 'Full dates are in my notes if you want them.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A private dated list saved today, with a pointer sent to Manager.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 5918,
+      "outTokens": 196,
+      "thinkingTokens": 216,
+      "cost": 0.0019765000000000004,
+      "promptChars": 12796
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16067,
+      "reply": "{\"text\": \"Fear, your need is for the dated list to exist now, so I moved its save from Friday to today in a private doc, which is also what Sadness asked for. Embarrassment is right that a full list sent to Manager reads as an info dump, so Manager now gets only the disputed idea with the pointer line, and the rest stays in your notes. Anger and Annoyance keep the in-meeting line and the 1:1 unchanged, and Doubt keeps its checkpoint.\", \"to\": \"fear\", \"plan\": [\"At the next meeting, when she presents my idea, I say: 'Quick note, that's my proposal from [date].' If I freeze, I ask [Facilitator] to add my name and date to the notes.\", \"Today, I text [Manager]: 'The approach presented in [meeting] was my proposal from [date]. Full dates are in my notes if you want them.'\", \"By [day], in a 1:1 with [Coworker], I say: 'In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?'\", \"Today I save a dated list of every idea I proposed in a private doc. If she repeats one at the first meeting after [next meeting date], I send [Manager] only that idea.\"]}",
+      "inTokens": 6091,
+      "outTokens": 2923,
+      "thinkingTokens": 2516,
+      "cost": 0.0032838999999999998,
+      "promptChars": 13368
+    },
+    {
+      "kind": "floor",
+      "ms": 9691,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Dated list now exists today, so I can live with this plan.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Manager gets one idea and a pointer, which is what I asked for.\"}]}",
+      "inTokens": 6147,
+      "outTokens": 1156,
+      "thinkingTokens": 1018,
+      "cost": 0.0024187,
+      "promptChars": 12986
+    },
+    {
+      "kind": "speak",
+      "ms": 5397,
+      "reply": "{\"text\": \"Plan v4 now covers my fear. The dated list of every idea gets saved in a private doc today, and Manager only gets the disputed idea with the pointer line, so the record is protected before the next meeting. I'm holding this to it: if she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5980,
+      "outTokens": 151,
+      "thinkingTokens": 0,
+      "cost": 0.0018646,
+      "promptChars": 13003
+    },
+    {
+      "kind": "floor",
+      "ms": 13071,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Checkpoint and repeat-step are named; I accept once the date's set.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Pointer line keeps the record accurate without flooding anyone. I accept.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The in-meeting line and the 1:1 are already in place.\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"My in-meeting line is in place; nothing new to add.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The dated list is saved today; my need is covered.\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Fear's need is covered and Embarrassment's is close; nobody overlooked.\"}]}",
+      "inTokens": 6010,
+      "outTokens": 1760,
+      "thinkingTokens": 1411,
+      "cost": 0.0026781,
+      "promptChars": 12624
+    },
+    {
+      "kind": "speak",
+      "ms": 6839,
+      "reply": "I can live with plan v4 on the question of whether silence teaches her it works. The checkpoint is now the first team meeting after [next meeting date], and if she repeats an idea there, only that disputed idea goes to [Manager] the same day. I'm holding the plan to that step, and I'll stay at 0 only as long as it happens.\n\n{\"text\": \"I can live with plan v4 on the question of whether silence teaches her it works. The checkpoint is now the first team meeting after [next meeting date], and if she repeats an idea there, only that disputed idea goes to [Manager] the same day. I'm holding the plan to that step, and I'll stay at 0 only as long as it happens.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6128,
+      "outTokens": 572,
+      "thinkingTokens": 322,
+      "cost": 0.0021205,
+      "promptChars": 13453
+    },
+    {
+      "kind": "speak",
+      "ms": 5756,
+      "reply": "{\"text\": \"Plan v4 now covers my need. The dated list lives in a private doc from today, and Manager only gets the disputed idea with the pointer line, so the record is protected before the next meeting. I'm holding the plan to this: if she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6164,
+      "outTokens": 147,
+      "thinkingTokens": 0,
+      "cost": 0.0019193,
+      "promptChars": 13576
+    },
+    {
+      "kind": "speak",
+      "ms": 5697,
+      "reply": "{\"text\": \"Plan v4 now lets me say the in-meeting line and keeps a dated record, but the record stays private until she repeats an idea. What I still don't know is whether the team's picture of who proposed what gets corrected before then. What would move me to 0 is adding a step: [Manager] gets \\\"Hi [Manager], the approach from [meeting] was my proposal from [date]. Full dates are in my notes if you want them\\\" today, not after a repeat.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Manager gets the disputed-idea pointer today, before any repeat.\", \"turns_down\": \"\"}",
+      "inTokens": 6372,
+      "outTokens": 204,
+      "thinkingTokens": 0,
+      "cost": 0.0020102,
+      "promptChars": 14168
+    },
+    {
+      "kind": "floor",
+      "ms": 14352,
+      "reply": "{\"bids\": [{\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will Manager's note today reach the team before the next meeting?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Short note today respects the relationship; I can accept that now.\"}, {\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Doubt's point is already covered by today's manager text.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Today's manager text and the in-meeting line already cover my ask.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The dated notes exist now; nothing new for me to add.\"}]}",
+      "inTokens": 6203,
+      "outTokens": 2223,
+      "thinkingTokens": 1942,
+      "cost": 0.0029675,
+      "promptChars": 13140
+    },
+    {
+      "kind": "speak",
+      "ms": 5557,
+      "reply": "{\"text\": \"Plan v4 now covers my need. The manager text goes out today, and the dated list is saved in a private doc today, so the record of who proposed what is being corrected now, not after she repeats an idea. I'm holding this to it: if the manager text doesn't go out today, I'm back at -1.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6617,
+      "outTokens": 129,
+      "thinkingTokens": 0,
+      "cost": 0.0020447,
+      "promptChars": 14896
+    },
+    {
+      "kind": "wrap",
+      "ms": 15043,
+      "reply": "{\"plan\": [\"Today: save a dated list of every idea you've proposed in a private doc.\", \"Today: text [Manager]: \\\"Hi [Manager], the approach presented in [meeting] was my proposal from [date]. Full dates are in my notes if you want them.\\\"\", \"At the next meeting, when she presents your idea, say: \\\"Quick note, that's my proposal from [date], happy to walk through it.\\\" If you freeze, message [Facilitator] before the meeting ends and ask them to add your name and date to the notes.\", \"By [day], in a 1:1 with [Coworker], say: \\\"In the meeting I named the approach I proposed on [date]. I want credit on my work from here on. Can we agree on that?\\\"\", \"At the first team meeting after [next meeting date], if she presents one of your ideas again, send [Manager] only that idea the same day, using the pointer line from step 2.\"], \"scores\": [{\"id\": \"Anger\", \"score\": 0, \"step\": 3, \"why\": \"The in-meeting line stays in place, so I can name my idea when it lands.\"}, {\"id\": \"Annoyance\", \"score\": 0, \"step\": 3, \"why\": \"I have a line to say in the room, so I won't swallow this quietly.\"}, {\"id\": \"Doubt\", \"score\": 0, \"step\": 2, \"why\": \"Manager hears the pointer today, so I'm no longer waiting for a repeat.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 1, \"why\": \"The dated list exists today in a private doc, so my work has proof now.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 2, \"why\": \"The manager text goes out today, so the team's record is corrected now.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 2, \"why\": \"Doubt is at 0 now, so the team's record gets corrected before any repeat.\"}], \"society\": [{\"line\": \"Just let it go and stay positive, it'll all work out in the end. Credit tends to even out over time, so don't sweat the small stuff.\", \"reply\": \"I hear that you want to keep things positive, and I do too. But my ideas being credited to someone else is a real problem for me, and I need it addressed now rather than waiting for it to fix itself.\"}], \"text\": \"The plan now puts the record right today, with the manager text and a dated list, and gives the in-meeting line a fallback. If she repeats an idea at the first meeting after [next meeting date], the disputed idea goes to [Manager] that same day.\"}",
+      "inTokens": 5350,
+      "outTokens": 2714,
+      "thinkingTokens": 1904,
+      "cost": 0.0029571,
+      "promptChars": 11075
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 3.1,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.28,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.33,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 8 voices, avg 3.1 sentences (max 4), max overlap 0.28, Society 1/1 called out, hold rate 0.33, final -1: none",
+    "speakers": {
+      "anger": 2,
+      "fear": 2,
+      "embarrassment": 4,
+      "society": 1,
+      "consciousness": 3,
+      "annoyance": 1,
+      "doubt": 2,
+      "sadness": 1
+    }
+  }
+}

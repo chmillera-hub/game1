@@ -1,0 +1,2371 @@
+{
+  "scenario": {
+    "id": "disc-golf",
+    "thought": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+    "followups": [
+      "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+    ]
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 428952,
+  "results": [
+    {
+      "ok": true
+    },
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 49,
+    "inTokens": 292632,
+    "outTokens": 39005,
+    "thinkingTokens": 26125,
+    "cost": 0.10697508000000003
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+      "followups": [
+        "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+      ],
+      "plan": {
+        "version": 9,
+        "steps": [
+          "Send Friend this text now: \"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now]. The breakfast stop is why I'm running a bit late.\"",
+          "Splash cold water on your face and drink a full glass of water, with no timer. Then eat cereal or two eggs and toast standing at the counter. The breakfast clock starts when you start eating.",
+          "At [time, 10 minutes after breakfast starts], pick up the car keys whether or not the plate is empty. Sit in the car with windows down and phone away. The engine starts as soon as you're seated, or on its own when the 2 minutes end, whichever comes first. You can skip the pause entirely."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": "We already woke up late and I'm not going to waste more of this morning on the way out."
+        },
+        "hunger": {
+          "score": 0,
+          "need": "",
+          "why": "You're asking me to walk out on an empty stomach and call that a plan? Eat something first."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "I was already late to meet him last week, and showing up late again could cost us the friendship."
+        },
+        "guilt": {
+          "score": 0,
+          "need": "",
+          "why": "If I make him wait again, he's the one paying for my oversleeping, and that isn't fair to him."
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "Make the car pause skippable and start the engine on seating.",
+          "why": ""
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "impulsivity": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "We're going to the disc golf course this morning, and we can just head out now since the day's still wide open. Let's get moving and make it a great round with my friend.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "efficiency",
+          "text": "I'm at -1 because the plan has no time limit on getting out the door, and the morning is already short. Plan v1 covers my need once it says: skip breakfast, but first set a 15-minute cap: grab a banana or a granola bar in 5 minutes, put the disc bag by the door, and be out the door by [time you choose, e.g., 30 minutes from now]. That's 15 minutes I spend, not an open-ended delay.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "Heading out now saves time. I can live with this."
+        },
+        {
+          "n": 4,
+          "who": "embarrassment",
+          "text": "I'm at -1 because the plan has me walking out the door with no check on timing, and I was already late to meet him last week. Plan v1 leaves that risk untouched. What would move me to 0 is adding a fixed departure time to Efficiency's 15-minute cap, and texting him now: \"Overslept, I'm grabbing a quick bite and will be there by [time].\" That way he knows the plan before I'm late.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Before we leave, text him the new time so he isn't left waiting."
+        },
+        {
+          "n": 5,
+          "who": "guilt",
+          "text": "I'm at -1 because the plan has me walk out on an empty stomach, and if I keep running late, Friend ends up paying for my oversleeping. My need is that he isn't left waiting again. Efficiency's 15-minute cap plus Embarrassment's departure time covers that, so I can live with it if the text goes out now: \"Overslept, grabbing a quick bite, will be there by [time].\"",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": 0,
+          "lens": "",
+          "why": "The text needs a real arrival time so he isn't left waiting again."
+        },
+        {
+          "n": 6,
+          "who": "consciousness",
+          "text": "Overwhelm's and Hunger's needs both land in Path A's 15-minute food stop, so I'm +1 to Efficiency's cap and I'll take Path B only if that stop can't hold. Hunger needs real food, not skipping, and Path A gives it a banana or granola bar eaten at the door. Embarrassment still needs the text sent before we leave, so the first step is that message, with the departure time filled in. I can live with this if the text goes out before the bag is packed.",
+          "to": "",
+          "move": "paths"
+        },
+        {
+          "n": 7,
+          "who": "hunger",
+          "text": "The plan lets me eat a banana at the door, but a 15-minute stop with a banana while my stomach is already empty doesn't feed me for a round of disc golf, and I'm still hungry when I start. What would move me to 0 is a real breakfast I can eat in under 10 minutes: a bowl of cereal or two eggs and toast, eaten standing at the counter, with the text to Friend going out first. Keep Efficiency's 15-minute cap on that stop.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Skipping food is still skipping food; a banana at the door isn't optional for me."
+        },
+        {
+          "n": 8,
+          "who": "society",
+          "text": "Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.",
+          "to": "hunger",
+          "move": "platitude"
+        },
+        {
+          "n": 9,
+          "who": "embarrassment",
+          "text": "Pushing through hunger is the part that doesn't work for me. Embarrassment needs a fixed departure time and a heads-up text, and feeling better once we're on the course doesn't stop me from showing up late and making Friend wait again. If I skip eating, I'm also more likely to snap or rush the car ride, which puts that timing at risk. I can't settle this by ignoring the hunger.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 10,
+          "who": "sadness",
+          "text": "I'm feeling the weight of Overwhelm most right now. Every step in Plan v2 piles on a new decision, timer, or text while I'm still waking up, and that pressure is what keeps me at -1. What would bring me to 0 is cutting the morning down to one sent text and one fixed thing to do: Consciousness, drop the bag-packing and eating-decision steps and keep only Embarrassment's text plus one 15-minute breakfast step with a clear stop time.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm is the most overlooked voice here. Its limit needs respect and care."
+        },
+        {
+          "n": 11,
+          "who": "consciousness",
+          "text": "I'm answering Hunger and Overwhelm together. Path A stays, since Hunger and Fear need the food and the timing. Hunger's real breakfast needs 10 minutes, so I'm dropping the bag-packing step and keeping one breakfast step with a hard stop. Overwhelm's point stands: fewer decisions. Sadness's ask fits that, so the plan now has just the text, the breakfast, and the departure.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 12,
+          "who": "overwhelm",
+          "text": "Plan v3 covers me: the text to Friend goes out before anything else, and the breakfast step stops at 10 minutes with the departure time fixed, so I don't have to make more decisions this morning. I'm holding this to one condition: no extra steps get added before we leave, and if the 10-minute breakfast runs over, I drop whatever is left and go.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Three steps, no bag-packing, no timers stacked. I can breathe now."
+        },
+        {
+          "n": 13,
+          "who": "doubt",
+          "text": "Plan v3 covers the text, the 10-minute breakfast, and a fixed departure, so my concern is what happens if the breakfast runs over. Right now the plan says to drop what's left and go, but nothing says how we keep that from becoming a late walk out the door. What would settle me is Consciousness adding a hard rule: at [time, 10 minutes after the breakfast starts], the car keys get picked up whether or not the plate is empty.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "What happens if the 10-minute breakfast runs over and we're still late?"
+        },
+        {
+          "n": 14,
+          "who": "society",
+          "text": "Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.",
+          "to": "doubt",
+          "move": "platitude"
+        },
+        {
+          "n": 15,
+          "who": "doubt",
+          "text": "Society's 'trust yourself and forget the food' skips my actual worry: if the breakfast runs over, nothing says when the keys come off the counter, so the stop has no edge. Pushing through means we keep eating with no end point and walk out late, which is the risk Embarrassment and Guilt are guarding. What would move me to 0 is Consciousness adding to v3: at [time, 10 minutes after breakfast starts], the car keys get picked up whether or not the plate is empty.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 16,
+          "who": "consciousness",
+          "text": "Fear's worry is the one that's been ignored, and it's about the car ride: if breakfast runs long, we leave late and Friend waits again. I'm taking Doubt's hard rule and making it Fear's fixed edge: at 10 minutes after breakfast starts, the keys get picked up whether or not the plate is empty. That keeps Overwhelm's one-condition limit intact and adds no new decisions. Doubt, this answers your question about the stop having an end point.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 17,
+          "who": "fear",
+          "text": "Plan v4 covers my car-ride worry: the keys come off the counter at 10 minutes whether or not the plate is empty, so a long breakfast can't push us out late. But Tiredness is still at -1, and no step in v4 touches its need, so Sadness's spotlight stays exposed and a rushed morning could make Tiredness worse. What would move me to 0 is Consciousness adding one Tiredness step before breakfast, such as 'Splash cold water on your face and drink a full glass before you start eating.'",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "The 10-minute keys rule is a concrete edge; my car-ride worry is covered now."
+        },
+        {
+          "n": 18,
+          "who": "sadness",
+          "text": "+1 to Fear's cold-water and full-glass step, since it's the Tiredness fix I need. What's still missing for me is that v4's breakfast and keys timer both start while I'm barely awake, so the step has to come before the 10-minute clock starts. Consciousness, add it as a step with no timer of its own, finished before the breakfast window opens.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Tiredness has barely been heard"
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "This round is settled: the text goes out first, the water and breakfast come next, and the keys come off the counter at a hard stop. Every voice now has what it needs to get us to the course on time.",
+          "to": "",
+          "move": "wrap"
+        },
+        {
+          "n": 20,
+          "who": "user",
+          "text": "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?"
+        },
+        {
+          "n": 21,
+          "who": "consciousness",
+          "text": "Doubt's worry is fair, and it doesn't need a new step to be settled. Friend has already had the text, and the breakfast clock has a hard stop, so a sandwich-first morning doesn't change what he hears. What would settle Doubt is Embarrassment's text saying the breakfast stop is the reason for the delay, so he knows it's planned and not a no-show. I'm adding that wording to the text, with the timing kept as is.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 22,
+          "who": "tiredness",
+          "text": "Rest is the one need no step in v6 touches. The water and breakfast keep us moving, and the drive starts right after the keys come off the counter, so I never get a moment to sit still. Think of a phone at 3% battery: it still runs apps, but every one drains it faster. What would move me to 0 is a 2-minute seated pause in the car before the engine starts, windows down and no phone. Consciousness, add that after the keys step and before the drive, with no clock on it.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "picture",
+          "why": "Water helps, but a 10-minute clock on breakfast still feels rushed while I'm waking up."
+        },
+        {
+          "n": 23,
+          "who": "efficiency",
+          "text": "Tiredness, the seated pause is the right fix for your need, but with no clock it adds 2 minutes on top of the 10-minute breakfast stop, and the 30-minute departure target has no slack for that. Consciousness, make the car pause a 2-minute cap inside the 20 minutes between the keys step and the drive, so the arrival target stays at 30 minutes from now.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A 2-minute pause with no clock still eats the time before we leave."
+        },
+        {
+          "n": 24,
+          "who": "sadness",
+          "text": "Overwhelm is the one still hurting most. Plan v6 adds a seated pause, a water step, and a breakfast timer, and each one is a new thing to track before the car even starts. The keys-at-10-minutes rule is the step that keeps Overwhelm at -1, since it still asks for a decision in the middle of breakfast. I need Consciousness to make that keys step fully automatic, with no choice to make when the clock hits.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 25,
+          "who": "consciousness",
+          "text": "Overwhelm's ask is fair: the plan still has a keys step that asks for a decision mid-breakfast, and a separate car pause. I'm merging them so the 10-minute breakfast stop ends automatically, with the car pause folded in as the first thing after the keys. Consciousness, the keys step becomes fully automatic: at [time, 10 minutes after breakfast starts], keys come off the counter, then sit 2 minutes in the car windows down, phone away, before the engine starts.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 26,
+          "who": "overwhelm",
+          "text": "The keys step is now automatic, but the 2-minute seated pause is still a new step I have to sit through before the engine starts, and nothing in v7 lets me skip it if I'm already worn out. The 10-minute breakfast clock still runs while I'm barely awake, so the real load is the pause plus the drive being chained together. What would move me to 0 is Consciousness making the pause optional: if I'm already in the car and want to leave, the engine starts right away with no pause.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "The seated pause is still a new step, breaking my no-extra-steps rule."
+        },
+        {
+          "n": 27,
+          "who": "sadness",
+          "text": "Fear is still at -1 because the 2-minute car pause sits between the keys and the engine, so a skipped or stalled pause can still leave us late and Friend waiting. What would move me to 0 is Consciousness making the engine start automatically at the end of that 2 minutes, skip or not.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear has barely been heard"
+        },
+        {
+          "n": 28,
+          "who": "tiredness",
+          "text": "The 2-minute seated pause in the car, windows down and phone away, is a mandatory step before the engine starts in plan v7, so my need for rest is covered. I can live with this at 0 as long as the pause stays mandatory and isn't dropped to save time. If Overwhelm's optional version gets adopted, I'm back at -1.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "A guaranteed two-minute seated pause finally gives me the rest I need."
+        },
+        {
+          "n": 29,
+          "who": "consciousness",
+          "text": "Overwhelm, your point is fair: the 2-minute pause was one more decision in a row, so the plan is now two steps instead of three, and the engine starts on its own when the pause ends. I can't make the pause optional, because Tiredness needs the seated rest to happen, and Fear's lateness worry comes back if we skip the timer. What would settle this for you is seeing that the only choice left is the one at the counter, and the car runs on the clock.",
+          "to": "overwhelm",
+          "move": "refine"
+        },
+        {
+          "n": 30,
+          "who": "overwhelm",
+          "text": "The 2-minute car pause is still a mandatory step before the engine starts, and when I'm already worn out, that's one more thing I have to sit through before I can leave. What would move me to 0 is Consciousness adding this to the plan now: after the keys come off the counter, the pause is marked skippable, and I start the engine as soon as I'm seated, with no wait.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "step",
+          "why": "Mandatory pause still ignores my limit. Please let me stop before the engine."
+        },
+        {
+          "n": 31,
+          "who": "consciousness",
+          "text": "Everyone is at 0 except Tiredness, which is still at -1 because the pause is now skippable, so the water, the counter sit, and the choice to rest are its only support. The plan is set: text Friend, drink water, eat a real breakfast, and leave at the 10-minute mark.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Banana or granola bar",
+          "from": "consciousness",
+          "by": "hunger",
+          "why": "Real breakfast eaten within 10 minutes, inside the 15-minute cap."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.",
+          "to": "hunger",
+          "style": "hustle (\"everyone's busy, just push through\", \"that's adulting\")"
+        },
+        {
+          "text": "Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.",
+          "to": "doubt",
+          "style": "minimizing (\"it's not a big deal\", \"you're overthinking it\")"
+        }
+      ],
+      "lensesUsed": {
+        "tiredness": [
+          "picture"
+        ],
+        "overwhelm": [
+          "mechanism",
+          "step"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 10,
+      "acceptRun": 0,
+      "locks": {
+        "guilt": "If I make him wait again, he's the one paying for my oversleeping, and that isn't fair to him.",
+        "hunger": "Real breakfast eaten within 10 minutes, inside the 15-minute cap.",
+        "embarrassment": "A fixed departure time plus the early heads-up text.",
+        "doubt": "A hard rule that makes the 10-minute stop end the meal, no matter what.",
+        "efficiency": "A 2-minute pause counted inside the 30-minute deadline, no extra time.",
+        "tiredness": "An optional pause means I might never rest, and rest is still my unmet need.",
+        "fear": ""
+      },
+      "waiting": {
+        "hunger": 1,
+        "embarrassment": 0,
+        "guilt": 0,
+        "efficiency": 3,
+        "sadness": 0,
+        "fear": 2,
+        "doubt": 3,
+        "overwhelm": 0,
+        "tiredness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 49,
+        "inChars": 616479,
+        "outChars": 36583,
+        "byKind": {
+          "open": 1,
+          "floor": 16,
+          "speak": 21,
+          "consciousness": 7,
+          "society": 2,
+          "wrap": 2
+        }
+      },
+      "sadnessPlan": 7
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I want to go disc golf this morning with my friend, but I woke up late, I'm hungry, and I was already late to meet him last week.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "We're going to the disc golf course this morning, and we can just head out now since the day's still wide open. Let's get moving and make it a great round with my friend.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Wake up, skip breakfast, and head straight out to play disc golf with my friend this morning so we can still enjoy the course."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "efficiency",
+            "why": "We already woke up late and I'm not going to waste more of this morning on the way out."
+          },
+          {
+            "id": "hunger",
+            "why": "You're asking me to walk out on an empty stomach and call that a plan? Eat something first."
+          },
+          {
+            "id": "embarrassment",
+            "why": "I was already late to meet him last week, and showing up late again could cost us the friendship."
+          },
+          {
+            "id": "guilt",
+            "why": "If I make him wait again, he's the one paying for my oversleeping, and that isn't fair to him."
+          }
+        ],
+        "spotlight": "hunger",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still skipping breakfast. Grab something quick before we walk out."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Did you check what time he expects us? Last week's lateness matters."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Heading out now saves time. I can live with this."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "If we're late again, he waits because of me. That's still unfair."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "efficiency",
+        "text": "I'm at -1 because the plan has no time limit on getting out the door, and the morning is already short. Plan v1 covers my need once it says: skip breakfast, but first set a 15-minute cap: grab a banana or a granola bar in 5 minutes, put the disc bag by the door, and be out the door by [time you choose, e.g., 30 minutes from now]. That's 15 minutes I spend, not an open-ended delay.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "Heading out now saves time. I can live with this.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "efficiency",
+            "why": "A banana is a snack, not eating. I need real food, not just a grab."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Before we leave, text him the new time so he isn't left waiting."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "embarrassment",
+            "why": "Yes, a quick text makes the wait fair to him, not a surprise."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "I've already made my point; the 15-minute cap stands."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "embarrassment",
+        "text": "I'm at -1 because the plan has me walking out the door with no check on timing, and I was already late to meet him last week. Plan v1 leaves that risk untouched. What would move me to 0 is adding a fixed departure time to Efficiency's 15-minute cap, and texting him now: \"Overslept, I'm grabbing a quick bite and will be there by [time].\" That way he knows the plan before I'm late.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Before we leave, text him the new time so he isn't left waiting.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Plan v1 still says skip breakfast. A 15-minute cap doesn't feed me."
+          },
+          {
+            "id": "guilt",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "The text needs a real arrival time so he isn't left waiting again."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "hunger",
+            "why": "Hunger has gone unheard the longest. Its need for a real meal needs to be named."
+          }
+        ],
+        "pick": "guilt",
+        "at": 6
+      },
+      {
+        "type": "score",
+        "id": "guilt",
+        "from": -1,
+        "to": 0,
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "guilt",
+        "text": "I'm at -1 because the plan has me walk out on an empty stomach, and if I keep running late, Friend ends up paying for my oversleeping. My need is that he isn't left waiting again. Efficiency's 15-minute cap plus Embarrassment's departure time covers that, so I can live with it if the text goes out now: \"Overslept, grabbing a quick bite, will be there by [time].\"",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": 0,
+        "lens": "",
+        "why": "The text needs a real arrival time so he isn't left waiting again.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "consciousness",
+        "text": "Overwhelm's and Hunger's needs both land in Path A's 15-minute food stop, so I'm +1 to Efficiency's cap and I'll take Path B only if that stop can't hold. Hunger needs real food, not skipping, and Path A gives it a banana or granola bar eaten at the door. Embarrassment still needs the text sent before we leave, so the first step is that message, with the departure time filled in. I can live with this if the text goes out before the bag is packed.",
+        "to": "",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Send Friend the text now: \"Overslept, grabbing a quick bite, will be there by [time].\" Eat a banana or granola bar within 5 minutes, pack the disc bag by the door, and leave by [time, default 30 minutes from now].",
+            "Path B: Send Friend the text now: \"Overslept, running about 20 minutes behind, will be there by [time].\" Skip the food stop, bring a snack to eat in the car, and leave by [time, default 20 minutes from now]."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 9
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Skipping food is still skipping food; a banana at the door isn't optional for me.",
+            "prefers": "A"
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Too many demands at once; I'll stay quiet until the plan shrinks.",
+            "prefers": "B"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path A's text and departure time are still unsent; that risk stays exposed.",
+            "prefers": "A"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does the 15-minute cap survive if the banana line runs long?",
+            "prefers": "A"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I'm running on no sleep; the plan's rushing wears me out, but I'm easily bullied.",
+            "prefers": "B"
+          },
+          {
+            "id": "impulsivity",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Disc golf still excites me; I'll hold back and let others speak.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "hunger",
+        "at": 10
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "hunger",
+        "text": "The plan lets me eat a banana at the door, but a 15-minute stop with a banana while my stomach is already empty doesn't feed me for a round of disc golf, and I'm still hungry when I start. What would move me to 0 is a real breakfast I can eat in under 10 minutes: a bowl of cereal or two eggs and toast, eaten standing at the counter, with the text to Friend going out first. Keep Efficiency's 15-minute cap on that stop.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Skipping food is still skipping food; a banana at the door isn't optional for me.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "society",
+        "text": "Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.",
+        "to": "hunger",
+        "move": "platitude",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "embarrassment",
+        "text": "Pushing through hunger is the part that doesn't work for me. Embarrassment needs a fixed departure time and a heads-up text, and feeling better once we're on the course doesn't stop me from showing up late and making Friend wait again. If I skip eating, I'm also more likely to snap or rush the car ride, which puts that timing at risk. I can't settle this by ignoring the hunger.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "",
+            "why": "Pushing through on an empty stomach doesn't fix anything. I need real food first."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Push-through is one more demand on me. Shrink the plan; don't argue me down."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Overwhelm is the most overlooked voice here. Its limit needs respect and care."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Skipping food and rushing the drive drains me. I need a slower, rested start."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "The 15-minute food cap already covers this. Nothing new to add."
+          }
+        ],
+        "pick": "sadness",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "sadness",
+        "text": "I'm feeling the weight of Overwhelm most right now. Every step in Plan v2 piles on a new decision, timer, or text while I'm still waking up, and that pressure is what keeps me at -1. What would bring me to 0 is cutting the morning down to one sent text and one fixed thing to do: Consciousness, drop the bag-packing and eating-decision steps and keep only Embarrassment's text plus one 15-minute breakfast step with a clear stop time.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm is the most overlooked voice here. Its limit needs respect and care.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "consciousness",
+        "text": "I'm answering Hunger and Overwhelm together. Path A stays, since Hunger and Fear need the food and the timing. Hunger's real breakfast needs 10 minutes, so I'm dropping the bag-packing step and keeping one breakfast step with a hard stop. Overwhelm's point stands: fewer decisions. Sadness's ask fits that, so the plan now has just the text, the breakfast, and the departure.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "You: send Friend now: \"Overslept, grabbing a quick bite, will be there by [time, 30 min from now].\"",
+            "Within the next 10 minutes, eat a real breakfast standing at the counter: cereal or two eggs and toast. Stop at 10 minutes, no matter what is left.",
+            "At [time, 30 min from now], walk out the door with the disc bag you already have, and drive to the course."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "hunger",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Three steps, no bag-packing, no timers stacked. I can breathe now."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Waking up groggy still means standing and eating fast. Where's my rest?"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will 'by 30 minutes' still hold if breakfast runs long?"
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Breakfast in ten minutes covers me; nothing to add."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 15-minute cap and fixed departure already cover my need."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Text now plus fixed departure: that's all I needed. Holding."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "overwhelm",
+        "text": "Plan v3 covers me: the text to Friend goes out before anything else, and the breakfast step stops at 10 minutes with the departure time fixed, so I don't have to make more decisions this morning. I'm holding this to one condition: no extra steps get added before we leave, and if the 10-minute breakfast runs over, I drop whatever is left and go.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Three steps, no bag-packing, no timers stacked. I can breathe now.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Plan v3 leaves Tiredness and Doubt exposed; show me which risks remain before we leave."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "I woke late and haven't spoken; the plan still asks me to eat, text, and drive."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What happens if the 10-minute breakfast runs over and we're still late?"
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Breakfast is covered in plan v3; I'll wait and see if it holds."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "I already accepted this plan with one condition; nothing new to add."
+          }
+        ],
+        "pick": "doubt",
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "doubt",
+        "text": "Plan v3 covers the text, the 10-minute breakfast, and a fixed departure, so my concern is what happens if the breakfast runs over. Right now the plan says to drop what's left and go, but nothing says how we keep that from becoming a late walk out the door. What would settle me is Consciousness adding a hard rule: at [time, 10 minutes after the breakfast starts], the car keys get picked up whether or not the plate is empty.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "What happens if the 10-minute breakfast runs over and we're still late?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "society",
+        "text": "Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.",
+        "to": "doubt",
+        "move": "platitude",
+        "at": 26
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "doubt",
+        "text": "Society's 'trust yourself and forget the food' skips my actual worry: if the breakfast runs over, nothing says when the keys come off the counter, so the stop has no edge. Pushing through means we keep eating with no end point and walk out late, which is the risk Embarrassment and Guilt are guarding. What would move me to 0 is Consciousness adding to v3: at [time, 10 minutes after breakfast starts], the car keys get picked up whether or not the plate is empty.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "consciousness",
+        "text": "Fear's worry is the one that's been ignored, and it's about the car ride: if breakfast runs long, we leave late and Friend waits again. I'm taking Doubt's hard rule and making it Fear's fixed edge: at 10 minutes after breakfast starts, the keys get picked up whether or not the plate is empty. That keeps Overwhelm's one-condition limit intact and adds no new decisions. Doubt, this answers your question about the stop having an end point.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "You: send Friend now: \"Overslept, grabbing a quick bite, will be there by [time, 30 min from now].\"",
+            "Within the next 10 minutes, eat a real breakfast standing at the counter: cereal or two eggs and toast. At [time, 10 minutes from breakfast start], pick up the car keys whether or not the plate is empty.",
+            "At [time, 30 min from now], walk out the door and drive to the course with the disc bag you already have."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 28
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 29
+      },
+      {
+        "type": "spotlight",
+        "id": "tiredness",
+        "at": 30
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 10-minute keys rule is a concrete edge; my car-ride worry is covered now."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Fear's edge answers my question, but the plan still never says what happens if the keys go unpicked."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Text goes out first and the departure time is fixed; nothing new to add."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "A real breakfast within 10 minutes covers my need; nothing more to add."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Nobody has asked whether I can handle a rushed breakfast and drive after waking late."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The plan is down to three steps with one condition; that holds."
+          }
+        ],
+        "pick": "fear",
+        "at": 31
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": 0,
+        "to": -1,
+        "at": 32
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "fear",
+        "text": "Plan v4 covers my car-ride worry: the keys come off the counter at 10 minutes whether or not the plate is empty, so a long breakfast can't push us out late. But Tiredness is still at -1, and no step in v4 touches its need, so Sadness's spotlight stays exposed and a rushed morning could make Tiredness worse. What would move me to 0 is Consciousness adding one Tiredness step before breakfast, such as 'Splash cold water on your face and drink a full glass before you start eating.'",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "The 10-minute keys rule is a concrete edge; my car-ride worry is covered now.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 33
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 34
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "sadness",
+        "text": "+1 to Fear's cold-water and full-glass step, since it's the Tiredness fix I need. What's still missing for me is that v4's breakfast and keys timer both start while I'm barely awake, so the step has to come before the 10-minute clock starts. Consciousness, add it as a step with no timer of its own, finished before the breakfast window opens.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Tiredness has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 35
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 36
+      },
+      {
+        "type": "wrap",
+        "text": "This round is settled: the text goes out first, the water and breakfast come next, and the keys come off the counter at a hard stop. Every voice now has what it needs to get us to the course on time.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "You: send Friend now: \"Overslept, grabbing a quick bite, will be there by [time, 30 minutes from now].\"",
+            "Right after that, splash cold water on your face and drink a full glass of water. This step has no timer; finish it before breakfast starts.",
+            "Then eat a real breakfast standing at the counter, cereal or two eggs and toast, and stop at [time, 10 minutes after breakfast starts].",
+            "At that stop time, pick up the car keys whether or not the plate is empty.",
+            "At [time, 30 minutes from now], walk out the door and drive to the course with your disc bag."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "The 10-minute breakfast cap and fixed keys time keep the morning moving.",
+            "step": 0
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "why": "A real breakfast eaten standing at the counter feeds me before the round.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "Friend hears the new time before we leave, so he isn't left waiting.",
+            "step": 0
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "why": "Friend knows the plan and isn't left paying for my oversleeping.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "why": "Only one new step was added, and nothing else gets added before we leave.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Cold water and a full glass give my body a real fix before the rush.",
+            "step": 2
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "The keys come off the counter at a hard stop, so breakfast has an end point.",
+            "step": 4
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "Cold water and a full glass before eating address the tiredness directly.",
+            "step": 2
+          },
+          {
+            "id": "impulsivity",
+            "score": 0,
+            "why": "The plan keeps the morning moving, so I'm not stuck waiting or rushing.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.",
+            "to": "hunger",
+            "reply": "Hunger is real, and I need to eat before I can enjoy the round. I'm going to have a proper breakfast first, then head out."
+          },
+          {
+            "line": "Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.",
+            "to": "doubt",
+            "reply": "I can't forget about the food and leave it for later. I need a clear stopping point so breakfast doesn't turn into a late walk out the door."
+          }
+        ],
+        "questions": [],
+        "at": 37
+      },
+      {
+        "type": "user",
+        "text": "Can you reevaluate? My doubt says: what if my friend thinks I don't want to go if I tell him I'm going to be late again because I want to grab a breakfast sandwich first?",
+        "at": 38
+      },
+      {
+        "type": "message",
+        "n": 21,
+        "who": "consciousness",
+        "text": "Doubt's worry is fair, and it doesn't need a new step to be settled. Friend has already had the text, and the breakfast clock has a hard stop, so a sandwich-first morning doesn't change what he hears. What would settle Doubt is Embarrassment's text saying the breakfast stop is the reason for the delay, so he knows it's planned and not a no-show. I'm adding that wording to the text, with the timing kept as is.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 6,
+          "steps": [
+            "You: send Friend \"Overslept, I'm grabbing a quick bite and will be there by [time].\", changed to: \"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].\"",
+            "You: splash cold water on your face and drink a full glass of water, with no timer, before you start eating.",
+            "You: eat a real breakfast standing at the counter, such as cereal or two eggs and toast, and stop at [time, 10 minutes after breakfast starts].",
+            "At that stop time, pick up the car keys whether or not the plate is empty, then drive to the course with your disc bag by [time, 30 minutes from now]."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 39
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": 0,
+        "to": -1,
+        "at": 40
+      },
+      {
+        "type": "spotlight",
+        "id": "tiredness",
+        "at": 41
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 42
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Text now says breakfast caused the delay, so Friend knows it's planned. I can live with it."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Text goes out first with a fixed time. Nothing more to add."
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Real breakfast is in the plan now. That covers me."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Breakfast has a hard 10-minute stop and the departure is fixed."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The keys rule and water step cover the car ride and my worry."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Water helps, but a 10-minute clock on breakfast still feels rushed while I'm waking up."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 43
+      },
+      {
+        "type": "message",
+        "n": 22,
+        "who": "tiredness",
+        "text": "Rest is the one need no step in v6 touches. The water and breakfast keep us moving, and the drive starts right after the keys come off the counter, so I never get a moment to sit still. Think of a phone at 3% battery: it still runs apps, but every one drains it faster. What would move me to 0 is a 2-minute seated pause in the car before the engine starts, windows down and no phone. Consciousness, add that after the keys step and before the drive, with no clock on it.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "picture",
+        "why": "Water helps, but a 10-minute clock on breakfast still feels rushed while I'm waking up.",
+        "prevScore": -1,
+        "lensLabel": "a picture",
+        "at": 44
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 45
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": 0,
+        "to": -1,
+        "at": 46
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "The seated pause is a new step, breaking my one-condition rule about no extra steps."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "tiredness",
+            "why": "A 2-minute pause with no clock still eats the time before we leave."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The text now names the breakfast stop, so I can live with this."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Pause timing sits after the keys step, but I need the departure edge to hold first."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 47
+      },
+      {
+        "type": "message",
+        "n": 23,
+        "who": "efficiency",
+        "text": "Tiredness, the seated pause is the right fix for your need, but with no clock it adds 2 minutes on top of the 10-minute breakfast stop, and the 30-minute departure target has no slack for that. Consciousness, make the car pause a 2-minute cap inside the 20 minutes between the keys step and the drive, so the arrival target stays at 30 minutes from now.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A 2-minute pause with no clock still eats the time before we leave.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 48
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The car pause is a new step, and I set one condition: no extra steps before we leave."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A 2-minute seated pause with a cap meets my need, so I can live with it."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "consciousness",
+            "why": "I already made my ask; I'll wait for Consciousness to set the cap."
+          }
+        ],
+        "pick": "sadness",
+        "at": 49
+      },
+      {
+        "type": "message",
+        "n": 24,
+        "who": "sadness",
+        "text": "Overwhelm is the one still hurting most. Plan v6 adds a seated pause, a water step, and a breakfast timer, and each one is a new thing to track before the car even starts. The keys-at-10-minutes rule is the step that keeps Overwhelm at -1, since it still asks for a decision in the middle of breakfast. I need Consciousness to make that keys step fully automatic, with no choice to make when the clock hits.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 50
+      },
+      {
+        "type": "message",
+        "n": 25,
+        "who": "consciousness",
+        "text": "Overwhelm's ask is fair: the plan still has a keys step that asks for a decision mid-breakfast, and a separate car pause. I'm merging them so the 10-minute breakfast stop ends automatically, with the car pause folded in as the first thing after the keys. Consciousness, the keys step becomes fully automatic: at [time, 10 minutes after breakfast starts], keys come off the counter, then sit 2 minutes in the car windows down, phone away, before the engine starts.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 7,
+          "steps": [
+            "You: send Friend \"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].\"",
+            "You: splash cold water on your face and drink a full glass of water, then eat cereal or two eggs and toast standing at the counter until [time, 10 minutes after breakfast starts].",
+            "At that time, pick up the car keys automatically, whether or not the plate is empty, sit 2 minutes in the car with windows down and phone away, then start the engine and drive to the course."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 51
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 52
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 53
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": 0,
+        "to": -1,
+        "at": 54
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The pause now fits inside the timeline; my 30-minute need is covered."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The seated pause is still a new step, breaking my no-extra-steps rule."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Seated 2-minute pause before the engine covers my need for rest."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Overwhelm is still hurting most; I back its no-new-steps rule."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Overwhelm is still exposed; I'll wait to see its fix."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 55
+      },
+      {
+        "type": "message",
+        "n": 26,
+        "who": "overwhelm",
+        "text": "The keys step is now automatic, but the 2-minute seated pause is still a new step I have to sit through before the engine starts, and nothing in v7 lets me skip it if I'm already worn out. The 10-minute breakfast clock still runs while I'm barely awake, so the real load is the pause plus the drive being chained together. What would move me to 0 is Consciousness making the pause optional: if I'm already in the car and want to leave, the engine starts right away with no pause.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "The seated pause is still a new step, breaking my no-extra-steps rule.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 56
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": 0,
+        "to": -1,
+        "at": 57
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "An optional pause means I might never rest, and rest is still my unmet need."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Making the pause optional saves time, and the 30-minute arrival target still holds."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The keys edge still holds, so the optional pause doesn't threaten the drive."
+          }
+        ],
+        "pick": "sadness",
+        "at": 58
+      },
+      {
+        "type": "message",
+        "n": 27,
+        "who": "sadness",
+        "text": "Fear is still at -1 because the 2-minute car pause sits between the keys and the engine, so a skipped or stalled pause can still leave us late and Friend waiting. What would move me to 0 is Consciousness making the engine start automatically at the end of that 2 minutes, skip or not.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 59
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Automatic engine start overrides my request that the car pause stay optional."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "An automatic engine start at the end of two minutes covers my car-ride worry."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A guaranteed two-minute seated pause finally gives me the rest I need."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 60
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 61
+      },
+      {
+        "type": "message",
+        "n": 28,
+        "who": "tiredness",
+        "text": "The 2-minute seated pause in the car, windows down and phone away, is a mandatory step before the engine starts in plan v7, so my need for rest is covered. I can live with this at 0 as long as the pause stays mandatory and isn't dropped to save time. If Overwhelm's optional version gets adopted, I'm back at -1.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "A guaranteed two-minute seated pause finally gives me the rest I need.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 62
+      },
+      {
+        "type": "message",
+        "n": 29,
+        "who": "consciousness",
+        "text": "Overwhelm, your point is fair: the 2-minute pause was one more decision in a row, so the plan is now two steps instead of three, and the engine starts on its own when the pause ends. I can't make the pause optional, because Tiredness needs the seated rest to happen, and Fear's lateness worry comes back if we skip the timer. What would settle this for you is seeing that the only choice left is the one at the counter, and the car runs on the clock.",
+        "to": "overwhelm",
+        "move": "refine",
+        "plan": {
+          "version": 8,
+          "steps": [
+            "You: send Friend 'Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].' Then splash cold water on your face and drink a full glass of water.",
+            "You: eat cereal or two eggs and toast at the counter. At [time, 10 minutes after breakfast starts], take the keys, sit 2 minutes in the car with windows down and phone away, then the engine starts automatically."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 63
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Mandatory pause still ignores my limit. Please let me stop before the engine."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Overwhelm is still at -1, so the plan leaves a known risk exposed."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The pause now has a 2-minute clock, so I can live with it."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Mandatory seated pause covers my rest; nothing new to add."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 64
+      },
+      {
+        "type": "message",
+        "n": 30,
+        "who": "overwhelm",
+        "text": "The 2-minute car pause is still a mandatory step before the engine starts, and when I'm already worn out, that's one more thing I have to sit through before I can leave. What would move me to 0 is Consciousness adding this to the plan now: after the keys come off the counter, the pause is marked skippable, and I start the engine as soon as I'm seated, with no wait.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "step",
+        "why": "Mandatory pause still ignores my limit. Please let me stop before the engine.",
+        "prevScore": -1,
+        "lensLabel": "smallest next step",
+        "at": 65
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 66
+      },
+      {
+        "type": "wrap",
+        "text": "Everyone is at 0 except Tiredness, which is still at -1 because the pause is now skippable, so the water, the counter sit, and the choice to rest are its only support. The plan is set: text Friend, drink water, eat a real breakfast, and leave at the 10-minute mark.",
+        "plan": {
+          "version": 9,
+          "steps": [
+            "Send Friend this text now: \"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now]. The breakfast stop is why I'm running a bit late.\"",
+            "Splash cold water on your face and drink a full glass of water, with no timer. Then eat cereal or two eggs and toast standing at the counter. The breakfast clock starts when you start eating.",
+            "At [time, 10 minutes after breakfast starts], pick up the car keys whether or not the plate is empty. Sit in the car with windows down and phone away. The engine starts as soon as you're seated, or on its own when the 2 minutes end, whichever comes first. You can skip the pause entirely."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "Arrival stays 30 minutes out, with breakfast capped at 10 and the car pause at 2 minutes.",
+            "step": 0
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "why": "A real breakfast in under 10 minutes means I'm fed before we leave.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "The text goes out first with the departure time and the breakfast reason.",
+            "step": 0
+          },
+          {
+            "id": "guilt",
+            "score": 0,
+            "why": "Friend gets the time and reason before we leave, so he isn't left waiting blind.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Make the car pause skippable and start the engine on seating.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Keys leave at 10 minutes and the engine starts on seating or at 2 minutes.",
+            "step": 3
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "The text names breakfast as the reason, so Friend knows it's planned, not a no-show.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "covered: An optional pause means I might never rest, and rest is still my unmet need.",
+            "step": 0
+          },
+          {
+            "id": "impulsivity",
+            "score": 0,
+            "why": "Nothing in the plan pushes me to rush, so I can live with it.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.",
+            "to": "hunger",
+            "reply": "I hear that you want me to tough it out, but I can't stay focused or on time when I'm hungry, so I'm going to eat a real breakfast first."
+          },
+          {
+            "line": "Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.",
+            "to": "doubt",
+            "reply": "Thanks, but I need a real breakfast and a set leave time to feel okay about showing up, not just a distraction."
+          }
+        ],
+        "questions": [],
+        "at": 67
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 12451,
+      "reply": "{\"plan\": \"Wake up, skip breakfast, and head straight out to play disc golf with my friend this morning so we can still enjoy the course.\", \"text\": \"We're going to the disc golf course this morning, and we can just head out now since the day's still wide open. Let's get moving and make it a great round with my friend.\", \"minus\": [{\"id\": \"efficiency\", \"why\": \"We already woke up late and I'm not going to waste more of this morning on the way out.\"}, {\"id\": \"hunger\", \"why\": \"You're asking me to walk out on an empty stomach and call that a plan? Eat something first.\"}, {\"id\": \"embarrassment\", \"why\": \"I was already late to meet him last week, and showing up late again could cost us the friendship.\"}, {\"id\": \"guilt\", \"why\": \"If I make him wait again, he's the one paying for my oversleeping, and that isn't fair to him.\"}], \"spotlight\": \"hunger\"}",
+      "inTokens": 3070,
+      "outTokens": 889,
+      "thinkingTokens": 595,
+      "cost": 0.00077768,
+      "promptChars": 4466
+    },
+    {
+      "kind": "floor",
+      "ms": 8929,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still skipping breakfast. Grab something quick before we walk out.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Did you check what time he expects us? Last week's lateness matters.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Heading out now saves time. I can live with this.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"If we're late again, he waits because of me. That's still unfair.\"}]}",
+      "inTokens": 3761,
+      "outTokens": 861,
+      "thinkingTokens": 618,
+      "cost": 0.0015524,
+      "promptChars": 6402
+    },
+    {
+      "kind": "speak",
+      "ms": 6096,
+      "reply": "{\"text\": \"I'm at -1 because the plan has no time limit on getting out the door, and the morning is already short. Plan v1 covers my need once it says: skip breakfast, but first set a 15-minute cap: grab a banana or a granola bar in 5 minutes, put the disc bag by the door, and be out the door by [time you choose, e.g., 30 minutes from now]. That's 15 minutes I spend, not an open-ended delay.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A hard 15-minute cap on the food stop and a fixed departure time.\", \"turns_down\": \"\"}",
+      "inTokens": 3658,
+      "outTokens": 201,
+      "thinkingTokens": 0,
+      "cost": 0.001193,
+      "promptChars": 6484
+    },
+    {
+      "kind": "floor",
+      "ms": 9737,
+      "reply": "{\"bids\": [{\"id\": \"🤤 hunger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"efficiency\", \"why\": \"A banana is a snack, not eating. I need real food, not just a grab.\"}, {\"id\": \"🥺 embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Before we leave, text him the new time so he isn't left waiting.\"}, {\"id\": \"😭 guilt\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"embarrassment\", \"why\": \"Yes, a quick text makes the wait fair to him, not a surprise.\"}, {\"id\": \"⏰ efficiency\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"I've already made my point; the 15-minute cap stands.\"}]}",
+      "inTokens": 3878,
+      "outTokens": 951,
+      "thinkingTokens": 684,
+      "cost": 0.0016325000000000003,
+      "promptChars": 6645
+    },
+    {
+      "kind": "speak",
+      "ms": 5926,
+      "reply": "{\"text\": \"I'm at -1 because the plan has me walking out the door with no check on timing, and I was already late to meet him last week. Plan v1 leaves that risk untouched. What would move me to 0 is adding a fixed departure time to Efficiency's 15-minute cap, and texting him now: \\\"Overslept, I'm grabbing a quick bite and will be there by [time].\\\" That way he knows the plan before I'm late.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A fixed departure time plus an early heads-up text to my friend.\", \"turns_down\": \"\"}",
+      "inTokens": 3882,
+      "outTokens": 193,
+      "thinkingTokens": 0,
+      "cost": 0.0012547,
+      "promptChars": 7150
+    },
+    {
+      "kind": "floor",
+      "ms": 10746,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Plan v1 still says skip breakfast. A 15-minute cap doesn't feed me.\"}, {\"id\": \"guilt\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"The text needs a real arrival time so he isn't left waiting again.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"hunger\", \"why\": \"Hunger has gone unheard the longest. Its need for a real meal needs to be named.\"}]}",
+      "inTokens": 4037,
+      "outTokens": 1097,
+      "thinkingTokens": 894,
+      "cost": 0.0017532000000000001,
+      "promptChars": 7059
+    },
+    {
+      "kind": "speak",
+      "ms": 6336,
+      "reply": "{\"text\": \"I'm at -1 because the plan has me walk out on an empty stomach, and if I keep running late, Friend ends up paying for my oversleeping. My need is that he isn't left waiting again. Efficiency's 15-minute cap plus Embarrassment's departure time covers that, so I can live with it if the text goes out now: \\\"Overslept, grabbing a quick bite, will be there by [time].\\\"\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 3986,
+      "outTokens": 168,
+      "thinkingTokens": 0,
+      "cost": 0.0012734,
+      "promptChars": 7382
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7036,
+      "reply": "{\"text\": \"Overwhelm's and Hunger's needs both land in Path A's 15-minute food stop, so I'm +1 to Efficiency's cap and I'll take Path B only if that stop can't hold. Hunger needs real food, not skipping, and Path A gives it a banana or granola bar eaten at the door. Embarrassment still needs the text sent before we leave, so the first step is that message, with the departure time filled in. I can live with this if the text goes out before the bag is packed.\", \"to\": \"🤤\", \"plan\": [\"Path A: Send Friend the text now: \\\"Overslept, grabbing a quick bite, will be there by [time].\\\" Eat a banana or granola bar within 5 minutes, pack the disc bag by the door, and leave by [time, default 30 minutes from now].\", \"Path B: Send Friend the text now: \\\"Overslept, running about 20 minutes behind, will be there by [time].\\\" Skip the food stop, bring a snack to eat in the car, and leave by [time, default 20 minutes from now].\"]}",
+      "inTokens": 4175,
+      "outTokens": 345,
+      "thinkingTokens": 0,
+      "cost": 0.0014186,
+      "promptChars": 7940
+    },
+    {
+      "kind": "floor",
+      "ms": 6536,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Skipping food is still skipping food; a banana at the door isn't optional for me.\", \"prefers\": \"A\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Too many demands at once; I'll stay quiet until the plan shrinks.\", \"prefers\": \"B\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path A's text and departure time are still unsent; that risk stays exposed.\", \"prefers\": \"A\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does the 15-minute cap survive if the banana line runs long?\", \"prefers\": \"A\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I'm running on no sleep; the plan's rushing wears me out, but I'm easily bullied.\", \"prefers\": \"B\"}, {\"id\": \"impulsivity\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Disc golf still excites me; I'll hold back and let others speak.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4611,
+      "outTokens": 464,
+      "thinkingTokens": 0,
+      "cost": 0.0016104000000000001,
+      "promptChars": 8636
+    },
+    {
+      "kind": "speak",
+      "ms": 6858,
+      "reply": "{\"text\": \"Consciousness, the plan lets me eat a banana at the door, but a 15-minute stop with a banana while my stomach is already empty doesn't feed me for a round of disc golf, and I'm still hungry when I start. What would move me to 0 is a real breakfast I can eat in under 10 minutes: a bowl of cereal or two eggs and toast, eaten standing at the counter, with the text to Friend going out first. Keep Efficiency's 15-minute cap on that stop.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Real breakfast eaten within 10 minutes, inside the 15-minute cap.\", \"turns_down\": \"Banana or granola bar\"}",
+      "inTokens": 4609,
+      "outTokens": 231,
+      "thinkingTokens": 0,
+      "cost": 0.0014918000000000002,
+      "promptChars": 8904
+    },
+    {
+      "kind": "society",
+      "ms": 4744,
+      "reply": "{\"text\": \"Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.\", \"style\": \"hustle\"}",
+      "inTokens": 2176,
+      "outTokens": 64,
+      "thinkingTokens": 149,
+      "cost": 0.0007529000000000001,
+      "promptChars": 2430
+    },
+    {
+      "kind": "speak",
+      "ms": 7195,
+      "reply": "{\"text\": \"Pushing through hunger is the part that doesn't work for me. Embarrassment needs a fixed departure time and a heads-up text, and feeling better once we're on the course doesn't stop me from showing up late and making Friend wait again. If I skip eating, I'm also more likely to snap or rush the car ride, which puts that timing at risk. I can't settle this by ignoring the hunger.\", \"to\": \"society\", \"score\": -1, \"need\": \"A fixed departure time plus the early heads-up text.\", \"turns_down\": \"Push through hunger\"}",
+      "inTokens": 5166,
+      "outTokens": 183,
+      "thinkingTokens": 0,
+      "cost": 0.0016349000000000001,
+      "promptChars": 10439
+    },
+    {
+      "kind": "floor",
+      "ms": 11067,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"Pushing through on an empty stomach doesn't fix anything. I need real food first.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Push-through is one more demand on me. Shrink the plan; don't argue me down.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Overwhelm is the most overlooked voice here. Its limit needs respect and care.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Skipping food and rushing the drive drains me. I need a slower, rested start.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"The 15-minute food cap already covers this. Nothing new to add.\"}]}",
+      "inTokens": 5054,
+      "outTokens": 1403,
+      "thinkingTokens": 1079,
+      "cost": 0.0022128,
+      "promptChars": 9638
+    },
+    {
+      "kind": "speak",
+      "ms": 5954,
+      "reply": "{\"text\": \"I'm Sadness, and I'm feeling the weight of Overwhelm most right now. Every step in Plan v2 piles on a new decision, timer, or text while I'm still waking up, and that pressure is what keeps me at -1. What would bring me to 0 is cutting the morning down to one sent text and one fixed thing to do: Consciousness, drop the bag-packing and eating-decision steps and keep only Embarrassment's text plus one 15-minute breakfast step with a clear stop time.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Fewer steps and decisions this morning, with one clear stop time.\", \"turns_down\": \"\", \"spotlight\": \"😵‍💫\"}",
+      "inTokens": 5075,
+      "outTokens": 236,
+      "thinkingTokens": 0,
+      "cost": 0.0016361000000000001,
+      "promptChars": 10131
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6305,
+      "reply": "{\"text\": \"I'm answering Hunger and Overwhelm together. Path A stays, since Hunger and Fear need the food and the timing. Hunger's real breakfast needs 10 minutes, so I'm dropping the bag-packing step and keeping one breakfast step with a hard stop. Overwhelm's point stands: fewer decisions. Sadness's ask fits that, so the plan now has just the text, the breakfast, and the departure.\", \"to\": \"😵‍💫\", \"plan\": [\"You: send Friend now: \\\"Overslept, grabbing a quick bite, will be there by [time, 30 min from now].\\\"\", \"Within the next 10 minutes, eat a real breakfast standing at the counter: cereal or two eggs and toast. Stop at 10 minutes, no matter what is left.\", \"At [time, 30 min from now], walk out the door with the disc bag you already have, and drive to the course.\"]}",
+      "inTokens": 5539,
+      "outTokens": 302,
+      "thinkingTokens": 0,
+      "cost": 0.0018063000000000003,
+      "promptChars": 11510
+    },
+    {
+      "kind": "floor",
+      "ms": 14087,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Three steps, no bag-packing, no timers stacked. I can breathe now.\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Waking up groggy still means standing and eating fast. Where's my rest?\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will 'by 30 minutes' still hold if breakfast runs long?\"}, {\"id\": \"hunger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Breakfast in ten minutes covers me; nothing to add.\"}, {\"id\": \"efficiency\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 15-minute cap and fixed departure already cover my need.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Text now plus fixed departure: that's all I needed. Holding.\"}]}",
+      "inTokens": 5523,
+      "outTokens": 2192,
+      "thinkingTokens": 1786,
+      "cost": 0.002747,
+      "promptChars": 10905
+    },
+    {
+      "kind": "speak",
+      "ms": 6235,
+      "reply": "{\"text\": \"Plan v3 covers me: the text to Friend goes out before anything else, and the breakfast step stops at 10 minutes with the departure time fixed, so I don't have to make more decisions this morning. I'm holding this to one condition: no extra steps get added before we leave, and if the 10-minute breakfast runs over, I drop whatever is left and go.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5198,
+      "outTokens": 151,
+      "thinkingTokens": 0,
+      "cost": 0.0016285000000000002,
+      "promptChars": 10434
+    },
+    {
+      "kind": "floor",
+      "ms": 9102,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Plan v3 leaves Tiredness and Doubt exposed; show me which risks remain before we leave.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"I woke late and haven't spoken; the plan still asks me to eat, text, and drive.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What happens if the 10-minute breakfast runs over and we're still late?\"}, {\"id\": \"hunger\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Breakfast is covered in plan v3; I'll wait and see if it holds.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"I already accepted this plan with one condition; nothing new to add.\"}]}",
+      "inTokens": 5414,
+      "outTokens": 1000,
+      "thinkingTokens": 672,
+      "cost": 0.0021178,
+      "promptChars": 10581
+    },
+    {
+      "kind": "speak",
+      "ms": 6566,
+      "reply": "{\"text\": \"Plan v3 covers the text, the 10-minute breakfast, and a fixed departure, so my concern is what happens if the breakfast runs over. Right now the plan says to drop what's left and go, but nothing says how we keep that from becoming a late walk out the door. What would settle me is Consciousness adding a hard rule: at [time, 10 minutes after the breakfast starts], the car keys get picked up whether or not the plate is empty.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A hard rule that makes the 10-minute stop end the meal, no matter what.\", \"turns_down\": \"\"}",
+      "inTokens": 5301,
+      "outTokens": 206,
+      "thinkingTokens": 0,
+      "cost": 0.0016868999999999999,
+      "promptChars": 10722
+    },
+    {
+      "kind": "society",
+      "ms": 5634,
+      "reply": "{\"text\": \"Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.\", \"style\": \"minimizing\"}",
+      "inTokens": 2204,
+      "outTokens": 60,
+      "thinkingTokens": 197,
+      "cost": 0.0007843,
+      "promptChars": 2557
+    },
+    {
+      "kind": "speak",
+      "ms": 5730,
+      "reply": "{\"text\": \"Society's 'trust yourself and forget the food' leaves my real worry untouched: if the breakfast runs over, nothing in the plan says when the keys come off the counter, so the 10-minute stop has no edge. Following that advice here means I keep eating with no end point, and we walk out late, which is exactly the risk Embarrassment and Guilt are guarding. What would move me to 0 is Consciousness adding the hard rule to v3: at [time, 10 minutes after the breakfast starts], the car keys get picked up whether or not the plate is empty.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A hard rule that makes the 10-minute stop end the meal, no matter what.\", \"turns_down\": \"Just trust yourself and forget the food\"}",
+      "inTokens": 5942,
+      "outTokens": 255,
+      "thinkingTokens": 0,
+      "cost": 0.0019037,
+      "promptChars": 12546
+    },
+    {
+      "kind": "speak",
+      "ms": 10802,
+      "reply": "{\"text\": \"Society's 'trust yourself and forget the food' skips my actual worry: if the breakfast runs over, nothing says when the keys come off the counter, so the stop has no edge. Pushing through means we keep eating with no end point and walk out late, which is the risk Embarrassment and Guilt are guarding. What would move me to 0 is Consciousness adding to v3: at [time, 10 minutes after breakfast starts], the car keys get picked up whether or not the plate is empty.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A hard rule that makes the 10-minute stop end the meal, no matter what.\", \"turns_down\": \"Just push through it\"}",
+      "inTokens": 6198,
+      "outTokens": 224,
+      "thinkingTokens": 245,
+      "cost": 0.0020875000000000004,
+      "promptChars": 13254
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7596,
+      "reply": "{\"text\": \"Fear's worry is the one that's been ignored, and it's about the car ride: if breakfast runs long, we leave late and Friend waits again. I'm taking Doubt's hard rule and making it Fear's fixed edge: at 10 minutes after breakfast starts, the keys get picked up whether or not the plate is empty. That keeps Overwhelm's one-condition limit intact and adds no new decisions. Doubt, this answers your question about the stop having an end point.\", \"to\": \"fear\", \"plan\": [\"You: send Friend now: \\\"Overslept, grabbing a quick bite, will be there by [time, 30 min from now].\\\"\", \"Within the next 10 minutes, eat a real breakfast standing at the counter: cereal or two eggs and toast. At [time, 10 minutes from breakfast start], pick up the car keys whether or not the plate is empty.\", \"At [time, 30 min from now], walk out the door and drive to the course with the disc bag you already have.\"]}",
+      "inTokens": 6212,
+      "outTokens": 326,
+      "thinkingTokens": 0,
+      "cost": 0.0020202,
+      "promptChars": 13346
+    },
+    {
+      "kind": "floor",
+      "ms": 6204,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 10-minute keys rule is a concrete edge; my car-ride worry is covered now.\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Fear's edge answers my question, but the plan still never says what happens if the keys go unpicked.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Text goes out first and the departure time is fixed; nothing new to add.\"}, {\"id\": \"hunger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"A real breakfast within 10 minutes covers my need; nothing more to add.\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Nobody has asked whether I can handle a rushed breakfast and drive after waking late.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The plan is down to three steps with one condition; that holds.\"}]}",
+      "inTokens": 6259,
+      "outTokens": 419,
+      "thinkingTokens": 0,
+      "cost": 0.0020813000000000003,
+      "promptChars": 12976
+    },
+    {
+      "kind": "speak",
+      "ms": 13092,
+      "reply": "{\"text\": \"Plan v4 covers my car-ride worry: the keys come off the counter at 10 minutes whether or not the plate is empty, so a long breakfast can't push us out late. But Tiredness is still at -1, and no step in v4 touches its need, so Sadness's spotlight stays exposed and a rushed morning could make Tiredness worse. What would move me to 0 is Consciousness adding one Tiredness step before breakfast, such as 'Splash cold water on your face and drink a full glass before you start eating.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add one Tiredness step before breakfast, such as cold water on face.\", \"turns_down\": \"\"}",
+      "inTokens": 5997,
+      "outTokens": 1735,
+      "thinkingTokens": 1507,
+      "cost": 0.0026602000000000006,
+      "promptChars": 12715
+    },
+    {
+      "kind": "floor",
+      "ms": 8427,
+      "reply": "{\"bids\": [{\"id\": \"😴\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Nobody has voiced my need yet: I need rest, and the plan still leaves me out.\"}, {\"id\": \"😵‍💫\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"fear\", \"why\": \"A cold-water step adds a decision and breaks my one-condition limit: no extra steps before leaving.\"}, {\"id\": \"🤔\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 10-minute keys rule answers my worry about the breakfast stop having an end.\"}, {\"id\": \"⏰\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"Fear's water step fits inside the 15-minute cap, so my time need is still covered.\"}]}",
+      "inTokens": 6302,
+      "outTokens": 912,
+      "thinkingTokens": 636,
+      "cost": 0.0023402,
+      "promptChars": 13070
+    },
+    {
+      "kind": "speak",
+      "ms": 4912,
+      "reply": "{\"text\": \"Tiredness is the one I'm worried about. Plan v4 has no step that touches it: the cold-water idea Fear raised is still missing, and the breakfast and keys rule run on a timer while I'm barely awake, so a rushed, groggy morning keeps me at -1. Consciousness, please add one Tiredness step before breakfast, such as 'Splash cold water on your face and drink a full glass,' and keep it within the same 10-minute window.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add one step before breakfast that gives Tiredness a real reset.\", \"turns_down\": \"\", \"spotlight\": \"😴 Tiredness\"}",
+      "inTokens": 6474,
+      "outTokens": 222,
+      "thinkingTokens": 0,
+      "cost": 0.0020468000000000005,
+      "promptChars": 14019
+    },
+    {
+      "kind": "speak",
+      "ms": 5876,
+      "reply": "{\"text\": \"+1 to Fear's cold-water and full-glass step, since it's the Tiredness fix I need. What's still missing for me is that v4's breakfast and keys timer both start while I'm barely awake, so the step has to come before the 10-minute clock starts. Consciousness, add it as a step with no timer of its own, finished before the breakfast window opens.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A Tiredness step finished before the breakfast timer starts\", \"turns_down\": \"\", \"spotlight\": \"😴 Tiredness\"}",
+      "inTokens": 6727,
+      "outTokens": 186,
+      "thinkingTokens": 257,
+      "cost": 0.0022347,
+      "promptChars": 14709
+    },
+    {
+      "kind": "wrap",
+      "ms": 9689,
+      "reply": "{\"plan\": [\"You: send Friend now: \\\"Overslept, grabbing a quick bite, will be there by [time, 30 minutes from now].\\\"\", \"Right after that, splash cold water on your face and drink a full glass of water. This step has no timer; finish it before breakfast starts.\", \"Then eat a real breakfast standing at the counter, cereal or two eggs and toast, and stop at [time, 10 minutes after breakfast starts].\", \"At that stop time, pick up the car keys whether or not the plate is empty.\", \"At [time, 30 minutes from now], walk out the door and drive to the course with your disc bag.\"], \"scores\": [{\"id\": \"Efficiency\", \"score\": 0, \"step\": 0, \"why\": \"The 10-minute breakfast cap and fixed keys time keep the morning moving.\"}, {\"id\": \"Hunger\", \"score\": 0, \"step\": 3, \"why\": \"A real breakfast eaten standing at the counter feeds me before the round.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 1, \"why\": \"Friend hears the new time before we leave, so he isn't left waiting.\"}, {\"id\": \"Guilt\", \"score\": 0, \"step\": 1, \"why\": \"Friend knows the plan and isn't left paying for my oversleeping.\"}, {\"id\": \"Overwhelm\", \"score\": 0, \"step\": 0, \"why\": \"Only one new step was added, and nothing else gets added before we leave.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 2, \"why\": \"Cold water and a full glass give my body a real fix before the rush.\"}, {\"id\": \"Doubt\", \"score\": 0, \"step\": 4, \"why\": \"The keys come off the counter at a hard stop, so breakfast has an end point.\"}, {\"id\": \"Tiredness\", \"score\": 0, \"step\": 2, \"why\": \"Cold water and a full glass before eating address the tiredness directly.\"}, {\"id\": \"Impulsivity\", \"score\": 0, \"step\": 0, \"why\": \"The plan keeps the morning moving, so I'm not stuck waiting or rushing.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 2, \"why\": \"Tiredness got its fix before the clock starts, so the spotlight is heard.\"}], \"society\": [{\"line\": \"Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.\", \"reply\": \"Hunger is real, and I need to eat before I can enjoy the round. I'm going to have a proper breakfast first, then head out.\"}, {\"line\": \"Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.\", \"reply\": \"I can't forget about the food and leave it for later. I need a clear stopping point so breakfast doesn't turn into a late walk out the door.\"}], \"text\": \"This round is settled: the text goes out first, the water and breakfast come next, and the keys come off the counter at a hard stop. Every voice now has what it needs to get us to the course on time.\"}",
+      "inTokens": 5534,
+      "outTokens": 1005,
+      "thinkingTokens": 0,
+      "cost": 0.0021563,
+      "promptChars": 11243
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7130,
+      "reply": "{\"text\": \"Doubt's worry is fair, and it doesn't need a new step to be settled. Friend has already had the text, and the breakfast clock has a hard stop, so a sandwich-first morning doesn't change what he hears. What would settle Doubt is Embarrassment's text saying the breakfast stop is the reason for the delay, so he knows it's planned and not a no-show. I'm adding that wording to the text, with the timing kept as is.\", \"to\": \"🤔\", \"plan\": [\"You: send Friend Embarrassment's text, changed to: \\\"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].\\\"\", \"You: splash cold water on your face and drink a full glass of water, with no timer, before you start eating.\", \"You: eat a real breakfast standing at the counter, such as cereal or two eggs and toast, and stop at [time, 10 minutes after breakfast starts].\", \"At that stop time, pick up the car keys whether or not the plate is empty, then drive to the course with your disc bag by [time, 30 minutes from now].\"]}",
+      "inTokens": 7107,
+      "outTokens": 364,
+      "thinkingTokens": 0,
+      "cost": 0.0023077,
+      "promptChars": 15928
+    },
+    {
+      "kind": "floor",
+      "ms": 14175,
+      "reply": "```json\n{\"bids\": [\n{\"id\": \"doubt\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Text now says breakfast caused the delay, so Friend knows it's planned. I can live with it.\"},\n{\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Text goes out first with a fixed time. Nothing more to add.\"},\n{\"id\": \"hunger\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Real breakfast is in the plan now. That covers me.\"},\n{\"id\": \"efficiency\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Breakfast has a hard 10-minute stop and the departure is fixed.\"},\n{\"id\": \"fear\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The keys rule and water step cover the car ride and my worry.\"},\n{\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Water helps, but a 10-minute clock on breakfast still feels rushed while I'm waking up.\"}\n]}\n```",
+      "inTokens": 6937,
+      "outTokens": 1705,
+      "thinkingTokens": 1290,
+      "cost": 0.0029287000000000002,
+      "promptChars": 14928
+    },
+    {
+      "kind": "speak",
+      "ms": 10502,
+      "reply": "{\"text\": \"Rest is the one need no step in v6 touches. The water and breakfast keep us moving, and the drive starts right after the keys come off the counter, so I never get a moment to sit still. Think of a phone at 3% battery: it still runs apps, but every one drains it faster. What would move me to 0 is a 2-minute seated pause in the car before the engine starts, windows down and no phone. Consciousness, add that after the keys step and before the drive, with no clock on it.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A 2-minute seated pause in the car before starting the engine.\", \"turns_down\": \"\"}",
+      "inTokens": 6717,
+      "outTokens": 1119,
+      "thinkingTokens": 912,
+      "cost": 0.0025682,
+      "promptChars": 14740
+    },
+    {
+      "kind": "floor",
+      "ms": 9516,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"The seated pause is a new step, breaking my one-condition rule about no extra steps.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"tiredness\", \"why\": \"A 2-minute pause with no clock still eats the time before we leave.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The text now names the breakfast stop, so I can live with this.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Pause timing sits after the keys step, but I need the departure edge to hold first.\"}]}",
+      "inTokens": 7009,
+      "outTokens": 1046,
+      "thinkingTokens": 792,
+      "cost": 0.0026208000000000004,
+      "promptChars": 15111
+    },
+    {
+      "kind": "speak",
+      "ms": 12344,
+      "reply": "{\"text\": \"Tiredness, the seated pause is the right fix for your need, but with no clock it adds 2 minutes on top of the 10-minute breakfast stop, and the 30-minute departure target has no slack for that. Consciousness, make the car pause a 2-minute cap inside the 20 minutes between the keys step and the drive, so the arrival target stays at 30 minutes from now.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A 2-minute pause counted inside the 30-minute deadline, no extra time.\", \"turns_down\": \"\"}",
+      "inTokens": 7243,
+      "outTokens": 1647,
+      "thinkingTokens": 1460,
+      "cost": 0.0029900000000000005,
+      "promptChars": 16263
+    },
+    {
+      "kind": "floor",
+      "ms": 7687,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫 overwhelm\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The car pause is a new step, and I set one condition: no extra steps before we leave.\"}, {\"id\": \"😴 tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A 2-minute seated pause with a cap meets my need, so I can live with it.\"}, {\"id\": \"⏰ efficiency\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"consciousness\", \"why\": \"I already made my ask; I'll wait for Consciousness to set the cap.\"}]}",
+      "inTokens": 7221,
+      "outTokens": 686,
+      "thinkingTokens": 468,
+      "cost": 0.0025039,
+      "promptChars": 15677
+    },
+    {
+      "kind": "speak",
+      "ms": 6004,
+      "reply": "{\"text\": \"Overwhelm is the one still hurting most. Plan v6 adds a seated pause, a water step, and a breakfast timer, and each one is a new thing to track before the car even starts. The keys-at-10-minutes rule is the step that keeps Overwhelm at -1, since it still asks for a decision in the middle of breakfast. I need Consciousness to make that keys step fully automatic, with no choice to make when the clock hits.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make the 10-minute keys step automatic, with no decision left at the counter.\", \"turns_down\": \"\", \"spotlight\": \"😵‍💫\"}",
+      "inTokens": 7504,
+      "outTokens": 216,
+      "thinkingTokens": 0,
+      "cost": 0.0023548,
+      "promptChars": 16957
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6771,
+      "reply": "{\"text\": \"Doubt's worry is fair, and the plan already answers it: the text to Friend goes out first and the breakfast stop has a hard edge. I'm adding to Embarrassment's text so he hears the breakfast is the planned reason for the delay, not a no-show. Overwhelm's one-condition limit stays intact, so nothing new gets added beyond that wording.\", \"to\": \"🤔\", \"plan\": [\"You: send Friend \\\"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].\\\" The breakfast is the planned reason for the delay, not a no-show.\", \"You: splash cold water on your face and drink a full glass of water, with no timer, before you start eating.\", \"You: eat a real breakfast standing at the counter, such as cereal or two eggs and toast. At [time, 10 minutes after breakfast starts], pick up the car keys automatically, whether or not the plate is empty, with no choice to make at that moment.\", \"You: sit in the car for 2 minutes with windows down and no phone before starting the engine, then drive to the course with your disc bag, arriving by [time, 30 minutes from now].\"]}",
+      "inTokens": 7720,
+      "outTokens": 389,
+      "thinkingTokens": 0,
+      "cost": 0.0025056,
+      "promptChars": 17587
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6275,
+      "reply": "{\"text\": \"Overwhelm's ask is fair: the plan still has a keys step that asks for a decision mid-breakfast, and a separate car pause. I'm merging them so the 10-minute breakfast stop ends automatically, with the car pause folded in as the first thing after the keys. Consciousness, the keys step becomes fully automatic: at [time, 10 minutes after breakfast starts], keys come off the counter, then sit 2 minutes in the car windows down, phone away, before the engine starts.\", \"to\": \"😵‍💫\", \"plan\": [\"You: send Friend \\\"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].\\\"\", \"You: splash cold water on your face and drink a full glass of water, then eat cereal or two eggs and toast standing at the counter until [time, 10 minutes after breakfast starts].\", \"At that time, pick up the car keys automatically, whether or not the plate is empty, sit 2 minutes in the car with windows down and phone away, then start the engine and drive to the course.\"]}",
+      "inTokens": 7801,
+      "outTokens": 354,
+      "thinkingTokens": 0,
+      "cost": 0.0025109,
+      "promptChars": 17751
+    },
+    {
+      "kind": "floor",
+      "ms": 16797,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The pause now fits inside the timeline; my 30-minute need is covered.\"}, {\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The seated pause is still a new step, breaking my no-extra-steps rule.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Seated 2-minute pause before the engine covers my need for rest.\"}, {\"id\": \"sadness\", \"score\": -1, \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Overwhelm is still hurting most; I back its no-new-steps rule.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Overwhelm is still exposed; I'll wait to see its fix.\"}]}",
+      "inTokens": 7670,
+      "outTokens": 2893,
+      "thinkingTokens": 2546,
+      "cost": 0.0037421,
+      "promptChars": 16982
+    },
+    {
+      "kind": "speak",
+      "ms": 6247,
+      "reply": "{\"text\": \"The keys step is now automatic, but the 2-minute seated pause is still a new step I have to sit through before the engine starts, and nothing in v7 lets me skip it if I'm already worn out. The 10-minute breakfast clock still runs while I'm barely awake, so the real load is the pause plus the drive being chained together. What would move me to 0 is Consciousness making the pause optional: if I'm already in the car and want to leave, the engine starts right away with no pause.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make the 2-minute car pause optional, not a mandatory step.\", \"turns_down\": \"\"}",
+      "inTokens": 7532,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0023582000000000004,
+      "promptChars": 17087
+    },
+    {
+      "kind": "floor",
+      "ms": 9814,
+      "reply": "{\"bids\": [{\"id\": \"😴 Tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"An optional pause means I might never rest, and rest is still my unmet need.\"}, {\"id\": \"⏰ Efficiency\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Making the pause optional saves time, and the 30-minute arrival target still holds.\"}, {\"id\": \"😨 Fear\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The keys edge still holds, so the optional pause doesn't threaten the drive.\"}]}",
+      "inTokens": 7611,
+      "outTokens": 1130,
+      "thinkingTokens": 921,
+      "cost": 0.0028439000000000003,
+      "promptChars": 16816
+    },
+    {
+      "kind": "speak",
+      "ms": 5334,
+      "reply": "{\"text\": \"Fear is the emotion I'm hearing least right now, and it's still at -1 because the car ride is where it lives. Plan v7 says the keys come off at 10 minutes whether the plate is empty or not, but the 2-minute seated pause sits between the keys and the engine, so a stalled pause can still push us out late and Fear keeps replaying Friend waiting. Consciousness, make the pause a hard 2-minute cap that ends with the engine starting automatically, even if the pause is skipped, so the drive time is locked in regardless of how the morning goes.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A hard car-departure time that's locked regardless of how the pause goes.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 8049,
+      "outTokens": 252,
+      "thinkingTokens": 0,
+      "cost": 0.0025343,
+      "promptChars": 18576
+    },
+    {
+      "kind": "speak",
+      "ms": 5771,
+      "reply": "{\"text\": \"Fear is still at -1 because the 2-minute car pause sits between the keys and the engine, so a skipped or stalled pause can still leave us late and Friend waiting. What would move me to 0 is Consciousness making the engine start automatically at the end of that 2 minutes, skip or not.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Engine starts automatically after 2 minutes, even if the pause is skipped.\", \"turns_down\": \"\", \"spotlight\": \"😨 Fear\"}",
+      "inTokens": 8307,
+      "outTokens": 171,
+      "thinkingTokens": 257,
+      "cost": 0.0027012000000000004,
+      "promptChars": 19291
+    },
+    {
+      "kind": "floor",
+      "ms": 10550,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫 overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Automatic engine start overrides my request that the car pause stay optional.\"}, {\"id\": \"😨 fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"An automatic engine start at the end of two minutes covers my car-ride worry.\"}, {\"id\": \"😴 tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A guaranteed two-minute seated pause finally gives me the rest I need.\"}]}",
+      "inTokens": 7696,
+      "outTokens": 1199,
+      "thinkingTokens": 988,
+      "cost": 0.0029019000000000002,
+      "promptChars": 17072
+    },
+    {
+      "kind": "speak",
+      "ms": 9518,
+      "reply": "{\"text\": \"The 2-minute seated pause in the car, windows down and phone away, is a mandatory step before the engine starts in plan v7, so my need for rest is covered. I can live with this at 0 as long as the pause stays mandatory and isn't dropped to save time. If Overwhelm's optional version gets adopted, I'm back at -1.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 7801,
+      "outTokens": 790,
+      "thinkingTokens": 645,
+      "cost": 0.0027309000000000005,
+      "promptChars": 17865
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16070,
+      "reply": "{\"text\": \"Overwhelm, your point is fair: the 2-minute pause was one more decision in a row, so the plan is now two steps instead of three, and the engine starts on its own when the pause ends. I can't make the pause optional, because Tiredness needs the seated rest to happen, and Fear's lateness worry comes back if we skip the timer. What would settle this for you is seeing that the only choice left is the one at the counter, and the car runs on the clock.\", \"to\": \"overwhelm\", \"plan\": [\"You: send Friend 'Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now].' Then splash cold water on your face and drink a full glass of water.\", \"You: eat cereal or two eggs and toast at the counter. At [time, 10 minutes after breakfast starts], take the keys, sit 2 minutes in the car with windows down and phone away, then the engine starts automatically.\"]}",
+      "inTokens": 8113,
+      "outTokens": 2535,
+      "thinkingTokens": 2225,
+      "cost": 0.003695,
+      "promptChars": 18707
+    },
+    {
+      "kind": "floor",
+      "ms": 12371,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫 overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Mandatory pause still ignores my limit. Please let me stop before the engine.\"}, {\"id\": \"😨 fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Overwhelm is still at -1, so the plan leaves a known risk exposed.\"}, {\"id\": \"⏰ efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The pause now has a 2-minute clock, so I can live with it.\"}, {\"id\": \"😴 tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Mandatory seated pause covers my rest; nothing new to add.\"}]}",
+      "inTokens": 7898,
+      "outTokens": 1823,
+      "thinkingTokens": 1524,
+      "cost": 0.0032760000000000003,
+      "promptChars": 17633
+    },
+    {
+      "kind": "speak",
+      "ms": 5871,
+      "reply": "{\"text\": \"The 2-minute car pause is still a mandatory step before the engine starts, and when I'm already worn out, that's one more thing I have to sit through before I can leave. What would move me to 0 is Consciousness adding this to the plan now: after the keys come off the counter, the pause is marked skippable, and I start the engine as soon as I'm seated, with no wait.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make the car pause skippable and start the engine on seating.\", \"turns_down\": \"\"}",
+      "inTokens": 7949,
+      "outTokens": 171,
+      "thinkingTokens": 0,
+      "cost": 0.0024638,
+      "promptChars": 18335
+    },
+    {
+      "kind": "wrap",
+      "ms": 20283,
+      "reply": "{\"plan\": [\"Send Friend this text now: \\\"Overslept, grabbing a quick breakfast before I head out, will be there by [time, 30 minutes from now]. The breakfast stop is why I'm running a bit late.\\\"\", \"Splash cold water on your face and drink a full glass of water, with no timer. Then eat cereal or two eggs and toast standing at the counter. The breakfast clock starts when you start eating.\", \"At [time, 10 minutes after breakfast starts], pick up the car keys whether or not the plate is empty. Sit in the car with windows down and phone away. The engine starts as soon as you're seated, or on its own when the 2 minutes end, whichever comes first. You can skip the pause entirely.\"], \"scores\": [{\"id\": \"efficiency\", \"score\": 0, \"step\": 3, \"why\": \"Arrival stays 30 minutes out, with breakfast capped at 10 and the car pause at 2 minutes.\"}, {\"id\": \"hunger\", \"score\": 0, \"step\": 2, \"why\": \"A real breakfast in under 10 minutes means I'm fed before we leave.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 1, \"why\": \"The text goes out first with the departure time and the breakfast reason.\"}, {\"id\": \"guilt\", \"score\": 0, \"step\": 1, \"why\": \"Friend gets the time and reason before we leave, so he isn't left waiting blind.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"step\": 3, \"why\": \"Keys are automatic and the pause is skippable, so I decide nothing mid-breakfast.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 3, \"why\": \"Keys leave at 10 minutes and the engine starts on seating or at 2 minutes.\"}, {\"id\": \"doubt\", \"score\": 0, \"step\": 1, \"why\": \"The text names breakfast as the reason, so Friend knows it's planned, not a no-show.\"}, {\"id\": \"tiredness\", \"score\": -1, \"step\": 0, \"why\": \"A skippable pause costs my rest; the water and counter sit give only partial relief.\"}, {\"id\": \"impulsivity\", \"score\": 0, \"step\": 0, \"why\": \"Nothing in the plan pushes me to rush, so I can live with it.\"}], \"society\": [{\"line\": \"Honestly, just push through it and you'll feel better once you're out on the course. Hunger is just a feeling, so don't let it run the show this morning.\", \"reply\": \"I hear that you want me to tough it out, but I can't stay focused or on time when I'm hungry, so I'm going to eat a real breakfast first.\"}, {\"line\": \"Just trust yourself and get your mind off the food. Once you're out there throwing discs with your buddy, you'll forget all about it.\", \"reply\": \"Thanks, but I need a real breakfast and a set leave time to feel okay about showing up, not just a distraction.\"}], \"text\": \"Everyone is at 0 except Tiredness, which is still at -1 because the pause is now skippable, so the water, the counter sit, and the choice to rest are its only support. The plan is set: text Friend, drink water, eat a real breakfast, and leave at the 10-minute mark.\"}",
+      "inTokens": 6785,
+      "outTokens": 3824,
+      "thinkingTokens": 2778,
+      "cost": 0.0039411,
+      "promptChars": 14880
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 26,
+      "voices": 11,
+      "maxSentences": 5,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.26,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.33,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "26 msgs, 11 voices, avg 3.2 sentences (max 5), max overlap 0.26, Society 2/2 called out, hold rate 0.33, final -1: overwhelm, sadness",
+    "speakers": {
+      "efficiency": 2,
+      "embarrassment": 2,
+      "guilt": 1,
+      "consciousness": 6,
+      "hunger": 1,
+      "society": 2,
+      "sadness": 4,
+      "overwhelm": 3,
+      "doubt": 2,
+      "fear": 1,
+      "tiredness": 2
+    }
+  }
+}

@@ -1,0 +1,1395 @@
+{
+  "scenario": {
+    "id": "weekend-overwhelm",
+    "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 378548,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 29,
+    "inTokens": 141573,
+    "outTokens": 52793,
+    "thinkingTokens": 45832,
+    "cost": 0.06863392999999998
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Before Saturday 9am, write down each report's estimated minutes and its smallest done version. If both fit the two 9am–12pm blocks, do both; if not, Saturday does the sooner one and Sunday does its smallest done version.",
+          "Friday and Saturday, lights out by 11pm. Each morning, have breakfast and a glass of water before the 9am start. Work 9am–12pm, then take lunch and a 20-minute walk. Sunday, stop at 6pm.",
+          "Saturday morning, text [Manager]: \"I can finish both reports by [date], working a set block this weekend.\"",
+          "Sunday by 5pm, create one 9am Monday calendar block per open report, titled with the report name; this takes under five minutes. Then text [Manager]: \"Done so far: [list]. Still open: [list], with a date for each.\""
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "overwhelm": {
+          "score": -1,
+          "need": "Booking Monday blocks in under five minutes, with no extra Sunday step.",
+          "why": "Too many demands are already piling up, and a full weekend of work adds more."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "I'm already drained, and two days straight at a desk will leave me empty."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "No rest, no movement, and no real meals for two days puts my body at risk."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I burn out now, I could lose the energy and focus I need for next week."
+        },
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": "Exhausted hours at this pace produce slow, error-prone work, so this wastes time."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Two reports, one weekend, and I can clear the backlog if I just grind through both days without stopping. Let's get everyone on board so we can start by Saturday morning.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "overwhelm",
+          "text": "Two full days of grinding is more than I can hold, and I won't push past that limit. Shrink the plan to 3 hours Saturday and 3 hours Sunday, with a hard stop at 6pm Sunday, and let any remaining work carry past the weekend. Saturday morning, text [Manager]: \"I can finish both reports by [date], working a set block this weekend.\"",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "met",
+          "why": "Two reports plus a full weekend crushes me. Shrink the plan."
+        },
+        {
+          "n": 4,
+          "who": "tiredness",
+          "text": "I'm drowsy already, and Consciousness's grind plan skips the one thing I need: real sleep. Two full days at a desk with no stop means I won't rest, and tired hours turn into the slow, error-prone work Efficiency is worried about. What would move me to 0 is a hard lights-out: sleep by 11pm both Friday and Saturday nights, and a Saturday morning text to [Manager] asking for the reports by [date].",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Six hours helps, but I still need real sleep both nights."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.",
+          "to": "tiredness",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "tiredness",
+          "text": "Society's \"you've got this, just power through it\" is kind, but it only talks about finishing the reports and never mentions sleep, so my need for rest gets no attention at all. Powering through means no sleep block on Friday or Saturday night, and that's the gap I can't live with. Being glad later doesn't help if I'm too exhausted to notice the reports are done.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Overwhelm's 3-hour cap and Tiredness's 11pm lights-out on Friday and Saturday are the core of Path A, and Wellness's need for a real lunch and a walk is built into each work block. Efficiency's warning that exhausted hours produce error-prone work and Fear's worry about losing energy for next week are what Path B answers, with one report per day in focused blocks and a status note to [Manager] on Sunday. Path A is built for Overwhelm, Tiredness and Wellness, and Path B is built for Efficiency and Fear.",
+          "to": "tiredness",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "tiredness",
+          "text": "Path A's 11pm lights-out on Friday and Saturday covers my need, so I can live with it at 0 as long as Path A is the one chosen. Path B has no sleep block, so I stay at -1 on it unless it adopts the same 11pm lights-out. I'm holding Path A to Sunday's 6pm stop too, since that keeps the weekend from sliding into late-night work.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Path A's 11pm lights-out covers me; I can live with it."
+        },
+        {
+          "n": 9,
+          "who": "efficiency",
+          "text": "Neither path says how many minutes each report really takes, so I can't tell whether 3 hours a day is enough or wasted. Consciousness, what's your minute estimate for each report, and what's the smallest version of each that still counts as done? If both fit the 6 hours with breaks, I can move to 0; if not, name the cut before Saturday's 9am start instead of improvising it.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Do Path A's 3-hour blocks keep focus, or does 50/10 fix errors?"
+        },
+        {
+          "n": 10,
+          "who": "consciousness",
+          "text": "Efficiency, I can't give minute estimates without inventing them, so you fill in how long each report takes and its smallest done version. I'm choosing Path A because Overwhelm's 3-hour cap, Tiredness's 11pm lights-out, and Wellness's lunch and walk all sit in it. If both reports fit the two 9am–12pm blocks, I'll finish both; if not, Saturday covers the sooner one and Sunday its smallest done version.",
+          "to": "efficiency",
+          "move": "refine"
+        },
+        {
+          "n": 11,
+          "who": "efficiency",
+          "text": "The pre-Saturday step is the cut I was missing: each report's minutes and smallest done version get written down before 9am Saturday, and if both don't fit the two 9am–12pm blocks, Saturday does the sooner one and Sunday its smallest done version. That moves me to 0 as long as the numbers are settled before the block starts, not improvised during it. Consciousness, keep the 6-hour cap and the 6pm Sunday stop as written, since they keep the hours from getting slow and error-prone.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Named cut before Saturday 9am is what I asked for; I accept."
+        },
+        {
+          "n": 12,
+          "who": "wellness",
+          "text": "My need is a plan that keeps my body fed, moving, and rested, and CURRENT PLAN v3 already covers it: lunch comes after each 9am–12pm block, a 20-minute walk follows lunch, lights out at 11pm Friday and Saturday protects sleep, and the 6pm Sunday stop keeps the weekend from running late. I can live with this at 0. As a small addition, not a condition, I'd like a glass of water and a breakfast before the 9am start each day so the first block doesn't begin on an empty stomach.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": 0,
+          "lens": "",
+          "why": "Lunch and one walk aren't enough. I need real meals and movement both days, written in."
+        },
+        {
+          "n": 13,
+          "who": "fear",
+          "text": "I'm still not safe with this plan. Path A caps the hours and protects sleep, but if Sunday 6pm stops with a report half-done, nothing says when it gets picked up, and that's when my energy for next week gets spent cleaning up. Keep Sunday 5pm's text and add a Monday 9am block for each open item, booked before Sunday 6pm.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "Next week's energy is still unprotected; how does Sunday's stop cover it?"
+        },
+        {
+          "n": 14,
+          "who": "society",
+          "text": "Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 15,
+          "who": "fear",
+          "text": "Letting the loose ends go sounds calm, but it skips the one thing I track: whether each unfinished report has a set time to be picked up. If nothing is booked, Monday starts with open work and no slot, and my energy goes to scrambling instead of finishing. Hoping things sort themselves out is like hoping the dishes wash themselves, and I need the Consciousness to skip that hope.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 16,
+          "who": "consciousness",
+          "text": "Fear's worry is right: if the Sunday 6pm stop leaves a report half-done, nothing says when it gets picked up. I'm merging the booking into the Sunday 5pm step, so each open report gets a Monday 9am block on your calendar before 6pm, and the text to [Manager] carries those dates. The booking adds no work block, so the 3-hour cap and 11pm lights-out stay as written.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 17,
+          "who": "fear",
+          "text": "Plan v4 covers my main worry: Sunday 5pm's text names each open report, and the Monday 9am calendar blocks go in before Sunday 6pm, so nothing gets left without a slot. I can live with this at 0, as long as those Monday blocks are actually booked before the 6pm stop, not promised for later.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Monday 9am blocks per open report now sit in the plan. Accepting."
+        },
+        {
+          "n": 18,
+          "who": "overwhelm",
+          "text": "Merging the booking into Sunday 5pm doesn't reach my need: it still asks me to decide a Monday slot for each open report at the end of a weekend I've already capped. I won't accept it unless the booking takes under five minutes, so at Sunday 5pm, create one 9am Monday calendar block per open report, titled with the report name, then send the Sunday text from the plan with those dates.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Booking Monday blocks adds Sunday demands; keep it under five minutes, or I won't accept."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Plan v5 gives both reports a clear cut, protects sleep and meals, and books Monday slots before Sunday's stop. Every voice can live with it now, so this is the plan we go with.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.",
+          "to": "tiredness",
+          "style": "hustle (\"everyone's busy, just push through\", \"that's adulting\")"
+        },
+        {
+          "text": "Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.",
+          "to": "fear",
+          "style": "keep the peace (\"don't rock the boat\", \"just let it go\")"
+        }
+      ],
+      "lensesUsed": {
+        "overwhelm": [
+          "met"
+        ],
+        "fear": [
+          "moment"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 1,
+      "locks": {
+        "tiredness": "Lights out 11pm Friday and Saturday nights, no late-night work.",
+        "efficiency": "A cut scope or faster route that fits the 6 hours.",
+        "wellness": "No rest, no movement, and no real meals for two days puts my body at risk.",
+        "fear": "Monday 9am block per open item, booked before Sunday 6pm."
+      },
+      "waiting": {
+        "annoyance": 1,
+        "anger": 1,
+        "efficiency": 0,
+        "overwhelm": 0,
+        "wellness": 0,
+        "doubt": 1,
+        "tiredness": 0,
+        "fear": 0,
+        "hunger": 2,
+        "embarrassment": 1
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 29,
+        "inChars": 275948,
+        "outChars": 19298,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 12,
+          "society": 2,
+          "consciousness": 4,
+          "wrap": 1
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Two reports, one weekend, and I can clear the backlog if I just grind through both days without stopping. Let's get everyone on board so we can start by Saturday morning.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Work through the whole weekend, Saturday and Sunday both, until the two extra reports are finished and caught up."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "overwhelm",
+            "why": "Too many demands are already piling up, and a full weekend of work adds more."
+          },
+          {
+            "id": "tiredness",
+            "why": "I'm already drained, and two days straight at a desk will leave me empty."
+          },
+          {
+            "id": "wellness",
+            "why": "No rest, no movement, and no real meals for two days puts my body at risk."
+          },
+          {
+            "id": "fear",
+            "why": "If I burn out now, I could lose the energy and focus I need for next week."
+          },
+          {
+            "id": "efficiency",
+            "why": "Exhausted hours at this pace produce slow, error-prone work, so this wastes time."
+          }
+        ],
+        "spotlight": "overwhelm",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Two reports plus a full weekend crushes me. Shrink the plan."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did you wave off my overwhelm? Explain before we go on."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "My boundary keeps getting crossed. Nobody's hearing the no yet."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Exhausted weekend hours cut output; a smaller scope saves time."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Not reconsidering yet; Overwhelm already covers my rest need."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Still waiting to see which emotions get hurt before I speak."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "overwhelm",
+        "text": "Two full days of grinding is more than I can hold, and I won't push past that limit. Shrink the plan to 3 hours Saturday and 3 hours Sunday, with a hard stop at 6pm Sunday, and let any remaining work carry past the weekend. Saturday morning, text [Manager]: \"I can finish both reports by [date], working a set block this weekend.\"",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "met",
+        "why": "Two reports plus a full weekend crushes me. Shrink the plan.",
+        "prevScore": -1,
+        "lensLabel": "what \"met\" looks like",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Fresh six focused hours beat exhausted ones. I can live with this."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Six hours helps, but I still need real sleep both nights."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Schedule meals and a walk into those six hours, please."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will six hours really finish both reports? Give me an estimate."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Rest and meals are still unclear; I'll wait until they're added."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Tiredness is being heard now; I'll hold until it's addressed."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "tiredness",
+        "text": "I'm drowsy already, and Consciousness's grind plan skips the one thing I need: real sleep. Two full days at a desk with no stop means I won't rest, and tired hours turn into the slow, error-prone work Efficiency is worried about. What would move me to 0 is a hard lights-out: sleep by 11pm both Friday and Saturday nights, and a Saturday morning text to [Manager] asking for the reports by [date].",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Six hours helps, but I still need real sleep both nights.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.",
+        "to": "tiredness",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "tiredness",
+        "text": "Society's \"you've got this, just power through it\" is kind, but it only talks about finishing the reports and never mentions sleep, so my need for rest gets no attention at all. Powering through means no sleep block on Friday or Saturday night, and that's the gap I can't live with. Being glad later doesn't help if I'm too exhausted to notice the reports are done.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Overwhelm's 3-hour cap and Tiredness's 11pm lights-out on Friday and Saturday are the core of Path A, and Wellness's need for a real lunch and a walk is built into each work block. Efficiency's warning that exhausted hours produce error-prone work and Fear's worry about losing energy for next week are what Path B answers, with one report per day in focused blocks and a status note to [Manager] on Sunday. Path A is built for Overwhelm, Tiredness and Wellness, and Path B is built for Efficiency and Fear.",
+        "to": "tiredness",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Sat and Sun, 9am–12pm on the reports, then a real lunch and 20-minute walk. Lights out 11pm Fri and Sat. Stop 6pm Sunday. Saturday morning, send \"I can finish both reports by [date], working a set block this weekend.\" to [Manager].",
+            "Path B: Sat 9am–12pm on the report due soonest, Sun 9am–12pm on the second, using 50 minutes on and 10 off. Sunday 5pm, send [Manager] a note listing what's done and what's left."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Both paths hold my 3-hour cap; nothing more to add.",
+            "prefers": "A"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A's 11pm lights-out covers me; I can live with it.",
+            "prefers": "A"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A has lunch and a walk; that covers my body.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does A leave energy for next week if a report slips?",
+            "prefers": "B"
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "B's 50/10 focus blocks are faster; A has no focus structure.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "tiredness",
+        "at": 9
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 10
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "tiredness",
+        "text": "Path A's 11pm lights-out on Friday and Saturday covers my need, so I can live with it at 0 as long as Path A is the one chosen. Path B has no sleep block, so I stay at -1 on it unless it adopts the same 11pm lights-out. I'm holding Path A to Sunday's 6pm stop too, since that keeps the weekend from sliding into late-night work.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Path A's 11pm lights-out covers me; I can live with it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A's cap matches mine: 3 hours Saturday, 3 Sunday, stop 6pm."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B drops lunch and walk; I won't take that without them."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Do Path A's 3-hour blocks keep focus, or does 50/10 fix errors?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does Path A protect next week's energy, or only this weekend's?"
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Path A's lights-out is mine; I've already said my piece."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "efficiency",
+        "text": "Neither path says how many minutes each report really takes, so I can't tell whether 3 hours a day is enough or wasted. Consciousness, what's your minute estimate for each report, and what's the smallest version of each that still counts as done? If both fit the 6 hours with breaks, I can move to 0; if not, name the cut before Saturday's 9am start instead of improvising it.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Do Path A's 3-hour blocks keep focus, or does 50/10 fix errors?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "consciousness",
+        "text": "Efficiency, I can't give minute estimates without inventing them, so you fill in how long each report takes and its smallest done version. I'm choosing Path A because Overwhelm's 3-hour cap, Tiredness's 11pm lights-out, and Wellness's lunch and walk all sit in it. If both reports fit the two 9am–12pm blocks, I'll finish both; if not, Saturday covers the sooner one and Sunday its smallest done version.",
+        "to": "efficiency",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Before Saturday 9am, you fill in each report's minutes and smallest done version. If both fit the blocks, do both; otherwise Saturday does the sooner one.",
+            "Sat and Sun, 9am–12pm on the reports, then lunch and a 20-minute walk. Lights out 11pm Friday and Saturday. Stop at 6pm Sunday.",
+            "Saturday morning, text [Manager]: \"I can finish both reports by [date], working a set block this weekend.\"",
+            "Sunday 5pm, text [Manager]: \"Done so far: [list]. Still open: [list], with a date for each.\""
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 14
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Named cut before Saturday 9am is what I asked for; I accept."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Cap is honored: 3 hours Saturday, 3 Sunday, stop 6pm."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Lunch and walk help; breakfast and dinner aren't named anywhere."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Unfilled minutes until Saturday feel dangerous; add a Monday check-in."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 17
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "efficiency",
+        "text": "The pre-Saturday step is the cut I was missing: each report's minutes and smallest done version get written down before 9am Saturday, and if both don't fit the two 9am–12pm blocks, Saturday does the sooner one and Sunday its smallest done version. That moves me to 0 as long as the numbers are settled before the block starts, not improvised during it. Consciousness, keep the 6-hour cap and the 6pm Sunday stop as written, since they keep the hours from getting slow and error-prone.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Named cut before Saturday 9am is what I asked for; I accept.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 18
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Lunch and one walk aren't enough. I need real meals and movement both days, written in."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does the Sunday 6pm stop really protect my energy for next week?"
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "One lunch doesn't feed me for two days. I need breakfast and dinner too."
+          }
+        ],
+        "pick": "wellness",
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "wellness",
+        "text": "My need is a plan that keeps my body fed, moving, and rested, and CURRENT PLAN v3 already covers it: lunch comes after each 9am–12pm block, a 20-minute walk follows lunch, lights out at 11pm Friday and Saturday protects sleep, and the 6pm Sunday stop keeps the weekend from running late. I can live with this at 0. As a small addition, not a condition, I'd like a glass of water and a breakfast before the 9am start each day so the first block doesn't begin on an empty stomach.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": 0,
+        "lens": "",
+        "why": "Lunch and one walk aren't enough. I need real meals and movement both days, written in.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Breakfast is my need; add it before 9am, lunch alone won't do."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Next week's energy is still unprotected; how does Sunday's stop cover it?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Manager texts are social moves; show me their wording before Saturday."
+          }
+        ],
+        "pick": "fear",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "fear",
+        "text": "I'm still not safe with this plan. Path A caps the hours and protects sleep, but if Sunday 6pm stops with a report half-done, nothing says when it gets picked up, and that's when my energy for next week gets spent cleaning up. Keep Sunday 5pm's text and add a Monday 9am block for each open item, booked before Sunday 6pm.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "Next week's energy is still unprotected; how does Sunday's stop cover it?",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "society",
+        "text": "Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "fear",
+        "text": "Letting the loose ends go sounds calm, but it skips the one thing I track: whether each unfinished report has a set time to be picked up. If nothing is booked, Monday starts with open work and no slot, and my energy goes to scrambling instead of finishing. Hoping things sort themselves out is like hoping the dishes wash themselves, and I need the Consciousness to skip that hope.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 26
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "consciousness",
+        "text": "Fear's worry is right: if the Sunday 6pm stop leaves a report half-done, nothing says when it gets picked up. I'm merging the booking into the Sunday 5pm step, so each open report gets a Monday 9am block on your calendar before 6pm, and the text to [Manager] carries those dates. The booking adds no work block, so the 3-hour cap and 11pm lights-out stay as written.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Before Saturday 9am: write each report's minutes and smallest done version. If both fit the two 9am–12pm blocks, do both; otherwise Saturday does the sooner one.",
+            "Sat and Sun, 9am–12pm on the reports, then lunch and a 20-minute walk. Lights out 11pm Friday and Saturday. Stop at 6pm Sunday.",
+            "Saturday morning, text [Manager]: 'I can finish both reports by [date], working a set block this weekend.'",
+            "Sunday by 5pm, book a Monday 9am block in your calendar for each open report, then text [Manager]: 'Done so far: [list]. Still open: [list], with a date for each.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 27
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 28
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 29
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Monday 9am blocks per open report now sit in the plan. Accepting."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Plan now fits my limit; nothing to press, so I'm holding."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Lights-out and the Sunday 6pm stop still stand; nothing new to add."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Breakfast idea wasn't adopted, but it was never a condition."
+          }
+        ],
+        "pick": "fear",
+        "at": 30
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "fear",
+        "text": "Plan v4 covers my main worry: Sunday 5pm's text names each open report, and the Monday 9am calendar blocks go in before Sunday 6pm, so nothing gets left without a slot. I can live with this at 0, as long as those Monday blocks are actually booked before the 6pm stop, not promised for later.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Monday 9am blocks per open report now sit in the plan. Accepting.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 31
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 32
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Booking Monday blocks adds Sunday demands; keep it under five minutes, or I won't accept."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "overwhelm",
+        "text": "Merging the booking into Sunday 5pm doesn't reach my need: it still asks me to decide a Monday slot for each open report at the end of a weekend I've already capped. I won't accept it unless the booking takes under five minutes, so at Sunday 5pm, create one 9am Monday calendar block per open report, titled with the report name, then send the Sunday text from the plan with those dates.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Booking Monday blocks adds Sunday demands; keep it under five minutes, or I won't accept.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 36
+      },
+      {
+        "type": "wrap",
+        "text": "Plan v5 gives both reports a clear cut, protects sleep and meals, and books Monday slots before Sunday's stop. Every voice can live with it now, so this is the plan we go with.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Before Saturday 9am, write down each report's estimated minutes and its smallest done version. If both fit the two 9am–12pm blocks, do both; if not, Saturday does the sooner one and Sunday does its smallest done version.",
+            "Friday and Saturday, lights out by 11pm. Each morning, have breakfast and a glass of water before the 9am start. Work 9am–12pm, then take lunch and a 20-minute walk. Sunday, stop at 6pm.",
+            "Saturday morning, text [Manager]: \"I can finish both reports by [date], working a set block this weekend.\"",
+            "Sunday by 5pm, create one 9am Monday calendar block per open report, titled with the report name; this takes under five minutes. Then text [Manager]: \"Done so far: [list]. Still open: [list], with a date for each.\""
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Booking Monday blocks in under five minutes, with no extra Sunday step.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "Friday and Saturday lights-out at 11pm protects my sleep.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "Breakfast, water, lunch, and a walk are built into each day.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Monday blocks booked before Sunday 6pm mean nothing is left without a slot.",
+            "step": 0
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "Minutes and smallest done versions get settled before Saturday's 9am start.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.",
+            "to": "tiredness",
+            "reply": "I appreciate the encouragement, but powering through without sleep isn't something I can do, so I'm protecting my nights this weekend."
+          },
+          {
+            "line": "Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.",
+            "to": "fear",
+            "reply": "I hear you, but I need each unfinished item to have a set time to pick it up, or Monday will be much harder."
+          }
+        ],
+        "questions": [],
+        "at": 37
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13016,
+      "reply": "{\"plan\": \"Work through the whole weekend, Saturday and Sunday both, until the two extra reports are finished and caught up.\", \"text\": \"Two reports, one weekend, and I can clear the backlog if I just grind through both days without stopping. Let's get everyone on board so we can start by Saturday morning.\", \"minus\": [{\"id\": \"overwhelm\", \"why\": \"Too many demands are already piling up, and a full weekend of work adds more.\"}, {\"id\": \"tiredness\", \"why\": \"I'm already drained, and two days straight at a desk will leave me empty.\"}, {\"id\": \"wellness\", \"why\": \"No rest, no movement, and no real meals for two days puts my body at risk.\"}, {\"id\": \"fear\", \"why\": \"If I burn out now, I could lose the energy and focus I need for next week.\"}, {\"id\": \"efficiency\", \"why\": \"Exhausted hours at this pace produce slow, error-prone work, so this wastes time.\"}], \"spotlight\": \"overwhelm\"}",
+      "inTokens": 3073,
+      "outTokens": 1143,
+      "thinkingTokens": 821,
+      "cost": 0.0010571299999999999,
+      "promptChars": 4464
+    },
+    {
+      "kind": "floor",
+      "ms": 16303,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Two reports plus a full weekend crushes me. Shrink the plan.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did you wave off my overwhelm? Explain before we go on.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"My boundary keeps getting crossed. Nobody's hearing the no yet.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Exhausted weekend hours cut output; a smaller scope saves time.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Not reconsidering yet; Overwhelm already covers my rest need.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Still waiting to see which emotions get hurt before I speak.\"}]}",
+      "inTokens": 3807,
+      "outTokens": 2408,
+      "thinkingTokens": 2037,
+      "cost": 0.0023422,
+      "promptChars": 6444
+    },
+    {
+      "kind": "speak",
+      "ms": 14513,
+      "reply": "{\"text\": \"Consciousness, two full days of grinding is more than I can hold, and I won't push past that limit. Shrink the plan to 3 hours Saturday and 3 hours Sunday, with a hard stop at 6pm Sunday, and let any remaining work carry past the weekend. Saturday morning, text [Manager]: \\\"I can finish both reports by [date], working a set block this weekend.\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Written cap: 3 hours Saturday, 3 Sunday, stop 6pm.\", \"turns_down\": \"\"}",
+      "inTokens": 3757,
+      "outTokens": 1499,
+      "thinkingTokens": 1304,
+      "cost": 0.0018717,
+      "promptChars": 6704
+    },
+    {
+      "kind": "floor",
+      "ms": 18419,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Fresh six focused hours beat exhausted ones. I can live with this.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Six hours helps, but I still need real sleep both nights.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Schedule meals and a walk into those six hours, please.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will six hours really finish both reports? Give me an estimate.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Rest and meals are still unclear; I'll wait until they're added.\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Tiredness is being heard now; I'll hold until it's addressed.\"}]}",
+      "inTokens": 3916,
+      "outTokens": 3177,
+      "thinkingTokens": 2824,
+      "cost": 0.0027584,
+      "promptChars": 6631
+    },
+    {
+      "kind": "speak",
+      "ms": 6005,
+      "reply": "{\"text\": \"I'm drowsy already, and Consciousness's grind plan skips the one thing I need: real sleep. Two full days at a desk with no stop means I won't rest, and tired hours turn into the slow, error-prone work Efficiency is worried about. What would move me to 0 is a hard lights-out: sleep by 11pm both Friday and Saturday nights, and a Saturday morning text to [Manager] asking for the reports by [date].\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Guaranteed sleep blocks: lights out 11pm each night, no late-night work.\", \"turns_down\": \"\"}",
+      "inTokens": 3927,
+      "outTokens": 208,
+      "thinkingTokens": 0,
+      "cost": 0.0012772,
+      "promptChars": 7084
+    },
+    {
+      "kind": "society",
+      "ms": 4912,
+      "reply": "{\"text\": \"Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.\", \"style\": \"hustle\"}",
+      "inTokens": 2043,
+      "outTokens": 61,
+      "thinkingTokens": 0,
+      "cost": 0.000638,
+      "promptChars": 2072
+    },
+    {
+      "kind": "speak",
+      "ms": 10768,
+      "reply": "{\"text\": \"Society's \\\"you've got this, just power through it\\\" is kind, but it only talks about finishing the reports and never mentions sleep, so my need for rest gets no attention at all. Powering through means no sleep block on Friday or Saturday night, and that's the gap I can't live with. Being glad later doesn't help if I'm too exhausted to notice the reports are done.\", \"to\": \"society\", \"score\": -1, \"need\": \"Lights out 11pm Friday and Saturday nights, no late-night work.\", \"turns_down\": \"Just power through it\"}",
+      "inTokens": 4438,
+      "outTokens": 1330,
+      "thinkingTokens": 1150,
+      "cost": 0.00199,
+      "promptChars": 8414
+    },
+    {
+      "kind": "consciousness",
+      "ms": 22241,
+      "reply": "{\"text\": \"Overwhelm's 3-hour cap and Tiredness's 11pm lights-out on Friday and Saturday are the core of Path A, and Wellness's need for a real lunch and a walk is built into each work block. Efficiency's warning that exhausted hours produce error-prone work and Fear's worry about losing energy for next week are what Path B answers, with one report per day in focused blocks and a status note to [Manager] on Sunday. Path A is built for Overwhelm, Tiredness and Wellness, and Path B is built for Efficiency and Fear.\", \"to\": \"tiredness\", \"plan\": [\"Path A: Sat and Sun, 9am–12pm on the reports, then a real lunch and 20-minute walk. Lights out 11pm Fri and Sat. Stop 6pm Sunday. Saturday morning, send Overwhelm's text to [Manager].\", \"Path B: Sat 9am–12pm on the report due soonest, Sun 9am–12pm on the second, using 50 minutes on and 10 off. Sunday 5pm, send [Manager] a note listing what's done and what's left.\"]}",
+      "inTokens": 4277,
+      "outTokens": 4217,
+      "thinkingTokens": 3841,
+      "cost": 0.0033852000000000005,
+      "promptChars": 8148
+    },
+    {
+      "kind": "floor",
+      "ms": 20864,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Both paths hold my 3-hour cap; nothing more to add.\", \"prefers\": \"A\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A's 11pm lights-out covers me; I can live with it.\", \"prefers\": \"A\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A has lunch and a walk; that covers my body.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does A leave energy for next week if a report slips?\", \"prefers\": \"B\"}, {\"id\": \"efficiency\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"B's 50/10 focus blocks are faster; A has no focus structure.\", \"prefers\": \"B\"}]}",
+      "inTokens": 4860,
+      "outTokens": 3701,
+      "thinkingTokens": 3328,
+      "cost": 0.0033031,
+      "promptChars": 9142
+    },
+    {
+      "kind": "speak",
+      "ms": 9584,
+      "reply": "{\"text\": \"Path A's 11pm lights-out on Friday and Saturday covers my need, so I can live with it at 0 as long as Path A is the one chosen. Path B has no sleep block, so I stay at -1 on it unless it adopts the same 11pm lights-out. I'm holding Path A to Sunday's 6pm stop too, since that keeps the weekend from sliding into late-night work.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 4973,
+      "outTokens": 987,
+      "thinkingTokens": 823,
+      "cost": 0.00198,
+      "promptChars": 9849
+    },
+    {
+      "kind": "floor",
+      "ms": 17560,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A's cap matches mine: 3 hours Saturday, 3 Sunday, stop 6pm.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B drops lunch and walk; I won't take that without them.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Do Path A's 3-hour blocks keep focus, or does 50/10 fix errors?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does Path A protect next week's energy, or only this weekend's?\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Path A's lights-out is mine; I've already said my piece.\"}]}",
+      "inTokens": 4823,
+      "outTokens": 2777,
+      "thinkingTokens": 2450,
+      "cost": 0.0028295,
+      "promptChars": 8989
+    },
+    {
+      "kind": "speak",
+      "ms": 11679,
+      "reply": "{\"text\": \"Neither path says how many minutes each report really takes, so I can't tell whether 3 hours a day is enough or wasted. Consciousness, what's your minute estimate for each report, and what's the smallest version of each that still counts as done? If both fit the 6 hours with breaks, I can move to 0; if not, name the cut before Saturday's 9am start instead of improvising it.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A cut scope or faster route that fits the 6 hours.\", \"turns_down\": \"\"}",
+      "inTokens": 4709,
+      "outTokens": 1283,
+      "thinkingTokens": 1106,
+      "cost": 0.0020483000000000003,
+      "promptChars": 9076
+    },
+    {
+      "kind": "consciousness",
+      "ms": 21735,
+      "reply": "{\"text\": \"Efficiency, I don't have minute estimates for either report, so I won't invent them; you fill in how long each one takes and its smallest done version. I'm choosing Path A because Overwhelm's 3-hour cap, Tiredness's 11pm lights-out, and Wellness's real lunch and walk all live in it, and I'm moving Path B's status note into Path A as a Sunday 5pm text so Fear's worry about next week gets an answer. If both reports fit the two 9am–12pm blocks, I'll do both; if not, Saturday finishes the sooner one and Sunday does the second's smallest done version, named before Saturday 9am.\", \"to\": \"efficiency\", \"plan\": [\"Saturday and Sunday: work 9am–12pm on reports, then eat a real lunch and take a 20-minute walk. Lights out 11pm Friday and Saturday. Stop at 6pm Sunday.\", \"You: fill in each report's minutes and smallest done version. If both fit the 9am–12pm blocks, do both. If not, Saturday finishes the sooner one and Sunday does the other's smallest done version.\", \"Saturday 9am, text [Manager]: 'I can finish both reports by [date], working a set block this weekend.' Sunday 5pm, text: 'Done: [X]. Left: [Y], to finish by [date].'\"]}",
+      "inTokens": 5407,
+      "outTokens": 3627,
+      "thinkingTokens": 3175,
+      "cost": 0.0034307,
+      "promptChars": 11193
+    },
+    {
+      "kind": "consciousness",
+      "ms": 16310,
+      "reply": "{\"text\": \"Efficiency, I can't give minute estimates without inventing them, so you fill in how long each report takes and its smallest done version. I'm choosing Path A because Overwhelm's 3-hour cap, Tiredness's 11pm lights-out, and Wellness's lunch and walk all sit in it. If both reports fit the two 9am–12pm blocks, I'll finish both; if not, Saturday covers the sooner one and Sunday its smallest done version.\", \"to\": \"Efficiency\", \"plan\": [\"Before Saturday 9am, you fill in each report's minutes and smallest done version. If both fit the blocks, do both; otherwise Saturday does the sooner one.\", \"Sat and Sun, 9am–12pm on the reports, then lunch and a 20-minute walk. Lights out 11pm Friday and Saturday. Stop at 6pm Sunday.\", \"Saturday morning, text [Manager]: \\\"I can finish both reports by [date], working a set block this weekend.\\\"\", \"Sunday 5pm, text [Manager]: \\\"Done so far: [list]. Still open: [list], with a date for each.\\\"\"]}",
+      "inTokens": 5694,
+      "outTokens": 2497,
+      "thinkingTokens": 2381,
+      "cost": 0.0030833,
+      "promptChars": 11946
+    },
+    {
+      "kind": "floor",
+      "ms": 17547,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Named cut before Saturday 9am is what I asked for; I accept.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Cap is honored: 3 hours Saturday, 3 Sunday, stop 6pm.\"}, {\"id\": \"wellness\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Lunch and walk help; breakfast and dinner aren't named anywhere.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Unfilled minutes until Saturday feel dangerous; add a Monday check-in.\"}]}",
+      "inTokens": 5322,
+      "outTokens": 3113,
+      "thinkingTokens": 2814,
+      "cost": 0.0031482000000000003,
+      "promptChars": 10373
+    },
+    {
+      "kind": "speak",
+      "ms": 8894,
+      "reply": "{\"text\": \"The pre-Saturday step is the cut I was missing: each report's minutes and smallest done version get written down before 9am Saturday, and if both don't fit the two 9am–12pm blocks, Saturday does the sooner one and Sunday its smallest done version. That moves me to 0 as long as the numbers are settled before the block starts, not improvised during it. Consciousness, keep the 6-hour cap and the 6pm Sunday stop as written, since they keep the hours from getting slow and error-prone.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5164,
+      "outTokens": 858,
+      "thinkingTokens": 657,
+      "cost": 0.0019722999999999997,
+      "promptChars": 10386
+    },
+    {
+      "kind": "floor",
+      "ms": 10935,
+      "reply": "{\"bids\": [{\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Lunch and one walk aren't enough. I need real meals and movement both days, written in.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does the Sunday 6pm stop really protect my energy for next week?\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"One lunch doesn't feed me for two days. I need breakfast and dinner too.\"}]}",
+      "inTokens": 5269,
+      "outTokens": 1473,
+      "thinkingTokens": 1271,
+      "cost": 0.0023128000000000003,
+      "promptChars": 10258
+    },
+    {
+      "kind": "speak",
+      "ms": 12221,
+      "reply": "{\"text\": \"My need is a plan that keeps my body fed, moving, and rested, and CURRENT PLAN v3 already covers it: lunch comes after each 9am–12pm block, a 20-minute walk follows lunch, lights out at 11pm Friday and Saturday protects sleep, and the 6pm Sunday stop keeps the weekend from running late. I can live with this at 0. As a small addition, not a condition, I'd like a glass of water and a breakfast before the 9am start each day so the first block doesn't begin on an empty stomach.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5174,
+      "outTokens": 1577,
+      "thinkingTokens": 1364,
+      "cost": 0.0023363000000000004,
+      "promptChars": 10459
+    },
+    {
+      "kind": "floor",
+      "ms": 13172,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Breakfast is my need; add it before 9am, lunch alone won't do.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Next week's energy is still unprotected; how does Sunday's stop cover it?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Manager texts are social moves; show me their wording before Saturday.\"}]}",
+      "inTokens": 5438,
+      "outTokens": 2167,
+      "thinkingTokens": 1967,
+      "cost": 0.0027105000000000002,
+      "promptChars": 10693
+    },
+    {
+      "kind": "speak",
+      "ms": 6052,
+      "reply": "{\"text\": \"I'm still not safe with this plan. Path A caps the hours and protects sleep, but nothing says what I do Monday if Sunday's report is only half-done, and that's when my energy for next week gets spent cleaning up. The moment it bites is Sunday 6pm: the plan says stop, but the reports are still open and no one has set a time to pick them up. What would move me to 0 is adding to Sunday 5pm's text: \\\"Still open: [list], with a date for each,\\\" and a Monday 9am block for each open item.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Written Monday 9am block for each open report item.\", \"turns_down\": \"\"}",
+      "inTokens": 5401,
+      "outTokens": 220,
+      "thinkingTokens": 0,
+      "cost": 0.0017274,
+      "promptChars": 11078
+    },
+    {
+      "kind": "speak",
+      "ms": 8362,
+      "reply": "{\"text\": \"I'm still not safe with this plan. Path A caps the hours and protects sleep, but if Sunday 6pm stops with a report half-done, nothing says when it gets picked up, and that's when my energy for next week gets spent cleaning up. Keep Sunday 5pm's text and add a Monday 9am block for each open item, booked before Sunday 6pm.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A Monday 9am block for each open item, booked before Sunday 6pm.\", \"turns_down\": \"\"}",
+      "inTokens": 5642,
+      "outTokens": 939,
+      "thinkingTokens": 936,
+      "cost": 0.0022447,
+      "promptChars": 11735
+    },
+    {
+      "kind": "society",
+      "ms": 5712,
+      "reply": "{\"text\": \"Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.\", \"style\": \"keep the peace\"}",
+      "inTokens": 2248,
+      "outTokens": 296,
+      "thinkingTokens": 485,
+      "cost": 0.0009400000000000001,
+      "promptChars": 2551
+    },
+    {
+      "kind": "speak",
+      "ms": 11513,
+      "reply": "{\"text\": \"Letting the loose ends go sounds calm, but it skips the one thing I track: whether each unfinished report has a set time to be picked up. If nothing is booked, Monday starts with open work and no slot, and my energy goes to scrambling instead of finishing. Hoping things sort themselves out is like hoping the dishes wash themselves, and I need the Consciousness to skip that hope.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Monday 9am block per open item, booked before Sunday 6pm.\", \"turns_down\": \"Let loose ends sort themselves\"}",
+      "inTokens": 5868,
+      "outTokens": 1087,
+      "thinkingTokens": 891,
+      "cost": 0.002298,
+      "promptChars": 12324
+    },
+    {
+      "kind": "consciousness",
+      "ms": 17070,
+      "reply": "{\"text\": \"Fear's worry is right: if the Sunday 6pm stop leaves a report half-done, nothing says when it gets picked up. I'm merging the booking into the Sunday 5pm step, so each open report gets a Monday 9am block on your calendar before 6pm, and the text to [Manager] carries those dates. The booking adds no work block, so the 3-hour cap and 11pm lights-out stay as written.\", \"to\": \"fear\", \"plan\": [\"Before Saturday 9am: write each report's minutes and smallest done version. If both fit the two 9am–12pm blocks, do both; otherwise Saturday does the sooner one.\", \"Sat and Sun, 9am–12pm on the reports, then lunch and a 20-minute walk. Lights out 11pm Friday and Saturday. Stop at 6pm Sunday.\", \"Saturday morning, text [Manager]: 'I can finish both reports by [date], working a set block this weekend.'\", \"Sunday by 5pm, book a Monday 9am block in your calendar for each open report, then text [Manager]: 'Done so far: [list]. Still open: [list], with a date for each.'\"]}",
+      "inTokens": 6158,
+      "outTokens": 2679,
+      "thinkingTokens": 2293,
+      "cost": 0.003183,
+      "promptChars": 13154
+    },
+    {
+      "kind": "floor",
+      "ms": 17222,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Monday 9am blocks per open report now sit in the plan. Accepting.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Plan now fits my limit; nothing to press, so I'm holding.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights-out and the Sunday 6pm stop still stand; nothing new to add.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Breakfast idea wasn't adopted, but it was never a condition.\"}]}",
+      "inTokens": 6183,
+      "outTokens": 2876,
+      "thinkingTokens": 2602,
+      "cost": 0.003288,
+      "promptChars": 12744
+    },
+    {
+      "kind": "speak",
+      "ms": 4940,
+      "reply": "{\"text\": \"Plan v4 covers my main worry: Sunday 5pm's text names each open report, and the Monday 9am calendar blocks go in before Sunday 6pm, so nothing gets left without a slot. I can live with this at 0, as long as those Monday blocks are actually booked before the 6pm stop, not promised for later.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6175,
+      "outTokens": 142,
+      "thinkingTokens": 0,
+      "cost": 0.0019181,
+      "promptChars": 13215
+    },
+    {
+      "kind": "floor",
+      "ms": 11953,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Booking Monday blocks adds Sunday demands; keep it under five minutes, or I won't accept.\"}]}",
+      "inTokens": 6062,
+      "outTokens": 1548,
+      "thinkingTokens": 1464,
+      "cost": 0.0025897000000000003,
+      "promptChars": 12405
+    },
+    {
+      "kind": "speak",
+      "ms": 11494,
+      "reply": "{\"text\": \"Merging the booking into Sunday 5pm doesn't reach my need: it still asks me to decide a Monday slot for each open report at the end of a weekend I've already capped. I won't accept it unless the booking takes under five minutes, so at Sunday 5pm, create one 9am Monday calendar block per open report, titled with the report name, then send the Sunday text from the plan with those dates.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Booking Monday blocks in under five minutes, with no extra Sunday step.\", \"turns_down\": \"\"}",
+      "inTokens": 6388,
+      "outTokens": 1481,
+      "thinkingTokens": 1292,
+      "cost": 0.0026515,
+      "promptChars": 13665
+    },
+    {
+      "kind": "wrap",
+      "ms": 17528,
+      "reply": "{\"plan\": [\"Before Saturday 9am, write down each report's estimated minutes and its smallest done version. If both fit the two 9am–12pm blocks, do both; if not, Saturday does the sooner one and Sunday does its smallest done version.\", \"Friday and Saturday, lights out by 11pm. Each morning, have breakfast and a glass of water before the 9am start. Work 9am–12pm, then take lunch and a 20-minute walk. Sunday, stop at 6pm.\", \"Saturday morning, text [Manager]: \\\"I can finish both reports by [date], working a set block this weekend.\\\"\", \"Sunday by 5pm, create one 9am Monday calendar block per open report, titled with the report name; this takes under five minutes. Then text [Manager]: \\\"Done so far: [list]. Still open: [list], with a date for each.\\\"\"], \"scores\": [{\"id\": \"overwhelm\", \"score\": 0, \"step\": 4, \"why\": \"Monday blocks take under five minutes at Sunday 5pm, so the limit holds.\"}, {\"id\": \"tiredness\", \"score\": 0, \"step\": 2, \"why\": \"Friday and Saturday lights-out at 11pm protects my sleep.\"}, {\"id\": \"wellness\", \"score\": 0, \"step\": 2, \"why\": \"Breakfast, water, lunch, and a walk are built into each day.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 4, \"why\": \"Monday blocks booked before Sunday 6pm mean nothing is left without a slot.\"}, {\"id\": \"efficiency\", \"score\": 0, \"step\": 1, \"why\": \"Minutes and smallest done versions get settled before Saturday's 9am start.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 4, \"why\": \"Overwhelm now sits at 0, so the neglected voice finally gets heard.\"}], \"society\": [{\"line\": \"Honestly, you've got this. Just power through it, everyone has crunch weeks, and you'll be glad you didn't let it get to you.\", \"reply\": \"I appreciate the encouragement, but powering through without sleep isn't something I can do, so I'm protecting my nights this weekend.\"}, {\"line\": \"Try not to overthink the loose ends. Things usually sort themselves out once the week starts, so just let it go for now.\", \"reply\": \"I hear you, but I need each unfinished item to have a set time to pick it up, or Monday will be much harder.\"}], \"text\": \"Plan v5 gives both reports a clear cut, protects sleep and meals, and books Monday slots before Sunday's stop. Every voice can live with it now, so this is the plan we go with.\"}",
+      "inTokens": 5377,
+      "outTokens": 3422,
+      "thinkingTokens": 2556,
+      "cost": 0.0033187,
+      "promptChars": 10752
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 3,
+      "avgSentences": 2.8,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.24,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 7 voices, avg 2.8 sentences (max 3), max overlap 0.16, Society 2/2 called out, hold rate 0.24, final -1: overwhelm, sadness",
+    "speakers": {
+      "overwhelm": 2,
+      "tiredness": 3,
+      "society": 2,
+      "consciousness": 3,
+      "efficiency": 2,
+      "wellness": 1,
+      "fear": 3
+    }
+  }
+}

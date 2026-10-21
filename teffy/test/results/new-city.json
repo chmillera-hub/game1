@@ -1,0 +1,1371 @@
+{
+  "scenario": {
+    "id": "new-city",
+    "thought": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 271904,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 30,
+    "inTokens": 145611,
+    "outTokens": 26332,
+    "thinkingTokens": 19111,
+    "cost": 0.05646229000000001
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Before 7:30pm, text [Name]: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.' Set a phone timer for 7:45pm.",
+          "At 7:45pm, if [Name] hasn't said yes, text [second name] the same words: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.'",
+          "Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'",
+          "At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.",
+          "At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'"
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "loneliness": {
+          "score": 0,
+          "need": "",
+          "why": "I already feel alone in this city, and skipping keeps me alone."
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": "She invited me, and skipping could quietly cool things between us."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "Skipping leaves loneliness and that coworker bond exposed. Danger feels close."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Tiredness gets the win tonight: we skip the drinks, go home, and sleep. Everyone else will be fine with that, I think.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "tiredness",
+          "text": "I'm still dragging, and I won't be able to keep up with a crowded night out after the day I've had. Plan v1 does rest me, but it leaves Loneliness and Embarrassment in the dark. Tiredness can live with a short stop: go for 45 minutes, then leave by [time, e.g., 9pm], with a text to her tonight saying \"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out soon.\" That keeps me, and the others, in the plan.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "Skipping gives me the rest I need. I can live with this."
+        },
+        {
+          "n": 4,
+          "who": "loneliness",
+          "text": "Tiredness's 45-minute cap helps, but I'll still walk into a room where everyone knows each other and I don't know anyone yet. I need one friendly face. Tonight, before I go, I'd like you to text my coworker: \"Happy birthday! Could I come by at 8 and grab a drink with you?\" and ask her to introduce me to one person from her group first.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "moment",
+          "why": "A short stop is a start, but I still need real connection tonight."
+        },
+        {
+          "n": 5,
+          "who": "embarrassment",
+          "text": "I'm at -1 because the plan has me skip the drinks, and that's the exact move that could quietly cool things with my coworker, who invited me in the first place. Tiredness's 45-minute cap helps, but it doesn't touch the message she gets. What would move me to 0 is adding to Embarrassment's text, before I leave: \"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 9pm.\" Send it tonight.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Check the text with me before sending. Keep it short and warm, with no excuses."
+        },
+        {
+          "n": 6,
+          "who": "society",
+          "text": "Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.",
+          "to": "embarrassment",
+          "move": "platitude"
+        },
+        {
+          "n": 7,
+          "who": "embarrassment",
+          "text": "Society's 'it'll all work itself out' skips past my part entirely. I'm not worried about one night of drinks. I'm worried that after a sudden silence, my coworker will read my absence as 'not interested' and the bond quietly stops growing. Passive rest doesn't send her anything, so that risk stays open. Following it means I go quiet tonight and never find out what she thought.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 8,
+          "who": "consciousness",
+          "text": "Tiredness's 45-minute cap and Embarrassment's text both hold, but Loneliness still walks into a room of strangers with nobody to greet her, and Fear's sense of danger comes from being left out. Tonight I need one named face waiting, so I'm asking my coworker to introduce me to one person from her group before I go. Path A covers the greeting with the coworker. Path B covers the same need by arriving with someone else, which doesn't depend on her.",
+          "to": "",
+          "move": "paths"
+        },
+        {
+          "n": 9,
+          "who": "sadness",
+          "text": "Fear is the emotion that has been heard least. It's been left out of the plan's whole picture, so the danger it feels, that the coworker bond and Loneliness are exposed if I'm absent, is still unanswered. Path A's text and the 45-minute cap don't say anything to make that risk feel smaller, so Fear stays at -1 and keeps pulling toward the worst case. Consciousness, please add one concrete safeguard that a missed night can be repaired tonight, for example a follow-up message the next morning from me, sent by 10am.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Fear has barely been heard"
+        },
+        {
+          "n": 10,
+          "who": "fear",
+          "text": "The greeting still depends on my coworker's reply, and Path B's arrival with someone else doesn't reach what I need. I'm exposed in a room I don't know yet, and a surprise introduction from her may not happen. What would move me to 0 is a named person waiting: before 7:30, text [Name] \"Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.\" and confirm they said yes.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Sadness is right: Fear needs a concrete repair safeguard, not just the plan."
+        },
+        {
+          "n": 11,
+          "who": "embarrassment",
+          "text": "Fear's named-person text can secure arrival, but it never reaches my coworker, so the signal I need still goes unsent. Path B's 'text to your coworker' at leaving has no words yet, and that gap is how it slips. What would move me to 0 is keeping Embarrassment's text, changing 9pm to 8:45, and sending it before I leave tonight.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A new text to someone else is a social move. Keep it short, and check with me first."
+        },
+        {
+          "n": 12,
+          "who": "consciousness",
+          "text": "I'm choosing Path A, because Tiredness, Embarrassment, and Loneliness can all live with it, but I'm adding Fear's named person so arrival no longer depends on the coworker's reply. Fear's worry about being exposed in a room is answered by that confirmed person waiting at 8. Sadness asked for a next-morning follow-up, but this plan must stay tonight, so the leave-time text becomes the repair.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 13,
+          "who": "fear",
+          "text": "Plan v3 gives me a named person to walk in with at 8, which is what I asked for. But the fallback only triggers on a 'no,' so if [Name] stays silent, I'd be standing at the entrance with nobody confirmed. What would move me to 0 is adding: if [Name] hasn't replied yes by 7:45pm, text [second name] the same words.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "Named person waiting before 8 answers my exposure worry. I can live with this."
+        },
+        {
+          "n": 14,
+          "who": "society",
+          "text": "Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 15,
+          "who": "fear",
+          "text": "Taking a deep breath would calm me for a minute, but it doesn't confirm that [Name] is coming, so at 8pm I could still be standing at the entrance with nobody expecting me. Trusting the right people to show up leaves the silence case open, and that's the exposure I'm guarding. Plan v3 only triggers the backup on a 'no,' so I need the 7:45pm check added to cover silence too.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 16,
+          "who": "loneliness",
+          "text": "Plan v3 now covers me. The named person at the entrance is the step that moves me to 0, and the 7:45pm check means silence still gets a backup, which is what I was missing. I'm holding it to that check firing on time, so if [Name] hasn't said yes by 7:45pm, [second name] gets the same message right away.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "A confirmed named person at 8 meets my need; the 7:45 backup protects it."
+        },
+        {
+          "n": 17,
+          "who": "consciousness",
+          "text": "Fear's silence worry gets the change: if [Name] hasn't said yes by 7:45pm, the same words go to [second name] right away, now written into step one. Sadness, this check answers Fear's exposure directly, since a confirmed person at the entrance at 8 covers the risk of standing alone. A next-morning follow-up falls outside tonight's time frame, so Embarrassment's leave text stays as the repair. Loneliness's named greeting and Tiredness's 8:45 cap are unchanged.",
+          "to": "fear",
+          "move": "refine"
+        },
+        {
+          "n": 18,
+          "who": "fear",
+          "text": "Plan v4 now answers the worry I was guarding: if [Name] doesn't say yes by 7:45pm, [second name] gets the same words right away, so I'm never standing alone at the entrance. I'm holding it to that 7:45 check actually going out, with a timer on my phone set for 7:45 tonight.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "The 7:45pm backup for silence is in place. I can live with this plan."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "We have a plan that lets you show up on a short timer, with a named person waiting and a clear message to your coworker. Go enjoy the evening, and rest when it ends at 8:45.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [],
+      "societyLines": [
+        {
+          "text": "Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.",
+          "to": "embarrassment",
+          "style": "rest instead of acting (\"sleep on it\", \"take a nap, you'll feel better\")"
+        },
+        {
+          "text": "Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.",
+          "to": "fear",
+          "style": "wellness platitude (yoga, deep breathing, a bubble bath, a walk)"
+        }
+      ],
+      "lensesUsed": {
+        "loneliness": [
+          "moment"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 1,
+      "locks": {
+        "embarrassment": "Leave text to coworker sent tonight, before I go home.",
+        "tiredness": "A firm 45-minute cap and a set leave time, so I can actually sleep tonight.",
+        "loneliness": "One named person to greet me when I arrive, arranged before I go.",
+        "fear": "Backup text also fires if [Name] stays silent past 7:45pm."
+      },
+      "waiting": {
+        "loneliness": 0,
+        "embarrassment": 2,
+        "fear": 0,
+        "tiredness": 2,
+        "doubt": 2,
+        "sadness": 1
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 30,
+        "inChars": 285265,
+        "outChars": 20029,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 13,
+          "society": 2,
+          "consciousness": 4,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 2
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I moved to a new city two months ago and I feel lonely. My coworker invited me to her birthday drinks tonight but I'm tired and thinking of skipping it.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Tiredness gets the win tonight: we skip the drinks, go home, and sleep. Everyone else will be fine with that, I think.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Skip the birthday drinks tonight, go home, and rest so I'm not drained tomorrow."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "loneliness",
+            "why": "I already feel alone in this city, and skipping keeps me alone."
+          },
+          {
+            "id": "embarrassment",
+            "why": "She invited me, and skipping could quietly cool things between us."
+          },
+          {
+            "id": "fear",
+            "why": "Skipping leaves loneliness and that coworker bond exposed. Danger feels close."
+          }
+        ],
+        "spotlight": "loneliness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Skipping gives me the rest I need. I can live with this."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Rest is fine, but staying home keeps me isolated. Can I stop by briefly?"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Would a short text to her tonight keep things warm without the full evening?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Loneliness and her friendship are both exposed. Show a plan protecting them first."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "tiredness",
+        "text": "I'm still dragging, and I won't be able to keep up with a crowded night out after the day I've had. Plan v1 does rest me, but it leaves Loneliness and Embarrassment in the dark. Tiredness can live with a short stop: go for 45 minutes, then leave by [time, e.g., 9pm], with a text to her tonight saying \"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out soon.\" That keeps me, and the others, in the plan.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "Skipping gives me the rest I need. I can live with this.",
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A short stop is a start, but I still need real connection tonight."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "tiredness",
+            "why": "A short, warm text with a 45-minute stop keeps our bond safe."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will 45 minutes be enough to actually connect with anyone?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Loneliness isn't fully covered yet; I'll wait to see if it is."
+          }
+        ],
+        "pick": "loneliness",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "loneliness",
+        "text": "Tiredness's 45-minute cap helps, but I'll still walk into a room where everyone knows each other and I don't know anyone yet. I need one friendly face. Tonight, before I go, I'd like you to text my coworker: \"Happy birthday! Could I come by at 8 and grab a drink with you?\" and ask her to introduce me to one person from her group first.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "moment",
+        "why": "A short stop is a start, but I still need real connection tonight.",
+        "prevScore": -1,
+        "lensLabel": "the exact moment",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Check the text with me before sending. Keep it short and warm, with no excuses."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A 45-minute cap and a 9pm leave time let me sleep. I can live with that."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Nothing new yet. I'll speak once the text and timing are settled."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I've already said what I need. I'll wait to see if it gets arranged."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "embarrassment",
+        "text": "I'm at -1 because the plan has me skip the drinks, and that's the exact move that could quietly cool things with my coworker, who invited me in the first place. Tiredness's 45-minute cap helps, but it doesn't touch the message she gets. What would move me to 0 is adding to Embarrassment's text, before I leave: \"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 9pm.\" Send it tonight.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Check the text with me before sending. Keep it short and warm, with no excuses.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "society",
+        "text": "Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.",
+        "to": "embarrassment",
+        "move": "platitude",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "embarrassment",
+        "text": "Society's 'it'll all work itself out' skips past my part entirely. I'm not worried about one night of drinks. I'm worried that after a sudden silence, my coworker will read my absence as 'not interested' and the bond quietly stops growing. Passive rest doesn't send her anything, so that risk stays open. Following it means I go quiet tonight and never find out what she thought.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "consciousness",
+        "text": "Tiredness's 45-minute cap and Embarrassment's text both hold, but Loneliness still walks into a room of strangers with nobody to greet her, and Fear's sense of danger comes from being left out. Tonight I need one named face waiting, so I'm asking my coworker to introduce me to one person from her group before I go. Path A covers the greeting with the coworker. Path B covers the same need by arriving with someone else, which doesn't depend on her.",
+        "to": "",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Before 8pm, text your coworker: \"Happy birthday! Could you introduce me to one person from your group when I arrive at 8? I'd love that.\" Arrive at 8, ask her for that introduction, and stay until 8:45 before leaving.",
+            "Path B: Before 7:30pm, text [Name of a neighbor or new colleague you've met] asking \"Want to join me at a birthday drink at 8 tonight? I'd like to have someone with me.\" Meet them at 8, go in together, and leave by 8:45 with a text to your coworker."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A's named greeting covers my need, arranged before I arrive.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Path A's text reaches her before I arrive. Nothing new to add.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "If she declines, who greets me? Path A has no backup.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Both paths cap me at 8:45; Path A asks less of me.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "sadness",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "sadness",
+        "text": "Fear is the emotion that has been heard least. It's been left out of the plan's whole picture, so the danger it feels, that the coworker bond and Loneliness are exposed if I'm absent, is still unanswered. Path A's text and the 45-minute cap don't say anything to make that risk feel smaller, so Fear stays at -1 and keeps pulling toward the worst case. Consciousness, please add one concrete safeguard that a missed night can be repaired tonight, for example a follow-up message the next morning from me, sent by 10am.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Fear has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Sadness is right: Fear needs a concrete repair safeguard, not just the plan."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "My relationship risk is covered by tonight's text; I'm holding."
+          },
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Path A and Path B both cover my greeting need; nothing new."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 45-minute cap and leave time hold; I can accept this."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Which path, A or B, is the actual plan? Both are still open."
+          }
+        ],
+        "pick": "fear",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "fear",
+        "text": "The greeting still depends on my coworker's reply, and Path B's arrival with someone else doesn't reach what I need. I'm exposed in a room I don't know yet, and a surprise introduction from her may not happen. What would move me to 0 is a named person waiting: before 7:30, text [Name] \"Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.\" and confirm they said yes.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Sadness is right: Fear needs a concrete repair safeguard, not just the plan.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 14
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "loneliness",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "fear",
+            "why": "Will they actually say yes before 7:30? Without a confirmed name, I'm still alone."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "fear",
+            "why": "A new text to someone else is a social move. Keep it short, and check with me first."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Extra texts and a confirmation step cost energy, but the 45-minute cap still covers me."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "embarrassment",
+        "text": "Fear's named-person text can secure arrival, but it never reaches my coworker, so the signal I need still goes unsent. Path B's 'text to your coworker' at leaving has no words yet, and that gap is how it slips. What would move me to 0 is keeping Embarrassment's text, changing 9pm to 8:45, and sending it before I leave tonight.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A new text to someone else is a social move. Keep it short, and check with me first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "consciousness",
+        "text": "I'm choosing Path A, because Tiredness, Embarrassment, and Loneliness can all live with it, but I'm adding Fear's named person so arrival no longer depends on the coworker's reply. Fear's worry about being exposed in a room is answered by that confirmed person waiting at 8. Sadness asked for a next-morning follow-up, but this plan must stay tonight, so the leave-time text becomes the repair.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Before 7:30pm, text [Name of neighbor or new colleague]: 'Hi! Want to join me at a birthday drink at 8 tonight? I'd love to walk in together.' If they say no, text [second name] the same words.",
+            "Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'",
+            "At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.",
+            "At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "score",
+        "id": "loneliness",
+        "from": -1,
+        "to": 0,
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Named person waiting before 8 answers my exposure worry. I can live with this."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The pre-8pm text now carries the 8:45 leave line. Coworker gets the signal."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Fixed 8:45 leave and 45-minute cap are what I asked for. Sleep is protected."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Named greeter is arranged before I go. Nothing new to add."
+          }
+        ],
+        "pick": "fear",
+        "at": 23
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": 0,
+        "to": -1,
+        "at": 24
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "fear",
+        "text": "Plan v3 gives me a named person to walk in with at 8, which is what I asked for. But the fallback only triggers on a 'no,' so if [Name] stays silent, I'd be standing at the entrance with nobody confirmed. What would move me to 0 is adding: if [Name] hasn't replied yes by 7:45pm, text [second name] the same words.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "Named person waiting before 8 answers my exposure worry. I can live with this.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 25
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "society",
+        "text": "Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "fear",
+        "text": "Taking a deep breath would calm me for a minute, but it doesn't confirm that [Name] is coming, so at 8pm I could still be standing at the entrance with nobody expecting me. Trusting the right people to show up leaves the silence case open, and that's the exposure I'm guarding. Plan v3 only triggers the backup on a 'no,' so I need the 7:45pm check added to cover silence too.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "My 7:45 check request is on the table; I'm waiting for Consciousness to add it."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will a second-name text at 7:45 feel like a cold replacement to my coworker?"
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "A confirmed named person at 8 meets my need; the 7:45 backup protects it."
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "Fear is still unanswered; the 7:45 check is the safeguard Consciousness needs to add."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The extra 7:45 text is brief and doesn't add to my exhaustion."
+          }
+        ],
+        "pick": "loneliness",
+        "at": 30
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "loneliness",
+        "text": "Plan v3 now covers me. The named person at the entrance is the step that moves me to 0, and the 7:45pm check means silence still gets a backup, which is what I was missing. I'm holding it to that check firing on time, so if [Name] hasn't said yes by 7:45pm, [second name] gets the same message right away.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "A confirmed named person at 8 meets my need; the 7:45 backup protects it.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "consciousness",
+        "text": "Fear's silence worry gets the change: if [Name] hasn't said yes by 7:45pm, the same words go to [second name] right away, now written into step one. Sadness, this check answers Fear's exposure directly, since a confirmed person at the entrance at 8 covers the risk of standing alone. A next-morning follow-up falls outside tonight's time frame, so Embarrassment's leave text stays as the repair. Loneliness's named greeting and Tiredness's 8:45 cap are unchanged.",
+        "to": "fear",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Before 7:30pm, text [Name]: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.' If no yes by 7:45pm, text [second name] the same words.",
+            "Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'",
+            "At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.",
+            "At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 32
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 7:45pm backup for silence is in place. I can live with this plan."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The 8:45 cap is unchanged, so I'm still fine. Nothing new to add."
+          },
+          {
+            "id": "loneliness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The named greeting at 8 still covers me. Nothing new to add."
+          }
+        ],
+        "pick": "fear",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "fear",
+        "text": "Plan v4 now answers the worry I was guarding: if [Name] doesn't say yes by 7:45pm, [second name] gets the same words right away, so I'm never standing alone at the entrance. I'm holding it to that 7:45 check actually going out, with a timer on my phone set for 7:45 tonight.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "The 7:45pm backup for silence is in place. I can live with this plan.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 36
+      },
+      {
+        "type": "wrap",
+        "text": "We have a plan that lets you show up on a short timer, with a named person waiting and a clear message to your coworker. Go enjoy the evening, and rest when it ends at 8:45.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Before 7:30pm, text [Name]: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.' Set a phone timer for 7:45pm.",
+            "At 7:45pm, if [Name] hasn't said yes, text [second name] the same words: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.'",
+            "Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'",
+            "At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.",
+            "At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'"
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "loneliness",
+            "score": 0,
+            "why": "A named person at the entrance and a coworker introduction give me a face in the room.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "My coworker gets a clear message that I came, which keeps the bond from going quiet.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Two named backups and a 7:45 timer mean I'm never left standing alone at the entrance.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "A hard 8:45 leave time caps the night, so I can rest afterward.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.",
+            "to": "embarrassment",
+            "reply": "I hear that, but I'm not worried about one night. I'm worried about my coworker reading my absence as disinterest, and resting doesn't tell her anything."
+          },
+          {
+            "line": "Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.",
+            "to": "fear",
+            "reply": "Breathing helps, but I need someone to actually confirm they'll meet me, because I'm new here and standing alone at the entrance is what I'm trying to avoid."
+          }
+        ],
+        "questions": [],
+        "at": 37
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 12064,
+      "reply": "{\"plan\": \"Skip the birthday drinks tonight, go home, and rest so I'm not drained tomorrow.\", \"text\": \"Tiredness gets the win tonight: we skip the drinks, go home, and sleep. Everyone else will be fine with that, I think.\", \"minus\": [{\"id\": \"loneliness\", \"why\": \"I already feel alone in this city, and skipping keeps me alone.\"}, {\"id\": \"embarrassment\", \"why\": \"She invited me, and skipping could quietly cool things between us.\"}, {\"id\": \"fear\", \"why\": \"Skipping leaves loneliness and that coworker bond exposed. Danger feels close.\"}], \"spotlight\": \"loneliness\"}",
+      "inTokens": 3081,
+      "outTokens": 919,
+      "thinkingTokens": 694,
+      "cost": 0.00079789,
+      "promptChars": 4484
+    },
+    {
+      "kind": "floor",
+      "ms": 9547,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Skipping gives me the rest I need. I can live with this.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Rest is fine, but staying home keeps me isolated. Can I stop by briefly?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Would a short text to her tonight keep things warm without the full evening?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Loneliness and her friendship are both exposed. Show a plan protecting them first.\"}]}",
+      "inTokens": 3709,
+      "outTokens": 842,
+      "thinkingTokens": 579,
+      "cost": 0.0015283,
+      "promptChars": 6166
+    },
+    {
+      "kind": "speak",
+      "ms": 3604,
+      "reply": "{\"text\": \"I'm still dragging, and I won't be able to keep up with a crowded night out after the day I've had. Plan v1 does rest me, but it leaves Loneliness and Embarrassment in the dark. Tiredness can live with a short stop: go for 45 minutes, then leave by [time, e.g., 9pm], with a text to her tonight saying \\\"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out soon.\\\" That keeps me, and the others, in the plan.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A firm 45-minute cap and a set leave time, so I can actually sleep tonight.\", \"turns_down\": \"\"}",
+      "inTokens": 3621,
+      "outTokens": 232,
+      "thinkingTokens": 0,
+      "cost": 0.0011984,
+      "promptChars": 6258
+    },
+    {
+      "kind": "floor",
+      "ms": 8103,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A short stop is a start, but I still need real connection tonight.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"tiredness\", \"why\": \"A short, warm text with a 45-minute stop keeps our bond safe.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will 45 minutes be enough to actually connect with anyone?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Loneliness isn't fully covered yet; I'll wait to see if it is.\"}]}",
+      "inTokens": 3895,
+      "outTokens": 776,
+      "thinkingTokens": 525,
+      "cost": 0.0015526,
+      "promptChars": 6573
+    },
+    {
+      "kind": "speak",
+      "ms": 6538,
+      "reply": "{\"text\": \"Tiredness's 45-minute cap helps, but it still leaves me alone at the exact moment I'm most likely to feel it: when I walk into a room of people who already know each other and I don't know anyone's name yet. Right now the plan doesn't put one friendly face on my side of that room. What would move me to 0 is texting my coworker tonight, before I go, \\\"Happy birthday! Is it okay if I come by at 8 and grab a drink with you?\\\" and then pointing me at one person from her group to say hi to first.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A named person to greet me on arrival, arranged before I walk in tonight\", \"turns_down\": \"\"}",
+      "inTokens": 3841,
+      "outTokens": 227,
+      "thinkingTokens": 0,
+      "cost": 0.0012604,
+      "promptChars": 6849
+    },
+    {
+      "kind": "speak",
+      "ms": 6406,
+      "reply": "{\"text\": \"Tiredness's 45-minute cap helps, but I'll still walk into a room where everyone knows each other and I don't know anyone yet. I need one friendly face. Tonight, before I go, I'd like you to text my coworker: \\\"Happy birthday! Could I come by at 8 and grab a drink with you?\\\" and ask her to introduce me to one person from her group first.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"One named person to greet me when I arrive, arranged before I go.\", \"turns_down\": \"\"}",
+      "inTokens": 4082,
+      "outTokens": 177,
+      "thinkingTokens": 220,
+      "cost": 0.0014192000000000002,
+      "promptChars": 7517
+    },
+    {
+      "kind": "floor",
+      "ms": 10668,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Check the text with me before sending. Keep it short and warm, with no excuses.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A 45-minute cap and a 9pm leave time let me sleep. I can live with that.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Nothing new yet. I'll speak once the text and timing are settled.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I've already said what I need. I'll wait to see if it gets arranged.\"}]}",
+      "inTokens": 4041,
+      "outTokens": 1070,
+      "thinkingTokens": 817,
+      "cost": 0.0017424,
+      "promptChars": 6971
+    },
+    {
+      "kind": "speak",
+      "ms": 3021,
+      "reply": "{\"text\": \"I'm at -1 because the plan has me skip the drinks, and that's the exact move that could quietly cool things with my coworker, who invited me in the first place. Tiredness's 45-minute cap helps, but it doesn't touch the message she gets. What would move me to 0 is adding to Embarrassment's text, before I leave: \\\"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 9pm.\\\" Send it tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Send a short, warm message tonight so she knows I chose to show up.\", \"turns_down\": \"\"}",
+      "inTokens": 4031,
+      "outTokens": 213,
+      "thinkingTokens": 0,
+      "cost": 0.0013114000000000001,
+      "promptChars": 7431
+    },
+    {
+      "kind": "society",
+      "ms": 4738,
+      "reply": "{\"text\": \"Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.\", \"style\": \"rest instead of acting\"}",
+      "inTokens": 2054,
+      "outTokens": 69,
+      "thinkingTokens": 0,
+      "cost": 0.0006473,
+      "promptChars": 2071
+    },
+    {
+      "kind": "speak",
+      "ms": 6046,
+      "reply": "{\"text\": \"Society's 'it'll all work itself out' skips past my part entirely. I'm not worried about one night of drinks. I'm worried that after a sudden silence, my coworker will read my absence as 'not interested' and the bond quietly stops growing. Passive rest doesn't send her anything, so that risk stays open. Following it means I go quiet tonight and never find out what she thought.\", \"to\": \"society\", \"score\": -1, \"need\": \"A visible, warm signal to my coworker tonight, sent before I go home.\", \"turns_down\": \"Just rest, it'll work out\"}",
+      "inTokens": 4623,
+      "outTokens": 190,
+      "thinkingTokens": 0,
+      "cost": 0.0014765,
+      "promptChars": 8999
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7015,
+      "reply": "{\"text\": \"Tiredness's 45-minute cap and Embarrassment's text both hold, but Loneliness still walks into a room of strangers with nobody to greet her, and Fear's sense of danger comes from being left out. Tonight I need one named face waiting, so I'm asking my coworker to introduce me to one person from her group before I go. Path A covers the greeting with the coworker. Path B covers the same need by arriving with someone else, which doesn't depend on her.\", \"to\": \"😔\", \"plan\": [\"Path A: Before 8pm, text your coworker: \\\"Happy birthday! Could you introduce me to one person from your group when I arrive at 8? I'd love that.\\\" Arrive at 8, ask her for that introduction, and stay until 8:45 before leaving.\", \"Path B: Before 7:30pm, text [Name of a neighbor or new colleague you've met] asking \\\"Want to join me at a birthday drink at 8 tonight? I'd like to have someone with me.\\\" Meet them at 8, go in together, and leave by 8:45 with a text to your coworker.\"]}",
+      "inTokens": 4425,
+      "outTokens": 359,
+      "thinkingTokens": 0,
+      "cost": 0.0015031,
+      "promptChars": 8538
+    },
+    {
+      "kind": "floor",
+      "ms": 16104,
+      "reply": "{\"bids\": [{\"id\": \"loneliness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A's named greeting covers my need, arranged before I arrive.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Path A's text reaches her before I arrive. Nothing new to add.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"If she declines, who greets me? Path A has no backup.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Both paths cap me at 8:45; Path A asks less of me.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4969,
+      "outTokens": 2556,
+      "thinkingTokens": 2256,
+      "cost": 0.0027638,
+      "promptChars": 9555
+    },
+    {
+      "kind": "speak",
+      "ms": 6433,
+      "reply": "{\"text\": \"Fear is the emotion that has been heard least. It's been left out of the plan's whole picture, so the danger it feels, that the coworker bond and Loneliness are exposed if I'm absent, is still unanswered. Path A's text and the 45-minute cap don't say anything to make that risk feel smaller, so Fear stays at -1 and keeps pulling toward the worst case. Consciousness, please add one concrete safeguard that a missed night can be repaired tonight, for example a follow-up message the next morning from me, sent by 10am.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A concrete repair step, sent by 10am tomorrow, if I miss tonight.\", \"turns_down\": \"\", \"spotlight\": \"fear\"}",
+      "inTokens": 4841,
+      "outTokens": 250,
+      "thinkingTokens": 0,
+      "cost": 0.0015744,
+      "promptChars": 9608
+    },
+    {
+      "kind": "floor",
+      "ms": 7358,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Sadness is right: Fear needs a concrete repair safeguard, not just the plan.\"}, {\"id\": \"embarrassment\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"My relationship risk is covered by tonight's text; I'm holding.\"}, {\"id\": \"loneliness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Path A and Path B both cover my greeting need; nothing new.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 45-minute cap and leave time hold; I can accept this.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Which path, A or B, is the actual plan? Both are still open.\"}]}",
+      "inTokens": 5026,
+      "outTokens": 303,
+      "thinkingTokens": 0,
+      "cost": 0.0016549,
+      "promptChars": 9685
+    },
+    {
+      "kind": "speak",
+      "ms": 6098,
+      "reply": "{\"text\": \"Consciousness, the greeting still depends on my coworker's reply, and Path B's arrival with someone else doesn't reach what I need. I'm exposed in a room I don't know yet, and a surprise introduction from her may not happen. What would move me to 0 is a named person waiting: before 7:30, text [Name] \\\"Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.\\\" and confirm they said yes.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A confirmed named person waiting for me at arrival, before 7:30pm.\", \"turns_down\": \"\"}",
+      "inTokens": 5122,
+      "outTokens": 211,
+      "thinkingTokens": 0,
+      "cost": 0.0016392000000000002,
+      "promptChars": 10444
+    },
+    {
+      "kind": "floor",
+      "ms": 10576,
+      "reply": "{\"bids\": [{\"id\": \"consciousness\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"fear\", \"why\": \"Fear's named-person text is the fix. I'll make it part of the plan.\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"fear\", \"why\": \"Will they actually say yes before 7:30? Without a confirmed name, I'm still alone.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"fear\", \"why\": \"A new text to someone else is a social move. Keep it short, and check with me first.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Extra texts and a confirmation step cost energy, but the 45-minute cap still covers me.\"}]}",
+      "inTokens": 5187,
+      "outTokens": 1249,
+      "thinkingTokens": 985,
+      "cost": 0.0021767,
+      "promptChars": 10121
+    },
+    {
+      "kind": "speak",
+      "ms": 12356,
+      "reply": "{\"text\": \"Fear's named-person text can secure arrival, but it never reaches my coworker, so the signal I need still goes unsent. Path B's 'text to your coworker' at leaving has no words yet, and that gap is how it slips. What would move me to 0 is keeping Embarrassment's text, changing 9pm to 8:45, and sending it before I leave tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Leave text to coworker sent tonight, before I go home.\", \"turns_down\": \"\"}",
+      "inTokens": 5611,
+      "outTokens": 1403,
+      "thinkingTokens": 1230,
+      "cost": 0.0023804000000000004,
+      "promptChars": 11791
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7508,
+      "reply": "{\"text\": \"Tiredness's 45-minute cap and Embarrassment's text both stay, and Fear's named-person text is the piece that gets Loneliness a face at the door. I'm choosing Path B as the base because Fear's need for someone confirmed before 7:30 is concrete, and the coworker greeting in Path A depends on her reply. I'm keeping Path A's greeting as a bonus: I'll ask my coworker for an introduction once I'm there, so Loneliness gets two chances at a friendly face. Embarrassment's text now goes out before I leave, with 8:45 as the leave time.\", \"to\": \"es_loneliness\", \"plan\": [\"Before 7:30pm, text [Neighbor or colleague name]: \\\"Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.\\\" Wait for a yes; if none by 7:45, text a second person the same words.\", \"At 8pm, meet them, go in together, and ask my coworker: \\\"Could you introduce me to one person from your group?\\\"\", \"At 8:45pm, send my coworker: \\\"Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45.\\\" Then go home and sleep.\", \"Tomorrow by 10am, send my coworker: \\\"Thanks for inviting me last night. I'd love to get coffee sometime this week.\\\"\"]}",
+      "inTokens": 5525,
+      "outTokens": 464,
+      "thinkingTokens": 0,
+      "cost": 0.0018855999999999999,
+      "promptChars": 11629
+    },
+    {
+      "kind": "consciousness",
+      "ms": 12974,
+      "reply": "{\"text\": \"I'm choosing Path A, because Tiredness, Embarrassment, and Loneliness can all live with it, but I'm adding Fear's named person so arrival no longer depends on the coworker's reply. Fear's worry about being exposed in a room is answered by that confirmed person waiting at 8. Sadness asked for a next-morning follow-up, but this plan must stay tonight, so the leave-time text becomes the repair.\", \"to\": \"fear\", \"plan\": [\"Before 7:30pm, text [Name of neighbor or new colleague]: 'Hi! Want to join me at a birthday drink at 8 tonight? I'd love to walk in together.' If they say no, text [second name] the same words.\", \"Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'\", \"At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.\", \"At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'\"], \"reason\": \"\"}",
+      "inTokens": 5594,
+      "outTokens": 1656,
+      "thinkingTokens": 1399,
+      "cost": 0.0025793,
+      "promptChars": 11783
+    },
+    {
+      "kind": "floor",
+      "ms": 17783,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Named person waiting before 8 answers my exposure worry. I can live with this.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The pre-8pm text now carries the 8:45 leave line. Coworker gets the signal.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Fixed 8:45 leave and 45-minute cap are what I asked for. Sleep is protected.\"}, {\"id\": \"loneliness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Named greeter is arranged before I go. Nothing new to add.\"}]}",
+      "inTokens": 5709,
+      "outTokens": 2585,
+      "thinkingTokens": 2290,
+      "cost": 0.0030012999999999997,
+      "promptChars": 11525
+    },
+    {
+      "kind": "speak",
+      "ms": 10396,
+      "reply": "{\"text\": \"Plan v3 gives me a named person to walk in with at 8, which is what I asked for. But the fallback only triggers on a 'no,' so if [Name] stays silent, I'd be standing at the entrance with nobody confirmed. What would move me to 0 is adding: if [Name] hasn't replied yes by 7:45pm, text [second name] the same words.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Second text if [Name] hasn't confirmed yes by 7:45pm.\", \"turns_down\": \"\"}",
+      "inTokens": 5516,
+      "outTokens": 1231,
+      "thinkingTokens": 1050,
+      "cost": 0.0022664,
+      "promptChars": 11442
+    },
+    {
+      "kind": "society",
+      "ms": 4522,
+      "reply": "{\"text\": \"Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.\", \"style\": \"wellness platitude\"}",
+      "inTokens": 2293,
+      "outTokens": 64,
+      "thinkingTokens": 262,
+      "cost": 0.0008455,
+      "promptChars": 2691
+    },
+    {
+      "kind": "speak",
+      "ms": 9201,
+      "reply": "{\"text\": \"Taking a deep breath would calm me for a minute, but it doesn't confirm that [Name] is coming, so at 8pm I could still be standing at the entrance with nobody expecting me. Trusting the right people to show up leaves the silence case open, and that's the exposure I'm guarding. Plan v3 only triggers the backup on a 'no,' so I need the 7:45pm check added to cover silence too.\", \"to\": \"society\", \"score\": -1, \"need\": \"Backup text also fires if [Name] stays silent past 7:45pm.\", \"turns_down\": \"Deep breath, trust people\"}",
+      "inTokens": 6028,
+      "outTokens": 938,
+      "thinkingTokens": 738,
+      "cost": 0.0022725,
+      "promptChars": 12813
+    },
+    {
+      "kind": "floor",
+      "ms": 14037,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"My 7:45 check request is on the table; I'm waiting for Consciousness to add it.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will a second-name text at 7:45 feel like a cold replacement to my coworker?\"}, {\"id\": \"loneliness\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"A confirmed named person at 8 meets my need; the 7:45 backup protects it.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"Fear is still unanswered; the 7:45 check is the safeguard Consciousness needs to add.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The extra 7:45 text is brief and doesn't add to my exhaustion.\"}]}",
+      "inTokens": 5840,
+      "outTokens": 1947,
+      "thinkingTokens": 1607,
+      "cost": 0.0027211,
+      "promptChars": 11848
+    },
+    {
+      "kind": "speak",
+      "ms": 5956,
+      "reply": "{\"text\": \"Plan v3 now covers me. The named person at the entrance is the step that moves me to 0, and the 7:45pm check means silence still gets a backup, which is what I was missing. I'm holding it to that check firing on time, so if [Name] hasn't said yes by 7:45pm, [second name] gets the same message right away.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5909,
+      "outTokens": 141,
+      "thinkingTokens": 0,
+      "cost": 0.0018378000000000001,
+      "promptChars": 12466
+    },
+    {
+      "kind": "consciousness",
+      "ms": 17801,
+      "reply": "{\"text\": \"Fear's silence worry gets the change: if [Name] hasn't said yes by 7:45pm, the same words go to [second name] right away, now written into step one. Sadness, this check answers Fear's exposure directly, since a confirmed person at the entrance at 8 covers the risk of standing alone. A next-morning follow-up falls outside tonight's time frame, so Embarrassment's leave text stays as the repair. Loneliness's named greeting and Tiredness's 8:45 cap are unchanged.\", \"to\": \"fear\", \"plan\": [\"Before 7:30pm, text [Name]: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.' If no yes by 7:45pm, text [second name] the same words.\", \"Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'\", \"At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.\", \"At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'\"]}",
+      "inTokens": 6252,
+      "outTokens": 3050,
+      "thinkingTokens": 2621,
+      "cost": 0.0033967000000000003,
+      "promptChars": 13529
+    },
+    {
+      "kind": "floor",
+      "ms": 13116,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 7:45pm backup for silence is in place. I can live with this plan.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 8:45 cap is unchanged, so I'm still fine. Nothing new to add.\"}, {\"id\": \"loneliness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The named greeting at 8 still covers me. Nothing new to add.\"}]}",
+      "inTokens": 6322,
+      "outTokens": 1460,
+      "thinkingTokens": 1250,
+      "cost": 0.0026257000000000003,
+      "promptChars": 13172
+    },
+    {
+      "kind": "speak",
+      "ms": 8245,
+      "reply": "{\"text\": \"Plan v4 covers me. The named person waiting at the entrance at 8 is the step that moves me to 0, and the 7:45pm check means silence still gets a backup. I'm holding it to that check firing on time, so [second name] gets the same words right after 7:45 if [Name] hasn't said yes.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6469,
+      "outTokens": 724,
+      "thinkingTokens": 588,
+      "cost": 0.0022988,
+      "promptChars": 14029
+    },
+    {
+      "kind": "speak",
+      "ms": 6313,
+      "reply": "{\"text\": \"Plan v4 now answers the worry I was guarding: if [Name] doesn't say yes by 7:45pm, [second name] gets the same words right away, so I'm never standing alone at the entrance. I'm holding it to that 7:45 check actually going out, with a timer on my phone set for 7:45 tonight.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6701,
+      "outTokens": 140,
+      "thinkingTokens": 0,
+      "cost": 0.0020784,
+      "promptChars": 14678
+    },
+    {
+      "kind": "wrap",
+      "ms": 7347,
+      "reply": "{\"plan\": [\"Before 7:30pm, text [Name]: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.' Set a phone timer for 7:45pm.\", \"At 7:45pm, if [Name] hasn't said yes, text [second name] the same words: 'Hi! Could you meet me at the entrance at 8 tonight? I'd love to walk in with you.'\", \"Before 8pm, text your coworker: 'Happy birthday! I'm wiped out, but I wanted to come say hi. I'll head out by 8:45. Could you introduce me to one person from your group when I arrive?'\", \"At 8pm, meet your named person at the entrance and go in together. Ask your coworker for the introduction, then stay until 8:45.\", \"At 8:45pm, leave and text your coworker: 'Thanks for including me tonight. I'd love to get coffee with you soon.'\"], \"scores\": [{\"id\": \"Loneliness\", \"score\": 0, \"step\": 4, \"why\": \"A named person at the entrance and a coworker introduction give me a face in the room.\"}, {\"id\": \"Embarrassment\", \"score\": 0, \"step\": 3, \"why\": \"My coworker gets a clear message that I came, which keeps the bond from going quiet.\"}, {\"id\": \"Fear\", \"score\": 0, \"step\": 2, \"why\": \"Two named backups and a 7:45 timer mean I'm never left standing alone at the entrance.\"}, {\"id\": \"Tiredness\", \"score\": 0, \"step\": 5, \"why\": \"A hard 8:45 leave time caps the night, so I can rest afterward.\"}, {\"id\": \"Sadness\", \"score\": 0, \"step\": 0, \"why\": \"The plan answers Fear's exposure and Embarrassment's signal, so I can accept it.\"}], \"society\": [{\"line\": \"Honestly, you're overthinking it. Real friendship doesn't depend on one night of drinks, so just get some rest and it'll all work itself out.\", \"reply\": \"I hear that, but I'm not worried about one night. I'm worried about my coworker reading my absence as disinterest, and resting doesn't tell her anything.\"}, {\"line\": \"Honestly, you're just in your head about it. Take a deep breath, trust that the right people will show up for you, and it'll all fall into place.\", \"reply\": \"Breathing helps, but I need someone to actually confirm they'll meet me, because I'm new here and standing alone at the entrance is what I'm trying to avoid.\"}], \"text\": \"We have a plan that lets you show up on a short timer, with a named person waiting and a clear message to your coworker. Go enjoy the evening, and rest when it ends at 8:45.\"}",
+      "inTokens": 5294,
+      "outTokens": 886,
+      "thinkingTokens": 0,
+      "cost": 0.0020263,
+      "promptChars": 10599
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 6,
+      "avgSentences": 3.7,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.21,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.39,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 7 voices, avg 3.7 sentences (max 6), max overlap 0.21, Society 2/2 called out, hold rate 0.39, final -1: none",
+    "speakers": {
+      "tiredness": 1,
+      "loneliness": 2,
+      "embarrassment": 3,
+      "society": 2,
+      "consciousness": 3,
+      "sadness": 1,
+      "fear": 4
+    }
+  }
+}

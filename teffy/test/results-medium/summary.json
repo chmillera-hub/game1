@@ -1,0 +1,203 @@
+{
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "society": "sometimes",
+  "summary": [
+    {
+      "id": "new-city",
+      "calls": 27,
+      "seconds": 321,
+      "cost": 0.0584,
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 5,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.37,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 1,
+      "holdRate": 0.28,
+      "finalMinus": [
+        "sadness",
+        "hunger"
+      ],
+      "errors": 0,
+      "flags": [
+        "[15] loneliness echoes [14] fear (0.37)",
+        "[16] embarrassment echoes [14] fear (0.32)",
+        "[16] embarrassment echoes [15] loneliness (0.31)",
+        "question without a stated reason? [18] sadness"
+      ]
+    },
+    {
+      "id": "third-saturday",
+      "calls": 31,
+      "seconds": 342,
+      "cost": 0.0656,
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 5,
+      "avgSentences": 3.2,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.3,
+      "finalMinus": [
+        "sadness",
+        "overwhelm"
+      ],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "exam-all-nighter",
+      "calls": 29,
+      "seconds": 346,
+      "cost": 0.0639,
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.21,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 1,
+      "holdRate": 0.16,
+      "finalMinus": [],
+      "errors": 0,
+      "flags": [
+        "question without a stated reason? [5] fear"
+      ]
+    },
+    {
+      "id": "weekend-overwhelm",
+      "calls": 29,
+      "seconds": 379,
+      "cost": 0.0686,
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 3,
+      "avgSentences": 2.8,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.24,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "credit-taker",
+      "calls": 30,
+      "seconds": 389,
+      "cost": 0.0706,
+      "messages": 16,
+      "voices": 7,
+      "maxSentences": 4,
+      "avgSentences": 2.8,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.16,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.41,
+      "finalMinus": [],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "sister-comments",
+      "calls": 30,
+      "seconds": 420,
+      "cost": 0.075,
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.15,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.36,
+      "finalMinus": [
+        "fear",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "quit-and-travel",
+      "calls": 32,
+      "seconds": 474,
+      "cost": 0.082,
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.09,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.29,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": []
+    },
+    {
+      "id": "disc-golf",
+      "calls": 52,
+      "seconds": 696,
+      "cost": 0.1406,
+      "messages": 26,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.22,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 3,
+      "bareQuestions": 2,
+      "holdRate": 0.37,
+      "finalMinus": [
+        "overwhelm",
+        "sadness"
+      ],
+      "errors": 0,
+      "flags": [
+        "question without a stated reason? [4] embarrassment",
+        "question without a stated reason? [6] embarrassment"
+      ]
+    }
+  ]
+}

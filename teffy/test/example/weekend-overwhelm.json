@@ -1,0 +1,1253 @@
+{
+  "scenario": {
+    "id": "weekend-overwhelm",
+    "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 202334,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 25,
+    "inTokens": 110919,
+    "outTokens": 14764,
+    "thinkingTokens": 9326,
+    "cost": 0.04062343
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+      "followups": [],
+      "plan": {
+        "version": 4,
+        "steps": [
+          "Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"",
+          "Tonight, before any weekend block exists: send your manager the priority email, and add \"No work Sat/Sun until [Manager] replies\" to your calendar.",
+          "Nothing gets added to Saturday or Sunday, even small tasks, until your manager replies in writing.",
+          "When your manager replies, check whether they set Monday as a hard deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "overwhelm": {
+          "score": 0,
+          "need": "",
+          "why": "Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "Working through the weekend with no rest is exhausting, and I'm already running on empty."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Skipping recovery for days in a row puts my body and health at real risk."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I burn out, the other parts of me, like my relationships and rest, get left exposed with nothing protecting them."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Okay, so the weekend is ours, and we can clear both reports and be caught up by Monday. It's basically just a few long days of focus, and then we're done.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "annoyance",
+          "text": "\"the weekend is ours\" and \"just a few long days\" skip past what I already said: I'm overwhelmed, and two extra reports on top of everything else is a lot. A full weekend of pushing takes away the rest I need, and that's where I can't go to 0. What would move me is a hard stop each weekend day at 6pm, plus an email to your manager tonight.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "'Basically just' minimizes what I'm feeling. Please say why you framed it that way."
+        },
+        {
+          "n": 4,
+          "who": "embarrassment",
+          "text": "Annoyance's hard-stop ask is the right line for me, so I won't work the weekend into a blur. Before I can say what I need, I need to know whether the two reports can really be done by Monday, or whether that's a guess. If you give me your honest hour estimate for each report, plus whether your manager set a deadline or just assumed Monday, I can judge whether the weekend is necessary.",
+          "to": "user",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Before we email the manager, how will we word the priority ask?"
+        },
+        {
+          "n": 5,
+          "who": "sadness",
+          "text": "Overwhelm is the one I hear hurting most: two extra reports landed on a full week, and the weekend plan stacks even more on it. The step that keeps it at -1 is \"work through the weekend, pushing hard,\" which leaves no room to slow down or be heard. Consciousness, please size the work first, then shrink the plan to what Overwhelm can carry.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": 0,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 6,
+          "who": "consciousness",
+          "text": "Annoyance's hard stops and Embarrassment's need for honest estimates both tell me the weekend can't be a blind push, so I'm changing the plan to start with sizing the work. Overwhelm is the one getting squeezed, so I'm shrinking the plan to a short, sized check-in with your manager before any weekend work is locked in. Once you have real hour estimates for both reports, we can decide whether any weekend time is truly needed, and if so, keep it capped.",
+          "to": "",
+          "move": "paths"
+        },
+        {
+          "n": 7,
+          "who": "overwhelm",
+          "text": "Plan v2 shrinks the weekend to a capped check-in before any work is locked in, and that's what I need. I'm holding it to one condition: tonight you send Annoyance's priority email, and the weekend stays off the calendar until your manager replies.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Path A shrinks the demands. I can live with that, grudgingly."
+        },
+        {
+          "n": 8,
+          "who": "fear",
+          "text": "I'm at -1 because the plan still leaves the weekend open to 'work through it' the moment the email goes out, and nothing protects my need for rest and my relationships if I burn out. Path B's Saturday and Sunday blocks are still on the calendar before the manager replies, so my need isn't covered yet. What would move me to 0 is Consciousness locking the weekend as off-limits until the manager confirms in writing: tonight, send Annoyance's priority email and add 'No work Sat/Sun until [Manager] replies' to the calendar.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Fear needs proof that the weekend stays off until the manager replies."
+        },
+        {
+          "n": 9,
+          "who": "society",
+          "text": "Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 10,
+          "who": "fear",
+          "text": "Society's 'stay positive and it'll all work out' doesn't touch my need at all: nothing in it says the weekend stays off the calendar until your manager answers in writing. Following it means the blocks get booked and the weekend starts filling before anyone has confirmed the Monday deadline is real.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 11,
+          "who": "consciousness",
+          "text": "I'm choosing Path A because it's the only one where Fear's and Overwhelm's needs are both met before any weekend time gets booked, and Annoyance's hard stops still hold. Annoyance is at -1 and I'm changing the plan so the priority email goes out tonight and the weekend stays off the calendar until your manager replies in writing. To settle whether Monday is real, I need you to fill in whether your manager set that deadline or just assumed it.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 12,
+          "who": "annoyance",
+          "text": "Plan v3 moves me to 0 with the step \"No work Sat/Sun until [Manager] replies\" on the calendar tonight, plus the priority email going out before any weekend block exists. I'm holding that to a condition: the weekend stays off until the manager answers in writing. That covers my need for a boundary I don't have to re-argue.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it."
+        },
+        {
+          "n": 13,
+          "who": "fear",
+          "text": "Plan v3 is what I can work with: the priority email goes out tonight, and the weekend blocks don't get created until your manager answers. I'm holding that to one condition: nothing gets added to Saturday or Sunday in the meantime, even small tasks, until that written reply comes back.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Plan v3 blocks the weekend and sends the email tonight, which is what I asked for."
+        },
+        {
+          "n": 14,
+          "who": "consciousness",
+          "text": "We've sized the work and put the weekend off-limits until your manager answers in writing. If the deadline turns out to be real, we'll cap whatever weekend time is needed.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Push through the weekend",
+          "from": "consciousness",
+          "by": "annoyance",
+          "why": "Weekend hard stops at 6pm and a priority email tonight"
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!",
+          "to": "fear",
+          "style": "toxic positivity (\"just stay positive\", \"look on the bright side\")"
+        }
+      ],
+      "lensesUsed": {},
+      "prefs": {},
+      "queue": [],
+      "roundCount": 11,
+      "acceptRun": 2,
+      "locks": {
+        "overwhelm": "Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more.",
+        "tiredness": "Working through the weekend with no rest is exhausting, and I'm already running on empty.",
+        "wellness": "Skipping recovery for days in a row puts my body and health at real risk.",
+        "embarrassment": "Honest hour estimates for both reports and whether Monday is a real deadline.",
+        "fear": "Weekend off the calendar until manager replies in writing, per the plan.",
+        "annoyance": "Weekend hard stops at 6pm and a priority email tonight"
+      },
+      "waiting": {
+        "overwhelm": 2,
+        "tiredness": 1,
+        "doubt": 4,
+        "annoyance": 0,
+        "anger": 1,
+        "fear": 0,
+        "embarrassment": 2,
+        "efficiency": 1,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 25,
+        "inChars": 210911,
+        "outChars": 17841,
+        "byKind": {
+          "open": 1,
+          "floor": 8,
+          "speak": 12,
+          "consciousness": 2,
+          "society": 1,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 1
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I'm overwhelmed at work because my manager dropped two extra reports on me this week, and I'm thinking of pushing through all weekend to catch up.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Okay, so the weekend is ours, and we can clear both reports and be caught up by Monday. It's basically just a few long days of focus, and then we're done.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Work through the weekend, pushing hard on the two extra reports so the workload is caught up before Monday."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "overwhelm",
+            "why": "Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more."
+          },
+          {
+            "id": "tiredness",
+            "why": "Working through the weekend with no rest is exhausting, and I'm already running on empty."
+          },
+          {
+            "id": "wellness",
+            "why": "Skipping recovery for days in a row puts my body and health at real risk."
+          },
+          {
+            "id": "fear",
+            "why": "If I burn out, the other parts of me, like my relationships and rest, get left exposed with nothing protecting them."
+          }
+        ],
+        "spotlight": "overwhelm",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Still too many demands. Shrink the plan, not just rename the weekend."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A few long days with no real rest is still exhausting."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "'Basically just' minimizes what I'm feeling. Please say why you framed it that way."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Is catching up by Monday realistic with two extra reports on top?"
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Overwhelm should speak first. I'll step in if it stays unheard."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "Nothing new yet. I'll wait to see whether the plan protects rest."
+          }
+        ],
+        "pick": "annoyance",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "annoyance",
+        "text": "\"the weekend is ours\" and \"just a few long days\" skip past what I already said: I'm overwhelmed, and two extra reports on top of everything else is a lot. A full weekend of pushing takes away the rest I need, and that's where I can't go to 0. What would move me is a hard stop each weekend day at 6pm, plus an email to your manager tonight.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "'Basically just' minimizes what I'm feeling. Please say why you framed it that way.",
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "The weekend-is-ours line ignores the boundary I already stated."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Before we email the manager, how will we word the priority ask?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "annoyance",
+            "why": "Hard stops and a tonight email protect my other needs too."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Hard stops help, but I still need real rest. Waiting."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "My limit is already signaled. I'll wait for the plan to shrink."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The catch-up plan is still unexamined, but Annoyance's point comes first."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "embarrassment",
+        "text": "Annoyance's hard-stop ask is the right line for me, so I won't work the weekend into a blur. Before I can say what I need, I need to know whether the two reports can really be done by Monday, or whether that's a guess. If you give me your honest hour estimate for each report, plus whether your manager set a deadline or just assumed Monday, I can judge whether the weekend is necessary.",
+        "to": "user",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Before we email the manager, how will we word the priority ask?",
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Already at -1; the plan must shrink, so I won't argue, just wait."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Weekend pushing is already flagged; I'd only repeat that."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Before any weekend plan, we need real hour estimates to see what's actually needed."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Is Monday really a hard deadline, or did someone just assume it?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Burnout risk is already on the table; I'll wait for the estimates."
+          }
+        ],
+        "pick": "sadness",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "sadness",
+        "text": "Overwhelm is the one I hear hurting most: two extra reports landed on a full week, and the weekend plan stacks even more on it. The step that keeps it at -1 is \"work through the weekend, pushing hard,\" which leaves no room to slow down or be heard. Consciousness, please size the work first, then shrink the plan to what Overwhelm can carry.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": 0,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "consciousness",
+        "text": "Annoyance's hard stops and Embarrassment's need for honest estimates both tell me the weekend can't be a blind push, so I'm changing the plan to start with sizing the work. Overwhelm is the one getting squeezed, so I'm shrinking the plan to a short, sized check-in with your manager before any weekend work is locked in. Once you have real hour estimates for both reports, we can decide whether any weekend time is truly needed, and if so, keep it capped.",
+        "to": "",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Tonight, write hour estimates for both reports and send your manager this: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\" Work no weekend until they reply.",
+            "Path B: Tonight, estimate hours for both reports, then block Saturday 9am to 1pm and Sunday 9am to 1pm for the first report only, with a hard stop at 6pm each day. Email your manager by Friday noon to confirm which report gets done by Monday."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 9
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 10
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 11
+      },
+      {
+        "type": "score",
+        "id": "embarrassment",
+        "from": -1,
+        "to": 0,
+        "at": 12
+      },
+      {
+        "type": "spotlight",
+        "id": "fear",
+        "at": 13
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 14
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path A shrinks the demands. I can live with that, grudgingly.",
+            "prefers": "A"
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "No weekend work under Path A means I can rest. Holding.",
+            "prefers": "A"
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Path A protects recovery. Nothing more needed from me right now.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "If my manager insists Monday is firm, what protects my rest then?",
+            "prefers": "A"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B's Friday email breaks my tonight rule. Choose A.",
+            "prefers": "A"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Path A's honest estimates and deadline question cover my need.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "overwhelm",
+        "text": "Plan v2 shrinks the weekend to a capped check-in before any work is locked in, and that's what I need. I'm holding it to one condition: tonight you send Annoyance's priority email, and the weekend stays off the calendar until your manager replies.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Path A shrinks the demands. I can live with that, grudgingly.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 16
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "My hard-stop and priority-email ask is already in Plan v2."
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "overwhelm",
+            "why": "Overwhelm's condition is fine, but I need the actual hour estimates first."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Fear needs proof that the weekend stays off until the manager replies."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Is the Monday deadline real, or just assumed? Plan v2 doesn't check that yet."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Plan v2 protects rest, so I can hold until the reply comes in."
+          }
+        ],
+        "pick": "fear",
+        "at": 17
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "fear",
+        "text": "I'm at -1 because the plan still leaves the weekend open to 'work through it' the moment the email goes out, and nothing protects my need for rest and my relationships if I burn out. Path B's Saturday and Sunday blocks are still on the calendar before the manager replies, so my need isn't covered yet. What would move me to 0 is Consciousness locking the weekend as off-limits until the manager confirms in writing: tonight, send Annoyance's priority email and add 'No work Sat/Sun until [Manager] replies' to the calendar.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Fear needs proof that the weekend stays off until the manager replies.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 18
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "society",
+        "text": "Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!",
+        "to": "fear",
+        "move": "platitude",
+        "at": 19
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "fear",
+        "text": "Society's 'stay positive and it'll all work out' doesn't touch my need at all: nothing in it says the weekend stays off the calendar until your manager answers in writing. Following it means the blocks get booked and the weekend starts filling before anyone has confirmed the Monday deadline is real.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "consciousness",
+        "text": "I'm choosing Path A because it's the only one where Fear's and Overwhelm's needs are both met before any weekend time gets booked, and Annoyance's hard stops still hold. Annoyance is at -1 and I'm changing the plan so the priority email goes out tonight and the weekend stays off the calendar until your manager replies in writing. To settle whether Monday is real, I need you to fill in whether your manager set that deadline or just assumed it.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"",
+            "Tonight: add \"No work Sat/Sun until [Manager] replies\" to your calendar and keep both weekend days blocked.",
+            "fill in whether your manager set Monday as a deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 22
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": -1,
+        "to": 0,
+        "at": 23
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 24
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Weekend stays blocked until the manager replies in writing. That's my need, so I accept."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Both my conditions are in the plan now: tonight's email and the weekend staying off."
+          }
+        ],
+        "pick": "annoyance",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "annoyance",
+        "text": "Plan v3 moves me to 0 with the step \"No work Sat/Sun until [Manager] replies\" on the calendar tonight, plus the priority email going out before any weekend block exists. I'm holding that to a condition: the weekend stays off until the manager answers in writing. That covers my need for a boundary I don't have to re-argue.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Plan v3 blocks the weekend and sends the email tonight, which is what I asked for."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Tonight's email and a weekend off until the reply are my condition, and v3 meets it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "If the manager never answers, what decides whether Monday is real?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "consciousness",
+            "why": "Keep the email to one short ask so the manager gets no info dump."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "Overwhelm is now being heard, so I have nothing new to add."
+          }
+        ],
+        "pick": "fear",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "fear",
+        "text": "Plan v3 is what I can work with: the priority email goes out tonight, and the weekend blocks don't get created until your manager answers. I'm holding that to one condition: nothing gets added to Saturday or Sunday in the meantime, even small tasks, until that written reply comes back.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Plan v3 blocks the weekend and sends the email tonight, which is what I asked for.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 28
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "The email's [X] and [Y] are blanks. Can we check the wording with me before it sends?"
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Monday's deadline is still a guess. What if the manager never answers in time?"
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Already accepted the plan with its condition; nothing new to add."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Weekend stays off until the reply, so rest is covered."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "The weekend block protects my health; nothing more to ask."
+          }
+        ],
+        "pick": "",
+        "at": 29
+      },
+      {
+        "type": "wrap",
+        "text": "We've sized the work and put the weekend off-limits until your manager answers in writing. If the deadline turns out to be real, we'll cap whatever weekend time is needed.",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Tonight: write hour estimates for both reports, then send your manager: \"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\"",
+            "Tonight, before any weekend block exists: send your manager the priority email, and add \"No work Sat/Sun until [Manager] replies\" to your calendar.",
+            "Nothing gets added to Saturday or Sunday, even small tasks, until your manager replies in writing.",
+            "When your manager replies, check whether they set Monday as a hard deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "why": "Sized work and a short check-in shrink the plan to what I can carry.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "The weekend stays off until a reply, so I get the rest I need.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "Protected weekend time keeps my health from being traded away.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Weekend blocks wait for a written reply, so my need is covered before anything is booked.",
+            "step": 0
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "The hard boundary is on the calendar tonight, so I don't have to re-argue it.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "Honest hour estimates give us real numbers instead of a guess.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!",
+            "to": "fear",
+            "reply": "I appreciate the encouragement, but I need my weekend protected and a real answer on the deadline before I commit any of it to work."
+          }
+        ],
+        "questions": [],
+        "at": 30
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 14666,
+      "reply": "{\"plan\": \"Work through the weekend, pushing hard on the two extra reports so the workload is caught up before Monday.\", \"text\": \"Okay, so the weekend is ours, and we can clear both reports and be caught up by Monday. It's basically just a few long days of focus, and then we're done.\", \"minus\": [{\"id\": \"overwhelm\", \"why\": \"Two extra reports on top of everything else is already too many demands, and a whole weekend of pushing adds more.\"}, {\"id\": \"tiredness\", \"why\": \"Working through the weekend with no rest is exhausting, and I'm already running on empty.\"}, {\"id\": \"wellness\", \"why\": \"Skipping recovery for days in a row puts my body and health at real risk.\"}, {\"id\": \"fear\", \"why\": \"If I burn out, the other parts of me, like my relationships and rest, get left exposed with nothing protecting them.\"}], \"spotlight\": \"overwhelm\"}",
+      "inTokens": 3035,
+      "outTokens": 662,
+      "thinkingTokens": 364,
+      "cost": 0.0006608300000000001,
+      "promptChars": 4351
+    },
+    {
+      "kind": "floor",
+      "ms": 10019,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Still too many demands. Shrink the plan, not just rename the weekend.\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A few long days with no real rest is still exhausting.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"'Basically just' minimizes what I'm feeling. Please say why you framed it that way.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Is catching up by Monday realistic with two extra reports on top?\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Overwhelm should speak first. I'll step in if it stays unheard.\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"Nothing new yet. I'll wait to see whether the plan protects rest.\"}]}",
+      "inTokens": 3742,
+      "outTokens": 1127,
+      "thinkingTokens": 753,
+      "cost": 0.0016811999999999999,
+      "promptChars": 6298
+    },
+    {
+      "kind": "speak",
+      "ms": 7761,
+      "reply": "{\"text\": \"Consciousness, you said \\\"the weekend is ours\\\" and \\\"it's basically just a few long days of focus,\\\" and that minimizes what I already told you: I'm overwhelmed, and two extra reports on top of everything else is a lot. Pushing through the whole weekend leaves my rest and recovery untouched, and that's exactly what I can't absorb right now. What would move me to 0 is a smaller plan: Saturday and Sunday each get a hard stop at 6pm, and the user emails their manager tonight: \\\"I can finish [Report A] by [date] and [Report B] by [date] without working the weekend; can we confirm priorities?\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan with hard weekend stop and a manager email, not full weekend push.\", \"turns_down\": \"push through weekend\"}",
+      "inTokens": 3735,
+      "outTokens": 276,
+      "thinkingTokens": 0,
+      "cost": 0.0012546,
+      "promptChars": 6627
+    },
+    {
+      "kind": "speak",
+      "ms": 6053,
+      "reply": "{\"text\": \"Consciousness, \\\"the weekend is ours\\\" and \\\"just a few long days\\\" skip past what I already said: I'm overwhelmed, and two extra reports on top of everything else is a lot. A full weekend of pushing takes away the rest I need, and that's where I can't go to 0. What would move me is a hard stop each weekend day at 6pm, plus an email to your manager tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Weekend hard stops at 6pm and a priority email tonight\", \"turns_down\": \"Push through the weekend\"}",
+      "inTokens": 4014,
+      "outTokens": 190,
+      "thinkingTokens": 287,
+      "cost": 0.0014372999999999999,
+      "promptChars": 7392
+    },
+    {
+      "kind": "floor",
+      "ms": 11576,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The weekend-is-ours line ignores the boundary I already stated.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Before we email the manager, how will we word the priority ask?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"annoyance\", \"why\": \"Hard stops and a tonight email protect my other needs too.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Hard stops help, but I still need real rest. Waiting.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"My limit is already signaled. I'll wait for the plan to shrink.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The catch-up plan is still unexamined, but Annoyance's point comes first.\"}]}",
+      "inTokens": 3933,
+      "outTokens": 1699,
+      "thinkingTokens": 1349,
+      "cost": 0.0020255,
+      "promptChars": 6730
+    },
+    {
+      "kind": "speak",
+      "ms": 6787,
+      "reply": "{\"text\": \"Annoyance's ask is the right kind of line for me: a hard stop, and no working the weekend into a blur. Before I can say what I need, I have to know whether the new reports can actually be finished by Monday at the pace the plan assumes, or whether that's a guess. If you can estimate the hours each report takes, and tell me whether anyone else could take either one, I'd know if the weekend is necessary or just a fear. What would settle me is your honest hour estimate for both reports, plus whether your manager has a deadline on them or just assumed Monday.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Realistic hour estimates and a confirmed deadline, so I know if Monday is real.\", \"turns_down\": \"\"}",
+      "inTokens": 3885,
+      "outTokens": 241,
+      "thinkingTokens": 0,
+      "cost": 0.0012826000000000003,
+      "promptChars": 7044
+    },
+    {
+      "kind": "speak",
+      "ms": 5933,
+      "reply": "{\"text\": \"Annoyance's hard-stop ask is the right line for me, so I won't work the weekend into a blur. Before I can say what I need, I need to know whether the two reports can really be done by Monday, or whether that's a guess. If you give me your honest hour estimate for each report, plus whether your manager set a deadline or just assumed Monday, I can judge whether the weekend is necessary.\", \"to\": \"user\", \"score\": -1, \"need\": \"Honest hour estimates for both reports and whether Monday is a real deadline.\", \"turns_down\": \"\"}",
+      "inTokens": 4136,
+      "outTokens": 182,
+      "thinkingTokens": 301,
+      "cost": 0.0014754,
+      "promptChars": 7779
+    },
+    {
+      "kind": "floor",
+      "ms": 5917,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Already at -1; the plan must shrink, so I won't argue, just wait.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Weekend pushing is already flagged; I'd only repeat that.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Before any weekend plan, we need real hour estimates to see what's actually needed.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Is Monday really a hard deadline, or did someone just assume it?\"}, {\"id\": \"fear\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Burnout risk is already on the table; I'll wait for the estimates.\"}]}",
+      "inTokens": 4122,
+      "outTokens": 310,
+      "thinkingTokens": 0,
+      "cost": 0.0013877000000000002,
+      "promptChars": 7261
+    },
+    {
+      "kind": "speak",
+      "ms": 7981,
+      "reply": "{\"text\": \"Sadness here: Overwhelm is the one I hear hurting most, because two extra reports landed on top of an already full week and the weekend plan just stacks more on it. The step that keeps it at -1 is \\\"work through the weekend, pushing hard,\\\" since that leaves no room for it to slow down or be heard at all. Consciousness, please add Overwhelm's need to the plan by sizing the work first: once the reports' hour estimates and Monday deadline are known, shrink the plan to fit what Overwhelm can carry rather than pushing to get everything done.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan sized to the hour estimates and deadline, not a full weekend push\", \"turns_down\": \"\", \"spotlight\": \"overwhelm\"}",
+      "inTokens": 4142,
+      "outTokens": 255,
+      "thinkingTokens": 0,
+      "cost": 0.0013647,
+      "promptChars": 7739
+    },
+    {
+      "kind": "speak",
+      "ms": 5505,
+      "reply": "{\"text\": \"Overwhelm is the one I hear hurting most: two extra reports landed on a full week, and the weekend plan stacks even more on it. The step that keeps it at -1 is \\\"work through the weekend, pushing hard,\\\" which leaves no room to slow down or be heard. Consciousness, please size the work first, then shrink the plan to what Overwhelm can carry.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan sized to the reports' hour estimates, with no forced full-weekend push.\", \"turns_down\": \"\", \"spotlight\": \"😵‍💫 overwhelm\"}",
+      "inTokens": 4416,
+      "outTokens": 203,
+      "thinkingTokens": 259,
+      "cost": 0.0015499000000000003,
+      "promptChars": 8516
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7130,
+      "reply": "{\"text\": \"Annoyance's hard stops and Embarrassment's need for honest estimates both tell me the weekend can't be a blind push, so I'm changing the plan to start with sizing the work. Overwhelm is the one getting squeezed, so I'm shrinking the plan to a short, sized check-in with your manager before any weekend work is locked in. Once you have real hour estimates for both reports, we can decide whether any weekend time is truly needed, and if so, keep it capped.\", \"to\": \"😵‍💫\", \"plan\": [\"Path A: Tonight, write hour estimates for both reports and send your manager this: \\\"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\\\" Work no weekend until they reply.\", \"Path B: Tonight, estimate hours for both reports, then block Saturday 9am to 1pm and Sunday 9am to 1pm for the first report only, with a hard stop at 6pm each day. Email your manager by Friday noon to confirm which report gets done by Monday.\"]}",
+      "inTokens": 4197,
+      "outTokens": 365,
+      "thinkingTokens": 0,
+      "cost": 0.0014367,
+      "promptChars": 7955
+    },
+    {
+      "kind": "floor",
+      "ms": 15798,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path A shrinks the demands. I can live with that, grudgingly.\", \"prefers\": \"A\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"No weekend work under Path A means I can rest. Holding.\", \"prefers\": \"A\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Path A protects recovery. Nothing more needed from me right now.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"If my manager insists Monday is firm, what protects my rest then?\", \"prefers\": \"A\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B's Friday email breaks my tonight rule. Choose A.\", \"prefers\": \"A\"}, {\"id\": \"embarrassment\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Path A's honest estimates and deadline question cover my need.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4766,
+      "outTokens": 2609,
+      "thinkingTokens": 2169,
+      "cost": 0.0027294,
+      "promptChars": 9036
+    },
+    {
+      "kind": "speak",
+      "ms": 6097,
+      "reply": "{\"text\": \"Plan v2 shrinks the weekend to a capped check-in before any work is locked in, and that's what I need. I'm holding it to one condition: tonight you send Annoyance's priority email, and the weekend stays off the calendar until your manager replies.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 4465,
+      "outTokens": 118,
+      "thinkingTokens": 0,
+      "cost": 0.0013936,
+      "promptChars": 8608
+    },
+    {
+      "kind": "floor",
+      "ms": 5814,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"My hard-stop and priority-email ask is already in Plan v2.\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"overwhelm\", \"why\": \"Overwhelm's condition is fine, but I need the actual hour estimates first.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Fear needs proof that the weekend stays off until the manager replies.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Is the Monday deadline real, or just assumed? Plan v2 doesn't check that yet.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Plan v2 protects rest, so I can hold until the reply comes in.\"}]}",
+      "inTokens": 4594,
+      "outTokens": 319,
+      "thinkingTokens": 0,
+      "cost": 0.0015338,
+      "promptChars": 8501
+    },
+    {
+      "kind": "speak",
+      "ms": 6479,
+      "reply": "{\"text\": \"I'm at -1 because the plan still leaves the weekend open to 'work through it' the moment the email goes out, and nothing protects my need for rest and my relationships if I burn out. Path B's Saturday and Sunday blocks are still on the calendar before the manager replies, so my need isn't covered yet. What would move me to 0 is Consciousness locking the weekend as off-limits until the manager confirms in writing: tonight, send Annoyance's priority email and add 'No work Sat/Sun until [Manager] replies' to the calendar.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Weekend stays off the calendar until manager replies in writing.\", \"turns_down\": \"\"}",
+      "inTokens": 4534,
+      "outTokens": 234,
+      "thinkingTokens": 0,
+      "cost": 0.0014723,
+      "promptChars": 8842
+    },
+    {
+      "kind": "society",
+      "ms": 4610,
+      "reply": "{\"text\": \"Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!\", \"style\": \"toxic positivity\"}",
+      "inTokens": 2183,
+      "outTokens": 59,
+      "thinkingTokens": 204,
+      "cost": 0.0007805000000000002,
+      "promptChars": 2500
+    },
+    {
+      "kind": "speak",
+      "ms": 7324,
+      "reply": "{\"text\": \"Society's 'stay positive and it'll all work out' doesn't touch my need at all: nothing in it says the weekend stays off the calendar until your manager answers in writing. Following it means the blocks get booked and the weekend starts filling before anyone has confirmed the Monday deadline is real.\", \"to\": \"society\", \"score\": -1, \"need\": \"Weekend off the calendar until manager replies in writing, per the plan.\", \"turns_down\": \"Stay positive, it'll work out\"}",
+      "inTokens": 5120,
+      "outTokens": 162,
+      "thinkingTokens": 0,
+      "cost": 0.0016121000000000002,
+      "promptChars": 10492
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6150,
+      "reply": "{\"text\": \"I'm choosing Path A because it's the only one where Fear's and Overwhelm's needs are both met before any weekend time gets booked, and Annoyance's hard stops still hold. Annoyance is at -1 and I'm changing the plan so the priority email goes out tonight and the weekend stays off the calendar until your manager replies in writing. To settle whether Monday is real, I need you to fill in whether your manager set that deadline or just assumed it.\", \"to\": \"bdannoyance\", \"plan\": [\"Tonight: write hour estimates for both reports, then send your manager: \\\"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\\\"\", \"Tonight: add \\\"No work Sat/Sun until [Manager] replies\\\" to your calendar and keep both weekend days blocked.\", \"You: fill in whether your manager set Monday as a deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date.\"]}",
+      "inTokens": 5408,
+      "outTokens": 362,
+      "thinkingTokens": 0,
+      "cost": 0.0017980000000000001,
+      "promptChars": 11330
+    },
+    {
+      "kind": "floor",
+      "ms": 11865,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Weekend stays blocked until the manager replies in writing. That's my need, so I accept.\"}, {\"id\": \"annoyance\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Priority email tonight and a weekend off the calendar cover my hard stops. I can live with it.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Both my conditions are in the plan now: tonight's email and the weekend staying off.\"}]}",
+      "inTokens": 5324,
+      "outTokens": 1484,
+      "thinkingTokens": 1254,
+      "cost": 0.0023353000000000002,
+      "promptChars": 10613
+    },
+    {
+      "kind": "speak",
+      "ms": 6084,
+      "reply": "{\"text\": \"Plan v3 moves me to 0 with the step \\\"No work Sat/Sun until [Manager] replies\\\" on the calendar tonight, plus the priority email going out before any weekend block exists. I'm holding that to a condition: the weekend stays off until the manager answers in writing. That covers my need for a boundary I don't have to re-argue.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5183,
+      "outTokens": 148,
+      "thinkingTokens": 0,
+      "cost": 0.0016245,
+      "promptChars": 10627
+    },
+    {
+      "kind": "floor",
+      "ms": 13344,
+      "reply": "{\"bids\": [{\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Plan v3 blocks the weekend and sends the email tonight, which is what I asked for.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Tonight's email and a weekend off until the reply are my condition, and v3 meets it.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"If the manager never answers, what decides whether Monday is real?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"consciousness\", \"why\": \"Keep the email to one short ask so the manager gets no info dump.\"}, {\"id\": \"sadness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Overwhelm is now being heard, so I have nothing new to add.\"}]}",
+      "inTokens": 5191,
+      "outTokens": 1669,
+      "thinkingTokens": 1352,
+      "cost": 0.0023879,
+      "promptChars": 10238
+    },
+    {
+      "kind": "speak",
+      "ms": 5507,
+      "reply": "{\"text\": \"Plan v3 covers my need. The step that moves me to 0 is putting \\\"No work Sat/Sun until [Manager] replies\\\" on the calendar tonight, with the priority email going out before any weekend block exists. I'm holding that to one condition: the weekend stays blocked until your manager answers in writing.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5462,
+      "outTokens": 137,
+      "thinkingTokens": 0,
+      "cost": 0.0017027000000000001,
+      "promptChars": 11525
+    },
+    {
+      "kind": "speak",
+      "ms": 4973,
+      "reply": "{\"text\": \"Plan v3 is what I can work with: the priority email goes out tonight, and the weekend blocks don't get created until your manager answers. I'm holding that to one condition: nothing gets added to Saturday or Sunday in the meantime, even small tasks, until that written reply comes back.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5699,
+      "outTokens": 128,
+      "thinkingTokens": 270,
+      "cost": 0.0019033,
+      "promptChars": 12192
+    },
+    {
+      "kind": "floor",
+      "ms": 9710,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"The email's [X] and [Y] are blanks. Can we check the wording with me before it sends?\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Monday's deadline is still a guess. What if the manager never answers in time?\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Already accepted the plan with its condition; nothing new to add.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Weekend stays off until the reply, so rest is covered.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"The weekend block protects my health; nothing more to ask.\"}]}",
+      "inTokens": 5295,
+      "outTokens": 1061,
+      "thinkingTokens": 764,
+      "cost": 0.0021151,
+      "promptChars": 10549
+    },
+    {
+      "kind": "wrap",
+      "ms": 9227,
+      "reply": "{\"plan\": [\"Tonight: write hour estimates for both reports, then send your manager: \\\"[Manager], I have two new reports and my honest estimates are [X] and [Y] hours. Is Monday a hard deadline, or can we agree on [date]?\\\"\", \"Tonight, before any weekend block exists: send your manager the priority email, and add \\\"No work Sat/Sun until [Manager] replies\\\" to your calendar.\", \"Nothing gets added to Saturday or Sunday, even small tasks, until your manager replies in writing.\", \"When your manager replies, check whether they set Monday as a hard deadline or just assumed it. If they set it, reply Friday with a capped weekend plan; if not, keep the weekend off and propose a later date.\"], \"scores\": [{\"id\": \"overwhelm\", \"score\": 0, \"step\": 1, \"why\": \"Sized work and a short check-in shrink the plan to what I can carry.\"}, {\"id\": \"tiredness\", \"score\": 0, \"step\": 3, \"why\": \"The weekend stays off until a reply, so I get the rest I need.\"}, {\"id\": \"wellness\", \"score\": 0, \"step\": 3, \"why\": \"Protected weekend time keeps my health from being traded away.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 2, \"why\": \"Weekend blocks wait for a written reply, so my need is covered before anything is booked.\"}, {\"id\": \"annoyance\", \"score\": 0, \"step\": 2, \"why\": \"The hard boundary is on the calendar tonight, so I don't have to re-argue it.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 1, \"why\": \"Honest hour estimates give us real numbers instead of a guess.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 1, \"why\": \"Overwhelm was heard first, and the plan now starts by sizing the work.\"}], \"society\": [{\"line\": \"Honestly, just stay positive and it'll all work out. Weekends are for pushing through when it counts, and you've got this!\", \"reply\": \"I appreciate the encouragement, but I need my weekend protected and a real answer on the deadline before I commit any of it to work.\"}], \"text\": \"We've sized the work and put the weekend off-limits until your manager answers in writing. If the deadline turns out to be real, we'll cap whatever weekend time is needed.\"}",
+      "inTokens": 4338,
+      "outTokens": 764,
+      "thinkingTokens": 0,
+      "cost": 0.0016784999999999999,
+      "promptChars": 8166
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 11,
+      "voices": 7,
+      "maxSentences": 3,
+      "avgSentences": 2.6,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.17,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.41,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "11 msgs, 7 voices, avg 2.6 sentences (max 3), max overlap 0.17, Society 1/1 called out, hold rate 0.41, final -1: none",
+    "speakers": {
+      "annoyance": 2,
+      "embarrassment": 1,
+      "sadness": 1,
+      "consciousness": 2,
+      "overwhelm": 1,
+      "fear": 3,
+      "society": 1
+    }
+  }
+}

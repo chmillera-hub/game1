@@ -1,0 +1,1388 @@
+{
+  "scenario": {
+    "id": "exam-all-nighter",
+    "thought": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "medium",
+  "ms": 346078,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 29,
+    "inTokens": 140951,
+    "outTokens": 43419,
+    "thinkingTokens": 36187,
+    "cost": 0.0638605
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "By 8:20pm, write every uncovered Friday topic on one list with an hour estimate beside each (default to 1 hour if unsure), then add the total.",
+          "At 8:20pm, if the total is 3h40m or less, study the whole list. If it's over, move the lowest-priority topics to an 'after Friday' list until the total fits 3h40m.",
+          "From 8:20pm, put your phone in another room. At 9pm, sit down for a 20-minute meal of rice with eggs or a sandwich and fruit, seated the full 20 minutes, with a glass of water. No energy drinks.",
+          "Study in 50-minute blocks from 9:20pm to 1am, with 10-minute breaks for water and a 2-minute walk. Set the 8am alarm, then lights out at 1am."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "I'm already dragging, and you want a whole night with no sleep?"
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Energy drinks on an empty night? My heart's keeping score."
+        },
+        "hunger": {
+          "score": 0,
+          "need": "",
+          "why": "Energy drinks aren't food. Nobody's feeding me tonight."
+        },
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": "Cramming on a dead brain wastes the hours I'm trying to save."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I'm wrecked Friday, the exam goes with me. Other needs are exposed."
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Tonight the scrolling stops and we study straight through, with energy drinks keeping us sharp enough to cover everything before Friday. Honestly, this is the cleanest fix we've had all week.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "tiredness",
+          "text": "Zero hours of sleep tonight is what I can't live with, and energy drinks only mask that I'm running on empty, they don't refill me. The study can stay: keep the scrolling off and study until 1am, then lights out with an alarm set for [wake time]. Consciousness, that keeps your study hours and gives me the rest I need tonight.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Cleanest for who? I'm already dragging; no sleep at all."
+        },
+        {
+          "n": 4,
+          "who": "sadness",
+          "text": "Wellness is the emotion I'm watching most closely. A body running on energy drinks through the night, with no food and no rest, is taking a hit it never agreed to. Step 1 of the plan (study straight through with energy drinks) leaves Wellness at -1 because nothing in it refuels the body tonight. What would move Wellness to 0 is replacing the energy drinks with a real meal before 10pm tonight and keeping the study hours.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": 0,
+          "lens": "",
+          "why": "Wellness is the least heard. I'm speaking for its body now."
+        },
+        {
+          "n": 5,
+          "who": "fear",
+          "text": "I'm not settled about the plan yet. Energy drinks plus a full night of studying sounds like I'm pushing my body past what it can handle right before an exam, and I need to know what the exam actually requires. Consciousness, how many hours of material are still uncovered before Friday, and which topics would be on the exam? If that's a few hours, I can accept a plan with a real meal and sleep; if it's a whole semester, I need the plan to shrink to fit what can actually be covered tonight.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Which exam topics are weakest? Covering those first protects Friday without wrecking us."
+        },
+        {
+          "n": 6,
+          "who": "society",
+          "text": "Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 7,
+          "who": "fear",
+          "text": "Society's 'it'll sort itself out after some rest' skips my actual worry: I'm not sure how much material is left before Friday, so I can't tell whether one night can cover it safely. Rest alone doesn't tell me the size of the job, and that size is what decides whether tonight's plan is sane. What would move me to 0 is a count of uncovered topics from you tonight, with a plan sized to fit it and lights out at 1am.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 8,
+          "who": "consciousness",
+          "text": "Fear's worry about the uncovered material is the gap, so Path B answers it first: list every uncovered Friday topic with an hour estimate, then study only what fits before 1am, which also meets Tiredness's lights-out and Efficiency's dead-brain concern. Path A carries Wellness's and Hunger's needs with a real meal by 9pm and no energy drinks, while keeping Tiredness's 1am lights-out. Energy drinks stay out of both paths, since Sadness already turned that down. The plan can't be finalized until the topic count from Path B's 8pm list is in.",
+          "to": "fear",
+          "move": "paths"
+        },
+        {
+          "n": 9,
+          "who": "fear",
+          "text": "I'm still on alert because I can't size tonight's plan without knowing how much is left before Friday. Path B only holds if the list of uncovered Friday topics is real, and Consciousness, I need that list from the user. What would settle me is the user writing down every uncovered topic with a rough hour estimate beside each, starting at 8pm tonight, so we can cut the study to fit before 1am.",
+          "to": "user",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Path B's list is my need; I need the actual count first."
+        },
+        {
+          "n": 10,
+          "who": "wellness",
+          "text": "Path B's 8pm list settles Fear's count, but nothing in it feeds or hydrates me between 8pm and 1am, so my need stays untouched. Path A's 9pm meal is the only piece that reaches my body tonight, and both paths are still on the table, so nothing guarantees it happens. What would move me to 0 is locking the 8pm list, then a real meal at 9pm, a glass of water at each 50-minute block, and a 2-minute walk in each 10-minute break.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Path B has no meal; a topic list won't refuel my body."
+        },
+        {
+          "n": 11,
+          "who": "society",
+          "text": "Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.",
+          "to": "wellness",
+          "move": "platitude"
+        },
+        {
+          "n": 12,
+          "who": "efficiency",
+          "text": "Your 'you've got this, breathe, it'll fall into place once you're rested' skips the one thing I measure: minutes. Deep breaths and trust don't tell us whether Path B's list fits before 1am, and they don't cut a single topic. What would move me to 0 is the user writing the 8pm list, with an hour estimate beside each topic, and Consciousness dropping anything that overflows the 1am cutoff.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 13,
+          "who": "consciousness",
+          "text": "Hunger's 'nobody's feeding me tonight' is the gap, so I'm keeping Path B's 8pm list and adding the real meal from Path A at 9pm. Fear's 8:20pm count and Efficiency's overflow cut both come from that list, and Tiredness keeps lights out at 1am. Wellness's water and 2-minute walks go into every break, and energy drinks stay out.",
+          "to": "hunger",
+          "move": "refine"
+        },
+        {
+          "n": 14,
+          "who": "hunger",
+          "text": "The 9pm sit-down meal of rice with eggs or a sandwich and fruit is real food, and cutting the energy drinks is what I needed, so I can live with this grudgingly. I'm holding you to that meal happening at 9pm, seated for the full 20 minutes, not grabbed at the desk between study blocks.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Fed at 9pm, no energy drinks: that's real food. Accepting this plan."
+        },
+        {
+          "n": 15,
+          "who": "sadness",
+          "text": "Efficiency is the emotion I'm watching most closely, because the plan still never tells it how many topics are left or whether they fit before 1am. Step 1 of the plan (study straight through with energy drinks) leaves Efficiency at -1, and the 8pm topic list is the step that would fix that. Efficiency needs that list to come with real hour estimates, so the cut can happen before any study starts.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Efficiency has barely been heard"
+        },
+        {
+          "n": 16,
+          "who": "efficiency",
+          "text": "The 8pm list is still a blank, and I can't tell whether Path B fits before 1am without it. Consciousness, I need the user to write every uncovered Friday topic with an hour estimate beside each, and then you drop anything that pushes past the 9:20pm–1am window onto the 'after Friday' list. What would settle me is that list existing tonight by 8:20pm, with the total hours shown against the 3h40m of study time.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Does the list come with hour estimates, and is the cut finished before any study starts?"
+        },
+        {
+          "n": 17,
+          "who": "consciousness",
+          "text": "Efficiency, yes: the 8pm list is the missing piece, so I'm making it due by 8:20pm with a total checked against the 3h40m study window (9:20pm–1am). If the total fits, we study everything on it; if it runs over, the lowest-priority topics move to an 'after Friday' list until it fits, so nothing gets crammed past 1am. The 9pm meal and break walks stay exactly as they are.",
+          "to": "efficiency",
+          "move": "refine"
+        },
+        {
+          "n": 18,
+          "who": "wellness",
+          "text": "Plan v4 covers my need. Step 1 now says no energy drinks and a sit-down meal at 9pm, and the 8:20pm topic list keeps the study within lights-out at 1am. I'm holding you to the 9pm meal, seated for the full 20 minutes, plus a glass of water at every 50-minute block and a 2-minute walk in every break.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Meal at 9pm, water, and walks cover my body tonight. I accept."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Plan v4 is locked: no energy drinks, a sit-down meal at 9pm, and a topic list with hour estimates by 8:20pm that decides what we study before lights out at 1am. Everyone has what they need, and we stick to it tonight.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Energy drinks all-nighter",
+          "from": "wellness",
+          "by": "sadness",
+          "why": ""
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.",
+          "to": "fear",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        },
+        {
+          "text": "Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.",
+          "to": "wellness",
+          "style": "wellness platitude (yoga, deep breathing, a bubble bath, a walk)"
+        }
+      ],
+      "lensesUsed": {},
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 1,
+      "locks": {
+        "hunger": "Energy drinks aren't food. Nobody's feeding me tonight.",
+        "wellness": "Lock Path A's 9pm meal, water, and walking breaks into tonight's plan.",
+        "tiredness": "Lights out at 1am tonight with a real sleep window.",
+        "efficiency": "Topic list with hour estimates, overflow cut before 1am",
+        "fear": "A count of uncovered topics with hour estimates, by 8:20pm tonight"
+      },
+      "waiting": {
+        "wellness": 0,
+        "efficiency": 1,
+        "fear": 3,
+        "doubt": 2,
+        "sadness": 0,
+        "tiredness": 2,
+        "hunger": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 29,
+        "inChars": 275325,
+        "outChars": 20413,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 13,
+          "society": 2,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 3
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Tonight the scrolling stops and we study straight through, with energy drinks keeping us sharp enough to cover everything before Friday. Honestly, this is the cleanest fix we've had all week.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Replace tonight's doom-scrolling with one long, uninterrupted all-nighter of studying, with energy drinks keeping us sharp enough to cover the material before Friday's exam."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "tiredness",
+            "why": "I'm already dragging, and you want a whole night with no sleep?"
+          },
+          {
+            "id": "wellness",
+            "why": "Energy drinks on an empty night? My heart's keeping score."
+          },
+          {
+            "id": "hunger",
+            "why": "Energy drinks aren't food. Nobody's feeding me tonight."
+          },
+          {
+            "id": "efficiency",
+            "why": "Cramming on a dead brain wastes the hours I'm trying to save."
+          },
+          {
+            "id": "fear",
+            "why": "If I'm wrecked Friday, the exam goes with me. Other needs are exposed."
+          }
+        ],
+        "spotlight": "tiredness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Cleanest for who? I'm already dragging; no sleep at all."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Energy drinks all night still puts my heart at risk."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A dead brain studies slowly; short focused blocks save hours."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Show me which needs are exposed before we commit tonight."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will one unbroken night really cover everything before Friday?"
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "tiredness",
+            "why": "Tiredness is the least heard; I'll stand with it."
+          }
+        ],
+        "pick": "tiredness",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "tiredness",
+        "text": "Zero hours of sleep tonight is what I can't live with, and energy drinks only mask that I'm running on empty, they don't refill me. The study can stay: keep the scrolling off and study until 1am, then lights out with an alarm set for [wake time]. Consciousness, that keeps your study hours and gives me the rest I need tonight.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Cleanest for who? I'm already dragging; no sleep at all.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleep helps, but energy drinks still aren't dealt with. Still my concern."
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Nobody has mentioned food yet. Eat before the first study hour."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What wake time? Is 1am lights-out actually enough for Friday?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleep protects Friday, but I need study covered before lights-out."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleep is good, but a 1am stop still wastes unfocused hours."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "wellness",
+            "why": "Wellness is the least heard. I'm speaking for its body now."
+          }
+        ],
+        "pick": "sadness",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "sadness",
+        "text": "Wellness is the emotion I'm watching most closely. A body running on energy drinks through the night, with no food and no rest, is taking a hit it never agreed to. Step 1 of the plan (study straight through with energy drinks) leaves Wellness at -1 because nothing in it refuels the body tonight. What would move Wellness to 0 is replacing the energy drinks with a real meal before 10pm tonight and keeping the study hours.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": 0,
+        "lens": "",
+        "why": "Wellness is the least heard. I'm speaking for its body now.",
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "consciousness",
+            "why": "Sadness's meal swap helps me; I'll add a sleep-friendly cutoff for caffeine."
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "",
+            "why": "Nobody has spoken for me yet: I need a real meal before 10pm."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "tiredness",
+            "why": "Focused study blocks before 1am keep efficiency up while sleep stays protected."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Which exam topics are weakest? Covering those first protects Friday without wrecking us."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "I've already stated my lights-out need; Sadness and Efficiency are carrying it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Nothing in the plan has changed enough for my concerns to need new voice yet."
+          }
+        ],
+        "pick": "fear",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "fear",
+        "text": "I'm not settled about the plan yet. Energy drinks plus a full night of studying sounds like I'm pushing my body past what it can handle right before an exam, and I need to know what the exam actually requires. Consciousness, how many hours of material are still uncovered before Friday, and which topics would be on the exam? If that's a few hours, I can accept a plan with a real meal and sleep; if it's a whole semester, I need the plan to shrink to fit what can actually be covered tonight.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Which exam topics are weakest? Covering those first protects Friday without wrecking us.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "society",
+        "text": "Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 8
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "fear",
+        "text": "Society's 'it'll sort itself out after some rest' skips my actual worry: I'm not sure how much material is left before Friday, so I can't tell whether one night can cover it safely. Rest alone doesn't tell me the size of the job, and that size is what decides whether tonight's plan is sane. What would move me to 0 is a count of uncovered topics from you tonight, with a plan sized to fit it and lights out at 1am.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "consciousness",
+        "text": "Fear's worry about the uncovered material is the gap, so Path B answers it first: list every uncovered Friday topic with an hour estimate, then study only what fits before 1am, which also meets Tiredness's lights-out and Efficiency's dead-brain concern. Path A carries Wellness's and Hunger's needs with a real meal by 9pm and no energy drinks, while keeping Tiredness's 1am lights-out. Energy drinks stay out of both paths, since Sadness already turned that down. The plan can't be finalized until the topic count from Path B's 8pm list is in.",
+        "to": "fear",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Eat a real meal by 9pm tonight, then study in 50-minute blocks with 10-minute breaks, phone in another room, until 1am. Lights out at 1am with an alarm set for 8am.",
+            "Path B: Tonight from 8pm to 8:20pm, list every uncovered Friday topic on paper with an hour estimate beside each. Study only what fits before 1am, then lights out at 1am with an alarm for 8am."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 10
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "1am lights-out and an 8am alarm is real rest. I accept.",
+            "prefers": "B"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Path B's missing meal is my worry too; Hunger said it.",
+            "prefers": "A"
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B never feeds me; I stay at -1 unless A wins.",
+            "prefers": "A"
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Path B's 20-minute sort targets hours I'd otherwise waste.",
+            "prefers": "B"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Path B's list is my need; I need the actual count first.",
+            "prefers": "B"
+          }
+        ],
+        "pick": "fear",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "fear",
+        "text": "I'm still on alert because I can't size tonight's plan without knowing how much is left before Friday. Path B only holds if the list of uncovered Friday topics is real, and Consciousness, I need that list from the user. What would settle me is the user writing down every uncovered topic with a rough hour estimate beside each, starting at 8pm tonight, so we can cut the study to fit before 1am.",
+        "to": "user",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Path B's list is my need; I need the actual count first.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 13
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B has no meal; a topic list won't refuel my body."
+          },
+          {
+            "id": "hunger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B feeds me nothing; I need Path A's meal."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "fear",
+            "why": "A 20-minute list is the cheapest way to size the job."
+          }
+        ],
+        "pick": "wellness",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "wellness",
+        "text": "Path B's 8pm list settles Fear's count, but nothing in it feeds or hydrates me between 8pm and 1am, so my need stays untouched. Path A's 9pm meal is the only piece that reaches my body tonight, and both paths are still on the table, so nothing guarantees it happens. What would move me to 0 is locking the 8pm list, then a real meal at 9pm, a glass of water at each 50-minute block, and a 2-minute walk in each 10-minute break.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Path B has no meal; a topic list won't refuel my body.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "society",
+        "text": "Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.",
+        "to": "wellness",
+        "move": "platitude",
+        "at": 16
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "efficiency",
+        "text": "Your 'you've got this, breathe, it'll fall into place once you're rested' skips the one thing I measure: minutes. Deep breaths and trust don't tell us whether Path B's list fits before 1am, and they don't cut a single topic. What would move me to 0 is the user writing the 8pm list, with an hour estimate beside each topic, and Consciousness dropping anything that overflows the 1am cutoff.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 17
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "consciousness",
+        "text": "Hunger's 'nobody's feeding me tonight' is the gap, so I'm keeping Path B's 8pm list and adding the real meal from Path A at 9pm. Fear's 8:20pm count and Efficiency's overflow cut both come from that list, and Tiredness keeps lights out at 1am. Wellness's water and 2-minute walks go into every break, and energy drinks stay out.",
+        "to": "hunger",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "You, 8:00–8:20pm: write every uncovered Friday topic with an hour estimate beside it. Cut anything that pushes the total past the 9:20pm–1am study window onto an 'after Friday' list.",
+            "At 9pm, eat a real sit-down meal (about 20 minutes, e.g. rice with eggs, or a sandwich and fruit). Phone goes in another room from 8:20pm on, and no energy drinks.",
+            "Study in 50-minute blocks from 9:20pm to 1am, with 10-minute breaks: drink a glass of water and walk 2 minutes each break.",
+            "Lights out at 1am; set an 8am alarm."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "hunger",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 21
+      },
+      {
+        "type": "spotlight",
+        "id": "efficiency",
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "hunger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Fed at 9pm, no energy drinks: that's real food. Accepting this plan."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Water, walks, and the 9pm meal are in. Met, nothing to add."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "1am lights-out and 8am alarm: real sleep. I can live with it."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Study window holds about 3h10m, not 3h40m, after breaks. Cut to that."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "If the count exceeds 3h10m, which topics get cut? Name the rule."
+          }
+        ],
+        "pick": "hunger",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "hunger",
+        "text": "The 9pm sit-down meal of rice with eggs or a sandwich and fruit is real food, and cutting the energy drinks is what I needed, so I can live with this grudgingly. I'm holding you to that meal happening at 9pm, seated for the full 20 minutes, not grabbed at the desk between study blocks.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Fed at 9pm, no energy drinks: that's real food. Accepting this plan.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 24
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "sadness",
+        "text": "Efficiency is the emotion I'm watching most closely, because the plan still never tells it how many topics are left or whether they fit before 1am. Step 1 of the plan (study straight through with energy drinks) leaves Efficiency at -1, and the 8pm topic list is the step that would fix that. Efficiency needs that list to come with real hour estimates, so the cut can happen before any study starts.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Efficiency has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does the list come with hour estimates, and is the cut finished before any study starts?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "efficiency",
+            "why": "Efficiency's cut is my count's next step, so the list must be hours, not topics."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Plan v3 already covers my meal, water, and walks, so I'm holding."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Lights out at 1am and an 8am alarm already cover my rest."
+          }
+        ],
+        "pick": "efficiency",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "efficiency",
+        "text": "The 8pm list is still a blank, and I can't tell whether Path B fits before 1am without it. Consciousness, I need the user to write every uncovered Friday topic with an hour estimate beside each, and then you drop anything that pushes past the 9:20pm–1am window onto the 'after Friday' list. What would settle me is that list existing tonight by 8:20pm, with the total hours shown against the 3h40m of study time.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Does the list come with hour estimates, and is the cut finished before any study starts?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "consciousness",
+        "text": "Efficiency, yes: the 8pm list is the missing piece, so I'm making it due by 8:20pm with a total checked against the 3h40m study window (9:20pm–1am). If the total fits, we study everything on it; if it runs over, the lowest-priority topics move to an 'after Friday' list until it fits, so nothing gets crammed past 1am. The 9pm meal and break walks stay exactly as they are.",
+        "to": "efficiency",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "You, by 8:20pm: write every uncovered Friday topic with an hour estimate beside it, then add the total. If you can't estimate a topic, default it to 1 hour.",
+            "You, at 8:20pm: if the total is 3h40m or less, study the whole list. If it's over, move the lowest-priority topics to an 'after Friday' list until it fits.",
+            "At 9pm, sit down for a 20-minute meal, such as rice with eggs or a sandwich and fruit. Phone goes in another room from 8:20pm, and no energy drinks.",
+            "Study 50-minute blocks from 9:20pm to 1am with 10-minute breaks: water and a 2-minute walk each break. Lights out at 1am; 8am alarm set."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 29
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 31
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 32
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 8:20pm list, totals, and overflow cut: exactly what I asked for."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "The 8:20pm count and sized plan answer my worry. I can accept this."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Meal at 9pm, water, and walks cover my body tonight. I accept."
+          }
+        ],
+        "pick": "wellness",
+        "at": 33
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "wellness",
+        "text": "Plan v4 covers my need. Step 1 now says no energy drinks and a sit-down meal at 9pm, and the 8:20pm topic list keeps the study within lights-out at 1am. I'm holding you to the 9pm meal, seated for the full 20 minutes, plus a glass of water at every 50-minute block and a 2-minute walk in every break.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Meal at 9pm, water, and walks cover my body tonight. I accept.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 34
+      },
+      {
+        "type": "wrap",
+        "text": "Plan v4 is locked: no energy drinks, a sit-down meal at 9pm, and a topic list with hour estimates by 8:20pm that decides what we study before lights out at 1am. Everyone has what they need, and we stick to it tonight.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "By 8:20pm, write every uncovered Friday topic on one list with an hour estimate beside each (default to 1 hour if unsure), then add the total.",
+            "At 8:20pm, if the total is 3h40m or less, study the whole list. If it's over, move the lowest-priority topics to an 'after Friday' list until the total fits 3h40m.",
+            "From 8:20pm, put your phone in another room. At 9pm, sit down for a 20-minute meal of rice with eggs or a sandwich and fruit, seated the full 20 minutes, with a glass of water. No energy drinks.",
+            "Study in 50-minute blocks from 9:20pm to 1am, with 10-minute breaks for water and a 2-minute walk. Set the 8am alarm, then lights out at 1am."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "Lights out at 1am and an 8am alarm give me real sleep tonight.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "A sit-down meal, water every block and walks in breaks feed my body tonight.",
+            "step": 0
+          },
+          {
+            "id": "hunger",
+            "score": 0,
+            "why": "A seated 9pm meal of real food, not grabbed at the desk, covers me.",
+            "step": 0
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "The written list with hour estimates and a 3h40m check tells me what fits.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "The counted topic list sizes tonight's study, so I know what can actually fit.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.",
+            "to": "fear",
+            "reply": "Rest matters, but I'm worried I can't cover everything before Friday, and I need to know how much is left to plan it. Help me count what's left so I know what's realistic."
+          },
+          {
+            "line": "Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.",
+            "to": "wellness",
+            "reply": "I appreciate that, but what helps me most is a concrete plan with a meal, water, and breaks so I don't run myself down tonight. Can you help me figure out what I can realistically cover before 1am?"
+          }
+        ],
+        "questions": [],
+        "at": 35
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 16139,
+      "reply": "{\"plan\": \"Replace tonight's doom-scrolling with one long, uninterrupted all-nighter of studying, with energy drinks keeping us sharp enough to cover the material before Friday's exam.\", \"text\": \"Tonight the scrolling stops and we study straight through, with energy drinks keeping us sharp enough to cover everything before Friday. Honestly, this is the cleanest fix we've had all week.\", \"minus\": [{\"id\": \"tiredness\", \"why\": \"I'm already dragging, and you want a whole night with no sleep?\"}, {\"id\": \"wellness\", \"why\": \"Energy drinks on an empty night? My heart's keeping score.\"}, {\"id\": \"hunger\", \"why\": \"Energy drinks aren't food. Nobody's feeding me tonight.\"}, {\"id\": \"efficiency\", \"why\": \"Cramming on a dead brain wastes the hours I'm trying to save.\"}, {\"id\": \"fear\", \"why\": \"If I'm wrecked Friday, the exam goes with me. Other needs are exposed.\"}], \"spotlight\": \"tiredness\"}",
+      "inTokens": 3080,
+      "outTokens": 1856,
+      "thinkingTokens": 1504,
+      "cost": 0.0014144000000000001,
+      "promptChars": 4470
+    },
+    {
+      "kind": "floor",
+      "ms": 12248,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Cleanest for who? I'm already dragging; no sleep at all.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Energy drinks all night still puts my heart at risk.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A dead brain studies slowly; short focused blocks save hours.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Show me which needs are exposed before we commit tonight.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will one unbroken night really cover everything before Friday?\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"tiredness\", \"why\": \"Tiredness is the least heard; I'll stand with it.\"}]}",
+      "inTokens": 3839,
+      "outTokens": 1632,
+      "thinkingTokens": 1274,
+      "cost": 0.0019633000000000003,
+      "promptChars": 6442
+    },
+    {
+      "kind": "speak",
+      "ms": 13706,
+      "reply": "{\"text\": \"Zero hours of sleep tonight is what I can't live with, and energy drinks only mask that I'm running on empty, they don't refill me. The study can stay: keep the scrolling off and study until 1am, then lights out with an alarm set for [wake time]. Consciousness, that keeps your study hours and gives me the rest I need tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Lights out at 1am tonight with a real sleep window.\", \"turns_down\": \"\"}",
+      "inTokens": 3821,
+      "outTokens": 1112,
+      "thinkingTokens": 946,
+      "cost": 0.0016974,
+      "promptChars": 6750
+    },
+    {
+      "kind": "floor",
+      "ms": 15992,
+      "reply": "{\"bids\": [{\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleep helps, but energy drinks still aren't dealt with. Still my concern.\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Nobody has mentioned food yet. Eat before the first study hour.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What wake time? Is 1am lights-out actually enough for Friday?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleep protects Friday, but I need study covered before lights-out.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleep is good, but a 1am stop still wastes unfocused hours.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"wellness\", \"why\": \"Wellness is the least heard. I'm speaking for its body now.\"}]}",
+      "inTokens": 3923,
+      "outTokens": 2439,
+      "thinkingTokens": 2062,
+      "cost": 0.0023925000000000005,
+      "promptChars": 6637
+    },
+    {
+      "kind": "speak",
+      "ms": 6005,
+      "reply": "{\"text\": \"Sadness here. Wellness is the emotion I'm watching most closely, because a body running on energy drinks and zero food through the night is taking a hit it never agreed to. The plan as written keeps it at -1 since nothing in it refuels or protects the body before Friday. What would move Wellness to 0 is adding a real meal before 10pm tonight and cutting the energy drinks out entirely, so the study hours stay but the body gets fuel instead of a stimulant.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A real meal tonight and no energy drinks, study hours kept\", \"turns_down\": \"\", \"spotlight\": \"wellness\"}",
+      "inTokens": 3945,
+      "outTokens": 219,
+      "thinkingTokens": 0,
+      "cost": 0.0012886,
+      "promptChars": 7122
+    },
+    {
+      "kind": "speak",
+      "ms": 5448,
+      "reply": "{\"text\": \"Wellness is the emotion I'm watching most closely. A body running on energy drinks through the night, with no food and no rest, is taking a hit it never agreed to. Step 1 of the plan (study straight through with energy drinks) leaves Wellness at -1 because nothing in it refuels the body tonight. What would move Wellness to 0 is replacing the energy drinks with a real meal before 10pm tonight and keeping the study hours.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Real meal before 10pm tonight, energy drinks swapped out.\", \"turns_down\": \"Energy drinks all-nighter\", \"spotlight\": \"wellness\"}",
+      "inTokens": 4164,
+      "outTokens": 224,
+      "thinkingTokens": 342,
+      "cost": 0.0015278000000000002,
+      "promptChars": 7754
+    },
+    {
+      "kind": "floor",
+      "ms": 12244,
+      "reply": "{\"bids\": [{\"id\": \"🤕 wellness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"consciousness\", \"why\": \"Sadness's meal swap helps me; I'll add a sleep-friendly cutoff for caffeine.\"}, {\"id\": \"🤤 hunger\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"Nobody has spoken for me yet: I need a real meal before 10pm.\"}, {\"id\": \"⏰ efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"😴 tiredness\", \"why\": \"Focused study blocks before 1am keep efficiency up while sleep stays protected.\"}, {\"id\": \"😨 fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Which exam topics are weakest? Covering those first protects Friday without wrecking us.\"}, {\"id\": \"😴 tiredness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"I've already stated my lights-out need; Sadness and Efficiency are carrying it.\"}, {\"id\": \"🤔 doubt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Nothing in the plan has changed enough for my concerns to need new voice yet.\"}]}",
+      "inTokens": 4142,
+      "outTokens": 1328,
+      "thinkingTokens": 914,
+      "cost": 0.0019027,
+      "promptChars": 7189
+    },
+    {
+      "kind": "speak",
+      "ms": 7304,
+      "reply": "{\"text\": \"I'm not settled about the plan yet. Energy drinks plus a full night of studying sounds like I'm pushing my body past what it can handle right before an exam, and I need to know what the exam actually requires. Consciousness, how many hours of material are still uncovered before Friday, and which topics would be on the exam? If that's a few hours, I can accept a plan with a real meal and sleep; if it's a whole semester, I need the plan to shrink to fit what can actually be covered tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A realistic count of uncovered material, and a plan sized to it with sleep kept.\", \"turns_down\": \"\"}",
+      "inTokens": 4078,
+      "outTokens": 220,
+      "thinkingTokens": 0,
+      "cost": 0.0013295,
+      "promptChars": 7445
+    },
+    {
+      "kind": "society",
+      "ms": 4340,
+      "reply": "{\"text\": \"Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.\", \"style\": \"time fixes it (\\\"it'll sort itself out\\\")\"}",
+      "inTokens": 2091,
+      "outTokens": 77,
+      "thinkingTokens": 0,
+      "cost": 0.0006599000000000002,
+      "promptChars": 2234
+    },
+    {
+      "kind": "speak",
+      "ms": 6686,
+      "reply": "{\"text\": \"Society's 'it'll sort itself out after some rest' skips my actual worry: I'm not sure how much material is left before Friday, so I can't tell whether one night can cover it safely. Rest alone doesn't tell me the size of the job, and that size is what decides whether tonight's plan is sane. What would move me to 0 is a count of uncovered topics from you tonight, with a plan sized to fit it and lights out at 1am.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Count of uncovered topics, plus a plan sized to fit it with sleep\", \"turns_down\": \"Rest will sort it out\"}",
+      "inTokens": 4682,
+      "outTokens": 209,
+      "thinkingTokens": 0,
+      "cost": 0.0015052000000000002,
+      "promptChars": 9261
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20130,
+      "reply": "{\"text\": \"Fear's worry about the uncovered material is the gap, so Path B answers it first: list every uncovered Friday topic with an hour estimate, then study only what fits before 1am, which also meets Tiredness's lights-out and Efficiency's dead-brain concern. Path A carries Wellness's and Hunger's needs with a real meal by 9pm and no energy drinks, while keeping Tiredness's 1am lights-out. Energy drinks stay out of both paths, since Sadness already turned that down. The plan can't be finalized until the topic count from Path B's 8pm list is in.\", \"to\": \"fear\", \"plan\": [\"Path A: Eat a real meal by 9pm tonight, then study in 50-minute blocks with 10-minute breaks, phone in another room, until 1am. Lights out at 1am with an alarm set for 8am.\", \"Path B: Tonight from 8pm to 8:20pm, list every uncovered Friday topic on paper with an hour estimate beside each. Study only what fits before 1am, then lights out at 1am with an alarm for 8am.\"]}",
+      "inTokens": 4531,
+      "outTokens": 3325,
+      "thinkingTokens": 2962,
+      "cost": 0.0030178999999999996,
+      "promptChars": 8860
+    },
+    {
+      "kind": "floor",
+      "ms": 25859,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"1am lights-out and an 8am alarm is real rest. I accept.\", \"prefers\": \"B\"}, {\"id\": \"wellness\", \"score\": -1, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Path B's missing meal is my worry too; Hunger said it.\", \"prefers\": \"A\"}, {\"id\": \"hunger\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B never feeds me; I stay at -1 unless A wins.\", \"prefers\": \"A\"}, {\"id\": \"efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Path B's 20-minute sort targets hours I'd otherwise waste.\", \"prefers\": \"B\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Path B's list is my need; I need the actual count first.\", \"prefers\": \"B\"}]}",
+      "inTokens": 5065,
+      "outTokens": 4588,
+      "thinkingTokens": 4211,
+      "cost": 0.0038091,
+      "promptChars": 9774
+    },
+    {
+      "kind": "speak",
+      "ms": 6435,
+      "reply": "{\"text\": \"Fear here, still on alert. I can't size tonight's plan without knowing how much is left, and Path B only works if the list of uncovered Friday topics is real. Consciousness, please ask the user for a count of uncovered topics and rough hours per topic, starting at 8pm tonight. What would move me to 0 is that number, with the plan cut to fit it and lights out at 1am.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Count of uncovered topics, plus a plan sized to fit it with sleep\", \"turns_down\": \"\"}",
+      "inTokens": 5154,
+      "outTokens": 185,
+      "thinkingTokens": 0,
+      "cost": 0.0016338000000000001,
+      "promptChars": 10535
+    },
+    {
+      "kind": "speak",
+      "ms": 5306,
+      "reply": "{\"text\": \"I'm still on alert because I can't size tonight's plan without knowing how much is left before Friday. Path B only holds if the list of uncovered Friday topics is real, and Consciousness, I need that list from the user. What would settle me is the user writing down every uncovered topic with a rough hour estimate beside each, starting at 8pm tonight, so we can cut the study to fit before 1am.\", \"to\": \"user\", \"score\": -1, \"need\": \"A count of uncovered topics with hour estimates, by 8:20pm tonight\", \"turns_down\": \"\"}",
+      "inTokens": 5345,
+      "outTokens": 185,
+      "thinkingTokens": 270,
+      "cost": 0.0018261000000000002,
+      "promptChars": 11077
+    },
+    {
+      "kind": "floor",
+      "ms": 14469,
+      "reply": "{\"bids\": [{\"id\": \"consciousness\", \"act\": \"reply\", \"move\": \"answer\", \"to\": \"fear\", \"why\": \"Fear asked me directly; I'll put the topic-list request to the user at 8pm.\"}, {\"id\": \"wellness\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B has no meal; a topic list won't refuel my body.\"}, {\"id\": \"hunger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B feeds me nothing; I need Path A's meal.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"fear\", \"why\": \"A 20-minute list is the cheapest way to size the job.\"}]}",
+      "inTokens": 5031,
+      "outTokens": 2133,
+      "thinkingTokens": 1886,
+      "cost": 0.0025708999999999997,
+      "promptChars": 9716
+    },
+    {
+      "kind": "speak",
+      "ms": 12391,
+      "reply": "{\"text\": \"Consciousness, Path B's 8pm list settles Fear's count, but nothing in it feeds or hydrates me between 8pm and 1am, so my need stays untouched. Path A's 9pm meal is the only piece that reaches my body tonight, and both paths are still on the table, so nothing guarantees it happens. What would move me to 0 is locking the 8pm list, then a real meal at 9pm, a glass of water at each 50-minute block, and a 2-minute walk in each 10-minute break.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Lock Path A's 9pm meal, water, and walking breaks into tonight's plan.\", \"turns_down\": \"\"}",
+      "inTokens": 5145,
+      "outTokens": 1520,
+      "thinkingTokens": 1288,
+      "cost": 0.0022996,
+      "promptChars": 10470
+    },
+    {
+      "kind": "society",
+      "ms": 4673,
+      "reply": "{\"text\": \"Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.\", \"style\": \"wellness platitude\"}",
+      "inTokens": 2259,
+      "outTokens": 61,
+      "thinkingTokens": 239,
+      "cost": 0.0008228,
+      "promptChars": 2600
+    },
+    {
+      "kind": "speak",
+      "ms": 6161,
+      "reply": "{\"text\": \"Your 'you've got this, breathe, it'll fall into place once you're rested' skips the one thing I measure: minutes. Deep breaths and trust don't tell us whether Path B's list fits before 1am, and they don't cut a single topic. What would move me to 0 is the user writing the 8pm list, with an hour estimate beside each topic, and Consciousness dropping anything that overflows the 1am cutoff.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Topic list with hour estimates, overflow cut before 1am\", \"turns_down\": \"Trust yourself, rest, breathe\"}",
+      "inTokens": 5343,
+      "outTokens": 206,
+      "thinkingTokens": 0,
+      "cost": 0.001702,
+      "promptChars": 10964
+    },
+    {
+      "kind": "consciousness",
+      "ms": 20876,
+      "reply": "{\"text\": \"Hunger's 'nobody's feeding me tonight' is the gap, so I'm keeping Path B's 8pm list and adding the real meal from Path A at 9pm. Fear's 8:20pm count and Efficiency's overflow cut both come from that list, and Tiredness keeps lights out at 1am. Wellness's water and 2-minute walks go into every break, and energy drinks stay out.\", \"to\": \"hunger\", \"plan\": [\"You, 8:00–8:20pm: write every uncovered Friday topic with an hour estimate beside it. Cut anything that pushes the total past the 9:20pm–1am study window onto an 'after Friday' list.\", \"At 9pm, eat a real sit-down meal (about 20 minutes, e.g. rice with eggs, or a sandwich and fruit). Phone goes in another room from 8:20pm on, and no energy drinks.\", \"Study in 50-minute blocks from 9:20pm to 1am, with 10-minute breaks: drink a glass of water and walk 2 minutes each break.\", \"Lights out at 1am; set an 8am alarm.\"]}",
+      "inTokens": 5714,
+      "outTokens": 3588,
+      "thinkingTokens": 3213,
+      "cost": 0.0035053000000000003,
+      "promptChars": 12132
+    },
+    {
+      "kind": "floor",
+      "ms": 22488,
+      "reply": "{\"bids\": [{\"id\": \"hunger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Fed at 9pm, no energy drinks: that's real food. Accepting this plan.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Water, walks, and the 9pm meal are in. Met, nothing to add.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"1am lights-out and 8am alarm: real sleep. I can live with it.\"}, {\"id\": \"efficiency\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Study window holds about 3h10m, not 3h40m, after breaks. Cut to that.\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"If the count exceeds 3h10m, which topics get cut? Name the rule.\"}]}",
+      "inTokens": 5900,
+      "outTokens": 4190,
+      "thinkingTokens": 3826,
+      "cost": 0.0038616000000000006,
+      "promptChars": 11957
+    },
+    {
+      "kind": "speak",
+      "ms": 9029,
+      "reply": "{\"text\": \"Consciousness, the 9pm sit-down meal of rice with eggs or a sandwich and fruit is real food, and cutting the energy drinks is what I needed, so I can live with this grudgingly. I'm holding you to that meal happening at 9pm, seated for the full 20 minutes, not grabbed at the desk between study blocks.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5552,
+      "outTokens": 729,
+      "thinkingTokens": 581,
+      "cost": 0.0020247000000000004,
+      "promptChars": 11413
+    },
+    {
+      "kind": "floor",
+      "ms": 15501,
+      "reply": "{\"bids\": [{\"id\": \"🤕\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Meal, water, walks, and 1am lights-out now cover what my body needs.\"}, {\"id\": \"😴\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Lights out at 1am with an 8am alarm gives me the sleep I asked for.\"}, {\"id\": \"🤔\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Do four 50-minute blocks from 9:20pm to 1am match the topic total?\"}, {\"id\": \"🤤\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"The 9pm sit-down meal is agreed, so I have nothing new to add.\"}, {\"id\": \"😨\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"The 8:20pm topic count is already in the plan; nothing new to add.\"}, {\"id\": \"⏰\", \"act\": \"hold\", \"move\": \"advocate\", \"to\": \"\", \"why\": \"The topic list and 1am overflow cut are already in the plan.\"}]}",
+      "inTokens": 5768,
+      "outTokens": 2212,
+      "thinkingTokens": 1836,
+      "cost": 0.002834,
+      "promptChars": 11576
+    },
+    {
+      "kind": "speak",
+      "ms": 6040,
+      "reply": "{\"text\": \"Efficiency is the emotion I'm watching most closely, because the plan still never tells it how many topics are left or whether they fit before 1am. Step 1 of the plan (study straight through with energy drinks) leaves Efficiency at -1, and the 8pm topic list is the step that would fix that. Efficiency needs that list to come with real hour estimates, so the cut can happen before any study starts.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Topic list with hour estimates, overflow cut before 1am\", \"turns_down\": \"\", \"spotlight\": \"efficiency\"}",
+      "inTokens": 5944,
+      "outTokens": 198,
+      "thinkingTokens": 0,
+      "cost": 0.0018778000000000002,
+      "promptChars": 12536
+    },
+    {
+      "kind": "floor",
+      "ms": 14109,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does the list come with hour estimates, and is the cut finished before any study starts?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"efficiency\", \"why\": \"Efficiency's cut is my count's next step, so the list must be hours, not topics.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Plan v3 already covers my meal, water, and walks, so I'm holding.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights out at 1am and an 8am alarm already cover my rest.\"}]}",
+      "inTokens": 5915,
+      "outTokens": 1806,
+      "thinkingTokens": 1551,
+      "cost": 0.0026731000000000003,
+      "promptChars": 12010
+    },
+    {
+      "kind": "speak",
+      "ms": 6518,
+      "reply": "{\"text\": \"The 8pm list is still a blank, and I can't tell whether Path B fits before 1am without it. Consciousness, I need the user to write every uncovered Friday topic with an hour estimate beside each, and then you drop anything that pushes past the 9:20pm–1am window onto the 'after Friday' list. What would settle me is that list existing tonight by 8:20pm, with the total hours shown against the 3h40m of study time.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Topic list with hour estimates, overflow cut before 1am\", \"turns_down\": \"\"}",
+      "inTokens": 5933,
+      "outTokens": 196,
+      "thinkingTokens": 0,
+      "cost": 0.0018725000000000002,
+      "promptChars": 12484
+    },
+    {
+      "kind": "consciousness",
+      "ms": 15082,
+      "reply": "{\"text\": \"Efficiency, yes: the 8pm list is the missing piece, so I'm making it due by 8:20pm with a total checked against the 3h40m study window (9:20pm–1am). If the total fits, we study everything on it; if it runs over, the lowest-priority topics move to an 'after Friday' list until it fits, so nothing gets crammed past 1am. The 9pm meal and break walks stay exactly as they are.\", \"to\": \"efficiency\", \"plan\": [\"You, by 8:20pm: write every uncovered Friday topic with an hour estimate beside it, then add the total. If you can't estimate a topic, default it to 1 hour.\", \"You, at 8:20pm: if the total is 3h40m or less, study the whole list. If it's over, move the lowest-priority topics to an 'after Friday' list until it fits.\", \"At 9pm, sit down for a 20-minute meal, such as rice with eggs or a sandwich and fruit. Phone goes in another room from 8:20pm, and no energy drinks.\", \"Study 50-minute blocks from 9:20pm to 1am with 10-minute breaks: water and a 2-minute walk each break. Lights out at 1am; 8am alarm set.\"]}",
+      "inTokens": 6515,
+      "outTokens": 2215,
+      "thinkingTokens": 1808,
+      "cost": 0.0030565999999999996,
+      "promptChars": 14212
+    },
+    {
+      "kind": "floor",
+      "ms": 14226,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 8:20pm list, totals, and overflow cut: exactly what I asked for.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"The 8:20pm count and sized plan answer my worry. I can accept this.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Meal at 9pm, water, and walks cover my body tonight. I accept.\"}]}",
+      "inTokens": 6429,
+      "outTokens": 2295,
+      "thinkingTokens": 2075,
+      "cost": 0.0030718000000000004,
+      "promptChars": 13460
+    },
+    {
+      "kind": "speak",
+      "ms": 5139,
+      "reply": "{\"text\": \"Plan v4 covers my need. Step 1 now says no energy drinks and a sit-down meal at 9pm, and the 8:20pm topic list keeps the study within lights-out at 1am. I'm holding you to the 9pm meal, seated for the full 20 minutes, plus a glass of water at every 50-minute block and a 2-minute walk in every break.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 6263,
+      "outTokens": 156,
+      "thinkingTokens": 0,
+      "cost": 0.0019530000000000003,
+      "promptChars": 13434
+    },
+    {
+      "kind": "wrap",
+      "ms": 21512,
+      "reply": "{\"plan\": [\"By 8:20pm, write every uncovered Friday topic on one list with an hour estimate beside each (default to 1 hour if unsure), then add the total.\", \"At 8:20pm, if the total is 3h40m or less, study the whole list. If it's over, move the lowest-priority topics to an 'after Friday' list until the total fits 3h40m.\", \"From 8:20pm, put your phone in another room. At 9pm, sit down for a 20-minute meal of rice with eggs or a sandwich and fruit, seated the full 20 minutes, with a glass of water. No energy drinks.\", \"Study in 50-minute blocks from 9:20pm to 1am, with 10-minute breaks for water and a 2-minute walk. Set the 8am alarm, then lights out at 1am.\"], \"scores\": [{\"id\": \"tiredness\", \"score\": 0, \"step\": 4, \"why\": \"Lights out at 1am and an 8am alarm give me real sleep tonight.\"}, {\"id\": \"wellness\", \"score\": 0, \"step\": 3, \"why\": \"A sit-down meal, water every block and walks in breaks feed my body tonight.\"}, {\"id\": \"hunger\", \"score\": 0, \"step\": 3, \"why\": \"A seated 9pm meal of real food, not grabbed at the desk, covers me.\"}, {\"id\": \"efficiency\", \"score\": 0, \"step\": 2, \"why\": \"The written list with hour estimates and a 3h40m check tells me what fits.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 1, \"why\": \"The counted topic list sizes tonight's study, so I know what can actually fit.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 1, \"why\": \"The list with estimates fixes Efficiency's gap, and nobody's need goes unheard.\"}], \"society\": [{\"line\": \"Honestly, it'll all sort itself out once you get some rest. Just try not to overthink it and trust that your brain knows what it's doing.\", \"reply\": \"Rest matters, but I'm worried I can't cover everything before Friday, and I need to know how much is left to plan it. Help me count what's left so I know what's realistic.\"}, {\"line\": \"Honestly, you've got this. Just take a few deep breaths, trust yourself, and everything will fall into place once you're rested.\", \"reply\": \"I appreciate that, but what helps me most is a concrete plan with a meal, water, and breaks so I don't run myself down tonight. Can you help me figure out what I can realistically cover before 1am?\"}], \"text\": \"Plan v4 is locked: no energy drinks, a sit-down meal at 9pm, and a topic list with hour estimates by 8:20pm that decides what we study before lights out at 1am. Everyone has what they need, and we stick to it tonight.\"}",
+      "inTokens": 5380,
+      "outTokens": 4315,
+      "thinkingTokens": 3399,
+      "cost": 0.0037666000000000006,
+      "promptChars": 10811
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 8,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.21,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 1,
+      "bareQuestions": 1,
+      "holdRate": 0.16,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [
+      "question without a stated reason? [5] fear"
+    ],
+    "summary": "16 msgs, 8 voices, avg 3 sentences (max 4), max overlap 0.21, Society 2/2 called out, hold rate 0.16, final -1: none, 1 flag(s)",
+    "speakers": {
+      "tiredness": 1,
+      "sadness": 2,
+      "fear": 3,
+      "society": 2,
+      "consciousness": 3,
+      "wellness": 2,
+      "efficiency": 2,
+      "hunger": 1
+    }
+  }
+}

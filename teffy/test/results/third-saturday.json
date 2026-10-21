@@ -1,0 +1,1410 @@
+{
+  "scenario": {
+    "id": "third-saturday",
+    "thought": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 298107,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 32,
+    "inTokens": 154529,
+    "outTokens": 27644,
+    "thinkingTokens": 21042,
+    "cost": 0.06030253000000001
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again.",
+      "followups": [],
+      "plan": {
+        "version": 5,
+        "steps": [
+          "Today, before replying to this week's Saturday shift, text [Manager]: \"I wasn't asked about the last three Saturdays. I can't take this one or any Saturday, and please don't post any Saturday for me until we've talked. Can we talk [time] today about how Saturdays get scheduled?\"",
+          "If [Manager] hasn't replied by Thursday, text: \"I can't take any Saturday until we agree on a process.\"",
+          "Next Saturday stays off unless you confirm it first. Raise that in the talk with [Manager], and don't agree to any Saturday before it's posted."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "anger": {
+          "score": 0,
+          "need": "",
+          "why": "My need is being ignored. Saying yes again lets my manager keep crossing the line."
+        },
+        "annoyance": {
+          "score": 0,
+          "need": "",
+          "why": "I was put on the schedule without being asked, and that was dismissive of me."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "If I keep saying yes, I'm worried it becomes the expected default and I lose my footing."
+        },
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "Three Saturdays in a row with no rest. I'm running on empty, and this plan adds to that."
+        },
+        "sadness": {
+          "score": -1,
+          "need": "make Overwhelm a 0",
+          "why": ""
+        },
+        "overwhelm": {
+          "score": -1,
+          "need": "Pull this Saturday off the table today, before answering anything.",
+          "why": ""
+        },
+        "embarrassment": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "overwhelm",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Saying yes again is the simplest move, and it keeps everything calm with the manager. Let's get this settled quickly so we can move on.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "sadness",
+          "text": "Anger is the one I'm worried about. The plan says yes again, which tells Anger its need to be asked before being scheduled gets dropped a third time, and it can't rest like that. What would move Anger to 0 is one step where you tell your manager you weren't asked about the last three Saturdays and need to be asked first. Use \"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled,\" by the end of today.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": 0,
+          "lens": "",
+          "why": "Anger has been talked over most. Its need deserves real weight here."
+        },
+        {
+          "n": 4,
+          "who": "anger",
+          "text": "+1 to Sadness's text. Your plan keeps the peace, but it never names the line that got crossed: three Saturdays in a row, no one asked me. Saying yes a fourth time tells my manager the schedule can be decided without me, and that's the part that keeps me boiling. What would move me to 0 is sending that message today, and agreeing to this week's shift only after it goes out.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "One line about past Saturdays won't stop the next schedule. I need future boundaries."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.",
+          "to": "anger",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "fear",
+          "text": "Society's \"sleep on it and things will look better\" leaves my worry untouched: if I keep saying yes, the Saturday shift quietly becomes the default, and no amount of rest changes that schedule next week. Waiting until morning also means another Saturday gets assigned before I've said anything, so the pattern that scares me keeps running. Tiredness is right that I need rest, but rest alone doesn't stop the default from setting.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "Sadness is right that Anger's need has been dropped three times, and Fear's worry is the same thing: a yes today sets the default for next Saturday too. I'm building on Anger's message, not repeating it. Path A handles the message itself, and Path B handles the schedule so the next assignment can't land on me without a check. Tiredness gets its rest only if the pattern actually stops, so I'm asking you to pick one path today.",
+          "to": "",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "tiredness",
+          "text": "Path B's posting process won't stop the pattern on its own: a fourth Saturday could still be agreed without a rest day in between, and I'd still get no recovery. What would move me to 0 is adding today's Path A message plus a request that next Saturday stays off until I agree to it: \"[Manager], I'm not available next Saturday, and I need to agree to any Saturday shift before it's posted.\"",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Either path adds work today. A is one text; B means a talk, maybe a decline."
+        },
+        {
+          "n": 9,
+          "who": "annoyance",
+          "text": "Path A and Path B both fix the schedule after the fact, but nothing in plan v2 makes the manager's next move visible before a Saturday is posted, so the same silent assignment can happen again. Sadness, Tiredness, and Fear all need that, and it's what I need too: my request to be asked first still has no step that reaches the scheduling itself. What would move me to 0 is adding to Path A's text today: \"Please don't post any Saturday shift for me until I've confirmed it.\"",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "mechanism",
+          "why": "Nobody has said being scheduled without asking was dismissive. The message must acknowledge that."
+        },
+        {
+          "n": 10,
+          "who": "society",
+          "text": "Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.",
+          "to": "annoyance",
+          "move": "platitude"
+        },
+        {
+          "n": 11,
+          "who": "annoyance",
+          "text": "Society's 'just rest this weekend' leaves my need untouched: the Saturday gets posted without my confirmation, and I can't stop the next one from landing on me. Following it would mean the schedule keeps being set without me, and I'd spend the rest day waiting to see whether it happens again. What would move me to 0 is the scheduling hold itself, which Consciousness adopts today.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 12,
+          "who": "consciousness",
+          "text": "Anger's need is the one still open, and Annoyance's hold makes it concrete, so I'm choosing Path A and folding Tiredness's and Fear's asks into it. Path B's posting process doesn't stop a fourth silent Saturday today, so I'm dropping it. I'm adding the hold and next-Saturday request to Anger's message so nothing gets posted before you confirm, and Fear gets its check on the next assignment.",
+          "to": "",
+          "move": "refine"
+        },
+        {
+          "n": 13,
+          "who": "overwhelm",
+          "text": "The hold and next-Saturday request help, but they don't reach my need: this Saturday is already posted, and I'm absorbing a third week of shifts at once. Answering yes while waiting on the manager keeps me overloaded. What would move me to 0 is texting [Manager] today: \"I can't take this Saturday or any Saturday until we agree on a process.\"",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "Three asks and a fallback is too much at once. Shrink it."
+        },
+        {
+          "n": 14,
+          "who": "embarrassment",
+          "text": "I need the manager relationship kept intact, and the plan's text is what hurts it: one message that asks three things at once (no Saturday posts, next Saturday unavailable, agree before any shift) plus a Thursday fallback reads like a demand instead of a conversation. What would move me to 0 is a short private text: '[Manager], can we agree how Saturdays get scheduled? Can we talk [time] today?' with the next-Saturday line raised in that talk, sent before answering this week's shift.",
+          "to": "consciousness",
+          "move": "advocate",
+          "score": -1,
+          "lens": "",
+          "why": "Keep it short, but check with me before texting the manager."
+        },
+        {
+          "n": 15,
+          "who": "anger",
+          "text": "+1 to Sadness's text. The hold and next-Saturday request still leave my need open: this Saturday is already posted, and a talk alone won't keep it from staying on the schedule. The written line has to go out before this shift gets answered. What would move me to 0 is sending the boundary text today, before I reply to this week's shift.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A talk can't replace the written line. Send the boundary text today too."
+        },
+        {
+          "n": 16,
+          "who": "consciousness",
+          "text": "Overwhelm's ask is still open, so I cut the plan from three steps to two: this Saturday comes off the table in today's text, and the Thursday fallback now drops the Saturday-specific wording. Annoyance's 'don't post Saturdays for me' and Anger's send-before-answering rule both sit inside that one message, so nothing gets posted silently. Fear and Tiredness keep their next-Saturday hold, and Embarrassment gets one short text instead of a demand.",
+          "to": "overwhelm",
+          "move": "refine"
+        },
+        {
+          "n": 17,
+          "who": "sadness",
+          "text": "Overwhelm is the one I'm hearing least right now. The plan still leaves this Saturday on the schedule while the manager talks it over, so Overwhelm keeps absorbing three weeks of shifts at once. Consciousness, please change the plan so this Saturday comes off the table today, before any reply goes out.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Overwhelm has barely been heard"
+        },
+        {
+          "n": 18,
+          "who": "embarrassment",
+          "text": "Plan v4's text still asks three things at once (take me off, don't post Saturdays, agree on a process), which reads as a demand before we've talked. What would move me to 0 is one short private text sent before I reply to this week's shift: '[Manager], can we talk [time] today about how Saturdays get scheduled?' Any Saturday-specific request can go in that conversation.",
+          "to": "consciousness",
+          "move": "comeback",
+          "score": -1,
+          "lens": "",
+          "why": "One short private text fits my need; I can live with that."
+        },
+        {
+          "n": 19,
+          "who": "consciousness",
+          "text": "Consciousness here: this round gives every voice a 0, with this Saturday off the table today and a talk requested before any shift is answered. The next Saturday stays unconfirmed, so the schedule can't quietly decide for you again.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "Just say yes again",
+          "from": "consciousness",
+          "by": "anger",
+          "why": "Sending the 'need to be asked first' message today, before agreeing to this shift."
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.",
+          "to": "anger",
+          "style": "time fixes it (\"it'll sort itself out\")"
+        },
+        {
+          "text": "Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.",
+          "to": "annoyance",
+          "style": "rest instead of acting (\"sleep on it\", \"take a nap, you'll feel better\")"
+        }
+      ],
+      "lensesUsed": {
+        "annoyance": [
+          "mechanism"
+        ]
+      },
+      "prefs": {},
+      "queue": [],
+      "roundCount": 16,
+      "acceptRun": 0,
+      "locks": {
+        "tiredness": "Next Saturday off unless I agree, so I get a real rest day.",
+        "fear": "A concrete check on whether the next Saturday assignment gets agreed with me first.",
+        "anger": "Send the written boundary text today, before answering this week's shift.",
+        "annoyance": "Add 'don't post Saturdays for me' or scheduling can still move silently.",
+        "embarrassment": "Plan v4's text needs one ask, sent before this week's reply."
+      },
+      "waiting": {
+        "anger": 0,
+        "annoyance": 2,
+        "tiredness": 0,
+        "sadness": 0,
+        "embarrassment": 0,
+        "fear": 3,
+        "doubt": 1,
+        "overwhelm": 2
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 32,
+        "inChars": 309987,
+        "outChars": 22489,
+        "byKind": {
+          "open": 1,
+          "floor": 9,
+          "speak": 16,
+          "society": 2,
+          "consciousness": 3,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 4
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "My manager put me on the Saturday shift for the third week in a row without asking me. I'm thinking of just saying yes again.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Saying yes again is the simplest move, and it keeps everything calm with the manager. Let's get this settled quickly so we can move on.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Say yes to the Saturday shift again, keep the peace with my manager, and skip the awkward conversation."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "anger",
+            "why": "My need is being ignored. Saying yes again lets my manager keep crossing the line."
+          },
+          {
+            "id": "annoyance",
+            "why": "I was put on the schedule without being asked, and that was dismissive of me."
+          },
+          {
+            "id": "fear",
+            "why": "If I keep saying yes, I'm worried it becomes the expected default and I lose my footing."
+          },
+          {
+            "id": "tiredness",
+            "why": "Three Saturdays in a row with no rest. I'm running on empty, and this plan adds to that."
+          }
+        ],
+        "spotlight": "anger",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Saying yes again keeps crossing my line. Settling fast ignores what I need."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Did you hear that I was scheduled without being asked?"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "A third Saturday with no rest is what this plan adds to."
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "anger",
+            "why": "Anger has been talked over most. Its need deserves real weight here."
+          }
+        ],
+        "pick": "sadness",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "sadness",
+        "text": "Anger is the one I'm worried about. The plan says yes again, which tells Anger its need to be asked before being scheduled gets dropped a third time, and it can't rest like that. What would move Anger to 0 is one step where you tell your manager you weren't asked about the last three Saturdays and need to be asked first. Use \"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled,\" by the end of today.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": 0,
+        "lens": "",
+        "why": "Anger has been talked over most. Its need deserves real weight here.",
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "One line about past Saturdays won't stop the next schedule. I need future boundaries."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Why did the plan say yes without asking me first?"
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "act": "reply",
+            "move": "advocate",
+            "to": "sadness",
+            "why": "Could we start with a short text, not a direct confrontation?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "One conversation doesn't stop yes becoming the default. What changes that?"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Three Saturdays without rest. Any plan needs a day off built in."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Nothing new yet. I'll wait to see the revised plan."
+          }
+        ],
+        "pick": "anger",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "anger",
+        "text": "+1 to Sadness's text. Your plan keeps the peace, but it never names the line that got crossed: three Saturdays in a row, no one asked me. Saying yes a fourth time tells my manager the schedule can be decided without me, and that's the part that keeps me boiling. What would move me to 0 is sending that message today, and agreeing to this week's shift only after it goes out.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "One line about past Saturdays won't stop the next schedule. I need future boundaries.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.",
+        "to": "anger",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "fear",
+        "text": "Society's \"sleep on it and things will look better\" leaves my worry untouched: if I keep saying yes, the Saturday shift quietly becomes the default, and no amount of rest changes that schedule next week. Waiting until morning also means another Saturday gets assigned before I've said anything, so the pattern that scares me keeps running. Tiredness is right that I need rest, but rest alone doesn't stop the default from setting.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "Sadness is right that Anger's need has been dropped three times, and Fear's worry is the same thing: a yes today sets the default for next Saturday too. I'm building on Anger's message, not repeating it. Path A handles the message itself, and Path B handles the schedule so the next assignment can't land on me without a check. Tiredness gets its rest only if the pattern actually stops, so I'm asking you to pick one path today.",
+        "to": "",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Today, before replying to this week's shift, text your manager: \"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled. Can you confirm you'll check with me first?\" Hold this week's yes until they reply.",
+            "Path B: Today, ask your manager: \"Can the Saturday schedule be posted to me for agreement at least 3 days ahead?\" If they say no, reply \"Then I can't commit to Saturdays until we agree on a process,\" and decline next Saturday's assignment by Thursday."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": 0,
+        "to": -1,
+        "at": 9
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Pick Path A now. B only sets the boundary after a refusal.",
+            "prefers": "A"
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Does my manager explain why I wasn't asked? A's text asks, B doesn't.",
+            "prefers": "A"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Only B gives a dated check on next Saturday before it's assigned.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Either path adds work today. A is one text; B means a talk, maybe a decline.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "tiredness",
+        "at": 10
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "tiredness",
+        "text": "Path B's posting process won't stop the pattern on its own: a fourth Saturday could still be agreed without a rest day in between, and I'd still get no recovery. What would move me to 0 is adding today's Path A message plus a request that next Saturday stays off until I agree to it: \"[Manager], I'm not available next Saturday, and I need to agree to any Saturday shift before it's posted.\"",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Either path adds work today. A is one text; B means a talk, maybe a decline.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 11
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Nobody has said being scheduled without asking was dismissive. The message must acknowledge that."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "tiredness",
+            "why": "Tiredness's combined message names the three Saturdays I wasn't asked about. I can live with that."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "tiredness",
+            "why": "Agreeing to next Saturday before it's posted is the concrete check I needed."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "What happens if the manager ignores the text and posts Saturday again anyway?"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "",
+            "why": "I've already said what I need; the combined message covers my rest day."
+          }
+        ],
+        "pick": "annoyance",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "annoyance",
+        "text": "Path A and Path B both fix the schedule after the fact, but nothing in plan v2 makes the manager's next move visible before a Saturday is posted, so the same silent assignment can happen again. Sadness, Tiredness, and Fear all need that, and it's what I need too: my request to be asked first still has no step that reaches the scheduling itself. What would move me to 0 is adding to Path A's text today: \"Please don't post any Saturday shift for me until I've confirmed it.\"",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "mechanism",
+        "why": "Nobody has said being scheduled without asking was dismissive. The message must acknowledge that.",
+        "prevScore": -1,
+        "lensLabel": "why it misses",
+        "at": 13
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "society",
+        "text": "Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.",
+        "to": "annoyance",
+        "move": "platitude",
+        "at": 14
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "annoyance",
+        "text": "Society's 'just rest this weekend' leaves my need untouched: the Saturday gets posted without my confirmation, and I can't stop the next one from landing on me. Following it would mean the schedule keeps being set without me, and I'd spend the rest day waiting to see whether it happens again. What would move me to 0 is the scheduling hold itself, which Consciousness adopts today.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 15
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "consciousness",
+        "text": "Anger's need is the one still open, and Annoyance's hold makes it concrete, so I'm choosing Path A and folding Tiredness's and Fear's asks into it. Path B's posting process doesn't stop a fourth silent Saturday today, so I'm dropping it. I'm adding the hold and next-Saturday request to Anger's message so nothing gets posted before you confirm, and Fear gets its check on the next assignment.",
+        "to": "",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "Today, before replying to this week's shift, text your manager: \"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled. Please don't post any Saturday shift for me until I've confirmed it.\"",
+            "In the same text, add: \"I'm not available next Saturday, and I need to agree to any Saturday shift before it's posted.\"",
+            "Hold this week's yes until your manager replies. If they don't confirm they'll check with you first by Thursday, reply: \"I can't commit to Saturdays until we agree on a process.\""
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 19
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": -1,
+        "to": 0,
+        "at": 20
+      },
+      {
+        "type": "spotlight",
+        "id": "overwhelm",
+        "at": 21
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Three asks and a fallback is too much at once. Shrink it."
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Firm text could strain the manager relationship. How will they react?"
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Message goes today, no yes before reply. I can live with that."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Next Saturday off unless I agree. My rest need is covered."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Agreement before posting covers my check on the next Saturday."
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "The scheduling hold is in the message. Nothing more to add."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 22
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "overwhelm",
+        "text": "The hold and next-Saturday request help, but they don't reach my need: this Saturday is already posted, and I'm absorbing a third week of shifts at once. Answering yes while waiting on the manager keeps me overloaded. What would move me to 0 is texting [Manager] today: \"I can't take this Saturday or any Saturday until we agree on a process.\"",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "Three asks and a fallback is too much at once. Shrink it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 23
+      },
+      {
+        "type": "score",
+        "id": "annoyance",
+        "from": 0,
+        "to": -1,
+        "at": 24
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Keep it short, but check with me before texting the manager."
+          },
+          {
+            "id": "anger",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "That line finally names the boundary: no Saturday without my agreement."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Add 'don't post Saturdays for me' or scheduling can still move silently."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "answer",
+            "to": "",
+            "why": "My ask is in; I'll wait and not press further."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "embarrassment",
+        "text": "I need the manager relationship kept intact, and the plan's text is what hurts it: one message that asks three things at once (no Saturday posts, next Saturday unavailable, agree before any shift) plus a Thursday fallback reads like a demand instead of a conversation. What would move me to 0 is a short private text: '[Manager], can we agree how Saturdays get scheduled? Can we talk [time] today?' with the next-Saturday line raised in that talk, sent before answering this week's shift.",
+        "to": "consciousness",
+        "move": "advocate",
+        "score": -1,
+        "lens": "",
+        "why": "Keep it short, but check with me before texting the manager.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 26
+      },
+      {
+        "type": "score",
+        "id": "anger",
+        "from": 0,
+        "to": -1,
+        "at": 27
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A talk can't replace the written line. Send the boundary text today too."
+          },
+          {
+            "id": "annoyance",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "embarrassment",
+            "why": "The short text drops my hold on posting. That line must stay."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Pulling this Saturday off the table must happen before any talk."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "embarrassment",
+            "why": "If the talk slips, does next Saturday still get posted first?"
+          }
+        ],
+        "pick": "anger",
+        "at": 28
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "anger",
+        "text": "+1 to Sadness's text. The hold and next-Saturday request still leave my need open: this Saturday is already posted, and a talk alone won't keep it from staying on the schedule. The written line has to go out before this shift gets answered. What would move me to 0 is sending the boundary text today, before I reply to this week's shift.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A talk can't replace the written line. Send the boundary text today too.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 29
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "consciousness",
+        "text": "Overwhelm's ask is still open, so I cut the plan from three steps to two: this Saturday comes off the table in today's text, and the Thursday fallback now drops the Saturday-specific wording. Annoyance's 'don't post Saturdays for me' and Anger's send-before-answering rule both sit inside that one message, so nothing gets posted silently. Fear and Tiredness keep their next-Saturday hold, and Embarrassment gets one short text instead of a demand.",
+        "to": "overwhelm",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "Today, before answering this week's shift, text [Manager]: 'I wasn't asked about the last three Saturdays. Take me off this one, and don't post any Saturday for me until we agree how they're scheduled.'",
+            "Next Saturday stays off unless you confirm it first. If [Manager] hasn't replied by Thursday, text: 'I can't take any Saturday until we agree on a process.'"
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 30
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 31
+      },
+      {
+        "type": "message",
+        "n": 17,
+        "who": "sadness",
+        "text": "Overwhelm is the one I'm hearing least right now. The plan still leaves this Saturday on the schedule while the manager talks it over, so Overwhelm keeps absorbing three weeks of shifts at once. Consciousness, please change the plan so this Saturday comes off the table today, before any reply goes out.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Overwhelm has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 32
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will this Saturday come off the schedule before any reply goes out?"
+          },
+          {
+            "id": "embarrassment",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "One short private text fits my need; I can live with that."
+          },
+          {
+            "id": "anger",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Sadness is repeating my send-before-answering ask, which the plan already covers."
+          }
+        ],
+        "pick": "embarrassment",
+        "at": 33
+      },
+      {
+        "type": "message",
+        "n": 18,
+        "who": "embarrassment",
+        "text": "Plan v4's text still asks three things at once (take me off, don't post Saturdays, agree on a process), which reads as a demand before we've talked. What would move me to 0 is one short private text sent before I reply to this week's shift: '[Manager], can we talk [time] today about how Saturdays get scheduled?' Any Saturday-specific request can go in that conversation.",
+        "to": "consciousness",
+        "move": "comeback",
+        "score": -1,
+        "lens": "",
+        "why": "One short private text fits my need; I can live with that.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 34
+      },
+      {
+        "type": "wrap",
+        "text": "Consciousness here: this round gives every voice a 0, with this Saturday off the table today and a talk requested before any shift is answered. The next Saturday stays unconfirmed, so the schedule can't quietly decide for you again.",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "Today, before replying to this week's Saturday shift, text [Manager]: \"I wasn't asked about the last three Saturdays. I can't take this one or any Saturday, and please don't post any Saturday for me until we've talked. Can we talk [time] today about how Saturdays get scheduled?\"",
+            "If [Manager] hasn't replied by Thursday, text: \"I can't take any Saturday until we agree on a process.\"",
+            "Next Saturday stays off unless you confirm it first. Raise that in the talk with [Manager], and don't agree to any Saturday before it's posted."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "anger",
+            "score": 0,
+            "why": "The boundary goes out today, before I answer this week's shift.",
+            "step": 1
+          },
+          {
+            "id": "annoyance",
+            "score": 0,
+            "why": "The text blocks silent Saturday postings, which was my need.",
+            "step": 1
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "Next Saturday needs my confirmation, so no default can set again.",
+            "step": 0
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "The next Saturday stays off, so I can actually recover.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": -1,
+            "why": "Overwhelm still isn't looked after.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "why": "Pull this Saturday off the table today, before answering anything.",
+            "step": 0
+          },
+          {
+            "id": "embarrassment",
+            "score": 0,
+            "why": "One short ask for a talk, sent before I answer, keeps the relationship intact.",
+            "step": 1
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.",
+            "to": "anger",
+            "reply": "I appreciate that, but I need this settled today, because waiting means another Saturday could be assigned without me. Taking care of it now is what will let me rest."
+          },
+          {
+            "line": "Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.",
+            "to": "annoyance",
+            "reply": "Rest matters, but what I need is for the schedule itself to change, not just for this weekend to be quiet. I'm going to raise it with my manager this week."
+          }
+        ],
+        "questions": [],
+        "at": 35
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 12421,
+      "reply": "{\"plan\": \"Say yes to the Saturday shift again, keep the peace with my manager, and skip the awkward conversation.\", \"text\": \"Saying yes again is the simplest move, and it keeps everything calm with the manager. Let's get this settled quickly so we can move on.\", \"minus\": [{\"id\": \"anger\", \"why\": \"My need is being ignored. Saying yes again lets my manager keep crossing the line.\"}, {\"id\": \"annoyance\", \"why\": \"I was put on the schedule without being asked, and that was dismissive of me.\"}, {\"id\": \"fear\", \"why\": \"If I keep saying yes, I'm worried it becomes the expected default and I lose my footing.\"}, {\"id\": \"tiredness\", \"why\": \"Three Saturdays in a row with no rest. I'm running on empty, and this plan adds to that.\"}], \"spotlight\": \"anger\"}",
+      "inTokens": 3025,
+      "outTokens": 858,
+      "thinkingTokens": 578,
+      "cost": 0.00075723,
+      "promptChars": 4330
+    },
+    {
+      "kind": "floor",
+      "ms": 8536,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Saying yes again keeps crossing my line. Settling fast ignores what I need.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Did you hear that I was scheduled without being asked?\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"A third Saturday with no rest is what this plan adds to.\"}, {\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"anger\", \"why\": \"Anger has been talked over most. Its need deserves real weight here.\"}]}",
+      "inTokens": 3696,
+      "outTokens": 653,
+      "thinkingTokens": 408,
+      "cost": 0.0014309000000000001,
+      "promptChars": 6163
+    },
+    {
+      "kind": "speak",
+      "ms": 6614,
+      "reply": "{\"text\": \"Anger is the one I'm worried about. Right now the plan says yes again, and that quietly tells Anger its need, to be heard that someone crossed a line, gets dropped a third time. Anger is being asked to swallow it for the sake of calm, and it can't rest like that. What would move Anger to 0 is one plan step where you tell your manager, in your own words, that you didn't agree to the last Saturday shifts and need to be asked first; if you're unsure how to phrase it, say \\\"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled,\\\" by the end of today.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A plan step where I tell the manager today that I must be asked first.\", \"turns_down\": \"Just say yes again\", \"spotlight\": \"anger\"}",
+      "inTokens": 3673,
+      "outTokens": 271,
+      "thinkingTokens": 0,
+      "cost": 0.0012324999999999999,
+      "promptChars": 6486
+    },
+    {
+      "kind": "speak",
+      "ms": 6371,
+      "reply": "{\"text\": \"Anger is the one I'm worried about. The plan says yes again, which tells Anger its need to be asked before being scheduled gets dropped a third time, and it can't rest like that. What would move Anger to 0 is one step where you tell your manager you weren't asked about the last three Saturdays and need to be asked first. Use \\\"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled,\\\" by the end of today.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A plan step where the user states they must be asked before being scheduled\", \"turns_down\": \"\", \"spotlight\": \"anger\"}",
+      "inTokens": 3944,
+      "outTokens": 211,
+      "thinkingTokens": 301,
+      "cost": 0.0014353,
+      "promptChars": 7247
+    },
+    {
+      "kind": "floor",
+      "ms": 13826,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"One line about past Saturdays won't stop the next schedule. I need future boundaries.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Why did the plan say yes without asking me first?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"sadness\", \"why\": \"Could we start with a short text, not a direct confrontation?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"One conversation doesn't stop yes becoming the default. What changes that?\"}, {\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Three Saturdays without rest. Any plan needs a day off built in.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Nothing new yet. I'll wait to see the revised plan.\"}]}",
+      "inTokens": 3826,
+      "outTokens": 1704,
+      "thinkingTokens": 1338,
+      "cost": 0.0019954,
+      "promptChars": 6490
+    },
+    {
+      "kind": "speak",
+      "ms": 5776,
+      "reply": "{\"text\": \"Consciousness, the yes-again plan keeps the peace with your manager, but it never asks why I'm angry: you were put on three Saturdays without being asked, and nothing in this plan stops the fourth one from landing the same way. What would move me to 0 is you sending your manager today: \\\"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled.\\\" I'm not asking you to refuse this week's shift, just to name the line.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Manager texted today asking to be asked before scheduling\", \"turns_down\": \"Just say yes again\"}",
+      "inTokens": 3880,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0012645999999999998,
+      "promptChars": 7068
+    },
+    {
+      "kind": "speak",
+      "ms": 6075,
+      "reply": "{\"text\": \"Consciousness, +1 to Sadness's text. Your plan keeps the peace, but it never names the line that got crossed: three Saturdays in a row, no one asked me. Saying yes a fourth time tells my manager the schedule can be decided without me, and that's the part that keeps me boiling. What would move me to 0 is sending that message today, and agreeing to this week's shift only after it goes out.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Sending the 'need to be asked first' message today, before agreeing to this shift.\", \"turns_down\": \"Just say yes again\"}",
+      "inTokens": 4146,
+      "outTokens": 198,
+      "thinkingTokens": 413,
+      "cost": 0.0015444,
+      "promptChars": 7827
+    },
+    {
+      "kind": "society",
+      "ms": 4696,
+      "reply": "{\"text\": \"Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.\", \"style\": \"time fixes it (\\\"it'll sort itself out\\\")\"}",
+      "inTokens": 1973,
+      "outTokens": 75,
+      "thinkingTokens": 221,
+      "cost": 0.0007360000000000001,
+      "promptChars": 1911
+    },
+    {
+      "kind": "speak",
+      "ms": 6202,
+      "reply": "{\"text\": \"Society's \\\"sleep on it and things will look better\\\" leaves my worry untouched: if I keep saying yes, the Saturday shift quietly becomes the default, and no amount of rest changes that schedule next week. Waiting until morning also means another Saturday gets assigned before I've said anything, so the pattern that scares me keeps running. Tiredness is right that I need rest, but rest alone doesn't stop the default from setting.\", \"to\": \"society\", \"score\": -1, \"need\": \"A concrete check on whether the next Saturday assignment gets agreed with me first.\", \"turns_down\": \"Sleep on it, it'll work out\"}",
+      "inTokens": 4217,
+      "outTokens": 210,
+      "thinkingTokens": 0,
+      "cost": 0.0013657,
+      "promptChars": 8046
+    },
+    {
+      "kind": "consciousness",
+      "ms": 7336,
+      "reply": "{\"text\": \"Sadness is right that Anger's need has been dropped three times, and Fear's worry is the same thing: a yes today sets the default for next Saturday too. I'm building on Anger's message, not repeating it. Path A handles the message itself, and Path B handles the schedule so the next assignment can't land on me without a check. Tiredness gets its rest only if the pattern actually stops, so I'm asking you to pick one path today.\", \"to\": \"😨\", \"plan\": [\"Path A: Today, before replying to this week's shift, text your manager: \\\"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled. Can you confirm you'll check with me first?\\\" Hold this week's yes until they reply.\", \"Path B: Today, ask your manager: \\\"Can the Saturday schedule be posted to me for agreement at least 3 days ahead?\\\" If they say no, reply \\\"Then I can't commit to Saturdays until we agree on a process,\\\" and decline next Saturday's assignment by Thursday.\"]}",
+      "inTokens": 4247,
+      "outTokens": 343,
+      "thinkingTokens": 0,
+      "cost": 0.0014411999999999997,
+      "promptChars": 8227
+    },
+    {
+      "kind": "floor",
+      "ms": 14361,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Pick Path A now. B only sets the boundary after a refusal.\", \"prefers\": \"A\"}, {\"id\": \"annoyance\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Does my manager explain why I wasn't asked? A's text asks, B doesn't.\", \"prefers\": \"A\"}, {\"id\": \"fear\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Only B gives a dated check on next Saturday before it's assigned.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Either path adds work today. A is one text; B means a talk, maybe a decline.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4766,
+      "outTokens": 1829,
+      "thinkingTokens": 1508,
+      "cost": 0.0023399000000000002,
+      "promptChars": 9209
+    },
+    {
+      "kind": "speak",
+      "ms": 8447,
+      "reply": "{\"text\": \"Path B's schedule posting doesn't reach my need. Even with a 3-day check, if my manager says yes to the next Saturday without a rest day in between, I still work through a fourth stretch with no rest, and a process for agreeing on shifts doesn't stop that. Sleep is what I need, and it only comes if the weekend is actually off the table for now. What would move me to 0 is pairing Path A's message today with a request that next Saturday is off unless I agree to it: '[Manager], I'm not available for next Saturday, and I need to agree to any Saturday shift before it's posted.'\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A confirmed Saturday off this coming week, not just a future check.\", \"turns_down\": \"\"}",
+      "inTokens": 4708,
+      "outTokens": 248,
+      "thinkingTokens": 0,
+      "cost": 0.0015320000000000002,
+      "promptChars": 9482
+    },
+    {
+      "kind": "speak",
+      "ms": 6107,
+      "reply": "{\"text\": \"Path B's posting process won't stop the pattern on its own: a fourth Saturday could still be agreed without a rest day in between, and I'd still get no recovery. What would move me to 0 is adding today's Path A message plus a request that next Saturday stays off until I agree to it: \\\"[Manager], I'm not available next Saturday, and I need to agree to any Saturday shift before it's posted.\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Next Saturday off unless I agree, so I get a real rest day.\", \"turns_down\": \"\"}",
+      "inTokens": 4975,
+      "outTokens": 188,
+      "thinkingTokens": 0,
+      "cost": 0.0015821,
+      "promptChars": 10235
+    },
+    {
+      "kind": "floor",
+      "ms": 10726,
+      "reply": "{\"bids\": [{\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Nobody has said being scheduled without asking was dismissive. The message must acknowledge that.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"tiredness\", \"why\": \"Tiredness's combined message names the three Saturdays I wasn't asked about. I can live with that.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"tiredness\", \"why\": \"Agreeing to next Saturday before it's posted is the concrete check I needed.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"What happens if the manager ignores the text and posts Saturday again anyway?\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"I've already said what I need; the combined message covers my rest day.\"}]}",
+      "inTokens": 4753,
+      "outTokens": 1332,
+      "thinkingTokens": 1006,
+      "cost": 0.0020875,
+      "promptChars": 9182
+    },
+    {
+      "kind": "speak",
+      "ms": 6238,
+      "reply": "{\"text\": \"Path A and Path B both fix the schedule after the fact, but nothing in plan v2 makes the manager's next move visible before a Saturday is posted, so the same silent assignment can happen again. Sadness, Tiredness, and Fear all need that, and it's what I need too: my request to be asked first still has no step that reaches the scheduling itself. What would move me to 0 is adding to Path A's text today: \\\"Please don't post any Saturday shift for me until I've confirmed it.\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add a scheduling hold to today's message so posting waits on my confirmation.\", \"turns_down\": \"\"}",
+      "inTokens": 4772,
+      "outTokens": 220,
+      "thinkingTokens": 0,
+      "cost": 0.0015371999999999999,
+      "promptChars": 9675
+    },
+    {
+      "kind": "society",
+      "ms": 5312,
+      "reply": "{\"text\": \"Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.\", \"style\": \"rest instead of acting\"}",
+      "inTokens": 2224,
+      "outTokens": 57,
+      "thinkingTokens": 226,
+      "cost": 0.0008038,
+      "promptChars": 2664
+    },
+    {
+      "kind": "speak",
+      "ms": 6088,
+      "reply": "{\"text\": \"Society's 'just rest this weekend' leaves my need untouched: the Saturday gets posted without my confirmation, and I can't stop the next one from landing on me. Following it would mean the schedule keeps being set without me, and I'd spend the rest day waiting to see whether it happens again. What would move me to 0 is the scheduling hold itself, which Consciousness adopts today.\", \"to\": \"society\", \"score\": -1, \"need\": \"Adding a scheduling hold to today's message so posting waits on my confirmation.\", \"turns_down\": \"Just rest this weekend\"}",
+      "inTokens": 5308,
+      "outTokens": 191,
+      "thinkingTokens": 0,
+      "cost": 0.0016835,
+      "promptChars": 11220
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6188,
+      "reply": "{\"text\": \"Anger's need is the one still open, and Annoyance's hold makes it concrete, so I'm choosing Path A and folding Tiredness's and Fear's asks into it. Path B's posting process doesn't stop a fourth silent Saturday today, so I'm dropping it. I'm adding the hold and next-Saturday request to Anger's message so nothing gets posted before you confirm, and Fear gets its check on the next assignment.\", \"to\": \"emo_anger\", \"plan\": [\"Today, before replying to this week's shift, text your manager: \\\"I wasn't asked about the last three Saturdays, and I need to be asked before I'm scheduled. Please don't post any Saturday shift for me until I've confirmed it.\\\"\", \"In the same text, add: \\\"I'm not available next Saturday, and I need to agree to any Saturday shift before it's posted.\\\"\", \"Hold this week's yes until your manager replies. If they don't confirm they'll check with you first by Thursday, reply: \\\"I can't commit to Saturdays until we agree on a process.\\\"\"]}",
+      "inTokens": 5384,
+      "outTokens": 352,
+      "thinkingTokens": 0,
+      "cost": 0.0017868,
+      "promptChars": 11572
+    },
+    {
+      "kind": "floor",
+      "ms": 15627,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Three asks and a fallback is too much at once. Shrink it.\"}, {\"id\": \"embarrassment\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Firm text could strain the manager relationship. How will they react?\"}, {\"id\": \"anger\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Message goes today, no yes before reply. I can live with that.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Next Saturday off unless I agree. My rest need is covered.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Agreement before posting covers my check on the next Saturday.\"}, {\"id\": \"annoyance\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The scheduling hold is in the message. Nothing more to add.\"}]}",
+      "inTokens": 5499,
+      "outTokens": 2757,
+      "thinkingTokens": 2372,
+      "cost": 0.0030238,
+      "promptChars": 11331
+    },
+    {
+      "kind": "speak",
+      "ms": 6606,
+      "reply": "{\"text\": \"Consciousness, the hold and the next-Saturday request are solid, but they still don't reach my need: nothing in the plan lets me rest the Saturday that's already posted, and right now I'm the one absorbing three weeks of shifts at once. Saying yes to this week while waiting on the manager keeps me in the same overloaded spot. What would move me to 0 is removing this week's Saturday from the table before I answer anything: text \\\"[Manager], I can't take this Saturday or any Saturday until we agree on a process, and I'll confirm by [time today].\\\" Then I'll decide on the rest with no new demands stacked on top.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Pull this week's Saturday off the table until we agree a process\", \"turns_down\": \"\"}",
+      "inTokens": 5318,
+      "outTokens": 259,
+      "thinkingTokens": 0,
+      "cost": 0.0017205,
+      "promptChars": 11139
+    },
+    {
+      "kind": "speak",
+      "ms": 5530,
+      "reply": "{\"text\": \"Consciousness, the hold and next-Saturday request help, but they don't reach my need: this Saturday is already posted, and I'm absorbing a third week of shifts at once. Answering yes while waiting on the manager keeps me overloaded. What would move me to 0 is texting [Manager] today: \\\"I can't take this Saturday or any Saturday until we agree on a process.\\\"\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Pull this Saturday off the table today, before answering anything.\", \"turns_down\": \"\"}",
+      "inTokens": 5595,
+      "outTokens": 179,
+      "thinkingTokens": 204,
+      "cost": 0.0018656000000000002,
+      "promptChars": 11927
+    },
+    {
+      "kind": "floor",
+      "ms": 12661,
+      "reply": "{\"bids\": [{\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Keep it short, but check with me before texting the manager.\"}, {\"id\": \"anger\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"That line finally names the boundary: no Saturday without my agreement.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Add 'don't post Saturdays for me' or scheduling can still move silently.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"answer\", \"to\": \"\", \"why\": \"My ask is in; I'll wait and not press further.\"}]}",
+      "inTokens": 5431,
+      "outTokens": 1890,
+      "thinkingTokens": 1647,
+      "cost": 0.0025699,
+      "promptChars": 11023
+    },
+    {
+      "kind": "speak",
+      "ms": 14729,
+      "reply": "{\"text\": \"I need the manager relationship kept intact, and the plan's text is what hurts it: one message that asks three things at once (no Saturday posts, next Saturday unavailable, agree before any shift) plus a Thursday fallback reads like a demand instead of a conversation. What would move me to 0 is a short private text: '[Manager], can we agree how Saturdays get scheduled? Can we talk [time] today?' with the next-Saturday line raised in that talk, sent before answering this week's shift.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Short private text, one ask, sent before answering this week's shift.\", \"turns_down\": \"\"}",
+      "inTokens": 5393,
+      "outTokens": 1805,
+      "thinkingTokens": 1589,
+      "cost": 0.002516,
+      "promptChars": 11436
+    },
+    {
+      "kind": "floor",
+      "ms": 10521,
+      "reply": "{\"bids\": [{\"id\": \"anger\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A talk can't replace the written line. Send the boundary text today too.\"}, {\"id\": \"annoyance\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"embarrassment\", \"why\": \"The short text drops my hold on posting. That line must stay.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Pulling this Saturday off the table must happen before any talk.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"embarrassment\", \"why\": \"If the talk slips, does next Saturday still get posted first?\"}]}",
+      "inTokens": 5674,
+      "outTokens": 1119,
+      "thinkingTokens": 874,
+      "cost": 0.0022573000000000003,
+      "promptChars": 11724
+    },
+    {
+      "kind": "speak",
+      "ms": 6390,
+      "reply": "{\"text\": \"Consciousness, the hold and next-Saturday request still leave my need open: this Saturday's shift is already posted, and nothing in Path A stops it from staying on the schedule while we talk. A written line helps, but it only holds if it's sent before this shift gets answered, so the boundary has to be in writing today. What would move me to 0 is sending '[Manager], I wasn't asked about the last three Saturdays and I need to be asked before I'm scheduled. Please don't post any Saturday shift for me until I've confirmed it.' right now, before I reply to this week's shift.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Written boundary text sent today, before answering this week's shift.\", \"turns_down\": \"\"}",
+      "inTokens": 5941,
+      "outTokens": 242,
+      "thinkingTokens": 0,
+      "cost": 0.0018989000000000002,
+      "promptChars": 12980
+    },
+    {
+      "kind": "speak",
+      "ms": 5921,
+      "reply": "{\"text\": \"+1 to Sadness's text. The hold and next-Saturday request still leave my need open: this Saturday is already posted, and a talk alone won't keep it from staying on the schedule. The written line has to go out before this shift gets answered. What would move me to 0 is sending the boundary text today, before I reply to this week's shift.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Send the written boundary text today, before answering this week's shift.\", \"turns_down\": \"\"}",
+      "inTokens": 6275,
+      "outTokens": 160,
+      "thinkingTokens": 310,
+      "cost": 0.0021126,
+      "promptChars": 13928
+    },
+    {
+      "kind": "consciousness",
+      "ms": 18512,
+      "reply": "{\"text\": \"Overwhelm's ask is still open, so I cut the plan from three steps to two: this Saturday comes off the table in today's text, and the Thursday fallback now drops the Saturday-specific wording. Annoyance's 'don't post Saturdays for me' and Anger's send-before-answering rule both sit inside that one message, so nothing gets posted silently. Fear and Tiredness keep their next-Saturday hold, and Embarrassment gets one short text instead of a demand.\", \"to\": \"overwhelm\", \"plan\": [\"Today, before answering this week's shift, text [Manager]: 'I wasn't asked about the last three Saturdays. Take me off this one, and don't post any Saturday for me until we agree how they're scheduled.'\", \"Next Saturday stays off unless you confirm it first. If [Manager] hasn't replied by Thursday, text: 'I can't take any Saturday until we agree on a process.'\"]}",
+      "inTokens": 6057,
+      "outTokens": 2835,
+      "thinkingTokens": 2522,
+      "cost": 0.0032302,
+      "promptChars": 13409
+    },
+    {
+      "kind": "floor",
+      "ms": 14984,
+      "reply": "{\"bids\": [{\"id\": \"😡\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Sending the boundary text before answering the shift covers my need now.\"}, {\"id\": \"🤨\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"The 'don't post Saturdays for me' line is already in the text.\"}, {\"id\": \"😵‍💫\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Pulling this Saturday off the table today respects my limit. That works.\"}, {\"id\": \"🥺\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"The text still makes two asks plus a Thursday ultimatum. Keep one ask.\"}, {\"id\": \"❤️\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Overwhelm is now covered, so my spotlight is met. Holding back.\"}]}",
+      "inTokens": 6128,
+      "outTokens": 1767,
+      "thinkingTokens": 1427,
+      "cost": 0.0027185,
+      "promptChars": 13000
+    },
+    {
+      "kind": "speak",
+      "ms": 5509,
+      "reply": "{\"text\": \"Overwhelm is the one I'm hearing least right now. The plan still leaves this Saturday on the schedule while the manager talks it over, so Overwhelm keeps absorbing three weeks of shifts at once. Consciousness, please change the plan so this Saturday comes off the table today, before any reply goes out.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Texting [Manager] today: 'I can't take this Saturday or any Saturday until we agree on a process.'\", \"turns_down\": \"\", \"spotlight\": \"😵‍💫\"}",
+      "inTokens": 6115,
+      "outTokens": 189,
+      "thinkingTokens": 0,
+      "cost": 0.0019246000000000003,
+      "promptChars": 13444
+    },
+    {
+      "kind": "floor",
+      "ms": 10062,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will this Saturday come off the schedule before any reply goes out?\"}, {\"id\": \"embarrassment\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"One short private text fits my need; I can live with that.\"}, {\"id\": \"anger\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Sadness is repeating my send-before-answering ask, which the plan already covers.\"}]}",
+      "inTokens": 6065,
+      "outTokens": 1001,
+      "thinkingTokens": 819,
+      "cost": 0.0023156,
+      "promptChars": 12818
+    },
+    {
+      "kind": "speak",
+      "ms": 12888,
+      "reply": "{\"text\": \"Plan v4's text still asks three things at once (take me off, don't post Saturdays, agree on a process), which reads as a demand before we've talked. What would move me to 0 is one short private text sent before I reply to this week's shift: '[Manager], can we talk [time] today about how Saturdays get scheduled?' Any Saturday-specific request can go in that conversation.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Plan v4's text needs one ask, sent before this week's reply.\", \"turns_down\": \"\"}",
+      "inTokens": 6238,
+      "outTokens": 1578,
+      "thinkingTokens": 1400,
+      "cost": 0.0026560000000000004,
+      "promptChars": 13839
+    },
+    {
+      "kind": "wrap",
+      "ms": 16816,
+      "reply": "{\"plan\": [\"Today, before replying to this week's Saturday shift, text [Manager]: \\\"I wasn't asked about the last three Saturdays. I can't take this one or any Saturday, and please don't post any Saturday for me until we've talked. Can we talk [time] today about how Saturdays get scheduled?\\\"\", \"If [Manager] hasn't replied by Thursday, text: \\\"I can't take any Saturday until we agree on a process.\\\"\", \"Next Saturday stays off unless you confirm it first. Raise that in the talk with [Manager], and don't agree to any Saturday before it's posted.\"], \"scores\": [{\"id\": \"anger\", \"score\": 0, \"step\": 1, \"why\": \"The boundary goes out today, before I answer this week's shift.\"}, {\"id\": \"annoyance\", \"score\": 0, \"step\": 1, \"why\": \"The text blocks silent Saturday postings, which was my need.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 3, \"why\": \"Next Saturday needs my confirmation, so no default can set again.\"}, {\"id\": \"tiredness\", \"score\": 0, \"step\": 3, \"why\": \"The next Saturday stays off, so I can actually recover.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 1, \"why\": \"Overwhelm gets this Saturday removed today, so it's no longer neglected.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"step\": 1, \"why\": \"This Saturday comes off the table today, before any shift is answered.\"}, {\"id\": \"embarrassment\", \"score\": 0, \"step\": 1, \"why\": \"One short ask for a talk, sent before I answer, keeps the relationship intact.\"}], \"society\": [{\"line\": \"Honestly, it'll probably work itself out. Maybe just take a deep breath and sleep on it, and things will look better in the morning.\", \"reply\": \"I appreciate that, but I need this settled today, because waiting means another Saturday could be assigned without me. Taking care of it now is what will let me rest.\"}, {\"line\": \"Honestly, it'll probably work itself out. Just try not to stress about it too much and get some rest this weekend.\", \"reply\": \"Rest matters, but what I need is for the schedule itself to change, not just for this weekend to be quiet. I'm going to raise it with my manager this week.\"}], \"text\": \"Consciousness here: this round gives every voice a 0, with this Saturday off the table today and a talk requested before any shift is answered. The next Saturday stays unconfirmed, so the schedule can't quietly decide for you again.\"}",
+      "inTokens": 5283,
+      "outTokens": 2713,
+      "thinkingTokens": 1879,
+      "cost": 0.002937,
+      "promptChars": 10955
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 16,
+      "voices": 9,
+      "maxSentences": 4,
+      "avgSentences": 3,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.26,
+      "societyLines": 2,
+      "societyCalledOut": 2,
+      "questions": 0,
+      "bareQuestions": 0,
+      "holdRate": 0.19,
+      "finalMinus": [
+        "sadness",
+        "overwhelm"
+      ],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "16 msgs, 9 voices, avg 3 sentences (max 4), max overlap 0.26, Society 2/2 called out, hold rate 0.19, final -1: sadness, overwhelm",
+    "speakers": {
+      "sadness": 2,
+      "anger": 2,
+      "society": 2,
+      "fear": 1,
+      "consciousness": 3,
+      "tiredness": 1,
+      "annoyance": 2,
+      "overwhelm": 1,
+      "embarrassment": 2
+    }
+  }
+}

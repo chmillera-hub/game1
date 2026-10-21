@@ -1,0 +1,1488 @@
+{
+  "scenario": {
+    "id": "exam-all-nighter",
+    "thought": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks."
+  },
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "ms": 318341,
+  "results": [
+    {
+      "ok": true
+    }
+  ],
+  "usage": {
+    "calls": 33,
+    "inTokens": 166907,
+    "outTokens": 32736,
+    "thinkingTokens": 23940,
+    "cost": 0.06627408
+  },
+  "conversation": {
+    "settings": {
+      "model": "claude-haiku-5-5",
+      "effort": "low",
+      "maxMessages": 16,
+      "society": "sometimes"
+    },
+    "state": {
+      "thought": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks.",
+      "followups": [],
+      "plan": {
+        "version": 6,
+        "steps": [
+          "Right now, before any timer starts, write [Topic 1], [Topic 2], and [Topic 3] on paper, each marked with Friday's exam date. Answer one practice question on each, keep only the topic you miss first, and write its name at the top of your page.",
+          "Study that one topic in three 40-minute blocks. Each block opens with one practice question on that topic. At each 10-minute break, drink a glass of water and play one song or do a stretch. Use water only, with no energy drinks.",
+          "At 10pm, put your phone in another room and keep it there.",
+          "At 11pm, stop studying and go to bed. Sleep at least 7 hours before the exam, and save the other two topics for Thursday."
+        ],
+        "paths": false,
+        "final": true
+      },
+      "scores": {
+        "tiredness": {
+          "score": 0,
+          "need": "",
+          "why": "A whole night without sleep leaves me wrecked before the exam even starts."
+        },
+        "wellness": {
+          "score": 0,
+          "need": "",
+          "why": "Energy drinks and no sleep are a real risk to my body, and it shows."
+        },
+        "fear": {
+          "score": 0,
+          "need": "",
+          "why": "Dropping sleep and health right before the exam feels like walking into danger."
+        },
+        "overwhelm": {
+          "score": 0,
+          "need": "",
+          "why": "You're asking me to absorb the whole course in one night, and I can't take that."
+        },
+        "efficiency": {
+          "score": 0,
+          "need": "",
+          "why": "Exhausted studying wastes the hours it pretends to save, so this isn't faster."
+        },
+        "doubt": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "boredom": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        },
+        "sadness": {
+          "score": 0,
+          "need": "",
+          "why": ""
+        }
+      },
+      "spotlight": "",
+      "messages": [
+        {
+          "n": 1,
+          "who": "user",
+          "text": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks."
+        },
+        {
+          "n": 2,
+          "who": "consciousness",
+          "text": "Here's the plan: no more scrolling, a few energy drinks, and one long night of studying that gets everything covered. It's a clean, decisive way to finally get ahead of this exam.",
+          "to": "",
+          "move": "open"
+        },
+        {
+          "n": 3,
+          "who": "overwhelm",
+          "text": "I can't absorb a whole course in one night, and energy drinks with no sleep would make me less able to take anything in. The plan doesn't say what gets covered tonight, so I need a shorter list. Consciousness, please cut tonight to the 3 weakest exam topics, study them until 11pm, and put the phone in another room at 10pm with no energy drinks.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "One night for the whole course is too much. Shrink the plan, don't argue me out of it."
+        },
+        {
+          "n": 4,
+          "who": "fear",
+          "text": "I'm stuck on one thing: the plan has no check on sleep, and I'm afraid a whole night awake puts my health and the exam at risk. Consciousness, tell me the exact time you'll stop studying tonight and whether you'll sleep at least hours before the exam. If you commit to lights out at 11pm, as Overwhelm asked, I can settle at 0.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Do the other topics stay uncovered before Friday? That's my danger."
+        },
+        {
+          "n": 5,
+          "who": "society",
+          "text": "Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.",
+          "to": "fear",
+          "move": "platitude"
+        },
+        {
+          "n": 6,
+          "who": "tiredness",
+          "text": "Society's \"just trust yourself and go with the flow\" says nothing about sleep, and that's my whole problem: I'm already running on empty before the exam even starts. Going with the flow through a whole night means no rest at all, so I'll be the one paying for it Friday morning. I can live with this plan once lights out is set at 11pm, which Overwhelm has already asked for.",
+          "to": "society",
+          "move": "callout",
+          "score": -1,
+          "lens": "",
+          "why": "Society just talked past a real need"
+        },
+        {
+          "n": 7,
+          "who": "consciousness",
+          "text": "The first plan breaks where Wellness says energy drinks and no sleep put the body at risk, and where Efficiency says exhausted studying wastes the hours it claims to save. Path A is built for Overwhelm, Tiredness, and Fear: three named topics, phone away at 10pm, lights out at 11pm. Path B is built for Wellness and Efficiency: timed study blocks with water instead of energy drinks.",
+          "to": "wellness",
+          "move": "paths"
+        },
+        {
+          "n": 8,
+          "who": "wellness",
+          "text": "Energy drinks plus no sleep before a Friday exam is a real hit to my body, and I feel it in the shakiness and the crash I'd hit mid-exam. Path A's 11pm lights-out with 7+ hours of sleep covers what I need, and I can live with it. My ask for Path B: keep its water-instead-of-energy-drinks rule, and add a hard stop at 11pm so the three 40-minute blocks end before lights-out, with a glass of water at each break.",
+          "to": "consciousness",
+          "move": "answer",
+          "score": -1,
+          "lens": "",
+          "why": "Sadness-spotlight: I need the plan to name water and real sleep, not just no energy drinks."
+        },
+        {
+          "n": 9,
+          "who": "doubt",
+          "text": "I'm still stuck on the exam itself. Path A names three topics, but nothing says which three or how I'd know they're the weakest, so I could spend the 10pm-to-11pm stretch on the wrong ones and wake up Friday feeling just as lost. Consciousness, before lights out, could you write the three [Topic 1], [Topic 2], [Topic 3] down and mark each with the exam date and a quick self-check, like a practice question I get wrong? That would settle me.",
+          "to": "consciousness",
+          "move": "question",
+          "score": -1,
+          "lens": "",
+          "why": "Will three 40-minute blocks really cover my three weakest topics?"
+        },
+        {
+          "n": 10,
+          "who": "consciousness",
+          "text": "Doubt, you're right that Path A never says which three topics, so I'm choosing Path B as the base because Wellness, Efficiency, and Boredom can all live with timed blocks and water. I'm keeping Path A's 11pm lights-out and 7+ hours of sleep from Tiredness and Fear, and I'm adding a self-check step so you pick topics by testing yourself rather than guessing. Topic choice stays with you, since I can't see your exam.",
+          "to": "doubt",
+          "move": "refine"
+        },
+        {
+          "n": 11,
+          "who": "sadness",
+          "text": "Boredom is still at -1 because the study blocks are just a timer and a topic list, so nothing makes the reading feel different from scrolling. What would move it to 0 is each 40-minute block starting with one practice question instead of rereading notes, and each break ending with a small reward like a song or a stretch.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Boredom has barely been heard"
+        },
+        {
+          "n": 12,
+          "who": "overwhelm",
+          "text": "Path B's timed blocks and water don't touch my need: they still leave tonight at three topics plus a self-check step, which means I'm still carrying a full load with no end point I can see until 11pm. What would move me to 0 is cutting tonight to one topic: pick the single weakest of your three, do one practice question, study only that topic in the three 40-minute blocks, and stop at 11pm. Quick ask: write [Topic 1] only, and drop the other two until Thursday.",
+          "to": "consciousness",
+          "move": "pushback",
+          "score": -1,
+          "lens": "",
+          "why": "A question per block plus rewards adds demands; keep tonight's load small."
+        },
+        {
+          "n": 13,
+          "who": "consciousness",
+          "text": "Overwhelm, your cut is in: tonight is one topic, the one you miss first on the three practice questions, and the other two wait until Thursday. Sadness, Boredom gets its fix: each 40-minute block opens with one practice question, and each break ends with a song or a stretch. Doubt's self-check and the 11pm lights-out that Fear and Tiredness need both stay as they were.",
+          "to": "overwhelm",
+          "move": "refine"
+        },
+        {
+          "n": 14,
+          "who": "sadness",
+          "text": "Boredom is still at -1 because the study blocks are a timer and a topic list, so reading feels like scrolling and keeps losing to the phone. Your 'one practice question first' and 'song or stretch after each break' is the right direction. What would move Boredom to 0 is opening every 40-minute block with that practice question, with the topic written at the top before the timer starts tonight.",
+          "to": "consciousness",
+          "move": "spotlight",
+          "score": -1,
+          "lens": "",
+          "why": "Boredom has barely been heard"
+        },
+        {
+          "n": 15,
+          "who": "consciousness",
+          "text": "Sadness, your spotlight is Boredom, so each 40-minute block now opens with one practice question, and the chosen topic's name goes at the top of the page before the timer starts. Overwhelm, I cut the plan from three steps to two: you still name all three topics, but tonight only the one you miss first gets studied, with the phone away at 10pm and lights out at 11pm. Doubt's self-check stays in the first step.",
+          "to": "boredom",
+          "move": "refine"
+        },
+        {
+          "n": 16,
+          "who": "boredom",
+          "text": "Plan v5 now gives me what I need. Opening each 40-minute block with one practice question on the topic written at the top of the page, and ending each break with a song or stretch, makes the study time feel like a game instead of scrolling. I can live with it, on the condition that the single topic gets chosen and written down before the first timer starts tonight.",
+          "to": "consciousness",
+          "move": "accept",
+          "score": 0,
+          "lens": "",
+          "why": "Practice question first and song breaks give me a real challenge now."
+        },
+        {
+          "n": 17,
+          "who": "consciousness",
+          "text": "Here's the plan everyone can live with: one topic tonight, studied in timed blocks that open with a practice question, phone away at 10pm, and lights out at 11pm for 7+ hours of sleep. Every voice that spoke now sits at 0, so we'll see how Friday goes.",
+          "to": "",
+          "move": "wrap"
+        }
+      ],
+      "ledger": [
+        {
+          "advice": "All-nighter with energy drinks",
+          "from": "consciousness",
+          "by": "overwhelm",
+          "why": "Tonight limited to 3 named topics, lights out 11pm"
+        },
+        {
+          "advice": "All-nighter with energy drinks",
+          "from": "consciousness",
+          "by": "wellness",
+          "why": "Water-only study blocks with a firm 11pm stop and sleep included."
+        },
+        {
+          "advice": "Three-topic tonight plan",
+          "from": "consciousness",
+          "by": "overwhelm",
+          "why": "Tonight limited to one topic, lights out 11pm"
+        }
+      ],
+      "societyLines": [
+        {
+          "text": "Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.",
+          "to": "fear",
+          "style": "wellness platitude (yoga, deep breathing, a bubble bath, a walk)"
+        }
+      ],
+      "lensesUsed": {},
+      "prefs": {},
+      "queue": [],
+      "roundCount": 14,
+      "acceptRun": 1,
+      "locks": {
+        "doubt": "Name the three topics and a quick self-check tonight.",
+        "efficiency": "Exhausted studying wastes the hours it pretends to save, so this isn't faster.",
+        "fear": "Concrete lights-out time and a minimum sleep amount written into tonight's plan.",
+        "tiredness": "Lights out 11pm with at least 7 hours of sleep planned tonight.",
+        "overwhelm": "Tonight limited to one topic, lights out 11pm",
+        "wellness": "Water-only study blocks with a firm 11pm stop and sleep included.",
+        "boredom": ""
+      },
+      "waiting": {
+        "tiredness": 0,
+        "efficiency": 4,
+        "fear": 2,
+        "doubt": 0,
+        "overwhelm": 1,
+        "wellness": 1,
+        "boredom": 0,
+        "sadness": 0
+      },
+      "pendingOpen": false,
+      "phase": "wrapped",
+      "usage": {
+        "calls": 33,
+        "inChars": 328655,
+        "outChars": 25999,
+        "byKind": {
+          "open": 1,
+          "floor": 11,
+          "speak": 12,
+          "society": 1,
+          "consciousness": 7,
+          "wrap": 1
+        }
+      },
+      "sadnessPlan": 4
+    },
+    "events": [
+      {
+        "type": "user",
+        "text": "I have a big exam on Friday and I keep doom-scrolling instead of studying. Tonight I'm planning to pull an all-nighter with energy drinks.",
+        "at": 0
+      },
+      {
+        "type": "opening",
+        "text": "Here's the plan: no more scrolling, a few energy drinks, and one long night of studying that gets everything covered. It's a clean, decisive way to finally get ahead of this exam.",
+        "plan": {
+          "version": 1,
+          "steps": [
+            "Cut the doom-scrolling tonight, fuel up on energy drinks, and study straight through until morning so the whole exam is covered before Friday."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "minus": [
+          {
+            "id": "tiredness",
+            "why": "A whole night without sleep leaves me wrecked before the exam even starts."
+          },
+          {
+            "id": "wellness",
+            "why": "Energy drinks and no sleep are a real risk to my body, and it shows."
+          },
+          {
+            "id": "fear",
+            "why": "Dropping sleep and health right before the exam feels like walking into danger."
+          },
+          {
+            "id": "overwhelm",
+            "why": "You're asking me to absorb the whole course in one night, and I can't take that."
+          },
+          {
+            "id": "efficiency",
+            "why": "Exhausted studying wastes the hours it pretends to save, so this isn't faster."
+          }
+        ],
+        "spotlight": "tiredness",
+        "at": 1
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Sleep is the most neglected need. Give me a short sleep window, please."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "One night for the whole course is too much. Shrink the plan, don't argue me out of it."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Short focused blocks with breaks would cover more than one exhausted night."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Before we go ahead, which of my needs does this plan leave exposed?"
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "comeback",
+            "to": "",
+            "why": "My concern about energy drinks and no sleep still stands, and I've said it."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Has the plan been re-checked against the exam date and what I actually need to cover?"
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 2
+      },
+      {
+        "type": "message",
+        "n": 3,
+        "who": "overwhelm",
+        "text": "I can't absorb a whole course in one night, and energy drinks with no sleep would make me less able to take anything in. The plan doesn't say what gets covered tonight, so I need a shorter list. Consciousness, please cut tonight to the 3 weakest exam topics, study them until 11pm, and put the phone in another room at 10pm with no energy drinks.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "One night for the whole course is too much. Shrink the plan, don't argue me out of it.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 3
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Lights out at 11pm gives me the sleep I've been missing."
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "support",
+            "to": "consciousness",
+            "why": "Three named topics saves hours; that's the faster route I wanted."
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Do the other topics stay uncovered before Friday? That's my danger."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Which three topics exactly? The plan still doesn't say what gets covered."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "support",
+            "to": "overwhelm",
+            "why": "Energy drink ban is my need; waiting for the plan to commit."
+          }
+        ],
+        "pick": "fear",
+        "at": 4
+      },
+      {
+        "type": "message",
+        "n": 4,
+        "who": "fear",
+        "text": "I'm stuck on one thing: the plan has no check on sleep, and I'm afraid a whole night awake puts my health and the exam at risk. Consciousness, tell me the exact time you'll stop studying tonight and whether you'll sleep at least hours before the exam. If you commit to lights out at 11pm, as Overwhelm asked, I can settle at 0.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Do the other topics stay uncovered before Friday? That's my danger.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 5
+      },
+      {
+        "type": "message",
+        "n": 5,
+        "who": "society",
+        "text": "Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.",
+        "to": "fear",
+        "move": "platitude",
+        "at": 6
+      },
+      {
+        "type": "message",
+        "n": 6,
+        "who": "tiredness",
+        "text": "Society's \"just trust yourself and go with the flow\" says nothing about sleep, and that's my whole problem: I'm already running on empty before the exam even starts. Going with the flow through a whole night means no rest at all, so I'll be the one paying for it Friday morning. I can live with this plan once lights out is set at 11pm, which Overwhelm has already asked for.",
+        "to": "society",
+        "move": "callout",
+        "score": -1,
+        "lens": "",
+        "why": "Society just talked past a real need",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 7
+      },
+      {
+        "type": "message",
+        "n": 7,
+        "who": "consciousness",
+        "text": "The first plan breaks where Wellness says energy drinks and no sleep put the body at risk, and where Efficiency says exhausted studying wastes the hours it claims to save. Path A is built for Overwhelm, Tiredness, and Fear: three named topics, phone away at 10pm, lights out at 11pm. Path B is built for Wellness and Efficiency: timed study blocks with water instead of energy drinks.",
+        "to": "wellness",
+        "move": "paths",
+        "plan": {
+          "version": 2,
+          "steps": [
+            "Path A: Tonight, list your 3 weakest exam topics: [Topic 1], [Topic 2], [Topic 3]. Study only those until 10pm, phone in another room at 10pm, lights out 11pm for 7+ hours of sleep.",
+            "Path B: Tonight, set a phone timer for three 40-minute study blocks with 10-minute breaks, starting now. Drink water instead of energy drinks, and move scrolling apps off your home screen before the first block."
+          ],
+          "paths": true,
+          "final": false
+        },
+        "at": 8
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "reply",
+            "move": "advocate",
+            "to": "consciousness",
+            "why": "Sadness-spotlight: I need the plan to name water and real sleep, not just no energy drinks.",
+            "prefers": "B"
+          },
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "Path B's timed blocks cut wasted hours, but I need the 40-minute blocks to actually start.",
+            "prefers": "B"
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Is three weakest topics enough to pass Friday, or does Path A leave gaps?",
+            "prefers": "A"
+          },
+          {
+            "id": "boredom",
+            "score": -1,
+            "act": "hold",
+            "move": "pushback",
+            "to": "",
+            "why": "Blocks plus breaks give variety, so I can hold back for now.",
+            "prefers": "B"
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Path A's 11pm lights-out with 7+ hours covers my need; holding back.",
+            "prefers": "A"
+          }
+        ],
+        "pick": "wellness",
+        "at": 9
+      },
+      {
+        "type": "message",
+        "n": 8,
+        "who": "wellness",
+        "text": "Energy drinks plus no sleep before a Friday exam is a real hit to my body, and I feel it in the shakiness and the crash I'd hit mid-exam. Path A's 11pm lights-out with 7+ hours of sleep covers what I need, and I can live with it. My ask for Path B: keep its water-instead-of-energy-drinks rule, and add a hard stop at 11pm so the three 40-minute blocks end before lights-out, with a glass of water at each break.",
+        "to": "consciousness",
+        "move": "answer",
+        "score": -1,
+        "lens": "",
+        "why": "Sadness-spotlight: I need the plan to name water and real sleep, not just no energy drinks.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 10
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "efficiency",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Fixed blocks with water beat marathon nights, but only if they end cleanly."
+          },
+          {
+            "id": "doubt",
+            "score": -1,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Will three 40-minute blocks really cover my three weakest topics?"
+          },
+          {
+            "id": "fear",
+            "score": -1,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Wellness's 11pm hard stop gives me the concrete lights-out I asked for."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Three named topics and 11pm lights-out are already in the plan."
+          },
+          {
+            "id": "tiredness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Sleep and 11pm lights-out are already covered; nothing new to add."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "My water-only and 11pm stop ask is already stated; holding."
+          }
+        ],
+        "pick": "doubt",
+        "at": 11
+      },
+      {
+        "type": "message",
+        "n": 9,
+        "who": "doubt",
+        "text": "I'm still stuck on the exam itself. Path A names three topics, but nothing says which three or how I'd know they're the weakest, so I could spend the 10pm-to-11pm stretch on the wrong ones and wake up Friday feeling just as lost. Consciousness, before lights out, could you write the three [Topic 1], [Topic 2], [Topic 3] down and mark each with the exam date and a quick self-check, like a practice question I get wrong? That would settle me.",
+        "to": "consciousness",
+        "move": "question",
+        "score": -1,
+        "lens": "",
+        "why": "Will three 40-minute blocks really cover my three weakest topics?",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 12
+      },
+      {
+        "type": "message",
+        "n": 10,
+        "who": "consciousness",
+        "text": "Doubt, you're right that Path A never says which three topics, so I'm choosing Path B as the base because Wellness, Efficiency, and Boredom can all live with timed blocks and water. I'm keeping Path A's 11pm lights-out and 7+ hours of sleep from Tiredness and Fear, and I'm adding a self-check step so you pick topics by testing yourself rather than guessing. Topic choice stays with you, since I can't see your exam.",
+        "to": "doubt",
+        "move": "refine",
+        "plan": {
+          "version": 3,
+          "steps": [
+            "You: fill in [Topic 1], [Topic 2], [Topic 3] with the three exam topics you feel weakest on, and write the exam date (Friday) beside each.",
+            "Right now, take one practice question per topic. Mark each one you get wrong; the wrong ones are your three study topics for tonight.",
+            "Set a phone timer for three 40-minute study blocks with 10-minute breaks, starting now. Drink water at each break, and move scrolling apps off your home screen first.",
+            "At 10pm, put your phone in another room. At 11pm, stop studying and go to sleep for at least 7 hours."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 13
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 14
+      },
+      {
+        "type": "score",
+        "id": "doubt",
+        "from": -1,
+        "to": 0,
+        "at": 15
+      },
+      {
+        "type": "score",
+        "id": "efficiency",
+        "from": -1,
+        "to": 0,
+        "at": 16
+      },
+      {
+        "type": "score",
+        "id": "fear",
+        "from": -1,
+        "to": 0,
+        "at": 17
+      },
+      {
+        "type": "score",
+        "id": "tiredness",
+        "from": -1,
+        "to": 0,
+        "at": 18
+      },
+      {
+        "type": "spotlight",
+        "id": "boredom",
+        "at": 19
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Three topics and an 11pm lights-out respect my limit. I'm settled."
+          },
+          {
+            "id": "boredom",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Three identical 40-minute blocks bore me; vary them with quick quizzes."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "question",
+            "to": "",
+            "why": "Self-check and topic choice are covered now; nothing new to add."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Short blocks and a quick self-check waste little time. Holding."
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Concrete 11pm lights-out and 7-hour sleep are now written in. I'm settled."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Lights out at 11pm with 7 hours of sleep covers me. Holding."
+          }
+        ],
+        "pick": "sadness",
+        "at": 20
+      },
+      {
+        "type": "message",
+        "n": 11,
+        "who": "sadness",
+        "text": "Boredom is still at -1 because the study blocks are just a timer and a topic list, so nothing makes the reading feel different from scrolling. What would move it to 0 is each 40-minute block starting with one practice question instead of rereading notes, and each break ending with a small reward like a song or a stretch.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Boredom has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 21
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": 0,
+        "to": -1,
+        "at": 22
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "boredom",
+            "score": -1,
+            "act": "reply",
+            "move": "comeback",
+            "to": "consciousness",
+            "why": "Rereading notes is still monotonous; I need the practice question in every block."
+          },
+          {
+            "id": "overwhelm",
+            "score": -1,
+            "act": "reply",
+            "move": "pushback",
+            "to": "consciousness",
+            "why": "A question per block plus rewards adds demands; keep tonight's load small."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Self-check now answers my topic concern; nothing new to add."
+          },
+          {
+            "id": "wellness",
+            "score": -1,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Water breaks and the 11pm lights-out already cover my ask."
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Timed blocks with a practice question each already save wasted time."
+          }
+        ],
+        "pick": "overwhelm",
+        "at": 23
+      },
+      {
+        "type": "message",
+        "n": 12,
+        "who": "overwhelm",
+        "text": "Path B's timed blocks and water don't touch my need: they still leave tonight at three topics plus a self-check step, which means I'm still carrying a full load with no end point I can see until 11pm. What would move me to 0 is cutting tonight to one topic: pick the single weakest of your three, do one practice question, study only that topic in the three 40-minute blocks, and stop at 11pm. Quick ask: write [Topic 1] only, and drop the other two until Thursday.",
+        "to": "consciousness",
+        "move": "pushback",
+        "score": -1,
+        "lens": "",
+        "why": "A question per block plus rewards adds demands; keep tonight's load small.",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 24
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "",
+        "at": 25
+      },
+      {
+        "type": "message",
+        "n": 13,
+        "who": "consciousness",
+        "text": "Overwhelm, your cut is in: tonight is one topic, the one you miss first on the three practice questions, and the other two wait until Thursday. Sadness, Boredom gets its fix: each 40-minute block opens with one practice question, and each break ends with a song or a stretch. Doubt's self-check and the 11pm lights-out that Fear and Tiredness need both stay as they were.",
+        "to": "overwhelm",
+        "move": "refine",
+        "plan": {
+          "version": 4,
+          "steps": [
+            "You: write [Topic 1], [Topic 2], [Topic 3] with Friday's exam date, then answer one practice question on each now. Tonight's only topic is the one you miss first.",
+            "Study that one topic in three 40-minute blocks, each opening with one practice question. Drink water at each 10-minute break, ending it with a song or a stretch.",
+            "At 10pm, put your phone in another room. Stop studying at 11pm and sleep at least 7 hours. Drop the other two topics until Thursday."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 26
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "sadness",
+        "at": 27
+      },
+      {
+        "type": "message",
+        "n": 14,
+        "who": "sadness",
+        "text": "Boredom is still at -1 because the study blocks are a timer and a topic list, so reading feels like scrolling and keeps losing to the phone. Your 'one practice question first' and 'song or stretch after each break' is the right direction. What would move Boredom to 0 is opening every 40-minute block with that practice question, with the topic written at the top before the timer starts tonight.",
+        "to": "consciousness",
+        "move": "spotlight",
+        "score": -1,
+        "lens": "",
+        "why": "Boredom has barely been heard",
+        "prevScore": -1,
+        "lensLabel": "",
+        "at": 28
+      },
+      {
+        "type": "bids",
+        "bids": [],
+        "pick": "",
+        "at": 29
+      },
+      {
+        "type": "message",
+        "n": 15,
+        "who": "consciousness",
+        "text": "Sadness, your spotlight is Boredom, so each 40-minute block now opens with one practice question, and the chosen topic's name goes at the top of the page before the timer starts. Overwhelm, I cut the plan from three steps to two: you still name all three topics, but tonight only the one you miss first gets studied, with the phone away at 10pm and lights out at 11pm. Doubt's self-check stays in the first step.",
+        "to": "boredom",
+        "move": "refine",
+        "plan": {
+          "version": 5,
+          "steps": [
+            "You: write [Topic 1], [Topic 2], [Topic 3] with Friday's exam date and answer one practice question on each now; keep only the one you miss first, and write its name atop your page before any timer starts.",
+            "Study that topic in three 40-minute blocks, each opening with one practice question; water and a song or stretch at each 10-minute break. Phone away at 10pm; stop at 11pm; sleep 7+ hours."
+          ],
+          "paths": false,
+          "final": false
+        },
+        "at": 30
+      },
+      {
+        "type": "score",
+        "id": "overwhelm",
+        "from": -1,
+        "to": 0,
+        "at": 31
+      },
+      {
+        "type": "score",
+        "id": "wellness",
+        "from": -1,
+        "to": 0,
+        "at": 32
+      },
+      {
+        "type": "score",
+        "id": "boredom",
+        "from": -1,
+        "to": 0,
+        "at": 33
+      },
+      {
+        "type": "score",
+        "id": "sadness",
+        "from": -1,
+        "to": 0,
+        "at": 34
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "One topic tonight, lights out 11pm; my limit is respected. Accepting."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Water breaks, 11pm stop, and 7+ hours sleep cover me. Accepting."
+          },
+          {
+            "id": "boredom",
+            "score": 0,
+            "act": "reply",
+            "move": "accept",
+            "to": "consciousness",
+            "why": "Practice question first and song breaks give me a real challenge now."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "hold",
+            "move": "advocate",
+            "to": "",
+            "why": "Self-check stays and picks my topic, so I'll hold for now."
+          }
+        ],
+        "pick": "boredom",
+        "at": 35
+      },
+      {
+        "type": "message",
+        "n": 16,
+        "who": "boredom",
+        "text": "Plan v5 now gives me what I need. Opening each 40-minute block with one practice question on the topic written at the top of the page, and ending each break with a song or stretch, makes the study time feel like a game instead of scrolling. I can live with it, on the condition that the single topic gets chosen and written down before the first timer starts tonight.",
+        "to": "consciousness",
+        "move": "accept",
+        "score": 0,
+        "lens": "",
+        "why": "Practice question first and song breaks give me a real challenge now.",
+        "prevScore": 0,
+        "lensLabel": "",
+        "at": 36
+      },
+      {
+        "type": "bids",
+        "bids": [
+          {
+            "id": "sadness",
+            "score": 0,
+            "act": "reply",
+            "move": "support",
+            "to": "consciousness",
+            "why": "Boredom is the emotion I'm watching; it's now at 0, so I can hold."
+          },
+          {
+            "id": "tiredness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Lights out at 11pm and 7+ hours of sleep are already covered."
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "One topic tonight with a firm 11pm stop respects my limit."
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "act": "reply",
+            "move": "question",
+            "to": "consciousness",
+            "why": "Which topic gets written first, and how do I pick it fast?"
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Timed blocks that open with a practice question keep the hours focused."
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "act": "hold",
+            "move": "accept",
+            "to": "",
+            "why": "Water at breaks and an 11pm stop cover my body's needs."
+          }
+        ],
+        "pick": "",
+        "at": 37
+      },
+      {
+        "type": "wrap",
+        "text": "Here's the plan everyone can live with: one topic tonight, studied in timed blocks that open with a practice question, phone away at 10pm, and lights out at 11pm for 7+ hours of sleep. Every voice that spoke now sits at 0, so we'll see how Friday goes.",
+        "plan": {
+          "version": 6,
+          "steps": [
+            "Right now, before any timer starts, write [Topic 1], [Topic 2], and [Topic 3] on paper, each marked with Friday's exam date. Answer one practice question on each, keep only the topic you miss first, and write its name at the top of your page.",
+            "Study that one topic in three 40-minute blocks. Each block opens with one practice question on that topic. At each 10-minute break, drink a glass of water and play one song or do a stretch. Use water only, with no energy drinks.",
+            "At 10pm, put your phone in another room and keep it there.",
+            "At 11pm, stop studying and go to bed. Sleep at least 7 hours before the exam, and save the other two topics for Thursday."
+          ],
+          "paths": false,
+          "final": true
+        },
+        "scores": [
+          {
+            "id": "tiredness",
+            "score": 0,
+            "why": "Lights out at 11pm with 7+ hours of sleep gives me the rest I need.",
+            "step": 0
+          },
+          {
+            "id": "wellness",
+            "score": 0,
+            "why": "Water instead of energy drinks and a firm 11pm stop protect my body.",
+            "step": 0
+          },
+          {
+            "id": "fear",
+            "score": 0,
+            "why": "A set 11pm stop and at least 7 hours of sleep settle my worry about the exam.",
+            "step": 0
+          },
+          {
+            "id": "overwhelm",
+            "score": 0,
+            "why": "Tonight is cut to one topic with a clear end point at 11pm.",
+            "step": 0
+          },
+          {
+            "id": "efficiency",
+            "score": 0,
+            "why": "Timed blocks that open with a practice question keep the hours from being wasted.",
+            "step": 0
+          },
+          {
+            "id": "doubt",
+            "score": 0,
+            "why": "Topics are chosen by testing myself on each one, not by guessing.",
+            "step": 0
+          },
+          {
+            "id": "boredom",
+            "score": 0,
+            "why": "Each block starts with a practice question and each break ends with a song or stretch.",
+            "step": 0
+          },
+          {
+            "id": "sadness",
+            "score": 0,
+            "why": "The emotion I was watching is looked after now.",
+            "step": 0
+          }
+        ],
+        "society": [
+          {
+            "line": "Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.",
+            "to": "fear",
+            "reply": "I appreciate the encouragement, but I can't count on going with the flow tonight. I need a clear stopping time and real sleep so I can actually perform on Friday."
+          }
+        ],
+        "questions": [],
+        "at": 38
+      }
+    ]
+  },
+  "calls": [
+    {
+      "kind": "open",
+      "ms": 13773,
+      "reply": "{\"plan\": \"Cut the doom-scrolling tonight, fuel up on energy drinks, and study straight through until morning so the whole exam is covered before Friday.\", \"text\": \"Here's the plan: no more scrolling, a few energy drinks, and one long night of studying that gets everything covered. It's a clean, decisive way to finally get ahead of this exam.\", \"minus\": [{\"id\": \"tiredness\", \"why\": \"A whole night without sleep leaves me wrecked before the exam even starts.\"}, {\"id\": \"wellness\", \"why\": \"Energy drinks and no sleep are a real risk to my body, and it shows.\"}, {\"id\": \"fear\", \"why\": \"Dropping sleep and health right before the exam feels like walking into danger.\"}, {\"id\": \"overwhelm\", \"why\": \"You're asking me to absorb the whole course in one night, and I can't take that.\"}, {\"id\": \"efficiency\", \"why\": \"Exhausted studying wastes the hours it pretends to save, so this isn't faster.\"}], \"spotlight\": \"tiredness\"}",
+      "inTokens": 3080,
+      "outTokens": 1255,
+      "thinkingTokens": 914,
+      "cost": 0.00096228,
+      "promptChars": 4470
+    },
+    {
+      "kind": "floor",
+      "ms": 14110,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Sleep is the most neglected need. Give me a short sleep window, please.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"One night for the whole course is too much. Shrink the plan, don't argue me out of it.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Short focused blocks with breaks would cover more than one exhausted night.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Before we go ahead, which of my needs does this plan leave exposed?\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"comeback\", \"to\": \"\", \"why\": \"My concern about energy drinks and no sleep still stands, and I've said it.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Has the plan been re-checked against the exam date and what I actually need to cover?\"}]}",
+      "inTokens": 3832,
+      "outTokens": 1717,
+      "thinkingTokens": 1330,
+      "cost": 0.0020042000000000003,
+      "promptChars": 6477
+    },
+    {
+      "kind": "speak",
+      "ms": 8588,
+      "reply": "{\"text\": \"I can't take a whole course in one night, and energy drinks plus no sleep would make me less able to absorb it anyway. Consciousness, the plan doesn't say what gets covered tonight, so I'll go with a shrunken version: the user writes the exam topics on paper right now, circles the 3 weakest, and studies only those until lights out at 11pm. Phone goes in another room at 10pm, no energy drinks, and the rest of the topics get a 45-minute block each on Wednesday and Thursday evening. That keeps me at 0 if the list is short enough to see the end of it tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"A written topic list with only 3 topics for tonight, lights out 11pm.\", \"turns_down\": \"All-nighter with energy drinks\"}",
+      "inTokens": 3823,
+      "outTokens": 265,
+      "thinkingTokens": 0,
+      "cost": 0.0012745,
+      "promptChars": 6840
+    },
+    {
+      "kind": "speak",
+      "ms": 5605,
+      "reply": "{\"text\": \"I can't absorb a whole course in one night, and energy drinks with no sleep would make me less able to take anything in. The plan doesn't say what gets covered tonight, so I need a shorter list. Consciousness, please cut tonight to the 3 weakest exam topics, study them until 11pm, and put the phone in another room at 10pm with no energy drinks.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tonight limited to 3 named topics, lights out 11pm\", \"turns_down\": \"All-nighter with energy drinks\"}",
+      "inTokens": 4091,
+      "outTokens": 185,
+      "thinkingTokens": 342,
+      "cost": 0.0014869,
+      "promptChars": 7575
+    },
+    {
+      "kind": "floor",
+      "ms": 15867,
+      "reply": "{\"bids\": [{\"id\": \"tiredness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Lights out at 11pm gives me the sleep I've been missing.\"}, {\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"consciousness\", \"why\": \"Three named topics saves hours; that's the faster route I wanted.\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Do the other topics stay uncovered before Friday? That's my danger.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Which three topics exactly? The plan still doesn't say what gets covered.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"overwhelm\", \"why\": \"Energy drink ban is my need; waiting for the plan to commit.\"}]}",
+      "inTokens": 3998,
+      "outTokens": 2381,
+      "thinkingTokens": 2072,
+      "cost": 0.0023870000000000002,
+      "promptChars": 6818
+    },
+    {
+      "kind": "speak",
+      "ms": 6517,
+      "reply": "{\"text\": \"I'm stuck on one thing: the plan has no check on sleep, and I'm afraid a whole night awake puts my health and the exam at risk. Consciousness, tell me the exact time you'll stop studying tonight and whether you'll sleep at least [5] hours before the exam. If you commit to lights out at 11pm, as Overwhelm asked, I can settle at 0.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Concrete lights-out time and a minimum sleep amount written into tonight's plan.\", \"turns_down\": \"\"}",
+      "inTokens": 3929,
+      "outTokens": 188,
+      "thinkingTokens": 0,
+      "cost": 0.0012683,
+      "promptChars": 7089
+    },
+    {
+      "kind": "society",
+      "ms": 4657,
+      "reply": "{\"text\": \"Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.\", \"style\": \"wellness platitude\"}",
+      "inTokens": 2041,
+      "outTokens": 59,
+      "thinkingTokens": 0,
+      "cost": 0.0006389000000000001,
+      "promptChars": 2043
+    },
+    {
+      "kind": "speak",
+      "ms": 6365,
+      "reply": "{\"text\": \"Society's \\\"just trust yourself and go with the flow\\\" says nothing about sleep, and that's my whole problem: I'm already running on empty before the exam even starts. Going with the flow through a whole night means no rest at all, so I'll be the one paying for it Friday morning. I can live with this plan once lights out is set at 11pm, which Overwhelm has already asked for.\", \"to\": \"society\", \"score\": -1, \"need\": \"Lights out 11pm with at least 7 hours of sleep planned tonight.\", \"turns_down\": \"Trust yourself, go with the flow\"}",
+      "inTokens": 4305,
+      "outTokens": 192,
+      "thinkingTokens": 0,
+      "cost": 0.0013836,
+      "promptChars": 8064
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6652,
+      "reply": "{\"text\": \"Overwhelm and Fear both need the same concrete thing, so I'm treating their asks as one: a 3-topic cap and a fixed lights-out. Tiredness's 7-hour sleep need is also covered by 11pm, and I'm taking Wellness's risk seriously since it's been neglected. Energy drinks were already turned down, so I'm building both paths without them. Path A focuses on a fast, capped study block; Path B adds a hard handoff to a friend for accountability.\", \"to\": \"😵‍💫\", \"plan\": [\"Path A: Right now, pick your 3 weakest exam topics and write them on paper. Study them in two 50-minute blocks with a 10-minute break between, phone in another room from 10pm. At 11pm, stop studying, drink water, and go to bed for at least 7 hours.\", \"Path B: Right now, text [Friend] \\\"Can you check on me at 10pm tonight and make sure my phone is off?\\\" Pick your 3 weakest topics and study them until 11pm. At 11pm, lights out. Wake at [time] tomorrow and review one topic before the exam.\"]}",
+      "inTokens": 4337,
+      "outTokens": 373,
+      "thinkingTokens": 0,
+      "cost": 0.0014822000000000001,
+      "promptChars": 8273
+    },
+    {
+      "kind": "consciousness",
+      "ms": 13889,
+      "reply": "{\"text\": \"The first plan breaks where Wellness says energy drinks and no sleep put the body at risk, and where Efficiency says exhausted studying wastes the hours it claims to save. Path A is built for Overwhelm, Tiredness, and Fear: three named topics, phone away at 10pm, lights out at 11pm. Path B is built for Wellness and Efficiency: timed study blocks with water instead of energy drinks.\", \"to\": \"wellness\", \"plan\": [\"Path A: Tonight, list your 3 weakest exam topics: [Topic 1], [Topic 2], [Topic 3]. Study only those until 10pm, phone in another room at 10pm, lights out 11pm for 7+ hours of sleep.\", \"Path B: Tonight, set a phone timer for three 40-minute study blocks with 10-minute breaks, starting now. Drink water instead of energy drinks, and move scrolling apps off your home screen before the first block.\"]}",
+      "inTokens": 4406,
+      "outTokens": 2308,
+      "thinkingTokens": 1990,
+      "cost": 0.0024709,
+      "promptChars": 8427
+    },
+    {
+      "kind": "floor",
+      "ms": 6385,
+      "reply": "{\"bids\": [{\"id\": \"wellness\", \"score\": -1, \"act\": \"reply\", \"move\": \"advocate\", \"to\": \"consciousness\", \"why\": \"Sadness-spotlight: I need the plan to name water and real sleep, not just no energy drinks.\", \"prefers\": \"B\"}, {\"id\": \"efficiency\", \"score\": -1, \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"Path B's timed blocks cut wasted hours, but I need the 40-minute blocks to actually start.\", \"prefers\": \"B\"}, {\"id\": \"doubt\", \"score\": -1, \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Is three weakest topics enough to pass Friday, or does Path A leave gaps?\", \"prefers\": \"A\"}, {\"id\": \"boredom\", \"score\": -1, \"act\": \"hold\", \"move\": \"pushback\", \"to\": \"\", \"why\": \"Blocks plus breaks give variety, so I can hold back for now.\", \"prefers\": \"B\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Path A's 11pm lights-out with 7+ hours covers my need; holding back.\", \"prefers\": \"A\"}]}",
+      "inTokens": 4843,
+      "outTokens": 415,
+      "thinkingTokens": 0,
+      "cost": 0.0016555,
+      "promptChars": 9096
+    },
+    {
+      "kind": "speak",
+      "ms": 5808,
+      "reply": "{\"text\": \"Energy drinks plus no sleep before a Friday exam is a real hit to my body, and I feel it in the shakiness and the crash I'd hit mid-exam. Path A's 11pm lights-out with 7+ hours of sleep covers what I need, and I can live with it. My ask for Path B: keep its water-instead-of-energy-drinks rule, and add a hard stop at 11pm so the three 40-minute blocks end before lights-out, with a glass of water at each break.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Water-only study blocks with a firm 11pm stop and sleep included.\", \"turns_down\": \"All-nighter with energy drinks\"}",
+      "inTokens": 4740,
+      "outTokens": 229,
+      "thinkingTokens": 0,
+      "cost": 0.0015326,
+      "promptChars": 9184
+    },
+    {
+      "kind": "floor",
+      "ms": 11163,
+      "reply": "{\"bids\": [{\"id\": \"efficiency\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Fixed blocks with water beat marathon nights, but only if they end cleanly.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Will three 40-minute blocks really cover my three weakest topics?\"}, {\"id\": \"fear\", \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Wellness's 11pm hard stop gives me the concrete lights-out I asked for.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Three named topics and 11pm lights-out are already in the plan.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Sleep and 11pm lights-out are already covered; nothing new to add.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"My water-only and 11pm stop ask is already stated; holding.\"}]}",
+      "inTokens": 4970,
+      "outTokens": 1294,
+      "thinkingTokens": 920,
+      "cost": 0.0021346,
+      "promptChars": 9308
+    },
+    {
+      "kind": "speak",
+      "ms": 6979,
+      "reply": "{\"text\": \"I'm still stuck on the exam itself. Path A names three topics, but nothing says which three or how I'd know they're the weakest, so I could spend the 10pm-to-11pm stretch on the wrong ones and wake up Friday feeling just as lost. Consciousness, before lights out, could you write the three [Topic 1], [Topic 2], [Topic 3] down and mark each with the exam date and a quick self-check, like a practice question I get wrong? That would settle me.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Name the three topics and a quick self-check tonight.\", \"turns_down\": \"\"}",
+      "inTokens": 4879,
+      "outTokens": 209,
+      "thinkingTokens": 0,
+      "cost": 0.0015628,
+      "promptChars": 9481
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6794,
+      "reply": "{\"text\": \"Doubt, you're right that Path A never says which three topics, so I'm choosing Path B as the base because Wellness, Efficiency, and Boredom can all live with timed blocks and water. I'm keeping Path A's 11pm lights-out and 7+ hours of sleep from Tiredness and Fear, and I'm adding a self-check step so you pick topics by testing yourself rather than guessing. Topic choice stays with you, since I can't see your exam.\", \"to\": \"emo_doubt\", \"plan\": [\"You: fill in [Topic 1], [Topic 2], [Topic 3] with the three exam topics you feel weakest on, and write the exam date (Friday) beside each.\", \"Right now, take one practice question per topic. Mark each one you get wrong; the wrong ones are your three study topics for tonight.\", \"Set a phone timer for three 40-minute study blocks with 10-minute breaks, starting now. Drink water at each break, and move scrolling apps off your home screen first.\", \"At 10pm, put your phone in another room. At 11pm, stop studying and go to sleep for at least 7 hours.\"]}",
+      "inTokens": 5559,
+      "outTokens": 374,
+      "thinkingTokens": 0,
+      "cost": 0.0018493000000000001,
+      "promptChars": 11510
+    },
+    {
+      "kind": "floor",
+      "ms": 17312,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Three topics and an 11pm lights-out respect my limit. I'm settled.\"}, {\"id\": \"boredom\", \"score\": -1, \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Three identical 40-minute blocks bore me; vary them with quick quizzes.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"question\", \"to\": \"\", \"why\": \"Self-check and topic choice are covered now; nothing new to add.\"}, {\"id\": \"efficiency\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Short blocks and a quick self-check waste little time. Holding.\"}, {\"id\": \"fear\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Concrete 11pm lights-out and 7-hour sleep are now written in. I'm settled.\"}, {\"id\": \"tiredness\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights out at 11pm with 7 hours of sleep covers me. Holding.\"}]}",
+      "inTokens": 5553,
+      "outTokens": 2771,
+      "thinkingTokens": 2353,
+      "cost": 0.0030480000000000004,
+      "promptChars": 10928
+    },
+    {
+      "kind": "speak",
+      "ms": 6147,
+      "reply": "{\"text\": \"Boredom is the one I keep worrying about: it's been stuck at -1 since the start, and the plan's four timed blocks are all about efficiency and sleep while nothing makes the actual studying feel less dull. Right now the three 40-minute blocks are just a timer and a list of topics, so Boredom has no reason to stay in the room. What would move it to 0 is a small change to the study blocks themselves, like naming a reward at each break or swapping one block to practice questions instead of rereading notes, so the work feels different from scrolling.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Add one concrete variation or break reward inside each 40-minute study block tonight\", \"turns_down\": \"\", \"spotlight\": \"boredom\"}",
+      "inTokens": 5237,
+      "outTokens": 245,
+      "thinkingTokens": 0,
+      "cost": 0.0016882000000000002,
+      "promptChars": 10522
+    },
+    {
+      "kind": "speak",
+      "ms": 6998,
+      "reply": "{\"text\": \"Boredom is still at -1 because the study blocks are just a timer and a topic list, so nothing makes the reading feel different from scrolling. What would move it to 0 is each 40-minute block starting with one practice question instead of rereading notes, and each break ending with a small reward like a song or a stretch.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Make study blocks start with a practice question and end with a small break reward.\", \"turns_down\": \"\", \"spotlight\": \"boredom\"}",
+      "inTokens": 5485,
+      "outTokens": 165,
+      "thinkingTokens": 277,
+      "cost": 0.0018601000000000002,
+      "promptChars": 11247
+    },
+    {
+      "kind": "floor",
+      "ms": 11411,
+      "reply": "{\"bids\": [{\"id\": \"boredom\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Rereading notes is still monotonous; I need the practice question in every block.\"}, {\"id\": \"overwhelm\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"consciousness\", \"why\": \"A question per block plus rewards adds demands; keep tonight's load small.\"}, {\"id\": \"doubt\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Self-check now answers my topic concern; nothing new to add.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Water breaks and the 11pm lights-out already cover my ask.\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Timed blocks with a practice question each already save wasted time.\"}]}",
+      "inTokens": 5353,
+      "outTokens": 1215,
+      "thinkingTokens": 922,
+      "cost": 0.002209,
+      "promptChars": 10408
+    },
+    {
+      "kind": "speak",
+      "ms": 6976,
+      "reply": "{\"text\": \"Consciousness, Path B's timed blocks and water don't touch my need: they still leave tonight at three topics plus a self-check step, which means I'm still carrying a full load with no end point I can see until 11pm. What would move me to 0 is cutting tonight to one topic: pick the single weakest of your three, do one practice question, study only that topic in the three 40-minute blocks, and stop at 11pm. Quick ask: write [Topic 1] only, and drop the other two until Thursday.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Tonight limited to one topic, lights out 11pm\", \"turns_down\": \"Three-topic tonight plan\"}",
+      "inTokens": 5615,
+      "outTokens": 224,
+      "thinkingTokens": 0,
+      "cost": 0.0017906,
+      "promptChars": 11604
+    },
+    {
+      "kind": "floor",
+      "ms": 9694,
+      "reply": "{\"bids\": [{\"id\": \"😩\", \"act\": \"reply\", \"move\": \"pushback\", \"to\": \"overwhelm\", \"why\": \"Three 40-minute blocks on one topic will feel monotonous; I need a new hook.\"}, {\"id\": \"🤔\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"One practice question can't reliably pick the weakest topic; I need a better check.\"}, {\"id\": \"😵‍💫\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"I just made the request myself; nothing new to add.\"}, {\"id\": \"🤕\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Water, the 11pm stop, and sleep are already covered.\"}, {\"id\": \"😴\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights out at 11pm protects my sleep; nothing more to say.\"}, {\"id\": \"⏰\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"One topic with a fixed stop wastes no time; nothing to add.\"}]}",
+      "inTokens": 5624,
+      "outTokens": 1170,
+      "thinkingTokens": 812,
+      "cost": 0.0022678,
+      "promptChars": 11110
+    },
+    {
+      "kind": "consciousness",
+      "ms": 6285,
+      "reply": "{\"text\": \"Doubt, your question is settled by the plan now: Tonight's topic is one, and you pick it by doing one practice question on each of your three topics first. Boredom, this is the spotlight you asked for: each 40-minute block starts with one practice question instead of rereading, and each break ends with a song or a stretch. Overwhelm, I'm cutting tonight to one topic, and the other two wait until Thursday, which is the only real limit your need allows. Wellness, Tiredness, and Fear are covered by water, the 11pm stop, and 7 hours of sleep, which I'm keeping as is.\", \"to\": \"😩\", \"plan\": [\"You: write [Topic 1], [Topic 2], [Topic 3] with Friday's exam date beside each, then take one practice question on each and mark the ones you miss.\", \"You: study only the topic you missed most, in three 40-minute blocks, starting each with one practice question and ending each break with a song or stretch and a glass of water.\", \"You: at 10pm move your phone to another room, and at 11pm stop studying and go to sleep for at least 7 hours.\", \"You: on Thursday, pick up [Topic 2] and [Topic 3] using the same practice-question check.\"]}",
+      "inTokens": 5939,
+      "outTokens": 402,
+      "thinkingTokens": 0,
+      "cost": 0.0019773,
+      "promptChars": 12519
+    },
+    {
+      "kind": "consciousness",
+      "ms": 5459,
+      "reply": "{\"text\": \"Doubt, the plan now picks your topic with one practice question on each of your three topics. Boredom, each 40-minute block opens with one practice question, not rereading, and each break ends with a song or stretch. Overwhelm, tonight covers only the single weakest topic; the other two wait until Thursday. Wellness, Tiredness, and Fear: water, the 11pm stop, and 7 hours of sleep stay as they are.\", \"to\": \"😵‍💫 Overwhelm\", \"plan\": [\"You: fill in [Topic 1], [Topic 2], [Topic 3] with your three weakest exam topics and write Friday beside each.\", \"Right now: take one practice question per topic. Mark the one you get wrong most; that topic is tonight's only study topic.\", \"Set a phone timer for three 40-minute study blocks with 10-minute breaks, starting now. Open each block with one practice question, and drink water at each break.\", \"At 10pm, put your phone in another room. At 11pm, stop studying and go to sleep for at least 7 hours.\"]}",
+      "inTokens": 6209,
+      "outTokens": 351,
+      "thinkingTokens": 263,
+      "cost": 0.0021633,
+      "promptChars": 13262
+    },
+    {
+      "kind": "consciousness",
+      "ms": 13017,
+      "reply": "{\"text\": \"Overwhelm, your cut is in: tonight is one topic, the one you miss first on the three practice questions, and the other two wait until Thursday. Sadness, Boredom gets its fix: each 40-minute block opens with one practice question, and each break ends with a song or a stretch. Doubt's self-check and the 11pm lights-out that Fear and Tiredness need both stay as they were.\", \"to\": \"overwhelm\", \"plan\": [\"You: write [Topic 1], [Topic 2], [Topic 3] with Friday's exam date, then answer one practice question on each now. Tonight's only topic is the one you miss first.\", \"Study that one topic in three 40-minute blocks, each opening with one practice question. Drink water at each 10-minute break, ending it with a song or a stretch.\", \"At 10pm, put your phone in another room. Stop studying at 11pm and sleep at least 7 hours. Drop the other two topics until Thursday.\"]}",
+      "inTokens": 6020,
+      "outTokens": 1870,
+      "thinkingTokens": 1552,
+      "cost": 0.0027361,
+      "promptChars": 12683
+    },
+    {
+      "kind": "floor",
+      "ms": 15975,
+      "reply": "{\"bids\": [{\"id\": \"😵‍💫\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"One topic, the one I miss first. My limit is respected. Accepting.\"}, {\"id\": \"🤕\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Water, 11pm stop, and sleep are in. I can accept this.\"}, {\"id\": \"😩\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Practice-question openers and song breaks give the blocks a spark. Accepting.\"}, {\"id\": \"😴\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"11pm lights-out and 7 hours of sleep cover me. Holding.\"}, {\"id\": \"🤔\", \"score\": 0, \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Topics get named and tested now, so my concern is covered. Holding.\"}]}",
+      "inTokens": 5916,
+      "outTokens": 2746,
+      "thinkingTokens": 2405,
+      "cost": 0.0031439000000000003,
+      "promptChars": 11940
+    },
+    {
+      "kind": "speak",
+      "ms": 6537,
+      "reply": "{\"text\": \"Boredom is the one I keep hearing from most, and it's still at -1 because the plan treats studying like a timer and a topic list, so the reading feels exactly like scrolling and keeps losing to the phone. Each 40-minute block opening with one practice question and each break ending with a song or a stretch is the right direction, and I can see it's already in the plan. What would move Boredom to 0 is Consciousness making the practice question the very first thing in every block, with the topic written at the top of the page before the timer starts tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Practice question first, topic written before timer starts tonight\", \"turns_down\": \"\", \"spotlight\": \"😩\"}",
+      "inTokens": 5858,
+      "outTokens": 229,
+      "thinkingTokens": 0,
+      "cost": 0.0018665,
+      "promptChars": 12276
+    },
+    {
+      "kind": "speak",
+      "ms": 7744,
+      "reply": "{\"text\": \"Boredom is still at -1 because the study blocks are a timer and a topic list, so reading feels like scrolling and keeps losing to the phone. Your 'one practice question first' and 'song or stretch after each break' is the right direction. What would move Boredom to 0 is opening every 40-minute block with that practice question, with the topic written at the top before the timer starts tonight.\", \"to\": \"consciousness\", \"score\": -1, \"need\": \"Every 40-minute block opens with a practice question on the topic written at the top.\", \"turns_down\": \"\", \"spotlight\": \"😩\"}",
+      "inTokens": 6099,
+      "outTokens": 191,
+      "thinkingTokens": 264,
+      "cost": 0.0020508,
+      "promptChars": 13012
+    },
+    {
+      "kind": "floor",
+      "ms": 10840,
+      "reply": "{\"bids\": [{\"id\": \"😩\", \"act\": \"reply\", \"move\": \"comeback\", \"to\": \"consciousness\", \"why\": \"Practice question and a song won't stimulate me; I need a challenge.\"}, {\"id\": \"❤️\", \"act\": \"hold\", \"move\": \"support\", \"to\": \"\", \"why\": \"Already said this; Consciousness adopted it, so nothing new.\"}, {\"id\": \"😵‍💫\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"One-topic cut is in; nothing new from me tonight.\"}, {\"id\": \"🤕\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Water, breaks, and 11pm lights-out are already in the plan.\"}]}",
+      "inTokens": 5871,
+      "outTokens": 1449,
+      "thinkingTokens": 1213,
+      "cost": 0.0024819,
+      "promptChars": 11851
+    },
+    {
+      "kind": "consciousness",
+      "ms": 18015,
+      "reply": "{\"text\": \"Sadness, your spotlight is Boredom, so each 40-minute block now opens with one practice question, and the chosen topic's name goes at the top of the page before the timer starts. Overwhelm, I cut the plan from three steps to two: you still name all three topics, but tonight only the one you miss first gets studied, with the phone away at 10pm and lights out at 11pm. Doubt's self-check stays in the first step.\", \"to\": \"boredom\", \"plan\": [\"You: write [Topic 1], [Topic 2], [Topic 3] with Friday's exam date and answer one practice question on each now; keep only the one you miss first, and write its name atop your page before any timer starts.\", \"Study that topic in three 40-minute blocks, each opening with one practice question; water and a song or stretch at each 10-minute break. Phone away at 10pm; stop at 11pm; sleep 7+ hours.\"]}",
+      "inTokens": 6191,
+      "outTokens": 3007,
+      "thinkingTokens": 2707,
+      "cost": 0.0033554,
+      "promptChars": 13265
+    },
+    {
+      "kind": "floor",
+      "ms": 14128,
+      "reply": "{\"bids\": [{\"id\": \"overwhelm\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"One topic tonight, lights out 11pm; my limit is respected. Accepting.\"}, {\"id\": \"wellness\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Water breaks, 11pm stop, and 7+ hours sleep cover me. Accepting.\"}, {\"id\": \"boredom\", \"score\": 0, \"act\": \"reply\", \"move\": \"accept\", \"to\": \"consciousness\", \"why\": \"Practice question first and song breaks give me a real challenge now.\"}, {\"id\": \"doubt\", \"score\": 0, \"act\": \"hold\", \"move\": \"\", \"to\": \"\", \"why\": \"Self-check stays and picks my topic, so I'll hold for now.\"}]}",
+      "inTokens": 6176,
+      "outTokens": 2185,
+      "thinkingTokens": 1904,
+      "cost": 0.0029414,
+      "promptChars": 12740
+    },
+    {
+      "kind": "speak",
+      "ms": 7276,
+      "reply": "{\"text\": \"Plan v5 now gives me what I need. Opening each 40-minute block with one practice question on the topic written at the top of the page, and ending each break with a song or stretch, makes the study time feel like a game instead of scrolling. I can live with it, on the condition that the single topic gets chosen and written down before the first timer starts tonight.\", \"to\": \"consciousness\", \"score\": 0, \"need\": \"\", \"turns_down\": \"\"}",
+      "inTokens": 5818,
+      "outTokens": 143,
+      "thinkingTokens": 0,
+      "cost": 0.0018130000000000002,
+      "promptChars": 12193
+    },
+    {
+      "kind": "floor",
+      "ms": 6201,
+      "reply": "{\"bids\": [{\"id\": \"sadness\", \"act\": \"reply\", \"move\": \"support\", \"to\": \"consciousness\", \"why\": \"Boredom is the emotion I'm watching; it's now at 0, so I can hold.\"}, {\"id\": \"tiredness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Lights out at 11pm and 7+ hours of sleep are already covered.\"}, {\"id\": \"overwhelm\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"One topic tonight with a firm 11pm stop respects my limit.\"}, {\"id\": \"doubt\", \"act\": \"reply\", \"move\": \"question\", \"to\": \"consciousness\", \"why\": \"Which topic gets written first, and how do I pick it fast?\"}, {\"id\": \"efficiency\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Timed blocks that open with a practice question keep the hours focused.\"}, {\"id\": \"wellness\", \"act\": \"hold\", \"move\": \"accept\", \"to\": \"\", \"why\": \"Water at breaks and an 11pm stop cover my body's needs.\"}]}",
+      "inTokens": 6039,
+      "outTokens": 361,
+      "thinkingTokens": 0,
+      "cost": 0.0019878,
+      "promptChars": 12421
+    },
+    {
+      "kind": "wrap",
+      "ms": 15151,
+      "reply": "{\"plan\": [\"Right now, before any timer starts, write [Topic 1], [Topic 2], and [Topic 3] on paper, each marked with Friday's exam date. Answer one practice question on each, keep only the topic you miss first, and write its name at the top of your page.\", \"Study that one topic in three 40-minute blocks. Each block opens with one practice question on that topic. At each 10-minute break, drink a glass of water and play one song or do a stretch. Use water only, with no energy drinks.\", \"At 10pm, put your phone in another room and keep it there.\", \"At 11pm, stop studying and go to bed. Sleep at least 7 hours before the exam, and save the other two topics for Thursday.\"], \"scores\": [{\"id\": \"tiredness\", \"score\": 0, \"step\": 4, \"why\": \"Lights out at 11pm with 7+ hours of sleep gives me the rest I need.\"}, {\"id\": \"wellness\", \"score\": 0, \"step\": 2, \"why\": \"Water instead of energy drinks and a firm 11pm stop protect my body.\"}, {\"id\": \"fear\", \"score\": 0, \"step\": 4, \"why\": \"A set 11pm stop and at least 7 hours of sleep settle my worry about the exam.\"}, {\"id\": \"overwhelm\", \"score\": 0, \"step\": 1, \"why\": \"Tonight is cut to one topic with a clear end point at 11pm.\"}, {\"id\": \"efficiency\", \"score\": 0, \"step\": 2, \"why\": \"Timed blocks that open with a practice question keep the hours from being wasted.\"}, {\"id\": \"doubt\", \"score\": 0, \"step\": 1, \"why\": \"Topics are chosen by testing myself on each one, not by guessing.\"}, {\"id\": \"boredom\", \"score\": 0, \"step\": 2, \"why\": \"Each block starts with a practice question and each break ends with a song or stretch.\"}, {\"id\": \"sadness\", \"score\": 0, \"step\": 2, \"why\": \"Boredom was heard and given a concrete fix, so the least-heard need now has a place.\"}], \"society\": [{\"line\": \"Honestly, you've got this. Just trust yourself and go with the flow tonight, and it'll all come together before Friday.\", \"reply\": \"I appreciate the encouragement, but I can't count on going with the flow tonight. I need a clear stopping time and real sleep so I can actually perform on Friday.\"}], \"text\": \"Here's the plan everyone can live with: one topic tonight, studied in timed blocks that open with a practice question, phone away at 10pm, and lights out at 11pm for 7+ hours of sleep. Every voice that spoke now sits at 0, so we'll see how Friday goes.\"}",
+      "inTokens": 5071,
+      "outTokens": 2568,
+      "thinkingTokens": 1700,
+      "cost": 0.0027993999999999996,
+      "promptChars": 10019
+    }
+  ],
+  "checks": {
+    "metrics": {
+      "messages": 14,
+      "voices": 9,
+      "maxSentences": 4,
+      "avgSentences": 2.9,
+      "over6": 0,
+      "backToBack": 0,
+      "maxOverlap": 0.23,
+      "societyLines": 1,
+      "societyCalledOut": 1,
+      "questions": 1,
+      "bareQuestions": 0,
+      "holdRate": 0.42,
+      "finalMinus": [],
+      "errors": 0
+    },
+    "flags": [],
+    "summary": "14 msgs, 9 voices, avg 2.9 sentences (max 4), max overlap 0.23, Society 1/1 called out, hold rate 0.42, final -1: none",
+    "speakers": {
+      "overwhelm": 2,
+      "fear": 1,
+      "society": 1,
+      "tiredness": 1,
+      "consciousness": 4,
+      "wellness": 1,
+      "doubt": 1,
+      "sadness": 2,
+      "boredom": 1
+    }
+  }
+}
