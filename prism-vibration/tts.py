@@ -1,7 +1,8 @@
 """Synthesize narration with Piper; writes per-scene wavs + timings.json."""
 import json, subprocess, sys, wave, os
 import numpy as np
-from narration import SCENES
+import importlib, os
+SCENES = importlib.import_module(os.environ.get("NARRATION", "narration")).SCENES
 
 OUT = sys.argv[1]
 MODEL = sys.argv[2]
