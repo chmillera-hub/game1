@@ -9,7 +9,7 @@ SYNCHRONIZED HEAD SWIVEL gag of S6 (pose.look, -1 beak to screen-left .. +1 to s
     rig = ch.draw_pigeon(cr, x, ground_y, 0.9, ch.PigeonPose(facing=-1, peck=u), light, t)
 
     flock = ch.PigeonFlock(n=7, x_range=(560, 1350), y_range=(930, 975), seed=3, scale=0.9,
-                           crumbs=ch.gnome_crumb_landings(t_toss, rig_gnome, 960), arrivals=[(3.0, -1)])
+                           crumbs=ch.gnome_crumb_landings(t_toss, rig_at_toss, 960), arrivals=[(3.0, -1)])
     flock.draw(cr, t, light, look=swivel(t))      # look=None: each bird minds its own business
 
 Scale 1.0: ground -> top of the head = PIGEON_HEIGHT = 42 px (profile, standing). Anchor (x, y) =
@@ -22,7 +22,7 @@ import bisect
 import heapq
 import math
 import random
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 
 from .. import core
 from ..core import clamp, lerp, smooth
@@ -68,6 +68,8 @@ def pigeon_mats():
             "beak": Mat.of(C["beak"], sheen=0.4),
             "cere": Mat.of(C["cere"]),
             "feet": Mat.of(C["feet"], sss=0.3),
+            "neck_g": Mat.of(C["neck_g"], sheen=0.6),
+            "neck_p": Mat.of(C["neck_p"], sheen=0.6),
         })
     return _MATS
 
@@ -212,14 +214,15 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
         legs.append((top, foot))
     fp = B.palette(light, M["feet"])
     lwl = lw * 0.8
-    for pass_ in (0, 1):
+    toes = ((5.0, 0.0), (-2.8, -0.6)) if detail < 2 else ((5.0, 0.0), (3.4, -0.5), (-3.0, -0.6))
+    for pass_ in (0, 1):            # coral legs + toes (three forward, one back): capsules
         cr.new_path()
+        d = lwl if pass_ == 0 else 0.0
         for top, foot in legs:
-            d = lwl * 2 if pass_ == 0 else 0.0
-            core.tapered(cr, [top, foot], 3.0 + d, 2.2 + d)
+            core.capsule(cr, top[0], top[1], 1.5 + d, foot[0], foot[1], 1.1 + d)
             if tuck < 0.6:
-                for tx, ty in ((5.0, 0.0), (3.4, -0.4), (-3.0, -0.6)):     # three toes forward, one back
-                    core.tapered(cr, [foot, (foot[0] + tx, foot[1] + ty)], 1.9 + d, 1.0 + d)
+                for tx, ty in toes:
+                    core.capsule(cr, foot[0], foot[1], 1.0 + d, foot[0] + tx, foot[1] + ty, 0.55 + d)
         core.src(cr, fp.line if pass_ == 0 else fp.lit)
         cr.fill()
 
@@ -233,7 +236,7 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     t0, t1 = BP(-13.0, -18.0), BP(-31.0, -14.0 + 2.0 * fly)
     tail = [BP(-12.0, -21.5), (t1[0] - 1.5, t1[1] - 4.8 * tail_spread), (t1[0] + 0.5, t1[1] + 0.5),
             (t1[0] - 1.0, t1[1] + 4.2 * tail_spread), BP(-12.5, -14.5)]
-    tsh, tp = _shape(q, tail, M["wing"], size=8, rim=0.6)
+    tsh, tp = _shape(q, tail, M["wing"], size=8, shade=detail >= 2)
     if detail >= 1:
         cr.save()
         tsh.add(cr)
@@ -276,16 +279,14 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
         cr.save()
         bodyp.add(cr)
         cr.clip()
-        shim = 0.5 + 0.5 * math.sin(t * 2.3 + hc[0] * 0.4 + seed)
-        g = core.mix(PIGEON_COLORS["neck_g"], PIGEON_COLORS["neck_p"], 0.25 * shim)
-        pc = core.mix(PIGEON_COLORS["neck_p"], PIGEON_COLORS["neck_g"], 0.2 * (1.0 - shim))
-        pg = B.palette(light, Mat.of(core.rgb2hex(g)))
-        pp = B.palette(light, Mat.of(core.rgb2hex(pc)))
+        shim = 0.5 + 0.5 * math.sin(t * 2.3 + hc[0] * 0.4 + seed)    # the sheen shifts as it moves
+        pg = B.palette(light, M["neck_g"])
+        pp = B.palette(light, M["neck_p"])
         nb = BP(6.5, -23.0)
-        core.src(cr, pp.lit, 0.9)
+        core.src(cr, pp.lit, 0.75 + 0.2 * shim)
         core.ellipse(cr, (nb[0] + hc[0]) * 0.5 + 0.5, (nb[1] + hc[1]) * 0.5 + 4.5, 8.0, 6.0, -0.9)
         cr.fill()
-        core.src(cr, pg.lit, 0.9)
+        core.src(cr, pg.lit, 0.95 - 0.2 * shim)
         core.ellipse(cr, (nb[0] + hc[0]) * 0.5 + 1.5, (nb[1] + hc[1]) * 0.5 - 0.5, 6.5, 5.0, -0.9)
         cr.fill()
         # the head is a deeper grey
@@ -349,7 +350,6 @@ def _wing(q, M, BP, up, far, detail):
         ang -= 0.25                                           # the far wing peeks out behind
     L = 31.0
     ca, sa = math.cos(ang), math.sin(ang)
-    side = -1.0 if math.sin(ang) < 0 else 1.0
 
     def W(u, v):        # u along the wing, v toward the trailing edge (below/behind the leading edge)
         nx, ny = -sa, ca
@@ -374,7 +374,6 @@ def _wing(q, M, BP, up, far, detail):
             core.tapered(cr, [W(u0, 0.0), W(u0 - 0.04, 0.42)], 2.4, 2.0)
         cr.fill()
         cr.restore()
-    del side
 
 
 def _head_details(q, M, hc, phi, tilt, pose, t, detail, fs):
@@ -630,11 +629,12 @@ class PigeonFlock:
 
     def draw(self, cr, t, light=None, look=None, sync=1.0, detail=None):
         """Draw every bird present at t, far to near. look (-1..1, screen terms) makes the birds
-        that are not busy walking/flying turn their heads together -- the S6 gag (sync 0..1 =
-        how many of them join in, deterministic per bird). Returns [PigeonRig]."""
+        turn their heads together -- the S6 gag (sync 0..1 = how many of them join in,
+        deterministic per bird). Pecking birds stop and look up; walking birds keep walking with
+        their heads turned; birds in the air don't join. Returns [PigeonRig]."""
         rigs = []
         for x, y, p, sc in sorted(self.states(t), key=lambda s: s[1]):
-            if look is not None and p.walk < 0.5 and p.fly < 0.5 and core.hash01(p.seed, 99) < sync:
+            if look is not None and p.fly < 0.5 and p.lift < 2.0 and core.hash01(p.seed, 99) < sync:
                 p = p.with_(look=look, peck=0.0, puff=0.0)
             rigs.append(draw_pigeon(cr, x, y, sc, p, light, t, detail))
         return rigs

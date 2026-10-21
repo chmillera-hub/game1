@@ -344,6 +344,15 @@ expressions, stylised proportions). Everyone gets idle secondary motion.
   burgundy-and-gold doublet, a well-loved lute (rounded back, bent pegbox). Rig: sit on a stool, strum
   (strum hand driven by the song's beat grid), fret hand shifting chords, foot tap, head bob on the
   beat, sing (beak/mouth from the vocal envelope), wink, look to camera; idle strum for the S8 cameo.
+- **No one may read as a plain human** (user requirement). The humanoid fantasy folk — gnome, dwarves,
+  elves — must be unmistakably *creatures*: pointed/leaf ears, strongly exaggerated proportions (gnome:
+  huge bulb nose, tiny round body; dwarf: barrel body, enormous braided beard hiding the mouth, stubby
+  limbs, craggy granite-ruddy skin with a faint stone texture; elf: very long swept ears, elongated
+  elegant proportions, a subtle moon-pale or lilac skin tint, star-like eyes). When in doubt, push toward
+  storybook creature design (Shrek's fairy-tale folk, Cartoon Saloon) and away from "a person in a costume".
+- **Two-shot readability:** the gnome grandmother is the co-lead; she's tiny, but in the bench scenes her
+  seated head should reach about the dragon's mid-chest/shoulder line when he slouches, and her face must
+  read clearly (stage her closer to camera or frame tighter when she speaks).
 - **Pigeons:** plump grey pigeons, iridescent green-purple necks, coral feet; peck, hop, flap, and do the
   synchronized head-swivel gag (S6). (They're the one "ordinary" animal — it's funny that they're the
   same in every world.)

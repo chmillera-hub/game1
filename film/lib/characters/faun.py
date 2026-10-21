@@ -60,11 +60,12 @@ FAUN_COLORS = {
 }
 
 FAUN_BUILD = F.Build(
-    pelvis_h=190.0, hip_w=20.0, thigh=74.0, shin=78.0, ankle_h=14.0, cannon=56.0, cannon_tilt=0.34,
-    sh_y=122.0, sh_z=0.0, sh_w=40.0, upper_arm=80.0, forearm=76.0, hand_len=52.0,
+    pelvis_h=196.0, hip_w=20.0, thigh=70.0, shin=72.0, ankle_h=14.0, cannon=56.0, cannon_tilt=0.3,
+    sh_y=118.0, sh_z=0.0, sh_w=40.0, upper_arm=78.0, forearm=74.0, hand_len=52.0,
     neck_y=132.0, neck_z=4.0, neck_len=26.0, head_up=14.0, head_fwd=8.0,
     hunch=0.55, hunch_fwd=16.0, stride=168.0, lift=22.0, bob=5.0, breath=0.25,
-    sit_drop=12.0, sit_back=8.0, sway=2.0, knee_out=0.25)
+    sit_drop=12.0, sit_back=8.0, sway=2.0, knee_out=0.25,
+    fit=0.969)   # scale 1.0 -> base.CAST_HEIGHTS (measured on the lineup)
 
 _MATS = {}
 
@@ -136,7 +137,7 @@ def draw_faun(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None, pa
     """Draw the teen faun with its anchor at (x, y). Returns a FaunRig (points: "pipe",
     "satchel"). parts: None = everything, or a subset of ("back", "body", "mid", "head", "front")."""
     pose = pose or FaunPose()
-    q = F.begin(cr, x, y, scale, pose, light, t, detail, FAUN_BUILD, faun_mats(), parts)
+    q = F.begin(cr, x, y, scale, pose, light, t, detail, FAUN_BUILD, faun_mats(), parts, height=FAUN_HEIGHT)
     A = {s: F.solve_arm(q, s, pose.near if s == q.near else pose.far, FAUN_GESTURES) for s in (-1.0, 1.0)}
     lay = {s: F.arm_layer(q, A[s]) for s in A}
     hands = {}
@@ -762,7 +763,7 @@ def sheet_items():
              ("fiddles with his pipe", FaunPose(facing=0, turn=-0.3, mood="worried", look=(0.2, 0.6), near=Arm("pipe"))),
              ("sits (bench)", FaunPose(facing=1, turn=-0.3, sit=1.0, mood="warm", near=Arm("knees"), far=Arm("knees"))),
              ("takes the bread", FaunPose(facing=1, turn=-0.2, sit=1.0, mood="warm", look=(0.6, 0.3), near=Arm("reach", phase=1.0, hold=_sheet_bread))),
-             ("eats, hood back", FaunPose(facing=0, turn=0.3, sit=1.0, hood=0.0, mood="happy", near=Arm("tankard", phase=0.55, hold=_sheet_bread)))]
+             ("eats, hood back", FaunPose(facing=0, turn=0.3, sit=1.0, hood=0.0, mood="happy", near=Arm("eat", phase=0.85, hold=_sheet_bread)))]
     for label, pose in beats:
         def fn(cr, p=pose):
             F.sheet_bg(cr, 240, 420, floor=392)

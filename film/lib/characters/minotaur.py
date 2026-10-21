@@ -68,7 +68,8 @@ MINOTAUR_BUILD = F.Build(
     sh_y=196.0, sh_z=0.0, sh_w=86.0, upper_arm=112.0, forearm=104.0, hand_len=82.0,
     neck_y=212.0, neck_z=10.0, neck_len=24.0, head_up=18.0, head_fwd=16.0,
     hunch=0.35, hunch_fwd=16.0, stride=204.0, lift=26.0, bob=6.0, breath=0.17,
-    sit_drop=18.0, sit_back=12.0, sway=2.5, knee_out=0.2)
+    sit_drop=18.0, sit_back=12.0, sway=2.5, knee_out=0.2,
+    fit=0.982)   # scale 1.0 -> base.CAST_HEIGHTS (measured on the lineup)
 
 _MATS = {}
 
@@ -143,7 +144,8 @@ def draw_minotaur(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None
     """Draw the minotaur with its anchor at (x, y). Returns a MinotaurRig. parts: None =
     everything, or a subset of ("back", "body", "mid", "head", "front") (see draw_brawl)."""
     pose = pose or MinotaurPose()
-    q = F.begin(cr, x, y, scale, pose, light, t, detail, MINOTAUR_BUILD, minotaur_mats(pose.variant), parts)
+    q = F.begin(cr, x, y, scale, pose, light, t, detail, MINOTAUR_BUILD, minotaur_mats(pose.variant), parts,
+                height=MINOTAUR_HEIGHT)
     A = {s: F.solve_arm(q, s, pose.near if s == q.near else pose.far, MINOTAUR_GESTURES) for s in (-1.0, 1.0)}
     lay = {s: F.arm_layer(q, A[s]) for s in A}
     hands = {}

@@ -139,6 +139,8 @@ class Build:
     sit_back: float = 8.0
     sway: float = 2.0           # idle weight shift (px)
     knee_out: float = 0.15
+    fit: float = 1.0            # calibration: the drawn scale is scale * fit, so that scale 1.0
+                                # matches base.CAST_HEIGHTS (seat / table heights stay in screen px)
 
 
 def yaw_of(pose):
@@ -153,7 +155,7 @@ def yaw_of(pose):
 
 def walk_stride(build, scale=1.0, yaw=1.0):
     """Screen px the anchor travels per walk cycle (so planted feet don't slide)."""
-    return build.stride * abs(math.sin(yaw)) * scale
+    return build.stride * abs(math.sin(yaw)) * scale * build.fit
 
 
 def walk_phase(build, distance_px, scale=1.0, yaw=1.0):
@@ -192,6 +194,8 @@ class Q:
         return p
 
     def shade(self, path, mat, lw=None, **kw):
+        if self.detail == 0:                # small on screen: no rim pass (one fill less per part)
+            kw["rim"] = 0.0
         return B.shade(self.cr, path, mat, self.light, self.lw if lw is None else lw, **kw)
 
     def want(self, layer):
@@ -204,10 +208,24 @@ class Q:
         return self.proj.depth(v)
 
 
-def begin(cr, x, y, scale, pose, light, t, detail, build, mats, parts=None, line=B.LINE, skel=None):
+LOD_PX = (420.0, 300.0)          # on-screen height (px) for detail 2 / detail 1 (else 0)
+
+
+def lod_for(dev, height):
+    """Level of detail from the creature's ON-SCREEN height (dev = drawn scale x device scale,
+    height = its height at scale 1): 2 >= 420 px, 1 >= 300 px, else 0. Small creatures at
+    scale 1 (a goblin is 260 px) are small on screen, so they simplify like distant big ones."""
+    h = dev * height
+    return 2 if h >= LOD_PX[0] else 1 if h >= LOD_PX[1] else 0
+
+
+def begin(cr, x, y, scale, pose, light, t, detail, build, mats, parts=None, line=B.LINE, skel=None, height=None):
     """Set up the context (cr is saved, translated to the anchor and scaled) and the skeleton.
-    Pair with end()."""
+    Pair with end(). height = the creature's height at scale 1.0 (CAST_HEIGHTS): the level of
+    detail then follows its on-screen size (lod_for); without it, the scale thresholds."""
     q = Q()
+    outer = scale
+    scale = scale * build.fit
     q.cr, q.M, q.light, q.t, q.pose, q.pal, q.b, q.scale = cr, mats, light or B.LIGHTS["neutral"], t, pose, {}, build, scale
     q.parts = None if parts is None else ({parts} if isinstance(parts, str) else set(parts))
     q.yaw = yaw_of(pose)
@@ -217,11 +235,13 @@ def begin(cr, x, y, scale, pose, light, t, detail, build, mats, parts=None, line
     q.far = -q.near
     dev = scale * B.device_scale(cr)
     q.dev = dev
-    q.detail = detail if detail is not None else (2 if dev >= 0.9 else 1 if dev >= 0.55 else 0)
+    if detail is None:
+        detail = lod_for(dev, height) if height else (2 if dev >= 0.9 else 1 if dev >= 0.55 else 0)
+    q.detail = detail
     q.lw = max(line, B.MIN_LINE_PX / max(dev, 1e-6))
     q.x, q.y = x, y
     cr.save()
-    cr.translate(x, y + (pose.seat_h * scale * q.sit if pose.anchor == "seat" else 0.0))
+    cr.translate(x, y + (pose.seat_h * outer * q.sit if pose.anchor == "seat" else 0.0))
     cr.scale(scale, scale)
     q.S = (skel or skeleton)(q)
     return q
@@ -269,7 +289,7 @@ def base_rig(q, head_pts):
     rig.chest = proj.xy(S["chest"])
     rig.lap = proj.xy(v_lerp(S["pelvis"], v_lerp(S["knee"][0], S["knee"][1], 0.5), 0.6))
     rig.feet = [proj.xy(f["ground"]) for f in S["feet"]]
-    rig.seat = (0.0, -q.pose.seat_h * q.sit)
+    rig.seat = (0.0, -q.pose.seat_h / q.b.fit * q.sit)
     return rig
 
 
@@ -294,7 +314,7 @@ def skeleton(q):
     S.update(br=br, hunch=hunch, wc=wc, walk=walk, shake=shake, laugh=laugh)
 
     stand = (sx, -b.pelvis_h + walk * wc.hip_dy + 0.6 * b.bob * abs(pose.stance), 0.0)
-    seat = (0.0, -pose.seat_h - b.sit_drop, -b.sit_back)
+    seat = (0.0, -pose.seat_h / b.fit - b.sit_drop, -b.sit_back)
     arc = math.sin(math.pi * sit)
     pel = v_add(v_lerp(stand, seat, smooth(sit)), (0.0, 0.0, -0.18 * b.thigh * arc))
     S["pelvis"] = pel
@@ -331,7 +351,7 @@ def skeleton(q):
     feet = []
     u_feet = smooth((sit - 0.55) / 0.45)        # feet stay planted until the seat takes the weight
     st = clamp(pose.stance, -1.0, 1.0) * b.stride * 0.17
-    seat_hip_y = -pose.seat_h - b.sit_drop + 6.0
+    seat_hip_y = -pose.seat_h / b.fit - b.sit_drop + 6.0
     for s in (-1.0, 1.0):
         hip = S["hip"][s]
         fz, lift, toe, planted = wc.feet[0 if s < 0 else 1]
@@ -493,11 +513,12 @@ def g_cheer(q, sk, side, arm):
 
 
 def g_raise_crystal(q, sk, side, arm):
-    """Holding a scrying crystal up to film: forearm up, the crystal at eye level in front of
-    the face and a little to the side (so it shows past the head in back views)."""
+    """Holding a scrying crystal up to film: forearm up, the grip at brow level out in front and
+    to the side, so the crystal stands above eye level beside the face (the face stays visible
+    under its glow; from behind, the crystal's face shows past the head)."""
     AL = _AL(q)
     hc = q.S["head_c"]
-    tgt = (sk[0] * 0.55 - side * 0.02 * AL, hc[1] + 0.10 * AL, hc[2] + 0.55 * AL)
+    tgt = (sk[0] * 0.80 + side * 0.06 * AL, hc[1] - 0.06 * AL, hc[2] + 0.50 * AL)
     return G(tgt, "grip", -0.9, "front", (side * 1.0, 0.9, -0.2), "up")
 
 
@@ -560,7 +581,8 @@ def g_on_table(q, sk, side, arm):
     """Forearms resting on a table edge in front (seated at a tavern table): pose.table_h is
     the table top above the ground."""
     AL = _AL(q)
-    th = getattr(q.pose, "table_h", q.pose.seat_h + 0.45 * q.b.sh_y)
+    th = getattr(q.pose, "table_h", None)
+    th = (q.pose.seat_h / q.b.fit + 0.45 * q.b.sh_y) if th is None else th / q.b.fit
     return G((sk[0] * 0.7 - side * 0.10 * AL, -th - 6.0, sk[2] + 0.62 * AL), "relaxed", -0.6, "front",
              (side * 1.0, 0.7, -0.3), "up")
 
@@ -585,6 +607,17 @@ def g_drag(q, sk, side, arm):
     return G((side * (q.b.sh_w * 0.55), -h, fwd), "grip", -0.2, "front", (side * 1.0, 0.8, -0.2), "in")
 
 
+def g_eat(q, sk, side, arm):
+    """Bringing food to the mouth (phase 0 = hand in the lap, 1 = at the mouth), held in front
+    of the face, a little to the side so the mouth still shows."""
+    hc = q.S["head_c"]
+    AL = _AL(q)
+    lap = v_add(sk, (-side * 0.05 * AL, 0.62 * AL, 0.40 * AL))
+    mouth = (hc[0] + side * 0.10 * AL, hc[1] + 0.20 * AL, hc[2] + 0.36 * AL)
+    u = core.inout_sine(clamp(arm.phase if arm.phase else 1.0))
+    return G(v_lerp(lap, mouth, u), "grip", -1.0, "front", (side * 1.0, 1.0, -0.2), "up")
+
+
 def g_chest(q, sk, side, arm):
     """Hand on the heart."""
     ch_ = q.S["chest"]
@@ -592,13 +625,22 @@ def g_chest(q, sk, side, arm):
     return G(v_add(ch_, (side * 0.10 * AL, -0.06 * AL, 0.22 * AL)), "flat", -1.6, "front", (side * 1.0, 1.0, -0.1), "in")
 
 
+def g_hip(q, sk, side, arm):
+    """Hand on the hip, elbow out (attitude): the back of the wrist on the waist."""
+    AL = _AL(q)
+    w = q.S["waist"]
+    return G(v_add(w, (side * (q.b.hip_w + 0.24 * AL), 0.10 * AL, -0.04 * AL)), "fist", 1.2, "auto",
+             (side * 1.0, -0.1, -0.7), "fwd")
+
+
 GESTURES = {
+    "hip": g_hip, "hand_on_hip": g_hip,
     "rest": g_rest, "slump": g_slump, "guard": g_guard, "shove": g_shove, "stagger": g_stagger, "hug": g_hug,
     "cheer": g_cheer, "raise_crystal_film": g_raise_crystal, "raise_crystal": g_raise_crystal,
     "lower_crystal": g_lower_crystal, "tankard": g_tankard, "hold_tankard": g_tankard,
     "hand_out_offer": g_offer, "offer": g_offer, "reach": g_reach, "take": g_reach, "point": g_point,
     "wave": g_wave, "talk": g_talk, "arms_crossed": g_arms_crossed, "on_table": g_on_table,
-    "knees": g_knees, "strap": g_strap, "drag": g_drag, "hand_on_chest": g_chest,
+    "knees": g_knees, "strap": g_strap, "drag": g_drag, "hand_on_chest": g_chest, "eat": g_eat,
 }
 
 
@@ -768,6 +810,45 @@ def front_arc(q, c, a, cz, n=9, extend=1.0):
         out.append(q.proj.xy((c[0] + math.sin(ph) * a, c[1], c[2] + math.cos(ph) * cz)))
     out.sort(key=lambda p: p[0])
     return out
+
+
+def dome_cap(q, P, D, c, r, h, mat, size, brim=1.5, rim=0.8, n=16, shadow=1.0):
+    """A round cap on a head: a dome of radius r / height h on a circular rim (head-space centre
+    c, the rim plane horizontal in head space) + a brim ring r + brim. Drawn as the hull of the
+    dome clipped to the region above the rim's NEAR half -- so when the head tips back the back
+    of the cap never paints over the face (it is behind the skull) -- with an ink line along
+    the visible brim edge. P/D from head_xf. Returns (Path, Palette, near-rim 2D points)."""
+    cr = q.cr
+    rb = r + brim
+    ring = [(c[0] + rb * math.cos(TAU * i / n), c[1], c[2] + rb * math.sin(TAU * i / n)) for i in range(n)]
+    dc = D(c)
+    near = [D(p) >= dc for p in ring]
+    start = next((i for i in range(n) if near[i] and not near[i - 1]), 0)
+    run, i = [], start
+    while near[i % n] and len(run) < n:
+        run.append(i % n)
+        i += 1
+    arc = [P(ring[j]) for j in [(start - 1) % n] + run + [i % n]]   # + the two tangent points
+    if arc[0][0] > arc[-1][0]:
+        arc.reverse()
+    pts = ellipsoid2d(P, c, r, h, r, 16) + ellipsoid2d(P, c, rb, 0.01, rb, 16)
+    big = 10.0 * rb * max(1.0, abs(q.scale))
+    y_top = min(p[1] for p in pts) - big
+    clip = [(arc[0][0] - big, arc[0][1])] + arc + [(arc[-1][0] + big, arc[-1][1]), (arc[-1][0] + big, y_top),
+                                                    (arc[0][0] - big, y_top)]
+    cr.save()
+    cr.new_path()
+    core.polygon(cr, clip)
+    cr.clip()
+    shp, pal = hull_union(q, [pts], mat, size, rim=rim, shadow=shadow)
+    cr.restore()
+    cr.new_path()
+    core.smooth_open(cr, arc, 0.8)
+    cr.set_line_width(q.lw * 1.4)
+    cr.set_line_cap(1)
+    core.src(cr, pal.line)
+    cr.stroke()
+    return shp, pal, arc
 
 
 def belt(q, c, a, cz, half_h, mat, buckle_mat=None, buckle_w=11.0, rim=0.0):
@@ -1028,10 +1109,70 @@ def hand(q, A, mat, *, size=None, claw=None, pad=None, finger_w=1.0, palm_w=1.0,
     hp = A["hand"]
     flip = hand_flip(q, A, hang)
     show_palm = hp in ("open", "offer") and arm.gesture in ("hand_out_offer", "offer", "stagger", "wave", "talk")
+    if q.detail == 0:
+        return mitten(q, wr[0] + fdx * 3.0, wr[1] + fdy * 3.0, hang, size or q.b.hand_len, hp, mat, flip=flip,
+                      hold=arm.hold if hold else None, claw=claw)
     return B.hand(q.cr, wr[0] + fdx * 3.0, wr[1] + fdy * 3.0, hang, size or q.b.hand_len, hp, mat, q.light, q.lw,
                   flip=flip, claw=claw, claw_len=0.06, pad=pad, show_palm=show_palm,
                   hold=arm.hold if hold else None, stamp=stamp or arm.stamp, finger_w=finger_w, palm_w=palm_w,
                   finger_len=finger_len, detail=q.detail, hold_behind=behind)
+
+
+def mitten(q, x, y, angle, size, pose, mat, *, flip=False, hold=None, claw=None):
+    """The detail-0 hand (small on screen): palm + finger block + thumb as ONE flat-lit union
+    with its outline (2 fills instead of ~5-10), the held prop drawn under the fingers in the
+    same frame base.hand gives a hold callback. Returns a base.HandFrame."""
+    cr = q.cr
+    pal = q.P(mat if isinstance(mat, B.Mat) else B.Mat.of(mat))
+    s = size
+    fy = -1.0 if flip else 1.0
+    curl = sum(B.HAND_POSES[pose]["curl"]) / 3.0 if isinstance(pose, str) and pose in B.HAND_POSES else 0.3
+    cr.save()
+    cr.translate(x, y)
+    cr.rotate(angle)
+    cr.scale(s, s * fy)
+    lwu = q.lw / s
+    kx = 0.42
+    if hold is not None:
+        cr.save()
+        cr.translate(kx + 0.08, 0.06)
+        cr.scale(1.0 / s, 1.0 / s * fy)
+        hold(cr, B.HandFrame(0.0, 0.0, angle, s, [], (0.0, 0.0), flip))
+        cr.restore()
+    # three short fingers (they fold toward the palm as they curl) + a thumb, one union
+    fingers = []
+    for i, u in enumerate((-1.0, 0.0, 1.0)):
+        L = 0.50 * (0.95, 1.0, 0.86)[i]
+        a0 = u * 0.10 + curl * 1.1
+        b0 = (kx - 0.03, u * 0.095)
+        tip_ = (b0[0] + math.cos(a0) * L, b0[1] + math.sin(a0) * L)
+        fingers.append((b0, tip_))
+    fx_, fr = fingers[1][1][0] - 0.2, 0.2
+
+    def shape(d):
+        core.ellipse(cr, 0.22, 0.0, 0.25 + d, 0.155 + d)
+        for (b0, tp) in fingers:
+            core.capsule(cr, b0[0], b0[1], 0.062 + d, tp[0], tp[1], 0.05 + d)
+        core.capsule(cr, 0.12, -0.10, 0.072 + d, 0.33 - 0.08 * curl, -0.21 + 0.06 * curl, 0.058 + d)
+
+    cr.new_path()
+    shape(lwu)
+    core.src(cr, pal.line)
+    cr.fill()
+    shape(0.0)
+    core.src(cr, pal.lit)
+    cr.fill()
+    m = cr.get_matrix()
+    cr.restore()
+    inv = cr.get_matrix()
+    inv.invert()
+
+    def tocaller(px, py):
+        dx, dy = m.transform_point(px, py)
+        return inv.transform_point(dx, dy)
+
+    tip = tocaller(fx_ + fr, 0.02)
+    return B.HandFrame(*tocaller(kx + 0.08, 0.06), angle, s, [tip, tip, tip], tocaller(0.21, 0.0), flip)
 
 
 def arm_tube(q, A, mat, radii, size, *, cut=1.0, rim=0.5):
@@ -1150,6 +1291,12 @@ def eye_at(q, P, nz, s, e, pos, rx, ry, *, iris, iris_hi=None, skin, pupil="#1d1
     ang = math.atan2((op[1] - ec[1]) * outer, (op[0] - ec[0]) * outer)
     lk = q.pose.look if look is None else look
     bl = blink if blink is not None else (B.auto_blink(q.t, q.pose.seed * 7 + 2) if q.pose.blink is None else q.pose.blink)
+    if q.detail == 0:
+        eye_lite(q.cr, ec[0], ec[1], rx * fore, ry, q.light, q.lw, angle=ang * 0.6, look=(lk[0] * outer, lk[1]),
+                 lid=clamp(e.lid + lid_add), lid_bot=e.lid_bot, tilt=e.lid_tilt, outer=outer, blink=bl,
+                 squint_arc=clamp((q.pose.laugh - 0.5) * 2.0) if squint is None else squint, iris=iris, pupil=pupil,
+                 pupil_size=pupil_size * e.pupil, pupil_aspect=pupil_aspect, skin=skin, iris_size=iris_size, line=line)
+        return ec
     B.eye(q.cr, ec[0], ec[1], rx * fore, ry, q.light, q.lw, angle=ang * 0.6, look=(lk[0] * outer, lk[1]),
           lid=clamp(e.lid + lid_add), lid_bot=e.lid_bot, tilt=e.lid_tilt, outer=outer, blink=bl,
           squint_arc=clamp((q.pose.laugh - 0.5) * 2.0) if squint is None else squint, iris=iris, iris_hi=iris_hi,
@@ -1157,6 +1304,71 @@ def eye_at(q, P, nz, s, e, pos, rx, ry, *, iris, iris_hi=None, skin, pupil="#1d1
           bags=bags if q.detail >= 1 else 0.0, lash=lash, lash_flick=lash_flick, line=line, lid_shade=lid_shade,
           iris_size=iris_size, highlight=highlight)
     return ec
+
+
+def eye_lite(cr, cx, cy, rx, ry, light, lw, *, angle=0.0, look=(0.0, 0.0), lid=0.22, lid_bot=0.06, tilt=0.0,
+             outer=1.0, blink=0.0, squint_arc=0.0, iris="#D99A2B", pupil="#1d120c", pupil_size=0.5,
+             pupil_aspect=1.0, skin="#888888", iris_size=0.66, line=None):
+    """base.eye's look in ~6 flat fills (no gradients, no lid skin pass, no crease): for faces
+    small on screen (detail 0). Same parameters and the same lid / iris / catchlight placement."""
+    sk = B.palette(light, Mat.of(skin, sss=0.2))
+    line_c = line if line is not None else sk.line
+    lid = clamp(lid + 0.28 * max(0.0, look[1]) - 0.10 * max(0.0, -look[1]))
+    closed = clamp(max(lid, blink))
+    cr.save()
+    cr.translate(cx, cy)
+    if angle:
+        cr.rotate(angle)
+    cr.scale(outer, 1.0)
+    n = 7
+    xs = [-rx + 2 * rx * i / (n - 1) for i in range(n)]
+
+    def y_top(x):
+        u = x / rx
+        k = math.sqrt(max(0.0, 1.0 - u * u))
+        return max(-ry * k, -ry + 2.0 * ry * closed - 0.38 * ry * (1.0 - u * u) * (1.0 - closed * 0.85)
+                   + tilt * 0.42 * ry * u * (1.0 - closed * 0.4))
+
+    def y_bot(x):
+        u = x / rx
+        k = math.sqrt(max(0.0, 1.0 - u * u))
+        return min(ry * k, ry - 2.0 * ry * lid_bot + 0.32 * ry * (1.0 - u * u) * (1.0 - lid_bot))
+
+    top = [(x, y_top(x)) for x in xs]
+    bot = [(x, y_bot(x)) for x in xs]
+    if closed < 0.97 and any(b_[1] - a_[1] > 0.6 for a_, b_ in zip(top, bot)):
+        cr.new_path()
+        core.polygon(cr, top + bot[::-1])
+        cr.save()
+        cr.clip_preserve()
+        core.src(cr, "#ECE6DA")
+        cr.fill()
+        ir = ry * iris_size
+        ix = clamp(look[0] * rx * 0.42 * outer, -rx + ir * 0.6, rx - ir * 0.6)
+        iy = look[1] * ry * 0.38 + ry * 0.06
+        core.src(cr, iris)
+        core.circle(cr, ix, iy, ir)
+        cr.fill()
+        core.src(cr, pupil)
+        pr = ir * pupil_size
+        core.ellipse(cr, ix, iy, pr * pupil_aspect, pr)
+        cr.fill()
+        cr.set_source_rgba(1, 1, 1, 0.9)
+        core.circle(cr, ix + ir * (0.32 - 0.07 * outer), iy - ir * 0.42, ir * 0.28)
+        cr.fill()
+        cr.restore()
+        cr.new_path()
+        wt = lw * 1.6
+        core.tapered(cr, top, wt * 0.5, wt * 0.8, profile=lambda u: wt * (0.4 + 0.6 * math.sin(math.pi * min(1.0, 0.15 + u))))
+        core.src(cr, line_c)
+        cr.fill()
+    else:
+        if squint_arc >= 0.5:
+            pts = [(x, -ry * 0.35 * (1.0 - (x / rx) ** 2) + ry * 0.15) for x in xs]
+        else:
+            pts = [(x, ry * 0.28 * (1.0 - (x / rx) ** 2) - ry * 0.02) for x in xs]
+        B.detail_line(cr, pts, lw * 1.5, line_c, 1.0, taper=(0.3, 1.0, 0.5))
+    cr.restore()
 
 
 def brow_pts(P, s, e, near, x0, x1, y, z0, z1, k_in=13.0, k_out=11.0):

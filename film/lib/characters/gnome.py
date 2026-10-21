@@ -10,7 +10,10 @@ satchel with a round crusty loaf. Twinkly; dry wit.
     pose = ch.GnomePose(facing=1, sit=1, mood="kind", talk=timeline.talk(6, t, "OLD_WOMAN"),
                         near=ch.GnomeArm("toss_crumbs", phase=u, bread="piece"))
     rig = ch.draw_gnome(cr, x, ground_y, 0.9, pose, ch.LIGHTS["dusk"], t)
-    ch.gnome_toss_crumbs(cr, t, t_release, rig, ground_y)       # crumbs from her hand
+    # crumbs from her hand: her rig at the release moment (once, in setup()), pigeons eat them
+    rel = ch.gnome_rig_at(x, ground_y, 0.9, pose_at(t_release), t_release)
+    flock = ch.PigeonFlock(6, crumbs=ch.gnome_crumb_landings(t_release, rel, ground_y + 10))
+    ch.gnome_toss_crumbs(cr, t, t_release, rel, ground_y + 10, flock=flock)
 
 Scale 1.0: standing, ground -> hood crown = GNOME_HEIGHT = 160 px (the floppy hood tip rises
 ~45 px more and, like hats, is not counted). Seated on the standard bench (GNOME_SEAT_H = 125)
@@ -25,13 +28,15 @@ from dataclasses import dataclass, field, replace
 
 from .. import core, fx
 from ..core import clamp, lerp, smooth
+from . import _cast_kit as K
 from . import base as B
 from .base import Mat, Path, Proj, m_mul, m_rot_x, m_rot_y, m_rot_z, m_vec, v_add, v_lerp
 
 TAU = math.tau
 
 __all__ = ["GnomePose", "GnomeArm", "GnomeRig", "draw_gnome", "gnome_bread", "gnome_bread_hold",
-           "gnome_toss_crumbs", "gnome_crumb_landings", "gnome_tear_crumbs", "GNOME_HEIGHT",
+           "gnome_toss_crumbs", "gnome_crumb_landings", "gnome_tear_crumbs", "gnome_rig_at", "gnome_stride",
+           "gnome_walk_phase", "GNOME_HEIGHT",
            "GNOME_SEAT_H", "GNOME_LINE", "GNOME_LOAF", "GNOME_COLORS", "GNOME_GESTURES", "gnome_mats"]
 
 # ----------------------------------------------------------------------------------------
@@ -128,6 +133,11 @@ def gnome_mats():
             "specs": Mat.of(C["specs"], sheen=0.8),
         })
     return _MATS
+
+
+# shared supporting-cast helpers (see _cast_kit.py)
+_union, _union_paths, _flat, _caps, _tube = K.union, K.union_paths, K.flat, K.caps, K.tube
+_circle_pts, _yaw_of, _bench = K.circle_pts, K.yaw_of, K.sheet_bench
 
 
 # ----------------------------------------------------------------------------------------
@@ -245,11 +255,6 @@ class GnomeRig:
     yaw: float = 0.0
 
 
-def _yaw_of(facing, turn):
-    base = {1: 1.0, -1: -1.0, 0: 0.0}.get(int(facing), 0.0)
-    return clamp(base + turn * 0.6, -1.45, 1.45)
-
-
 def gnome_stride(scale=1.0, facing=1, turn=0.0):
     """Screen px the anchor travels per waddle cycle (feet don't slide)."""
     return STRIDE * abs(math.sin(_yaw_of(facing, turn))) * scale
@@ -349,68 +354,6 @@ GNOME_GESTURES = {
 # per-draw context
 # ----------------------------------------------------------------------------------------
 
-class _Q:
-    __slots__ = ("cr", "proj", "light", "light_nb", "lw", "detail", "micro", "t", "pose", "yaw", "sit", "M", "S", "pal",
-                 "caller")
-
-    def P(self, mat):
-        p = self.pal.get(mat)
-        if p is None:
-            p = self.pal[mat] = B.palette(self.light, mat)
-        return p
-
-    def shade(self, path, mat, lw=None, **kw):
-        # the ground-bounce band is off by default: at her size it is invisible, and it doubles
-        # the cost of a shade() call (the skirt, the big form nearest the ground, keeps it)
-        kw.setdefault("bounce", 0.0)
-        return B.shade(self.cr, path, mat, self.light, self.lw if lw is None else lw, **kw)
-
-
-def _union(q, hulls, mat, size, lw=None, **kw):
-    """Several convex point sets -> one silhouette (outline filled once) shaded once."""
-    cr = q.cr
-    lw = q.lw if lw is None else lw
-    cr.new_path()
-    for h in hulls:
-        core.smooth_closed(cr, B.offset_closed(h, lw), 0.85)
-    core.src(cr, q.P(mat).line)
-    cr.fill()
-    for h in hulls:
-        core.smooth_closed(cr, h, 0.85)
-    path = Path(cr)
-    q.shade(path, mat, lw=lw, outline=False, size=size, **kw)
-    return path
-
-
-def _union_paths(q, pairs, mat, size, lw=None, **kw):
-    """Like _union, for already-built (shape, outline) Path pairs wound the same way."""
-    cr = q.cr
-    cr.new_path()
-    for _sh, o in pairs:
-        o.add(cr)
-    core.src(cr, q.P(mat).line)
-    cr.fill()
-    for sh, _o in pairs:
-        sh.add(cr)
-    path = Path(cr)
-    q.shade(path, mat, lw=q.lw if lw is None else lw, outline=False, size=size, **kw)
-    return path
-
-
-def _flat(q, shape, outline, mat, tone=0.0):
-    """Small parts (cuffs, toggles, straps): outline + one lit fill (tone > 0 mixes toward the
-    shadow) -- the cheap version of the house recipe for things a few px wide."""
-    cr = q.cr
-    p = q.P(mat)
-    outline.add(cr)
-    core.src(cr, p.line)
-    cr.fill()
-    shape.add(cr)
-    core.src(cr, core.mix(p.lit, p.shadow, tone) if tone else p.lit)
-    cr.fill()
-    return p
-
-
 # ----------------------------------------------------------------------------------------
 # the rig
 # ----------------------------------------------------------------------------------------
@@ -420,9 +363,7 @@ def draw_gnome(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     t drives the idle life (breathing, blinks, hood tip, dangling feet, glints)."""
     pose = pose or GnomePose()
     light = light or B.LIGHTS["neutral"]
-    q = _Q()
-    q.cr, q.M, q.light, q.t, q.pose, q.pal = cr, gnome_mats(), light, t, pose, {}
-    q.light_nb = light.with_(bounce_strength=0.0) if light.bounce_strength else light
+    q = K.Q(cr, light, gnome_mats(), t, pose)
     yaw = _yaw_of(pose.facing, pose.turn)
     q.yaw = yaw
     proj = Proj(yaw, pose.elev)
@@ -430,14 +371,9 @@ def draw_gnome(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     sit = clamp(pose.sit)
     q.sit = sit
     seat_h = pose.seat_h
-    dev = scale * B.device_scale(cr)
-    if detail is None:
-        detail = 2 if dev >= 0.9 else 1 if dev >= 0.55 else 0
-    q.detail = detail
-    q.micro = detail >= 2 and dev >= 1.4       # close-ups only: knit stitches, laces, embroidery...
+    dev = q.lod(scale, detail)          # detail 2/1/0; q.micro = close-up textures (knit, laces...)
     q.lw = max(GNOME_LINE, B.MIN_LINE_PX / max(dev, 1e-6))
 
-    q.caller = cr.get_matrix()            # caller -> device (for screen-space arm targets)
     cr.save()
     cr.translate(x, y + (seat_h * scale * sit if pose.anchor == "seat" else 0.0))
     cr.scale(scale, scale)
@@ -607,25 +543,10 @@ def _skeleton(pose, t, sit, seat_h, yaw=0.0):
     S["feet"] = feet
     S["knee"] = {-1.0: feet[0]["knee"], 1.0: feet[1]["knee"]}
     # the screen-facing direction in body space (3/4 right: forward and toward her left)
-    sy_ = math.sin(yaw)
-    fwd = (math.copysign(math.cos(yaw), sy_) * abs(sy_), 0.0, lerp(1.0, abs(sy_), abs(sy_)))
+    fwd = K.facing_dir(yaw)
     S["ctx"] = {"sit_k": k, "waist": S["waist"], "chest": S["chest"], "lap": lap, "pelvis": pel,
                 "phase": 0.0, "satchel_mouth": (0.0, 0.0, 0.0), "fwd": fwd}
     return S
-
-
-def _screen_to_body(q, pt, depth):
-    """Caller coordinates -> body space at the given camera depth (inverse of the projection)."""
-    inv = q.cr.get_matrix()        # a fresh copy: local -> device, inverted below
-    inv.invert()
-    # caller -> device -> this rig's local units
-    dx, dy = q.caller.transform_point(pt[0], pt[1])
-    lx, ly = inv.transform_point(dx, dy)
-    pr = q.proj
-    X = lx * pr.c - depth * pr.s
-    Z = lx * pr.s + depth * pr.c
-    Y = (ly - depth * pr.se) / pr.ce
-    return (X, Y, Z)
 
 
 def _solve_arm(q, S, side, arm):
@@ -643,7 +564,7 @@ def _solve_arm(q, S, side, arm):
     if arm.target is not None:
         tgt = arm.target
     if arm.screen is not None:
-        tgt = _screen_to_body(q, arm.screen, q.proj.depth(sk) + arm.depth)
+        tgt = K.screen_to_body(q, q.proj, arm.screen, q.proj.depth(sk) + arm.depth)
     if arm.hand:
         hp = arm.hand
     if arm.gesture == "rest" and q.sit < SIT_SWAP:
@@ -971,7 +892,7 @@ def _skirt_seated(q):
 def _shawl(q):
     """The lavender knitted shawl draped over her shoulders like a little cape (it covers the
     upper arms), knotted at the front."""
-    cr, proj, S, t = q.cr, q.proj, q.S, q.t
+    cr, proj, S = q.cr, q.proj, q.S
     T = S["T"]
     xy = proj.xy
     br = S["br"]
@@ -1081,7 +1002,7 @@ def _satchel(q):
             pts.append(Bp(u, v + (1.0 if v > 0 else 0.0), w * (1.0 - 0.3 * abs(math.sin(a)))))
     hull = core.convex_hull(pts)
     sh, so = B.smooth_paths(cr, hull, q.lw, 0.85)
-    pal = q.shade(sh, M["satchel"], outline=so, size=18)
+    q.shade(sh, M["satchel"], outline=so, size=18)
     front = proj.depth((nx, 0.0, nz_))
     if front > -0.2:
         # the flap over the top half of the bag
@@ -1165,41 +1086,6 @@ def _cone_spine(q, hood_swing):
     return pts
 
 
-def _circle_pts(c, r, n=10, sy=1.0):
-    """Points round a projected sphere (orthographic: a circle) for hulls -- no 3D sampling."""
-    return [(c[0] + math.cos(TAU * i / n) * r, c[1] + math.sin(TAU * i / n) * r * sy) for i in range(n)]
-
-
-def _caps(cr, pts, radii, lw):
-    """A limb as capsules (two arcs each -- far cheaper than base.tube_paths for 2-3 joints),
-    wound like hulls/ellipses so it can join a union -> (shape, outline)."""
-    cr.new_path()
-    for (a, b), ra, rb in zip(zip(pts, pts[1:]), radii, radii[1:]):
-        core.capsule(cr, a[0], a[1], ra, b[0], b[1], rb)
-    shape = Path(cr)
-    for (a, b), ra, rb in zip(zip(pts, pts[1:]), radii, radii[1:]):
-        core.capsule(cr, a[0], a[1], ra + lw, b[0], b[1], rb + lw)
-    return shape, Path(cr)
-
-
-def _signed_area(pts):
-    return 0.5 * sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1]
-                     for i in range(len(pts)))
-
-
-def _tube(cr, pts, radii, lw, samples=4, tension=0.8):
-    """base.tube_paths, but wound like convex hulls / ellipses (base.tube_outline winds the
-    other way), so tubes can join hulls in ONE union without the overlap cancelling out."""
-    a, b = B.tube_outline(pts, radii, samples, tension, (0.0, lw))
-    if _signed_area(a) < 0.0:
-        a, b = a[::-1], b[::-1]
-    cr.new_path()
-    core.smooth_closed(cr, a, 0.9)
-    shape = Path(cr)
-    core.smooth_closed(cr, b, 0.9)
-    return shape, Path(cr)
-
-
 def _head(q):
     cr, proj, M, S, pose, t = q.cr, q.proj, q.M, q.S, q.pose, q.t
     RH, HC = S["RH"], S["head_c"]
@@ -1228,7 +1114,7 @@ def _head(q):
     bcx, bcy = P((0.0, 17.0, -27.0))
     bsh, bso = B.ellipse_paths(cr, bcx, bcy, 9.4, 9.0, lw)
     if q.detail >= 2:
-        q.shade(bsh, M["hair"], outline=bso, size=16, rim=0.7)
+        q.shade(bsh, M["hair"], outline=bso, size=16, rim=0.0)
     else:
         _flat(q, bsh, bso, M["hair"], tone=0.25)
     if q.detail >= 1 and nz((0.0, 0.2, -1.0)) > -0.2:
@@ -1277,7 +1163,6 @@ def _head(q):
 
     # ---- the hood's soft hem framing her face: the whole band first (the face will hide its
     # far run behind the far cheek), the near run again over the face further down
-    hem_r = [BRIM_R * 0.7] + [BRIM_R] * (len(ARCH) - 2) + [BRIM_R * 0.7]
     arch = [P(a) for a in ARCH]
     vis = [nz(_unit3(a)) for a in ARCH]
     if min(vis) < -0.2:
@@ -1295,9 +1180,9 @@ def _head(q):
                   (FACE_C[0], FACE_C[1] + ca * FACE_R[1], FACE_C[2] + sa * FACE_R[2])]
     face2 = [P(v) for v in face3]
     for s in (-1.0, 1.0):
-        face2 += _circle_pts(P((s * 14.5, 11.0, 12.0)), 10.2, 10)                 # cheeks
-        face2 += _circle_pts(P((s * 11.5, 17.5 + open_ * 1.5, 7.5)), 9.8, 10)     # jowls
-        face2 += _circle_pts(P((s * 3.5, 21.5 + open_ * 2.5, 9.5)), 8.6, 10)      # chin
+        face2 += _circle_pts(P((s * 14.5, 11.0, 12.0)), 10.2, 8)                  # cheeks
+        face2 += _circle_pts(P((s * 11.5, 17.5 + open_ * 1.5, 7.5)), 9.8, 8)      # jowls
+        face2 += _circle_pts(P((s * 3.5, 21.5 + open_ * 2.5, 9.5)), 8.6, 8)       # chin
     fhull = core.convex_hull(face2)
     front = [P(v) for v in face3 if v[2] > 1.0] + [P((0.0, 0.0, 26.0)), P((0.0, 12.0, 24.0))]
     opening = core.convex_hull(arch + front)
@@ -1589,7 +1474,7 @@ def _specs(q, P, nz, slide, near, spal, part):
     far = -near
     glint = pose.glint if pose.glint is not None else _auto_glint(t, pose.seed)
     centers = []
-    rims, lenses = [], []
+    lenses = []
     for s in (far, near):
         c3 = (s * EYE_X, -4.0 + slide, 23.5 - slide * 0.1)
         if nz((s * 0.3, 0.0, 0.95)) < 0.02:
@@ -1695,7 +1580,7 @@ def _loaf_pts(r, x0=-1.0, x1=1.0, n=20):
 
 def _bread_loaf(cr, r, light, M, lw, crack, detail):
     sh, so = B.smooth_paths(cr, _loaf_pts(r), lw, 0.85)
-    p = B.shade(cr, sh, M["crust"], light, lw, outline=so, size=r * 1.4)
+    p = B.shade(cr, sh, M["crust"], light, lw, outline=so, size=r * 1.4, bounce=0)
     hi = B.palette(light, M["crust_hi"])
     cr.save()
     sh.add(cr)
@@ -1751,7 +1636,7 @@ def _bread_half(cr, r, light, M, lw, face, detail):
     crust = _loaf_pts(r, -1.0, 0.18)
     crust += [(r * 0.24, r * 0.3), (r * 0.3, -r * 0.1), (r * 0.22, -r * 0.62)]
     sh, so = B.smooth_paths(cr, crust, lw, 0.8)
-    p = B.shade(cr, sh, M["crust"], light, lw, outline=so, size=r * 1.2)
+    B.shade(cr, sh, M["crust"], light, lw, outline=so, size=r * 1.2, bounce=0)
     if detail >= 1:
         hi = B.palette(light, M["crust_hi"])
         cr.save()
@@ -1772,7 +1657,7 @@ def _bread_half(cr, r, light, M, lw, face, detail):
         rag = 1.0 + 0.08 * math.sin(i * 2.7) + 0.05 * math.cos(i * 4.1)
         face_pts.append((r * 0.2 + math.cos(a) * r * 0.36 * rag, r * -0.05 + math.sin(a) * r * 0.62 * rag))
     fs, fo = B.smooth_paths(cr, face_pts, lw * 0.8, 0.7)
-    cp = B.shade(cr, fs, M["crumb"], light, lw * 0.8, outline=fo, size=r * 0.6)
+    cp = B.shade(cr, fs, M["crumb"], light, lw * 0.8, outline=fo, size=r * 0.6, bounce=0)
     if detail >= 1:                          # the crumb's little holes
         core.src(cr, cp.shadow, 0.8)
         for i in range(7):
@@ -1781,7 +1666,6 @@ def _bread_half(cr, r, light, M, lw, face, detail):
             core.ellipse(cr, hx, hy, r * 0.045 + 0.4, r * 0.03 + 0.3)
         cr.fill()
     cr.restore()
-    del p
 
 
 def _bread_piece(cr, r, light, M, lw, face, seed, detail):
@@ -1792,7 +1676,7 @@ def _bread_piece(cr, r, light, M, lw, face, seed, detail):
         rag = 1.0 + 0.16 * (core.hash01(i, seed + 11) - 0.5)
         pts.append((math.cos(a) * s * 1.15 * rag, math.sin(a) * s * 0.85 * rag))
     sh, so = B.smooth_paths(cr, pts, lw * 0.85, 0.8)
-    B.shade(cr, sh, M["crumb"], light, lw * 0.85, outline=so, size=s)
+    B.shade(cr, sh, M["crumb"], light, lw * 0.85, outline=so, size=s, bounce=0)
     # the crust cap over the top
     cr.save()
     sh.add(cr)
@@ -1843,18 +1727,47 @@ def _crumb_kw(rig, ground_y, n, seed):
                 scale=s, release=0.1)
 
 
-def gnome_toss_crumbs(cr, t, t0, rig, ground_y, n=10, seed=0, size=3.0):
+def gnome_rig_at(x, y, scale, pose, t, light=None):
+    """Her rig (hand frames, head, bread...) for this pose and time WITHOUT drawing her -- e.g.
+    the release moment of a toss, for gnome_toss_crumbs / gnome_crumb_landings. Costs about one
+    draw; compute it once (setup()) when the toss is fixed."""
+    _s, c = core.frame(4, 4)
+    return draw_gnome(c, x, y, scale, pose, light, t)
+
+
+def gnome_toss_crumbs(cr, t, t0, rig, ground_y, n=10, seed=0, size=3.0, flock=None, first=0):
     """The crumbs she flicks at t0 (toss_crumbs phase ~0.5) from her near hand, landing on
-    ground_y. Uses fx.crumbs; gnome_crumb_landings() gives where they land (for the pigeons)."""
+    ground_y. `rig` must be her rig AT THE RELEASE (gnome_rig_at(..., t0)), so crumbs already in
+    the air don't follow her hand. gnome_crumb_landings() gives where they come to rest (for
+    the pigeons); pass the PigeonFlock built from them as `flock` and the crumbs it has pecked
+    up vanish (`first` = the index of this toss's first crumb in the flock's crumb list)."""
     h = rig.hand_near
-    fx.crumbs(cr, t, t0, h.x, h.y, size=size, color=GNOME_COLORS["crumb"], crust=GNOME_COLORS["crust"],
-              **_crumb_kw(rig, ground_y, n, seed))
+    kw = _crumb_kw(rig, ground_y, n, seed)
+    gone = []
+    if flock is not None:
+        land = fx.crumb_landings(t0, h.x, h.y, **kw)
+        gone = [lx for k, (lx, _tr) in enumerate(land) if flock.crumb_eaten(first + k, t)]
+    if gone:
+        cr.save()
+        cr.new_path()
+        cr.set_fill_rule(1)                    # even-odd: everything but small discs round the eaten
+        cr.rectangle(-1e5, -1e5, 2e5, 2e5)
+        r = 9.0 * rig.scale
+        for lx in gone:
+            cr.new_sub_path()
+            cr.arc(lx, ground_y, r, 0.0, TAU)
+        cr.clip()
+        cr.set_fill_rule(0)
+    fx.crumbs(cr, t, t0, h.x, h.y, size=size, color=GNOME_COLORS["crumb"], crust=GNOME_COLORS["crust"], **kw)
+    if gone:
+        cr.restore()
 
 
 def gnome_crumb_landings(t0, rig, ground_y, n=10, seed=0):
-    """[(x_rest, t_rest)] for gnome_toss_crumbs with the same arguments."""
+    """[(x_rest, t_rest, ground_y)] for gnome_toss_crumbs with the same arguments -- pass them
+    straight to PigeonFlock(crumbs=...)."""
     h = rig.hand_near
-    return fx.crumb_landings(t0, h.x, h.y, **_crumb_kw(rig, ground_y, n, seed))
+    return [(lx, tr, ground_y) for lx, tr in fx.crumb_landings(t0, h.x, h.y, **_crumb_kw(rig, ground_y, n, seed))]
 
 
 def gnome_tear_crumbs(cr, t, t0, rig, n=8, seed=4):
@@ -1871,41 +1784,9 @@ def gnome_tear_crumbs(cr, t, t0, rig, n=8, seed=4):
 # character sheet (python3 film/render.py --sheet)
 # ----------------------------------------------------------------------------------------
 
-def _bench(cr, x, ground, sc, seat_h=GNOME_SEAT_H, w=240.0, light=None, back=True):
-    """Sheet-only stand-in for the props kit's wrought-iron and oak bench (seat at seat_h)."""
-    light = light or B.LIGHTS["neutral"]
-    iron = B.palette(light, Mat.of("#3a3a40"))
-    oak = B.palette(light, Mat.of("#8a5f3a"))
-    y = ground - seat_h * sc
-    core.src(cr, iron.lit)
-    for lx in (x - w * 0.42, x + w * 0.42):
-        cr.rectangle(lx - 3 * sc, y, 6 * sc, seat_h * sc)
-    if back:
-        for lx in (x - w * 0.42, x + w * 0.42):
-            cr.rectangle(lx - 3 * sc, y - 95 * sc, 6 * sc, 95 * sc)
-    cr.fill()
-    if back:
-        for k in range(2):
-            core.src(cr, oak.shadow)
-            cr.rectangle(x - w / 2, y - (88 - 26 * k) * sc, w, 16 * sc)
-            cr.fill()
-    core.src(cr, oak.lit)
-    cr.rectangle(x - w / 2, y - 7 * sc, w, 11 * sc)
-    cr.fill()
-    core.src(cr, oak.shadow)
-    cr.rectangle(x - w / 2, y + 4 * sc, w, 3 * sc)
-    cr.fill()
-
-
 def lineup():
     """The gnome on the cast height chart (character_sheet_lineup.png)."""
     return [B.LineupItem("gnome", lambda cr, x, y, sc: draw_gnome(cr, x, y, sc, GnomePose(facing=1), t=0.4), 110.0)]
-
-
-def _head_frame(pose, scale, light, t=0.4):
-    """Where the head lands for this pose (dry run on a scratch surface)."""
-    _s, c = core.frame(4, 4)
-    return draw_gnome(c, 0.0, 0.0, scale, pose, light, t=t).head
 
 
 def sheet_items():
@@ -1994,7 +1875,7 @@ def sheet_items():
 
         def fn(cr, p=pose):
             B.sheet_bg(cr, 230, 230)
-            hx, hy = _head_frame(p, FS, neutral)
+            hx, hy = K.head_frame(draw_gnome, p, FS, neutral)
             draw_gnome(cr, 115 - hx, 112 - hy, FS, p, neutral, t=0.4)
         add(label, 230, 230, fn, "faces")
 

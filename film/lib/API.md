@@ -544,6 +544,630 @@ p = ch.DragonPose(facing=0, turn=0.25, sit=1, tail_front=True, mood="kind", wing
 *(Each creature module adds its section here: file, draw function, pose fields, gestures, rig
 attach points, heights at scale 1.0, cost.)*
 
+### Cast A: gnome, elf, lioness, troll, pigeons
+
+Files: `characters/gnome.py`, `elf.py`, `lioness.py`, `troll.py` and `pigeon.py`. Their shared
+private helpers live in `characters/_cast_kit.py`, which is not auto-imported. Every public
+name is re-exported as `ch.*`.
+
+**Conventions shared by all five** (the same as the dragon's):
+
+* The draw call is `ch.draw_X(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None)`
+  and returns an `XRig`.
+  * `(x, y)` is the ground point below the pelvis. For the pigeon it is between the feet.
+  * Give characters in the same depth plane the dragon's `scale`, so the `CAST_HEIGHTS` hold.
+    The line-up page measures them: gnome 160 (crown) / 175 (with the hood tip), elf 470,
+    lioness 450, troll 660, pigeon 43.
+* Every pose field is optional, and `pose.with_(**kw)` returns a changed copy.
+* Idle life is a pure function of `t`. Breathing, sway, auto-blink (`blink=None`), the hood
+  tip, hair, whiskers and the mirror runes all follow it, so pass the scene's local time.
+* `talk` (0..1) is the mouth: use `timeline.talk(scene, t, "SPEAKER")`.
+* `mood`, `mood2`, `mood_mix` and `smile` use the shared `B.MOODS`. `look=(x, y)` moves the
+  irises, each in -1..1.
+* Arms use `XArm(gesture, amt=1, prev="rest", hold=None, target=None, screen=None, hand=None, phase=0)`.
+  * `near` is the arm on the camera side and `far` is the other one.
+  * `amt` blends from the `prev` gesture: animate it from 0 to 1 and the reach arcs.
+  * `phase` (0..1) drives the gesture's own motion: tosses, taps, stamps, the till.
+  * `hold(cr, frame)` draws a prop in the hand.
+    * The frame origin is the grip. Call `cr.rotate(-frame.angle)` to keep a prop upright.
+    * The hold callbacks below work in any character's hand.
+  * `screen=(x, y)` (caller coordinates) aims the reach at a point on screen. `target=` takes a
+    body-space point, and `hand=` overrides the hand pose.
+  * **In 3/4 views only the FAR arm reaches toward the side the character faces**, so use the
+    far arm for offers.
+* Rig points are in caller coordinates:
+  * `hand_near` / `hand_far` are `HandFrame`s with `x, y, angle, scale, tips, palm`.
+  * Also `head`, `mouth`, `eyes`, `top`, `chest` and `feet`, plus the per-creature points
+    below.
+* `anchor="seat"` (gnome, elf) puts `(x, y)` on the bench seat instead of the ground.
+
+#### `ch.draw_gnome`: the gnome grandmother (`OLD_WOMAN`), second lead
+
+She is tiny and round. She has a big soft nose, rosy cheeks, round brass spectacles that glint
+and a silver bun under a faded-red pointed hood whose long tip flops. She wears a lavender
+knitted shawl, a mossy skirt and laced boots, and carries a linen satchel with a round crusty
+loaf.
+
+**Size and seating.**
+
+* Standing, the hood crown is `GNOME_HEIGHT` = 160. Like hats, the floppy tip is not counted;
+  it adds about 15.
+* Seated on the standard bench (`seat_h=125`, which is `GNOME_SEAT_H`):
+  * her crown is about 227 and her head centre about 193, level with the seated dragon's elbow
+    at the same scale;
+  * her boots dangle about 100 above the ground.
+
+**`GnomePose` fields** (beyond the shared ones):
+
+| field | meaning |
+|---|---|
+| `sit`, `seat_h` | 0 standing .. 1 on a bench of `seat_h`, legs dangling |
+| `kick`, `legs_out` | dangling boots swing 0..1; legs stuck straight out (too short for the bench) |
+| `walk`, `phase` | waddle; `phase = ch.gnome_walk_phase(distance_px, scale, facing)` |
+| `smirk` | 0..1 her one-sided dry-wit smile |
+| `laugh` | 0..1 the warm laugh: eyes squeeze to arcs, mouth open, shoulders and hood tip bounce |
+| `specs` | 0..1; at 1 the spectacles slide down her nose and she glances OVER them |
+| `glint` | `None` gives a glint sweep every ~8 s; 0..1 forces the sweep; -1 never |
+| `hood_swing` | extra push on the hood tip (-1..1), on top of its own lag and bounce |
+| `satchel`, `satchel_side` | `"loaf"` (it peeks out), `"empty"`, or `None` for no satchel; the side is -1 or +1 |
+| `mood` | default `"kind"`; she also uses `"warm"`, `"happy"`, `"skeptical"`, `"sad"` |
+
+**`GnomeArm(..., bread=None, depth=16)`.** Set `bread` to `"loaf"`, `"half"` or `"piece"` to
+put her bread in that hand.
+
+| gesture | |
+|---|---|
+| `rest` | hands folded on her tummy (standing) or resting on her lap (seated) |
+| `toss_crumbs` | wind-up until 0.38, flick 0.38–0.55 (crumbs leave at ~0.47), then follow-through, aimed the way she faces |
+| `tear_bread` | needs **both arms at the same phase**: grip, crack 0.25–0.5, snaps at 0.5, the halves pull apart. Then switch to `hold_bread` with `bread="half"` |
+| `hold_bread` | a piece or half held before her chest |
+| `hand_out_offer` | arm out the way she faces, palm up; use the far arm in 3/4, or `screen=` |
+| `hand_on_chest`, `reach_satchel`, `pat_bench`, `wave`, `point` | `pat_bench` and `wave` use `phase` |
+
+**`GnomeRig` extras.** `nose`, `lenses` (the lens centres, for flares), `hood_tip`, `lap`,
+`seat`, `satchel`, and `bread` (where the loaf snaps during `tear_bread`).
+
+**Bread and crumbs.**
+
+* `ch.gnome_bread(cr, x, y, size=GNOME_LOAF(46), light, state="loaf"|"half"|"piece", angle, crack, face)`
+  draws her bread.
+* `ch.gnome_bread_hold(state, light, size=46)` returns a `hold` callback for **any** hand. For
+  example, the dragon takes the piece with `ch.Arm("hand_out_offer", hold=ch.gnome_bread_hold("piece", L))`.
+* `ch.gnome_rig_at(x, y, scale, pose, t)` returns her rig without drawing her. Use it for the
+  moment of release (about one draw's cost, so do it in `setup()`).
+* `ch.gnome_toss_crumbs(cr, t, t0, rig_at_release, ground_y, n=10, flock=None)` draws the
+  crumbs she flicks at `t0`.
+  * `ch.gnome_crumb_landings(t0, rig_at_release, ground_y, n)` returns `[(x, t_rest, y)]`, ready
+    for `PigeonFlock(crumbs=...)`.
+  * Pass that flock as `flock=` and the crumbs it has pecked up vanish.
+* `ch.gnome_tear_crumbs(cr, t, t0, rig)` is the little spray when the loaf snaps, with `t0` at
+  tear phase 0.5.
+
+#### `ch.draw_elf`: the wash-house stranger (S1, plus tavern and square extras)
+
+She is elegant and aloof. She wears a deep-plum hooded travelling cloak (a hood with a shoulder
+cape and a pewter clasp) over a long silver-blue kirtle with an embroidered hem. Pale-gold hair
+falls in two curtains, and her long ears poke through the hood with tiny glowing sea-shells in
+them. Her half-lidded eyes stay on an enchanted hand-mirror whose runes scroll, and its cold
+light falls on her face.
+
+**Size and seating.**
+
+* Standing, the ear tips are at `ELF_HEIGHT` = 470, the hood crown at about 451 and the eyes at
+  about 400.
+* Seated on a bench of `seat_h` (`ELF_SEAT_H` = 125), her knees are together, her ankles are
+  crossed and the kirtle falls to the floor. Her crown is then about 348, and the mirror glass
+  is about 228 above the ground.
+
+**`ElfPose` extras.**
+
+| field | meaning |
+|---|---|
+| `sit`, `seat_h` | 0 standing .. 1 seated |
+| `glow` | 0..1 the mirror's light on her face (use 1 while she holds it) |
+| `scroll` | rune scroll speed of the mirror |
+| `shells` | 0..1 glow of the ear-shells |
+| `hood` | 1 up, 0 down (hair shows) |
+| `mood` | default `"bored"` (aloof); try `"skeptical"` for the raised glance |
+
+**Gestures.**
+
+| gesture | |
+|---|---|
+| `mirror` | the mirror held up before her chest. It draws `ch.elf_mirror` by default; `phase` is her idle thumb |
+| `tap_sign` | reaches back over her shoulder and taps twice over `phase`. Put `screen=` on the plaque. Use the **far** arm; it draws behind her |
+| `point`, `rest` | |
+
+**Rig extras.** `mirror` (the glass centre, for the scene's `fx.glow` light spill) and
+`shells`.
+
+**The mirror itself.** `ch.elf_mirror(cr, frame, t, light, glow=1, size=1, scroll=1)` is also a
+hold callback. It is a pewter oval with a finial on a short handle, with runes and mist
+drifting in the glowing glass. The glass centre sits `44*size` above the grip.
+
+#### `ch.draw_lioness`: the kind apothecary (`PHARMACIST`, S2)
+
+She has tawny fur, a pale muzzle, round ears and a tufted tail. She wears an apothecary-green
+robe, a cream bib-apron with lavender in the pocket, a cream collar with a rose ribbon, and gold
+half-moon spectacles on a beaded chain. She looks OVER them and reads THROUGH them.
+
+**Size and counter.** Her ear tips are at `LIONESS_HEIGHT` = 450 and her eyes at about 400.
+Build the S2 counter to `LIONESS_COUNTER_H` = 200 (`pose.counter_h`). Her paws rest on it, and
+items are set down on it.
+
+**`LionessPose` extras.**
+
+| field | meaning |
+|---|---|
+| `walk`, `phase` | glide along the shelves; `phase = ch.lioness_walk_phase(distance_px, scale, facing)` |
+| `specs` | 0 low on the muzzle (looking over them) .. 1 pushed up (reading through them) |
+| `freeze` | 0..1 stops her idle motion: the held beat of the frozen smile |
+| `whisker` | 0..1 whisker twitch |
+| `tail_swing` | -1..1 |
+| `counter_h` | the counter height (default 200) |
+| `head_nod` | `s2_nod` |
+
+**Gestures.**
+
+| gesture | |
+|---|---|
+| `rest` | paws loosely clasped before her apron |
+| `on_counter` | both paws on the counter top |
+| `reach_up` | reaches to a high shelf (`screen=` the jar), grip hand |
+| `place` | carries the item at her chest, sets it down at phase 0.55, then opens her paw and draws back. Use `hold=` for the item |
+| `hold_note` | one paw pinches the `hold=` prop (a note) before her chest |
+| `read_note` | both arms. Pass the note callback as `hold=` on either arm. It is drawn upright between the paws, which pinch its lower edge, and `rig.note` is its centre |
+| `present` | "Try these": an open palm toward the pile |
+| `ring_till` | the paw lifts and presses the key down at phase 0.45, then bounces |
+| `point` | |
+
+**Rig extras.** `nose` and `note`.
+
+#### `ch.draw_troll`: the stone troll bouncer (`BOUNCER`, S4)
+
+He is a boulder on small legs. Huge mossy shoulder mounds hunch past a low, heavy-browed head.
+He has tiny bored eyes, a stone nose, an underbite with tusks, cracks and lichen, a leather
+jerkin laced across his chest and rough breeches. The wooden SMILE stamp disappears in his fist.
+
+**Size.** The top of his silhouette (the mossy crown, in 3/4) is `TROLL_HEIGHT` = 660, his eyes
+are at about 575 and his chest at about 365. At scale 0.6 he stands about 400 px tall.
+
+**`TrollPose` extras.**
+
+| field | meaning |
+|---|---|
+| `look` | his tiny eyes slide sideways (`look=(-0.6, 0.2)` = the side-eye) |
+| `talk` | a slow, flat jaw |
+| `shrug` | 0..1 |
+| `mood` | default `"bored"` |
+
+**Gestures.**
+
+| gesture | |
+|---|---|
+| `rest` | knuckles by his knees |
+| `arms_crossed` | both arms |
+| `hold_up_stamp` | the stamp raised beside his shoulder like a torch |
+| `press_stamp` | raise, then **slam at phase 0.5** with a wobble, hold until 0.75, then lift. `screen=` is where the DIE lands (e.g. the dragon's `hand_near.palm`). He must stand within reach: the target should be within about 350 × scale px of his near shoulder |
+| `belt` | fists at his belt |
+| `thumb` | a jerk of the thumb over his shoulder |
+
+Both stamp gestures draw `ch.troll_stamp` unless `hold=` is given. It is a carved wooden stamp
+with SMILE cut in mirror-writing and pink ink.
+
+**Rig extras.** `stamp_face` is where the die is, so the scene can add the thunk and the ink.
+
+#### `ch.draw_pigeon` and `ch.PigeonFlock`: plump grey pigeons (S6–S8)
+
+They are blue-grey with iridescent green and purple necks, two dark wing bars and coral feet.
+They are drawn in profile (`facing` ±1) and only the head turns. At scale 1.0 a pigeon is
+`PIGEON_HEIGHT` = 42.
+
+**`PigeonPose` fields.**
+
+| field | meaning |
+|---|---|
+| `walk`, `phase` | head-bobbing walk; one cycle covers `ch.pigeon_stride(scale)` px |
+| `peck` | 0..1 cycle; the beak reaches the ground |
+| `hop` | 0..1 |
+| `flap` | 0..1 wings up, with `lift` px off the ground (takeoff-lite) |
+| `fly` | 0..1 open wings, airborne |
+| `look` | the SWIVEL, in screen terms: -1 beak to screen-left, 0 at the camera, +1 screen-right; `None` = straight ahead |
+| `tilt`, `puff`, `blink`, `seed` | |
+
+**`ch.PigeonFlock(n=6, x_range, y_range, seed, scale, crumbs=[(x, t_land[, y])], arrivals=[(t, side)], t_end=40)`.**
+
+* The birds are placed deterministically and schedule themselves, first come first served.
+  They idle, bob, peck, hop and flap now and then, walk to each crumb as it lands and peck it
+  up. Birds listed in `arrivals` fly in and land.
+* `flock.draw(cr, t, light, look=None, sync=1.0)` is a pure function of `t`. Farther birds
+  (smaller y) are drawn first and slightly smaller.
+* `look=±1` with `sync=1` is the **S6 synchronized head swivel**: every bird on the ground turns
+  its head together. Peckers look up, walkers keep walking with their heads turned, and birds
+  in the air don't join. `sync<1` lets only some of them join, chosen deterministically per
+  bird.
+* `flock.crumb_eaten(k, t)`, `flock.states(t)` → `[(x, y, PigeonPose, scale)]`.
+
+#### Recipes (tested against the stub timeline)
+
+```python
+L = ch.LIGHTS
+# S1 wash-house: the elf scrolling on the bench; at 8.3 she taps the plaque without looking up
+p = ch.ElfPose(facing=-1, sit=1.0, glow=1.0, look=(0.1, 0.9), head_nod=-0.5,
+               near=ch.ElfArm("mirror", phase=t * 0.3),
+               far=ch.ElfArm("tap_sign", amt=core.ramp(t, 8.3, 8.7, "inout_sine"),
+                             phase=core.ramp(t, 8.3, 11.0), screen=plaque_xy))
+rig = ch.draw_elf(cr, x, ground_y, 0.9, p, L["washhouse"], t)
+fx.glow(cr, *rig.mirror, 60 * 0.9, "#5fe0ff", 0.35)            # the mirror's light spill
+
+# S2 apothecary: set the jars down (s2_items), the frozen smile (s2_pause), the till (s2_ring 23.3)
+p = ch.LionessPose(facing=-1, talk=timeline.talk(2, t, "PHARMACIST"),
+                   near=ch.LionessArm("place", phase=((t - 8.0) / 1.5) % 1.0, hold=jar),
+                   far=ch.LionessArm("on_counter"))
+p = p.with_(smile=0.6, freeze=1.0, whisker=1.0, near=ch.LionessArm("on_counter"))
+p = p.with_(near=ch.LionessArm("ring_till", phase=core.ramp(t, 23.3 - 0.45, 24.3)))  # key down at 23.3
+rig = ch.draw_lioness(cr, x, ground_y, 0.95, p, L["apothecary"], t)
+
+# S4 tavern door: the troll stamps the dragon's hand (slam = phase 0.5 = s4_stamp 3.0)
+dragon = ch.draw_dragon(cr, dx, ground_y, 0.6, ch.DragonPose(facing=1, near=ch.Arm("hand_out_offer")), L["tavern"], t)
+p = ch.TrollPose(facing=-1, look=(-0.6, 0.2), talk=timeline.talk(4, t, "BOUNCER"),
+                 near=ch.TrollArm("press_stamp", phase=core.ramp(t, 2.5, 3.5), screen=dragon.hand_near.palm))
+rig = ch.draw_troll(cr, dx + 230, ground_y, 0.6, p, L["tavern"], t)    # rig.stamp_face: the thunk
+
+# S6 bench: crumbs tossed at 5.0 (set up once), the pigeons come, the heads swivel to the speaker
+rel = ch.gnome_rig_at(gx, ground_y, 0.95, ch.GnomePose(facing=-1, sit=1.0,
+                      near=ch.GnomeArm("toss_crumbs", phase=0.47, bread="piece")), 5.0)
+flock = ch.PigeonFlock(n=6, x_range=(560, 1350), y_range=(ground_y + 15, ground_y + 70), seed=3,
+                       scale=0.95, crumbs=ch.gnome_crumb_landings(5.0, rel, ground_y + 10))
+gp = ch.GnomePose(facing=-1, sit=1.0, talk=timeline.talk(6, t, "OLD_WOMAN"),
+                  specs=core.ramp(t, 12.6, 12.9) * (1 - core.ramp(t, 13.4, 13.8)),     # s6_glance
+                  laugh=core.ramp(t, 26.8, 27.1))                                       # s6_laugh
+ch.draw_gnome(cr, gx, ground_y, 0.95, gp, L["dusk"], t)
+ch.gnome_toss_crumbs(cr, t, 5.0, rel, ground_y + 10, flock=flock)
+who = 1.0 if timeline.speaking(6, t, "OLD_WOMAN") else -1.0 if timeline.speaking(6, t, "MAN") else None
+flock.draw(cr, t, L["dusk"], look=who, sync=1.0)
+
+# S7: tear the loaf (s7_tear 0.8, snaps at 1.3), offer a piece with the FAR arm (s7_hand 1.8)
+tear = core.ramp(t, 0.8, 1.8)
+arms = (dict(near=ch.GnomeArm("tear_bread", phase=tear), far=ch.GnomeArm("tear_bread", phase=tear)) if t < 1.8 else
+        dict(near=ch.GnomeArm("hold_bread", bread="half"),
+             far=ch.GnomeArm("hand_out_offer", amt=core.ramp(t, 1.8, 2.4, "inout_sine"), bread="piece")))
+rig = ch.draw_gnome(cr, gx, ground_y, 0.95, ch.GnomePose(facing=-1, sit=1.0, mood="warm", **arms), L["dusk"], t)
+ch.gnome_tear_crumbs(cr, t, 1.3, rig)
+# ...and from then on the dragon's hand holds her bread: hold=ch.gnome_bread_hold("piece", L["dusk"])
+```
+
+#### Cost
+
+All figures are CPU per draw, measured against the dragon at the same time on this loaded
+machine and scaled to the dragon's ~21 ms nominal.
+
+| creature | cost |
+|---|---|
+| gnome | ~8–9 ms at 0.9–1.0, seated with busy hands in dusk light; ~5.5 ms at 0.5 |
+| elf | ~7–7.5 ms at 0.9, seated with the mirror; ~5 ms at 0.5 |
+| lioness | ~7.5 ms at 0.9 (~8 when reading the note); ~6 ms at 0.6 walking |
+| troll | ~7.5–8 ms at 0.6; ~6.5 ms at 0.4 |
+| pigeon | ~0.9 ms each; a flock of 8 is ~7.5 ms |
+
+* Lights with a ground bounce (dusk, golden, street_night) cost a little more than neutral.
+* Only the big ground-touching cloth (her skirt) draws the bounce band.
+* Detail drops on its own below 0.9 and below 0.55 on-screen scale.
+
+**New base-kit helpers** (added to `base.py` for this cast; existing signatures unchanged):
+
+* `B.ellipsoid_pts(project, c, rx, ry, rz, n=10)` returns the silhouette points of a 3D
+  ellipsoid through any projection, for hull unions.
+* `B.sheet_bg(cr, w, h, light="neutral", floor=None)` and `B.SHEET_BG` give sheet cells a
+  backdrop in a light's colours.
+
+### Cast B: orc, minotaur, faun, dwarf, griffin, pixie, crowd extras, scrying crystal
+
+Files are `characters/orc.py`, `minotaur.py`, `faun.py`, `dwarf.py`, `griffin.py`, `pixie.py`
+and `crowd.py`. They share the private rig `characters/_folk.py`, which is not auto-imported
+and adds nothing to `base.py`. Everything is re-exported by `film.lib.characters` (`ch.`).
+
+#### Common to every Cast-B creature
+
+* **Signature.**
+  `draw_<name>(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None, parts=None)`
+  returns a rig.
+  * `(x, y)` is the ground point under the pelvis (or under the seat when sitting).
+  * The pixie and the griffin use the same anchor: the ground under her, the ground under his
+    hips.
+* **Scale.** `scale=1.0` matches `CAST_HEIGHTS`, measured on the lineup with hats excluded.
+  Each build carries a `fit` factor, so do not fudge the scale per character. Seat and table
+  heights stay in screen px: `seat_h=125` sits on the standard bench at any scale.
+* **Detail.** `detail=None` chooses the level of detail from the creature's **on-screen
+  height**, not from its scale (`_folk.lod_for`):
+  * detail 2 at 420 px or taller,
+  * detail 1 at 300 px or taller,
+  * otherwise detail 0, which uses flat-lit mitten hands, `eye_lite` eyes and no rim pass.
+  A goblin at scale 1 is 260 px tall, so it draws as detail 0.
+* **Pose.** Every Pose extends `FolkPose`. Its fields are the `DragonPose` names, plus:
+  * `facing=±2` and an explicit `yaw` (rad). These creatures have **back views**.
+  * `stance` (-1..1): fighting stance.
+  * Every field is optional; use `.with_(**kw)`.
+* **Arms.** `near=` and `far=` take `ch.Arm(gesture, amt, prev, hold, stamp, target, hand,
+  phase)`, the same class as the dragon's. Shared gestures:
+  * `rest`, `slump`, `guard`, `shove` (`phase`; aimed by `pose.shove_y`), `stagger`, `hug`,
+    `cheer` (`phase` pumps)
+  * `raise_crystal_film` / `raise_crystal`, `lower_crystal`
+  * `tankard` / `hold_tankard` (`phase` 0..1 raises a toast)
+  * `offer` / `hand_out_offer`, `reach` / `take` (`phase` 0..1 extends), `point`, `wave`,
+    `talk`, `arms_crossed`
+  * `on_table` (`pose.table_h`), `knees`, `strap`, `drag`, `hand_on_chest`
+  * `eat` (`phase` 0 lap .. 1 mouth), `hip` / `hand_on_hip`
+* **Layers.** `parts` takes any of `"back"`, `"body"`, `"mid"`, `"head"` and `"front"`. Use it
+  to interleave two creatures; see `draw_brawl`.
+* **Rig.** All points are in caller coordinates:
+  * `head`, `mouth`, `nose`, `eyes`, `top`, `chest`, `lap`, `feet`, `seat`
+  * `hand_near` and `hand_far` (`HandFrame`)
+  * `scale`, `facing`, `yaw`, and the per-creature `points{}` listed below
+* **Walking.** `walk=1, phase=ch.<name>_walk_phase(distance_px, scale, yaw)` keeps the feet
+  planted.
+* **Life.** Every creature breathes, blinks, sways and does its own idle business: tail
+  flicks, ear twitches, a wing flutter, a beard sway.
+
+#### Heights at scale 1.0, seat heights and cost (CPU, min of 12 runs, `square` light)
+
+Costs depend on the machine and its load.
+
+| creature | height (px) | seated | cost per draw |
+|---|---|---|---|
+| orc | 480 | bench 125 | 12.8 ms at 1.0; 6.4 ms at 0.6 (288 px, detail 0) |
+| minotaur | 600 (horn tips) | bench 125 | 15.6 ms at 1.0; 12.0 ms at 0.6 |
+| `draw_brawl` (the pair) | | | 24 ms at 0.8 |
+| faun | 410 (horns) | bench 125: hooves on the ground | 14.7 ms at 1.0; 14.0 ms seated at 0.9 |
+| dwarf | 300 (cap excluded, about 320 with it) | bench 125: **boots dangle** | 8.7 ms at 1.0 (detail 1) |
+| griffin | 380 sitting on his haunches (ear tufts; cap excluded) | sits on the ground beside the bench | 15.4 ms |
+| pixie | 90 (spikes and ears; wings extra) | hovers | 9.7 ms at 2.4; 5.2 ms at 1.0 |
+| crowd extra | `CAST_HEIGHTS[kind]` | `sit_table` seat 70 | 5-6.5 ms below 300 px; 9.5-11.6 ms at 300-420 px; 10.7-13 ms at 450 px. The minotaur variant is 7.7 / 13.7 / 16 ms |
+
+For comparison, the hero dragon costs 21 ms at 1.0. Crowd figures include the crystal and its
+glow.
+
+#### Orc: `ch.draw_orc`, `ch.OrcPose`, `ch.draw_brawl`, `ch.brawl_state`
+
+The orc is green, with tusks, a black mohawk crest, a laced red leather jerkin
+(`ORC_COLORS["jerkin"]`), fur-cuffed boots and iron bracers.
+
+`OrcPose` adds these fields to `FolkPose`:
+
+* `snarl`: 0..1, bares the tusks.
+* `ears`: -1 flat .. +1 perked.
+* `hug_reach`, `hug_w`, `hug_d`, `hug_y`, `hug_y_far`: the hug partner's torso. `draw_brawl`
+  sets them.
+
+```python
+# S5, the whole beat in one call: shoves (orc, minotaur, orc, ...), the stop at 8.5, the hug at
+# 9.6, the minotaur's slow hug back 11 -> 15, rocking, still holding on at 22-25.
+o_rig, m_rig = ch.draw_brawl(cr, cx, ground_y, 0.8, ch.LIGHTS["square"], t,
+                             t_stop=tl.beat("s5_stop").t, t_hug=tl.beat("s5_hug").t, hug_back=(11.0, 15.0),
+                             orc_left=True)
+st = ch.brawl_state(t)    # plain numbers: fight, shover, shove_index, phase, impact, orc_shove / mino_shove,
+                          # orc_stagger / mino_stagger, orc_x / mino_x (body px from the pair centre), stop, hug, hug_back, step
+```
+
+* `draw_brawl` interleaves the two creatures' layers. In the hug, the orc's face rests on the
+  minotaur's chest with his eyes closed, the minotaur's head bows over him, and his far arm
+  goes over the orc's shoulder while the near one goes under it.
+* Use `brawl_state` for sound cues: a cheer on each new `shove_index`, silence at `stop`.
+* Alone: `ch.OrcPose(facing=1, stance=0.6, snarl=0.6, mood="angry", near=ch.Arm("shove", phase=u))`.
+
+#### Minotaur: `ch.draw_minotaur`, `ch.MinotaurPose`
+
+The minotaur has big ivory horns with dark tips, a grey hooded tunic (the hood hangs down his
+back), a brass-buckled belt, wrapped shins, cloven hooves and a tufted tail.
+
+`MinotaurPose` adds:
+
+* `shove_y`: aim the shove at a shorter opponent's chest.
+* `tail_swing`.
+* `variant`: one of `MINOTAUR_VARIANTS`: chestnut, black, dun or brindle.
+* The `hug_*` fields, as for the orc.
+
+There is an extra gesture, `Arm("surprised")`: hands up, stunned (S5 9.6-11).
+`rig.points["horn_tips"]` holds the horn tips.
+
+#### Faun (S7 teen): `ch.draw_faun`, `ch.FaunPose`
+
+The teen faun is gangly. He has goat legs, small horns through a **red wool hood**
+(`FAUN_COLORS["hood"]`) with a dagged capelet, a patched tunic, a rope belt, a satchel and a
+**wooden reed-pipe on a cord**. He wears no headphones.
+
+`FaunPose` adds:
+
+* `hood`: 1 up, 0 pushed back. When the hood is pushed back his hair and ears show.
+* `ears`.
+
+Extra gestures:
+
+* `Arm("neck_rub")`: the shy hesitation.
+* `Arm("pipe")`: fiddles with the pipe.
+* `Arm("reach", phase=, hold=bread)`: takes the bread.
+* `Arm("eat", phase=)`.
+
+```python
+p = ch.FaunPose(facing=-1, walk=1 - core.ramp(t, 5.8, 6.6), phase=ch.faun_walk_phase(x0 - x, sc),
+                look=(-0.6, 0.1), mood="worried", near=ch.Arm("neck_rub", amt=core.window(t, 7.0, 9.0, 0.3, 0.4)))
+p = ch.FaunPose(facing=1, turn=-0.2, sit=core.ramp(t, 9.8, 10.8, "inout_sine"), mood="warm",
+                near=ch.Arm("reach", phase=core.ramp(t, 11.0, 11.8), hold=bread))
+```
+
+#### Dwarf (S7 worker): `ch.draw_dwarf`, `ch.DwarfPose`, `ch.dwarf_grip`
+
+The dwarf is stout. He wears an **orange-brown tanned-leather work vest** with brass buckles
+and tool loops (hammer, tongs) over a slate tunic. He has a braided beard with brass rings,
+soot smudges, and a miner's leather cap with a brass candle-holder and candle.
+
+`DwarfPose` adds:
+
+* `drag` (0..1): he leans back with his heels dug in.
+* `grip` (fwd, height): the bench end he holds.
+* `lamp_lit`: a tiny warm flame; use it in S8.
+* `soot`.
+* `palette`: colour overrides.
+* `cap`.
+
+`rig.points["grip"]` (while dragging) and `rig.points["lamp"]` (the flame, for a glow) are set.
+
+```python
+# S7 15.5-18.0: he drags the second bench (walking backwards: phase decreases with distance)
+p = ch.DwarfPose(facing=-1, drag=1, walk=1, phase=-ch.dwarf_walk_phase(dist, sc),
+                 near=ch.Arm("drag"), far=ch.Arm("drag"), mood="angry", talk=0.3)
+gx, gy = ch.dwarf_grip(p, sc)          # draw the bench's near end at (x + gx, y + gy)
+```
+
+Seated on the standard bench, his boots dangle, and that is intended.
+
+#### Griffin (S7 courier): `ch.draw_griffin`, `ch.GriffinPose`
+
+The griffin has an eagle head and a lion body. He wears a royal-post blue felt cap with a
+badge and a quill feather, and carries a leather parcel satchel with a red wax seal. His eyes
+droop.
+
+`GriffinPose` is its own dataclass and has no arms. Its fields:
+
+* `sit`: 0 on four legs .. 1 on his haunches. Animate it; the front talons stay planted.
+* `walk`, `phase`: `phase` comes from `ch.griffin_walk_phase(distance_px, scale, facing, turn)`.
+* `yawn` (0..1): the big droopy yawn, with the wings stretching.
+* `beak_open`.
+* `beak_hold=cb`: a mouthful held in the beak. The callback is `cb(cr, frame)`, drawn over
+  the mandibles at the gape near the tip.
+  * The frame origin is the gape. +x runs along the head's left-right axis; do not undo
+    `frame.angle`.
+  * 1 unit = 1 body px. Draw a piece about 40-60 px wide.
+* `talon=ch.Arm("reach", phase=, hold=cb)`: the near front talon lifts and takes it (it is a
+  `base.hand` with claws).
+* `wings`: -1..1.
+* `tail_curl`.
+* `cap`, `satchel`.
+* The usual head, look and mood fields. The default mood is `"tired"`.
+
+Rig points: `rig.points["beak"]` (hand him bread there), `["satchel"]`, `["seal"]`, and
+`rig.hand_near` (the talon, while reaching).
+
+#### Pixie (S5, speaker CROWD): `ch.draw_pixie`, `ch.PixiePose`, `ch.pixie_wing_buzz`
+
+The pixie is tiny and lilac, with long pointed ears, a spiky magenta crop
+(`PIXIE_COLORS["hair"]`), sneering green eyes and a leaf tunic with a petal collar. She has
+four dragonfly wings, and each one is a fan of three translucent blurred copies with a speed
+arc. The buzz never stops.
+
+`PixiePose` adds:
+
+* `hover`: feet above the ground anchor, in body px. Its `bob` is automatic.
+* `buzz`: 0..1. At 0 the wings are spread and still (lineup).
+* The default is `mood="sneer"`, `head_nod=0.12`, so she looks down her nose.
+* Use `far=ch.Arm("hip")` for attitude.
+* Her `raise_crystal_film` holds the crystal high and out beside her big head.
+* Her lines are finer than the cast standard (0.8 × LINE), and her face uses 0.6 of that.
+
+Her LOD follows on-screen height: detail 2 at 220 px or taller, detail 1 at 110 px or taller.
+
+```python
+hold = ch.crystal_hold(face=-1.0 if facing_us else 1.0, size=1.7, thumb=feed, t=t)
+p = ch.PixiePose(facing=-1, hover=150, talk=tl.talk(5, t, "CROWD"), far=ch.Arm("hip"),
+                 near=ch.Arm("lower_crystal" if t > 13.0 else "raise_crystal_film",
+                             amt=core.ramp(t, 13.0, 13.6), prev="raise_crystal_film", hold=hold))
+rig = ch.draw_pixie(cr, x, ground_y, 1.6, p, ch.LIGHTS["square"], t)
+```
+
+When a held crystal draws, the pixie paints its cold glow over her face and sets
+`rig.points["crystal"]`. `rig.points["wings"]` is the wing root.
+
+#### Crowd extras: `ch.random_creature`, `ch.crowd_pose`, `ch.draw_crowd`
+
+```python
+spec = ch.random_creature(seed)              # deterministic; or random_creature(seed, "goblin")
+pose = ch.crowd_pose(action, t, spec, facing=0, turn=0.3, amount=1.0, thumb=feed, glow=1.0)
+rig  = ch.draw_crowd(cr, x, ground_y, scale, spec, pose, ch.LIGHTS["square"], t)
+```
+
+**Kinds** (`CROWD_KINDS`): dwarf, goblin, kobold, satyr, elf, harpy and minotaur.
+* `random_creature` picks a kind with weights 5, 6, 5, 3, 4, 2 and 1, so minotaurs are rare.
+* The minotaur is the real rig in a `MINOTAUR_VARIANTS` colour.
+* A `CrowdSpec` (kind, seed, size 0.92-1.08, skin, cloth, cloth2, hair, accent, eye, hat,
+  beard, ears, horns, variant) is plain data. Edit it freely, e.g. `spec.hat = "hood"`.
+* Hats are `""`, `"hood"` or `"cap"`. Dwarves always have beards; satyrs have one 70 % of the
+  time.
+
+**Actions** (`CROWD_ACTIONS`, the first argument of `crowd_pose`):
+
+| action | what it does | knobs |
+|---|---|---|
+| `idle` | weight shifts, seeded glances | |
+| `cheer` | an arm pumps (both arms for some seeds), shouting | `amount` |
+| `film` | `raise_crystal_film`: the crystal is held up beside the face. When the extra faces us we see the crystal's back and its cold glow lights the face; when it faces away we see the face with the reflected fight. A red recording rune pulses | `thumb`, `glow` |
+| `lower` | `lower_crystal`: the crystal comes down to the belly and dims, the head drops, the mood turns bored | `amount` (stagger it per extra: "one by one") |
+| `turn_away` | the yaw swings toward 180° as `amount` goes to 1, eyes on the lowered crystal (S5 18.8: the circle dissolves) | `amount` |
+| `laugh` | **the synchronized laugh**: `laugh_sync(t)` gives everyone with the same `t` the identical pulse. Tankard raised on the beat | |
+| `tankard` | a tankard at the chest, a slow toast now and then | |
+| `sit_table` | seated (`seat_h=70` by default), forearms on a table at `table_h=150` | `seat_h=`, `table_h=` |
+| `talk` | leans in and talks, with an explaining hand | `amount` |
+
+* `crowd_pose(...)` keyword arguments override any `CrowdPose` field, e.g. `facing`, `yaw`,
+  `mood`, `seed`.
+* `draw_crowd` paints a held crystal's glow by itself and returns `rig.points["crystal"]`.
+
+```python
+# S5: a ring of 14 filming extras; the crystals lower one by one 10.8 -> 13.0, then they turn away
+feed = ch.crystal_feed(lambda c, w, h: ch.draw_brawl(c, w / 2, h - 4, 0.11, ch.LIGHTS["square"], t), 96, 72)
+for i, (x, y, sc) in enumerate(ring):
+    spec = ch.random_creature(500 + i)
+    k = core.ramp(t, 10.8 + 0.15 * i, 11.6 + 0.15 * i)                 # this extra lowers
+    act = "film" if k <= 0 else "lower" if t < 18.8 else "turn_away"
+    amt = k if act == "lower" else core.ramp(t, 18.8 + 0.1 * i, 20.0 + 0.1 * i) if act == "turn_away" else 1.0
+    ch.draw_crowd(cr, x, y, sc, spec, ch.crowd_pose(act, t, spec, facing=1 if x < cx else -1, amount=amt, thumb=feed),
+                  ch.LIGHTS["square"], t)
+# S4: the tavern laugh -- identical rhythm because everyone gets the same t
+ch.draw_crowd(cr, x, y, sc, spec, ch.crowd_pose("laugh", t, spec, facing=0), ch.LIGHTS["tavern"], t)
+```
+
+`laugh_sync(t, bpm=280, t0=0)` returns 0.55..1. Use it to pulse the laugh sound at the same
+beat.
+
+#### Scrying crystal, tankard and feed
+
+```python
+c = ch.draw_scrying_crystal(cr, x, y, size=1.0, angle=0.0, light=None, *, face=1.0, glow=1.0, rec=True,
+                            t=0.0, thumb=None, handle=True, detail=2, lw=None)
+```
+
+* It is a long hexagonal crystal slab in a brass collar on a short wooden handle, like a
+  hand-mirror.
+* `(x, y)` is the grip and the crystal stands above it. At size 1 it is 62 px tall.
+* `face`:
+  * +1: the scrying face, with the reflected scene `thumb(cr, w, h)` clipped and tinted cold.
+  * -1: the back, cold facets.
+  * In between it turns edge-on.
+* `glow` (0..1) dims it.
+* `rec` is a tiny pulsing red rune sigil: a medieval "recording" rune, not a dot.
+* It returns the centre.
+
+The other helpers:
+
+* `ch.crystal_hold(face, glow, rec, thumb, size, t, tilt, light)` returns a `CrystalHold`, a
+  hold callback for any `Arm(hold=...)`.
+  * The crystal is about 1.45 hand lengths tall × `size`.
+  * Call `.light(cr, strength=1)` afterwards to paint its cold glow. `draw_crowd` and
+    `draw_pixie` do this themselves; for other creatures call it after drawing them.
+* `ch.crystal_feed(draw_fn, w=96, h=72)` renders the reflected fight **once per frame** into
+  a small surface. Every crystal's face then paints it as one image. `ch.demo_thumb` is a
+  stand-in.
+* `ch.draw_tankard(cr, x, y, size=1.0, light, foam=1.0, slosh=0.0)`: a pewter tankard with
+  foam, 34 px tall at size 1.
+* `ch.tankard_hold(foam, size, light, slosh)`: its hold callback.
+
+#### Shared helpers in `_folk.py` (private; for Cast-B modules)
+
+* `dome_cap(q, P, D, c, r, h, mat, size)`: a cap drawn so its back never paints over the face
+  when the head tips back. The dwarf, crowd caps and the dwarf hair dome use it.
+* `mitten(...)` and `eye_lite(...)`: the detail-0 hands and eyes.
+* `lod_for(dev, height)`: the on-screen-height level of detail.
+* `Build.fit`: the scale calibration.
+
 ## Props
 
 *(film/lib/props.py: each recurring prop, its draw signature, anchor, size at scale 1.0 and
@@ -553,3 +1177,374 @@ how it attaches to a hand via `hold`.)*
 
 *(film/lib/env.py: the environment kit: walls, timber facades, cobbles, sky, trees, castle;
 how to cache it in `fx.Layer`s and its parallax planes.)*
+
+## Bard
+
+File: `characters/bard.py`. Every public name is re-exported as `ch.*`. Sheets:
+`python3 film/render.py --sheet --only bard` (7 pages) and `python3 film/build/bard_showcase.py`
+(`bard_sheet.png`, `storybook_sheet.png`, `prologue_mock.png` in `film/build/preview/`).
+
+THE BARD (speaker `BARD`) frames the film: the prologue (S0), a cameo on the second bench in S8
+and the reprise under the end card (S9). He is a plump, twinkly **cockatrice minstrel**:
+
+* a rooster's golden-chestnut head with a floppy red comb and wattles, a cream face mask, big
+  bright green eyes, and a short horn-yellow beak that opens to sing;
+* a dragon's small leathery green wings and a scaly green tail with a rooster-feather tuft;
+* a ruff of hackle feathers, a patched burgundy-and-gold doublet over a round belly, scaly
+  yellow hands, chicken feet in soft leather boots;
+* a green felt beret with a long white plume pinned by a gold brooch;
+* a well-loved **lute** with a ribbed pear-shaped bowl, a carved rose, a bent-back pegbox with
+  a red ribbon and 7 strings, played with one of his own quills.
+
+His colours are in `BARD_COLORS` and his materials in `bard_mats()`.
+
+```python
+pose = ch.BardPose(sit=1, facing=1, turn=-0.45, look_cam=0.5, **ch.bard_song(t))   # S0
+ch.draw_bard_stool(cr, x, ground_y, sc, light, yaw=ch.bard_yaw(pose))              # first
+rig = ch.draw_bard(cr, x, ground_y, sc, pose, light, t)
+```
+
+### Draw calls
+
+* `ch.draw_bard(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None)` returns a
+  `BardRig`.
+  * `(x, y)` is the ground point below his pelvis. With `pose.anchor="seat"` it is the seat
+    point instead.
+  * Idle life is a pure function of `t`: breathing, auto-blinks, the comb flop, the wattles,
+    the plume, the lute ribbon and the tail tuft. Pass the scene's local time.
+* `ch.draw_bard_stool(cr, x, y, scale=1.0, light=None, seat_h=28, yaw=0.0, detail=None)` draws
+  his three-legged milking stool. It uses the same anchor as the bard.
+  * Draw it **before** him, with `yaw=ch.bard_yaw(pose)` so it turns with him.
+  * It returns the seat point.
+* Light: `ch.BARD_LIGHTS["candle"]` is the prologue's candlelight. It has the same values as
+  `storybook.STORY_LIGHT` (they compare equal): a warm key from the candles (screen right), a
+  deep plum ambient and a hearth-orange rim from the left. Use `LIGHTS["lantern_night"]` for S8 and any `B.LIGHTS`
+  preset elsewhere.
+
+### Heights at scale 1.0 (measured)
+
+| pose | plume top | comb top | eyes | beak |
+|---|---|---|---|---|
+| standing (`BARD_HEIGHT` = 178) | 178 | 156 | 124 | 109 |
+| on his stool (`BARD_STOOL_H` = 28), boots planted | 153 | 142 | 113 | 98 |
+| on the standard bench (`B.BENCH_SEAT_H` = 125), boots dangle | 250 | 238 | 209 | 194 |
+
+He is the gnome's height plus his comb and plume, about a third of the dragon. In a shared
+plane (S8), give him the dragon's scale.
+
+### `BardPose` fields
+
+Every field is optional, and `pose.with_(**kw)` returns a changed copy.
+
+* **Body**
+  * `facing` / `turn` work like the dragon's: +1 is 3/4 right, -1 is 3/4 left, 0 is front, and
+    `turn` adds yaw (×0.6 rad). The default is front, turned a little right.
+    * **Seated, use 3/4: `facing=1, turn=-0.45`.** Then the thighs, the stool legs and the
+      draped tail all read. From the front a seated figure reads as standing.
+  * `sit` (0..1) and `seat_h` (default 28). `walk` and `phase` drive a strut with a rooster
+    head-thrust (`ch.bard_walk_phase(distance_px, scale, facing, turn)`).
+  * `lean`, `head_turn`, `head_tilt`, `head_nod`, `look=(x, y)`.
+* **Face**
+  * `look_cam` (0..1) turns his head and eyes into the lens.
+  * `mood` defaults to `"twinkle"`. `BARD_MOODS` adds `twinkle`, `sing`, `rapture`, `listen`
+    and `sly`; `base.MOODS` also works. Mix with `mood2` and `mood_mix`; override with `smile`.
+  * `wink` (0..1) winks the near eye. `blink=None` is an auto-blink.
+* **Voice**
+  * `sing` (0..1) opens the beak; `talk` is the same for spoken lines.
+  * `vowel` is `"a"`, `"o"`, `"e"` or `"m"` (`m` closes the beak).
+  * `rapture` (0..1) is the long-note bliss: his eyes close, his brows lift and his head tips up.
+* **The lute**
+  * `lute` is `"play"` (in his lap), `"back"` (slung) or `"none"`.
+  * The right arm strums and the left arm frets. `right` and `left` are
+    `ch.BardArm(gesture, amt=1, prev="play", hold=None, hand=None, target=None, phase=0)`.
+    Gestures (`BARD_GESTURES`): `play`, `strum`, `fret`, `rest`, `present` (an open-palm flourish
+    toward the story), `wave`, `tip_cap`, `point`.
+  * `amt` blends from `prev`, so animate it from 0 to 1 to lift a hand off the lute and back. A
+    seated `tip_cap` or `wave` with the right arm leaves the fret hand on the neck.
+  * Strum hand: `strum_t` (seconds since the last stroke), `strum_next` (seconds to the next),
+    `strum_dir` and `strum_next_dir` (+1 down, -1 up) and `strum_amt` (size).
+    * Each stroke has an anticipation wind-up, a 75 ms sweep across the strings, an overshoot
+      follow-through and a recovery. When the next stroke goes the same way, the hand lifts
+      clear of the strings.
+    * The plucked strings vibrate and the body rocks slightly on each stroke.
+  * Fret hand: `chord` is an index into `BARD_CHORDS` (7 shapes, one per song chord, see
+    `BARD_CHORD_NAMES`: D, G, A, C, Bm, A7, Em). `chord_to` and `chord_mix` slide the hand to
+    another shape.
+  * `tune` (0..1) puts the fret hand at the pegbox turning a peg while he cocks his head and
+    listens. `tune_phase` drives the peg wiggle.
+* **Music and secondary motion**
+  * `beat` (a continuous beat count) and `groove` (0..1) give the head bob on the beat, the body
+    sway, the plume and comb following late, and the left boot's foot tap (`tap` scales it).
+  * `wings` runs from -1 (drooped) to +1 (lifted). `tail_curl` and `tail_swing` shape the tail.
+* **Cap and misc**
+  * `cap` wears the beret. `cap_lift` (0..1) lifts it, for `tip_cap`.
+  * `anchor`, `elev` (camera elevation), `shadow` and `seed`.
+
+### `BardRig` (caller coordinates)
+
+* `hand_right` (strum), `hand_left` (fret), `hand_near` and `hand_far` are `HandFrame`s.
+* `head`, `mouth` (between the mandibles: song breath, notes, sparkles), `beak` (the tip),
+  `eyes`, `top` (beret top), `comb`, `plume_tip`, `chest`, `lap`, `feet`, `seat`.
+* `lute` is a dict: `rose`, `bridge`, `nut`, `pegbox`, `center` and `strum` (where the
+  strings are hit: put string glints and floating notes here).
+* `scale`, `facing`, `yaw`.
+
+### Music helpers: the song drives him
+
+* `ch.bard_song(t, piece="prologue", timing=None, offset=0.0)` returns **every music-driven
+  pose field** at song time `t - offset`, read from `film/assets/song/song_timing.json`
+  (`ch.bard_song_timing()` loads it once and caches it). `piece` is `"prologue"` or `"reprise"`.
+  * **Strums:** every lute stroke.
+    * Down and up strums. Bass notes and plucks are alternating quill strokes.
+    * Runs, rolls, the flourish and the final chord. Each stroke's size comes from its velocity.
+  * **Chords:** the fret hand reaches each new chord 0.16 s early.
+  * **Beat:** `beat` and `groove` from the beat grid and the sections (intro 0.35, verses 1.0,
+    coda 0.8, outro 0.45).
+  * **Tuning:** the tuning gesture over the intro's tuning strokes.
+  * **Singing:**
+    * `sing` comes from each line's 24 fps envelope.
+    * `vowel` comes from the current syllable.
+    * `rapture` rises on long notes.
+  * Splat it into a pose: `ch.BardPose(sit=1, facing=1, turn=-0.45, **ch.bard_song(t))`. Any
+    keyword you give after the splat wins.
+  * It costs ~0.01 ms. It returns `{}` if the file is missing.
+  * **Staging stays with the scene:** `look_cam`, `wink`, `tip_cap`/`present`, `mood` and the
+    camera.
+* Without the song file, build the same fields yourself:
+  * `ch.bard_beat(t, beats)` gives a continuous beat count.
+  * `ch.bard_strum(t, strums, amt=1.0)` takes times (alternating down/up) or `(time, dir)` pairs
+    and returns the strum fields.
+  * `ch.bard_chord(t, [(time, idx)], slide=0.16)` returns a float. `ch.bard_chords(...)` returns
+    `chord`, `chord_to` and `chord_mix`.
+  * `ch.bard_sing(t, env_fn)` returns `sing` and `rapture`. Use it with
+    `lambda tt: timeline.talk(0, tt, "BARD")`.
+* `ch.bard_twinkle(cr, t, t0, rig, scale=None, dur=0.55)` draws the wink's "ting!", a
+  four-point sparkle by his winking eye from `t0`. Draw it after him.
+* `ch.bard_cameo_pose(t, facing=-1, turn=0.35, period=1.4, seed=0, **kw)` is the S8 cameo:
+  * seated on the standard bench, boots dangling, tail hanging;
+  * quietly strumming at half size (silent: the score carries the music), slow chord changes;
+  * eyes half closed, swaying.
+  * Extra keywords override `BardPose` fields.
+
+### Recipes
+
+```python
+from film.lib import characters as ch, storybook as sb
+L = sb.STORY_LIGHT                                  # == ch.BARD_LIGHTS["candle"]
+marks = ch.bard_song_timing()["prologue"]["marks"]  # flourish, vamp, page_turn_v2, coda_look_up,
+                                                    # break, final_chord, book_opens, interlude
+# S0: the whole prologue performance, staged 3/4 toward the lectern, glancing at us
+pose = ch.BardPose(sit=1, facing=1, turn=-0.45, look_cam=0.35, tail_swing=-0.6, **ch.bard_song(t))
+# S0 coda: he looks up at us and winks (from the coda_look_up mark), tips his cap on the last line
+u = core.smooth((t - marks["coda_look_up"]) / 0.6)
+pose = pose.with_(look_cam=max(pose.look_cam, u), mood="sly" if u > 0.5 else pose.mood,
+                  wink=core.smooth((t - (marks["coda_look_up"] + 1.2)) / 0.2)
+                       * (1 - core.smooth((t - (marks["coda_look_up"] + 1.7)) / 0.2)))
+ch.draw_bard_stool(cr, x, floor_y, sc, L, yaw=ch.bard_yaw(pose))
+rig = ch.draw_bard(cr, x, floor_y, sc, pose, L, t)
+ch.bard_twinkle(cr, t, marks["coda_look_up"] + 1.2, rig)
+# S8: among the crowd on the second bench (scale = the dragon's), silent strumming
+rig = ch.draw_bard(cr, x, ground_y, sc, ch.bard_cameo_pose(t, facing=-1), L_lantern, t)
+# S9 end card (the reprise): bard_song(t - reprise_start, "reprise") if he is shown at all
+```
+
+### Cost
+
+CPU per draw on this machine:
+
+| draw | cost |
+|---|---|
+| `draw_bard`, seated with the lute, scale 3.0 (prologue close shot) | ~42 ms |
+| `draw_bard`, scale 1.0 | ~28 ms |
+| `draw_bard`, scale 0.5 (cameo) | ~19 ms |
+| `draw_bard_stool` | ~1.5 ms |
+| `bard_song` | ~0.01 ms |
+
+Detail drops automatically below on-screen scales of 0.9 and 0.55.
+
+## Storybook
+
+File: `film/lib/storybook.py` (`from film.lib import storybook as sb`). This is the prologue's
+storybook kit (SPEC 0.2, S0):
+
+* the great book, *The Stone and the Bread*: oxblood calf, brass corners, a gilt title, marbled
+  endpapers;
+* its illuminated pages: parchment with deckled edges, gold-leaf vine borders, an Uncial drop cap
+  "O" with a little castle inside it, the verse in IM FELL italic;
+* the living watercolour illustrations;
+* a carved oak lectern, beeswax candles, and a stone hearth with a living fire.
+
+Every function is deterministic in `t`. Units are px at scale 1, y down.
+
+```python
+book = sb.Book()                                          # PROLOGUE_SPREADS, 150 x 200 pages
+lec = sb.draw_lectern(cr, x, floor_y, sc, sb.STORY_LIGHT, book, view=V)   # static: fx.Layer it
+rig = sb.draw_book(cr, book, *lec.desk, sc, t, open=o, spread=k, turn=p, light=sb.STORY_LIGHT, view=V)
+for i, c in enumerate(lec.candles):
+    cd = sb.draw_candle(cr, *c, sc, t + i, sb.STORY_LIGHT, seed=i)   # then glow at cd.flame
+```
+
+### The book
+
+* `sb.Book(spreads=PROLOGUE_SPREADS, title="The Stone and the Bread", page_w=150, page_h=200,
+  block=12, seed=3)`. At scale 1 the open book is ~325 px across, about twice the bard's
+  height.
+* `sb.draw_book(cr, book, x, y, scale=1.0, t=0.0, open=1.0, spread=0, turn=0.0, light=None,
+  view=0.42, detail=None, shimmer=None, flutter=6, center_closed=True)` returns a `BookRig`.
+  * `(x, y)` is the middle of the spine on the desk (`LecternRig.desk`).
+  * `open` runs from 0 (closed, title up) to 1:
+    * 0 to 0.45: the cover swings over. This is the creak.
+    * 0.3 to 1.0: a flutter of `flutter` pages settles on the spread. The last page carries the
+      spread's left page.
+    * Animate `open` over about 1.5 s from the `book_opens` mark.
+    * `center_closed=True` keeps the closed book centred on its anchor and slides it to the
+      spine as it opens. Pass `False` and move the camera instead if you prefer.
+  * `spread=k` shows that spread; `turn` (0..1) turns the right page over to `spread + 1`.
+    * The page is a 16-strip curl with a lambert-shaded back and a shadow sweeping the pages.
+    * Ease it over ~0.9 s, then set `spread=k+1, turn=0`.
+  * `view` is how far from face-on the desk is seen (rad). It **must match `draw_lectern`'s**.
+    * ~0.6 reads as a book lying on a lectern in wide shots.
+    * Ease it toward ~0.15–0.3 as the camera pushes into a page so the painting faces us.
+  * `shimmer` (0..1) is the gold-leaf burnish. It defaults to a slow candle flicker.
+* **`BookRig`** (caller coordinates):
+  * `pages["left"/"right"]` holds the 4 corners (tl, tr, br, bl) of each open page.
+  * `page_matrix[side]` is a `cairo.Matrix` from page units (0..150, 0..200) to caller
+    coordinates.
+  * `page_point(side, u, v)` gives a point at page **fractions** (0..1). Use it for push-in
+    targets, e.g. the middle of an illustration: `rig.page_point("right", 0.5, 0.5)`, or
+    (for a box `b`) `page_point(side, b[0] + b[2] / 2, b[1] + b[3] / 2)`.
+  * `anchor`, `scale`, `page_size`.
+* Close-ups stay crisp. The page art is vector, drawn through the page's own transform.
+  * The static page layers are cached per resolution bucket.
+  * Each illustration caches its static background and paints only its life each frame.
+
+### The pages: `PROLOGUE_SPREADS`
+
+There are 4 spreads, so 3 page turns. The verse is set in ballad half-lines.
+
+| spread | left page | right page | lines |
+|---|---|---|---|
+| 0 | drop-cap "O" + verse 1, over `doors` | `castle` (gothic arch) | `s0_l1`–`s0_l4` |
+| 1 | `dragon` (arch) + lines 5–6 | `market` (arch) + lines 7–8 | `s0_l5`–`s0_l8` |
+| 2 | drop-cap "S" + the coda, over `stool` | `bread` (gothic) | `s0_l9`–`s0_l10` |
+| 3 | rubric: *Here beginneth the tale of the Stone and the Bread* + `fleuron` | `washhouse` (gothic) | push in, then S1 |
+
+Suggested turns, all **read from the song's marks and line times** (the song is still being
+tuned, so never hard-code them):
+
+* `open` 0→1 from `marks["book_opens"]`.
+* `turn` 0→1 (spread 0→1) at `marks["page_turn_v2"]`.
+* turn 1→2 at `marks["coda_look_up"]`, as the camera pulls back to the bard.
+* turn 2→3 on the word "bread" in `s0_l10`. This is the spec's "the page turns to the
+  wash-house".
+* Then push into `rig.page_point("right", 0.5, 0.5)` and dissolve to S1.
+
+Build your own pages with `sb.Page`:
+
+* `text` uses `"\n"` for new lines. A line starting with `">"` is indented as a second
+  half-line.
+* `drop_cap`, `cap_lines` (default 3), `illus` (a callable), `box` (page fractions),
+  `frame` (`"rect"`, `"arch"`, `"gothic"` or `None`), `text_box`, `text_size`, `align`,
+  `heading`, `folio`, `border` (`"vine"`, `"rule"` or `None`), `ink` (`sb.RUBRIC` for red).
+* `sb.Spread(left, right)` pairs two pages.
+* `sb.draw_page(cr, page, w, h, t, side, light, shimmer, detail, blank=False)` draws a single
+  page in page units.
+
+### Illustrations
+
+`sb.ILLUSTRATIONS[name](cr, w, h, t)` paints into a box (0..w, 0..h) with "cover" fitting.
+Each one keeps its static layer cached and animates by `t`; it costs ~5 ms at 600×700.
+
+* `castle`: a castle on a hill at dusk. Pennants flutter, stars twinkle, the windows light up.
+* `doors`: a street of shut doors and lanterns. Folk close and bolt their doors in a loop.
+* `dragon`: **the real dragon rig**, on-model and painted in (`sb.storybook_dragon`), waving on
+  a cobbled street while a goblin, a kobold and a mouse hurry by.
+* `market`: the STONES / POTIONS / CANDLES stalls. Rune-glow stones, bubbling potions,
+  flickering candles, fluttering awnings, swinging signs.
+* `stool`: the coda vignette. An empty stool waits by a candle.
+* `bread`: the moral. A grey stone and a broken loaf on a board, with a gold-leaf glory behind
+  the loaf and warm steam rising.
+* `washhouse`: the wash-house at night. Cold teal arched windows with tumbling drums, a sign,
+  steam, a moon. This is the S1 hand-off.
+* `fleuron`: a gilded ivy-leaf ornament.
+
+The painter's toolkit is public:
+
+* `sb.wash`: a watercolour fill with pooled edges and blooms.
+* `sb.ink`, `sb.ink_outline`: iron-gall line.
+* `sb.gild`: burnished gold leaf; `shimmer` brightens it.
+* `sb.hatch`, `sb.paper_grain`.
+* `sb.PIGMENTS`, `sb.INK`, `sb.RUBRIC`.
+* `sb.folk(cr, x, y, s, kind, ...)`: little goblin, elf, dwarf, kobold and mouse figures.
+* `sb.storybook_dragon(cr, x, y, s, t, wave)`.
+* `sb.STORYBOOK_LIGHT`: soft light for characters painted into pages.
+* Fonts: `sb.TEXT_FONT` (IM FELL English), `sb.CAP_FONT` (Uncial Antiqua) and `sb.SIGN_FONT`
+  (IM FELL English SC). These are OFL fonts in `film/assets/fonts/`; if they are not installed
+  the module falls back to `core.SERIF`.
+
+### Lectern, candles, hearth, fire
+
+* `sb.draw_lectern(cr, x, y, scale=1.0, light=None, book=None, height=230, view=0.42,
+  candles=True, detail=None)` returns a `LecternRig`.
+  * `(x, y)` is the floor under the column. It has scrolled tripod feet, a turned baluster
+    column and a carved capital.
+  * The desk is narrower than the great book, which overhangs it and rests on its ledge. Two
+    scrolled iron candle arms reach out past the book's edges.
+  * `LecternRig` has `desk` (where `draw_book` goes), `top`, `candles` (2 dish points) and
+    `scale`.
+  * It is static (~4.4 ms), so cache it in an `fx.Layer`.
+* `sb.draw_candle(cr, x, y, scale=1.0, t=0.0, light=None, height=34, width=10, holder="dish",
+  lit=1.0, seed=0, glow=True, drips=3)` returns a `CandleRig`.
+  * It draws a beeswax candle with drips and a flickering flame (~0.9 ms).
+  * `CandleRig` has `flame`, `tip`, `flicker` (0.8..1.15) and `scale`.
+  * Put the room glow in the LightLayer:
+    `fx.glow(lc, *cd.flame, 420 * cd.flicker, "#ffaa55", 0.4)`.
+  * `sb.candle_flicker(t, seed)` returns `(brightness, sway, stretch)`.
+* `sb.draw_hearth(cr, x, y, scale=1.0, light=None, seed=0, width=300, height=300,
+  mantel=True)` returns a `HearthRig`.
+  * It is the nook's stone fireplace: dressed-stone jambs, an arched mouth of wedge stones, a
+    sooty firebox with a brick fireback, a raised hearthstone and an oak mantel on corbels.
+  * `HearthRig` has `fire`, `mouth`, `mantel` and `scale`.
+  * It is static (~15 ms), so cache it.
+* `sb.draw_fire(cr, x, y, scale=1.0, t=0.0, seed=0, logs=True, intensity=1.0, embers=True)`
+  returns a `FireRig`. Call it every frame at `HearthRig.fire` (~6.5 ms).
+  * Nested tongues of flame (deep red, orange, gold, white heart) lick with their own noise and
+    shed wisps.
+  * Split logs with pulsing ember cracks, an ember bed and rising sparks.
+  * `FireRig` has `glow`, `top`, `flicker` and `scale`.
+  * Put `fx.glow(lc, *fr.glow, 900 * fr.flicker, "#ff7a30", 0.36)` in the LightLayer.
+  * `sb.fire_flicker(t, seed)` returns the fire's brightness.
+
+### The nook (reference frame)
+
+`film/build/bard_showcase.py::prologue_mock` assembles the reference frame,
+`film/build/preview/prologue_mock.png`.
+
+* The setting is a minstrel's nook at night:
+  * a stone wall in warm darkness under a ceiling beam;
+  * the hearth at the left;
+  * the bard's frame drum and recorder on wall pegs;
+  * a little arched window with the moon;
+  * a woven rug, a stack of old books with a candle stub, plank floor.
+* The bard sits on his stool at 3/4, singing from `bard_song`. The lectern and open book stand
+  at the right.
+* Post-processing is `fx.post` with bloom 0.6, grain 0.035 and a plum vignette.
+* Its `_nook(cr)` (static set dressing, drawn once in an `fx.Layer`) is a good starting point for
+  `s0_prologue.py`.
+* It costs ~0.3 s per frame at 1080p with all three layers cached.
+
+### Cost
+
+CPU per draw on this machine, scale ~1.55 unless noted:
+
+| draw | cost |
+|---|---|
+| `draw_book`, open | ~18 ms |
+| `draw_book`, open, scale 4 (push-in) | ~47 ms |
+| `draw_book`, opening (flutter) | ~11 ms |
+| `draw_book`, closed | ~11 ms |
+| `draw_book`, page turn | ~49 ms |
+| `draw_lectern` (static) | ~4.4 ms |
+| `draw_candle` | ~0.9 ms |
+| `draw_hearth` (static) | ~15 ms |
+| `draw_fire` | ~6.5 ms |

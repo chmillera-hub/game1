@@ -9,7 +9,7 @@
 Outputs
   film/assets/dialogue/<line_id>.wav   DRY voice (no fx), 48 kHz mono 16-bit, leading/trailing silence trimmed
                                        to 20 ms, 6 ms / 10 ms raised-cosine edge fades, every line normalised to
-                                       -20 LUFS integrated (BS.1770 K-weighting), true sample peak <= -1 dBFS.
+                                       -20 LUFS integrated (BS.1770 K-weighting), sample peak <= -1 dBFS.
                                        The committed wavs are the source of truth: they are only re-made with
                                        --force (manifest.json beside them records exactly how each was made and
                                        this script warns when a wav is stale against its spec).
@@ -28,6 +28,26 @@ Timing model
 Determinism
   Every synthesized part uses its own fresh ONNX session seeded with onnxruntime.set_seed(part.seed)
   (Piper's VITS noise is drawn from the session RNG), single-threaded for bit-stable numerics.
+
+Scenes (SPEC section 6)
+  S0 prologue (~40 s, the bard's song), S1-S8 (25, 25, 20, 25, 25, 30, 30, 20 s), S9 end card (~16 s).
+  S0 and S9 take their durations from the song timing when it exists (rounded to whole frames);
+  otherwise the nominal 40 s / 16 s are used.  Global starts are cumulative; "total" is their sum.
+
+Song merge (the bard's lyrics; SPEC 0.2 / 5)
+  When film/assets/song/song_timing.json exists (written by film/audio/song.py) it is merged:
+    {"scenes": {"0": 39.625, "9": 16.0},          # durations of the prologue / end card, seconds
+     "lines": [{"id": "s0_l1", "scene": 0, "text": "Once upon a time, in a kingdom of stone,",
+                "start": 4.86, "end": 8.10,        # LOCAL scene seconds (vocal onset / offset)
+                "env": [...],                      # 24 fps vocal envelope 0..1, env[k] at start + k/24
+                "wav": null}, ...,                 # optional; the mix plays the song stems, not per-line wavs
+               {"id": "s9_l1", "scene": 9, ...}, {"id": "s9_l2", "scene": 9, ...}],
+     "beats": [{"id": "s0_bookopen", "scene": 0, "t": 3.0, "end": null}, ...],   # optional overrides/extras
+     "cast":  {"character": "the cockatrice bard", "model": "...", "speaker_id": 0, "length_scale": 1.0,
+               "noise_scale": 0.667, "noise_w": 0.8, "median_f0": 140.0, "notes": "..."}}
+  Merged lyric lines get speaker "BARD", caption true, vo false, fx null and an extra "sung": true
+  (captioned in italics between two notes); spoken dialogue lines carry exactly the dialogue schema.
+  Lyric lines are not moved: the song owns their timing.  Re-run this script after the song changes.
 """
 from __future__ import annotations
 
@@ -42,7 +62,7 @@ import sys
 import wave
 import zlib
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from multiprocessing import get_context
 from typing import Optional
 
@@ -69,18 +89,20 @@ MIN_GAP = 0.30               # hard minimum silence between two lines of a scene
 END_GUARD = 0.60             # lines end at least this long before the scene ends
 NUDGE = 1.00                 # max |start - target|
 
-SCENES = [  # id, name, global start, duration  (SPEC section 6; fixed)
-    (1, "washhouse", 0.0, 25.0),
-    (2, "apothecary", 25.0, 25.0),
-    (3, "stone", 50.0, 20.0),
-    (4, "tavern", 70.0, 25.0),
-    (5, "crowd", 95.0, 25.0),
-    (6, "bench", 120.0, 30.0),
-    (7, "bread", 150.0, 30.0),
-    (8, "close", 180.0, 20.0),
-    (9, "endcard", 200.0, 10.0),
+SONG_TIMING = os.path.join(FILM, "assets", "song", "song_timing.json")
+SCENE_TABLE = [  # id, name, nominal duration (SPEC section 6).  S0 / S9 follow the song when it exists.
+    (0, "prologue", 40.0),
+    (1, "washhouse", 25.0),
+    (2, "apothecary", 25.0),
+    (3, "stone", 20.0),
+    (4, "tavern", 25.0),
+    (5, "crowd", 25.0),
+    (6, "bench", 30.0),
+    (7, "bread", 30.0),
+    (8, "close", 20.0),
+    (9, "endcard", 16.0),
 ]
-TOTAL = 210.0
+SONG_SCENES = (0, 9)         # scenes whose length the song may set
 
 # ================================================================================================
 # CAST -- chosen by objective analysis (film/build/cast_scan.py + cast_deep.py; see notes)
@@ -95,7 +117,7 @@ CAST = {
         character="the dragon", model="en_US-hfc_male-medium", speaker_id=None,
         length_scale=1.05, noise_scale=0.667, noise_w=0.8,
         notes="US male (HiFi-Captain). Best of 26 male candidates rendered on 11 of his lines: median F0 "
-              "~118 Hz (target 95-125), the most expressive of the field (F0 SD 4.1 st, not monotone), "
+              "~117 Hz (target 95-125), the most expressive of the field (F0 SD 4.1 st, not monotone), "
               "clearest diction (Whisper: 0 word errors, best mean log-prob -0.07) and best DNSMOS OVRL 3.43; "
               "perceived age ~34. Dialogue length_scale 1.05; the scene-8 voice-over uses 1.12 (vo=true, "
               "fx='vo': intimate, a touch of room reverb). Bright-ish timbre: a gentle -2 dB shelf above ~5 kHz "
@@ -108,16 +130,17 @@ CAST = {
         character="the lioness", model="en_US-libritts_r-medium", speaker_id=515,
         length_scale=1.06, noise_scale=0.5, noise_w=0.6,
         notes="LibriTTS-R reader 5139. Soft and warm: dark timbre (spectral centroid ~300 Hz, LTAS tilt "
-              "-10.8 dB/oct) with soft, breathy phonation (H1-H2 +7.4 dB), median F0 ~196 Hz, perceived age "
-              "~30, kind contour (F0 SD ~2.9 st). The only soft LibriTTS voice that never turned 'Try these' "
-              "into 'Fry these' (6/6 Whisper-perfect renditions vs 3-4/6). Distinct from the gnome (30 Hz "
-              "higher, ~25 years younger-sounding, darker, smoother) and from the stone (far less pitch "
+              "-10.8 dB/oct) with soft, breathy phonation (H1-H2 +7.4 dB), median F0 ~186-196 Hz, perceived "
+              "age ~30, kind contour (F0 SD ~3 st). The only soft LibriTTS voice that never turned 'Try "
+              "these' into 'Fry these' (6/6 Whisper-perfect renditions vs 3-4/6). Distinct from the gnome by "
+              "timbre and age rather than pitch (darker and smoother: centroid ~300 vs ~420 Hz, breathy-soft "
+              "vs rough, perceived ~30 vs ~54; they never share a scene) and from the stone (far less pitch "
               "movement, darker). length_scale 1.06, noise 0.5/0.6."),
     "PHONE": dict(
         character="the speaking stone", model="en_US-lessac-high", speaker_id=None,
         length_scale=1.0, noise_scale=0.5, noise_w=0.5,
         notes="US announcer-style female (high quality): crisp, very articulate menu voice (Whisper 0 errors, "
-              "log-prob -0.08, DNSMOS 3.47), bright sing-song IVR contour (F0 SD ~5.8 st), median F0 ~185 Hz. "
+              "log-prob -0.08, DNSMOS 3.47), bright sing-song IVR contour (F0 SD ~5.8 st), median F0 ~183 Hz. "
               "noise 0.5/0.5 for a controlled, regular read. Captions off (scene 3 shows its words as glowing "
               "rune-text). Mix fx='phone': stone-phone band-pass (~300-3400 Hz) plus a faint magical shimmer; "
               "that, its pitch movement and brightness keep it well apart from the pharmacist."),
@@ -131,7 +154,7 @@ CAST = {
     "CROWD": dict(
         character="the pixie", model="en_US-libritts_r-medium", speaker_id=448,
         length_scale=0.92, noise_scale=0.5, noise_w=0.6,
-        notes="LibriTTS-R reader 4807: young (perceived ~27), high (median F0 ~244 Hz -- a tiny pixie), quick "
+        notes="LibriTTS-R reader 4807: young (perceived ~27), high (median F0 ~250 Hz -- a tiny pixie), quick "
               "(fastest finalist, ~5.8 syl/s) and expressive (F0 SD ~3.9 st) for the sneer. 'Ew.' is fed as "
               "'Eew.' (/iːw/): espeak reads 'Ew.' as /juː/ = 'you' (Whisper heard 'You, what is he doing?' in "
               "0/4 'Ew.' renditions vs 'Ew' in 4/4 with 'Eew.'). length_scale 0.92, noise 0.5/0.6."),
@@ -140,7 +163,8 @@ CAST = {
         length_scale=1.15, noise_scale=0.5, noise_w=0.6,
         notes="LibriTTS-R reader 4800: the oldest-sounding clean female voice found (perceived age ~54 after "
               "an age scan of all ~600 female-pitched LibriTTS-R/VCTK speakers; several 'older' candidates "
-              "were high-pitched men and were rejected). Warm and twinkly (F0 SD ~3.9 st), the roughest/"
+              "were high-pitched men and were rejected). Median F0 ~170-176 Hz (target 160-200); warm and "
+              "twinkly (F0 SD ~3.9 st), the roughest/"
               "breathiest phonation of the finalists (HNR ~10 dB, the most F0 micro-perturbation -- an older "
               "voice quality), Whisper-perfect on 15/15 renditions. length_scale 1.15 (slow, dry), noise "
               "0.5/0.6."),
@@ -186,20 +210,20 @@ LINES = [
     # ---- S1 the wash-house
     Line("s1_l1", 1, "MAN", "Self-service.", 11.8, [Part("Self-service.", seed=12676)], lo=11.3),
     Line("s1_l2", 1, "MAN", "That's the whole city, isn't it.", 18.5,
-         [Part("That's the whole city, isn't it.", seed=4687)]),
+         [Part("That's the whole city, isn't it.", seed=16687)]),
     # ---- S2 the apothecary
     Line("s2_l1", 2, "PHARMACIST", "Try these. Lots of people swear by them.", 17.0,
-         [Part("Try these.", seed=11687, pause=0.42), Part("Lots of people swear by them.", seed=12724)]),
+         [Part("Try these.", seed=14687, pause=0.42), Part("Lots of people swear by them.", seed=12724)]),
     Line("s2_l2", 2, "MAN", "Do any of them talk back?", 20.3, [Part("Do any of them talk back?", seed=10698)],
          reply=(0.45, 0.9)),
     # ---- S3 the speaking stone
     Line("s3_l1", 3, "PHONE", "For billing, press one.", 1.0, [Part("For billing, press one.", seed=8698)],
          caption=False, fx="phone"),
-    Line("s3_l2", 3, "PHONE", "For a new account, press two.", 3.6, [Part("For a new account, press two.", seed=13709)],
+    Line("s3_l2", 3, "PHONE", "For a new account, press two.", 3.6, [Part("For a new account, press two.", seed=9709)],
          caption=False, fx="phone"),
     Line("s3_l3", 3, "PHONE", "For loneliness… please hold.", 6.6,
-         [Part("For loneliness,", seed=13720, pause=0.62), Part("please hold.", seed=9757)], caption=False, fx="phone"),
-    Line("s3_l4", 3, "MAN", "I've been on hold my whole life.", 14.3, [Part("I've been on hold my whole life.", seed=11731)]),
+         [Part("For loneliness…", seed=8397, pause=0.62), Part("please hold.", seed=9757)], caption=False, fx="phone"),
+    Line("s3_l4", 3, "MAN", "I've been on hold my whole life.", 14.3, [Part("I've been on hold my whole life.", seed=16731)]),
     # ---- S4 the tavern door
     Line("s4_l1", 4, "MAN", "Can I tell you something? Lately I—", 10.0,
          [Part("Can I tell you something?", seed=5709, pause=0.38),
@@ -208,16 +232,16 @@ LINES = [
     Line("s4_l2", 4, "BOUNCER", "Keep it light, buddy.", 15.5, [Part("Keep it light, buddy.", seed=7720)]),
     # ---- S5 the crowd
     Line("s5_l1", 5, "CROWD", "Ew. What is he doing?", 13.4,
-         [Part("Eew.", seed=4720, pause=0.35), Part("What is he doing?", seed=11757)]),
+         [Part("Eew.", seed=7300, pause=0.35), Part("What is he doing?", seed=11757)]),
     Line("s5_l2", 5, "MAN", "We'll film a fight.", 16.3, [Part("We'll film a fight.", seed=11731)], reply=(0.5, 1.4)),
     Line("s5_l3", 5, "MAN", "But someone gets gentle, and everybody looks away.", 18.8,
          [Part("But someone gets gentle, and everybody looks away.", seed=12742)], min_gap=0.6),
     # ---- S6 the bench
     Line("s6_l1", 6, "OLD_WOMAN", "They tell you to try that too?", 13.2, [Part("They tell you to try that too?", seed=7731)]),
     Line("s6_l2", 6, "MAN", "Candles. Vitamins. Yoga.", 16.0,
-         [Part("Candles.", seed=11742, pause=0.45), Part("Vitamins.", seed=10779, pause=0.45), Part("Yoga.", seed=6816)], reply=(0.5, 1.0)),
+         [Part("Candles.", seed=11742, pause=0.45), Part("Vitamins.", seed=10779, pause=0.45), Part("Yoga.", seed=15816)], reply=(0.5, 1.0)),
     Line("s6_l3", 6, "OLD_WOMAN", "They told me to get a cat. I got the cat.", 19.0,
-         [Part("They told me to get a cat.", seed=9753, pause=0.72), Part("I got the cat.", seed=6790)], reply=(0.45, 0.9)),
+         [Part("They told me to get a cat.", seed=14753, pause=0.72), Part("I got the cat.", seed=6790)], reply=(0.45, 0.9)),
     Line("s6_l4", 6, "OLD_WOMAN", "The cat sleeps through every story about my day.", 23.4,
          [Part("The cat sleeps through every story about my day.", seed=10764)], reply=(0.8, 1.3), min_gap=0.7),
     # The laugh: five 'hah' pulses synthesized in the dragon's own voice, assembled like a real laugh bout
@@ -234,22 +258,23 @@ LINES = [
     # ---- S7 the bread
     Line("s7_l1", 7, "MAN", "You know what's funny?", 18.6, [Part("You know what's funny?", seed=12742)]),
     Line("s7_l2", 7, "MAN", "All that stuff they gave me was for being alone.", 20.6,
-         [Part("All that stuff they gave me was for being alone.", seed=13753)], min_gap=0.5),
+         [Part("All that stuff they gave me was for being alone.", seed=10753)], min_gap=0.5),
     Line("s7_l3", 7, "OLD_WOMAN", "And all this costs is a loaf of bread.", 24.6,
          [Part("And all this costs is a loaf of bread.", seed=7764)], reply=(0.6, 1.4)),
     # ---- S8 close (voice-over)
-    Line("s8_l1", 8, "MAN", "They kept handing me stones.", 2.5, [Part("They kept handing me stones.", seed=13753, ls=1.12)],
+    Line("s8_l1", 8, "MAN", "They kept handing me stones.", 2.5, [Part("They kept handing me stones.", seed=16753, ls=1.12)],
          vo=True, fx="vo"),
     Line("s8_l2", 8, "MAN", "We were hungry for bread the whole time.", 7.0,
          [Part("We were hungry for bread the whole time.", seed=10764, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
     Line("s8_l3", 8, "MAN", "All it took was somebody to break it.", 11.8,
-         [Part("All it took was somebody to break it.", seed=12775, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
+         [Part("All it took was somebody to break it.", seed=15775, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
 ]
 
 REQUIRED_LINES = ["s1_l1", "s1_l2", "s2_l1", "s2_l2", "s3_l1", "s3_l2", "s3_l3", "s3_l4", "s4_l1", "s4_l2",
                   "s5_l1", "s5_l2", "s5_l3", "s6_l1", "s6_l2", "s6_l3", "s6_l4", "s6_laugh", "s7_l1", "s7_l2",
                   "s7_l3", "s8_l1", "s8_l2", "s8_l3"]
-REQUIRED_BEATS = ["s1_fadein", "s1_glance", "s1_lean", "s1_tap", "s1_lookaround",
+REQUIRED_BEATS = ["s0_open", "s0_bookopen", "s0_v1", "s0_v2", "s0_coda", "s0_out",
+                  "s1_fadein", "s1_glance", "s1_lean", "s1_tap", "s1_lookaround",
                   "s2_slide", "s2_note", "s2_nod", "s2_items", "s2_item1", "s2_item2", "s2_item3", "s2_item4",
                   "s2_stare", "s2_pause", "s2_ring",
                   "s3_hold",
@@ -262,9 +287,45 @@ REQUIRED_BEATS = ["s1_fadein", "s1_glance", "s1_lean", "s1_tap", "s1_lookaround"
                   "s8_fade"]
 
 
-def derive_beats(L: dict) -> list:
+def load_song(path: Optional[str] = None) -> Optional[dict]:
+    """The bard's song timing (see 'Song merge' above), normalised; None when the song is not built yet."""
+    path = path or SONG_TIMING
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    durs = {}
+    sc = raw.get("scenes") or {}
+    items = sc.items() if isinstance(sc, dict) else [(d.get("id"), d) for d in sc]
+    for k, v in items:
+        d = v.get("duration") if isinstance(v, dict) else v
+        if d is not None and int(k) in SONG_SCENES:
+            durs[int(k)] = float(d)
+    lines = []
+    for d in raw.get("lines", []):
+        lines.append({"id": str(d["id"]), "scene": int(d.get("scene", int(str(d["id"])[1]))),
+                      "text": str(d["text"]), "start": float(d["start"]), "end": float(d["end"]),
+                      "env": [round(min(1.0, max(0.0, float(v))), 3) for v in (d.get("env") or [])],
+                      "wav": d.get("wav")})
+    beats = [{"id": str(b["id"]), "scene": int(b.get("scene", int(str(b["id"])[1]))), "t": float(b["t"]),
+              "end": None if b.get("end") is None else float(b["end"])} for b in raw.get("beats", [])]
+    return {"durations": durs, "lines": lines, "beats": beats, "cast": raw.get("cast") or raw.get("voice")}
+
+
+def scene_table(song: Optional[dict]) -> list:
+    """[(id, name, global start, duration)] -- nominal SPEC durations, S0/S9 set by the song (whole frames)."""
+    out, t = [], 0.0
+    for sid, name, dur in SCENE_TABLE:
+        if song and sid in song["durations"]:
+            dur = round(song["durations"][sid] * FPS) / FPS
+        out.append((sid, name, round(t, 4), round(dur, 4)))
+        t += dur
+    return out
+
+
+def derive_beats(L: dict, D: dict, song: Optional[dict] = None) -> list:
     """Every SPEC section 6 beat (+ a few explicitly-timed unnamed ranges), moved with the lines they
-    depend on.  L[id] = (start, end) local seconds."""
+    depend on.  L[id] = (start, end) local seconds (dialogue and lyric lines); D[scene] = duration."""
     B = []
 
     def b(bid, t, end=None):
@@ -272,6 +333,22 @@ def derive_beats(L: dict) -> list:
                   "end": None if end is None else round(float(end), 3)})
 
     s, e = (lambda k: L[k][0]), (lambda k: L[k][1])
+
+    def span(first, last, nominal):
+        """Range covered by lyric lines first..last, or a nominal range scaled to the scene."""
+        if first in L and last in L:
+            return s(first), e(last)
+        return nominal
+
+    # S0 -- the prologue (the bard's song); verse ranges follow the lyric lines when the song exists
+    d0 = D[0]
+    k0 = d0 / 40.0
+    b("s0_open", 0.0, 2.0)
+    b("s0_bookopen", 3.0)
+    b("s0_v1", *span("s0_l1", "s0_l4", (5.0 * k0, 18.0 * k0)))
+    b("s0_v2", *span("s0_l5", "s0_l8", (18.5 * k0, 31.5 * k0)))
+    b("s0_coda", *span("s0_l9", "s0_l10", (32.0 * k0, d0 - 2.0)))
+    b("s0_out", d0 - 1.2, d0)
     # S1
     b("s1_fadein", 0.0, 1.0)
     b("s1_glance", 5.5)
@@ -333,10 +410,22 @@ def derive_beats(L: dict) -> list:
     b("s7_drag", 15.5, min(18.0, s("s7_l1") - 0.4))
     # S8
     b("s8_fade", max(17.5, e("s8_l3") + 1.5), 20.0)
-    # S9 (end card; explicit SPEC timings)
+    # S9 (end card; explicit SPEC timings; the bard's reprise s9_l1-s9_l2 from ~5-6 s)
+    d9 = D[9]
     b("s9_fadein", 0.0, 1.5)
     b("s9_quote", 2.5, 4.0)
-    b("s9_fadeout", 8.5, 10.0)
+    b("s9_reprise", *span("s9_l1", "s9_l2", (5.5, max(6.0, d9 - 2.5))))
+    b("s9_fadeout", d9 - 1.5, d9)
+    # the song may add or override beats (e.g. a precise s0_bookopen on the lute's first downbeat)
+    if song:
+        ids = {x["id"]: i for i, x in enumerate(B)}
+        for sb in song.get("beats", []):
+            x = {"id": sb["id"], "scene": sb["scene"], "t": round(sb["t"], 3),
+                 "end": None if sb["end"] is None else round(sb["end"], 3)}
+            if x["id"] in ids:
+                B[ids[x["id"]]] = x
+            else:
+                B.append(x)
     B.sort(key=lambda d: (d["scene"], d["t"]))
     return B
 
@@ -446,22 +535,6 @@ def trim(x: np.ndarray, sr: int, margin: float, fade_in: float = 0.0, fade_out: 
     if fo:
         y[-fo:] *= raised_cos(fo)[::-1]
     return y
-
-
-def voiced_runs(x: np.ndarray, sr: int, fmin=60.0, fmax=500.0, vthresh=0.3):
-    """Voiced segments [(start_s, end_s)] from the YIN track."""
-    t, f0, v = yin(x, sr, fmin, fmax, vthresh=vthresh)
-    runs, i, n = [], 0, len(v)
-    while i < n:
-        if v[i]:
-            j = i
-            while j < n and v[j]:
-                j += 1
-            runs.append((t[i], t[j - 1]))
-            i = j
-        else:
-            i += 1
-    return runs
 
 
 def vowel_runs(x: np.ndarray, sr: int, rel_db: float = 22.0, min_gap: float = 0.035, min_len: float = 0.03):
@@ -922,13 +995,16 @@ def build(force: bool, only: Optional[list], jobs: int):
         wavs[ln.id] = a
         durs[ln.id] = len(a) / SR
 
-    # ---- placement per scene
+    # ---- scenes (S0 / S9 follow the bard's song when it has been built) and placement per scene
+    song = load_song()
+    scenes = scene_table(song)
+    scene_start = {x[0]: x[2] for x in scenes}
+    scene_dur = {x[0]: x[3] for x in scenes}
     starts = {}
-    for sid, _, _, sdur in SCENES:
+    for sid, _, _, sdur in scenes:
         sl = [ln for ln in LINES if ln.scene == sid]
         if sl:
             starts.update(place_scene(sl, durs, sdur))
-    scene_start = {s[0]: s[2] for s in SCENES}
     lines_out, L = [], {}
     for ln in LINES:
         st = starts[ln.id]
@@ -942,14 +1018,34 @@ def build(force: bool, only: Optional[list], jobs: int):
             "caption": ln.caption, "vo": ln.vo, "fx": ln.fx,
             "env": speech_env(wavs[ln.id]),
         })
+    # ---- the bard's lyric lines (owned by the song: merged as-is, never moved)
+    for d in (song or {}).get("lines", []):
+        L[d["id"]] = (d["start"], d["end"])
+        lines_out.append({
+            "id": d["id"], "scene": d["scene"], "speaker": "BARD", "text": d["text"],
+            "start": round(d["start"], 4), "end": round(d["end"], 4),
+            "global_start": round(scene_start[d["scene"]] + d["start"], 4),
+            "global_end": round(scene_start[d["scene"]] + d["end"], 4),
+            "wav": d["wav"], "caption": True, "vo": False, "fx": None, "env": d["env"], "sung": True,
+        })
+    lines_out.sort(key=lambda d: (d["scene"], d["start"]))
     cast_out = {}
     for spk, c in CAST.items():
         cast_out[spk] = {"character": c["character"], "model": c["model"], "speaker_id": c["speaker_id"],
                          "length_scale": c["length_scale"], "noise_scale": c["noise_scale"], "noise_w": c["noise_w"],
                          "median_f0": median_f0(spk, wavs), "notes": c["notes"]}
-    tl = {"fps": FPS, "width": WIDTH, "height": HEIGHT, "total": TOTAL, "cast": cast_out,
-          "scenes": [{"id": s[0], "name": s[1], "start": s[2], "duration": s[3]} for s in SCENES],
-          "lines": lines_out, "beats": derive_beats(L)}
+    if song and song["lines"]:
+        c = song.get("cast") or {}
+        cast_out["BARD"] = {"character": c.get("character", "the cockatrice bard"), "model": c.get("model"),
+                            "speaker_id": c.get("speaker_id"), "length_scale": c.get("length_scale"),
+                            "noise_scale": c.get("noise_scale"), "noise_w": c.get("noise_w"),
+                            "median_f0": c.get("median_f0"),
+                            "notes": c.get("notes", "The bard's sung vocal is built by film/audio/song.py "
+                                                    "(timing merged from film/assets/song/song_timing.json).")}
+    total = round(sum(x[3] for x in scenes), 4)
+    tl = {"fps": FPS, "width": WIDTH, "height": HEIGHT, "total": total, "cast": cast_out,
+          "scenes": [{"id": x[0], "name": x[1], "start": x[2], "duration": x[3]} for x in scenes],
+          "lines": lines_out, "beats": derive_beats(L, scene_dur, song)}
     tmp = TIMELINE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(dump_timeline(tl))
@@ -961,12 +1057,14 @@ def build(force: bool, only: Optional[list], jobs: int):
 
 def report(tl: dict):
     tg = {ln.id: ln.target for ln in LINES}
+    print("\nscenes: " + "  ".join(f"S{x['id']} {x['name']} {x['start']:.3f}+{x['duration']:.3f}" for x in tl["scenes"])
+          + f"  | total {tl['total']:.3f}s")
     print(f"\n{'line':9s} {'spk':10s} {'target':>6s} {'start':>7s} {'end':>7s} {'dur':>5s} {'gap':>5s}  text")
     prev = {}
     for d in tl["lines"]:
         g = d["start"] - prev[d["scene"]] if d["scene"] in prev else float("nan")
         prev[d["scene"]] = d["end"]
-        print(f"{d['id']:9s} {d['speaker']:10s} {tg[d['id']]:6.2f} {d['start']:7.2f} {d['end']:7.2f} "
+        print(f"{d['id']:9s} {d['speaker']:10s} {tg.get(d['id'], float('nan')):6.2f} {d['start']:7.2f} {d['end']:7.2f} "
               f"{d['end']-d['start']:5.2f} {g:5.2f}  {d['text']}")
     print("\ncast:")
     for k, c in tl["cast"].items():
@@ -977,6 +1075,10 @@ def report(tl: dict):
 # ================================================================================================
 # validation
 # ================================================================================================
+LINE_KEYS = {"id", "scene", "speaker", "text", "start", "end", "global_start", "global_end", "wav", "caption",
+             "vo", "fx", "env"}
+
+
 def check(path: str = TIMELINE) -> bool:
     with open(path, encoding="utf-8") as fh:
         tl = json.load(fh)
@@ -987,35 +1089,62 @@ def check(path: str = TIMELINE) -> bool:
             errs.append(msg)
 
     need(set(tl) == {"fps", "width", "height", "total", "cast", "scenes", "lines", "beats"}, f"top keys {set(tl)}")
-    need(tl["fps"] == 24 and tl["width"] == 1920 and tl["height"] == 1080 and tl["total"] == 210.0, "header")
-    # scenes
-    need([(s["id"], s["name"], s["start"], s["duration"]) for s in tl["scenes"]] == [s for s in SCENES], "scenes")
-    for s in tl["scenes"]:
-        need(set(s) == {"id", "name", "start", "duration"}, f"scene keys {s}")
-    need(abs(sum(s["duration"] for s in tl["scenes"]) - tl["total"]) < 1e-9, "durations sum")
-    sdur = {s["id"]: s["duration"] for s in tl["scenes"]}
-    sstart = {s["id"]: s["start"] for s in tl["scenes"]}
+    need(tl["fps"] == 24 and tl["width"] == 1920 and tl["height"] == 1080, "header")
+    # scenes: S0..S9 in order, contiguous, whole frames; S1-S8 have the fixed SPEC lengths
+    need([x["id"] for x in tl["scenes"]] == [x[0] for x in SCENE_TABLE], "scene ids")
+    need([x["name"] for x in tl["scenes"]] == [x[1] for x in SCENE_TABLE], "scene names")
+    t = 0.0
+    for x, (sid, name, nominal) in zip(tl["scenes"], SCENE_TABLE):
+        need(set(x) == {"id", "name", "start", "duration"}, f"scene keys {x}")
+        need(abs(x["start"] - t) < 1e-3, f"scene {sid} start {x['start']} (expected {t:.4f})")
+        need(abs(x["duration"] * FPS - round(x["duration"] * FPS)) < 1e-3, f"scene {sid} not whole frames")
+        need(x["duration"] == nominal or sid in SONG_SCENES, f"scene {sid} duration {x['duration']} != {nominal}")
+        need(x["duration"] > 0, f"scene {sid} duration")
+        t += x["duration"]
+    need(abs(t - tl["total"]) < 1e-3, f"total {tl['total']} != sum of durations {t:.4f}")
+    sdur = {x["id"]: x["duration"] for x in tl["scenes"]}
+    sstart = {x["id"]: x["start"] for x in tl["scenes"]}
     # cast
-    need(set(tl["cast"]) == {"MAN", "PHARMACIST", "PHONE", "BOUNCER", "CROWD", "OLD_WOMAN"}, "cast speakers")
+    sung = [d for d in tl["lines"] if d.get("sung")]
+    want_cast = {"MAN", "PHARMACIST", "PHONE", "BOUNCER", "CROWD", "OLD_WOMAN"} | ({"BARD"} if sung else set())
+    need(set(tl["cast"]) == want_cast, f"cast speakers {set(tl['cast'])}")
     for k, c in tl["cast"].items():
         need(set(c) == {"character", "model", "speaker_id", "length_scale", "noise_scale", "noise_w", "median_f0",
                         "notes"}, f"cast keys {k}")
+        if k == "BARD":
+            continue
         need(os.path.exists(os.path.join(VOICE_DIR, c["model"] + ".onnx")) or not os.path.isdir(VOICE_DIR),
              f"voice model missing {c['model']}")
         need(isinstance(c["notes"], str) and len(c["notes"]) > 20, f"cast notes {k}")
         need(c["median_f0"] > 50, f"median_f0 {k}")
     # lines
     spec = {ln.id: ln for ln in LINES}
+    spoken = [d for d in tl["lines"] if not d.get("sung")]
     ids = [d["id"] for d in tl["lines"]]
-    need(sorted(ids) == sorted(REQUIRED_LINES) and len(set(ids)) == len(ids), f"line ids {ids}")
+    need(len(set(ids)) == len(ids), "duplicate line ids")
+    need(sorted(d["id"] for d in spoken) == sorted(REQUIRED_LINES), f"dialogue line ids {[d['id'] for d in spoken]}")
+    need([(d["scene"], d["start"]) for d in tl["lines"]] == sorted((d["scene"], d["start"]) for d in tl["lines"]),
+         "lines not in (scene, start) order")
     with open(SCRIPT_MD, encoding="utf-8") as fh:
         script = fh.read()
     with open(os.path.join(FILM, "SPEC.md"), encoding="utf-8") as fh:
-        script += fh.read()          # s4_l1's drowned words are written in SPEC section 6
+        script += fh.read()          # s4_l1's drowned words (and the lyrics) are written in SPEC.md
     by_scene = {}
     for d in tl["lines"]:
-        need(set(d) == {"id", "scene", "speaker", "text", "start", "end", "global_start", "global_end", "wav",
-                        "caption", "vo", "fx", "env"}, f"line keys {d['id']}")
+        need(set(d) == (LINE_KEYS | {"sung"} if d.get("sung") else LINE_KEYS), f"line keys {d['id']}")
+        need(0.0 <= d["start"] < d["end"], f"{d['id']} start/end")
+        need(abs(d["global_start"] - (sstart[d["scene"]] + d["start"])) < 1e-3, f"{d['id']} global_start")
+        need(abs(d["global_end"] - (sstart[d["scene"]] + d["end"])) < 1e-3, f"{d['id']} global_end")
+        n_env = round((d["end"] - d["start"]) * FPS)
+        env = d["env"]
+        need(abs(len(env) - n_env) <= 1, f"{d['id']} env len {len(env)} vs {n_env}")
+        need(all(0.0 <= v <= 1.0 for v in env), f"{d['id']} env range")
+        by_scene.setdefault(d["scene"], []).append(d)
+        if d.get("sung"):
+            need(d["speaker"] == "BARD" and d["scene"] in SONG_SCENES and d["id"].startswith(f"s{d['scene']}_l"),
+                 f"{d['id']} sung line identity")
+            need(d["end"] <= sdur[d["scene"]] + 1e-6, f"{d['id']} beyond its scene")
+            continue
         ln = spec.get(d["id"])
         if ln is None:
             continue
@@ -1023,17 +1152,10 @@ def check(path: str = TIMELINE) -> bool:
         need(d["speaker"] in tl["cast"], f"{d['id']} speaker")
         if d["id"] != "s6_laugh":
             need(d["text"] in script, f"{d['id']} text not verbatim in SCRIPT.md / SPEC.md: {d['text']!r}")
-        need(0.0 <= d["start"] < d["end"], f"{d['id']} start/end")
         need(d["end"] <= sdur[d["scene"]] - END_GUARD + 1e-6, f"{d['id']} ends too late ({d['end']})")
         need(abs(d["start"] - ln.target) <= NUDGE + 1e-6, f"{d['id']} moved > {NUDGE}s from target")
-        need(abs(d["global_start"] - (sstart[d["scene"]] + d["start"])) < 1e-3, f"{d['id']} global_start")
-        need(abs(d["global_end"] - (sstart[d["scene"]] + d["end"])) < 1e-3, f"{d['id']} global_end")
         need(d["caption"] is ln.caption and d["vo"] is ln.vo and d["fx"] == ln.fx, f"{d['id']} flags")
         need(d["fx"] in (None, "phone", "vo", "drowned"), f"{d['id']} fx")
-        n_env = round((d["end"] - d["start"]) * FPS)
-        env = d["env"]
-        need(abs(len(env) - n_env) <= 1, f"{d['id']} env len {len(env)} vs {n_env}")
-        need(all(0.0 <= v <= 1.0 for v in env), f"{d['id']} env range")
         need(max(env) >= 0.9, f"{d['id']} env not normalised (max {max(env)})")
         need(env[0] <= 0.35, f"{d['id']} env starts open ({env[0]})")
         need(d["wav"] == f"film/assets/dialogue/{d['id']}.wav", f"{d['id']} wav path")
@@ -1052,16 +1174,16 @@ def check(path: str = TIMELINE) -> bool:
         on, off = speech_bounds(a, sr)
         need(on / sr <= EDGE + 0.012 and (len(a) - off) / sr <= EDGE + 0.012, f"{d['id']} edges not trimmed")
         # multi-part lines: the mouth closes in the deliberate pauses
-        if len(ln.parts) > 1 and d["id"] != "s4_l1":
+        if len(ln.parts) > 1 and d["id"] != "s4_l1" and not any(p.pulse for p in ln.parts):
             need(min(env[2:-2]) == 0.0, f"{d['id']} mouth never closes in its pauses")
-        by_scene.setdefault(d["scene"], []).append(d)
     for sc, arr in by_scene.items():
+        dia = [d for d in arr if not d.get("sung")]
         story = [ln.id for ln in LINES if ln.scene == sc]
-        need([d["id"] for d in arr] == story, f"scene {sc} story order")
+        need([d["id"] for d in sorted(dia, key=lambda d: d["start"])] == story, f"scene {sc} story order")
         srt = sorted(arr, key=lambda d: d["start"])
-        need([d["id"] for d in srt] == story, f"scene {sc} start order")
         for p, q in zip(srt, srt[1:]):
-            need(q["start"] >= p["end"] + 0.25 - 1e-6, f"overlap/too tight {p['id']} -> {q['id']}")
+            gap = 0.25 if not (p.get("sung") or q.get("sung")) else 0.0
+            need(q["start"] >= p["end"] + gap - 1e-6, f"overlap/too tight {p['id']} -> {q['id']}")
     # beats
     bids = [b["id"] for b in tl["beats"]]
     need(len(set(bids)) == len(bids), "duplicate beats")
@@ -1090,15 +1212,17 @@ def check(path: str = TIMELINE) -> bool:
              "s6_laugh after s6_l4")
         need(B["s7_drag"]["end"] <= Ld["s7_l1"]["start"], "s7_drag before s7_l1")
         need(B["s8_fade"]["t"] >= Ld["s8_l3"]["end"], "s8_fade after the last VO line")
+        need(B["s0_out"]["end"] == sdur[0] and B["s9_fadeout"]["end"] == sdur[9], "s0_out / s9_fadeout end their scenes")
         # story order of the SPEC beats inside each scene
-        for sc in range(1, 10):
+        for sc in range(0, 10):
             seq = [bid for bid in REQUIRED_BEATS if B.get(bid, {}).get("scene") == sc]
             ts = [B[bid]["t"] for bid in seq]
             need(ts == sorted(ts), f"scene {sc} beat order {seq}")
     for e in errs:
         print("  FAIL:", e)
     print(f"check: {'OK' if not errs else str(len(errs)) + ' problem(s)'} "
-          f"({len(tl['lines'])} lines, {len(tl['beats'])} beats, {len(tl['cast'])} voices)")
+          f"({len(spoken)} dialogue + {len(sung)} sung lines, {len(tl['beats'])} beats, {len(tl['cast'])} voices, "
+          f"{len(tl['scenes'])} scenes, {tl['total']:.3f} s)")
     return not errs
 
 

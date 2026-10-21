@@ -60,7 +60,8 @@ ORC_BUILD = F.Build(
     sh_y=156.0, sh_z=2.0, sh_w=78.0, upper_arm=95.0, forearm=90.0, hand_len=74.0,
     neck_y=172.0, neck_z=8.0, neck_len=16.0, head_up=16.0, head_fwd=12.0,
     hunch=0.5, hunch_fwd=18.0, stride=170.0, lift=22.0, bob=5.0, breath=0.2,
-    sit_drop=16.0, sit_back=10.0, sway=2.5, knee_out=0.25)
+    sit_drop=16.0, sit_back=10.0, sway=2.5, knee_out=0.25,
+    fit=0.984)   # scale 1.0 -> base.CAST_HEIGHTS (measured on the lineup)
 
 _MATS = {}
 
@@ -122,7 +123,7 @@ def draw_orc(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None, par
     coordinates). parts: None = everything, or a subset of ("back", "body", "mid", "head",
     "front") to interleave with another creature (draw_brawl does this for the hug)."""
     pose = pose or OrcPose()
-    q = F.begin(cr, x, y, scale, pose, light, t, detail, ORC_BUILD, orc_mats(), parts)
+    q = F.begin(cr, x, y, scale, pose, light, t, detail, ORC_BUILD, orc_mats(), parts, height=ORC_HEIGHT)
     A = {s: F.solve_arm(q, s, pose.near if s == q.near else pose.far, ORC_GESTURES) for s in (-1.0, 1.0)}
     lay = {s: F.arm_layer(q, A[s]) for s in A}
     hands = {}
