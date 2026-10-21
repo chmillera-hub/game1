@@ -1,0 +1,857 @@
+<title>Shake-a-Rainbow Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: optical bench — a dark "wall" projection screen is the hero; instrument-style control rack on the right */
+:root {
+  --bg: #eceff3; --surface: #ffffff; --ink: #121722; --muted: #586275; --line: #d3d9e2;
+  --accent: #1f5fd6; --accent-ink: #ffffff; --warn: #a8501a; --chip: #e3e8f0;
+  --wall: #040507; --wall-ink: #c9d0dc; --wall-grid: rgba(255,255,255,0.075); --wall-grid-major: rgba(255,255,255,0.17);
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b0e14; --surface: #141922; --ink: #e5e9f0; --muted: #8d97aa; --line: #252d3a;
+  --accent: #82a8ff; --accent-ink: #0b0e14; --warn: #f0a35e; --chip: #1c2330; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b0e14; --surface: #141922; --ink: #e5e9f0; --muted: #8d97aa; --line: #252d3a;
+  --accent: #82a8ff; --accent-ink: #0b0e14; --warn: #f0a35e; --chip: #1c2330; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 18px; }
+header h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 72ch; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 18px; align-items: start; }
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.stage { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.wall-card { padding: 12px; }
+.wall-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.label { font-family: var(--f-display); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.wall-title { font-family: var(--f-display); font-weight: 700; font-size: 17px; }
+canvas { display: block; width: 100%; border-radius: 6px; background: var(--wall); }
+#wall { aspect-ratio: 960 / 420; }
+.notice { margin: 10px 2px 0; min-height: 3em; }
+.notice b { font-weight: 600; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; }
+@media (max-width: 760px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+.row2 canvas { aspect-ratio: 1 / 0.82; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+figure { margin: 0; }
+table { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 4px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { font-family: var(--f-body); font-weight: 500; color: var(--muted); font-size: 12px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.pill { display: inline-block; font-family: var(--f-body); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); margin-left: 4px; }
+.facts { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.facts .warn { color: var(--warn); }
+/* control rack */
+.panel { display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1000px) { .panel { position: static; } }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { font: 500 13px var(--f-body); border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 99px; padding: 5px 10px; cursor: pointer; }
+.presets button:hover { border-color: var(--accent); }
+.presets button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 5px 11px; font-size: 13px; font-weight: 500; color: var(--muted); background: var(--surface); }
+.seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -3px; }
+.group { display: grid; gap: 10px; }
+.group + .group { border-top: 1px solid var(--line); padding-top: 12px; }
+.group h3 { margin: 0; font-family: var(--f-display); font-size: 15px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.group h3 small { font-family: var(--f-body); font-weight: 400; font-size: 12px; color: var(--muted); }
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.ctl label { font-size: 13px; }
+.ctl output { font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--accent); }
+.ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+.line { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.line > span { font-size: 13px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+footer { color: var(--muted); font-size: 12.5px; max-width: 90ch; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>What happens when you shake a rainbow?</h1>
+    <p>Shine white light through a glass prism onto a wall, then vibrate the prism or the light: left and right, up and down, or both. Every frame is an exact 3D ray trace through SF11 flint glass, with colours mixed the way your eye mixes light.</p>
+  </header>
+
+  <div class="layout">
+    <section class="stage">
+      <div class="card wall-card">
+        <div class="wall-head">
+          <div><div class="label">The wall · ▼ marks where each colour lands when still</div><div class="wall-title" id="wallTitle">1.0 m from the prism · 1 cm grid</div></div>
+          <div class="seg" role="radiogroup" aria-label="View">
+            <label><input type="radio" name="view" id="view-eye" value="eye" checked><span>Your eye</span></label>
+            <label><input type="radio" name="view" id="view-slow" value="slow"><span>Slow motion</span></label>
+            <label><input type="radio" name="view" id="view-cam" value="cam"><span>Phone camera</span></label>
+          </div>
+        </div>
+        <canvas id="wall" width="960" height="420" aria-label="Simulated spectrum on the wall"></canvas>
+        <p class="notice" id="notice"></p>
+      </div>
+      <div class="row2">
+        <figure class="card"><canvas id="top" width="400" height="328"></canvas><figcaption>Top view, in slow motion. The wall is drawn close; it is really <span id="distCap">1.0 m</span> away.</figcaption></figure>
+        <figure class="card"><canvas id="path" width="400" height="328"></canvas><figcaption id="pathCap">Path of the vibration, seen from the light source.</figcaption></figure>
+        <div class="card">
+          <div class="label">How far each colour moves on the wall</div>
+          <table id="readout"><thead><tr><th>Colour</th><th>left↔right</th><th>up↕down</th></tr></thead><tbody></tbody></table>
+          <ul class="facts" id="facts"></ul>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel card" aria-label="Controls">
+      <div class="group">
+        <div class="label">Try an experiment</div>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="group">
+        <div class="line"><span>What vibrates</span>
+          <div class="seg" role="radiogroup" aria-label="What vibrates">
+            <label><input type="radio" name="target" id="target-prism" value="prism" checked><span>Prism</span></label>
+            <label><input type="radio" name="target" id="target-light" value="light"><span>Light source</span></label>
+          </div></div>
+        <div class="line"><span>Motion shape</span>
+          <div class="seg" role="radiogroup" aria-label="Waveform">
+            <label><input type="radio" name="wave" id="wave-sine" value="sine" checked><span>Smooth</span></label>
+            <label><input type="radio" name="wave" id="wave-triangle" value="triangle"><span>Steady</span></label>
+            <label><input type="radio" name="wave" id="wave-square" value="square"><span>Snapping</span></label>
+          </div></div>
+      </div>
+      <div class="group">
+        <h3>Left ↔ right <small id="hNote"></small></h3>
+        <div class="ctl"><label for="slideH">Slide sideways</label><output id="slideH-o"></output><input type="range" id="slideH" min="0" max="20" step="0.5"></div>
+        <div class="ctl"><label for="turnH" id="turnH-l">Rock (turn left/right)</label><output id="turnH-o"></output><input type="range" id="turnH" min="0" max="8" step="0.1"></div>
+        <div class="ctl"><label for="fH">Speed</label><output id="fH-o"></output><input type="range" id="fH" min="0" max="100" step="1"></div>
+      </div>
+      <div class="group">
+        <h3>Up ↕ down <small id="vNote"></small></h3>
+        <div class="ctl"><label for="slideV">Slide up/down</label><output id="slideV-o"></output><input type="range" id="slideV" min="0" max="20" step="0.5"></div>
+        <div class="ctl"><label for="turnV" id="turnV-l">Nod (tilt up/down)</label><output id="turnV-o"></output><input type="range" id="turnV" min="0" max="8" step="0.1"></div>
+        <div class="ctl"><label for="fV">Speed</label><output id="fV-o"></output><input type="range" id="fV" min="0" max="100" step="1"></div>
+        <div class="ctl"><label for="phase">Timing vs left/right</label><output id="phase-o"></output><input type="range" id="phase" min="0" max="180" step="5"></div>
+      </div>
+      <div class="group">
+        <h3>Setup</h3>
+        <div class="line"><span>Light</span>
+          <div class="seg" role="radiogroup" aria-label="Light source">
+            <label><input type="radio" name="light" id="light-white" value="white" checked><span>White</span></label>
+            <label><input type="radio" name="light" id="light-mercury" value="mercury"><span>Mercury lamp</span></label>
+          </div></div>
+        <div class="line"><span>Beam</span>
+          <div class="seg" role="radiogroup" aria-label="Beam shape">
+            <label><input type="radio" name="beam" id="beam-spot" value="spot" checked><span>Round, 3 mm</span></label>
+            <label><input type="radio" name="beam" id="beam-slit" value="slit"><span>Tall slit</span></label>
+          </div></div>
+        <div class="ctl"><label for="theta">Prism angle (incidence)</label><output id="theta-o"></output><input type="range" id="theta" min="58" max="82" step="0.1"></div>
+        <p class="hint" id="thetaHint"></p>
+        <div class="ctl"><label for="dist">Wall distance</label><output id="dist-o"></output><input type="range" id="dist" min="0.3" max="3" step="0.1"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    Model: equilateral 60° prism of Schott SF11 glass (Sellmeier dispersion, n = 1.85 at 400 nm, 1.77 at 700 nm), exact 3D vector Snell's law, 6500 K white light, CIE 1931 colour matching, additive mixing. “Your eye” averages over whole vibration cycles, which is what you see when the motion is faster than about 50 per second. The light source pivots from 20 cm in front of the prism. The numbers in the colour table are measured from the simulation.
+  </footer>
+</div>
+
+<script>
+// PHYSICS-BEGIN
+// 3D optics for an equilateral SF11 prism whose refracting edge is vertical (z).
+// Lab frame: beam travels +x, y is left/right across the beam, z is up. Units: mm, radians.
+const DEG = Math.PI / 180;
+const SELL_B = [1.73759695, 0.313747346, 1.89878101];
+const SELL_C = [0.013188707, 0.0623068142, 155.23629];
+function nGlass(lam) {
+  const l2 = (lam / 1000) ** 2;
+  let s = 0;
+  for (let i = 0; i < 3; i++) s += SELL_B[i] * l2 / (l2 - SELL_C[i]);
+  return Math.sqrt(1 + s);
+}
+function lobe(l, mu, s1, s2) { const s = l < mu ? s1 : s2; return Math.exp(-0.5 * ((l - mu) / s) ** 2); }
+function cmf(l) {
+  return [
+    1.056 * lobe(l, 599.8, 37.9, 31.0) + 0.362 * lobe(l, 442.0, 16.0, 26.7) - 0.065 * lobe(l, 501.1, 20.4, 26.2),
+    0.821 * lobe(l, 568.8, 46.9, 40.5) + 0.286 * lobe(l, 530.9, 16.3, 31.1),
+    1.217 * lobe(l, 437.0, 11.8, 36.0) + 0.681 * lobe(l, 459.0, 26.0, 13.8)];
+}
+function planck(lamNm, T = 6500) {
+  const l = lamNm * 1e-9, h = 6.626e-34, c = 2.998e8, k = 1.381e-23;
+  return 1 / (l ** 5 * (Math.exp(h * c / (l * k * T)) - 1));
+}
+const XYZ2RGB = [[3.2406, -1.5372, -0.4986], [-0.9689, 1.8758, 0.0415], [0.0557, -0.2040, 1.0570]];
+const WHITE_BAL = (() => {
+  const xyz = [0, 0, 0];
+  for (let l = 390; l <= 700; l += 1) { const c = cmf(l), p = planck(l); for (let j = 0; j < 3; j++) xyz[j] += c[j] * p; }
+  const rgb = XYZ2RGB.map(r => r[0] * xyz[0] + r[1] * xyz[1] + r[2] * xyz[2]);
+  const m = Math.max(...rgb);
+  return rgb.map(v => v / m);
+})();
+
+// light sources: arrays of wavelengths and their XYZ weights (sum of Y = 1)
+function makeSource(kind) {
+  let lams, w;
+  if (kind === 'mercury') {
+    lams = [404.7, 435.8, 546.1, 577.0, 579.1];
+    w = [0.6, 1.0, 1.0, 0.45, 0.5];
+  } else {
+    lams = []; w = [];
+    const N = 124;
+    for (let i = 0; i < N; i++) { const l = 390 + 310 * i / (N - 1); lams.push(l); w.push(planck(l)); }
+  }
+  const xyz = lams.map((l, i) => cmf(l).map(v => v * w[i]));
+  const ysum = xyz.reduce((s, c) => s + c[1], 0);
+  return { kind, lams, n: lams.map(nGlass), xyz: xyz.map(c => c.map(v => v / ysum)), continuous: kind !== 'mercury' };
+}
+
+// prism cross-section (apex up, centroid at origin) and its three vertical faces
+const SIDE = 40, PH = SIDE * Math.sqrt(3) / 2;
+const PV = [[0, 2 * PH / 3], [-SIDE / 2, -PH / 3], [SIDE / 2, -PH / 3]];
+const FACES = [[0, 1], [1, 2], [2, 0]].map(([a, b]) => {
+  const A = PV[a], B = PV[b], e = [B[0] - A[0], B[1] - A[1]], len = Math.hypot(...e);
+  let nx = e[1] / len, ny = -e[0] / len;
+  const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2;
+  if (nx * mx + ny * my < 0) { nx = -nx; ny = -ny; }
+  return { a: A, e, n: [nx, ny, 0] };
+});
+const BEAM_Y = 9.0;           // beam height across the entry face (mm)
+const SOURCE_X = -200;        // the light source sits 20 cm before the prism
+
+function poseMatrix(rot, nod) {
+  // lab = Ry(nod) * Rz(rot) * prism
+  const cr = Math.cos(rot), sr = Math.sin(rot), cn = Math.cos(nod), sn = Math.sin(nod);
+  const Rz = [[cr, -sr, 0], [sr, cr, 0], [0, 0, 1]];
+  const Ry = [[cn, 0, sn], [0, 1, 0], [-sn, 0, cn]];
+  const M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) M[i][j] += Ry[i][k] * Rz[k][j];
+  return M;
+}
+const mul = (M, v) => [M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2], M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2], M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]];
+const mulT = (M, v) => [M[0][0] * v[0] + M[1][0] * v[1] + M[2][0] * v[2], M[0][1] * v[0] + M[1][1] * v[1] + M[2][1] * v[2], M[0][2] * v[0] + M[1][2] * v[1] + M[2][2] * v[2]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+function refract(d, nrm, eta) {
+  // nrm faces the incoming side; returns null on total internal reflection
+  const cosi = -dot(d, nrm), k = 1 - eta * eta * (1 - cosi * cosi);
+  if (k < 0) return null;
+  const f = eta * cosi - Math.sqrt(k);
+  return [eta * d[0] + f * nrm[0], eta * d[1] + f * nrm[1], eta * d[2] + f * nrm[2]];
+}
+function hitFace(p, d, F) {
+  // ray against the infinite vertical face; returns [t, point] or null
+  const den = d[0] * F.n[0] + d[1] * F.n[1];
+  if (Math.abs(den) < 1e-12) return null;
+  const t = ((F.a[0] - p[0]) * F.n[0] + (F.a[1] - p[1]) * F.n[1]) / den;
+  if (t <= 1e-9) return null;
+  const q = [p[0] + t * d[0], p[1] + t * d[1], p[2] + t * d[2]];
+  const s = ((q[0] - F.a[0]) * F.e[0] + (q[1] - F.a[1]) * F.e[1]) / (F.e[0] ** 2 + F.e[1] ** 2);
+  if (s < 0 || s > 1) return null;
+  return [t, q];
+}
+
+// Trace one ray (lab frame) through a prism with pose {M, T}. Returns {p1,p2,d2} in lab or null.
+function traceRay(p0, d0, n, pose) {
+  const p = mulT(pose.M, [p0[0] - pose.T[0], p0[1] - pose.T[1], p0[2] - pose.T[2]]);
+  const d = mulT(pose.M, d0);
+  const F0 = FACES[0];
+  if (dot(d, F0.n) >= 0) return null;
+  const h1 = hitFace(p, d, F0);
+  if (!h1) return null;
+  // make sure no other face is hit first
+  for (const k of [1, 2]) { const h = hitFace(p, d, FACES[k]); if (h && h[0] < h1[0]) return null; }
+  const d1 = refract(d, F0.n, 1 / n);
+  if (!d1) return null;
+  const hA = hitFace(h1[1], d1, FACES[1]), hB = hitFace(h1[1], d1, FACES[2]);
+  if (!hB || (hA && hA[0] < hB[0])) return null;      // must leave through the far face
+  const F2 = FACES[2];
+  const d2 = refract(d1, [-F2.n[0], -F2.n[1], 0], n);
+  if (!d2) return null;
+  const toLab = q => { const r = mul(pose.M, q); return [r[0] + pose.T[0], r[1] + pose.T[1], r[2] + pose.T[2]]; };
+  return { p1: toLab(h1[1]), p2: toLab(hB[1]), d2: mul(pose.M, d2) };
+}
+
+function rotForIncidence(thetaDeg) { return (30 - thetaDeg) * DEG; }
+function minDevIncidence(lam) { return Math.asin(nGlass(lam) * Math.sin(30 * DEG)) / DEG; }
+
+// The bench: base prism angle, wall distance. Wall is perpendicular to the still 550 nm ray.
+function makeBench(thetaDeg, L) {
+  const base = rotForIncidence(thetaDeg);
+  const pose = { M: poseMatrix(base, 0), T: [0, 0, 0] };
+  const r = traceRay([SOURCE_X, BEAM_Y, 0], [1, 0, 0], nGlass(550), pose);
+  const A = r.d2, len = Math.hypot(...A);
+  const axis = [A[0] / len, A[1] / len, A[2] / len];
+  return { theta: thetaDeg, base, L, axis, origin: axis.map(v => v * L), uh: [-axis[1], axis[0], 0], entry: r.p1 };
+}
+// Motion state -> lab beam + prism pose.
+// m = {target:'prism'|'light', slideH, slideV (mm), turnH, turnV (rad)}
+function configure(bench, m) {
+  let p0 = [SOURCE_X, BEAM_Y, 0], d0 = [1, 0, 0], pose;
+  if (m.target === 'light') {
+    p0 = [SOURCE_X, BEAM_Y + m.slideH, m.slideV];
+    d0 = [Math.cos(m.turnV) * Math.cos(m.turnH), Math.cos(m.turnV) * Math.sin(m.turnH), Math.sin(m.turnV)];
+    pose = { M: poseMatrix(bench.base, 0), T: [0, 0, 0] };
+  } else {
+    pose = { M: poseMatrix(bench.base + m.turnH, m.turnV), T: [0, m.slideH, m.slideV] };
+  }
+  return { p0, d0, pose };
+}
+function wallHit(bench, r) {
+  const A = bench.axis, O = bench.origin;
+  const den = dot(r.d2, A);
+  if (den <= 1e-9) return null;
+  const t = dot([O[0] - r.p2[0], O[1] - r.p2[1], O[2] - r.p2[2]], A) / den;
+  const q = [r.p2[0] + t * r.d2[0] - O[0], r.p2[1] + t * r.d2[1] - O[1], r.p2[2] + t * r.d2[2] - O[2]];
+  return [dot(q, bench.uh), q[2]];
+}
+// positions on the wall for all wavelengths of a source; out[2i], out[2i+1] (NaN when blocked)
+function spectrumOnWall(bench, cfg, src, out) {
+  for (let i = 0; i < src.n.length; i++) {
+    const r = traceRay(cfg.p0, cfg.d0, src.n[i], cfg.pose);
+    const h = r && wallHit(bench, r);
+    out[2 * i] = h ? h[0] : NaN; out[2 * i + 1] = h ? h[1] : NaN;
+  }
+  return out;
+}
+function wave(kind, ph) {
+  if (kind === 'square') return Math.sin(ph) >= 0 ? 1 : -1;
+  if (kind === 'triangle') return 2 / Math.PI * Math.asin(Math.sin(ph));
+  return Math.sin(ph);
+}
+
+</script>
+<script>
+// APP-BEGIN
+(() => {
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2;
+const BW = 960, BH = 420;                 // wall image buffer (full quality)
+const SPOT_SIGMA = 1.3, SLIT_H = 30;      // mm
+const C_LIGHT = 2.998e11;                 // mm/s
+
+const DEFAULTS = { target: 'prism', wave: 'sine', slideH: 0, turnH: 0, fH: 100, slideV: 0, turnV: 0, fV: 100, phase: 90,
+  light: 'white', beam: 'spot', theta: 64, dist: 1.0 };
+const PRESETS = [
+  { id: 'still', name: 'Still prism', s: {},
+    note: '<b>A still prism.</b> A clean spectrum about 18 cm wide. Violet is bent most and spreads widest; red is bent least.' },
+  { id: 'slideH', name: 'Shake sideways 5 mm', s: { slideH: 5 },
+    note: '<b>Sliding the prism barely matters.</b> Every colour moves the same 2.5–3.4 mm, so nothing overlaps. Sliding changes no angles, and angles are what separate the colours.' },
+  { id: 'slideV', name: 'Shake up/down 5 mm', s: { slideV: 5 },
+    note: '<b>Nothing happens at all.</b> The prism looks identical all along its edge, so sliding it along that edge changes no ray. The table reads 0.0 mm.' },
+  { id: 'lightV', name: 'Shake the light up/down', s: { target: 'light', slideV: 5 },
+    note: '<b>The rainbow smears into a 10 mm tall band</b> with brighter top and bottom edges, because the light lingers at the turning points. Each colour moves straight up and down, so colours never mix.' },
+  { id: 'rock', name: 'Rock ±4.5° → pink', s: { turnH: 4.5, theta: 75 },
+    note: '<b>Pink appears</b> (about −3 cm), a colour that is in no rainbow. The rainbow spends most of its time at the two ends of its swing, so you see two ghost rainbows. Where one\'s red lands on the other\'s violet, the light adds up to pink.' },
+  { id: 'square', name: 'Snap ±4.5° → magenta', s: { turnH: 4.5, theta: 75, wave: 'square' },
+    note: '<b>Two crisp rainbows overlap</b>, with vivid magenta where red meets violet. Try "Steady" instead: the light spreads evenly and the middle washes out to grey.' },
+  { id: 'freeze', name: 'Freeze one colour', s: { turnH: 1.5, theta: 64.82 },
+    note: '<b>Blue-green (480 nm) barely moves</b> (see the table) while violet and red swing in opposite directions. The prism rocks about that colour\'s minimum-deviation angle, where its bending stops changing. Switch to Slow motion to watch the rainbow breathe around it, or move the prism angle to freeze a different colour.' },
+  { id: 'mercury', name: 'Mercury lines split', s: { turnH: 2.5, theta: 65.88, light: 'mercury' },
+    note: '<b>Each spectral line splits into a pair</b> (the turning points again), except the 436 nm line, which sits at its minimum deviation and stays single and sharp.' },
+  { id: 'circle', name: 'Light moves in a circle', s: { target: 'light', slideH: 5, slideV: 5, phase: 90 },
+    note: '<b>Each colour traces its own small ring.</b> Left-right and up-down motion add as separate directions, and the rainbow becomes a ribbon with bright rims. The rings are slightly squashed because sideways light shifts are scaled by the prism.' },
+  { id: 'smile', name: 'Aim the light up/down ±6°', s: { target: 'light', turnV: 6 },
+    note: '<b>The rainbow curves into a smile.</b> Light that crosses the prism at a slant meets the glass at a steeper effective angle and bends more, so every colour slides toward the violet side as it rises or falls. Violet slides the furthest.' },
+  { id: 'nod', name: 'Nod the prism ±6°', s: { turnV: 6 },
+    note: '<b>The rainbow swings like a fan.</b> Nodding the prism lifts violet higher than red, so the line tilts. Shaking it up and down sweeps out a bow-tie shape.' },
+  { id: 'lissajous', name: 'Two speeds at once', s: { target: 'light', turnH: 0.6, fH: 100, slideV: 6, fV: 150, phase: 0 },
+    note: '<b>Different left-right and up-down speeds</b> (100 and 150 per second) make each colour trace a figure-of-eight pattern (see the path panel). Averaged by your eye, the figures fill a band that is brightest along its top and bottom edges, where the motion turns around.' },
+  { id: 'camera', name: 'Film it with a phone', s: { turnH: 3, theta: 75, fH: 240, beam: 'slit', view: 'cam' },
+    note: '<b>A phone camera reads its sensor row by row</b> over about 25 ms. With the prism rocking 240 times a second, each row sees the rainbow at a different moment, and straight bands become snakes. Set the speed to 30 per second to see the camera make fast shaking look slow.' },
+];
+
+let S = { ...DEFAULTS, ...PRESETS[4].s };
+let view = 'eye';
+let activePreset = 'rock';
+
+// ---------- controls
+const fToS = f => Math.round(Math.log10(Math.max(1, f)) / 3 * 100);
+const sToF = s => { const f = Math.pow(10, s / 100 * 3); return f < 10 ? Math.round(f * 10) / 10 : f < 100 ? Math.round(f) : Math.round(f / 5) * 5; };
+const sliders = ['slideH', 'turnH', 'fH', 'slideV', 'turnV', 'fV', 'phase', 'theta', 'dist'];
+function writeControls() {
+  for (const k of sliders) $(k).value = (k === 'fH' || k === 'fV') ? fToS(S[k]) : S[k];
+  for (const g of ['target', 'wave', 'light', 'beam']) $(`${g}-${S[g]}`).checked = true;
+  $(`view-${view}`).checked = true;
+  writeOutputs();
+}
+function writeOutputs() {
+  const light = S.target === 'light';
+  $('slideH-o').textContent = `±${S.slideH.toFixed(1)} mm`;
+  $('slideV-o').textContent = `±${S.slideV.toFixed(1)} mm`;
+  $('turnH-o').textContent = `±${S.turnH.toFixed(1)}°`;
+  $('turnV-o').textContent = `±${S.turnV.toFixed(1)}°`;
+  $('fH-o').textContent = `${S.fH} per second`;
+  $('fV-o').textContent = `${S.fV} per second`;
+  $('phase-o').textContent = S.phase === 0 ? 'together' : S.phase === 90 ? '¼ cycle apart' : S.phase === 180 ? 'opposite' : `${S.phase}°`;
+  $('theta-o').textContent = `${S.theta.toFixed(1)}°`;
+  $('dist-o').textContent = `${S.dist.toFixed(1)} m`;
+  $('turnH-l').textContent = light ? 'Aim left/right' : 'Rock (turn left/right)';
+  $('turnV-l').textContent = light ? 'Aim up/down' : 'Nod (tilt up/down)';
+  $('slideH').previousElementSibling.previousElementSibling.textContent = light ? 'Slide the light sideways' : 'Slide the prism sideways';
+  $('slideV').previousElementSibling.previousElementSibling.textContent = light ? 'Slide the light up/down' : 'Slide the prism up/down';
+  const frozen = invMinDev(S.theta);
+  $('thetaHint').textContent = frozen ? `At this angle ${Math.round(frozen)} nm is at minimum deviation. Rocking here freezes that colour.`
+    : S.theta < 62.36 ? 'Below every colour\'s minimum-deviation angle; violet becomes very sensitive.' : 'Above every colour\'s minimum-deviation angle.';
+  $('wallTitle').textContent = `${S.dist.toFixed(1)} m from the prism · 1 cm grid`;
+  $('distCap').textContent = `${S.dist.toFixed(1)} m`;
+}
+function invMinDev(th) {
+  // wavelength whose minimum-deviation incidence equals th (or null)
+  let lo = 390, hi = 700;
+  const g = l => minDevIncidence(l) - th;
+  if (g(lo) < 0 || g(hi) > 0) return null;
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (g(m) > 0) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+function onInput(e) {
+  const k = e.target.id;
+  if (sliders.includes(k)) S[k] = (k === 'fH' || k === 'fV') ? sToF(+e.target.value) : +e.target.value;
+  else if (e.target.name === 'view') { view = e.target.value; writeOutputs(); invalidate(false); return; }
+  else if (e.target.name) S[e.target.name] = e.target.value;
+  activePreset = null;
+  markPreset();
+  writeOutputs();
+  invalidate(true);
+}
+document.querySelector('.panel').addEventListener('input', onInput);
+document.querySelector('.wall-head').addEventListener('input', onInput);
+function applyPreset(p) {
+  S = { ...DEFAULTS, ...p.s };
+  delete S.view;
+  view = p.s.view || (view === 'cam' ? 'eye' : view);
+  activePreset = p.id;
+  writeControls(); markPreset(); invalidate(false);
+}
+function markPreset() {
+  for (const b of $('presets').children) b.setAttribute('aria-pressed', String(b.dataset.id === activePreset));
+}
+for (const p of PRESETS) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = p.name; b.dataset.id = p.id;
+  b.addEventListener('click', () => applyPreset(p));
+  $('presets').appendChild(b);
+}
+
+// ---------- motion
+const activeH = () => S.slideH > 0 || S.turnH > 0;
+const activeV = () => S.slideV > 0 || S.turnV > 0;
+function motionAt(t) {
+  const h = activeH() ? wave(S.wave, TAU * S.fH * t) : 0;
+  const v = activeV() ? wave(S.wave, TAU * S.fV * t + S.phase * DEG) : 0;
+  return { target: S.target, slideH: S.slideH * h, turnH: S.turnH * DEG * h, slideV: S.slideV * v, turnV: S.turnV * DEG * v, h, v };
+}
+function gcd(a, b) { a = Math.round(a); b = Math.round(b); while (b) [a, b] = [b, a % b]; return Math.max(1, a); }
+function sampleTimes(quality) {
+  const H = activeH(), V = activeV();
+  let T, N;
+  if (!H && !V) return [0];
+  if (H && V && S.fH !== S.fV) {
+    const g = gcd(S.fH, S.fV);
+    T = 1 / g; N = Math.min(9000, Math.max(720, Math.round(360 * Math.max(S.fH, S.fV) / g)));
+  } else { T = 1 / (H ? S.fH : S.fV); N = 720; }
+  N = Math.max(48, Math.round(N * quality));
+  return Array.from({ length: N }, (_, k) => (k + 0.5) / N * T);
+}
+const fastest = () => Math.max(activeH() ? S.fH : 0, activeV() ? S.fV : 0);
+
+// ---------- simulation cache
+let src, bench, times, hits, still, win, exposureStill, readoutLams;
+function rebuild(quality) {
+  src = makeSource(S.light);
+  bench = makeBench(S.theta, S.dist * 1000);
+  times = sampleTimes(quality);
+  const nl = src.n.length;
+  hits = new Float32Array(times.length * nl * 2);
+  const tmp = new Float64Array(nl * 2);
+  let blocked = 0;
+  times.forEach((t, k) => {
+    spectrumOnWall(bench, configure(bench, motionAt(t)), src, tmp);
+    hits.set(tmp, k * nl * 2);
+    for (let i = 0; i < nl; i++) if (Number.isNaN(tmp[2 * i])) blocked++;
+  });
+  hits.blocked = blocked / (times.length * nl);
+  still = spectrumOnWall(bench, configure(bench, { target: S.target, slideH: 0, slideV: 0, turnH: 0, turnV: 0 }), src, new Float64Array(nl * 2));
+  win = fitWindow();
+}
+function fitWindow() {
+  let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+  const nl = src.n.length, use = i => !src.continuous || src.lams[i] >= 400;
+  const add = (u, v) => { if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v; };
+  for (let k = 0; k < hits.length / (2 * nl); k++) for (let i = 0; i < nl; i++) {
+    if (!use(i)) continue;
+    const u = hits[(k * nl + i) * 2], v = hits[(k * nl + i) * 2 + 1];
+    if (!Number.isNaN(u)) add(u, v);
+  }
+  for (let i = 0; i < nl; i++) if (use(i) && !Number.isNaN(still[2 * i])) add(still[2 * i], still[2 * i + 1]);
+  if (!Number.isFinite(u0)) { u0 = -100; u1 = 100; v0 = -40; v1 = 40; }
+  const padU = 14, padV = (S.beam === 'slit' ? SLIT_H / 2 : 4) + 10;
+  u0 -= padU; u1 += padU; v0 -= padV; v1 += padV;
+  let s = Math.max((u1 - u0) / BW, (v1 - v0) / BH, 0.12);
+  s = Math.ceil(s * 50) / 50;
+  const cu = (u0 + u1) / 2, cv = (v0 + v1) / 2;
+  return { u0: cu - s * BW / 2, vtop: cv + s * BH / 2, s };
+}
+
+// ---------- image formation
+function makeBuf(w, h) { return { w, h, X: new Float32Array(w * h), Y: new Float32Array(w * h), Z: new Float32Array(w * h) }; }
+function deposit(buf, px, py, x, y, z) {
+  const i0 = Math.floor(px), j0 = Math.floor(py);
+  if (i0 < 0 || j0 < 0 || i0 >= buf.w - 1 || j0 >= buf.h - 1) return;
+  const fx = px - i0, fy = py - j0;
+  const ws = [(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy];
+  const id = [j0 * buf.w + i0, j0 * buf.w + i0 + 1, (j0 + 1) * buf.w + i0, (j0 + 1) * buf.w + i0 + 1];
+  for (let q = 0; q < 4; q++) { buf.X[id[q]] += ws[q] * x; buf.Y[id[q]] += ws[q] * y; buf.Z[id[q]] += ws[q] * z; }
+}
+// lay one instantaneous spectrum (positions arr at offset off) into the buffer; continuous sources are drawn as
+// line segments between neighbouring wavelengths so wide spectra stay gap-free
+function layDown(buf, arr, off, scale, w, rowFilter) {
+  const nl = src.n.length, xyz = src.xyz;
+  const toPx = u => (u - win.u0) / scale, toPy = v => (win.vtop - v) / scale;
+  const put = (u, v, x, y, z) => {
+    if (rowFilter) { const wv = rowFilter(v); if (wv > 0) deposit(buf, toPx(u), rowFilter.row, x * wv, y * wv, z * wv); }
+    else deposit(buf, toPx(u), toPy(v), x, y, z);
+  };
+  if (!src.continuous) {
+    for (let i = 0; i < nl; i++) {
+      const u = arr[off + 2 * i], v = arr[off + 2 * i + 1];
+      if (!Number.isNaN(u)) put(u, v, xyz[i][0] * w, xyz[i][1] * w, xyz[i][2] * w);
+    }
+    return;
+  }
+  for (let i = 0; i < nl - 1; i++) {
+    const ua = arr[off + 2 * i], va = arr[off + 2 * i + 1], ub = arr[off + 2 * i + 2], vb = arr[off + 2 * i + 3];
+    if (Number.isNaN(ua) || Number.isNaN(ub)) continue;
+    const len = Math.hypot(ub - ua, vb - va) / scale;
+    const m = Math.max(1, Math.ceil(len * 1.5));
+    const A = xyz[i], B = xyz[i + 1];
+    for (let j = 0; j < m; j++) {
+      const s = (j + 0.5) / m, ww = w / m;
+      put(ua + (ub - ua) * s, va + (vb - va) * s,
+        (A[0] + (B[0] - A[0]) * s) * ww, (A[1] + (B[1] - A[1]) * s) * ww, (A[2] + (B[2] - A[2]) * s) * ww);
+    }
+  }
+}
+function kernel(sigmaPx, boxPx) {
+  const r = Math.ceil(3 * sigmaPx + boxPx / 2);
+  const k = new Float32Array(2 * r + 1);
+  let sum = 0;
+  for (let i = -r; i <= r; i++) {
+    let v;
+    if (boxPx > 0) { // box of width boxPx with gaussian-soft edges
+      const a = (i + boxPx / 2) / (sigmaPx * Math.SQRT2), b = (i - boxPx / 2) / (sigmaPx * Math.SQRT2);
+      v = erf(a) - erf(b);
+    } else v = Math.exp(-0.5 * (i / sigmaPx) ** 2);
+    k[i + r] = v; sum += v;
+  }
+  for (let i = 0; i < k.length; i++) k[i] /= sum;
+  return k;
+}
+function erf(x) { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+function blur(buf, kx, ky) {
+  const { w, h } = buf, tmp = new Float32Array(w * h);
+  for (const ch of ['X', 'Y', 'Z']) {
+    const a = buf[ch];
+    if (kx) { const r = (kx.length - 1) / 2;
+      for (let y = 0; y < h; y++) { const row = y * w;
+        for (let x = 0; x < w; x++) { let s = 0; const lo = Math.max(0, x - r), hi = Math.min(w - 1, x + r);
+          for (let i = lo; i <= hi; i++) s += a[row + i] * kx[i - x + r]; tmp[row + x] = s; } }
+      a.set(tmp); }
+    if (ky) { const r = (ky.length - 1) / 2;
+      for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) { let s = 0; const lo = Math.max(0, y - r), hi = Math.min(h - 1, y + r);
+        for (let i = lo; i <= hi; i++) s += a[i * w + x] * ky[i - y + r]; tmp[y * w + x] = s; }
+      a.set(tmp); }
+  }
+}
+function linearRGB(buf) {
+  const n = buf.w * buf.h, out = new Float32Array(n * 3);
+  const M = XYZ2RGB;
+  for (let p = 0; p < n; p++) {
+    const x = buf.X[p], y = buf.Y[p], z = buf.Z[p];
+    for (let c = 0; c < 3; c++) out[p * 3 + c] = (M[c][0] * x + M[c][1] * y + M[c][2] * z) / WHITE_BAL[c];
+  }
+  return out;
+}
+function autoExposure(rgb) {
+  const vals = [];
+  for (let p = 0; p < rgb.length; p += 9) { const m = Math.max(rgb[p], rgb[p + 1], rgb[p + 2]); if (m > 0) vals.push(m); }
+  if (!vals.length) return 1;
+  vals.sort((a, b) => a - b);
+  const top = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.997))];
+  return top > 0 ? 1 / top : 1;
+}
+function toImage(rgb, w, h, ex, img) {
+  const d = img.data;
+  const enc = v => v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+  for (let p = 0; p < w * h; p++) {
+    let r = rgb[p * 3] * ex, g = rgb[p * 3 + 1] * ex, b = rgb[p * 3 + 2] * ex;
+    const mn = Math.min(r, g, b);
+    if (mn < 0) { r -= mn; g -= mn; b -= mn; }
+    const mx = Math.max(r, g, b);
+    if (mx > 0.75) { const soft = 0.75 + 0.25 * Math.tanh((mx - 0.75) / 0.25); r *= soft / mx; g *= soft / mx; b *= soft / mx; }
+    d[p * 4] = 255 * enc(Math.min(1, r)); d[p * 4 + 1] = 255 * enc(Math.min(1, g)); d[p * 4 + 2] = 255 * enc(Math.min(1, b)); d[p * 4 + 3] = 255;
+  }
+}
+function kernelsFor(scale) {
+  const sg = SPOT_SIGMA / scale;
+  return { kx: kernel(sg, 0), ky: S.beam === 'slit' ? kernel(sg, SLIT_H / scale) : kernel(sg, 0) };
+}
+function renderAverage(res) {
+  const w = Math.round(BW * res), h = Math.round(BH * res), scale = win.s / res;
+  const buf = makeBuf(w, h), nl = src.n.length;
+  const N = hits.length / (2 * nl);
+  for (let k = 0; k < N; k++) layDown(buf, hits, k * nl * 2, scale, 1 / N);
+  const { kx, ky } = kernelsFor(scale);
+  blur(buf, kx, ky);
+  return { rgb: linearRGB(buf), w, h };
+}
+function stillExposure(res) {
+  const w = Math.round(BW * res), h = Math.round(BH * res), scale = win.s / res;
+  const buf = makeBuf(w, h);
+  layDown(buf, still, 0, scale, 1);
+  const { kx, ky } = kernelsFor(scale);
+  blur(buf, kx, ky);
+  return autoExposure(linearRGB(buf));
+}
+function renderInstant(t, res) {
+  const w = Math.round(BW * res), h = Math.round(BH * res), scale = win.s / res;
+  const buf = makeBuf(w, h), arr = new Float64Array(src.n.length * 2);
+  spectrumOnWall(bench, configure(bench, motionAt(t)), src, arr);
+  layDown(buf, arr, 0, scale, 1);
+  const { kx, ky } = kernelsFor(scale);
+  blur(buf, kx, ky);
+  return { rgb: linearRGB(buf), w, h, arr };
+}
+function renderCamera(t0, res) {
+  // rolling shutter: row r is read out at t0 + r/h * 25 ms
+  const w = Math.round(BW * res), h = Math.round(BH * res), scale = win.s / res;
+  const buf = makeBuf(w, h), arr = new Float64Array(src.n.length * 2);
+  const sg = SPOT_SIGMA, halfSlit = SLIT_H / 2;
+  for (let r = 0; r < h; r++) {
+    const t = t0 + (r / h) * 0.025;
+    spectrumOnWall(bench, configure(bench, motionAt(t)), src, arr);
+    const vRow = win.vtop - (r + 0.5) * scale;
+    const filt = v => {
+      const dv = vRow - v;
+      if (S.beam === 'slit') return 0.5 * (erf((dv + halfSlit) / (sg * Math.SQRT2)) - erf((dv - halfSlit) / (sg * Math.SQRT2))) / SLIT_H * scale;
+      return Math.exp(-0.5 * (dv / sg) ** 2) / (sg * Math.sqrt(TAU)) * scale;
+    };
+    filt.row = r;
+    layDown(buf, arr, 0, scale, 1, filt);
+  }
+  const { kx } = kernelsFor(scale);
+  blur(buf, kx, null);
+  return { rgb: linearRGB(buf), w, h };
+}
+
+// ---------- wall drawing
+const wall = $('wall'), wctx = wall.getContext('2d');
+const off = document.createElement('canvas'), octx = off.getContext('2d');
+function sizeCanvas(c) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), cw = c.clientWidth;
+  const ar = c === wall ? BH / BW : 0.82;
+  const W = Math.round(cw * dpr), H = Math.round(cw * ar * dpr);
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  return { W, H, dpr };
+}
+function drawWall(rgb, w, h, ex, extra) {
+  off.width = w; off.height = h;
+  const img = octx.createImageData(w, h);
+  toImage(rgb, w, h, ex, img);
+  octx.putImageData(img, 0, 0);
+  const { W, H, dpr } = sizeCanvas(wall);
+  wctx.fillStyle = '#040507'; wctx.fillRect(0, 0, W, H);
+  wctx.imageSmoothingEnabled = true; wctx.imageSmoothingQuality = 'high';
+  // grid first (light adds on top of it)
+  const k = W / BW;            // display px per buffer px
+  const mm = k / win.s;        // display px per mm
+  const X = u => (u - win.u0) * mm, Y = v => (win.vtop - v) * mm;
+  const uA = win.u0, uB = win.u0 + win.s * BW, vB = win.vtop - win.s * BH;
+  const minor = mm * 10 >= 5 * dpr ? 10 : 50, major = minor === 10 ? 50 : 100;
+  wctx.lineWidth = 1;
+  for (let u = Math.ceil(uA / minor) * minor; u <= uB; u += minor) {
+    wctx.strokeStyle = u % major === 0 ? 'rgba(255,255,255,0.17)' : 'rgba(255,255,255,0.07)';
+    wctx.beginPath(); wctx.moveTo(Math.round(X(u)) + 0.5, 0); wctx.lineTo(Math.round(X(u)) + 0.5, H); wctx.stroke(); }
+  for (let v = Math.ceil(vB / minor) * minor; v <= win.vtop; v += minor) {
+    wctx.strokeStyle = v % major === 0 ? 'rgba(255,255,255,0.17)' : 'rgba(255,255,255,0.07)';
+    wctx.beginPath(); wctx.moveTo(0, Math.round(Y(v)) + 0.5); wctx.lineTo(W, Math.round(Y(v)) + 0.5); wctx.stroke(); }
+  wctx.globalCompositeOperation = 'lighter';
+  wctx.drawImage(off, 0, 0, W, H);
+  wctx.globalCompositeOperation = 'source-over';
+  // labels
+  wctx.font = `${11 * dpr}px "IBM Plex Mono", monospace`;
+  wctx.fillStyle = 'rgba(201,208,220,0.75)';
+  wctx.textBaseline = 'bottom'; wctx.textAlign = 'center';
+  for (let u = Math.ceil(uA / major) * major; u <= uB; u += major) if (X(u) > 20 * dpr && X(u) < W - 20 * dpr) wctx.fillText(`${u / 10} cm`, X(u), H - 4 * dpr);
+  wctx.textAlign = 'left'; wctx.textBaseline = 'middle';
+  for (let v = Math.ceil(vB / major) * major; v <= win.vtop; v += major) if (Y(v) > 12 * dpr && Y(v) < H - 22 * dpr) wctx.fillText(`${v / 10} cm`, 5 * dpr, Y(v));
+  // still-position ticks along the top edge
+  const ticks = src.continuous ? [450, 550, 650] : src.lams.filter((_, i) => i !== 4);
+  wctx.textAlign = 'center'; wctx.textBaseline = 'top';
+  for (const l of ticks) {
+    const i = src.lams.reduce((b, x, j) => Math.abs(x - l) < Math.abs(src.lams[b] - l) ? j : b, 0);
+    const u = still[2 * i]; if (Number.isNaN(u)) continue;
+    const x = X(u);
+    wctx.fillStyle = 'rgba(201,208,220,0.85)';
+    wctx.beginPath(); wctx.moveTo(x - 5 * dpr, 2 * dpr); wctx.lineTo(x + 5 * dpr, 2 * dpr); wctx.lineTo(x, 9 * dpr); wctx.fill();
+    wctx.fillText(l === 577 ? '577/579' : `${Math.round(l)}`, x, 11 * dpr);
+  }
+  if (extra) { wctx.textAlign = 'left'; wctx.fillStyle = 'rgba(255,204,102,0.95)'; wctx.fillText(extra, 8 * dpr, 4 * dpr); }
+}
+
+// ---------- side panels
+const topC = $('top'), tctx = topC.getContext('2d');
+function spectralCSS(l, a = 1) {
+  const c = cmf(l); let rgb = XYZ2RGB.map(r => r[0] * c[0] + r[1] * c[1] + r[2] * c[2]);
+  const mn = Math.min(...rgb); if (mn < 0) rgb = rgb.map(v => v - mn);
+  const mx = Math.max(...rgb); rgb = rgb.map(v => v / mx);
+  const e = v => Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  return `rgba(${e(rgb[0])},${e(rgb[1])},${e(rgb[2])},${a})`;
+}
+const DIAG_L = Array.from({ length: 14 }, (_, i) => 400 + 300 * i / 13);
+function drawTop(t) {
+  const { W, H, dpr } = sizeCanvas(topC);
+  tctx.fillStyle = '#07090d'; tctx.fillRect(0, 0, W, H);
+  const xs = [-110, 150], sc = W / (xs[1] - xs[0]);
+  const X = x => (x - xs[0]) * sc, Y = y => H * 0.16 - y * sc;
+  const m = motionAt(t), cfg = configure(bench, m);
+  // wall, drawn 150 mm out along the still exit ray
+  const A = bench.axis, U = bench.uh, D = 150, c0 = [A[0] * D, A[1] * D];
+  tctx.strokeStyle = '#c9d0dc'; tctx.lineWidth = 4 * dpr; tctx.lineCap = 'round';
+  tctx.beginPath(); tctx.moveTo(X(c0[0] - 55 * U[0]), Y(c0[1] - 55 * U[1])); tctx.lineTo(X(c0[0] + 55 * U[0]), Y(c0[1] + 55 * U[1])); tctx.stroke();
+  // rays
+  const lams = src.continuous ? DIAG_L : src.lams;
+  let p1 = null;
+  for (const l of lams) {
+    const r = traceRay(cfg.p0, cfg.d0, nGlass(l), cfg.pose);
+    if (!r) continue;
+    p1 = r.p1;
+    const den = r.d2[0] * A[0] + r.d2[1] * A[1];
+    const tt = ((c0[0] - r.p2[0]) * A[0] + (c0[1] - r.p2[1]) * A[1]) / den;
+    tctx.strokeStyle = spectralCSS(l, 0.9); tctx.lineWidth = 1.6 * dpr;
+    tctx.beginPath(); tctx.moveTo(X(r.p1[0]), Y(r.p1[1])); tctx.lineTo(X(r.p2[0]), Y(r.p2[1])); tctx.lineTo(X(r.p2[0] + tt * r.d2[0]), Y(r.p2[1] + tt * r.d2[1])); tctx.stroke();
+  }
+  // incoming beam
+  const start = [cfg.p0[0], cfg.p0[1]];
+  const end = p1 ? p1 : [cfg.p0[0] + 300 * cfg.d0[0], cfg.p0[1] + 300 * cfg.d0[1]];
+  tctx.strokeStyle = '#ffffff'; tctx.lineWidth = 2.4 * dpr;
+  tctx.beginPath(); tctx.moveTo(X(start[0]), Y(start[1])); tctx.lineTo(X(end[0]), Y(end[1])); tctx.stroke();
+  // prism outline (slice through the beam height)
+  tctx.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const v = [PV[i][0], PV[i][1], 0], q = [cfg.pose.M[0][0] * v[0] + cfg.pose.M[0][1] * v[1] + cfg.pose.T[0], cfg.pose.M[1][0] * v[0] + cfg.pose.M[1][1] * v[1] + cfg.pose.T[1]];
+    i ? tctx.lineTo(X(q[0]), Y(q[1])) : tctx.moveTo(X(q[0]), Y(q[1]));
+  }
+  tctx.closePath(); tctx.fillStyle = 'rgba(140,190,240,0.22)'; tctx.fill(); tctx.strokeStyle = '#cfe3ff'; tctx.lineWidth = 1.6 * dpr; tctx.stroke();
+  tctx.font = `${11 * dpr}px "IBM Plex Sans", sans-serif`; tctx.fillStyle = '#8d97aa'; tctx.textBaseline = 'top';
+  tctx.fillText(S.target === 'light' ? 'light source (wobbling) ←' : 'light from the left', 6 * dpr, Y(BEAM_Y) - 22 * dpr);
+}
+const pathC = $('path'), pctx = pathC.getContext('2d');
+function drawPath(t) {
+  const { W, H, dpr } = sizeCanvas(pathC);
+  pctx.fillStyle = '#07090d'; pctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36;
+  pctx.strokeStyle = 'rgba(255,255,255,0.12)'; pctx.lineWidth = 1;
+  pctx.beginPath(); pctx.moveTo(cx - R * 1.15, cy); pctx.lineTo(cx + R * 1.15, cy); pctx.moveTo(cx, cy - R * 1.15); pctx.lineTo(cx, cy + R * 1.15); pctx.stroke();
+  const H_ = activeH(), V_ = activeV();
+  pctx.font = `${11 * dpr}px "IBM Plex Sans", sans-serif`; pctx.fillStyle = '#8d97aa';
+  pctx.textAlign = 'center'; pctx.textBaseline = 'bottom';
+  pctx.fillText('up', cx, cy - R * 1.17); pctx.textBaseline = 'top'; pctx.fillText('down', cx, cy + R * 1.17);
+  pctx.textAlign = 'left'; pctx.textBaseline = 'middle'; pctx.fillText('left', 4 * dpr, cy - 9 * dpr); pctx.textAlign = 'right'; pctx.fillText('right', W - 4 * dpr, cy - 9 * dpr);
+  if (!H_ && !V_) { pctx.textAlign = 'center'; pctx.fillStyle = '#c9d0dc'; pctx.fillText('not moving', cx, cy + 24 * dpr); }
+  const T = times.length > 1 ? times[times.length - 1] + times[0] : 1;
+  pctx.strokeStyle = '#82a8ff'; pctx.lineWidth = 1.6 * dpr; pctx.beginPath();
+  const n = 1200;
+  for (let k = 0; k <= n; k++) { const m = motionAt(k / n * T); const x = cx + R * m.h, y = cy - R * m.v; k ? pctx.lineTo(x, y) : pctx.moveTo(x, y); }
+  pctx.stroke();
+  const m = motionAt(t);
+  pctx.fillStyle = '#ffffff'; pctx.beginPath(); pctx.arc(cx + R * m.h, cy - R * m.v, 5 * dpr, 0, TAU); pctx.fill();
+  const who = S.target === 'light' ? 'Light source' : 'Prism';
+  const parts = [];
+  if (H_) parts.push(`left↔right ${S.slideH ? `±${S.slideH} mm` : ''}${S.slideH && S.turnH ? ' + ' : ''}${S.turnH ? `±${S.turnH}°` : ''} at ${S.fH}/s`);
+  if (V_) parts.push(`up↕down ${S.slideV ? `±${S.slideV} mm` : ''}${S.slideV && S.turnV ? ' + ' : ''}${S.turnV ? `±${S.turnV}°` : ''} at ${S.fV}/s`);
+  $('pathCap').textContent = `${who} motion, seen from behind the light: ${parts.length ? parts.join('; ') : 'still'}. Each axis is scaled to fill the box.`;
+}
+
+// ---------- readouts
+function updateReadout() {
+  const lams = src.continuous ? [420, 480, 530, 650] : [404.7, 435.8, 546.1, 577.0];
+  const names = src.continuous ? ['violet', 'blue', 'green', 'red'] : ['405 violet', '436 blue', '546 green', '577 yellow'];
+  const fake = { n: lams.map(nGlass) }, arr = new Float64Array(lams.length * 2);
+  const ru = lams.map(() => [Infinity, -Infinity]), rv = lams.map(() => [Infinity, -Infinity]);
+  const ts = times.length > 1 ? times.filter((_, i) => i % Math.max(1, Math.floor(times.length / 720)) === 0) : times;
+  for (const t of ts) {
+    spectrumOnWall(bench, configure(bench, motionAt(t)), fake, arr);
+    lams.forEach((_, i) => { const u = arr[2 * i], v = arr[2 * i + 1]; if (Number.isNaN(u)) return;
+      ru[i][0] = Math.min(ru[i][0], u); ru[i][1] = Math.max(ru[i][1], u); rv[i][0] = Math.min(rv[i][0], v); rv[i][1] = Math.max(rv[i][1], v); });
+  }
+  const span = r => Number.isFinite(r[0]) ? r[1] - r[0] : NaN;
+  const tot = lams.map((_, i) => Math.hypot(span(ru[i]), span(rv[i])));
+  const big = Math.max(...tot.filter(Number.isFinite));
+  const rows = lams.map((l, i) => {
+    const frozen = big > 3 && tot[i] < 0.3 * big;
+    const f = v => Number.isNaN(v) ? '—' : `${v.toFixed(1)} mm`;
+    return `<tr><td><span class="sw" style="background:${spectralCSS(l)}"></span>${names[i]}${frozen ? '<span class="pill">nearly frozen</span>' : ''}</td><td>${f(span(ru[i]))}</td><td>${f(span(rv[i]))}</td></tr>`;
+  });
+  $('readout').querySelector('tbody').innerHTML = rows.join('');
+  const facts = [];
+  const fmax = fastest();
+  if (fmax > 0) {
+    const vPeak = TAU * Math.max(activeH() ? S.fH * (S.slideH + S.turnH * DEG * 23) : 0, activeV() ? S.fV * (S.slideV + S.turnV * DEG * 23) : 0);
+    const ratio = vPeak / C_LIGHT;
+    facts.push(`Doppler colour shift from the motion: at most ${ratio.toExponential(1).replace('e-', ' × 10⁻').replace(/(\d+)$/, d => d.split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join(''))} of the frequency (${(550 * ratio).toExponential(0).replace('e-', ' × 10⁻').replace(/(\d+)$/, d => d.split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join(''))} nm). Far too small to see.`);
+    if (view === 'eye' && fmax < 40) facts.push(`<span class="warn">At ${fmax} per second your eye can still follow the motion. This view shows the average; switch to Slow motion to see it move.</span>`);
+  }
+  if (hits.blocked > 0.001) facts.push(`<span class="warn">Part of the time (${(hits.blocked * 100).toFixed(0)}%) light misses the exit face or is reflected inside the prism, so it never reaches the wall.</span>`);
+  if (view === 'cam' && S.beam === 'spot') facts.push('Tip: the rolling-shutter effect shows best with the tall slit beam.');
+  $('facts').innerHTML = facts.map(f => `<li>${f}</li>`).join('');
+  const p = PRESETS.find(q => q.id === activePreset);
+  $('notice').innerHTML = p ? p.note : '<b>Your own settings.</b> Grid squares are 1 cm. The table shows how far each colour travels during one cycle. Pick an experiment to compare.';
+}
+
+// ---------- scheduling
+let dirty = true, refineTimer = null, avgCache = null, exStill = 1, camFrame = 0;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function invalidate(dragging) {
+  dirty = true;
+  quality = dragging ? 0.25 : 1;
+  clearTimeout(refineTimer);
+  if (dragging) refineTimer = setTimeout(() => { dirty = true; quality = 1; }, 220);
+}
+let quality = 1, t0 = performance.now();
+function frame(now) {
+  if (dirty) {
+    rebuild(quality);
+    avgCache = null;
+    exStill = stillExposure(view === 'eye' ? 1 : 0.5);
+    updateReadout();
+    dirty = false;
+  }
+  const slowF = fastest() > 0 ? 0.35 / fastest() : 0;
+  const tau = reduceMotion ? 0 : (now - t0) / 1000 * slowF;
+  if (view === 'eye') {
+    if (!avgCache) { const r = renderAverage(quality < 1 ? 0.5 : 1); r.ex = autoExposure(r.rgb); avgCache = r; drawWall(r.rgb, r.w, r.h, r.ex); }
+  } else if (view === 'slow') {
+    const r = renderInstant(tau, 0.5); drawWall(r.rgb, r.w, r.h, exStill, fastest() ? `slow motion: one swing every ${(1 / 0.35).toFixed(1)} s` : '');
+    avgCache = null;
+  } else {
+    const r = renderCamera(camFrame / 30, 0.5); camFrame++;
+    drawWall(r.rgb, r.w, r.h, exStill, `camera at 30 frames/s, frame ${camFrame}`);
+    avgCache = null;
+  }
+  drawTop(tau); drawPath(tau);
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize', () => { avgCache = null; });
+writeControls(); markPreset();
+requestAnimationFrame(frame);
+})();
+// APP-END
+
+</script>
