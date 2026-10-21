@@ -3,6 +3,8 @@
 A narrated explainer video (`shake-a-rainbow.mp4`, about 5 minutes) built from a physics simulation of
 white light passing through a vibrating prism.
 
+Part 2 (`shake-a-rainbow-part2.mp4`, about 5 minutes) moves the prism or the light in circles, squares, triangles, stars and figure 8s. It compares each pattern side by side at 5, 20, 50 and 100 times a second, using a simple model of the eye's persistence of vision (a three-stage low-pass filter with an 8 ms time constant) and a 30 fps phone-camera model. It is built by `render2.py` with narration from `narration2.py` (`NARRATION=narration2 python3 tts.py ...`).
+
 There is also an interactive simulator, `bench/shake-a-rainbow-bench.html`, a single file you open in any browser. It uses a full 3D ray trace. You can vibrate the prism or the light source left/right and up/down (amount and speed for each) or around a pattern (circle, square, triangle, figure 8, star), and choose the motion shape, white light or a mercury lamp, a round or slit beam, the prism angle and the wall distance. The wall shows a 1 cm grid in three views: what your eye sees (time-averaged), slow motion, and a rolling-shutter phone camera.
 
 ## Findings
