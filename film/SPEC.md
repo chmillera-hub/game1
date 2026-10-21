@@ -117,6 +117,38 @@ funny, honest connection → warmth spreading from one broken loaf to a whole be
 - **When something is hard, be inventive** rather than settling for a placeholder — try a bolder
   staging, a cleverer visual metaphor, a different technique; keep the version that moves people.
 
+### 0.4 REFERENCES AND THE BAR — direct this like an elite animation studio (user requirement)
+
+> "Make sure it's a fantasy medieval theme in your passes — The Princess Bride, A Knight's Tale, Shrek,
+> the Robin Hood movies, a castle-adventure energy. Animate and construct it like an elite animation
+> director or studio would."
+
+**Energy references:** *The Princess Bride* (a storyteller framing a fairy tale; warm, witty, sincere),
+*A Knight's Tale* (medieval world with cheeky swagger — the tavern can have that rowdy, slightly
+anachronistic-feeling bravado in its energy, while staying period-correct on screen), *Shrek* (storybook
+opening, fairy-tale kingdom satire with heart), Disney's *Robin Hood* (1973: animal cast in medieval
+Nottingham, a minstrel narrator, warm watercolor backgrounds), castle-and-kingdom fairy-tale adventure.
+**Craft references for the look:** *Klaus* (2D characters lit like 3D — volumetric light, rim light,
+soft shadow shapes), Cartoon Saloon's *The Secret of Kells* / *Wolfwalkers* (illuminated-manuscript
+design — perfect for the prologue's storybook pages), *Puss in Boots: The Last Wish* (painterly fairy-tale
+color and texture), *The Sword in the Stone* (yes — a stone!).
+
+**Every agent is the director AND the studio.** Work like the best feature-animation teams:
+- **Staging & composition:** one clear idea per shot; strong silhouettes; rule of thirds, leading lines,
+  framing devices (arches, doorways, windows, lantern strings); depth in 3+ layers (foreground framing,
+  midground action, background) with parallax; eye-trace planned from shot to shot; the caption band kept clear.
+- **Value structure & color script:** squint test — the subject is the brightest/most contrasted area;
+  each scene has a dominant hue and one accent; the color script follows §0.3's emotional arc.
+- **Acting:** think before each line (a thought → a glance → a breath → the line); hold moments; small
+  specific gestures over big generic ones; reactions matter as much as actions; eyes lead the head, head
+  leads the body.
+- **Timing & spacing (the 12 principles):** anticipation, follow-through and overlapping action, slow-in/
+  slow-out, arcs, secondary action, squash & stretch, exaggeration with appeal, solid drawing, staging.
+  Holds are "moving holds" (breathing, blinks, drifting cloth), never dead frames.
+- **Polish:** light interacts with characters (rim from lanterns, cold glow from crystals, warm bounce
+  from bread/embers); contact shadows; atmospheric depth; motion feels weighty and intentional.
+- **Self-direct ruthlessly:** render, look, ask "would a top studio ship this shot?", and iterate.
+
 **Thematic gift of the translation:** the city keeps handing him *stones* — his "phone" is a speaking
 rune-stone, the bouncer is a stone troll, the remedies are crystals and cold glass — until a tiny
 gnome grandmother hands him *bread*.
