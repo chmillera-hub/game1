@@ -1,0 +1,82 @@
+"""Narration script: one list of sentences per scene."""
+SCENES = [
+    ("title", [
+        "Shine white light through a prism, and it fans out into a rainbow.",
+        "But what happens if you vibrate the prism, or the light?",
+        "Do the colors just blur, or does something stranger happen?",
+        "I built a ray-tracing simulation to find out.",
+    ]),
+    ("setup", [
+        "Here's the setup: a narrow beam of white light hits a sixty-degree prism of dense flint glass.",
+        "The glass bends violet light more than red, so each color leaves at its own angle.",
+        "One meter away, the colors land on a screen as a spectrum about eighteen centimeters wide.",
+        "Everything you'll see is computed with Snell's law and real glass data, and the colors are mixed the way your eye mixes light.",
+    ]),
+    ("shake", [
+        "Experiment one: shake the prism side to side, five millimeters each way.",
+        "The result: almost nothing.",
+        "Every color shifts by nearly the same few millimeters, and the rainbow stays intact.",
+        "Sliding a prism doesn't change any angles, and it's the angles that separate the colors.",
+        "To scramble a rainbow, you have to rock it, not slide it.",
+    ]),
+    ("rock", [
+        "Experiment two: rock the prism back and forth, a few degrees each way.",
+        "In slow motion, the whole rainbow sweeps across the screen.",
+        "Now speed it up to a hundred swings per second, far faster than your eye can follow.",
+        "Your eye averages the motion, and a color appears that is in no rainbow: pink.",
+        "Pink and magenta are not wavelengths of light. They are what your brain reports when red and violet arrive together.",
+    ]),
+    ("why", [
+        "Why pink, and not just a blur?",
+        "Anything that vibrates spends most of its time near the ends of its swing, where it slows down to turn around.",
+        "So the averaged image is really two ghost rainbows, one at each extreme, joined by a fainter smear.",
+        "Where the red of one ghost lands on the violet of the other, the light adds up to pink.",
+    ]),
+    ("waveform", [
+        "That means the shape of the vibration matters.",
+        "Rock the prism at a constant speed, and the light spreads evenly, washing the middle toward gray.",
+        "A smooth, sine-wave vibration gives a dusky pink.",
+        "But snap the prism between two positions, like a buzzer, and you get two crisp rainbows overlapping, with vivid magenta where they cross.",
+        "Same prism, same amplitude, completely different colors.",
+    ]),
+    ("map", [
+        "Here is every amplitude at once, for a smooth vibration.",
+        "At the bottom is the still rainbow. Moving up, the wobble grows.",
+        "The spectrum fans out, the middle drains toward pink and gray, and only the outer edges stay pure red and violet.",
+    ]),
+    ("freeze", [
+        "Experiment three is the strangest.",
+        "Each color has a special angle, called minimum deviation, where the prism bends it the least.",
+        "Rock the prism around that angle for one color, and that color almost stops moving.",
+        "It only quivers, at twice the vibration frequency, because it passes through its turning point twice per swing.",
+        "Meanwhile, violet and red move in opposite directions, so the rainbow breathes like an accordion around one frozen color.",
+        "Change the tilt, and you choose which color freezes.",
+    ]),
+    ("mercury", [
+        "This is easiest to see with a mercury lamp, which emits only a few pure colors instead of a continuous rainbow.",
+        "Rock the prism fast, and each spectral line splits into a pair, because the light lingers at both ends of the swing.",
+        "The green and yellow lines split widely, but the blue-violet line, sitting at its minimum deviation, stays sharp.",
+        "A spectroscopist might think the atoms had changed. It's only the glass dancing.",
+    ]),
+    ("light", [
+        "What about vibrating the light instead of the prism?",
+        "Wiggling the beam's angle is like rocking the prism, with a twist: the beam drags every color along with it, so no color ever freezes, and violet always swings farthest.",
+        "Could shaking change the light's actual color, through the Doppler effect?",
+        "At a brisk meter per second, the frequency shifts by about three parts in a billion. On this screen, that's less than a nanometer.",
+        "And overlapping colors never form interference fringes. Different frequencies beat against each other about a hundred trillion times a second, so they simply add.",
+    ]),
+    ("camera", [
+        "One last surprise, if you try to film this.",
+        "A phone camera reads its sensor one row at a time, from top to bottom.",
+        "With the prism rocking hundreds of times a second, each row catches the rainbow at a different moment, and the straight color bands turn into snakes.",
+        "And if the vibration nearly matches the frame rate, the camera catches the same part of every swing, so the rainbow seems to drift lazily, even though it's really shaking fast.",
+    ]),
+    ("summary", [
+        "So, what happens when you shake a rainbow?",
+        "Sliding the prism does almost nothing.",
+        "Rocking it creates pink and magenta, colors that are in no rainbow, and the shape of the vibration controls how vivid they get.",
+        "Rocking around minimum deviation freezes one color while the rest breathe around it.",
+        "Spectral lines split into fake pairs, and cameras add illusions of their own.",
+        "All from one wobbling piece of glass.",
+    ]),
+]
