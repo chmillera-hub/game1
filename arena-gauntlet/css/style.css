@@ -1399,8 +1399,9 @@ button.card:active {
 
 /* Short landscape phones: tighten everything. */
 @media (min-aspect-ratio: 5/4) and (max-height: 520px) {
+  /* A fixed height, so the panel below never shifts as the Pass button comes and goes. */
   .topbar {
-    min-height: 44px;
+    height: 52px;
     padding-block: 4px;
   }
   .topbar .title b {

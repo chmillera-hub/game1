@@ -2379,7 +2379,8 @@
     B.confirmEnd = false;
     // One unit a turn: once it has moved or acted, the others can only be looked at.
     B.mode = (s.act && s.act.uid === v.uid) || (ownReady && !inProgress) ? 'unit' : 'inspect';
-    if (UI.board.zoom > 1) UI.board.centerOn(v.x, v.y);
+    // Zoomed in, the view only moves if the unit is off screen.
+    UI.board.ensureVisible(v.x, v.y);
     sfx('select');
     renderBattle();
   }

@@ -72,6 +72,7 @@
       this.terrain = terrain.slice();
       this.palette = PALETTES[paletteName] || PALETTES.grass;
       this.paletteName = paletteName;
+      this.layoutH = this.cssH;
       this.computeLayout();
       this.staticDirty = true;
     }
@@ -79,6 +80,9 @@
     resize(cssW, cssH) {
       const dpr = Math.min(root.devicePixelRatio || 1, 3);
       if (cssW === this.cssW && cssH === this.cssH && dpr === this.dpr) return;
+      // Only the height changed (the panel below grew or shrank): the board stays where it
+      // is while it still fits, so picking a unit never nudges the view.
+      const keep = this.layoutH && cssW === this.cssW && dpr === this.dpr;
       this.dpr = dpr;
       this.cssW = Math.max(1, cssW);
       this.cssH = Math.max(1, cssH);
@@ -86,8 +90,19 @@
       this.cv.height = Math.round(this.cssH * dpr);
       this.cv.style.width = this.cssW + 'px';
       this.cv.style.height = this.cssH + 'px';
+      if (!keep) this.layoutH = this.cssH;
       this.computeLayout();
+      if (keep && ((this.zoom === 1 && this.boardBottom > this.cssH + 1) || this.baseFor(this.cssH) !== this.baseTw)) {
+        this.layoutH = this.cssH;
+        this.computeLayout();
+      }
       this.staticDirty = true;
+    }
+
+    // Tile width that fits the board in this width and height.
+    baseFor(h) {
+      const span = (this.w + this.h) / 2;
+      return Math.max(8, Math.min((this.cssW - 6) / span, (h - 4) / (span * 0.5 + 0.17 + 0.92 + 0.1)));
     }
 
     computeLayout() {
@@ -97,8 +112,8 @@
       const ratio = 0.5;
       const depth = 0.17;
       const head = 0.92;
-      const foot = 0.1;
-      const base = Math.max(8, Math.min((this.cssW - 6) / span, (this.cssH - 4) / (span * ratio + depth + head + foot)));
+      const layoutH = this.layoutH || this.cssH;
+      const base = this.baseFor(layoutH);
       this.baseTw = base;
       const tw = base * this.zoom;
       this.tw = tw;
@@ -109,10 +124,11 @@
       const total = boardH + head * tw;
       this.boardW = span * tw;
       this.boardTotalH = total;
-      const top = (this.cssH - total) / 2 + head * tw;
+      const top = (layoutH - total) / 2 + head * tw;
       this.clampPan();
       this.ox = this.cssW / 2 - ((W - H) * tw) / 4 + this.panX;
       this.oy = top + this.th / 2 + this.panY;
+      this.boardBottom = top - head * tw + total + this.panY;
     }
 
     clampPan() {
@@ -147,10 +163,20 @@
       this.staticDirty = true;
     }
 
-    centerOn(x, y) {
+    // Pan only as far as needed to bring a tile into view, away from the edges.
+    ensureVisible(x, y) {
       if (this.zoom <= 1) return;
       const [sx, sy] = this.center(x, y);
-      this.panBy(this.cssW / 2 - sx, this.cssH * 0.55 - sy);
+      const mx = this.tw * 0.8;
+      const top = this.tw * 1.4;
+      const bottom = this.th * 1.2;
+      let dx = 0;
+      let dy = 0;
+      if (sx < mx) dx = mx - sx;
+      else if (sx > this.cssW - mx) dx = this.cssW - mx - sx;
+      if (sy < top) dy = top - sy;
+      else if (sy > this.cssH - bottom) dy = this.cssH - bottom - sy;
+      if (dx || dy) this.panBy(dx, dy);
     }
 
     center(x, y) {
