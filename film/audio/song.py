@@ -33,18 +33,26 @@ How the singing is made (speech-to-singing, all deterministic)
      (~5.5 Hz, +-28-35 cents) on notes > 0.38 s, a relaxed fall at line ends, slow random drift of a few
      cents; unvoiced consonant frames stay unvoiced.  VITS sometimes renders a long-held token as near
      silence (a held schwa, the length mark of /uː/): repair_nuclei() refills such frames from the same
-     vowel's good frames and lifts nuclei that come out far too quiet.  Resynthesized at 22.05 kHz and
-     upsampled to 48 kHz.
+     vowel's good frames and lifts nuclei that come out far too quiet; steady_nuclei() re-voices vowels that
+     VITS rendered as breath noise (a stretched 'a', 'back', 'lock': mean formant envelope + voiced tilt, else
+     they come out whispered); enhance_formants() sharpens the envelope's formant structure (re-pitching and
+     stretching blur it: 'scarf' -> 'scuff').  Resynthesized at 22.05 kHz and upsampled to 48 kHz.
   4. A second take (the runner-up seed, +-10 ms timing jitter, +5 cents, 0.9x vibrato) doubles the lead at
-     -10 dB; then high-pass, gentle presence EQ, split-band de-esser, compressor; in the mix a synthetic hall
-     IR (band-wise exponentially decaying noise, RT60 ~1.45 s, 20 ms pre-delay, early reflections).
+     -10 dB on the held vowels only (vowel_gate: no doubled, flammed consonants); then high-pass, gentle
+     presence EQ, split-band de-esser, compressor; in the mix a synthetic hall IR (band-wise exponentially
+     decaying noise, RT60 ~1.45 s, early reflections) fed with 45 ms pre-delay, high-passed at 200 Hz and ducked
+     6 dB while he sings, so the words stay dry and close and the room blooms in the gaps.  MIX / ARR hold the
+     mix and arrangement settings; BREATH a catch-breath at the commas where the next pickup follows at once.
   Accompaniment: Karplus-Strong lute (exactly tuned loop with fractional delay, double courses, octave strings
   on the basses, fingertip excitation, pluck-position comb, lute-body resonance IR), arpeggios / strums /
   rolls from the chord chart, strings damped when the chord moves on; a recorder (additive + breath noise +
   chiff + delayed vibrato) playing the motif as a counter-melody from the interlude on and resolving
-  G4 -> F#4 under the last chord; a very light frame drum + tambourine in verse 2; the intro is the bard
+  G4 -> F#4 under the last chord; a light frame drum + tambourine in verse 2; the intro is the bard
   tuning up (a flat A string, the peg turned while it rings, a fifth, two harmonics), a playful run and a
-  rolled chord (the book opens on it), then the vamp.
+  rolled chord (the book opens on it), then the vamp.  The arrangement builds: verse 1 fingerpicked lute; the
+  interlude gives the motif to the recorder (lute steps back); verse 2 strums a little fuller (+1.5 dB) with
+  the drum (~6 dB under the lute) and tambourine (~20 dB under) and the recorder doubling the hook 8va (~9 dB
+  under); the coda thins to rolls; the final chord rings on (2x decay) under the outro.
 """
 from __future__ import annotations
 
@@ -88,7 +96,26 @@ VOICE = dict(model="en_GB-northern_english_male-medium", speaker_id=None,
              pad_mode="natural",  # stretched vowels keep their trailing transition pad natural
              min_frac=0.45,     # the vowel keeps at least this fraction of every note
              noise=0.5, noise_w=0.6,
-             seed=7)
+             seed=7,
+             steady=True,       # steady_nuclei(): re-voice breath-noise VITS vowels (see there)
+             steady_breathy=0.6,  # ... a monophthong core with less than this raw voiced fraction is re-voiced
+             steady_smooth=0,     # ... optional temporal smoothing (frames) of the other held-vowel envelopes
+             formant_enh=0.6,   # WORLD envelope formant sharpening on voiced frames (cepstral postfilter); 0 = off
+             cons_db=None,      # articulation: dB boost per consonant class {"plos","fric","sib","nasal","liquid"}
+             breath=0.03)       # a line's last note stops this long before the next line's first consonant (s)
+
+# Mix settings (one place; make_piece/mixdown read them).  Per-piece values are dicts {piece: value}.
+MIX = dict(double_db=-10.0,      # the double take under the lead
+           double_gate=True,     # the double sounds only on held vowels (consonants single-tracked, no flams)
+           double_floor_db=-30.0,
+           hall_send_db=-16.0, hall_predelay=0.045,          # the words stay dry and close, the room is behind them
+           hall_rt60={"prologue": 1.45, "reprise": 1.6},
+           hall_duck_db=6.0,     # the vocal hall return dips this much while he sings (blooms in the gaps)
+           hall_hp=200.0,        # high-pass on the hall send (Hz, 0 = off): no low-mid mud under the words
+           acc_gap_lu={"prologue": 6.0, "reprise": 5.0},   # vocal stem loudness above the accompaniment
+           acc_duck_db=4.0, acc_dip_db=-3.0,
+           rec_gain=0.42, drum_gain=1.0, tamb_gain=0.8,
+           target_lufs={"prologue": -17.0, "reprise": -19.0})
 
 # ================================================================================================
 # THE SCORE
@@ -174,6 +201,10 @@ SAY = {
     "s0_l5": "Now [[eɪ]] dragon lived there with [[ə]] scarf and [[ə]] sigh,",  # 'Now a dragon' -> 'Now I drag and'
 }
 
+# A catch-breath (s) before the next line where the lyric has a comma/colon and the pickup follows at once
+# (the last note stops this long before the next line's first consonant; default VOICE["breath"]).
+BREATH = {"s0_l5": 0.10, "s0_l9": 0.10}
+
 # Best takes: Piper noise seed per line for (lead, double), picked by sung-ASR take selection -- every line
 # rendered with 8 seeds, scored by Whisper small.en + base.en WER (+ log-prob); the respelled lines were
 # chosen jointly with their spelling.  Lines not listed fall back to default seeds.
@@ -245,7 +276,8 @@ class Grid:
 PROLOGUE_T_BAR0 = 3.00          # the vamp bar (bar 0) starts here; before it the bard tunes up
 PROLOGUE_GRID = Grid(PROLOGUE_T_BAR0, M.TEMPO, 23, bar_len={18: 3},
                      rit=[(21, 22, 1.0, 1.14), (22, 22.5, 1.14, 1.42)])
-REPRISE_T_BAR0 = 0.0            # (the lute's soft rolled chord comes in at bar 0, eighth 1)
+REPRISE_T_BAR0 = 0.06           # the lute's soft rolled chord comes in at bar 0, eighth 1 (after 60 ms of silence:
+                                # a clean head, the file never starts mid-transient)
 REPRISE_GRID = Grid(REPRISE_T_BAR0 - M.eighth_seconds(M.REPRISE_TEMPO), M.REPRISE_TEMPO, 5,
                     rit=[(3.5, 4.0, 1.0, 1.10), (4.0, 4.5, 1.10, 1.38)])
 
@@ -501,7 +533,7 @@ def _unit_ids(n_ph):
 
 
 def plan_line(tp, text, notes, next_onset_start=None, seed=7, nat_ls=None, cons=None, bound=None,
-              pad_mode=None, min_frac=None, say=None):
+              pad_mode=None, min_frac=None, say=None, breath=None):
     """Phonemize + syllabify + allocate phoneme durations so each nucleus starts at its note start.
     Consonants (and the word-boundary tokens between words) keep ~natural length; the vowel absorbs the rest
     of the note.  Returns ids, frame durations, utterance start time, phoneme spans and roles."""
@@ -552,7 +584,7 @@ def plan_line(tp, text, notes, next_onset_start=None, seed=7, nat_ls=None, cons=
     starts = np.array([nt.start for nt in notes])
     ends = np.array([nt.end for nt in notes])
     if next_onset_start is not None:
-        ends[-1] = min(ends[-1], next_onset_start - 0.03)
+        ends[-1] = min(ends[-1], next_onset_start - (VOICE.get("breath", 0.03) if breath is None else breath))
     # consonants squeezed (jointly per syllable boundary) only when the vowel would get < min_frac of the note
     sc = np.ones(n)          # scale of [coda k + boundary k + onset k+1]
     for k in range(n):
@@ -695,6 +727,10 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
     sp = pw.cheaptrick(x, f0r, t, fs)
     ap = pw.d4c(x, f0r, t, fs)
     sp, ap, f0r, repaired = repair_nuclei(sp, ap, f0r, t, plan, fs, f0_raw=f0)
+    if VOICE.get("steady", True):
+        sp, ap, nb = steady_nuclei(sp, ap, t, plan, f0, fs, breathy=VOICE.get("steady_breathy", 0.6),
+                                   smooth_frames=VOICE.get("steady_smooth", 0))
+        repaired += nb
     ap = clean_phonation(ap, t, plan, pct=VOICE.get("ap_pct", 30))
     if warp != 1.0:          # formant warp (<1 lowers formants: a touch darker / warmer)
         nb = sp.shape[1]
@@ -703,8 +739,113 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
     target = f0_track(t + plan["t0"], notes, plan, rng, **kw)
     voiced = (f0r > 0) & ~unv_cls
     f0o = np.where(voiced, 440.0 * 2.0 ** ((target - 69.0) / 12.0), 0.0)
+    if VOICE.get("formant_enh", 0.0) > 0:
+        sp = enhance_formants(sp, np.where(voiced)[0], VOICE["formant_enh"], fs)
     y = pw.synthesize(f0o, sp, ap, fs, frame_period=5.0)
     return y, dict(t=t, f0_in=f0, f0_out=f0o, target=target, voiced=voiced, repaired=repaired)
+
+
+def enhance_formants(sp, frames, beta, fs, q_lo=0.0004, q_hi=0.0045):
+    """Formant sharpening of WORLD envelopes (the cepstral 'postfilter' of vocoded TTS).  Re-pitching a speech
+    envelope to sung notes and stretching its vowels blurs the formants (vowels drift toward a neutral 'uh': scarf
+    -> 'scuff', heart -> 'horse'); in the given frames the log envelope's cepstrum between quefrencies q_lo..q_hi
+    (the formant structure, above the spectral tilt and below the F0 scale) is scaled by up to (1 + beta) with a
+    raised-cosine taper, i.e. formant peaks up and valleys down in dB.  Each frame keeps its energy."""
+    if beta <= 0 or len(frames) == 0:
+        return sp
+    sp = sp.copy()
+    L = np.log(sp[frames] + 1e-20)
+    c = np.fft.irfft(L, axis=1)
+    n = c.shape[1]
+    q = np.minimum(np.arange(n), n - np.arange(n)) / fs
+    lift = np.zeros(n)
+    rise = (q >= q_lo) & (q < 2 * q_lo)
+    lift[rise] = 0.5 - 0.5 * np.cos(np.pi * (q[rise] - q_lo) / q_lo)
+    lift[(q >= 2 * q_lo) & (q <= 0.75 * q_hi)] = 1.0
+    fall = (q > 0.75 * q_hi) & (q <= q_hi)
+    lift[fall] = 0.5 + 0.5 * np.cos(np.pi * (q[fall] - 0.75 * q_hi) / (0.25 * q_hi))
+    L2 = np.fft.rfft(c * (1.0 + beta * lift)[None, :], axis=1).real
+    S2 = np.exp(L2)
+    S2 *= (sp[frames].sum(axis=1) / (S2.sum(axis=1) + 1e-30))[:, None]
+    sp[frames] = S2
+    return sp
+
+
+CONS_CLASS = {**{p: "plos" for p in "ptkbdɡ"}, **{p: "fric" for p in "fvθðhx"}, **{p: "sib" for p in "szʃʒ"},
+              **{p: "nasal" for p in "mnŋ"}, **{p: "liquid" for p in "lɹwj"}}
+
+
+def articulate(y, sr, plan, cons_db, ramp=0.008):
+    """Sung diction: consonants (onsets/codas) lifted by class (dB), smooth ramps; vowels untouched.  Stretched
+    vowels dominate a sung line's energy and the hall/lute mask the short consonants that carry the words."""
+    if not cons_db:
+        return y
+    g = np.zeros(len(y))
+    for i, (a, b) in enumerate(plan["spans"]):
+        if plan["role"][i] not in ("on", "coda"):
+            continue
+        db = cons_db.get(CONS_CLASS.get(plan["ph"][i], ""), 0.0)
+        if db:
+            s, e = int(a * sr), int(b * sr)
+            g[max(0, s):max(0, e)] = np.maximum(g[max(0, s):max(0, e)], db)
+    L = int(ramp * sr) | 1
+    k = np.hanning(L + 2)[1:-1]
+    g = np.convolve(g, k / k.sum(), mode="same")
+    return y * 10 ** (g / 20)
+
+
+def steady_nuclei(sp, ap, t, plan, f0_raw, fs, breathy=0.6, smooth_frames=0, margin=0.025):
+    """Sung vowels hold a steady vocal-tract shape.  VITS sometimes renders a stretched vowel (an unstressed 'a', or a
+    short vowel before a voiceless coda: 'back', 'lock') as breath noise: harvest finds little periodicity there, and
+    CheapTrick's envelope of noise jitters at random from one 5 ms frame to the next, so even re-voiced it comes out
+    rough/whispered (a sung 'a' that is heard as nothing).  Per sung nucleus core (margins kept for the formant
+    transitions):
+      * a breathy monophthong (raw voiced fraction < `breathy`): the log envelope becomes the core's mean (its formant
+        average) with the line's voiced-vowel spectral tilt, frame energy kept smooth, and the aperiodicity capped at
+        the line's typical sung-vowel profile (diphthongs keep their glide and are left alone);
+      * smooth_frames > 0: light temporal smoothing of every other nucleus's log envelope (smooth_frames x 5 ms).
+    Returns (sp, ap, notes)."""
+    sp, ap = sp.copy(), ap.copy()
+    spans, syls, ph = plan["spans"], plan["syls"], plan["ph"]
+    cores, mono = [], []
+    for sy in syls:
+        a, b = spans[sy.nucleus[0]][0] + margin, spans[sy.nucleus[-1]][1] - margin
+        cores.append(np.where((t >= a) & (t < b))[0])
+        vows = "".join(ph[i] for i in sy.nucleus if ph[i] not in STRESS and ph[i] != LENGTH)
+        mono.append(len(vows) == 1)
+    vfr = [float(np.mean(f0_raw[ix] > 0)) if len(ix) else 1.0 for ix in cores]
+    good = [ix for ix, v in zip(cores, vfr) if len(ix) and v >= breathy]
+    ap_ref = np.median(ap[np.concatenate(good)], axis=0) if good else None
+    # the line's voiced-vowel spectral tilt (low quefrencies of the mean log envelope of its well-voiced vowels)
+    tilt_ref = None
+    if good:
+        c_ref = np.fft.irfft(np.log(sp[np.concatenate(good)] + 1e-20).mean(axis=0))
+        nq = len(c_ref)
+        qq = np.minimum(np.arange(nq), nq - np.arange(nq))
+        tilt_ref = (c_ref, qq <= int(round(0.0004 * fs)))     # quefrency < 0.4 ms: tilt / overall shape
+    notes = []
+    k = np.hanning(max(smooth_frames, 1) + 2)[1:-1]
+    k /= k.sum()
+    for si, (ix, v) in enumerate(zip(cores, vfr)):
+        if len(ix) < 3:
+            continue
+        L = np.log(sp[ix] + 1e-20)
+        if v < breathy and mono[si]:
+            e = L.mean(axis=1)                                 # per-frame log energy (smoothed)
+            es = np.convolve(np.pad(e, (2, 2), mode="edge"), np.ones(5) / 5, mode="valid")
+            M_ = L.mean(axis=0)
+            if tilt_ref is not None:                           # breath is far brighter than voice: voiced tilt,
+                c = np.fft.irfft(M_)                           # own formant detail
+                c[tilt_ref[1]] = tilt_ref[0][tilt_ref[1]]
+                M_ = np.fft.rfft(c).real
+            sp[ix] = np.exp(M_[None, :] - M_.mean() + es[:, None])
+            if ap_ref is not None:
+                ap[ix] = np.minimum(ap[ix], ap_ref[None, :])
+            notes.append((si, f"breathy nucleus re-voiced (raw voiced {v:.2f})"))
+        elif smooth_frames > 1 and len(ix) > smooth_frames:
+            Lp = np.pad(L, ((smooth_frames // 2, smooth_frames // 2), (0, 0)), mode="edge")
+            sp[ix] = np.exp(np.apply_along_axis(lambda c: np.convolve(c, k, mode="valid"), 0, Lp))
+    return sp, ap, notes
 
 
 def clean_phonation(ap, t, plan, pct=30):
@@ -833,11 +974,12 @@ def render_vocal(lines_notes, tp, total, take=0, jitter=0.0, cents=0.0, vib_scal
         if nxt is not None and nxt > ns[-1].end + 0.25:
             nxt = None                                        # a rest follows: keep the written length
         seed = take_seed(li, lid, take)
-        p = plan_line(tp, text, ns, next_onset_start=nxt, seed=seed, say=SAY.get(lid))
+        p = plan_line(tp, text, ns, next_onset_start=nxt, seed=seed, say=SAY.get(lid), breath=BREATH.get(lid))
         ns[-1].end = float(p["ends"][-1])
         x, _ = tp.run(p["ids"], p["dur"], VOICE["noise"], 1.0, VOICE["noise_w"], seed)
         rng = np.random.default_rng(seed + 99)
         y, w = world_sing(x, sr_in, p, ns, rng, warp=warp, vib_scale=vib_scale, cents=cents)
+        y = articulate(y, sr_in, p, VOICE.get("cons_db"))
         # edge fades, upsample to 48 kHz, place
         fi = int(0.004 * sr_in)
         y[:fi] *= np.linspace(0, 1, fi)
@@ -1100,6 +1242,7 @@ class Pluck:
     end: float = None      # damped at (s); None = ring
     bend: object = None    # optional cents(t) for the tuning-peg gag
     harmonic: bool = False
+    ring: float = 1.0      # decay-time (t60) multiplier
 
 
 def render_lute(plucks, total, seed=21):
@@ -1121,7 +1264,7 @@ def render_lute(plucks, total, seed=21):
                 np.exp(-tt / 0.7) * np.clip(tt / 0.002, 0, 1)
         else:
             low = p.midi < 52
-            t60 = 3.2 if low else (2.4 if p.midi < 64 else 1.6)
+            t60 = (3.2 if low else (2.4 if p.midi < 64 else 1.6)) * p.ring
             damp = 0.22 if low else (0.18 if p.midi < 64 else 0.155)     # gut strings: warm, not zingy
             s = ks_string(f, dur, t60=t60, damp=damp, pick=0.19 if low else 0.15, vel=p.vel, soft=0.66,
                           rng=rng, bend=p.bend)
@@ -1244,6 +1387,16 @@ def render_hits(hits, total, seed=41):
 # ================================================================================================
 # arrangement
 # ================================================================================================
+ARR = dict(v1_vel=0.55,            # lute velocity, verse 1 (fingerpicked arpeggios)
+           v2_vel=0.55,            # lute velocity, verse 2 (strummed: should sit a little fuller than verse 1)
+           interlude_style="arp_soft",  # lute under the recorder's motif in the interlude (bar 9): it steps back
+           interlude_vel=0.45,
+           rec_interlude_vel=1.6,   # recorder: the motif at the page turn (its one featured statement, ~lute level)
+           rec_double_vel=0.76,     # recorder: soft 8va doubling of the hook in verse 2 (~9 dB under the lute)
+           rec_final_vel=0.65,      # recorder: G4 -> F#4 under the last chord
+           v2_gain_db=1.5,          # lute fader in verse 2 (bars 10-17): the strummed verse sits fuller
+           final_ring=2.0)          # decay-time multiplier for the final chord (lets it ring out under the outro)
+
 LUTE_UPPER = {"D": (57, 62, 66), "G": (59, 62, 67), "A": (57, 61, 64), "A7": (55, 61, 64), "Bm": (59, 62, 66),
               "Em": (55, 59, 64), "C": (55, 60, 64), "F#m": (57, 61, 66)}
 LUTE_BASS = {"D": (38, 45), "G": (43, 50), "A": (45, 52), "A7": (45, 52), "Bm": (47, 54), "Em": (40, 47),
@@ -1264,16 +1417,18 @@ class Strokes:
 
     def __init__(self):
         self.plucks, self.log = [], []
+        self.auto = []          # lute fader moves [(t_from, t_to, dB)]
 
     def pluck(self, t, midi, vel, kind="pluck"):
         self.plucks.append(Pluck(t, midi, vel))
         self.log.append(dict(t=round(t, 4), kind=kind, n=1, vel=round(vel, 2)))
 
-    def strum(self, t, notes, vel, up=False, spread=0.018, kind=None, rng=None):
+    def strum(self, t, notes, vel, up=False, spread=0.018, kind=None, rng=None, ring=1.0):
         order = sorted(notes, reverse=up)
         for i, m in enumerate(order):
             jit = (rng.uniform(-0.003, 0.003) if rng is not None else 0.0)
-            self.plucks.append(Pluck(t + i * spread + jit, m, vel * (0.92 ** i if not up else 0.8 * 0.95 ** i)))
+            self.plucks.append(Pluck(t + i * spread + jit, m, vel * (0.92 ** i if not up else 0.8 * 0.95 ** i),
+                                     ring=ring))
         self.log.append(dict(t=round(t, 4), kind=kind or ("up" if up else "down"), n=len(notes),
                              vel=round(vel, 2)))
 
@@ -1348,21 +1503,25 @@ def arrange_prologue(notes_by_line):
     marks["vamp"] = g.t(0)
     # --- in tempo ---------------------------------------------------------------------------------
     styles = {0: "arp_soft"}
-    styles.update({b: "arp" for b in range(1, 10)})
+    styles.update({b: "arp" for b in range(1, 9)})
+    styles[9] = ARR["interlude_style"]
     styles.update({b: "strum" for b in range(10, 18)})
     styles.update({18: "roll", 19: "arp_soft", 20: "arp_soft", 21: "roll"})
     for bar in range(0, 22):
         st = styles[bar]
-        vel = {0: 0.5, 9: 0.55, 18: 0.6, 19: 0.48, 20: 0.5, 21: 0.5}.get(bar, 0.55)
+        vel = {0: 0.5, 9: ARR["interlude_vel"], 18: 0.6, 19: 0.48, 20: 0.5, 21: 0.5}.get(
+            bar, ARR["v2_vel"] if 10 <= bar <= 17 else ARR["v1_vel"])
         lute_bar(S, g, PROLOGUE_CHORDS, bar, st, vel=vel, rng=rng, halves=halves_of(g, bar))
     # bar 22: "way back to" (G) ... A7 under "bread" ... final D when the melisma resolves
     S.strum(g.t(22, 0), [43] + list(LUTE_UPPER["G"]), 0.5, spread=0.04, kind="roll", rng=rng)
     bread = notes_by_line["s0_l10"][-1]
     S.strum(bread.start, [45] + list(LUTE_UPPER["A7"]), 0.5, spread=0.045, kind="roll", rng=rng)
     t_res = bread.start + bread.split * (bread.end - bread.start)
-    S.strum(t_res, [38, 45, 50, 57, 62, 66], 0.72, spread=0.055, kind="final", rng=rng)
+    S.strum(t_res, [38, 45, 50, 57, 62, 66], 0.72, spread=0.055, kind="final", rng=rng, ring=ARR["final_ring"])
     marks["final_chord"] = t_res
     total = t_res + 3.4                    # the voice holds D3 ~1.4 s, then ~2 s of lute ring-out
+    if ARR.get("v2_gain_db"):              # verse 2 strums a little fuller (fader up through bars 10-17)
+        S.auto.append((g.t(10, 0) - 0.15, g.t(18, 0), ARR["v2_gain_db"]))
     S.damp_all(total)
     # chord changes damp the strings the next chord does not contain
     changes = []
@@ -1371,13 +1530,15 @@ def arrange_prologue(notes_by_line):
             changes.append((g.t(bar, 3 * h), chord_at(PROLOGUE_CHORDS, bar, h)))
     _damp_on_changes(S, changes, [(bread.start, "A7"), (t_res, "D")])
     # --- recorder (from the interlude): the motif as a counter-melody ------------------------------
-    interlude = recorder_motif(g, 9, vel=0.85)                           # interlude (page turn) ...
+    interlude = recorder_motif(g, 9, vel=ARR["rec_interlude_vel"])      # interlude (page turn) ...
     t_pick = notes_by_line["s0_l5"][0].start - 0.12                      # ... its last note ends before
     interlude[-1] = (interlude[-1][0], t_pick - interlude[-1][0], interlude[-1][2], interlude[-1][3])  # 'Now a'
+    dv = ARR["rec_double_vel"]
     phrases = [interlude,
-               recorder_motif(g, 11, vel=0.38),                          # doubles "SCARF and a SIGH" 8va, softly
-               recorder_motif(g, 16, vel=0.35)[:3]]                      # "WHAT he was MISS-" ...
-    phrases.append([(bread.start, t_res - bread.start, 67, 0.55), (t_res, 2.3, 66, 0.6)])   # G4 -> F#4 (7 -> 3)
+               recorder_motif(g, 11, vel=dv),                            # doubles "SCARF and a SIGH" 8va, softly
+               recorder_motif(g, 16, vel=dv * 0.92)[:3]]                 # "WHAT he was MISS-" ...
+    fv = ARR["rec_final_vel"]
+    phrases.append([(bread.start, t_res - bread.start, 67, fv), (t_res, 2.3, 66, fv * 1.09)])   # G4 -> F#4 (7 -> 3)
     rec = recorder_line(phrases, total)
     # --- frame drum + tambourine (verse 2, lightly) ------------------------------------------------
     hits = []
@@ -1434,8 +1595,8 @@ def arrange_reprise(notes_by_line):
 # ================================================================================================
 # vocal processing, mix, timing json
 # ================================================================================================
-def process_vocal(lead, double):
-    v = lead + 10 ** (-10 / 20) * double
+def process_vocal(lead, double, double_db=-10.0):
+    v = lead + 10 ** (double_db / 20) * double
     v = sosfilt(butter(2, 75 / (SR / 2), btype="high", output="sos"), v)
     b, a = biquad_peak(330, -1.5, 1.0)
     v = lfilter(b, a, v)
@@ -1513,6 +1674,108 @@ def beat_grid(grid, bar_from, bar_to, extra_downbeats=()):
     return sorted({b for b in beats if b >= 0}), sorted({d for d in downs if d >= 0})
 
 
+def synth_vocal(lines_notes, total, log=None):
+    """The sung lead (take 0) and its double (take 1: runner-up seed, +-10 ms, +5 cents, 0.9x vibrato)."""
+    tp = TimedPiper(VOICE["model"], VOICE["speaker_id"])
+    lead, info = render_vocal(lines_notes, tp, total, take=0, log=log)
+    double, _ = render_vocal(lines_notes, tp, total, take=1, jitter=0.010, cents=5.0, vib_scale=0.9)
+    return lead, double, info
+
+
+def fader(n, moves, ramp=0.3, sr=SR):
+    """Fader automation: [(t_from, t_to, dB)] segments with smooth ramps -> linear gain curve of n samples."""
+    g = np.zeros(n)
+    for a, b, db in moves:
+        g[max(0, int(a * sr)):max(0, int(b * sr))] += db
+    L = int(ramp * sr) | 1
+    k = np.hanning(L + 2)[1:-1]
+    g = np.convolve(np.pad(g, (L // 2, L // 2), mode="edge"), k / k.sum(), mode="valid")
+    return 10 ** (g / 20)
+
+
+def render_accomp(S, rec, hits, total):
+    """Raw instrument tracks (mono, piece length): lute, recorder, frame drum, tambourine."""
+    n = int(round(total * SR))
+    parts = dict(lute=fit(render_lute(S.plucks, total), n))
+    if getattr(S, "auto", None):
+        parts["lute"] = parts["lute"] * fader(n, S.auto)
+    if rec is not None:
+        parts["rec"] = fit(rec, n)
+    if hits:
+        dr, tb = render_hits(hits, total)
+        parts["drum"], parts["tamb"] = fit(dr, n), fit(tb, n)
+    return parts
+
+
+def vowel_gate(info, n, pre=0.02, post=0.012, floor_db=-30.0, ramp=0.012, sr=SR):
+    """1 over every sung vowel nucleus (shrunk by pre/post), floor elsewhere, smooth: keeps the double off the
+    consonants, where two takes' slightly different timing smears the words."""
+    g = np.zeros(n)
+    for li in info:
+        p = li["plan"]
+        for sy in p["syls"]:
+            a = int((li["t0"] + p["spans"][sy.nucleus[0]][0] + pre) * sr)
+            b = int((li["t0"] + p["spans"][sy.nucleus[-1]][1] - post) * sr)
+            if b > a:
+                g[max(0, a):max(0, min(n, b))] = 1.0
+    L = int(ramp * sr) | 1
+    k = np.hanning(L + 2)[1:-1]
+    g = np.convolve(g, k / k.sum(), mode="same")
+    fl = 10 ** (floor_db / 20)
+    return fl + (1 - fl) * g
+
+
+def mixdown(name, total, lead, double, info, parts):
+    """Vocal processing + accompaniment balance + halls + loudness -> stems dict (see the module docstring)."""
+    n = int(round(total * SR))
+    dbl = fit(double, n)
+    if MIX["double_gate"]:
+        dbl = dbl * vowel_gate(info, n, floor_db=MIX["double_floor_db"])
+    vocal = fit(process_vocal(fit(lead, n), dbl, MIX["double_db"]), n)
+    acc = pan(parts["lute"], -0.22) * 1.0
+    if "rec" in parts:
+        acc += pan(parts["rec"], 0.32) * MIX["rec_gain"]
+    if "drum" in parts:
+        acc += pan(parts["drum"], 0.08) * MIX["drum_gain"] + pan(parts["tamb"], 0.38) * MIX["tamb_gain"]
+    # make room for the words: a gentle dip in the accompaniment's presence band, and the accompaniment
+    # ducked (smooth) whenever the bard sings
+    if MIX["acc_dip_db"]:
+        b_, a_ = biquad_peak(2600, MIX["acc_dip_db"], 0.8)
+        acc = lfilter(b_, a_, acc, axis=0)
+    acc = acc * duck_gain(vocal, SR, depth_db=MIX["acc_duck_db"])[:, None]
+    # levels: vocal on top (acc_gap_lu above the accompaniment), then a shared hall
+    lv, la = kweight_lufs(vocal), kweight_lufs(acc)
+    acc *= 10 ** ((lv - MIX["acc_gap_lu"][name] - la) / 20)
+    ir_a = hall_ir(MIX["hall_rt60"][name])
+    ir_v = hall_ir(MIX["hall_rt60"][name], predelay=MIX["hall_predelay"])
+    send = vocal
+    if MIX["hall_hp"]:
+        send = sosfilt(butter(2, MIX["hall_hp"] / (SR / 2), btype="high", output="sos"), send)
+    v_wet = fit(reverb(send, ir_v), n) * 10 ** (MIX["hall_send_db"] / 20)
+    if MIX["hall_duck_db"]:
+        v_wet = v_wet * duck_gain(vocal, SR, depth_db=MIX["hall_duck_db"], attack=0.01, release=0.35)[:, None]
+    a_wet = fit(reverb(acc, ir_a), n) * 10 ** (-13.0 / 20)
+    acc_stem = fit(acc, n) + a_wet
+    voc_stem = fit(vocal, n)
+    mix = np.stack([voc_stem, voc_stem], 1) * 0.7071 + v_wet + acc_stem
+    # fades: tail ring-out
+    fo = int(0.9 * SR)
+    ramp = np.linspace(1, 0, fo) ** 2
+    for arr in (mix, acc_stem, v_wet):
+        arr[-fo:] *= ramp[:, None]
+    voc_stem[-fo:] *= ramp
+    # loudness: mix to the target LUFS; every stem limited to <= -1.5 dBTP *before* the stems are summed,
+    # so vocal(both channels) + vocal hall + accomp == mix before the final bus limiter (-1.3 dBTP)
+    g = 10 ** ((MIX["target_lufs"][name] - kweight_lufs(mix)) / 20)
+    voc_stem = limiter(voc_stem * g * 0.7071, SR, ceiling_db=-1.5)
+    acc_stem = limiter(acc_stem * g, SR, ceiling_db=-1.5)
+    v_wet *= g
+    mix = np.stack([voc_stem, voc_stem], 1) + v_wet + acc_stem
+    mix_l = limiter(mix, SR, ceiling_db=-1.3)
+    return dict(vocal=voc_stem, accomp=acc_stem, mix=mix_l, vocal_wet=v_wet, lead=lead, double=double,
+                lute=parts["lute"])
+
+
 def make_piece(name, lines, grid, chords, arrange, log):
     t_start = time.time()
     lines_notes = score_notes(lines, grid)
@@ -1520,52 +1783,11 @@ def make_piece(name, lines, grid, chords, arrange, log):
     S, rec, hits, total, marks = arrange(notes_by_line)
     total = round(total, 3)
     log(f"[{name}] {total:.2f} s; singing ...")
-    tp = TimedPiper(VOICE["model"], VOICE["speaker_id"])
-    lead, info = render_vocal(lines_notes, tp, total, take=0, log=log)
-    double, _ = render_vocal(lines_notes, tp, total, take=1, jitter=0.010, cents=5.0, vib_scale=0.9)
+    lead, double, info = synth_vocal(lines_notes, total, log)
     log(f"[{name}] vocal done ({time.time() - t_start:.1f}s); instruments ...")
-    vocal = process_vocal(lead, double)
+    parts = render_accomp(S, rec, hits, total)
+    stems = mixdown(name, total, lead, double, info, parts)
     n = int(round(total * SR))
-    vocal = fit(vocal, n)
-    lute = fit(render_lute(S.plucks, total), n)
-    acc = pan(lute, -0.22) * 1.0
-    if rec is not None:
-        acc += pan(fit(rec, n), 0.32) * 0.42
-    if hits:
-        dr, tb = render_hits(hits, total)
-        acc += pan(fit(dr, n), 0.08) * 0.34 + pan(fit(tb, n), 0.38) * 0.16
-    # make room for the words: a gentle dip in the accompaniment's presence band, and the accompaniment
-    # ducked (<= 4 dB, smooth) whenever the bard sings
-    b_, a_ = biquad_peak(2600, -3.0, 0.8)
-    acc = lfilter(b_, a_, acc, axis=0)
-    acc = acc * duck_gain(vocal, SR, depth_db=4.0)[:, None]
-    # levels: vocal on top (~9 LU above the accompaniment in the prologue), then a shared hall
-    lv, la = kweight_lufs(vocal), kweight_lufs(acc)
-    target_gap = 9.0 if name == "prologue" else 7.0
-    acc *= 10 ** ((lv - target_gap - la) / 20)
-    ir = hall_ir(1.45 if name == "prologue" else 1.6)
-    v_wet = fit(reverb(vocal, ir), n) * 10 ** (-13.5 / 20)
-    a_wet = fit(reverb(acc, ir), n) * 10 ** (-13.0 / 20)
-    acc_stem = fit(acc, n) + a_wet
-    voc_stem = fit(vocal, n)
-    mix = np.stack([voc_stem, voc_stem], 1) * 0.7071 + v_wet + acc_stem
-    # fades: tail ring-out
-    fo = int(0.9 * SR)
-    ramp = np.linspace(1, 0, fo) ** 2
-    for arr in (mix, acc_stem):
-        arr[-fo:] *= ramp[:, None]
-    voc_stem[-fo:] *= ramp
-    # loudness: mix to the target LUFS; every stem limited to <= -1.5 dBTP *before* the stems are summed,
-    # so vocal(both channels) + vocal hall + accomp == mix before the final bus limiter (-1.3 dBTP)
-    target = -17.0 if name == "prologue" else -19.0
-    g = 10 ** ((target - kweight_lufs(mix)) / 20)
-    voc_stem = limiter(voc_stem * g * 0.7071, SR, ceiling_db=-1.5)
-    acc_stem = limiter(acc_stem * g, SR, ceiling_db=-1.5)
-    v_wet *= g
-    mix = np.stack([voc_stem, voc_stem], 1) + v_wet + acc_stem
-    mix_l = limiter(mix, SR, ceiling_db=-1.3)
-    stems = dict(vocal=voc_stem, accomp=acc_stem, mix=mix_l, vocal_wet=v_wet, lead=lead, double=double,
-                 lute=lute)
     timing = dict(duration=total, lines=line_timing(info, fit(lead, n)), info=info, strokes=S.log,
                   marks=marks, grid=grid, chords=chords, notes=lines_notes)
     log(f"[{name}] done in {time.time() - t_start:.1f}s")
@@ -1763,7 +1985,7 @@ def verify_piece(name, stems, timing, pj, log):
                 y = (y / (np.abs(y).max() + 1e-9) * 0.5).astype(np.float32)
                 y = np.concatenate([np.zeros(4800, np.float32), y, np.zeros(4800, np.float32)])
                 segs, _ = asr.transcribe(y, language="en", beam_size=5, condition_on_previous_text=False,
-                                         without_timestamps=True)
+                                         without_timestamps=True, temperature=0.0)   # no sampling: repeatable
                 hyp = " ".join(sg.text.strip() for sg in segs)
                 e, n_ = wer(li["text"], hyp)
                 tot_e += e
@@ -1773,7 +1995,7 @@ def verify_piece(name, stems, timing, pj, log):
             w16 = resample_poly(whole, 1, 3)
             w16 = (w16 / (np.abs(w16).max() + 1e-9) * 0.5).astype(np.float32)
             segs, _ = asr.transcribe(w16, language="en", beam_size=5, condition_on_previous_text=False,
-                                     without_timestamps=True)
+                                     without_timestamps=True, temperature=0.0)
             hyp_w = " ".join(sg.text.strip() for sg in segs)
             ew, nw = wer(" ".join(l["text"] for l in pj["lines"]), hyp_w)
             rep["asr"][mname] = dict(per_line_wer=round(tot_e / tot_n, 3), whole_wer=round(ew / nw, 3),
