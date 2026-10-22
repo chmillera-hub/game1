@@ -794,20 +794,35 @@
   function newCampaign() {
     let wb = WARBANDS[0].id;
     let diff = 'knight';
-    const itemName = ([kind, id]) => (kind === 'skill' ? SKILLS[id] : GEAR[id]).name;
+    // The chip whose meaning is shown under a warband's chips: [warband, chip key].
+    let info = null;
+    const itemDefOf = ([kind, id]) => (kind === 'skill' ? SKILLS[id] : GEAR[id]);
+    const chipInfo = (w, key) => {
+      if (key === 'relic') return { name: RELICS[w.relic].name, kind: 'Relic', desc: RELICS[w.relic].desc };
+      if (key === 'gold') return { name: `${w.gold} gold`, kind: 'Starting gold', desc: 'Spend it at merchants on recruits, talents, skills, gear and relics.' };
+      const it = w.items[+key];
+      const d = itemDefOf(it);
+      return { name: d.name, kind: `${it[0] === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply`, desc: d.desc + ' Slot it into a unit from its loadout.' };
+    };
+    const chip = (w, key, cls, icon, label) => {
+      const c = chipInfo(w, key);
+      const on = info && info[0] === w.id && info[1] === key;
+      return `<span class="chip tappable ${cls} ${on ? 'on' : ''}" data-chip="${w.id}:${key}" title="${esc(c.name + ': ' + c.desc)}">${ic(icon)} ${esc(label)}</span>`;
+    };
     const render = () => {
       const v = showView(
         `<div class="wrap">
           <div class="row"><button class="btn ghost" id="ncBack">Back</button></div>
           <div><p class="eyebrow">New campaign</p><h2>Choose your warband</h2></div>
-          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Choose wisely who fights.</p>
+          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Choose wisely who fights. Tap a relic or item to see what it does.</p>
           <div class="choice-grid">${WARBANDS.map(
             (w) => `<button class="card ${w.id === wb ? 'selected' : ''}" data-wb="${w.id}">
               <div class="unit-strip">${w.units.map((t) => `<canvas data-p="${t}:P"></canvas>`).join('')}</div>
               <div class="title">${esc(w.name)}</div>
               <div class="desc">${esc(w.desc)}</div>
               <div class="small">${w.units.map((t) => UNITS[t].name).join(', ')}</div>
-              <div class="chips"><span class="chip magic">${ic('gem')} ${esc(RELICS[w.relic].name)}</span>${(w.items || []).map((it) => `<span class="chip">${ic(it[0] === 'skill' ? 'scroll' : 'sword')} ${esc(itemName(it))}</span>`).join('')}<span class="chip warn">${ic('gold')} ${w.gold}</span></div>
+              <div class="chips">${chip(w, 'relic', 'magic', 'gem', RELICS[w.relic].name)}${(w.items || []).map((it, i) => chip(w, String(i), '', it[0] === 'skill' ? 'scroll' : 'sword', itemDefOf(it).name)).join('')}${chip(w, 'gold', 'warn', 'gold', String(w.gold))}</div>
+              ${info && info[0] === w.id ? (() => { const c = chipInfo(w, info[1]); return `<div class="chip-info"><b>${esc(c.name)}</b> <span class="muted">${esc(c.kind)}</span><br>${esc(c.desc)}</div>`; })() : ''}
             </button>`
           ).join('')}</div>
           <h3>Difficulty</h3>
@@ -818,6 +833,16 @@
         </div>`
       );
       $('#ncBack', v).onclick = () => title();
+      // Tapping a chip picks that warband and explains the chip; tapping it again hides it.
+      for (const c of $$('[data-chip]', v))
+        c.onclick = (e) => {
+          e.stopPropagation();
+          const [id, key] = c.dataset.chip.split(':');
+          wb = id;
+          info = info && info[0] === id && info[1] === key ? null : [id, key];
+          sfx('click');
+          render();
+        };
       for (const b of $$('[data-wb]', v))
         b.onclick = () => {
           wb = b.dataset.wb;
