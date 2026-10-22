@@ -38,9 +38,12 @@ How the singing is made (speech-to-singing, all deterministic)
      they come out whispered); enhance_formants() sharpens the envelope's formant structure above ~500-900 Hz
      (re-pitching and stretching blur it: 'scarf' -> 'scuff'; F1 is left alone, or one harmonic dominates the sung
      vowel).  Resynthesized at 22.05 kHz and upsampled to 48 kHz.
-  4. A second take (the runner-up seed, +-10 ms timing jitter, +5 cents, 0.9x vibrato) doubles the lead at
+  4. Every sung line is ridden to the same loudness (VOICE line_lufs: raw VITS takes differ by up to 11 dB, and a
+     line sung 5-8 dB under its neighbours loses its words to the lute).  A second take (the runner-up seed, +-10 ms
+     timing jitter, +5 cents, 0.9x vibrato) doubles the lead at
      -10 dB on the held vowels only (vowel_gate: no doubled, flammed consonants); then high-pass, gentle
-     presence EQ, split-band de-esser, compressor; in the mix a synthetic hall IR (band-wise exponentially
+     presence EQ, split-band de-esser, compressor (fed at a fixed loudness, so changing one line's take cannot
+     change how every other line is compressed); in the mix a synthetic hall IR (band-wise exponentially
      decaying noise, RT60 ~1.45 s, early reflections) fed with 45 ms pre-delay, high-passed at 200 Hz and ducked
      6 dB while he sings, so the words stay dry and close and the room blooms in the gaps.  The lute is EQ'd for
      the voice (-4 dB below ~250 Hz, +6 dB shelf above ~1.5 kHz: less low-mid mud under the words, more pluck) and the
@@ -119,6 +122,7 @@ LINE_GAIN_DB = {}
 
 # Mix settings (one place; make_piece/mixdown read them).  Per-piece values are dicts {piece: value}.
 MIX = dict(double_db=-10.0,      # the double take under the lead
+           vocal_comp_in_lufs=-28.0,   # the vocal chain's compressor sees the (ridden) vocal at this loudness
            double_gate=True,     # the double sounds only on held vowels (consonants single-tracked, no flams)
            double_floor_db=-30.0,
            hall_send_db=-16.0, hall_predelay=0.045,          # the words stay dry and close, the room is behind them
@@ -212,12 +216,18 @@ REPRISE_LINES = [
 ]
 
 # What Piper is fed when it differs from the lyric (same syllables; [[...]] = raw phonemes).  Each respelling
-# was chosen because Whisper misheard the plain spelling when sung.
+# was chosen because Whisper misheard the plain spelling when sung.  [[hˈɛd]] / [[dɹˈɛɡən]]: espeak's TRAP vowel /æ/,
+# stretched and re-pitched, is heard as /ʌ/ or /ɒ/ ('had' -> 'have', 'hot', 'harder'; 'dragon' -> 'drug and'); a singer's
+# brighter /ɛ/ (the older-RP 'had') keeps the word.
 SAY = {
     "s0_l1": "Once [[ʌpˈɒn]] a time, in a kingdom of stone,",               # a held schwa renders silent
     "s0_l2": "Lived [[eɪ]] town full of folk who were living alone.",      # /ɐ/ heard as 'the'
+    "s0_l3": "They [[hˈɛd]] potions for sleeping and charms for the rain,",  # 'They have/hot potions'
     "s0_l4": "And [[ə]] lock on each heart, and [[ə]] latch on each pane.",  # /ɐ/ heard as "I'll"
-    "s0_l5": "Now [[eɪ]] dragon lived there with [[ə]] scarf and [[ə]] sigh,",  # 'Now a dragon' -> 'Now I drag and'
+    "s0_l5": "Now [[ə]] [[dɹˈɛɡən]] lived there with [[ə]] scarf and [[ə]] sigh,",  # 'Now I drag and'; strong
+                                                                    # 'ay' + 'dre-' was heard as 'Now Adrian can'
+    "s0_l7": "Every merchant in town [[hˈɛd]] a stone he could sell —",     # 'had a' heard as 'harder'
+    "s0_l9": "So pull up [[ə]] stool, friend, and hear how it's said:",     # /ɐ/: 'So Paul, there's a still friend'
 }
 
 # A catch-breath (s) before the next line where the lyric has a comma/colon and the pickup follows at once
@@ -228,10 +238,14 @@ BREATH = {"s0_l5": 0.10, "s0_l9": 0.10,
 # Best takes: Piper noise seed per line for (lead, double), picked by sung-ASR take selection -- every line
 # rendered with 8 seeds, scored by Whisper small.en + base.en WER (+ log-prob); the respelled lines were
 # chosen jointly with their spelling.  Lines not listed fall back to default seeds.
+# s0_l3/l4/l5/l7/l9 were re-chosen in the final mix context (lute EQ, vocal riding, band-limited formant
+# sharpening): spelling x 4-8 seeds per line, each take scored over 10 views (vocal stem; the mix with the
+# accompaniment at +0 and +3 dB, two cut points; base.en + small.en, homophones allowed), ranked by mean + worst
+# view, vowels required voiced.  A single-view pick is noise: the same take scores 10-45% across these views.
 TAKE_SEEDS = {
-    "s0_l1": (7017, 6017), "s0_l2": (8048, 3048), "s0_l3": (8079, 7079), "s0_l4": (5110, 8110),
-    "s0_l5": (4141, 1141), "s0_l6": (5172, 8172), "s0_l7": (2203, 3203), "s0_l8": (8234, 6234),
-    "s0_l9": (1265, 3265), "s0_l10": (8296, 3296), "s9_l1": (2017, 4017), "s9_l2": (3048, 2048),
+    "s0_l1": (7017, 6017), "s0_l2": (8048, 3048), "s0_l3": (3079, 5079), "s0_l4": (8110, 7110),
+    "s0_l5": (7141, 1141), "s0_l6": (5172, 8172), "s0_l7": (1203, 2203), "s0_l8": (8234, 6234),
+    "s0_l9": (3265, 6265), "s0_l10": (8296, 3296), "s9_l1": (2017, 4017), "s9_l2": (3048, 2048),
 }
 
 
@@ -1650,8 +1664,13 @@ def process_vocal(lead, double, double_db=-10.0):
     b, a = biquad_shelf(140, 1.0, high=False)
     v = lfilter(b, a, v)
     v = deess(v, SR)
-    pk = np.abs(v).max() + 1e-9
-    v = v / pk * 0.5
+    # into the compressor at a fixed loudness (was: the whole track's peak -> 0.5, so swapping ONE line's take moved
+    # every line's compression -- and flipped other lines' intelligibility)
+    lv = kweight_lufs(v)
+    if lv > -70.0:
+        v = v * 10 ** ((MIX.get("vocal_comp_in_lufs", -28.0) - lv) / 20)
+    else:
+        v = v / (np.abs(v).max() + 1e-9) * 0.5
     v = compress(v, SR, thresh_db=-22.0, ratio=2.6)
     return v
 

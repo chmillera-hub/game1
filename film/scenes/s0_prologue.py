@@ -683,16 +683,16 @@ SHOT_B = [
     (T_CUT_C, Wk(1112, 684, 1.56), "linear"),
 ]
 SHOT_C = [
-    (T_CUT_C, Pk("left", 0.98, 0.54, 5.0)),                               # cut to the spread: verse 2 writes itself
-    (wt(5, "dragon"), Pk("left", 0.9, 0.55, 5.3), "inout_sine"),          #   at the top, the dragon alone below
-    (wt(5, "sigh") - 0.15, Pk("left", 0.47, 0.605, 9.0), "inout_sine"),   # push in on him for "...and a SIGH"
-    (wt(6, "waved") + 0.25, Pk("left", 0.47, 0.61, 8.6), "inout_sine"),   # the hopeful wave (verse out of frame)
-    (wt(6, "hurried") - 0.1, Pk("left", 0.52, 0.70, 6.8), "inout_sine"),  # ease back: the neighbours hurry by
-    (wt(6, "by") + 0.2, Pk("left", 0.53, 0.70, 6.7), "linear"),           #   (the verse above is out of frame)
-    (wt(7, "merchant"), Pk("right", 0.47, 0.66, 7.2), "inout_sine"),      # glide to the market: "Every merchant..."
-    (wt(7, "stone") - 0.1, Pk("right", 0.3, 0.6, 8.6), "inout_sine"),     # in on the stone-seller for "STONE"
-    (wt(7, "sell"), Pk("right", 0.46, 0.66, 7.4), "inout_sine"),          # ...all three hold up their wares
-    (wt(8, "wasn't"), Pk("right", -0.02, 0.58, 4.6), "inout_sine"),       # pull back: the dragon AND the stalls
+    (T_CUT_C, Pk("left", 0.995, 0.495, 6.25)),                            # the spread fills the frame: verse 2 writes
+    (wt(5, "with") - 0.1, Pk("left", 0.95, 0.53, 6.6), "inout_sine"),    #   itself over the dragon and the market
+    (wt(5, "sigh") - 0.12, Pk("left", 0.655, 0.68, 9.2), "inout_sine"),  # in on him: "...with a scarf and a SIGH"
+    (wt(6, "neighbours"), Pk("left", 0.665, 0.685, 9.6), "inout_sine"),  # the hopeful wave
+    (wt(6, "hurried") + 0.1, Pk("left", 0.83, 0.69, 7.6), "inout_sine"), # ease back: they hurry past, heads down
+    (wt(7, "merchant"), Pk("left", 0.995, 0.52, 6.35), "inout_sine"),      # "Every merchant in town": the spread
+    (wt(7, "stone") - 0.15, Pk("right", 0.31, 0.66, 12.0), "inout_sine"),  # in on the stone-seller: STONE
+    (wt(7, "sell"), Pk("right", 0.49, 0.645, 11.6), "inout_sine"),       # ...all three hold up their wares: SELL
+    (wt(8, "missing") - 0.25, Pk("left", 0.995, 0.5, 6.25), "inout_sine"),  # back to the spread: held out to him
+    (wt(8, "spell"), Pk("left", 0.99, 0.5, 6.1), "linear"),              # "there wasn't a spell": he turns away
     (LN[9].start + 0.15, Wk(1062, 742, 1.45), "inout_sine"),              # out of the book, back to the bard
     (T_WINK - 0.15, Wk(872, 772, 2.15), "inout_sine"),                    # push in on him: the stool, the wink
     (LN[9].end + 0.1, Wk(874, 770, 2.2), "linear"),
@@ -702,6 +702,27 @@ SHOT_C = [
     (DUR, Pk("right", 0.74, 0.82, 16.0), "inout_sine"),                   # ...after him to the door as it goes black
                                                                           #   (the lectern candle slides out right)
 ]
+
+
+BOOK_PAD = 6.0                                    # the boards' overhang round the page block (world px)
+
+
+def book_bounds(view=VIEW_BOOK):
+    """World rectangle of the open book (both pages + the boards) at desk angle `view`."""
+    x0 = page_world("left", 0.0, 0.0, view)[0] - BOOK_PAD
+    x1 = page_world("right", 1.0, 0.0, view)[0] + BOOK_PAD
+    y0 = page_world("left", 0.0, 0.0, view)[1] - BOOK_PAD
+    y1 = page_world("left", 0.0, 1.0, view)[1] + BOOK_PAD
+    return x0, y0, x1, y1
+
+
+def frame_inside_book(cam):
+    """True when the whole frame lies on the open book (deep shots: the nook can't show)."""
+    if cam.zoom < 3.0:
+        return False
+    x0, y0, x1, y1 = book_bounds(view_for_zoom(cam.zoom))
+    hw, hh = W * 0.5 / cam.zoom, H * 0.5 / cam.zoom
+    return cam.x - hw >= x0 and cam.x + hw <= x1 and cam.y - hh >= y0 and cam.y + hh <= y1
 
 
 def camera_at(t):
@@ -847,7 +868,10 @@ def _flat_loop(build):
     """Flatten a path built by build(cr) into one polyline (page units)."""
     surf, c = core.frame(4, 4)
     c.new_path()
-    build(c)
+    res = build(c)
+    if res is not None and hasattr(res, "add"):      # builders that return a captured B.Path (it clears the path)
+        c.new_path()
+        res.add(c)
     pts = []
     for kind, xy in c.copy_path_flat():
         if kind in (cairo.PATH_MOVE_TO, cairo.PATH_LINE_TO) and xy:
@@ -861,7 +885,7 @@ def _page_gilt(page):
     """The gilt lines of one of our pages, as page-unit polylines: the border rule and the gold
     frame of its illustration (if it has one)."""
     w, h = 150.0, 200.0
-    m = w * 0.075
+    m = PG.KELLS_BAND[0]                       # the outer gold rule of the Kells border band
     loops = [[(m, m), (w - m, m), (w - m, h - m), (m, h - m), (m, m)]]
     art = getattr(page, "illus", None)
     if isinstance(art, PG.PageArt) and art.box is not None and art.frame:
@@ -1042,7 +1066,7 @@ def draw(cr, t, st):
     z = cam.zoom
     view = view_for_zoom(z)
     k_book = smooth((z - 2.6) / (4.2 - 2.6))          # 0 in the nook .. 1 deep in the book
-    deep = z > 4.6
+    deep = frame_inside_book(cam)                       # nothing of the nook can show: skip it
     flames = []
     # ---- the wall (parallax), the hearth fire
     if not deep:

@@ -75,7 +75,9 @@ class Song:
 
 SONG = Song()
 
-LATCH_LEAD, LATCH_STEP = 0.1, 0.09             # the shutter run: starts just before "latch", 90 ms apart
+LATCH_LEAD, LATCH_STEP = 0.1, 0.075            # the shutter run: starts just before "latch", 75 ms apart
+LATCH_CLOSE, LATCH_BAR = 0.26, 0.18           # each pair swings shut in 0.26 s, then its bar drops in 0.18 s
+PADLOCK_DELAY = 0.12                          # the heart padlock snaps shut this long after its door slams
 
 
 # ----------------------------------------------------------------------------------------
@@ -195,6 +197,7 @@ FOLK = {
     "kobold": dict(skin="#c97446", cloak="#34539c", trim="#d8b25e", hood=True, ears="kobold", nose=1.2, h=0.92,
                    tail=True),
     "hare": dict(skin="#cbb79a", cloak="#6b5a8a", trim="#d6c08e", hood=False, ears="hare", nose=0.4, h=0.95),
+    "frog": dict(skin="#86a95a", cloak="#5d4a8c", trim="#d8b25e", hood=False, ears="frog", nose=0.0, h=0.9),
 }
 
 
@@ -297,10 +300,32 @@ def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, 
             pe = sb.wash(cr, e, sk, 0.99, 0.3, smooth_t=0.6)
             sb.ink_outline(cr, pe, 0.45, ink_c, 0.75)
     # the face (or the back of the head when turned away)
-    face = [(-4.4, -3.2), (-1.0, -6.0), (3.6, -5.2), (5.0, -1.4), (4.4, 2.2), (0.6, 3.6), (-3.6, 2.6)]
+    if ears == "frog":
+        # a broad flat frog head, bulging eyes on top, a long wide mouth
+        face = [(-5.0, -2.6), (-2.0, -4.6), (3.6, -4.4), (6.4, -1.4), (5.8, 1.8), (1.0, 3.2), (-4.2, 2.4)]
+    else:
+        face = [(-4.4, -3.2), (-1.0, -6.0), (3.6, -5.2), (5.0, -1.4), (4.4, 2.2), (0.6, 3.6), (-3.6, 2.6)]
     pf = sb.wash(cr, face, sk if away < 0.5 else core.shade(sk, 0.15), 0.99, 0.35, smooth_t=0.8, w=0.5)
     sb.ink_outline(cr, pf, 0.5, ink_c, 0.8)
-    if away < 0.5:
+    if ears == "frog" and away < 0.5:
+        sb.wash(cr, [(-3.0, 1.0), (5.0, 0.4), (4.4, 2.4), (-2.6, 2.6)], core.tint(sk, 0.35), 0.8, 0.0, smooth_t=0.7)
+        for k_, (ex, ey, er) in enumerate(((-0.6, -4.6, 2.3), (3.6, -4.3, 2.2))):
+            pe = sb.wash(cr, [(ex + math.cos(a) * er, ey + math.sin(a) * er) for a in [i * TAU / 12 for i in range(12)]], sk,
+                         0.99, 0.3)
+            sb.ink_outline(cr, pe, 0.45, ink_c, 0.85)
+            cr.new_path()
+            core.circle(cr, ex + 0.25 + 0.5 * look, ey - 0.2, er * 0.62)
+            core.src(cr, "#f6eed8")
+            cr.fill()
+            cr.new_path()
+            core.ellipse(cr, ex + 0.45 + 0.7 * look, ey - 0.1, er * 0.22, er * 0.36)
+            core.src(cr, "#1d120c")
+            cr.fill()
+            if hurry > 0.3 or shrug > 0.3:     # heavy lids: a weary shopkeeper's shrug
+                sb.wash(cr, [(ex - er, ey - 0.3), (ex - er * 0.6, ey - er * 0.9), (ex + er * 0.6, ey - er * 0.9),
+                             (ex + er, ey - 0.3)], sk, 0.99, 0.0)
+        sb.ink(cr, [(-3.4, 1.2), (0.8, 1.9), (5.4, 0.6)], 0.5, ink_c, 0.85)
+    elif away < 0.5:
         nose = F["nose"]
         if nose > 0.1:
             sn = [(3.4, -1.8), (5.0 + 3.6 * nose, -0.6 + (1.0 if ears == "goblin" else 0.0)), (3.4, 1.4)]
@@ -362,11 +387,13 @@ def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, 
     sb.ink(cr, [(sx, sy), ((sx + hx) * 0.5 + 0.6, (sy + hy_) * 0.5 + 1.2), (hx, hy_)], 2.8, F["cloak"], 1.0,
            (1.0, 1.0, 0.9))
     if hold is not None:
-        hold(cr, hx + 0.6, hy_ - 0.4)
+        hold(cr, hx + 0.6, hy_ - 3.4)
     cr.new_path()
     core.circle(cr, hx + 0.6, hy_ + 0.2, 1.35)
     core.src(cr, F["skin"])
     cr.fill()
+    sb.ink_outline(cr, _poly(cr, [(hx + 0.6 + math.cos(a) * 1.35, hy_ + 0.2 + math.sin(a) * 1.35)
+                                  for a in [i * TAU / 10 for i in range(10)]]), 0.35, ink_c, 0.7)
     if shrug > 0.02:                          # the other hand comes up too: "what can you do?"
         bx_, by_ = -8.0, -ch_ * 0.92
         sb.ink(cr, [(-2.0, -ch_ * 0.74 - 1.6 * shrug), (-6.0, -ch_ * 0.66), (bx_, by_ - 2.0 * shrug)], 2.6,
@@ -604,6 +631,449 @@ def draw_shutters(cr, rect, close=0.0, color="#4e8a6c", glow=0.0, latch_glint=0.
             fx.sparkle(cr, x + w * 0.55, y + h * 0.5, w * 0.28, P["gold_hi"], 0.85 * latch_glint)
 
 
+# ----------------------------------------------------------------------------------------
+# the town of shut doors: characterful house fronts (each one different), iron heart padlocks
+# that click shut on "lock", latch bars that drop across the shutters on "latch"
+# ----------------------------------------------------------------------------------------
+
+def seg_ink(cr, pts, w, color=INK, alpha=0.9):
+    """Ink a polyline with SHARP corners (each segment its own straight stroke): gable edges,
+    bargeboards, hinges. sb.ink smooths through its points, which bulges a roof's apex."""
+    B.detail_lines(cr, [[pts[i], pts[i + 1]] for i in range(len(pts) - 1)], w, color, alpha, taper=(1.0, 1.0, 1.0))
+
+
+def scallop_rows(cr, x0, x1, y0, y1, row_h, cell_w, color, alpha, w=0.32, stagger=True):
+    """Fish-scale tiles / shingles (an illuminator's pattern): rows of little arcs between y0 and y1
+    (call inside a clip)."""
+    arcs = []
+    y = y1
+    r = 0
+    while y > y0 - row_h:
+        x = x0 - (cell_w * 0.5 if (stagger and r % 2) else 0.0)
+        while x < x1 + cell_w:
+            arcs.append([(x, y - row_h * 0.15), (x + cell_w * 0.5, y + row_h * 0.62), (x + cell_w, y - row_h * 0.15)])
+            x += cell_w
+        y -= row_h
+        r += 1
+    B.detail_lines(cr, arcs, w, color, alpha, taper=(0.5, 1.0, 0.5))
+
+
+def _stone_courses(cr, x0, x1, y_bot, y_top, rng, course=6.0, w=0.3, alpha=0.22):
+    rows = []
+    r = 0
+    y = y_bot
+    while y > y_top:
+        xx = x0 - (r % 2) * 5.0
+        while xx < x1:
+            rows.append([(xx, y), (xx, y - course)])
+            xx += rng.uniform(8.0, 13.0)
+        rows.append([(x0, y), (x1, y)])
+        y -= course
+        r += 1
+    B.detail_lines(cr, rows, w, INK, alpha, taper=(1.0, 1.0, 1.0))
+
+
+def town_house(cr, x, y, w, hg, hu, roof_h, wall, roof_c, shutters, seed, roof="gable", jetty=3.5,
+               door_u=0.62, low_u=0.2, ups_u=(0.26, 0.74), timber="x", chimney=None, sign=None, dormer=False,
+               stone=None, door_w=0.26, door_h=0.78):
+    """A storybook half-timbered house front standing on y (its doorstep line), seen face on:
+    a coursed-stone ground storey, a jettied timber-framed upper storey (timber = "x" braces,
+    "close" studding or "arch" braces), and a roof ("gable" with fish-scale tiles, "hip" with a
+    dormer, or "thatch"). Returns its features (door, lower window, upper windows, eaves...)."""
+    rng = random.Random(seed)
+    gtop = y - hg
+    utop = gtop - hu
+    stone = stone or core.mix(wall, P["stone"], 0.5)
+    # --- ground storey: coursed stone under a lime wash
+    gs = sb.wobble([(x, y), (x, gtop), (x + w, gtop), (x + w, y)], 0.35, seed)
+    pg = sb.wash(cr, gs, stone, 0.98, 0.35, w=0.7)
+    cr.save()
+    pg.add(cr)
+    cr.clip()
+    _stone_courses(cr, x - 2, x + w + 2, y, gtop, rng)
+    # the jetty's shadow on the ground storey, and a darker foot
+    cr.set_source(core.linear(0, gtop, 0, gtop + 9.0, [(0.0, (0.12, 0.08, 0.14, 0.42)), (1.0, (0.12, 0.08, 0.14, 0.0))]))
+    cr.rectangle(x - 2, gtop, w + 4, 9.0)
+    cr.fill()
+    cr.set_source(core.linear(0, y - 6.0, 0, y, [(0.0, (0.1, 0.07, 0.06, 0.0)), (1.0, (0.1, 0.07, 0.06, 0.22))]))
+    cr.rectangle(x - 2, y - 6.0, w + 4, 6.0)
+    cr.fill()
+    cr.restore()
+    sb.ink_outline(cr, pg, 0.6, INK, 0.75)
+    # --- upper storey: jettied, lime plaster + oak frame
+    xl, xr = x - jetty, x + w + jetty
+    us = sb.wobble([(xl, gtop), (xl, utop), (xr, utop), (xr, gtop)], 0.35, seed + 1)
+    pu = sb.wash(cr, us, wall, 0.98, 0.35, w=0.7)
+    cr.save()
+    pu.add(cr)
+    cr.clip()
+    # the eaves' shadow along the top of the wall
+    cr.set_source(core.linear(0, utop, 0, utop + 7.0, [(0.0, (0.12, 0.08, 0.14, 0.38)), (1.0, (0.12, 0.08, 0.14, 0.0))]))
+    cr.rectangle(xl, utop, xr - xl, 7.0)
+    cr.fill()
+    cr.restore()
+    oak = core.mix(P["umber"], "#3a2416", 0.25)
+    beams = [[(xl - 0.8, gtop), (xr + 0.8, gtop)], [(xl, utop + 0.6), (xr, utop + 0.6)]]
+    nposts = 4
+    posts = [xl + (xr - xl) * k / nposts for k in range(nposts + 1)]
+    for px_ in posts:
+        beams.append([(px_, utop), (px_, gtop)])
+    braces = []
+    if timber == "x":
+        for k in (0, nposts - 1):
+            a_, b_ = posts[k], posts[k + 1]
+            braces += [[(a_, gtop), (b_, utop)], [(b_, gtop), (a_, utop)]]
+    elif timber == "close":
+        k = xl + 2.6
+        while k < xr - 1.0:
+            braces.append([(k, utop + 1.0), (k, gtop - 1.0)])
+            k += 3.2
+        beams.append([(xl, (utop + gtop) * 0.5), (xr, (utop + gtop) * 0.5)])
+    else:   # "arch": curved braces springing from the posts
+        for k in (0, nposts - 1):
+            a_, b_ = posts[k], posts[k + 1]
+            m_ = (a_ + b_) * 0.5
+            braces.append([(a_, gtop - 1.0), (a_ + (m_ - a_) * 0.35, utop + hu * 0.45), (m_, utop + 1.2)])
+            braces.append([(b_, gtop - 1.0), (b_ - (b_ - m_) * 0.35, utop + hu * 0.45), (m_, utop + 1.2)])
+    B.detail_lines(cr, braces, 1.25, oak, 0.92, taper=(0.9, 1.0, 0.9))
+    B.detail_lines(cr, beams, 1.8, oak, 0.95, taper=(1.0, 1.0, 1.0))
+    sb.ink_outline(cr, pu, 0.6, INK, 0.75)
+    # corbels under the jetty
+    for cx_ in (x + 1.8, x + w - 1.8):
+        seg_ink(cr, [(cx_, gtop), (cx_, gtop + 4.2), (cx_ + (1.8 if cx_ < x + w / 2 else -1.8), gtop + 0.4)], 1.1, oak, 0.9)
+    # --- the roof
+    ov = 4.5
+    rl, rr = xl - ov, xr + ov
+    apex = (x + w * 0.5, utop - roof_h)
+    feat = {}
+    if roof == "thatch":
+        cap_pts = [(rl - 1.0, utop + 2.0)]
+        for k in range(1, 12):
+            u = k / 12.0
+            a = math.pi * (1.0 - u)
+            cap_pts.append((x + w * 0.5 + math.cos(a) * (rr - rl) * 0.5, utop - math.sin(a) * roof_h * 1.05 + 1.0))
+        cap_pts.append((rr + 1.0, utop + 2.0))
+        pr = sb.wash(cr, cap_pts, roof_c, 0.98, 0.45, smooth_t=0.55, w=0.8)
+        cr.save()
+        pr.add(cr)
+        cr.clip()
+        straw = []
+        for k in range(46):
+            sx_ = rl + (rr - rl) * rng.random()
+            sy_ = utop - rng.random() * roof_h
+            straw.append([(sx_, sy_), (sx_ + rng.uniform(-0.6, 0.6), sy_ + rng.uniform(2.5, 4.5))])
+        B.detail_lines(cr, straw, 0.35, core.shade(roof_c, 0.45), 0.55)
+        # the ridge's woven band and a scalloped eave edge
+        cr.set_source(core.linear(0, utop - roof_h, 0, utop + 2, [(0.0, (1, 0.95, 0.8, 0.18)), (0.5, (1, 1, 1, 0.0)),
+                                                                   (1.0, (0.2, 0.1, 0.05, 0.35))]))
+        cr.paint()
+        cr.restore()
+        sb.ink_outline(cr, pr, 0.75, INK, 0.85)
+        eave = []
+        k = rl
+        while k < rr:
+            eave.append([(k, utop + 1.6), (k + 1.6, utop + 3.4), (k + 3.2, utop + 1.6)])
+            k += 3.2
+        B.detail_lines(cr, eave, 0.45, core.shade(roof_c, 0.55), 0.8)
+        feat["ridge"] = (x + w * 0.5, utop - roof_h)
+    elif roof == "hip":
+        top_w = w * 0.42
+        poly = [(rl, utop + 1.0), (x + w * 0.5 - top_w * 0.5, utop - roof_h), (x + w * 0.5 + top_w * 0.5, utop - roof_h),
+                (rr, utop + 1.0)]
+        pr = sb.wash(cr, poly, roof_c, 0.98, 0.45, w=0.8)
+        cr.save()
+        pr.add(cr)
+        cr.clip()
+        scallop_rows(cr, rl, rr, utop - roof_h, utop, 3.0, 3.6, core.shade(roof_c, 0.5), 0.55)
+        cr.set_source(core.linear(0, utop - roof_h, 0, utop, [(0.0, (1, 0.95, 0.85, 0.16)), (1.0, (0.2, 0.08, 0.06, 0.25))]))
+        cr.paint()
+        cr.restore()
+        sb.ink_outline(cr, pr, 0.75, INK, 0.85)
+        seg_ink(cr, [(rl - 0.5, utop + 1.2), poly[1], poly[2], (rr + 0.5, utop + 1.2)], 0.9, oak, 0.9)
+        feat["ridge"] = (x + w * 0.5, utop - roof_h)
+        if dormer:
+            dx_, dw_ = x + w * 0.5, 9.0
+            dy_ = utop - roof_h * 0.42
+            dp = [(dx_ - dw_ * 0.5, dy_ + 6.0), (dx_ - dw_ * 0.5, dy_), (dx_, dy_ - 5.0), (dx_ + dw_ * 0.5, dy_),
+                  (dx_ + dw_ * 0.5, dy_ + 6.0)]
+            sb.ink_outline(cr, sb.wash(cr, dp, wall, 0.99, 0.3), 0.55, INK, 0.85)
+            seg_ink(cr, [(dx_ - dw_ * 0.5 - 1.2, dy_ + 0.6), (dx_, dy_ - 5.6), (dx_ + dw_ * 0.5 + 1.2, dy_ + 0.6)], 1.0,
+                    core.shade(roof_c, 0.3), 0.95)
+            feat["dormer"] = (dx_ - 2.4, dy_ + 0.4, 4.8, 4.6)
+    else:   # gable: steep, fish-scale tiles, carved bargeboards with a gilt finial
+        poly = [(rl, utop + 1.0), apex, (rr, utop + 1.0)]
+        pr = sb.wash(cr, poly, roof_c, 0.98, 0.45, w=0.8)
+        cr.save()
+        pr.add(cr)
+        cr.clip()
+        scallop_rows(cr, rl, rr, apex[1], utop, 3.0, 3.6, core.shade(roof_c, 0.5), 0.55)
+        cr.set_source(core.linear(rl, 0, rr, 0, [(0.0, (1, 0.95, 0.85, 0.14)), (0.5, (1, 1, 1, 0.0)),
+                                                  (1.0, (0.15, 0.06, 0.08, 0.28))]))
+        cr.paint()
+        cr.restore()
+        sb.ink_outline(cr, pr, 0.75, INK, 0.85)
+        seg_ink(cr, [(rl - 0.5, utop + 1.4), (apex[0], apex[1] - 0.6), (rr + 0.5, utop + 1.4)], 1.3, oak, 0.95)
+        gold_star(cr, apex[0], apex[1] - 2.2, 1.9, points=4, inner=0.35)
+        feat["ridge"] = apex
+    # --- the chimney (smoke is drawn per frame from feat["chimney"])
+    if chimney is not None:
+        cx_, ch_h = chimney
+        rf_y = utop - roof_h * 0.55
+        stack = [(cx_ - 3.2, rf_y + 6.0), (cx_ - 3.2, rf_y - ch_h), (cx_ + 3.2, rf_y - ch_h), (cx_ + 3.2, rf_y + 6.0)]
+        ps = sb.wash(cr, stack, "#8a5a4a", 0.99, 0.3)
+        cr.save()
+        ps.add(cr)
+        cr.clip()
+        _stone_courses(cr, cx_ - 4, cx_ + 4, rf_y + 6.0, rf_y - ch_h, rng, course=2.4, w=0.22, alpha=0.3)
+        cr.restore()
+        sb.ink_outline(cr, ps, 0.5, INK, 0.85)
+        sb.ink_outline(cr, sb.wash(cr, [(cx_ - 4.2, rf_y - ch_h), (cx_ + 4.2, rf_y - ch_h), (cx_ + 4.2, rf_y - ch_h - 1.8),
+                                        (cx_ - 4.2, rf_y - ch_h - 1.8)], "#6a4438", 0.99, 0.2), 0.45, INK, 0.85)
+        feat["chimney"] = (cx_, rf_y - ch_h - 2.0)
+    # --- openings
+    uw, uh = w * 0.19, hu * 0.54
+    ups = [(x + w * u_ - uw * 0.5, utop + hu * 0.2, uw, uh) for u_ in ups_u]
+    dw, dh = w * door_w, hg * door_h
+    door = (x + w * door_u - dw * 0.5, y - dh, dw, dh)
+    lw_ = (x + w * low_u - w * 0.09, y - hg * 0.74, w * 0.18, hg * 0.36)
+    # a deep stone reveal round the door, a worn step
+    dx, dy, dw_, dh_ = door
+    sb.ink_outline(cr, sb.wash(cr, _door_arch(dx - 1.8, dy - 1.8, dw_ + 3.6, dh_ + 1.8), core.shade(stone, 0.25), 0.98, 0.25),
+                   0.5, INK, 0.8)
+    sb.wash(cr, [(dx - 3.0, y), (dx + dw_ + 3.0, y), (dx + dw_ + 4.0, y + 2.4), (dx - 4.0, y + 2.4)], "#86807a", 0.98, 0.3)
+    feat.update({"door": door, "low": lw_, "ups": ups, "apex": apex, "jetty": gtop, "top": utop, "x": x, "w": w, "y": y,
+                 "shutters": shutters, "xl": xl, "xr": xr, "wall": wall})
+    return feat
+
+
+def draw_heart_padlock(cr, x, y, r, shut=0.0, swing=0.0, glint=0.0, t=0.0, open_side=1.0):
+    """An iron HEART-SHAPED padlock hanging from the hasp staple at (x, y) (r = the heart's half
+    width). shut 0: the shackle stands open (one leg out of the body, the lock hanging slack at an
+    angle) .. 1: snapped shut; swing (rad) rocks it on the staple; glint 0..1 runs a burnished
+    highlight over its face (light catching iron -- not a magic sparkle)."""
+    cr.save()
+    cr.translate(x, y)
+    cr.rotate(swing + 0.32 * (1.0 - shut) * open_side)
+    # the shackle: a thick iron U through the staple; open = lifted and swung aside on one leg
+    lift = 0.55 * r * (1.0 - shut)
+    sw = r * 0.62
+    top = -0.15 * r - lift
+    leg = r * 1.25
+    cr.save()
+    cr.translate(open_side * sw * (1.0 - shut) * 0.55, 0.0)
+    pts = [(-sw, top + leg), (-sw, top + r * 0.2)]
+    for k in range(1, 9):
+        a = math.pi + math.pi * k / 9
+        pts.append((math.cos(a) * sw, top + r * 0.2 + math.sin(a) * sw))
+    pts += [(sw, top + r * 0.2), (sw, top + leg * (0.55 + 0.45 * shut))]
+    B.detail_line(cr, pts, r * 0.26, "#2a2624", 1.0, taper=(1.0, 1.0, 1.0))
+    B.detail_line(cr, pts[1:-1], r * 0.09, "#8a8480", 0.7, taper=(0.3, 1.0, 0.3))
+    cr.restore()
+    # the heart-shaped body (iron, with a pewter bevel and a keyhole)
+    by_ = top + leg * 0.92 + r * 0.95
+    hp = heart_pts(0.0, by_, r * 1.02)
+    ph = sb.wash(cr, hp, "#4c4744", 0.99, 0.0)
+    cr.save()
+    ph.add(cr)
+    cr.clip()
+    g = core.linear(-r, by_ - r, r, by_ + r, [(0.0, "#8d8781"), (0.45, "#4f4946"), (1.0, "#2a2523")])
+    cr.set_source(g)
+    cr.paint()
+    inner = heart_pts(0.0, by_ + r * 0.06, r * 0.74)
+    cr.new_path()
+    core.polygon(cr, inner)
+    core.src(cr, "#3c3734", 0.85)
+    cr.fill()
+    if glint > 0.01:
+        # a burnished sweep across the face (candle-gold on iron)
+        gx = lerp(-1.6 * r, 1.6 * r, glint)
+        sg = core.linear(gx - r * 0.5, by_ - r, gx + r * 0.5, by_ + r,
+                         [(0.0, (1.0, 0.85, 0.5, 0.0)), (0.5, (1.0, 0.9, 0.62, 0.8 * math.sin(math.pi * glint))),
+                          (1.0, (1.0, 0.85, 0.5, 0.0))])
+        cr.set_source(sg)
+        cr.paint()
+    cr.restore()
+    sb.ink_outline(cr, ph, max(0.3, r * 0.1), "#1c1816", 0.95)
+    # keyhole + rivets
+    cr.new_path()
+    core.circle(cr, 0.0, by_ - r * 0.12, r * 0.17)
+    cr.move_to(-r * 0.09, by_ - r * 0.08)
+    cr.line_to(r * 0.09, by_ - r * 0.08)
+    cr.line_to(r * 0.14, by_ + r * 0.4)
+    cr.line_to(-r * 0.14, by_ + r * 0.4)
+    cr.close_path()
+    core.src(cr, "#120d0b")
+    cr.fill()
+    for (rx_, ry_) in ((-r * 0.55, by_ - r * 0.45), (r * 0.55, by_ - r * 0.45)):
+        cr.new_path()
+        core.circle(cr, rx_, ry_, r * 0.08)
+        core.src(cr, "#a8a29a", 0.8)
+        cr.fill()
+    cr.restore()
+
+
+def draw_town_door(cr, rect, open_=0.0, slam=-1.0, t=0.0, lock=0.0, swing=0.0, glint=0.0, wood="#7a4d2c",
+                   interior=None, lamp=0.0):
+    """An arched oak door with scrolled iron strap hinges, a ring pull and the HEART PADLOCK on its
+    hasp. open_ 0 shut .. 1 wide (the lamplit hall shows: lamp 0..1); slam = s since it slammed
+    (a shake); lock 0..1 the padlock's shackle snaps shut; swing its rock; glint its burnish."""
+    dx, dy, dw, dh = rect
+    arch = _door_arch(dx, dy, dw, dh)
+    inside = interior or core.mix("#1a120c", "#ffb24a", 0.55 * lamp)
+    sb.wash(cr, arch, inside, 0.99, 0.15)
+    if lamp > 0.02:
+        soft_glow(cr, dx + dw * 0.5, dy + dh * 0.7, dw * 0.9, "#ffcf7a", 0.5 * lamp)
+    k = clamp(1.0 - open_)
+    shake = 0.0
+    if slam >= 0.0:
+        shake = math.exp(-slam / 0.09) * math.sin(slam * 70.0) * 0.6
+    if k > 0.02:
+        cr.save()
+        cr.new_path()
+        core.polygon(cr, arch)
+        cr.clip()
+        cr.translate(dx, 0.0)
+        cr.scale(k, 1.0)
+        cr.translate(-dx + shake, 0.0)
+        leaf = [(dx, dy - 2.0), (dx + dw, dy - 2.0), (dx + dw, dy + dh), (dx, dy + dh)]
+        sb.wash(cr, leaf, wood, 0.99, 0.4, w=0.6)
+        planks = [[(dx + dw * j / 4.0, dy), (dx + dw * j / 4.0, dy + dh)] for j in (1, 2, 3)]
+        B.detail_lines(cr, planks, 0.35, INK, 0.5, taper=(1.0, 1.0, 1.0))
+        # the arch's shadow at the top of the leaf
+        cr.set_source(core.linear(0, dy, 0, dy + dw * 0.7, [(0.0, (0.1, 0.05, 0.03, 0.35)), (1.0, (0.1, 0.05, 0.03, 0.0))]))
+        cr.rectangle(dx, dy - 2, dw, dw * 0.7 + 2)
+        cr.fill()
+        # strap hinges ending in Kells scrolls
+        for hy in (dy + dh * 0.3, dy + dh * 0.8):
+            B.detail_line(cr, [(dx + 0.2, hy), (dx + dw * 0.62, hy)], 1.05, "#2b2522", 0.95, taper=(1.0, 1.0, 0.7))
+            sp = spiral_pts(dx + dw * 0.62 + 1.1, hy - 0.2, 0.2, 1.3, turns=1.1, n=10, a0=math.pi, cw=-1)
+            B.detail_line(cr, sp, 0.55, "#2b2522", 0.95, taper=(0.6, 1.0, 0.4))
+        # the ring pull
+        rx_, ry_ = dx + dw * 0.3, dy + dh * 0.56
+        cr.new_path()
+        cr.arc(rx_, ry_ + 1.2, 1.25, 0, TAU)
+        cr.set_line_width(0.45)
+        core.src(cr, "#2b2522", 0.95)
+        cr.stroke()
+        # the hasp: a hinged iron strap from the jamb over a staple
+        hx_, hy_ = dx + dw * 0.8, dy + dh * 0.47
+        B.detail_line(cr, [(dx + dw + 0.6, hy_ - 0.9), (hx_ - 1.6, hy_ - 0.9)], 1.0, "#2b2522", 0.95, taper=(1.0, 1.0, 1.0))
+        cr.new_path()
+        core.circle(cr, hx_, hy_, 0.85)
+        cr.set_line_width(0.45)
+        core.src(cr, "#2b2522", 0.95)
+        cr.stroke()
+        draw_heart_padlock(cr, hx_, hy_ + 0.4, dw * 0.21, shut=lock, swing=swing, glint=glint, t=t)
+        cr.restore()
+    sb.ink_outline(cr, _poly(cr, arch), 0.75, INK, 0.9)
+
+
+def draw_town_shutters(cr, rect, close=0.0, color="#4e8a6c", glow=0.0, latch=0.0, t=0.0):
+    """A pair of slatted shutters on a window: close 0 folded open beside it .. 1 swung shut over it
+    (a leaf is edge-on halfway); then the iron LATCH BAR drops across both leaves (latch 0..1: it
+    swings down from upright on its pivot, overshoots and settles in its keeper). glow: lamplight
+    leaking between the leaves once shut."""
+    x, y, w, h = rect
+    for side in (-1, 1):
+        u = clamp(close)
+        a = math.pi * (1.0 - u)
+        hinge = x if side < 0 else x + w
+        half = w * 0.5
+        span = half * math.cos(a)
+        x0, x1 = hinge, hinge - side * span
+        if abs(x1 - x0) < 0.2:
+            sb.ink(cr, [(hinge, y), (hinge, y + h)], 0.8, core.shade(color, 0.4), 1.0)
+            continue
+        lo, hi = min(x0, x1), max(x0, x1)
+        face_out = math.cos(a) < 0
+        c = color if face_out or u > 0.5 else core.shade(color, 0.3)
+        leaf = [(lo, y - 0.6), (hi, y - 0.6), (hi, y + h + 0.6), (lo, y + h + 0.6)]
+        pl = sb.wash(cr, leaf, c, 0.99, 0.35, w=0.5)
+        slats = [[(lo + 0.4, y + h * k / 6.0), (hi - 0.4, y + h * k / 6.0)] for k in range(1, 6)]
+        B.detail_lines(cr, slats, 0.28, INK, 0.45, taper=(1.0, 1.0, 1.0))
+        sb.ink_outline(cr, pl, 0.45, INK, 0.85)
+    if close > 0.97:
+        if glow > 0.01:
+            B.detail_line(cr, [(x + w * 0.5, y + 0.5), (x + w * 0.5, y + h - 0.5)], 0.55, "#ffd27a", 0.9 * glow,
+                          taper=(0.3, 1.0, 0.3))
+            soft_glow(cr, x + w * 0.5, y + h * 0.5, w * 0.6, "#ffcf7a", 0.18 * glow)
+        # the keeper (a hook on the right leaf) and the bar on its pivot (left leaf)
+        px_, py_ = x + w * 0.2, y + h * 0.5
+        kx_ = x + w * 0.8
+        cr.new_path()
+        cr.arc(kx_, py_ + 0.2, 0.75, -0.2, math.pi + 0.2)
+        cr.set_line_width(0.45)
+        core.src(cr, "#2b2522", 0.95)
+        cr.stroke()
+        if latch > 0.0:
+            # down from upright (-pi/2) to across (0): overshoot and settle (out_back)
+            ang = -math.pi * 0.5 * (1.0 - core.out_back(clamp(latch)))
+            L_ = w * 0.66
+            ex, ey = px_ + math.cos(ang) * L_, py_ + math.sin(ang) * L_
+            B.detail_line(cr, [(px_, py_), (ex, ey)], 0.95, "#2b2522", 1.0, taper=(1.0, 1.0, 0.8))
+        else:
+            B.detail_line(cr, [(px_, py_), (px_, py_ - w * 0.66)], 0.95, "#2b2522", 1.0, taper=(1.0, 1.0, 0.8))
+        cr.new_path()
+        core.circle(cr, px_, py_, 0.6)
+        core.src(cr, "#55504c", 1.0)
+        cr.fill()
+
+
+def dress_town_house(cr, hf, lit=(0.0, 0.0), shut=(False, False), low_lit=0.0, door=True, flowers=None, seed=0):
+    """Static dressing for a town_house front (verse 2's streets): upper windows lamplit with the
+    shutters folded open, or shut and latched; the lower window with its sill (or a flower box);
+    the door shut with its heart padlock locked."""
+    for k, rect in enumerate(hf["ups"]):
+        x, y0, w, h = rect
+        lk = lit[k % len(lit)]
+        if lk > 0.02 and not shut[k % len(shut)]:
+            soft_glow(cr, x + w * 0.5, y0 + h * 0.55, w * 1.25, "#ffbf5a", 0.22 * lk)
+        lit_window(cr, x, y0, w, h, 0.0 if shut[k % len(shut)] else lk, arch=False)
+        if shut[k % len(shut)]:
+            draw_town_shutters(cr, rect, 1.0, hf["shutters"], glow=0.7 * lk, latch=1.0)
+        else:
+            draw_town_shutters(cr, rect, 0.0, hf["shutters"])
+    lx, ly, lw_, lh = hf["low"]
+    lit_window(cr, lx, ly, lw_, lh, low_lit, arch=True)
+    seg_ink(cr, [(lx - 1.4, ly + lh + 0.5), (lx + lw_ + 1.4, ly + lh + 0.5)], 1.4, P["umber"], 0.95)
+    if flowers:
+        rng = random.Random(seed)
+        box = [(lx - 1.5, ly + lh + 0.6), (lx + lw_ + 1.5, ly + lh + 0.6), (lx + lw_ + 1.0, ly + lh + 4.0), (lx - 1.0, ly + lh + 4.0)]
+        sb.ink_outline(cr, sb.wash(cr, box, "#7a4d2c", 0.98, 0.3), 0.4, INK, 0.8)
+        for q in range(6):
+            fx_ = lx + lw_ * (q + 0.5) / 6.0
+            cr.new_path()
+            core.circle(cr, fx_, ly + lh - 0.6 + rng.uniform(-0.8, 0.8), 1.2)
+            core.src(cr, flowers[q % len(flowers)], 0.95)
+            cr.fill()
+    if door:
+        draw_town_door(cr, hf["door"], lock=1.0)
+
+
+def ink_clack(cr, x, y, r, u, alpha=0.85, n=5, a0=-2.6, a1=-0.5):
+    """A little fan of ink impact strokes (a 'clack!' drawn by the illuminator) radiating from
+    (x, y) as u goes 0 -> 1."""
+    if not 0.0 < u < 1.0:
+        return
+    al = math.sin(math.pi * min(1.0, u * 1.8)) * (1.0 - u) * alpha
+    strokes = []
+    for j in range(n):
+        a = lerp(a0, a1, j / max(1, n - 1))
+        r0, r1 = r * (0.5 + 0.8 * u), r * (1.2 + 1.2 * u)
+        strokes.append([(x + math.cos(a) * r0, y + math.sin(a) * r0), (x + math.cos(a) * r1, y + math.sin(a) * r1)])
+    B.detail_lines(cr, strokes, max(0.25, r * 0.12), INK, al, taper=(0.4, 1.0, 0.2))
+
+
+def town_lantern(cr, x, y, t, phase=0.0, scale=1.0, side=1, warm=True):
+    """sb._lantern, but it can hang from a wall on either side: side +1 the bracket comes from the
+    wall at the left, -1 from a wall on the right (mirrored); the lantern hangs at (x + side*9*scale, y)."""
+    cr.save()
+    cr.translate(x, y)
+    cr.scale(side, 1.0)
+    sb._lantern(cr, 9.0 * scale, 0.0, t, phase=phase, scale=scale, warm=warm)
+    cr.restore()
+
+
 class CastleTown(_Synced):
     """Verse 1's great picture (spread 0, right page): the kingdom of stone at dusk -- a grey castle
     on its hill under an indigo sky (gold-leaf moon and stars, Kells cloud-curls), the road winding
@@ -791,16 +1261,61 @@ class CastleTown(_Synced):
 
     def _draw_town(self, cr, rng):
         y = self.STREET_Y
-        # the town wall + gate arch the road passes through (behind the houses, at the hill's foot)
-        tw = sb.wobble([(-10, 214), (212, 214), (212, 226), (-10, 226)], 0.5, 11)
+        # the town wall at the hill's foot (behind everything in the street)
+        tw = sb.wobble([(-10, 212), (212, 212), (212, 232), (-10, 232)], 0.5, 11)
         ptw = sb.wash(cr, tw, "#8b8ea0", 0.97, 0.35)
-        merl = [[(x_, 214), (x_, 210.5), (x_ + 3.2, 210.5), (x_ + 3.2, 214)] for x_ in range(-8, 212, 6)]
+        merl = [[(x_, 212), (x_, 208.5), (x_ + 3.2, 208.5), (x_ + 3.2, 212)] for x_ in range(-8, 212, 6)]
         for m in merl:
             sb.wash(cr, m, "#8b8ea0", 0.97, 0.2)
         sb.ink_outline(cr, ptw, 0.5, INK, 0.7)
-        # cobbled street + the far pavement edge
+        # --- the back row: hazy gables between the wall and the street (depth), a few lamplit
+        #     windows, chimneys (the smoke lives in anim)
+        self._back_chimneys = []
+        bx = -14.0
+        brng = random.Random(self.seed + 31)
+        haze = "#8f8aaa"
+        while bx < 214.0:
+            bw = brng.uniform(18.0, 30.0)
+            bh = brng.uniform(16.0, 30.0)
+            rh = brng.uniform(9.0, 16.0)
+            base = 236.0
+            body = [(bx, base), (bx, base - bh), (bx + bw * 0.5, base - bh - rh), (bx + bw, base - bh), (bx + bw, base)]
+            col = core.mix(haze, "#6f6a92", brng.uniform(0.0, 0.5))
+            pb = sb.wash(cr, body, col, 0.96, 0.25)
+            cr.save()
+            pb.add(cr)
+            cr.clip()
+            cr.set_source(core.linear(0, base - bh - rh, 0, base, [(0.0, (0.95, 0.8, 0.75, 0.12)), (1.0, (0.15, 0.12, 0.25, 0.35))]))
+            cr.paint()
+            cr.restore()
+            seg_ink(cr, [(bx - 1.0, base - bh + 0.6), (bx + bw * 0.5, base - bh - rh), (bx + bw + 1.0, base - bh + 0.6)], 0.7,
+                    "#4e4870", 0.8)
+            if brng.random() < 0.6:
+                wx_, wy_ = bx + bw * brng.uniform(0.3, 0.6), base - bh * brng.uniform(0.45, 0.75)
+                sb.wash(cr, [(wx_, wy_), (wx_ + 2.6, wy_), (wx_ + 2.6, wy_ + 3.4), (wx_, wy_ + 3.4)], "#ffcf7a", 0.9, 0.0)
+                soft_glow(cr, wx_ + 1.3, wy_ + 1.7, 5.0, "#ffbf5a", 0.18)
+            if brng.random() < 0.45:
+                cx_ = bx + bw * brng.uniform(0.62, 0.8)
+                cy_ = base - bh - rh * 0.5
+                sb.wash(cr, [(cx_ - 1.6, cy_ + 2), (cx_ - 1.6, cy_ - 6), (cx_ + 1.6, cy_ - 6), (cx_ + 1.6, cy_ + 2)], "#6c5a6e", 0.96, 0.1)
+                self._back_chimneys.append((cx_, cy_ - 6.5))
+            bx += bw + brng.uniform(-4.0, 1.0)
+        # a soft evening haze over the back row (atmospheric depth)
+        cr.set_source(core.linear(0, 190, 0, 240, [(0.0, (0.85, 0.72, 0.78, 0.0)), (1.0, (0.85, 0.72, 0.78, 0.22))]))
+        cr.rectangle(-10, 190, 220, 50)
+        cr.fill()
+        # --- the alleys between the houses: deep plum shadow with a far lamp at the end
+        for ax in (57.0, 126.0):
+            al = [(ax, y + 1.0), (ax, 214.0), (ax + 17.0, 214.0), (ax + 17.0, y + 1.0)]
+            pa = sb.wash(cr, al, "#2e2440", 0.98, 0.2)
+            cr.save()
+            pa.add(cr)
+            cr.clip()
+            soft_glow(cr, ax + 7.0, 246.0, 7.0, "#ffb24a", 0.35)
+            cr.restore()
+        # --- the cobbled street: fish-scale setts, a gutter down the middle, darker near the walls
         street = [(-6, y - 2.0), (206, y - 2.0), (206, self.DH + 4), (-6, self.DH + 4)]
-        ps = sb.wash(cr, street, "#9c968c", 0.95, 0.3)
+        ps = sb.wash(cr, street, "#9a938a", 0.97, 0.3)
         cr.save()
         ps.add(cr)
         cr.clip()
@@ -818,30 +1333,51 @@ class CastleTown(_Synced):
             row += 1
         B.detail_lines(cr, arcs, 0.4, INK, 0.38)
         stipple(cr, -6, y, 206, self.DH, 120, "#4a443c", 0.25, (0.2, 0.5), seed=21)
+        cr.set_source(core.linear(0, y - 2, 0, y + 9, [(0.0, (0.15, 0.1, 0.12, 0.35)), (1.0, (0.15, 0.1, 0.12, 0.0))]))
+        cr.rectangle(-6, y - 2, 212, 11)
+        cr.fill()
+        B.detail_lines(cr, [[(-6, 281.5), (206, 281.0)]], 0.5, INK, 0.3, taper=(1.0, 1.0, 1.0))
         cr.restore()
-        # three house fronts
-        walls = ("#efe2c4", core.mix("#efe2c4", P["ochre"], 0.4), core.mix("#efe2c4", P["rose"], 0.42))
-        roofs = (P["sienna"], P["madder"], "#5b5f7c")
-        shutt = (P["verdigris"], P["ultramarine"], P["olive"])
+        # --- three house fronts, each its own character
+        bone = P["bone"]
+        specs = (
+            dict(x=2.0, w=56.0, hg=42.0, hu=30.0, roof_h=31.0, wall=core.mix(bone, P["ochre"], 0.12), roof_c=P["sienna"],
+                 shutters=P["verdigris"], roof="gable", timber="x", door_u=0.66, low_u=0.22, ups_u=(0.27, 0.73), seed=71,
+                 stone=core.mix(bone, P["stone"], 0.55)),
+            dict(x=73.0, w=54.0, hg=40.0, hu=34.0, roof_h=22.0, wall=core.mix(bone, P["ochre"], 0.42), roof_c=P["madder"],
+                 shutters=P["ultramarine"], roof="hip", timber="close", door_u=0.6, low_u=0.2, ups_u=(0.27, 0.73), seed=80,
+                 chimney=(114.0, 13.0), dormer=True, stone=core.mix(bone, "#b3a28a", 0.6)),
+            dict(x=143.0, w=55.0, hg=40.0, hu=27.0, roof_h=24.0, wall=core.mix(bone, P["rose"], 0.42), roof_c="#b68e4e",
+                 shutters=P["olive"], roof="thatch", timber="arch", door_u=0.37, low_u=0.78, ups_u=(0.28, 0.72), seed=89,
+                 chimney=(183.0, 10.0), stone=core.mix(bone, "#a9a0a8", 0.6)),
+        )
         self._houses = []
-        xs = (6.0, 72.0, 138.0)
-        for k, x in enumerate(xs):
-            hf = _house_front(cr, x, y, 58.0, 40.0, 28.0, 22.0 + (k % 2) * 6.0, walls[k], roofs[k], 70 + k * 9,
-                              jetty=3.5, shutters=shutt[k])
+        for k, sp_ in enumerate(specs):
+            sp_ = dict(sp_)
+            seed_ = sp_.pop("seed")
+            hf = town_house(cr, sp_.pop("x"), y, sp_.pop("w"), sp_.pop("hg"), sp_.pop("hu"), sp_.pop("roof_h"),
+                            sp_.pop("wall"), sp_.pop("roof_c"), sp_.pop("shutters"), seed_, **sp_)
             # the lower window beside the door (a sill for the potions)
             lx, ly, lw_, lh = hf["low"]
             lit_window(cr, lx, ly, lw_, lh, 0.0, arch=True)
-            sb.ink(cr, [(lx - 1.2, ly + lh + 0.5), (lx + lw_ + 1.2, ly + lh + 0.5)], 1.3, P["umber"], 0.95)
-            # a door step
-            dx, dy, dw, dh = hf["door"]
-            sb.wash(cr, [(dx - 2.0, y), (dx + dw + 2.0, y), (dx + dw + 3.0, y + 2.4), (dx - 3.0, y + 2.4)], "#7f7a74", 0.97, 0.3)
+            seg_ink(cr, [(lx - 1.4, ly + lh + 0.5), (lx + lw_ + 1.4, ly + lh + 0.5)], 1.4, P["umber"], 0.95)
             self._houses.append(hf)
-        # iron lantern brackets between the houses
-        jy = self._houses[0]["jetty"] - 3.0
-        self._lamps = [(68.5, jy), (134.5, jy), (202.0, jy)]
-        for (bx, by) in self._lamps:
-            sb.ink(cr, [(bx - 8.0, by - 3.0), (bx, by - 3.0)], 1.0, "#2e2a28", 1.0)
-            sb.ink(cr, [(bx - 8.0, by + 1.0), (bx - 3.5, by - 3.0)], 0.7, "#2e2a28", 0.9)
+        # trade signs on scrolled iron brackets (the boards swing in anim): the locksmith's gilt
+        # key on the first house -- and on the middle house, the baker's gilt loaf (the bread was in
+        # this town all along)
+        self._signs = []
+        for k, (kind, side) in enumerate((("key", 1), ("loaf", 1))):
+            hf = self._houses[k]
+            sx_ = hf["xr"] if side > 0 else hf["xl"]
+            sy_ = hf["top"] + 9.0
+            arm = 9.5
+            seg_ink(cr, [(sx_, sy_), (sx_ + side * arm, sy_)], 0.9, "#2e2a28", 1.0)
+            B.detail_line(cr, spiral_pts(sx_ + side * 2.4, sy_ + 2.6, 0.3, 2.3, turns=1.0, n=10, a0=-math.pi * 0.5,
+                                         cw=side), 0.5, "#2e2a28", 0.95, taper=(0.5, 1.0, 0.5))
+            self._signs.append((sx_ + side * (arm - 1.5), sy_, kind, side))
+        # iron lanterns on brackets from the next house's corner (they swing in anim)
+        self._lamps = [(self._houses[1]["xl"], self._houses[1]["jetty"] - 1.0, -1),
+                       (self._houses[2]["xl"], self._houses[2]["jetty"] - 1.0, -1)]
 
     def anim(self, cr, t):
         if not hasattr(self, "_houses"):
@@ -873,24 +1409,48 @@ class CastleTown(_Synced):
         y = self.STREET_Y
         rain_u = smooth((t - e("rain")) / 0.9)
         dim = 0.35 * rain_u                     # the street darkens under the rain
-        # upper windows: a lone figure in each, lamplit, on "living alone"; shutters on "latch"
+        # chimney smoke: soft lilac puffs curling up and away (leaning harder once it rains)
+        for i, hf in enumerate(self._houses):
+            if "chimney" not in hf:
+                continue
+            cx_, cy_ = hf["chimney"]
+            for j in range(5):
+                u = (t * 0.14 + j * 0.2 + i * 0.37) % 1.0
+                px_ = cx_ + u * (8.0 + 10.0 * rain_u) + 2.2 * math.sin(u * 4.0 + i * 2.0 + j)
+                py_ = cy_ - 1.5 - u * 24.0
+                soft_glow(cr, px_, py_, 2.6 + 6.5 * u, "#e2d8ea", 0.34 * math.sin(math.pi * min(1.0, u * 1.15)) * (1.0 - 0.3 * rain_u))
+        # lamplight pools on the cobbles under the two lanterns (they flicker)
+        for i, (lx_, ly_, side_) in enumerate(self._lamps):
+            fl = 0.85 + 0.15 * math.sin(t * 9.0 + i * 2.0) * math.sin(t * 5.3 + i)
+            cr.save()
+            cr.translate(lx_ + side_ * 7.6, y + 7.0)
+            cr.scale(1.0, 0.32)
+            soft_glow(cr, 0.0, 0.0, 26.0, "#ffbf5a", 0.3 * fl * (1.0 - 0.45 * rain_u))
+            cr.restore()
+        # upper windows: a lone figure in each, lamplit, on "living alone"; the shutters swing shut
+        # one after another on "latch" and an iron bar drops across each pair
         alone0 = e("alone")
-        latch0 = e("latch") - LATCH_LEAD          # the shutters latch one by one, all shut before "pane"
+        latch0 = e("latch") - LATCH_LEAD
         sleeper = (2, 0)                        # (house, window) where someone drinks a potion and yawns
         for k, hf in enumerate(self._houses):
             for j, rect in enumerate(hf["ups"]):
                 idx = k * 2 + j
                 lit = smooth((t - (alone0 + 0.16 * idx)) / 0.4)
-                close = core.ease("inout_back", clamp((t - (latch0 + LATCH_STEP * idx)) / 0.32)) if t > latch0 + LATCH_STEP * idx else 0.0
+                ts = latch0 + LATCH_STEP * idx
+                close = core.ease("inout_back", clamp((t - ts) / LATCH_CLOSE)) if t > ts else 0.0
+                shut = smooth(clamp(close))
                 x, y0, w, h = rect
-                lit_window(cr, x, y0, w, h, lit * (1.0 - 0.85 * smooth(close)), arch=False)
+                if lit > 0.02:                  # warm lamplight spilling onto the plaster round it
+                    soft_glow(cr, x + w * 0.5, y0 + h * 0.55, w * 1.25, "#ffbf5a", 0.22 * lit * (1.0 - 0.75 * shut))
+                lit_window(cr, x, y0, w, h, lit * (1.0 - 0.85 * shut), arch=False)
                 if lit > 0.05 and close < 0.6:
                     self._silhouette(cr, x + w * 0.5, y0 + h, w, lit * (1.0 - smooth(close / 0.6)), t, idx,
                                      sleepy=(k, j) == sleeper)
-                draw_shutters(cr, rect, min(1.0, close) if close > 0 else 0.0, hf["shutters"],
-                              glow=lit * 0.8 if close >= 0.97 else 0.0,
-                              latch_glint=math.exp(-max(0.0, t - (latch0 + LATCH_STEP * idx + 0.32)) / 0.18)
-                              if t > latch0 + LATCH_STEP * idx + 0.3 else 0.0)
+                bar = clamp((t - (ts + LATCH_CLOSE)) / LATCH_BAR) if t > ts + LATCH_CLOSE else 0.0
+                draw_town_shutters(cr, rect, min(1.0, close) if close > 0 else 0.0, hf["shutters"],
+                                   glow=lit * 0.8 if close >= 0.97 else 0.0, latch=bar, t=t)
+                ink_clack(cr, x + w * 0.8, y0 + h * 0.5, w * 0.42, (t - (ts + LATCH_CLOSE + LATCH_BAR * 0.7)) / 0.35,
+                          alpha=0.8, n=4, a0=-1.9, a1=-0.2)
         # the ink z's from the sleepy window
         zt = e("sleeping")
         if zt - 0.2 < t < zt + 3.2:
@@ -919,11 +1479,13 @@ class CastleTown(_Synced):
                 g = math.exp(-max(0.0, t - (pt0 + 0.1 * (k * 2 + q))) / 0.5) if t > pt0 + 0.1 * (k * 2 + q) else 0.0
                 pulse = 0.25 + 0.15 * math.sin(t * 2.0 + k + q)
                 soft_glow(cr, bx_, by_ - bh * 0.4, 4.5, "#8fb8ff", (pulse + 0.7 * g) * (1.0 - 0.5 * dim))
-                if g > 0.05:
-                    fx.sparkle(cr, bx_ - 0.6, by_ - bh * 0.5, 2.6 * g + 0.6, "#e8f2ff", 0.9 * g)
+                if g > 0.05:      # the cork catches the light: a cold gleam slides up the glass
+                    B.detail_line(cr, [(bx_ - 1.0, by_ - bh * 0.25), (bx_ - 1.2, by_ - bh * (0.25 + 0.4 * g))], 0.45,
+                                  "#eef6ff", 0.9 * g, taper=(0.2, 1.0, 0.2))
             # the charm: a rune-stone on a cord hanging by the door, swinging
             dx, dy, dw, dh = hf["door"]
-            hx, hy = dx + dw + 3.4, dy - 2.0
+            hx = dx + dw + 3.6 if k < 2 else dx - 3.6
+            hy = dy - 2.0
             kick = math.exp(-max(0.0, t - (ct0 + 0.12 * k)) / 1.2) * (1.0 if t > ct0 + 0.12 * k else 0.0)
             ang = 0.12 * math.sin(t * 1.6 + k) + 0.55 * kick * math.sin((t - ct0) * 6.0)
             ang += 0.25 * rain_u * math.sin(t * 3.1 + k)
@@ -936,44 +1498,83 @@ class CastleTown(_Synced):
             cg = 0.3 + 0.7 * kick
             soft_glow(cr, ex_, ey_ + 1.0, 3.6, P["rune"], 0.35 * cg)
             sb.ink(cr, [(ex_ - 0.6, ey_ + 0.4), (ex_ + 0.3, ey_ + 1.4), (ex_ + 0.8, ey_ + 0.2)], 0.3, P["rune"], 0.5 + 0.5 * cg)
-        # the doors: open while their folk come home, slam on "lock", heart bolts home, glint on "heart"
+        # the doors: open while their folk come home, SLAM on "lock" and the heart padlocks snap
+        # shut (a little 'clack' of ink); on "heart" the candlelight burnishes each lock in turn
         lock0, heart0 = e("lock"), e("heart")
         for k, hf in enumerate(self._houses):
-            dk = self._door_plan(k)
-            o0, o1 = dk
+            o0, o1 = self._door_plan(k)
             open_ = 0.0
-            if o0 <= t < lock0 + 0.04 * k:
+            t_slam = lock0 + 0.04 * k
+            if o0 <= t < t_slam:
                 open_ = smooth((t - o0) / 0.35) * 0.8
-            slam = t - (lock0 + 0.04 * k)
+            slam = t - t_slam
             if slam >= 0.0:
                 open_ = 0.8 * (1.0 - core.in_quad(clamp(slam / 0.09)))
-            heart = smooth((t - (lock0 + 0.04 * k + 0.12)) / 0.18)
+            tl_ = t_slam + PADLOCK_DELAY
+            lk = core.out_back(clamp((t - tl_) / 0.1)) if t > tl_ else 0.0
+            swing = 0.0
+            if t > tl_:
+                swing = -0.32 * math.exp(-(t - tl_) / 0.32) * math.sin((t - tl_) * 15.0)
+            else:
+                swing = 0.05 * math.sin(t * 1.9 + k * 1.3) - 0.12 * open_ * 0.0
             glint = 0.0
-            if t > heart0 + 0.1 * k:
-                u = (t - (heart0 + 0.1 * k)) / 0.7
-                glint = math.sin(math.pi * clamp(u)) if u < 1.0 else 0.0
-            draw_door(cr, hf["door"], open_=open_, slam=slam - 0.09 if slam > 0.09 else -1.0, t=t, heart=heart,
-                      heart_glint=glint, interior="#2a1a10" if open_ < 0.05 else "#4a2c14")
+            if t > heart0 + 0.12 * k:
+                gu = (t - (heart0 + 0.12 * k)) / 0.6
+                glint = gu if gu < 1.0 else 0.0
+            lamp = clamp(open_ / 0.4) * (1.0 if t < t_slam + 0.09 else 0.0)
+            draw_town_door(cr, hf["door"], open_=open_, slam=slam - 0.09 if slam > 0.09 else -1.0, t=t, lock=clamp(lk, 0.0, 1.08),
+                           swing=swing, glint=glint, lamp=lamp)
+            dx, dy, dw, dh = hf["door"]
+            if lk > 0.0:
+                ink_clack(cr, dx + dw * 0.8, dy + dh * 0.47 + dw * 0.3, dw * 0.42, (t - tl_) / 0.4, n=5, a0=-0.3, a1=1.0)
             if 0.09 < slam < 0.55:                    # SLAM: ink impact strokes round the door, a puff of dust
                 u = (slam - 0.09) / 0.46
-                dx, dy, dw, dh = hf["door"]
                 al = math.sin(math.pi * min(1.0, u * 1.6)) * (1.0 - u)
                 strokes = []
-                for j, (ax, ay, a_) in enumerate(((dx - 1.5, dy + dh * 0.2, 3.5), (dx - 1.8, dy + dh * 0.5, 3.1),
-                                                   (dx + dw + 1.5, dy + dh * 0.25, -0.4), (dx + dw + 1.8, dy + dh * 0.55, 0.0),
-                                                   (dx + dw * 0.5, dy - 2.0, -1.57))):
+                for j, (ax, ay, a_) in enumerate(((dx - 2.2, dy + dh * 0.2, 3.5), (dx - 2.5, dy + dh * 0.5, 3.1),
+                                                   (dx + dw + 2.2, dy + dh * 0.25, -0.4), (dx + dw + 2.5, dy + dh * 0.55, 0.0),
+                                                   (dx + dw * 0.5, dy - 3.0, -1.57))):
                     r0, r1 = 1.0 + 2.5 * u, 3.5 + 3.5 * u
                     strokes.append([(ax + math.cos(a_) * r0, ay + math.sin(a_) * r0), (ax + math.cos(a_) * r1, ay + math.sin(a_) * r1)])
                 B.detail_lines(cr, strokes, 0.55, INK, 0.85 * al, taper=(0.4, 1.0, 0.2))
-                for q in range(3):
-                    px_ = dx + dw * (0.2 + 0.3 * q) + (q - 1) * 4.0 * u
-                    cr.new_path()
-                    core.circle(cr, px_, dy + dh - 0.5 - 1.5 * u, 1.0 + 2.2 * u)
-                    core.src(cr, "#d8d0c4", 0.45 * (1.0 - u))
-                    cr.fill()
+                for q in (-1, 1):     # a soft puff of dust squeezed out along the threshold
+                    soft_glow(cr, dx + dw * 0.5 + q * (dw * 0.45 + 5.0 * u), dy + dh - 1.2 - 0.8 * u, 2.2 + 3.2 * u,
+                              "#e4dccf", 0.5 * (1.0 - u))
+        # the trade signs, rocking on their brackets (harder in the rain)
+        for i, (sx_, sy_, kind, side) in enumerate(self._signs):
+            ang = 0.07 * math.sin(t * 1.3 + i * 1.9) + 0.12 * rain_u * math.sin(t * 2.7 + i)
+            cr.save()
+            cr.translate(sx_, sy_)
+            cr.rotate(ang)
+            seg_ink(cr, [(-2.6, 0.0), (-2.6, 2.4)], 0.4, "#2e2a28", 0.95)
+            seg_ink(cr, [(2.6, 0.0), (2.6, 2.4)], 0.4, "#2e2a28", 0.95)
+            board = [(-4.6, 2.4), (4.6, 2.4), (4.6, 10.2), (0.0, 12.0), (-4.6, 10.2)]
+            pbd = sb.wash(cr, board, P["ultramarine"] if kind == "key" else P["madder"], 0.99, 0.3)
+            sb.ink_outline(cr, pbd, 0.45, INK, 0.9)
+            if kind == "key":
+                cr.new_path()
+                core.circle(cr, -1.8, 6.6, 1.5)
+                gp = B.Path(cr)
+                sb.gild(cr, path=gp, shimmer=0.5, outline=0.2)
+                cr.new_path()
+                core.circle(cr, -1.8, 6.6, 0.6)
+                core.src(cr, P["ultramarine"])
+                cr.fill()
+                sb.gild(cr, [(-0.4, 6.1), (3.4, 6.1), (3.4, 7.1), (-0.4, 7.1)], shimmer=0.5, outline=0.15)
+                sb.gild(cr, [(2.2, 7.0), (3.0, 7.0), (3.0, 8.4), (2.2, 8.4)], shimmer=0.5, outline=0.1)
+            else:
+                lp = [(-3.0, 8.6), (-2.6, 5.6), (0.0, 4.4), (2.6, 5.6), (3.0, 8.6)]
+                sb.gild(cr, lp, shimmer=0.55, smooth_t=0.6, outline=0.2)
+                B.detail_lines(cr, [[(-1.6, 5.6), (-0.8, 7.6)], [(0.0, 5.0), (0.0, 7.6)], [(1.6, 5.6), (0.8, 7.6)]], 0.25,
+                               P["gold_dk"], 0.8)
+            cr.restore()
         # the lanterns on their brackets (they sway harder in the rain)
-        for i, (bx, by) in enumerate(self._lamps):
-            sb._lantern(cr, bx, by - 3.0, t * (1.0 + 0.8 * rain_u), phase=i * 2.1, scale=0.85)
+        for i, (bx, by, side_) in enumerate(self._lamps):
+            town_lantern(cr, bx, by, t * (1.0 + 0.8 * rain_u), phase=i * 2.1, scale=0.85, side=side_)
+        # a candle in the baker's dormer
+        if "dormer" in self._houses[1]:
+            dx_, dy_, dw_, dh_ = self._houses[1]["dormer"]
+            lit_window(cr, dx_, dy_, dw_, dh_, 0.75 + 0.1 * math.sin(t * 3.0), arch=True)
         # folk in the street
         self._street_folk(cr, t, rain_u)
         # the rain: painted streaks over the town (and a cold wash that dims it)
@@ -1203,12 +1804,14 @@ class DragonStreet(_Synced):
         _far_roofs(cr, 136.0, self.seed + 5, lit=0.6)
         # the two house fronts framing the street, dressed: the left one lamplit (they're home,
         # they just don't come out), the right one dark
-        hl = _house_front(cr, -14.0, self.GROUND, 72.0, 54.0, 44.0, 30.0, core.mix(P["bone"], P["ochre"], 0.3),
-                          P["madder"], self.seed + 1, jetty=4.0, shutters=P["verdigris"])
-        _dress_house(cr, hl, lit=(0.85, 0.6), low_lit=0.0, flowers=(P["vermilion"], P["ochre"], P["rose"]), seed=7)
-        hr = _house_front(cr, 142.0, self.GROUND, 72.0, 54.0, 42.0, 28.0, core.mix(P["bone"], P["rose"], 0.32),
-                          P["sienna"], self.seed + 2, jetty=4.0, shutters=P["ultramarine"])
-        _dress_house(cr, hr, lit=(0.0, 0.0), low_lit=0.0)
+        hl = town_house(cr, -14.0, self.GROUND, 72.0, 54.0, 44.0, 34.0, core.mix(P["bone"], P["ochre"], 0.3),
+                        P["madder"], P["verdigris"], self.seed + 1, roof="gable", timber="x", door_u=0.62, low_u=0.24,
+                        ups_u=(0.3, 0.72), jetty=4.0)
+        dress_town_house(cr, hl, lit=(0.85, 0.6), flowers=(P["vermilion"], P["ochre"], P["rose"]), seed=7)
+        hr = town_house(cr, 142.0, self.GROUND, 72.0, 54.0, 42.0, 26.0, core.mix(P["bone"], P["rose"], 0.32),
+                        P["sienna"], P["ultramarine"], self.seed + 2, roof="hip", timber="close", door_u=0.4, low_u=0.78,
+                        ups_u=(0.3, 0.7), jetty=4.0, chimney=(198.0, 12.0))
+        dress_town_house(cr, hr, lit=(0.5, 0.3), shut=(True, True))
         # the street
         street = [(-6, self.GROUND - 1.0), (206, self.GROUND - 1.0), (206, self.DH + 4), (-6, self.DH + 4)]
         ps = sb.wash(cr, street, "#a39a8c", 0.95, 0.3)
@@ -1240,6 +1843,30 @@ class DragonStreet(_Synced):
         e = self.e
         return smooth((t - (e("but") + 0.2)) / 0.5) * (1.0 - smooth((t - (e("wasnt", e("spell") - 0.75))) / 0.5))
 
+    PASS_SPEED = 84.0                        # design units / s: a scurry, quick small steps
+
+    def passers(self):
+        """(kind, start time, glance, bundle): the neighbours who hurry by during "neighbours,
+        who hurried on by"."""
+        e = self.e
+        t0 = e("waved") - 0.25                # already coming up the street as he raises his hand
+        return (("goblin", t0, 0.0, None), ("kobold", t0 + 0.36, 1.0, None), ("mouse", t0 + 0.74, 0.0, P["ochre"]))
+
+    def passer_at(self, t, t0, glance):
+        """x, distance walked, glance amount (or None when off the picture)."""
+        if t < t0:
+            return None, 0.0, 0.0
+        dist = (t - t0) * self.PASS_SPEED
+        # the glancer slows a beat as she passes him, looks, then speeds up
+        if glance > 0:                       # level with him: a glance up, a hitch, then faster away
+            tg = t0 + 1.3
+            dist -= 10.0 * smooth((t - tg) / 0.3) - 10.0 * smooth((t - (tg + 0.45)) / 0.25)
+        x = -30.0 + dist
+        if x > 240.0:
+            return None, 0.0, 0.0
+        g = glance * math.sin(math.pi * clamp((t - (t0 + 1.15)) / 0.75))
+        return x, dist, g
+
     def pose(self, t):
         e = self.e
         sig, wav, hur = e("sigh"), e("wave"), e("hurried")
@@ -1252,9 +1879,13 @@ class DragonStreet(_Synced):
         amt = clamp(w_in) * (1.0 - w_out)
         hope = smooth((t - (wav - 0.3)) / 0.3) * (1.0 - smooth((t - (hur + 0.2)) / 0.6))
         look_x = 0.35 * math.sin(t * 0.7) * (1.0 - hope)
+        # his eyes follow the passers-by as they go (eyes first, the head after)
+        t_pass = self.passers()[0][1]
+        follow = smooth((t - (t_pass + 0.9)) / 0.5) * (1.0 - smooth((t - (e("by") + 0.5)) / 0.6))
+        look_x = lerp(look_x, 0.9, follow)
         across = self.offer(t)
         away = smooth((t - (wasnt + 0.05)) / 0.45)
-        head_turn = 0.6 * across - 0.25 * away
+        head_turn = 0.6 * across - 0.25 * away + 0.35 * smooth((t - (t_pass + 1.1)) / 0.6) * (1.0 - smooth((t - (e("by") + 0.4)) / 0.7))
         look_x = lerp(look_x, 1.0, across)
         look_x = lerp(look_x, -0.3, away)
         nod = -0.15 - 0.4 * away - 0.2 * smooth((t - (hur + 0.3)) / 0.5) * (1.0 - smooth((t - but_) / 0.3))
@@ -1273,15 +1904,29 @@ class DragonStreet(_Synced):
             bx, by = -10 + u * 220, 40 + 12 * math.sin(u * 5 + k) + k * 9
             fl = 1.4 * math.sin(t * 7.0 + k)
             sb.ink(cr, [(bx - 3.0, by - 1.0 - fl), (bx, by), (bx + 3.0, by - 1.0 - fl)], 0.7, INK, 0.7, (0.3, 1.0, 0.3))
-        # the cold glow of the merchants' wares, reaching across the gutter
+        # the cold glow of the merchants' wares, reaching across the gutter for him in streams of
+        # rune-light (and drawing back again on "there wasn't a spell")
         off = self.offer(t)
         if off > 0.01:
             cr.save()
             cr.rectangle(-4, -4, self.DW + 8, self.DH + 8)
-            cr.set_source(core.linear(self.DW, 0, self.DW * 0.25, 0, [(0.0, core.alpha("#7fe0ff", 0.30 * off)),
-                                                                     (0.55, core.alpha("#6fb8e8", 0.10 * off)),
-                                                                     (1.0, core.alpha("#6fb8e8", 0.0))]))
+            cr.set_source(core.linear(self.DW, 0, self.DW * 0.3, 0, [(0.0, core.alpha("#7fe0ff", 0.34 * off)),
+                                                                    (0.55, core.alpha("#6fb8e8", 0.12 * off)),
+                                                                    (1.0, core.alpha("#6fb8e8", 0.0))]))
             cr.fill()
+            for i, (y0_, y1_, ph_) in enumerate(((104.0, 128.0, 0.0), (122.0, 142.0, 1.7), (140.0, 150.0, 3.1))):
+                reach = clamp(off * 1.15 - 0.08 * i)
+                n = 18
+                for j in range(n + 1):
+                    u = j / n
+                    if u > reach:
+                        break
+                    x_ = lerp(self.DW + 6.0, 104.0, u)
+                    y_ = lerp(y0_, y1_, u) + 5.0 * math.sin(u * 5.0 + t * 2.2 + ph_)
+                    soft_glow(cr, x_, y_, 6.0 + 4.0 * u, "#8fe8ff", 0.13 * off * (1.0 - 0.5 * u))
+                    if j % 3 == 0:
+                        sb.ink(cr, [(x_ - 1.2, y_ - 0.6), (x_ + 0.4, y_ + 0.5), (x_ + 1.4, y_ - 0.7)], 0.35, P["rune"],
+                               0.6 * off * (1.0 - u))
             cr.restore()
         pose = self.pose(t)
         dx, dy, ds = 84.0, self.GROUND + 20.0, 0.232
@@ -1295,18 +1940,15 @@ class DragonStreet(_Synced):
         wasnt = e("wasnt", e("spell") - 0.75)
         if wasnt < t < wasnt + 3.4:
             ch.dragon_smoke(cr, t, wasnt + 0.3, rig, scale=0.9, dur=2.4, alpha=0.7, light_tint="#f4f0ff")
-        # the neighbours hurrying by in the foreground, heads down
+        # the neighbours hurrying by in the foreground, heads down, all the same way ("on by"),
+        # one after another; the kobold glances up at him and scurries faster
         y = self.DH - 11.0
-        plan = (("goblin", e("wave") + 0.2, 1, 2.4, 0.0), ("kobold", e("neighbours") + 0.15, -1, 2.2, 1.0),
-                ("mouse", e("hurried") + 0.05, 1, 2.0, 0.0))
-        for k, (kind, t0, d, dur, glance) in enumerate(plan):
-            u = (t - t0) / dur
-            if not 0.0 < u < 1.0:
+        for k, (kind, t0, glance, bundle) in enumerate(self.passers()):
+            x, dist, g = self.passer_at(t, t0, glance)
+            if x is None:
                 continue
-            x = lerp(-40.0, 240.0, u) if d > 0 else lerp(240.0, -40.0, u)
-            g = glance * math.sin(math.pi * clamp((u - 0.3) / 0.25))
-            pfolk(cr, x, y - k * 1.5, 1.38, kind, t, facing=d, walk=1.0, phase=u * 9.5, hurry=1.0 - 0.6 * g, look=g,
-                  seed=k + 11, bundle=P["ochre"] if kind == "mouse" else None)
+            pfolk(cr, x, y - k * 1.2, 1.38, kind, t, facing=1, walk=1.0, phase=dist / 21.0, hurry=1.0 - 0.6 * g, look=g,
+                  seed=k + 11, bundle=bundle)
         return rig
 
 
@@ -1329,9 +1971,11 @@ class Market(_Synced):
         for k, (x, w, c, rf, sh) in enumerate(((-12, 74, P["bone"], P["madder"], P["verdigris"]),
                                                (62, 76, core.mix(P["bone"], P["ochre"], 0.35), P["sienna"], P["ultramarine"]),
                                                (138, 76, core.mix(P["bone"], P["rose"], 0.3), "#5b5f7c", P["olive"]))):
-            hf = _house_front(cr, x, 122.0, w, 30.0, 40.0, 20.0 + (k % 2) * 6, core.mix(c, "#9a96ae", 0.2),
-                              core.mix(rf, "#6c6a80", 0.25), self.seed + 20 + k, jetty=3.0, shutters=sh)
-            _dress_house(cr, hf, lit=((0.0, 0.7), (0.5, 0.0), (0.0, 0.0))[k], door=False)
+            hf = town_house(cr, x, 122.0, w, 30.0, 40.0, 22.0 + (k % 2) * 6, core.mix(c, "#9a96ae", 0.2),
+                            core.mix(rf, "#6c6a80", 0.25), sh, self.seed + 20 + k, jetty=3.0,
+                            roof=("gable", "hip", "gable")[k], timber=("x", "close", "arch")[k])
+            dress_town_house(cr, hf, lit=((0.0, 0.7), (0.5, 0.0), (0.0, 0.0))[k],
+                             shut=((True, False), (False, True), (True, True))[k], door=False)
             hs.append(hf)
         street = [(-6, 118), (206, 118), (206, self.DH + 4), (-6, self.DH + 4)]
         ps = sb.wash(cr, street, "#a39a8c", 0.95, 0.3)
@@ -1382,7 +2026,7 @@ class Market(_Synced):
         off = self.offer(t)
         shrug = smooth((t - (wasnt + 0.05)) / 0.35) * (1.0 - smooth((t - (spell + 1.4)) / 0.5))
         for k, (x, w, awn, sign) in enumerate(self._stalls):
-            kind = ("goblin", "dwarf", "kobold")[k]
+            kind = ("goblin", "frog", "kobold")[k]
             t_up = stone - 0.12 if k == 0 else sell - 0.05 + 0.14 * (k - 1)
             lift = core.out_back(clamp((t - t_up) / 0.32)) if t > t_up else 0.0
             lift = clamp(lift, 0.0, 1.15) * (1.0 - smooth((t - (wasnt - 0.1)) / 0.4))
@@ -1970,16 +2614,188 @@ class VerseText:
         cr.restore()
 
 
+# ----------------------------------------------------------------------------------------
+# Kells illumination: a lapis border with a twisted gold cord, vermilion corner panels with gilt
+# triskeles, and the Insular manuscripts' rows of red dots round frames and initials
+# ----------------------------------------------------------------------------------------
+
+LAPIS = "#2b4687"
+KELLS_BAND = (9.4, 13.0)                    # the border band, page units in from the edge
+
+
+def red_dots_along(cr, pts, step=1.7, off=1.4, r=0.34, color=None, alpha=0.85, closed=True):
+    """The Insular red-dot contour: dots spaced `step` apart, `off` outside the polyline pts
+    (outside = to the left of travel for a clockwise loop in y-down space)."""
+    color = color or P["vermilion"]
+    seq = pts + ([pts[0]] if closed and pts[0] != pts[-1] else [])
+    acc = 0.0
+    nxt = 0.0
+    cr.new_path()
+    for (x0, y0), (x1, y1) in zip(seq, seq[1:]):
+        L = math.hypot(x1 - x0, y1 - y0)
+        if L < 1e-6:
+            continue
+        nx, ny = (y1 - y0) / L, -(x1 - x0) / L
+        while nxt <= acc + L:
+            u = (nxt - acc) / L
+            px_, py_ = x0 + (x1 - x0) * u + nx * off, y0 + (y1 - y0) * u + ny * off
+            cr.new_sub_path()
+            cr.arc(px_, py_, r, 0, TAU)
+            nxt += step
+        acc += L
+    core.src(cr, color, alpha)
+    cr.fill()
+
+
+def _triskele(cr, cx, cy, r, color, w):
+    arms = []
+    for k in range(3):
+        a0 = k * TAU / 3.0
+        ex, ey = cx + math.cos(a0) * r * 0.55, cy + math.sin(a0) * r * 0.55
+        arms.append(spiral_pts(ex, ey, r * 0.05, r * 0.45, turns=1.25, n=16, a0=a0 + math.pi, cw=1))
+    B.detail_lines(cr, arms, w, color, 0.95, taper=(0.4, 1.0, 0.7))
+
+
+def kells_border(cr, w, h, side=1, seed=0, shimmer=0.5, gutter_boss=True):
+    """The page's illuminated border band (static: cache it): lapis between gold rules, a twisted
+    gold cord running round it, vermilion corner panels with gilt triskeles, a gilded boss at the
+    middle of the fore-edge side, and red dots along the outside."""
+    m0, m1 = KELLS_BAND
+    bwid = m1 - m0
+    outer = [(m0, m0), (w - m0, m0), (w - m0, h - m0), (m0, h - m0)]
+    inner = [(m1, m1), (w - m1, m1), (w - m1, h - m1), (m1, h - m1)]
+    cr.save()
+    cr.new_path()
+    core.polygon(cr, outer)
+    core.polygon(cr, inner[::-1])
+    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    band = B.Path(cr)
+    band.add(cr)
+    core.src(cr, LAPIS, 0.96)
+    cr.fill()
+    # the cord: diagonal gold strokes, each with a dark lower edge (the twist)
+    cr.save()
+    band.add(cr)
+    cr.clip()
+    strokes, shadows = [], []
+    pitch = 2.0
+
+    def side_run(x0, y0, x1, y1, nx, ny):
+        L = math.hypot(x1 - x0, y1 - y0)
+        tx, ty = (x1 - x0) / L, (y1 - y0) / L
+        n = int(L / pitch) + 2
+        for k in range(-1, n):
+            s0 = k * pitch
+            a = (x0 + tx * s0 + nx * 0.5, y0 + ty * s0 + ny * 0.5)
+            b = (x0 + tx * (s0 + pitch * 1.25) + nx * (bwid - 0.5), y0 + ty * (s0 + pitch * 1.25) + ny * (bwid - 0.5))
+            mid = ((a[0] + b[0]) * 0.5 - tx * 0.25, (a[1] + b[1]) * 0.5 - ty * 0.25)
+            strokes.append([a, mid, b])
+            shadows.append([(a[0] + tx * 0.55, a[1] + ty * 0.55), (mid[0] + tx * 0.55, mid[1] + ty * 0.55),
+                            (b[0] + tx * 0.55, b[1] + ty * 0.55)])
+    side_run(m0, m0, w - m0, m0, 0.0, 1.0)
+    side_run(w - m0, m0, w - m0, h - m0, -1.0, 0.0)
+    side_run(w - m0, h - m0, m0, h - m0, 0.0, -1.0)
+    side_run(m0, h - m0, m0, m0, 1.0, 0.0)
+    B.detail_lines(cr, shadows, 0.62, "#14204a", 0.85, taper=(0.3, 1.0, 0.3))
+    B.detail_lines(cr, strokes, 0.72, P["gold"], 0.95, taper=(0.3, 1.0, 0.3))
+    B.detail_lines(cr, strokes, 0.22, P["gold_hi"], 0.7, taper=(0.2, 1.0, 0.2))
+    cr.restore()
+    # the gold rules
+    for poly, lw in ((outer, 0.55), (inner, 0.55)):
+        cr.new_path()
+        core.polygon(cr, poly)
+        cr.close_path()
+        cr.set_line_width(lw)
+        core.src(cr, P["gold"], 1.0)
+        cr.stroke()
+    for poly in ([(m0 - 0.45, m0 - 0.45), (w - m0 + 0.45, m0 - 0.45), (w - m0 + 0.45, h - m0 + 0.45), (m0 - 0.45, h - m0 + 0.45)],
+                 [(m1 + 0.45, m1 + 0.45), (w - m1 - 0.45, m1 + 0.45), (w - m1 - 0.45, h - m1 - 0.45), (m1 + 0.45, h - m1 - 0.45)]):
+        cr.new_path()
+        core.polygon(cr, poly)
+        cr.close_path()
+        cr.set_line_width(0.22)
+        core.src(cr, INK, 0.75)
+        cr.stroke()
+    cr.restore()
+    # corner panels: vermilion squares, gilt edge, a gold triskele
+    cs = bwid + 2.4
+    for (cx, cy) in ((m0 + bwid * 0.5, m0 + bwid * 0.5), (w - m0 - bwid * 0.5, m0 + bwid * 0.5),
+                     (w - m0 - bwid * 0.5, h - m0 - bwid * 0.5), (m0 + bwid * 0.5, h - m0 - bwid * 0.5)):
+        sq = [(cx - cs * 0.5, cy - cs * 0.5), (cx + cs * 0.5, cy - cs * 0.5), (cx + cs * 0.5, cy + cs * 0.5),
+              (cx - cs * 0.5, cy + cs * 0.5)]
+        cr.new_path()
+        core.polygon(cr, sq)
+        sp_ = B.Path(cr)
+        sp_.add(cr)
+        core.src(cr, P["vermilion"], 0.98)
+        cr.fill()
+        sp_.add(cr)
+        cr.set_line_width(0.7)
+        core.src(cr, P["gold"], 1.0)
+        cr.stroke()
+        sb.ink_outline(cr, sp_, 0.22, INK, 0.8)
+        _triskele(cr, cx, cy, cs * 0.42, P["gold_hi"], 0.42)
+        red_dots_along(cr, sq, step=1.5, off=1.0, r=0.3)
+    # a gilded boss at the middle of the fore-edge band, and two small ones on the head and tail
+    ox = m0 + bwid * 0.5 if side < 0 else w - m0 - bwid * 0.5
+    for (bx_, by_, r_) in ((ox, h * 0.5, bwid * 0.75), (w * 0.5, m0 + bwid * 0.5, bwid * 0.5),
+                           (w * 0.5, h - m0 - bwid * 0.5, bwid * 0.5)):
+        cr.new_path()
+        core.circle(cr, bx_, by_, r_)
+        sb.gild(cr, path=B.Path(cr), shimmer=shimmer, outline=0.25)
+        cr.new_path()
+        core.circle(cr, bx_, by_, r_ * 0.42)
+        core.src(cr, P["vermilion"], 0.95)
+        cr.fill()
+    # red dots along the outside of the band
+    red_dots_along(cr, [(m0, m0), (w - m0, m0), (w - m0, h - m0), (m0, h - m0)], step=1.75, off=-1.25, r=0.32)
+
+
+ORN_MAX_BUCKET = 16.0
+
+
 class PageArt:
     """One page's living content, used as the Page's `illus` over the whole page (box (0,0,1,1),
     frame None): its illustration clipped to a gilt frame + the verse being written. Because it is
-    part of the page itself, it turns with the page."""
+    part of the page itself, it turns with the page. Its illumination (the Kells border band, the
+    red-dot contours round the frame and the initial) is static, cached per resolution bucket and
+    painted over the picture."""
 
-    def __init__(self, illus=None, box=None, frame="arch", verse=None):
+    def __init__(self, illus=None, box=None, frame="arch", verse=None, side=1, border=True, cap=None, seed=0):
         self.illus = illus
         self.box = box
         self.frame = frame
         self.verse = verse
+        self.side = side
+        self.border = border
+        self.cap = cap                      # (x, y, size) of the library's drop cap, page units
+        self.seed = seed
+        self._orn = {}
+
+    def _ornament(self, cr, w, h):
+        dev = B.device_scale(cr)
+        bucket = min(ORN_MAX_BUCKET, 2.0 ** (math.ceil(math.log2(max(0.25, dev)) * 2.0) / 2.0))
+        key = (round(w, 2), round(h, 2), bucket)
+        surf = self._orn.get(key)
+        if surf is None:
+            if len(self._orn) > 3:
+                self._orn.clear()
+            surf = core.new_surface(max(1, int(math.ceil(w * bucket))), max(1, int(math.ceil(h * bucket))))
+            c2 = core.new_context(surf)
+            c2.scale(bucket, bucket)
+            if self.border:
+                kells_border(c2, w, h, self.side, self.seed)
+            if self.illus is not None and self.box is not None and self.frame:
+                bx, by, bw, bh = self.box[0] * w, self.box[1] * h, self.box[2] * w, self.box[3] * h
+                pts = _flat_pts(lambda c: sb._frame_path(c, bx - 2.2, by - 2.2, bw + 4.4, bh + 2.2, self.frame))
+                red_dots_along(c2, pts, step=1.6, off=0.0, r=0.32)
+            if self.cap is not None:
+                x_, y_, s_ = self.cap
+                red_dots_along(c2, [(x_ - 1.6, y_ - 1.6), (x_ + s_ + 1.6, y_ - 1.6), (x_ + s_ + 1.6, y_ + s_ + 1.6),
+                                    (x_ - 1.6, y_ + s_ + 1.6)], step=1.5, off=0.0, r=0.3)
+            surf.flush()
+            self._orn[key] = surf
+        return surf, bucket
 
     def __call__(self, cr, w, h, t=0.0):
         if self.illus is not None and self.box is not None:
@@ -1992,20 +2808,48 @@ class PageArt:
                 cr.translate(bx, by)
                 self.illus(cr, bw, bh, t)
                 cr.restore()
+                # the gilt frame: a broad gold moulding, a lapis fillet inside it, ink both sides
                 cr.save()
                 fp.add(cr)
-                cr.set_line_width(w * 0.014)
+                cr.set_line_width(w * 0.022)
                 cr.set_source_rgb(*core.col(P["gold"])[:3])
                 cr.stroke()
+                fp.add(cr)
+                cr.set_line_width(w * 0.006)
+                cr.set_source_rgb(*core.col(LAPIS)[:3])
+                cr.stroke()
                 cr.restore()
-                sb.ink_outline(cr, fp, w * 0.004, INK, 0.85)
+                sb.ink_outline(cr, fp, w * 0.0035, INK, 0.85)
             else:
                 cr.save()
                 cr.translate(bx, by)
                 self.illus(cr, bw, bh, t)
                 cr.restore()
+        if self.border or (self.frame and self.box is not None) or self.cap is not None:
+            surf, bucket = self._ornament(cr, w, h)
+            cr.save()
+            cr.scale(1.0 / bucket, 1.0 / bucket)
+            cr.set_source_surface(surf, 0, 0)
+            cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+            cr.paint()
+            cr.restore()
         if self.verse is not None:
             self.verse.draw(cr, w, h, t)
+
+
+def _flat_pts(build):
+    """Flatten a path built by build(cr) into a polyline."""
+    surf, c = core.frame(4, 4)
+    c.new_path()
+    res = build(c)
+    if res is not None and hasattr(res, "add"):
+        c.new_path()
+        res.add(c)
+    pts = []
+    for kind, xy in c.copy_path_flat():
+        if kind in (cairo.PATH_MOVE_TO, cairo.PATH_LINE_TO) and xy:
+            pts.append(tuple(xy))
+    return pts
 
 
 # ----------------------------------------------------------------------------------------
@@ -2038,21 +2882,31 @@ def make_book(ev):
     v2b = VerseText(V2B_TEXT, ["s0_l7", "s0_l8"], TEXT_V2, 150.0 / 18.5, align="center")
     coda = VerseText(CODA_TEXT, ["s0_l9", "s0_l10"], (0.11, 0.14, 0.79, 0.3), 150.0 / 17.0, cap_lines=2)
     full = (0.0, 0.0, 1.0, 1.0)
+    # the library's drop caps sit at the text box corner: (x, y + size*0.12), size = cap_lines*1.24*size - 0.15*size
+    s1 = 150.0 / 17.0
+    cap_o = (0.11 * 150.0, 0.11 * 200.0 + s1 * 0.12, 1.24 * s1 * 3 - 0.15 * s1)
+    cap_s = (0.11 * 150.0, 0.14 * 200.0 + s1 * 0.12, 1.24 * s1 * 2 - 0.15 * s1)
     spreads = [
-        sb.Spread(sb.Page(text=" ", drop_cap="O", text_box=(0.11, 0.11, 0.79, 0.5), text_size=150.0 / 17.0,
-                          illus=PageArt(shelf, (0.12, 0.655, 0.76, 0.27), None, v1), box=full, frame=None, folio="j", seed=1),
-                  sb.Page(illus=PageArt(castle, BOX_TALL, "gothic"), box=full, frame=None, folio="ij", seed=2)),
-        sb.Spread(sb.Page(illus=PageArt(dragon, BOX_V2, "arch", v2a), box=full, frame=None, folio="iij", seed=3),
-                  sb.Page(illus=PageArt(market, BOX_V2, "arch", v2b), box=full, frame=None, folio="iv", seed=4)),
-        sb.Spread(sb.Page(text=" ", drop_cap="S", cap_lines=2, text_box=(0.11, 0.14, 0.79, 0.3), text_size=150.0 / 17.0,
-                          illus=PageArt(sb.illus_stool, (0.1, 0.5, 0.8, 0.36), None, coda), box=full, frame=None,
-                          folio="v", seed=5),
-                  sb.Page(illus=PageArt(sb.illus_bread, (0.13, 0.09, 0.74, 0.82), "gothic"), box=full, frame=None,
-                          folio="vj", seed=6)),
+        sb.Spread(sb.Page(text=" ", drop_cap="O", text_box=(0.11, 0.11, 0.79, 0.5), text_size=s1, border=None,
+                          illus=PageArt(shelf, (0.12, 0.655, 0.76, 0.27), None, v1, side=-1, cap=cap_o, seed=1),
+                          box=full, frame=None, folio="j", seed=1),
+                  sb.Page(illus=PageArt(castle, BOX_TALL, "gothic", side=1, seed=2), box=full, frame=None, folio="ij",
+                          seed=2, border=None)),
+        sb.Spread(sb.Page(illus=PageArt(dragon, BOX_V2, "arch", v2a, side=-1, seed=3), box=full, frame=None, folio="iij",
+                          seed=3, border=None),
+                  sb.Page(illus=PageArt(market, BOX_V2, "arch", v2b, side=1, seed=4), box=full, frame=None, folio="iv",
+                          seed=4, border=None)),
+        sb.Spread(sb.Page(text=" ", drop_cap="S", cap_lines=2, text_box=(0.11, 0.14, 0.79, 0.3), text_size=s1,
+                          illus=PageArt(sb.illus_stool, (0.1, 0.5, 0.8, 0.36), None, coda, side=-1, cap=cap_s, seed=5),
+                          box=full, frame=None, folio="v", seed=5, border=None),
+                  sb.Page(illus=PageArt(sb.illus_bread, (0.13, 0.09, 0.74, 0.82), "gothic", side=1, seed=6), box=full,
+                          frame=None, folio="vj", seed=6, border=None)),
         sb.Spread(sb.Page(text="Here beginneth\nthe tale of\nthe Stone\nand the Bread", align="center", ink=sb.RUBRIC,
-                          text_box=(0.12, 0.32, 0.76, 0.3), text_size=150.0 / 13.0, illus=sb.illus_fleuron,
-                          box=(0.3, 0.6, 0.4, 0.1), frame=None, folio="vij", seed=7),
-                  sb.Page(illus=PageArt(wash_, BOX_TALL, "gothic"), box=full, frame=None, folio="viij", seed=8)),
+                          text_box=(0.12, 0.32, 0.76, 0.3), text_size=150.0 / 13.0,
+                          illus=PageArt(sb.illus_fleuron, (0.3, 0.6, 0.4, 0.1), None, side=-1, seed=7),
+                          box=full, frame=None, folio="vij", seed=7, border=None),
+                  sb.Page(illus=PageArt(wash_, BOX_TALL, "gothic", side=1, seed=8), box=full, frame=None, folio="viij",
+                          seed=8, border=None)),
     ]
     book = sb.Book(spreads=spreads)
     book.art = {"castle": castle, "shelf": shelf, "dragon": dragon, "market": market, "wash": wash_,

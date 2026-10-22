@@ -1,99 +1,108 @@
 """s9_endcard.py -- SCENE 9: THE END CARD.  "Which of you, if your son asks for bread, will give him a stone?"
 
-THE IDEA. The film's last word is a page from the bard's own book: an illuminated end card on warm
-charcoal vellum (the manner of the "Black Hours" -- gold and cream on a dark-dyed page), lit by one
-unseen candle, framed by blind-tooled rules with gilded corner flourishes. At its heart is a small
-painted miniature in a gilded roundel the size of a host: a grey rune-stone and a round crusty loaf
-on a linen-covered board, under a deep ultramarine night powdered with shell-gold stars. The two
-are twins in shape -- the parable's stones look like loaves, that is its whole point -- and opposite
-in substance: the stone carries the city's cold arcane cyan (a carved spiral and a band of runes,
-the speaking stone's marks), the loaf (the gnome's loaf) glows softly from within. The whole film in
-one picture: what the world handed him, and what fed him.
-The card does not just sit there -- it acts the parable out once, quietly, under the bard's
-reprise: on "...you know what to DO" the loaf breaks itself open, warm light pours out between the
-halves, and that light physically spreads through the gold leaf of the page -- the stars of the
-little sky, the stone (its cold runes gutter and go dark, it is washed warm), the roundel's rim,
-the vines, the title, the corners -- while "Someone's hungry for bread on the bench next to you" is
-sung. Light is the score: the film's color script (cold, isolated -> one warm pool in the dark ->
-warmth spreading) replayed in sixteen seconds. Reverent, still, sincere; nothing on the card moves
-that a candle could not explain, except the bread.
+THE IDEA. The film closes the bard's book on one last illuminated page: gold and cream on a dark-dyed
+vellum (the manner of the "Black Hours"), lit by one unseen candle, framed by blind-tooled rules with
+a hair of gold and a gilded ivy spray in each corner. At its heart a painted miniature in a gilded
+roundel: under an ultramarine night powdered with shell-gold stars, the kingdom on its high horizon
+(the castle on the hill; far off, the garden's bench under its lantern -- both dark), a tilted-up
+millefleur meadow, and in front, on a linen cloth spread on the grass, the two things the film is
+about, side by side like two strangers on a bench: a grey slate rune-stone (the city's cold cyan in
+its carved spiral -- the speaking stone's marks) and the gnome's round loaf, softly warm inside. Twins
+in shape (the parable's stones look like loaves), opposite in substance. And in the margin, as in
+every Book of Hours, a drollery: the cockatrice minstrel himself, perched on the curl at the end of
+the left vine with his lute -- he sings the reprise we hear (bookending S0: bard left, book right).
+The card acts the parable out once, quietly. On "...you know what to DO" the loaf breaks itself open
+like a book: the halves snap apart, lean out and turn their torn crumb to us, a V of light stands
+between them (the opened loaf makes a soft heart), flour puffs, crumbs patter onto the linen. Then,
+while "Someone's hungry for bread on the bench next to you" is sung, the light spreads: over the cloth
+and the meadow (the flowers catch it), onto the stone beside it on "hungry" (its runes gutter out; it
+is only warm grey stone now, its shadow falling away from the bread), the castle's windows light one
+by one, the far lantern over the bench catches on the word "bench", then the gold of the whole page --
+stars, rim, vines, title, frame -- by "you". The film's colour script (cold and alone -> one warm pool
+-> warmth spreading) replayed in sixteen seconds. Nothing touches the bread: it breaks for whoever
+sits beside it.
 
-ONE SHOT, LOCKED OFF (an end card must be still; its life is light, not camera). 0 -> 16.96 s.
-Layout (1920x1080). The page is a blind-tooled double rule (104..1816 x 56..872) with a gilded
-quatrefoil-and-tendril flourish in each corner; it ends ABOVE the caption band, so the sung
-reprise's captions sit under the page like a colophon (nothing in the bottom ~200 px):
-  TITLE   "THE STONE AND THE BREAD": Cinzel, letter-spaced, cream with a whisper of gold (base 184)
-  ROUNDEL the miniature, centre (960, 430), r 160: a gilded double ring with a madder band of gold
-          pearls and gothic cusps top and bottom; gold vine scrolls (hedera leaves, tendril curls,
-          berry dots) run out of its equator to left and right and end in spirals under the
-          title's ends. Inside, a little still life with depth: the stone set back on the left, the
-          loaf in front on the right (its left half overlaps the stone's foot once it opens), a
-          linen runner hanging over the board's edge in cone folds with a madder hem and gold thread.
-  QUOTE   Cormorant Garamond Italic, cream, two lines: "Which of you, if your son asks for bread, /
-          will give him a stone?"  (the line break lands "stone" at the end of the card's sentence)
-  ATTRIB  "-- Matthew 7:9": Cinzel small caps in pale gold                               (base 832)
-Eye-trace: the iris opens on the roundel (warm loaf + cold stone: the most saturated, most
-contrasted thing on the card) -> the page -> a candle glint walks across the gilded title (a
-twinkle pings on the apex of the A) -> the quote fades in below -> held -> the loaf breaks and the
-light carries the eye outward through the gold and up to the title -> the final chord's glint
-ends on "BREAD" -> the iris closes down onto the loaf.
+ONE SHOT, LOCKED OFF (an end card is a page: its life is light and the little minstrel, not camera).
+Layout (1920x1080). The page: tooled double rule 104..1816 x 56..872 with a gold hairline between and
+an ivy spray at each corner; it ends ABOVE the caption band, so the reprise's sung captions sit under
+the page like a colophon (nothing in the bottom ~200 px).
+  TITLE   "THE STONE AND THE BREAD": Cinzel, letter-spaced, cream with a whisper of gold (base 172)
+  ROUNDEL centre (960, 430), r 184: gilded double ring, madder band of gold pearls, trefoil cusps N/S;
+          gold ivy vines (hedera leaves, tendrils, berries) run from its equator to curls under the
+          title's ends. Inside, back to front: stars | horizon y 372 (hills; castle left; bench and
+          lantern right) | meadow in painted rows with clumps of millefleurs | the linen cloth
+          (madder border, gold thread, fringe) | stone x 876 and loaf x 1026 on it (tops ~ y 427)
+          | foreground flowers.
+  BARD    seated on the left vine's end curl (420, 370), scale 0.62 (~100 px), 3/4 toward the roundel.
+  QUOTE   Cormorant Garamond Italic, cream, two lines (bases 712 / 772)
+  ATTRIB  "-- Matthew 7:9": Cinzel in pale gold (base 840)
+Eye-trace: the iris opens on the roundel (warm loaf vs cold stone: the most saturated, most contrasted
+thing) -> a candle glint walks the title (a twinkle on the A of AND) -> the quote fades in -> the
+minstrel tunes up and begins, his gaze leading along the vine to the loaf -> the break (the flash is
+the brightest thing on the card) -> the light carries the eye out through the gold, up to the title,
+to the frame -> on "you" the minstrel looks at US -> the final chord's glint, his wink -> the iris
+closes on the bread.
 
-BEATS (today's timeline values; the code reads every one from timeline.json beats/lines and from
-the reprise's own syllable timing in film/assets/song/song_timing.json):
-  s9_fadein 0.0-1.5   fade up from black as an IRIS opening from the miniature: the light comes up
-                      on the picture first, then the page. Candlelit: the gold is deep and quiet,
-                      the loaf glows from within, the stone's spiral breathes cold cyan (out of
-                      phase with the loaf).
-  T_GLINT 1.3-3.0     a candle glint slides across the title left to right; as it crosses "AND" a
-                      small four-point twinkle pings on the A's apex. The title is read.
-  s9_quote 2.5-4.0    the quote and its attribution fade in (ease in-out).
-  4.0-8.75            moving hold: the candle flicker breathes on the gold, motes drift in front of
-                      the page, the two glows breathe. s9_song (5.0): the lute begins; each lute
-                      BASS note plucks a tiny glint from a pearl of the roundel's rim (a different
-                      pearl each time) -- the music lighting the gold. T_VGLINT 6.1-8.5: one slow
-                      candle glint drifts along the vines, left to right.
-  T_TREMBLE (~8.75)   "...what to": the loaf holds its breath -- a small tremble, a squash that
-                      releases, a still beat, and a hairline crack of light opens along its middle
-                      score (a faint crust crackle).
-  T_BREAK (~9.38)     "DO" -- the sung note's downbeat, which is also a lute bass note: the loaf
-                      breaks in two. The crack flares, the halves part (fast 0.16 s, then an
-                      ease-out settle with a little rock), strands of crumb stretch and snap, a
-                      slit of light stands between the torn faces and soft rays fan up from it, a
-                      puff of flour, crumbs hop onto the cloth (cues: bread_tear, crumbs). Steam
-                      starts curling up from the crumb.
-  T_BREAK -> +4.2     the warmth spreads: a slow ring of light travels outward from the broken loaf
-                      through every gilded thing -- the little stars ignite, the stone is washed
-                      warm (its runes gutter and go dark over ~1.4 s), the rim lights round from
-                      right to left with a run of sparkles, the vines light outward, then the
-                      title and the corners; behind the front the gold stays lit and the page
-                      itself is warmer.
-  s9_final_chord 14.15 a last soft swell over all the gold and one glint across the title, ending
-                      in a twinkle on the D of "BREAD", as the final lute chord rings.
-  s9_fadeout 15.46-16.96  fade out as an iris closing on the loaf: the edges go first, the bread's
-                      light is the last thing on screen.
+BEATS (every time read from timeline.json and the reprise's syllable timing, song_timing.json;
+today's values in brackets):
+  s9_fadein 0-1.5     fade up from black as an iris opening from the miniature. Candlelit: the gold
+                      deep and quiet; the loaf's scoring warm; the stone's spiral breathes cold cyan.
+  1.3-3.0             a candle glint slides across the title; a twinkle pings on the A of AND.
+  s9_quote 2.5-4.0    the quote and attribution fade in.
+  hold -> T_WHAT      moving hold: candle flicker on the gold, motes, a thread of steam off the warm
+                      loaf, a few stars twinkle, the glows breathe out of phase; the minstrel watches
+                      his page, then tunes a peg [3.85-4.8]; s9_song [5.0]: he plays (strums, chord
+                      hand, head-bob and foot from the song's beat grid), sings from 5.87 with his
+                      beak on the vocal envelope; each lute BASS note [5.63 6.56 7.50 8.44] plucks a
+                      glint from a pearl of the rim; one slow glint drifts along the vines (6.1-8.5).
+  T_WHAT [8.75]       "...what to": the loaf holds its breath -- a slight swell, a fine tremble, a
+                      hairline crack of light opens down its middle score (a crust crackle); on "to"
+                      it squashes, about to give.
+  T_BREAK [9.375]     "DO" (the sung note, also a lute bass note): it breaks. Flash; the halves snap
+                      apart (a 0.04 s crack), lean out about their inner feet and turn their crumb to us
+                      (ease-out with a small overshoot, settled by ~0.8 s); strands of crumb stretch
+                      and snap; a V of white-gold light stands in the gap, rays fan up, flour puffs;
+                      crumbs land on the linen [9.89-10.17] (cues bread_tear, crumbs). The minstrel's
+                      brows lift into a smile. Steam curls off the crumb from here on.
+  the spread          the ring of bread light, keyed to the sung accents: the cloth, meadow and stone
+                      by "hungry" [10.31] (runes gutter out over 1.2 s), castle windows one by one
+                      [~10.9-11.2], the rim by "bread" [11.25], the far lantern catches ON "bench"
+                      [12.23] as the vines light out, the title and frame by "you" [13.40]. The
+                      minstrel turns from the loaf to us on "next to you" [12.6-13.3] and holds the last
+                      note to us, eyes closed in rapture.
+  s9_final_chord [14.15] a soft swell over all the gold and a last glint across the title; the
+                      minstrel opens his eyes on us, warm, and winks [14.70] with a twinkle.
+  s9_fadeout 15.46-16.96 an iris that closes on the loaf: edges first, the bread's light last.
 
-VALUE / COLOR PLAN. Warm charcoal vellum in a narrow dark band; cream type (the lightest large
-shapes) and gold that runs from deep candlelit ochre (unlit) to pale burnished gold (lit); ONE
-saturated warm accent (the loaf and its glow) set against ONE cold accent (the stone's cyan runes)
-inside a deep ultramarine ground -- the S8 palette (dark blue + one warm pool) in miniature. After
-the break warm wins everywhere. Bloom on the loaf, lit gold and title highlights (threshold 0.62);
-grain 3.5 %; a deep plum-brown vignette that opens with the fade-in.
+ACTING. The stone never moves: heavy, cold, patient; only its runes breathe, then die. The loaf
+breathes, holds its breath, trembles, gives itself (anticipation: swell, squash; the snap;
+follow-through: overshoot, settle; a long warm afterglow that keeps breathing). The minstrel: eyes on
+his story; a tuning peg and a breath before he plays; thought -> glance -> line: he looks to the loaf
+as he sings of it, lights up when it breaks, finds us on "next to you", sings the last note TO us,
+then the wink -- the storyteller's goodbye (S0's coda wink, returned).
 
-PERIOD. Everything is a scribe's material: dyed vellum, blind tooling, gold leaf on raised gesso
-with a dark ink edge, shell-gold stars, madder, ultramarine, linen, oak, a carved slate stone, a
-crusty boule. Lettering: inscriptional capitals (Cinzel, OFL, film/assets/fonts) and a book italic
-(Cormorant Garamond). Nothing modern on the card.
+VALUE / COLOUR PLAN. Warm charcoal vellum in a narrow dark band; cream type (the lightest large
+shapes); gold from deep candlelit ochre (unlit) to pale burnished gold (lit). Inside the roundel a
+cold night (ultramarine, blue-green meadow, moonlit linen) with ONE warm accent -- the loaf -- set
+against ONE cold accent -- the stone's cyan: the S8 palette (dark blue + one warm pool) in miniature.
+The minstrel's burgundy and chestnut stay dim in the candle until the warmth reaches him. After the
+break the gap of light is the brightest point and warm wins everywhere. Bloom (threshold 0.62) on the
+light, the lit gold and the title; grain 3.5 %; a plum-brown vignette that opens with the fade-in.
 
-BUILD. Static art is rendered once in setup(): the vellum (numpy: mottling, fibres, candle pool),
-the tooling, the roundel ground (night, blooms, board, linen, painted grain), and ALL gilding
-(rings, pearls, cusps, vines, corners, the hem's gold thread, the stars, the title) as coverage
-masks turned into two cached layers -- "dim" (candlelit leaf) and "lit" (burnished, metallic, with
-a gesso bevel lit from the candle side and an ink edge). Every frame paints the dim page, then the
-lit gold through a quarter-resolution LIGHT FIELD mask (candle flicker, title and vine glints, rim
-plucks, the spreading ring of bread light, the final swell), then the live miniature (stone,
-loaf, crumbs, flour, steam, rays), the quote, sparkles, motes, the light layer + bloom, and the
-iris fades. Cost ~57 ms/frame on an idle core (127 ms average in the full render on the shared, loaded
-machine); setup ~3 s.
+PERIOD. A scribe's materials: dyed vellum, blind tooling, gold leaf on raised gesso with an ink edge,
+shell-gold stars, madder, ultramarine, verdigris meadow, linen with a fringe, a slate stone, a crusty
+boule, a castle, a candle-lantern on an iron post, a marginal minstrel with a lute. Lettering:
+inscriptional capitals (Cinzel, OFL, film/assets/fonts) and a book italic (Cormorant Garamond).
+
+BUILD. setup() renders the vellum (numpy), the tooling, the miniature's ground (sky, hills, castle,
+bench + lantern, meadow rows, tufts, flowers, cloth, painted grain) and ALL the gilding (rings,
+pearls, cusps, vines, corner sprays, frame hairline, the cloth's thread, the flowers' hearts, stars,
+title) as coverage masks turned into two cached layers, "dim" (in the page) and "lit" (burnished,
+metallic, with a gesso bevel and an ink edge). Each frame paints the page, then the lit gold through
+a quarter-res LIGHT FIELD mask (candle flicker, glints, rim plucks, star twinkles, the spreading ring
+of bread light, the final swell), the live miniature (warm pools, far lights, stone, loaf, crumbs,
+flour, steam, rays), the quote, the minstrel (the bard rig, driven by bard_song), sparkles, motes,
+the light layer + bloom, and the iris fades. ~100 ms/frame on the shared machine.
 """
 
 import functools
@@ -103,6 +112,7 @@ import subprocess
 import cairocffi as cairo
 import numpy as np
 from scipy import ndimage
+from scipy.interpolate import PchipInterpolator
 
 from film.lib import core, fx, props as P, storybook as sb, timeline as tl
 from film.lib import characters as ch
@@ -160,16 +170,55 @@ def _word_note(word, k=0, fallback=None):
     return fallback
 
 
-# "...you know what to DO": the loaf breaks on the note under "do" (a bass downbeat)
+# "...you know what to DO": the loaf breaks on the note under "do" (a lute bass downbeat)
 T_BREAK = _word_note("do", 0, L1.end - 0.4)
-T_TREMBLE = T_BREAK - 0.62                       # "what to": it holds its breath, a crack of light opens
-T_GLINT0, T_GLINT1 = T_FADE_IN0 + 1.3, T_FADE_IN0 + 3.0   # the candle glint across the title
-T_VGLINT0 = T_SONG + 1.1                         # a slower candle glint along the vines in the hold...
-T_VGLINT1 = min(T_VGLINT0 + 2.4, T_TREMBLE - 0.2)  # ...finished before the loaf holds its breath
-SPREAD_DUR = 4.2                                 # the ring of light: bread -> title ends
-FRONT_MAX = 1250.0                               # px travelled by the ring in SPREAD_DUR
+T_WHAT = min(_word_note("what", 0, T_BREAK - 0.62), T_BREAK - 0.35)    # it holds its breath, a crack opens
+# the spreading light lands its stages on the sung accents of the second line
+T_HUNGRY = max(T_BREAK + 0.6, _word_note("hungry", 0, L2.start + 0.5))
+T_BREADW = max(T_HUNGRY + 0.4, _word_note("bread", 0, L2.start + 1.45))
+T_BENCH = max(T_BREADW + 0.4, _word_note("bench", 0, L2.start + 2.45))
+T_YOU2 = max(T_BENCH + 0.4, _word_note("you", 1, L2.start + 3.6))
+T_NEXT = _word_note("next", 0, T_YOU2 - 0.8)                    # "...next to YOU": the bard turns to us
+T_WINK = T_FINAL + 0.55                                          # eyes open on the final chord, then a wink
+T_GLINT0, T_GLINT1 = T_FADE_IN0 + 1.3, T_FADE_IN0 + 3.0         # the candle glint across the title
+T_VGLINT0 = T_SONG + 1.1                                         # a slow glint along the vines in the hold...
+T_VGLINT1 = min(T_VGLINT0 + 2.4, T_WHAT - 0.2)                   # ...done before the loaf holds its breath
+T_LAST0 = T_FINAL + 0.05                                         # the final chord's glint across the title
+T_LAST1 = min(T_FINAL + 1.25, T_FADE_OUT0 - 0.05)
 # lute bass notes before the break each pluck a glint from the roundel's rim
-PLUCKS = [tb for tb in _reprise()[2] if T_SONG < tb < T_TREMBLE - 0.1]
+PLUCKS = [tb for tb in _reprise()[2] if T_SONG < tb < T_WHAT - 0.1]
+
+
+def _spread_curve():
+    """The ring of bread light: radius (px from the gap) against time, through the lyric's accents."""
+    keys = [(T_BREAK, 0.0), (T_BREAK + 0.45, 85.0), (T_HUNGRY, 150.0), (T_BREADW, 250.0), (T_BENCH, 560.0),
+            (T_YOU2, 900.0), (max(T_FINAL, T_YOU2 + 0.4), 1120.0), (max(DUR + 1.0, T_FINAL + 1.5), 1450.0)]
+    ts, rs = [], []
+    for tk, rk in keys:
+        if ts and tk <= ts[-1] + 0.05:
+            tk = ts[-1] + 0.05
+        ts.append(tk)
+        rs.append(rk)
+    f = PchipInterpolator(ts, rs)
+    grid = np.linspace(ts[0], ts[-1], 800)
+    return f, ts[-1], grid, f(grid)
+
+
+_SPREAD, _SPREAD_END, _SP_T, _SP_R = _spread_curve()
+FRONT_MAX = float(_SP_R[-1])
+
+
+def _front(t):
+    """Radius (px) of the spreading ring of bread light, or None before the break."""
+    if t < T_BREAK:
+        return None
+    return float(_SPREAD(min(t, _SPREAD_END)))
+
+
+def _t_of_radius(d):
+    """Seconds after the break at which the ring of light reaches radius d."""
+    return float(np.interp(d, _SP_R, _SP_T)) - T_BREAK
+
 
 # ----------------------------------------------------------------------------------------
 # layout
@@ -177,34 +226,40 @@ PLUCKS = [tb for tb in _reprise()[2] if T_SONG < tb < T_TREMBLE - 0.1]
 
 CX = W / 2.0
 TITLE = "THE STONE AND THE BREAD"
-TITLE_SIZE, TITLE_SPACING, TITLE_BASE = 62.0, 14.0, 184.0
+TITLE_SIZE, TITLE_SPACING, TITLE_BASE = 62.0, 14.0, 172.0
 RC = (CX, 430.0)                      # the roundel's centre
-RR = 160.0                            # its inner (painted) radius
+RR = 184.0                            # its inner (painted) radius
 RING = (3.5, 12.5, 17.5)              # inner gold ring | madder band with pearls | outer gold ring (radii past RR)
 QUOTE = ("“Which of you, if your son asks for bread,", "will give him a stone?”")
-QUOTE_SIZE, QUOTE_BASES = 50.0, (702.0, 764.0)
+QUOTE_SIZE, QUOTE_BASES = 50.0, (712.0, 772.0)
 ATTRIB = "— Matthew 7:9"
-ATTRIB_SIZE, ATTRIB_BASE = 30.0, 832.0
-BOARD_Y = RC[1] + 6.0                 # the board's back edge; its top face runs to BOARD_FRONT
-BOARD_FRONT = RC[1] + 74.0
-# a little still life with depth: the stone sits further back on the board (left), the loaf in
-# front (right); when the loaf opens, its left half comes to overlap the stone's foot
-STONE_X, STONE_REST, STONE_SCALE = RC[0] - 68.0, RC[1] + 36.0, 1.56
-LOAF_X, REST_Y, LOAF_SCALE = RC[0] + 42.0, RC[1] + 58.0, 2.22
-LOAF_SHIFT = 22.0                     # the loaf's centre slides right as it opens
-CLOTH_HEM = BOARD_FRONT + 48.0        # the linen runner hangs over the board's front edge to here
+ATTRIB_SIZE, ATTRIB_BASE = 30.0, 840.0
 FRAME = (104.0, 56.0, W - 104.0, 872.0)   # the blind-tooled border (it ends above the caption band)
-LOAF_R = 0.5 * 46.0 * LOAF_SCALE      # the loaf's radius (P.LOAF = 46)
-LOAF_Y = REST_Y - 0.56 * LOAF_R       # draw_bread's anchor is the loaf's centre; its base is 0.56 r below
-BREAD_LIGHT = (LOAF_X + LOAF_SHIFT, LOAF_Y - 4.0)   # where the warm light comes from (the gap)
+GOLD_RULE = 4.6                       # the gold hairline, inset between the two tooled rules
+# the miniature: a high (medieval) horizon, a tilted-up meadow, the cloth in front
+HORIZON = RC[1] - 58.0
+CLOTH = [(RC[0] - 146.0, RC[1] + 44.0), (RC[0] + 150.0, RC[1] + 41.0),     # back-left, back-right
+         (RC[0] + 194.0, RC[1] + 128.0), (RC[0] - 190.0, RC[1] + 132.0)]   # front-right, front-left
+STONE_X, STONE_BASE = RC[0] - 84.0, RC[1] + 66.0       # the stone sits a little further back...
+LOAF_R = 62.0                                          # ...the loaf (the gnome's boule, on-model) in front
+LOAF_X, LOAF_BASE = RC[0] + 66.0, RC[1] + 75.0
+LOAF_Y = LOAF_BASE - 0.56 * LOAF_R                     # the centre of the loaf's outline (its base is 0.56 r below)
+BREAD_LIGHT = (LOAF_X, LOAF_Y - 0.12 * LOAF_R)         # where the warm light comes from (the gap)
+CASTLE = (RC[0] - 92.0, HORIZON - 26.0)                # base centre of the castle on the left hill
+LANTERN = (RC[0] + 106.0, HORIZON - 9.0)               # foot of the far garden's lantern post
+PHI_MAX = 0.40                                         # how far each half turns its crumb to us (rad)
+TILT_MAX = 0.28                                        # how far each half leans out about its inner foot (rad)
+
+BARD_SCALE = 0.62                                      # the marginal minstrel (a drollery on the vine's end)
 
 # palette
 CHARCOAL = "#28221f"
-NIGHT = ("#2c3c72", "#18224c", "#0e1430")
+NIGHT = ("#3a4c8c", "#22306a", "#121a40")
 MADDER = "#5b1f24"
 WARM = "#ffc46b"
 WARM_HOT = "#fff1c8"
 RUNE = P.PROP_COLORS["rune"]
+MATS = P.prop_mats()
 
 
 @functools.lru_cache(maxsize=8)
@@ -216,7 +271,28 @@ def _font_ok(name):
         return False
 
 
-TITLE_FONT = "Cinzel" if _font_ok("Cinzel") else core.SERIF   # film/assets/fonts/Cinzel-Variable.ttf (OFL)
+def _ensure_font(family, filename):
+    """The title's OFL font lives in film/assets/fonts; if fontconfig does not know it yet, install it
+    the way SPEC section 2 says (~/.fonts + fc-cache) so the card never silently falls back."""
+    if _font_ok(family):
+        return True
+    try:
+        import os
+        import shutil
+        src = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts", filename)
+        dst_dir = os.path.expanduser("~/.fonts")
+        if os.path.isfile(src):
+            os.makedirs(dst_dir, exist_ok=True)
+            if not os.path.isfile(os.path.join(dst_dir, filename)):
+                shutil.copyfile(src, os.path.join(dst_dir, filename))
+            subprocess.run(["fc-cache", "-f", dst_dir], capture_output=True, timeout=60)
+            _font_ok.cache_clear()
+    except Exception:
+        pass
+    return _font_ok(family)
+
+
+TITLE_FONT = "Cinzel" if _ensure_font("Cinzel", "Cinzel-Variable.ttf") else core.SERIF   # OFL, film/assets/fonts
 QUOTE_FONT = core.SERIF                                         # Cormorant Garamond Italic
 
 
@@ -413,6 +489,53 @@ def _vine(side):
     return stems, leaves, dots
 
 
+def _corner_pieces():
+    """A gilded ivy spray in each corner of the page, in the vines' vocabulary: from a small
+    quatrefoil on the inner rule's corner two stems run along the rules, each carrying a hedera leaf
+    and ending in a curl, with a berry triplet on the diagonal."""
+    stems, leaves, dots = [], [], []
+    x0, y0, x1, y1 = FRAME
+    for (cx, cy, sx, sy) in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+        ix, iy = cx + sx * 9.0, cy + sy * 9.0                    # the inner rule's corner
+
+        def P_(x, y, ix=ix, iy=iy, sx=sx, sy=sy):
+            return (ix + sx * x, iy + sy * y)
+
+        for swap in (False, True):
+            def Q(x, y, swap=swap, P_=P_):
+                return P_(y, x) if swap else P_(x, y)
+
+            def ang(a, swap=swap, sx=sx, sy=sy):
+                ux, uy = math.cos(a), math.sin(a)
+                if swap:
+                    ux, uy = uy, ux
+                return math.atan2(sy * uy, sx * ux)
+
+            curl = _spiral_pts(96.0, 21.0, 11.0, 2.4, -math.pi / 2, 1.3, sign=1.0, n=22)
+            main = [(11.0, 11.0), (32.0, 13.5), (58.0, 12.5), (82.0, 10.0)] + curl
+            stems.append(([Q(x, y) for (x, y) in main], 3.4, 1.1))
+            # a leaf on a short stalk, hanging inward off the stem
+            bx, by = 46.0, 13.2
+            a = 1.15
+            lx, ly = bx + math.cos(a) * 7.0, by + math.sin(a) * 7.0
+            stems.append(([Q(bx, by), Q(lx + math.cos(a) * 4.0, ly + math.sin(a) * 4.0)], 2.2, 1.8))
+            leaves.append(_heart_pts(*Q(lx, ly), 17.0, ang(a)))
+            # a small tendril curling up off the stem toward the rule
+            tc = _spiral_pts(0, 0, 6.5, 1.6, math.pi * 0.5, 1.2, sign=-1.0, n=14)
+            tpts = [(66.0, 11.5), (70.0, 4.0)] + [(74.0 + px, -1.0 + py) for px, py in tc]
+            stems.append(([Q(x, y) for (x, y) in tpts], 2.0, 0.8))
+        qx, qy = P_(11.0, 11.0)                                  # the quatrefoil on the corner
+        for k in range(4):
+            a = math.pi / 4 + k * math.pi / 2
+            dots.append((qx + math.cos(a) * 5.4, qy + math.sin(a) * 5.4, 4.4))
+        dots.append((qx, qy, 2.4))
+        bx, by = P_(30.0, 30.0)                                  # berries on the diagonal
+        for k in range(3):
+            a = TAU * k / 3 + 0.8
+            dots.append((bx + math.cos(a) * 4.2, by + math.sin(a) * 4.2, 2.4))
+    return stems, leaves, dots
+
+
 def _ornaments_path(cr, stems, leaves, dots):
     for pts, w0, w1 in stems:
         core.tapered(cr, pts, w0, w1, cap=True)
@@ -434,7 +557,7 @@ def _ring_path(cr, r0, r1):
 def _pearls():
     """Gold pearls in the madder band: [(angle, x, y)], starting at the top, clockwise."""
     rm = RR + (RING[0] + RING[1]) / 2.0
-    n = 52
+    n = 60
     return [(TAU * k / n - math.pi / 2, RC[0] + math.cos(TAU * k / n - math.pi / 2) * rm,
              RC[1] + math.sin(TAU * k / n - math.pi / 2) * rm) for k in range(n)]
 
@@ -448,20 +571,47 @@ def _cusps():
     return out
 
 
+# the far hills on the high horizon: (dx from the centre, dy from HORIZON)
+_HILLS = [(-206.0, 8.0), (-178.0, -5.0), (-150.0, -19.0), (-124.0, -27.0), (-98.0, -29.0), (-72.0, -22.0),
+          (-46.0, -12.0), (-18.0, -8.0), (10.0, -12.0), (38.0, -16.0), (66.0, -13.0), (92.0, -9.0),
+          (120.0, -10.0), (150.0, -17.0), (178.0, -11.0), (206.0, 2.0)]
+
+
+def _hill_y(x):
+    """y of the far hills' crest above frame x."""
+    return HORIZON + float(np.interp(x - RC[0], [p[0] for p in _HILLS], [p[1] for p in _HILLS]))
+
+
+def _castle_box():
+    return (CASTLE[0] - 30.0, CASTLE[1] - 54.0, CASTLE[0] + 30.0, CASTLE[1] + 4.0)
+
+
+def _lantern_box():
+    return (LANTERN[0] - 46.0, LANTERN[1] - 48.0, LANTERN[0] + 12.0, LANTERN[1] + 4.0)
+
+
+def _in_box(x, y, b, m=0.0):
+    return b[0] - m <= x <= b[2] + m and b[1] - m <= y <= b[3] + m
+
+
+@functools.lru_cache(maxsize=1)
 def _stars():
     """The shell-gold stars of the miniature's sky: [(x, y, r, kind)] (kind 0 star, 1 dot)."""
     out = []
-    step = 32.0
-    for i in range(-8, 9):
-        for j in range(-8, 9):
+    step = 30.0
+    for j in range(0, 8):
+        for i in range(-8, 9):
             x = RC[0] + i * step + (step / 2.0 if j % 2 else 0.0)
-            y = RC[1] + j * step * 0.87
-            if math.hypot(x - RC[0], y - RC[1]) < RR - 9 and y < BOARD_Y - 8:
-                out.append((x, y, 4.6 + 1.2 * core.hash01(i * 31 + j, 5), 0))
-            # tiny dots between the stars
-            xd, yd = x + step * 0.5, y + step * 0.29
-            if math.hypot(xd - RC[0], yd - RC[1]) < RR - 7 and yd < BOARD_Y - 6:
-                out.append((xd, yd, 1.3, 1))
+            y = HORIZON - 30.0 - j * step * 0.87
+            ok = (math.hypot(x - RC[0], y - RC[1]) < RR - 10 and y < _hill_y(x) - 12
+                  and not _in_box(x, y, _castle_box(), 9) and not _in_box(x, y, _lantern_box(), 9))
+            if ok:
+                out.append((x, y, 4.2 + 1.2 * core.hash01(i * 31 + j, 5), 0))
+            xd, yd = x + step * 0.5, y - step * 0.29          # tiny dots between the stars
+            okd = (math.hypot(xd - RC[0], yd - RC[1]) < RR - 8 and yd < _hill_y(xd) - 9
+                   and not _in_box(xd, yd, _castle_box(), 6) and not _in_box(xd, yd, _lantern_box(), 6))
+            if okd:
+                out.append((xd, yd, 1.2, 1))
     return out
 
 
@@ -475,6 +625,65 @@ def _star_path(cr, x, y, r):
     core.polygon(cr, pts)
 
 
+def _cloth_q(u, v):
+    """A point on the linen cloth: u 0..1 left -> right, v 0..1 back -> front (bilinear in the quad)."""
+    bl, br, fr, fl = CLOTH
+    bx, by = bl[0] + (br[0] - bl[0]) * u, bl[1] + (br[1] - bl[1]) * u
+    fx_, fy_ = fl[0] + (fr[0] - fl[0]) * u, fl[1] + (fr[1] - fl[1]) * u
+    return bx + (fx_ - bx) * v, by + (fy_ - by) * v
+
+
+def _in_cloth(x, y, m=0.0):
+    pts = CLOTH
+    inside = True
+    for i in range(4):
+        (x0, y0), (x1, y1) = pts[i], pts[(i + 1) % 4]
+        # inward normal of a clockwise quad (y down): cross product sign
+        cross = (x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)
+        L = math.hypot(x1 - x0, y1 - y0)
+        if cross / L < -m:
+            inside = False
+    return inside
+
+
+@functools.lru_cache(maxsize=1)
+def _flowers():
+    """Millefleurs in the night meadow, in small clumps: [(x, y, size, kind)] -- off the cloth and
+    the objects, sparse at the back, bigger in front of the cloth."""
+    rng = np.random.default_rng(29)
+
+    def ok(x, y, out, s):
+        if math.hypot(x - RC[0], y - RC[1]) > RR - 12 or _in_cloth(x, y, 11.0) or y < _hill_y(x) + 7.0:
+            return False
+        if abs(x - STONE_X) < 70 and STONE_BASE - 80 < y < STONE_BASE + 12:
+            return False
+        if abs(x - LOAF_X) < 104 and LOAF_BASE - 86 < y < LOAF_BASE + 12:
+            return False
+        return not any(math.hypot(x - a, y - b) < 11.0 * max(s, c) for a, b, c, _k in out)
+
+    out = []
+    clumps = 0
+    tries = 0
+    n_clumps = 17
+    while clumps < n_clumps and tries < 4000:
+        tries += 1
+        cx = RC[0] - RR + (clumps % 9 + rng.uniform(0.1, 0.9)) * (2.0 * RR / 9.0)    # one per strip, twice over
+        cy = rng.uniform(HORIZON + 9.0, RC[1] + RR)
+        depth = core.clamp((cy - HORIZON) / (RC[1] + RR - HORIZON))
+        s = 0.6 + 1.1 * depth
+        if not ok(cx, cy, out, s):
+            continue
+        clumps += 1
+        kind = int(rng.integers(0, 3))
+        for j in range(int(rng.integers(2, 5))):
+            x = cx + (rng.normal(0.0, 9.0 * s) if j else 0.0)
+            y = cy + (rng.normal(0.0, 3.5 * s) if j else 0.0)
+            ss = s * (0.8 + 0.35 * rng.uniform())
+            if ok(x, y, out, ss):
+                out.append((x, y, ss, kind if rng.uniform() < 0.75 else int(rng.integers(0, 3))))
+    return out
+
+
 # ----------------------------------------------------------------------------------------
 # static art (setup)
 # ----------------------------------------------------------------------------------------
@@ -485,8 +694,8 @@ def _vellum():
     from PIL import Image
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     base = _rgb(CHARCOAL)
-    warm = _rgb("#372d27")
-    d = np.sqrt(((xx - CX) / 1.3) ** 2 + (yy - 440.0) ** 2) / 820.0
+    warm = _rgb("#3a2f28")
+    d = np.sqrt(((xx - CX) / 1.3) ** 2 + (yy - RC[1]) ** 2) / 820.0
     pool = np.clip(1.0 - d, 0.0, 1.0) ** 1.6
     img = base[None, None, :] * 0.86 + (warm - base * 0.86)[None, None, :] * pool[..., None]
     mot = core.noise_array(W, H, scale=150.0, octaves=4, seed=91)
@@ -579,135 +788,235 @@ def _title_layers(crinkle):
     return M, np.clip(dim, 0, 1), np.clip(lit, 0, 1)
 
 
+def _draw_castle(cr):
+    """The castle on the far hill: a curtain wall, two towers and a keep with cone roofs and a
+    pennant, cold blue-grey in the moonlight; its windows are dark (they light later)."""
+    x0, y0 = CASTLE
+    wall, wall_dk, roof, roof_dk = "#46538a", "#333f72", "#5a3a5e", "#432a4a"
+
+    def R(a, b, c, d, col):
+        cr.rectangle(x0 + a, y0 + b, c - a, d - b)
+        core.src(cr, col)
+        cr.fill()
+
+    def merlons(a, c, y, col, w=3.0, gap=3.2):
+        x = a
+        while x + w <= c + 0.01:
+            cr.rectangle(x0 + x, y0 + y - 3.2, w, 3.4)
+            x += w + gap
+        core.src(cr, col)
+        cr.fill()
+
+    def cone(a, c, y, h, col, col_dk):
+        m = (a + c) / 2.0
+        core.polygon(cr, [(x0 + a - 1.5, y0 + y), (x0 + m, y0 + y - h), (x0 + c + 1.5, y0 + y)])
+        core.src(cr, col)
+        cr.fill()
+        core.polygon(cr, [(x0 + m, y0 + y), (x0 + m, y0 + y - h), (x0 + c + 1.5, y0 + y)])
+        core.src(cr, col_dk)
+        cr.fill()
+
+    R(-21, -13, 21, 2, wall)                       # curtain wall
+    merlons(-20, 20, -13, wall)
+    R(-25, -27, -15, 2, wall)                      # left tower
+    R(-20, -27, -15, 2, wall_dk)
+    cone(-25, -15, -27, 12, roof, roof_dk)
+    R(15, -24, 25, 2, wall)                        # right tower
+    R(20, -24, 25, 2, wall_dk)
+    cone(15, 25, -24, 11, roof, roof_dk)
+    R(-8, -33, 8, -12, wall)                       # the keep
+    R(0, -33, 8, -12, wall_dk)
+    merlons(-8, 8, -33, wall)
+    cone(-6, 6, -36, 12, roof, roof_dk)
+    R(-6, -36, 6, -33, wall)
+    cr.rectangle(x0 - 0.5, y0 - 54, 1.0, 7)         # the pennant on the keep
+    core.src(cr, "#2c3155")
+    cr.fill()
+    core.polygon(cr, [(x0 + 0.5, y0 - 54), (x0 + 8.5, y0 - 51.5), (x0 + 0.5, y0 - 49)])
+    core.src(cr, "#6e2a33")
+    cr.fill()
+    cr.new_path()                                   # the gate (dark)
+    cr.move_to(x0 - 3.2, y0 + 2)
+    cr.line_to(x0 - 3.2, y0 - 3)
+    cr.arc(x0, y0 - 3, 3.2, math.pi, TAU)
+    cr.line_to(x0 + 3.2, y0 + 2)
+    cr.close_path()
+    core.src(cr, "#161a30")
+    cr.fill()
+    for (wx, wy) in _CASTLE_WINDOWS:                # windows: dark slits (they light later)
+        cr.rectangle(x0 + wx - 1.0, y0 + wy - 1.8, 2.0, 3.6)
+    core.src(cr, "#161a30")
+    cr.fill()
+
+
+# window slits on the castle, relative to its base centre (they light one by one)
+_CASTLE_WINDOWS = [(-3.2, -26.0), (3.2, -26.0), (0.0, -19.0), (-20.0, -19.0), (20.0, -16.0), (-12.0, -7.0),
+                   (12.0, -7.0)]
+
+
+def _draw_far_bench(cr):
+    """Far off on the horizon, right: the garden bench under its lantern post (unlit)."""
+    lx, ly = LANTERN
+    col = "#1d2547"
+    bx = lx - 30.0
+    cr.rectangle(bx - 15, ly - 7.5, 30, 2.6)        # seat
+    cr.rectangle(bx - 15, ly - 14.5, 30, 2.4)       # back rail
+    for x in (bx - 13, bx + 11):                    # ends and legs
+        cr.rectangle(x, ly - 15.5, 2.2, 15.5)
+    core.src(cr, col)
+    cr.fill()
+    cr.rectangle(lx - 1.1, ly - 36, 2.2, 36)        # the post
+    core.polygon(cr, [(lx - 4.0, ly - 36.5), (lx + 4.0, ly - 36.5), (lx + 2.6, ly - 45.0), (lx - 2.6, ly - 45.0)])
+    core.polygon(cr, [(lx - 4.6, ly - 45.0), (lx + 4.6, ly - 45.0), (lx, ly - 49.5)])
+    core.src(cr, col)
+    cr.fill()
+    core.polygon(cr, [(lx - 2.4, ly - 37.5), (lx + 2.4, ly - 37.5), (lx + 1.6, ly - 43.6), (lx - 1.6, ly - 43.6)])
+    core.src(cr, "#2c355e")                        # the unlit glass
+    cr.fill()
+
+
+def _draw_cloth(cr):
+    """The linen cloth spread on the grass: dim moonlit linen, a few soft creases running back, a
+    madder border all round (its gold thread is gilded with the rest), a short fringe in front."""
+    bl, br, fr, fl = CLOTH
+    fringe = []                                         # the fringe hangs over the grass at the front
+    for k in range(64):
+        x, y = _cloth_q((k + 0.5) / 64.0, 1.0)
+        fringe.append([(x, y - 0.5), (x + 0.6, y + 5.5 + 1.5 * core.hash01(k, 3))])
+    B.detail_lines(cr, fringe, 1.6, "#4c4944", 0.9, taper=(1.0, 0.8, 0.4))
+    core.polygon(cr, CLOTH)
+    cr.set_source(core.linear(0, bl[1], 0, fl[1], [(0.0, "#524e4b"), (0.5, "#5c5751"), (1.0, "#625c54")]))
+    cr.fill()
+    cr.save()
+    core.polygon(cr, CLOTH)
+    cr.clip()
+    B.detail_line(cr, [_cloth_q(u, 0.0) for u in (0.0, 0.5, 1.0)], 2.0, "#9a9ca2", 0.30, taper=(0.2, 1.0, 0.2))
+    for u0, u1, w in ((0.24, 0.19, 1.0), (0.53, 0.52, 1.2), (0.80, 0.85, 1.0)):    # soft creases running back
+        ridge = [_cloth_q(u0 + (u1 - u0) * v, v) for v in (0.1, 0.45, 0.8, 1.02)]
+        shade = [(x + 4.0 + 3.0 * i, y) for i, (x, y) in enumerate(ridge)]
+        B.detail_line(cr, shade, 6.0 * w, "#34333a", 0.22, taper=(0.1, 1.0, 0.5))
+        B.detail_line(cr, ridge, 2.0 * w, "#8d8e93", 0.16, taper=(0.1, 1.0, 0.5))
+    for poly in (_band_poly("back"), _band_poly("front"), _band_poly("left"), _band_poly("right")):
+        core.polygon(cr, poly)
+        core.src(cr, "#4a1a24")
+        cr.fill()
+    cr.restore()
+    B.detail_line(cr, [bl, br], 1.3, "#22242c", 0.55, taper=(0.0, 1.0, 0.0))   # its back edge on the grass
+    B.detail_line(cr, [fl, fr], 1.6, "#1e1e22", 0.6, taper=(0.0, 1.0, 0.0))    # its front edge
+
+
+_BAND = (0.075, 0.135, 0.035, 0.062, 0.86, 0.915)   # back v0..v1 | sides u0..u1 | front v0..v1
+
+
+def _band_poly(which):
+    v0, v1, u0, u1, f0, f1 = _BAND
+    if which == "back":
+        return [_cloth_q(u0, v0), _cloth_q(1 - u0, v0), _cloth_q(1 - u0, v1), _cloth_q(u0, v1)]
+    if which == "front":
+        return [_cloth_q(u0, f0), _cloth_q(1 - u0, f0), _cloth_q(1 - u0, f1), _cloth_q(u0, f1)]
+    if which == "left":
+        return [_cloth_q(u0, v0), _cloth_q(u1, v0), _cloth_q(u1, f1), _cloth_q(u0, f1)]
+    return [_cloth_q(1 - u1, v0), _cloth_q(1 - u0, v0), _cloth_q(1 - u0, f1), _cloth_q(1 - u1, f1)]
+
+
+def _thread_lines():
+    """The gold thread running along the middle of the madder border."""
+    v0, v1, u0, u1, f0, f1 = _BAND
+    vm, um, fm = (v0 + v1) / 2.0, (u0 + u1) / 2.0, (f0 + f1) / 2.0
+    back = [_cloth_q(um + (1 - 2 * um) * k / 12.0, vm) for k in range(13)]
+    front = [_cloth_q(um + (1 - 2 * um) * k / 12.0, fm) for k in range(13)]
+    left = [_cloth_q(um, vm + (fm - vm) * k / 8.0) for k in range(9)]
+    right = [_cloth_q(1 - um, vm + (fm - vm) * k / 8.0) for k in range(9)]
+    return [back, front, left, right]
+
+
 def _draw_roundel_ground(cr):
-    """Inside the roundel: deep ultramarine night (lighter behind the loaf), watercolour blooms,
-    the oak board in perspective and the dark beneath it."""
+    """Inside the roundel (back to front): the ultramarine night, the far hills with the castle and
+    the bench + lantern, the night meadow with sparse millefleurs, the linen cloth."""
     cr.save()
     core.circle(cr, RC[0], RC[1], RR + 0.5)
     cr.clip()
-    g = core.radial(LOAF_X - 30, LOAF_Y - 50, RR * 1.55, [(0.0, NIGHT[0]), (0.5, NIGHT[1]), (1.0, NIGHT[2])])
+    g = core.radial(BREAD_LIGHT[0] - 40, HORIZON + 30, RR * 1.7, [(0.0, NIGHT[0]), (0.42, NIGHT[1]), (1.0, NIGHT[2])])
     cr.set_source(g)
     cr.paint()
-    for i in range(8):                                     # soft blooms (the wash dried unevenly)
-        bx = RC[0] + (core.hash01(i, 5) - 0.5) * RR * 1.6
-        by = RC[1] + (core.hash01(i, 6) - 0.75) * RR * 1.2
-        rr = RR * (0.22 + 0.3 * core.hash01(i, 7))
-        col = "#4c62a6" if core.hash01(i, 8) < 0.55 else "#0a0f26"
-        fx.glow(cr, bx, by, rr, col, 0.11, additive=False)
-    # the board: its top face (back edge -> front edge), its front face, the dark under it
-    x0, x1 = RC[0] - RR - 10, RC[0] + RR + 10
-    top = [(x0, BOARD_Y + 2), (x1, BOARD_Y - 2), (x1, BOARD_FRONT - 2), (x0, BOARD_FRONT + 2)]
-    core.polygon(cr, top)
-    cr.set_source(core.linear(0, BOARD_Y, 0, BOARD_FRONT, [(0.0, "#4f3421"), (1.0, "#80583a")]))
+    for i in range(9):                                     # soft blooms (the wash dried unevenly)
+        bx = RC[0] + (core.hash01(i, 5) - 0.5) * RR * 1.7
+        by = RC[1] - RR * 0.2 + (core.hash01(i, 6) - 0.7) * RR * 1.0
+        rr = RR * (0.18 + 0.28 * core.hash01(i, 7))
+        col = "#5068b0" if core.hash01(i, 8) < 0.55 else "#0a0f26"
+        fx.glow(cr, bx, by, rr, col, 0.10, additive=False)
+    cr.rectangle(RC[0] - RR, HORIZON - 34, 2 * RR, 34)    # a breath of haze along the horizon
+    cr.set_source(core.linear(0, HORIZON - 34, 0, HORIZON, [(0.0, (0.45, 0.52, 0.78, 0.0)), (1.0, (0.45, 0.52, 0.78, 0.16))]))
     cr.fill()
-    for k in range(10):                                    # grain
-        f = k / 9.0
-        yk = BOARD_Y + 4 + f * (BOARD_FRONT - BOARD_Y - 8)
-        pts = [(x0 + i * 26, yk + 1.3 * math.sin(i * 0.8 + k * 1.9)) for i in range(14)]
-        B.detail_line(cr, pts, 0.8 + 0.5 * f, "#35210f", 0.35 + 0.15 * f, taper=(0.6, 1.0, 0.6))
-    front = [(x0, BOARD_FRONT + 2), (x1, BOARD_FRONT - 2), (x1, BOARD_FRONT + 22), (x0, BOARD_FRONT + 26)]
-    core.polygon(cr, front)
-    cr.set_source(core.linear(0, BOARD_FRONT, 0, BOARD_FRONT + 26, [(0.0, "#4a3020"), (1.0, "#2a1a11")]))
+    # the far hills (atmospheric: lighter and bluer than the meadow), a moonlit crest
+    hills = [(RC[0] + dx, HORIZON + dy) for dx, dy in _HILLS]
+    cr.new_path()
+    core.smooth_open(cr, hills, 0.5)
+    cr.line_to(RC[0] + 210, HORIZON + 40)
+    cr.line_to(RC[0] - 210, HORIZON + 40)
+    cr.close_path()
+    cr.set_source(core.linear(0, HORIZON - 30, 0, HORIZON + 10, [(0.0, "#2d3b72"), (1.0, "#253262")]))
     cr.fill()
-    B.detail_line(cr, [(x0, BOARD_FRONT + 2.5), (x1, BOARD_FRONT - 1.5)], 1.8, "#b08353", 0.55, taper=(0.3, 1.0, 0.3))
-    cr.rectangle(x0 - 10, BOARD_FRONT + 24, x1 - x0 + 20, RR)
-    cr.set_source(core.linear(0, BOARD_FRONT + 24, 0, RC[1] + RR, [(0.0, "#140d0b"), (1.0, "#0b0910")]))
+    B.detail_line(cr, hills[1:-1], 1.6, "#5b6cab", 0.35, taper=(0.1, 1.0, 0.1))
+    _draw_castle(cr)
+    _draw_far_bench(cr)
+    # the meadow, tilted up toward a high horizon (darker and greener as it comes near)
+    near = [(-210.0, 7.0), (-150.0, 1.0), (-90.0, 4.0), (-30.0, 0.0), (30.0, 3.0), (90.0, -1.0), (150.0, 2.0),
+            (210.0, 6.0)]
+    cr.new_path()
+    core.smooth_open(cr, [(RC[0] + dx, HORIZON + dy) for dx, dy in near], 0.5)
+    cr.line_to(RC[0] + 210, RC[1] + RR + 10)
+    cr.line_to(RC[0] - 210, RC[1] + RR + 10)
+    cr.close_path()
+    cr.set_source(core.linear(0, HORIZON, 0, RC[1] + RR, [(0.0, "#2c4a4c"), (0.3, "#1f3a3c"), (1.0, "#0f1d21")]))
     cr.fill()
+    cr.save()                                              # the meadow painted in rows, as an illuminator would
+    core.circle(cr, RC[0], RC[1], RR)
+    cr.clip()
+    for k in range(9):
+        y = HORIZON + 6.0 + (k ** 1.35) * 4.2
+        w = 2.0 + 0.9 * k
+        pts = [(RC[0] - RR + i * 40.0, y + 1.6 * math.sin(i * 1.3 + k * 2.1)) for i in range(11)]
+        B.detail_line(cr, pts, w, "#3d6460" if k % 2 == 0 else "#122427", 0.22, taper=(0.3, 1.0, 0.3))
+    cr.restore()
+    # grass: short strokes in rows, lighter near the horizon
+    rng = np.random.default_rng(31)
+    blades_l, blades_d = [], []
+    for _ in range(700):
+        x = RC[0] + rng.uniform(-RR, RR)
+        y = rng.uniform(HORIZON + 4, RC[1] + RR)
+        if math.hypot(x - RC[0], y - RC[1]) > RR or _in_cloth(x, y, 2.0):
+            continue
+        depth = core.clamp((y - HORIZON) / (RC[1] + RR - HORIZON))
+        h = 2.5 + 6.5 * depth
+        lean = rng.uniform(-0.35, 0.35)
+        tuft = blades_l if rng.uniform() < 0.45 else blades_d
+        for b in (-1.0, 0.0, 1.0):                         # a tuft: three blades fanning out
+            tuft.append([(x + b * 0.8, y), (x + (lean + 0.35 * b) * h, y - h * (1.0 - 0.18 * abs(b)))])
+    B.detail_lines(cr, blades_l, 1.0, "#4b7470", 0.5, taper=(1.0, 0.8, 0.1))
+    B.detail_lines(cr, blades_d, 1.0, "#0c171b", 0.55, taper=(1.0, 0.8, 0.1))
+    # millefleurs: petals painted (dim in the night); their gold hearts are gilded with the rest
+    petal_cols = ("#cfc6a4", "#9a3e4a", "#8a9fd0")
+    for (x, y, s, kind) in _flowers():
+        B.detail_line(cr, [(x, y + 2.0 * s), (x - 0.6 * s, y + 7.5 * s)], 1.0 * s, "#2c4a3f", 0.8)   # stalk
+        cr.new_path()
+        for k in range(5):
+            a = -math.pi / 2 + k * TAU / 5
+            core.circle(cr, x + math.cos(a) * 2.7 * s, y + math.sin(a) * 2.3 * s, 1.9 * s)
+        core.src(cr, petal_cols[kind], 0.88)
+        cr.fill()
     _draw_cloth(cr)
     sb.paper_grain(cr, RC[0] - RR, RC[1] - RR, 2 * RR, 2 * RR, 0.28, scale=0.6, seed=19)   # painted, not printed
     # the ring's raised gesso shades the painted ground just inside it
-    g2 = core.radial(RC[0], RC[1], RR, [(0.0, (0, 0, 0, 0)), (0.84, (0, 0, 0, 0)), (1.0, (0, 0, 0, 0.6))])
+    g2 = core.radial(RC[0], RC[1], RR, [(0.0, (0, 0, 0, 0)), (0.86, (0, 0, 0, 0)), (1.0, (0, 0, 0, 0.55))])
     cr.set_source(g2)
     cr.paint()
     cr.restore()
 
 
-CLOTH_FOLDS = 8
-
-
-def _cloth_geom():
-    """The linen runner: x extent, its back and front edges on the board, and the hem line (the
-    fold crests swing forward and hang a little lower than the troughs)."""
-    x0, x1 = RC[0] - RR - 12, RC[0] + RR + 12
-    back = BOARD_Y + 13.0
-    front = BOARD_FRONT + 1.0
-    n = 64
-    hem = []
-    for i in range(n + 1):
-        x = x0 + (x1 - x0) * i / n
-        ph = (x - x0) / (x1 - x0) * CLOTH_FOLDS
-        hem.append((x, CLOTH_HEM + 4.0 * math.cos(ph * TAU) + 1.5 * math.sin(i * 0.7)))
-    return x0, x1, back, front, hem
-
-
-def _draw_cloth(cr):
-    """A linen runner laid across the board under the stone and the loaf, hanging over the front
-    edge in soft cone folds, with a madder hem (its gold thread is gilded with the rest). Lit warm
-    from the loaf, falling off to cool grey toward the edges."""
-    x0, x1, back, front, hem = _cloth_geom()
-    lx, ly = LOAF_X + 6, REST_Y - 8
-    # top face: lit from the loaf, a fine weave, a couple of soft creases
-    top = [(x0, back + 1), (x1, back - 2), (x1, front - 1), (x0, front + 2)]
-    core.polygon(cr, top)
-    cr.set_source(core.radial(lx, ly, 270, [(0.0, "#ae9e80"), (0.35, "#8a7e6a"), (0.75, "#625b53"), (1.0, "#46423f")]))
-    cr.fill()
-    cr.save()
-    core.polygon(cr, top)
-    cr.clip()
-    cr.rectangle(x0, back - 4, x1 - x0, 14)
-    cr.set_source(core.linear(0, back - 3, 0, back + 10, [(0.0, (0.06, 0.03, 0.03, 0.5)), (1.0, (0, 0, 0, 0))]))
-    cr.fill()
-    for k in range(5):                                   # creases: soft light streaks along the runner
-        yk = back + 9 + k * (front - back - 14) / 4.0
-        B.detail_line(cr, [(x0 + 30 + 40 * k, yk + 2), (RC[0] - 40 + 25 * k, yk), (x1 - 40, yk + 1.5)], 1.2,
-                      "#fff4e0", 0.07, taper=(0.2, 1.0, 0.2))
-    cr.restore()
-    # the hanging front: cone folds, darker than the top (it turns away from the light)
-    cr.new_path()
-    cr.move_to(x0, front + 2)
-    cr.line_to(x1, front - 1)
-    for (hx, hy) in reversed(hem):
-        cr.line_to(hx, hy)
-    cr.close_path()
-    hang = B.Path(cr)
-    stops = []
-    m = CLOTH_FOLDS * 4
-    for i in range(m + 1):
-        u = i / m
-        ph = u * CLOTH_FOLDS
-        crest = 0.5 + 0.5 * math.cos(ph * TAU)              # 1 on a fold's crest, 0 in a trough
-        warm = math.exp(-((x0 + u * (x1 - x0) - lx) / 150.0) ** 2)
-        base = core.mix("#3a3532", "#6d6457", crest)
-        stops.append((u, core.mix(base, core.mix("#8a7a5f", "#b29d79", crest), 0.65 * warm)))
-    hang.add(cr)
-    cr.set_source(core.linear(x0, 0, x1, 0, stops))
-    cr.fill()
-    cr.save()
-    hang.add(cr)
-    cr.clip()
-    cr.rectangle(x0, front - 3, x1 - x0, CLOTH_HEM - front + 12)   # the bend over the edge, then the drop
-    cr.set_source(core.linear(0, front - 3, 0, CLOTH_HEM + 6, [(0.0, (1.0, 0.95, 0.85, 0.22)), (0.12, (0, 0, 0, 0.0)),
-                                                              (0.55, (0, 0, 0, 0.12)), (1.0, (0, 0, 0, 0.30))]))
-    cr.fill()
-    # the folds start narrow at the bend and open toward the hem: dark trough lines
-    lines = []
-    for k in range(CLOTH_FOLDS):
-        xt = x0 + (k + 0.5) * (x1 - x0) / CLOTH_FOLDS
-        lines.append([(xt + 2.0, front + 3), (xt - 1.0, (front + CLOTH_HEM) / 2.0), (xt - 3.0, CLOTH_HEM - 6)])
-    B.detail_lines(cr, lines, 2.4, "#1f1b19", 0.35, taper=(0.1, 1.0, 0.6))
-    # the madder hem band, following the hem
-    cr.new_path()
-    core.polygon(cr, [(hx, hy - 11.0) for hx, hy in hem] + [(hx, hy - 3.0) for hx, hy in reversed(hem)])
-    core.src(cr, "#5a1c21")
-    cr.fill()
-    cr.restore()
-    # the hem's lower edge: a thin dark line (the cloth ends)
-    B.detail_line(cr, hem, 1.6, "#120c0b", 0.6, taper=(0.0, 1.0, 0.0))
-
-
 def _draw_tooling(cr):
     """Blind tooling pressed into the vellum round the page: a double rule, each a dark groove with
-    a faint lit lip on its lower-right side (no colour, no gold: it is felt more than seen)."""
+    a faint lit lip on its lower-right side (no colour: felt more than seen)."""
     x0, y0, x1, y1 = FRAME
     for inset, w in ((0.0, 2.2), (9.0, 1.1)):
         rx, ry, rw, rh = x0 + inset, y0 + inset, x1 - x0 - 2 * inset, y1 - y0 - 2 * inset
@@ -721,29 +1030,6 @@ def _draw_tooling(cr):
         cr.stroke()
 
 
-def _corner_pieces():
-    """Gilded corner flourishes on the tooled border, as (stems, leaves, dots) like the vines: two
-    tendrils running along the inner rule that end in curls, and a quatrefoil rosette on the corner."""
-    stems, leaves, dots = [], [], []
-    x0, y0, x1, y1 = FRAME
-    for (cx, cy, sx, sy) in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
-        ix, iy = cx + sx * 9.0, cy + sy * 9.0                    # the inner rule's corner
-
-        def P_(x, y, ix=ix, iy=iy, sx=sx, sy=sy):
-            return (ix + sx * x, iy + sy * y)
-
-        for swap in (False, True):
-            curl = _spiral_pts(60.0, 17.5, 9.0, 2.2, -math.pi / 2, 1.25, sign=1.0, n=18)
-            local = [(7.0, 7.0), (27.0, 7.6), (47.0, 8.4)] + curl
-            stems.append(([P_(y, x) if swap else P_(x, y) for (x, y) in local], 2.8, 1.0))
-        qx, qy = P_(9.0, 9.0)                                    # a gilded quatrefoil rosette at the corner
-        for k in range(4):
-            a = math.pi / 4 + k * math.pi / 2
-            dots.append((qx + math.cos(a) * 5.2, qy + math.sin(a) * 5.2, 4.3))
-        dots.append((*P_(22.0, 22.0), 1.9))
-    return stems, leaves, dots
-
-
 def _draw_band(cr):
     """The madder band between the gold rings."""
     cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
@@ -754,7 +1040,8 @@ def _draw_band(cr):
 
 
 def _gold_coverage():
-    """(M_leaf, M_stars, vine dots): burnished leaf (rings, pearls, cusps, vines) and shell-gold stars."""
+    """(M_leaf, M_stars, sparkle sites): burnished leaf (rings, pearls, cusps, vines, corners, the
+    frame hairline, the cloth's thread, the flowers' hearts) and the shell-gold stars."""
     stems_l, leaves_l, dots_l = _vine(-1)
     stems_r, leaves_r, dots_r = _vine(+1)
     stems_c, leaves_c, dots_c = _corner_pieces()
@@ -769,22 +1056,26 @@ def _gold_coverage():
         c.fill()
         c.set_fill_rule(cairo.FILL_RULE_WINDING)
         for (_a, x, y) in _pearls():
-            core.circle(c, x, y, 2.4)
+            core.circle(c, x, y, 2.3)
         c.fill()
-        # the gold thread of the cloth's hem (inside the roundel)
-        c.save()
+        x0, y0, x1, y1 = FRAME                             # the gold hairline round the page
+        g = GOLD_RULE
+        c.rectangle(x0 + g, y0 + g, x1 - x0 - 2 * g, y1 - y0 - 2 * g)
+        c.set_line_width(1.5)
+        c.stroke()
+        c.save()                                           # inside the roundel: thread and flower hearts
         core.circle(c, RC[0], RC[1], RR - 1.0)
         c.clip()
-        _x0, _x1, _b, _f, hem = _cloth_geom()
-        core.tapered(c, [(hx, hy - 7.0) for (hx, hy) in hem[::2]], 1.4, 1.4, cap=False)
+        for line in _thread_lines():
+            core.tapered(c, line, 1.5, 1.9, cap=False)
         c.fill()
-        for (hx, hy) in hem[1::4]:
-            core.circle(c, hx, hy - 7.0, 1.7)
+        for (x, y, s, kind) in _flowers():
+            core.circle(c, x, y, 1.35 * s)
         c.fill()
         c.restore()
         for (x, y, a) in _cusps():
             for k in (-1, 0, 1):
-                aa = a + k * 0.07
+                aa = a + k * 0.065
                 r = RR + RING[2] + (5.5 if k == 0 else 3.0)
                 core.circle(c, RC[0] + math.cos(aa) * r, RC[1] + math.sin(aa) * r, 4.2 if k == 0 else 3.2)
             c.fill()
@@ -798,7 +1089,10 @@ def _gold_coverage():
                 core.circle(c, x, y, r)
         c.fill()
     M_st = _a8(stars)
-    return M_leaf, M_st, (dots_l + dots_r)
+    sites = [(x, y) for (_a, x, y) in _pearls()[::5]] + [(x, y) for (x, y, r) in (dots_l + dots_r) if r > 2.2][::2]
+    sites += [(x, y) for (x, y, r, kind) in _stars() if kind == 0][::4]
+    sites += [(x, y) for (x, y, s, k) in _flowers()][::4]
+    return M_leaf, M_st, sites
 
 
 def _quote_layer():
@@ -831,7 +1125,7 @@ def setup():
     _draw_tooling(c)
     _draw_band(c)
     _draw_roundel_ground(c)
-    M_leaf, M_st, vine_dots = _gold_coverage()
+    M_leaf, M_st, sites = _gold_coverage()
     Mt, tdim, tlit = _title_layers(crink)
     gold_dim = _gild(M_leaf, crink, refl, False)
     gold_lit = _gild(M_leaf, crink, refl, True)
@@ -843,7 +1137,7 @@ def setup():
     page.flush()
     st["page"] = _Img(page)
     # the lit gold: one layer (leaf + stars + title), revealed through the light field
-    M_st_lit = M_st * 0.72
+    M_st_lit = M_st * 0.75
     A_all = np.clip(M_leaf + M_st_lit + Mt, 0.0, 1.0)
     lit_rgb = (gold_lit * M_leaf[..., None] + st_lit * M_st_lit[..., None] + tlit * Mt[..., None])
     lit_rgb = lit_rgb / np.maximum(A_all, 1e-4)[..., None]
@@ -854,9 +1148,7 @@ def setup():
     ab = _bbox(Ma)
     st["attr_dim"] = _crop_img(_gild_text(Ma, False), Ma, ab)
     st["attr_lit"] = _crop_img(_gild_text(Ma, True), Ma, ab)
-    # sparkle sites on the gold, with their distance from the loaf (for the ring of light)
-    sites = [(x, y) for (_a, x, y) in _pearls()[::4]] + [(x, y) for (x, y, r) in vine_dots]
-    sites += [(x, y) for (x, y, r, kind) in _stars() if kind == 0][::5]
+    # sparkle sites on the gold, with their distance from the gap (for the ring of light)
     st["sites"] = [(x, y, math.hypot(x - BREAD_LIGHT[0], y - BREAD_LIGHT[1]), core.hash01(i, 33))
                    for i, (x, y) in enumerate(sites)]
     st["light"] = fx.LightLayer()
@@ -867,20 +1159,6 @@ def setup():
 # ----------------------------------------------------------------------------------------
 # per-frame light: the field that reveals the lit gold
 # ----------------------------------------------------------------------------------------
-
-
-def _front(t):
-    """Radius (px) of the spreading ring of bread light, or None before the break."""
-    if t < T_BREAK:
-        return None
-    u = core.clamp((t - T_BREAK) / SPREAD_DUR)
-    return FRONT_MAX * (1.0 - (1.0 - u) ** 1.7)
-
-
-def _t_of_radius(d):
-    """Seconds after the break at which the ring of light reaches radius d."""
-    u = core.clamp(d / FRONT_MAX)
-    return (1.0 - (1.0 - u) ** (1.0 / 1.7)) * SPREAD_DUR
 
 
 def _flicker(t):
@@ -915,6 +1193,17 @@ def _pluck_pos(i):
     a = -math.pi / 2 + 0.9 + i * 2.4
     rm = RR + (RING[0] + RING[1]) / 2.0
     return RC[0] + math.cos(a) * rm, RC[1] + math.sin(a) * rm
+
+
+@functools.lru_cache(maxsize=1)
+def _twinkle_stars():
+    """A handful of stars that twinkle in the hold: [(x, y, phase, rate)]."""
+    big = [(x, y) for (x, y, r, k) in _stars() if k == 0]
+    out = []
+    for i in range(0, len(big), max(1, len(big) // 6)):
+        x, y = big[i]
+        out.append((x, y, core.hash01(i, 51) * TAU, 0.9 + 0.8 * core.hash01(i, 52)))
+    return out
 
 
 def _light_field(st, t):
@@ -954,26 +1243,38 @@ def _light_field(st, t):
             c.set_source(gg)
             c.arc(px, py, 60, 0, TAU)
             c.fill()
+    # 3b. a few stars twinkle in the hold (quietly; they stop once the bread's light has them)
+    fade_tw = 1.0 - core.smoothstep(T_BREAK, T_BREAK + 1.6, t)
+    if fade_tw > 0.0:
+        for (x, y, ph, rate) in _twinkle_stars():
+            k = max(0.0, math.sin(t * rate + ph)) ** 6 * 0.55 * fade_tw
+            if k > 0.02:
+                gg = cairo.RadialGradient(x, y, 0, x, y, 12)
+                gg.add_color_stop_rgba(0.0, 0, 0, 0, k)
+                gg.add_color_stop_rgba(1.0, 0, 0, 0, 0.0)
+                c.set_source(gg)
+                c.arc(x, y, 12, 0, TAU)
+                c.fill()
     # 4. the bread: a warm core before the break; after it, a ring travels out, lit behind it
     fr = _front(t)
     bx, by = BREAD_LIGHT
     if fr is None:
         pre = 0.16 + 0.05 * math.sin(t * 1.7)
-        k = 1.0 + 0.8 * core.smoothstep(T_TREMBLE, T_BREAK, t)
-        gg = cairo.RadialGradient(bx, by, 0, bx, by, 170)
+        k = 1.0 + 0.8 * core.smoothstep(T_WHAT, T_BREAK, t)
+        gg = cairo.RadialGradient(bx, by, 0, bx, by, 150)
         gg.add_color_stop_rgba(0.0, 0, 0, 0, pre * k)
         gg.add_color_stop_rgba(1.0, 0, 0, 0, 0.0)
         c.set_source(gg)
-        c.arc(bx, by, 170, 0, TAU)
+        c.arc(bx, by, 150, 0, TAU)
         c.fill()
     else:
         R = max(fr, 1.0)
-        w = 150.0
+        w = 130.0
         gg = cairo.RadialGradient(bx, by, 0, bx, by, R + w)
-        n = 16
+        n = 18
         for i in range(n + 1):
             r = (R + w) * i / n
-            steady = 0.80 * math.exp(-r / 380.0) + 0.24
+            steady = 0.80 * math.exp(-r / 420.0) + 0.24
             z = (r - R) / w
             ring = math.exp(-z * z * 3.0) * 0.6 * (1.0 - 0.45 * R / FRONT_MAX)
             inside = core.clamp((R - r) / (0.6 * w) + 0.5)             # 1 behind the front, 0 beyond
@@ -996,8 +1297,8 @@ def _light_field(st, t):
         c.set_source_rgba(0, 0, 0, max(0.0, sw))
         c.rectangle(0, 0, W, H)
         c.fill()
-        gx, v = _glint_x(t, T_FINAL, T_FINAL + 1.6)
-        if v < 1.0:
+        gx, v = _glint_x(t, T_LAST0, T_LAST1)
+        if 0.0 < v < 1.0:
             _glint_band(c, gx, TITLE_BASE - 22, 150.0, 0.85 * math.sin(math.pi * v), (0, TITLE_BASE - 80, W, 110))
     lf.flush()
     pat = cairo.SurfacePattern(lf)
@@ -1008,29 +1309,32 @@ def _light_field(st, t):
     return pat
 
 
-def _lit_at(x, y, t):
+def _lit_at(x, y, t, soft=160.0):
     """0..1 how much the bread's light has reached (x, y)."""
     fr = _front(t)
     if fr is None:
         return 0.0
     d = math.hypot(x - BREAD_LIGHT[0], y - BREAD_LIGHT[1])
-    return core.smoothstep(d - 40.0, d + 160.0, fr)
+    return core.smoothstep(d - 40.0, d + soft, fr)
 
 
 # ----------------------------------------------------------------------------------------
-# the miniature: the rune-stone and the loaf
+# the miniature: lights in the night, the rune-stone, the loaf
 # ----------------------------------------------------------------------------------------
 
-L_COLD = B.Light(key=(0.80, 0.86, 1.02), ambient=(0.30, 0.34, 0.54), rim=(0.55, 0.88, 1.0), rim_strength=0.6,
-                 direction=(-0.5, -0.86), rim_direction=(-0.9, -0.4), name="s9_cold")
-L_WARM_STONE = B.Light(key=(1.14, 0.88, 0.60), ambient=(0.42, 0.34, 0.40), rim=(1.0, 0.74, 0.40), rim_strength=0.9,
-                       direction=(0.92, -0.4), rim_direction=(0.95, -0.3), name="s9_warm_stone")
-L_BREAD = B.Light(key=(1.10, 0.92, 0.70), ambient=(0.52, 0.40, 0.42), rim=(1.0, 0.82, 0.50), rim_strength=0.65,
-                  direction=(-0.45, -0.89), rim_direction=(0.7, -0.7), name="s9_bread")
+L_COLD = B.Light(key=(0.86, 0.90, 1.0), ambient=(0.34, 0.37, 0.48), rim=(0.62, 0.78, 0.9), rim_strength=0.22,
+                 direction=(-0.55, -0.83), rim_direction=(-0.9, -0.4), name="s9_cold")
+L_WARM_STONE = B.Light(key=(1.16, 0.90, 0.64), ambient=(0.44, 0.36, 0.40), rim=(1.0, 0.76, 0.42), rim_strength=0.95,
+                       direction=(0.95, -0.3), rim_direction=(0.98, -0.2), name="s9_warm_stone")
+L_BREAD = B.Light(key=(1.08, 0.92, 0.74), ambient=(0.48, 0.40, 0.46), rim=(1.0, 0.82, 0.52), rim_strength=0.6,
+                  direction=(-0.5, -0.86), rim_direction=(0.7, -0.7), name="s9_bread")
 
-# the rune-stone: shaped like the loaf (a domed field stone), anchor = the middle of its base
-STONE_PTS = [(-33, 10), (-36, 2), (-35, -6), (-31, -14), (-24, -21), (-14, -26), (-3, -28), (8, -27.5), (18, -24),
-             (27, -18), (33, -10), (36, -1), (35, 7), (29, 11.5), (12, 13), (-8, 13), (-24, 12.5)]
+# the rune-stone: a domed field stone the size and shape of the loaf, but hard -- a few flat
+# chiselled planes and corners where the loaf is all soft curve. Anchor: the middle of its base.
+STONE_PTS = [(-57, -3), (-60, -15), (-58, -29), (-52, -41), (-41, -54), (-27, -61), (-17, -66), (1, -69), (20, -66),
+             (33, -60), (44, -50), (51, -42), (57, -30), (60, -16), (57, -3), (41, 2), (14, 4), (-16, 4), (-42, 2)]
+STONE_TOP_PLANE = [(-45, -46), (-33, -58), (-14, -66), (8, -67), (27, -60), (19, -52), (-2, -55), (-24, -50)]
+STONE_SIDE_PLANE = [(31, -57), (48, -45), (56, -31), (59, -16), (52, -17), (43, -30), (31, -45)]
 _GLYPHS = ([[(0.5, 0), (0.5, 1)], [(0.5, 0.2), (0.95, 0.0)], [(0.5, 0.45), (0.95, 0.25)]],     # fehu
            [[(0.5, 0), (0.5, 1)], [(0.5, 0.45), (0.1, 0.1)], [(0.5, 0.45), (0.9, 0.1)]],       # algiz
            [[(0.1, 0), (0.9, 1)], [(0.9, 0), (0.1, 1)]],                                       # gebo
@@ -1044,14 +1348,15 @@ def _q(u, n=24):
 
 @functools.lru_cache(maxsize=1)
 def _stone_marks():
-    spiral = [(-1.0 + math.cos(a) * 10.0 * (0.12 + 0.88 * a / (2.6 * math.pi)),
-               -9.0 + math.sin(a) * 8.4 * (0.12 + 0.88 * a / (2.6 * math.pi)))
-              for a in [k * 2.6 * math.pi / 26 for k in range(27)]]
+    cx, cy = -1.0, -30.0
+    spiral = [(cx + math.cos(a) * 15.0 * (0.12 + 0.88 * a / (2.6 * math.pi)),
+               cy + math.sin(a) * 12.5 * (0.12 + 0.88 * a / (2.6 * math.pi)))
+              for a in [k * 2.6 * math.pi / 30 for k in range(31)]]
     runes = []
-    for k, a0 in enumerate((-2.62, -2.27, -1.92, -1.22, -0.87, -0.52)):
-        rx, ry = -1.0 + math.cos(a0) * 26.5, -5.0 + math.sin(a0) * 17.5
+    for k, a0 in enumerate((-2.72, -2.36, -2.0, -1.14, -0.78, -0.42)):
+        rx, ry = cx + math.cos(a0) * 38.0, cy + 2.0 + math.sin(a0) * 24.0
         ang = a0 + math.pi / 2
-        h = 5.4
+        h = 7.0
         ca, sa = math.cos(ang), math.sin(ang)
         for (u0, v0), (u1, v1) in _GLYPHS[k % len(_GLYPHS)]:
             seg = []
@@ -1062,157 +1367,483 @@ def _stone_marks():
     return spiral, runes
 
 
+@functools.lru_cache(maxsize=1)
+def _stone_texture():
+    """(dark pits, pale specks) as small surfaces in the stone's local space (x -66..66, y -78..10):
+    the granular, matte grain that says slate and not dough."""
+    w, h = 132, 88
+    n1 = core.noise_array(w, h, scale=2.2, octaves=2, seed=81)
+    n2 = core.noise_array(w, h, scale=13.0, octaves=3, seed=82)
+    n3 = core.noise_array(w, h, scale=5.0, octaves=2, seed=83)
+    dark = np.clip((-n1 - 0.38) * 2.6, 0.0, 1.0) * 0.55 + np.clip(-n2 - 0.1, 0.0, 1.0) * 0.30
+    pale = np.clip((n1 - 0.48) * 2.6, 0.0, 1.0) * 0.45 + np.clip(n3 - 0.35, 0.0, 1.0) * 0.25
+    zero = np.zeros((h, w, 3), np.float32)
+    return _surface(zero + 0.05, dark), _surface(zero + 0.92, pale)
+
+
 def _stone_level(t):
     """(cold rune glow 0..1, warmth reached 0..1): a slow breath, out of phase with the loaf. When
     the warm light washes over the stone its runes gutter (a little dying flicker) and go dark over
-    ~1.4 s; the warm light on it follows the front."""
+    ~1.2 s; the warm light on it follows the front."""
     breath = 0.62 + 0.18 * math.sin(t * 1.15 + 1.9)
-    warm = _lit_at(STONE_X + 30, STONE_REST - 30, t)
-    if t < T_BREAK:
-        return breath, warm
-    u = core.clamp((t - (T_BREAK + 0.15)) / 1.4)
-    gutter = 1.0 - 0.45 * u * (0.5 + 0.5 * core.noise1(t * 19.0, 61)) * (1.0 - u)
+    warm = _lit_at(STONE_X + 20, STONE_BASE - 36, t, soft=110.0)
+    if warm <= 0.0:
+        return breath, 0.0
+    t_hit = T_BREAK + _t_of_radius(math.hypot(STONE_X + 20 - BREAD_LIGHT[0], STONE_BASE - 36 - BREAD_LIGHT[1]))
+    u = core.clamp((t - t_hit) / 1.2)
+    gutter = 1.0 - 0.55 * (0.5 + 0.5 * core.noise1(t * 21.0, 61)) * math.sin(math.pi * u)
     return breath * (1.0 - core.smoothstep(0.0, 1.0, u)) * gutter, warm
 
 
 def _draw_stone(cr, t):
     lvl, warm = _stone_level(t)
     light = B.Light.lerp(L_COLD, L_WARM_STONE, _q(warm))
-    sc = STONE_SCALE
-    B.contact_shadow(cr, STONE_X + 3, STONE_REST + 1, 40 * sc, 6.5 * sc, alpha=0.6, color="#0c0806")
+    # its shadow, thrown away from the bread once the light is on it
+    if warm > 0.01:
+        cr.save()
+        cr.translate(STONE_X - 46.0 * warm, STONE_BASE + 1.5)
+        cr.scale(1.0, 0.12)
+        fx.glow(cr, 0, 0, 78.0 + 24.0 * warm, "#0b0d14", 0.55 * warm, additive=False)
+        cr.restore()
+    B.contact_shadow(cr, STONE_X + 2, STONE_BASE + 1, 58, 7.5, alpha=0.62, color="#0c0a0e")
     cr.save()
-    cr.translate(STONE_X, STONE_REST - 13 * sc)
-    cr.scale(sc, sc)
-    lw = B.line_for(B.LINE, B.device_scale(cr))             # the house line, in local units
-    sh, so = B.smooth_paths(cr, STONE_PTS, lw, 0.9)
-    p = B.shade(cr, sh, P.prop_mats()["stone"], light, lw, outline=so, size=38.0, rim=1.0)
+    cr.translate(STONE_X, STONE_BASE)
+    lw = B.line_for(B.LINE, B.device_scale(cr))             # the house line
+    sh, so = B.smooth_paths(cr, STONE_PTS, lw, 0.62)        # low tension: a harder, chiselled contour
+    p = B.shade(cr, sh, MATS["stone"], light, lw, outline=so, size=46.0, rim=1.0)
     cr.save()
     sh.add(cr)
     cr.clip()
-    core.src(cr, p.hi, 0.22)                                 # pale and dark flecks: a field stone
-    for i in range(11):
-        core.circle(cr, (core.hash01(i, 3) - 0.5) * 60, -22 + core.hash01(i, 4) * 32, 0.5 + 0.8 * core.hash01(i, 5))
+    core.polygon(cr, STONE_TOP_PLANE)                       # the planes it was split along
+    core.src(cr, p.hi, 0.34 - 0.12 * warm)
     cr.fill()
-    core.src(cr, p.line, 0.22)
-    for i in range(8):
-        core.circle(cr, (core.hash01(i, 6) - 0.5) * 60, -20 + core.hash01(i, 7) * 30, 0.5 + 0.7 * core.hash01(i, 8))
+    core.polygon(cr, STONE_SIDE_PLANE)
+    core.src(cr, core.mix(p.shadow, p.line, 0.45), 0.55 - 0.3 * warm)
     cr.fill()
-    B.detail_lines(cr, [[(-30, 3), (-22, 6), (-10, 7.5)], [(14, -22), (20, -17)]], 0.9, p.line, 0.35)   # a chip, a crack
+    B.detail_lines(cr, [[(-45, -46), (-24, -50), (-2, -55), (19, -52), (31, -57)], [(31, -45), (43, -30), (52, -17)]],
+                   1.1, p.line, 0.45, taper=(0.3, 1.0, 0.3))                    # the arrises between the planes
+    B.detail_lines(cr, [[(-44, -47), (-23, -51), (-2, -56), (18, -53)]], 1.0, p.hi, 0.35, taper=(0.3, 1.0, 0.3))
+    tex_d, tex_p = _stone_texture()                          # the grain of the stone
+    cr.set_source_surface(tex_d, -66, -78)
+    cr.paint_with_alpha(0.75)
+    cr.set_source_surface(tex_p, -66, -78)
+    cr.paint_with_alpha(0.32 + 0.1 * warm)
+    core.src(cr, p.hi, 0.30)                                 # pale and dark flecks: slate, not dough
+    for i in range(16):
+        core.circle(cr, (core.hash01(i, 3) - 0.5) * 100, -60 + core.hash01(i, 4) * 56, 0.5 + 0.8 * core.hash01(i, 5))
+    cr.fill()
+    core.src(cr, p.line, 0.30)
+    for i in range(12):
+        core.circle(cr, (core.hash01(i, 6) - 0.5) * 100, -58 + core.hash01(i, 7) * 54, 0.5 + 0.7 * core.hash01(i, 8))
+    cr.fill()
+    core.polygon(cr, [(-60, -14), (-50, -11), (-56, -4)])   # a chip off its foot, a hairline crack
+    core.src(cr, p.line, 0.55)
+    cr.fill()
+    B.detail_lines(cr, [[(22, -64), (27, -55), (25, -47)]], 0.9, p.line, 0.45)
     cr.restore()
-    groove = core.mix(p.shadow, p.line, 0.5)
+    groove = core.mix(p.shadow, p.line, 0.55)
     glowc = core.mix(groove, RUNE, 0.12 + 0.88 * lvl)
     spiral, runes = _stone_marks()
-    B.detail_lines(cr, [spiral], 2.7, groove, 0.85, taper=(0.4, 1.0, 0.8))
-    B.detail_lines(cr, runes, 1.5, groove, 0.75, taper=(0.8, 1.0, 0.8))
+    B.detail_lines(cr, [spiral], 3.0, groove, 0.9, taper=(0.4, 1.0, 0.8))
+    B.detail_lines(cr, runes, 1.8, groove, 0.8, taper=(0.8, 1.0, 0.8))
     if lvl > 0.01:
-        B.detail_lines(cr, [spiral], 1.4, glowc, 0.3 + 0.7 * lvl, taper=(0.4, 1.0, 0.8))
-        B.detail_lines(cr, runes, 0.85, glowc, 0.25 + 0.75 * lvl, taper=(0.8, 1.0, 0.8))
-        fx.glow(cr, -1.0, -9.0, 22.0, RUNE, 0.55 * lvl)
-    B.sheen(cr, -15, -20, 10, 3.0, angle=-0.35, alpha=0.22 * (1.0 - 0.6 * warm))
+        B.detail_lines(cr, [spiral], 1.5, glowc, 0.3 + 0.7 * lvl, taper=(0.4, 1.0, 0.8))
+        B.detail_lines(cr, runes, 1.0, glowc, 0.25 + 0.75 * lvl, taper=(0.8, 1.0, 0.8))
+        fx.glow(cr, -1.0, -30.0, 30.0, RUNE, 0.42 * lvl)
+    B.sheen(cr, -22, -52, 12, 3.0, angle=-0.4, alpha=0.08 * (1.0 - 0.6 * warm))
     cr.restore()
-    if lvl > 0.01:                                           # its cold light on the ground about it
-        fx.glow(cr, STONE_X, STONE_REST - 22 * sc, 58 * sc, RUNE, 0.16 * lvl)
+    if lvl > 0.01:                                           # its cold light on the cloth about it
+        fx.light_pool(cr, STONE_X, STONE_BASE + 2, 74, 12, RUNE, 0.12 * lvl)
     return lvl, warm
 
 
-def _bread_state(t):
-    """(tear, rock angle, squash, crack light) of the loaf at t."""
-    if t < T_TREMBLE:
-        return 0.0, 0.0, 0.0, 0.0
+# --- the loaf ------------------------------------------------------------------------------
+
+
+def _loaf_pts(r, n=41):
+    """The boule's silhouette (props' loaf, on-model): a high dome, a flatter base. Centre (0, 0)."""
+    pts = []
+    for i in range(n):
+        a = math.pi + math.pi * i / (n - 1)
+        pts.append((math.cos(a) * r, math.sin(a) * r * 0.8 + r * 0.12))
+    pts += [(r * 0.97, r * 0.3), (r * 0.72, r * 0.5), (0.0, r * 0.56), (-r * 0.72, r * 0.5), (-r * 0.97, r * 0.3)]
+    return pts
+
+
+def _half_pts(r, s):
+    """A torn half turned toward us by phi (s = sin phi), authored as the LEFT half with its torn face
+    toward +x: the crust's silhouette on the left, the torn face's edge (squeezed by s) on the right."""
+    s = max(s, 0.03)
+    return [(px if px <= 0.0 else px * s, py) for (px, py) in _loaf_pts(r)]
+
+
+def _section_pts(r, s, k=1.0, seed=0, rag=0.0):
+    """The torn face: the loaf's cross-section squeezed to width by s, scaled by k about its centre,
+    its dome edge pulled into ragged tufts (rag)."""
+    cy = -0.06 * r
+    out = []
+    for i, (px, py) in enumerate(_loaf_pts(r)):
+        kk = k
+        if rag > 0.0 and py < 0.28 * r:
+            kk *= 1.0 + rag * (0.55 * math.sin(i * 2.9 + seed * 1.7) + (0.9 if (i + seed) % 4 == 0 else -0.2))
+        out.append((px * kk * s, cy + (py - cy) * kk))
+    return out
+
+
+def _loaf_state(t):
+    """The loaf's performance at t: open (0 whole .. 1 broken, overshoots a little), the pre-break
+    swell/squash/tremble, the crack of light, the flash and the strands of crumb."""
+    s = dict(open=0.0, sx=1.0, sy=1.0, dx=0.0, crack=0.0, flash=0.0, strands=0.0, dt=-1.0)
+    if t < T_WHAT:
+        return s
     if t < T_BREAK:
-        u = (t - T_TREMBLE) / (T_BREAK - T_TREMBLE)
-        trem = math.sin((t - T_TREMBLE) * 33.0) * 0.016 * u ** 1.4 * (1.0 - core.smoothstep(0.78, 0.97, u))
-        squash = 0.035 * core.smoothstep(0.3, 0.82, u) * (1.0 - core.smoothstep(0.86, 1.0, u))
-        return 0.0, trem, squash, core.smoothstep(0.1, 1.0, u)
+        u = (t - T_WHAT) / (T_BREAK - T_WHAT)
+        swell = 0.016 * core.smoothstep(0.0, 0.5, u) * (1.0 - core.smoothstep(0.55, 0.85, u))
+        squash = 0.032 * core.smoothstep(0.55, 0.9, u)        # "to": pressed, about to give
+        s["sx"] = 1.0 + swell + 0.55 * squash
+        s["sy"] = 1.0 + swell - squash
+        s["dx"] = math.sin((t - T_WHAT) * 47.0) * 0.8 * core.smoothstep(0.1, 0.6, u) * (1.0 - core.smoothstep(0.85, 1.0, u))
+        s["crack"] = core.smoothstep(0.0, 0.95, u)
+        return s
     dt = t - T_BREAK
-    tear = 0.40 * core.smoothstep(0.0, 0.16, dt) + 0.27 * core.out_cubic(core.clamp((dt - 0.1) / 0.85))
-    rock = math.exp(-dt * 4.5) * math.sin(dt * 16.0) * 0.02
-    return tear, rock, 0.0, 1.0
+    s["dt"] = dt
+    s["open"] = 1.0 - math.exp(-dt * 7.0) * math.cos(dt * 5.0)    # a snap, a small overshoot, a settle
+    s["crack"] = 1.0
+    s["flash"] = math.exp(-dt * 4.5)
+    s["strands"] = 1.0 - core.smoothstep(0.06, 0.26, dt)
+    return s
 
 
-def _opened(tear):
-    """0..1: how far the break has opened (the halves' extra separation, lean and slide)."""
-    return core.smooth(min(1.0, tear / 0.67))
+def _half_geom(o):
+    """(phi, sin phi, separation of each half's pivot, outward lean) for an opening o."""
+    phi = PHI_MAX * o
+    sp = math.sin(phi)
+    sep = 0.72 * LOAF_R * sp + 2.0 * min(o, 1.0)       # the crumb's flat foot: the halves' feet nearly touch
+    tilt = TILT_MAX * o                                # ...and they lean apart, so the gap of light is a V
+    return phi, sp, sep, tilt
 
 
-def _draw_loaf(cr, t, burst):
-    """The loaf: whole, trembling with a crack of light, then broken -- each half drawn on its own
-    side of the centre line (draw_bread's tear, clipped), pushed a little further apart and leaning
-    out, so a slit of light stands between the torn faces."""
-    tear, rock, squash, crack = _bread_state(t)
-    op = _opened(tear)
-    x = LOAF_X + LOAF_SHIFT * op
-    r = LOAF_R
-    g = r * 0.95 * core.smooth(tear)          # draw_bread's own offset of each half
-    sep = 0.16 * r * op                       # ...and ours on top of it
-    vee = 0.075 * op                          # the halves lean apart (pivot: the inner foot)
-    # the light from inside, drawn BEHIND the loaf: it shows in the crack, then between the halves
-    if tear > 0.02 or crack > 0.0:
-        k = max(crack * 0.55, min(1.0, tear * 3.0))
-        fx.glow(cr, x, LOAF_Y - r * 0.05, r * (0.9 + 0.9 * burst), WARM_HOT, 0.6 * k)
-        if tear > 0.02:
-            cr.save()                          # the slit itself: a tall hot ellipse
-            cr.translate(x, LOAF_Y + r * 0.05)
-            cr.scale(1.0, 2.6)
-            fx.glow(cr, 0, 0, r * 0.32 + sep, "#ffffff", 0.75 * k)
-            cr.restore()
-    for side in ((-1, 1) if tear > 0.02 else (0,)):
-        B.contact_shadow(cr, x + side * (g + sep), REST_Y + 1, r * (1.0 if side == 0 else 0.72), r * 0.13,
-                         alpha=0.6, color="#0c0806")
-    if tear <= 0.02:
-        cr.save()
-        cr.translate(x, REST_Y)
-        cr.rotate(rock)
-        cr.scale(1.0 + squash, 1.0 - squash)
-        cr.translate(0, LOAF_Y - REST_Y)
-        P.draw_bread(cr, 0, 0, P.LOAF, L_BREAD, t, state="loaf", tear=0.0, seed=3, scale=LOAF_SCALE)
-        cr.restore()
-    else:
-        for side in (-1, 1):
-            cr.save()
-            cr.translate(x, REST_Y)
-            cr.rotate(rock)
-            px = side * (sep + 0.06 * r)       # lean out about the inner foot of this half
-            cr.translate(px, 0)
-            cr.rotate(side * vee)
-            cr.translate(-px + side * sep, LOAF_Y - REST_Y)
-            cr.rectangle(0.0 if side > 0 else -4.0 * r, -4.0 * r, 4.0 * r, 8.0 * r)
-            cr.clip()
-            P.draw_bread(cr, 0, 0, P.LOAF, L_BREAD, t, state="loaf", tear=tear, seed=3, scale=LOAF_SCALE)
-            cr.restore()
-    # the crack of light along its middle score before it parts
-    if crack > 0.01 and tear < 0.25:
-        k = crack * (1.0 - core.clamp(tear / 0.25))
-        pts = [(x + 1.0, LOAF_Y - r * 0.66), (x - 1.5, LOAF_Y - r * 0.25), (x + 1.2, LOAF_Y + r * 0.12),
-               (x, LOAF_Y + r * 0.46)]
+def _crust_art(cr, r, p, light, ears, inner_glow, seed=3):
+    """Crust details over a shaded crust shape (caller clips): the darker bake underneath, the three
+    scored ears (glowing faintly from within before the break), flour and blisters."""
+    core.ellipse(cr, 0.0, r * 0.62, r * 1.2, r * 0.32)
+    core.src(cr, B.palette(light, B.Mat.of(P.PROP_COLORS["crust_dk"])).lit, 0.5)
+    cr.fill()
+    hi = B.palette(light, MATS["crust_hi"])
+    cr.new_path()
+    for k in ears:
+        x0 = k * r * 0.42
+        dy = abs(k) * r * 0.11
+        core.tapered(cr, [(x0 - r * 0.22, -r * 0.40 + dy), (x0, -r * 0.60 + dy), (x0 + r * 0.22, -r * 0.42 + dy)],
+                     r * 0.14, r * 0.14, profile=lambda u: r * 0.15 * math.sin(math.pi * u) + 0.4)
+    sc = B.Path(cr)
+    sc.add(cr, 0.0, r * 0.05)
+    core.src(cr, p.line, 0.7)
+    cr.fill()
+    sc.add(cr)
+    core.src(cr, hi.lit)
+    cr.fill()
+    if inner_glow > 0.01:                                  # the scoring glows: it is warm inside
         cr.save()
         cr.set_operator(cairo.OPERATOR_ADD)
-        B.detail_line(cr, pts, 1.6 + 2.2 * k, WARM_HOT, 0.9 * k, taper=(0.3, 1.0, 0.3))
+        sc.add(cr)
+        core.src(cr, "#ff7a30", 0.12 * inner_glow)
+        cr.fill()
         cr.restore()
-        fx.glow(cr, x, LOAF_Y - r * 0.1, r * (0.35 + 0.4 * k), WARM, 0.45 * k)
-    # rays of the light pouring out of the gap, very soft (a painted glory)
-    if op > 0.02:
-        fx.god_rays(cr, x, LOAF_Y + r * 0.1, -math.pi / 2, 1.9, 175.0 + 40.0 * op, WARM, t, n=7, width=(4.0, 34.0),
-                    alpha=0.13 * op * (0.6 + 0.4 * burst), seed=5, shimmer=0.45)
-    return tear, x
+    core.src(cr, "#f7efdc", 0.55)                          # flour
+    for i in range(14):
+        core.circle(cr, (core.hash01(i, seed + 77) - 0.5) * r * 1.6, -r * 0.62 + core.hash01(i, seed + 78) * r * 0.42,
+                    r * 0.025 + 0.4)
+    cr.fill()
+    core.src(cr, p.line, 0.35)                             # blisters
+    for i in range(7):
+        core.circle(cr, (core.hash01(i, seed + 79) - 0.5) * r * 1.5, -r * 0.1 + core.hash01(i, seed + 80) * r * 0.45,
+                    r * 0.022 + 0.3)
+    cr.fill()
 
 
-def _draw_steam_and_flour(cr, t, x):
+def _draw_whole_loaf(cr, r, light, lw, inner_glow, crack):
+    sh, so = B.smooth_paths(cr, _loaf_pts(r), lw, 0.85)
+    p = B.shade(cr, sh, MATS["crust"], light, lw, outline=so, size=r * 1.4)
+    cr.save()
+    sh.add(cr)
+    cr.clip()
+    _crust_art(cr, r, p, light, (-1, 0, 1), inner_glow)
+    cr.restore()
+    B.sheen(cr, -r * 0.35, -r * 0.5, r * 0.3, r * 0.13, angle=-0.4, alpha=0.3)
+    if crack > 0.01:                                      # a hairline of light down the middle score
+        n = 7
+        pts = [(1.2 * math.sin(i * 2.4 + 0.5) * (i > 0), -r * 0.66 + (r * 1.05) * i / (n - 1)) for i in range(n)]
+        m = max(2, int(round(2 + (n - 2) * core.smoothstep(0.0, 0.7, crack))))
+        cr.save()
+        cr.set_operator(cairo.OPERATOR_ADD)
+        B.detail_line(cr, pts[:m], 1.0 + 2.4 * crack, WARM, 0.75 * crack, taper=(0.4, 1.0, 0.2))
+        B.detail_line(cr, pts[:m], 0.5 + 1.1 * crack, WARM_HOT, 0.95 * crack, taper=(0.4, 1.0, 0.2))
+        cr.restore()
+        fx.glow(cr, 0.0, -r * 0.35, r * (0.3 + 0.35 * crack), WARM, 0.35 * crack)
+
+
+def _draw_half(cr, r, sp, light_crust, light_face, lw, seed, heat):
+    """One torn half, authored as the LEFT half (torn face toward +x): one silhouette with one ink
+    line -- a crescent of crust on the outside, the torn crumb filling the rest, a thin crust shell
+    round the crumb -- so it reads as half a loaf, not as two things."""
+    outline = _half_pts(r, sp)
+    sh, so = B.smooth_paths(cr, outline, lw, 0.85)
+    p = B.shade(cr, sh, MATS["crust"], light_crust, lw, outline=so, size=r * 1.1)
+    cr.save()
+    sh.add(cr)
+    cr.clip()
+    cr.save()                                               # the crust's details, squeezed into the crescent
+    cr.translate(-r * sp, 0.0)
+    cr.scale(1.0 - sp, 1.0)
+    cr.rectangle(-2.0 * r, -2.0 * r, 2.0 * r, 4.0 * r)
+    cr.clip()
+    _crust_art(cr, r, p, light_crust, (-1, 0), 0.0, seed=3)
+    cr.restore()
+    # the crust shell round the torn face (seen where the crumb stops)
+    core.smooth_closed(cr, _section_pts(r, sp, 1.0), 0.8)
+    core.src(cr, B.palette(light_crust, B.Mat.of(P.PROP_COLORS["crust_dk"])).lit)
+    cr.fill()
+    cr.restore()
+    # the torn crumb: ragged, lit hot from the gap (local +x), its airy holes
+    face = _section_pts(r, sp, 0.9, seed, rag=0.075)
+    fs, _fo = B.smooth_paths(cr, face, lw * 0.7, 0.72)
+    pc = B.shade(cr, fs, MATS["crumb"], light_face, lw, outline=False, size=r * sp * 1.1)
+    xs = [x for x, _ in face]
+    ys = [y for _, y in face]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    cr.save()
+    fs.add(cr)
+    cr.clip()
+    if heat > 0.01:
+        cr.set_operator(cairo.OPERATOR_ADD)
+        g = core.linear(x1 + 2.0, 0, x0, 0, [(0.0, (1.0, 0.80, 0.50, 0.42 * heat)), (0.3, (1.0, 0.66, 0.34, 0.14 * heat)),
+                                            (1.0, (1.0, 0.6, 0.3, 0.0))])
+        cr.set_source(g)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+    w_, h_ = x1 - x0, y1 - y0
+    pits = []
+    for i in range(11):
+        hx = x0 + w_ * (0.12 + 0.76 * core.hash01(i, seed + 41))
+        hy = y0 + h_ * (0.14 + 0.72 * core.hash01(i, seed + 42))
+        hr = (0.6 + 1.0 * core.hash01(i, seed + 43)) * r * 0.045
+        pits.append((hx, hy, hr * (0.55 + 0.6 * sp), hr * 0.85, (core.hash01(i, seed + 44) - 0.5) * 0.8))
+    cr.new_path()
+    for hx, hy, a_, b_, ang in pits:
+        core.ellipse(cr, hx, hy, a_, b_, ang)
+    core.src(cr, core.mix(pc.shadow, pc.line, 0.3), 0.8)
+    cr.fill()
+    for hx, hy, a_, b_, ang in pits:                        # the lit lower lip of each pit
+        core.ellipse(cr, hx + a_ * 0.15, hy + b_ * 0.45, a_ * 0.75, b_ * 0.4, ang)
+    core.src(cr, pc.hi, 0.75)
+    cr.fill()
+    cr.restore()
+    # torn fibres along the crumb's top edge
+    B.detail_lines(cr, [[(face[i][0], face[i][1]), (face[i][0] * 1.04 + 1.0, face[i][1] - 2.2)]
+                        for i in range(8, 34, 5)], 1.0, pc.hi, 0.7)
+
+
+def _draw_loaf(cr, t, burst, breath):
+    """The loaf: whole and breathing; holding its breath with a crack of light; broken open."""
+    s = _loaf_state(t)
+    r = LOAF_R
+    o = s["open"]
+    lw = B.line_for(B.LINE, B.device_scale(cr))
+    inner = 0.45 + 0.3 * breath + 0.5 * s["crack"]
+    if o <= 0.0:
+        B.contact_shadow(cr, LOAF_X + 2, LOAF_BASE + 1, r * 0.98, r * 0.13, alpha=0.62, color="#0c0a0e")
+        fx.glow(cr, LOAF_X, LOAF_Y - r * 0.05, r * 1.25, "#ff9a45", 0.10 + 0.05 * breath + 0.12 * s["crack"])
+        cr.save()
+        cr.translate(LOAF_X + s["dx"], LOAF_BASE)
+        cr.scale(s["sx"], s["sy"])
+        cr.translate(0.0, LOAF_Y - LOAF_BASE)
+        _draw_whole_loaf(cr, r, L_BREAD, lw, inner, s["crack"])
+        cr.restore()
+        return 0.0
+    phi, sp, sep, tilt = _half_geom(o)
+    pulse = 0.5 + 0.5 * math.sin(t * 1.9 + 0.6)                     # the light inside breathes
+    heat = min(1.0, 0.72 + 0.25 * burst + 0.3 * s["flash"] + 0.06 * pulse)
+    # the light inside, BEHIND the halves: it fills the gap and haloes their torn edges
+    gx, gy = LOAF_X, LOAF_Y - r * 0.05
+    fx.glow(cr, gx, gy - r * 0.2, r * (0.9 + 0.4 * burst + 0.06 * pulse), WARM, 0.42 + 0.3 * s["flash"] + 0.06 * pulse)
+    cr.save()                                     # the V of light standing in the gap
+    cr.translate(gx, LOAF_BASE)
+    vh = r * 1.45 * min(o, 1.0)
+    vw = math.tan(tilt) * vh + 3.0
+    core.polygon(cr, [(-2.5, 0.0), (2.5, 0.0), (vw, -vh), (-vw, -vh)])
+    cr.set_source(core.linear(0, 0, 0, -vh, [(0.0, (1.0, 0.98, 0.9, 0.95)), (0.55, (1.0, 0.86, 0.55, 0.8)),
+                                             (1.0, (1.0, 0.75, 0.4, 0.0))]))
+    cr.fill()
+    cr.restore()
+    for side in (-1, 1):
+        B.contact_shadow(cr, LOAF_X + side * (sep + r * 0.3), LOAF_BASE + 1, r * 0.66, r * 0.12, alpha=0.6,
+                         color="#0c0a0e")
+    for side in (-1, 1):
+        lc = L_BREAD.with_(rim=(1.0, 0.86, 0.58), rim_strength=1.0, rim_direction=(-side, -0.25))
+        lf = B.Light(key=(1.0, 0.86, 0.66), ambient=(0.64, 0.47, 0.37), rim=(1.0, 0.92, 0.72), rim_strength=0.8,
+                     direction=(-side * 0.95, -0.3), rim_direction=(-side, -0.1), name="s9_crumb")
+        cr.save()
+        cr.translate(LOAF_X + side * sep, LOAF_BASE)
+        cr.rotate(side * tilt)                     # each half leans out about its inner foot
+        if side > 0:
+            cr.scale(-1.0, 1.0)                    # the right half is the left one, mirrored
+        cr.translate(0.0, LOAF_Y - LOAF_BASE)
+        _draw_half(cr, r, sp, lc, lf, lw, 7 if side < 0 else 12, heat)
+        cr.restore()
+    # strands of crumb stretched across the gap, snapping one by one
+    if s["strands"] > 0.01:
+        lines = []
+        for i, yy in enumerate((-0.38, -0.16, 0.06, 0.26)):
+            k = core.clamp(s["strands"] * 1.4 - 0.1 * i)
+            if k <= 0.02:
+                continue
+            y = LOAF_Y + yy * r
+            d = math.sqrt(max(0.0, 1.0 - ((yy * r - 0.12 * r) / (0.8 * r)) ** 2)) * r * sp
+            xa, xb = LOAF_X - sep + d * 0.9, LOAF_X + sep - d * 0.9
+            lines.append(([(xa, y), ((xa + xb) / 2, y + 2.0 * k), (xb, y)], k))
+        for pts, k in lines:
+            B.detail_line(cr, pts, 1.0 + 3.0 * k, P.PROP_COLORS["crumb"], 0.9 * k, taper=(1.0, 0.35, 1.0))
+    # the slit of light in the gap and the soft rays it throws up
+    cr.save()                                     # the white-hot slit where the crumb parted
+    cr.translate(gx, LOAF_BASE - r * 0.45)
+    cr.scale(1.0, 3.2)
+    fx.glow(cr, 0, 0, 7.0 + 4.0 * burst, "#ffffff", 0.85)
+    cr.restore()
+    fx.god_rays(cr, gx, gy + r * 0.1, -math.pi / 2, 1.5, 175.0 + 50.0 * min(o, 1.0), WARM, t, n=7, width=(4.0, 34.0),
+                alpha=0.13 * min(o, 1.0) * (0.6 + 0.4 * burst), seed=5, shimmer=0.45)
+    if s["flash"] > 0.02:
+        fx.glow(cr, gx, gy, r * 1.5, WARM_HOT, 0.65 * s["flash"])
+    return sep
+
+
+def _draw_crumbs_steam(cr, t, sep):
+    r = LOAF_R
+    k = 0                               # a fresh loaf: now and then a thread of warmth off its top
+    t0 = T_FADE_IN1 - 0.5               # (the last threads finish rising after the break)
+    while t0 < min(t, T_BREAK) and k < 12:
+        fx.smoke(cr, t, t0, LOAF_X - 6 + 10 * core.hash01(k, 9), LOAF_Y - r * 0.66, n=3, dur=3.2, rise=70.0,
+                 drift=(6.0, 0.0), size=4.0, color="#fff1da", alpha=0.07, seed=40 + k)
+        k += 1
+        t0 += 1.9
     if t < T_BREAK:
         return
-    r = LOAF_R
-    # flour puff at the break
-    fx.smoke(cr, t, T_BREAK + 0.02, x, LOAF_Y - r * 0.3, n=6, dur=1.3, rise=34.0, drift=(0.0, 0.0), size=7.0,
-             color="#f6ecd6", alpha=0.32, seed=21, spread=1.4)
-    # steam curling up from the crumb, again and again
+    fx.crumbs(cr, t, T_BREAK + 0.02, LOAF_X, LOAF_Y - r * 0.2, ground_y=LOAF_BASE + 9, size=2.6,
+              color=P.PROP_COLORS["crumb"], crust=P.PROP_COLORS["crust"], **CRUMB_ARGS)
+    fx.smoke(cr, t, T_BREAK + 0.02, LOAF_X, LOAF_Y - r * 0.35, n=7, dur=1.3, rise=34.0, drift=(0.0, 0.0), size=7.5,
+             color="#f6ecd6", alpha=0.32, seed=21, spread=1.5)
     k = 0
     t0 = T_BREAK + 0.3
-    while t0 < t:
+    while t0 < t:                       # steam curling up off the crumb, again and again
         for side in (-1, 1):
-            fx.smoke(cr, t, t0 + 0.4 * (side > 0), x + side * r * 0.42, LOAF_Y - r * 0.62, n=4, dur=2.8, rise=105.0,
-                     drift=(side * 9.0, 0.0), size=6.0, color="#fff1da", alpha=0.22, seed=11 + k * 2 + (side > 0))
+            fx.smoke(cr, t, t0 + 0.45 * (side > 0), LOAF_X + side * (sep * 0.75), LOAF_Y - r * 0.55, n=4, dur=2.8,
+                     rise=110.0, drift=(side * 10.0, 0.0), size=6.0, color="#fff1da", alpha=0.20,
+                     seed=11 + k * 2 + (side > 0))
         k += 1
         t0 += 1.2
+
+
+def _draw_warmth(cr, t, fr, burst, breath):
+    """Warm light falling on the painted night (additive): before the break only the loaf's own
+    small pool; after it, a pool that grows across the linen and the meadow with the ring."""
+    s = _loaf_state(t)
+    pre = 0.18 + 0.05 * breath + 0.18 * s["crack"]
+    fx.light_pool(cr, LOAF_X, LOAF_BASE + 4, 120 + 30 * s["crack"], 22, WARM, pre)
+    if fr is None:
+        return
+    k = core.clamp((t - T_BREAK) / 0.5)
+    R = min(fr + 40.0, 420.0)
+    cr.save()
+    cr.set_operator(cairo.OPERATOR_ADD)
+    cr.rectangle(RC[0] - RR, HORIZON - 4.0, 2 * RR, 2 * RR)        # the ground takes the light...
+    cr.clip()
+    g = core.radial(BREAD_LIGHT[0], BREAD_LIGHT[1] + 10, R, [(0.0, (1.0, 0.68, 0.34, 0.24 * k)),
+                                                             (0.35, (1.0, 0.60, 0.28, 0.12 * k)),
+                                                             (1.0, (1.0, 0.55, 0.25, 0.0))])
+    cr.set_source(g)
+    cr.paint()
+    cr.restore()
+    fx.glow(cr, BREAD_LIGHT[0], HORIZON - 10, min(R, 260.0), "#ff9a50", 0.07 * k)   # ...the sky only a breath of it
+    fx.light_pool(cr, LOAF_X, LOAF_BASE + 6, 140 + 90 * k, 26 + 10 * k, WARM, 0.22 * k + 0.15 * burst)
+
+
+def _draw_far_lights(cr, t):
+    """The far lantern over the bench and the castle's windows catch the light as the ring passes."""
+    lx, ly = LANTERN
+    u = core.smoothstep(T_BENCH - 0.08, T_BENCH + 0.35, t)           # it catches on the word "bench"
+    if u > 0.01:
+        flare = 1.0 + 0.8 * math.exp(-max(0.0, t - T_BENCH) * 5.0) * core.smoothstep(T_BENCH - 0.08, T_BENCH + 0.05, t)
+        fl = (0.85 + 0.15 * sb.candle_flicker(t, 3)[0]) * flare
+        fx.glow(cr, lx, ly - 40.5, 34.0, "#ffb45a", 0.42 * u * fl)
+        core.polygon(cr, [(lx - 2.4, ly - 37.5), (lx + 2.4, ly - 37.5), (lx + 1.6, ly - 43.6), (lx - 1.6, ly - 43.6)])
+        core.src(cr, core.mix("#2c355e", "#ffd88a", u * fl))
+        cr.fill()
+        fx.light_pool(cr, lx - 24, ly, 30, 5, "#ffb45a", 0.30 * u)
+    cx0, cy0 = CASTLE
+    for i, (wx, wy) in enumerate(_CASTLE_WINDOWS):
+        x, y = cx0 + wx, cy0 + wy
+        v = _lit_at(x, y, t, soft=40.0)
+        # each window catches a beat after the last, with a candle's stutter
+        v = core.clamp((v - 0.12 * i / len(_CASTLE_WINDOWS)) * 1.6)
+        if v <= 0.01:
+            continue
+        stut = 1.0 if v > 0.6 else (0.6 + 0.4 * core.noise1(t * 18.0 + i, 77))
+        cr.rectangle(x - 1.0, y - 1.8, 2.0, 3.6)
+        core.src(cr, core.mix("#161a30", "#ffcf7a", v * stut))
+        cr.fill()
+        fx.glow(cr, x, y, 6.0, "#ffb45a", 0.35 * v * stut)
+
+
+# --- the bard in the margin -------------------------------------------------------------------
+
+
+@functools.lru_cache(maxsize=1)
+def _bard_seat():
+    """The top of the curl that ends the left vine: the minstrel's perch."""
+    end_x = TITLE_W / 2.0 - (RR + RING[2] + 1.0) - 34.0
+    ox = RC[0] - (RR + RING[2] + 1.0)
+    cx, cy = ox - (end_x * 0.97 - 4.0), RC[1] - 36.0
+    return cx + 2.0, cy - 26.0 + 2.5
+
+
+L_BARD = ch.BARD_LIGHTS["candle"].with_(direction=(-0.55, -0.83), exposure=0.86, rim_strength=0.5,
+                                        name="s9_bard_candle")            # the page's candle: dim, from above left
+L_BARD_WARM = ch.BARD_LIGHTS["candle"].with_(direction=(0.95, -0.3), exposure=1.06, rim_direction=(0.9, -0.4),
+                                             name="s9_bard_warm")         # the bread's warmth, from the right
+
+
+def _bard_pose(t):
+    """The minstrel sings the reprise from his perch: he watches his last page, tunes up, plays
+    and sings to the loaf, lights up when it breaks, turns to sing "...next to YOU" to us, holds the
+    last note in rapture, and winks as the light closes in on the bread."""
+    off = _reprise()[0]
+    song = ch.bard_song(t, "reprise", offset=off) if off is not None else {}
+    look_us = core.smoothstep(T_NEXT - 0.15, T_YOU2 - 0.1, t)
+    broke = core.smoothstep(T_BREAK, T_BREAK + 0.5, t) * (1.0 - look_us)
+    tune = core.window(t, T_SONG - 1.15, T_SONG - 0.2, 0.25, 0.3)
+    wink = core.window(t, T_WINK, T_WINK + 0.36, 0.07, 0.12)
+    kw = dict(sit=1.0, seat_h=125.0, anchor="seat", facing=1, turn=-0.25, lute="play", shadow=False, seed=4,
+              look=(0.55 * (1.0 - look_us), 0.3 * (1.0 - look_us)), head_turn=0.12 * (1.0 - look_us),
+              head_nod=-0.12 * (1.0 - look_us), look_cam=look_us, mood="twinkle", mood2="happy",
+              mood_mix=0.55 * broke, tail_swing=0.35, tail_curl=0.95, wink=wink)
+    kw.update(song)
+    # the last note: bliss, eyes closed... until the final chord rings -- then he opens them on us
+    kw["rapture"] = kw.get("rapture", 0.0) * (1.0 - core.smoothstep(T_FINAL - 0.05, T_FINAL + 0.3, t))
+    if t > T_FINAL:
+        kw["mood2"], kw["mood_mix"] = "warm", 0.7 * core.smoothstep(T_FINAL, T_FINAL + 0.4, t)
+    if tune > 0.0:
+        kw["tune"] = max(kw.get("tune", 0.0), tune)
+        kw["tune_phase"] = t * 2.2
+    return ch.BardPose(**kw)
+
+
+def _draw_bard(cr, t):
+    x, y = _bard_seat()
+    warm = _lit_at(x, y - 30, t, soft=120.0)
+    light = B.Light.lerp(L_BARD, L_BARD_WARM, _q(warm))
+    rig = ch.draw_bard(cr, x, y, BARD_SCALE, _bard_pose(t), light, t)
+    ch.bard_twinkle(cr, t, T_WINK + 0.04, rig)
+    return rig
 
 
 # ----------------------------------------------------------------------------------------
@@ -1230,22 +1861,14 @@ def draw(cr, t, st):
     # 2. the miniature
     breath = 0.5 + 0.5 * math.sin(t * 1.7)
     burst = 0.0 if fr is None else (0.6 * math.exp(-(t - T_BREAK) * 2.0) + 0.4 * core.smoothstep(0.0, 1.4, t - T_BREAK))
-    lx0 = LOAF_X + LOAF_SHIFT * _opened(_bread_state(t)[0])
     cr.save()
     core.circle(cr, RC[0], RC[1], RR)
     cr.clip()
-    # warm light on the board and on the night behind the loaf
-    fx.light_pool(cr, lx0, REST_Y + 2, 120 + 70 * burst, 26 + 10 * burst, WARM, 0.20 + 0.45 * burst)
-    fx.glow(cr, lx0, LOAF_Y - 6, 125 + 70 * burst, "#ff9a45", 0.12 + 0.05 * breath + 0.22 * burst)
+    _draw_warmth(cr, t, fr, burst, breath)
+    _draw_far_lights(cr, t)
     lvl, warm = _draw_stone(cr, t)
-    tear, lx = _draw_loaf(cr, t, burst)
-    if fr is not None:
-        fx.crumbs(cr, t, T_BREAK + 0.03, lx, LOAF_Y - 6, n=9, seed=7, vx=(-90.0, 90.0), vy=(-200.0, -80.0),
-                  gravity=900.0, ground_y=REST_Y + 4, size=2.4, color=P.PROP_COLORS["crumb"],
-                  crust=P.PROP_COLORS["crust"])
-    _draw_steam_and_flour(cr, t, lx)
-    # a gentle warm sheen over the loaf (it glows from within; kept low so the crumb never blows out)
-    fx.glow(cr, lx, LOAF_Y - 2, LOAF_R * 1.25, WARM, 0.10 + 0.04 * breath + 0.08 * burst)
+    sep = _draw_loaf(cr, t, burst, breath)
+    _draw_crumbs_steam(cr, t, sep)
     cr.restore()
     # 3. the quote and its attribution
     qa = core.ramp(t, T_QUOTE0, T_QUOTE1, "inout_sine")
@@ -1256,13 +1879,15 @@ def draw(cr, t, st):
         st["attr_lit"].paint_masked(cr, pat)
         cr.pop_group_to_source()
         cr.paint_with_alpha(qa)
+    # 3b. the minstrel on his perch at the end of the left vine, singing the reprise
+    _draw_bard(cr, t)
     # 4. sparkles: where the ring of light reaches the gold; the plucked pearls; the title twinkles
     if fr is not None:
         for (x, y, d, h) in st["sites"]:
-            dt = t - (T_BREAK + _t_of_radius(d)) - h * 0.12
+            dt = t - (T_BREAK + _t_of_radius(d)) - h * 0.15
             if 0.0 <= dt < 0.5:
                 u = dt / 0.5
-                fx.sparkle(cr, x, y, 6.5 * math.sin(math.pi * u) * (0.7 + 0.6 * h), WARM_HOT, 0.75 * (1 - u) ** 0.5,
+                fx.sparkle(cr, x, y, 6.0 * math.sin(math.pi * u) * (0.7 + 0.6 * h), WARM_HOT, 0.7 * (1 - u) ** 0.5,
                            angle=0.3 * h)
     for i, tb in enumerate(PLUCKS):
         dt = t - tb
@@ -1271,20 +1896,20 @@ def draw(cr, t, st):
             px, py = _pluck_pos(i)
             fx.sparkle(cr, px, py, 11.0 * math.sin(math.pi * u ** 0.6), "#fff4d0", 0.85 * (1.0 - u), angle=0.2)
     _twinkle(cr, t, T_GLINT0 + 0.5 * (T_GLINT1 - T_GLINT0) - 0.05, TITLE_A_X, TITLE_BASE - CAP_H - 1.0, 15.0)
-    _twinkle(cr, t, T_FINAL + 1.25, TITLE_END_X, TITLE_BASE - CAP_H * 0.95, 17.0)
     # 5. motes drifting in front of the page in the candlelight (warmer and brighter after the break)
     warm_all = 0.0 if fr is None else core.clamp((t - T_BREAK) / 3.0)
-    fx.dust(cr, t, (RC[0] - 540, RC[1] - 340, 1080, 660), n=34, color="#ffe2a8", alpha=0.20 + 0.28 * warm_all,
+    fx.dust(cr, t, (RC[0] - 560, RC[1] - 360, 1120, 700), n=34, color="#ffe2a8", alpha=0.20 + 0.28 * warm_all,
             size=(0.8, 2.2), seed=17, drift=(5.0, -7.0), twinkle=0.7,
-            mask=lambda x, y: core.clamp(1.15 - math.hypot(x - RC[0], (y - RC[1]) * 1.3) / 540.0))
+            mask=lambda x, y: core.clamp(1.15 - math.hypot(x - RC[0], (y - RC[1]) * 1.3) / 560.0))
     # 6. light layer: the candle's pool on the page and the warmth that spreads from the bread
     lc = st["light"].begin()
     fx.glow(lc, CX - 300, 300, 1100, "#ffb070", 0.045 + 0.02 * _flicker(t))
-    fx.glow(lc, lx, LOAF_Y, 260 + 90 * burst, WARM, 0.08 + 0.03 * breath + 0.24 * burst)
+    fx.glow(lc, LOAF_X, LOAF_Y, 240 + 100 * burst, WARM, 0.07 + 0.03 * breath + 0.26 * burst)
     if fr is not None:
-        fx.glow(lc, BREAD_LIGHT[0], BREAD_LIGHT[1], max(60.0, fr * 0.95), "#ffae58", 0.15 * core.clamp((t - T_BREAK) / 1.2))
+        fx.glow(lc, BREAD_LIGHT[0], BREAD_LIGHT[1], max(60.0, fr * 0.95), "#ffae58",
+                0.13 * core.clamp((t - T_BREAK) / 1.2))
     if lvl > 0.01:
-        fx.glow(lc, STONE_X, STONE_REST - 30, 210, RUNE, 0.09 * lvl)
+        fx.glow(lc, STONE_X, STONE_BASE - 34, 200, RUNE, 0.08 * lvl)
     vig = 0.5 + 0.4 * (1.0 - core.ramp(t, T_FADE_IN0, T_FADE_IN1 + 0.6, "inout_sine"))
     fx.post(cr, t, light=st["light"], bloom_strength=0.45, threshold=0.62, bloom_radius=2.2, grain=0.035,
             vignette=vig, vignette_color=(0.07, 0.03, 0.04))
@@ -1292,9 +1917,9 @@ def draw(cr, t, st):
     #    first); out as an iris that closes down onto the loaf (its light is the last thing on screen)
     a_in = 1.0 - core.ramp(t, T_FADE_IN0, T_FADE_IN1, "inout_sine")
     if a_in > 0:
-        _iris(cr, a_in, RC[0], RC[1] + 10.0)
+        _iris(cr, a_in, RC[0], RC[1] + 20.0)
     if t > T_FADE_OUT0:
-        _iris(cr, core.ramp(t, T_FADE_OUT0, T_FADE_OUT1, "inout_sine"), lx, LOAF_Y - 8)
+        _iris(cr, core.ramp(t, T_FADE_OUT0, T_FADE_OUT1, "inout_sine"), LOAF_X, LOAF_Y - 8)
 
 
 def _twinkle(cr, t, t0, x, y, r):
@@ -1332,10 +1957,28 @@ def _iris(cr, a, cx, cy):
 # sound: discrete on-screen events for the foley pass (local seconds)
 # ----------------------------------------------------------------------------------------
 
-_PAN_LOAF = round((LOAF_X + LOAF_SHIFT * 0.5 - CX) / CX * 0.8, 2)     # the loaf sits a little right of centre
-SFX_CUES = sorted([
+_PAN_LOAF = round((LOAF_X - CX) / CX * 0.8, 2)     # the loaf sits a little right of centre
+CRUMB_ARGS = dict(n=11, seed=7, vx=(-120.0, 120.0), vy=(-240.0, -90.0), gravity=950.0)
+
+
+def _crumb_hits():
+    """Scene times at which the break's crumbs first touch the linen (same maths as fx.crumbs)."""
+    y0, gy = LOAF_Y - LOAF_R * 0.2, LOAF_BASE + 9
+    out = []
+    for i in range(CRUMB_ARGS["n"]):
+        tb = T_BREAK + 0.02 + 0.12 * core.hash01(i, CRUMB_ARGS["seed"])
+        v0, v1 = CRUMB_ARGS["vy"]
+        vy = v0 + (v1 - v0) * core.hash01(i, CRUMB_ARGS["seed"] + 2)
+        g = CRUMB_ARGS["gravity"]
+        out.append(tb + (-vy + math.sqrt(vy * vy + 2 * g * (gy - y0))) / g)
+    return sorted(out)
+
+
+_HITS = _crumb_hits()
+SFX_CUES = sorted([(round(c[0], 3), c[1], c[2]) for c in [
     (T_FADE_IN0 + 0.5, "candle_flicker", {"gain": 0.3, "pan": -0.3}),          # the unseen candle that lights the page
-    (T_BREAK - 0.32, "crumbs", {"gain": 0.22, "pan": _PAN_LOAF, "count": 6, "dur": 0.3}),   # the crust crackles as the crack of light opens
+    (T_WHAT + 0.12, "crumbs", {"gain": 0.2, "pan": _PAN_LOAF, "count": 5, "dur": 0.3}),   # the crust crackles as the crack of light opens
     (T_BREAK - 0.02, "bread_tear", {"gain": 0.55, "pan": _PAN_LOAF}),            # the loaf breaks on "do"
-    (T_BREAK + 0.14, "crumbs", {"gain": 0.45, "pan": _PAN_LOAF}),                # crumbs hop onto the board
-], key=lambda c: c[0])
+    (_HITS[0] - 0.01, "crumbs", {"gain": 0.4, "pan": _PAN_LOAF, "count": 14,         # crumbs patter onto the linen
+                                 "dur": round(_HITS[-1] - _HITS[0] + 0.15, 2)}),
+]], key=lambda c: c[0])

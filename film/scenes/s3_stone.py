@@ -2,89 +2,87 @@
 
 THE IDEA. He calls the one number left -- and the city answers with a menu. Loneliness is just
 another option between billing and new accounts, and the answer to it is "please hold": four
-tinny notes, over and over. He walks home through the rain lit by the cold stone at his ear,
-past warm lamps that light the street but not him, and stops in a pool of lamplight that
-surrounds him without reaching him: a cold figure in a warm pool, still on hold. (The image
-rhymes with S8, where one warm lamp shelters a whole crowded bench.)
+tinny notes going round and round an hourglass. He walks home through the rain lit by the cold
+stone at his ear, past warm windows and warm lamps that light the street but not him, and stops
+in a pool of lamplight that surrounds him without reaching him: a cold figure in a warm pool,
+still on hold. (The image rhymes with S8, where one warm lamp shelters a whole crowded bench.)
 
-ONE SHOT, three movements (times from timeline.json; the numbers are the current timeline's):
- A  0 - s3_hold (10.0)  SIDE-ON TRACKING SHOT, medium-wide, eye line at his shoulder (y 560).
-    The camera trucks right with him at walking pace (he holds at screen x ~620, look room
-    ahead); the world slides past in depth: sky 0.05, castle hill 0.12, the town behind 0.3,
-    the far side of the street 0.5, four strips of wet cobbles 0.56 / 0.74 / 1.0 (his plane:
-    no foot slides) / 1.35, the near side's eave and a rain barrel 1.8 (out of focus).
-    Opening frame: he has just walked out of a lamp's pool (warm on his scarf and horns) into
-    the cold; a downspout pours into a barrel in the soft foreground; far ahead, at the right
-    edge, the lamp he will end under. As each PHONE line plays, a spark leaves the stone and
-    the words are WRITTEN in light, word by word (syllable-timed to the voice's envelope):
-    illuminated uncial script, glowing cold cyan, an enlarged initial F on every line (the
-    machine's monotony), a dark halo behind each letter so it reads over anything. The menu
-    stacks up beside his face like a page; older lines cool and dim.
-      s3_l1 "For billing, press one."  s3_l2 "For a new account, press two."
-      s3_l3 "For loneliness... please hold." -- "loneliness" lands with a beat: it burns
-      brighter, pops (a damped scale pulse) and throws a cold flash; the ellipsis writes
-      itself one dot at a time through the voice's pause; then "please hold."
-    Each finished line gets a scribe's line-filler (a thin swash ending in the stone's spiral),
-    and the glowing words throw cold streaks down the wet cobbles beside the lamps' gold ones.
-    Acting: L1/L2 he has heard it all before (heavy lids, eyes ahead and down, tail dragging,
-    wings drooped, the open apothecary sack swinging from his far hand); between the options a
-    weary glance up into the rain (2.6), a heavy blink after "press two" (5.4) and a shiver in
-    the cold (5.9: shoulders up, head trembles, wet-wool rustle). At "loneliness" his eyes lift
-    to the word, his brows rise, his head turns a touch toward the stone and his walk falters
-    half a step (hope). "please hold": a slow blink, the brows sink, the head drops, the hunch
-    deepens (it was not for him after all).
- B  s3_dissolve (9.3) - stop (13.25)  The menu breaks into motes that stream into a scrap of
-    four-line staff between repeat signs: four mensural notes that light up EXACTLY as the
-    music box plays them (onsets from film/audio/motif.py: B A F# E, e e e q., 1.5 s loop),
-    and a small hourglass marked "On hold" that runs out every two loops and flips over as
-    the loop comes round again. The loop floats beside his face and follows him. He slows
-    (strides shorten and slow down; the walk is integrated from his speed so the feet never
-    skate) and passes under the lamp -- its light runs gold along his horns, head and shoulders
-    -- and stops a stride past the post, the trailing foot setting down beside the planted one;
-    the camera eases to rest a beat after him. The lamp now hangs above and BEHIND him: its
-    cone of lit rain and its pool of gold on the stones surround him; on him only a warm edge of
-    top-light (and a faint bounce off the wet pool) -- the front of him stays cold, lit cyan by
-    the stone. Rain bursts on his horns and shoulders; a drop gathers on his snout and falls.
- C  stop - end  thought -> glance -> breath -> line, then the pull-back.
-    Thought (13.35): eyes drop to the wet stones. Glance (13.75): up to the hourglass. Breath
-    (13.96): the hunch eases, the chest lifts. s3_l4 MAN (14.3) "I've been on hold my whole
-    life." -- small and tired, to himself: on "on hold" his eyes are on the hourglass, on "my
-    whole life" they slide down and away; his body has turned a little toward us (3/4) so the
-    face reads; a slow push-in (zoom 1.0 -> 1.12) holds on him. After the line (16.4): a long
-    exhale -- shoulders sink, a breath of steam curls from his nostrils in the cold.
-    s3_lantern (17.0 - 20.0): the camera pulls back and rises (1.12 -> 0.78) into the dark
-    under the near side's eaves: the eave and a doorway post close in at the top and right,
-    drips falling off them, and the street sinks into the night round the lamp (its cone, its
-    pool, him and the loop keep their light) -- we leave him as we found him, watched from the
-    dark: small, cold, in the warm pool, the stone still at his ear, the four notes looping.
+FOUR SHOTS, hard cuts on the story's turns (times are the current timeline's; the code derives
+every one from timeline.json lines, beats and word times):
 
-COLOUR / VALUE PLAN. Deep navy night and rain (the far side 12-30 % value, sunk in a night
-falloff and a rain haze) against sodium-gold lamp light (halos, volumetric cones of lit rain,
-pools on the cobbles with warm specular glints, long broken reflections on the wet street),
-a few warm windows and door lamps across the street (chosen so none ever passes behind the
-text), and one cold accent: the speaking stone's cyan (its glow at his ear, its light on his
-face, the rune text, the notes, the hourglass). Warm light is the world's, never his: it rims
-him, it does not reach his front. Vignette deepens as the camera pulls back.
+ A  0.00-6.45  "the menu" -- ESTABLISHING CRANE, then a side-on tracking wide.
+    Opens high in the rain on the far side's gables (a few warm attic windows: lives behind shut
+    shutters) and the castle on its hill against a faint break in the cloud; the crane comes down
+    (-0.55 -> 2.0, eased) past the roofs onto the wet street, where he is already walking out of
+    a lamp's pool (warm on his horns) toward the next. Then it trucks with him at walking pace
+    (his head at screen x ~646, look room ahead), the world sliding past in seven parallax planes
+    (sky .05, castle .12, roofs .3, far side .5, street strips .56/.74/1.0/1.35).
+    s3_l1 (1.0) / s3_l2 (3.6): a spark leaves the stone and each word is WRITTEN in light beside
+    his head, syllable-timed to the voice (illuminated uncial, glowing cold cyan, an enlarged
+    initial F, a dark halo for legibility, a scribe's swash after each line, cold streaks of its
+    reflection down the wet cobbles); the older line cools and dims. Acting: heard it all before
+    -- heavy lids, eyes ahead and down; a weary glance up into the rain (2.6), a heavy blink
+    after "press two" (5.4), a shiver in the cold (5.9: shoulders up, head trembles).
+ B  6.45-13.47 "for loneliness... please hold" -- MEDIUM, tracking beside him at eye level
+    (zoom 2.2 -> 2.34, a breath of push as the hold begins); the far side melts to soft shapes
+    and warm bokeh. Cut in on the third option: the two options already heard sit small and dim
+    above; the third is written big. "loneliness" (6.77) lands at 7.09 with a pop, a flash and a
+    burst of cold sparks: HOPE -- his eyes lift to the word, wide, no blink, brows up, wings lift a
+    little, his walk falters. "please hold" (8.06): the eyes drift down, a slow blink, the head
+    drops, the hunch deepens, the wings sag. 9.3: the menu breaks into motes that stream into the
+    HOLD EMBLEM ahead of his face: a small hourglass (it runs out every two loops and flips as
+    the loop comes round again: 12.45 / 15.45 / 18.45) under a banderole lettered "On hold", and
+    the music box's four notes riding round it on a tilted ring of light -- one turn per loop,
+    each note flaring and pinging as it comes round to the front EXACTLY as the music box plays
+    it (B A F# E, e e e q. from film/audio/motif.py: the four bunch on one side of the ring and
+    the long E leaves the rest of it empty before it all comes round again). From 10.0 he looks
+    at it; he slows (the walk is integrated from his speed: no foot ever slides), passes under
+    the lamp (its gold runs along his horns and head), and stops at 13.25.
+ C  13.47-17.00 "I've been on hold my whole life" -- MEDIUM CLOSE-UP under the lamp (zoom 3.5
+    -> 3.68, a slow push), his face on the left third, the emblem on the right; he has turned a
+    little toward us. Cut on the thought: eyes drop to the wet stones (13.35) -> glance up at the
+    hourglass (13.75) -> breath, the hunch eases (13.96) -> s3_l4 (14.3), small and tired, to
+    himself: eyes on the hourglass for "I've been on hold", sliding down and away on "my whole
+    life". 16.4: a long closed-mouth exhale; his breath steams in the cold and drifts forward.
+    Lit like Klaus: the lamp is above and BEHIND him -- a warm rim along his horns and crown;
+    everything the camera sees of his front is cold, washed cyan by the stone.
+ D  17.00-20.00 s3_lantern -- THE FINAL WIDE: the camera has pulled back across the street and
+    keeps rising and pulling away (zoom 0.9 -> 0.74) while the street sinks into the night round
+    the lamp's pool (a radial falloff; the lamp, its cone of lit rain, its gold pool and glints,
+    him and the emblem keep their light). A few warm windows across the street, none for him.
+    Last image: a small cold figure in a warm pool of lamplight, the stone at his ear, the steam
+    of his breath thinning away, the four notes still going round.
 
-THE PERIOD WORLD. Half-timbered houses with jettied upper storeys, shuttered shop fronts,
-leaded diamond-pane windows, arched plank doors, iron wall lamps, painted hanging signs (a
-baker's loaf among them, shut for the night), a castle on the hill and a church spire beyond
-the roofs (they show above the eaves as the camera pulls back), cobbles, a rain barrel under a
-wooden downspout, iron lantern posts with candle flames. The "phone" is a slate rune-stone; its
-menu is illuminated script; the timer is an hourglass; the hold music is a music box's tune
-written as medieval notes.
+COLOUR / VALUE. Deep navy night and rain (the far side graded down to 5-15 % value, sunk in a
+night falloff and a rain haze) against sodium-gold lamp light: halos, volumetric cones of lit
+rain, gold pools with specular glints, long broken reflections on the wet street, and a few
+candle-lit panes. One cold accent: the speaking stone's cyan (its glow at his ear, its light on
+his face, the rune text, the notes, the hourglass). Warm light is the world's, never his: it
+rims him, it never reaches his front. The subject is always the brightest, most contrasted
+thing: the lamp-pool + his face in the wides, the text or the emblem + his face in the close
+shots. Eye-trace: text above-right of his head in A and B; the emblem on the right in B and C;
+him in the lamp's pool in D.
 
-CRAFT. Cached layers (sky, castle, roofs, the far side drawn twice so lit windows can be
-chosen, the whole street painted once and cut into parallax strips, reflections, lamp-pool
-glints, out-of-focus foreground); per frame: lamp posts, the dragon -- drawn ONCE into an
-offscreen buffer that is composited, mirrored (1/3 res) for his reflection in the wet stones,
-and used as the mask for the lamp's top-light and the pool's bounce (Klaus-style light that
-touches the character) -- his contact and cast shadows, rain in three world-locked depths that
-turns gold inside each lamp's halo and cone, splashes (a real one when he steps in the puddle),
-puddle ripples, mist, the rune text and the hold loop, a background light layer composited
-BEHIND him (so he reads dark against the lamp light) and a front light layer (the stone's cold
-spill, the text's reflections), bloom, grain, vignette. SFX_CUES are computed from the same
-walk integrator, word schedule, beat constants and hourglass clock the picture uses.
+THE PERIOD WORLD. Half-timbered houses with jettied storeys and carved bargeboards, shuttered
+shop fronts, leaded diamond-pane windows lit by candles, arched plank doors and iron door lamps,
+painted hanging signs (a baker's loaf among them), the castle on its hill, cobbles, iron
+lantern posts with candle flames. The "phone" is a slate rune-stone; its menu is illuminated
+script; the timer is an hourglass; the hold music is a music box's tune written as medieval
+mensural notes.
+
+CRAFT. Cached layers (sky with the town's glow on the cloud base, castle hill, roofline, the far
+side drawn twice so its lit windows can be chosen -- never behind the line being spoken in the
+wide -- the whole wet street painted once and cut into parallax strips, reflections, pool
+glints) graded in setup to a deep navy; soft depth-of-field copies of the far side for the close
+shots. Per frame: the lamp posts, the dragon (drawn ONCE into an offscreen buffer that is
+composited, mirrored for his reflection in the wides, and used as the mask for the lamp's warm
+top-light), contact and lamp shadows, rain in three world-locked depths (drop counts fixed per
+shot, streak width and length matched to each shot's magnification) turning gold inside the
+lamps' halos and cones, splashes, step splashes, puddle ripples, mist, rain bursting on his
+horns, a drip off his snout once he stands still, the rune text, the dissolve, the hold emblem,
+the background light layer behind him and the front light layer (the stone's spill on his face),
+bloom, grain, vignette. SFX_CUES come from the same walk integrator, word schedule, beat
+constants and hourglass clock the picture uses.
 """
 
 import math
@@ -137,9 +135,9 @@ def _hold_music():
 
 HOLD_EV, LOOP, NOTES = _hold_music()
 NOTE_IDX = {m: k for k, m in enumerate(NOTES)}
+NOTE_ONSET = tuple(float(HOLD_EV[k][0] - T_HOLD) for k in range(4))    # within the loop: 0 .25 .5 .75
 HG_PERIOD = 2.0 * LOOP          # the hourglass runs out every two loops ...
 HG_FLIP = 0.55                  # ... and flips, landing as the loop starts again
-
 
 # ---------------------------------------------------------------------------------------------
 # word timing for the rune text: phrases -> voiced stretches of the line's envelope; words ->
@@ -234,7 +232,7 @@ def _word_t(line, stem, end=False):
 T_LONELY = _word_t(L3, "lonel")                  # the word that lands with a beat ...
 T_LONELY_LAND = T_LONELY + clamp((_word_t(L3, "lonel", end=True) - T_LONELY) * 0.85, 0.1, 0.32)  # ... here
 T_PLEASE = _word_t(L3, "please")
-T_DISSOLVE0 = max(L3.end + 0.55, T_HOLD - 0.7)   # the menu dissolves into the hold loop
+T_DISSOLVE0 = max(L3.end + 0.55, T_HOLD - 0.7)   # the menu dissolves into the hold emblem
 T_DISSOLVE1 = T_HOLD + 0.02
 
 # =============================================================================================
@@ -244,7 +242,7 @@ SC = 0.85                       # the dragon and everything in his depth plane (
 GY = 905.0                      # his ground line (world == screen at the opening frame)
 X0 = 600.0                      # his world x at t = 0
 STEP_T = 0.62                   # seconds per step: a tired walk
-TURN_WALK, TURN_TALK = 0.40, 0.06
+TURN_WALK, TURN_TALK = 0.40, -0.12
 V0 = ch.dragon_stride(SC, 1, TURN_WALK) / (2.0 * STEP_T)
 T_SLOW0 = T_HOLD + 0.2                          # the music box starts ... he slows ...
 T_STOP = min(T_HOLD + 3.25, L4.start - 1.05)     # ... and stops under the lantern
@@ -321,18 +319,29 @@ def _plants():
 PLANTS = _plants()
 
 # =============================================================================================
-# the camera: a slow side-on tracking shot; it eases to rest as he stops, pushes in a touch for
-# his line, then pulls back and up to leave him small in the lamp's pool of light
+# SHOTS. Four set-ups, hard cuts on the story's turns:
+#   A  wide: the crane comes down out of the rain onto the street and tracks him (the menu)
+#   B  medium, tracking beside him: "For loneliness... please hold." -> the hold loop; he slows
+#      and stops under the lamp
+#   C  medium close-up under the lamp: thought, glance, breath, "I've been on hold my whole life."
+#   D  the final wide: the crane rises away and leaves him small in the lamp's pool
 # =============================================================================================
-CAM_LAG = 0.3
-SCREEN_X_WALK = 620.0
-OFFX = (W / 2 - SCREEN_X_WALK) + V0 * CAM_LAG
+T_CUT1 = L3.start - 0.15                        # cut in on the third option
+T_CUT2 = T_STOP + 0.22                          # cut in when he has stopped
+T_CUT3 = max(T_LANTERN, L4.end + 0.6)           # s3_lantern: cut wide
+
+
+def shot_at(t):
+    if t < T_CUT1:
+        return "A"
+    if t < T_CUT2:
+        return "B"
+    if t < T_CUT3:
+        return "C"
+    return "D"
+
+
 HEAD_DX, HEAD_DY = 26.0, -373.0      # his head centre relative to his anchor (scale 0.85, hunched)
-T_CAM0 = T_STOP + CAM_LAG
-T_PUSH1 = L4.end - 0.05
-T_PULL0 = max(L4.end + 0.25, T_LANTERN - 0.4)     # s3_lantern: the pull-back to the final image
-T_PULL1 = DUR - 0.3
-ZOOM_LINE, ZOOM_WIDE = 1.12, 0.78
 
 
 def _cam_put(wx, wy, sx, sy, zoom):
@@ -340,27 +349,71 @@ def _cam_put(wx, wy, sx, sy, zoom):
     return core.Camera(wx - (sx - W / 2) / zoom, wy - (sy - H / 2) / zoom, zoom)
 
 
-def _cam_follow(t):
-    return core.Camera(walk_x(t - CAM_LAG) + OFFX, H / 2, 1.0)
+# A -- the crane comes down out of the rain and the roofs, onto the street, already tracking him
+CAM_LAG = 0.3
+SX_A, SY_A = 646.0, 532.0             # his head on screen while the camera tracks
+CRANE_R = 730.0                       # how high the crane starts (screen px at his plane)
+T_CRANE = (-0.55, 2.0)
 
 
-K_STOP = _cam_follow(T_CAM0)
-K_LINE = _cam_put(X_STOP + HEAD_DX, GY + HEAD_DY, 650.0, 505.0, ZOOM_LINE)
-K_WIDE = _cam_put(X_STOP, GY, 790.0, 862.0, ZOOM_WIDE)
+def crane_a(t):
+    return CRANE_R * (1.0 - core.inout_sine(ramp(t, T_CRANE[0], T_CRANE[1])))
+
+
+def zoom_a(t):
+    return lerp(1.0, 1.05, core.inout_sine(ramp(t, T_CRANE[1] - 0.4, T_CUT1)))
+
+
+def cam_a(t):
+    wx = walk_x(t - CAM_LAG) + V0 * CAM_LAG + HEAD_DX
+    return _cam_put(wx, GY + HEAD_DY, SX_A, SY_A + crane_a(t), zoom_a(t))
+
+
+# B -- medium, side-on, tracking beside him (eye line at his eyes): the third option, the hold
+LAG_B = 0.38
+SX_B, SY_B = 560.0, 468.0
+
+
+def zoom_b(t):
+    z = lerp(2.2, 2.34, core.inout_sine(ramp(t, T_CUT1, T_PLEASE + 0.9)))
+    return z * lerp(1.0, 1.035, core.inout_sine(ramp(t, T_HOLD, T_CUT2)))
+
+
+def cam_b(t):
+    wx = walk_x(t - LAG_B) + V0 * LAG_B + HEAD_DX
+    return _cam_put(wx, GY + HEAD_DY, SX_B, SY_B, zoom_b(t))
+
+
+# C -- medium close-up under the lamp: his head on the left third, the hold emblem on the right
+SX_C, SY_C = 650.0, 452.0
+
+
+def zoom_c(t):
+    return lerp(3.5, 3.68, core.inout_sine(ramp(t, T_CUT2, T_CUT3)))
+
+
+def cam_c(t):
+    return _cam_put(X_STOP + HEAD_DX, GY + HEAD_DY, SX_C, SY_C, zoom_c(t))
+
+
+# D -- the crane rises and pulls away: small, cold, in the warm pool, still on hold
+D_KEYS = ((790.0, 812.0, 0.9), (800.0, 905.0, 0.74))
+
+
+def cam_d(t):
+    u = core.inout_sine(ramp(t, T_CUT3, DUR + 0.6))
+    (sx0, sy0, z0), (sx1, sy1, z1) = D_KEYS
+    return _cam_put(X_STOP, GY, lerp(sx0, sx1, u), lerp(sy0, sy1, u), z0 * (z1 / z0) ** u)
 
 
 def camera_base(t):
-    if t <= T_CAM0:
-        return _cam_follow(t)
-    if t <= T_PUSH1:
-        return core.Camera.lerp(K_STOP, K_LINE, core.inout_sine(ramp(t, T_CAM0, T_PUSH1)))
-    if t <= T_PULL0:
-        return K_LINE
-    return core.Camera.lerp(K_LINE, K_WIDE, core.inout_sine(ramp(t, T_PULL0, T_PULL1)))
+    s = shot_at(t)
+    return cam_a(t) if s == "A" else cam_b(t) if s == "B" else cam_c(t) if s == "C" else cam_d(t)
 
 
 def camera(t):
-    return camera_base(t).drift(t, amp=2.2, freq=0.11, seed=3)
+    c = camera_base(t)
+    return c.drift(t, amp=2.2 / c.zoom ** 0.5, freq=0.11, seed=3)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -381,7 +434,7 @@ def _cobble_size(y):
 def _extent(p, margin=140.0):
     """World rect (x, y, w, h) that the camera ever shows at parallax p (+ margin)."""
     xs, ys = [], []
-    for k in range(0, int(DUR * 10) + 1):
+    for k in range(-1, int(DUR * 10) + 1):
         cam = camera_base(k / 10.0)
         for sx, sy in ((0, 0), (W, 0), (0, H), (W, H)):
             x, y = cam.to_world(sx, sy, p)
@@ -432,40 +485,149 @@ def dragon_light(x):
 
 
 # =============================================================================================
-# the rune text's box on screen (kept clear of every bright thing behind it)
+# the rune text: per-shot layouts (screen space), kept clear of every bright thing behind it
 # =============================================================================================
 FONT = P.FONTS.sign                # Uncial Antiqua: insular uncial, the Book of Kells' hand
 FS = 46.0                          # letter size
 LH = 64.0                          # line spacing
-TEXT_DX, TEXT_Y0 = 172.0, 366.0    # first baseline; the third line sits just above his eyes
-TEXT_BOX = (SCREEN_X_WALK + TEXT_DX - 60.0, TEXT_Y0 - 70.0, 900.0, 3 * LH + 60.0)
 TEXT_T = (L1.start - 0.4, T_DISSOLVE1 + 0.3)
+TA_DX, TA_DY = 146.0, -166.0       # shot A: the first baseline relative to his head on screen
+TB_DX = 168.0                      # shot B: the text block's left edge relative to his head
+TB_Y3, TB_S3 = -126.0, 1.24        # shot B: the third option, big, above his eye line
+TB_Y1, TB_S1, TB_A1 = -262.0, 0.7, 0.62   # shot B: the two options already heard, small and dim
+
+
+def text_layout(t):
+    """[(ox, oy, scale, alpha) or None] per menu line, in screen px, for the shot at t."""
+    s = shot_at(t)
+    if s == "A":
+        hx, hy = SX_A, SY_A + crane_a(t)
+        return [(hx + TA_DX, hy + TA_DY + k * LH, 1.0, 1.0) for k in range(3)]
+    if s == "B":
+        hx, hy = SX_B, SY_B
+        old = [(hx + TB_DX, hy + TB_Y1 + k * LH * TB_S1, TB_S1, TB_A1) for k in range(2)]
+        return old + [(hx + TB_DX, hy + TB_Y3, TB_S3, 1.0)]
+    return [None, None, None]
+
+
+def _text_boxes(t):
+    """Screen rect of the menu line being spoken at t (the one at full strength: lit windows are
+    kept out from behind it; the older, dimmed lines may pass in front of a lit pane)."""
+    k = -1
+    for li, ln in enumerate(PHONE_LINES):
+        if t >= ln.start - 0.4:
+            k = li
+    if k < 0:
+        return []
+    lay = text_layout(t)[k]
+    if lay is None:
+        return []
+    ox, oy, s, _a = lay
+    return [(ox - 50.0, oy - 60.0 * s, 980.0 * s + 60.0, 80.0 * s)]
+
 
 # =============================================================================================
 # set painting (static: cached in setup)
 # =============================================================================================
 KIND = "rain_night"
 PAL = env.palette(KIND)
-NIGHT = "#04070f"
+NIGHT = "#03060f"
+NAVY = "#050b1c"
+
+
+def _grade(surf, gain=(1.0, 1.0, 1.0), gamma=1.0, lift=(0.0, 0.0, 0.0)):
+    """Grade a cached layer in place (setup only): c' = lift + c ** gamma * gain, on the
+    un-premultiplied colour, so the night is deep navy, not grey murk. RGB tuples."""
+    surf.flush()
+    w, h, stride = surf.get_width(), surf.get_height(), surf.get_stride()
+    a = np.ndarray((h, stride // 4, 4), dtype=np.uint8, buffer=surf.get_data())[:, :w, :]
+    px = a.astype(np.float32) / 255.0
+    al = px[..., 3:4]
+    c = np.where(al > 1e-4, px[..., :3] / np.maximum(al, 1e-4), 0.0)       # B G R
+    g = np.array(gain[::-1], np.float32)
+    lf = np.array(lift[::-1], np.float32)
+    c = np.clip(lf + np.power(np.clip(c, 0.0, 1.0), gamma) * g, 0.0, 1.0) * al
+    a[..., :3] = (c * 255.0 + 0.5).astype(np.uint8)
+    surf.mark_dirty()
+
+
+class SoftCopy:
+    """A depth-of-field copy of a cached layer (same placement, extra blur): the far side of
+    the street for the close shots."""
+
+    def __init__(self, layer, radius, res=0.5):
+        self.x, self.y, self.res = layer.x, layer.y, layer.res * res
+        src = layer.surface
+        if res != 1.0:
+            sw, sh = max(1, int(src.get_width() * res)), max(1, int(src.get_height() * res))
+            small = core.new_surface(sw, sh)
+            c = cairo.Context(small)
+            c.scale(res, res)
+            c.set_source_surface(src, 0, 0)
+            c.get_source().set_filter(cairo.FILTER_GOOD)
+            c.paint()
+            small.flush()
+            src = small
+        self.surface = fx.blur_surface(src, radius * self.res)
+
+    def paint(self, cr, alpha=1.0):
+        cr.save()
+        cr.translate(self.x, self.y)
+        cr.scale(1.0 / self.res, 1.0 / self.res)
+        cr.set_source_surface(self.surface, 0, 0)
+        cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+        cr.rectangle(0, 0, self.surface.get_width(), self.surface.get_height())
+        if alpha >= 0.999:
+            cr.fill()
+        else:
+            cr.clip()
+            cr.paint_with_alpha(alpha)
+        cr.restore()
+
+
+SKY_GLOW = [0.0, 0.0]                  # world (sky plane) of the cloud-break behind the castle (setup)
 
 
 def _draw_sky(cr, rect):
+    """The overcast lid of rain cloud, its underside faintly lit by the sleeping town: lighter low
+    down behind the roofs (so the roofline, the chimneys and the castle stand dark against it),
+    and a pale thinning of the cloud behind the castle on its hill."""
     x, y, w, h = rect
-    env.draw_sky(cr, x, y, w, h, kind=KIND, horizon=620.0, seed=5)
-    env.draw_haze(cr, x, y, w, h, NIGHT, 0.35, 0.0)
+    env.draw_sky(cr, x, y, w, h, kind=KIND, horizon=470.0, seed=5)
+    cr.rectangle(x, y, w, h)
+    cr.set_source(core.linear(0, y, 0, 520.0, [(0.0, core.alpha(NIGHT, 0.55)), (0.45, core.alpha(NIGHT, 0.2)),
+                                              (1.0, core.alpha(NIGHT, 0.0))]))
+    cr.fill()
+    cr.rectangle(x, y, w, h)
+    cr.set_source(core.linear(0, 120.0, 0, 560.0, [(0.0, core.alpha("#3a4c74", 0.0)), (0.55, core.alpha("#3a4c74", 0.32)),
+                                                  (1.0, core.alpha("#46587e", 0.42))]))
+    cr.fill()
+    gx, gy = SKY_GLOW
+    cr.save()
+    cr.translate(gx, gy)
+    cr.scale(1.0, 0.55)
+    cr.set_source(core.radial(0.0, 0.0, 520.0, [(0.0, core.alpha("#6f84ad", 0.5)), (0.35, core.alpha("#55688f", 0.3)),
+                                               (1.0, core.alpha("#3a4c74", 0.0))]))
+    cr.arc(0.0, 0.0, 520.0, 0.0, TAU)
+    cr.fill()
+    cr.restore()
 
 
-def _draw_castle(cr, rect, cx):
+# the castle on its hill above the roofs: placed where the crane's opening frame finds it
+CASTLE_SC = 0.4
+
+
+def _draw_castle(cr, rect, cx, cy):
     x, y, w, h = rect
-    env.draw_hills(cr, x, w, 520.0, kind=KIND, layers=2, height=(30.0, 80.0), seed=8, trees=True,
+    env.draw_hills(cr, x, w, cy + 110.0, kind=KIND, layers=2, height=(30.0, 90.0), seed=8, trees=True,
                    fields=False, bottom=y + h)
-    env.draw_castle_hill(cr, cx, 420.0, 0.34, kind=KIND, hill_w=620, hill_h=90, seed=2, windows=7)
-    env.draw_haze(cr, x, 250.0, w, y + h - 250.0, PAL["haze"], 0.0, 0.5)
+    env.draw_castle_hill(cr, cx, cy, CASTLE_SC, kind=KIND, hill_w=900, hill_h=420, seed=2, windows=7, road=False)
+    env.draw_haze(cr, x, cy - 260.0, w, y + h - cy + 260.0, PAL["haze"], 0.0, 0.55)
 
 
 def _draw_roofs(cr, rect):
     x, y, w, h = rect
-    env.draw_roofline(cr, x, x + w, 600.0, 0.24, KIND, seed=4, lit=0.2, haze=0.3)
+    env.draw_roofline(cr, x, x + w, 600.0, 0.24, KIND, seed=4, lit=0.2, haze=0.3, spire=False)
     env.draw_haze(cr, x, 150.0, w, y + h - 150.0, PAL["haze"], 0.1, 0.45)
 
 
@@ -487,12 +649,15 @@ def _window_path(cr, cx, cy, w, h, arched):
 
 
 def _text_sweep(px):
-    """Does a point of the houses' plane pass behind the rune text while it is up?"""
-    bx, by, bw, bh = TEXT_BOX
-    for k in range(int(TEXT_T[0] * 10), int(TEXT_T[1] * 10) + 1):
-        sx, sy = camera_base(k / 10.0).to_screen(px[0], px[1], PX_HOUSES)
-        if bx - 40 <= sx <= bx + bw + 40 and by - 40 <= sy <= by + bh + 40:
-            return True
+    """Does a point of the houses' plane pass behind the rune text while it is up in the wide
+    (shot A: the far side is sharp there; in the close shots it is a soft blur behind the dark
+    halo of the letters)?"""
+    for k in range(int(TEXT_T[0] * 10), int(T_CUT1 * 10) + 1):
+        tt = k / 10.0
+        sx, sy = camera_base(tt).to_screen(px[0], px[1], PX_HOUSES)
+        for (bx, by, bw, bh) in _text_boxes(tt):
+            if bx - 40 <= sx <= bx + bw + 40 and by - 40 <= sy <= by + bh + 40:
+                return True
     return False
 
 
@@ -501,6 +666,12 @@ def _draw_houses(cr, rect, out):
     be chosen: none may ever pass behind the floating text."""
     x, y, w, h = rect
     rigs = _houses_rows(cr, rect, 0.0)
+    # env.draw_house reports its windows through the full CTM (device px of this cached layer),
+    # not in world coordinates: map them back (scene-local workaround for the library bug)
+    inv = cr.get_matrix()
+    inv.invert()
+    for r in rigs:
+        r.windows = [(inv.transform_point(*c), ww, wh, wl) for (c, ww, wh, wl) in r.windows]
     lit_s = core.new_surface(int(math.ceil(w)), int(math.ceil(h)))
     lc = core.new_context(lit_s)
     lc.translate(-x, -y)
@@ -513,7 +684,7 @@ def _draw_houses(cr, rect, out):
                 continue
             ground_floor = wy > HOUSE_Y - 600.0 * HOUSE_SC
             attic = wy < HOUSE_Y - 1000.0 * HOUSE_SC
-            if core.hash01(hi * 17 + wi, 71) < (0.42 if ground_floor else 0.45 if attic else 0.28):
+            if core.hash01(hi * 17 + wi, 64) < (0.5 if ground_floor else 0.55 if attic else 0.4):
                 chosen.append((wx, wy, ww, wh, ground_floor or wh < ww * 1.25))
     _dress_houses(cr, rigs, glass=False)
     # the far side's pavement: wet flagstones at the houses' feet
@@ -528,7 +699,7 @@ def _draw_houses(cr, rect, out):
     cr.rectangle(x, y, w, HOUSE_Y - y + 8.0)
     cr.clip()
     cr.set_source(core.linear(0, HOUSE_Y - 900.0 * HOUSE_SC, 0, HOUSE_Y,
-                              [core.alpha(NIGHT, 0.62), core.alpha(NIGHT, 0.46), core.alpha(NIGHT, 0.3)]))
+                              [core.alpha(NAVY, 0.6), core.alpha(NAVY, 0.44), core.alpha(NAVY, 0.28)]))
     cr.paint()
     cr.restore()
     for (wx, wy, ww, wh, arched) in chosen:                  # the chosen panes: candlelight
@@ -536,9 +707,9 @@ def _draw_houses(cr, rect, out):
         _window_path(cr, wx, wy, ww + 1.0, wh + 1.0, arched)
         cr.clip()
         cr.set_source_surface(lit_s, x, y)
-        cr.paint_with_alpha(0.85)
+        cr.paint_with_alpha(0.9)
         cr.restore()
-    env.draw_haze(cr, x, y, w, HOUSE_Y - y + 10.0, PAL["haze"], 0.12, 0.05)
+    env.draw_haze(cr, x, y, w, HOUSE_Y - y + 10.0, PAL["haze"], 0.06, 0.04)
     out["lamps"] = _dress_houses(cr, rigs, glass=True)
     out["rigs"] = rigs
     out["windows"] = [(wx, wy, ww, wh) for (wx, wy, ww, wh, _a) in chosen]
@@ -623,7 +794,7 @@ def _ground():
         env.draw_cobbles(cr, x0, GROUND_Y0, w, GROUND_Y1, KIND, seed=31, wet=True, size=(4.0, 50.0), contrast=1.1)
         # night: the street darkens toward us (the lamps relight it)
         cr.rectangle(x0, GROUND_Y0, w, h)
-        cr.set_source(core.linear(0, HOUSE_Y, 0, 1150.0, [core.alpha(NIGHT, 0.12), core.alpha(NIGHT, 0.45)]))
+        cr.set_source(core.linear(0, HOUSE_Y, 0, 1150.0, [core.alpha(NIGHT, 0.18), core.alpha(NIGHT, 0.55)]))
         cr.fill()
         surf.flush()
         _GROUND.update(surf=surf, x0=x0)
@@ -674,12 +845,18 @@ STEP_PUDDLE, T_SPLASH = _step_puddle()
 PUDDLES_B = [STEP_PUDDLE, (X_STOP + 150.0, GY + 30.0, 118.0, 17.0), (walk_x(2.6) + 260.0, GY + 22.0, 70.0, 12.0)]
 PUDDLES_C = [(walk_x(6.0) + 760.0, 1012.0, 120.0, 22.0)]
 
+# grading of the cached planes (gain, gamma): deep navy night, darker up high and far away
+GRADE = {"sky": ((0.86, 0.95, 1.18), 1.0), "castle": ((0.72, 0.82, 1.05), 1.1), "roofs": ((0.72, 0.82, 1.08), 1.12),
+         "houses": ((0.78, 0.86, 1.08), 1.16), "band": ((0.8, 0.88, 1.06), 1.1)}
+
 
 def setup():
     st = {"light_bg": fx.LightLayer(), "light": fx.LightLayer()}
+    c0 = cam_a(0.0)
+    cxw, cyw = c0.to_world(1490.0, 250.0, PX_CASTLE)
+    SKY_GLOW[:] = c0.to_world(1490.0, 210.0, PX_SKY)
     st["sky"] = _layer(_draw_sky, PX_SKY, blur=3.0, opaque=True, margin=200.0)
-    cxw = K_WIDE.to_world(1430.0, 230.0, PX_CASTLE)[0]
-    st["castle"] = _layer(lambda cr, r: _draw_castle(cr, r, cxw), PX_CASTLE, blur=2.5)
+    st["castle"] = _layer(lambda cr, r: _draw_castle(cr, r, cxw, cyw), PX_CASTLE, blur=2.2)
     st["roofs"] = _layer(_draw_roofs, PX_ROOFS, blur=1.8)
     hs = {}
     st["houses"] = _layer(lambda cr, r: _draw_houses(cr, r, hs), PX_HOUSES, blur=1.0)
@@ -712,11 +889,21 @@ def setup():
     st["band_b"] = _layer(band_b, PX_B, ys=(836.0, 1014.0))
     st["band_c"] = _layer(band_c, PX_C, ys=(946.0, GROUND_Y1 + 2.0), blur=1.2)
     _GROUND.clear()                                          # the big paint is no longer needed
+    for key in ("sky", "castle", "roofs", "houses"):
+        gain, gamma = GRADE[key]
+        _grade(st[key].surface, gain, gamma)
+    for key in ("band_a1", "band_a2", "band_b", "band_c"):
+        gain, gamma = GRADE["band"]
+        _grade(st[key].surface, gain, gamma)
+    # depth of field for the close shots: the far side melts into soft shapes and warm bokeh
+    st["houses_b"] = SoftCopy(st["houses"], 2.2, res=0.5)
+    st["houses_c"] = SoftCopy(st["houses"], 5.0, res=0.5)
+    st["bands_c"] = [SoftCopy(st[k], 4.0, res=0.5) for k in ("band_a1", "band_a2")]
     st["post_refl"] = _layer(lambda cr, r: env.draw_wet_reflections(cr, plights, stretch=0.62, width=1.6, alpha=1.35),
                              PX_B, ys=(POST_Y - 10.0, 1400.0))
     pools = [(r.lamp[0], r.ground[1] + 6.0) for r in st["post_rigs"]]
     st["glints"] = _layer(lambda cr, r: _pool_glints(cr, pools), PX_B, ys=(POST_Y - 80.0, 1100.0))
-    st["mist"] = env.Mist(-400.0, HOUSE_Y - 140.0, 7000.0, 220.0, PAL["haze"], 0.18, seed=3, speed=10.0)
+    st["mist"] = env.Mist(-400.0, HOUSE_Y - 140.0, 7000.0, 220.0, PAL["haze"], 0.14, seed=3, speed=10.0)
     st["text"] = RuneText()
     # the final wide's isolation: the night closes in round the pool of light (a quarter-res
     # radial falloff, twice the frame, painted off-centre on him)
@@ -730,8 +917,6 @@ def setup():
     ic.paint()
     iso.flush()
     st["iso"] = iso
-    st["fg_barrel"] = _layer(_draw_fg_barrel, PX_FG, blur=6.0, res=0.5, ys=(-500.0, 1500.0))
-    st["fg_door"] = _layer(_draw_fg_door, PX_FG, blur=7.0, res=0.5, ys=(-1400.0, 1500.0))
     return st
 
 
@@ -752,22 +937,22 @@ def dragon_pose(t, stone_cb, bag_cb):
     walk = walk_amt(t)
     ph = walk_phase(t)
     # eyes: ahead and down while he walks; up to "loneliness"; down at "please hold"; a look at
-    # the music; down (thought) -> up at the hourglass (glance) -> the line -> down and away
+    # the hold loop; down (thought) -> up at the hourglass (glance) -> the line -> down and away
     look = _k(t, [(0.0, (0.35, 0.3)), (T_RAINLOOK, (0.35, 0.3)), (T_RAINLOOK + 0.2, (0.2, -0.8)),
                   (T_RAINLOOK + 0.75, (0.25, -0.75)), (T_RAINLOOK + 1.05, (0.35, 0.3)),
-                  (T_LONELY - 0.12, (0.35, 0.3)), (T_LONELY + 0.12, (0.75, -0.2)),
-                  (T_PLEASE - 0.05, (0.7, -0.15)), (T_PLEASE + 0.35, (0.25, 0.55)),
-                  (T_HOLD + 0.35, (0.3, 0.45)), (T_HOLD + 0.7, (0.75, 0.0)), (T_HOLD + 2.0, (0.7, 0.05)),
-                  (T_HOLD + 2.5, (0.3, 0.5)), (T_LOOKDOWN + 0.3, (0.2, 0.75)), (T_GLANCE - 0.05, (0.2, 0.75)),
-                  (T_GLANCE + 0.2, (0.8, -0.1)), (L4.start + 0.9, (0.75, -0.05)), (L4.start + 1.3, (0.2, 0.55)),
+                  (T_LONELY - 0.12, (0.35, 0.3)), (T_LONELY + 0.12, (0.75, -0.5)),
+                  (T_PLEASE - 0.05, (0.7, -0.4)), (T_PLEASE + 0.35, (0.25, 0.55)),
+                  (T_HOLD - 0.3, (0.3, 0.45)), (T_HOLD + 0.1, (0.8, -0.2)), (T_HOLD + 1.9, (0.75, -0.15)),
+                  (T_HOLD + 2.4, (0.3, 0.5)), (T_LOOKDOWN + 0.3, (0.2, 0.75)), (T_GLANCE - 0.05, (0.2, 0.75)),
+                  (T_GLANCE + 0.2, (0.85, -0.35)), (L4.start + 0.9, (0.8, -0.3)), (L4.start + 1.3, (0.2, 0.55)),
                   (L4.end + 0.6, (0.1, 0.7))])
     nod = _k(t, [(0.0, -0.1), (T_RAINLOOK + 0.1, -0.1), (T_RAINLOOK + 0.4, 0.12), (T_RAINLOOK + 0.8, 0.1),
-                 (T_RAINLOOK + 1.2, -0.1), (T_LONELY, -0.1), (T_LONELY + 0.35, 0.06), (T_PLEASE + 0.1, 0.04),
-                 (T_PLEASE + 0.7, -0.24), (T_HOLD + 0.6, -0.12), (T_STOP - 0.4, -0.22), (T_LOOKDOWN + 0.5, -0.32),
-                 (T_GLANCE + 0.05, -0.3), (T_GLANCE + 0.35, -0.05), (L4.start + 1.1, -0.08), (L4.start + 1.6, -0.22),
-                 (T_SIGH + 0.3, -0.3), (DUR, -0.34)])
+                 (T_RAINLOOK + 1.2, -0.1), (T_LONELY, -0.1), (T_LONELY + 0.35, 0.08), (T_PLEASE + 0.1, 0.05),
+                 (T_PLEASE + 0.7, -0.24), (T_HOLD + 0.1, -0.1), (T_HOLD + 0.6, -0.02), (T_STOP - 0.4, -0.22),
+                 (T_LOOKDOWN + 0.5, -0.32), (T_GLANCE + 0.05, -0.3), (T_GLANCE + 0.35, -0.02),
+                 (L4.start + 1.1, -0.06), (L4.start + 1.6, -0.22), (T_SIGH + 0.3, -0.3), (DUR, -0.34)])
     head_turn = _k(t, [(0.0, 0.0), (T_LONELY, 0.0), (T_LONELY + 0.3, 0.12), (T_PLEASE + 0.5, 0.0),
-                       (T_GLANCE, 0.0), (T_GLANCE + 0.3, 0.1), (L4.start + 1.4, -0.05), (DUR, -0.08)])
+                       (T_GLANCE, -0.05), (T_GLANCE + 0.3, 0.08), (L4.start + 1.4, -0.12), (DUR, -0.15)])
     hunch = _k(t, [(0.0, 0.55), (T_PLEASE + 0.2, 0.55), (T_PLEASE + 0.9, 0.66), (T_STOP, 0.68),
                    (T_BREATH, 0.66), (T_BREATH + 0.3, 0.5), (L4.end, 0.56), (T_SIGH + 0.8, 0.8), (DUR, 0.82)])
     shiver = core.window(t, T_SHIVER, T_SHIVER + 0.55, 0.07, 0.3)
@@ -776,7 +961,7 @@ def dragon_pose(t, stone_cb, bag_cb):
     # hope at "loneliness" (brows up), deflation at "please hold"; sadder through the hold; after
     # the line a closed-mouth exhale (the mouth moves only when he speaks)
     if t < T_PLEASE + 0.1:
-        mood2, mix = E_RAISED, 0.42 * core.window(t, T_LONELY - 0.05, T_PLEASE + 0.1, 0.25, 0.25)
+        mood2, mix = E_RAISED, 0.5 * core.window(t, T_LONELY - 0.05, T_PLEASE + 0.1, 0.25, 0.25)
     else:
         sad = _k(t, [(T_PLEASE + 0.1, 0.0), (T_PLEASE + 0.8, 0.55), (T_HOLD + 1.0, 0.5),
                      (T_STOP, 0.6), (L4.start, 0.62), (L4.end, 0.62)])
@@ -786,7 +971,10 @@ def dragon_pose(t, stone_cb, bag_cb):
     blink = B.auto_blink(t, 2)
     blink = max(blink, core.window(t, T_PLEASE + 0.18, T_PLEASE + 0.72, 0.16, 0.24))      # the slow blink
     blink = max(blink, 0.85 * core.window(t, L2.end + 0.05, L2.end + 0.5, 0.15, 0.2))      # heard it all
-    wings = _k(t, [(0.0, -0.85), (T_STOP, -0.95), (T_SIGH + 0.5, -1.0)])
+    if T_LONELY - 0.3 < t < T_PLEASE:                                                     # hope: eyes wide
+        blink = 0.0
+    wings = _k(t, [(0.0, -0.85), (T_LONELY, -0.85), (T_LONELY + 0.3, -0.7), (T_PLEASE + 0.5, -0.92),
+                   (T_STOP, -0.95), (T_SIGH + 0.5, -1.0)])
     swing = 0.11 * math.sin(ph * TAU) * walk + 0.06 * B.wobble(t, T_STOP, 1.4, 1.2)
     return ch.DragonPose(facing=1, turn=_turn(t), walk=walk, phase=ph, lean=0.05 * walk, hunch=hunch,
                          head_turn=head_turn, head_nod=nod - 0.12 * shiver, head_tilt=tilt, look=look,
@@ -829,22 +1017,11 @@ def stone_amp(t):
     return a
 
 
-def _cistercian(k, cx, cy, h):
-    """Strokes of the Cistercian numeral k (the stone's own digits) centred at (cx, cy)."""
-    top = cy - h * 0.5
-    q = h * 0.42
-    x0 = cx - q * 0.35
-    ticks = {1: [((0, 0), (1, 0))], 2: [((0, 1), (1, 1))]}.get(k, [])
-    out = [[(x0, top), (x0, cy + h * 0.5)]]
-    for (a, b) in ticks:
-        out.append([(x0 + a[0] * q, top + a[1] * q), (x0 + b[0] * q, top + b[1] * q)])
-    return out
-
-
 class RuneText:
     """The three menu lines as illuminated uncial script: an enlarged glowing initial, then each
     word written on by a point of light (a left-to-right wipe with a spark at the nib) on the
-    word's own syllable-timed onset. Older lines cool and dim; "loneliness" lands with a pulse."""
+    word's own syllable-timed onset. Older lines cool and dim; "loneliness" lands with a pulse.
+    Laid out per shot by text_layout() (screen space: origin, scale, alpha per line)."""
 
     def __init__(self):
         _s, cr = core.frame(8, 8)
@@ -881,26 +1058,41 @@ class RuneText:
                 x += core.measure(cr, " ", FS, FONT)[0] * 1.15
             last = [tk for tk in toks if tk["kind"] in ("word", "lonely")][-1]
             end_x = last["x"] + core.measure(cr, last["s"], last["size"], FONT)[0] * (1.06 if last["kind"] == "lonely" else 1.0)
+            for tk in toks:
+                tk["w"] = core.measure(cr, tk["s"], tk["size"], FONT)[0]
             self.lines.append(dict(toks=toks, start=ln.start, end=ln.end, width=x, end_x=end_x,
                                    t_end=WORDS[ln.id][-1][2]))
 
-    def draw(self, cr, t, ox, oy, stone_xy, front):
+    def draw(self, cr, t, layout, stone_xy, front):
         if t < TEXT_T[0] or t > TEXT_T[1]:
             return
         fade_all = 1.0 - core.smoothstep(T_DISSOLVE0, T_DISSOLVE1 - 0.15, t)
         for li, line in enumerate(self.lines):
-            if t < line["toks"][0]["t0"] - 0.3:
+            lay = layout[li]
+            if lay is None or t < line["toks"][0]["t0"] - 0.3:
                 continue
+            ox, oy, s, la = lay
             nxt = self.lines[li + 1]["toks"][0]["t0"] if li + 1 < len(self.lines) else 1e9
             cool = core.smoothstep(nxt - 0.1, nxt + 0.5, t)        # an older line cools and dims
-            line_a = (1.0 - 0.45 * cool) * fade_all
-            by = oy + li * LH + 2.0 * math.sin(t * 1.3 + li * 1.7)
-            bx = ox + 3.0 * math.sin(t * 0.9 + li)
+            line_a = (1.0 - 0.45 * cool) * fade_all * la
             if line_a <= 0.01:
                 continue
-            for tok in line["toks"]:
-                self._token(cr, t, tok, bx, by, line_a, cool, stone_xy, front)
-            self._filler(cr, t, line, bx, by, line_a)
+            by = 2.0 * math.sin(t * 1.3 + li * 1.7)
+            bx = 3.0 * math.sin(t * 0.9 + li)
+            sxy = None
+            if stone_xy is not None:
+                sxy = ((stone_xy[0] - ox) / s, (stone_xy[1] - oy) / s)
+            for c in (cr, front):
+                c.save()
+                c.translate(ox, oy)
+                c.scale(s, s)
+            try:
+                for tok in line["toks"]:
+                    self._token(cr, t, tok, bx, by, line_a, cool, sxy, front)
+                self._filler(cr, t, line, bx, by, line_a)
+            finally:
+                cr.restore()
+                front.restore()
 
     @staticmethod
     def _filler(cr, t, line, bx, by, a):
@@ -938,7 +1130,7 @@ class RuneText:
             return
         x = bx + tok["x"]
         kind = tok["kind"]
-        dur = clamp((tok["t1"] - t0) * 0.85, 0.1, 0.32) if kind not in ("dot", "numeral") else 0.12   # == T_LONELY_LAND
+        dur = clamp((tok["t1"] - t0) * 0.85, 0.1, 0.32) if kind != "dot" else 0.12   # == T_LONELY_LAND
         u = clamp((t - t0) / dur)
         # a spark travels from the stone to the start of the word, just before it is written
         if kind != "dot" and t < t0 + 0.02 and stone_xy is not None:
@@ -957,15 +1149,10 @@ class RuneText:
             return
         hot = math.exp(-max(0.0, t - (t0 + dur)) / 0.45)          # just-written words burn brighter
         a = line_a
-        if kind == "numeral":
-            strokes = _cistercian(tok["k"], x + 10.0, by - FS * 0.33, FS * 0.62)
-            B.detail_lines(cr, strokes, 5.0, RUNE, 0.35 * a * u, taper=(1.0, 1.0, 1.0))
-            B.detail_lines(cr, strokes, 2.2, RUNE_HOT, 0.95 * a * u, taper=(1.0, 1.0, 1.0))
-            return
         size = tok["size"]
         scale = 1.0
         glow_a = (0.75 + 0.6 * hot) * (1.0 - 0.35 * cool)
-        wv = core.measure(cr, tok["s"], size, FONT)[0]
+        wv = tok["w"]
         if kind == "lonely":                                     # it lands with a beat: when the
             v = t - (t0 + dur)                                   # nib finishes, a pop and a flash
             if v < 0.0:
@@ -974,14 +1161,16 @@ class RuneText:
                 scale = 1.06 + 0.13 * math.exp(-v / 0.22) * math.cos(v * 11.0)
                 glow_a *= 1.0 + 1.3 * math.exp(-v / 0.55)
                 fx.glow(front, x + wv / 2, by - FS * 0.35, 280.0, RUNE, 0.34 * math.exp(-v / 0.6) * a)
-                rr = 40.0 + 260.0 * core.out_cubic(clamp(v / 0.7))         # a ring of cold light
-                cr.save()
-                cr.set_operator(cairo.OPERATOR_ADD)
-                cr.set_line_width(2.0)
-                core.src(cr, RUNE, 0.22 * (1.0 - clamp(v / 0.7)) * a)
-                core.ellipse(cr, x + wv / 2, by - FS * 0.35, rr, rr * 0.32)
-                cr.stroke()
-                cr.restore()
+                if v < 0.95:                                     # a burst of cold sparks off the word
+                    w_ = clamp(v / 0.95)
+                    a2 = (1.0 - w_) ** 1.4 * a
+                    for j in range(11):
+                        ang = TAU * (j + 0.35 * core.hash01(j, 77)) / 11.0
+                        d = (24.0 + 150.0 * (0.6 + 0.4 * core.hash01(j, 78)) * core.out_cubic(w_))
+                        px = x + wv / 2 + math.cos(ang) * d * (1.0 + wv / 260.0)
+                        py = by - FS * 0.35 + math.sin(ang) * d * 0.42 - 18.0 * w_ * w_
+                        fx.glow(cr, px, py, 10.0, RUNE, 0.5 * a2)
+                        fx.sparkle(cr, px, py, 8.0 * (1.0 - 0.5 * w_), RUNE_HOT, 0.85 * a2, angle=ang + t * 2.0)
         col = core.mix(RUNE_DIM, RUNE_HOT, 0.6 + 0.4 * hot)
         cr.save()
         if scale != 1.0:                                         # grows from its left edge
@@ -994,7 +1183,7 @@ class RuneText:
             cr.clip()
         # legibility: a soft dark halo first (painted), then the cold glow and the letters
         core.glow_text(cr, tok["s"], x, by, size, FONT, INK_DARK, glow=INK_DARK, radius=13.0,
-                       glow_alpha=0.55 * a, additive=False, alpha_=0.0)
+                       glow_alpha=0.6 * a, additive=False, alpha_=0.0)
         core.glow_text(cr, tok["s"], x, by, size, FONT, col, glow=RUNE, radius=9.0, glow_alpha=glow_a * a,
                        alpha_=a, passes=2 if kind in ("initial", "lonely") else 1)
         cr.restore()
@@ -1004,114 +1193,200 @@ class RuneText:
 
 
 # =============================================================================================
-# the hold: four notes on a scrap of four-line staff between repeat signs, and an hourglass
+# THE HOLD EMBLEM: the hourglass marked "On hold", with the music box's four notes riding round
+# it on a little carousel of light -- one turn per loop, each note flaring as it comes round to
+# the front exactly when the music box plays it (B A F# E, e e e q.: the four notes bunch on one
+# side of the ring and the long E leaves the other side empty -- the rest before it all comes
+# round again). It floats ahead of his face, in his plane, so every shot sees the same thing.
 # =============================================================================================
-STAFF_SP = 13.0                                     # staff line spacing
-NOTE_DX = 62.0
-NOTE_STEPS = (0, 1, 3, 4)                           # B5 A5 F#5 E5: diatonic steps down
+EMB_DX, EMB_UP = 232.0, 44.0         # from his head (world px at his plane)
+RING_RX, RING_RY, RING_TILT = 56.0, 13.0, -0.07
+NOTE_H = (-12.0, -6.0, 2.0, 7.0)     # each pitch rides at its own height: B high ... E low
+NOTE_SIZE = 0.7
+HG_SC = 0.86
+T_WIND0 = T_HOLD - 0.75              # the carousel winds up from rest ...
+T_HG_POP = T_DISSOLVE0 + 0.42        # ... the hourglass condenses out of the menu's motes ...
+T_NOTE_POP = tuple(T_DISSOLVE0 + 0.5 + 0.07 * k for k in range(4))   # ... and the notes
+T_BANNER = (T_HOLD - 0.1, T_HOLD + 0.45)
 
 
-def hold_anchor(t):
-    """Where the hold loop floats (world, his plane): beside his face, a beat behind him."""
-    xh = walk_x(t - 0.35) + 225.0
-    return xh, GY - 412.0 + 6.0 * math.sin(t * 0.8)
+def emblem_center(t):
+    """World (his plane): ahead of his face, keeping pace a moment behind him, bobbing a little."""
+    x = walk_x(t - 0.15) + HEAD_DX + EMB_DX
+    y = GY + HEAD_DY - EMB_UP + 4.0 * math.sin(t * 0.8) + 2.0 * math.sin(t * 1.9 + 1.0)
+    return x, y
 
 
-HOLD_SC = 1.3                                     # the loop's size (its own scale about the anchor)
+def ring_angle(t):
+    w = TAU / LOOP
+    if t >= T_HOLD:
+        return w * (t - T_HOLD)
+    d = T_HOLD - T_WIND0
+    if t <= T_WIND0:
+        return -w * d / 2.0
+    u = t - T_WIND0
+    return -w * d / 2.0 + w * u * u / (2.0 * d)
 
 
-def draw_hold(cr, t, front):
-    if t < T_DISSOLVE0 + 0.2:
+def _ring_pt(cx, cy, a, dy=0.0):
+    x, y = RING_RX * math.cos(a), RING_RY * math.sin(a) + dy
+    c, s = math.cos(RING_TILT), math.sin(RING_TILT)
+    return cx + x * c - y * s, cy + x * s + y * c
+
+
+def note_pos(t, k):
+    """(x, y, depth) of note k on the ring at t (depth +1 = front)."""
+    cx, cy = emblem_center(t)
+    a = math.pi / 2 + ring_angle(t) - TAU * NOTE_ONSET[k] / LOOP
+    x, y = _ring_pt(cx, cy, a, NOTE_H[k])
+    return x, y, math.sin(a)
+
+
+def emblem_targets(t):
+    """World points the dissolving menu's motes fly to: the four notes, then the hourglass."""
+    out = [note_pos(t, k)[:2] for k in range(4)]
+    out.append(emblem_center(t))
+    return out
+
+
+def _ring_track(cr, cx, cy, front_half, alpha):
+    if alpha <= 0.01:
         return
-    ax, ay = hold_anchor(t)
+    n = 40
+    a0, a1 = (0.0, math.pi) if front_half else (math.pi, TAU)
+    pts = [_ring_pt(cx, cy, a0 + (a1 - a0) * i / n) for i in range(n + 1)]
     cr.save()
-    cr.translate(ax, ay)
-    cr.scale(HOLD_SC, HOLD_SC)
-    cr.translate(-ax, -ay)
-    front.save()
-    front.translate(ax, ay)
-    front.scale(HOLD_SC, HOLD_SC)
-    front.translate(-ax, -ay)
-    try:
-        _draw_hold(cr, t, front, ax, ay)
-    finally:
-        front.restore()
-        cr.restore()
-
-
-def _draw_hold(cr, t, front, ax, ay):
-    appear = core.smoothstep(T_HOLD - 0.25, T_HOLD + 0.25, t)
-    # the staff scrap
-    x0 = ax - 40.0
-    x1 = ax + 3 * NOTE_DX + 40.0
-    cr.save()
-    cr.set_line_width(1.4)
-    for k in range(4):
-        y = ay + (k - 1.5) * STAFF_SP
-        cr.move_to(x0, y)
-        cr.line_to(x1, y)
-    cr.set_source(core.linear(x0, 0, x1, 0, [(0.0, core.alpha(RUNE, 0.0)), (0.12, core.alpha(RUNE, 0.45 * appear)),
-                                            (0.88, core.alpha(RUNE, 0.45 * appear)), (1.0, core.alpha(RUNE, 0.0))]))
     cr.set_operator(cairo.OPERATOR_ADD)
+    core.smooth_open(cr, pts)
+    cr.set_line_width(4.0)
+    core.src(cr, RUNE, 0.12 * alpha)
     cr.stroke()
-    # repeat signs: over and over
-    for xs, sgn in ((x0 + 22.0, 1), (x1 - 22.0, -1)):
-        core.src(cr, RUNE_HOT, 0.75 * appear)
-        cr.rectangle(xs - 1.5 * sgn - (3.0 if sgn > 0 else 0.0), ay - 1.5 * STAFF_SP, 3.0, 3 * STAFF_SP)
-        cr.rectangle(xs + 3.5 * sgn - 0.7, ay - 1.5 * STAFF_SP, 1.4, 3 * STAFF_SP)
-        cr.fill()
-        for dy in (-0.5, 0.5):
-            core.circle(cr, xs + 9.0 * sgn, ay + dy * STAFF_SP, 2.4)
-        cr.fill()
+    core.smooth_open(cr, pts)
+    cr.set_line_width(1.3)
+    core.src(cr, RUNE_DIM, 0.42 * alpha)
+    cr.stroke()
     cr.restore()
-    # the four notes, each lighting up exactly as the music box plays it
-    for k in range(4):
-        first = T_HOLD + sum((0.25, 0.25, 0.25, 0.75)[:k]) * LOOP / 1.5
-        pop = core.smoothstep(first - 0.05, first + 0.12, t)
-        if pop <= 0:
-            continue
-        fl = note_flash(t, k)
-        nx = ax + k * NOTE_DX
-        ny = ay + (NOTE_STEPS[k] * 0.5 - 1.0) * STAFF_SP - 6.0 * fl
-        size = (1.15 + 0.35 * fl) * (0.6 + 0.4 * core.out_back(pop))
-        alpha = (0.45 + 0.55 * fl) * pop
-        P.draw_music_note(cr, nx, ny, size, t, RUNE, alpha, "minim" if k == 3 else "semiminim", 0.0, True)
-        if k == 3:                                   # the long note's dot
-            core.circle(cr, nx + 15.0 * size, ny - 2.0, 2.6 * size)
-            core.src(cr, RUNE_HOT, alpha)
+
+
+def _draw_note(cr, front, t, k, x, y, depth, appear):
+    fl = note_flash(t, k) if t >= T_HOLD - 0.02 else 0.0
+    persp = 0.84 + 0.16 * depth
+    size = NOTE_SIZE * persp * (1.0 + 0.42 * fl) * (0.55 + 0.45 * core.out_back(appear))
+    alpha = appear * min(1.0, 0.42 + 0.22 * (depth + 1.0) + 0.6 * fl)
+    # a short comet trail along the ring behind the note
+    if appear > 0.5:
+        cr.save()
+        cr.set_operator(cairo.OPERATOR_ADD)
+        for j in range(1, 5):
+            tt = t - 0.035 * j
+            px, py, _d = note_pos(tt, k)
+            core.circle(cr, px, py, 2.2 * persp)
+            core.src(cr, RUNE, 0.12 * alpha * (1.0 - j / 5.0))
             cr.fill()
-        if fl > 0.05:
-            fx.glow(front, nx, ny - 8.0, 70.0, RUNE, 0.35 * fl)
-    # the hourglass: running out every two loops, flipping as the loop comes round again
-    hx, hy = _note_local(t, 4)[2:]
-    pop = core.smoothstep(T_HOLD - 0.1, T_HOLD + 0.3, t)
-    if pop > 0:
-        P.draw_hourglass(cr, hx, hy, 1.35 * (0.7 + 0.3 * core.out_back(pop)), L_COLD, t - T_HOLD, period=HG_PERIOD,
-                         flip_time=HG_FLIP, glow=pop, label=None)
-        core.glow_text(cr, "On hold", hx, hy + 66.0, 24.0, FONT, RUNE_HOT, glow=RUNE, radius=6.0,
-                       glow_alpha=0.8 * pop, align="center", alpha_=pop)
+        cr.restore()
+    P.draw_music_note(cr, x, y, size, t, RUNE_HOT if fl > 0.35 else RUNE, alpha, "minim" if k == 3 else "semiminim",
+                      0.08 * math.sin(t * 2.0 + k), True)
+    if k == 3:                                   # the long note's dot
+        core.circle(cr, x + 15.0 * size, y - 2.0, 2.6 * size)
+        core.src(cr, RUNE_HOT, alpha)
+        cr.fill()
+    if fl > 0.04:
+        fx.glow(cr, x, y - 10.0, 30.0 * persp, RUNE, 0.45 * fl * appear)
+        fx.glow(front, x, y - 10.0, 80.0, RUNE, 0.26 * fl * appear)
+        # the ping: a thin ring of light widening off the note as it sounds
+        u = 1.0 - fl
+        if u < 0.7:
+            cr.save()
+            cr.set_operator(cairo.OPERATOR_ADD)
+            cr.set_line_width(1.0)
+            core.src(cr, RUNE_HOT, 0.3 * fl * appear)
+            core.ellipse(cr, x, y, 7.0 + 16.0 * u, (7.0 + 16.0 * u) * 0.45)
+            cr.stroke()
+            cr.restore()
 
 
-def _note_local(t, k):
-    ax, ay = hold_anchor(t)
-    if k >= 4:
-        return ax, ay, ax + 3 * NOTE_DX + 120.0, ay - 6.0
-    return ax, ay, ax + k * NOTE_DX, ay + (NOTE_STEPS[k] * 0.5 - 1.0) * STAFF_SP
+def _banner(cr, t, cx, cy, appear):
+    """A little banderole under the hourglass, unfurling, lettered "On hold" in glowing uncial."""
+    u = core.out_cubic(appear)
+    if u <= 0.01:
+        return
+    w = 92.0 * u
+    hh = 9.5
+    y = cy + 45.0
+    wave = 3.0
+    pts_top, pts_bot = [], []
+    n = 16
+    for i in range(n + 1):
+        v = i / n
+        x = cx - w / 2 + w * v
+        dy = wave * math.sin(v * TAU * 1.0 + t * 1.4)
+        pts_top.append((x, y - hh + dy))
+        pts_bot.append((x, y + hh + dy))
+    # forked tails folding back behind each end
+    lx, ly = pts_top[0][0], (pts_top[0][1] + pts_bot[0][1]) / 2
+    rx, ry = pts_top[-1][0], (pts_top[-1][1] + pts_bot[-1][1]) / 2
+    for (ex, ey, sg) in ((lx, ly, -1.0), (rx, ry, 1.0)):
+        core.polygon(cr, [(ex, ey - hh + 2.0), (ex + sg * 14.0 * u, ey - hh + 5.0), (ex + sg * 8.0 * u, ey),
+                          (ex + sg * 14.0 * u, ey + hh + 5.0), (ex, ey + hh + 2.0)])
+        core.src(cr, "#0a1a2c", 0.8 * appear)
+        cr.fill()
+    cr.move_to(*pts_top[0])
+    for p in pts_top[1:]:
+        cr.line_to(*p)
+    for p in reversed(pts_bot):
+        cr.line_to(*p)
+    cr.close_path()
+    path = cr.copy_path()
+    core.src(cr, "#0d2236", 0.88 * appear)
+    cr.fill()
+    cr.append_path(path)
+    cr.set_line_width(1.2)
+    core.src(cr, RUNE, 0.55 * appear)
+    cr.stroke()
+    if u > 0.55:
+        a = clamp((u - 0.55) / 0.45)
+        core.glow_text(cr, "On hold", cx, y + 4.8 + wave * math.sin(0.5 * TAU + t * 1.4), 14.5, FONT, RUNE_HOT,
+                       glow=RUNE, radius=4.0, glow_alpha=0.75 * a * appear, align="center", alpha_=a * appear)
 
 
-def note_world(t, k):
-    """World position (his plane) of hold note k (0..3) or the hourglass (k = 4) at time t."""
-    ax, ay, x, y = _note_local(t, k)
-    return ax + (x - ax) * HOLD_SC, ay + (y - ay) * HOLD_SC
+def draw_emblem(cr, t, front):
+    """(his plane; front = the light layer in the same view)"""
+    if t < T_DISSOLVE0 + 0.3:
+        return
+    cx, cy = emblem_center(t)
+    ring_a = core.smoothstep(T_WIND0 - 0.1, T_HOLD + 0.2, t)
+    notes = []
+    for k in range(4):
+        ap = core.smoothstep(T_NOTE_POP[k] - 0.12, T_NOTE_POP[k] + 0.18, t)
+        if ap <= 0.0:
+            continue
+        x, y, d = note_pos(t, k)
+        notes.append((d, k, x, y, ap))
+    notes.sort()
+    # the soft cold light of the whole thing
+    fx.glow(front, cx, cy, 120.0, RUNE, 0.1 * ring_a)
+    for (d, k, x, y, ap) in notes:                     # behind the hourglass
+        if d < 0.0:
+            _draw_note(cr, front, t, k, x, y, d, ap)
+    _ring_track(cr, cx, cy, False, ring_a)
+    hp = core.smoothstep(T_HG_POP - 0.12, T_HG_POP + 0.3, t)
+    if hp > 0:
+        fx.glow(cr, cx, cy, 46.0, RUNE, 0.18 * hp)
+        P.draw_hourglass(cr, cx, cy, HG_SC * (0.6 + 0.4 * core.out_back(hp)), L_COLD, t - T_HOLD, period=HG_PERIOD,
+                         flip_time=HG_FLIP, glow=hp, label=None)
+    _ring_track(cr, cx, cy, True, ring_a)
+    for (d, k, x, y, ap) in notes:                     # in front of it
+        if d >= 0.0:
+            _draw_note(cr, front, t, k, x, y, d, ap)
+    _banner(cr, t, cx, cy, core.smoothstep(T_BANNER[0], T_BANNER[1], t))
 
 
-NOTE_FIRST = [T_HOLD + sum((0.25, 0.25, 0.25, 0.75)[:k]) * LOOP / 1.5 for k in range(4)] + [T_HOLD]
 _MOTES = []
 
 
 def _motes(text):
     """The dissolve: each mote leaves a letter of the menu and flies into a note of the loop
-    (or into the hourglass), arriving as that note first sounds."""
+    (or into the hourglass), arriving as that piece condenses."""
     if not _MOTES:
         rng = np.random.default_rng(29)
         boxes = []
@@ -1119,38 +1394,45 @@ def _motes(text):
             for tok in line["toks"]:
                 if tok["kind"] in ("dot",):
                     continue
-                boxes.append((li, tok["x"], max(8.0, core.measure(core.frame(4, 4)[1], tok["s"], tok["size"], FONT)[0])))
+                boxes.append((li, tok["x"], max(8.0, tok["w"])))
         wsum = sum(b[2] for b in boxes)
-        for i in range(64):
+        for i in range(70):
             r = rng.random() * wsum
             for (li, bx, bw) in boxes:
                 r -= bw
                 if r <= 0:
                     break
             k = i % 5
-            born = T_DISSOLVE0 + 0.45 * rng.random()
-            arrive = max(born + 0.45, NOTE_FIRST[k] - 0.02 + 0.08 * rng.random())
+            born = T_DISSOLVE0 + 0.3 * rng.random()
+            land = T_NOTE_POP[k] if k < 4 else T_HG_POP
+            arrive = max(born + 0.3, land - 0.05 + 0.1 * rng.random())
             _MOTES.append(dict(li=li, x=bx + bw * rng.random(), y=-FS * (0.15 + 0.5 * rng.random()), k=k,
                                born=born, arrive=arrive, lift=40.0 + 120.0 * rng.random(), size=0.7 + 0.6 * rng.random()))
     return _MOTES
 
 
-def draw_dissolve(cr, t, cam, text, ox, oy):
-    if t < T_DISSOLVE0 or t > T_HOLD + 1.2:
+def draw_dissolve(cr, t, cam, text, layout):
+    if t < T_DISSOLVE0 or t > T_HOLD + 0.6:
         return
+    tg = emblem_targets(t)
     for m in _motes(text):
         if t < m["born"] or t > m["arrive"] + 0.15:
             continue
+        lay = layout[m["li"]]
+        if lay is None:
+            continue
+        ox, oy, s, _a = lay
         u = clamp((t - m["born"]) / (m["arrive"] - m["born"]))
         e = core.inout_sine(u)
-        sx, sy = ox + m["x"], oy + m["li"] * LH + m["y"]
-        ex, ey = cam.to_screen(*note_world(t, m["k"]), PX_B)
+        sx, sy = ox + m["x"] * s, oy + m["y"] * s
+        ex, ey = cam.to_screen(*tg[m["k"]], PX_B)
         cx, cy = (sx + ex) / 2, min(sy, ey) - m["lift"]
         px = (1 - e) ** 2 * sx + 2 * (1 - e) * e * cx + e * e * ex
         py = (1 - e) ** 2 * sy + 2 * (1 - e) * e * cy + e * e * ey
         a = clamp(u * 6.0) * (1.0 - clamp((t - m["arrive"]) / 0.15))
-        fx.glow(cr, px, py, 9.0 * m["size"], RUNE, 0.55 * a)
-        fx.glow(cr, px, py, 3.0 * m["size"], RUNE_HOT, 0.9 * a)
+        r = m["size"] * cam.zoom ** 0.5
+        fx.glow(cr, px, py, 9.0 * r, RUNE, 0.55 * a)
+        fx.glow(cr, px, py, 3.0 * r, RUNE_HOT, 0.9 * a)
 
 
 def hourglass_flips():
@@ -1164,7 +1446,8 @@ def hourglass_flips():
 
 
 # =============================================================================================
-# rain: world-locked drops in three depths, lit up inside the lamps' glow
+# rain: world-locked drops in three depths, lit up inside the lamps' glow; per shot, the counts
+# and widths are set so the rain reads the same on screen at every focal length
 # =============================================================================================
 RAIN_TILE = 1100.0
 RAIN_Y = (-900.0, 1500.0)
@@ -1252,7 +1535,31 @@ def draw_rain_layer(cr, cam, t, p, n, speed, length, width, alpha, seed, lamps=(
             cr.restore()
 
 
-def lamp_light(lc, rig, t, flick, front=False, boost=1.0):
+# (parallax, drops per tile at zoom 1, speed, streak length, width on screen px, alpha, seed)
+RAIN_FAR = (0.62, 170, 1000.0, 16.0, 0.9, 0.15, 11)
+RAIN_MID = (1.0, 150, 1500.0, 30.0, 1.4, 0.22, 12)
+RAIN_NEAR = (PX_NEAR, 26, 2300.0, 70.0, 2.4, 0.2, 13)
+
+
+SHOT_ZOOM = {"A": 1.0, "B": 2.25, "C": 3.6, "D": 0.82}    # nominal: drop counts are fixed per shot
+CONE_K = {"A": 1.0, "B": 0.42, "C": 0.3, "D": 1.0}           # the lamps' cones of lit air, per shot
+
+
+def rain_params(spec, zoom, shot, near_len_cap=None):
+    """World parameters that keep a rain depth's look on screen at this zoom: the same number of
+    drops in frame (counted at the shot's nominal zoom, so no drop ever re-rolls mid-shot),
+    streaks thin but long (motion blur grows with the magnification)."""
+    p, n, speed, length, width, alpha, seed = spec
+    zp = zoom ** p
+    zn = SHOT_ZOOM[shot] ** p
+    n2 = int(round(n * zn * zn))
+    w2 = width * zp ** 0.35 / zp
+    if near_len_cap is not None:
+        length = min(length, near_len_cap / zp)
+    return p, n2, speed, length, w2, alpha, seed
+
+
+def lamp_light(lc, rig, t, flick, front=False, boost=1.0, cone=1.0):
     """A street lamp's light in the rain: the halo, a soft cone of lit rain-air down to the
     cobbles, and the warm pool it throws on the wet stones (boost > 1: the final wide)."""
     lx, ly = rig.lamp
@@ -1262,7 +1569,7 @@ def lamp_light(lc, rig, t, flick, front=False, boost=1.0):
                        fade_start=1.0, fade_end=0.7)
         return
     P.lantern_light(lc, rig, POST_SC, t, 1.0)
-    fx.light_shaft(lc, lx, ly + 22.0, lx, gy, 46.0, 520.0, "#ffbe6e", 0.3 * flick * boost, soft=4,
+    fx.light_shaft(lc, lx, ly + 22.0, lx, gy, 46.0, 520.0, "#ffbe6e", 0.3 * flick * boost * cone, soft=4,
                    fade_start=1.0, fade_end=0.25)
     fx.light_pool(lc, lx, gy + 4.0, 360.0 * (0.9 + 0.1 * boost), 64.0, "#ffb860", 0.7 * flick * boost)
     fx.light_pool(lc, lx, gy + 2.0, 170.0, 30.0, "#ffd9a0", 0.45 * flick * boost)
@@ -1278,6 +1585,10 @@ def _hash_np(a, seed):
 
 def draw_splashes(cr, cam, t, p, y0, y1, n_per_tile, size, alpha, seed, tile=900.0):
     """Raindrops bursting on the street: world-locked slots in tiles along the band y0..y1."""
+    sy0 = cam.to_screen(0.0, y0, p)[1]
+    sy1 = cam.to_screen(0.0, y1, p)[1]
+    if sy0 > H + 20 or sy1 < -20:
+        return
     with cam.view(cr, p):
         x0, _ = cam.to_world(-40.0, 0.0, p)
         x1, _ = cam.to_world(W + 40.0, 0.0, p)
@@ -1339,7 +1650,7 @@ def _pool_glints(cr, pools):
 
 
 DBOX = (340.0, 610.0, 270.0, 70.0)     # left, up, right, down margins round his anchor (px at zoom 1)
-DS_W, DS_H = 700, 780                  # covers the box at the closest zoom (1.12)
+DS_W, DS_H = 700, 780                  # covers the box at the wide shots' zooms (<= 1.12)
 _DS = {}
 
 
@@ -1350,14 +1661,19 @@ def _dsurf(key, w, h):
     return surf
 
 
-def render_dragon(cam, t, xd, pose, light):
+def render_dragon(cam, t, xd, pose, light, full=False):
     """Draw him ONCE into an offscreen buffer (screen pixels, integer offset): the same image is
     composited into the frame, mirrored for his reflection in the wet street, and used as the
-    mask for the lamp's top-light and the pool's bounce. Returns (surface, ox, oy, rig)."""
+    mask for the lamp's top-light and the pool's bounce. full=True: a frame-sized buffer (the
+    close shots). Returns (surface, ox, oy, rig)."""
     z = cam.zoom
-    sx, sy = cam.to_screen(xd, GY, PX_B)
-    ox, oy = int(math.floor(sx - DBOX[0] * z)), int(math.floor(sy - DBOX[1] * z))
-    surf = _dsurf("dragon", DS_W, DS_H)
+    if full:
+        ox = oy = 0
+        surf = _dsurf("dragon_full", W, H)
+    else:
+        sx, sy = cam.to_screen(xd, GY, PX_B)
+        ox, oy = int(math.floor(sx - DBOX[0] * z)), int(math.floor(sy - DBOX[1] * z))
+        surf = _dsurf("dragon", DS_W, DS_H)
     c = cairo.Context(surf)
     c.set_operator(cairo.OPERATOR_CLEAR)
     c.paint()
@@ -1391,7 +1707,8 @@ def edge_light(cr, surf, ox, oy, dx, dy, color, alpha, y_fade=None):
     stay warm, never turn additive green-white)."""
     if alpha <= 0.01:
         return
-    small = _dsurf("edge", DS_W // 2 + 2, DS_H // 2 + 2)
+    sw, sh = surf.get_width(), surf.get_height()
+    small = _dsurf(("edge", sw, sh), sw // 2 + 2, sh // 2 + 2)
     c = cairo.Context(small)
     c.set_operator(cairo.OPERATOR_SOURCE)
     c.scale(0.5, 0.5)
@@ -1495,13 +1812,14 @@ def draw_step_splashes(cr, t):
 # the rain on him: drops striking his horns, head and shoulders, a drip off the end of his snout
 # =============================================================================================
 
-def draw_rain_on_him(cr, t, rig):
+def draw_rain_on_him(cr, t, rig, zoom=1.0):
     """(his plane) Pure function of t: a few drops burst on his upper contours every second, and
     every ~1.6 s a drop gathers at his snout tip, swells and falls."""
     hx, hy = rig.head
     tx, ty = rig.top
     hits = [(tx - 6.0, ty + 4.0), (hx - 30.0, hy + 2.0), (hx - 52.0, hy + 46.0), (hx - 70.0, hy + 92.0),
             (rig.hand_near.x + 6.0, rig.hand_near.y - 30.0)]
+    r0 = 1.3 if zoom < 1.5 else 0.9
     for i in range(10):
         per = 0.55 + 0.5 * core.hash01(i, 301)
         u = ((t + per * core.hash01(i, 302)) % per) / 0.22
@@ -1513,7 +1831,7 @@ def draw_rain_on_him(cr, t, rig):
         for k in (-1.0, 1.0):
             px = bx + k * 9.0 * u
             py = by - 12.0 * u * (1.0 - u) * 2.0
-            core.circle(cr, px, py, 1.3)
+            core.circle(cr, px, py, r0)
             core.src(cr, "#d6e6fa", 0.6 * (1.0 - u))
             cr.fill()
     # the snout drip (only while he is still: walking shakes it off)
@@ -1526,6 +1844,9 @@ def draw_rain_on_him(cr, t, rig):
             core.ellipse(cr, nx + 4.0, ny + 6.0 + r, r * 0.8, r)
             core.src(cr, "#cfe2fa", 0.55)
             cr.fill()
+            core.circle(cr, nx + 3.4, ny + 5.5 + r * 0.6, r * 0.3)
+            core.src(cr, "#ffffff", 0.5)
+            cr.fill()
         else:                                                 # falling
             v = (u - 0.75) / 0.25
             yy = ny + 9.0 + 900.0 * (v * per * 0.25) ** 2
@@ -1535,23 +1856,36 @@ def draw_rain_on_him(cr, t, rig):
                 cr.fill()
 
 
-def draw_text_reflection(lc, t, text, ox, oy, gy_s, z=1.0):
+def draw_breath(cr, t, rig):
+    """(his plane) The exhale after his line: his breath steams out of his nostrils in the cold
+    night air, drifts forward and up, curls and thins away (a breath, not a smoker's puff)."""
+    nx, ny = rig.nose
+    fx.smoke(cr, t, T_SIGH + 0.06, nx + 2.0, ny + 1.0, n=10, dur=2.5, rise=44.0, drift=(36.0, 2.0), size=8.5,
+             color="#cfdcec", alpha=0.62, seed=17, scale=SC, spread=0.6)
+    fx.smoke(cr, t, T_SIGH + 0.18, nx - 2.0, ny + 3.0, n=6, dur=2.0, rise=30.0, drift=(22.0, 6.0), size=6.0,
+             color="#dde7f3", alpha=0.45, seed=29, scale=SC, spread=0.4)
+
+
+def draw_text_reflection(lc, t, text, layout, gy_s, z=1.0):
     """(screen space, the light layer) The glowing menu mirrored in the wet street: under every
     written word a soft cold streak runs down the wet cobbles from his ground line, flickering
     with the rain (the higher the line, the fainter and longer its streak)."""
     if t < TEXT_T[0] or t > TEXT_T[1]:
         return
     fade_all = 1.0 - core.smoothstep(T_DISSOLVE0, T_DISSOLVE1 - 0.15, t)
-    _s, mc = core.frame(4, 4)
     for li, line in enumerate(text.lines):
+        lay = layout[li]
+        if lay is None:
+            continue
+        ox, _oy, s, la = lay
         nxt = text.lines[li + 1]["toks"][0]["t0"] if li + 1 < len(text.lines) else 1e9
-        a = (1.0 - 0.45 * core.smoothstep(nxt - 0.1, nxt + 0.5, t)) * fade_all
+        a = (1.0 - 0.45 * core.smoothstep(nxt - 0.1, nxt + 0.5, t)) * fade_all * la
         for k, tk in enumerate(line["toks"]):
             if tk["kind"] not in ("word", "lonely") or t < tk["t0"]:
                 continue
             on = clamp((t - tk["t0"]) / 0.3)
-            wv = core.measure(mc, tk["s"], tk["size"], FONT)[0]
-            xx = ox + tk["x"] + wv / 2
+            wv = tk["w"] * s
+            xx = ox + tk["x"] * s + wv / 2
             fl = 0.65 + 0.35 * core.noise1(t * 2.5 + k * 1.9 + li * 7.0, 41)
             boost = 1.6 if tk["kind"] == "lonely" else 1.0
             y0 = gy_s + 6.0 * z
@@ -1561,173 +1895,14 @@ def draw_text_reflection(lc, t, text, ox, oy, gy_s, z=1.0):
 
 
 # =============================================================================================
-# foreground (the near side of the street, close to the camera, out of focus): a downspout
-# pouring into a rain barrel frames the opening; a doorway's post and lintel slide in as the
-# camera pulls back, so the film leaves him the way we found him -- watched from the dark
-# =============================================================================================
-PX_FG = 1.8
-FG_SC = SC * PX_FG
-FG_INK = "#05070d"
-
-
-def _fg_x(t, sx):
-    return camera_base(t).to_world(sx, H / 2, PX_FG)[0]
-
-
-BARREL_X = _fg_x(0.0, 175.0)              # in frame at the start, gone by ~1.5 s
-DOOR_X = _fg_x(DUR, 1790.0)              # the doorway post's inner edge in the final frame
-LINTEL_Y = camera_base(DUR).to_world(W / 2, 205.0, PX_FG)[1]
-
-
-def _draw_fg_barrel(cr, rect):
-    s = FG_SC
-    x, gy = BARREL_X, 1080.0 + 150.0
-    w, h = 200.0 * s, 290.0 * s
-    top = gy - h
-    pts = [(x - w * 0.43, gy), (x - w * 0.5, gy - h * 0.5), (x - w * 0.43, top), (x + w * 0.43, top),
-           (x + w * 0.5, gy - h * 0.5), (x + w * 0.43, gy)]
-    core.smooth_closed(cr, pts, 0.55)
-    core.src(cr, "#1c1612")
-    cr.fill()
-    cr.save()
-    core.smooth_closed(cr, pts, 0.55)
-    cr.clip()
-    # the staves: a rounded body (dark at the sides), the joints between them
-    cr.set_source(core.linear(x - w * 0.5, 0, x + w * 0.5, 0, [(0.0, core.alpha("#000000", 0.55)), (0.45, core.alpha("#000000", 0.0)),
-                                                             (0.8, core.alpha("#000000", 0.15)), (1.0, core.alpha("#000000", 0.6))]))
-    cr.rectangle(x - w, top, 2 * w, h)
-    cr.fill()
-    for k in range(-4, 5):
-        xx = x + k * w * 0.1
-        cr.rectangle(xx - 1.2, top, 2.4, h)
-    core.src(cr, "#000000", 0.35)
-    cr.fill()
-    # iron hoops, each with a lit upper edge
-    for hy in (0.1, 0.4, 0.82):
-        cr.rectangle(x - w, top + h * hy, 2 * w, 11.0 * s)
-        core.src(cr, "#101114")
-        cr.fill()
-        cr.rectangle(x - w, top + h * hy, 2 * w, 2.0 * s)
-        core.src(cr, "#6a5a4a", 0.6)
-        cr.fill()
-    # the lamp behind it rims its right side warm; the sky rims the left cold
-    cr.set_source(core.linear(x + w * 0.3, 0, x + w * 0.52, 0, [core.alpha("#ffb766", 0.0), core.alpha("#ffb766", 0.55)]))
-    cr.rectangle(x, top, w, h)
-    cr.fill()
-    cr.set_source(core.linear(x - w * 0.52, 0, x - w * 0.38, 0, [core.alpha("#8fb0e0", 0.3), core.alpha("#8fb0e0", 0.0)]))
-    cr.rectangle(x - w, top, w, h)
-    cr.fill()
-    cr.restore()
-    # the brimming water at the top: dark, with a bright rim
-    core.ellipse(cr, x, top + 2.0 * s, w * 0.43, 15.0 * s)
-    core.src(cr, "#2a2018")
-    cr.fill()
-    core.ellipse(cr, x, top + 5.0 * s, w * 0.39, 11.0 * s)
-    core.src(cr, "#1b2638")
-    cr.fill()
-    cr.set_line_width(3.0)
-    core.src(cr, "#ffcf8a", 0.35)
-    cr.arc(x, top + 5.0 * s, w * 0.39, -0.1, 0.9)
-    cr.stroke()
-    # the downspout: a wooden trough angling down off the eaves, lit along its edge
-    sp = [(x - w * 0.95, -300.0), (x - w * 0.78, -300.0), (x - w * 0.08, top - 70.0 * s), (x - w * 0.25, top - 60.0 * s)]
-    core.polygon(cr, sp)
-    core.src(cr, "#140f0c")
-    cr.fill()
-    cr.move_to(x - w * 0.78, -300.0)
-    cr.line_to(x - w * 0.08, top - 70.0 * s)
-    cr.set_line_width(4.0)
-    core.src(cr, "#ffb766", 0.3)
-    cr.stroke()
-
-
-def _draw_fg_door(cr, rect):
-    """The near side's eave (all along the street, just above the frame until the pull-back)
-    and one doorway post that the pull-back reveals at the right."""
-    s = FG_SC
-    x0, _y, w, _h = rect
-    x = DOOR_X
-    core.src(cr, FG_INK)
-    cr.rectangle(x0, LINTEL_Y - 900.0, w, 900.0)                         # the eave beam
-    cr.fill()
-    for k in range(int(w / (420.0 * s)) + 2):                            # carved joist ends
-        bx = x0 + k * 420.0 * s
-        core.rounded_rect(cr, bx - 22.0 * s, LINTEL_Y - 4.0, 44.0 * s, 34.0 * s, 10.0 * s)
-        cr.fill()
-    cr.rectangle(x, LINTEL_Y - 900.0, 900.0, 4000.0)                     # the doorway post
-    cr.fill()
-    br = [(x, LINTEL_Y + 120.0 * s), (x - 70.0 * s, LINTEL_Y + 8.0 * s), (x - 260.0 * s, LINTEL_Y - 2.0),
-          (x, LINTEL_Y - 2.0)]
-    core.smooth_closed(cr, br, 0.4)
-    cr.fill()
-    # the lamp's warm light catching the wood's inner edges
-    cr.set_source(core.linear(x, 0, x + 26.0 * s, 0, [core.alpha("#ffb060", 0.32), core.alpha("#ffb060", 0.0)]))
-    cr.rectangle(x, LINTEL_Y + 100.0 * s, 26.0 * s, 4000.0)
-    cr.fill()
-    cr.set_source(core.linear(0, LINTEL_Y, 0, LINTEL_Y - 14.0 * s, [core.alpha("#ffb060", 0.2), core.alpha("#ffb060", 0.0)]))
-    cr.rectangle(x0, LINTEL_Y - 14.0 * s, x - x0, 14.0 * s)
-    cr.fill()
-
-
-DRIP_SP = 240.0
-
-
-def draw_fg(cr, cam, t, st):
-    """The out-of-focus near side: the barrel (only while on screen), the eave and post, and
-    water dripping off the eave in front of the lens (the gutters)."""
-    with cam.view(cr, PX_FG):
-        x0, y0 = cam.to_world(-200.0, -200.0, PX_FG)
-        x1, y1 = cam.to_world(W + 200.0, H + 200.0, PX_FG)
-        s = FG_SC
-        if x0 < BARREL_X + 400.0 and t < 4.0:
-            st["fg_barrel"].paint(cr)
-            # the spout pours: a ragged, glinting rope of water into the barrel
-            top = 1080.0 + 150.0 - 290.0 * s
-            sx0, sy0 = BARREL_X - 200.0 * s * 0.12, top - 64.0 * s
-            for k in range(3):
-                pts = []
-                for j in range(9):
-                    v = j / 8.0
-                    pts.append((sx0 + 8.0 * k - 6.0 + 5.0 * math.sin(t * 13.0 + j * 1.3 + k) * v,
-                                sy0 + v * (top + 4.0 * s - sy0)))
-                core.smooth_open(cr, pts)
-                cr.set_line_width(5.0 - k)
-                core.src(cr, "#cfe0f7" if k else "#ffd9a8", 0.28)
-                cr.stroke()
-            for k in range(6):                                 # splash where it hits the water
-                a = TAU * core.hash01(k, 95) + t * 3.0
-                u = (t * 2.2 + k / 6.0) % 1.0
-                fx.glow(cr, sx0 + math.cos(a) * 30.0 * u, top + 2.0 * s - 40.0 * u * (1 - u), 6.0, "#d8e8ff",
-                        0.35 * (1 - u))
-        if y0 < LINTEL_Y + 40.0 * s and x1 > x0:
-            st["fg_door"].paint(cr)
-        # drips off the eave, big and soft (they fall through the frame from above it)
-        k0, k1 = int(math.floor(x0 / DRIP_SP)), int(math.ceil(x1 / DRIP_SP))
-        cr.set_line_cap(cairo.LINE_CAP_ROUND)
-        for k in range(k0, k1 + 1):
-            if core.hash01(k, 90) < 0.45:
-                continue
-            dx = k * DRIP_SP + 80.0 * core.hash01(k, 91)
-            if dx > DOOR_X - 20.0:
-                continue
-            per = 1.1 + 0.9 * core.hash01(k, 92)
-            u = ((t + per * core.hash01(k, 93)) % per) / per
-            yy = LINTEL_Y + 30.0 * s + 2200.0 * u * u
-            if yy > y1 or yy + 80.0 < y0:
-                continue
-            cr.move_to(dx, yy)
-            cr.line_to(dx, yy + 20.0 + 70.0 * u)
-            cr.set_line_width(6.0)
-            core.src(cr, "#b9cdea", 0.18)
-            cr.stroke()
-
-
-# =============================================================================================
 # per-frame drawing
 # =============================================================================================
 
 def draw(cr, t, st):
+    shot = shot_at(t)
     cam = camera(t)
+    z = cam.zoom
+    close = shot in ("B", "C")
     xd = walk_x(t)
     flick = 0.85 + 0.15 * (0.5 + 0.5 * core.noise1(t * 6.0, 4))
     light = dragon_light(xd)
@@ -1740,9 +1915,10 @@ def draw(cr, t, st):
         return P.bag_hold(light, t, swing, state="open", damp=0.85)
 
     pose = dragon_pose(t, stone_cb, bag_cb)
-    dsurf, dox, doy, rig = render_dragon(cam, t, xd, pose, light)
+    dsurf, dox, doy, rig = render_dragon(cam, t, xd, pose, light, full=close)
     gy_s = cam.to_screen(xd, GY, PX_B)[1]
     k_lamp = lamp_k(xd)
+    wide = core.smoothstep(T_CUT3, T_CUT3 + 1.2, t) if shot == "D" else 0.0
 
     # ---------------- far to near: sky, castle, roofs, the far side, the wet street
     with cam.view(cr, PX_SKY):
@@ -1752,32 +1928,39 @@ def draw(cr, t, st):
     with cam.view(cr, PX_ROOFS):
         st["roofs"].paint(cr)
     with cam.view(cr, PX_HOUSES):
-        st["houses"].paint(cr)
-    for key, p in (("band_a1", PX_A1), ("band_a2", PX_A2), ("band_b", PX_B), ("band_c", PX_C)):
-        with cam.view(cr, p):
-            st[key].paint(cr)
+        (st["houses_c"] if shot == "C" else st["houses_b"] if shot == "B" else st["houses"]).paint(cr)
+    if shot == "C":
+        for lay, p in zip(st["bands_c"], (PX_A1, PX_A2)):
+            with cam.view(cr, p):
+                lay.paint(cr)
+    else:
+        for key, p in (("band_a1", PX_A1), ("band_a2", PX_A2), ("band_b", PX_B), ("band_c", PX_C)):
+            if shot == "B" and p > 0.8:
+                continue
+            with cam.view(cr, p):
+                st[key].paint(cr)
     with cam.view(cr, PX_HOUSES):
         st["house_refl"].paint(cr, alpha=0.9 * flick)
-    with cam.view(cr, PX_B):
-        st["post_refl"].paint(cr, alpha=flick)
-        st["glints"].paint(cr, alpha=0.75 + 0.25 * flick)
-        for i, pd in enumerate(PUDDLES_B):
-            env.puddle_ripples(cr, t, *pd, n=4, seed=60 + i, alpha=0.3)
-    with cam.view(cr, PX_C):
-        for i, pd in enumerate(PUDDLES_C):
-            env.puddle_ripples(cr, t, *pd, n=6, seed=70 + i, alpha=0.3)
-    draw_reflection(cr, dsurf, dox, doy, gy_s, cam.zoom)
+    if not close:
+        with cam.view(cr, PX_B):
+            st["post_refl"].paint(cr, alpha=flick)
+            st["glints"].paint(cr, alpha=0.75 + 0.25 * flick)
+            for i, pd in enumerate(PUDDLES_B):
+                env.puddle_ripples(cr, t, *pd, n=4, seed=60 + i, alpha=0.3)
+        with cam.view(cr, PX_C):
+            for i, pd in enumerate(PUDDLES_C):
+                env.puddle_ripples(cr, t, *pd, n=6, seed=70 + i, alpha=0.3)
+        draw_reflection(cr, dsurf, dox, doy, gy_s, z)
     with cam.view(cr, 0.75):
         st["mist"].draw(cr, t)
 
     # the final wide: the street sinks into the night round the lamp (its light, him and the
     # loop are drawn after this and keep their brightness)
-    wide = core.smoothstep(T_PULL0, T_PULL1, t)
     if wide > 0.0:
         cx, cy = cam.to_screen(xd - 40.0, GY - 300.0, PX_B)
         cr.save()
-        cr.translate(cx - 1920.0, cy - 1080.0)
-        cr.scale(4.0, 4.0)
+        cr.translate(cx - 1920.0 * z / 0.8, cy - 1080.0 * z / 0.8)
+        cr.scale(4.0 * z / 0.8, 4.0 * z / 0.8)
         cr.set_source_surface(st["iso"], 0, 0)
         cr.get_source().set_filter(cairo.FILTER_BILINEAR)
         cr.paint_with_alpha(0.8 * wide)
@@ -1796,52 +1979,63 @@ def draw(cr, t, st):
             fx.light_pool(lb, lx, HOUSE_Y + 6.0, 90.0, 14.0, "#ffbf5f", 0.3 * fl)
     with cam.view(lb, PX_B):
         for i, r in enumerate(st["post_rigs"]):
-            lamp_light(lb, r, t, flick, boost=1.0 + 0.4 * wide * (i == 1))
+            lamp_light(lb, r, t, flick, boost=1.0 + 0.4 * wide * (i == 1), cone=CONE_K[shot])
     st["light_bg"].composite(cr)
 
-    draw_rain_layer(cr, cam, t, 0.62, 170, 1000.0, 16.0, 0.9, 0.15, 11)          # far rain
+    draw_rain_layer(cr, cam, t, *rain_params(RAIN_FAR, z, shot))                                 # far rain
     draw_splashes(cr, cam, t, PX_A2, 790.0, 850.0, 26, 6.0, 0.35, 21)
 
     # ---------------- his plane: the lamp posts, the dragon, the stone's glow
     with cam.view(cr, PX_B):
-        posts = [P.draw_lantern_post(cr, x, y, POST_SC, L_SET, t, height=POST_H, side=1, seed=s_)
+        lp = L_SET.with_(exposure=0.5) if shot == "C" else L_SET
+        posts = [P.draw_lantern_post(cr, x, y, POST_SC, lp, t, height=POST_H, side=1, seed=s_,
+                                     detail=0 if close else None)
                  for (x, y, s_) in POSTS]
-        draw_shadows(cr, rig, xd, k_lamp)
+        if not close:
+            draw_shadows(cr, rig, xd, k_lamp)
+    lamps = [(p.lamp[0], p.lamp[1], 300.0, p.ground[1] + 6.0) for p in posts]
+    if close:          # the close shots: the lamp's lit rain falls round and behind him, his face stays clear
+        draw_rain_layer(cr, cam, t, *rain_params(RAIN_MID, z, shot), lamps)
     composite_dragon(cr, dsurf, dox, doy)
     # the lamp overhead: warm light along his upper contours (strongest on horns and head), and a
     # faint warm bounce off its pool on his lower edges -- his front stays cold
-    z = cam.zoom
     head_y = cam.to_screen(xd, GY - 470.0 * SC, PX_B)[1]
-    edge_light(cr, dsurf, dox, doy, 2.5 * z, 6.5 * z, "#ffb963", 0.7 * k_lamp, (head_y, gy_s, 1.0, 0.25))
-    edge_light(cr, dsurf, dox, doy, 0.0, -4.0 * z, "#e0924e", 0.3 * k_lamp, (head_y, gy_s, 0.0, 1.0))
+    ez = min(z, 1.5)
+    edge_light(cr, dsurf, dox, doy, 2.5 * ez, 6.5 * ez, "#ffb963", (0.55 if close else 0.7) * k_lamp,
+               (head_y, gy_s, 1.0, 0.25))
+    if not close:
+        edge_light(cr, dsurf, dox, doy, 0.0, -4.0 * z, "#e0924e", 0.3 * k_lamp, (head_y, gy_s, 0.0, 1.0))
     with cam.view(cr, PX_B):
-        draw_rain_on_him(cr, t, rig)
+        draw_rain_on_him(cr, t, rig, z)
         P.stone_glow(cr, rig.hand_near.x, rig.hand_near.y, SC, lvl, t)
-        if t > T_SIGH:                          # the long exhale: steam in the cold rain
-            ch.dragon_smoke(cr, t, T_SIGH + 0.2, rig, dur=2.8, alpha=0.46, light_tint="#9fb8d8")
-    lamps = [(p.lamp[0], p.lamp[1], 300.0, p.ground[1] + 6.0) for p in posts]
-    draw_rain_layer(cr, cam, t, PX_B, 150, 1500.0, 30.0, 1.4, 0.22, 12, lamps)      # rain round him
-    draw_splashes(cr, cam, t, PX_B, 850.0, 1000.0, 30, 9.0, 0.45, 22)
-    draw_splashes(cr, cam, t, PX_C, 960.0, 1180.0, 22, 13.0, 0.45, 23)
-    with cam.view(cr, PX_B):
-        draw_step_splashes(cr, t)
+        if t > T_SIGH:                          # the long exhale: his breath steams in the cold
+            draw_breath(cr, t, rig)
+    if not close:
+        draw_rain_layer(cr, cam, t, *rain_params(RAIN_MID, z, shot), lamps)                    # rain round him
+        draw_splashes(cr, cam, t, PX_B, 850.0, 1000.0, 30, 9.0, 0.45, 22)
+        draw_splashes(cr, cam, t, PX_C, 960.0, 1180.0, 22, 13.0, 0.45, 23)
+        with cam.view(cr, PX_B):
+            draw_step_splashes(cr, t)
 
-    # ---------------- the stone's voice and the hold loop, then the nearest rain over all
+    # ---------------- the stone's voice and the hold emblem, then the nearest rain over all
     lc = st["light"].begin()
     with cam.view(lc, PX_B):
         P.stone_light(lc, rig.hand_near.x, rig.hand_near.y, SC, lvl)
+        if shot == "C":
+            ex_, ey_ = rig.eyes[0]
+            fx.glow(lc, 0.5 * (ex_ + rig.hand_near.x), ey_ + 8.0, 105.0, "#a6dcff", 0.13 + 0.05 * lvl)
         for r in posts:
-            lamp_light(lc, r, t, flick, front=True)
+            lamp_light(lc, r, t, flick, front=True, boost=CONE_K[shot])
     with cam.view(cr, PX_B):
         with cam.view(lc, PX_B):
-            draw_hold(cr, t, lc)
+            draw_emblem(cr, t, lc)
+    layout = text_layout(t)
     sx, sy = cam.to_screen(rig.hand_near.x, rig.hand_near.y, PX_B)
-    tx = cam.to_screen(xd, GY, PX_B)[0] + TEXT_DX
-    draw_text_reflection(lc, t, st["text"], tx, TEXT_Y0, gy_s, cam.zoom)
-    st["text"].draw(cr, t, tx, TEXT_Y0, (sx, sy), lc)
-    draw_dissolve(cr, t, cam, st["text"], tx, TEXT_Y0)
-    draw_rain_layer(cr, cam, t, PX_NEAR, 26, 2300.0, 70.0, 2.4, 0.2, 13)
-    draw_fg(cr, cam, t, st)
+    if shot == "A":
+        draw_text_reflection(lc, t, st["text"], layout, gy_s, z)
+    st["text"].draw(cr, t, layout, (sx, sy), lc)
+    draw_dissolve(cr, t, cam, st["text"], layout)
+    draw_rain_layer(cr, cam, t, *rain_params(RAIN_NEAR, z, shot, near_len_cap=260.0))
     st["rig"] = rig
     fx.post(cr, t, light=st["light"], bloom_strength=0.5, threshold=0.62, bloom_radius=2.2, wide=0.4,
             grain=0.04, vignette=0.55 + 0.15 * wide, vignette_color=(0.0, 0.01, 0.04))
@@ -1873,21 +2067,25 @@ def _sfx_cues():
                                                   "who": "dragon"}))
     cues.append((round(T_STOP - 0.05, 3), "cloth_rustle", {"gain": 0.25, "pan": _pan_at(T_STOP, X_STOP), "size": 0.5}))
     # the stone's voice writes itself in light: a shimmer as each menu line begins, a bigger one
-    # as "loneliness" lands; the menu breaking into the hold loop
+    # as "loneliness" lands; the menu breaking into the hold emblem
     for ln in PHONE_LINES[:2]:                       # (line 3's shimmer is the "loneliness" swell)
         t0 = WORDS[ln.id][0][1]
-        cues.append((round(t0 - 0.06, 3), "rune_glow", {"gain": 0.22, "dur": 0.7, "pan": _pan_at(t0, walk_x(t0) + 500.0)}))
-    pan_l = _pan_at(T_LONELY, walk_x(T_LONELY) + 420.0)
+        lay = text_layout(t0)[PHONE_LINES.index(ln)]
+        pan = round(clamp(((lay[0] + 300.0) - W / 2) / (W / 2) * 0.8, -0.9, 0.9), 3)
+        cues.append((round(t0 - 0.06, 3), "rune_glow", {"gain": 0.22, "dur": 0.7, "pan": pan}))
+    lay = text_layout(T_LONELY)[2]
+    pan_l = round(clamp(((lay[0] + 330.0 * lay[2]) - W / 2) / (W / 2) * 0.8, -0.9, 0.9), 3)
     cues.append((round(T_LONELY_LAND - 0.45, 3), "rune_glow", {"gain": 0.42, "dur": 1.0, "midi": 76, "pan": pan_l}))
     cues.append((round(T_LONELY_LAND, 3), "crystal_chime", {"gain": 0.3, "midi": 88, "pan": pan_l}))   # it lands
+    ex, ey = emblem_center(T_HG_POP)
     cues.append((round(T_DISSOLVE0 + 0.15, 3), "rune_glow", {"gain": 0.25, "dur": 0.9, "midi": 88,
-                                                            "pan": _pan_at(T_DISSOLVE0, walk_x(T_DISSOLVE0) + 400.0)}))
+                                                            "pan": _pan_at(T_HG_POP, ex, ey)}))
     # the shiver: wet wool and leather
     cues.append((round(T_SHIVER + 0.02, 3), "cloth_rustle", {"gain": 0.3, "pan": _pan_at(T_SHIVER, walk_x(T_SHIVER)),
                                                             "size": 0.4, "dur": 0.45}))
     # the hourglass flips over every two loops
     for tf in hourglass_flips():
-        hx, hy = note_world(tf, 4)
+        hx, hy = emblem_center(tf)
         cues.append((round(tf + 0.05, 3), "hourglass_flip", {"gain": 0.4, "pan": _pan_at(tf, hx, hy)}))
     # after his line: the long exhale, and its breath of steam in the cold
     cues.append((round(T_SIGH + 0.05, 3), "sigh", {"gain": 0.4, "pan": _pan_at(T_SIGH, X_STOP)}))

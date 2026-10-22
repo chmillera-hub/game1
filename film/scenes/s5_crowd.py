@@ -4,9 +4,11 @@
 
 EMOTION. Cold voyeurism, then a tenderness nobody can bear to watch. The square is a ring of
 cold cyan crystal-light around two brawlers; the light IS the voyeurism (every glow is an eye).
-When the orc hugs the minotaur the ring falls silent and the eyes go out one by one. The dragon,
-across the street in the dark, is the only one who keeps looking. The last image is the two of
-them holding on, alone on the cobbles, the first faint warmth of the film resting on them.
+When the orc stops himself and hugs the minotaur, the ring falls silent and the eyes go out one
+by one. The dragon, across the street in the arcade's shadow, is the only one who keeps looking.
+The last image: the two of them holding on, alone on the cobbles, a pale shaft of grace falling
+on them through a break in the cloud -- the scene's only warmth, and only "a little" (SPEC 0.3:
+the first warm light that comes from HIM is his laugh in S6; this one falls from the sky).
 
 WORLD (one perspective model for every shot). Ground point (X lateral, D depth) projects to
 sx = 960 + X*F/D, sy = 470 + 560*F/D (horizon 470, camera 560 units up, F = 1000), so a creature
@@ -20,73 +22,90 @@ Period: stone, oak, canvas, wool, iron; the "phones" are scrying crystals. Nothi
 Each set-up's backdrop is baked once at its own framing with its own depth of field (Baked);
 moving cameras paint it through the residual transform, the foreground with extra parallax.
 
-SHOTS (cuts are derived from the timeline; times below are for the current timeline.json)
- 1  0.00-3.92  MASTER WIDE, across the street, slow dolly-in (zoom x1.07). Framing device: the
-               dark stone arch of the arcade the dragon stands under (left pier, the arch ring
-               over the top), out of focus. The dragon left, near profile, hands in his coat
-               pockets, wings drooped, in the arcade's shadow (a stop darker than the square, a
-               cold cyan rim from the crystals). Beyond him the ring: 14 creatures (goblins,
-               kobolds, elves, dwarves, two harpies) with crystals raised, cheering; the pixie
-               hovers high over them, filming. In the middle the orc (red jerkin) and the minotaur
-               (grey hooded tunic) shove each other. Eye trace: the cyan ring (brightest) -> the
-               brawl -> back along the dragon's gaze. Two shoves, each with a wind-up (lean back),
-               a thrust, an impact and a stagger; at each impact the dragon winces.
- 2  3.92-5.36  INSERT: ONE CRYSTAL. A kobold's claw holds a scrying crystal up in the foreground;
-               the fight is sharp and small inside it (its red recording rune pulsing), the real
-               brawl behind it is soft bokeh -- they watch the screen, not the people. A nearer
-               crystal glows out of focus at the left. The hand trembles with excitement. Cut on
-               the impact of the orc's next shove.
- 3  5.36-13.00 IN THE CIRCLE, long lens (zoom 2.3): only the fighters' plane is sharp; the far
-               arc falls soft (crystals turn to bokeh), the near arc is soft, dark and backlit.
-               Handheld while they fight (shake on impacts), locked off from the stop. The
-               shoving ESCALATES (each faster and harder); the minotaur's 4th is the biggest, the
-               orc reels, recovers and winds up the payback -- s5_stop: frozen mid wind-up (a held
-               beat; his brows jump: "what am I doing?"), then the arms FALL, the head sinks.
-               Eyes down ... eyes up to the minotaur; he walks in. The wary minotaur, guard still
-               up, flinches as he comes close (leans back, hands up and out) -- s5_hug: the orc
-               wraps his arms round him, face to his chest, eyes shut. The minotaur stands
-               frozen, arms out, eyes wide. s5_silence: the cheering mouths close, arms come down,
-               bodies freeze. s5_lower: the crystals come down one by one (each glow dimming, the
-               cyan pool on the cobbles draining), heads drop, uneasy glances. The minotaur's
-               arms hover, hesitate ... and slowly begin to close round the orc.
- 4 13.00-15.65 THE PIXIE, medium close-up (her own set-up nearer the lens; the square behind
-               her soft). Her crystal sinking, her lip curls, chin up -- "Ew." (head pulled
-               back, brows knit) "What is he doing?" (one brow up, head tilted) -- an eye-roll,
-               then the crystal back up to her face and she turns to it.
- 5 15.65-22.14 THE DRAGON, medium close-up from the arcade (the arch pier and ring frame the
-               left and top): he fills the left, the ring and the pair on the right. Thought ->
-               glance -> breath -> line: his eyes drop on the thought, 'We'll film a fight.'
-               (quiet; eyes back up on 'fight'); three extras already drift off, bored. A breath.
-               'But someone gets gentle,' (his brows soften) 'and everybody looks away.' -- on
-               the line the whole ring turns its back on the pair, crystals glowing again in
-               their faces, and walks off in every direction; the circle dissolves. A small
-               sigh, a curl of grey smoke.
+SHOTS (cuts derive from the timeline; times below are for the current timeline.json)
+ 1  0.00-3.88  MASTER WIDE across the street, slow dolly-in. Framing device: the dark arch of
+               the arcade (pier at the left, the arch ring over the top), out of focus. The
+               dragon left, near profile, hands in his coat pockets, wings drooped, a stop
+               darker than the square with a cold cyan rim. Beyond him the ring of 14 creatures
+               (goblins, kobolds, elves, dwarves, two harpies) holds crystals up, cheering; the
+               pixie hovers over them, filming. Eye trace: the cyan ring (brightest) -> the
+               brawl -> back along the dragon's gaze. Two shoves (anticipation, thrust, impact,
+               stagger); the dragon winces at each impact.
+ 2  3.88-5.33  INSERT: ONE CRYSTAL. A kobold's claw holds a scrying crystal up in the
+               foreground; it GLOWS (a halo of cold light, rune motes rising off it, a glint
+               round the brass collar) -- the brightest thing in the film so far; inside, the
+               fight, small and sharp, under the pulsing red recording rune; the real brawl
+               behind is soft bokeh: they watch the image, not the people. Cut on the impact.
+ 3  5.33-13.00 IN THE CIRCLE, long lens: only the fighters' plane is sharp (far arc soft,
+               crystals turned to bokeh; near arc soft, dark, backlit). Handheld while they
+               fight (a jolt on every impact). The shoving ESCALATES -- the minotaur's 4th is
+               the hardest, the orc reels -- and the orc goes for real: he cocks a FIST back by
+               his ear, the minotaur flinches, eyes squeezed shut, face turned away ...
+               s5_stop: the fist freezes at the top of the wind-up (a jolt, held, trembling);
+               the minotaur's eyes pop open (no blow?); the orc's brows jump -- what am I
+               doing? -- the fist uncurls, the arms FALL, the head sinks; eyes down ... eyes up
+               to him; two quick steps in. The minotaur's hands go up and out of the way
+               ("whoa") -- s5_hug: the orc wraps his arms round him, his cheek on the
+               minotaur's chest, his face turned to us, eyes sinking shut, a small smile. The
+               minotaur freezes with both hands up ("I didn't do anything!"). The camera locks
+               off and pushes in slowly from the stop. s5_silence: the cheering mouths close,
+               arms come down. s5_lower: the crystals come down one by one, the cyan pool on
+               the cobbles drains, uneasy glances. His eyes dart to the crowd, come down to the
+               orc ... his far arm comes over the orc's shoulders, the near one round his back
+               (low: nothing crosses the orc's face), his head turns to us, his jaw comes to
+               rest on the orc's crown, eyes closing.
+ 4 13.00-15.65 THE PIXIE, medium close-up (her own set-up near the lens, 3/4 toward the pair,
+               who sit soft on the left third behind her). Her crystal comes down off her face;
+               she stares down at the hug and her face curdles (lip curl, knit brows) -- "Ew."
+               (the head jerks back, nose up) -- "What is he doing?" (head cocked, one brow up,
+               her free hand flicks out at them, palm up) -- an eye-roll up and away, and the
+               crystal comes back up to her chin, its cold light washing over her face.
+ 5 15.65-22.14 THE DRAGON, medium close-up from the arcade (the pier and arch at the left and
+               top), slow push-in; the square beyond him a little soft so he reads first, a
+               soft cold bounce off the square on his face. Thought -> glance -> breath ->
+               line: his eyes drop on the thought; "We'll film a fight." with a dry, rueful
+               half-smile on "fight"; his eyes follow the bored ones drifting off; a breath in;
+               "But someone gets gentle," (his brows lift and soften toward the two of them)
+               "and everybody looks away." -- on the line the whole ring turns its back on the
+               pair, crystals glowing in their faces again, and walks off in every direction;
+               his eyes sweep after the turning backs, then sink; a slow blink.
  6 22.14-25.00 THE EMPTIED SQUARE (s5_alone): the master's frame again, bookending shot 1 --
-               everything changed (an ellipsis: the last walkers are already at the edges, their
-               cold glows scattering away). The pair alone in the middle, still holding on,
-               rocking a little, the minotaur's chin resting on the orc's head (two slow pats).
-               A break in the cloud: one soft warm shaft and a rose-gold pool on them only, motes
-               drifting in it, a warm rim on them -- quiet, almost holy. Slow push toward them;
-               the dragon stays in the arcade's shadow, his brows softening, wings lifting a
-               fraction.
+               an ellipsis: the crowd is gone but for a few far figures at the edges, their
+               cold glows scattering away. The evening sinks in round the two of them, still
+               holding on, rocking a little (two slow pats on the orc's back). A break in the
+               cloud opens: one soft shaft of pale rose-gold (a few rays breathing inside it,
+               motes drifting) falls on them only, a pool at their feet, a warm rim on their
+               heads and shoulders -- quiet, almost holy. Slow push in on them. The dragon
+               stays in the arcade's shadow, watching; a sigh (a curl of grey smoke), his
+               brows soften, his wings lift a fraction, the faintest warmth on his face.
 
 COLOUR / VALUE. Dominant grey-blue (sky #2c3650 -> #b4b8c0, stone #6a7286); the one accent is
 the crystals' cyan (#5fe0ff) -- the brightest values in the frame while they are raised, and
-they bloom; the orc's red jerkin is the only warm hue until the end. The circle is lit from
-inside (a cyan pool on the cobbles, a haze glow above the ring, cyan rims on the brawlers);
-when the crystals lower that light drains and the frame goes flat and grey -- then at the end
-the pair alone get a little warmth (rose-gold rim, pool, shaft). The dragon sits a stop darker
-than the square (the arcade's shadow) so the eye goes past him. Vignette tinted deep blue.
+they bloom; the orc's red jerkin is the only warm hue. The circle is lit from inside (a cyan
+pool on the cobbles, a haze glow over the ring, cyan rims on the brawlers); when the crystals
+lower, that light drains and the frame goes flat and grey; at the end the square darkens round
+the pair and a pale warm shaft lifts them out of it -- the brightest, warmest place in the
+frame, and the only one. The dragon sits a stop darker than the square (the arcade's shadow)
+in the wides; in his close-up a cold bounce lifts his face. Vignette tinted deep blue.
 
 ACTING. Eyes lead, then the head, then the body. Every hold moves (breathing, blinks, sway,
-the pixie's buzzing wings, the minotaur's tail). The orc: fury -> a frozen beat -> the anger
-drains (brows lift, then fall) -> eyes down -> eyes up to the minotaur -> two steps -> the hug.
-The minotaur: fury -> confusion (one brow up, guard still up: a trick?) -> a flinch as the orc
-comes close (leans back, hands up and out) -> frozen stiff (arms out, eyes wide) -> hesitation
-(hands hovering) -> surrender (hugs back, chin on the orc's head, eyes closed). The crowd:
-glee -> confusion -> shock -> silence -> discomfort (they glance at each other) -> they look
-away. Lip-sync: the pixie only on s5_l1, the dragon only on s5_l2/s5_l3 (timeline.talk); the
-extras' mouths move only while they cheer and are shut from s5_silence on.
+the pixie's buzzing wings, the minotaur's tail). The orc: fury -> the punch wound up -> frozen
+-> the anger drains (brows jump, then fall; the fist opens) -> eyes down -> eyes up to the
+minotaur -> two steps -> the hug, face to us, eyes closing, a small smile. The minotaur: fury
+-> a flinch (eyes shut, face turned away) -> eyes open: no blow? -> wary (hands up and away as
+the orc comes) -> frozen, hands up -> eyes dart to the crowd, then down to the orc -> his arms
+close round him, head turned to us, jaw on the orc's crown, eyes closed. The crowd: glee ->
+confusion -> shock -> silence -> discomfort (glances) -> they look away. Lip-sync: the pixie
+only on s5_l1 (her close-up), the dragon only on s5_l2/s5_l3 (his close-up), from
+timeline.talk; none of the lines is voiceover; the extras' cheering mouths are procedural and
+shut from s5_silence on.
+
+SOUND. SFX_CUES (bottom of the file) are derived from the same constants the animation uses:
+the four shove impacts (+ crowd bursts and the stumble), the punch wind-up and the flinch, the
+arms falling, the steps in, the hug, the crystals coming down one by one (chimes), the
+minotaur's arms and pats, the pixie's wings, the crowd turning away and walking off (footsteps
+only while a walker is on screen; after the ellipsis only the few still in the square), the
+dragon's sigh and smoke.
 """
 
 import math
@@ -132,12 +151,16 @@ def _word(line_id, k, default):
 
 # the shoves escalate: each faster and harder (who, wind-up start, cycle length, power).
 # The last one is the orc's payback -- frozen in its wind-up at s5_stop, never thrown.
+# Four shoves escalate; then the orc, shoved hardest, goes for real: he cocks a FIST back by his
+# ear (body twisting away, the minotaur flinching with his eyes shut) -- and freezes at the top
+# of the wind-up at s5_stop. The fist never comes.
+IMPACT_U = 0.42                                   # cycle fraction where the hands land
+T_COCK = T_STOP - 0.62                            # the punch wind-up starts (it peaks at s5_stop)
+T_DROP = T_STOP + 0.42                            # ... a frozen beat, then his arms fall (0.26 s)
 SHOVES = [("orc", T_STOP - 8.35, 2.30, 0.80),
           ("mino", T_STOP - 6.05, 2.10, 1.00),
           ("orc", T_STOP - 3.95, 1.85, 1.25),
-          ("mino", T_STOP - 2.10, 1.75, 1.60),
-          ("orc", T_STOP - 0.38, 1.60, 1.80)]
-IMPACT_U = 0.42                                   # cycle fraction where the hands land
+          ("mino", T_STOP - 2.10, 1.43, 1.60)]           # fastest; settles before the wind-up
 
 
 def _impact_t(i):
@@ -158,7 +181,8 @@ T_EMPTY = T_ALONE                                 # the emptied square
 T_GENTLE = _word("s5_l3", 3, L3.start + 0.94)     # "gentle,"
 T_EVERY = _word("s5_l3", 5, L3.start + 1.68)      # "everybody"
 T_SIGH = T_ALONE + 0.75                           # in the emptied square: he sighs, watching them
-E_SKIP = 4.2                                      # the cut to shot 6 skips this much of the dispersal
+E_SKIP = 8.0                                      # the cut to shot 6 skips this much of the dispersal
+SHOT6_KEEP = (0, 1, 4, 5)                         # ... by then only these few are still in the square, far off
 
 # ----------------------------------------------------------------------------------------
 # the world: one perspective model (see the docstring)
@@ -205,9 +229,11 @@ PCX, PGY, PSC = gp(PAIR_X, D0)                    # pair anchor (screen) and sca
 
 LS = ch.LIGHTS["square"]
 CYAN = "#5fe0ff"
-WARM = "#ffbf8a"
-WARM_POOL = "#ffa860"
-WARM_SHAFT = "#ffd2a0"
+# the end's light: a pale rose-gold from a break in the cloud -- only "a little warmer" (SPEC
+# 0.3: the first warm light that comes from HIM is his laugh in S6; this one falls on them)
+WARM = "#ffc9a4"
+WARM_POOL = "#f0a888"
+WARM_SHAFT = "#ffdcc0"
 
 # ----------------------------------------------------------------------------------------
 # the fight -> the hug (a local, escalating take on characters.draw_brawl)
@@ -215,9 +241,15 @@ WARM_SHAFT = "#ffd2a0"
 
 GAP = 262.0                                       # anchors apart while they square up (body px)
 ORC_BASE, MINO_BASE = -GAP * 0.45, GAP * 0.55
-HUG_DIST = 94.0
+HUG_DIST = 110.0
 YAW_FIGHT = 1.2                                   # nearly side-on: chests and palms read across the gap
-YAW_HUG = 1.0                                     # 3/4 in the hug: both faces open to the lens
+# the hug is staged so BOTH faces read, stacked: the orc opens toward the lens as he walks in
+# (his cheek on the minotaur's chest, face to us), the minotaur turns a little toward us as he
+# gives in (his face over the orc's crown, his jaw resting on it). His near arm goes round the
+# orc's back LOW (it never crosses the orc's face), the far arm over the orc's shoulders.
+YAW_HUG_O = 0.8
+YAW_STUN_M = 1.08
+YAW_HUG_M = 0.95
 _BUILD = {"orc": ORC.ORC_BUILD, "mino": MN.MINOTAUR_BUILD}
 ORC_SHOVE_Y = 188.0                               # the orc's palms: this far above his pelvis
 
@@ -268,10 +300,36 @@ def _g_shove(q, sk, side, arm):
 
 
 def _g_whoa(q, sk, side, arm):
-    """Hands up and open in front of the chest, palms out: 'whoa -- what are you doing?'"""
+    """Hands lifted and open, out to the sides and a little back: 'whoa -- what are you
+    doing?' Seen 3/4, his far hand is on the partner's side, so it rises to shoulder height,
+    and the near one goes out and BACK (a near hand 'out to the side' would come straight at
+    the lens and over the faces): nothing crosses the face of the one walking in."""
     AL = FK._AL(q)
-    return FK.G(B.v_add(sk, (side * 0.02 * AL, 0.30 * AL, 0.46 * AL)), "open", -1.15, "auto",
-                (side * 0.8, 1.0, -0.5), "in")
+    if side == q.near:
+        tgt = (side * 0.34 * AL, 0.24 * AL, -0.26 * AL)
+    else:
+        tgt = (side * 0.34 * AL, 0.02 * AL, -0.04 * AL)
+    return FK.G(B.v_add(sk, tgt), "open", -0.5, "auto", (side * 0.9, 0.9, -0.6), "in")
+
+
+def _g_stun(q, sk, side, arm):
+    """Being hugged: arms frozen up and out, hands open -- 'I didn't do anything!' The far
+    hand goes up by his head (well above the orc's on his chest), the near one out and back at
+    shoulder height (clear of both faces): a clear silhouette with the sound off."""
+    AL = FK._AL(q)
+    if side == q.near:
+        tgt = (side * 0.32 * AL, 0.04 * AL, -0.34 * AL)
+    else:
+        tgt = (side * 0.56 * AL, -0.04 * AL, 0.02 * AL)
+    return FK.G(B.v_add(sk, tgt), "open", -0.35, "auto", (side * 1.0, 0.7, -0.5), "in")
+
+
+def _g_cock(q, sk, side, arm):
+    """A punch wound up: the fist drawn back past the ear, elbow high and back (a clear
+    silhouette in profile)."""
+    AL = FK._AL(q)
+    return FK.G(B.v_add(sk, (side * 0.16 * AL, -0.30 * AL, -0.40 * AL)), "fist", 0.4, "auto",
+                (side * 0.5, 0.1, -1.0), "fwd")
 
 
 def _g_aside(q, sk, side, arm):
@@ -287,6 +345,8 @@ for _tbl in (ORC.ORC_GESTURES, MN.MINOTAUR_GESTURES):
     _tbl.setdefault("s5_square", _g_square)
     _tbl.setdefault("s5_shove", _g_shove)
     _tbl.setdefault("s5_whoa", _g_whoa)
+    _tbl.setdefault("s5_stun", _g_stun)
+    _tbl.setdefault("s5_cock", _g_cock)
 
 
 def _shove_shape(u):
@@ -306,7 +366,15 @@ def _fight_state(t):
     st = {"orc_shove": None, "mino_shove": None, "orc_stagger": 0.0, "mino_stagger": 0.0,
           "orc_pow": 1.0, "mino_pow": 1.0, "orc_lean": 0.0, "mino_lean": 0.0, "phase": 0.0, "impact": 0.0,
           "power": 0.0}
-    for who, t0, per, pw in SHOVES:
+    st["orc_cock"] = None
+    if t >= T_COCK:
+        # the punch wind-up: a little dip (anticipation), then the fist goes back and up, the
+        # body twists and leans away; it peaks (and freezes) at s5_stop
+        u = clamp((t - T_COCK) / (T_STOP - T_COCK))
+        st["orc_cock"] = core.inout_back(u) if u < 1.0 else 1.0
+        st["orc_lean"] = -0.10 * math.sin(math.pi * clamp(u / 0.35)) * (u < 0.35) - 0.26 * core.inout_sine(clamp((u - 0.2) / 0.8))
+        ox -= 14.0 * core.inout_sine(u)
+    for k, (who, t0, per, pw) in enumerate(SHOVES):
         if not (t0 <= t < t0 + per):
             continue
         u = (t - t0) / per
@@ -332,11 +400,10 @@ def _fight_state(t):
 
 _STOP_STATE = _fight_state(T_STOP - 1e-4)
 ORC_STOP_X = _STOP_STATE["orc_x"]
-STOP_PHASE = _STOP_STATE["orc_shove"] if _STOP_STATE["orc_shove"] is not None else 0.3
 ORC_REST_X = ORC_STOP_X - 10.0                    # he sags back a little as his arms drop
 MINO_HUG_X = MINO_BASE - 18.0                     # the puzzled minotaur half-steps in: "what?"
 ORC_HUG_X = MINO_HUG_X - HUG_DIST
-T_BRACE = SHOVES[4][1] + 0.12                     # the minotaur sees the payback coming
+T_BRACE = T_COCK + 0.12                           # the minotaur sees the punch coming: he flinches
 
 
 def _xs(t):
@@ -380,8 +447,11 @@ def pair_state(t):
         st["walk_u"] = walk_u
         st["hug"] = core.inout_sine(clamp((t - (T_HUG - 0.3)) / 0.45))
         st["hug_close"] = core.inout_sine(clamp((t - T_HUG) / 0.7))
-        oyaw = lerp(YAW_FIGHT, YAW_HUG, walk_u)
-        myaw = lerp(YAW_FIGHT, YAW_HUG, core.inout_sine(clamp((t - T_HUG) / 0.6)))
+        st["hb_close"] = core.inout_sine(clamp((t - (T_HUGBACK[0] + 0.85)) / 1.1))
+        open_u = core.inout_sine(clamp((t - T_WALK_IN[0]) / (T_HUG + 0.55 - T_WALK_IN[0])))
+        oyaw = lerp(YAW_FIGHT, YAW_HUG_O, open_u)
+        myaw = lerp(lerp(YAW_FIGHT, YAW_STUN_M, core.inout_sine(clamp((t - T_HUG) / 0.6))), YAW_HUG_M,
+                    st["hb_close"])
     st["orc_x"], st["mino_x"] = ox, mx
     st["orc_yaw"], st["mino_yaw"] = oyaw, myaw
     # stepping: the feet follow the anchor (phase from the displacement, so nothing slides)
@@ -406,7 +476,12 @@ def orc_pose(t, st, sgn=1.0):
     if st["fight"]:
         hit = _impact_pulse_for(t, "orc")
         whip = _impact_pulse_for(t, "orc", 0.16)
-        if st["orc_shove"] is not None:
+        far_arm = None
+        if st.get("orc_cock") is not None:
+            arm = ch.Arm("s5_cock", amt=st["orc_cock"], prev="s5_square")
+            far_arm = ch.Arm("s5_square")
+            lean = st["orc_lean"]
+        elif st["orc_shove"] is not None:
             arm = ch.Arm("s5_shove", phase=st["orc_shove"])
             lean = st["orc_lean"] * (0.8 + 0.2 * st["orc_pow"])
         elif st["orc_stagger"] > 0.02:
@@ -416,34 +491,54 @@ def orc_pose(t, st, sgn=1.0):
             arm = ch.Arm("s5_square")
             lean = 0.0
         thrust = st["orc_shove"] is not None and 0.3 < st["orc_shove"] < 0.75
+        cock = st.get("orc_cock") or 0.0
         e = _expr(("angry", 1.0), ("surprised", 0.75 * hit))
-        return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.45 + 0.45 * thrust - 0.4 * hit, stance=0.5 * sgn,
-                           hunch=0.62, lean=lean, head_nod=0.5 * whip - 0.08 * thrust, look=(0.0, -0.1),
-                           walk=walk, phase=phase, near=arm, far=arm, seed=3)
+        return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e,
+                           snarl=0.45 + 0.45 * max(float(thrust), cock) - 0.4 * hit, stance=0.5 * sgn,
+                           hunch=0.62, lean=lean, head_nod=0.5 * whip - 0.08 * max(float(thrust), cock),
+                           look=(0.0, -0.1), walk=walk, phase=phase, near=arm,
+                           far=far_arm if far_arm is not None else arm, seed=3)
     ts = t - T_STOP
     frozen = _STOP_STATE
-    lean0 = frozen["orc_lean"] * (0.8 + 0.2 * frozen["orc_pow"])
-    drop = core.in_quad(clamp((ts - 0.30) / 0.30))                 # a frozen beat, then the arms FALL
-    arms = ch.Arm("slump", amt=drop, prev="s5_shove", phase=STOP_PHASE)
+    # frozen at the top of the wind-up (a jolt, then held, the fist trembling) -- he sees the
+    # minotaur flinching, eyes shut; the brows jump (what am I doing?); the fist OPENS; then the
+    # arms FALL, heavy, the head sinks, and the eyes come up to the minotaur's face
+    jolt = 0.05 * math.sin(ts * TAU * 4.5) * math.exp(-ts * 9.0)
+    lean0 = frozen["orc_lean"] + jolt
+    drop = core.in_quad(clamp((t - T_DROP) / 0.26))                # a frozen beat, then the arms FALL
+    opened = "open" if 0.28 < ts and drop < 0.5 else None          # the fist uncurls before it falls
+    near = ch.Arm("slump", amt=drop, prev="s5_cock", hand=opened)
+    far = ch.Arm("slump", amt=drop, prev="s5_square")
     hug = st["hug"]
     if hug > 0.0:
-        arms = ch.Arm("hug", amt=hug, prev="slump", phase=1.0 - st["hug_close"])
-    realise = core.window(ts, 0.04, 0.62, 0.1, 0.3)                # brows jump: "what am I doing?"
-    sad = core.inout_sine(clamp((ts - 0.3) / 0.4))
+        near = far = ch.Arm("hug", amt=hug, prev="slump", phase=1.0 - st["hug_close"])
+    realise = core.window(ts, 0.06, 0.7, 0.08, 0.3)                # brows jump: "what am I doing?"
+    sad = core.inout_sine(clamp((ts - 0.38) / 0.4))
     tender = st["hug_close"]
-    e = _expr(("angry", 1.0), ("raised", realise), ("sad", sad), ("kind", tender))
-    look_down = core.inout_sine(clamp((ts - 0.34) / 0.2))
-    look_up = core.inout_sine(clamp((ts - 0.58) / 0.18))          # eyes down ... then up at him: go
-    look_y = (0.55 * look_down * (1.0 - look_up) - 0.12 * look_up) * (1.0 - tender) + 0.3 * tender
-    nod = (-0.32 * look_down * (1.0 - 0.7 * lagged_u(t, ts, 0.58))) * (1.0 - tender) - 0.12 * tender
-    return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.8 * (1.0 - core.inout_sine(clamp((ts - 0.3) / 0.35))),
+    # once he holds on: his cheek on the minotaur's chest, his face turned to us, eyes sinking
+    # shut (a sliver stays open: a closed green lid would not read at this size), a small smile
+    rest = core.inout_sine(clamp((t - (T_HUG + 0.25)) / 0.9))
+    e = _expr(("angry", 1.0), ("raised", realise), ("sad", sad), ("kind", tender), ("warm", 0.45 * rest))
+    at_hands = core.window(ts, 0.1, 0.5, 0.1, 0.12) * 0.0           # (he looks at the flinching minotaur)
+    look_down = core.inout_sine(clamp((ts - 0.42) / 0.18))
+    look_up = core.inout_sine(clamp((ts - 0.66) / 0.16))          # eyes down ... then up at him: go
+    look_y = ((-0.1 * (1.0 - core.inout_sine(clamp(ts / 0.12))) + 0.5 * at_hands)
+              + 0.55 * look_down * (1.0 - look_up) - 0.12 * look_up) * (1.0 - tender) + 0.3 * tender
+    look_x = 0.25 * at_hands
+    nod = (-0.08 * (1.0 - core.inout_sine(clamp(ts / 0.3))) - 0.12 * at_hands
+           - 0.32 * look_down * (1.0 - 0.7 * lagged_u(t, ts, 0.66))) * (1.0 - tender) - 0.05 * tender
+    tremble = 0.025 * math.sin(t * TAU * 7.3) * core.window(ts, 0.08, 0.42, 0.06, 0.06)   # the held hands quiver
+    blink = None
+    if tender > 0.3:
+        blink = 0.8 * core.inout_sine(clamp((tender - 0.3) / 0.7))
+    return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.9 * (1.0 - core.inout_sine(clamp((ts - 0.1) / 0.45))),
                        stance=0.5 * sgn * (1.0 - st["stop"]),
-                       hunch=lerp(0.62, 0.9, core.inout_sine(clamp((ts - 0.3) / 0.35))) - 0.15 * hug,
-                       lean=lean0 * (1.0 - core.inout_sine(clamp((ts - 0.3) / 0.4))) + 0.08 * st["walk_u"] * (1 - hug)
-                       + 0.34 * hug,
-                       head_tilt=0.22 * tender * sgn, head_turn=-0.3 * tender * sgn, head_nod=nod,
-                       look=(0.0, look_y), blink=clamp((tender - 0.4) * 2.5) if tender > 0.4 else None,
-                       walk=walk, phase=phase, near=arms, far=arms, seed=3,
+                       hunch=lerp(0.62, 0.9, core.inout_sine(clamp((ts - 0.4) / 0.32))) - 0.02 * hug,
+                       lean=lean0 * (1.0 - core.inout_sine(clamp((ts - 0.4) / 0.4))) + tremble
+                       + 0.08 * st["walk_u"] * (1 - hug) + 0.35 * hug,
+                       head_tilt=0.3 * tender * sgn, head_turn=-0.55 * tender * sgn, head_nod=nod,
+                       look=(look_x * sgn, look_y), blink=blink,
+                       walk=walk, phase=phase, near=near, far=far, seed=3,
                        hug_reach=(st["mino_x"] - st["orc_x"]) / math.sin(abs(st["orc_yaw"])),
                        hug_w=74.0, hug_d=52.0, hug_y=112.0)
 
@@ -471,8 +566,10 @@ def mino_pose(t, st, sgn=1.0):
         thrust = st["mino_shove"] is not None and 0.3 < st["mino_shove"] < 0.75
         e = _expr(("angry", 1.0), ("surprised", 0.75 * hit), ("worried", 0.45 * brace))
         e = e.with_(lid_bot=max(e.lid_bot, 0.4 * brace))
+        # the punch coming: he flinches -- eyes squeezed shut, face turned away, shoulders up
         return MN.MinotaurPose(yaw=-sgn * st["mino_yaw"], mood=e, stance=0.5 * -sgn, hunch=0.55 + 0.25 * brace,
                                lean=lean, head_nod=0.5 * whip - 0.08 * thrust - 0.22 * brace, look=(0.0, 0.1),
+                               head_turn=0.4 * brace * sgn, blink=0.92 * brace if brace > 0.02 else None,
                                walk=walk, phase=phase, near=arm, far=arm, seed=5, shove_y=62.0,
                                tail_swing=0.6 * math.sin(t * 2.3) + 0.5 * whip)
     ts = t - T_STOP
@@ -480,7 +577,9 @@ def mino_pose(t, st, sgn=1.0):
     # arms up and out, head back -> frozen -> eyes dart, then down at him -> hands hover ->
     # they settle on his back, head bows, eyes close
     unbrace = core.inout_sine(clamp((ts - 0.25) / 0.6))
-    whoa = core.inout_sine(clamp((t - (T_WALK_IN[0] + 0.15)) / 0.35))
+    flinch = 1.0 - core.inout_sine(clamp((ts - 0.3) / 0.5))           # the flinch eases off ...
+    peek = core.inout_sine(clamp((ts - 0.2) / 0.16))                 # ... the eyes pop open: no blow?
+    whoa = core.inout_sine(clamp((t - (T_WALK_IN[0] + 0.02)) / 0.36))        # hands up and away as he comes
     stun = core.inout_sine(clamp((t - (T_HUG - 0.05)) / 0.32))
     tb = T_HUGBACK[0]
     hover = core.inout_sine(clamp((t - tb) / 0.9))                  # far arm: over his shoulder
@@ -493,12 +592,12 @@ def mino_pose(t, st, sgn=1.0):
     if whoa > 0.0:
         arms = ch.Arm("s5_whoa", amt=whoa, prev="s5_square")
     if stun > 0.0:
-        arms = ch.Arm("surprised", amt=stun, prev="s5_whoa")
+        arms = ch.Arm("s5_stun", amt=stun, prev="s5_whoa")
     near = far = arms
     if hover > 0.0:
-        far = ch.Arm("hug", amt=hover, prev="surprised", phase=lerp(1.0, 0.18, close) * (1.0 - settle))
+        far = ch.Arm("hug", amt=hover, prev="s5_stun", phase=lerp(1.0, 0.18, close) * (1.0 - settle))
     if drop_n > 0.0:
-        near = ch.Arm("s5_aside", amt=drop_n, prev="surprised")
+        near = ch.Arm("s5_aside", amt=drop_n, prev="s5_stun")
     if hover_n > 0.0:
         u = (t - T_HUGBACK[1] - 0.6) % 4.2 if t > T_HUGBACK[1] + 0.6 else 9.0
         pat = 0.14 * math.sin(math.pi * u / 0.34) ** 2 if u < 0.68 else 0.0    # slow pats on his back
@@ -509,22 +608,31 @@ def mino_pose(t, st, sgn=1.0):
                           (T_HUG + 1.1, 0.5, "inout_sine"), (T_HUG + 1.3, 0.5), (T_HUGBACK[0] + 0.05, 0.0, "inout_sine")])
     down = core.inout_sine(clamp((t - (T_HUGBACK[0] - 0.15)) / 0.4))
     tender = close
-    e = _expr(("angry", 1.0 - unbrace), ("skeptical", confused), ("worried", whoa * (1.0 - stun)),
-              ("surprised", stun * (1.0 - 0.7 * down)), ("worried", 0.6 * down * (1.0 - tender)), ("kind", tender))
-    e = e.with_(open=e.open * (1.0 - down))
-    yaw = -sgn * (st["mino_yaw"] - 0.3 * settle)
+    e = _expr(("angry", 1.0 - unbrace), ("worried", 0.45 * flinch), ("skeptical", confused),
+              ("worried", whoa * (1.0 - stun)), ("surprised", stun * (1.0 - 0.7 * down)),
+              ("worried", 0.6 * down * (1.0 - tender)), ("kind", tender))
+    e = e.with_(open=e.open * (1.0 - down), lid_bot=max(e.lid_bot, 0.4 * flinch))
+    blink = None
+    if peek < 1.0:
+        blink = 0.92 * (1.0 - peek)
+    elif close > 0.55:
+        blink = clamp((close - 0.55) * 2.5)
+    # giving in: his head turns to us and tilts so his jaw comes to rest on the orc's crown (it
+    # stays ABOVE the orc's face: no bow), eyes closing
+    yaw = -sgn * st["mino_yaw"]
     return MN.MinotaurPose(yaw=yaw, mood=e,
-                           lean=-0.12 * whoa * (1 - stun) - 0.1 * stun * (1.0 - hover) + 0.05 * close,
-                           hunch=0.55 - 0.15 * stun * (1.0 - hover) + 0.4 * close,
-                           head_nod=0.22 * stun * (1.0 - hover) - 0.18 * down * (1.0 - close) - 0.5 * close + 0.06 * whoa,
-                           head_tilt=(-0.22 * close + 0.12 * confused) * sgn,
-                           head_turn=(0.5 * close) * sgn,
-                           look=(dart * (1.0 - down), 0.1 + 0.45 * down * (1.0 - close)),
+                           lean=-0.08 * flinch - 0.12 * whoa * (1 - stun) - 0.1 * stun * (1.0 - hover) + 0.05 * close,
+                           hunch=0.55 + 0.25 * flinch - 0.15 * stun * (1.0 - hover) + 0.35 * close,
+                           head_nod=-0.22 * flinch + 0.22 * stun * (1.0 - hover) - 0.18 * down * (1.0 - close)
+                           - 0.07 * close + 0.06 * whoa,
+                           head_tilt=(-0.42 * close + 0.12 * confused) * sgn,
+                           head_turn=(0.4 * flinch + 0.85 * close) * sgn,
+                           look=(dart * (1.0 - down) - 0.3 * close * sgn, 0.1 + 0.45 * down),
                            near=near, far=far, seed=5, stance=0.5 * -sgn * (1 - st["stop"]),
-                           blink=clamp((close - 0.75) * 4.0) if close > 0.75 else None,
+                           blink=blink,
                            walk=walk, phase=phase,
                            hug_reach=(st["mino_x"] - st["orc_x"]) / math.sin(abs(st["mino_yaw"])),
-                           hug_w=66.0, hug_d=46.0, hug_y=-6.0, hug_y_far=78.0,
+                           hug_w=66.0, hug_d=46.0, hug_y=20.0, hug_y_far=105.0,
                            tail_swing=lerp(0.6 * math.sin(t * 2.3), 0.25 * math.sin(t * 0.9), st["stop"]))
 
 
@@ -756,6 +864,41 @@ def pixie_pose(t, feed, staged=False):
                         near=near, seed=2)
 
 
+PIX_MCU = (1330.0, 1262.0, 12.5)                  # her medium close-up: anchor x, ground y (below frame), scale
+
+
+def pixie_mcu_pose(t, feed):
+    """Shot 4, her medium close-up (staged 3/4 toward the pair, who sit soft on the left third
+    behind her). Thought -> glance -> line: she stares down at the hug and her face curdles
+    (lip curl, brows knit) -- "Ew." (the head jerks back, nose up) -- "What is he doing?" (head
+    cocked, one brow up, her free hand flicks out at them, palm up) -- an eye-roll up and away
+    -- and the crystal comes back up to her face, its cold light washing over it."""
+    low = core.inout_sine(clamp((t - (T_PIXIE - 0.3)) / 0.55))    # the crystal comes down off her face
+    talk = tl.talk(SCENE, t, "CROWD")
+    w_what = _word("s5_l1", 1, L1.start + 0.2)
+    curdle = core.inout_sine(clamp((t - (T_PIXIE - 0.3)) / 0.45))
+    ew = core.window(t, L1.start - 0.1, w_what + 0.15, 0.1, 0.3)
+    what = core.window(t, w_what - 0.05, L1.end + 0.2, 0.25, 0.3)
+    flick = core.window(t, w_what + 0.1, L1.end + 0.05, 0.22, 0.35)
+    roll = core.window(t, L1.end + 0.08, L1.end + 0.62, 0.16, 0.24)
+    back = core.inout_sine(clamp((t - (L1.end + 0.38)) / 0.4))
+    e = _expr(("sneer", 1.0), ("angry", 0.45 * ew), ("skeptical", 0.85 * what), ("bored", 0.85 * roll + 0.7 * back))
+    disgust = curdle * (1.0 - 0.5 * back)
+    e = e.with_(smile=lerp(e.smile, -0.8, disgust), brow_asym=e.brow_asym + 0.35 * what)
+    hold = ch.crystal_hold(face=-1.0, size=1.55, thumb=feed, t=t, glow=0.35 + 0.65 * back)
+    near = ch.Arm("lower_crystal", amt=low, prev="raise_crystal_film", hold=hold)
+    if back > 0.0:                                 # ... back up to her chin: she reads it, bored
+        near = ch.Arm("raise_crystal_film", amt=0.42 * back, prev="lower_crystal", hold=hold)
+    far = ch.Arm("talk", amt=flick, prev="hip", phase=t * 0.8) if flick > 0.0 else ch.Arm("hip")
+    look = (-0.88 + 1.1 * back, 0.78 - 0.25 * ew + 0.05 * what - 0.6 * back)   # eyes DOWN on the pair
+    if roll > 0.0:
+        look = (lerp(look[0], 0.45, roll), lerp(look[1], -0.9, roll))
+    return ch.PixiePose(facing=-1, turn=0.35 - 0.55 * back, hover=3.0, bob=1.2, talk=talk, mood=e,
+                        head_nod=0.14 + 0.24 * ew + 0.06 * curdle - 0.06 * what + 0.12 * roll - 0.1 * back,
+                        head_tilt=0.28 * what - 0.1 * ew, head_turn=0.25 * back, look=look,
+                        lean=-0.12 * ew, near=near, far=far, seed=2, shadow=False)
+
+
 def pixie_low(t):
     """Her crystal comes down last of all (mid-way at the cut to her close-up)."""
     return core.inout_sine(clamp((t - (T_LOW1 - 0.5)) / 0.95))
@@ -769,6 +912,12 @@ def dragon_light(t):
     g = crystal_level(t) if t < T_EMPTY else 0.25
     base = B.Light(key=(0.62, 0.68, 0.82), ambient=(0.30, 0.34, 0.48), rim=(0.55, 0.88, 1.0), rim_strength=0.45 + 0.35 * g,
                    direction=(-0.4, -0.92), rim_direction=(1.0, -0.3), name="s5_arcade")
+    if t >= T_EMPTY:
+        # the emptied square: he stands deeper in the arcade's shadow; the warmth that falls on
+        # the two of them catches the edge of his face (a warm rim from their side)
+        w = _q(warmth(t), 16)
+        base = base.with_(exposure=0.86, rim=core.lerp_tuple((0.55, 0.8, 0.95), (1.0, 0.78, 0.58), w),
+                          rim_strength=0.4 + 0.35 * w, name="s5_arcade_end")
     return base
 
 
@@ -787,19 +936,34 @@ def dragon_pose(t, shot):
                              look=(0.55, 0.05), wings=-0.85, hunch=0.6, head_nod=-0.05 - 0.05 * wince, blink=blink,
                              tail_curl=0.5, seed=1)
     if shot == 5:
-        think = core.window(t, T_DRAGON + 0.3, L2.start + 0.2, 0.15, 0.25)
-        on_fight = core.window(t, _word("s5_l2", 3, L2.start + 0.74) - 0.1, L2.end + 0.6, 0.15, 0.5)
-        breath = core.window(t, L3.start - 0.5, L3.start + 0.1, 0.25, 0.25)
-        soft = core.window(t, T_GENTLE - 0.1, L3.end + 0.6, 0.3, 0.6)
-        track = core.window(t, T_EVERY - 0.2, L3.end + 0.2, 0.3, 0.5)
-        e = _expr(("lonely", 1.0), ("sad", 0.35 + 0.25 * on_fight), ("kind", 0.45 * soft))
-        look = (0.55 - 0.15 * think + 0.18 * track, 0.05 + 0.4 * think - 0.05 * on_fight + 0.12 * track)
+        # thought -> glance -> breath -> line. He watches the pair; the thought drops his eyes;
+        # "We'll film a fight." with a dry, rueful half-smile on "fight"; his eyes follow the
+        # bored ones drifting off; a breath in; "But someone gets gentle," -- his brows lift,
+        # his face softens toward the two of them -- "and everybody looks away." -- his eyes
+        # sweep after the turning backs, then sink, and a slow blink
+        w_fight = _word("s5_l2", 3, L2.start + 0.74)
+        think = core.window(t, T_DRAGON + 0.35, L2.start + 0.15, 0.15, 0.22)
+        irony = core.window(t, w_fight - 0.15, L2.end + 0.45, 0.15, 0.45)
+        follow = core.window(t, L2.end + 0.25, L3.start - 0.35, 0.45, 0.4)
+        breath = core.window(t, L3.start - 0.6, L3.start + 0.05, 0.3, 0.2)
+        gentle = core.window(t, T_GENTLE - 0.25, L3.end + 0.9, 0.35, 0.6)
+        sweep = core.inout_sine(clamp((t - T_EVERY) / max(0.3, L3.end - T_EVERY)))
+        track = core.window(t, T_EVERY - 0.15, L3.end + 0.1, 0.25, 0.45)
+        sink = core.inout_sine(clamp((t - (L3.end - 0.25)) / 0.6))
+        e = _expr(("lonely", 1.0), ("sad", 0.3 + 0.2 * think), ("kind", 0.55 * gentle), ("sad", 0.35 * sink))
+        e = e.with_(smile=e.smile + 0.22 * irony, brow_asym=e.brow_asym + 0.35 * irony,
+                    brow_in=e.brow_in + 0.25 * gentle)
+        look = (0.5 - 0.12 * think + 0.32 * follow + (0.25 * sweep - 0.05) * track,
+                0.08 + 0.42 * think - 0.04 * irony + 0.1 * track + 0.18 * sink)
         blink = None
         if T_DRAGON + 0.05 < t < T_DRAGON + 0.25:
             blink = core.window(t, T_DRAGON + 0.05, T_DRAGON + 0.25, 0.08, 0.1)
+        elif L3.end + 0.05 < t < L3.end + 0.55:                      # a slow blink as it lands
+            blink = core.window(t, L3.end + 0.05, L3.end + 0.55, 0.18, 0.25)
         return ch.DragonPose(facing=1, turn=0.3, near=ch.Arm("pockets"), far=ch.Arm("pockets"), mood=e,
-                             look=look, wings=-0.85, hunch=0.62 - 0.06 * breath, lean=-0.04 * breath,
-                             head_nod=-0.12 - 0.12 * think + 0.06 * breath, head_turn=0.05 * track,
+                             look=look, wings=-0.85, hunch=0.62 - 0.08 * breath + 0.05 * sink, lean=-0.04 * breath,
+                             head_nod=-0.12 - 0.12 * think + 0.07 * breath - 0.08 * sink,
+                             head_turn=0.06 * follow + 0.06 * track * sweep, head_tilt=0.05 * gentle,
                              talk=talk, blink=blink, tail_curl=0.5, seed=1)
     # shot 6: the emptied square -- he keeps looking; a sigh of longing (a little grey smoke),
     # then his brows soften and his wings lift a fraction: the warmth reaches him too
@@ -1355,10 +1519,11 @@ CAM_A0 = cam_at(FIGHT_SX, FIGHT_SY, 1105.0, 812.0, 1.24)
 CAM_A1 = zoom_cam(CAM_A0, 1105.0, 640.0, 1.07)
 CAM_I = cam_at(FIGHT_SX + 25.0, 650.0, 700.0, 610.0, 2.45)       # the insert, behind the crystal
 CAM_B = cam_at(FIGHT_SX, 640.0, 960.0, 548.0, 2.3)
-CAM_C = cam_at(HUG_SX, 640.0, 600.0, 560.0, 1.0)
+CAM_C = cam_at(HUG_SX, 640.0, 560.0, 610.0, 1.32)    # behind the pixie: the pair on the left third
 CAM_D0 = cam_at(HUG_SX, 640.0, 1440.0, 560.0, 1.1)
 CAM_E0 = CAM_A0                                   # the bookend: the master's first framing ...
-CAM_E1 = zoom_cam(CAM_A0, 1205.0, 660.0, 1.07)    # ... and a slow push toward the pair
+PAIR_SCR = CAM_A0.to_screen(HUG_SX, PGY - 190.0)
+CAM_E1 = zoom_cam(CAM_A0, PAIR_SCR[0], PAIR_SCR[1], 1.2)    # ... and a slow push in on the pair
 
 # the dragon and the arch, placed per framing in SCREEN space (at the set-up's base camera)
 DRAGON_AT = {1: (292.0, 1238.0, 1.30, 1.3), 5: (468.0, 1420.0, 2.12, 1.2)}
@@ -1383,8 +1548,12 @@ def camera_for(t, shot):
     if shot == 3:
         if t < T_STOP:
             return CAM_B.shake(t, amp=2.0 + 9.0 * impact_pulse(t), freq=2.4, seed=11)
+        # locked off at the stop, then a slow push in on the two of them (the crowd falls away
+        # to the frame edges) as the hug happens and the crystals come down
         settle = clamp((t - T_STOP) / 0.6)
-        return CAM_B.shake(t, amp=2.0 * (1.0 - settle), freq=2.4, seed=11)
+        push = core.inout_sine(clamp((t - (T_STOP + 0.35)) / (T_PIXIE - T_STOP - 0.35)))
+        c = zoom_cam(CAM_B, *CAM_B.to_screen(HUG_SX, PGY - 200.0), lerp(1.0, 1.16, push))
+        return c.shake(t, amp=2.0 * (1.0 - settle), freq=2.4, seed=11)
     if shot == 4:
         return CAM_C.drift(t, amp=3.0, freq=0.2, seed=4)
     if shot == 5:
@@ -1464,16 +1633,23 @@ L_PIX = LS.with_(exposure=1.0, rim=(0.55, 0.9, 1.0), rim_strength=0.75, rim_dire
 
 
 def warmth(t):
-    return core.inout_sine(clamp((t - (T_EMPTY + 0.15)) / 2.0)) if t >= T_EMPTY else 0.0
+    """The break in the cloud over the emptied square: already faintly there at the cut, it
+    opens up over 1.5 s and then holds."""
+    return 0.22 + 0.78 * core.inout_sine(clamp((t - T_EMPTY) / 1.5)) if t >= T_EMPTY else 0.0
 
 
 def pair_light(t):
     g = crystal_level(t)
     cold = LS.with_(exposure=1.06, rim=(0.55, 0.92, 1.0), rim_strength=0.4 + 0.45 * g, name="s5_pair")
-    warm = B.Light(key=(1.06, 0.98, 0.93), ambient=(0.48, 0.47, 0.6), rim=(1.0, 0.82, 0.64), rim_strength=0.8,
-                   direction=(-0.35, -0.94), exposure=1.04, name="s5_grace")
+    warm = B.Light(key=(1.04, 0.98, 0.96), ambient=(0.46, 0.46, 0.6), rim=(1.0, 0.86, 0.76), rim_strength=0.85,
+                   direction=(-0.35, -0.94), exposure=1.06, name="s5_grace")
     w = _q(warmth(t), 24)
     return B.Light.lerp(cold, warm, 0.9 * w) if w > 0 else cold
+
+
+WARM_SKY = "#f6d2c0"
+GRACE_SRC = (HUG_SX - 330.0, -170.0)               # the break in the cloud, up over the roofs (world)
+GRACE_HIT = (HUG_SX + 6.0, PGY + 4.0)              # where the shaft lands: on the two of them
 
 
 def grace_motes(cr, t, cam):
@@ -1481,18 +1657,65 @@ def grace_motes(cr, t, cam):
     w = warmth(t)
     if w <= 0.02:
         return
-    px, py, _, _ = circle3((HUG_SX - CX0) / PSC, D0, 430.0, 0.0)
-    x0, y0, x1, y1 = px - 300, -260.0, px + 5, py - 10
+    (x0, y0), (x1, y1) = GRACE_SRC, GRACE_HIT
 
     def mask(x, y):
         u = clamp((y - y0) / (y1 - y0))
         cx_ = lerp(x0, x1, u)
-        half = lerp(60.0, 150.0, u)
-        return w * clamp(1.0 - abs(x - cx_) / half) * clamp(u * 3.0) * clamp((1.0 - u) * 4.0 + 0.2)
+        half = lerp(70.0, 165.0, u)
+        return w * clamp(1.0 - abs(x - cx_) / half) * clamp(u * 2.5) * clamp((1.0 - u) * 5.0 + 0.15)
 
     with cam.view(cr, 1.0):
-        fx.dust(cr, t, (px - 460, -100, 560, py - 20), n=70, color="#ffe2b8", alpha=0.55, size=(1.0, 2.4),
-                seed=7, drift=(5.0, 7.0), twinkle=0.5, mask=mask)
+        fx.dust(cr, t, (x0 - 120, 40, x1 - x0 + 300, y1 - 60), n=90, color="#ffe4bc", alpha=0.6, size=(1.0, 2.6),
+                seed=7, drift=(4.0, 6.0), twinkle=0.55, mask=mask)
+
+
+def _shaft(cr, x0, y0, x1, y1, w0, w1, color, alpha, stops, soft=6):
+    """A soft additive beam (like fx.light_shaft) with its own brightness profile along it:
+    stops = [(offset 0..1 from (x0, y0), k)]; nested quads make the edges soft."""
+    c = core.col(color)
+    dx, dy = x1 - x0, y1 - y0
+    L = math.hypot(dx, dy) or 1e-6
+    nx, ny = -dy / L, dx / L
+    cr.save()
+    cr.set_operator(cairo.OPERATOR_ADD)
+    for k in range(soft):
+        f = 1.0 - 0.55 * k / max(1, soft - 1)
+        h0, h1 = w0 * 0.5 * f, w1 * 0.5 * f
+        cr.move_to(x0 + nx * h0, y0 + ny * h0)
+        cr.line_to(x1 + nx * h1, y1 + ny * h1)
+        cr.line_to(x1 - nx * h1, y1 - ny * h1)
+        cr.line_to(x0 - nx * h0, y0 - ny * h0)
+        cr.close_path()
+        pat = cairo.LinearGradient(x0, y0, x1, y1)
+        for off, kk in stops:
+            pat.add_color_stop_rgba(off, c[0], c[1], c[2], alpha * kk / soft)
+        cr.set_source(pat)
+        cr.fill()
+    cr.restore()
+
+
+def grace_light(lc, t, cam):
+    """The end: a break in the cloud -- one soft warm shaft (a few rays breathing inside it)
+    falls on the two of them only; a rose-gold pool on the cobbles round their feet; their
+    heads and shoulders catch it. Light layer (additive, quarter-res)."""
+    w = warmth(t)
+    if w <= 0.0:
+        return
+    (sx0, sy0), (px, py) = GRACE_SRC, GRACE_HIT
+    breathe = 0.92 + 0.08 * core.noise1(t * 0.5, 17)
+    ang = math.atan2(py - sy0, px - sx0)
+    L = math.hypot(px - sx0, py - sy0)
+    with cam.view(lc, 1.0):
+        # the shaft, from the ground UP: it dissolves into the pool at their feet, is brightest
+        # round the two of them and thins out toward the cloud (the far roofs barely catch it)
+        _shaft(lc, px, py + 70, sx0, sy0, 280, 120, WARM_SHAFT, 0.58 * w * breathe,
+               ((0.0, 0.0), (0.09, 0.55), (0.2, 1.0), (0.4, 0.62), (0.62, 0.3), (1.0, 0.1)))
+        fx.god_rays(lc, sx0, sy0, ang, 0.10, L * 0.97, WARM_SHAFT, t, n=4, width=(18, 70), alpha=0.15 * w,
+                    seed=5, shimmer=0.5)
+        fx.light_pool(lc, px + 6, py + 4, 230, 58, WARM_POOL, 0.30 * w)                 # the pool, in perspective
+        fx.light_pool(lc, px, py + 2, 120, 30, WARM, 0.08 * w)
+        fx.glow(lc, px - 16, py - 300.0, 175, WARM_SHAFT, 0.17 * w)               # heads and shoulders
 
 
 def ring_light(lc, t, cam, glows):
@@ -1505,17 +1728,22 @@ def ring_light(lc, t, cam, glows):
         fx.glow(lc, cx, cy - 230, 560, CYAN, 0.12 * g)
         for (x, y, s, gl) in glows:
             fx.glow(lc, x, y, 190 * s, CYAN, 0.16 * gl)
-        w = warmth(t)
-        if w > 0:
-            px, py, prx, pry = circle3((HUG_SX - CX0) / PSC, D0, 430.0, 0.0)
-            fx.light_pool(lc, px, py, prx, pry * 1.2, WARM_POOL, 0.36 * w)
-            fx.light_pool(lc, px, py, prx * 0.45, pry * 0.5, WARM, 0.22 * w)
-            hy = py - 400.0 * PSC                     # their heads and shoulders catch it most
-            fx.glow(lc, px - 10, hy, 190, WARM_SHAFT, 0.20 * w)
-            # a break in the cloud: one soft shaft falling on them only
-            fx.light_shaft(lc, px - 300, -260, px + 5, py - 10, 100, 250, WARM_SHAFT, 0.34 * w, soft=5,
-                           fade_start=0.2, fade_end=0.3)
-            fx.glow(lc, px - 300, -120, 420, WARM_SHAFT, 0.10 * w)
+    grace_light(lc, t, cam)
+
+
+def draw_dusk(cr):
+    """The emptied square sinks into the evening round the two of them (world coords; cached):
+    an elliptical darkening centred on the pair, clear over them, deep at the edges."""
+    cr.save()
+    cr.translate(HUG_SX - 40.0, PGY - 190.0)
+    cr.scale(1.0, 0.6)
+    pat = cairo.RadialGradient(0, 0, 90.0, 0, 0, 1300.0)
+    c = NIGHT_BLUE
+    for off, a in ((0.0, 0.0), (0.18, 0.06), (0.42, 0.30), (0.75, 0.48), (1.0, 0.6)):
+        pat.add_color_stop_rgba(off, c[0], c[1], c[2], a)
+    cr.set_source(pat)
+    cr.paint()
+    cr.restore()
 
 
 # ----------------------------------------------------------------------------------------
@@ -1555,6 +1783,7 @@ def setup():
                   5: Baked(CAM_D0, [(lambda c: draw_arch(c, *ARCH_AT[5], focus=0.6), 9.0, None)], margin=140,
                            opaque=False)}
     st["soft2"] = Soft(0.25)
+    st["dusk"] = fx.Layer(draw_dusk, res=0.25, **env.MARGIN)
     st["mist"] = env.Mist(-700, HOUSE_GY - 140, 3400, 260, PAL["haze"], 0.14, seed=3, speed=10)
     return st
 
@@ -1568,6 +1797,8 @@ def world_items(t, skip_pixie=False, crowd_dt=0.0):
     items = []
     tc = t + crowd_dt
     for m in MEMBERS:
+        if crowd_dt > 0.0 and m.i not in SHOT6_KEEP:
+            continue                                  # gone home (the ellipsis)
         X, D, _, _ = member_ground(m, tc)
         items.append((D, "m", m))
     items.append((D0, "pair", None))
@@ -1639,6 +1870,7 @@ def post(cr, t, st, bloom=0.55):
 
 
 KOBOLD_SKIN = B.Mat.of("#C8643A", sss=0.4)
+_SCRATCH_CR = cairo.Context(core.new_surface(4, 4))     # for dry runs (rig positions only)
 KOBOLD_SLEEVE = B.Mat.of("#3E4A6A", shadow_k=1.1)
 INS_WRIST = (1470.0, 1035.0)                      # the hero crystal's holder: a kobold's claw
 
@@ -1646,19 +1878,49 @@ INS_WRIST = (1470.0, 1035.0)                      # the hero crystal's holder: a
 def big_feed(t):
     """The insert's crystal: what it 'sees' -- the fight, framed tight and sharp."""
     def fn(c, w, h):
-        core.vgrad(c, 0, 0, w, h, ["#3d4e68", "#1c2534"])
-        c.save()
-        c.translate(w / 2, h * 0.9)
-        c.scale(1.0, 0.28)
-        g = cairo.RadialGradient(0, 0, 0, 0, 0, w * 0.6)
-        g.add_color_stop_rgba(0.0, 0.37, 0.88, 1.0, 0.35)
+        core.vgrad(c, 0, 0, w, h, ["#5d7c9a", "#2a3a52"])
+        c.save()                                     # the scrying light welling up from within
+        c.translate(w * 0.5, h * 0.55)
+        c.scale(1.0, 1.25)
+        g = cairo.RadialGradient(0, 0, 0, 0, 0, w * 0.62)
+        g.add_color_stop_rgba(0.0, 0.62, 0.95, 1.0, 0.55)
+        g.add_color_stop_rgba(0.55, 0.37, 0.85, 1.0, 0.22)
         g.add_color_stop_rgba(1.0, 0.37, 0.88, 1.0, 0.0)
         c.set_source(g)
         c.paint()
         c.restore()
         sc = 0.3                                     # (the pair low and left of the rec-rune)
         draw_pair(c, w * 0.45 - 15.0 * sc, h * 0.95, sc, t, LS)
+        c.save()                                     # a drifting veil of mist over the image
+        c.set_operator(cairo.OPERATOR_ADD)
+        for k in range(3):
+            yy = (h * (0.25 + 0.3 * k) + 18.0 * math.sin(t * 0.9 + 2.1 * k)) % h
+            gg = cairo.LinearGradient(0, yy - 26, 0, yy + 26)
+            gg.add_color_stop_rgba(0.0, 0.5, 0.9, 1.0, 0.0)
+            gg.add_color_stop_rgba(0.5, 0.5, 0.9, 1.0, 0.10)
+            gg.add_color_stop_rgba(1.0, 0.5, 0.9, 1.0, 0.0)
+            c.set_source(gg)
+            c.rectangle(0, yy - 26, w, 52)
+            c.fill()
+        c.restore()
     return ch.crystal_feed(fn, 200, 280)
+
+
+def _halo(cr, x, y, r0, r1, sy, color, alpha):
+    """An additive elliptical halo that starts at r0 (the edge of what it surrounds, at full
+    alpha) and fades out by r1 -- the light round a glowing object, not hidden behind it."""
+    c = core.col(color)
+    cr.save()
+    cr.translate(x, y)
+    cr.scale(1.0, sy)
+    pat = cairo.RadialGradient(0, 0, r0 * 0.6, 0, 0, r1)
+    for off, k in ((0.0, 1.0), (0.22, 0.55), (0.45, 0.22), (0.7, 0.07), (1.0, 0.0)):
+        pat.add_color_stop_rgba(off, c[0], c[1], c[2], alpha * k)
+    cr.set_operator(cairo.OPERATOR_ADD)
+    cr.set_source(pat)
+    cr.arc(0, 0, r1, 0, TAU)
+    cr.fill()
+    cr.restore()
 
 
 def draw_insert_hand(cr, t):
@@ -1670,9 +1932,34 @@ def draw_insert_hand(cr, t):
     wx, wy = INS_WRIST[0] + jx, INS_WRIST[1] + jy
     ang = math.pi * 1.06 + 0.03 * core.noise1(t * 1.9, 5)
     lw = B.line_for(B.LINE, 3.2)
-    hold = ch.crystal_hold(face=1.0, size=1.62, thumb=big_feed(t), t=t, tilt=-0.06 + 0.04 * core.noise1(t * 1.3, 7))
+    tilt = -0.06 + 0.04 * core.noise1(t * 1.3, 7)
+    # a dry run (no image, on a scratch surface) finds the crystal, so its glow can go BEHIND it
+    probe = ch.crystal_hold(face=1.0, size=1.62, thumb=None, t=t, tilt=tilt)
+    B.hand(_SCRATCH_CR, wx, wy, ang, 300.0, "grip", KOBOLD_SKIN, L_INS, lw, claw="#2E2A26", finger_w=0.9,
+           palm_w=0.9, hold=probe, detail=0)
+    gx, gy = probe.center_dev if probe.center_dev else (wx, wy - 300)
+    pulse = 0.9 + 0.1 * math.sin(t * TAU * 1.2)
+    _halo(cr, gx, gy, 170.0, 640.0, 1.35, CYAN, 0.55 * pulse)          # the scrying light round it
+    hold = ch.crystal_hold(face=1.0, size=1.62, thumb=big_feed(t), t=t, tilt=tilt)
     B.hand(cr, wx, wy, ang, 300.0, "grip", KOBOLD_SKIN, L_INS, lw, claw="#2E2A26", finger_w=0.9, palm_w=0.9,
            hold=hold)
+    # magic: rune motes rising off it, and a glint travelling round the brass collar
+    cr.save()
+    cr.set_operator(cairo.OPERATOR_ADD)
+    for i in range(14):
+        life = 1.8 + 0.8 * core.hash01(i, 81)
+        u = ((t + core.hash01(i, 82) * life) % life) / life
+        side = -1.0 if i % 2 else 1.0
+        mx = gx + side * (190.0 + 140.0 * core.hash01(i, 83)) + 14.0 * math.sin(t * 1.7 + i)
+        my = gy + 260.0 - u * 560.0
+        a_ = 0.75 * math.sin(math.pi * u) * (0.5 + 0.5 * core.hash01(i, 84))
+        core.src(cr, "#d8fbff", a_)
+        core.circle(cr, mx, my, 2.2 + 2.6 * core.hash01(i, 85) * (1.0 - 0.5 * u))
+        cr.fill()
+    cr.restore()
+    ga = (t * 0.55) % 1.0
+    fx.sparkle(cr, gx + 205.0 * math.cos(ga * TAU), gy + 285.0 * math.sin(ga * TAU), 26.0, "#fff4d6",
+               0.55 * math.sin(math.pi * ((t * 1.1) % 1.0)), angle=0.3)
     # the sleeve (blue-grey wool) from below the frame, its cuff over the wrist
     d = (math.cos(ang), math.sin(ang))
     cuff = (wx - d[0] * 18.0, wy - d[1] * 18.0)
@@ -1681,7 +1968,7 @@ def draw_insert_hand(cr, t):
     B.shade(cr, shp, KOBOLD_SLEEVE, L_INS, lw, outline=so, size=150.0)
     B.detail_lines(cr, [[(cuff[0] + 30, cuff[1] - 60), (cuff[0] + 10, cuff[1] + 5), (cuff[0] + 32, cuff[1] + 70)]],
                    lw * 0.9, B.palette(L_INS, KOBOLD_SLEEVE).line, 0.6)
-    # its cold light falls on the claw (a halo below the face, not over it)
+    # its cold light falls on the claw
     c = cr.device_to_user(*hold.center_dev) if hold.center_dev else (wx, wy - 300)
     fx.glow(cr, c[0] + 40, c[1] + 330, 260.0, CYAN, 0.16)
     return c
@@ -1738,16 +2025,44 @@ def draw(cr, t, st):
     elif shot == 4:
         # the pixie's close-up: the square behind her soft, she is staged near the lens
         items = world_items(t, skip_pixie=True)
-        draw_items(soft.begin(), items, t, cam, feed, sfeed, glows=glows, dy_front=170.0, detail=0)
-        soft.end(cr, 3.5)
-        ch.draw_pixie(cr, 1270.0, 1240.0, 9.0, pixie_pose(t, feed, staged=True), L_PIX, t)
+        draw_items(soft.begin(), items, t, cam, feed, sfeed, glows=glows, dy_front=150.0, detail=0)
+        soft.end(cr, 4.0)
+        px_, py_, ps_ = PIX_MCU
+        dx = 4.0 * core.noise1(t * 0.7, 31)                  # she hangs in the air, drifting a hair
+        rig = ch.draw_pixie(cr, px_ + dx, py_, ps_, pixie_mcu_pose(t, feed), L_PIX, t)
+        if "crystal" in rig.points:                          # its cold light from below on her face
+            cx_, cy_ = rig.points["crystal"]
+            fx.glow(lc, cx_, cy_ - 40.0, 520.0, CYAN, 0.10 + 0.22 * core.inout_sine(clamp((t - (L1.end + 0.38)) / 0.4)))
+    elif shot == 6:
+        # the emptied square: the last walkers far off (their cold glows scattering), the
+        # evening sinking in round the two of them, the shaft's shadow under them, the pair
+        items = world_items(t, skip_pixie=True, crowd_dt=E_SKIP)
+        draw_items(cr, [it for it in items if it[1] == "m"], t, cam, feed, sfeed, glows=glows, crowd_dt=E_SKIP)
+        w = warmth(t)
+        with cam.view(cr, 1.0):
+            st["dusk"].paint(cr, alpha=0.55 + 0.45 * w)
+            env.draw_ground_shadow(cr, HUG_SX + 62.0, PGY + 14.0, 150.0, 22.0, alpha=0.3 * w)
+        draw_items(cr, [it for it in items if it[1] == "pair"], t, cam, feed, sfeed, glows=glows)
+    elif shot == 5:
+        # his medium close-up: the square beyond him falls a little soft (depth of field), so
+        # he reads first -- the ring turning its back is still clear
+        items = world_items(t, skip_pixie=(t > L1.end + 2.4))
+        draw_items(soft.begin(), items, t, cam, feed, sfeed, glows=glows, detail=1)
+        soft.end(cr, 2.2)
     else:
-        dt = E_SKIP if shot == 6 else 0.0
-        items = world_items(t, skip_pixie=(shot >= 5 and t > L1.end + 2.4), crowd_dt=dt)
-        draw_items(cr, items, t, cam, feed, sfeed, glows=glows, crowd_dt=dt)
+        items = world_items(t)
+        draw_items(cr, items, t, cam, feed, sfeed, glows=glows)
     if shot in (1, 5, 6):
-        draw_dragon_fg(cr, t, shot, cam)
+        drig = draw_dragon_fg(cr, t, shot, cam)
         st["arch"][set_of(shot)].paint(cr, cam, 1.5)
+        x, gy, sc, p = DRAGON_AT[set_of(shot)]
+        hx, hy = residual(base_cam(shot), cam, p).transform_point(*drig.head)
+        if shot == 5:
+            # his close-up: a soft cold bounce off the square on his face, so he reads first
+            fx.glow(lc, hx + 60.0 * sc, hy + 20.0 * sc, 230.0 * sc, "#a9d4ff", 0.12)
+        elif shot == 6:
+            # the warmth on the two of them reaches him too, faintly, as his face softens
+            fx.glow(lc, hx + 50.0 * sc, hy + 10.0 * sc, 200.0 * sc, WARM, 0.07 * warmth(t))
     if shot == 6:
         grace_motes(cr, t, cam)
     ring_light(lc, t, cam, glows)
@@ -1773,8 +2088,9 @@ def _build_cues():
         cues.append((round(ti + 0.06, 3), "laugh_crowd_burst", {"gain": round(0.35 + 0.2 * pw, 2), "pan": 0.0}))
         for j in range(2):                                           # the stumble of the one shoved
             cues.append((round(ti + 0.16 + 0.17 * j, 3), "footstep", {"gain": round(0.35 + 0.1 * pw, 2), "pan": pan_pair(ti)}))
-    cues.append((round(SHOVES[4][1] + 0.05, 3), "cloth_rustle", {"gain": 0.3, "pan": pan_pair(T_STOP)}))   # payback wind-up
-    cues.append((round(T_STOP + 0.3, 3), "cloth_rustle", {"gain": 0.45, "pan": pan_pair(T_STOP)}))         # arms drop
+    cues.append((round(T_COCK + 0.12, 3), "cloth_rustle", {"gain": 0.35, "pan": pan_pair(T_STOP)}))        # the punch wound up
+    cues.append((round(T_BRACE + 0.16, 3), "cloth_rustle", {"gain": 0.25, "pan": pan_pair(T_STOP)}))       # the flinch
+    cues.append((round(T_DROP + 0.22, 3), "cloth_rustle", {"gain": 0.45, "pan": pan_pair(T_STOP)}))        # arms fall
     w0, w1 = T_WALK_IN
     for j in range(3):                                               # his steps in
         cues.append((round(w0 + 0.12 + j * (w1 - w0 - 0.2) / 2.5, 3), "footstep", {"gain": 0.4, "pan": pan_pair(w0)}))
@@ -1805,6 +2121,8 @@ def _build_cues():
             if tc < T_EMPTY:
                 ts = tc
             elif tc >= T_EMPTY + E_SKIP:
+                if m.i not in SHOT6_KEEP:
+                    break                                            # gone home (the ellipsis)
                 ts = tc - E_SKIP                                     # after the ellipsis
             else:
                 continue
