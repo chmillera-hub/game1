@@ -18,6 +18,7 @@ edits film/lib.
 
 import math
 import random
+import re
 
 import cairocffi as cairo
 
@@ -203,12 +204,12 @@ FOLK = {
 
 def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, hurry=0.0, away=0.0,
           look=0.0, reach=0.0, lantern=False, lantern_lit=1.0, alpha=1.0, seed=0, hood=None, bundle=None,
-          lift=0.0, hold=None, shrug=0.0):
+          lift=0.0, hold=None, shrug=0.0, ear_k=1.0):
     """A painted creature figure standing at (x, y) (feet), ~38*s units tall, facing +1 right / -1
     left. walk 0..1 + phase (legs, bob); hurry 0..1 (leans, head down, hood up); away 0..1 (turned
     away from us: the face hides behind the hood/head); look -1..1 glance (head turned toward the
     viewer side); reach 0..1 the front arm goes out (a door, a latch); lantern: carries one (lit).
-    alpha < 1 fades the whole figure (stepping into a doorway)."""
+    alpha < 1 fades the whole figure; ear_k < 1 folds long ears back (ducking in at a low door)."""
     F = FOLK.get(kind, FOLK["goblin"])
     if alpha <= 0.01:
         return None
@@ -282,7 +283,7 @@ def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, 
     ears = F["ears"]
     # ears behind the head
     if ears in ("goblin", "elf") and not (hood_on and ears == "elf" and away > 0.5):
-        L_ = 9.5 if ears == "goblin" else 8.0
+        L_ = (9.5 if ears == "goblin" else 8.0) * ear_k
         for sgn in (-1.0, 1.0):
             e = [(sgn * 3.2, -2.4), (sgn * (3.6 + L_), -4.6 - (1.5 if ears == "elf" else 0.0)), (sgn * 3.6, 0.6)]
             pe = sb.wash(cr, e, sk, 0.99, 0.3)
@@ -739,16 +740,25 @@ def draw_heart_padlock(cr, x, y, r, shut=0.0, swing=0.0, glint=0.0, t=0.0, open_
 
 
 def draw_town_door(cr, rect, open_=0.0, slam=-1.0, t=0.0, lock=0.0, swing=0.0, glint=0.0, wood="#7a4d2c",
-                   interior=None, lamp=0.0):
+                   interior=None, lamp=0.0, within=None):
     """An arched oak door with scrolled iron strap hinges, a ring pull and the HEART PADLOCK on its
     hasp. open_ 0 shut .. 1 wide (the lamplit hall shows: lamp 0..1); slam = s since it slammed
-    (a shake); lock 0..1 the padlock's shackle snaps shut; swing its rock; glint its burnish."""
+    (a shake); lock 0..1 the padlock's shackle snaps shut; swing its rock; glint its burnish.
+    within(cr): draws whoever is IN the doorway -- over the lit hall, under the door leaf, clipped by
+    the jambs and the arch (so the door shuts in front of them)."""
     dx, dy, dw, dh = rect
     arch = _door_arch(dx, dy, dw, dh)
     inside = interior or core.mix("#1a120c", "#ffb24a", 0.55 * lamp)
     sb.wash(cr, arch, inside, 0.99, 0.15)
     if lamp > 0.02:
         soft_glow(cr, dx + dw * 0.5, dy + dh * 0.7, dw * 0.9, "#ffcf7a", 0.5 * lamp)
+    if within is not None:
+        cr.save()
+        cr.new_path()
+        core.polygon(cr, arch)
+        cr.clip()
+        within(cr)
+        cr.restore()
     k = clamp(1.0 - open_)
     shake = 0.0
     if slam >= 0.0:
@@ -2460,13 +2470,19 @@ def _font_opts():
     return _FONT_OPTS
 
 
+_PUNCT_ONLY = re.compile(r"[—–\-,.;:!?’'\"]+")
+
+
 def _timed_words(text, lids, skip_first_letter=False):
     """Assign song word times to the words of `text` (the page's lines, '\\n'-separated, '>' =
-    indented half-line) by walking the sung words of lines `lids` in order."""
+    indented half-line) by walking the sung words of lines `lids` in order. A token that is only
+    punctuation (the em-dash in "sell —") is not a sung word: it is inked by the same quill stroke,
+    right as the word before it finishes, and does not use up a sung word."""
     sung = []
     for lid in lids:
         sung += SONG.words(lid)
     out, k = [], 0
+    prev = None
     for para in text.split("\n"):
         ind = para.startswith(">")
         body = para[1:].lstrip() if ind else para
@@ -2474,14 +2490,32 @@ def _timed_words(text, lids, skip_first_letter=False):
         for w in body.split(" "):
             if not w:
                 continue
+            if _PUNCT_ONLY.fullmatch(w) and prev is not None:
+                pa, pb = prev
+                a = pa + 0.8 * (pb - pa)                   # the nib flicks it in as the word lands
+                words.append((w, a, a + 0.16))
+                continue
             if k < len(sung):
                 _, a, b = sung[k]
                 k += 1
             else:
                 a, b = 1e9, 1e9
             words.append((w, a, b))
+            prev = (a, b)
         out.append((ind, words))
     return out
+
+
+def check_verse(name, verse, lids):
+    """The page's verse must write exactly the sung words, in order, every one of them: one page word
+    per sung word (punctuation-only tokens excepted) and no word left unwritten (t = 1e9)."""
+    sung = sum(len(SONG.words(lid)) for lid in lids)
+    if not sung:                                       # no song timing file: nothing to check against
+        return
+    page = [w for _, words in verse.lines for (w, a, b) in words if not _PUNCT_ONLY.fullmatch(w)]
+    never = [w for _, words in verse.lines for (w, a, b) in words if a >= 1e8]
+    assert len(page) == sung, f"verse {name}: {len(page)} page words but {sung} sung words ({lids})"
+    assert not never, f"verse {name}: words never written: {never}"
 
 
 class VerseText:
@@ -2839,6 +2873,9 @@ def make_book(ev):
     v2a = VerseText(V2A_TEXT, ["s0_l5", "s0_l6"], TEXT_V2, 150.0 / 18.5, align="center")
     v2b = VerseText(V2B_TEXT, ["s0_l7", "s0_l8"], TEXT_V2, 150.0 / 18.5, align="center")
     coda = VerseText(CODA_TEXT, ["s0_l9", "s0_l10"], (0.11, 0.14, 0.79, 0.3), 150.0 / 17.0, cap_lines=2)
+    for name, verse, lids in (("v1", v1, ["s0_l1", "s0_l2", "s0_l3", "s0_l4"]), ("v2a", v2a, ["s0_l5", "s0_l6"]),
+                              ("v2b", v2b, ["s0_l7", "s0_l8"]), ("coda", coda, ["s0_l9", "s0_l10"])):
+        check_verse(name, verse, lids)
     full = (0.0, 0.0, 1.0, 1.0)
     # the library's drop caps sit at the text box corner: (x, y + size*0.12), size = cap_lines*1.24*size - 0.15*size
     s1 = 150.0 / 17.0

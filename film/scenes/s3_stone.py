@@ -18,14 +18,20 @@ every one from timeline.json lines, beats and word times):
     (his head at screen x ~646, look room ahead), the world sliding past in seven parallax planes
     (sky .05, castle .12, roofs .3, far side .5, street strips .56/.74/1.0/1.35).
     s3_l1 (1.0) / s3_l2 (3.6): a spark leaves the stone and each word is WRITTEN in light beside
-    his head, syllable-timed to the voice (illuminated uncial, glowing cold cyan, an enlarged
-    initial F, a dark halo for legibility, a scribe's swash after each line, cold streaks of its
-    reflection down the wet cobbles); the older line cools and dims. Acting: heard it all before
+    his head, syllable-timed to the voice (illuminated script, glowing cold cyan: an enlarged
+    uncial initial F ringed with rubrication dots, broad-nib downstrokes, a hairline flourish
+    off the ascenders of "loneliness" and "hold", a dark halo for legibility, a scribe's swash
+    after each line, cold streaks of its reflection down the wet cobbles); the text lands before
+    the first word is written and the crane settles under it; the older line cools and dims;
+    anything passing behind the line being read (a lamp post's column, a drip) fades out of the
+    way of the letters. The eaves and jetties across the street drip, two gutter spouts pour,
+    the lamps' hoods drip into their pools. Acting: heard it all before
     -- heavy lids, eyes ahead and down; a weary glance up into the rain (2.6), a heavy blink
     after "press two" (5.4), a shiver in the cold (5.9: shoulders up, head trembles).
  B  6.45-13.47 "for loneliness... please hold" -- MEDIUM, tracking beside him at eye level
     (zoom 2.2 -> 2.34, a breath of push as the hold begins); the far side melts to soft shapes
-    and warm bokeh. Cut in on the third option: the two options already heard sit small and dim
+    and warm bokeh, and the stop lamp's post, a step upstage of him, is softly out of focus as it
+    passes behind him. Cut in on the third option: the two options already heard sit small and dim
     above; the third is written big. "loneliness" (6.77) lands at 7.09 with a pop, a flash and a
     burst of cold sparks: HOPE -- his eyes lift to the word, wide, no blink, brows up, wings lift a
     little, his walk falters. "please hold" (8.06): the eyes drift down, a slow blink, the head
@@ -44,12 +50,16 @@ every one from timeline.json lines, beats and word times):
     hourglass (13.75) -> breath, the hunch eases (13.96) -> s3_l4 (14.3), small and tired, to
     himself: eyes on the hourglass for "I've been on hold", sliding down and away on "my whole
     life". 16.4: a long closed-mouth exhale; his breath steams in the cold and drifts forward.
+    (The lamp's post stands just out of frame left; its hood's gold drips fall behind him.)
     Lit like Klaus: the lamp is above and BEHIND him -- a warm rim along his horns and crown;
     everything the camera sees of his front is cold, washed cyan by the stone.
  D  17.00-20.00 s3_lantern -- THE FINAL WIDE: the camera has pulled back across the street and
     keeps rising and pulling away (zoom 0.9 -> 0.74) while the street sinks into the night round
     the lamp's pool (a radial falloff; the lamp, its cone of lit rain, its gold pool and glints,
-    him and the emblem keep their light). A few warm windows across the street, none for him.
+    him and the emblem keep their light). The rain is as heavy as in the close shot it cuts
+    from: the cone is full of long gold streaks glinting by the lamp, drops burst gold on his
+    horns and shoulders, the hood drips rings into the pool, gutter spouts pour across the
+    street. A few warm windows across the street, none for him.
     Last image: a small cold figure in a warm pool of lamplight, the stone at his ear, the steam
     of his breath thinning away, the four notes still going round.
 
@@ -57,7 +67,11 @@ COLOUR / VALUE. Deep navy night and rain (the far side graded down to 5-15 % val
 night falloff and a rain haze) against sodium-gold lamp light: halos, volumetric cones of lit
 rain, gold pools with specular glints, long broken reflections on the wet street, and a few
 candle-lit panes. One cold accent: the speaking stone's cyan (its glow at his ear, its light on
-his face, the rune text, the notes, the hourglass). Warm light is the world's, never his: it
+his face, the rune text, the notes, the hourglass) -- one continuous level for the runes, the
+halo and the light on his face: a low steady glow while the call is open, swelling with each
+phrase of the voice (smoothed, attack 0.04 s / release 0.15 s) and then with the music box's
+notes. In the tracking wide the lamps' cones are kept soft and a cool sky rim separates his
+dark coat from the dark facades between the lamps. Warm light is the world's, never his: it
 rims him, it never reaches his front. The subject is always the brightest, most contrasted
 thing: the lamp-pool + his face in the wides, the text or the emblem + his face in the close
 shots. Eye-trace: text above-right of his head in A and B; the emblem on the right in B and C;
@@ -74,11 +88,16 @@ CRAFT. Cached layers (sky with the town's glow on the cloud base, castle hill, r
 side drawn twice so its lit windows can be chosen -- never behind the line being spoken in the
 wide -- the whole wet street painted once and cut into parallax strips, reflections, pool
 glints) graded in setup to a deep navy; soft depth-of-field copies of the far side for the close
-shots. Per frame: the lamp posts, the dragon (drawn ONCE into an offscreen buffer that is
+shots. Per frame: the far side's drips (world-locked slots along every eave and jetty line,
+replayed from the street row's own layout, each catching the gold of the panes and door lamps
+it falls past) and its two gutter spouts, the lamp posts (a post's column is masked out of the
+way of the line being read; in the medium shot it is drawn soft, out of focus), the lamps' hood
+drips, the dragon (drawn ONCE into an offscreen buffer that is
 composited, mirrored for his reflection in the wides, and used as the mask for the lamp's warm
-top-light), contact and lamp shadows, rain in three world-locked depths (drop counts fixed per
-shot, streak width and length matched to each shot's magnification) turning gold inside the
-lamps' halos and cones, splashes, step splashes, puddle ripples, mist, rain bursting on his
+top-light and the cool sky rim), contact and lamp shadows, rain in three world-locked depths
+(drop counts fixed per shot, streak width and length matched to each shot's magnification, the
+final wide boosted) turning gold inside the lamps' halos and cones, the final wide's cone of lit
+rain, splashes, step splashes, puddle ripples, mist, rain bursting on his
 horns, a drip off his snout once he stands still, the rune text, the dissolve, the hold emblem,
 the background light layer behind him and the front light layer (the stone's spill on his face),
 bloom, grain, vignette. SFX_CUES come from the same walk integrator, word schedule, beat
@@ -399,6 +418,16 @@ def crane_a(t):
     return CRANE_R * (1.0 - core.inout_sine(ramp(t, T_CRANE[0], T_CRANE[1])))
 
 
+T_TEXT_LAND = L1.start - 0.03      # the menu's first word is written on still air
+
+
+def text_crane(t):
+    """The rune text's own way down with the crane: it rides down with the camera at first but
+    lands just before the first word is written (the crane keeps settling under it until 2.0,
+    bringing his head up to the words)."""
+    return CRANE_R * (1.0 - core.inout_sine(ramp(t, T_CRANE[0], T_TEXT_LAND)))
+
+
 def zoom_a(t):
     return lerp(1.0, 1.05, core.inout_sine(ramp(t, T_CRANE[1] - 0.4, T_CUT1)))
 
@@ -426,7 +455,7 @@ def cam_b(t):
 # C -- close shot under the lamp, a NEW set-up (not a punch-in on B's axis): the camera has come
 # round toward his face (TURN_C swings him ~22 deg toward us) and in to 1.7x B's size; his face
 # on the left third, the hold emblem on the right, a little above his eye line
-SX_C, SY_C = 700.0, 470.0
+SX_C, SY_C = 612.0, 470.0        # (the stop lamp's post stays just out of frame, left)
 FACE_DX, FACE_DY = 50.0, -350.0        # his face (between the eyes and the mouth) from his anchor, turned
 
 
@@ -542,11 +571,13 @@ TB_Y3, TB_S3 = -126.0, 1.24        # shot B: the third option, big, above his ey
 TB_Y1, TB_S1, TB_A1 = -262.0, 0.7, 0.62   # shot B: the two options already heard, small and dim
 
 
-def text_layout(t):
-    """[(ox, oy, scale, alpha) or None] per menu line, in screen px, for the shot at t."""
+def text_layout(t, legacy=False):
+    """[(ox, oy, scale, alpha) or None] per menu line, in screen px, for the shot at t.
+    legacy=True: the text riding the crane all the way down (the layout the far side's lit
+    windows and door lamps were chosen against -- kept so the set stays as it was)."""
     s = shot_at(t)
     if s == "A":
-        hx, hy = SX_A, SY_A + crane_a(t)
+        hx, hy = SX_A, SY_A + (crane_a(t) if legacy else text_crane(t))
         return [(hx + TA_DX, hy + TA_DY + k * LH, 1.0, 1.0) for k in range(3)]
     if s == "B":
         hx, hy = SX_B, SY_B
@@ -555,7 +586,7 @@ def text_layout(t):
     return [None, None, None]
 
 
-def _text_boxes(t):
+def _text_boxes(t, legacy=False):
     """Screen rect of the menu line being spoken at t (the one at full strength: lit windows are
     kept out from behind it; the older, dimmed lines may pass in front of a lit pane)."""
     k = -1
@@ -564,7 +595,7 @@ def _text_boxes(t):
             k = li
     if k < 0:
         return []
-    lay = text_layout(t)[k]
+    lay = text_layout(t, legacy)[k]
     if lay is None:
         return []
     ox, oy, s, _a = lay
@@ -700,7 +731,7 @@ def _text_sweep(px):
     for k in range(int(TEXT_T[0] * 10), int(T_CUT1 * 10) + 1):
         tt = k / 10.0
         sx, sy = camera_base(tt).to_screen(px[0], px[1], PX_HOUSES)
-        for (bx, by, bw, bh) in _text_boxes(tt):
+        for (bx, by, bw, bh) in _text_boxes(tt, legacy=True):
             if bx - 40 <= sx <= bx + bw + 40 and by - 40 <= sy <= by + bh + 40:
                 return True
     return False
@@ -990,13 +1021,17 @@ def _drip_drops(t, x, y0, y1, per, ph, r, g, ncyc=3):
     return bead, falling, splashes
 
 
-def draw_drips(cr, cam, t, slots, alpha=1.0, soft=1.0):
+def draw_drips(cr, cam, t, slots, alpha=1.0, soft=1.0, which=None):
     """(screen) The far side's eaves dripping, in the houses' plane: a bead swelling at the edge,
     the drop falling (a short streak, longer as it speeds up) and two flecks where it lands;
     cold grey-blue, flashing gold in front of a lit pane or a door lamp. soft > 1: the close
-    shots' depth of field (wider, fainter)."""
+    shots' depth of field (wider, fainter). which = "cool" / "lit" draws only the slots that
+    never / do catch warm light (the final wide sinks the cool ones into the night with the
+    street, the lit ones keep their light)."""
     if alpha <= 0.01 or not slots:
         return
+    if which is not None:
+        slots = [sl for sl in slots if (max(sl[6]) > 0.12) == (which == "lit")]
     xa, _ = cam.to_world(-40.0, 0.0, PX_HOUSES)
     xb, _ = cam.to_world(W + 40.0, 0.0, PX_HOUSES)
     pz = cam.scale_at(PX_HOUSES)                      # screen px per world px in this plane
@@ -1059,6 +1094,147 @@ def draw_drips(cr, cam, t, slots, alpha=1.0, soft=1.0):
                     core.circle(cr, x + sg * (1.5 + 6.0 * u) / pz, y1 - (9.0 * u * (1.0 - u) * 2.0) / pz,
                                 max(0.5, 0.9 / pz))
                     cr.fill()
+
+
+# screen points in the final wide (t = 18.5): two eave ends right of the stop lamp and the hold
+# emblem, which in the tracking wide stay clear of him (they enter at the right edge)
+SPOUT_TARGETS = ((1197.0, 488.0), (1468.0, 494.0))
+
+
+def make_spouts(rect, windows, lamps):
+    """Two gutter spouts pouring off the far side's eaves, right of the stop lamp in the final
+    wide (the eave ends nearest SPOUT_TARGETS there): [(x, y_top, y_bot, lut)]."""
+    cam = camera_base(T_CUT3 + 1.5)
+    ends = []
+    for (hx, w, f, hseed) in _house_specs(rect):
+        for (xa, xb, y) in _eave_lines(hx, w, f, hseed):
+            if xb - xa < 20.0:
+                ends.append((0.5 * (xa + xb), y))
+            else:
+                ends += [(xa + 5.0, y), (xb - 5.0, y)]
+    out = []
+    for (tx, ty) in SPOUT_TARGETS:
+        x, y = min(ends, key=lambda e: math.hypot(cam.to_screen(e[0], e[1], PX_HOUSES)[0] - tx,
+                                                  cam.to_screen(e[0], e[1], PX_HOUSES)[1] - ty))
+        y1 = HOUSE_Y + 3.0
+        lut = [_warm_at(x, lerp(y, y1, q / 11.0), windows, lamps) for q in range(12)]
+        out.append((x, y, y1, lut))
+    return out
+
+
+def draw_spouts(cr, cam, t, spouts, alpha=1.0, soft=1.0, lamp_xy=None):
+    """(screen) The gutter spouts: a little lead spout at the eave, a thin twisting stream of
+    rain pouring off it (highlights running down it, breaking into drops near the bottom) and a
+    splashing crown where it lands. Lit by the panes and lamps near it, and a little by the
+    street lamp (lamp_xy: its screen position)."""
+    if alpha <= 0.01:
+        return
+    pz = cam.scale_at(PX_HOUSES)
+    boxes = text_veil_boxes(t)
+    with cam.view(cr, PX_HOUSES):
+        for i, (x, y0, y1, lut) in enumerate(spouts):
+            sx, sy0 = cam.to_screen(x, y0, PX_HOUSES)
+            if sx < -40 or sx > W + 40:
+                continue
+            wl = 0.0
+            if lamp_xy is not None:
+                wl = 0.55 * clamp(1.0 - math.hypot(sx - lamp_xy[0], sy0 - lamp_xy[1]) / 700.0) ** 1.4
+            vis = veil_at(sx, 0.5 * (sy0 + cam.to_screen(x, y1, PX_HOUSES)[1]), boxes)
+            a = alpha * vis / soft ** 0.7
+            if a <= 0.01:
+                continue
+            q = clamp(0.5 * (lut[3] + lut[8]) + wl)
+            c = core.mix(DRIP_COOL, DRIP_WARM, q)
+            # the spout: a short lead trough poking out of the eave, a wet glint on its lip
+            core.polygon(cr, [(x - 6.0, y0 - 3.0), (x + 5.0, y0 - 1.5), (x + 4.0, y0 + 3.0), (x - 5.0, y0 + 2.0)])
+            core.src(cr, "#161c29", 0.95 * alpha)
+            cr.fill()
+            core.polygon(cr, [(x - 6.0, y0 - 3.0), (x + 5.0, y0 - 1.5), (x + 5.0, y0 - 0.4), (x - 6.0, y0 - 1.8)])
+            core.src(cr, core.mix("#7d8fae", "#ffd590", q), 0.6 * a)
+            cr.fill()
+            # the stream: parcels of water leave the spout every 1/30 s and fall, drifting a touch
+            # downwind -- packed into a glossy rope near the spout, they stretch out and break
+            # into gulps and drops lower down as they speed up
+            v0, dtp = 30.0, 1.0 / 30.0
+            fall = (-v0 + math.sqrt(v0 * v0 + 2.0 * G_HOUSES * max(1.0, y1 - y0))) / G_HOUSES
+            kmax = int(math.floor(t / dtp))
+            cr.set_line_cap(cairo.LINE_CAP_ROUND)
+            for k in range(kmax + 1, kmax - int(fall / dtp) - 3, -1):
+                hk = core.hash01(k, 71 + i)
+                age = t - (k + 0.8 * (core.hash01(k, 73 + i) - 0.5)) * dtp   # an uneven flow
+                if age < 0.0 or age > fall:
+                    continue
+                y = y0 + 1.0 + v0 * age + 0.5 * G_HOUSES * age * age
+                u = clamp((y - y0) / max(1.0, y1 - y0))
+                v = v0 + G_HOUSES * age
+                wob = (0.4 + 2.4 * u) * math.sin(k * 0.9 + i * 2.0) / pz
+                xx = x + 0.07 * (y - y0) + wob
+                ln = max(3.0 / pz, v * dtp * ((1.1 if u < 0.3 else 0.45) + 0.6 * hk))
+                cr.move_to(xx - 0.07 * ln, y - ln)
+                cr.line_to(xx, y)
+                cr.set_line_width((2.7 - 1.3 * u) * soft / pz)
+                core.src(cr, c, (0.5 + 0.35 * q) * (0.7 + 0.3 * hk) * a)
+                cr.stroke()
+                if hk > 0.62:                                # a bright bead running down it
+                    core.circle(cr, xx, y, (1.0 + 0.5 * q) * soft / pz)
+                    core.src(cr, core.mix("#eef4ff", "#fff0c8", q), 0.8 * a)
+                    cr.fill()
+            # the splash where it lands: a bright foot of foam and a crown of flying drops
+            xl = x + 0.07 * (y1 - y0)
+            core.ellipse(cr, xl, y1 + 1.0, 5.0 / pz, 1.6 / pz)
+            core.src(cr, c, 0.55 * a)
+            cr.fill()
+            for j in range(8):
+                ph = (t * 3.3 + j / 8.0 + 0.5 * i) % 1.0
+                cyc = int(t * 3.3 + j / 8.0 + 0.5 * i)
+                ang = math.pi * (0.12 + 0.76 * core.hash01(j + cyc * 8, 61 + i))
+                r = (3.0 + 11.0 * ph) / pz
+                core.circle(cr, xl + math.cos(ang) * r, y1 - math.sin(ang) * r + 9.0 * ph * ph / pz, max(0.45, 0.8 / pz))
+                core.src(cr, c, (0.65 + 0.3 * q) * (1.0 - ph) * a)
+                cr.fill()
+
+
+# the street lamps' hoods: drops run off the lantern roof's corners and the drip base, fall past
+# the lit glass and through the cone of lamplight, and land in the gold pool with a ring
+LAMP_DRIPS = ((-28.0, -28.0, 0.82, 0.0), (28.0, -28.0, 1.06, 0.41), (0.0, 40.0, 1.37, 0.77))
+
+
+def draw_lamp_drips(cr, t, rig, zoom=1.0, alpha=1.0):
+    """(his plane) Gold drops off a street lamp's hood into its pool (pure function of t). Their
+    size is kept on screen (a drop is a drop: ~2 px wide whatever the shot's magnification)."""
+    lx, ly = rig.lamp
+    gy = rig.ground[1] + 3.0
+    px = zoom ** 0.35 / zoom                         # world units per screen px, gently growing
+    for k, (dx, dy, per, ph) in enumerate(LAMP_DRIPS):
+        x = lx + dx * POST_SC
+        y0 = ly + dy * POST_SC
+        bead, falling, splashes = _drip_drops(t, x, y0, gy, per, ph * per, 2.4 * px, G_STREET, ncyc=2)
+        if bead > 0.3 * px:
+            core.ellipse(cr, x, y0 + bead, bead * 0.8, bead * 1.1)
+            core.src(cr, "#ffe2a8", 0.85 * alpha)
+            cr.fill()
+        for (y, v) in falling:
+            near = clamp(1.0 - (y - ly) / 520.0)               # brightest by the lamp, gold below
+            ln = max(4.0 * px, v / 48.0)
+            cr.move_to(x, y - ln)
+            cr.line_to(x, y)
+            cr.set_line_width(1.9 * px)
+            cr.set_line_cap(cairo.LINE_CAP_ROUND)
+            core.src(cr, core.mix("#ffb95c", "#fff1cf", near), (0.5 + 0.4 * near) * alpha)
+            cr.stroke()
+            core.circle(cr, x, y, 1.3 * px)
+            core.src(cr, "#fff6de", (0.65 + 0.3 * near) * alpha)
+            cr.fill()
+        for u in splashes:                                    # a ring opening in the gold pool
+            rr = 4.0 + 30.0 * core.out_cubic(u)
+            cr.set_line_width(1.5 * px)
+            core.src(cr, "#ffd28a", 0.65 * (1.0 - u) * alpha)
+            core.ellipse(cr, x, gy + 2.0, rr, rr * 0.22)
+            cr.stroke()
+            for sg in (-1.0, 1.0):
+                core.circle(cr, x + sg * (2.0 + 8.0 * u), gy - 14.0 * u * (1.0 - u) * 2.0, 1.2 * px)
+                core.src(cr, "#ffe7b8", 0.8 * (1.0 - u) * alpha)
+                cr.fill()
 
 
 GROUND_Y0, GROUND_Y1 = HOUSE_Y + 2.0, 1268.0
@@ -1148,6 +1324,7 @@ def setup():
     st["house_windows"] = hs["windows"]
     st["house_lamps"] = hs["lamps"]
     st["drips"] = make_drips(_extent(PX_HOUSES), hs["windows"], hs["lamps"])
+    st["spouts"] = make_spouts(_extent(PX_HOUSES), hs["windows"], hs["lamps"])
     wl = [(wx, wy, "#ffbf5f", 0.55, HOUSE_Y + 6.0) for (wx, wy, ww, wh) in hs["windows"]]
     wl += [(lx, ly, "#ffc870", 0.9, HOUSE_Y + 6.0) for (lx, ly) in hs["lamps"]]
     st["house_refl"] = _layer(lambda cr, r: env.draw_wet_reflections(cr, wl, stretch=0.42, width=0.8, alpha=1.0,
@@ -1354,6 +1531,63 @@ def stone_lvl(t):
     return clamp(STONE_FLOOR + 0.035 * core.noise1(t * 5.0, 11) + (1.0 - STONE_FLOOR) * stone_drive(t))
 
 
+NIB = 1.25                 # the broad nib: vertical strokes this much (px at FS) heavier than the hairlines
+
+
+def _rubric_dots(ch, size, family, gap=6.5, step=7.5):
+    """Kells-style rubrication: dots following the illuminated initial's contour at `gap` px,
+    every `step` px, in the order a scribe would set them (round the letter from its top-left).
+    Relative to the glyph's origin (baseline-left)."""
+    from scipy import ndimage
+    pad = int(gap + 8)
+    sc = core.new_surface(int(size * 1.4) + 2 * pad, int(size * 1.7) + 2 * pad)
+    c = core.new_context(sc)
+    ox, oy = pad + size * 0.1, pad + size * 1.2
+    core.text(c, ch, ox, oy, size, family, (1, 1, 1))
+    sc.flush()
+    h, w = sc.get_height(), sc.get_width()
+    a = np.ndarray((h, sc.get_stride() // 4, 4), np.uint8, buffer=sc.get_data())[:, :w, 3]
+    ink = a > 110
+    if not ink.any():
+        return []
+    dist = ndimage.distance_transform_edt(~ink)
+    ys, xs = np.nonzero(np.abs(dist - gap) < 0.7)
+    cy, cx = np.nonzero(ink)
+    mx, my = cx.mean(), cy.mean()
+    ang = (np.arctan2(ys - my, xs - mx) + 2.4) % TAU            # start at the top-left, go round
+    order = np.argsort(ang)
+    dots = []
+    for i in order:
+        px, py = float(xs[i]), float(ys[i])
+        if all((px - qx) ** 2 + (py - qy) ** 2 >= step * step for (qx, qy) in dots):
+            dots.append((px, py))
+    return [(px - ox, py - oy) for (px, py) in dots]
+
+
+def _flourish(word, x0, size, family):
+    """A hairline flourish off one ascender of the word (relative to the word's origin): an
+    entry loop curling left off the 'l' of "loneliness", a flag curling right off the 'd' of
+    "hold" -- the scribe's hand in the printed-looking menu."""
+    _s, c = core.frame(8, 8)
+    core.set_font(c, size, family)
+    wl = word.lower()
+    if wl.startswith("lonel"):
+        xb, yb, gw, _gh, _a, _b = c.text_extents("l")
+        sx, top = x0 + xb + gw * 0.5, yb
+        pts = [(sx, top + 3.0), (sx - 3.0, top - 5.0), (sx - 10.0, top - 11.0), (sx - 19.0, top - 10.0),
+               (sx - 23.0, top - 4.0), (sx - 19.0, top + 1.5), (sx - 12.5, top - 1.0)]
+    elif wl.startswith("hold"):
+        pre = c.text_extents("hol")[4]
+        xb, yb, gw, _gh, _a, _b = c.text_extents("d")
+        sx, top = x0 + pre + xb + gw * 0.86, yb
+        pts = [(sx, top + 3.0), (sx + 3.0, top - 5.0), (sx + 10.0, top - 10.5), (sx + 19.0, top - 10.0),
+               (sx + 23.5, top - 4.5), (sx + 20.0, top + 1.0), (sx + 14.0, top - 0.5)]
+    else:
+        return None
+    k = size / FS
+    return [(x0 + (px - x0) * k, py * k) for (px, py) in pts] if k != 1.0 else pts
+
+
 _TEXT_W = []
 
 
@@ -1410,8 +1644,11 @@ class RuneText:
             end_x = last["x"] + core.measure(cr, last["s"], last["size"], last["font"])[0] * (1.06 if last["kind"] == "lonely" else 1.0)
             for tk in toks:
                 tk["w"] = core.measure(cr, tk["s"], tk["size"], tk["font"])[0]
+                if tk["kind"] in ("word", "lonely"):
+                    tk["flourish"] = _flourish(tk["s"], 0.0, tk["size"], tk["font"])
             self.lines.append(dict(toks=toks, start=ln.start, end=ln.end, width=x, end_x=end_x,
                                    t_end=WORDS[ln.id][-1][2]))
+        self.rubric = _rubric_dots(PHONE_LINES[0].text[0], INI_SIZE, FONT_INI)
 
     def draw(self, cr, t, layout, stone_xy, front):
         if t < TEXT_T[0] or t > TEXT_T[1]:
@@ -1535,6 +1772,24 @@ class RuneText:
                        glow_alpha=0.78 * a, additive=False, alpha_=0.0)
         core.glow_text(cr, tok["s"], x, by, size, tok["font"], col, glow=RUNE, radius=9.0, glow_alpha=glow_a * a,
                        alpha_=a, passes=2 if kind in ("initial", "lonely") else 1)
+        if kind != "dot":         # the broad nib: the downstrokes a hair heavier than the hairlines
+            core.text(cr, tok["s"], x + NIB * size / FS, by, size, tok["font"], col, alpha_=a)
+        fl = tok.get("flourish")
+        if fl:                    # the scribe's hairline flourish off an ascender
+            pts = [(x + px_, by + py_) for (px_, py_) in fl]
+            core.tapered(cr, pts, 5.0, 1.6)
+            core.src(cr, RUNE, 0.22 * a)
+            cr.fill()
+            core.tapered(cr, pts, 2.0, 0.5)
+            core.src(cr, col, a)
+            cr.fill()
+        if kind == "initial" and self.rubric:     # rubrication: dots set round the initial
+            n = len(self.rubric)
+            k = int(round(n * clamp((t - t0) / 0.75)))
+            for (dx, dy) in self.rubric[:k]:
+                core.circle(cr, x + dx, by + dy, 1.75)
+            core.src(cr, RUNE, 0.85 * a)
+            cr.fill()
         cr.restore()
         if u < 1.0:                                              # the nib's spark
             fx.glow(cr, edge, by - size * 0.3, 18.0, RUNE, 0.6 * a)
@@ -1911,6 +2166,47 @@ def draw_rain_layer(cr, cam, t, p, n, speed, length, width, alpha, seed, lamps=(
             cr.restore()
 
 
+def draw_cone_rain(cr, cam, t, rig, k=1.0, n=1100, length=52.0, width=1.5):
+    """(screen) The final image's lit rain: a dense, world-locked sheet of drops seen only
+    inside the stop lamp's cone and halo -- long gold streaks, white-hot near the lamp, fading
+    toward the pool, a few glinting heads (the classic rain-in-the-lamplight)."""
+    if k <= 0.01:
+        return
+    lx, ly = rig.lamp
+    gy = rig.ground[1] + 6.0
+    zp = cam.scale_at(PX_B)
+    with cam.view(cr, PX_B):
+        segs = [s_ for s_ in rain_drops(cam, PX_B, t, n, 1500.0, length, 37)
+                if abs(s_[0] - lx) < 300.0 and ly - 140.0 < s_[1] < gy]
+        if not segs:
+            return
+        lw = width * zp ** 0.35 / zp
+        cr.save()
+        cr.set_operator(cairo.OPERATOR_ADD)
+        # the cone (and the halo round the lamp), in three falloff bands from the lamp down
+        for (y_a, y_b, al, col) in ((ly - 140.0, ly + 150.0, 0.62, "#ffe2a6"), (ly + 150.0, ly + 360.0, 0.42, "#ffc46a"),
+                                    (ly + 360.0, gy, 0.26, "#ffb256")):
+            cr.save()
+            _cone_path(cr, lx, ly + 18.0, gy, 30.0, 270.0)
+            cr.new_sub_path()
+            cr.arc(lx, ly, 120.0, 0.0, TAU)
+            cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+            cr.clip()
+            cr.rectangle(lx - 320.0, y_a, 640.0, y_b - y_a)
+            cr.clip()
+            stroke_segs(cr, segs, lw, col, al * k)
+            cr.restore()
+        cr.restore()
+        # glinting heads near the lamp
+        for (x0, y0, x1, y1) in segs:
+            d = math.hypot(x1 - lx, (y1 - ly) * 0.8)
+            if d < 200.0 and abs(x1 - lx) < 26.0 + 0.4 * max(0.0, y1 - ly) + 60.0:
+                g = (1.0 - d / 200.0) * k
+                core.circle(cr, x1, y1, 1.6 / zp ** 0.6)
+                core.src(cr, "#fff6e0", 0.8 * g)
+                cr.fill()
+
+
 # (parallax, drops per tile at zoom 1, speed, streak length, width on screen px, alpha, seed)
 RAIN_FAR = (0.62, 170, 1000.0, 16.0, 0.9, 0.15, 11)
 RAIN_MID = (1.0, 150, 1500.0, 30.0, 1.4, 0.22, 12)
@@ -1918,7 +2214,10 @@ RAIN_NEAR = (PX_NEAR, 26, 2300.0, 70.0, 2.4, 0.2, 13)
 
 
 SHOT_ZOOM = {"A": 1.0, "B": 2.25, "C": 4.15, "D": 0.82}    # nominal: drop counts are fixed per shot
-CONE_K = {"A": 1.0, "B": 0.42, "C": 0.3, "D": 1.0}           # the lamps' cones of lit air, per shot
+CONE_K = {"A": 0.66, "B": 0.42, "C": 0.3, "D": 1.0}           # the lamps' cones of lit air, per shot
+# the final wide's rain against the close shot it cuts from: more drops, longer streaks (count
+# and length factors per shot), so the C -> D cut does not read as the rain easing off
+RAIN_BOOST = {"D": (1.6, 1.9)}
 
 
 def rain_params(spec, zoom, shot, near_len_cap=None):
@@ -1928,8 +2227,10 @@ def rain_params(spec, zoom, shot, near_len_cap=None):
     p, n, speed, length, width, alpha, seed = spec
     zp = zoom ** p
     zn = SHOT_ZOOM[shot] ** p
-    n2 = int(round(n * zn * zn))
+    kn, kl = RAIN_BOOST.get(shot, (1.0, 1.0)) if p <= 1.0 else (1.0, 1.0)
+    n2 = int(round(n * zn * zn * kn))
     w2 = width * zp ** 0.35 / zp
+    length *= kl
     if near_len_cap is not None:
         length = min(length, near_len_cap / zp)
     return p, n2, speed, length, w2, alpha, seed
@@ -2136,6 +2437,86 @@ def draw_reflection(cr, surf, ox, oy, gy_s, z):
     cr.restore()
 
 
+POST_VEIL_FLOOR = 0.24          # how much of a lamp post still shows through the rune text's veil
+POST_DOF_B = 3.2                # shot B: the stop lamp's post just upstage of him, softly out of focus
+
+
+def _post_veil_mask(cam, t, sx, lamp_bot_y):
+    """A vertical mask (cairo pattern) for a post at screen x sx: 1 everywhere except where the
+    rune text being read sits in front of its column (soft edges); None when nothing is veiled.
+    The lantern itself (above lamp_bot_y) is never veiled."""
+    boxes = [b for b in text_veil_boxes(t) if b[0] - 60.0 < sx < b[2] + 60.0]
+    if not boxes:
+        return None
+    ys = np.linspace(-20.0, H + 20.0, 56)
+    vals = [1.0 if y < lamp_bot_y else max(POST_VEIL_FLOOR, veil_at(sx, y, boxes, feather=30.0)) for y in ys]
+    if min(vals) > 0.98:
+        return None
+    pat = cairo.LinearGradient(0.0, ys[0], 0.0, ys[-1])
+    for y, v in zip(ys, vals):
+        pat.add_color_stop_rgba((y - ys[0]) / (ys[-1] - ys[0]), 0.0, 0.0, 0.0, v)
+    return pat
+
+
+def draw_posts(cr, cam, t, shot, rigs0):
+    """The street's lamp posts (his plane), each drawn so the floating rune text keeps clear of
+    it -- its column fades behind the line being read -- and, in the medium shot, softly out of
+    focus (it stands a step upstage of him). Returns the post rigs."""
+    lp = L_SET.with_(exposure=0.5) if shot == "C" else L_SET
+    close = shot in ("B", "C")
+    z = cam.zoom
+    out = []
+    for i, (x, y, s_) in enumerate(POSTS):
+        sx = cam.to_screen(x, y, PX_B)[0]
+        x0, x1 = sx - 40.0 * z, sx + 120.0 * z                     # the column, the arm, the lantern
+        if x1 < -20.0 or x0 > W + 20.0:
+            out.append(rigs0[i])
+            continue
+        lamp_bot = cam.to_screen(x, y - (POST_H - 40.0 - 52.0 - 40.0) * POST_SC, PX_B)[1]
+        mask = _post_veil_mask(cam, t, sx, lamp_bot)
+        blur = POST_DOF_B if shot == "B" else 0.0
+        if mask is None and blur <= 0.0:
+            with cam.view(cr, PX_B):
+                out.append(P.draw_lantern_post(cr, x, y, POST_SC, lp, t, height=POST_H, side=1, seed=s_,
+                                               detail=0 if close else None))
+            continue
+        xa, xb = int(max(-20.0, math.floor(x0))), int(min(W + 20.0, math.ceil(x1)))
+        if blur > 0.0:                    # half resolution, blurred: a soft dark column
+            res = 0.5
+            sw, sh = int(math.ceil((xb - xa) * res)) + 2, int(math.ceil(H * res)) + 2
+            surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, sw, sh)
+            c = cairo.Context(surf)
+            c.scale(res, res)
+            c.translate(-xa, 0.0)
+            c.transform(cam.matrix(PX_B))
+            out.append(P.draw_lantern_post(c, x, y, POST_SC, lp, t, height=POST_H, side=1, seed=s_, detail=0))
+            del c
+            soft = fx.blur_surface(surf, blur * res)
+            src = cairo.SurfacePattern(soft)
+            src.set_filter(cairo.FILTER_BILINEAR)
+            src.set_matrix(cairo.Matrix(xx=res, yy=res, x0=-xa * res, y0=0.0))
+        else:
+            cr.save()
+            cr.rectangle(xa, -20.0, xb - xa, H + 40.0)
+            cr.clip()
+            cr.push_group()
+            with cam.view(cr, PX_B):
+                out.append(P.draw_lantern_post(cr, x, y, POST_SC, lp, t, height=POST_H, side=1, seed=s_,
+                                               detail=0 if close else None))
+            src = cr.pop_group()
+            cr.restore()
+        cr.save()
+        cr.rectangle(xa, -20.0, xb - xa, H + 40.0)
+        cr.clip()
+        cr.set_source(src)
+        if mask is None:
+            cr.paint_with_alpha(0.92 if blur > 0.0 else 1.0)
+        else:
+            cr.mask(mask)
+        cr.restore()
+    return out
+
+
 def lamp_k(xd):
     """How strongly a street lamp overhead lights him (0..1), by distance from the nearest lamp."""
     k = 0.0
@@ -2188,15 +2569,18 @@ def draw_step_splashes(cr, t):
 # the rain on him: drops striking his horns, head and shoulders, a drip off the end of his snout
 # =============================================================================================
 
-def draw_rain_on_him(cr, t, rig, zoom=1.0):
+def draw_rain_on_him(cr, t, rig, zoom=1.0, lit=0.0):
     """(his plane) Pure function of t: a few drops burst on his upper contours every second, and
-    every ~1.6 s a drop gathers at his snout tip, swells and falls."""
+    every ~1.6 s a drop gathers at his snout tip, swells and falls. lit > 0 (under the lamp in
+    the final wide): bigger bursts, more of them, gold from the lamp above -- they read small."""
     hx, hy = rig.head
     tx, ty = rig.top
     hits = [(tx - 6.0, ty + 4.0), (hx - 30.0, hy + 2.0), (hx - 52.0, hy + 46.0), (hx - 70.0, hy + 92.0),
             (rig.hand_near.x + 6.0, rig.hand_near.y - 30.0)]
-    r0 = 1.3 if zoom < 1.5 else 0.9
-    for i in range(10):
+    r0 = (1.3 if zoom < 1.5 else 0.9) * (1.0 + 1.1 * lit)
+    spread = 9.0 * (1.0 + 0.7 * lit)
+    col = core.mix("#d6e6fa", "#ffe2ae", lit)
+    for i in range(int(10 + 6 * lit)):
         per = 0.55 + 0.5 * core.hash01(i, 301)
         u = ((t + per * core.hash01(i, 302)) % per) / 0.22
         if u >= 1.0:
@@ -2204,11 +2588,15 @@ def draw_rain_on_him(cr, t, rig, zoom=1.0):
         cyc = int((t + per * core.hash01(i, 302)) // per)
         bx, by = hits[int(core.hash01(cyc * 13 + i, 303) * len(hits))]
         bx += (core.hash01(cyc * 7 + i, 304) - 0.5) * 16.0
+        if lit > 0.0 and u < 0.25:                          # the hit itself: a bright fleck
+            core.circle(cr, bx, by, r0 * 1.3)
+            core.src(cr, "#fff3da", 0.8 * lit * (1.0 - u / 0.25))
+            cr.fill()
         for k in (-1.0, 1.0):
-            px = bx + k * 9.0 * u
-            py = by - 12.0 * u * (1.0 - u) * 2.0
+            px = bx + k * spread * u
+            py = by - 12.0 * (1.0 + 0.6 * lit) * u * (1.0 - u) * 2.0
             core.circle(cr, px, py, r0)
-            core.src(cr, "#d6e6fa", 0.6 * (1.0 - u))
+            core.src(cr, col, (0.6 + 0.3 * lit) * (1.0 - u))
             cr.fill()
     # the snout drip (only while he is still: walking shakes it off)
     if walk_amt(t) < 0.3:
@@ -2319,8 +2707,16 @@ def draw(cr, t, st):
                 st[key].paint(cr)
     with cam.view(cr, PX_HOUSES):
         st["house_refl"].paint(cr, alpha=0.9 * flick)
-    if shot != "C":                       # the far side's eaves dripping (soft in the medium shot)
-        draw_drips(cr, cam, t, st["drips"], alpha=0.6 if shot == "B" else 1.0, soft=2.4 if shot == "B" else 1.0)
+    # the far side's wet edges: eaves, jetties and door-lamp hoods dripping, two gutter spouts
+    # pouring (soft in the medium shot; in the final wide the cool ones sink into the night with
+    # the street and the lit ones are drawn after it)
+    lamp_s = cam.to_screen(*st["post_rigs"][1].lamp, PX_B)
+    if shot in ("A", "B"):
+        soft = 2.4 if shot == "B" else 1.0
+        draw_drips(cr, cam, t, st["drips"], alpha=0.6 if shot == "B" else 1.0, soft=soft)
+        draw_spouts(cr, cam, t, st["spouts"], alpha=0.5 if shot == "B" else 0.8, soft=soft, lamp_xy=lamp_s)
+    elif shot == "D":
+        draw_drips(cr, cam, t, st["drips"], which="cool")
     if not close:
         with cam.view(cr, PX_B):
             st["post_refl"].paint(cr, alpha=flick)
@@ -2345,6 +2741,9 @@ def draw(cr, t, st):
         cr.get_source().set_filter(cairo.FILTER_BILINEAR)
         cr.paint_with_alpha(0.8 * wide)
         cr.restore()
+    if shot == "D":                       # the lit drips and the spouts keep their light
+        draw_drips(cr, cam, t, st["drips"], which="lit")
+        draw_spouts(cr, cam, t, st["spouts"], alpha=0.75, lamp_xy=lamp_s)
 
     # background light (behind him): window glows, door lamps, the street lamps' halos, cones
     # of lit rain and their pools on the stones -- he will stand dark against it
@@ -2366,16 +2765,17 @@ def draw(cr, t, st):
     draw_splashes(cr, cam, t, PX_A2, 790.0, 850.0, 26, 6.0, 0.35, 21)
 
     # ---------------- his plane: the lamp posts, the dragon, the stone's glow
+    posts = draw_posts(cr, cam, t, shot, st["post_rigs"])
     with cam.view(cr, PX_B):
-        lp = L_SET.with_(exposure=0.5) if shot == "C" else L_SET
-        posts = [P.draw_lantern_post(cr, x, y, POST_SC, lp, t, height=POST_H, side=1, seed=s_,
-                                     detail=0 if close else None)
-                 for (x, y, s_) in POSTS]
         if not close:
             draw_shadows(cr, rig, xd, k_lamp)
+        for p in posts:                    # the lamps' hoods drip into their pools (behind him)
+            draw_lamp_drips(cr, t, p, z)
     lamps = [(p.lamp[0], p.lamp[1], 300.0, p.ground[1] + 6.0) for p in posts]
     if close:          # the close shots: the lamp's lit rain falls round and behind him, his face stays clear
         draw_rain_layer(cr, cam, t, *rain_params(RAIN_MID, z, shot), lamps)
+    if shot == "D":    # the final image: the lamp's cone full of lit rain, behind the cold figure
+        draw_cone_rain(cr, cam, t, posts[1], k=0.6 + 0.4 * wide)
     composite_dragon(cr, dsurf, dox, doy)
     # the lamp overhead: warm light along his upper contours (strongest on horns and head), and a
     # faint warm bounce off its pool on his lower edges -- his front stays cold
@@ -2385,8 +2785,11 @@ def draw(cr, t, st):
                (head_y, gy_s, 1.0, 0.25))
     if not close:
         edge_light(cr, dsurf, dox, doy, 0.0, -4.0 * z, "#e0924e", 0.3 * k_lamp, (head_y, gy_s, 0.0, 1.0))
+    if shot == "A":    # between the lamps: a cool rim off the night sky on his back and crown, so
+        # the dark coat separates from the dark facades (the squint read: him, then the lamps)
+        edge_light(cr, dsurf, dox, doy, 3.2 * ez, 3.6 * ez, "#a3c4f2", 0.44 * (1.0 - k_lamp), (head_y, gy_s, 1.0, 0.6))
     with cam.view(cr, PX_B):
-        draw_rain_on_him(cr, t, rig, z)
+        draw_rain_on_him(cr, t, rig, z, lit=k_lamp if shot == "D" else 0.0)
         P.stone_glow(cr, rig.hand_near.x, rig.hand_near.y, SC, lvl, t)
         if t > T_SIGH:                          # the long exhale: his breath steams in the cold
             draw_breath(cr, t, rig)

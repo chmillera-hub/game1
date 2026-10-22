@@ -714,12 +714,29 @@ def Pk(side, u, v, dev):
 
 
 def _resolve(spec):
+    """A key camera. Keys inside the book ("p" keys) are clamped onto the open book HERE, once per key
+    (never per frame), so the frame can't show past the boards at a key, and every move between two
+    keys stays one pure eased dolly (a per-frame clamp bends the eased path into a swim)."""
     if spec[0] == "w":
         return core.Camera(spec[1], spec[2], spec[3])
     _, side, u, v, dev = spec
     z = dev / LECT_SC
     x, y = page_world(side, u, v, view_for_zoom(z))
-    return core.Camera(x, y, z)
+    return clamp_to_book(core.Camera(x, y, z))
+
+
+KEY_MARGIN = 6.0                                  # screen px between a key's frame edge and the boards (covers the drift)
+
+
+def clamp_to_book(cam, margin=KEY_MARGIN):
+    """The key camera moved (not zoomed) so its whole frame lies on the open book; a frame wider/taller
+    than the book is centred on it. Between two keys that both lie on the book every in-between frame
+    does too (a dolly moves each frame edge monotonically between its two key values)."""
+    x0, y0, x1, y1 = book_bounds(view_for_zoom(cam.zoom))
+    hw, hh = (W * 0.5 + margin) / cam.zoom, (H * 0.5 + margin) / cam.zoom
+    cx = (x0 + x1) * 0.5 if x1 - x0 < 2.0 * hw else clamp(cam.x, x0 + hw, x1 - hw)
+    cy = (y0 + y1) * 0.5 if y1 - y0 < 2.0 * hh else clamp(cam.y, y0 + hh, y1 - hh)
+    return core.Camera(cx, cy, cam.zoom)
 
 
 def _cam_lerp(a, b, u):
@@ -755,25 +772,30 @@ SHOT_B = [
     (T_TURN1 + 0.75, Wk(1075, 668, 1.68), "inout_sine"),           # he opens his eyes and looks; we follow his look
     (T_CUT_C, Wk(1085, 666, 1.7), "linear"),                       #   to the book turning its own page
 ]
+# Verse 2 (the verse is written at the TOP of both pages): every key holds the verse block either wholly in
+# frame (the spread) or wholly out of it (on the pictures), so the camera never comes to rest on lettering
+# cut by the frame edge; from the dragon it glides ACROSS the gutter to the market below the verse.
 SHOT_C = [
-    (T_CUT_C, Pk("left", 0.995, 0.495, 6.25)),                            # the spread fills the frame: verse 2 writes
-    (wt(5, "with") - 0.1, Pk("left", 0.95, 0.53, 6.6), "inout_sine"),    #   itself over the dragon and the market
-    (wt(5, "sigh") - 0.12, Pk("left", 0.655, 0.68, 9.2), "inout_sine"),  # in on him: "...with a scarf and a SIGH"
-    (wt(6, "neighbours"), Pk("left", 0.665, 0.685, 9.6), "inout_sine"),  # the hopeful wave
-    (wt(6, "hurried") + 0.1, Pk("left", 0.83, 0.69, 7.6), "inout_sine"), # ease back: they hurry past, heads down
-    (wt(7, "merchant"), Pk("left", 0.995, 0.52, 6.35), "inout_sine"),      # "Every merchant in town": the spread
-    (wt(7, "stone") - 0.15, Pk("right", 0.31, 0.66, 12.0), "inout_sine"),  # in on the stone-seller: STONE
-    (wt(7, "sell"), Pk("right", 0.49, 0.645, 11.6), "inout_sine"),       # ...all three hold up their wares: SELL
-    (wt(8, "missing") - 0.25, Pk("left", 0.995, 0.5, 6.25), "inout_sine"),  # back to the spread: held out to him
-    (wt(8, "spell"), Pk("left", 0.99, 0.5, 6.1), "linear"),              # "there wasn't a spell": he turns away
+    (T_CUT_C, Pk("left", 0.995, 0.48, 6.25)),                              # the spread fills the frame: verse 2
+    (wt(5, "there") + 0.15, Pk("left", 0.99, 0.475, 6.45), "linear"),      #   writes itself, the whole block in frame
+    (wt(5, "sigh") - 0.12, Pk("left", 0.655, 0.68, 9.2), "inout_sine"),    # one move in on him: "...a scarf and a SIGH"
+    (wt(6, "neighbours"), Pk("left", 0.665, 0.685, 9.6), "inout_sine"),    # the hopeful wave
+    (wt(6, "hurried") + 0.1, Pk("left", 0.83, 0.655, 7.9), "inout_sine"),  # ease back: they hurry past, heads down
+    (wt(7, "Every"), Pk("left", 0.85, 0.655, 8.0), "linear"),              # hold on him while the wave sinks on "by"
+    (wt(7, "stone") - 0.15, Pk("right", 0.31, 0.66, 12.0), "inout_sine"),  # "Every merchant in town": across the gutter
+                                                                           #   and in on the stone-seller: STONE
+    (wt(7, "sell"), Pk("right", 0.49, 0.645, 11.6), "inout_sine"),         # ...all three hold up their wares: SELL
+    (wt(8, "missing") - 0.25, Pk("left", 0.995, 0.49, 6.4), "inout_sine"),  # back to the spread: held out to him
+    (wt(8, "spell"), Pk("left", 0.99, 0.49, 6.28), "linear"),              # "there wasn't a spell": he turns away
     (LN[9].start + 0.15, Wk(1062, 742, 1.45), "inout_sine"),              # out of the book, back to the bard
     (T_WINK - 0.15, Wk(872, 772, 2.15), "inout_sine"),                    # push in on him: the stool, the wink
     (LN[9].end + 0.1, Wk(874, 770, 2.2), "linear"),
     (T_TURN3 - 0.4, Wk(1095, 690, 1.62), "inout_sine"),                   # ease back: him and the book
     (T_FINAL + 0.28, Wk(1110, 682, 1.68), "inout_sine"),                  # the page lands on the final chord; he
                                                                           #   presents the tale with an open hand...
-    (T_OUT0 - 0.62, Pk("right", 0.5, 0.71, 12.6), "inout_sine"),          # ...and we follow it in: the wash-house
-    (DUR, Pk("right", 0.5, 0.745, 16.0), "in_sine"),                      # the doors open; creep in after him as it goes black
+    (T_OUT0 - 0.62, Pk("right", 0.5, 0.755, 11.0), "inout_sine"),         # ...and we follow it in: the wash-house, the
+                                                                          #   street + threshold above the caption band
+    (DUR, Pk("right", 0.5, 0.75, 15.0), "in_sine"),                       # the doors open; creep in after him as it goes black
 ]
 
 
@@ -816,38 +838,19 @@ def camera_at(t):
                 u = core.ease(k1[2] if len(k1) > 2 else "inout_sine", (t - k0[0]) / (k1[0] - k0[0]))
                 cam = _cam_lerp(_resolve(k0[1]), _resolve(k1[1]), u)
                 break
-    # a breathing drift, constant in screen px whatever the zoom
+    # a breathing drift, constant in screen px whatever the zoom (KEY_MARGIN keeps it on the book)
     dx = 2.4 * core.fbm1(t * 0.18, 2, 11) / cam.zoom
     dy = 1.6 * core.fbm1(t * 0.18, 2, 17) / cam.zoom
-    return keep_on_book(core.Camera(cam.x + dx, cam.y + dy, cam.zoom))
+    return core.Camera(cam.x + dx, cam.y + dy, cam.zoom)
 
 
-def _soft_clamp(v, lo, hi, soft):
-    """clamp v into [lo, hi] with a smooth knee of width `soft` (no velocity kink at the edges)."""
-    if lo > hi:
-        return (lo + hi) * 0.5
-    if v < lo + soft:
-        d = (lo + soft) - v
-        return lo + soft - soft * math.tanh(d / soft)
-    if v > hi - soft:
-        d = v - (hi - soft)
-        return hi - soft + soft * math.tanh(d / soft)
-    return v
-
-
-def keep_on_book(cam):
-    """Deep inside the book the frame must never show past the boards (the dark wall beyond). Pull the
-    camera centre in, smoothly, weighted by zoom (no effect in the nook, full effect once the frame
-    is smaller than the book), so keyed moves keep their spacing."""
-    k = smooth((cam.zoom - 4.6) / (6.2 - 4.6))
-    if k <= 0.0:
-        return cam
-    x0, y0, x1, y1 = book_bounds(view_for_zoom(cam.zoom))
-    hw, hh = W * 0.5 / cam.zoom, H * 0.5 / cam.zoom
-    soft_x, soft_y = 18.0 / cam.zoom * 6.0, 12.0 / cam.zoom * 6.0
-    cx = _soft_clamp(cam.x, x0 + hw, x1 - hw, soft_x)
-    cy = _soft_clamp(cam.y, y0 + hh, y1 - hh, soft_y)
-    return core.Camera(lerp(cam.x, cx, k), lerp(cam.y, cy, k), cam.zoom)
+def shot_span(t):
+    """(start, end) of the shot that t belongs to (the hard cuts split the scene into three shots)."""
+    if t < T_CUT_B:
+        return 0.0, T_CUT_B
+    if t < T_CUT_C:
+        return T_CUT_B, T_CUT_C
+    return T_CUT_C, DUR
 
 
 # ----------------------------------------------------------------------------------------
