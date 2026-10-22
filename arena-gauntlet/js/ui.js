@@ -2107,7 +2107,8 @@
       let hint;
       if (!moved && !acted) hint = faced ? 'Facing set. Move, act, or tap Done to end its turn here.' : `Tap a blue tile to move${main.length && directKinds(u.act.kind) ? ', a red enemy to attack' : ''}, or choose an action below.`;
       else if (moved && !acted) hint = (anyTargets ? 'Moved. Choose an action, or tap Done.' : 'Moved. Nothing in reach from here. Tap Done.') + keep;
-      else hint = moved ? `Action used. Tap Done${faced ? ': it keeps the facing you set' : UI.prefs.manualFacing ? ' to choose a facing' : ': it turns to the nearest enemy'}.` : 'Action used. You may still move, or tap Done.' + keep;
+      else if (moreToDo(s, u)) hint = 'Action used. You may still move, or tap Done.' + keep;
+      else hint = `Action used. Tap Done to end its turn${faced ? ' facing the way you set' : UI.prefs.manualFacing ? ' and pick a facing' : ': it turns to the nearest enemy'}, or Face to ${faced ? 'change the facing' : 'pick the facing yourself'}.`;
       const loot = !acted && E.lootAt(s, u.x, u.y);
       if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
       if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
@@ -2537,10 +2538,9 @@
       await play();
       return nextMove();
     }
-    if (moreToDo(s, u)) {
-      B.mode = 'unit';
-      renderBattle();
-    } else enterFacing();
+    // The turn waits for Done (or Face), even when there is nothing left to do.
+    B.mode = 'unit';
+    renderBattle();
   }
 
   // Whether the selected unit could still move or act this turn.
@@ -3079,7 +3079,7 @@
         <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
-          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both, then turns toward the nearest enemy. Then the enemy picks one of theirs.</li>
+          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both. Tap <b>Done</b> to end its turn, and it turns toward the nearest enemy. Then the enemy picks one of theirs.</li>
           <li>Acting starts that unit's <b>cooldown</b> (CD on its card): it sits out that many of your turns, then it is ready again. A Knight (CD 1) can attack every other turn, a Witch (CD 2) every third turn and a Scout (CD 0) every turn. Moving alone never starts a cooldown.</li>
           <li>Any unit that is not cooling down can be picked. If none can do anything, your turn passes on its own. You can also <b>Pass</b> on purpose.</li>
           <li>The turn counter counts rounds: the enemy's move, then yours. Durations such as "roots for 2 turns" count the turns of the side they affect.</li>
