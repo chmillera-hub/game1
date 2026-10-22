@@ -2031,7 +2031,7 @@
     return t;
   }
 
-  // Units that count for routing a side (not objects, structures or bound guardians).
+  // Units that must fall to defeat a side (not objects, structures or bound guardians).
   function counts(u) {
     return !u.nonCombat && !u.bound && !u.structure;
   }

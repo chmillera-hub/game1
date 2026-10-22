@@ -458,7 +458,7 @@
     flying: 'Flies over units, water, lava and rocks.',
     immobile: 'Rooted in place: cannot move.',
     shieldwall: 'Full block from the sides.',
-    retaliate: 'Strikes back for half power when hit in melee.',
+    retaliate: 'Strikes back for half its damage when hit in melee.',
     bloodrage: 'Cleave heals 5 HP per enemy struck.',
     bloodlust: 'Slaying an enemy resets its cooldown: it is ready again next turn.',
     secondwind: 'Once per battle, survives a fatal blow with 1 HP.',
@@ -483,7 +483,7 @@
     cart: `Rolls ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} toward the left edge after every enemy turn, and escapes there.`,
     big: 'Huge: cannot be knocked back.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
-    structure: 'A structure: it does not need to fall for a rout.',
+    structure: 'A structure: you can win without destroying it.',
     spawner: 'Sends reinforcements every few turns until it is destroyed.',
   };
 
@@ -1240,7 +1240,7 @@
       ${statsHTML(u)}
       <div class="lo-sec"><div class="eyebrow">Level</div>
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
-        <p class="small muted">Level 2: +20% HP, +15% power, a second ability and a second skill slot. Level 3: +40% HP, +30% power, its Mastery and a second gear slot.</p></div>
+        <p class="small muted">Level 2: +20% HP, +15% damage, a second ability and a second skill slot. Level 3: +40% HP, +30% damage, its Mastery and a second gear slot.</p></div>
       <div class="lo-sec"><div class="eyebrow">Ability · pick 1 of 3</div>
         <div class="picks">${T.abilities[1].map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Level 2 ability · pick 1 of 3${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
@@ -1254,7 +1254,7 @@
       <div class="lo-sec"><div class="eyebrow">Enchantment</div>
         ${r.enchant
           ? `<div class="pick static on ench"><span class="pk-head"><b>${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</b><span class="cost">+${ENCHANTS[r.enchant].surcharge}</span></span><span class="pk-desc">${esc(ENCHANTS[r.enchant].desc)} Bound for good.</span></div>`
-          : `<p class="small muted">None. ${scrolls.length ? `You have ${scrolls.length} scroll${scrolls.length > 1 ? 's' : ''} that could be bound to this unit.` : 'Enchantment scrolls bind a permanent power to one unit.'}</p>
+          : `<p class="small muted">None. ${scrolls.length ? `You have ${scrolls.length} scroll${scrolls.length > 1 ? 's' : ''} that could be bound to this unit.` : 'Enchantment scrolls bind a permanent bonus to one unit.'}</p>
             ${scrolls.length ? `<button class="btn" id="loBind">${ic('gem')} Bind a scroll…</button>` : ''}`}</div>
       <div class="lo-sec"><div class="eyebrow">In battle</div>${actsHTML(u)}
         ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
@@ -3033,9 +3033,9 @@
         <h4>Levels, abilities, skills and gear</h4>
         <ul>
           <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
-          <li>Level 2 (+2 Supply): +20% HP, +15% power, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% power, a Mastery and a second gear slot.</li>
+          <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
-          <li>Enchantment scrolls bind a permanent power to one unit, forever. That unit costs a little more Supply to field.</li>
+          <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
         <h4>Commander level</h4>
         <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
@@ -3051,11 +3051,11 @@
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li>When a unit finishes its turn it turns to face the nearest enemy. To pick facings yourself with arrows, switch <b>Facing</b> in the menu; <b>Face only</b> always lets you turn a unit by hand.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
-          <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's Power carries the icon of its main attack, and magic damage numbers float up in violet.</li>
+          <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>
         <h4>Missions</h4>
         <ul>
-          <li>Rout the enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Routing always wins once no more reinforcements are coming.</li>
+          <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
           <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or fielding a unit that sat out your last battle.</li>
         </ul>
         <h4>Buildings and siege</h4>

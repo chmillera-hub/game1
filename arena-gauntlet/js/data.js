@@ -48,11 +48,11 @@
 
   const A = {
     // Knight
-    k_bash: { name: 'Shield Bash', cost: 0, desc: 'Active: slam an adjacent enemy for half power and knock it back 1 tile. If it cannot move, it takes 6 extra damage.',
+    k_bash: { name: 'Shield Bash', cost: 0, desc: 'Active: slam an adjacent enemy for half damage and knock it back 1 tile. If it cannot move, it takes 6 extra damage.',
       mod: { active: { name: 'Shield Bash', kind: 'strike', range: [1, 1], dmg: 'phys', mult: 0.5, fx: { knock: 1 } } } },
     k_guard: { name: 'Guardian', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
     k_wall: { name: 'Shield Wall', cost: 2, desc: 'Attacks from the side face full block instead of half.', mod: { traits: ['shieldwall'] } },
-    k_riposte: { name: 'Riposte', cost: 1, desc: 'When struck in melee and still standing, strikes back for half power.', mod: { traits: ['retaliate'] } },
+    k_riposte: { name: 'Riposte', cost: 1, desc: 'When struck in melee and still standing, strikes back for half damage.', mod: { traits: ['retaliate'] } },
     k_plate: { name: 'Heavy Plate', cost: 0, desc: '+10% armor and +15% magic resistance.', mod: { stat: { armor: 0.1, res: 0.15 } } },
     k_rally: { name: 'Rallying Cry', cost: 2, desc: 'Active, 1 use: allies within 2 tiles take 1 turn off their cooldowns and shake off paralysis and roots.',
       mod: { active: { name: 'Rallying Cry', kind: 'rally', radius: 2, uses: 1 } } },
@@ -785,7 +785,7 @@
     flanker: { name: 'Flanker', cost: 1, desc: '+30% damage from the side or from behind.', req: 'phys', mod: { props: { flankMult: 0.3 } } },
     unshakable: { name: 'Unshakable', cost: 1, desc: 'Immune to poison, paralysis, roots and knockback.', mod: { traits: ['steadfast', 'poisonproof'] } },
     guardian: { name: 'Guardian', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
-    retaliate: { name: 'Retaliate', cost: 2, desc: 'When struck in melee and still standing, strikes back for half power.', req: 'damage', mod: { traits: ['retaliate'] } },
+    retaliate: { name: 'Retaliate', cost: 2, desc: 'When struck in melee and still standing, strikes back for half damage.', req: 'damage', mod: { traits: ['retaliate'] } },
     quickened: { name: 'Quickened', cost: 3, desc: 'Cooldown 1 turn shorter.', req: 'slow', mod: { stat: { rec: -1 } } },
     martyr: { name: 'Martyr', cost: 1, desc: 'When it falls, heals allies within 2 tiles for 20.', mod: { traits: ['martyr'] } },
     arcane_focus: { name: 'Arcane Focus', cost: 2, desc: '+20% magic damage, healing and poison.', req: 'magic', mod: { props: { magicMult: 0.2 } } },

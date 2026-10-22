@@ -502,7 +502,7 @@
     return used;
   }
 
-  // Mission goals. The primary goal decides how the battle is won (a full rout always works);
+  // Mission goals. The primary goal decides how the battle is won (defeating every enemy always works);
   // bonus goals pay out extra rewards when completed.
   const PRIMARY = {
     normal: [['rout', 30], ['banner', 13], ['prison', 12], ['hold', 12], ['commander', 10], ['survive', 12], ['totems', 12], ['raze', 12]],
@@ -925,19 +925,19 @@
     const own = (enc.waves || []).filter((w) => w.from && w.from === (enc.waves || []).find((x) => x.from).from);
     const every = own.length > 1 ? own[1].turn - own[0].turn : 3;
     const P = {
-      rout: 'Rout the enemy: defeat every enemy unit.',
+      rout: `Every enemy fighter must fall.${typesWith('structure').length ? ' Buildings do not need to.' : ''}`,
       boss: 'Slay the boss. Its retinue will scatter.',
-      banner: 'Burn the War Banner, or rout the enemy. Enemies near their banner hit 15% harder.',
-      prison: 'Break the prison cage, or rout the guards. The freed prisoner joins your army.',
-      commander: 'Assassinate the enemy Commander (crowned), or rout them all.',
-      hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : HOLD_NEED} of your turns in a row with a unit on it. Or rout the enemy.`,
-      survive: `Survive ${enc.surviveTurns || 12} turns while waves of reinforcements march in from the far edge. Or rout them all.`,
-      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
-      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every turn.`,
+      banner: 'Burn the War Banner, or defeat every enemy. Enemies near their banner hit 15% harder.',
+      prison: 'Break the prison cage, or defeat all the guards. The freed prisoner joins your army.',
+      commander: 'Assassinate the enemy Commander (crowned), or defeat them all.',
+      hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : HOLD_NEED} of your turns in a row with a unit on it. Or defeat every enemy.`,
+      survive: `Survive ${enc.surviveTurns || 12} turns while waves of reinforcements march in from the far edge. Or defeat them all.`,
+      gate: `Break the Castle Gate, or defeat the whole garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
+      totems: `Topple all ${totems.length} ${tName}s, or defeat every enemy. Each heals enemies within 2 tiles every turn.`,
       raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
-      convoy: 'Break every Loot Wagon before it escapes off the left edge, or rout the escort.',
+      convoy: 'Break every Loot Wagon before it escapes off the left edge, or defeat the whole escort.',
     };
-    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 12} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
+    const short = { rout: 'Defeat them all', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 12} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -962,7 +962,7 @@
       }
       return { b, text: '', reward: '' };
     });
-    return { primary: P[key] || P.rout, short: short[key] || 'Rout', key, bonus };
+    return { primary: P[key] || P.rout, short: short[key] || short.rout, key, bonus };
   }
 
   function deployRows(run, enc) {

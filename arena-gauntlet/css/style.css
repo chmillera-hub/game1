@@ -396,7 +396,7 @@ button.card:active {
 
 .stats {
   display: grid;
-  /* Power is a touch wider: it carries its damage-type icon. */
+  /* DMG is a touch wider: it carries its damage-type icon. */
   grid-template-columns: minmax(0, 1.2fr) repeat(6, minmax(0, 1fr));
   gap: 4px;
   font-variant-numeric: tabular-nums;

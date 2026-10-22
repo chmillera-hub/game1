@@ -24,15 +24,15 @@ on a phone turned sideways, but portrait works too.
   33 Supply and 8 units at Level 10.
 - **Unit levels**: Level 1 picks one of three abilities; the free one comes first
   and stronger picks cost extra Supply. For example, the Archer chooses Snare Shot,
-  Poison Arrows or Smoke Screen. Level 2 (+2 Supply) gets more HP and power,
+  Poison Arrows or Smoke Screen. Level 2 (+2 Supply) gets more HP and damage,
   another skill slot and a second pick of three. Level 3 (+5) adds a class mastery
   and a second gear slot.
-- **Enchantments**: binding a scroll to a unit gives it a permanent power and a
+- **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
   magic (a violet sparkle) is reduced by magic resistance. Armor and magic
   resistance both cap at 50%, and some units go as low as -50%: Specters shrug
-  off steel but melt to spells, and Mage Knights do the reverse. A unit's Power,
+  off steel but melt to spells, and Mage Knights do the reverse. A unit's DMG stat,
   its attacks and every damage preview show the damage-type icon.
 - **Taking turns**: the sides alternate one unit at a time, like chess, and the enemy
   goes first. On your turn you pick one unit: it moves, acts or both, then turns
@@ -53,7 +53,7 @@ on a phone turned sideways, but portrait works too.
   every attack: where it can aim and exactly which tiles one use hits (a Brute's
   maul strikes its target and the three tiles around it; a Witch's lightning runs
   five tiles straight). The board shows everywhere it could hit on its next move.
-- **Missions**: rout the enemy, burn a War Banner, break a prison cage, kill a
+- **Missions**: defeat every enemy, burn a War Banner, break a prison cage, kill a
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
