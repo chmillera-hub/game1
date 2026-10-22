@@ -417,6 +417,65 @@ button.card:active {
   color: var(--parchment);
 }
 
+/* Board features (rocks, loot, the shrine, hazards) explained on tap. */
+.tileinfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ti-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+}
+
+.ti-icon {
+  display: inline-flex;
+  color: var(--brass-hi);
+}
+
+.ti-icon .icon {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.ti-swatch {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: #8b8780;
+}
+
+.ti-swatch.tree {
+  background: radial-gradient(circle at 50% 40%, #467a40, #2c4f2c);
+}
+
+.ti-swatch.basalt {
+  background: linear-gradient(135deg, #3a3330, #6b5c55);
+}
+
+.ti-swatch.water {
+  background: linear-gradient(135deg, #3a78a3, #8cc6e8);
+}
+
+.ti-swatch.lava {
+  background: linear-gradient(135deg, #c9521d, #ffb347);
+}
+
+.tileinfo ul {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.tileinfo li + li {
+  margin-top: 4px;
+}
+
 /* Damage types: a sword for physical, a violet sparkle for magic. */
 .dt {
   display: inline-flex;

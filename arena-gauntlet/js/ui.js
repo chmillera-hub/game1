@@ -1411,6 +1411,110 @@
     );
   }
 
+  // ------------------------------------------------------------ board features
+
+  const OBSTACLE_NAME = { rock: 'Boulder', tree: 'Tree', basalt: 'Basalt Spire' };
+
+  // What a tile holds besides units, in plain words: terrain, loot, the shrine, hazards and
+  // reinforcement landing points. Null for open ground with nothing on it.
+  function tileFacts(s, x, y, enc) {
+    const t = s.terrain[E.idx(s, x, y)];
+    const f = { title: null, icon: null, swatch: null, lines: [], zone: null };
+    const name = (title, icon, swatch) => {
+      if (f.title) return;
+      f.title = title;
+      f.icon = icon || null;
+      f.swatch = swatch || null;
+    };
+    if (t === E.T_ROCK) {
+      const kind = UI.board.palette.obstacle || 'rock';
+      name(OBSTACLE_NAME[kind] || 'Boulder', null, kind);
+      f.lines.push(
+        'Blocks the way: nobody can stand here, and only flying units pass over it.',
+        'Stops straight-line attacks such as Dark Lightning; arcing shots and spells fly over it.',
+        'It cannot be destroyed. A unit knocked into it is slammed for 6 damage.'
+      );
+    } else if (t === E.T_WATER || t === E.T_LAVA) {
+      const water = t === E.T_WATER;
+      name(water ? 'Deep Water' : 'Lava', null, water ? 'water' : 'lava');
+      f.lines.push(
+        `${water ? 'Too deep' : 'Too hot'} to walk through. Flying units cross it, but nobody can stop on it.`,
+        'Attacks pass over it. A unit on foot knocked toward it is slammed for 6 damage instead.'
+      );
+    }
+    const loot = (s.loot || []).find((l) => !l.taken && l.x === x && l.y === y);
+    if (loot) {
+      name(R.LOOT_NAMES[loot.kind], { chest: 'chest', tome: 'book', relic: 'gem' }[loot.kind]);
+      const bonus = R.objectiveInfo(UI.run, enc).bonus.find((o) => o.b.type === 'loot' && o.b.lootId === loot.id);
+      f.lines.push(`Move a unit onto it and spend that unit's action to take it.${bonus ? ' Reward: ' + bonus.reward + '.' : ''}`);
+      const guards = s.units.filter((u) => u.alive && u.post && u.post.x === x && u.post.y === y);
+      if (guards.length) {
+        const who = `${guards.length > 1 ? guards.length + ' ' : 'a '}${UNITS[guards[0].type].name}${guards.length > 1 ? 's' : ''}`;
+        if (guards.some((g) => !AI.dormant(s, g))) f.lines.push(`Its guards are awake: ${who}.`);
+        else {
+          f.lines.push(`Guarded by ${who}, asleep until one of your units comes within 3 tiles of it (the red tiles) or strikes them.`);
+          f.zone = E.radiusTiles(s, x, y, 3, true);
+        }
+      }
+    }
+    const h = s.hold;
+    if (h && h.x === x && h.y === y) {
+      name('Shrine', 'flag');
+      f.lines.push(`Start ${h.need} of your turns in a row with one of your units standing on it to win.${h.count ? ` Held for ${h.count} so far.` : ''}`);
+    }
+    for (const fx of s.tfx || []) {
+      if (fx.x !== x || fx.y !== y) continue;
+      const mine = fx.team === 'P';
+      const left = `${fx.turns} more turn${fx.turns === 1 ? '' : 's'}`;
+      if (fx.kind === 'fire') {
+        name('Wall of Fire', 'fire');
+        f.lines.push(`${mine ? 'Your fire: enemy' : 'Enemy fire: your'} units that step in or start their turn here take ${fx.dmg || 6} magic damage. Burns for ${left}.`);
+      } else if (fx.kind === 'smoke') {
+        name('Smoke', 'eye');
+        f.lines.push(`Nobody inside can be targeted from more than 1 tile away. Clears in ${left}.`);
+      } else if (fx.kind === 'caltrops') {
+        name('Caltrops', 'target');
+        f.lines.push(`${mine ? 'Your caltrops: the first enemy' : 'Enemy caltrops: the first of your units'} to step here stops, takes 6 damage and is rooted for 1 turn. They stay for ${left}.`);
+      }
+    }
+    for (const w of E.waveSummary(s)) {
+      const k = (w.marks || []).findIndex(([mx, my]) => mx === x && my === y);
+      if (k < 0) continue;
+      name('Landing Point', 'hourglass');
+      f.lines.push(`Reinforcements: ${w.team === 'E' ? 'an enemy' : 'your'} ${UNITS[w.types[k]].name} lands here after the enemy's next move. One of your units standing here blocks it, but takes ${E.BLOCK_DMG} damage.`);
+    }
+    return f.lines.length ? f : null;
+  }
+
+  // A line for a unit standing on something worth knowing: the shrine, loot, a hazard or a
+  // landing point.
+  function underfootHTML(s, u, enc) {
+    const f = tileFacts(s, u.x, u.y, enc);
+    return f ? `<div class="small muted">Standing on: <b>${esc(f.title)}</b>. ${esc(f.lines[0])}</div>` : '';
+  }
+
+  function tileInfoHTML(f) {
+    const mark = f.icon ? `<span class="ti-icon">${ic(f.icon)}</span>` : `<span class="ti-swatch ${f.swatch || ''}"></span>`;
+    return `<div class="tileinfo"><div class="ti-head">${mark}<b>${esc(f.title)}</b></div><ul>${f.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
+  }
+
+  // The board feature a tap landed on, when it is not a unit: whichever drawing (a rock,
+  // a chest, or the flat tile itself) has its middle nearest the finger.
+  function featureAt(hit, s, enc) {
+    const cands = [...(hit.props || []), ...(hit.tile ? [hit.tile] : [])].filter((t) => tileFacts(s, t.x, t.y, enc));
+    cands.sort((a, b) => (a.d || 0) - (b.d || 0));
+    return cands.length ? { x: cands[0].x, y: cands[0].y } : null;
+  }
+
+  // Whoever stands in front under the finger, unless a rock or a chest drawn nearer the
+  // viewer covers them.
+  function unitInFront(hit, s) {
+    const prop = (hit.props || [])[0];
+    const sprite = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
+    const u = sprite && sprite.alive ? sprite : hit.tile ? E.at(s, hit.tile.x, hit.tile.y) : null;
+    return u && !(prop && prop.x + prop.y > u.x + u.y) ? u : null;
+  }
+
   // ------------------------------------------------------------ objectives
 
   function objectivesHTML(enc, s) {
@@ -1572,6 +1676,11 @@
         ov.select = [v.x, v.y];
       }
     }
+    const tileF = wr.tile && !wr.sel && !wr.inspect ? tileFacts(s, wr.tile.x, wr.tile.y, enc) : null;
+    if (tileF) {
+      ov.select = [wr.tile.x, wr.tile.y];
+      if (tileF.zone) ov.range = tileF.zone;
+    }
     b.ov = ov;
 
     const used = wrUsed();
@@ -1633,6 +1742,8 @@
       selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
         ${actsHTML(u)}
         <div class="actions"><button class="btn" id="wrEInfo">${ic('help')} Details</button></div>`;
+    } else if (tileF) {
+      selBlock = tileInfoHTML(tileF);
     } else if (wr.dep.size === 0) {
       selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit again to change its level, abilities, skills and gear. Every point of Supply counts.</div>`;
     }
@@ -1673,6 +1784,7 @@
       c.onclick = () => {
         wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
         wr.sel = null;
+        wr.tile = null;
         renderWarRoom();
       };
     if ($('#wrLoad')) $('#wrLoad').onclick = () => loadoutSheet(wr.sel, () => closeSheet());
@@ -1731,6 +1843,7 @@
   function wrCard(rid) {
     const run = UI.run;
     const wr = UI.wr;
+    wr.tile = null;
     if (wr.dep.has(rid)) {
       if (wr.sel === rid) {
         loadoutSheet(rid, () => closeSheet());
@@ -1766,6 +1879,9 @@
     const wr = UI.wr;
     if (!wr) return;
     const s = wr.s;
+    // Any tap closes the feature panel; tapping the same feature again keeps it closed.
+    const shown = wr.tile;
+    wr.tile = null;
     const raw = hit.tile;
     const tileUnit = raw ? E.at(s, raw.x, raw.y) : null;
     const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
@@ -1773,7 +1889,9 @@
     // With a unit picked up, an open blue tile under the finger is where it goes.
     const placing = wr.sel && wr.dep.has(wr.sel) && raw && !tileUnit && isDeployTile(raw.x, raw.y);
     if (!placing && spriteUnit) t = { x: spriteUnit.x, y: spriteUnit.y };
-    if (!t) return;
+    // A rock or chest in front of everything else: say what it is.
+    if (!placing && !unitInFront(hit, s) && (hit.props || []).length) t = null;
+    if (!t) return wrFeature(hit, shown);
     const unit = E.at(s, t.x, t.y);
     if (unit && unit.team === 'E') {
       wr.inspect = wr.inspect === unit.uid ? null : unit.uid;
@@ -1813,8 +1931,18 @@
       renderWarRoom();
       return;
     }
+    wrFeature(hit, shown);
+  }
+
+  // A tap on the board that is not about a unit: explain the rock, chest or shrine under
+  // it, or clear the selection.
+  function wrFeature(hit, shown) {
+    const wr = UI.wr;
+    const spot = featureAt(hit, wr.s, wr.enc);
     wr.sel = null;
     wr.inspect = null;
+    wr.tile = spot && !(shown && shown.x === spot.x && shown.y === spot.y) ? spot : null;
+    if (wr.tile) sfx('click');
     renderWarRoom();
   }
 
@@ -1958,6 +2086,8 @@
     const endBtn = (primary) =>
       `<button class="btn ${primary ? 'primary' : ''}" id="btEnd" ${s.side !== 'P' || B.busy ? 'disabled' : ''}>${B.confirmEnd ? 'Confirm pass' : 'Pass'}</button>`;
     const inProgress = !!(s.act && (s.act.moved || s.act.acted));
+    const tileF = B.mode === 'tile' && B.tile ? tileFacts(s, B.tile.x, B.tile.y, B.enc) : null;
+    if (B.mode === 'tile' && !tileF) B.mode = 'idle';
 
     if (s.side !== 'P' || B.busy) {
       const actor = B.acting && s.byId[B.acting];
@@ -1979,7 +2109,7 @@
       const loot = !acted && E.lootAt(s, u.x, u.y);
       if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
       if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
-      panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}
+      panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}${loot ? '' : underfootHTML(s, u, B.enc)}
         <div class="hint">${hint}</div>
         <div class="actions acts">
           ${loot ? `<button class="btn primary" id="btLoot">${ic('chest')} Take the ${R.LOOT_NAMES[loot.kind]}</button>` : ''}
@@ -2027,7 +2157,7 @@
       ov.range = th.hit;
       ov.move = th.move.filter(([x, y]) => x !== u.x || y !== u.y);
       ov.select = [u.x, u.y];
-      panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}
+      panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${actsHTML(u)}
         <div class="hint">${
           u.team === 'E'
@@ -2041,6 +2171,11 @@
                   : 'Cannot act right now.'
         }</div>
         <div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`;
+    } else if (B.mode === 'tile') {
+      ov.select = [B.tile.x, B.tile.y];
+      if (tileF.zone) ov.range = tileF.zone;
+      panel = `${tileInfoHTML(tileF)}
+        <div class="actions"><button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
@@ -2211,6 +2346,7 @@
     E.cancelActivation(s);
     B.mode = 'idle';
     B.sel = null;
+    B.tile = null;
     B.target = null;
     B.ai = 0;
     renderBattle();
@@ -2343,11 +2479,16 @@
       if (!A || (!A.moved && !A.acted)) deselect();
       return;
     }
-    const other = unitAtHit(hit);
+    const other = unitInFront(hit, s);
     if (other) return selectUnit(other);
     if (s.act && (s.act.moved || s.act.acted)) return selectUnit(s.byId[s.act.uid]);
-    B.mode = 'idle';
+    // Rocks, loot, the shrine, hazards and landing points explain themselves.
+    const spot = featureAt(hit, s, B.enc);
+    E.cancelActivation(s);
+    B.mode = spot ? 'tile' : 'idle';
+    B.tile = spot;
     B.sel = null;
+    if (spot) sfx('select');
     renderBattle();
   }
 
@@ -2931,6 +3072,7 @@
         <h4>Controls</h4>
         <ul>
           <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
+          <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
           <li>In the war room, tap a deployed unit again to open its loadout. Long-press any unit for details.</li>
           <li>Pinch, drag, or use + and − to zoom. The eye button shows every tile an enemy unit could strike on its next turn.</li>
           <li>Battles play best with your phone turned sideways.</li>

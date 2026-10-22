@@ -20,6 +20,9 @@
     },
   };
 
+  // How tall each act's obstacle is drawn, in sprite units (for tapping it).
+  const OBSTACLE_HEIGHT = { rock: 24, tree: 44, basalt: 38 };
+
   const now = () => (root.performance ? root.performance.now() : Date.now());
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -269,14 +272,32 @@
     hit(px, py) {
       const tile = this.tileAt(px, py);
       const stack = [];
+      const half = this.tw * 0.3;
+      const under = (x, y, hgt) => {
+        const [cx, cy] = this.center(x, y);
+        return px >= cx - half && px <= cx + half && py <= cy + this.th * 0.35 && py >= cy - hgt;
+      };
       const list = [...this.vis.values()].filter((v) => v.alpha > 0.3).sort((a, b) => b.x + b.y - (a.x + a.y) || b.x - a.x);
       for (const v of list) {
-        const [cx, cy] = this.center(v.x, v.y);
-        const hgt = (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1);
-        const half = this.tw * 0.3;
-        if (px >= cx - half && px <= cx + half && py <= cy + this.th * 0.35 && py >= cy - hgt) stack.push({ x: Math.round(v.x), y: Math.round(v.y), uid: v.uid });
+        if (under(v.x, v.y, (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1))) stack.push({ x: Math.round(v.x), y: Math.round(v.y), uid: v.uid });
       }
-      return { tile, unitTile: stack[0] || null, stack, px, py, grid: this.toGrid(px, py) };
+      // Things drawn standing up that are not units: obstacles and loot, front to back. `d`
+      // is how far the finger is from the middle of the drawing.
+      const props = [];
+      const prop = (x, y, hgt) => {
+        if (!under(x, y, hgt)) return;
+        const [cx, cy] = this.center(x, y);
+        props.push({ x, y, d: Math.hypot(px - cx, py - (cy - hgt / 2)) });
+      };
+      const ob = OBSTACLE_HEIGHT[this.palette.obstacle] || 24;
+      for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) if (this.terrain[y * this.w + x] === 1) prop(x, y, ob * this.unit);
+      for (const l of this.loot) if (!l.taken) prop(l.x, l.y, 24 * this.unit);
+      props.sort((a, b) => b.x + b.y - (a.x + a.y) || b.x - a.x);
+      if (tile) {
+        const [cx, cy] = this.center(tile.x, tile.y);
+        tile.d = Math.hypot(px - cx, py - cy);
+      }
+      return { tile, unitTile: stack[0] || null, stack, props, px, py, grid: this.toGrid(px, py) };
     }
 
     // ---------------------------------------------------------- units

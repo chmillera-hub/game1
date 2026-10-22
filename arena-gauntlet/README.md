@@ -45,6 +45,10 @@ on a phone turned sideways, but portrait works too.
   own. Bosses sit out the enemy's first turn.
 - **Combat**: block works from the front, half from the side, never from behind. Statuses count the turns of the side they
   affect: a root lasts its victim's next turns, a mark the attacker's.
+- **Board features**: tap a rock, tree, water, lava, a treasure chest, the shrine,
+  fire, smoke, caltrops or a red landing tile to see what it does: whether it blocks
+  movement or attacks, what loot pays and which tiles wake its guards, and how long
+  a hazard lasts. A unit's panel also says what it is standing on.
 - **Reading the enemy**: tap any unit, yours or theirs, to see a small diagram of
   every attack: where it can aim and exactly which tiles one use hits (a Brute's
   maul strikes its target and the three tiles around it; a Witch's lightning runs
