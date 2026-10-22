@@ -52,8 +52,11 @@ SHOTS (every time is derived from timeline.json beats/lines; the numbers are tod
      rig in setup() so the GRIP lands on the item's middle (no paw floating below a bottle).
      Every item comes in to her chest BEFORE she turns and rides round with her body through an
      11-frame turn (the arm's depth follows the true 3D carry point round the turn and on up over
-     the column, so the elbow never flips and the paw never spins; carried items move <= ~60 px
-     a frame), and a fast frame trails two faint multiples (a smear), never a jump:
+     the column, so the elbow never flips; the paw's direction is steered round with her body,
+     because a forearm pointing at the camera has no direction of its own; carried items move
+     <= ~60 px a frame), and a fast frame trails two faint multiples (a smear), never a jump.
+     Between trips her empty paw goes straight on to the next shelf, turning with her (no stop at
+     her apron); every path's depth is eased between its ends, so the elbow never jumps:
        s2_item1 SLEEP DRAUGHT  turn to the shelf behind her, reach, back, set down.
        s2_item2 VITAMINS       glide to the far shelf and back; she balances the jar ON THE
                                DRAUGHT'S CORK -- it wobbles, holds. (Absurdly neat.)
@@ -65,7 +68,9 @@ SHOTS (every time is derived from timeline.json beats/lines; the numbers are tod
                                candle's rim: the column now towers over her head; it teeters
                                (one full wobble), her paw hovers beside it at its height, one
                                tap (+0.84, the book squashes two frames) squares it -- and a
-                               little "ta-da!": the open paw sweeps out beside the tower.
+                               little "ta-da!": the open paw sweeps down and out beside the
+                               tower at her chest height (clear of her face) and HOLDS there
+                               into the cut (and is still out, presenting, in the low angle).
      He watches like a tennis match (eyes lead, head ~0.2 s behind); at each thunk his eyes
      drop to the column and climb its new height -- his gaze rises with the tower; a blink on
      each landing. After the vitamins he tries once more -- "Actually, I..." -- an inhale, a paw
@@ -78,7 +83,8 @@ SHOTS (every time is derived from timeline.json beats/lines; the numbers are tod
      The tower blocks their eye line. Slow push 1.0 -> 1.035 with a breathing drift.
      s2_stare: he stares up at the top of the tower. She beams at it.
      s2_l1 PHARMACIST "Try these. Lots of people swear by them." -- warm, encouraging: her far paw
-       presents the tower, eyes to the tower then to him, a reassuring nod on "swear by them".
+       (still out from the ta-da) presents the tower, eyes to the tower then to him, a reassuring
+       nod on "swear by them"; the paw comes down after the line.
        His eyes go to her as she starts, then climb the tower again.
      THOUGHT -> GLANCE -> BREATH -> s2_l2 MAN "Do any of them talk back?": his eyes travel down
        the tower (thought), find her (glance, 0.38 s before), a breath lifts him and he leans to
@@ -89,20 +95,23 @@ SHOTS (every time is derived from timeline.json beats/lines; the numbers are tod
      hard two-frame snaps) and her eyes: a dart to her shelves (nothing there for this) and back.
      In the silence an orb stutters (the light on her face buzzes). ~0.7 s held. A double blink
      reboots her, eyes to the till.
- E   s2_ring - 0.14 .. s2_ring + 0.52   INSERT, THE TILL: her paw comes down from above and the
+ E   s2_ring - 0.14 .. s2_ring + 0.38   INSERT, THE TILL: her paw comes down from above and the
      index fingertip lands ON key 2 exactly at s2_ring (solved: the hand is placed from the tip);
      the key sinks, the bell rocks and dings, the number flags pop, the parchment receipt curls up
      out of its slot; the paw lifts away and the receipt keeps coming. Under the insert we HEAR
      his sigh begin and her bag the whole tower at speed (a paper sack snapped open, clinks, the
-     book's thud, the sack plunked down a frame before the cut).
- C'  s2_ring + 0.52 .. end   BACK TO THE LOW TWO-SHOT: the tower is gone; the white sack with the
-     green cross stands where it stood (book and draught peeking out), still settling; her paw on
-     it gives it one satisfied pat, a proud little nod to him. He looks down at it; the exhale:
-     head and shoulders sink and stay sunk, a curl of smoke from his nostrils. Held ~1 s to the
-     hard cut (S3: he walks home in the rain with it).
+     book's thud). We cut back as soon as her paw has left the frame.
+ C'  s2_ring + 0.38 .. end   BACK TO THE LOW TWO-SHOT on her PLUNKING the filled sack down where
+     the tower stood (the white sack with the green cross, book and draught peeking out: it comes
+     the last few px with her paw on it, lands and squashes -- the time-cut reads as an action);
+     one satisfied pat, a proud little nod to him. He looks down at it; the exhale: head and
+     shoulders sink and stay sunk, a curl of smoke from his nostrils. Held ~1.1 s to the hard cut
+     (S3: he walks home in the rain with it).
 
 ACTING NOTES. Dragon: shy, careful, too big for the room (hunched, wings low, stooped under the
-herbs), never snarky; eyes lead, the head follows. Lioness: tidy, graceful, quick professional
+herbs), never snarky; eyes lead, the head follows. Every look is SCREEN space for both eyes (the
+shared rigs mirror an eye whose outer corner is screen-left; _s2_rig.screen_gaze undoes it), so
+he meets her eyes and her two eyes move together. No auto-blink straddles a cut. Lioness: tidy, graceful, quick professional
 paws, sincerely kind; reaches stay comfortable (she steps to the work -- no straight-arm
 lunges). Expressions blend continuously (expr_track: no pops). Mouths move only on their own
 lines (timeline.talk); his line is quiet, so his mouth opens small; the sigh is a closed-mouth
@@ -136,7 +145,7 @@ from film.scenes import _s2_rig as R2
 SCENE = 2
 W, H = core.W, core.H
 TAU = math.tau
-LArm = R2.LionessArmS2            # her arms: the library's LionessArm + a steady forearm (no flips)
+LArm = R2.LionessArmS2            # her arms: the library's LionessArm + a droop that turns with her and a steerable paw
 
 
 def draw_dragon_g(cr, x, y, scale, pose, light, t):
@@ -913,7 +922,7 @@ COLUMN_TOP = -282.0                        # the top of the standing book
 def _draw_item_raw(cr, name, x, y, scale, t, angle, light):
     # the prop kit's labels are lettered for close-ups (6-8 px tall at this scale): every remedy
     # is drawn without its label and re-lettered for the screen (_s2_rig: bigger plates, bold
-    # caps; the book's cover re-set with FOR ADULTS in capitals on a banner)
+    # caps); the book is the kit's own cover with its "for Adults" set larger
     if name == "calm":
         # unlit shop stock: draw_calm_candle shows a dying thread of smoke on a 3 s loop after
         # its flame goes out; at t=2.99 it has fully faded, so the stock candle never smokes
@@ -1131,6 +1140,31 @@ def _turn_steer(t):
         t0, _a, _b, d = TURNS[i]
         w = max(w, core.window(t, t0 - 0.05, t0 + d + 0.25, 0.14, 0.3))
     return max(w, core.window(t, I2 + 0.13, I2 + 0.7, 0.25, 0.2))
+
+
+# Paw swings steered from the angle the paw has at the start to the one it has at the end (both
+# measured through the rig in setup()), the short way round through `via`: where a forearm passes
+# the view axis, its own direction flips; steered, the paw swings through `via` instead.
+# (t0, t1, via): the switch -- her right paw lets go of the note's corner and drops to her apron.
+STEER_SEGS = [(T_SWITCH, T_SWITCH + 0.36, math.radians(160.0))]     # swings down through the front
+STEER_ANG = {}                    # setup(): {(t0, t1): (forearm angle at t0, at t1)}
+
+
+def _arc_lerp(a0, a1, via, u):
+    d = (a1 - a0) % TAU                  # the counter-clockwise sweep
+    if (via - a0) % TAU > d:             # via is not on it: go round the other way
+        d -= TAU
+    return a0 + d * u
+
+
+def _paw_steer(t):
+    """(angle, weight) for her right paw's steered swings, or (None, 0)."""
+    for t0, t1, via in STEER_SEGS:
+        if t0 <= t < t1 and (t0, t1) in STEER_ANG:
+            a0, a1 = STEER_ANG[(t0, t1)]
+            u = core.inout_sine((t - t0) / (t1 - t0))
+            return _arc_lerp(a0, a1, via, u), 1.0
+    return None, 0.0
 
 
 def _yaw_keys():
@@ -1558,8 +1592,13 @@ def lio_arms_A(t, x, y0, yaw, pose, cam, note_cb):
             wc, drop, dz = _carry_phase(t)
             if wc > 0.0:
                 dep = lerp(dep, _carry_depth(t, drop) + dz, wc)
-            r = LArm("place", screen=p_r, hand=_no_pad(h_r), hold=hold_r, depth=dep, hang=dr_r * fade,
-                     ang=carry_angle(yaw), ang_w=max(wc, _turn_steer(t)))
+            sa, sw = _paw_steer(t)
+            if sw > 0.0:
+                r = LArm("place", screen=p_r, hand=_no_pad(h_r), hold=hold_r, depth=dep, hang=dr_r * fade,
+                         ang=sa, ang_w=sw)
+            else:
+                r = LArm("place", screen=p_r, hand=_no_pad(h_r), hold=hold_r, depth=dep, hang=dr_r * fade,
+                         ang=carry_angle(yaw), ang_w=max(wc, _turn_steer(t)))
         else:
             r = LArm(g_r, hand=_no_pad(h_r), hold=hold_r)
         if p_l is not None:
@@ -1621,7 +1660,7 @@ def lio_resolve(spec, t, x, y0, yaw, pose, side, scale=SC):
             # reading, her paws pinch the note's two LOWER CORNERS (as in the insert, her point of
             # view); lowered, the same grip 34 px further down
             p = lio_gesture(x, y0, yaw, pose, t, side, "read_note", 0.0, scale)
-            sx, sy = READ_SPREAD[side]
+            sx, sy = (READ_SPREAD if spec == "read_wide" else READ_LOW_SPREAD)[side]
             return (p[0] + sx, p[1] + sy + (34.0 if spec == "read_low" else 0.0))
         return lio_gesture(x, y0, yaw, pose, t, side, spec, 0.0, scale)
     if callable(spec):
@@ -1630,6 +1669,7 @@ def lio_resolve(spec, t, x, y0, yaw, pose, side, scale=SC):
 
 
 READ_SPREAD = {-1.0: (-16.0, -6.0), 1.0: (34.0, -16.0)}     # (right, left) paw offsets from read_note (px)
+READ_LOW_SPREAD = {-1.0: (-6.0, -24.0), 1.0: (30.0, -16.0)}  # lowered, the far paw's fingers point along the edge
 
 
 def _note_pick_wrist(t):
@@ -2329,10 +2369,12 @@ T_DART_BACK = T_PAUSE + 0.6          # ... and back to him
 T_SNAP2 = T_PAUSE + 0.63             # whisker snap down (two frames)
 T_REBOOT = T_RING - 0.31             # she snaps out of it: a double blink, a brisk breath
 CUT_E = T_RING - 0.14                # INSERT: the till (three frames before the key goes down)
-CUT_C2 = T_RING + 0.52               # back to the two-shot: the tower is in the sack
-T_PAT = CUT_C2 + 0.1                 # one satisfied pat on the sack
-T_SMOKE = CUT_C2 + 0.02              # his sigh: the smoke leaves his nostrils as he deflates
-T_SIGH = CUT_C2 - 0.12               # (the sigh's exhale; the sound starts during the insert)
+CUT_C2 = T_RING + 0.38               # back to the two-shot as soon as her paw has left the insert ...
+T_PLUNK = CUT_C2 + 0.1               # ... on her plunking the filled sack down where the tower stood
+T_PAT = T_PLUNK + 0.2                # one satisfied pat on the sack
+T_SMOKE = CUT_C2 + 0.06              # his sigh: the smoke leaves his nostrils as he deflates
+T_SIGH = CUT_C2 - 0.06               # (the sigh's exhale; its inhale is heard under the insert)
+SACK_DROP = 26.0                     # px the sack still has to come down when we cut back
 CUTS = (CUT_B, CUT_A2, CUT_C, CUT_D, CUT_E, CUT_C2)
 LIO_BAG_X = 1226.0                   # where she stands in C' (behind the sack)
 D_ON_COUNTER = 62.0                  # paw depth (body units ahead of the shoulder) for things on the counter
@@ -2628,9 +2670,13 @@ def _pat_goal():
 
 
 def _lio_pat_far(t, x, y0, base):
-    """C': her far paw rests flat on the sack she has just set down, gives it one pat, then
-    goes back to rest in front of her apron."""
+    """C': her far paw rests flat on the sack she is setting down, gives it one pat, and stays
+    there, proud, to the cut."""
     w = PAT_PROBE.get("wrist", _pat_goal())
+
+    def on_sack(tt):
+        # her palm on the sack's front: it comes down with the sack as she sets it down
+        return (w[0], w[1] - sack_lift(tt))
 
     def rest(tt):
         return lio_gesture(lio_x_C(tt), lio_y_C(tt), -1.0, base, tt, FAR_C, "rest", scale=SCL)
@@ -2638,10 +2684,9 @@ def _lio_pat_far(t, x, y0, base):
     def rest_d(tt):
         return lio_rest_depth(tt, FAR_C, base)
     up = (w[0] + 4.0, w[1] - 26.0)
-    segs = [(CUT_C2, w, "linear", 0.0, D_ON_COUNTER), (T_PAT, w, "linear", 0.0, D_ON_COUNTER),
+    segs = [(CUT_C2, on_sack, "linear", 0.0, D_ON_COUNTER), (T_PAT, on_sack, "linear", 0.0, D_ON_COUNTER),
             (T_PAT + 0.09, up, "out_quad", 0.0, D_ON_COUNTER), (T_PAT + 0.17, w, "in_quad", 0.0, D_ON_COUNTER),
-            (T_PAT + 0.3, w, "linear", 0.0, D_ON_COUNTER),
-            (T_PAT + 0.62, rest, "inout_sine", -10.0, rest_d)]
+            (T_PAT + 0.3, w, "linear", 0.0, D_ON_COUNTER)]         # ... and it stays there, proud
     px, py, dd = seg_path(t, segs)
     if t < T_PAT + 0.3:
         hand = "flat"
@@ -2650,10 +2695,20 @@ def _lio_pat_far(t, x, y0, base):
     return LArm("rest", screen=(px, py), depth=dd, hand=hand)
 
 
+def sack_lift(t):
+    """How high (px) the filled sack still is above the counter: we cut back on her setting it
+    down -- it comes the last few px with her paw on it and lands (plunk) at T_PLUNK: the time-cut
+    reads as an action, not a swap."""
+    if t >= T_PLUNK:
+        return 0.0
+    u = clamp((t - CUT_C2) / (T_PLUNK - CUT_C2))
+    return SACK_DROP * (1.0 - core.in_quad(u))
+
+
 def sack_squash(t):
-    """The sack has just been plunked down (it is still settling at the cut), and gives under the
-    pat. + squashes (wider, shorter), - stretches."""
-    dt = t - (CUT_C2 - 0.06)
+    """The sack lands (plunk) and settles, and gives under the pat. + squashes (wider, shorter),
+    - stretches."""
+    dt = t - T_PLUNK
     s = 0.07 * math.exp(-dt * 9.0) * math.cos(dt * 26.0) if dt > 0.0 else 0.0
     s += 0.045 * bump(t, T_PAT + 0.15, 0.03, 0.12)
     return s
@@ -2662,10 +2717,12 @@ def sack_squash(t):
 def draw_sack_C(cr, t):
     """The filled sack on the counter (book and draught peeking out of its open mouth)."""
     sq = sack_squash(t)
+    lift = sack_lift(t)
     gx, gy = _sack_grip()
     bx, by = BAG_C
-    B.contact_shadow(cr, bx, by + 3.0, 34.0 * SCC, 4.5 * SCC, alpha=0.45)
+    B.contact_shadow(cr, bx, by + 3.0, 34.0 * SCC * (1.0 - 0.006 * lift), 4.5 * SCC, alpha=0.45 * (1.0 - 0.012 * lift))
     cr.save()
+    cr.translate(0.0, -lift)
     cr.translate(bx, by)
     cr.scale(1.0 + 0.6 * sq, 1.0 - sq)
     cr.translate(-bx, -by)
@@ -2695,8 +2752,9 @@ def draw_C(cr, t, st):
             draw_sack_C(cr, t)
             # her paw on the sack is in front of it: lay her far arm again over the sack (only
             # where the sack is: her arm keeps its own place against her body everywhere else)
-            if t < T_PAT + 0.55:
+            if True:                                    # her paw stays on the sack to the end
                 gx, gy = _sack_grip()
+                gy -= sack_lift(t)
                 cr.save()
                 cr.rectangle(gx - 46.0 * SCC, gy - 30.0 * SCC, 92.0 * SCC, 124.0 * SCC)
                 cr.clip()
@@ -2962,6 +3020,17 @@ def setup():
         if k < 3:
             sx, sy = SHELF_SPOT[COLUMN[k][0]]
             GRIP_OFF[("shelf", k)] = _solve_A(TRIPS[k][0], (sx, sy - grip_h(COLUMN[k][0]) * SC))
+    # the steered swings: her right forearm's own angle at each end (steering off)
+    for t0, t1, _via in STEER_SEGS:
+        angs = []
+        for ts in (t0 - 1e-3, t1 + 1e-3):
+            cam = cam_A(ts)
+            x, y0, yaw, lp = lio_state_A(ts)
+            nc = note_holder_lio(ts, cam) if T_PICK - 0.02 <= ts < T_POCKET + 0.02 else None
+            near, far, _h = lio_arms_A(ts, x, y0, yaw, lp, cam, nc)
+            sh, el, wr = R2.lio_joints(x, y0, SC, lp.with_(near=near, far=far), ts, "near" if yaw >= 0 else "far")
+            angs.append(math.atan2(wr[1] - el[1], wr[0] - el[0]))
+        STEER_ANG[(t0, t1)] = tuple(angs)
     # the tap: the flat paw's middle fingertip exactly on the book's edge
     TAP_OFF["tap"] = _solve_A(T_TAP, _book_edge(T_TAP), hand="point", point="index")
     ex, ey = _book_edge(T_TAP_PRESS)
@@ -3101,8 +3170,8 @@ def _sfx_cues():
     # the end. D: the silence of the frozen smile (only the orb's buzz). E: a brisk step to the till,
     # the sleeve swishes in, DING on s2_ring, the receipt rattles out, and under the insert his
     # sigh begins (its exhale lands on the cut back). Off screen she bags the whole tower at speed
-    # -- a paper sack snapped open, the remedies clinking in, the book's thud -- and the sack is
-    # plunked on the counter a frame before we see it there. C': one pat; the smoke puff.
+    # -- a paper sack snapped open, the remedies clinking in, the book's thud. C': we cut back as
+    # the sack comes down the last few px under her paw and plunk (T_PLUNK); one pat; the smoke.
     tx, bx = _pan(TILL_C[0]), _pan(BAG_C[0])
     cues.append((round(T_BUZZ, 3), "candle_flicker", {"gain": 0.5, "pan": _pan(ORBS_C[0][0])}))
     cues.append((round(T_REBOOT + 0.04, 3), "cloth_rustle", {"gain": 0.18, "pan": _pan(LIO_C[0])}))
@@ -3111,14 +3180,15 @@ def _sfx_cues():
     cues.append((round(T_RING - 3.0 / 24.0, 3), "cloth_rustle", {"gain": 0.24, "pan": tx, "dur": 0.15}))
     cues.append((round(T_RING, 3), "till_bell", {"gain": 0.9, "pan": tx}))
     cues.append((round(T_RING + 0.06, 3), "receipt", {"gain": 0.6, "pan": tx}))
-    cues.append((round(T_RING + 0.1, 3), "sigh", {"gain": 0.45, "pan": _pan(DRAGON_C[0] + 200.0)}))
-    cues.append((round(PAW_OUT - 0.04, 3), "cloth_rustle", {"gain": 0.42, "pan": bx, "dur": 0.18}))   # sack snapped open
-    cues.append((round(PAW_OUT + 0.03, 3), "glass_clink", {"gain": 0.3, "pan": bx}))
-    cues.append((round(PAW_OUT + 0.08, 3), "glass_clink", {"gain": 0.26, "pan": bx}))
-    cues.append((round(PAW_OUT + 0.12, 3), "item_set_down", {"gain": 0.3, "pan": bx, "size": 0.4, "material": "book"}))
-    cues.append((round(CUT_C2 - 0.04, 3), "item_set_down", {"gain": 0.72, "pan": bx, "size": 0.6, "material": "bag"}))
-    cues.append((round(CUT_C2 - 0.03, 3), "cloth_rustle", {"gain": 0.32, "pan": bx}))
-    cues.append((round(T_PAT + 0.15, 3), "cloth_rustle", {"gain": 0.22, "pan": bx}))                  # the pat
+    # the sigh: its inhale under the press, the exhale (0.38 s into the sound) as we cut back to him
+    cues.append((round(T_SIGH - 0.38, 3), "sigh", {"gain": 0.45, "pan": _pan(DRAGON_C[0] + 200.0)}))
+    cues.append((round(PAW_OUT - 0.06, 3), "cloth_rustle", {"gain": 0.42, "pan": bx, "dur": 0.16}))   # sack snapped open
+    cues.append((round(PAW_OUT - 0.01, 3), "glass_clink", {"gain": 0.3, "pan": bx}))
+    cues.append((round(PAW_OUT + 0.03, 3), "glass_clink", {"gain": 0.26, "pan": bx}))
+    cues.append((round(PAW_OUT + 0.07, 3), "item_set_down", {"gain": 0.3, "pan": bx, "size": 0.4, "material": "book"}))
+    cues.append((round(T_PLUNK, 3), "item_set_down", {"gain": 0.72, "pan": bx, "size": 0.6, "material": "bag"}))
+    cues.append((round(T_PLUNK + 0.01, 3), "cloth_rustle", {"gain": 0.32, "pan": bx}))
+    cues.append((round(T_PAT + 0.17, 3), "cloth_rustle", {"gain": 0.22, "pan": bx}))                  # the pat
     cues.append((round(T_SMOKE, 3), "smoke_puff", {"gain": 0.22, "pan": _pan(DRAGON_C[0] + 250.0)}))
     return sorted(cues, key=lambda c: c[0])
 

@@ -33,34 +33,40 @@ COLOUR / VALUE SCRIPT
   to S7's golden hour is warmth continuing, not a jump.
 
 SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a frozen frame)
-  A  0.00-3.55  "she is alone" -> OPENS CLOSE ON HER, PULLS BACK TO THE WIDE.
-     cam (815,770) z2.30, held while she tosses her crumbs (release 0.71) -- a small figure at
-     one end of a long, empty bench, the castle above, the pigeons pecking: the image of the
-     whole film's loneliness -- then from 0.85 an eased pull-back to (917,627) z1.10 just as he
-     trudges in at the right edge (drooped wings, the paper apothecary sack swinging -- open at
-     the neck as he carried it in S3 and S4, the coloring book's corner peeking out): the
-     reveal widens on him, the oak framing the left, the castle on its hill above the bench, the
-     unlit iron lantern on the right. She clocks him at 1.75 (eyes, then head; back to her
-     pigeons). He stops (2.80), turns front and lowers himself, setting the sack down by his foot.
-  B  3.55-12.45 "the gap" -> LOW TWO-SHOT WITH A GALLERY.  cam (870,800) z2.12 -> z2.20.
+  A  0.00-3.60  "she is alone" -> OPENS ON HER, PULLS BACK TO THE WIDE AS HE ARRIVES.
+     cam (754,846) z2.92, held while she tosses her crumbs (release 0.71) and puts the rest of
+     her bread back in her satchel (1.35-1.85): a tiny figure at the end of a long empty bench
+     that runs out of the frame, the pigeons pecking up the crumbs, his footsteps heard before
+     he is seen (the scurrier pigeon hurries in ahead of him) -- the image of the whole film's
+     loneliness, held. From 1.15 an eased pull-back to (917,627) z1.10 finds him at the right
+     edge (~1.45 s) trudging in (drooped wings, the paper apothecary sack swinging -- open at the
+     neck as he carried it in S3 and S4, the coloring book's corner peeking out): the reveal
+     widens on him, the oak framing the left, the castle on its hill above the bench, the unlit
+     iron lantern on the right. She clocks him at 1.75 (eyes, then head; back to her pigeons).
+     He stops (3.00), turns front and lowers himself, feet planted, setting the sack down by his
+     foot; once the bench has his weight he steps his feet forward (feet_override).
+  B  3.60-12.45 "the gap" -> LOW TWO-SHOT WITH A GALLERY.  cam (870,800) z2.12 -> z2.20.
      Cut on the sit. The bench across the frame, she on the left, he on the right, the EMPTY
      middle with the castle above it -- and along the bottom of the frame, close to the lens,
      a row of four big pigeons: the spectators (grounded by their own soft contact shadows and
-     long dusk shadows on their foreground plane). 3.75: the seat takes his weight (creak, sag,
-     her bounce, hood flop, spectacles jump) and the gallery startles (hop, flap). An "umpire"
-     pigeon flies in (4.10) and lands on the middle of the backrest (4.85): the umpire's chair.
+     long dusk shadows on their foreground plane). 3.80: the seat takes his weight (creak, sag,
+     her silent startle -- brows up, mouth shut -- bounce, hood flop, spectacles jump) and the
+     gallery startles (hop, flap). An "umpire" pigeon flies in high over his head (4.15) and
+     drops onto the middle of the backrest over the empty seat (4.90): the umpire's chair.
      s6_pause 4.0-9.0, THE TENNIS MATCH: every small thing either of them does snaps every head
      that way in sync (anticipation dip, fast turn, overshoot, settle) -- and bird 3 is always a
-     beat late. Him (4.25) -> her "hmph", eyes shut, nose up (5.25) -> his scoot + creak (6.05)
-     -> her boots shoot out at the lens, soles to us, as she sits back with a bounce (6.75) ->
-     his sigh, a curl of smoke (7.35) -> her sniff (7.90) -> they
-     glance at each other at the same moment (8.25) and look away fast; the pigeons, out of
-     options, turn and stare into the lens -- and blink, all together (8.70). Hold to 9.0.
+     beat late. Him (4.30) -> her "hmph", eyes shut, nose up (5.15) -> his scoot + creak (5.85)
+     -> her boots shoot out at the lens, soles to us, as she sits back with a bounce (6.45) ->
+     his sigh, a curl of smoke (7.00) -> her sniff (7.50) -> they glance at each other at the
+     same moment (7.85: her head right round, a lean, a flash off her lenses), hold it (0.4 s)
+     and look away fast; the pigeons, out of options, turn and stare into the lens -- the late
+     one too -- and blink, all together (8.47). The stare holds to the sack's rustle (9.0).
      s6_book 9.0-12.0: the sack rustles (every head snaps to him); he leans down, pulls out
      MINDFUL COLORING FOR ADULTS (9.42: it rises out of the sack from where its corner stood,
-     turning to face us), sits up with it, opens it (to 10.08), flips four pages
-     without joy (10.12-11.40), shuts it and lobs it onto the seat into the gap (lands 12.00);
-     every head follows its arc. The camera eases in a touch toward the book business.
+     turning to face us), sits up with it, opens it (to 10.08; his far hand rises to meet the
+     left page), flips four pages without joy (10.12-11.40), shuts it and lobs it onto the seat
+     into the gap (lands 12.00); every head follows its arc. The camera eases in a touch toward
+     the book business.
   C  12.45-15.24 "over the spectacles" -> MEDIUM CLOSE-UP on her.  z5.95 -> 6.12.
      Her face on the left third, looking right (lead room toward the book and him). s6_glance
      12.6: eyes slide to the book, the spectacles slide down her nose, one judging blink, a
@@ -75,7 +81,8 @@ SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a froz
      the look lands).
   E  18.56-30.00 "the cat" -> TWO-SHOT that closes in as they connect.  z3.0 -> 3.3 by "I got
      the cat", 4.7 by the beat (both faces big: the held look is the shot), 4.9 into the snort,
-     released to 3.75 as the laugh throws his head back, breathing out to 3.3 at the end. From
+     held through it (the camera waits with them), then thrown back to 3.75 by the burst
+     (_react: it reacts to the laugh, never anticipates it), breathing out to 3.3 at the end. From
      shot D on the book on the seat is graded a stop down (BOOK_DIM: her long dusk shadow lies
      across the seat), so their faces stay the brightest values and the caption band stays calm.
      Cut BEFORE she moves: two quick hops along the seat toward him (18.68, 18.87) -- she crosses
@@ -92,7 +99,8 @@ SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a froz
      a tiny head shake through "every story", a smirk on "day". HIS BUILD (build_stages): on
      "sleeps" the corner of his mouth goes and his cheeks push his lower lids up (GRIN); through
      "every story" he holds it in -- his eyes slide away, his chin dips, his shoulders start to
-     shake; on "day" his eyes come back to her and the grin breaks wide; the snort (26.95): a
+     hitch (~3.4 a second, on 2s: the SHOULDERS, while his head stays steady -- shoulder_shrug);
+     on "day" his eyes come back to her and the grin breaks wide; the snort (26.95): a
      jerk of the head, a hitch of the shoulders, eyes squeezed, a puff of smoke and sparks
      blown from his nose.
      s6_laugh 27.19: HE LAUGHS -- he rocks back out of the lean, head back, eyes squeezed,
@@ -126,8 +134,19 @@ The light at the last frame: the dusk garden with the golden-hour garden bloomed
 (GOLD_NEAR 0.5 around them, GOLD_FAR 0.3 at the edges) and the cast lit Light.lerp(dusk,
 golden, 0.5) with warm rims toward each other -- S7's golden hour continues from there.
 
+RIGS (_s6_rig, scene-local, installed only around this scene's draw calls): arm hand-offs
+between "rest" and any other gesture keep the elbow on its side (the library picks the IK pole
+by gesture name, which flipped the elbow on one frame), and the hand's screen angle is eased
+while a forearm swings end-on to the lens; his held-in laugh shrugs his shoulders without his
+head; his feet stay planted while he sits and then step forward. The bench's sag lowers his
+seat (DragonPose.seat_h), not his whole anchor, so his feet stay on the gravel.
+
+SET DRESSING: the far stretch of the gravel walk (behind his end of the bench, up to the gap in
+the back hedge) gets a soft, shaded, blurred copy that carries on through the gap toward the
+castle (_far_walk_layer): its squared-off end read as a slab of masonry in the close shots.
+
 SOUND: SFX_CUES (module level) lists every on-screen event with its local time, computed from
-the same constants the animation uses (footsteps on the walk cycle's heel strikes).
+the same constants the animation uses (footsteps on the walk cycle's heel strikes; walk_dist).
 """
 
 import bisect
@@ -1659,9 +1678,14 @@ def _sfx_cues():
             cues.append((round(t, 3), "footstep", {"gain": 0.45, "pan": _pan_of(x0 - dist, t), "surface": "gravel"}))
         last = step
         t += 1.0 / 48.0
+    # seated, he steps his feet forward on the gravel, one and then the other (feet_override)
+    for side, (d0, dur) in FEET_STEPS.items():
+        cues.append((round(T_LAND + d0 + dur, 3), "footstep", {"gain": 0.22, "pan": _pan_of(xd - 30.0, T_LAND), "surface": "gravel"}))
     cues += [
         (round(T_CRUMBS, 3), "crumbs", {"gain": 0.35, "pan": _pan_of(xg + 30, T_CRUMBS)}),
         (round(T_CRUMBS + 0.75, 3), "pigeon_coo", {"gain": 0.3, "pan": -0.15}),
+        # the rest of her bread goes back into the linen satchel
+        (round(T_TUCK1 - 0.12, 3), "cloth_rustle", {"gain": 0.16, "pan": _pan_of(xg - 10.0, T_TUCK1), "size": 0.25}),
         (round(T_SIT0 + 0.2, 3), "cloth_rustle", {"gain": 0.4, "pan": _pan_of(xd, T_SIT0)}),
         (round(T_BAG, 3), "paper_slide", {"gain": 0.3, "pan": _pan_of(xd + 50, T_BAG), "size": 0.5}),
         (round(T_LAND, 3), "bench_creak", {"gain": 1.0, "pan": _pan_of(xd, T_LAND), "size": 1.0}),
@@ -1918,7 +1942,7 @@ def _set_gesture_targets(t):
 # draw
 # ----------------------------------------------------------------------------------------
 
-SACK_EXPOSURE = 0.62             # the cream sack sits a stop under the faces (in his shadow, on the gravel)
+SACK_EXPOSURE = 0.56             # the cream sack sits a stop under the faces (in his shadow, on the gravel)
 SACK_BOTTOM = 87.0               # props: the sack's bottom hangs 87 below its grip
 
 
@@ -1966,7 +1990,7 @@ def _draw_bag(cr, t, light):
             P._bag_contents = orig
     else:
         P.draw_apothecary_bag(cr, dx, yy, SC, light, t, angle=ang, state="open")
-    B.occlusion(cr, bot[0], bot[1] - 5.0 * SC, 40.0 * SC, 13.0 * SC, "#1b1530", alpha=0.42 * k)
+    B.occlusion(cr, bot[0], bot[1] - 7.0 * SC, 42.0 * SC, 17.0 * SC, "#1b1530", alpha=0.55 * k)
 
 
 

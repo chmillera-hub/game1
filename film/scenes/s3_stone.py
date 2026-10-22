@@ -316,6 +316,14 @@ def _turn(t):
     return lerp(TURN_WALK, TURN_TALK, ramp(t, T_STOP - 0.35, L4.start - 0.1, "inout_sine"))
 
 
+# Shot B only shows the start of that turn. Below a body turn of ~0.22 (head yaw ~1.07 rad) the
+# rig starts drawing his far eye, and at these near-profile angles it lands outside the head's
+# silhouette, pasted on the brow/snout edge. So B plays the same ease scaled down to end at
+# TURN_B_LAST on its last frame. The turn keeps moving through the cut, and the C set-up, whose
+# camera has come round, turns him the rest of the way.
+TURN_B_LAST = 0.28
+
+
 def _slow_u(t):
     return clamp((t - T_SLOW0) / (T_STOP - T_SLOW0))
 
@@ -397,6 +405,18 @@ def shot_at(t):
     if t < T_CUT3:
         return "C"
     return "D"
+
+
+_T_B_LAST = (math.ceil(T_CUT2 * tl.fps() - 1e-6) - 1) / tl.fps()      # shot B's last frame
+_TURN_B_K = min(1.0, (TURN_WALK - TURN_B_LAST) / max(1e-6, TURN_WALK - _turn(_T_B_LAST)))
+
+
+def body_turn(t):
+    """His body turn as the shot at t sees it: B plays the turn's start, scaled (TURN_B_LAST)."""
+    s = shot_at(t)
+    if s == "B":
+        return TURN_WALK - (TURN_WALK - _turn(t)) * _TURN_B_K
+    return _turn(t) + (TURN_C if s == "C" else 0.0)
 
 
 HEAD_DX, HEAD_DY = 26.0, -373.0      # his head centre relative to his anchor (scale 0.85, hunched)
@@ -1453,8 +1473,7 @@ def dragon_pose(t, stone_cb, bag_cb):
     wings = _k(t, [(0.0, -1.0), (T_LONELY, -1.0), (T_LONELY + 0.3, -0.8), (T_PLEASE + 0.5, -1.0)])
     wings = min(-0.75, wings + 0.12 * abs(trem))
     swing = 0.11 * math.sin(ph * TAU) * walk + 0.06 * B.wobble(t, T_STOP, 1.4, 1.2)
-    turn = _turn(t) + (TURN_C if shot_at(t) == "C" else 0.0)
-    return ch.DragonPose(facing=1, turn=turn, walk=walk, phase=ph, lean=0.05 * walk, hunch=hunch,
+    return ch.DragonPose(facing=1, turn=body_turn(t), walk=walk, phase=ph, lean=0.05 * walk, hunch=hunch,
                          head_turn=head_turn, head_nod=nod - 0.12 * shiver, head_tilt=tilt, look=look,
                          mood="tired", mood2=mood2,
                          mood_mix=mix, talk=man_talk(t), blink=blink,
@@ -1803,8 +1822,13 @@ class RuneText:
 # side of the ring and the long E leaves the other side empty -- the rest before it all comes
 # round again). It floats ahead of his face, in his plane, so every shot sees the same thing.
 # =============================================================================================
-EMB_DX, EMB_UP = 232.0, 44.0         # from his head (world px at his plane)
+# From his head, in world px at his plane. In B the "On hold" banner hangs over the far side's
+# plaster and doors: a dark alley between two houses there would otherwise run straight down
+# from it like a signpost (measured with a luma probe on the background-only frames). This also
+# puts the emblem on the right third, where the C set-up finds it after the cut.
+EMB_DX, EMB_UP = 335.0, 44.0
 EMB_DX_C, EMB_UP_C = 182.0, 22.0     # shot C's angle: nearer (foreshortened) and nearer his eye line
+EMB_DX_D, EMB_UP_D = 330.0, 44.0     # the final wide: clear of the same alley as the camera rises
 EMB_SCALE = {"A": 1.0, "B": 1.0, "C": 0.84}   # screen-size balance per shot ...
 EMB_D = 1.42                         # ... and the final wide counter-scales it as the camera pulls away
 RING_RX, RING_RY, RING_TILT = 56.0, 13.0, -0.07
@@ -1819,9 +1843,10 @@ T_BANNER = (T_HOLD - 0.1, T_HOLD + 0.45)
 
 def emblem_center(t):
     """World (his plane): ahead of his face, keeping pace a moment behind him, bobbing a little."""
-    c = shot_at(t) == "C"
-    x = walk_x(t - 0.15) + HEAD_DX + (EMB_DX_C if c else EMB_DX)
-    y = GY + HEAD_DY - (EMB_UP_C if c else EMB_UP) + 4.0 * math.sin(t * 0.8) + 2.0 * math.sin(t * 1.9 + 1.0)
+    s = shot_at(t)
+    dx, up = (EMB_DX_C, EMB_UP_C) if s == "C" else (EMB_DX_D, EMB_UP_D) if s == "D" else (EMB_DX, EMB_UP)
+    x = walk_x(t - 0.15) + HEAD_DX + dx
+    y = GY + HEAD_DY - up + 4.0 * math.sin(t * 0.8) + 2.0 * math.sin(t * 1.9 + 1.0)
     return x, y
 
 

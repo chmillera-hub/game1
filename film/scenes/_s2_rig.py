@@ -10,8 +10,8 @@ it (file ownership: film/lib/** belongs to the library authors):
   lio_joints(...)      her shoulder / elbow / wrist of one arm in caller coordinates (no drawing).
   screen_gaze(x)       context manager: inside it every eye uses x as a SCREEN-space look (the
                        shared rigs mirror the gaze of any eye whose outer corner is screen-left).
-  LionessArmS2         LionessArm + steady (no forearm flips) and hang (a droop that turns with
-                       her) -- see the section below.
+  LionessArmS2         LionessArm + hang (a droop that turns with her) and ang/ang_w (a paw the
+                       scene steers when its forearm points at the camera) -- see below.
   LionessPoseS2        LionessPose + three S2-only fields used by the frozen-smile take:
                          grin (0..1)      the polite smile locks into a rigid, wide, toothy grin
                                           with the cheeks pushed up (a "polite rictus");
@@ -283,26 +283,19 @@ class screen_gaze:
 
 
 # ========================================================================================
-# the lioness's arms: a steady forearm (no flips) and a hand droop that turns with her
+# the lioness's arms: a hand droop that turns with her, and a paw the scene can steer
 # ========================================================================================
-# The library solves each arm in 3D with a fixed elbow pole (out, down and a little back). In a
-# 3/4 view that bends the arm in DEPTH, so when the wrist passes close to the elbow on screen the
-# projected forearm shrinks to a few px, its direction flips and the paw (drawn along it) spins
-# half round in one frame. LionessArmS2 arms (the library ignores the extra fields):
-#   steady  0..1: when the projected forearm gets short, the elbow is eased toward a 2D elbow
-#           bent in the PICTURE plane (down and toward her back), so the forearm keeps a length
-#           and only ever rotates in the picture plane: continuous by construction.
+# LionessArmS2 arms (the library ignores the extra fields):
 #   hang    None = the gesture's own hand droop, faded to nothing as she passes the front view
 #           (the library flips its sign at yaw 0: a 57-degree twist in one frame mid-turn);
 #           a number = the droop in radians (the scene keeps it continuous).
-
 #   ang     None, or a screen angle (rad) the paw points along (cuff and hand), blended in by
 #   ang_w   0..1 -- for a paw whose forearm points at the camera (an item carried at her chest
-#           through a turn): its projected direction is noise, so the scene steers the paw.
+#           through a turn): its projected direction is noise (it flips as the forearm passes
+#           the view axis), so the scene steers the paw round with her body instead.
 
 @dataclass
 class LionessArmS2(LIO.LionessArm):
-    steady: float = 0.0
     hang: float = None
     ang: float = None
     ang_w: float = 0.0
@@ -310,34 +303,6 @@ class LionessArmS2(LIO.LionessArm):
 
 _ORIG_SOLVE = LIO._solve_arm
 HANG_YAW = 0.7               # the droop fades in over this much yaw either side of the front view
-
-
-def _xy_to_body(pr, p, depth):
-    """Rig 2D (projected) point at a camera depth -> body space (inverse of Proj)."""
-    X = p[0] * pr.c - depth * pr.s
-    Z = p[0] * pr.s + depth * pr.c
-    Y = (p[1] - depth * pr.se) / pr.ce
-    return (X, Y, Z)
-
-
-def _elbow_2d(s2, w2, yaw, l1, l2):
-    """A 2D elbow for shoulder s2 -> wrist w2: two-bone IK in the picture plane with the bones a
-    little foreshortened, bent toward her back and down (the side swaps smoothly through the
-    front view, where the arm is shown straight)."""
-    dx, dy = w2[0] - s2[0], w2[1] - s2[1]
-    d = math.hypot(dx, dy)
-    if d < 1e-6:
-        return (s2[0], s2[1] + l1)
-    ux, uy = dx / d, dy / d
-    sgn = -clamp(yaw / 0.6, -1.0, 1.0)          # facing left: + (the elbow on the down/back side)
-    if d >= l1 + l2:
-        a, h = d * l1 / (l1 + l2), 0.0
-    else:
-        dd = max(d, abs(l1 - l2) + 1e-3)
-        a = (l1 * l1 - l2 * l2 + dd * dd) / (2.0 * dd)
-        h = math.sqrt(max(0.0, l1 * l1 - a * a))
-    nx, ny = uy, -ux                              # cross(u, n) < 0: the down/back side facing left
-    return (s2[0] + ux * a + nx * h * sgn, s2[1] + uy * a + ny * h * sgn)
 
 
 def _solve_arm_s2(q, S, side, arm):
@@ -350,17 +315,6 @@ def _solve_arm_s2(q, S, side, arm):
         A["hang"] = arm.hang * (1.0 if side < 0 else -1.0) * step
     else:
         A["hang"] = A["hang"] * clamp(abs(yaw) / HANG_YAW, 0.0, 1.0)
-    k = clamp(arm.steady)
-    if k > 0.0:
-        pr = q.proj
-        s2, w2, e2 = pr.xy(A["sh"]), pr.xy(A["wr"]), pr.xy(A["el"])
-        fl = math.hypot(w2[0] - e2[0], w2[1] - e2[1])
-        wgt = k * (1.0 - core.smoothstep(0.3 * LIO.FOREARM, 0.55 * LIO.FOREARM, fl))
-        if wgt > 1e-4:
-            e_ref = _elbow_2d(s2, w2, yaw, LIO.UPPER_ARM * 0.86, LIO.FOREARM * 0.86)
-            e_new = (lerp(e2[0], e_ref[0], wgt), lerp(e2[1], e_ref[1], wgt))
-            dep = lerp(pr.depth(A["el"]), 0.5 * (pr.depth(A["sh"]) + pr.depth(A["wr"])), wgt)
-            A = dict(A, el=_xy_to_body(pr, e_new, dep))
     return A
 
 
