@@ -818,9 +818,11 @@
     };
     const chip = (w, key, cls, icon, label) => {
       const c = chipInfo(w, key);
-      const on = info && info[0] === w.id && info[1] === key;
-      return `<span class="chip tappable ${cls} ${on ? 'on' : ''}" data-chip="${w.id}:${key}" title="${esc(c.name + ': ' + c.desc)}">${ic(icon)} ${esc(label)}</span>`;
+      return `<span class="chip tappable ${cls}" data-chip="${w.id}:${key}" title="${esc(c.name + ': ' + c.desc)}">${ic(icon)} ${esc(label)}</span>`;
     };
+    const infoHTML = (c) => `<div class="chip-info"><b>${esc(c.name)}</b> <span class="muted">${esc(c.kind)}</span><br>${esc(c.desc)}</div>`;
+    // Built once. Taps only move the highlight and the explanation, so the page never
+    // redraws or scrolls under the finger.
     const render = () => {
       const v = showView(
         `<div class="wrap">
@@ -834,7 +836,6 @@
               <div class="desc">${esc(w.desc)}</div>
               <div class="small">${w.units.map((t) => UNITS[t].name).join(', ')}</div>
               <div class="chips">${chip(w, 'relic', 'magic', 'gem', RELICS[w.relic].name)}${(w.items || []).map((it, i) => chip(w, String(i), '', it[0] === 'skill' ? 'scroll' : 'sword', itemDefOf(it).name)).join('')}${chip(w, 'gold', 'warn', 'gold', String(w.gold))}</div>
-              ${info && info[0] === w.id ? (() => { const c = chipInfo(w, info[1]); return `<div class="chip-info"><b>${esc(c.name)}</b> <span class="muted">${esc(c.kind)}</span><br>${esc(c.desc)}</div>`; })() : ''}
             </button>`
           ).join('')}</div>
           <h3>Difficulty</h3>
@@ -845,27 +846,32 @@
         </div>`
       );
       $('#ncBack', v).onclick = () => title();
+      const pickWarband = (id) => {
+        wb = id;
+        for (const b of $$('[data-wb]', v)) b.classList.toggle('selected', b.dataset.wb === id);
+      };
       // Tapping a chip picks that warband and explains the chip; tapping it again hides it.
       for (const c of $$('[data-chip]', v))
         c.onclick = (e) => {
           e.stopPropagation();
           const [id, key] = c.dataset.chip.split(':');
-          wb = id;
+          pickWarband(id);
           info = info && info[0] === id && info[1] === key ? null : [id, key];
+          for (const x of $$('.chip-info', v)) x.remove();
+          for (const x of $$('[data-chip]', v)) x.classList.toggle('on', x === c && !!info);
+          if (info) c.parentElement.insertAdjacentHTML('afterend', infoHTML(chipInfo(WARBANDS.find((w) => w.id === id), key)));
           sfx('click');
-          render();
         };
       for (const b of $$('[data-wb]', v))
         b.onclick = () => {
-          wb = b.dataset.wb;
+          pickWarband(b.dataset.wb);
           sfx('click');
-          render();
         };
       for (const b of $$('[data-diff]', v))
         b.onclick = () => {
           diff = b.dataset.diff;
+          for (const x of $$('[data-diff]', v)) x.classList.toggle('selected', x === b);
           sfx('click');
-          render();
         };
       $('#ncGo', v).onclick = () => {
         R.clearSave();
