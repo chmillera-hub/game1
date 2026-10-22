@@ -15,6 +15,10 @@ on a phone turned sideways, but portrait works too.
   plus its level, plus any ability, skill, gear or enchantment it carries.
   Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight
   (3 + 2) with an extra ability. Loadouts are free to change between battles.
+- **Auto**: the War Room's Auto button builds an army for you. It weighs the
+  enemy's armor against its magic resistance: magic attackers against armored
+  armies, physical ones against magic-resistant armies, a mix otherwise. The
+  scout report shows the same comparison.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 14 Supply and 4 units on the field at Level 1 to
   33 Supply and 8 units at Level 10.
@@ -31,15 +35,15 @@ on a phone turned sideways, but portrait works too.
   off steel but melt to spells, and Mage Knights do the reverse. A unit's Power,
   its attacks and every damage preview show the damage-type icon.
 - **Taking turns**: the sides alternate one unit at a time, like chess, and the enemy
-  goes first. On your turn you pick one unit: it moves, acts or both, then faces.
-  Then the enemy picks one of theirs.
+  goes first. On your turn you pick one unit: it moves, acts or both, then turns
+  to face the nearest enemy (or the way you choose, if you switch Facing to manual
+  in the menu). Then the enemy picks one of theirs.
 - **Cooldowns**: acting starts a unit's cooldown (its Recover stat + 1), which drops
   by 1 at the start of each of your turns. At 0 the unit can be picked again: a
   Scout every turn, a Knight every other turn, a Witch every third. Moving without
   acting costs about half. When nothing of yours is ready, your turn passes on its
   own. Bosses sit out the enemy's first turn.
-- **Combat**: after its move, a unit picks a facing. Block works from the front,
-  half from the side, never from behind. Statuses count the turns of the side they
+- **Combat**: block works from the front, half from the side, never from behind. Statuses count the turns of the side they
   affect: a root lasts its victim's next turns, a mark the attacker's.
 - **Reading the enemy**: tap any unit, yours or theirs, to see a small diagram of
   every attack: where it can aim and exactly which tiles one use hits (a Brute's

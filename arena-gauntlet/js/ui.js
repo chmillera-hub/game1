@@ -32,7 +32,7 @@
     battle: null,
     wr: null,
     mapSel: null,
-    prefs: { fast: false, threat: false },
+    prefs: { fast: false, threat: false, manualFacing: false },
   };
   try {
     Object.assign(UI.prefs, JSON.parse(root.localStorage.getItem(PREFS_KEY) || '{}'));
@@ -209,7 +209,7 @@
     const a = u.act;
     const heal = a.kind === 'pray' || a.kind === 'drum';
     const poisoner = a.fx && a.fx.poison && !a.dmg;
-    const powLabel = heal ? 'Heal' : poisoner ? 'Poison' : 'Power';
+    const powLabel = heal ? 'Heal' : poisoner ? 'Poison' : 'DMG';
     const powVal = heal ? E.healAmount(u, a) : poisoner ? E.poisonDamage(u, a) : u.pow || '-';
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
@@ -1005,6 +1005,7 @@
         <button class="btn wide" id="muHelp">${ic('help')} How to play</button>
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
+        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
         ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
         <button class="btn wide" id="muTitle">Save and quit to title</button>
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
@@ -1014,6 +1015,11 @@
         $('#muCodex', sh).onclick = () => codexSheet();
         $('#muSound', sh).onclick = () => {
           AG.Audio.toggle();
+          menuSheet(inBattle);
+        };
+        $('#muFacing', sh).onclick = () => {
+          UI.prefs.manualFacing = !UI.prefs.manualFacing;
+          savePrefs();
           menuSheet(inBattle);
         };
         $('#muTitle', sh).onclick = () => {
@@ -1695,6 +1701,24 @@
       R.save(run);
       sfx('click');
       renderWarRoom();
+      // Say what Auto went for, and why.
+      const p = R.damageProfile(wr.enc);
+      const types = [...wr.dep.keys()].map((rid) => UNITS[R.unitById(run, rid).type].act.dmg);
+      const n = (t) => types.filter((x) => x === t).length;
+      const plural = (k, w) => `${k} ${w} attacker${k === 1 ? '' : 's'}`;
+      const got = n('magic') && n('phys') ? `${plural(n('magic'), 'magic')} and ${plural(n('phys'), 'physical')}` : n('magic') ? plural(n('magic'), 'magic') : plural(n('phys'), 'physical');
+      const a = `armor ${Math.round(p.armor * 100)}%`;
+      const r = `magic resistance ${Math.round(p.res * 100)}%`;
+      const owned = (t) => run.roster.some((x) => UNITS[x.type].act.dmg === t);
+      let why;
+      if (p.lean === 'mixed') why = `Their ${a} and ${r} are close, so both damage types work.`;
+      else {
+        const t = p.lean;
+        const name = t === 'magic' ? 'Magic' : 'Steel';
+        why = `${name} hits harder here (their ${a}, ${r}).`;
+        if (!n(t)) why += owned(t) ? ` Your ${t === 'magic' ? 'magic' : 'physical'} units did not fit this time.` : ` You have no ${t === 'magic' ? 'magic' : 'physical'} attackers yet.`;
+      }
+      if (n('magic') + n('phys')) toast(`Auto: ${got}. ${why}`, 5000);
     };
     $('#wrClear').onclick = () => {
       wr.dep.clear();
@@ -1951,7 +1975,7 @@
       let hint;
       if (!moved && !acted) hint = `Tap a blue tile to move${main.length && directKinds(u.act.kind) ? ', a red enemy to attack' : ''}, or choose an action below.`;
       else if (moved && !acted) hint = anyTargets ? 'Moved. Choose an action, or tap Done.' : 'Moved. Nothing in reach from here. Tap Done.';
-      else hint = moved ? 'Action used. Tap Done to choose a facing.' : 'Action used. You may still move, or tap Done.';
+      else hint = moved ? `Action used. Tap Done${UI.prefs.manualFacing ? ' to choose a facing' : ': it turns to the nearest enemy'}.` : 'Action used. You may still move, or tap Done.';
       const loot = !acted && E.lootAt(s, u.x, u.y);
       if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
       if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
@@ -2109,9 +2133,10 @@
       renderBattle();
     });
     on('btDone', () => enterFacing());
+    // Turning in place is a deliberate choice: pick the facing by hand.
     on('btFace', () => {
       if (!E.beginActivation(s, B.sel)) return;
-      enterFacing();
+      enterFacing(true);
     });
     for (const btn of $$('#cmd [data-act]'))
       btn.onclick = () => {
@@ -2395,13 +2420,19 @@
     await afterAct(u);
   }
 
-  function enterFacing() {
+  // The unit is done: it turns toward the nearest enemy on its own, unless the player
+  // picks the facing (Face only, or manual facing chosen in the menu).
+  function enterFacing(manual) {
     const B = UI.battle;
     const s = B.s;
     const u = s.byId[B.sel];
     if (!u) return;
     if (u.facing < 0) {
       finishUnit(-1);
+      return;
+    }
+    if (!manual && !UI.prefs.manualFacing) {
+      finishUnit(AI.nearestFacing(s, u));
       return;
     }
     B.mode = 'facing';
@@ -2869,7 +2900,7 @@
         <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
-          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both, then picks a facing. Then the enemy picks one of theirs.</li>
+          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both, then turns toward the nearest enemy. Then the enemy picks one of theirs.</li>
           <li>Acting starts that unit's <b>cooldown</b> (CD on its card). It counts down by 1 at the start of each of your turns, and at 0 the unit is ready again. A Cooldown 1 unit can go every turn; a Witch (Cooldown 3) every third turn. Moving without acting costs half.</li>
           <li>Any unit that is not cooling down can be picked. If none can do anything, your turn passes on its own. You can also <b>Pass</b> on purpose.</li>
           <li>The turn counter counts rounds: the enemy's move, then yours. Durations such as "roots for 2 turns" count the turns of the side they affect.</li>
@@ -2877,6 +2908,7 @@
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
+          <li>When a unit finishes its turn it turns to face the nearest enemy. To pick facings yourself with arrows, switch <b>Facing</b> in the menu; <b>Face only</b> always lets you turn a unit by hand.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's Power carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>

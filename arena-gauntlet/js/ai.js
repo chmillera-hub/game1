@@ -762,6 +762,20 @@
     return facing;
   }
 
+  // The facing a player's unit takes on its own when its turn ends: toward the nearest
+  // enemy fighter, awake ones first and the more valuable on a tie.
+  function nearestFacing(s, u) {
+    if (u.facing < 0) return -1;
+    let best = null;
+    for (const v of s.units) {
+      if (!v.alive || v.team === u.team || v.nonCombat || (v.structure && !E.canDealDamage(v))) continue;
+      const k = (dormant(s, v) ? 1000 : 0) + Math.abs(v.x - u.x) + Math.abs(v.y - u.y) - v.value / 10000;
+      if (!best || k < best.k) best = { v, k };
+    }
+    const f = best ? E.dirFromDelta(best.v.x - u.x, best.v.y - u.y) : -1;
+    return f < 0 ? u.facing : f;
+  }
+
   // Tiles the opposing side can strike next turn (for the danger overlay).
   function threatMap(s, team) {
     const foe = E.other(team);
@@ -832,5 +846,5 @@
     runPlan(s, chooseActivation(s, team, opts), opts);
   }
 
-  AG.AI = { chooseActivation, executePlan, runPlan, smartFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant };
+  AG.AI = { chooseActivation, executePlan, runPlan, smartFacing, nearestFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant };
 })(typeof window !== 'undefined' ? window : globalThis);

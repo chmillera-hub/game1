@@ -1861,24 +1861,40 @@
     return !!((m.props && m.props.vs && m.props.vs.structure) || (m.active && m.active.vs && m.active.vs.structure));
   }
 
-  function counterScore(type, enc) {
+  // Which damage type gets through this enemy better: its armor against its magic
+  // resistance, averaged over its fighters and reinforcements by HP (treasure guardians
+  // count half). A gap under 8 points counts as even. `share` is the part of your
+  // attackers Auto makes magic.
+  function damageProfile(enc) {
+    let w = 0;
+    let armor = 0;
+    let res = 0;
+    const add = (spec, k) => {
+      if (isObjectType(spec.type) || UNITS[spec.type].traits.includes('structure')) return;
+      const b = E.buildUnit(spec, new Set());
+      w += b.maxHp * k;
+      armor += b.maxHp * k * b.armor;
+      res += b.maxHp * k * b.res;
+    };
+    for (const u of enc.units) add(u, u.post ? 0.5 : 1);
+    for (const wv of enc.waves || []) for (const u of wv.units) add(u, 1);
+    if (!w) return { armor: 0, res: 0, share: 0.5, lean: 'mixed' };
+    armor /= w;
+    res /= w;
+    const share = Math.min(0.85, Math.max(0.15, 0.5 + (armor - res) * 2.5));
+    return { armor, res, share, lean: share >= 0.7 ? 'magic' : share <= 0.3 ? 'phys' : 'mixed' };
+  }
+
+  function counterScore(type, enc, prof) {
     const T = UNITS[type];
     // Siege engines earn their place when buildings must fall, and are a poor pick otherwise.
     const siege = T.act.vs && T.act.vs.structure ? (siegeTargets(enc) ? 1 + Math.min(0.6, 0.2 * siegeTargets(enc)) : 0.7) : 1;
-    const foes = enc.units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure'));
-    if (!foes.length) return 1;
-    let armor = 0;
-    let res = 0;
-    for (const f of foes) {
-      armor += UNITS[f.type].armor;
-      res += UNITS[f.type].res || 0;
-    }
-    armor /= foes.length;
-    res /= foes.length;
+    const p = prof || damageProfile(enc);
     const dmg = T.act.dmg;
     let k = 1;
-    if (dmg === 'magic') k *= 1 + (armor - res) * 1.2;
-    else if (dmg === 'phys') k *= 1 + (res - armor) * 0.8;
+    // Units whose damage gets through this enemy better are worth more.
+    if (dmg === 'magic') k *= (p.share / 0.5) ** 0.7;
+    else if (dmg === 'phys') k *= ((1 - p.share) / 0.5) ** 0.7;
     if (!isAttacker(type)) k *= 0.75;
     return Math.max(0.4, k * siege);
   }
@@ -1901,18 +1917,29 @@
       r.load.a1 = UNITS[r.type].abilities[1][0];
       r.load.a2 = UNITS[r.type].abilities[2][0];
     }
-    const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc) * jitter[r.id]) / Math.max(1, unitCost(run, r));
+    const prof = damageProfile(enc);
+    const kind = (r) => UNITS[r.type].act.dmg;
+    const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc, prof) * jitter[r.id]) / Math.max(1, unitCost(run, r));
     const pool = run.roster.slice().sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
     const pick = [];
     let spent = 0;
-    for (const r of pool) {
-      if (pick.length >= cap) break;
-      const c = unitCost(run, r);
-      if (spent + c > supply) continue;
-      const attackers = pick.filter((p) => isAttacker(p.type)).length;
-      if (!isAttacker(r.type) && attackers < 2 && pool.some((o) => o !== r && !pick.includes(o) && isAttacker(o.type) && spent + unitCost(run, o) <= supply)) continue;
+    while (pick.length < cap) {
+      const open = pool.filter((r) => !pick.includes(r) && spent + unitCost(run, r) <= supply);
+      if (!open.length) break;
+      const attackers = pick.filter((p) => isAttacker(p.type));
+      // Supporting units wait until two attackers are in, and fill at most a third of the army.
+      const supportFull = attackers.length < 2 || pick.length - attackers.length >= Math.max(1, Math.floor(cap / 3));
+      const options = supportFull && open.some((o) => isAttacker(o.type)) ? open.filter((o) => isAttacker(o.type)) : open;
+      // Steer the attackers toward the mix of damage types this enemy is weakest to.
+      const magicIn = attackers.filter((p) => kind(p) === 'magic').length;
+      const want = magicIn + 0.5 <= prof.share * (attackers.length + 1) ? 'magic' : 'phys';
+      let r = options[0];
+      if (kind(r) && kind(r) !== want) {
+        const alt = options.find((o) => kind(o) === want);
+        if (alt && worth(alt) >= worth(r) * 0.55) r = alt;
+      }
       pick.push(r);
-      spent += c;
+      spent += unitCost(run, r);
     }
     if (!pick.some((r) => isAttacker(r.type))) return [];
     // Spend what is left: levels on the best units, then owned items in open slots.
@@ -1969,12 +1996,22 @@
 
   // ------------------------------------------------------------ advice
 
+  // The scout report's first line: which damage type gets through this army better.
+  function damageTip(enc) {
+    const p = damageProfile(enc);
+    const a = Math.round(p.armor * 100) + '%';
+    const r = Math.round(p.res * 100) + '%';
+    if (p.lean === 'magic') return `Their armor (${a} on average) outweighs their magic resistance (${r}): magic hits harder here. Auto favors magic attackers.`;
+    if (p.lean === 'phys') return `Their magic resistance (${r} on average) outweighs their armor (${a}): steel hits harder here. Auto favors physical attackers.`;
+    return `Their armor (${a}) and magic resistance (${r}) are close: both damage types work. Auto mixes physical and magic attackers.`;
+  }
+
   // Plain-language counter tips for the scout report.
   function scoutTips(enc) {
     const foes = enc.units.filter((u) => !isObjectType(u.type));
     const count = (pred) => foes.filter((u) => pred(UNITS[u.type], u)).length;
     const has = (...types) => enc.units.some((u) => types.includes(u.type));
-    const tips = [];
+    const tips = [damageTip(enc)];
     const waves = enc.waves || [];
     if (waves.length) {
       const n = waves.reduce((t, w) => t + w.units.length, 0);
@@ -1990,8 +2027,6 @@
       tips.push('Stone buildings shrug off swords and spells. Siege damage breaks them fast: a Trebuchet, Siege Hammer, Demolisher or Boulder Toss.');
     if (buildings.some((u) => UNITS[u.type].material === 'wood')) tips.push('Wooden buildings burn: fire and magic deal extra damage to them.');
     if (has('portal')) tips.push('Dark Portals: steel barely scratches them, but magic unravels them.');
-    if (count((T) => T.armor >= 0.3) >= 2) tips.push('Heavy armor: bring magic. Pyromancers, Witches and Arcane Edge ignore armor and block.');
-    if (count((T) => (T.res || 0) >= 0.3) >= 2) tips.push('Strong magic resistance: bring steel. Archers, Knights and Berserkers hit them harder than spells.');
     if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
     if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
     if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them. Specters have 50% armor.');
@@ -2093,7 +2128,7 @@
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
     addRecruit, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
-    objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, isFront, battleConfig,
+    objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, loadMeta, recordMeta,
