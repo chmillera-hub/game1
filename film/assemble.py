@@ -18,6 +18,8 @@ BUILD = ROOT / "build"
 VIDEO = BUILD / "video"
 OUT = ROOT / "out" / "the_stone_and_the_bread.mp4"
 FPS = 24
+MAX_MB = 88       # final file size target (GitHub rejects files over 100 MB)
+AUDIO_KBPS = 192
 
 
 def ass_time(t):
@@ -88,15 +90,21 @@ def main():
     concat = BUILD / "concat.txt"
     concat.write_text("".join(f"file '{(VIDEO / f's{i}.mp4').resolve()}'\n" for i in ids))
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-stats",
-           "-f", "concat", "-safe", "0", "-i", str(concat), "-i", str(mix),
-           "-vf", f"subtitles={subs}", "-map", "0:v:0", "-map", "1:a:0",
-           "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", str(FPS),
-           "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-t", f"{total:.4f}",
-           "-movflags", "+faststart", str(OUT)]
-    print(" ".join(cmd))
-    subprocess.run(cmd, check=True)
-    print(f"wrote {OUT} ({total:.2f} s)")
+    # Two-pass at a bitrate that keeps the film under GitHub's 100 MB file limit (the film grain
+    # makes constant-quality encodes balloon to ~900 MB).
+    video_kbps = int((MAX_MB * 8e3 / total) - AUDIO_KBPS)
+    base = ["ffmpeg", "-y", "-loglevel", "error",
+            "-f", "concat", "-safe", "0", "-i", str(concat), "-i", str(mix),
+            "-vf", f"subtitles={subs}", "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-preset", "slow", "-tune", "grain", "-b:v", f"{video_kbps}k",
+            "-maxrate", f"{int(video_kbps * 1.8)}k", "-bufsize", f"{video_kbps * 4}k",
+            "-pix_fmt", "yuv420p", "-r", str(FPS), "-t", f"{total:.4f}",
+            "-passlogfile", str(BUILD / "x264pass")]
+    print(f"encoding at {video_kbps} kb/s video + {AUDIO_KBPS} kb/s audio")
+    subprocess.run(base + ["-pass", "1", "-an", "-f", "mp4", "/dev/null"], check=True)
+    subprocess.run(base + ["-pass", "2", "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-ar", "48000",
+                           "-movflags", "+faststart", str(OUT)], check=True)
+    print(f"wrote {OUT} ({total:.2f} s, {OUT.stat().st_size / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
