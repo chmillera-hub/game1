@@ -15,6 +15,12 @@
     String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const ic = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
   const pct = (v) => Math.round(v * 100) + '%';
+  // Damage types at a glance: a sword for physical, a violet sparkle for magic.
+  const DMG_TYPES = {
+    phys: { icon: 'sword', tip: 'Physical damage: armor and block reduce it' },
+    magic: { icon: 'magic', tip: 'Magic damage: magic resistance reduces it' },
+  };
+  const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
   const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -205,8 +211,10 @@
     const poisoner = a.fx && a.fx.poison && !a.dmg;
     const powLabel = heal ? 'Heal' : poisoner ? 'Poison' : 'Power';
     const powVal = heal ? E.healAmount(u, a) : poisoner ? E.poisonDamage(u, a) : u.pow || '-';
-    const st = (v, l, title) => `<div class="stat"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
-    return `<div class="stats">${st(powVal, powLabel)}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it can go again this many turns later')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
+    const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
+    const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
+    const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
+    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it can go again this many turns later')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
   }
 
   function fxText(u, a) {
@@ -569,7 +577,7 @@
   }
 
   function actRow(u, a, ability) {
-    return `<div class="act-row">${patternSVG(a, u.team)}<p class="ability"><b>${esc(a.name)}${ability ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p></div>`;
+    return `<div class="act-row">${patternSVG(a, u.team)}<p class="ability"><b>${a.dmg ? dmgIcon(a.dmg) : ''}${esc(a.name)}${ability ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p></div>`;
   }
 
   function levelBadge(lv) {
@@ -1901,7 +1909,8 @@
       if (a.left <= 0) why = 'no uses left';
       else if (!usable) why = a.asMove ? 'already moved' : 'already acted';
       else if (!n) why = 'no targets';
-      out.push(`<button class="btn act ${i === 0 ? 'primary' : ''}" data-act="${i}" ${n ? '' : 'disabled'} title="${esc(why)}">${ic(i === 0 ? 'target' : 'star')} ${esc(a.name)}${uses}</button>`);
+      const icon = a.dmg ? dmgIcon(a.dmg) : ic(i === 0 ? 'target' : 'star');
+      out.push(`<button class="btn act ${i === 0 ? 'primary' : ''}" data-act="${i}" ${n ? '' : 'disabled'} title="${esc(why)}">${icon} ${esc(a.name)}${uses}</button>`);
     });
     return out.join('');
   }
@@ -2053,7 +2062,8 @@
       const who = e.self ? 'Itself' : `${v.team === 'P' ? 'Your' : 'Enemy'} ${esc(UNITS[v.type].name)}`;
       const bits = [];
       if (e.dmg != null) {
-        bits.push(`<b>${e.dmg}</b> dmg`);
+        // One flex item, so the type icon stays with its number.
+        bits.push(`<span>${act.dmg ? dmgIcon(act.dmg) : ''}<b>${e.dmg}</b></span> ${act.dmg === 'magic' ? 'magic' : act.dmg === 'phys' ? 'physical' : ''} dmg`);
         if (e.block > 0) bits.push(`${pct(e.block)} block (${e.cat})`);
         else if (act.dmg === 'phys' && !e.self) bits.push(e.cat === 'back' ? 'from behind' : 'no block');
         if (e.kill) bits.push(`<span class="kill">${e.block > 0 ? 'can kill' : 'kills'}</span>`);
@@ -2868,6 +2878,7 @@
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
+          <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's Power carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>
         <h4>Missions</h4>
         <ul>

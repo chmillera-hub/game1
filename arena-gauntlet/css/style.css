@@ -396,7 +396,8 @@ button.card:active {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* Power is a touch wider: it carries its damage-type icon. */
+  grid-template-columns: minmax(0, 1.2fr) repeat(6, minmax(0, 1fr));
   gap: 4px;
   font-variant-numeric: tabular-nums;
 }
@@ -416,7 +417,47 @@ button.card:active {
   color: var(--parchment);
 }
 
-.stat span {
+/* Damage types: a sword for physical, a violet sparkle for magic. */
+.dt {
+  display: inline-flex;
+  vertical-align: -0.2em;
+  margin-right: 0.15em;
+  color: var(--parchment);
+}
+
+/* Filled glyphs stay legible at small sizes. */
+.dt .icon {
+  vertical-align: 0;
+  fill: currentColor;
+  stroke-width: 1.6;
+}
+
+.dt-magic {
+  color: var(--violet);
+}
+
+.btn.primary .dt {
+  color: inherit;
+}
+
+.stat .dt {
+  margin-right: 0.08em;
+}
+
+.stat .dt .icon {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.stat b {
+  white-space: nowrap;
+}
+
+.stat.dmg-magic b {
+  color: var(--violet);
+}
+
+.stat > span {
   font-family: var(--font-caps);
   font-size: 0.7rem;
   letter-spacing: 0.08em;

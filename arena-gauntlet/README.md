@@ -25,9 +25,11 @@ on a phone turned sideways, but portrait works too.
   and a second gear slot.
 - **Enchantments**: binding a scroll to a unit gives it a permanent power and a
   Supply surcharge. It cannot be undone or moved to another unit.
-- **Damage**: physical hits are reduced by armor and block; magic is reduced by
-  magic resistance. Both cap at 50%, and some units go as low as -50%: Specters
-  shrug off steel but melt to spells, and Mage Knights do the reverse.
+- **Damage**: physical hits (marked with a sword) are reduced by armor and block;
+  magic (a violet sparkle) is reduced by magic resistance. Armor and magic
+  resistance both cap at 50%, and some units go as low as -50%: Specters shrug
+  off steel but melt to spells, and Mage Knights do the reverse. A unit's Power,
+  its attacks and every damage preview show the damage-type icon.
 - **Taking turns**: the sides alternate one unit at a time, like chess, and the enemy
   goes first. On your turn you pick one unit: it moves, acts or both, then faces.
   Then the enemy picks one of theirs.
