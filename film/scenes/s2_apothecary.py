@@ -171,13 +171,21 @@ T_GO = T_SLIDE + 0.75            # ... it glides on by itself and comes to rest 
 T_HORN = T_SLIDE - 0.28          # as he leans in, a horn brushes the tansy bundle above him
 T_TAP = T_ITEM[3] + 0.84         # she squares the teetering book with one tap (after one full teeter)
 
+
+def guarded_blink(t, rig_seed):
+    """A rig's own auto-blink (base.auto_blink with the seed the rig would use), held open across
+    every cut: a blink straddling a cut reads as a flash, and a new shot's first frames belong to
+    the eyes. (Cuts are defined further down; this is only called at draw time.)"""
+    w = max(core.window(t, c - 0.14, c + 0.36, 0.05, 0.08) for c in CUTS)
+    return B.auto_blink(t, rig_seed) * (1.0 - w)
+
 # ----------------------------------------------------------------------------------------
 # light + palette
 # ----------------------------------------------------------------------------------------
 L = ch.LIGHTS["apothecary"]
 # the orbs hang overhead: a cool white top-rim on everyone (stronger on the dark-coated dragon)
 LD = L.with_(rim_strength=0.78, rim_direction=(-0.25, -0.97))
-LL = L.with_(rim_strength=0.6, rim_direction=(0.3, -0.95))
+LL = L.with_(rim_strength=0.74, rim_direction=(0.3, -0.95))
 
 C = {
     "plaster": "#dbe8e2", "plaster_hi": "#f4faf6", "plaster_lo": "#b4cac1",
@@ -384,6 +392,14 @@ def draw_shelves_A(cr):
         _hot_spot(cr, ox, oy + 70.0, 400.0, 0.26)
     cr.restore()
     env.draw_haze(cr, SHELF_X - 40, SHELF_Y - 40, SHELF_W * SC + 80, SHELF_H * SC + 80, C["haze"], 0.2, 0.07)
+    # value structure: the band of jars right behind her working area (where her head and the
+    # growing column are) sinks a few steps into a cool shade, so her tan head, white apron and the
+    # remedies' labels are the contrast there -- not the glare wall (the orbs stay the hottest)
+    cr.save()
+    cr.rectangle(SHELF_X - 40, SHELF_Y - 40, SHELF_W * SC + 80, SHELF_H * SC + 80)
+    cr.clip()
+    _soft_blob(cr, 1150.0, 450.0, 560.0, 320.0, "#2f4744", 0.5)
+    cr.restore()
     return rig
 
 
@@ -1450,7 +1466,10 @@ def lio_state_A(t):
                           (T_LOWER, mix_expr(LIO_READ, LIO_SYMPATHY, 0.85)), (T_LOWER + 0.12, LIO_SYMPATHY),
                           (T_NOD - 0.05, LIO_SYMPATHY), (T_NOD + 0.45, LIO_KIND), (T_BACK - 0.1, LIO_KIND),
                           (T_ITEMS0 + 0.15, LIO_BUSY)])
-    look, specs, nod, tilt, blink = (-0.55, 0.05), 0.0, 0.0, 0.0, None
+    look, specs, nod, tilt = (-0.55, 0.05), 0.0, 0.0, 0.0
+    blink = guarded_blink(t, 2 + 23)              # her rig's auto-blink (seed 2), held open across cuts
+    if CUT_A2 <= t < T_NOD + 0.75:
+        blink = 0.0                               # the meaning lands: eyes steady until her slow blink
     if T_SLIDE - 0.1 <= t < T_GO + 0.3:
         look = (-0.55, 0.7)                                  # the note coming across the counter
     elif T_GO + 0.3 <= t < T_LOWER:
@@ -1913,7 +1932,7 @@ def dragon_pose_A(t, cam):
             ht = lerp(ht, 0.22, smooth((t - (I3 - 0.05)) / 0.4))
         # a flinch as the book teeters (lean back), and a blink at every landing
         lean = -0.1 * bump(t, I3 + 0.05, 0.15, 0.6, 0.2)
-    blink = None
+    blink = guarded_blink(t, 1 + 2)               # his rig's auto-blink (seed 1), held open across cuts
     for tk in T_ITEM + [T_TAP]:
         if tk - 0.02 <= t < tk + 0.2:
             blink = bump(t, tk - 0.02, 0.06, 0.12)
@@ -2203,6 +2222,7 @@ def draw_B(cr, t, st):
     down = bump(t, T_NOTE0 + 1.25, 0.2, 0.3, 0.6)                       # a shy glance down, and back
     dp = ch.DragonPose(facing=0, turn=-0.12, hunch=0.95, mood="lonely", mood2="raised", mood_mix=0.35 * (1 - down),
                        look=(0.04, 0.05 + 0.6 * down), head_nod=-0.12 - 0.12 * down, wings=-0.6, seed=1,
+                       blink=guarded_blink(t, 1 + 2),
                        talk=tl.talk(SCENE, t, "MAN"), near=ch.Arm("rest"), far=ch.Arm("rest"))
     draw_dragon_g(bctx, DRAGON_B[0], DRAGON_B[1], DRAGON_B[2], dp, LD, t)
     for i, (hx, hl, kind, sd) in enumerate(HERBS_B):
@@ -2313,6 +2333,7 @@ CUT_C2 = T_RING + 0.52               # back to the two-shot: the tower is in the
 T_PAT = CUT_C2 + 0.1                 # one satisfied pat on the sack
 T_SMOKE = CUT_C2 + 0.02              # his sigh: the smoke leaves his nostrils as he deflates
 T_SIGH = CUT_C2 - 0.12               # (the sigh's exhale; the sound starts during the insert)
+CUTS = (CUT_B, CUT_A2, CUT_C, CUT_D, CUT_E, CUT_C2)
 LIO_BAG_X = 1226.0                   # where she stands in C' (behind the sack)
 D_ON_COUNTER = 62.0                  # paw depth (body units ahead of the shoulder) for things on the counter
 LIO_SIZE_PX = LIO_SIZE_K * SCL       # body units -> px for her in shots C / D
@@ -2347,7 +2368,8 @@ def _room_C(cr):
     for ox, oy, _s in ORBS_C:
         _soft_blob(cr, ox, oy, 120.0, 120.0, "#2f4a44", 0.16)
     env.draw_haze(cr, -200, -200, 2400, 1500, C["haze"], 0.21, 0.05)
-    P.draw_hanging_sign(cr, 815.0, 170.0, kind="apothecary", scale=1.25, light=L, t=0.0, side=1, swing=0.0)
+    # (hung high and to the left, so its soft board never kisses the crisp top of the tower)
+    P.draw_hanging_sign(cr, 690.0, 122.0, kind="apothecary", scale=1.2, light=L, t=0.0, side=1, swing=0.0)
     _timber(cr, -200, -200, 2400, 230, vertical=False, color=C["timber_dk"])     # the beam
 
 
@@ -2452,7 +2474,7 @@ def dragon_pose_C(t):
     nod -= 0.45 * sigh
     if t >= T_SIGH - 0.1:
         look = core.lerp_tuple(her, (0.64, 0.62), smooth((t - (T_SIGH - 0.1)) / 0.3))     # down at the sack
-    blink = None
+    blink = guarded_blink(t, 1 + 2)
     if T_SIGH + 0.5 <= t < T_SIGH + 0.75:
         blink = bump(t, T_SIGH + 0.5, 0.06, 0.14)                                      # a slow, tired blink
     return ch.DragonPose(facing=1, turn=turn, hunch=hunch, mood=face, mood2=None, mood_mix=0.0, look=look,
@@ -2532,7 +2554,8 @@ def lio_C(t, cam=None):
     talk = tl.talk(SCENE, t, "PHARMACIST")
     x, y0 = lio_x_C(t), lio_y_C(t)
     look = (-0.62, -0.02)
-    freeze, nod, tilt, hturn, blink = 0.0, 0.0, 0.0, 0.0, None
+    freeze, nod, tilt, hturn = 0.0, 0.0, 0.0, 0.0
+    blink = guarded_blink(t, 2 + 23)
     grin, fan, snap = 0.0, 0.0, None
     yaw = -1.0
     base = R2.LionessPoseS2(facing=-1, talk=talk, seed=2, elev=ELEV_C)
