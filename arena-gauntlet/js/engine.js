@@ -1984,11 +1984,13 @@
     }
   }
 
+  // The battle is decided. `s.end` keeps why, after the events have been played.
   function finish(s, winner, why) {
     s.over = true;
     s.winner = winner;
     s.act = null;
-    emit(s, Object.assign({ t: 'end', winner }, why));
+    s.end = Object.assign({ t: 'end', winner }, why);
+    emit(s, s.end);
   }
 
   function startTurn(s) {
@@ -2076,20 +2078,11 @@
       winner = armed.P ? 'P' : 'E';
       surrender = true;
     }
-    if (winner) {
-      s.over = true;
-      s.winner = winner;
-      s.act = null;
-      emit(s, { t: 'end', winner, surrender, vipSlain: vipDown, destroyed: objDown });
-    }
+    if (winner) finish(s, winner, { surrender, vipSlain: vipDown, destroyed: objDown });
   }
 
   function forfeit(s) {
-    if (s.over) return;
-    s.over = true;
-    s.winner = 'E';
-    s.act = null;
-    emit(s, { t: 'end', winner: 'E', forfeit: true });
+    if (!s.over) finish(s, 'E', { forfeit: true });
   }
 
   function drainEvents(s) {

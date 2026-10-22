@@ -1499,7 +1499,7 @@
       if (dep.size >= R.unitCap(run)) break;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
-    UI.wr = { supply: R.battleSupply(run), cap: R.unitCap(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
+    UI.wr = { supply: R.supplyFor(run), cap: R.unitCap(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
     boardTools();
@@ -1536,7 +1536,7 @@
     const wr = UI.wr;
     if (!wr || !run.pending || run.pending.type !== 'battle') return;
     for (const rid of [...wr.dep.keys()]) if (!R.unitById(run, rid)) wr.dep.delete(rid);
-    wr.supply = R.battleSupply(run);
+    wr.supply = R.supplyFor(run);
     wr.cap = R.unitCap(run);
     const enc = wr.enc;
     const s = E.createBattle(R.battleConfig(run, wrDepArray()));
@@ -1565,7 +1565,6 @@
     const gold = Math.max(0, left) * R.LEAN_GOLD * (R.hasRelic(run, 'alchemist_stone') ? 3 : 1);
     const pips = [];
     for (let i = 0; i < Math.max(wr.supply, used); i++) pips.push(`<span class="pip ${i < used ? (i >= wr.supply ? 'over' : 'used') : ''}"></span>`);
-    const bonus = R.retryBonus(run);
     const attempt = run.pending.attempt || 0;
 
     $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${encKindLabel(enc)}${attempt ? ' · attempt ' + (attempt + 1) : ''}</span></div>
@@ -1631,7 +1630,7 @@
         <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}/${wr.cap}</span></span></div>
       <div class="small ${over || overCap ? 'bad-text' : 'muted'}">${
         over ? `Over budget by ${used - wr.supply} Supply: lower a level, drop an item, or remove a unit.` : overCap ? 'Too many units for your commander level.' : left > 0 ? `${left} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : 'Every point of Supply committed.'
-      }${bonus ? ` · <span class="good-text">+${bonus} Supply from earlier defeats</span>` : ''}</div>
+      }</div>
       ${objectivesHTML(enc)}
       <div class="tabs"><button class="btn ${wr.tab === 'army' ? 'on' : ''}" id="wrTabA">${ic('army')} Your army</button>
         <button class="btn ${wr.tab === 'intel' ? 'on' : ''}" id="wrTabI">${ic('eye')} Enemy (${s.units.filter((u) => u.team === 'E' && E.counts(u)).length})</button></div>
@@ -2473,7 +2472,7 @@
     B.busy = true;
     const s = B.s;
     const won = s.winner === 'P';
-    const endEv = s.events.find((e) => e.t === 'end');
+    const endEv = s.end;
     showBanner(won ? 'Victory' : 'Defeat', !won);
     sfx(won ? 'victory' : 'defeat');
     renderBattle();
@@ -2491,11 +2490,10 @@
         : endEv && endEv.surrender
           ? 'None of your remaining units could fight.'
           : 'Your army was broken.';
-    const nextBonus = R.retryBonus(UI.run);
     openSheet(
       `${sheetHead('Defeat')}
       <p>${reason} The enemy holds the field, but your campaign goes on: there is no limit on retries.</p>
-      <p class="muted">Re-plan your army against the same enemy. Swap units, change levels and abilities, move your archers back, bring the counter they fear.${nextBonus ? ` Your army is steeled by defeat: <b>+${nextBonus} Supply</b> for this battle.` : ' After another defeat, your army gains +1 Supply for this battle.'}</p>
+      <p class="muted">Re-plan your army against the same enemy. Swap units, change levels and abilities, move your archers back, bring the counter they fear.</p>
       <div class="actions"><button class="btn" id="dfTitle">Main menu</button><button class="btn primary" id="dfRetry">${ic('swords')} Re-plan and fight</button></div>`,
       (sh) => {
         $('#dfRetry', sh).onclick = () => {

@@ -25,7 +25,7 @@ function playBattle(run) {
   const p = run.pending;
   const dep = R.autoDeploy(run, p.attempt || 0);
   assert.ok(dep.length > 0, 'deployment possible');
-  assert.ok(R.supplyUsed(run, dep) <= R.battleSupply(run), 'within Supply');
+  assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run), 'within Supply');
   assert.ok(dep.length <= R.unitCap(run), 'within the unit cap');
   const rows = R.deployRows(run, p.enc);
   for (const d of dep) assert.ok(rows.includes(d.y) && p.enc.terrain[d.y * p.enc.w + d.x] === 0, 'valid deploy tile');
@@ -100,7 +100,7 @@ for (let i = 0; i < N; i++) {
         results.walls.push(`${run.warband} act ${act} ${kind} ${p.enc.name}`);
         if (process.env.VERBOSE) {
           const army = R.autoDeploy(run).map((d) => { const r = R.unitById(run, d.rid); return r.type + 'L' + r.load.lv; });
-          console.log(`  WALL ${p.enc.name} (${p.enc.primary}, budget ${p.enc.budget}) E: ${p.enc.units.map((u) => u.type + 'L' + (u.level || 1)).join(' ')} | P supply ${R.battleSupply(run)}: ${army.join(' ')}`);
+          console.log(`  WALL ${p.enc.name} (${p.enc.primary}, budget ${p.enc.budget}) E: ${p.enc.units.map((u) => u.type + 'L' + (u.level || 1)).join(' ')} | P supply ${R.supplyFor(run)}: ${army.join(' ')}`);
         }
       }
       continue;

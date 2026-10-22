@@ -56,17 +56,6 @@
     return s;
   }
 
-  // Each defeat after the first steels your army: +1 Supply for that battle, up to +3.
-  function retryBonus(run) {
-    const p = run.pending;
-    return p && p.type === 'battle' ? Math.min(3, Math.max(0, (p.attempt || 0) - 1)) : 0;
-  }
-
-  // Supply for the battle at hand.
-  function battleSupply(run) {
-    return supplyFor(run) + retryBonus(run);
-  }
-
   function unitCap(run) {
     let c = COMMAND[commanderLevel(run)].cap + (run.capBonus || 0);
     if (hasRelic(run, 'recruiters_bell')) c += 1;
@@ -1185,7 +1174,7 @@
       gold += 10;
       run.stats.firstTry++;
     }
-    const supply = battleSupply(run);
+    const supply = supplyFor(run);
     const used = supplyUsed(run, deployment);
     const unspent = Math.max(0, supply - used);
     const lean = unspent * LEAN_GOLD * (hasRelic(run, 'alchemist_stone') ? 3 : 1);
@@ -1902,7 +1891,7 @@
     const vr = variant ? AG.derive(run.seed, 'auto:' + variant) : null;
     const jitter = {};
     for (const r of run.roster) jitter[r.id] = vr ? 0.6 + vr.next() * 0.8 : 1;
-    const supply = battleSupply(run);
+    const supply = supplyFor(run);
     const cap = unitCap(run);
     for (const r of run.roster) {
       r.load.lv = 1;
@@ -2101,7 +2090,7 @@
   AG.Run = {
     ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
-    commanderLevel, levelInfo, supplyFor, retryBonus, battleSupply, unitCap, gainXp,
+    commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
     addRecruit, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
     objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, isFront, battleConfig,

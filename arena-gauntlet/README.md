@@ -58,9 +58,8 @@ on a phone turned sideways, but portrait works too.
   down on each building. Waves land after the enemy's move; a turn ahead, red
   tiles mark where. Standing on one blocks that arrival at a cost of 10 HP.
   Destroy a building and its remaining waves are cut off.
-- **Defeat**: lose as often as you need. Retry with a new setup and +1 Supply per
-  loss after the first (up to +3), or quit; Continue on the title screen returns
-  to the same battle.
+- **Defeat**: lose as often as you need. Retry with a new setup, or quit; Continue
+  on the title screen returns to the same battle.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
   events, and camps to drill, study or tinker.
 
