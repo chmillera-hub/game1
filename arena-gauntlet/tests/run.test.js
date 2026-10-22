@@ -30,6 +30,11 @@ function playBattle(run) {
   const rows = R.deployRows(run, p.enc);
   for (const d of dep) assert.ok(rows.includes(d.y) && p.enc.terrain[d.y * p.enc.w + d.x] === 0, 'valid deploy tile');
   checkLoadouts(run);
+  for (const w of p.enc.waves || []) {
+    assert.ok(w.units.length > 0, 'a wave brings someone');
+    if (w.from) assert.ok(p.enc.units.some((u) => u.key === w.from && D.UNITS[u.type].traits.includes('spawner')), 'wave source is a spawner');
+    else assert.ok(w.tiles && w.tiles.length, 'edge wave has tiles');
+  }
   const s = E.createBattle(R.battleConfig(run, dep));
   let guard = 0;
   while (!s.over && guard++ < 100) {
@@ -45,7 +50,7 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, lv: [], walls: [] };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [] };
 const t0 = Date.now();
 for (let i = 0; i < N; i++) {
   const run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
@@ -76,6 +81,9 @@ for (let i = 0; i < N; i++) {
       const k = (results.kinds[kind + act] = results.kinds[kind + act] || [0, 0]);
       k[1]++;
       if (tries === 1) k[0]++;
+      const m = (results.missions[p.enc.primary] = results.missions[p.enc.primary] || [0, 0]);
+      m[1]++;
+      if (tries === 1) m[0]++;
       if (!res.won) {
         stuck = true;
         results.walls.push(`${run.warband} act ${act} ${kind} ${p.enc.name}`);
@@ -138,5 +146,6 @@ const pct = ([a, b]) => (b ? Math.round((100 * a) / b) + '%' : '-');
 console.log(`campaigns: won ${results.done}, stuck ${results.stuck} (more than ${MAX_TRIES} tries) · battles ${results.battles}, avg tries ${(results.tries / Math.max(1, results.battles)).toFixed(2)}`);
 console.log(`first-try wins: act1 ${pct(results.first[1])} act2 ${pct(results.first[2])} act3 ${pct(results.first[3])}`);
 console.log('by kind:', Object.entries(results.kinds).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
+console.log('by mission:', Object.entries(results.missions).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
 console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

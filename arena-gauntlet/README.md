@@ -32,9 +32,20 @@ on a phone turned sideways, but portrait works too.
   Block works from the front, half from the side, never from behind. Acting
   starts a unit's Recover timer.
 - **Missions**: rout the enemy, burn a War Banner, break a prison cage, kill a
-  Commander, hold a shrine, survive, storm a castle gate, or stop a wagon convoy.
-  Bonus goals (ghost-guarded loot, fast wins, no losses, fielding a unit that sat
-  out the last battle) pay extra.
+  Commander, hold a shrine, survive the waves, topple three totems, raze the
+  buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
+  Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
+  fielding a unit that sat out the last battle) pay extra.
+- **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
+  portals and barricades are buildings. Stone resists swords and spells alike,
+  wood burns, and portals unravel under magic. Siege damage breaks them fast:
+  the Trebuchet, the Siege Hammer, the Demolisher skill, a Blasting Charge, the
+  Golem's Boulder Toss and the Sapper's Kit relic.
+- **Reinforcements**: some battles send enemy waves at set turns, from the far
+  edge or out of buildings. The War Room shows the schedule, and badges count
+  down on each building. A turn ahead, red tiles mark where they land; standing
+  on one blocks that arrival at a cost of 10 HP. Destroy a building and its
+  remaining waves are cut off.
 - **Defeat**: lose as often as you need. Retry with a new setup and +1 Supply per
   loss after the first (up to +3), or quit; Continue on the title screen returns
   to the same battle.
@@ -57,6 +68,6 @@ on a phone turned sideways, but portrait works too.
 ```
 node tests/engine.test.js        # rule checks
 node tests/sim.js 200            # AI-vs-AI balance by unit type
-node tests/chaos.js 200          # random levels, abilities, items and bosses
+node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries
 ```

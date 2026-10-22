@@ -516,9 +516,67 @@
   // Mission goals. The primary goal decides how the battle is won (a full rout always works);
   // bonus goals pay out extra rewards when completed.
   const PRIMARY = {
-    normal: [['rout', 34], ['banner', 16], ['prison', 14], ['hold', 14], ['commander', 12], ['survive', 10]],
-    elite: [['rout', 45], ['commander', 30], ['banner', 25]],
+    normal: [['rout', 30], ['banner', 13], ['prison', 12], ['hold', 12], ['commander', 10], ['survive', 12], ['totems', 12], ['raze', 12]],
+    elite: [['rout', 40], ['commander', 24], ['banner', 20], ['raze', 14], ['totems', 12]],
   };
+
+  // Missions with buildings or reinforcements field a smaller army up front.
+  const BUDGET_SHARE = { survive: 0.8, raze: 0.6, totems: 0.85 };
+  // Totems and spawners grow sturdier act by act.
+  const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
+  const TOTEM_BY_ACT = { 1: 'totem', 2: 'hexstone', 3: 'obelisk' };
+  const SPAWNER_BY_ACT = { 1: 'war_tent', 2: 'crypt', 3: 'guardhouse' };
+
+  // Who comes out of each kind of building: the warband's own reserves when they fit the
+  // building, or else its usual residents.
+  const SPAWN_FIT = {
+    den: (T) => T.tags.includes('beast'),
+    crypt: (T) => T.tags.includes('undead'),
+    guardhouse: (T) => T.tags.includes('human'),
+    war_tent: (T) => !T.tags.includes('undead'),
+    portal: () => true,
+  };
+  const SPAWN_DEFAULT = {
+    den: { 1: ['wolf', 'warg'], 2: ['wolf', 'spider'], 3: ['warg', 'spider'] },
+    crypt: { 1: ['skeleton', 'skelarcher'], 2: ['skeleton', 'skelarcher', 'specter'], 3: ['skeleton', 'specter'] },
+    guardhouse: { 1: ['knight', 'archer'], 2: ['knight', 'archer'], 3: ['knight', 'crossbow'] },
+    war_tent: { 1: ['orc', 'goblin_archer'], 2: ['orc', 'goblin_archer'], 3: ['orc', 'brute'] },
+    portal: { 1: ['wisp', 'specter'], 2: ['wisp', 'specter'], 3: ['specter', 'wisp'] },
+  };
+
+  function spawnPool(type, act, pool) {
+    const fit = pool.filter((t) => SPAWN_FIT[type](UNITS[t]));
+    return fit.length ? fit : SPAWN_DEFAULT[type][act];
+  }
+
+  // One reinforcement, a little tougher in later acts.
+  function waveSpec(rng, run, pool, group) {
+    const type = rng.pick(pool);
+    const T = UNITS[type];
+    const u = { type, level: run.act >= 2 && group !== 'normal' ? 2 : 1 };
+    if (T.abilities) {
+      u.a1 = rng.pick(T.abilities[1]);
+      u.a2 = T.abilities[2][0];
+    }
+    return u;
+  }
+
+  // A wave worth about `budget` Supply.
+  function waveOf(rng, run, pool, budget, group, maxN) {
+    const out = [];
+    let spent = 0;
+    for (let g = 0; g < 16 && out.length < maxN; g++) {
+      const u = waveSpec(rng, run, pool, group);
+      const c = enemyCost(u);
+      if (spent + c > budget + 0.5) {
+        if (out.length) break;
+        continue;
+      }
+      out.push(u);
+      spent += c;
+    }
+    return out.length ? out : [waveSpec(rng, run, pool, group)];
+  }
 
   // Units that sat out the last battle, for the featured-unit bonus.
   function musterCandidates(run) {
@@ -602,7 +660,8 @@
     }
     const layout = tpl.layout || null;
     let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[group]);
-    const budget = enemyBudget(run, node, kind) * (primary === 'survive' ? 1.3 : 1);
+    const fullBudget = enemyBudget(run, node, kind);
+    const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
     const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
@@ -632,8 +691,20 @@
     const objects = [];
     const putObj = (type, x, y, extra) => {
       if (terrain[y * BOARD + x] !== 0 || taken.has(x + ',' + y)) return false;
-      objects.push(Object.assign({ type, level: 1, x, y, facing: 2 }, extra || {}));
+      const T = UNITS[type];
+      const sturdy = T.traits.includes('totem') || T.traits.includes('spawner') ? { baseHp: Math.round(T.hp * BUILDING_HP[act]) } : {};
+      objects.push(Object.assign({ type, level: 1, x, y, facing: 2 }, sturdy, extra || {}));
       taken.add(x + ',' + y);
+      return true;
+    };
+    // Buildings that send reinforcements keep their doorway clear.
+    const spawners = [];
+    const putSpawner = (type, x, y, goal) => {
+      if (terrain[(y + 1) * BOARD + x] !== 0 || taken.has(x + ',' + (y + 1))) return false;
+      const key = 'sp' + spawners.length;
+      if (!putObj(type, x, y, { key, goal })) return false;
+      taken.add(x + ',' + (y + 1));
+      spawners.push({ key, x, y });
       return true;
     };
     if (layout === 'siege') {
@@ -641,6 +712,21 @@
       putObj('gate', 4, 2);
       const towers = structures / 3 === 2 ? [2, 6] : [rng.pick([2, 6])];
       for (const x of towers) putObj('tower', x, 1);
+      const houses = act >= 3 || group === 'elite' ? [1, 7] : [rng.pick([1, 7])];
+      for (const x of houses) putSpawner('guardhouse', x, 0, false);
+    } else if (primary === 'raze') {
+      // One building in Act I skirmishes, two everywhere else.
+      const type = tpl.spawner || SPAWNER_BY_ACT[act];
+      const lanes = act === 1 && group === 'normal' ? [rng.shuffle([3, 4, 5])] : [rng.shuffle([1, 2, 3]), rng.shuffle([5, 6, 7])];
+      for (const xs of lanes) {
+        let ok = false;
+        for (const x of xs) for (const y of rng.shuffle([0, 1])) if (!ok) ok = putSpawner(type, x, y, true);
+      }
+    } else if (primary === 'totems') {
+      for (const xs of [[0, 1, 2], [3, 4, 5], [6, 7, 8]]) {
+        let ok = false;
+        for (let tries = 0; tries < 20 && !ok; tries++) ok = putObj(TOTEM_BY_ACT[act], rng.pick(xs), rng.range(1, 3));
+      }
     } else if (layout === 'convoy') {
       const n = act >= 2 && group !== 'normal' ? 3 : 2;
       const spots = [[8, 3], [8, 5], [7, 4]];
@@ -705,6 +791,12 @@
       case 'convoy':
         enc.objective = 'destroy';
         break;
+      case 'totems':
+        if (units.some((u) => UNITS[u.type].traits.includes('totem'))) enc.objective = 'destroy';
+        break;
+      case 'raze':
+        if (spawners.length) enc.objective = 'destroy';
+        break;
       case 'banner':
         if (addObject('warbanner', [0], [3, 4, 5, 2, 6])) enc.objective = 'destroy';
         break;
@@ -731,6 +823,43 @@
     }
     if (enc.objective === 'all') enc.primary = primary = primary === 'boss' ? 'boss' : 'rout';
 
+    // Reinforcements. Buildings send one unit at a time until they fall; survival battles
+    // bring whole waves in from the far edge.
+    const pool = tpl.pool.filter((t) => !UNITS[t].boss);
+    enc.waves = [];
+    if (primary === 'raze' || layout === 'siege') {
+      const every = primary === 'raze' && act >= 2 && group !== 'normal' ? 2 : 3;
+      for (const sp of spawners) {
+        let sPool = spawnPool(units.find((u) => u.key === sp.key).type, act, pool);
+        // Act I buildings send light troops.
+        if (act === 1) {
+          const cheap = (list) => list.filter((t) => UNITS[t].cost <= 2);
+          const type = units.find((u) => u.key === sp.key).type;
+          sPool = cheap(sPool).length ? cheap(sPool) : cheap(SPAWN_DEFAULT[type][1]).length ? cheap(SPAWN_DEFAULT[type][1]) : sPool;
+        }
+        for (let k = 0, t = 2; k < 4; k++, t += every) enc.waves.push({ turn: t, from: sp.key, units: [waveSpec(rng, run, sPool, group)] });
+      }
+    } else if (primary === 'survive') {
+      const tiles = [];
+      for (const y of [0, 1]) for (let x = 0; x < BOARD; x++) if (terrain[y * BOARD + x] === 0) tiles.push([x, y]);
+      const turns = act === 1 ? [2, 4] : [1, 3, 5];
+      const share = (fullBudget * 2.2 - budget) / turns.length;
+      for (const t of turns) enc.waves.push({ turn: t, tiles, units: waveOf(rng, run, pool, share, group, 3) });
+    }
+
+    // Barricades: obstacles worth breaking through.
+    if (!layout && group !== 'boss' && rng.chance(primary === 'raze' || primary === 'totems' ? 0.75 : 0.25)) {
+      const n = rng.range(1, 2);
+      for (let k = 0, tries = 0; k < n && tries < 30; tries++) {
+        const x = rng.int(BOARD);
+        const y = rng.range(3, 5);
+        if (!open(x, y) || (enc.hold && enc.hold.x === x && enc.hold.y === y)) continue;
+        units.push({ type: 'barricade', level: 1, x, y, facing: 2 });
+        used.add(x + ',' + y);
+        k++;
+      }
+    }
+
     // Bonus: loot on the field, sometimes guarded by specters.
     if (layout !== 'siege' && rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
       const lk = group === 'normal' ? rng.weighted([['chest', 50], ['tome', 35], ['relic', 15]]) : rng.weighted([['chest', 20], ['tome', 40], ['relic', 40]]);
@@ -756,13 +885,15 @@
     if (rng.chance(group === 'boss' ? 0.4 : 0.65)) {
       const opts = [['flawless', 30]];
       if (primary !== 'survive') opts.push(['swift', 35]);
+      if (enc.waves.length) opts.push(['blockade', 40]);
       const muster = musterCandidates(run);
       if (muster.length) opts.push(['muster', 50]);
       const c = rng.weighted(opts);
       if (c === 'swift') {
         const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
-        enc.bonus.push({ type: 'swift', turns: 4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) });
+        enc.bonus.push({ type: 'swift', turns: 4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
+      else if (c === 'blockade') enc.bonus.push({ type: 'blockade', n: 2 });
       else enc.bonus.push({ type: 'flawless' });
     }
     if (layout === 'convoy') enc.bonus.push({ type: 'plunder' });
@@ -773,6 +904,14 @@
 
   // Plain-language goals for the war room and the battle panel.
   function objectiveInfo(run, enc) {
+    const typesWith = (trait) => enc.units.filter((u) => UNITS[u.type].traits.includes(trait));
+    const totems = typesWith('totem');
+    const spawners = typesWith('spawner');
+    const tName = totems.length ? UNITS[totems[0].type].name : 'Totem';
+    const sName = spawners.length ? UNITS[spawners[0].type].name : 'building';
+    // How often each building sends someone: the gap between its first two waves.
+    const own = (enc.waves || []).filter((w) => w.from && w.from === (enc.waves || []).find((x) => x.from).from);
+    const every = own.length > 1 ? own[1].turn - own[0].turn : 3;
     const P = {
       rout: 'Rout the enemy: defeat every enemy unit.',
       boss: 'Slay the boss. Its retinue will scatter.',
@@ -780,11 +919,13 @@
       prison: 'Break the prison cage, or rout the guards. The freed prisoner joins your army.',
       commander: 'Assassinate the enemy Commander (crowned), or rout them all.',
       hold: 'Hold the shrine: start 2 of your turns in a row with a unit on it. Or rout the enemy.',
-      survive: `Survive ${enc.surviveTurns || 6} turns against a larger force. Or rout them.`,
-      gate: 'Break the Castle Gate, or rout the garrison. Towers and walls do not need to fall.',
+      survive: `Survive ${enc.surviveTurns || 6} turns while waves of reinforcements march in from the far edge. Or rout them all.`,
+      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
+      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every turn.`,
+      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or rout the escort.',
     };
-    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} turns`, gate: 'Break the gate', convoy: 'Stop the convoy' };
+    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -800,6 +941,8 @@
           return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
           return { b, text: 'Break every wagon (none may escape).', reward: '+20 gold per wagon' };
+        case 'blockade':
+          return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'muster': {
           const u = unitById(run, b.rid);
           return { b, text: u ? `Field ${u.name} the ${UNITS[u.type].name}, who sat out the last battle.` : 'Field a unit that sat out the last battle.', reward: '+6 XP, +20 gold' };
@@ -889,7 +1032,7 @@
       units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp });
     return {
       w: enc.w,
       h: enc.h,
@@ -903,6 +1046,7 @@
       loot: enc.loot,
       cartExit: 0,
       turnLimit: 30,
+      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),
     };
   }
 
@@ -1057,6 +1201,7 @@
       else if (b.type === 'swift') done = s.turn <= b.turns;
       else if (b.type === 'flawless') done = !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
       else if (b.type === 'muster') done = deployment.some((d) => d.rid === b.rid);
+      else if (b.type === 'blockade') done = (s.stats.blocked || 0) >= b.n;
       else if (b.type === 'plunder') {
         const carts = s.units.filter((u) => u.type === 'cart');
         done = carts.length > 0 && carts.every((u) => !u.alive && !u.escaped);
@@ -1082,7 +1227,7 @@
             run.gold += 40;
             got = '+40 gold';
           }
-        } else if (b.type === 'swift' || b.type === 'flawless') {
+        } else if (b.type === 'swift' || b.type === 'flawless' || b.type === 'blockade') {
           const g = 15 + 5 * run.act;
           run.gold += g;
           run.stats.gold += g;
@@ -1694,8 +1839,20 @@
   }
 
   // How well a unit type answers this enemy army: magic against armor, steel against wards.
+  // Buildings in this battle worth bringing siege damage for: goals, spawners and gates.
+  function siegeTargets(enc) {
+    return enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall'].includes(u.type)).length;
+  }
+
+  function isSiegeItem(def) {
+    const m = def.mod || {};
+    return !!((m.props && m.props.vs && m.props.vs.structure) || (m.active && m.active.vs && m.active.vs.structure));
+  }
+
   function counterScore(type, enc) {
     const T = UNITS[type];
+    // Siege engines earn their place when buildings must fall, and are a poor pick otherwise.
+    const siege = T.act.vs && T.act.vs.structure ? (siegeTargets(enc) ? 1 + Math.min(0.6, 0.2 * siegeTargets(enc)) : 0.7) : 1;
     const foes = enc.units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure'));
     if (!foes.length) return 1;
     let armor = 0;
@@ -1711,7 +1868,7 @@
     if (dmg === 'magic') k *= 1 + (armor - res) * 1.2;
     else if (dmg === 'phys') k *= 1 + (res - armor) * 0.8;
     if (!isAttacker(type)) k *= 0.75;
-    return Math.max(0.4, k);
+    return Math.max(0.4, k * siege);
   }
 
   // A reasonable army for this battle within Supply and the unit cap: picks units,
@@ -1761,7 +1918,11 @@
         }
       }
       if (!did) {
-        for (const it of freeItems(run).filter((i) => i.kind !== 'scroll')) {
+        // Siege gear first when buildings must fall; left in the pack otherwise.
+        const siegeNeeded = siegeTargets(enc) > 0;
+        const items = freeItems(run).filter((i) => i.kind !== 'scroll' && (siegeNeeded || !isSiegeItem(itemDef(i))));
+        items.sort((a, b) => (siegeNeeded ? isSiegeItem(itemDef(b)) - isSiegeItem(itemDef(a)) : 0));
+        for (const it of items) {
           const d = itemDef(it);
           if (d.cost > left) continue;
           const holder = pick.find((r) => assignItem(run, r.id, it.uid));
@@ -1802,6 +1963,21 @@
     const count = (pred) => foes.filter((u) => pred(UNITS[u.type], u)).length;
     const has = (...types) => enc.units.some((u) => types.includes(u.type));
     const tips = [];
+    const waves = enc.waves || [];
+    if (waves.length) {
+      const n = waves.reduce((t, w) => t + w.units.length, 0);
+      tips.push(
+        waves.some((w) => w.from)
+          ? 'Reinforcements keep coming until their building falls. Stand on a marked tile to block an arrival; the blocker takes 10 damage.'
+          : `${n} reinforcements are coming in waves. Stand on a marked tile to block an arrival; the blocker takes 10 damage.`
+      );
+    }
+    // Only buildings that matter: goals, spawners and the castle.
+    const buildings = enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall', 'tower'].includes(u.type));
+    if (buildings.some((u) => UNITS[u.type].material === 'stone'))
+      tips.push('Stone buildings shrug off swords and spells. Siege damage breaks them fast: a Trebuchet, Siege Hammer, Demolisher or Boulder Toss.');
+    if (buildings.some((u) => UNITS[u.type].material === 'wood')) tips.push('Wooden buildings burn: fire and magic deal extra damage to them.');
+    if (has('portal')) tips.push('Dark Portals: steel barely scratches them, but magic unravels them.');
     if (count((T) => T.armor >= 0.3) >= 2) tips.push('Heavy armor: bring magic. Pyromancers, Witches and Arcane Edge ignore armor and block.');
     if (count((T) => (T.res || 0) >= 0.3) >= 2) tips.push('Strong magic resistance: bring steel. Archers, Knights and Berserkers hit them harder than spells.');
     if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
@@ -1812,7 +1988,7 @@
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
     if (has('troll')) tips.push('Trolls regenerate 12 a turn unless magic hurt them since their last turn.');
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
-    if (has('wall', 'gate', 'tower')) tips.push('A Siege Hammer deals triple damage to walls, gates, towers and wagons. Towers need not fall.');
+    if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');
     if (has('cart')) tips.push('The wagons flee left 2 tiles a turn. Block their path with units and break them fast.');
     if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');

@@ -219,6 +219,9 @@
       vip: !!(spec.vip || T.boss),
       post: spec.post || null,
       bound: !!spec.post,
+      // Breaking every goal object wins a 'destroy' battle. Optional buildings set goal: false.
+      goal: spec.goal != null ? !!spec.goal : traits.has('object') && !traits.has('scenery'),
+      key: spec.key || null,
       structure: traits.has('structure') || traits.has('scenery'),
       nonCombat: summon,
       summoner: spec.summoner || 0,
@@ -241,8 +244,11 @@
 
   // cfg: { w, h, terrain, units: [spec], relics: {P: [], E: []}, seed, turnLimit,
   //        objective: 'all' | 'boss' | 'vip' | 'destroy' | 'hold' | 'survive',
-  //        hold: {x, y, need}, surviveTurns, loot: [{id, kind, x, y}], cartExit }
-  // A unit spec: { type, team, level, a1, a2, skills, gear, enchant, x, y, facing, rid, name, vip, post }
+  //        hold: {x, y, need}, surviveTurns, loot: [{id, kind, x, y}], cartExit,
+  //        waves: [{ turn, team, from, tiles, units: [spec] }] }
+  // A unit spec: { type, team, level, a1, a2, skills, gear, enchant, x, y, facing, rid, name, vip, post, goal, key }
+  // A wave arrives at the end of its team's turn `turn`, around the building whose key is
+  // `from` (cancelled if it falls first), or else on the edge `tiles`.
   function createBattle(cfg) {
     const s = {
       w: cfg.w,
@@ -263,7 +269,7 @@
       turnLimit: cfg.turnLimit || 30,
       events: [],
       phoenixUsed: { P: false, E: false },
-      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0 },
+      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0 },
       summonCount: 0,
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
       surviveTurns: cfg.surviveTurns || 0,
@@ -271,8 +277,24 @@
       tfx: [],
       booms: [],
       cartExit: cfg.cartExit != null ? cfg.cartExit : 0,
+      waves: [],
     };
     for (const spec of cfg.units) addUnit(s, spec);
+    (cfg.waves || []).forEach((w, i) => {
+      const team = w.team || 'E';
+      const src = w.from ? s.units.find((u) => u.key === w.from) : null;
+      s.waves.push({
+        i,
+        team,
+        turn: w.turn,
+        src: src ? src.uid : 0,
+        tiles: w.tiles || null,
+        units: w.units.map(clone),
+        marks: null,
+        state: w.from && !src ? 'cancelled' : 'pending',
+      });
+    });
+    planWaves(s);
     for (const team of ['P', 'E']) {
       if (!s.relics[team].has('sands_of_haste')) continue;
       for (const u of s.units) if (u.team === other(team) && UNITS[u.type].rec >= 2 && !u.boss) u.wait = 1;
@@ -583,6 +605,7 @@
     let vs = 0;
     for (const t of tgt.tags) vs += ((P.vs && P.vs[t]) || 0) + ((act.vs && act.vs[t]) || 0);
     if (vs) mult *= 1 + vs;
+    if (relA.has('sappers_kit') && tgt.tags.has('structure')) mult *= 1.5;
     if (P.vsArmored && tgt.armor >= 0.3) mult *= 1 + P.vsArmored;
     if (P.packMult && packed(s, atk, tgt)) mult *= 1 + P.packMult;
     if (dmgType === 'magic' && P.magicMult) mult *= 1 + P.magicMult;
@@ -1067,6 +1090,15 @@
     if (u.traits.has('martyr')) {
       for (const v of s.units)
         if (v.alive && v.team === u.team && manhattan(u.x, u.y, v.x, v.y) <= 2) heal(s, v, 20, 'martyr');
+    }
+    if (u.traits.has('spawner')) {
+      let n = 0;
+      for (const w of s.waves) {
+        if (w.src !== u.uid || w.state !== 'pending') continue;
+        w.state = 'cancelled';
+        n += w.units.length;
+      }
+      if (n) emit(s, { t: 'waveCancel', uid: u.uid, n });
     }
     // The raised dead crumble with their master.
     for (const v of s.units) {
@@ -1645,6 +1677,102 @@
     resolveBooms(s);
   }
 
+  // ------------------------------------------------------------ reinforcements
+
+  const BLOCK_DMG = 10;
+
+  function pendingWaves(s, team) {
+    let n = 0;
+    for (const w of s.waves) if (w.state === 'pending' && w.team === team) n += w.units.length;
+    return n;
+  }
+
+  // Free tiles where a wave's units step onto the field: around its building, front first,
+  // or anywhere along its edge.
+  function spawnTiles(s, w, n, taken) {
+    const ok = (x, y) => inB(s, x, y) && s.terrain[idx(s, x, y)] === T_GRASS && !s.occ[idx(s, x, y)] && !taken.has(idx(s, x, y));
+    const src = w.src ? s.byId[w.src] : null;
+    let cands = [];
+    if (src) {
+      const ahead = w.team === 'E' ? 1 : -1;
+      for (let r = 1; r <= 3 && cands.length < n; r++) {
+        const ring = [];
+        for (let dx = -r; dx <= r; dx++) {
+          for (const dy of [r - Math.abs(dx), Math.abs(dx) - r]) {
+            if (ring.some((c) => c[0] === src.x + dx && c[1] === src.y + dy)) continue;
+            if (ok(src.x + dx, src.y + dy)) ring.push([src.x + dx, src.y + dy, dy * ahead, Math.abs(dx)]);
+          }
+        }
+        ring.sort((a, b) => b[2] - a[2] || a[3] - b[3]);
+        cands.push(...ring);
+      }
+    } else {
+      cands = s.rng.shuffle((w.tiles || []).filter(([x, y]) => ok(x, y)));
+    }
+    const out = [];
+    for (const c of cands) {
+      if (out.length >= n) break;
+      taken.add(idx(s, c[0], c[1]));
+      out.push([c[0], c[1]]);
+    }
+    return out;
+  }
+
+  // Mark where this round's waves will appear, so the other side can see them coming.
+  function planWaves(s) {
+    const taken = new Set();
+    for (const w of s.waves) if (w.state === 'pending' && w.marks) for (const [x, y] of w.marks) taken.add(idx(s, x, y));
+    for (const w of s.waves) {
+      if (w.state !== 'pending' || w.marks || w.turn > s.turn) continue;
+      w.marks = spawnTiles(s, w, w.units.length, taken);
+      emit(s, { t: 'waveWarn', i: w.i, marks: w.marks });
+    }
+  }
+
+  // At the end of a team's turn its due waves arrive. A foe standing on a marked tile
+  // blocks that arrival and takes the hit.
+  function spawnWaves(s, team) {
+    for (const w of s.waves) {
+      if (w.state !== 'pending' || w.team !== team || w.turn > s.turn) continue;
+      const src = w.src ? s.byId[w.src] : null;
+      if (src && !src.alive) {
+        w.state = 'cancelled';
+        continue;
+      }
+      const taken = new Set();
+      const marks = w.marks || spawnTiles(s, w, w.units.length, taken);
+      const spawned = [];
+      let blocked = 0;
+      w.units.forEach((spec, k) => {
+        let tile = marks[k] || null;
+        if (tile) {
+          const o = at(s, tile[0], tile[1]);
+          if (o && o.team !== team) {
+            blocked++;
+            if (o.team === 'P') s.stats.blocked++;
+            emit(s, { t: 'spawnBlock', uid: o.uid, x: tile[0], y: tile[1], type: spec.type });
+            applyDamage(s, null, o, BLOCK_DMG, { cat: 'none', dmgType: 'true' });
+            return;
+          }
+          if (o) tile = null;
+        }
+        if (!tile) tile = spawnTiles(s, w, 1, taken)[0];
+        if (!tile) return;
+        const u = addUnit(s, Object.assign({}, spec, { team, x: tile[0], y: tile[1], facing: team === 'E' ? 2 : 0, born: s.turn }));
+        spawned.push(u.uid);
+      });
+      w.state = 'done';
+      emit(s, { t: 'wave', i: w.i, src: w.src, uids: spawned, blocked });
+    }
+  }
+
+  // What is still coming, for the battle panel and the board.
+  function waveSummary(s) {
+    return s.waves
+      .filter((w) => w.state === 'pending')
+      .map((w) => ({ i: w.i, team: w.team, turn: w.turn, in: w.turn - s.turn, src: w.src, types: w.units.map((u) => u.type), marks: w.marks }));
+  }
+
   function endTurn(s) {
     if (s.over) return;
     if (s.act) finishActivation(s, null);
@@ -1662,6 +1790,9 @@
       u.activated = false;
     }
     driveCarts(s, side);
+    checkOutcome(s);
+    if (s.over) return;
+    spawnWaves(s, side);
     checkOutcome(s);
     if (s.over) return;
     s.side = other(side);
@@ -1717,6 +1848,22 @@
       u.scorched = false;
       if (s.relics[team].has('sacred_chalice')) heal(s, u, 3, 'chalice');
     }
+    // Totems mend allies within 2 tiles. Several totems in reach do not stack.
+    const totems = mine.filter((w) => w.alive && w.props.totemHeal);
+    if (totems.length) {
+      const pulsed = new Set();
+      for (const v of mine) {
+        if (!v.alive || v.nonCombat || v.structure || v.hp >= v.maxHp) continue;
+        let best = null;
+        for (const w of totems) if (manhattan(v.x, v.y, w.x, w.y) <= 2 && (!best || w.props.totemHeal > best.props.totemHeal)) best = w;
+        if (!best) continue;
+        if (!pulsed.has(best.uid)) {
+          pulsed.add(best.uid);
+          emit(s, { t: 'totem', uid: best.uid });
+        }
+        heal(s, v, best.props.totemHeal, 'totem');
+      }
+    }
     for (const w of mine) {
       if (!w.alive || !w.traits.has('aura_barrier')) continue;
       const mend = w.traits.has('auramend');
@@ -1767,6 +1914,7 @@
       emit(s, { t: 'end', winner: 'P', survived: true });
       return;
     }
+    if (team === 'P') planWaves(s);
     if (s.relics[team].has('healing_salve')) {
       let best = null;
       for (const u of s.units) {
@@ -1808,7 +1956,7 @@
         hasVip = true;
         if (u.alive) vipAlive = true;
       }
-      if (u.team === 'E' && u.traits.has('object') && !u.traits.has('scenery')) {
+      if (u.team === 'E' && u.goal) {
         hasObj = true;
         if (u.alive) objAlive = true;
         if (u.escaped) objEscaped = true;
@@ -1817,6 +1965,12 @@
         alive[u.team] = true;
         if (canDealDamage(u)) armed[u.team] = true;
       }
+    }
+    // Reinforcements still on the way keep a side in the fight.
+    for (const team of ['P', 'E']) {
+      if (!pendingWaves(s, team)) continue;
+      alive[team] = true;
+      armed[team] = true;
     }
     const vipDown = (s.objective === 'boss' || s.objective === 'vip') && hasVip && !vipAlive;
     const objDown = s.objective === 'destroy' && hasObj && !objAlive && !objEscaped;
@@ -1862,5 +2016,6 @@
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, canUndo, performAction,
     finishActivation, endTurn, startTurn, checkOutcome, forfeit, drainEvents,
+    BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -224,9 +224,14 @@
     return { unit: best, d: bd };
   }
 
-  // An object whose destruction wins the battle (banner, cage, gate, wagon).
+  // An object whose destruction wins the battle (banner, cage, gate, wagon, totem).
   function isGoal(u) {
-    return u.traits.has('object') && !u.traits.has('scenery');
+    return u.goal;
+  }
+
+  // A building that still has reinforcements to send.
+  function isSpawning(s, u) {
+    return u.traits.has('spawner') && s.waves.some((w) => w.src === u.uid && w.state === 'pending');
   }
 
   function makeCtx(s, team, opts) {
@@ -237,7 +242,7 @@
     // Objective objects count as targets to march on when breaking them wins the battle.
     // Treasure guardians and towers are left alone unless they get in the way.
     const foes = s.units.filter(
-      (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)))
+      (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u))
     );
     const ctx = {
       s,
@@ -248,7 +253,15 @@
       distField: buildDistField(s, foes),
       allies: s.units.filter((u) => u.alive && u.team === team && !u.nonCombat && !u.structure),
       foes,
-      objects: s.units.filter((u) => u.alive && u.team === team && u.traits.has('object') && !u.traits.has('scenery')),
+      objects: s.units.filter((u) => u.alive && u.team === team && u.goal),
+      // Enemy buildings to bring down: goals of a 'destroy' battle, and anything still spawning.
+      siege: s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u))),
+      // Tiles where enemy reinforcements land at the end of this round.
+      marks: new Set(
+        s.waves
+          .filter((w) => w.state === 'pending' && w.team === foe && w.turn <= s.turn && w.marks)
+          .flatMap((w) => w.marks.map(([mx, my]) => E.idx(s, mx, my)))
+      ),
       foeRanged: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.range && a.range[1] >= 2 && a.dmg)),
       approach: st.approach,
       risk: st.risk,
@@ -384,6 +397,16 @@
       const dp = Math.abs(x - u.post.x) + Math.abs(y - u.post.y);
       if (dp > 1) v -= (dp - 1) * 6;
     }
+    // Push on toward the buildings that must fall.
+    if (ctx.siege.length && u.acts.some((x2) => x2.dmg)) {
+      let dg = 99;
+      for (const o of ctx.siege) dg = Math.min(dg, Math.abs(x - o.x) + Math.abs(y - o.y));
+      const r = primaryRange(u);
+      const ideal = r && r[1] >= 2 ? r[1] : 1;
+      v -= Math.abs(dg - ideal) * 0.5 * ctx.approach;
+    }
+    // Stand on a marked tile to stop a reinforcement from arriving.
+    if (ctx.marks.has(E.idx(s, x, y)) && !u.nonCombat && u.hp > E.BLOCK_DMG + 4) v += 7 - E.BLOCK_DMG * hpv * 0.4;
     if (ctx.objects.length && s.objective === 'destroy') {
       for (const o of ctx.objects) {
         if (Math.abs(x - o.x) + Math.abs(y - o.y) <= 2) {
@@ -511,6 +534,7 @@
         let val = Math.max(0, dealt - t.shield) * hpv + Math.min(dealt, t.shield) * 0.2;
         if (e.kill) val += t.value * 0.8;
         if (bossTarget) val *= t.boss ? 2.5 : 3;
+        else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
         if (e.friendly) v -= p * val * 1.4;
         else v += p * val;

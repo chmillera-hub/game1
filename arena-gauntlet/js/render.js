@@ -310,6 +310,7 @@
       for (const uid of [...this.vis.keys()]) if (!seen.has(uid) && !(opts && opts.keep)) this.vis.delete(uid);
       this.tfx = (s.tfx || []).map((f) => Object.assign({}, f));
       this.exitX = s.units.some((u) => u.alive && u.traits && u.traits.has('cart')) ? s.cartExit : null;
+      this.waves = s.waves ? AG.Engine.waveSummary(s) : [];
     }
 
     copyStatus(v, u) {
@@ -342,6 +343,7 @@
       this.texts = [];
       this.tfx = [];
       this.exitX = null;
+      this.waves = [];
     }
 
     // Loot on the field and the shrine to hold, if the mission has them.
@@ -390,7 +392,9 @@
       g.setTransform(this.dpr, 0, 0, this.dpr, sx, sy);
       this.drawLiquids(g);
       this.drawOverlays(g);
+      this.drawWaveMarks(g);
       this.drawObjects(g);
+      this.drawWaveBadges(g);
       this.drawSmoke(g);
       this.drawEffects(g, dt);
       this.drawTexts(g, dt);
@@ -674,6 +678,78 @@
           g.ellipse(px, py, this.tw * (0.3 - i * 0.03), this.th * (0.42 - i * 0.04), 0, 0, Math.PI * 2);
           g.fill();
         }
+      }
+    }
+
+    // Tiles where reinforcements land at the end of this round, with a ghost of who is coming.
+    drawWaveMarks(g) {
+      if (!this.waves || !this.waves.length) return;
+      const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
+      const occupied = new Map();
+      for (const v of this.vis.values()) if (v.alpha > 0.5) occupied.set(Math.round(v.x) + ',' + Math.round(v.y), v);
+      for (const w of this.waves) {
+        if (!w.marks || w.in > 0) continue;
+        w.marks.forEach(([x, y], k) => {
+          const o = occupied.get(x + ',' + y);
+          const blocking = o && o.team !== w.team;
+          this.tileFill(
+            g, x, y,
+            blocking ? 'rgba(255,214,106,' + (0.16 + 0.1 * pulse) + ')' : 'rgba(255,70,50,' + (0.14 + 0.1 * pulse) + ')',
+            blocking ? 'rgba(255,224,140,0.95)' : 'rgba(255,120,90,' + (0.55 + 0.35 * pulse) + ')',
+            2.5, 1.5
+          );
+          if (o) return;
+          const type = w.types[k];
+          const [cx, cy] = this.center(x, y);
+          g.save();
+          g.globalAlpha = 0.3 + 0.08 * pulse;
+          g.translate(cx, cy);
+          g.scale(w.team === 'E' ? -this.unit : this.unit, this.unit);
+          S.drawUnit(g, type, w.team, 'front', this.time, null);
+          g.restore();
+          const top = cy - (S.HEIGHT[type] || 40) * this.unit - this.tw * (0.1 + 0.06 * pulse);
+          const c = this.tw * 0.09;
+          g.save();
+          g.strokeStyle = 'rgba(255,150,120,' + (0.65 + 0.35 * pulse) + ')';
+          g.lineWidth = Math.max(1.5, this.tw * 0.04);
+          g.lineCap = 'round';
+          g.beginPath();
+          g.moveTo(cx - c, top - c);
+          g.lineTo(cx, top);
+          g.lineTo(cx + c, top - c);
+          g.stroke();
+          g.restore();
+        });
+      }
+    }
+
+    // A countdown over each building that still has reinforcements to send.
+    drawWaveBadges(g) {
+      if (!this.waves || !this.waves.length) return;
+      const next = new Map();
+      for (const w of this.waves) if (w.src) next.set(w.src, Math.min(next.has(w.src) ? next.get(w.src) : 99, w.in));
+      for (const [uid, n] of next) {
+        const v = this.vis.get(uid);
+        if (!v || v.alpha < 0.3) continue;
+        const [cx, cy] = this.center(v.x, v.y);
+        const top = cy - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1);
+        const r = Math.max(7, this.tw * 0.12);
+        const by = top - Math.max(3, this.tw * 0.075) - 4 - r * 1.3;
+        const soon = n <= 0;
+        g.save();
+        g.fillStyle = soon ? '#c93c36' : '#2b2230';
+        g.strokeStyle = soon ? '#ffd0c8' : '#ff9a8a';
+        g.lineWidth = 1.5;
+        g.beginPath();
+        g.arc(cx, by, r, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = '#ffffff';
+        g.font = '800 ' + Math.round(r * 1.25) + 'px "Alegreya Sans", system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText(soon ? '!' : String(n), cx, by + 0.5);
+        g.restore();
       }
     }
 
@@ -1319,7 +1395,7 @@
           if (type === 'lich' || type === 'specter') return 'frost';
           return 'hex';
         }
-        if (type === 'golem' || type === 'golem_king') return 'rock';
+        if (type === 'golem' || type === 'golem_king' || type === 'trebuchet') return 'rock';
         if (type === 'scout' || type === 'cutthroat') return 'knife';
         return 'arrow';
       };
@@ -1349,7 +1425,12 @@
           } else {
             this.sfx('swing');
             const back = await lunge(tgt.x, tgt.y);
-            this.slash(tgt.x, tgt.y);
+            if (ev.name === 'Blasting Charge') {
+              this.sfx('boom');
+              this.shakeT = 0.3;
+              this.flashTiles([[tgt.x, tgt.y]], 'rgba(255,150,40,ALPHA)', 420);
+              this.particles(tgt.x, tgt.y, 20, ['#ffd27a', '#ff8a2a', '#5a4a3a', '#2a2420'], { lift: 8, rise: 0.9, speed: 1.2, max: 0.8 });
+            } else this.slash(tgt.x, tgt.y);
             await this.applyImpacts(group, state);
             await back;
           }
@@ -1372,9 +1453,11 @@
         }
         case 'blast': {
           if (ev.dmg === 'phys') {
-            this.sfx('bow');
-            await Promise.all(tiles.map((t, i) => this.wait(i * 45).then(() => this.projectile(from, t, 'arrow', fast ? 120 : 330))));
+            const stones = type === 'trebuchet';
+            this.sfx(stones ? 'slam' : 'bow');
+            await Promise.all(tiles.map((t, i) => this.wait(i * 45).then(() => this.projectile(from, t, stones ? 'rock' : 'arrow', fast ? 120 : 330))));
             this.flashTiles(tiles, 'rgba(255,240,200,ALPHA)', 260);
+            if (stones) for (const [x, y] of tiles) this.particles(x, y, 5, ['#a08a6a', '#6f5f48'], { lift: 6, gravity: 2.5, rise: 0.4 });
           } else if (!ev.dmg) {
             this.sfx('grow');
             await this.projectile(from, [tgt.x, tgt.y], 'green', fast ? 150 : 360);
@@ -1697,11 +1780,18 @@
               this.addText(v.x, v.y, 'RALLY', '#ffd86a', { height: h, dy: -this.tw * 0.25 });
             }
             break;
-          case 'death':
+          case 'death': {
             if (!v) break;
             any = true;
             v.dying = true;
-            this.sfx('death');
+            const mat = UNITS[v.type] && UNITS[v.type].material;
+            if (mat && v.type !== 'barrel') {
+              // A building comes down in a cloud of rubble, splinters or sparks.
+              this.sfx('crumble');
+              this.shakeT = Math.max(this.shakeT, 0.22);
+              const bits = mat === 'wood' ? ['#8a5a30', '#5a3d22', '#c9a26a'] : mat === 'arcane' ? ['#b98cff', '#5a2a8a', '#ecdcff'] : ['#9a958c', '#6d6a64', '#c9c3b8'];
+              this.particles(v.x, v.y, 22, bits, { lift: 14, gravity: 2.2, rise: 0.7, speed: 1, max: 0.9 });
+            } else this.sfx('death');
             this.particles(v.x, v.y, 12, ['#b9b2a8', '#7f786f', '#e8e2d8'], { lift: 12, rise: 0.4, speed: 0.6, max: 0.7 });
             this.tween(450, (k) => {
               v.alpha = 1 - k;
@@ -1709,6 +1799,56 @@
             }).then(() => {
               if (v.dying) this.vis.delete(e.uid);
             });
+            break;
+          }
+          case 'waveWarn':
+            if (e.marks && e.marks.length) {
+              this.flashTiles(e.marks, 'rgba(255,90,60,ALPHA)', 600);
+              this.addText(e.marks[0][0], e.marks[0][1], 'INCOMING', '#ff9a8a', { height: 20 });
+            }
+            break;
+          case 'wave': {
+            any = true;
+            this.sfx('horn');
+            const src = state && state.byId[e.src];
+            if (src) this.ring(src.x, src.y, 'rgba(255,120,90,0.9)', 1.2, 420);
+            for (const id of e.uids || []) {
+              const u = state && state.byId[id];
+              if (!u || this.vis.has(id)) continue;
+              const nv = this.makeVis(u);
+              nv.alpha = 0;
+              nv.oy = -this.tw * 0.4;
+              this.vis.set(id, nv);
+              this.particles(u.x, u.y, 10, ['#c9b9a0', '#8a7a64', '#e8dcc8'], { lift: 2, rise: 0.5, speed: 0.7, max: 0.6 });
+              this.tween(this.reduced ? 60 : 380, (k) => {
+                nv.alpha = k;
+                nv.oy = -this.tw * 0.4 * (1 - ease(k));
+              });
+            }
+            const first = (e.uids || []).map((id) => state && state.byId[id]).find(Boolean);
+            const spot = first || src;
+            if (spot) this.addText(spot.x, spot.y, 'REINFORCEMENTS', '#ff9a8a', { height: 40, big: true });
+            await this.wait(this.reduced ? 60 : 380);
+            break;
+          }
+          case 'spawnBlock':
+            if (v) {
+              any = true;
+              this.sfx('block');
+              this.addText(v.x, v.y, 'BLOCKED', '#ffd86a', { height: h, dy: -this.tw * 0.3, big: true });
+              this.ring(v.x, v.y, 'rgba(255,216,106,0.95)', 0.9, 360);
+            }
+            break;
+          case 'waveCancel': {
+            const u = state && state.byId[e.uid];
+            if (u) {
+              any = true;
+              this.addText(u.x, u.y, 'CUT OFF', '#ffd86a', { height: 40, dy: -this.tw * 0.3 });
+            }
+            break;
+          }
+          case 'totem':
+            if (v) this.ring(v.x, v.y, 'rgba(150,255,170,0.85)', 2.4, 520);
             break;
           case 'revive': {
             const u = state && state.byId[e.uid];

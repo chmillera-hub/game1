@@ -1179,6 +1179,39 @@ button.card:active {
   color: var(--faint);
 }
 
+/* Reinforcements: a countdown line, red when they arrive this turn. */
+.obj.waves .icon {
+  color: #ff9a8a;
+}
+
+.obj.waves.now {
+  color: #ffd0c8;
+}
+
+.reinf {
+  border: 1px solid rgba(255, 120, 100, 0.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: rgba(120, 30, 24, 0.18);
+}
+
+.reinf .eyebrow {
+  color: #ff9a8a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reinf ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.88rem;
+  color: var(--parchment-2);
+}
+
 .rcard .flag.feat {
   background: rgba(233, 180, 64, 0.9);
   color: #2a1d0e;

@@ -18,7 +18,7 @@ function board(units, opts = {}) {
   const w = opts.w || 9;
   const h = opts.h || 9;
   const terrain = opts.terrain || new Array(w * h).fill(0);
-  return E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot });
+  return E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot, waves: opts.waves });
 }
 
 // Begin, act and finish in one go. `ai` picks the act (0 = main attack).
@@ -857,6 +857,149 @@ test('specters: steel barely scratches them, magic hurts them more, and they dra
   kn.block = 0;
   act(s, sp, { kind: 'unit', uid: kn.uid });
   assert.ok(sp.hp > 10, 'drained life');
+});
+
+// ------------------------------------------------------------ buildings and reinforcements
+
+test('siege damage: hammers, Demolisher, the Trebuchet and the Sapper Kit hit buildings harder', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'knight', team: 'P', x: 3, y: 4, gear: ['siege_hammer'] },
+    { type: 'knight', team: 'P', x: 5, y: 4, skills: ['demolisher'] },
+    { type: 'trebuchet', team: 'P', x: 4, y: 8 },
+    { type: 'totem', team: 'E', x: 4, y: 4 },
+    { type: 'knight', team: 'E', x: 0, y: 0 },
+  ]);
+  const [plain, hammer, demo, treb, totem, foe] = s.units;
+  assert.strictEqual(E.calcHit(s, plain, totem, {}).dmg, 9, 'stone halves a sword');
+  assert.strictEqual(E.calcHit(s, hammer, totem, {}).dmg, 27, 'Siege Hammer triples it');
+  assert.strictEqual(E.calcHit(s, demo, totem, {}).dmg, 18, 'Demolisher doubles it');
+  assert.strictEqual(E.calcHit(s, treb, totem, {}).dmg, 19, 'Trebuchet: +150% to buildings');
+  assert.strictEqual(E.calcHit(s, treb, foe, {}).dmg, 10, 'but no bonus against units');
+  const k = board([{ type: 'knight', team: 'P', x: 4, y: 5 }, { type: 'totem', team: 'E', x: 4, y: 4 }], { relics: { P: ['sappers_kit'], E: [] } });
+  assert.strictEqual(E.calcHit(k, k.units[0], k.units[1], {}).dmg, 14, "Sapper's Kit: +50%");
+});
+
+test('the Trebuchet cannot hit anything closer than 3 tiles', () => {
+  const s = board([
+    { type: 'trebuchet', team: 'P', x: 4, y: 8 },
+    { type: 'orc', team: 'E', x: 4, y: 6 },
+    { type: 'orc', team: 'E', x: 2, y: 6 },
+  ]);
+  const [treb, near, far] = s.units;
+  const t = E.allTargets(s, treb).filter((x) => x.ai === 0);
+  assert.ok(!t.some((x) => x.uid === near.uid), 'two tiles away is too close');
+  assert.ok(t.some((x) => x.uid === far.uid), 'four tiles away is fine');
+});
+
+test('materials: wood burns, stone resists, portals unravel under magic', () => {
+  const s = board([
+    { type: 'pyromancer', team: 'P', x: 4, y: 8 },
+    { type: 'knight', team: 'P', x: 0, y: 8 },
+    { type: 'war_tent', team: 'E', x: 4, y: 4 },
+    { type: 'crypt', team: 'E', x: 2, y: 4 },
+    { type: 'portal', team: 'E', x: 6, y: 4 },
+  ]);
+  const [py, kn, tent, crypt, portal] = s.units;
+  assert.strictEqual(E.calcHit(s, py, tent, {}).dmg, 20);
+  assert.strictEqual(E.calcHit(s, py, crypt, {}).dmg, 11);
+  assert.strictEqual(E.calcHit(s, py, portal, {}).dmg, 24);
+  assert.strictEqual(E.calcHit(s, kn, portal, {}).dmg, 9);
+});
+
+test('totems heal nearby enemies at the start of their turn, but not poisoned ones', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 8 },
+    { type: 'totem', team: 'E', x: 4, y: 2 },
+    { type: 'orc', team: 'E', x: 4, y: 4 },
+    { type: 'orc', team: 'E', x: 4, y: 5 },
+    { type: 'orc', team: 'E', x: 3, y: 2 },
+  ]);
+  const [, , near, far, sick] = s.units;
+  for (const o of [near, far, sick]) o.hp = 20;
+  sick.poison = { turns: 3, dmg: 2, src: 0 };
+  E.endTurn(s);
+  assert.strictEqual(s.side, 'E');
+  assert.strictEqual(near.hp, 26, 'within 2 tiles: +6');
+  assert.strictEqual(far.hp, 20, '3 tiles away: nothing');
+  assert.strictEqual(sick.hp, 18, 'poison blocks healing');
+  assert.ok(s.events.some((e) => e.t === 'totem'));
+});
+
+function tentBattle(extra, opts) {
+  const units = [{ type: 'knight', team: 'P', x: 4, y: 8 }, { type: 'war_tent', team: 'E', x: 4, y: 1, key: 't1' }].concat(extra || []);
+  return board(units, Object.assign({ waves: [{ turn: 1, from: 't1', units: [{ type: 'orc' }] }, { turn: 3, from: 't1', units: [{ type: 'orc' }] }] }, opts));
+}
+
+test('waves are marked a turn ahead and arrive at the end of the enemy turn', () => {
+  const s = tentBattle();
+  const w = s.waves[0];
+  assert.deepStrictEqual(w.marks, [[4, 2]], 'the doorway faces your side');
+  assert.strictEqual(s.waves[1].marks, null, 'later waves are not marked yet');
+  assert.strictEqual(E.pendingWaves(s, 'E'), 2);
+  E.endTurn(s);
+  assert.ok(!s.units.some((u) => u.type === 'orc'), 'nothing arrives during your turn');
+  E.endTurn(s);
+  const orc = s.units.find((u) => u.type === 'orc');
+  assert.ok(orc && orc.x === 4 && orc.y === 2, 'arrived on its mark');
+  assert.strictEqual(w.state, 'done');
+  assert.ok(!s.over, 'more waves are coming');
+});
+
+test('standing on a mark blocks the arrival and costs the blocker HP', () => {
+  const s = tentBattle();
+  const kn = s.units[0];
+  place(s, kn, 4, 2);
+  E.endTurn(s);
+  E.endTurn(s);
+  assert.ok(!s.units.some((u) => u.type === 'orc'), 'blocked');
+  assert.strictEqual(kn.hp, kn.maxHp - E.BLOCK_DMG);
+  assert.ok(s.events.some((e) => e.t === 'spawnBlock' && e.uid === kn.uid));
+});
+
+test('breaking the building cancels its waves; a rout needs no waves left', () => {
+  const s = tentBattle([{ type: 'goblin_archer', team: 'E', x: 0, y: 0 }], { objective: 'all' });
+  const [kn, tent, gob] = s.units;
+  place(s, kn, 1, 0);
+  gob.hp = 1;
+  gob.block = 0;
+  act(s, kn, { kind: 'unit', uid: gob.uid });
+  assert.ok(!gob.alive);
+  assert.ok(!s.over, 'waves still on the way');
+  place(s, kn, 3, 1);
+  tent.hp = 1;
+  act(s, kn, { kind: 'unit', uid: tent.uid });
+  assert.ok(!tent.alive);
+  assert.ok(s.waves.every((w) => w.state === 'cancelled'));
+  assert.ok(s.events.some((e) => e.t === 'waveCancel' && e.n === 2));
+  assert.ok(s.over && s.winner === 'P', 'routed');
+});
+
+test('raze: breaking every goal building wins; optional buildings do not need to fall', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 3 },
+    { type: 'war_tent', team: 'E', x: 4, y: 2, key: 'a' },
+    { type: 'guardhouse', team: 'E', x: 0, y: 0, key: 'b', goal: false },
+    { type: 'orc', team: 'E', x: 8, y: 0 },
+  ], { objective: 'destroy', waves: [{ turn: 2, from: 'b', units: [{ type: 'orc' }] }] });
+  const [kn, tent, house] = s.units;
+  assert.ok(tent.goal && !house.goal);
+  tent.hp = 1;
+  act(s, kn, { kind: 'unit', uid: tent.uid });
+  assert.ok(s.over && s.winner === 'P', 'the guardhouse and the orc did not matter');
+});
+
+test('edge waves appear along their edge', () => {
+  const s = board([{ type: 'knight', team: 'P', x: 4, y: 8 }, { type: 'orc', team: 'E', x: 8, y: 0 }], {
+    objective: 'survive', surviveTurns: 4,
+    waves: [{ turn: 1, tiles: [[0, 0], [1, 0], [2, 0], [3, 0]], units: [{ type: 'orc' }, { type: 'goblin_archer', level: 2 }] }],
+  });
+  E.endTurn(s);
+  E.endTurn(s);
+  const fresh = s.units.filter((u) => u.born === 1);
+  assert.strictEqual(fresh.length, 2);
+  assert.ok(fresh.every((u) => u.y === 0 && u.x <= 3 && u.team === 'E'));
+  assert.strictEqual(fresh.find((u) => u.type === 'goblin_archer').level, 2);
 });
 
 console.log(`engine: ${passed} tests passed`);

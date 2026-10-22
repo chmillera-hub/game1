@@ -1,5 +1,6 @@
 // Stress test: random levels, abilities, skills, gear, enchantments, relics, bosses,
-// walls, kegs and wagons. Checks board invariants every turn. Run: node tests/chaos.js [battles]
+// walls, kegs, wagons, totems, spawners and reinforcement waves. Checks board invariants
+// every turn. Run: node tests/chaos.js [battles]
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js']);
 const E = AG.Engine;
 const D = AG.Data;
@@ -46,10 +47,26 @@ for (let i = 0; i < N; i++) {
       units.push(Object.assign(spec(type, team), { x: p[0], y: p[1], facing: team === 'P' ? 0 : 2 }));
     }
   }
-  for (const [type, x, y] of [['barrel', rng.range(0, 8), 3], ['wall', rng.range(0, 8), 4], ['cart', 8, 5], ['tower', rng.range(0, 8), 2]]) {
+  for (const [type, x, y] of [['barrel', rng.range(0, 8), 3], ['wall', rng.range(0, 8), 4], ['cart', 8, 5], ['tower', rng.range(0, 8), 2],
+    [rng.pick(['totem', 'hexstone', 'obelisk']), rng.range(0, 8), rng.range(1, 3)], ['barricade', rng.range(0, 8), 4]]) {
     if (used.has(x + ',' + y) || rng.chance(0.3)) continue;
     used.add(x + ',' + y);
     units.push({ type, team: 'E', x, y });
+  }
+  // Reinforcements: some from buildings (goal or optional), some from the back edge.
+  const waves = [];
+  const spawners = rng.range(0, 2);
+  for (let k = 0; k < spawners; k++) {
+    const p = spot('E');
+    if (!p) continue;
+    const key = 'sp' + k;
+    units.push({ type: rng.pick(['war_tent', 'crypt', 'den', 'portal', 'guardhouse']), team: 'E', x: p[0], y: p[1], key, goal: rng.chance(0.5) });
+    for (let t = rng.range(1, 3); t <= 12; t += rng.range(2, 3)) waves.push({ turn: t, from: key, units: [spec(rng.pick(foes), 'E')] });
+  }
+  if (rng.chance(0.3)) {
+    const tiles = [];
+    for (let x = 0; x < 9; x++) tiles.push([x, 0], [x, 1]);
+    for (let t = 1; t <= 5; t += 2) waves.push({ turn: t, tiles, units: [spec(rng.pick(foes), 'E'), spec(rng.pick(foes), 'E')] });
   }
   const relics = { P: rng.shuffle(Object.keys(D.RELICS)).slice(0, rng.range(0, 6)), E: rng.chance(0.3) ? [rng.pick(Object.keys(D.RELICS))] : [] };
   const terrain = new Array(81).fill(0);
@@ -58,8 +75,8 @@ for (let i = 0; i < N; i++) {
     const y = rng.range(3, 5);
     if (!used.has(x + ',' + y)) terrain[y * 9 + x] = rng.pick([1, 2, 3]);
   }
-  const objective = units.some((u) => D.UNITS[u.type].boss) ? 'boss' : rng.pick(['all', 'all', 'destroy']);
-  const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective });
+  const objective = units.some((u) => D.UNITS[u.type].boss) ? 'boss' : rng.pick(['all', 'all', 'destroy', 'survive']);
+  const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective, surviveTurns: objective === 'survive' ? 6 : 0, waves });
   let turns = 0;
   while (!s.over && turns++ < 200) {
     AG.AI.playTurn(s, s.side, { stance: rng.pick(['aggressive', 'balanced', 'defensive']), temp: 1 });

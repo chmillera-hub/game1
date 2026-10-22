@@ -222,6 +222,17 @@
     return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
   }
 
+  const VS_NAME = { structure: 'buildings and wagons', greenskin: 'orcs and goblins', big: 'huge foes', caster: 'spellcasters', spirit: 'spirits' };
+  const vsName = (k) => VS_NAME[k] || k;
+
+  // Bonus damage and armor piercing that belong to one act.
+  function edgeText(a) {
+    const bits = [];
+    if (a.vs) for (const k in a.vs) bits.push(`+${pct(a.vs[k])} against ${vsName(k)}`);
+    if (a.pierce) bits.push(`ignores ${pct(a.pierce)} of armor`);
+    return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
+  }
+
   function usesText(a) {
     if (!a.uses) return '';
     const left = a.left === Infinity || a.left == null ? a.uses : a.left;
@@ -305,7 +316,7 @@
       default:
         t = UNITS[u.type].desc;
     }
-    return t + fxText(u, a) + usesText(a);
+    return t + edgeText(a) + fxText(u, a) + usesText(a);
   }
 
   const TRAIT_TEXT = {
@@ -340,12 +351,32 @@
     big: 'Huge: cannot be knocked back.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
     structure: 'A structure: it does not need to fall for a rout.',
+    spawner: 'Sends reinforcements every few turns until it is destroyed.',
   };
 
-  function traitLines(u) {
+  const MATERIAL_TEXT = {
+    stone: 'Stone building: resists swords and spells alike. Siege damage breaks it fast.',
+    wood: 'Wooden building: fire and magic deal extra damage to it.',
+    arcane: 'Arcane rift: steel barely scratches it, but magic unravels it.',
+    iron: 'Iron building: siege damage breaks it fastest.',
+  };
+
+  // s, when given, adds what a building still has to send.
+  function traitLines(u, s) {
     const out = [];
+    const mat = UNITS[u.type].material;
+    if (mat && MATERIAL_TEXT[mat]) out.push(MATERIAL_TEXT[mat]);
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
     const P = u.props;
+    if (P.totemHeal) out.push(`At the start of their turn, its allies within 2 tiles heal ${P.totemHeal} HP.`);
+    if (s && u.traits.has('spawner')) {
+      const waves = s.waves.filter((w) => w.src === u.uid && w.state === 'pending');
+      if (waves.length) {
+        const n = waves.reduce((t, w) => t + w.units.length, 0);
+        const next = waves[0];
+        out.push(`${n} more on the way. Next: ${next.units.map((x) => UNITS[x.type].name).join(', ')} at the end of turn ${next.turn}.`);
+      } else out.push('It has nobody left to send.');
+    }
     if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
     if (P.magicGuard) out.push(`Adjacent allies take ${pct(P.magicGuard)} less magic damage.`);
     if (P.regen) out.push(`Heals ${P.regen} HP each turn.`);
@@ -360,7 +391,7 @@
     if (P.packMult) out.push(`+${pct(P.packMult)} damage when an ally flanks the same target.`);
     if (P.bonusMagic) out.push(`Hits deal ${P.bonusMagic} bonus magic damage.`);
     if (P.dmgMult) out.push(`+${pct(P.dmgMult)} damage.`);
-    if (P.vs) for (const k in P.vs) out.push(`+${pct(P.vs[k])} damage against ${k === 'greenskin' ? 'orcs and goblins' : k === 'big' ? 'huge foes' : k === 'structure' ? 'structures' : k === 'caster' ? 'spellcasters' : k === 'spirit' ? 'spirits' : k}.`);
+    if (P.vs) for (const k in P.vs) out.push(`+${pct(P.vs[k])} damage against ${vsName(k)}.`);
     if (P.vsArmored) out.push(`+${pct(P.vsArmored)} damage against armored targets.`);
     if (u.boss) out.push('Boss: immune to paralysis and knockback.');
     return [...new Set(out)];
@@ -1220,7 +1251,7 @@
     if (u.level >= 3 && MASTERY[u.type]) picks.push(MASTERY[u.type]);
     for (const id of u.skills || []) picks.push(SKILLS[id]);
     for (const id of u.gear || []) picks.push(GEAR[id]);
-    const traits = traitLines(u)
+    const traits = traitLines(u, (UI.battle && UI.battle.s) || (UI.wr && UI.wr.s))
       .map((t) => `<li>${esc(t)}</li>`)
       .join('');
     openSheet(
@@ -1247,7 +1278,13 @@
       const carts = s.units.filter((u) => u.type === 'cart');
       status = ` <span class="reward">${carts.filter((u) => !u.alive && !u.escaped).length} broken · ${carts.filter((u) => u.escaped).length} escaped</span>`;
     }
+    if (s && (info.key === 'totems' || info.key === 'raze')) {
+      const goals = s.units.filter((u) => u.team === 'E' && u.goal);
+      status = ` <span class="reward">${goals.filter((u) => !u.alive).length}/${goals.length} down</span>`;
+    }
     const lines = [`<div class="obj primary">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
+    const wl = wavesLine(enc, s);
+    if (wl) lines.push(wl);
     for (const o of info.bonus) {
       let state = '';
       if (s) {
@@ -1257,16 +1294,53 @@
         if (b.type === 'flawless' && s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive)) state = 'failed';
         if (b.type === 'muster') state = s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
         if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) state = 'failed';
+        if (b.type === 'blockade' && s.stats.blocked >= b.n) state = 'done';
       }
       lines.push(`<div class="obj bonus ${state}">${ic(state === 'done' ? 'check' : 'star')}<span>${esc(o.text)} <span class="reward">Reward: ${esc(o.reward)}.</span></span></div>`);
     }
     return `<div class="objectives">${lines.join('')}</div>`;
   }
 
+  // When the next enemy reinforcements arrive, and how many are still to come.
+  function wavesLine(enc, s) {
+    const waves = s
+      ? E.waveSummary(s).filter((w) => w.team === 'E')
+      : (enc.waves || []).map((w) => ({ turn: w.turn, types: w.units.map((u) => u.type), src: w.from }));
+    if (!waves.length) return '';
+    const next = Math.min(...waves.map((w) => w.turn));
+    const n = waves.filter((w) => w.turn === next).reduce((t, w) => t + w.types.length, 0);
+    const rest = waves.reduce((t, w) => t + w.types.length, 0) - n;
+    const now = s && next <= s.turn;
+    const when = now ? 'after the enemy moves. Red tiles show where; a unit standing on one blocks that arrival but takes 10 damage' : `at the end of turn ${next}`;
+    const more = rest > 0 ? ` ${rest} more after that${waves.some((w) => w.src) ? ' unless their buildings fall' : ''}.` : '';
+    return `<div class="obj waves ${now ? 'now' : ''}">${ic('hourglass')}<span><b>Reinforcements.</b> ${n} arriving ${when}.${more}</span></div>`;
+  }
+
   // ------------------------------------------------------------ war room
 
   function encKindLabel(enc) {
     return enc.kind === 'boss' ? 'Boss battle' : enc.kind === 'elite' ? 'Elite battle' : 'Battle';
+  }
+
+  // The enemy's reinforcement schedule, for the scout report.
+  function reinforcementsHTML(s) {
+    const waves = s.waves.filter((w) => w.team === 'E' && w.state === 'pending');
+    if (!waves.length) return '';
+    const rows = [];
+    const bySrc = new Map();
+    for (const w of waves) {
+      const k = w.src || 0;
+      if (!bySrc.has(k)) bySrc.set(k, []);
+      bySrc.get(k).push(w);
+    }
+    for (const [src, list] of bySrc) {
+      const names = (w) => w.units.map((u) => UNITS[u.type].name + (u.level > 1 ? ` (Lv ${u.level})` : '')).join(', ');
+      if (src) {
+        const b = s.byId[src];
+        rows.push(`<li><b>${esc(UNITS[b.type].name)}</b> (${esc(UNITS[b.type].material || 'stone')}): ${list.map((w) => `${esc(names(w))} on turn ${w.turn}`).join(' · ')}. Destroy it to stop the rest.</li>`);
+      } else rows.push(...list.map((w) => `<li><b>Turn ${w.turn}:</b> ${esc(names(w))}, from the far edge.</li>`));
+    }
+    return `<div class="reinf"><div class="eyebrow">${ic('hourglass')} Reinforcements</div><ul>${rows.join('')}</ul></div>`;
   }
 
   function warRoom() {
@@ -1396,6 +1470,7 @@
               <span class="ty">${esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
           )
           .join('')}</div>
+        ${reinforcementsHTML(s)}
         ${tips.length ? `<ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       </div>`;
     }
@@ -1800,7 +1875,14 @@
     b.ov = ov;
 
     const info = R.objectiveInfo(UI.run, B.enc);
-    const goal = s.hold ? `${info.short} ${s.hold.count}/${s.hold.need}` : s.surviveTurns ? `Survive ${Math.max(0, s.surviveTurns - s.turn + 1)} more` : info.short;
+    const goals = info.key === 'totems' || info.key === 'raze' ? s.units.filter((x) => x.team === 'E' && x.goal) : [];
+    const goal = s.hold
+      ? `${info.short} ${s.hold.count}/${s.hold.need}`
+      : s.surviveTurns
+        ? `Survive ${Math.max(0, s.surviveTurns - s.turn + 1)} more`
+        : goals.length
+          ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
+          : info.short;
     $('#topbar').innerHTML = `<div class="title"><b>${s.side === 'P' ? 'Your turn' : 'Enemy turn'}</b>
       <span>Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' ? endBtn(false) : ''}
@@ -2629,8 +2711,19 @@
         </ul>
         <h4>Missions</h4>
         <ul>
-          <li>Rout the enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive, storm a castle gate, or stop a convoy of loot wagons. Routing always wins.</li>
-          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, or fielding a unit that sat out your last battle.</li>
+          <li>Rout the enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Routing always wins once no more reinforcements are coming.</li>
+          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or fielding a unit that sat out your last battle.</li>
+        </ul>
+        <h4>Buildings and siege</h4>
+        <ul>
+          <li>Walls, gates, towers, totems, tents, crypts, dens, portals and barricades are <b>buildings</b>. Stone ones shrug off swords and spells alike; wooden ones burn, taking extra damage from fire and magic; dark portals unravel under magic but barely notice steel.</li>
+          <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
+        </ul>
+        <h4>Reinforcements</h4>
+        <ul>
+          <li>Some battles bring enemy reinforcements at set turns: from the far edge, or out of tents, crypts, dens, portals and guardhouses. The war room shows the schedule; badges on buildings count down the turns.</li>
+          <li>A turn before they arrive, red tiles mark where they will appear. A unit standing on one <b>blocks</b> that arrival, but takes 10 damage.</li>
+          <li>Destroy a building and everything it had left to send is cut off.</li>
         </ul>
         <h4>Controls</h4>
         <ul>
@@ -2648,7 +2741,7 @@
     const t = tab || 'units';
     let body = '';
     if (t === 'units' || t === 'enemies') {
-      const types = t === 'units' ? D.RECRUITABLE : Object.keys(UNITS).filter((k) => ['enemy', 'boss'].includes(UNITS[k].rarity) || ['cart', 'wall', 'gate', 'barrel'].includes(k));
+      const types = t === 'units' ? D.RECRUITABLE : Object.keys(UNITS).filter((k) => ['enemy', 'boss'].includes(UNITS[k].rarity) || (UNITS[k].material && k !== 'cage' && k !== 'warbanner'));
       body = `<div class="codex-grid">${types
         .map((type) => {
           const u = R.unitStats(null, { type, level: 1 }, t === 'units' ? 'P' : 'E');

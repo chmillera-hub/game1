@@ -120,8 +120,8 @@
       mod: { active: { name: 'Shadow Strike', kind: 'shadowstrike', range: [2, 4], dmg: 'phys', mult: 1, uses: 2 } } },
 
     // Golem
-    g_toss: { name: 'Boulder Toss', cost: 0, desc: 'Active: hurl a boulder at an enemy 2 to 4 tiles away for 80% damage.',
-      mod: { active: { name: 'Boulder Toss', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8 } } },
+    g_toss: { name: 'Boulder Toss', cost: 0, desc: 'Active: hurl a boulder at an enemy 2 to 4 tiles away for 80% damage, double against buildings.',
+      mod: { active: { name: 'Boulder Toss', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, vs: { structure: 1 } } } },
     g_quake: { name: 'Earthshaker', cost: 1, desc: 'Stone Fist also hits every enemy beside the target.', mod: { act: { kind: 'quake' } } },
     g_moss: { name: 'Living Moss', cost: 1, desc: 'Heals 6 HP at the start of each of your turns.', mod: { props: { regen: 6 } } },
     g_bulwark: { name: 'Bulwark', cost: 1, desc: 'Its Guardian protection rises to 35%.', mod: { props: { guard: 0.35 } } },
@@ -218,6 +218,15 @@
     sa_volley: { name: 'Bone Volley', cost: 1, desc: 'Active, 2 uses: bones rain on a 5-tile area 2 to 4 tiles away, 60% damage to each enemy.',
       mod: { active: { name: 'Bone Volley', kind: 'blast', range: [2, 4], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.6, ff: false, uses: 2 } } },
     sa_reform: { name: 'Reassemble', cost: 2, desc: 'Once per battle, survives a fatal blow with 1 HP.', mod: { traits: ['secondwind'] } },
+
+    // Trebuchet
+    tb_counter: { name: 'Counterweight', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
+    tb_firepots: { name: 'Fire Pots', cost: 1, desc: 'Boulders set targets burning: 5 damage a turn for 2 turns.', mod: { onHit: { burn: [2, 5] } } },
+    tb_scatter: { name: 'Scattershot', cost: 2, desc: 'Active, 2 uses: stones rain on a 5-tile area 3 to 5 tiles away, 70% damage to each enemy.',
+      mod: { active: { name: 'Scattershot', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, ff: false, uses: 2 } } },
+    tb_frame: { name: 'Reinforced Frame', cost: 0, desc: '+20 max HP and +10% armor.', mod: { stat: { hp: 20, armor: 0.1 } } },
+    tb_wreck: { name: 'Wrecking Shot', cost: 1, desc: "Boulders ignore half of the target's armor.", mod: { props: { pierce: 0.5 } } },
+    tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
   };
 
   // Level 3 masteries (fixed per class).
@@ -238,6 +247,7 @@
     witch: { name: 'Shadow Pact', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
     lightning: { name: 'Thunderhead', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
     dragon: { name: 'Wyrmlord', desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
+    trebuchet: { name: 'Siege Master', desc: '+25% damage, and boulders deal a further +100% to buildings.', mod: { props: { dmgMult: 0.25, vs: { structure: 1 } } } },
     mageknight: { name: 'Runic Mastery', desc: 'Hits also deal 8 bonus magic damage.', mod: { props: { bonusMagic: 8 } } },
     skelarcher: { name: 'Undying', desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
   };
@@ -245,6 +255,23 @@
   // ---------------------------------------------------------------- units
   //
   // res = magic resistance. tags drive gear bonuses (Blessed Blade vs undead, and so on).
+  // Buildings carry the 'structure' tag, which siege damage targets, and a material:
+  // stone resists swords and spells, wood burns, arcane unravels under magic.
+
+  const TOTEM = {
+    rarity: 'none', cost: 0, role: 'object',
+    pow: 0, armor: 0.5, res: 0.3, block: 0, rec: 0, move: 0,
+    act: { name: 'Mending Ward', kind: 'none' },
+    traits: ['immobile', 'nofacing', 'object', 'totem'], tags: ['structure'], material: 'stone',
+    tip: 'Stone shrugs off swords and spells alike. Siege damage cracks it fast.',
+  };
+
+  const SPAWNER = {
+    rarity: 'none', cost: 0, role: 'object',
+    pow: 0, block: 0, rec: 0, move: 0,
+    act: { name: 'Reinforce', kind: 'none' },
+    traits: ['immobile', 'nofacing', 'object', 'spawner'], tags: ['structure'],
+  };
 
   const UNITS = {
     knight: {
@@ -409,6 +436,15 @@
       desc: 'Winged tyrant. Breathes fire over a 7-tile cone and flies over anything.',
       tip: 'Mighty but slow to recover. Swarm it from the sides while it rests.',
     },
+    trebuchet: {
+      name: 'Trebuchet', rarity: 'uncommon', cost: 4, role: 'ranged',
+      hp: 40, pow: 15, armor: 0.25, res: -0.2, block: 0, rec: 2, move: 2,
+      act: { name: 'Boulder', kind: 'strike', range: [3, 6], dmg: 'phys', arc: true, vs: { structure: 1.5 } },
+      traits: [], tags: ['construct'],
+      abilities: { 1: ['tb_counter', 'tb_firepots', 'tb_scatter'], 2: ['tb_frame', 'tb_wreck', 'tb_crew'] },
+      desc: 'Siege engine. Lobs boulders 3 to 6 tiles and deals +150% damage to buildings. Cannot hit anything closer than 3 tiles.',
+      tip: 'Helpless up close, and its timber burns: rush it, or hit it with magic.',
+    },
 
     // ------------------------------------------------ summons and objects
     shrub: {
@@ -421,9 +457,9 @@
     },
     warbanner: {
       name: 'War Banner', rarity: 'none', cost: 0, role: 'object',
-      hp: 44, pow: 0, armor: 0.1, res: 0.1, block: 0, rec: 0, move: 0,
+      hp: 44, pow: 0, armor: 0.1, res: -0.2, block: 0, rec: 0, move: 0,
       act: { name: 'Rally', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'],
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood',
       desc: 'The enemy standard. Enemies within 2 tiles of it deal 15% more damage.',
       tip: 'Burn it to break their will and win the battle.',
     },
@@ -431,15 +467,15 @@
       name: 'Prison Cage', rarity: 'none', cost: 0, role: 'object',
       hp: 52, pow: 0, armor: 0.3, res: 0.2, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'],
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'iron',
       desc: 'Captives rattle the bars. Break the cage to free them.',
       tip: 'Breaking the cage wins the battle. The freed prisoner joins your army.',
     },
     cart: {
       name: 'Loot Wagon', rarity: 'none', cost: 0, role: 'object',
-      hp: 44, pow: 0, armor: 0.3, res: 0.1, block: 0, rec: 0, move: 2,
+      hp: 44, pow: 0, armor: 0.3, res: -0.2, block: 0, rec: 0, move: 2,
       act: { name: 'Flee', kind: 'none' },
-      traits: ['nofacing', 'object', 'cart'], tags: ['structure'],
+      traits: ['nofacing', 'object', 'cart'], tags: ['structure'], material: 'wood',
       desc: 'A wagon heavy with stolen goods, rumbling for the far edge of the field.',
       tip: 'Break every wagon before it escapes off the left edge. Units in its way slow it down.',
     },
@@ -447,26 +483,75 @@
       name: 'Castle Wall', rarity: 'none', cost: 0, role: 'object',
       hp: 70, pow: 0, armor: 0.45, res: 0.3, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'],
+      traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'], material: 'stone',
       desc: 'Thick castle stone. Blocks movement and lines. Flyers and arcing shots pass over it.',
-      tip: 'Go through the gate, around the ends, or bring a Siege Hammer.',
+      tip: 'Go through the gate or around the ends. Siege damage breaks stone fast.',
     },
     gate: {
       name: 'Castle Gate', rarity: 'none', cost: 0, role: 'object',
-      hp: 80, pow: 0, armor: 0.4, res: 0.2, block: 0, rec: 0, move: 0,
+      hp: 80, pow: 0, armor: 0.4, res: -0.2, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'],
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood',
       desc: 'An oak-and-iron gate. Breaking it opens the castle.',
-      tip: 'Breaking the gate wins a siege. Siege Hammers deal triple damage to it.',
+      tip: 'Breaking the gate wins a siege. Siege damage and fire bring it down fastest.',
     },
     barrel: {
       name: 'Powder Keg', rarity: 'none', cost: 0, role: 'object',
       hp: 10, pow: 0, armor: 0, res: 0, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object', 'scenery', 'volatile'], tags: ['structure'], props: { boom: 22 },
+      traits: ['immobile', 'nofacing', 'object', 'scenery', 'volatile'], tags: ['structure'], material: 'wood', props: { boom: 22 },
       desc: 'Black powder. Explodes when broken, dealing 22 damage to everything next to it.',
       tip: 'Shoot it when enemies stand beside it. Explosions set off other kegs too.',
     },
+    barricade: {
+      name: 'Barricade', rarity: 'none', cost: 0, role: 'object',
+      hp: 30, pow: 0, armor: 0.3, res: -0.25, block: 0, rec: 0, move: 0,
+      act: { name: 'None', kind: 'none' },
+      traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'], material: 'wood',
+      desc: 'Sharpened stakes. Blocks movement and lines until broken.',
+      tip: 'Break through with siege damage or fire, or go around.',
+    },
+
+    // Totems: objectives that mend the enemies around them.
+    totem: Object.assign({}, TOTEM, {
+      name: 'Stone Totem', hp: 40, props: { totemHeal: 6 },
+      desc: 'A carved war-stone. At the start of their turn, enemies within 2 tiles heal 6 HP.',
+    }),
+    hexstone: Object.assign({}, TOTEM, {
+      name: 'Hex Stone', hp: 46, props: { totemHeal: 8 },
+      desc: 'A rune-cut standing stone. At the start of their turn, enemies within 2 tiles heal 8 HP.',
+    }),
+    obelisk: Object.assign({}, TOTEM, {
+      name: 'Ember Obelisk', hp: 52, props: { totemHeal: 10 },
+      desc: 'A shard of black glass, warm to the touch. At the start of their turn, enemies within 2 tiles heal 10 HP.',
+    }),
+
+    // Spawners: reinforcements march out of them until they fall.
+    war_tent: Object.assign({}, SPAWNER, {
+      name: 'War Tent', hp: 44, armor: 0.3, res: -0.25, material: 'wood',
+      desc: 'Hide and canvas. Fresh warriors march out of it every few turns until it falls.',
+      tip: 'Fire and siege damage tear it down. Stand in the doorway to block an arrival.',
+    }),
+    crypt: Object.assign({}, SPAWNER, {
+      name: 'Crypt', hp: 56, armor: 0.5, res: 0.3, material: 'stone',
+      desc: 'The dead claw their way out of it every few turns until it is broken.',
+      tip: 'Thick stone: bring siege damage. Stand in the doorway to block an arrival.',
+    }),
+    den: Object.assign({}, SPAWNER, {
+      name: 'Beast Den', hp: 50, armor: 0.5, res: 0.3, material: 'stone',
+      desc: 'A rocky lair. Beasts prowl out of it every few turns until it caves in.',
+      tip: 'Solid rock: bring siege damage. Stand at the mouth to block an arrival.',
+    }),
+    portal: Object.assign({}, SPAWNER, {
+      name: 'Dark Portal', hp: 40, armor: 0.5, res: -0.5, material: 'arcane',
+      desc: 'A tear in the world. Creatures step through every few turns until it is closed.',
+      tip: 'Steel barely scratches it, but magic unravels it.',
+    }),
+    guardhouse: Object.assign({}, SPAWNER, {
+      name: 'Guardhouse', hp: 54, armor: 0.5, res: 0.3, material: 'stone',
+      desc: 'Soldiers muster here and march out every few turns until it falls.',
+      tip: 'Stone walls: bring siege damage, or win before the garrison gathers.',
+    }),
 
     // ------------------------------------------------ enemy forces
     orc: {
@@ -603,9 +688,9 @@
       name: 'Arrow Tower', rarity: 'enemy', cost: 0, role: 'ranged',
       hp: 60, pow: 14, armor: 0.4, res: 0.2, block: 0, rec: 1, move: 0,
       act: { name: 'Arrow Slits', kind: 'strike', range: [2, 5], dmg: 'phys', arc: true },
-      traits: ['immobile', 'nofacing', 'structure'], tags: ['structure'],
+      traits: ['immobile', 'nofacing', 'structure'], tags: ['structure'], material: 'stone',
       desc: 'A stone tower full of archers. You do not need to destroy it to win.',
-      tip: 'Stay out of its reach, or bring a Siege Hammer.',
+      tip: 'Stay out of its reach, or bring siege damage.',
     },
     castellan: {
       name: 'Castellan', rarity: 'enemy', cost: 4, role: 'tank',
@@ -704,6 +789,7 @@
     quickened: { name: 'Quickened', cost: 3, desc: 'Recovers 1 turn faster.', req: 'slow', mod: { stat: { rec: -1 } } },
     martyr: { name: 'Martyr', cost: 1, desc: 'When it falls, heals allies within 2 tiles for 20.', mod: { traits: ['martyr'] } },
     arcane_focus: { name: 'Arcane Focus', cost: 2, desc: '+20% magic damage, healing and poison.', req: 'magic', mod: { props: { magicMult: 0.2 } } },
+    demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
   };
 
   const GEAR = {
@@ -712,7 +798,7 @@
     blessed_blade: { name: 'Blessed Blade', cost: 1, desc: '+50% damage against undead and spirits.', req: 'damage', mod: { props: { vs: { undead: 0.5, spirit: 0.5 } } } },
     orcbane: { name: 'Orcbane Axe', cost: 1, desc: '+40% damage against orcs and goblins.', req: 'damage', mod: { props: { vs: { greenskin: 0.4 } } } },
     dragonslayer: { name: 'Dragonslayer Spear', cost: 2, desc: '+50% damage against huge foes: dragons, trolls, brutes and bosses.', req: 'damage', mod: { props: { vs: { big: 0.5 } } } },
-    siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against walls, gates, towers, wagons and kegs.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
+    siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
     war_pick: { name: 'War Pick', cost: 2, desc: 'Physical attacks ignore half of armor.', req: 'phys', mod: { props: { pierce: 0.5 } } },
     healing_charm: { name: 'Healing Charm', cost: 1, desc: 'Heals 5 HP at the start of each of your turns.', mod: { props: { regen: 5 } } },
     thorn_ring: { name: 'Thorn Ring', cost: 1, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
@@ -729,6 +815,8 @@
       mod: { active: { name: 'Fire Flask', kind: 'blast', range: [2, 3], pattern: 'plus', dmg: 'magic', fixed: 14, arc: true, ff: true, fx: { burn: [2, 4] }, uses: 1 } } },
     healing_draught: { name: 'Healing Draught', cost: 1, desc: 'Active, 1 use: heal itself or an adjacent ally for 20 and cure poison and burns.',
       mod: { active: { name: 'Healing Draught', kind: 'heal', range: [0, 1], fixed: 20, cure: true, uses: 1 } } },
+    blasting_charge: { name: 'Blasting Charge', cost: 1, desc: 'Active, 1 use: blow up an adjacent target for 20 damage, triple against buildings, ignoring half of armor.',
+      mod: { active: { name: 'Blasting Charge', kind: 'strike', range: [1, 1], dmg: 'phys', fixed: 20, pierce: 0.5, vs: { structure: 2 }, uses: 1 } } },
   };
 
   // Enchantments are bound to one unit forever and raise its Supply cost.
@@ -773,6 +861,7 @@
     drill_manual: { name: 'Drill Manual', tier: 'common', desc: 'Gain 25% more XP from battles.' },
     pathfinder: { name: 'Pathfinder Boots', tier: 'common', desc: 'Units with 3 Move or less gain +1 Move.' },
     oak_charm: { name: 'Oaken Charm', tier: 'common', desc: 'Your units have +8 max HP.' },
+    sappers_kit: { name: "Sapper's Kit", tier: 'common', desc: 'Your units deal 50% more damage to buildings and wagons.' },
     mana_crystal: { name: 'Mana Crystal', tier: 'uncommon', desc: 'Spellcasters (Recover 2 or more) recover 1 turn faster.' },
     bloodstone: { name: 'Bloodstone', tier: 'uncommon', desc: 'Your units heal for 20% of the damage they deal.' },
     thorned_mail: { name: 'Thorned Mail', tier: 'uncommon', desc: 'Enemies that strike your units in melee take 5 damage.' },
@@ -850,18 +939,18 @@
   const ENCOUNTERS = {
     1: {
       normal: [
-        { name: 'Bandit Ambush', units: ['cutthroat', 'cutthroat', 'crossbow', 'scout'], stance: 'aggressive', pool: ['cutthroat', 'crossbow', 'scout'] },
-        { name: 'Goblin Raiders', units: ['goblin_archer', 'goblin_archer', 'sapper', 'orc'], stance: 'aggressive', pool: ['goblin_archer', 'sapper', 'orc'] },
-        { name: 'Warg Riders', units: ['warg', 'warg', 'orc', 'goblin_archer'], stance: 'aggressive', pool: ['warg', 'goblin_archer'] },
-        { name: "Smugglers' Convoy", units: ['cutthroat', 'crossbow', 'scout'], layout: 'convoy', stance: 'balanced', pool: ['cutthroat', 'scout'] },
-        { name: 'Border Keep', units: ['knight', 'archer', 'castellan'], layout: 'siege', stance: 'defensive', pool: ['archer', 'knight'] },
-        { name: 'Mercenary Company', units: ['knight', 'archer', 'cleric', 'scout'], stance: 'balanced', pool: ['knight', 'archer', 'scout'] },
-        { name: 'Orc Warband', units: ['orc', 'orc', 'shaman', 'goblin_archer'], stance: 'balanced', pool: ['orc', 'goblin_archer'] },
+        { name: 'Bandit Ambush', units: ['cutthroat', 'cutthroat', 'crossbow', 'scout'], spawner: 'war_tent', stance: 'aggressive', pool: ['cutthroat', 'crossbow', 'scout'] },
+        { name: 'Goblin Raiders', units: ['goblin_archer', 'goblin_archer', 'sapper', 'orc'], spawner: 'war_tent', stance: 'aggressive', pool: ['goblin_archer', 'sapper', 'orc'] },
+        { name: 'Warg Riders', units: ['warg', 'warg', 'orc', 'goblin_archer'], spawner: 'den', stance: 'aggressive', pool: ['warg', 'goblin_archer'] },
+        { name: "Smugglers' Convoy", units: ['cutthroat', 'crossbow', 'scout'], layout: 'convoy', spawner: 'war_tent', stance: 'balanced', pool: ['cutthroat', 'scout'] },
+        { name: 'Border Keep', units: ['knight', 'archer', 'castellan'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
+        { name: 'Mercenary Company', units: ['knight', 'archer', 'cleric', 'scout'], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer', 'scout'] },
+        { name: 'Orc Warband', units: ['orc', 'orc', 'shaman', 'goblin_archer'], spawner: 'war_tent', stance: 'balanced', pool: ['orc', 'goblin_archer'] },
       ],
       elite: [
-        { name: "Warchief's Guard", units: ['brute', 'brute', 'shaman', 'orc'], lv: [2, 1, 1, 2], stance: 'balanced', pool: ['orc'] },
-        { name: 'Goblin Powder Camp', units: ['sapper', 'sapper', 'goblin_archer', 'goblin_archer', 'orc'], layout: 'camp', stance: 'aggressive', pool: ['sapper', 'goblin_archer'] },
-        { name: 'Knights of the March', units: ['knight', 'knight', 'archer', 'cleric'], lv: [2, 2, 1, 1], stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: "Warchief's Guard", units: ['brute', 'brute', 'shaman', 'orc'], lv: [2, 1, 1, 2], spawner: 'war_tent', stance: 'balanced', pool: ['orc'] },
+        { name: 'Goblin Powder Camp', units: ['sapper', 'sapper', 'goblin_archer', 'goblin_archer', 'orc'], layout: 'camp', spawner: 'war_tent', stance: 'aggressive', pool: ['sapper', 'goblin_archer'] },
+        { name: 'Knights of the March', units: ['knight', 'knight', 'archer', 'cleric'], lv: [2, 2, 1, 1], spawner: 'war_tent', stance: 'balanced', pool: ['knight', 'archer'] },
       ],
       boss: {
         golem_king: { name: 'The Golem King', units: ['golem_king', 'knight', 'archer', 'archer', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },
@@ -870,18 +959,18 @@
     },
     2: {
       normal: [
-        { name: 'The Restless Dead', units: ['skeleton', 'skeleton', 'skelarcher', 'specter'], stance: 'aggressive', pool: ['skeleton', 'skelarcher'] },
-        { name: "Necromancer's Circle", units: ['necromancer', 'skeleton', 'skeleton', 'specter'], stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
-        { name: 'Spider Nest', units: ['spider', 'spider', 'wisp', 'wolf'], stance: 'aggressive', pool: ['spider', 'wolf'] },
-        { name: 'Troll Bridge', units: ['troll', 'goblin_archer', 'goblin_archer', 'wolf'], stance: 'balanced', pool: ['goblin_archer', 'wolf'] },
-        { name: 'Witch Circle', units: ['witch', 'enchantress', 'knight', 'wisp'], stance: 'balanced', pool: ['knight', 'wisp'] },
-        { name: 'Wolf Pack', units: ['wolf', 'wolf', 'wolf', 'beastrider'], stance: 'aggressive', pool: ['wolf', 'beastrider'] },
-        { name: 'Bog Raiders', units: ['berserker', 'berserker', 'wisp', 'cutthroat'], layout: 'convoy', stance: 'aggressive', pool: ['berserker', 'cutthroat'] },
+        { name: 'The Restless Dead', units: ['skeleton', 'skeleton', 'skelarcher', 'specter'], spawner: 'crypt', stance: 'aggressive', pool: ['skeleton', 'skelarcher'] },
+        { name: "Necromancer's Circle", units: ['necromancer', 'skeleton', 'skeleton', 'specter'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
+        { name: 'Spider Nest', units: ['spider', 'spider', 'wisp', 'wolf'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
+        { name: 'Troll Bridge', units: ['troll', 'goblin_archer', 'goblin_archer', 'wolf'], spawner: 'den', stance: 'balanced', pool: ['goblin_archer', 'wolf'] },
+        { name: 'Witch Circle', units: ['witch', 'enchantress', 'knight', 'wisp'], spawner: 'portal', stance: 'balanced', pool: ['knight', 'wisp'] },
+        { name: 'Wolf Pack', units: ['wolf', 'wolf', 'wolf', 'beastrider'], spawner: 'den', stance: 'aggressive', pool: ['wolf', 'beastrider'] },
+        { name: 'Bog Raiders', units: ['berserker', 'berserker', 'wisp', 'cutthroat'], layout: 'convoy', spawner: 'portal', stance: 'aggressive', pool: ['berserker', 'cutthroat'] },
       ],
       elite: [
-        { name: 'The Coven', units: ['witch', 'witch', 'barrier', 'knight', 'knight'], stance: 'balanced', pool: ['knight'] },
-        { name: 'Bone Colossus', units: ['colossus', 'necromancer', 'skeleton', 'skelarcher'], stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
-        { name: 'Troll Kin', units: ['troll', 'troll', 'spider', 'shaman'], stance: 'aggressive', pool: ['spider', 'wolf'] },
+        { name: 'The Coven', units: ['witch', 'witch', 'barrier', 'knight', 'knight'], spawner: 'portal', stance: 'balanced', pool: ['knight'] },
+        { name: 'Bone Colossus', units: ['colossus', 'necromancer', 'skeleton', 'skelarcher'], spawner: 'crypt', stance: 'balanced', pool: ['skeleton', 'skelarcher'] },
+        { name: 'Troll Kin', units: ['troll', 'troll', 'spider', 'shaman'], spawner: 'den', stance: 'aggressive', pool: ['spider', 'wolf'] },
       ],
       boss: {
         witch_queen: { name: 'The Witch Queen', units: ['witch_queen', 'enchantress', 'wisp', 'knight', 'knight', 'witch'], stance: 'balanced', pool: ['knight', 'wisp'] },
@@ -890,18 +979,18 @@
     },
     3: {
       normal: [
-        { name: 'Spire Garrison', units: ['castellan', 'knight', 'knight', 'archer'], layout: 'siege', stance: 'defensive', pool: ['knight', 'archer'] },
-        { name: 'Cult of Flame', units: ['pyromancer', 'pyromancer', 'enchantress', 'golem'], stance: 'balanced', pool: ['golem', 'knight'] },
-        { name: 'Drake Keepers', units: ['drake', 'drake', 'knight', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },
-        { name: 'Iron Legion', units: ['knight', 'knight', 'mageknight', 'archer', 'archer', 'cleric'], stance: 'defensive', pool: ['knight', 'archer'] },
-        { name: 'Orc Vanguard', units: ['brute', 'orc', 'orc', 'shaman', 'warg'], lv: [1, 2, 2, 1, 1], stance: 'aggressive', pool: ['orc', 'warg'] },
-        { name: 'Shadow Strike', units: ['assassin', 'assassin', 'enchantress', 'scout', 'cutthroat'], stance: 'aggressive', pool: ['assassin', 'scout'] },
-        { name: 'Storm Battery', units: ['lightning', 'barrier', 'pyromancer', 'archer', 'archer'], layout: 'camp', stance: 'defensive', pool: ['archer', 'knight'] },
+        { name: 'Spire Garrison', units: ['castellan', 'knight', 'knight', 'archer'], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
+        { name: 'Cult of Flame', units: ['pyromancer', 'pyromancer', 'enchantress', 'golem'], spawner: 'portal', stance: 'balanced', pool: ['golem', 'knight'] },
+        { name: 'Drake Keepers', units: ['drake', 'drake', 'knight', 'cleric'], spawner: 'den', stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: 'Iron Legion', units: ['knight', 'knight', 'mageknight', 'archer', 'archer', 'cleric'], spawner: 'guardhouse', stance: 'defensive', pool: ['knight', 'archer'] },
+        { name: 'Orc Vanguard', units: ['brute', 'orc', 'orc', 'shaman', 'warg'], lv: [1, 2, 2, 1, 1], spawner: 'war_tent', stance: 'aggressive', pool: ['orc', 'warg'] },
+        { name: 'Shadow Strike', units: ['assassin', 'assassin', 'enchantress', 'scout', 'cutthroat'], spawner: 'portal', stance: 'aggressive', pool: ['assassin', 'scout'] },
+        { name: 'Storm Battery', units: ['lightning', 'barrier', 'pyromancer', 'archer', 'archer'], layout: 'camp', spawner: 'guardhouse', stance: 'defensive', pool: ['archer', 'knight'] },
       ],
       elite: [
-        { name: 'Dragon Brood', units: ['dragon', 'drake', 'cleric', 'knight'], stance: 'aggressive', pool: ['knight'] },
-        { name: 'Champions of the Spire', units: ['knight', 'assassin', 'pyromancer', 'cleric', 'archer'], lv: [3, 3, 2, 2, 1], stance: 'balanced', pool: ['knight', 'archer'] },
-        { name: 'The Inner Keep', units: ['castellan', 'mageknight', 'mageknight', 'crossbow', 'cleric'], lv: [3, 1, 1, 1, 1], layout: 'siege', stance: 'defensive', pool: ['crossbow', 'knight'] },
+        { name: 'Dragon Brood', units: ['dragon', 'drake', 'cleric', 'knight'], spawner: 'den', stance: 'aggressive', pool: ['knight'] },
+        { name: 'Champions of the Spire', units: ['knight', 'assassin', 'pyromancer', 'cleric', 'archer'], lv: [3, 3, 2, 2, 1], spawner: 'guardhouse', stance: 'balanced', pool: ['knight', 'archer'] },
+        { name: 'The Inner Keep', units: ['castellan', 'mageknight', 'mageknight', 'crossbow', 'cleric'], lv: [3, 1, 1, 1, 1], layout: 'siege', spawner: 'guardhouse', stance: 'defensive', pool: ['crossbow', 'knight'] },
       ],
       boss: {
         ashen_tyrant: { name: 'The Ashen Tyrant', units: ['ashen_tyrant', 'pyromancer', 'knight', 'knight', 'drake', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },

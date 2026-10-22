@@ -119,6 +119,11 @@
       tone('sine', 90, 35, 0.35, 0.3);
     },
     death: () => tone('triangle', 300, 70, 0.4, 0.12),
+    horn: () => {
+      tone('sawtooth', 147, 140, 0.55, 0.06);
+      tone('sawtooth', 220, 210, 0.5, 0.045, 0.14);
+    },
+    crumble: () => noise(0.7, 0.28, 'lowpass', 380),
     turn: () => {
       tone('triangle', 392, 0, 0.12, 0.1);
       tone('triangle', 523, 0, 0.18, 0.1, 0.1);
