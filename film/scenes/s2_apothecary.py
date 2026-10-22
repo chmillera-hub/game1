@@ -136,6 +136,19 @@ from film.scenes import _s2_rig as R2
 SCENE = 2
 W, H = core.W, core.H
 TAU = math.tau
+LArm = R2.LionessArmS2            # her arms: the library's LionessArm + a steady forearm (no flips)
+
+
+def draw_dragon_g(cr, x, y, scale, pose, light, t):
+    """draw_dragon with a SCREEN-space gaze: pose.look[0] > 0 looks screen-right with both eyes
+    (the shared rigs mirror the eye whose outer corner is screen-left; see _s2_rig.screen_gaze)."""
+    with R2.screen_gaze(pose.look[0]):
+        return ch.draw_dragon(cr, x, y, scale, pose, light, t)
+
+
+def draw_lioness_g(cr, x, y, scale, pose, light, t):
+    with R2.screen_gaze(pose.look[0]):
+        return ch.draw_lioness(cr, x, y, scale, pose, light, t)
 
 # ----------------------------------------------------------------------------------------
 # timing: everything from the timeline (beats + lines); scene beats are derived from them
@@ -1082,6 +1095,28 @@ def _turn_end(i):
     return TURNS[i][0] + TURNS[i][3]
 
 
+FREE_TURNS = (2, 4)               # turns she makes with an empty right paw on its way to a shelf
+
+
+def carry_angle(yaw):
+    """The screen direction of a paw carried in front of her as she turns (its forearm points at
+    the camera, so its own projected direction is noise): toward where she faces, a little down;
+    straight down through the front view. It turns with her, never spins."""
+    return math.radians(90.0 - 80.0 * clamp(yaw / 1.05, -1.0, 1.0))
+
+
+def _turn_steer(t):
+    """How strongly her empty right paw is steered round with her body (0..1): through the turns
+    she makes on her way to a shelf (handing back to the reach over its last third), and as it
+    drops from the candle down behind the counter (the paw passes its own elbow on screen there:
+    steered, it swings down through the side instead of spinning)."""
+    w = 0.0
+    for i in FREE_TURNS:
+        t0, _a, _b, d = TURNS[i]
+        w = max(w, core.window(t, t0 - 0.05, t0 + d + 0.25, 0.14, 0.3))
+    return max(w, core.window(t, I2 + 0.13, I2 + 0.7, 0.25, 0.2))
+
+
 def _yaw_keys():
     keys = [(0.0, -1.0)]
     for t0, a, b, d in TURNS:
@@ -1128,29 +1163,76 @@ def lio_shoulder(x0, y0, yaw, pose, t, side, scale=SC):
     return lio_screen(x0, y0, yaw, S["shoulders"][side], scale, pose.elev)
 
 
-def paw_track(t, keys, resolve):
-    """A paw's path through keys [(t, spec, hand[, arc])]: spec = a gesture name (resolved on the
-    CURRENT body, so it rides along with her), a world point, or a callable(t) -> point. Returns
-    (gesture_name or None, world point or None, hand pose). Between two keys of the same gesture
-    the gesture itself is returned (the rig's own idle applies); otherwise an eased, arcing
-    screen-space path from wherever the paw is to wherever it is going -- nothing ever snaps.
-    The hand shape blends over the segment's last quarter (fingers curl / open, never pop)."""
+REST_DROOP = 0.5                  # the library's "rest" paw droop (rad), faded through the front view
+
+
+def paw_track(t, keys, resolve, depth_of=None):
+    """A paw's path through keys [(t, spec, hand[, arc[, depth]])]: spec = a gesture name
+    (resolved on the CURRENT body, so it rides along with her), a world point, or a callable(t)
+    -> point. Returns (gesture_name or None, world point or None, hand pose, depth, droop).
+    Between two keys of the same gesture the gesture itself is returned (the rig's own idle
+    applies); otherwise an eased, arcing screen-space path from wherever the paw is to wherever
+    it is going -- nothing ever snaps. The hand shape blends over the segment's last quarter
+    (fingers curl / open, never pop). depth: the paw's camera depth ahead of its shoulder, eased
+    between the two keys' own depths (a key's 5th element, else depth_of(spec, t)) with the
+    path's easing, so the elbow never jumps where a path hands over to a gesture or back (a
+    depth chosen per frame from the screen point swung the forearm through the view axis);
+    droop: the hand's droop (the library's at "rest" keys, none elsewhere), eased the same way."""
     def real(s):
         return isinstance(s, str) and s in LIO_GESTURE_NAMES
 
+    def dep(k, tt):
+        if len(k) > 4 and k[4] is not None:
+            return k[4](tt) if callable(k[4]) else k[4]
+        return depth_of(k[1], tt) if depth_of is not None else None
+
+    def droop(k):
+        return REST_DROOP if k[1] == "rest" else 0.0
+
+    def held(k):
+        if real(k[1]):
+            return k[1], None, k[2], dep(k, t), droop(k)
+        return None, resolve(k[1], t), k[2], dep(k, t), droop(k)
+
     if t <= keys[0][0]:
-        k = keys[0]
-        return (k[1], None, k[2]) if real(k[1]) else (None, resolve(k[1], t), k[2])
+        return held(keys[0])
     for a, b in zip(keys, keys[1:]):
         if t < b[0]:
             u = (t - a[0]) / max(1e-6, b[0] - a[0])
             hand = a[2] if a[2] == b[2] else hand_blend(a[2], b[2], smooth((u - 0.55) / 0.45))
             if real(a[1]) and a[1] == b[1]:
-                return a[1], None, hand
-            arc = b[3] if len(b) > 3 else 14.0
-            return None, _ease_arc(resolve(a[1], t), resolve(b[1], t), u, arc), hand
-    k = keys[-1]
-    return (k[1], None, k[2]) if real(k[1]) else (None, resolve(k[1], t), k[2])
+                return a[1], None, hand, dep(a, t), droop(a)
+            arc = b[3] if len(b) > 3 and b[3] is not None else 14.0
+            e = core.inout_sine(clamp(u))
+            da, db = dep(a, t), dep(b, t)
+            d = None if da is None or db is None else lerp(da, db, e)
+            return None, _ease_arc(resolve(a[1], t), resolve(b[1], t), u, arc), hand, d, lerp(droop(a), droop(b), e)
+    return held(keys[-1])
+
+
+def gesture_depth(t, yaw, pose, side, g, phase=0.0):
+    """How far ahead of her shoulder (camera depth, body units) a library gesture puts that paw:
+    a screen-aimed paw given exactly this depth sits exactly where the gesture puts it."""
+    S = LIO_MOD._skeleton(pose, t, yaw)
+    sk = S["shoulders"][side]
+    tgt = LIO_MOD.LIONESS_GESTURES[g](sk, side, dict(S["ctx"], phase=phase))[0]
+    pr = B.Proj(yaw, pose.elev)
+    return pr.depth(tgt) - pr.depth(sk)
+
+
+def lio_depth(spec, t, x, y0, yaw, pose, side, auto=True):
+    """A paw key's depth: a gesture's own; a world point's: the right paw keeps a comfortably long
+    arm (_r_depth), the left one the library's default."""
+    if isinstance(spec, str):
+        if spec == "hang":
+            pr = B.Proj(yaw, pose.elev)
+            return pr.depth((side * 12.0, 150.0, 10.0))
+        g = {"read_low": "read_note", "read_wide": "read_note", "carry": "place"}.get(spec, spec)
+        if g in LIO_GESTURE_NAMES:
+            return gesture_depth(t, yaw, pose, side, g)
+    if not auto:
+        return 30.0
+    return _r_depth(x, y0, yaw, pose, t, lio_resolve(spec, t, x, y0, yaw, pose, side))
 
 
 LIO_GESTURE_NAMES = frozenset(LIO_MOD.LIONESS_GESTURES)
@@ -1283,8 +1365,8 @@ def _solve_A(t, goal, hand="grip", point="grip", iters=8):
     _s, scr = core.frame(8, 8)
 
     def measure(w):
-        arm = ch.LionessArm("place", screen=w, hand=hand, depth=_r_depth(x, y0, yaw, lp, t, w))
-        near, far = (arm, ch.LionessArm("rest")) if yaw >= 0 else (ch.LionessArm("rest"), arm)
+        arm = LArm("place", screen=w, hand=hand, depth=_r_depth(x, y0, yaw, lp, t, w), hang=0.0)
+        near, far = (arm, LArm("rest")) if yaw >= 0 else (LArm("rest"), arm)
         rig = ch.draw_lioness(scr, x, y0, SC, lp.with_(near=near, far=far), LL, t)
         hf = rig.hand_near if yaw >= 0 else rig.hand_far
         if point == "index":
@@ -1434,26 +1516,38 @@ def lio_arms_A(t, x, y0, yaw, pose, cam, note_cb):
             haze = 0.5 * (1.0 - smooth((t - tg) / 0.45)) if k < 3 else 0.0
             hold_r = Holder(lambda c, px, py, n=name, hz=haze: draw_item(c, n, px, py, SC, t, 0.0, L, hz),
                             cam, SC, (0.0, grip_h(name) * SC), magnet)
-    g_r, p_r, h_r = paw_track(t, RIGHT_KEYS, resolve_r)
-    g_l, p_l, h_l = paw_track(t, LEFT_KEYS, resolve_l)
+    def depth_r(spec, tt):
+        return lio_depth(spec, tt, x, y0, yaw, pose, R_ARM, auto=True)
+
+    def depth_l(spec, tt):
+        return lio_depth(spec, tt, x, y0, yaw, pose, L_ARM, auto=False)
+
+    g_r, p_r, h_r, d_r, dr_r = paw_track(t, RIGHT_KEYS, resolve_r, depth_r)
+    g_l, p_l, h_l, d_l, dr_l = paw_track(t, LEFT_KEYS, resolve_l, depth_l)
     if T_SWITCH <= t < T_POCKET + 0.02:
         hold_l = note_cb
+    # the droop of a paw on a path turns with her (it fades out through the front view)
+    fade = clamp(yaw / R2.HANG_YAW, -1.0, 1.0)
     two = T_READ <= t < T_SWITCH
     if two:
         # both paws on the note (the library's two-hand hold draws it between them)
-        r = ch.LionessArm("read_note", screen=p_r, hold=note_cb, hand="pinch")
-        lft = ch.LionessArm("read_note", screen=p_l, hand="pinch")
+        r = LArm("read_note", screen=p_r, hold=note_cb, hand="pinch", depth=30.0 if d_r is None else d_r, hang=0.0)
+        lft = LArm("read_note", screen=p_l, hand="pinch", depth=30.0 if d_l is None else d_l, hang=0.0)
     else:
-        # coming down off the tower after the tap, the paw stays out in front of her (more depth):
-        # the arm stays long, so the elbow never flips over as the wrist passes under the shoulder
-        dep = 30.0 + 30.0 * bump(t, T_TAP + 0.1, 0.12, 0.12, CUT_C - T_TAP - 0.34)
         if p_r is not None:
-            dep = _r_depth(x, y0, yaw, pose, t, p_r, dep)
+            dep = d_r if d_r is not None else _r_depth(x, y0, yaw, pose, t, p_r)
             wc, drop, dz = _carry_phase(t)
             if wc > 0.0:
                 dep = lerp(dep, _carry_depth(t, drop) + dz, wc)
-        r = ch.LionessArm(g_r or "place", screen=p_r, hand=_no_pad(h_r), hold=hold_r, depth=dep)
-        lft = ch.LionessArm(g_l or "place", screen=p_l, hand=_no_pad(h_l), hold=hold_l)
+            r = LArm("place", screen=p_r, hand=_no_pad(h_r), hold=hold_r, depth=dep, hang=dr_r * fade,
+                     ang=carry_angle(yaw), ang_w=max(wc, _turn_steer(t)))
+        else:
+            r = LArm(g_r, hand=_no_pad(h_r), hold=hold_r)
+        if p_l is not None:
+            lft = LArm("place", screen=p_l, hand=_no_pad(h_l), hold=hold_l, depth=30.0 if d_l is None else d_l,
+                       hang=-dr_l * fade)
+        else:
+            lft = LArm(g_l, hand=_no_pad(h_l), hold=hold_l)
     near, far = (r, lft) if yaw >= 0 else (lft, r)
     return near, far, held
 
@@ -1492,17 +1586,31 @@ def _no_pad(hand):
     return hand
 
 
+def _hang_body(t, yaw, pose, side):
+    """Her paw dropped at her side (hanging, a little forward): behind the counter, out of sight."""
+    S = LIO_MOD._skeleton(pose, t, yaw)
+    return B.v_add(S["shoulders"][side], (side * 12.0, 150.0, 10.0))
+
+
 def lio_resolve(spec, t, x, y0, yaw, pose, side, scale=SC):
     if isinstance(spec, str):
+        if spec == "hang":
+            return lio_screen(x, y0, yaw, _hang_body(t, yaw, pose, side), scale, pose.elev)
         if spec == "carry":
             return lio_gesture(x, y0, yaw, pose, t, side, "place", 0.0, scale)
-        if spec == "read_low":
+        if spec in ("read_wide", "read_low"):
+            # reading, her paws pinch the note's two LOWER CORNERS (as in the insert, her point of
+            # view); lowered, the same grip 34 px further down
             p = lio_gesture(x, y0, yaw, pose, t, side, "read_note", 0.0, scale)
-            return (p[0], p[1] + 34.0)
+            sx, sy = READ_SPREAD[side]
+            return (p[0] + sx, p[1] + sy + (34.0 if spec == "read_low" else 0.0))
         return lio_gesture(x, y0, yaw, pose, t, side, spec, 0.0, scale)
     if callable(spec):
         return spec(t)
     return spec
+
+
+READ_SPREAD = {-1.0: (-16.0, -6.0), 1.0: (34.0, -16.0)}     # (right, left) paw offsets from read_note (px)
 
 
 def _note_pick_wrist(t):
@@ -1550,7 +1658,9 @@ T_TAP_PRESS = T_TAP + 2.0 / 24.0
 
 
 def _tada(t):
-    return (PILE_X + 108.0, 535.0)                    # "ta-da!": an open paw presenting the tower
+    """"ta-da!": the open paw out beside the tower at her chest height (clear of her face),
+    presenting it; held into the cut (and still presenting in the low angle)."""
+    return (PILE_X + 78.0, 572.0)
 
 
 # the poking finger bends a little against the book for the two frames of the press
@@ -1592,8 +1702,8 @@ def _seat(k, dx=24.0, dy=26.0):
 RIGHT_KEYS = [
     (0.0, "on_counter", "flat"), (T_GO - 0.25, "on_counter", "flat"),
     (T_PICK - 0.06, _note_pick_wrist, "open", 18.0), (T_PICK, _note_pick_wrist, "pinch"),
-    (T_READ, "read_note", "pinch", 20.0), (T_LOWER - 0.2, "read_note", "pinch"),
-    (T_LOWER, "read_low", "pinch"), (T_SWITCH, "read_low", "pinch"),
+    (T_READ, "read_wide", "pinch", 20.0), (T_LOWER - 0.32, "read_wide", "pinch"),
+    (T_LOWER, "read_low", "pinch", 8.0), (T_SWITCH, "read_low", "pinch"),
     (T_SWITCH + 0.36, "rest", "relaxed", 10.0),
     # trip 1: the sleep draught from the shelf behind her. It comes in to her chest BEFORE she turns
     # and rides round with her body through the turn; then out over the counter and down onto it
@@ -1603,41 +1713,42 @@ RIGHT_KEYS = [
     (TRIPS[0][0] + CARRY_IN, _carry_pt, "grip", 8.0), (_turn_end(1), _carry_pt, "grip"),
     (I0 - 0.14, _seat(0, 24.0, 26.0 - 64.0), "grip", 6.0),
     (I0, _seat(0), "grip", 0.0), (I0 + HOLD_AFTER, _seat(0), "open"),
-    (I0 + 0.3, _seat(0, 40.0, 26.0 - 46.0), "relaxed", 0.0), (I0 + 0.55, "rest", "relaxed", 8.0),
-    # trip 2: the vitamins from the far shelf -- balanced ON THE CORK ("steady...")
-    (TRIPS[1][0] - 0.3, "rest", "relaxed"), (TRIPS[1][0] - 0.05, _shelf(1), "open", 20.0),
+    (I0 + 0.3, _seat(0, 40.0, 26.0 - 46.0), "relaxed", 0.0),
+    # trip 2: the vitamins from the far shelf -- balanced ON THE CORK ("steady..."). Her paw goes
+    # straight from the draught to the far shelf, turning with her (no stop at her apron)
+    (TRIPS[1][0] - 0.05, _shelf(1), "open", 24.0),
     (TRIPS[1][0], _shelf(1), "grip"), (TRIPS[1][0] + 0.08, _lift(1), "grip", 0.0),
     (TRIPS[1][0] + CARRY_IN, _carry_pt, "grip", 10.0), (_turn_end(3), _carry_pt, "grip"),
     (I1 - 0.14, _seat(1, 26.0, 8.0), "grip", 6.0),
     (I1, _seat(1), "grip", 0.0), (I1 + HOLD_AFTER, _seat(1), "open"),
-    (I1 + 0.26, _seat(1, 40.0, 12.0), "relaxed", 4.0), (I1 + 0.4, "rest", "relaxed", 14.0),
-    # trip 3: the CALM candle from the high shelf (on tiptoe), down to her chest BEFORE she turns
-    # (it rides round with her, held a little higher), then in above the column from a step
-    # further off, and down onto the jar's cover
-    (TRIPS[2][0] - 0.36, "rest", "relaxed"), (TRIPS[2][0] - 0.05, _shelf(2), "open", 26.0),
+    # trip 3: the CALM candle from the high shelf (on tiptoe): her paw goes from the jar straight up
+    # to it, turning with her; down to her chest BEFORE she turns back (it rides round with her,
+    # held a little higher), then in above the column from a step further off, and down onto the
+    # jar's cover
+    (TRIPS[2][0] - 0.05, _shelf(2), "open", 30.0),
     (TRIPS[2][0], _shelf(2), "grip"), (TRIPS[2][0] + 0.42, _carry3, "grip", 12.0),
     (_turn_end(5), _carry3, "grip"),
     (I2 - 0.13, lambda tt: _carry_high(tt, 2), "grip", 8.0),
     (I2, _seat(2), "grip", 0.0), (I2 + HOLD_AFTER, _seat(2), "open"),
-    (I2 + 0.3, lambda tt: _carry_pt(tt, -30.0), "relaxed", 8.0), (I2 + 0.5, "rest", "relaxed", 6.0),
-    # trip 4: she ducks for the book, brings it in to her chest while still down (hidden behind the
-    # counter), and it comes up WITH her as she rises; on tiptoe she crowns the column with it. It
-    # teeters: she steps back half a step and her paw hovers BESIDE it at its height; one tap
-    # squares it; ta-da!
-    (BOOK_DUCK0, "rest", "relaxed"), (TRIPS[3][0] - 0.06, _under_counter, "open", 10.0),
+    (I2 + 0.26, _seat(2, 46.0, 10.0), "relaxed", 4.0),
+    # trip 4: from the candle her paw goes straight down behind the counter as she ducks for the
+    # book; she brings it in to her chest while still down (hidden behind the counter), and it
+    # comes up WITH her as she rises; on tiptoe she crowns the column with it. It teeters: she
+    # steps back half a step and her paw hovers BESIDE it at its height; one tap squares it; and
+    # a "ta-da!" -- the open paw out beside the tower, held into the cut
+    (TRIPS[3][0] - 0.06, _under_counter, "open", 10.0),
     (TRIPS[3][0], _under_counter, "grip"), (BOOK_DUCK1 - 0.18, _carry_low, "grip", 6.0),
     (BOOK_DUCK1 + 0.26, _carry_pt, "grip"),
     (I3 - 0.2, _above_top, "grip", 20.0), (I3, _seat(3, 26.0, 18.0), "grip", 0.0),
     (I3 + HOLD_AFTER, _seat(3, 30.0, 16.0), "open"),
     (I3 + 0.45, _hover_book, "open", 10.0), (T_TAP - 0.14, _hover_book, "point"),
     (T_TAP, _tap_book, "point", 0.0), (T_TAP_PRESS, _tap_press, PRESSED, 0.0),
-    (T_TAP + 0.2, lambda tt: _tap_wrist(tt, 22.0, -8.0), "open", 0.0),
-    (T_TAP + 0.42, _tada, "offer", -18.0), (CUT_C, "rest", "relaxed", -12.0),
+    (T_TAP + 0.36, _tada, "offer", -22.0, 40.0),
 ]
 LEFT_KEYS = [
     (0.0, "on_counter", "flat"), (T_PICK + 0.05, "on_counter", "flat"),
-    (T_READ, "read_note", "pinch", 16.0), (T_LOWER - 0.2, "read_note", "pinch"),
-    (T_LOWER, "read_low", "pinch"), (T_SWITCH, "read_low", "pinch"),
+    (T_READ, "read_wide", "pinch", 16.0), (T_LOWER - 0.32, "read_wide", "pinch"),
+    (T_LOWER, "read_low", "pinch", 8.0), (T_SWITCH, "read_low", "pinch"),
     (T_POCKET, _pocket, "pinch", -24.0), (T_BACK, "rest", "relaxed", 10.0),
 ]
 LOOK_Y = _look_y_keys()
@@ -1819,7 +1930,8 @@ def dragon_pose_A(t, cam):
             c0 = dragon_body(NOTE_START_X - 58.0, NOTE_Y - 10.0, 60.0)
             e = core.inout_sine(u)
             tgt = B.v_add(B.v_lerp(hold_p, c0, e), (0.0, -16.0 * math.sin(math.pi * e), 10.0 * math.sin(math.pi * e)))
-            hand = "pinch" if u < 0.7 else "flat"
+            # the claws open over a few frames as the note tips flat onto the oak (no shape swap)
+            hand = hand_blend("pinch", "flat", smooth((u - 0.55) / 0.35))
         elif t < T_REL + 0.12:
             # the push: claws flat on the note; at the release they stay on the oak a beat
             tgt = dragon_body(note_slide_x(min(t, T_REL)) - 58.0, NOTE_Y - 10.0, 60.0)
@@ -1840,7 +1952,7 @@ def dragon_pose_A(t, cam):
         # A2: "Actually, I--" -- one claw comes up in front of his chest (the start of a correction),
         # hangs there while she turns away for the high shelf, then curls and sinks back. The gesture
         # stays the rig's own "rest" (same elbow pole, same layer) with a target, so nothing pops.
-        ask = smooth((t - ASK0) / 0.3) * (1.0 - smooth((t - ASK1) / 0.55))
+        ask = smooth((t - ASK0) / 0.42) * (1.0 - smooth((t - ASK1) / 0.55))
         if ask > 0.0005:
             # his paw to his own chest -- "I..." -- the start of the explanation he never gets out
             on_chest = B.v_add(S["chest"], (D_NEAR * 16.0, 14.0 - 5.0 * bump(t, ASK0 + 0.28, 0.12, 0.3), 60.0))
@@ -1883,7 +1995,7 @@ def draw_lioness_behind(cr, x, y0, scale, pose, light, t, cut_y, reveal=(False, 
             if w in sides:
                 R2.lio_arm(cr, x, y0, scale, pose_nh, light, t, w, parts="hand")
     cr.push_group()
-    rig = ch.draw_lioness(cr, x, y0, scale, pose, light, t)
+    rig = draw_lioness_g(cr, x, y0, scale, pose, light, t)
     if under is not None:
         paws_over(("far", "near"))
     pat = cr.pop_group()
@@ -2010,7 +2122,7 @@ def draw_A(cr, t, st):
         st["cfront"].paint(cr)
         # the dragon, in front of everything
         dp = dragon_pose_A(t, cam)
-        rig = ch.draw_dragon(cr, DRAGON_X, FLOOR_D, SC, dp, LD, t)
+        rig = draw_dragon_g(cr, DRAGON_X, FLOOR_D, SC, dp, LD, t)
     with cam.view(cr, 1.04):
         # a horn brushes the tansy as he leans in: it swings off his horn (to the right) and back
         kick = (T_HORN, -0.115) if t >= T_HORN else None
@@ -2092,7 +2204,7 @@ def draw_B(cr, t, st):
     dp = ch.DragonPose(facing=0, turn=-0.12, hunch=0.95, mood="lonely", mood2="raised", mood_mix=0.35 * (1 - down),
                        look=(0.04, 0.05 + 0.6 * down), head_nod=-0.12 - 0.12 * down, wings=-0.6, seed=1,
                        talk=tl.talk(SCENE, t, "MAN"), near=ch.Arm("rest"), far=ch.Arm("rest"))
-    ch.draw_dragon(bctx, DRAGON_B[0], DRAGON_B[1], DRAGON_B[2], dp, LD, t)
+    draw_dragon_g(bctx, DRAGON_B[0], DRAGON_B[1], DRAGON_B[2], dp, LD, t)
     for i, (hx, hl, kind, sd) in enumerate(HERBS_B):
         draw_herb_simple(bctx, hx, -30.0, hl, kind, herb_sway(t, i), 2.1)
     bctx.restore()
@@ -2431,9 +2543,11 @@ def lio_C(t, cam=None):
     # at the stare she admires her tower; "Try these." her far paw presents it; "Lots of people
     # swear by them." a reassuring nod
     look = (-0.35, -0.75) if t < LN1.start - 0.2 else look
-    pres = smooth((t - (LN1.start - 0.35)) / 0.6) * (1.0 - smooth((t - (LN1.end - 0.55)) / 0.65))
-    far = ch.LionessArm("present", amt=max(0.02, pres), prev="rest")
-    near = ch.LionessArm("rest")
+    # the "ta-da" carries over the cut: her paw is still out presenting the tower, and it stays out
+    # through "Try these." -- then comes down after the line
+    pres = 1.0 - smooth((t - (LN1.end - 0.55)) / 0.65)
+    far = LArm("present", amt=max(0.02, pres), prev="rest")
+    near = LArm("rest")
     if LN1.start - 0.3 <= t < LN1.end + 0.6:
         look = core.lerp_tuple((-0.62, -0.02), (-0.35, -0.6), bump(t, LN1.start - 0.2, 0.2, 0.25, 0.7))
         swear = [w for w in tl.word_times(LN1.id) if w[0].startswith("swear")]
@@ -2510,7 +2624,7 @@ def _lio_pat_far(t, x, y0, base):
         hand = "flat"
     else:
         hand = hand_blend("flat", "relaxed", smooth((t - (T_PAT + 0.3)) / 0.3))
-    return ch.LionessArm("rest", screen=(px, py), depth=dd, hand=hand)
+    return LArm("rest", screen=(px, py), depth=dd, hand=hand)
 
 
 def sack_squash(t):
@@ -2548,7 +2662,7 @@ def draw_C(cr, t, st):
     with cam.view(cr, 1.0):
         # the lioness, behind the counter (the counter's front hides her below its top)
         x, y0, lp = lio_C(t)
-        lrig = ch.draw_lioness(cr, x, y0, SCL, lp, LL, t)
+        lrig = draw_lioness_g(cr, x, y0, SCL, lp, LL, t)
         if not end:
             draw_column(cr, t, 4, PILE_C, SCC, sparkle=True)
         # the till, on the counter in front of her (in C' the receipt hangs out of it, still rocking)
@@ -2568,7 +2682,7 @@ def draw_C(cr, t, st):
         st["counter_C"].paint(cr)
         # the dragon, nearest the camera
         dp = dragon_pose_C(t)
-        rig = ch.draw_dragon(cr, DRAGON_C[0], DRAGON_C[1], SCC, dp, LD, t)
+        rig = draw_dragon_g(cr, DRAGON_C[0], DRAGON_C[1], SCC, dp, LD, t)
         if t >= T_SMOKE:
             _sigh_smoke(cr, t, T_SMOKE, rig)
     with cam.view(cr, 1.06):
@@ -2614,7 +2728,7 @@ def draw_D(cr, t, st):
         _paint_room_C(cr, st["room_C"])
     with cam.view(cr, 1.0):
         x, y0, lp = lio_C(t)
-        lrig = ch.draw_lioness(cr, x, y0, SCL, lp, LL, t)
+        lrig = draw_lioness_g(cr, x, y0, SCL, lp, LL, t)
         draw_column(cr, t, 4, PILE_C, SCC, sparkle=True)
         P.draw_till(cr, TILL_C[0], TILL_C[1], TILL_C[2], L, t)
         fx.dust(cr, t, (880, 330, 760, 460), n=18, color="#f4fffb", alpha=0.32, size=(0.8, 1.6), seed=41,
@@ -2875,7 +2989,7 @@ def _solve_wrist(t, side, goal, hand, point="grip", iters=12):
     _s, scr = core.frame(8, 8)
 
     def measure(w):
-        arm = ch.LionessArm("rest", screen=w, depth=D_ON_COUNTER, hand=hand)
+        arm = LArm("rest", screen=w, depth=D_ON_COUNTER, hand=hand)
         pose = base.with_(far=arm) if side == FAR_C else base.with_(near=arm)
         rig = ch.draw_lioness(scr, x, y0, SCL, pose, LL, t)
         hf = rig.hand_far if side == FAR_C else rig.hand_near

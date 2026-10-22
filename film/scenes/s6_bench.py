@@ -135,7 +135,7 @@ import math
 
 import cairocffi as cairo
 
-from film.lib import core, fx
+from film.lib import core, env, fx
 from film.lib import props as P
 from film.lib import timeline as tl
 from film.lib import characters as ch
@@ -144,6 +144,7 @@ from film.lib.characters import gnome as _GN          # her arm lengths (UPPER_A
 from film.lib.characters import dragon as _DR         # its _brow_ridge, wrapped in draw_dragon (the far eye's clip)
 from film.scenes import _garden as G
 from film.scenes import _s6_eye
+from film.scenes import _s6_rig as R6
 
 SCENE = 6
 DUR = tl.scene(SCENE).duration
@@ -167,27 +168,32 @@ W_VITAMINS, W_YOGA = _word("s6_l2", 1), _word("s6_l2", 2)
 W_CAT1, W_I = _word("s6_l3", 6), _word("s6_l3", 7)
 W_SLEEPS, W_EVERY, W_DAY = _word("s6_l4", 2), _word("s6_l4", 4), _word("s6_l4", 8)
 
-# A -- the walk in and the sit
-T_WALK_END = B_SIT.t + 1.3             # he arrives in front of his end of the bench
-T_TURN0, T_TURN1 = T_WALK_END - 0.15, T_WALK_END + 0.6
-T_SIT0 = T_WALK_END + 0.12
-T_LAND = B_SIT.t + 2.25                # the seat takes his weight: creak, sag, her bounce
+# A -- the walk in and the sit: she is alone through her toss (the crumbs land, the pigeons
+# start pecking); he comes into view at the frame's right edge at ~1.3 s, as the camera starts
+# to pull back, trudging at his S3 pace (~150 world px/s), and sits at the other end
+T_WALK_END = B_SIT.t + 1.5             # he arrives in front of his end of the bench
+T_TURN0, T_TURN1 = T_WALK_END - 0.15, T_WALK_END + 0.55
+T_SIT0 = T_WALK_END + 0.1
+T_LAND = B_SIT.t + 2.3                 # the seat takes his weight: creak, sag, her bounce
 T_BAG = T_LAND - 0.06                  # the sack touches down beside his foot
 CUT_B = T_LAND - 0.2                   # cut on the action into the two-shot
 T_TOSS_G0, T_TOSS_G1 = 0.15, 1.35      # her crumb toss (release at phase 0.47)
+T_TUCK1 = T_TOSS_G1 + 0.5              # ... then the rest of her bread goes back in her satchel
 T_CRUMBS = T_TOSS_G0 + 0.47 * (T_TOSS_G1 - T_TOSS_G0)
 T_NOTICE = B_SIT.t + 0.25              # she clocks him (eyes first)
 
 # B -- the pause: the pigeon tennis match (volleys; each sends every head to that side)
 P0, P1 = B_PAUSE.t, B_PAUSE.end
 V_HIM0 = T_LAND + 0.5                  # all heads to the newcomer
-V_HMPH = P0 + 1.25                     # her "hmph": chin up
-V_SHIFT = P0 + 2.05                    # his weight shift (creak)
-V_KICK = P0 + 2.75                     # her boots swing
-V_SIGH = P0 + 3.35                     # his sigh (smoke)
-V_SNIFF = P0 + 3.9                     # her sniff
-V_GLANCE = P0 + 4.25                   # both glance at each other: the pigeons look at us
-T_SYNC_BLINK = V_GLANCE + 0.45         # ... and blink, all together
+V_HMPH = P0 + 1.15                     # her "hmph": chin up
+V_SHIFT = P0 + 1.85                    # his weight shift (creak)
+V_KICK = P0 + 2.45                     # her boots swing
+V_SIGH = P0 + 3.0                      # his sigh (smoke)
+V_SNIFF = P0 + 3.5                     # her sniff
+V_GLANCE = P0 + 3.85                   # both glance at each other: the pigeons look at us ...
+GLANCE_HOLD = 0.4                      # ... the two looks meet and hold (then snap away)
+T_SYNC_BLINK = V_GLANCE + 0.62         # ... all four staring (the late one too), they blink together;
+                                       # the stare holds ~0.75 s, to the sack's rustle at s6_book
 T_UMP0 = T_LAND + 0.35                 # the umpire pigeon flies in ...
 T_UMP1 = T_UMP0 + 0.75                 # ... and lands on the backrest
 
@@ -197,6 +203,7 @@ T_BAGOPEN = T_REACH + 0.28             # his hand rummages in the (open) sack: a
 T_GRAB = T_REACH + 0.42
 T_HOLD = T_REACH + 0.8
 T_OPEN0, T_OPEN1 = T_HOLD, T_HOLD + 0.28
+T_FAR0, T_FAR1 = T_OPEN0 - 0.15, T_OPEN1 + 0.1   # his far hand meets the left page as it opens
 T_FLIPS = [T_OPEN1 + 0.04 + 0.32 * k for k in range(4)]
 FLIP_D = 0.3
 T_CLOSE0, T_CLOSE1 = B_BOOK.end - 0.58, B_BOOK.end - 0.36
@@ -252,7 +259,7 @@ U_GNOME2 = G.SEATS_S6_END["gnome"]      # after she shuffles closer
 U_DRAGON = G.SEATS["dragon"]
 U_BOOK = G.S6_END_PROPS["book_u"]       # where the book lands on the seat (in the gap)
 PIGEON_Y = (950.0, 990.0)
-WALK_FROM = 360.0                       # he starts this far right of his seat (entering frame, walking)
+WALK_FROM = 410.0                       # he starts this far right of his seat (off-frame, walking in)
 WALK_TURN = -0.5                        # facing -1 + turn: near profile while walking (yaw -1.3)
 SIT_TURN = 0.92                         # seated, nearly front-on (yaw ~-0.45): closed
 TALK_TURN = 0.38                        # turned toward her by the end (yaw ~-0.77)
@@ -337,6 +344,10 @@ def build_stages(t):
             _r(t, W_DAY - 0.06, W_DAY + 0.22))
 
 
+# her startle when the seat takes his weight: brows up, eyes wide -- MOUTH SHUT (she says
+# nothing: STYLE 8, mouths move only on dialogue); the bounce, the jumping spectacles and the
+# hood flop sell it
+STARTLE = B.MOODS["surprised"].with_(open=0.0, mouth="", smile=-0.15, pupil=0.75)
 # her silent chuckle: a closed-mouth smile, the eyes squeezed into happy crescents
 CHUCKLE = ch.Expr(brow_in=0.3, brow_out=0.25, brow_y=0.4, lid=0.58, lid_bot=0.62, lid_tilt=-0.12, smile=1.0, open=0.0,
                   mouth="", cheek=1.0)
@@ -401,10 +412,16 @@ def bench_light(t):
 # camera
 # ----------------------------------------------------------------------------------------
 Cam = core.Camera
-CAM_B0 = Cam(870.0, 800.0, 2.12)          # the gallery two-shot (the gallery is placed against it)
-T_PULL0 = 0.85                            # A: the pull-back starts as her crumbs land (he is entering)
+CAM_B0 = Cam(870.0, 800.0, 2.12)
+
+
+def _react(u):
+    """Ease for a camera move thrown by an action (the laugh): a one-frame kick-in, then a long
+    out-cubic settle -- it reacts to the burst instead of anticipating it."""
+    return core.out_cubic(u) * core.smoothstep(0.0, 0.08, u)          # the gallery two-shot (the gallery is placed against it)
+T_PULL0 = 1.15                            # A: the pull-back starts once her crumbs are down: it finds him
 SHOTS = [
-    ("A", 0.0, CUT_B, [(0.0, Cam(815.0, 770.0, 2.3)), (T_PULL0, Cam(818.0, 768.0, 2.25)),
+    ("A", 0.0, CUT_B, [(0.0, Cam(754.0, 846.0, 2.92)), (T_PULL0, Cam(756.0, 845.0, 2.88)),
                        (CUT_B - 0.1, Cam(916.0, 628.0, 1.1), "inout_sine"), (CUT_B, Cam(917.0, 627.0, 1.096))]),
     ("B", CUT_B, CUT_C, [(CUT_B, CAM_B0), (P1, Cam(871.0, 799.0, 2.15)),
                          (T_HOLD + 0.4, Cam(880.0, 797.0, 2.19)), (CUT_C, Cam(878.0, 797.0, 2.2))]),
@@ -414,7 +431,8 @@ SHOTS = [
                               (W_I - 0.25, Cam(876.0, 742.0, 3.3)),
                               (T_BEAT0 + 0.35, Cam(872.0, 740.0, 4.7)), (T_BEAT1, Cam(872.0, 740.0, 4.76)),
                               (T_SNORT - 0.3, Cam(873.0, 740.0, 4.9)),
-                              (LAUGH.start + 0.5, Cam(884.0, 726.0, 3.75)),
+                              (LAUGH.start + 0.02, Cam(873.0, 740.0, 4.9)),      # held through the snort ...
+                              (LAUGH.start + 0.66, Cam(884.0, 726.0, 3.75), _react),  # ... thrown back by the burst
                               (DUR, Cam(876.0, 738.0, 3.3))]),
 ]
 DRIFT_PX = {"A": 1.8, "B": 2.6, "C": 4.0, "D": 4.0, "E": 4.0}     # breathing drift, in screen px
@@ -501,6 +519,9 @@ for _name, _fn in (("s6_set_bag", _g_s6_set_bag), ("s6_bag", _g_s6_bag), ("s6_bo
                    ("s6_book_far", _g_s6_book_far), ("s6_toss", _g_s6_toss), ("s6_slap", _g_s6_slap),
                    ("s6_belly", _g_s6_belly)):
     ch.DRAGON_GESTURES[_name] = _fn
+# the far hand turns right round between his thigh and the open book's left edge (its forearm
+# swings end-on to the lens on the way): ease its screen angle over the whole reach (_s6_rig)
+R6.STEER_ALWAYS.add("s6_book_far")
 
 _ELEV = 0.12
 
@@ -550,11 +571,57 @@ def draw_dragon(cr, x, y, scale, pose, light, t):
     _DR._brow_ridge = _brow_then
     del _EYE_Q[:]
     try:
-        return ch.draw_dragon(cr, x, y, scale, pose, light, t)
+        # (_s6_rig: arm hand-offs without elbow pops, the held-in laugh's shoulders, the feet)
+        with R6.dragon_patch(shrug=shoulder_shrug(t), feet=feet_override(t)):
+            return ch.draw_dragon(cr, x, y, scale, pose, light, t)
     finally:
         _flush_eye()                 # (an eye with no ridge after it: none in the library today)
         B.eye = _BASE_EYE
         _DR._brow_ridge = _BASE_BROW
+
+
+def tremble_env(t):
+    """0..1: how hard he is holding the laugh in -- from "every story", fullest on "day", gone
+    when it bursts."""
+    _b1, b2, b3 = build_stages(t)
+    return (0.45 * b2 + 0.55 * b3) * (1.0 - _r(t, LAUGH.start - 0.05, LAUGH.start + 0.1))
+
+
+def giggle(t):
+    """The held-in laugh's hitches: ~3.4 a second, quick up and down, animated on 2s (12 fps
+    steps) -- a cartoon shudder, not a per-frame jitter."""
+    tq = math.floor(t * 12.0) / 12.0
+    return max(0.0, math.sin((tq - W_EVERY) * math.tau * 3.4)) ** 0.7
+
+
+def shoulder_shrug(t):
+    """Hunch units for his SHOULDERS only (R6.RIG['shrug'], applied after the head is placed):
+    the held-in laugh makes them hitch up while his head stays steady."""
+    k = tremble_env(t)
+    return -0.26 * k * giggle(t) if k > 0.0 else 0.0
+
+
+FEET_STEPS = {-1.0: (0.1, 0.27), 1.0: (0.3, 0.27)}     # side -> (start after T_LAND, duration)
+
+
+def feet_override(t):
+    """{side: (u, lift)} for his feet while he sits (R6.RIG['feet']), or None (the library's
+    own). The library slides the feet forward over the gravel as sit passes 0.55; here they
+    stay planted where he stood while he lowers himself, and once the bench has his weight he
+    steps them forward into the seated pose, one and then the other, with a small lift."""
+    if t < T_SIT0 or t > T_LAND + 0.8:
+        return None
+    out = {}
+    for side, (d0, dur) in FEET_STEPS.items():
+        u = core.clamp((t - T_LAND - d0) / dur)
+        out[side] = (core.inout_sine(u), 9.0 * math.sin(math.pi * u))
+    return out
+
+
+def draw_gnome(cr, x, y, scale, pose, light, t):
+    """ch.draw_gnome with this scene's arm hand-offs (_s6_rig: no elbow pops)."""
+    with R6.gnome_patch():
+        return ch.draw_gnome(cr, x, y, scale, pose, light, t)
 
 
 def _world_to_body(wx, wy, ax, ay, yaw, depth):
@@ -567,20 +634,20 @@ def _world_to_body(wx, wy, ax, ay, yaw, depth):
     return (X, Y, Z)
 
 
+def walk_dist(t):
+    """World px he has walked by t (0 .. WALK_FROM at T_WALK_END): a steady pace, easing into
+    the stop over the last 22 % of the walk. (The footstep cues use it too.)"""
+    u = core.clamp(t / T_WALK_END)
+    k = 0.78
+    s = u / k * 0.86 if u < k else 0.86 + 0.14 * core.out_quad((u - k) / (1 - k))
+    return WALK_FROM * min(1.0, s)
+
+
 def dragon_anchor(t):
     """World anchor (ground point under his pelvis) and walk distance travelled."""
     x1, y1 = _bench_rig().place(U_DRAGON)
     x0 = x1 + WALK_FROM
-    # constant pace, easing into the stop over the last 0.6 s
-    tw = T_WALK_END
-    if t >= tw:
-        x = x1
-    else:
-        u = core.clamp(t / tw)
-        # a speed profile: steady, then slowing (smooth stop)
-        k = 0.78
-        s = u / k * 0.86 if u < k else 0.86 + 0.14 * core.out_quad((u - k) / (1 - k))
-        x = core.lerp(x0, x1, min(1.0, s))
+    x = x0 - walk_dist(t)
     # his weight shift scoots him a hair along the seat
     x += 6.0 * _r(t, V_SHIFT, V_SHIFT + 0.3, "out_back") - 2.0 * _r(t, V_SHIFT + 0.3, V_SHIFT + 0.7)
     return x, y1, x0 - x
@@ -668,9 +735,9 @@ def dragon_pose(t):
     if build > 0:
         mood2, mix = GRIN, build
         smile = 0.5 * b1 + 0.25 * b2 + 0.2 * b3 + 0.05 * _r(t, T_SNORT - 0.1, T_SNORT + 0.1)
-    tremble = (0.45 * b2 + 0.55 * b3) * (1.0 - _r(t, LAUGH.start - 0.05, LAUGH.start + 0.1))
-    hunch += 0.04 * math.sin(t * math.tau * 7.5) * tremble
-    lean += 0.025 * math.sin(t * math.tau * 7.5 + 1.3) * tremble
+    # ...his shoulders hitch with it (shoulder_shrug: the shoulders only, via _s6_rig); the head
+    # rides along just a little (~3 px at the close-up's zoom), so his eyes stay readable
+    hunch += 0.012 * giggle(t) * tremble_env(t)
     # the snort: a jerk of the head, a hitch of the shoulders (and a puff from his nose, in draw)
     snort = _pulse(t, T_SNORT, 0.06, 0.28)
     lean -= 0.12 * snort
@@ -689,7 +756,7 @@ def dragon_pose(t):
                       (T_LAND + 0.4, (0.0, 0.3)), (T_LAND + 0.6, (-0.25, 0.75)),     # the pigeons stare at him
                       (T_LAND + 1.4, (-0.25, 0.75)), (T_LAND + 1.6, (0.15, 0.25)),
                       (V_GLANCE - 0.05, (0.15, 0.25)), (V_GLANCE + 0.08, (-0.9, 0.05)),
-                      (V_GLANCE + 0.3, (-0.9, 0.05)), (V_GLANCE + 0.42, (0.3, 0.15)),
+                      (V_GLANCE + GLANCE_HOLD, (-0.9, 0.05)), (V_GLANCE + GLANCE_HOLD + 0.12, (0.3, 0.15)),
                       (T_REACH - 0.15, (0.3, 0.15)), (T_REACH + 0.05, (0.35, 0.85)),     # down at the sack
                       (T_HOLD - 0.1, (0.0, 0.75)), (T_HOLD + 0.1, (-0.15, 0.6)),        # the book
                       (T_RELEASE, (-0.2, 0.6)), (T_RELEASE + 0.15, (-0.55, 0.55)),      # follows it
@@ -701,8 +768,8 @@ def dragon_pose(t):
     # holding the laugh in: the eyes slide away from her (down, to the other side), then back on "day"
     away = _r(t, W_EVERY - 0.06, W_EVERY + 0.14) * (1.0 - _r(t, W_DAY - 0.12, W_DAY + 0.06))
     look = core.lerp_tuple(look, (0.4, 0.42), away)
-    head_turn = _track(t, [(0.0, 0.0), (V_GLANCE, 0.0), (V_GLANCE + 0.12, -0.32), (V_GLANCE + 0.32, -0.32),
-                           (V_GLANCE + 0.46, 0.08), (V_GLANCE + 0.9, 0.0), (W_TOO + 0.05, 0.0), (W_TOO + 0.3, -0.12),
+    head_turn = _track(t, [(0.0, 0.0), (V_GLANCE, 0.0), (V_GLANCE + 0.12, -0.32), (V_GLANCE + GLANCE_HOLD + 0.02, -0.32),
+                           (V_GLANCE + GLANCE_HOLD + 0.16, 0.08), (V_GLANCE + GLANCE_HOLD + 0.6, 0.0), (W_TOO + 0.05, 0.0), (W_TOO + 0.3, -0.12),
                            (L3.start, -0.15), (DUR, -0.15)])
     head_turn -= 0.12 * max(0.0, k_in)
     head_nod = _track(t, [(0.0, -0.25), (T_WALK_END, -0.2), (T_LAND + 0.5, -0.2), (T_LAND + 0.7, -0.35),
@@ -730,7 +797,10 @@ def dragon_pose(t):
     tail_swing = 0.35 * math.sin(t * 2.2) * _r(t, LAUGH.start + 0.2, LAUGH.end + 0.5)
     # arms
     near, far = _dragon_arms(t)
-    pose = ch.DragonPose(facing=-1, turn=turn, sit=sit, walk=walk, phase=phase, lean=lean, hunch=hunch,
+    # the seat gives under him: his seat (pelvis) rides the bench's sag; his feet stay on the gravel
+    seat_h = P.BENCH_SEAT_H - _STATE["garden"].seat_dip(U_DRAGON, bench_sag(t), sag_u=U_DRAGON) / SC * core.ramp(
+        t, T_LAND - 0.02, T_LAND)
+    pose = ch.DragonPose(facing=-1, turn=turn, sit=sit, seat_h=seat_h, walk=walk, phase=phase, lean=lean, hunch=hunch,
                          head_turn=head_turn, head_tilt=head_tilt, head_nod=head_nod, look=look, mood=mood,
                          mood2=mood2, mood_mix=mix, talk=tl.talk(SCENE, t, "MAN"), smile=smile, laugh=laugh,
                          sigh=sigh, blink=blink, wings=wings, tail_curl=tail_curl, tail_swing=tail_swing,
@@ -914,8 +984,8 @@ def _dragon_arms(t):
     # far arm (his RIGHT hand, still printed SMILE from the tavern door, S4 -- the ink fading):
     # takes the left cover as the book opens, lets go as it closes; holds his belly in the laugh
     stamp = P.smile_stamp(ink=STAMP_INK)
-    if T_OPEN0 - 0.1 <= t < T_CLOSE0:
-        far = ch.Arm("s6_book_far", amt=_r(t, T_OPEN0 - 0.1, T_OPEN1 + 0.06), prev="rest", stamp=stamp)
+    if T_FAR0 <= t < T_CLOSE0:
+        far = ch.Arm("s6_book_far", amt=_r(t, T_FAR0, T_FAR1), prev="rest", stamp=stamp)
     elif T_CLOSE0 <= t < T_CLOSE1 + 0.45:
         far = ch.Arm("rest", amt=_r(t, T_CLOSE0, T_CLOSE1 + 0.4), prev="s6_book_far", stamp=stamp)
     elif T_SLAP0 - 0.1 <= t < T_SLAP1 + 0.5:
@@ -990,6 +1060,26 @@ def _g_s6_flick(sk, side, c):
 
 ch.GNOME_GESTURES["s6_flick"] = _g_s6_flick
 
+# the crumb toss's END pose (the library evaluates a blend's `prev` at phase 0, i.e. the toss's
+# start on her lap -- the hand used to jump back there on the hand-off)
+_G_TOSS = ch.GNOME_GESTURES["toss_crumbs"]
+ch.GNOME_GESTURES["s6_toss_end"] = lambda sk, side, c: _G_TOSS(sk, side, dict(c, phase=1.0))
+GNOME_INWARD = 1.0               # her near hand is screen-left of her chest: the piece's torn face (setup checks)
+
+
+def _tuck_hold(k, light):
+    """Her bread piece in the hand (as GnomeArm(bread="piece") draws it), sinking into the
+    satchel's mouth as k goes 0 -> 1 (it shrinks away under the hand)."""
+    def cb(cr, f):
+        if k >= 0.97:
+            return
+        cr.save()
+        cr.rotate(-f.angle)
+        cr.translate(0.0, 7.0 * k)
+        ch.gnome_bread(cr, GNOME_INWARD * 3.0, -3.0, ch.GNOME_LOAF * (1.0 - k), light, "piece", face=GNOME_INWARD, seed=3)
+        cr.restore()
+    return cb
+
 
 def _gnome_yaw(turn):
     """GnomePose yaw for facing +1 (API: turn x0.6 rad on top of the facing, clamped to +-1.45)."""
@@ -1025,7 +1115,7 @@ def gnome_pose(t):
                       (V_HMPH - 0.05, (0.1, 0.25)), (V_HMPH + 0.1, (-0.3, -0.25)), (V_HMPH + 0.6, (-0.3, -0.25)),
                       (V_HMPH + 0.8, (0.1, 0.25)),
                       (V_GLANCE - 0.05, (0.1, 0.25)), (V_GLANCE + 0.08, (0.95, -0.15)),
-                      (V_GLANCE + 0.3, (0.95, -0.15)), (V_GLANCE + 0.4, (-0.15, 0.2)),
+                      (V_GLANCE + GLANCE_HOLD, (0.95, -0.15)), (V_GLANCE + GLANCE_HOLD + 0.1, (-0.15, 0.2)),
                       (T_REACH + 0.2, (-0.15, 0.2)), (T_REACH + 0.35, (1.0, 0.25)),    # sidelong at the book business
                       (T_BOOKLAND - 0.1, (1.0, 0.25)), (T_BOOKLAND + 0.05, (0.75, 0.75)),
                       (CUT_C, (0.7, 0.7)),                                              # C opens on her, eyes on the book
@@ -1039,8 +1129,8 @@ def gnome_pose(t):
                       (DUR, (0.8, -0.25))])
     head_turn = _track(t, [(0.0, 0.0), (T_NOTICE + 0.1, 0.0), (T_NOTICE + 0.3, 0.15), (T_NOTICE + 0.75, 0.15),
                            (T_NOTICE + 1.0, 0.0), (V_HMPH, 0.0), (V_HMPH + 0.16, -0.45), (V_HMPH + 0.62, -0.45),
-                           (V_HMPH + 0.95, 0.0), (V_GLANCE, 0.0), (V_GLANCE + 0.12, 0.3), (V_GLANCE + 0.3, 0.3),
-                           (V_GLANCE + 0.42, -0.12), (T_REACH + 0.3, 0.08), (CUT_C, 0.0), (B_GLANCE.t + 0.12, 0.0),
+                           (V_HMPH + 0.95, 0.0), (V_GLANCE, 0.0), (V_GLANCE + 0.12, 0.52),
+                           (V_GLANCE + GLANCE_HOLD, 0.5), (V_GLANCE + GLANCE_HOLD + 0.13, -0.14), (T_REACH + 0.3, 0.08), (CUT_C, 0.0), (B_GLANCE.t + 0.12, 0.0),
                            (B_GLANCE.t + 0.4, 0.25), (W_TOO, 0.25), (W_TOO + 0.25, 0.12), (L3.start + 0.1, 0.05),
                            (L3.start + 0.4, -0.18), (W_I - 0.1, -0.18), (W_I + 0.15, 0.08), (DUR, 0.08)])
     # the little head shake on "through every story"
@@ -1066,7 +1156,7 @@ def gnome_pose(t):
     # mood: the strongest of the moments wins the blend
     mood, smile = "kind", None
     windows = [
-        ("surprised", _win(t, T_LAND + 0.05, T_LAND + 0.7, 0.06, 0.4)),
+        (STARTLE, _win(t, T_LAND + 0.05, T_LAND + 0.7, 0.06, 0.4)),
         ("skeptical", 0.6 * _win(t, T_LAND + 0.5, T_LAND + 1.3, 0.2, 0.3) + 0.35 * _win(t, T_BEAT0, L4.start + 0.4, 0.25, 0.5)),
         ("bored", 0.55 * _win(t, B_GLANCE.t, W_TOO + 0.05, 0.25, 0.12)),                 # peering at the book
         ("raised", 0.4 * _win(t, W_TOO, L2.start + 0.4, 0.12, 0.4) + 0.3 * _win(t, W_YOGA, W_YOGA + 0.9, 0.15, 0.4)
@@ -1095,10 +1185,18 @@ def gnome_pose(t):
     # arms: the crumb toss at the start; the lazy flick at the book on "that"; a hand to her
     # heart in the laugh
     near = ch.GnomeArm("rest")
-    if t < T_TOSS_G1 + 0.4:
-        ph = core.ramp(t, T_TOSS_G0, T_TOSS_G1)
-        near = ch.GnomeArm("toss_crumbs", phase=ph, bread="piece") if t < T_TOSS_G1 else \
-            ch.GnomeArm("rest", amt=_r(t, T_TOSS_G1, T_TOSS_G1 + 0.4), prev="toss_crumbs")
+    if t < T_TOSS_G1:
+        near = ch.GnomeArm("toss_crumbs", phase=core.ramp(t, T_TOSS_G0, T_TOSS_G1), bread="piece")
+    elif t < T_TUCK1:
+        # the last of her bread goes back in the satchel: from where the flick's follow-through
+        # ended, her hand dips to the satchel's mouth and the piece sinks in (S7: the loaf is
+        # still in there, peeking out)
+        u = _r(t, T_TOSS_G1, T_TUCK1 - 0.02)
+        near = ch.GnomeArm("reach_satchel", amt=u, prev="s6_toss_end", hand=_hand_mix("open", "pinch", (u - 0.25) / 0.5),
+                           hold=_tuck_hold(core.ramp(t, T_TUCK1 - 0.17, T_TUCK1 - 0.02, "in_quad"), light_for(t, "gnome")))
+    elif t < T_TUCK1 + 0.5:
+        u = _r(t, T_TUCK1, T_TUCK1 + 0.5)
+        near = ch.GnomeArm("rest", amt=u, prev="reach_satchel", hand=_hand_mix("pinch", "relaxed", (u - 0.2) / 0.6))
     far = ch.GnomeArm("rest")
     if CUT_C <= t < CUT_D and "book_rest" in _STATE:
         # a lazy flick of the hand toward the book: the forearm lifts off her lap, the fingers
@@ -1123,10 +1221,14 @@ def gnome_pose(t):
     for h0, hd in SCOOT_HOPS:
         hood += 0.45 * B.wobble(t, h0 + hd, 2.6, 3.2) / 1.35
     lean = 0.35 * shuffle - 0.25 * _win(t, V_KICK - 0.06, V_KICK + 0.42, 0.1, 0.3)
+    # the glance: a quick lean toward him with the look, the hood tip flops, her lenses flash
+    lean += 0.16 * _win(t, V_GLANCE, V_GLANCE + GLANCE_HOLD + 0.1, 0.1, 0.16)
+    hood += 0.5 * B.wobble(t, V_GLANCE + 0.1, 2.6, 3.2) / 1.35 + 0.45 * B.wobble(t, V_GLANCE + GLANCE_HOLD + 0.12, 2.6, 3.2) / 1.35
+    glint = core.ramp(t, V_GLANCE + 0.08, V_GLANCE + 0.36) if V_GLANCE + 0.08 <= t <= V_GLANCE + 0.36 else None
     pose = ch.GnomePose(facing=1, turn=yaw_turn, sit=1.0, look=look, head_turn=head_turn, head_nod=head_nod,
                         head_tilt=head_tilt, lean=lean, legs_out=legs_out, mood=mood, mood2=mood2, mood_mix=mix, smile=smile, smirk=smirk,
                         talk=tl.talk(SCENE, t, "OLD_WOMAN"), laugh=laugh, blink=blink, specs=specs,
-                        glint=None, near=near, far=far, kick=kick, hood_swing=hood, satchel="loaf",
+                        glint=glint, near=near, far=far, kick=kick, hood_swing=hood, satchel="loaf",
                         satchel_side=-1, seed=11)
     return x, y, pose
 
@@ -1296,7 +1398,9 @@ class Troupe:
         ux, uy = perch
         h1, h2 = UMP_HOPS
         x1, x2 = ux - UMP_STEP, ux - 2.0 * UMP_STEP
-        segs = [(T_UMP0, T_UMP1, "fly", ux + 330.0, uy - 230.0, ux, uy, -1),
+        # (it comes in high from the right, above his horns, and drops onto its chair over the
+        # empty middle of the bench -- never crossing his head)
+        segs = [(T_UMP0, T_UMP1, "fly", ux + 300.0, uy - 420.0, ux, uy, -1),
                 (T_UMP1, T_UMP1 + 0.45, "land", ux, uy, ux, uy, -1),
                 (T_UMP1 + 0.45, h1, "idle", ux, uy, ux, uy, -1),
                 (h1, h1 + 0.16, "hop", ux, uy, x1, uy, -1),
@@ -1356,10 +1460,10 @@ class Troupe:
             x, y = core.lerp(xa, xb, core.smooth(u)), core.lerp(ya, yb, u)
             p = ch.PigeonPose(facing=f, flap=math.sin(math.pi * u), lift=16.0 * math.sin(math.pi * u), seed=seed)
         elif kind == "fly":
-            e = core.out_quad(u)
-            x = core.lerp(xa, xb, e)
+            # across fast and high, then down onto the perch: x settles before the height does
+            x = core.lerp(xa, xb, core.out_cubic(u))
             y = yb
-            lift = (yb - ya) * (1.0 - e) ** 1.4 + 26.0 * math.sin(math.pi * e) * (1.0 - e)
+            lift = (yb - ya) * (1.0 - u) ** 1.25
             p = ch.PigeonPose(facing=f, fly=1.0, lift=lift / SC, seed=seed)
         elif kind == "land":
             x, y = xb, yb
@@ -1369,7 +1473,18 @@ class Troupe:
             nod = core.noise1((t + seed) * 0.6, seed)
             look = f * (1.0 - 1.1 * core.smooth((abs(nod) - 0.45) / 0.2)) if abs(nod) > 0.45 else None
             p = ch.PigeonPose(facing=f, look=look, puff=0.3 * max(0.0, core.noise1(t * 0.3, seed + 5)), seed=seed)
-        return (x, y, p)
+        return (x, y, self._turn_hop(segs, j, t, p))
+
+    TURN = 0.08                       # half a hop-turn (s)
+
+    def _turn_hop(self, segs, j, t, p):
+        """Wherever a bird changes facing between two segments it turns in a little hop: the
+        body flips at the top of it with the head swivelled to the lens (no profile pop)."""
+        for k in (j, j + 1):
+            if 0 < k < len(segs) and segs[k][7] != segs[k - 1][7] and abs(t - segs[k][0]) < self.TURN:
+                u = (t - (segs[k][0] - self.TURN)) / (2.0 * self.TURN)
+                return p.with_(hop=max(p.hop, u), flap=max(p.flap, 0.35 * math.sin(math.pi * u)), look=0.0)
+        return p
 
     def states(self, t):
         out = []
@@ -1379,6 +1494,9 @@ class Troupe:
                 continue
             x, y, p = st
             w = self.sync_weight(t, i)
+            if b.get("umpire"):
+                # just landed: its head comes round from its flight facing to the match (no pop)
+                w *= core.ramp(t, T_UMP1, T_UMP1 + 0.22, "inout_sine")
             if w > 0.0 and p.fly < 0.5:
                 nat = p.look if p.look is not None else float(p.facing)
                 tgt = self.look_at(t, i, x)
@@ -1415,7 +1533,7 @@ def _book_flight(t):
 # the gallery (shot B): four pigeons on the gravel close to the lens -- the spectators
 # ----------------------------------------------------------------------------------------
 # bird -> [(volley time, delay)]: bird 3 (index 2) is always a beat late
-GALLERY_LATE = {2: [(V_HMPH, 0.3), (V_SNIFF, 0.22), (V_GLANCE, 0.34)]}
+GALLERY_LATE = {2: [(V_HMPH, 0.3), (V_SNIFF, 0.22), (V_GLANCE, 0.2)]}
 GALLERY_PF = 1.42                 # their plane's parallax (in front of the bench plane)
 
 
@@ -1535,10 +1653,7 @@ def _sfx_cues():
     last = -1
     while t < T_WALK_END + 0.1:
         x0 = xd + WALK_FROM
-        u = core.clamp(t / T_WALK_END)
-        k = 0.78
-        s = u / k * 0.86 if u < k else 0.86 + 0.14 * core.out_quad((u - k) / (1 - k))
-        dist = WALK_FROM * min(1.0, s)
+        dist = walk_dist(t)
         step = int((dist / stride) * 2.0)
         if step != last and last >= 0:
             cues.append((round(t, 3), "footstep", {"gain": 0.45, "pan": _pan_of(x0 - dist, t), "surface": "gravel"}))
@@ -1554,7 +1669,7 @@ def _sfx_cues():
         # the gallery right by the lens startles: close, full-bodied flaps
         (round(T_LAND + 0.04, 3), "pigeon_flap", {"gain": 0.85, "pan": -0.1, "size": 0.8}),
         (round(T_LAND + 0.14, 3), "pigeon_flap", {"gain": 0.7, "pan": 0.15, "size": 0.7}),
-        (round(T_UMP0 + 0.2, 3), "pigeon_flap", {"gain": 0.4, "pan": 0.4}),
+        (round(T_UMP0 + 0.2, 3), "pigeon_flap", {"gain": 0.4, "pan": 0.2}),
         (round(T_UMP1, 3), "pigeon_flap", {"gain": 0.55, "pan": 0.05}),
         (round(V_HMPH, 3), "cloth_rustle", {"gain": 0.18, "pan": -0.45, "size": 0.3}),
         (round(V_SHIFT, 3), "bench_creak", {"gain": 0.55, "pan": _pan_of(xd, V_SHIFT), "size": 0.6}),
@@ -1639,11 +1754,13 @@ def setup():
     _STATE["garden"] = g
     st["g"] = g
     _STATE["bench"] = g.bench(1)
+    _STATE["far_walk"] = {k: _far_walk_layer(k) for k in ("dusk", "golden")}
     st["light"] = fx.LightLayer()
     st["gallery"] = Gallery(CAM_B0)
     # the gnome's crumbs: her rig at the release
     gx, gy, gp = gnome_pose(T_CRUMBS)
-    rel = ch.gnome_rig_at(gx, gy, SC, gp, T_CRUMBS, L_DUSK)
+    with R6.gnome_patch():
+        rel = ch.gnome_rig_at(gx, gy, SC, gp, T_CRUMBS, L_DUSK)
     ground = 968.0
     landings = crumb_landings(T_CRUMBS, rel, ground, n=10)
     st["crumb_rel"] = rel
@@ -1801,6 +1918,10 @@ def _set_gesture_targets(t):
 # draw
 # ----------------------------------------------------------------------------------------
 
+SACK_EXPOSURE = 0.62             # the cream sack sits a stop under the faces (in his shadow, on the gravel)
+SACK_BOTTOM = 87.0               # props: the sack's bottom hangs 87 below its grip
+
+
 def _bag_place(t):
     """(x, y, angle) of the sack on the gravel (after T_BAG): it drops the last bit, wobbles as
     it lands and again as he pulls the book out."""
@@ -1819,8 +1940,13 @@ def _draw_bag(cr, t, light):
     is out of it; while it is still coming out (_book_out) the sack draws it, in his hand's frame."""
     if t < T_BAG:
         return
-    light = light.with_(exposure=light.exposure * 0.8)
+    light = light.with_(exposure=light.exposure * SACK_EXPOSURE)
     dx, yy, ang = _bag_place(t)
+    # grounded: a contact shadow under its base on the gravel (it comes in as the sack touches
+    # down), and a soft occlusion where its bottom meets the stones (drawn after it, below)
+    k = core.ramp(t, T_BAG, T_BAG + 0.12)
+    bot = (dx - math.sin(ang) * SACK_BOTTOM * SC, yy + math.cos(ang) * SACK_BOTTOM * SC)
+    B.contact_shadow(cr, bot[0] + 3.0 * SC, bot[1] + 1.0, 42.0 * SC, 8.0 * SC, alpha=0.6 * k, color="#1b1530")
     if t >= T_GRAB and _CAN_EMPTY_BAG:
         inside = _CAPTURE.get("sack_book") if not _book_out(t) else None
 
@@ -1840,6 +1966,7 @@ def _draw_bag(cr, t, light):
             P._bag_contents = orig
     else:
         P.draw_apothecary_bag(cr, dx, yy, SC, light, t, angle=ang, state="open")
+    B.occlusion(cr, bot[0], bot[1] - 5.0 * SC, 40.0 * SC, 13.0 * SC, "#1b1530", alpha=0.42 * k)
 
 
 
@@ -1888,6 +2015,51 @@ def _laugh_fire(cr, t, drig):
                   wind=-110.0 + sgn * 45.0, alpha=1.0, solid=True)
 
 
+# the far end of the gravel walk, behind his end of the bench, runs up to the gap in the back
+# hedge and stopped there in a squared-off cut: magnified in the close shots it read as a flat
+# slab of masonry. This dressing (cached, world plane, over the garden's own walk) gives that far
+# stretch the depth of field the hedges beside it already have, lets it fade into the hedge's
+# dusk shade, and carries it on through the gap, narrowing into the haze toward the castle.
+FAR_WALK_FADE = (800.0, 872.0)   # world y: the soft walk covers the sharp one above the first, gone below the second
+
+
+def _far_walk_layer(kind):
+    pal = env.palette(kind)
+    base = core.mix(core.mix(pal["ground"], pal["stone"], 0.5), "#b4a282", 0.4)    # (env.draw_gravel_path's)
+    shade = G._SHADOW_COL.get(kind, "#2a1f3e")
+
+    def walk_shape(cr):
+        sp = core.spline(G.PATH, 8)
+        w0, w1 = G.PATH_W
+        cr.new_path()
+        core.tapered(cr, sp, w0, w1, profile=lambda s_: core.lerp(w0, w1, s_ ** 1.2), cap=False)
+
+    def fn(cr):
+        cr.push_group()
+        env.draw_gravel_path(cr, G.PATH, G.PATH_W, kind, seed=6)
+        # on through the gap: a narrowing strip of the same gravel, hazing into the far lawn
+        x0, y0 = G.PATH[0]
+        core.tapered(cr, [(x0, y0 + 3.0), (x0 - 4.0, y0 - 26.0), (x0 - 7.0, y0 - 58.0)], G.PATH_W[0] * 1.02, 16.0)
+        cr.set_source(core.linear(0.0, y0 + 3.0, 0.0, y0 - 58.0, [core.alpha(env.haze_toward(base, pal["haze"], 0.35), 1.0),
+                                                                  core.alpha(env.haze_toward(base, pal["haze"], 0.8), 0.0)]))
+        cr.fill()
+        # the far stretch lies in the hedge's dusk shade (darker the further it goes)
+        cr.save()
+        walk_shape(cr)
+        cr.clip()
+        cr.rectangle(1000.0, 700.0, 300.0, 200.0)
+        cr.set_source(core.linear(0.0, y0, 0.0, FAR_WALK_FADE[1], [core.alpha(shade, 0.42), core.alpha(shade, 0.0)]))
+        cr.fill()
+        cr.restore()
+        cr.pop_group_to_source()
+        cr.mask(core.linear(0.0, FAR_WALK_FADE[0], 0.0, FAR_WALK_FADE[1], [(0.0, (0, 0, 0, 1.0)), (1.0, (0, 0, 0, 0.0))]))
+
+    lay = env.layer(fn, blur=3.5)
+    gr = G.GRADE[kind]
+    G._grade_layer(lay, gr["ground"], gr["ground_v"])
+    return lay
+
+
 def _golden_bloom(cr, cam, t, g):
     """The warmth reaches the world: the garden's golden-hour paint blooms in over the dusk,
     through a soft circle that grows out from his mouth (from the first ember) across the frame
@@ -1906,6 +2078,8 @@ def _golden_bloom(cr, cam, t, g):
     pat.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 0.0)
     cr.push_group()
     g.paint_back(cr, cam, t, "golden")
+    with cam.view(cr, 1.0):
+        _STATE["far_walk"]["golden"].paint(cr)
     cr.pop_group_to_source()
     cr.mask(pat)
     cr.set_source_rgb(0.0, 0.0, 0.0)
@@ -1998,13 +2172,14 @@ def draw(cr, t, st):
     gx, gy, gpose = gnome_pose(t)
     dx, dy, dpose = dragon_pose(t)
     sag = bench_sag(t)
-    dy += g.seat_dip(U_DRAGON, sag, sag_u=U_DRAGON) * core.ramp(t, T_LAND - 0.02, T_LAND)
     birds = st["troupe"].states(t)
     _STATE["gnome_head"] = (gx, gy - 150.0)
     _STATE["gnome_face"] = (gx + 8.0, gy - 146.0)
 
     # ---- the set (after the laugh the golden hour blooms in over the dusk, out from his mouth)
     g.paint_back(cr, cam, t, "dusk")
+    with cam.view(cr, 1.0):
+        _STATE["far_walk"]["dusk"].paint(cr)
     _golden_bloom(cr, cam, t, g)
     if shot in ("A", "B"):
         casters = [(gx, gy + 2.0, 40.0, 150.0), (dx, dy, 95.0, 330.0 if dpose.sit < 0.5 else 300.0)]
@@ -2027,7 +2202,7 @@ def draw(cr, t, st):
             if ump:                                    # he rides the crest board as the bench rocks
                 y += g.seat_dip(0.5, sag, sag_u=U_DRAGON, height=P.BENCH_SEAT_H + 117.0)
                 ch.draw_pigeon(cr, x, y, SC, p, L, t)
-        ch.draw_gnome(cr, gx, gy, SC, gpose, Lg, t)
+        draw_gnome(cr, gx, gy, SC, gpose, Lg, t)
         drig = draw_dragon(cr, dx, dy, SC, dpose, Ld, t)
         if shot == "A":
             toss_crumbs(cr, t, T_CRUMBS, st["crumb_rel"], st["crumb_ground"], n=10, flock=st["troupe"])

@@ -8,6 +8,10 @@ it (file ownership: film/lib/** belongs to the library authors):
                        top can be laid again over the counter WITHOUT dragging any apron pixels
                        along (the old reveal cut circles out of her whole figure).
   lio_joints(...)      her shoulder / elbow / wrist of one arm in caller coordinates (no drawing).
+  screen_gaze(x)       context manager: inside it every eye uses x as a SCREEN-space look (the
+                       shared rigs mirror the gaze of any eye whose outer corner is screen-left).
+  LionessArmS2         LionessArm + steady (no forearm flips) and hang (a droop that turns with
+                       her) -- see the section below.
   LionessPoseS2        LionessPose + three S2-only fields used by the frozen-smile take:
                          grin (0..1)      the polite smile locks into a rigid, wide, toothy grin
                                           with the cheeks pushed up (a "polite rictus");
@@ -21,8 +25,8 @@ it (file ownership: film/lib/** belongs to the library authors):
                        nothing else that draws the lioness can change.
   draw_label_big(...)  the remedies' labels re-lettered for the screen: bigger plates and bolder,
                        larger caps (the prop kit's labels are ~6-8 px tall at film scale).
-  draw_book_cover(...) the coloring book standing, with a re-set cover: a bigger title and FOR
-                       ADULTS in capitals on a little banner.
+  draw_book_cover(...) the coloring book standing: the prop kit's own cover (one book across
+                       scenes), with its "for Adults" set larger to read at film scale.
   draw_sack_layers(..) the open paper sack in two layers (back wall | front body) so a whole
                        column of remedies can go INTO its mouth between them.
 
@@ -33,6 +37,8 @@ shape, this fails loudly instead of drawing something subtly wrong.
 
 import math
 from dataclasses import dataclass
+
+import numpy as np
 
 from film.lib import core, props as P
 from film.lib.characters import base as B
@@ -214,6 +220,191 @@ LIO._whiskers = _whiskers_s2
 
 
 # ========================================================================================
+# eyelines: a pose's look-x is SCREEN space (+x = screen right), for both eyes, here
+# ========================================================================================
+# Every rig passes look=(pose.look[0] * outer, ...) to base.eye, and base.eye multiplies by
+# `outer` again inside its mirrored frame, so each iris moves toward its own outer corner: an eye
+# whose outer corner is screen-left (the dragon's visible eye when he faces right; the lioness's
+# far eye when she faces left) looks the WRONG way, and two visible eyes diverge (cross-eyed).
+# Inside screen_gaze(look_x) every eye uses look_x as a screen-space gaze. The mapping is probed
+# from base.eye itself, so this stays right if the library is fixed later (either way round).
+# Outside the context manager base.eye is untouched for everyone.
+
+_ORIG_EYE = B.eye
+_GAZE = []                   # a stack: the screen-space look-x of the character being drawn
+_EYE_SCREEN = []             # [True] if base.eye's look-x is screen space, [False] if outer-relative
+
+
+def _eye_is_screen_space():
+    if not _EYE_SCREEN:
+        xs = []
+        for lx in (-1.0, 1.0):
+            surf = core.new_surface(96, 64)
+            c = core.new_context(surf)
+            c.set_source_rgb(1.0, 1.0, 1.0)
+            c.paint()
+            _ORIG_EYE(c, 48.0, 32.0, 26.0, 22.0, B.LIGHTS["neutral"], 1.0, look=(lx, 0.0), lid=0.0, lid_bot=0.0,
+                      outer=-1.0, iris="#000000", iris_hi="#000000", pupil="#000000", sclera="#ffffff",
+                      skin="#ffffff", line="#ffffff", highlight=0.0, crease=0.0, lash=0.0, lid_shade=0.0)
+            surf.flush()
+            h, stride = surf.get_height(), surf.get_stride()
+            px = np.frombuffer(surf.get_data(), np.uint8).reshape(h, stride // 4, 4)[:, :surf.get_width(), 1]
+            ys_, xs_ = np.nonzero(px < 80)                  # the dark iris (green channel of BGRA)
+            xs.append(float(xs_.mean()) if len(xs_) else 0.0)
+        _EYE_SCREEN.append(xs[1] > xs[0])
+    return _EYE_SCREEN[0]
+
+
+def _eye_gaze(*a, **kw):
+    if _GAZE and "look" in kw:
+        lx = _GAZE[-1]
+        outer = kw.get("outer", 1.0)
+        kw["look"] = (lx if _eye_is_screen_space() else lx * outer, kw["look"][1])
+    return _ORIG_EYE(*a, **kw)
+
+
+B.eye = _eye_gaze
+
+
+class screen_gaze:
+    """with screen_gaze(pose.look[0]): draw_dragon(...) -- both eyes look screen-left (-) or
+    screen-right (+) as the pose says."""
+
+    def __init__(self, look_x):
+        self.look_x = float(look_x)
+
+    def __enter__(self):
+        _GAZE.append(self.look_x)
+        return self
+
+    def __exit__(self, *exc):
+        _GAZE.pop()
+        return False
+
+
+# ========================================================================================
+# the lioness's arms: a steady forearm (no flips) and a hand droop that turns with her
+# ========================================================================================
+# The library solves each arm in 3D with a fixed elbow pole (out, down and a little back). In a
+# 3/4 view that bends the arm in DEPTH, so when the wrist passes close to the elbow on screen the
+# projected forearm shrinks to a few px, its direction flips and the paw (drawn along it) spins
+# half round in one frame. LionessArmS2 arms (the library ignores the extra fields):
+#   steady  0..1: when the projected forearm gets short, the elbow is eased toward a 2D elbow
+#           bent in the PICTURE plane (down and toward her back), so the forearm keeps a length
+#           and only ever rotates in the picture plane: continuous by construction.
+#   hang    None = the gesture's own hand droop, faded to nothing as she passes the front view
+#           (the library flips its sign at yaw 0: a 57-degree twist in one frame mid-turn);
+#           a number = the droop in radians (the scene keeps it continuous).
+
+#   ang     None, or a screen angle (rad) the paw points along (cuff and hand), blended in by
+#   ang_w   0..1 -- for a paw whose forearm points at the camera (an item carried at her chest
+#           through a turn): its projected direction is noise, so the scene steers the paw.
+
+@dataclass
+class LionessArmS2(LIO.LionessArm):
+    steady: float = 0.0
+    hang: float = None
+    ang: float = None
+    ang_w: float = 0.0
+
+
+_ORIG_SOLVE = LIO._solve_arm
+HANG_YAW = 0.7               # the droop fades in over this much yaw either side of the front view
+
+
+def _xy_to_body(pr, p, depth):
+    """Rig 2D (projected) point at a camera depth -> body space (inverse of Proj)."""
+    X = p[0] * pr.c - depth * pr.s
+    Z = p[0] * pr.s + depth * pr.c
+    Y = (p[1] - depth * pr.se) / pr.ce
+    return (X, Y, Z)
+
+
+def _elbow_2d(s2, w2, yaw, l1, l2):
+    """A 2D elbow for shoulder s2 -> wrist w2: two-bone IK in the picture plane with the bones a
+    little foreshortened, bent toward her back and down (the side swaps smoothly through the
+    front view, where the arm is shown straight)."""
+    dx, dy = w2[0] - s2[0], w2[1] - s2[1]
+    d = math.hypot(dx, dy)
+    if d < 1e-6:
+        return (s2[0], s2[1] + l1)
+    ux, uy = dx / d, dy / d
+    sgn = -clamp(yaw / 0.6, -1.0, 1.0)          # facing left: + (the elbow on the down/back side)
+    if d >= l1 + l2:
+        a, h = d * l1 / (l1 + l2), 0.0
+    else:
+        dd = max(d, abs(l1 - l2) + 1e-3)
+        a = (l1 * l1 - l2 * l2 + dd * dd) / (2.0 * dd)
+        h = math.sqrt(max(0.0, l1 * l1 - a * a))
+    nx, ny = uy, -ux                              # cross(u, n) < 0: the down/back side facing left
+    return (s2[0] + ux * a + nx * h * sgn, s2[1] + uy * a + ny * h * sgn)
+
+
+def _solve_arm_s2(q, S, side, arm):
+    A = _ORIG_SOLVE(q, S, side, arm)
+    if not isinstance(arm, LionessArmS2):
+        return A
+    yaw = q.yaw
+    step = 1.0 if yaw >= 0 else -1.0
+    if arm.hang is not None:
+        A["hang"] = arm.hang * (1.0 if side < 0 else -1.0) * step
+    else:
+        A["hang"] = A["hang"] * clamp(abs(yaw) / HANG_YAW, 0.0, 1.0)
+    k = clamp(arm.steady)
+    if k > 0.0:
+        pr = q.proj
+        s2, w2, e2 = pr.xy(A["sh"]), pr.xy(A["wr"]), pr.xy(A["el"])
+        fl = math.hypot(w2[0] - e2[0], w2[1] - e2[1])
+        wgt = k * (1.0 - core.smoothstep(0.3 * LIO.FOREARM, 0.55 * LIO.FOREARM, fl))
+        if wgt > 1e-4:
+            e_ref = _elbow_2d(s2, w2, yaw, LIO.UPPER_ARM * 0.86, LIO.FOREARM * 0.86)
+            e_new = (lerp(e2[0], e_ref[0], wgt), lerp(e2[1], e_ref[1], wgt))
+            dep = lerp(pr.depth(A["el"]), 0.5 * (pr.depth(A["sh"]) + pr.depth(A["wr"])), wgt)
+            A = dict(A, el=_xy_to_body(pr, e_new, dep))
+    return A
+
+
+LIO._solve_arm = _solve_arm_s2
+
+_ORIG_ARM = LIO._arm
+
+
+def _arm_s2(q, A, side, parts="all", hold=True):
+    """lioness._arm (sleeve, cuff, paw) with the paw's direction steered (LionessArmS2.ang)."""
+    arm = A["arm"]
+    if not isinstance(arm, LionessArmS2) or arm.ang is None or arm.ang_w <= 1e-4:
+        return _ORIG_ARM(q, A, side, parts, hold)
+    cr, proj, M = q.cr, q.proj, q.M
+    sh, el, wr = proj.xy(A["sh"]), proj.xy(A["el"]), proj.xy(A["wr"])
+    fdx, fdy = core.normalize((wr[0] - el[0], wr[1] - el[1]))
+    ang = core.lerp_angle(math.atan2(fdy, fdx), arm.ang, clamp(arm.ang_w))
+    fdx, fdy = math.cos(ang), math.sin(ang)
+    if parts in ("all", "sleeve"):
+        s_, o_ = K.caps(cr, [sh, el, wr], [18.0, 15.0, 13.0], q.lw)
+        pal = q.shade(s_, M["robe"], outline=o_, size=40, rim=0.7)
+        if q.detail >= 2:
+            nx, ny = -fdy, fdx
+            bend = (el[0] - sh[0]) * (wr[1] - el[1]) - (el[1] - sh[1]) * (wr[0] - el[0])
+            sg = 1.0 if bend > 0 else -1.0
+            B.detail_lines(cr, [[(el[0] + nx * 6 * sg - fdx * 8, el[1] + ny * 6 * sg - fdy * 8),
+                                 (el[0] + nx * 15 * sg + fdx * 4, el[1] + ny * 15 * sg + fdy * 4)]], q.lw * 0.8, pal.line, 0.5)
+        cs, co = B.ellipse_paths(cr, wr[0] - fdx * 4.0, wr[1] - fdy * 4.0, 8.5, 15.5, q.lw, ang)
+        K.flat(q, cs, co, M["collar"])
+    if parts == "sleeve":
+        return B.HandFrame(wr[0], wr[1], ang, 1.0, [], wr, False)
+    hp = A["hand"]
+    hang = ang + A["hang"] * (1 if side < 0 else -1) * (1 if q.yaw >= 0 else -1)
+    flip = (side > 0) == (q.yaw >= 0)
+    show_palm = hp in ("open", "offer") and arm.gesture in ("present", "place")
+    return B.hand(cr, wr[0] + fdx * 6.0, wr[1] + fdy * 6.0, hang, LIO.HAND_LEN, hp, M["fur"], q.light_nb, q.lw,
+                  flip=flip, claw=None, pad=LIO.LIONESS_COLORS["pad"], show_palm=show_palm,
+                  hold=arm.hold if hold else None, finger_w=1.15, palm_w=1.1, detail=q.detail)
+
+
+LIO._arm = _arm_s2
+
+
+# ========================================================================================
 # props: legible labels, the re-set book cover, the open sack in two layers
 # ========================================================================================
 
@@ -282,9 +473,11 @@ def draw_label_big(cr, name, x, y, scale, light, angle=0.0, detail=None):
 
 
 def draw_book_cover(cr, x, y, scale, light, angle=0.0, detail=None):
-    """The coloring book standing, cover to us (anchor = the cover's centre), its cover re-set for
-    the screen: MINDFUL / COLORING big across the top, a smaller rose window, and FOR ADULTS in
-    capitals on a little ribbon banner. Mirrors props.draw_coloring_book(state="closed")."""
+    """The coloring book standing, cover to us (anchor = the cover's centre). This IS the prop
+    kit's cover (props.draw_coloring_book(state="closed"): the same parchment, ruled gold frame,
+    MINDFUL / COLORING title, rose-window mandala and italic "for Adults"), so it is one book from
+    the apothecary to the bench (S6); only "for Adults" is set larger: the kit letters it for
+    close-ups, and here the joke has to read at film scale."""
     q = P._Ctx(cr, x, y, scale, angle, light, detail)
     C = P.PROP_COLORS
     w, h = P.BOOK_W, P.BOOK_H
@@ -294,37 +487,37 @@ def draw_book_cover(cr, x, y, scale, light, angle=0.0, detail=None):
     pc = q.shade(cs, "book_cover", 22.0, outline=co)
     ss, so = P._rrect_paths(cr, -w / 2 - 1.0, -h / 2, 7.0, h, 2.0, q.lw)
     q.shade(ss, "book_spine", 7.0, outline=so, rim=0.6)
+    # props._cover_art(q, x0, y0, ww, h, pc), line for line, with the subtitle enlarged
     x0, y0, ww = -w / 2 + 6.0, -h / 2, w - 6.0
-    cx = x0 + ww / 2
     ink = core.mix(C["ink"], pc.shadow, 0.1)
+    cx = x0 + ww / 2
     if q.detail >= 1:
         cr.new_path()
-        cr.rectangle(x0 + 2.5, y0 + 2.5, ww - 5.0, h - 5.0)
+        cr.rectangle(x0 + 3.0, y0 + 3.0, ww - 6.0, h - 6.0)
         cr.set_line_width(0.8)
         core.src(cr, C["gold_ink"], 0.85)
         cr.stroke()
-        mr, my = ww * 0.2, y0 + h * 0.555
-        core.circle(cr, cx, my, mr * 1.03)
+    mr = ww * 0.26
+    my = y0 + h * 0.56
+    if q.detail >= 1:
+        core.circle(cr, cx, my, mr * 1.02)
         core.src(cr, core.mix(pc.lit, C["rose_ink"], 0.12))
         cr.fill()
-        P._mandala(cr, cx, my, mr, C["rose_ink"], 0.9, 0.7, rings=3, petals=10)
-        P._mandala(cr, cx, my, mr * 0.55, C["teal_ink"], 0.9, 0.65, rings=2, petals=8)
-        core.circle(cr, cx, my, mr * 0.12)
+        P._mandala(cr, cx, my, mr, C["rose_ink"], 0.9, 0.75, rings=3, petals=10)
+        P._mandala(cr, cx, my, mr * 0.55, C["teal_ink"], 0.9, 0.7, rings=2, petals=8)
+        core.circle(cr, cx, my, mr * 0.1)
         core.src(cr, C["gold_ink"])
         cr.fill()
-        _word(cr, "MINDFUL", cx, y0 + h * 0.135, 7.0, ww - 8.0, ink, spacing=0.4)
-        _word(cr, "COLORING", cx, y0 + h * 0.275, 6.8, ww - 5.0, ink, spacing=0.15)
-        # FOR ADULTS on a little rose ribbon banner with forked tails
-        by, bh, bw = y0 + h * 0.85, 12.5, ww - 3.0
-        pts = [(cx - bw / 2, by - bh / 2), (cx + bw / 2, by - bh / 2), (cx + bw / 2 + 3.5, by + bh / 2 + 1.0),
-               (cx + bw / 2 - 1.5, by + bh / 2 - 0.5), (cx - bw / 2 + 1.5, by + bh / 2 - 0.5), (cx - bw / 2 - 3.5, by + bh / 2 + 1.0)]
-        rs, ro = P._poly_paths(cr, pts, q.lw * 0.7)
-        q.shade(rs, B.Mat.of("#c9566e", line_k=0.55), 6.0, outline=ro, rim=0.4)
-        _word(cr, "FOR ADULTS", cx, by - 0.2, 5.8, bw - 3.0, "#fbf3e2", condense=0.9, spacing=0.2)
     else:
-        core.circle(cr, cx, y0 + h * 0.56, ww * 0.2)
+        core.circle(cr, cx, my, mr)
         core.src(cr, core.mix(pc.lit, C["rose_ink"], 0.4))
         cr.fill()
+    fam = P.FONTS.label
+    P._label(cr, "MINDFUL", cx, y0 + h * 0.13, h * 0.125, ink, fam, spacing=0.3)
+    P._label(cr, "COLORING", cx, y0 + h * 0.27, h * 0.11, ink, fam, spacing=0.2)
+    if q.detail >= 1:
+        P._label(cr, "for Adults", cx, y0 + h * 0.895, h * 0.13, core.mix(ink, C["rose_ink"], 0.4), P.FONTS.text,
+                 italic=True, maxw=ww - 7.0)
     q.end()
 
 
