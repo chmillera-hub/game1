@@ -1955,6 +1955,25 @@ button.card:active {
   color: var(--violet);
 }
 
+.itemico.talent {
+  color: #8fd18a;
+}
+
+.pick.talent .pk-head svg {
+  color: #8fd18a;
+}
+
+.pk-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #8fd18a;
+}
+
+.pick.locked .pk-note {
+  color: var(--muted);
+}
+
 .army-row.item-row .nm b {
   font-size: 1.05rem;
 }

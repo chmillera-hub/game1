@@ -751,6 +751,20 @@
 
   const RECRUITABLE = Object.keys(UNITS).filter((k) => ['common', 'uncommon', 'rare', 'legendary'].includes(UNITS[k].rarity));
 
+  // Talents: a class's passive picks that cost Supply. They are not free choices: you find
+  // them in shops and battle spoils, then slot one into that level's ability pick. The free
+  // option at each level and the active abilities stay open to every unit of the class.
+  const TALENTS = {};
+  for (const [type, T] of Object.entries(UNITS)) {
+    if (!T.abilities) continue;
+    for (const tier of [1, 2]) {
+      for (const id of T.abilities[tier]) {
+        const ab = A[id];
+        if (ab.cost > 0 && !ab.mod.active) TALENTS[id] = Object.assign({}, ab, { id, cls: type, tier });
+      }
+    }
+  }
+
   // Which skill and gear families a unit type can use.
   function unitTags(typeId) {
     const T = UNITS[typeId];
@@ -836,7 +850,7 @@
   };
 
   function itemDef(kind, id) {
-    return kind === 'skill' ? SKILLS[id] : kind === 'gear' ? GEAR[id] : null;
+    return kind === 'skill' ? SKILLS[id] : kind === 'gear' ? GEAR[id] : kind === 'talent' ? TALENTS[id] : null;
   }
 
   // Can this unit type use this skill, gear or enchantment?
@@ -844,6 +858,7 @@
     if (!def) return false;
     const T = UNITS[typeId];
     if (!T || T.traits.includes('summon')) return false;
+    if (def.cls) return def.cls === typeId;
     if (!def.req) return true;
     if (def.req === 'recovers') return T.rec >= 1;
     return unitTags(typeId).has(def.req);
@@ -1009,7 +1024,7 @@
 
   AG.Data = {
     DIRS, MAX_LEVEL, LEVEL_COST, LEVEL_HP, LEVEL_POW, SKILL_SLOTS, GEAR_SLOTS, RES_CAP, COMMAND,
-    ABILITIES: A, MASTERY, UNITS, RECRUITABLE, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS,
+    ABILITIES: A, TALENTS, MASTERY, UNITS, RECRUITABLE, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS,
     DIFFICULTIES, ACTS, ENCOUNTERS, NAMES, unitTags, itemDef, eligible,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

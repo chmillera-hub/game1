@@ -4,7 +4,7 @@
   'use strict';
   const AG = (root.AG = root.AG || {});
   const D = AG.Data;
-  const { UNITS, RECRUITABLE, ABILITIES, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
+  const { UNITS, RECRUITABLE, ABILITIES, TALENTS, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
   const E = AG.Engine;
 
   const SAVE_KEY = 'arena-gauntlet-run-v2';
@@ -19,10 +19,13 @@
   const RELIC_PRICE = { common: 85, uncommon: 115, rare: 150, boss: 200, event: 120 };
   const ITEM_PRICE = (cost) => 28 + 14 * cost;
   const SCROLL_PRICE = 80;
+  // Class talents cost a little more than skills of the same Supply cost.
+  const TALENT_PRICE = (cost) => 40 + 20 * cost;
 
   const hasRelic = (run, id) => run.relics.includes(id);
   const unitById = (run, id) => run.roster.find((u) => u.id === id);
   const itemByUid = (run, uid) => run.items.find((i) => i.uid === uid);
+  const isTalent = (id) => !!(id && TALENTS[id]);
   const discount = (run, price) => Math.round(price * (hasRelic(run, 'guild_seal') ? 0.75 : 1));
   const isObjectType = (t) => UNITS[t].traits.includes('object') || UNITS[t].traits.includes('summon');
   const isAttacker = (type) => {
@@ -83,7 +86,7 @@
 
   function defaultLoad(type) {
     const T = UNITS[type];
-    return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, skills: [], gear: [] };
+    return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, t1: null, t2: null, skills: [], gear: [] };
   }
 
   function addRecruit(run, type, extra) {
@@ -108,10 +111,19 @@
     return D.itemDef(it.kind, it.id);
   }
 
-  // The unit an item is slotted into, if any.
+  // The unit an item is slotted into, if any. A talent sits in a level's ability pick.
   function itemHolder(run, uid) {
-    for (const r of run.roster) if (r.load.skills.includes(uid) || r.load.gear.includes(uid)) return r;
+    for (const r of run.roster) if (r.load.skills.includes(uid) || r.load.gear.includes(uid) || r.load.t1 === uid || r.load.t2 === uid) return r;
     return null;
+  }
+
+  // An owned copy of a talent for this unit: the one it holds, else one nobody holds.
+  function talentCopy(run, r, id, tier, steal) {
+    const mine = r.load['t' + tier];
+    const it = itemByUid(run, mine);
+    if (it && it.kind === 'talent' && it.id === id) return it;
+    const copies = run.items.filter((i) => i.kind === 'talent' && i.id === id);
+    return copies.find((i) => !itemHolder(run, i.uid)) || (steal ? copies[0] : null) || null;
   }
 
   function slotsFor(lv) {
@@ -124,8 +136,21 @@
     const L = r.load || (r.load = defaultLoad(r.type));
     L.lv = Math.max(1, Math.min(D.MAX_LEVEL, L.lv || 1));
     if (T.abilities) {
-      if (!T.abilities[1].includes(L.a1)) L.a1 = T.abilities[1][0];
-      if (!T.abilities[2].includes(L.a2)) L.a2 = T.abilities[2][0];
+      for (const tier of [1, 2]) {
+        const a = 'a' + tier;
+        const t = 't' + tier;
+        if (!T.abilities[tier].includes(L[a])) L[a] = T.abilities[tier][0];
+        // A talent pick needs a copy this unit holds; without one it falls back to the free pick.
+        if (isTalent(L[a])) {
+          const holder = L[t] ? itemHolder(run, L[t]) : null;
+          const it = holder && holder !== r ? null : talentCopy(run, r, L[a], tier, false);
+          if (it) L[t] = it.uid;
+          else {
+            L[a] = T.abilities[tier][0];
+            L[t] = null;
+          }
+        } else L[t] = null;
+      }
     }
     const sl = slotsFor(L.lv);
     const ok = (uid, kind) => {
@@ -149,7 +174,17 @@
     const r = unitById(run, rid);
     const T = r && UNITS[r.type];
     if (!T || !T.abilities || !T.abilities[tier].includes(id)) return false;
-    r.load[tier === 1 ? 'a1' : 'a2'] = id;
+    let uid = null;
+    if (isTalent(id)) {
+      // Talents must be owned; a copy another unit uses is taken from it.
+      const it = talentCopy(run, r, id, tier, true);
+      if (!it) return false;
+      const holder = itemHolder(run, it.uid);
+      if (holder && holder !== r) unassignItem(run, it.uid);
+      uid = it.uid;
+    }
+    r.load['a' + tier] = id;
+    r.load['t' + tier] = uid;
     return true;
   }
 
@@ -157,8 +192,14 @@
   function assignItem(run, rid, uid) {
     const r = unitById(run, rid);
     const it = itemByUid(run, uid);
-    if (!r || !it || (it.kind !== 'skill' && it.kind !== 'gear')) return false;
+    if (!r || !it || (it.kind !== 'skill' && it.kind !== 'gear' && it.kind !== 'talent')) return false;
     if (!D.eligible(r.type, itemDef(it))) return false;
+    if (it.kind === 'talent') {
+      // Into its level's pick, if the unit is that level and the pick is not a talent already.
+      const tier = TALENTS[it.id].tier;
+      if (r.load.lv < tier || isTalent(r.load['a' + tier])) return r.load['t' + tier] === uid;
+      return setAbility(run, rid, tier, it.id);
+    }
     const key = it.kind === 'skill' ? 'skills' : 'gear';
     if (r.load[key].includes(uid)) return true;
     if (r.load[key].length >= slotsFor(r.load.lv)[key]) return false;
@@ -171,6 +212,11 @@
     for (const r of run.roster) {
       r.load.skills = r.load.skills.filter((x) => x !== uid);
       r.load.gear = r.load.gear.filter((x) => x !== uid);
+      for (const tier of [1, 2]) {
+        if (r.load['t' + tier] !== uid) continue;
+        r.load['t' + tier] = null;
+        r.load['a' + tier] = UNITS[r.type].abilities[tier][0];
+      }
     }
   }
 
@@ -267,6 +313,7 @@
     const diff = DIFFICULTIES.find((d) => d.id === opts.difficulty) || DIFFICULTIES[1];
     const run = {
       v: 2,
+      talents: 1,
       seed,
       warband: wb.id,
       difficulty: diff.id,
@@ -1109,6 +1156,16 @@
     return ids.length ? rng.pick(ids) : null;
   }
 
+  // A talent for one of your classes. Level 2 talents turn up half as often, and ones you
+  // already own less often still, so a full build takes some hunting.
+  function rollTalent(run, rng, exclude) {
+    const types = [...new Set(run.roster.map((r) => r.type))];
+    const opts = Object.values(TALENTS)
+      .filter((t) => types.includes(t.cls) && !(exclude || []).includes(t.id))
+      .map((t) => [t.id, (t.tier === 2 ? 1 : 2) / (1 + 2 * run.items.filter((i) => i.kind === 'talent' && i.id === t.id).length)]);
+    return opts.length ? rng.weighted(opts) : null;
+  }
+
   function rollEnchant(run, rng, type, exclude) {
     const ids = Object.keys(ENCHANTS).filter((id) => !(exclude || []).includes(id) && (type ? D.eligible(type, ENCHANTS[id]) : true));
     return ids.length ? rng.pick(ids) : null;
@@ -1138,12 +1195,14 @@
     if (id1) out.push({ type: firstItem, id: id1 });
     const scrollW = kind === 'normal' || kind === 'battle' ? 10 : 30;
     for (let guard = 0; guard < 8 && out.length < 3; guard++) {
-      const k = rng.weighted([['recruit', 30], ['skill', 25], ['gear', 25], ['scroll', scrollW]]);
+      const talentW = kind === 'normal' || kind === 'battle' ? 14 : 28;
+      const k = rng.weighted([['recruit', 30], ['skill', 22], ['gear', 22], ['talent', talentW], ['scroll', scrollW]]);
       if (k === 'recruit') {
         const r = rollRecruit(run, rng, kind, [r1.unit]);
         out.push({ type: 'recruit', unit: r.unit, enchant: r.enchant });
-      } else if (k === 'skill' || k === 'gear') {
-        const id = k === 'skill' ? rollSkill(run, rng, out.map((o) => o.id)) : rollGear(run, rng, out.map((o) => o.id));
+      } else if (k === 'skill' || k === 'gear' || k === 'talent') {
+        const ex = out.map((o) => o.id);
+        const id = k === 'skill' ? rollSkill(run, rng, ex) : k === 'gear' ? rollGear(run, rng, ex) : rollTalent(run, rng, ex);
         if (id) out.push({ type: k, id });
       } else {
         const id = rollEnchant(run, rng);
@@ -1301,7 +1360,7 @@
     if (sp.type === 'recruit') {
       if (run.roster.length >= MAX_ROSTER) return false;
       addRecruit(run, sp.unit, { enchant: sp.enchant || null });
-    } else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
+    } else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
     else if (sp.type === 'gold') run.gold += sp.amount;
     p.spoilTaken = true;
     save(run);
@@ -1358,6 +1417,7 @@
     }
     for (const id of rollMany(rng, 2, () => rollSkill(run, rng))) items.push({ kind: 'skill', id, price: discount(run, ITEM_PRICE(SKILLS[id].cost)), sold: false });
     for (const id of rollMany(rng, 3, () => rollGear(run, rng))) items.push({ kind: 'gear', id, price: discount(run, ITEM_PRICE(GEAR[id].cost)), sold: false });
+    for (const id of rollMany(rng, 2, () => rollTalent(run, rng))) items.push({ kind: 'talent', id, price: discount(run, TALENT_PRICE(TALENTS[id].cost)), sold: false });
     const sc = rollEnchant(run, rng);
     if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
     const rl = [];
@@ -1389,6 +1449,7 @@
         break;
       case 'skill':
       case 'gear':
+      case 'talent':
       case 'scroll':
         addItem(run, item.kind, item.id);
         break;
@@ -1916,6 +1977,8 @@
       normalizeLoad(run, r);
       r.load.a1 = UNITS[r.type].abilities[1][0];
       r.load.a2 = UNITS[r.type].abilities[2][0];
+      r.load.t1 = null;
+      r.load.t2 = null;
     }
     const prof = damageProfile(enc);
     const kind = (r) => UNITS[r.type].act.dmg;
@@ -2078,6 +2141,18 @@
     }
   }
 
+  // Saves from before talents: a unit keeps a talent it had picked, as an item it holds.
+  function grantPickedTalents(run) {
+    if (run.talents) return;
+    run.talents = 1;
+    for (const r of run.roster) {
+      for (const tier of [1, 2]) {
+        const id = r.load['a' + tier];
+        if (isTalent(id) && !r.load['t' + tier]) r.load['t' + tier] = addItem(run, 'talent', id).uid;
+      }
+    }
+  }
+
   function load() {
     try {
       const j = root.localStorage && root.localStorage.getItem(SAVE_KEY);
@@ -2085,6 +2160,7 @@
       const r = JSON.parse(j);
       if (!r || r.v !== 2 || r.over) return null;
       if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
+      grantPickedTalents(r);
       return r;
     } catch (e) {
       return null;

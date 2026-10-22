@@ -4,7 +4,7 @@
   'use strict';
   const AG = root.AG;
   const D = AG.Data;
-  const { UNITS, ABILITIES, MASTERY, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ACTS, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
+  const { UNITS, ABILITIES, TALENTS, MASTERY, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ACTS, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
   const R = AG.Run;
   const E = AG.Engine;
   const AI = AG.AI;
@@ -1072,7 +1072,14 @@
   // ------------------------------------------------------------ army and items
 
   function itemKindLabel(it) {
-    return it.kind === 'skill' ? 'Skill' : it.kind === 'gear' ? 'Gear' : 'Enchantment scroll';
+    return it.kind === 'skill' ? 'Skill' : it.kind === 'gear' ? 'Gear' : it.kind === 'talent' ? `${UNITS[TALENTS[it.id].cls].name} talent` : 'Enchantment scroll';
+  }
+
+  const ITEM_ICON = { skill: 'scroll', gear: 'sword', talent: 'star', scroll: 'gem' };
+
+  // Where a talent goes: one class, one level's ability pick.
+  function talentWhere(t) {
+    return `Only for the ${UNITS[t.cls].name}. It fills its ${t.tier === 2 ? 'Level 2 ability' : 'ability'} pick${t.tier === 2 ? ', so the unit must be Level 2' : ''}.`;
   }
 
   function itemCost(it) {
@@ -1106,15 +1113,15 @@
             const d = R.itemDef(it);
             const holder = R.itemHolder(run, it.uid);
             return `<button class="army-row item-row" data-item="${it.uid}">
-              <div class="itemico ${kind}">${ic(kind === 'skill' ? 'scroll' : kind === 'gear' ? 'sword' : 'gem')}</div>
+              <div class="itemico ${kind}">${ic(ITEM_ICON[kind])}</div>
               <div class="nm" style="min-width:0"><b>${esc(d.name)}</b><div class="small muted">${esc(d.desc)}</div></div>
               <div class="chips" style="justify-content:flex-end"><span class="chip warn">${esc(itemCost(it))}</span>${holder ? `<span class="chip good">${esc(holder.name)}</span>` : kind === 'scroll' ? '<span class="chip magic">Bind</span>' : '<span class="chip">Free</span>'}</div></button>`;
           })
           .join('')}</div>`;
       };
       body =
-        group('skill', 'Skills') + group('gear', 'Gear') + group('scroll', 'Enchantment scrolls') ||
-        '<p class="muted">No skills, gear or scrolls yet. Win battles, visit merchants, rest at campfires and explore events to find them.</p>';
+        group('talent', 'Talents') + group('skill', 'Skills') + group('gear', 'Gear') + group('scroll', 'Enchantment scrolls') ||
+        '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants, rest at campfires and explore events to find them.</p>';
     } else {
       body = `<div class="army-list">${run.relics
         .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
@@ -1146,12 +1153,14 @@
     openSheet(
       `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`)}
       <p>${esc(d.desc)}</p>
+      ${it.kind === 'talent' ? `<p class="small muted">${esc(talentWhere(d))}</p>` : ''}
       ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'have a cooldown of 2 or more', recovers: 'have a cooldown' }[d.req] || 'qualify'}.</p>` : ''}
       ${it.kind === 'scroll'
         ? `<p class="hint warn">Binding is permanent: the enchantment stays with that unit for the rest of the campaign and adds ${d.surcharge} Supply to its cost. A unit can hold only one enchantment.</p>`
         : `<p class="small muted">${holder ? `Slotted into ${esc(holder.name)}.` : 'Not slotted into anyone. Equip it from a unit\'s loadout.'}</p>`}
       <div class="actions">
         ${it.kind === 'scroll' ? `<button class="btn primary" id="isBind">${ic('gem')} Bind to a unit</button>` : ''}
+        ${it.kind === 'talent' && !holder ? `<button class="btn primary" id="isEquip">${ic('star')} Give to a unit</button>` : ''}
         ${holder ? `<button class="btn" id="isFree">Unequip from ${esc(holder.name)}</button>` : ''}
         <button class="btn" id="isBack">Back</button>
       </div>`,
@@ -1172,6 +1181,21 @@
             UI.onSheetClose = after;
             back && back();
           };
+        if ($('#isEquip', sh))
+          $('#isEquip', sh).onclick = async () => {
+            UI.onSheetClose = null;
+            const rid = await pickUnit('Give ' + d.name, talentWhere(d), (u) => u.type === d.cls && u.load.lv >= d.tier);
+            if (rid) {
+              const r = R.unitById(run, rid);
+              const was = ABILITIES[r.load['a' + d.tier]].name;
+              R.setAbility(run, rid, d.tier, d.id);
+              R.save(run);
+              if (UI.wr) renderWarRoom();
+              toast(`${r.name} now has ${d.name} instead of ${was}.`);
+            }
+            UI.onSheetClose = after;
+            itemSheet(uid, back);
+          };
         if ($('#isFree', sh))
           $('#isFree', sh).onclick = () => {
             R.unassignItem(run, uid);
@@ -1190,12 +1214,29 @@
   function abilityCard(r, tier, id, locked) {
     const ab = ABILITIES[id];
     const on = r.load[tier === 1 ? 'a1' : 'a2'] === id;
+    // Talents have to be found before any unit can pick them.
+    let note = '';
+    let missing = false;
+    if (TALENTS[id]) {
+      const run = UI.run;
+      const copies = run.items.filter((i) => i.kind === 'talent' && i.id === id);
+      const holders = copies.map((i) => R.itemHolder(run, i.uid));
+      missing = !copies.length;
+      note = on
+        ? 'Talent · this unit holds your copy'
+        : missing
+          ? 'Talent · find it in shops and battle spoils'
+          : holders.every((h) => h)
+            ? `Talent · ${esc(holders[0].name)} has it; picking it here takes it`
+            : `Talent · you own ${copies.length > 1 ? copies.length + ' copies' : 'it'}`;
+    }
     // Show the shape of a new active, or of the main attack when the pick reshapes it.
     const m = ab.mod;
     const shape = m.active ? m.active : m.act && (m.act.kind || m.act.pattern) ? Object.assign({}, UNITS[r.type].act, m.act) : null;
-    return `<button class="pick ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-ab="${tier}:${id}">
-      <span class="pk-head"><b>${esc(ab.name)}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
-      <span class="pk-body">${shape ? patternSVG(shape, 'P') : ''}<span class="pk-desc">${esc(ab.desc)}</span></span></button>`;
+    return `<button class="pick ${on ? 'on' : ''} ${locked || missing ? 'locked' : ''} ${TALENTS[id] ? 'talent' : ''}" data-ab="${tier}:${id}">
+      <span class="pk-head"><b>${TALENTS[id] ? ic('star') + ' ' : ''}${esc(ab.name)}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
+      <span class="pk-body">${shape ? patternSVG(shape, 'P') : ''}<span class="pk-desc">${esc(ab.desc)}</span></span>
+      ${note ? `<span class="pk-note">${note}</span>` : ''}</button>`;
   }
 
   function slotButton(run, r, kind, i) {
@@ -1241,6 +1282,7 @@
       <div class="lo-sec"><div class="eyebrow">Level</div>
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
         <p class="small muted">Level 2: +20% HP, +15% damage, a second ability and a second skill slot. Level 3: +40% HP, +30% damage, its Mastery and a second gear slot.</p></div>
+      <p class="small muted">${ic('star')} Talents are found in shops and battle spoils. Each copy fits one unit of its class at a time.</p>
       <div class="lo-sec"><div class="eyebrow">Ability · pick 1 of 3</div>
         <div class="picks">${T.abilities[1].map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Level 2 ability · pick 1 of 3${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
@@ -1279,8 +1321,15 @@
       for (const b of $$('[data-ab]', sh))
         b.onclick = () => {
           const [tier, id] = b.dataset.ab.split(':');
-          if (+tier === 2 && L.lv < 2) toast('This pick applies once the unit is Level 2.');
-          R.setAbility(run, rid, +tier, id);
+          // With no spare copy, the pick takes the first one from whoever holds it.
+          const holders = run.items.filter((i) => i.kind === 'talent' && i.id === id).map((i) => R.itemHolder(run, i.uid));
+          const from = holders.length && holders.every((h) => h && h !== r) ? holders[0].name : null;
+          if (!R.setAbility(run, rid, +tier, id)) {
+            toast(`${ABILITIES[id].name} is a talent. Find it in a shop or in battle spoils first.`);
+            return;
+          }
+          if (from) toast(`Took ${ABILITIES[id].name} from ${from}.`);
+          else if (+tier === 2 && L.lv < 2) toast('This pick applies once the unit is Level 2.');
           changed();
         };
       for (const b of $$('[data-slot]', sh))
@@ -2740,6 +2789,10 @@
       const d = ENCHANTS[id];
       return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Enchantment scroll · +${d.surcharge} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)} Bind it to one unit, forever.</div>${extra || ''}</button>`;
     }
+    if (kind === 'talent') {
+      const t = TALENTS[id];
+      return `<button class="card" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · Level 2' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
+    }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
     return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
@@ -2756,7 +2809,7 @@
   function spoilCard(sp, i, taken) {
     const attrs = `data-spoil="${i}" ${taken ? 'disabled' : ''}`;
     if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs);
-    if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs);
+    if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs);
     return `<button class="card" ${attrs}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
   }
 
@@ -2862,7 +2915,7 @@
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
       const dis = `data-buy="${i}" ${can ? '' : 'disabled'}`;
       if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, price);
-      if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, price);
+      if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, price);
       if (it.kind === 'relic')
         return `<button class="card" ${dis}><div class="kind">${ic('gem')} Relic · ${RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
       if (it.kind === 'supply')
@@ -2878,6 +2931,7 @@
         <div class="row"><div class="grow"><p class="eyebrow">Merchant</p><h2>The Wandering Market</h2></div></div>
         <div class="row">${resbar(run)}<span class="grow"></span><button class="btn" id="shArmy">${ic('army')} Army</button></div>
         ${section('Recruits', ['recruit'])}
+        ${section('Talents', ['talent'])}
         ${section('Skills', ['skill'])}
         ${section('Gear', ['gear'])}
         ${section('Enchantments', ['scroll'])}
@@ -3072,6 +3126,7 @@
         <h4>Levels, abilities, skills and gear</h4>
         <ul>
           <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
+          <li>The free pick and active abilities are always open. Passive picks marked ${ic('star')} are <b>talents</b>: class-specific, found in shops and battle spoils, and each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
           <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
