@@ -257,8 +257,12 @@
       units: [],
       byId: {},
       occ: new Array(cfg.w * cfg.h).fill(0),
-      side: 'P',
+      side: 'E',
       turn: 1,
+      // Alternating activations: who acted last, consecutive passes, sides done this round.
+      lastActor: null,
+      passes: 0,
+      done: { P: false, E: false },
       over: false,
       winner: null,
       rng: new AG.RNG(cfg.seed || 1),
@@ -299,6 +303,8 @@
       if (!s.relics[team].has('sands_of_haste')) continue;
       for (const u of s.units) if (u.team === other(team) && UNITS[u.type].rec >= 2 && !u.boss) u.wait = 1;
     }
+    // The enemy opens the battle, unless it has nothing to do.
+    s.side = hasMove(s, 'E') || !hasMove(s, 'P') ? 'E' : 'P';
     return s;
   }
 
@@ -1219,19 +1225,26 @@
       u.burn = { turns: Math.max(fx.burn[0], p ? p.turns : 0), dmg: Math.max(fx.burn[1], p ? p.dmg : 0), src: src.uid };
       emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
     }
+    // A unit that has already acted this round would lose a turn of its debuff when the
+    // round ends; stamp it so the countdown starts next round.
+    u.fresh = u.fresh || {};
+    const stamp = u.activated ? s.turn : 0;
     if (fx.root) {
       if (statusImmune(s, u, 'root')) emit(s, { t: 'resist', uid: u.uid });
       else {
         u.root = Math.max(u.root, fx.root);
+        u.fresh.root = stamp;
         emit(s, { t: 'status', uid: u.uid, status: 'root', turns: u.root });
       }
     }
     if (fx.weak) {
       u.weak = Math.max(u.weak, fx.weak);
+      u.fresh.weak = stamp;
       emit(s, { t: 'status', uid: u.uid, status: 'weak', turns: u.weak });
     }
     if (fx.mark) {
       u.mark = Math.max(u.mark, fx.mark);
+      u.fresh.mark = stamp;
       emit(s, { t: 'status', uid: u.uid, status: 'mark', turns: u.mark });
     }
     if (fx.knock && u.alive) knockback(s, src, u);
@@ -1773,31 +1786,98 @@
       .map((w) => ({ i: w.i, team: w.team, turn: w.turn, in: w.turn - s.turn, src: w.src, types: w.units.map((u) => u.type), marks: w.marks }));
   }
 
+  // ---------------------------------------------------------------- rounds
+  //
+  // A battle is a series of rounds. Within a round the sides alternate, one unit activation
+  // at a time: the enemy opens the battle, and each later round opens with whoever did not
+  // act last. Every unit activates at most once a round, and a side with nothing left to do
+  // is skipped. When both sides pass, or neither can act, the round ends: recovery and
+  // statuses tick down, wagons roll and reinforcements arrive. The next round then opens
+  // with poison, burns, healing and auras.
+
+  // A ready unit that can actually do something: move somewhere, or reach a target.
+  function usefulUnit(s, u) {
+    if (u.move > 0 && !u.traits.has('immobile') && u.root === 0 && reachable(s, u).size > 1) return true;
+    return allTargets(s, u).length > 0;
+  }
+
+  function hasMove(s, team) {
+    return !s.done[team] && readyUnits(s, team).some((u) => usefulUnit(s, u));
+  }
+
+  function setSide(s, team) {
+    s.side = team;
+    emit(s, { t: 'side', side: team });
+  }
+
+  // Hand the initiative on after an activation (or a pass).
+  function yieldTurn(s, passed) {
+    if (s.over) return;
+    if (s.act) {
+      const acted = s.act.moved || s.act.acted;
+      if (acted) finishActivation(s, null);
+      else s.act = null;
+      if (acted) passed = false;
+    }
+    const me = s.side;
+    const foe = other(me);
+    s.passes = passed ? s.passes + 1 : 0;
+    if (!passed) s.lastActor = me;
+    if (s.passes < 2 && hasMove(s, foe)) return setSide(s, foe);
+    if (!passed && hasMove(s, me)) return setSide(s, me);
+    endRound(s);
+  }
+
+  // Skip this activation. The side may still act later in the round.
+  function pass(s) {
+    yieldTurn(s, true);
+  }
+
+  // This side is done for the round.
   function endTurn(s) {
     if (s.over) return;
-    if (s.act) finishActivation(s, null);
     const side = s.side;
+    if (s.act && (s.act.moved || s.act.acted)) {
+      finishActivation(s, null);
+      s.lastActor = side;
+    }
+    s.act = null;
+    s.done[side] = true;
+    yieldTurn(s, true);
+  }
+
+  // Wrap up a round and start the next.
+  function endRound(s) {
+    if (s.over) return;
+    s.act = null;
+    closeRound(s);
+    if (!s.over) startRound(s);
+  }
+
+  // Recovery and statuses tick down, wagons roll and reinforcements arrive. A debuff that
+  // landed after its victim had acted waits a round before counting down, so "roots for
+  // 2 turns" always covers two of the victim's activations.
+  function closeRound(s) {
     for (const u of s.units) {
-      if (!u.alive || u.team !== side) continue;
+      if (!u.alive) continue;
       if (!u.activated) {
         if (u.wait > 0) u.wait--;
         else if (u.para > 0) u.para--;
       }
-      if (u.root > 0) u.root--;
-      if (u.weak > 0) u.weak--;
-      if (u.mark > 0) u.mark--;
+      const fresh = u.fresh || {};
+      for (const k of ['root', 'weak', 'mark']) if (u[k] > 0 && fresh[k] !== s.turn) u[k]--;
       if (u.frenzy > 0) u.frenzy--;
       u.activated = false;
     }
-    driveCarts(s, side);
-    checkOutcome(s);
-    if (s.over) return;
-    spawnWaves(s, side);
-    checkOutcome(s);
-    if (s.over) return;
-    s.side = other(side);
-    if (s.side === 'P') s.turn++;
-    startTurn(s);
+    for (const team of ['E', 'P']) {
+      driveCarts(s, team);
+      checkOutcome(s);
+      if (s.over) return;
+      spawnWaves(s, team);
+      checkOutcome(s);
+      if (s.over) return;
+    }
+    s.turn++;
   }
 
   function tickDot(s, u, kind) {
@@ -1814,17 +1894,9 @@
     }
   }
 
-  function startTurn(s) {
-    const team = s.side;
-    emit(s, { t: 'turn', side: team, turn: s.turn });
-    if (team === 'P' && s.turn > s.turnLimit) {
-      s.over = true;
-      s.winner = strength(s, 'P') > strength(s, 'E') ? 'P' : 'E';
-      s.timeout = true;
-      emit(s, { t: 'end', winner: s.winner, timeout: true });
-      return;
-    }
-    // Hazards fade on their owner's turn.
+  // What happens to a team at the start of a round.
+  function startEffects(s, team) {
+    // Hazards fade at the start of each round of their owner's.
     const before = s.tfx.length;
     s.tfx = s.tfx.filter((f) => f.team !== team || --f.turns > 0);
     if (s.tfx.length !== before) emit(s, { t: 'hazardEnd' });
@@ -1893,28 +1965,6 @@
       }
     }
     resolveBooms(s);
-    if (team === 'P' && s.hold) {
-      const h = s.hold;
-      const on = at(s, h.x, h.y);
-      if (on && on.team === 'P' && !on.nonCombat) h.count++;
-      else h.count = 0;
-      emit(s, { t: 'hold', count: h.count, need: h.need, uid: on && on.team === 'P' ? on.uid : 0 });
-      if (h.count >= h.need) {
-        s.over = true;
-        s.winner = 'P';
-        s.act = null;
-        emit(s, { t: 'end', winner: 'P', held: true });
-        return;
-      }
-    }
-    if (team === 'P' && s.surviveTurns && s.turn > s.surviveTurns) {
-      s.over = true;
-      s.winner = 'P';
-      s.act = null;
-      emit(s, { t: 'end', winner: 'P', survived: true });
-      return;
-    }
-    if (team === 'P') planWaves(s);
     if (s.relics[team].has('healing_salve')) {
       let best = null;
       for (const u of s.units) {
@@ -1923,7 +1973,49 @@
       }
       if (best && best.hp < best.maxHp) heal(s, best, 6, 'salve');
     }
-    checkOutcome(s);
+  }
+
+  function finish(s, winner, why) {
+    s.over = true;
+    s.winner = winner;
+    s.act = null;
+    emit(s, Object.assign({ t: 'end', winner }, why));
+  }
+
+  function startRound(s) {
+    for (let guard = 0; guard < 60; guard++) {
+      emit(s, { t: 'turn', side: 'round', turn: s.turn });
+      if (s.turn > s.turnLimit) {
+        s.timeout = true;
+        return finish(s, strength(s, 'P') > strength(s, 'E') ? 'P' : 'E', { timeout: true });
+      }
+      for (const team of ['E', 'P']) {
+        startEffects(s, team);
+        checkOutcome(s);
+        if (s.over) return;
+      }
+      if (s.hold) {
+        const h = s.hold;
+        const on = at(s, h.x, h.y);
+        if (on && on.team === 'P' && !on.nonCombat) h.count++;
+        else h.count = 0;
+        emit(s, { t: 'hold', count: h.count, need: h.need, uid: on && on.team === 'P' ? on.uid : 0 });
+        if (h.count >= h.need) return finish(s, 'P', { held: true });
+      }
+      if (s.surviveTurns && s.turn > s.surviveTurns) return finish(s, 'P', { survived: true });
+      planWaves(s);
+      checkOutcome(s);
+      if (s.over) return;
+      s.done = { P: false, E: false };
+      s.passes = 0;
+      // Whoever did not act last opens the round; the enemy opens the battle.
+      const first = s.lastActor ? other(s.lastActor) : 'E';
+      if (hasMove(s, first)) return setSide(s, first);
+      if (hasMove(s, other(first))) return setSide(s, other(first));
+      // Nobody can act this round: let it pass.
+      closeRound(s);
+      if (s.over) return;
+    }
   }
 
   function canDealDamage(u) {
@@ -2015,7 +2107,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, endTurn, startTurn, checkOutcome, forfeit, drainEvents,
+    finishActivation, yieldTurn, pass, endTurn, endRound, startRound, hasMove, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -518,6 +518,8 @@
   const PRIMARY = {
     normal: [['rout', 30], ['banner', 13], ['prison', 12], ['hold', 12], ['commander', 10], ['survive', 12], ['totems', 12], ['raze', 12]],
     elite: [['rout', 40], ['commander', 24], ['banner', 20], ['raze', 14], ['totems', 12]],
+    // The first fights of a run: straightforward goals while you learn the ropes.
+    intro: [['rout', 40], ['banner', 18], ['prison', 16], ['hold', 14], ['commander', 12]],
   };
 
   // Missions with buildings or reinforcements field a smaller army up front.
@@ -651,16 +653,18 @@
     const act = run.act;
     const rng = AG.derive(run.seed, 'enc:' + act + ':' + node.id + ':' + kind);
     const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
+    // The first two rows of Act I: no sieges or convoys, and a slightly smaller army.
+    const intro = act === 1 && group === 'normal' && node.row <= 1;
     let tpl;
     if (group === 'boss') tpl = ENCOUNTERS[act].boss[bossOf(run)];
     else {
-      const pool = ENCOUNTERS[act][group];
+      const pool = ENCOUNTERS[act][group].filter((t) => !intro || !t.layout);
       const fresh = pool.filter((t) => !run.recentEnc.includes(t.name));
       tpl = rng.pick(fresh.length ? fresh : pool);
     }
     const layout = tpl.layout || null;
-    let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[group]);
-    const fullBudget = enemyBudget(run, node, kind);
+    let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[intro ? 'intro' : group]);
+    const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1);
     const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
@@ -918,14 +922,14 @@
       banner: 'Burn the War Banner, or rout the enemy. Enemies near their banner hit 15% harder.',
       prison: 'Break the prison cage, or rout the guards. The freed prisoner joins your army.',
       commander: 'Assassinate the enemy Commander (crowned), or rout them all.',
-      hold: 'Hold the shrine: start 2 of your turns in a row with a unit on it. Or rout the enemy.',
-      survive: `Survive ${enc.surviveTurns || 6} turns while waves of reinforcements march in from the far edge. Or rout them all.`,
-      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
-      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every turn.`,
-      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
+      hold: 'Hold the shrine: start 2 rounds in a row with a unit on it. Or rout the enemy.',
+      survive: `Survive ${enc.surviveTurns || 6} rounds while waves of reinforcements march in from the far edge. Or rout them all.`,
+      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} rounds until destroyed.` : ''} Towers and walls do not need to fall.`,
+      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every round.`,
+      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} rounds until it falls.`,
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or rout the escort.',
     };
-    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
+    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} rounds`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -936,7 +940,7 @@
             reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Choose a skill' : 'A relic',
           };
         case 'swift':
-          return { b, text: `Win within ${b.turns} turns.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Win within ${b.turns} rounds.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
           return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
@@ -1986,10 +1990,10 @@
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
-    if (has('troll')) tips.push('Trolls regenerate 12 a turn unless magic hurt them since their last turn.');
+    if (has('troll')) tips.push('Trolls regenerate 12 a round unless magic hurt them since the last one.');
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
     if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');
-    if (has('cart')) tips.push('The wagons flee left 2 tiles a turn. Block their path with units and break them fast.');
+    if (has('cart')) tips.push('The wagons flee left 2 tiles a round. Block their path with units and break them fast.');
     if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
     if (has('cleric', 'shaman')) tips.push('Enemy healers: kill them early, or poison the huddle so the healing fails.');

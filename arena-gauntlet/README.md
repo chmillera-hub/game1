@@ -28,13 +28,19 @@ on a phone turned sideways, but portrait works too.
 - **Damage**: physical hits are reduced by armor and block; magic is reduced by
   magic resistance. Both cap at 50%, and some units go as low as -50%: Specters
   shrug off steel but melt to spells, and Mage Knights do the reverse.
-- **Combat**: each ready unit moves and acts once per turn, then picks a facing.
-  Block works from the front, half from the side, never from behind. Acting
-  starts a unit's Recover timer.
+- **Taking turns**: battles run in rounds, and within a round the sides take turns
+  one unit at a time, like chess. The enemy moves first: one unit moves, acts or
+  both. Then you answer with one of yours, and so on. Every unit moves at most once
+  a round. When one side has nothing left to do, the other finishes its moves. You
+  can Pass to let the enemy go first, and your units stay ready. Recovery, statuses,
+  wagons and reinforcements tick at the end of each round.
+- **Combat**: after its move, a unit picks a facing. Block works from the front,
+  half from the side, never from behind. Acting makes a unit sit out as many rounds
+  as its Recover stat.
 - **Reading the enemy**: tap any unit, yours or theirs, to see a small diagram of
   every attack: where it can aim and exactly which tiles one use hits (a Brute's
   maul strikes its target and the three tiles around it; a Witch's lightning runs
-  five tiles straight). The board shows everywhere it could hit next turn.
+  five tiles straight). The board shows everywhere it could hit on its next move.
 - **Missions**: rout the enemy, burn a War Banner, break a prison cage, kill a
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
@@ -45,11 +51,11 @@ on a phone turned sideways, but portrait works too.
   wood burns, and portals unravel under magic. Siege damage breaks them fast:
   the Trebuchet, the Siege Hammer, the Demolisher skill, a Blasting Charge, the
   Golem's Boulder Toss and the Sapper's Kit relic.
-- **Reinforcements**: some battles send enemy waves at set turns, from the far
+- **Reinforcements**: some battles send enemy waves at set rounds, from the far
   edge or out of buildings. The War Room shows the schedule, and badges count
-  down on each building. A turn ahead, red tiles mark where they land; standing
-  on one blocks that arrival at a cost of 10 HP. Destroy a building and its
-  remaining waves are cut off.
+  down on each building. During the round they arrive, red tiles mark where they
+  land when it ends; standing on one blocks that arrival at a cost of 10 HP.
+  Destroy a building and its remaining waves are cut off.
 - **Defeat**: lose as often as you need. Retry with a new setup and +1 Supply per
   loss after the first (up to +3), or quit; Continue on the title screen returns
   to the same battle.

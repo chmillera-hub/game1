@@ -814,24 +814,25 @@
     return { move: list.map((r) => [r.x, r.y]), hit };
   }
 
-  // Run a whole AI turn instantly (used by tests and fast-forward).
-  function playTurn(s, team, opts) {
-    let guard = 0;
-    while (!s.over && s.side === team && guard++ < 40) {
-      const plan = chooseActivation(s, team, opts);
-      if (!plan) break;
-      if (plan.kind === 'turn') {
-        E.beginActivation(s, plan.uid);
-        E.finishActivation(s, plan.facing);
-        continue;
-      }
-      if (!executePlan(s, plan, opts)) {
-        const u = s.byId[plan.uid];
-        u.activated = true;
-      }
+  // Carry out a chosen plan as this side's activation, then hand the initiative on.
+  // With no plan, the side passes.
+  function runPlan(s, plan, opts) {
+    if (!plan) return E.pass(s);
+    if (plan.kind === 'turn') {
+      E.beginActivation(s, plan.uid);
+      E.finishActivation(s, plan.facing);
+    } else if (!executePlan(s, plan, opts)) {
+      const u = s.byId[plan.uid];
+      u.activated = true;
     }
-    if (!s.over && s.side === team) E.endTurn(s);
+    if (!s.over) E.yieldTurn(s, false);
   }
 
-  AG.AI = { chooseActivation, executePlan, smartFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant };
+  // One activation for `team`, played instantly (tests, simulations and fast-forward).
+  function playTurn(s, team, opts) {
+    if (s.over || s.side !== team) return;
+    runPlan(s, chooseActivation(s, team, opts), opts);
+  }
+
+  AG.AI = { chooseActivation, executePlan, runPlan, smartFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant };
 })(typeof window !== 'undefined' ? window : globalThis);

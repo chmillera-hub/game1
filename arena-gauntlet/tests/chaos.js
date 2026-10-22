@@ -78,7 +78,7 @@ for (let i = 0; i < N; i++) {
   const objective = units.some((u) => D.UNITS[u.type].boss) ? 'boss' : rng.pick(['all', 'all', 'destroy', 'survive']);
   const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective, surviveTurns: objective === 'survive' ? 6 : 0, waves });
   let turns = 0;
-  while (!s.over && turns++ < 200) {
+  while (!s.over && turns++ < 4000) {
     AG.AI.playTurn(s, s.side, { stance: rng.pick(['aggressive', 'balanced', 'defensive']), temp: 1 });
     s.events.length = 0;
     for (const u of s.units) {

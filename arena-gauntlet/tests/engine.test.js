@@ -4,13 +4,15 @@ const AG = require('./load')(['rng.js', 'data.js', 'engine.js']);
 const E = AG.Engine;
 
 let passed = 0;
+const failed = [];
 function test(name, fn) {
   try {
     fn();
     passed++;
   } catch (e) {
     console.error('FAIL', name);
-    throw e;
+    if (!process.env.ALL) throw e;
+    failed.push(name + ': ' + e.message.split('\n')[0]);
   }
 }
 
@@ -18,7 +20,10 @@ function board(units, opts = {}) {
   const w = opts.w || 9;
   const h = opts.h || 9;
   const terrain = opts.terrain || new Array(w * h).fill(0);
-  return E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot, waves: opts.waves });
+  const s = E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot, waves: opts.waves });
+  // Most rule checks start with the player to move; turn order has its own tests.
+  if (!opts.enemyFirst) s.side = 'P';
+  return s;
 }
 
 // Begin, act and finish in one go. `ai` picks the act (0 = main attack).
@@ -188,10 +193,11 @@ test('move-only halves recovery', () => {
   assert.strictEqual(p.wait, 1);
 });
 
-test('paralysis costs a full turn on top of recovery and removes block', () => {
+test('paralysis costs a full round on top of recovery and removes block', () => {
   const s = board([
     { type: 'enchantress', team: 'P', x: 4, y: 7 },
     { type: 'knight', team: 'E', x: 4, y: 4, facing: 2 },
+    { type: 'scout', team: 'P', x: 0, y: 8 },
   ]);
   const [en, kn] = s.units;
   kn.wait = 1;
@@ -199,16 +205,15 @@ test('paralysis costs a full turn on top of recovery and removes block', () => {
   assert.ok(E.performAction(s, en.uid, { kind: 'tile', x: 4, y: 4 }));
   assert.strictEqual(kn.para, 1);
   assert.strictEqual(E.blockChance(s, kn, 'front'), 0);
-  E.endTurn(s);
-  assert.ok(!E.canActivate(s, kn));
-  E.endTurn(s);
-  assert.strictEqual(kn.wait, 0);
+  E.finishActivation(s, 0);
+  E.endRound(s);
+  assert.strictEqual(s.turn, 2);
+  assert.strictEqual(kn.wait, 0, 'recovery ticks first');
   assert.strictEqual(kn.para, 1);
-  E.endTurn(s);
-  assert.ok(!E.canActivate(s, kn), 'still paralyzed');
-  E.endTurn(s);
-  E.endTurn(s);
-  assert.ok(E.canActivate(s, kn));
+  assert.ok(!E.canActivateFor(s, kn, 'E'), 'still paralyzed in round 2');
+  E.endRound(s);
+  assert.strictEqual(kn.para, 0);
+  assert.ok(E.canActivateFor(s, kn, 'E'), 'free in round 3');
 });
 
 test('poison ticks, blocks healing; golems and the undead are immune', () => {
@@ -224,7 +229,7 @@ test('poison ticks, blocks healing; golems and the undead are immune', () => {
   assert.ok(kn.poison && kn.poison.turns === 3);
   assert.strictEqual(go.poison, null);
   assert.strictEqual(sk.poison, null);
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(kn.hp, kn.maxHp - 6);
   assert.strictEqual(kn.poison.turns, 2);
   const before = kn.hp;
@@ -318,20 +323,33 @@ test("Snare Shot roots; roots wear off on the victim's turns", () => {
   const s = board([
     { type: 'archer', team: 'P', x: 4, y: 6, a1: 'a_snare' },
     { type: 'knight', team: 'E', x: 4, y: 3, facing: 0 },
+    { type: 'scout', team: 'P', x: 0, y: 8 },
   ]);
   const [ar, kn] = s.units;
   act(s, ar, { kind: 'unit', uid: kn.uid }, 1);
   assert.strictEqual(kn.hp, kn.maxHp - 6);
   assert.strictEqual(kn.root, 2);
   assert.strictEqual(E.reachable(s, kn).size, 1, 'rooted units cannot move');
-  s.side = 'P';
-  E.endTurn(s);
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(kn.root, 1);
-  E.endTurn(s);
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(kn.root, 0);
   assert.ok(E.reachable(s, kn).size > 1);
+});
+
+test('a root landing after its victim acted waits a round to count down', () => {
+  const s = board([
+    { type: 'archer', team: 'P', x: 4, y: 6, a1: 'a_snare' },
+    { type: 'knight', team: 'E', x: 4, y: 3, facing: 0 },
+    { type: 'scout', team: 'P', x: 0, y: 8 },
+  ]);
+  const [ar, kn] = s.units;
+  kn.activated = true;
+  act(s, ar, { kind: 'unit', uid: kn.uid }, 1);
+  E.endRound(s);
+  assert.strictEqual(kn.root, 2, 'it still loses two activations');
+  E.endRound(s);
+  assert.strictEqual(kn.root, 1);
 });
 
 test('Poison Arrows poison on hit', () => {
@@ -387,15 +405,13 @@ test('wall of fire burns units that enter it and start their turn in it', () => 
   ]);
   const [py, kn] = s.units;
   act(s, py, { kind: 'tile', x: 4, y: 4 }, 1);
-  s.side = 'P';
-  E.endTurn(s);
+  s.side = 'E';
   assert.ok(E.beginActivation(s, kn.uid));
   assert.ok(E.moveUnit(s, kn.uid, 4, 4));
   assert.strictEqual(kn.hp, kn.maxHp - 16, 'two burning tiles crossed');
   E.finishActivation(s, 2);
-  E.endTurn(s);
-  E.endTurn(s);
-  assert.strictEqual(kn.hp, kn.maxHp - 24, 'starts its turn in the fire');
+  E.endRound(s);
+  assert.strictEqual(kn.hp, kn.maxHp - 24, 'starts the next round in the fire');
 });
 
 test('powder kegs explode and set off their neighbors', () => {
@@ -461,15 +477,13 @@ test('troll regeneration stops after magic damage', () => {
   ]);
   const [py, tr] = s.units;
   tr.hp = 40;
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(tr.hp, 52, 'regenerates 12');
-  E.endTurn(s);
   act(s, py, { kind: 'tile', x: 4, y: 4 });
   const after = tr.hp;
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(tr.hp, after, 'scorched: no regeneration');
-  E.endTurn(s);
-  E.endTurn(s);
+  E.endRound(s);
   assert.strictEqual(tr.hp, Math.min(tr.maxHp, after + 12));
 });
 
@@ -907,7 +921,7 @@ test('materials: wood burns, stone resists, portals unravel under magic', () => 
   assert.strictEqual(E.calcHit(s, kn, portal, {}).dmg, 9);
 });
 
-test('totems heal nearby enemies at the start of their turn, but not poisoned ones', () => {
+test('totems heal nearby enemies at the start of each round, but not poisoned ones', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 8 },
     { type: 'totem', team: 'E', x: 4, y: 2 },
@@ -918,8 +932,7 @@ test('totems heal nearby enemies at the start of their turn, but not poisoned on
   const [, , near, far, sick] = s.units;
   for (const o of [near, far, sick]) o.hp = 20;
   sick.poison = { turns: 3, dmg: 2, src: 0 };
-  E.endTurn(s);
-  assert.strictEqual(s.side, 'E');
+  E.endRound(s);
   assert.strictEqual(near.hp, 26, 'within 2 tiles: +6');
   assert.strictEqual(far.hp, 20, '3 tiles away: nothing');
   assert.strictEqual(sick.hp, 18, 'poison blocks healing');
@@ -931,17 +944,20 @@ function tentBattle(extra, opts) {
   return board(units, Object.assign({ waves: [{ turn: 1, from: 't1', units: [{ type: 'orc' }] }, { turn: 3, from: 't1', units: [{ type: 'orc' }] }] }, opts));
 }
 
-test('waves are marked a turn ahead and arrive at the end of the enemy turn', () => {
+test('waves are marked a round ahead and arrive when the round ends', () => {
   const s = tentBattle();
   const w = s.waves[0];
+  const kn = s.units[0];
   assert.deepStrictEqual(w.marks, [[4, 2]], 'the doorway faces your side');
   assert.strictEqual(s.waves[1].marks, null, 'later waves are not marked yet');
   assert.strictEqual(E.pendingWaves(s, 'E'), 2);
-  E.endTurn(s);
-  assert.ok(!s.units.some((u) => u.type === 'orc'), 'nothing arrives during your turn');
-  E.endTurn(s);
+  assert.ok(E.beginActivation(s, kn.uid));
+  assert.ok(E.moveUnit(s, kn.uid, 4, 6));
+  E.finishActivation(s, 0);
+  assert.ok(!s.units.some((u) => u.type === 'orc'), 'nothing arrives mid-round');
+  E.yieldTurn(s, false);
   const orc = s.units.find((u) => u.type === 'orc');
-  assert.ok(orc && orc.x === 4 && orc.y === 2, 'arrived on its mark');
+  assert.ok(orc && orc.x === 4 && orc.y === 2, 'arrived on its mark as the round ended');
   assert.strictEqual(w.state, 'done');
   assert.ok(!s.over, 'more waves are coming');
 });
@@ -1002,4 +1018,86 @@ test('edge waves appear along their edge', () => {
   assert.strictEqual(fresh.find((u) => u.type === 'goblin_archer').level, 2);
 });
 
+// ------------------------------------------------------------ alternating activations
+
+function duel(extra) {
+  return board(
+    [
+      { type: 'knight', team: 'P', x: 3, y: 7 },
+      { type: 'scout', team: 'P', x: 5, y: 7 },
+      { type: 'knight', team: 'E', x: 3, y: 1 },
+      { type: 'scout', team: 'E', x: 5, y: 1 },
+    ].concat(extra || []),
+    { enemyFirst: true }
+  );
+}
+
+function step(s, uid, x, y) {
+  assert.ok(E.beginActivation(s, uid), 'can activate');
+  assert.ok(E.moveUnit(s, uid, x, y), 'can move');
+  E.finishActivation(s, 2);
+  E.yieldTurn(s, false);
+}
+
+test('the enemy opens the battle, then the sides alternate one unit at a time', () => {
+  const s = duel();
+  const [pk, ps, ek, es] = s.units;
+  assert.strictEqual(s.side, 'E');
+  assert.ok(!E.canActivate(s, pk), 'not your move yet');
+  step(s, ek.uid, 3, 2);
+  assert.strictEqual(s.side, 'P', 'your answer');
+  step(s, pk.uid, 3, 6);
+  assert.strictEqual(s.side, 'E');
+  assert.ok(!E.canActivate(s, ek), 'a unit activates once a round');
+  step(s, es.uid, 5, 2);
+  assert.strictEqual(s.side, 'P');
+  step(s, ps.uid, 5, 6);
+  assert.strictEqual(s.turn, 2, 'everyone has moved: the next round starts');
+  assert.strictEqual(s.side, 'E', 'whoever did not act last opens it');
+});
+
+test('a side with nothing left to do is skipped', () => {
+  const s = duel();
+  const [pk, ps, ek, es] = s.units;
+  es.wait = 3;
+  step(s, ek.uid, 3, 2);
+  step(s, pk.uid, 3, 6);
+  assert.strictEqual(s.side, 'P', 'the enemy has nothing ready, so you move again');
+  assert.ok(E.canActivate(s, ps));
+});
+
+test('passing hands over the move; two passes in a row end the round', () => {
+  const s = duel();
+  const [, , ek] = s.units;
+  E.pass(s);
+  assert.strictEqual(s.side, 'P');
+  assert.strictEqual(s.turn, 1);
+  E.pass(s);
+  assert.strictEqual(s.turn, 2, 'both passed');
+  assert.ok(!ek.activated && ek.wait === 0, 'passing costs nothing');
+});
+
+test('a pass is not a forfeit: the passing side can still act later in the round', () => {
+  const s = duel();
+  const [pk, , ek] = s.units;
+  E.pass(s);
+  step(s, pk.uid, 3, 6);
+  assert.strictEqual(s.side, 'E');
+  assert.ok(E.canActivate(s, ek), 'the enemy passed earlier but may act now');
+});
+
+test('an empty round passes on its own, and statuses still tick', () => {
+  const s = duel();
+  for (const u of s.units) u.wait = 2;
+  s.units[0].root = 2;
+  E.endRound(s);
+  assert.strictEqual(s.turn, 3, 'round 2 had no moves at all');
+  assert.strictEqual(s.units[0].root, 0);
+  assert.ok(s.units.every((u) => u.wait === 0));
+});
+
 console.log(`engine: ${passed} tests passed`);
+if (failed.length) {
+  console.log(failed.join('\n'));
+  process.exit(1);
+}

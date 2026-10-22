@@ -54,14 +54,14 @@
     k_wall: { name: 'Shield Wall', cost: 2, desc: 'Attacks from the side face full block instead of half.', mod: { traits: ['shieldwall'] } },
     k_riposte: { name: 'Riposte', cost: 1, desc: 'When struck in melee and still standing, strikes back for half power.', mod: { traits: ['retaliate'] } },
     k_plate: { name: 'Heavy Plate', cost: 0, desc: '+10% armor and +15% magic resistance.', mod: { stat: { armor: 0.1, res: 0.15 } } },
-    k_rally: { name: 'Rallying Cry', cost: 2, desc: 'Active, 1 use: allies within 2 tiles recover 1 turn sooner and shake off paralysis and roots.',
+    k_rally: { name: 'Rallying Cry', cost: 2, desc: 'Active, 1 use: allies within 2 tiles recover 1 round sooner and shake off paralysis and roots.',
       mod: { active: { name: 'Rallying Cry', kind: 'rally', radius: 2, uses: 1 } } },
 
     // Archer
-    a_snare: { name: 'Snare Shot', cost: 0, desc: 'Active: an arrow for 60% damage that roots the target for 2 turns. Rooted units cannot move.',
+    a_snare: { name: 'Snare Shot', cost: 0, desc: 'Active: an arrow for 60% damage that roots the target for 2 rounds. Rooted units cannot move.',
       mod: { active: { name: 'Snare Shot', kind: 'strike', range: [2, 5], dmg: 'phys', arc: true, mult: 0.6, fx: { root: 2 } } } },
-    a_poison: { name: 'Poison Arrows', cost: 1, desc: 'Longbow hits poison the target for 2 turns: 5 damage a turn, and it cannot be healed.', mod: { onHit: { poison: [2, 5] } } },
-    a_smoke: { name: 'Smoke Screen', cost: 1, desc: 'Active, 2 uses: smoke over a 5-tile area up to 4 tiles away. For 2 turns, units inside cannot be targeted from more than 1 tile away.',
+    a_poison: { name: 'Poison Arrows', cost: 1, desc: 'Longbow hits poison the target for 2 rounds: 5 damage a round, and it cannot be healed.', mod: { onHit: { poison: [2, 5] } } },
+    a_smoke: { name: 'Smoke Screen', cost: 1, desc: 'Active, 2 uses: smoke over a 5-tile area up to 4 tiles away. For 2 rounds, units inside cannot be targeted from more than 1 tile away.',
       mod: { active: { name: 'Smoke Screen', kind: 'hazard', hz: 'smoke', range: [0, 4], pattern: 'plus', turns: 2, arc: true, uses: 2 } } },
     a_eagle: { name: 'Eagle Eye', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     a_bodkin: { name: 'Bodkin Arrows', cost: 1, desc: "Arrows ignore half of the target's armor.", mod: { props: { pierce: 0.5 } } },
@@ -69,14 +69,14 @@
       mod: { active: { name: 'Arrow Volley', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, ff: false, uses: 2 } } },
 
     // Scout
-    s_caltrops: { name: 'Caltrops', cost: 0, desc: 'Active, 2 uses: scatter caltrops on an empty tile up to 3 away. The first enemy to step there stops, takes 6 damage and is rooted for 1 turn.',
+    s_caltrops: { name: 'Caltrops', cost: 0, desc: 'Active, 2 uses: scatter caltrops on an empty tile up to 3 away. The first enemy to step there stops, takes 6 damage and is rooted for 1 round.',
       mod: { active: { name: 'Caltrops', kind: 'hazard', hz: 'caltrops', range: [1, 3], pattern: 'single', turns: 6, arc: true, uses: 2 } } },
     s_ambush: { name: 'Ambusher', cost: 1, desc: '+50% damage on attacks from behind.', mod: { props: { backMult: 0.5 } } },
     s_fleet: { name: 'Fleet-footed', cost: 1, desc: '+1 Move, and it slips through enemy units.', mod: { stat: { move: 1 }, traits: ['shadowstep'] } },
     s_evasion: { name: 'Evasion', cost: 0, desc: '+15% block.', mod: { stat: { block: 0.15 } } },
-    s_mark: { name: 'Mark Prey', cost: 1, desc: 'Active, 2 uses: mark an enemy up to 5 tiles away. It takes 25% more damage for 2 turns.',
+    s_mark: { name: 'Mark Prey', cost: 1, desc: 'Active, 2 uses: mark an enemy up to 5 tiles away. It takes 25% more damage for 2 rounds.',
       mod: { active: { name: 'Mark Prey', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 }, uses: 2 } } },
-    s_venom: { name: 'Venom Blades', cost: 2, desc: 'Knife hits poison the target for 2 turns: 5 damage a turn, and no healing.', mod: { onHit: { poison: [2, 5] } } },
+    s_venom: { name: 'Venom Blades', cost: 2, desc: 'Knife hits poison the target for 2 rounds: 5 damage a round, and no healing.', mod: { onHit: { poison: [2, 5] } } },
 
     // Cleric
     c_mend: { name: 'Mend', cost: 0, desc: 'Active: heal one ally up to 4 tiles away for 150% and cure its poison and burns.',
@@ -92,7 +92,7 @@
 
     // Berserker
     b_rage: { name: 'Rage', cost: 0, desc: '+30% damage while below half HP.', mod: { props: { rageMult: 0.3 } } },
-    b_warcry: { name: 'War Cry', cost: 1, desc: 'Active, 2 uses: enemies within 2 tiles are weakened for 2 turns: they deal 30% less damage.',
+    b_warcry: { name: 'War Cry', cost: 1, desc: 'Active, 2 uses: enemies within 2 tiles are weakened for 2 rounds: they deal 30% less damage.',
       mod: { active: { name: 'War Cry', kind: 'nova', radius: 2, fx: { weak: 2 }, uses: 2 } } },
     b_thirst: { name: 'Bloodthirst', cost: 1, desc: 'Cleave heals it 5 HP for every enemy struck.', mod: { traits: ['bloodrage'] } },
     b_leap: { name: 'Savage Leap', cost: 1, desc: 'Active, 2 uses: leap to an empty tile 2 or 3 away, over anything, and cleave every adjacent enemy for 80% damage.',
@@ -102,20 +102,20 @@
 
     // Pyromancer
     p_kindling: { name: 'Controlled Burn', cost: 0, desc: 'Fireball no longer burns allies.', mod: { act: { ff: false } } },
-    p_ignite: { name: 'Ignite', cost: 1, desc: 'Fireball sets enemies burning: 5 damage a turn for 2 turns.', mod: { onHit: { burn: [2, 5] } } },
-    p_firewall: { name: 'Wall of Fire', cost: 1, desc: 'Active, 2 uses: set a 5-tile area 2 to 4 tiles away ablaze for 2 turns. Enemies that enter it or start their turn in it take 8 damage.',
+    p_ignite: { name: 'Ignite', cost: 1, desc: 'Fireball sets enemies burning: 5 damage a round for 2 rounds.', mod: { onHit: { burn: [2, 5] } } },
+    p_firewall: { name: 'Wall of Fire', cost: 1, desc: 'Active, 2 uses: set a 5-tile area 2 to 4 tiles away ablaze for 2 rounds. Enemies that enter it or start a round in it take 8 damage.',
       mod: { active: { name: 'Wall of Fire', kind: 'hazard', hz: 'fire', range: [2, 4], pattern: 'plus', turns: 2, dmgFixed: 8, arc: true, uses: 2 } } },
     p_range: { name: 'Far Cast', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     p_cloak: { name: 'Flame Cloak', cost: 1, desc: 'Enemies that strike it in melee take 8 damage.', mod: { props: { thorns: 8 } } },
     p_inferno: { name: 'Inferno', cost: 2, desc: 'Fireball scorches a full 3x3 area.', mod: { act: { pattern: 'square' } } },
 
     // Assassin
-    as_smoke: { name: 'Smoke Bomb', cost: 0, desc: 'Active, 2 uses: smoke around itself for 2 turns. Units in the smoke cannot be targeted from more than 1 tile away.',
+    as_smoke: { name: 'Smoke Bomb', cost: 0, desc: 'Active, 2 uses: smoke around itself for 2 rounds. Units in the smoke cannot be targeted from more than 1 tile away.',
       mod: { active: { name: 'Smoke Bomb', kind: 'hazard', hz: 'smoke', range: [0, 1], pattern: 'plus', turns: 2, uses: 2 } } },
-    as_poison: { name: 'Poisoned Dagger', cost: 1, desc: 'Hits poison the target for 2 turns: 6 damage a turn, and no healing.', mod: { onHit: { poison: [2, 6] } } },
+    as_poison: { name: 'Poisoned Dagger', cost: 1, desc: 'Hits poison the target for 2 rounds: 6 damage a round, and no healing.', mod: { onHit: { poison: [2, 6] } } },
     as_exec: { name: 'Executioner', cost: 1, desc: '+40% damage against targets below half HP.', mod: { props: { execMult: 0.4 } } },
     as_evasion: { name: 'Evasion', cost: 0, desc: '+15% block.', mod: { stat: { block: 0.15 } } },
-    as_cripple: { name: 'Hamstring', cost: 1, desc: 'Hits root the target for 1 turn.', mod: { onHit: { root: 1 } } },
+    as_cripple: { name: 'Hamstring', cost: 1, desc: 'Hits root the target for 1 round.', mod: { onHit: { root: 1 } } },
     as_shadow: { name: 'Shadow Strike', cost: 2, desc: "Active, 2 uses: vanish and reappear behind an enemy 2 to 4 tiles away, striking its back. The tile behind it must be free.",
       mod: { active: { name: 'Shadow Strike', kind: 'shadowstrike', range: [2, 4], dmg: 'phys', mult: 1, uses: 2 } } },
 
@@ -123,24 +123,24 @@
     g_toss: { name: 'Boulder Toss', cost: 0, desc: 'Active: hurl a boulder at an enemy 2 to 4 tiles away for 80% damage, double against buildings.',
       mod: { active: { name: 'Boulder Toss', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, vs: { structure: 1 } } } },
     g_quake: { name: 'Earthshaker', cost: 1, desc: 'Stone Fist also hits every enemy beside the target.', mod: { act: { kind: 'quake' } } },
-    g_moss: { name: 'Living Moss', cost: 1, desc: 'Heals 6 HP at the start of each of your turns.', mod: { props: { regen: 6 } } },
+    g_moss: { name: 'Living Moss', cost: 1, desc: 'Heals 6 HP at the start of each round.', mod: { props: { regen: 6 } } },
     g_bulwark: { name: 'Bulwark', cost: 1, desc: 'Its Guardian protection rises to 35%.', mod: { props: { guard: 0.35 } } },
     g_runes: { name: 'Runic Core', cost: 0, desc: '+30% magic resistance.', mod: { stat: { res: 0.3 } } },
     g_slam: { name: 'Ground Slam', cost: 2, desc: 'Active, 2 uses: strike every adjacent enemy for 80% damage and knock them back.',
       mod: { active: { name: 'Ground Slam', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.8, fx: { knock: 1 }, uses: 2 } } },
 
     // Beast Rider
-    br_howl: { name: 'Howl', cost: 0, desc: 'Active, 2 uses: enemies within 2 tiles are weakened for 2 turns: they deal 30% less damage.',
+    br_howl: { name: 'Howl', cost: 0, desc: 'Active, 2 uses: enemies within 2 tiles are weakened for 2 rounds: they deal 30% less damage.',
       mod: { active: { name: 'Howl', kind: 'nova', radius: 2, fx: { weak: 2 }, uses: 2 } } },
     br_trample: { name: 'Trample', cost: 1, desc: 'Its Charge bonus rises to +60%.', mod: { props: { chargeMult: 0.3 } } },
-    br_hamstring: { name: 'Hamstring', cost: 1, desc: 'Lance hits root the target for 1 turn.', mod: { onHit: { root: 1 } } },
+    br_hamstring: { name: 'Hamstring', cost: 1, desc: 'Lance hits root the target for 1 round.', mod: { onHit: { root: 1 } } },
     br_pack: { name: 'Pack Hunter', cost: 0, desc: '+25% damage when another ally stands next to the target.', mod: { props: { packMult: 0.25 } } },
     br_swift: { name: 'Swift Mount', cost: 1, desc: '+1 Move.', mod: { stat: { move: 1 } } },
     br_scent: { name: 'Bloodscent', cost: 1, desc: 'Heals for 30% of the damage it deals.', mod: { props: { lifesteal: 0.3 } } },
 
     // Furgon
     f_bark: { name: 'Barkskin', cost: 0, desc: '+10% armor and +10% magic resistance.', mod: { stat: { armor: 0.1, res: 0.1 } } },
-    f_roots: { name: 'Entangling Roots', cost: 1, desc: 'Active, 2 uses: roots every enemy in a 5-tile area 2 to 4 tiles away for 2 turns.',
+    f_roots: { name: 'Entangling Roots', cost: 1, desc: 'Active, 2 uses: roots every enemy in a 5-tile area 2 to 4 tiles away for 2 rounds.',
       mod: { active: { name: 'Entangling Roots', kind: 'blast', range: [2, 4], pattern: 'plus', arc: true, ff: false, fx: { root: 2 }, uses: 2 } } },
     f_thorn: { name: 'Thornwall', cost: 1, desc: 'Its shrubs have double HP and prick melee attackers for 6.', mod: { traits: ['thornwall'] } },
     f_grove: { name: 'Grove Keeper', cost: 0, desc: 'Grow reaches 1 tile further, and 4 shrubs can stand at once.', mod: { stat: { range: 1 }, props: { shrubs: 1 } } },
@@ -150,45 +150,45 @@
 
     // Poison Wisp
     w_drift: { name: 'Drift', cost: 0, desc: '+1 Move.', mod: { stat: { move: 1 } } },
-    w_virulent: { name: 'Virulence', cost: 1, desc: 'Its poison deals 2 more damage a turn.', mod: { props: { poisonDmg: 2 } } },
-    w_wither: { name: 'Withering Mist', cost: 1, desc: 'Miasma also weakens enemies for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
+    w_virulent: { name: 'Virulence', cost: 1, desc: 'Its poison deals 2 more damage a round.', mod: { props: { poisonDmg: 2 } } },
+    w_wither: { name: 'Withering Mist', cost: 1, desc: 'Miasma also weakens enemies for 2 rounds: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
     w_ethereal: { name: 'Ethereal', cost: 0, desc: '+20% armor.', mod: { stat: { armor: 0.2 } } },
-    w_linger: { name: 'Lingering Spores', cost: 1, desc: 'Its poison lasts 1 turn longer.', mod: { props: { poisonTurns: 1 } } },
+    w_linger: { name: 'Lingering Spores', cost: 1, desc: 'Its poison lasts 1 round longer.', mod: { props: { poisonTurns: 1 } } },
     w_plague: { name: 'Plague', cost: 2, desc: 'Miasma reaches 3 tiles.', mod: { stat: { radius: 1 } } },
 
     // Barrier Ward
     bw_crystal: { name: 'Hardened Crystal', cost: 0, desc: '+20 max HP.', mod: { stat: { hp: 20 } } },
-    bw_mend: { name: 'Mending Light', cost: 1, desc: 'Allies in its aura heal 4 HP at the start of your turn.', mod: { traits: ['auramend'] } },
+    bw_mend: { name: 'Mending Light', cost: 1, desc: 'Allies in its aura heal 4 HP at the start of each round.', mod: { traits: ['auramend'] } },
     bw_reach: { name: 'Wide Field', cost: 2, desc: 'Its aura reaches 3 tiles.', mod: { props: { auraR: 1 } } },
     bw_reflect: { name: 'Reflection', cost: 0, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
     bw_steel: { name: 'Steel Field', cost: 1, desc: 'Its aura also grants +10% armor.', mod: { traits: ['steelfield'] } },
-    bw_purge: { name: 'Purging Pulse', cost: 1, desc: 'At the start of your turn, allies in its aura are cured of roots and burns.', mod: { traits: ['purge'] } },
+    bw_purge: { name: 'Purging Pulse', cost: 1, desc: 'At the start of each round, allies in its aura are cured of roots and burns.', mod: { traits: ['purge'] } },
 
     // Enchantress
     e_far: { name: 'Far Song', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     e_spike: { name: 'Mind Spike', cost: 1, desc: 'Mesmerize deals 50% more damage.', mod: { act: { mult: 1.5 } } },
-    e_chain: { name: "Siren's Chain", cost: 1, desc: 'Mesmerize also roots its targets for 2 turns.', mod: { act: { fx: { root: 2 } } } },
+    e_chain: { name: "Siren's Chain", cost: 1, desc: 'Mesmerize also roots its targets for 2 rounds.', mod: { act: { fx: { root: 2 } } } },
     e_glamour: { name: 'Glamour', cost: 0, desc: '+15% block and +10% magic resistance.', mod: { stat: { block: 0.15, res: 0.1 } } },
-    e_frailty: { name: 'Hex of Frailty', cost: 1, desc: 'Mesmerize marks its targets for 2 turns: they take 25% more damage.', mod: { act: { fx: { mark: 2 } } } },
-    e_trance: { name: 'Deep Trance', cost: 2, desc: 'Paralysis lasts 2 turns.', mod: { act: { fx: { para: 2 } } } },
+    e_frailty: { name: 'Hex of Frailty', cost: 1, desc: 'Mesmerize marks its targets for 2 rounds: they take 25% more damage.', mod: { act: { fx: { mark: 2 } } } },
+    e_trance: { name: 'Deep Trance', cost: 2, desc: 'Paralysis lasts 2 rounds.', mod: { act: { fx: { para: 2 } } } },
 
     // Dark Magic Witch
     wi_siphon: { name: 'Soul Siphon', cost: 0, desc: 'Heals for 30% of the damage it deals.', mod: { props: { lifesteal: 0.3 } } },
-    wi_hex: { name: 'Hex', cost: 1, desc: 'Active, 2 uses: curse an enemy up to 5 tiles away. It takes 25% more damage for 2 turns.',
+    wi_hex: { name: 'Hex', cost: 1, desc: 'Active, 2 uses: curse an enemy up to 5 tiles away. It takes 25% more damage for 2 rounds.',
       mod: { active: { name: 'Hex', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 }, uses: 2 } } },
     wi_abyss: { name: 'Abyssal Bolt', cost: 2, desc: 'Dark Lightning passes through allies harmlessly and reaches 7 tiles.', mod: { act: { ff: false }, stat: { len: 2 } } },
     wi_long: { name: 'Long Reach', cost: 0, desc: 'Dark Lightning reaches 1 tile further.', mod: { stat: { len: 1 } } },
-    wi_curse: { name: 'Withering Curse', cost: 1, desc: 'Dark Lightning weakens its targets for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
+    wi_curse: { name: 'Withering Curse', cost: 1, desc: 'Dark Lightning weakens its targets for 2 rounds: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
     wi_storm: { name: 'Black Storm', cost: 2, desc: 'Active, 1 use: dark lightning lashes out 4 tiles in all four directions, striking only enemies.',
       mod: { active: { name: 'Black Storm', kind: 'cross', len: 4, dmg: 'magic', ff: false, uses: 1 } } },
 
     // Lightning Ward
     l_cap: { name: 'Capacitor', cost: 0, desc: '+15 max HP.', mod: { stat: { hp: 15 } } },
-    l_shock: { name: 'Static Snare', cost: 1, desc: 'Storm Pulse roots its targets for 1 turn.', mod: { act: { fx: { root: 1 } } } },
+    l_shock: { name: 'Static Snare', cost: 1, desc: 'Storm Pulse roots its targets for 1 round.', mod: { act: { fx: { root: 1 } } } },
     l_over: { name: 'Overcharge', cost: 2, desc: 'Storm Pulse reaches 3 tiles.', mod: { stat: { radius: 1 } } },
     l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against armored targets (30% armor or more).', mod: { props: { vsArmored: 0.3 } } },
     l_ground: { name: 'Grounding Field', cost: 1, desc: 'Adjacent allies take 20% less magic damage.', mod: { props: { magicGuard: 0.2 } } },
-    l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
+    l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Recovers 1 round faster.', mod: { stat: { rec: -1 } } },
 
     // Dragon Tyrant
     d_scales: { name: 'Iron Scales', cost: 0, desc: '+10% armor and +10% magic resistance.', mod: { stat: { armor: 0.1, res: 0.1 } } },
@@ -197,13 +197,13 @@
     d_hellfire: { name: 'Hellfire', cost: 2, desc: 'Fire Breath reaches 4 tiles deep.', mod: { stat: { len: 1 } } },
     d_tamed: { name: 'Tamed Fire', cost: 0, desc: 'Fire Breath spares allies.', mod: { act: { ff: false } } },
     d_hide: { name: 'Ancient Hide', cost: 1, desc: '+30 max HP.', mod: { stat: { hp: 30 } } },
-    d_terror: { name: 'Terror', cost: 2, desc: 'Active, 1 use: enemies within 3 tiles are weakened for 2 turns and marked: they deal 30% less and take 25% more damage.',
+    d_terror: { name: 'Terror', cost: 2, desc: 'Active, 1 use: enemies within 3 tiles are weakened for 2 rounds and marked: they deal 30% less and take 25% more damage.',
       mod: { active: { name: 'Terror', kind: 'nova', radius: 3, fx: { weak: 2, mark: 2 }, uses: 1 } } },
 
     // Mage Knight
     mk_ward: { name: 'Spellward Aura', cost: 0, desc: 'Adjacent allies take 20% less magic damage.', mod: { props: { magicGuard: 0.2 } } },
     mk_arcane: { name: 'Arcane Edge', cost: 1, desc: 'Runeblade deals magic damage: armor and block do not stop it.', mod: { act: { dmg: 'magic' } } },
-    mk_brand: { name: 'Rune Brand', cost: 1, desc: 'Hits mark the target for 2 turns: it takes 25% more damage.', mod: { onHit: { mark: 2 } } },
+    mk_brand: { name: 'Rune Brand', cost: 1, desc: 'Hits mark the target for 2 rounds: it takes 25% more damage.', mod: { onHit: { mark: 2 } } },
     mk_spellbreak: { name: 'Spellbreaker', cost: 0, desc: '+30% damage against spellcasters.', mod: { props: { vs: { caster: 0.3 } } } },
     mk_blink: { name: 'Blink', cost: 1, desc: 'Active, 2 uses: instead of walking, teleport to an empty tile up to 3 tiles away, ignoring anything in between. It can still attack afterward.',
       mod: { active: { name: 'Blink', kind: 'blink', range: [1, 3], uses: 2, asMove: true } } },
@@ -212,8 +212,8 @@
 
     // Skeleton Archer
     sa_rattle: { name: 'Rattling Bones', cost: 0, desc: '+8 max HP.', mod: { stat: { hp: 8 } } },
-    sa_grave: { name: 'Grave Arrows', cost: 1, desc: 'Hits weaken the target for 2 turns: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
-    sa_frost: { name: 'Frost Arrows', cost: 1, desc: 'Hits root the target for 1 turn.', mod: { onHit: { root: 1 } } },
+    sa_grave: { name: 'Grave Arrows', cost: 1, desc: 'Hits weaken the target for 2 rounds: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
+    sa_frost: { name: 'Frost Arrows', cost: 1, desc: 'Hits root the target for 1 round.', mod: { onHit: { root: 1 } } },
     sa_gaze: { name: 'Hollow Gaze', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     sa_volley: { name: 'Bone Volley', cost: 1, desc: 'Active, 2 uses: bones rain on a 5-tile area 2 to 4 tiles away, 60% damage to each enemy.',
       mod: { active: { name: 'Bone Volley', kind: 'blast', range: [2, 4], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.6, ff: false, uses: 2 } } },
@@ -221,12 +221,12 @@
 
     // Trebuchet
     tb_counter: { name: 'Counterweight', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
-    tb_firepots: { name: 'Fire Pots', cost: 1, desc: 'Boulders set targets burning: 5 damage a turn for 2 turns.', mod: { onHit: { burn: [2, 5] } } },
+    tb_firepots: { name: 'Fire Pots', cost: 1, desc: 'Boulders set targets burning: 5 damage a round for 2 rounds.', mod: { onHit: { burn: [2, 5] } } },
     tb_scatter: { name: 'Scattershot', cost: 2, desc: 'Active, 2 uses: stones rain on a 5-tile area 3 to 5 tiles away, 70% damage to each enemy.',
       mod: { active: { name: 'Scattershot', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, ff: false, uses: 2 } } },
     tb_frame: { name: 'Reinforced Frame', cost: 0, desc: '+20 max HP and +10% armor.', mod: { stat: { hp: 20, armor: 0.1 } } },
     tb_wreck: { name: 'Wrecking Shot', cost: 1, desc: "Boulders ignore half of the target's armor.", mod: { props: { pierce: 0.5 } } },
-    tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
+    tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Recovers 1 round faster.', mod: { stat: { rec: -1 } } },
   };
 
   // Level 3 masteries (fixed per class).
@@ -234,7 +234,7 @@
     knight: { name: 'Champion', desc: '+20% damage and +10% block.', mod: { props: { dmgMult: 0.2 }, stat: { block: 0.1 } } },
     archer: { name: 'Deadeye', desc: '+20% damage and +1 range.', mod: { props: { dmgMult: 0.2 }, stat: { range: 1 } } },
     scout: { name: 'Shadow Dance', desc: '+30% damage from the side or behind.', mod: { props: { flankMult: 0.3 } } },
-    cleric: { name: 'Devotion', desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
+    cleric: { name: 'Devotion', desc: 'Recovers 1 round faster.', mod: { stat: { rec: -1 } } },
     berserker: { name: 'Juggernaut', desc: '+15 max HP and +15% damage.', mod: { stat: { hp: 15 }, props: { dmgMult: 0.15 } } },
     pyromancer: { name: 'Pyroclasm', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
     assassin: { name: 'Deathmark', desc: 'Attacks from behind deal double damage.', mod: { props: { backMult: 0.5 } } },
@@ -246,7 +246,7 @@
     enchantress: { name: 'Grand Illusion', desc: 'Mesmerize covers a full 3x3 area.', mod: { act: { pattern: 'square' } } },
     witch: { name: 'Shadow Pact', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
     lightning: { name: 'Thunderhead', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
-    dragon: { name: 'Wyrmlord', desc: 'Recovers 1 turn faster.', mod: { stat: { rec: -1 } } },
+    dragon: { name: 'Wyrmlord', desc: 'Recovers 1 round faster.', mod: { stat: { rec: -1 } } },
     trebuchet: { name: 'Siege Master', desc: '+25% damage, and boulders deal a further +100% to buildings.', mod: { props: { dmgMult: 0.25, vs: { structure: 1 } } } },
     mageknight: { name: 'Runic Mastery', desc: 'Hits also deal 8 bonus magic damage.', mod: { props: { bonusMagic: 8 } } },
     skelarcher: { name: 'Undying', desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
@@ -298,7 +298,7 @@
       act: { name: 'Throwing Knives', kind: 'strike', range: [1, 3], dmg: 'phys', arc: true },
       traits: [], tags: ['human'],
       abilities: { 1: ['s_caltrops', 's_ambush', 's_fleet'], 2: ['s_evasion', 's_mark', 's_venom'] },
-      desc: 'Fast and cheap. Recover 0: it can act every single turn.',
+      desc: 'Fast and cheap. Recover 0: it can act every single round.',
       tip: 'Its light hits glance off armor. Keep your backs covered against its flanking.',
     },
     cleric: {
@@ -379,7 +379,7 @@
       act: { name: 'Grow Shrub', kind: 'grow', range: [1, 3] },
       traits: [], tags: ['beast'], props: { regen: 4 },
       abilities: { 1: ['f_bark', 'f_roots', 'f_thorn'], 2: ['f_grove', 'f_rejuv', 'f_ironwood'] },
-      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regains 4 HP each turn.',
+      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regains 4 HP each round.',
       tip: 'Shrubs can be cut down, and flyers and arcing shots ignore them.',
     },
     wisp: {
@@ -388,7 +388,7 @@
       act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 3 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_virulent', 'w_wither'], 2: ['w_ethereal', 'w_linger', 'w_plague'] },
-      desc: 'Floats over anything. Poisons enemies within 2 tiles for 3 turns. Poisoned units cannot heal.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 3 rounds. Poisoned units cannot heal.',
       tip: 'Only 24 HP and no armor. One arrow volley can drop it.',
     },
     barrier: {
@@ -406,7 +406,7 @@
       act: { name: 'Mesmerize', kind: 'blast', range: [2, 4], dmg: 'magic', pattern: 'plus', ff: false, arc: true, fx: { para: 1 } },
       traits: [], tags: ['human', 'caster'],
       abilities: { 1: ['e_far', 'e_spike', 'e_chain'], 2: ['e_glamour', 'e_frailty', 'e_trance'] },
-      desc: 'Paralyzes enemies in a 5-tile burst. They lose a turn and cannot block until it wears off.',
+      desc: 'Paralyzes enemies in a 5-tile burst. They lose their next move and cannot block until it wears off.',
       tip: 'Golems, and units near a Barrier Ward, shrug off paralysis.',
     },
     witch: {
@@ -515,41 +515,41 @@
     // Totems: objectives that mend the enemies around them.
     totem: Object.assign({}, TOTEM, {
       name: 'Stone Totem', hp: 40, props: { totemHeal: 6 },
-      desc: 'A carved war-stone. At the start of their turn, enemies within 2 tiles heal 6 HP.',
+      desc: 'A carved war-stone. At the start of each round, enemies within 2 tiles heal 6 HP.',
     }),
     hexstone: Object.assign({}, TOTEM, {
       name: 'Hex Stone', hp: 46, props: { totemHeal: 8 },
-      desc: 'A rune-cut standing stone. At the start of their turn, enemies within 2 tiles heal 8 HP.',
+      desc: 'A rune-cut standing stone. At the start of each round, enemies within 2 tiles heal 8 HP.',
     }),
     obelisk: Object.assign({}, TOTEM, {
       name: 'Ember Obelisk', hp: 52, props: { totemHeal: 10 },
-      desc: 'A shard of black glass, warm to the touch. At the start of their turn, enemies within 2 tiles heal 10 HP.',
+      desc: 'A shard of black glass, warm to the touch. At the start of each round, enemies within 2 tiles heal 10 HP.',
     }),
 
     // Spawners: reinforcements march out of them until they fall.
     war_tent: Object.assign({}, SPAWNER, {
       name: 'War Tent', hp: 44, armor: 0.3, res: -0.25, material: 'wood',
-      desc: 'Hide and canvas. Fresh warriors march out of it every few turns until it falls.',
+      desc: 'Hide and canvas. Fresh warriors march out of it every few rounds until it falls.',
       tip: 'Fire and siege damage tear it down. Stand in the doorway to block an arrival.',
     }),
     crypt: Object.assign({}, SPAWNER, {
       name: 'Crypt', hp: 56, armor: 0.5, res: 0.3, material: 'stone',
-      desc: 'The dead claw their way out of it every few turns until it is broken.',
+      desc: 'The dead claw their way out of it every few rounds until it is broken.',
       tip: 'Thick stone: bring siege damage. Stand in the doorway to block an arrival.',
     }),
     den: Object.assign({}, SPAWNER, {
       name: 'Beast Den', hp: 50, armor: 0.5, res: 0.3, material: 'stone',
-      desc: 'A rocky lair. Beasts prowl out of it every few turns until it caves in.',
+      desc: 'A rocky lair. Beasts prowl out of it every few rounds until it caves in.',
       tip: 'Solid rock: bring siege damage. Stand at the mouth to block an arrival.',
     }),
     portal: Object.assign({}, SPAWNER, {
       name: 'Dark Portal', hp: 40, armor: 0.5, res: -0.5, material: 'arcane',
-      desc: 'A tear in the world. Creatures step through every few turns until it is closed.',
+      desc: 'A tear in the world. Creatures step through every few rounds until it is closed.',
       tip: 'Steel barely scratches it, but magic unravels it.',
     }),
     guardhouse: Object.assign({}, SPAWNER, {
       name: 'Guardhouse', hp: 54, armor: 0.5, res: 0.3, material: 'stone',
-      desc: 'Soldiers muster here and march out every few turns until it falls.',
+      desc: 'Soldiers muster here and march out every few rounds until it falls.',
       tip: 'Stone walls: bring siege damage, or win before the garrison gathers.',
     }),
 
@@ -591,7 +591,7 @@
       hp: 30, pow: 10, armor: 0.1, res: 0.3, block: 0.2, rec: 2, move: 3,
       act: { name: 'War Drums', kind: 'drum', radius: 2 },
       traits: [], tags: ['greenskin', 'caster'],
-      desc: 'Beats the war drums: allies within 2 tiles heal 10 and fly into a frenzy, dealing 25% more damage for 2 turns.',
+      desc: 'Beats the war drums: allies within 2 tiles heal 10 and fly into a frenzy, dealing 25% more damage for 2 rounds.',
       tip: 'Kill the drummer first and the warband loses its fury.',
     },
     warg: {
@@ -599,7 +599,7 @@
       hp: 34, pow: 15, armor: 0.1, res: 0.1, block: 0.2, rec: 0, move: 5,
       act: { name: 'Savage Bite', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: [], tags: ['beast'], props: { packMult: 0.25 },
-      desc: 'A great wolf. Acts every turn and bites 25% harder when an ally flanks the same target.',
+      desc: 'A great wolf. Acts every round and bites 25% harder when an ally flanks the same target.',
       tip: 'Keep your units shoulder to shoulder so wargs cannot gang up.',
     },
     wolf: {
@@ -615,7 +615,7 @@
       hp: 30, pow: 14, armor: 0.1, res: 0.1, block: 0.45, rec: 0, move: 4,
       act: { name: 'Dirk', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: [], tags: ['human'], props: { backMult: 0.5 },
-      desc: 'A bandit with a long knife. Acts every turn and deals +50% damage from behind.',
+      desc: 'A bandit with a long knife. Acts every round and deals +50% damage from behind.',
       tip: 'Face it. Its dirk is deadly only from behind.',
     },
     crossbow: {
@@ -623,7 +623,7 @@
       hp: 32, pow: 19, armor: 0.2, res: 0, block: 0.3, rec: 2, move: 3,
       act: { name: 'Heavy Bolt', kind: 'strike', range: [2, 5], dmg: 'phys', arc: true },
       traits: [], tags: ['human'], props: { pierce: 0.5 },
-      desc: 'Heavy bolts ignore half of armor, but reloading takes two turns.',
+      desc: 'Heavy bolts ignore half of armor, but reloading takes two rounds.',
       tip: 'Rush it while it reloads.',
     },
     skeleton: {
@@ -673,8 +673,8 @@
       hp: 80, pow: 20, armor: 0.15, res: -0.1, block: 0.1, rec: 1, move: 3,
       act: { name: 'Club', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: ['trollblood', 'big'], tags: ['beast', 'big'], props: { regen: 12 },
-      desc: 'Heals 12 HP every turn unless magic or fire hurt it since its last turn.',
-      tip: 'Burn it. Any magic damage stops its regeneration for a turn.',
+      desc: 'Heals 12 HP every round unless magic or fire hurt it since the last one.',
+      tip: 'Burn it. Any magic damage stops its regeneration for a round.',
     },
     drake: {
       name: 'Fire Drake', rarity: 'enemy', cost: 5, role: 'monster',
@@ -740,7 +740,7 @@
     },
     ashen_tyrant: {
       name: 'Ashen Tyrant', rarity: 'boss', cost: 17, role: 'monster', boss: true,
-      hp: 230, pow: 25, armor: 0.35, res: 0.35, block: 0, rec: 1, move: 4,
+      hp: 210, pow: 25, armor: 0.35, res: 0.35, block: 0, rec: 1, move: 4,
       act: { name: 'Cinder Breath', kind: 'cone', len: 3, dmg: 'magic', ff: false },
       extra: [{ name: 'Wing Buffet', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.6, fx: { knock: 1 } }],
       traits: ['flying', 'big'], tags: ['big', 'beast'],
@@ -786,21 +786,21 @@
     unshakable: { name: 'Unshakable', cost: 1, desc: 'Immune to poison, paralysis, roots and knockback.', mod: { traits: ['steadfast', 'poisonproof'] } },
     guardian: { name: 'Guardian', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
     retaliate: { name: 'Retaliate', cost: 2, desc: 'When struck in melee and still standing, strikes back for half power.', req: 'damage', mod: { traits: ['retaliate'] } },
-    quickened: { name: 'Quickened', cost: 3, desc: 'Recovers 1 turn faster.', req: 'slow', mod: { stat: { rec: -1 } } },
+    quickened: { name: 'Quickened', cost: 3, desc: 'Recovers 1 round faster.', req: 'slow', mod: { stat: { rec: -1 } } },
     martyr: { name: 'Martyr', cost: 1, desc: 'When it falls, heals allies within 2 tiles for 20.', mod: { traits: ['martyr'] } },
     arcane_focus: { name: 'Arcane Focus', cost: 2, desc: '+20% magic damage, healing and poison.', req: 'magic', mod: { props: { magicMult: 0.2 } } },
     demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
   };
 
   const GEAR = {
-    flame_brand: { name: 'Flame Brand', cost: 2, desc: 'Hits also set the target burning: 4 damage a turn for 2 turns.', req: 'damage', mod: { onHit: { burn: [2, 4] } } },
-    venom_edge: { name: 'Venom Edge', cost: 2, desc: 'Hits also poison the target for 2 turns: 4 damage a turn, and no healing.', req: 'damage', mod: { onHit: { poison: [2, 4] } } },
+    flame_brand: { name: 'Flame Brand', cost: 2, desc: 'Hits also set the target burning: 4 damage a round for 2 rounds.', req: 'damage', mod: { onHit: { burn: [2, 4] } } },
+    venom_edge: { name: 'Venom Edge', cost: 2, desc: 'Hits also poison the target for 2 rounds: 4 damage a round, and no healing.', req: 'damage', mod: { onHit: { poison: [2, 4] } } },
     blessed_blade: { name: 'Blessed Blade', cost: 1, desc: '+50% damage against undead and spirits.', req: 'damage', mod: { props: { vs: { undead: 0.5, spirit: 0.5 } } } },
     orcbane: { name: 'Orcbane Axe', cost: 1, desc: '+40% damage against orcs and goblins.', req: 'damage', mod: { props: { vs: { greenskin: 0.4 } } } },
     dragonslayer: { name: 'Dragonslayer Spear', cost: 2, desc: '+50% damage against huge foes: dragons, trolls, brutes and bosses.', req: 'damage', mod: { props: { vs: { big: 0.5 } } } },
     siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
     war_pick: { name: 'War Pick', cost: 2, desc: 'Physical attacks ignore half of armor.', req: 'phys', mod: { props: { pierce: 0.5 } } },
-    healing_charm: { name: 'Healing Charm', cost: 1, desc: 'Heals 5 HP at the start of each of your turns.', mod: { props: { regen: 5 } } },
+    healing_charm: { name: 'Healing Charm', cost: 1, desc: 'Heals 5 HP at the start of each round.', mod: { props: { regen: 5 } } },
     thorn_ring: { name: 'Thorn Ring', cost: 1, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
     iron_will: { name: 'Iron Will', cost: 1, desc: 'Immune to paralysis, roots and knockback.', mod: { traits: ['steadfast'] } },
     focus_amulet: { name: 'Focus Amulet', cost: 2, desc: '+15% magic damage and healing.', req: 'magic', mod: { props: { magicMult: 0.15 } } },
@@ -809,7 +809,7 @@
     silk_mantle: { name: 'Silk Mantle', cost: 1, desc: '+15% magic resistance.', mod: { stat: { res: 0.15 } } },
     swift_boots: { name: 'Swift Boots', cost: 2, desc: '+1 Move.', req: 'mobile', mod: { stat: { move: 1 } } },
     giant_belt: { name: "Giant's Belt", cost: 1, desc: '+20 max HP.', mod: { stat: { hp: 20 } } },
-    smoke_pouch: { name: 'Smoke Pouch', cost: 1, desc: 'Active, 1 use: smoke over its own 5-tile area for 2 turns. Units inside cannot be targeted from more than 1 tile away.',
+    smoke_pouch: { name: 'Smoke Pouch', cost: 1, desc: 'Active, 1 use: smoke over its own 5-tile area for 2 rounds. Units inside cannot be targeted from more than 1 tile away.',
       mod: { active: { name: 'Smoke Pouch', kind: 'hazard', hz: 'smoke', range: [0, 0], pattern: 'plus', turns: 2, uses: 1 } } },
     fire_flask: { name: 'Fire Flask', cost: 1, desc: 'Active, 1 use: throw a flask 2 or 3 tiles: 14 magic damage in a 5-tile burst that also burns enemies.',
       mod: { active: { name: 'Fire Flask', kind: 'blast', range: [2, 3], pattern: 'plus', dmg: 'magic', fixed: 14, arc: true, ff: true, fx: { burn: [2, 4] }, uses: 1 } } },
@@ -821,16 +821,16 @@
 
   // Enchantments are bound to one unit forever and raise its Supply cost.
   const ENCHANTS = {
-    stormcaller: { name: 'Stormcaller', surcharge: 2, desc: 'At the start of your turn, lightning strikes the nearest enemy within 3 tiles for 8 magic damage.', mod: { traits: ['stormcaller'] } },
+    stormcaller: { name: 'Stormcaller', surcharge: 2, desc: 'At the start of each round, lightning strikes the nearest enemy within 3 tiles for 8 magic damage.', mod: { traits: ['stormcaller'] } },
     bloodforged: { name: 'Bloodforged', surcharge: 2, desc: '+10 max HP. Heals for 25% of the damage it deals.', req: 'damage', mod: { stat: { hp: 10 }, props: { lifesteal: 0.25 } } },
     runeward: { name: 'Runeward', surcharge: 1, desc: '+20% magic resistance. Immune to paralysis.', mod: { stat: { res: 0.2 }, traits: ['paraproof'] } },
     phoenix_soul: { name: 'Phoenix Soul', surcharge: 3, desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
     spellblade: { name: 'Spellblade', surcharge: 2, desc: 'Its attacks also deal 6 bonus magic damage.', req: 'damage', mod: { props: { bonusMagic: 6 } } },
-    frostbound: { name: 'Frostbound', surcharge: 2, desc: 'Hits root the target for 1 turn. +10% armor.', req: 'damage', mod: { onHit: { root: 1 }, stat: { armor: 0.1 } } },
+    frostbound: { name: 'Frostbound', surcharge: 2, desc: 'Hits root the target for 1 round. +10% armor.', req: 'damage', mod: { onHit: { root: 1 }, stat: { armor: 0.1 } } },
     giantblood: { name: 'Giantblood', surcharge: 2, desc: '+30% max HP and +10% damage.', mod: { stat: { hpPct: 0.3 }, props: { dmgMult: 0.1 } } },
     windwalker: { name: 'Windwalker', surcharge: 2, desc: '+1 Move, and it flies over units, water and rocks.', req: 'mobile', mod: { stat: { move: 1 }, traits: ['flying'] } },
     holy_aegis: { name: 'Holy Aegis', surcharge: 2, desc: 'Adjacent allies take 15% less damage. Immune to poison.', mod: { props: { guard: 0.15 }, traits: ['poisonproof'] } },
-    quicksilver: { name: 'Quicksilver', surcharge: 3, desc: 'Recovers 1 turn faster.', req: 'recovers', mod: { stat: { rec: -1 } } },
+    quicksilver: { name: 'Quicksilver', surcharge: 3, desc: 'Recovers 1 round faster.', req: 'recovers', mod: { stat: { rec: -1 } } },
     midas: { name: 'Midas Touch', surcharge: 1, desc: 'Every enemy it slays earns 6 gold.', req: 'damage', mod: { traits: ['midas'] } },
     thunderstep: { name: 'Thunderstep', surcharge: 2, desc: 'When it finishes a move, enemies next to it take 6 magic damage.', req: 'mobile', mod: { traits: ['thunderstep'] } },
   };
@@ -856,13 +856,13 @@
     steel_bucklers: { name: 'Steel Bucklers', tier: 'common', desc: 'Your units have +8% block.' },
     iron_plating: { name: 'Iron Plating', tier: 'common', desc: 'Your units have +6% armor.' },
     coin_purse: { name: "Merchant's Purse", tier: 'common', desc: 'Gain 12 extra gold after each victory.' },
-    healing_salve: { name: 'Healing Salve', tier: 'common', desc: 'At the start of your turn, your most injured unit heals 6 HP.' },
+    healing_salve: { name: 'Healing Salve', tier: 'common', desc: 'At the start of each round, your most injured unit heals 6 HP.' },
     scout_map: { name: "Cartographer's Map", tier: 'common', desc: 'Your deployment zone reaches one row further forward.' },
     drill_manual: { name: 'Drill Manual', tier: 'common', desc: 'Gain 25% more XP from battles.' },
     pathfinder: { name: 'Pathfinder Boots', tier: 'common', desc: 'Units with 3 Move or less gain +1 Move.' },
     oak_charm: { name: 'Oaken Charm', tier: 'common', desc: 'Your units have +8 max HP.' },
     sappers_kit: { name: "Sapper's Kit", tier: 'common', desc: 'Your units deal 50% more damage to buildings and wagons.' },
-    mana_crystal: { name: 'Mana Crystal', tier: 'uncommon', desc: 'Spellcasters (Recover 2 or more) recover 1 turn faster.' },
+    mana_crystal: { name: 'Mana Crystal', tier: 'uncommon', desc: 'Spellcasters (Recover 2 or more) recover 1 round faster.' },
     bloodstone: { name: 'Bloodstone', tier: 'uncommon', desc: 'Your units heal for 20% of the damage they deal.' },
     thorned_mail: { name: 'Thorned Mail', tier: 'uncommon', desc: 'Enemies that strike your units in melee take 5 damage.' },
     headsman_axe: { name: "Headsman's Axe", tier: 'uncommon', desc: '+30% damage against enemies below half HP.' },
@@ -882,7 +882,7 @@
     eternal_flame: { name: 'Eternal Flame', tier: 'boss', desc: "Each unit's first action in a battle needs no recovery." },
     kings_ransom: { name: "King's Ransom", tier: 'boss', desc: 'Gain 150 gold now and 20 extra gold after each victory.' },
     crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+1 unit allowed on the field and +1 Supply.' },
-    sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'At the start of your turn, all your units heal 3 HP.' },
+    sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'At the start of each round, all your units heal 3 HP.' },
     cursed_blade: { name: 'Bloodthirst Blade', tier: 'event', desc: 'Your units deal 20% more damage and take 10% more damage.' },
   };
 

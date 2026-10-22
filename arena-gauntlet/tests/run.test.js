@@ -37,7 +37,7 @@ function playBattle(run) {
   }
   const s = E.createBattle(R.battleConfig(run, dep));
   let guard = 0;
-  while (!s.over && guard++ < 100) {
+  while (!s.over && guard++ < 4000) {
     AG.AI.playTurn(s, s.side, { stance: s.side === 'E' ? p.enc.stance : 'balanced', temp: 0.6 });
     s.events.length = 0;
   }

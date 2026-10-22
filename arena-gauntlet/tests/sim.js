@@ -76,7 +76,7 @@ function runBattle(seed, pPool, ePool, budget, opts = {}) {
     AG.AI.playTurn(s, team, { stance: team === 'P' ? opts.pStance || 'balanced' : opts.eStance || 'balanced', temp: 0.8 });
     actions++;
     s.events.length = 0;
-    if (actions > 200) throw new Error('runaway battle');
+    if (actions > 4000) throw new Error('runaway battle');
   }
   return { winner: s.winner, turns: s.turn, timeout: !!s.timeout, ms: Date.now() - t0, comp: units.map((u) => u.team + ':' + u.type) };
 }
