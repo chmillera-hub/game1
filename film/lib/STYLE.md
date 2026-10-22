@@ -67,6 +67,7 @@ props are excluded.
 | goblin | 260 | ears included |
 | kobold | 220 | |
 | **gnome (grandmother)** | **160** | hood tip extra; **seated on the bench her head reaches the dragon's elbow** |
+| bard (cockatrice minstrel, S0/S8/S9) | 156 | comb top; his beret and plume make 178 (`BARD_HEIGHT`) |
 | pixie (S5) | 90 | hovers; wings extra |
 | pigeon | 42 | |
 
@@ -87,7 +88,9 @@ props are excluded.
   cases.
 * Weight: `base.LINE = 2.2` px at scale 1.0 for the whole cast (the dragon uses 2.4). Line
   weight does **not** grow with creature size: the troll and the gnome share it. On screen,
-  never thinner than 1 px: `lw = max(LINE, MIN_LINE_PX / device_scale)`.
+  never thinner than 1 px, and in close-ups (zoom past scale 1.0) the ink grows at only half
+  the rate of the drawing, so a 3x close-up has a 2x line, not a 3x marker outline:
+  `lw = base.line_for(LINE, scale * device_scale(cr))`. Every rig and prop uses it.
 * Draw outlines as **filled dilated copies** of the shape: the `*_paths()` builders return
   `(shape, outline)`. Do not stroke them: strokes cost about 3x more and cross at joints.
   Overlapping parts of one material are **one union** with one outline. Then the joints have
@@ -108,6 +111,9 @@ Three solid tones per part, never a gradient per part:
 3. **shadow**: the shape filled shifted away from the rim;
 4. **lit**: the shape filled shifted toward the key light. The leftover crescent on the far
    side is the core shadow: ~20 % of the part's `size`.
+5. **bounce** (only lights with a ground bounce: dusk, golden, street_night): a faint warm or
+   wet band on the underside, drawn only on parts at least `base.BOUNCE_MIN_SIZE` = 40 thick
+   (on thinner parts it is invisible and costs a whole extra fill).
 
 Tones come from `palette(light, mat)`:
 
@@ -123,8 +129,9 @@ backgrounds, and one big soft occlusion per character (`base.occlusion`) under a
 scarf.
 
 Materials (`base.Mat`): `sss` 0.3-0.6 for skin and membranes, 0 for cloth and horn; `sheen`
-0.4-0.6 for brass, horn and wet things; `shadow_k` > 1 makes the shadow lighter (pale
-materials). Every creature module exposes its colours as a dict (`DRAGON_COLORS`) and its
+0.4-0.6 for brass, horn and wet things; `shadow = base * ambient / shadow_k`, so `shadow_k` > 1
+makes the shadow DARKER (wool, velvet, deep cloth) and `shadow_k` < 1 makes it lighter (pale,
+glossy or translucent things: parchment, bone, the elf's skin). Every creature module exposes its colours as a dict (`DRAGON_COLORS`) and its
 materials through a function (`dragon_mats()`).
 
 ## 6. Colour

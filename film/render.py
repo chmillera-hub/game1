@@ -17,7 +17,8 @@ Run from the repo root (/home/user/game1):
 Scenes are found by globbing film/scenes/s{N}_*.py and imported as film.scenes.<module>.
 Scene contract: SCENE = N; optional setup() -> state (called once per process);
 draw(cr, t, state) paints one full 1920x1080 frame at LOCAL time t (seconds).
-Video: exactly round(duration * 24) frames, raw BGRA piped to ffmpeg (libx264 crf 16, yuv420p).
+Video: exactly round(duration * 24) frames, raw BGRA piped to ffmpeg (libx264 veryfast crf 14, yuv420p;
+intermediate quality - assemble.py does the final high-quality encode).
 Timing source: film/lib/timeline.py (FILM_TIMELINE env var overrides film/timeline.json).
 """
 
@@ -133,7 +134,7 @@ class Frame:
 def _ffmpeg_cmd(out_path, threads=2):
     return ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgra",
             "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", "-pix_fmt", "yuv420p",
             "-threads", str(threads), "-movflags", "+faststart", str(out_path)]
 
 
@@ -450,53 +451,56 @@ def _measure_top(item, scale=1.0):
 
 
 def render_lineup():
-    """character_sheet_lineup.png: every creature with a lineup() hook, side by side at one
-    scale, against 100 px guides, the bench seat (125) and the planned CAST_HEIGHTS marks."""
+    """character_sheet_lineup.png: every creature with a lineup() hook, side by side on one
+    ground line at ONE scale, against 100 px guides, the bench seat (125) and a tick at each
+    creature's planned CAST_HEIGHTS. Under each: its name and measured top / plan (green when
+    within 3 %; red otherwise -- expected only where a hat, hood tip or plume tops the plan)."""
     from film.lib import characters as ch
     items = ch.lineup_items()
     heights = ch.base.CAST_HEIGHTS
     surf, cr = core.frame(SHEET_W, SHEET_H)
-    _sheet_background(cr, "cast line-up (scale 1.0 heights; one scale for everyone)", 1, 1)
-    ground = SHEET_H - 90
-    top_room = ground - 120
-    tallest = max([heights.get(it.name, 520) for it in items] + [max(heights.values())]) + 80
-    total_w = sum(it.width for it in items) + 60 * max(0, len(items) - 1)
-    sc = min(1.0, top_room / tallest, (SHEET_W - 420) / max(total_w, 1.0))
+    _sheet_background(cr, "cast line-up (one scale for everyone; measured top / planned CAST_HEIGHTS)", 1, 1)
+    ground = SHEET_H - 120
+    gap = 26.0
+    tallest = max([heights.get(it.name, 520) for it in items] + [max(heights.values())]) + 40
+    total_w = sum(it.width for it in items) + gap * max(0, len(items) - 1)
+    sc = min(1.0, (ground - 90) / tallest, (SHEET_W - 110) / max(total_w, 1.0))
     # guides
     for k in range(0, int(tallest) + 1, 100):
         y = ground - k * sc
-        cr.rectangle(60, y - 0.5, SHEET_W - 120, 1.0)
+        cr.rectangle(60, y - 0.5, SHEET_W - 80, 1.0)
         cr.set_source_rgba(1, 1, 1, 0.12 if k else 0.35)
         cr.fill()
         core.text(cr, f"{k}", 52, y + 5, 13, core.SANS, "#aab3bd", align="right")
     yb = ground - ch.base.BENCH_SEAT_H * sc
-    cr.rectangle(60, yb - 1, SHEET_W - 120, 2)
+    cr.rectangle(60, yb - 1, SHEET_W - 80, 2)
     cr.set_source_rgba(0.8, 0.55, 0.3, 0.45)
     cr.fill()
-    core.text(cr, "bench seat 125", SHEET_W - 64, yb - 6, 13, core.SANS, "#e0b48a", align="right")
-    # planned heights (right column)
-    present = {it.name for it in items}
-    for i, (name, hgt) in enumerate(sorted(heights.items(), key=lambda kv: -kv[1])):
-        y = ground - hgt * sc
-        x0 = SHEET_W - 330 + (i % 2) * 130
-        cr.rectangle(x0, y - 1, 40, 2)
-        cr.set_source_rgba(0.55, 0.9, 1.0, 0.9 if name in present else 0.45)
-        cr.fill()
-        core.text(cr, f"{name} {hgt}", x0 + 46, y + 5, 13, core.SANS, "#cfeefa" if name in present else "#8fa4b0")
+    core.text(cr, "bench seat 125", SHEET_W - 24, yb - 6, 13, core.SANS, "#e0b48a", align="right")
+    core.text(cr, f"drawn at scale {sc:.2f}; cyan tick = planned height (hats, hood tips and plumes are not planned)",
+              24, 64, 14, core.SANS, "#c8d0d8")
     # the creatures
-    x = 120.0
-    for it in items:
+    x = 80.0
+    for i, it in enumerate(items):
         cx = x + it.width * sc / 2
+        plan = heights.get(it.name)
+        ly = ground + 28 + (i % 2) * 36                 # staggered labels never overlap
         try:
             it.draw(cr, cx, ground, sc)
             top = _measure_top(it)
-            plan = heights.get(it.name)
-            lab = f"{it.name}: top {top:.0f}" + (f" / crown plan {plan}" if plan else "")
+            ok = plan is None or abs(top - plan) <= max(4.0, 0.03 * plan)
+            sub, colr = f"{top:.0f}" + (f" / {plan}" if plan else ""), "#bfe9c8" if ok else "#ffb0a0"
         except Exception:
             print(f"[sheet] lineup '{it.name}' failed:\n{traceback.format_exc()}", file=sys.stderr)
-            lab = f"{it.name}: FAILED"
-        core.text(cr, lab, cx, ground + 34, 14, core.SANS, "#e8e8e8", align="center")
-        x += (it.width + 60) * sc
+            sub, colr = "FAILED", "#ff6060"
+        if plan:
+            y = ground - plan * sc
+            cr.rectangle(cx - it.width * sc * 0.4, y - 1, it.width * sc * 0.8, 2)
+            cr.set_source_rgba(0.55, 0.9, 1.0, 0.9)
+            cr.fill()
+        core.text(cr, it.name, cx, ly, 14, core.SANS_SEMI, "#eef2f6", align="center")
+        core.text(cr, sub, cx, ly + 16, 12, core.SANS, colr, align="center")
+        x += (it.width + gap) * sc
     p = PREVIEW_DIR / "character_sheet_lineup.png"
     surf.write_to_png(str(p))
     return p

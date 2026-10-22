@@ -143,9 +143,22 @@ class TrollRig:
 # the stamp
 # ----------------------------------------------------------------------------------------
 
+def _stamp_drop(hand_size):
+    """How far below the grip the stamp's block hangs, so it clears the fingers of a fist of
+    `hand_size` (the hand's wrist-to-fingertip length, frame.scale in a hold callback)."""
+    return max(6.0, 0.30 * hand_size)
+
+
+def _stamp_die_y(hand_size):
+    """The die FACE's offset below the grip (upright stamp) for a hand of `hand_size`."""
+    return _stamp_drop(hand_size) + 30.0
+
+
 def troll_stamp(cr, frame, light=None, ink=1.0, die_down=True):
-    """The tavern's wooden SMILE stamp as a hold callback (handle in the fist, the carved die
-    below the fist with SMILE cut in mirror-writing, pink ink). Usable in any hand."""
+    """The tavern's wooden SMILE stamp as a hold callback (a turned handle through the fist,
+    the block and the inked die hanging clear BELOW the fist -- _stamp_drop() -- with SMILE cut
+    in mirror-writing, pink ink). Usable in any hand: the neck lengthens with the hand size
+    (frame.scale), so the die always shows under the fingers."""
     light = light or B.LIGHTS["neutral"]
     M = troll_mats()
     cr.save()
@@ -154,13 +167,14 @@ def troll_stamp(cr, frame, light=None, ink=1.0, die_down=True):
     lw = B.line_w(cr, LINE * 0.8)
     wood = B.palette(light, M["wood"])
     rub = B.palette(light, M["die"])
-    # the handle: a turned knob up through the fist
-    hs, ho = B.smooth_paths(cr, [(-9, -46), (9, -46), (11, -30), (7, -14), (8, 6), (-8, 6), (-7, -14), (-11, -30)], lw, 0.8)
+    y0 = _stamp_drop(getattr(frame, "scale", 0.0) or 0.0)
+    # the handle: a turned knob up through the fist, its neck down to the block
+    hs, ho = B.smooth_paths(cr, [(-9, -46), (9, -46), (11, -30), (7, -14), (8, y0), (-8, y0), (-7, -14), (-11, -30)], lw, 0.8)
     B.shade(cr, hs, M["wood"], light, lw, outline=ho, size=18, bounce=0)
     # the block and the die
-    bs, bo = B.smooth_paths(cr, [(-30, 6), (30, 6), (32, 22), (-32, 22)], lw, 0.4)
-    B.shade(cr, bs, M["wood"], light, lw, outline=bo, size=16, bounce=0)
-    ds, do = B.smooth_paths(cr, [(-29, 22), (29, 22), (29, 31), (-29, 31)], lw, 0.3)
+    bs, bo = B.smooth_paths(cr, [(-34, y0), (34, y0), (36, y0 + 20), (-36, y0 + 20)], lw, 0.4)
+    B.shade(cr, bs, M["wood"], light, lw, outline=bo, size=18, bounce=0)
+    ds, do = B.smooth_paths(cr, [(-33, y0 + 20), (33, y0 + 20), (33, y0 + 30), (-33, y0 + 30)], lw, 0.3)
     do.add(cr)
     core.src(cr, rub.line)
     cr.fill()
@@ -169,9 +183,9 @@ def troll_stamp(cr, frame, light=None, ink=1.0, die_down=True):
     cr.fill()
     if ink > 0:
         core.src(cr, TROLL_COLORS["ink"], 0.9 * ink)
-        cr.rectangle(-28, 29.5, 56, 2.0)
+        cr.rectangle(-32, y0 + 28.5, 64, 2.0)
         cr.fill()
-    B.detail_lines(cr, [[(-24, 12), (24, 12)]], lw * 0.7, wood.line, 0.5)
+    B.detail_lines(cr, [[(-28, y0 + 7), (28, y0 + 7)]], lw * 0.7, wood.line, 0.5)
     cr.restore()
 
 
@@ -191,8 +205,17 @@ def _g_rest(sk, side, c):
 
 
 def _g_arms_crossed(sk, side, c):
+    # a bouncer's folded arms, high on the chest: the NEAR forearm lies on top and its fist
+    # grips the far biceps (knuckles to us); the FAR forearm passes under it and its fist tucks
+    # in behind the near upper arm (hidden) -- not two paws held out like a carried box
     ch = c["chest"]
-    return v_add(ch, (-side * 58.0, 40.0 + (10.0 if side < 0 else 0.0), 104.0 + (10.0 if side < 0 else 0.0))), "fist", 0.0, "front"
+    if c.get("near_side", -1.0) == side:
+        return v_add(ch, (-side * AC_NEAR[0], AC_NEAR[1], AC_NEAR[2])), "fist", side * AC_NEAR[3], "front"
+    return v_add(ch, (-side * AC_FAR[0], AC_FAR[1], AC_FAR[2])), "fist", side * AC_FAR[3], "front"
+
+
+AC_NEAR = (86.0, -30.0, 130.0, 1.4)      # wrist offset from the chest (x toward the far side, y, z) + fist hang
+AC_FAR = (60.0, 16.0, 80.0, 0.6)
 
 
 def _g_hold_up_stamp(sk, side, c):
@@ -246,7 +269,7 @@ def draw_troll(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     scale = scale * SIZE_K            # internal units: lines stay LINE px on screen
     # LOD: his features are big (a 660 px creature), so judge detail by size, not raw scale
     dev = q.lod(scale * 1.6, detail) / 1.6
-    q.lw = max(LINE / SIZE_K, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(LINE / SIZE_K, dev, 1.0 / SIZE_K)
     cr.save()
     cr.translate(x, y)
     cr.scale(scale, scale)
@@ -276,9 +299,9 @@ def draw_troll(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     if rig.hand_near is None:
         rig.hand_near = _arm(q, A[near_side], near_side)
     stamp = None
-    for s_ in (near_side, far_side):
-        if A[s_]["arm"].gesture in ("press_stamp", "hold_up_stamp") and not A[s_]["arm"].hold:
-            stamp = A[s_]["stamp"]
+    for s_, hf in ((near_side, rig.hand_near), (far_side, rig.hand_far)):
+        if A[s_]["stamp"] and hf is not None:
+            stamp = (hf.x, hf.y + _stamp_die_y(FIST))         # the upright die hangs below the grip
     ex = K.Exporter(cr)
     cr.restore()
     ex.ready(cr)
@@ -294,12 +317,31 @@ def draw_troll(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     return rig
 
 
+def _slam_lean(pose):
+    """press_stamp leans his whole bulk into the slam (wind-up upright, lunge on the down
+    stroke, hold, settle back): extra reach, and the weight of the gesture reads."""
+    k = 0.0
+    for arm in (pose.near, pose.far):
+        if arm is not None and arm.gesture == "press_stamp":
+            ph = arm.phase
+            if ph < 0.35:
+                k = max(k, -0.25 * core.inout_sine(ph / 0.35))
+            elif ph < 0.5:
+                k = max(k, lerp(-0.25, 1.0, core.in_quad((ph - 0.35) / 0.15)))
+            elif ph < 0.75:
+                k = max(k, 1.0)
+            else:
+                k = max(k, 1.0 - core.inout_sine((ph - 0.75) / 0.25))
+            k *= clamp(arm.amt)
+    return k
+
+
 def _skeleton(pose, t, yaw):
     S = {}
     br = B.breathing(t, 0.15, pose.seed)          # big creature: a slow, deep breath
     pel = (0.0, PELVIS_Y, 0.0)
     S["pelvis"] = pel
-    tilt = 0.28 + 0.2 * pose.lean + 0.01 * br    # always hunched forward
+    tilt = 0.28 + 0.2 * pose.lean + 0.26 * _slam_lean(pose) + 0.01 * br    # always hunched forward
     R = m_mul(m_rot_z(0.015 * B.sway(t, 0.12, pose.seed + 3)), m_rot_x(-tilt))
     S["R"], S["br"] = R, br
 
@@ -334,12 +376,13 @@ def _skeleton(pose, t, yaw):
 
 def _solve_arm(q, S, side, arm):
     sk = S["shoulders"][side]
-    c = dict(S["ctx"], phase=arm.phase)
+    c = dict(S["ctx"], phase=arm.phase, near_side=-1.0 if q.yaw >= 0 else 1.0)
     stamp_g = arm.gesture in ("press_stamp", "hold_up_stamp")
     if arm.screen is not None and stamp_g:
-        # aim the DIE at the screen point: the wrist sits a fist + die above it
+        # aim the DIE FACE at the screen point (the wrist that puts it there, solved through
+        # the real hand geometry -- see _aim_stamp)
         die = K.screen_to_body(q, q.proj, arm.screen, q.proj.depth(sk) + arm.depth)
-        c["press_target"] = v_add(die, (0.0, -(FIST * 0.55 + 34.0), 0.0))
+        c["press_target"] = _aim_stamp(q, sk, side, die)
     tgt, hp, hang, z = TROLL_GESTURES.get(arm.gesture, _g_rest)(sk, side, c)
     if arm.amt < 1.0:
         t0, hp0, ha0, z0 = TROLL_GESTURES.get(arm.prev, _g_rest)(sk, side, dict(c, phase=0.0))
@@ -360,10 +403,39 @@ def _solve_arm(q, S, side, arm):
     else:
         pole = (side * 1.0, 0.6, -0.4)
     elbow, wrist = B.ik3(sk, tgt, UPPER_ARM, FOREARM, pole)
-    # where the stamp's die face ends up (straight below the fist, upright)
-    w2 = q.proj.xy(wrist)
-    stamp = (w2[0], w2[1] + FIST * 0.55 + 34.0) if stamp_g else None
-    return {"sh": sk, "el": elbow, "wr": wrist, "hand": hp, "z": z, "arm": arm, "hang": hang, "side": side, "stamp": stamp}
+    return {"sh": sk, "el": elbow, "wr": wrist, "hand": hp, "z": z, "arm": arm, "hang": hang, "side": side,
+            "stamp": stamp_g and not arm.hold}
+
+
+def _grip_of(proj, el, wr, side, yaw, hang=0.0, size=FIST):
+    """Where B.hand puts the grip for this arm (2D): the hand is drawn at the wrist + 10 along
+    the forearm, and its grip is (0.50, 0.06) hand lengths along / across it."""
+    w2, e2 = proj.xy(wr), proj.xy(el)
+    fx_, fy_ = core.normalize((w2[0] - e2[0], w2[1] - e2[1]))
+    a = math.atan2(fy_, fx_) + hang
+    fy = -1.0 if (side > 0) == (yaw >= 0) else 1.0
+    return (w2[0] + fx_ * 10.0 + math.cos(a) * 0.50 * size - math.sin(a) * 0.06 * size * fy,
+            w2[1] + fy_ * 10.0 + math.sin(a) * 0.50 * size + math.cos(a) * 0.06 * size * fy)
+
+
+def _aim_stamp(q, sk, side, die):
+    """The wrist target (body space) that lands the stamp's DIE FACE on `die`: the grip sits
+    half a fist along the hand and the die hangs _stamp_die_y() below it, both depending on the
+    forearm's direction -- so iterate the IK a few times with the true geometry. Out of reach,
+    it returns the best effort (stand the troll within ~350 x scale px of the target)."""
+    proj = q.proj
+    dy = _stamp_die_y(FIST)
+    tx, ty = proj.xy(die)
+    wt = v_add(die, (0.0, -(dy + 0.3 * FIST), 0.0))
+    pole = (side * 1.0, 0.6, -0.4)
+    for _ in range(5):
+        el, wr = B.ik3(sk, wt, UPPER_ARM, FOREARM, pole)
+        gx, gy = _grip_of(proj, el, wr, side, q.yaw)
+        ex_, ey_ = tx - gx, ty - (gy + dy)
+        if abs(ex_) + abs(ey_) < 0.5:
+            break
+        wt = v_add(wt, (ex_ * proj.c, ey_, ex_ * proj.s))
+    return wt
 
 
 def _arm(q, A, side):
@@ -401,7 +473,8 @@ def _arm(q, A, side):
         hold = _stamp_cb(q.light)
     hang = ang + A["hang"]
     flip = (side > 0) == (q.yaw >= 0)
-    return B.hand(cr, wr[0] + fdx * 10.0, wr[1] + fdy * 10.0, hang, FIST, A["hand"], M["stone"], q.light_nb, q.lw,
+    fist = FIST * (0.72 if arm.gesture == "arms_crossed" else 1.0)     # folded arms: the fists tuck in
+    return B.hand(cr, wr[0] + fdx * 10.0, wr[1] + fdy * 10.0, hang, fist, A["hand"], M["stone"], q.light_nb, q.lw,
                   flip=flip, claw=None, show_palm=False, hold=hold, finger_w=1.35, finger_len=0.9, palm_w=1.25,
                   detail=q.detail)
 
@@ -693,7 +766,9 @@ def sheet_items():
                         ("press_stamp 0.5 (thunk)", TrollPose(facing=-1, near=TrollArm("press_stamp", phase=0.5), look=(-0.5, 0.5), head_nod=-0.2))):
         def fn(cr, p=pose):
             B.sheet_bg(cr, 290, 470, floor=440)
-            draw_troll(cr, 145 - 14 * p.facing, 455, SC, p.with_(blink=0.0), neutral, t=0.4)
+            # the slam lunges him forward: stand him further back so the die stays in the cell
+            lunge = 60 if p.near.gesture == "press_stamp" else 0
+            draw_troll(cr, 145 - 14 * p.facing + lunge, 455, SC, p.with_(blink=0.0), neutral, t=0.4)
         add(label, 290, 470, fn, "turnaround & gestures")
     FS = 1.6
     for label, kw in (("bored (default)", {}), ("look sideways", dict(look=(-0.9, 0.1))), ("talking: 'Keep it light, buddy.'", dict(talk=0.8)),

@@ -24,7 +24,7 @@ from .. import core, fx
 from ..core import clamp, lerp
 from . import base as B
 from . import _folk as F
-from .base import Mat, Path, m_vec, v_add, v_lerp
+from .base import Mat, Path, v_add, v_lerp
 from .dragon import Arm
 
 __all__ = ["DwarfPose", "DwarfRig", "draw_dwarf", "dwarf_walk_phase", "DWARF_HEIGHT", "DWARF_COLORS",
@@ -35,7 +35,7 @@ HS = 1.3
 TAU = math.tau
 
 DWARF_COLORS = {
-    "skin": "#CF8F6C",
+    "skin": "#C4866C",       # granite-ruddy (SPEC §4), a touch greyer than a human's
     "nose": "#D9735C",       # ruddy
     "beard": "#5E3A24",      # chestnut
     "beard_hi": "#8A5A3A",
@@ -446,6 +446,22 @@ def _head(q, draw=True):
                 if nz((x / 30.0, y / 30.0, 0.8)) > 0.1:
                     c = P((x, y, z))
                     B.occlusion(cr, c[0], c[1], r * HS * 1.4, r * HS, DWARF_COLORS["soot"], 0.32 * pose.soot)
+        if q.detail >= 1:
+            # granite flecks and a hairline crack (SPEC §4: craggy granite-ruddy skin with a faint
+            # stone texture -- a creature, not a ruddy old man)
+            cr.new_path()
+            for k, v in enumerate(((-11.0, -30.0, 26.0), (9.0, -34.0, 25.0), (19.0, -22.0, 24.0), (-22.0, -14.0, 22.0),
+                                   (24.0, 2.0, 22.0), (-25.0, 4.0, 21.0), (2.0, -38.0, 22.0))):
+                if nz((v[0] / 30.0, v[1] / 30.0, v[2] / 30.0)) < 0.2:
+                    continue
+                c = P(v)
+                cr.new_sub_path()
+                cr.arc(c[0], c[1], (1.1 + 0.8 * core.hash01(k, 41)) * HS, 0.0, TAU)
+            core.src(cr, pal.shadow, 0.55)
+            cr.fill()
+            if nz((-0.35, -0.6, 0.7)) > 0.1:
+                B.detail_lines(cr, [[P((-14.0, -30.0, 25.0)), P((-9.0, -25.0, 27.0)), P((-11.0, -19.0, 28.0))]],
+                               lw * 0.7, pal.line, 0.45)
     else:
         pts["eyes"] = []
     _ear(q, P, [s for s in (-1.0, 1.0) if not behind[s]])

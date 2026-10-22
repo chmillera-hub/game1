@@ -694,7 +694,7 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
         f0r[fill] = np.exp(lf[fill])
     sp = pw.cheaptrick(x, f0r, t, fs)
     ap = pw.d4c(x, f0r, t, fs)
-    sp, ap, f0r, repaired = repair_nuclei(sp, ap, f0r, t, plan, fs)
+    sp, ap, f0r, repaired = repair_nuclei(sp, ap, f0r, t, plan, fs, f0_raw=f0)
     ap = clean_phonation(ap, t, plan, pct=VOICE.get("ap_pct", 30))
     if warp != 1.0:          # formant warp (<1 lowers formants: a touch darker / warmer)
         nb = sp.shape[1]
@@ -729,10 +729,12 @@ def clean_phonation(ap, t, plan, pct=30):
     return ap
 
 
-def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_to=-4.0, max_boost=12.0):
+def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_to=-4.0, max_boost=12.0,
+                  f0_raw=None):
     """VITS sometimes renders a stretched vowel token (a long schwa, the length mark of /uː/, a vowel
     before a comma) as near-silence part-way through the note.  Per sung nucleus:
-      1. collapse repair: frames that fall > drop_db below the nucleus's sustain level are refilled
+      1. collapse repair: frames that fall > drop_db below the nucleus's sustain level, or whose source F0 is
+         missing / > 4 semitones off the vowel's own (creaky VITS phonation, mis-analysed envelope), are refilled
          from its good frames, walking back and forth through them (ping-pong) so the timbre keeps moving;
       2. level repair: a whole nucleus far below the line's median vowel level is boosted (<= max_boost dB)
          toward median + boost_to dB, and its aperiodicity capped at the line's typical vowel profile
@@ -770,8 +772,16 @@ def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_
         if ref < med + floor_db:
             notes.append((k, "silent nucleus (needs a respelling)"))
             continue
-        good = core[ec >= ref - drop_db]
-        bad = core[ec < ref - drop_db]
+        ok_lvl = ec >= ref - drop_db
+        if f0_raw is not None:        # creaky / irregular VITS phonation: the analysis F0 is missing or far
+            fr0 = f0_raw[core]        # from the vowel's own pitch, so its envelope keeps a wrong harmonic ripple
+            v = fr0 > 0
+            if v.sum() >= 3:
+                medf = np.median(fr0[v])
+                ok_f0 = v & (np.abs(np.log2(np.maximum(fr0, 1e-3) / medf)) < 0.34)
+                ok_lvl = ok_lvl & ok_f0
+        good = core[ok_lvl]
+        bad = core[~ok_lvl]
         if len(bad) and len(good) >= 3:
             src = np.concatenate([good, good[::-1]])
             for j, i in enumerate(bad):
@@ -952,6 +962,17 @@ def limiter(x, sr, ceiling_db=-1.3, lookahead=0.004, release=0.08):
     gs = 1 - np.maximum(lfilter([1 - gr], [1, -gr], 1 - g), 1 - g)
     out = st * gs[:, None]
     return out if x.ndim == 2 else out[:, 0]
+
+
+def duck_gain(voice, sr, depth_db=3.0, attack=0.03, release=0.25):
+    """Smooth gain curve (1 .. 10^(-depth/20)) that follows the voice's activity (sidechain ducking)."""
+    a = math.exp(-1 / (0.02 * sr))
+    env = np.sqrt(lfilter([1 - a], [1, -a], voice * voice) + 1e-12)
+    edb = 20 * np.log10(env)
+    act = np.clip((edb - (edb.max() - 40.0)) / 12.0, 0, 1)        # 0 = silent .. 1 = singing
+    ga, gr = math.exp(-1 / (attack * sr)), math.exp(-1 / (release * sr))
+    sm = np.maximum(lfilter([1 - ga], [1, -ga], act), lfilter([1 - gr], [1, -gr], act))
+    return 10 ** (-depth_db * np.clip(sm, 0, 1) / 20)
 
 
 def pan(x, p):
@@ -1350,15 +1371,18 @@ def arrange_prologue(notes_by_line):
             changes.append((g.t(bar, 3 * h), chord_at(PROLOGUE_CHORDS, bar, h)))
     _damp_on_changes(S, changes, [(bread.start, "A7"), (t_res, "D")])
     # --- recorder (from the interlude): the motif as a counter-melody ------------------------------
-    phrases = [recorder_motif(g, 9, vel=0.85),                           # interlude (page turn)
-               recorder_motif(g, 11, vel=0.55),                          # doubles "SCARF and a SIGH" 8va
-               recorder_motif(g, 16, vel=0.5)[:3]]                       # "WHAT he was MISS-" ...
+    interlude = recorder_motif(g, 9, vel=0.85)                           # interlude (page turn) ...
+    t_pick = notes_by_line["s0_l5"][0].start - 0.12                      # ... its last note ends before
+    interlude[-1] = (interlude[-1][0], t_pick - interlude[-1][0], interlude[-1][2], interlude[-1][3])  # 'Now a'
+    phrases = [interlude,
+               recorder_motif(g, 11, vel=0.38),                          # doubles "SCARF and a SIGH" 8va, softly
+               recorder_motif(g, 16, vel=0.35)[:3]]                      # "WHAT he was MISS-" ...
     phrases.append([(bread.start, t_res - bread.start, 67, 0.55), (t_res, 2.3, 66, 0.6)])   # G4 -> F#4 (7 -> 3)
     rec = recorder_line(phrases, total)
     # --- frame drum + tambourine (verse 2, lightly) ------------------------------------------------
     hits = []
     for bar in range(10, 18):
-        hits += [(g.t(bar, 0), "doum", 0.55), (g.t(bar, 3), "tek", 0.32), (g.t(bar, 5), "tek", 0.12),
+        hits += [(g.t(bar, 0), "doum", 0.55), (g.t(bar, 3), "tek", 0.22), (g.t(bar, 5), "tek", 0.08),
                  (g.t(bar, 3), "jingle", 0.22), (g.t(bar, 5), "jingle", 0.08)]
     hits += [(g.t(18, 0), "doum", 0.5), (g.t(18, 0) + 0.02, "jingle", 0.12)]
     for bar in (19, 20):
@@ -1510,12 +1534,17 @@ def make_piece(name, lines, grid, chords, arrange, log):
     if hits:
         dr, tb = render_hits(hits, total)
         acc += pan(fit(dr, n), 0.08) * 0.34 + pan(fit(tb, n), 0.38) * 0.16
-    # levels: vocal on top (~7 LU above the accompaniment), then a shared hall
+    # make room for the words: a gentle dip in the accompaniment's presence band, and the accompaniment
+    # ducked (<= 4 dB, smooth) whenever the bard sings
+    b_, a_ = biquad_peak(2600, -3.0, 0.8)
+    acc = lfilter(b_, a_, acc, axis=0)
+    acc = acc * duck_gain(vocal, SR, depth_db=4.0)[:, None]
+    # levels: vocal on top (~9 LU above the accompaniment in the prologue), then a shared hall
     lv, la = kweight_lufs(vocal), kweight_lufs(acc)
-    target_gap = 7.0 if name == "prologue" else 6.0
+    target_gap = 9.0 if name == "prologue" else 7.0
     acc *= 10 ** ((lv - target_gap - la) / 20)
     ir = hall_ir(1.45 if name == "prologue" else 1.6)
-    v_wet = fit(reverb(vocal, ir), n) * 10 ** (-11.5 / 20)
+    v_wet = fit(reverb(vocal, ir), n) * 10 ** (-13.5 / 20)
     a_wet = fit(reverb(acc, ir), n) * 10 ** (-13.0 / 20)
     acc_stem = fit(acc, n) + a_wet
     voc_stem = fit(vocal, n)

@@ -356,7 +356,6 @@ def bloom(target, threshold=0.72, strength=0.6, radius=2.0, knee=0.12, tint=None
     light: a LightLayer -- its contents are composited in the same upscale (saves ~6 ms)."""
     surf = _target(target)
     surf.flush()
-    w, h = surf.get_width(), surf.get_height()
     img = _bloom_image(surf, threshold, strength, radius, knee, wide, wide_radius, tint)
     data = bytearray(img.tobytes("raw", "BGRX"))
     small = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, img.width, img.height, img.width * 4)
@@ -672,9 +671,14 @@ def dust(cr, t, rect, n=40, color="#fff2d0", alpha=0.5, size=(1.0, 2.6), seed=0,
 
 
 def embers(cr, t, x, y, t0=0.0, n=24, life=1.6, spread=40.0, rise=110.0, color="#ffb347",
-           hot="#fff2b0", size=2.4, seed=0, burst=0.25, scale=1.0, wind=0.0, alpha=1.0):
+           hot="#fff2b0", size=2.4, seed=0, burst=0.25, scale=1.0, wind=0.0, alpha=1.0, solid=False):
     """Rising sparks/embers emitted from (x, y) starting at t0 (all born within `burst` s).
-    Each flickers, drifts sideways, shrinks and cools from `hot` to `color`."""
+    Each flickers, drifts sideways, shrinks and cools from `hot` to `color`.
+
+    solid=False: everything is additive (sparks over dark backgrounds: fires, night).
+    solid=True: the spark cores are painted opaque (OVER) with a smaller additive halo, so
+    warm sparks stay warm gold in front of a cool-coloured character (additive orange over
+    teal turns pale green-white)."""
     if t < t0:
         return
     c1, c2 = col(hot), col(color)
@@ -695,6 +699,14 @@ def embers(cr, t, x, y, t0=0.0, n=24, life=1.6, spread=40.0, rise=110.0, color="
         a = alpha * fl * (1.0 - u) ** 1.2 * min(1.0, u * 8.0)
         cc = core.mix(c1, c2, min(1.0, u * 1.6))
         r = size * scale * (1.0 - 0.6 * u) * (0.7 + 0.6 * hash01(i, seed + 6))
+        if solid:
+            glow(cr, px, py, r * 3.2, c2, a * 0.22, True)
+            cr.set_operator(cairo.OPERATOR_OVER)
+            cr.set_source_rgba(cc[0], cc[1], cc[2], min(1.0, a * 1.15))
+            cr.arc(px, py, max(0.6, r * 1.1), 0, TAU)
+            cr.fill()
+            cr.set_operator(cairo.OPERATOR_ADD)
+            continue
         glow(cr, px, py, r * 4.0, cc, a * 0.35, True)
         cr.set_source_rgba(cc[0], cc[1], cc[2], a)
         cr.arc(px, py, max(0.5, r), 0, TAU)

@@ -617,7 +617,7 @@ def draw_brawl(cr, cx, y, scale=1.0, light=None, t=0.0, *, t_stop=8.5, t_hug=9.6
     st = state or brawl_state(t, t_stop, t_hug, hug_back)
     sgn = 1.0 if orc_left else -1.0
     L = light or B.LIGHTS["square"]
-    stop, hug, hb, step = st["stop"], st["hug"], st["hug_back"], st["step"]
+    stop, hug, hb = st["stop"], st["hug"], st["hug_back"]
     # ---- orc pose
     if st["fight"]:
         if st["orc_shove"] is not None:

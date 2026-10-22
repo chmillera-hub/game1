@@ -70,7 +70,7 @@ def draw_scrying_crystal(cr, x, y, size=1.0, angle=0.0, light=None, *, face=1.0,
            clipped to the crystal's face and tinted; see crystal_feed()
     Returns the crystal centre (x, y) in the caller's coordinates (for the glow / face light)."""
     L = light or B.LIGHTS["neutral"]
-    lw = lw if lw is not None else max(B.LINE * 0.8, B.MIN_LINE_PX / max(B.device_scale(cr) * size, 1e-6))
+    lw = lw if lw is not None else B.line_for(B.LINE * 0.8, B.device_scale(cr) * size)
     w, h = 30.0, 42.0
     fw = max(0.12, abs(face))
     cr.save()
@@ -246,7 +246,7 @@ def draw_tankard(cr, x, y, size=1.0, light=None, *, foam=1.0, lw=None, slosh=0.0
     """A pewter tankard with a handle and a head of foam; (x, y) = its handle grip, upright.
     size 1.0 = 34 px tall."""
     L = light or B.LIGHTS["neutral"]
-    lw = lw if lw is not None else max(B.LINE * 0.8, B.MIN_LINE_PX / max(B.device_scale(cr) * size, 1e-6))
+    lw = lw if lw is not None else B.line_for(B.LINE * 0.8, B.device_scale(cr) * size)
     pw = B.pal(L, "#9AA0A6", sheen=0.7)
     cr.save()
     cr.translate(x, y)
@@ -313,14 +313,18 @@ def laugh_sync(t, bpm=280.0, t0=0.0):
 # ========================================================================================
 
 _SKINS = {
-    "dwarf": ["#CF8F6C", "#B97A5C", "#D9A07C", "#A86A50"],
+    # SPEC §4 "no one may read as a plain human": dwarves are granite-ruddy (with stone flecks,
+    # see _head_dwarf), elves moon-pale / lilac / sage -- never human peach
+    "dwarf": ["#BE7E68", "#AE7464", "#B88672", "#A47A6E", "#B4806A"],
     "goblin": ["#8FAE4A", "#7FA040", "#A3B85A", "#6E9A52"],
     "kobold": ["#C8643A", "#B8562E", "#D07A3A", "#9A5A8A"],
     "satyr": ["#8E6A4A", "#A07A52", "#6E5240", "#B08A60"],
-    "elf": ["#EBC9A8", "#D9AE8A", "#C49072", "#F2D5BE", "#B88466"],
+    "elf": ["#D2CAE6", "#C6BEE0", "#DCCAD8", "#C2CCE2", "#CFD0E8"],     # moon-lilac, rose-moon, periwinkle
     "harpy": ["#8A7A9A", "#9A8058", "#5E6A7E", "#A0786A"],
 }
 _CLOTH = ["#6E4A3A", "#4E5E3A", "#3E4A6A", "#7A3A3A", "#5A4A6E", "#8A6A3A", "#4A5A5A", "#6A5A4A", "#7A6E5A", "#3A5048"]
+# hose, hoods, caps and belts: earthy wool and leather (no bright blue legs -- they read as jeans)
+_HOSE = ["#5A4636", "#6A5A40", "#4E5A3C", "#5E5650", "#6E3E34", "#4A4038", "#7A6A50", "#55504A", "#3E4A44"]
 _HAIR = ["#2B2624", "#5E3A24", "#8A5A2A", "#B8B0A0", "#D8C08A", "#3A2A40", "#A0522D", "#E8E0D0"]
 _ACCENT = ["#B8913F", "#9AA0A6", "#C0392B", "#2E6E8A", "#7A9A3A", "#8A4A8A"]
 
@@ -355,7 +359,7 @@ def random_creature(seed, kind=None):
     sp.size = 0.92 + 0.16 * rng.random()
     sp.skin = rng.choice(_SKINS.get(kind, ["#888888"]))
     sp.cloth = rng.choice(_CLOTH)
-    sp.cloth2 = rng.choice([c for c in _CLOTH if c != sp.cloth])
+    sp.cloth2 = rng.choice([c for c in _HOSE if c != sp.cloth])
     sp.hair = rng.choice(_HAIR)
     sp.accent = rng.choice(_ACCENT)
     sp.eye = rng.choice(["#C08A3A", "#6E8A4A", "#5A7FA0", "#8A5A2A", "#D4A030", "#7A5AA0"])
@@ -430,8 +434,6 @@ def crowd_pose(action, t, spec=None, **kw):
     base = dict(seed=seed)
     look = (0.3 * B.sway(t, 0.13, seed + 31), 0.1 * B.sway(t, 0.11, seed + 37))
     head_turn = 0.25 * B.sway(t, 0.09, seed + 41)
-    yaw0 = kw.get("yaw", None)
-    facing = kw.get("facing", 1)
     face_sign = None
     if action == "idle":
         p = CrowdPose(action="idle", look=look, head_turn=head_turn, mood="neutral", **base)
@@ -839,9 +841,12 @@ def _hood(q, P, nz, facing_away, mat, r=38.0, hole=(29.0, 32.0), hole_z=22.0):
 
 
 def _cap_round(q, P, D, mat, y=-26.0, r=31.0, ry=13.0):
-    """A round felt cap (dome on a brim) -- F.dome_cap: its back never covers the face.
-    P / D: the head's transforms from _hx / head_xf."""
-    F.dome_cap(q, P, D, (0.0, y + ry * 0.55, -4.0), r, ry * 1.1, q.M[mat], r, brim=1.5, rim=0.7)
+    """A soft medieval felt cap: a brimless dome rising to a floppy peak that leans back (a
+    round cap with a brim read as a modern flat cap -- SPEC §0.1). F.dome_cap keeps its back
+    from ever covering the face. P / D: the head's transforms from _hx / head_xf."""
+    c = (0.0, y + ry * 0.55, -4.0)
+    peak = (0.0, y - ry * 1.9, -r * 0.62)
+    F.dome_cap(q, P, D, c, r, ry * 1.3, q.M[mat], r, brim=0.6, rim=0.7, extra=[peak])
 
 
 def _mouth(q, P, nz, e, pos, w, spec, HS):
@@ -977,8 +982,11 @@ def _head_elf(q, spec, draw=True):
     away = nz((0.0, 0.0, 1.0)) < -0.25
     cr = q.cr
     behind = {s: D((s * 26.0, -4.0, -2.0)) < D((0.0, -4.0, -2.0)) - 2.0 for s in (-1.0, 1.0)}
-    ear = ((24.0, -4.0, -2.0), (54.0 * spec.ears, -30.0, -14.0), 7.0)
     hood_up = spec.hat == "hood"
+    # long swept ears; with the hood up they come out THROUGH it (slits in the hood, like the
+    # hero elf) -- an elf without visible ears reads as a person in a hood (SPEC §4)
+    ear = (((31.0, -6.0, -4.0), (60.0 * spec.ears, -33.0, -16.0), 7.5) if hood_up else
+           ((24.0, -4.0, -2.0), (54.0 * spec.ears, -30.0, -14.0), 7.0))
     # long hair: two locks falling behind the ears to the shoulders (behind the head), and
     # from behind a curtain of hair down the nape
     if not hood_up:
@@ -992,7 +1000,7 @@ def _head_elf(q, spec, draw=True):
         for sh_, _o in locks:
             sh_.add(cr)
         q.shade(Path(cr), q.M["hair"], outline=False, size=16.0, rim=0.6)
-    _ear_pair(q, P, [s for s in (-1.0, 1.0) if behind[s] and not hood_up], *ear)
+    _ear_pair(q, P, [s for s in (-1.0, 1.0) if behind[s]], *ear)
     F.hull_union(q, [F.ellipsoid2d(P, (0.0, -6.0, 0.0), 25.0, 28.0, 27.0, 16), F.ellipsoid2d(P, (0.0, 14.0, 12.0), 16.0, 12.0, 16.0, 12),
                      F.blob_pts(q.proj, q.S["neck_top"], 8.0, 8.0, 8.0, 10)], q.M["skin"], 50.0)
     if not hood_up:
@@ -1020,8 +1028,7 @@ def _head_elf(q, spec, draw=True):
             fr = [P((-22.0, -24.0, 18.0)), P((0.0, -30.0, 24.0)), P((20.0, -22.0, 18.0))]
             sh, so = B.taper_paths(cr, fr, 12.0, 4.0, q.lw * 0.8)
             q.shade(sh, q.M["hair"], lw=q.lw * 0.8, outline=so, size=10.0, rim=0.6)
-    if not hood_up:
-        _ear_pair(q, P, [s for s in (-1.0, 1.0) if not behind[s]], *ear)
+    _ear_pair(q, P, [s for s in (-1.0, 1.0) if not behind[s]], *ear)
     return pts
 
 
@@ -1055,7 +1062,7 @@ def _head_harpy(q, spec, draw=True):
         pts["eyes"] = _eyes(q, spec, P, nz, e, near, (12.0, -6.0, 22.0), 10.5, 11.0, HS, iris_size=0.75)
         beak = [P((-6.0, 2.0, 24.0)), P((6.0, 2.0, 24.0)), P((-5.0, 12.0, 26.0)), P((5.0, 12.0, 26.0)), P((0.0, 6.0, 38.0)), P((0.0, 16.0, 38.0))]
         shp, so, _ = B.hull_paths(cr, beak, q.lw * 0.85)
-        bp = q.shade(shp, q.M["beak"], lw=q.lw * 0.85, outline=so, size=8.0, rim=0.0)
+        q.shade(shp, q.M["beak"], lw=q.lw * 0.85, outline=so, size=8.0, rim=0.0)
         op = clamp(max(q.pose.talk, e.open))
         if op > 0.08:
             m = P((0.0, 13.0 + 3 * op, 30.0))
@@ -1084,10 +1091,21 @@ def _head_dwarf(q, spec, draw=True):
     if not away:
         # beard first (sideburns -> a point on the chest), the face features go on top of it
         sw = 1.2 * math.sin(q.t * 1.3 + spec.seed)
-        bd = [P((s * x, y, z)) for s in (-1.0, 1.0) for (x, y, z) in ((28.0, 4.0, 0.0), (26.0, 13.0, 9.0), (21.0, 22.0, 18.0))]
-        tip = q.proj.xy(v_add(W((0.0, 26.0, 24.0)), (sw, 30.0, 6.0)))
-        bd += [P((0.0, 21.0, 31.0)), tip, (tip[0] - 9, tip[1] - 6), (tip[0] + 9, tip[1] - 6)]
-        F.hull_union(q, [bd], q.M["hair"], 34.0, rim=0.6, shadow=0.7)
+        # a big beard down the chest (SPEC: "enormous braided beard hiding the mouth")
+        bd = [P((s * x, y, z)) for s in (-1.0, 1.0) for (x, y, z) in ((28.0, 4.0, 0.0), (26.0, 13.0, 9.0), (22.0, 24.0, 18.0),
+                                                                       (17.0, 36.0, 21.0))]
+        tip = q.proj.xy(v_add(W((0.0, 26.0, 24.0)), (sw, 44.0, 8.0)))
+        bd += [P((0.0, 21.0, 31.0)), tip, (tip[0] - 11, tip[1] - 9), (tip[0] + 11, tip[1] - 9)]
+        bpal = F.hull_union(q, [bd], q.M["hair"], 34.0, rim=0.6, shadow=0.7)[1]
+        if q.detail >= 1:
+            # two braids down the middle, bound by a brass ring above the tip
+            top = P((0.0, 24.0, 30.0))
+            braids = [[(top[0] + d, top[1]), ((top[0] + tip[0]) / 2 + d * 1.3, (top[1] + tip[1]) / 2),
+                       (tip[0] + d * 0.6, tip[1] - 12.0)] for d in (-5.0, 5.0)]
+            B.detail_lines(cr, braids, q.lw * 0.8, bpal.line, 0.55)
+            ring = (tip[0] * 0.8 + top[0] * 0.2, tip[1] * 0.8 + top[1] * 0.2)
+            rp, ro = B.ellipse_paths(cr, ring[0], ring[1], 7.5, 3.6, q.lw * 0.8)
+            q.shade(rp, q.M["accent"], lw=q.lw * 0.8, outline=ro, size=6.0, rim=0.5)
         if hl is not None:
             cr.save()
             cr.new_path()
@@ -1119,6 +1137,18 @@ def _head_dwarf(q, spec, draw=True):
             core.src(cr, core.mix(hp.lit, "#F4E6D0", 0.18))
             cr.fill()
         _brows(q, spec, P, nz, e, near, 3.0, 25.0, -19.0, 31.0, 22.0, 7.5)
+        if q.detail >= 1:
+            # faint granite flecks (SPEC: craggy granite-ruddy skin, a creature not a ruddy old man)
+            cr.new_path()
+            for k, v in enumerate(((-10.0, -33.0, 20.0), (8.0, -36.0, 19.0), (17.0, -29.0, 21.0), (-23.0, 4.0, 19.0),
+                                   (22.0, 7.0, 19.0), (-27.0, -9.0, 15.0))):
+                if nz((v[0] / 30.0, v[1] / 30.0, v[2] / 30.0)) < 0.15:
+                    continue
+                p = P(v)
+                cr.new_sub_path()
+                cr.arc(p[0], p[1], 1.3 + 0.9 * core.hash01(k, spec.seed), 0.0, TAU)
+            core.src(cr, q.P(q.M["skin"]).shadow, 0.6)
+            cr.fill()
     if not hood_up and away:                # the back of his head: hair to the nape
         F.hull_union(q, [F.ellipsoid2d(P, (0.0, -8.0, -12.0), 30.0, 24.0, 20.0, 14)], q.M["hair"], 30.0, rim=0.6)
     if spec.hat == "cap":

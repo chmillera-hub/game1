@@ -371,7 +371,7 @@ def draw_dragon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     if detail is None:
         detail = 2 if dev >= 0.9 else 1 if dev >= 0.55 else 0
     q.detail = detail
-    q.lw = max(DRAGON_LINE, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(DRAGON_LINE, dev)
 
     cr.save()
     cr.translate(x, y + (seat_h * scale * sit if pose.anchor == "seat" else 0.0))
@@ -1170,7 +1170,6 @@ def _lap(q):
         cr.curve_to(lerp(legs[0][0], mid[0], 0.5), mid[1], lerp(mid[0], legs[1][0], 0.5), mid[1], *legs[1])
         cr.curve_to(legs[1][0], legs[1][1] - 12.0, lerp(top[0], legs[1][0], 0.5) - 2.0, lerp(top[1], legs[1][1], 0.45), *top)
         cr.close_path()
-        gap = Path(cr)
         lp = q.P(q.M["lining"])
         core.src(cr, core.mix(lp.shadow, pal.deep, 0.45))
         cr.fill()
@@ -1673,12 +1672,18 @@ def dragon_embers(cr, t, t0, rig, scale=None, n=34, life=1.9, intensity=1.0):
     mx = rig.mouth[0] + 8.0 * s * side
     g = clamp(1.0 - u / 1.4) * clamp(u * 6.0) * intensity
     if g > 0:
-        fx.glow(cr, mx + 2.0 * s * side, rig.mouth[1] - 6 * s, 90.0 * s, "#ffb347", 0.45 * g)
-    # two half-puffs: head-on they fountain out to either side so they never veil the eyes
+        # a PAINTED warm glow (additive orange over his teal face turned pale green-white),
+        # plus a small additive hot-spot for the bloom pass
+        gx, gy = mx + 2.0 * s * side, rig.mouth[1] - 6 * s
+        fx.glow(cr, gx, gy, 90.0 * s, "#ffa040", 0.32 * g, additive=False)
+        fx.glow(cr, gx, gy, 34.0 * s, "#ffc060", 0.30 * g)
+    # two half-puffs: head-on they fountain out to either side so they never veil the eyes;
+    # solid cores keep them GOLD in front of the teal scales (the film's first warm light)
     for sgn, seed in ((-1.0, 21), (1.0, 22)):
         fx.embers(cr, t, mx + sgn * 10.0 * s * front, rig.mouth[1], t0=t0, n=n // 2, life=life,
-                  spread=46.0 * (1.0 - 0.4 * front), rise=120.0, color="#ff9a3c", hot="#fff1b8", size=2.6,
-                  seed=seed, burst=0.5, scale=s, wind=30.0 * side + sgn * 100.0 * front, alpha=intensity)
+                  spread=46.0 * (1.0 - 0.4 * front), rise=120.0, color="#ff8a24", hot="#ffe27a", size=2.6,
+                  seed=seed, burst=0.5, scale=s, wind=30.0 * side + sgn * 100.0 * front, alpha=intensity,
+                  solid=True)
 
 
 # ----------------------------------------------------------------------------------------

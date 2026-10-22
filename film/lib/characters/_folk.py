@@ -238,7 +238,7 @@ def begin(cr, x, y, scale, pose, light, t, detail, build, mats, parts=None, line
     if detail is None:
         detail = lod_for(dev, height) if height else (2 if dev >= 0.9 else 1 if dev >= 0.55 else 0)
     q.detail = detail
-    q.lw = max(line, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(line, dev, 1.0 / build.fit)
     q.x, q.y = x, y
     cr.save()
     cr.translate(x, y + (pose.seat_h * outer * q.sit if pose.anchor == "seat" else 0.0))
@@ -812,12 +812,13 @@ def front_arc(q, c, a, cz, n=9, extend=1.0):
     return out
 
 
-def dome_cap(q, P, D, c, r, h, mat, size, brim=1.5, rim=0.8, n=16, shadow=1.0):
+def dome_cap(q, P, D, c, r, h, mat, size, brim=1.5, rim=0.8, n=16, shadow=1.0, extra=()):
     """A round cap on a head: a dome of radius r / height h on a circular rim (head-space centre
     c, the rim plane horizontal in head space) + a brim ring r + brim. Drawn as the hull of the
     dome clipped to the region above the rim's NEAR half -- so when the head tips back the back
     of the cap never paints over the face (it is behind the skull) -- with an ink line along
-    the visible brim edge. P/D from head_xf. Returns (Path, Palette, near-rim 2D points)."""
+    the visible brim edge. `extra`: more head-space points for the hull (e.g. the peak of a
+    pointed felt hat). P/D from head_xf. Returns (Path, Palette, near-rim 2D points)."""
     cr = q.cr
     rb = r + brim
     ring = [(c[0] + rb * math.cos(TAU * i / n), c[1], c[2] + rb * math.sin(TAU * i / n)) for i in range(n)]
@@ -831,7 +832,7 @@ def dome_cap(q, P, D, c, r, h, mat, size, brim=1.5, rim=0.8, n=16, shadow=1.0):
     arc = [P(ring[j]) for j in [(start - 1) % n] + run + [i % n]]   # + the two tangent points
     if arc[0][0] > arc[-1][0]:
         arc.reverse()
-    pts = ellipsoid2d(P, c, r, h, r, 16) + ellipsoid2d(P, c, rb, 0.01, rb, 16)
+    pts = ellipsoid2d(P, c, r, h, r, 16) + ellipsoid2d(P, c, rb, 0.01, rb, 16) + [P(e) for e in extra]
     big = 10.0 * rb * max(1.0, abs(q.scale))
     y_top = min(p[1] for p in pts) - big
     clip = [(arc[0][0] - big, arc[0][1])] + arc + [(arc[-1][0] + big, arc[-1][1]), (arc[-1][0] + big, y_top),

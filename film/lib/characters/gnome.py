@@ -372,7 +372,7 @@ def draw_gnome(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     q.sit = sit
     seat_h = pose.seat_h
     dev = q.lod(scale, detail)          # detail 2/1/0; q.micro = close-up textures (knit, laces...)
-    q.lw = max(GNOME_LINE, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(GNOME_LINE, dev)
 
     cr.save()
     cr.translate(x, y + (seat_h * scale * sit if pose.anchor == "seat" else 0.0))

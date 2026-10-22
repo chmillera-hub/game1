@@ -371,7 +371,7 @@ def _capelet_and_pipe(q):
 
 def _arm(q, A):
     """Outgrown tunic sleeve (his furry wrists show) and a hand."""
-    cr, M, proj = q.cr, q.M, q.proj
+    M, proj = q.M, q.proj
     sh, el, wr = proj.xy(A["sh"]), proj.xy(A["el"]), proj.xy(A["wr"])
     F.limb(q, [sh, el, wr], [13.0, 9.5, 7.5], M["fur"], 18.0)
     cut = core.lerp_pt(el, wr, 0.78)

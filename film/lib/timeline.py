@@ -50,7 +50,7 @@ class Scene:
 
 class Line:
     __slots__ = ("id", "scene", "speaker", "text", "start", "end", "global_start", "global_end",
-                 "wav", "caption", "vo", "fx", "env", "raw")
+                 "wav", "caption", "vo", "fx", "env", "sung", "raw")
 
     def __init__(self, d):
         self.raw = d
@@ -67,6 +67,7 @@ class Line:
         self.vo = bool(d.get("vo", False))
         self.fx = d.get("fx")
         self.env = [float(v) for v in (d.get("env") or [])]
+        self.sung = bool(d.get("sung", False))          # the bard's lyric lines (captioned in italics with ♪)
 
     @property
     def duration(self):
@@ -396,6 +397,9 @@ def make_stub(out_path):
         dur = round(0.35 + 0.075 * len(text), 2)
         if lid == "s1_l1":
             dur = 0.82
+        nxt = [ln[4] for ln in _STUB_LINES[k + 1:] if ln[1] == sid]
+        if nxt:                                    # never run into the next line of the scene
+            dur = min(dur, round(nxt[0] - 0.15 - st, 2))
         en = round(st + dur, 3)
         lines_out.append({
             "id": lid, "scene": sid, "speaker": spk, "text": text, "start": st, "end": en,

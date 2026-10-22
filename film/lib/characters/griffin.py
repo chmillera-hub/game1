@@ -28,7 +28,7 @@ from .. import core
 from ..core import clamp, lerp, smooth
 from . import base as B
 from . import _folk as F
-from .base import Mat, Path, Proj, m_mul, m_rot_x, m_rot_y, m_rot_z, m_vec, v_add, v_lerp, v_sub
+from .base import Mat, Path, m_mul, m_rot_x, m_rot_y, m_rot_z, m_vec, v_add, v_lerp
 from .dragon import Arm
 
 __all__ = ["GriffinPose", "GriffinRig", "draw_griffin", "griffin_walk_phase", "griffin_stride", "GRIFFIN_HEIGHT",

@@ -86,6 +86,8 @@ PROP_COLORS = {
     "brass": "#B8913F", "brass_lt": "#F2DC98", "brass_dk": "#5A4520", "iron": "#2E3236",
     "iron_hi": "#5C646C", "oak": "#8A5F3A", "oak_lt": "#B07E4E", "oak_dk": "#5E3F24",
     "pewter": "#8E979C", "ale": "#C88A2E", "foam": "#F4EBD8", "ivory": "#EDE3C8",
+    # painted boards (the SELF-SERVICE plaque)
+    "green_paint": "#2F5A4A",
     # lights
     "candle": "#FFD27A", "candle_hot": "#FFF4CF", "wisp": "#4DFFC4", "wisp_core": "#E6FFF7",
 }
@@ -121,7 +123,7 @@ def prop_mats():
             "oak_dk": Mat.of(C["oak_dk"]),
             "pewter": Mat.of(C["pewter"], sheen=0.6),
             "ivory": Mat.of(C["ivory"], shadow_k=0.85),
-            "green_paint": Mat.of("#2F5A4A", sheen=0.1),
+            "green_paint": Mat.of(C["green_paint"], sheen=0.1),
         })
     return _MATS
 
@@ -188,7 +190,7 @@ class _Ctx:
         dev = B.device_scale(cr)
         self.dev = dev
         self.detail = detail if detail is not None else (2 if dev >= 0.9 else 1 if dev >= 0.55 else 0)
-        self.lw = max(B.LINE * line, B.MIN_LINE_PX / max(dev, 1e-6))
+        self.lw = B.line_for(B.LINE * line, dev)
         self.light = light or B.LIGHTS["neutral"]
         self.M = prop_mats()
         self.pal = {}
@@ -502,7 +504,6 @@ def draw_apothecary_bag(cr, x, y, scale=1.0, light=None, t=0.0, angle=0.0, state
     q = _Ctx(cr, x, y, scale, angle + swing, light, detail)
     C = PROP_COLORS
     paper = q.M["paper"] if damp < 0.05 else Mat.of(core.mix(C["paper"], "#a0a8b2", 0.28 * damp), shadow_k=0.85, line_k=0.5)
-    pp = B.palette(q.light, paper)
     if state == "open":
         # the back wall of the open mouth, then the contents, then the front wall
         back = [(-27.0, 6.0), (-14.0, -1.0), (0.0, -3.0), (14.0, -1.5), (27.0, 5.0), (24.0, 14.0), (-24.0, 14.0)]
@@ -746,7 +747,7 @@ def _glints(cr, pts_list, alpha=0.75):
 
 def draw_sleep_draught(cr, x, y, scale=1.0, light=None, t=0.0, angle=0.0, detail=None, label=True):
     """SLEEP DRAUGHT: a round blue glass flask, corked and sealed with midnight wax, a parchment
-    label with a crescent moon. Anchor (x, y) = bottom centre (where it stands); 50 x 78 at
+    label with a crescent moon. Anchor (x, y) = bottom centre (where it stands); 50 x 81 at
     scale 1.0. Returns PropRig(top, center, label)."""
     q = _Ctx(cr, x, y, scale, angle, light, detail)
     C = PROP_COLORS
@@ -885,7 +886,7 @@ def _label_icon(cr, icon, x, y):
 
 def draw_vitamins(cr, x, y, scale=1.0, light=None, t=0.0, angle=0.0, detail=None, glow=1.0, label=True):
     """VITAMINS: a squat glass jar of softly glowing berry-pills under a linen cover tied with
-    twine. Anchor = bottom centre; 46 x 62 at scale 1.0. glow 0..1 (they shimmer by
+    twine. Anchor = bottom centre; 48 x 62 at scale 1.0. glow 0..1 (they shimmer by
     themselves). Returns PropRig(top, center, label)."""
     q = _Ctx(cr, x, y, scale, angle, light, detail)
     C = PROP_COLORS
@@ -969,7 +970,7 @@ def _flame(cr, x, y, h, w, t, seed=0, color="#FFB347", core_color="#FFF4CF", lit
     cr.set_operator(cairo.OPERATOR_ADD)
     for k, (sc, c, a) in enumerate(((1.0, color, 0.75), (0.55, core_color, 0.95))):
         cr.new_path()
-        bx, by = x, y - hh * 0.18 * sc
+        by = y - hh * 0.18 * sc
         cr.move_to(tipx * sc + x * (1 - sc), tipy * sc + y * (1 - sc))
         cr.curve_to(x + ww * sc * 0.9, y - hh * 0.45 * sc, x + ww * sc * 0.75, by + ww * 0.7 * sc, x, by + ww * 0.75 * sc)
         cr.curve_to(x - ww * sc * 0.75, by + ww * 0.7 * sc, x - ww * sc * 0.9, y - hh * 0.45 * sc,
@@ -988,7 +989,7 @@ def draw_calm_candle(cr, x, y, scale=1.0, light=None, t=0.0, angle=0.0, lit=1.0,
                      label=True):
     """CALM: a lavender candle in a glass tumbler with a painted band label and a sprig.
 
-    Anchor = bottom centre; 46 x 50 at scale 1.0 (the flame adds ~16). lit 0..1 (0: a dark
+    Anchor = bottom centre; 47 x 53 at scale 1.0 (the flame adds ~16). lit 0..1 (0: a dark
     wick and a thread of smoke). flame "cool" (a pale lavender spell-flame: the remedies are
     stones, not kindness) or "warm". Draw its halo with candle_glow(). Returns PropRig(top,
     flame, center, label)."""
@@ -1257,7 +1258,6 @@ def _book_flat(q, w, h, angle_yaw=-0.18, elev=0.32, thick=8.0):
     """The book lying on a counter, seen from a little above: a projected box. Its top face is
     an affine image of the cover, so the cover art is drawn through that matrix."""
     cr = q.cr
-    C = PROP_COLORS
     c, s_ = math.cos(angle_yaw), math.sin(angle_yaw)
     se, ce = math.sin(elev), math.cos(elev)
 
@@ -1789,7 +1789,7 @@ def draw_till(cr, x, y, scale=1.0, light=None, t=0.0, ring=None, receipt=0.0, pr
                 core.ellipse(cr, -26 + i * 15, -13.0 + dy * 0.6, 4.5, 1.6)
             cr.fill()
     ds, do = _rrect_paths(cr, -40.0, -15.0 + dy, 80.0, 12.0, 2.0, q.lw * 0.8)
-    pd = q.shade(ds, "oak_dk", 12.0, outline=do, rim=0.5)
+    q.shade(ds, "oak_dk", 12.0, outline=do, rim=0.5)
     core.circle(cr, 0.0, -9.0 + dy, 2.6)
     core.src(cr, B.palette(q.light, brass).lit)
     cr.fill()
@@ -1902,7 +1902,7 @@ def _receipt(q, x0, y0, length):
     cr = q.cr
     spine = _ribbon_spine(x0, y0, length, ang0=-math.pi / 2 - 0.1, curl=4.2, power=1.7, ref=70.0)
     rs, ro = B.taper_paths(cr, spine, 10.5, 10.5, q.lw * 0.8, cap=False)
-    pr = q.shade(rs, "parchment", 5.0, outline=ro, rim=0.4)
+    q.shade(rs, "parchment", 5.0, outline=ro, rim=0.4)
     if q.detail >= 1:
         marks = []
         acc = 0.0
@@ -3416,7 +3416,6 @@ def draw_shelves(cr, x, y, w=420.0, h=420.0, scale=1.0, light=None, t=0.0, rows=
     rows of ~105). gaps = [(row, slot)] left empty (where she took something). Set dressing: no
     outline -- cache it in an fx.Layer (it is static). Returns PropRig(boards=[y of each shelf top])."""
     q = _Ctx(cr, x, y, scale, 0.0, light, detail)
-    C = PROP_COLORS
     ol, osh, odeep, orim = _tones(q.light, "#5A3C24")
     bl, bsh, bdeep, brim = _tones(q.light, "#3A2618")
     core.rounded_rect(cr, 0.0, 0.0, w, h, 4.0)              # the back panel

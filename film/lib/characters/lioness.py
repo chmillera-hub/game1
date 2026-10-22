@@ -254,7 +254,7 @@ def draw_lioness(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None)
     scale_px = scale
     scale = scale * SIZE_K            # internal units: lines stay LINE px on screen
     dev = q.lod(scale, detail)
-    q.lw = max(LINE / SIZE_K, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(LINE / SIZE_K, dev, 1.0 / SIZE_K)
     cr.save()
     cr.translate(x, y)
     cr.scale(scale, scale)

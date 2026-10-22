@@ -325,10 +325,34 @@ def device_scale(cr):
     return math.hypot(x, y)
 
 
+LINE_GROW = 0.5     # close-ups: how fast the on-screen ink line grows with zoom past 1.0
+
+
+def line_for(line, dev, k=1.0):
+    """THE house line width, in LOCAL units, for every outlined drawing (cast and props).
+
+    line  the width in local units at scale 1.0 (e.g. LINE)
+    dev   screen px per local unit (scale * device_scale(cr) for most rigs)
+    k     local units per scale-1 px (1 for most rigs; 1/SIZE_K or 1/fit for calibrated builds)
+
+    Never thinner than MIN_LINE_PX on screen (far figures keep their silhouettes). Past scale
+    1.0 -- a close-up or a camera push -- the ink line thickens at only LINE_GROW of the
+    drawing's rate (a 3x close-up gets a 2x line, not a 3x marker outline), so the line reads
+    the same fine weight across shot sizes, as in a hand-inked 2D feature. Continuous in dev:
+    no popping during camera moves."""
+    dev = max(dev, 1e-6)
+    zoom = dev * k
+    if zoom > 1.0:
+        line = line * (1.0 + LINE_GROW * (zoom - 1.0)) / zoom
+    return max(line, MIN_LINE_PX / dev)
+
+
 def line_w(cr, lw):
-    """Clamp a line width (user units) so it is never below MIN_LINE_PX on screen."""
+    """A line width in user units for the current transform (line_for with k=1): never below
+    MIN_LINE_PX on screen, and only half-growing in close-ups. For props drawn inside hold
+    callbacks, where 1 unit = 1 px of the holder at scale 1.0."""
     s = device_scale(cr)
-    return max(lw, MIN_LINE_PX / s) if s > 0 else lw
+    return line_for(lw, s) if s > 0 else lw
 
 
 def outline_under(cr, path, lw, color, exclude=None):
@@ -350,6 +374,12 @@ def outline_under(cr, path, lw, color, exclude=None):
     cr.stroke()
     if exclude is not None:
         cr.restore()
+
+
+# the ground-bounce band (dusk, golden, street_night lights) is drawn only on parts at least this
+# thick (local units = px at scale 1): on fingers, claws, horns and tail tips the faint 6 px band
+# is invisible but cost a full extra fill (~35% of a character's draw under those lights)
+BOUNCE_MIN_SIZE = 40.0
 
 
 @functools.lru_cache(maxsize=8192)
@@ -421,7 +451,7 @@ def shade(cr, path, mat, light, lw=LINE, *, shadow=1.0, rim=1.0, outline=True, s
         path.add(cr, lx * d, ly * d)
     core.src(cr, p.lit)
     cr.fill()
-    if bs > 0.01:
+    if bs > 0.01 and size >= BOUNCE_MIN_SIZE:
         bx, by = local_dir(cr, (0.0, 1.0))
         bw = max(lw, 0.6) * 2.6
         cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
@@ -1432,7 +1462,7 @@ class SheetItem:
 CAST_HEIGHTS = {
     "troll": 660, "minotaur": 600, "dragon": 520, "orc": 480, "elf": 470, "lioness": 450,
     "satyr": 430, "faun": 410, "harpy": 400, "griffin": 380, "dwarf": 300, "goblin": 260,
-    "kobold": 220, "gnome": 160, "pixie": 90, "pigeon": 42,
+    "kobold": 220, "bard": 156, "gnome": 160, "pixie": 90, "pigeon": 42,
 }
 BENCH_SEAT_H = 125.0
 

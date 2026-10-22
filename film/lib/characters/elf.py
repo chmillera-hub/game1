@@ -312,7 +312,7 @@ def draw_elf(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     scale_px = scale
     scale = scale * SIZE_K            # internal units: lines stay LINE px on screen
     dev = q.lod(scale, detail)
-    q.lw = max(LINE / SIZE_K, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(LINE / SIZE_K, dev, 1.0 / SIZE_K)
     cr.save()
     cr.translate(x, y + (pose.seat_h * scale_px * sit if pose.anchor == "seat" else 0.0))
     cr.scale(scale, scale)
@@ -533,20 +533,35 @@ def _kirtle(q):
             _trim(q, [(lerp(left[-1][0], right[-1][0], u), lerp(left[-1][1], right[-1][1], u) + 8.0 * math.sin(math.pi * u) - 6.0)
                       for u in (0.12, 0.3, 0.5, 0.7, 0.88)])
         return
-    # seated: bodice + lap over the knees + the skirt falling to the floor (one union)
+    # seated: bodice + lap over the knees + the skirt (one union). The skirt is a soft BELL of
+    # cloth hanging from just under the knees to the floor -- stacked rings like the standing
+    # kirtle, flaring toward a scalloped hem -- so it drapes instead of reading as a board
     kn = {f["side"]: f["knee"] for f in S["feet"]}
     kx = 0.5 * (kn[-1.0][0] + kn[1.0][0])
+    ky = 0.5 * (kn[-1.0][1] + kn[1.0][1])
     kz = max(kn[-1.0][2], kn[1.0][2])
     torso = B.ellipsoid_pts(xy, T((0.0, -76.0, 4.0)), 31.0, 34.0, 22.0, 8) + B.ellipsoid_pts(xy, T((0.0, -40.0, 2.0)), 25.0, 10.0, 19.0, 6)
     hips = B.ellipsoid_pts(xy, v_add(pel, (0.0, 4.0, -2.0)), 38.0, 12.0, 28.0, 8)
     knees = K.circle_pts(xy(kn[-1.0]), 19.0, 8) + K.circle_pts(xy(kn[1.0]), 19.0, 8)
-    skirt = list(knees)
-    hem3 = []
-    for dx in (-46.0, -24.0, 0.0, 24.0, 46.0):
-        hem3.append((kx + dx, -9.0 + 2.0 * math.sin(dx * 0.3 + t * 0.8), kz + 14.0 - abs(dx) * 0.3))
-    skirt += [xy(h) for h in hem3]
-    skirt += [xy((kx + dx, -9.0, kz - 50.0)) for dx in (-42.0, 42.0)]
-    hulls = [core.convex_hull(torso), core.convex_hull(hips + knees), core.convex_hull(skirt)]
+    sway = 1.5 * math.sin(t * 0.8 + q.pose.seed)
+    bell = []
+    for u in (0.0, 0.3, 0.62, 1.0):
+        bell.append(((kx + sway * u, lerp(ky + 8.0, -8.0, u), lerp(kz - 6.0, kz - 16.0, u)),
+                     lerp(29.0, 47.0, u ** 1.4), lerp(22.0, 36.0, u)))
+    left, right = [], []
+    for (c, a, cz) in bell:
+        x, y, hw = proj.ellipse(c, a, cz)
+        left.append((x - hw, y))
+        right.append((x + hw, y))
+    c, a, cz = bell[-1]
+    cy = xy(c)[1]
+    ring = [xy((c[0] + math.sin(ang) * a, c[1] + 2.6 * math.sin(7.0 * ang + 0.5 * math.sin(t * 0.7)),
+                c[2] + math.cos(ang) * cz)) for ang in (TAU * i / 32 for i in range(32))]
+    hem = sorted((p for p in ring if p[1] >= cy - 0.5), key=lambda p: p[0])
+    skirt = left + hem + right[::-1]
+    if sum(skirt[i][0] * skirt[i - 1][1] - skirt[i - 1][0] * skirt[i][1] for i in range(len(skirt))) > 0:
+        skirt.reverse()                                  # wound like the convex hulls (one union)
+    hulls = [core.convex_hull(torso), core.convex_hull(hips + knees), skirt]
     path = K.union(q, hulls, q.M["kirtle"], size=70, shadow=0.7)
     if q.detail >= 1:
         cr.save()
@@ -559,7 +574,8 @@ def _kirtle(q):
         folds.append([xy((kx, kn[1.0][1] + 16.0, kz + 6.0)), xy((kx + 1.0, -50.0, kz + 13.0)), xy((kx, -14.0, kz + 15.0))])
         B.detail_lines(cr, folds, q.lw, pal.line, 0.4)
         cr.restore()
-        _trim(q, [xy((h[0], h[1] - 6.0, h[2])) for h in hem3[1:4]])
+        n = len(hem)
+        _trim(q, [(p[0], p[1] - 6.0) for p in hem[n // 6: n - n // 6]])
 
 
 def _cloak_rings(q):

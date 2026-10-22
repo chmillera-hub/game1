@@ -154,7 +154,7 @@ def draw_pigeon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
     if detail is None:
         detail = 2 if dev >= 1.8 else 1 if dev >= 0.7 else 0
     M = pigeon_mats()
-    lw = max(PIGEON_LINE * 0.8, B.MIN_LINE_PX / max(dev, 1e-6))
+    lw = B.line_for(PIGEON_LINE * 0.8, dev)
     fs = 1.0 if pose.facing >= 0 else -1.0
     q = {"cr": cr, "light": light, "lw": lw}
     seed = pose.seed

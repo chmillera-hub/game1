@@ -2364,7 +2364,7 @@ def draw_bard(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
         detail = 2 if dev >= 0.9 else 1 if dev >= 0.55 else 0
     q.detail = detail
     q.micro = detail >= 2 and dev >= 1.4
-    q.lw = max(BARD_LINE, B.MIN_LINE_PX / max(dev, 1e-6))
+    q.lw = B.line_for(BARD_LINE, dev)
 
     cr.save()
     cr.translate(x, y + (seat_h * scale * sit if pose.anchor == "seat" else 0.0))
@@ -2496,7 +2496,7 @@ def draw_bard_stool(cr, x, y, scale=1.0, light=None, seat_h=BARD_STOOL_H, yaw=0.
     wood = Mat.of("#A0703F", sheen=0.3)                # paler than his boots: furniture, not legs
     pal = B.palette(light, wood)
     dev = scale * B.device_scale(cr)
-    lw = max(BARD_LINE, B.MIN_LINE_PX / max(dev, 1e-6))
+    lw = B.line_for(BARD_LINE, dev)
     proj = Proj(yaw, ELEV)
     cr.save()
     cr.translate(x, y)

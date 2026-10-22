@@ -6,7 +6,7 @@ in **STYLE.md**; this file is the reference for *how to call things*. Keep it ac
 add to the library: append your module under **Cast**, **Props** or **Environment**.
 
 ```python
-from film.lib import core, fx, timeline            # + env, props when they exist
+from film.lib import core, fx, timeline, env, props, storybook
 from film.lib import characters as ch               # every creature, auto-registered
 from film.lib.characters import base as B           # the shared rig kit (also ch.base)
 ```
@@ -110,7 +110,7 @@ python3 film/render.py --list                    scenes found, durations, frame 
 ```python
 tl.scene(3)            # Scene: .id .name .start (global s) .duration .end .frames
 tl.line("s3_l4")       # Line: .id .scene .speaker .text .start .end (LOCAL s) .global_start .global_end
-                       #       .duration .wav .caption .vo .fx .env (envelope samples) .env_at(t)
+                       #       .duration .wav .caption .vo .sung .fx .env (envelope samples) .env_at(t) .raw
 tl.beat("s3_hold")     # Beat: .id .scene .t .end (LOCAL s; end may be None) .dur
 tl.talk(3, t, "MAN")   # 0..1 mouth openness from the real speech envelope (smoothed, never snaps)
 tl.speaking(3, t, "MAN")        # bool
@@ -125,7 +125,11 @@ tl.reload()            # re-read the file (after tts.py rewrote it)
 * The speaker ids are `MAN`, `OLD_WOMAN`, `PHARMACIST`, `PHONE`, `BOUNCER` and `CROWD`. Line
   ids are `sN_lK` and beat ids are `sN_<name>` (SPEC §6). Scenes add their own beats as
   constants defined relative to these.
-* Stub: `python3 -m film.lib.timeline --stub film/build/stub_timeline.json`. It mirrors the SPEC
+* The real timeline also has scene 0 (the prologue, speaker `BARD`, lyric lines with `.sung`
+  True) and a `(laughs)` line `s6_laugh` for MAN, so `talk(6, t, "MAN")` opens his mouth on the
+  laugh. Beats with no end have `.end` None and `.dur` 0.
+* Stub: `python3 -m film.lib.timeline --stub film/build/stub_timeline.json` (or
+  `tl.make_stub(path)`). It mirrors the SPEC
   target times with synthetic envelopes. It refuses to write `film/timeline.json`, which is
   owned by `film/audio/tts.py`. `--info` prints the loaded timeline.
 
@@ -261,7 +265,9 @@ tl.reload()            # re-read the file (after tts.py rewrote it)
 * `splashes(cr, t, rect, n, size, color, alpha, seed, life)`.
 * `dust(cr, t, rect, n, color, alpha, size, seed, drift, twinkle, mask=fn(x, y)->0..1)`.
   `mask` keeps motes inside a light shaft.
-* `embers(cr, t, x, y, t0, n, life, spread, rise, color, hot, size, seed, burst, scale, wind)`.
+* `embers(cr, t, x, y, t0, n, life, spread, rise, color, hot, size, seed, burst, scale, wind, alpha,
+  solid=False)`. `solid=True` paints the spark cores opaque (with a small additive halo) so warm
+  sparks stay gold in front of a cool-coloured character (additive orange over teal goes white-green).
 * `smoke(cr, t, t0, x, y, n, dur, rise, drift, size, color, alpha, seed, scale)`.
 * `fireflies(cr, t, rect, n, color, size, seed, alpha, speed, halo)`.
 * `crumbs(cr, t, t0, x, y, n, seed, vx, vy, gravity, ground_y, size, ...)` and
@@ -343,7 +349,8 @@ instead), so one broken creature never takes the others down.
   `Palette`.
   * Pass the `outline` Path from a builder (preferred), `True` (stroke-under, for any path) or
   `False` (draw your own union outline first).
-  * `size` is the part's thickness (crescent width).
+  * `size` is the part's thickness (crescent width). The bounce band (lights with `bounce`) is
+    drawn only when `size >= BOUNCE_MIN_SIZE` (40).
   * Cost is ~0.2-0.5 ms per part.
 * `flat(cr, path, color, lw, line)`: flat fill + thin outline (claws, buttons).
 * `detail_line(cr, pts, w, color, alpha, taper)` and **`detail_lines(cr, [pts, ...], w, color,
@@ -352,7 +359,13 @@ instead), so one broken creature never takes the others down.
 * `sheen(cr, x, y, rx, ry, angle, alpha)`: a specular dab.
 * `outline_under(cr, path, lw, color, exclude)`.
 * `device_scale(cr)`, `line_w(cr, lw)`, `local_dir(cr, v)`.
-* `LINE = 2.2`, `MIN_LINE_PX = 1.0`.
+* `LINE = 2.2`, `MIN_LINE_PX = 1.0`, `LINE_GROW = 0.5`.
+* **`line_for(line, dev, k=1.0)`** is THE line width for every outlined drawing, in local units:
+  `line` at scale 1.0, never under `MIN_LINE_PX` on screen, and in close-ups (zoom > 1) the ink
+  thickens at only `LINE_GROW` of the drawing's rate (a 3x close-up gets a 2x line, not a 3x
+  marker outline). `dev` = screen px per local unit (`scale * device_scale(cr)`), `k` = local units
+  per scale-1 px (1, or `1/SIZE_K`, `1/fit` for calibrated builds). Every rig and prop uses it, and
+  `line_w(cr, lw)` applies it inside hold callbacks.
 
 ### 3D-lite rigs
 
@@ -748,7 +761,7 @@ are at about 575 and his chest at about 365. At scale 0.6 he stands about 400 px
 | `rest` | knuckles by his knees |
 | `arms_crossed` | both arms |
 | `hold_up_stamp` | the stamp raised beside his shoulder like a torch |
-| `press_stamp` | raise, then **slam at phase 0.5** with a wobble, hold until 0.75, then lift. `screen=` is where the DIE lands (e.g. the dragon's `hand_near.palm`). He must stand within reach: the target should be within about 350 × scale px of his near shoulder |
+| `press_stamp` | raise (and rise a little), then **slam at phase 0.5** -- he lunges his whole bulk into it -- with a wobble, hold until 0.75, then lift and settle back. `screen=` is where the DIE FACE lands (e.g. the dragon's `hand_near.palm`): the aim is solved through the real fist geometry, so `rig.stamp_face` is exactly where the die is. He must stand within reach: anchors at most ~530 × scale px apart, facing each other (farther and the die falls short; check `rig.stamp_face`) |
 | `belt` | fists at his belt |
 | `thumb` | a jerk of the thumb over his shoulder |
 
@@ -809,10 +822,13 @@ p = p.with_(near=ch.LionessArm("ring_till", phase=core.ramp(t, 23.3 - 0.45, 24.3
 rig = ch.draw_lioness(cr, x, ground_y, 0.95, p, L["apothecary"], t)
 
 # S4 tavern door: the troll stamps the dragon's hand (slam = phase 0.5 = s4_stamp 3.0)
-dragon = ch.draw_dragon(cr, dx, ground_y, 0.6, ch.DragonPose(facing=1, near=ch.Arm("hand_out_offer")), L["tavern"], t)
+# the BACK of his hand up (hand="back"): the stamp goes on the back of the hand (SPEC S4)
+dragon = ch.draw_dragon(cr, dx, ground_y, 0.6, ch.DragonPose(facing=1, near=ch.Arm("hand_out_offer", hand="back")),
+                        L["tavern"], t)
 p = ch.TrollPose(facing=-1, look=(-0.6, 0.2), talk=timeline.talk(4, t, "BOUNCER"),
                  near=ch.TrollArm("press_stamp", phase=core.ramp(t, 2.5, 3.5), screen=dragon.hand_near.palm))
-rig = ch.draw_troll(cr, dx + 230, ground_y, 0.6, p, L["tavern"], t)    # rig.stamp_face: the thunk
+rig = ch.draw_troll(cr, dx + 530 * 0.6, ground_y, 0.6, p, L["tavern"], t)   # rig.stamp_face: the thunk + ink
+# from s4_stamp on: near=ch.Arm(..., stamp=P.smile_stamp(ink=0.9)) prints SMILE on the back of his hand
 
 # S6 bench: crumbs tossed at 5.0 (set up once), the pigeons come, the heads swivel to the speaker
 rel = ch.gnome_rig_at(gx, ground_y, 0.95, ch.GnomePose(facing=-1, sit=1.0,
@@ -1090,7 +1106,10 @@ rig  = ch.draw_crowd(cr, x, ground_y, scale, spec, pose, ch.LIGHTS["square"], t)
 * The minotaur is the real rig in a `MINOTAUR_VARIANTS` colour.
 * A `CrowdSpec` (kind, seed, size 0.92-1.08, skin, cloth, cloth2, hair, accent, eye, hat,
   beard, ears, horns, variant) is plain data. Edit it freely, e.g. `spec.hat = "hood"`.
-* Hats are `""`, `"hood"` or `"cap"`. Dwarves always have beards; satyrs have one 70 % of the
+* Hats are `""`, `"hood"` or `"cap"` (a soft pointed felt cap). Hooded elves' long ears come out
+  through the hood. Skins are creature tones (granite-ruddy dwarves with stone flecks, moon-pale /
+  lilac elves) and hose are earthy wool, so no extra reads as a human. Dwarves always have beards
+  (with a brass ring); satyrs have one 70 % of the
   time.
 
 **Actions** (`CROWD_ACTIONS`, the first argument of `crowd_pose`):
@@ -1162,7 +1181,8 @@ The other helpers:
 
 #### Shared helpers in `_folk.py` (private; for Cast-B modules)
 
-* `dome_cap(q, P, D, c, r, h, mat, size)`: a cap drawn so its back never paints over the face
+* `dome_cap(q, P, D, c, r, h, mat, size, extra=())`: a cap drawn so its back never paints over the face
+  (`extra`: more head-space hull points, e.g. a felt cap's peak)
   when the head tips back. The dwarf, crowd caps and the dwarf hair dome use it.
 * `mitten(...)` and `eye_lite(...)`: the detail-0 hands and eyes.
 * `lod_for(dev, height)`: the on-screen-height level of detail.
@@ -1450,10 +1470,11 @@ bench = P.draw_garden_bench(cr, x, y, scale, light, t, yaw=0.0, elev=0.12, lengt
 * `crumbs=n` scatters `n` crumbs on the seat.
 * The `BenchRig` places the sitters:
   * `rig.place(u)` is the **ground anchor** for a sitter at fraction `u` (0 is the bench's left
-    end, 1 its right end). Draw the sitter with `pose.sit=1` and `seat_h=rig.seat_h`, e.g.
-    `ch.draw_gnome(cr, *rig.place(0.18), sc, pose, L, t)`.
+    end, 1 its right end, each 30 in from the end). Draw the sitter with `pose.sit=1` and
+    `seat_h=rig.seat_h`, e.g. `ch.draw_gnome(cr, *rig.place(0.18), sc, pose, L, t)`.
   * `rig.seat(u)` is the point on the seat surface, for `pose.anchor="seat"`.
-  * `rig.ends` and `rig.back_top` are also available.
+  * `rig.ends` holds the ground points of the two ends, and `rig.back_top` the top of the
+    backrest.
 * Draw order:
   1. `part="back"`;
   2. the sitters;
@@ -2045,7 +2066,7 @@ rig = ch.draw_bard(cr, x, ground_y, sc, pose, light, t)
 | on his stool (`BARD_STOOL_H` = 28), boots planted | 153 | 142 | 113 | 98 |
 | on the standard bench (`B.BENCH_SEAT_H` = 125), boots dangle | 250 | 238 | 209 | 194 |
 
-He is the gnome's height plus his comb and plume, about a third of the dragon. In a shared
+`CAST_HEIGHTS["bard"]` is 156 (the comb top; hats are not planned). He is the gnome's height plus his comb and plume, about a third of the dragon. In a shared
 plane (S8), give him the dragon's scale.
 
 ### `BardPose` fields
@@ -2269,7 +2290,8 @@ Build your own pages with `sb.Page`:
 ### Illustrations
 
 `sb.ILLUSTRATIONS[name](cr, w, h, t)` paints into a box (0..w, 0..h) with "cover" fitting.
-Each one keeps its static layer cached and animates by `t`; it costs ~5 ms at 600×700.
+Each one keeps its static layer cached and animates by `t`. At 600×700: ~4-8 ms each, except
+`market` (~16 ms) and `dragon` (~25 ms: it draws the real dragon rig every frame).
 
 * `castle`: a castle on a hill at dusk. Pennants flutter, stars twinkle, the windows light up.
 * `doors`: a street of shut doors and lanterns. Folk close and bolt their doors in a loop.
@@ -2355,12 +2377,45 @@ CPU per draw on this machine, scale ~1.55 unless noted:
 
 | draw | cost |
 |---|---|
-| `draw_book`, open | ~18 ms |
-| `draw_book`, open, scale 4 (push-in) | ~47 ms |
+| `draw_book`, open, spread 0 / 2 / 3 | ~13-18 ms |
+| `draw_book`, open, spread 1 (the `dragon` + `market` pages) | ~37 ms |
+| `draw_book`, open, scale 4 (push-in), spread 1 | ~80 ms |
 | `draw_book`, opening (flutter) | ~11 ms |
 | `draw_book`, closed | ~11 ms |
-| `draw_book`, page turn | ~49 ms |
+| `draw_book`, page turn | ~45-50 ms |
 | `draw_lectern` (static) | ~4.4 ms |
 | `draw_candle` | ~0.9 ms |
 | `draw_hearth` (static) | ~15 ms |
 | `draw_fire` | ~6.5 ms |
+
+## Index: every exported name
+
+Generated from the code (`python3 film/build/test_lib.py --only doc` fails when a module
+exports a name this file never mentions). Classes are in **bold**; UPPER_CASE names are
+constants. Each creature module follows one pattern: `draw_<name>`, `<Name>Pose`, `<Name>Rig`,
+`<NAME>_HEIGHT`, `<NAME>_COLORS` (hex dict), `<name>_mats()` (its `B.Mat`s), `<NAME>_GESTURES`
+(gesture name -> function), `<name>_walk_phase` / `<name>_stride` where it walks.
+
+| module | prefix | names |
+|---|---|---|
+| core | `core.` | **Camera**, add, alpha, angle_to, arc_text, at, blob, camera_move, capsule, circle, clamp, col, convex_hull, dist, ease, ellipse, fbm1, fbm2, frame, frames, from_hsv, glow_text, hash01, hash2, hex2rgb, hgrad, hue_shift, in_back, in_cubic, in_elastic, in_quad, in_sine, inout_back, inout_cubic, inout_quad, inout_sine, invlerp, jitter, lerp, lerp_angle, lerp_pt, lerp_tuple, linear, luma, measure, mix, mul, new_context, new_surface, noise1, noise2, noise_array, normalize, out_back, out_cubic, out_elastic, out_quad, out_sine, pil_to_surface, pingpong, polygon, polyline_length, radial, ramp, remap, resample, rgb2hex, rotate_pt, rotated_text, rounded_rect, saturate, save_png, saved, set_font, shade, smooth, smooth_closed, smooth_open, smoother, smoothstep, spline, src, star, superellipse, surface_to_pil, tapered, text, text_block, text_path, tint, to_hsv, track, vgrad, window, wrap, wrap_angle, zoom_about |
+| fx | `fx.` | **Layer**, **LightLayer**, bloom, blur_surface, cache_layer, crumb_landings, crumbs, dust, embers, fade, fade_alpha, finish, fireflies, glow, god_rays, grade_lut, gradient_tint, grain, lift, light_pool, light_shaft, make_lut, multiply, post, rain, screen, smoke, sparkle, splashes, tint, vignette |
+| timeline | `tl.` | **Beat**, **Line**, **Scene**, active_line, beat, beats_in, cast, fps, has_beat, has_line, line, lines_in, make_stub, path, raw, reload, scene, scenes, speaking, talk, to_global, to_local, total, word_times |
+| characters/base.py | `B.` / `ch.` | **Expr**, **HandFrame**, **Light**, **LineupItem**, **Mat**, **Palette**, **Path**, **Proj**, **SheetItem**, **WalkPose**, auto_blink, breathing, brow_shape, build, capture, chain, contact_shadow, detail_line, detail_lines, device_scale, ellipse_paths, ellipsoid_pts, expr, eye, fill_outlines, flat, follow, hand, hull_paths, ik2, ik3, lagged, limb, line_for, line_w, local_dir, m_mul, m_rot_x, m_rot_y, m_rot_z, m_vec, mouth, occlusion, offset_closed, outline_under, pal, shade, sheen, sheet_bg, smooth_paths, spring, sway, taper_paths, tube, tube_outline, tube_paths, v_add, v_cross, v_dot, v_len, v_lerp, v_mul, v_norm, v_sub, walk_cycle, wobble |
+| characters/bard.py | `ch.` | **BardArm**, **BardPose**, **BardRig**, bard_beat, bard_cameo_pose, bard_chord, bard_chords, bard_mats, bard_sing, bard_song, bard_song_timing, bard_stride, bard_strum, bard_twinkle, bard_walk_phase, bard_yaw, draw_bard, draw_bard_stool, BARD_CHORD_NAMES, BARD_CHORDS, BARD_COLORS, BARD_GESTURES, BARD_HEIGHT, BARD_LIGHTS, BARD_LINE, BARD_MOODS, BARD_STOOL_H |
+| characters/crowd.py | `ch.` | **CrowdPose**, **CrowdRig**, **CrowdSpec**, **CrystalHold**, crowd_mats, crowd_pose, crystal_feed, crystal_hold, demo_thumb, draw_crowd, draw_scrying_crystal, draw_tankard, laugh_sync, random_creature, tankard_hold, CROWD_ACTIONS, CROWD_HEIGHTS, CROWD_KINDS |
+| characters/dragon.py | `ch.` | **Arm**, **DragonPose**, **DragonRig**, dragon_embers, dragon_mats, dragon_smoke, dragon_stride, dragon_walk_phase, draw_dragon, DRAGON_COLORS, DRAGON_GESTURES, DRAGON_HEIGHT, DRAGON_LINE, DRAGON_SEAT_H |
+| characters/dwarf.py | `ch.` | **DwarfPose**, **DwarfRig**, draw_dwarf, dwarf_grip, dwarf_mats, dwarf_walk_phase, DWARF_COLORS, DWARF_GESTURES, DWARF_HEIGHT |
+| characters/elf.py | `ch.` | **ElfArm**, **ElfPose**, **ElfRig**, draw_elf, elf_mats, elf_mirror, ELF_COLORS, ELF_GESTURES, ELF_HEIGHT, ELF_SEAT_H |
+| characters/faun.py | `ch.` | **FaunPose**, **FaunRig**, draw_faun, faun_mats, faun_walk_phase, FAUN_COLORS, FAUN_GESTURES, FAUN_HEIGHT |
+| characters/gnome.py | `ch.` | **GnomeArm**, **GnomePose**, **GnomeRig**, draw_gnome, gnome_bread, gnome_bread_hold, gnome_crumb_landings, gnome_mats, gnome_rig_at, gnome_stride, gnome_tear_crumbs, gnome_toss_crumbs, gnome_walk_phase, GNOME_COLORS, GNOME_GESTURES, GNOME_HEIGHT, GNOME_LINE, GNOME_LOAF, GNOME_SEAT_H |
+| characters/griffin.py | `ch.` | **GriffinPose**, **GriffinRig**, draw_griffin, griffin_mats, griffin_stride, griffin_walk_phase, GRIFFIN_COLORS, GRIFFIN_HEIGHT |
+| characters/lioness.py | `ch.` | **LionessArm**, **LionessPose**, **LionessRig**, draw_lioness, lioness_mats, lioness_stride, lioness_walk_phase, LIONESS_COLORS, LIONESS_COUNTER_H, LIONESS_GESTURES, LIONESS_HEIGHT |
+| characters/minotaur.py | `ch.` | **MinotaurPose**, **MinotaurRig**, draw_minotaur, minotaur_mats, minotaur_walk_phase, MINOTAUR_COLORS, MINOTAUR_GESTURES, MINOTAUR_HEIGHT, MINOTAUR_VARIANTS |
+| characters/orc.py | `ch.` | **OrcPose**, **OrcRig**, brawl_state, draw_brawl, draw_orc, orc_mats, orc_walk_phase, ORC_COLORS, ORC_GESTURES, ORC_HEIGHT |
+| characters/pigeon.py | `ch.` | **PigeonFlock**, **PigeonPose**, **PigeonRig**, draw_pigeon, pigeon_mats, pigeon_stride, PIGEON_COLORS, PIGEON_HEIGHT |
+| characters/pixie.py | `ch.` | **PixiePose**, **PixieRig**, draw_pixie, pixie_mats, pixie_wing_buzz, PIXIE_COLORS, PIXIE_GESTURES, PIXIE_HEIGHT |
+| characters/troll.py | `ch.` | **TrollArm**, **TrollPose**, **TrollRig**, draw_troll, troll_mats, troll_stamp, TROLL_COLORS, TROLL_GESTURES, TROLL_HEIGHT |
+| props | `P.` | **BenchRig**, **PropRig**, bag_hold, book_hold, bread_hold, candle_glow, draw_apothecary_bag, draw_bread, draw_calm_candle, draw_coloring_book, draw_crumbs, draw_garden_bench, draw_hanging_sign, draw_hourglass, draw_lantern_post, draw_lantern_string, draw_music_note, draw_note, draw_plaque, draw_remedy, draw_shelves, draw_sleep_draught, draw_smile_mark, draw_speaking_stone, draw_stamp, draw_stool, draw_tankard, draw_tavern_table, draw_till, draw_tumbling_drum, draw_vitamins, draw_washhouse_bench, draw_wisp_lamp, drum_body, drum_light, drum_porthole, lantern_light, lantern_string_light, note_hold, pile_layout, prop_mats, remedy_hold, sign_light, smile_stamp, stamp_hold, stone_glow, stone_hold, stone_level, stone_light, tankard_hold, wisp_light, BAG_H, BAG_W, BENCH_DEPTH, BENCH_LEN, BENCH_SEAT_H, BOOK_H, BOOK_W, FONTS, LOAF, NOTE_H, NOTE_W, PROP_COLORS, REMEDIES, STONE_H, STONE_W, STOOL_SEAT_H |
+| env | `env.` | **Mist**, **OakTree**, **Rain**, **StarField**, draw_arch, draw_castle_hill, draw_clouds, draw_cobbles, draw_flower_bed, draw_grass, draw_gravel_path, draw_ground_shadow, draw_haze, draw_hedge, draw_hills, draw_house, draw_mist, draw_moon, draw_oak, draw_puddle, draw_roofline, draw_sky, draw_stone_wall, draw_street_row, draw_vaulted_hall, draw_wet_reflections, haze_toward, layer, palette, puddle_ripples, texture, MARGIN, PALETTES |
+| storybook | `sb.` | **Book**, **BookRig**, **CandleRig**, **FireRig**, **HearthRig**, **Illustration**, **LecternRig**, **Page**, **Spread**, candle_flicker, draw_book, draw_candle, draw_fire, draw_hearth, draw_lectern, draw_page, fire_flicker, folk, gild, hatch, illus_bread, illus_castle, illus_doors, illus_dragon, illus_fleuron, illus_market, illus_stool, illus_washhouse, ink, ink_outline, page_turn_shadow, paper_grain, storybook_dragon, wash, CAP_FONT, ILLUSTRATIONS, INK, PIGMENTS, PROLOGUE_SPREADS, RUBRIC, SIGN_FONT, STORY_LIGHT, STORYBOOK_LIGHT, TEXT_FONT |

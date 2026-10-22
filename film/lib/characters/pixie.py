@@ -22,7 +22,7 @@ tiny): full detail only when she is >= ~220 px tall on screen.
 import math
 from dataclasses import dataclass
 
-from .. import core, fx
+from .. import core
 from ..core import clamp
 from . import base as B
 from . import _folk as F

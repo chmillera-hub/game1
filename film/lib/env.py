@@ -39,7 +39,7 @@ import cairocffi as cairo
 import numpy as np
 
 from . import core, fx
-from .core import clamp, lerp, smooth, TAU
+from .core import clamp, lerp, TAU
 
 __all__ = [
     "MARGIN", "PALETTES", "palette", "layer", "texture", "haze_toward",
@@ -2007,9 +2007,7 @@ def draw_hedge(cr, x, y, w, h, kind="dusk", seed=0, light_dx=-0.6, color=None, s
     with a bumpy crown, lit along its top and light side, darker toward its foot, leaf dabs.
     Static."""
     P = palette(kind)
-    fd, fm, fl = P["foliage"]
-    if color:
-        fm = color
+    fd = P["foliage"][0]
     if shadow:
         draw_ground_shadow(cr, x + w / 2, y, w * 0.6, 14.0, 0.35)
     circles = []
@@ -2438,12 +2436,12 @@ def sheet_items():
 
     def oak(cr):
         core.vgrad(cr, 0, 0, 420, 420, palette("dusk")["sky"][1:])
-        draw_oak(cr, 210, 400, 0.38, "dusk")
+        draw_oak(cr, 210, 405, 0.33, "dusk")
     add("the old oak (dusk)", 420, 420, oak, g)
 
     def oak_g(cr):
         core.vgrad(cr, 0, 0, 420, 420, palette("golden")["sky"][1:])
-        draw_oak(cr, 210, 400, 0.38, "golden", seed=3)
+        draw_oak(cr, 210, 405, 0.33, "golden", seed=3)
     add("the old oak (golden hour)", 420, 420, oak_g, g)
 
     def hedges(cr):
