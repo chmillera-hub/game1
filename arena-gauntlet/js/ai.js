@@ -612,14 +612,13 @@
     const hold = posAt(start);
     const plans = [{ uid: u.uid, kind: 'hold', score: hold.score, facing: hold.facing, gain: 0 }];
     const holdScore = hold.score;
-    const moveOnlyCost = Math.floor(u.rec / 2) * 3;
     const acts = [];
     for (let i = 0; i < u.acts.length; i++) if (E.actUsable(s, u, i)) acts.push(i);
 
     for (const r of reach.values()) {
       E.withUnitAt(s, u, r.x, r.y, () => {
         const p = posAt(r);
-        if (r.d > 0) plans.push({ uid: u.uid, kind: 'move', to: r, score: p.score - moveOnlyCost, facing: p.facing });
+        if (r.d > 0) plans.push({ uid: u.uid, kind: 'move', to: r, score: p.score, facing: p.facing });
         for (const i of acts) {
           const a = u.acts[i];
           if (a.asMove && r.d > 0) continue;

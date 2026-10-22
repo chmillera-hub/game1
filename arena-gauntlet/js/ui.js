@@ -214,7 +214,7 @@
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
     const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
-    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it can go again this many turns later')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
+    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it sits out this many turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
   }
 
   function fxText(u, a) {
@@ -1146,7 +1146,7 @@
     openSheet(
       `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`)}
       <p>${esc(d.desc)}</p>
-      ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'have a cooldown of 3 or more', recovers: 'have a cooldown of 2 or more' }[d.req] || 'qualify'}.</p>` : ''}
+      ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'have a cooldown of 2 or more', recovers: 'have a cooldown' }[d.req] || 'qualify'}.</p>` : ''}
       ${it.kind === 'scroll'
         ? `<p class="hint warn">Binding is permanent: the enchantment stays with that unit for the rest of the campaign and adds ${d.surcharge} Supply to its cost. A unit can hold only one enchantment.</p>`
         : `<p class="small muted">${holder ? `Slotted into ${esc(holder.name)}.` : 'Not slotted into anyone. Equip it from a unit\'s loadout.'}</p>`}
@@ -2161,11 +2161,11 @@
         ${actsHTML(u)}
         <div class="hint">${
           u.team === 'E'
-            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 1 ? ` (it cools down for ${u.wait - 1} more of its turns)` : ''}.`
+            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it sits out its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
             : inProgress && s.act.uid !== u.uid
               ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first: one unit a turn.`
               : u.wait > 0
-                ? `Cooling down: ready ${u.wait === 1 ? 'next turn' : 'in ' + u.wait + ' turns'}.`
+                ? `Cooling down: it sits out ${s.side === u.team ? 'this turn' : 'your next turn'}${u.wait > 1 ? ` and ${u.wait - 1} more` : ''}.`
                 : u.para > 0
                   ? `Paralyzed: it sits out ${u.para === 1 ? 'this turn' : 'this turn and ' + (u.para - 1) + ' more'}.`
                   : 'Cannot act right now.'
@@ -3042,7 +3042,7 @@
         <h4>Taking turns</h4>
         <ul>
           <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both, then turns toward the nearest enemy. Then the enemy picks one of theirs.</li>
-          <li>Acting starts that unit's <b>cooldown</b> (CD on its card). It counts down by 1 at the start of each of your turns, and at 0 the unit is ready again. A Cooldown 1 unit can go every turn; a Witch (Cooldown 3) every third turn. Moving without acting costs half.</li>
+          <li>Acting starts that unit's <b>cooldown</b> (CD on its card): it sits out that many of your turns, then it is ready again. A Knight (CD 1) can attack every other turn, a Witch (CD 2) every third turn and a Scout (CD 0) every turn. Moving alone never starts a cooldown.</li>
           <li>Any unit that is not cooling down can be picked. If none can do anything, your turn passes on its own. You can also <b>Pass</b> on purpose.</li>
           <li>The turn counter counts rounds: the enemy's move, then yours. Durations such as "roots for 2 turns" count the turns of the side they affect.</li>
         </ul>

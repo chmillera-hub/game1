@@ -167,65 +167,113 @@ test('walls block walking; shadowstep slips through enemies', () => {
   assert.ok(!rk.has(E.idx(s, 2, 3)), 'the wall blocks the knight');
 });
 
-test('cooldown: Recover 1 means acting every other turn', () => {
+test('cooldown: a Knight (CD 1) sits out one turn after attacking', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
     { type: 'knight', team: 'E', x: 4, y: 3, facing: 2 },
     { type: 'scout', team: 'P', x: 0, y: 8 },
   ]);
   const [p, e, sc] = s.units;
-  assert.strictEqual(E.cooldown(p), 2);
+  assert.strictEqual(E.cooldown(p), 1);
   assert.ok(E.beginActivation(s, p.uid));
   assert.ok(E.moveUnit(s, p.uid, 4, 4));
   assert.ok(E.performAction(s, p.uid, { kind: 'unit', uid: e.uid }));
   E.finishActivation(s, 0);
-  assert.strictEqual(p.wait, 2);
+  assert.strictEqual(p.wait, 1);
   assert.ok(!E.canActivate(s, sc), 'one unit a turn');
   E.endTurn(s);
-  assert.strictEqual(p.wait, 2, 'it does not tick on the enemy turn');
+  assert.strictEqual(p.wait, 1, 'the turn it attacked in does not count');
   E.endTurn(s);
   assert.strictEqual(s.side, 'P');
-  assert.strictEqual(p.wait, 1, 'ticks at the start of your turn');
-  assert.ok(!E.canActivate(s, p), 'still cooling down on your next turn');
+  assert.strictEqual(p.wait, 1, 'still there at the start of your next turn');
+  assert.ok(!E.canActivate(s, p), 'so it sits that turn out');
   assert.ok(E.canActivate(s, sc), 'others are free to go');
   until(s, 'P');
-  assert.strictEqual(p.wait, 0);
+  assert.strictEqual(p.wait, 0, 'it ran out at the end of the turn it sat out');
   assert.ok(E.canActivate(s, p), 'ready the turn after');
 });
 
-test('Recover 0 acts every turn; a Witch every third', () => {
+test('a Scout (CD 0) acts every turn; a Witch (CD 2) every third', () => {
   const s = board([
     { type: 'scout', team: 'P', x: 4, y: 8 },
     { type: 'witch', team: 'P', x: 6, y: 8 },
     { type: 'knight', team: 'E', x: 4, y: 7, facing: 2 },
+    { type: 'knight', team: 'E', x: 6, y: 6, facing: 2 },
   ]);
   const [sc, wi] = s.units;
-  assert.strictEqual(E.cooldown(sc), 1);
-  assert.strictEqual(E.cooldown(wi), 3);
+  assert.strictEqual(E.cooldown(sc), 0);
+  assert.strictEqual(E.cooldown(wi), 2);
   act(s, sc, { kind: 'unit', uid: s.units[2].uid });
+  assert.strictEqual(sc.wait, 0);
   until(s, 'P');
   assert.ok(E.canActivate(s, sc), 'the scout is ready again');
-  sc.wait = 0;
-  wi.wait = E.cooldown(wi);
-  until(s, 'P');
+  act(s, wi, { kind: 'dir', d: 0 });
   assert.strictEqual(wi.wait, 2);
   until(s, 'P');
+  assert.ok(!E.canActivate(s, wi), 'the witch sits out one turn');
+  assert.strictEqual(wi.wait, 2);
+  until(s, 'P');
+  assert.ok(!E.canActivate(s, wi), 'and a second');
   assert.strictEqual(wi.wait, 1);
   until(s, 'P');
   assert.ok(E.canActivate(s, wi), 'three turns on, the witch is back');
 });
 
-test('moving without acting costs half', () => {
+test('moving alone never starts a cooldown', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 8 },
     { type: 'knight', team: 'E', x: 4, y: 0 },
   ]);
   const p = s.units[0];
+  assert.strictEqual(E.cooldown(p), 2);
   E.beginActivation(s, p.uid);
   E.moveUnit(s, p.uid, 4, 6);
   E.finishActivation(s, 0);
-  assert.strictEqual(p.wait, 2, 'Recover 2: half is 1, plus the turn it ticks');
-  assert.strictEqual(E.moveCooldown(s.units[1]), 1, 'a Knight can move every turn');
+  assert.strictEqual(p.wait, 0, 'it only moved');
+  until(s, 'P');
+  assert.ok(E.canActivate(s, p), 'free to go again on your next turn');
+});
+
+test('cooldown exceptions: Bloodlust kills, Eternal Flame and bosses', () => {
+  const s = board([
+    { type: 'berserker', team: 'P', x: 4, y: 3, level: 2, a2: 'b_bloodlust' },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 2 },
+    { type: 'knight', team: 'E', x: 0, y: 0 },
+  ]);
+  const [b, sc] = s.units;
+  sc.hp = 1;
+  act(s, b, { kind: 'unit', uid: sc.uid });
+  assert.ok(!sc.alive);
+  assert.strictEqual(b.wait, 0, 'the kill reset its cooldown');
+  until(s, 'P');
+  assert.ok(E.canActivate(s, b), 'ready again on your next turn');
+
+  const f = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'knight', team: 'E', x: 4, y: 4, facing: 0 },
+    ],
+    { relics: { P: ['eternal_flame'], E: [] } }
+  );
+  const [k, ek] = f.units;
+  act(f, k, { kind: 'unit', uid: ek.uid });
+  assert.strictEqual(k.wait, 0, 'Eternal Flame: the first action is free');
+  until(f, 'P');
+  act(f, k, { kind: 'unit', uid: ek.uid });
+  assert.strictEqual(k.wait, 1, 'the second one is not');
+
+  const g = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 8 },
+      { type: 'golem_king', team: 'E', x: 4, y: 0 },
+      { type: 'knight', team: 'E', x: 2, y: 0 },
+    ],
+    { enemyFirst: true }
+  );
+  const boss = g.units[1];
+  assert.ok(!E.canActivate(g, boss), "a boss sits out its side's first turn");
+  until(g, 'E');
+  assert.ok(E.canActivate(g, boss), 'and joins in on the second');
 });
 
 test('paralysis costs a turn on top of the cooldown and removes block', () => {
@@ -236,7 +284,8 @@ test('paralysis costs a turn on top of the cooldown and removes block', () => {
     { type: 'scout', team: 'E', x: 0, y: 0 },
   ]);
   const [en, kn] = s.units;
-  kn.wait = 2;
+  // It attacked on its last turn, so it sits out its next one.
+  kn.wait = 1;
   E.beginActivation(s, en.uid);
   assert.ok(E.performAction(s, en.uid, { kind: 'tile', x: 4, y: 4 }));
   assert.strictEqual(kn.para, 1);
@@ -245,7 +294,7 @@ test('paralysis costs a turn on top of the cooldown and removes block', () => {
   E.finishActivation(s, 0);
   E.endTurn(s);
   assert.strictEqual(s.side, 'E');
-  assert.strictEqual(kn.wait, 1, 'the cooldown ticks first');
+  assert.strictEqual(kn.wait, 1, 'the cooldown runs first');
   assert.ok(!E.canActivate(s, kn));
   until(s, 'E');
   assert.strictEqual(kn.wait, 0);
@@ -1129,13 +1178,13 @@ test('the enemy opens; each turn one unit goes, then the other side picks one', 
 test('a side with nobody ready passes on its own', () => {
   const s = duel();
   const [pk, ps, ek] = s.units;
-  pk.wait = 2;
-  ps.wait = 2;
+  pk.wait = 1;
+  ps.wait = 1;
   step(s, ek.uid, 3, 2);
   assert.strictEqual(s.side, 'E', 'you had nothing ready, so the enemy goes again');
   assert.strictEqual(s.turn, 2);
   assert.ok(s.events.some((e) => e.t === 'pass' && e.side === 'P' && e.auto));
-  assert.strictEqual(pk.wait, 1, 'your cooldowns still ticked');
+  assert.strictEqual(pk.wait, 0, 'the skipped turn still counted for your cooldowns');
   E.endTurn(s);
   assert.strictEqual(s.side, 'P');
   assert.ok(E.canActivate(s, pk), 'ready on your next turn');
@@ -1177,7 +1226,7 @@ test('timed statuses count the turns of the side they matter to', () => {
 
 test('when nobody can act, turns pass on their own and statuses still tick', () => {
   const s = duel();
-  for (const u of s.units) u.wait = 3;
+  for (const u of s.units) u.wait = u.team === 'P' ? 2 : 3;
   s.units[0].root = 2;
   E.endTurn(s);
   assert.strictEqual(s.side, 'P');

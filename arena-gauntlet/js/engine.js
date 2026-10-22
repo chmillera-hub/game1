@@ -300,11 +300,11 @@
     });
     planWaves(s, 'E', s.turn);
     // Bosses take the field on their side's second turn, after you have had a move.
-    for (const u of s.units) if (u.boss) u.wait = Math.max(u.wait, 2);
+    for (const u of s.units) if (u.boss) u.wait = Math.max(u.wait, 1);
     // Slow casters start out cooling down: they sit out their side's first turn.
     for (const team of ['P', 'E']) {
       if (!s.relics[team].has('sands_of_haste')) continue;
-      for (const u of s.units) if (u.team === other(team) && UNITS[u.type].rec >= 2 && !u.boss) u.wait = 2;
+      for (const u of s.units) if (u.team === other(team) && UNITS[u.type].rec >= 2 && !u.boss) u.wait = 1;
     }
     // The enemy opens the battle. With nothing to open with, it passes.
     startTurn(s);
@@ -1083,6 +1083,7 @@
       s.spent = true;
       u.activated = true;
       u.wait = cooldown(u);
+      stamp(s, u, 'wait');
     }
     emit(s, { t: 'death', uid: u.uid, src: src ? src.uid : 0 });
     if (src && src.team !== u.team && !u.nonCombat && !u.structure) {
@@ -1638,7 +1639,8 @@
           v.revived = true;
           revive(s, v, a.pct || 0.4, 'prayer');
           v.activated = true;
-          v.wait = Math.max(v.wait, 2);
+          v.wait = Math.max(v.wait, 1);
+          stamp(s, v, 'wait');
         }
         break;
       }
@@ -1658,37 +1660,33 @@
       u.facing = facing;
       emit(s, { t: 'face', uid: u.uid, facing });
     }
-    // The cooldown counts down at the start of each of its side's turns; at 0 it is ready.
-    // Acting costs Recover + 1 turns, moving alone half that, and 1 means "ready next turn".
+    // Acting starts the cooldown: the unit sits out that many of its side's turns, and the
+    // count drops at the end of each one (not the turn it acted in). Moving alone is free.
     let w = 0;
     if (A.acted) {
       w = cooldown(u);
       if (u.firstActionFree) {
-        w = 1;
+        w = 0;
         u.firstActionFree = false;
       }
-      if (A.killed && (u.traits.has('bloodlust') || s.relics[u.team].has('warlord_helm'))) w = 1;
-    } else if (A.moved) {
-      w = moveCooldown(u);
+      if (A.killed && (u.traits.has('bloodlust') || s.relics[u.team].has('warlord_helm'))) w = 0;
     }
     u.wait = w;
+    stamp(s, u, 'wait');
     u.activated = true;
     s.spent = true;
     emit(s, { t: 'done', uid: u.uid, wait: w });
   }
 
+  // The CD on a unit's card: how many of its turns it sits out after acting.
   function cooldown(u) {
-    return u.rec + 1;
+    return u.rec;
   }
 
-  function moveCooldown(u) {
-    return Math.floor(u.rec / 2) + 1;
-  }
-
-  // Own turns before a unit can act again, seen from the other side's turn: its cooldown
-  // ticks once more before then, and paralysis only wears off after that.
+  // Own turns a unit sits out before it can act again, seen from the other side's turn:
+  // its cooldown, then any paralysis (which only wears off once the cooldown has).
   function turnsUntilReady(u) {
-    return Math.max(0, u.wait - 1) + u.para;
+    return u.wait + u.para;
   }
 
   // Loot wagons trundle toward their exit edge at the end of their side's turn.
@@ -1819,12 +1817,12 @@
   // ---------------------------------------------------------------- turns
   //
   // The sides take turns, the enemy first. A turn is one unit's activation: it moves, acts,
-  // or both, then faces. Acting starts that unit's cooldown, which counts down at the start
-  // of each of its side's turns, so any unit at 0 may be picked. A side with nothing it can
-  // do passes on its own. "Turn N" on the board counts rounds: the enemy's move, then yours.
+  // or both, then faces. Acting starts that unit's cooldown: it sits out that many of its
+  // side's turns, and any unit at 0 may be picked. A side with nothing it can do passes on
+  // its own. "Turn N" on the board counts rounds: the enemy's move, then yours.
   //
-  // A turn opens with cooldowns, poison, burns, healing and auras for the side to move. It
-  // closes with that side's statuses ticking down, its wagons rolling and its
+  // A turn opens with poison, burns, healing and auras for the side to move. It closes with
+  // that side's cooldowns and statuses ticking down, its wagons rolling and its
   // reinforcements arriving.
 
   // A ready unit that can actually do something: move somewhere, or reach a target.
@@ -1864,9 +1862,10 @@
     endTurn(s);
   }
 
-  // Timed statuses count the turns of the side they matter to: roots, weakness, paralysis
-  // and frenzy the victim's own, marks those of its enemies (who get the bonus). Paralysis
-  // waits for the cooldown to run out, so it always costs a turn the unit could have used.
+  // Timed statuses count the turns of the side they matter to: cooldowns, roots, weakness,
+  // paralysis and frenzy the unit's own, marks those of its enemies (who get the bonus). A
+  // count set during this turn starts with the next one. Paralysis waits for the cooldown
+  // to run out, so it always costs a turn the unit could have used.
   function closeTurn(s, side) {
     for (const u of s.units) {
       if (!u.alive) continue;
@@ -1875,7 +1874,8 @@
         if (u[k] > 0 && fresh[k] !== s.ply) u[k]--;
       };
       if (u.team === side) {
-        if (u.wait === 0) tick('para');
+        if (u.wait > 0) tick('wait');
+        else tick('para');
         tick('root');
         tick('weak');
         tick('frenzy');
@@ -2004,7 +2004,6 @@
       }
       if (s.surviveTurns && s.turn > s.surviveTurns) return finish(s, 'P', { survived: true });
     }
-    for (const u of s.units) if (u.alive && u.team === side && u.wait > 0) u.wait--;
     startEffects(s, side);
     checkOutcome(s);
     if (s.over) return;
@@ -2100,7 +2099,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, moveCooldown, turnsUntilReady, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -38,11 +38,11 @@ on a phone turned sideways, but portrait works too.
   goes first. On your turn you pick one unit: it moves, acts or both, then turns
   to face the nearest enemy (or the way you choose, if you switch Facing to manual
   in the menu). Then the enemy picks one of theirs.
-- **Cooldowns**: acting starts a unit's cooldown (its Recover stat + 1), which drops
-  by 1 at the start of each of your turns. At 0 the unit can be picked again: a
-  Scout every turn, a Knight every other turn, a Witch every third. Moving without
-  acting costs about half. When nothing of yours is ready, your turn passes on its
-  own. Bosses sit out the enemy's first turn.
+- **Cooldowns**: acting starts a unit's cooldown (CD on its card): it sits out that
+  many of your turns, and the count drops at the end of each one. A Scout (CD 0)
+  can act every turn, a Knight (CD 1) every other turn and a Witch (CD 2) every
+  third. Moving alone never starts a cooldown. When nothing of yours is ready, your
+  turn passes on its own. Bosses sit out the enemy's first turn.
 - **Combat**: block works from the front, half from the side, never from behind. Statuses count the turns of the side they
   affect: a root lasts its victim's next turns, a mark the attacker's.
 - **Board features**: tap a rock, tree, water, lava, a treasure chest, the shrine,
