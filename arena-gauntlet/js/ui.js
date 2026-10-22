@@ -633,10 +633,22 @@
     $('#battle').hidden = true;
     if (UI.board) UI.board.stop();
     const v = $('#view');
+    // Redrawing the same screen (after a pick or a purchase) keeps its scroll position;
+    // a new screen starts at the top. A screen is known by its heading.
+    const heading = () => {
+      const h = v.querySelector('h2');
+      return h ? h.textContent : null;
+    };
+    const was = v.hidden ? null : heading();
+    const top = v.scrollTop;
+    const winY = root.scrollY || 0;
     v.hidden = false;
     v.className = 'screen ' + (cls || '');
     v.innerHTML = html;
-    v.scrollTop = 0;
+    if (was && was === heading()) {
+      v.scrollTop = top;
+      if (winY) root.scrollTo(0, winY);
+    } else v.scrollTop = 0;
     drawPortraits(v);
     bindRelics(v);
     bindResbar(v);
