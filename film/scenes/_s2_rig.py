@@ -75,9 +75,10 @@ def _side_arm(pose, yaw, which):
     return -near_side, pose.far
 
 
-def lio_arm(cr, x, y, scale, pose, light, t, which, draw=True):
+def lio_arm(cr, x, y, scale, pose, light, t, which, draw=True, parts="all"):
     """Draw one arm of the lioness (sleeve, cuff, paw and its held prop) exactly where and how
-    draw_lioness(cr, x, y, scale, pose, light, t) draws it. which = "near" | "far".
+    draw_lioness(cr, x, y, scale, pose, light, t) draws it. which = "near" | "far"; parts =
+    "all" | "sleeve" (sleeve + cuff) | "hand" (the paw alone: laid again over a prop).
     Returns (HandFrame or None, [shoulder, elbow, wrist]) in caller coordinates."""
     q, yaw, proj, sc = _ctx(cr, x, y, scale, pose, light, t)
     cr.save()
@@ -87,7 +88,7 @@ def lio_arm(cr, x, y, scale, pose, light, t, which, draw=True):
     q.S = S
     side, arm = _side_arm(pose, yaw, which)
     A = LIO._solve_arm(q, S, side, arm)
-    hf = LIO._arm(q, A, side) if draw else None
+    hf = LIO._arm(q, A, side, parts=parts) if draw else None
     ex = K.Exporter(cr)
     cr.restore()
     ex.ready(cr)
@@ -265,13 +266,13 @@ def draw_label_big(cr, name, x, y, scale, light, angle=0.0, detail=None):
         if q.detail >= 1:
             ink = core.mix(INK, pl.shadow, 0.1)
             _word(cr, "SLEEP", 0.0, -32.2, 8.4, 38.0, ink)
-            _word(cr, "DRAUGHT", 0.0, -18.6, 6.4, 40.0, ink, condense=0.9)
+            _word(cr, "DRAUGHT", 0.0, -18.4, 7.2, 42.0, ink, condense=0.88)
             P._label_icon(cr, "moon_white", 12.5, -45.5)      # the painted crescent on the shoulder
     elif name == "vitamins":
-        pl = _plate(q, 0.0, -24.0, 46.0, 19.0, 1.6, "#a07a2a")
+        pl = _plate(q, 0.0, -24.0, 47.5, 21.0, 1.6, "#a07a2a")
         if q.detail >= 1:
             ink = core.mix(INK, pl.shadow, 0.1)
-            _word(cr, "VITAMINS", 0.0, -23.0, 7.2, 42.0, ink, condense=0.88)
+            _word(cr, "VITAMINS", 0.0, -23.2, 8.2, 44.5, ink, condense=0.86)
     elif name == "calm":
         pl = _plate(q, 0.0, -18.5, 44.0, 20.0, 2.0, "#7a5aa8")
         if q.detail >= 1:
@@ -312,14 +313,14 @@ def draw_book_cover(cr, x, y, scale, light, angle=0.0, detail=None):
         core.src(cr, C["gold_ink"])
         cr.fill()
         _word(cr, "MINDFUL", cx, y0 + h * 0.135, 7.0, ww - 8.0, ink, spacing=0.4)
-        _word(cr, "COLORING", cx, y0 + h * 0.275, 6.2, ww - 7.0, ink, spacing=0.2)
+        _word(cr, "COLORING", cx, y0 + h * 0.275, 6.8, ww - 5.0, ink, spacing=0.15)
         # FOR ADULTS on a little rose ribbon banner with forked tails
-        by, bh, bw = y0 + h * 0.855, 10.0, ww - 6.0
+        by, bh, bw = y0 + h * 0.85, 12.5, ww - 3.0
         pts = [(cx - bw / 2, by - bh / 2), (cx + bw / 2, by - bh / 2), (cx + bw / 2 + 3.5, by + bh / 2 + 1.0),
                (cx + bw / 2 - 1.5, by + bh / 2 - 0.5), (cx - bw / 2 + 1.5, by + bh / 2 - 0.5), (cx - bw / 2 - 3.5, by + bh / 2 + 1.0)]
         rs, ro = P._poly_paths(cr, pts, q.lw * 0.7)
         q.shade(rs, B.Mat.of("#c9566e", line_k=0.55), 6.0, outline=ro, rim=0.4)
-        _word(cr, "FOR ADULTS", cx, by - 0.2, 4.6, bw - 4.0, "#fbf3e2", condense=0.94, spacing=0.25)
+        _word(cr, "FOR ADULTS", cx, by - 0.2, 5.8, bw - 3.0, "#fbf3e2", condense=0.9, spacing=0.2)
     else:
         core.circle(cr, cx, y0 + h * 0.56, ww * 0.2)
         core.src(cr, core.mix(pc.lit, C["rose_ink"], 0.4))

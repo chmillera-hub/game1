@@ -4,113 +4,126 @@ The tiny gnome grandmother breaks her loaf and lays half of it in the lonely dra
 claw; they feed the pigeons together; and one by one the lonely of the kingdom drift into the
 warmth -- a teen faun, a bone-tired griffin courier, a dwarf off his shift -- until the bench is
 full and the dwarf drags the lonely empty bench over to join them. The light tells it: the sun
-goes down on them (golden -> dusk -> blue hour, each cut a little later in the evening), and as
-the world cools, ONE ember of the dragon's chuckle drifts up into the iron lantern and lights
-it; its warm pool grows with every newcomer until it holds them all (S8 picks up there, at night).
+goes down on them (golden -> dusk -> blue hour), and as the world cools ONE ember of the
+dragon's chuckle drifts up into the iron lantern and lights it; its warm pool widens with every
+newcomer until it holds them all (S8 picks up there, at night).
 
 Every time below is the CURRENT value; the code derives each one from timeline beats, lines and
 word times (constants at the top), so the staging follows the audio if the timeline changes.
-The set is the shared location module film/scenes/_garden.py (S6/S7/S8), never edited here.
+The set is the shared location module film/scenes/_garden.py (S6/S7/S8), never edited here; the
+hands insert (A3) is laid out by the private helper film/scenes/_s7_insert.py.
 
 EMOTIONAL LINE (SPEC 0.3)
-  two people who just laughed together -> she breaks her bread for him: after a film of being
-  handed stones, he is handed bread, and he can hardly take it -> they feed the birds together, a
-  playful duet; his chuckle gives off the first warm sparks -> a passing teen is noticed and
-  offered bread; he hesitates (would I be welcome?) -- the dragon quietly clears the seat (the
-  coloring book, the remedy for being alone, goes back in the sack: it makes room for a person),
-  and the teen sits -> the ember lights the lantern: warmth now has a home -> the receiver
-  becomes a giver (the teen gives his piece to the courier) -> a worker finds no room ... and
-  drags the lonely empty bench into the light -> the dragon's quiet realisation -> her dry,
-  profound reply as she hands out the very last of the bread and is left with empty hands.
+  two who have just laughed together -> she breaks her bread for him: after a film of being
+  handed stones, he is handed bread, and he can hardly take it (for ME?) -> her tiny hand rests
+  on his huge claw: the image the film turns on -> they feed the birds together, a playful duet;
+  his chuckle gives off the first warm sparks -> he sees a passing kid watching and quietly
+  clears the seat (the coloring book, the remedy for being alone, goes back in the sack: it
+  makes room for a person) -> she offers the kid bread; he hesitates (would I be welcome?), the
+  dragon's small nod, a brave yes -> the ember of the chuckle rises and the lantern CATCHES over
+  all their upturned faces: warmth now has a home -> the receiver becomes a giver (the faun gives
+  his piece to the courier) -> the bench is full; a worker finds no room ... and drags the lonely
+  empty bench into the light -> the dragon's quiet realisation -> her dry, profound reply as she
+  hands out the very last of the bread and is left with empty hands.
 
 COLOUR / VALUE SCRIPT (light is the score; warm light is reserved for kindness, STYLE 6)
-  A, B   golden hour, the warmest gold of the film so far (S6's laugh resolved into sunlight); the
-         loaf is the brightest, warmest thing in every frame it is in; steam glows against the low
-         sun; warm rims where the two faces turn to each other.
-  C1-C2  the sun goes (golden -> dusk, a step at each cut, only a slow drift within a shot); the
-         faun walks in out of the cooling lawn.
-  C3     the lantern catches: the one warm source left, gold against a violet sky -- and its light
-         lands on the dragon's upturned face.
-  C4-I   blue hour all round, the garden sinking cool and dark beyond the lantern's reach; inside
-         it, one warm pool that widens with each arrival (faun -> courier -> worker -> the dragged
-         bench): faces keyed amber from the lamp (upper right), rimmed cool by the sky -- the
-         Klaus-like two-light look, matching S8's lamplight at the cut.
+  A, B   golden hour, the warmest gold of the film so far (S6's laugh resolved into sunlight);
+         the loaf is the brightest, warmest thing in every frame it is in; steam glows against
+         the low sun. The insert is lit by that sun alone: shafts from the upper left, the warm
+         glow of the bread, a small warmth where her hand touches his.
+  C, C2  the sun goes (golden -> dusk); the faun walks in out of the cooling lawn. The C2
+         crane-up is where the light turns: the sky darkens to violet as the camera rises with
+         the ember -- and the lantern catches, the one warm source left.
+  C4-I   blue hour all round, the garden sinking cool and dark beyond the lantern's reach;
+         inside it one warm pool that widens with each arrival (faun -> courier -> the full
+         bench -> the dragged bench): faces keyed amber from the lamp, rimmed cool by the sky --
+         the Klaus-like two-light look, toned to S8's lantern light at the cut. D shows the warm
+         group at the left, the lamp post as the divider, the empty bench and the dwarf in the
+         cold at the right. The G2 insert keeps the sack of remedies in his cool shadow (the
+         stones) below the warmth.
 
 SHOTS (hard cuts on action; eased moves + a breathing drift; never a frozen frame)
-  A1 0.00-1.55 CU, her (cut IN from S6's two-shot): she dips into her satchel and brings out the
-     round loaf (0.38); both hands on it; s7_tear 0.80: strain, crust crackle -- SNAP (1.30):
-     crumbs spray, warm steam breathes from both torn faces; she beams at the halves and looks up
-     at him.
-  A2 1.55-2.35 MEDIUM TWO-SHOT (S6's last framing): hop, hop -- she scoots along the seat to him
-     with his half; s7_hand: she holds it out. He looks at the bread, at her -- for ME? -- and
-     slowly turns his great clawed hand palm-up and lowers it to her, over the coloring book
-     still lying between them (the bread passes over the stone).
-  A3 2.35-3.50 INSERT, the hands: TINY HAND, HUGE CLAW -- she lays the golden half in his palm
-     (2.45); her tiny hand comes to rest on his claw-fingers and stays (HOLD), steam curling up
-     through the low sun; she lets go and his fingers close round it, gently.
-  B  3.50-6.45 TWO-SHOT easing back to show the gravel and the birds: he draws the bread to his
-     chest in both hands (a breath -- he is moved; his wings lift), and he smiles at her. She
-     flicks crumbs (4.04); he copies her with one enormous clumsy toss (4.81) -- the pigeons rush;
-     four more flutter in from both sides; they toss together, in sync (5.9), and he chuckles: a
-     puff of golden embers (6.06); one of them floats off and lingers over the bench like a firefly.
-  C1 6.45-7.95 WIDE from the oak: s7_teen -- a teen faun in a red wool hood walks along the lawn
-     at the left, head down over his reed-pipe; he notices them, slows, stops by the bench end
-     (7.50) and watches. The sun is going.
-  C2 7.95-10.80 MEDIUM THREE-SHOT (faun, gnome, dragon): she clocks him (7.45) and breaks a piece
-     off her half; s7_offer: holds it out (8.05). He HESITATES: "me?" (a hand to his chest, 8.25),
-     ears down, the back of his neck rubbed, a glance back the way he was going, half a step back
-     (8.72-9.40) ... while the dragon quietly lifts the coloring book off the seat (8.75-9.15) and
-     lowers it into his sack (9.45): room. She nods "go on"; a shy smile, ears up, a small brave
-     nod; s7_teensit: he steps in and takes the piece (9.95); she hops over to the dragon's side
-     (10.14, 10.35) and he sits at the end of the bench (10.30-10.85). The camera eases in on the
-     hesitation and back out for the sit.
-  C3 10.80-12.05 THE LANTERN CATCHES: low on the dragon's upturned face (lower left), the iron
-     lantern over him against the violet sky and the castle on its hill (upper right). The ember
-     of his chuckle drifts up past his eyes into the dark lantern -- it CATCHES (11.30): a
-     sputter, a flare, then the glass glows gold and the first lamplight falls on his face.
-  C4 12.05-13.85 MEDIUM-WIDE, the bench in the new light: a bone-tired griffin courier plods in
-     from the left (s7_driver; a jaw-cracking yawn, the royal-post cap) and settles on his
-     haunches by the bench end (12.25-13.05); the faun -- given bread -- turns and holds out HIS
-     piece (13.30); the courier takes it in his beak and gulps it (13.62). The pool widens.
-  D  13.85-14.75 WIDE, the right side of the garden: an EMPTY bench standing apart and turned away
-     in the cold blue lawn, outside the light; s7_worker: a dwarf off his shift (leather work vest,
-     candle cap) stomps in along the lawn in front of it toward the group ...
-  E  14.75-15.60 "THE BENCH IS FULL" -- the full bench from where he stands: the courier, the
-     faun, three pigeons who have hopped up into the last gap, the gnome, the dragon, all in the
-     warm light; s7_full: every head turns to him at once -- the pigeons in sync -- and the
-     pigeons blink.
-  F  15.60-18.40 WIDE pushing in on him: s7_drag -- no room? then MAKE room: the dwarf takes the
-     empty bench by its end and drags it over: heels dug in, leaning back, three heaves, turf
-     flying from its iron feet, furrows in the lawn -- into the lantern's light beside the first
-     bench. The warm pool spreads over it. The faun pushes his hood back; the dragon pops the last
-     of his half into his mouth, watching.
-  G  18.40-24.25 WARM THREE-SHOT on the bench, the dragon the brightest face (the faun soft at the
-     left, the gnome below him -- every face clear of the caption band): a look round at them
-     all; a breath; s7_l1 "You know what's funny?" (to her, a wry smile); a beat -- his eyes drop
-     to the sack at his feet; s7_l2 "All that stuff they gave me..." (a slow shake of the head)
-     "...was for being alone." -- eyes back up to her on "alone". The camera creeps in.
-  H  24.25-27.44 CLOSER ON HER, his face above her at the top of frame: she breaks the very last
-     of her bread in two; s7_l3 "And all this costs" -- her eyes sweep the gathering -- she
-     crumbles one bit over the seat for the pigeons beside her -- "is a loaf of bread." as she
-     lays the other in the dragon's great palm on "loaf" and rests her tiny hand on his knuckles
-     (tiny hand, huge claw, again). Empty hands; a dry twinkle over her specs on "bread".
+  A1 0.00-1.52 CU on her (cut IN from S6's two-shot; his coat and claw at the right edge): she
+     dips into her satchel and brings out the round loaf (0.38); s7_tear 0.80: both hands, a
+     strain -- SNAP (1.30): crumbs spray, warm steam breathes from the torn faces; she beams.
+  A2 1.52-2.21 TWO-SHOT: hop, hop -- she scoots along the seat to him and holds his half out
+     (s7_hand). He looks at the bread, at her -- for ME? (1.75, brows up, mouth shut) -- and his
+     great clawed hand turns palm-up and comes down to her over the coloring book.
+  A3 2.21-3.72 INSERT, TINY HAND / HUGE CLAW (_s7_insert: their true relative sizes, his hand
+     2.8x hers): her lavender sleeve from the upper left, his navy sleeve from the right, the
+     open palm with its sand pads and dark claws. She lowers the golden half into his palm
+     (2.45; a tiny give), slides her hand onto his claw-fingers, two pats -- his fingers flex
+     once at the touch, his thumb curls toward her hand -- and it RESTS there (2.69-3.42, a
+     held breath, the steam curling up through the sun). She lifts it away; his fingers begin,
+     very carefully, to close round the bread. Slow push-in.
+  B  3.72-6.45 TWO-SHOT easing back to show the gravel and the birds: his fingers finish
+     closing as he draws the bread to his chest in both hands (wings lift: he is moved). She
+     flicks crumbs (4.40); he copies with one enormous clumsy toss (4.90); four more pigeons
+     flutter in from both sides; they toss together (5.80/5.82) and he chuckles: a puff of
+     golden embers (5.98); one ember floats off and lingers over the bench like a firefly.
+  C  6.45-7.95 WIDE from the oak: s7_teen -- a teen faun in a red wool hood walks along the
+     lawn at the left, head down over his reed-pipe; he notices them, slows, stops by the bench
+     end (7.50) and watches. The dragon sees him (6.70) and quietly lifts the coloring book off
+     the seat (7.12-7.48), lowers it hanging from his fingertips over his sack and lets it drop
+     in (7.80; it lands 7.96 and stands there, top showing, for the rest of the scene): room.
+  C2 7.95-12.45 THE OFFER, THE SIT, THE LANTERN -- one take: she clocks the kid (7.45), breaks a
+     piece off her half and holds it right out to him at arm's length on her open palm
+     (s7_offer 8.05). The camera eases in on his HESITATION: "me?" (a hand to his chest, 8.25,
+     brows up), ears down, the back of his neck rubbed, a glance back the way he came, half a
+     step back (8.72-9.40); the dragon gives him a small nod; she nods "go on"; a shy smile,
+     ears up, a small brave nod -- s7_teensit: he steps in, takes the piece (9.95), she hops
+     over beside the dragon and the faun sits at the end of the bench (10.30-10.85). Then
+     (no cut) the ember of the chuckle drifts down past the dragon's face and up (10.95), and
+     the camera CRANES UP with it from the three on the bench to the dark lantern against the
+     violet sky over the castle on its hill -- it CATCHES (11.90): a sputter, a flare, the glass
+     fills with gold, and all three faces turn up into its first light.
+  C4 12.45-14.12 MEDIUM-WIDE, the bench in the new light: s7_driver -- a bone-tired griffin
+     courier plods in at the left (a jaw-cracking yawn, the royal-post cap) and settles on his
+     haunches by the bench end (12.90-13.60); the faun -- given bread -- turns and holds out HIS
+     piece (13.20); the courier takes it in his beak (13.58) and gulps it (13.86). The pool
+     widens.
+  D  14.12-14.88 WIDE: the warm group at the left, the lamp post between, and in the cold blue
+     lawn at the right an EMPTY bench standing apart and turned away; s7_worker: a dwarf off his
+     shift (leather work vest, candle cap) stomps in toward the group, sees no room.
+  E  14.88-15.60 "THE BENCH IS FULL": the courier, the faun, three pigeons who have hopped up
+     into the last gap, the gnome, the dragon, all in the warm light; s7_full: every head --
+     and every pigeon -- turns to the dwarf at once (14.98), and the pigeons blink.
+  F  15.60-18.40 WIDE on the dwarf easing back: s7_drag -- no room? then MAKE room: he takes
+     the empty bench by its end and drags it over (heels dug in, leaning back, three heaves,
+     turf and dust flying from its iron feet, furrows in the lawn) into the lantern's light;
+     the camera eases back to take in both benches round the lamp. The dragon pops the last of
+     his half into his mouth (17.25), watching.
+  G  18.40-20.94 WARM THREE-SHOT on the bench (the faun soft at the left, the gnome below him,
+     the dragon the brightest face): a look round at them all; a breath; s7_l1 "You know
+     what's funny?" (to her, a wry smile); a beat --
+  G2 20.94-22.12 INSERT, the sack at his feet: "All that stuff they gave me..." -- the remedies
+     peeking out, in his cool shadow below the warmth (the stones).
+  G3 22.12-24.25 back on him: "...was for being alone." -- eyes back up to her on "alone". (The
+     faun has pushed his hood back during the insert, his hand just leaving his neck: at home.)
+  H  24.25-27.44 CLOSER ON HER between them: she breaks the very last of her bread in two;
+     s7_l3 "And all this costs" -- her eyes sweep the gathering -- she crumbles one bit over the
+     seat for the pigeons beside her -- "is a loaf of bread." as she lays the other in the
+     dragon's palm on "loaf" and rests her tiny hand on his knuckles (tiny hand, huge claw,
+     again). Empty hands; a dry twinkle over her specs on "bread".
   I  27.44-30.00 THE WARM POOL -- the final wide in the blue evening: the camera settles back to
-     S8's opening framing (Camera(1128, 716) z1.30 at the last frame); he draws her piece into his
-     lap; the pigeons peck the last crumbs; the dwarf on his bench; the courier dozing.
+     S8's opening framing (Camera(1128, 716) z1.30 at the last frame); he draws her piece into
+     his lap; the pigeons peck the last crumbs; the dwarf on his bench; the courier dozing.
 
 ACTING NOTES (thought -> glance -> breath -> line; eyes lead, the head follows, the body last)
   Gnome: matter-of-fact generosity -- she gives the way other people breathe; tiny busy hands;
     a twinkle over her spectacles; she notices everyone first.
   Dragon: still glowing from the laugh; receiving is hard for him (a beat of disbelief before
-    he opens his hand); clumsy and huge with the crumbs; he makes room (the book); his lines are
-    quiet and wry, a realisation, not a speech.
+    he opens his hand; his fingers flex at her touch); clumsy and huge with the crumbs; he
+    makes room (the book) before anyone asks; his lines are quiet and wry, a realisation, not a
+    speech.
   Faun: a lonely teen -- head down over his pipe, fidgety; curiosity -> "me?" -> shy doubt ->
     a small brave yes; he keeps a polite distance at the end of the bench; then he gives.
   Griffin: bone tired, droopy-lidded, a huge yawn; surprised by kindness.
   Dwarf: a practical man of few words: no room? then MAKE room.
-  Pigeons: the S6 troupe, now a crowd; three take a seat; heads turn in sync.
-  Mouths move only on their own lines (timeline.talk; scene 7 has no voice-over) -- plus the
-  dwarf's effort grunts on each heave (closed-ish, timed to his sigh cues) and the dragon chewing.
+  Pigeons: the S6 troupe, now a crowd; three take a seat; heads turn in sync with everyone's.
+  Mouths move only on their own lines (timeline.talk; scene 7 has no voice-over): silent
+  reactions keep the lips shut (surprise, awe, chewing, the dwarf's effort); only the courier's
+  beak opens -- to yawn and to take the bread.
 
 PERIOD: a castle garden of a storybook kingdom -- wrought-iron-and-oak benches, an iron candle
 lantern, gravel walk, clipped hedges, the castle on its hill; wool, linen, leather, felt, a round
@@ -118,14 +131,15 @@ crusty loaf, a reed-pipe, a royal-post satchel with a wax seal, a miner's candle
 
 CONTINUITY
   <- S6: she sits at bench u 0.30, he at u 0.83 (+4 px, his scoot), the seat sagging 0.3 under
-     him; the coloring book flat on the seat between them (u 0.55); the umpire on the crest board
-     (u 0.5); five pigeons on the gravel; the tied-open sack at his feet; her loaf in her satchel.
-  -> S8 (S7_END below): bench 1: faun u 0.20 (hood down), three pigeons on the seat (u 0.34-0.46),
-     gnome u 0.60, dragon u 0.83 (+4) with her last piece in his lap; the umpire on the crest board
-     (u 0.42); the courier on his haunches on the grass at the bench's left end; bench 2 at
-     G.BENCH2 with the dwarf at u 0.45; two pigeons at the lantern's foot; the coloring book back
-     in the sack; the lantern lit; she has no bread left (S8: the giver receives). The last frame
-     is S8's first camera, Camera(1128, 716, 1.30).
+     him; the coloring book flat on the seat between them (u 0.55); the umpire on the crest
+     board (u 0.5); five pigeons on the gravel; the tied-open sack at his feet; her loaf in her
+     satchel.
+  -> S8 (S7_END below): bench 1: faun u 0.20 (hood down), three pigeons on the seat (u
+     0.39-0.51), gnome u 0.60, dragon u 0.83 (+4) with her last piece in his lap; the umpire on
+     the crest board (u 0.42); the courier on his haunches on the grass at the bench's left end;
+     bench 2 at G.BENCH2 with the dwarf at u 0.45; two pigeons at the lantern's foot; the
+     coloring book back in the sack; the lantern lit; she has no bread left (S8: the giver
+     receives). The last frame is S8's first camera, Camera(1128, 716, 1.30).
 
 SOUND: SFX_CUES (module level) lists every on-screen event with its local time, computed from
 the same constants the animation uses.
@@ -180,8 +194,8 @@ G_SCOOT = ((T_SNAP + 0.26, 0.17), (T_SNAP + 0.47, 0.17))   # hop, hop: she scoot
 T_D_LOOK = B_HAND.t - 0.05                  # for ME? -- he looks from the bread up to her
 T_D_REACH0 = B_HAND.t + 0.15                # his great hand turns palm-up and comes down to her ...
 T_GIVE = B_HAND.t + 0.65                    # ... and she lays his half in it
-T_PAT1 = T_GIVE + 0.24                      # her tiny hand comes to rest on his claw-fingers (HOLD) ...
-T_LET = T_GIVE + 0.97                       # ... and lifts away; his fingers begin to close round the bread
+T_PAT1 = T_GIVE + 0.36                      # her tiny hand slides onto his claw-fingers and RESTS (HOLD) ...
+T_LET = T_GIVE + 1.0                        # ... and lifts away; his fingers begin to close round the bread
 T_CRADLE = T_GIVE + 1.22                    # (B) he draws it in to his chest, both hands round it ...
 T_SWAP = T_CRADLE + 0.75                    # ... where his right hand takes it (then down to his lap)
 # shots
@@ -190,7 +204,7 @@ CUT_A3 = T_GIVE - 0.24                      # 2.21  insert: tiny hand, huge claw
 CUT_B = T_GIVE + 1.27                       # 3.72  two-shot: his reaction, feeding the birds together
 CUT_C = B_TEEN.t - 0.05                     # 6.45  wide: the faun walks in
 CUT_C2 = B_OFFER.t - 0.05                   # 7.95  three-shot: the offer, the hesitation, the sit
-CUT_E = B_FULL.t - 0.25                     # 14.75 the bench is full
+CUT_E = B_FULL.t - 0.12                     # 14.88 the bench is full
 CUT_F = B_DRAG.t + 0.10                     # 15.60 the second bench
 CUT_G = L1.start - 0.20                     # 18.40 you know what's funny
 CUT_G2 = W_STUFF - 0.1                      # 20.94 (his eyes drop to his sack) the stuff they gave him ...
@@ -198,8 +212,8 @@ CUT_G3 = W_ME + 0.15                        # 22.12 ... back on him: "was for be
 CUT_H = L3.start - 0.35                     # 24.25 a loaf of bread
 CUT_I = L3.end + 0.30                       # 27.44 the warm pool
 # B -- feeding the pigeons together: (start, duration) of each toss
-TOSS_G = [(CUT_B + 0.4, 0.6), (CUT_B + 1.12, 0.6), (CUT_B + 1.8, 0.6)]
-TOSS_D = [(T_SWAP + 0.16, 0.64), (CUT_B + 1.79, 0.62)]
+TOSS_G = [(CUT_B + 0.38, 0.58), (CUT_B + 1.0, 0.58), (CUT_B + 1.6, 0.58)]
+TOSS_D = [(T_SWAP + 0.12, 0.62), (CUT_B + 1.58, 0.6)]
 REL_G = [a + 0.47 * d for a, d in TOSS_G]   # her crumbs leave her fingers
 REL_D = [a + 0.50 * d for a, d in TOSS_D]   # his
 T_CHUCKLE = REL_D[-1] + 0.16                # he chuckles: a puff of golden embers ...
@@ -216,24 +230,25 @@ T_F_STEP = B_TEENSIT.t - 0.35               # he steps in to her ...
 T_F_TAKE = B_TEENSIT.t + 0.15               # ... takes the piece from her hand (standing)
 T_D_SEE = B_TEEN.t + 0.2                    # the dragon sees the kid watching them ...
 T_D_BOOK0, T_D_BOOK1 = B_TEEN.t + 0.62, B_TEEN.t + 0.98         # ... quietly lifts the book off the seat ...
-T_D_SACK = B_TEEN.t + 1.3                   # ... and lowers it into the sack at his feet: room! (before the offer)
+T_D_SACK = B_TEEN.t + 1.3                   # ... and lets it drop into the sack at his feet: room! (before the offer)
+T_BOOK_IN = T_D_SACK + 0.16                 # (it lands among the bottles: the sack jolts)
 G_HOPS = ((B_TEENSIT.t + 0.34, 0.17), (B_TEENSIT.t + 0.55, 0.17))   # she hops over to his side
 T_F_SIT0, T_F_SIT1 = B_TEENSIT.t + 0.5, B_TEENSIT.t + 1.05        # the faun sits at the end of the bench
-CUT_C3 = T_F_SIT1 - 0.05                    # 10.80 the lantern catches
-T_LIGHT = CUT_C3 + 0.62                     # THE LANTERN CATCHES (the bench begins to fill) ...
-T_EMBER0 = T_CHUCKLE + 0.25                 # ... lit by one ember of his chuckle, drifting up to it
-T_EMBER_GO = CUT_C3 + 0.12                  # (the ember leaves his face for the lantern)
-CUT_C4 = T_LIGHT + 0.75                     # 12.05 the courier, in the new light
-T_F_BITE = CUT_C4 + 0.3                     # the faun's first bite
+T_EMBER_GO = T_F_SIT1 + 0.1                 # 10.95 the ember of his chuckle leaves his face for the lantern ...
+T_LIGHT = T_EMBER_GO + 0.95                 # 11.90 ... and THE LANTERN CATCHES (C2 has craned up with it)
+T_EMBER0 = T_CHUCKLE + 0.25                 # (the ember: off his chuckle, it has lingered over the bench since)
+CUT_C3 = T_EMBER_GO + 0.08                  # (the crane-up begins: C2 follows the ember -- no cut)
+CUT_C4 = T_LIGHT + 0.55                     # 12.45 the courier, in the new light
+T_F_BITE = CUT_C4 + 0.32                    # the faun's first bite
 # C4 -- the courier (from the left; he settles on the grass at the bench's left end)
-T_GR_IN = T_LIGHT - 0.4                     # plods in from the left (off screen as the lantern catches) ...
+T_GR_IN = CUT_C4 - 0.2                      # plods in from the left edge (s7_driver) ...
 T_GR_YAWN0, T_GR_YAWN1 = CUT_C4 + 0.05, CUT_C4 + 0.75             # ... a jaw-cracking yawn on the way
-T_GR_STOP = B_DRIVER.t + 1.3                # stops by the bench end ...
-T_GR_SIT0, T_GR_SIT1 = T_GR_STOP - 0.5, T_GR_STOP + 0.3          # ... and settles on his haunches as he stops
-T_F_GIVE0 = T_GR_SIT1 - 0.15                # the faun turns and holds out his own piece
-T_F_GIVE = T_F_GIVE0 + 0.42                 # the courier takes it in his beak (the teen gives)
-T_GR_GULP = T_F_GIVE + 0.32
-CUT_D = B_WORKER.t + 0.35                   # 13.85 meanwhile, a dwarf off his shift ...
+T_GR_STOP = CUT_C4 + 0.85                   # stops by the bench end ...
+T_GR_SIT0, T_GR_SIT1 = T_GR_STOP - 0.4, T_GR_STOP + 0.3          # ... and settles on his haunches as he stops
+T_F_GIVE0 = T_GR_STOP - 0.1                 # the faun turns and holds out his own piece (he sees him coming)
+T_F_GIVE = T_F_GIVE0 + 0.38                 # the courier takes it in his beak (the teen gives)
+T_GR_GULP = T_F_GIVE + 0.28
+CUT_D = B_WORKER.t + 0.62                   # 14.12 meanwhile, a dwarf off his shift ...
 ARRIVALS_C = [(B_DRIVER.t + 0.9, 1, (1418.0, 979.0)), (B_DRIVER.t + 1.25, 1, (1476.0, 968.0))]  # two more, by the lantern
 # D/E/F -- the worker and the second bench
 T_DW_STOP = B_FULL.t + 0.12                 # stops by the empty bench's end, looks: no room
@@ -243,6 +258,7 @@ T_DW_WALK0 = CUT_G + 0.4                    # (off screen) he steps round to the
 T_DW_SIT0 = T_DW_WALK0 + 1.9                # ... and sits
 T_DW_SIT1 = T_DW_SIT0 + 0.6
 T_D_EAT0, T_D_EAT1 = B_DRAG.t + 1.2, B_DRAG.t + 1.75             # the dragon pops the last of his half
+T_LOOK_DW = B_FULL.t - 0.02                 # s7_full: EVERY head on the bench turns to the dwarf at once
 T_SEAT_BIRDS = [(B_WORKER.t + 0.35, 0.385), (B_WORKER.t + 0.55, 0.505), (B_WORKER.t + 0.8, 0.445)]  # the gap fills
 # H -- the last of the bread
 T_G_TEAR3_0, T_G_TEAR3_1 = CUT_H + 0.05, L3.start + 0.15          # she breaks the last bit in two
@@ -261,14 +277,18 @@ DRAGON_DX = 4.0                              # his S6 weight-shift scoot
 SAG = 0.3                                    # S6 leaves the seat sagging under him (G.seat_dip, sag_u = his seat)
 U_BOOK = G.S6_END_PROPS["book_u"]
 SACK = (1042.24, 878.53)                     # S6: the tied-open sack's grip, standing at his feet
+BOOK_K = 0.84                                # the book, cheated a touch smaller as he lowers it: it must fit the mouth
+BOOK_TURN = 0.8                              # ... and turning edge-on in his fingers (horizontal squash) ...
+BOOK_DROP = (-5.0, -40.0)                    # ... he lets go of it here (bag-local centre), just clear of the mouth
+BOOK_REST = (-5.0, 6.5, -0.08, 0.5)          # it stands in the sack, turned (centre, tilt, squash): props' sack art
 GR_SIT = (504.0, 956.0)                      # the courier settles here, facing the bench (S8: 520)
-GR_FROM_X = 236.0                            # ... having plodded in from here (off frame left)
+GR_FROM_X = 318.0                            # ... having plodded in from here (C4's left edge)
 F_STOP = (628.0, 941.0)                      # the faun stops just in front of the bench's left end
 F_SPEED = 150.0                              # px/s as he walks in (decelerating to the stop)
 BENCH2_START = G.BenchSpot(1742.0, 946.0, -0.5, 520.0)   # the lonely empty bench, apart and turned away
 DW_Y = 972.0                                 # the dwarf walks in along the lawn in front of it ...
 U_DWARF = 0.45                               # ... and in the end sits on it here (= S8)
-DW_SPEED = 104.0                             # px/s: short stomping steps
+DW_SPEED = 158.0                             # px/s: short, determined stomping steps
 # S6's last frame: the five pigeons on the gravel and the umpire on the crest board
 S6_BIRDS = [(758.0, 979.0, 1), (797.0, 956.0, -1), (857.0, 986.0, 1), (892.0, 960.0, -1), (934.0, 982.0, -1)]
 UMPIRE = (865.7, 735.7)                      # S6: the umpire on the crest board (u 0.5) ...
@@ -346,11 +366,22 @@ def _scratch():
 # ----------------------------------------------------------------------------------------
 T_GOLD = 2.6                                 # S6's dusk-with-golden-bloom resolves into golden
 
-# the sun goes down on them a step at each cut (only a slow drift within a shot): no time-lapse
-# inside a take, and never a muddy golden/blue mix (golden -> dusk, then dusk -> blue hour)
-TOD_SHOTS = {"C": ("golden", "dusk", 0.12, 0.38), "C2": ("golden", "dusk", 0.55, 0.92),
-             "C3": ("dusk", "blue_hour", 0.22, 0.36), "C4": ("dusk", "blue_hour", 0.52, 0.66),
-             "D": ("dusk", "blue_hour", 0.84, 0.92)}
+# the sun goes down on them: one value, 0 golden .. 1 dusk .. 2 blue hour, keyed per shot -- a
+# hard cut may step it on; within a shot it only drifts (the C2 crane-up is where the sun goes:
+# the camera rises with the ember into a darkening sky and the lantern catches)
+SUN_KEYS = {"C": [(CUT_C, 0.12), (CUT_C2, 0.38)],
+            "C2": [(CUT_C2, 0.55), (T_F_SIT1, 1.0), (CUT_C4, 1.36)],
+            "C4": [(CUT_C4, 1.52), (CUT_D, 1.66)],
+            "D": [(CUT_D, 1.84), (CUT_E, 1.92)]}
+
+
+def sun(t):
+    """0 golden .. 1 dusk .. 2 blue hour (from shot C on)."""
+    if t < CUT_C:
+        return 0.0
+    name, _a, _b = _shot_span(t)
+    keys = SUN_KEYS.get(name)
+    return 2.0 if keys is None else _track(t, keys, "linear")
 
 
 def tod(t):
@@ -358,11 +389,10 @@ def tod(t):
     the faun comes -> blue hour by the time the bench is full."""
     if t < CUT_C:
         return ("dusk", "golden", core.lerp(0.5, 1.0, core.smooth(t / T_GOLD))) if t < T_GOLD else "golden"
-    name, a, b = _shot_span(t)
-    if name in TOD_SHOTS:
-        k0, k1, u0, u1 = TOD_SHOTS[name]
-        return (k0, k1, core.lerp(u0, u1, core.clamp((t - a) / max(1e-6, b - a))))
-    return "blue_hour"
+    s = sun(t)
+    if s >= 2.0:
+        return "blue_hour"
+    return ("golden", "dusk", s) if s <= 1.0 else ("dusk", "blue_hour", s - 1.0)
 
 
 def blue(t):
@@ -389,9 +419,9 @@ L_LANTERN = ch.LIGHTS["lantern_night"]
 WARM_RIM = (1.0, 0.74, 0.40)
 SKY_RIM = (0.66, 0.74, 1.0)
 # the lamplight on a face (as S8's: a warm amber key from the lamp's side, a cool sky rim)
-LAMP_KEY = (1.24, 0.86, 0.5)
+LAMP_KEY = (1.17, 0.88, 0.6)                 # (S8's lantern_night is (1.12, 0.84, 0.54) at exposure 1)
 LAMP_AMB = (0.32, 0.3, 0.48)
-LAMP_EXPOSURE = 1.3
+LAMP_EXPOSURE = 1.14
 FACE_GLOW_R = {"dragon": 95.0, "griffin": 78.0, "faun": 70.0, "dwarf": 66.0, "gnome": 50.0}
 
 
@@ -409,8 +439,8 @@ def lantern_lit(t):
 
 def lantern_reach(t):
     """The radius (world px) of the lantern's warm pool: it widens with each arrival."""
-    return _track(t, [(T_LIGHT, 220.0), (T_LIGHT + 0.5, 470.0), (T_F_GIVE, 480.0), (T_F_GIVE + 0.8, 560.0),
-                      (B_WORKER.t, 550.0), (B_FULL.t, 610.0), (T_DRAG0, 630.0), (T_DRAG1 + 0.4, 840.0)])
+    return _track(t, [(T_LIGHT, 220.0), (T_LIGHT + 0.5, 470.0), (T_F_GIVE, 480.0), (T_F_GIVE + 0.6, 560.0),
+                      (B_FULL.t, 610.0), (T_DRAG0, 630.0), (T_DRAG1 + 0.4, 840.0)])
 
 
 _LAMP = [1252.7, 446.2]                      # the lantern's centre (setup measures it)
@@ -504,17 +534,19 @@ SHOTS = [
     ("B", CUT_B, CUT_C, [(CUT_B, Cam(912.0, 742.0, 3.0)), (T_SWAP + 0.3, Cam(906.0, 758.0, 2.75)),
                          (CUT_C, Cam(892.0, 790.0, 2.25))]),
     ("C", CUT_C, CUT_C2, [(CUT_C, Cam(700.0, 745.0, 1.75)), (CUT_C2, Cam(694.0, 748.0, 1.85))]),
-    ("C2", CUT_C2, CUT_C3, [(CUT_C2, Cam(786.0, 748.0, 2.6)), (T_F_RUB0, Cam(768.0, 752.0, 2.9)),
-                            (T_F_STEP, Cam(770.0, 752.0, 2.92)), (T_F_SIT1, Cam(800.0, 752.0, 2.45))]),
-    # C3: low on his upturned face (lower left), the dark lantern against the violet sky (upper
-    # right) -- nobody else in frame; the ember's arc joins them
-    ("C3", CUT_C3, CUT_C4, [(CUT_C3, Cam(1106.0, 560.0, 2.85)), (T_LIGHT, Cam(1110.0, 557.0, 2.95)),
-                            (CUT_C4, Cam(1114.0, 554.0, 3.1))]),
+    # C2: the offer, the hesitation, the sit -- then (no cut) the camera cranes up with the ember
+    # from his face to the dark lantern: it CATCHES over all their upturned faces
+    ("C2", CUT_C2, CUT_C4, [(CUT_C2, Cam(786.0, 748.0, 2.6)), (T_F_RUB0, Cam(768.0, 752.0, 2.9)),
+                            (T_F_STEP, Cam(770.0, 752.0, 2.92)), (T_F_SIT1, Cam(800.0, 752.0, 2.45)),
+                            (CUT_C3, Cam(804.0, 749.0, 2.44)), (T_LIGHT - 0.05, Cam(1036.0, 614.0, 2.04)),
+                            (CUT_C4, Cam(1046.0, 610.0, 2.1))]),
     ("C4", CUT_C4, CUT_D, [(CUT_C4, Cam(808.0, 712.0, 1.6)), (CUT_D, Cam(816.0, 714.0, 1.66))]),
-    ("D", CUT_D, CUT_E, [(CUT_D, Cam(1316.0, 772.0, 1.6)), (CUT_E, Cam(1304.0, 768.0, 1.66))]),
+    ("D", CUT_D, CUT_E, [(CUT_D, Cam(1330.0, 730.0, 1.44)), (CUT_E, Cam(1312.0, 728.0, 1.49))]),
     ("E", CUT_E, CUT_F, [(CUT_E, Cam(800.0, 790.0, 2.1)), (CUT_F, Cam(802.0, 789.0, 2.16))]),
-    ("F", CUT_F, CUT_G, [(CUT_F, Cam(1192.0, 744.0, 1.3)), (T_DRAG1, Cam(1296.0, 778.0, 1.72)),
-                         (CUT_G, Cam(1300.0, 780.0, 1.76))]),
+    # F: on the dwarf as he grips the empty bench -- then, as he hauls it over, the camera eases
+    # back to take in both benches round the lantern (the lamp stays in frame: it is the axis)
+    ("F", CUT_F, CUT_G, [(CUT_F, Cam(1352.0, 738.0, 1.56)), (T_DRAG0 + 0.3, Cam(1344.0, 736.0, 1.56)),
+                         (T_DRAG1 + 0.3, Cam(1236.0, 718.0, 1.42)), (CUT_G, Cam(1232.0, 717.0, 1.43))]),
     ("G", CUT_G, CUT_G2, [(CUT_G, Cam(900.0, 708.0, 3.0)), (CUT_G2, Cam(903.0, 707.0, 3.16))]),
     ("G2", CUT_G2, CUT_G3, [(CUT_G2, Cam(1036.0, 884.0, 5.6)), (CUT_G3, Cam(1038.0, 880.0, 6.1))]),
     ("G3", CUT_G3, CUT_H, [(CUT_G3, Cam(912.0, 700.0, 3.3)), (CUT_H, Cam(915.0, 698.0, 3.5))]),
@@ -522,7 +554,7 @@ SHOTS = [
                          (W_LOAF + 0.2, Cam(914.0, 766.0, 3.9), "inout_sine"), (CUT_I, Cam(916.0, 765.0, 4.0))]),
     ("I", CUT_I, DUR + 0.01, [(CUT_I, Cam(1120.0, 722.0, 1.33)), (DUR - 1.0 / 24.0, Cam(1128.0, 716.0, 1.3))]),
 ]
-DRIFT_PX = {"A1": 3.0, "A2": 2.6, "A3": 0.0, "B": 2.4, "C": 2.4, "C2": 2.4, "C3": 3.0, "C4": 2.4, "D": 2.4,
+DRIFT_PX = {"A1": 3.0, "A2": 2.6, "A3": 0.0, "B": 2.4, "C": 2.4, "C2": 2.4, "C4": 2.4, "D": 2.4,
             "E": 3.0, "F": 2.4, "G": 3.6, "G2": 3.0, "G3": 3.6, "H": 3.6, "I": 2.0}
 
 
@@ -781,10 +813,62 @@ def bread_receiver(key, state, face, size, light, seed=3, cap=None, upright=True
     return cb
 
 
-def _loaf_up(light):
+def _loaf_up(light, t=None):
     """The whole loaf in her near hand as it comes out of the satchel (solved so that it lands
-    exactly where tear_bread draws it at phase 0)."""
-    return bread_receiver("loaf", "loaf", 1.0, LOAF, light, seed=0, cap="loaf_up", hang=True)
+    exactly where tear_bread draws it at phase 0). As she grabs it, it starts exactly where the
+    satchel's own (smaller, peeking) loaf was -- rising out of the bag's mouth (clipped there)
+    and growing into her grip as she lifts it: no frame where it pops."""
+    base = bread_receiver("loaf", "loaf", 1.0, LOAF, light, seed=0, cap="loaf_up", hang=True)
+    if t is None or "loaf_sat" not in _STATE or "cam_m" not in _STATE:
+        return base
+    k = core.inout_sine(core.clamp((t - T_GRAB) / (T_TEAR0 - 0.1 - T_GRAB)))
+    if k >= 1.0:
+        return base
+
+    def cb(cr, f):
+        o = _HOLD.get("loaf")
+        if o is None:
+            base(cr, f)
+            return
+        # where (device) and how big (device px per bread unit) the solved hold draws it ...
+        cr.save()
+        c_, s_ = math.cos(o[2]), math.sin(o[2])
+        cr.rotate(-f.angle)
+        cr.translate(o[0] * c_ - o[1] * s_, o[0] * s_ + o[1] * c_)
+        d1 = cr.user_to_device(0.0, 0.0)
+        s1 = _dev_scale(cr) * o[3]
+        cr.restore()
+        # ... and the satchel's peeking loaf (size 30 body units at the bag's mouth)
+        m = _STATE["cam_m"]
+        d0 = m.transform_point(*_STATE["loaf_sat"])
+        z = math.hypot(*m.transform_distance(1.0, 0.0))
+        s0 = z * SC * 30.0 / LOAF
+        mouth_y = d0[1] + 1.5 * SC * z
+        cx, cy = core.lerp(d0[0], d1[0], k), core.lerp(d0[1], d1[1], k)
+        sk = core.lerp(s0, s1, k)
+        cr.save()
+        cr.identity_matrix()
+        masked = k < 0.6                             # still coming out of the bag: fade at its mouth
+        if masked:
+            r = LOAF * 0.62 * sk
+            cr.rectangle(cx - r, cy - r, 2.0 * r, 2.0 * r)
+            cr.clip()
+            cr.push_group()
+        cr.translate(cx, cy)
+        cr.scale(sk, sk)
+        _CAP["loaf_up"] = (*cr.user_to_device(0.0, 0.0), _dev_scale(cr))
+        _bread(cr, 0.0, 0.0, LOAF, light, "loaf", 1.0, 0)
+        if masked:
+            cr.identity_matrix()
+            cr.pop_group_to_source()
+            edge = mouth_y + 30.0 * SC * z * core.smooth(k / 0.6)
+            feather = 3.5 * SC * z
+            g = cairo.LinearGradient(0.0, edge - feather, 0.0, edge + feather)
+            g.add_color_stop_rgba(0.0, 0, 0, 0, 1.0)
+            g.add_color_stop_rgba(1.0, 0, 0, 0, 0.0)
+            cr.mask(g)
+        cr.restore()
+    return cb
 
 
 # ----------------------------------------------------------------------------------------
@@ -836,10 +920,10 @@ def gnome_turn(t):
     """Her body turn (facing=1; yaw = 1 + 0.6 turn): toward him (S6) -> a little front for the
     loaf and the tosses -> round to the faun on her left (through the front) -> back to him."""
     return _track(t, [(0.0, -0.36), (T_SATCHEL, -0.36), (T_GRAB + 0.1, -0.55), (T_SNAP, -0.55), (T_TEAR1, -0.2),
-                      (T_GIVE, 0.0), (T_PAT1 + 0.1, -0.15), (CUT_B, -0.42), (B_FEED.t + 0.5, -0.65), (CUT_C, -0.62),
+                      (T_GIVE, 0.0), (T_PAT1 + 0.1, -0.15), (CUT_B, -0.42), (CUT_B + 0.6, -0.65), (CUT_C, -0.62),
                       (T_G_NOTICE, -0.62), (T_G_NOTICE + 0.45, -2.45), (T_F_TAKE, -2.4),
-                      (G_HOPS[0][0] + 0.1, -0.7), (T_F_SIT1, -0.9), (B_DRIVER.t + 1.0, -1.2),
-                      (B_WORKER.t + 0.6, -0.6), (CUT_G, -0.4), (CUT_H, -0.42), (T_G_TEAR3_0 + 0.2, -0.55),
+                      (G_HOPS[0][0] + 0.1, -0.7), (T_F_SIT1, -0.9), (CUT_C4 + 0.4, -1.2), (T_LOOK_DW, -1.2),
+                      (T_LOOK_DW + 0.3, -0.6), (CUT_G, -0.4), (CUT_H, -0.42), (T_G_TEAR3_0 + 0.2, -0.55),
                       (T_SPRINKLE0 + 0.1, -0.8), (T_SPRINKLE1, -0.75), (T_LAST_D - 0.2, -0.3),
                       (CUT_I + 0.3, -0.5), (DUR, -0.5)])
 
@@ -857,30 +941,31 @@ def gnome_pose(t, light=None):
     near_phys = -1.0 if yaw >= 0 else 1.0          # her right arm is the near one while she faces right
     look = _track(t, [(0.0, (0.8, -0.25)), (T_SATCHEL - 0.1, (0.8, -0.25)), (T_SATCHEL + 0.05, (-0.4, 0.8)),
                       (T_GRAB + 0.15, (0.2, 0.75)), (T_SNAP + 0.05, (0.25, 0.7)), (T_TEAR1 - 0.1, (0.85, -0.2)),
-                      (T_GIVE - 0.12, (0.85, 0.55)), (T_GIVE + 0.25, (0.85, 0.55)), (T_PAT1, (0.85, -0.3)),
-                      (CUT_B + 0.1, (0.6, 0.5)), (REL_G[0] + 0.1, (0.5, 0.9)), (REL_D[0] - 0.3, (0.95, 0.3)),
-                      (REL_D[0] + 0.1, (0.8, 0.85)), (REL_G[1], (0.4, 0.9)), (ARRIVALS[1][0] + 0.3, (0.6, -0.3)),
-                      (REL_G[2] - 0.2, (0.5, 0.8)), (T_CHUCKLE + 0.05, (0.9, -0.2)), (CUT_C, (0.5, 0.7)),
+                      (T_GIVE - 0.12, (0.85, 0.55)), (T_GIVE + 0.2, (0.85, 0.55)), (T_PAT1 + 0.05, (0.85, -0.3)),
+                      (CUT_B + 0.1, (0.85, -0.25)), (TOSS_G[0][0] - 0.05, (0.5, 0.85)), (REL_G[0] + 0.15, (0.5, 0.9)),
+                      (TOSS_D[0][0] + 0.05, (0.95, 0.3)), (REL_D[0] + 0.1, (0.8, 0.85)), (REL_G[1], (0.4, 0.9)),
+                      (REL_G[1] + 0.25, (0.6, -0.3)), (REL_G[2] - 0.2, (0.5, 0.8)), (T_CHUCKLE + 0.05, (0.9, -0.2)),
+                      (CUT_C, (0.5, 0.7)),
                       (T_G_NOTICE, (0.5, 0.7)), (T_G_NOTICE + 0.12, (-0.9, -0.35)), (T_G_TEAR2_0, (-0.3, 0.6)),
                       (T_G_HOLDOUT + 0.05, (-0.85, -0.45)), (T_F_TAKE, (-0.75, -0.4)),
                       (G_HOPS[0][0] + 0.05, (0.6, 0.2)), (G_HOPS[1][0] + 0.2, (-0.8, -0.1)),
-                      (T_F_SIT1 + 0.3, (-0.8, -0.1)), (T_LIGHT + 0.02, (-0.8, -0.1)), (T_LIGHT + 0.2, (0.85, -0.85)),
-                      (T_LIGHT + 0.9, (0.8, -0.8)), (CUT_C4 + 0.15, (-0.9, -0.1)),
-                      (B_DRIVER.t + 0.3, (-0.95, -0.05)), (T_F_GIVE + 0.4, (-0.9, 0.0)),
-                      (B_WORKER.t + 0.5, (0.95, -0.1)), (CUT_F, (0.95, -0.1)), (T_DRAG1 + 0.2, (0.95, -0.1)),
+                      (T_F_SIT1 + 0.3, (-0.8, -0.1)), (T_LIGHT - 0.25, (-0.8, -0.1)), (T_LIGHT - 0.05, (0.85, -0.85)),
+                      (T_LIGHT + 0.45, (0.8, -0.8)), (CUT_C4 + 0.15, (-0.9, -0.1)),
+                      (T_F_GIVE0, (-0.95, -0.05)), (T_F_GIVE + 0.4, (-0.9, 0.0)), (T_LOOK_DW, (-0.9, 0.0)),
+                      (T_LOOK_DW + 0.15, (0.95, -0.1), "out_back"), (CUT_F, (0.95, -0.1)), (T_DRAG1 + 0.2, (0.95, -0.1)),
                       (CUT_G, (0.9, -0.55)), (W_STUFF, (0.9, -0.5)), (CUT_H, (0.4, 0.55)), (L3.start, (0.4, 0.55)),
                       (W_ALL3, (-0.8, -0.2)), (W_COSTS, (-0.45, 0.65)), (T_SPRINKLE1 - 0.1, (-0.4, 0.7)),
                       (T_LAST_D - 0.3, (0.8, 0.45)), (T_LAST_D + 0.25, (0.85, -0.55)), (W_BREAD + 0.55, (0.85, -0.45)),
                       (CUT_I + 0.4, (0.9, -0.3)), (DUR, (0.9, -0.3))])
     head_turn = _track(t, [(0.0, 0.08), (T_SATCHEL, 0.08), (T_GRAB, -0.1), (T_TEAR1, 0.12), (T_GIVE, 0.18),
                            (CUT_B, 0.05), (CUT_C, 0.0), (T_G_NOTICE + 0.15, 0.0), (T_G_NOTICE + 0.45, -0.25),
-                           (T_F_TAKE, -0.2), (G_HOPS[1][0] + 0.3, -0.35), (B_DRIVER.t + 0.6, -0.4),
-                           (B_WORKER.t + 0.6, 0.3), (CUT_G, 0.2), (CUT_H, 0.05), (W_ALL3, -0.32), (W_COSTS, -0.12),
+                           (T_F_TAKE, -0.2), (G_HOPS[1][0] + 0.3, -0.35), (CUT_C4 + 0.3, -0.4), (T_LOOK_DW, -0.4),
+                           (T_LOOK_DW + 0.2, 0.3), (CUT_G, 0.2), (CUT_H, 0.05), (W_ALL3, -0.32), (W_COSTS, -0.12),
                            (T_LAST_D - 0.2, 0.2), (CUT_I + 0.4, 0.25), (DUR, 0.25)])
     head_nod = _track(t, [(0.0, 0.1), (T_SATCHEL, 0.1), (T_SATCHEL + 0.2, -0.35), (T_TEAR0, -0.25),
                           (T_SNAP + 0.1, -0.1), (T_GIVE - 0.1, -0.2), (T_PAT1, 0.05), (CUT_B, -0.15),
-                          (CUT_C, -0.15), (T_G_NOTICE + 0.3, 0.25), (T_F_TAKE, 0.15), (T_LIGHT + 0.05, 0.1),
-                          (T_LIGHT + 0.35, 0.45), (T_LIGHT + 0.9, 0.4), (CUT_C4 + 0.2, 0.05), (B_DRIVER.t, 0.0),
+                          (CUT_C, -0.15), (T_G_NOTICE + 0.3, 0.25), (T_F_TAKE, 0.15), (T_LIGHT - 0.25, 0.1),
+                          (T_LIGHT + 0.05, 0.45), (T_LIGHT + 0.45, 0.4), (CUT_C4 + 0.2, 0.05), (CUT_C4 + 0.5, 0.0),
                           (CUT_G, 0.15), (L2.end, 0.15), (CUT_H, -0.2), (L3.start, -0.05), (W_COSTS, -0.25),
                           (T_LAST_D - 0.2, -0.1), (W_BREAD, 0.1), (DUR, 0.05)])
     head_nod += 0.2 * _pulse(t, T_F_RUB1 - 0.1, 0.15, 0.3)                      # "go on": a nod toward the seat
@@ -944,7 +1029,7 @@ def _half_size(t):
 
 def _sprinkle_k(t):
     """0..1: how much of the bit she crumbles for the pigeons is left in her fingers."""
-    return 1.0 - _r(t, T_SPRINKLE0 + 0.15, T_SPRINKLE1 - 0.05, "linear")
+    return 1.0 - _r(t, T_SPRINKLE0 + 0.4, T_SPRINKLE1 - 0.02, "linear")
 
 
 def _gnome_arms(t, L):
@@ -956,7 +1041,7 @@ def _gnome_arms(t, L):
     elif t < T_GRAB:
         R = ch.GnomeArm("reach_satchel", amt=_r(t, T_SATCHEL, T_GRAB - 0.03), prev="rest")
     elif t < T_TEAR0:
-        R = ch.GnomeArm("s7_tear0", amt=_r(t, T_GRAB, T_TEAR0 - 0.02), prev="reach_satchel", hold=_loaf_up(L))
+        R = ch.GnomeArm("s7_tear0", amt=_r(t, T_GRAB, T_TEAR0 - 0.02), prev="reach_satchel", hold=_loaf_up(L, t))
     elif t < T_TEAR1:
         R = ch.GnomeArm("tear_bread", phase=tear_phase(t))
     elif t < T_G_TEAR3_1:
@@ -967,7 +1052,7 @@ def _gnome_arms(t, L):
     elif t < T_SPRINKLE1 + 0.05:
         k = _sprinkle_k(t)
         bit = bread_giver("piece", hl[-1.0], PIECE * 0.7 * max(0.25, k), L, seed=8, cap="g_sprinkle") if k > 0.02 else None
-        R = ch.GnomeArm("s7_sprinkle", amt=_r(t, T_SPRINKLE0, T_SPRINKLE0 + 0.22), prev="s7_hold", hold=bit,
+        R = ch.GnomeArm("s7_sprinkle", amt=_r(t, T_SPRINKLE0, T_SPRINKLE0 + 0.42), prev="s7_hold", hold=bit,
                         phase=(t - T_SPRINKLE0) * 2.2)
     else:
         R = ch.GnomeArm("rest", amt=_r(t, T_SPRINKLE1 + 0.05, T_SPRINKLE1 + 0.55), prev="s7_sprinkle")
@@ -1071,17 +1156,17 @@ def dragon_pose(t, light=None):
                       (T_SNAP, (-0.75, 0.85)), (T_SNAP + 0.12, (-0.7, 0.75)), (T_D_LOOK, (-0.8, 0.9)),
                       (T_D_LOOK + 0.25, (-0.85, 0.3)), (T_D_REACH0 + 0.05, (-0.85, 0.3)),
                       (T_D_REACH0 + 0.25, (-0.75, 0.9)), (T_GIVE + 0.25, (-0.65, 0.95)), (T_PAT1 + 0.25, (-0.65, 0.95)),
-                      (T_PAT1 + 0.45, (-0.85, 0.3)), (CUT_B + 0.2, (-0.85, 0.3)), (CUT_B + 0.5, (-0.3, 0.95)),
-                      (T_SWAP + 0.1, (-0.3, 0.95)), (T_SWAP + 0.4, (-0.8, 0.45)), (REL_G[0] - 0.1, (-0.6, 0.8)),
-                      (REL_G[0] + 0.3, (-0.2, 0.95)), (TOSS_D[0][0], (-0.1, 0.9)), (REL_D[0] + 0.4, (-0.3, 0.95)),
-                      (ARRIVALS[0][0] + 0.4, (-0.6, -0.3)), (ARRIVALS[1][0] + 0.5, (0.5, -0.2)), (REL_D[1] - 0.2, (-0.3, 0.9)),
+                      (T_PAT1 + 0.45, (-0.85, 0.3)), (CUT_B + 0.1, (-0.4, 0.95)), (CUT_B + 0.45, (-0.4, 0.95)),
+                      (CUT_B + 0.6, (-0.75, 0.6)), (REL_G[0] + 0.15, (-0.5, 0.95)), (TOSS_D[0][0] + 0.05, (-0.15, 0.9)),
+                      (REL_D[0] + 0.15, (-0.3, 0.95)), (REL_D[0] + 0.32, (-0.6, -0.3)), (REL_D[1] - 0.3, (-0.3, 0.9)),
                       (T_CHUCKLE, (-0.85, 0.4)), (CUT_C, (-0.85, 0.5)), (T_D_SEE, (-0.95, 0.3)),
                       (T_D_BOOK0 - 0.2, (-0.95, 0.3)), (T_D_BOOK0 - 0.05, (-0.7, 0.95)), (T_D_BOOK1 + 0.1, (0.2, 0.95)),
                       (T_D_SACK + 0.1, (0.2, 0.95)), (T_D_SACK + 0.3, (-0.9, 0.35)), (T_F_RUB0 + 0.2, (-0.95, 0.25)),
                       (T_EMBER_GO - 0.85, (-0.9, 0.4)),
                       (T_EMBER_GO - 0.55, (0.15, 0.1)), (T_EMBER_GO, (0.3, -0.2)), (T_LIGHT - 0.12, (0.75, -0.9)),
-                      (T_LIGHT + 0.9, (0.7, -0.85)), (B_DRIVER.t + 0.2, (-0.95, 0.15)),
-                      (T_F_GIVE + 0.4, (-0.95, 0.2)), (B_WORKER.t + 0.4, (0.9, 0.0)), (CUT_F, (0.95, 0.15)),
+                      (T_LIGHT + 0.45, (0.7, -0.85)), (CUT_C4 + 0.2, (-0.95, 0.15)),
+                      (T_F_GIVE + 0.4, (-0.95, 0.2)), (T_LOOK_DW, (-0.95, 0.2)), (T_LOOK_DW + 0.16, (0.9, 0.0), "out_back"),
+                      (CUT_F, (0.95, 0.15)),
                       (T_DRAG1, (0.9, 0.2)), (T_DRAG1 + 0.3, (-0.85, 0.4)), (L1.start, (-0.85, 0.42)),
                       (L1.end + 0.2, (-0.85, 0.42)), (L1.end + 0.45, (0.25, 0.95)), (W_BEING - 0.1, (0.25, 0.95)),
                       (W_BEING + 0.1, (-0.85, 0.42)), (CUT_H, (-0.85, 0.5)), (T_LAST_D - 0.3, (-0.7, 0.85)),
@@ -1089,15 +1174,14 @@ def dragon_pose(t, light=None):
                       (DUR, (-0.85, 0.35))])
     head_turn = _track(t, [(0.0, -0.17), (T_TEAR1, -0.17), (T_GIVE, -0.05), (CUT_B, 0.0), (T_SWAP, 0.05), (CUT_C, -0.15),
                            (T_D_SEE + 0.2, -0.3), (T_D_BOOK0, -0.22), (T_D_BOOK1 + 0.1, 0.1), (T_D_SACK + 0.3, -0.28),
-                           (T_EMBER_GO - 0.5, -0.25), (T_EMBER_GO + 0.1, 0.0), (T_LIGHT, 0.25), (T_LIGHT + 0.9, 0.25),
-                           (B_DRIVER.t + 0.3, -0.3),
-                           (B_WORKER.t + 0.6, 0.25), (T_DRAG1 + 0.2, 0.2), (T_DRAG1 + 0.5, -0.15), (CUT_H, -0.15),
+                           (T_EMBER_GO - 0.5, -0.25), (T_EMBER_GO + 0.1, 0.0), (T_LIGHT, 0.25), (T_LIGHT + 0.45, 0.25),
+                           (CUT_C4 + 0.3, -0.3), (T_LOOK_DW, -0.3), (T_LOOK_DW + 0.2, 0.25), (T_DRAG1 + 0.2, 0.2), (T_DRAG1 + 0.5, -0.15), (CUT_H, -0.15),
                            (DUR, -0.15)])
     head_nod = _track(t, [(0.0, -0.09), (T_GRAB, -0.3), (T_TEAR1, -0.2), (T_D_LOOK + 0.3, -0.05),
                           (T_D_REACH0 + 0.2, -0.35), (T_GIVE, -0.42), (T_PAT1 + 0.3, -0.4), (T_PAT1 + 0.55, -0.2),
                           (CUT_B + 0.3, -0.2), (CUT_B + 0.6, -0.4), (T_SWAP + 0.3, -0.25), (CUT_C, -0.15), (T_D_BOOK0 + 0.1, -0.45), (T_D_SACK + 0.2, -0.45),
                           (T_D_SACK + 0.5, -0.15), (T_EMBER_GO - 0.3, -0.15), (T_EMBER_GO + 0.1, 0.05),
-                          (T_LIGHT, 0.42), (T_LIGHT + 0.7, 0.38), (T_LIGHT + 1.1, 0.0), (CUT_G, -0.05), (L1.end + 0.4, -0.4), (W_BEING, -0.1),
+                          (T_LIGHT, 0.42), (T_LIGHT + 0.45, 0.38), (CUT_C4 + 0.3, 0.0), (CUT_G, -0.05), (L1.end + 0.4, -0.4), (W_BEING, -0.1),
                           (CUT_H, -0.15), (T_D_LAP, -0.3), (DUR, -0.25)])
     head_nod += 0.1 * _pulse(t, L1.start - 0.18, 0.12, 0.3)                       # the breath before the line
     head_nod -= 0.16 * _pulse(t, T_F_RUB1 - 0.3, 0.18, 0.4)                       # to the hesitating kid: "it's all right"
@@ -1123,9 +1207,9 @@ def dragon_pose(t, light=None):
     blink = _blink_at(t, DRAGON_BLINKS)
     wings = 0.38 + 0.28 * _win(t, T_PAT1 + 0.2, T_SWAP + 0.4, 0.5, 0.7) + 0.15 * laugh
     tail_swing = 0.25 * math.sin(t * 1.9) * _win(t, CUT_B, CUT_C, 0.4, 0.4)
-    talk = tl.talk(SCENE, t, "MAN")
-    if T_D_EAT1 - 0.15 < t < T_D_EAT1 + 0.6:               # chewing his bite (closed lips working)
-        talk = max(talk, 0.18 * abs(math.sin((t - T_D_EAT1) * math.tau * 2.4)))
+    talk = tl.talk(SCENE, t, "MAN")                      # (his mouth moves only on his lines)
+    if T_D_EAT1 - 0.05 < t < T_D_EAT1 + 0.7:               # chewing his bite: lips shut, the head working
+        head_nod += 0.035 * math.sin((t - T_D_EAT1) * math.tau * 2.4) * _win(t, T_D_EAT1 - 0.05, T_D_EAT1 + 0.7, 0.1, 0.25)
     Lt, Rt = _dragon_arms(t, L)
     near, far = (Lt, Rt) if near_phys > 0 else (Rt, Lt)
     pose = ch.DragonPose(facing=-1, turn=dragon_turn(t), sit=1.0, lean=lean, hunch=hunch, head_turn=head_turn,
@@ -1137,7 +1221,8 @@ def dragon_pose(t, light=None):
 
 def _book_in_hand(L, lay):
     """The coloring book in his hand as he lifts it off the seat (lay 1: lying flat, exactly
-    where it lay -- the offset is solved in setup) and lowers it, upright, into the sack."""
+    where it lay -- the offset is solved in setup) and lowers it, upright and turning edge-on,
+    over the sack's mouth (where he lets it drop: _book_in_sack)."""
     def cb(cr, f):
         o = _HOLD.get("book")
         if o is None:
@@ -1145,22 +1230,48 @@ def _book_in_hand(L, lay):
             if w is None:
                 return
             o = _HOLD["book"] = (*cr.device_to_user(*w), f.angle)
+        u = 1.0 - lay
+        k = core.lerp(1.0, BOOK_K, u)
+        # as he lifts it his grip slides to its top edge: it ends up hanging from his fingertips
+        # (so it can drop clean out of them into the sack)
+        c_, s_ = math.cos(f.angle), math.sin(f.angle)
+        w = core.smooth(core.clamp(u / 0.8))
+        hang = 36.0 * k + 2.0                       # its top edge just under his grip (cover: 72 tall)
         cr.save()
-        cr.translate(o[0], o[1])
         cr.rotate(-f.angle)
+        cr.translate(core.lerp(o[0] * c_ - o[1] * s_, 0.0, w), core.lerp(o[0] * s_ + o[1] * c_, hang, w))
+        cr.scale(k, k)
+        _CAP["book_c"] = (*cr.user_to_device(0.0, 0.0), _dev_scale(cr))
         book_lay(cr, lay)
+        cr.scale(core.lerp(1.0, BOOK_TURN, core.smooth(u)), 1.0)
         P.draw_coloring_book(cr, 0.0, 0.0, 1.0, L, 0.0, state="closed")
         cr.restore()
     return cb
 
 
 def _hand_mix(a, b, u):
-    """A hand pose between two HAND_POSES (his fingers closing round the bread)."""
-    pa, pb = B.HAND_POSES[a], B.HAND_POSES[b]
+    """A hand pose between two hand poses (HAND_POSES names or pose dicts)."""
+    pa = B.HAND_POSES[a] if isinstance(a, str) else a
+    pb = B.HAND_POSES[b] if isinstance(b, str) else b
     u = core.clamp(u)
     return {"curl": tuple(core.lerp(x, y, u) for x, y in zip(pa["curl"], pb["curl"])),
             "spread": core.lerp(pa["spread"], pb["spread"], u),
             "thumb": tuple(core.lerp(x, y, u) for x, y in zip(pa["thumb"], pb["thumb"]))}
+
+
+def _hand_track(t, keys, blend=0.14):
+    """A hand pose from timed keys [(t, pose), ...] (sorted): from each key the fingers blend
+    into its pose over `blend` s, starting from wherever they were -- they never snap."""
+    i = -1
+    for j, (tk, _p) in enumerate(keys):
+        if t >= tk:
+            i = j
+    if i <= 0:
+        return keys[0][1]
+    tk, pk = keys[i]
+    if t >= tk + blend:
+        return pk
+    return _hand_mix(_hand_track(tk, keys[:i], blend), pk, core.inout_sine((t - tk) / blend))
 
 
 def _half_face():
@@ -1189,16 +1300,38 @@ def palm_bread(cr, t, drig, L):
     cr.restore()
 
 
+def _d_hand_keys():
+    """His hands' finger poses through the scene (the left's bread hand-off curve is separate):
+    they always blend from pose to pose -- reaching open, closing on what they take, opening
+    to let go -- instead of snapping where a gesture changes."""
+    lt = [(0.0, "relaxed"), (T_D_REACH0, "offer"), (T_GIVE - 0.1, "cup")]
+    if not any(T_SWAP - 0.3 < a < T_SWAP + 0.4 for (a, _d) in TOSS_D):
+        lt.append((T_SWAP, "relaxed"))
+    tosses = sorted(TOSS_D)
+    for i, (a, d) in enumerate(tosses):    # (the bread hand-off curve holds until T_SWAP: pinch from there)
+        lt += [(max(a - 0.2, T_SWAP), "pinch"), (a + 0.45 * d, "open")]
+        if i + 1 == len(tosses) or tosses[i + 1][0] - 0.2 > a + d + 0.25:
+            lt.append((a + d + 0.05, "relaxed"))
+    lt += [(T_D_BOOK0, "open"), (T_D_BOOK1 - 0.1, "grip"), (T_D_SACK, "open"), (T_D_SACK + 0.3, "relaxed"),
+           (T_LAST_D - 0.55, "offer")]
+    rt = [(0.0, "relaxed"), (T_CRADLE + 0.15, "cup"), (T_D_EAT1 - 0.12, "grip"), (T_D_EAT1 + 0.2, "relaxed")]
+    return sorted(lt, key=lambda k: k[0]), rt
+
+
+D_HAND_LT, D_HAND_RT = _d_hand_keys()
+
+
 def _dragon_arms(t, L):
     """His left (Lt: near while he faces left) and right (Rt) arms."""
     half_d = bread_receiver("half_d", "half", _half_face(), LOAF, L, seed=2, cap="d_half")
+    hl, hr = _hand_track(t, D_HAND_LT), _hand_track(t, D_HAND_RT)
     # --- left hand: (A) his palm comes down to her and she lays his half in it; his fingers close
     # round it; (B) he draws it to his chest in both hands, gives it to his right; tosses crumbs;
     # (C) the book into the sack; (H) receives the last piece, (I) cradles it in his lap
     if t < T_D_REACH0:
-        Lt = ch.Arm("rest")
+        Lt = ch.Arm("rest", hand=hl)
     elif t < T_GIVE - 0.1:
-        Lt = ch.Arm("s7_receive", amt=_r(t, T_D_REACH0, T_GIVE - 0.1), prev="rest", hand="offer")
+        Lt = ch.Arm("s7_receive", amt=_r(t, T_D_REACH0, T_GIVE - 0.1), prev="rest", hand=hl)
     elif t < CUT_B:
         # palm up and open (the library's offer shows the palm pads): the half is laid IN it --
         # drawn on top of the open hand by draw() (palm_bread), as bread lying on a palm is;
@@ -1209,26 +1342,25 @@ def _dragon_arms(t, L):
         Lt = ch.Arm("s7_cradle", amt=_r(t, CUT_B, T_SWAP - 0.2), prev="s7_receive",
                     hand=_hand_mix("offer", "cup", _d_close(t)), hold=half_d)
     elif t < CUT_C:
-        Lt = ch.Arm("rest", amt=_r(t, T_SWAP, T_SWAP + 0.35), prev="s7_cradle")
+        Lt = ch.Arm("rest", amt=_r(t, T_SWAP, T_SWAP + 0.35), prev="s7_cradle", hand=hl)
         for (a, d) in TOSS_D:
             if a - 0.05 <= t < a + d + 0.4:
                 ph = core.clamp((t - a) / d)
-                Lt = ch.Arm("toss_crumbs", phase=ph) if t < a + d else \
-                    ch.Arm("rest", amt=_r(t, a + d, a + d + 0.4), prev="toss_crumbs")
+                Lt = ch.Arm("toss_crumbs", phase=ph, hand=hl) if t < a + d else \
+                    ch.Arm("rest", amt=_r(t, a + d, a + d + 0.4), prev="toss_crumbs", hand=hl)
     elif t < T_D_BOOK0:
-        Lt = ch.Arm("rest")
+        Lt = ch.Arm("rest", hand=hl)
     elif t < T_D_BOOK1:
-        Lt = ch.Arm("s7_book", amt=_r(t, T_D_BOOK0, T_D_BOOK1 - 0.02), prev="rest", hand="grip")
+        Lt = ch.Arm("s7_book", amt=_r(t, T_D_BOOK0, T_D_BOOK1 - 0.02), prev="rest", hand=hl)
     elif t < T_D_SACK:
         lay = 1.0 - _r(t, T_D_BOOK1 + 0.04, T_D_SACK - 0.06)
-        Lt = ch.Arm("s7_sack", amt=_r(t, T_D_BOOK1, T_D_SACK - 0.02), prev="s7_book", hand="grip",
+        Lt = ch.Arm("s7_sack", amt=_r(t, T_D_BOOK1, T_D_SACK - 0.02), prev="s7_book", hand=hl,
                     hold=_book_in_hand(L, lay))
     elif t < T_LAST_D - 0.55:
-        # (she scoots in beside him: his near hand settles in his lap, clear of her)
-        Lt = ch.Arm("s7_lapc", amt=_r(t, T_D_SACK + 0.04, T_D_SACK + 0.7), prev="s7_sack",
-                    hand="open" if T_D_SACK <= t < T_D_SACK + 0.25 else None)
+        # he lets the book drop (fingers opening); his near hand settles in his lap, clear of her
+        Lt = ch.Arm("s7_lapc", amt=_r(t, T_D_SACK + 0.06, T_D_SACK + 0.7), prev="s7_sack", hand=hl)
     elif t < T_LAST_D - 0.1:
-        Lt = ch.Arm("s7_receive", amt=_r(t, T_LAST_D - 0.55, T_LAST_D - 0.1), prev="s7_lapc", hand="offer")
+        Lt = ch.Arm("s7_receive", amt=_r(t, T_LAST_D - 0.55, T_LAST_D - 0.1), prev="s7_lapc", hand=hl)
     elif t < T_LAST_D:
         Lt = ch.Arm("hand_out_offer", target=_gx("d_receive", 1.0), hand="offer")
     elif t < T_LAST_D + 0.45:
@@ -1242,18 +1374,17 @@ def _dragon_arms(t, L):
     half_r = bread_receiver("half_r", "half", _half_face(), LOAF, L, seed=2, cap="half_r",
                             scale=1.0 if t < CUT_E else 0.6)
     if t < T_CRADLE + 0.15:
-        Rt = ch.Arm("rest")
+        Rt = ch.Arm("rest", hand=hr)
     elif t < T_SWAP:
-        Rt = ch.Arm("s7_cradle", amt=_r(t, T_CRADLE + 0.15, T_SWAP - 0.12), prev="rest", hand="cup")
+        Rt = ch.Arm("s7_cradle", amt=_r(t, T_CRADLE + 0.15, T_SWAP - 0.12), prev="rest", hand=hr)
     elif t < T_D_EAT0:
-        Rt = ch.Arm("s7_lap", amt=_r(t, T_SWAP + 0.05, T_SWAP + 0.55), prev="s7_cradle", hand="cup", hold=half_r)
+        Rt = ch.Arm("s7_lap", amt=_r(t, T_SWAP + 0.05, T_SWAP + 0.55), prev="s7_cradle", hand=hr, hold=half_r)
     elif t < T_D_EAT1 + 0.6:
         bite = core.clamp((t - T_D_EAT0) / (T_D_EAT1 - T_D_EAT0))
         u = core.inout_sine(bite) if t < T_D_EAT1 else 1.0 - _r(t, T_D_EAT1, T_D_EAT1 + 0.6)
-        Rt = ch.Arm("s7_eat", amt=u, prev="s7_lap", hand="cup" if u < 0.5 else None,
-                    hold=half_r if t < T_D_EAT1 - 0.1 else None)
+        Rt = ch.Arm("s7_eat", amt=u, prev="s7_lap", hand=hr, hold=half_r if t < T_D_EAT1 - 0.1 else None)
     else:
-        Rt = ch.Arm("s7_lapc", amt=_r(t, T_D_EAT1 + 0.6, T_D_EAT1 + 1.2), prev="s7_lap")
+        Rt = ch.Arm("s7_lapc", amt=_r(t, T_D_EAT1 + 0.6, T_D_EAT1 + 1.2), prev="s7_lap", hand=hr)
     return Lt, Rt
 # ----------------------------------------------------------------------------------------
 # the faun (teen): walks in at the left, slows, watches, hesitates, takes the bread, sits; and
@@ -1306,7 +1437,7 @@ def faun_yaw(t):
 
 
 def faun_pose(t, light=None):
-    if t < CUT_C - 0.05:
+    if t < CUT_C:                     # (he walks in on the cut to C: never a frame early inside B)
         return None
     x, y, dist = faun_anchor(t)
     L = light or cast_light(t, x, y - 230.0, "faun")
@@ -1319,18 +1450,19 @@ def faun_pose(t, light=None):
     sit = _r(t, T_F_SIT0, T_F_SIT1)
     look = _track(t, [(0.0, (0.3, 0.9)), (T_F_NOTICE - 0.05, (0.3, 0.9)), (T_F_NOTICE + 0.08, (0.85, 0.15)),
                       (T_F_STOP, (0.8, 0.25)), (B_OFFER.t + 0.05, (0.8, 0.3)), (B_OFFER.t + 0.2, (0.75, 0.0)),
-                      (T_F_RUB0, (0.4, 0.85)), (T_F_RUB0 + 0.35, (-0.8, 0.1)), (T_F_RUB0 + 0.75, (0.6, 0.5)),
+                      (T_F_RUB0, (0.4, 0.85)), (T_F_RUB0 + 0.35, (-0.8, 0.1)), (T_F_STEP - 0.1, (0.6, 0.5)),
                       (T_F_STEP, (0.8, 0.45)), (T_F_TAKE + 0.2, (0.7, 0.75)), (T_F_SIT1, (0.75, 0.3)),
-                      (T_LIGHT + 0.08, (0.75, 0.3)), (T_LIGHT + 0.25, (0.9, -0.85)), (T_LIGHT + 0.85, (0.85, -0.8)),
-                      (CUT_C4, (0.7, 0.5)), (T_F_BITE + 0.3, (0.6, 0.5)), (T_GR_STOP - 0.4, (-0.9, 0.25)), (T_F_GIVE + 0.6, (-0.8, 0.3)),
-                      (B_WORKER.t + 0.6, (0.95, 0.05)), (CUT_G, (0.95, 0.0)), (CUT_H, (0.85, 0.3)), (DUR, (0.9, 0.1))])
+                      (T_LIGHT - 0.3, (0.75, 0.3)), (T_LIGHT - 0.1, (0.9, -0.85)), (T_LIGHT + 0.3, (0.85, -0.8)),
+                      (CUT_C4, (0.7, 0.5)), (T_F_BITE + 0.1, (0.6, 0.5)), (T_F_BITE + 0.35, (-0.9, 0.25)),
+                      (T_F_GIVE + 0.6, (-0.8, 0.3)), (T_LOOK_DW, (-0.8, 0.3)), (T_LOOK_DW + 0.15, (0.95, 0.05), "out_back"),
+                      (CUT_G, (0.95, 0.0)), (CUT_H, (0.85, 0.3)), (DUR, (0.9, 0.1))])
     head_nod = _track(t, [(0.0, -0.45), (T_F_NOTICE + 0.1, -0.45), (T_F_NOTICE + 0.35, 0.0), (B_OFFER.t, 0.0),
                           (T_F_RUB0, -0.35), (T_F_RUB0 + 0.6, -0.15), (T_F_STEP, 0.05), (T_F_TAKE, -0.2),
-                          (T_F_SIT1, 0.0), (T_LIGHT + 0.1, 0.0), (T_LIGHT + 0.4, 0.4), (T_LIGHT + 0.85, 0.35),
-                          (CUT_C4, 0.0), (T_F_GIVE - 0.2, -0.15), (T_F_GIVE + 0.4, 0.0), (DUR, 0.0)])
+                          (T_F_SIT1, 0.0), (T_LIGHT - 0.3, 0.0), (T_LIGHT, 0.4), (T_LIGHT + 0.4, 0.35),
+                          (CUT_C4 + 0.1, 0.0), (T_F_GIVE - 0.2, -0.15), (T_F_GIVE + 0.4, 0.0), (DUR, 0.0)])
     head_turn = _track(t, [(0.0, 0.0), (T_F_RUB0 + 0.25, 0.0), (T_F_RUB0 + 0.45, -0.45), (T_F_RUB0 + 0.85, -0.4),
-                           (T_F_RUB0 + 1.1, 0.1), (T_F_SIT1, 0.15), (T_GR_STOP - 0.5, 0.15), (T_GR_STOP - 0.2, -0.35),
-                           (T_F_GIVE + 0.6, -0.35), (B_WORKER.t + 0.4, 0.3), (DUR, 0.25)])
+                           (T_F_RUB0 + 1.1, 0.1), (T_F_SIT1, 0.15), (T_F_BITE + 0.25, 0.15), (T_F_BITE + 0.5, -0.35),
+                           (T_F_GIVE + 0.6, -0.35), (T_LOOK_DW, -0.35), (T_LOOK_DW + 0.18, 0.3), (DUR, 0.25)])
     head_nod += 0.25 * _pulse(t, T_F_RUB1 + 0.05, 0.12, 0.3)                       # a small brave nod
     mood, mood2, mix, smile = "sad", None, 0.0, None
     if t > T_F_NOTICE:
@@ -1382,11 +1514,13 @@ def _faun_arms(t, L):
     if t < FAUN_BITES[0] - 0.45:
         return ch.Arm("s7_take_f", amt=1.0 - _r(t, T_F_TAKE + 0.04, T_F_TAKE + 0.42), prev="s7_hold_f", hold=piece), far
     if t < T_F_GIVE0:
-        ph = 0.0
+        ph = 0.25                                  # = s7_hold_f: the piece held before his chest
         for b in FAUN_BITES:
             if b - 0.45 <= t < b + 0.55:
-                ph = core.inout_sine(core.clamp((t - (b - 0.45)) / 0.45)) if t < b else 1.0 - core.inout_sine(core.clamp((t - b - 0.1) / 0.45))
-        return ch.Arm("eat", phase=max(0.001, ph), hold=piece), far
+                u = core.inout_sine(core.clamp((t - (b - 0.45)) / 0.45)) if t < b else \
+                    1.0 - core.inout_sine(core.clamp((t - b - 0.1) / 0.45))
+                ph = 0.25 + 0.75 * u
+        return ch.Arm("eat", phase=ph, hold=piece), far
     if t < T_F_GIVE:
         return ch.Arm("s7_give_f", amt=_r(t, T_F_GIVE0, T_F_GIVE - 0.04), prev="eat", hold=piece), far
     return ch.Arm("rest", amt=_r(t, T_F_GIVE + 0.05, T_F_GIVE + 0.6), prev="s7_give_f"), far
@@ -1418,9 +1552,9 @@ def griffin_pose(t, light=None):
     phase = ch.griffin_walk_phase(x - GR_FROM_X, SC, 1, turn)
     yawn = _win(t, T_GR_YAWN0, T_GR_YAWN1, 0.3, 0.35)
     look = _track(t, [(T_GR_IN, (0.5, 0.3)), (T_GR_STOP - 0.1, (0.6, 0.2)), (T_F_GIVE0, (0.5, 0.5)),
-                      (T_F_GIVE - 0.3, (0.3, 0.6)), (T_GR_GULP + 0.4, (0.5, 0.1)), (B_WORKER.t + 0.6, (0.9, 0.0)),
-                      (CUT_G, (0.6, 0.0)), (DUR, (0.6, 0.1))])
-    head_nod = _track(t, [(T_GR_IN, -0.1), (T_GR_STOP, -0.05), (T_F_GIVE - 0.35, -0.3), (T_F_GIVE, -0.25),
+                      (T_F_GIVE - 0.3, (0.3, 0.6)), (T_GR_GULP + 0.4, (0.5, 0.1)), (T_LOOK_DW, (0.5, 0.1)),
+                      (T_LOOK_DW + 0.18, (0.9, 0.0), "out_back"), (CUT_G, (0.6, 0.0)), (DUR, (0.6, 0.1))])
+    head_nod = _track(t, [(T_GR_IN, -0.1), (T_GR_STOP - 0.2, -0.05), (T_F_GIVE - 0.35, -0.3), (T_F_GIVE, -0.25),
                           (T_GR_GULP, 0.55), (T_GR_GULP + 0.5, 0.0), (DUR, -0.05)])
     beak = 0.32 * _win(t, T_F_GIVE - 0.3, T_F_GIVE + 0.06, 0.15, 0.06) + 0.4 * _win(t, T_GR_GULP - 0.05, T_GR_GULP + 0.35, 0.1, 0.2)
     hold = None
@@ -1482,12 +1616,81 @@ def _bag_contents_no_book(q):
 _CAN_EMPTY_BAG = hasattr(P, "_bag_contents") and hasattr(P, "_rrect_paths")
 
 
+SACK_BODY = [(-27.0, 8.0), (-14.0, 12.5), (0.0, 10.0), (14.0, 13.0), (27.0, 7.5), (30.0, 30.0), (33.0, 62.0),
+             (31.5, 82.0), (22.0, 86.5), (0.0, 87.5), (-22.0, 86.5), (-31.5, 82.0), (-33.0, 64.0), (-30.5, 30.0)]
+
+
+def _sack_angle(t):
+    return 0.06 * B.wobble(t, T_BOOK_IN, 3.2, 4.0) / 1.35
+
+
+def _book_drop_pose(t):
+    """The book once he lets go (t >= T_D_SACK): (world x, y, tilt, scale, squash). It drops
+    from his fingers (where setup measured it: _STATE["book_drop"]) into the sack, landing at
+    T_BOOK_IN with a little settle, and stands there turned -- as props' sack art shows it."""
+    x0, y0, s0 = _STATE["book_drop"]
+    ang = _sack_angle(t)
+    bx, by, tilt, sq = BOOK_REST
+    if t > T_BOOK_IN:
+        dt = t - T_BOOK_IN
+        by += 1.8 * math.sin(dt * 26.0) * math.exp(-dt * 11.0)      # it lands on the bottles: a small give
+    c, s = math.cos(ang), math.sin(ang)
+    rx = SACK[0] + SC * (bx * c - by * s)
+    ry = SACK[1] + SC * (bx * s + by * c)
+    u = core.clamp((t - T_D_SACK) / (T_BOOK_IN - T_D_SACK))
+    e = u * u                                                         # falling
+    return (core.lerp(x0, rx, e), core.lerp(y0, ry, e), core.lerp(0.0, tilt, core.smooth(u)) + ang * u,
+            core.lerp(s0, SC * BOOK_K, u), core.lerp(BOOK_TURN, sq, core.smooth(u)))
+
+
+def _book_in_sack(cr, t, light, ang):
+    """The book in the sack (from the moment he lets go), drawn over the sack and clipped to
+    what is above its front wall -- the rest of it is inside. Lit as in his hand (his light)
+    at first, settling into the sack's own light once it has landed (a cross-fade, no pop)."""
+    if t < T_D_SACK or "book_drop" not in _STATE:
+        return
+    x, y, tilt, k, sq = _book_drop_pose(t)
+    m = cr.get_matrix()
+    cr.save()
+    cr.translate(*SACK)
+    cr.rotate(ang)
+    cr.scale(SC, SC)
+    lw = B.line_for(B.LINE, B.device_scale(cr))
+    cr.rectangle(-300.0, -400.0, 600.0, 418.0)          # nothing of it below the mouth's lip ...
+    cr.clip()
+    _bs, bo = B.smooth_paths(cr, SACK_BODY, lw, 0.62)    # ... and nothing over the front wall (+ its line)
+    cr.new_path()
+    cr.rectangle(-300.0, -400.0, 600.0, 800.0)
+    bo.add(cr)
+    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    cr.clip()
+    cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+    cr.set_matrix(m)
+    cr.translate(x, y)
+    cr.rotate(tilt)
+    cr.scale(k * sq, k)
+    w = _r(t, T_BOOK_IN, T_BOOK_IN + 0.5)
+    Ld = _STATE.get("d_light") or light
+    if w <= 0.0:
+        P.draw_coloring_book(cr, 0.0, 0.0, 1.0, Ld, 0.0, state="closed")
+    elif w >= 1.0:
+        P.draw_coloring_book(cr, 0.0, 0.0, 1.0, light, 0.0, state="closed")
+    else:
+        P.draw_coloring_book(cr, 0.0, 0.0, 1.0, Ld, 0.0, state="closed")
+        cr.push_group()
+        P.draw_coloring_book(cr, 0.0, 0.0, 1.0, light, 0.0, state="closed")
+        cr.pop_group_to_source()
+        cr.paint_with_alpha(w)
+    cr.restore()
+
+
 def _draw_sack(cr, t, light):
-    """The tied-open apothecary sack at his feet; the book goes back into it (T_D_SACK)."""
+    """The tied-open apothecary sack at his feet; the book drops back into it (T_D_SACK) --
+    props' own book corner never shows (ours is drawn where it really is: _book_in_sack)."""
     light = light.with_(exposure=light.exposure * 0.8)
     x, y = SACK
-    ang = 0.06 * B.wobble(t, T_D_SACK + 0.02, 3.2, 4.0) / 1.35
-    if t < T_D_SACK and _CAN_EMPTY_BAG:
+    ang = _sack_angle(t)
+    if _CAN_EMPTY_BAG:
         orig = P._bag_contents
         P._bag_contents = _bag_contents_no_book
         try:
@@ -1496,6 +1699,7 @@ def _draw_sack(cr, t, light):
             P._bag_contents = orig
     else:
         P.draw_apothecary_bag(cr, x, y, SC, light, t, angle=ang, state="open")
+    _book_in_sack(cr, t, light, ang)
 
 
 # ----------------------------------------------------------------------------------------
@@ -1581,7 +1785,7 @@ def dwarf_state(t, light=None):
     ax0, ay0 = _STATE.get("dw_anchor0", (1545.0, 944.0))
     if t < T_DW_STOP + 0.05:
         # walking in from the right along the lawn in front of the empty bench, slowing to its end
-        dec = 0.7
+        dec = 0.55
         dist_to_go = DW_SPEED * (T_DW_STOP - t) - 0.5 * DW_SPEED * dec if t < T_DW_STOP - dec else \
             0.5 * DW_SPEED * (T_DW_STOP - t) ** 2 / dec
         dist_to_go = max(0.0, dist_to_go)
@@ -1617,7 +1821,7 @@ def dwarf_state(t, light=None):
         ax, ay = _drag_anchor(t)
         dist = BENCH2_START.x - bench2_spot(t).x
         pose = _drag_pose(t, drag=0.72 + 0.28 * e, walk=1.0, phase=-ch.dwarf_walk_phase(dist, SC, DW_YAW_DRAG),
-                          mood="angry", mood2="tired", mood_mix=0.3, talk=0.3 * e, look=(0.3, 0.35),
+                          mood="angry", mood2="tired", mood_mix=0.3, look=(0.3, 0.35),
                           head_nod=-0.18 * e + 0.12 * _pulse(t, T_DRAG0 - 0.1, 0.1, 0.3), lean=-0.6 * e,
                           blink=0.65 * e, seed=29)
         return ax, ay, pose, False
@@ -1638,7 +1842,7 @@ def dwarf_state(t, light=None):
                             look=_track(t, [(T_DW_LET, (0.3, 0.35)), (T_DW_LET + 0.35, (-0.9, -0.1)),
                                             (CUT_G, (-0.9, -0.1))]),
                             head_nod=-0.18 * e0 * (1.0 - u) + 0.12 * _pulse(t, T_DW_LET + 0.5, 0.15, 0.35),
-                            talk=0.3 * e0 * (1.0 - u), mood="angry" if mood_u < 0.5 else "happy", mood2="tired",
+                            mood="angry" if mood_u < 0.5 else "happy", mood2="tired",
                             mood_mix=0.3 + 0.4 * abs(mood_u - 0.5) * 0.0 if mood_u < 0.5 else 0.35,
                             blink=max(0.65 * e0 * (1.0 - u), _blink_at(t, DW_BLINKS)), seed=29)
         return axl, ayl, pose, False
@@ -1748,11 +1952,15 @@ class Flock:
                 b["segs"].append((tt, tt + 0.9, "flyto", x, y, tx, ty, ff))
                 b.update(x=tx, y=ty, f=ff, xr=(tx - 10.0, tx + 10.0), yr=(ty - 2.0, ty + 2.0))
                 return tt + 0.9
+        # never start a task that would overrun this bird's next forced event (a hop up onto the
+        # seat must happen on its beat, whatever crumbs are about)
+        deadline = b["forced"][0][0] if b["forced"] else 1e9
         best = None
         for c in self.crumbs:
             if c["by"] is None and c["t"] <= tt + 0.5:
                 d = abs(c["x"] - x) + 2.0 * abs(c["y"] - y)
-                if d < 420.0 and (best is None or d < best[0]):
+                walk = max(0.25, (abs(c["x"] - x) + abs(c["y"] - y)) / self.speed)
+                if d < 420.0 and tt + walk + 1.0 < deadline and (best is None or d < best[0]):
                     best = (d, c)
         if best is not None:
             c = best[1]
@@ -1763,6 +1971,8 @@ class Flock:
             dur = max(0.25, dist / self.speed)
             b["segs"].append((tt, tt + dur, "walk", x, y, tx, c["y"], f))
             npk = 2 + r.randint(0, 2)
+            while npk > 1 and tt + dur + npk * 0.42 > deadline:
+                npk -= 1
             t1 = tt + dur + npk * 0.42
             b["segs"].append((tt + dur, t1, "peck", tx, c["y"], tx, c["y"], f))
             c["eaten"] = t1 - 0.1
@@ -1770,8 +1980,11 @@ class Flock:
             return t1
         xr, yr = b["xr"], b["yr"]
         k = r.random()
+        if deadline - tt < 0.9:                     # its forced event is about to come: wait for it
+            b["segs"].append((tt, deadline, "idle", x, y, x, y, f))
+            return deadline
         if k < 0.38:
-            dur = r.uniform(0.9, 2.4)
+            dur = min(r.uniform(0.9, 2.4), deadline - tt)
             if r.random() < 0.25:
                 f = -f
             b["segs"].append((tt, tt + dur, "idle", x, y, x, y, f))
@@ -1785,6 +1998,8 @@ class Flock:
             x, y = tx, ty
         elif k < 0.93:
             dur = r.choice((1, 2, 3)) * 0.42
+            while dur > 0.42 and tt + dur > deadline:
+                dur -= 0.42
             b["segs"].append((tt, tt + dur, "peck", x, y, x, y, f))
         else:
             tx = core.clamp(x + f * 8.0, *xr)
@@ -2321,6 +2536,8 @@ def setup():
     _STATE["dw_anchor0"] = _drag_anchor(T_DRAG0)
     _STATE["dw_seat"] = g.bench(2).place(U_DWARF)
     # ---- the loaf: in her hand from the satchel exactly where tear_bread holds it at phase 0
+    rig = _scratch_draw("gnome", T_GRAB - 1e-3)
+    _STATE["loaf_sat"] = (rig.satchel[0], rig.satchel[1] - 9.5 * SC)    # the satchel's peeking loaf
     rig = _scratch_draw("gnome", T_TEAR0 + 1e-4)
     _MEAS["loaf"] = (rig.bread[0], rig.bread[1] + 4.0 * SC, SC)
     _scratch_draw("gnome", T_TEAR0 - 1e-3)                  # solves _HOLD["loaf"]
@@ -2399,6 +2616,11 @@ def setup():
     _STATE["P_d_book"] = (bx + 3.0 + 24.0 * SC, by + 2.0)
     _STATE["P_d_sack"] = (SACK[0] - 2.0, SACK[1] + 10.0)
     _scratch_draw("dragon", T_D_BOOK1 + 1e-4)               # solves _HOLD["book"]
+    # ... and he brings it over the sack's mouth, where he lets it drop (_book_in_sack)
+    drop = (SACK[0] + SC * BOOK_DROP[0], SACK[1] + SC * BOOK_DROP[1])
+    _solve_target("P_d_sack", "dragon", T_D_SACK - 1e-3, _cap("book_c"), drop)
+    _scratch_draw("dragon", T_D_SACK - 1e-3)
+    _STATE["book_drop"] = _CAP["book_c"]
     # ---- H: the last of the bread. A bit for the pigeons beside her, the last piece in his palm.
     sx, sy = _seat_point(0.5, 20.0)
     _STATE["P_g_sprinkle"] = (sx + 4.0, sy - 22.0)
@@ -2418,7 +2640,7 @@ def setup():
     ty = sum(p[1] for p in tips) / len(tips)
     _STATE["P_g_pat2"] = (core.lerp(hn.x, tx, 0.45) + 2.0, core.lerp(hn.y, ty, 0.45) - 7.0)   # on his knuckles
     # the sprinkle: where her fingers crumble it
-    _scratch_draw("gnome", 0.5 * (T_SPRINKLE0 + T_SPRINKLE1))
+    _scratch_draw("gnome", T_SPRINKLE0 + 0.45)             # (her hand has arrived over the seat)
     v = _CAP.get("g_sprinkle")
     _STATE["sprinkle_pt"] = (v[0], v[1]) if v else (sx, sy - 22.0)
     st["sprinkle_pt"] = _STATE["sprinkle_pt"]
@@ -2663,12 +2885,14 @@ def draw(cr, t, st):
 
     Lg = cast_light(t, gx, gy - 120.0, "gnome")
     Ld = cast_light(t, dx, dy - 260.0, "dragon")
+    _STATE["d_light"] = Ld
     Lb1 = set_light(t, BENCH.x + 60.0, BENCH.y - 110.0)
     Lb2 = set_light(t, sp2.x, sp2.y - 90.0)
     drig = None
     grig = None
     rigs = {}
     with cam.view(cr, 1.0):
+        _STATE["cam_m"] = cr.get_matrix()            # (world -> device: the loaf's grab blend)
         _furrows(cr, t)
         # back: the lantern post, bench 1's back, the umpire on the crest board
         post = g.draw_lantern(cr, t, set_light(t, G.LANTERN[0], G.LANTERN[1] - 300.0), lit=lit)
@@ -2686,7 +2910,7 @@ def draw(cr, t, st):
                         p = p.with_(look=sl)
                     if B_FULL.t + 0.25 < t < B_FULL.t + 0.6:
                         p = p.with_(blink=_blink_at(t, [B_FULL.t + 0.3 + 0.04 * (i % 3)]))
-                    if T_SPRINKLE0 + 0.35 < t < T_SPRINKLE1 + 1.6:
+                    if T_SPRINKLE0 + 0.55 < t < T_SPRINKLE1 + 1.6:
                         p = p.with_(peck=((t * 1.7 + i * 0.37) % 1.0))
                     y += 0.0
                 if vis(x - 30, y - 40, x + 30, y + 5):
@@ -2721,7 +2945,7 @@ def draw(cr, t, st):
         items.sort(key=lambda it: it[0])
         for _y, kind, data in items:
             if kind == "sack":
-                if vis(SACK[0] - 40, SACK[1] - 30, SACK[0] + 40, SACK[1] + 75):
+                if vis(SACK[0] - 40, SACK[1] - 70, SACK[0] + 40, SACK[1] + 75):
                     _draw_sack(cr, t, set_light(t, SACK[0], SACK[1]))
             elif kind == "faun":
                 x, y, p = data
@@ -2768,10 +2992,10 @@ def draw(cr, t, st):
         if drig is not None and T_CHUCKLE - 0.02 < t < T_CHUCKLE + 1.6:
             ch.dragon_embers(cr, t, T_CHUCKLE, drig, n=12, life=1.3, intensity=0.55)
         _draw_ember(cr, t)
-        if t > T_SPRINKLE0 + 0.1:
+        if t > T_SPRINKLE0 + 0.38:
             spx, spy = st["sprinkle_pt"]
             kw = _sprinkle_kw()
-            fx.crumbs(cr, t, T_SPRINKLE0 + 0.15, spx, spy + 2.0, color=CRUMB_C, crust=CRUST_C, **kw)
+            fx.crumbs(cr, t, T_SPRINKLE0 + 0.4, spx, spy + 2.0, color=CRUMB_C, crust=CRUST_C, **kw)
         _gravel(cr, t)
         _moths(cr, t, lit)
         if shot in ("A1", "A2", "B"):
@@ -2783,6 +3007,16 @@ def draw(cr, t, st):
             fx.fireflies(cr, t, (1240.0, 690.0, 760.0, 120.0), n=5, size=1.6, seed=9, alpha=0.6 * k, halo=6.0)
 
     _pool_grade(cr, cam, t, lit)
+    if shot == "G2":
+        # "all that stuff they gave me": the sack of remedies sits in his shadow at the edge of
+        # the lamplight -- the stones, cold and dim below; the warmth stays up with them
+        cr.save()
+        cr.identity_matrix()
+        cr.set_source(core.linear(0.0, 0.0, 0.0, core.H, [(0.0, core.alpha("#0b1026", 0.0)),
+                                                          (0.45, core.alpha("#0b1026", 0.28)),
+                                                          (1.0, core.alpha("#0b1026", 0.55))]))
+        cr.paint()
+        cr.restore()
     g.paint_fg(cr, cam, t, td, alpha=1.0 if shot in ("C", "C4", "D", "F", "I") else 0.0)
     _warm_grade(cr, t)
 
@@ -2810,8 +3044,9 @@ def draw(cr, t, st):
             # its warm pool on the ground -- broad and even over the bench (as S8's), not a hot
             # spot on the empty walk -- and the faint cone of light falling over them
             R = lantern_reach(t)
-            _pool(lc, pool_center(t), POOL_C[1], R * 1.05, 0.27, "#ff9e48", 0.85 * lit * fl)
-            _pool(lc, lx - 40.0, POOL_C[1] - 4.0, 260.0, 0.3, "#ffb860", 0.3 * lit * fl)     # the hot spot under the lamp
+            pk = 0.45 if shot == "G2" else 1.0       # (the sack insert sits in his shadow)
+            _pool(lc, pool_center(t), POOL_C[1], R * 1.05, 0.27, "#ff9e48", 0.62 * lit * fl * pk)
+            _pool(lc, lx - 40.0, POOL_C[1] - 4.0, 260.0, 0.3, "#ffb860", 0.24 * lit * fl * pk)  # the hot spot under the lamp
             fx.glow(lc, BENCH.x + 120.0, BENCH.y - 170.0, R * 0.8, "#ffa850", 0.07 * lit * fl * (0.4 + 0.6 * blue(t)))
             fx.light_shaft(lc, lx, ly + 22.0, lx - 120.0, G.GROUND_Y + 10.0, 60.0, R * 0.9, "#ffb468",
                            0.05 * lit * fl, soft=6, fade_start=0.15, fade_end=0.75)
@@ -2897,19 +3132,20 @@ def _sfx_cues():
              (T_G_TEAR2_0 + 0.12, "bread_tear", {"gain": 0.35, "pan": _pan_of(xg, T_G_TEAR2_0), "dur": 0.4}),
              (T_F_RUB0 + 0.05, "cloth_rustle", {"gain": 0.15, "pan": _pan_of(590.0, T_F_RUB0), "size": 0.25}),
              (T_D_BOOK1, "book_close", {"gain": 0.18, "pan": _pan_of(890.0, T_D_BOOK1)}),
-             (T_D_SACK - 0.05, "paper_slide", {"gain": 0.3, "pan": _pan_of(SACK[0], T_D_SACK)}),
-             (T_D_SACK + 0.03, "item_set_down", {"gain": 0.14, "pan": _pan_of(SACK[0], T_D_SACK), "material": "book", "vel": 0.3}),
+             (T_D_SACK + 0.04, "paper_slide", {"gain": 0.3, "pan": _pan_of(SACK[0], T_D_SACK)}),
+             (T_BOOK_IN, "item_set_down", {"gain": 0.16, "pan": _pan_of(SACK[0], T_BOOK_IN), "material": "book", "vel": 0.4}),
              (G_HOPS[0][0] + G_HOPS[0][1] - 0.02, "bench_creak", {"gain": 0.2, "pan": _pan_of(820.0, G_HOPS[0][0]), "weight": 0.15, "size": 0.3}),
              (G_HOPS[1][0] + G_HOPS[1][1] - 0.02, "bench_creak", {"gain": 0.18, "pan": _pan_of(880.0, G_HOPS[1][0]), "weight": 0.15, "size": 0.3}),
              (T_UMP_OFF + 0.02, "pigeon_flap", {"gain": 0.3, "pan": _pan_of(880.0, T_UMP_OFF), "count": 2}),
              (T_UMP_UP - 0.1, "pigeon_flap", {"gain": 0.2, "pan": _pan_of(820.0, T_UMP_UP), "count": 1, "dir": "land"}),
              (T_F_SIT1 - 0.12, "bench_creak", {"gain": 0.4, "pan": _pan_of(730.0, T_F_SIT1), "weight": 0.35, "size": 0.4}),
              (T_LIGHT - 0.02, "candle_flicker", {"gain": 0.55, "pan": _pan_of(_LAMP[0], T_LIGHT)}),
-             (T_LIGHT + 0.02, "rune_glow", {"gain": 0.12, "pan": _pan_of(_LAMP[0], T_LIGHT)}),
+             (T_LIGHT + 0.02, "ember_crackle", {"gain": 0.22, "pan": _pan_of(_LAMP[0], T_LIGHT), "size": 0.25}),
+             (T_EMBER_GO + 0.05, "ember_crackle", {"gain": 0.08, "pan": _pan_of(1000.0, T_EMBER_GO), "size": 0.15}),
              (T_F_BITE + 0.02, "crumbs", {"gain": 0.18, "pan": _pan_of(730.0, T_F_BITE), "count": 4}),
              (T_GR_YAWN0 + 0.25, "sigh", {"gain": 0.3, "pan": _pan_of(griffin_x(T_GR_YAWN0), T_GR_YAWN0), "who": "griffin"})]
     gstride = ch.REGISTRY["griffin"].STRIDE * ch.REGISTRY["griffin"]._B.fit * SC * 0.5
-    for ts in _steps(T_GR_IN, T_GR_STOP, lambda tt: griffin_x(tt) - GR_FROM_X, gstride):
+    for ts in _steps(CUT_C4, T_GR_STOP, lambda tt: griffin_x(tt) - GR_FROM_X, gstride):
         cues.append((ts, "footstep", {"gain": 0.2, "pan": _pan_of(griffin_x(ts), ts), "surface": "grass", "weight": 0.5}))
     cues += [(T_GR_SIT0 + 0.15, "cloth_rustle", {"gain": 0.25, "pan": _pan_of(GR_SIT[0], T_GR_SIT0), "size": 0.4}),
              (T_GR_SIT1 - 0.1, "wing_flutter", {"gain": 0.2, "pan": _pan_of(GR_SIT[0], T_GR_SIT1), "size": "bird", "count": 2}),
@@ -2936,9 +3172,9 @@ def _sfx_cues():
              (T_DRAG0 + 0.55, "pigeon_flap", {"gain": 0.3, "pan": _pan_of(1470.0, T_DRAG0 + 0.55), "count": 1}),
              (T_D_EAT1 - 0.1, "crumbs", {"gain": 0.2, "pan": _pan_of(xd, T_D_EAT1), "count": 5}),
              (T_DW_LET + 0.1, "sigh", {"gain": 0.3, "pan": _pan_of(1400.0, T_DW_LET), "who": "dwarf"}),
-             (T_DW_SIT1 - 0.12, "bench_creak", {"gain": 0.3, "pan": 0.8, "weight": 0.7, "size": 0.6}),
+             (T_DW_SIT1 - 0.12, "bench_creak", {"gain": 0.12, "pan": 0.8, "weight": 0.7, "size": 0.6}),
              (T_G_TEAR3_0 + 0.3, "bread_tear", {"gain": 0.25, "pan": -0.1, "dur": 0.35}),
-             (T_SPRINKLE0 + 0.2, "crumbs", {"gain": 0.18, "pan": -0.25, "count": 9, "dur": 0.5}),
+             (T_SPRINKLE0 + 0.42, "crumbs", {"gain": 0.18, "pan": -0.25, "count": 9, "dur": 0.45}),
              (T_SPRINKLE0 + 0.8, "pigeon_coo", {"gain": 0.28, "pan": -0.35}),
              (T_LAST_D + 0.02, "hug_rustle", {"gain": 0.12, "pan": 0.25}),
              (CUT_I + 0.4, "pigeon_coo", {"gain": 0.3, "pan": -0.3})]

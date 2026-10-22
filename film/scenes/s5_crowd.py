@@ -25,33 +25,44 @@ moving cameras paint it through the residual transform, the foreground with extr
 SHOTS (cuts derive from the timeline; times below are for the current timeline.json)
  1  0.00-3.88  MASTER WIDE across the street, slow dolly-in. Framing device: the dark arch of
                the arcade (pier at the left, the arch ring over the top), out of focus. The
-               dragon left, near profile, hands in his coat pockets, wings drooped, a stop
-               darker than the square with a cold cyan rim. Beyond him the ring of 14 creatures
+               dragon left, near profile, his right hand in his coat pocket, the apothecary's
+               sack (S2-S4, on into S6) hanging from his left, wings drooped, a stop darker
+               than the square with a cold cyan rim. Beyond him the ring of 14 creatures
                (goblins, kobolds, elves, dwarves, two harpies) holds crystals up, cheering; the
                pixie hovers over them, filming. Eye trace: the cyan ring (brightest) -> the
                brawl -> back along the dragon's gaze. Two shoves (anticipation, thrust, impact,
-               stagger); the dragon winces at each impact.
+               stagger): fists bunched, then flat palms ON the other's chest (never past it),
+               a yell on each thrust, a wince on each hit; the dragon winces at each impact.
  2  3.88-5.33  INSERT: ONE CRYSTAL. A kobold's claw holds a scrying crystal up in the
                foreground; it GLOWS (a halo of cold light, rune motes rising off it, a glint
-               round the brass collar) -- the brightest thing in the film so far; inside, the
-               fight, small and sharp, under the pulsing red recording rune; the real brawl
-               behind is soft bokeh: they watch the image, not the people. Cut on the impact.
- 3  5.33-13.00 IN THE CIRCLE, long lens: only the fighters' plane is sharp (far arc soft,
+               round the brass collar) -- the brightest thing in the film so far (the nearer
+               crystal at the frame edge is a dim blur); inside, the fight, small and sharp,
+               under the pulsing red recording rune; the real brawl behind is soft bokeh: they
+               watch the image, not the people. Cut on the impact.
+ 3  5.33-9.92  IN THE CIRCLE, long lens: only the fighters' plane is sharp (far arc soft,
                crystals turned to bokeh; near arc soft, dark, backlit). Handheld while they
                fight (a jolt on every impact). The shoving ESCALATES -- the minotaur's 4th is
                the hardest, the orc reels -- and the orc goes for real: he cocks a FIST back by
-               his ear, the minotaur flinches, eyes squeezed shut, face turned away ...
-               s5_stop: the fist freezes at the top of the wind-up (a jolt, held, trembling);
-               the minotaur's eyes pop open (no blow?); the orc's brows jump -- what am I
-               doing? -- the fist uncurls, the arms FALL, the head sinks; eyes down ... eyes up
-               to him; two quick steps in. The minotaur's hands go up and out of the way
-               ("whoa") -- s5_hug: the orc wraps his arms round him, his cheek on the
-               minotaur's chest, his face turned to us, eyes sinking shut, a small smile. The
-               minotaur freezes with both hands up ("I didn't do anything!"). The camera locks
-               off and pushes in slowly from the stop. s5_silence: the cheering mouths close,
-               arms come down. s5_lower: the crystals come down one by one, the cyan pool on
-               the cobbles drains, uneasy glances. His eyes dart to the crowd, come down to the
-               orc ... his far arm comes over the orc's shoulders, the near one round his back
+               his ear, the minotaur flinches, hands over his own face ... s5_stop: the fist
+               freezes at the top of the wind-up (a jolt, held, trembling); the minotaur's eyes
+               pop open (no blow?); the orc's brows jump -- what am I doing? -- the fist
+               uncurls, the arms FALL (heavy, caught at the bottom), the head sinks; eyes down
+               ... eyes up to him; two quick steps in. The minotaur's guard comes down to open
+               hands ("what?"), then up and out of the orc's way ("whoa") -- s5_hug: the orc
+               wraps his arms round him, his cheek on the minotaur's chest, his face turned to
+               us, eyes sinking shut, a small smile. The minotaur freezes with both hands up
+               ("I didn't do anything!"). The camera locks off and pushes in from the stop.
+ 7  9.92-10.42 THE WATCHERS (reaction cutaway, the far side of the square soft behind them):
+               three faces lit by their own raised crystals -- the hooded elf, the laughing
+               goblin, a kobold -- mid-gasp; s5_silence: the mouths SNAP shut, the eyes stay
+               wide, the cheering fists stop in the air and sink. Nobody blinks.
+ 8 10.42-11.17 THE DRAGON across the street (his close-up framing): the hug and the first
+               crystals going dark soft behind him; his eyes widen -- he cannot look away -- a
+               slow blink, and his brows soften.
+ 3 11.17-13.00 BACK IN THE CIRCLE, pushed in: s5_lower: the crystals come down one by one,
+               the cyan pool on the cobbles drains, uneasy glances. The minotaur's eyes come
+               down to the orc ... his near hand comes down to hover by the orc's back, his
+               far arm folds over the orc's shoulders, the near one settles round his back
                (low: nothing crosses the orc's face), his head turns to us, his jaw comes to
                rest on the orc's crown, eyes closing.
  4 13.00-15.65 THE PIXIE, medium close-up (her own set-up near the lens, 3/4 toward the pair,
@@ -59,7 +70,8 @@ SHOTS (cuts derive from the timeline; times below are for the current timeline.j
                she stares down at the hug and her face curdles (lip curl, knit brows) -- "Ew."
                (the head jerks back, nose up) -- "What is he doing?" (head cocked, one brow up,
                her free hand flicks out at them, palm up) -- an eye-roll up and away, and the
-               crystal comes back up to her chin, its cold light washing over her face.
+               crystal comes back up to her chin, its cold light washing over her face. Her
+               wings buzz as a soft smear under one crisp wing (no strobing copies this close).
  5 15.65-22.14 THE DRAGON, medium close-up from the arcade (the pier and arch at the left and
                top), slow push-in; the square beyond him a little soft so he reads first, a
                soft cold bounce off the square on his face. Thought -> glance -> breath ->
@@ -67,17 +79,20 @@ SHOTS (cuts derive from the timeline; times below are for the current timeline.j
                half-smile on "fight"; his eyes follow the bored ones drifting off; a breath in;
                "But someone gets gentle," (his brows lift and soften toward the two of them)
                "and everybody looks away." -- on the line the whole ring turns its back on the
-               pair, crystals glowing in their faces again, and walks off in every direction;
-               his eyes sweep after the turning backs, then sink; a slow blink.
+               pair, crystals glowing in their faces again, and walks off OUTWARD in every
+               direction: the circle visibly breaks up behind him before the cut; his eyes
+               sweep after the turning backs, then sink; a slow blink.
  6 22.14-25.00 THE EMPTIED SQUARE (s5_alone): the master's frame again, bookending shot 1 --
-               an ellipsis: the crowd is gone but for a few far figures at the edges, their
-               cold glows scattering away. The evening sinks in round the two of them, still
-               holding on, rocking a little (two slow pats on the orc's back). A break in the
-               cloud opens: one soft shaft of pale rose-gold (a few rays breathing inside it,
-               motes drifting) falls on them only, a pool at their feet, a warm rim on their
-               heads and shoulders -- quiet, almost holy. Slow push in on them. The dragon
-               stays in the arcade's shadow, watching; a sigh (a curl of grey smoke), his
-               brows soften, his wings lift a fraction, the faintest warmth on his face.
+               an ellipsis: the crowd is gone but for three far figures walking away on the
+               cobbles (never past the stalls or into the house fronts), their cold glows
+               scattering. The evening sinks in round the two of them, still holding on,
+               rocking a little (two slow pats on the orc's back). A break in the cloud opens:
+               one soft shaft of pale rose-gold (a few rays breathing inside it, motes
+               drifting) falls on them only, a pool at their feet; the warmth is in the light
+               that models them (a warm key, a gold rim, their darks kept) more than in veils
+               over them -- quiet, almost holy. Slow push in on them. The dragon stays in the
+               arcade's shadow, watching; a sigh (a curl of grey smoke), his brows soften, his
+               wings lift a fraction, the faintest warmth on his face.
 
 COLOUR / VALUE. Dominant grey-blue (sky #2c3650 -> #b4b8c0, stone #6a7286); the one accent is
 the crystals' cyan (#5fe0ff) -- the brightest values in the frame while they are raised, and
@@ -178,7 +193,8 @@ T_WALK_IN = (T_STOP + 0.6, T_HUG + 0.12)          # the orc's steps into the hug
 T_INS = IMPACTS[1][0] + 0.55                      # the insert: one crystal, the fight inside it
 T_CIRCLE = IMPACTS[2][0]                          # cut on the impact of the orc's 2nd shove
 T_REACT = T_SIL - 0.08                            # cutaway: the watchers' faces as the silence falls ...
-T_REACT1 = T_LOW0 - 0.04                          # ... back to the pair as the crystals start coming down
+T_DREACT = T_REACT + 0.5                          # ... then the dragon, the only one who keeps looking ...
+T_REACT1 = T_HUGBACK[0] + 0.17                    # ... back to the pair as the minotaur starts to hug back
 T_PIXIE = min(T_LOW1, L1.start - 0.4)             # the pixie, just before "Ew."
 T_DRAGON = L2.start - 0.65                        # the dragon, a breath before his line
 T_EMPTY = T_ALONE                                 # the emptied square
@@ -1539,6 +1555,17 @@ def dragon_pose(t, shot):
                              head_nod=-0.12 - 0.12 * think + 0.07 * breath - 0.08 * sink,
                              head_turn=0.06 * follow + 0.06 * track * sweep, head_tilt=0.05 * gentle,
                              talk=talk, blink=blink, tail_curl=0.5, seed=1)
+    if shot == 8:
+        # the hug, seen from across the street: his eyes widen -- he cannot look away -- a slow
+        # blink, and his brows soften (the first thing all day that has touched him)
+        wide = core.inout_sine(clamp((t - (T_DREACT - 0.25)) / 0.3))
+        soften = core.inout_sine(clamp((t - (T_DREACT + 0.4)) / 0.4))
+        blink = core.window(t, T_DREACT + 0.24, T_DREACT + 0.52, 0.1, 0.16)
+        e = _expr(("lonely", 1.0), ("raised", 0.85 * wide * (1.0 - 0.6 * soften)), ("kind", 0.6 * soften))
+        return ch.DragonPose(facing=1, turn=0.3, near=ch.Arm("pockets"), far=dragon_bag(t), mood=e,
+                             look=(0.6, 0.1 + 0.06 * soften), wings=-0.85 + 0.12 * soften,
+                             hunch=0.62 - 0.05 * wide, lean=0.04 * wide, head_nod=-0.08 + 0.05 * wide,
+                             head_turn=0.04 * wide, blink=blink, tail_curl=0.5, seed=1)
     # shot 6: the emptied square -- he keeps looking; a sigh of longing (a little grey smoke),
     # then his brows soften and his wings lift a fraction: the warmth reaches him too
     sigh = core.window(t, T_SIGH, T_SIGH + 1.3, 0.35, 0.7)
@@ -2105,8 +2132,8 @@ ARCH_AT = {1: (150.0, 395.0, (1180.0, -190.0)), 5: (40.0, 300.0, (1250.0, -330.0
 
 # shots: 1 master, 2 insert (the crystal), 3 the circle, 4 the pixie, 5 the dragon, 6 the
 # emptied square (the master's set-up again)
-SHOT_STARTS = ((0.0, 1), (T_INS, 2), (T_CIRCLE, 3), (T_REACT, 7), (T_REACT1, 3), (T_PIXIE, 4), (T_DRAGON, 5),
-               (T_EMPTY, 6))
+SHOT_STARTS = ((0.0, 1), (T_INS, 2), (T_CIRCLE, 3), (T_REACT, 7), (T_DREACT, 8), (T_REACT1, 3), (T_PIXIE, 4),
+               (T_DRAGON, 5), (T_EMPTY, 6))
 CAM_R = zoom_cam(CAM_B, 960.0, 240.0, 1.45)       # the watchers: the far side soft behind their faces
 
 
@@ -2134,6 +2161,8 @@ def camera_for(t, shot):
         return CAM_C.drift(t, amp=3.0, freq=0.2, seed=4)
     if shot == 7:
         return CAM_R.drift(t, amp=2.0, freq=0.3, seed=9)
+    if shot == 8:                                 # his reaction: his close-up framing, a hair closer
+        return zoom_cam(CAM_D0, 600.0, 420.0, 1.03)
     if shot == 5:
         return cam_d(t)
     u = core.inout_sine(clamp((t - T_EMPTY) / (DUR - T_EMPTY)))
@@ -2143,11 +2172,11 @@ def camera_for(t, shot):
 def set_of(shot):
     """Which baked set-up a shot uses (the emptied square is the master's; the watchers'
     cutaway paints the circle's set-up, pushed in and soft)."""
-    return {6: 1, 7: 3}.get(shot, shot)
+    return {6: 1, 7: 3, 8: 5}.get(shot, shot)
 
 
 def base_cam(shot):
-    return {1: CAM_A0, 2: CAM_I, 3: CAM_B, 4: CAM_C, 5: CAM_D0, 6: CAM_A0, 7: CAM_B}[shot]
+    return {1: CAM_A0, 2: CAM_I, 3: CAM_B, 4: CAM_C, 5: CAM_D0, 6: CAM_A0, 7: CAM_B, 8: CAM_D0}[shot]
 
 
 def shot_of(t):
@@ -2220,8 +2249,10 @@ def warmth(t):
 def pair_light(t):
     g = crystal_level(t)
     cold = LS.with_(exposure=1.06, rim=(0.55, 0.92, 1.0), rim_strength=0.4 + 0.45 * g, name="s5_pair")
-    warm = B.Light(key=(1.04, 0.98, 0.96), ambient=(0.46, 0.46, 0.6), rim=(1.0, 0.86, 0.76), rim_strength=0.85,
-                   direction=(-0.35, -0.94), exposure=1.06, name="s5_grace")
+    # the warmth is in the light that MODELS them (a warm key from the break in the cloud, a
+    # defined gold rim, the darks kept), not in veils laid over them
+    warm = B.Light(key=(1.14, 1.0, 0.84), ambient=(0.38, 0.40, 0.55), rim=(1.0, 0.8, 0.56), rim_strength=1.05,
+                   direction=(-0.35, -0.94), rim_direction=(-0.5, -0.86), exposure=1.04, name="s5_grace")
     w = _q(warmth(t), 24)
     return B.Light.lerp(cold, warm, 0.9 * w) if w > 0 else cold
 
@@ -2288,13 +2319,15 @@ def grace_light(lc, t, cam):
     with cam.view(lc, 1.0):
         # the shaft, from the ground UP: it dissolves into the pool at their feet, is brightest
         # round the two of them and thins out toward the cloud (the far roofs barely catch it)
-        _shaft(lc, px, py + 70, sx0, sy0, 280, 120, WARM_SHAFT, 0.58 * w * breathe,
-               ((0.0, 0.0), (0.09, 0.55), (0.2, 1.0), (0.4, 0.62), (0.62, 0.3), (1.0, 0.1)))
-        fx.god_rays(lc, sx0, sy0, ang, 0.10, L * 0.97, WARM_SHAFT, t, n=4, width=(18, 70), alpha=0.15 * w,
+        # (thinned over their bodies so it does not haze their darks, and gone before it reaches
+        # the house front behind them: the facade must not compete)
+        _shaft(lc, px, py + 70, sx0, sy0, 280, 120, WARM_SHAFT, 0.68 * w * breathe,
+               ((0.0, 0.0), (0.08, 0.48), (0.18, 0.6), (0.3, 0.44), (0.45, 0.32), (0.7, 0.28), (1.0, 0.18)))
+        fx.god_rays(lc, sx0, sy0, ang, 0.10, L * 0.97, WARM_SHAFT, t, n=4, width=(18, 70), alpha=0.11 * w,
                     seed=5, shimmer=0.5)
         fx.light_pool(lc, px + 6, py + 4, 230, 58, WARM_POOL, 0.30 * w)                 # the pool, in perspective
         fx.light_pool(lc, px, py + 2, 120, 30, WARM, 0.08 * w)
-        fx.glow(lc, px - 16, py - 300.0, 175, WARM_SHAFT, 0.17 * w)               # heads and shoulders
+        fx.glow(lc, px - 16, py - 300.0, 175, WARM_SHAFT, 0.07 * w)               # heads and shoulders
 
 
 def ring_light(lc, t, cam, glows):
@@ -2567,8 +2600,8 @@ def big_feed(t):
         c.translate(w * 0.5, h * 0.55)
         c.scale(1.0, 1.25)
         g = cairo.RadialGradient(0, 0, 0, 0, 0, w * 0.62)
-        g.add_color_stop_rgba(0.0, 0.62, 0.95, 1.0, 0.55)
-        g.add_color_stop_rgba(0.55, 0.37, 0.85, 1.0, 0.22)
+        g.add_color_stop_rgba(0.0, 0.66, 0.97, 1.0, 0.72)
+        g.add_color_stop_rgba(0.55, 0.37, 0.85, 1.0, 0.3)
         g.add_color_stop_rgba(1.0, 0.37, 0.88, 1.0, 0.0)
         c.set_source(g)
         c.paint()
@@ -2623,7 +2656,7 @@ def draw_insert_hand(cr, t):
            palm_w=0.9, hold=probe, detail=0)
     gx, gy = probe.center_dev if probe.center_dev else (wx, wy - 300)
     pulse = 0.9 + 0.1 * math.sin(t * TAU * 1.2)
-    _halo(cr, gx, gy, 170.0, 640.0, 1.35, CYAN, 0.55 * pulse)          # the scrying light round it
+    _halo(cr, gx, gy, 200.0, 720.0, 1.35, CYAN, 0.85 * pulse)          # the scrying light round it
     hold = ch.crystal_hold(face=1.0, size=1.62, thumb=big_feed(t), t=t, tilt=tilt)
     B.hand(cr, wx, wy, ang, 300.0, "grip", KOBOLD_SKIN, L_INS, lw, claw="#2E2A26", finger_w=0.9, palm_w=0.9,
            hold=hold)
@@ -2667,15 +2700,15 @@ def draw_insert(cr, t, st, cam, lc):
     st["softq"].end(cr, 6.5)
     # a nearer holder's crystal at the left edge: a big out-of-focus glow
     sc2 = st["soft2"].begin()
-    ch.draw_scrying_crystal(sc2, 230.0 + 6.0 * core.noise1(t * 2.0, 21), 1010.0 + 5.0 * core.noise1(t * 2.0, 22), 7.5,
-                            -0.12, L_INS, face=-1.0, glow=1.0, t=t)
+    ch.draw_scrying_crystal(sc2, 150.0 + 6.0 * core.noise1(t * 2.0, 21), 1060.0 + 5.0 * core.noise1(t * 2.0, 22), 7.5,
+                            -0.12, L_INS, face=-1.0, glow=0.4, t=t)    # dim: the eye goes to the hero
     st["soft2"].end(cr, 16.0)
     c = draw_insert_hand(cr, t)
     with cam.view(lc, 1.0):
         for (x, y, s_, gl) in glows:
             fx.glow(lc, x, y, 190 * s_, CYAN, 0.14 * gl)
-    fx.glow(lc, c[0], c[1], 560.0, CYAN, 0.12)
-    fx.glow(lc, 200.0, 760.0, 420.0, CYAN, 0.22)
+    fx.glow(lc, c[0], c[1], 600.0, CYAN, 0.22)                # the hero crystal blooms ...
+    fx.glow(lc, 120.0, 840.0, 380.0, CYAN, 0.07)              # ... the near one barely
 
 
 def draw(cr, t, st):
@@ -2732,21 +2765,22 @@ def draw(cr, t, st):
             st["dusk"].paint(cr, alpha=0.55 + 0.45 * w)
             env.draw_ground_shadow(cr, HUG_SX + 62.0, PGY + 14.0, 150.0, 22.0, alpha=0.3 * w)
         draw_items(cr, [it for it in items if it[1] == "pair"], t, cam, feed, sfeed, glows=glows)
-    elif shot == 5:
+    elif shot in (5, 8):
         # his medium close-up: the square beyond him falls a little soft (depth of field), so
-        # he reads first -- the ring turning its back is still clear
+        # he reads first -- the ring turning its back is still clear (shot 8: the hug and the
+        # first crystals going dark behind him)
         items = world_items(t, skip_pixie=(t > L1.end + 2.4))
         draw_items(soft.begin(), items, t, cam, feed, sfeed, glows=glows, detail=1)
         soft.end(cr, 2.2)
     else:
         items = world_items(t)
         draw_items(cr, items, t, cam, feed, sfeed, glows=glows)
-    if shot in (1, 5, 6):
+    if shot in (1, 5, 6, 8):
         drig = draw_dragon_fg(cr, t, shot, cam)
         st["arch"][set_of(shot)].paint(cr, cam, 1.5)
         x, gy, sc, p = DRAGON_AT[set_of(shot)]
         hx, hy = residual(base_cam(shot), cam, p).transform_point(*drig.head)
-        if shot == 5:
+        if shot in (5, 8):
             # his close-up: a soft cold bounce off the square on his face, so he reads first
             fx.glow(lc, hx + 60.0 * sc, hy + 20.0 * sc, 230.0 * sc, "#a9d4ff", 0.12)
         elif shot == 6:
@@ -2779,7 +2813,7 @@ def _build_cues():
             cues.append((round(ti + 0.16 + 0.17 * j, 3), "footstep", {"gain": round(0.35 + 0.1 * pw, 2), "pan": pan_pair(ti)}))
     cues.append((round(T_COCK + 0.12, 3), "cloth_rustle", {"gain": 0.35, "pan": pan_pair(T_STOP)}))        # the punch wound up
     cues.append((round(T_BRACE + 0.16, 3), "cloth_rustle", {"gain": 0.25, "pan": pan_pair(T_STOP)}))       # the flinch
-    cues.append((round(T_DROP + 0.22, 3), "cloth_rustle", {"gain": 0.45, "pan": pan_pair(T_STOP)}))        # arms fall
+    cues.append((round(T_DROP + 0.26, 3), "cloth_rustle", {"gain": 0.45, "pan": pan_pair(T_STOP)}))        # arms fall
     w0, w1 = T_WALK_IN
     for j in range(3):                                               # his steps in
         cues.append((round(w0 + 0.12 + j * (w1 - w0 - 0.2) / 2.5, 3), "footstep", {"gain": 0.4, "pan": pan_pair(w0)}))

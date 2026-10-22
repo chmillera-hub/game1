@@ -21,27 +21,28 @@ to their warmth; times derive from the timeline's lines, words and the s8_fade b
      z1.17 (inout): the ring, the lantern, the castle on its hill and the town's three cold lights.
      Multiplane: sky 0.06, the castle hill + town 0.28, near hills 0.45, the garden 1.0, soft
      foreground grass and near fireflies 1.3. The ring is the subject; the faces stay readable.
-  B  11.00-16.54 THE BREAD -- MEDIUM TWO-SHOT, cut IN on his look down at the bread: Camera(1024,
+  B  11.00-16.58 THE BREAD -- MEDIUM TWO-SHOT, cut IN on his look down at the bread: Camera(1024,
      754) z2.6 easing back to z2.5. He sits centre, the lamp just out of frame at the upper right
      (its light spills in over them), the gnome beside him, the faun watching from the left; the
      town's cold lights hang far behind them as soft teal / mint / magenta bokeh -- the stones,
      out of focus. The climax must read with the sound off: the loaf rides high in his hands, its
      scored dome in full view; the break releases a breath of warm light, steam and crumbs; every
      hand-over is solved in setup so the bread never jumps between hands.
-  C  16.54-20.00 THE FINAL PAINTING -- the WIDEST frame of the scene, cut OUT on her lean (on
+  C  16.58-20.00 THE FINAL PAINTING -- the WIDEST frame of the scene, cut OUT on her lean (on
      action): Camera(986, 606) z0.985 settling back and up to Camera(975, 560) z0.935 (out_sine):
      the whole garden in the night, more sky over the small warm ring (the widest the cached
      garden planes allow: x -52..2002, y -17..1137). s8_fade 17.50-19.80: a soft storybook IRIS
-     (an ellipse, IRIS_C) -- slow to start, so the painting is seen whole first -- narrows on the
-     two of them in the warm pool and lingers there; the last of the light goes out; the last
-     frames are black for a clean cut to S9's fade-in.
+     (an ellipse, IRIS_C) -- slow to start, so the painting is seen whole first -- narrows to a
+     small oval round both their faces by 19.25, lingers there a breath while it still shrinks,
+     and then the last of the light goes out: black from 19.80 (the last frames), a clean cut to
+     S9's fade-in.
 
 LAYOUT (world px; the shared layout of film/scenes/_garden.py, handed over by S7)
   bench 1: the faun (u 0.20), three pigeons roosting on the seat (S7's), S6's umpire asleep on the
   crest board (one eye opens at the chuckle), the gnome (u 0.60, her last hop takes her to 0.685),
   the dragon (u 0.845, front-on, turned a touch to the lamp, tail curled round in front of his
   feet, wings relaxed); the tied-open apothecary sack -- the stones -- forgotten by his foot. The
-  griffin courier dozes on his haunches at the pool's edge left of bench 1 (520, 956).
+  griffin courier dozes on his haunches at the pool's edge left of bench 1 (466, 958).
   bench 2 (G.BENCH2, angled in): the cockatrice BARD (u 0.14, the storyteller of S0 has joined the
   tale he told: silent cameo, quietly strumming), the dwarf (u 0.45, cap candle lit), and the elf
   of S1 (u 0.80): hood down, ear-shells dark, no mirror -- the stranger who pointed at
@@ -84,12 +85,13 @@ ACTING (thought -> glance -> breath -> line; the VO is his THOUGHT: NOBODY'S lip
                "break" it snaps in two (14.15): crumbs, a breath of warm light, steam. The faun
                looks up from his pipe at the sound and watches. His face softens to tender; his
                near hand turns palm-up and holds her half out at the edge of his lap (14.47-14.92).
-               She looks at it, up at him ("for me?"), hops once along the seat to him (15.08),
-               takes it off his palm (15.58) -- tiny hand, huge claw -- looks up at him with a hand
-               to her heart (15.94), and leans her head against his arm (16.30) ...
-  C 16.54-     ... the lean lands in the wide; he gives one slow, content blink and stays at peace,
+               She looks at it, up at him ("for me?"), hops once along the seat to him (15.20),
+               takes it off his palm (15.64) -- tiny hand, huge claw -- draws it in and holds it to
+               her heart, looks up at him, her other hand flat on her chest (15.98), and leans her
+               head against his arm (16.32) ...
+  C 16.58-     ... the lean lands in the wide; he gives one slow, content blink and stays at peace,
                lids heavy, eyes on her, the fullest closed smile of the film. The ring turns to
-               them (16.79): the faun touched, the dwarf and the elf looking over, the bard's slow
+               them (16.83): the faun touched, the dwarf and the elf looking over, the bard's slow
                nod -- and his four warm notes (the hold music's motif, set free) drift up into the
                night. Then the iris.
 
@@ -159,10 +161,10 @@ T_SNAP = W_BREAK + 0.06                          # it snaps on "break"
 T_PART = T_SNAP + 0.3                            # the halves apart
 T_OFFER0 = T_PART + 0.02                         # his near hand turns palm-up and holds her half out to her,
 T_OFFER = T_OFFER0 + 0.45                        # beside his knee
-T_HOP = T_OFFER + 0.16                           # she scoots along the seat to him: one little hop (her S6 hops)
-T_HANDOFF = T_HOP + 0.5                          # she takes it off his palm
-T_LOOKUP = T_HANDOFF + 0.36                      # she looks up at him, a hand to her heart ...
-T_LEAN = T_LOOKUP + 0.36                         # ... and leans her head against his arm, eyes closed
+T_HOP = T_OFFER + 0.28                           # ("for me?" -- a look up at him first) she scoots along the seat
+T_HANDOFF = T_HOP + 0.44                         # to him in one little hop (her S6 hops) and takes it off his palm
+T_LOOKUP = T_HANDOFF + 0.34                      # she looks up at him, a hand to her heart ...
+T_LEAN = T_LOOKUP + 0.34                         # ... and leans her head against his arm, eyes closed
 T_GIVE0 = T_OFFER0                               # (alias: the giving begins)
 # three shots, hard cuts on action (see the docstring)
 CUT_B = round((T_THINK + 0.15) * 24.0) / 24.0   # A -> B: cut IN on his look down at the bread (frame-aligned)
@@ -179,7 +181,8 @@ SC = G.SCALE
 U1 = {"faun": 0.2, "gnome": 0.6, "dragon": 0.845}             # bench 1 (BenchRig.place fractions)
 U2 = {"bard": 0.14, "dwarf": 0.45, "elf": 0.8}                # bench 2
 ELF_TURN = 0.5                                                # the elf sits more square to us (see elf_pose)
-GRIFFIN = (520.0, 956.0)                                      # on the grass at bench 1's left end
+GRIFFIN = (466.0, 958.0)                                      # on the grass off bench 1's left end, at the pool's edge
+                                                              # (clear of B's two-shot: no beak poking in at its edge)
 PIGEONS = [(1336.0, 921.0, -1, 71), (1366.0, 926.0, -1, 72)]  # roosting at the lantern's foot (x, y, facing, seed)
 SEAT_BIRDS = [(0.40, -1, 79), (0.34, 1, 77), (0.46, -1, 78)]      # S7's three seat pigeons (u, facing, seed), roosting
 UMPIRE = (0.44, -1, 101)             # S6/S7's umpire, still on the crest board (S7: u 0.38; shuffled clear of the faun's head) -- asleep
@@ -721,15 +724,19 @@ def gnome_pose(t):
     far_side = 1.0
     _GXG.update(x=x, y=y, lean=lean, yaw=1.0 + G_TURN * 0.6)
     reach = _STATE.get("gnome_reach", (x + 60.0, y - 110.0))
-    home = (x + 14.0 * SC, y - (ch.GNOME_SEAT_H + 22.0) * SC)
-    lap = (x + 12.0 * SC, y - (ch.GNOME_SEAT_H + 4.0) * SC)
+    # (home / lap: chosen so the far arm never folds past her chest -- a tighter home flips the
+    # hand ~2 rad in two frames as the forearm doubles back; checked by tracing the IK path)
+    home = (x + 30.0 * SC, y - (ch.GNOME_SEAT_H + 16.0) * SC)     # the bread held to her heart
+    lap = (x + 24.0 * SC, y - (ch.GNOME_SEAT_H + 6.0) * SC)       # ... then lowered into her lap as she leans
     r_near = (reach[0] - 9.0, reach[1] + 5.0)
     far_keys = [(T_HOP + 0.05, ("g", "rest"), "relaxed"), (T_HANDOFF, ("p", reach), "grip"),
-                (T_HANDOFF + 0.1, ("p", reach), "grip"), (T_HANDOFF + 0.62, ("p", home), "grip"),
-                (T_LEAN, ("p", home), "grip"), (T_LEAN + 0.8, ("p", lap), "grip")]
+                (T_HANDOFF + 0.1, ("p", reach), "grip"), (T_HANDOFF + 0.5, ("p", home), "grip"),
+                (T_LEAN + 0.05, ("p", home), "grip"), (T_LEAN + 0.85, ("p", lap), "grip")]
     near_keys = [(T_HOP + 0.12, ("g", "rest"), "relaxed"), (T_HANDOFF - 0.04, ("p", r_near), "cup"),
-                 (T_HANDOFF + 0.1, ("p", r_near), "cup"), (T_HANDOFF + 0.62, ("p", (home[0] - 9.0, home[1] + 5.0)), "cup"),
-                 (T_LOOKUP, ("p", (home[0] - 9.0, home[1] + 5.0)), "cup"), (T_LOOKUP + 0.5, ("g", "hand_on_chest"), "flat")]
+                 (T_HANDOFF + 0.1, ("p", r_near), "cup"), (T_HANDOFF + 0.44, ("p", (home[0] - 9.0, home[1] + 5.0)), "cup"),
+                 (T_LOOKUP + 0.5, ("g", "hand_on_chest"), "flat")]
+    for keys in (far_keys, near_keys):          # keyframes must run forward in time (a retime must not reorder them)
+        assert all(a[0] <= b[0] for a, b in zip(keys, keys[1:])), keys
     _GXG[far_side] = _keys_at(t, far_keys)
     _GXG[near_side] = _keys_at(t, near_keys)
     Lb = light_at(x, y - 160.0, boost=GNOME_BOOST)
@@ -922,16 +929,19 @@ def dwarf_talk(t):
 def dwarf_pose(t):
     x, y = _STATE["b2"].place(U2["dwarf"])
     tale = _win(t, T_TALE0, T_TALE1, 0.4, 0.45)
-    punch = _win(t, T_PUNCH - 0.22, T_LAUGH1 - 0.2, 0.22, 0.5)
+    # the punchline: the hand comes up over 0.4 s (linear here: the gesture eases it once -- an
+    # eased window on top of the eased gesture crammed the move into a single-frame jump)
+    punch = min(core.clamp((t - (T_PUNCH - 0.4)) / 0.4), 1.0 - core.clamp((t - (T_LAUGH1 - 0.7)) / 0.5))
     laugh = _win(t, T_LAUGH, T_LAUGH1 + 0.2, 0.1, 0.5)
     ring = _r(t, T_RING + 0.15, T_RING + 0.75)
     # the tale: his near hand explains in front of his chest (the bard sits too close on his far
     # side for that arm to wave); the punchline: the open hand comes up, palm to the sky ("...and
     # THAT was the last of the cheese!") -- and on the ring's laugh he slaps his knee. One custom
     # gesture throughout (no hand flips, no layer swaps)
-    slap = _r(t, T_LAUGH - 0.04, T_LAUGH + 0.1, "in_quad")
+    slap = _r(t, T_LAUGH - 0.02, T_LAUGH + 0.14, "in_quad")
+    wind = 0.12 * _bump(t, T_LAUGH - 0.24, 0.26)                 # the hand lifts a touch before it comes down
     _GX["dw_wiggle"] = math.sin(t * math.tau * 1.2)
-    _GX["dw_lift"] = punch
+    _GX["dw_lift"] = min(1.0, punch + wind)
     near = ch.Arm("s8_tale", phase=max(tale, punch) * (1.0 - slap))
     far = ch.Arm("s8_tale", phase=0.12 * tale)
     nod = 0.07 * tale * math.sin(t * 4.3) + 0.14 * laugh + 0.1 * punch
@@ -1593,6 +1603,13 @@ def _visible(cam, who, x, y, pad=8.0):
 
 
 def draw(cr, t, st):
+    if t >= T_FADE1:                                # the light has gone out: the last frames are pure black
+        cr.save()
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgb(0.0, 0.0, 0.0)
+        cr.paint()
+        cr.restore()
+        return
     g = st["g"]
     cam = camera(t)
     shot = shot_at(t)[0]
@@ -1723,20 +1740,23 @@ def draw(cr, t, st):
 
 VIGNETTE = {"A": 0.6, "B": 0.74, "C": 0.62}   # B: the light falls away from the two of them
 TOWN_K = {"A": 1.0, "B": 0.4, "C": 1.0}      # B: the town sits low behind the hedge -- only a faint cold bokeh
-IRIS_C = (1012.0, 742.0)               # the night closes in on the two of them under the lamp (world)
+IRIS_C = (1000.0, 715.0)               # the night closes in on the two of them under the lamp (world): both faces
+IRIS_SMALL_T = T_FADE1 - 0.55          # ... the iris is a small oval round them by here, lingers, then black
+IRIS_SMALL_R = 150.0
 IRIS_ASPECT = 1.4                      # the iris is a soft ellipse, wider than tall
 KIND_C = (985.0, 735.0)                # where the warmth swells after the gift: round the two of them
 
 
 def _fade(cr, cam, t):
     """s8_fade: the night closes in -- a soft storybook iris narrowing on the two of them in the
-    warm pool, slow to start (the final painting is seen whole first) and lingering at the end on
-    the little warm light, which then goes out."""
-    u = core.clamp((t - T_FADE0) / (T_FADE1 - 0.3 - T_FADE0))
+    warm pool: slow to start (the final painting is seen whole first), closing to a small oval
+    round both their faces (IRIS_SMALL_T), lingering there a breath while it still shrinks a
+    little, and then the last of the light goes out (black by T_FADE1)."""
     cx, cy = cam.to_screen(*IRIS_C)
-    e = core.inout_sine(u)
-    r = core.lerp(1180.0, 60.0, e)                 # the clear radius (screen px, vertical)
-    soft = 140.0 + 0.6 * r                         # the edge's softness
+    e1 = core.inout_sine(core.clamp((t - T_FADE0) / (IRIS_SMALL_T - T_FADE0)))
+    e2 = core.smooth(core.clamp((t - IRIS_SMALL_T) / (T_FADE1 - IRIS_SMALL_T)))
+    r = core.lerp(core.lerp(1180.0, IRIS_SMALL_R, e1), IRIS_SMALL_R * 0.55, e2)   # clear radius (screen px, vertical)
+    soft = 120.0 + 0.6 * r                                                       # the edge's softness
     cr.save()
     cr.translate(cx, cy)
     cr.scale(IRIS_ASPECT, 1.0)
@@ -1748,4 +1768,4 @@ def _fade(cr, cam, t):
     cr.set_source(pat)
     cr.paint()
     cr.restore()
-    fx.fade(cr, core.ramp(t, T_FADE1 - 0.55, T_FADE1, "in_sine"))
+    fx.fade(cr, core.ramp(t, IRIS_SMALL_T + 0.2, T_FADE1, "in_sine"))
