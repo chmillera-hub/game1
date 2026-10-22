@@ -141,7 +141,9 @@ from film.lib import timeline as tl
 from film.lib import characters as ch
 from film.lib.characters import base as B
 from film.lib.characters import gnome as _GN          # her arm lengths (UPPER_ARM, FOREARM) for _g_s6_flick
+from film.lib.characters import dragon as _DR         # its _brow_ridge, wrapped in draw_dragon (the far eye's clip)
 from film.scenes import _garden as G
+from film.scenes import _s6_eye
 
 SCENE = 6
 DUR = tl.scene(SCENE).duration
@@ -503,26 +505,56 @@ for _name, _fn in (("s6_set_bag", _g_s6_set_bag), ("s6_bag", _g_s6_bag), ("s6_bo
 _ELEV = 0.12
 
 
-def _eye_skin_lids(*a, **kw):
-    kw["hide_lid"] = True
-    return _BASE_EYE(*a, **kw)
-
-
 _BASE_EYE = B.eye
+_BASE_BROW = _DR._brow_ridge
+_EYE_Q = []                      # the eye call waiting for its brow ridge (see draw_dragon)
+
+
+def _eye_deferred(cr, *a, **kw):
+    """Stands in for base.eye inside ch.draw_dragon: remember the call and its transform; the
+    brow ridge drawn right after it paints it (_brow_then)."""
+    _EYE_Q.append((cr, cr.get_matrix(), a, kw))
+
+
+def _flush_eye(head=None):
+    while _EYE_Q:
+        cr, m, a, kw = _EYE_Q.pop(0)
+        cr.save()
+        cr.set_matrix(m)
+        cr.new_path()
+        if head:
+            _s6_eye.eye_far(cr, head, *a, **kw)
+        else:
+            _s6_eye.eye(cr, *a, **kw)
+        cr.restore()
+
+
+def _brow_then(q, P_, nz, s, e, near, clip=None):
+    """dragon._head draws each eye and then its brow ridge -- the far ridge with the head's
+    silhouette paths as its clip: the waiting eye is painted here (same z-order), the far one
+    with its bulge past those paths drawn as an outlined lid (_s6_eye.eye_far)."""
+    _flush_eye(clip)
+    return _BASE_BROW(q, P_, nz, s, e, near, clip)
 
 
 def draw_dragon(cr, x, y, scale, pose, light, t):
-    """ch.draw_dragon with his eyelids left to the head's own scales (base.eye hide_lid=True).
-    In this scene's 3/4 close-ups (zoom 4-5) the library's flat lid fill shows: the far eye's
-    socket bulges past his head outline, so as the lids close it becomes a flat, unoutlined dome
-    over the sky, and the near lid reads as a smooth patch from eye to brow. Without the fill a
-    blink is the lash line coming down over the eyeball, the closed eye a lid arc on his
-    scales; the open eyes are unchanged. (A scene-local swap, restored at once.)"""
-    B.eye = _eye_skin_lids
+    """ch.draw_dragon with this scene's eyes (_s6_eye) for his big 3/4 close-ups (zoom 4-5).
+    The library's eye fills the lid with one flat tone, and his far eye's socket bulges past the
+    head's outline: as the lids closed the far one became a flat, unoutlined dome with an ink
+    line over the sky, the near one a smooth untextured patch from eye to brow. Here the lids
+    inside the head are his own scales (no fill, no corner slivers), and the far eye's bulge past
+    the head is a lid of scales with an ink contour that runs into the head's outline, so a
+    blink is the lash line coming down over the eyeball and the closed eye a lid arc on his
+    scales. (Scene-local swaps, restored at once.)"""
+    B.eye = _eye_deferred
+    _DR._brow_ridge = _brow_then
+    del _EYE_Q[:]
     try:
         return ch.draw_dragon(cr, x, y, scale, pose, light, t)
     finally:
+        _flush_eye()                 # (an eye with no ridge after it: none in the library today)
         B.eye = _BASE_EYE
+        _DR._brow_ridge = _BASE_BROW
 
 
 def _world_to_body(wx, wy, ax, ay, yaw, depth):

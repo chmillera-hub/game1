@@ -252,6 +252,45 @@ T_BREATH = L4.start - 0.34                      # breath
 T_SIGH = L4.end + 0.15                          # the long exhale after the line (+ steam)
 T_RAINLOOK = L1.end + 0.25                      # between the options: a weary glance up into the rain
 T_SHIVER = 0.5 * (L2.end + L3.start) - 0.1       # ... and a shiver in the cold
+SHIVER_HZ = 4.8                                 # 5 frames a cycle: a clean tremble, no aliasing
+
+# s3_l4 is said "small and tired, to himself". The envelope is normalised per line, so his
+# mutter would get a full jaw flap: compress it (talk' = k * talk ** gamma), and let the lips
+# meet on the bilabials -- the b of "been", the m of "my" -- where the voice dips at those words.
+L4_TALK = (0.42, 1.35)
+
+
+def _lip_closures(line, words=("been", "my")):
+    """Local times of the lip closures: the envelope's minimum just before each bilabial word."""
+    env_ = list(line.env)
+    if not env_:
+        return ()
+    fps = tl.fps()
+    out = []
+    for w, a, _b in tl.word_times(line.id):
+        if re.sub(r"[^a-z]", "", w.lower()) not in words:
+            continue
+        k0 = max(0, int((a - 0.16 - line.start) * fps))
+        k1 = min(len(env_) - 1, int((a + 0.06 - line.start) * fps))
+        if k1 >= k0:
+            k = min(range(k0, k1 + 1), key=lambda i: env_[i])
+            out.append(line.start + k / fps)
+    return tuple(out)
+
+
+L4_CLOSE = _lip_closures(L4)
+
+
+def man_talk(t):
+    """His mouth: the voice's envelope, muttered, with the lips meeting on the bilabials."""
+    a = tl.talk(SCENE, t, "MAN")
+    if a <= 0.0:
+        return 0.0
+    if L4.start - 0.3 <= t <= L4.end + 0.4:
+        a = L4_TALK[0] * a ** L4_TALK[1]
+        for tc in L4_CLOSE:
+            a *= 1.0 - 0.92 * core.window(t, tc - 0.085, tc + 0.055, 0.035, 0.03)
+    return a
 
 
 def _turn(t):
@@ -384,16 +423,19 @@ def cam_b(t):
     return _cam_put(wx, GY + HEAD_DY, SX_B, SY_B, zoom_b(t))
 
 
-# C -- medium close-up under the lamp: his head on the left third, the hold emblem on the right
-SX_C, SY_C = 650.0, 452.0
+# C -- close shot under the lamp, a NEW set-up (not a punch-in on B's axis): the camera has come
+# round toward his face (TURN_C swings him ~22 deg toward us) and in to 1.7x B's size; his face
+# on the left third, the hold emblem on the right, a little above his eye line
+SX_C, SY_C = 700.0, 470.0
+FACE_DX, FACE_DY = 50.0, -350.0        # his face (between the eyes and the mouth) from his anchor, turned
 
 
 def zoom_c(t):
-    return lerp(3.5, 3.68, core.inout_sine(ramp(t, T_CUT2, T_CUT3)))
+    return lerp(4.05, 4.25, core.inout_sine(ramp(t, T_CUT2, T_CUT3)))
 
 
 def cam_c(t):
-    return _cam_put(X_STOP + HEAD_DX, GY + HEAD_DY, SX_C, SY_C, zoom_c(t))
+    return _cam_put(X_STOP + FACE_DX, GY + FACE_DY, SX_C, SY_C, zoom_c(t))
 
 
 # D -- the crane rises and pulls away: small, cold, in the warm pool, still on hold
@@ -470,6 +512,7 @@ L_LAMP = L_BASE.with_(key=(1.06, 0.80, 0.56), ambient=(0.24, 0.29, 0.5), rim=(1.
 L_POOL = L_COLD.with_(rim=(1.0, 0.64, 0.28), rim_strength=0.95, rim_direction=(-0.25, -0.97),
                       key=(0.7, 0.74, 0.9), name="s3_pool")
 L_SET = L_BASE.with_(name="s3_set")
+BAG_EXPOSURE = 0.52
 
 
 def dragon_light(x):
@@ -487,8 +530,10 @@ def dragon_light(x):
 # =============================================================================================
 # the rune text: per-shot layouts (screen space), kept clear of every bright thing behind it
 # =============================================================================================
-FONT = P.FONTS.sign                # Uncial Antiqua: insular uncial, the Book of Kells' hand
-FS = 46.0                          # letter size
+FONT_INI = P.FONTS.sign            # the illuminated initial: Uncial Antiqua (the Book of Kells' hand)
+INI_SIZE = 69.0
+FONT = P.FONTS.text                # the words: IM FELL English -- a period book face that reads at a
+FS = 52.0                          # glance (uncial t/g/w read as c/3/ɯ, and these lines have no captions)
 LH = 64.0                          # line spacing
 TEXT_T = (L1.start - 0.4, T_DISSOLVE1 + 0.3)
 TA_DX, TA_DY = 146.0, -166.0       # shot A: the first baseline relative to his head on screen
@@ -926,7 +971,9 @@ def setup():
 
 E_RAISED = B.expr("raised")
 E_SAD = B.expr("sad")
+E_SAD_HEAVY = E_SAD.with_(lid=0.62, lid_bot=0.3)   # under the lamp: too tired to lift his lids
 E_SIGH = B.expr("sigh", open=0.0)          # the exhale, mouth shut
+TURN_C = -0.62                             # shot C: the camera has come round toward his face
 
 
 def _k(t, keys, ease="inout_sine"):
@@ -937,29 +984,37 @@ def dragon_pose(t, stone_cb, bag_cb):
     walk = walk_amt(t)
     ph = walk_phase(t)
     # eyes: ahead and down while he walks; up to "loneliness"; down at "please hold"; a look at
-    # the hold loop; down (thought) -> up at the hourglass (glance) -> the line -> down and away
+    # the hold loop; down (thought) -> up at the hourglass (glance: the eyes lead, then settle a
+    # little as the head comes up after them) -> the line -> down and away
     look = _k(t, [(0.0, (0.35, 0.3)), (T_RAINLOOK, (0.35, 0.3)), (T_RAINLOOK + 0.2, (0.2, -0.8)),
                   (T_RAINLOOK + 0.75, (0.25, -0.75)), (T_RAINLOOK + 1.05, (0.35, 0.3)),
                   (T_LONELY - 0.12, (0.35, 0.3)), (T_LONELY + 0.12, (0.75, -0.5)),
                   (T_PLEASE - 0.05, (0.7, -0.4)), (T_PLEASE + 0.35, (0.25, 0.55)),
                   (T_HOLD - 0.3, (0.3, 0.45)), (T_HOLD + 0.1, (0.8, -0.2)), (T_HOLD + 1.9, (0.75, -0.15)),
                   (T_HOLD + 2.4, (0.3, 0.5)), (T_LOOKDOWN + 0.3, (0.2, 0.75)), (T_GLANCE - 0.05, (0.2, 0.75)),
-                  (T_GLANCE + 0.2, (0.85, -0.35)), (L4.start + 0.9, (0.8, -0.3)), (L4.start + 1.3, (0.2, 0.55)),
-                  (L4.end + 0.6, (0.1, 0.7))])
+                  (T_GLANCE + 0.2, (0.85, -0.27)), (T_GLANCE + 0.6, (0.82, -0.13)), (L4.start + 0.9, (0.8, -0.1)),
+                  (L4.start + 1.3, (0.2, 0.55)), (L4.end + 0.6, (0.1, 0.7))])
+    # the head follows the eyes 0.1-0.2 s later (keys strictly in time order: core.track needs it)
     nod = _k(t, [(0.0, -0.1), (T_RAINLOOK + 0.1, -0.1), (T_RAINLOOK + 0.4, 0.12), (T_RAINLOOK + 0.8, 0.1),
                  (T_RAINLOOK + 1.2, -0.1), (T_LONELY, -0.1), (T_LONELY + 0.35, 0.08), (T_PLEASE + 0.1, 0.05),
                  (T_PLEASE + 0.7, -0.24), (T_HOLD + 0.1, -0.1), (T_HOLD + 0.6, -0.02), (T_STOP - 0.4, -0.22),
-                 (T_LOOKDOWN + 0.5, -0.32), (T_GLANCE + 0.05, -0.3), (T_GLANCE + 0.35, -0.02),
-                 (L4.start + 1.1, -0.06), (L4.start + 1.6, -0.22), (T_SIGH + 0.3, -0.3), (DUR, -0.34)])
+                 (T_LOOKDOWN + 0.35, -0.32), (T_GLANCE + 0.1, -0.31), (T_GLANCE + 0.45, -0.04),
+                 (L4.start + 1.1, -0.07), (L4.start + 1.6, -0.22), (T_SIGH + 0.3, -0.3), (DUR, -0.34)])
     head_turn = _k(t, [(0.0, 0.0), (T_LONELY, 0.0), (T_LONELY + 0.3, 0.12), (T_PLEASE + 0.5, 0.0),
                        (T_GLANCE, -0.05), (T_GLANCE + 0.3, 0.08), (L4.start + 1.4, -0.12), (DUR, -0.15)])
     hunch = _k(t, [(0.0, 0.55), (T_PLEASE + 0.2, 0.55), (T_PLEASE + 0.9, 0.66), (T_STOP, 0.68),
                    (T_BREATH, 0.66), (T_BREATH + 0.3, 0.5), (L4.end, 0.56), (T_SIGH + 0.8, 0.8), (DUR, 0.82)])
-    shiver = core.window(t, T_SHIVER, T_SHIVER + 0.55, 0.07, 0.3)
-    hunch += 0.2 * shiver
-    tilt = 0.045 * math.sin(TAU * 9.0 * (t - T_SHIVER)) * shiver
-    # hope at "loneliness" (brows up), deflation at "please hold"; sadder through the hold; after
-    # the line a closed-mouth exhale (the mouth moves only when he speaks)
+    # the shiver: the shoulders jerk up into the scarf, tremble (4.8 Hz, dying away) and settle;
+    # the wings clamp and quiver with them; the head only rides along
+    shiver = core.window(t, T_SHIVER, T_SHIVER + 0.8, 0.07, 0.45)
+    u_sh = t - T_SHIVER
+    trem = math.sin(TAU * SHIVER_HZ * u_sh) * math.exp(-u_sh / 0.32) * clamp(u_sh / 0.06) if u_sh > 0 else 0.0
+    hunch += 0.2 * shiver + 0.07 * trem
+    # a slight wistful tilt as he looks up at the hourglass and says it
+    tilt = 0.012 * trem + 0.07 * core.window(t, T_GLANCE + 0.25, L4.start + 1.5, 0.6, 0.7)
+    # hope at "loneliness" (brows up), deflation at "please hold"; sadder through the hold; under
+    # the lamp his lids get heavy (the glance up stays half-lidded); after the line a closed-mouth
+    # exhale (the mouth moves only when he speaks)
     if t < T_PLEASE + 0.1:
         mood2, mix = E_RAISED, 0.5 * core.window(t, T_LONELY - 0.05, T_PLEASE + 0.1, 0.25, 0.25)
     else:
@@ -967,19 +1022,24 @@ def dragon_pose(t, stone_cb, bag_cb):
                      (T_STOP, 0.6), (L4.start, 0.62), (L4.end, 0.62)])
         sig = 0.5 * core.window(t, T_SIGH, DUR + 5.0, 0.7, 0.1) - 0.15 * ramp(t, T_SIGH + 1.4, T_SIGH + 2.6, "inout_sine")
         mix = min(1.0, sad + sig)
-        mood2 = E_SAD.blend(E_SIGH, sig / max(1e-6, sad + sig)) if sig > 0 else E_SAD
+        heavy = core.smoothstep(T_STOP - 0.6, T_LOOKDOWN + 0.3, t)
+        e_sad = E_SAD.blend(E_SAD_HEAVY, heavy) if heavy > 0.0 else E_SAD
+        mood2 = e_sad.blend(E_SIGH, sig / max(1e-6, sad + sig)) if sig > 0 else e_sad
     blink = B.auto_blink(t, 2)
     blink = max(blink, core.window(t, T_PLEASE + 0.18, T_PLEASE + 0.72, 0.16, 0.24))      # the slow blink
     blink = max(blink, 0.85 * core.window(t, L2.end + 0.05, L2.end + 0.5, 0.15, 0.2))      # heard it all
     if T_LONELY - 0.3 < t < T_PLEASE:                                                     # hope: eyes wide
         blink = 0.0
-    wings = _k(t, [(0.0, -0.85), (T_LONELY, -0.85), (T_LONELY + 0.3, -0.7), (T_PLEASE + 0.5, -0.92),
-                   (T_STOP, -0.95), (T_SIGH + 0.5, -1.0)])
+    # wings held tight (the rig's most compact fold is its lowest droop): a little lift of hope
+    # at "loneliness", a quiver in the shiver
+    wings = _k(t, [(0.0, -1.0), (T_LONELY, -1.0), (T_LONELY + 0.3, -0.8), (T_PLEASE + 0.5, -1.0)])
+    wings = min(-0.75, wings + 0.12 * abs(trem))
     swing = 0.11 * math.sin(ph * TAU) * walk + 0.06 * B.wobble(t, T_STOP, 1.4, 1.2)
-    return ch.DragonPose(facing=1, turn=_turn(t), walk=walk, phase=ph, lean=0.05 * walk, hunch=hunch,
+    turn = _turn(t) + (TURN_C if shot_at(t) == "C" else 0.0)
+    return ch.DragonPose(facing=1, turn=turn, walk=walk, phase=ph, lean=0.05 * walk, hunch=hunch,
                          head_turn=head_turn, head_nod=nod - 0.12 * shiver, head_tilt=tilt, look=look,
                          mood="tired", mood2=mood2,
-                         mood_mix=mix, talk=tl.talk(SCENE, t, "MAN"), blink=blink,
+                         mood_mix=mix, talk=man_talk(t), blink=blink,
                          wings=wings, tail_curl=0.25, tail_drag=_k(t, [(0.0, 0.75), (T_STOP, 0.9)]),
                          damp=1.0, seed=3,
                          near=ch.Arm("hand_to_ear", hold=stone_cb),
@@ -1034,18 +1094,20 @@ class RuneText:
                 core_w = w[:-1] if dots else w
                 if wi == 0:                                       # the illuminated initial
                     ini, rest = core_w[0], core_w[1:]
-                    adv = core.measure(cr, ini, FS * 1.5, FONT)[0]
-                    toks.append(dict(s=ini, x=x - 4.0, size=FS * 1.5, t0=a - 0.06, t1=a + 0.12, kind="initial"))
-                    x += adv - 6.0
+                    adv = core.measure(cr, ini, INI_SIZE, FONT_INI)[0]
+                    toks.append(dict(s=ini, x=x - 4.0, size=INI_SIZE, t0=a - 0.06, t1=a + 0.12, kind="initial",
+                                     font=FONT_INI))
+                    x += adv - 4.0
                     adv = core.measure(cr, rest, FS, FONT)[0]
-                    toks.append(dict(s=rest, x=x, size=FS, t0=a + 0.06, t1=b, kind="word"))
+                    toks.append(dict(s=rest, x=x, size=FS, t0=a + 0.06, t1=b, kind="word", font=FONT))
                     x += adv
                 else:
                     lonely = core_w.lower().startswith("lonel")
                     if lonely:
                         x += 6.0                                  # room for its pulse
                     adv = core.measure(cr, core_w, FS, FONT)[0] * (1.06 if lonely else 1.0)
-                    toks.append(dict(s=core_w, x=x, size=FS, t0=a, t1=b, kind="lonely" if lonely else "word"))
+                    toks.append(dict(s=core_w, x=x, size=FS, t0=a, t1=b, kind="lonely" if lonely else "word",
+                                     font=FONT))
                     x += adv
                 if dots:                                          # the ellipsis: the long wait
                     nxt = WORDS[ln.id][wi + 1][1] if wi + 1 < len(WORDS[ln.id]) else b + 0.6
@@ -1053,13 +1115,14 @@ class RuneText:
                     dw = core.measure(cr, ".", FS, FONT)[0]
                     for k in range(3):
                         td = b + (k + 0.6) * gap / 3.6
-                        toks.append(dict(s=".", x=x + 2.0 + k * (dw + 3.0), size=FS, t0=td, t1=td + 0.08, kind="dot"))
+                        toks.append(dict(s=".", x=x + 2.0 + k * (dw + 3.0), size=FS, t0=td, t1=td + 0.08, kind="dot",
+                                         font=FONT))
                     x += 3 * (dw + 3.0) + 4.0
                 x += core.measure(cr, " ", FS, FONT)[0] * 1.15
             last = [tk for tk in toks if tk["kind"] in ("word", "lonely")][-1]
-            end_x = last["x"] + core.measure(cr, last["s"], last["size"], FONT)[0] * (1.06 if last["kind"] == "lonely" else 1.0)
+            end_x = last["x"] + core.measure(cr, last["s"], last["size"], last["font"])[0] * (1.06 if last["kind"] == "lonely" else 1.0)
             for tk in toks:
-                tk["w"] = core.measure(cr, tk["s"], tk["size"], FONT)[0]
+                tk["w"] = core.measure(cr, tk["s"], tk["size"], tk["font"])[0]
             self.lines.append(dict(toks=toks, start=ln.start, end=ln.end, width=x, end_x=end_x,
                                    t_end=WORDS[ln.id][-1][2]))
 
@@ -1160,17 +1223,16 @@ class RuneText:
             else:
                 scale = 1.06 + 0.13 * math.exp(-v / 0.22) * math.cos(v * 11.0)
                 glow_a *= 1.0 + 1.3 * math.exp(-v / 0.55)
-                fx.glow(front, x + wv / 2, by - FS * 0.35, 280.0, RUNE, 0.34 * math.exp(-v / 0.6) * a)
-                if v < 0.95:                                     # a burst of cold sparks off the word
-                    w_ = clamp(v / 0.95)
-                    a2 = (1.0 - w_) ** 1.4 * a
-                    for j in range(11):
-                        ang = TAU * (j + 0.35 * core.hash01(j, 77)) / 11.0
-                        d = (24.0 + 150.0 * (0.6 + 0.4 * core.hash01(j, 78)) * core.out_cubic(w_))
-                        px = x + wv / 2 + math.cos(ang) * d * (1.0 + wv / 260.0)
-                        py = by - FS * 0.35 + math.sin(ang) * d * 0.42 - 18.0 * w_ * w_
-                        fx.glow(cr, px, py, 10.0, RUNE, 0.5 * a2)
-                        fx.sparkle(cr, px, py, 8.0 * (1.0 - 0.5 * w_), RUNE_HOT, 0.85 * a2, angle=ang + t * 2.0)
+                fx.glow(front, x + wv / 2, by - FS * 0.35, 260.0, RUNE, 0.28 * math.exp(-v / 0.6) * a)
+                if v < 1.6:                                      # a few cold motes lift off the word and
+                    w_ = clamp(v / 1.6)                          # drift away (a sigh of light, not glitter)
+                    a2 = core.smoothstep(0.0, 0.2, v) * (1.0 - w_) ** 1.6 * a
+                    for j in range(5):
+                        hx = core.hash01(j, 77)
+                        px = x + wv * (0.12 + 0.76 * hx) + 10.0 * math.sin(v * 1.7 + j) * w_
+                        py = by - FS * (0.45 + 0.4 * core.hash01(j, 78)) - (22.0 + 26.0 * core.hash01(j, 79)) * core.out_sine(w_)
+                        fx.glow(cr, px, py, 7.0, RUNE, 0.32 * a2)
+                        fx.glow(cr, px, py, 2.0, RUNE_HOT, 0.55 * a2)
         col = core.mix(RUNE_DIM, RUNE_HOT, 0.6 + 0.4 * hot)
         cr.save()
         if scale != 1.0:                                         # grows from its left edge
@@ -1182,9 +1244,9 @@ class RuneText:
             cr.rectangle(x - 40.0, by - size * 1.4, edge - (x - 40.0), size * 2.2)
             cr.clip()
         # legibility: a soft dark halo first (painted), then the cold glow and the letters
-        core.glow_text(cr, tok["s"], x, by, size, FONT, INK_DARK, glow=INK_DARK, radius=13.0,
-                       glow_alpha=0.6 * a, additive=False, alpha_=0.0)
-        core.glow_text(cr, tok["s"], x, by, size, FONT, col, glow=RUNE, radius=9.0, glow_alpha=glow_a * a,
+        core.glow_text(cr, tok["s"], x, by, size, tok["font"], INK_DARK, glow=INK_DARK, radius=13.0,
+                       glow_alpha=0.78 * a, additive=False, alpha_=0.0)
+        core.glow_text(cr, tok["s"], x, by, size, tok["font"], col, glow=RUNE, radius=9.0, glow_alpha=glow_a * a,
                        alpha_=a, passes=2 if kind in ("initial", "lonely") else 1)
         cr.restore()
         if u < 1.0:                                              # the nib's spark
@@ -1200,6 +1262,9 @@ class RuneText:
 # round again). It floats ahead of his face, in his plane, so every shot sees the same thing.
 # =============================================================================================
 EMB_DX, EMB_UP = 232.0, 44.0         # from his head (world px at his plane)
+EMB_DX_C, EMB_UP_C = 182.0, 22.0     # shot C's angle: nearer (foreshortened) and nearer his eye line
+EMB_SCALE = {"A": 1.0, "B": 1.0, "C": 0.84}   # screen-size balance per shot ...
+EMB_D = 1.42                         # ... and the final wide counter-scales it as the camera pulls away
 RING_RX, RING_RY, RING_TILT = 56.0, 13.0, -0.07
 NOTE_H = (-12.0, -6.0, 2.0, 7.0)     # each pitch rides at its own height: B high ... E low
 NOTE_SIZE = 0.7
@@ -1212,8 +1277,9 @@ T_BANNER = (T_HOLD - 0.1, T_HOLD + 0.45)
 
 def emblem_center(t):
     """World (his plane): ahead of his face, keeping pace a moment behind him, bobbing a little."""
-    x = walk_x(t - 0.15) + HEAD_DX + EMB_DX
-    y = GY + HEAD_DY - EMB_UP + 4.0 * math.sin(t * 0.8) + 2.0 * math.sin(t * 1.9 + 1.0)
+    c = shot_at(t) == "C"
+    x = walk_x(t - 0.15) + HEAD_DX + (EMB_DX_C if c else EMB_DX)
+    y = GY + HEAD_DY - (EMB_UP_C if c else EMB_UP) + 4.0 * math.sin(t * 0.8) + 2.0 * math.sin(t * 1.9 + 1.0)
     return x, y
 
 
@@ -1345,8 +1411,17 @@ def _banner(cr, t, cx, cy, appear):
     cr.stroke()
     if u > 0.55:
         a = clamp((u - 0.55) / 0.45)
-        core.glow_text(cr, "On hold", cx, y + 4.8 + wave * math.sin(0.5 * TAU + t * 1.4), 14.5, FONT, RUNE_HOT,
+        core.glow_text(cr, "On hold", cx, y + 5.2 + wave * math.sin(0.5 * TAU + t * 1.4), 16.0, FONT, RUNE_HOT,
                        glow=RUNE, radius=4.0, glow_alpha=0.75 * a * appear, align="center", alpha_=a * appear)
+
+
+def emblem_scale(t):
+    """The emblem's size about its centre: smaller in the close shot, and in the final wide
+    growing against the pull-back so the hourglass and the four notes still read at the end."""
+    s = shot_at(t)
+    if s == "D":
+        return EMB_D * D_KEYS[0][2] / max(0.4, camera_base(t).zoom)
+    return EMB_SCALE[s]
 
 
 def draw_emblem(cr, t, front):
@@ -1354,6 +1429,20 @@ def draw_emblem(cr, t, front):
     if t < T_DISSOLVE0 + 0.3:
         return
     cx, cy = emblem_center(t)
+    k = emblem_scale(t)
+    for c in (cr, front):
+        c.save()
+        c.translate(cx, cy)
+        c.scale(k, k)
+        c.translate(-cx, -cy)
+    try:
+        _draw_emblem(cr, t, front, cx, cy)
+    finally:
+        cr.restore()
+        front.restore()
+
+
+def _draw_emblem(cr, t, front, cx, cy):
     ring_a = core.smoothstep(T_WIND0 - 0.1, T_HOLD + 0.2, t)
     notes = []
     for k in range(4):
@@ -1541,7 +1630,7 @@ RAIN_MID = (1.0, 150, 1500.0, 30.0, 1.4, 0.22, 12)
 RAIN_NEAR = (PX_NEAR, 26, 2300.0, 70.0, 2.4, 0.2, 13)
 
 
-SHOT_ZOOM = {"A": 1.0, "B": 2.25, "C": 3.6, "D": 0.82}    # nominal: drop counts are fixed per shot
+SHOT_ZOOM = {"A": 1.0, "B": 2.25, "C": 4.15, "D": 0.82}    # nominal: drop counts are fixed per shot
 CONE_K = {"A": 1.0, "B": 0.42, "C": 0.3, "D": 1.0}           # the lamps' cones of lit air, per shot
 
 
@@ -1911,8 +2000,12 @@ def draw(cr, t, st):
     lvl = P.stone_level(state, amp, t)
     stone_cb = P.stone_hold(light, state, amp, t)
 
+    # the sack: soaked grey paper in the night, kept down near his face's value (the brightest
+    # things on the figure stay his eyes, his face and the stone)
+    bag_light = B.Light.lerp(light, L_COLD, 0.5).with_(exposure=BAG_EXPOSURE)
+
     def bag_cb(swing):
-        return P.bag_hold(light, t, swing, state="open", damp=0.85)
+        return P.bag_hold(bag_light, t, swing, state="open", damp=1.0)
 
     pose = dragon_pose(t, stone_cb, bag_cb)
     dsurf, dox, doy, rig = render_dragon(cam, t, xd, pose, light, full=close)
