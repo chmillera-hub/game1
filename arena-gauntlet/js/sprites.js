@@ -161,6 +161,7 @@
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.fillRect(-4, -34.5, 3, 4);
     poly(ctx, [-1, -36, 2, -42 + o.bob, 7, -40, 4, -35], T.main);
+    if (o.lord) poly(ctx, [-5.5, -35, -5.5, -39, -3, -37, 0, -40, 3, -37, 5.5, -39, 5.5, -35], '#e6b83c', 0.8);
     // kite shield on the off arm
     poly(ctx, [-13, -25, -3, -25, -3, -13, -8, -6, -13, -13], T.main);
     poly(ctx, [-11.2, -23.3, -4.8, -23.3, -4.8, -13.8, -8, -9.2, -11.2, -13.8], T.dark, 0);
@@ -551,10 +552,11 @@
   D.dragon = (ctx, o) => {
     const T = o.tc;
     const ash = o.tyrant;
-    const body = ash ? '#3d3633' : '#8e2f24';
-    const belly = ash ? '#7a5a44' : '#e3a24c';
-    const wing = ash ? '#2a2422' : '#6d2119';
-    const memb = ash ? '#5a2f20' : '#a8432f';
+    const drake = o.drake;
+    const body = ash ? '#3d3633' : drake ? '#c0602e' : '#8e2f24';
+    const belly = ash ? '#7a5a44' : drake ? '#f0c060' : '#e3a24c';
+    const wing = ash ? '#2a2422' : drake ? '#8a3a1c' : '#6d2119';
+    const memb = ash ? '#5a2f20' : drake ? '#d97a3a' : '#a8432f';
     const flap = Math.sin(o.t * 3) * 3;
     // far wing
     poly(ctx, [-4, -26, -16, -48 - flap, -24, -40 - flap, -22, -28, -12, -24], wing);
@@ -652,6 +654,586 @@
     rect(ctx, -2, -12, 4, 4, 1, T.main, 0.8);
   };
 
+  // ------------------------------------------------------------ v2 heroes
+
+  D.mageknight = (ctx, o) => {
+    const T = o.tc;
+    const steel = '#7e88a6';
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 4);
+    legs(ctx, '#5f6884');
+    if (o.back) {
+      torso(ctx, steel, -25);
+      cape(ctx, T.main, -24, 19);
+      arm(ctx, 6, -22, 10, -14, steel, '#9aa3b0');
+      line(ctx, 10, -14, 15, -34, 2.6, '#d9ccff');
+      rect(ctx, -5.5, -36, 11, 12, 3, '#8c96b3');
+      poly(ctx, [-5, -34, -9, -41, -3.5, -36], '#c9a94a', 0.8);
+      poly(ctx, [5, -34, 9, -41, 3.5, -36], '#c9a94a', 0.8);
+      return;
+    }
+    torso(ctx, steel, -25);
+    rect(ctx, -4.5, -24, 9, 12, 1.5, T.main);
+    glow(ctx, 0, -19, 6, 'rgba(180,140,255,', 0.3 + 0.3 * pulse);
+    line(ctx, -2, -21.5, 2, -16.5, 1.1, '#efe6ff', false);
+    line(ctx, 2, -21.5, -2, -16.5, 1.1, '#efe6ff', false);
+    circle(ctx, -6.5, -23, 3.2, '#98a2bf');
+    circle(ctx, 6.5, -23, 3.2, '#98a2bf');
+    arm(ctx, -6, -21, -9, -14, steel, '#9aa3b0');
+    arm(ctx, 6.5, -22, 10, -14, steel, '#9aa3b0');
+    glow(ctx, 13, -25, 9, 'rgba(180,140,255,', 0.2 + 0.2 * pulse);
+    line(ctx, 10, -14, 15.5, -35, 2.8, '#ddd2ff');
+    line(ctx, 11.6, -19, 14.6, -31, 0.9, '#8f6cff', false);
+    line(ctx, 7.8, -17, 12.6, -15.4, 2.2, '#c9a94a');
+    rect(ctx, -5.5, -36, 11, 12, 3, '#9aa4c2');
+    rect(ctx, 0.5, -31.5, 5, 1.6, 0.6, '#2a1f45', 0);
+    ctx.fillStyle = 'rgba(210,190,255,' + (0.6 + 0.4 * pulse) + ')';
+    ctx.fillRect(2, -31.2, 2.6, 1);
+    poly(ctx, [-5, -34, -9, -41, -3.5, -36], '#c9a94a', 0.8);
+    poly(ctx, [5, -34, 9, -41, 3.5, -36], '#c9a94a', 0.8);
+  };
+
+  // Bare bones: legs, pelvis, spine and ribs.
+  function skeletonBody(ctx, o) {
+    const bone = '#e6dfc9';
+    const dark = '#b9b19a';
+    line(ctx, -3, -12, -4, -1.5, 1.8, bone);
+    line(ctx, 3, -12, 3.5, -1.5, 1.8, dark);
+    rect(ctx, -6.5, -2.2, 4.5, 2.2, 0.8, dark, 0.8);
+    rect(ctx, 1.8, -2.2, 5, 2.2, 0.8, dark, 0.8);
+    poly(ctx, [-5, -14.5, 5, -14.5, 4, -11, -4, -11], dark);
+    line(ctx, 0, -14, 0, -27, 1.8, dark);
+    for (let i = 0; i < 3; i++) line(ctx, -5 + i * 0.6, -25 + i * 2.8, 5 - i * 0.6, -25 + i * 2.8, 1.2, bone);
+    line(ctx, -5.5, -25.5, 5.5, -15, 1.6, o.tc.main, false);
+  }
+
+  function skull(ctx, x, y, r, back, eye) {
+    circle(ctx, x, y, r, '#e9e3cd');
+    if (back) return;
+    rect(ctx, x - r * 0.1, y + r * 0.45, r * 1.05, r * 0.55, 0.6, '#d8d0b8', 0.8);
+    ctx.fillStyle = OUT;
+    ctx.beginPath();
+    ctx.arc(x + r * 0.35, y - r * 0.05, r * 0.28, 0, Math.PI * 2);
+    ctx.arc(x + r * 0.85, y - r * 0.05, r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = eye || '#9fe0ff';
+    ctx.fillRect(x + r * 0.28, y - r * 0.12, 1, 1);
+  }
+
+  D.skelarcher = (ctx, o) => {
+    skeletonBody(ctx, o);
+    skull(ctx, 1, -31, 5, o.back);
+    if (o.back) {
+      rect(ctx, -5, -27, 5, 13, 2, '#5d4630');
+      arm(ctx, 4, -23, 9, -18, '#e6dfc9', '#e6dfc9');
+      ctx.beginPath();
+      ctx.arc(8, -22, 11, -1.15, 1.15);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = OUT;
+      ctx.stroke();
+      ctx.lineWidth = 1.7;
+      ctx.strokeStyle = '#a69a7a';
+      ctx.stroke();
+      return;
+    }
+    arm(ctx, -4, -23, -7, -16, '#e6dfc9', '#e6dfc9');
+    arm(ctx, 4, -23, 9, -22, '#e6dfc9', '#e6dfc9');
+    ctx.beginPath();
+    ctx.arc(7, -22, 12, -1.05, 1.05);
+    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = OUT;
+    ctx.stroke();
+    ctx.lineWidth = 1.9;
+    ctx.strokeStyle = '#b3a684';
+    ctx.stroke();
+    line(ctx, 13, -32.5, 13, -11.5, 0.7, '#d8d2c0', false);
+    line(ctx, 3, -22, 16.5, -22, 1, '#d9cfb8', false);
+    poly(ctx, [16.5, -23.5, 19.5, -22, 16.5, -20.5], '#cfe9f5', 0.8);
+  };
+
+  // ------------------------------------------------------------ greenskins
+
+  const ORC = '#6f9a4a';
+  const GOB = '#8db14a';
+
+  function tusks(ctx, x, y) {
+    poly(ctx, [x, y, x + 1, y - 3, x + 2, y], '#f2ecd8', 0.6);
+  }
+
+  D.orc = (ctx, o) => {
+    const T = o.tc;
+    const skin = o.skin || ORC;
+    legs(ctx, '#5a4632', '#3a2a1c');
+    if (o.back) {
+      rect(ctx, -8, -27, 16, 15, 4, '#6b5a44');
+      line(ctx, -7, -24, 7, -16, 2, T.main, false);
+      circle(ctx, 0.5, -31, 5.8, skin);
+      poly(ctx, [-2, -36, 3, -36, 1, -41], '#2f2418');
+      arm(ctx, 7, -24, 10, -15, skin, skin);
+      line(ctx, 10, -15, 14, -30, 2, '#5a3d22');
+      poly(ctx, [12, -33, 18, -31, 17, -26, 13, -28], '#a9b1b9');
+      return;
+    }
+    rect(ctx, -8, -27, 16, 15, 4, '#7d6c54');
+    ctx.fillStyle = 'rgba(30,25,20,0.35)';
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) ctx.fillRect(-6 + i * 3.4, -25 + j * 3.2, 1.4, 1.4);
+    rect(ctx, -8.5, -15.5, 17, 3, 1, '#4a3a28', 0);
+    rect(ctx, -2, -15.8, 4, 3.4, 0.8, T.main, 0.8);
+    circle(ctx, -7.5, -25, 3.4, '#5d4a35');
+    face(ctx, 1.5, -31.5, 5.8, skin);
+    line(ctx, -0.5, -34, 5.5, -33, 1.4, '#3d5a26', false);
+    tusks(ctx, 3, -28.4);
+    tusks(ctx, 5.4, -28.4);
+    poly(ctx, [-3, -36.5, 2, -37.5, 0, -41], '#2f2418');
+    arm(ctx, -7, -24, -9, -15, skin, skin);
+    arm(ctx, 7, -24, 10, -17, skin, skin);
+    line(ctx, 10, -17, 12, -33, 2.2, '#5a3d22');
+    poly(ctx, [10.5, -36, 18.5, -33.5, 17, -26, 11.5, -28], '#aeb6be');
+    line(ctx, 12, -34.5, 17.5, -32.5, 0.9, '#e8edf2', false);
+  };
+
+  D.brute = (ctx, o) => {
+    const T = o.tc;
+    const skin = '#5f8a3e';
+    rect(ctx, -8, -12, 6, 12, 1.5, '#4d3b29');
+    rect(ctx, 2, -12, 6, 12, 1.5, '#44331f');
+    rect(ctx, -9, -2.5, 7, 3, 1, '#2d2016', 0.9);
+    rect(ctx, 1.5, -2.5, 8, 3, 1, '#2d2016', 0.9);
+    if (o.back) {
+      rect(ctx, -11, -31, 22, 20, 6, skin);
+      rect(ctx, -10, -30, 20, 8, 3, '#5b4a37', 0.8);
+      line(ctx, -9, -27, 9, -14, 2.2, T.main, false);
+      circle(ctx, 0.5, -34, 5.6, skin);
+      arm(ctx, 10, -27, 13, -15, skin, skin);
+      line(ctx, 13, -15, 16, -38, 2.6, '#5a3d22');
+      rect(ctx, 11, -45, 11, 8, 2, '#7d858c');
+      return;
+    }
+    rect(ctx, -11, -31, 22, 20, 6, skin);
+    rect(ctx, -9, -24, 18, 9, 2, '#6b5a44', 0.9);
+    rect(ctx, -10, -15, 20, 3.4, 1, '#3e2e1f', 0);
+    rect(ctx, -2.2, -15.4, 4.4, 4, 0.8, T.main, 0.8);
+    circle(ctx, -9.5, -28.5, 4.6, '#7d858c');
+    circle(ctx, 9.5, -28.5, 4.6, '#7d858c');
+    face(ctx, 2, -34.5, 5.6, skin);
+    line(ctx, -0.5, -37, 6.5, -36, 1.6, '#3d5a26', false);
+    tusks(ctx, 3.4, -31.4);
+    tusks(ctx, 5.8, -31.4);
+    arm(ctx, -10, -27, -13, -16, skin, skin);
+    arm(ctx, 10, -27, 13, -17, skin, skin);
+    line(ctx, 13, -15, 16, -38, 2.6, '#5a3d22');
+    rect(ctx, 11, -46, 11, 9, 2, '#80888f');
+    rect(ctx, 11, -43, 11, 2, 0.5, '#5b6268', 0);
+  };
+
+  D.goblin_archer = (ctx, o) => {
+    const T = o.tc;
+    ctx.save();
+    ctx.scale(0.82, 0.82);
+    legs(ctx, '#5f4a2f', '#3a2a1c');
+    poly(ctx, [-6, -24, 6, -24, 8, -11, -8, -11], '#6a5236');
+    line(ctx, -6, -23, 6, -13, 1.8, T.main, false);
+    if (o.back) {
+      poly(ctx, [-6, -26, 0, -36, 6.5, -26, 6, -21, -6, -21], '#4f3d27');
+      poly(ctx, [-6, -30, -13, -33, -6, -27], GOB);
+      arm(ctx, 5, -21, 9, -16, GOB, GOB);
+      ctx.restore();
+      return;
+    }
+    face(ctx, 1.5, -28.5, 5, GOB);
+    poly(ctx, [-3, -29, -12, -33, -4, -26], GOB);
+    poly(ctx, [5, -31, 12, -35, 6, -28], GOB);
+    poly(ctx, [-6, -30, 0, -38, 7, -30, 6, -27, -6, -27], '#4f3d27');
+    ctx.fillStyle = '#ffde59';
+    ctx.fillRect(3, -29.5, 1.6, 1.3);
+    arm(ctx, -5, -21, -8, -14, GOB, GOB);
+    arm(ctx, 5, -21, 9.5, -21, GOB, GOB);
+    ctx.beginPath();
+    ctx.arc(7.5, -21, 10, -1.05, 1.05);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = OUT;
+    ctx.stroke();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#7a5530';
+    ctx.stroke();
+    line(ctx, 12.5, -29.5, 12.5, -12.5, 0.6, '#efe8d8', false);
+    line(ctx, 3, -21, 15, -21, 0.9, '#d9cfb8', false);
+    ctx.restore();
+  };
+
+  D.sapper = (ctx, o) => {
+    const T = o.tc;
+    ctx.save();
+    ctx.scale(0.82, 0.82);
+    const spark = 0.5 + 0.5 * Math.sin(o.t * 18);
+    legs(ctx, '#5f4a2f', '#3a2a1c');
+    // the keg on its back
+    rect(ctx, -14, -28, 10, 13, 3, '#7a4f28');
+    rect(ctx, -14.5, -25, 11, 1.6, 0.4, '#3e3a36', 0);
+    rect(ctx, -14.5, -19, 11, 1.6, 0.4, '#3e3a36', 0);
+    line(ctx, -9, -28, -7, -33, 1, '#3a2a1c', false);
+    glow(ctx, -7, -33.5, 4 + spark * 2, 'rgba(255,190,80,', 0.8);
+    circle(ctx, -7, -33.5, 1.2, '#fff1a8', 0);
+    poly(ctx, [-6, -24, 6, -24, 8, -11, -8, -11], '#7b5e3a');
+    line(ctx, -6, -23, 6, -13, 1.8, T.main, false);
+    if (o.back) {
+      circle(ctx, 0.5, -29, 4.8, GOB);
+      ctx.restore();
+      return;
+    }
+    face(ctx, 1.5, -28.5, 5, GOB);
+    poly(ctx, [-3, -29, -11, -33, -4, -26], GOB);
+    poly(ctx, [5, -31, 12, -35, 6, -28], GOB);
+    rect(ctx, -3.5, -33.5, 9, 3, 1, '#5b4a37', 0.8);
+    ctx.fillStyle = '#ffde59';
+    ctx.fillRect(3, -29.5, 1.6, 1.3);
+    poly(ctx, [1, -26, 6, -26, 4, -24.5], '#f2ecd8', 0.5);
+    arm(ctx, 5, -21, 9.5, -19, GOB, GOB);
+    circle(ctx, 10.5, -19, 2.4, '#3e3a36');
+    ctx.restore();
+  };
+
+  D.shaman = (ctx, o) => {
+    const T = o.tc;
+    const skin = ORC;
+    poly(ctx, [-7, -25, 7, -25, 10, 0, -10, 0], '#5c4632');
+    poly(ctx, [-10, 0, 10, 0, 9.4, -3, -9.4, -3], T.main, 0);
+    for (let i = -7; i <= 7; i += 3.5) poly(ctx, [i - 1.4, -25, i + 1.4, -25, i, -21], '#e8dfc4', 0.6);
+    if (o.back) {
+      circle(ctx, 0.5, -30, 5.6, skin);
+      poly(ctx, [-6, -31, -9, -40, -3, -34], '#d9cfb8', 0.8);
+      poly(ctx, [6, -31, 9, -40, 3, -34], '#d9cfb8', 0.8);
+      arm(ctx, 6, -22, 10, -15, skin, skin);
+      line(ctx, 10, -3, 12, -38, 1.8, '#5a3d22');
+      return;
+    }
+    face(ctx, 1.5, -30, 5.6, skin);
+    tusks(ctx, 3.2, -26.6);
+    // bone mask and horns
+    poly(ctx, [-1, -34, 7, -34, 7, -29.5, -1, -29.5], '#e8dfc4', 0.8);
+    ctx.fillStyle = OUT;
+    ctx.fillRect(1.5, -32.6, 1.6, 1.4);
+    ctx.fillRect(4.6, -32.6, 1.6, 1.4);
+    poly(ctx, [-5, -33, -9, -42, -2, -35], '#d9cfb8', 0.8);
+    poly(ctx, [6, -34, 9, -43, 4, -35], '#d9cfb8', 0.8);
+    // war drum at the hip
+    const beat = Math.max(0, Math.sin(o.t * 6)) * 1.5;
+    ellipse(ctx, -8, -13, 5, 6, '#8a5a30');
+    ellipse(ctx, -8, -13, 3.5, 4.4, '#e8d7b0', 0.8);
+    arm(ctx, -5, -22, -7, -15 - beat, skin, skin);
+    arm(ctx, 5.5, -22, 10, -17, skin, skin);
+    line(ctx, 11, -3, 12.5, -39, 1.8, '#5a3d22');
+    for (const [dx, c] of [[-2, '#c4542a'], [2, '#3f7fd9']]) line(ctx, 12.5, -36, 12.5 + dx, -30, 1, c, false);
+    circle(ctx, 12.6, -39.5, 2.4, '#e8dfc4');
+  };
+
+  // ------------------------------------------------------------ beasts
+
+  function wolfBody(ctx, o, fur, big) {
+    const k = big ? 1.15 : 1;
+    const step = Math.sin(o.t * 5) * 0.9;
+    ctx.save();
+    ctx.scale(k, k);
+    poly(ctx, [-14, -14, -20, -19 + o.bob, -16, -12], fur);
+    rect(ctx, -11, -8, 3.2, 8, 1, shade(fur, -0.25));
+    rect(ctx, 6, -8, 3.2, 8, 1, shade(fur, -0.25));
+    ellipse(ctx, -1, -12, 13, 5.8, fur);
+    ellipse(ctx, 0, -9.5, 9, 3, shade(fur, 0.15), 0);
+    rect(ctx, -8, -8, 3.2, 8 + step, 1, fur);
+    rect(ctx, 3, -8, 3.2, 8 - step, 1, fur);
+    poly(ctx, [8, -17, 16, -19, 22, -14, 20, -11, 12, -10, 7, -12], fur);
+    poly(ctx, [10, -18, 11.5, -23, 13.5, -18], shade(fur, -0.2));
+    poly(ctx, [13, -18.5, 15, -23, 16, -18], shade(fur, -0.2));
+    if (!o.back) {
+      ctx.fillStyle = big ? '#ff5a3a' : '#f0d36a';
+      ctx.fillRect(16, -16.5, 1.7, 1.3);
+      poly(ctx, [19, -11.5, 21, -11.5, 20, -9.5], '#f2ecd8', 0.5);
+    }
+    rect(ctx, -6, -18, 8, 2.4, 1, o.tc.main, 0.8);
+    ctx.restore();
+  }
+
+  D.warg = (ctx, o) => wolfBody(ctx, o, '#4e4a46', true);
+  D.wolf = (ctx, o) => wolfBody(ctx, o, '#8d8a85', false);
+
+  D.spider = (ctx, o) => {
+    const T = o.tc;
+    const body = '#3b3340';
+    const sc = Math.sin(o.t * 6);
+    for (let i = 0; i < 4; i++) {
+      const lx = -10 + i * 6;
+      const lift = (i % 2 ? sc : -sc) * 1.2;
+      line(ctx, lx, -9, lx - 5, -15 + lift, 1.6, shade(body, -0.2));
+      line(ctx, lx - 5, -15 + lift, lx - 7, 0, 1.6, shade(body, -0.2));
+    }
+    ellipse(ctx, -6, -11, 9, 7.5, body);
+    ellipse(ctx, -6, -12, 5, 3.5, T.main, 0.8);
+    poly(ctx, [-8, -14, -4, -14, -6, -9], '#d94a3a', 0);
+    ellipse(ctx, 6, -8, 6, 5, shade(body, 0.1));
+    for (let i = 0; i < 4; i++) {
+      const lx = -8 + i * 6;
+      const lift = (i % 2 ? -sc : sc) * 1.2;
+      line(ctx, lx, -7, lx + 6, -13 + lift, 1.8, body);
+      line(ctx, lx + 6, -13 + lift, lx + 8, 0, 1.8, body);
+    }
+    if (!o.back) {
+      ctx.fillStyle = '#ff5a3a';
+      for (const [x, y] of [[9, -10], [10.6, -9], [9.5, -8], [11, -7.5]]) ctx.fillRect(x, y, 1.2, 1.2);
+      line(ctx, 11, -5.5, 12.5, -3, 1, '#d8d0b8', false);
+    }
+  };
+
+  D.troll = (ctx, o) => {
+    const T = o.tc;
+    const skin = '#7b8f6a';
+    const moss = '#55703f';
+    rect(ctx, -9, -12, 6.5, 12, 2, shade(skin, -0.15));
+    rect(ctx, 2.5, -12, 6.5, 12, 2, shade(skin, -0.22));
+    poly(ctx, [-10, -14, 10, -14, 11, -8, -11, -8], '#5a4632');
+    if (o.back) {
+      ellipse(ctx, 0, -26, 12, 13, skin);
+      for (const [x, y, r] of [[-5, -32, 3], [3, -30, 3.4], [-1, -24, 2.6]]) circle(ctx, x, y, r, moss, 0);
+      circle(ctx, 3, -38, 5, skin);
+      arm(ctx, 10, -27, 13, -12, skin, skin);
+      line(ctx, 13, -12, 16, -30, 3.4, '#6b4a2b');
+      return;
+    }
+    ellipse(ctx, 0, -26, 12, 13, skin);
+    ellipse(ctx, 2, -22, 7, 7, shade(skin, 0.12), 0);
+    for (const [x, y, r] of [[-7, -31, 3], [-9, -24, 2.4]]) circle(ctx, x, y, r, moss, 0);
+    rect(ctx, -6, -15, 12, 3, 1, T.main, 0.8);
+    face(ctx, 6, -36, 5, skin);
+    poly(ctx, [8.5, -35, 13, -33, 9, -32], shade(skin, -0.1));
+    tusks(ctx, 7, -32.6);
+    line(ctx, 3, -39, 9, -38.5, 1.4, '#3d4d30', false);
+    arm(ctx, -10, -28, -13, -12, skin, skin);
+    arm(ctx, 10, -28, 13, -16, skin, skin);
+    line(ctx, 13, -14, 17, -33, 3.6, '#6b4a2b');
+    circle(ctx, 17.3, -35, 4.6, '#5d4128');
+  };
+
+  // ------------------------------------------------------------ bandits and soldiers
+
+  D.cutthroat = (ctx, o) => {
+    const T = o.tc;
+    legs(ctx, '#3d3a44', '#2a2420');
+    torso(ctx, '#5a4a3c', -23, 6.5);
+    rect(ctx, -6.5, -14, 13, 2.2, 0.8, '#2f2620', 0);
+    poly(ctx, [-6.5, -23, 6.5, -23, 7.5, -18, -7.5, -18], T.main, 0.8);
+    if (o.back) {
+      circle(ctx, 0.5, -28.5, 5, '#3a2a22');
+      poly(ctx, [-4, -30, 5, -30, 5, -27, -4, -27], T.main);
+      line(ctx, -4, -28.5, -9, -26 + o.bob, 1.6, T.main);
+      arm(ctx, 5.5, -20, 9, -14, '#5a4a3c', SKIN);
+      return;
+    }
+    face(ctx, 1.3, -28.5, 5, SKIN);
+    poly(ctx, [-4.5, -31.5, 5.8, -31.5, 5.8, -28.6, -4.5, -28.6], '#2f2620');
+    poly(ctx, [-1, -27, 6.5, -27, 6, -24, -1, -24], T.main, 0.6);
+    line(ctx, -4.5, -30, -9, -27 + o.bob, 1.6, '#2f2620');
+    arm(ctx, -5.5, -20, -8, -14, '#5a4a3c', SKIN);
+    arm(ctx, 5.5, -20, 10, -18, '#5a4a3c', SKIN);
+    line(ctx, 10, -18, 17, -22, 1.8, '#e8eef5');
+    line(ctx, 9.5, -17.5, 10.8, -19, 1.8, '#8a6a3a');
+  };
+
+  D.crossbow = (ctx, o) => {
+    const T = o.tc;
+    legs(ctx, '#6b6250');
+    torso(ctx, '#8a8170', -24);
+    rect(ctx, -4.5, -23, 9, 11, 1.5, T.main);
+    rect(ctx, -7, -14, 14, 2.4, 0.8, '#4a3a28', 0);
+    if (o.back) {
+      circle(ctx, 0.5, -29, 5, '#e1b48e');
+      ellipse(ctx, 0.5, -32, 8, 2.2, '#9aa3ad');
+      rect(ctx, -3.5, -35.5, 8, 4, 2, '#9aa3ad');
+      arm(ctx, 6, -21, 10, -15, '#8a8170', SKIN);
+      return;
+    }
+    face(ctx, 1.5, -29, 4.8, SKIN);
+    ellipse(ctx, 0.8, -32.3, 8.2, 2.2, '#a3acb6');
+    rect(ctx, -3.5, -36, 8.5, 4.5, 2, '#a3acb6');
+    arm(ctx, -5, -21, -2, -17, '#8a8170', SKIN);
+    arm(ctx, 5, -21, 9, -19, '#8a8170', SKIN);
+    line(ctx, -2, -18.5, 17, -19.5, 2.4, '#6a4a2a');
+    line(ctx, 13, -25, 13.5, -14, 1.8, '#5a3d22');
+    line(ctx, 13, -25, 4, -19, 0.6, '#d9cfb8', false);
+    line(ctx, 13.5, -14, 4, -19, 0.6, '#d9cfb8', false);
+    poly(ctx, [17, -20.6, 20, -19.6, 17, -18.6], '#cfd6de', 0.6);
+  };
+
+  // ------------------------------------------------------------ the dead
+
+  D.skeleton = (ctx, o) => {
+    const T = o.tc;
+    skeletonBody(ctx, o);
+    skull(ctx, 1, -31, 5, o.back, '#ff6a4a');
+    if (o.back) {
+      ellipse(ctx, -7, -20, 5.5, 7, '#6a5a44');
+      arm(ctx, 4, -23, 9, -16, '#e6dfc9', '#e6dfc9');
+      return;
+    }
+    ellipse(ctx, -7.5, -19, 5.5, 7, '#6a5a44');
+    ellipse(ctx, -7.5, -19, 2.2, 2.8, T.main, 0.8);
+    arm(ctx, 4, -23, 9, -17, '#e6dfc9', '#e6dfc9');
+    line(ctx, 9, -17, 15, -33, 2.2, '#9d8f78');
+    line(ctx, 7, -19.5, 11.5, -18, 1.8, '#6a5a44');
+  };
+
+  D.necromancer = (ctx, o) => {
+    const T = o.tc;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 3);
+    poly(ctx, [-7, -25, 7, -25, 11, 0, 6, -2, 2, 0, -2, -2, -6, 0, -11, 0], '#2b2230');
+    rect(ctx, -2, -24, 4, 22, 1, shade(T.main, -0.3), 0);
+    if (o.back) {
+      poly(ctx, [-7, -34, 7, -34, 8, -20, -8, -20], '#231b28');
+      poly(ctx, [-6, -34, 0, -42, 6, -34], '#231b28');
+      arm(ctx, 6, -22, 10, -16, '#2b2230', '#d8d2c8');
+      line(ctx, 10, -3, 12, -38, 1.8, '#3a2f2a');
+      return;
+    }
+    poly(ctx, [-7, -33, 7, -33, 8, -19, -8, -19], '#231b28');
+    poly(ctx, [-6, -33, 1, -42, 7, -33], '#231b28');
+    circle(ctx, 2, -28.5, 3.8, '#120d16', 0);
+    ctx.fillStyle = 'rgba(140,255,160,' + (0.6 + 0.4 * pulse) + ')';
+    ctx.fillRect(2.4, -29.5, 1.4, 1.2);
+    ctx.fillRect(4.6, -29.5, 1.2, 1.2);
+    arm(ctx, -5.5, -21, -8, -14, '#2b2230', '#d8d2c8');
+    arm(ctx, 5.5, -21, 10, -18, '#2b2230', '#d8d2c8');
+    line(ctx, 11, -2, 12.5, -36, 1.8, '#3a2f2a');
+    glow(ctx, 12.7, -38, 8 + pulse * 2, 'rgba(120,255,140,', 0.45);
+    skull(ctx, 12.4, -38.5, 3.2, false, '#9dffad');
+  };
+
+  D.colossus = (ctx, o) => {
+    const T = o.tc;
+    const bone = '#ddd5bd';
+    const dark = '#a99f86';
+    rect(ctx, -10, -13, 7, 13, 2, dark);
+    rect(ctx, 3, -13, 7, 13, 2, shade(dark, -0.1));
+    ellipse(ctx, 0, -26, 14, 13, '#5c5248');
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, -26, 12 - i * 0.6, 10 - i * 2.2, 0, Math.PI * 1.05, Math.PI * 1.95);
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = OUT;
+      ctx.stroke();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = bone;
+      ctx.stroke();
+      ctx.restore();
+    }
+    line(ctx, 0, -38, 0, -14, 2.6, dark);
+    rect(ctx, -5, -19, 10, 3, 1, T.main, 0.8);
+    skull(ctx, 2, -41, 6.5, o.back, '#ff6a4a');
+    poly(ctx, [-4, -45, -9, -51, -2, -47], bone, 0.8);
+    poly(ctx, [7, -45, 11, -51, 5, -47], bone, 0.8);
+    const sway = o.bob * 0.8;
+    line(ctx, -12, -33, -17, -16, 4.4, bone);
+    circle(ctx, -17.5, -14 + sway, 4.6, dark);
+    line(ctx, 12, -33, 16, -17, 4.4, bone);
+    circle(ctx, 16.5, -15 - sway, 4.8, dark);
+  };
+
+  D.lich = (ctx, o) => {
+    const T = o.tc;
+    const y = -4 + o.bob * 1.2;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 3);
+    glow(ctx, 0, y - 22, 20, 'rgba(120,200,255,', 0.25 + 0.1 * pulse);
+    poly(ctx, [-8, y - 26, 8, y - 26, 12, y, 7, y - 3, 3, y + 1, -1, y - 3, -5, y + 1, -9, y - 2, -12, y], '#2a3446');
+    poly(ctx, [-6, y - 26, 6, y - 26, 8, y - 18, -8, y - 18], '#3a4a64', 0);
+    rect(ctx, -2, y - 25, 4, 18, 1, shade(T.main, -0.25), 0);
+    if (!o.back) {
+      for (let i = 0; i < 3; i++) line(ctx, -4, y - 24 + i * 2.4, 4, y - 24 + i * 2.4, 0.9, '#cfc7b0', false);
+    }
+    skull(ctx, 1, y - 32, 5.4, o.back, '#8fe3ff');
+    poly(ctx, [-4.5, y - 36, -4.5, y - 41, -2, y - 38, 1, y - 42, 4, y - 38, 6.5, y - 41, 6.5, y - 36], '#7fd3ff', 0.8);
+    arm(ctx, -6, y - 23, -9, y - 15, '#2a3446', '#e6dfc9');
+    arm(ctx, 6, y - 23, 10, y - 19, '#2a3446', '#e6dfc9');
+    line(ctx, 11, y - 2, 12.5, y - 38, 1.8, '#4a5a70');
+    glow(ctx, 12.8, y - 40, 7 + pulse * 2, 'rgba(140,220,255,', 0.6);
+    poly(ctx, [12.8, y - 45, 15.5, y - 40, 12.8, y - 35, 10.1, y - 40], '#bfefff', 0.8);
+  };
+
+  // ------------------------------------------------------------ the keep, the camp and the road
+
+  D.tower = (ctx, o) => {
+    const T = o.tc;
+    const stone = '#8d877d';
+    poly(ctx, [-12, 0, 12, 0, 10, -34, -10, -34], stone);
+    poly(ctx, [-12, 0, -1, 0, -1, -34, -10, -34], shade(stone, -0.12), 0);
+    for (let r = 0; r < 4; r++) line(ctx, -11 + r * 0.5, -8 - r * 7, 11 - r * 0.5, -8 - r * 7, 0.7, 'rgba(0,0,0,0.22)', false);
+    rect(ctx, -12, -40, 24, 7, 1, shade(stone, 0.06));
+    for (let i = 0; i < 4; i++) rect(ctx, -12 + i * 6.6, -45, 4.4, 5.5, 0.6, shade(stone, 0.1));
+    rect(ctx, 2, -27, 2.2, 7, 0.8, '#1b1714', 0);
+    rect(ctx, -6, -18, 2.2, 7, 0.8, '#1b1714', 0);
+    line(ctx, 0, -45, 0, -58, 1.4, '#5a3d22');
+    const w = Math.sin(o.t * 3);
+    poly(ctx, [0, -58, 9, -57 + w * 0.6, 9, -52 + w, 0, -51.5], T.main);
+  };
+
+  D.wall = (ctx, o) => {
+    const stone = '#8f897e';
+    poly(ctx, [-15, -2, 0, 5, 15, -2, 15, -20, 0, -13, -15, -20], stone);
+    poly(ctx, [0, 5, 15, -2, 15, -20, 0, -13], shade(stone, -0.14), 0);
+    poly(ctx, [-15, -20, 0, -27, 15, -20, 0, -13], shade(stone, 0.1));
+    for (const [x, y] of [[-11, -22], [-3, -26], [5, -22], [-4, -18]]) rect(ctx, x, y - 4, 4.5, 4, 0.5, shade(stone, 0.16), 0.8);
+    line(ctx, -15, -11, 0, -4, 0.7, 'rgba(0,0,0,0.25)', false);
+    line(ctx, 0, -4, 15, -11, 0.7, 'rgba(0,0,0,0.25)', false);
+    void o;
+  };
+
+  D.gate = (ctx, o) => {
+    const T = o.tc;
+    const stone = '#8f897e';
+    rect(ctx, -15, -30, 6, 31, 1, stone);
+    rect(ctx, 9, -30, 6, 31, 1, shade(stone, -0.12));
+    rect(ctx, -16, -34, 8, 5, 1, shade(stone, 0.1));
+    rect(ctx, 8, -34, 8, 5, 1, shade(stone, 0.1));
+    poly(ctx, [-9, 0, 9, 0, 9, -22, 0, -28, -9, -22], '#6d4a2a');
+    for (const x of [-5, 0, 5]) line(ctx, x, -1, x, -24 + Math.abs(x) * 0.6, 0.8, 'rgba(0,0,0,0.3)', false);
+    rect(ctx, -9, -17, 18, 2.4, 0.5, '#3e3a36', 0.8);
+    rect(ctx, -9, -7, 18, 2.4, 0.5, '#3e3a36', 0.8);
+    circle(ctx, 0, -12, 1.6, '#c9a94a', 0.8);
+    poly(ctx, [-8, -30, 8, -30, 6, -36, -6, -36], T.main);
+  };
+
+  D.barrel = (ctx, o) => {
+    const spark = 0.5 + 0.5 * Math.sin(o.t * 14);
+    rect(ctx, -7, -17, 14, 17, 4, '#7a4f28');
+    rect(ctx, -7.4, -13.5, 14.8, 1.8, 0.4, '#3e3a36', 0);
+    rect(ctx, -7.4, -5, 14.8, 1.8, 0.4, '#3e3a36', 0);
+    ellipse(ctx, 0, -17, 7, 2.4, '#8e5f31');
+    circle(ctx, 0, -9, 2.6, '#1b1714', 0);
+    ctx.fillStyle = '#e8dfc4';
+    ctx.fillRect(-1, -10, 2, 1.2);
+    line(ctx, 2, -17.5, 4, -22, 0.9, '#3a2a1c', false);
+    glow(ctx, 4, -22.5, 3 + spark * 1.5, 'rgba(255,190,80,', 0.75);
+    void o;
+  };
+
+  D.cart = (ctx, o) => {
+    const T = o.tc;
+    const wood = '#8a5a30';
+    const spin = o.t * 2;
+    rect(ctx, -14, -19, 26, 9, 1.5, wood);
+    rect(ctx, -14, -12, 26, 2, 0.5, shade(wood, -0.25), 0);
+    for (const [x, y, w, h, c] of [[-12, -27, 8, 8, '#b98a52'], [-3, -25, 7, 6, '#d6c49a'], [4, -28, 7, 9, '#9a6a3a']]) rect(ctx, x, y, w, h, 1.5, c);
+    poly(ctx, [-1, -25, 4, -25, 1.5, -29], '#e2b84c', 0.6);
+    line(ctx, 12, -15, 20, -12, 1.6, shade(wood, -0.2));
+    for (const wx of [-9, 6]) {
+      circle(ctx, wx, -7, 6, '#5a3d22');
+      circle(ctx, wx, -7, 4.2, '#7a5530', 0.8);
+      for (let k = 0; k < 3; k++) {
+        const a = spin + (k * Math.PI) / 3;
+        line(ctx, wx - Math.cos(a) * 4, -7 - Math.sin(a) * 4, wx + Math.cos(a) * 4, -7 + Math.sin(a) * 4, 0.8, '#3a2a1c', false);
+      }
+      circle(ctx, wx, -7, 1.2, '#3a2a1c', 0);
+    }
+    line(ctx, -13, -27, -13, -38, 1.2, '#5a3d22');
+    poly(ctx, [-13, -38, -6, -37, -6, -33, -13, -33.5], T.main);
+  };
+
   // Pick-ups that lie on a tile: a war chest, a tome on a lectern, or a relic on a plinth.
   function drawLoot(ctx, kind, t) {
     const sp = Math.sin(t * 3);
@@ -684,9 +1266,12 @@
     knight: 43, archer: 39, scout: 33, cleric: 44, berserker: 45, pyromancer: 45, assassin: 35, golem: 44,
     beastrider: 44, furgon: 44, wisp: 38, barrier: 40, enchantress: 37, witch: 47, lightning: 44, dragon: 50,
     shrub: 20, golem_king: 62, witch_queen: 60, ashen_tyrant: 82, specter: 42, warbanner: 62, cage: 31,
+    mageknight: 43, skelarcher: 37, orc: 41, brute: 52, goblin_archer: 31, sapper: 31, shaman: 43, warg: 26, wolf: 22,
+    spider: 25, troll: 54, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
+    drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
   };
 
-  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, dragon: 1.05 };
+  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };
 
   // Draw a unit with feet at the current origin. view: 'front' or 'back'.
   function drawUnit(ctx, type, team, view, t, extra) {
@@ -707,6 +1292,16 @@
         break;
       case 'ashen_tyrant':
         D.dragon(ctx, Object.assign(o, { tyrant: true }));
+        break;
+      case 'drake':
+        D.dragon(ctx, Object.assign(o, { drake: true }));
+        break;
+      case 'castellan':
+        D.knight(ctx, Object.assign(o, { lord: true }));
+        break;
+      case 'warlord':
+        D.brute(ctx, o);
+        if (!o.back) poly(ctx, [-6, -40, -11, -49, -3, -43], '#d9cfb8', 0.8);
         break;
       default:
         (D[type] || D.knight)(ctx, o);

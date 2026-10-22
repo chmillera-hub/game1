@@ -16,8 +16,9 @@ function randomArmy(rng, budget, team, pool) {
       if (spent >= budget - 1) break;
       continue;
     }
-    units.push({ type, team, rank: 1 });
-    spent += c;
+    const T = UNITS[type];
+    units.push({ type, team, level: 1, a1: rng.pick(T.abilities[1]), a2: T.abilities[2][0] });
+    spent += c + AG.Data.ABILITIES[units[units.length - 1].a1].cost;
   }
   return units;
 }
@@ -67,7 +68,7 @@ function runBattle(seed, pPool, ePool, budget, opts = {}) {
     ...place(rng, randomArmy(rng, budget, 'P', pPool), 'P', w, h),
     ...place(rng, randomArmy(rng, budget, 'E', ePool), 'E', w, h),
   ];
-  const s = E.createBattle({ w, h, terrain: terrain(rng, w, h), units, seed });
+  const s = E.createBattle({ w, h, terrain: terrain(rng, w, h), units, seed, relics: { P: [], E: [] } });
   let actions = 0;
   const t0 = Date.now();
   while (!s.over) {
@@ -88,7 +89,7 @@ let ms = 0;
 let maxMs = 0;
 const typeWins = {};
 for (let i = 0; i < N; i++) {
-  const r = runBattle(1000 + i, pool, pool, 12);
+  const r = runBattle(1000 + i, pool, pool, 14);
   wins[r.winner]++;
   turns += r.turns;
   if (r.timeout) timeouts++;

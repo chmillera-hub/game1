@@ -48,6 +48,8 @@
       this.panY = 0;
       this.loot = [];
       this.hold = null;
+      this.tfx = [];
+      this.exitX = null;
       this.staticCv = document.createElement('canvas');
       this.staticDirty = true;
       this.activeSide = null;
@@ -301,28 +303,45 @@
         v.hp = u.hp;
         v.maxHp = u.maxHp;
         v.wait = u.wait;
-        v.para = u.para;
-        v.poison = !!u.poison;
-        v.rank = u.rank;
         v.activated = u.activated;
         v.alpha = v.dying ? v.alpha : 1;
+        this.copyStatus(v, u);
       }
       for (const uid of [...this.vis.keys()]) if (!seen.has(uid) && !(opts && opts.keep)) this.vis.delete(uid);
+      this.tfx = (s.tfx || []).map((f) => Object.assign({}, f));
+      this.exitX = s.units.some((u) => u.alive && u.traits && u.traits.has('cart')) ? s.cartExit : null;
+    }
+
+    copyStatus(v, u) {
+      v.para = u.para || 0;
+      v.poison = !!u.poison;
+      v.burn = !!u.burn;
+      v.root = u.root || 0;
+      v.weak = u.weak || 0;
+      v.mark = u.mark || 0;
+      v.frenzy = u.frenzy || 0;
+      v.shield = u.shield || 0;
+      v.level = u.level || 1;
     }
 
     makeVis(u) {
-      return {
+      const v = {
         uid: u.uid, type: u.type, team: u.team, x: u.x, y: u.y, facing: u.facing, hp: u.hp, maxHp: u.maxHp,
-        wait: u.wait || 0, para: u.para || 0, poison: !!u.poison, rank: u.rank || 1, boss: !!u.boss, vip: !!u.vip,
-        nonCombat: !!u.nonCombat, alpha: 1, ox: 0, oy: 0, hop: 0, scale: 1, shake: 0, flash: 0,
+        wait: u.wait || 0, boss: !!u.boss, vip: !!u.vip,
+        nonCombat: !!u.nonCombat, scenery: !!(u.traits && u.traits.has && u.traits.has('scenery')),
+        alpha: 1, ox: 0, oy: 0, hop: 0, scale: 1, shake: 0, flash: 0,
         phase: (u.uid * 1.7) % 6.28, activated: !!u.activated, ghost: !!u.ghost, rid: u.rid,
       };
+      this.copyStatus(v, u);
+      return v;
     }
 
     clearUnits() {
       this.vis.clear();
       this.fx = [];
       this.texts = [];
+      this.tfx = [];
+      this.exitX = null;
     }
 
     // Loot on the field and the shrine to hold, if the mission has them.
@@ -372,6 +391,7 @@
       this.drawLiquids(g);
       this.drawOverlays(g);
       this.drawObjects(g);
+      this.drawSmoke(g);
       this.drawEffects(g, dt);
       this.drawTexts(g, dt);
       this.drawFacingArrows(g);
@@ -527,6 +547,8 @@
       const o = this.ov;
       const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
       if (this.hold) this.drawHold(g);
+      if (this.exitX != null) this.drawExit(g);
+      this.drawHazards(g);
       if (o.deploy)
         for (const [x, y] of o.deploy) this.tileFill(g, x, y, 'rgba(90,160,255,0.16)', 'rgba(150,200,255,0.55)', 3, 1);
       if (o.danger)
@@ -585,6 +607,76 @@
       g.restore();
     }
 
+    // The left edge loot wagons flee toward.
+    drawExit(g) {
+      const k = 0.5 + 0.5 * Math.sin(this.time * 3);
+      for (let y = 0; y < this.h; y++) {
+        const x = this.exitX;
+        if (this.terrain[y * this.w + x] !== 0) continue;
+        this.tileFill(g, x, y, 'rgba(255,200,80,' + (0.08 + 0.06 * k) + ')', 'rgba(255,210,120,0.35)', 3, 1);
+        const [cx, cy] = this.center(x, y);
+        const [ax, ay] = this.center(x - 0.35, y);
+        g.strokeStyle = 'rgba(255,220,140,' + (0.45 + 0.35 * k) + ')';
+        g.lineWidth = Math.max(1.2, this.tw * 0.035);
+        g.beginPath();
+        g.moveTo(cx + (cx - ax) * 0.2, cy + (cy - ay) * 0.2 - this.th * 0.12);
+        g.lineTo(ax, ay);
+        g.lineTo(cx + (cx - ax) * 0.2, cy + (cy - ay) * 0.2 + this.th * 0.12);
+        g.stroke();
+      }
+    }
+
+    // Fire and caltrops lie on the ground; smoke is drawn over the units.
+    drawHazards(g) {
+      for (const f of this.tfx) {
+        const [cx, cy] = this.center(f.x, f.y);
+        if (f.kind === 'fire') {
+          const ph = this.time * 6 + f.x * 1.7 + f.y;
+          this.tileFill(g, f.x, f.y, 'rgba(255,110,30,' + (0.22 + 0.08 * Math.sin(ph)) + ')', 'rgba(255,170,60,0.55)', 2, 1);
+          for (let i = 0; i < 3; i++) {
+            const fx = cx + (i - 1) * this.tw * 0.14;
+            const fh = this.tw * (0.16 + 0.06 * Math.sin(ph + i * 2));
+            g.fillStyle = i === 1 ? 'rgba(255,220,120,0.85)' : 'rgba(255,120,40,0.8)';
+            g.beginPath();
+            g.moveTo(fx - this.tw * 0.05, cy + this.th * 0.05);
+            g.quadraticCurveTo(fx, cy - fh, fx + this.tw * 0.05, cy + this.th * 0.05);
+            g.fill();
+          }
+        } else if (f.kind === 'caltrops') {
+          g.strokeStyle = f.team === 'P' ? 'rgba(150,200,255,0.9)' : 'rgba(255,150,140,0.9)';
+          g.lineWidth = Math.max(1, this.tw * 0.025);
+          for (let i = 0; i < 5; i++) {
+            const a = i * 1.26 + f.x;
+            const px = cx + Math.cos(a) * this.tw * 0.15;
+            const py = cy + Math.sin(a) * this.th * 0.15;
+            const s = this.tw * 0.04;
+            g.beginPath();
+            g.moveTo(px - s, py);
+            g.lineTo(px + s, py);
+            g.moveTo(px, py - s * 1.3);
+            g.lineTo(px, py + s * 0.4);
+            g.stroke();
+          }
+        }
+      }
+    }
+
+    drawSmoke(g) {
+      for (const f of this.tfx) {
+        if (f.kind !== 'smoke') continue;
+        const [cx, cy] = this.center(f.x, f.y);
+        for (let i = 0; i < 4; i++) {
+          const a = this.time * 0.6 + i * 1.6 + f.x * 0.9 + f.y * 0.4;
+          const px = cx + Math.cos(a) * this.tw * 0.14;
+          const py = cy - this.tw * (0.12 + 0.1 * i) + Math.sin(a * 1.3) * this.th * 0.12;
+          g.fillStyle = 'rgba(205,210,220,' + (0.22 - i * 0.03) + ')';
+          g.beginPath();
+          g.ellipse(px, py, this.tw * (0.3 - i * 0.03), this.th * (0.42 - i * 0.04), 0, 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+    }
+
     drawLootItem(g, l) {
       const [cx, cy] = this.center(l.x, l.y);
       g.save();
@@ -610,7 +702,7 @@
         else if (it.loot) this.drawLootItem(g, it.loot);
         else {
           this.drawUnit(g, it.v);
-          if (!it.v.ghost) bars.push(it.v);
+          if (!it.v.ghost && (!it.v.scenery || it.v.hp < it.v.maxHp)) bars.push(it.v);
         }
       }
       for (const v of bars) this.drawBar(g, v);
@@ -674,6 +766,12 @@
           g.ellipse(cx, cy, rx + 2.5, ry + 1.5, 0, 0, Math.PI * 2);
           g.stroke();
         }
+        if (v.frenzy > 0) {
+          g.fillStyle = 'rgba(255,70,30,' + (0.18 + 0.12 * Math.sin(this.time * 9)) + ')';
+          g.beginPath();
+          g.ellipse(cx, cy, rx * 1.2, ry * 1.2, 0, 0, Math.PI * 2);
+          g.fill();
+        }
         if (v.facing >= 0) {
           const [dx, dy] = DIRS[v.facing];
           const vx = ((dx - dy) * this.tw) / 2;
@@ -710,6 +808,64 @@
       if (v.para > 0) g.filter = 'saturate(0.4) brightness(1.15)';
       S.drawUnit(g, v.type, v.team, view, this.time + v.phase, null);
       g.filter = 'none';
+      g.restore();
+      this.drawStatusFx(g, v, cx, cy - lift);
+    }
+
+    // Roots, burns, shields and marks shown on the unit itself.
+    drawStatusFx(g, v, cx, cy) {
+      if (v.alpha < 0.3) return;
+      const h = (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1);
+      const t = this.time + v.phase;
+      g.save();
+      g.globalAlpha = v.alpha;
+      if (v.root > 0) {
+        g.strokeStyle = '#5fbf4a';
+        g.lineWidth = Math.max(1.2, this.tw * 0.03);
+        for (let i = 0; i < 3; i++) {
+          const a = (i / 3) * Math.PI * 2 + 0.4;
+          const x0 = cx + Math.cos(a) * this.tw * 0.18;
+          const y0 = cy + Math.sin(a) * this.th * 0.18;
+          g.beginPath();
+          g.moveTo(x0, y0);
+          g.quadraticCurveTo(x0 + this.tw * 0.06, y0 - h * 0.25, x0 - this.tw * 0.02, y0 - h * 0.38);
+          g.stroke();
+        }
+      }
+      if (v.burn) {
+        for (let i = 0; i < 2; i++) {
+          const fx = cx + (i ? 0.12 : -0.1) * this.tw;
+          const fy = cy - h * (0.35 + 0.2 * i);
+          const fh = this.tw * (0.09 + 0.03 * Math.sin(t * 9 + i));
+          g.fillStyle = 'rgba(255,140,40,0.9)';
+          g.beginPath();
+          g.moveTo(fx - fh * 0.45, fy);
+          g.quadraticCurveTo(fx, fy - fh * 2, fx + fh * 0.45, fy);
+          g.fill();
+        }
+      }
+      if (v.shield > 0) {
+        g.strokeStyle = 'rgba(140,200,255,' + (0.55 + 0.2 * Math.sin(t * 3)) + ')';
+        g.fillStyle = 'rgba(140,200,255,0.12)';
+        g.lineWidth = Math.max(1, this.tw * 0.025);
+        g.beginPath();
+        g.ellipse(cx, cy - h * 0.48, this.tw * 0.32, h * 0.58, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+      }
+      if (v.mark > 0) {
+        const my = cy - h - this.tw * 0.32;
+        const r = this.tw * 0.09;
+        g.strokeStyle = '#ff5a4a';
+        g.lineWidth = Math.max(1, this.tw * 0.025);
+        g.beginPath();
+        g.arc(cx, my, r, 0, Math.PI * 2);
+        g.moveTo(cx - r * 1.5, my);
+        g.lineTo(cx + r * 1.5, my);
+        g.moveTo(cx, my - r * 1.5);
+        g.lineTo(cx, my + r * 1.5);
+        g.stroke();
+      }
       g.restore();
     }
 
@@ -771,9 +927,24 @@
         g.stroke();
         ix -= icon;
       }
-      if (v.rank > 1) {
+      const icons = [];
+      if (v.root > 0) icons.push('#5fbf4a');
+      if (v.burn) icons.push('#ff8a2a');
+      if (v.weak > 0) icons.push('#b08cff');
+      if (v.shield > 0) icons.push('#8cc8ff');
+      for (const c of icons) {
+        g.fillStyle = c;
+        g.strokeStyle = S.OUT;
+        g.lineWidth = 1;
+        g.beginPath();
+        g.arc(ix, iy, icon * 0.38, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        ix -= icon * 0.95;
+      }
+      if (v.level > 1) {
         const s = Math.max(3, this.tw * 0.07);
-        for (let i = 0; i < v.rank; i++) this.star(g, x + bw + s * 1.4 + i * s * 1.9, iy, s);
+        for (let i = 0; i < v.level; i++) this.star(g, x + bw + s * 1.4 + i * s * 1.9, iy, s);
       }
       if (v.boss || v.vip) {
         g.fillStyle = '#e6b83c';
@@ -975,7 +1146,7 @@
       const [x0, y0] = this.pt(from[0], from[1], 24);
       const [x1, y1] = this.pt(to[0], to[1], 16);
       const dist = Math.hypot(x1 - x0, y1 - y0);
-      const arc = kind === 'arrow' ? dist * 0.35 : kind === 'fire' || kind === 'orb' ? dist * 0.45 : dist * 0.08;
+      const arc = kind === 'arrow' ? dist * 0.35 : kind === 'rock' ? dist * 0.5 : kind === 'knife' ? dist * 0.08 : dist * 0.35;
       const trail = [];
       return this.effect(ms / 1000, (g, k) => {
         const px = lerp(x0, x1, k);
@@ -1008,7 +1179,11 @@
         } else {
           trail.push([px, py]);
           if (trail.length > 10) trail.shift();
-          const col = kind === 'fire' ? ['255,150,40', '#ffd27a'] : kind === 'orb' ? ['255,120,220', '#ffd2f2'] : ['170,110,255', '#e0c8ff'];
+          const COLS = {
+            fire: ['255,150,40', '#ffd27a'], orb: ['255,120,220', '#ffd2f2'], holy: ['255,225,120', '#fff6c8'], frost: ['120,200,255', '#e0f6ff'],
+            green: ['110,240,140', '#d8ffe0'], web: ['235,235,235', '#ffffff'], rock: ['150,135,110', '#9a8a70'],
+          };
+          const col = COLS[kind] || ['170,110,255', '#e0c8ff'];
           for (let i = 0; i < trail.length; i++) {
             const a = i / trail.length;
             g.fillStyle = 'rgba(' + col[0] + ',' + a * 0.5 + ')';
@@ -1119,6 +1294,8 @@
       const tgt = ev.target;
       const tiles = ev.tiles || [];
       const fast = this.reduced;
+      const dist = tgt ? Math.abs(tgt.x - ev.x) + Math.abs(tgt.y - ev.y) : 0;
+      const travel = (d) => (fast ? 120 : 240 + 25 * d);
       const lunge = async (tx, ty) => {
         if (!v) return;
         const [ax, ay] = this.center(v.x, v.y);
@@ -1133,12 +1310,41 @@
         });
         return back;
       };
+      // What a ranged single-target act throws.
+      const missile = () => {
+        if (!ev.dmg) return type === 'spider' ? 'web' : 'hex';
+        if (ev.dmg === 'magic') {
+          if (type === 'cleric') return 'holy';
+          if (type === 'necromancer') return 'green';
+          if (type === 'lich' || type === 'specter') return 'frost';
+          return 'hex';
+        }
+        if (type === 'golem' || type === 'golem_king') return 'rock';
+        if (type === 'scout' || type === 'cutthroat') return 'knife';
+        return 'arrow';
+      };
+      const beam = (x, y, color) => {
+        const [cx, cy] = this.center(x, y);
+        this.effect(0.6, (g, k) => {
+          g.save();
+          g.globalAlpha = Math.sin(k * Math.PI) * 0.75;
+          const gr = g.createLinearGradient(cx, cy, cx, cy - this.tw * 1.6);
+          gr.addColorStop(0, color + '0.85)');
+          gr.addColorStop(1, color + '0)');
+          g.fillStyle = gr;
+          g.fillRect(cx - this.tw * 0.18, cy - this.tw * 1.6, this.tw * 0.36, this.tw * 1.6);
+          g.restore();
+        });
+      };
       switch (ev.kind) {
         case 'strike': {
-          const ranged = Math.abs(tgt.x - ev.x) + Math.abs(tgt.y - ev.y) > 1;
-          if (ranged) {
-            this.sfx(type === 'archer' ? 'bow' : 'throw');
-            await this.projectile(from, [tgt.x, tgt.y], type === 'archer' ? 'arrow' : 'knife', fast ? 120 : 260 + 25 * (Math.abs(tgt.x - ev.x) + Math.abs(tgt.y - ev.y)));
+          if (dist > 1) {
+            const m = missile();
+            this.sfx(m === 'arrow' ? 'bow' : m === 'knife' ? 'throw' : m === 'rock' ? 'slam' : m === 'holy' ? 'heal' : 'zap');
+            await this.projectile(from, [tgt.x, tgt.y], m, travel(dist));
+            if (m === 'holy') this.ring(tgt.x, tgt.y, 'rgba(255,230,140,0.9)', 0.8, 320);
+            if (m === 'web') this.particles(tgt.x, tgt.y, 8, ['#ffffff', '#dddddd'], { lift: 10, speed: 0.4, max: 0.6 });
+            if (m === 'rock') this.particles(tgt.x, tgt.y, 10, ['#a08a6a', '#6f5f48'], { lift: 8, gravity: 2.5, rise: 0.5 });
             await this.applyImpacts(group, state);
           } else {
             this.sfx('swing');
@@ -1165,17 +1371,28 @@
           break;
         }
         case 'blast': {
-          const charm = ev.dmg === 'magic' && type === 'enchantress';
-          this.sfx(charm ? 'charm' : 'fireball');
-          await this.projectile(from, [tgt.x, tgt.y], charm ? 'orb' : 'fire', fast ? 150 : 380);
-          if (charm) {
-            this.flashTiles(tiles, 'rgba(255,130,220,ALPHA)', 450);
-            for (const [x, y] of tiles) this.particles(x, y, 6, ['#ffc4ee', '#ff7ad0', '#fff'], { lift: 10, speed: 0.6, max: 0.7 });
+          if (ev.dmg === 'phys') {
+            this.sfx('bow');
+            await Promise.all(tiles.map((t, i) => this.wait(i * 45).then(() => this.projectile(from, t, 'arrow', fast ? 120 : 330))));
+            this.flashTiles(tiles, 'rgba(255,240,200,ALPHA)', 260);
+          } else if (!ev.dmg) {
+            this.sfx('grow');
+            await this.projectile(from, [tgt.x, tgt.y], 'green', fast ? 150 : 360);
+            this.flashTiles(tiles, 'rgba(90,200,80,ALPHA)', 450);
+            for (const [x, y] of tiles) this.particles(x, y, 6, ['#5aa046', '#8fd06a', '#3d7f33'], { lift: 4, rise: 0.4, max: 0.6 });
           } else {
-            this.sfx('boom');
-            this.shakeT = 0.18;
-            this.flashTiles(tiles, 'rgba(255,140,40,ALPHA)', 420);
-            for (const [x, y] of tiles) this.particles(x, y, 8, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 8, rise: 0.5, max: 0.6 });
+            const charm = type === 'enchantress';
+            this.sfx(charm ? 'charm' : 'fireball');
+            await this.projectile(from, [tgt.x, tgt.y], charm ? 'orb' : 'fire', fast ? 150 : 380);
+            if (charm) {
+              this.flashTiles(tiles, 'rgba(255,130,220,ALPHA)', 450);
+              for (const [x, y] of tiles) this.particles(x, y, 6, ['#ffc4ee', '#ff7ad0', '#fff'], { lift: 10, speed: 0.6, max: 0.7 });
+            } else {
+              this.sfx('boom');
+              this.shakeT = 0.18;
+              this.flashTiles(tiles, 'rgba(255,140,40,ALPHA)', 420);
+              for (const [x, y] of tiles) this.particles(x, y, 8, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 8, rise: 0.5, max: 0.6 });
+            }
           }
           await this.applyImpacts(group, state);
           break;
@@ -1228,14 +1445,30 @@
           await this.applyImpacts(group, state);
           break;
         }
-        case 'nova': {
-          const poison = type === 'wisp';
-          this.sfx(poison ? 'poison' : 'zap');
+        case 'nova':
+        case 'detonate': {
           const r = Math.max(...tiles.map(([x, y]) => Math.abs(x - ev.x) + Math.abs(y - ev.y)), 1);
-          this.ring(ev.x, ev.y, poison ? 'rgba(150,230,80,0.9)' : 'rgba(255,225,90,0.95)', r + 0.3, 420);
-          if (poison) {
+          if (ev.kind === 'detonate') {
+            this.sfx('boom');
+            this.shakeT = 0.3;
+            this.flashTiles(tiles.concat([[ev.x, ev.y]]), 'rgba(255,150,40,ALPHA)', 480);
+            this.particles(ev.x, ev.y, 26, ['#ffd27a', '#ff8a2a', '#5a4a3a', '#2a2420'], { lift: 8, rise: 0.9, speed: 1.3, max: 0.8 });
+          } else if (ev.dmg === 'phys') {
+            this.sfx('slam');
+            this.shakeT = 0.22;
+            this.ring(ev.x, ev.y, 'rgba(200,170,120,0.9)', r + 0.6, 380);
+            this.particles(ev.x, ev.y, 14, ['#a08a6a', '#6f5f48'], { lift: 2, gravity: 2.5, rise: 0.6 });
+          } else if (!ev.dmg && type !== 'wisp') {
+            this.sfx('enemyturn');
+            this.ring(ev.x, ev.y, 'rgba(255,90,70,0.95)', r + 0.3, 520);
+            this.wait(120).then(() => this.ring(ev.x, ev.y, 'rgba(255,150,120,0.7)', r * 0.6 + 0.3, 420));
+          } else if (type === 'wisp') {
+            this.sfx('poison');
+            this.ring(ev.x, ev.y, 'rgba(150,230,80,0.9)', r + 0.3, 420);
             for (const [x, y] of tiles) if (Math.random() < 0.6) this.particles(x, y, 3, ['#9bd94a', '#5fa82a'], { lift: 4, rise: 0.4, speed: 0.3, max: 0.8 });
           } else {
+            this.sfx('zap');
+            this.ring(ev.x, ev.y, 'rgba(255,225,90,0.95)', r + 0.3, 420);
             const targets = group.filter((e) => e.t === 'dmg').map((e) => state.byId[e.uid]).filter(Boolean);
             for (const t of targets) this.bolt([from, [t.x, t.y]], 'rgba(255,220,80,A)', 300, 0.9);
           }
@@ -1243,31 +1476,104 @@
           await this.applyImpacts(group, state);
           break;
         }
-        case 'pray': {
-          this.sfx('heal');
-          if (v) {
-            const [cx, cy] = this.center(v.x, v.y);
-            this.effect(0.6, (g, k) => {
-              g.save();
-              g.globalAlpha = Math.sin(k * Math.PI) * 0.7;
-              const gr = g.createLinearGradient(cx, cy, cx, cy - this.tw * 1.6);
-              gr.addColorStop(0, 'rgba(255,230,140,0.8)');
-              gr.addColorStop(1, 'rgba(255,230,140,0)');
-              g.fillStyle = gr;
-              g.fillRect(cx - this.tw * 0.18, cy - this.tw * 1.6, this.tw * 0.36, this.tw * 1.6);
-              g.restore();
-            });
-          }
-          this.ring(ev.x, ev.y, 'rgba(255,230,140,0.9)', 2.5, 500);
+        case 'pray':
+        case 'drum':
+        case 'rally': {
+          const drum = ev.kind === 'drum';
+          this.sfx(drum ? 'slam' : 'heal');
+          if (v && !drum) beam(v.x, v.y, ev.kind === 'rally' ? 'rgba(255,200,90,' : 'rgba(255,230,140,');
+          const col = drum ? 'rgba(255,90,60,0.9)' : ev.kind === 'rally' ? 'rgba(255,200,90,0.95)' : 'rgba(255,230,140,0.9)';
+          this.ring(ev.x, ev.y, col, 2.5, 500);
+          if (drum) this.wait(fast ? 60 : 220).then(() => (this.sfx('slam'), this.ring(ev.x, ev.y, col, 2.5, 500)));
           await this.wait(fast ? 40 : 260);
           await this.applyImpacts(group, state);
           break;
         }
-        case 'grow': {
+        case 'heal':
+        case 'revive': {
+          this.sfx('heal');
+          beam(tgt.x, tgt.y, 'rgba(255,230,140,');
+          this.particles(tgt.x, tgt.y, 10, ['#fff3b0', '#ffe08a', '#ffffff'], { lift: 10, rise: 0.8, speed: 0.3, max: 0.8 });
+          await this.wait(fast ? 40 : 260);
+          await this.applyImpacts(group, state);
+          break;
+        }
+        case 'shield': {
+          this.sfx('charm');
+          this.ring(tgt.x, tgt.y, 'rgba(140,200,255,0.95)', 0.9, 420, 20 * this.unit);
+          await this.wait(fast ? 30 : 200);
+          await this.applyImpacts(group, state);
+          break;
+        }
+        case 'hazard': {
+          const self = tgt.x === ev.x && tgt.y === ev.y;
+          if (ev.hz === 'fire') {
+            this.sfx('fireball');
+            if (!self) await this.projectile(from, [tgt.x, tgt.y], 'fire', fast ? 150 : 360);
+            for (const [x, y] of tiles) this.particles(x, y, 6, ['#ffd27a', '#ff8a2a'], { lift: 4, rise: 0.8, max: 0.6 });
+          } else if (ev.hz === 'caltrops') {
+            this.sfx('throw');
+            await this.projectile(from, [tgt.x, tgt.y], 'knife', fast ? 120 : 280);
+          } else {
+            this.sfx('throw');
+            if (!self) await this.projectile(from, [tgt.x, tgt.y], 'web', fast ? 120 : 300);
+            for (const [x, y] of tiles) this.particles(x, y, 8, ['#d8dce4', '#b8bcc6', '#ffffff'], { lift: 8, rise: 0.3, speed: 0.6, max: 0.9, size: 2 });
+          }
+          await this.applyImpacts(group, state);
+          break;
+        }
+        case 'grow':
+        case 'raise': {
           this.sfx('grow');
-          this.particles(tgt.x, tgt.y, 10, ['#5aa046', '#8fd06a', '#3d7f33'], { lift: 4, rise: 0.5, max: 0.6 });
+          const raise = ev.kind === 'raise';
+          if (raise) beam(tgt.x, tgt.y, 'rgba(110,255,140,');
+          this.particles(tgt.x, tgt.y, 10, raise ? ['#9dffad', '#5fd17a', '#d8ffe0'] : ['#5aa046', '#8fd06a', '#3d7f33'], { lift: 4, rise: 0.5, max: 0.6 });
           await this.wait(fast ? 20 : 120);
           await this.applyImpacts(group, state);
+          break;
+        }
+        case 'leap': {
+          const le = group.find((e) => e.t === 'leap');
+          if (v && le) {
+            this.sfx('step');
+            v.moving = true;
+            await this.tween(fast ? 120 : 360, (k) => {
+              v.x = lerp(le.fx, le.x, k);
+              v.y = lerp(le.fy, le.y, k);
+              v.hop = Math.sin(k * Math.PI) * this.tw * 0.6;
+            });
+            v.x = le.x;
+            v.y = le.y;
+            v.hop = 0;
+            v.moving = false;
+            this.sfx('slam');
+            this.shakeT = 0.15;
+            this.particles(le.x, le.y, 10, ['#a08a6a', '#6f5f48'], { lift: 2, gravity: 2.5, rise: 0.5 });
+          }
+          for (const [x, y] of tiles.slice(1)) if (state && state.units.some((o) => o.x === x && o.y === y && o.team !== (u && u.team))) this.slash(x, y);
+          await this.applyImpacts(group, state);
+          break;
+        }
+        case 'blink':
+        case 'shadowstrike': {
+          const be = group.find((e) => e.t === 'blink');
+          if (v && be) {
+            this.sfx('charm');
+            this.particles(be.fx, be.fy, 10, ['#c9b6ff', '#8f6cff', '#ffffff'], { lift: 14, speed: 0.6, max: 0.5 });
+            await this.tween(fast ? 60 : 140, (k) => (v.alpha = 1 - k));
+            v.x = be.x;
+            v.y = be.y;
+            this.particles(be.x, be.y, 10, ['#c9b6ff', '#8f6cff', '#ffffff'], { lift: 14, speed: 0.6, max: 0.5 });
+            await this.tween(fast ? 60 : 140, (k) => (v.alpha = k));
+            v.alpha = 1;
+          }
+          if (ev.kind === 'shadowstrike') {
+            this.sfx('swing');
+            const back = await lunge(tgt.x, tgt.y);
+            this.slash(tgt.x, tgt.y);
+            await this.applyImpacts(group, state);
+            await back;
+          } else await this.applyImpacts(group, state);
           break;
         }
         default:
@@ -1293,6 +1599,10 @@
     // Apply damage numbers, deaths, heals and statuses for a group of events.
     async applyImpacts(group, state, standalone) {
       let any = false;
+      const STATUS_TEXT = {
+        para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', '#b6f070'], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
+        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'],
+      };
       for (const e of group) {
         const v = this.vis.get(e.uid);
         const h = v ? (S.HEIGHT[v.type] || 40) * (v.scale || 1) : 40;
@@ -1306,15 +1616,16 @@
             v.hp = Math.max(0, v.hp - e.amount);
             v.shake = 1;
             setTimeout(() => (v.shake = 0), 220);
-            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? '#b6f070' : e.dmgType === 'true' ? '#ffb0a0' : '#ffffff';
+            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? '#b6f070' : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : '#ffffff';
             this.addText(v.x, v.y, String(e.amount), col, { height: h, big: e.amount >= 25 });
             if (e.cat === 'back' && e.dmgType === 'phys') {
               const src = state && state.byId[e.src];
-              const stab = src && src.traits.has('backstab');
+              const stab = src && src.props && src.props.backMult;
               this.addText(v.x, v.y, stab ? 'BACKSTAB' : 'FROM BEHIND', '#ffcf6a', { height: h, dy: -this.tw * 0.28, max: 0.9 });
             }
-            this.sfx(e.dmgType === 'poison' ? 'poison' : e.dmgType === 'magic' ? 'magichit' : 'hit');
+            this.sfx(e.dmgType === 'poison' ? 'poison' : e.dmgType === 'magic' || e.dmgType === 'burn' ? 'magichit' : 'hit');
             if (e.dmgType === 'poison') this.particles(v.x, v.y, 5, ['#9bd94a', '#5fa82a'], { lift: 14, rise: 0.4, speed: 0.3, max: 0.6 });
+            if (e.dmgType === 'burn') this.particles(v.x, v.y, 5, ['#ffd27a', '#ff8a2a'], { lift: 14, rise: 0.6, speed: 0.3, max: 0.6 });
             break;
           }
           case 'block':
@@ -1323,6 +1634,19 @@
             this.addText(v.x, v.y, 'BLOCK', '#a9d1ff', { height: h });
             this.sfx('block');
             this.particles(v.x, v.y, 6, ['#ffffff', '#cfe3ff'], { lift: 18, speed: 0.6, max: 0.35 });
+            break;
+          case 'absorb':
+            if (!v) break;
+            any = true;
+            v.shield = e.left;
+            this.addText(v.x, v.y, 'SHIELD -' + e.amount, '#8cc8ff', { height: h });
+            this.sfx('block');
+            break;
+          case 'shield':
+            if (v) {
+              v.shield = e.amount;
+              this.addText(v.x, v.y, 'SHIELD ' + e.amount, '#8cc8ff', { height: h, dy: -this.tw * 0.25 });
+            }
             break;
           case 'heal':
             if (!v) break;
@@ -1334,25 +1658,43 @@
           case 'healblock':
             if (v) this.addText(v.x, v.y, 'NO HEAL', '#b6f070', { height: h, max: 0.9 });
             break;
-          case 'status':
-            if (!v) break;
-            if (e.status === 'para') {
-              v.para = e.turns;
-              this.addText(v.x, v.y, 'PARALYZED', '#ffd84a', { height: h, dy: -this.tw * 0.25 });
-            } else if (e.status === 'poison') {
-              v.poison = true;
-              this.addText(v.x, v.y, 'POISONED', '#b6f070', { height: h, dy: -this.tw * 0.25 });
-            }
+          case 'noregen':
+            if (v) this.addText(v.x, v.y, 'NO REGEN', '#ffb060', { height: h, max: 0.9 });
             break;
+          case 'status': {
+            if (!v) break;
+            const st = STATUS_TEXT[e.status];
+            if (e.status === 'para') v.para = e.turns;
+            else if (e.status === 'poison') v.poison = true;
+            else if (e.status === 'burn') v.burn = true;
+            else v[e.status] = e.turns;
+            if (st) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
+            break;
+          }
           case 'resist':
-            if (v) this.addText(v.x, v.y, 'IMMUNE', '#e8e2d0', { height: h, dy: -this.tw * 0.25 });
+            if (v) this.addText(v.x, v.y, e.why === 'steady' ? 'STEADY' : 'IMMUNE', '#e8e2d0', { height: h, dy: -this.tw * 0.25 });
             break;
           case 'cleanse':
-          case 'cure':
             if (v) {
               v.para = 0;
               v.poison = false;
-              if (e.t === 'cleanse') this.addText(v.x, v.y, 'CURED', '#fff3b0', { height: h, dy: -this.tw * 0.25 });
+              v.burn = false;
+              v.root = 0;
+              this.addText(v.x, v.y, 'CURED', '#fff3b0', { height: h, dy: -this.tw * 0.25 });
+            }
+            break;
+          case 'cure':
+            if (v) {
+              if (e.status === 'burn') v.burn = false;
+              else v.poison = false;
+            }
+            break;
+          case 'rally':
+            if (v) {
+              v.wait = e.wait;
+              v.para = 0;
+              v.root = 0;
+              this.addText(v.x, v.y, 'RALLY', '#ffd86a', { height: h, dy: -this.tw * 0.25 });
             }
             break;
           case 'death':
@@ -1368,16 +1710,24 @@
               if (v.dying) this.vis.delete(e.uid);
             });
             break;
-          case 'revive':
-            if (v) {
-              v.dying = false;
-              v.alpha = 1;
-              v.oy = 0;
-              v.hp = e.hp;
-              this.addText(v.x, v.y, 'REBORN', '#ffcf6a', { height: h, big: true });
-              this.particles(v.x, v.y, 16, ['#ffcf6a', '#ff8a2a', '#fff'], { lift: 10, rise: 1, max: 0.9 });
+          case 'revive': {
+            const u = state && state.byId[e.uid];
+            let rv = v;
+            if (!rv && u) {
+              rv = this.makeVis(u);
+              this.vis.set(u.uid, rv);
+            }
+            if (rv) {
+              rv.dying = false;
+              rv.alpha = 1;
+              rv.oy = 0;
+              rv.hp = e.hp;
+              this.addText(rv.x, rv.y, e.why === 'phoenix' ? 'REBORN' : 'RISEN', '#ffcf6a', { height: h, big: true });
+              this.particles(rv.x, rv.y, 16, ['#ffcf6a', '#ff8a2a', '#fff'], { lift: 10, rise: 1, max: 0.9 });
+              any = true;
             }
             break;
+          }
           case 'secondwind':
             if (v) this.addText(v.x, v.y, 'SECOND WIND', '#ffcf6a', { height: h, dy: -this.tw * 0.25 });
             break;
@@ -1402,6 +1752,34 @@
             }
             break;
           }
+          case 'push':
+            if (v) {
+              const x0 = v.x;
+              const y0 = v.y;
+              v.moving = true;
+              await this.tween(this.reduced ? 40 : 170, (k) => {
+                v.x = lerp(x0, e.x, k);
+                v.y = lerp(y0, e.y, k);
+              });
+              v.x = e.x;
+              v.y = e.y;
+              v.moving = false;
+              any = true;
+            }
+            break;
+          case 'slam':
+            if (v) {
+              this.shakeT = Math.max(this.shakeT, 0.12);
+              this.addText(v.x, v.y, 'SLAM', '#ffb0a0', { height: h, dy: -this.tw * 0.25, max: 0.8 });
+            }
+            break;
+          case 'leap':
+          case 'blink':
+            if (v && !v.moving) {
+              v.x = e.x;
+              v.y = e.y;
+            }
+            break;
           case 'summon': {
             const u = state && state.byId[e.uid];
             if (u) {
@@ -1409,13 +1787,71 @@
               nv.scale = 0.2;
               this.vis.set(u.uid, nv);
               this.tween(260, (k) => (nv.scale = 0.2 + 0.8 * ease(k)));
+              if (e.raise) this.particles(u.x, u.y, 10, ['#9dffad', '#e6dfc9'], { lift: 2, rise: 0.8, max: 0.7 });
             }
             break;
           }
           case 'wither':
             if (v) {
               v.dying = true;
+              if (e.crumble) this.particles(v.x, v.y, 10, ['#e6dfc9', '#b9b19a'], { lift: 10, gravity: 2.5, speed: 0.6, max: 0.6 });
               this.tween(300, (k) => (v.alpha = 1 - k)).then(() => this.vis.delete(e.uid));
+            }
+            break;
+          case 'hazard':
+            for (const [x, y] of e.tiles || []) {
+              this.tfx = this.tfx.filter((f) => !(f.x === x && f.y === y && f.kind === e.kind));
+              this.tfx.push({ kind: e.kind, x, y, team: e.team });
+            }
+            break;
+          case 'trap':
+            this.tfx = this.tfx.filter((f) => !(f.x === e.x && f.y === e.y && f.kind === 'caltrops'));
+            if (v) {
+              any = true;
+              this.sfx('hit');
+              this.addText(v.x, v.y, 'CALTROPS', '#ffb0a0', { height: h, dy: -this.tw * 0.25 });
+            }
+            break;
+          case 'scorch':
+            if (v) this.particles(v.x, v.y, 6, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 6, rise: 0.8, max: 0.5 });
+            break;
+          case 'boom':
+            any = true;
+            this.sfx('boom');
+            this.shakeT = 0.32;
+            this.flashTiles(e.tiles || [[e.x, e.y]], 'rgba(255,150,40,ALPHA)', 480);
+            this.ring(e.x, e.y, 'rgba(255,200,120,0.95)', 1.5, 420);
+            this.particles(e.x, e.y, 24, ['#ffd27a', '#ff8a2a', '#5a4a3a', '#2a2420'], { lift: 8, rise: 0.9, speed: 1.3, max: 0.8 });
+            await this.wait(this.reduced ? 40 : 160);
+            break;
+          case 'escape':
+            if (v) {
+              any = true;
+              v.dying = true;
+              this.addText(e.x, e.y, 'ESCAPED', '#ffd86a', { height: h, big: true });
+              const x0 = v.x;
+              await this.tween(this.reduced ? 60 : 380, (k) => {
+                v.x = x0 - k * 1.2;
+                v.alpha = 1 - k;
+              });
+              this.vis.delete(e.uid);
+            }
+            break;
+          case 'zap': {
+            const src = state && state.byId[e.uid];
+            if (src) {
+              this.sfx('zap');
+              for (const id of e.targets || []) {
+                const t = state.byId[id];
+                if (t) this.bolt([[src.x, src.y], [t.x, t.y]], 'rgba(150,200,255,A)', 260, 0.8);
+              }
+            }
+            break;
+          }
+          case 'gold':
+            if (v) {
+              this.sfx('coin');
+              this.addText(v.x, v.y, '+' + e.amount + ' GOLD', '#ffd86a', { height: h, dy: -this.tw * 0.3 });
             }
             break;
           case 'done':

@@ -396,7 +396,7 @@ button.card:active {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   font-variant-numeric: tabular-nums;
 }
@@ -862,6 +862,11 @@ button.card:active {
   gap: 10px;
 }
 
+/* The command column scrolls; its blocks never squash to fit. */
+.cmd > * {
+  flex-shrink: 0;
+}
+
 .unitcard {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -964,11 +969,19 @@ button.card:active {
   flex: 1 1 auto;
 }
 
+/* The Supply meter stays in view while the War Room roster scrolls under it.
+   The side shadows paint its background across the panel's gutters. */
 .cp-meter {
   display: flex;
   align-items: center;
   gap: 10px;
   font-variant-numeric: tabular-nums;
+  position: sticky;
+  top: -10px; /* the panel's top padding */
+  z-index: 3;
+  padding-block: 4px;
+  background: var(--leather-2);
+  box-shadow: -24px 0 0 var(--leather-2), 24px 0 0 var(--leather-2);
 }
 
 .cp-meter .pips {
@@ -1235,6 +1248,9 @@ button.card:active {
     gap: 8px;
     padding-top: 8px;
   }
+  .cp-meter {
+    top: -8px;
+  }
   .unitcard .name b {
     font-size: 1.12rem;
   }
@@ -1482,6 +1498,411 @@ button.card:active {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 10px;
+}
+
+/* ------------------------------------------------------------------ v2: levels, Supply and loadouts */
+
+.lvl {
+  display: inline-grid;
+  place-items: center;
+  font-family: var(--font-caps);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0 5px;
+  min-height: 16px;
+  border-radius: 4px;
+  vertical-align: 0.1em;
+  color: var(--muted);
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.lvl.lv2 {
+  color: #2a1d0e;
+  background: linear-gradient(180deg, #e8d29a, #c59a4c);
+  border-color: #f0cf86;
+}
+
+.lvl.lv3 {
+  color: #fff;
+  background: linear-gradient(180deg, #b58cff, #7a4fd6);
+  border-color: #d2b8ff;
+}
+
+.res.cmdlv {
+  appearance: none;
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+  padding: 2px 10px 2px 8px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  min-height: 32px;
+}
+
+.xpbar {
+  display: inline-block;
+  width: 46px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.xpbar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #d2b8ff, #8a5ce6);
+}
+
+.lvtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.lvtable th,
+.lvtable td {
+  text-align: center;
+  padding: 5px 4px;
+  border-bottom: 1px solid rgba(197, 154, 76, 0.18);
+}
+
+.lvtable th {
+  font-family: var(--font-caps);
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  color: var(--brass);
+}
+
+.lvtable tr.cur td {
+  color: var(--brass-hi);
+  font-weight: 800;
+  background: rgba(197, 154, 76, 0.12);
+}
+
+.lvtable tr.past td {
+  color: var(--faint);
+}
+
+.budget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(197, 154, 76, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.budget.over {
+  border-color: var(--danger);
+  color: #ffb3aa;
+}
+
+.cost-big {
+  color: var(--brass-hi);
+  font-size: 1.05rem;
+}
+
+.lo-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lockline {
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+  font-size: 0.78rem;
+  margin-left: 4px;
+}
+
+.lv-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.lv-seg .btn {
+  flex-direction: column;
+  gap: 0;
+  min-height: 48px;
+  line-height: 1.1;
+}
+
+.lv-seg .btn span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.lv-seg .btn.on {
+  border-color: var(--brass-hi);
+  color: var(--brass-hi);
+  background: linear-gradient(180deg, #4a3c46, var(--leather-2));
+  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.3);
+}
+
+.picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px;
+}
+
+.pick {
+  appearance: none;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 154, 76, 0.28);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 48px;
+}
+
+.pick.static {
+  cursor: default;
+}
+
+.pick.on {
+  border-color: var(--brass-hi);
+  background: linear-gradient(180deg, rgba(197, 154, 76, 0.2), rgba(0, 0, 0, 0.2));
+  box-shadow: 0 0 0 1px rgba(240, 207, 134, 0.45);
+}
+
+.pick.locked {
+  opacity: 0.55;
+}
+
+.pick.ench.on {
+  border-color: #c39bff;
+  background: linear-gradient(180deg, rgba(195, 155, 255, 0.18), rgba(0, 0, 0, 0.2));
+  box-shadow: 0 0 0 1px rgba(195, 155, 255, 0.45);
+}
+
+.pk-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pk-head b {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  color: var(--parchment);
+}
+
+.pk-desc {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.pick .cost,
+.slot .cost {
+  flex: none;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 0 6px;
+  border-radius: 5px;
+  color: #2a1d0e;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass));
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slot {
+  appearance: none;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(197, 154, 76, 0.4);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.slot.full {
+  border-style: solid;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.slot.locked {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sl-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.itemico {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.itemico.skill {
+  color: #9cc6ff;
+}
+
+.itemico.gear {
+  color: var(--brass-hi);
+}
+
+.itemico.scroll {
+  color: var(--violet);
+}
+
+.army-row.item-row .nm b {
+  font-size: 1.05rem;
+}
+
+.costtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.costtable td {
+  padding: 3px 2px;
+  border-bottom: 1px solid rgba(197, 154, 76, 0.14);
+  color: var(--parchment-2);
+}
+
+.costtable td:last-child {
+  text-align: right;
+  color: var(--brass-hi);
+  font-weight: 700;
+}
+
+.costtable tr.tot td {
+  border-bottom: 0;
+  font-weight: 800;
+  color: var(--parchment);
+}
+
+.ability .tag {
+  font-family: var(--font-caps);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--violet);
+  font-weight: 400;
+}
+
+.selunit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selunit b {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.bad-text {
+  color: #ffb3aa;
+}
+
+.good-text {
+  color: var(--green);
+}
+
+.levelup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid #c39bff;
+  background: linear-gradient(180deg, rgba(150, 100, 240, 0.25), rgba(40, 20, 70, 0.3));
+  color: #efe6ff;
+}
+
+.levelup .icon {
+  width: 30px;
+  height: 30px;
+  color: #d2b8ff;
+}
+
+.levelup b {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.res.xp .icon {
+  color: #c39bff;
+}
+
+.rcard .flag.ench {
+  background: rgba(150, 100, 240, 0.9);
+  padding: 1px 3px;
+}
+
+.rcard .flag.ench .icon {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.rcard .nm .lvl {
+  font-size: 0.6rem;
+  min-height: 14px;
+  padding: 0 3px;
+}
+
+.btn.act .uses {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--parchment-2);
+}
+
+.actions.acts .btn {
+  flex: 1 1 140px;
+}
+
+.tabs.wrap-tabs {
+  flex-wrap: wrap;
+}
+
+.tabs.wrap-tabs .btn {
+  flex: 1 1 80px;
 }
 
 @media (prefers-reduced-motion: reduce) {

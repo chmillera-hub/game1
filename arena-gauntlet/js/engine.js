@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   const AG = (root.AG = root.AG || {});
-  const { DIRS, UNITS, RANK_MULT } = AG.Data;
+  const D = AG.Data;
+  const { DIRS, UNITS } = D;
 
   const T_GRASS = 0;
   const T_ROCK = 1;
@@ -14,6 +15,9 @@
   const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
   const idx = (s, x, y) => y * s.w + x;
   const inB = (s, x, y) => x >= 0 && y >= 0 && x < s.w && y < s.h;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const clampRes = (v) => clamp(v, -D.RES_CAP, D.RES_CAP);
+  const clone = (o) => JSON.parse(JSON.stringify(o));
 
   function at(s, x, y) {
     if (!inB(s, x, y)) return null;
@@ -27,66 +31,148 @@
     return dy > 0 ? 2 : 0;
   }
 
-  function unitValue(type, rank) {
+  function unitValue(type, level) {
     const T = UNITS[type];
     if (T.traits.includes('summon')) return 5;
-    if (T.traits.includes('object')) return 45;
-    return T.cost * 10 * (1 + 0.3 * ((rank || 1) - 1)) * (T.boss ? 2 : 1);
+    if (T.traits.includes('scenery')) return 6;
+    if (T.traits.includes('object')) return T.traits.includes('cart') ? 40 : 45;
+    if (T.traits.includes('structure')) return 30;
+    return Math.max(2, T.cost) * 10 * (1 + 0.35 * ((level || 1) - 1)) * (T.boss ? 2 : 1);
+  }
+
+  // ---------------------------------------------------------------- unit build
+
+  const MAX_PROPS = { guard: 1, magicGuard: 1, pierce: 1 };
+
+  // Status effects stack by keeping the stronger value. Poison and burn are [turns, damage].
+  function mergeFx(into, add) {
+    for (const k in add) {
+      const v = add[k];
+      const o = into[k];
+      if (Array.isArray(v) && Array.isArray(o)) into[k] = [Math.max(o[0], v[0]), Math.max(o[1], v[1])];
+      else if (Array.isArray(v)) into[k] = v.slice();
+      else if (!Array.isArray(o)) into[k] = Math.max(o || 0, v);
+    }
+    return into;
+  }
+
+  function mergeProps(into, add) {
+    for (const k in add) {
+      const v = add[k];
+      if (k === 'vs') {
+        into.vs = into.vs || {};
+        for (const t in v) into.vs[t] = (into.vs[t] || 0) + v[t];
+      } else if (k === 'onHit') into.onHit = mergeFx(into.onHit || {}, v);
+      else if (MAX_PROPS[k]) into[k] = Math.max(into[k] || 0, v);
+      else into[k] = (into[k] || 0) + v;
+    }
+    return into;
+  }
+
+  // Every mod that applies to a unit spec: class abilities, mastery, skills, gear, enchantment.
+  function specMods(spec) {
+    const T = UNITS[spec.type];
+    const lv = spec.level || 1;
+    const out = [];
+    const ab = T.abilities;
+    if (ab) {
+      if (spec.a1 && ab[1].includes(spec.a1)) out.push(D.ABILITIES[spec.a1].mod);
+      if (lv >= 2 && spec.a2 && ab[2].includes(spec.a2)) out.push(D.ABILITIES[spec.a2].mod);
+      if (lv >= 3 && D.MASTERY[spec.type]) out.push(D.MASTERY[spec.type].mod);
+    }
+    for (const id of spec.skills || []) if (D.SKILLS[id]) out.push(D.SKILLS[id].mod);
+    for (const id of spec.gear || []) if (D.GEAR[id]) out.push(D.GEAR[id].mod);
+    if (spec.enchant && D.ENCHANTS[spec.enchant]) out.push(D.ENCHANTS[spec.enchant].mod);
+    return out;
+  }
+
+  function prepAct(a) {
+    const act = clone(a);
+    act.uses = act.uses || 0;
+    act.left = act.uses > 0 ? act.uses : Infinity;
+    return act;
+  }
+
+  // Compile a unit spec into battle numbers.
+  function buildUnit(spec, relics) {
+    const T = UNITS[spec.type];
+    const lv = Math.max(1, Math.min(D.MAX_LEVEL, spec.level || 1));
+    const traits = new Set(T.traits || []);
+    const props = mergeProps({}, T.props || {});
+    const primary = prepAct(T.act);
+    const acts = [primary];
+    for (const x of T.extra || []) acts.push(prepAct(x));
+    let hpAdd = 0;
+    let hpPct = 0;
+    let powAdd = 0;
+    let armor = T.armor;
+    let res = T.res || 0;
+    let block = T.block;
+    let rec = T.rec;
+    let move = T.move;
+    for (const m of specMods(spec)) {
+      const st = m.stat || {};
+      hpAdd += st.hp || 0;
+      hpPct += st.hpPct || 0;
+      powAdd += st.pow || 0;
+      armor += st.armor || 0;
+      res += st.res || 0;
+      block += st.block || 0;
+      if (move > 0) move += st.move || 0;
+      rec += st.rec || 0;
+      if (st.range && primary.range && primary.range[1] >= 2) primary.range[1] += st.range;
+      if (st.len && primary.len) primary.len += st.len;
+      if (st.radius && primary.radius) primary.radius += st.radius;
+      for (const t of m.traits || []) traits.add(t);
+      if (m.props) mergeProps(props, m.props);
+      if (m.onHit) props.onHit = mergeFx(props.onHit || {}, m.onHit);
+      if (m.act) {
+        for (const k in m.act) {
+          if (k === 'fx') primary.fx = mergeFx(primary.fx || {}, m.act.fx);
+          else primary[k] = m.act[k];
+        }
+      }
+      if (m.active) acts.push(prepAct(m.active));
+    }
+    const isObj = traits.has('summon') || traits.has('object');
+    const rel = relics || new Set();
+    if (!isObj && !traits.has('structure')) {
+      if (rel.has('oak_charm')) hpAdd += 8;
+      if (rel.has('iron_plating')) armor += 0.06;
+      if (rel.has('steel_bucklers') && !traits.has('nofacing')) block += 0.08;
+      if (rel.has('pathfinder') && move > 0 && move <= 3) move += 1;
+      if (rel.has('mana_crystal') && T.rec >= 2) rec -= 1;
+      if (rel.has('dragon_scale')) res += 0.15;
+    }
+    const baseHp = spec.baseHp || T.hp;
+    const maxHp = Math.round((Math.round(baseHp * D.LEVEL_HP[lv]) + hpAdd) * (1 + hpPct));
+    const pow = Math.round(T.pow * D.LEVEL_POW[lv]) + powAdd;
+    if (primary.range && primary.range[1] > 7) primary.range[1] = 7;
+    if (primary.len) primary.len = Math.min(primary.len, 8);
+    if (primary.radius) primary.radius = Math.min(primary.radius, 4);
+    return {
+      level: lv,
+      traits,
+      props,
+      acts,
+      maxHp: Math.max(1, maxHp),
+      pow,
+      armor: clampRes(armor),
+      res: clampRes(res),
+      block: traits.has('nofacing') ? 0 : clamp(block, 0, 0.85),
+      rec: Math.max(T.rec >= 2 ? 1 : 0, rec),
+      move: T.move > 0 ? Math.max(1, move) : 0,
+    };
   }
 
   // ---------------------------------------------------------------- setup
 
-  function applyStar3(type, act, traits) {
-    switch (type) {
-      case 'knight': traits.add('shieldwall'); break;
-      case 'archer': traits.add('pierce'); break;
-      case 'scout': traits.add('ambush'); break;
-      case 'cleric': act.radius = 4; act.cleanse = true; break;
-      case 'berserker': traits.add('bloodrage'); break;
-      case 'pyromancer': act.pattern = 'square'; break;
-      case 'assassin': traits.add('deathmark'); break;
-      case 'golem': traits.add('bulwark'); break;
-      case 'beastrider': traits.add('trample'); break;
-      case 'furgon': traits.add('thornwall'); break;
-      case 'wisp': act.radius = 3; break;
-      case 'barrier': traits.add('aegisfield'); break;
-      case 'enchantress': act.fx = { para: 2 }; break;
-      case 'witch': act.len = 7; act.ff = false; break;
-      case 'lightning': act.radius = 3; break;
-      case 'dragon': act.len = 4; break;
-    }
-  }
-
   function addUnit(s, spec) {
     const T = UNITS[spec.type];
-    const rank = spec.rank || 1;
     const team = spec.team;
-    const rel = s.relics[team];
-    const tal = new Set(spec.talents || []);
-    const traits = new Set(T.traits || []);
-    const m = RANK_MULT[rank];
-    const act = JSON.parse(JSON.stringify(T.act));
-    let maxHp = Math.round((spec.baseHp || T.hp) * m);
-    let pow = Math.round(T.pow * m);
-    let armor = T.armor;
-    let block = T.block;
-    let rec = T.rec;
-    let move = T.move;
-    if (rank >= 3) applyStar3(spec.type, act, traits);
-    if (tal.has('thick_hide')) maxHp += 15;
-    if (tal.has('hardened')) armor += 0.1;
-    if (tal.has('sentinel')) block += 0.12;
-    if (tal.has('swift') && move > 0) move += 1;
-    if (tal.has('eagle_eye') && act.range && act.range[1] >= 2) act.range[1] += 1;
-    if (tal.has('quickened')) rec = Math.max(0, rec - 1);
+    const b = buildUnit(spec, s.relics[team]);
+    const traits = b.traits;
     const summon = traits.has('summon') || traits.has('object');
-    if (!summon) {
-      if (rel.has('oak_charm')) maxHp += 8;
-      if (rel.has('iron_plating')) armor += 0.06;
-      if (rel.has('steel_bucklers') && !traits.has('nofacing')) block += 0.08;
-      if (rel.has('swift_boots') && move > 0 && move <= 3) move += 1;
-      if (rel.has('mana_crystal') && T.rec >= 2) rec = Math.max(1, rec - 1);
-    }
     const u = {
       uid: s.nextUid++,
       type: spec.type,
@@ -96,49 +182,67 @@
       x: spec.x,
       y: spec.y,
       facing: traits.has('nofacing') ? -1 : spec.facing != null ? spec.facing : team === 'P' ? 0 : 2,
-      rank,
-      tal,
+      level: b.level,
+      a1: spec.a1 || null,
+      a2: b.level >= 2 ? spec.a2 || null : null,
+      skills: (spec.skills || []).slice(),
+      gear: (spec.gear || []).slice(),
+      enchant: spec.enchant || null,
       traits,
-      act,
-      maxHp,
-      hp: spec.wounded ? Math.ceil(maxHp / 2) : maxHp,
-      pow,
-      armor: Math.min(0.8, armor),
-      block: traits.has('nofacing') ? 0 : Math.min(0.85, block),
-      rec,
-      move,
+      tags: new Set(T.tags || []),
+      props: b.props,
+      acts: b.acts,
+      act: b.acts[0],
+      maxHp: b.maxHp,
+      hp: b.maxHp,
+      pow: b.pow,
+      armor: b.armor,
+      res: b.res,
+      block: b.block,
+      rec: b.rec,
+      move: b.move,
       wait: spec.wait || 0,
       para: 0,
       poison: null,
+      burn: null,
+      root: 0,
+      weak: 0,
+      mark: 0,
+      frenzy: 0,
+      shield: 0,
       alive: true,
       activated: false,
-      secondWind: tal.has('second_wind'),
-      firstActionFree: !summon && rel.has('eternal_flame'),
+      secondWind: traits.has('secondwind'),
+      phoenix: traits.has('phoenix'),
+      firstActionFree: !summon && s.relics[team].has('eternal_flame'),
       boss: !!T.boss,
       vip: !!(spec.vip || T.boss),
       post: spec.post || null,
       bound: !!spec.post,
+      structure: traits.has('structure') || traits.has('scenery'),
       nonCombat: summon,
       summoner: spec.summoner || 0,
       born: spec.born || 0,
-      thorns: spec.thorns || 0,
       kills: 0,
-      value: unitValue(spec.type, rank),
+      scorched: false,
+      value: unitValue(spec.type, b.level),
     };
-    if (traits.has('object')) u.value = 45;
+    if (spec.thorns) u.props.thorns = (u.props.thorns || 0) + spec.thorns;
+    if (spec.armor != null) u.armor = spec.armor;
+    if (spec.res != null) u.res = spec.res;
     if (spec.vip && !T.boss) u.value *= 1.8;
     if (u.bound) u.value *= 0.5;
-    if (u.hp < 1) u.hp = 1;
+    if (spec.hpFrac) u.hp = Math.max(1, Math.round(u.maxHp * spec.hpFrac));
     s.units.push(u);
     s.byId[u.uid] = u;
     s.occ[idx(s, u.x, u.y)] = u.uid;
     return u;
   }
 
-  // cfg: { w, h, terrain, units: [{type, team, rank, talents, x, y, facing, rid, name, wounded, vip, post}],
-  //        relics: {P: [], E: []}, seed, turnLimit,
+  // cfg: { w, h, terrain, units: [spec], relics: {P: [], E: []}, seed, turnLimit,
   //        objective: 'all' | 'boss' | 'vip' | 'destroy' | 'hold' | 'survive',
-  //        hold: {x, y, need}, surviveTurns, loot: [{id, kind, x, y}] }
+  //        hold: {x, y, need}, surviveTurns, loot: [{id, kind, x, y}], cartExit }
+  // A unit spec: { type, team, level, a1, a2, skills, gear, enchant, x, y, facing, rid, name, vip, post }
   function createBattle(cfg) {
     const s = {
       w: cfg.w,
@@ -159,11 +263,14 @@
       turnLimit: cfg.turnLimit || 30,
       events: [],
       phoenixUsed: { P: false, E: false },
-      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 } },
+      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0 },
       summonCount: 0,
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
       surviveTurns: cfg.surviveTurns || 0,
       loot: (cfg.loot || []).map((l) => ({ id: l.id, kind: l.kind, x: l.x, y: l.y, taken: false, by: 0 })),
+      tfx: [],
+      booms: [],
+      cartExit: cfg.cartExit != null ? cfg.cartExit : 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     for (const team of ['P', 'E']) {
@@ -179,6 +286,7 @@
     if (u.x === x && u.y === y) return fn();
     const ox = u.x;
     const oy = u.y;
+    const prev = s.occ[idx(s, x, y)];
     s.occ[idx(s, ox, oy)] = 0;
     u.x = x;
     u.y = y;
@@ -186,11 +294,27 @@
     try {
       return fn();
     } finally {
-      s.occ[idx(s, x, y)] = 0;
+      s.occ[idx(s, x, y)] = prev;
       u.x = ox;
       u.y = oy;
       s.occ[idx(s, ox, oy)] = u.uid;
     }
+  }
+
+  function tileFx(s, x, y, kind) {
+    for (const f of s.tfx) if (f.x === x && f.y === y && (!kind || f.kind === kind)) return f;
+    return null;
+  }
+
+  // A hostile trap on this tile stops a walking unit there. Flyers pass over traps and fire.
+  function trapFor(s, u, x, y) {
+    if (u.traits.has('flying')) return null;
+    const f = tileFx(s, x, y, 'caltrops');
+    return f && f.team !== u.team ? f : null;
+  }
+
+  function passable(u, o, flying, shadow) {
+    return flying || (!o.nonCombat && !o.structure && (o.team === u.team || shadow));
   }
 
   // Tiles a unit can end its move on. Map<index, {x, y, d, prev}>.
@@ -199,7 +323,7 @@
     const start = idx(s, u.x, u.y);
     res.set(start, { x: u.x, y: u.y, d: 0, prev: -1 });
     const mv = maxMove != null ? maxMove : u.move;
-    if (mv <= 0 || u.traits.has('immobile') || u.para > 0) return res;
+    if (mv <= 0 || u.traits.has('immobile') || u.para > 0 || u.root > 0) return res;
     const flying = u.traits.has('flying');
     const shadow = u.traits.has('shadowstep');
     const dist = new Map([[start, 0]]);
@@ -211,6 +335,7 @@
       if (cd >= mv) continue;
       const cx = ci % s.w;
       const cy = (ci - cx) / s.w;
+      if (ci !== start && trapFor(s, u, cx, cy)) continue;
       for (const [dx, dy] of DIRS) {
         const nx = cx + dx;
         const ny = cy + dy;
@@ -220,11 +345,7 @@
         const t = s.terrain[ni];
         if (t !== T_GRASS && !flying) continue;
         const o = at(s, nx, ny);
-        if (o && o !== u) {
-          const pass =
-            flying || (!o.nonCombat && (o.team === u.team || shadow));
-          if (!pass) continue;
-        }
+        if (o && o !== u && !passable(u, o, flying, shadow)) continue;
         dist.set(ni, cd + 1);
         queue.push(ni);
         if (!o && t === T_GRASS) res.set(ni, { x: nx, y: ny, d: cd + 1, prev: ci });
@@ -251,6 +372,7 @@
       if (cd >= u.move) continue;
       const cx = ci % s.w;
       const cy = (ci - cx) / s.w;
+      if (ci !== start && trapFor(s, u, cx, cy)) continue;
       for (const [dx, dy] of DIRS) {
         const nx = cx + dx;
         const ny = cy + dy;
@@ -259,7 +381,7 @@
         if (dist.has(ni)) continue;
         if (s.terrain[ni] !== T_GRASS && !flying) continue;
         const o = at(s, nx, ny);
-        if (o && o !== u && !(flying || (!o.nonCombat && (o.team === u.team || shadow)))) continue;
+        if (o && o !== u && !passable(u, o, flying, shadow)) continue;
         dist.set(ni, cd + 1);
         parent.set(ni, ci);
         queue.push(ni);
@@ -272,15 +394,16 @@
   }
 
   function patternTiles(s, pattern, cx, cy) {
-    const offs =
-      pattern === 'square'
-        ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
-        : [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
+    let offs;
+    if (pattern === 'square') offs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+    else if (pattern === 'single') offs = [[0, 0]];
+    else offs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
     const out = [];
     for (const [dx, dy] of offs) if (inB(s, cx + dx, cy + dy)) out.push([cx + dx, cy + dy]);
     return out;
   }
 
+  // A straight line that stops at rocks and walls (the wall itself is struck).
   function lineTiles(s, ox, oy, d, len) {
     const [dx, dy] = DIRS[d];
     const out = [];
@@ -291,6 +414,8 @@
       y += dy;
       if (!inB(s, x, y) || s.terrain[idx(s, x, y)] === T_ROCK) break;
       out.push([x, y]);
+      const o = at(s, x, y);
+      if (o && o.type === 'wall') break;
     }
     return out;
   }
@@ -325,18 +450,16 @@
 
   // ---------------------------------------------------------- modifiers
 
+  function auraRadius(v) {
+    return 2 + (v.props.auraR || 0);
+  }
+
   function inBarrier(s, u) {
     for (const v of s.units) {
       if (!v.alive || v.team !== u.team || !v.traits.has('aura_barrier')) continue;
-      const r = v.traits.has('aegisfield') ? 3 : 2;
-      if (manhattan(u.x, u.y, v.x, v.y) <= r) return v;
+      if (manhattan(u.x, u.y, v.x, v.y) <= auraRadius(v)) return v;
     }
     return null;
-  }
-
-  function aegisField(s, u) {
-    const b = inBarrier(s, u);
-    return !!(b && b.traits.has('aegisfield'));
   }
 
   function nearBanner(s, u) {
@@ -346,28 +469,56 @@
     return false;
   }
 
+  function effArmor(s, u) {
+    let a = u.armor;
+    if (!u.nonCombat && !u.structure) {
+      const b = inBarrier(s, u);
+      if (b && b.traits.has('steelfield')) a += 0.1;
+    }
+    return clampRes(a);
+  }
+
+  function effRes(s, u) {
+    let r = u.res;
+    if (!u.nonCombat && !u.structure && inBarrier(s, u)) r += 0.25;
+    return clampRes(r);
+  }
+
   function guardianReduction(s, u) {
     let best = 0;
     for (const v of s.units) {
-      if (!v.alive || v === u || v.team !== u.team || manhattan(u.x, u.y, v.x, v.y) !== 1) continue;
-      if (v.traits.has('guardian')) best = Math.max(best, v.traits.has('bulwark') ? 0.35 : 0.2);
-      if (v.tal.has('guardian')) best = Math.max(best, 0.15);
+      if (!v.alive || v === u || v.team !== u.team || v.nonCombat || manhattan(u.x, u.y, v.x, v.y) !== 1) continue;
+      best = Math.max(best, v.props.guard || 0);
     }
     return best;
   }
 
-  function magicTakenMult(s, u) {
-    let m = 1;
-    if (u.traits.has('spellward')) m *= 0.5;
-    if (inBarrier(s, u)) m *= 0.5;
-    if (s.relics[u.team].has('dragon_scale') && !u.nonCombat) m *= 0.75;
-    return m;
+  function magicGuard(s, u) {
+    let best = 0;
+    for (const v of s.units) {
+      if (!v.alive || v === u || v.team !== u.team || manhattan(u.x, u.y, v.x, v.y) !== 1) continue;
+      best = Math.max(best, v.props.magicGuard || 0);
+    }
+    return best;
   }
 
+  // kind: para | poison | root | knock
   function statusImmune(s, u, kind) {
-    if (u.nonCombat || u.traits.has('stoneskin') || u.tal.has('unshakable')) return true;
-    if (kind === 'para' && u.boss) return true;
-    return !!inBarrier(s, u);
+    if (u.nonCombat || u.structure) return true;
+    const tr = u.traits;
+    switch (kind) {
+      case 'para':
+        if (u.boss || tr.has('stoneskin') || tr.has('steadfast') || tr.has('paraproof')) return true;
+        return !!inBarrier(s, u);
+      case 'poison':
+        if (tr.has('stoneskin') || tr.has('undead') || tr.has('poisonproof')) return true;
+        return !!inBarrier(s, u);
+      case 'root':
+        return tr.has('steadfast') || tr.has('immobile');
+      case 'knock':
+        return u.boss || tr.has('steadfast') || tr.has('immobile') || tr.has('big');
+    }
+    return false;
   }
 
   function dirCategory(fx, fy, tgt) {
@@ -390,62 +541,117 @@
     return Math.min(0.85, b);
   }
 
+  // Another fighter on the attacker's side stands next to the target.
+  function packed(s, atk, tgt) {
+    for (const v of s.units) {
+      if (v.alive && v !== atk && v.team === atk.team && !v.nonCombat && !v.structure && manhattan(v.x, v.y, tgt.x, tgt.y) === 1) return true;
+    }
+    return false;
+  }
+
   // Damage one attacker deals to one target, before the block roll.
-  // opts: { fromX, fromY, moved, moveDist, mult, dmgType }
+  // opts: { fromX, fromY, moved, moveDist, mult, dmgType, act, cat }
   function calcHit(s, atk, tgt, opts) {
-    const dmgType = opts.dmgType || atk.act.dmg;
+    const act = opts.act || atk.act;
+    const dmgType = opts.dmgType || act.dmg;
     const fx = opts.fromX != null ? opts.fromX : atk.x;
     const fy = opts.fromY != null ? opts.fromY : atk.y;
-    const cat = dirCategory(fx, fy, tgt);
+    const cat = opts.cat || dirCategory(fx, fy, tgt);
     const relA = s.relics[atk.team];
-    let mult = opts.mult || 1;
-    if (atk.traits.has('rage') && atk.hp < atk.maxHp / 2) mult *= 1.3;
-    if (atk.tal.has('brutal')) mult *= 1.15;
+    const P = atk.props;
+    let mult = opts.mult != null ? opts.mult : act.mult || 1;
+    if (P.rageMult && atk.hp < atk.maxHp / 2) mult *= 1 + P.rageMult;
+    if (P.dmgMult) mult *= 1 + P.dmgMult;
     if (relA.has('old_crown')) mult *= 1.15;
     if (relA.has('titan_gauntlet')) mult *= 1.25;
-    if (nearBanner(s, atk)) mult *= 1.15;
     if (relA.has('cursed_blade')) mult *= 1.2;
     if (s.relics[tgt.team].has('cursed_blade') && !tgt.nonCombat) mult *= 1.1;
+    if (nearBanner(s, atk)) mult *= 1.15;
+    if (atk.frenzy > 0) mult *= 1.25;
+    if (atk.weak > 0) mult *= 0.7;
     if (cat === 'back') {
-      if (atk.traits.has('backstab')) mult *= atk.traits.has('deathmark') ? 2 : 1.5;
-      if (atk.traits.has('ambush')) mult *= 1.5;
-      if (relA.has('shadow_cloak')) mult *= 1.4;
+      let b = P.backMult || 0;
+      if (relA.has('shadow_cloak')) b += 0.4;
+      mult *= 1 + b;
     }
-    if (cat !== 'front' && dmgType === 'phys' && atk.tal.has('flanker')) mult *= 1.3;
-    if (atk.traits.has('charge') && opts.moved && (opts.moveDist || 0) >= 3) mult *= atk.traits.has('trample') ? 1.6 : 1.3;
+    if (cat !== 'front' && dmgType === 'phys' && P.flankMult) mult *= 1 + P.flankMult;
+    if (P.chargeMult && opts.moved && (opts.moveDist || 0) >= 3) mult *= 1 + P.chargeMult;
     if (tgt.hp < tgt.maxHp / 2) {
-      if (atk.tal.has('executioner')) mult *= 1.4;
+      if (P.execMult) mult *= 1 + P.execMult;
       if (relA.has('headsman_axe')) mult *= 1.3;
     }
-    if (dmgType === 'magic' && atk.tal.has('arcane_focus')) mult *= 1.2;
-    let dmg = atk.pow * mult;
+    let vs = 0;
+    for (const t of tgt.tags) vs += ((P.vs && P.vs[t]) || 0) + ((act.vs && act.vs[t]) || 0);
+    if (vs) mult *= 1 + vs;
+    if (P.vsArmored && tgt.armor >= 0.3) mult *= 1 + P.vsArmored;
+    if (P.packMult && packed(s, atk, tgt)) mult *= 1 + P.packMult;
+    if (dmgType === 'magic' && P.magicMult) mult *= 1 + P.magicMult;
+    const base = act.fixed != null ? act.fixed : atk.pow;
+    let dmg = base * mult;
     if (dmgType === 'phys') {
       if (relA.has('whetstone')) dmg += 2;
-      if (tgt.traits.has('ethereal')) dmg *= 0.5;
-      const armor = atk.traits.has('pierce') ? tgt.armor * 0.5 : tgt.armor;
-      dmg *= 1 - armor;
-      if (aegisField(s, tgt)) dmg *= 0.85;
+      const armor = effArmor(s, tgt);
+      const pierce = Math.max(P.pierce || 0, act.pierce || 0);
+      dmg *= 1 - (armor > 0 ? armor * (1 - pierce) : armor);
+      const b = !tgt.nonCombat && inBarrier(s, tgt);
+      if (b && b.traits.has('aegisfield')) dmg *= 0.85;
     } else if (dmgType === 'magic') {
-      dmg *= magicTakenMult(s, tgt);
+      dmg *= 1 - effRes(s, tgt);
+      dmg *= 1 - magicGuard(s, tgt);
     }
+    if (tgt.mark > 0) dmg *= 1.25;
     dmg *= 1 - guardianReduction(s, tgt);
     dmg = Math.max(1, Math.round(dmg));
     const block = dmgType === 'phys' ? blockChance(s, tgt, cat) : 0;
     return { dmg, block, cat };
   }
 
-  function poisonDamage(u) {
-    return Math.max(1, Math.round(u.pow * (u.tal.has('arcane_focus') ? 1.2 : 1)));
+  function poisonDamage(u, act) {
+    const a = act || u.act;
+    const base = a.poisonDmg || Math.max(1, Math.round(u.pow * (1 + (u.props.magicMult || 0))));
+    return base + (u.props.poisonDmg || 0);
   }
 
-  function healAmount(u) {
-    return Math.round(u.pow * (u.tal.has('arcane_focus') ? 1.2 : 1));
+  function healAmount(u, act) {
+    const a = act || u.act;
+    const base = a.fixed != null ? a.fixed : u.pow * (a.mult || 1);
+    return Math.round(base * (1 + (u.props.magicMult || 0) + (u.props.healMult || 0)));
+  }
+
+  // Status effects an act applies when it lands: its own plus the unit's on-hit effects.
+  function hitFx(u, act) {
+    const fx = {};
+    const add = (src) => {
+      for (const k in src) {
+        let v = src[k];
+        if (k === 'poison' && !Array.isArray(v)) v = [v, poisonDamage(u, act)];
+        if (k === 'burn' && !Array.isArray(v)) v = [v, 4];
+        mergeFx(fx, { [k]: v });
+      }
+    };
+    add(act.fx || {});
+    if (act.dmg && u.props.onHit) add(u.props.onHit);
+    if (fx.poison) fx.poison = [fx.poison[0] + (u.props.poisonTurns || 0), fx.poison[1]];
+    return fx;
+  }
+
+  function hasFx(fx) {
+    for (const k in fx) if (fx[k]) return true;
+    return false;
   }
 
   // ------------------------------------------------------------ targeting
 
   function isFoe(u, v) {
     return v.alive && v.team !== u.team;
+  }
+
+  // Walls and kegs never make a spell worth casting on their own.
+  const worthy = (v) => !v.traits.has('scenery');
+
+  // A unit in smoke cannot be singled out from more than 1 tile away.
+  function concealed(s, v, fx, fy) {
+    return !!tileFx(s, v.x, v.y, 'smoke') && manhattan(fx, fy, v.x, v.y) > 1;
   }
 
   function unitsOnTiles(s, tiles) {
@@ -457,19 +663,66 @@
     return out;
   }
 
-  // Legal targets for u's action from its current tile.
-  function targetsFrom(s, u) {
-    const a = u.act;
+  function raisedCount(s, u) {
+    let n = 0;
+    for (const v of s.units) if (v.alive && v.summoner === u.uid && v.type === 'skeleton') n++;
+    return n;
+  }
+
+  function emptyGrass(s, x, y) {
+    return inB(s, x, y) && s.terrain[idx(s, x, y)] === T_GRASS && !at(s, x, y);
+  }
+
+  // The tile behind a target, from the attacker's point of view.
+  function behindTile(s, u, v) {
+    let d = v.facing;
+    if (d < 0) d = dirFromDelta(v.x - u.x, v.y - u.y);
+    const [dx, dy] = DIRS[(d + 2) % 4];
+    return [v.x + dx, v.y + dy];
+  }
+
+  // Whether act `ai` can be used right now (charges left, move-like acts, roots).
+  function actUsable(s, u, ai) {
+    const a = u.acts[ai];
+    if (!a || a.kind === 'none' || a.left <= 0) return false;
+    const A = s.act && s.act.uid === u.uid ? s.act : null;
+    if (a.asMove) {
+      if (A && A.moved) return false;
+    } else if (A && A.acted) return false;
+    if ((a.kind === 'blink' || a.kind === 'leap' || a.kind === 'shadowstrike') && (u.root > 0 || u.traits.has('immobile'))) return false;
+    return true;
+  }
+
+  // Legal targets for u's act `ai` (default 0) from its current tile. Each target carries `ai`.
+  function targetsFrom(s, u, ai) {
+    ai = ai || 0;
+    const a = u.acts[ai];
     const res = [];
+    if (!a || a.kind === 'none' || a.left <= 0) return res;
+    const push = (t) => {
+      t.ai = ai;
+      res.push(t);
+    };
     switch (a.kind) {
       case 'strike':
       case 'cleave':
-      case 'quake': {
+      case 'quake':
+      case 'shadowstrike': {
         const [r0, r1] = a.range;
         for (const v of s.units) {
           if (!isFoe(u, v)) continue;
+          if (!a.dmg && (v.nonCombat || v.structure)) continue;
           const d = manhattan(u.x, u.y, v.x, v.y);
-          if (d >= r0 && d <= r1) res.push({ kind: 'unit', uid: v.uid, x: v.x, y: v.y });
+          if (d < r0 || d > r1) continue;
+          if (concealed(s, v, u.x, u.y)) continue;
+          if (a.kind === 'shadowstrike') {
+            if (v.nonCombat || v.structure) continue;
+            const [bx, by] = behindTile(s, u, v);
+            if (!emptyGrass(s, bx, by)) continue;
+            push({ kind: 'unit', uid: v.uid, x: v.x, y: v.y, bx, by });
+            continue;
+          }
+          push({ kind: 'unit', uid: v.uid, x: v.x, y: v.y });
         }
         break;
       }
@@ -481,7 +734,7 @@
             const d = manhattan(u.x, u.y, x, y);
             if (d < r0 || d > r1) continue;
             const hits = unitsOnTiles(s, patternTiles(s, a.pattern, x, y));
-            if (hits.some((v) => isFoe(u, v))) res.push({ kind: 'tile', x, y });
+            if (hits.some((v) => isFoe(u, v) && (a.dmg || (!v.nonCombat && !v.structure)))) push({ kind: 'tile', x, y });
           }
         break;
       }
@@ -490,35 +743,85 @@
         for (let d = 0; d < 4; d++) {
           const tiles = a.kind === 'line' ? lineTiles(s, u.x, u.y, d, a.len) : coneTiles(s, u.x, u.y, d, a.len);
           if (!tiles.length) continue;
-          if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) res.push({ kind: 'dir', d, x: u.x + DIRS[d][0], y: u.y + DIRS[d][1] });
+          if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) push({ kind: 'dir', d, x: u.x + DIRS[d][0], y: u.y + DIRS[d][1] });
         }
         break;
       }
       case 'cross': {
         const tiles = [];
         for (let d = 0; d < 4; d++) tiles.push(...lineTiles(s, u.x, u.y, d, a.len));
-        if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) res.push({ kind: 'self', x: u.x, y: u.y });
+        if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) push({ kind: 'self', x: u.x, y: u.y });
         break;
       }
-      case 'nova': {
+      case 'nova':
+      case 'detonate': {
         const hits = unitsOnTiles(s, radiusTiles(s, u.x, u.y, a.radius));
-        if (hits.some((v) => isFoe(u, v) && !v.nonCombat)) res.push({ kind: 'self', x: u.x, y: u.y });
+        if (hits.some((v) => isFoe(u, v) && worthy(v) && (a.dmg || (!v.nonCombat && !v.structure)))) push({ kind: 'self', x: u.x, y: u.y });
         break;
       }
-      case 'pray': {
+      case 'pray':
+      case 'drum': {
         const hits = unitsOnTiles(s, radiusTiles(s, u.x, u.y, a.radius, true));
-        const useful = hits.some(
-          (v) => v.team === u.team && !v.nonCombat && ((v.hp < v.maxHp && !v.poison) || (a.cleanse && (v.poison || v.para)))
-        );
-        if (useful) res.push({ kind: 'self', x: u.x, y: u.y });
+        const useful = hits.some((v) => {
+          if (v.team !== u.team || v.nonCombat || v.structure) return false;
+          if (a.kind === 'drum' && v.frenzy === 0) return true;
+          if (a.noHeal) return false;
+          if (v.hp < v.maxHp && !v.poison) return true;
+          return !!a.cleanse && !!(v.poison || v.para || v.burn || v.root);
+        });
+        if (useful) push({ kind: 'self', x: u.x, y: u.y });
         break;
       }
-      case 'grow': {
+      case 'rally': {
+        const hits = unitsOnTiles(s, radiusTiles(s, u.x, u.y, a.radius));
+        if (hits.some((v) => v.team === u.team && !v.nonCombat && !v.structure && (v.wait > 0 || v.para > 0 || v.root > 0))) push({ kind: 'self', x: u.x, y: u.y });
+        break;
+      }
+      case 'grow':
+      case 'raise':
+      case 'blink':
+      case 'leap': {
+        if (a.kind === 'raise' && raisedCount(s, u) >= (a.max || 3)) break;
         const [r0, r1] = a.range;
         for (const [x, y] of radiusTiles(s, u.x, u.y, r1)) {
-          if (manhattan(u.x, u.y, x, y) < r0) continue;
-          if (s.terrain[idx(s, x, y)] !== T_GRASS || at(s, x, y)) continue;
-          res.push({ kind: 'tile', x, y });
+          if (manhattan(u.x, u.y, x, y) < r0 || !emptyGrass(s, x, y)) continue;
+          if (a.kind === 'leap') {
+            const near = unitsOnTiles(s, radiusTiles(s, x, y, 1)).some((v) => v !== u && isFoe(u, v) && worthy(v));
+            if (!near) continue;
+          }
+          push({ kind: 'tile', x, y });
+        }
+        break;
+      }
+      case 'heal':
+      case 'shield': {
+        const [r0, r1] = a.range;
+        for (const v of s.units) {
+          if (!v.alive || v.team !== u.team || v.nonCombat || v.structure) continue;
+          const d = manhattan(u.x, u.y, v.x, v.y);
+          if (d < r0 || d > r1) continue;
+          if (a.kind === 'heal' && !((v.hp < v.maxHp && !v.poison) || (a.cure && (v.poison || v.burn)))) continue;
+          if (a.kind === 'shield' && v.shield >= (a.amount || 15)) continue;
+          push({ kind: 'unit', uid: v.uid, x: v.x, y: v.y });
+        }
+        break;
+      }
+      case 'hazard': {
+        const [r0, r1] = a.range;
+        for (const [x, y] of radiusTiles(s, u.x, u.y, r1, true)) {
+          if (manhattan(u.x, u.y, x, y) < r0 || s.terrain[idx(s, x, y)] === T_ROCK) continue;
+          if (a.hz === 'caltrops' && (!emptyGrass(s, x, y) || tileFx(s, x, y, 'caltrops'))) continue;
+          push({ kind: 'tile', x, y });
+        }
+        break;
+      }
+      case 'revive': {
+        const [r0, r1] = a.range;
+        for (const v of s.units) {
+          if (v.alive || v.team !== u.team || v.nonCombat || v.structure || v.revived || v.escaped || v.summoner) continue;
+          const d = manhattan(u.x, u.y, v.x, v.y);
+          if (d < r0 || d > r1 || !emptyGrass(s, v.x, v.y)) continue;
+          push({ kind: 'tile', uid: v.uid, x: v.x, y: v.y });
         }
         break;
       }
@@ -526,29 +829,48 @@
     return res;
   }
 
+  // Targets for every act the unit can use right now.
+  function allTargets(s, u) {
+    const out = [];
+    for (let i = 0; i < u.acts.length; i++) if (actUsable(s, u, i)) out.push(...targetsFrom(s, u, i));
+    return out;
+  }
+
   function sameTarget(a, b) {
-    if (a.kind !== b.kind) return false;
+    if (!a || !b || a.kind !== b.kind || (a.ai || 0) !== (b.ai || 0)) return false;
     if (a.kind === 'unit') return a.uid === b.uid;
     if (a.kind === 'dir') return a.d === b.d;
     if (a.kind === 'self') return true;
     return a.x === b.x && a.y === b.y;
   }
 
+  function actOf(u, target) {
+    return u.acts[(target && target.ai) || 0] || u.act;
+  }
+
   function affectedTiles(s, u, target) {
-    const a = u.act;
+    const a = actOf(u, target);
     if (target.kind === 'unit' && s.byId[target.uid]) {
       const v = s.byId[target.uid];
-      target = { kind: 'unit', uid: v.uid, x: v.x, y: v.y };
+      target = Object.assign({}, target, { x: v.x, y: v.y });
     }
     switch (a.kind) {
       case 'strike':
+      case 'heal':
+      case 'shield':
+      case 'shadowstrike':
+      case 'grow':
+      case 'raise':
+      case 'blink':
+      case 'revive':
         return [[target.x, target.y]];
       case 'cleave':
         return radiusTiles(s, u.x, u.y, 1);
       case 'quake':
         return radiusTiles(s, target.x, target.y, 1, true);
       case 'blast':
-        return patternTiles(s, a.pattern, target.x, target.y);
+      case 'hazard':
+        return patternTiles(s, a.pattern || 'single', target.x, target.y);
       case 'line':
         return lineTiles(s, u.x, u.y, target.d, a.len);
       case 'cone':
@@ -559,34 +881,51 @@
         return t;
       }
       case 'nova':
+      case 'detonate':
+      case 'rally':
         return radiusTiles(s, u.x, u.y, a.radius);
       case 'pray':
+      case 'drum':
         return radiusTiles(s, u.x, u.y, a.radius, true);
-      case 'grow':
-        return [[target.x, target.y]];
+      case 'leap':
+        return [[target.x, target.y], ...radiusTiles(s, target.x, target.y, 1)];
     }
     return [];
   }
 
   // Units an action would touch, in resolution order.
   function affectedUnits(s, u, target) {
-    const a = u.act;
+    const a = actOf(u, target);
     const tiles = affectedTiles(s, u, target);
-    const units = unitsOnTiles(s, tiles).filter((v) => v !== u || a.kind === 'pray');
     switch (a.kind) {
       case 'strike':
-        return units.filter((v) => v.uid === target.uid);
+      case 'shadowstrike':
+      case 'heal':
+      case 'shield': {
+        const v = s.byId[target.uid];
+        return v && v.alive ? [v] : [];
+      }
+      case 'leap':
+        return unitsOnTiles(s, tiles.slice(1)).filter((v) => v !== u && isFoe(u, v));
+    }
+    const units = unitsOnTiles(s, tiles).filter((v) => v !== u || a.kind === 'pray' || a.kind === 'drum');
+    switch (a.kind) {
       case 'cleave':
       case 'quake':
       case 'cross':
-      case 'nova':
         return units.filter((v) => isFoe(u, v));
+      case 'nova':
+        return units.filter((v) => isFoe(u, v) && (a.dmg || (!v.nonCombat && !v.structure)));
       case 'blast':
       case 'line':
       case 'cone':
-        return units.filter((v) => (a.ff ? v.alive : isFoe(u, v)));
+        return units.filter((v) => (a.ff ? v.alive : isFoe(u, v)) && (a.dmg || (!v.nonCombat && !v.structure)));
+      case 'detonate':
+        return units.filter((v) => v.alive);
       case 'pray':
-        return units.filter((v) => v.team === u.team && !v.nonCombat);
+      case 'drum':
+      case 'rally':
+        return units.filter((v) => v.team === u.team && !v.nonCombat && !v.structure);
     }
     return [];
   }
@@ -594,35 +933,58 @@
   function facingToward(u, target) {
     if (target.kind === 'dir') return target.d;
     if (target.kind === 'self') return -1;
+    if (target.x === u.x && target.y === u.y) return -1;
     return dirFromDelta(target.x - u.x, target.y - u.y);
   }
 
   // Predicted outcome of an action, without rolling dice.
   // ctx: { moved, moveDist } (defaults to the live activation)
   function previewAction(s, u, target, ctx) {
-    const a = u.act;
+    const a = actOf(u, target);
     const c = ctx || (s.act && s.act.uid === u.uid ? { moved: s.act.moved && !s.act.acted, moveDist: s.act.moveDist } : { moved: false, moveDist: 0 });
     const tiles = affectedTiles(s, u, target);
     const effects = [];
-    const opts = { moved: c.moved, moveDist: c.moveDist };
-    for (const v of affectedUnits(s, u, target)) {
-      const e = { uid: v.uid, friendly: v.team === u.team };
-      if (a.kind === 'pray') {
-        e.heal = v.poison && !a.cleanse ? 0 : Math.min(healAmount(u), v.maxHp - v.hp);
-        if (a.cleanse && (v.poison || v.para)) e.cleanse = true;
-      } else {
-        if (a.dmg) {
-          const r = calcHit(s, u, v, opts);
-          e.dmg = r.dmg;
-          e.block = r.block;
-          e.cat = r.cat;
-          e.kill = r.dmg >= v.hp && !v.secondWind;
+    const run = () => {
+      const opts = { moved: c.moved, moveDist: c.moveDist, act: a };
+      if (a.kind === 'shadowstrike') opts.cat = 'back';
+      const fx = hitFx(u, a);
+      for (const v of affectedUnits(s, u, target)) {
+        const e = { uid: v.uid, friendly: v.team === u.team };
+        if (a.kind === 'pray' || a.kind === 'heal') {
+          const cures = (a.cleanse && (v.poison || v.para || v.burn || v.root)) || (a.cure && (v.poison || v.burn));
+          e.heal = v.poison && !cures ? 0 : Math.min(healAmount(u, a), v.maxHp - v.hp);
+          if (cures) e.cleanse = true;
+        } else if (a.kind === 'drum') {
+          if (!a.noHeal) e.heal = v.poison ? 0 : Math.min(healAmount(u, a), v.maxHp - v.hp);
+          e.frenzy = 2;
+        } else if (a.kind === 'shield') e.shield = a.amount || 15;
+        else if (a.kind === 'rally') e.rally = true;
+        else {
+          if (a.dmg) {
+            const r = calcHit(s, u, v, opts);
+            e.dmg = r.dmg;
+            e.block = r.block;
+            e.cat = r.cat;
+            const bonus = u.props.bonusMagic ? u.props.bonusMagic : 0;
+            e.kill = r.dmg + bonus >= v.hp + v.shield && !v.secondWind && !v.phoenix;
+          }
+          if (!e.friendly) {
+            if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
+            if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1] };
+            if (fx.burn) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
+            if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
+            if (fx.weak) e.weak = fx.weak;
+            if (fx.mark) e.mark = fx.mark;
+            if (fx.knock) e.knock = statusImmune(s, v, 'knock') ? 'resist' : true;
+          }
         }
-        if (a.fx && a.fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : a.fx.para;
-        if (a.fx && a.fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: a.fx.poison, dmg: poisonDamage(u) };
+        effects.push(e);
       }
-      effects.push(e);
-    }
+    };
+    if (a.kind === 'leap') withUnitAt(s, u, target.x, target.y, run);
+    else if (a.kind === 'shadowstrike') withUnitAt(s, u, target.bx, target.by, run);
+    else run();
+    if (a.kind === 'detonate') effects.push({ uid: u.uid, friendly: true, self: true, dmg: u.hp, kill: true, block: 0 });
     return { tiles, effects };
   }
 
@@ -633,7 +995,7 @@
   }
 
   function heal(s, u, amount, why) {
-    if (!u.alive || u.nonCombat) return 0;
+    if (!u.alive || u.nonCombat || u.structure) return 0;
     if (u.poison) {
       if (why === 'prayer') emit(s, { t: 'healblock', uid: u.uid });
       return 0;
@@ -645,39 +1007,98 @@
     return h;
   }
 
+  function cleanse(s, v, all) {
+    let any = false;
+    if (v.poison) {
+      v.poison = null;
+      any = true;
+    }
+    if (v.burn) {
+      v.burn = null;
+      any = true;
+    }
+    if (all && (v.para || v.root)) {
+      v.para = 0;
+      v.root = 0;
+      any = true;
+    }
+    if (any) emit(s, { t: 'cleanse', uid: v.uid });
+    return any;
+  }
+
+  function revive(s, u, frac, why) {
+    u.alive = true;
+    u.hp = Math.max(1, Math.ceil(u.maxHp * frac));
+    u.poison = null;
+    u.burn = null;
+    u.para = 0;
+    u.root = 0;
+    u.weak = 0;
+    u.mark = 0;
+    u.shield = 0;
+    s.occ[idx(s, u.x, u.y)] = u.uid;
+    emit(s, { t: 'revive', uid: u.uid, hp: u.hp, why });
+  }
+
   function kill(s, u, src) {
     u.alive = false;
     u.hp = 0;
     s.occ[idx(s, u.x, u.y)] = 0;
     if (s.act && s.act.uid === u.uid) {
-      // Died mid-action (thorns or a counterattack): its turn is over.
+      // Died mid-action (thorns, a counterattack or its own blast): its turn is over.
       s.act = null;
       u.activated = true;
       u.wait = u.rec;
     }
     emit(s, { t: 'death', uid: u.uid, src: src ? src.uid : 0 });
-    if (src && src.team !== u.team && !u.nonCombat) {
+    if (src && src.team !== u.team && !u.nonCombat && !u.structure) {
       s.stats.kills[src.team]++;
       src.kills++;
       if (s.act && s.act.uid === src.uid) s.act.killed = true;
+      if (src.traits.has('midas') && src.team === 'P') {
+        s.stats.gold += 6;
+        emit(s, { t: 'gold', uid: src.uid, amount: 6 });
+      }
     }
-    if (u.tal.has('martyr')) {
+    if (u.traits.has('volatile') && !u.exploded) {
+      u.exploded = true;
+      s.booms.push({ x: u.x, y: u.y, dmg: u.props.boom || 15, src: u });
+    }
+    if (u.traits.has('martyr')) {
       for (const v of s.units)
         if (v.alive && v.team === u.team && manhattan(u.x, u.y, v.x, v.y) <= 2) heal(s, v, 20, 'martyr');
     }
-    if (!u.nonCombat && s.relics[u.team].has('phoenix_feather') && !s.phoenixUsed[u.team] && !at(s, u.x, u.y)) {
+    // The raised dead crumble with their master.
+    for (const v of s.units) {
+      if (v.alive && v.summoner === u.uid && v.type === 'skeleton') {
+        v.alive = false;
+        v.hp = 0;
+        s.occ[idx(s, v.x, v.y)] = 0;
+        emit(s, { t: 'wither', uid: v.uid, crumble: true });
+      }
+    }
+    if (u.nonCombat || u.structure) return;
+    if (u.phoenix && !u.phoenixUsed && !at(s, u.x, u.y)) {
+      u.phoenixUsed = true;
+      revive(s, u, 0.5, 'phoenix');
+      return;
+    }
+    if (s.relics[u.team].has('phoenix_feather') && !s.phoenixUsed[u.team] && !at(s, u.x, u.y)) {
       s.phoenixUsed[u.team] = true;
-      u.alive = true;
-      u.hp = Math.ceil(u.maxHp / 2);
-      u.poison = null;
-      u.para = 0;
-      s.occ[idx(s, u.x, u.y)] = u.uid;
-      emit(s, { t: 'revive', uid: u.uid, hp: u.hp });
+      revive(s, u, 0.5, 'phoenix');
     }
   }
 
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
+    if (tgt.shield > 0 && info.dmgType !== 'poison') {
+      const ab = Math.min(tgt.shield, amount);
+      tgt.shield -= ab;
+      amount -= ab;
+      emit(s, { t: 'absorb', uid: tgt.uid, amount: ab, left: tgt.shield });
+      if (amount <= 0) return 0;
+    }
+    if (info.dmgType === 'magic' || info.dmgType === 'burn') tgt.scorched = true;
     let dealt;
     if (amount >= tgt.hp && tgt.secondWind) {
       tgt.secondWind = false;
@@ -695,21 +1116,30 @@
     return dealt;
   }
 
+  // Magic damage that is not an attack: bonus magic, zaps, burns, fire and explosions.
+  function magicDamage(s, src, tgt, base, why) {
+    if (!tgt.alive) return 0;
+    let dmg = base * (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt));
+    if (tgt.mark > 0) dmg *= 1.25;
+    dmg = Math.max(1, Math.round(dmg));
+    return applyDamage(s, src, tgt, dmg, { cat: 'none', dmgType: why === 'burn' ? 'burn' : 'magic' });
+  }
+
   function hit(s, atk, tgt, opts) {
     if (!tgt.alive) return { blocked: false, dmg: 0 };
+    const act = opts.act || atk.act;
     const r = calcHit(s, atk, tgt, opts);
-    const dmgType = opts.dmgType || atk.act.dmg;
+    const dmgType = opts.dmgType || act.dmg;
     if (r.block > 0 && s.rng.next() < r.block) {
       emit(s, { t: 'block', uid: tgt.uid, src: atk.uid, cat: r.cat });
       reactToMelee(s, atk, tgt, opts);
       return { blocked: true, dmg: 0 };
     }
     const dealt = applyDamage(s, atk, tgt, r.dmg, { cat: r.cat, dmgType });
+    if (atk.alive && !opts.noBonus && atk.props.bonusMagic && tgt.alive) magicDamage(s, atk, tgt, atk.props.bonusMagic, 'bonus');
     if (dealt > 0 && atk.alive && !opts.noDrain) {
-      let ls = 0;
-      if (atk.tal.has('vampiric')) ls += 0.3;
-      if (atk.traits.has('drain')) ls += 0.4;
-      if (s.relics[atk.team].has('bloodstone')) ls += 0.2;
+      let ls = atk.props.lifesteal || 0;
+      if (s.relics[atk.team].has('bloodstone') && !atk.nonCombat) ls += 0.2;
       if (ls > 0) heal(s, atk, Math.max(1, Math.round(dealt * ls)), 'drain');
     }
     reactToMelee(s, atk, tgt, opts);
@@ -721,62 +1151,159 @@
     if (opts.noReact || !atk.alive) return;
     const fx = opts.fromX != null ? opts.fromX : atk.x;
     const fy = opts.fromY != null ? opts.fromY : atk.y;
-    const dmgType = opts.dmgType || atk.act.dmg;
-    if (dmgType !== 'phys' || manhattan(fx, fy, tgt.x, tgt.y) !== 1) return;
-    let thorns = tgt.thorns || 0;
-    if (!tgt.nonCombat && s.relics[tgt.team].has('thorned_mail')) thorns += 5;
+    const dmgType = opts.dmgType || (opts.act || atk.act).dmg;
+    if (manhattan(fx, fy, tgt.x, tgt.y) !== 1 || !dmgType || dmgType === 'true') return;
+    let thorns = tgt.props.thorns || 0;
+    if (!tgt.nonCombat && !tgt.structure && s.relics[tgt.team].has('thorned_mail') && dmgType === 'phys') thorns += 5;
     if (thorns > 0) {
       emit(s, { t: 'thorns', uid: atk.uid, src: tgt.uid });
       applyDamage(s, tgt, atk, thorns, { cat: 'none', dmgType: 'true' });
     }
-    if (atk.alive && tgt.alive && tgt.tal.has('retaliate') && tgt.para === 0) {
+    if (atk.alive && tgt.alive && tgt.traits.has('retaliate') && tgt.para === 0) {
       emit(s, { t: 'retaliate', uid: tgt.uid, target: atk.uid });
-      hit(s, tgt, atk, { mult: 0.5, dmgType: 'phys', noReact: true, noDrain: true });
+      hit(s, tgt, atk, { mult: 0.5, dmgType: 'phys', act: { dmg: 'phys' }, noReact: true, noDrain: true, noBonus: true });
     }
   }
 
-  function applyPara(s, u, n) {
-    if (!u.alive) return;
-    if (statusImmune(s, u, 'para')) {
-      emit(s, { t: 'resist', uid: u.uid });
-      return;
+  function applyStatus(s, src, u, fx) {
+    if (!u.alive || u.nonCombat || u.structure) return;
+    if (fx.para) {
+      if (statusImmune(s, u, 'para')) emit(s, { t: 'resist', uid: u.uid });
+      else {
+        u.para = Math.max(u.para, fx.para);
+        emit(s, { t: 'status', uid: u.uid, status: 'para', turns: u.para });
+      }
     }
-    u.para = Math.max(u.para, n);
-    emit(s, { t: 'status', uid: u.uid, status: 'para', turns: u.para });
+    if (fx.poison) {
+      if (statusImmune(s, u, 'poison')) emit(s, { t: 'resist', uid: u.uid });
+      else {
+        const p = u.poison;
+        u.poison = { turns: Math.max(fx.poison[0], p ? p.turns : 0), dmg: Math.max(fx.poison[1], p ? p.dmg : 0), src: src.uid };
+        emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns });
+      }
+    }
+    if (fx.burn) {
+      const p = u.burn;
+      u.burn = { turns: Math.max(fx.burn[0], p ? p.turns : 0), dmg: Math.max(fx.burn[1], p ? p.dmg : 0), src: src.uid };
+      emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
+    }
+    if (fx.root) {
+      if (statusImmune(s, u, 'root')) emit(s, { t: 'resist', uid: u.uid });
+      else {
+        u.root = Math.max(u.root, fx.root);
+        emit(s, { t: 'status', uid: u.uid, status: 'root', turns: u.root });
+      }
+    }
+    if (fx.weak) {
+      u.weak = Math.max(u.weak, fx.weak);
+      emit(s, { t: 'status', uid: u.uid, status: 'weak', turns: u.weak });
+    }
+    if (fx.mark) {
+      u.mark = Math.max(u.mark, fx.mark);
+      emit(s, { t: 'status', uid: u.uid, status: 'mark', turns: u.mark });
+    }
+    if (fx.knock && u.alive) knockback(s, src, u);
   }
 
-  function applyPoison(s, src, u, turns, dmg) {
-    if (!u.alive) return;
-    if (statusImmune(s, u, 'poison')) {
-      emit(s, { t: 'resist', uid: u.uid });
+  // Shove a unit one tile away from `src`. If something is in the way it slams into it.
+  function knockback(s, src, u) {
+    if (statusImmune(s, u, 'knock')) {
+      emit(s, { t: 'resist', uid: u.uid, why: 'steady' });
       return;
     }
-    const p = u.poison;
-    u.poison = { turns: Math.max(turns, p ? p.turns : 0), dmg: Math.max(dmg, p ? p.dmg : 0), src: src.uid };
-    emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns });
+    let d = dirFromDelta(u.x - src.x, u.y - src.y);
+    if (d < 0) d = src.facing >= 0 ? src.facing : 0;
+    const nx = u.x + DIRS[d][0];
+    const ny = u.y + DIRS[d][1];
+    const flying = u.traits.has('flying');
+    const t = inB(s, nx, ny) ? s.terrain[idx(s, nx, ny)] : T_ROCK;
+    const ok = inB(s, nx, ny) && !at(s, nx, ny) && (t === T_GRASS || (flying && t !== T_ROCK));
+    if (!ok) {
+      emit(s, { t: 'slam', uid: u.uid, x: nx, y: ny });
+      applyDamage(s, src, u, 6, { cat: 'none', dmgType: 'true' });
+      return;
+    }
+    relocate(s, u, nx, ny);
+    emit(s, { t: 'push', uid: u.uid, x: nx, y: ny });
+    enterTile(s, u, nx, ny);
+  }
+
+  // Hostile hazards trigger when a walking unit steps onto them. Returns true if it must stop.
+  function enterTile(s, u, x, y) {
+    if (!u.alive || u.traits.has('flying')) return false;
+    let stop = false;
+    for (const f of s.tfx.slice()) {
+      if (f.x !== x || f.y !== y || f.team === u.team) continue;
+      if (f.kind === 'fire') {
+        emit(s, { t: 'scorch', uid: u.uid, x, y });
+        magicDamage(s, s.byId[f.src] || null, u, f.dmg || 8, 'burn');
+      } else if (f.kind === 'caltrops') {
+        s.tfx.splice(s.tfx.indexOf(f), 1);
+        emit(s, { t: 'trap', uid: u.uid, x, y });
+        applyDamage(s, s.byId[f.src] || null, u, 6, { cat: 'none', dmgType: 'true' });
+        if (u.alive && !statusImmune(s, u, 'root')) {
+          u.root = Math.max(u.root, 1);
+          emit(s, { t: 'status', uid: u.uid, status: 'root', turns: u.root });
+        }
+        stop = true;
+      }
+      if (!u.alive) return true;
+    }
+    return stop;
+  }
+
+  function relocate(s, u, x, y) {
+    s.occ[idx(s, u.x, u.y)] = 0;
+    u.x = x;
+    u.y = y;
+    s.occ[idx(s, x, y)] = u.uid;
   }
 
   function summonShrub(s, u, x, y) {
+    const cap = 3 + (u.props.shrubs || 0);
     const mine = s.units.filter((v) => v.alive && v.type === 'shrub' && v.summoner === u.uid).sort((a, b) => a.born - b.born);
-    while (mine.length >= 3) {
+    while (mine.length >= cap) {
       const old = mine.shift();
       old.alive = false;
       s.occ[idx(s, old.x, old.y)] = 0;
       emit(s, { t: 'wither', uid: old.uid });
     }
     const thorn = u.traits.has('thornwall');
+    const iron = u.traits.has('ironwood');
     const shrub = addUnit(s, {
       type: 'shrub',
       team: u.team,
-      rank: 1,
       x,
       y,
       summoner: u.uid,
       born: ++s.summonCount,
       thorns: thorn ? 6 : 0,
-      baseHp: Math.round(18 * RANK_MULT[u.rank] * (thorn ? 2 : 1)),
+      baseHp: Math.round(18 * D.LEVEL_HP[u.level] * (thorn ? 2 : 1)),
+      armor: iron ? 0.4 : 0,
+      res: iron ? 0.4 : 0,
     });
     emit(s, { t: 'summon', uid: shrub.uid, x, y, by: u.uid });
+  }
+
+  function raiseDead(s, u, x, y) {
+    const sk = addUnit(s, { type: 'skeleton', team: u.team, x, y, summoner: u.uid, born: ++s.summonCount, facing: u.team === 'P' ? 0 : 2 });
+    sk.activated = true;
+    sk.value *= 0.6;
+    emit(s, { t: 'summon', uid: sk.uid, x, y, by: u.uid, raise: true });
+  }
+
+  // Explosions resolve one at a time; each may set off more.
+  function resolveBooms(s) {
+    let guard = 0;
+    while (s.booms.length && guard++ < 50) {
+      const b = s.booms.shift();
+      const tiles = radiusTiles(s, b.x, b.y, 1, true);
+      emit(s, { t: 'boom', x: b.x, y: b.y, tiles });
+      for (const v of unitsOnTiles(s, tiles)) {
+        if (!v.alive || v === b.src) continue;
+        magicDamage(s, b.src, v, b.dmg, 'boom');
+      }
+    }
   }
 
   // ------------------------------------------------------------ loot
@@ -799,6 +1326,7 @@
     const l = lootAt(s, u.x, u.y);
     if (!l) return false;
     A.acted = true;
+    A.noUndo = true;
     l.taken = true;
     l.by = uid;
     emit(s, { t: 'loot', uid, kind: l.kind, id: l.id, x: u.x, y: u.y });
@@ -807,11 +1335,13 @@
 
   // ------------------------------------------------------------ activation
 
+  function hasAction(u) {
+    if (u.move > 0 && !u.traits.has('immobile')) return true;
+    return u.acts.some((a) => a.kind !== 'none' && a.left > 0);
+  }
+
   function canActivate(s, u) {
-    return !!(
-      u && u.alive && !s.over && u.team === s.side && !u.activated && u.wait === 0 && u.para === 0 && !u.nonCombat &&
-      !(u.act.kind === 'none' && u.move === 0)
-    );
+    return !!(u && !s.over && u.team === s.side && canActivateFor(s, u, u.team));
   }
 
   function readyUnits(s, team) {
@@ -819,9 +1349,7 @@
   }
 
   function canActivateFor(s, u, team) {
-    return !!(
-      u.alive && u.team === team && !u.activated && u.wait === 0 && u.para === 0 && !u.nonCombat && !(u.act.kind === 'none' && u.move === 0)
-    );
+    return !!(u.alive && u.team === team && !u.activated && u.wait === 0 && u.para === 0 && !u.nonCombat && hasAction(u));
   }
 
   function beginActivation(s, uid) {
@@ -832,12 +1360,20 @@
       s.act = null;
     }
     if (!canActivate(s, u)) return false;
-    s.act = { uid, sx: u.x, sy: u.y, sf: u.facing, moved: false, acted: false, moveDist: 0, movedBeforeAct: false, killed: false };
+    s.act = { uid, sx: u.x, sy: u.y, sf: u.facing, moved: false, acted: false, moveDist: 0, movedBeforeAct: false, killed: false, blinked: false, noUndo: false };
     return true;
   }
 
   function cancelActivation(s) {
     if (s.act && !s.act.moved && !s.act.acted) s.act = null;
+  }
+
+  function thunderstep(s, u) {
+    if (!u.alive || !u.traits.has('thunderstep')) return;
+    const near = unitsOnTiles(s, radiusTiles(s, u.x, u.y, 1)).filter((v) => isFoe(u, v) && !v.nonCombat && !v.structure);
+    if (!near.length) return;
+    emit(s, { t: 'zap', uid: u.uid, targets: near.map((v) => v.uid) });
+    for (const v of near) magicDamage(s, u, v, 6, 'zap');
   }
 
   function moveUnit(s, uid, x, y) {
@@ -849,29 +1385,36 @@
     if (!r || r.d === 0) return null;
     const path = findPath(s, u, x, y);
     if (!path) return null;
-    s.occ[idx(s, u.x, u.y)] = 0;
-    u.x = x;
-    u.y = y;
-    s.occ[idx(s, x, y)] = u.uid;
+    relocate(s, u, x, y);
     A.moved = true;
-    A.moveDist = r.d;
+    A.moveDist = path.length - 1;
     A.movedBeforeAct = !A.acted;
     if (u.facing >= 0 && path.length >= 2) {
       const a = path[path.length - 2];
       u.facing = dirFromDelta(x - a.x, y - a.y);
     }
     emit(s, { t: 'move', uid, path, facing: u.facing });
+    const mark = s.events.length;
+    // Fire along the way burns; a trap can only be the last tile (reachable stops there).
+    for (let i = 1; i < path.length && u.alive; i++) enterTile(s, u, path[i].x, path[i].y);
+    thunderstep(s, u);
+    resolveBooms(s);
+    if (s.events.length > mark) A.noUndo = true;
+    checkOutcome(s);
     return path;
+  }
+
+  function canUndo(s) {
+    const A = s.act;
+    return !!(A && A.moved && !A.acted && !A.blinked && !A.noUndo);
   }
 
   function undoMove(s) {
     const A = s.act;
-    if (!A || !A.moved || A.acted) return false;
+    if (!canUndo(s)) return false;
     const u = s.byId[A.uid];
-    s.occ[idx(s, u.x, u.y)] = 0;
-    u.x = A.sx;
-    u.y = A.sy;
-    s.occ[idx(s, u.x, u.y)] = u.uid;
+    if (!u.alive) return false;
+    relocate(s, u, A.sx, A.sy);
     u.facing = A.sf;
     A.moved = false;
     A.moveDist = 0;
@@ -883,66 +1426,168 @@
   function performAction(s, uid, target) {
     const A = s.act;
     const u = s.byId[uid];
-    if (!A || A.uid !== uid || A.acted || s.over) return false;
-    const legal = targetsFrom(s, u).find((t) => sameTarget(t, target));
+    if (!A || A.uid !== uid || s.over || !target) return false;
+    const ai = target.ai || 0;
+    if (!actUsable(s, u, ai)) return false;
+    const legal = targetsFrom(s, u, ai).find((t) => sameTarget(t, target));
     if (!legal) return false;
     target = legal;
-    const a = u.act;
-    A.acted = true;
-    const opts = { moved: A.movedBeforeAct, moveDist: A.moveDist, fromX: u.x, fromY: u.y };
+    const a = u.acts[ai];
+    if (a.asMove) {
+      A.moved = true;
+      A.blinked = true;
+      A.moveDist = 0;
+      A.movedBeforeAct = !A.acted;
+    } else A.acted = true;
+    A.noUndo = true;
+    if (a.left !== Infinity) a.left--;
+    const opts = { moved: A.movedBeforeAct, moveDist: A.moveDist, fromX: u.x, fromY: u.y, act: a };
     const tiles = affectedTiles(s, u, target);
     const fd = facingToward(u, target);
-    if (fd >= 0 && u.facing >= 0 && fd !== u.facing) {
+    if (fd >= 0 && u.facing >= 0 && fd !== u.facing && a.kind !== 'leap' && a.kind !== 'blink') {
       u.facing = fd;
       emit(s, { t: 'face', uid, facing: fd });
     }
-    emit(s, { t: 'action', uid, kind: a.kind, name: a.name, target, tiles, x: u.x, y: u.y, dmg: a.dmg || null });
-    const victims = affectedUnits(s, u, target);
+    emit(s, { t: 'action', uid, kind: a.kind, name: a.name, target, tiles, x: u.x, y: u.y, dmg: a.dmg || null, ai, hz: a.hz || null, fixed: a.fixed != null });
+    const fx = hitFx(u, a);
+    const strike = (v, o) => {
+      if (!v.alive) return;
+      let landed = true;
+      if (a.dmg) landed = !hit(s, u, v, o || opts).blocked;
+      if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx);
+    };
     switch (a.kind) {
       case 'strike':
       case 'quake':
       case 'line':
       case 'cone':
       case 'cross':
-        for (const v of victims) if (u.alive) hit(s, u, v, opts);
+      case 'blast':
+      case 'nova': {
+        for (const v of affectedUnits(s, u, target)) {
+          if (!u.alive) break;
+          strike(v);
+        }
+        if (a.kind === 'strike' && u.traits.has('ridedown') && opts.moved && opts.moveDist >= 3) {
+          const v = s.byId[target.uid];
+          if (v && v.alive && u.alive) knockback(s, u, v);
+        }
         break;
+      }
       case 'cleave': {
         let struck = 0;
-        for (const v of victims) {
+        for (const v of affectedUnits(s, u, target)) {
           if (!u.alive) break;
-          hit(s, u, v, opts);
+          strike(v);
           struck++;
         }
         if (u.traits.has('bloodrage') && u.alive) heal(s, u, 5 * struck, 'drain');
         break;
       }
-      case 'blast':
-        for (const v of victims) {
-          if (a.dmg) hit(s, u, v, opts);
-          if (a.fx && a.fx.para && v.team !== u.team) applyPara(s, v, a.fx.para);
+      case 'shadowstrike': {
+        const v = s.byId[target.uid];
+        emit(s, { t: 'blink', uid, fx: u.x, fy: u.y, x: target.bx, y: target.by });
+        relocate(s, u, target.bx, target.by);
+        if (u.facing >= 0) {
+          u.facing = dirFromDelta(v.x - u.x, v.y - u.y);
+          emit(s, { t: 'face', uid, facing: u.facing });
         }
+        strike(v, Object.assign({}, opts, { fromX: u.x, fromY: u.y, cat: 'back' }));
+        if (u.alive) enterTile(s, u, u.x, u.y);
         break;
-      case 'nova':
-        for (const v of victims) {
-          if (v.nonCombat && !a.dmg) continue;
-          if (a.dmg) hit(s, u, v, opts);
-          if (a.fx && a.fx.poison) applyPoison(s, u, v, a.fx.poison, poisonDamage(u));
+      }
+      case 'leap': {
+        emit(s, { t: 'leap', uid, fx: u.x, fy: u.y, x: target.x, y: target.y });
+        relocate(s, u, target.x, target.y);
+        let struck = 0;
+        for (const v of affectedUnits(s, u, target)) {
+          if (!u.alive) break;
+          strike(v, Object.assign({}, opts, { fromX: u.x, fromY: u.y }));
+          struck++;
         }
+        if (u.traits.has('bloodrage') && u.alive) heal(s, u, 5 * struck, 'drain');
+        if (u.alive) enterTile(s, u, u.x, u.y);
         break;
+      }
+      case 'blink': {
+        emit(s, { t: 'blink', uid, fx: u.x, fy: u.y, x: target.x, y: target.y });
+        relocate(s, u, target.x, target.y);
+        if (u.alive) enterTile(s, u, u.x, u.y);
+        thunderstep(s, u);
+        break;
+      }
+      case 'detonate': {
+        u.exploded = true;
+        for (const v of affectedUnits(s, u, target)) strike(v, Object.assign({}, opts, { noReact: true }));
+        if (u.alive) kill(s, u, null);
+        break;
+      }
       case 'pray':
-        for (const v of victims) {
-          if (a.cleanse && (v.poison || v.para)) {
-            v.poison = null;
-            v.para = 0;
-            emit(s, { t: 'cleanse', uid: v.uid });
-          }
-          heal(s, v, healAmount(u), 'prayer');
+        for (const v of affectedUnits(s, u, target)) {
+          if (a.cleanse) cleanse(s, v, true);
+          heal(s, v, healAmount(u, a), 'prayer');
         }
         break;
+      case 'heal': {
+        const v = s.byId[target.uid];
+        if (a.cure) cleanse(s, v, false);
+        heal(s, v, healAmount(u, a), 'prayer');
+        break;
+      }
+      case 'drum':
+        for (const v of affectedUnits(s, u, target)) {
+          if (!a.noHeal) heal(s, v, healAmount(u, a), 'drum');
+          v.frenzy = Math.max(v.frenzy, 2);
+          emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
+        }
+        break;
+      case 'rally':
+        for (const v of affectedUnits(s, u, target)) {
+          v.wait = Math.max(0, v.wait - 1);
+          v.para = 0;
+          v.root = 0;
+          emit(s, { t: 'rally', uid: v.uid, wait: v.wait });
+        }
+        break;
+      case 'shield': {
+        const v = s.byId[target.uid];
+        v.shield = Math.max(v.shield, a.amount || 15);
+        emit(s, { t: 'shield', uid: v.uid, amount: v.shield });
+        break;
+      }
+      case 'hazard': {
+        const placed = [];
+        for (const [x, y] of tiles) {
+          const t = s.terrain[idx(s, x, y)];
+          if (t === T_ROCK) continue;
+          if (a.hz === 'fire' && t !== T_GRASS) continue;
+          if (a.hz === 'caltrops' && (t !== T_GRASS || at(s, x, y))) continue;
+          const old = tileFx(s, x, y, a.hz);
+          if (old) s.tfx.splice(s.tfx.indexOf(old), 1);
+          s.tfx.push({ kind: a.hz, x, y, team: u.team, turns: a.turns || 2, dmg: a.dmgFixed || 0, src: u.uid });
+          placed.push([x, y]);
+        }
+        emit(s, { t: 'hazard', kind: a.hz, tiles: placed, team: u.team });
+        break;
+      }
       case 'grow':
         summonShrub(s, u, target.x, target.y);
         break;
+      case 'raise':
+        raiseDead(s, u, target.x, target.y);
+        break;
+      case 'revive': {
+        const v = s.byId[target.uid];
+        if (v && !v.alive && emptyGrass(s, v.x, v.y)) {
+          v.revived = true;
+          revive(s, v, a.pct || 0.4, 'prayer');
+          v.activated = true;
+          v.wait = Math.max(v.wait, 1);
+        }
+        break;
+      }
     }
+    resolveBooms(s);
     checkOutcome(s);
     return true;
   }
@@ -964,13 +1609,40 @@
         w = 0;
         u.firstActionFree = false;
       }
-      if (A.killed && (u.tal.has('bloodlust') || s.relics[u.team].has('warlord_helm'))) w = 0;
+      if (A.killed && (u.traits.has('bloodlust') || s.relics[u.team].has('warlord_helm'))) w = 0;
     } else if (A.moved) {
       w = Math.floor(u.rec / 2);
     }
     u.wait = w;
     u.activated = true;
     emit(s, { t: 'done', uid: u.uid, wait: w });
+  }
+
+  // Loot wagons trundle toward their exit edge at the end of their side's turn.
+  function driveCarts(s, side) {
+    for (const u of s.units) {
+      if (!u.alive || u.team !== side || !u.traits.has('cart') || s.over) continue;
+      const reach = reachable(s, u);
+      let best = null;
+      for (const r of reach.values()) {
+        const k = Math.abs(r.x - s.cartExit) * 10 + Math.abs(r.y - u.y) + r.d * 0.01;
+        if (!best || k < best.k) best = { r, k };
+      }
+      if (!best || best.r.d === 0) continue;
+      const path = findPath(s, u, best.r.x, best.r.y);
+      if (!path) continue;
+      relocate(s, u, best.r.x, best.r.y);
+      emit(s, { t: 'move', uid: u.uid, path, facing: u.facing });
+      for (let i = 1; i < path.length && u.alive; i++) enterTile(s, u, path[i].x, path[i].y);
+      if (u.alive && u.x === s.cartExit) {
+        u.alive = false;
+        u.escaped = true;
+        s.occ[idx(s, u.x, u.y)] = 0;
+        s.stats.escaped++;
+        emit(s, { t: 'escape', uid: u.uid, x: u.x, y: u.y });
+      }
+    }
+    resolveBooms(s);
   }
 
   function endTurn(s) {
@@ -983,11 +1655,32 @@
         if (u.wait > 0) u.wait--;
         else if (u.para > 0) u.para--;
       }
+      if (u.root > 0) u.root--;
+      if (u.weak > 0) u.weak--;
+      if (u.mark > 0) u.mark--;
+      if (u.frenzy > 0) u.frenzy--;
       u.activated = false;
     }
+    driveCarts(s, side);
+    checkOutcome(s);
+    if (s.over) return;
     s.side = other(side);
     if (s.side === 'P') s.turn++;
     startTurn(s);
+  }
+
+  function tickDot(s, u, kind) {
+    const p = u[kind];
+    if (!p || !u.alive) return;
+    const src = s.byId[p.src] || null;
+    if (kind === 'poison') applyDamage(s, src, u, p.dmg, { cat: 'none', dmgType: 'poison' });
+    else magicDamage(s, src, u, p.dmg, 'burn');
+    if (!u.alive || !u[kind]) return;
+    p.turns--;
+    if (p.turns <= 0) {
+      u[kind] = null;
+      emit(s, { t: 'cure', uid: u.uid, status: kind });
+    }
   }
 
   function startTurn(s) {
@@ -1000,22 +1693,59 @@
       emit(s, { t: 'end', winner: s.winner, timeout: true });
       return;
     }
-    for (const u of s.units) {
-      if (!u.alive || u.team !== team || !u.poison) continue;
-      const p = u.poison;
-      applyDamage(s, s.byId[p.src] || null, u, p.dmg, { cat: 'none', dmgType: 'poison' });
-      if (!u.alive) continue;
-      p.turns--;
-      if (p.turns <= 0) {
-        u.poison = null;
-        emit(s, { t: 'cure', uid: u.uid });
+    // Hazards fade on their owner's turn.
+    const before = s.tfx.length;
+    s.tfx = s.tfx.filter((f) => f.team !== team || --f.turns > 0);
+    if (s.tfx.length !== before) emit(s, { t: 'hazardEnd' });
+    const mine = s.units.filter((u) => u.alive && u.team === team);
+    for (const u of mine) {
+      tickDot(s, u, 'poison');
+      tickDot(s, u, 'burn');
+      if (!u.alive || u.traits.has('flying')) continue;
+      const fire = tileFx(s, u.x, u.y, 'fire');
+      if (fire && fire.team !== team) {
+        emit(s, { t: 'scorch', uid: u.uid, x: u.x, y: u.y });
+        magicDamage(s, s.byId[fire.src] || null, u, fire.dmg || 8, 'burn');
       }
     }
-    for (const u of s.units) {
-      if (!u.alive || u.team !== team || u.nonCombat) continue;
-      if (u.traits.has('regrowth')) heal(s, u, 4, 'regrowth');
+    for (const u of mine) {
+      if (!u.alive || u.nonCombat) continue;
+      if (u.props.regen) {
+        if (u.traits.has('trollblood') && u.scorched) emit(s, { t: 'noregen', uid: u.uid });
+        else heal(s, u, u.props.regen, 'regrowth');
+      }
+      u.scorched = false;
       if (s.relics[team].has('sacred_chalice')) heal(s, u, 3, 'chalice');
     }
+    for (const w of mine) {
+      if (!w.alive || !w.traits.has('aura_barrier')) continue;
+      const mend = w.traits.has('auramend');
+      const purge = w.traits.has('purge');
+      if (!mend && !purge) continue;
+      for (const v of s.units) {
+        if (!v.alive || v.team !== team || v.nonCombat || v.structure || manhattan(v.x, v.y, w.x, w.y) > auraRadius(w)) continue;
+        if (purge && (v.root || v.burn)) {
+          v.root = 0;
+          v.burn = null;
+          emit(s, { t: 'cleanse', uid: v.uid });
+        }
+        if (mend) heal(s, v, 4, 'aura');
+      }
+    }
+    for (const u of mine) {
+      if (!u.alive || !u.traits.has('stormcaller')) continue;
+      let best = null;
+      for (const v of s.units) {
+        if (!isFoe(u, v) || v.nonCombat || v.structure) continue;
+        const d = manhattan(u.x, u.y, v.x, v.y);
+        if (d <= 3 && (!best || d < best.d || (d === best.d && v.hp < best.v.hp))) best = { v, d };
+      }
+      if (best) {
+        emit(s, { t: 'zap', uid: u.uid, targets: [best.v.uid] });
+        magicDamage(s, u, best.v, 8, 'zap');
+      }
+    }
+    resolveBooms(s);
     if (team === 'P' && s.hold) {
       const h = s.hold;
       const on = at(s, h.x, h.y);
@@ -1040,7 +1770,7 @@
     if (s.relics[team].has('healing_salve')) {
       let best = null;
       for (const u of s.units) {
-        if (!u.alive || u.team !== team || u.nonCombat || u.poison) continue;
+        if (!u.alive || u.team !== team || u.nonCombat || u.structure || u.poison) continue;
         if (!best || u.maxHp - u.hp > best.maxHp - best.hp) best = u;
       }
       if (best && best.hp < best.maxHp) heal(s, best, 6, 'salve');
@@ -1049,14 +1779,19 @@
   }
 
   function canDealDamage(u) {
-    return !!(u.act.dmg || (u.act.fx && u.act.fx.poison));
+    return u.acts.some((a) => a.left > 0 && (a.dmg || (a.fx && a.fx.poison) || a.kind === 'raise'));
   }
 
   // Remaining fighting strength, used to settle battles that hit the turn limit.
   function strength(s, team) {
     let t = 0;
-    for (const u of s.units) if (u.alive && u.team === team && !u.nonCombat) t += u.value * (u.hp / u.maxHp);
+    for (const u of s.units) if (u.alive && u.team === team && !u.nonCombat && !u.structure) t += u.value * (u.hp / u.maxHp);
     return t;
+  }
+
+  // Units that count for routing a side (not objects, structures or bound guardians).
+  function counts(u) {
+    return !u.nonCombat && !u.bound && !u.structure;
   }
 
   function checkOutcome(s) {
@@ -1067,23 +1802,24 @@
     let vipAlive = false;
     let hasObj = false;
     let objAlive = false;
+    let objEscaped = false;
     for (const u of s.units) {
       if (u.vip && u.team === 'E') {
         hasVip = true;
         if (u.alive) vipAlive = true;
       }
-      if (u.traits.has('object') && u.team === 'E') {
+      if (u.team === 'E' && u.traits.has('object') && !u.traits.has('scenery')) {
         hasObj = true;
         if (u.alive) objAlive = true;
+        if (u.escaped) objEscaped = true;
       }
-      // Treasure guardians are bound to their post and do not need to be defeated.
-      if (u.alive && !u.nonCombat && !u.bound) {
+      if (u.alive && counts(u)) {
         alive[u.team] = true;
         if (canDealDamage(u)) armed[u.team] = true;
       }
     }
     const vipDown = (s.objective === 'boss' || s.objective === 'vip') && hasVip && !vipAlive;
-    const objDown = s.objective === 'destroy' && hasObj && !objAlive;
+    const objDown = s.objective === 'destroy' && hasObj && !objAlive && !objEscaped;
     let winner = null;
     let surrender = false;
     if (!alive.P && !alive.E) winner = s.side;
@@ -1118,13 +1854,13 @@
 
   AG.Engine = {
     T_GRASS, T_ROCK, T_WATER, T_LAVA,
-    other, manhattan, idx, inB, at, dirFromDelta, unitValue,
-    canDealDamage, strength, createBattle, addUnit, withUnitAt, reachable, findPath,
-    patternTiles, lineTiles, coneTiles, radiusTiles,
-    inBarrier, guardianReduction, magicTakenMult, statusImmune, dirCategory, blockChance, calcHit,
-    poisonDamage, healAmount, targetsFrom, sameTarget, affectedTiles, affectedUnits, previewAction, facingToward,
-    lootAt, canLoot, takeLoot, nearBanner,
-    canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, performAction,
+    other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
+    canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
+    patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, concealed,
+    inBarrier, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
+    poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
+    previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
+    canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, canUndo, performAction,
     finishActivation, endTurn, startTurn, checkOutcome, forfeit, drainEvents,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,31 +1,88 @@
-// Campaign layer: the branching map, enemy armies, economy, rewards, shops, events and saving.
-// The run object is plain JSON so it can be saved between sessions.
+// Campaign layer: the branching map, commander level and Supply, loadouts, enemy armies,
+// rewards, shops, events and saving. The run object is plain JSON so it can be saved.
 (function (root) {
   'use strict';
   const AG = (root.AG = root.AG || {});
   const D = AG.Data;
-  const { UNITS, RECRUITABLE, TALENTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, talentEligible, MAX_TALENTS } = D;
+  const { UNITS, RECRUITABLE, ABILITIES, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
   const E = AG.Engine;
 
-  const SAVE_KEY = 'arena-gauntlet-run-v1';
-  const META_KEY = 'arena-gauntlet-meta-v1';
+  const SAVE_KEY = 'arena-gauntlet-run-v2';
+  const META_KEY = 'arena-gauntlet-meta-v2';
   const ROWS = 7; // regular rows per act; the boss sits on row ROWS
   const COLS = 5;
   const BOARD = 9;
-  const MAX_ROSTER = 10;
-  const MAX_BANNERS = 3;
-  const RANK_COST = [0, 0, 1.2, 2.6];
-  const PROMOTE_PRICE = [0, 0, 40, 80];
-  const RECRUIT_PRICE = { common: 45, uncommon: 65, rare: 90, legendary: 150 };
+  const MAX_ROSTER = 12;
+  const MAX_FIELD = 9;
+  const LEAN_GOLD = 3;
+  const RECRUIT_PRICE = { common: 40, uncommon: 60, rare: 85, legendary: 140 };
   const RELIC_PRICE = { common: 85, uncommon: 115, rare: 150, boss: 200, event: 120 };
-  const TALENT_PRICE = 50;
-  const EFFICIENCY_GOLD = 4;
+  const ITEM_PRICE = (cost) => 28 + 14 * cost;
+  const SCROLL_PRICE = 80;
 
   const hasRelic = (run, id) => run.relics.includes(id);
   const unitById = (run, id) => run.roster.find((u) => u.id === id);
+  const itemByUid = (run, uid) => run.items.find((i) => i.uid === uid);
   const discount = (run, price) => Math.round(price * (hasRelic(run, 'guild_seal') ? 0.75 : 1));
+  const isObjectType = (t) => UNITS[t].traits.includes('object') || UNITS[t].traits.includes('summon');
+  const isAttacker = (type) => {
+    const T = UNITS[type];
+    return !!(T.act.dmg || (T.act.fx && T.act.fx.poison) || (T.extra || []).some((a) => a.dmg));
+  };
 
-  // ------------------------------------------------------------ roster
+  // ------------------------------------------------------------ commander
+
+  function commanderLevel(run) {
+    let lv = 1;
+    for (let i = 1; i < COMMAND.length; i++) if (run.xp >= COMMAND[i].xp) lv = i;
+    return lv;
+  }
+
+  // XP progress toward the next commander level.
+  function levelInfo(run) {
+    const lv = commanderLevel(run);
+    const cur = COMMAND[lv];
+    const next = COMMAND[lv + 1] || null;
+    return { lv, xp: run.xp, from: cur.xp, to: next ? next.xp : null, max: !next };
+  }
+
+  function supplyFor(run) {
+    let s = COMMAND[commanderLevel(run)].supply + (run.supplyBonus || 0);
+    if (hasRelic(run, 'war_horn')) s += 1;
+    if (hasRelic(run, 'legion_banner')) s += 2;
+    if (hasRelic(run, 'tyrant_heart')) s += 3;
+    if (hasRelic(run, 'crown_command')) s += 1;
+    if (hasRelic(run, 'titan_gauntlet')) s -= 1;
+    return s;
+  }
+
+  // Each defeat after the first steels your army: +1 Supply for that battle, up to +3.
+  function retryBonus(run) {
+    const p = run.pending;
+    return p && p.type === 'battle' ? Math.min(3, Math.max(0, (p.attempt || 0) - 1)) : 0;
+  }
+
+  // Supply for the battle at hand.
+  function battleSupply(run) {
+    return supplyFor(run) + retryBonus(run);
+  }
+
+  function unitCap(run) {
+    let c = COMMAND[commanderLevel(run)].cap + (run.capBonus || 0);
+    if (hasRelic(run, 'recruiters_bell')) c += 1;
+    if (hasRelic(run, 'crown_command')) c += 1;
+    return Math.min(MAX_FIELD, c);
+  }
+
+  function gainXp(run, amount) {
+    const from = commanderLevel(run);
+    const amt = Math.round(amount * (hasRelic(run, 'drill_manual') ? 1.25 : 1));
+    run.xp += amt;
+    run.stats.xp += amt;
+    return { amount: amt, from, to: commanderLevel(run) };
+  }
+
+  // ------------------------------------------------------------ roster and items
 
   function pickName(run) {
     const rng = AG.derive(run.seed, 'name:' + run.nextId);
@@ -35,41 +92,160 @@
     return name;
   }
 
-  function addRecruit(run, type, rank, extra) {
-    const u = { id: 'u' + run.nextId, type, rank: rank || 1, talents: [], wounded: false, name: '', kills: 0, battles: 0 };
+  function defaultLoad(type) {
+    const T = UNITS[type];
+    return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, skills: [], gear: [] };
+  }
+
+  function addRecruit(run, type, extra) {
+    const u = { id: 'u' + run.nextId, type, name: '', enchant: null, kills: 0, battles: 0, load: defaultLoad(type) };
     u.name = pickName(run);
     run.nextId++;
     if (extra) Object.assign(u, extra);
+    if (u.enchant && !D.eligible(type, ENCHANTS[u.enchant])) u.enchant = null;
     run.roster.push(u);
     return u;
   }
 
-  function canLearn(u, talent) {
-    return u.talents.length < MAX_TALENTS && talentEligible(u.type, talent, u.talents);
+  function addItem(run, kind, id) {
+    const it = { uid: 'i' + run.nextItem++, kind, id };
+    run.items.push(it);
+    return it;
   }
 
-  function teach(run, rid, talent) {
-    const u = unitById(run, rid);
-    if (!u || !canLearn(u, talent)) return false;
-    u.talents.push(talent);
-    return true;
+  function itemDef(it) {
+    if (!it) return null;
+    if (it.kind === 'scroll') return ENCHANTS[it.id];
+    return D.itemDef(it.kind, it.id);
   }
 
-  function promoteCost(run, u) {
-    if (u.rank >= 3) return null;
-    return discount(run, PROMOTE_PRICE[u.rank + 1]);
+  // The unit an item is slotted into, if any.
+  function itemHolder(run, uid) {
+    for (const r of run.roster) if (r.load.skills.includes(uid) || r.load.gear.includes(uid)) return r;
+    return null;
   }
 
-  function promote(run, rid, free) {
-    const u = unitById(run, rid);
-    if (!u || u.rank >= 3) return false;
-    if (!free) {
-      const c = promoteCost(run, u);
-      if (run.gold < c) return false;
-      run.gold -= c;
+  function slotsFor(lv) {
+    return { skills: SKILL_SLOTS[lv], gear: GEAR_SLOTS[lv] };
+  }
+
+  // Keep a unit's loadout legal: valid picks, owned and eligible items, slots within its level.
+  function normalizeLoad(run, r) {
+    const T = UNITS[r.type];
+    const L = r.load || (r.load = defaultLoad(r.type));
+    L.lv = Math.max(1, Math.min(D.MAX_LEVEL, L.lv || 1));
+    if (T.abilities) {
+      if (!T.abilities[1].includes(L.a1)) L.a1 = T.abilities[1][0];
+      if (!T.abilities[2].includes(L.a2)) L.a2 = T.abilities[2][0];
     }
-    u.rank++;
+    const sl = slotsFor(L.lv);
+    const ok = (uid, kind) => {
+      const it = itemByUid(run, uid);
+      return it && it.kind === kind && D.eligible(r.type, itemDef(it));
+    };
+    L.skills = (L.skills || []).filter((uid) => ok(uid, 'skill')).slice(0, sl.skills);
+    L.gear = (L.gear || []).filter((uid) => ok(uid, 'gear')).slice(0, sl.gear);
+    return L;
+  }
+
+  function setLevel(run, rid, lv) {
+    const r = unitById(run, rid);
+    if (!r) return false;
+    r.load.lv = Math.max(1, Math.min(D.MAX_LEVEL, lv));
+    normalizeLoad(run, r);
     return true;
+  }
+
+  function setAbility(run, rid, tier, id) {
+    const r = unitById(run, rid);
+    const T = r && UNITS[r.type];
+    if (!T || !T.abilities || !T.abilities[tier].includes(id)) return false;
+    r.load[tier === 1 ? 'a1' : 'a2'] = id;
+    return true;
+  }
+
+  // Slot an owned item into a unit, taking it off whoever had it.
+  function assignItem(run, rid, uid) {
+    const r = unitById(run, rid);
+    const it = itemByUid(run, uid);
+    if (!r || !it || (it.kind !== 'skill' && it.kind !== 'gear')) return false;
+    if (!D.eligible(r.type, itemDef(it))) return false;
+    const key = it.kind === 'skill' ? 'skills' : 'gear';
+    if (r.load[key].includes(uid)) return true;
+    if (r.load[key].length >= slotsFor(r.load.lv)[key]) return false;
+    unassignItem(run, uid);
+    r.load[key].push(uid);
+    return true;
+  }
+
+  function unassignItem(run, uid) {
+    for (const r of run.roster) {
+      r.load.skills = r.load.skills.filter((x) => x !== uid);
+      r.load.gear = r.load.gear.filter((x) => x !== uid);
+    }
+  }
+
+  // Items not slotted into anyone.
+  function freeItems(run, kind) {
+    return run.items.filter((it) => (!kind || it.kind === kind) && (it.kind === 'scroll' || !itemHolder(run, it.uid)));
+  }
+
+  function abilityCost(id) {
+    return id && ABILITIES[id] ? ABILITIES[id].cost : 0;
+  }
+
+  // What fielding this unit costs, line by line.
+  function costBreakdown(run, r) {
+    normalizeLoad(run, r);
+    const T = UNITS[r.type];
+    const L = r.load;
+    const out = [{ label: T.name + ' (Level 1)', cost: T.cost }];
+    if (L.lv > 1) out.push({ label: 'Level ' + L.lv, cost: LEVEL_COST[L.lv] });
+    if (L.a1) out.push({ label: ABILITIES[L.a1].name, cost: abilityCost(L.a1) });
+    if (L.lv >= 2 && L.a2) out.push({ label: ABILITIES[L.a2].name, cost: abilityCost(L.a2) });
+    for (const uid of L.skills.concat(L.gear)) {
+      const d = itemDef(itemByUid(run, uid));
+      if (d) out.push({ label: d.name, cost: d.cost });
+    }
+    if (r.enchant) out.push({ label: ENCHANTS[r.enchant].name + ' (enchantment)', cost: ENCHANTS[r.enchant].surcharge });
+    return out;
+  }
+
+  function unitCost(run, r) {
+    return costBreakdown(run, r).reduce((t, x) => t + x.cost, 0);
+  }
+
+  function deployCost(run, rid) {
+    const r = unitById(run, rid);
+    return r ? unitCost(run, r) : 0;
+  }
+
+  function supplyUsed(run, deployment) {
+    return deployment.reduce((t, d) => t + deployCost(run, d.rid), 0);
+  }
+
+  // An engine unit spec for a roster unit.
+  function specFor(run, r) {
+    normalizeLoad(run, r);
+    const L = r.load;
+    return {
+      type: r.type,
+      level: L.lv,
+      a1: L.a1,
+      a2: L.a2,
+      skills: L.skills.map((uid) => itemByUid(run, uid).id),
+      gear: L.gear.map((uid) => itemByUid(run, uid).id),
+      enchant: r.enchant,
+      rid: r.id,
+      name: r.name,
+    };
+  }
+
+  // Battle-ready numbers for a roster unit (or any spec), with relics applied.
+  function unitStats(run, rOrSpec, team) {
+    const spec = rOrSpec.load ? specFor(run, rOrSpec) : Object.assign({}, rOrSpec);
+    const s = { w: 1, h: 1, units: [], byId: {}, occ: [0], nextUid: 1, relics: { P: new Set(run ? run.relics : []), E: new Set() } };
+    return E.addUnit(s, Object.assign(spec, { team: team || 'P', x: 0, y: 0 }));
   }
 
   function dismiss(run, rid) {
@@ -81,10 +257,16 @@
     return true;
   }
 
-  // Battle-ready numbers for a roster unit (rank, talents and relics applied).
-  function unitStats(spec, relics, team) {
-    const s = { w: 1, h: 1, units: [], byId: {}, occ: [0], nextUid: 1, relics: { P: new Set(relics || []), E: new Set() } };
-    return E.addUnit(s, { type: spec.type, rank: spec.rank || 1, talents: spec.talents || [], team: team || 'P', x: 0, y: 0, wounded: spec.wounded });
+  // Bind an enchantment scroll to a unit, for good.
+  function applyScroll(run, uid, rid) {
+    const it = itemByUid(run, uid);
+    const r = unitById(run, rid);
+    if (!it || it.kind !== 'scroll' || !r || r.enchant) return false;
+    if (!D.eligible(r.type, ENCHANTS[it.id])) return false;
+    r.enchant = it.id;
+    run.items = run.items.filter((x) => x.uid !== uid);
+    save(run);
+    return true;
   }
 
   // ------------------------------------------------------------ new run
@@ -95,30 +277,35 @@
     const wb = WARBANDS.find((w) => w.id === opts.warband) || WARBANDS[0];
     const diff = DIFFICULTIES.find((d) => d.id === opts.difficulty) || DIFFICULTIES[1];
     const run = {
-      v: 1,
+      v: 2,
       seed,
       warband: wb.id,
       difficulty: diff.id,
       act: 1,
       gold: wb.gold,
-      banners: MAX_BANNERS,
-      maxBanners: MAX_BANNERS,
-      cpBonus: 0,
+      xp: 0,
+      supplyBonus: 0,
+      capBonus: 0,
       roster: [],
+      items: [],
       relics: [wb.relic],
       nextId: 1,
+      nextItem: 1,
       usedNames: [],
       map: null,
       pos: null,
       cur: null,
       visited: [],
       recentEnc: [],
+      seenEvents: [],
+      lastDeployed: [],
       pending: null,
       over: false,
       won: false,
-      stats: { battles: 0, elites: 0, bosses: 0, gold: 0, efficiency: 0, fallen: 0, kills: 0, losses: 0 },
+      stats: { battles: 0, elites: 0, bosses: 0, gold: 0, xp: 0, kills: 0, losses: 0, firstTry: 0, lean: 0 },
     };
-    for (const t of wb.units) addRecruit(run, t, 1);
+    for (const t of wb.units) addRecruit(run, t);
+    for (const [kind, id] of wb.items || []) addItem(run, kind, id);
     run.map = genMap(run, 1);
     return run;
   }
@@ -179,7 +366,7 @@
     if (!list.some((n) => n.kind === 'elite') && plain().length) rng.pick(plain()).kind = 'elite';
     for (const n of list) if (n.row === ROWS - 1) n.next = ['boss'];
     list.push({ id: 'boss', row: ROWS, col: 2, kind: 'boss', next: [], jx: 0 });
-    return { act, nodes: list };
+    return { act, nodes: list, boss: rng.pick(D.ACTS[act].bosses) };
   }
 
   function getNode(run, id) {
@@ -193,30 +380,19 @@
     return at ? at.next.map((id) => getNode(run, id)) : [];
   }
 
+  function bossOf(run) {
+    return run.map.boss || D.ACTS[run.act].bosses[0];
+  }
+
+  // XP a victory pays, by battle kind.
+  function battleXp(run, kind) {
+    const a = run.act - 1;
+    if (kind === 'boss') return 25 + 5 * a;
+    if (kind === 'elite') return 15 + 3 * a;
+    return 8 + 2 * a;
+  }
+
   // ------------------------------------------------------------ encounters
-
-  function cpFor(run, node, baseOnly, kind) {
-    const k = kind || node.kind;
-    let cp = 9 + (run.act - 1) * 4 + Math.floor(node.row / 2) + (k === 'elite' ? 1 : 0) + (k === 'boss' ? 2 : 0);
-    if (baseOnly) return cp;
-    cp += 1 + run.cpBonus;
-    if (hasRelic(run, 'war_horn')) cp += 1;
-    if (hasRelic(run, 'legion_banner')) cp += 2;
-    if (hasRelic(run, 'tyrant_heart')) cp += 3;
-    if (hasRelic(run, 'titan_gauntlet')) cp -= 1;
-    return cp;
-  }
-
-  function encounterCost(units) {
-    let c = 0;
-    for (const u of units) c += UNITS[u.type].cost + RANK_COST[u.rank] + 0.6 * u.talents.length;
-    return c;
-  }
-
-  function randomTalentFor(rng, type, owned) {
-    const ids = Object.keys(TALENTS).filter((t) => talentEligible(type, t, owned));
-    return ids.length ? rng.pick(ids) : null;
-  }
 
   function connected(t, w, h) {
     const seen = new Uint8Array(w * h);
@@ -247,7 +423,7 @@
   }
 
   // Obstacles sit in the middle rows, mirrored so neither side is favored.
-  function genTerrain(rng, act, w, h) {
+  function genTerrain(rng, act, w, h, layout) {
     for (let attempt = 0; attempt < 40; attempt++) {
       const t = new Array(w * h).fill(0);
       const put = (x, y, v) => {
@@ -272,24 +448,41 @@
         put(x, y, E.T_LAVA);
         if (x + 1 < w && rng.chance(0.5)) put(x + 1, y, E.T_LAVA);
       }
+      if (layout === 'siege') for (let i = 0; i < 3 * w; i++) t[i] = 0;
+      if (layout === 'convoy') for (let y = 3; y <= 5; y++) for (const x of [0, w - 1, w - 2]) t[y * w + x] = 0;
       if (connected(t, w, h)) return t;
     }
     return new Array(w * h).fill(0);
   }
 
-  function placeEnemies(rng, units, terrain, w) {
-    const used = new Set();
+  // Supply cost of an enemy spec, measured like the player's.
+  function enemyCost(u) {
+    const T = UNITS[u.type];
+    if (isObjectType(u.type) || T.traits.includes('structure')) return u.type === 'tower' ? 3 : 0;
+    let c = T.cost + LEVEL_COST[u.level || 1] + abilityCost(u.a1) + ((u.level || 1) >= 2 ? abilityCost(u.a2) : 0);
+    for (const id of u.skills || []) c += SKILLS[id].cost;
+    for (const id of u.gear || []) c += GEAR[id].cost;
+    return c;
+  }
+
+  function placeEnemies(rng, units, terrain, w, layout, taken) {
+    const used = taken || new Set();
     const front = ['tank', 'melee', 'skirmisher', 'monster'];
     for (const u of units) {
+      if (u.x != null) {
+        used.add(u.x + ',' + u.y);
+        continue;
+      }
       const T = UNITS[u.type];
       let rows;
-      if (T.boss) rows = T.role === 'caster' ? [0, 1] : [1, 0];
+      if (layout === 'siege') rows = front.includes(T.role) ? [1, 0] : [0, 1];
+      else if (layout === 'convoy') rows = front.includes(T.role) ? [2, 3, 1] : [1, 2, 0];
+      else if (T.boss) rows = T.role === 'caster' ? [0, 1] : [1, 0];
       else if (front.includes(T.role) || u.type === 'lightning') rows = [1, 0];
       else rows = [0, 1];
-      const xs = [...Array(w).keys()]
-        .map((x) => [x, Math.abs(x - (w - 1) / 2) + rng.next() * 3.5])
-        .sort((a, b) => a[1] - b[1])
-        .map((a) => a[0]);
+      let xs = [...Array(w).keys()].map((x) => [x, Math.abs(x - (w - 1) / 2) + rng.next() * 3.5]);
+      if (layout === 'convoy') xs = xs.map(([x, k]) => [x, Math.abs(x - 6.5) + rng.next() * 2]);
+      xs = xs.sort((a, b) => a[1] - b[1]).map((a) => a[0]);
       let placed = false;
       for (const y of rows) {
         for (const x of xs) {
@@ -304,7 +497,20 @@
         }
         if (placed) break;
       }
+      if (!placed) {
+        for (let y = 0; y < 4 && !placed; y++)
+          for (let x = 0; x < w && !placed; x++) {
+            const k = x + ',' + y;
+            if (used.has(k) || terrain[y * w + x] !== 0) continue;
+            used.add(k);
+            u.x = x;
+            u.y = y;
+            u.facing = 2;
+            placed = true;
+          }
+      }
     }
+    return used;
   }
 
   // Mission goals. The primary goal decides how the battle is won (a full rout always works);
@@ -317,7 +523,69 @@
   // Units that sat out the last battle, for the featured-unit bonus.
   function musterCandidates(run) {
     if (!run.lastDeployed || !run.lastDeployed.length) return [];
-    return run.roster.filter((u) => !run.lastDeployed.includes(u.id) && !u.wounded);
+    return run.roster.filter((u) => !run.lastDeployed.includes(u.id));
+  }
+
+  // Enemy armies grow with the act and the floor, but never outgrow your own Supply by much,
+  // so an under-leveled army can always find a winning plan.
+  // Later acts lean harder on you, to answer the relics and gear you have piled up.
+  const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
+
+  function enemyBudget(run, node, kind) {
+    const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
+    const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
+    let b = 12 + (run.act - 1) * 7.5 + node.row;
+    if (group === 'elite') b *= 1.2;
+    if (group === 'boss') b = 12 + (run.act - 1) * 7 + 8;
+    const lean = group === 'boss' ? 0.03 : 0.08;
+    b = Math.min(b, supplyFor(run) * (BUDGET_CAP[group] + lean * (run.act - 1)));
+    return b * diff.mult;
+  }
+
+  // Give enemy units abilities, levels and (later on) gear, within the budget.
+  function outfitEnemies(rng, run, units, budget, group) {
+    const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
+    const classUnits = units.filter((u) => UNITS[u.type].abilities);
+    for (const u of classUnits) {
+      const ab = UNITS[u.type].abilities;
+      const pick = rng.pick(ab[1]);
+      u.a1 = cost() + abilityCost(pick) <= budget ? pick : ab[1][0];
+      u.a2 = ab[2][0];
+    }
+    const maxLv = run.act === 1 ? (group === 'normal' ? 2 : 3) : 3;
+    for (let guard = 0; guard < 24; guard++) {
+      const left = budget - cost();
+      const opts = units.filter((u) => {
+        const T = UNITS[u.type];
+        if (T.boss || isObjectType(u.type) || T.traits.includes('structure') || (u.level || 1) >= maxLv) return false;
+        const lv = u.level || 1;
+        return LEVEL_COST[lv + 1] - LEVEL_COST[lv] <= left;
+      });
+      if (!opts.length) break;
+      const u = rng.pick(opts);
+      u.level = (u.level || 1) + 1;
+      if (u.level === 2 && UNITS[u.type].abilities) {
+        const ab = UNITS[u.type].abilities[2];
+        const pick = rng.pick(ab);
+        u.a2 = cost() + abilityCost(pick) - abilityCost(u.a2) <= budget ? pick : ab[0];
+      }
+    }
+    // Later acts: leftover budget buys skills and gear.
+    if (run.act >= 2) {
+      for (let guard = 0; guard < 6; guard++) {
+        const left = budget - cost();
+        if (left < 1) break;
+        const u = rng.pick(units.filter((x) => !isObjectType(x.type) && !UNITS[x.type].traits.includes('structure')));
+        if (!u) break;
+        const pool = rng.chance(0.5) ? ['skill', SKILLS] : ['gear', GEAR];
+        const ids = Object.keys(pool[1]).filter((id) => pool[1][id].cost <= left && D.eligible(u.type, pool[1][id]) && !pool[1][id].mod.active);
+        if (!ids.length) continue;
+        const key = pool[0] === 'skill' ? 'skills' : 'gear';
+        u[key] = u[key] || [];
+        if (u[key].length >= (key === 'skills' ? SKILL_SLOTS : GEAR_SLOTS)[u.level || 1]) continue;
+        u[key].push(rng.pick(ids));
+      }
+    }
   }
 
   function genEncounter(run, node, kindOverride) {
@@ -325,54 +593,77 @@
     const act = run.act;
     const rng = AG.derive(run.seed, 'enc:' + act + ':' + node.id + ':' + kind);
     const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
-    const pool = ENCOUNTERS[act][group];
-    const fresh = pool.filter((t) => !run.recentEnc.includes(t.name));
-    const tpl = rng.pick(fresh.length ? fresh : pool);
-    const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
-    const primary = group === 'boss' ? 'boss' : rng.weighted(PRIMARY[group]);
-    // Unit count follows a Command Point budget, like the player's army. Ranks and
-    // talents come on top, growing with the act and floor the way the player's do.
-    const mult = { normal: [0, 0.9, 1.05, 1.12], elite: [0, 1.15, 1.3, 1.35], boss: [0, 1.35, 1.25, 1.3] }[group][act];
-    const budget = cpFor(run, node, true, kind) * mult * diff.mult * (primary === 'survive' ? 1.3 : 1);
-    const units = tpl.units.map((t, i) => ({ type: t, rank: tpl.ranks ? tpl.ranks[i] : 1, talents: [] }));
-    const unitCost = () => units.reduce((t, u) => t + UNITS[u.type].cost, 0);
-    while (unitCost() > budget + 0.5 && units.length > 2) {
+    let tpl;
+    if (group === 'boss') tpl = ENCOUNTERS[act].boss[bossOf(run)];
+    else {
+      const pool = ENCOUNTERS[act][group];
+      const fresh = pool.filter((t) => !run.recentEnc.includes(t.name));
+      tpl = rng.pick(fresh.length ? fresh : pool);
+    }
+    const layout = tpl.layout || null;
+    let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[group]);
+    const budget = enemyBudget(run, node, kind) * (primary === 'survive' ? 1.3 : 1);
+    const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
+    const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
+    const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
+    // Enemy armies obey a unit cap a little above yours; spare Supply buys levels instead.
+    const maxUnits = Math.min(8, unitCap(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2));
+    while ((cost() + structures > budget + 0.5 && units.length > 2) || units.length > maxUnits) {
       let i = units.length - 1;
       while (i >= 0 && UNITS[units[i].type].boss) i--;
       if (i < 0) break;
       units.splice(i, 1);
     }
     for (let guard = 0; guard < 30; guard++) {
-      const addable = tpl.pool.filter((t) => UNITS[t].cost <= budget - unitCost() + 0.5);
-      if (!addable.length || units.length >= 8) break;
-      units.push({ type: rng.pick(addable), rank: 1, talents: [] });
+      const addable = tpl.pool.filter((t) => enemyCost({ type: t, level: 1 }) <= budget - structures - cost() + 0.5);
+      if (!addable.length || units.length >= maxUnits) break;
+      units.push({ type: rng.pick(addable), level: 1 });
     }
-    const depth = Math.min(1, node.row / ROWS);
-    const elite = group === 'elite' ? 1 : 0;
-    const p2 = ([0, 0.12 * depth, 0.35 + 0.15 * depth, 0.45 + 0.1 * depth][act] + 0.15 * elite) * diff.mult;
-    const p3 = ([0, 0, 0.04 + 0.06 * depth, 0.18 + 0.15 * depth][act] + 0.05 * elite) * diff.mult;
-    const pt = [0, 0.05, 0.25, 0.45][act] + 0.2 * elite;
-    for (const u of units) {
-      if (UNITS[u.type].boss) continue;
-      if (!tpl.ranks) {
-        const r = rng.next();
-        if (r < p3) u.rank = 3;
-        else if (r < p3 + p2) u.rank = 2;
-      }
-      const talents = rng.chance(pt) ? (act === 3 && elite && rng.chance(0.3) ? 2 : 1) : 0;
-      for (let k = 0; k < talents; k++) {
-        const t = randomTalentFor(rng, u.type, u.talents);
-        if (t) u.talents.push(t);
-      }
-    }
+    outfitEnemies(rng, run, units, budget - structures, group);
     if (primary === 'commander') {
       let lead = null;
-      for (const u of units) if (!lead || UNITS[u.type].cost + u.rank > UNITS[lead.type].cost + lead.rank) lead = u;
+      for (const u of units) if (!lead || enemyCost(u) > enemyCost(lead)) lead = u;
       lead.vip = true;
-      lead.rank = Math.min(3, lead.rank + 1);
+      lead.level = Math.min(3, (lead.level || 1) + 1);
+      if (UNITS[lead.type].abilities && !lead.a2) lead.a2 = UNITS[lead.type].abilities[2][0];
     }
-    const terrain = genTerrain(rng, act, BOARD, BOARD);
-    placeEnemies(rng, units, terrain, BOARD);
+    const terrain = genTerrain(rng, act, BOARD, BOARD, layout);
+    const taken = new Set();
+    const objects = [];
+    const putObj = (type, x, y, extra) => {
+      if (terrain[y * BOARD + x] !== 0 || taken.has(x + ',' + y)) return false;
+      objects.push(Object.assign({ type, level: 1, x, y, facing: 2 }, extra || {}));
+      taken.add(x + ',' + y);
+      return true;
+    };
+    if (layout === 'siege') {
+      for (const x of [1, 2, 3, 5, 6, 7]) putObj('wall', x, 2);
+      putObj('gate', 4, 2);
+      const towers = structures / 3 === 2 ? [2, 6] : [rng.pick([2, 6])];
+      for (const x of towers) putObj('tower', x, 1);
+    } else if (layout === 'convoy') {
+      const n = act >= 2 && group !== 'normal' ? 3 : 2;
+      const spots = [[8, 3], [8, 5], [7, 4]];
+      for (let i = 0; i < n; i++) putObj('cart', spots[i][0], spots[i][1]);
+    }
+    placeEnemies(rng, units, terrain, BOARD, layout, taken);
+    for (const u of units) {
+      if (layout === 'convoy' && u.y >= 2) u.facing = rng.pick([2, 3]);
+    }
+    units.push(...objects);
+    if (layout === 'camp') {
+      const n = act >= 2 ? 4 : 3;
+      let placed = 0;
+      for (let tries = 0; tries < 60 && placed < n; tries++) {
+        const x = rng.int(BOARD);
+        const y = rng.range(0, 3);
+        const k = x + ',' + y;
+        const near = units.some((u) => Math.abs(u.x - x) + Math.abs(u.y - y) === 1 && !isObjectType(u.type));
+        if (!near || terrain[y * BOARD + x] !== 0 || units.some((u) => u.x + ',' + u.y === k)) continue;
+        units.push({ type: 'barrel', level: 1, x, y, facing: 2 });
+        placed++;
+      }
+    }
     const used = new Set(units.map((u) => u.x + ',' + u.y));
     const open = (x, y) => x >= 0 && y >= 0 && x < BOARD && y < BOARD && terrain[y * BOARD + x] === 0 && !used.has(x + ',' + y);
     const pickTile = (rows, xs) => {
@@ -383,6 +674,7 @@
     const enc = {
       name: tpl.name,
       kind,
+      layout,
       stance: tpl.stance,
       objective: 'all',
       primary,
@@ -398,7 +690,7 @@
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
       if (!t) return false;
-      units.push({ type, rank: 1, talents: [], x: t[0], y: t[1], facing: 2 });
+      units.push({ type, level: 1, x: t[0], y: t[1], facing: 2 });
       used.add(t[0] + ',' + t[1]);
       return true;
     };
@@ -409,13 +701,17 @@
       case 'commander':
         enc.objective = 'vip';
         break;
+      case 'gate':
+      case 'convoy':
+        enc.objective = 'destroy';
+        break;
       case 'banner':
         if (addObject('warbanner', [0], [3, 4, 5, 2, 6])) enc.objective = 'destroy';
         break;
       case 'prison':
         if (addObject('cage', [1, 0], rng.chance(0.5) ? [1, 2, 0] : [6, 7, 8])) {
           enc.objective = 'destroy';
-          enc.prisoner = { type: rollUnitType(run, rng, 'normal'), rank: recruitRank(run, rng) };
+          enc.prisoner = { type: rollUnitType(run, rng, 'normal') };
         }
         break;
       case 'hold': {
@@ -433,10 +729,10 @@
         enc.stance = 'aggressive';
         break;
     }
-    if (enc.objective === 'all') enc.primary = primary === 'boss' ? 'boss' : 'rout';
+    if (enc.objective === 'all') enc.primary = primary = primary === 'boss' ? 'boss' : 'rout';
 
     // Bonus: loot on the field, sometimes guarded by specters.
-    if (rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
+    if (layout !== 'siege' && rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
       const lk = group === 'normal' ? rng.weighted([['chest', 50], ['tome', 35], ['relic', 15]]) : rng.weighted([['chest', 20], ['tome', 40], ['relic', 40]]);
       // Guarded treasure sits off to a flank so the main fight can happen elsewhere.
       const xs = lk === 'chest' ? rng.shuffle([0, 1, 2, 6, 7, 8, 3, 5, 4]) : rng.chance(0.5) ? [0, 1, 8, 7] : [8, 7, 0, 1];
@@ -449,7 +745,7 @@
           const spots = [[0, -1], [-1, 0], [1, 0], [0, 1]].map(([dx, dy]) => [t[0] + dx, t[1] + dy]).filter(([x, y]) => open(x, y));
           for (let i = 0; i < n && i < spots.length; i++) {
             const [x, y] = spots[i];
-            units.push({ type: 'specter', rank: act >= 3 ? 2 : 1, talents: [], x, y, facing: 0, post: { x: t[0], y: t[1] } });
+            units.push({ type: 'specter', level: act >= 3 ? 2 : 1, x, y, facing: 0, post: { x: t[0], y: t[1] } });
             used.add(x + ',' + y);
           }
         }
@@ -464,11 +760,12 @@
       if (muster.length) opts.push(['muster', 50]);
       const c = rng.weighted(opts);
       if (c === 'swift') {
-        const foes = units.filter((u) => !UNITS[u.type].traits.includes('object')).length;
-        enc.bonus.push({ type: 'swift', turns: 4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) });
+        const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
+        enc.bonus.push({ type: 'swift', turns: 4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
       else enc.bonus.push({ type: 'flawless' });
     }
+    if (layout === 'convoy') enc.bonus.push({ type: 'plunder' });
     return enc;
   }
 
@@ -484,8 +781,10 @@
       commander: 'Assassinate the enemy Commander (crowned), or rout them all.',
       hold: 'Hold the shrine: start 2 of your turns in a row with a unit on it. Or rout the enemy.',
       survive: `Survive ${enc.surviveTurns || 6} turns against a larger force. Or rout them.`,
+      gate: 'Break the Castle Gate, or rout the garrison. Towers and walls do not need to fall.',
+      convoy: 'Break every Loot Wagon before it escapes off the left edge, or rout the escort.',
     };
-    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} turns` };
+    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} turns`, gate: 'Break the gate', convoy: 'Stop the convoy' };
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -493,15 +792,17 @@
           return {
             b,
             text: `Take the ${LOOT_NAMES[b.kind]}${b.kind === 'chest' ? '' : ' (guarded by specters)'}: stand a unit on it and spend its action.`,
-            reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Teach a talent' : 'A relic',
+            reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Choose a skill' : 'A relic',
           };
         case 'swift':
-          return { b, text: `Win within ${b.turns} turns.`, reward: `+${15 + 5 * run.act} gold` };
+          return { b, text: `Win within ${b.turns} turns.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
-          return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold` };
+          return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
+        case 'plunder':
+          return { b, text: 'Break every wagon (none may escape).', reward: '+20 gold per wagon' };
         case 'muster': {
           const u = unitById(run, b.rid);
-          return { b, text: u ? `Field ${u.name} the ${UNITS[u.type].name}, who sat out the last battle.` : 'Field a unit that sat out the last battle.', reward: u && u.rank < 3 ? 'A free promotion for them' : '+30 gold' };
+          return { b, text: u ? `Field ${u.name} the ${UNITS[u.type].name}, who sat out the last battle.` : 'Field a unit that sat out the last battle.', reward: '+6 XP, +20 gold' };
         }
       }
       return { b, text: '', reward: '' };
@@ -530,9 +831,11 @@
       case 'shop':
         run.pending = { type: 'shop', nodeId: id, stock: genShop(run, node) };
         break;
-      case 'rest':
-        run.pending = { type: 'rest', nodeId: id };
+      case 'rest': {
+        const rng = AG.derive(run.seed, 'rest:' + run.act + ':' + id);
+        run.pending = { type: 'rest', nodeId: id, skills: rollMany(rng, 3, () => rollSkill(run, rng)), gear: rollMany(rng, 3, () => rollGear(run, rng)), done: null };
         break;
+      }
       case 'treasure': {
         const rng = AG.derive(run.seed, 'treasure:' + run.act + ':' + id);
         const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
@@ -542,9 +845,9 @@
       }
       case 'event': {
         const rng = AG.derive(run.seed, 'event:' + run.act + ':' + id);
-        const pool = EVENTS.filter((ev) => !run.seenEvents || !run.seenEvents.includes(ev.id));
+        const pool = EVENTS.filter((ev) => !run.seenEvents.includes(ev.id));
         const ev = rng.pick(pool.length ? pool : EVENTS);
-        run.seenEvents = (run.seenEvents || []).concat(ev.id);
+        run.seenEvents = run.seenEvents.concat(ev.id);
         run.pending = { type: 'event', nodeId: id, eventId: ev.id, ctx: ev.prepare ? ev.prepare(run, rng) : {}, result: null };
         break;
       }
@@ -577,21 +880,16 @@
 
   // ------------------------------------------------------------ battles
 
-  function deployCost(run, rid) {
-    const u = unitById(run, rid);
-    return u ? UNITS[u.type].cost : 0;
-  }
-
   function battleConfig(run, deployment) {
     const enc = run.pending.enc;
     const units = [];
     for (const d of deployment) {
       const r = unitById(run, d.rid);
       if (!r) continue;
-      units.push({ type: r.type, rank: r.rank, talents: r.talents, team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, rid: r.id, name: r.name, wounded: r.wounded });
+      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, rank: e.rank, talents: e.talents, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post });
     return {
       w: enc.w,
       h: enc.h,
@@ -603,6 +901,7 @@
       hold: enc.hold,
       surviveTurns: enc.surviveTurns,
       loot: enc.loot,
+      cartExit: 0,
       turnLimit: 30,
     };
   }
@@ -621,15 +920,41 @@
     return rng.pick(pool);
   }
 
-  function recruitRank(run, rng) {
-    const r = rng.next();
-    if (run.act >= 3) return r < 0.1 ? 3 : r < 0.6 ? 2 : 1;
-    if (run.act === 2) return r < 0.35 ? 2 : 1;
-    return 1;
+  // Some recruits arrive already bound to an enchantment.
+  function rollRecruit(run, rng, kind, exclude) {
+    const unit = rollUnitType(run, rng, kind, exclude);
+    const chance = kind === 'elite' || kind === 'boss' ? 0.3 : 0.15;
+    let enchant = null;
+    if (rng.chance(chance)) enchant = rollEnchant(run, rng, unit);
+    return { unit, enchant };
   }
 
-  function rollTalent(run, rng, exclude) {
-    const ids = Object.keys(TALENTS).filter((t) => !(exclude || []).includes(t) && run.roster.some((u) => canLearn(u, t)));
+  function rollMany(rng, n, fn) {
+    const out = [];
+    for (let i = 0; i < n * 4 && out.length < n; i++) {
+      const v = fn();
+      if (v && !out.includes(v)) out.push(v);
+    }
+    return out;
+  }
+
+  // Skills and gear that at least one of your units could use.
+  function usable(run, def) {
+    return run.roster.some((r) => D.eligible(r.type, def));
+  }
+
+  function rollSkill(run, rng, exclude) {
+    const ids = Object.keys(SKILLS).filter((id) => !(exclude || []).includes(id) && usable(run, SKILLS[id]));
+    return ids.length ? rng.pick(ids) : null;
+  }
+
+  function rollGear(run, rng, exclude) {
+    const ids = Object.keys(GEAR).filter((id) => !(exclude || []).includes(id) && usable(run, GEAR[id]));
+    return ids.length ? rng.pick(ids) : null;
+  }
+
+  function rollEnchant(run, rng, type, exclude) {
+    const ids = Object.keys(ENCHANTS).filter((id) => !(exclude || []).includes(id) && (type ? D.eligible(type, ENCHANTS[id]) : true));
     return ids.length ? rng.pick(ids) : null;
   }
 
@@ -646,24 +971,30 @@
     if (!id || run.relics.includes(id)) return;
     run.relics.push(id);
     if (id === 'kings_ransom') run.gold += 150;
-    if (id === 'golden_standard') {
-      run.maxBanners++;
-      run.banners = run.maxBanners;
-    }
   }
 
   function genSpoils(run, rng, kind) {
     const out = [];
-    const t1 = rollUnitType(run, rng, kind);
-    out.push({ type: 'recruit', unit: t1, rank: recruitRank(run, rng) });
-    const tal = rollTalent(run, rng);
-    if (tal) out.push({ type: 'talent', talent: tal });
-    const canPromote = run.roster.some((u) => u.rank < 3);
-    const third = rng.weighted([['promote', canPromote ? 40 : 0], ['recruit', 35], ['talent', 25]]);
-    if (third === 'promote') out.push({ type: 'promote' });
-    else if (third === 'talent' && rollTalent(run, rng, [tal])) out.push({ type: 'talent', talent: rollTalent(run, rng, [tal]) });
-    else out.push({ type: 'recruit', unit: rollUnitType(run, rng, kind, [t1]), rank: recruitRank(run, rng) });
-    while (out.length < 3) out.push(canPromote ? { type: 'promote' } : { type: 'gold', amount: 30 });
+    const r1 = rollRecruit(run, rng, kind);
+    out.push({ type: 'recruit', unit: r1.unit, enchant: r1.enchant });
+    const firstItem = rng.chance(0.5) ? 'skill' : 'gear';
+    const id1 = firstItem === 'skill' ? rollSkill(run, rng) : rollGear(run, rng);
+    if (id1) out.push({ type: firstItem, id: id1 });
+    const scrollW = kind === 'normal' || kind === 'battle' ? 10 : 30;
+    for (let guard = 0; guard < 8 && out.length < 3; guard++) {
+      const k = rng.weighted([['recruit', 30], ['skill', 25], ['gear', 25], ['scroll', scrollW]]);
+      if (k === 'recruit') {
+        const r = rollRecruit(run, rng, kind, [r1.unit]);
+        out.push({ type: 'recruit', unit: r.unit, enchant: r.enchant });
+      } else if (k === 'skill' || k === 'gear') {
+        const id = k === 'skill' ? rollSkill(run, rng, out.map((o) => o.id)) : rollGear(run, rng, out.map((o) => o.id));
+        if (id) out.push({ type: k, id });
+      } else {
+        const id = rollEnchant(run, rng);
+        if (id) out.push({ type: 'scroll', id });
+      }
+    }
+    while (out.length < 3) out.push({ type: 'gold', amount: 30 });
     return out;
   }
 
@@ -673,29 +1004,29 @@
     const node = getNode(run, p.nodeId);
     const kind = p.enc.kind;
     if (s.winner !== 'P') {
-      run.banners--;
+      p.attempt = (p.attempt || 0) + 1;
       run.stats.losses++;
-      if (run.banners <= 0) {
-        run.over = true;
-        run.won = false;
-        recordMeta(run);
-      } else {
-        p.attempt = (p.attempt || 0) + 1;
-      }
       save(run);
-      return { won: false, bannersLeft: run.banners };
+      return { won: false, attempt: p.attempt };
     }
     const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id + ':' + (p.attempt || 0));
     let gold = kind === 'boss' ? 75 : kind === 'elite' ? rng.range(30, 38) : rng.range(14, 20);
     if (hasRelic(run, 'coin_purse')) gold += 12;
     if (hasRelic(run, 'kings_ransom')) gold += 20;
-    const cp = cpFor(run, node, false, kind);
-    const used = deployment.reduce((t, d) => t + deployCost(run, d.rid), 0);
-    const unspent = Math.max(0, cp - used);
-    const eff = unspent * EFFICIENCY_GOLD * (hasRelic(run, 'alchemist_stone') ? 2 : 1);
-    run.gold += gold + eff;
-    run.stats.gold += gold + eff;
-    run.stats.efficiency += eff;
+    const firstTry = !p.attempt;
+    if (firstTry) {
+      gold += 10;
+      run.stats.firstTry++;
+    }
+    const supply = battleSupply(run);
+    const used = supplyUsed(run, deployment);
+    const unspent = Math.max(0, supply - used);
+    const lean = unspent * LEAN_GOLD * (hasRelic(run, 'alchemist_stone') ? 3 : 1);
+    const midas = s.stats.gold || 0;
+    let xp = battleXp(run, kind) + (firstTry ? 2 : 0);
+    run.gold += gold + lean + midas;
+    run.stats.gold += gold + lean + midas;
+    run.stats.lean += lean;
     run.stats.battles++;
     if (kind === 'elite') run.stats.elites++;
     if (kind === 'boss') run.stats.bosses++;
@@ -703,29 +1034,21 @@
     const deployedIds = new Set(deployment.map((d) => d.rid));
     const fallen = [];
     for (const r of run.roster) {
-      if (!deployedIds.has(r.id)) {
-        r.wounded = false;
-        continue;
-      }
+      if (!deployedIds.has(r.id)) continue;
       const bu = s.units.find((u) => u.rid === r.id);
       r.battles++;
       if (bu) {
         r.kills += bu.kills;
         run.stats.kills += bu.kills;
-        if (!bu.alive) {
-          fallen.push(r.name);
-          run.stats.fallen++;
-          if (!hasRelic(run, 'field_kit')) r.wounded = true;
-        }
+        if (!bu.alive) fallen.push(r.name);
       }
-    }
-    if (kind === 'boss') {
-      for (const r of run.roster) r.wounded = false;
-      run.banners = Math.min(run.maxBanners, run.banners + 1);
     }
     run.recentEnc = run.recentEnc.concat(p.enc.name).slice(-3);
     run.lastDeployed = deployment.map((d) => d.rid);
-    const reward = { type: 'reward', nodeId: p.nodeId, kind, gold, eff, unspent, fallen, spoils: genSpoils(run, rng, kind), spoilTaken: false, objectives: [] };
+    const reward = {
+      type: 'reward', nodeId: p.nodeId, kind, gold, lean, unspent, midas, firstTry, fallen,
+      spoils: genSpoils(run, rng, kind), spoilTaken: false, objectives: [],
+    };
     const info = objectiveInfo(run, p.enc);
     for (const it of info.bonus) {
       const b = it.b;
@@ -734,6 +1057,10 @@
       else if (b.type === 'swift') done = s.turn <= b.turns;
       else if (b.type === 'flawless') done = !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
       else if (b.type === 'muster') done = deployment.some((d) => d.rid === b.rid);
+      else if (b.type === 'plunder') {
+        const carts = s.units.filter((u) => u.type === 'cart');
+        done = carts.length > 0 && carts.every((u) => !u.alive && !u.escaped);
+      }
       let got = '';
       if (done) {
         if (b.type === 'loot' && b.kind === 'chest') {
@@ -742,14 +1069,9 @@
           run.stats.gold += g;
           got = `+${g} gold`;
         } else if (b.type === 'loot' && b.kind === 'tome') {
-          const picks = [];
-          for (let i = 0; i < 3; i++) {
-            const t = rollTalent(run, rng, picks);
-            if (t) picks.push(t);
-          }
-          reward.tome = picks;
-          reward.tomeTaken = picks.length === 0;
-          got = 'choose a talent below';
+          reward.tome = rollMany(rng, 3, () => rollSkill(run, rng));
+          reward.tomeTaken = reward.tome.length === 0;
+          got = 'choose a skill below';
         } else if (b.type === 'loot' && b.kind === 'relic') {
           const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
           if (id) {
@@ -764,23 +1086,29 @@
           const g = 15 + 5 * run.act;
           run.gold += g;
           run.stats.gold += g;
-          got = `+${g} gold`;
+          xp += 3;
+          got = `+${g} gold, +3 XP`;
         } else if (b.type === 'muster') {
-          const u = unitById(run, b.rid);
-          if (u && u.rank < 3) {
-            u.rank++;
-            got = `${u.name} is promoted`;
-          } else {
-            run.gold += 30;
-            got = '+30 gold';
-          }
+          run.gold += 20;
+          run.stats.gold += 20;
+          xp += 6;
+          got = '+6 XP, +20 gold';
+        } else if (b.type === 'plunder') {
+          const g = 20 * s.units.filter((u) => u.type === 'cart').length;
+          run.gold += g;
+          run.stats.gold += g;
+          got = `+${g} gold`;
         }
       }
       reward.objectives.push({ text: it.text, done, got });
     }
+    const lv = gainXp(run, xp);
+    reward.xp = lv.amount;
+    reward.lvFrom = lv.from;
+    reward.lvTo = lv.to;
     if (p.enc.prisoner) {
       if (run.roster.length < MAX_ROSTER) {
-        const u = addRecruit(run, p.enc.prisoner.type, p.enc.prisoner.rank);
+        const u = addRecruit(run, p.enc.prisoner.type);
         reward.prisoner = u.id;
       } else {
         run.gold += 30;
@@ -805,34 +1133,38 @@
     }
     run.pending = reward;
     save(run);
-    return { won: true, gold, eff, unspent };
+    return { won: true, gold, lean, xp: reward.xp, lvFrom: reward.lvFrom, lvTo: reward.lvTo };
   }
 
-  function takeSpoil(run, index, rid) {
+  function takeSpoil(run, index) {
     const p = run.pending;
     if (!p || p.type !== 'reward' || p.spoilTaken) return false;
     const sp = p.spoils[index];
     if (!sp) return false;
     if (sp.type === 'recruit') {
       if (run.roster.length >= MAX_ROSTER) return false;
-      addRecruit(run, sp.unit, sp.rank);
-    } else if (sp.type === 'talent') {
-      if (!teach(run, rid, sp.talent)) return false;
-    } else if (sp.type === 'promote') {
-      if (!promote(run, rid, true)) return false;
-    } else if (sp.type === 'gold') {
-      run.gold += sp.amount;
-    }
+      addRecruit(run, sp.unit, { enchant: sp.enchant || null });
+    } else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
+    else if (sp.type === 'gold') run.gold += sp.amount;
     p.spoilTaken = true;
     save(run);
     return true;
   }
 
-  function takeTome(run, index, rid) {
+  function skipSpoils(run) {
+    const p = run.pending;
+    if (!p || p.type !== 'reward' || p.spoilTaken) return;
+    run.gold += 10;
+    p.spoilTaken = true;
+    save(run);
+  }
+
+  function takeTome(run, index) {
     const p = run.pending;
     if (!p || p.type !== 'reward' || !p.tome || p.tomeTaken) return false;
-    const t = p.tome[index];
-    if (!t || !teach(run, rid, t)) return false;
+    const id = p.tome[index];
+    if (!id) return false;
+    addItem(run, 'skill', id);
     p.tomeTaken = true;
     save(run);
     return true;
@@ -843,14 +1175,6 @@
     if (!p || !p.tome || p.tomeTaken) return;
     p.tomeTaken = true;
     run.gold += 10;
-    save(run);
-  }
-
-  function skipSpoils(run) {
-    const p = run.pending;
-    if (!p || p.type !== 'reward' || p.spoilTaken) return;
-    run.gold += 10;
-    p.spoilTaken = true;
     save(run);
   }
 
@@ -870,18 +1194,15 @@
     const items = [];
     const seen = [];
     for (let i = 0; i < 3; i++) {
-      const t = rollUnitType(run, rng, 'normal', seen);
-      seen.push(t);
-      const rank = recruitRank(run, rng);
-      items.push({ kind: 'recruit', unit: t, rank, price: discount(run, RECRUIT_PRICE[UNITS[t].rarity] + (rank - 1) * 25), sold: false });
+      const r = rollRecruit(run, rng, 'normal', seen);
+      seen.push(r.unit);
+      const price = RECRUIT_PRICE[UNITS[r.unit].rarity] + (r.enchant ? 40 : 0);
+      items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, price: discount(run, price), sold: false });
     }
-    const tl = [];
-    for (let i = 0; i < 3; i++) {
-      const t = rollTalent(run, rng, tl);
-      if (!t) break;
-      tl.push(t);
-      items.push({ kind: 'talent', talent: t, price: discount(run, TALENT_PRICE), sold: false });
-    }
+    for (const id of rollMany(rng, 2, () => rollSkill(run, rng))) items.push({ kind: 'skill', id, price: discount(run, ITEM_PRICE(SKILLS[id].cost)), sold: false });
+    for (const id of rollMany(rng, 3, () => rollGear(run, rng))) items.push({ kind: 'gear', id, price: discount(run, ITEM_PRICE(GEAR[id].cost)), sold: false });
+    const sc = rollEnchant(run, rng);
+    if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
     const rl = [];
     for (let i = 0; i < 2; i++) {
       const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)], rl) || pickRelic(run, rng, ['common', 'uncommon', 'rare'], rl);
@@ -889,40 +1210,39 @@
       rl.push(id);
       items.push({ kind: 'relic', relic: id, price: discount(run, RELIC_PRICE[RELICS[id].tier]), sold: false });
     }
-    items.push({ kind: 'heal', price: discount(run, 25), sold: false });
-    items.push({ kind: 'banner', price: discount(run, 60), sold: false });
+    items.push({ kind: 'supply', price: discount(run, 70 + 20 * (run.supplyBonus || 0)), sold: false });
+    items.push({ kind: 'manual', price: discount(run, 45), sold: false });
     return items;
   }
 
   function canBuy(run, item) {
     if (item.sold || run.gold < item.price) return false;
     if (item.kind === 'recruit') return run.roster.length < MAX_ROSTER;
-    if (item.kind === 'talent') return run.roster.some((u) => canLearn(u, item.talent));
-    if (item.kind === 'heal') return run.roster.some((u) => u.wounded);
-    if (item.kind === 'banner') return run.banners < run.maxBanners;
     return true;
   }
 
-  function buy(run, index, rid) {
+  function buy(run, index) {
     const p = run.pending;
     if (!p || p.type !== 'shop') return false;
     const item = p.stock[index];
     if (!item || !canBuy(run, item)) return false;
     switch (item.kind) {
       case 'recruit':
-        addRecruit(run, item.unit, item.rank);
+        addRecruit(run, item.unit, { enchant: item.enchant || null });
         break;
-      case 'talent':
-        if (!teach(run, rid, item.talent)) return false;
+      case 'skill':
+      case 'gear':
+      case 'scroll':
+        addItem(run, item.kind, item.id);
         break;
       case 'relic':
         gainRelic(run, item.relic);
         break;
-      case 'heal':
-        for (const u of run.roster) u.wounded = false;
+      case 'supply':
+        run.supplyBonus = (run.supplyBonus || 0) + 1;
         break;
-      case 'banner':
-        run.banners++;
+      case 'manual':
+        item.levels = gainXp(run, 10);
         break;
     }
     run.gold -= item.price;
@@ -931,14 +1251,19 @@
     return true;
   }
 
-  function rest(run, choice, rid) {
+  // choice: 'drill' | 'study' (index into skills) | 'tinker' (index into gear)
+  function rest(run, choice, index) {
     const p = run.pending;
     if (!p || p.type !== 'rest' || p.done) return false;
-    if (choice === 'rest') {
-      for (const u of run.roster) u.wounded = false;
-      run.banners = Math.min(run.maxBanners, run.banners + 1);
-    } else if (choice === 'train') {
-      if (!promote(run, rid, true)) return false;
+    if (choice === 'drill') p.levels = gainXp(run, 12 + 2 * (run.act - 1));
+    else if (choice === 'study') {
+      const id = p.skills[index];
+      if (!id) return false;
+      addItem(run, 'skill', id);
+    } else if (choice === 'tinker') {
+      const id = p.gear[index];
+      if (!id) return false;
+      addItem(run, 'gear', id);
     } else return false;
     p.done = choice;
     save(run);
@@ -964,23 +1289,26 @@
     {
       id: 'sellsword',
       title: "The Sellsword's Offer",
-      text: 'A scarred mercenary sits by the road, honing a blade. "Coin first, loyalty after. I have fought for worse than you."',
-      prepare: (run, rng) => ({ unit: rollUnitType(run, rng, 'elite') }),
+      text: 'A scarred mercenary sits by the road, honing a blade that hums with old magic. "Coin first, loyalty after."',
+      prepare: (run, rng) => {
+        const unit = rollUnitType(run, rng, 'elite');
+        return { unit, enchant: rollEnchant(run, rng, unit) };
+      },
       choices: (run, c) => [
-        { id: 'hire', label: 'Hire', detail: `Pay 60 gold. A Rank II ${uname(c.unit)} joins your warband.`, enabled: run.gold >= 60 && !fullRoster(run) },
-        { id: 'haggle', label: 'Haggle', detail: `Pay 30 gold. Even odds: a Rank I ${uname(c.unit)} joins, or the coin is simply gone.`, enabled: run.gold >= 30 && !fullRoster(run) },
+        { id: 'hire', label: 'Hire (65 gold)', detail: `An enchanted ${uname(c.unit)} joins, bound with ${ENCHANTS[c.enchant].name}: ${ENCHANTS[c.enchant].desc}`, enabled: run.gold >= 65 && !fullRoster(run) },
+        { id: 'haggle', label: 'Haggle (30 gold)', detail: `Even odds: a plain ${uname(c.unit)} joins, or the coin is simply gone.`, enabled: run.gold >= 30 && !fullRoster(run) },
         { id: 'leave', label: 'Move on', detail: 'Keep your gold.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
         if (choice === 'hire') {
-          run.gold -= 60;
-          const u = addRecruit(run, c.unit, 2);
+          run.gold -= 65;
+          const u = addRecruit(run, c.unit, { enchant: c.enchant });
           return `${u.name} the ${uname(u.type)} counts the coin twice, then falls in line.`;
         }
         if (choice === 'haggle') {
           run.gold -= 30;
           if (rng.chance(0.5)) {
-            const u = addRecruit(run, c.unit, 1);
+            const u = addRecruit(run, c.unit);
             return `${u.name} the ${uname(u.type)} shrugs, takes the coin and joins you.`;
           }
           return 'The mercenary bites the coin, grins, and is gone before you can blink.';
@@ -992,40 +1320,22 @@
       id: 'shrine',
       title: 'Shrine of the Forgotten Saint',
       text: 'Candles still burn before a weathered statue, though no keeper is in sight. The air hums with old blessings.',
-      prepare: (run, rng) => {
-        const opts = [];
-        for (let i = 0; i < 3; i++) {
-          const t = rollTalent(run, rng, opts);
-          if (t) opts.push(t);
-        }
-        return { talents: opts, seed: rng.int(1e9) };
-      },
+      prepare: (run, rng) => ({ skills: rollMany(rng, 2, () => rollSkill(run, rng)), free: rollSkill(run, rng) }),
       choices: (run, c) => [
-        { id: 'pray', label: 'Pray', detail: 'A random unit learns a random talent.', enabled: run.roster.some((u) => u.talents.length < MAX_TALENTS) },
-        ...c.talents.map((t) => ({
-          id: 'offer:' + t,
-          label: 'Offer 40 gold: ' + TALENTS[t].name,
-          detail: TALENTS[t].desc + ' Choose who learns it.',
-          enabled: run.gold >= 40 && run.roster.some((u) => canLearn(u, t)),
-          pick: { talent: t },
-        })),
+        { id: 'pray', label: 'Pray', detail: c.free ? `Receive a random skill.` : 'The saint is silent.', enabled: !!c.free },
+        ...c.skills.map((id) => ({ id: 'offer:' + id, label: `Offer 35 gold: ${SKILLS[id].name}`, detail: `${SKILLS[id].desc} (Skill, ${SKILLS[id].cost} Supply)`, enabled: run.gold >= 35 })),
         { id: 'leave', label: 'Leave', detail: 'Let the candles burn.' },
       ],
-      resolve: (run, c, choice, rid) => {
+      resolve: (run, c, choice) => {
         if (choice === 'pray') {
-          const rng = new AG.RNG(c.seed);
-          const pairs = [];
-          for (const u of run.roster) for (const t of Object.keys(TALENTS)) if (canLearn(u, t)) pairs.push([u, t]);
-          if (!pairs.length) return 'The saint is silent.';
-          const [u, t] = rng.pick(pairs);
-          u.talents.push(t);
-          return `A warm light settles on ${u.name}. They learn ${TALENTS[t].name}.`;
+          addItem(run, 'skill', c.free);
+          return `A warm light settles on your camp. You learn ${SKILLS[c.free].name}.`;
         }
         if (choice.startsWith('offer:')) {
-          const t = choice.slice(6);
-          if (!teach(run, rid, t)) return null;
-          run.gold -= 40;
-          return `${unitById(run, rid).name} kneels and rises with ${TALENTS[t].name}.`;
+          const id = choice.slice(6);
+          run.gold -= 35;
+          addItem(run, 'skill', id);
+          return `You kneel and rise with ${SKILLS[id].name}.`;
         }
         return 'You bow your head and walk on.';
       },
@@ -1061,18 +1371,18 @@
     },
     {
       id: 'deserter',
-      title: 'A Wounded Deserter',
+      title: 'A Deserter in the Brush',
       text: 'A soldier in a torn tabard limps out of the brush, hands raised. "I am done with my old lord. Take me in, or take my purse. Just let me live."',
       prepare: (run, rng) => ({ unit: rng.pick(RECRUITABLE.filter((t) => UNITS[t].rarity === 'common')) }),
       choices: (run, c) => [
-        { id: 'take', label: 'Take them in', detail: `A wounded Rank I ${uname(c.unit)} joins.`, enabled: !fullRoster(run) },
+        { id: 'take', label: 'Take them in', detail: `A ${uname(c.unit)} joins your army.`, enabled: !fullRoster(run) },
         { id: 'rob', label: 'Take the purse', detail: 'Gain 35 gold.' },
         { id: 'leave', label: 'Let them go', detail: 'Nothing gained, nothing lost.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'take') {
-          const u = addRecruit(run, c.unit, 1, { wounded: true });
-          return `${u.name} the ${uname(u.type)} swears a new oath. They will need a battle's rest to heal.`;
+          const u = addRecruit(run, c.unit);
+          return `${u.name} the ${uname(u.type)} swears a new oath.`;
         }
         if (choice === 'rob') {
           run.gold += 35;
@@ -1084,15 +1394,20 @@
     {
       id: 'armory',
       title: 'The Sealed Armory',
-      text: 'Behind a rusted gate lies a single blade, still wet with something dark. It whispers promises of victory.',
-      choices: (run) => [
+      text: 'Behind a rusted gate lies a single blade, still wet with something dark. It whispers promises of victory. The racks around it hold older steel.',
+      prepare: (run, rng) => ({ gear: rollGear(run, rng) }),
+      choices: (run, c) => [
         { id: 'take', label: 'Take the blade', detail: RELICS.cursed_blade.desc, enabled: !hasRelic(run, 'cursed_blade') },
-        { id: 'loot', label: 'Strip the racks', detail: 'Gain 30 gold of old iron.' },
+        { id: 'loot', label: 'Search the racks', detail: c.gear ? `Find a ${GEAR[c.gear].name}: ${GEAR[c.gear].desc}` : 'Gain 30 gold of old iron.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'take') {
           gainRelic(run, 'cursed_blade');
           return 'The Bloodthirst Blade is yours. Your soldiers fight with a terrible hunger.';
+        }
+        if (c.gear) {
+          addItem(run, 'gear', c.gear);
+          return `You pull a ${GEAR[c.gear].name} from the racks.`;
         }
         run.gold += 30;
         return 'You haul away the old iron and sell it for 30 gold.';
@@ -1102,15 +1417,14 @@
       id: 'fountain',
       title: 'Fountain of Renewal',
       text: 'Clear water bubbles from a marble basin carved with sleeping lions. Your soldiers gather around it in silence.',
-      choices: (run) => [
-        { id: 'drink', label: 'Drink deeply', detail: 'Heal all wounds and restore 1 Banner.' },
+      choices: () => [
+        { id: 'drink', label: 'Drink and reflect', detail: 'Gain 10 XP.' },
         { id: 'fill', label: 'Fill flasks to sell', detail: 'Gain 40 gold.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'drink') {
-          for (const u of run.roster) u.wounded = false;
-          run.banners = Math.min(run.maxBanners, run.banners + 1);
-          return 'Wounds close and spirits lift. Your banners fly a little higher.';
+          gainXp(run, 10);
+          return 'Clear water, clear minds. Your command grows sharper.';
         }
         run.gold += 40;
         return 'Pilgrims pay well for the water. You gain 40 gold.';
@@ -1118,16 +1432,16 @@
     },
     {
       id: 'library',
-      title: "The Tactician's Library",
-      text: 'A ruined keep still holds shelves of campaign journals, annotated by a general long dead.',
+      title: "The Quartermaster's Ledgers",
+      text: 'A ruined keep still holds the ledgers of a long-dead quartermaster: depots, wagon routes, hidden caches.',
       choices: () => [
-        { id: 'study', label: 'Study the journals', detail: '+1 Command Point in every battle for the rest of the run.' },
+        { id: 'study', label: 'Study the ledgers', detail: '+1 Supply in every battle for the rest of the run.' },
         { id: 'sell', label: 'Sell the books', detail: 'Gain 60 gold.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'study') {
-          run.cpBonus += 1;
-          return 'You learn to do more with less. +1 Command Point.';
+          run.supplyBonus = (run.supplyBonus || 0) + 1;
+          return 'You find caches no one else remembers. +1 Supply.';
         }
         run.gold += 60;
         return 'A collector pays 60 gold for the lot.';
@@ -1138,7 +1452,7 @@
       title: 'Trial of Champions',
       text: 'A herald blocks the road. "The champions of this land challenge any who pass. Win, and claim a relic of the old kings."',
       choices: () => [
-        { id: 'accept', label: 'Accept the challenge', detail: 'Fight an elite battle. Victory earns a relic.' },
+        { id: 'accept', label: 'Accept the challenge', detail: 'Fight an elite battle. Victory earns a relic and extra XP.' },
         { id: 'decline', label: 'Decline', detail: 'The herald sneers as you pass.' },
       ],
       resolve: (run, c, choice) => {
@@ -1149,16 +1463,16 @@
     {
       id: 'alchemist',
       title: 'The Wandering Alchemist',
-      text: 'A cart rattles with bubbling flasks. "Transformation, my friend! Or perhaps a tonic for the thin-skinned?"',
+      text: 'A cart rattles with bubbling flasks. "Transformation, my friend! Or perhaps something for the road?"',
       choices: (run) => [
         {
           id: 'transmute',
           label: 'Transmute (50 gold)',
-          detail: 'Choose a unit. It becomes a random unit of a higher rarity, keeping its rank.',
+          detail: 'Choose a common or uncommon unit. It becomes a random unit of a higher rarity.',
           enabled: run.gold >= 50 && run.roster.some((u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity)),
           pick: { filter: 'transmute' },
         },
-        { id: 'tonic', label: 'Tonic (35 gold)', detail: 'Choose a unit. It learns Thick Hide.', enabled: run.gold >= 35 && run.roster.some((u) => canLearn(u, 'thick_hide')), pick: { talent: 'thick_hide' } },
+        { id: 'flasks', label: 'Buy flasks (30 gold)', detail: 'Gain a Fire Flask and a Healing Draught.', enabled: run.gold >= 30 },
         { id: 'leave', label: 'Decline', detail: 'Leave the alchemist to the fumes.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
@@ -1169,14 +1483,16 @@
           const t = rng.pick(RECRUITABLE.filter((x) => UNITS[x].rarity === next));
           const old = uname(u.type);
           u.type = t;
-          u.talents = u.talents.filter((tl) => talentEligible(t, tl, []));
+          u.load = defaultLoad(t);
+          if (u.enchant && !D.eligible(t, ENCHANTS[u.enchant])) u.enchant = null;
           run.gold -= 50;
           return `Smoke billows. ${u.name} the ${old} steps out as a ${uname(t)}.`;
         }
-        if (choice === 'tonic' && u) {
-          if (!teach(run, rid, 'thick_hide')) return null;
-          run.gold -= 35;
-          return `${u.name} grimaces at the taste, but their skin toughens like leather.`;
+        if (choice === 'flasks') {
+          run.gold -= 30;
+          addItem(run, 'gear', 'fire_flask');
+          addItem(run, 'gear', 'healing_draught');
+          return 'Two flasks, one red and one gold. Handle with care.';
         }
         return 'The alchemist shrugs and rattles away.';
       },
@@ -1184,17 +1500,18 @@
     {
       id: 'forge',
       title: 'The Old Forge',
-      text: 'A smith with arms like oak branches looks up from the anvil. "Bring me steel and coin, and I will make a soldier better."',
-      choices: (run) => [
-        { id: 'temper', label: 'Temper (35 gold)', detail: 'Promote one unit by a rank.', enabled: run.gold >= 35 && run.roster.some((u) => u.rank < 3), pick: { filter: 'promote' } },
+      text: 'A smith with arms like oak branches looks up from the anvil. "Bring me coin, and I will make you something worth carrying."',
+      prepare: (run, rng) => ({ gear: rollMany(rng, 3, () => rollGear(run, rng)) }),
+      choices: (run, c) => [
+        ...c.gear.map((id) => ({ id: 'forge:' + id, label: `Commission (40 gold): ${GEAR[id].name}`, detail: `${GEAR[id].desc} (Gear, ${GEAR[id].cost} Supply)`, enabled: run.gold >= 40 })),
         { id: 'leave', label: 'Move on', detail: 'The forge fire dims behind you.' },
       ],
-      resolve: (run, c, choice, rid) => {
-        if (choice === 'temper') {
-          if (!promote(run, rid, true)) return null;
-          run.gold -= 35;
-          const u = unitById(run, rid);
-          return `${u.name} returns in reforged gear. Now Rank ${u.rank}.`;
+      resolve: (run, c, choice) => {
+        if (choice.startsWith('forge:')) {
+          const id = choice.slice(6);
+          run.gold -= 40;
+          addItem(run, 'gear', id);
+          return `The smith hands you a ${GEAR[id].name}, still warm.`;
         }
         return 'You leave the smith to the anvil.';
       },
@@ -1203,21 +1520,26 @@
       id: 'battlefield',
       title: 'The Haunted Battlefield',
       text: 'Broken spears and rusted helms cover a silent field. Something glints among the bones, and something else watches.',
-      prepare: (run, rng) => ({ roll: rng.next(), relic: pickRelic(run, rng, ['common', 'uncommon']), victim: rng.int(1000) }),
+      prepare: (run, rng) => ({ roll: rng.next(), relic: pickRelic(run, rng, ['common', 'uncommon']) }),
       choices: () => [
-        { id: 'search', label: 'Search the fallen', detail: 'Maybe a relic. Maybe a curse that wounds one of your soldiers.' },
+        { id: 'search', label: 'Search the fallen', detail: 'Maybe a relic. Maybe a curse.' },
+        { id: 'raise', label: 'Raise a fallen archer', detail: 'A Skeleton Archer rises to serve you.' },
         { id: 'leave', label: 'Leave the dead in peace', detail: 'Walk on quietly.' },
       ],
       resolve: (run, c, choice) => {
+        if (choice === 'raise') {
+          if (fullRoster(run)) return 'Your army is full. The bones settle back into the mud.';
+          const u = addRecruit(run, 'skelarcher');
+          return `${u.name}, long dead, takes up a bow for you.`;
+        }
         if (choice !== 'search') return 'You leave the field to its ghosts.';
-        if (c.roll < 0.55 && c.relic && !run.relics.includes(c.relic)) {
+        if (c.roll < 0.6 && c.relic && !run.relics.includes(c.relic)) {
           gainRelic(run, c.relic);
           return `Under a shattered shield you find the ${RELICS[c.relic].name}.`;
         }
-        const u = run.roster[c.victim % run.roster.length];
-        u.wounded = true;
-        run.gold += 15;
-        return `A cold hand grips ${u.name}, who is now wounded. You find 15 gold in a dead captain's purse.`;
+        const lost = Math.min(run.gold, 25);
+        run.gold -= lost;
+        return `A cold wind tears through your camp and scatters your purse. You lose ${lost} gold.`;
       },
     },
     {
@@ -1229,58 +1551,92 @@
         return { units: [a, rollUnitType(run, rng, 'normal', [a])] };
       },
       choices: (run, c) => [
-        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A Rank I ${uname(t)} joins for free.`, enabled: !fullRoster(run) })),
+        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A ${uname(t)} joins for free.`, enabled: !fullRoster(run) })),
         { id: 'leave', label: 'Wish them luck', detail: 'Ride on.' },
       ],
       resolve: (run, c, choice) => {
         if (choice.startsWith('take:')) {
-          const u = addRecruit(run, choice.slice(5), 1);
+          const u = addRecruit(run, choice.slice(5));
           return `${u.name} picks up a weapon and joins your column.`;
         }
         return 'The villagers watch you go.';
       },
     },
     {
-      id: 'hermit',
-      title: "The Hermit's Counsel",
-      text: 'An old warrior lives alone in a cave lined with trophies. "I will teach one of yours, but my lessons leave bruises."',
-      prepare: (run, rng) => ({ talent: rollTalent(run, rng) }),
+      id: 'tower',
+      title: "The Enchanter's Tower",
+      text: 'A crooked tower leans over the road, its windows flickering with colored light. An old enchanter peers down. "Binding magic, captain. Permanent. Choose wisely."',
+      prepare: (run, rng) => ({ scrolls: rollMany(rng, 2, () => rollEnchant(run, rng)) }),
       choices: (run, c) => [
-        c.talent
-          ? { id: 'learn', label: 'Learn ' + TALENTS[c.talent].name, detail: TALENTS[c.talent].desc + ' The student is wounded.', pick: { talent: c.talent } }
-          : { id: 'learn', label: 'Learn', detail: 'The hermit has nothing to teach you.', enabled: false },
-        { id: 'leave', label: 'Decline politely', detail: 'Leave the hermit in peace.' },
+        ...c.scrolls.map((id) => ({ id: 'buy:' + id, label: `Buy a scroll (55 gold): ${ENCHANTS[id].name}`, detail: `${ENCHANTS[id].desc} Bind it to a unit from the Army screen. +${ENCHANTS[id].surcharge} Supply to field that unit.`, enabled: run.gold >= 55 })),
+        { id: 'steal', label: 'Steal a scroll', detail: 'Even odds: a free scroll, or the enchanter catches you and fines you 40 gold.' },
+        { id: 'leave', label: 'Leave', detail: 'Some magic is best left alone.' },
       ],
-      resolve: (run, c, choice, rid) => {
-        if (choice === 'learn') {
-          if (!teach(run, rid, c.talent)) return null;
-          const u = unitById(run, rid);
-          u.wounded = true;
-          return `${u.name} limps out of the cave having learned ${TALENTS[c.talent].name}.`;
+      resolve: (run, c, choice, rid, rng) => {
+        if (choice.startsWith('buy:')) {
+          const id = choice.slice(4);
+          run.gold -= 55;
+          addItem(run, 'scroll', id);
+          return `The scroll of ${ENCHANTS[id].name} hums in your hands.`;
         }
-        return 'The hermit returns to polishing an old helm.';
+        if (choice === 'steal') {
+          if (rng.chance(0.5)) {
+            const id = rng.pick(c.scrolls);
+            addItem(run, 'scroll', id);
+            return `You slip away with the scroll of ${ENCHANTS[id].name}.`;
+          }
+          const lost = Math.min(run.gold, 40);
+          run.gold -= lost;
+          return `A glowing hand seizes your collar. You pay ${lost} gold to be let go.`;
+        }
+        return 'The tower lights wink out behind you.';
+      },
+    },
+    {
+      id: 'lodge',
+      title: "Veterans' Lodge",
+      text: 'Old soldiers drink by a long fire. "We drilled the king\'s own guard once," says one. "Pay us and we will teach your sergeants to run a bigger line."',
+      choices: (run) => [
+        { id: 'train', label: 'Pay for drills (90 gold)', detail: '+1 unit allowed on the field for the rest of the run.', enabled: run.gold >= 90 },
+        { id: 'stories', label: 'Listen to their stories', detail: 'Gain 8 XP.' },
+        { id: 'leave', label: 'Leave', detail: 'March on.' },
+      ],
+      resolve: (run, c, choice) => {
+        if (choice === 'train') {
+          run.gold -= 90;
+          run.capBonus = (run.capBonus || 0) + 1;
+          return 'Your sergeants learn to hold a wider line. +1 unit on the field.';
+        }
+        if (choice === 'stories') {
+          gainXp(run, 8);
+          return 'Old wars, hard lessons. You take notes.';
+        }
+        return 'The veterans raise their cups as you go.';
       },
     },
     {
       id: 'caravan',
       title: 'Merchant Caravan',
       text: 'Wagons circle around a campfire. A merchant in a fur hat sizes up your army and your purse.',
-      choices: (run) => [
-        { id: 'banner', label: 'Buy a new standard (40 gold)', detail: 'Restore 1 Banner.', enabled: run.gold >= 40 && run.banners < run.maxBanners },
+      prepare: (run, rng) => ({ gear: rollGear(run, rng), skill: rollSkill(run, rng) }),
+      choices: (run, c) => [
+        c.gear ? { id: 'gear', label: `Buy ${GEAR[c.gear].name} (35 gold)`, detail: GEAR[c.gear].desc, enabled: run.gold >= 35 } : null,
+        c.skill ? { id: 'skill', label: `Buy a manual of ${SKILLS[c.skill].name} (35 gold)`, detail: SKILLS[c.skill].desc, enabled: run.gold >= 35 } : null,
         { id: 'sell', label: 'Sell spare gear', detail: 'Gain 25 gold.' },
-        { id: 'leave', label: 'Ride on', detail: 'Nothing here for you.' },
-      ],
+      ].filter(Boolean),
       resolve: (run, c, choice) => {
-        if (choice === 'banner') {
-          run.gold -= 40;
-          run.banners++;
-          return 'A fresh standard flies over your camp. Banners restored by 1.';
+        if (choice === 'gear') {
+          run.gold -= 35;
+          addItem(run, 'gear', c.gear);
+          return `The ${GEAR[c.gear].name} is yours.`;
         }
-        if (choice === 'sell') {
-          run.gold += 25;
-          return 'The merchant pays 25 gold for your spare gear.';
+        if (choice === 'skill') {
+          run.gold -= 35;
+          addItem(run, 'skill', c.skill);
+          return `You learn ${SKILLS[c.skill].name} from a dog-eared manual.`;
         }
-        return 'The caravan rolls on without you.';
+        run.gold += 25;
+        return 'The merchant pays 25 gold for your spare gear.';
       },
     },
   ];
@@ -1321,6 +1677,10 @@
 
   const FRONT_ROLES = ['tank', 'melee', 'skirmisher', 'monster'];
 
+  function isFront(type) {
+    return FRONT_ROLES.includes(UNITS[type].role) || type === 'lightning';
+  }
+
   // Free deploy tiles nearest the center, front row first or back row first.
   function deploySlots(run, enc, front, taken) {
     const rows = deployRows(run, enc);
@@ -1333,31 +1693,103 @@
     return out;
   }
 
-  const isAttacker = (type) => !!(UNITS[type].act.dmg || (UNITS[type].act.fx && UNITS[type].act.fx.poison));
+  // How well a unit type answers this enemy army: magic against armor, steel against wards.
+  function counterScore(type, enc) {
+    const T = UNITS[type];
+    const foes = enc.units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure'));
+    if (!foes.length) return 1;
+    let armor = 0;
+    let res = 0;
+    for (const f of foes) {
+      armor += UNITS[f.type].armor;
+      res += UNITS[f.type].res || 0;
+    }
+    armor /= foes.length;
+    res /= foes.length;
+    const dmg = T.act.dmg;
+    let k = 1;
+    if (dmg === 'magic') k *= 1 + (armor - res) * 1.2;
+    else if (dmg === 'phys') k *= 1 + (res - armor) * 0.8;
+    if (!isAttacker(type)) k *= 0.75;
+    return Math.max(0.4, k);
+  }
 
-  // A reasonable default deployment: healthy fighters first, then support, within the budget.
-  function suggestDeployment(run, cp) {
+  // A reasonable army for this battle within Supply and the unit cap: picks units,
+  // levels, abilities and items, and places them. Rewrites the chosen units' loadouts.
+  // variant > 0 shuffles the priorities a little, for a different suggestion each time.
+  function autoDeploy(run, variant) {
     const enc = run.pending.enc;
-    const worth = (u) => UNITS[u.type].cost * (1 + 0.3 * u.rank) * (isAttacker(u.type) ? 1 : 0.6) * (u.wounded ? 0.5 : 1);
-    const units = run.roster.slice().sort((a, b) => worth(b) - worth(a));
+    const vr = variant ? AG.derive(run.seed, 'auto:' + variant) : null;
+    const jitter = {};
+    for (const r of run.roster) jitter[r.id] = vr ? 0.6 + vr.next() * 0.8 : 1;
+    const supply = battleSupply(run);
+    const cap = unitCap(run);
+    for (const r of run.roster) {
+      r.load.lv = 1;
+      r.load.skills = [];
+      r.load.gear = [];
+      normalizeLoad(run, r);
+      r.load.a1 = UNITS[r.type].abilities[1][0];
+      r.load.a2 = UNITS[r.type].abilities[2][0];
+    }
+    const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc) * jitter[r.id]) / Math.max(1, unitCost(run, r));
+    const pool = run.roster.slice().sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
     const pick = [];
     let spent = 0;
-    for (const u of units) {
-      const c = UNITS[u.type].cost;
-      if (spent + c > cp) continue;
-      if (!isAttacker(u.type) && pick.filter((p) => isAttacker(p.type)).length < 2 && units.some((o) => o !== u && !pick.includes(o) && isAttacker(o.type) && spent + UNITS[o.type].cost <= cp)) continue;
-      pick.push(u);
+    for (const r of pool) {
+      if (pick.length >= cap) break;
+      const c = unitCost(run, r);
+      if (spent + c > supply) continue;
+      const attackers = pick.filter((p) => isAttacker(p.type)).length;
+      if (!isAttacker(r.type) && attackers < 2 && pool.some((o) => o !== r && !pick.includes(o) && isAttacker(o.type) && spent + unitCost(run, o) <= supply)) continue;
+      pick.push(r);
       spent += c;
     }
-    if (!pick.some((u) => isAttacker(u.type))) return [];
+    if (!pick.some((r) => isAttacker(r.type))) return [];
+    // Spend what is left: levels on the best units, then owned items in open slots.
+    for (let guard = 0; guard < 30; guard++) {
+      const left = supply - pick.reduce((t, r) => t + unitCost(run, r), 0);
+      if (left <= 0) break;
+      let did = false;
+      for (const r of pick) {
+        if (r.load.lv >= 2) continue;
+        const delta = LEVEL_COST[2] + abilityCost(r.load.a2);
+        if (delta <= left) {
+          r.load.lv = 2;
+          did = true;
+          break;
+        }
+      }
+      if (!did) {
+        for (const it of freeItems(run).filter((i) => i.kind !== 'scroll')) {
+          const d = itemDef(it);
+          if (d.cost > left) continue;
+          const holder = pick.find((r) => assignItem(run, r.id, it.uid));
+          if (holder) {
+            did = true;
+            break;
+          }
+        }
+      }
+      if (!did) {
+        for (const r of pick) {
+          if (r.load.lv >= 3) continue;
+          if (LEVEL_COST[3] - LEVEL_COST[2] <= left && r.load.lv === 2) {
+            r.load.lv = 3;
+            did = true;
+            break;
+          }
+        }
+      }
+      if (!did) break;
+    }
     const taken = new Set();
     const out = [];
-    for (const u of pick) {
-      const front = FRONT_ROLES.includes(UNITS[u.type].role) || u.type === 'lightning';
-      const slot = deploySlots(run, enc, front, taken)[0];
+    for (const r of pick) {
+      const slot = deploySlots(run, enc, isFront(r.type), taken)[0];
       if (!slot) break;
       taken.add(slot.x + ',' + slot.y);
-      out.push({ rid: u.id, x: slot.x, y: slot.y, facing: 0 });
+      out.push({ rid: r.id, x: slot.x, y: slot.y, facing: 0 });
     }
     return out;
   }
@@ -1366,21 +1798,27 @@
 
   // Plain-language counter tips for the scout report.
   function scoutTips(enc) {
-    const count = (pred) => enc.units.filter((u) => pred(UNITS[u.type], u)).length;
+    const foes = enc.units.filter((u) => !isObjectType(u.type));
+    const count = (pred) => foes.filter((u) => pred(UNITS[u.type], u)).length;
     const has = (...types) => enc.units.some((u) => types.includes(u.type));
     const tips = [];
-    if (count((T) => T.armor >= 0.25) >= 2) tips.push('Heavy armor: magic from Pyromancers, Witches and Enchantresses ignores it.');
-    if (has('knight')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
-    if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Strong enemy magic: spread out, and a Barrier Ward halves magic damage around it.');
-    else if (has('pyromancer', 'witch', 'dragon', 'ashen_tyrant')) tips.push('Area attacks punish clumps. Leave gaps between your units.');
-    if (has('assassin', 'beastrider', 'scout')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
-    if (has('archer') && count((T) => T.role === 'ranged') >= 2) tips.push('Archers outrange you. Close in with fast units, or soak arrows on a Knight\'s front.');
-    if (has('cleric')) tips.push('Enemy Cleric: kill it early, or poison its huddle so the healing fails.');
-    if (has('lightning', 'barrier')) tips.push('Wards cannot move. Archers and fireballs can hit them from outside their reach.');
-    if (has('golem', 'golem_king')) tips.push('Golems are slow and immune to poison and paralysis. Kite them and burn them with magic.');
-    if (has('enchantress')) tips.push('Paralysis strips block. Keep units near a Barrier Ward or use Golems.');
-    if (has('wisp')) tips.push('Poison Wisps are fragile. A single arrow volley can drop one.');
-    if (has('specter')) tips.unshift('Specters take half damage from physical attacks. Bring magic to claim their treasure.');
+    if (count((T) => T.armor >= 0.3) >= 2) tips.push('Heavy armor: bring magic. Pyromancers, Witches and Arcane Edge ignore armor and block.');
+    if (count((T) => (T.res || 0) >= 0.3) >= 2) tips.push('Strong magic resistance: bring steel. Archers, Knights and Berserkers hit them harder than spells.');
+    if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
+    if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
+    if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them. Specters have 50% armor.');
+    if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
+    if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
+    if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
+    if (has('troll')) tips.push('Trolls regenerate 12 a turn unless magic hurt them since their last turn.');
+    if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
+    if (has('wall', 'gate', 'tower')) tips.push('A Siege Hammer deals triple damage to walls, gates, towers and wagons. Towers need not fall.');
+    if (has('cart')) tips.push('The wagons flee left 2 tiles a turn. Block their path with units and break them fast.');
+    if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
+    if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
+    if (has('cleric', 'shaman')) tips.push('Enemy healers: kill them early, or poison the huddle so the healing fails.');
+    if (has('golem', 'golem_king')) tips.push('Golems have 50% armor but take 25% extra from magic.');
+    if (has('dragon', 'ashen_tyrant', 'drake', 'brute', 'colossus')) tips.push('Huge foes: Dragonslayer Spears deal 50% more to them.');
     return tips.slice(0, 4);
   }
 
@@ -1399,7 +1837,7 @@
       const j = root.localStorage && root.localStorage.getItem(SAVE_KEY);
       if (!j) return null;
       const r = JSON.parse(j);
-      return r && r.v === 1 && !r.over ? r : null;
+      return r && r.v === 2 && !r.over ? r : null;
     } catch (e) {
       return null;
     }
@@ -1437,12 +1875,14 @@
   }
 
   AG.Run = {
-    ROWS, COLS, MAX_ROSTER, EFFICIENCY_GOLD, EVENTS,
-    newRun, genMap, getNode, availableNodes, enterNode, completeNode,
-    LOOT_NAMES, objectiveInfo, musterCandidates, takeTome, skipTome,
-    cpFor, deployRows, deploySlots, suggestDeployment, deployCost, battleConfig, finishBattle, takeSpoil, skipSpoils, takeBossRelic,
-    genEncounter, genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent,
-    canLearn, teach, promote, promoteCost, dismiss, unitById, unitStats, scoutTips, hasRelic,
+    ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, EVENTS, LOOT_NAMES,
+    newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
+    commanderLevel, levelInfo, supplyFor, retryBonus, battleSupply, unitCap, gainXp,
+    addRecruit, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
+    costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
+    objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, isFront, battleConfig,
+    genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
+    genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, loadMeta, recordMeta,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

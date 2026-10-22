@@ -24,37 +24,45 @@
   }
 
   function isArea(kind) {
-    return kind === 'blast' || kind === 'line' || kind === 'cone' || kind === 'cross' || kind === 'nova';
+    return kind === 'blast' || kind === 'line' || kind === 'cone' || kind === 'cross' || kind === 'nova' || kind === 'detonate';
   }
 
-  // Everything the opposing side could do on its next turn.
+  function harmful(a) {
+    return a.kind !== 'none' && a.left > 0 && !!(a.dmg || (a.fx && (a.fx.para || a.fx.poison)));
+  }
+
+  // Everything the opposing side could do on its next turn, one entry per unit.
   function buildSources(s, foeTeam) {
     const out = [];
     for (const v of s.units) {
       if (!v.alive || v.team !== foeTeam || v.nonCombat || dormant(s, v)) continue;
-      const a = v.act;
-      const harmful = a.dmg || (a.fx && (a.fx.para || a.fx.poison));
-      if (!harmful) continue;
+      const acts = v.acts.filter(harmful);
+      if (!acts.length) continue;
       const delay = v.wait + v.para;
       const weight = delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
       if (weight === 0) continue;
-      // Reach as if it could move next turn (paralysis wears off by then for weight>0 cases).
+      // Reach as if it could move next turn (paralysis and roots wear off by then for weight>0 cases).
       const savedPara = v.para;
+      const savedRoot = v.root;
       v.para = 0;
+      v.root = Math.max(0, v.root - 1);
       const reach = E.reachable(s, v);
       v.para = savedPara;
+      v.root = savedRoot;
       const list = [...reach.values()];
-      const src = { v, weight, reach, list, area: isArea(a.kind) };
-      if (src.area) src.cover = areaCover(s, v, list);
-      out.push(src);
+      const profiles = acts.map((a) => {
+        const p = { a, area: isArea(a.kind) };
+        if (p.area) p.cover = areaCover(s, v, a, list);
+        return p;
+      });
+      out.push({ v, weight, reach, list, profiles });
     }
     return out;
   }
 
   // Tiles an area attacker could catch from any tile it can reach.
-  function areaCover(s, v, list) {
+  function areaCover(s, v, a, list) {
     const cover = new Uint8Array(s.w * s.h);
-    const a = v.act;
     const mark = (tiles) => {
       for (const [x, y] of tiles) cover[E.idx(s, x, y)] = 1;
     };
@@ -64,8 +72,6 @@
           mark(E.radiusTiles(s, r.x, r.y, a.range[1] + (a.pattern === 'square' ? 2 : 1)));
           break;
         case 'line':
-          for (let d = 0; d < 4; d++) mark(E.lineTiles(s, r.x, r.y, d, a.len));
-          break;
         case 'cross':
           for (let d = 0; d < 4; d++) mark(E.lineTiles(s, r.x, r.y, d, a.len));
           break;
@@ -73,6 +79,7 @@
           for (let d = 0; d < 4; d++) mark(E.coneTiles(s, r.x, r.y, d, a.len));
           break;
         case 'nova':
+        case 'detonate':
           mark(E.radiusTiles(s, r.x, r.y, a.radius));
           break;
       }
@@ -80,14 +87,14 @@
     return cover;
   }
 
-  // Tiles from which a direct attacker could strike (x, y).
-  function directOrigins(s, src, x, y) {
-    const v = src.v;
-    const [r0, r1] = v.act.range;
+  // Tiles from which a direct attack could strike (x, y). Smoke hides it from afar.
+  function directOrigins(s, src, a, x, y) {
+    const [r0, r1] = a.range;
+    const smoke = !!E.tileFx(s, x, y, 'smoke');
     const out = [];
     for (const r of src.list) {
       const d = Math.abs(r.x - x) + Math.abs(r.y - y);
-      if (d >= r0 && d <= r1) out.push(r);
+      if (d >= r0 && d <= r1 && !(smoke && d > 1)) out.push(r);
     }
     return out;
   }
@@ -120,52 +127,54 @@
     return per.map(combine);
   }
 
-  function dangerParts(ctx, u, x, y, per) {
+  function dangerParts(ctx, u, x, y, res) {
     const s = ctx.s;
-    const res = per;
     E.withUnitAt(s, u, x, y, () => {
       const savedF = u.facing;
       const ti = E.idx(s, x, y);
       for (const src of ctx.sources) {
         const v = src.v;
-        if (src.area) {
-          if (!src.cover[ti]) continue;
-          let e = 0;
-          if (v.act.dmg) e += E.calcHit(s, v, u, { dmgType: v.act.dmg }).dmg;
-          if (v.act.fx && v.act.fx.para && !E.statusImmune(s, u, 'para')) e += 10;
-          if (v.act.fx && v.act.fx.poison && !u.poison && !E.statusImmune(s, u, 'poison'))
-            e += E.poisonDamage(v) * v.act.fx.poison * 0.6;
-          e *= src.weight * 0.75;
-          if (e > 0) for (let f = 0; f < 4; f++) res[f].push(e);
-          continue;
-        }
-        const origins = directOrigins(s, src, x, y);
-        if (!origins.length) continue;
-        // Expected damage per arc, computed once with a reference facing of north.
-        u.facing = savedF < 0 ? -1 : 0;
-        const moveDist = Math.max(0, Math.abs(v.x - x) + Math.abs(v.y - y) - 1);
-        const exp = {};
-        for (const [cat, fx, fy] of [
-          ['front', x, y - 1],
-          ['side', x + 1, y],
-          ['back', x, y + 1],
-        ]) {
-          const r = E.calcHit(s, v, u, { fromX: fx, fromY: fy, moved: true, moveDist });
-          exp[cat] = r.dmg * (1 - r.block);
-        }
-        if (v.act.kind === 'cleave' || v.act.kind === 'quake') {
-          exp.front *= 1.15;
-          exp.side *= 1.15;
-          exp.back *= 1.15;
-        }
-        for (let f = 0; f < 4; f++) {
-          let best = 0;
-          for (const o of origins) {
-            const e = exp[catFor(o.x, o.y, x, y, savedF < 0 ? -1 : f)];
-            if (e > best) best = e;
+        const best = [0, 0, 0, 0];
+        for (const prof of src.profiles) {
+          const a = prof.a;
+          if (prof.area) {
+            if (!prof.cover[ti]) continue;
+            let e = 0;
+            if (a.dmg) e += E.calcHit(s, v, u, { act: a, dmgType: a.dmg }).dmg;
+            if (a.fx && a.fx.para && !E.statusImmune(s, u, 'para')) e += 10;
+            if (a.fx && a.fx.poison && !u.poison && !E.statusImmune(s, u, 'poison')) e += E.poisonDamage(v, a) * a.fx.poison * 0.6;
+            e *= 0.75;
+            for (let f = 0; f < 4; f++) best[f] = Math.max(best[f], e);
+            continue;
           }
-          if (best > 0) res[f].push(best * src.weight);
+          if (!a.range || !a.dmg) continue;
+          const origins = directOrigins(s, src, a, x, y);
+          if (!origins.length) continue;
+          // Expected damage per arc, computed once with a reference facing of north.
+          u.facing = savedF < 0 ? -1 : 0;
+          const moveDist = Math.max(0, Math.abs(v.x - x) + Math.abs(v.y - y) - 1);
+          const exp = {};
+          for (const [cat, fx, fy] of [
+            ['front', x, y - 1],
+            ['side', x + 1, y],
+            ['back', x, y + 1],
+          ]) {
+            const r = E.calcHit(s, v, u, { act: a, fromX: fx, fromY: fy, moved: true, moveDist });
+            exp[cat] = r.dmg * (1 - r.block);
+          }
+          if (a.kind === 'cleave' || a.kind === 'quake') {
+            exp.front *= 1.15;
+            exp.side *= 1.15;
+            exp.back *= 1.15;
+          }
+          for (let f = 0; f < 4; f++) {
+            for (const o of origins) {
+              const e = exp[catFor(o.x, o.y, x, y, savedF < 0 ? -1 : f)];
+              if (e > best[f]) best[f] = e;
+            }
+          }
         }
+        for (let f = 0; f < 4; f++) if (best[f] > 0) res[f].push(best[f] * src.weight);
       }
       u.facing = savedF;
     });
@@ -173,12 +182,11 @@
   }
 
   // Walking distance from every tile to the nearest foe (units ignored).
-  function buildDistField(s, foeTeam) {
+  function buildDistField(s, foes) {
     const n = s.w * s.h;
     const dist = new Int16Array(n).fill(99);
     const q = [];
-    for (const v of s.units) {
-      if (!v.alive || v.team !== foeTeam || v.nonCombat) continue;
+    for (const v of foes) {
       const i = E.idx(s, v.x, v.y);
       dist[i] = 0;
       q.push(i);
@@ -194,6 +202,8 @@
         if (!E.inB(s, nx, ny)) continue;
         const ni = E.idx(s, nx, ny);
         if (dist[ni] <= dist[i] + 1 || s.terrain[ni] !== E.T_GRASS) continue;
+        const o = E.at(s, nx, ny);
+        if (o && o.type === 'wall') continue;
         dist[ni] = dist[i] + 1;
         q.push(ni);
       }
@@ -214,25 +224,32 @@
     return { unit: best, d: bd };
   }
 
+  // An object whose destruction wins the battle (banner, cage, gate, wagon).
+  function isGoal(u) {
+    return u.traits.has('object') && !u.traits.has('scenery');
+  }
+
   function makeCtx(s, team, opts) {
     opts = opts || {};
     const foe = E.other(team);
     const stanceName = opts.stance || 'balanced';
     const st = STANCES[stanceName] || STANCES.balanced;
+    // Objective objects count as targets to march on when breaking them wins the battle.
+    // Treasure guardians and towers are left alone unless they get in the way.
+    const foes = s.units.filter(
+      (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)))
+    );
     const ctx = {
       s,
       team,
       foe,
       opts,
       sources: buildSources(s, foe),
-      distField: buildDistField(s, foe),
-      allies: s.units.filter((u) => u.alive && u.team === team && !u.nonCombat),
-      // Objective objects count as targets to march on when breaking them wins the battle.
-      // Treasure guardians are left alone unless they get in the way.
-      foes: s.units.filter(
-        (u) => u.alive && u.team === foe && !u.bound && (!u.nonCombat || (s.objective === 'destroy' && u.traits.has('object')))
-      ),
-      objects: s.units.filter((u) => u.alive && u.team === team && u.traits.has('object')),
+      distField: buildDistField(s, foes),
+      allies: s.units.filter((u) => u.alive && u.team === team && !u.nonCombat && !u.structure),
+      foes,
+      objects: s.units.filter((u) => u.alive && u.team === team && u.traits.has('object') && !u.traits.has('scenery')),
+      foeRanged: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.range && a.range[1] >= 2 && a.dmg)),
       approach: st.approach,
       risk: st.risk,
     };
@@ -244,7 +261,7 @@
     }
     // Press harder as the battle drags on, and when we are the stronger side.
     const strength = (list) => list.reduce((t, u) => t + u.value * (u.hp / u.maxHp), 0);
-    const ratio = strength(ctx.allies) / Math.max(1, strength(ctx.foes));
+    const ratio = strength(ctx.allies) / Math.max(1, strength(ctx.foes.filter((u) => !u.nonCombat)));
     ctx.approach *= (1 + 0.2 * Math.max(0, s.turn - 2)) * Math.min(1.5, Math.max(0.7, ratio));
     ctx.risk *= Math.min(1.3, Math.max(0.7, 1 / ratio));
     let cx = 0;
@@ -266,24 +283,34 @@
     return E.dirFromDelta(nf.unit.x - x, nf.unit.y - y);
   }
 
+  function actSpan(a) {
+    return a.range ? a.range[1] : a.radius || a.len || 1;
+  }
+
   // How hard this unit could hit someone next turn from (x, y).
   function offense(ctx, u, x, y) {
-    const a = u.act;
-    if (!a.dmg && !a.fx) return 0;
-    const span = a.range ? a.range[1] : a.radius || a.len || 1;
-    const reachR = u.move + span + (a.kind === 'blast' || a.kind === 'quake' ? 1 : 0);
     let best = 0;
-    for (const f of ctx.foes) {
-      const d = Math.abs(f.x - x) + Math.abs(f.y - y);
-      if (d > reachR) continue;
-      let base;
-      if (a.dmg === 'phys') base = u.pow * (1 - f.armor) * (1 - f.block * 0.5);
-      else if (a.dmg === 'magic') base = u.pow;
-      else base = a.fx.poison ? E.poisonDamage(u) * 2 : 10;
-      const val = base * (f.value / f.maxHp);
-      if (val > best) best = val;
+    for (const a of u.acts) {
+      if (a.left <= 0 || a.kind === 'none' || (!a.dmg && !a.fx)) continue;
+      const reachR = u.move + actSpan(a) + (a.kind === 'blast' || a.kind === 'quake' ? 1 : 0);
+      for (const f of ctx.foes) {
+        const d = Math.abs(f.x - x) + Math.abs(f.y - y);
+        if (d > reachR) continue;
+        const base = a.fixed != null ? a.fixed : u.pow * (a.mult || 1);
+        let dmg;
+        if (a.dmg === 'phys') dmg = base * (1 - f.armor) * (1 - f.block * 0.5);
+        else if (a.dmg === 'magic') dmg = base * (1 - f.res);
+        else dmg = a.fx.poison ? E.poisonDamage(u, a) * 2 : 6;
+        const val = dmg * (f.value / f.maxHp);
+        if (val > best) best = val;
+      }
     }
     return best * 0.35;
+  }
+
+  function primaryRange(u) {
+    const a = u.act;
+    return a.range ? a.range : null;
   }
 
   function positionValue(ctx, u, x, y) {
@@ -301,7 +328,7 @@
       }
     }
     const hpv = u.value / u.maxHp;
-    const expTaken = danger * 0.85;
+    const expTaken = Math.max(0, danger * 0.85 - u.shield * 0.8);
     let v = -expTaken * hpv * ctx.risk + offense(ctx, u, x, y);
     if (expTaken >= u.hp) v -= u.value * 0.6 * ctx.risk;
     else if (expTaken >= u.hp * 0.6) v -= u.value * 0.15 * ctx.risk;
@@ -324,14 +351,14 @@
         break;
       }
       case 'ranged': {
-        const ideal = a.range[1];
-        v -= Math.abs(nf.d - ideal) * 1.1 * Math.max(0.5, ctx.approach / 1.6);
-        if (nf.d < a.range[0]) v -= 4;
+        const r = primaryRange(u) || [1, 1];
+        v -= Math.abs(nf.d - r[1]) * 1.1 * Math.max(0.5, ctx.approach / 1.6);
+        if (nf.d < r[0]) v -= 4;
         break;
       }
       case 'caster': {
         let ideal = 3;
-        if (a.kind === 'blast') ideal = a.range[1];
+        if (a.kind === 'blast' || a.kind === 'strike') ideal = a.range[1];
         else if (a.kind === 'nova') ideal = a.radius + 1;
         else if (a.kind === 'cross') ideal = 2;
         v -= Math.abs(nf.d - ideal) * 1.1 * Math.max(0.5, ctx.approach / 1.6);
@@ -342,7 +369,7 @@
         v -= dc * 0.8;
         if (a.kind === 'grow') v -= Math.abs(nf.d - 3) * 0.8;
         else if (nf.d < 3) v -= (3 - nf.d) * 3;
-        if (a.kind === 'pray') {
+        if (a.kind === 'pray' || a.kind === 'drum') {
           for (const al of ctx.allies) if (al !== u && Math.abs(al.x - x) + Math.abs(al.y - y) <= a.radius) v += 0.8;
         }
         break;
@@ -365,11 +392,23 @@
         }
       }
     }
-    if (u.traits.has('guardian') || u.tal.has('guardian')) {
+    if (u.props.guard) {
       for (const al of ctx.allies) {
         if (al === u || Math.abs(al.x - x) + Math.abs(al.y - y) !== 1) continue;
         const r = UNITS[al.type].role;
         v += r === 'ranged' || r === 'caster' || r === 'support' ? 2.5 : 1;
+      }
+    }
+    // Hazards underfoot, and powder kegs that the enemy could set off.
+    if (!flying) {
+      const f = E.tileFx(s, x, y);
+      if (f && f.team !== u.team && f.kind === 'fire') v -= (f.dmg || 8) * hpv * 1.2;
+      if (f && f.team !== u.team && f.kind === 'caltrops') v -= 6 * hpv + 3;
+    }
+    if (ctx.foeRanged) {
+      for (const [bx, by] of E.radiusTiles(s, x, y, 1)) {
+        const b = E.at(s, bx, by);
+        if (b && b.alive && b.traits.has('volatile') && b !== u) v -= 0.12 * (b.props.boom || 15) * hpv * 2;
       }
     }
     return { score: v, facing, danger };
@@ -397,43 +436,138 @@
     return Math.min(v, 14);
   }
 
+  // Our damage dealers that could reach a target next turn (for marks and roots).
+  function alliesNear(ctx, t, r) {
+    let n = 0;
+    for (const al of ctx.allies) if (al.acts.some((a) => a.dmg) && Math.abs(al.x - t.x) + Math.abs(al.y - t.y) <= r) n++;
+    return n;
+  }
+
+  function hazardValue(ctx, u, a, target) {
+    const s = ctx.s;
+    const tiles = E.patternTiles(s, a.pattern || 'single', target.x, target.y).filter(([x, y]) => s.terrain[E.idx(s, x, y)] !== E.T_ROCK);
+    let v = 0;
+    if (a.hz === 'smoke') {
+      if (!ctx.foeRanged) return 0;
+      for (const [x, y] of tiles) {
+        if (E.tileFx(s, x, y, 'smoke')) continue;
+        const o = E.at(s, x, y);
+        if (!o || o.team !== u.team || o.nonCombat || o.structure) continue;
+        let threatened = false;
+        for (const src of ctx.sources) {
+          if (src.weight < 1) continue;
+          for (const prof of src.profiles) {
+            if (prof.area || !prof.a.range || prof.a.range[1] < 2) continue;
+            if (Math.abs(src.v.x - x) + Math.abs(src.v.y - y) <= prof.a.range[1] + src.v.move) threatened = true;
+          }
+        }
+        if (threatened) v += 3 + (o.value / o.maxHp) * 4;
+      }
+    } else if (a.hz === 'fire') {
+      for (const [x, y] of tiles) {
+        if (s.terrain[E.idx(s, x, y)] !== E.T_GRASS) continue;
+        const o = E.at(s, x, y);
+        if (o && o.team !== u.team && !o.nonCombat && !o.structure && !o.traits.has('flying')) {
+          v += Math.min(o.hp, (a.dmgFixed || 8) * (1 - o.res)) * (o.value / o.maxHp) * 1.3;
+        }
+        for (const f of ctx.foes) if (!f.nonCombat && Math.abs(f.x - x) + Math.abs(f.y - y) === 1) v += 0.3;
+      }
+    } else if (a.hz === 'caltrops') {
+      for (const f of ctx.foes) {
+        if (f.nonCombat || f.traits.has('flying') || f.move === 0) continue;
+        const d = Math.abs(f.x - target.x) + Math.abs(f.y - target.y);
+        if (d <= f.move + 1 && d >= 1) v = Math.max(v, 3 + (f.value / f.maxHp) * 2);
+      }
+    }
+    return v;
+  }
+
   function actionValue(ctx, u, target, c) {
     const s = ctx.s;
+    const a = E.actOf(u, target);
+    if (a.kind === 'hazard') return hazardValue(ctx, u, a, target) - (a.uses ? 1 : 0);
+    if (a.kind === 'blink') return 0.6;
+    if (a.kind === 'raise') {
+      const sk = UNITS.skeleton;
+      return sk.cost * 10 * 0.6 * 0.8 + 2;
+    }
+    if (a.kind === 'revive') {
+      const d = s.byId[target.uid];
+      return d ? d.value * (a.pct || 0.4) * 1.2 : 0;
+    }
     const pv = E.previewAction(s, u, target, c);
     let v = 0;
-    let foeHits = 0;
     for (const e of pv.effects) {
       const t = s.byId[e.uid];
       const hpv = t.value / t.maxHp;
-      const bossTarget = s.objective === 'boss' && t.boss && t.team !== u.team;
+      if (e.self) {
+        v -= u.value;
+        continue;
+      }
+      const bossTarget = t.team !== u.team && ((s.objective === 'boss' && t.boss) || (s.objective === 'destroy' && isGoal(t)));
       if (e.dmg != null) {
         const p = 1 - e.block;
-        const dealt = Math.min(e.dmg, t.hp);
-        let val = dealt * hpv;
+        const dealt = Math.min(e.dmg, t.hp + t.shield);
+        let val = Math.max(0, dealt - t.shield) * hpv + Math.min(dealt, t.shield) * 0.2;
         if (e.kill) val += t.value * 0.8;
-        if (bossTarget) val *= 2.5;
+        if (bossTarget) val *= t.boss ? 2.5 : 3;
+        if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
         if (e.friendly) v -= p * val * 1.4;
-        else {
-          v += p * val;
-          if (!t.nonCombat) foeHits++;
-        }
+        else v += p * val;
       }
-      if (!e.friendly && e.para && e.para !== 'resist') v += e.para * paraValue(t);
-      if (!e.friendly && e.poison && e.poison !== 'resist') {
+      if (e.friendly) {
+        if (e.heal) v += e.heal * hpv;
+        if (e.cleanse) v += 6;
+        if (e.shield) v += Math.min(e.shield, 12) * hpv * (ctx.sources.length ? 1 : 0.3);
+        if (e.frenzy && t.frenzy === 0) v += t.pow * 0.25 * (t.wait === 0 || t.activated ? 0.8 : 0.5) * hpv * 2;
+        if (e.rally) v += (t.wait > 0 ? (t.activated ? 3 : 7) : 0) + (t.para ? 6 : 0) + (t.root ? 2 : 0);
+        continue;
+      }
+      if (t.nonCombat || t.structure) continue;
+      const p = e.block != null ? 1 - e.block : 1;
+      if (e.para && e.para !== 'resist') v += p * e.para * paraValue(t);
+      if (e.poison && e.poison !== 'resist') {
         const fresh = t.poison ? Math.max(0, e.poison.turns - t.poison.turns) : e.poison.turns;
-        v += Math.min(fresh * e.poison.dmg, t.hp) * hpv * 0.85 + (t.poison ? 0 : 3);
-        if (!t.nonCombat) foeHits++;
+        v += p * (Math.min(fresh * e.poison.dmg, t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
       }
-      if (e.heal) v += e.heal * hpv;
-      if (e.cleanse) v += 6;
+      if (e.burn) {
+        const fresh = t.burn ? Math.max(0, e.burn.turns - t.burn.turns) : e.burn.turns;
+        v += p * Math.min(fresh * e.burn.dmg * (1 - t.res), t.hp) * hpv * 0.8;
+      }
+      if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
+      if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (t.wait === 0 ? 1 : 0.6);
+      if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
+      if (e.knock === true) v += p * 2;
     }
-    if (u.act.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
+    if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
     // Acting starts recovery; small cost so weak pokes don't lock down slow casters.
     v -= u.rec * u.pow * 0.08;
+    if (a.uses) v -= 1.5;
+    return v;
+  }
+
+  // What a dying powder keg or sapper would do to everyone beside it.
+  function boomValue(ctx, u, t) {
+    const s = ctx.s;
+    let v = 0;
+    for (const [x, y] of E.radiusTiles(s, t.x, t.y, 1)) {
+      const o = E.at(s, x, y);
+      if (!o || !o.alive || o === t || o.nonCombat) continue;
+      const dmg = Math.min(o.hp, Math.round((t.props.boom || 15) * (1 - o.res)));
+      const val = dmg * (o.value / o.maxHp) + (dmg >= o.hp ? o.value * 0.6 : 0);
+      v += o.team === u.team ? -val * 1.4 : val;
+    }
     return v;
   }
 
   // ------------------------------------------------------------ planning
+
+  // The tile a unit ends up on after an act that moves it.
+  function landing(a, t) {
+    if (a.kind === 'leap' || a.kind === 'blink') return { x: t.x, y: t.y };
+    if (a.kind === 'shadowstrike') return { x: t.bx, y: t.by };
+    return null;
+  }
 
   function planFor(ctx, u) {
     const s = ctx.s;
@@ -453,22 +587,32 @@
     const plans = [{ uid: u.uid, kind: 'hold', score: hold.score, facing: hold.facing, gain: 0 }];
     const holdScore = hold.score;
     const moveOnlyCost = Math.floor(u.rec / 2) * 3;
+    const acts = [];
+    for (let i = 0; i < u.acts.length; i++) if (E.actUsable(s, u, i)) acts.push(i);
 
     for (const r of reach.values()) {
       E.withUnitAt(s, u, r.x, r.y, () => {
         const p = posAt(r);
         if (r.d > 0) plans.push({ uid: u.uid, kind: 'move', to: r, score: p.score - moveOnlyCost, facing: p.facing });
-        for (const t of E.targetsFrom(s, u)) {
-          const av = actionValue(ctx, u, t, { moved: r.d > 0, moveDist: r.d });
-          if (av <= 0.5) continue;
-          plans.push({ uid: u.uid, kind: r.d > 0 ? 'moveAct' : 'act', to: r, target: t, score: av + p.score, facing: p.facing, av });
+        for (const i of acts) {
+          const a = u.acts[i];
+          if (a.asMove && r.d > 0) continue;
+          for (const t of E.targetsFrom(s, u, i)) {
+            const av = actionValue(ctx, u, t, { moved: r.d > 0, moveDist: r.d });
+            if (av <= 0.5) continue;
+            const land = landing(a, t);
+            let after = p;
+            if (land) after = positionValue(ctx, u, land.x, land.y);
+            plans.push({ uid: u.uid, kind: r.d > 0 ? 'moveAct' : 'act', to: r, target: t, score: av + after.score, facing: after.facing, av });
+          }
         }
       });
     }
 
     // Act first, then reposition (hit and run).
-    if (u.move > 0 && !u.traits.has('immobile')) {
-      const fromHere = E.targetsFrom(s, u);
+    if (u.move > 0 && !u.traits.has('immobile') && u.root === 0) {
+      const fromHere = [];
+      for (const i of acts) if (!u.acts[i].asMove && !landing(u.acts[i], {})) fromHere.push(...E.targetsFrom(s, u, i));
       if (fromHere.length) {
         let bestPos = null;
         for (const r of reach.values()) {
@@ -546,6 +690,7 @@
       }
     }
     if (plan.kind === 'moveAct' || plan.kind === 'act' || plan.kind === 'actMove') {
+      if (s.over || !u.alive) return true;
       if (!E.performAction(s, plan.uid, plan.target) && plan.kind === 'act') {
         E.cancelActivation(s);
         return false;
@@ -553,7 +698,7 @@
     }
     if (s.over) return true;
     let facing = plan.facing;
-    if (u.alive && plan.kind === 'actMove') {
+    if (u.alive && plan.kind === 'actMove' && s.act && !s.act.moved) {
       const ctx = makeCtx(s, u.team, opts);
       let best = null;
       for (const r of E.reachable(s, u).values()) {
@@ -566,7 +711,7 @@
         E.moveUnit(s, u.uid, best.r.x, best.r.y);
         facing = best.p.facing;
       } else facing = stay.facing;
-    } else if (u.alive && (plan.kind === 'moveAct' || plan.kind === 'act')) {
+    } else if (u.alive && (plan.kind === 'moveAct' || plan.kind === 'act' || plan.kind === 'actMove')) {
       // The board changed after the action; re-check which way to face.
       facing = smartFacing(s, u, opts);
     }
@@ -597,17 +742,20 @@
     const sources = buildSources(s, foe).filter((src) => src.weight >= 1);
     const map = new Uint8Array(s.w * s.h);
     for (const src of sources) {
-      if (src.area) {
-        for (let i = 0; i < map.length; i++) if (src.cover[i]) map[i] = Math.max(map[i], 2);
-        continue;
-      }
-      const [r0, r1] = src.v.act.range;
-      const reachR = r1 + (src.v.act.kind === 'quake' ? 1 : 0);
-      for (const r of src.list)
-        for (const [x, y] of E.radiusTiles(s, r.x, r.y, reachR)) {
-          const d = Math.abs(x - r.x) + Math.abs(y - r.y);
-          if (d >= r0 || src.v.act.kind === 'quake') map[E.idx(s, x, y)] = Math.max(map[E.idx(s, x, y)], 1);
+      for (const prof of src.profiles) {
+        if (prof.area) {
+          for (let i = 0; i < map.length; i++) if (prof.cover[i]) map[i] = Math.max(map[i], 2);
+          continue;
         }
+        if (!prof.a.range) continue;
+        const [r0, r1] = prof.a.range;
+        const quake = prof.a.kind === 'quake';
+        for (const r of src.list)
+          for (const [x, y] of E.radiusTiles(s, r.x, r.y, r1 + (quake ? 1 : 0))) {
+            const d = Math.abs(x - r.x) + Math.abs(y - r.y);
+            if (d >= r0 || quake) map[E.idx(s, x, y)] = Math.max(map[E.idx(s, x, y)], 1);
+          }
+      }
     }
     return map;
   }
@@ -615,22 +763,27 @@
   // Where one unit could move and strike on its next turn (for inspecting enemies).
   function unitThreat(s, v) {
     const savedPara = v.para;
+    const savedRoot = v.root;
     v.para = 0;
+    v.root = 0;
     const reach = E.reachable(s, v);
     v.para = savedPara;
+    v.root = savedRoot;
     const list = [...reach.values()];
     const map = new Uint8Array(s.w * s.h);
-    const a = v.act;
-    if (isArea(a.kind)) {
-      const c = areaCover(s, v, list);
-      for (let i = 0; i < map.length; i++) if (c[i]) map[i] = 1;
-    } else if (a.range) {
-      const [r0, r1] = a.range;
-      const extra = a.kind === 'quake' ? 1 : 0;
-      for (const r of list)
-        for (const [x, y] of E.radiusTiles(s, r.x, r.y, r1 + extra)) {
-          if (extra || Math.abs(x - r.x) + Math.abs(y - r.y) >= r0) map[E.idx(s, x, y)] = 1;
-        }
+    for (const a of v.acts) {
+      if (a.kind === 'none' || a.left <= 0 || !(a.dmg || a.fx)) continue;
+      if (isArea(a.kind)) {
+        const c = areaCover(s, v, a, list);
+        for (let i = 0; i < map.length; i++) if (c[i]) map[i] = 1;
+      } else if (a.range) {
+        const [r0, r1] = a.range;
+        const extra = a.kind === 'quake' ? 1 : 0;
+        for (const r of list)
+          for (const [x, y] of E.radiusTiles(s, r.x, r.y, r1 + extra)) {
+            if (extra || Math.abs(x - r.x) + Math.abs(y - r.y) >= r0) map[E.idx(s, x, y)] = 1;
+          }
+      }
     }
     const hit = [];
     for (let i = 0; i < map.length; i++) if (map[i]) hit.push([i % s.w, Math.floor(i / s.w)]);

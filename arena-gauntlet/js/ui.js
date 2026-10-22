@@ -1,9 +1,10 @@
-// Screens and touch controls: title, campaign setup, map, war room, battle, rewards,
-// shop, rest, events, army management, help and codex.
+// Screens and touch controls: title, campaign setup, map, army and loadouts, war room,
+// battle, rewards, shop, rest, events, help and codex.
 (function (root) {
   'use strict';
   const AG = root.AG;
-  const { UNITS, TALENTS, RELICS, WARBANDS, DIFFICULTIES, ACTS, MAX_TALENTS } = AG.Data;
+  const D = AG.Data;
+  const { UNITS, ABILITIES, MASTERY, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ACTS, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
   const R = AG.Run;
   const E = AG.Engine;
   const AI = AG.AI;
@@ -16,6 +17,7 @@
   const pct = (v) => Math.round(v * 100) + '%';
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
+  const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const PREFS_KEY = 'arena-gauntlet-prefs';
 
   const UI = {
@@ -70,6 +72,14 @@
     if (bind) bind(sh);
   }
 
+  // Re-render a sheet in place, keeping the scroll position.
+  function refreshSheet(html, bind) {
+    const sh = $('#sheet');
+    const top = sh.scrollTop;
+    openSheet(html, bind);
+    sh.scrollTop = top;
+  }
+
   function closeSheet() {
     $('#modal').hidden = true;
     $('#sheet').innerHTML = '';
@@ -95,6 +105,7 @@
         closeSheet();
         resolve(v);
       };
+      UI.onSheetClose = null;
       openSheet(
         `${sheetHead(esc(title))}<p class="muted">${text}</p>
         <div class="actions"><button class="btn" id="cfNo">${esc(cancelLabel || 'Cancel')}</button>
@@ -113,6 +124,10 @@
     });
   }
 
+  function unitSub(r) {
+    return `${UNITS[r.type].name} · Lv ${r.load.lv}${r.enchant ? ' · ' + ENCHANTS[r.enchant].name : ''}`;
+  }
+
   // Ask the player to pick one of their units. Resolves to a roster id or null.
   function pickUnit(title, note, filter) {
     return new Promise((resolve) => {
@@ -123,8 +138,7 @@
           const ok = filter(u);
           return `<button class="army-row" data-rid="${u.id}" ${ok ? '' : 'disabled style="opacity:.45"'}>
           <canvas class="portrait" data-p="${u.type}:P"></canvas>
-          <div class="nm"><b>${esc(u.name)}</b> <span class="stars">${stars(u.rank)}</span>
-            <div class="small muted">${UNITS[u.type].name}${u.talents.length ? ' · ' + u.talents.map((t) => TALENTS[t].name).join(', ') : ''}</div></div>
+          <div class="nm"><b>${esc(u.name)}</b><div class="small muted">${esc(unitSub(u))}</div></div>
           <div>${ok ? ic('check') : ''}</div></button>`;
         })
         .join('');
@@ -144,18 +158,22 @@
     });
   }
 
-  function computed(r) {
-    return R.unitStats(r, UI.run ? UI.run.relics : [], 'P');
-  }
+  // ------------------------------------------------------------ describing units
 
-  function rangeLabel(u) {
-    const a = u.act;
+  function rangeLabel(a) {
     switch (a.kind) {
       case 'strike':
       case 'cleave':
       case 'quake':
       case 'blast':
       case 'grow':
+      case 'heal':
+      case 'shield':
+      case 'hazard':
+      case 'raise':
+      case 'leap':
+      case 'blink':
+      case 'shadowstrike':
         return a.range[0] === a.range[1] ? String(a.range[0]) : a.range[0] + '-' + a.range[1];
       case 'line':
         return 'Line ' + a.len;
@@ -165,98 +183,204 @@
         return 'Cross ' + a.len;
       case 'nova':
       case 'pray':
+      case 'drum':
+      case 'rally':
+      case 'detonate':
         return 'Aura ' + a.radius;
       default:
         return '-';
     }
   }
 
-  function statsHTML(u) {
-    const heal = u.act.kind === 'pray';
-    const powLabel = heal ? 'Heal' : u.act.fx && u.act.fx.poison ? 'Poison' : 'Power';
-    const powVal = heal ? E.healAmount(u) : u.act.fx && u.act.fx.poison ? E.poisonDamage(u) : u.pow || '-';
-    return `<div class="stats">
-      <div class="stat"><b>${powVal}</b><span>${powLabel}</span></div>
-      <div class="stat"><b>${pct(u.armor)}</b><span>Armor</span></div>
-      <div class="stat"><b>${u.facing < 0 ? '-' : pct(u.block)}</b><span>Block</span></div>
-      <div class="stat"><b>${u.rec}</b><span>Recover</span></div>
-      <div class="stat"><b>${u.move}</b><span>Move</span></div>
-      <div class="stat"><b>${rangeLabel(u)}</b><span>Range</span></div>
-    </div>`;
-  }
-
   function rangeText(r) {
+    if (r[1] === 0) return 'on itself';
     if (r[0] === 1 && r[1] === 1) return 'next to it';
-    if (r[0] === 1) return 'up to ' + r[1] + ' tiles away';
+    if (r[0] <= 1) return 'up to ' + r[1] + ' tiles away';
     return r[0] + '-' + r[1] + ' tiles away';
   }
 
-  function abilityText(u) {
+  function statsHTML(u) {
     const a = u.act;
-    const p = u.pow;
+    const heal = a.kind === 'pray' || a.kind === 'drum';
+    const poisoner = a.fx && a.fx.poison && !a.dmg;
+    const powLabel = heal ? 'Heal' : poisoner ? 'Poison' : 'Power';
+    const powVal = heal ? E.healAmount(u, a) : poisoner ? E.poisonDamage(u, a) : u.pow || '-';
+    const st = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+    return `<div class="stats">${st(powVal, powLabel)}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(u.rec, 'Recover')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
+  }
+
+  function fxText(u, a) {
+    const fx = E.hitFx(u, a);
+    const bits = [];
+    if (fx.para) bits.push(`paralyzes for ${fx.para} turn${fx.para > 1 ? 's' : ''}`);
+    if (fx.poison) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
+    if (fx.burn) bits.push(`burns for ${fx.burn[0]} turns (${fx.burn[1]} a turn)`);
+    if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
+    if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
+    if (fx.mark) bits.push(`marks for ${fx.mark} turns (+25% damage taken)`);
+    if (fx.knock) bits.push('knocks back 1 tile');
+    return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
+  }
+
+  function usesText(a) {
+    if (!a.uses) return '';
+    const left = a.left === Infinity || a.left == null ? a.uses : a.left;
+    return ` ${left} of ${a.uses} use${a.uses > 1 ? 's' : ''} left.`;
+  }
+
+  // Plain-language rules text for one of a unit's acts.
+  function actText(u, a) {
+    const base = a.fixed != null ? Math.round(a.fixed * (a.dmg === 'magic' ? 1 + (u.props.magicMult || 0) : 1)) : Math.round(u.pow * (a.mult || 1));
+    const dt = a.dmg === 'magic' ? 'magic' : 'physical';
     const ff = a.ff ? ' Hits allies too.' : '';
+    let t;
     switch (a.kind) {
       case 'strike':
-        return `${p} ${a.dmg === 'magic' ? 'magic' : 'physical'} damage to one enemy ${rangeText(a.range)}.`;
+        t = a.dmg ? `${base} ${dt} damage to one enemy ${rangeText(a.range)}.` : `Targets one enemy ${rangeText(a.range)}.`;
+        break;
       case 'cleave':
-        return `${p} physical damage to every adjacent enemy.`;
+        t = `${base} ${dt} damage to every adjacent enemy.`;
+        break;
       case 'quake':
-        return `${p} physical damage to an adjacent enemy and every enemy beside it.`;
+        t = `${base} ${dt} damage to an adjacent enemy and every enemy beside it.`;
+        break;
       case 'blast':
-        return `${a.dmg ? p + ' magic damage to' : 'Strikes'} a ${a.pattern === 'square' ? '3x3' : '5-tile'} burst ${rangeText(a.range)}.${
-          a.fx && a.fx.para ? ` Paralyzes enemies for ${a.fx.para} turn${a.fx.para > 1 ? 's' : ''}.` : ''
-        }${ff}`;
+        t = `${a.dmg ? base + ' ' + dt + ' damage to' : 'Affects enemies in'} a ${a.pattern === 'square' ? '3x3' : '5-tile'} area ${rangeText(a.range)}.${ff}`;
+        break;
       case 'line':
-        return `${p} magic damage to every unit in a straight line up to ${a.len} tiles.${a.ff ? ' Hits allies too.' : ' Passes through allies.'}`;
+        t = `${base} ${dt} damage to every unit in a straight line up to ${a.len} tiles.${a.ff ? ' Hits allies too.' : ' Passes through allies.'}`;
+        break;
       case 'cone':
-        return `${p} magic damage across a cone ${a.len} tiles deep.${ff}`;
+        t = `${base} ${dt} damage across a cone ${a.len} tiles deep.${ff}`;
+        break;
       case 'cross':
-        return `${p} magic damage to enemies in all four directions, up to ${a.len} tiles.`;
+        t = `${base} ${dt} damage to enemies in all four directions, up to ${a.len} tiles.`;
+        break;
       case 'nova':
-        return a.dmg
-          ? `${p} magic damage to every enemy within ${a.radius} tiles.`
-          : `Poisons every enemy within ${a.radius} tiles for ${a.fx.poison} turns: ${E.poisonDamage(u)} damage a turn, and no healing.`;
+        t = a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.` : `Affects every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.`;
+        break;
       case 'pray':
-        return `Heals ${E.healAmount(u)} HP to every ally within ${a.radius} tiles.${a.cleanse ? ' Also cures poison and paralysis.' : ''}`;
+        t = `Heals ${E.healAmount(u, a)} HP to every ally within ${a.radius} tiles.${a.cleanse ? ' Also cures poison, burns, paralysis and roots.' : ''}`;
+        break;
+      case 'drum':
+        t = `Allies within ${a.radius} tiles ${a.noHeal ? '' : 'heal ' + E.healAmount(u, a) + ' and '}fly into a frenzy: +25% damage for 2 turns.`;
+        break;
+      case 'heal':
+        t = `Heals one ally ${rangeText(a.range)} for ${E.healAmount(u, a)}${a.cure ? ' and cures poison and burns' : ''}.`;
+        break;
+      case 'shield':
+        t = `An ally ${rangeText(a.range)} gains a shield that absorbs ${a.amount || 15} damage.`;
+        break;
+      case 'rally':
+        t = `Allies within ${a.radius} tiles recover 1 turn sooner and shake off paralysis and roots.`;
+        break;
       case 'grow':
-        return `Raises a shrub on an empty tile up to ${a.range[1]} tiles away. Up to 3 at once.`;
+        t = `Raises a shrub on an empty tile up to ${a.range[1]} tiles away. Up to ${3 + (u.props.shrubs || 0)} at once.`;
+        break;
+      case 'raise':
+        t = `Raises a skeleton on an empty tile up to ${a.range[1]} tiles away, ${a.max || 3} at most. They crumble when it dies.`;
+        break;
+      case 'revive':
+        t = `An ally that fell within ${a.range[1]} tiles rises again with ${Math.round((a.pct || 0.4) * 100)}% HP.`;
+        break;
+      case 'detonate':
+        t = `Explodes: ${base} magic damage to everything next to it, friend or foe. It dies.`;
+        break;
+      case 'leap':
+        t = `Leaps ${a.range[0]}-${a.range[1]} tiles over anything and strikes every adjacent enemy for ${base}.`;
+        break;
+      case 'blink':
+        t = `Instead of walking, teleports up to ${a.range[1]} tiles. It can still attack afterward.`;
+        break;
+      case 'shadowstrike':
+        t = `Teleports behind an enemy ${rangeText(a.range)} and strikes its back for ${base}.`;
+        break;
+      case 'hazard': {
+        const where = a.range[1] === 0 ? 'around itself' : `${a.pattern === 'single' ? 'an empty tile' : 'a 5-tile area'} ${a.range[0] === 0 ? 'up to ' + a.range[1] + ' tiles away' : rangeText(a.range)}`;
+        if (a.hz === 'smoke') t = `Smoke ${where} for ${a.turns} turns: units inside cannot be targeted from more than 1 tile away.`;
+        else if (a.hz === 'fire') t = `Sets ${where} ablaze for ${a.turns} turns: enemies that enter it or start their turn in it take ${a.dmgFixed || 8}.`;
+        else t = `Caltrops on ${where}: the first enemy to step there stops, takes 6 and is rooted.`;
+        break;
+      }
       default:
-        return UNITS[u.type].desc;
+        t = UNITS[u.type].desc;
     }
+    return t + fxText(u, a) + usesText(a);
   }
 
   const TRAIT_TEXT = {
-    backstab: 'Backstab: +50% damage from behind.',
-    deathmark: 'Deathmark: double damage from behind.',
-    shadowstep: 'Shadowstep: moves through enemy units.',
-    stoneskin: 'Stoneskin: immune to poison and paralysis.',
-    guardian: 'Guardian: adjacent allies take 20% less damage.',
-    bulwark: 'Bulwark: Guardian protection is 35%.',
-    charge: 'Charge: +30% damage after moving 3+ tiles first.',
-    trample: 'Trample: Charge bonus is +60%.',
-    rage: 'Rage: +30% damage below half HP.',
-    bloodrage: 'Bloodrage: Cleave heals 5 per enemy struck.',
-    flying: 'Flying: passes over units, water, lava and rocks.',
-    immobile: 'Rooted: cannot move.',
-    regrowth: 'Regrowth: heals 4 HP each turn.',
-    aura_barrier: 'Barrier Aura: allies within 2 tiles take half magic damage and are immune to poison and paralysis.',
-    aegisfield: 'Aegis Field: aura reaches 3 tiles and softens physical blows by 15%.',
-    shieldwall: 'Shield Wall: full block from the sides.',
-    pierce: 'Bodkin Arrows: ignores half of armor.',
-    ambush: 'Ambusher: +50% damage from behind.',
-    thornwall: 'Thornwall: shrubs are tougher and prick melee attackers.',
-    spellward: 'Spellward: takes half magic damage.',
+    shadowstep: 'Slips through enemy units.',
+    stoneskin: 'Immune to poison and paralysis.',
+    flying: 'Flies over units, water, lava and rocks.',
+    immobile: 'Rooted in place: cannot move.',
+    shieldwall: 'Full block from the sides.',
+    retaliate: 'Strikes back for half power when hit in melee.',
+    bloodrage: 'Cleave heals 5 HP per enemy struck.',
+    bloodlust: 'Skips its recovery after slaying an enemy.',
+    secondwind: 'Once per battle, survives a fatal blow with 1 HP.',
+    phoenix: 'The first time it falls, it rises again with half HP.',
+    steadfast: 'Immune to paralysis, roots and knockback.',
+    poisonproof: 'Immune to poison.',
+    paraproof: 'Immune to paralysis.',
+    undead: 'Undead: immune to poison.',
+    aura_barrier: 'Barrier Aura: allies within reach gain +25% magic resistance and are immune to poison and paralysis.',
+    aegisfield: 'Its aura also softens physical blows by 15%.',
+    steelfield: 'Its aura also grants +10% armor.',
+    auramend: 'Allies in its aura heal 4 HP each turn.',
+    purge: 'Allies in its aura are cured of roots and burns each turn.',
+    thornwall: 'Its shrubs are tougher and prick melee attackers.',
+    ironwood: 'Its shrubs have 40% armor and magic resistance.',
+    ridedown: 'After moving 3 or more tiles, its Lance knocks the target back.',
+    stormcaller: 'Each turn, lightning strikes the nearest enemy within 3 tiles for 8.',
+    midas: 'Every enemy it slays earns 6 gold.',
+    thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
+    volatile: 'Explodes when destroyed, hurting everything next to it.',
+    trollblood: 'Regenerates unless magic or fire hurt it since its last turn.',
+    cart: 'Flees 2 tiles a turn toward the left edge, and escapes there.',
+    big: 'Huge: cannot be knocked back.',
+    martyr: 'When it falls, heals allies within 2 tiles for 20.',
+    structure: 'A structure: it does not need to fall for a rout.',
   };
 
   function traitLines(u) {
     const out = [];
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
-    if (u.boss) out.push('Boss: immune to paralysis.');
-    return out;
+    const P = u.props;
+    if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
+    if (P.magicGuard) out.push(`Adjacent allies take ${pct(P.magicGuard)} less magic damage.`);
+    if (P.regen) out.push(`Heals ${P.regen} HP each turn.`);
+    if (P.lifesteal) out.push(`Heals for ${pct(P.lifesteal)} of the damage it deals.`);
+    if (P.thorns) out.push(`Melee attackers take ${P.thorns} damage.`);
+    if (P.backMult) out.push(`+${pct(P.backMult)} damage from behind.`);
+    if (P.flankMult) out.push(`+${pct(P.flankMult)} damage from the side or behind.`);
+    if (P.chargeMult) out.push(`Charge: +${pct(P.chargeMult)} damage after moving 3 or more tiles.`);
+    if (P.execMult) out.push(`+${pct(P.execMult)} damage to targets below half HP.`);
+    if (P.rageMult) out.push(`+${pct(P.rageMult)} damage while below half HP.`);
+    if (P.pierce) out.push(`Ignores ${pct(P.pierce)} of armor.`);
+    if (P.packMult) out.push(`+${pct(P.packMult)} damage when an ally flanks the same target.`);
+    if (P.bonusMagic) out.push(`Hits deal ${P.bonusMagic} bonus magic damage.`);
+    if (P.dmgMult) out.push(`+${pct(P.dmgMult)} damage.`);
+    if (P.vs) for (const k in P.vs) out.push(`+${pct(P.vs[k])} damage against ${k === 'greenskin' ? 'orcs and goblins' : k === 'big' ? 'huge foes' : k === 'structure' ? 'structures' : k === 'caster' ? 'spellcasters' : k === 'spirit' ? 'spirits' : k}.`);
+    if (P.vsArmored) out.push(`+${pct(P.vsArmored)} damage against armored targets.`);
+    if (u.boss) out.push('Boss: immune to paralysis and knockback.');
+    return [...new Set(out)];
   }
 
   function hpClass(f) {
     return f > 0.5 ? '' : f > 0.25 ? 'mid' : 'low';
+  }
+
+  function statusChips(u) {
+    const chips = [];
+    if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
+    if (u.poison) chips.push(`<span class="chip good">Poisoned ${u.poison.turns}</span>`);
+    if (u.burn) chips.push(`<span class="chip warn">Burning ${u.burn.turns}</span>`);
+    if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
+    if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
+    if (u.mark > 0) chips.push(`<span class="chip bad">Marked ${u.mark}</span>`);
+    if (u.frenzy > 0) chips.push(`<span class="chip bad">Frenzy ${u.frenzy}</span>`);
+    if (u.shield > 0) chips.push(`<span class="chip">${ic('shield')} Shield ${u.shield}</span>`);
+    return chips;
   }
 
   function unitInfoHTML(u, opts) {
@@ -267,34 +391,65 @@
     if (o.status) {
       const B = UI.battle;
       const acting = B && B.s.act && B.s.act.uid === u.uid;
-      if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
-      if (u.poison) chips.push(`<span class="chip good">Poisoned ${u.poison.turns}</span>`);
+      chips.push(...statusChips(u));
       if (acting) chips.push('<span class="chip warn">Acting</span>');
       else if (u.activated) chips.push('<span class="chip">Done this turn</span>');
       else if (u.wait > 0) chips.push(`<span class="chip">${ic('hourglass')} Recovering ${u.wait}</span>`);
-      else if (!u.nonCombat && u.act.kind !== 'none' && u.para === 0) chips.push('<span class="chip good">Ready</span>');
+      else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
     }
-    if (o.wounded) chips.push('<span class="chip bad">Wounded</span>');
-    for (const t of u.tal) chips.push(`<span class="chip magic">${esc(TALENTS[t].name)}</span>`);
+    if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
     return `<div class="unitcard">
       <canvas class="portrait" data-p="${u.type}:${u.team}"></canvas>
-      <div class="name"><b class="team-${u.team}">${esc(o.name || u.name)}</b><span class="stars">${stars(u.rank)}</span>
-        <span class="small muted">${T.name !== (o.name || u.name) ? esc(T.name) : ''}</span></div>
+      <div class="name"><b class="team-${u.team}">${esc(o.name || u.name)}</b><span class="stars">${stars(u.level)}</span>
+        <span class="small muted">${T.name !== (o.name || u.name) ? esc(T.name) : ''}${u.level ? ' · Lv ' + u.level : ''}</span></div>
       <div class="hp"><div class="hpbar ${hpClass(f)}"><i style="width:${Math.round(f * 100)}%"></i></div><span>${u.hp}/${u.maxHp}</span></div>
     </div>
     ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
   }
 
+  // The attack and every active ability of a unit, as rules text.
+  function actsHTML(u) {
+    return u.acts
+      .map((a, i) => `<p class="ability"><b>${esc(a.name)}${i > 0 ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p>`)
+      .join('');
+  }
+
+  function levelBadge(lv) {
+    return `<span class="lvl lv${lv}">Lv${lv}</span>`;
+  }
+
   function resbar(run) {
+    const li = R.levelInfo(run);
+    const frac = li.max ? 1 : (li.xp - li.from) / (li.to - li.from);
     return `<div class="resbar">
       <span class="res gold" title="Gold">${ic('gold')}<span class="num">${run.gold}</span></span>
-      <span class="res lives" title="Banners left">${ic('banner')}<span class="num">${run.banners}/${run.maxBanners}</span></span>
-      <span class="res" title="Army size">${ic('army')}<span class="num">${run.roster.length}/${R.MAX_ROSTER}</span></span>
+      <button class="res cmdlv" data-cmd title="Commander level">${ic('crown')}<span class="num">Lv ${li.lv}</span>
+        <span class="xpbar"><i style="width:${Math.round(frac * 100)}%"></i></span></button>
+      <span class="res" title="Supply each battle">${ic('command')}<span class="num">${R.supplyFor(run)}</span></span>
+      <span class="res" title="Units allowed on the field">${ic('army')}<span class="num">${R.unitCap(run)}</span></span>
     </div>`;
   }
 
-  function relicChips(run) {
-    return run.relics.map((id) => `<button class="relic" data-relic="${id}">${ic('gem')}${esc(RELICS[id].name)}</button>`).join('');
+  function commanderSheet() {
+    const run = UI.run;
+    const li = R.levelInfo(run);
+    const rows = COMMAND.slice(1)
+      .map((c, i) => {
+        const lv = i + 1;
+        return `<tr class="${lv === li.lv ? 'cur' : lv < li.lv ? 'past' : ''}"><td>${lv}</td><td>${c.xp}</td><td>${c.supply}</td><td>${c.cap}</td></tr>`;
+      })
+      .join('');
+    openSheet(
+      `${sheetHead('Commander level', `${li.max ? 'Maximum level reached.' : `${li.xp} XP · ${li.to - li.xp} XP to level ${li.lv + 1}`}`)}
+      <p class="muted">Victories earn XP. Each commander level raises the Supply you can spend in every battle, and sometimes how many units may take the field. Elites, bosses and bonus goals pay more XP.</p>
+      <table class="lvtable"><thead><tr><th>Level</th><th>XP</th><th>Supply</th><th>Units</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="small muted">Right now: ${R.supplyFor(run)} Supply and ${R.unitCap(run)} units, after relics and bonuses.</p>
+      <div class="actions"><button class="btn primary" data-close>Got it</button></div>`
+    );
+  }
+
+  function bindResbar(el) {
+    for (const b of $$('[data-cmd]', el)) b.addEventListener('click', () => commanderSheet());
   }
 
   function bindRelics(el) {
@@ -318,6 +473,7 @@
     v.scrollTop = 0;
     drawPortraits(v);
     bindRelics(v);
+    bindResbar(v);
     return v;
   }
 
@@ -369,6 +525,13 @@
     b.className = 'banner' + (enemy ? ' enemy' : '');
     void b.offsetWidth;
     b.classList.add('show');
+    // Hiding the battle screen restarts a CSS animation, so a finished banner
+    // would replay over the next War Room.
+    b.onanimationend = clearBanner;
+  }
+
+  function clearBanner() {
+    $('#banner').className = 'banner';
   }
 
   // ------------------------------------------------------------ title
@@ -390,12 +553,12 @@
     terrain[2 * 5 + 4] = 2;
     b.setBoard(5, 5, terrain, 'grass');
     const list = [
-      { uid: 1, type: 'knight', team: 'P', x: 2, y: 3, facing: 0, hp: 52, maxHp: 52 },
+      { uid: 1, type: 'knight', team: 'P', x: 2, y: 3, facing: 0, hp: 52, maxHp: 52, level: 2 },
       { uid: 2, type: 'archer', team: 'P', x: 3, y: 4, facing: 0, hp: 34, maxHp: 34 },
       { uid: 3, type: 'pyromancer', team: 'P', x: 1, y: 4, facing: 0, hp: 28, maxHp: 28 },
-      { uid: 4, type: 'knight', team: 'E', x: 2, y: 2, facing: 2, hp: 52, maxHp: 52 },
-      { uid: 5, type: 'golem', team: 'E', x: 3, y: 1, facing: 2, hp: 74, maxHp: 74 },
-      { uid: 6, type: 'witch', team: 'E', x: 1, y: 0, facing: 2, hp: 28, maxHp: 28 },
+      { uid: 4, type: 'orc', team: 'E', x: 2, y: 2, facing: 2, hp: 46, maxHp: 46 },
+      { uid: 5, type: 'brute', team: 'E', x: 3, y: 1, facing: 2, hp: 64, maxHp: 64 },
+      { uid: 6, type: 'goblin_archer', team: 'E', x: 1, y: 0, facing: 2, hp: 22, maxHp: 22 },
     ];
     for (const u of list) b.vis.set(u.uid, b.makeVis(u));
     b.interactive = false;
@@ -406,7 +569,7 @@
     const beat = () => {
       const k = step++ % 3;
       if (k === 0) {
-        b.projectile([3, 4], [3, 1], 'arrow', 320).then(() => b.addText(3, 1, '10', '#fff', { height: 44 }));
+        b.projectile([3, 4], [3, 1], 'arrow', 320).then(() => b.addText(3, 1, '13', '#fff', { height: 52 }));
       } else if (k === 1) {
         const v = b.vis.get(1);
         b.tween(120, (t) => (v.oy = -t * b.th * 0.35)).then(() => {
@@ -415,12 +578,8 @@
         });
       } else {
         b.projectile([1, 4], [2, 1], 'fire', 420).then(() => {
-          b.flashTiles(
-            [[2, 1], [1, 1], [3, 1], [2, 0], [2, 2]],
-            'rgba(255,140,40,ALPHA)',
-            420
-          );
-          b.addText(3, 1, '16', '#d7b4ff', { height: 44 });
+          b.flashTiles([[2, 1], [1, 1], [3, 1], [2, 0], [2, 2]], 'rgba(255,140,40,ALPHA)', 420);
+          b.addText(3, 1, '18', '#d7b4ff', { height: 52 });
         });
       }
     };
@@ -433,18 +592,19 @@
     if (!UI.run) UI.run = R.load();
     const meta = R.loadMeta();
     const run = UI.run;
+    const pendingBattle = run && run.pending && run.pending.type === 'battle';
     const v = showView(
       `<div class="wrap">
         <div class="title-grid">
           <div class="wrap" style="margin:0;gap:14px">
             <p class="eyebrow">A tactics roguelike</p>
             <h1 class="wordmark">Arena<br>Gauntlet</h1>
-            <p class="tagline">Scout the enemy army, field the counter, and fight your way through three acts of isometric arena battles.</p>
+            <p class="tagline">Scout the enemy, spend your Supply on the perfect counter, and fight through three acts of isometric battles. Lose, re-plan, and try again.</p>
             <div class="title-actions">
-              ${run ? `<button class="btn primary" id="tCont">${ic('flag')} Continue · ${ACTS[run.act].short}</button>` : ''}
+              ${run ? `<button class="btn primary" id="tCont">${ic('flag')} Continue · ${ACTS[run.act].short}${pendingBattle ? ' · ' + esc(run.pending.enc.name) : ''}</button>` : ''}
               <button class="btn ${run ? '' : 'primary'}" id="tNew">${ic('swords')} New campaign</button>
               <div class="row"><button class="btn grow" id="tHelp">${ic('help')} How to play</button>
-              <button class="btn grow" id="tCodex">${ic('book')} Units</button></div>
+              <button class="btn grow" id="tCodex">${ic('book')} Codex</button></div>
             </div>
             <p class="meta-line">${meta.runs ? `Campaigns fought: ${meta.runs} · Victories: ${meta.wins}` : 'Inspired by the classic isometric arena tactics games.'}</p>
           </div>
@@ -468,25 +628,27 @@
   function newCampaign() {
     let wb = WARBANDS[0].id;
     let diff = 'knight';
+    const itemName = ([kind, id]) => (kind === 'skill' ? SKILLS[id] : GEAR[id]).name;
     const render = () => {
       const v = showView(
         `<div class="wrap">
           <div class="row"><button class="btn ghost" id="ncBack">Back</button></div>
           <div><p class="eyebrow">New campaign</p><h2>Choose your warband</h2></div>
+          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Choose wisely who fights.</p>
           <div class="choice-grid">${WARBANDS.map(
             (w) => `<button class="card ${w.id === wb ? 'selected' : ''}" data-wb="${w.id}">
               <div class="unit-strip">${w.units.map((t) => `<canvas data-p="${t}:P"></canvas>`).join('')}</div>
               <div class="title">${esc(w.name)}</div>
               <div class="desc">${esc(w.desc)}</div>
               <div class="small">${w.units.map((t) => UNITS[t].name).join(', ')}</div>
-              <div class="chips"><span class="chip magic">${ic('gem')} ${esc(RELICS[w.relic].name)}</span><span class="chip warn">${ic('gold')} ${w.gold}</span></div>
+              <div class="chips"><span class="chip magic">${ic('gem')} ${esc(RELICS[w.relic].name)}</span>${(w.items || []).map((it) => `<span class="chip">${ic(it[0] === 'skill' ? 'scroll' : 'sword')} ${esc(itemName(it))}</span>`).join('')}<span class="chip warn">${ic('gold')} ${w.gold}</span></div>
             </button>`
           ).join('')}</div>
           <h3>Difficulty</h3>
           <div class="seg">${DIFFICULTIES.map(
             (d) => `<button class="card ${d.id === diff ? 'selected' : ''}" data-diff="${d.id}"><div class="title" style="font-size:1.15rem">${d.name}</div><div class="desc small">${esc(d.desc)}</div></button>`
           ).join('')}</div>
-          <button class="btn primary wide" id="ncGo">${ic('swords')} March to the arena</button>
+          <button class="btn primary wide" id="ncGo">${ic('swords')} March to the Borderlands</button>
         </div>`
       );
       $('#ncBack', v).onclick = () => title();
@@ -508,8 +670,8 @@
         R.save(UI.run);
         sfx('turn');
         mapScreen();
-        if (!UI.prefs.seenHelp) {
-          UI.prefs.seenHelp = true;
+        if (!UI.prefs.seenHelp2) {
+          UI.prefs.seenHelp2 = true;
           savePrefs();
           helpSheet();
         }
@@ -521,11 +683,11 @@
   // ------------------------------------------------------------ map
 
   const NODE_INFO = {
-    battle: { icon: 'swords', name: 'Battle', desc: 'A standard enemy warband.' },
-    elite: { icon: 'skull', name: 'Elite', desc: 'A tougher warband. Victory earns a relic.' },
+    battle: { icon: 'swords', name: 'Battle', desc: 'A standard enemy warband. Victory pays XP, gold and spoils.' },
+    elite: { icon: 'skull', name: 'Elite', desc: 'A tougher warband. Pays more XP and a relic.' },
     event: { icon: 'event', name: 'Unknown', desc: 'Something waits on the road.' },
-    shop: { icon: 'bag', name: 'Merchant', desc: 'Spend gold on recruits, talents and relics.' },
-    rest: { icon: 'fire', name: 'Campfire', desc: 'Rest to heal wounds and raise a Banner, or train a unit.' },
+    shop: { icon: 'bag', name: 'Merchant', desc: 'Recruits, skills, gear, enchantments and relics for gold.' },
+    rest: { icon: 'fire', name: 'Campfire', desc: 'Drill for XP, study a skill, or tinker with gear.' },
     treasure: { icon: 'chest', name: 'Treasure', desc: 'A relic and some gold for the taking.' },
     boss: { icon: 'crown', name: 'Boss', desc: '' },
   };
@@ -556,6 +718,7 @@
       pos = (n) => (n.id === 'boss' ? [W / 2, top] : [70 + n.col * 90 + n.jx * 24, top + (rows - n.row) * rowH]);
     }
     const visited = new Set(run.visited.filter((v) => v.startsWith(run.act + ':')).map((v) => v.slice(2)));
+    const bossName = UNITS[R.bossOf(run)].name;
     let lines = '';
     let nodes = '';
     for (const n of run.map.nodes) {
@@ -585,25 +748,35 @@
         <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${isAvail || isPos ? 3 : 2}"/>
         ${isPos ? `<circle r="${r - 4}" fill="none" stroke="#f3e6c8" stroke-width="1.5"/>` : ''}
         <svg x="${-r * 0.55}" y="${-r * 0.55}" width="${r * 1.1}" height="${r * 1.1}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-${info.icon}"/></svg>
-        ${n.id === 'boss' ? `<text y="${r + 18}" text-anchor="middle" font-family="Grenze Gotisch, Georgia, serif" font-size="17" fill="#5b3417">${esc(UNITS[ACTS[run.act].boss].name)}</text>` : ''}
+        ${n.id === 'boss' ? `<text y="${r + 18}" text-anchor="middle" font-family="Grenze Gotisch, Georgia, serif" font-size="17" fill="#5b3417">${esc(bossName)}</text>` : ''}
         <circle r="${r + 10}" fill="transparent"/>
       </g>`;
     }
     return `<svg class="mapsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Campaign map">${lines}${nodes}</svg>`;
   }
 
+  function nodeDesc(run, n) {
+    const info = NODE_INFO[n.kind];
+    if (n.kind === 'boss') {
+      const b = UNITS[R.bossOf(run)];
+      return `${b.name}. ${b.desc}`;
+    }
+    if (n.kind === 'battle' || n.kind === 'elite') return `${info.desc} Victory: +${R.battleXp(run, n.kind)} XP.`;
+    return info.desc;
+  }
+
   function mapFoot(run) {
     const n = UI.mapSel && R.getNode(run, UI.mapSel);
     if (!n) return `<span class="muted grow">Tap a glowing stop on the map to choose your path.</span>`;
     const info = NODE_INFO[n.kind];
-    const desc = n.kind === 'boss' ? `${UNITS[ACTS[run.act].boss].name}. ${UNITS[ACTS[run.act].boss].desc}` : info.desc;
-    return `<div class="grow" style="min-width:0"><b>${info.name}</b><div class="small muted">${esc(desc)}</div></div>
+    return `<div class="grow" style="min-width:0"><b>${info.name}</b><div class="small muted">${esc(nodeDesc(run, n))}</div></div>
       <button class="btn primary" id="mGo">${ic(info.icon)} Enter</button>`;
   }
 
   function mapScreen() {
     const run = UI.run;
     UI.battle = null;
+    UI.wr = null;
     const act = ACTS[run.act];
     const avail = R.availableNodes(run).map((n) => n.id);
     if (UI.mapSel && !avail.includes(UI.mapSel)) UI.mapSel = null;
@@ -625,24 +798,22 @@
       'map-screen'
     );
     UI.mapWide = wide;
-    const bindFoot = () => {
-      const go = $('#mGo', v);
-      if (go)
-        go.onclick = () => {
-          const id = UI.mapSel;
-          UI.mapSel = null;
-          if (R.enterNode(run, id)) {
-            sfx('select');
-            route();
-          }
-        };
-    };
+    const go = $('#mGo', v);
+    if (go)
+      go.onclick = () => {
+        const id = UI.mapSel;
+        UI.mapSel = null;
+        if (R.enterNode(run, id)) {
+          sfx('select');
+          route();
+        }
+      };
     for (const g of $$('[data-node]', v)) {
       const pick = () => {
         const id = g.dataset.node;
         if (!avail.includes(id)) {
           const n = R.getNode(run, id);
-          toast(NODE_INFO[n.kind].name + (n.kind === 'boss' ? ': ' + UNITS[act.boss].name : ': ' + NODE_INFO[n.kind].desc));
+          toast(NODE_INFO[n.kind].name + ': ' + nodeDesc(run, n));
           return;
         }
         UI.mapSel = id;
@@ -654,7 +825,6 @@
         if (e.key === 'Enter' || e.key === ' ') pick();
       });
     }
-    bindFoot();
     $('#mArmy', v).onclick = () => armySheet(() => mapScreen());
     $('#mMenu', v).onclick = () => menuSheet();
     $('#mRelics', v).onclick = () => relicSheet();
@@ -667,9 +837,9 @@
       `${sheetHead('Menu')}
       <div class="army-list">
         <button class="btn wide" id="muHelp">${ic('help')} How to play</button>
-        <button class="btn wide" id="muCodex">${ic('book')} Units</button>
+        <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
-        ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat (lose a Banner)</button>` : ''}
+        ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
         <button class="btn wide" id="muTitle">Save and quit to title</button>
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
       </div>`,
@@ -683,12 +853,14 @@
         $('#muTitle', sh).onclick = () => {
           closeSheet();
           if (UI.board) UI.board.stop();
+          UI.battle = null;
+          UI.wr = null;
           title();
         };
         if ($('#muRetreat', sh))
           $('#muRetreat', sh).onclick = async () => {
             closeSheet();
-            if (!(await confirmSheet('Retreat?', 'Retreating counts as a defeat: you lose a Banner and must fight this battle again.', 'Retreat', 'Keep fighting', true))) return;
+            if (!(await confirmSheet('Retreat?', 'The battle counts as lost. You go back to the war room to change your army and try again, as many times as you like.', 'Retreat', 'Keep fighting', true))) return;
             const B = UI.battle;
             if (!B || B.busy) return;
             E.forfeit(B.s);
@@ -710,6 +882,11 @@
     );
   }
 
+  function relicCard(id, attrs) {
+    const r = RELICS[id];
+    return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${r.tier}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
+  }
+
   function relicSheet() {
     const run = UI.run;
     openSheet(
@@ -720,99 +897,339 @@
     );
   }
 
-  // ------------------------------------------------------------ army
+  // ------------------------------------------------------------ army and items
 
-  function armySheet(after) {
+  function itemKindLabel(it) {
+    return it.kind === 'skill' ? 'Skill' : it.kind === 'gear' ? 'Gear' : 'Enchantment scroll';
+  }
+
+  function itemCost(it) {
+    const d = R.itemDef(it);
+    return it.kind === 'scroll' ? `+${d.surcharge} Supply on its unit` : `${d.cost} Supply`;
+  }
+
+  function armySheet(after, tab) {
     const run = UI.run;
-    const rows = run.roster
-      .map((u) => {
-        const c = R.promoteCost(run, u);
-        return `<button class="army-row" data-rid="${u.id}">
-          <canvas class="portrait" data-p="${u.type}:P"></canvas>
-          <div class="nm" style="min-width:0"><b>${esc(u.name)}</b> <span class="stars">${stars(u.rank)}</span>
-            <div class="small muted">${UNITS[u.type].name} · ${UNITS[u.type].cost} CP${u.talents.length ? ' · ' + u.talents.map((t) => TALENTS[t].name).join(', ') : ''}</div></div>
-          <div class="chips" style="justify-content:flex-end">${u.wounded ? '<span class="chip bad">Wounded</span>' : ''}${
-            c != null ? `<span class="chip ${run.gold >= c ? 'warn' : ''}">${ic('up')} ${c}</span>` : ''
-          }</div></button>`;
+    const t = tab || UI.armyTab || 'units';
+    UI.armyTab = t;
+    let body = '';
+    if (t === 'units') {
+      body = `<div class="army-list">${run.roster
+        .map((r) => {
+          const deployed = UI.wr && UI.wr.dep.has(r.id);
+          return `<button class="army-row" data-rid="${r.id}">
+            <canvas class="portrait" data-p="${r.type}:P"></canvas>
+            <div class="nm" style="min-width:0"><b>${esc(r.name)}</b> ${levelBadge(r.load.lv)}
+              <div class="small muted">${esc(UNITS[r.type].name)} · ${esc(ABILITIES[r.load.a1].name)}${r.load.lv >= 2 ? ' · ' + esc(ABILITIES[r.load.a2].name) : ''}</div></div>
+            <div class="chips" style="justify-content:flex-end">${r.enchant ? `<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</span>` : ''}${deployed ? '<span class="chip good">Deployed</span>' : ''}
+              <span class="chip warn">${ic('command')} ${R.unitCost(run, r)}</span></div></button>`;
+        })
+        .join('')}</div>`;
+    } else if (t === 'items') {
+      const group = (kind, title) => {
+        const list = run.items.filter((i) => i.kind === kind);
+        if (!list.length) return '';
+        return `<div class="eyebrow">${title}</div><div class="army-list">${list
+          .map((it) => {
+            const d = R.itemDef(it);
+            const holder = R.itemHolder(run, it.uid);
+            return `<button class="army-row item-row" data-item="${it.uid}">
+              <div class="itemico ${kind}">${ic(kind === 'skill' ? 'scroll' : kind === 'gear' ? 'sword' : 'gem')}</div>
+              <div class="nm" style="min-width:0"><b>${esc(d.name)}</b><div class="small muted">${esc(d.desc)}</div></div>
+              <div class="chips" style="justify-content:flex-end"><span class="chip warn">${esc(itemCost(it))}</span>${holder ? `<span class="chip good">${esc(holder.name)}</span>` : kind === 'scroll' ? '<span class="chip magic">Bind</span>' : '<span class="chip">Free</span>'}</div></button>`;
+          })
+          .join('')}</div>`;
+      };
+      body =
+        group('skill', 'Skills') + group('gear', 'Gear') + group('scroll', 'Enchantment scrolls') ||
+        '<p class="muted">No skills, gear or scrolls yet. Win battles, visit merchants, rest at campfires and explore events to find them.</p>';
+    } else {
+      body = `<div class="army-list">${run.relics
+        .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .join('')}</div>`;
+    }
+    openSheet(
+      `${sheetHead('Your army', `${run.roster.length}/${R.MAX_ROSTER} units · ${ic('gold')} ${run.gold} gold · Commander Lv ${R.commanderLevel(run)}`)}
+      <div class="tabs"><button class="btn ${t === 'units' ? 'on' : ''}" data-tab="units">${ic('army')} Units</button>
+        <button class="btn ${t === 'items' ? 'on' : ''}" data-tab="items">${ic('bag')} Items (${run.items.length})</button>
+        <button class="btn ${t === 'relics' ? 'on' : ''}" data-tab="relics">${ic('gem')} Relics</button></div>
+      ${t === 'units' ? '<p class="small muted">Tap a unit to set its level, abilities, skills and gear. Loadouts carry over between battles.</p>' : ''}
+      ${body}`,
+      (sh) => {
+        for (const b of $$('[data-tab]', sh)) b.onclick = () => armySheet(after, b.dataset.tab);
+        for (const b of $$('[data-rid]', sh)) b.onclick = () => loadoutSheet(b.dataset.rid, () => armySheet(after));
+        for (const b of $$('[data-item]', sh)) b.onclick = () => itemSheet(b.dataset.item, () => armySheet(after, 'items'));
+      }
+    );
+    UI.onSheetClose = after || null;
+  }
+
+  function itemSheet(uid, back) {
+    const run = UI.run;
+    const it = R.itemByUid(run, uid);
+    if (!it) return back && back();
+    const d = R.itemDef(it);
+    const holder = R.itemHolder(run, uid);
+    const after = UI.onSheetClose;
+    openSheet(
+      `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`)}
+      <p>${esc(d.desc)}</p>
+      ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'recover 2 or more turns', recovers: 'recover after acting' }[d.req] || 'qualify'}.</p>` : ''}
+      ${it.kind === 'scroll'
+        ? `<p class="hint warn">Binding is permanent: the enchantment stays with that unit for the rest of the campaign and adds ${d.surcharge} Supply to its cost. A unit can hold only one enchantment.</p>`
+        : `<p class="small muted">${holder ? `Slotted into ${esc(holder.name)}.` : 'Not slotted into anyone. Equip it from a unit\'s loadout.'}</p>`}
+      <div class="actions">
+        ${it.kind === 'scroll' ? `<button class="btn primary" id="isBind">${ic('gem')} Bind to a unit</button>` : ''}
+        ${holder ? `<button class="btn" id="isFree">Unequip from ${esc(holder.name)}</button>` : ''}
+        <button class="btn" id="isBack">Back</button>
+      </div>`,
+      (sh) => {
+        if ($('#isBind', sh))
+          $('#isBind', sh).onclick = async () => {
+            UI.onSheetClose = null;
+            const rid = await pickUnit('Bind ' + d.name, 'Choose a unit without an enchantment. This cannot be undone.', (u) => !u.enchant && D.eligible(u.type, d));
+            if (!rid) return itemSheet(uid, back);
+            const r = R.unitById(run, rid);
+            UI.onSheetClose = null;
+            if (!(await confirmSheet(`Bind ${d.name} to ${r.name}?`, `${esc(d.desc)} It is permanent, and fielding ${esc(r.name)} will cost ${d.surcharge} more Supply.`, 'Bind forever', 'Not yet'))) return itemSheet(uid, back);
+            if (R.applyScroll(run, uid, rid)) {
+              sfx('coin');
+              toast(`${r.name} is now bound with ${d.name}.`);
+              if (UI.wr) renderWarRoom();
+            }
+            UI.onSheetClose = after;
+            back && back();
+          };
+        if ($('#isFree', sh))
+          $('#isFree', sh).onclick = () => {
+            R.unassignItem(run, uid);
+            R.save(run);
+            if (UI.wr) renderWarRoom();
+            itemSheet(uid, back);
+          };
+        $('#isBack', sh).onclick = () => back && back();
+      }
+    );
+    UI.onSheetClose = after;
+  }
+
+  // ------------------------------------------------------------ loadout editor
+
+  function abilityCard(r, tier, id, locked) {
+    const ab = ABILITIES[id];
+    const on = r.load[tier === 1 ? 'a1' : 'a2'] === id;
+    return `<button class="pick ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-ab="${tier}:${id}">
+      <span class="pk-head"><b>${esc(ab.name)}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
+      <span class="pk-desc">${esc(ab.desc)}</span></button>`;
+  }
+
+  function slotButton(run, r, kind, i) {
+    const key = kind === 'skill' ? 'skills' : 'gear';
+    const uid = r.load[key][i];
+    const it = uid && R.itemByUid(run, uid);
+    const d = it && R.itemDef(it);
+    return `<button class="slot ${d ? 'full' : ''}" data-slot="${kind}:${i}">
+      <span class="itemico ${kind}">${ic(kind === 'skill' ? 'scroll' : 'sword')}</span>
+      <span class="sl-body">${d ? `<b>${esc(d.name)}</b><span class="small muted">${esc(d.desc)}</span>` : `<b class="muted">Empty ${kind} slot</b><span class="small muted">Tap to equip</span>`}</span>
+      ${d ? `<span class="cost">+${d.cost}</span>` : ''}</button>`;
+  }
+
+  // Edit one unit's level, ability picks, skills and gear. Costs update live.
+  function loadoutSheet(rid, back) {
+    const run = UI.run;
+    const r = R.unitById(run, rid);
+    if (!r) return back && back();
+    R.normalizeLoad(run, r);
+    const T = UNITS[r.type];
+    const L = r.load;
+    const u = R.unitStats(run, r, 'P');
+    const cost = R.unitCost(run, r);
+    const wr = UI.wr && UI.run.pending && UI.run.pending.type === 'battle' ? UI.wr : null;
+    const after = UI.onSheetClose;
+    let budget = '';
+    if (wr) {
+      const used = wrUsed();
+      const deployed = wr.dep.has(rid);
+      const total = deployed ? used : used + cost;
+      budget = `<div class="budget ${total > wr.supply ? 'over' : ''}">${ic('command')} ${deployed ? 'Army' : 'Army with this unit'}: <b>${total}/${wr.supply}</b> Supply${total > wr.supply ? ' · over budget' : ''}</div>`;
+    }
+    const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-lv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
+    const sl = R.slotsFor(L.lv);
+    const scrolls = run.items.filter((i) => i.kind === 'scroll' && D.eligible(r.type, ENCHANTS[i.id]));
+    const breakdown = R.costBreakdown(run, r)
+      .map((x) => `<tr><td>${esc(x.label)}</td><td>${x.cost ? x.cost : 'free'}</td></tr>`)
+      .join('');
+    const html = `${sheetHead(esc(r.name), `${esc(T.name)} · fielding costs <b class="cost-big">${cost}</b> Supply`)}
+      ${budget}
+      ${unitInfoHTML(u, { name: r.name })}
+      ${statsHTML(u)}
+      <div class="lo-sec"><div class="eyebrow">Level</div>
+        <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
+        <p class="small muted">Level 2: +20% HP, +15% power, a second ability and a second skill slot. Level 3: +40% HP, +30% power, its Mastery and a second gear slot.</p></div>
+      <div class="lo-sec"><div class="eyebrow">Ability · pick 1 of 3</div>
+        <div class="picks">${T.abilities[1].map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Level 2 ability · pick 1 of 3${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
+        <div class="picks">${T.abilities[2].map((id) => abilityCard(r, 2, id, L.lv < 2)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Mastery${L.lv < 3 ? ' <span class="lockline">unlocks at Level 3</span>' : ''}</div>
+        <div class="pick static ${L.lv < 3 ? 'locked' : 'on'}"><span class="pk-head"><b>${esc(MASTERY[r.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[r.type].desc)}</span></div></div>
+      <div class="lo-sec"><div class="eyebrow">Skills · ${sl.skills} slot${sl.skills > 1 ? 's' : ''}</div>
+        <div class="slots">${[...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slotButton(run, r, 'skill', i) : `<div class="slot locked"><span class="itemico skill">${ic('scroll')}</span><span class="sl-body"><b class="muted">Skill slot</b><span class="small muted">Unlocks at Level 2</span></span></div>`)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Gear · ${sl.gear} slot${sl.gear > 1 ? 's' : ''}</div>
+        <div class="slots">${[...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slotButton(run, r, 'gear', i) : `<div class="slot locked"><span class="itemico gear">${ic('sword')}</span><span class="sl-body"><b class="muted">Gear slot</b><span class="small muted">Unlocks at Level 3</span></span></div>`)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Enchantment</div>
+        ${r.enchant
+          ? `<div class="pick static on ench"><span class="pk-head"><b>${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</b><span class="cost">+${ENCHANTS[r.enchant].surcharge}</span></span><span class="pk-desc">${esc(ENCHANTS[r.enchant].desc)} Bound for good.</span></div>`
+          : `<p class="small muted">None. ${scrolls.length ? `You have ${scrolls.length} scroll${scrolls.length > 1 ? 's' : ''} that could be bound to this unit.` : 'Enchantment scrolls bind a permanent power to one unit.'}</p>
+            ${scrolls.length ? `<button class="btn" id="loBind">${ic('gem')} Bind a scroll…</button>` : ''}`}</div>
+      <div class="lo-sec"><div class="eyebrow">In battle</div>${actsHTML(u)}
+        ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
+      <div class="lo-sec"><div class="eyebrow">Supply cost</div><table class="costtable">${breakdown}<tr class="tot"><td>Total</td><td>${cost}</td></tr></table></div>
+      <p class="small muted">Battles: ${r.battles} · Enemies slain: ${r.kills}</p>
+      <div class="actions">
+        <button class="btn" id="loDismiss" ${run.roster.length <= 2 ? 'disabled' : ''}>Dismiss (+15 gold)</button>
+        <button class="btn primary" id="loDone">${ic('check')} Done</button>
+      </div>`;
+    const changed = () => {
+      R.save(run);
+      if (UI.wr) renderWarRoom();
+      sfx('click');
+      loadoutSheet(rid, back);
+    };
+    refreshSheet(html, (sh) => {
+      for (const b of $$('[data-lv]', sh))
+        b.onclick = () => {
+          R.setLevel(run, rid, +b.dataset.lv);
+          changed();
+        };
+      for (const b of $$('[data-ab]', sh))
+        b.onclick = () => {
+          const [tier, id] = b.dataset.ab.split(':');
+          if (+tier === 2 && L.lv < 2) toast('This pick applies once the unit is Level 2.');
+          R.setAbility(run, rid, +tier, id);
+          changed();
+        };
+      for (const b of $$('[data-slot]', sh))
+        b.onclick = () => {
+          const [kind, i] = b.dataset.slot.split(':');
+          itemPicker(rid, kind, +i, () => loadoutSheet(rid, back));
+        };
+      if ($('#loBind', sh))
+        $('#loBind', sh).onclick = async () => {
+          const pick = scrolls.length === 1 ? scrolls[0] : null;
+          if (pick) return bindFlow(pick.uid, rid, () => loadoutSheet(rid, back));
+          openSheet(
+            `${sheetHead('Choose a scroll')}<div class="army-list">${scrolls
+              .map((s) => `<button class="army-row" data-sc="${s.uid}"><div class="itemico scroll">${ic('gem')}</div><div class="nm"><b>${esc(ENCHANTS[s.id].name)}</b><div class="small muted">${esc(ENCHANTS[s.id].desc)}</div></div><span class="chip warn">+${ENCHANTS[s.id].surcharge}</span></button>`)
+              .join('')}</div><div class="actions"><button class="btn" id="scBack">Back</button></div>`,
+            (s2) => {
+              for (const b of $$('[data-sc]', s2)) b.onclick = () => bindFlow(b.dataset.sc, rid, () => loadoutSheet(rid, back));
+              $('#scBack', s2).onclick = () => loadoutSheet(rid, back);
+            }
+          );
+        };
+      $('#loDismiss', sh).onclick = async () => {
+        UI.onSheetClose = null;
+        const ok = await confirmSheet('Dismiss ' + r.name + '?', 'They leave your army for good, and their skills and gear return to your pack. You get 15 gold.', 'Dismiss', 'Keep', true);
+        if (ok && R.dismiss(run, rid)) {
+          R.save(run);
+          if (UI.wr) {
+            UI.wr.dep.delete(rid);
+            UI.wr.sel = null;
+            renderWarRoom();
+          }
+          UI.onSheetClose = after;
+          return back ? back() : closeSheet();
+        }
+        UI.onSheetClose = after;
+        loadoutSheet(rid, back);
+      };
+      $('#loDone', sh).onclick = () => (back ? back() : closeSheet());
+    });
+    UI.onSheetClose = after;
+  }
+
+  async function bindFlow(uid, rid, back) {
+    const run = UI.run;
+    const it = R.itemByUid(run, uid);
+    const r = R.unitById(run, rid);
+    const d = ENCHANTS[it.id];
+    const after = UI.onSheetClose;
+    UI.onSheetClose = null;
+    const ok = await confirmSheet(`Bind ${d.name} to ${r.name}?`, `${esc(d.desc)} This is permanent, and fielding ${esc(r.name)} will cost ${d.surcharge} more Supply.`, 'Bind forever', 'Not yet');
+    UI.onSheetClose = after;
+    if (ok && R.applyScroll(run, uid, rid)) {
+      sfx('coin');
+      toast(`${r.name} is now bound with ${d.name}.`);
+      if (UI.wr) renderWarRoom();
+    }
+    back();
+  }
+
+  // Choose which owned skill or gear goes into a slot.
+  function itemPicker(rid, kind, idx, back) {
+    const run = UI.run;
+    const r = R.unitById(run, rid);
+    const key = kind === 'skill' ? 'skills' : 'gear';
+    const cur = r.load[key][idx];
+    const list = run.items.filter((i) => i.kind === kind);
+    const rows = list
+      .map((it) => {
+        const d = R.itemDef(it);
+        const ok = D.eligible(r.type, d);
+        const holder = R.itemHolder(run, it.uid);
+        const mine = holder && holder.id === rid;
+        return `<button class="army-row item-row" data-pick="${it.uid}" ${ok && !mine ? '' : 'disabled style="opacity:.45"'}>
+          <div class="itemico ${kind}">${ic(kind === 'skill' ? 'scroll' : 'sword')}</div>
+          <div class="nm" style="min-width:0"><b>${esc(d.name)}</b><div class="small muted">${esc(d.desc)}</div></div>
+          <div class="chips" style="justify-content:flex-end"><span class="chip warn">+${d.cost}</span>${mine ? '<span class="chip good">Equipped</span>' : holder ? `<span class="chip">on ${esc(holder.name)}</span>` : ''}${!ok ? '<span class="chip bad">Not usable</span>' : ''}</div></button>`;
       })
       .join('');
     openSheet(
-      `${sheetHead('Your army', `${run.roster.length}/${R.MAX_ROSTER} units · ${ic('gold')} ${run.gold} gold · Promote for gold to raise a unit's rank.`)}
-      <div class="army-list">${rows}</div>`,
+      `${sheetHead(`Equip ${kind}`, `${esc(r.name)} the ${esc(UNITS[r.type].name)}. Taking an item from another unit moves it here.`)}
+      ${list.length ? `<div class="army-list">${rows}</div>` : `<p class="muted">You own no ${kind === 'skill' ? 'skills' : 'gear'} yet. Find them in battle spoils, shops, campfires and events.</p>`}
+      <div class="actions">${cur ? `<button class="btn" id="ipClear">Empty this slot</button>` : ''}<button class="btn" id="ipBack">Back</button></div>`,
       (sh) => {
-        for (const b of $$('[data-rid]', sh)) b.onclick = () => unitSheet(b.dataset.rid, after);
-      }
-    );
-    UI.onSheetClose = after || null;
-  }
-
-  function unitSheet(rid, after) {
-    const run = UI.run;
-    const r = R.unitById(run, rid);
-    if (!r) return;
-    const u = computed(r);
-    const T = UNITS[r.type];
-    const c = R.promoteCost(run, r);
-    const talents = r.talents.map((t) => `<li><b>${esc(TALENTS[t].name)}</b>: ${esc(TALENTS[t].desc)}</li>`).join('');
-    const traits = traitLines(u)
-      .map((t) => `<li>${esc(t)}</li>`)
-      .join('');
-    openSheet(
-      `${sheetHead(esc(r.name), `${T.name} · Rank ${['I', 'II', 'III'][r.rank - 1]} · ${T.cost} CP to deploy`)}
-      ${unitInfoHTML(u, { name: r.name, wounded: r.wounded })}
-      ${statsHTML(u)}
-      <p class="ability"><b>${esc(u.act.name)}.</b> ${esc(abilityText(u))}</p>
-      ${traits ? `<ul class="tips">${traits}</ul>` : ''}
-      <div><div class="eyebrow">Talents (${r.talents.length}/${MAX_TALENTS})</div>${talents ? `<ul class="tips">${talents}</ul>` : '<p class="small muted">None yet. Win battles, visit shrines and merchants to teach talents.</p>'}</div>
-      ${r.rank < 3 && T.star3 ? `<p class="small muted">At Rank III: <b>${esc(T.star3.name)}</b>. ${esc(T.star3.desc)}</p>` : ''}
-      ${r.wounded ? '<p class="small" style="color:var(--red)">Wounded: starts battles at half HP. Sit out a battle, rest, or buy healing to recover.</p>' : ''}
-      <p class="small muted">Battles: ${r.battles} · Enemies slain: ${r.kills}</p>
-      <div class="actions">
-        ${c != null ? `<button class="btn primary" id="usPromote" ${run.gold < c ? 'disabled' : ''}>${ic('up')} Promote to Rank ${['I', 'II', 'III'][r.rank]} · ${c} gold</button>` : ''}
-        <button class="btn" id="usDismiss" ${run.roster.length <= 2 ? 'disabled' : ''}>Dismiss (+15 gold)</button>
-        <button class="btn" id="usBack">Back</button>
-      </div>`,
-      (sh) => {
-        if ($('#usPromote', sh))
-          $('#usPromote', sh).onclick = () => {
-            if (R.promote(run, rid)) {
-              R.save(run);
-              sfx('coin');
-              toast(`${r.name} is now Rank ${['I', 'II', 'III'][r.rank - 1]}.`);
-              unitSheet(rid, after);
-              if (UI.wr) renderWarRoom();
-            }
-          };
-        $('#usDismiss', sh).onclick = async () => {
-          UI.onSheetClose = null;
-          const ok = await confirmSheet('Dismiss ' + r.name + '?', 'They leave your army for good. You get 15 gold.', 'Dismiss', 'Keep', true);
-          if (ok && R.dismiss(run, rid)) {
+        for (const b of $$('[data-pick]', sh))
+          b.onclick = () => {
+            if (b.disabled) return;
+            if (cur) R.unassignItem(run, cur);
+            if (!R.assignItem(run, rid, b.dataset.pick)) toast('That item does not fit this unit.');
             R.save(run);
-            if (UI.wr) UI.wr.dep.delete(rid);
-          }
-          armySheet(after);
-          if (UI.wr) renderWarRoom();
-        };
-        $('#usBack', sh).onclick = () => armySheet(after);
+            if (UI.wr) renderWarRoom();
+            sfx('select');
+            back();
+          };
+        if ($('#ipClear', sh))
+          $('#ipClear', sh).onclick = () => {
+            R.unassignItem(run, cur);
+            R.save(run);
+            if (UI.wr) renderWarRoom();
+            back();
+          };
+        $('#ipBack', sh).onclick = () => back();
       }
     );
-    UI.onSheetClose = after || null;
   }
 
   // Details for a unit on the battlefield (either side).
-  function battleUnitSheet(u, extra) {
+  function battleUnitSheet(u, live) {
     const T = UNITS[u.type];
+    const picks = [];
+    if (u.a1) picks.push(ABILITIES[u.a1]);
+    if (u.a2) picks.push(ABILITIES[u.a2]);
+    if (u.level >= 3 && MASTERY[u.type]) picks.push(MASTERY[u.type]);
+    for (const id of u.skills || []) picks.push(SKILLS[id]);
+    for (const id of u.gear || []) picks.push(GEAR[id]);
     const traits = traitLines(u)
       .map((t) => `<li>${esc(t)}</li>`)
       .join('');
-    const talents = [...u.tal].map((t) => `<li><b>${esc(TALENTS[t].name)}</b>: ${esc(TALENTS[t].desc)}</li>`).join('');
     openSheet(
-      `${sheetHead(esc(u.name), `${u.team === 'P' ? 'Your' : 'Enemy'} ${T.name} · Rank ${['I', 'II', 'III'][u.rank - 1]}`)}
-      ${unitInfoHTML(u, { status: !!extra })}
+      `${sheetHead(esc(u.name), `${u.team === 'P' ? 'Your' : 'Enemy'} ${T.name} · Level ${u.level}`)}
+      ${unitInfoHTML(u, { status: !!live })}
       ${statsHTML(u)}
-      <p class="ability"><b>${esc(u.act.name)}.</b> ${esc(abilityText(u))}</p>
+      ${actsHTML(u)}
+      ${picks.length ? `<div class="chips">${picks.map((p) => `<span class="chip magic" title="${esc(p.desc)}">${esc(p.name)}</span>`).join('')}</div>` : ''}
       ${traits ? `<ul class="tips">${traits}</ul>` : ''}
-      ${talents ? `<ul class="tips">${talents}</ul>` : ''}
       <p class="small muted">${esc(T.desc)}</p>
       ${u.team === 'E' ? `<p class="hint">${esc(T.tip)}</p>` : ''}
       <div class="actions"><button class="btn" data-close>Close</button></div>`
@@ -826,6 +1243,10 @@
     let status = '';
     if (s && s.hold) status = ` <span class="reward">${s.hold.count}/${s.hold.need}</span>`;
     if (s && s.surviveTurns) status = ` <span class="reward">${Math.max(0, s.surviveTurns - s.turn + 1)} to go</span>`;
+    if (s && enc.layout === 'convoy') {
+      const carts = s.units.filter((u) => u.type === 'cart');
+      status = ` <span class="reward">${carts.filter((u) => !u.alive && !u.escaped).length} broken · ${carts.filter((u) => u.escaped).length} escaped</span>`;
+    }
     const lines = [`<div class="obj primary">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     for (const o of info.bonus) {
       let state = '';
@@ -835,6 +1256,7 @@
         if (b.type === 'swift' && s.turn > b.turns) state = 'failed';
         if (b.type === 'flawless' && s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive)) state = 'failed';
         if (b.type === 'muster') state = s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
+        if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) state = 'failed';
       }
       lines.push(`<div class="obj bonus ${state}">${ic(state === 'done' ? 'check' : 'star')}<span>${esc(o.text)} <span class="reward">Reward: ${esc(o.reward)}.</span></span></div>`);
     }
@@ -851,8 +1273,8 @@
     const run = UI.run;
     const p = run.pending;
     const enc = p.enc;
-    const node = R.getNode(run, p.nodeId);
     const b = showBattleLayout();
+    clearBanner();
     b.clearUnits();
     b.ov = {};
     b.zoom = 1;
@@ -863,19 +1285,16 @@
     b.readySet = null;
     b.setBoard(enc.w, enc.h, enc.terrain, ACTS[run.act].palette);
     b.setObjectives(enc.loot, enc.hold);
-    const cp = R.cpFor(run, node, false, enc.kind);
     const rows = R.deployRows(run, enc);
     const dep = new Map();
-    let used = 0;
     for (const d of p.lastDep || []) {
       const r = R.unitById(run, d.rid);
       if (!r || !rows.includes(d.y) || enc.terrain[d.y * enc.w + d.x] !== 0) continue;
-      if (used + UNITS[r.type].cost > cp) continue;
       if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
-      used += UNITS[r.type].cost;
+      if (dep.size >= R.unitCap(run)) break;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
-    UI.wr = { cp, dep, sel: null, tab: 'army', inspect: null, rows, enc };
+    UI.wr = { supply: R.battleSupply(run), cap: R.unitCap(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
     boardTools();
@@ -903,8 +1322,8 @@
   }
 
   function isAttacker(type) {
-    const a = UNITS[type].act;
-    return !!(a.dmg || (a.fx && a.fx.poison));
+    const T = UNITS[type];
+    return !!(T.act.dmg || (T.act.fx && T.act.fx.poison));
   }
 
   function renderWarRoom() {
@@ -912,6 +1331,8 @@
     const wr = UI.wr;
     if (!wr || !run.pending || run.pending.type !== 'battle') return;
     for (const rid of [...wr.dep.keys()]) if (!R.unitById(run, rid)) wr.dep.delete(rid);
+    wr.supply = R.battleSupply(run);
+    wr.cap = R.unitCap(run);
     const enc = wr.enc;
     const s = E.createBattle(R.battleConfig(run, wrDepArray()));
     wr.s = s;
@@ -935,12 +1356,14 @@
     b.ov = ov;
 
     const used = wrUsed();
-    const unspent = wr.cp - used;
-    const gold = unspent * R.EFFICIENCY_GOLD * (R.hasRelic(run, 'alchemist_stone') ? 2 : 1);
+    const left = wr.supply - used;
+    const gold = Math.max(0, left) * R.LEAN_GOLD * (R.hasRelic(run, 'alchemist_stone') ? 3 : 1);
     const pips = [];
-    for (let i = 0; i < Math.max(wr.cp, used); i++) pips.push(`<span class="pip ${i < used ? (i >= wr.cp ? 'over' : 'used') : ''}"></span>`);
+    for (let i = 0; i < Math.max(wr.supply, used); i++) pips.push(`<span class="pip ${i < used ? (i >= wr.supply ? 'over' : 'used') : ''}"></span>`);
+    const bonus = R.retryBonus(run);
+    const attempt = run.pending.attempt || 0;
 
-    $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${encKindLabel(enc)}${enc.objective === 'boss' ? ' · slay the boss' : ''}</span></div>
+    $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${encKindLabel(enc)}${attempt ? ' · attempt ' + (attempt + 1) : ''}</span></div>
       <button class="btn icon-only" id="wrArmy" aria-label="Army">${ic('army')}</button>
       <button class="btn icon-only" id="wrMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#wrArmy').onclick = () => armySheet(() => renderWarRoom());
@@ -951,13 +1374,13 @@
       body = `<div class="roster">${run.roster
         .map((u) => {
           const deployed = wr.dep.has(u.id);
-          const cost = UNITS[u.type].cost;
-          const cant = !deployed && cost > unspent;
+          const cost = R.unitCost(run, u);
+          const cant = !deployed && (cost > left || wr.dep.size >= wr.cap);
           const featured = (enc.bonus || []).some((x) => x.type === 'muster' && x.rid === u.id);
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
-            <span class="cost">${cost}</span>${u.wounded ? '<span class="flag">Hurt</span>' : featured ? '<span class="flag feat">Bonus</span>' : ''}
+            <span class="cost">${cost}</span>${featured ? '<span class="flag feat">Bonus</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
-            <span class="nm">${esc(u.name)} <span class="stars">${stars(u.rank)}</span></span>
+            <span class="nm">${esc(u.name)} ${levelBadge(u.load.lv)}</span>
             <span class="ty">${UNITS[u.type].name}</span></button>`;
         })
         .join('')}</div>`;
@@ -965,12 +1388,12 @@
       const tips = R.scoutTips(enc);
       body = `<div class="intel">
         <div class="intel-list">${s.units
-          .filter((u) => u.team === 'E')
+          .filter((u) => u.team === 'E' && !u.traits.has('scenery'))
           .map(
             (u) => `<button class="rcard ${wr.inspect === u.uid ? 'sel' : ''}" data-uid="${u.uid}">
               <canvas data-p="${u.type}:E"></canvas>
-              <span class="nm">${esc(UNITS[u.type].name)} <span class="stars">${stars(u.rank)}</span></span>
-              <span class="ty">${u.tal.size ? [...u.tal].map((t) => TALENTS[t].name).join(', ') : u.hp + ' HP'}</span></button>`
+              <span class="nm">${esc(UNITS[u.type].name)} ${u.level > 1 ? levelBadge(u.level) : ''}</span>
+              <span class="ty">${esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
           )
           .join('')}</div>
         ${tips.length ? `<ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
@@ -980,31 +1403,35 @@
     let selBlock = '';
     if (wr.sel && wr.dep.has(wr.sel)) {
       const r = R.unitById(run, wr.sel);
-      const u = s.units.find((x) => x.rid === wr.sel);
-      selBlock = `<div class="hint">${esc(r.name)} the ${UNITS[r.type].name} · ${u ? u.hp + '/' + u.maxHp + ' HP · ' : ''}tap a blue tile to move, or another of your units to swap places.</div>
-        <div class="actions"><button class="btn" id="wrTurn">${ic('rotate')} Turn</button>
-        <button class="btn" id="wrInfo">${ic('help')} Details</button>
+      const L = r.load;
+      selBlock = `<div class="selunit"><div><b>${esc(r.name)}</b> ${levelBadge(L.lv)} <span class="small muted">${esc(UNITS[r.type].name)} · ${esc(ABILITIES[L.a1].name)}${L.lv >= 2 ? ' · ' + esc(ABILITIES[L.a2].name) : ''} · ${R.unitCost(run, r)} Supply</span></div>
+        <div class="small muted">Tap a blue tile to move it, or another of your units to swap places. Tap it again for its loadout.</div></div>
+        <div class="actions"><button class="btn primary" id="wrLoad">${ic('up')} Loadout</button>
+        <button class="btn" id="wrTurn">${ic('rotate')} Turn</button>
         <button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>`;
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
-      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}: <b>${esc(u.act.name)}</b>. ${esc(abilityText(u))} Red tiles show where it can strike next turn.</div>
+      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: <b>${esc(u.act.name)}</b>. ${esc(actText(u, u.act))} ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles show where it can strike next turn.</div>
         <div class="actions"><button class="btn" id="wrEInfo">${ic('help')} Details</button></div>`;
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap units in your army to deploy them into the blue zone. Points you leave unspent turn into gold if you win.</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit again to change its level, abilities, skills and gear. Every point of Supply counts.</div>`;
     }
 
+    const overCap = wr.dep.size > wr.cap;
+    const over = used > wr.supply;
     $('#cmd').innerHTML = `
-      <div class="cp-meter"><span class="res">${ic('command')}<span class="num">${used}/${wr.cp}</span></span><div class="pips">${pips.join('')}</div></div>
-      <div class="small ${unspent < 0 ? '' : 'muted'}">${
-        unspent > 0 ? `${unspent} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : unspent === 0 ? 'Every Command Point committed.' : 'Over budget.'
-      }</div>
+      <div class="cp-meter"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
+        <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}/${wr.cap}</span></span></div>
+      <div class="small ${over || overCap ? 'bad-text' : 'muted'}">${
+        over ? `Over budget by ${used - wr.supply} Supply: lower a level, drop an item, or remove a unit.` : overCap ? 'Too many units for your commander level.' : left > 0 ? `${left} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : 'Every point of Supply committed.'
+      }${bonus ? ` · <span class="good-text">+${bonus} Supply from earlier defeats</span>` : ''}</div>
       ${objectivesHTML(enc)}
       <div class="tabs"><button class="btn ${wr.tab === 'army' ? 'on' : ''}" id="wrTabA">${ic('army')} Your army</button>
-        <button class="btn ${wr.tab === 'intel' ? 'on' : ''}" id="wrTabI">${ic('eye')} Enemy (${enc.units.length})</button></div>
+        <button class="btn ${wr.tab === 'intel' ? 'on' : ''}" id="wrTabI">${ic('eye')} Enemy (${s.units.filter((u) => u.team === 'E' && E.counts(u)).length})</button></div>
       ${body}
       ${selBlock}
-      <div class="actions"><button class="btn" id="wrAuto">Auto</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>
-        <button class="btn primary" id="wrFight" ${wr.dep.size ? '' : 'disabled'}>${ic('swords')} Fight</button></div>`;
+      <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>
+        <button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} Fight</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
     $('#wrTabA').onclick = () => {
@@ -1015,20 +1442,26 @@
       wr.tab = 'intel';
       renderWarRoom();
     };
-    for (const c of $$('.rcard[data-rid]', cmd)) c.onclick = () => wrCard(c.dataset.rid);
+    for (const c of $$('.rcard[data-rid]', cmd)) {
+      c.onclick = () => wrCard(c.dataset.rid);
+      c.oncontextmenu = (e) => {
+        e.preventDefault();
+        loadoutSheet(c.dataset.rid, () => closeSheet());
+      };
+    }
     for (const c of $$('.rcard[data-uid]', cmd))
       c.onclick = () => {
         wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
         wr.sel = null;
         renderWarRoom();
       };
+    if ($('#wrLoad')) $('#wrLoad').onclick = () => loadoutSheet(wr.sel, () => closeSheet());
     if ($('#wrTurn'))
       $('#wrTurn').onclick = () => {
         const d = wr.dep.get(wr.sel);
         d.facing = (d.facing + 1) % 4;
         renderWarRoom();
       };
-    if ($('#wrInfo')) $('#wrInfo').onclick = () => unitSheet(wr.sel, () => renderWarRoom());
     if ($('#wrRemove'))
       $('#wrRemove').onclick = () => {
         wr.dep.delete(wr.sel);
@@ -1036,10 +1469,16 @@
         renderWarRoom();
       };
     if ($('#wrEInfo')) $('#wrEInfo').onclick = () => battleUnitSheet(s.byId[wr.inspect]);
-    $('#wrAuto').onclick = () => {
+    $('#wrAuto').onclick = async () => {
+      if (!wr.auto && run.roster.some((r) => r.load.lv > 1 || r.load.skills.length || r.load.gear.length)) {
+        const ok = await confirmSheet('Auto-build an army?', 'Auto picks units, levels and items for this enemy. It resets the levels and items of your units first.', 'Build it', 'Cancel');
+        if (!ok) return;
+      }
+      wr.auto++;
       wr.dep.clear();
-      for (const d of R.suggestDeployment(run, wr.cp)) wr.dep.set(d.rid, { x: d.x, y: d.y, facing: 0 });
+      for (const d of R.autoDeploy(run, wr.auto - 1)) wr.dep.set(d.rid, { x: d.x, y: d.y, facing: 0 });
       wr.sel = null;
+      R.save(run);
       sfx('click');
       renderWarRoom();
     };
@@ -1055,22 +1494,23 @@
     const run = UI.run;
     const wr = UI.wr;
     if (wr.dep.has(rid)) {
-      wr.sel = wr.sel === rid ? null : rid;
+      if (wr.sel === rid) {
+        loadoutSheet(rid, () => closeSheet());
+        return;
+      }
+      wr.sel = rid;
       wr.inspect = null;
       sfx('click');
       renderWarRoom();
       return;
     }
     const r = R.unitById(run, rid);
-    const cost = UNITS[r.type].cost;
-    const left = wr.cp - wrUsed();
-    if (cost > left) {
-      toast(`Not enough Command Points: ${r.name} needs ${cost}, you have ${left} left.`);
+    if (wr.dep.size >= wr.cap) {
+      toast(`Only ${wr.cap} units may take the field. Remove one first, or raise your commander level.`);
       return;
     }
     const taken = new Set([...wr.dep.values()].map((d) => d.x + ',' + d.y));
-    const front = ['tank', 'melee', 'skirmisher', 'monster'].includes(UNITS[r.type].role) || r.type === 'lightning';
-    const slot = R.deploySlots(run, wr.enc, front, taken)[0];
+    const slot = R.deploySlots(run, wr.enc, R.isFront(r.type), taken)[0];
     if (!slot) {
       toast('Your deployment zone is full.');
       return;
@@ -1079,6 +1519,8 @@
     wr.sel = rid;
     wr.inspect = null;
     sfx('select');
+    const over = wrUsed() - wr.supply;
+    if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
     renderWarRoom();
   }
 
@@ -1145,7 +1587,7 @@
     if (!t) return;
     const u = E.at(wr.s, t.x, t.y);
     if (!u) return;
-    if (u.team === 'P' && u.rid) unitSheet(u.rid, () => renderWarRoom());
+    if (u.team === 'P' && u.rid) loadoutSheet(u.rid, () => closeSheet());
     else battleUnitSheet(u);
   }
 
@@ -1154,16 +1596,18 @@
     const wr = UI.wr;
     const dep = wrDepArray();
     if (!dep.length) return;
-    if (wrUsed() > wr.cp) {
-      toast('You are over your Command Point budget.');
+    if (wrUsed() > wr.supply) {
+      toast('You are over your Supply budget.');
+      return;
+    }
+    if (dep.length > wr.cap) {
+      toast(`Only ${wr.cap} units may take the field.`);
       return;
     }
     if (!dep.some((d) => isAttacker(R.unitById(run, d.rid).type))) {
       toast('Deploy at least one unit that can deal damage.');
       return;
     }
-    const wounded = dep.filter((d) => R.unitById(run, d.rid).wounded);
-    if (wounded.length && !(await confirmSheet('Field wounded units?', `${wounded.map((d) => esc(R.unitById(run, d.rid).name)).join(', ')} will start at half HP.`, 'Fight anyway', 'Back'))) return;
     run.pending.lastDep = dep;
     R.save(run);
     startBattle(dep);
@@ -1178,7 +1622,7 @@
     const s = E.createBattle(R.battleConfig(run, dep));
     E.drainEvents(s);
     UI.wr = null;
-    UI.battle = { s, dep, enc, mode: 'idle', sel: null, target: null, busy: false, temp: diff.temp, confirmEnd: false };
+    UI.battle = { s, dep, enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: diff.temp, confirmEnd: false };
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
@@ -1212,13 +1656,12 @@
 
   // Ready units that can actually do something this turn.
   function usefulReady(s) {
-    return E.readyUnits(s, 'P').filter(
-      (u) => (u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1) || E.targetsFrom(s, u).length > 0
-    );
+    return E.readyUnits(s, 'P').filter((u) => (u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1) || E.allTargets(s, u).length > 0);
   }
 
+  // Acts aimed by tapping an enemy directly.
   function directKinds(kind) {
-    return kind === 'strike' || kind === 'cleave' || kind === 'quake';
+    return kind === 'strike' || kind === 'cleave' || kind === 'quake' || kind === 'shadowstrike';
   }
 
   function activationOf(u) {
@@ -1231,6 +1674,24 @@
     if (t.kind === 'unit' || t.kind === 'tile') return [[t.x, t.y]];
     if (t.kind === 'self') return [[u.x, u.y]];
     return E.affectedTiles(s, u, t).filter(([x, y]) => E.at(s, x, y));
+  }
+
+  // Buttons for the attack and each active ability, with charges and availability.
+  function actButtons(u) {
+    const s = UI.battle.s;
+    const out = [];
+    u.acts.forEach((a, i) => {
+      if (a.kind === 'none') return;
+      const usable = E.actUsable(s, u, i);
+      const n = usable ? E.targetsFrom(s, u, i).length : 0;
+      const uses = a.uses ? ` <span class="uses">${a.left}/${a.uses}</span>` : '';
+      let why = '';
+      if (a.left <= 0) why = 'no uses left';
+      else if (!usable) why = a.asMove ? 'already moved' : 'already acted';
+      else if (!n) why = 'no targets';
+      out.push(`<button class="btn act ${i === 0 ? 'primary' : ''}" data-act="${i}" ${n ? '' : 'disabled'} title="${esc(why)}">${ic(i === 0 ? 'target' : 'star')} ${esc(a.name)}${uses}</button>`);
+    });
+    return out.join('');
   }
 
   function renderBattle() {
@@ -1258,47 +1719,51 @@
       const moved = A && A.moved;
       const acted = A && A.acted;
       if (!moved) ov.move = [...E.reachable(s, u).values()].filter((r) => r.d > 0).map((r) => [r.x, r.y]);
-      const targets = acted ? [] : E.targetsFrom(s, u);
-      if (!acted && directKinds(u.act.kind)) ov.targets = targets.map((t) => [t.x, t.y]);
+      const main = acted ? [] : E.actUsable(s, u, 0) ? E.targetsFrom(s, u, 0) : [];
+      if (!acted && directKinds(u.act.kind)) ov.targets = main.map((t) => [t.x, t.y]);
       ov.select = [u.x, u.y];
+      const anyTargets = E.allTargets(s, u).length > 0;
       let hint;
-      if (!moved && !acted)
-        hint = directKinds(u.act.kind)
-          ? `Tap a blue tile to move${targets.length ? ', or a red enemy to attack' : ''}.`
-          : `Tap a blue tile to move, or use ${esc(u.act.name)}.`;
-      else if (moved && !acted) hint = targets.length ? `Moved. ${directKinds(u.act.kind) ? 'Tap a red enemy to attack' : 'Use ' + esc(u.act.name)}, or tap Done.` : 'Moved. No targets in reach from here. Tap Done.';
-      else hint = 'Action used. You may still move, or tap Done.';
+      if (!moved && !acted) hint = `Tap a blue tile to move${main.length && directKinds(u.act.kind) ? ', a red enemy to attack' : ''}, or choose an action below.`;
+      else if (moved && !acted) hint = anyTargets ? 'Moved. Choose an action, or tap Done.' : 'Moved. Nothing in reach from here. Tap Done.';
+      else hint = moved ? 'Action used. Tap Done to choose a facing.' : 'Action used. You may still move, or tap Done.';
       const loot = !acted && E.lootAt(s, u.x, u.y);
-      if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action${targets.length ? ', so it cannot attack this turn' : ''}.`;
+      if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
+      if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
       panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}
-        <p class="ability"><b>${esc(u.act.name)}.</b> ${esc(abilityText(u))}</p>
         <div class="hint">${hint}</div>
-        <div class="actions">
+        <div class="actions acts">
           ${loot ? `<button class="btn primary" id="btLoot">${ic('chest')} Take the ${R.LOOT_NAMES[loot.kind]}</button>` : ''}
-          ${!acted && targets.length ? `<button class="btn ${loot ? '' : 'primary'}" id="btAim">${ic('target')} ${esc(u.act.name)}</button>` : ''}
-          ${moved && !acted ? `<button class="btn" id="btUndo">${ic('undo')} Undo move</button>` : ''}
+          ${actButtons(u)}
+        </div>
+        <div class="actions">
+          ${E.canUndo(s) && moved ? `<button class="btn" id="btUndo">${ic('undo')} Undo move</button>` : ''}
           ${moved || acted ? `<button class="btn" id="btDone">${ic('check')} Done</button>` : `<button class="btn" id="btFace">${ic('rotate')} Turn only</button>`}
+          <button class="btn" id="btInfo">${ic('help')}</button>
           <button class="btn ghost" id="btDesel">${ic('close')}</button>
         </div>`;
     } else if ((B.mode === 'aim' || B.mode === 'confirm') && u) {
-      const targets = E.targetsFrom(s, u);
+      const act = u.acts[B.ai] || u.act;
+      const targets = E.targetsFrom(s, u, B.ai);
       ov.targets = [];
       for (const t of targets) ov.targets.push(...targetTiles(u, t));
       ov.select = [u.x, u.y];
       let prev = '';
       if (B.mode === 'confirm' && B.target) {
         const pv = E.previewAction(s, u, B.target);
+        const healish = act.kind === 'pray' || act.kind === 'heal' || act.kind === 'shield' || act.kind === 'drum' || act.kind === 'rally';
         ov.aoe = pv.tiles.map(([x, y]) => {
           const o = E.at(s, x, y);
-          return [x, y, u.act.kind === 'pray' ? 'heal' : o && o.team === u.team && o !== u ? 'ally' : 'foe'];
+          return [x, y, healish ? 'heal' : o && o.team === u.team && o !== u ? 'ally' : 'foe'];
         });
         if (B.target.kind === 'unit' || B.target.kind === 'tile') ov.targets = ov.targets.filter(([x, y]) => x !== B.target.x || y !== B.target.y);
-        prev = previewHTML(u, pv);
+        prev = previewHTML(u, act, pv);
       }
       panel = `${unitInfoHTML(u, { status: true })}
-        ${B.mode === 'confirm' ? prev : `<div class="hint">Choose a target for ${esc(u.act.name)}: tap a red tile${u.act.kind === 'line' || u.act.kind === 'cone' ? ' or a unit in that direction' : ''}.</div>`}
+        <p class="ability"><b>${esc(act.name)}.</b> ${esc(actText(u, act))}</p>
+        ${B.mode === 'confirm' ? prev : `<div class="hint">Choose a target: tap a red tile${act.kind === 'line' || act.kind === 'cone' ? ' or a unit in that direction' : ''}.</div>`}
         <div class="actions">
-          ${B.mode === 'confirm' ? `<button class="btn primary" id="btConfirm">${ic('check')} ${esc(u.act.name)}</button>` : ''}
+          ${B.mode === 'confirm' ? `<button class="btn primary" id="btConfirm">${ic('check')} ${esc(act.name)}</button>` : ''}
           <button class="btn" id="btCancel">Cancel</button>
         </div>
         ${B.mode === 'confirm' ? '<p class="small muted">Tap the target again, or the button, to confirm.</p>' : ''}`;
@@ -1314,16 +1779,14 @@
       ov.move = th.move.filter(([x, y]) => x !== u.x || y !== u.y);
       ov.select = [u.x, u.y];
       panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}
-        <p class="ability"><b>${esc(u.act.name)}.</b> ${esc(abilityText(u))}</p>
+        ${actsHTML(u)}
         <div class="hint">${u.team === 'E' ? 'Blue: where it can move. Red: where it can strike next turn.' : u.wait > 0 ? `Recovering for ${u.wait} more turn${u.wait > 1 ? 's' : ''}.` : u.activated ? 'Already acted this turn.' : 'Cannot act right now.'}</div>
         <div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
       panel = `<div class="hint">${
-        ready.length
-          ? 'Tap a glowing unit to command it. Long-press any unit for details.'
-          : 'All your units have acted or are recovering. End your turn.'
+        ready.length ? 'Tap a glowing unit to command it. Long-press any unit for details.' : 'All your units have acted or are recovering. End your turn.'
       }</div>
         ${ready.length ? `<div class="roster">${ready
           .map(
@@ -1336,10 +1799,8 @@
     }
     b.ov = ov;
 
-    const alive = (team) => s.units.filter((x) => x.alive && x.team === team && !x.nonCombat).length;
     const info = R.objectiveInfo(UI.run, B.enc);
     const goal = s.hold ? `${info.short} ${s.hold.count}/${s.hold.need}` : s.surviveTurns ? `Survive ${Math.max(0, s.surviveTurns - s.turn + 1)} more` : info.short;
-    void alive;
     $('#topbar').innerHTML = `<div class="title"><b>${s.side === 'P' ? 'Your turn' : 'Enemy turn'}</b>
       <span>Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' ? endBtn(false) : ''}
@@ -1349,25 +1810,40 @@
     bindBattlePanel();
   }
 
-  function previewHTML(u, pv) {
+  function previewHTML(u, act, pv) {
     const s = UI.battle.s;
+    const healish = act.kind === 'pray' || act.kind === 'heal' || act.kind === 'shield' || act.kind === 'drum' || act.kind === 'rally';
     const lines = pv.effects.map((e) => {
       const v = s.byId[e.uid];
-      const who = `${v.team === 'P' ? 'Your' : 'Enemy'} ${esc(UNITS[v.type].name)}`;
+      const who = e.self ? 'Itself' : `${v.team === 'P' ? 'Your' : 'Enemy'} ${esc(UNITS[v.type].name)}`;
       const bits = [];
       if (e.dmg != null) {
         bits.push(`<b>${e.dmg}</b> dmg`);
         if (e.block > 0) bits.push(`${pct(e.block)} block (${e.cat})`);
-        else if (u.act.dmg === 'phys') bits.push(e.cat === 'back' ? 'from behind' : 'no block');
+        else if (act.dmg === 'phys' && !e.self) bits.push(e.cat === 'back' ? 'from behind' : 'no block');
         if (e.kill) bits.push(`<span class="kill">${e.block > 0 ? 'can kill' : 'kills'}</span>`);
       }
       if (e.heal != null) bits.push(e.heal > 0 ? `<b>+${e.heal}</b> HP` : v.poison ? 'poisoned: no healing' : 'full HP');
       if (e.cleanse) bits.push('cures');
+      if (e.shield) bits.push(`shield ${e.shield}`);
+      if (e.frenzy) bits.push('frenzy');
+      if (e.rally) bits.push(v.wait > 0 ? `recovery ${v.wait} → ${v.wait - 1}` : 'rallied');
       if (e.para) bits.push(e.para === 'resist' ? 'immune to paralysis' : `paralyzed ${e.para}`);
       if (e.poison) bits.push(e.poison === 'resist' ? 'immune to poison' : `poison ${e.poison.dmg}×${e.poison.turns}`);
-      return `<div class="line ${e.friendly && u.act.kind !== 'pray' ? 'ff' : ''}">${who}: ${bits.join(' · ') || 'no effect'}${e.friendly && u.act.kind !== 'pray' ? ' (friendly fire)' : ''}</div>`;
+      if (e.burn) bits.push(`burn ${e.burn.dmg}×${e.burn.turns}`);
+      if (e.root) bits.push(e.root === 'resist' ? 'cannot be rooted' : `rooted ${e.root}`);
+      if (e.weak) bits.push(`weakened ${e.weak}`);
+      if (e.mark) bits.push(`marked ${e.mark}`);
+      if (e.knock) bits.push(e.knock === 'resist' ? 'stands firm' : 'knocked back');
+      const ff = e.friendly && !healish && !e.self;
+      return `<div class="line ${ff ? 'ff' : ''}">${who}: ${bits.join(' · ') || 'no effect'}${ff ? ' (friendly fire)' : ''}</div>`;
     });
-    if (u.act.kind === 'grow') lines.push('<div class="line">Raise a shrub here.</div>');
+    if (act.kind === 'grow') lines.push('<div class="line">Raise a shrub here.</div>');
+    if (act.kind === 'raise') lines.push('<div class="line">Raise a skeleton here.</div>');
+    if (act.kind === 'blink') lines.push('<div class="line">Teleport here. You can still attack afterward.</div>');
+    if (act.kind === 'revive') lines.push(`<div class="line">${esc(s.byId[UI.battle.target.uid].name)} rises with ${Math.round((act.pct || 0.4) * 100)}% HP.</div>`);
+    if (act.kind === 'hazard') lines.push(`<div class="line">${act.hz === 'smoke' ? 'Smoke' : act.hz === 'fire' ? 'Fire' : 'Caltrops'} on ${pv.tiles.length} tile${pv.tiles.length > 1 ? 's' : ''} for ${act.turns} turns.</div>`);
+    if (act.kind === 'leap') lines.unshift('<div class="line">Leap here, then strike every adjacent enemy.</div>');
     return `<div class="preview">${lines.join('') || '<div class="line">No units affected.</div>'}</div>`;
   }
 
@@ -1392,22 +1868,26 @@
       if (!E.beginActivation(s, B.sel)) return;
       enterFacing();
     });
-    on('btAim', () => {
-      const u = s.byId[B.sel];
-      const targets = E.targetsFrom(s, u);
-      if (targets.length === 1 && (targets[0].kind === 'self' || !directKinds(u.act.kind))) {
-        B.mode = 'confirm';
-        B.target = targets[0];
-      } else {
-        B.mode = 'aim';
-        B.target = null;
-      }
-      sfx('click');
-      renderBattle();
-    });
+    for (const btn of $$('#cmd [data-act]'))
+      btn.onclick = () => {
+        const u = s.byId[B.sel];
+        const ai = +btn.dataset.act;
+        const targets = E.targetsFrom(s, u, ai);
+        B.ai = ai;
+        if (targets.length === 1 && (targets[0].kind === 'self' || !directKinds(u.acts[ai].kind))) {
+          B.mode = 'confirm';
+          B.target = targets[0];
+        } else {
+          B.mode = 'aim';
+          B.target = null;
+        }
+        sfx('click');
+        renderBattle();
+      };
     on('btCancel', () => {
       B.mode = 'unit';
       B.target = null;
+      B.ai = 0;
       renderBattle();
     });
     on('btConfirm', () => doAction());
@@ -1443,6 +1923,7 @@
     B.mode = 'idle';
     B.sel = null;
     B.target = null;
+    B.ai = 0;
     renderBattle();
   }
 
@@ -1460,6 +1941,7 @@
     }
     B.sel = v.uid;
     B.target = null;
+    B.ai = 0;
     B.confirmEnd = false;
     B.mode = (s.act && s.act.uid === v.uid) || ownReady ? 'unit' : 'inspect';
     if (UI.board.zoom > 1) UI.board.centerOn(v.x, v.y);
@@ -1515,7 +1997,7 @@
     }
     if ((B.mode === 'aim' || B.mode === 'confirm') && u) {
       const cands = [];
-      for (const t of E.targetsFrom(s, u)) for (const [x, y] of targetTiles(u, t)) cands.push({ x, y, t });
+      for (const t of E.targetsFrom(s, u, B.ai)) for (const [x, y] of targetTiles(u, t)) cands.push({ x, y, t });
       const c = snap(hit, cands);
       if (c) {
         if (B.mode === 'confirm' && B.target && E.sameTarget(c.t, B.target)) return doAction();
@@ -1527,6 +2009,7 @@
       }
       B.mode = 'unit';
       B.target = null;
+      B.ai = 0;
       renderBattle();
       return;
     }
@@ -1534,14 +2017,15 @@
       const A = activationOf(u);
       const tileUnit = hit.tile ? E.at(s, hit.tile.x, hit.tile.y) : null;
       const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
-      // 1. An enemy under the finger (sprite or tile) that this unit can strike: aim at it.
-      if (!(A && A.acted) && directKinds(u.act.kind)) {
-        const tgts = E.targetsFrom(s, u);
+      // 1. An enemy under the finger (sprite or tile) that the main attack can hit: aim at it.
+      if (!(A && A.acted) && directKinds(u.act.kind) && E.actUsable(s, u, 0)) {
+        const tgts = E.targetsFrom(s, u, 0);
         for (const cand of [tileUnit, spriteUnit]) {
           if (!cand || cand.team === u.team) continue;
           const t = tgts.find((k) => k.uid === cand.uid);
           if (t) {
             B.mode = 'confirm';
+            B.ai = 0;
             B.target = t;
             sfx('select');
             renderBattle();
@@ -1593,8 +2077,34 @@
     if (!E.beginActivation(s, u.uid)) return;
     if (!E.moveUnit(s, u.uid, x, y)) return;
     await play();
+    if (s.over) return battleOver();
+    if (!u.alive) {
+      B.mode = 'idle';
+      B.sel = null;
+      renderBattle();
+      return;
+    }
     B.mode = 'unit';
     renderBattle();
+  }
+
+  async function afterAct(u) {
+    const B = UI.battle;
+    const s = B.s;
+    if (s.over) return battleOver();
+    if (!u.alive) {
+      B.mode = 'idle';
+      B.sel = null;
+      renderBattle();
+      return;
+    }
+    const A = activationOf(u);
+    const canMove = A && !A.moved && u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1;
+    const canAct = A && !A.acted && E.allTargets(s, u).length > 0;
+    if (canMove || canAct) {
+      B.mode = 'unit';
+      renderBattle();
+    } else enterFacing();
   }
 
   async function doAction() {
@@ -1609,19 +2119,9 @@
       return;
     }
     B.target = null;
+    B.ai = 0;
     await play();
-    if (s.over) return battleOver();
-    if (!u.alive) {
-      B.mode = 'idle';
-      B.sel = null;
-      renderBattle();
-      return;
-    }
-    const A = activationOf(u);
-    if (A && !A.moved && u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1) {
-      B.mode = 'unit';
-      renderBattle();
-    } else enterFacing();
+    await afterAct(u);
   }
 
   async function doLoot() {
@@ -1631,13 +2131,7 @@
     if (!u || B.busy) return;
     if (!E.beginActivation(s, u.uid) || !E.takeLoot(s, u.uid)) return;
     await play();
-    renderBattle();
-    if (s.over) return battleOver();
-    const A = activationOf(u);
-    if (A && !A.moved && u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1) {
-      B.mode = 'unit';
-      renderBattle();
-    } else enterFacing();
+    await afterAct(u);
   }
 
   function enterFacing() {
@@ -1657,14 +2151,13 @@
   async function finishUnit(d, silent) {
     const B = UI.battle;
     const s = B.s;
-    if (!s.act) {
-      E.beginActivation(s, B.sel);
-    }
+    if (!s.act) E.beginActivation(s, B.sel);
     E.finishActivation(s, d);
     await play();
     B.mode = 'idle';
     B.sel = null;
     B.target = null;
+    B.ai = 0;
     if (!silent) renderBattle();
   }
 
@@ -1749,7 +2242,7 @@
     await sleep(1500);
     const res = R.finishBattle(UI.run, s, B.dep);
     UI.battle = null;
-    if (won || UI.run.over) {
+    if (won) {
       route();
       return;
     }
@@ -1760,80 +2253,94 @@
         : endEv && endEv.surrender
           ? 'None of your remaining units could fight.'
           : 'Your army was broken.';
+    const nextBonus = R.retryBonus(UI.run);
     openSheet(
       `${sheetHead('Defeat')}
-      <p>${reason} You lose a Banner: <b>${res.bannersLeft}</b> left.</p>
-      <p class="muted">The enemy holds the field. Re-plan your army and try again: study their reach, flank their shields, and bring the right counters.</p>
-      <div class="actions"><button class="btn primary" id="dfRetry">${ic('swords')} Re-plan and fight</button></div>`,
+      <p>${reason} The enemy holds the field, but your campaign goes on: there is no limit on retries.</p>
+      <p class="muted">Re-plan your army against the same enemy. Swap units, change levels and abilities, move your archers back, bring the counter they fear.${nextBonus ? ` Your army is steeled by defeat: <b>+${nextBonus} Supply</b> for this battle.` : ' After another defeat, your army gains +1 Supply for this battle.'}</p>
+      <div class="actions"><button class="btn" id="dfTitle">Main menu</button><button class="btn primary" id="dfRetry">${ic('swords')} Re-plan and fight</button></div>`,
       (sh) => {
         $('#dfRetry', sh).onclick = () => {
           UI.onSheetClose = null;
           closeSheet();
           warRoom();
         };
+        $('#dfTitle', sh).onclick = () => {
+          UI.onSheetClose = null;
+          closeSheet();
+          title();
+        };
       }
     );
     UI.onSheetClose = () => warRoom();
+    void res;
   }
 
   // ------------------------------------------------------------ rewards
 
-  function spoilCard(sp, i, taken) {
-    if (sp.type === 'recruit') {
-      const T = UNITS[sp.unit];
-      return `<button class="card" data-spoil="${i}" ${taken ? 'disabled' : ''}>
-        <div class="card-head"><canvas class="portrait" data-p="${sp.unit}:P"></canvas>
-        <div><div class="kind">Recruit · ${T.rarity}</div><div class="title">${T.name} <span class="stars">${stars(sp.rank)}</span></div></div></div>
-        <div class="desc">${esc(T.desc)}</div><div class="small muted">${T.cost} CP to deploy</div></button>`;
+  function itemCard(kind, id, attrs, extra) {
+    if (kind === 'scroll') {
+      const d = ENCHANTS[id];
+      return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Enchantment scroll · +${d.surcharge} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)} Bind it to one unit, forever.</div>${extra || ''}</button>`;
     }
-    if (sp.type === 'talent') {
-      const t = TALENTS[sp.talent];
-      return `<button class="card" data-spoil="${i}" ${taken ? 'disabled' : ''}>
-        <div class="kind">${ic('scroll')} Talent</div><div class="title">${esc(t.name)}</div>
-        <div class="desc">${esc(t.desc)} Teach it to one unit.</div></button>`;
-    }
-    if (sp.type === 'promote') {
-      return `<button class="card" data-spoil="${i}" ${taken ? 'disabled' : ''}>
-        <div class="kind">${ic('up')} Promotion</div><div class="title">Field Promotion</div>
-        <div class="desc">Raise one unit a rank for free: +20% HP and power per rank, and a signature ability at Rank III.</div></button>`;
-    }
-    return `<button class="card" data-spoil="${i}" ${taken ? 'disabled' : ''}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
+    const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
+    return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
-  function relicCard(id, attrs) {
-    const r = RELICS[id];
-    return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${r.tier}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
+  function recruitCard(unit, enchant, attrs, extra) {
+    const T = UNITS[unit];
+    return `<button class="card" ${attrs || ''}>
+      <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
+      <div><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}</div></div></div>
+      ${enchant ? `<div class="chips"><span class="chip magic">${ic('gem')} ${esc(ENCHANTS[enchant].name)} +${ENCHANTS[enchant].surcharge}</span></div>` : ''}
+      <div class="desc">${esc(T.desc)}${enchant ? ' ' + esc(ENCHANTS[enchant].desc) : ''}</div>${extra || ''}</button>`;
+  }
+
+  function spoilCard(sp, i, taken) {
+    const attrs = `data-spoil="${i}" ${taken ? 'disabled' : ''}`;
+    if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs);
+    if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs);
+    return `<button class="card" ${attrs}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
+  }
+
+  function levelUpHTML(from, to) {
+    if (!to || to <= from) return '';
+    const a = COMMAND[from];
+    const b = COMMAND[to];
+    return `<div class="levelup">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}${b.cap > a.cap ? ` · units on the field ${a.cap} → ${b.cap}` : ''}</div></div></div>`;
   }
 
   function rewardScreen() {
     const run = UI.run;
     const p = run.pending;
     const bossDone = !p.bossRelics || p.bossRelicTaken;
+    const li = R.levelInfo(run);
     const v = showView(
       `<div class="wrap">
         <div class="reward-head"><p class="eyebrow">${p.kind === 'boss' ? 'The champion falls' : 'The field is yours'}</p><h2>Victory</h2></div>
+        ${levelUpHTML(p.lvFrom, p.lvTo)}
         <div class="panel loot">
-          <span class="res gold">${ic('gold')} +${p.gold} gold</span>
-          ${p.eff ? `<span class="res gold">${ic('command')} +${p.eff} gold for ${p.unspent} unspent Command</span>` : '<span class="small muted">No unspent Command Points this time.</span>'}
+          <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? 'max level' : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
+          <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
+          ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
+          ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold from Midas Touch</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
-        ${p.fallen && p.fallen.length ? `<p class="small" style="color:var(--red)">${esc(p.fallen.join(', '))} fell in battle${R.hasRelic(run, 'field_kit') ? ', but your surgeon patched them up.' : '. Wounded units start their next battle at half HP unless they sit one out or rest.'}</p>` : ''}
-        ${p.kind === 'boss' ? '<p class="small" style="color:var(--green)">Your army recovers: all wounds healed and a Banner restored.</p>' : ''}
         ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
           .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
-        ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small" style="color:var(--green)">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.</p>` : ''}
+        ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small good-text">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.</p>` : ''}
         ${p.prisonerGold ? `<p class="small muted">The freed prisoner could not join a full army, but leaves you ${p.prisonerGold} gold in thanks.</p>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, 'disabled style="opacity:1"')}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, 'disabled style="opacity:1"')}</div></div>` : ''}
-        ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a talent to teach'}</div>
-          <div class="cards">${p.tome
-            .map((t, i) => `<button class="card" data-tome="${i}" ${p.tomeTaken ? 'disabled' : ''}><div class="kind">${ic('scroll')} Talent</div><div class="title">${esc(TALENTS[t].name)}</div><div class="desc">${esc(TALENTS[t].desc)}</div></button>`)
-            .join('')}</div></div>` : ''}
+        ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
+          <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${p.tomeTaken ? 'disabled' : ''}`)).join('')}</div></div>` : ''}
         ${p.bossRelics && p.bossRelics.length ? `<div><div class="eyebrow">${p.bossRelicTaken ? 'Boss relic claimed' : 'Choose a boss relic'}</div><div class="cards">${p.bossRelics.map((id) => relicCard(id, `data-boss="${id}" ${p.bossRelicTaken ? 'disabled' : ''}`)).join('')}</div></div>` : ''}
         <div><div class="eyebrow">${p.spoilTaken ? 'Spoils claimed' : 'Choose your spoils'}</div>
-          <div class="cards">${p.spoils.map((sp, i) => spoilCard(sp, i, p.spoilTaken)).join('')}</div></div>
+          <div class="cards">${p.spoils.map((sp, i) => spoilCard(sp, i, p.spoilTaken)).join('')}</div>
+          <p class="small muted">Skills and gear go to your pack: slot them into units from the War Room or the Army screen.</p></div>
         <div class="row end">
+          <button class="btn" id="rwArmy">${ic('army')} Army</button>
           ${!p.spoilTaken ? `<button class="btn" id="rwSkip">Skip spoils (+10 gold)</button>` : ''}
           ${p.tome && !p.tomeTaken ? `<button class="btn" id="rwTomeSkip">Skip the tome (+10 gold)</button>` : ''}
           <button class="btn primary" id="rwGo" ${p.spoilTaken && bossDone && (!p.tome || p.tomeTaken) ? '' : 'disabled'}>${p.kind === 'boss' && run.act >= 3 ? 'Claim victory' : 'Continue'}</button>
@@ -1848,38 +2355,29 @@
         }
       };
     for (const b of $$('[data-spoil]', v))
-      b.onclick = async () => {
+      b.onclick = () => {
         const i = +b.dataset.spoil;
         const sp = p.spoils[i];
-        let rid = null;
         if (sp.type === 'recruit' && run.roster.length >= R.MAX_ROSTER) {
-          toast('Your army is full. Dismiss a unit in the Army screen first.');
+          toast('Your army is full. Dismiss a unit from the Army screen first.');
           return;
         }
-        if (sp.type === 'talent') {
-          rid = await pickUnit('Teach ' + TALENTS[sp.talent].name, esc(TALENTS[sp.talent].desc), (u) => R.canLearn(u, sp.talent));
-          if (!rid) return;
-        }
-        if (sp.type === 'promote') {
-          rid = await pickUnit('Field Promotion', 'Choose a unit to raise one rank.', (u) => u.rank < 3);
-          if (!rid) return;
-        }
-        if (R.takeSpoil(run, i, rid)) {
+        if (R.takeSpoil(run, i)) {
           sfx('coin');
           if (sp.type === 'recruit') toast(`${run.roster[run.roster.length - 1].name} the ${UNITS[sp.unit].name} joins your army.`);
+          else if (sp.type !== 'gold') toast(`Added to your pack. Equip it from a unit's loadout.`);
           rewardScreen();
         }
       };
+    $('#rwArmy', v).onclick = () => armySheet(() => rewardScreen());
     if ($('#rwSkip', v))
       $('#rwSkip', v).onclick = () => {
         R.skipSpoils(run);
         rewardScreen();
       };
     for (const b of $$('[data-tome]', v))
-      b.onclick = async () => {
-        const t = p.tome[+b.dataset.tome];
-        const rid = await pickUnit('Teach ' + TALENTS[t].name, esc(TALENTS[t].desc), (u) => R.canLearn(u, t));
-        if (rid && R.takeTome(run, +b.dataset.tome, rid)) {
+      b.onclick = () => {
+        if (R.takeTome(run, +b.dataset.tome)) {
           sfx('coin');
           rewardScreen();
         }
@@ -1906,19 +2404,13 @@
       const can = R.canBuy(run, it);
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
       const dis = `data-buy="${i}" ${can ? '' : 'disabled'}`;
-      if (it.kind === 'recruit') {
-        const T = UNITS[it.unit];
-        return `<button class="card" ${dis}><div class="card-head"><canvas class="portrait" data-p="${it.unit}:P"></canvas>
-          <div><div class="kind">Recruit · ${T.rarity}</div><div class="title">${T.name} <span class="stars">${stars(it.rank)}</span></div></div></div>
-          <div class="desc">${esc(T.desc)}</div>${price}</button>`;
-      }
-      if (it.kind === 'talent')
-        return `<button class="card" ${dis}><div class="kind">${ic('scroll')} Talent</div><div class="title">${esc(TALENTS[it.talent].name)}</div><div class="desc">${esc(TALENTS[it.talent].desc)}</div>${price}</button>`;
+      if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, price);
+      if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, price);
       if (it.kind === 'relic')
         return `<button class="card" ${dis}><div class="kind">${ic('gem')} Relic · ${RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
-      if (it.kind === 'heal')
-        return `<button class="card" ${dis}><div class="kind">${ic('heart')} Service</div><div class="title">Field Surgeon</div><div class="desc">Heal every wounded unit.</div>${price}</button>`;
-      return `<button class="card" ${dis}><div class="kind">${ic('banner')} Service</div><div class="title">New Standard</div><div class="desc">Restore one Banner.</div>${price}</button>`;
+      if (it.kind === 'supply')
+        return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
+      return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
     };
     const section = (title, kinds) => {
       const items = p.stock.map((it, i) => [it, i]).filter(([it]) => kinds.includes(it.kind));
@@ -1929,23 +2421,22 @@
         <div class="row"><div class="grow"><p class="eyebrow">Merchant</p><h2>The Wandering Market</h2></div></div>
         <div class="row">${resbar(run)}<span class="grow"></span><button class="btn" id="shArmy">${ic('army')} Army</button></div>
         ${section('Recruits', ['recruit'])}
-        ${section('Talents', ['talent'])}
+        ${section('Skills', ['skill'])}
+        ${section('Gear', ['gear'])}
+        ${section('Enchantments', ['scroll'])}
         ${section('Relics', ['relic'])}
-        ${section('Services', ['heal', 'banner'])}
+        ${section('Services', ['supply', 'manual'])}
         <div class="row end"><button class="btn primary" id="shLeave">Leave the market</button></div>
       </div>`
     );
     for (const b of $$('[data-buy]', v))
-      b.onclick = async () => {
+      b.onclick = () => {
         const i = +b.dataset.buy;
         const it = p.stock[i];
-        let rid = null;
-        if (it.kind === 'talent') {
-          rid = await pickUnit('Teach ' + TALENTS[it.talent].name, esc(TALENTS[it.talent].desc), (u) => R.canLearn(u, it.talent));
-          if (!rid) return;
-        }
-        if (R.buy(run, i, rid)) {
+        const before = R.commanderLevel(run);
+        if (R.buy(run, i)) {
           sfx('coin');
+          if (it.kind === 'manual' && R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
           shopScreen();
         }
       };
@@ -1961,28 +2452,36 @@
   function restScreen() {
     const run = UI.run;
     const p = run.pending;
-    const wounded = run.roster.filter((u) => u.wounded).length;
+    const xp = 12 + 2 * (run.act - 1);
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Campfire</p><h2>A night by the fire</h2></div>
-        <p class="muted">${wounded ? `${wounded} of your units are wounded.` : 'Your soldiers are in good health.'} Banners: ${run.banners}/${run.maxBanners}.</p>
-        ${p.done ? `<p class="hint">${p.done === 'rest' ? 'Your army rests. Wounds are healed and spirits rise.' : 'Training pays off.'}</p>` : `<div class="cards">
-          <button class="card" id="rsRest"><div class="kind">${ic('fire')} Rest</div><div class="title">Rest</div><div class="desc">Heal all wounds and restore 1 Banner.</div></button>
-          <button class="card" id="rsTrain" ${run.roster.some((u) => u.rank < 3) ? '' : 'disabled'}><div class="kind">${ic('up')} Train</div><div class="title">Train</div><div class="desc">Promote one unit by a rank for free.</div></button>
-        </div>`}
+        <div class="row">${resbar(run)}</div>
+        ${p.done ? `<p class="hint">${p.done === 'drill' ? 'Your soldiers drill until dawn. Your command grows sharper.' : 'A quiet night of study and repair. The new item is in your pack.'}</p>${p.levels ? levelUpHTML(p.levels.from, p.levels.to) : ''}` : `
+        <div class="cards">
+          <button class="card" id="rsDrill"><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level: more Supply, and in time more units on the field.</div></button>
+        </div>
+        <div><div class="eyebrow">Or study: take one skill</div><div class="cards">${p.skills.map((id, i) => itemCard('skill', id, `data-study="${i}"`)).join('')}</div></div>
+        <div><div class="eyebrow">Or tinker: take one piece of gear</div><div class="cards">${p.gear.map((id, i) => itemCard('gear', id, `data-tinker="${i}"`)).join('')}</div></div>`}
         <div class="row end"><button class="btn" id="rsArmy">${ic('army')} Army</button><button class="btn primary" id="rsGo" ${p.done ? '' : 'disabled'}>Break camp</button></div>
       </div>`
     );
-    if ($('#rsRest', v))
-      $('#rsRest', v).onclick = () => {
-        R.rest(run, 'rest');
+    if ($('#rsDrill', v))
+      $('#rsDrill', v).onclick = () => {
+        R.rest(run, 'drill');
         sfx('heal');
         restScreen();
       };
-    if ($('#rsTrain', v))
-      $('#rsTrain', v).onclick = async () => {
-        const rid = await pickUnit('Train', 'Choose a unit to promote.', (u) => u.rank < 3);
-        if (rid && R.rest(run, 'train', rid)) {
+    for (const b of $$('[data-study]', v))
+      b.onclick = () => {
+        if (R.rest(run, 'study', +b.dataset.study)) {
+          sfx('coin');
+          restScreen();
+        }
+      };
+    for (const b of $$('[data-tinker]', v))
+      b.onclick = () => {
+        if (R.rest(run, 'tinker', +b.dataset.tinker)) {
           sfx('coin');
           restScreen();
         }
@@ -2031,12 +2530,10 @@
           <h2>${esc(ev.title)}</h2>
           <p>${esc(ev.text)}</p>
           ${p.result ? `<p class="result">${esc(p.result)}</p>` : choices
-            .map(
-              (c) => `<button class="choice" data-choice="${esc(c.id)}" ${c.enabled ? '' : 'disabled'}><b>${esc(c.label)}</b><span>${esc(c.detail)}</span></button>`
-            )
+            .map((c) => `<button class="choice" data-choice="${esc(c.id)}" ${c.enabled ? '' : 'disabled'}><b>${esc(c.label)}</b><span>${esc(c.detail)}</span></button>`)
             .join('')}
         </div>
-        ${p.result ? `<div class="row end"><button class="btn primary" id="evGo">Continue</button></div>` : ''}
+        ${p.result ? `<div class="row end"><button class="btn" id="evArmy">${ic('army')} Army</button><button class="btn primary" id="evGo">Continue</button></div>` : ''}
       </div>`
     );
     for (const b of $$('[data-choice]', v))
@@ -2044,20 +2541,17 @@
         const c = choices.find((x) => x.id === b.dataset.choice);
         let rid = null;
         if (c.pick) {
-          const filter = c.pick.talent
-            ? (u) => R.canLearn(u, c.pick.talent)
-            : c.pick.filter === 'promote'
-              ? (u) => u.rank < 3
-              : (u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity);
-          rid = await pickUnit(c.label, esc(c.detail), filter);
+          rid = await pickUnit(c.label, esc(c.detail), (u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity));
           if (!rid) return;
         }
+        const before = R.commanderLevel(run);
         const out = R.chooseEvent(run, c.id, rid);
         if (out == null) {
           toast('That choice is not available.');
           return;
         }
         sfx('click');
+        if (R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
         if (run.pending && run.pending.type === 'battle') {
           toast(out);
           route();
@@ -2065,6 +2559,7 @@
         }
         eventScreen();
       };
+    if ($('#evArmy', v)) $('#evArmy', v).onclick = () => armySheet(() => eventScreen());
     if ($('#evGo', v))
       $('#evGo', v).onclick = () => {
         R.completeNode(run);
@@ -2080,19 +2575,19 @@
     R.clearSave();
     const v = showView(
       `<div class="wrap">
-        <div><p class="eyebrow">${run.won ? 'The Spire is silent' : 'Your banners have fallen'}</p>
-        <h2>${run.won ? 'Campaign won' : 'Campaign lost'}</h2></div>
+        <div><p class="eyebrow">${run.won ? 'The Spire is silent' : 'The campaign is over'}</p>
+        <h2>${run.won ? 'Campaign won' : 'Campaign ended'}</h2></div>
         <p class="muted">${run.won ? 'The Ashen Tyrant is slain and the arena bows to your warband.' : `Your march ended in ${ACTS[run.act].short}, ${esc(ACTS[run.act].name)}.`}</p>
         <div class="end-stats">
           <div class="stat"><b>${st.battles}</b><span>Battles won</span></div>
-          <div class="stat"><b>${st.elites}</b><span>Elites</span></div>
-          <div class="stat"><b>${st.bosses}</b><span>Bosses</span></div>
+          <div class="stat"><b>${st.losses}</b><span>Retries</span></div>
+          <div class="stat"><b>${st.firstTry}</b><span>First-try wins</span></div>
+          <div class="stat"><b>${R.commanderLevel(run)}</b><span>Commander level</span></div>
           <div class="stat"><b>${st.kills}</b><span>Enemies slain</span></div>
           <div class="stat"><b>${st.gold}</b><span>Gold earned</span></div>
-          <div class="stat"><b>${st.efficiency}</b><span>Efficiency gold</span></div>
         </div>
         <div class="roster">${run.roster
-          .map((u) => `<div class="rcard"><canvas data-p="${u.type}:P"></canvas><span class="nm">${esc(u.name)}</span><span class="ty">${UNITS[u.type].name} <span class="stars">${stars(u.rank)}</span></span></div>`)
+          .map((u) => `<div class="rcard"><canvas data-p="${u.type}:P"></canvas><span class="nm">${esc(u.name)}</span><span class="ty">${UNITS[u.type].name}${u.enchant ? ' · ' + esc(ENCHANTS[u.enchant].name) : ''}</span></div>`)
           .join('')}</div>
         <div class="row end"><button class="btn primary" id="enNew">${ic('swords')} New campaign</button><button class="btn" id="enTitle">Title</button></div>
       </div>`
@@ -2114,34 +2609,34 @@
       `${sheetHead('How to play')}
       <div class="help">
         <h4>The campaign</h4>
-        <p>March through three acts on a branching map. Each act ends with a boss. Banners are your lives: lose a battle and you lose a Banner, then try the same fight again with a new plan.</p>
-        <h4>The war room</h4>
-        <p>Before every battle you see the whole enemy army and where it stands. Spend Command Points to deploy units into your blue zone. Every point you leave unspent pays 4 gold if you win, so a sharp counter-pick also funds your next promotion.</p>
-        <h4>Your turn</h4>
+        <p>March through three acts on a branching map: battles, elites, merchants, campfires, events and treasure. Each act ends with a boss. You can lose as often as you need: a defeat sends you back to the war room to re-plan against the same enemy.</p>
+        <h4>Supply and the war room</h4>
+        <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
+        <h4>Levels, abilities, skills and gear</h4>
         <ul>
-          <li>Each ready unit (glowing ring) can move once and use its action once, in either order.</li>
-          <li>Then choose which way it faces. Its back is its weak side.</li>
-          <li>After acting, a unit recovers for turns equal to its Recover stat. Moving without acting costs half.</li>
+          <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
+          <li>Level 2 (+2 Supply): +20% HP, +15% power, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% power, a Mastery and a second gear slot.</li>
+          <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
+          <li>Enchantment scrolls bind a permanent power to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
-        <h4>Facing, block and armor</h4>
+        <h4>Commander level</h4>
+        <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
+        <h4>Damage, facing and defense</h4>
         <ul>
-          <li>Physical attacks can be blocked: full Block from the front, half from the side, never from behind.</li>
-          <li>Armor reduces physical damage. Magic ignores both armor and block.</li>
-          <li>Fireballs, lightning and dragon fire hit your own units too.</li>
+          <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
+          <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
+          <li>After acting, a unit recovers for turns equal to its Recover stat. Moving without acting costs half.</li>
         </ul>
         <h4>Missions</h4>
         <ul>
-          <li>Each battle has a goal: rout the enemy, burn their War Banner, break a prison cage, assassinate a Commander, hold a shrine, or survive. Routing the enemy always wins.</li>
-          <li>Bonus goals pay extra. Loot on the field (a war chest, a tome, a relic) goes to the unit that stands on it and spends its action. Specters guard the best loot and take half damage from physical attacks.</li>
-          <li>Some missions feature a unit that sat out your last battle. Field it and win, and it earns a free promotion.</li>
+          <li>Rout the enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive, storm a castle gate, or stop a convoy of loot wagons. Routing always wins.</li>
+          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, or fielding a unit that sat out your last battle.</li>
         </ul>
-        <h4>Growing your army</h4>
-        <p>After each victory, choose a new recruit, a talent for one unit, or a promotion. Spend gold in the Army screen to promote units to Rank II and III. Units that fall are wounded and start their next battle at half HP unless they sit one out or rest.</p>
         <h4>Controls</h4>
         <ul>
-          <li>Tap a unit, tap a blue tile to move, tap a red enemy to aim, then tap again to confirm.</li>
-          <li>Long-press any unit for its details. Pinch, drag, or use + and − to zoom.</li>
-          <li>The eye button shows every tile the enemy can strike next turn.</li>
+          <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
+          <li>In the war room, tap a deployed unit again to open its loadout. Long-press any unit for details.</li>
+          <li>Pinch, drag, or use + and − to zoom. The eye button shows every tile the enemy can strike next turn.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>
       </div>
@@ -2149,20 +2644,39 @@
     );
   }
 
-  function codexSheet() {
-    const types = AG.Data.RECRUITABLE;
-    openSheet(
-      `${sheetHead('Units', 'Every unit you can recruit, and every unit you will face.')}
-      <div class="codex-grid">${types
-        .map((t) => {
-          const u = R.unitStats({ type: t, rank: 1 }, [], 'P');
-          const T = UNITS[t];
-          return `<div class="card"><div class="card-head"><canvas class="portrait" data-p="${t}:P"></canvas>
-            <div><div class="kind">${T.rarity} · ${T.cost} CP</div><div class="title">${T.name}</div></div></div>
-            ${statsHTML(u)}<p class="ability"><b>${esc(T.act.name)}.</b> ${esc(abilityText(u))}</p>
+  function codexSheet(tab) {
+    const t = tab || 'units';
+    let body = '';
+    if (t === 'units' || t === 'enemies') {
+      const types = t === 'units' ? D.RECRUITABLE : Object.keys(UNITS).filter((k) => ['enemy', 'boss'].includes(UNITS[k].rarity) || ['cart', 'wall', 'gate', 'barrel'].includes(k));
+      body = `<div class="codex-grid">${types
+        .map((type) => {
+          const u = R.unitStats(null, { type, level: 1 }, t === 'units' ? 'P' : 'E');
+          const T = UNITS[type];
+          const ab = T.abilities
+            ? `<div class="small"><b>Level 1:</b> ${T.abilities[1].map((id) => esc(ABILITIES[id].name)).join(' / ')}<br><b>Level 2:</b> ${T.abilities[2].map((id) => esc(ABILITIES[id].name)).join(' / ')}<br><b>Mastery:</b> ${esc(MASTERY[type].name)}</div>`
+            : '';
+          return `<div class="card"><div class="card-head"><canvas class="portrait" data-p="${type}:${t === 'units' ? 'P' : 'E'}"></canvas>
+            <div><div class="kind">${T.rarity}${T.cost ? ' · ' + T.cost + ' Supply' : ''}</div><div class="title">${T.name}</div></div></div>
+            ${statsHTML(u)}${actsHTML(u)}${ab}
             <p class="small muted">${esc(T.tip)}</p></div>`;
         })
-        .join('')}</div>`
+        .join('')}</div>`;
+    } else {
+      const src = t === 'skills' ? SKILLS : t === 'gear' ? GEAR : ENCHANTS;
+      body = `<div class="army-list">${Object.values(src)
+        .map((d) => `<div class="card"><div class="kind">${t === 'enchant' ? `+${d.surcharge} Supply surcharge` : `${d.cost} Supply`}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div></div>`)
+        .join('')}</div>`;
+    }
+    openSheet(
+      `${sheetHead('Codex', 'Every unit you can recruit, every foe you will face, and every skill, piece of gear and enchantment.')}
+      <div class="tabs wrap-tabs">${[['units', 'Units'], ['enemies', 'Foes'], ['skills', 'Skills'], ['gear', 'Gear'], ['enchant', 'Enchant']]
+        .map(([k, l]) => `<button class="btn ${t === k ? 'on' : ''}" data-cx="${k}">${l}</button>`)
+        .join('')}</div>
+      ${body}`,
+      (sh) => {
+        for (const b of $$('[data-cx]', sh)) b.onclick = () => codexSheet(b.dataset.cx);
+      }
     );
   }
 

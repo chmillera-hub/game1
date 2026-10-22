@@ -1,21 +1,35 @@
-// Plays whole campaigns with the AI on both sides. Run: node tests/run.test.js [runs] [difficulty]
+// Plays whole campaigns with the AI on both sides. Losses are retried, as in the game.
+// Run: node tests/run.test.js [runs] [difficulty] [maxTries]
 const assert = require('assert');
 const AG = require('./load')();
 const R = AG.Run;
 const E = AG.Engine;
-const N = +process.argv[2] || 20;
+const D = AG.Data;
+const N = +process.argv[2] || 12;
 const DIFF = process.argv[3] || 'knight';
+const MAX_TRIES = +process.argv[4] || 6;
+
+function checkLoadouts(run) {
+  const seen = new Set();
+  for (const r of run.roster) {
+    R.normalizeLoad(run, r);
+    for (const uid of r.load.skills.concat(r.load.gear)) {
+      assert.ok(!seen.has(uid), 'an item is slotted in two units');
+      seen.add(uid);
+      assert.ok(R.itemByUid(run, uid), 'slotted item exists');
+    }
+  }
+}
 
 function playBattle(run) {
   const p = run.pending;
-  const node = R.getNode(run, p.nodeId);
-  const cp = R.cpFor(run, node, false, p.enc.kind);
-  const dep = R.suggestDeployment(run, cp);
+  const dep = R.autoDeploy(run, p.attempt || 0);
   assert.ok(dep.length > 0, 'deployment possible');
-  const used = dep.reduce((t, d) => t + R.deployCost(run, d.rid), 0);
-  assert.ok(used <= cp, 'within CP');
+  assert.ok(R.supplyUsed(run, dep) <= R.battleSupply(run), 'within Supply');
+  assert.ok(dep.length <= R.unitCap(run), 'within the unit cap');
   const rows = R.deployRows(run, p.enc);
   for (const d of dep) assert.ok(rows.includes(d.y) && p.enc.terrain[d.y * p.enc.w + d.x] === 0, 'valid deploy tile');
+  checkLoadouts(run);
   const s = E.createBattle(R.battleConfig(run, dep));
   let guard = 0;
   while (!s.over && guard++ < 100) {
@@ -27,21 +41,18 @@ function playBattle(run) {
 }
 
 function pickUnit(run, pick) {
-  const ok = run.roster.filter((u) => {
-    if (pick.talent) return R.canLearn(u, pick.talent);
-    if (pick.filter === 'promote') return u.rank < 3;
-    if (pick.filter === 'transmute') return ['common', 'uncommon'].includes(AG.Data.UNITS[u.type].rarity);
-    return true;
-  });
+  const ok = run.roster.filter((u) => (pick.filter === 'transmute' ? ['common', 'uncommon'].includes(D.UNITS[u.type].rarity) : true));
   return ok.length ? ok[0].id : null;
 }
 
-const results = { won: 0, lost: 0, acts: [0, 0, 0, 0, 0], battles: 0 };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, lv: [], walls: [] };
+const t0 = Date.now();
 for (let i = 0; i < N; i++) {
-  const run = R.newRun({ seed: 9000 + i, warband: AG.Data.WARBANDS[i % 4].id, difficulty: DIFF });
+  const run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
   const rng = new AG.RNG(i + 1);
   let steps = 0;
-  while (!run.over && steps++ < 400) {
+  let stuck = false;
+  while (!run.over && steps++ < 500 && !stuck) {
     if (!run.pending) {
       const opts = R.availableNodes(run);
       assert.ok(opts.length, 'map has a way forward');
@@ -50,37 +61,51 @@ for (let i = 0; i < N; i++) {
     }
     const p = run.pending;
     if (p.type === 'battle') {
-      const r = playBattle(run);
+      const act = run.act;
+      const kind = p.enc.kind;
+      let res;
+      let tries = 0;
+      do {
+        res = playBattle(run);
+        tries++;
+      } while (!res.won && tries < MAX_TRIES);
       results.battles++;
+      results.tries += tries;
+      results.first[act][1]++;
+      if (tries === 1) results.first[act][0]++;
+      const k = (results.kinds[kind + act] = results.kinds[kind + act] || [0, 0]);
+      k[1]++;
+      if (tries === 1) k[0]++;
+      if (!res.won) {
+        stuck = true;
+        results.walls.push(`${run.warband} act ${act} ${kind} ${p.enc.name}`);
+        if (process.env.VERBOSE) {
+          const army = R.autoDeploy(run).map((d) => { const r = R.unitById(run, d.rid); return r.type + 'L' + r.load.lv; });
+          console.log(`  WALL ${p.enc.name} (${p.enc.primary}, budget ${p.enc.budget}) E: ${p.enc.units.map((u) => u.type + 'L' + (u.level || 1)).join(' ')} | P supply ${R.battleSupply(run)}: ${army.join(' ')}`);
+        }
+      }
       continue;
     }
     if (p.type === 'reward') {
       if (p.bossRelics && !p.bossRelicTaken) R.takeBossRelic(run, p.bossRelics[0]);
+      if (p.tome && !p.tomeTaken) R.takeTome(run, 0);
       const idx = rng.int(p.spoils.length);
-      const sp = p.spoils[idx];
-      let rid = null;
-      if (sp.type === 'talent') rid = pickUnit(run, { talent: sp.talent });
-      if (sp.type === 'promote') rid = pickUnit(run, { filter: 'promote' });
-      if (!R.takeSpoil(run, idx, rid)) R.skipSpoils(run);
+      if (!R.takeSpoil(run, idx)) R.skipSpoils(run);
+      for (const sc of run.items.filter((it) => it.kind === 'scroll')) {
+        const r = run.roster.find((u) => !u.enchant && D.eligible(u.type, D.ENCHANTS[sc.id]));
+        if (r) assert.ok(R.applyScroll(run, sc.uid, r.id));
+      }
       R.completeNode(run);
       continue;
     }
     if (p.type === 'shop') {
-      for (let k = 0; k < p.stock.length; k++) {
-        const it = p.stock[k];
-        if (!R.canBuy(run, it) || rng.chance(0.5)) continue;
-        const rid = it.kind === 'talent' ? pickUnit(run, { talent: it.talent }) : null;
-        R.buy(run, k, rid);
-      }
+      for (let k = 0; k < p.stock.length; k++) if (R.canBuy(run, p.stock[k]) && rng.chance(0.5)) R.buy(run, k);
       R.completeNode(run);
       continue;
     }
     if (p.type === 'rest') {
-      if (run.banners < run.maxBanners || run.roster.some((u) => u.wounded)) assert.ok(R.rest(run, 'rest'));
-      else {
-        const rid = pickUnit(run, { filter: 'promote' });
-        if (!rid || !R.rest(run, 'train', rid)) R.rest(run, 'rest');
-      }
+      const c = rng.pick(['drill', 'study', 'tinker']);
+      assert.ok(R.rest(run, c, 0) || R.rest(run, 'drill'));
       R.completeNode(run);
       continue;
     }
@@ -101,11 +126,17 @@ for (let i = 0; i < N; i++) {
     }
     throw new Error('unknown pending ' + p.type);
   }
-  assert.ok(run.over, 'run finished');
   JSON.parse(JSON.stringify(run));
-  if (run.won) results.won++;
-  else results.lost++;
-  results.acts[run.won ? 4 : run.act]++;
-  console.log(`run ${i} ${run.warband.padEnd(9)} ${run.won ? 'WON ' : 'lost'} act ${run.act} roster=${run.roster.length} relics=${run.relics.length} gold=${run.gold} battles=${run.stats.battles}`);
+  if (run.won) results.done++;
+  else results.stuck++;
+  results.lv.push(R.commanderLevel(run));
+  console.log(
+    `run ${i} ${run.warband.padEnd(8)} ${run.won ? 'WON  ' : 'STUCK'} act ${run.act} lv ${R.commanderLevel(run)} xp ${run.xp} supply ${R.supplyFor(run)} cap ${R.unitCap(run)} roster=${run.roster.length} items=${run.items.length} relics=${run.relics.length} gold=${run.gold} battles=${run.stats.battles} losses=${run.stats.losses}`
+  );
 }
-console.log(`runs: won ${results.won}, lost ${results.lost}; reached act1=${results.acts[1]} act2=${results.acts[2]} act3=${results.acts[3]} cleared=${results.acts[4]}; battles=${results.battles}`);
+const pct = ([a, b]) => (b ? Math.round((100 * a) / b) + '%' : '-');
+console.log(`campaigns: won ${results.done}, stuck ${results.stuck} (more than ${MAX_TRIES} tries) · battles ${results.battles}, avg tries ${(results.tries / Math.max(1, results.battles)).toFixed(2)}`);
+console.log(`first-try wins: act1 ${pct(results.first[1])} act2 ${pct(results.first[2])} act3 ${pct(results.first[3])}`);
+console.log('by kind:', Object.entries(results.kinds).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
+if (results.walls.length) console.log('walls:', results.walls.join(' | '));
+console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);
