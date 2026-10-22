@@ -2167,8 +2167,8 @@
   function snap(hit, cands) {
     if (!cands.length) return null;
     const b = UI.board;
-    if (hit.unitTile) {
-      const m = cands.find((c) => c.x === hit.unitTile.x && c.y === hit.unitTile.y);
+    for (const st of hit.stack || (hit.unitTile ? [hit.unitTile] : [])) {
+      const m = cands.find((c) => c.x === st.x && c.y === st.y);
       if (m) return m;
     }
     if (hit.tile) {
@@ -2231,11 +2231,12 @@
       const A = activationOf(u);
       const tileUnit = hit.tile ? E.at(s, hit.tile.x, hit.tile.y) : null;
       const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
-      // 1. An enemy under the finger that the main attack can hit: aim at it. The sprite the
-      // player sees comes first, then whoever stands on the tile beneath it.
+      // 1. An enemy under the finger that the main attack can hit: aim at it. Sprites come
+      // first, front to back, then whoever stands on the tile beneath the finger.
       if (!(A && A.acted) && directKinds(u.act.kind) && E.actUsable(s, u, 0)) {
         const tgts = E.targetsFrom(s, u, 0);
-        for (const cand of [spriteUnit, tileUnit]) {
+        const under = (hit.stack || []).map((st) => s.byId[st.uid]);
+        for (const cand of [...under, tileUnit]) {
           if (!cand || cand.team === u.team) continue;
           const t = tgts.find((k) => k.uid === cand.uid);
           if (t) {

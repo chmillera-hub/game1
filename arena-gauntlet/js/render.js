@@ -264,20 +264,19 @@
     }
 
     // What a tap at (px, py) points at: the tile under the finger and any unit sprite there.
+    // What lies under a point: the tile, the front-most sprite, and every sprite there,
+    // front to back (a unit can peek out from behind a bigger one).
     hit(px, py) {
       const tile = this.tileAt(px, py);
-      let unitTile = null;
+      const stack = [];
       const list = [...this.vis.values()].filter((v) => v.alpha > 0.3).sort((a, b) => b.x + b.y - (a.x + a.y) || b.x - a.x);
       for (const v of list) {
         const [cx, cy] = this.center(v.x, v.y);
         const hgt = (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1);
         const half = this.tw * 0.3;
-        if (px >= cx - half && px <= cx + half && py <= cy + this.th * 0.35 && py >= cy - hgt) {
-          unitTile = { x: Math.round(v.x), y: Math.round(v.y), uid: v.uid };
-          break;
-        }
+        if (px >= cx - half && px <= cx + half && py <= cy + this.th * 0.35 && py >= cy - hgt) stack.push({ x: Math.round(v.x), y: Math.round(v.y), uid: v.uid });
       }
-      return { tile, unitTile, px, py, grid: this.toGrid(px, py) };
+      return { tile, unitTile: stack[0] || null, stack, px, py, grid: this.toGrid(px, py) };
     }
 
     // ---------------------------------------------------------- units
