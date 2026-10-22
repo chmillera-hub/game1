@@ -712,7 +712,7 @@ def _note_text(cr, s, x, y, size, fam, ink, pal, seed=0, clip=None):
 
 
 def note_hold(light=None, t=0.0, unfold=0.0, angle=0.0, upright=False):
-    """Hold callback: the folded note pinched or flat under the fingers (slide_note, read_note).
+    """Hold callback: the folded note pinched or flat under the fingers (slide_note, hold_item).
     upright=True keeps it level on screen."""
     def cb(cr, f):
         cr.save()
@@ -728,7 +728,8 @@ def note_hold(light=None, t=0.0, unfold=0.0, angle=0.0, upright=False):
 # ========================================================================================
 
 # name -> (width, height) at scale 1.0; the anchor of every remedy is its bottom centre
-REMEDIES = {"sleep": (50.0, 81.0), "vitamins": (48.0, 62.0), "calm": (47.0, 53.0), "book": (70.0, 30.0)}
+REMEDIES = {"sleep": (50.0, 81.0), "vitamins": (48.0, 62.0), "calm": (47.0, 53.0), "book": (70.0, 30.0),
+            "book_up": (70.0, 72.0)}
 
 
 def _glass_body(q, pts, mat, size, tension=0.8):
@@ -1045,7 +1046,7 @@ def candle_glow(cr, rig, scale=1.0, t=0.0, flame="cool", strength=1.0):
 
 def draw_remedy(cr, name, x, y, scale=1.0, light=None, t=0.0, angle=0.0, detail=None, **kw):
     """Dispatch by name: "sleep" (SLEEP DRAUGHT), "vitamins", "calm" (candle), "book" (the
-    coloring book lying flat). Anchor = bottom centre."""
+    coloring book lying flat) or "book_up" (standing, its cover to us). Anchor = bottom centre."""
     if name == "sleep":
         return draw_sleep_draught(cr, x, y, scale, light, t, angle, detail, **kw)
     if name == "vitamins":
@@ -1054,6 +1055,9 @@ def draw_remedy(cr, name, x, y, scale=1.0, light=None, t=0.0, angle=0.0, detail=
         return draw_calm_candle(cr, x, y, scale, light, t, angle, detail=detail, **kw)
     if name == "book":
         return draw_coloring_book(cr, x, y - 5.0 * scale, scale, light, t, angle, state="flat", detail=detail, **kw)
+    if name == "book_up":         # standing on its bottom edge, cover to us, leaning a touch
+        return draw_coloring_book(cr, x, y - BOOK_H * 0.5 * scale, scale, light, t, angle - 0.06, state="closed",
+                                  detail=detail, **kw)
     raise ValueError(f"unknown remedy {name!r}")
 
 
@@ -1074,8 +1078,9 @@ def remedy_hold(name, light=None, t=0.0, upright=True, **kw):
 def pile_layout(n=4):
     """A neat, absurdly tall S2 counter pile: [(name, dx, dy)] offsets (scale 1.0) from the pile's
     bottom centre for the first n items, in the order the pharmacist sets them down (SLEEP
-    DRAUGHT, VITAMINS, CALM, the book on top), each dy = the surface it stands on."""
-    lay = [("sleep", -30.0, 0.0), ("vitamins", 24.0, 0.0), ("calm", 24.0, -62.0), ("book", -4.0, -112.0)]
+    DRAUGHT, VITAMINS, CALM stacked on the jar, the coloring book stood up beside them, cover
+    out), each dy = the surface it stands on. Draw them in this order."""
+    lay = [("sleep", -44.0, 0.0), ("vitamins", 8.0, 0.0), ("calm", 8.0, -62.0), ("book_up", 70.0, 0.0)]
     return lay[:max(0, min(n, 4))]
 
 
@@ -1086,9 +1091,14 @@ def pile_layout(n=4):
 BOOK_W, BOOK_H = 64.0, 72.0           # one page / the closed cover
 
 
-def _mandala(cr, cx, cy, r, color, alpha=1.0, w=0.9, seed=0, rings=3, petals=12):
-    """Line-art mandala / rose window: concentric rings of petals (one batched ink fill)."""
+@functools.lru_cache(maxsize=64)
+def _mandala_path(rings, petals, wk):
+    """The line-art mandala of unit radius as a captured cairo path of tapered ink strokes
+    (wk = stroke width / radius) -- built once, then translated and scaled into place."""
+    surf = core.new_surface(2, 2)
+    cr = cairo.Context(surf)
     lines = []
+    r = 1.0
     for k in range(rings):
         rr0 = r * (0.22 + 0.78 * k / max(1, rings))
         rr1 = r * (0.22 + 0.78 * (k + 1) / max(1, rings))
@@ -1098,14 +1108,36 @@ def _mandala(cr, cx, cy, r, color, alpha=1.0, w=0.9, seed=0, rings=3, petals=12)
             a = off + TAU * i / n
             a0, a1 = a - math.pi / n * 0.95, a + math.pi / n * 0.95
             mid = (rr0 + rr1) * 0.5
-            lines.append([(cx + math.cos(a0) * rr0, cy + math.sin(a0) * rr0),
-                          (cx + math.cos(a - 0.04) * (mid + (rr1 - rr0) * 0.25), cy + math.sin(a - 0.04) * (mid + (rr1 - rr0) * 0.25)),
-                          (cx + math.cos(a) * rr1, cy + math.sin(a) * rr1),
-                          (cx + math.cos(a + 0.04) * (mid + (rr1 - rr0) * 0.25), cy + math.sin(a + 0.04) * (mid + (rr1 - rr0) * 0.25)),
-                          (cx + math.cos(a1) * rr0, cy + math.sin(a1) * rr0)])
-        lines.append(_ellipse_pts(cx, cy, rr1, rr1, 28) + [_ellipse_pts(cx, cy, rr1, rr1, 28)[0]])
-    lines.append(_ellipse_pts(cx, cy, r * 0.12, r * 0.12, 12) + [_ellipse_pts(cx, cy, r * 0.12, r * 0.12, 12)[0]])
-    B.detail_lines(cr, lines, w, color, alpha, taper=(0.8, 1.0, 0.8))
+            lines.append([(math.cos(a0) * rr0, math.sin(a0) * rr0),
+                          (math.cos(a - 0.04) * (mid + (rr1 - rr0) * 0.25), math.sin(a - 0.04) * (mid + (rr1 - rr0) * 0.25)),
+                          (math.cos(a) * rr1, math.sin(a) * rr1),
+                          (math.cos(a + 0.04) * (mid + (rr1 - rr0) * 0.25), math.sin(a + 0.04) * (mid + (rr1 - rr0) * 0.25)),
+                          (math.cos(a1) * rr0, math.sin(a1) * rr0)])
+        ring = _ellipse_pts(0.0, 0.0, rr1, rr1, 28)
+        lines.append(ring + [ring[0]])
+    ring = _ellipse_pts(0.0, 0.0, r * 0.12, r * 0.12, 12)
+    lines.append(ring + [ring[0]])
+    a_, m_, b_ = 0.8, 1.0, 0.8
+
+    def prof(s_):
+        return wk * (a_ + (m_ - a_) * (s_ / 0.5) if s_ < 0.5 else m_ + (b_ - m_) * ((s_ - 0.5) / 0.5))
+    cr.new_path()
+    for pts in lines:
+        core.tapered(cr, pts, wk, wk, profile=prof, cap=True)
+    return cr.copy_path()
+
+
+def _mandala(cr, cx, cy, r, color, alpha=1.0, w=0.9, seed=0, rings=3, petals=12):
+    """Line-art mandala / rose window: concentric rings of petals (one cached ink fill)."""
+    path = _mandala_path(int(rings), int(petals), round(w / max(r, 1e-3), 4))
+    cr.save()
+    cr.translate(cx, cy)
+    cr.scale(r, r)
+    cr.new_path()
+    cr.append_path(path)
+    core.src(cr, color, alpha)
+    cr.fill()
+    cr.restore()
 
 
 def _cover_art(q, x0, y0, w, h, pal):
@@ -2089,6 +2121,33 @@ def _end_frame(xe, sh):
     return g
 
 
+@functools.lru_cache(maxsize=256)
+def _bench_pairs(key, tag, bars):
+    """The ironwork of a set of bars as two captured paths in the bench's local units: the
+    union's dilated outline and the union itself (cached: a bench's ironwork only changes with
+    its yaw, elevation, size and the line weight, so a dragged bench costs fills only)."""
+    yaw, elev, _L, _sh, lw = key
+    proj = B.Proj(yaw, elev)
+    prs = [_tube_pair([proj.xy(p3) for p3 in pts], [rad] * len(pts), lw) for pts, rad in bars]
+    c = cairo.Context(core.new_surface(2, 2))
+    c.new_path()
+    for _a, o in prs:
+        core.polygon(c, o)
+    outline = Path(c)
+    for a, _o in prs:
+        core.polygon(c, a)
+    return outline, Path(c)
+
+
+def _union_paths_shade(q, paths, mat, size, rim=1.0):
+    """Shade a cached (outline, union) pair: one outline fill, one house shading pass."""
+    outline, shape = paths
+    outline.add(q.cr)
+    core.src(q.cr, q.P(mat).line)
+    q.cr.fill()
+    return q.shade(shape, mat, size, rim=rim)
+
+
 def draw_garden_bench(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.12, length=BENCH_LEN,
                       seat_h=BENCH_SEAT_H, part="all", detail=None, crumbs=0):
     """The garden bench (S6-S8): oak slats on wrought-iron end frames with scrolled arms.
@@ -2098,7 +2157,7 @@ def draw_garden_bench(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.12
     exactly like the cast, so it turns continuously: yaw 0 = front view, +-0.5 = 3/4 front,
     +-1.45 = side view (the iron scrolls in profile). At scale 1.0: seat top seat_h = 125 above
     the ground (BENCH_SEAT_H), seat depth BENCH_DEPTH = 84 (front edge 42 in front of the
-    sitter's anchor, backrest 46 behind it), back top ~245, length BENCH_LEN = 400 (param).
+    sitter's anchor, backrest 46 behind it), back top ~245, length BENCH_LEN = 440 (param).
     part: "all", "back" (everything but the NEAR end's front leg and arm) and "front" (just
     those): draw "back", then the sitters, then "front" (in the front view there is no near
     end: "back" is the whole bench). crumbs = n crumbs lying on the seat.
@@ -2111,19 +2170,20 @@ def draw_garden_bench(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.12
     oak = Mat.of("#8E6A44", sheen=0.15)
     iron = q.M["iron"]
     frames = {e: _end_frame(e, seat_h) for e in (-xe, xe)}
+    key = (round(yaw, 4), round(elev, 4), round(L, 2), round(seat_h, 2), round(q.lw, 3))
 
-    def pairs(bars):
-        return [_tube_pair([proj.xy(p3) for p3 in pts], [rad] * len(pts), q.lw) for pts, rad in bars]
+    def pairs(bars, tag=""):
+        return _bench_pairs(key, tag, tuple((tuple(pts), rad) for pts, rad in bars))
 
     if part in ("all", "back"):
-        _union_shade(q, pairs(frames[-xe]["post"] + frames[xe]["post"]), iron, 8.0, rim=0.6)
+        _union_paths_shade(q, pairs(frames[-xe]["post"] + frames[xe]["post"], "post"), iron, 8.0, rim=0.6)
         _crest_board(q, proj, L, seat_h, oak)                 # the carved top board, then two slats
         for hh in (52.0, 26.0):
             zb = -48.0 - 0.22 * hh
             _plank(q, proj, -L / 2 + 6, L / 2 - 6, -seat_h - hh - 10.0, -seat_h - hh + 10.0, zb - 3.0, zb + 3.0, oak,
                    top_face=False)
         far_ends = [e for e in (-xe, xe) if e != near]
-        _union_shade(q, pairs(sum((frames[e]["leg"] for e in far_ends), [])), iron, 8.0, rim=0.6)
+        _union_paths_shade(q, pairs(sum((frames[e]["leg"] for e in far_ends), []), "leg"), iron, 8.0, rim=0.6)
         for k in range(4):                                    # seat slats, back to front
             z0 = -42.0 + k * 22.0
             _plank(q, proj, -L / 2, L / 2, -seat_h - 6.0, -seat_h + 1.0, z0, z0 + 18.0, oak)
@@ -2131,7 +2191,7 @@ def draw_garden_bench(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.12
             pts = [proj.xy(((core.hash01(i, 5) - 0.5) * L * 0.8, -seat_h - 6.5, (core.hash01(i, 6) - 0.5) * 60))
                    for i in range(crumbs)]
             draw_crumbs(cr, pts, 1.0, q.light, seed=3, size=2.2)
-        _union_shade(q, pairs(sum((frames[e]["arm"] for e in far_ends), [])), iron, 8.0, rim=0.6)
+        _union_paths_shade(q, pairs(sum((frames[e]["arm"] for e in far_ends), []), "arm"), iron, 8.0, rim=0.6)
         # the scrolled iron apron under the front edge of the seat (it reads in every view)
         apron = []
         span = xe - 26.0
@@ -2143,9 +2203,9 @@ def draw_garden_bench(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.12
                 pts += [(cx_ + px * sx, -seat_h + 16.0 + py, 43.0) for px, py in sc]
                 apron.append((pts, 2.2))
         apron.append(([(-span, -seat_h + 6.0, 43.0), (span, -seat_h + 6.0, 43.0)], 2.4))
-        _union_shade(q, pairs(apron), iron, 6.0, rim=0.5)
+        _union_paths_shade(q, pairs(apron, "apron"), iron, 6.0, rim=0.5)
     if part in ("all", "front") and near is not None:
-        _union_shade(q, pairs(frames[near]["leg"] + frames[near]["arm"]), iron, 8.0, rim=0.6)
+        _union_paths_shade(q, pairs(frames[near]["leg"] + frames[near]["arm"], "near"), iron, 8.0, rim=0.6)
     q.end()
     rig = BenchRig(origin=q.C((0.0, 0.0)), scale=scale, yaw=yaw, elev=elev, length=L, seat_h=seat_h)
     rig._m = q.C
@@ -3545,3 +3605,209 @@ def draw_tavern_table(cr, x, y, scale=1.0, light=None, t=0.0, yaw=0.0, elev=0.28
         _flame(cr, cx, cy - 16.0, 12.0, 3.4, t, seed + 3, PROP_COLORS["flame_warm"], PROP_COLORS["candle_hot"], 1.0)
     q.end()
     return PropRig(top_center=q.C(proj.xy((0.0, -H - 9.0, 0.0))), top_y=q.C(proj.xy((0.0, -H - 9.0, 0.0)))[1])
+
+
+# ========================================================================================
+# character-sheet hook (python3 film/render.py --sheet --only props; and the showcase)
+# ========================================================================================
+
+def _cell(cr, w, h, light="neutral", floor=None):
+    B.sheet_bg(cr, w, h, light, floor)
+
+
+def sheet_items():
+    """Sheet cells for render.py --sheet (pages character_sheet_props_N.png) and the showcase's
+    props_sheet.png: every prop, its states, in hands, under scene lights, and at film scale."""
+    from . import characters as ch            # the cast, for the in-hand and seating cells
+    L = B.LIGHTS
+    items = []
+
+    def add(label, w, h, fn, group):
+        items.append(B.SheetItem(label, w, h, fn, group))
+
+    # ---- hand props ------------------------------------------------------------------
+    g = "hand props: the stone, the sack, the note"
+    add("speaking stone: active, key 1 pressed", 260, 170,
+        lambda cr: (_cell(cr, 260, 170), draw_speaking_stone(cr, 130, 85, 3.0, L["neutral"], 1.0, state="active", pressed=1)), g)
+    add("pulsing with the voice (back face)", 260, 170,
+        lambda cr: (_cell(cr, 260, 170, "street_night"), draw_speaking_stone(cr, 130, 85, 3.0, L["street_night"], 1.0,
+                                                                              state="pulsing", amp=0.9, face="back")), g)
+    add("idle / off", 260, 170, lambda cr: (_cell(cr, 260, 170), draw_speaking_stone(cr, 130, 50, 2.0, L["neutral"], 1.0, state="idle"),
+                                             draw_speaking_stone(cr, 130, 125, 2.0, L["neutral"], 1.0, state="off")), g)
+
+    def stone_ear(cr):
+        _cell(cr, 260, 330, "street_night")
+        t, amp = 0.6, 0.8
+        Ls = L["street_night"]
+        rig = ch.draw_dragon(cr, 70, 600, 1.15, ch.DragonPose(facing=1, near=ch.Arm("hand_to_ear", hold=stone_hold(Ls, "pulsing", amp, t)),
+                                                              mood="sad"), Ls, t)
+        stone_glow(cr, rig.hand_near.x, rig.hand_near.y, 1.15, stone_level("pulsing", amp, t), t)
+    add("held to the ear (behind the hand)", 260, 330, stone_ear, g)
+    add("sack: tied", 200, 330, lambda cr: (_cell(cr, 200, 330), draw_apothecary_bag(cr, 100, 50, 2.5, L["neutral"])), g)
+    add("sack: open (S6)", 200, 330, lambda cr: (_cell(cr, 200, 330, "dusk"), draw_apothecary_bag(cr, 100, 80, 2.3, L["dusk"], state="open")), g)
+    add("sack: rain-soaked (S3)", 200, 330, lambda cr: (_cell(cr, 200, 330, "street_night"),
+                                                         draw_apothecary_bag(cr, 100, 50, 2.5, L["street_night"], damp=1.0)), g)
+    add("note: open (the S2 insert)", 420, 260, lambda cr: (_cell(cr, 420, 260), draw_note(cr, 210, 130, 4.6, L["neutral"])), g)
+    add("note: folded / unfolding", 300, 260, lambda cr: (_cell(cr, 300, 260), draw_note(cr, 150, 70, 3.0, L["neutral"], unfold=0.0),
+                                                           draw_note(cr, 150, 185, 3.0, L["neutral"], unfold=0.72)), g)
+
+    def hands(cr):
+        _cell(cr, 900, 420, "neutral", 398)
+        t = 0.4
+        Ln = L["neutral"]
+        ch.draw_dragon(cr, 150, 410, 0.74, ch.DragonPose(facing=1, lean=0.5, near=ch.Arm("slide_note", hold=note_hold(Ln)), mood="worried"), Ln, t)
+        ch.draw_dragon(cr, 450, 410, 0.74, ch.DragonPose(facing=-1, walk=1.0, phase=0.3, far=ch.Arm("carry_bag", hold=bag_hold(Ln))), Ln, t)
+        ch.draw_dragon(cr, 720, 410, 0.74, ch.DragonPose(facing=1, near=ch.Arm("look_at_hand", stamp=smile_stamp()), mood="sad",
+                                                         head_nod=-0.3, look=(0.4, 0.6)), Ln, t)
+    add("in his hands: slide_note, carry_bag, look_at_hand (SMILE)", 900, 420, hands, g)
+
+    # ---- the apothecary ------------------------------------------------------------------
+    g = "the apothecary: remedies, coloring book, till, shelves"
+    La = L["apothecary"]
+    add("SLEEP DRAUGHT", 190, 260, lambda cr: (_cell(cr, 190, 260, "apothecary", 236), draw_sleep_draught(cr, 95, 240, 2.6, La, 1.0)), g)
+    add("VITAMINS", 190, 260, lambda cr: (_cell(cr, 190, 260, "apothecary", 236), draw_vitamins(cr, 95, 240, 2.8, La, 1.0)), g)
+    add("CALM: lit (cool spell-flame)", 190, 260, lambda cr: (_cell(cr, 190, 260, "apothecary", 236),
+                                                             candle_glow(cr, draw_calm_candle(cr, 95, 240, 2.9, La, 1.0), 2.9, 1.0),
+                                                             None), g)
+    add("CALM: unlit", 190, 260, lambda cr: (_cell(cr, 190, 260, "apothecary", 236), draw_calm_candle(cr, 95, 240, 2.9, La, 2.0, lit=0.0)), g)
+    add("coloring book: cover", 220, 260, lambda cr: (_cell(cr, 220, 260), draw_coloring_book(cr, 110, 130, 2.9, L["neutral"])), g)
+    add("open, a page turning (flip 0.3)", 360, 260, lambda cr: (_cell(cr, 360, 260, "dusk"),
+                                                                draw_coloring_book(cr, 180, 130, 2.3, L["dusk"], state="open", flip=0.3, colored=0.5)), g)
+    add("lying on the counter", 220, 260, lambda cr: (_cell(cr, 220, 260, "apothecary"), draw_coloring_book(cr, 110, 130, 2.6, La, state="flat")), g)
+
+    def pile(cr):
+        _cell(cr, 280, 330, "apothecary", 300)
+        for name, dx, dy in pile_layout(4):
+            draw_remedy(cr, name, 140 + dx * 1.3, 300 + dy * 1.3, 1.3, La, 1.0)
+    add("the absurdly neat pile (pile_layout)", 280, 330, pile, g)
+    add("brass till: idle", 260, 330, lambda cr: (_cell(cr, 260, 330, "apothecary", 300), draw_till(cr, 130, 300, 1.55, La, 0.0)), g)
+    add("rung: bell, flags, receipt 0.6", 260, 330, lambda cr: (_cell(cr, 260, 330, "apothecary", 300),
+                                                                draw_till(cr, 140, 300, 1.55, La, 23.45, ring=23.3, receipt=0.6, pressed=2)), g)
+    add("receipt out, drawer open", 260, 330, lambda cr: (_cell(cr, 260, 330, "apothecary", 300),
+                                                         draw_till(cr, 140, 300, 1.55, La, 25.0, ring=23.3, receipt=1.0, drawer=1.0)), g)
+    add("shelves (procedural, seed 4)", 560, 400, lambda cr: (_cell(cr, 560, 400, "apothecary"),
+                                                              draw_shelves(cr, 30, 30, 500, 350, 1.0, La, 1.0, seed=4)), g)
+
+    # ---- bread and the stamp ----------------------------------------------------------------
+    g = "bread, crumbs, the SMILE stamp"
+    Lg = L["golden"]
+    add("the loaf", 220, 200, lambda cr: (_cell(cr, 220, 200, "golden"), draw_bread(cr, 110, 100, LOAF, Lg, scale=3.6)), g)
+    add("tearing it (tear 0.35)", 260, 200, lambda cr: (_cell(cr, 260, 200, "golden"), draw_bread(cr, 130, 100, LOAF, Lg, scale=3.6, tear=0.35)), g)
+    add("torn in two (tear 0.9)", 300, 200, lambda cr: (_cell(cr, 300, 200, "golden"), draw_bread(cr, 150, 100, LOAF, Lg, scale=3.4, tear=0.9)), g)
+    add("a half, pieces, crumbs", 380, 200, lambda cr: (_cell(cr, 380, 200, "golden"),
+                                                      draw_bread(cr, 90, 100, LOAF, Lg, scale=3.4, state="half"),
+                                                      [draw_bread(cr, 210 + k * 50, 70 + k * 30, LOAF, Lg, scale=2.4, state="piece", seed=k) for k in range(3)],
+                                                      draw_crumbs(cr, [(220 + k * 13, 170 + (k % 3) * 5) for k in range(10)], 2.0, Lg)), g)
+
+    def bread_hands(cr):
+        _cell(cr, 300, 200, "golden")
+        pose = ch.DragonPose(facing=1, turn=-0.3, sit=1.0, near=ch.Arm("hand_out_offer", hold=bread_hold("half", Lg)), mood="warm", wings=0.2)
+        s_, c_ = core.frame(4, 4)
+        hx, hy = ch.draw_dragon(c_, 0.0, 0.0, 1.6, pose, Lg, 0.4).hand_near.palm
+        ch.draw_dragon(cr, 150 - hx, 110 - hy, 1.6, pose, Lg, 0.4)
+    add("received on his palm (bread_hold)", 300, 200, bread_hands, g)
+    add("the stamp", 220, 200, lambda cr: (_cell(cr, 220, 200, "tavern"), draw_stamp(cr, 110, 170, 2.4, L["tavern"])), g)
+    add("its print: SMILE", 320, 200, lambda cr: (_cell(cr, 320, 200, "neutral"), draw_smile_mark(cr, 160, 80, 3.6),
+                                                draw_smile_mark(cr, 160, 165, 1.4, seed=3, angle=0.08)), g)
+
+    # ---- furniture ------------------------------------------------------------------------
+    g = "furniture: benches (seat 125), the stool (72), tables"
+    Ld = L["dusk"]
+    for yaw, lab in ((0.0, "front"), (0.55, "3/4 front"), (-0.55, "3/4 front (other side)"), (1.42, "side")):
+        add(f"garden bench, {lab} (yaw {yaw:+.2f})", 420, 280,
+            lambda cr, yaw=yaw: (_cell(cr, 420, 280, "dusk", 250), draw_garden_bench(cr, 210 if abs(yaw) < 1 else 230, 262, 0.72, Ld, yaw=yaw)), g)
+
+    def sitters(cr):
+        _cell(cr, 600, 330, "dusk", 300)
+        rig = draw_garden_bench(cr, 300, 312, 0.72, Ld, yaw=0.0, part="back")
+        gx, gy = rig.place(0.15)
+        dx, dy = rig.place(0.78)
+        ch.draw_gnome(cr, gx, gy, 0.72, ch.GnomePose(facing=1, sit=1.0), Ld, 0.4)
+        ch.draw_dragon(cr, dx, dy, 0.72, ch.DragonPose(facing=-1, sit=1.0), Ld, 0.4)
+        draw_garden_bench(cr, 300, 312, 0.72, Ld, yaw=0.0, part="front")
+        cr.set_source_rgba(1, 1, 1, 0.5)
+        cr.rectangle(20, 312 - BENCH_SEAT_H * 0.72, 560, 1)
+        cr.fill()
+        core.text(cr, "seat 125", 26, 312 - BENCH_SEAT_H * 0.72 - 6, 12, core.SANS, "#ffffff")
+    add("sitters via rig.place(u): the seat line is 125 at scale 1", 600, 330, sitters, g)
+
+    def stool(cr):
+        _cell(cr, 260, 330, "washhouse", 300)
+        draw_stool(cr, 130, 312, 1.0, L["washhouse"], part="back")
+        ch.draw_dragon(cr, 130, 312, 0.72 * 0 + 0.62, ch.DragonPose(facing=0, turn=0.45, sit=1.0, seat_h=72.0, hunch=0.85, wings=-0.9),
+                       L["washhouse"], 0.4)
+    add("too-small stool (S1)", 260, 330, stool, g)
+    add("the stool", 200, 200, lambda cr: (_cell(cr, 200, 200, "washhouse"), draw_stool(cr, 100, 180, 1.5, L["washhouse"])), g)
+    add("wash-house bench", 340, 200, lambda cr: (_cell(cr, 340, 200, "washhouse"), draw_washhouse_bench(cr, 170, 185, 1.0, L["washhouse"], yaw=0.35)), g)
+    add("tavern table + tankards", 460, 220, lambda cr: (_cell(cr, 460, 220, "tavern"), draw_tavern_table(cr, 230, 205, 0.95, L["tavern"])), g)
+    add("tankards: wood, pewter", 220, 220, lambda cr: (_cell(cr, 220, 220, "tavern"), draw_tankard(cr, 70, 190, 2.0, L["tavern"]),
+                                                       draw_tankard(cr, 160, 190, 2.0, L["tavern"], kind="pewter", flip=True)), g)
+
+    # ---- lights and signs --------------------------------------------------------------------
+    g = "lights and signs"
+
+    def posts(cr):
+        _cell(cr, 560, 420, "lantern_night", 400)
+        Ln = L["lantern_night"]
+        r1 = draw_lantern_post(cr, 110, 405, 0.62, Ln, 1.0)
+        draw_lantern_post(cr, 290, 405, 0.62, Ln, 1.0, style="top", lit=0.0)
+        r3 = draw_lantern_post(cr, 430, 405, 0.62, L["washhouse"], 1.0, kind="wisp", side=-1)
+        lantern_light(cr, r1, 0.62, 1.0, 0.7, ground_y=405)        # (in a scene: into the LightLayer)
+        lantern_light(cr, r3, 0.62, 1.0, 0.7, ground_y=405)
+    add("lantern posts: candle, unlit, wisp", 560, 420, posts, g)
+
+    def wisp(cr):
+        _cell(cr, 220, 420, "washhouse")
+        r = draw_wisp_lamp(cr, 110, 250, 1.6, L["washhouse"], 1.3, top=0)
+        fx.glow(cr, r.center[0], r.center[1], 150, PROP_COLORS["wisp"], 0.2)
+    add("wisp lamp (cage + chain)", 220, 420, wisp, g)
+
+    def string(cr):
+        _cell(cr, 560, 200, "tavern")
+        lan = draw_lantern_string(cr, (20, 40), (540, 60), 1.0, 1.1, L["tavern"])
+        lantern_string_light(cr, lan, 1.1, 0.5)
+    add("string of paper lanterns", 560, 200, string, g)
+    add("plaque: SELF-SERVICE", 420, 160, lambda cr: (_cell(cr, 420, 160, "washhouse"), draw_plaque(cr, 210, 22, "SELF-SERVICE", 1.15, L["washhouse"])), g)
+    for kind, lt in (("apothecary", "apothecary"), ("flagon", "tavern"), ("washhouse", "washhouse")):
+        add(f"hanging sign: {kind}", 300, 260, lambda cr, kind=kind, lt=lt: (_cell(cr, 300, 260, lt),
+                                                                            draw_hanging_sign(cr, 30, 30, kind, 1.45, L[lt], 1.0)), g)
+    add("S3 on hold: hourglass + notes", 300, 260, lambda cr: (_cell(cr, 300, 260, "street_night"),
+                                                             draw_hourglass(cr, 90, 110, 2.2, L["street_night"], 1.0),
+                                                             [draw_music_note(cr, 180 + k * 30, 120 + 25 * (k % 2), 1.3, 1.0,
+                                                                              kind=("semiminim", "minim", "fusa", "semiminim")[k]) for k in range(4)]), g)
+
+    # ---- the wash-house drums ---------------------------------------------------------------
+    g = "wash-house: tumbling drums"
+    for seed in (1, 2, 3):
+        add(f"tumbling drum, seed {seed}", 380, 330, lambda cr, seed=seed: (_cell(cr, 380, 330, "washhouse", 300),
+                                                                           draw_tumbling_drum(cr, 160, 310, 1.15, L["washhouse"], 1.0 + seed, seed=seed)), g)
+    add("a row toward a vanishing point", 560, 330, lambda cr: (_cell(cr, 560, 330, "washhouse", 300),
+                                                               [draw_tumbling_drum(cr, 80 + k * 128, 300 - k * 16, 0.6 - 0.09 * k, L["washhouse"], 1.0,
+                                                                                   seed=k + 4, vp=(560, 110)) for k in range(4)]), g)
+
+    # ---- film scale: what reads on screen ---------------------------------------------------------
+    g = "film scale (props at their on-screen size beside the dragon at 0.75)"
+
+    def film(cr):
+        _cell(cr, 1880, 420, "neutral", 390)
+        Ln = L["neutral"]
+        x = 40
+        ch.draw_dragon(cr, x + 110, 400, 0.75, ch.DragonPose(facing=1), Ln, 0.4)
+        x = 300
+        for name in ("sleep", "vitamins", "calm", "book"):
+            draw_remedy(cr, name, x, 400, 0.75, Ln, 1.0)
+            x += 62
+        draw_till(cr, x + 60, 400, 0.75, Ln, 0.0)
+        draw_bread(cr, x + 170, 380, LOAF, Ln, scale=0.75)
+        draw_speaking_stone(cr, x + 240, 370, 0.75, Ln, 1.0, state="active")
+        draw_note(cr, x + 315, 370, 0.75, Ln)
+        draw_apothecary_bag(cr, x + 390, 320, 0.75, Ln)
+        draw_stamp(cr, x + 460, 400, 0.75, Ln)
+        draw_smile_mark(cr, x + 530, 370, 0.75)
+        draw_tankard(cr, x + 600, 400, 0.75, Ln)
+        draw_garden_bench(cr, x + 830, 400, 0.75, Ln, yaw=0.3)
+        draw_stool(cr, x + 1050, 400, 0.75, Ln)
+        draw_plaque(cr, x + 1190, 170, "SELF-SERVICE", 0.75, Ln)
+        draw_coloring_book(cr, x + 1190, 400 - BOOK_H * 0.75 / 2, 0.75, Ln)
+    add("everything at scale 0.75 (the dragon is 390 px tall)", 1880, 420, film, g)
+    return items

@@ -19,23 +19,32 @@ Outputs (film/assets/song/, 48 kHz, 24-bit PCM)
 How the singing is made (speech-to-singing, all deterministic)
   1. Score: every syllable of the SPEC 0.2 lyrics (verbatim) has a note (pitch, bar, eighth position, length)
      in 6/8 at motif.TEMPO; motif.py's four-note motif is the hook ("KING-dom of STONE" ... "WAY back to
-     BREAD").  Chords one per dotted-quarter beat.
-  2. Piper (VITS) is patched in memory (onnx) so the per-phoneme durations are an INPUT: each line is
-     synthesized as one natural utterance whose vowels are already stretched to the note lengths -- vowel
-     onsets (the stress-mark token = the vowel attack) land exactly on the beat, onset consonants are placed
-     just before it, codas at the end of the note, consonants keep their natural length.
+     BREAD").  Chords one per dotted-quarter beat.  Written 16th-note pickups are sung as two 0.75-eighth
+     notes (a singer's rubato that keeps 'and he', 'they had' intelligible); the lute stays strict.
+  2. Piper (VITS, en_GB-northern_english_male) is patched in memory (onnx): the per-phoneme durations become
+     an input, and both Gaussian noise sources become inputs fed from a seeded numpy RNG (onnxruntime's
+     RandomNormalLike is not reproducible).  Each line is one natural utterance whose vowels are already
+     stretched to the note lengths: the vowel attack (espeak's stress-mark token) lands exactly on the beat,
+     onset consonants sit just before it, codas and word-boundary tokens keep their natural length (x1.1:
+     crisp sung consonants), the vowel absorbs the rest.  SAY holds the few respellings that Whisper proved
+     necessary; TAKE_SEEDS the best of 8 noise seeds per line (sung-ASR take selection).
   3. WORLD (pyworld harvest / CheapTrick / D4C): the speech F0 is replaced by the melody -- note pitches,
-     ~45 ms portamento between notes, a scoop into each phrase, small overshoots on upward leaps, delayed
-     vibrato (~5.5 Hz, +-28 cents) on notes > 0.38 s, slow random drift of a few cents; unvoiced consonant
-     frames stay unvoiced.  Resynthesized at 22.05 kHz, upsampled to 48 kHz.
-  4. A second take (different Piper noise seed, +-10 ms timing jitter, +5 cents, other vibrato phase) doubles
-     the lead at -10 dB; then high-pass, gentle presence EQ, de-esser, compressor; a synthetic hall IR
-     (exponentially decaying filtered noise, RT60 ~1.4 s, 20 ms pre-delay) in the mix.
-  Accompaniment: Karplus-Strong lute (double courses, octave strings on the basses, fingertip excitation,
-  pluck-position comb, lute-body resonance IR), arpeggios and strums from the chord chart; a recorder
-  (additive + breath noise + chiff + delayed vibrato) playing the motif as a counter-melody from verse 2;
-  a very light frame drum + tambourine in verse 2; the intro is the bard tuning up (a flat string, the peg
-  turned, a fifth, two harmonics), a playful run and a rolled chord, then the vamp.
+     ~45 ms portamento, a scoop into each phrase, small overshoots on upward leaps, delayed vibrato
+     (~5.5 Hz, +-28-35 cents) on notes > 0.38 s, a relaxed fall at line ends, slow random drift of a few
+     cents; unvoiced consonant frames stay unvoiced.  VITS sometimes renders a long-held token as near
+     silence (a held schwa, the length mark of /uː/): repair_nuclei() refills such frames from the same
+     vowel's good frames and lifts nuclei that come out far too quiet.  Resynthesized at 22.05 kHz and
+     upsampled to 48 kHz.
+  4. A second take (the runner-up seed, +-10 ms timing jitter, +5 cents, 0.9x vibrato) doubles the lead at
+     -10 dB; then high-pass, gentle presence EQ, split-band de-esser, compressor; in the mix a synthetic hall
+     IR (band-wise exponentially decaying noise, RT60 ~1.45 s, 20 ms pre-delay, early reflections).
+  Accompaniment: Karplus-Strong lute (exactly tuned loop with fractional delay, double courses, octave strings
+  on the basses, fingertip excitation, pluck-position comb, lute-body resonance IR), arpeggios / strums /
+  rolls from the chord chart, strings damped when the chord moves on; a recorder (additive + breath noise +
+  chiff + delayed vibrato) playing the motif as a counter-melody from the interlude on and resolving
+  G4 -> F#4 under the last chord; a very light frame drum + tambourine in verse 2; the intro is the bard
+  tuning up (a flat A string, the peg turned while it rings, a fifth, two harmonics), a playful run and a
+  rolled chord (the book opens on it), then the vamp.
 """
 from __future__ import annotations
 
@@ -74,6 +83,7 @@ VOICE = dict(model="en_GB-northern_english_male-medium", speaker_id=None,
              article_schwa=False,  # (tested: /ə/ for the article 'a' did not help)
              syllabic_n="keep",   # 'wasn't' keeps its hummed syllabic n
              strip_commas=True,   # Piper sees no commas inside a sung line (they act as phrase breaks)
+             ap_pct=30,           # held vowels: aperiodicity capped at the line's 30th-percentile profile
              bound="natural",   # word-boundary tokens: "zero" | "natural" | factor
              pad_mode="natural",  # stretched vowels keep their trailing transition pad natural
              min_frac=0.45,     # the vowel keeps at least this fraction of every note
@@ -159,12 +169,19 @@ REPRISE_LINES = [
 # was chosen because Whisper misheard the plain spelling when sung.
 SAY = {
     "s0_l1": "Once [[ʌpˈɒn]] a time, in a kingdom of stone,",               # a held schwa renders silent
-    "s0_l2": "Lived [[ʌ]] town full of folk who were living alone.",       # 'lived a' was heard 'leave the'
+    "s0_l2": "Lived [[eɪ]] town full of folk who were living alone.",      # /ɐ/ heard as 'the'
+    "s0_l4": "And [[ə]] lock on each heart, and [[ə]] latch on each pane.",  # /ɐ/ heard as "I'll"
+    "s0_l5": "Now [[eɪ]] dragon lived there with [[ə]] scarf and [[ə]] sigh,",  # 'Now a dragon' -> 'Now I drag and'
 }
 
-# Best takes: Piper noise seed per line for the lead and the double (picked by sung-ASR take selection,
-# see film/build/song/takes.json); lines not listed use the default seeds.
-TAKE_SEEDS = {}
+# Best takes: Piper noise seed per line for (lead, double), picked by sung-ASR take selection -- every line
+# rendered with 8 seeds, scored by Whisper small.en + base.en WER (+ log-prob); the respelled lines were
+# chosen jointly with their spelling.  Lines not listed fall back to default seeds.
+TAKE_SEEDS = {
+    "s0_l1": (7017, 6017), "s0_l2": (8048, 3048), "s0_l3": (8079, 7079), "s0_l4": (5110, 8110),
+    "s0_l5": (4141, 1141), "s0_l6": (5172, 8172), "s0_l7": (2203, 3203), "s0_l8": (8234, 6234),
+    "s0_l9": (1265, 3265), "s0_l10": (8296, 3296), "s9_l1": (2017, 4017), "s9_l2": (3048, 2048),
+}
 
 
 def take_seed(li: int, lid: str, take: int) -> int:
@@ -678,6 +695,7 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
     sp = pw.cheaptrick(x, f0r, t, fs)
     ap = pw.d4c(x, f0r, t, fs)
     sp, ap, f0r, repaired = repair_nuclei(sp, ap, f0r, t, plan, fs)
+    ap = clean_phonation(ap, t, plan, pct=VOICE.get("ap_pct", 30))
     if warp != 1.0:          # formant warp (<1 lowers formants: a touch darker / warmer)
         nb = sp.shape[1]
         src = np.clip(np.arange(nb) * warp, 0, nb - 1)
@@ -689,13 +707,36 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
     return y, dict(t=t, f0_in=f0, f0_out=f0o, target=target, voiced=voiced, repaired=repaired)
 
 
+def clean_phonation(ap, t, plan, pct=30):
+    """Sung vowels are phonated more cleanly than breathy read speech: inside each held vowel (stress mark +
+    vowel tokens, transitions excluded) cap D4C's aperiodicity at the line's own clean profile (per-bin
+    `pct` percentile over all its held-vowel frames).  Consonants keep their noise."""
+    if pct is None or pct >= 100:
+        return ap
+    spans, syls, ph = plan["spans"], plan["syls"], plan["ph"]
+    held = []
+    for sy in syls:
+        a, b = spans[sy.nucleus[0]][0], spans[sy.nucleus[-1]][1]
+        ix = np.where((t >= a + 0.02) & (t < b - 0.03))[0]
+        if len(ix):
+            held.append(ix)
+    if not held:
+        return ap
+    allix = np.concatenate(held)
+    prof = np.percentile(ap[allix], pct, axis=0)
+    ap = ap.copy()
+    ap[allix] = np.minimum(ap[allix], prof[None, :])
+    return ap
+
+
 def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_to=-4.0, max_boost=12.0):
     """VITS sometimes renders a stretched vowel token (a long schwa, the length mark of /uː/, a vowel
     before a comma) as near-silence part-way through the note.  Per sung nucleus:
       1. collapse repair: frames that fall > drop_db below the nucleus's sustain level are refilled
          from its good frames, walking back and forth through them (ping-pong) so the timbre keeps moving;
       2. level repair: a whole nucleus far below the line's median vowel level is boosted (<= max_boost dB)
-         toward median + boost_to dB.
+         toward median + boost_to dB, and its aperiodicity capped at the line's typical vowel profile
+         (a quiet VITS vowel is breathy; lifted as-is it would come out as pitchless noise).
     Returns (sp, ap, f0r, notes) -- notes lists what was repaired."""
     sp, ap, f0r = sp.copy(), ap.copy(), f0r.copy()
     nb = sp.shape[1]
@@ -713,6 +754,9 @@ def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_
         a, b = spans[sy.nucleus[0]][0], spans[last][1]
         rng_idx.append(np.where((t >= a) & (t < b))[0])
     med = np.median([np.median(edb[ix]) for ix in rng_idx if len(ix)])
+    allv = np.concatenate([ix for ix in rng_idx if len(ix)])
+    loud = allv[edb[allv] >= med - 6.0]
+    ap_ref = np.median(ap[loud], axis=0) if len(loud) else None     # a typical sung vowel's aperiodicity
     notes = []
     for k, ix in enumerate(rng_idx):
         if len(ix) < 6:
@@ -745,6 +789,8 @@ def repair_nuclei(sp, ap, f0r, t, plan, fs, drop_db=10.0, floor_db=-40.0, boost_
                 ramp[:m] = np.linspace(0.3, 1, m)
                 ramp[-m:] = np.linspace(1, 0.3, m)
             sp[ix] *= (10 ** (gdb * ramp / 10))[:, None]
+            if ap_ref is not None and gdb >= 4.0:   # quiet = breathy: give the lifted vowel a sung voice
+                ap[ix] = np.minimum(ap[ix], ap_ref[None, :])
             notes.append((k, f"boost {gdb:.1f} dB"))
     return sp, ap, f0r, notes
 
@@ -1711,7 +1757,7 @@ def verify_piece(name, stems, timing, pj, log):
         log("  (b) faster-whisper not installed: WER skipped (pip install faster-whisper)")
     # (c) timing: acoustic vowel onsets (end of the unvoiced consonant gap -> first sustained voiced, loud
     #     frame; harvest on the output) vs the notes' beat positions, for syllables whose onset ends unvoiced
-    on_err = []
+    on_err, on_rows = [], []
     for li in timing["info"]:
         p_, ns, y, srl = li["plan"], li["notes"], li["y"], li["sr"]
         ph, syls, spans = p_["ph"], p_["syls"], p_["spans"]
@@ -1732,8 +1778,9 @@ def verify_piece(name, stems, timing, pj, log):
             if not unv:
                 continue
             for i in range(max(unv), min(n_ - 4, max(unv) + 80)):
-                if np.all(f0o[i:i + 4] > 0) and edb[i] > peak - 15:
+                if np.all(f0o[i:i + 4] > 0) and edb[i] > peak - 10:     # voiced AND at vowel level
                     on_err.append(t[i] - ts)
+                    on_rows.append((li["id"], nt.syl, round(1000 * (t[i] - ts))))
                     break
     on_err = np.array(on_err)
     rep.update(onset_notes=int(len(on_err)), onset_median_abs_ms=float(1000 * np.median(np.abs(on_err))),
@@ -1741,7 +1788,9 @@ def verify_piece(name, stems, timing, pj, log):
                onset_mean_ms=float(1000 * np.mean(on_err)), onset_within_40ms=float(np.mean(np.abs(on_err) <= 0.04)))
     log(f"  (c) timing: {len(on_err)} measurable vowel onsets: median |err| {rep['onset_median_abs_ms']:.0f} ms, "
         f"p90 {rep['onset_p90_abs_ms']:.0f} ms, mean {rep['onset_mean_ms']:+.0f} ms, "
-        f"{100 * rep['onset_within_40ms']:.0f}% within 40 ms")
+        f"{100 * rep['onset_within_40ms']:.0f}% within 40 ms; largest "
+        + ", ".join(f"{a_}:{b_} {c_:+d}ms" for a_, b_, c_ in sorted(on_rows, key=lambda r: -abs(r[2]))[:5]))
+    rep["onsets"] = on_rows
     # (d) levels
     for k in ("vocal", "accomp", "mix"):
         x = stems[k]

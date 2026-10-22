@@ -45,6 +45,15 @@ Song merge (the bard's lyrics; SPEC 0.2 / 5)
      "beats": [{"id": "s0_bookopen", "scene": 0, "t": 3.0, "end": null}, ...],   # optional overrides/extras
      "cast":  {"character": "the cockatrice bard", "model": "...", "speaker_id": 0, "length_scale": 1.0,
                "noise_scale": 0.667, "noise_w": 0.8, "median_f0": 140.0, "notes": "..."}}
+  song.py's native per-piece format is read too (and is what song.py writes):
+    {"voice": {"model": ..., "speaker_id": ...},
+     "prologue": {"duration": 43.166, "lines": [{"id": "s0_l1", "text", "start", "end", "env", ...}, ...],
+                  "sections": {...}, "marks": {"book_opens": 2.86, "page_turn_v2": 17.595, ...}, ...},
+     "reprise":  {"duration": 11.947, "lines": [{"id": "s9_l1", ...}, ...], "marks": {...}, ...}}
+  with times in seconds from the start of each piece.  The prologue starts at S0 t=0; the reprise starts at
+  S9 t=REPRISE_AT (SPEC 6: "starting around 5-6 s").  S0 / S9 last until each piece has rung out (rounded UP
+  to whole frames).  Extra beats: s0_song / s9_song = where the piece (and its stems) play in the scene, and
+  every song mark as s<N>_<mark> (book_opens also sets s0_bookopen).
   Merged lyric lines get speaker "BARD", caption true, vo false, fx null and an extra "sung": true
   (captioned in italics between two notes); spoken dialogue lines carry exactly the dialogue schema.
   Lyric lines are not moved: the song owns their timing.  Re-run this script after the song changes.
@@ -103,6 +112,7 @@ SCENE_TABLE = [  # id, name, nominal duration (SPEC section 6).  S0 / S9 follow 
     (9, "endcard", 16.0),
 ]
 SONG_SCENES = (0, 9)         # scenes whose length the song may set
+REPRISE_AT = 5.0             # S9 local time where the reprise piece (lute intro + two sung lines) starts
 
 # ================================================================================================
 # CAST -- chosen by objective analysis (film/build/cast_scan.py + cast_deep.py; see notes)
@@ -119,8 +129,11 @@ CAST = {
         notes="US male (HiFi-Captain). Best of 26 male candidates rendered on 11 of his lines: median F0 "
               "~117 Hz (target 95-125), the most expressive of the field (F0 SD 4.1 st, not monotone), "
               "clearest diction (Whisper: 0 word errors, best mean log-prob -0.07) and best DNSMOS OVRL 3.43; "
-              "perceived age ~34. Dialogue length_scale 1.05; the scene-8 voice-over uses 1.12 (vo=true, "
-              "fx='vo': intimate, a touch of room reverb). Bright-ish timbre: a gentle -2 dB shelf above ~5 kHz "
+              "perceived age ~34. Dialogue length_scale 1.05. Scene-8 voice-over (vo=true, fx='vo': intimate, a "
+              "touch of room reverb) is slower: s8_l1 1.12, s8_l2 1.30, s8_l3 1.2 read as 'All it took was... / "
+              "somebody to break it.' with a 0.40 s reflective pause (audit: the single-phrase take was the "
+              "fastest VO line at 4.6 syl/s and opened on a declamatory ~210 Hz 'ALL'; the VO now runs ~3.1-3.5 "
+              "syl/s overall, peaks ~165 Hz, accents land on 'somebody' / 'break'). Bright-ish timbre: a gentle -2 dB shelf above ~5 kHz "
               "warms the dragon in the mix. s4_l1 (fx='drowned') is cut off on purpose mid-breath "
               "('Lately I f-'); the tavern music swells from beat s4_swell to bury it. s6_laugh is five "
               "'hah' pulses of this same voice assembled into a real laugh bout (~1.2 s, pitch stepping down "
@@ -146,28 +159,39 @@ CAST = {
               "that, its pitch movement and brightness keep it well apart from the pharmacist."),
     "BOUNCER": dict(
         character="the stone troll", model="en_GB-vctk-medium", speaker_id=102,
-        length_scale=1.18, noise_scale=0.5, noise_w=0.6,
-        notes="VCTK speaker p237 (Scottish male). The deepest + flattest + slowest combination of 26 male "
-              "candidates: median F0 ~77-81 Hz, F0 SD ~0.75 st (a flat, bored monotone), ~3.3 syl/s at "
-              "length_scale 1.18; 'Keep it light, buddy.' recognised perfectly in 6/6 renditions. Dark "
-              "timbre (centroid ~210 Hz). noise 0.5/0.6."),
+        length_scale=1.35, noise_scale=0.5, noise_w=0.6,
+        notes="VCTK speaker p237 (Scottish male). The deepest + flattest combination of 26 male candidates: "
+              "median F0 ~76 Hz (the lowest voice in the cast), F0 span ~4.8 st (a flat, bored monotone), dark "
+              "timbre (centroid ~210 Hz). length_scale 1.35 (audit; was 1.18 = 4.0 syl/s, barely slower than "
+              "the dragon): ~3.3 syl/s, 'Keep it light, [comma pause] buddy.' Take chosen for intelligibility "
+              "under the tavern din: Whisper small+base hear it perfectly in 24/24 trials with pink noise at "
+              "20/12 dB SNR, -12 dB level and a 300-3400 Hz band-limit (the 1.18 take: 14/24, 'light' -> "
+              "'like' in noise); most seeds at >= 1.3 are misheard, so re-seed only with that check. noise 0.5/0.6."),
     "CROWD": dict(
         character="the pixie", model="en_US-libritts_r-medium", speaker_id=448,
         length_scale=0.92, noise_scale=0.5, noise_w=0.6,
         notes="LibriTTS-R reader 4807: young (perceived ~27), high (median F0 ~250 Hz -- a tiny pixie), quick "
               "(fastest finalist, ~5.8 syl/s) and expressive (F0 SD ~3.9 st) for the sneer. 'Ew.' is fed as "
-              "'Eew.' (/iːw/): espeak reads 'Ew.' as /juː/ = 'you' (Whisper heard 'You, what is he doing?' in "
-              "0/4 'Ew.' renditions vs 'Ew' in 4/4 with 'Eew.'). length_scale 0.92, noise 0.5/0.6."),
+              "'Eew!' (/ˈiːw!/, length_scale 1.0 for that word): espeak reads 'Ew.'/'Eww.' as /juː/ = 'you'. "
+              "The exclamation gives a longer, higher [i] onset, the cue that separates 'ew' from 'you': the "
+              "chosen take is heard as 'Ew' in 24/24 Whisper small+base trials (clean, noise 20/12 dB SNR, -12 dB, "
+              "band-limited); the earlier 'Eew.' take was heard as 'You' by base.en in all 12 of its trials. "
+              "length_scale 0.92, noise 0.5/0.6."),
     "OLD_WOMAN": dict(
         character="the gnome grandmother", model="en_US-libritts_r-medium", speaker_id=510,
-        length_scale=1.15, noise_scale=0.5, noise_w=0.6,
+        length_scale=1.24, noise_scale=0.5, noise_w=0.6,
         notes="LibriTTS-R reader 4800: the oldest-sounding clean female voice found (perceived age ~54 after "
               "an age scan of all ~600 female-pitched LibriTTS-R/VCTK speakers; several 'older' candidates "
               "were high-pitched men and were rejected). Median F0 ~170-176 Hz (target 160-200); warm and "
               "twinkly (F0 SD ~3.9 st), the roughest/"
               "breathiest phonation of the finalists (HNR ~10 dB, the most F0 micro-perturbation -- an older "
-              "voice quality), Whisper-perfect on 15/15 renditions. length_scale 1.15 (slow, dry), noise "
-              "0.5/0.6."),
+              "voice quality), Whisper-perfect on 15/15 renditions. length_scale 1.24 (s6_l1 / s7_l3 takes at "
+              "1.30), noise 0.5/0.6: SPEC wants her 'slower pace, dry wit' -- at 1.15 she measured 4.3 syl/s, "
+              "no slower than the lioness (4.2); now ~4.0 (punchline s6_l4 3.97, s7_l3 3.6), perceived age 47-54 "
+              "vs the lioness's 32. 'I got the cat.' is fed as [[aɪ ɡˈɑːt ðə kæt.]] so the accent falls on GOT "
+              "('cat' is given information): 'They TOLD me to get a cat. I GOT the cat.' Spectrally the lioness "
+              "is the darker voice (alpha ratio -22 vs ~-13 dB); for more warmth on the gnome use a gentle -2 dB "
+              "shelf above ~3.5 kHz in the mix, never more (her consonant clarity carries the jokes)."),
 }
 
 
@@ -229,21 +253,25 @@ LINES = [
          [Part("Can I tell you something?", seed=5709, pause=0.38),
           Part("Lately I feel", seed=9746, cut={"gap": "longest", "keep": 0.030, "fade": 0.010})],
          fx="drowned"),
-    Line("s4_l2", 4, "BOUNCER", "Keep it light, buddy.", 15.5, [Part("Keep it light, buddy.", seed=7720)]),
+    Line("s4_l2", 4, "BOUNCER", "Keep it light, buddy.", 15.5, [Part("Keep it light, buddy.", seed=54771)]),
     # ---- S5 the crowd
     Line("s5_l1", 5, "CROWD", "Ew. What is he doing?", 13.4,
-         [Part("Eew.", seed=7300, pause=0.35), Part("What is he doing?", seed=11757)]),
+         [Part("Eew!", seed=35074, ls=1.0, pause=0.35), Part("What is he doing?", seed=11757)]),
     Line("s5_l2", 5, "MAN", "We'll film a fight.", 16.3, [Part("We'll film a fight.", seed=11731)], reply=(0.5, 1.4)),
     Line("s5_l3", 5, "MAN", "But someone gets gentle, and everybody looks away.", 18.8,
          [Part("But someone gets gentle, and everybody looks away.", seed=12742)], min_gap=0.6),
     # ---- S6 the bench
-    Line("s6_l1", 6, "OLD_WOMAN", "They tell you to try that too?", 13.2, [Part("They tell you to try that too?", seed=7731)]),
+    Line("s6_l1", 6, "OLD_WOMAN", "They tell you to try that too?", 13.2,
+         [Part("They tell you to try that too?", seed=29529, ls=1.30)]),
     Line("s6_l2", 6, "MAN", "Candles. Vitamins. Yoga.", 16.0,
          [Part("Candles.", seed=11742, pause=0.45), Part("Vitamins.", seed=10779, pause=0.45), Part("Yoga.", seed=15816)], reply=(0.5, 1.0)),
     Line("s6_l3", 6, "OLD_WOMAN", "They told me to get a cat. I got the cat.", 19.0,
-         [Part("They told me to get a cat.", seed=14753, pause=0.72), Part("I got the cat.", seed=6790)], reply=(0.45, 0.9)),
+         [Part("They told me to get a cat.", seed=14753, pause=0.72),
+          Part("[[aɪ ɡˈɑːt ðə kæt.]]", seed=6790)],          # "I GOT the cat." -- accent on got, cat deaccented
+         reply=(0.45, 0.9)),
+    # the script's "(beat)" before the punchline: clearly longer than the 0.72 s pause inside s6_l3
     Line("s6_l4", 6, "OLD_WOMAN", "The cat sleeps through every story about my day.", 23.4,
-         [Part("The cat sleeps through every story about my day.", seed=10764)], reply=(0.8, 1.3), min_gap=0.7),
+         [Part("The cat sleeps through every story about my day.", seed=25127)], reply=(1.15, 1.45), min_gap=1.05),
     # The laugh: five 'hah' pulses synthesized in the dragon's own voice, assembled like a real laugh bout
     # (film/build/laugh_pulses.py + laugh_pick.py): ~4.4 pulses/s, each an F0 arch, starting ~+9 st above
     # his speaking pitch and stepping down (196 -> 181 -> 168 -> 155 -> 146 Hz), decrescendo, breathy /h/
@@ -254,20 +282,21 @@ LINES = [
           Part("[[hˈɑ!]]", seed=95000, ls=0.6, ns=0.667, nw=0.8, gain_db=-2.6, pulse={"vowel": 0.11, "ioi": 0.215}),
           Part("Ha.", seed=93105, ls=0.7, ns=0.667, nw=0.8, gain_db=-4.0, pulse={"vowel": 0.11, "ioi": 0.235}),
           Part("Ha.", seed=93204, ls=0.8, ns=0.667, nw=0.8, gain_db=-6.0, pulse={"vowel": 0.19, "ioi": 0.0})],
-         caption=False, reply=(0.3, 0.7), min_gap=0.25),
+         caption=False, reply=(0.5, 0.8), min_gap=0.4),     # a breath to take the joke in, then the laugh
     # ---- S7 the bread
     Line("s7_l1", 7, "MAN", "You know what's funny?", 18.6, [Part("You know what's funny?", seed=12742)]),
     Line("s7_l2", 7, "MAN", "All that stuff they gave me was for being alone.", 20.6,
          [Part("All that stuff they gave me was for being alone.", seed=10753)], min_gap=0.5),
     Line("s7_l3", 7, "OLD_WOMAN", "And all this costs is a loaf of bread.", 24.6,
-         [Part("And all this costs is a loaf of bread.", seed=7764)], reply=(0.6, 1.4)),
-    # ---- S8 close (voice-over)
+         [Part("And all this costs is a loaf of bread.", seed=29562, ls=1.30)], reply=(0.6, 1.4)),
+    # ---- S8 close (voice-over: slower and more intimate than his dialogue)
     Line("s8_l1", 8, "MAN", "They kept handing me stones.", 2.5, [Part("They kept handing me stones.", seed=16753, ls=1.12)],
          vo=True, fx="vo"),
     Line("s8_l2", 8, "MAN", "We were hungry for bread the whole time.", 7.0,
-         [Part("We were hungry for bread the whole time.", seed=10764, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
+         [Part("We were hungry for bread the whole time.", seed=33091, ls=1.30)], vo=True, fx="vo", min_gap=0.8),
     Line("s8_l3", 8, "MAN", "All it took was somebody to break it.", 11.8,
-         [Part("All it took was somebody to break it.", seed=15775, ls=1.12)], vo=True, fx="vo", min_gap=0.8),
+         [Part("All it took was…", seed=80305, ls=1.2, pause=0.40),     # a reflective pause before the answer
+          Part("somebody to break it.", seed=80306, ls=1.2)], vo=True, fx="vo", min_gap=0.8),
 ]
 
 REQUIRED_LINES = ["s1_l1", "s1_l2", "s2_l1", "s2_l2", "s3_l1", "s3_l2", "s3_l3", "s3_l4", "s4_l1", "s4_l2",
@@ -294,6 +323,8 @@ def load_song(path: Optional[str] = None) -> Optional[dict]:
         return None
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
+    if "prologue" in raw or "reprise" in raw:
+        return _song_from_pieces(raw)
     durs = {}
     sc = raw.get("scenes") or {}
     items = sc.items() if isinstance(sc, dict) else [(d.get("id"), d) for d in sc]
@@ -310,6 +341,32 @@ def load_song(path: Optional[str] = None) -> Optional[dict]:
     beats = [{"id": str(b["id"]), "scene": int(b.get("scene", int(str(b["id"])[1]))), "t": float(b["t"]),
               "end": None if b.get("end") is None else float(b["end"])} for b in raw.get("beats", [])]
     return {"durations": durs, "lines": lines, "beats": beats, "cast": raw.get("cast") or raw.get("voice")}
+
+
+def _song_from_pieces(raw: dict) -> dict:
+    """song.py's native song_timing.json (per-piece times) -> the normalised merge dict of load_song()."""
+    durs, lines, beats = {}, [], []
+    for key, sid, at in (("prologue", 0, 0.0), ("reprise", 9, REPRISE_AT)):
+        p = raw.get(key)
+        if not p:
+            continue
+        pdur = float(p["duration"])
+        durs[sid] = math.ceil((at + pdur) * FPS - 1e-6) / FPS          # whole frames; never cut the ring-out
+        for d in p.get("lines", []):
+            lines.append({"id": str(d["id"]), "scene": sid, "text": str(d["text"]),
+                          "start": round(at + float(d["start"]), 4), "end": round(at + float(d["end"]), 4),
+                          "env": [round(min(1.0, max(0.0, float(v))), 3) for v in (d.get("env") or [])],
+                          "wav": d.get("wav")})
+        beats.append({"id": f"s{sid}_song", "scene": sid, "t": at, "end": round(at + pdur, 4)})
+        for name, t in sorted((p.get("marks") or {}).items(), key=lambda kv: kv[1]):
+            bid = "s0_bookopen" if (sid == 0 and name == "book_opens") else f"s{sid}_{name}"
+            beats.append({"id": bid, "scene": sid, "t": round(at + float(t), 4), "end": None})
+    v = raw.get("cast") or raw.get("voice") or {}
+    cast = dict(v, notes=v.get("notes", f"The bard's sung vocal (film/audio/song.py; Piper {v.get('model')} -> "
+                                         f"WORLD speech-to-singing). Lyric timing, 24 fps vocal envelopes and "
+                                         f"marks are merged from film/assets/song/song_timing.json; the mix "
+                                         f"plays the song stems at beats s0_song / s9_song."))
+    return {"durations": durs, "lines": lines, "beats": beats, "cast": cast}
 
 
 def scene_table(song: Optional[dict]) -> list:
@@ -329,8 +386,10 @@ def derive_beats(L: dict, D: dict, song: Optional[dict] = None) -> list:
     B = []
 
     def b(bid, t, end=None):
-        B.append({"id": bid, "scene": int(bid[1]), "t": round(float(t), 3),
-                  "end": None if end is None else round(float(end), 3)})
+        # 4 decimals like the scene table: a beat that ends a song-length scene (e.g. 43.1667 s = 1036 frames)
+        # must equal the scene duration exactly, not overshoot it by a rounding step
+        B.append({"id": bid, "scene": int(bid[1]), "t": round(float(t), 4),
+                  "end": None if end is None else round(float(end), 4)})
 
     s, e = (lambda k: L[k][0]), (lambda k: L[k][1])
 
@@ -420,8 +479,8 @@ def derive_beats(L: dict, D: dict, song: Optional[dict] = None) -> list:
     if song:
         ids = {x["id"]: i for i, x in enumerate(B)}
         for sb in song.get("beats", []):
-            x = {"id": sb["id"], "scene": sb["scene"], "t": round(sb["t"], 3),
-                 "end": None if sb["end"] is None else round(sb["end"], 3)}
+            x = {"id": sb["id"], "scene": sb["scene"], "t": round(sb["t"], 4),
+                 "end": None if sb["end"] is None else round(sb["end"], 4)}
             if x["id"] in ids:
                 B[ids[x["id"]]] = x
             else:
