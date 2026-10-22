@@ -1,4 +1,110 @@
-"""s0_prologue.py -- SCENE 0, THE PROLOGUE: "A Kingdom of Stone" (the bard's song).  (shot plan: see PLAN)"""
+"""s0_prologue.py -- SCENE 0, THE PROLOGUE: "A Kingdom of Stone" (the bard's song, ~43 s).
+
+THE IDEA. A storyteller's invitation. Before the film shows us a cold kingdom it shows us the one
+warm room in it: a candlelit minstrel's nook where a twinkly cockatrice bard opens a great book and
+sings. The prologue is the film's thesis in miniature -- a town of locked doors, a dragon who waves
+and is passed by, merchants selling stones -- told in the warmest possible light, so the cold that
+follows (S1-S5) reads as the exception and the warmth of the bread (S6-S8) as a homecoming. It
+ends by pulling a stool up for *us* and turning the page to the wash-house: the tale begins.
+
+TIMING. Local time == song time. Every time below comes from film/timeline.json (lines s0_l1..10,
+beats s0_*) and film/assets/song/song_timing.json (word times, strokes, beats, chords, marks); the
+numbers in brackets are today's values, for reading only -- the code never hard-codes them.
+
+SHOT LIST (one continuous camera inside the nook, two cuts at musical seams):
+
+ A1  THE NOOK, PUSH PAST THE CANDLE  0 -> s0_bookopen [2.86]. Fade up from black on a near candle
+     flame (a fat beeswax pillar close to the lens at frame left, soft focus: the first light of the
+     film). Slow dolly forward past it (its own plane, parallax 2.4: it sweeps out of frame left)
+     toward the great closed book on its carved lectern, the gilt title THE STONE AND THE BREAD
+     catching a sweep of candle sheen. Frame left of centre:
+     the bard on his milking stool in 3/4, head cocked, tuning a peg and listening (the tuning
+     strokes), then the run and the flourish [2.56] -- eyes to the book first, the head follows.
+     Centre: an empty stool on the rug (it is ours; it pays off on "pull up a stool"). Eye-trace:
+     candle flame -> gilt title -> bard -> back to the book.
+ A2  THE BOOK CREAKS OPEN  s0_bookopen [2.86] -> s0_l1 "in" [5.84]. The cover swings over, the
+     pages flutter and settle (the last one lands carrying the drop-cap page), a puff of gold motes
+     and a bloom of warm light off the parchment. The bard, delighted, turns to US, draws a breath
+     on the vamp and sings "Once upon a time," straight to camera (we see the singer start). The
+     camera keeps creeping in (zoom ~1.44 -> 1.56), holding bard + book as a two-shot.
+ A3  THE DIVE  "in a kingdom of stone" [5.7 -> 7.1]. The camera swoops into the right-hand page
+     and lands inside the painted castle on "STONE" (the bard sweeps out of frame left in one clean
+     move during the fast middle of the ease). The castle's windows light one by one on "kingdom".
+ A4  INSIDE THE PAGE (verse 1)  [7.1 -> "pane" 16.74]. Book of Kells / Cartoon Saloon painting:
+     gold-leaf moon and stars, Kells cloud-curls, indigo->peach dusk. "Lived a town full of folk":
+     tilt down the hill to a street of half-timbered houses; lone silhouettes appear in lamplit
+     windows ("living alone"), two folk cross without a word (one turns his face away).
+     "potions for sleeping": potions glint on the sills, one window sips and yawns ink z's;
+     "charms for the rain": rune charms swing, painted rain begins, the folk hurry home.
+     "And a LOCK on each heart": push in as the doors slam shut (ink impact strokes), heart-shaped
+     lock plates bolt and glint on "heart"; "and a LATCH on each pane": tilt up as the shutters
+     swing shut and latch one after another (all six before "pane"), lamplight leaking between
+     the slats. The street's ground stays above y ~880 so the action clears the caption band.
+ B   THE LONG NOTE  cut on "paaane" [16.74] -> s0_l5 [18.59]. Wide two-shot: the bard holds the
+     note eyes closed (rapture), opens them, and watches the page turn ITSELF on the interlude
+     downbeat [17.595] -- the book is alive. A breath between verses.
+ C1  THE DRAGON'S PAGE (verse 2)  cut on "Now" [18.59]. Close on the left picture: the dragon --
+     on-model, the real rig painted in (slate-teal, charcoal-navy coat, mustard scarf) -- alone on
+     a dusk street, the verse writing itself above him. Push in for "with a scarf and a SIGH" (a
+     curl of grey smoke), "And he WAVED at his neighbours" (an eager, hopeful wave), ease back for
+     "who HURRIED on by" (goblin, kobold and mouse-folk hurry past heads down, one glances and
+     speeds up; the wave sinks).
+ C2  THE MARKET  "Every merchant in town" [25.3]: glide right to the stalls STONES / POTIONS /
+     CANDLES (painted signs). On "STONE" the goblin hoists a rune-stone that flares cold; on
+     "sell" the dwarf and kobold hold up a sleeping draught and a spell-candle. "But for what he
+     was missing": pull back to the whole spread -- the merchants hold their cold, glowing wares out
+     across the gutter, the cold light spilling onto the dragon's page; "there wasn't a spell":
+     they lower them and shrug; the dragon turns away, head down, a smaller sigh.
+     The verse is written in at the TOP of each page (as it is sung) so the deep shots keep the
+     caption band clear of page lettering (no text on text).
+ C3  THE PULL-BACK  "spell" [31.28] -> s0_l9 [32.67]. Out of the book in one ease, back to the
+     nook; on coda_look_up [31.38] the bard lifts his eyes to the lens; the page turns on the
+     lute's break [32.19] to the coda spread (the empty-stool vignette, the stone and the loaf).
+ C4  THE INVITATION  "So pull up a STOOL" -- push in on the bard: a glance and a nod at the empty
+     stool beside him, eyes back to us on "FRIEND", a sly smile, and the WINK on "and hear HOW
+     it's said" (a gold "ting!" at his eye). "How a kingdom of stone" -- he turns back to the book;
+     the camera eases out to the two-shot.
+ C5  BACK TO BREAD  the page turns on "BREAD" [38.94]: the leaf passes vertical while the bard
+     holds "breeead" eyes closed, and lands on the final chord [39.77]; push into the wash-house
+     picture (cold teal windows, the small dragon trudging to the
+     door with his laundry sack; the lectern candle slides out of frame as we enter the picture):
+     he reaches the door, it swings open spilling cold wisp-light on him, he steps into it -- and
+     the picture fades to black over s0_out [41.97 -> 43.17]. S1 fades up inside.
+
+ACTING (thought -> glance -> breath -> line). Eyes lead, head 0.15-0.25 s later, body last.
+ - Tuning: head cocked toward the pegbox, eyes half-lidded, listening; a pleased little nod when
+   the string comes true (the harmonics). Flourish: eyes flick to the book, then the head.
+ - Before "Once": a look to camera on the vamp, an inhale (beak closed, chest up), then sing.
+ - Long notes ("pane", "spell", "bread"): eyes close, brows lift, head tips up (rapture).
+ - The coda: "pull up a stool" -- eyes to the stool, head nod toward it, back to us on "friend";
+   "hear HOW" -- the wink; "kingdom of stone" -- eyes return to the book (he's reading it to us).
+ - The music drives the body: strum hand hits on every stroke time (anticipation, 75 ms sweep,
+   follow-through), the fret hand slides to each chord change (all on beats; most on
+   downbeats), head bob + left-boot tap on the beat grid, groove by section. Beak from the
+   vocal envelope timeline.talk(0, t, "BARD") (no voiceover lines in S0), vowel shapes from the
+   syllables; the beak is shut through the intro, interlude, break and outro.
+
+COLOR / VALUE. Dominant warm amber (candle) over deep plum-brown darks; one cool accent (the
+moonlit window and a faint blue-violet moon shaft across the back wall) so the warm reads warm.
+The room's falloff is baked into cached light maps round the real flame positions and laid over
+the set and the actors alike, so the lectern foot, the stools and his boots sink into the dark. Klaus lighting on the bard: warm key from the
+lectern candles (screen right), hearth-orange rim from the left, a big soft cast shadow of him
+playing along on the stone wall. The subject is always the brightest, most contrasted area: in
+A1 the candle flame and the gilt title; in A2 the opened pages; in B/C3-C5 the bard's face and the
+pages. Inside the book: the painted pages' own palettes (dusk indigo/peach, cold teal for the
+stones and the wash-house) under a gentle candle wash; gold leaf glints as the light and camera
+move (small burnished specular slides, not lens stars). Grain 3.5 %, plum vignette.
+
+PERIOD. Stone walls, a hearth, beeswax candles in iron prickets, a carved oak lectern, a frame drum
+and recorder on wall pegs, a moonlit leaded window, a woven rug, a stack of old books; storybook
+lettering only (IM FELL, Uncial). Inside the pages: half-timbered houses, iron lanterns, market
+awnings, painted signs. Nothing modern; nobody human (goblins, kobolds, elves, mouse- and
+hare-folk, a dwarf, the dragon, the cockatrice).
+
+SOUND (SFX_CUES at the bottom, computed from the same event times): the near flame, the cover's
+creak + landing + page flutter, the painted doors' muffled slams, six shutter latches, three page
+turns, the rune-stone's flare, the wink's chime, the wash-house door opening.
+"""
 
 import math
 import random
@@ -17,6 +123,10 @@ SCENE = 0
 W, H = core.W, core.H
 TAU = math.tau
 L_CANDLE = sb.STORY_LIGHT
+# the bard's own light: the lectern candle burns right beside his head (a near-horizontal warm key
+# from screen right), the hearth rims him hot orange from the left
+L_BARD = L_CANDLE.with_(direction=(0.9, -0.42), rim=(1.0, 0.6, 0.28), rim_strength=1.45,
+                        rim_direction=(-0.9, -0.42))
 
 # ----------------------------------------------------------------------------------------
 # timing: everything derives from timeline.json beats/lines and the song's own word times
@@ -59,7 +169,7 @@ EV = dict(castle_lights=wt(1, "kingdom"), folk_walk=wt(2, "Lived"), cross=wt(2, 
           lock=wt(4, "lock"), heart=wt(4, "heart"), latch=wt(4, "latch"), pane=wt(4, "pane"),
           sigh=wt(5, "sigh"), wave=wt(6, "waved"), neighbours=wt(6, "neighbours"), hurried=wt(6, "hurried"),
           by=wt(6, "by"), stone=wt(7, "stone"), sell=wt(7, "sell"), but=wt(8, "But"), missing=wt(8, "missing"),
-          wasnt=wt(8, "wasn't"), spell=wt(8, "spell"), wash_walk=T_TURN3 - 2.5)
+          wasnt=wt(8, "wasn't"), spell=wt(8, "spell"), wash_walk=T_TURN3 - 0.4, wash_door=DUR - 1.05)
 
 # ----------------------------------------------------------------------------------------
 # the set (world px at zoom 1; y down). The nook: stone wall, hearth (left, off the frame's
@@ -73,15 +183,53 @@ HEARTH_X, HEARTH_SC = 205.0, 1.45
 WIN_X, WIN_Y, WIN_W, WIN_H = 1700.0, 150.0, 150.0, 250.0
 STOOL_X, STOOL_Y = 1068.0, 968.0                  # the empty stool (pull up a stool, friend)
 STACK_X, STACK_Y = 1740.0, 1004.0                 # old books + a candle stub (right)
-FG_CANDLE = (1585.0, 610.0)                       # the near candle we push past (parallax FG_P)
-FG_P = 1.32
+FG_CANDLE = (886.5, 782.9)                        # the near candle's flame (on its own plane, parallax FG_P)
+FG_P = 2.4                                        # close to the lens: it sweeps out of frame left as we push in
 WALL_P = 0.95
+SHADOW_K = 1.5                                    # the bard's wall shadow: x his size, about the candle
 WALL = {"stone_a": "#5a443a", "stone_b": "#46352f", "mortar": "#1f1617", "beam": "#33231a",
         "floor_hi": "#5b3f2c", "floor_lo": "#24170f"}
 M = dict(w=2400, h=1500, x=-240, y=-200)          # cached-layer margin (camera moves never show an edge)
 
 VIEW_WIDE, VIEW_BOOK = 0.55, 0.24                 # the desk angle: wide shots / pushed into the page
 GILT = {}                                         # id(page) -> gilt polylines (page units)
+
+# the room's light sources (world px), filled in by setup() from the lectern / hearth rigs
+SRC = {"cand_l": (1042.0, 640.0), "cand_r": (1618.0, 640.0), "fire": (205.0, 784.0),
+       "stack": (1750.0, 850.0), "moon": (1796.0, 234.0)}
+DARK = "#0a0510"                                  # the nook's darkness: deep plum-violet, never grey
+CANDLE_C, HEARTH_C, MOON_C = "#ff9440", "#ff6a24", "#7f9cf0"
+
+
+def light_map(cr, rect, dark_a, holes, washes):
+    """Paint the room's static light onto a cached layer: darken everything in `rect` toward DARK
+    (alpha dark_a) except soft pools round the light sources (holes: [(x, y, r, k, squash)]: k is
+    how much darkness the pool lifts), then wash the pools with their light's colour (washes:
+    [(x, y, r, colour, alpha, squash)], additive). One-off cost (setup)."""
+    x0, y0, w, h = rect
+    cr.push_group()
+    core.src(cr, DARK, dark_a)
+    cr.rectangle(x0, y0, w, h)
+    cr.fill()
+    cr.set_operator(cairo.OPERATOR_DEST_OUT)
+    for (x, y, r, k, sq) in holes:
+        cr.save()
+        cr.translate(x, y)
+        cr.scale(1.0, sq)
+        g = cairo.RadialGradient(0, 0, 0, 0, 0, r)
+        for off, f in ((0.0, 1.0), (0.18, 0.92), (0.4, 0.62), (0.65, 0.28), (0.85, 0.08), (1.0, 0.0)):
+            g.add_color_stop_rgba(off, 0, 0, 0, k * f)
+        cr.set_source(g)
+        cr.paint()
+        cr.restore()
+    cr.pop_group_to_source()
+    cr.paint()
+    for (x, y, r, c, a, sq) in washes:
+        cr.save()
+        cr.translate(x, y)
+        cr.scale(1.0, sq)
+        fx.glow(cr, 0.0, 0.0, r, c, a)
+        cr.restore()
 
 
 # ----------------------------------------------------------------------------------------
@@ -298,13 +446,6 @@ def _book_stack(cr, x, y):
     return (x, yy)
 
 
-def _radial(cx, cy, r, stops):
-    g = cairo.RadialGradient(cx, cy, 0, cx, cy, r)
-    for off, c in stops:
-        g.add_color_stop_rgba(off, *c)
-    return g
-
-
 def draw_wall(cr, store):
     """The back wall plane (parallax WALL_P): stone, ceiling beam, hearth, mantel, the drum and
     recorder on their pegs, the night window; the painted light falloff."""
@@ -317,6 +458,7 @@ def draw_wall(cr, store):
     cr.fill()
     hr = sb.draw_hearth(cr, HEARTH_X, WALL_Y + 22, HEARTH_SC, L_CANDLE, seed=1)
     store["hearth"] = hr
+    SRC["fire"] = hr.fire
     mx, my = hr.mantel
     core.src(cr, "#7a4a30")
     cr.new_path()
@@ -333,19 +475,24 @@ def draw_wall(cr, store):
         cr.fill()
     _wall_music(cr, 950, 250)
     _window(cr)
-    # light falloff: dark ceiling, a warm pocket round the book and the bard, the hearth's orange
-    cr.set_source(core.linear(0, -220, 0, 520, [(0.0, (0.03, 0.01, 0.02, 0.85)), (1.0, (0.03, 0.01, 0.02, 0.0))]))
-    cr.rectangle(-260, -220, W + 520, 740)
+    # the ceiling falls away into darkness above the candles
+    cr.set_source(core.linear(0, -220, 0, 560, [(0.0, (0.03, 0.01, 0.02, 0.9)), (1.0, (0.03, 0.01, 0.02, 0.0))]))
+    cr.rectangle(-260, -220, W + 520, 780)
     cr.fill()
-    cr.set_source(_radial(1150, 620, 1250, [(0.0, (0.0, 0.0, 0.0, 0.0)), (0.42, (0.02, 0.0, 0.02, 0.22)),
-                                            (1.0, (0.02, 0.0, 0.03, 0.78))]))
-    cr.rectangle(-260, -220, W + 520, H + 440)
-    cr.fill()
+    # the light: pools round the candles, the book, the hearth and the moonlit window
+    (clx, cly), (crx, cry) = SRC["cand_l"], SRC["cand_r"]
     hx, hy = hr.fire
-    cr.set_source(_radial(hx, hy - 120, 760, [(0.0, (1.0, 0.45, 0.15, 0.30)), (0.5, (0.9, 0.35, 0.1, 0.10)),
-                                              (1.0, (0.9, 0.3, 0.1, 0.0))]))
-    cr.rectangle(-260, -220, W + 520, H + 440)
-    cr.fill()
+    sx_, sy_ = SRC["stack"]
+    mx_, my_ = SRC["moon"]
+    shx, shy = clx + (BARD_X - 10.0 - clx) * SHADOW_K, cly + (600.0 - cly) * SHADOW_K
+    light_map(cr, (-260, -220, W + 520, H + 440), 0.62,
+              holes=[(shx + 40, shy + 10, 380, 0.8, 1.15), (clx, cly, 480, 0.92, 1.0), (crx, cry, 440, 0.88, 1.0), ((clx + crx) / 2, cly - 30, 400, 0.6, 0.9),
+                     (hx + 40, hy - 90, 840, 0.92, 0.8), (sx_, sy_, 300, 0.6, 1.0), (BARD_X + 60, 690, 300, 0.32, 1.1),
+                     (mx_, my_ + 30, 210, 0.6, 1.2)],
+              washes=[(shx + 40, shy + 10, 360, CANDLE_C, 0.1, 1.15), (clx, cly, 460, CANDLE_C, 0.13, 1.0),
+                      (crx, cry, 420, CANDLE_C, 0.11, 1.0),
+                      (hx + 30, hy - 80, 780, HEARTH_C, 0.2, 0.8), (sx_, sy_, 260, CANDLE_C, 0.08, 1.0),
+                      (mx_, my_ + 20, 240, MOON_C, 0.12, 1.2)])
 
 
 def draw_floor(cr, store):
@@ -363,37 +510,106 @@ def draw_floor(cr, store):
     cr.fill()
     _rug(cr, BARD_X + 120, BARD_Y + 10, 360, 74)
     store["stack_top"] = _book_stack(cr, STACK_X, STACK_Y)
-    # the floor falls into darkness away from the candles
-    cr.set_source(_radial(1150, 900, 1150, [(0.0, (0.0, 0.0, 0.0, 0.0)), (0.5, (0.02, 0.0, 0.02, 0.18)),
-                                            (1.0, (0.02, 0.0, 0.03, 0.7))]))
-    cr.rectangle(-260, WALL_Y - 10, W + 520, H)
-    cr.fill()
+    # the floor falls into darkness away from the candles (pools squashed into floor perspective)
+    (clx, _), (crx, _) = SRC["cand_l"], SRC["cand_r"]
+    hx = SRC["fire"][0]
+    light_map(cr, (-260, WALL_Y - 10, W + 520, H), 0.6,
+              holes=[((clx + crx) / 2, LECT_Y, 620, 0.85, 0.3), (BARD_X + 80, BARD_Y, 520, 0.8, 0.32),
+                     (hx + 80, WALL_Y + 60, 760, 0.88, 0.36), (STACK_X, STACK_Y - 20, 340, 0.62, 0.35)],
+              washes=[((clx + crx) / 2, LECT_Y - 10, 600, CANDLE_C, 0.11, 0.3), (BARD_X + 80, BARD_Y, 480, CANDLE_C, 0.09, 0.3),
+                      (hx + 120, WALL_Y + 70, 820, HEARTH_C, 0.14, 0.34)])
+
+
+def draw_room_shade(cr):
+    """The room's light falloff as one world-anchored darkness field, painted OVER the set AND the
+    actors (lectern column, stools, the bard's legs) so everything falls off with its distance from
+    the flames: candle-height things glow, the floor and the corners sink into plum dark."""
+    (clx, cly), (crx, cry) = SRC["cand_l"], SRC["cand_r"]
+    hx, hy = SRC["fire"]
+    sx_, sy_ = SRC["stack"]
+    light_map(cr, (-260, -220, W + 520, H + 440), 0.62,
+              holes=[(clx, cly, 520, 1.0, 1.0), (crx, cry, 470, 1.0, 1.0), ((clx + crx) / 2, cly - 40, 420, 1.0, 0.85),
+                     (clx + (BARD_X - 10.0 - clx) * SHADOW_K + 40, cly + (600.0 - cly) * SHADOW_K, 360, 0.65, 1.15),
+                     (BARD_X + 70, cly + 20, 380, 0.75, 1.0), (hx + 120, hy - 60, 900, 0.7, 0.8),
+                     (sx_, sy_, 300, 0.8, 1.0)],
+              washes=[])
 
 
 def draw_fg_candle(cr):
-    """The near candle (parallax FG_P, out of focus): a tall beeswax candle in an iron pricket.
-    Drawn once into a blurred layer; its flame + halo are drawn per frame."""
+    """The near candle (its own plane, parallax FG_P, cached and blurred = out of focus): a fat
+    beeswax pillar on an iron pricket whose stem runs out of the bottom of frame. Seen against the
+    room it is a dark warm silhouette -- except its crown, where the wax glows translucent round
+    the wick, and an orange rim from the hearth down its left side. The flame is drawn per frame."""
     x, y = FG_CANDLE
-    iron = "#1c1412"
+    top = y + 16.0                                  # the wax rim
+    w, h = 76.0, 210.0
+    iron = "#160d0b"
+    # the pricket: a stem out of frame, a drip dish, a collar
     core.src(cr, iron)
-    core.rounded_rect(cr, x - 70, y + 330, 140, 30, 10)
+    core.rounded_rect(cr, x - 9.0, top + h - 6.0, 18.0, 520.0, 7.0)
     cr.fill()
-    core.rounded_rect(cr, x - 13, y + 160, 26, 190, 10)
+    cr.new_path()
+    core.ellipse(cr, x, top + h + 6.0, 70.0, 15.0)
     cr.fill()
-    core.rounded_rect(cr, x - 46, y + 150, 92, 16, 7)
+    core.rounded_rect(cr, x - 44.0, top + h - 8.0, 88.0, 20.0, 9.0)
     cr.fill()
-    cr.set_source(core.linear(x - 22, 0, x + 22, 0, ["#6e5a40", "#b49a6c", "#5e4a34"]))
-    core.rounded_rect(cr, x - 22, y + 10, 44, 146, 9)
+    # the wax body: dark, a little warmer toward the lit crown
+    body = [(x - w / 2, top + 6.0), (x - w / 2 + 1.0, top + h), (x + w / 2 - 1.0, top + h), (x + w / 2, top + 4.0)]
+    cr.new_path()
+    core.smooth_closed(cr, body, 0.15)
+    bp = B.Path(cr)
+    cr.set_source(core.linear(0, top, 0, top + h, [(0.0, "#7a4a24"), (0.22, "#3a2214"), (1.0, "#1c100b")]))
     cr.fill()
-    cr.set_source(core.linear(0, y + 8, 0, y + 70, [(0.0, (1.0, 0.85, 0.55, 0.85)), (1.0, (1.0, 0.85, 0.55, 0.0))]))
-    core.rounded_rect(cr, x - 22, y + 8, 44, 64, 9)
+    cr.save()
+    bp.add(cr)
+    cr.clip()
+    # translucent crown: the flame lights the wax from inside
+    cr.set_source(core.radial(x, top - 4.0, 88.0, [(0.0, (1.0, 0.86, 0.52, 0.95)), (0.45, (1.0, 0.62, 0.26, 0.55)),
+                                                     (1.0, (1.0, 0.5, 0.2, 0.0))]))
+    cr.paint()
+    # the hearth's rim down the left edge
+    cr.set_source(core.linear(x - w / 2, 0, x - w / 2 + 16.0, 0, [(0.0, (1.0, 0.52, 0.2, 0.55)), (1.0, (1.0, 0.5, 0.2, 0.0))]))
+    cr.rectangle(x - w / 2, top, 16.0, h)
     cr.fill()
-    core.src(cr, "#ffe2a8", 0.55)
-    for dx_, dl in ((-12, 36), (6, 58), (15, 24)):
-        core.rounded_rect(cr, x + dx_ - 3, y + 8, 6, dl, 3)
+    cr.restore()
+    # drips down the side
+    core.src(cr, "#8a5a2c", 0.9)
+    for dx_, dl in ((-24.0, 54.0), (-6.0, 30.0), (14.0, 76.0), (27.0, 38.0)):
+        core.rounded_rect(cr, x + dx_ - 4.0, top + 2.0, 8.0, dl, 4.0)
         cr.fill()
-    core.src(cr, "#ffe7b0")
-    core.ellipse(cr, x, y + 10, 21, 5)
+    # the wax pool on top (lit)
+    cr.new_path()
+    core.ellipse(cr, x, top + 4.0, w / 2 - 3.0, 8.0)
+    core.src(cr, "#ffd89a", 0.95)
+    cr.fill()
+    # the wick stub
+    core.src(cr, "#2a1608")
+    cr.rectangle(x - 1.6, top - 9.0, 3.2, 12.0)
+    cr.fill()
+
+
+def fg_flame(cr, x, y, s, t, alpha=1.0):
+    """The near candle's flame at screen (x, y) (its base), s = on-screen scale: a soft teardrop
+    (blue root, gold body, white heart) that flickers, leans and stretches with candle_flicker."""
+    b, sway, stretch = sb.candle_flicker(t, 9)
+    hgt = 46.0 * s * stretch
+    wid = 15.0 * s
+    lean = 5.0 * s * sway
+    tip = (x + lean, y - hgt)
+
+    def tear(k, dy=0.0):
+        return [(x - wid * k, y - hgt * 0.28 * k + dy), (x - wid * 0.62 * k + lean * 0.4, y - hgt * 0.62 * k + dy),
+                (tip[0] * k + x * (1 - k), y - hgt * k + dy), (x + wid * 0.62 * k + lean * 0.4, y - hgt * 0.62 * k + dy),
+                (x + wid * k, y - hgt * 0.28 * k + dy), (x, y + wid * 0.55 * k + dy)]
+    fx.glow(cr, x + lean * 0.5, y - hgt * 0.45, 70.0 * s * b, "#ffb455", 0.55 * alpha)
+    for k, c, a in ((1.0, "#ff9a3c", 0.85), (0.74, "#ffd27a", 0.95), (0.46, "#fff3d0", 1.0)):
+        cr.new_path()
+        core.smooth_closed(cr, tear(k, -hgt * 0.04 * (1 - k)), 0.6)
+        core.src(cr, c, a * alpha)
+        cr.fill()
+    cr.new_path()
+    core.ellipse(cr, x, y - hgt * 0.06, wid * 0.42, wid * 0.32)
+    core.src(cr, "#5a78ff", 0.45 * alpha)
     cr.fill()
 
 
@@ -449,36 +665,42 @@ def _cam_lerp(a, b, u):
 
 # (time, spec, easing into this key). Three shots: A (0 -> T_CUT_B), B (-> T_CUT_C), C (-> end).
 SHOT_A = [
-    (0.0, Wk(1088, 668, 1.24)),
-    (T_OPEN - 0.1, Wk(1132, 640, 1.60), "inout_sine"),          # slow push past the candle: the closed book
-    (T_COVER_LAND - 0.12, Wk(1148, 628, 1.71), "linear"),        # ...creeping on while the cover swings
-    (LN[1].start + 0.72, Pk("right", -0.02, 0.36, 5.9), "inout_sine"),  # dive in: the whole spread fills the frame
-    (wt(1, "in") - 0.05, Pk("left", 0.9, 0.33, 6.2), "inout_sine"),     # "Once upon a time," -- the quill writes
-    (wt(1, "stone") + 0.1, Pk("right", 0.5, 0.245, 10.4), "inout_sine"),  # into the castle on "stone"
+    (0.0, Wk(1075, 700, 1.18)),
+    (T_OPEN - 0.1, Wk(1118, 688, 1.44), "inout_sine"),          # push past the near candle to the closed book
+    (T_COVER_LAND - 0.12, Wk(1124, 684, 1.48), "linear"),        # ...creeping on while the cover swings
+    (wt(1, "in") - 0.15, Wk(1140, 676, 1.56), "inout_sine"),     # hold the two-shot: "Once upon a time," to us
+    (wt(1, "stone") + 0.1, Pk("right", 0.5, 0.245, 10.4), "inout_cubic"),  # THE DIVE: into the castle on "stone"
     (LN[2].start + 0.35, Pk("right", 0.5, 0.25, 10.5), "linear"),
-    (wt(2, "alone"), Pk("right", 0.5, 0.74, 10.8), "inout_sine"),      # tilt down the hill to the town
+    (wt(2, "alone"), Pk("right", 0.5, 0.755, 10.8), "inout_sine"),     # tilt down the hill to the town
     (wt(4, "And"), Pk("right", 0.5, 0.775, 11.0), "inout_sine"),        # settle in the street
-    (T_CUT_B, Pk("right", 0.53, 0.79, 11.25), "inout_sine"),            # lean in on lock / latch
+    (wt(4, "lock") + 0.05, Pk("right", 0.53, 0.8, 13.5), "inout_sine"),  # push in as the doors SLAM on "lock"
+    (wt(4, "heart") + 0.2, Pk("right", 0.54, 0.8, 14.2), "linear"),     # creep: the heart-locks bolt and glint
+    (wt(4, "latch") - 0.05, Pk("right", 0.5, 0.73, 14.0), "inout_sine"),  # tilt up: the shutters LATCH, one by one
+    (T_CUT_B, Pk("right", 0.5, 0.73, 14.4), "linear"),
 ]
 SHOT_B = [
-    (T_CUT_B, Wk(1095, 655, 1.66)),
-    (T_CUT_C, Wk(1105, 650, 1.74), "linear"),
+    (T_CUT_B, Wk(1100, 688, 1.5)),                                 # the storyteller again (A2's two-shot)
+    (T_CUT_C, Wk(1112, 684, 1.56), "linear"),
 ]
 SHOT_C = [
-    (T_CUT_C, Pk("left", 0.8, 0.56, 6.2)),                                # the dragon's page; its verse writes below
-    (wt(5, "a", 1) - 0.1, Pk("left", 0.64, 0.42, 9.0), "inout_sine"),     # push in on him for "...and a SIGH"
-    (wt(6, "by") - 0.1, Pk("left", 0.66, 0.43, 9.2), "inout_sine"),       # the wave, the neighbours hurrying by
-    (wt(7, "in"), Pk("right", 0.42, 0.55, 6.6), "inout_sine"),            # glide to the market: "Every merchant..."
-    (wt(7, "stone") - 0.1, Pk("right", 0.3, 0.42, 8.6), "inout_sine"),    # in on the stone-seller for "STONE"
-    (wt(7, "sell"), Pk("right", 0.42, 0.46, 7.6), "inout_sine"),          # ...all three hold up their wares
-    (wt(8, "wasn't"), Pk("right", -0.02, 0.55, 4.6), "inout_sine"),       # pull back: the dragon AND the stalls
+    (T_CUT_C, Pk("left", 0.98, 0.54, 5.0)),                               # cut to the spread: verse 2 writes itself
+    (wt(5, "dragon"), Pk("left", 0.9, 0.55, 5.3), "inout_sine"),          #   at the top, the dragon alone below
+    (wt(5, "sigh") - 0.15, Pk("left", 0.47, 0.605, 9.0), "inout_sine"),   # push in on him for "...and a SIGH"
+    (wt(6, "waved") + 0.25, Pk("left", 0.47, 0.61, 8.6), "inout_sine"),   # the hopeful wave (verse out of frame)
+    (wt(6, "hurried") - 0.1, Pk("left", 0.52, 0.70, 6.8), "inout_sine"),  # ease back: the neighbours hurry by
+    (wt(6, "by") + 0.2, Pk("left", 0.53, 0.70, 6.7), "linear"),           #   (the verse above is out of frame)
+    (wt(7, "merchant"), Pk("right", 0.47, 0.66, 7.2), "inout_sine"),      # glide to the market: "Every merchant..."
+    (wt(7, "stone") - 0.1, Pk("right", 0.3, 0.6, 8.6), "inout_sine"),     # in on the stone-seller for "STONE"
+    (wt(7, "sell"), Pk("right", 0.46, 0.66, 7.4), "inout_sine"),          # ...all three hold up their wares
+    (wt(8, "wasn't"), Pk("right", -0.02, 0.58, 4.6), "inout_sine"),       # pull back: the dragon AND the stalls
     (LN[9].start + 0.15, Wk(1062, 742, 1.45), "inout_sine"),              # out of the book, back to the bard
     (T_WINK - 0.15, Wk(872, 772, 2.15), "inout_sine"),                    # push in on him: the stool, the wink
     (LN[9].end + 0.1, Wk(874, 770, 2.2), "linear"),
     (T_TURN3 - 0.4, Wk(1095, 690, 1.62), "inout_sine"),                   # ease back: him and the book
     (T_FINAL + 0.1, Wk(1108, 682, 1.67), "inout_sine"),                   # the page turns, the final chord
-    (T_OUT0 - 0.25, Pk("right", 0.47, 0.55, 7.8), "inout_cubic"),         # push into the wash-house page...
-    (DUR, Pk("right", 0.5, 0.64, 12.5), "inout_sine"),                    # ...and on into it as it goes black
+    (T_OUT0 - 0.25, Pk("right", 0.6, 0.66, 7.4), "inout_cubic"),          # push into the wash-house page...
+    (DUR, Pk("right", 0.74, 0.82, 16.0), "inout_sine"),                   # ...after him to the door as it goes black
+                                                                          #   (the lectern candle slides out right)
 ]
 
 
@@ -523,39 +745,73 @@ def book_state(t):
 # the bard's staging (the music itself -- strums, chords, beat, singing -- comes from bard_song)
 # ----------------------------------------------------------------------------------------
 
+def _bump(t, t0, rise, hold, fall):
+    """0 -> 1 -> 0: eases up over `rise` from t0, holds, eases down over `fall`."""
+    return smooth((t - t0) / rise) * (1.0 - smooth((t - (t0 + rise + hold)) / fall))
+
+
 def bard_pose(t):
+    """The bard's performance. The MUSIC (strum hand on every stroke, fret hand to each chord, head
+    bob + foot tap on the beat grid, groove by section, tuning, vowels, long-note rapture) comes
+    from the song timing via bard_song; the beak opens from the vocal envelope in timeline.json
+    (timeline.talk(0, t, "BARD")); the ACTING (where he looks, when, and what he feels) is staged
+    here, eyes leading the head by ~0.15-0.2 s."""
     song = ch.bard_song(t)
     tune = song.get("tune", 0.0)
-    # after the flourish he looks to the book (eyes first, then the head), delighted as it opens
-    to_book = smooth((t - (T_FLOURISH + 0.05)) / 0.3) * (1.0 - smooth((t - (T_VAMP + 0.45)) / 0.5))
-    to_us_intro = smooth((t - (T_VAMP + 0.45)) / 0.4) * (1.0 - smooth((t - (LN[1].start + 0.2)) / 0.5))
-    # the interlude: eyes closed on "paaane", then he opens them and watches the page turn itself
-    watch = smooth((t - (LN[4].end + 0.05)) / 0.35) * (1.0 - smooth((t - (T_CUT_C - 0.1)) / 0.3))
-    # the coda: up to us on "spell", the stool, the wink
-    up = smooth((t - T_LOOKUP) / 0.6)
-    stool = smooth((t - (wt(9, "pull") - 0.1)) / 0.25) * (1.0 - smooth((t - (T_FRIEND - 0.12)) / 0.25))
-    to_book_end = smooth((t - (LN[10].start - 0.05)) / 0.5)
-    look_cam = max(0.45 * to_us_intro, up * (1.0 - 0.75 * stool) * (1.0 - to_book_end))
-    look_x = 0.75 * to_book + 0.8 * watch + 0.55 * stool + 0.85 * to_book_end * (1.0 - up * (1 - to_book_end))
-    look_y = -0.1 * to_book + 0.65 * stool - 0.05 * watch
-    head_turn = 0.35 * smooth((t - (T_FLOURISH + 0.18)) / 0.35) * (1.0 - smooth((t - (T_VAMP + 0.4)) / 0.5))
-    head_turn += 0.3 * watch + 0.18 * stool + 0.35 * to_book_end
-    nod = -0.35 * math.sin(math.pi * clamp((t - (T_STOOL - 0.15)) / 0.5)) * stool
-    wink = smooth((t - T_WINK) / 0.1) * (1.0 - smooth((t - (T_WINK + 0.42)) / 0.18))
+    # -- intro: tuning (head cocked, listening), a pleased little nod when the harmonics ring true
+    pleased = _bump(t, 1.62, 0.18, 0.12, 0.3)
+    # -- the run + flourish: eyes to the book, the head follows; delight as the cover swings open
+    eyes_book = smooth((t - 2.25) / 0.18) * (1.0 - smooth((t - 3.5) / 0.2))
+    head_book = smooth((t - 2.42) / 0.3) * (1.0 - smooth((t - 3.6) / 0.35))
+    delight = _bump(t, T_OPEN - 0.05, 0.25, 0.45, 0.4)
+    # -- the vamp: he turns to US (eyes first), sits up and breathes in, then sings the first line
+    #    to camera until the camera has dived into the page
+    to_us = smooth((t - 3.62) / 0.35) * (1.0 - smooth((t - 6.6) / 0.4))
+    inhale = _bump(t, 3.62, 0.25, 0.12, 0.3)
+    # -- the long note "paaane": eyes closed (rapture from the song); on the release he opens them
+    #    and catches the page turning itself
+    watch = smooth((t - (LN[4].end - 0.02)) / 0.22) * (1.0 - smooth((t - (T_CUT_C + 0.2)) / 0.3))
+    # -- the coda: up to us on "spell", eyes to the empty stool on "pull up a stool" (a nod at it),
+    #    back to us on "friend", the wink on "HOW", then back to the book for the last line
+    up = smooth((t - T_LOOKUP) / 0.5)
+    stool_eyes = smooth((t - (wt(9, "pull") - 0.12)) / 0.18) * (1.0 - smooth((t - (T_FRIEND - 0.15)) / 0.2))
+    stool_head = smooth((t - (wt(9, "pull") + 0.05)) / 0.3) * (1.0 - smooth((t - (T_FRIEND - 0.02)) / 0.3))
+    to_book_end = smooth((t - (LN[10].start - 0.1)) / 0.45)
+    # singing TO us: the head stays in 3/4 (a full-front beak points down the lens and its gape
+    # vanishes), the eyes swing the rest of the way to meet the lens
+    gaze = max(to_us * (1.0 - head_book), up * (1.0 - 0.8 * stool_head) * (1.0 - to_book_end))
+    look_cam = 0.6 * gaze
+    look_x = (0.8 * eyes_book * (1.0 - to_us) + 0.8 * watch + 0.6 * stool_eyes
+              + 0.8 * to_book_end * (1.0 - stool_eyes) - 0.32 * gaze)
+    look_y = -0.12 * eyes_book + 0.7 * stool_eyes - 0.05 * watch
+    head_turn = 0.38 * head_book * (1.0 - to_us) + 0.3 * watch + 0.22 * stool_head + 0.35 * to_book_end
+    nod = (0.12 * pleased - 0.3 * math.sin(math.pi * clamp((t - (T_STOOL - 0.2)) / 0.5)) * stool_head
+           + 0.16 * inhale + 0.08 * delight)
+    # the wink snaps shut on "HOW" and snaps open again (the rig's half-shut wink frame reads as a
+    # patch over the eye, and a real wink is that fast anyway)
+    wink = 1.0 if T_WINK <= t < T_WINK + 0.42 else 0.0
+    # -- the face
     mood, mood2, mix_ = "twinkle", "listen", tune
-    if t > T_FRIEND - 0.1 and t < LN[10].start:
+    if delight > 0.01:
+        mood2, mix_ = "happy", 0.7 * delight
+    elif watch > 0.01:
+        mood2, mix_ = "raised", 0.55 * watch
+    if T_FRIEND - 0.1 < t < LN[10].start:
         mood, mood2, mix_ = "warm", "sly", smooth((t - (wt(9, "hear") - 0.1)) / 0.25)
-    rap = song.get("rapture", 0.0) * (1.0 - 0.8 * up * (1.0 - to_book_end))
-    # beak legibility: the rig's "e" barely parts the mandibles (x0.55), and the quiet aside of
-    # "...hear how it's said" sings at ~0.4 -- open both up a touch so every syllable reads
-    sing = song.get("sing", 0.0)
-    if (song.get("vowel") or "a")[:1] in ("e", "i"):
-        sing *= 0.75 / 0.55
-    sing = clamp(sing) ** 0.85
+    rap = song.get("rapture", 0.0) * (1.0 - 0.85 * up * (1.0 - to_book_end))
+    # the beak: the vocal envelope from the timeline (BARD lines; none are voice-over), with the
+    # rig's narrow "e" opened up a touch so every syllable reads
+    sing = tl.talk(SCENE, t, "BARD")
+    v = (song.get("vowel") or "a")[:1]
+    if v in ("e", "i"):
+        sing *= 0.8 / 0.55
+    elif v == "o":
+        sing *= 0.9 / 0.8
+    sing = clamp(sing) ** 0.7            # soft singing still opens the beak legibly
     song = dict(song, rapture=rap, sing=sing)
     return ch.BardPose(sit=1.0, facing=1, turn=-0.45, look_cam=look_cam, look=(look_x, look_y), head_turn=head_turn,
-                       head_nod=nod, mood=mood, mood2=mood2, mood_mix=mix_, wink=wink, tail_swing=-0.6, seed=2,
-                       **song)
+                       head_nod=nod, lean=-0.1 * inhale, mood=mood, mood2=mood2, mood_mix=mix_, wink=wink,
+                       tail_swing=-0.6, seed=2, **song)
 
 
 # ----------------------------------------------------------------------------------------
@@ -565,17 +821,23 @@ def bard_pose(t):
 def setup():
     st = {"light": fx.LightLayer()}
     store = {}
-    st["wall"] = fx.Layer(lambda c: draw_wall(c, store), blur=1.1, opaque=True, **M)
-    st["floor"] = fx.Layer(lambda c: draw_floor(c, store), blur=0.6, **M)
-    st["fg"] = fx.Layer(draw_fg_candle, blur=9.0, x=FG_CANDLE[0] - 160, y=FG_CANDLE[1] - 120, w=320, h=560)
-    st.update(store)
     st["book"] = PG.make_book(EV)
     for sp_ in st["book"].spreads:
         for pg in (sp_.left, sp_.right):
             GILT[id(pg)] = _page_gilt(pg)
-    lrig = sb.draw_lectern(core.frame(4, 4)[1], LECT_X, LECT_Y, LECT_SC, L_CANDLE, st["book"], height=LECT_HT,
-                           view=VIEW_WIDE)
+    scratch = core.frame(4, 4)[1]
+    lrig = sb.draw_lectern(scratch, LECT_X, LECT_Y, LECT_SC, L_CANDLE, st["book"], height=LECT_HT, view=VIEW_WIDE)
     st["lectern_candles"] = lrig.candles
+    # where the flames really are (the room's light sources) -- before the lit layers are painted
+    for key, c in zip(("cand_l", "cand_r"), lrig.candles):
+        SRC[key] = sb.draw_candle(scratch, c[0], c[1], LECT_SC, t=0.0, light=L_CANDLE, height=40.0).flame
+    st["wall"] = fx.Layer(lambda c: draw_wall(c, store), blur=1.1, opaque=True, **M)
+    st["floor"] = fx.Layer(lambda c: draw_floor(c, store), blur=0.6, **M)
+    st["fg"] = fx.Layer(draw_fg_candle, blur=6.0, x=FG_CANDLE[0] - 130, y=FG_CANDLE[1] - 70, w=260, h=880)
+    st.update(store)
+    st["shade"] = fx.Layer(draw_room_shade, blur=24.0, res=0.25, **M)
+    sx, sy = st["stack_top"]
+    SRC["stack"] = sb.draw_candle(scratch, sx + 10, sy, 1.9, t=0.0, light=L_CANDLE, height=22.0, width=12.0).flame
     return st
 
 
@@ -626,9 +888,10 @@ def _along_loop(pts, s0, s1, n=10):
 
 
 def draw_glints(cr, t, cam, brig, book, spread, vis):
-    """A burnished highlight sliding along each gilt rule of the open pages: where it sits on the
-    loop depends on the camera's position (a specular moves when the eye moves) and drifts with the
-    candle; its brightness breathes with the flame."""
+    """Burnished gold leaf: a short specular streak slides along each gilt rule of the open pages.
+    Where it sits on the loop follows the camera (a specular moves when the eye moves) and drifts
+    with the candle; its brightness breathes with the flame. A streak + a tight warm bloom, never a
+    lens star."""
     if vis <= 0.01:
         return
     fl = sb.candle_flicker(t, 3)[0]
@@ -641,17 +904,15 @@ def draw_glints(cr, t, cam, brig, book, spread, vis):
             if len(loop) < 3:
                 continue
             base = 0.37 * k + (0.13 if side == "right" else 0.61)
-            sc = base + 0.035 * t + 0.00042 * cam.x + 0.00031 * cam.y
-            for j, off in enumerate((0.0, 0.5)):
-                c = sc + off + 0.04 * math.sin(t * 0.7 + j)
-                a = vis * (0.55 + 0.45 * math.sin(t * 0.9 + 2.0 * j + k)) * clamp(fl - 0.05)
-                if a < 0.05:
-                    continue
-                pts = [M_.transform_point(*p) for p in _along_loop(loop, c - 0.035, c + 0.035, 12)]
-                wpx = (1.6 if k == 0 else 2.2) * LECT_SC
-                B.detail_line(cr, pts, wpx, "#fff4cc", 0.8 * a, taper=(0.05, 1.0, 0.05))
-                mx, my = pts[len(pts) // 2]
-                fx.sparkle(cr, mx, my, 5.0 * LECT_SC, "#fffbe8", 0.85 * a, angle=0.3 * math.sin(t))
+            sc = base + 0.03 * t + 0.00042 * cam.x + 0.00031 * cam.y
+            a = vis * (0.6 + 0.4 * math.sin(t * 0.8 + k + (0.0 if side == "right" else 2.0))) * clamp(fl - 0.05)
+            if a < 0.05:
+                continue
+            pts = [M_.transform_point(*p) for p in _along_loop(loop, sc - 0.03, sc + 0.03, 14)]
+            wpx = (1.35 if k == 0 else 2.1) * LECT_SC        # the gilt rule's own width (world px)
+            B.detail_line(cr, pts, wpx * 0.9, "#fff1c2", 0.85 * a, taper=(0.02, 1.0, 0.02))
+            mx, my = pts[len(pts) // 2]
+            fx.glow(cr, mx, my, wpx * 4.0, "#ffd98a", 0.45 * a)
 
 
 def cover_glint(cr, t, t0, t1):
@@ -683,9 +944,10 @@ def cover_glint(cr, t, t0, t1):
     cr.set_operator(cairo.OPERATOR_ADD)
     cr.paint()
     cr.restore()
-    # the twinkle as the sheen crosses the title's letters
+    # the sheen catches the gilt letters as it crosses them: a soft warm bloom riding the title
     tx, ty = C(min(CW - 30.0, max(34.0, sx)), -CH * 0.12)
-    fx.sparkle(cr, tx, ty, 9.0 * LECT_SC, "#fff6d8", 0.9 * a, angle=0.6 * u)
+    fx.glow(cr, tx, ty, 26.0 * LECT_SC, "#ffd98a", 0.32 * a)
+    fx.sparkle(cr, tx, ty, 3.2 * LECT_SC, "#fff6d8", 0.6 * a, angle=0.6 * u)
 
 
 def drop_cap_glint(cr, t, t0, brig):
@@ -702,9 +964,7 @@ def drop_cap_glint(cr, t, t0, brig):
     x0, y0 = 150.0 * 0.11, 200.0 * 0.11 + size * 0.12
     cx, cy = M_.transform_point(x0 + cap * 0.32, y0 + cap * 0.3)
     fx.glow(cr, cx, cy, 30.0 * LECT_SC, "#ffd98a", 0.35 * a)
-    fx.sparkle(cr, cx, cy, 9.0 * LECT_SC * (0.6 + 0.4 * a), "#fffbe8", 0.95 * a, angle=0.8 * u)
-    ex, ey = M_.transform_point(x0 + cap * 0.85, y0 + cap * 0.75)
-    fx.sparkle(cr, ex, ey, 5.0 * LECT_SC * a, "#fff2c0", 0.8 * a, angle=-0.5 * u)
+    fx.sparkle(cr, cx, cy, 4.0 * LECT_SC * (0.6 + 0.4 * a), "#fffbe8", 0.8 * a, angle=0.8 * u)
 
 
 # ---- the storyteller's shadow on the wall (Klaus: light is shape) --------------------------
@@ -713,9 +973,11 @@ SHADOW_RES = 0.25
 
 
 def draw_bard_shadow(cr, st, cam, pose, t, strength=1.0):
-    """The bard's silhouette cast big and soft on the stone wall behind him by the lectern candles
-    (to his right): drawn at quarter resolution through a skew-and-stretch, blurred, and laid on
-    the wall as a plum shadow -- it plays the lute along with him."""
+    """The bard's silhouette thrown big and soft onto the stone wall by the lectern candle burning
+    beside his head (Klaus: light is shape): his silhouette projected from the flame (scaled about
+    it, so the plume and head rise on the wall to his left), drawn at quarter resolution, blurred,
+    and laid on the wall as plum shadow. It plays the lute along with him and wavers with the
+    flame."""
     from PIL import Image, ImageFilter
     sw_, sh_ = int(W * SHADOW_RES), int(H * SHADOW_RES)
     surf = st.get("_shadow_surf")
@@ -727,26 +989,29 @@ def draw_bard_shadow(cr, st, cam, pose, t, strength=1.0):
     c2.paint()
     c2.set_operator(cairo.OPERATOR_OVER)
     c2.scale(SHADOW_RES, SHADOW_RES)
-    c2.transform(cam.matrix(WALL_P))
-    # the shadow transform: about the bard's foot, stretched up the wall and thrown to the left
-    fxp, fyp = BARD_X, WALL_Y + 10.0
-    c2.translate(fxp - 175.0, fyp)
-    c2.transform(cairo.Matrix(1.18, 0.0, -0.32, 1.12, 0.0, 0.0))
-    c2.translate(-BARD_X, -BARD_Y)
+    c2.transform(cam.matrix(1.0))
+    # projected from the flame: the flame's own sway moves the shadow (a living light)
+    b, sway, stretch = sb.candle_flicker(t + 0.9, 2)
+    lx, ly = SRC["cand_l"]
+    lx += 6.0 * sway
+    k = SHADOW_K * (1.0 + 0.025 * sway)
+    c2.translate(lx, ly)
+    c2.scale(k, k)
+    c2.translate(-lx, -ly)
     ch.draw_bard(c2, BARD_X, BARD_Y, BARD_SC, pose.with_(shadow=False), L_CANDLE, t, detail=0)
     surf.flush()
     img = Image.frombuffer("RGBA", (sw_, sh_), bytes(surf.get_data()), "raw", "BGRA", surf.get_stride(), 1)
-    alpha = img.getchannel("A").filter(ImageFilter.GaussianBlur(4.0))
+    alpha = img.getchannel("A").filter(ImageFilter.GaussianBlur(2.6))
     data = bytearray(sw_ * sh_ * 4)
     data[3::4] = alpha.tobytes()
     mask = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, sw_, sh_, sw_ * 4)
     cr.save()
     with cam.view(cr, WALL_P):                       # only on the wall, above the floor line
-        cr.rectangle(-400, -400, W + 800, WALL_Y + 400)
+        cr.rectangle(-400, -400, W + 800, WALL_Y + 406)    # down to the floor line
     cr.identity_matrix()
     cr.clip()
     cr.scale(1.0 / SHADOW_RES, 1.0 / SHADOW_RES)
-    core.src(cr, "#12060a", 0.5 * strength)
+    core.src(cr, "#0e0409", (0.5 + 0.08 * (b - 1.0)) * strength)
     cr.mask_surface(mask, 0, 0)
     cr.restore()
 
@@ -825,13 +1090,17 @@ def draw(cr, t, st):
             # the bard
             if st.get("_pose") is not None:
                 pose = st["_pose"]
-                ch.draw_bard_stool(cr, BARD_X, BARD_Y, BARD_SC, L_CANDLE, yaw=ch.bard_yaw(pose))
-                rig = ch.draw_bard(cr, BARD_X, BARD_Y, BARD_SC, pose, L_CANDLE, t)
+                ch.draw_bard_stool(cr, BARD_X, BARD_Y, BARD_SC, L_BARD, yaw=ch.bard_yaw(pose))
+                rig = ch.draw_bard(cr, BARD_X, BARD_Y, BARD_SC, pose, L_BARD, t)
+                st["_rig"] = rig
                 wink_ting(cr, t, T_WINK + 0.06, rig)
             sx, sy = st["stack_top"]
             if _on_screen(cam, sx - 60, sy - 120, sx + 60, sy + 20):
                 flames.append(sb.draw_candle(cr, sx + 10, sy, 1.9, t=t + 2.1, light=L_CANDLE, seed=7, height=22.0,
                                              width=12.0, drips=4))
+        # the room's falloff over everything (fades out as we dive into the page)
+        if not deep:
+            st["shade"].paint(cr, alpha=1.0 - k_book)
         # gold motes rising off the open pages (the pages come alive)
         if o > 0.3:
             (lx0, ly0), (rx1, ry1) = brig.pages["left"][0], brig.pages["right"][2]
@@ -839,20 +1108,21 @@ def draw(cr, t, st):
             if md > 0.01:
                 fx.dust(cr, t, (lx0, ly0 - 60, rx1 - lx0, ry1 - ly0 + 40), n=22, color="#ffe3a0", alpha=md,
                         size=(1.0 / max(1.0, z / 2.0), 2.6 / max(1.0, z / 2.0)), seed=5, drift=(3.0, -12.0), twinkle=1.0)
-    # ---- the near candle we push past (out of focus, parallax)
+    # ---- the near candle we push past (its own plane close to the lens, out of focus)
     fgx, fgy = cam.to_screen(FG_CANDLE[0], FG_CANDLE[1], FG_P)
     fz = z ** FG_P
-    fg_a = 1.0 - smooth((fz - 2.3) / 0.5)              # the camera has passed it: gone
-    fg_vis = fg_a > 0.01 and -300 < fgx < W + 300
+    fg_vis = fgx > -180 and t < 8.0
     if fg_vis:
         with cam.view(cr, FG_P):
-            st["fg"].paint(cr, alpha=fg_a)
+            st["fg"].paint(cr)
+        fg_flame(cr, fgx, fgy, fz * 0.72, t)
     # ---- light: candles, the hearth, a pool on the open book, moonlight, the bard's floor pool
     lc = st["light"].begin()
     zf = min(z, 3.0)
     for cd in flames:
         sxy = cam.to_screen(*cd.flame)
-        fx.glow(lc, sxy[0], sxy[1], 320 * zf * cd.flicker, "#ffaa55", 0.36)
+        fx.glow(lc, sxy[0], sxy[1], 210 * zf * cd.flicker, "#ffaa55", 0.26)
+        fx.glow(lc, sxy[0], sxy[1] - 4 * zf, 46 * zf * cd.flicker, "#ffe2b0", 0.5)
     hx, hy = cam.to_screen(*fire.glow, WALL_P)
     fx.glow(lc, hx, hy, min(1400, 900 * z ** WALL_P) * fire.flicker, "#ff7a30", 0.34 * (1 - k_book))
     if o > 0.2:
@@ -865,13 +1135,23 @@ def draw(cr, t, st):
     if not deep:
         mx, my = cam.to_screen(WIN_X + 75, WIN_Y + 120, WALL_P)
         fx.glow(lc, mx, my, 300 * z, "#7f9fe0", 0.12)
+        # the moon's shaft: the one cool note in the warm room (fades as we dive into the book)
+        sx0, sy0 = cam.to_screen(WIN_X + 75, WIN_Y + 150, WALL_P)
+        sx1, sy1 = cam.to_screen(WIN_X - 170, WALL_Y + 150, 1.0)
+        fx.light_shaft(lc, sx0, sy0, sx1, sy1, 120 * z, 330 * z, "#8aa6f0", 0.07 * (1.0 - k_book), soft=3,
+                       fade_start=0.0, fade_end=0.85)
         px, py = cam.to_screen(BARD_X + 60, BARD_Y + 5)
         fx.light_pool(lc, px, py, 420 * z, 90 * z, "#ffa060", 0.14)
+        rig = st.get("_rig") if st.get("_pose") is not None else None
+        if rig is not None:
+            # light wrap: the candle beside him lifts his lit side (face, ruff, the lute's belly)
+            hx_, hy_ = rig.head
+            wx, wy = cam.to_screen(hx_ + 70.0, hy_ + 60.0)
+            fl = sb.candle_flicker(t + 0.9, 2)[0]
+            fx.glow(lc, wx, wy, 300 * z, "#ffb070", 0.11 * fl)
     if fg_vis:
-        fl = sb.candle_flicker(t, 9)
-        quiet = lerp(1.0, 0.45, smooth((t - 3.5) / 1.5))
-        fx.glow(lc, fgx, fgy - 8 * fz, min(1100, 520 * fz) * fl[0], "#ffb060", 0.5 * fg_a * quiet)
-        fx.glow(lc, fgx, fgy - 4 * fz, 70 * fz * fl[0], "#ffe0a0", 0.55 * fg_a)
+        fl = sb.candle_flicker(t, 9)[0]
+        fx.glow(lc, fgx, fgy - 18 * fz, 300 * fz * fl, "#ffa850", 0.3)
     fx.post(cr, t, light=st["light"], bloom_strength=lerp(0.6, 0.28, k_book), threshold=lerp(0.8, 0.92, k_book),
             bloom_radius=2.4, grain=0.035, vignette=lerp(0.55, 0.42, k_book), vignette_color=(0.06, 0.02, 0.04))
     # ---- the fades (the near candle's flame is the first and last thing we see)
@@ -879,25 +1159,42 @@ def draw(cr, t, st):
         fx.fade(cr, 1.0 - core.inout_sine(clamp(t / T_FADEIN)))
     if t > T_OUT0:
         fx.fade(cr, core.inout_sine(clamp((t - T_OUT0) / (T_OUT1 - T_OUT0))))
-    if fg_vis and t < T_FADEIN + 0.5:
-        fl = sb.candle_flicker(t, 9)
-        fx.glow(cr, fgx, fgy - 6 * fz, 60 * fz, "#ffd9a0", 0.55 * fl[0] * (1.0 - smooth(t / (T_FADEIN + 0.5))))
+    if fg_vis and t < T_FADEIN:
+        # the near flame burns through the fade: the first light of the film
+        u = 1.0 - core.inout_sine(clamp(t / T_FADEIN))
+        fg_flame(cr, fgx, fgy, fz * 0.72, t, alpha=u)
+        fx.glow(cr, fgx, fgy - 18 * fz, 160 * fz, "#ffa850", 0.35 * u)
 
 
 # ----------------------------------------------------------------------------------------
 # sound: discrete on-screen events for the foley pass (times as the animation uses them)
 # ----------------------------------------------------------------------------------------
 
-SFX_CUES = sorted([
-    (0.35, "candle_flicker", {"gain": 0.5, "pan": 0.55}),
-    (T_COVER_LAND - 0.58, "book_open", {"gain": 0.9, "pan": 0.35}),            # its "land" thump = cover lands
-    (EV["lock"], "door_close", {"gain": 0.22, "pan": 0.1, "dist": 0.7}),       # the painted doors slam (muffled)
-    (EV["latch"] + 0.3, "tap_wood", {"gain": 0.25, "pan": 0.2, "dist": 0.6}),   # shutters latch
-    (EV["latch"] + 0.55, "tap_wood", {"gain": 0.2, "pan": 0.35, "dist": 0.6}),
-    (T_TURN1, "page_turn", {"heavy": True, "gain": 0.8, "pan": 0.3}),
-    (EV["stone"], "rune_glow", {"gain": 0.25, "pan": 0.3, "dist": 0.5}),       # the rune-stone flares
-    (T_TURN2, "page_turn", {"heavy": True, "gain": 0.6, "pan": 0.35}),
-    (T_WINK + 0.05, "crystal_chime", {"gain": 0.3, "pan": -0.2}),              # the wink's "ting!"
-    (T_TURN3, "page_turn", {"heavy": True, "gain": 0.8, "pan": 0.3}),
-    (T_OUT0 - 1.5, "candle_flicker", {"gain": 0.45, "pan": 0.4}),
-], key=lambda c: c[0])
+def _sfx_cues():
+    """Every cue is computed from the same event times the animation uses (EV, the book's turn
+    times, the wink), offset for where each synthesized sound has its attack: door_close hits
+    0.16 s after its cue, book_open lands its cover 0.58 s in, a heavy page_turn's swish peaks
+    ~0.25 s in and flaps down at ~0.45 s (the visible leaf lands 0.85 s after the turn starts)."""
+    pan_house = (-0.45, 0.0, 0.45)                    # the three painted houses, left to right on screen
+    cues = [
+        (0.3, "candle_flicker", {"gain": 0.5, "pan": -0.4}),                     # the near flame: the first light
+        (T_COVER_LAND - 0.58, "book_open", {"gain": 0.9, "pan": 0.25}),            # creak, the cover lands, pages flutter
+        (EV["stone"] - 0.35, "rune_glow", {"gain": 0.25, "pan": -0.1, "dist": 0.5}),  # the rune-stone flares cold
+        (T_WINK + 0.04, "crystal_chime", {"gain": 0.3, "pan": -0.1}),              # the wink's "ting!"
+        (EV["wash_door"] + 0.02, "door_open", {"gain": 0.45, "pan": 0.2, "dist": 0.5}),  # he opens the wash-house door
+    ]
+    # "a LOCK on each heart": the three painted doors slam shut, 40 ms apart (shut at lock + 0.04 k + 0.09)
+    for k in range(3):
+        cues.append((EV["lock"] + 0.04 * k + 0.09 - 0.16, "door_close",
+                     {"gain": 0.3 - 0.05 * k, "pan": pan_house[k], "dist": 0.65}))
+    # "a LATCH on each pane": six shutters latch one after another (latched 0.3 s after each starts)
+    for i in range(6):
+        cues.append((EV["latch"] - PG.LATCH_LEAD + PG.LATCH_STEP * i + 0.3, "tap_wood",
+                     {"count": 1, "gain": 0.18, "pan": pan_house[i // 2] + (0.08 if i % 2 else -0.08), "dist": 0.55}))
+    # the three page turns (the leaf lands TURN_DUR after each starts)
+    for t0, d, g in ((T_TURN1, TURN_DUR, 0.8), (T_TURN2, TURN_DUR, 0.6), (T_TURN3, TURN3_DUR, 0.8)):
+        cues.append((t0 + d - 0.55, "page_turn", {"heavy": True, "gain": g, "pan": 0.3}))
+    return sorted(cues, key=lambda c: c[0])
+
+
+SFX_CUES = _sfx_cues()

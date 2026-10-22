@@ -32,7 +32,8 @@ AMBIENCES (`ambience(scene, ctx)`; ctx = {"dur", "beats", "lines", "cues", "wall
   S0 cosy hearth (roar, crackle, snaps), candle flutter, warm room tone
   S1 wash-house: tumbling wooden drums (rotation rumble, cloth swish, tumbling thumps, brass rattles,
      axle creaks), buzzing caged wisp-lamps (detuned cluster with flicker), cold night wind at the windows
-  S2 apothecary: humming white light-orbs (beating cluster + faint whine), bubbling alembic, shop room tone
+  S2 apothecary: humming white light-orbs (beating cluster + a glassy singing overtone), bubbling alembic,
+     shop room tone
   S3 rain in layers (far hiss, mid patter, near drops on cobbles/puddles, hits on shutters), a gutter
      spout, eave drips, distant thunder rolls, a far-off watchman's handbell
   S4 tavern: outside street wind + muffled chatter through the door; inside loud chatter + tankards; the
@@ -50,7 +51,9 @@ WALLA (`Walla`)
   period crowd words ("Have at him!", "Huzzah!", "Fight! Fight!", tavern chatter, gentle bench talk),
   synthesized deterministically through song.py's TimedPiper (seeded noise inputs, duration control) and
   cached in film/build/audio/walla/.  The tavern's uncanny synchronized laughter and the swell's unison
-  "Hey!" force IDENTICAL phoneme durations on every speaker, so all heads laugh in perfect sync.
+  "Hey!" force IDENTICAL phoneme durations on every speaker, so all heads laugh in perfect sync; a laugh cue
+  that carries the picture's laugh clock ({"dur", "bpm"}, as S4 does) gets exactly round(dur*bpm/60) HAs
+  whose vowels land on that beat (+-10 ms), so the crowd's mouths and the sound start and stop together.
 """
 from __future__ import annotations
 
@@ -366,6 +369,15 @@ def to_lufs(x, target):
 
 def softclip(x, drive=1.5):
     return np.tanh(drive * x) / np.tanh(drive)
+
+
+def no_sub(x, fc=45.0):
+    """Remove the subsonic part of a rumble (brown noise piles most of its energy below ~40 Hz: inaudible on
+    laptops/phones, a woofer-pumping, headroom-eating offset on big systems) and give the audible band back
+    its loudness (K-weighted), so the rumble sounds as big as before."""
+    y = hp(x, fc, 4)
+    l0, l1 = lufs(x), lufs(y)
+    return y * 10 ** ((l0 - l1) / 20) if (l0 > -69 and l1 > -69) else y
 
 
 # ================================================================================================
@@ -1083,7 +1095,12 @@ def k_laugh_crowd_burst(rng, p):
     scene = p.get("_scene", 4)
     try:
         if scene == 4 or p.get("sync"):
-            y = w.sync_laugh(variant=int(rng.integers(0, 3)), voices=nvo)
+            dur_p, bpm_p = _num(p, ("dur", "duration"), 0.0), _num(p, ("bpm", "rate"), 0.0)
+            if dur_p > 0.3 and bpm_p > 30.0:        # the module's laugh clock: n HAs exactly on its beat
+                n_ha = int(np.clip(round(dur_p * bpm_p / 60.0), 1, 16))
+                y = w.sync_laugh_grid(n_ha, bpm_p, variant=int(rng.integers(0, 3)), voices=nvo)
+            else:
+                y = w.sync_laugh(variant=int(rng.integers(0, 3)), voices=nvo)
         else:
             pool = w.pool(["Ooh!", "Ha!", "Huzzah!", "Oh!", "Whoa!", "Hey!", "Ha ha!", "Get him!"], 16, seed=909)
             n = ns(1.6)
@@ -1225,11 +1242,11 @@ def k_candle_flicker(rng, p):
 
 # kind -> (function, calibrated peak level dBFS at dist 0, default pan spread)
 KINDS = {
-    "footstep": (k_footstep, -21.0), "footstep_wet": (k_footstep_wet, -24.0), "splash": (k_splash, -18.0),
+    "footstep": (k_footstep, -21.0), "footstep_wet": (k_footstep_wet, -21.0), "splash": (k_splash, -18.0),
     "creak_wood": (k_creak_wood, -24.0), "bench_creak": (k_bench_creak, -22.0), "bench_scrape": (k_bench_scrape, -17.0),
     "page_turn": (k_page_turn, -24.0), "book_open": (k_book_open, -16.0), "book_close": (k_book_close, -17.0),
     "paper_slide": (k_paper_slide, -22.0), "item_set_down": (k_item_set_down, -14.0), "glass_clink": (k_glass_clink, -22.0),
-    "till_bell": (k_till_bell, -13.0), "receipt": (k_receipt, -24.0), "stamp_thunk": (k_stamp_thunk, -9.0),
+    "till_bell": (k_till_bell, -16.0), "receipt": (k_receipt, -24.0), "stamp_thunk": (k_stamp_thunk, -9.0),
     "door_open": (k_door_open, -17.0), "door_close": (k_door_close, -10.0), "cloth_rustle": (k_cloth_rustle, -28.0),
     "wing_flutter": (k_wing_flutter, -21.0), "pigeon_flap": (k_pigeon_flap, -20.0), "pigeon_coo": (k_pigeon_coo, -24.0),
     "bread_tear": (k_bread_tear, -19.0), "crumbs": (k_crumbs, -30.0), "ember_crackle": (k_ember_crackle, -24.0),
@@ -1278,10 +1295,14 @@ def resolve_kind(kind):
     if k in ALIASES:
         warn(f"unknown SFX kind {kind!r} -> {ALIASES[k]!r}")
         return ALIASES[k]
-    for part in k.split("_"):
-        if part in ALIASES:
-            warn(f"unknown SFX kind {kind!r} -> {ALIASES[part]!r}")
-            return ALIASES[part]
+    parts = [p for p in k.split("_") if p]
+    for size in range(len(parts) - 1, 0, -1):          # longest word run first: bench_drag_gravel -> bench_drag
+        for i in range(len(parts) - size + 1):
+            sub = "_".join(parts[i:i + size])
+            hit = sub if sub in KINDS else ALIASES.get(sub)
+            if hit:
+                warn(f"unknown SFX kind {kind!r} -> {hit!r}")
+                return hit
     m = difflib.get_close_matches(k, list(KINDS) + list(ALIASES), n=1, cutoff=0.5)
     if m:
         r = ALIASES.get(m[0], m[0])
@@ -1502,6 +1523,55 @@ class Walla:
             out = y if out is None else (out[:len(y)] + y[:len(out)] if len(out) != len(y) else out + y)
         return peak_norm(out)
 
+    def sync_laugh_grid(self, n_ha, bpm, variant=0, voices=12, lead=0.05):
+        """Exactly `n_ha` HAs on the picture's laugh clock: each HA's vowel onset at lead + k * 60/bpm seconds.
+        Every voice speaks 'Ha ha ... ha!' on identical phoneme durations (so they are already in sync with one
+        another and the 'h' onsets are known exactly); the HA period those durations give (19 frames =
+        0.221 s) is pulled onto 60/bpm by one tiny varispeed of the sum (~3 %), and the vowel onsets (50 %
+        energy rise, median over the HAs) are set `lead` after the cue start -- S4 starts each volley cue
+        40 ms before the mouths begin to open, so the vowel arrives as the mouths open."""
+        n_ha = int(max(1, n_ha))
+        text = " ".join(["Ha"] + ["ha"] * (n_ha - 1)) + "!"
+        dur = self.sync_durations(text, 7.0, 3.0)
+        spk = (LIBRI_MALE[::2] + LIBRI_FEMALE[::3])
+        out = None
+        for v in range(voices):
+            sid = spk[(v * 5 + variant * 3) % len(spk)]
+            y = self.say_sync(LIBRI, sid, text, seed=1000 + 17 * v + variant, durations=dur)
+            y = y / (np.sqrt(np.mean(y[np.abs(y) > 0.02] ** 2)) + 1e-9)
+            k = len(y) if out is None else min(len(out), len(y))
+            out = y[:k] if out is None else out[:k] + y[:k]
+        # HA onsets from the durations themselves ('h' starts), then each HA's energy peak from the sum
+        tp = self._piper(LIBRI)
+        inv = {}
+        for sym, ids_ in tp.voice.config.phoneme_id_map.items():
+            for i in ids_:
+                inv[i] = sym
+        ids = tp.voice.phonemes_to_ids(tp.phonemize(text))
+        fr = 256.0 / 22050.0
+        cum = np.concatenate([[0.0], np.cumsum(dur)])
+        on = np.array([cum[j] * fr for j, i in enumerate(ids) if inv.get(i) == "h"])
+        if len(on) < 1:
+            return peak_norm(out)
+        period = float(np.median(np.diff(on))) if len(on) > 1 else 19 * fr
+        env = np.sqrt(np.convolve(out ** 2, np.ones(ns(0.015)) / ns(0.015), "same"))
+        rise = []
+        for a in on:                                 # each HA's vowel onset: first 50 % crossing in its slot
+            i0, i1 = ns(a), min(len(env), ns(a + period))
+            if i1 > i0 + 1:
+                seg = env[i0:i1]
+                rise.append(int(np.argmax(seg >= 0.5 * seg.max())) / SR)
+        off = float(np.median(rise)) if rise else 0.07
+        ratio = period / (60.0 / bpm)
+        y = varispeed(out, ratio)
+        first = (on[0] + off) / ratio                # where the first vowel onset is after the varispeed
+        shift = ns(abs(first - lead))
+        if first > lead:
+            y = y[shift:]
+        else:
+            y = np.concatenate([np.zeros(shift), y])
+        return peak_norm(fade(y.copy(), 0.004, 0.02))
+
     def unison(self, text, voices=12, seed=0, frames_vowel=8.0):
         dur = self.sync_durations(text, frames_vowel, 3.0)
         spk = LIBRI_MALE[1::2] + LIBRI_FEMALE[1::3]
@@ -1626,7 +1696,7 @@ def hearth(rng, n, target=-42.0):
     """Hearth fire: low roar, crackle stream, occasional snaps and sap hiss."""
     t = tvec(n)
     roar = wide(rng, lambda r, m: lp(brown(r, m, 0.997), 260) * smooth_rand(r, m, 0.8, 0.5, 1.0), n, 0.6)
-    roar = to_lufs(roar, target - 4)
+    roar = to_lufs(hp(roar, 50.0, 4), target - 4)                 # the fire's roar lives at 50-260 Hz
     cr = np.zeros((n, 2))
     for ch in range(2):
         cr[:, ch] = grain_bank(rng, n, 9.0, 1000, 6000, (0.0015, 0.005), banks=8, amp_sigma=0.8)
@@ -1703,7 +1773,7 @@ def thunder(rng, dur=5.0, n_rolls=3):
     env *= np.clip(t / 0.35, 0, 1)
     y = wide(rng, lambda r, m: lp(brown(r, m, 0.999), 140) + 0.3 * lp(pink(r, m), 400), n, 0.7)
     y *= env[:, None]
-    return fade(hp(y, 25), 0.05, 0.6)
+    return fade(hp(y, 32, 4), 0.05, 0.6)
 
 
 BELL_PARTIALS = [(0.5, 9.0, 0.55), (1.0, 5.5, 0.8), (1.19, 3.6, 0.5), (1.5, 3.0, 0.38), (2.0, 2.4, 1.0),
@@ -1860,12 +1930,15 @@ def bubbling(rng, n, rate=4.5, target=-44.0):
     return to_lufs(st, target)
 
 
-def hum_cluster(rng, n, freqs, harmonics, flicker=0.0, target=-40.0, pans=None, buzz=0.0):
-    """Sum of steady tones (with harmonics) + optional flicker dips and a buzzy edge."""
+def hum_cluster(rng, n, freqs, harmonics, flicker=0.0, target=-40.0, pans=None, buzz=0.0, drift=0.002):
+    """Sum of tones (with harmonics) + optional flicker dips and a buzzy edge.  drift: slow pitch wander
+    (fraction); mains-locked hum never wanders, a living wisp-flame does."""
     t = tvec(n)
     out = np.zeros((n, 2))
     for i, f in enumerate(freqs):
         fm = 1 + 0.002 * smooth_rand(rng, n, 1.5, -1, 1)
+        if drift > 0.002:
+            fm = fm + (drift - 0.002) * smooth_rand(rng, n, 0.3, -1, 1)
         ph = 2 * np.pi * np.cumsum(f * fm) / SR + rng.uniform(0, 6.28)
         y = sum(a * np.sin((k + 1) * ph) for k, a in enumerate(harmonics))
         if buzz > 0:
@@ -1894,7 +1967,7 @@ def drums_rumble(rng, n, count=5, target=-31.0):
         dist = d / max(count - 1, 1)
         pan = np.linspace(-0.8, 0.8, count)[d] + rng.uniform(-0.1, 0.1)
         rotm = 0.5 + 0.5 * np.sin(2 * np.pi * (rot * t + phase))
-        rumble = lp(brown(rng, n, 0.996), 170) * (0.2 + 0.8 * rotm ** 2)
+        rumble = no_sub(lp(brown(rng, n, 0.996), 170), 45.0) * (0.2 + 0.8 * rotm ** 2)
         swish = bp(white(rng, n), 300, 1600) * (0.15 + 0.85 * rotm ** 3) * 0.45
         y = rumble + swish
         thumps = np.zeros(n)
@@ -1947,7 +2020,7 @@ def amb_s1(ctx, rng):
     n, pre = _span(ctx)
     drums = drums_rumble(rng, n, 5, -31.5)
     wisps = hum_cluster(rng, n, [151.0, 166.7, 179.3], [1.0, 0.55, 0.35, 0.22, 0.12, 0.08], flicker=0.7,
-                        target=-41.0, pans=[-0.6, 0.15, 0.7], buzz=0.25)
+                        target=-41.0, pans=[-0.6, 0.15, 0.7], buzz=0.25, drift=0.007)
     sizzle = wide(rng, lambda r, m: bp(white(r, m), 3200, 6500) * (0.6 + 0.4 * np.sin(2 * np.pi * 166.7 * tvec(m))),
                   n, 0.5)
     sizzle = to_lufs(sizzle, -58.0)
@@ -1960,8 +2033,16 @@ def amb_s2(ctx, rng):
     n, pre = _span(ctx)
     orbs = hum_cluster(rng, n, [523.3, 528.1, 1046.5], [1.0, 0.25, 0.1], flicker=0.0, target=-47.0,
                        pans=[-0.4, 0.4, 0.0])
-    whine = hum_cluster(rng, n, [7902.0], [1.0], target=-63.0, pans=[0.2])
-    y = orbs + whine + bubbling(rng, n, 4.0, -46.0) + room_tone(rng, n, 50, 1500, -55.0)
+    # the orbs' glassy 'singing' overtone (G7 = 3 x C6, slowly beating, its level breathing like a wet finger
+    # on a goblet) -- the clinical edge without a steady electronic whine (a pure 7.9 kHz sine read as coil
+    # whine: period rule)
+    sing = np.zeros(n)
+    for f0, ph0 in ((3136.0, 0.0), (3140.6, 1.3)):
+        f = f0 * (1 + 0.0008 * smooth_rand(rng, n, 0.6, -1, 1))
+        sing += np.sin(2 * np.pi * np.cumsum(f) / SR + ph0)
+    sing *= smooth_rand(rng, n, 0.25, 0.25, 1.0) ** 2
+    glass = to_lufs(stereo(sing, 0.25) + 0.3 * stereo(sing, -0.5), -62.0)
+    y = orbs + glass + bubbling(rng, n, 4.0, -46.0) + room_tone(rng, n, 50, 1500, -55.0)
     for _ in range(int(ctx["dur"] / 7)):                                  # the old floorboards
         cr = k_creak_wood(rng, dict(material="floor", dur=rng.uniform(0.3, 0.5)))
         place(y, stereo(0.025 * cr, rng.uniform(-0.6, 0.6)), rng.integers(0, n))

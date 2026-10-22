@@ -18,8 +18,10 @@ DIALOGUE  each film/assets/dialogue/<id>.wav (-20 LUFS) is placed at its scene's
           compressor + look-ahead peak limiter (speech crest factor tamed so the film can sit at -16 LUFS
           without the master limiter touching voices), a level per speaker, and a touch of the scene's room.
             fx "phone"   -> the speaking stone: 300-3400 Hz band-pass, a little grit, a 1.7 kHz presence
-                            peak and a faint magical shimmer (an airy, tremolo'd high-passed tail).
-            fx "vo"      -> intimate: proximity warmth, a gentle 2:1 squeeze, a small warm room.
+                            peak and a faint magical shimmer (an airy, tremolo'd high-passed tail, ducked by
+                            the voice so it blooms between words and never smears the consonants).
+            fx "vo"      -> intimate: proximity warmth, a gentle 2:1 squeeze, a small warm room; ~1.5 dB
+                            under his on-screen lines.
             fx "drowned" -> not protected: no ducking key; after beat s4_swell the line sinks 6 dB as the
                             tavern swells over it (buried by design).
             s6_laugh     -> 3-4 dB under his dialogue level (cast note), and it does not duck the score.
@@ -35,8 +37,12 @@ AMBIENCE  sfx.ambience(scene) beds, rendered with 0.5 s margins and joined with 
           door (outside/inside/outside perspective) in S4.
 DUCKING   a sidechain keyed from the processed dialogue (minus the drowned line; minus the laugh for the
           music) with look-ahead, hold, smooth attack/release: music -10 dB (score under the voice-over -9 dB,
-          the tavern under the troll -12 dB), ambience -9 dB (tavern -12 dB).
-MASTER    loudness gain to -16 LUFS integrated, a gentle stereo-linked compressor (1.5:1 above -14 dBFS RMS,
+          the tavern under the troll -12 dB), ambience -9 dB (tavern -12 dB).  Crowd-type cues (the tavern's
+          synchronized laugh) duck like the crowd bed AND lose a further 10 dB above 1.5 kHz while anyone speaks
+          (a complementary split, exact when not ducking): the laugh stays visible-and-heard, consonants stay clear.
+MASTER    ambience + foley buses high-passed at 20 Hz before the master gain (4th order: DC and sub-audible rumble
+          out; linear, so the stems still sum; nothing filters after the limiter, which would re-phase its peaks),
+          loudness gain to -16 LUFS integrated, a gentle stereo-linked compressor (1.5:1 above -14 dBFS RMS,
           30 ms / 300 ms), a 4x-oversampled true-peak look-ahead limiter at -1.3 dBTP (verified <= -1 dBTP),
           iterated until the integrated loudness is within 0.15 LU of the target.  Fade-out with the picture
           over beat s9_fadeout.  Deterministic: fixed seeds everywhere.
@@ -79,9 +85,11 @@ TP_CEIL_DB = -1.3
 
 # ---- levels (dB, pre-master) ---------------------------------------------------------------------------
 DLG_GAIN = {"MAN": 2.0, "OLD_WOMAN": 2.0, "PHARMACIST": 2.0, "PHONE": 3.5, "BOUNCER": 5.0, "CROWD": 1.5}
-VO_GAIN = 3.0
+VO_GAIN = 4.5                       # the S8 voice-over: still ~1.5 dB under his on-screen lines ("quiet"), but
+                                    # on top of the score's bloom (at +3 dB its weakest syllables sat level with it)
 LAUGH_REL_DB = -4.0
-AMB_TARGET = {0: -42.0, 1: -31.0, 2: -41.0, 3: -27.5, 4: -25.0, 5: -24.0, 6: -39.0, 7: -37.5, 8: -38.0, 9: -68.0}
+SHIMMER_LEVEL, SHIMMER_DUCK = 0.12, 0.88   # the stone's shimmer: rms re the voice, depth of its voice-keyed duck
+AMB_TARGET = {0: -42.0, 1: -31.0, 2: -41.0, 3: -29.0, 4: -25.0, 5: -24.0, 6: -39.0, 7: -37.5, 8: -38.0, 9: -68.0}
 ROOM_SEND = {0: 0.0, 1: 0.22, 2: 0.10, 3: 0.07, 4: 0.12, 5: 0.16, 6: 0.06, 7: 0.06, 8: 0.0, 9: 0.0}
 SFX_SEND = {0: 0.3, 1: 0.55, 2: 0.3, 3: 0.35, 4: 0.35, 5: 0.45, 6: 0.25, 7: 0.25, 8: 0.25, 9: 0.2}
 MODULE_GAIN_OFFSET_DB = 5.0         # scene modules write gain as a linear 0..1 (1 = loud): 0.55 ~ our reference
@@ -97,6 +105,16 @@ DUCK_TAVERN_DB = 12.0
 DUCK_PHONE_AMB_DB = 12.0
 DUCK_SFX_DB = 6.0                   # foley rides 6 dB under lines (a mixer's fader, not a pump)
 CROWD_KINDS = ("laugh_crowd_burst",)  # crowd-like cues duck with the crowd bed (ambience depth), not as foley
+CROWD_HF_DUCK_DB = 10.0             # ... and lose a further 10 dB above ~1.5 kHz while anyone speaks: the room keeps
+                                    # laughing (its 'ha' body stays) but the consonants are clear (S4 fires a volley
+                                    # on "Keep it LIGHT": un-carved, its first HA turned 'light' into 'like')
+CROWD_HF_XOVER = 1500.0
+TAVERN_BAND_HF_DUCK_DB = 6.0        # the jig (dense fiddle/crumhorn mids) gets the same consonant pocket under the
+                                    # troll, on top of its 12 dB duck: the band darkens a little while he speaks
+SUBSONIC_HZ = 20.0                  # 4th-order high-pass on the beds and foley (DC from soft-clipped walla, rumble
+SUBSONIC_BUSES = ("amb", "sfx")     # below hearing), BEFORE the master gain.  Not on dialogue (already high-passed
+                                    # per line) or music: its phase turn at 60-80 Hz raises the troll's and the
+                                    # stomps' crest factor and the bus limiters then work ~1.5 dB harder.
 SILENCE_RIDE = (-18.0, 1.6, -7.0)   # S5: foley/amb at -18 dB for 1.6 s after s5_silence, back to -7 dB by s5_lower end
 SCORE_LUFS = -27.0                  # score 'bloom' section (S8 under the voice-over, pre-duck)
 
@@ -154,8 +172,10 @@ def _norm_cue(c, dur):
             if len(c) > 3 and isinstance(params, dict):
                 params = dict(params, extra=c[3:])
     except (TypeError, ValueError, IndexError, KeyError):
+        FX.warn(f"malformed SFX cue {c!r:.80}; skipped")
         return None
     if kind is None or not math.isfinite(t):
+        FX.warn(f"malformed SFX cue {c!r:.80}; skipped")
         return None
     if t < -0.25 or t > dur + 0.25:
         FX.warn(f"SFX cue at t={t:.2f}s is outside the scene (0..{dur:.2f}); skipped")
@@ -324,7 +344,9 @@ def _peak_limit(x, ceil_db, lookahead=0.0015, release=0.04):
 
 
 def stone_voice(x, seed=7):
-    """fx 'phone': the enchanted speaking stone -- band-limited, a little gritty, a faint magical shimmer."""
+    """fx 'phone': the enchanted speaking stone -- band-limited, a little gritty, a faint magical shimmer.
+    The shimmer is DUCKED by the voice (fast attack, 150 ms release): it blooms in the gaps between words
+    and never lies over the consonants (un-ducked, its 2.2-3.4 kHz tail turned 'billing' into 'Billy')."""
     from scipy.signal import butter, sosfiltfilt
     y = sosfiltfilt(butter(4, [300 / (SR / 2), 3400 / (SR / 2)], "band", output="sos"), x)   # zero-phase: in sync
     pk = np.abs(y).max() + 1e-9
@@ -334,7 +356,12 @@ def stone_voice(x, seed=7):
     sh = FX.reverb(air, "shimmer")[: len(y) + ns(1.2)]
     t = tvec(len(sh))
     sh *= (0.65 + 0.35 * np.sin(2 * np.pi * 5.2 * t))[:, None]          # a soft magical tremolo
-    sh *= 0.1 * np.sqrt(np.mean(y * y)) / (np.sqrt(np.mean(sh * sh)) + 1e-12)
+    sh *= SHIMMER_LEVEL * np.sqrt(np.mean(y * y)) / (np.sqrt(np.mean(sh * sh)) + 1e-12)
+    e = np.zeros(len(sh))
+    e[: len(y)] = y * y
+    a_, r_ = math.exp(-1 / (0.004 * SR)), math.exp(-1 / (0.15 * SR))
+    env = np.maximum(np.sqrt(lfilter([1 - a_], [1, -a_], e)), np.sqrt(lfilter([1 - r_], [1, -r_], e)))
+    sh *= (1.0 - SHIMMER_DUCK * np.clip(env / (np.sqrt(np.mean(y * y)) + 1e-12), 0, 1))[:, None]
     dry = np.zeros((len(sh), 2))
     dry[: len(y)] = stereo(y, 0.0)
     return dry + sh
@@ -826,13 +853,21 @@ def build(placeholder=False, quiet=False, use_walla=True, out_dir=OUT_DIR, worke
     depth_a = np.full(N, DUCK_AMB_DB)
     depth_a[scene_of == 4] = DUCK_TAVERN_DB
     depth_a[scene_of == 3] = DUCK_PHONE_AMB_DB            # the stone is at his ear: the rain recedes
-    gm, _ = duck_gain(key_mus, depth_m)
-    ga, _ = duck_gain(key_all, depth_a)
+    gm, act_m = duck_gain(key_mus, depth_m)
+    ga, act_a = duck_gain(key_all, depth_a)
+    hf_m = np.where(scene_of == 4, TAVERN_BAND_HF_DUCK_DB, 0.0)
+    if np.any(hf_m):                                       # consonant pocket in the band (complementary split)
+        lo_m = lp(duck_music, CROWD_HF_XOVER, 2)
+        duck_music = lo_m + (duck_music - lo_m) * (10 ** (-hf_m * act_m / 20))[:, None]
+        del lo_m
     mus += duck_music * gm[:, None]
     del duck_music
     amb *= ga[:, None]
     gs, _ = duck_gain(key_all, DUCK_SFX_DB, attack=0.05, release=0.35)
     sfx_bus *= gs[:, None]
+    lo_c = lp(sfx_crowd, CROWD_HF_XOVER, 2)                # complementary split: lo + hi == the cue exactly
+    sfx_crowd = lo_c + (sfx_crowd - lo_c) * (10 ** (-CROWD_HF_DUCK_DB * act_a / 20))[:, None]
+    del lo_c
     sfx_bus += sfx_crowd * ga[:, None]
     del sfx_crowd
     if TL.has_beat("s5_silence"):                     # the silence must LAND: ride S5's foley + bed right down
@@ -856,7 +891,8 @@ def build(placeholder=False, quiet=False, use_walla=True, out_dir=OUT_DIR, worke
                                       until=round(t_lo / SR, 3))
     report["duck"] = dict(music_db=DUCK_MUSIC_DB, score_vo_db=DUCK_SCORE_VO_DB, tavern_db=DUCK_TAVERN_DB,
                           amb_db=DUCK_AMB_DB, s3_amb_under_stone_db=DUCK_PHONE_AMB_DB, sfx_db=DUCK_SFX_DB,
-                          crowd_cues="ambience depth")
+                          crowd_cues="ambience depth", crowd_cues_hf_extra_db=CROWD_HF_DUCK_DB,
+                          tavern_band_hf_extra_db=TAVERN_BAND_HF_DUCK_DB, hf_xover_hz=CROWD_HF_XOVER)
     lap("ducking")
 
     # ---------------- master --------------------------------------------------------------------
@@ -869,6 +905,8 @@ def build(placeholder=False, quiet=False, use_walla=True, out_dir=OUT_DIR, worke
         ramp = np.cos(0.5 * np.pi * np.linspace(0, 1, k)) ** 2
         for b in buses.values():
             b[a_fo:] *= ramp[:, None]
+    for name in SUBSONIC_BUSES:                          # subsonic / DC clean-up (linear: stems still sum)
+        buses[name] = hp(buses[name], SUBSONIC_HZ, 4)
     g_est = TARGET_LUFS - lufs_of(dlg + mus + sfx_bus + amb)
     bus_ceil = TP_CEIL_DB - g_est - 0.3
     report["bus_limit"] = {"ceiling_dbfs": round(bus_ceil, 2)}
@@ -887,10 +925,17 @@ def build(placeholder=False, quiet=False, use_walla=True, out_dir=OUT_DIR, worke
         if abs(L_ - TARGET_LUFS) < 0.15:
             break
         g0 *= 10 ** ((TARGET_LUFS - L_) / 20)
-    for name in buses:
-        buses[name] = buses[name] * gain[:, None]
+    for name in buses:                                   # (no filtering after this point: a high-pass after the
+        buses[name] = buses[name] * gain[:, None]        # limiter re-phases the swell's stomps -> +1.4 dB TP)
     out = buses["dialogue"] + buses["music"] + buses["sfx"] + buses["amb"]
     tp = 20 * np.log10(tp_envelope(out, 20 * np.log10(np.abs(out).max() + 1e-12)).max() + 1e-12)
+    if tp > TP_CEIL_DB + 0.25:                           # safety net: one more true-peak pass, same gain on every bus
+        FX.warn(f"master true peak {tp:+.2f} dBTP over the ceiling: safety limiter applied")
+        lg2 = limiter_gain(out)
+        for name in buses:
+            buses[name] = buses[name] * lg2[:, None]
+        out = buses["dialogue"] + buses["music"] + buses["sfx"] + buses["amb"]
+        tp = 20 * np.log10(tp_envelope(out, 20 * np.log10(np.abs(out).max() + 1e-12)).max() + 1e-12)
     report["master"] = dict(lufs=round(lufs_of(out), 2), true_peak_dbtp=round(float(tp), 2),
                             gain_db=round(20 * math.log10(g0), 2),
                             comp_max_db=round(float(-20 * math.log10(cg.min())), 2),

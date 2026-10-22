@@ -134,8 +134,10 @@ def _hot_wash(cr, x, y, rx, ry, color, alpha):
 
 
 def draw_ext_sky(cr):
-    """Night sky behind the gap left of the tavern: stars and thin clouds (cached, blurred)."""
-    env.draw_sky(cr, -120, -90, 2440, 1270, kind=EXT, horizon=760, seed=4, moon=False)
+    """Night sky behind the gap left of the tavern: stars and a few soft cloud banks (cached,
+    blurred). No stratus streaks: in the narrow gap they read as seams across the night."""
+    env.draw_sky(cr, -120, -90, 2440, 1270, kind=EXT, horizon=760, seed=4, moon=False, clouds=False)
+    env.draw_clouds(cr, -120, -90, 2440, 850, kind=EXT, seed=4, light_from=(236.0, 150.0), streaks=0, alpha=0.85)
 
 
 def draw_ext_far(cr):
@@ -143,9 +145,9 @@ def draw_ext_far(cr):
     town's roofs, cold, quiet and small (everything the tavern is not)."""
     k = EXT
     env.draw_moon(cr, 236.0, 150.0, 28.0, kind=k, glow=0.9)
-    env.draw_castle_hill(cr, 300, 600, 0.6, kind=k, hill_w=760, hill_h=150, seed=2, windows=5,
-                         color="#1b2442", rim="#8aa4e0", window_color="#9ec8ff", window_alpha=0.8, light_dx=-0.25)
-    env.draw_haze(cr, -120, 520, 820, 240, k["haze"], 0.0, 0.3)
+    env.draw_castle_hill(cr, 212, 600, 0.6, kind=k, hill_w=640, hill_h=140, seed=2, windows=6,
+                         color="#202b4e", rim="#a8c0f4", window_color="#a8d0ff", window_alpha=0.95, light_dx=-0.25)
+    env.draw_haze(cr, -120, 560, 820, 200, k["haze"], 0.0, 0.26)
     env.draw_roofline(cr, -140, 700, 770, 0.1, k, seed=7, lit=0.35, spire=False, haze=0.05)
     cr.rectangle(-140, 770, 820, 160)
     core.src(cr, "#0d1120")
@@ -523,7 +525,7 @@ def _silhouette(cr, x, base, s, kind, lp, k, color):
     cr.restore()
 
 
-def draw_window_life(cr, rect, pulse, lp, seed=0, crowd=True, level=1.0, upper=False):
+def draw_window_life(cr, rect, pulse, lp, seed=0, crowd=True, level=1.0, upper=False, skip=()):
     """One lit leaded window: the hot room glow (pulsing with the jig), the synchronized laughing
     silhouettes, then the leading and a cold glint of the street on the glass."""
     x, y, w, h = rect
@@ -542,6 +544,8 @@ def draw_window_life(cr, rect, pulse, lp, seed=0, crowd=True, level=1.0, upper=F
         n = max(2, int(w / 72))
         sil = core.mix("#14060e", "#2a0a1a", 0.3)
         for i in range(n):
+            if i in skip:
+                continue
             u = (i + 0.5) / n
             kind = _SIL_KINDS[(i + seed) % len(_SIL_KINDS)]
             s = (0.52 if upper else 0.62) + 0.12 * core.hash01(i, seed + 11)
@@ -574,7 +578,8 @@ def draw_window_life(cr, rect, pulse, lp, seed=0, crowd=True, level=1.0, upper=F
 
 
 def draw_ext_windows(cr, pulse, lp, level=1.0):
-    draw_window_life(cr, WIN_L, pulse, lp, seed=1, level=level)
+    # (its middle panes are kept clear: the stamp comes down on his hand in front of them)
+    draw_window_life(cr, WIN_L, pulse, lp, seed=1, level=level, skip=(1, 2))
     draw_window_life(cr, WIN_R, pulse, lp, seed=4, level=level)
     for i, (cx, cy, w, h) in enumerate(WIN_UP):
         draw_window_life(cr, (cx - w / 2, cy - h / 2, w, h), pulse * 0.7, lp, seed=7 + i, level=0.78 * level,
@@ -861,7 +866,18 @@ def draw_int_wall(cr):
         xx = bx0 + (bx1 - bx0) * (k + 0.5) / 7
         cr.rectangle(xx - 3, 330, 6, 340)
     cr.fill()
-    P._emblem(cr, "tankard", (bx0 + bx1) / 2, 470, 3.0, "#e8c46a", "#8a1a52")
+    cr.restore()
+    _tapestry_shield(cr, (bx0 + bx1) / 2, 482, 1.0)
+    # a gold-thread fringe along the banner's hem
+    cr.save()
+    cr.set_line_width(2.0)
+    core.src(cr, "#8a6a30", 0.8)
+    for k in range(int((bx1 - bx0) / 9)):
+        xx = bx0 + 4 + k * 9
+        yy = 640 if abs(xx - (bx0 + bx1) / 2) > 60 else 640 + 28 * (1 - abs(xx - (bx0 + bx1) / 2) / 60)
+        cr.move_to(xx, yy)
+        cr.line_to(xx + 1.0, yy + 12)
+    cr.stroke()
     cr.restore()
     cr.rectangle(bx0 - 14, 318, bx1 - bx0 + 28, 16)
     core.src(cr, tim)
@@ -947,6 +963,68 @@ def draw_int_wall(cr):
 
 
 INT_WINDOWS = [(1300.0, 196.0, 92.0, 82.0), (1700.0, 196.0, 92.0, 82.0)]
+
+
+def _tapestry_shield(cr, cx, cy, s):
+    """The house arms embroidered on the band's banner: a heater shield, burgundy with a couched
+    gold-thread border and a foaming flagon in ochre silk -- thread, not paint and not a lamp
+    (its values stay well under the bloom threshold)."""
+    w, h = 132.0 * s, 158.0 * s
+
+    def shield(inset):
+        x0, x1 = cx - w / 2 + inset, cx + w / 2 - inset
+        y0 = cy - h / 2 + inset
+        cr.new_path()
+        cr.move_to(x0, y0)
+        cr.line_to(x1, y0)
+        cr.line_to(x1, cy + h * 0.08)
+        cr.curve_to(x1, cy + h * 0.36 - inset * 0.5, cx + w * 0.22, cy + h * 0.46 - inset, cx, cy + h / 2 - inset * 1.2)
+        cr.curve_to(cx - w * 0.22, cy + h * 0.46 - inset, x0, cy + h * 0.36 - inset * 0.5, x0, cy + h * 0.08)
+        cr.close_path()
+
+    shield(-5.0)
+    core.src(cr, "#3a0a20", 0.55)                     # its shadow on the banner
+    cr.fill()
+    shield(0.0)
+    core.src(cr, "#7a5222")                           # the gold-thread border (dull, couched)
+    cr.fill()
+    shield(7.0 * s)
+    cr.set_source(core.linear(0, cy - h / 2, 0, cy + h / 2, ["#5e1030", "#4a0c26"]))
+    cr.fill()
+    cr.save()
+    shield(7.0 * s)
+    cr.clip()
+    env.texture(cr, "paint", 0.25, 0.5)
+    cr.restore()
+    # the stitches along the border
+    cr.save()
+    shield(3.5 * s)
+    cr.set_line_width(1.4)
+    cr.set_dash([5.0, 4.0])
+    core.src(cr, "#b08a48", 0.7)
+    cr.stroke()
+    cr.restore()
+    # the flagon: ochre silk, a cream-wool head of foam, darker satin-stitch shading
+    k = 2.2 * s
+    tx, ty = cx - 4 * k, cy + 4 * k
+    core.rounded_rect(cr, tx - 10 * k, ty - 8 * k, 20 * k, 22 * k, 3 * k)
+    core.src(cr, "#a8783a")
+    cr.fill()
+    cr.set_line_width(3.4 * k)
+    core.src(cr, "#a8783a")
+    cr.arc(tx + 11 * k, ty + 3 * k, 6 * k, -math.pi / 2, math.pi / 2)
+    cr.stroke()
+    core.src(cr, "#6a4420", 0.8)
+    for kk in (-1, 1):
+        cr.rectangle(tx + kk * 5 * k - 0.8 * k, ty - 4 * k, 1.6 * k, 16 * k)
+    cr.fill()
+    core.blob(cr, tx, ty - 10 * k, 11.5 * k, 0.2, 7, seed=4, sy=0.55)
+    core.src(cr, "#b8a68a")
+    cr.fill()
+    cr.set_line_width(1.2)
+    core.src(cr, "#3a0a18", 0.6)
+    core.rounded_rect(cr, tx - 10 * k, ty - 8 * k, 20 * k, 22 * k, 3 * k)
+    cr.stroke()
 
 
 def draw_int_window_glass(cr):
@@ -1061,6 +1139,9 @@ INS_WRIST = (640.0, 548.0)
 INS_ANGLE = -0.06                     # the fingers point right, a little up
 INS_SIZE = 770.0                      # wrist -> fingertip
 INS_PRINT = 0.25                      # where the print sits along the hand (hand lengths from the wrist)
+INS_HAND_POSE = dict(curl=(0.13, 0.18, 0.25), spread=0.08, thumb=(-0.45, 0.12))   # between "back" and
+                                      # "relaxed": the back of the hand flat to us, fingers a little fanned
+INS_INK = "#d9407e"                   # the same pink ink, a touch deeper in the close-up (wet, on dark scales)
 
 
 def draw_insert_bg(cr):
@@ -1139,18 +1220,20 @@ def _scales_detail():
     return cb
 
 
-def _print_cb(ink, smudge, gloss, t):
+def _print_cb(ink, smudge, gloss, t, hand_size=None):
     """The SMILE print for the insert (same mark, seed and angle as P.smile_stamp so S5-S7's faint
     print matches), slightly smudged on one side, wet ink catching the light."""
-    k = INS_SIZE / 56.0                 # this hand vs the dragon's own (HAND_LEN 56)
+    hs = INS_SIZE if hand_size is None else hand_size
+    k = hs / 56.0                       # this hand vs the dragon's own (HAND_LEN 56)
     size = 0.52 * k * 0.92
 
     def cb(cr):
-        x0 = (INS_PRINT - 0.21) * INS_SIZE
+        x0 = (INS_PRINT - 0.21) * hs
+        col = INS_INK
         if smudge > 0:
-            P.draw_smile_mark(cr, x0 + 9.0, 7.0, size, -0.1, ink * 0.26 * smudge, 0)
-            P.draw_smile_mark(cr, x0 + 3.0, 2.0, size * 1.01, -0.1, ink * 0.3 * smudge, 0)
-        P.draw_smile_mark(cr, x0, 0.0, size, -0.1, ink, 0)
+            P.draw_smile_mark(cr, x0 + 9.0, 7.0, size, -0.1, ink * 0.22 * smudge, 0, color=col)
+            P.draw_smile_mark(cr, x0 + 3.0, 2.0, size * 1.01, -0.1, ink * 0.26 * smudge, 0, color=col)
+        P.draw_smile_mark(cr, x0, 0.0, size, -0.1, ink * 0.9, 0, color=col)
         if gloss > 0.01:
             # wet ink: small specular dabs on the letters (the light catches them as they dry)
             for i in range(9):
@@ -1163,20 +1246,61 @@ def _print_cb(ink, smudge, gloss, t):
     return cb
 
 
+_FIST_GRIP = {}
+
+
 def _troll_stamp_big(cr, x, die_y, k):
-    """The troll's stamp seen huge (ch.troll_stamp: the block, the inked die, the neck of the
-    handle running up out of frame into his fist): (x, die_y) = the middle of the die's face."""
+    """The troll's stamp seen huge, IN HIS STONE FIST (as the rig holds it: the handle through the
+    fist, the block and the inked die below it), his forearm reaching in from the top right:
+    (x, die_y) = the middle of the die's face, k = troll units -> px."""
     from film.lib.characters import troll as TR
-    L = INS_LIGHT
+    L = INS_LIGHT.with_(exposure=0.7, key=(0.95, 0.82, 0.9))      # granite in the street's shadow, not a pale glove
+    M = TR.troll_mats()
+    fist = TR.FIST
+    ang = math.pi / 2 + 0.22                 # the fingers point down (and a little back): the arm comes from above-right
+    if "g" not in _FIST_GRIP:                # where B.hand puts the grip for a wrist at the origin (once)
+        c = core.frame(4, 4)[1]
+        hf = B.hand(c, 0.0, 0.0, ang, fist, "grip", M["stone"], L, 1.0, finger_w=1.35, finger_len=0.9, palm_w=1.25)
+        _FIST_GRIP["g"] = (hf.x, hf.y)
+    gx, gy = _FIST_GRIP["g"]
+    die_dy = TR._stamp_die_y(fist)           # the die face hangs this far below the grip (upright stamp)
     cr.save()
     cr.translate(x, die_y)
     cr.scale(k, k)
-    cr.rotate(-0.08)
-    y0 = -30.0                       # troll_stamp: the die face sits 30 below the block's top
+    lw = 4.2 / k
+    wx, wy = -gx, -die_dy - gy               # the wrist that puts the grip right above the die
+    # the forearm: a stone capsule from off-frame (top right) down to the wrist, a moss patch
+    ex, ey = wx + math.cos(ang + math.pi) * 150.0 + 60.0, wy + math.sin(ang + math.pi) * 150.0
+    s_, o_ = B.tube_paths(cr, [(ex + 40.0, ey - 120.0), (ex, ey), (wx, wy)], [50.0, 46.0, 42.0], lw, samples=4, tension=0.7)
+    B.shade(cr, s_, M["stone"], L, lw, outline=o_, size=110, rim=0.8)
     cr.save()
-    cr.translate(0.0, y0 - TR._stamp_drop(0.0))
-    TR.troll_stamp(cr, B.HandFrame(0.0, 0.0, 0.0, 0.0, [], (0.0, 0.0), False), L, ink=1.0, die_down=False)
+    s_.add(cr)
+    cr.clip()
+    core.blob(cr, ex - 18.0, ey + 40.0, 26.0, 0.25, 8, 5)
+    core.src(cr, B.palette(L, M["moss"]).lit)
+    cr.fill()
     cr.restore()
+
+    def hold(c, f):
+        TR.troll_stamp(c, f, L, ink=1.0, die_down=True)
+
+    cr.push_group()
+    B.hand(cr, wx, wy, ang, fist, "grip", M["stone"], L, lw, claw=None, show_palm=False, hold=hold,
+           finger_w=1.35, finger_len=0.9, palm_w=1.25, detail=2)
+    hand = cr.pop_group()
+    cr.set_source(hand)
+    cr.paint()
+    # moss and darker flecks on the stone knuckles (masked to the fist, so they never spill)
+    for (bx, by, br, col, a, sd) in ((wx + 30, wy + 26, 15, B.palette(L, M["moss"]).lit, 0.8, 3),
+                                     (wx + 18, wy + 36, 8, B.palette(L, M["moss"]).lit, 0.7, 4),
+                                     (wx - 14, wy + 70, 5, "#2a2630", 0.3, 7), (wx + 6, wy + 104, 4, "#2a2630", 0.28, 9),
+                                     (wx + 36, wy + 88, 4.5, "#2a2630", 0.28, 11), (wx - 26, wy + 112, 3.5, "#2a2630", 0.25, 13)):
+        cr.save()
+        core.blob(cr, bx, by, br, 0.3, 7, sd)
+        cr.clip()
+        core.src(cr, col, a)
+        cr.mask(hand)
+        cr.restore()
     cr.restore()
 
 
@@ -1210,7 +1334,7 @@ def _light_hand(cr, hand, wx, wy, ang, pulse):
     cr.restore()
     cr.save()
     cr.set_operator(cairo.OPERATOR_ADD)
-    core.src(cr, "#ff5aa0", 0.75 * hot)
+    core.src(cr, "#ff6aa6", 0.42 * hot)
     cr.mask(rim)
     cr.restore()
 
@@ -1253,26 +1377,86 @@ def draw_insert(cr, t, u, pulse, st):
     gloss = 1.0 - core.ramp(u, 0.15, 0.9)
     # the hand goes into a group so the scene's light can touch it (the rig's hands carry no rim)
     cr.push_group()
-    B.hand(cr, wx, wy, ang, INS_SIZE, "back", M["scales"], L, lw, flip=False, claw=DR.DRAGON_COLORS["claw"],
+    B.hand(cr, wx, wy, ang, INS_SIZE, INS_HAND_POSE, M["scales"], L, lw, flip=False, claw=DR.DRAGON_COLORS["claw"],
            claw_len=0.08, pad=DR.DRAGON_COLORS["belly"], show_palm=False, finger_w=1.05, curl_add=curl, detail=2,
-           back_detail=_scales_detail(), stamp=_print_cb(ink, 1.0, gloss, t))
+           back_detail=_scales_detail())
     hand = cr.pop_group()
     cr.set_source(hand)
     cr.paint()
     _light_hand(cr, hand, wx, wy, ang, pulse)
+    # the print goes on AFTER the light (ink is matte and dark-ish: it must not glow like a sign);
+    # same frame as base.hand's stamp callback (the back of the hand, x along the fingers)
+    cr.save()
+    cr.translate(wx + math.cos(ang) * 0.21 * INS_SIZE, wy + math.sin(ang) * 0.21 * INS_SIZE)
+    cr.rotate(ang)
+    _print_cb(ink, 1.0, gloss, t)(cr)
+    cr.restore()
     # the troll's stone fist and his stamp lifting off the hand and out of the top of frame
     # (first ~0.35 s, accelerating): drawn with two trailing ghosts for motion blur
     # (it starts pressed onto the hand, hiding the print, and peels away: in_cubic)
-    lift = core.ramp(u, 0.0, 0.14, "in_cubic")
+    lift = core.ramp(u, 0.0, 0.16, "in_cubic")
     if lift < 1.0:
         for k, a in ((2, 0.18), (1, 0.4), (0, 1.0)):
             if k > 0 and lift < 0.05 * k + 0.02:
                 continue                       # no motion trail while it is still pressed down
-            yy = py + 96.0 - 1300.0 * max(0.0, lift - 0.05 * k)
+            yy = py + 96.0 - 1500.0 * max(0.0, lift - 0.05 * k)
             cr.save()
             cr.push_group()
-            _troll_stamp_big(cr, px + 4.0, yy, 7.0)
+            _troll_stamp_big(cr, px + 4.0, yy, 6.2)
             cr.pop_group_to_source()
             cr.paint_with_alpha(a)
             cr.restore()
+    cr.restore()
+
+
+# ----------------------------------------------------------------------------------------
+# the POV close-up (INT_C): he reads the back of his own hand; the room laughs on, out of focus
+# ----------------------------------------------------------------------------------------
+
+POV_LIGHT = B.Light(key=(1.12, 0.80, 0.84), ambient=(0.36, 0.28, 0.44), rim=(1.0, 0.55, 0.78), rim_strength=0.7,
+                    direction=(0.55, -0.83), rim_direction=(0.8, -0.6), name="s4_pov")
+POV_WRIST = (640.0, 780.0)
+POV_ANGLE = -0.30                      # the fingers point away (toward the room), a little up: the word reads
+POV_SIZE = 700.0
+
+
+def draw_hand_pov(cr, t, u, pulse):
+    """His own forearm up from the bottom of frame, the back of the hand toward him (and us), SMILE
+    big and readable -- the ink dry now, a little smudged. It rises into place (the cut is on the
+    action), hangs there with a small tremor, and the fingers slowly curl in."""
+    from film.lib.characters import dragon as DR
+    M = DR.dragon_mats()
+    L = POV_LIGHT.with_(exposure=0.95 + 0.06 * min(1.2, pulse))
+    rise = core.out_cubic(core.clamp(u / 0.22, 0.0, 1.0))
+    trem = 2.2 * math.sin(t * 13.0) * math.sin(t * 2.1)
+    ang = POV_ANGLE + 0.012 * math.sin(t * 1.6) + 0.06 * (1.0 - rise)
+    wx = POV_WRIST[0] - 40.0 * (1.0 - rise)
+    wy = POV_WRIST[1] + 190.0 * (1.0 - rise) + trem
+    lw = 4.0
+    # the coat sleeve from the bottom-left corner, the plum cuff
+    ca, sa = math.cos(ang), math.sin(ang)
+    sl, so = B.tube_paths(cr, [(wx - ca * 720 - 120, wy - sa * 720 + 260), (wx - ca * 300, wy - sa * 300 + 30), (wx - ca * 36, wy - sa * 36)],
+                          [150.0, 128.0, 112.0], lw, samples=5, tension=0.7)
+    B.shade(cr, sl, M["coat"], L, lw, outline=so, size=420)
+    cr.save()
+    sl.add(cr)
+    cr.clip()
+    cr.set_source(core.linear(wx + 200, wy - 200, wx - 300, wy + 300, [core.alpha("#ff6aa6", 0.22), core.alpha("#ff6aa6", 0.0)]))
+    cr.paint()
+    cr.restore()
+    cs, co = B.ellipse_paths(cr, wx - ca * 28, wy - sa * 28, 58.0, 116.0, lw, ang)
+    B.shade(cr, cs, M["lining"], L, lw, outline=co, size=80, rim=0.6)
+    curl = 0.05 + 0.22 * core.ramp(u, 0.45, 0.95, "inout_sine")
+    cr.push_group()
+    B.hand(cr, wx, wy, ang, POV_SIZE, INS_HAND_POSE, M["scales"], L, lw, flip=False, claw=DR.DRAGON_COLORS["claw"],
+           claw_len=0.08, pad=DR.DRAGON_COLORS["belly"], show_palm=False, finger_w=1.05, curl_add=curl, detail=2,
+           back_detail=_scales_detail())
+    hand = cr.pop_group()
+    cr.set_source(hand)
+    cr.paint()
+    _light_hand(cr, hand, wx, wy, ang, pulse)
+    cr.save()
+    cr.translate(wx + ca * 0.21 * POV_SIZE, wy + sa * 0.21 * POV_SIZE)
+    cr.rotate(ang)
+    _print_cb(0.92, 1.0, 0.0, t, POV_SIZE)(cr)
     cr.restore()

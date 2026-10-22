@@ -35,14 +35,18 @@ How the singing is made (speech-to-singing, all deterministic)
      silence (a held schwa, the length mark of /uː/): repair_nuclei() refills such frames from the same
      vowel's good frames and lifts nuclei that come out far too quiet; steady_nuclei() re-voices vowels that
      VITS rendered as breath noise (a stretched 'a', 'back', 'lock': mean formant envelope + voiced tilt, else
-     they come out whispered); enhance_formants() sharpens the envelope's formant structure (re-pitching and
-     stretching blur it: 'scarf' -> 'scuff').  Resynthesized at 22.05 kHz and upsampled to 48 kHz.
+     they come out whispered); enhance_formants() sharpens the envelope's formant structure above ~500-900 Hz
+     (re-pitching and stretching blur it: 'scarf' -> 'scuff'; F1 is left alone, or one harmonic dominates the sung
+     vowel).  Resynthesized at 22.05 kHz and upsampled to 48 kHz.
   4. A second take (the runner-up seed, +-10 ms timing jitter, +5 cents, 0.9x vibrato) doubles the lead at
      -10 dB on the held vowels only (vowel_gate: no doubled, flammed consonants); then high-pass, gentle
      presence EQ, split-band de-esser, compressor; in the mix a synthetic hall IR (band-wise exponentially
      decaying noise, RT60 ~1.45 s, early reflections) fed with 45 ms pre-delay, high-passed at 200 Hz and ducked
-     6 dB while he sings, so the words stay dry and close and the room blooms in the gaps.  MIX / ARR hold the
-     mix and arrangement settings; BREATH a catch-breath at the commas where the next pickup follows at once.
+     6 dB while he sings, so the words stay dry and close and the room blooms in the gaps.  The lute is EQ'd for
+     the voice (-4 dB below ~250 Hz, +6 dB shelf above ~1.5 kHz: less low-mid mud under the words, more pluck) and the
+     accompaniment dips 3 dB while he sings: the vocal sits ~8 dB above it in 1-4 kHz, ~6 LU above it overall.
+     MIX / ARR hold the mix and arrangement settings; BREATH a catch-breath at the commas where the next pickup
+     follows at once.
   Accompaniment: Karplus-Strong lute (exactly tuned loop with fractional delay, double courses, octave strings
   on the basses, fingertip excitation, pluck-position comb, lute-body resonance IR), arpeggios / strums /
   rolls from the chord chart, strings damped when the chord moves on; a recorder (additive + breath noise +
@@ -101,8 +105,17 @@ VOICE = dict(model="en_GB-northern_english_male-medium", speaker_id=None,
              steady_breathy=0.6,  # ... a monophthong core with less than this raw voiced fraction is re-voiced
              steady_smooth=0,     # ... optional temporal smoothing (frames) of the other held-vowel envelopes
              formant_enh=0.6,   # WORLD envelope formant sharpening on voiced frames (cepstral postfilter); 0 = off
+             formant_band=(500, 900),  # ... only above ~500-900 Hz (F2/F3: vowel identity).  Full band also sharpened
+                                       # F1, which at sung pitches sits on 2-4 harmonics: one harmonic then dominated
+                                       # the vowel (hollow, weak fundamental; 7.9% of frames pitch-ambiguous vs 0.9%)
              cons_db=None,      # articulation: dB boost per consonant class {"plos","fric","sib","nasal","liquid"}
-             breath=0.03)       # a line's last note stops this long before the next line's first consonant (s)
+             breath=0.03,       # a line's last note stops this long before the next line's first consonant (s)
+             line_lufs=-30.0)   # vocal riding: each sung line (dry) normalized to this K-weighted loudness before the
+                                # vocal chain.  VITS takes differ by up to 11 dB (line 2 sat 5-8 dB under line 1 in the
+                                # delivered vocal, and lost its words in the mix).  None = off; shaping: LINE_GAIN_DB
+
+# Deliberate per-line level offsets (dB) on top of the riding (musical dynamics); empty = every line equally present.
+LINE_GAIN_DB = {}
 
 # Mix settings (one place; make_piece/mixdown read them).  Per-piece values are dicts {piece: value}.
 MIX = dict(double_db=-10.0,      # the double take under the lead
@@ -113,7 +126,13 @@ MIX = dict(double_db=-10.0,      # the double take under the lead
            hall_duck_db=6.0,     # the vocal hall return dips this much while he sings (blooms in the gaps)
            hall_hp=200.0,        # high-pass on the hall send (Hz, 0 = off): no low-mid mud under the words
            acc_gap_lu={"prologue": 6.0, "reprise": 5.0},   # vocal stem loudness above the accompaniment
-           acc_duck_db=4.0, acc_dip_db=-3.0,
+           acc_duck_db=3.0,      # the accompaniment dips this much (smoothly) while he sings
+           acc_dip_db=0.0,       # (optional presence dip at 2.6 kHz on the accompaniment bus; off -- see lute_eq)
+           # the lute's tone in the mix [(kind "low"|"high"|"peak", Hz, dB, slope/Q)]: the Karplus-Strong gut strings
+           # put nearly all their energy below 500 Hz (masking the voice's low end, nothing in the presence band: the
+           # vocal sat 14-17 dB above the accompaniment in 1-4 kHz).  Less mud, more pluck: ~8 dB in 1-4 kHz.
+           lute_eq=(("low", 250.0, -4.0, 0.8), ("high", 1500.0, 6.0, 0.8)),
+           acc_eq=(),            # extra accompaniment-bus EQ, same format
            rec_gain=0.42, drum_gain=1.0, tamb_gain=0.8,
            target_lufs={"prologue": -17.0, "reprise": -19.0})
 
@@ -203,7 +222,8 @@ SAY = {
 
 # A catch-breath (s) before the next line where the lyric has a comma/colon and the pickup follows at once
 # (the last note stops this long before the next line's first consonant; default VOICE["breath"]).
-BREATH = {"s0_l5": 0.10, "s0_l9": 0.10}
+BREATH = {"s0_l5": 0.10, "s0_l9": 0.10,
+          "s9_l1": 0.10}      # reprise: "...what to do: / Someone's hungry" ran on with ~20 ms between the lines
 
 # Best takes: Piper noise seed per line for (lead, double), picked by sung-ASR take selection -- every line
 # rendered with 8 seeds, scored by Whisper small.en + base.en WER (+ log-prob); the respelled lines were
@@ -276,8 +296,9 @@ class Grid:
 PROLOGUE_T_BAR0 = 3.00          # the vamp bar (bar 0) starts here; before it the bard tunes up
 PROLOGUE_GRID = Grid(PROLOGUE_T_BAR0, M.TEMPO, 23, bar_len={18: 3},
                      rit=[(21, 22, 1.0, 1.14), (22, 22.5, 1.14, 1.42)])
-REPRISE_T_BAR0 = 0.06           # the lute's soft rolled chord comes in at bar 0, eighth 1 (after 60 ms of silence:
-                                # a clean head, the file never starts mid-transient)
+REPRISE_T_BAR0 = 0.0            # the lute's soft rolled chord comes in at bar 0, eighth 1 = t 0 (timeline.json and S9
+                                # are built on this timing: reprise 11.947 s); mixdown() fades every stem in over 3 ms,
+                                # so the file never starts on a step
 REPRISE_GRID = Grid(REPRISE_T_BAR0 - M.eighth_seconds(M.REPRISE_TEMPO), M.REPRISE_TEMPO, 5,
                     rit=[(3.5, 4.0, 1.0, 1.10), (4.0, 4.5, 1.10, 1.38)])
 
@@ -740,17 +761,20 @@ def world_sing(x, fs, plan, notes, rng, f0_floor=60.0, f0_ceil=420.0, warp=1.0, 
     voiced = (f0r > 0) & ~unv_cls
     f0o = np.where(voiced, 440.0 * 2.0 ** ((target - 69.0) / 12.0), 0.0)
     if VOICE.get("formant_enh", 0.0) > 0:
-        sp = enhance_formants(sp, np.where(voiced)[0], VOICE["formant_enh"], fs)
+        sp = enhance_formants(sp, np.where(voiced)[0], VOICE["formant_enh"], fs, band=VOICE.get("formant_band"))
     y = pw.synthesize(f0o, sp, ap, fs, frame_period=5.0)
     return y, dict(t=t, f0_in=f0, f0_out=f0o, target=target, voiced=voiced, repaired=repaired)
 
 
-def enhance_formants(sp, frames, beta, fs, q_lo=0.0004, q_hi=0.0045):
+def enhance_formants(sp, frames, beta, fs, q_lo=0.0004, q_hi=0.0045, band=None):
     """Formant sharpening of WORLD envelopes (the cepstral 'postfilter' of vocoded TTS).  Re-pitching a speech
     envelope to sung notes and stretching its vowels blurs the formants (vowels drift toward a neutral 'uh': scarf
     -> 'scuff', heart -> 'horse'); in the given frames the log envelope's cepstrum between quefrencies q_lo..q_hi
     (the formant structure, above the spectral tilt and below the F0 scale) is scaled by up to (1 + beta) with a
-    raised-cosine taper, i.e. formant peaks up and valleys down in dB.  Each frame keeps its energy."""
+    raised-cosine taper, i.e. formant peaks up and valleys down in dB.  Each frame keeps its energy.
+    band=(f_lo, f_hi): sharpen only above f_lo (smooth crossfade to full effect at f_hi), energy kept in that band.
+    At sung pitches F1 is sampled by only 2-4 harmonics: sharpening it makes ONE harmonic dominate the vowel (a hollow,
+    whistly tone with a weak fundamental) while vowel identity for the ear lives mostly in F2/F3."""
     if beta <= 0 or len(frames) == 0:
         return sp
     sp = sp.copy()
@@ -765,8 +789,17 @@ def enhance_formants(sp, frames, beta, fs, q_lo=0.0004, q_hi=0.0045):
     fall = (q > 0.75 * q_hi) & (q <= q_hi)
     lift[fall] = 0.5 + 0.5 * np.cos(np.pi * (q[fall] - 0.75 * q_hi) / (0.25 * q_hi))
     L2 = np.fft.rfft(c * (1.0 + beta * lift)[None, :], axis=1).real
-    S2 = np.exp(L2)
-    S2 *= (sp[frames].sum(axis=1) / (S2.sum(axis=1) + 1e-30))[:, None]
+    if band is None:
+        S2 = np.exp(L2)
+        S2 *= (sp[frames].sum(axis=1) / (S2.sum(axis=1) + 1e-30))[:, None]
+    else:
+        f = np.arange(L.shape[1]) * fs / 2.0 / (L.shape[1] - 1)
+        w = np.clip((f - band[0]) / float(band[1] - band[0]), 0.0, 1.0)
+        w = w * w * (3 - 2 * w)
+        S2 = np.exp(L + w[None, :] * (L2 - L))
+        hb = f >= band[0]
+        g = sp[frames][:, hb].sum(axis=1) / (S2[:, hb].sum(axis=1) + 1e-30)
+        S2 *= 1.0 + w[None, :] * (g[:, None] - 1.0)
     sp[frames] = S2
     return sp
 
@@ -985,6 +1018,10 @@ def render_vocal(lines_notes, tp, total, take=0, jitter=0.0, cents=0.0, vib_scal
         y[:fi] *= np.linspace(0, 1, fi)
         y[-fi:] *= np.linspace(1, 0, fi)
         z = resample_poly(y, 320, 147)
+        if VOICE.get("line_lufs") is not None:   # ride the vocal: every sung line at the same loudness (+ LINE_GAIN_DB)
+            lv = kweight_lufs(z)
+            if lv > -70.0:
+                z = z * 10 ** ((VOICE["line_lufs"] + LINE_GAIN_DB.get(lid, 0.0) - lv) / 20)
         a = int(round(p["t0"] * SR))
         if a < 0:
             z, a = z[-a:], 0
@@ -1261,7 +1298,7 @@ def render_lute(plucks, total, seed=21):
         if p.harmonic:     # natural harmonic: near-sine, bell-like
             tt = np.arange(int(min(dur, 2.0) * SR)) / SR
             s = p.vel * 0.55 * (np.sin(2 * np.pi * f * tt) + 0.08 * np.sin(4 * np.pi * f * tt)) * \
-                np.exp(-tt / 0.7) * np.clip(tt / 0.002, 0, 1)
+                np.exp(-tt / 0.7) * np.clip(tt / 0.002, 0, 1) * np.clip((tt[-1] - tt) / 0.08, 0, 1)  # no cut-off tail
         else:
             low = p.midi < 52
             t60 = (3.2 if low else (2.4 if p.midi < 64 else 1.6)) * p.ring
@@ -1292,7 +1329,9 @@ def recorder_line(phrases, total, seed=31):
     n = int(total * SR)
     out = np.zeros(n + SR)
     for notes in phrases:
-        t0 = notes[0][0]
+        # 40 ms of pre-roll: the zero-phase (forward-backward) envelope smoothing below needs room before the first
+        # note, else the phrase starts at ~half amplitude on its first sample (a click at every recorder entry)
+        t0 = notes[0][0] - 0.04
         T = notes[-1][0] + notes[-1][1] - t0 + 0.15
         L = int(T * SR)
         t = np.arange(L) / SR
@@ -1333,7 +1372,9 @@ def recorder_line(phrases, total, seed=31):
             fc = float(midi_hz(mm))
             sos2 = butter(2, [min(0.9, 2.2 * fc / (SR / 2)), min(0.95, 5.5 * fc / (SR / 2))], btype="band",
                           output="sos")
-            breath[a:a + k] += sosfilt(sos2, rng.standard_normal(k)) * np.exp(-np.arange(k) / (0.007 * SR)) * 0.2 * v
+            rise = 0.5 - 0.5 * np.cos(np.pi * np.clip(np.arange(k) / (0.002 * SR), 0, 1))     # 2 ms tongue attack
+            breath[a:a + k] += sosfilt(sos2, rng.standard_normal(k)) * np.exp(-np.arange(k) / (0.007 * SR)) * rise \
+                * 0.2 * v
         a0 = int(t0 * SR)
         out[a0:a0 + L] += (y + breath)[: len(out) - a0]
     return out[:n]
@@ -1368,6 +1409,10 @@ def drum_hit(kind, vel, rng):
             y[a:] += part
         y += 0.8 * sosfilt(butter(2, 6000 / (SR / 2), btype="high", output="sos"),
                            rng.standard_normal(n) * np.exp(-t / 0.02))
+    # the buffer is 0.5 s: fade its last 120 ms (a hand damping the skin) -- cutting the doum's low mode off while it
+    # still rings at ~-15 dB was a click 0.5 s after every downbeat
+    nf = int(0.12 * SR)
+    y[-nf:] *= 0.5 + 0.5 * np.cos(np.linspace(0.0, np.pi, nf))
     return vel * y / (np.abs(y).max() + 1e-9)
 
 
@@ -1725,6 +1770,19 @@ def vowel_gate(info, n, pre=0.02, post=0.012, floor_db=-30.0, ramp=0.012, sr=SR)
     return fl + (1 - fl) * g
 
 
+def eq_chain(x, bands):
+    """Apply [(kind "low"|"high" shelf | "peak", Hz, dB, shelf slope | Q)] biquads in order (mono or (n, 2))."""
+    for kind, f_, db_, q_ in bands:
+        if not db_:
+            continue
+        if kind == "peak":
+            b_, a_ = biquad_peak(f_, db_, q_)
+        else:
+            b_, a_ = biquad_shelf(f_, db_, high=(kind == "high"), s=q_)
+        x = lfilter(b_, a_, x, axis=0)
+    return x
+
+
 def mixdown(name, total, lead, double, info, parts):
     """Vocal processing + accompaniment balance + halls + loudness -> stems dict (see the module docstring)."""
     n = int(round(total * SR))
@@ -1732,7 +1790,7 @@ def mixdown(name, total, lead, double, info, parts):
     if MIX["double_gate"]:
         dbl = dbl * vowel_gate(info, n, floor_db=MIX["double_floor_db"])
     vocal = fit(process_vocal(fit(lead, n), dbl, MIX["double_db"]), n)
-    acc = pan(parts["lute"], -0.22) * 1.0
+    acc = pan(eq_chain(parts["lute"], MIX.get("lute_eq", ())), -0.22) * 1.0
     if "rec" in parts:
         acc += pan(parts["rec"], 0.32) * MIX["rec_gain"]
     if "drum" in parts:
@@ -1742,6 +1800,7 @@ def mixdown(name, total, lead, double, info, parts):
     if MIX["acc_dip_db"]:
         b_, a_ = biquad_peak(2600, MIX["acc_dip_db"], 0.8)
         acc = lfilter(b_, a_, acc, axis=0)
+    acc = eq_chain(acc, MIX.get("acc_eq", ()))
     acc = acc * duck_gain(vocal, SR, depth_db=MIX["acc_duck_db"])[:, None]
     # levels: vocal on top (acc_gap_lu above the accompaniment), then a shared hall
     lv, la = kweight_lufs(vocal), kweight_lufs(acc)
@@ -1761,9 +1820,13 @@ def mixdown(name, total, lead, double, info, parts):
     # fades: tail ring-out
     fo = int(0.9 * SR)
     ramp = np.linspace(1, 0, fo) ** 2
+    fi = int(0.003 * SR)                       # ... and a 3 ms head fade-in (the reprise's first pluck is at t = 0)
+    ramp_in = 0.5 - 0.5 * np.cos(np.linspace(0.0, np.pi, fi))
     for arr in (mix, acc_stem, v_wet):
         arr[-fo:] *= ramp[:, None]
+        arr[:fi] *= ramp_in[:, None]
     voc_stem[-fo:] *= ramp
+    voc_stem[:fi] *= ramp_in
     # loudness: mix to the target LUFS; every stem limited to <= -1.5 dBTP *before* the stems are summed,
     # so vocal(both channels) + vocal hall + accomp == mix before the final bus limiter (-1.3 dBTP)
     g = 10 ** ((MIX["target_lufs"][name] - kweight_lufs(mix)) / 20)

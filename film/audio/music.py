@@ -164,10 +164,14 @@ VIOLIN_BODY = [(275, 0.012, 1.0), (460, 0.010, 0.8), (540, 0.010, 0.9), (700, 0.
                (4400, 0.002, 0.25)]
 
 
-def _body_ir(spec, seed, direct=0.5, dur=0.06):
+def _body_ir(spec, seed, direct=1.0, modal=0.08, dur=0.06):
+    """Instrument body: a unit direct path plus the body's modes `modal` x (unit energy).  A unit-energy
+    modal IR alone peaks ~27 dB above a flat path (each note's level then depends on where it falls
+    between the modes: a 28 dB note-to-note spread on the fiddle).  At modal ~0.08 the body gives gentle
+    formants (1/3-octave spread ~3 dB, fundamentals within ~+2/-6 dB) -- it colours, it does not pick notes."""
     rng = np.random.default_rng(seed)
     ir = modes(rng, spec, ns(dur), jitter=0.01, amp_jit=0.1)
-    ir /= np.sqrt(np.sum(ir * ir)) + 1e-12
+    ir *= modal / (np.sqrt(np.sum(ir * ir)) + 1e-12)
     ir[0] += direct
     return ir
 
@@ -239,6 +243,7 @@ def fiddle(notes, total, seed=11, bright=0.7, cuts=()):
         place(scr, bp(white(rng, k), 2000, 6500) * np.exp(-tvec(k) / 0.008) * 0.12 * v, ns(t))
     y = fftconvolve(y + bow + scr, _body_ir(VIOLIN_BODY, seed))[:n]
     y = peq(y, 1250, 3.0, 1.0)                                    # vielle nasal
+    y = peq(y, 2600, 2.0, 1.2)                                    # the bridge hill: bite for the jig
     return hp(y, 180)
 
 
@@ -559,6 +564,14 @@ def _roll(ev, t, notes, vel, inst, dur, spread=0.07, accent_top=0.0):
                      inst))
 
 
+def _open_sus(ev, t_open, pc=2, lead=0.12):
+    """Asus4 -> A: the suspended D must give way to the C# -- every D still held when the third enters is
+    damped just before it (a D ringing on under C#4 is a minor-second rub, not warmth)."""
+    for e in ev:
+        if e.midi % 12 == pc and e.t < t_open < e.t + e.dur:
+            e.dur = max(0.12, t_open - lead - e.t)
+
+
 def _arp(ev, t0, t1, notes, vel, inst, step=0.3, pattern=(0, 1, 2, 3, 2, 1)):
     i = 0
     t = t0
@@ -609,6 +622,7 @@ def score_events(tl=None):
             for m in v[1:]:
                 ev.append(Ev(t + 0.05, gap + 0.2, m, 0.13, "piano"))
     t_ts = G(7, bt("s7_teensit", 9.8) + 0.35)                          # the sus4 opens when the teen sits
+    _open_sus(ev, t_ts)
     ev.append(Ev(t_ts, 1.8, 61, 0.26, "harp"))
     ev.append(Ev(t_ts + 0.02, 1.5, 61, 0.14, "piano"))
     # ---- S7 statement 2: piano melody on each arrival, harp arpeggios, celesta echoes ---------------------
@@ -626,6 +640,7 @@ def score_events(tl=None):
              pattern=(0, 1, 2, 3, 2, 1))
         ev.append(Ev(G(7, a) + 1.0, 1.4, mel[i] + 12, 0.16, "celesta"))
     va = M.voicing("A", low=38, high=69, n=4)                          # sus4 -> 3 at the end of the drag
+    _open_sus(ev, G(7, t_A))
     for j, m in enumerate(va):
         ev.append(Ev(G(7, t_A) + 0.03 * j, 2.4, m, 0.22 if j else 0.26, "piano"))
     # ---- S7 under the dialogue: sparse held chords between lines; rising harp into S8 ---------------------
@@ -660,12 +675,14 @@ def score_events(tl=None):
         ev.append(Ev(G(8, a), b - a + 0.4, v[0], 0.34, "piano"))
         for j, m in enumerate(v[1:]):
             ev.append(Ev(G(8, a) + 0.03 * (j + 1), b - a + 0.3, m, 0.2, "piano"))
-        _arp(ev, G(8, a) + 0.35, G(8, b), list(v[2:]) + [v[1] + 12, v[2] + 12], 0.16, "harp", step=0.42,
-             pattern=(0, 1, 2, 3, 4, 3, 2, 1))
+        # five DISTINCT chord tones (v[1] + 12 duplicated v[3] or v[4]: the harp re-plucked D4-D4, F#4-F#4)
+        arp = sorted(set(list(v[2:]) + [v[1] + 12, v[2] + 12, v[3] + 12]))[:5]
+        _arp(ev, G(8, a) + 0.35, G(8, b), arp, 0.16, "harp", step=0.42, pattern=(0, 1, 2, 3, 4, 3, 2, 1))
         ev.append(Ev(G(8, a) + 1.1, 1.6, mel[i] + 12, 0.17, "celesta"))
-        if i < 3:                                         # a step down IN D major: B-A, A-G, F#-E (never to D)
-            ev.append(Ev(G(8, a) + 1.6, 1.6, mel[i] + 12 - 2, 0.13, "celesta"))
+        if i < 3:                                         # an echo falling to a tone of the chord, never to D:
+            ev.append(Ev(G(8, a) + 1.6, 1.6, mel[i] + 12 - (2, 3, 2)[i], 0.13, "celesta"))   # B-A, A-F#, F#-E
     va = M.voicing("A", low=36, high=69, n=5)
+    _open_sus(ev, G(8, tA8))
     tail = sc[8].duration - tA8 + 4.0                     # ring through the fade into the end card
     for j, m in enumerate(va):
         ev.append(Ev(G(8, tA8) + 0.04 * j, tail, m, 0.3 if j == 0 else 0.22, "piano"))

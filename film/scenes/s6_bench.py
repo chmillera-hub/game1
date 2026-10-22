@@ -19,24 +19,29 @@ EMOTIONAL LINE (SPEC 0.3)
 
 COLOUR / VALUE SCRIPT
   Dusk: violet sky, a peach glow low on the LEFT where the sun has just set, long soft shadows
-  falling right; the garden graded cool violet-green. The bench band and the cast are the
-  brightest, most contrasted things in frame (a soft last-light key on the bench, the near
-  ground and the sky top falling off). Warm notes are withheld -- only her faded-red hood, his
-  mustard scarf and the horizon -- until the laugh (27.2 s): golden embers fountain from his
-  mouth, a hot spot of light drifts from him to her, warm rims come up on the sides of their
-  faces that face each other (the light lives in the space BETWEEN them), and a warm grade
-  spreads out from the embers over the whole frame (a growing radial light + a global warm
-  curve that ramps in with it). It stays: golden motes hang between them to the last frame,
-  so the cut to S7's golden hour is warmth continuing.
+  falling right; the garden graded cool violet-green. The cast out-contrasts the set: the dusk
+  key from the low sun on the left and a COOL lavender rim from the sky on the right cut both
+  of them out of the background, while the bench is lit a step dimmer and duskier than they
+  are (bench_light). Warm notes are withheld -- only her faded-red hood, his mustard scarf and
+  the horizon -- until the laugh (27.2 s): golden embers fountain from his mouth with a glow
+  that pulses on each laugh pulse, the light reaches HER face from his side, warm rims come up
+  on the sides of their faces that face each other (the light lives in the space BETWEEN
+  them), and THE WORLD CHANGES: the garden's golden-hour paint blooms in over the dusk through
+  a soft circle that grows out from his mouth across the whole frame (_golden_bloom: the
+  hedges go green-gold, the sky peach, the bench honey) while the cast's and the bench's light
+  warm toward golden. It stays: golden motes hang between them to the last frame, so the cut
+  to S7's golden hour is warmth continuing, not a jump.
 
 SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a frozen frame)
-  A  0.00-3.55  "she is alone" -> WIDE.  cam (742,770) z1.60 -> (918,624) z1.08, a slow pull-back.
-     Her alone at the left end tossing crumbs (release 0.71) to pigeons on the gravel; he trudges
-     in from the right edge (drooped wings, the paper apothecary sack swinging) as the pull-back
-     reveals the oak framing the left, the castle on its hill above the bench, the unlit iron
-     lantern on the right. She clocks him at 1.75 (eyes, then head; back to her pigeons). He stops
-     (2.80), turns front and lowers himself, setting the sack down by his foot.
-  B  3.55-12.45 "the gap" -> LOW TWO-SHOT WITH A GALLERY.  cam (870,800) z2.12 -> z2.30.
+  A  0.00-3.55  "she is alone" -> OPENS CLOSE ON HER, PULLS BACK TO THE WIDE.
+     cam (815,770) z2.30, held while she tosses her crumbs (release 0.71) -- a small figure at
+     one end of a long, empty bench, the castle above, the pigeons pecking: the image of the
+     whole film's loneliness -- then from 0.85 an eased pull-back to (917,627) z1.10 just as he
+     trudges in at the right edge (drooped wings, the paper apothecary sack swinging): the
+     reveal widens on him, the oak framing the left, the castle on its hill above the bench, the
+     unlit iron lantern on the right. She clocks him at 1.75 (eyes, then head; back to her
+     pigeons). He stops (2.80), turns front and lowers himself, setting the sack down by his foot.
+  B  3.55-12.45 "the gap" -> LOW TWO-SHOT WITH A GALLERY.  cam (870,800) z2.12 -> z2.20.
      Cut on the sit. The bench across the frame, she on the left, he on the right, the EMPTY
      middle with the castle above it -- and along the bottom of the frame, close to the lens,
      a row of four big pigeons: the spectators. 3.75: the seat takes his weight (creak, sag,
@@ -52,7 +57,7 @@ SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a froz
      MINDFUL COLORING FOR ADULTS (9.42), sits up with it, opens it (to 10.08), flips four pages
      without joy (10.12-11.40), shuts it and lobs it onto the seat into the gap (lands 12.00);
      every head follows its arc. The camera eases in a touch toward the book business.
-  C  12.45-15.24 "over the spectacles" -> MEDIUM CLOSE-UP on her.  z6.3 -> 6.5.
+  C  12.45-15.24 "over the spectacles" -> MEDIUM CLOSE-UP on her.  z5.95 -> 6.12.
      Her face on the left third, looking right (lead room toward the book and him). s6_glance
      12.6: eyes slide to the book, the spectacles slide down her nose, one judging blink, a
      bored-skeptical peer over the rims. s6_l1 "They tell you to try that too?" -- a lazy flick
@@ -63,21 +68,27 @@ SHOTS (hard cuts on action; eased moves + a gentle breathing drift; never a froz
      "Candles. Vitamins. Yoga." -- deadpan, eyes down to the book (off left); a slow blink before
      "Vitamins."; on "Yoga." his eyes come up to her with the smallest tilt and shrug (no blink:
      the look lands).
-  E  18.56-30.00 "the cat" -> TWO-SHOT that pushes in as they connect.  z3.0 -> 3.85 by the beat,
-     4.0 through the punchline, released to 3.6 for the laugh, breathing out to 3.3 at the end.
+  E  18.56-30.00 "the cat" -> TWO-SHOT that closes in as they connect.  z3.0 -> 3.3 by "I got
+     the cat", 4.7 by the beat (both faces big: the held look is the shot), 4.9 into the snort,
+     released to 3.75 as the laugh throws his head back, breathing out to 3.3 at the end.
      Cut BEFORE she moves: two quick hops along the seat toward him (18.68, 18.87) -- she crosses
      the gap, in the frame that shows it. His body has opened toward her.
-     s6_l3 "They told me to get a cat. I got the cat." -- she looks out front, remembering; back
-     to him, deadpan, on "I got the cat." (21.44). He leans in; brows up.
+     s6_l3 "They told me to get a cat. I got the cat." -- she looks out front, remembering; in
+     her pause after "...get a cat." HE LEANS IN to listen (lean_in: his head comes down toward
+     hers -- he crosses the rest of the gap), and the umpire pigeon, in the way of his snout,
+     sidesteps twice along the crest board and ruffles its feathers; back to him, deadpan, on
+     "I got the cat." (21.44). His brows go up.
      THE BEAT 22.49-23.62, a held look, the camera still: she stares at him over her spectacles,
-     one slow dry blink; he waits; the umpire turns to him for an answer, then back to her.
+     one slow dry blink; he waits, leaning in; the umpire turns to him for an answer, then back.
      s6_l4 "The cat sleeps through every story about my day." -- her eyes half-close on "sleeps",
      a tiny head shake through "every story", a smirk on "day"; the corner of his mouth goes on
      "sleeps", the smile grows word by word, a snort with one spark (26.95).
-     s6_laugh 27.19: HE LAUGHS -- head back, eyes squeezed, shoulders shaking, wings lifting, a
-     fountain of golden embers; the bench rocks, the umpire flaps. She melts: a silent chuckle,
-     hand to her heart, spectacles pushed up, chin up. The warmth spreads (see the colour script)
-     and settles; they end smiling at each other.
+     s6_laugh 27.19: HE LAUGHS -- he rocks back out of the lean, head back, eyes squeezed,
+     shoulders shaking, a slap of the knee on two pulses, wings lifting, a fountain of golden
+     embers; the bench rocks, the umpire startles up and lands back on the middle. She melts: a
+     silent chuckle, hand to her heart, spectacles pushed up, chin up. The golden hour blooms
+     out from him over the garden (see the colour script) and settles; they end smiling at each
+     other -- his eyes open and soft, his head tipped toward her.
 
 ACTING NOTES (thought -> glance -> breath -> line; eyes lead, the head follows, the body last)
   Her: dry wit, twinkly, never mocking. She notices him long before she admits it. Each line
@@ -93,8 +104,13 @@ castle with pennants on its hill, a paper apothecary sack tied with twine, wool,
 Nothing modern on screen.
 
 CONTINUITY -> S7 (film/scenes/_garden.py): she ends at G.SEATS_S6_END (u 0.3), he at u 0.83; the
-book lies on the seat at u 0.55, the umpire stands on the backrest, the sack on the gravel at
-his feet (G.S6_END_PROPS); his wings relaxed-up, both smiling.
+book lies on the seat at u 0.55, the umpire stands on the middle of the backrest, the sack on
+the gravel at his feet (G.S6_END_PROPS); his wings relaxed-up, both smiling, him turned to her.
+The book on the seat is props' "flat" book squashed to FLAT_K = 0.75 in depth, its front face
+on the seat's front edge (book_rest / book_front in setup) -- copy that to match it exactly.
+The light at the last frame: the dusk garden with the golden-hour garden bloomed over it
+(GOLD_NEAR 0.5 around them, GOLD_FAR 0.3 at the edges) and the cast lit Light.lerp(dusk,
+golden, 0.5) with warm rims toward each other -- S7's golden hour continues from there.
 
 SOUND: SFX_CUES (module level) lists every on-screen event with its local time, computed from
 the same constants the animation uses (footsteps on the walk cycle's heel strikes).
@@ -192,6 +208,10 @@ GNOME_BLINKS = [1.0, 3.1, T_LAND + 1.15, V_SHIFT + 0.4, V_GLANCE + 0.55, T_HOLD 
 T_BEAT0, T_BEAT1 = L3.end, L4.start
 T_SNORT = LAUGH.start - 0.24
 T_EMBERS = LAUGH.start + 0.03
+# E -- in her pause after "...get a cat." he leans in; the umpire sidesteps out of his way
+T_LEAN0 = W_CAT1 + 0.5
+UMP_HOPS = (T_LEAN0 + 0.02, T_LEAN0 + 0.21)       # two little sideways hops (0.16 s each)
+UMP_STEP = 17.0                                  # world px per hop (toward her)
 
 
 def _laugh_peaks():
@@ -286,14 +306,19 @@ def _unit(v):
 # lights and the warmth
 # ----------------------------------------------------------------------------------------
 # his face after the laugh: a warm smile with smiling eyes (cheeks up, soft lids)
-AFTER_LAUGH = ch.Expr(brow_in=0.25, brow_out=0.2, brow_y=0.2, lid=0.4, lid_bot=0.45, lid_tilt=-0.05, smile=0.8,
-                      open=0.0, mouth="", cheek=0.9)
+AFTER_LAUGH = ch.Expr(brow_in=0.4, brow_out=0.18, brow_y=0.32, lid=0.22, lid_bot=0.32, lid_tilt=0.08, smile=0.85,
+                      open=0.0, mouth="", cheek=0.75, pupil=1.12)
 # her silent chuckle: a closed-mouth smile, the eyes squeezed into happy crescents
 CHUCKLE = ch.Expr(brow_in=0.3, brow_out=0.25, brow_y=0.4, lid=0.58, lid_bot=0.62, lid_tilt=-0.12, smile=1.0, open=0.0,
                   mouth="", cheek=1.0)
 L_DUSK = G.light_for("dusk")
 L_GOLD = G.light_for("golden")
 WARM_RIM = (1.0, 0.74, 0.40)
+# the cast before the laugh: the dusk key from the low sun (left) and a COOL rim from the violet
+# sky on the right -- it separates them from the set without spending a warm note
+COOL_RIM, COOL_RIM_K = (0.76, 0.74, 1.0), 0.8
+# the bench before the laugh: dusky, a step under the cast in value and saturation
+BENCH_COOL = dict(key=(0.96, 0.86, 0.9), k_exposure=0.88)
 
 
 def warmth(t):
@@ -306,26 +331,41 @@ def spread(t):
     return core.ramp(t, T_EMBERS, T_EMBERS + 3.0, "out_cubic")
 
 
+GOLD_CAST = 0.5                  # how far the cast's light warms toward golden after the laugh
+GOLD_SET = 0.42                  # ... and the bench / props
+GOLD_NEAR, GOLD_FAR = 0.5, 0.3   # the garden's golden bloom: near the embers / the far frame
+
+
 def light_for(t, who):
     """The light on one of them. Dusk; after the laugh the key warms toward golden and a warm
     rim comes up on the side that faces the other one (the light lives BETWEEN them)."""
     w = warmth(t)
+    cast = L_DUSK.with_(rim=COOL_RIM, rim_strength=COOL_RIM_K)
     if w <= 0.0:
-        return L_DUSK
+        return cast
     side = 1.0 if who == "gnome" else -1.0           # toward the warm source
-    base = ch.Light.lerp(L_DUSK, L_GOLD, 0.3 * w)
-    rd0 = L_DUSK.rim_dir()
+    base = ch.Light.lerp(cast, L_GOLD, GOLD_CAST * w)
+    rd0 = cast.rim_dir()
     rd1 = _unit((side, -0.3))
     rd = _unit((core.lerp(rd0[0], rd1[0], w), core.lerp(rd0[1], rd1[1], w)))
-    return base.with_(rim=core.lerp_tuple(L_DUSK.rim, WARM_RIM, w),
-                      rim_strength=core.lerp(L_DUSK.rim_strength, 1.0, w), rim_direction=rd,
-                      exposure=1.0 + 0.04 * w)
+    return base.with_(rim=core.lerp_tuple(COOL_RIM, WARM_RIM, w),
+                      rim_strength=core.lerp(COOL_RIM_K, 1.0, w), rim_direction=rd,
+                      exposure=1.0 + 0.05 * w)
 
 
 def light_at(t):
-    """The set's light on props (the bench, the book, the sack): dusk warming a little."""
+    """The set's light on props (the book, the sack, the birds): dusk warming after the laugh."""
     w = warmth(t)
-    return L_DUSK if w <= 0.0 else ch.Light.lerp(L_DUSK, L_GOLD, 0.3 * w)
+    return L_DUSK if w <= 0.0 else ch.Light.lerp(L_DUSK, L_GOLD, GOLD_SET * w)
+
+
+def bench_light(t):
+    """The bench: dusky and a step darker than the cast before the laugh; the warmth soaks into
+    the wood after it (the warm pool lands on the seat between them)."""
+    L = light_at(t)
+    cool = 1.0 - warmth(t)
+    return L.with_(key=core.lerp_tuple(L.key, BENCH_COOL["key"], cool),
+                   exposure=L.exposure * core.lerp(1.0, BENCH_COOL["k_exposure"], cool))
 
 
 # ----------------------------------------------------------------------------------------
@@ -333,16 +373,20 @@ def light_at(t):
 # ----------------------------------------------------------------------------------------
 Cam = core.Camera
 CAM_B0 = Cam(870.0, 800.0, 2.12)          # the gallery two-shot (the gallery is placed against it)
+T_PULL0 = 0.85                            # A: the pull-back starts as her crumbs land (he is entering)
 SHOTS = [
-    ("A", 0.0, CUT_B, [(0.0, Cam(742.0, 770.0, 1.6)), (CUT_B, Cam(918.0, 624.0, 1.08))]),
+    ("A", 0.0, CUT_B, [(0.0, Cam(815.0, 770.0, 2.3)), (T_PULL0, Cam(818.0, 768.0, 2.25)),
+                       (CUT_B - 0.1, Cam(916.0, 628.0, 1.1), "inout_sine"), (CUT_B, Cam(917.0, 627.0, 1.096))]),
     ("B", CUT_B, CUT_C, [(CUT_B, CAM_B0), (P1, Cam(871.0, 799.0, 2.15)),
                          (T_HOLD + 0.4, Cam(880.0, 797.0, 2.19)), (CUT_C, Cam(878.0, 797.0, 2.2))]),
     ("C", CUT_C, CUT_D, [(CUT_C, Cam(781.0, 792.0, 5.95)), (CUT_D, Cam(780.0, 791.0, 6.12))]),
     ("D", CUT_D, CUT_E, [(CUT_D, Cam(946.0, 698.0, 4.3)), (CUT_E, Cam(944.0, 697.0, 4.45))]),
-    ("E", CUT_E, DUR + 0.01, [(CUT_E, Cam(880.0, 744.0, 3.0)), (L3.start + 0.2, Cam(878.0, 742.0, 3.12)),
-                              (T_BEAT0 - 0.15, Cam(872.0, 737.0, 4.1)), (T_BEAT1 + 0.1, Cam(872.0, 737.0, 4.13)),
-                              (T_SNORT, Cam(871.0, 736.0, 4.3)), (LAUGH.start + 0.55, Cam(876.0, 727.0, 3.6)),
-                              (DUR, Cam(878.0, 733.0, 3.3))]),
+    ("E", CUT_E, DUR + 0.01, [(CUT_E, Cam(880.0, 744.0, 3.0)), (L3.start + 0.2, Cam(878.0, 743.0, 3.06)),
+                              (W_I - 0.25, Cam(876.0, 742.0, 3.3)),
+                              (T_BEAT0 + 0.35, Cam(872.0, 740.0, 4.7)), (T_BEAT1, Cam(872.0, 740.0, 4.76)),
+                              (T_SNORT - 0.3, Cam(873.0, 740.0, 4.9)),
+                              (LAUGH.start + 0.5, Cam(884.0, 726.0, 3.75)),
+                              (DUR, Cam(876.0, 738.0, 3.3))]),
 ]
 DRIFT_PX = {"A": 1.8, "B": 2.6, "C": 4.0, "D": 4.0, "E": 4.0}     # breathing drift, in screen px
 
@@ -478,9 +522,22 @@ def slap_lift(t):
 
 
 def dragon_turn(t):
-    """His body turn: near profile walking in, front-on and closed on the bench, opening to her."""
-    return _track(t, [(T_TURN0, WALK_TURN), (T_TURN1, SIT_TURN), (L2.start - 0.3, SIT_TURN),
-                      (L2.start + 0.7, 0.62), (L3.start + 0.2, 0.62), (W_I, TALK_TURN)])
+    """His body turn: near profile walking in, front-on and closed on the bench, opening to her;
+    the laugh throws him back toward the front for a moment."""
+    turn = _track(t, [(T_TURN0, WALK_TURN), (T_TURN1, SIT_TURN), (L2.start - 0.3, SIT_TURN),
+                      (L2.start + 0.7, 0.62), (L3.start + 0.2, 0.6), (W_I - 0.1, 0.5), (W_I + 0.55, TALK_TURN)])
+    turn += 0.16 * _win(t, LAUGH.start - 0.02, LAUGH.end + 0.2, 0.18, 0.7)
+    return turn
+
+
+def lean_in(t):
+    """0..1: he leans in to listen to the cat story -- a little on "cat", then, in her pause
+    before "I got the cat.", all the way (closing the distance as she earns it); rocks back with
+    the laugh, and settles still turned to her (leaning only a little: the umpire is back)."""
+    k = _track(t, [(L3.start + 0.1, 0.0), (W_CAT1 + 0.1, 0.12), (T_LEAN0, 0.2), (W_I - 0.1, 0.7),
+                   (W_I + 0.5, 0.78), (L4.start, 0.82), (W_DAY, 0.86), (LAUGH.start - 0.02, 0.88),
+                   (LAUGH.start + 0.3, -0.12), (LAUGH.end - 0.1, -0.05), (LAUGH.end + 0.9, 0.18), (DUR, 0.2)])
+    return k
 
 
 def dragon_pose(t):
@@ -502,6 +559,10 @@ def dragon_pose(t):
     lean += 0.32 * math.sin((t - V_SHIFT) * math.tau * 2.2) * _bump(t, V_SHIFT, 0.5)
     # the book: lean down to the sack, then sit back up
     lean += 0.42 * _win(t, T_REACH, T_HOLD + 0.1, 0.32, 0.38)
+    # the cat story: he leans in to listen (his head comes down toward her), rocks back laughing
+    k_in = lean_in(t)
+    lean += 0.9 * k_in
+    hunch += 0.14 * max(0.0, k_in)
     # moods
     mood, mood2, mix = "tired", "lonely", 0.45 * (1.0 - _r(t, L3.start, L4.start))
     smile = None
@@ -537,15 +598,18 @@ def dragon_pose(t):
                       (W_TOO - 0.05, (0.1, 0.3)), (W_TOO + 0.12, (-0.75, 0.35)),        # "too?" -> her
                       (L2.start - 0.25, (-0.75, 0.35)), (L2.start - 0.05, (-0.5, 0.6)),  # the list: to the book
                       (W_YOGA - 0.12, (-0.5, 0.6)), (W_YOGA + 0.05, (-0.85, 0.32)),     # "Yoga." -> her
-                      (L3.start, (-0.85, 0.35)), (DUR, (-0.85, 0.33))])
+                      (L3.start, (-0.85, 0.35)), (W_I + 0.4, (-0.8, 0.5)), (DUR, (-0.8, 0.5))])
     head_turn = _track(t, [(0.0, 0.0), (V_GLANCE, 0.0), (V_GLANCE + 0.12, -0.32), (V_GLANCE + 0.32, -0.32),
                            (V_GLANCE + 0.46, 0.08), (V_GLANCE + 0.9, 0.0), (W_TOO + 0.05, 0.0), (W_TOO + 0.3, -0.12),
                            (L3.start, -0.15), (DUR, -0.15)])
+    head_turn -= 0.12 * max(0.0, k_in)
     head_nod = _track(t, [(0.0, -0.25), (T_WALK_END, -0.2), (T_LAND + 0.5, -0.2), (T_LAND + 0.7, -0.35),
                           (T_LAND + 1.4, -0.35), (T_LAND + 1.6, -0.15), (T_REACH, -0.15), (T_REACH + 0.3, -0.45),
                           (T_HOLD, -0.35), (T_BOOKLAND + 0.6, -0.15), (L3.start, -0.05), (DUR, -0.05)])
+    head_nod -= 0.2 * max(0.0, k_in)
     head_nod += 0.12 * _pulse(t, T_SNORT, 0.08, 0.3)
     head_tilt = 0.07 * _pulse(t, W_YOGA, 0.15, 0.6) + 0.06 * _win(t, T_BEAT0 + 0.2, L4.start + 0.4, 0.3, 0.5)
+    head_tilt += 0.07 * after                                     # tender, toward her
     hunch += 0.1 * _pulse(t, W_YOGA + 0.05, 0.15, 0.45)        # the tiny shrug
     # blinks are acted: on thought changes, never on a look that must land ("Yoga.", the beat)
     blink = _blink_at(t, DRAGON_BLINKS)
@@ -596,14 +660,23 @@ def book_state(t):
     return flip, page % 3, opened
 
 
+# the coloring book lying on the seat: props' "flat" book is seen from higher up (elev 0.32) than
+# the bench (0.12), so it is drawn squashed in depth to sit in the seat's perspective (the cover
+# still reads), with its front face on the seat's front edge and a contact shadow under it
+FLAT_K = 0.75                    # depth squash of the flat book
+FLAT_FRONT = 18.74               # props' flat book: anchor -> bottom of its front face (book units)
+SEAT_FRONT_Z = 40.0              # the seat's front edge, ahead of the sitters' line (bench units)
+
+
 def book_lay(cr, k):
     """Tip a book drawn about its centre toward lying flat on the seat (k 0 upright .. 1 flat):
-    a little roll on the way, then the cover foreshortens into the seat's perspective (matches
-    props' "flat" book closely, so the hand-off at the landing is invisible)."""
+    a little roll on the way, then the cover foreshortens into the seat's perspective; at k = 1
+    it is the seated flat book's cover mapping (props' flat top face x FLAT_K), so the hand-off at
+    the landing is seamless."""
     if k <= 0.0:
         return
     cr.rotate(-0.3 * math.sin(math.pi * min(1.0, k)))
-    cr.transform(cairo.Matrix(1.0, 0.0, -0.22 * k, 1.0 - 0.62 * k, 0.0, 0.0))
+    cr.transform(cairo.Matrix(1.0, 0.042 * k, -0.18 * k, 1.0 - 0.768 * k, 0.0, 0.0))
 
 
 def _draw_book_in_hand(cr, t, light, lift, lay=0.0):
@@ -657,18 +730,6 @@ def _draw_book_in_hand(cr, t, light, lift, lay=0.0):
             open_book()
         cr.restore()
     _CAPTURE["book_center"] = cr.user_to_device(-24.0, -4.0)
-
-
-def _with_alpha(cr, a, fn):
-    if a >= 0.999:
-        fn()
-        return
-    if a <= 0.001:
-        return
-    cr.push_group()
-    fn()
-    cr.pop_group_to_source()
-    cr.paint_with_alpha(a)
 
 
 def _book_cb(t, light, lift, lay=0.0):
@@ -831,9 +892,11 @@ def gnome_pose(t):
     far = ch.GnomeArm("rest")
     flick = _win(t, W_THAT - 0.3, W_TOO + 0.1, 0.2, 0.36)
     if flick > 0 and "book_rest" in _STATE:
-        # a lazy flick of the hand toward the book: half an arm, palm up, then back to her lap
+        # a lazy flick of the hand toward the book: the forearm lifts off her lap, palm up, a
+        # little way toward it (low, small -- not a point across the bench), then back down
         bx, by = _STATE["book_rest"]
-        far = ch.GnomeArm("point", amt=0.85 * flick, prev="rest", screen=(x + 0.36 * (bx - x), y - 124.0), hand="offer")
+        far = ch.GnomeArm("hand_out_offer", amt=0.8 * flick, prev="rest",
+                          screen=(x + 0.17 * (bx - x), y - 108.0), hand="offer")
     hc = _win(t, LAUGH.start + 0.35, LAUGH.end + 1.0, 0.35, 0.5)
     if hc > 0:
         far = ch.GnomeArm("hand_on_chest", amt=hc, prev="rest")
@@ -971,12 +1034,20 @@ class Troupe:
             segs.append((tl0 + 0.85, LAUGH.end + 1.1 + 0.2 * i, "idle", xs, y0, xs, y0, gf))
             segs.append((LAUGH.end + 1.1 + 0.2 * i, DUR + 1.0, "peck", xs, y0, xs, y0, gf))
             self.birds.append({"segs": segs, "seed": 61 + i * 7, "t0s": [s[0] for s in segs]})
-        # the umpire: flies in from up right and perches on the middle of the backrest
+        # the umpire: flies in from up right and perches on the middle of the backrest; when the
+        # dragon leans in it sidesteps twice toward her (making room for his head); the laugh
+        # startles it up and it settles back on the middle (S7 picks it up there)
         ux, uy = perch
+        h1, h2 = UMP_HOPS
+        x1, x2 = ux - UMP_STEP, ux - 2.0 * UMP_STEP
         segs = [(T_UMP0, T_UMP1, "fly", ux + 330.0, uy - 230.0, ux, uy, -1),
                 (T_UMP1, T_UMP1 + 0.45, "land", ux, uy, ux, uy, -1),
-                (T_UMP1 + 0.45, LAUGH.start + 0.1, "idle", ux, uy, ux, uy, -1),
-                (LAUGH.start + 0.1, LAUGH.start + 0.95, "flap", ux, uy, ux, uy, -1),
+                (T_UMP1 + 0.45, h1, "idle", ux, uy, ux, uy, -1),
+                (h1, h1 + 0.16, "hop", ux, uy, x1, uy, -1),
+                (h1 + 0.16, h2, "idle", x1, uy, x1, uy, -1),
+                (h2, h2 + 0.16, "hop", x1, uy, x2, uy, -1),
+                (h2 + 0.16, LAUGH.start + 0.1, "idle", x2, uy, x2, uy, -1),
+                (LAUGH.start + 0.1, LAUGH.start + 0.95, "flaphop", x2, uy, ux, uy, -1),
                 (LAUGH.start + 0.95, DUR + 1.0, "idle", ux, uy, ux, uy, -1)]
         self.birds.append({"segs": segs, "seed": 101, "t0s": [s[0] for s in segs], "umpire": True})
 
@@ -1025,6 +1096,9 @@ class Troupe:
         elif kind == "flap":
             x, y = xa, ya
             p = ch.PigeonPose(facing=f, flap=math.sin(math.pi * u), lift=9.0 * math.sin(math.pi * u), seed=seed)
+        elif kind == "flaphop":                       # startled up, flutters, lands a little way off
+            x, y = core.lerp(xa, xb, core.smooth(u)), core.lerp(ya, yb, u)
+            p = ch.PigeonPose(facing=f, flap=math.sin(math.pi * u), lift=16.0 * math.sin(math.pi * u), seed=seed)
         elif kind == "fly":
             e = core.out_quad(u)
             x = core.lerp(xa, xb, e)
@@ -1061,6 +1135,10 @@ class Troupe:
                 p = p.with_(look=look, peck=peck, puff=p.puff * (1.0 - w))
             # the coo after the laugh: chests puff
             p = p.with_(puff=max(p.puff, 0.7 * _win(t, LAUGH.end + 0.3 + 0.1 * i, LAUGH.end + 1.4 + 0.1 * i, 0.2, 0.4)))
+            if b.get("umpire"):
+                # an indignant ruffle after it has had to make room for him
+                hop_end = UMP_HOPS[1] + 0.16
+                p = p.with_(puff=max(p.puff, 0.85 * _win(t, hop_end, hop_end + 0.7, 0.08, 0.4)))
             out.append((x, y, p, b.get("umpire", False)))
         return out
 
@@ -1109,8 +1187,8 @@ class Gallery:
     foreground parallax. They peck, startle at the creak, then watch the match."""
 
     # (screen x of the feet, screen y of the feet, facing, on-screen height px) at CAM_B0
-    SPOTS = [(668.0, 1064.0, 1, 138.0), (840.0, 1052.0, -1, 130.0), (1014.0, 1066.0, 1, 142.0),
-             (1186.0, 1056.0, -1, 134.0)]
+    SPOTS = [(668.0, 1014.0, 1, 128.0), (840.0, 1004.0, -1, 122.0), (1014.0, 1017.0, 1, 131.0),
+             (1186.0, 1008.0, -1, 125.0)]
 
     def __init__(self, cam_ref):
         pf = GALLERY_PF
@@ -1227,6 +1305,11 @@ def _sfx_cues():
         (round(T_SCOOT0 + 0.02, 3), "cloth_rustle", {"gain": 0.3, "pan": -0.3, "size": 0.4}),
         (round(SCOOT_HOPS[0][0] + SCOOT_HOPS[0][1], 3), "bench_creak", {"gain": 0.3, "pan": -0.25, "size": 0.3}),
         (round(SCOOT_HOPS[1][0] + SCOOT_HOPS[1][1], 3), "bench_creak", {"gain": 0.3, "pan": -0.15, "size": 0.3}),
+        # he leans in to listen (his coat), and the umpire hops out of his way (two wing flicks)
+        (round(T_LEAN0, 3), "cloth_rustle", {"gain": 0.22, "pan": _pan_of(xd - 60.0, T_LEAN0), "size": 0.4}),
+        (round(UMP_HOPS[0] + 0.02, 3), "pigeon_flap", {"gain": 0.16, "pan": _pan_of(BENCH.x, UMP_HOPS[0]), "size": 0.2}),
+        (round(UMP_HOPS[1] + 0.02, 3), "pigeon_flap", {"gain": 0.16, "pan": _pan_of(BENCH.x - 20.0, UMP_HOPS[1]), "size": 0.2}),
+        (round(LAUGH.start + 0.02, 3), "cloth_rustle", {"gain": 0.3, "pan": _pan_of(xd - 40.0, LAUGH.start), "size": 0.5}),
         (round(T_SNORT, 3), "ember_crackle", {"gain": 0.25, "pan": 0.35, "size": 0.2}),
         (round(T_EMBERS, 3), "ember_crackle", {"gain": 0.75, "pan": 0.35, "size": 1.0}),
         (round(T_EMBERS + 0.55, 3), "ember_crackle", {"gain": 0.4, "pan": 0.35, "size": 0.6}),
@@ -1269,7 +1352,7 @@ _CAN_EMPTY_BAG = hasattr(P, "_bag_contents") and hasattr(P, "_rrect_paths")
 def setup():
     st = {}
     _STATE.clear()
-    g = G.Garden(kinds=("dusk",))
+    g = G.Garden(kinds=("dusk", "golden"))
     _STATE["garden"] = g
     st["g"] = g
     _STATE["bench"] = g.bench(1)
@@ -1295,13 +1378,15 @@ def setup():
     _STATE["bag_rest"] = (bx, bag_ground - 86.5 * SC)
     # the sack's mouth (for the s6_bag reach)
     _STATE["bag_mouth_world"] = (bx + 2.0, bag_ground - 86.5 * SC - 4.0)
-    sx, sy = _bench_rig().seat(U_BOOK)
-    _STATE["book_rest"] = (sx, sy - 3.5)
+    fx_, fy_ = _bench_rig()._pt((U_BOOK - 0.5) * (BENCH.length - 60.0), -P.BENCH_SEAT_H, SEAT_FRONT_Z)
+    _STATE["book_front"] = (fx_, fy_)
+    _STATE["book_rest"] = (fx_, fy_ - FLAT_FRONT * SC * FLAT_K)
     _solve_toss()
     _solve_book_far()
     # where the warmth starts: his mouth as the laugh bursts (a scratch draw: every frame must
     # render on its own, in any order)
     _STATE["ember_origin"] = _far_grip(T_EMBERS).mouth
+    _STATE["sigh_nose"] = _far_grip(V_SIGH + 0.1).nose
     return st
 
 
@@ -1419,10 +1504,19 @@ def _draw_free_book(cr, t, light):
         cr.restore()
         return
     x, y = _STATE["book_rest"]
-    y += _STATE["garden"].seat_dip(U_BOOK, bench_sag(t), sag_u=U_DRAGON)
+    dip = _STATE["garden"].seat_dip(U_BOOK, bench_sag(t), sag_u=U_DRAGON)
+    y += dip
     bounce = 2.5 * _bump(t, T_BOOKLAND, 0.12)
-    P.draw_coloring_book(cr, x + 3.0 * core.ramp(t, T_BOOKLAND, T_BOOKLAND + 0.15, "out_quad"), y - bounce, SC, light,
-                         t, angle=0.0, state="flat")
+    x += 3.0 * core.ramp(t, T_BOOKLAND, T_BOOKLAND + 0.15, "out_quad")
+    # contact shadow on the slats under its front edge (it fades in as it lands)
+    fx_, fy_ = _STATE["book_front"]
+    k = core.ramp(t, T_BOOKLAND - 0.04, T_BOOKLAND + 0.1) * (1.0 - 0.5 * _bump(t, T_BOOKLAND, 0.12))
+    B.contact_shadow(cr, x + 1.0, fy_ + dip - 1.5, 30.0 * SC, 4.5 * SC, alpha=0.42 * k)
+    cr.save()
+    cr.translate(x, y - bounce)
+    cr.scale(1.0, FLAT_K)
+    P.draw_coloring_book(cr, 0.0, 0.0, SC, light, t, angle=0.0, state="flat")
+    cr.restore()
 
 
 
@@ -1442,31 +1536,51 @@ def _laugh_fire(cr, t, drig):
                   wind=-110.0 + sgn * 45.0, alpha=1.0, solid=True)
 
 
-def _warm_light(lc, t, drig):
-    """Warmth enters the light (world units, inside the camera view of the light layer):
-    a hot spot at his mouth that drifts toward her face, a soft glow whose edge travels out
-    from the embers over the frame and settles, and a gentle warm light between their faces
-    that stays."""
-    if t < T_EMBERS:
-        return
-    k = core.clamp((t - T_EMBERS) / 2.8)
-    w = warmth(t)
+def _golden_bloom(cr, cam, t, g):
+    """The warmth reaches the world: the garden's golden-hour paint blooms in over the dusk,
+    through a soft circle that grows out from his mouth (from the first ember) across the frame
+    and stays -- the dusk is warmed, not replaced (GOLD_NEAR near them, GOLD_FAR at the edges)."""
     s = spread(t)
-    mx, my = _STATE["ember_origin"]
+    if s <= 0.0:
+        return
+    k = core.smooth(core.clamp((t - T_EMBERS) / 0.5))
+    ox, oy = cam.to_screen(*_STATE["ember_origin"])
+    R = core.lerp(160.0, 2700.0, s)
+    a_c, a_f = GOLD_NEAR * k, GOLD_FAR * k
+    pat = cairo.RadialGradient(ox, oy, 0.0, ox, oy, R)
+    pat.add_color_stop_rgba(0.0, 0.0, 0.0, 0.0, a_c)
+    pat.add_color_stop_rgba(0.42, 0.0, 0.0, 0.0, core.lerp(a_c, a_f, 0.35))
+    pat.add_color_stop_rgba(0.78, 0.0, 0.0, 0.0, a_f)
+    pat.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 0.0)
+    cr.push_group()
+    g.paint_back(cr, cam, t, "golden")
+    cr.pop_group_to_source()
+    cr.mask(pat)
+    cr.set_source_rgb(0.0, 0.0, 0.0)
+
+
+def _warm_light(lc, t, drig):
+    """Warmth enters the light (world units, inside the camera view of the light layer): the
+    embers' own glow at his mouth, pulsing with the laugh; their light reaching HER face; a
+    broad warm glow over the two of them that grows and stays; a warm pool on the bench."""
+    if t < T_SNORT:
+        return
+    w = warmth(t)
+    mx, my = drig.mouth
     fx_, fy_ = _STATE["gnome_face"]
     cx, cy = (mx + fx_) * 0.5, (my + fy_) * 0.5
-    # the hot spot travels from his mouth to her
-    hx = core.lerp(mx - 14.0, core.lerp(cx, fx_, 0.35), core.out_cubic(k))
-    hy = core.lerp(my, core.lerp(cy, fy_, 0.35), core.out_cubic(k))
-    fade = core.clamp((t - T_EMBERS) * 6.0) * (1.0 - 0.7 * core.smooth((t - T_EMBERS - 0.5) / 2.2))
-    fx.glow(lc, hx, hy, 50.0 + 40.0 * k, "#ffb060", 0.3 * fade)
-    # the spreading warmth: a big soft glow whose edge travels out from the embers
-    R = core.lerp(60.0, 950.0, s)
-    fx.glow(lc, core.lerp(mx, cx, s), core.lerp(my, cy, s), R, "#ff9a4a",
-            core.lerp(0.2, 0.07, s) * core.clamp((t - T_EMBERS) * 4.0))
-    # the light between them that stays
-    fx.glow(lc, cx, cy + 10.0, 300.0, "#ffbc70", 0.07 * w)
-    fx.light_pool(lc, cx + 10.0, BENCH.y - 100.0, 300.0, 70.0, "#ffb070", 0.05 * w)
+    # the snort's spark, then the laugh's fire: a bright glow at his mouth on the laugh pulses
+    burst = _win(t, T_SNORT, T_SNORT + 0.25, 0.05, 0.18) * 0.5
+    burst = max(burst, _win(t, T_EMBERS - 0.03, LAUGH.end + 0.4, 0.08, 0.9))
+    pulse = 0.75 + 0.25 * max([_pulse(t, p - 0.04, 0.05, 0.25) for p in LAUGH_PEAKS] + [0.0])
+    if burst > 0.0:
+        fx.glow(lc, mx - 8.0, my - 4.0, 120.0, "#ffb050", 0.45 * burst * pulse, core_r=22.0, core_alpha=0.35)
+    if w > 0.0:
+        # it reaches her: her face warms from his side
+        fx.glow(lc, fx_ + 6.0, fy_ - 4.0, 95.0, "#ffbf72", 0.16 * w)
+        # the warmth that stays: a broad soft light over both of them, and on the seat
+        fx.glow(lc, cx, cy + 20.0, 420.0, "#ffb468", 0.09 * w)
+        fx.light_pool(lc, cx + 10.0, BENCH.y - 100.0, 330.0, 74.0, "#ffb070", 0.06 * w)
 
 
 _LUTS = {}
@@ -1537,8 +1651,9 @@ def draw(cr, t, st):
     _STATE["gnome_head"] = (gx, gy - 150.0)
     _STATE["gnome_face"] = (gx + 8.0, gy - 146.0)
 
-    # ---- the set
+    # ---- the set (after the laugh the golden hour blooms in over the dusk, out from his mouth)
     g.paint_back(cr, cam, t, "dusk")
+    _golden_bloom(cr, cam, t, g)
     if shot in ("A", "B"):
         casters = [(gx, gy + 2.0, 40.0, 150.0), (dx, dy, 95.0, 330.0 if dpose.sit < 0.5 else 300.0)]
         if shot == "A":
@@ -1548,7 +1663,8 @@ def draw(cr, t, st):
     with cam.view(cr, 1.0):
         if shot in ("A", "B"):
             g.draw_lantern(cr, t, L, lit=0.0)
-        g.draw_bench(cr, t, L, part="back", sag=sag, sag_u=U_DRAGON)
+        Lb = bench_light(t)
+        g.draw_bench(cr, t, Lb, part="back", sag=sag, sag_u=U_DRAGON)
         if t >= T_RELEASE:                     # falling / lying on the seat: behind his hand and knees
             _draw_free_book(cr, t, L)
         for (x, y, p, ump) in birds:
@@ -1559,14 +1675,19 @@ def draw(cr, t, st):
         drig = ch.draw_dragon(cr, dx, dy, SC, dpose, Ld, t)
         if shot == "A":
             ch.gnome_toss_crumbs(cr, t, T_CRUMBS, st["crumb_rel"], st["crumb_ground"], n=10, flock=st["troupe"])
-        g.draw_bench(cr, t, L, part="front", sag=sag, sag_u=U_DRAGON)
+        g.draw_bench(cr, t, Lb, part="front", sag=sag, sag_u=U_DRAGON)
         _draw_bag(cr, t, L)
         if shot == "A":
             for (x, y, p, ump) in sorted(birds, key=lambda b: b[1]):
                 if not ump:
                     ch.draw_pigeon(cr, x, y, SC * (1.0 + 0.0015 * (y - PIGEON_Y[0])), p, L, t)
         # breath and fire
-        ch.dragon_smoke(cr, t, V_SIGH + 0.1, drig, alpha=0.45)
+        if V_SIGH < t < V_SIGH + 3.2:
+            # the sigh's curl of smoke: pale lavender-grey so it reads against the hedge, left
+            # where he breathed it out (drifting toward her)
+            sx, sy = _STATE["sigh_nose"]
+            fx.smoke(cr, t, V_SIGH + 0.1, sx - 4.0, sy + 2.0, n=9, dur=2.3, rise=42.0, drift=(-62.0, 4.0), size=6.5,
+                     color="#d4d0e2", alpha=0.6, seed=7, scale=SC)
         if T_SNORT <= t < T_SNORT + 0.8:
             fx.embers(cr, t, drig.nose[0], drig.nose[1], t0=T_SNORT, n=3, life=0.7, spread=14.0, rise=40.0,
                       color="#ff9a30", hot="#ffe9a0", size=2.0, seed=9, burst=0.06, scale=SC, solid=True)

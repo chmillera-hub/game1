@@ -75,6 +75,8 @@ class Song:
 
 SONG = Song()
 
+LATCH_LEAD, LATCH_STEP = 0.1, 0.09             # the shutter run: starts just before "latch", 90 ms apart
+
 
 # ----------------------------------------------------------------------------------------
 # small painter's helpers (on top of sb.wash / sb.ink / sb.gild / sb.hatch)
@@ -873,13 +875,13 @@ class CastleTown(_Synced):
         dim = 0.35 * rain_u                     # the street darkens under the rain
         # upper windows: a lone figure in each, lamplit, on "living alone"; shutters on "latch"
         alone0 = e("alone")
-        latch0 = e("latch")
+        latch0 = e("latch") - LATCH_LEAD          # the shutters latch one by one, all shut before "pane"
         sleeper = (2, 0)                        # (house, window) where someone drinks a potion and yawns
         for k, hf in enumerate(self._houses):
             for j, rect in enumerate(hf["ups"]):
                 idx = k * 2 + j
                 lit = smooth((t - (alone0 + 0.16 * idx)) / 0.4)
-                close = core.ease("inout_back", clamp((t - (latch0 + 0.13 * idx)) / 0.32)) if t > latch0 + 0.13 * idx else 0.0
+                close = core.ease("inout_back", clamp((t - (latch0 + LATCH_STEP * idx)) / 0.32)) if t > latch0 + LATCH_STEP * idx else 0.0
                 x, y0, w, h = rect
                 lit_window(cr, x, y0, w, h, lit * (1.0 - 0.85 * smooth(close)), arch=False)
                 if lit > 0.05 and close < 0.6:
@@ -887,8 +889,8 @@ class CastleTown(_Synced):
                                      sleepy=(k, j) == sleeper)
                 draw_shutters(cr, rect, min(1.0, close) if close > 0 else 0.0, hf["shutters"],
                               glow=lit * 0.8 if close >= 0.97 else 0.0,
-                              latch_glint=math.exp(-max(0.0, t - (latch0 + 0.13 * idx + 0.32)) / 0.18)
-                              if t > latch0 + 0.13 * idx + 0.3 else 0.0)
+                              latch_glint=math.exp(-max(0.0, t - (latch0 + LATCH_STEP * idx + 0.32)) / 0.18)
+                              if t > latch0 + LATCH_STEP * idx + 0.3 else 0.0)
         # the ink z's from the sleepy window
         zt = e("sleeping")
         if zt - 0.2 < t < zt + 3.2:
@@ -1666,10 +1668,13 @@ class WashHouseNight(_Synced):
         # the door at the right end, under its caged wisp-lamp
         door = _door_arch(171.0, 236.0, 15.0, 32.0, n=8)
         sb.ink_outline(cr, sb.wash(cr, _door_arch(168.0, 233.0, 21.0, 35.0, n=8), "#5a646c", 0.97, 0.3), 0.6, INK, 0.85)
-        pdr = sb.wash(cr, door, "#3c2a1c", 0.98, 0.3)
-        B.detail_lines(cr, [[(171.0 + 15.0 * j / 3.0, 238.0), (171.0 + 15.0 * j / 3.0, 268.0)] for j in (1, 2)], 0.4, INK, 0.5,
-                       taper=(1.0, 1.0, 1.0))
-        sb.ink_outline(cr, pdr, 0.7, INK, 0.9)
+        pin = sb.wash(cr, door, "#163c3c", 0.99, 0.3)            # the doorway: the cold-lit wash-house inside
+        cr.save()
+        pin.add(cr)
+        cr.clip()
+        soft_glow(cr, 178.5, 256.0, 22.0, P["wisp"], 0.45)
+        cr.restore()
+        self._door = door
         sb.wash(cr, [(166.0, 268.0), (192.0, 268.0), (194.0, 271.0), (164.0, 271.0)], "#6c777e", 0.97, 0.3)
         # cobbles
         street = [(-6, 266), (206, 266), (206, self.DH + 4), (-6, self.DH + 4)]
@@ -1748,23 +1753,90 @@ class WashHouseNight(_Synced):
             cr.fill()
         # the caged wisp-lamp by the door
         sb._lantern(cr, 196, 226, t, phase=0.3, scale=0.9, warm=False)
-        # the dragon, small, trudging toward the door with his laundry sack
+        # the dragon, small, trudging to the door with his laundry sack. Constant pace, then a short
+        # slow-down at the door (the walk phase comes from the distance actually travelled, so his
+        # feet never skate); the door swings open spilling cold wisp-light on him and he steps inside
+        # as the picture goes dark -- S1 opens in there.
         e = self.e
-        t0 = e("wash_walk", 0.0)
-        u = clamp((t - t0) / 9.0)
-        x = lerp(70.0, 150.0, u)
-        pose = ch.DragonPose(facing=1, walk=1.0, phase=ch.dragon_walk_phase((x - 70.0) * 2.0, 0.12, 1), mood="tired",
-                             wings=-0.8, hunch=0.8, tail_drag=0.3, seed=5,
-                             far=ch.Arm("carry_bag", hold=lambda c, f: self._sack(c, f)))
-        storybook_dragon_posed(cr, x, 284.0, 0.12, t, pose, alpha=0.95, tint=0.18)
+        t0, t1 = e("wash_walk", 0.0), e("wash_door", 9.0)
+        x0, x1 = 64.0, 163.0
+        u = clamp((t - t0) / max(0.1, t1 - t0))
+        k = 0.82                                   # constant pace until here, then ease into the stop
+        if u < k:
+            prog = u / (k + 0.5 * (1.0 - k))
+        else:
+            w = (u - k) / (1.0 - k)
+            prog = (k + (1.0 - k) * (w - 0.5 * w * w)) / (k + 0.5 * (1.0 - k))
+        x = lerp(x0, x1, prog)
+        walk = 1.0 - smooth((u - 0.9) / 0.1)
+        # the door: opens over 0.45 s from his arrival; he takes one step into its light (the picture
+        # is going black by then: S1 finds him inside)
+        opn = smooth((t - t1) / 0.45)
+        step = clamp((t - (t1 + 0.3)) / 0.6)
+        if step > 0.0:
+            x = lerp(x1, 171.0, core.inout_sine(step))
+            walk = math.sin(math.pi * step)
+        alpha = 0.95
+        dist = x - x0
+        if opn > 0.01:
+            # the cold light spilling out across the cobbles (and onto him)
+            soft_glow(cr, 179.0, 270.0, 26.0 * opn, P["wisp"], 0.35 * opn)
+        self._draw_door_leaf(cr, opn)
+        if alpha > 0.01:
+            pose = ch.DragonPose(facing=1, walk=walk, phase=ch.dragon_walk_phase(dist, 0.12, 1), mood="tired",
+                                 wings=-0.8, hunch=0.8, tail_drag=0.3, seed=5,
+                                 head_turn=0.25 * smooth((u - 0.85) / 0.15) * (1.0 - opn),
+                                 far=ch.Arm("carry_bag", hold=lambda c, f: self._sack(c, f)))
+            storybook_dragon_posed(cr, x, 284.0, 0.12, t, pose, alpha=alpha, tint=0.18)
+            if opn > 0.01:
+                soft_glow(cr, x + 6.0, 262.0, 18.0, P["wisp"], 0.18 * opn * alpha)
+
+    def _draw_door_leaf(self, cr, opn):
+        """The oak door leaf on its left hinge: shut it covers the doorway; it swings inward (narrowing
+        toward the hinge, darkening as it turns away from the moon)."""
+        dx, dy, dw, dh = 171.0, 236.0, 15.0, 32.0
+        k = 1.0 - 0.86 * clamp(opn)
+        if k <= 0.02:
+            return
+        cr.save()
+        cr.new_path()
+        core.polygon(cr, self._door)
+        cr.clip()
+        cr.translate(dx, 0.0)
+        cr.scale(k, 1.0)
+        cr.translate(-dx, 0.0)
+        leaf = [(dx, dy - 2.0), (dx + dw, dy - 2.0), (dx + dw, dy + dh), (dx, dy + dh)]
+        pl = sb.wash(cr, leaf, core.mix("#3c2a1c", "#1e140e", 0.6 * clamp(opn)), 0.99, 0.3)
+        B.detail_lines(cr, [[(dx + dw * j / 3.0, dy + 2.0), (dx + dw * j / 3.0, dy + dh)] for j in (1, 2)], 0.4, INK, 0.5,
+                       taper=(1.0, 1.0, 1.0))
+        B.detail_lines(cr, [[(dx + 0.5, dy + dh * 0.35), (dx + dw * 0.7, dy + dh * 0.35)],
+                            [(dx + 0.5, dy + dh * 0.78), (dx + dw * 0.7, dy + dh * 0.78)]], 0.8, "#2b2522", 0.95,
+                       taper=(1.0, 1.0, 1.0))
+        cr.new_path()
+        core.circle(cr, dx + dw * 0.8, dy + dh * 0.56, 0.9)
+        core.src(cr, "#b49248", 0.95)
+        cr.fill()
+        sb.ink_outline(cr, pl, 0.5, INK, 0.85)
+        cr.restore()
+        sb.ink_outline(cr, _poly(cr, self._door), 0.7, INK, 0.9)
 
     @staticmethod
     def _sack(cr, f):
+        """His laundry: a lumpy linen sack hanging plumb from his fist (hold units are px at the
+        holder's scale 1.0, so this is sized for a full-size dragon), a sleeve poking out of the
+        gathered neck."""
         cr.save()
         cr.rotate(-f.angle)
-        sack = [(-12, 0), (12, 0), (16, 30), (0, 36), (-16, 30)]
+        k = 4.2
+        neck = [(-9 * k, -2 * k), (9 * k, -2 * k), (6 * k, 6 * k), (-6 * k, 6 * k)]
+        sack = [(-8 * k, 4 * k), (8 * k, 4 * k), (19 * k, 22 * k), (17 * k, 34 * k), (4 * k, 39 * k), (-12 * k, 37 * k),
+                (-19 * k, 26 * k)]
         p = sb.wash(cr, sack, "#d8cdb6", 0.98, 0.4, smooth_t=0.6)
-        sb.ink_outline(cr, p, 1.6, INK, 0.9)
+        sb.wash(cr, [(2 * k, 10 * k), (17 * k, 24 * k), (14 * k, 34 * k), (3 * k, 37 * k)], "#b7aa90", 0.6, 0.0, smooth_t=0.6)
+        sb.ink_outline(cr, p, 1.4 * k, INK, 0.9)
+        sleeve = [(-2 * k, -1 * k), (5 * k, -6 * k), (10 * k, -4 * k), (4 * k, 3 * k)]
+        sb.ink_outline(cr, sb.wash(cr, sleeve, "#9a6b8c", 0.98, 0.3, smooth_t=0.5), 1.2 * k, INK, 0.85)
+        sb.ink_outline(cr, sb.wash(cr, neck, "#cbbf9f", 0.98, 0.3), 1.2 * k, INK, 0.9)
         cr.restore()
 
 
@@ -1949,7 +2021,9 @@ CODA_TEXT = ("o pull up a stool, friend,\n>and hear how it’s said:\nHow a king
              ">found its way back to bread.")
 
 BOX_TALL = (0.1, 0.07, 0.8, 0.86)          # 120 x 172 page units: DW 200 x DH 287
-BOX_V2 = (0.12, 0.08, 0.76, 0.6)            # 114 x 120: DW 200 x DH 212
+BOX_V2 = (0.12, 0.31, 0.76, 0.6)            # 114 x 120: DW 200 x DH 212 (the verse sits above it)
+TEXT_V2 = (0.12, 0.085, 0.76, 0.2)          # verse 2 is written at the TOP of its page: deep shots keep the
+                                            # caption band (bottom of frame) clear of page lettering
 
 
 def make_book(ev):
@@ -1960,8 +2034,8 @@ def make_book(ev):
     market = Market(ev, seed=4)
     wash_ = WashHouseNight(ev, seed=5)
     v1 = VerseText(V1_TEXT, ["s0_l1", "s0_l2", "s0_l3", "s0_l4"], (0.11, 0.11, 0.79, 0.5), 150.0 / 17.0, cap_lines=3)
-    v2a = VerseText(V2A_TEXT, ["s0_l5", "s0_l6"], (0.12, 0.715, 0.76, 0.16), 150.0 / 18.5, align="center")
-    v2b = VerseText(V2B_TEXT, ["s0_l7", "s0_l8"], (0.12, 0.715, 0.76, 0.16), 150.0 / 18.5, align="center")
+    v2a = VerseText(V2A_TEXT, ["s0_l5", "s0_l6"], TEXT_V2, 150.0 / 18.5, align="center")
+    v2b = VerseText(V2B_TEXT, ["s0_l7", "s0_l8"], TEXT_V2, 150.0 / 18.5, align="center")
     coda = VerseText(CODA_TEXT, ["s0_l9", "s0_l10"], (0.11, 0.14, 0.79, 0.3), 150.0 / 17.0, cap_lines=2)
     full = (0.0, 0.0, 1.0, 1.0)
     spreads = [
