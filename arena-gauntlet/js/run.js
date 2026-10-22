@@ -526,7 +526,21 @@
   const BUDGET_SHARE = { survive: 0.8, raze: 0.6, totems: 0.85 };
   // Totems and spawners grow sturdier act by act.
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
+  // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
+  const TURN_LIMIT = 90;
+  const HOLD_NEED = 4;
+
+  // When buildings send their reinforcements: the first, then one every few turns.
+  function spawnRhythm(primary, act, group) {
+    if (primary !== 'raze') return { first: 4, every: 8 };
+    return { first: 3, every: act >= 2 && group !== 'normal' ? 6 : 7 };
+  }
   const TOTEM_BY_ACT = { 1: 'totem', 2: 'hexstone', 3: 'obelisk' };
+  // Buildings a mission is about breaking: they scale with the act.
+  function isGoalBuilding(type) {
+    const T = UNITS[type];
+    return T.traits.includes('totem') || T.traits.includes('spawner') || ['gate', 'cart', 'warbanner', 'cage'].includes(type);
+  }
   const SPAWNER_BY_ACT = { 1: 'war_tent', 2: 'crypt', 3: 'guardhouse' };
 
   // Who comes out of each kind of building: the warband's own reserves when they fit the
@@ -590,6 +604,9 @@
   // so an under-leveled army can always find a winning plan.
   // Later acts lean harder on you, to answer the relics and gear you have piled up.
   const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
+  // With one unit acting a turn, a bigger army counts for less, so ordinary foes get a
+  // little more to spend.
+  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 1 };
 
   function enemyBudget(run, node, kind) {
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
@@ -599,7 +616,7 @@
     if (group === 'boss') b = 12 + (run.act - 1) * 7 + 8;
     const lean = group === 'boss' ? 0.03 : 0.08;
     b = Math.min(b, supplyFor(run) * (BUDGET_CAP[group] + lean * (run.act - 1)));
-    return b * diff.mult;
+    return b * diff.mult * BUDGET_SCALE[group];
   }
 
   // Give enemy units abilities, levels and (later on) gear, within the budget.
@@ -696,7 +713,7 @@
     const putObj = (type, x, y, extra) => {
       if (terrain[y * BOARD + x] !== 0 || taken.has(x + ',' + y)) return false;
       const T = UNITS[type];
-      const sturdy = T.traits.includes('totem') || T.traits.includes('spawner') ? { baseHp: Math.round(T.hp * BUILDING_HP[act]) } : {};
+      const sturdy = isGoalBuilding(type) ? { baseHp: Math.round(T.hp * BUILDING_HP[act]) } : {};
       objects.push(Object.assign({ type, level: 1, x, y, facing: 2 }, sturdy, extra || {}));
       taken.add(x + ',' + y);
       return true;
@@ -776,11 +793,13 @@
       seed: rng.int(2 ** 30) + 1,
       loot: [],
       bonus: [],
+      // Timings made for one unit a turn (see retime).
+      tm: 2,
     };
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
       if (!t) return false;
-      units.push({ type, level: 1, x: t[0], y: t[1], facing: 2 });
+      units.push({ type, level: 1, x: t[0], y: t[1], facing: 2, baseHp: Math.round(UNITS[type].hp * BUILDING_HP[act]) });
       used.add(t[0] + ',' + t[1]);
       return true;
     };
@@ -813,7 +832,7 @@
       case 'hold': {
         const t = pickTile([4, 3, 5], [3, 4, 5, 2, 6]);
         if (t) {
-          enc.hold = { x: t[0], y: t[1], need: 2 };
+          enc.hold = { x: t[0], y: t[1], need: HOLD_NEED };
           enc.objective = 'hold';
           if (enc.stance === 'defensive') enc.stance = 'balanced';
         }
@@ -821,7 +840,7 @@
       }
       case 'survive':
         enc.objective = 'survive';
-        enc.surviveTurns = act === 1 ? 5 : 6;
+        enc.surviveTurns = act === 1 ? 12 : 15;
         enc.stance = 'aggressive';
         break;
     }
@@ -832,7 +851,7 @@
     const pool = tpl.pool.filter((t) => !UNITS[t].boss);
     enc.waves = [];
     if (primary === 'raze' || layout === 'siege') {
-      const every = primary === 'raze' && act >= 2 && group !== 'normal' ? 2 : 3;
+      const { first, every } = spawnRhythm(primary, act, group);
       for (const sp of spawners) {
         let sPool = spawnPool(units.find((u) => u.key === sp.key).type, act, pool);
         // Act I buildings send light troops.
@@ -841,12 +860,12 @@
           const type = units.find((u) => u.key === sp.key).type;
           sPool = cheap(sPool).length ? cheap(sPool) : cheap(SPAWN_DEFAULT[type][1]).length ? cheap(SPAWN_DEFAULT[type][1]) : sPool;
         }
-        for (let k = 0, t = 2; k < 4; k++, t += every) enc.waves.push({ turn: t, from: sp.key, units: [waveSpec(rng, run, sPool, group)] });
+        for (let k = 0, t = first; k < 4; k++, t += every) enc.waves.push({ turn: t, from: sp.key, units: [waveSpec(rng, run, sPool, group)] });
       }
     } else if (primary === 'survive') {
       const tiles = [];
       for (const y of [0, 1]) for (let x = 0; x < BOARD; x++) if (terrain[y * BOARD + x] === 0) tiles.push([x, y]);
-      const turns = act === 1 ? [2, 4] : [1, 3, 5];
+      const turns = act === 1 ? [3, 7] : [2, 6, 10];
       const share = (fullBudget * 2.2 - budget) / turns.length;
       for (const t of turns) enc.waves.push({ turn: t, tiles, units: waveOf(rng, run, pool, share, group, 3) });
     }
@@ -895,7 +914,7 @@
       const c = rng.weighted(opts);
       if (c === 'swift') {
         const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
-        enc.bonus.push({ type: 'swift', turns: 4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0) });
+        enc.bonus.push({ type: 'swift', turns: Math.round(2.5 * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
       else if (c === 'blockade') enc.bonus.push({ type: 'blockade', n: 2 });
       else enc.bonus.push({ type: 'flawless' });
@@ -922,14 +941,14 @@
       banner: 'Burn the War Banner, or rout the enemy. Enemies near their banner hit 15% harder.',
       prison: 'Break the prison cage, or rout the guards. The freed prisoner joins your army.',
       commander: 'Assassinate the enemy Commander (crowned), or rout them all.',
-      hold: 'Hold the shrine: start 2 rounds in a row with a unit on it. Or rout the enemy.',
-      survive: `Survive ${enc.surviveTurns || 6} rounds while waves of reinforcements march in from the far edge. Or rout them all.`,
-      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} rounds until destroyed.` : ''} Towers and walls do not need to fall.`,
-      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every round.`,
-      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} rounds until it falls.`,
+      hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : HOLD_NEED} of your turns in a row with a unit on it. Or rout the enemy.`,
+      survive: `Survive ${enc.surviveTurns || 12} turns while waves of reinforcements march in from the far edge. Or rout them all.`,
+      gate: `Break the Castle Gate, or rout the garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
+      totems: `Topple all ${totems.length} ${tName}s, or rout the enemy. Each heals enemies within 2 tiles every turn.`,
+      raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or rout the escort.',
     };
-    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 6} rounds`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
+    const short = { rout: 'Rout', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 12} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -940,7 +959,7 @@
             reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Choose a skill' : 'A relic',
           };
         case 'swift':
-          return { b, text: `Win within ${b.turns} rounds.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Win within ${b.turns} turns.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
           return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
@@ -1049,7 +1068,7 @@
       surviveTurns: enc.surviveTurns,
       loot: enc.loot,
       cartExit: 0,
-      turnLimit: 30,
+      turnLimit: TURN_LIMIT,
       waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),
     };
   }
@@ -1990,10 +2009,10 @@
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
-    if (has('troll')) tips.push('Trolls regenerate 12 a round unless magic hurt them since the last one.');
+    if (has('troll')) tips.push(`Trolls regenerate ${UNITS.troll.props.regen} a turn unless magic hurt them since their last turn.`);
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
     if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');
-    if (has('cart')) tips.push('The wagons flee left 2 tiles a round. Block their path with units and break them fast.');
+    if (has('cart')) tips.push(`The wagons flee left ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} at the end of every enemy turn. Block their path with units and break them fast.`);
     if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
     if (has('cleric', 'shaman')) tips.push('Enemy healers: kill them early, or poison the huddle so the healing fails.');
@@ -2003,6 +2022,29 @@
   }
 
   // ------------------------------------------------------------ saving
+
+  // A battle planned back when every unit moved each turn: stretch its timings to the
+  // one-unit-a-turn rhythm.
+  function retime(run, enc) {
+    if (!enc || enc.tm === 2) return;
+    enc.tm = 2;
+    const group = enc.kind === 'boss' ? 'boss' : enc.kind === 'elite' ? 'elite' : 'normal';
+    if (enc.hold) enc.hold.need = HOLD_NEED;
+    if (enc.surviveTurns) enc.surviveTurns = run.act === 1 ? 12 : 15;
+    const waves = enc.waves || [];
+    const { first, every } = spawnRhythm(enc.primary, run.act, group);
+    const k = {};
+    for (const w of waves) {
+      if (w.from) {
+        k[w.from] = (k[w.from] || 0) + 1;
+        w.turn = first + (k[w.from] - 1) * every;
+      }
+    }
+    const edge = waves.filter((w) => !w.from);
+    const turns = run.act === 1 ? [3, 7] : [2, 6, 10];
+    edge.forEach((w, i) => (w.turn = turns[Math.min(i, turns.length - 1)] + Math.max(0, i - turns.length + 1) * 4));
+    for (const b of enc.bonus || []) if (b.type === 'swift') b.turns = Math.round(b.turns * 2.5);
+  }
 
   function save(run) {
     try {
@@ -2017,7 +2059,9 @@
       const j = root.localStorage && root.localStorage.getItem(SAVE_KEY);
       if (!j) return null;
       const r = JSON.parse(j);
-      return r && r.v === 2 && !r.over ? r : null;
+      if (!r || r.v !== 2 || r.over) return null;
+      if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
+      return r;
     } catch (e) {
       return null;
     }

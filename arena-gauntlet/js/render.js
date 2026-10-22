@@ -680,14 +680,14 @@
       }
     }
 
-    // Tiles where reinforcements land at the end of this round, with a ghost of who is coming.
+    // Tiles where reinforcements land after the enemy's next move, with a ghost of who is coming.
     drawWaveMarks(g) {
       if (!this.waves || !this.waves.length) return;
       const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
       const occupied = new Map();
       for (const v of this.vis.values()) if (v.alpha > 0.5) occupied.set(Math.round(v.x) + ',' + Math.round(v.y), v);
       for (const w of this.waves) {
-        if (!w.marks || w.in > 0) continue;
+        if (!w.marks) continue;
         w.marks.forEach(([x, y], k) => {
           const o = occupied.get(x + ',' + y);
           const blocking = o && o.team !== w.team;
@@ -726,7 +726,8 @@
     drawWaveBadges(g) {
       if (!this.waves || !this.waves.length) return;
       const next = new Map();
-      for (const w of this.waves) if (w.src) next.set(w.src, Math.min(next.has(w.src) ? next.get(w.src) : 99, w.in));
+      // A marked wave lands after the enemy's next move: show it as imminent.
+      for (const w of this.waves) if (w.src) next.set(w.src, Math.min(next.has(w.src) ? next.get(w.src) : 99, w.marks ? 0 : w.in));
       for (const [uid, n] of next) {
         const v = this.vis.get(uid);
         if (!v || v.alpha < 0.3) continue;

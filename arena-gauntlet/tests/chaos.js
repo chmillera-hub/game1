@@ -79,7 +79,10 @@ for (let i = 0; i < N; i++) {
   const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective, surviveTurns: objective === 'survive' ? 6 : 0, waves });
   let turns = 0;
   while (!s.over && turns++ < 4000) {
-    AG.AI.playTurn(s, s.side, { stance: rng.pick(['aggressive', 'balanced', 'defensive']), temp: 1 });
+    const side = s.side;
+    AG.AI.playTurn(s, side, { stance: rng.pick(['aggressive', 'balanced', 'defensive']), temp: 1 });
+    const done = s.events.filter((e) => e.t === 'done');
+    if (done.length > 1 || done.some((e) => s.byId[e.uid].team !== side)) throw new Error('more than one unit acted in a turn, seed ' + i);
     s.events.length = 0;
     for (const u of s.units) {
       if (u.alive && s.occ[E.idx(s, u.x, u.y)] !== u.uid) throw new Error('occupancy mismatch, seed ' + i + ' ' + u.type);

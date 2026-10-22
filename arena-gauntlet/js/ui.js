@@ -205,19 +205,19 @@
     const poisoner = a.fx && a.fx.poison && !a.dmg;
     const powLabel = heal ? 'Heal' : poisoner ? 'Poison' : 'Power';
     const powVal = heal ? E.healAmount(u, a) : poisoner ? E.poisonDamage(u, a) : u.pow || '-';
-    const st = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
-    return `<div class="stats">${st(powVal, powLabel)}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(u.rec, 'Recover')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
+    const st = (v, l, title) => `<div class="stat"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
+    return `<div class="stats">${st(powVal, powLabel)}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it can go again this many turns later')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
   }
 
   function fxText(u, a) {
     const fx = E.hitFx(u, a);
     const bits = [];
-    if (fx.para) bits.push(`paralyzes for ${fx.para} round${fx.para > 1 ? 's' : ''}`);
-    if (fx.poison) bits.push(`poisons for ${fx.poison[0]} rounds (${fx.poison[1]} a round, no healing)`);
-    if (fx.burn) bits.push(`burns for ${fx.burn[0]} rounds (${fx.burn[1]} a round)`);
-    if (fx.root) bits.push(`roots for ${fx.root} round${fx.root > 1 ? 's' : ''}`);
-    if (fx.weak) bits.push(`weakens for ${fx.weak} rounds (-30% damage)`);
-    if (fx.mark) bits.push(`marks for ${fx.mark} rounds (+25% damage taken)`);
+    if (fx.para) bits.push(`paralyzes for ${fx.para} turn${fx.para > 1 ? 's' : ''}`);
+    if (fx.poison) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
+    if (fx.burn) bits.push(`burns for ${fx.burn[0]} turns (${fx.burn[1]} a turn)`);
+    if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
+    if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
+    if (fx.mark) bits.push(`marks for ${fx.mark} turns (+25% damage taken)`);
     if (fx.knock) bits.push('knocks back 1 tile');
     return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
   }
@@ -274,7 +274,7 @@
         t = `Heals ${E.healAmount(u, a)} HP to every ally within ${a.radius} tiles.${a.cleanse ? ' Also cures poison, burns, paralysis and roots.' : ''}`;
         break;
       case 'drum':
-        t = `Allies within ${a.radius} tiles ${a.noHeal ? '' : 'heal ' + E.healAmount(u, a) + ' and '}fly into a frenzy: +25% damage for 2 rounds.`;
+        t = `Allies within ${a.radius} tiles ${a.noHeal ? '' : 'heal ' + E.healAmount(u, a) + ' and '}fly into a frenzy: +25% damage for 2 turns.`;
         break;
       case 'heal':
         t = `Heals one ally ${rangeText(a.range)} for ${E.healAmount(u, a)}${a.cure ? ' and cures poison and burns' : ''}.`;
@@ -283,7 +283,7 @@
         t = `An ally ${rangeText(a.range)} gains a shield that absorbs ${a.amount || 15} damage.`;
         break;
       case 'rally':
-        t = `Allies within ${a.radius} tiles recover 1 round sooner and shake off paralysis and roots.`;
+        t = `Allies within ${a.radius} tiles take 1 turn off their cooldowns and shake off paralysis and roots.`;
         break;
       case 'grow':
         t = `Raises a shrub on an empty tile up to ${a.range[1]} tiles away. Up to ${3 + (u.props.shrubs || 0)} at once.`;
@@ -452,7 +452,7 @@
     shieldwall: 'Full block from the sides.',
     retaliate: 'Strikes back for half power when hit in melee.',
     bloodrage: 'Cleave heals 5 HP per enemy struck.',
-    bloodlust: 'Skips its recovery after slaying an enemy.',
+    bloodlust: 'Slaying an enemy resets its cooldown: it is ready again next turn.',
     secondwind: 'Once per battle, survives a fatal blow with 1 HP.',
     phoenix: 'The first time it falls, it rises again with half HP.',
     steadfast: 'Immune to paralysis, roots and knockback.',
@@ -462,21 +462,21 @@
     aura_barrier: 'Barrier Aura: allies within reach gain +25% magic resistance and are immune to poison and paralysis.',
     aegisfield: 'Its aura also softens physical blows by 15%.',
     steelfield: 'Its aura also grants +10% armor.',
-    auramend: 'Allies in its aura heal 4 HP each round.',
-    purge: 'Allies in its aura are cured of roots and burns each round.',
+    auramend: 'Allies in its aura heal 3 HP at the start of each of its turns.',
+    purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
     ironwood: 'Its shrubs have 40% armor and magic resistance.',
     ridedown: 'After moving 3 or more tiles, its Lance knocks the target back.',
-    stormcaller: 'Each round, lightning strikes the nearest enemy within 3 tiles for 8.',
+    stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
     thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
     volatile: 'Explodes when destroyed, hurting everything next to it.',
-    trollblood: 'Regenerates unless magic or fire hurt it since the last round.',
-    cart: 'Flees 2 tiles a round toward the left edge, and escapes there.',
+    trollblood: 'Regenerates unless magic or fire hurt it since its last turn.',
+    cart: `Rolls ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} toward the left edge after every enemy turn, and escapes there.`,
     big: 'Huge: cannot be knocked back.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
     structure: 'A structure: it does not need to fall for a rout.',
-    spawner: 'Sends reinforcements every few rounds until it is destroyed.',
+    spawner: 'Sends reinforcements every few turns until it is destroyed.',
   };
 
   const MATERIAL_TEXT = {
@@ -493,7 +493,7 @@
     if (mat && MATERIAL_TEXT[mat]) out.push(MATERIAL_TEXT[mat]);
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
     const P = u.props;
-    if (P.totemHeal) out.push(`At the start of each round, its allies within 2 tiles heal ${P.totemHeal} HP.`);
+    if (P.totemHeal) out.push(`At the start of their turn, its allies within 2 tiles heal ${P.totemHeal} HP.`);
     if (s && u.traits.has('spawner')) {
       const waves = s.waves.filter((w) => w.src === u.uid && w.state === 'pending');
       if (waves.length) {
@@ -504,7 +504,7 @@
     }
     if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
     if (P.magicGuard) out.push(`Adjacent allies take ${pct(P.magicGuard)} less magic damage.`);
-    if (P.regen) out.push(`Heals ${P.regen} HP each round.`);
+    if (P.regen) out.push(`Heals ${P.regen} HP at the start of each of its turns.`);
     if (P.lifesteal) out.push(`Heals for ${pct(P.lifesteal)} of the damage it deals.`);
     if (P.thorns) out.push(`Melee attackers take ${P.thorns} damage.`);
     if (P.backMult) out.push(`+${pct(P.backMult)} damage from behind.`);
@@ -549,8 +549,7 @@
       const acting = B && B.s.act && B.s.act.uid === u.uid;
       chips.push(...statusChips(u));
       if (acting) chips.push('<span class="chip warn">Acting</span>');
-      else if (u.activated) chips.push('<span class="chip">Moved this round</span>');
-      else if (u.wait > 0) chips.push(`<span class="chip">${ic('hourglass')} Recovering ${u.wait}</span>`);
+      else if (u.wait > 0) chips.push(`<span class="chip">${ic('hourglass')} Cooldown ${u.wait}</span>`);
       else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
     }
     if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
@@ -1133,7 +1132,7 @@
     openSheet(
       `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`)}
       <p>${esc(d.desc)}</p>
-      ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'recover 2 or more turns', recovers: 'recover after acting' }[d.req] || 'qualify'}.</p>` : ''}
+      ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'have a cooldown of 3 or more', recovers: 'have a cooldown of 2 or more' }[d.req] || 'qualify'}.</p>` : ''}
       ${it.kind === 'scroll'
         ? `<p class="hint warn">Binding is permanent: the enchantment stays with that unit for the rest of the campaign and adds ${d.surcharge} Supply to its cost. A unit can hold only one enchantment.</p>`
         : `<p class="small muted">${holder ? `Slotted into ${esc(holder.name)}.` : 'Not slotted into anyone. Equip it from a unit\'s loadout.'}</p>`}
@@ -1441,8 +1440,9 @@
     const next = Math.min(...waves.map((w) => w.turn));
     const n = waves.filter((w) => w.turn === next).reduce((t, w) => t + w.types.length, 0);
     const rest = waves.reduce((t, w) => t + w.types.length, 0) - n;
-    const now = s && next <= s.turn;
-    const when = now ? 'when this round ends. Red tiles show where; a unit standing on one blocks that arrival but takes 10 damage' : `at the end of round ${next}`;
+    // Waves mark their landing tiles a turn ahead.
+    const now = !!s && waves.some((w) => w.turn === next && w.marks);
+    const when = now ? "after the enemy's next move. Red tiles show where; a unit standing on one blocks that arrival but takes 10 damage" : `on turn ${next}, after the enemy moves`;
     const more = rest > 0 ? ` ${rest} more after that${waves.some((w) => w.src) ? ' unless their buildings fall' : ''}.` : '';
     return `<div class="obj waves ${now ? 'now' : ''}">${ic('hourglass')}<span><b>Reinforcements.</b> ${n} arriving ${when}.${more}</span></div>`;
   }
@@ -1617,7 +1617,7 @@
         <button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>`;
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
-      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next move, splash included.</div>
+      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
         ${actsHTML(u)}
         <div class="actions"><button class="btn" id="wrEInfo">${ic('help')} Details</button></div>`;
     } else if (wr.dep.size === 0) {
@@ -1847,7 +1847,7 @@
       UI.prefs.threat = !UI.prefs.threat;
       savePrefs();
       $('#btThreat').classList.toggle('on', UI.prefs.threat);
-      toast(UI.prefs.threat ? 'Showing every tile the enemy could strike on its next moves.' : 'Enemy reach hidden.');
+      toast(UI.prefs.threat ? 'Showing every tile an enemy unit could strike on its next turn.' : 'Enemy reach hidden.');
       renderBattle();
     };
     $('#btFast').onclick = () => {
@@ -1856,10 +1856,10 @@
       b.speed = UI.prefs.fast ? 2 : 1;
       $('#btFast').classList.toggle('on', UI.prefs.fast);
     };
-    showBanner('Round 1');
-    sfx('turn');
+    showBanner(s.side === 'E' ? 'Enemy moves first' : 'Your turn', s.side === 'E');
+    sfx(s.side === 'E' ? 'enemyturn' : 'turn');
     renderBattle();
-    // The enemy opens the battle; then you answer, one unit at a time.
+    // The enemy opens the battle; then the sides take turns, one unit each.
     if (s.side === 'E') {
       UI.battle.busy = true;
       await sleep(UI.prefs.fast ? 300 : 800);
@@ -1867,9 +1867,9 @@
     }
   }
 
-  // Ready units that can actually do something this move.
+  // Ready units that can actually do something this turn.
   function usefulReady(s) {
-    return E.readyUnits(s, 'P').filter((u) => (u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1) || E.allTargets(s, u).length > 0);
+    return E.readyUnits(s, 'P').filter((u) => E.usefulUnit(s, u));
   }
 
   // Acts aimed by tapping an enemy directly.
@@ -1930,8 +1930,8 @@
     if (s.side !== 'P' || B.busy) {
       const actor = B.acting && s.byId[B.acting];
       panel = actor && actor.alive
-        ? `${unitInfoHTML(actor, { status: true })}<div class="hint">Enemy move: their ${esc(UNITS[actor.type].name)}. Your answer comes next.</div>`
-        : `<div class="hint">${s.side === 'P' ? 'Resolving…' : 'The enemy is choosing a move. The fast-forward button speeds things up.'}</div>`;
+        ? `${unitInfoHTML(actor, { status: true })}<div class="hint">Enemy turn: their ${esc(UNITS[actor.type].name)}. Your turn comes next.</div>`
+        : `<div class="hint">${s.side === 'P' ? 'Resolving…' : 'The enemy is choosing a unit. The fast-forward button speeds things up.'}</div>`;
     } else if (B.mode === 'unit' && u) {
       const moved = A && A.moved;
       const acted = A && A.acted;
@@ -1946,7 +1946,7 @@
       else hint = moved ? 'Action used. Tap Done to choose a facing.' : 'Action used. You may still move, or tap Done.';
       const loot = !acted && E.lootAt(s, u.x, u.y);
       if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
-      if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more round${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
+      if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
       panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}
         <div class="hint">${hint}</div>
         <div class="actions acts">
@@ -1955,7 +1955,7 @@
         </div>
         <div class="actions">
           ${E.canUndo(s) && moved ? `<button class="btn" id="btUndo">${ic('undo')} Undo move</button>` : ''}
-          ${moved || acted ? `<button class="btn" id="btDone">${ic('check')} Done</button>` : `<button class="btn" id="btFace">${ic('rotate')} Turn only</button>`}
+          ${moved || acted ? `<button class="btn" id="btDone">${ic('check')} Done</button>` : `<button class="btn" id="btFace">${ic('rotate')} Face only</button>`}
           <button class="btn" id="btInfo">${ic('help')}</button>
           <button class="btn ghost" id="btDesel">${ic('close')}</button>
         </div>`;
@@ -1999,13 +1999,13 @@
         ${actsHTML(u)}
         <div class="hint">${
           u.team === 'E'
-            ? 'Blue: where it can move. Red: everywhere it could hit on its next move.'
+            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 1 ? ` (it cools down for ${u.wait - 1} more of its turns)` : ''}.`
             : inProgress && s.act.uid !== u.uid
-              ? `${esc(s.byId[s.act.uid].name)} is mid-move. Finish it first: one unit per move.`
+              ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first: one unit a turn.`
               : u.wait > 0
-                ? `Recovering for ${u.wait} more round${u.wait > 1 ? 's' : ''}.`
-                : u.activated
-                  ? 'Already moved this round.'
+                ? `Cooling down: ready ${u.wait === 1 ? 'next turn' : 'in ' + u.wait + ' turns'}.`
+                : u.para > 0
+                  ? `Paralyzed: it sits out ${u.para === 1 ? 'this turn' : 'this turn and ' + (u.para - 1) + ' more'}.`
                   : 'Cannot act right now.'
         }</div>
         <div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`;
@@ -2014,7 +2014,7 @@
       const ready = usefulReady(s);
       panel = `<div class="hint">${
         ready.length
-          ? 'Your move: pick one glowing unit to move, act, or both. Then the enemy answers. Long-press any unit for details.'
+          ? 'Your turn: pick one glowing unit to move, act, or both. Then the enemy picks one. Long-press any unit for details.'
           : 'None of your units can act right now. Pass.'
       }</div>
         ${ready.length ? `<div class="roster">${ready
@@ -2037,8 +2037,8 @@
         : goals.length
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
-    $('#topbar').innerHTML = `<div class="title"><b>${s.side === 'P' && !B.busy ? 'Your move' : 'Enemy move'}</b>
-      <span>Round ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
+    $('#topbar').innerHTML = `<div class="title"><b>${s.side === 'P' && !B.busy ? 'Your turn' : 'Enemy turn'}</b>
+      <span>Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#cmd').innerHTML = panel;
@@ -2063,7 +2063,7 @@
       if (e.cleanse) bits.push('cures');
       if (e.shield) bits.push(`shield ${e.shield}`);
       if (e.frenzy) bits.push('frenzy');
-      if (e.rally) bits.push(v.wait > 0 ? `recovery ${v.wait} → ${v.wait - 1}` : 'rallied');
+      if (e.rally) bits.push(v.wait > 0 ? `cooldown ${v.wait} → ${v.wait - 1}` : 'rallied');
       if (e.para) bits.push(e.para === 'resist' ? 'immune to paralysis' : `paralyzed ${e.para}`);
       if (e.poison) bits.push(e.poison === 'resist' ? 'immune to poison' : `poison ${e.poison.dmg}×${e.poison.turns}`);
       if (e.burn) bits.push(`burn ${e.burn.dmg}×${e.burn.turns}`);
@@ -2141,11 +2141,12 @@
     const ev = E.drainEvents(B.s);
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
-    const round = ev.find((e) => e.t === 'turn' && e.side === 'round');
-    if (round && !B.s.over) {
-      showBanner('Round ' + round.turn);
-      sfx('turn');
-      await sleep(UI.prefs.fast ? 250 : 650);
+    // Your own passes need no news; the enemy's, and turns you had to skip, do.
+    const passes = B.s.over ? [] : ev.filter((e) => e.t === 'pass' && (e.side === 'E' || e.auto));
+    if (passes.length) {
+      const mine = passes.filter((e) => e.side === 'P').length;
+      toast(mine ? `None of your units could act, so your turn passed${mine > 1 ? ' ' + mine + ' times' : ''}.` : 'The enemy passes.');
+      await sleep(UI.prefs.fast ? 250 : 600);
     }
     if (!keepBusy) B.busy = false;
   }
@@ -2193,7 +2194,7 @@
     B.target = null;
     B.ai = 0;
     B.confirmEnd = false;
-    // One unit per move: once it has moved or acted, the others can only be looked at.
+    // One unit a turn: once it has moved or acted, the others can only be looked at.
     B.mode = (s.act && s.act.uid === v.uid) || (ownReady && !inProgress) ? 'unit' : 'inspect';
     if (UI.board.zoom > 1) UI.board.centerOn(v.x, v.y);
     sfx('select');
@@ -2332,7 +2333,7 @@
     await play();
     if (s.over) return battleOver();
     if (!u.alive) {
-      E.yieldTurn(s, false);
+      E.endTurn(s);
       await play();
       return nextMove();
     }
@@ -2345,7 +2346,7 @@
     const s = B.s;
     if (s.over) return battleOver();
     if (!u.alive) {
-      E.yieldTurn(s, false);
+      E.endTurn(s);
       await play();
       return nextMove();
     }
@@ -2399,13 +2400,13 @@
     renderBattle();
   }
 
-  // The unit is done: pick up where the round stands, usually with the enemy's answer.
+  // The unit is done, and so is your turn: the enemy picks a unit next.
   async function finishUnit(d) {
     const B = UI.battle;
     const s = B.s;
     if (!s.act) E.beginActivation(s, B.sel);
     E.finishActivation(s, d);
-    E.yieldTurn(s, false);
+    E.endTurn(s);
     B.mode = 'idle';
     B.sel = null;
     B.target = null;
@@ -2414,7 +2415,7 @@
     await nextMove();
   }
 
-  // Skip this move: the enemy goes next, and your units stay ready for later in the round.
+  // Skip your turn: the enemy moves next.
   async function passMove() {
     const B = UI.battle;
     if (!B || B.busy || B.s.side !== 'P') return;
@@ -2422,7 +2423,7 @@
     if (s.act && (s.act.moved || s.act.acted)) return enterFacing();
     if (usefulReady(s).length && !B.confirmEnd) {
       B.confirmEnd = true;
-      toast('Pass this move? The enemy goes next and your units stay ready. Tap again to pass.');
+      toast('Pass this turn? The enemy moves next. Tap again to pass.');
       renderBattle();
       return;
     }
@@ -2436,7 +2437,7 @@
     await nextMove();
   }
 
-  // The enemy's moves, one unit at a time, until it is your move again.
+  // The enemy's turn: one unit. If none of yours can act, it goes again.
   async function enemyMoves() {
     const B = UI.battle;
     const s = B.s;
@@ -2445,7 +2446,7 @@
     B.mode = 'idle';
     B.sel = null;
     let guard = 0;
-    while (!s.over && s.side === 'E' && guard++ < 80) {
+    while (!s.over && s.side === 'E' && guard++ < 400) {
       const plan = AI.chooseActivation(s, 'E', { stance: B.enc.stance, temp: B.temp });
       const u = plan && s.byId[plan.uid];
       if (u && plan.kind !== 'turn') {
@@ -2484,7 +2485,7 @@
       return;
     }
     const reason = s.timeout
-      ? 'The round limit ran out and the enemy held stronger.'
+      ? 'The turn limit ran out and the enemy held stronger.'
       : endEv && endEv.forfeit
         ? 'You sounded the retreat.'
         : endEv && endEv.surrender
@@ -2860,16 +2861,15 @@
         <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
-          <li>Battles are played in <b>rounds</b>. Within a round the two sides take turns <b>one unit at a time</b>: the enemy moves one unit, then you move one, and so on. Each move is one unit moving, acting, or both, and then picking a facing.</li>
-          <li>The enemy makes the first move of the battle. Each later round opens with whoever did not move last.</li>
-          <li>Every unit moves at most once a round. When one side has nothing left to do, the other finishes its moves. You can also <b>Pass</b>: the enemy goes next and your units stay ready for later in the round.</li>
-          <li>When the round ends, recovery and statuses tick down, wagons roll and reinforcements arrive. Durations such as "roots for 2 rounds" count rounds.</li>
+          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both, then picks a facing. Then the enemy picks one of theirs.</li>
+          <li>Acting starts that unit's <b>cooldown</b> (CD on its card). It counts down by 1 at the start of each of your turns, and at 0 the unit is ready again. A Cooldown 1 unit can go every turn; a Witch (Cooldown 3) every third turn. Moving without acting costs half.</li>
+          <li>Any unit that is not cooling down can be picked. If none can do anything, your turn passes on its own. You can also <b>Pass</b> on purpose.</li>
+          <li>The turn counter counts rounds: the enemy's move, then yours. Durations such as "roots for 2 turns" count the turns of the side they affect.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
-          <li>After acting, a unit sits out as many rounds as its Recover stat. Moving without acting costs half. Recover 0 units can move every round.</li>
         </ul>
         <h4>Missions</h4>
         <ul>
@@ -2883,15 +2883,15 @@
         </ul>
         <h4>Reinforcements</h4>
         <ul>
-          <li>Some battles bring enemy reinforcements at set rounds: from the far edge, or out of tents, crypts, dens, portals and guardhouses. The war room shows the schedule; badges on buildings count down the rounds.</li>
-          <li>During the round they arrive, red tiles mark where they will appear when it ends. A unit standing on one <b>blocks</b> that arrival, but takes 10 damage.</li>
+          <li>Some battles bring enemy reinforcements on set turns: from the far edge, or out of tents, crypts, dens, portals and guardhouses. The war room shows the schedule; badges on buildings count down the turns.</li>
+          <li>They arrive after the enemy's move. A turn ahead, red tiles mark where they will appear: a unit standing on one <b>blocks</b> that arrival, but takes 10 damage.</li>
           <li>Destroy a building and everything it had left to send is cut off.</li>
         </ul>
         <h4>Controls</h4>
         <ul>
           <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
           <li>In the war room, tap a deployed unit again to open its loadout. Long-press any unit for details.</li>
-          <li>Pinch, drag, or use + and − to zoom. The eye button shows every tile the enemy could strike on its next moves.</li>
+          <li>Pinch, drag, or use + and − to zoom. The eye button shows every tile an enemy unit could strike on its next turn.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>
       </div>

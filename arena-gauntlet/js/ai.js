@@ -38,7 +38,7 @@
       if (!v.alive || v.team !== foeTeam || v.nonCombat || dormant(s, v)) continue;
       const acts = v.acts.filter(harmful);
       if (!acts.length) continue;
-      const delay = v.wait + v.para;
+      const delay = E.turnsUntilReady(v);
       const weight = delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
       if (weight === 0) continue;
       // Reach as if it could move next turn (paralysis and roots wear off by then for weight>0 cases).
@@ -256,10 +256,10 @@
       objects: s.units.filter((u) => u.alive && u.team === team && u.goal),
       // Enemy buildings to bring down: goals of a 'destroy' battle, and anything still spawning.
       siege: s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u))),
-      // Tiles where enemy reinforcements land at the end of this round.
+      // Tiles where enemy reinforcements land at the end of the enemy's next turn.
       marks: new Set(
         s.waves
-          .filter((w) => w.state === 'pending' && w.team === foe && w.turn <= s.turn && w.marks)
+          .filter((w) => w.state === 'pending' && w.team === foe && w.marks)
           .flatMap((w) => w.marks.map(([mx, my]) => E.idx(s, mx, my)))
       ),
       foeRanged: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.range && a.range[1] >= 2 && a.dmg)),
@@ -270,12 +270,12 @@
       // Defenders hold their line until the enemy closes in or time passes.
       let closest = 99;
       for (const a of ctx.allies) closest = Math.min(closest, nearestFoe(ctx, a.x, a.y).d);
-      if (closest <= 5 || s.turn >= 5) ctx.approach = 1.2;
+      if (closest <= 5 || s.turn >= 10) ctx.approach = 1.2;
     }
     // Press harder as the battle drags on, and when we are the stronger side.
     const strength = (list) => list.reduce((t, u) => t + u.value * (u.hp / u.maxHp), 0);
     const ratio = strength(ctx.allies) / Math.max(1, strength(ctx.foes.filter((u) => !u.nonCombat)));
-    ctx.approach *= (1 + 0.2 * Math.max(0, s.turn - 2)) * Math.min(1.5, Math.max(0.7, ratio));
+    ctx.approach *= (1 + 0.08 * Math.max(0, s.turn - 4)) * Math.min(1.5, Math.max(0.7, ratio));
     ctx.risk *= Math.min(1.3, Math.max(0.7, 1 / ratio));
     let cx = 0;
     let cy = 0;
@@ -438,7 +438,7 @@
   }
 
   function paraValue(t) {
-    const ready = t.wait === 0 ? 1 : 0.6;
+    const ready = E.turnsUntilReady(t) === 0 ? 1 : 0.6;
     return (t.pow * 0.8 + 6) * ready;
   }
 
@@ -543,8 +543,10 @@
         if (e.heal) v += e.heal * hpv;
         if (e.cleanse) v += 6;
         if (e.shield) v += Math.min(e.shield, 12) * hpv * (ctx.sources.length ? 1 : 0.3);
-        if (e.frenzy && t.frenzy === 0) v += t.pow * 0.25 * (t.wait === 0 || t.activated ? 0.8 : 0.5) * hpv * 2;
-        if (e.rally) v += (t.wait > 0 ? (t.activated ? 3 : 7) : 0) + (t.para ? 6 : 0) + (t.root ? 2 : 0);
+        // Only one ally acts a turn, so a frenzy pays off for few of them.
+        if (e.frenzy && t.frenzy === 0) v += t.pow * 0.25 * (t.wait <= 1 ? 0.5 : 0.25) * hpv * 2;
+        // A cooldown of 1 runs out next turn anyway.
+        if (e.rally) v += (t.wait >= 2 ? 5 : 0) + (t.para ? 6 : 0) + (t.root ? 2 : 0);
         continue;
       }
       if (t.nonCombat || t.structure) continue;
@@ -559,7 +561,7 @@
         v += p * Math.min(fresh * e.burn.dmg * (1 - t.res), t.hp) * hpv * 0.8;
       }
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
-      if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (t.wait === 0 ? 1 : 0.6);
+      if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (E.turnsUntilReady(t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
       if (e.knock === true) v += p * 2;
     }
@@ -814,21 +816,17 @@
     return { move: list.map((r) => [r.x, r.y]), hit };
   }
 
-  // Carry out a chosen plan as this side's activation, then hand the initiative on.
-  // With no plan, the side passes.
+  // Carry out a chosen plan as this side's turn, then hand over to the other side. With no
+  // plan (or one that no longer works), the side passes.
   function runPlan(s, plan, opts) {
-    if (!plan) return E.pass(s);
-    if (plan.kind === 'turn') {
+    if (plan && plan.kind === 'turn') {
       E.beginActivation(s, plan.uid);
       E.finishActivation(s, plan.facing);
-    } else if (!executePlan(s, plan, opts)) {
-      const u = s.byId[plan.uid];
-      u.activated = true;
-    }
-    if (!s.over) E.yieldTurn(s, false);
+    } else if (plan && !executePlan(s, plan, opts)) E.cancelActivation(s);
+    if (!s.over) E.endTurn(s);
   }
 
-  // One activation for `team`, played instantly (tests, simulations and fast-forward).
+  // One turn for `team`, played instantly (tests, simulations and fast-forward).
   function playTurn(s, team, opts) {
     if (s.over || s.side !== team) return;
     runPlan(s, chooseActivation(s, team, opts), opts);
