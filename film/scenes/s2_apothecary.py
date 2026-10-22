@@ -661,13 +661,22 @@ def draw_orb(cr, x, y, t, seed, scale=1.0, flick=0.0, chain_top=None):
     return (x, y)
 
 
-def orb_flicker(t, seed):
-    """The 'buzzing fluorescent' nod: one orb stutters now and then."""
-    if seed != 2:
-        return 0.0
-    ph = t % 7.3
-    if 3.0 < ph < 3.45:
-        return 0.55 * (0.5 + 0.5 * math.sin(ph * 70.0))
+# The 'buzzing fluorescent' nod: one orb that is IN FRAME stutters, at quiet moments -- once in the
+# two-shot while she pockets his note, and once in the frozen-smile silence (shot D: the light on
+# her face stutters with it). (shot, orb seed, start time)
+STUTTERS = [("A", 1, 7.18), ("C", 0, None)]
+
+
+def orb_flicker(t, seed, shot="A"):
+    """How far orb `seed` has dimmed (0..1) at t in that shot's world."""
+    for sh, sd, t0 in STUTTERS:
+        if sh != shot or sd != seed:
+            continue
+        t0 = T_BUZZ if t0 is None else t0
+        u = t - t0
+        if 0.0 <= u < 0.3:
+            # two quick dips and a half-hearted catch: bzz-bzzt
+            return 0.62 * max(bump(u, 0.0, 0.03, 0.05), bump(u, 0.1, 0.02, 0.04), 0.5 * bump(u, 0.19, 0.03, 0.06))
     return 0.0
 
 
@@ -1771,11 +1780,11 @@ def draw_A(cr, t, st):
         fx.dust(cr, t, (700, 120, 1300, 600), n=30, color="#f4fffb", alpha=0.38, size=(1.0, 2.6), seed=21,
                 drift=(5.0, -2.5))
         for ox, oy, sd in ORBS:
-            draw_orb(cr, ox, oy, t, sd, 1.15, orb_flicker(t, sd), chain_top=BEAM_Y)
+            draw_orb(cr, ox, oy, t, sd, 1.15, orb_flicker(t, sd, "A"), chain_top=BEAM_Y)
     lc = st["light"].begin()
     with cam.view(lc, 1.0):
         for ox, oy, sd in ORBS:
-            lv = 1.0 - orb_flicker(t, sd)
+            lv = 1.0 - orb_flicker(t, sd, "A")
             fx.glow(lc, ox, oy, 560, "#8fe8c8", 0.22 * lv)
             fx.glow(lc, ox, oy, 150, "#f0fffa", 0.30 * lv)
             # the hard downlight: a pool on the waxed counter top under each orb
@@ -1921,41 +1930,39 @@ DRAGON_C = (452.0, HZ + 200.0 * SCC)
 PILE_C = (1000.0, HZ - 3.0)        # the tower: between their faces, within her reach
 LIO_C = (1300.0, HZ + 200.0 * SCL)
 TILL_C = (1530.0, HZ - 2.0, 1.72)   # within reach: she steps to it, never stretches for it
-BAG_C = (1040.0, HZ - 3.0)           # the filled sack lands where the tower stood (its bottom centre)
+BAG_C = (1006.0, HZ - 3.0)           # the filled sack stands where the tower stood (its bottom centre)
 HERBS_C = [(-40, 330, "sage", 1), (70, 360, "lavender", 2), (178, 320, "yarrow", 3), (284, 270, "rosemary", 4),
            (388, 236, "lavender", 5), (488, 222, "tansy", 6), (588, 236, "sage", 7), (684, 268, "yarrow", 8)]
 ORBS_C = [(1105.0, 128.0, 0), (1650.0, 110.0, 1)]
 
-# the end, all relative to s2_pause / s2_ring: the frozen smile holds, she snaps out of it,
-# steps to the till and rings him up (key down ON s2_ring), steps over to the tower, takes it in
-# one paw (it stays absurdly neat), lowers it behind the counter, and up comes the sack
-T_REBOOT = T_RING - 0.5              # she snaps out of the freeze (a double blink)
-STEP_R0, STEP_R1 = T_RING - 0.48, T_RING - 0.14      # a brisk step toward the till ...
-KEY_UP = T_RING - 0.13               # ... paw poised above the key ...
-STEP_L0, STEP_L1 = T_RING + 0.06, T_RING + 0.34      # ... then over to the tower
-LIO_RING_X, LIO_TOWER_X = 1338.0, 1238.0
-TOWER_GRAB = T_RING + 0.3            # her far paw closes on the jar ...
-TOWER_UP = TOWER_GRAB + 0.1          # ... lifts the whole column a hair ...
-T_RELEASE = TOWER_UP + 0.16          # ... pulls it down past the counter's edge and lets go:
-TOWER_G = 6000.0                     #     it drops (still perfectly stacked) into the sack below
-TOWER_GONE = T_RELEASE + 0.2         # (out of sight by now)
-BAG_UP0 = T_RELEASE + 0.2            # up comes the sack
-BAG_DOWN = BAG_UP0 + 0.28            # plunked on the counter in front of him
-BAG_PAT = BAG_DOWN + 0.14
-T_SMOKE = T_RING + 0.16              # his closed-mouth sigh: the smoke leaves his nostrils as he deflates
-TOWER_PULL = 140.0                   # how far her paw lowers the tower before letting go (px)
+# The end, all relative to s2_pause / s2_ring. Three cuts carry it:
+#   D  MCU on her (punch-in on the low angle), a beat before the smile freezes: the polite smile
+#      locks into a rigid toothy grin, everything stops, the whiskers snap, her eyes dart to her
+#      shelves (nothing there for this) and back, an orb buzzes in the silence; a double blink
+#      reboots her ...
+#   E  ... INSERT on the till: her paw comes down from above, the index fingertip lands ON key 2
+#      at s2_ring (the key goes down, the bell rocks and dings, the flags pop, the receipt curls
+#      out); the paw lifts away and the receipt keeps coming. Off screen we HEAR her bag it all
+#      (a paper sack snapped open, clinks, a thump) ...
+#   C' ... back to the low two-shot: the tower is gone; the white sack with the green cross
+#      stands where it stood, book and draught peeking out; one satisfied pat, a proud nod; he
+#      looks down at it and sighs a curl of smoke. Held to the cut.
+CUT_D = T_PAUSE - 0.25               # MCU on her, a beat before the freeze
+T_LOCK = T_PAUSE                     # the smile locks (two frames)
+T_BUZZ = T_PAUSE + 0.12              # an orb stutters in the silence
+T_SNAP1 = T_PAUSE + 0.27             # whisker snap up (two frames)
+T_DART = T_PAUSE + 0.4               # eyes dart to her shelves ...
+T_DART_BACK = T_PAUSE + 0.6          # ... and back to him
+T_SNAP2 = T_PAUSE + 0.63             # whisker snap down (two frames)
+T_REBOOT = T_RING - 0.31             # she snaps out of it: a double blink, a brisk breath
+CUT_E = T_RING - 0.14                # INSERT: the till (three frames before the key goes down)
+CUT_C2 = T_RING + 0.52               # back to the two-shot: the tower is in the sack
+T_PAT = CUT_C2 + 0.1                 # one satisfied pat on the sack
+T_SMOKE = CUT_C2 + 0.02              # his sigh: the smoke leaves his nostrils as he deflates
+T_SIGH = CUT_C2 - 0.12               # (the sigh's exhale; the sound starts during the insert)
+LIO_BAG_X = 1226.0                   # where she stands in C' (behind the sack)
 D_ON_COUNTER = 62.0                  # paw depth (body units ahead of the shoulder) for things on the counter
-
-
-class _FixedCam:
-    """A camera stand-in for Holders in shot C (world = this shot's coordinates)."""
-
-    def __init__(self, cam):
-        self.cam = cam
-        self.zoom = cam.zoom
-
-    def matrix(self, p=1.0):
-        return self.cam.matrix(p)
+LIO_SIZE_PX = LIO_SIZE_K * SCL       # body units -> px for her in shots C / D
 
 
 def _room_C(cr):
@@ -1982,6 +1989,10 @@ def _room_C(cr):
     for hx, hy, hr, ha in ((1100.0, 170.0, 520.0, 0.28), (1650.0, 150.0, 460.0, 0.26)):
         _hot_spot(cr, hx, hy, hr, ha)
     cr.restore()
+    # the orbs' downlight leaves the wall right behind them a shade darker than the glare around
+    # it: a dim ring so the hot white cores read as light sources, not as holes in the glare
+    for ox, oy, _s in ORBS_C:
+        _soft_blob(cr, ox, oy, 120.0, 120.0, "#2f4a44", 0.16)
     env.draw_haze(cr, -200, -200, 2400, 1500, C["haze"], 0.21, 0.05)
     P.draw_hanging_sign(cr, 815.0, 170.0, kind="apothecary", scale=1.25, light=L, t=0.0, side=1, swing=0.0)
     _timber(cr, -200, -200, 2400, 230, vertical=False, color=C["timber_dk"])     # the beam
@@ -2044,28 +2055,10 @@ def cam_C(t):
 COLUMN_H_C = -COLUMN_TOP * SCC
 
 
-def tower_grip_C():
-    """Where her far paw closes on the column: the vitamin jar's right flank (world, shot C)."""
-    ax, ay = column_point(TOWER_GRAB, 1, item_anchor_local(1), PILE_C, SCC)
-    return (ax + 21.0 * SCC, ay - 31.0 * SCC)
-
-
-def _tower_in_paw(t, cam):
-    """The whole column held in her far paw (z-correct: between the palm and the fingers). The
-    magnet keeps it exactly where it stood at the grab, then the paw carries it."""
-    gx, gy = tower_grip_C()
-    anchor = (PILE_C[0] - gx, PILE_C[1] - gy)
-    w = 1.0 - smooth((t - TOWER_GRAB) / 0.1)
-
-    def draw(c, ax, ay):
-        draw_column(c, t, 4, (ax, ay), SCC, sparkle=False, shadow=False)
-    return Holder(draw, cam, SCC, anchor, (PILE_C[0], PILE_C[1], w))
-
-
 def dragon_pose_C(t):
     """He stares up at the tower; looks to her while she talks; thought -> glance -> breath ->
-    'Do any of them talk back?' leaning round the tower; waits through her frozen smile; the
-    till rings; a long closed-mouth sigh."""
+    'Do any of them talk back?' leaning round the tower; waits through her frozen smile; at the
+    cut back the sack is there: a long closed-mouth sigh, eyes down on it."""
     l1, l2 = LN1, LN2
     talk = tl.talk(SCENE, t, "MAN") * 0.42           # quiet and sincere: a small mouth
     top = (0.55, -0.95)                              # up at the top of the tower
@@ -2077,8 +2070,7 @@ def dragon_pose_C(t):
     waiting = D_WAIT
     sighing = B.expr("lonely").blend(B.expr("sigh", open=0.0, mouth=""), 0.65)
     face = expr_track(t, [(CUT_C, blank), (l2.start - 0.38, blank), (l2.start - 0.08, asking), (l2.end, asking),
-                          (l2.end + 0.6, waiting), (T_RING + 0.05, waiting), (T_RING + 0.35, sighing),
-                          (DUR, sighing)])
+                          (l2.end + 0.6, waiting), (T_SIGH - 0.1, waiting), (T_SIGH + 0.3, sighing), (DUR, sighing)])
     if t >= l1.start - 0.1:
         look = core.lerp_tuple(top, her, smooth((t - (l1.start - 0.1)) / 0.2))
         nod = lerp(0.22, 0.05, smooth((t - (l1.start - 0.05)) / 0.4))
@@ -2096,24 +2088,22 @@ def dragon_pose_C(t):
     br = bump(t, l2.start - 0.3, 0.16, 0.22)
     hunch -= 0.12 * br
     nod += 0.06 * br
-    lean_round = smooth((t - (l2.start - 0.3)) / 0.45) * (1.0 - smooth((t - (T_RING - 0.1)) / 0.4))
+    lean_round = smooth((t - (l2.start - 0.3)) / 0.45) * (1.0 - smooth((t - (T_SIGH - 0.2)) / 0.45))
     lean += 0.28 * lean_round
     ht += 0.25 * lean_round
     turn += 0.15 * lean_round
-    sigh = 0.0
-    if t >= T_RING:
-        u = smooth((t - T_RING) / 0.3)
-        look = core.lerp_tuple(her, (0.6, 0.7), u)                                         # eyes drop
-        sigh = bump(t, T_RING + 0.08, 0.35, 0.8, 0.5)
-        hunch += 0.35 * sigh                     # the deflate, by hand (pose.sigh would open his mouth)
-        nod -= 0.45 * sigh
-    if t >= BAG_DOWN:
-        look = core.lerp_tuple((0.6, 0.7), (0.62, 0.55), smooth((t - BAG_DOWN) / 0.2))      # at the sack
+    # the sigh: the exhale starts just as we cut back to him (the sound's inhale was under the
+    # insert); head and shoulders sink and STAY sunk, eyes down on the sack
+    sigh = smooth((t - T_SIGH) / 0.55)
+    hunch += 0.35 * sigh
+    nod -= 0.45 * sigh
+    if t >= T_SIGH - 0.1:
+        look = core.lerp_tuple(her, (0.64, 0.62), smooth((t - (T_SIGH - 0.1)) / 0.3))     # down at the sack
     blink = None
-    if T_RING - 0.02 <= t < T_RING + 0.2:
-        blink = bump(t, T_RING - 0.02, 0.05, 0.12)                                         # the ding: a blink
+    if T_SIGH + 0.5 <= t < T_SIGH + 0.75:
+        blink = bump(t, T_SIGH + 0.5, 0.06, 0.14)                                      # a slow, tired blink
     return ch.DragonPose(facing=1, turn=turn, hunch=hunch, mood=face, mood2=None, mood_mix=0.0, look=look,
-                         head_nod=nod, head_turn=ht, talk=talk, wings=-0.95 - 0.05 * sigh, sigh=0.0, seed=1,
+                         head_nod=nod, head_turn=ht, talk=talk, wings=-0.95 - 0.08 * sigh, sigh=0.0, seed=1,
                          tail_curl=0.55, lean=lean, elev=ELEV_C, blink=blink,
                          near=ch.Arm("rest"), far=ch.Arm("rest"))
 
@@ -2123,21 +2113,19 @@ LIO_TALK = B.Expr(brow_in=0.3, brow_out=0.3, brow_y=0.34, lid=0.1, lid_bot=0.14,
 LIO_LISTEN = B.Expr(brow_in=0.42, brow_out=0.14, brow_y=0.26, lid=0.12, lid_bot=0.1, lid_tilt=0.12, smile=0.42,
                     cheek=0.25)
 # the frozen smile: the grin stays switched on while everything behind it stops -- lids wide open,
-# pupils pin-small, brows stuck up: a polite rictus. She has no product for this.
-FROZEN_SMILE = B.Expr(brow_in=0.5, brow_out=0.32, brow_y=0.48, lid=0.0, lid_bot=0.16, lid_tilt=-0.04, smile=0.74,
-                      cheek=0.55, pupil=0.58)
+# pupils pin-small, brows stuck up: a polite rictus (the toothy grin itself is _s2_rig's `grin`)
+FROZEN_SMILE = B.Expr(brow_in=0.55, brow_out=0.36, brow_y=0.52, lid=0.0, lid_bot=0.16, lid_tilt=-0.04, smile=0.74,
+                      cheek=0.6, pupil=0.5)
 FAR_C, NEAR_C = -1.0, 1.0      # her far (screen-left, toward him) and near (screen-right, toward the till) arms
 
 
 def lio_x_C(t):
-    """Her ground x in shot C: a brisk step to the till, then over to the tower."""
-    return kf(t, [(0.0, LIO_C[0]), (STEP_R0, LIO_C[0]), (STEP_R1, LIO_RING_X), (STEP_L0, LIO_RING_X),
-                  (STEP_L1, LIO_TOWER_X)])
+    """Her ground x in shots C / D, and in C' behind the sack she has just filled."""
+    return LIO_BAG_X if t >= CUT_C2 else LIO_C[0]
 
 
 def lio_y_C(t):
-    """A small dip on each step (her legs are hidden behind the counter; the body still carries it)."""
-    return LIO_C[1] + 7.0 * (bump(t, STEP_R0, 0.14, 0.14) + bump(t, STEP_L0, 0.17, 0.17))
+    return LIO_C[1]
 
 
 def seg_path(t, segs):
@@ -2176,18 +2164,29 @@ def lio_rest_depth(t, side, pose, yaw=-1.0):
     return pr.depth(tgt) - pr.depth(sk)
 
 
-def lio_C(t, cam):
-    """The lioness in shot C -> (x, y0, pose)."""
+def _snap(t, t0, sign):
+    """A whisker snap: two frames bent hard, one frame of twang back, then still."""
+    dt = t - t0
+    if dt < 0.0:
+        return 0.0
+    if dt < 2.0 / 24.0:
+        return sign
+    return sign * 0.3 * max(0.0, 1.0 - (dt - 2.0 / 24.0) / (1.5 / 24.0))
+
+
+def lio_C(t, cam=None):
+    """The lioness in shots C, D and C' -> (x, y0, pose)."""
     talk = tl.talk(SCENE, t, "PHARMACIST")
     x, y0 = lio_x_C(t), lio_y_C(t)
     look = (-0.62, -0.02)
-    freeze, whisker, nod, tilt, hturn, blink = 0.0, 0.0, 0.0, 0.0, 0.0, None
+    freeze, nod, tilt, hturn, blink = 0.0, 0.0, 0.0, 0.0, None
+    grin, fan, snap = 0.0, 0.0, None
     yaw = -1.0
-    base = ch.LionessPose(facing=-1, talk=talk, seed=2, elev=ELEV_C)
+    base = R2.LionessPoseS2(facing=-1, talk=talk, seed=2, elev=ELEV_C)
     face = expr_track(t, [(CUT_C, LIO_PROUD), (LN1.start - 0.15, LIO_PROUD), (LN1.start + 0.1, LIO_TALK),
-                          (LN1.end + 0.2, LIO_TALK), (LN1.end + 0.5, LIO_LISTEN), (T_PAUSE, LIO_LISTEN),
-                          (T_PAUSE + 0.12, FROZEN_SMILE), (T_REBOOT, FROZEN_SMILE), (T_REBOOT + 0.18, LIO_BUSY),
-                          (BAG_DOWN, LIO_BUSY), (BAG_DOWN + 0.25, LIO_PROUD)])
+                          (LN1.end + 0.2, LIO_TALK), (LN1.end + 0.5, LIO_LISTEN), (T_LOCK, LIO_LISTEN),
+                          (T_LOCK + 0.08, FROZEN_SMILE), (T_REBOOT, FROZEN_SMILE), (T_REBOOT + 0.12, LIO_BUSY),
+                          (CUT_C2, LIO_BUSY), (T_PAT + 0.15, LIO_PROUD)])
     # at the stare she admires her tower; "Try these." her far paw presents it; "Lots of people
     # swear by them." a reassuring nod
     look = (-0.35, -0.75) if t < LN1.start - 0.2 else look
@@ -2201,185 +2200,130 @@ def lio_C(t, cam):
         nod = -0.35 * bump(t, t_sw - 0.12, 0.2, 0.35, 0.05)
     # his line: she listens, smile held; her eyes flick to the tower and back as it lands
     if t >= LN2.start:
-        tilt = 0.06 * smooth((t - (LN2.end - 0.2)) / 0.5) * (1.0 - smooth((t - T_PAUSE) / 0.2))
-    if LN2.end + 0.15 <= t < T_PAUSE + 0.1:
+        tilt = 0.06 * smooth((t - (LN2.end - 0.2)) / 0.5) * (1.0 - smooth((t - T_LOCK) / 0.08))
+    if LN2.end + 0.15 <= t < T_LOCK:
         look = core.lerp_tuple((-0.62, -0.02), (-0.3, -0.55), bump(t, LN2.end + 0.15, 0.12, 0.15, 0.2))
-    # the held beat: the smile freezes, whiskers twitch twice, a tiny pull-back -- nothing else moves
+    # ---- D: the held beat. The smile LOCKS (two frames) into a rigid, toothy grin, cheeks up,
+    # lids wide, pupils pinned, a tiny pull-back -- then nothing moves but the whiskers (two hard
+    # snaps) and the eyes: a dart to her shelves (nothing there for this) and back to him
     lean = 0.0
-    if t >= T_PAUSE:
-        freeze = core.window(t, T_PAUSE, T_REBOOT + 0.04, 0.1, 0.06)
-        whisker = max(bump(t, T_PAUSE + 0.14, 0.05, 0.15), bump(t, T_PAUSE + 0.34, 0.05, 0.16))
-        lean = -0.12 * B.spring(t, T_PAUSE, freq=2.4, damping=0.55) * (1.0 - smooth((t - T_REBOOT) / 0.2))
-    # ...she snaps out of it (a double blink, a brisk breath) and rings him up anyway
-    if T_REBOOT <= t < T_REBOOT + 0.3:
-        blink = max(bump(t, T_REBOOT, 0.04, 0.05), bump(t, T_REBOOT + 0.13, 0.04, 0.06))
+    if t >= T_LOCK:
+        lock = smooth((t - T_LOCK) / 0.07) * (1.0 - smooth((t - T_REBOOT) / 0.1))
+        grin, fan = lock, lock
+        freeze = core.window(t, T_LOCK, T_REBOOT - 0.02, 0.06, 0.04)
+        snap = _snap(t, T_SNAP1, 1.0) + _snap(t, T_SNAP2, -1.0)
+        lean = -0.13 * B.spring(t, T_LOCK, freq=3.0, damping=0.6) * (1.0 - smooth((t - T_REBOOT) / 0.15))
+        dart = smooth((t - T_DART) / 0.07) * (1.0 - smooth((t - T_DART_BACK) / 0.07))
+        look = core.lerp_tuple((-0.62, -0.02), (0.78, -0.32), dart)
+    # ... she snaps out of it: a double blink, a brisk breath, eyes to the till
+    if T_REBOOT - 0.02 <= t < T_REBOOT + 0.16:
+        blink = max(bump(t, T_REBOOT - 0.015, 0.02, 0.035), bump(t, T_REBOOT + 0.075, 0.02, 0.035))
     if t >= T_REBOOT:
-        till_eyes = (0.6, 0.55)
-        tower_eyes = (-0.5, 0.1)
-        sack_eyes = (-0.55, 0.4)
-        him = (-0.62, -0.04)
-        look = core.lerp_tuple(him, till_eyes, smooth((t - (T_REBOOT + 0.08)) / 0.12))
-        hturn = 0.18 * smooth((t - (T_REBOOT + 0.14)) / 0.2)
-        if t >= T_RING + 0.02:
-            look = core.lerp_tuple(till_eyes, tower_eyes, smooth((t - (T_RING + 0.02)) / 0.12))
-            hturn = 0.18 * (1.0 - smooth((t - (T_RING + 0.08)) / 0.25))
-        if t >= TOWER_UP + 0.1:
-            look = core.lerp_tuple(tower_eyes, sack_eyes, smooth((t - (TOWER_UP + 0.1)) / 0.15))
-        if t >= BAG_DOWN + 0.05:
-            look = core.lerp_tuple(sack_eyes, him, smooth((t - (BAG_DOWN + 0.05)) / 0.18))
-            nod = 0.12 * bump(t, BAG_DOWN + 0.05, 0.15, 0.4, 0.2)          # "there you are!"
-        near = _lio_ring_near(t, x, y0, yaw, base)
-        far = _lio_bagging_far(t, x, y0, yaw, base, cam, far)
+        look = core.lerp_tuple((-0.62, -0.02), (0.62, 0.48), smooth((t - (T_REBOOT + 0.05)) / 0.08))
+        hturn = 0.16 * smooth((t - (T_REBOOT + 0.06)) / 0.12)
+        nod = 0.12 * bump(t, T_REBOOT, 0.06, 0.12)
+    # ---- C': she has just set the sack down: one satisfied pat, a proud little nod to him
+    if t >= CUT_C2:
+        hturn = 0.0
+        look = core.lerp_tuple((-0.5, 0.42), (-0.62, -0.04), smooth((t - (T_PAT + 0.14)) / 0.16))
+        nod = 0.14 * bump(t, T_PAT + 0.16, 0.14, 0.3, 0.12) - 0.08 * (1.0 - smooth((t - CUT_C2) / 0.25))
+        far = _lio_pat_far(t, x, y0, base)
     pose = base.with_(look=look, mood=face, mood2=None, mood_mix=0.0, smile=None, freeze=freeze,
-                      whisker=whisker, head_nod=nod, head_tilt=tilt, head_turn=hturn, blink=blink, near=near,
-                      far=far, lean=lean, tail_swing=0.2 * math.sin(t * 0.7) * (1.0 - freeze))
+                      head_nod=nod, head_tilt=tilt, head_turn=hturn, blink=blink, near=near, far=far, lean=lean,
+                      tail_swing=0.2 * math.sin(t * 0.7) * (1.0 - freeze), grin=grin, whisker_fan=fan,
+                      whisker_snap=snap)
     return x, y0, pose
 
 
-def _shoulder_via(tt, side, base, yaw=-1.0, dx=0.0, dy=150.0):
-    """A point straight below her shoulder: paths pass through it so the forearm turns from
-    'clasped in front of the apron' to 'reaching sideways' over several frames, never in one."""
-    sx, sy = lio_shoulder(lio_x_C(tt), lio_y_C(tt), yaw, base, tt, side, SCL)
-    return (sx + dx, sy + dy)
+PAT_PROBE = {}           # setup(): her far wrist when her flat palm rests on the sack's front, below its mouth
 
 
-def _lio_ring_near(t, x, y0, yaw, base):
-    """Her near paw: from rest, down past her side and up over the till's key, down ON s2_ring,
-    a little bounce, then it settles on the counter beside the till (and slides along with her)."""
-    if t < STEP_R0:
-        return ch.LionessArm("rest")
-    key = st_rigs["till_key"]
-    press = RING_PROBE.get("wrist", (key[0] + 6.0, key[1] - 16.0))
-    above = (press[0] + 6.0, press[1] - 58.0)
-
-    def rest(tt):
-        return lio_gesture(lio_x_C(tt), lio_y_C(tt), yaw, base, tt, NEAR_C, "rest", scale=SCL)
-
-    def rest_d(tt):
-        return lio_rest_depth(tt, NEAR_C, base)
-
-    def via(tt):
-        return _shoulder_via(tt, NEAR_C, base, dx=100.0, dy=165.0)
-
-    def on_counter(tt):
-        return (lio_x_C(tt) + 128.0, HZ - 30.0)
-    D = D_ON_COUNTER
-    segs = [(STEP_R0, rest, "linear", 0.0, rest_d), (STEP_R0 + 0.17, via, "in_sine", 0.0, 34.0),
-            (KEY_UP, above, "out_sine", 18.0, D), (T_RING, press, "in_quad", 0.0, D),
-            (T_RING + 0.1, (press[0], press[1] - 10.0), "out_quad", 0.0, D),
-            (T_RING + 0.34, on_counter, "inout_sine", 14.0, D)]
-    px, py, dd = seg_path(t, segs)
-    if t < KEY_UP:
-        hand = hand_blend("relaxed", "point", smooth((t - (STEP_R0 + 0.06)) / (KEY_UP - STEP_R0 - 0.06)))
-    elif t < T_RING + 0.1:
-        hand = "point"
-    else:
-        hand = hand_blend("point", "flat", smooth((t - (T_RING + 0.1)) / 0.24))
-    return ch.LionessArm("rest", screen=(px, py), depth=dd, hand=hand)
+def _sack_grip(bulge=0.0):
+    """The sack's grip point (props anchor) for the sack standing at BAG_C."""
+    return (BAG_C[0], BAG_C[1] - 87.0 * SCC)
 
 
-def _bag_draw(t, cam):
-    return Holder(lambda c, ax, ay: P.draw_apothecary_bag(c, ax, ay, SCC, L, t, 0.0, "open"), cam, SCC,
-                  (0.0, 4.0), (BAG_C[0], BAG_C[1] - 87.0 * SCC, smooth((t - (BAG_DOWN - 0.1)) / 0.1)))
+def _pat_goal():
+    """Her palm on the sack's front just under its rim -- clear of the green cross."""
+    gx, gy = _sack_grip()
+    return (gx + 6.0 * SCC, gy + 19.0 * SCC)
 
 
-def _lio_bagging_far(t, x, y0, yaw, base, cam, idle):
-    """Her far paw: closes on the tower's middle, lifts it a hair, lowers the whole thing behind
-    the counter (it stays perfectly stacked in her paw), comes up with the sack, sets it in front
-    of him and gives it a pat."""
-    if t < STEP_L0 - 0.02:
-        return idle
+def _lio_pat_far(t, x, y0, base):
+    """C': her far paw rests flat on the sack she has just set down, gives it one pat, then
+    goes back to rest in front of her apron."""
+    w = PAT_PROBE.get("wrist", _pat_goal())
 
     def rest(tt):
-        return lio_gesture(lio_x_C(tt), lio_y_C(tt), yaw, base, tt, FAR_C, "rest", scale=SCL)
+        return lio_gesture(lio_x_C(tt), lio_y_C(tt), -1.0, base, tt, FAR_C, "rest", scale=SCL)
 
     def rest_d(tt):
         return lio_rest_depth(tt, FAR_C, base)
-    def via(tt):
-        return _shoulder_via(tt, FAR_C, base, dx=-105.0, dy=165.0)
-    g = TOWER_PROBE.get("wrist", tower_grip_C())
-    lift = (g[0] + 2.0, g[1] - 16.0)
-    pulled = (g[0] + 4.0, g[1] + TOWER_PULL)
-    low = (g[0] - 10.0, HZ + 60.0)                    # just below the counter's edge: the sack is there
-    bag_w = BAG_PROBE.get("wrist", (BAG_C[0] + 26.0, BAG_C[1] - 87.0 * SCC + 30.0))
-    pat_w = (bag_w[0] + 12.0, bag_w[1] + 26.0)
-    counter = (BAG_C[0] + 150.0, HZ - 26.0)
-    D = D_ON_COUNTER
-    segs = [(STEP_L0 - 0.02, rest, "linear", 0.0, rest_d), (STEP_L0 + 0.12, via, "in_sine", 0.0, 34.0),
-            (TOWER_GRAB, g, "out_sine", 16.0, D),
-            (TOWER_UP, lift, "out_quad", 0.0, D), (T_RELEASE, pulled, "in_sine", 0.0, D),
-            (BAG_UP0, low, "out_quad", 0.0, D), (BAG_DOWN, bag_w, "out_quad", -20.0, D),
-            (BAG_PAT, pat_w, "inout_sine", 6.0, D), (BAG_PAT + 0.4, counter, "inout_sine", 10.0, D)]
+    up = (w[0] + 4.0, w[1] - 26.0)
+    segs = [(CUT_C2, w, "linear", 0.0, D_ON_COUNTER), (T_PAT, w, "linear", 0.0, D_ON_COUNTER),
+            (T_PAT + 0.09, up, "out_quad", 0.0, D_ON_COUNTER), (T_PAT + 0.17, w, "in_quad", 0.0, D_ON_COUNTER),
+            (T_PAT + 0.3, w, "linear", 0.0, D_ON_COUNTER),
+            (T_PAT + 0.62, rest, "inout_sine", -10.0, rest_d)]
     px, py, dd = seg_path(t, segs)
-    if BAG_PAT <= t < BAG_PAT + 0.3:
-        py -= 10.0 * abs(math.sin((t - BAG_PAT) / 0.3 * math.pi * 2.0)) * (1.0 - (t - BAG_PAT) / 0.3)
-    hold = None
-    if t < TOWER_GRAB - 0.05:
-        hand = hand_blend("relaxed", "open", smooth((t - STEP_L0) / 0.2))
-    elif t < TOWER_GRAB:
-        hand = hand_blend("open", "grip", smooth((t - (TOWER_GRAB - 0.05)) / 0.05))
-    elif t < T_RELEASE:
-        hand = "grip"
-        hold = _tower_in_paw(t, cam)
-    elif t < BAG_UP0 - 0.04:
-        hand = hand_blend("grip", "open", smooth((t - T_RELEASE) / 0.06))     # lets go; reaches for the sack
-    elif t < BAG_DOWN:
-        hand = hand_blend("open", "grip", smooth((t - (BAG_UP0 - 0.04)) / 0.04))
-        hold = _bag_draw(t, cam)
-    elif t < BAG_PAT:
-        hand = hand_blend("grip", "flat", smooth((t - BAG_DOWN) / 0.1))
-    else:
+    if t < T_PAT + 0.3:
         hand = "flat"
-    return ch.LionessArm("rest", screen=(px, py), depth=dd, hand=hand, hold=hold)
+    else:
+        hand = hand_blend("flat", "relaxed", smooth((t - (T_PAT + 0.3)) / 0.3))
+    return ch.LionessArm("rest", screen=(px, py), depth=dd, hand=hand)
 
 
-RING_PROBE = {}          # setup(): her near wrist when her index fingertip is on the till's key
-TOWER_PROBE = {}         # setup(): her far wrist when the paw's grip point sits on the tower's grip
-BAG_PROBE = {}           # setup(): her far wrist when the sack's neck sits where it is set down
+def sack_squash(t):
+    """The sack has just been plunked down (it is still settling at the cut), and gives under the
+    pat. + squashes (wider, shorter), - stretches."""
+    dt = t - (CUT_C2 - 0.06)
+    s = 0.07 * math.exp(-dt * 9.0) * math.cos(dt * 26.0) if dt > 0.0 else 0.0
+    s += 0.045 * bump(t, T_PAT + 0.15, 0.03, 0.12)
+    return s
 
 
-st_rigs = {}
+def draw_sack_C(cr, t):
+    """The filled sack on the counter (book and draught peeking out of its open mouth)."""
+    sq = sack_squash(t)
+    gx, gy = _sack_grip()
+    bx, by = BAG_C
+    B.contact_shadow(cr, bx, by + 3.0, 34.0 * SCC, 4.5 * SCC, alpha=0.45)
+    cr.save()
+    cr.translate(bx, by)
+    cr.scale(1.0 + 0.6 * sq, 1.0 - sq)
+    cr.translate(-bx, -by)
+    P.draw_apothecary_bag(cr, gx, gy, SCC, L, t, 0.0, "open")
+    cr.restore()
 
 
 def draw_C(cr, t, st):
+    """Shot C (16.5 .. CUT_D) and C' (CUT_C2 .. end): the low angle across the counter."""
     cam = cam_C(t)
+    end = t >= CUT_C2
     with cam.view(cr, 0.85):
         _paint_room_C(cr, st["room_C"])
     with cam.view(cr, 0.95):
         for ox, oy, sd in ORBS_C:
-            draw_orb(cr, ox, oy, t, sd, 1.3, orb_flicker(t, sd), chain_top=-60.0)
+            draw_orb(cr, ox, oy, t, sd, 1.3, orb_flicker(t, sd, "C"), chain_top=-60.0)
     with cam.view(cr, 1.0):
-        # the lioness, behind the counter (the counter's front hides her below its top). She is
-        # painted from a group so that her paws can be laid again OVER the props on the counter
-        # (the till's key under her finger, the sack under her pat).
-        x, y0, lp = lio_C(t, _FixedCam(cam))
-        cr.push_group()
+        # the lioness, behind the counter (the counter's front hides her below its top)
+        x, y0, lp = lio_C(t)
         lrig = ch.draw_lioness(cr, x, y0, SCL, lp, LL, t)
-        lpat = cr.pop_group()
-        cr.set_source(lpat)
-        cr.paint()
-        # the column stands on the counter until her paw takes it (then it is drawn in her paw);
-        # once she lets go it drops, still perfectly stacked, behind the counter into the sack
-        if t < TOWER_GRAB:
+        if not end:
             draw_column(cr, t, 4, PILE_C, SCC, sparkle=True)
-        elif t >= T_RELEASE and "release" in TOWER_PROBE:
-            bx, by = TOWER_PROBE["release"]
-            dt = t - T_RELEASE
-            fall = TOWER_PROBE.get("v0", 0.0) * dt + 0.5 * TOWER_G * dt * dt
-            if by + fall + COLUMN_TOP * SCC < HZ + 12.0:
-                draw_column(cr, t, 4, (bx, by + fall), SCC, sparkle=False, shadow=False)
-        # the till, on the counter in front of her
+        # the till, on the counter in front of her (in C' the receipt hangs out of it, still rocking)
         P.draw_till(cr, TILL_C[0], TILL_C[1], TILL_C[2], L, t, ring=T_RING if t >= T_RING else None,
-                    receipt=ramp(t, T_RING + 0.06, T_RING + 0.9, "out_quad"),
-                    pressed=2 if T_RING - 0.02 <= t < T_RING + 0.12 else None)
-        if t >= BAG_DOWN:
-            B.contact_shadow(cr, BAG_C[0], BAG_C[1] + 3.0, 33.0 * SCC, 4.5 * SCC, alpha=0.42)
-            P.draw_apothecary_bag(cr, BAG_C[0], BAG_C[1] - 87.0 * SCC, SCC, L, t, 0.0, "open")
-        # her paws over the props: the ringing finger on the key, the pat on the sack
-        if STEP_R0 + 0.08 <= t < STEP_L1:
-            paint_paw(cr, lpat, lrig.hand_near)
-        if BAG_DOWN <= t:
-            paint_paw(cr, lpat, lrig.hand_far)
+                    receipt=ramp(t, T_RING + 0.06, T_RING + 0.62, "out_quad"))
+        if end:
+            draw_sack_C(cr, t)
+            # her paw on the sack is in front of it: lay her far arm again over the sack (only
+            # where the sack is: her arm keeps its own place against her body everywhere else)
+            if t < T_PAT + 0.55:
+                gx, gy = _sack_grip()
+                cr.save()
+                cr.rectangle(gx - 46.0 * SCC, gy - 30.0 * SCC, 92.0 * SCC, 124.0 * SCC)
+                cr.clip()
+                R2.lio_arm(cr, x, y0, SCL, lp, LL, t, "far")
+                cr.restore()
         st["counter_C"].paint(cr)
         # the dragon, nearest the camera
         dp = dragon_pose_C(t)
@@ -2394,11 +2338,7 @@ def draw_C(cr, t, st):
                 drift=(4.0, -2.0))
     lc = st["light"].begin()
     with cam.view(lc, 1.0):
-        for ox, oy, sd in ORBS_C:
-            lv = 1.0 - orb_flicker(t, sd)
-            fx.glow(lc, ox, oy, 640, "#8fe8c8", 0.2 * lv)
-            fx.glow(lc, ox, oy, 170, "#f0fffa", 0.3 * lv)
-        fx.glow(lc, 1200, -220, 1600, "#e6fff6", 0.1)
+        _orb_light_C(lc, t)
         fx.light_pool(lc, 960, HZ - 6, 900, 34, "#e8fff6", 0.14)
         fx.glow(lc, rig.top[0], rig.top[1] + 40.0, 300.0, "#e9fff7", 0.13)
         fx.glow(lc, lrig.top[0], lrig.top[1] + 40.0, 260.0, "#e9fff7", 0.12)
@@ -2406,20 +2346,222 @@ def draw_C(cr, t, st):
             grain=0.03, vignette=0.34, vignette_color=VIG)
 
 
+def _orb_light_C(lc, t):
+    for ox, oy, sd in ORBS_C:
+        lv = 1.0 - orb_flicker(t, sd, "C")
+        fx.glow(lc, ox, oy, 640, "#8fe8c8", 0.2 * lv)
+        fx.glow(lc, ox, oy, 170, "#f0fffa", 0.3 * lv)
+    fx.glow(lc, 1200, -220, 1600, "#e6fff6", 0.1 * (1.0 - 0.35 * orb_flicker(t, 0, "C")))
+
+
+# ========================================================================================
+# shot D: MCU on her -- the frozen smile (a punch-in on the low angle)
+# ========================================================================================
+
+D_CENTER = (1205.0, 566.0)
+
+
+def cam_D(t):
+    u = ramp(t, CUT_D, CUT_E)
+    z = lerp(2.46, 2.58, core.inout_sine(u))          # a slow push while nothing moves
+    return core.Camera(D_CENTER[0], D_CENTER[1], z).drift(t, 1.2, 0.14, seed=11)
+
+
+def draw_D(cr, t, st):
+    cam = cam_D(t)
+    with cam.view(cr, 0.85):
+        _paint_room_C(cr, st["room_C"])
+    with cam.view(cr, 1.0):
+        x, y0, lp = lio_C(t)
+        lrig = ch.draw_lioness(cr, x, y0, SCL, lp, LL, t)
+        draw_column(cr, t, 4, PILE_C, SCC, sparkle=True)
+        P.draw_till(cr, TILL_C[0], TILL_C[1], TILL_C[2], L, t)
+        fx.dust(cr, t, (880, 330, 760, 460), n=18, color="#f4fffb", alpha=0.32, size=(0.8, 1.6), seed=41,
+                drift=(3.0, -1.5))
+    lc = st["light"].begin()
+    with cam.view(lc, 1.0):
+        _orb_light_C(lc, t)
+        # the orb light on her face: it stutters with the orb (the buzz in the silence)
+        fx.glow(lc, lrig.top[0] + 20.0, lrig.top[1] + 30.0, 230.0, "#e9fff7", 0.16 * (1.0 - 0.8 * orb_flicker(t, 0, "C")))
+    fx.post(cr, t, light=st["light"], bloom_strength=0.7, threshold=0.9, bloom_radius=2.2, wide=0.3,
+            grain=0.03, vignette=0.4, vignette_color=VIG)
+
+
+# ========================================================================================
+# shot E: INSERT on the till -- her paw comes down from above, the fingertip lands ON the key
+# ========================================================================================
+
+K_E = 2.8                                  # the insert's magnification of the low angle
+KEY_IDX = 2                                # the key she presses (the till rig's `key` point is key 2)
+KEY_LOCAL = (-9.0, -38.0)                  # key 2's centre in the till's own units (props.draw_till)
+KEY_DOWN = 1.8                             # how far a pressed key sinks (till units)
+TILL_E_SC = TILL_C[2] * K_E
+KEY_E = (962.0, 862.0)                     # where key 2 sits on screen in the insert
+TILL_E = (KEY_E[0] - KEY_LOCAL[0] * TILL_E_SC, KEY_E[1] - KEY_LOCAL[1] * TILL_E_SC)
+PAW_E = LIO_MOD.HAND_LEN * LIO_SIZE_PX * K_E          # her paw's length on screen in the insert
+UNIT_E = LIO_SIZE_PX * K_E                            # her body units -> insert px
+
+
+def _e_from_c(x, y):
+    """Shot-C world -> insert screen (the insert is the low angle, magnified about the key)."""
+    kx = TILL_C[0] + KEY_LOCAL[0] * TILL_C[2]
+    ky = TILL_C[1] + KEY_LOCAL[1] * TILL_C[2]
+    return (KEY_E[0] + (x - kx) * K_E, KEY_E[1] + (y - ky) * K_E)
+
+
+def build_insert_E():
+    """The insert's background: the wall of jars behind the till, magnified, very soft (drawn
+    at half resolution and blurred: the till is in sharp focus a whole room in front of it)."""
+    res = 0.5
+    surf = core.new_surface(int(W * res) + 40, int(H * res) + 40)
+    c = core.new_context(surf)
+    c.translate(20, 20)
+    c.scale(res, res)
+    kx = TILL_C[0] + KEY_LOCAL[0] * TILL_C[2]
+    ky = TILL_C[1] + KEY_LOCAL[1] * TILL_C[2]
+    c.translate(KEY_E[0], KEY_E[1])
+    c.scale(K_E * 0.92, K_E * 0.92)                  # the far wall magnifies a little less (depth)
+    c.translate(-kx, -ky - 40.0)
+    _room_C(c)
+    surf.flush()
+    return {"surf": fx.blur_surface(surf, 5.5), "res": res}
+
+
+def _insert_counter(cr):
+    """The counter's lip and carved front under the till, at the insert's magnification."""
+    kx = TILL_C[0] + KEY_LOCAL[0] * TILL_C[2]
+    ky = TILL_C[1] + KEY_LOCAL[1] * TILL_C[2]
+    cr.save()
+    cr.translate(KEY_E[0], KEY_E[1])
+    cr.scale(K_E, K_E)
+    cr.translate(-kx, -ky)
+    _counter_C(cr)
+    cr.restore()
+
+
+def cam_E(t):
+    u = ramp(t, CUT_E, CUT_C2)
+    return core.Camera.about(KEY_E[0], KEY_E[1] - 120.0, lerp(1.0, 1.035, core.out_sine(u)))
+
+
+# her fingertip (relative to key 2's centre, insert px) through the insert: in fast from above,
+# a hover, the press ON s2_ring (riding the key down), two frames pressed, the lift, out
+F24 = 1.0 / 24.0
+TIP_KEYS = [(T_RING - 4 * F24, (-110.0, -420.0)), (T_RING - 3 * F24, (-62.0, -226.0), "linear"),
+            (T_RING - 2 * F24, (-22.0, -84.0), "linear"), (T_RING - F24, (-5.0, -24.0), "linear"),
+            (T_RING, (0.0, 2.0), "in_quad"), (T_RING + 2 * F24, (0.0, 4.0), "linear"),
+            (T_RING + 3 * F24, (-4.0, -16.0), "out_quad"), (T_RING + 4 * F24, (-14.0, -66.0), "linear"),
+            (T_RING + 5 * F24, (-38.0, -160.0), "linear"), (T_RING + 6 * F24, (-78.0, -300.0), "linear"),
+            (T_RING + 7 * F24, (-128.0, -480.0), "linear"), (T_RING + 8 * F24, (-180.0, -680.0), "linear")]
+HAND_ANG_KEYS = [(T_RING - 4 * F24, 1.12), (T_RING - F24, 1.3, "out_sine"), (T_RING, 1.34, "linear"),
+                 (T_RING + 2 * F24, 1.34), (T_RING + 7 * F24, 1.08, "inout_sine")]
+PAW_OUT = T_RING + 8 * F24              # the paw is out of the insert
+
+
+def _tip_local(angle, pose, flip):
+    """Where the index fingertip is relative to the hand's base (insert px), for this angle/pose."""
+    _s, scr = core.frame(8, 8)
+    mats = LIO_MOD.lioness_mats()
+    hf = B.hand(scr, 0.0, 0.0, angle, PAW_E, pose, mats["fur"], LL, 2.0, flip=flip, finger_w=1.15, palm_w=1.1)
+    return hf.tips[0]
+
+
+def draw_insert_paw(cr, t, lw):
+    """Her near arm coming down into the insert: robe sleeve, the blouse's cream cuff, the paw
+    (the same construction and materials as the rig's arm). The index fingertip is placed exactly
+    on the key: the hand's base is solved back from the fingertip."""
+    if t > PAW_OUT:
+        return None
+    tip_rel = core.track(t, TIP_KEYS)
+    ang = core.track(t, HAND_ANG_KEYS)
+    pressing = T_RING - 0.005 <= t < T_RING + 0.1
+    pose = PRESSED if pressing else ("point" if t < T_RING + 0.16 else hand_blend("point", "relaxed",
+                                                                                  smooth((t - (T_RING + 0.16)) / 0.2)))
+    flip = True
+    down = KEY_DOWN * TILL_E_SC if pressing else 0.0
+    # the fingertip's visible end is a finger's half-width past the tip joint: aim the joint a hair
+    # above the key face so the rounded tip covers the key's centre
+    fx_, fy_ = KEY_E[0] + tip_rel[0], KEY_E[1] + tip_rel[1] + down - 0.05 * PAW_E
+    tl_ = _tip_local(ang, pose, flip)
+    hx, hy = fx_ - tl_[0], fy_ - tl_[1]
+    # the arm comes down from above the frame as she leans in: it keeps one soft elbow bend and
+    # travels WITH the paw (forearm along the hand, the upper arm a little steeper, going up out of
+    # the top of the frame), so it never kinks or snakes on the way in and out
+    mats = LIO_MOD.lioness_mats()
+    l1, l2 = LIO_MOD.UPPER_ARM * UNIT_E * 1.2, LIO_MOD.FOREARM * UNIT_E
+    fa = ang - 0.12                                   # the wrist breaks a little toward the key
+    fdx, fdy = math.cos(fa), math.sin(fa)
+    wx, wy = hx - fdx * 6.0 * UNIT_E, hy - fdy * 6.0 * UNIT_E
+    ex, ey = wx - fdx * l2, wy - fdy * l2
+    ua = fa + 0.36
+    sx, sy = ex - math.cos(ua) * l1, ey - math.sin(ua) * l1
+    # the rig's own sleeve construction: straight capsules shoulder -> elbow -> wrist (one union),
+    # with the crease ink on the inside of the elbow
+    s_, o_ = CK.caps(cr, [(sx, sy), (ex, ey), (wx, wy)], [18.0 * UNIT_E, 15.0 * UNIT_E, 13.0 * UNIT_E], lw)
+    pal = B.shade(cr, s_, mats["robe"], LL, lw, outline=o_, size=40.0 * UNIT_E, rim=0.7)
+    nx, ny = -fdy, fdx
+    bend = (ex - sx) * (wy - ey) - (ey - sy) * (wx - ex)
+    sg = 1.0 if bend > 0 else -1.0
+    B.detail_lines(cr, [[(ex + nx * 6 * UNIT_E * sg - fdx * 8 * UNIT_E, ey + ny * 6 * UNIT_E * sg - fdy * 8 * UNIT_E),
+                         (ex + nx * 15 * UNIT_E * sg + fdx * 4 * UNIT_E, ey + ny * 15 * UNIT_E * sg + fdy * 4 * UNIT_E)]],
+                   lw * 0.8, pal.line, 0.5)
+    a = math.atan2(fdy, fdx)
+    cs, co = B.ellipse_paths(cr, wx - fdx * 4.0 * UNIT_E, wy - fdy * 4.0 * UNIT_E, 8.5 * UNIT_E, 15.5 * UNIT_E, lw, a)
+    B.shade(cr, cs, mats["collar"], LL, lw, outline=co, size=14.0 * UNIT_E, rim=0.5)
+    # a soft contact shadow of the finger on the key bed as it comes close
+    near = clamp(1.0 - math.hypot(tip_rel[0], tip_rel[1]) / 120.0)
+    if near > 0.0:
+        B.occlusion(cr, KEY_E[0] + 6.0, KEY_E[1] + 10.0, 46.0, 22.0, (0.2, 0.14, 0.06), 0.35 * near)
+    hf = B.hand(cr, hx, hy, ang, PAW_E, pose, mats["fur"], LL, lw, flip=flip, pad=LIO_MOD.LIONESS_COLORS["pad"],
+                finger_w=1.15, palm_w=1.1, detail=2)
+    return hf
+
+
+def draw_E(cr, t, st):
+    cam = cam_E(t)
+    bg = st["insert_E"]
+    with cam.view(cr, 0.7):
+        cr.save()
+        cr.translate(-20.0, -20.0)
+        cr.scale(1.0 / bg["res"], 1.0 / bg["res"])
+        cr.set_source_surface(bg["surf"], 0, 0)
+        cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+        cr.paint()
+        cr.restore()
+    with cam.view(cr, 1.0):
+        # the till, big: the key goes down ON s2_ring, the bell rocks and dings, the flags pop,
+        # the parchment receipt curls up out of its slot
+        pressed = KEY_IDX if T_RING - 0.005 <= t < T_RING + 0.1 else None
+        B.contact_shadow(cr, TILL_E[0], TILL_E[1] + 4.0, 66.0 * TILL_E_SC, 5.0 * TILL_E_SC, alpha=0.4)
+        P.draw_till(cr, TILL_E[0], TILL_E[1], TILL_E_SC, L, t, ring=T_RING if t >= T_RING else None,
+                    receipt=ramp(t, T_RING + 0.06, T_RING + 0.62, "out_quad"), pressed=pressed)
+        dev = B.device_scale(cr)
+        lw = B.line_for(LIO_MOD.LINE / LIO_SIZE_K, UNIT_E * dev, 1.0 / LIO_SIZE_K) * UNIT_E
+        draw_insert_paw(cr, t, lw)
+        st["counter_E"].paint(cr)
+        fx.dust(cr, t, (300, 80, 1300, 700), n=22, color="#f4fffb", alpha=0.3, size=(1.4, 3.2), seed=45,
+                drift=(4.0, -2.0))
+    lc = st["light"].begin()
+    with cam.view(lc, 1.0):
+        fx.glow(lc, 1100, -260, 1500, "#e6fff6", 0.16)
+        bell = (TILL_E[0], TILL_E[1] - 128.0 * TILL_E_SC)
+        if t >= T_RING:
+            fx.glow(lc, bell[0], bell[1], 260.0, "#f2fff8", 0.22 * math.exp(-(t - T_RING) * 4.0))
+    fx.post(cr, t, light=st["light"], bloom_strength=0.6, threshold=0.88, bloom_radius=2.2, wide=0.3,
+            grain=0.03, vignette=0.38, vignette_color=VIG)
+
+
 def _sigh_smoke(cr, t, t0, rig):
-    """The sigh: a curl of smoke from his nostrils. Against the pale plaster grey smoke vanishes,
-    so it is slate-dark with a soft core: it must read as smoke, not a smudge."""
+    """The sigh: a curl of smoke from his nostrils. It has to read as smoke, not a smudge: a
+    pale, thick halo (it reads over the darker shelves it rises into) around a slate core (it
+    reads over the pale limewash), big soft puffs curling up and forward off the snout."""
     s = rig.scale
-    # against pale limewash, smoke needs a body: a slate-grey core puff with lighter wisps curling
-    # off it, rising and drifting forward off the nostrils; soft edges (fx.smoke) so it never smudges
-    # each puff = a soft pale halo with a slate core on the same path: the halo reads over the dark
-    # shelves, the core over the pale limewash (smoke reads light on dark and dark on light)
-    for size, col, alpha in ((13.0, "#eef4f3", 0.42), (7.5, "#56636d", 0.5)):
-        fx.smoke(cr, t, t0, rig.nose[0], rig.nose[1], n=9, dur=2.2, rise=80.0, drift=(40.0 * rig.facing, -4.0),
-                 size=size, color=col, alpha=alpha, seed=7, scale=s, spread=0.35)
-    for size, col, alpha in ((8.5, "#eef4f3", 0.36), (4.8, "#66737c", 0.42)):
-        fx.smoke(cr, t, t0 + 0.08, rig.nose[0], rig.nose[1], n=7, dur=1.8, rise=64.0, drift=(28.0 * rig.facing, 2.0),
-                 size=size, color=col, alpha=alpha, seed=9, scale=s, spread=0.3)
+    for size, col, alpha in ((24.0, "#f4f8f7", 0.78), (12.5, "#46525a", 0.8)):
+        fx.smoke(cr, t, t0, rig.nose[0], rig.nose[1], n=12, dur=1.9, rise=104.0, drift=(50.0 * rig.facing, -4.0),
+                 size=size, color=col, alpha=alpha, seed=7, scale=s, spread=0.45)
+    for size, col, alpha in ((15.0, "#f4f8f7", 0.66), (8.0, "#4f5b63", 0.72)):
+        fx.smoke(cr, t, t0 + 0.05, rig.nose[0] - 6.0 * s, rig.nose[1] + 2.0 * s, n=9, dur=1.7, rise=82.0,
+                 drift=(34.0 * rig.facing, 2.0), size=size, color=col, alpha=alpha, seed=9, scale=s, spread=0.35)
 
 
 # ========================================================================================
@@ -2472,46 +2614,36 @@ def setup():
     base.flush()
     surf = core.new_surface(int(W * res), int(H * res))
     st["insert_bg"] = {"res": res, "base": base, "surf": surf, "ctx": core.new_context(surf)}
-    # shot C
+    # shots C, D, C' (the low angle) and E (the till insert)
     st["room_C"] = build_room_C()
     st["counter_C"] = env.layer(_counter_C)
     st["herbs_C"] = [Herb(hl, kind, sd, scale=1.25, blur=1.2) for (_x, hl, kind, sd) in HERBS_C]
-    _s, scratch = core.frame(8, 8)
-    st_rigs["till_key"] = P.draw_till(scratch, TILL_C[0], TILL_C[1], TILL_C[2], L, 0.0).key
-    # her paws are aimed by the wrist; solve the wrist so the FINGERTIP lands on the key and the
-    # GRIP lands on the tower's flank / the sack's neck (no prop ever jumps into or out of a paw)
-    key = st_rigs["till_key"]
-    RING_PROBE["wrist"] = _solve_wrist(T_RING, NEAR_C, (key[0] + 1.0, key[1] - 5.0), "point", tip=True)
-    TOWER_PROBE["wrist"] = _solve_wrist(TOWER_GRAB, FAR_C, tower_grip_C(), "grip")
-    BAG_PROBE["wrist"] = _solve_wrist(BAG_DOWN, FAR_C, (BAG_C[0], BAG_C[1] - 87.0 * SCC - 4.0), "grip")
-    # where the tower is (and how fast it is going down) at the instant she lets go of it
-    ys = []
-    for ts in (T_RELEASE - 1.0 / 24.0, T_RELEASE - 1e-3):
-        cam = _FixedCam(cam_C(ts))
-        x, y0, lp = lio_C(ts, cam)
-        with cam_C(ts).view(scratch, 1.0):
-            ch.draw_lioness(scratch, x, y0, SCL, lp, LL, ts)
-        ys.append(lp.far.hold.world)
-    TOWER_PROBE["release"] = ys[1]
-    TOWER_PROBE["v0"] = max(0.0, (ys[1][1] - ys[0][1]) / (1.0 / 24.0 - 1e-3))
+    st["insert_E"] = build_insert_E()
+    st["counter_E"] = fx.Layer(_insert_counter, w=W + 200, h=H + 200, x=-100, y=-100)
+    # C': her flat palm rests on the sack's front, just below its mouth (solved through the rig)
+    PAT_PROBE["wrist"] = _solve_wrist(CUT_C2 + 0.01, FAR_C, _pat_goal(), "flat", point="palm")
     return st
 
 
-def _solve_wrist(t, side, goal, hand, tip=False, iters=7):
-    """Shot C: the screen (wrist) target that puts her paw's grip point -- or, with tip=True, its
-    index fingertip -- on `goal` (world), found by drawing her off-screen and correcting."""
+def _solve_wrist(t, side, goal, hand, point="grip", iters=12):
+    """Shots C / C': the screen (wrist) target that puts her paw's grip point -- or its palm
+    centre, or its index fingertip -- exactly on `goal` (world): a damped Newton solve through the
+    real rig (the paw's angle depends on the wrist, so a plain fixed-point update oscillates)."""
     x, y0 = lio_x_C(t), lio_y_C(t)
     base = ch.LionessPose(facing=-1, seed=2, elev=ELEV_C)
-    w = (goal[0] + 20.0, goal[1] + 24.0)
     _s, scr = core.frame(8, 8)
-    for _ in range(iters):
+
+    def measure(w):
         arm = ch.LionessArm("rest", screen=w, depth=D_ON_COUNTER, hand=hand)
         pose = base.with_(far=arm) if side == FAR_C else base.with_(near=arm)
         rig = ch.draw_lioness(scr, x, y0, SCL, pose, LL, t)
         hf = rig.hand_far if side == FAR_C else rig.hand_near
-        px, py = (hf.tips[0] if (tip and hf.tips) else (hf.x, hf.y))
-        w = (w[0] + goal[0] - px, w[1] + goal[1] - py)
-    return w
+        if point == "tip":
+            return hf.tips[0]
+        if point == "palm":
+            return hf.palm
+        return (hf.x, hf.y)
+    return newton2(measure, (goal[0] + 20.0, goal[1] + 24.0), goal, iters)
 
 
 def draw(cr, t, st):
@@ -2521,6 +2653,12 @@ def draw(cr, t, st):
         draw_B(cr, t, st)
     elif t < CUT_C:
         draw_A(cr, t, st)
+    elif t < CUT_D:
+        draw_C(cr, t, st)
+    elif t < CUT_E:
+        draw_D(cr, t, st)
+    elif t < CUT_C2:
+        draw_E(cr, t, st)
     else:
         draw_C(cr, t, st)
 
@@ -2582,27 +2720,28 @@ def _sfx_cues():
     cues.append((round(I3, 3), "item_set_down", {"gain": 0.7, "pan": px, "size": 0.6, "material": "book"}))
     cues.append((round(I3 + 0.3, 3), "glass_clink", {"gain": 0.12, "pan": px}))                    # the teeter
     cues.append((round(T_TAP, 3), "tap_wood", {"gain": 0.4, "pan": px}))                           # squared off
-    # shot C: the till, the receipt, the sigh; the tower down behind the counter; the sack
-    tx = _pan(TILL_C[0])
+    # the end. D: the silence of the frozen smile (only the orb's buzz). E: a brisk step to the till,
+    # the sleeve swishes in, DING on s2_ring, the receipt rattles out, and under the insert his
+    # sigh begins (its exhale lands on the cut back). Off screen she bags the whole tower at speed
+    # -- a paper sack snapped open, the remedies clinking in, the book's thud -- and the sack is
+    # plunked on the counter a frame before we see it there. C': one pat; the smoke puff.
+    tx, bx = _pan(TILL_C[0]), _pan(BAG_C[0])
+    cues.append((round(T_BUZZ, 3), "candle_flicker", {"gain": 0.5, "pan": _pan(ORBS_C[0][0])}))
+    cues.append((round(T_REBOOT + 0.04, 3), "cloth_rustle", {"gain": 0.18, "pan": _pan(LIO_C[0])}))
+    cues.append((round(CUT_E - 0.03, 3), "footstep", {"gain": 0.16, "pan": tx, "size": 0.4, "who": "lioness",
+                                                       "surface": "wood"}))
+    cues.append((round(T_RING - 3.0 / 24.0, 3), "cloth_rustle", {"gain": 0.24, "pan": tx, "dur": 0.15}))
     cues.append((round(T_RING, 3), "till_bell", {"gain": 0.9, "pan": tx}))
     cues.append((round(T_RING + 0.06, 3), "receipt", {"gain": 0.6, "pan": tx}))
     cues.append((round(T_RING + 0.1, 3), "sigh", {"gain": 0.45, "pan": _pan(DRAGON_C[0] + 200.0)}))
-    cues.append((round(T_SMOKE, 3), "smoke_puff", {"gain": 0.2, "pan": _pan(DRAGON_C[0] + 250.0)}))
-    # her two brisk steps behind the counter: to the till, then over to the tower
-    for t0, xx in ((STEP_R0 + 0.14, LIO_RING_X), (STEP_L0 + 0.17, LIO_TOWER_X)):
-        cues.append((round(t0, 3), "footstep", {"gain": 0.18, "pan": _pan(xx), "size": 0.4, "who": "lioness",
-                                                "surface": "wood"}))
-    cues.append((round(TOWER_GRAB, 3), "glass_clink", {"gain": 0.3, "pan": _pan(PILE_C[0])}))     # paw on the jar
-    # she lets go below the counter's edge: the whole tower drops into the waiting sack (out of view)
-    cues.append((round(T_RELEASE + 0.1, 3), "item_set_down", {"gain": 0.4, "pan": _pan(PILE_C[0]), "size": 0.5,
-                                                              "material": "bag"}))
-    cues.append((round(T_RELEASE + 0.11, 3), "glass_clink", {"gain": 0.22, "pan": _pan(PILE_C[0])}))
-    cues.append((round(BAG_UP0 + 0.08, 3), "cloth_rustle", {"gain": 0.3, "pan": _pan(BAG_C[0])}))  # up comes the sack
-    cues.append((round(BAG_DOWN, 3), "item_set_down", {"gain": 0.75, "pan": _pan(BAG_C[0]), "size": 0.6,
-                                                       "material": "bag"}))
-    cues.append((round(BAG_DOWN + 0.01, 3), "cloth_rustle", {"gain": 0.4, "pan": _pan(BAG_C[0])}))
-    if BAG_PAT < DUR - 0.05:
-        cues.append((round(BAG_PAT, 3), "cloth_rustle", {"gain": 0.18, "pan": _pan(BAG_C[0])}))     # the pat
+    cues.append((round(PAW_OUT - 0.04, 3), "cloth_rustle", {"gain": 0.42, "pan": bx, "dur": 0.18}))   # sack snapped open
+    cues.append((round(PAW_OUT + 0.03, 3), "glass_clink", {"gain": 0.3, "pan": bx}))
+    cues.append((round(PAW_OUT + 0.08, 3), "glass_clink", {"gain": 0.26, "pan": bx}))
+    cues.append((round(PAW_OUT + 0.12, 3), "item_set_down", {"gain": 0.3, "pan": bx, "size": 0.4, "material": "book"}))
+    cues.append((round(CUT_C2 - 0.04, 3), "item_set_down", {"gain": 0.72, "pan": bx, "size": 0.6, "material": "bag"}))
+    cues.append((round(CUT_C2 - 0.03, 3), "cloth_rustle", {"gain": 0.32, "pan": bx}))
+    cues.append((round(T_PAT + 0.15, 3), "cloth_rustle", {"gain": 0.22, "pan": bx}))                  # the pat
+    cues.append((round(T_SMOKE, 3), "smoke_puff", {"gain": 0.22, "pan": _pan(DRAGON_C[0] + 250.0)}))
     return sorted(cues, key=lambda c: c[0])
 
 

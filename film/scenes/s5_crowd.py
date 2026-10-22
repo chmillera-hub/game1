@@ -123,6 +123,7 @@ from film.lib.characters import crowd as CW
 from film.lib.characters import minotaur as MN
 from film.lib.characters import orc as ORC
 from film.lib.characters import _folk as FK
+from film.lib.characters import pixie as PX
 
 SCENE = 5
 W, H = core.W, core.H
@@ -176,6 +177,8 @@ T_WALK_IN = (T_STOP + 0.6, T_HUG + 0.12)          # the orc's steps into the hug
 # shot boundaries
 T_INS = IMPACTS[1][0] + 0.55                      # the insert: one crystal, the fight inside it
 T_CIRCLE = IMPACTS[2][0]                          # cut on the impact of the orc's 2nd shove
+T_REACT = T_SIL - 0.08                            # cutaway: the watchers' faces as the silence falls ...
+T_REACT1 = T_LOW0 - 0.04                          # ... back to the pair as the crystals start coming down
 T_PIXIE = min(T_LOW1, L1.start - 0.4)             # the pixie, just before "Ew."
 T_DRAGON = L2.start - 0.65                        # the dragon, a breath before his line
 T_EMPTY = T_ALONE                                 # the emptied square
@@ -183,7 +186,9 @@ T_GENTLE = _word("s5_l3", 3, L3.start + 0.94)     # "gentle,"
 T_EVERY = _word("s5_l3", 5, L3.start + 1.68)      # "everybody"
 T_SIGH = T_ALONE + 0.75                           # in the emptied square: he sighs, watching them
 E_SKIP = 8.0                                      # the cut to shot 6 skips this much of the dispersal
-SHOT6_KEEP = (0, 1, 4, 5)                         # ... by then only these few are still in the square, far off
+SHOT6_KEEP = (1, 2, 3)                            # ... by then only these few are still in the square, far
+                                                  # off: on the cobbles (in front of the stalls and the house
+                                                  # fronts) and clear of the dragon (checked over the shot)
 
 # ----------------------------------------------------------------------------------------
 # the world: one perspective model (see the docstring)
@@ -252,9 +257,64 @@ YAW_HUG_O = 0.8
 YAW_STUN_M = 1.08
 YAW_HUG_M = 0.95
 _BUILD = {"orc": ORC.ORC_BUILD, "mino": MN.MINOTAUR_BUILD}
-ORC_SHOVE_Y = 188.0                               # the orc's palms: this far above his pelvis
-MINO_SHOVE_Y = 62.0                               # the minotaur's: the shorter orc's chest
-CHEST_D = {"orc": 46.0, "mino": 56.0}             # chest half-depth: a shove's palms stop there
+ORC_SHOVE_Y = 130.0                               # the orc's palms: this far above his pelvis -- into the
+                                                  # taller minotaur's lower chest, BELOW the orc's own chin
+                                                  # (any higher and his near hand crosses his face)
+MINO_SHOVE_Y = 62.0                               # the minotaur's: down onto the shorter orc's chest
+CHEST_D = {"orc": 46.0, "mino": 56.0}             # chest half-depth (the hug gesture's partner)
+PALM_GAP = 10.0                                   # a shoving wrist stops this far short of the partner's
+                                                  # torso edge (body units): the flat palm just meets it
+
+
+@dataclass
+class OrcPoseS5(ORC.OrcPose):
+    s5_front: tuple = None                        # the shove's partner torso edge (see torso_front)
+
+
+@dataclass
+class MinoPoseS5(MN.MinotaurPose):
+    s5_front: tuple = None
+
+
+# the torso cross-sections (centre, half-width, half-depth) of orc._torso / minotaur._torso,
+# shoulders to waist: the silhouette a shove's palms land on
+_RINGS = {
+    "orc": lambda h, br: (((0.0, -140.0 + 4 * h, 4.0), 78.0 + br, 46.0), ((0.0, -112.0, 9.0), 80.0 + 1.5 * br, 52.0 + br),
+                          ((0.0, -76.0, 7.0), 64.0, 48.0), ((0.0, -40.0, 4.0), 53.0, 43.0)),
+    "mino": lambda h, br: (((0.0, -166.0 + 5 * h, 3.0), 92.0 + br, 52.0), ((0.0, -132.0, 12.0), 90.0 + 1.5 * br, 60.0 + br),
+                           ((0.0, -86.0, 12.0), 80.0, 58.0), ((0.0, -44.0, 6.0), 68.0, 50.0)),
+}
+
+
+def torso_front(who, pose, t, dx, shover):
+    """`who`'s torso edge on the side facing the other one (shoulders, chest, belly, waist),
+    from his own skeleton (no drawing, ~0.1 ms), as ((y, x), ...) top to bottom in the
+    SHOVER's local units; dx = who's anchor minus the shover's (pair px)."""
+    b = _BUILD[who]
+    q = FK.Q()
+    q.b, q.pose, q.t, q.sit = b, pose, t, clamp(pose.sit)
+    q.yaw = FK.yaw_of(pose)
+    q.proj = B.Proj(q.yaw, pose.elev)
+    q.near = -1.0 if math.sin(q.yaw) >= 0 else 1.0
+    q.far = -q.near
+    S = FK.skeleton(q)
+    d = 1.0 if math.sin(q.yaw) >= 0 else -1.0     # +1: he faces screen-right (his front edge is his right)
+    fw, fs = b.fit, _BUILD[shover].fit
+    out = []
+    for c, a, cz in _RINGS[who](S["hunch"], S["br"]):
+        x, y, hw = q.proj.ellipse(S["T"](c), a, cz)
+        out.append((y * fw / fs, (dx + (x + d * hw) * fw) / fs))
+    return tuple(out)
+
+
+def _front_x(front, y):
+    """The partner's torso edge (pose.s5_front, top to bottom) at local height y."""
+    if y <= front[0][0]:
+        return front[0][1]
+    for (y0, x0), (y1, x1) in zip(front, front[1:]):
+        if y <= y1:
+            return lerp(x0, x1, (y - y0) / max(1e-6, y1 - y0))
+    return front[-1][1]
 
 
 def _stride(who, yaw):
@@ -433,9 +493,26 @@ def arm_track(t, keys):
         t0, dur, arm = k[0], k[1], k[2]
         if t <= t0:
             break
-        u = core.ease(k[3] if len(k) > 3 else "inout_sine", clamp((t - t0) / max(dur, 1e-6)))
-        state = arm if u >= 1.0 else mix(state, arm, u, arc=k[4] if len(k) > 4 else 1.0)
+        raw = clamp((t - t0) / max(dur, 1e-6))
+        u = core.ease(k[3] if len(k) > 3 else "inout_sine", raw)
+        # done only when the TIME is up (an easing may overshoot past 1 and settle back)
+        state = arm if raw >= 1.0 else mix(state, arm, u, arc=k[4] if len(k) > 4 else 1.0)
     return state
+
+
+def drop_ease(u):
+    """Arms falling under their own weight: they accelerate (in_quad) for most of the drop and
+    are caught at the bottom over the last ~40% (a cubic with zero end slope): heavy, but the
+    velocity stays continuous -- never a dead stop. (An overshoot past the hang would ask the
+    IK for more than a straight arm.)"""
+    u = clamp(u)
+    a, c = 0.6, 0.65
+    if u <= a:
+        return c * (u / a) ** 2
+    s = (u - a) / (1.0 - a)
+    m0 = 2.0 * c / a * (1.0 - a)
+    h00, h10, h01 = 2 * s ** 3 - 3 * s ** 2 + 1, s ** 3 - 2 * s ** 2 + s, -2 * s ** 3 + 3 * s ** 2
+    return h00 * c + h10 * m0 + h01
 
 
 def _tab(q):
@@ -534,28 +611,38 @@ def _g_square(q, sk, side, arm):
                 (side * 1.0, -0.1, -0.8), "fwd")
 
 
+SHOVE_UP = {"orc": 0.95, "mino": 0.35}            # the flat hand's fingers: this far above level (rad)
+SHOVE_DROP = {"orc": 10.0, "mino": 26.0}          # the far hand lands this much lower (body units)
+
+
 def _g_shove(q, sk, side, arm):
     """A two-handed chest shove from the squared stance: phase 0..0.35 the hands come up to the
-    chest (elbows cocked back), 0.35..0.55 they shoot out flat into the other's chest (aimed by
-    pose.shove_y), 0.55..1 back down to the stance. The palms land ON the other's near chest and
-    never pass it: the reach is clamped to the live gap (pose.hug_reach = the partner's distance,
-    pose.hug_d = his chest's half-depth, both set by the fight poses)."""
+    shover's OWN chest (loaded, elbows back), 0.35..0.55 they shoot out flat into the other's
+    chest (height: pose.shove_y above the pelvis), 0.55..1 back down to the stance. The palms
+    land ON the other's chest and never pass it: each wrist is clamped ON SCREEN to the
+    partner's torso silhouette (pose.s5_front, from his own skeleton, set by draw_pair) --
+    the far arm included, which a depth clamp alone lets through (in 3/4 its shoulder
+    projects nearer the partner). The flat hands turn so the fingers point forward and UP
+    whatever the forearm does: the palm faces the other's chest (never a limp, fingers-down
+    hand)."""
     AL = FK._AL(q)
     ph = arm.phase
+    who = "orc" if q.b is ORC.ORC_BUILD else "mino"
+    near = side == q.near
+    d = 1.0 if math.sin(q.yaw) >= 0 else -1.0    # +1 faces screen-right
     sq = _g_square(q, sk, side, arm).target
-    back = B.v_add(sk, (-side * 0.06 * AL, 0.36 * AL, 0.20 * AL))       # hands drawn in before the chest
-    out = B.v_add(sk, (-side * 0.10 * AL, 0.22 * AL, 0.98 * AL))
     sy = getattr(q.pose, "shove_y", None)
-    if sy is None and q.b is ORC.ORC_BUILD:
-        sy = ORC_SHOVE_Y                          # the orc reaches UP to the minotaur's chest
-    if sy is not None:
-        y = q.S["pelvis"][1] - sy
-        dy = y - out[1]
-        out = (out[0], y, out[2] - 0.25 * max(0.0, dy))
-        back = (back[0], back[1] + 0.3 * dy, back[2])
-    reach = getattr(q.pose, "hug_reach", None)
-    if reach is not None:
-        out = (out[0], out[1], min(out[2], reach - getattr(q.pose, "hug_d", 50.0) - 12.0))
+    if sy is None:
+        sy = ORC_SHOVE_Y if who == "orc" else MINO_SHOVE_Y
+    y_t = q.S["pelvis"][1] - sy + (0.0 if near else SHOVE_DROP[who])
+    back = (sk[0] - side * 0.05 * AL, max(sk[1] + 0.40 * AL, y_t + 0.10 * AL), sk[2] + 0.16 * AL)
+    out = (sk[0] - side * 0.10 * AL, y_t, sk[2] + 0.98 * AL)
+    front = getattr(q.pose, "s5_front", None)
+    if front:
+        xs, ys = q.proj.xy(out)
+        lim = _front_x(front, ys) - d * PALM_GAP
+        if (xs - lim) * d > 0.0 and abs(q.proj.s) > 1e-3:
+            out = (out[0], out[1], out[2] + (lim - xs) / q.proj.s)
     # the elbows: out and back in the stance, straight back with the hands at the chest, down
     # and out on the thrust -- swivelled round the arm (no pole sweep, no flip)
     b = q.b
@@ -575,9 +662,23 @@ def _g_shove(q, sk, side, arm):
     else:
         e = core.inout_sine((ph - 0.55) / 0.45)
         p, f = B.v_lerp(out, sq, e), _lerp_phi(f_out, f_sq, e)
-    k = core.inout_sine(clamp((ph - 0.04) / 0.24)) * (1.0 - core.inout_sine(clamp((ph - 0.62) / 0.3)))
-    return FK.G(p, "flat" if k > 0.5 else FIST0, lerp(0.2, -1.25, k), "auto", _swivel(sk, p, side, f),
-                "in" if k > 0.5 else "fwd")
+    # the fists stay bunched through the load and burst open as they shoot out (continuously:
+    # no pose pop), flat on his chest through the thrust, closing again on the way back down
+    k = core.inout_sine(clamp((ph - 0.22) / 0.17)) * (1.0 - core.inout_sine(clamp((ph - 0.62) / 0.3)))
+    pole = _swivel(sk, p, side, f)
+    # the hand's screen angle: _folk.hand draws it at (forearm angle + hang * sgn), so solve the
+    # arm here and pick the hang that points the fingers forward-and-up (the palm on his chest).
+    # While loading the open hands simply follow the forearms (two hands pressed together with
+    # the fingers up at his own chest would read as praying); they turn up for the thrust.
+    el, wr = B.ik3(sk, p, b.upper_arm, b.forearm, pole)
+    (ex, ey), (wx, wy) = q.proj.xy(el), q.proj.xy(wr)
+    ang = math.atan2(wy - ey, wx - ex)
+    up = SHOVE_UP[who]
+    want = math.atan2(-math.sin(up), d * math.cos(up))
+    sgn = (1.0 if side < 0 else -1.0) * d
+    turn_up = core.inout_sine(clamp((ph - 0.33) / 0.14)) * (1.0 - core.inout_sine(clamp((ph - 0.62) / 0.22)))
+    hang = core.wrap_angle(want - ang) * sgn * turn_up
+    return FK.G(p, fist_pose(k), lerp(0.2, hang, k), "auto", pole, "in" if k > 0.5 else "fwd")
 
 
 def _g_flinch(q, sk, side, arm):
@@ -591,6 +692,22 @@ def _g_flinch(q, sk, side, arm):
     return FK.G(tgt, "open", -0.25, "auto", (side * 0.35, 1.0, 0.25), "in")
 
 
+def _g_what(q, sk, side, arm):
+    """'What?': the guard comes down to open hands low in front of him, palms up, elbows down
+    at his sides (no fists: he is not squaring up again). From here the hands rise straight
+    up into 'whoa' with the elbows staying down (never a chicken wing)."""
+    AL = FK._AL(q)
+    near = side == q.near
+    # low and close to his own belly (he towers over the orc: any higher and the open hands
+    # are at the orc's face)
+    if near:
+        return FK.G(B.v_add(sk, (side * 0.26 * AL, 0.78 * AL, 0.20 * AL)), "open", -0.6, "auto",
+                    (side * 0.4, 1.0, -0.3), "in")
+    # the far hand is on the orc's side of him: it stays down by his hip, out of the orc's way
+    return FK.G(B.v_add(sk, (side * 0.12 * AL, 0.86 * AL, 0.06 * AL)), "open", -0.4, "auto",
+                (side * 0.4, 1.0, -0.3), "in")
+
+
 def _g_whoa(q, sk, side, arm):
     """Hands lifted and open at shoulder height, out to the sides and a little back: 'whoa --
     what are you doing?' Seen 3/4, his far hand is on the partner's side; the near one goes out
@@ -600,7 +717,9 @@ def _g_whoa(q, sk, side, arm):
     if side == q.near:
         return FK.G(B.v_add(sk, (side * 0.30 * AL, -0.04 * AL, -0.30 * AL)), "open", -0.5, "auto",
                     (side * 0.2, 1.0, 0.1), "in")
-    return FK.G(B.v_add(sk, (side * 0.32 * AL, -0.08 * AL, 0.06 * AL)), "open", -0.5, "auto",
+    # the far hand is on the orc's side (he is walking in there): up and BACK over his own
+    # shoulder, out of the orc's way
+    return FK.G(B.v_add(sk, (side * 0.22 * AL, -0.24 * AL, -0.16 * AL)), "open", -0.5, "auto",
                 (side * 0.3, 1.0, 0.0), "in")
 
 
@@ -637,6 +756,7 @@ for _tbl in (ORC.ORC_GESTURES, MN.MINOTAUR_GESTURES):
     _tbl.setdefault("s5_square", _g_square)
     _tbl.setdefault("s5_shove", _g_shove)
     _tbl.setdefault("s5_whoa", _g_whoa)
+    _tbl.setdefault("s5_what", _g_what)
     _tbl.setdefault("s5_stun", _g_stun)
     _tbl.setdefault("s5_cock", _g_cock)
     _tbl.setdefault("s5_flinch", _g_flinch)
@@ -654,7 +774,7 @@ def _shove_shape(u):
     return shove, recoil, step - 0.45 * back, 0.5 * step - 0.3 * back
 
 
-STEP_IN = {"orc": 46.0, "mino": 22.0}             # the taller minotaur barely steps: long arms
+STEP_IN = {"orc": 46.0, "mino": 14.0}             # the taller minotaur barely steps: long arms
 
 
 def _fight_state(t):
@@ -662,7 +782,7 @@ def _fight_state(t):
     ox, mx = ORC_BASE, MINO_BASE
     st = {"orc_shove": None, "mino_shove": None, "orc_stagger": 0.0, "mino_stagger": 0.0,
           "orc_pow": 1.0, "mino_pow": 1.0, "orc_lean": 0.0, "mino_lean": 0.0, "phase": 0.0, "impact": 0.0,
-          "power": 0.0, "orc_thrust": 0.0, "mino_thrust": 0.0}
+          "power": 0.0, "orc_thrust": 0.0, "mino_thrust": 0.0, "orc_walk": 0.0, "mino_walk": 0.0}
     st["orc_cock"] = None
     if t >= T_COCK:
         # the punch wind-up: a little dip (anticipation), then the fist goes back and up, the
@@ -677,6 +797,16 @@ def _fight_state(t):
         u = (t - t0) / per
         shove, recoil, stepin, lean = _shove_shape(u)
         thrust = core.window(u, 0.33, 0.62, 0.07, 0.14)          # the effort: face set, teeth bared
+        # the legs: eased envelopes over the cycle (never read from the speed: the steps and the
+        # recoil start with a velocity step, and the legs would snap to mid-stride in a frame) --
+        # the shover's feet work through his wind-up, step in and step back; the one shoved
+        # stumbles from the impact until he has his footing again
+        step_w = core.window(u, 0.0, 1.0, 0.16, 0.26) * clamp(STEP_IN[who] * pw / 40.0)
+        stag_w = core.window(u, IMPACT_U - 0.03, 1.0, 0.1, 0.26)
+        if who == "orc":
+            st["orc_walk"], st["mino_walk"] = step_w, stag_w
+        else:
+            st["mino_walk"], st["orc_walk"] = step_w, stag_w
         if who == "orc":
             ox += STEP_IN["orc"] * pw * stepin
             mx += 60.0 * pw * recoil
@@ -687,7 +817,9 @@ def _fight_state(t):
             mx -= STEP_IN["mino"] * pw * stepin
             ox -= 60.0 * pw * recoil
             st["mino_shove"], st["mino_pow"], st["mino_thrust"] = shove, pw, thrust
-            st["mino_lean"] = min(0.22, lean * (0.8 + 0.2 * pw))  # the taller one stays upright
+            # the taller one stays upright and shoves from the shoulders, chin up: his head
+            # never drops onto the orc's crown
+            st["mino_lean"] = min(0.09, lean * (0.8 + 0.2 * pw))
             st["orc_stagger"] = max(st["orc_stagger"], recoil)
             st["orc_pow"] = pw
         st["phase"] = u
@@ -729,17 +861,12 @@ def _impact_pulse_for(t, who, tau=0.3):
 
 
 def pair_state(t):
-    h = 1.0 / 48.0
     ox, mx = _xs(t)
     if t < T_STOP:
-        o0, m0 = _xs(t - h)
-        o1, m1 = _xs(t + h)
-        vo, vm = (o1 - o0) / (2 * h), (m1 - m0) / (2 * h)
         st = _fight_state(t)
         st.update(fight=True, stop=0.0, hug=0.0, hug_back=0.0)
         oyaw, myaw = YAW_FIGHT, YAW_FIGHT
-        st["orc_walk"] = clamp(abs(vo) / 70.0)
-        st["mino_walk"] = clamp(abs(vm) / 70.0)
+        # (orc_walk / mino_walk: eased per-cycle envelopes from _fight_state)
         st["orc_phase"] = (ox - ORC_BASE) / _stride("orc", oyaw)
         st["mino_phase"] = -(mx - MINO_BASE) / _stride("mino", myaw)
     else:
@@ -775,19 +902,24 @@ def _expr(*pairs):
     return e
 
 
-# fury reads at 3/4: brows driven hard down and in, heavy lids over level eyes (a glare, not a
-# plea), the mouth corners down; each thrust bares the teeth (a grunt, the jaw set), each hit
-# lands as a pained wince (brows up, eyes squeezed, a grimace)
-FURY = B.expr("angry").with_(brow_in=-1.3, brow_out=0.35, brow_y=-0.35, lid=0.42, lid_bot=0.22, lid_tilt=-0.8,
-                             smile=-0.6)
+# fury reads at 3/4: brows driven hard down and in, the eyes OPEN in a glare (the orc's eyes
+# already sit under a heavy lid, +0.2, the minotaur's +0.06: a high upper lid here, a tight
+# lower one, the angry slant), the mouth corners down; each thrust opens a yell (jaw dropped,
+# the tusks bared), each hit lands as a pained wince (brows up, eyes squeezed, a grimace)
+FURY_O = B.expr("angry").with_(brow_in=-1.45, brow_out=0.45, brow_y=-0.42, lid=0.02, lid_bot=0.32, lid_tilt=-0.9,
+                               smile=-0.75, pupil=0.85)
+FURY_M = B.expr("angry").with_(brow_in=-1.35, brow_out=0.4, brow_y=-0.38, lid=0.1, lid_bot=0.3, lid_tilt=-0.85,
+                               smile=-0.7, pupil=0.85)
+FURY = FURY_O
 WINCE = B.Expr(brow_in=1.0, brow_out=-0.2, brow_y=0.2, lid=0.72, lid_bot=0.5, lid_tilt=0.35, smile=-0.6, open=0.2)
 FLINCH = B.Expr(brow_in=1.0, brow_out=-0.15, brow_y=0.3, lid=0.9, lid_bot=0.6, lid_tilt=0.3, smile=-0.7, open=0.1)
 
 
-def _fight_face(thrust, hit, snarl_open=0.0):
-    e = FURY
+def _fight_face(thrust, hit, snarl_open=0.0, fury=FURY_O):
+    e = fury
     if thrust > 0.0:
-        e = e.with_(open=0.22 * thrust, brow_in=e.brow_in - 0.25 * thrust, lid=e.lid + 0.06 * thrust)
+        # the effort: the jaw drops on a grunt-yell, the brows crush down, the eyes narrow
+        e = e.with_(open=0.5 * thrust, brow_in=e.brow_in - 0.3 * thrust, lid=e.lid + 0.1 * thrust)
     if snarl_open > e.open:
         e = e.with_(open=snarl_open)
     if hit > 0.0:
@@ -817,11 +949,11 @@ def orc_pose(t, st, sgn=1.0):
             lean = 0.0
         ck = clamp(cock or 0.0)
         thrust = st["orc_thrust"]
-        e = _fight_face(thrust, hit, 0.16 * ck)
-        return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.6 + 0.4 * max(thrust, ck) - 0.4 * hit,
+        e = _fight_face(thrust, hit, 0.3 * ck)
+        return OrcPoseS5(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.6 + 0.4 * max(thrust, ck) - 0.4 * hit,
                            stance=0.5 * sgn, hunch=0.62, lean=lean,
                            head_nod=0.5 * whip + 0.07 - 0.05 * thrust + 0.06 * ck,
-                           look=(0.3 * sgn, 0.0), walk=walk, phase=phase, near=near, far=far, seed=3,
+                           look=(0.38 * sgn, -0.2), walk=walk, phase=phase, near=near, far=far, seed=3,
                            hug_reach=reach, hug_d=CHEST_D["mino"])
     ts = t - T_STOP
     frozen = _STOP_STATE
@@ -834,9 +966,9 @@ def orc_pose(t, st, sgn=1.0):
     open_u = core.inout_sine(clamp((ts - T_OPEN0) / 0.21))
     COCK = ch.Arm("s5_cock", hand=fist_pose(open_u))
     hug_arm = ch.Arm("hug", phase=1.0 - st["hug_close"])
-    near = arm_track(t, [(T_STOP - 1.0, 0.0, COCK), (T_DROP, 0.26, ch.Arm("slump"), "in_quad", 0.4),
+    near = arm_track(t, [(T_STOP - 1.0, 0.0, COCK), (T_DROP, 0.36, ch.Arm("slump"), drop_ease, 0.4),
                          (T_HUG - 0.3, 0.45, hug_arm)])
-    far = arm_track(t, [(T_STOP - 1.0, 0.0, SQ), (T_DROP, 0.26, ch.Arm("slump"), "in_quad", 0.4),
+    far = arm_track(t, [(T_STOP - 1.0, 0.0, SQ), (T_DROP, 0.36, ch.Arm("slump"), drop_ease, 0.4),
                         (T_HUG - 0.3, 0.45, hug_arm)])
     hug = st["hug"]
     realise = core.window(ts, 0.06, 0.7, 0.08, 0.3)                # brows jump: "what am I doing?"
@@ -845,7 +977,7 @@ def orc_pose(t, st, sgn=1.0):
     # once he holds on: his cheek on the minotaur's chest, his face turned to us, eyes sinking
     # shut (a sliver stays open: a closed green lid would not read at this size), a small smile
     rest = core.inout_sine(clamp((t - (T_HUG + 0.25)) / 0.9))
-    fury = FURY.with_(open=0.16 * (1.0 - core.inout_sine(clamp((ts - 0.08) / 0.3))))
+    fury = FURY_O.with_(open=0.3 * (1.0 - core.inout_sine(clamp((ts - 0.08) / 0.3))))
     e = fury.blend(B.expr("raised"), clamp(realise))
     for m, u in (("sad", sad), ("kind", tender), ("warm", 0.45 * rest)):
         if u > 0:
@@ -861,7 +993,7 @@ def orc_pose(t, st, sgn=1.0):
     blink = None
     if tender > 0.3:
         blink = 0.8 * core.inout_sine(clamp((tender - 0.3) / 0.7))
-    return ORC.OrcPose(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.9 * (1.0 - core.inout_sine(clamp((ts - 0.1) / 0.45))),
+    return OrcPoseS5(yaw=sgn * st["orc_yaw"], mood=e, snarl=0.9 * (1.0 - core.inout_sine(clamp((ts - 0.1) / 0.45))),
                        stance=0.5 * sgn * (1.0 - st["stop"]),
                        hunch=lerp(0.62, 0.9, core.inout_sine(clamp((ts - 0.45) / 0.32))) - 0.02 * hug,
                        lean=lean0 * (1.0 - core.inout_sine(clamp((ts - 0.45) / 0.4))) + tremble - sag
@@ -899,13 +1031,14 @@ def mino_pose(t, st, sgn=1.0):
             arm = mix(SQ, ch.Arm("s5_flinch"), brace, arc=0.5)
             lean = -0.2 * brace
         thrust = st["mino_thrust"]
-        e = _fight_face(thrust, hit)
+        e = _fight_face(thrust, hit, fury=FURY_M)
         if brace > 0.0:
             e = e.blend(FLINCH, brace)
         # the punch coming: he flinches -- eyes squeezed shut, face turned away, shoulders up
-        return MN.MinotaurPose(yaw=-sgn * st["mino_yaw"], mood=e, stance=0.5 * -sgn, hunch=0.55 + 0.25 * brace,
-                               lean=lean, head_nod=0.5 * whip + 0.08 * thrust - 0.02 - 0.2 * brace,
-                               look=(-0.3 * sgn, 0.14), head_turn=0.45 * brace * sgn,
+        return MinoPoseS5(yaw=-sgn * st["mino_yaw"], mood=e, stance=0.5 * -sgn,
+                               hunch=0.55 - 0.2 * thrust + 0.25 * brace,
+                               lean=lean, head_nod=0.5 * whip + 0.24 * thrust - 0.02 - 0.2 * brace,
+                               look=(-0.38 * sgn, 0.24), head_turn=0.45 * brace * sgn,
                                blink=0.92 * brace if brace > 0.02 else None,
                                walk=walk, phase=phase, near=arm, far=arm, seed=5, shove_y=MINO_SHOVE_Y,
                                hug_reach=reach, hug_d=CHEST_D["orc"],
@@ -917,7 +1050,7 @@ def mino_pose(t, st, sgn=1.0):
     unbrace = core.inout_sine(clamp((ts - 0.25) / 0.6))
     flinch = 1.0 - core.inout_sine(clamp((ts - 0.3) / 0.5))           # the flinch eases off ...
     peek = core.inout_sine(clamp((ts - 0.2) / 0.16))                 # ... the eyes pop open: no blow?
-    whoa = core.inout_sine(clamp((t - (T_WALK_IN[0] + 0.02)) / 0.36))        # hands up and away as he comes
+    whoa = core.inout_sine(clamp((t - (T_WALK_IN[0] - 0.06)) / 0.36))        # hands up and away as he comes
     stun = core.inout_sine(clamp((t - (T_HUG - 0.05)) / 0.32))
     tb = T_HUGBACK[0]
     hover = core.inout_sine(clamp((t - tb) / 0.9))                  # far arm: over his shoulder
@@ -926,20 +1059,22 @@ def mino_pose(t, st, sgn=1.0):
     settle = core.inout_sine(clamp((t - (tb + 1.7)) / 0.9))
     u = (t - T_HUGBACK[1] - 0.6) % 4.2 if t > T_HUGBACK[1] + 0.6 else 9.0
     pat = 0.14 * math.sin(math.pi * u / 0.34) ** 2 if u < 0.68 else 0.0    # slow pats on his back
-    common = [(T_STOP - 1.0, 0.0, ch.Arm("s5_flinch")), (T_STOP + 0.25, 0.6, SQ),
-              (T_WALK_IN[0] + 0.02, 0.36, ch.Arm("s5_whoa")), (T_HUG - 0.05, 0.32, ch.Arm("s5_stun"))]
+    common = [(T_STOP - 1.0, 0.0, ch.Arm("s5_flinch")), (T_STOP + 0.22, 0.42, ch.Arm("s5_what")),
+              (T_WALK_IN[0] - 0.06, 0.36, ch.Arm("s5_whoa")), (T_HUG - 0.05, 0.32, ch.Arm("s5_stun"))]
     # far arm over the orc's shoulders: it starts from a half-open wrap (a tight arc over his
     # shoulder, not a wide level reach)
-    far = arm_track(t, common + [(tb, 0.9, ch.Arm("hug", phase=lerp(0.55, 0.18, close) * (1.0 - settle)), "inout_sine", 0.5)])
-    near = arm_track(t, common + [(tb + 0.1, 0.55, ch.Arm("s5_aside")),
-                                  (tb + 0.6, 0.7, ch.Arm("hug", phase=lerp(1.0, 0.18, close_n) * (1.0 - settle) + pat))])
+    far = arm_track(t, common + [(tb, 1.15, ch.Arm("hug", phase=lerp(0.55, 0.18, close) * (1.0 - settle)), "inout_sine", 0.5)])
+    # near arm: down out of the frozen 'I didn't do anything' -- it comes down and in, elbow
+    # down, to HOVER by the orc's back without touching (the hesitation), then settles on it
+    near = arm_track(t, common + [(tb + 0.12, 0.8, ch.Arm("hug", phase=lerp(0.62, 0.18, close_n) * (1.0 - settle) + pat),
+                                   "inout_sine", 0.4)])
     confused = core.window(ts, 0.35, T_WALK_IN[0] - T_STOP + 0.3, 0.3, 0.25)
     # frozen: his eyes dart to the crowd, then come down to the orc
     dart = core.track(t, [(T_HUG + 0.5, 0.0), (T_HUG + 0.68, -0.55, "inout_sine"), (T_HUG + 0.92, -0.55),
                           (T_HUG + 1.1, 0.5, "inout_sine"), (T_HUG + 1.3, 0.5), (T_HUGBACK[0] + 0.05, 0.0, "inout_sine")])
     down = core.inout_sine(clamp((t - (T_HUGBACK[0] - 0.15)) / 0.4))
     tender = close
-    e = FURY.blend(FLINCH, flinch).blend(B.expr("neutral"), clamp(unbrace * (1.0 - flinch)))
+    e = FURY_M.blend(FLINCH, flinch).blend(B.expr("neutral"), clamp(unbrace * (1.0 - flinch)))
     for m, k in (("skeptical", confused), ("worried", whoa * (1.0 - stun)), ("surprised", stun * (1.0 - 0.7 * down)),
                  ("worried", 0.6 * down * (1.0 - tender)), ("kind", tender)):
         if k > 0:
@@ -956,7 +1091,7 @@ def mino_pose(t, st, sgn=1.0):
     # giving in: his head turns to us and tilts so his jaw comes to rest on the orc's crown (it
     # stays ABOVE the orc's face: no bow), eyes closing
     yaw = -sgn * st["mino_yaw"]
-    return MN.MinotaurPose(yaw=yaw, mood=e,
+    return MinoPoseS5(yaw=yaw, mood=e,
                            lean=-0.2 * flinch + 0.07 * curious - 0.12 * whoa * (1 - stun) - 0.1 * stun * (1.0 - hover)
                            + 0.05 * close - rocked,
                            hunch=0.55 + 0.25 * flinch - 0.15 * stun * (1.0 - hover) + 0.35 * close,
@@ -973,12 +1108,24 @@ def mino_pose(t, st, sgn=1.0):
                            tail_swing=lerp(0.6 * math.sin(t * 2.3), 0.25 * math.sin(t * 0.9), st["stop"]))
 
 
+def pair_poses(t, st):
+    """(orc pose, minotaur pose) at t; a shover's pose carries his partner's torso edge
+    (s5_front) so the palms land on it (see _g_shove)."""
+    op, mp = orc_pose(t, st), mino_pose(t, st)
+    if st["fight"]:
+        if st["orc_shove"] is not None:
+            op = replace(op, s5_front=torso_front("mino", mp, t, st["mino_x"] - st["orc_x"], "orc"))
+        if st["mino_shove"] is not None:
+            mp = replace(mp, s5_front=torso_front("orc", op, t, st["orc_x"] - st["mino_x"], "mino"))
+    return op, mp
+
+
 def draw_pair(cr, cx, gy, sc, t, light_orc, light_mino=None, detail=None):
     """The orc and the minotaur at anchor (cx, gy) (the fight centre), z-correct (the hug
     interleaves their layers like characters.draw_brawl). Returns (orc_rig, mino_rig)."""
     st = pair_state(t)
     lm = light_mino or light_orc
-    op, mp = orc_pose(t, st), mino_pose(t, st)
+    op, mp = pair_poses(t, st)
     hug = st.get("hug", 0.0)
     rock = 3.5 * hug * math.sin((t - T_HUG) * TAU * 0.21) if not st["fight"] else 0.0
     ox, mx = cx + (st["orc_x"] + rock) * sc, cx + (st["mino_x"] + rock) * sc
@@ -1040,7 +1187,7 @@ class Member:
         self.D = D0 + RING_RD * rf * math.sin(self.theta)
         self.yaw0 = yaw_toward(X0 - self.X, D0 - self.D)
         self.yaw1 = yaw_toward(self.dir[0], self.dir[1])
-        self.t_walk = self.t_turn + 0.45
+        self.t_walk = self.t_turn + 0.3                # a beat to turn, then away
         r = random.Random(seed * 31 + 7)
         self.ph = r.random() * TAU
         self.bouncy = r.random() < 0.55
@@ -1053,23 +1200,24 @@ _E1 = L2.start - 0.25
 _W = L3.start - 0.2
 MEMBERS = [
     # back arc: faces lit by their crystals, cheering (a tall elf peeks from a second row)
-    Member(0, 22, "harpy", 517, 1.0, 6, 0.8, "sneer", (_W + 0.55, 0.8, 0.6, 1.15)),
-    Member(1, 47, "elf", 503, 1.0, 2, 0.35, "skeptical", (_W + 0.3, 0.45, 0.9, 1.1), hat="hood"),
-    Member(2, 72, "dwarf", 541, 1.0, 0, 0.9, "worried", (_W + 1.35, 0.15, 1.0, 1.3)),
-    Member(3, 101, "goblin", 524, 1.0, 1, 1.0, "sneer", (_W + 0.95, -0.3, 1.0, 1.35), laugh=True),
-    Member(4, 127, "elf", 512, 1.0, 4, 0.35, "bored", (_E1, -0.2, 1.0, 1.15), cloth="#5A4A6E"),
-    Member(5, 155, "kobold", 533, 1.0, 9, 0.9, "worried", (_W + 1.55, -0.5, 0.85, 1.4)),
-    Member(14, 160, "elf", 561, 1.2, 5, 0.3, "skeptical", (_W + 0.45, -0.1, 1.0, 1.1)),
+    Member(0, 22, "harpy", 517, 1.0, 6, 0.8, "sneer", (_W + 0.55, 0.85, 0.5, 1.3)),
+    Member(1, 47, "elf", 503, 1.0, 2, 0.35, "skeptical", (_W + 0.3, 0.75, 0.66, 1.25), hat="hood"),
+    Member(2, 72, "dwarf", 541, 1.0, 0, 0.9, "worried", (_W + 1.35, 0.45, 0.9, 1.45)),
+    Member(3, 101, "goblin", 524, 1.0, 1, 1.0, "sneer", (_W + 0.95, -0.3, 0.95, 1.2), laugh=True),
+    Member(4, 127, "elf", 512, 1.0, 4, 0.35, "bored", (_E1, -0.75, 0.66, 1.25), cloth="#5A4A6E"),
+    Member(5, 155, "kobold", 533, 1.0, 9, 0.9, "worried", (_W + 1.55, -0.85, 0.5, 1.55)),
+    Member(14, 160, "elf", 561, 1.2, 5, 0.3, "skeptical", (_W + 0.45, -0.9, 0.45, 1.25)),
     # the sides
-    Member(6, 0, "goblin", 545, 1.0, 7, 0.9, "skeptical", (_E1 + 1.25, 1.0, 0.3, 1.45), hat="cap"),
-    Member(7, 180, "dwarf", 529, 1.0, 8, 0.8, "sad", (_W + 1.15, -0.35, 1.0, 1.3)),
+    Member(6, 0, "goblin", 545, 1.0, 7, 0.9, "skeptical", (_E1 + 1.25, 1.0, 0.3, 1.6), hat="cap"),
+    Member(7, 180, "dwarf", 529, 1.0, 8, 0.8, "sad", (_W + 1.15, -0.95, 0.3, 1.45)),
     # front arc: backs to us, crystals showing the fight; the middle stays open
-    Member(8, -22, "elf", 507, 1.0, 3, 0.3, "skeptical", (_E1 + 0.65, 1.0, 0.2, 1.25)),
-    Member(9, -47, "dwarf", 522, 1.0, 10, 0.9, "worried", (_W + 1.95, 1.0, 0.15, 1.35)),
-    Member(10, -128, "goblin", 536, 1.0, 11, 1.0, "sneer", (_W + 1.65, -0.12, 1.0, 1.35), laugh=True),
-    Member(11, -153, "kobold", 548, 1.06, 12, 1.0, "bored", (_W + 0.75, 0.05, 1.0, 1.4)),
-    Member(13, 141, "harpy", 538, 1.24, 13, 0.7, "sneer", (_W + 0.85, -0.45, 0.9, 1.15)),
+    Member(8, -22, "elf", 507, 1.0, 3, 0.3, "skeptical", (_E1 + 0.65, 1.0, 0.2, 1.35)),
+    Member(9, -47, "dwarf", 522, 1.0, 10, 0.9, "worried", (_W + 1.95, 1.0, 0.15, 1.5)),
+    Member(10, -128, "goblin", 536, 1.0, 11, 1.0, "sneer", (_W + 1.65, -0.9, 0.35, 1.5), laugh=True),
+    Member(11, -153, "kobold", 548, 1.06, 12, 1.0, "bored", (_W + 0.75, -0.95, 0.3, 1.55)),
+    Member(13, 141, "harpy", 538, 1.24, 13, 0.7, "sneer", (_W + 0.85, -0.8, 0.6, 1.3)),
 ]
+MEMBER_BY_ID = {m.i: m for m in MEMBERS}
 N_LOWER = 15                                      # 14 crystals + the pixie's (last)
 
 
@@ -1084,12 +1232,15 @@ def lower_amount(m, t):
     return core.inout_sine(clamp((t - t0) / (t1 - t0)))
 
 
+WALK_ACC = 0.4                                    # s to reach walking speed
+
+
 def member_ground(m, t):
     """Where member m stands at t: (X, D, walking 0..1, distance walked)."""
     if t <= m.t_walk:
         return m.X, m.D, 0.0, 0.0
     tw = t - m.t_walk
-    acc = 0.5
+    acc = WALK_ACC
     dist = m.speed * (tw * tw / (2 * acc) if tw < acc else (tw - acc * 0.5))
     walk = clamp(tw / 0.35)
     return m.X + m.dir[0] * dist, m.D + m.dir[1] * dist, walk, dist
@@ -1208,6 +1359,76 @@ def pixie_pose(t, feed, staged=False):
 PIX_MCU = (1330.0, 1262.0, 12.5)                  # her medium close-up: anchor x, ground y (below frame), scale
 
 
+class _SoftWings:
+    """Her close-up: at this size the library's buzz (three hard-edged copies at unrelated
+    angles every frame plus a speed arc) strobes like a wireframe fan beside her face. Here the
+    beat is a soft motion smear -- the wing drawn at several positions across its stroke,
+    blurred -- under one faint crisp wing that only sways gently. Active only while the
+    close-up pixie draws (it swaps the pixie module's private wing painter)."""
+
+    N = 13
+    AMP = 0.5                                     # half the stroke (rad), like pixie_wing_buzz's range
+
+    def __init__(self, t, blur=9.0):
+        self.t, self.blur = t, blur
+
+    def __enter__(self):
+        self.orig_w, self.orig_b = PX._wings, PX.pixie_wing_buzz
+        PX._wings = self._draw
+        return self
+
+    def __exit__(self, *exc):
+        PX._wings, PX.pixie_wing_buzz = self.orig_w, self.orig_b
+        return False
+
+    def _paint_wings(self, q, c2, flap, buzz_pose):
+        """One library wing set at flap angle `flap` (rad), drawn into c2."""
+        cr0, pose0 = q.cr, q.pose
+        q.cr, q.pose = c2, buzz_pose
+        PX.pixie_wing_buzz = lambda t, seed=0: flap / 0.25        # buzz 0 -> flap = 0.25 x this
+        try:
+            self.orig_w(q)
+        finally:
+            q.cr, q.pose = cr0, pose0
+            PX.pixie_wing_buzz = self.orig_b
+
+    def _draw(self, q):
+        cr = q.cr
+        m = cr.get_matrix()
+        root = q.proj.xy(q.S["T"]((0.0, -0.80 * q.b.sh_y, -3.0)))
+        R = 58.0
+        corners = [cr.user_to_device(root[0] + sx * R, root[1] + sy * R) for sx in (-1, 1) for sy in (-1, 1)]
+        pad = 3.0 * self.blur
+        x0 = int(min(c[0] for c in corners) - pad)
+        y0 = int(min(c[1] for c in corners) - pad)
+        x1 = int(max(c[0] for c in corners) + pad)
+        y1 = int(max(c[1] for c in corners) + pad)
+        if x1 <= x0 or y1 <= y0:
+            return
+        still = q.pose.with_(buzz=0.0)
+        # the smear: the wing across its whole stroke, at half resolution, blurred
+        k = 0.5
+        surf = core.new_surface(int((x1 - x0) * k) + 2, int((y1 - y0) * k) + 2)
+        c2 = cairo.Context(surf)
+        c2.scale(k, k)
+        c2.translate(-x0, -y0)
+        c2.transform(m)
+        for i in range(self.N):
+            self._paint_wings(q, c2, self.AMP * math.cos(math.pi * i / (self.N - 1)), still)
+        surf.flush()
+        soft = fx.blur_surface(surf, self.blur * k)
+        cr.save()
+        cr.identity_matrix()
+        cr.translate(x0, y0)
+        cr.scale(1.0 / k, 1.0 / k)
+        cr.set_source_surface(soft, 0, 0)
+        cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+        cr.paint_with_alpha(0.42)
+        cr.restore()
+        # one crisp wing over it (veins, spot): a slow sway, never the aliased buzz
+        self._paint_wings(q, cr, 0.12 * math.sin(self.t * TAU * 1.3), still)
+
+
 def pixie_mcu_pose(t, feed):
     """Shot 4, her medium close-up (staged 3/4 toward the pair, who sit soft on the left third
     behind her). Thought -> glance -> line: she stares down at the hug and her face curdles
@@ -1262,6 +1483,18 @@ def dragon_light(t):
     return base
 
 
+BAG_DAMP = 0.35                                   # the S3 rain drying off it (S4 0.6 .. S6 dry)
+
+
+def dragon_bag(t):
+    """The apothecary's sack he has carried since S2 (S3 -> S4 -> S6): open at the neck, the
+    remedies peeking out, hanging from his LEFT hand (his far arm: he faces right), the right
+    hand in his coat pocket. It sways a hair with his breathing."""
+    swing = 0.04 * math.sin(t * 1.3) + 0.02 * math.sin(t * 2.9 + 1.0)
+    return ch.Arm("carry_bag", hold=P.bag_hold(dragon_light(t).with_(exposure=0.82), t, swing, state="open",
+                                               damp=BAG_DAMP))
+
+
 def dragon_pose(t, shot):
     """shot 1: the master; 5: his medium close-up (the lines); 6: the emptied square."""
     blink = None
@@ -1273,7 +1506,7 @@ def dragon_pose(t, shot):
         e = _expr(("lonely", 1.0), ("worried", 0.5 * wince))
         if wince > 0.6:
             blink = clamp((wince - 0.6) * 4.0)
-        return ch.DragonPose(facing=1, turn=0.55, near=ch.Arm("pockets"), far=ch.Arm("pockets"), mood=e,
+        return ch.DragonPose(facing=1, turn=0.55, near=ch.Arm("pockets"), far=dragon_bag(t), mood=e,
                              look=(0.55, 0.05), wings=-0.85, hunch=0.6, head_nod=-0.05 - 0.05 * wince, blink=blink,
                              tail_curl=0.5, seed=1)
     if shot == 5:
@@ -1301,7 +1534,7 @@ def dragon_pose(t, shot):
             blink = core.window(t, T_DRAGON + 0.05, T_DRAGON + 0.25, 0.08, 0.1)
         elif L3.end + 0.05 < t < L3.end + 0.55:                      # a slow blink as it lands
             blink = core.window(t, L3.end + 0.05, L3.end + 0.55, 0.18, 0.25)
-        return ch.DragonPose(facing=1, turn=0.3, near=ch.Arm("pockets"), far=ch.Arm("pockets"), mood=e,
+        return ch.DragonPose(facing=1, turn=0.3, near=ch.Arm("pockets"), far=dragon_bag(t), mood=e,
                              look=look, wings=-0.85, hunch=0.62 - 0.08 * breath + 0.05 * sink, lean=-0.04 * breath,
                              head_nod=-0.12 - 0.12 * think + 0.07 * breath - 0.08 * sink,
                              head_turn=0.06 * follow + 0.06 * track * sweep, head_tilt=0.05 * gentle,
@@ -1311,7 +1544,7 @@ def dragon_pose(t, shot):
     sigh = core.window(t, T_SIGH, T_SIGH + 1.3, 0.35, 0.7)
     soften = core.inout_sine(clamp((t - (T_SIGH + 0.9)) / 1.4))
     e = _expr(("lonely", 1.0), ("sigh", 0.55 * sigh), ("kind", 0.4 * soften))
-    return ch.DragonPose(facing=1, turn=0.55, near=ch.Arm("pockets"), far=ch.Arm("pockets"), mood=e,
+    return ch.DragonPose(facing=1, turn=0.55, near=ch.Arm("pockets"), far=dragon_bag(t), mood=e,
                          look=(0.6, 0.12 + 0.1 * sigh), wings=-0.85 + 0.3 * soften, hunch=0.6 + 0.06 * sigh - 0.05 * soften,
                          head_nod=-0.06 - 0.06 * sigh + 0.04 * soften, sigh=0.75 * sigh, tail_curl=0.5, seed=1)
 
@@ -1872,7 +2105,9 @@ ARCH_AT = {1: (150.0, 395.0, (1180.0, -190.0)), 5: (40.0, 300.0, (1250.0, -330.0
 
 # shots: 1 master, 2 insert (the crystal), 3 the circle, 4 the pixie, 5 the dragon, 6 the
 # emptied square (the master's set-up again)
-SHOT_STARTS = ((0.0, 1), (T_INS, 2), (T_CIRCLE, 3), (T_PIXIE, 4), (T_DRAGON, 5), (T_EMPTY, 6))
+SHOT_STARTS = ((0.0, 1), (T_INS, 2), (T_CIRCLE, 3), (T_REACT, 7), (T_REACT1, 3), (T_PIXIE, 4), (T_DRAGON, 5),
+               (T_EMPTY, 6))
+CAM_R = zoom_cam(CAM_B, 960.0, 240.0, 1.45)       # the watchers: the far side soft behind their faces
 
 
 def cam_d(t):
@@ -1897,6 +2132,8 @@ def camera_for(t, shot):
         return c.shake(t, amp=2.0 * (1.0 - settle), freq=2.4, seed=11)
     if shot == 4:
         return CAM_C.drift(t, amp=3.0, freq=0.2, seed=4)
+    if shot == 7:
+        return CAM_R.drift(t, amp=2.0, freq=0.3, seed=9)
     if shot == 5:
         return cam_d(t)
     u = core.inout_sine(clamp((t - T_EMPTY) / (DUR - T_EMPTY)))
@@ -1904,12 +2141,13 @@ def camera_for(t, shot):
 
 
 def set_of(shot):
-    """Which baked set-up a shot uses (the emptied square is the master's)."""
-    return 1 if shot == 6 else shot
+    """Which baked set-up a shot uses (the emptied square is the master's; the watchers'
+    cutaway paints the circle's set-up, pushed in and soft)."""
+    return {6: 1, 7: 3}.get(shot, shot)
 
 
 def base_cam(shot):
-    return {1: CAM_A0, 2: CAM_I, 3: CAM_B, 4: CAM_C, 5: CAM_D0, 6: CAM_A0}[shot]
+    return {1: CAM_A0, 2: CAM_I, 3: CAM_B, 4: CAM_C, 5: CAM_D0, 6: CAM_A0, 7: CAM_B}[shot]
 
 
 def shot_of(t):
@@ -2126,6 +2364,7 @@ def setup():
     st["soft2"] = Soft(0.25)
     st["dusk"] = fx.Layer(draw_dusk, res=0.25, **env.MARGIN)
     st["mist"] = env.Mist(-700, HOUSE_GY - 140, 3400, 260, PAL["haze"], 0.14, seed=3, speed=10)
+    st["watch_off"] = watcher_offsets()
     return st
 
 
@@ -2184,6 +2423,110 @@ def draw_items(cr, items, t, cam, feed, sfeed, *, glows=None, crowd_dt=0.0, dy_f
                 rig = ch.draw_pixie(cr, sx + fly[0], sy + fly[1], s, pixie_pose(t, feed), L_CROWD, t, detail)
                 if glows is not None and "crystal" in rig.points:
                     glows.append((*rig.points["crystal"], s, 1.0 - 0.75 * pixie_low(t)))
+
+
+# ----------------------------------------------------------------------------------------
+# the watchers: a cutaway on three faces as the silence falls (s5_silence)
+# ----------------------------------------------------------------------------------------
+# Seen from the ring centre: the back arc faces the pair, so a reverse on them shows their faces
+# lit from below by their own raised crystals, the far side of the square soft behind them.
+# Staged in screen space (a cheat, like any reaction shot): (member, head target, scale, yaw,
+# eye line, cheering arm, glance). At the cut they are mid-gasp; on the silence the mouths
+# SNAP shut, the eyes stay wide and frozen, the cheering fist stops in the air and sinks.
+
+@dataclass
+class Watcher:
+    i: int
+    head: tuple
+    scale: float
+    yaw: float
+    look: tuple
+    cheer: bool = False
+    glance: float = 0.0
+    sharp: bool = True
+
+
+WATCHERS = [Watcher(14, (250.0, 318.0), 1.75, 0.42, (0.25, 0.25), sharp=False),
+            Watcher(2, (1745.0, 575.0), 2.05, -0.5, (-0.3, 0.3), sharp=False),
+            Watcher(1, (585.0, 300.0), 2.4, 0.55, (0.32, 0.28), glance=0.55),
+            Watcher(5, (1425.0, 430.0), 3.0, -0.62, (-0.4, 0.3), cheer=True),
+            Watcher(3, (985.0, 505.0), 3.05, 0.18, (-0.08, 0.3), cheer=True, glance=-0.6)]
+
+
+def _g_film_high(q, sk, side, arm):
+    """The crystal held up high and out beside the head (filming over the crowd): the face
+    stays clear under its glow even when the holder faces us."""
+    AL = FK._AL(q)
+    hc = q.S["head_c"]
+    tgt = (sk[0] + side * 0.28 * AL, hc[1] - 0.34 * AL, hc[2] + 0.12 * AL)
+    return FK.G(tgt, "grip", -0.9, "front", (side * 1.0, 0.7, -0.3), "up")
+
+
+FK.GESTURES.setdefault("s5_film_high", _g_film_high)
+
+
+def watcher_pose(m, w, t, feed, k):
+    """A watcher's face and arms during the cutaway (k: its index, staggers the details)."""
+    shut = core.inout_sine(clamp((t - (T_SIL + 0.03 + 0.03 * (k % 2))) / 0.08))   # the mouths SNAP shut
+    e = B.expr("surprised")
+    uneasy = core.inout_sine(clamp((t - (T_SIL + 0.3)) / 0.4))
+    e = e.blend(B.expr(m.mood_after), 0.3 * uneasy)
+    e = e.with_(open=0.85 * (1.0 - shut), mouth="o" if shut < 0.5 else "", lid=min(e.lid, 0.04),
+                smile=lerp(0.0, -0.35, shut), pupil=0.75)
+    glance = core.window(t, T_SIL + 0.3, T_SIL + 0.62, 0.1, 0.12) * w.glance
+    look = (w.look[0] + glance, w.look[1] - 0.15 * abs(glance))
+    # a frozen stare: no idle blinks -- only the elf's one slow blink of disbelief
+    blink = core.window(t, T_SIL + 0.42, T_SIL + 0.72, 0.12, 0.14) if w.i == 1 else 0.0
+    pose = ch.crowd_pose("film", t, m.spec, yaw=w.yaw, thumb=feed, mood=e, talk=0.6 * (1.0 - shut), look=look,
+                         head_nod=0.04 - 0.06 * shut, blink=blink)
+    pose = pose.with_(near=ch.Arm("s5_film_high", hold=pose.crystal))
+    if w.cheer:
+        # the fist pumping in the air stops dead at the hush ... and sinks
+        ph = min(t, T_SIL + 0.05) * 1.7 + m.ph * 0.2
+        sink = core.inout_sine(clamp((t - (T_SIL + 0.28)) / 0.55))
+        pose = pose.with_(far=ch.Arm("cheer", amt=1.0 - 0.75 * sink, prev="rest", phase=ph))
+    return pose
+
+
+def draw_watchers(cr, t, st, cam, lc):
+    """Shot 7: the watchers' faces, the far side of the square soft behind them."""
+    feed = make_feed(t)
+    off = st["watch_off"]
+    soft = st["soft"]
+    sc = soft.begin()
+    for k, w in enumerate(WATCHERS):
+        if w.sharp:
+            continue
+        m = MEMBER_BY_ID[w.i]
+        ox, oy = off[w.i]
+        rig = ch.draw_crowd(sc, w.head[0] - ox * w.scale, w.head[1] - oy * w.scale, w.scale, m.spec,
+                            watcher_pose(m, w, t, feed, k), L_CROWD, t, 1)
+        if "crystal" in rig.points:
+            fx.glow(lc, *rig.points["crystal"], 150.0 * w.scale, CYAN, 0.2)
+    soft.end(cr, 5.0)
+    for k, w in enumerate(WATCHERS):
+        if not w.sharp:
+            continue
+        m = MEMBER_BY_ID[w.i]
+        ox, oy = off[w.i]
+        rig = ch.draw_crowd(cr, w.head[0] - ox * w.scale, w.head[1] - oy * w.scale, w.scale, m.spec,
+                            watcher_pose(m, w, t, feed, k), L_CROWD, t)
+        if "crystal" in rig.points:
+            cx_, cy_ = rig.points["crystal"]
+            fx.glow(lc, cx_, cy_, 170.0 * w.scale, CYAN, 0.24)
+            fx.glow(lc, cx_, cy_ + 90.0 * w.scale, 150.0 * w.scale, CYAN, 0.1)    # on the face below it
+
+
+def watcher_offsets():
+    """Each watcher's head offset from its anchor at scale 1 (a dry run): the cutaway places
+    the HEADS where the composition wants them."""
+    out = {}
+    feed = ch.demo_thumb if hasattr(ch, "demo_thumb") else None
+    for k, w in enumerate(WATCHERS):
+        m = MEMBER_BY_ID[w.i]
+        rig = ch.draw_crowd(_SCRATCH_CR, 0.0, 0.0, 1.0, m.spec, watcher_pose(m, w, T_REACT, feed, k), L_CROWD, T_REACT)
+        out[w.i] = rig.head
+    return out
 
 
 def pixie_flyoff(t):
@@ -2345,6 +2688,10 @@ def draw(cr, t, st):
         draw_insert(cr, t, st, cam, lc)
         post(cr, t, st, bloom=0.3)
         return
+    if shot == 7:
+        draw_watchers(cr, t, st, cam, lc)
+        post(cr, t, st, bloom=0.5)
+        return
     feed = make_feed(t)
     sfeed = scroll_thumb(t)
     soft = st["soft"]
@@ -2370,7 +2717,8 @@ def draw(cr, t, st):
         soft.end(cr, 4.0)
         px_, py_, ps_ = PIX_MCU
         dx = 4.0 * core.noise1(t * 0.7, 31)                  # she hangs in the air, drifting a hair
-        rig = ch.draw_pixie(cr, px_ + dx, py_, ps_, pixie_mcu_pose(t, feed), L_PIX, t)
+        with _SoftWings(t):
+            rig = ch.draw_pixie(cr, px_ + dx, py_, ps_, pixie_mcu_pose(t, feed), L_PIX, t)
         if "crystal" in rig.points:                          # its cold light from below on her face
             cx_, cy_ = rig.points["crystal"]
             fx.glow(lc, cx_, cy_ - 40.0, 520.0, CYAN, 0.10 + 0.22 * core.inout_sine(clamp((t - (L1.end + 0.38)) / 0.4)))
@@ -2453,7 +2801,7 @@ def _build_cues():
         cues.append((round(m.t_turn, 3), "cloth_rustle", {"gain": 0.18, "pan": _pan_world(m.X, m.D, m.t_turn)}))
         b = CW.BUILDS[m.spec.kind]
         step = b.stride * b.fit * 0.5
-        acc = 0.5
+        acc = WALK_ACC
         for k in range(1, 40):
             dist = k * step
             d_acc = m.speed * acc / 2.0

@@ -142,6 +142,7 @@ from film.lib import characters as ch
 from film.lib.characters import base as B
 from film.lib.characters import _folk as F
 from film.scenes import _garden as G
+from film.scenes import _s7_insert as INS
 
 SCENE = 7
 DUR = tl.scene(SCENE).duration
@@ -179,14 +180,14 @@ G_SCOOT = ((T_SNAP + 0.26, 0.17), (T_SNAP + 0.47, 0.17))   # hop, hop: she scoot
 T_D_LOOK = B_HAND.t - 0.05                  # for ME? -- he looks from the bread up to her
 T_D_REACH0 = B_HAND.t + 0.15                # his great hand turns palm-up and comes down to her ...
 T_GIVE = B_HAND.t + 0.65                    # ... and she lays his half in it
-T_PAT1 = T_GIVE + 0.18                      # her tiny hand comes to rest on his claw-fingers (HOLD) ...
-T_LET = T_GIVE + 0.85                       # ... and lifts away; his fingers close round the bread
-T_CRADLE = T_GIVE + 1.0                     # (B) he draws it in to his chest, both hands round it ...
+T_PAT1 = T_GIVE + 0.24                      # her tiny hand comes to rest on his claw-fingers (HOLD) ...
+T_LET = T_GIVE + 0.97                       # ... and lifts away; his fingers begin to close round the bread
+T_CRADLE = T_GIVE + 1.22                    # (B) he draws it in to his chest, both hands round it ...
 T_SWAP = T_CRADLE + 0.75                    # ... where his right hand takes it (then down to his lap)
 # shots
-CUT_A2 = T_SNAP + 0.25                      # 1.55  medium two-shot: hop, hop, the offer
-CUT_A3 = T_GIVE - 0.12                      # 2.33  insert: tiny hand, huge claw
-CUT_B = T_GIVE + 1.05                       # 3.50  two-shot: his reaction, feeding the birds together
+CUT_A2 = T_SNAP + 0.22                      # 1.52  two-shot: hop, hop, "for me?", the offer
+CUT_A3 = T_GIVE - 0.24                      # 2.21  insert: tiny hand, huge claw (HOLD)
+CUT_B = T_GIVE + 1.27                       # 3.72  two-shot: his reaction, feeding the birds together
 CUT_C = B_TEEN.t - 0.05                     # 6.45  wide: the faun walks in
 CUT_C2 = B_OFFER.t - 0.05                   # 7.95  three-shot: the offer, the hesitation, the sit
 CUT_E = B_FULL.t - 0.25                     # 14.75 the bench is full
@@ -197,12 +198,12 @@ CUT_G3 = W_ME + 0.15                        # 22.12 ... back on him: "was for be
 CUT_H = L3.start - 0.35                     # 24.25 a loaf of bread
 CUT_I = L3.end + 0.30                       # 27.44 the warm pool
 # B -- feeding the pigeons together: (start, duration) of each toss
-TOSS_G = [(CUT_B + 0.45, 0.62), (CUT_B + 1.45, 0.62), (CUT_B + 2.10, 0.62)]
-TOSS_D = [(T_SWAP + 0.3, 0.72), (CUT_B + 2.05, 0.66)]
+TOSS_G = [(CUT_B + 0.4, 0.6), (CUT_B + 1.12, 0.6), (CUT_B + 1.8, 0.6)]
+TOSS_D = [(T_SWAP + 0.16, 0.64), (CUT_B + 1.79, 0.62)]
 REL_G = [a + 0.47 * d for a, d in TOSS_G]   # her crumbs leave her fingers
 REL_D = [a + 0.50 * d for a, d in TOSS_D]   # his
-T_CHUCKLE = REL_D[-1] + 0.18                # he chuckles: a puff of golden embers ...
-ARRIVALS = [(CUT_B + 0.85, -1), (CUT_B + 1.2, 1), (CUT_B + 1.6, -1), (CUT_B + 1.95, 1)]
+T_CHUCKLE = REL_D[-1] + 0.16                # he chuckles: a puff of golden embers ...
+ARRIVALS = [(CUT_B + 0.45, -1), (CUT_B + 0.75, 1), (CUT_B + 1.05, -1), (CUT_B + 1.3, 1)]
 # C -- the faun
 T_F_NOTICE = B_TEEN.t                       # he looks up and sees them, slows
 T_F_STOP = B_TEEN.t + 1.0                   # stands by the bench end, watching
@@ -213,8 +214,9 @@ T_F_ME = B_OFFER.t + 0.25                   # "me?"
 T_F_RUB0, T_F_RUB1 = B_OFFER.t + 0.72, B_TEENSIT.t - 0.4        # the neck rub, the glance away
 T_F_STEP = B_TEENSIT.t - 0.35               # he steps in to her ...
 T_F_TAKE = B_TEENSIT.t + 0.15               # ... takes the piece from her hand (standing)
-T_D_BOOK0, T_D_BOOK1 = B_OFFER.t + 0.75, B_OFFER.t + 1.15        # the dragon lifts the book off the seat
-T_D_SACK = B_OFFER.t + 1.45                 # ... and lowers it into the sack at his feet: room!
+T_D_SEE = B_TEEN.t + 0.2                    # the dragon sees the kid watching them ...
+T_D_BOOK0, T_D_BOOK1 = B_TEEN.t + 0.62, B_TEEN.t + 0.98         # ... quietly lifts the book off the seat ...
+T_D_SACK = B_TEEN.t + 1.3                   # ... and lowers it into the sack at his feet: room! (before the offer)
 G_HOPS = ((B_TEENSIT.t + 0.34, 0.17), (B_TEENSIT.t + 0.55, 0.17))   # she hops over to his side
 T_F_SIT0, T_F_SIT1 = B_TEENSIT.t + 0.5, B_TEENSIT.t + 1.05        # the faun sits at the end of the bench
 CUT_C3 = T_F_SIT1 - 0.05                    # 10.80 the lantern catches
@@ -492,17 +494,22 @@ def set_light(t, x=None, y=None, dim=1.0):
 Cam = core.Camera
 HANDS_A = (882.0, 798.0)                    # A3: the insert's centre -- her face, her tiny hand, his palm, the bread
 SHOTS = [
-    ("A1", 0.0, CUT_A2, [(0.0, Cam(806.0, 786.0, 5.5)), (T_TEAR0, Cam(803.0, 788.0, 5.75)),
-                         (T_SNAP + 0.05, Cam(800.0, 790.0, 6.05)), (CUT_A2, Cam(800.0, 790.0, 6.1))]),
-    ("A2", CUT_A2, CUT_A3, [(CUT_A2, Cam(905.0, 742.0, 3.2)), (CUT_A3, Cam(903.0, 744.0, 3.32))]),
-    ("A3", CUT_A3, CUT_B, [(CUT_A3, Cam(HANDS_A[0], HANDS_A[1], 9.0)),
-                           (CUT_B, Cam(HANDS_A[0] - 1.0, HANDS_A[1] - 1.0, 9.6))]),
+    # A1: close on her and her loaf (his coat and claw at the right edge) -- the break
+    ("A1", 0.0, CUT_A2, [(0.0, Cam(788.0, 804.0, 6.2)), (T_TEAR0, Cam(787.0, 805.0, 6.35)),
+                         (T_SNAP + 0.06, Cam(786.0, 806.0, 6.6)), (CUT_A2, Cam(786.0, 806.0, 6.62))]),
+    # A2: the two of them: hop, hop -- "for me?" -- his great palm turns up and comes down to her
+    ("A2", CUT_A2, CUT_A3, [(CUT_A2, Cam(906.0, 726.0, 3.05)), (CUT_A3, Cam(902.0, 730.0, 3.2))]),
+    # A3: the insert, laid out on its own (_s7_insert): TINY HAND, HUGE CLAW
+    ("A3", CUT_A3, CUT_B, [(CUT_A3, Cam(HANDS_A[0], HANDS_A[1], 7.6)), (CUT_B, Cam(HANDS_A[0], HANDS_A[1], 7.6))]),
     ("B", CUT_B, CUT_C, [(CUT_B, Cam(912.0, 742.0, 3.0)), (T_SWAP + 0.3, Cam(906.0, 758.0, 2.75)),
                          (CUT_C, Cam(892.0, 790.0, 2.25))]),
     ("C", CUT_C, CUT_C2, [(CUT_C, Cam(700.0, 745.0, 1.75)), (CUT_C2, Cam(694.0, 748.0, 1.85))]),
-    ("C2", CUT_C2, CUT_C3, [(CUT_C2, Cam(800.0, 760.0, 2.35)), (T_F_RUB0, Cam(792.0, 764.0, 2.6)),
-                            (T_F_STEP, Cam(790.0, 765.0, 2.62)), (T_F_SIT1, Cam(800.0, 760.0, 2.4))]),
-    ("C3", CUT_C3, CUT_C4, [(CUT_C3, Cam(1100.0, 568.0, 2.45)), (CUT_C4, Cam(1122.0, 552.0, 2.75))]),
+    ("C2", CUT_C2, CUT_C3, [(CUT_C2, Cam(786.0, 748.0, 2.6)), (T_F_RUB0, Cam(768.0, 752.0, 2.9)),
+                            (T_F_STEP, Cam(770.0, 752.0, 2.92)), (T_F_SIT1, Cam(800.0, 752.0, 2.45))]),
+    # C3: low on his upturned face (lower left), the dark lantern against the violet sky (upper
+    # right) -- nobody else in frame; the ember's arc joins them
+    ("C3", CUT_C3, CUT_C4, [(CUT_C3, Cam(1106.0, 560.0, 2.85)), (T_LIGHT, Cam(1110.0, 557.0, 2.95)),
+                            (CUT_C4, Cam(1114.0, 554.0, 3.1))]),
     ("C4", CUT_C4, CUT_D, [(CUT_C4, Cam(808.0, 712.0, 1.6)), (CUT_D, Cam(816.0, 714.0, 1.66))]),
     ("D", CUT_D, CUT_E, [(CUT_D, Cam(1316.0, 772.0, 1.6)), (CUT_E, Cam(1304.0, 768.0, 1.66))]),
     ("E", CUT_E, CUT_F, [(CUT_E, Cam(800.0, 790.0, 2.1)), (CUT_F, Cam(802.0, 789.0, 2.16))]),
@@ -515,7 +522,7 @@ SHOTS = [
                          (W_LOAF + 0.2, Cam(914.0, 766.0, 3.9), "inout_sine"), (CUT_I, Cam(916.0, 765.0, 4.0))]),
     ("I", CUT_I, DUR + 0.01, [(CUT_I, Cam(1120.0, 722.0, 1.33)), (DUR - 1.0 / 24.0, Cam(1128.0, 716.0, 1.3))]),
 ]
-DRIFT_PX = {"A1": 3.0, "A2": 2.6, "A3": 3.4, "B": 2.4, "C": 2.4, "C2": 2.4, "C3": 3.0, "C4": 2.4, "D": 2.4,
+DRIFT_PX = {"A1": 3.0, "A2": 2.6, "A3": 0.0, "B": 2.4, "C": 2.4, "C2": 2.4, "C3": 3.0, "C4": 2.4, "D": 2.4,
             "E": 3.0, "F": 2.4, "G": 3.6, "G2": 3.0, "G3": 3.6, "H": 3.6, "I": 2.0}
 
 
@@ -622,7 +629,7 @@ def _gg_sprinkle(sk, side, c):
 for _n, _f in (("s7_tear0", _gg_tear0), ("s7_tear1", _gg_tear1), ("s7_hold", _gg_hold),
                ("s7_give", _gg_world("g_give", "grip")), ("s7_pat", _gg_pat("g_pat")),
                ("s7_offer_d", _gg_world("g_offer_d", "grip")),
-               ("s7_out_f", _gg_world("g_out_f", "grip")), ("s7_out_d", _gg_world("g_out_d", "grip")),
+               ("s7_out_f", _gg_world("g_out_f", "offer")), ("s7_out_d", _gg_world("g_out_d", "grip")),
                ("s7_pat2", _gg_world("g_pat2", "flat")), ("s7_sprinkle", _gg_sprinkle)):
     ch.GNOME_GESTURES[_n] = _f
 
@@ -707,6 +714,19 @@ def _dev_scale(cr):
     return math.hypot(ux, uy)
 
 
+_INSERT = {"on": False}          # A3 (the hands insert) is being drawn: the close-up loaf
+
+
+def _bread(cr, x, y, size, light, state, face, seed):
+    """Her bread. In the close insert (A3) a torn half is drawn as the props loaf -- the rig's
+    half reads like a shell at that size -- with its fluffy torn face toward `face` and warm
+    from the oven; everywhere else (and at every other size) the gnome's own bread."""
+    if _INSERT["on"] and state == "half":
+        P.draw_bread(cr, x, y, size * 0.94, light, 0.0, state="half", face=face, seed=seed)
+        return
+    ch.gnome_bread(cr, x, y, size, light, state, face=face, seed=seed, detail=_bread_detail(cr))
+
+
 def bread_giver(state, face, size, light, seed=3, ofs=None, cap=None):
     """A hold callback: bread held upright at a library-like offset from the grip. cap: record
     its device centre and drawn scale in _CAP[cap] (setup reads them to solve the receiver)."""
@@ -723,7 +743,7 @@ def bread_giver(state, face, size, light, seed=3, ofs=None, cap=None):
             a, b = face * size * 0.3, -size * 0.18
         if cap:
             _CAP[cap] = (*cr.user_to_device(a, b), _dev_scale(cr))
-        ch.gnome_bread(cr, a, b, size, light, state, face=face, seed=seed, detail=_bread_detail(cr))
+        _bread(cr, a, b, size, light, state, face, seed)
         cr.restore()
     return cb
 
@@ -756,7 +776,7 @@ def bread_receiver(key, state, face, size, light, seed=3, cap=None, upright=True
             cr.scale(k, k)
         if cap:
             _CAP[cap] = (*cr.user_to_device(0.0, 0.0), _dev_scale(cr))
-        ch.gnome_bread(cr, 0.0, 0.0, size, light, state, face=face, seed=seed, detail=_bread_detail(cr))
+        _bread(cr, 0.0, 0.0, size, light, state, face, seed)
         cr.restore()
     return cb
 
@@ -1004,6 +1024,8 @@ def _gnome_arms(t, L):
 # ----------------------------------------------------------------------------------------
 # the dragon
 # ----------------------------------------------------------------------------------------
+SURPRISE_SHUT = B.MOODS["surprised"].with_(open=0.05, mouth="")     # silent: the brows and eyes say it
+AWE = B.MOODS["surprised"].with_(open=0.1, mouth="", smile=0.15)      # the lantern catches: a held breath
 AFTER_LAUGH = ch.Expr(brow_in=0.4, brow_out=0.18, brow_y=0.32, lid=0.22, lid_bot=0.32, lid_tilt=0.08, smile=0.85,
                       open=0.0, mouth="", cheek=0.75, pupil=1.12)
 DRAGON_BLINKS = [0.95, T_SNAP + 0.04, T_D_LOOK + 0.02, CUT_B + 0.5, 5.2, CUT_C + 0.7, B_OFFER.t + 0.9, T_EMBER_GO - 0.7,
@@ -1053,9 +1075,10 @@ def dragon_pose(t, light=None):
                       (T_SWAP + 0.1, (-0.3, 0.95)), (T_SWAP + 0.4, (-0.8, 0.45)), (REL_G[0] - 0.1, (-0.6, 0.8)),
                       (REL_G[0] + 0.3, (-0.2, 0.95)), (TOSS_D[0][0], (-0.1, 0.9)), (REL_D[0] + 0.4, (-0.3, 0.95)),
                       (ARRIVALS[0][0] + 0.4, (-0.6, -0.3)), (ARRIVALS[1][0] + 0.5, (0.5, -0.2)), (REL_D[1] - 0.2, (-0.3, 0.9)),
-                      (T_CHUCKLE, (-0.85, 0.4)), (CUT_C, (-0.85, 0.5)), (T_F_NOTICE + 0.6, (-0.95, 0.3)),
+                      (T_CHUCKLE, (-0.85, 0.4)), (CUT_C, (-0.85, 0.5)), (T_D_SEE, (-0.95, 0.3)),
                       (T_D_BOOK0 - 0.2, (-0.95, 0.3)), (T_D_BOOK0 - 0.05, (-0.7, 0.95)), (T_D_BOOK1 + 0.1, (0.2, 0.95)),
-                      (T_D_SACK + 0.15, (0.2, 0.95)), (T_D_SACK + 0.35, (-0.9, 0.4)), (T_EMBER_GO - 0.85, (-0.9, 0.4)),
+                      (T_D_SACK + 0.1, (0.2, 0.95)), (T_D_SACK + 0.3, (-0.9, 0.35)), (T_F_RUB0 + 0.2, (-0.95, 0.25)),
+                      (T_EMBER_GO - 0.85, (-0.9, 0.4)),
                       (T_EMBER_GO - 0.55, (0.15, 0.1)), (T_EMBER_GO, (0.3, -0.2)), (T_LIGHT - 0.12, (0.75, -0.9)),
                       (T_LIGHT + 0.9, (0.7, -0.85)), (B_DRIVER.t + 0.2, (-0.95, 0.15)),
                       (T_F_GIVE + 0.4, (-0.95, 0.2)), (B_WORKER.t + 0.4, (0.9, 0.0)), (CUT_F, (0.95, 0.15)),
@@ -1065,7 +1088,7 @@ def dragon_pose(t, light=None):
                       (T_LAST_D + 0.4, (-0.8, 0.45)), (T_D_LAP + 0.2, (-0.4, 0.9)), (T_D_LAP + 1.2, (-0.85, 0.35)),
                       (DUR, (-0.85, 0.35))])
     head_turn = _track(t, [(0.0, -0.17), (T_TEAR1, -0.17), (T_GIVE, -0.05), (CUT_B, 0.0), (T_SWAP, 0.05), (CUT_C, -0.15),
-                           (T_F_NOTICE + 0.7, -0.3), (T_D_BOOK0, -0.2), (T_D_BOOK1 + 0.1, 0.1), (T_D_SACK + 0.3, -0.25),
+                           (T_D_SEE + 0.2, -0.3), (T_D_BOOK0, -0.22), (T_D_BOOK1 + 0.1, 0.1), (T_D_SACK + 0.3, -0.28),
                            (T_EMBER_GO - 0.5, -0.25), (T_EMBER_GO + 0.1, 0.0), (T_LIGHT, 0.25), (T_LIGHT + 0.9, 0.25),
                            (B_DRIVER.t + 0.3, -0.3),
                            (B_WORKER.t + 0.6, 0.25), (T_DRAG1 + 0.2, 0.2), (T_DRAG1 + 0.5, -0.15), (CUT_H, -0.15),
@@ -1077,19 +1100,20 @@ def dragon_pose(t, light=None):
                           (T_LIGHT, 0.42), (T_LIGHT + 0.7, 0.38), (T_LIGHT + 1.1, 0.0), (CUT_G, -0.05), (L1.end + 0.4, -0.4), (W_BEING, -0.1),
                           (CUT_H, -0.15), (T_D_LAP, -0.3), (DUR, -0.25)])
     head_nod += 0.1 * _pulse(t, L1.start - 0.18, 0.12, 0.3)                       # the breath before the line
+    head_nod -= 0.16 * _pulse(t, T_F_RUB1 - 0.3, 0.18, 0.4)                       # to the hesitating kid: "it's all right"
     head_turn += 0.06 * math.sin((t - W_STUFF) * math.tau * 1.6) * _win(t, W_STUFF, W_GAVE + 0.3, 0.2, 0.3)   # slow head shake
     head_tilt = 0.07 + 0.06 * _win(t, L1.start, L1.end + 0.3, 0.2, 0.4)
     mood, mood2, mix, smile = "warm", AFTER_LAUGH, 0.85, 0.72
     wonder = _win(t, T_D_LOOK + 0.1, T_GIVE + 0.1, 0.12, 0.3)
     if wonder > 0:
-        mood2, mix = "surprised", 0.5 * wonder
+        mood2, mix = SURPRISE_SHUT, 0.5 * wonder
         smile = 0.72 - 0.45 * wonder
     moved = _win(t, T_PAT1 + 0.3, T_SWAP, 0.3, 0.4)
     if moved > 0 and wonder <= 0:
         mood2, mix, smile = "kind", 0.55 * moved, 0.72 + 0.15 * moved
     awe = _win(t, T_LIGHT - 0.05, T_LIGHT + 0.9, 0.1, 0.5)       # the lantern catches: wonder, then delight
     if awe > 0:
-        mood2, mix, smile = "surprised", 0.45 * awe, 0.72 - 0.2 * awe
+        mood2, mix, smile = AWE, 0.55 * awe, 0.72 - 0.2 * awe
     if T_LIGHT + 0.6 < t < CUT_C4 + 0.6:
         mood2, mix, smile = "happy", 0.6 * _win(t, T_LIGHT + 0.6, CUT_C4 + 0.6, 0.3, 0.3), 0.9
     if L1.start - 0.4 < t < CUT_H:
@@ -1143,6 +1167,12 @@ def _half_face():
     return _STATE.get("g_inward", {1.0: -1.0})[1.0]
 
 
+def _d_close(t):
+    """0..1: his fingers closing round the half she laid in his palm (begun in the insert as her
+    hand lifts away, finished in B as he draws it to his chest) -- one curve across the cut."""
+    return 0.35 * _r(t, T_LET + 0.12, CUT_B, "inout_sine") + 0.65 * _r(t, CUT_B, CUT_B + 0.35, "out_sine")
+
+
 def palm_bread(cr, t, drig, L):
     """A2/A3: the half lying IN his open palm -- drawn over the whole hand (an open palm-up hand
     has no fingers over what it holds), in the hand's own frame, where her hand left it (the
@@ -1171,12 +1201,13 @@ def _dragon_arms(t, L):
         Lt = ch.Arm("s7_receive", amt=_r(t, T_D_REACH0, T_GIVE - 0.1), prev="rest", hand="offer")
     elif t < CUT_B:
         # palm up and open (the library's offer shows the palm pads): the half is laid IN it --
-        # drawn on top of the open hand by draw() (palm_bread), as bread lying on a palm is
-        Lt = ch.Arm("hand_out_offer", target=_gx("d_receive", 1.0), hand="offer")
+        # drawn on top of the open hand by draw() (palm_bread), as bread lying on a palm is;
+        # as her hand lifts away his great fingers begin, very carefully, to close round it
+        Lt = ch.Arm("hand_out_offer", target=_gx("d_receive", 1.0), hand=_hand_mix("offer", "cup", _d_close(t)))
     elif t < T_SWAP:
         # (B) his great fingers close round it and he draws it in to his chest, both hands round it
         Lt = ch.Arm("s7_cradle", amt=_r(t, CUT_B, T_SWAP - 0.2), prev="s7_receive",
-                    hand=_hand_mix("offer", "cup", _r(t, CUT_B, CUT_B + 0.3)), hold=half_d)
+                    hand=_hand_mix("offer", "cup", _d_close(t)), hold=half_d)
     elif t < CUT_C:
         Lt = ch.Arm("rest", amt=_r(t, T_SWAP, T_SWAP + 0.35), prev="s7_cradle")
         for (a, d) in TOSS_D:
@@ -1305,7 +1336,7 @@ def faun_pose(t, light=None):
     if t > T_F_NOTICE:
         mood, mood2, mix = "sad", "raised", _r(t, T_F_NOTICE, T_F_NOTICE + 0.4)
     if t > B_OFFER.t:
-        mood, mood2, mix = "raised", "surprised", 0.7 * _win(t, B_OFFER.t, T_F_RUB0, 0.12, 0.3)
+        mood, mood2, mix = "raised", SURPRISE_SHUT, 0.7 * _win(t, B_OFFER.t, T_F_RUB0, 0.12, 0.3)
     if t > T_F_RUB0:
         mood, mood2, mix = "worried", "happy", _r(t, T_F_RUB1 - 0.25, T_F_STEP + 0.2)
         smile = 0.15 + 0.35 * _r(t, T_F_RUB1 - 0.25, T_F_STEP + 0.2)
@@ -2080,14 +2111,16 @@ def _draw_ember(cr, t):
             q = ember_pos(max(T_EMBER_GO, t - 0.035 * k))
             if q is None:
                 continue
-            a = 0.5 * (1.0 - k / 6.0)
+            a = 0.6 * (1.0 - k / 6.0)
             core.src(cr, "#ffcf6a", a)
             core.circle(cr, q[0] + 2.0 * core.noise1(t * 9.0 + k, 41), q[1] + 2.0 * core.noise1(t * 8.0 + k, 42),
-                        1.3 * (1.0 - k / 7.0))
+                        2.0 * (1.0 - k / 7.0))
             cr.fill()
-    fx.glow(cr, p[0], p[1], 13.0, "#ff9a30", 0.6 * fl)
-    core.src(cr, "#fff0b8", 0.95)
-    core.circle(cr, p[0], p[1], 2.0)
+    big = 1.0 + 0.6 * _r(t, T_EMBER0, T_EMBER0 + 1.3) * (1.0 - _r(t, T_LIGHT - 0.12, T_LIGHT))   # a real little coal
+    fx.glow(cr, p[0], p[1], 34.0 * big, "#ff8a28", 0.22 * fl)
+    fx.glow(cr, p[0], p[1], 15.0 * big, "#ffa040", 0.7 * fl)
+    core.src(cr, "#fff3c4", 0.98)
+    core.circle(cr, p[0], p[1], 2.4 * big)
     cr.fill()
 
 
@@ -2334,7 +2367,7 @@ def setup():
     _MEAS["half_r"] = _CAP["d_half"]
     _scratch_draw("dragon", T_SWAP + 1e-4)                   # solves _HOLD["half_r"]
     # ---- C: the faun's piece. She holds it out to him; his hand comes to it.
-    _STATE["P_g_out_f"] = (806.0, 818.0)
+    _STATE["P_g_out_f"] = (794.0, 804.0)            # held right out to him at arm's length (her arm is short)
     _scratch_draw("gnome", T_F_TAKE - 1e-3)
     pc = _CAP["g_give_f"]
     _STATE["P_f_take"] = (pc[0] - 8.0, pc[1] + 4.0)
@@ -2440,8 +2473,19 @@ def setup():
     _STATE["chuckle_mouth"] = drig.mouth
     st["chuckle_rig"] = drig
     st["errs"] = (e1, e2, e3, e4, e_pat)
+    # A3: the hands insert's soft plate (the bench seat between them, the book on it)
+    st["insert_plate"] = INS.build_plate(g, L_GOLD, lambda cr: _draw_book(cr, 0.0, L_GOLD))
     _GX.clear()
     return st
+
+
+INSERT_T = {"cut": CUT_A3, "give": T_GIVE, "pat1": T_PAT1, "let": T_LET, "end": CUT_B, "snap": T_SNAP}
+
+
+def _insert_light(t):
+    """The insert's light on the hands: the golden sun low on the left (warm rim on their left
+    edges), as the two-shots around it."""
+    return cast_light(t, 900.0, 700.0, "gnome").with_(direction=(-0.93, -0.36), rim_direction=(-0.9, -0.44))
 
 
 # ----------------------------------------------------------------------------------------
@@ -2569,6 +2613,15 @@ BREAD_CAPS = ("tear", "loaf_up", "g_half", "g_give_d", "d_half", "half_r")
 def draw(cr, t, st):
     g = st["g"]
     shot, cam = camera(t)
+    _INSERT["on"] = shot == "A3"
+    if shot == "A3":
+        # the insert is its own layout: the hands, the bread, the steam over a soft plate
+        INS.draw_insert(cr, t, st, INSERT_T, _insert_light(t))
+        _warm_grade(cr, t)
+        lc = st["light"].begin()
+        INS.insert_light(lc, t, st, INSERT_T)
+        fx.post(cr, t, light=st["light"], **_post_kw(t, 0.0))
+        return
     for k in BREAD_CAPS:
         _CAP.pop(k, None)                            # this frame's bread positions (screen px)
     if T_TEAR0 <= t < T_TEAR1 + 0.1:
@@ -2721,7 +2774,7 @@ def draw(cr, t, st):
             fx.crumbs(cr, t, T_SPRINKLE0 + 0.15, spx, spy + 2.0, color=CRUMB_C, crust=CRUST_C, **kw)
         _gravel(cr, t)
         _moths(cr, t, lit)
-        if shot in ("A1", "A2", "A3", "B"):
+        if shot in ("A1", "A2", "B"):
             fx.dust(cr, t, (560.0, 560.0, 760.0, 330.0), n=14 if shot != "B" else 10, color="#ffe6c4",
                     alpha=0.3 * gw, size=(0.6, 1.4), seed=17, drift=(5.0, -2.5), twinkle=0.7)
         if blue(t) > 0.45 and shot in ("C4", "D", "E", "F", "G", "G3", "H", "I"):
