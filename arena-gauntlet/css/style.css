@@ -1094,6 +1094,10 @@ button.card:active {
   flex: 1 1 auto;
 }
 
+.actions .btn.icon-only {
+  flex: none;
+}
+
 /* The Supply meter stays in view while the War Room roster scrolls under it.
    The side shadows paint its background across the panel's gutters. */
 .cp-meter {

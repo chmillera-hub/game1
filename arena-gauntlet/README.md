@@ -36,8 +36,9 @@ on a phone turned sideways, but portrait works too.
   its attacks and every damage preview show the damage-type icon.
 - **Taking turns**: the sides alternate one unit at a time, like chess, and the enemy
   goes first. On your turn you pick one unit: it moves, acts or both, then turns
-  to face the nearest enemy (or the way you choose, if you switch Facing to manual
-  in the menu). Then the enemy picks one of theirs.
+  to face the nearest enemy. Tap Face during its turn to pick the facing yourself,
+  before or after it moves and acts, or switch Facing to manual in the menu to
+  always pick it. Then the enemy picks one of theirs.
 - **Cooldowns**: acting starts a unit's cooldown (CD on its card): it sits out that
   many of your turns, and the count drops at the end of each one. A Scout (CD 0)
   can act every turn, a Knight (CD 1) every other turn and a Witch (CD 2) every

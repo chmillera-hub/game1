@@ -2097,15 +2097,17 @@
     } else if (B.mode === 'unit' && u) {
       const moved = A && A.moved;
       const acted = A && A.acted;
+      const faced = A && A.face != null;
       if (!moved) ov.move = [...E.reachable(s, u).values()].filter((r) => r.d > 0).map((r) => [r.x, r.y]);
       const main = acted ? [] : E.actUsable(s, u, 0) ? E.targetsFrom(s, u, 0) : [];
       if (!acted && directKinds(u.act.kind)) ov.targets = main.map((t) => [t.x, t.y]);
       ov.select = [u.x, u.y];
       const anyTargets = E.allTargets(s, u).length > 0;
+      const keep = faced ? ' It ends its turn facing the way you set.' : '';
       let hint;
-      if (!moved && !acted) hint = `Tap a blue tile to move${main.length && directKinds(u.act.kind) ? ', a red enemy to attack' : ''}, or choose an action below.`;
-      else if (moved && !acted) hint = anyTargets ? 'Moved. Choose an action, or tap Done.' : 'Moved. Nothing in reach from here. Tap Done.';
-      else hint = moved ? `Action used. Tap Done${UI.prefs.manualFacing ? ' to choose a facing' : ': it turns to the nearest enemy'}.` : 'Action used. You may still move, or tap Done.';
+      if (!moved && !acted) hint = faced ? 'Facing set. Move, act, or tap Done to end its turn here.' : `Tap a blue tile to move${main.length && directKinds(u.act.kind) ? ', a red enemy to attack' : ''}, or choose an action below.`;
+      else if (moved && !acted) hint = (anyTargets ? 'Moved. Choose an action, or tap Done.' : 'Moved. Nothing in reach from here. Tap Done.') + keep;
+      else hint = moved ? `Action used. Tap Done${faced ? ': it keeps the facing you set' : UI.prefs.manualFacing ? ' to choose a facing' : ': it turns to the nearest enemy'}.` : 'Action used. You may still move, or tap Done.' + keep;
       const loot = !acted && E.lootAt(s, u.x, u.y);
       if (loot) hint = `${esc(u.name)} stands on the ${R.LOOT_NAMES[loot.kind]}. Taking it uses this unit's action.`;
       if (u.root > 0 && !moved) hint = `Rooted for ${u.root} more turn${u.root > 1 ? 's' : ''}: it can act and turn, but not move.`;
@@ -2116,10 +2118,11 @@
           ${actButtons(u)}
         </div>
         <div class="actions">
+          ${moved || acted || faced ? `<button class="btn" id="btDone">${ic('check')} Done</button>` : ''}
+          ${u.facing >= 0 ? `<button class="btn" id="btFace">${ic('rotate')} Face</button>` : ''}
           ${E.canUndo(s) && moved ? `<button class="btn" id="btUndo">${ic('undo')} Undo move</button>` : ''}
-          ${moved || acted ? `<button class="btn" id="btDone">${ic('check')} Done</button>` : `<button class="btn" id="btFace">${ic('rotate')} Face only</button>`}
-          <button class="btn" id="btInfo">${ic('help')}</button>
-          <button class="btn ghost" id="btDesel">${ic('close')}</button>
+          <button class="btn icon-only" id="btInfo" aria-label="Details">${ic('help')}</button>
+          <button class="btn ghost icon-only" id="btDesel" aria-label="Deselect">${ic('close')}</button>
         </div>`;
     } else if ((B.mode === 'aim' || B.mode === 'confirm') && u) {
       const act = u.acts[B.ai] || u.act;
@@ -2150,8 +2153,8 @@
       ov.select = [u.x, u.y];
       ov.facing = { x: u.x, y: u.y, current: B.facing };
       panel = `${unitInfoHTML(u, { status: true })}
-        <div class="hint">Choose where ${esc(u.name)} faces: tap an arrow. The front blocks best, the sides half as well, the back never.</div>
-        <div class="actions"><button class="btn primary" id="btKeep">${ic('check')} Confirm facing</button></div>`;
+        <div class="hint">${B.facePlan ? `Tap an arrow to choose where ${esc(u.name)} faces when its turn ends.` : `Choose where ${esc(u.name)} faces: tap an arrow.`} The front blocks best, the sides half as well, the back never.</div>
+        <div class="actions"><button class="btn primary" id="btKeep">${ic('check')} ${B.facePlan ? 'Set facing' : 'Confirm facing'}</button>${B.faceBack ? '<button class="btn" id="btFaceBack">Back</button>' : ''}</div>`;
     } else if (B.mode === 'inspect' && u && u.alive) {
       const th = AI.unitThreat(s, u);
       ov.range = th.hit;
@@ -2268,10 +2271,14 @@
       renderBattle();
     });
     on('btDone', () => enterFacing());
-    // Turning in place is a deliberate choice: pick the facing by hand.
+    // Face: pick by hand where the unit ends up facing, before or after it moves and acts.
     on('btFace', () => {
       if (!E.beginActivation(s, B.sel)) return;
       enterFacing(true);
+    });
+    on('btFaceBack', () => {
+      B.mode = 'unit';
+      renderBattle();
     });
     for (const btn of $$('#cmd [data-act]'))
       btn.onclick = () => {
@@ -2297,7 +2304,7 @@
     });
     on('btConfirm', () => doAction());
     on('btLoot', () => doLoot());
-    on('btKeep', () => finishUnit(B.facing));
+    on('btKeep', () => chooseFacing(B.facing));
     on('btInfo', () => battleUnitSheet(s.byId[B.sel], true));
     on('btBack', () => s.act && selectUnit(s.byId[s.act.uid]));
     for (const c of $$('#cmd .rcard[data-uid]')) c.onclick = () => selectUnit(s.byId[+c.dataset.uid]);
@@ -2332,7 +2339,7 @@
     renderBattle();
   }
 
-  function deselect() {
+  async function deselect() {
     const B = UI.battle;
     const s = B.s;
     if (s.act && (s.act.moved || s.act.acted)) {
@@ -2344,6 +2351,8 @@
       return;
     }
     E.cancelActivation(s);
+    // A facing set for a turn that never happened turns back.
+    if (s.events.length) await play();
     B.mode = 'idle';
     B.sel = null;
     B.tile = null;
@@ -2359,7 +2368,10 @@
     const act = s.act;
     const inProgress = act && (act.moved || act.acted);
     const ownReady = v.team === 'P' && E.canActivate(s, v);
-    if (act && act.uid !== v.uid && !inProgress) E.cancelActivation(s);
+    if (act && act.uid !== v.uid && !inProgress) {
+      E.cancelActivation(s);
+      if (s.events.length) await play();
+    }
     B.sel = v.uid;
     B.target = null;
     B.ai = 0;
@@ -2414,7 +2426,7 @@
     const u = B.sel ? s.byId[B.sel] : null;
     if (B.mode === 'facing' && u) {
       const d = UI.board.facingFromHit(hit, u.x, u.y);
-      if (d >= 0) finishUnit(d);
+      if (d >= 0) chooseFacing(d);
       return;
     }
     if ((B.mode === 'aim' || B.mode === 'confirm') && u) {
@@ -2467,7 +2479,7 @@
       const other = spriteUnit || tileUnit;
       if (other && other.alive) {
         if (other.uid === u.uid) {
-          if (A && (A.moved || A.acted)) enterFacing();
+          if (A && (A.moved || A.acted || A.face != null)) enterFacing();
           else deselect();
           return;
         }
@@ -2525,13 +2537,18 @@
       await play();
       return nextMove();
     }
-    const A = activationOf(u);
-    const canMove = A && !A.moved && u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1;
-    const canAct = A && !A.acted && E.allTargets(s, u).length > 0;
-    if (canMove || canAct) {
+    if (moreToDo(s, u)) {
       B.mode = 'unit';
       renderBattle();
     } else enterFacing();
+  }
+
+  // Whether the selected unit could still move or act this turn.
+  function moreToDo(s, u) {
+    const A = activationOf(u);
+    const canMove = !(A && A.moved) && u.move > 0 && !u.traits.has('immobile') && E.reachable(s, u).size > 1;
+    const canAct = !(A && A.acted) && E.allTargets(s, u).length > 0;
+    return canMove || canAct;
   }
 
   async function doAction() {
@@ -2561,8 +2578,8 @@
     await afterAct(u);
   }
 
-  // The unit is done: it turns toward the nearest enemy on its own, unless the player
-  // picks the facing (Face only, or manual facing chosen in the menu).
+  // The unit is done: it keeps a facing set with Face, or turns toward the nearest enemy
+  // on its own, unless the player picks it now (Face, or manual facing in the menu).
   function enterFacing(manual) {
     const B = UI.battle;
     const s = B.s;
@@ -2572,12 +2589,33 @@
       finishUnit(-1);
       return;
     }
+    const A = activationOf(u);
+    const set = A && A.face != null ? A.face : null;
+    if (!manual && set != null) {
+      finishUnit(set);
+      return;
+    }
     if (!manual && !UI.prefs.manualFacing) {
       finishUnit(AI.nearestFacing(s, u));
       return;
     }
     B.mode = 'facing';
-    B.facing = AI.smartFacing(s, u);
+    // From the Face button: a unit with more to do keeps going after the pick.
+    B.faceBack = !!manual;
+    B.facePlan = !!manual && moreToDo(s, u);
+    B.facing = set != null ? set : AI.smartFacing(s, u);
+    renderBattle();
+  }
+
+  // A facing picked mid-turn turns the unit now and holds when the turn ends; otherwise
+  // the pick ends the turn.
+  async function chooseFacing(d) {
+    const B = UI.battle;
+    if (!B.facePlan) return finishUnit(d);
+    if (B.busy || !E.turnUnit(B.s, B.sel, d)) return;
+    B.mode = 'unit';
+    sfx('click');
+    await play();
     renderBattle();
   }
 
@@ -3049,7 +3087,7 @@
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
-          <li>When a unit finishes its turn it turns to face the nearest enemy. To pick facings yourself with arrows, switch <b>Facing</b> in the menu; <b>Face only</b> always lets you turn a unit by hand.</li>
+          <li>When a unit finishes its turn it turns to face the nearest enemy. Tap <b>Face</b> during its turn to pick the facing yourself, before or after it moves and acts. To always pick with arrows, switch <b>Facing</b> in the menu.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>

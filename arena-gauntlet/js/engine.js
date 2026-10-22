@@ -1413,7 +1413,7 @@
     if (s.act) {
       if (s.act.uid === uid) return true;
       if (s.act.moved || s.act.acted) return false;
-      s.act = null;
+      cancelActivation(s);
     }
     if (!canActivate(s, u)) return false;
     s.act = { uid, sx: u.x, sy: u.y, sf: u.facing, moved: false, acted: false, moveDist: 0, movedBeforeAct: false, killed: false, blinked: false, noUndo: false };
@@ -1421,7 +1421,29 @@
   }
 
   function cancelActivation(s) {
-    if (s.act && !s.act.moved && !s.act.acted) s.act = null;
+    const A = s.act;
+    if (!A || A.moved || A.acted) return;
+    // A facing picked for a turn that never happened is undone too.
+    const u = s.byId[A.uid];
+    if (A.face != null && u.alive && u.facing !== A.sf) {
+      u.facing = A.sf;
+      emit(s, { t: 'face', uid: u.uid, facing: u.facing });
+    }
+    s.act = null;
+  }
+
+  // Pick where the active unit faces when its turn ends, and turn it now. Moving and
+  // attacking still turn it along the way; finishing turns it back to this choice.
+  function turnUnit(s, uid, d) {
+    const A = s.act;
+    const u = s.byId[uid];
+    if (!A || A.uid !== uid || s.over || u.facing < 0 || !(d >= 0 && d < 4)) return false;
+    A.face = d;
+    if (u.facing !== d) {
+      u.facing = d;
+      emit(s, { t: 'face', uid, facing: d });
+    }
+    return true;
   }
 
   function thunderstep(s, u) {
@@ -1471,7 +1493,7 @@
     const u = s.byId[A.uid];
     if (!u.alive) return false;
     relocate(s, u, A.sx, A.sy);
-    u.facing = A.sf;
+    u.facing = A.face != null ? A.face : A.sf;
     A.moved = false;
     A.moveDist = 0;
     A.movedBeforeAct = false;
@@ -1656,6 +1678,7 @@
     const u = s.byId[A.uid];
     s.act = null;
     if (!u.alive) return;
+    if (facing == null && A.face != null) facing = A.face;
     if (facing != null && facing >= 0 && u.facing >= 0 && u.facing !== facing) {
       u.facing = facing;
       emit(s, { t: 'face', uid: u.uid, facing });
@@ -2098,7 +2121,7 @@
     inBarrier, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
-    canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, moveUnit, undoMove, canUndo, performAction,
+    canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
     finishActivation, cooldown, turnsUntilReady, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };

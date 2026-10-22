@@ -863,6 +863,38 @@ test('turn limit goes to the stronger side', () => {
   assert.ok(s.over && s.timeout && s.winner === 'P');
 });
 
+test('Face: a facing picked mid-turn holds when the turn ends; dropping the unit undoes it', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 6, facing: 0 },
+    { type: 'knight', team: 'E', x: 4, y: 3, facing: 2 },
+    { type: 'scout', team: 'P', x: 0, y: 8, facing: 0 },
+  ]);
+  const [k, e, sc] = s.units;
+  assert.ok(E.beginActivation(s, sc.uid));
+  assert.ok(E.turnUnit(s, sc.uid, 1));
+  assert.strictEqual(sc.facing, 1);
+  assert.ok(E.beginActivation(s, k.uid), 'you can still switch to another unit');
+  assert.strictEqual(sc.facing, 0, 'the scout turned back: no free turn');
+  assert.ok(E.turnUnit(s, k.uid, 3));
+  assert.ok(E.moveUnit(s, k.uid, 4, 4));
+  assert.ok(E.undoMove(s));
+  assert.strictEqual(k.facing, 3, 'undoing the move keeps the pick');
+  assert.ok(E.moveUnit(s, k.uid, 4, 4));
+  assert.ok(E.performAction(s, k.uid, { kind: 'unit', uid: e.uid }));
+  assert.strictEqual(k.facing, 0, 'it turns to strike');
+  E.finishActivation(s, null);
+  assert.strictEqual(k.facing, 3, 'and to the pick when it is done');
+  assert.strictEqual(k.wait, 1);
+  // Turning in place is a turn of its own, with no cooldown.
+  until(s, 'P');
+  assert.ok(E.beginActivation(s, sc.uid));
+  assert.ok(E.turnUnit(s, sc.uid, 2));
+  E.finishActivation(s, null);
+  assert.strictEqual(sc.facing, 2);
+  assert.strictEqual(sc.wait, 0);
+  assert.ok(s.spent, 'it used the turn');
+});
+
 test('a unit killed by a counterattack ends its activation', () => {
   const s = board(
     [
