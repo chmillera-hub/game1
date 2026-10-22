@@ -80,6 +80,7 @@
       if (lv >= 2 && spec.a2 && ab[2].includes(spec.a2)) out.push(D.ABILITIES[spec.a2].mod);
       if (lv >= 3 && D.MASTERY[spec.type]) out.push(D.MASTERY[spec.type].mod);
     }
+    for (const id of new Set(spec.talents || [])) if (D.TALENTS[id] && D.TALENTS[id].cls === spec.type) out.push(D.TALENTS[id].mod);
     for (const id of spec.skills || []) if (D.SKILLS[id]) out.push(D.SKILLS[id].mod);
     for (const id of spec.gear || []) if (D.GEAR[id]) out.push(D.GEAR[id].mod);
     if (spec.enchant && D.ENCHANTS[spec.enchant]) out.push(D.ENCHANTS[spec.enchant].mod);

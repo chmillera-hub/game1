@@ -4,7 +4,7 @@
   'use strict';
   const AG = (root.AG = root.AG || {});
   const D = AG.Data;
-  const { UNITS, RECRUITABLE, ABILITIES, TALENTS, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS } = D;
+  const { UNITS, RECRUITABLE, ABILITIES, TALENTS, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ENCOUNTERS, NAMES, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS, TALENT_SLOTS } = D;
   const E = AG.Engine;
 
   const SAVE_KEY = 'arena-gauntlet-run-v2';
@@ -86,7 +86,7 @@
 
   function defaultLoad(type) {
     const T = UNITS[type];
-    return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, t1: null, t2: null, skills: [], gear: [] };
+    return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, talents: [], skills: [], gear: [] };
   }
 
   function addRecruit(run, type, extra) {
@@ -111,23 +111,16 @@
     return D.itemDef(it.kind, it.id);
   }
 
-  // The unit an item is slotted into, if any. A talent sits in a level's ability pick.
+  const SLOT_KEY = { skill: 'skills', gear: 'gear', talent: 'talents' };
+
+  // The unit an item is slotted into, if any.
   function itemHolder(run, uid) {
-    for (const r of run.roster) if (r.load.skills.includes(uid) || r.load.gear.includes(uid) || r.load.t1 === uid || r.load.t2 === uid) return r;
+    for (const r of run.roster) if (r.load.skills.includes(uid) || r.load.gear.includes(uid) || r.load.talents.includes(uid)) return r;
     return null;
   }
 
-  // An owned copy of a talent for this unit: the one it holds, else one nobody holds.
-  function talentCopy(run, r, id, tier, steal) {
-    const mine = r.load['t' + tier];
-    const it = itemByUid(run, mine);
-    if (it && it.kind === 'talent' && it.id === id) return it;
-    const copies = run.items.filter((i) => i.kind === 'talent' && i.id === id);
-    return copies.find((i) => !itemHolder(run, i.uid)) || (steal ? copies[0] : null) || null;
-  }
-
   function slotsFor(lv) {
-    return { skills: SKILL_SLOTS[lv], gear: GEAR_SLOTS[lv] };
+    return { skills: SKILL_SLOTS[lv], gear: GEAR_SLOTS[lv], talents: TALENT_SLOTS[lv] };
   }
 
   // Keep a unit's loadout legal: valid picks, owned and eligible items, slots within its level.
@@ -136,21 +129,8 @@
     const L = r.load || (r.load = defaultLoad(r.type));
     L.lv = Math.max(1, Math.min(D.MAX_LEVEL, L.lv || 1));
     if (T.abilities) {
-      for (const tier of [1, 2]) {
-        const a = 'a' + tier;
-        const t = 't' + tier;
-        if (!T.abilities[tier].includes(L[a])) L[a] = T.abilities[tier][0];
-        // A talent pick needs a copy this unit holds; without one it falls back to the free pick.
-        if (isTalent(L[a])) {
-          const holder = L[t] ? itemHolder(run, L[t]) : null;
-          const it = holder && holder !== r ? null : talentCopy(run, r, L[a], tier, false);
-          if (it) L[t] = it.uid;
-          else {
-            L[a] = T.abilities[tier][0];
-            L[t] = null;
-          }
-        } else L[t] = null;
-      }
+      // Level picks are the free option and the actives; talents go in their own slots.
+      for (const tier of [1, 2]) if (!T.abilities[tier].includes(L['a' + tier]) || isTalent(L['a' + tier])) L['a' + tier] = T.abilities[tier][0];
     }
     const sl = slotsFor(L.lv);
     const ok = (uid, kind) => {
@@ -159,6 +139,17 @@
     };
     L.skills = (L.skills || []).filter((uid) => ok(uid, 'skill')).slice(0, sl.skills);
     L.gear = (L.gear || []).filter((uid) => ok(uid, 'gear')).slice(0, sl.gear);
+    // One copy of each talent per unit.
+    const ids = new Set();
+    L.talents = (L.talents || [])
+      .filter((uid) => {
+        if (!ok(uid, 'talent')) return false;
+        const id = itemByUid(run, uid).id;
+        if (ids.has(id)) return false;
+        ids.add(id);
+        return true;
+      })
+      .slice(0, sl.talents);
     return L;
   }
 
@@ -173,18 +164,8 @@
   function setAbility(run, rid, tier, id) {
     const r = unitById(run, rid);
     const T = r && UNITS[r.type];
-    if (!T || !T.abilities || !T.abilities[tier].includes(id)) return false;
-    let uid = null;
-    if (isTalent(id)) {
-      // Talents must be owned; a copy another unit uses is taken from it.
-      const it = talentCopy(run, r, id, tier, true);
-      if (!it) return false;
-      const holder = itemHolder(run, it.uid);
-      if (holder && holder !== r) unassignItem(run, it.uid);
-      uid = it.uid;
-    }
+    if (!T || !T.abilities || !T.abilities[tier].includes(id) || isTalent(id)) return false;
     r.load['a' + tier] = id;
-    r.load['t' + tier] = uid;
     return true;
   }
 
@@ -192,16 +173,11 @@
   function assignItem(run, rid, uid) {
     const r = unitById(run, rid);
     const it = itemByUid(run, uid);
-    if (!r || !it || (it.kind !== 'skill' && it.kind !== 'gear' && it.kind !== 'talent')) return false;
+    if (!r || !it || !SLOT_KEY[it.kind]) return false;
     if (!D.eligible(r.type, itemDef(it))) return false;
-    if (it.kind === 'talent') {
-      // Into its level's pick, if the unit is that level and the pick is not a talent already.
-      const tier = TALENTS[it.id].tier;
-      if (r.load.lv < tier || isTalent(r.load['a' + tier])) return r.load['t' + tier] === uid;
-      return setAbility(run, rid, tier, it.id);
-    }
-    const key = it.kind === 'skill' ? 'skills' : 'gear';
+    const key = SLOT_KEY[it.kind];
     if (r.load[key].includes(uid)) return true;
+    if (it.kind === 'talent' && r.load.talents.some((x) => itemByUid(run, x).id === it.id)) return false;
     if (r.load[key].length >= slotsFor(r.load.lv)[key]) return false;
     unassignItem(run, uid);
     r.load[key].push(uid);
@@ -212,11 +188,7 @@
     for (const r of run.roster) {
       r.load.skills = r.load.skills.filter((x) => x !== uid);
       r.load.gear = r.load.gear.filter((x) => x !== uid);
-      for (const tier of [1, 2]) {
-        if (r.load['t' + tier] !== uid) continue;
-        r.load['t' + tier] = null;
-        r.load['a' + tier] = UNITS[r.type].abilities[tier][0];
-      }
+      r.load.talents = r.load.talents.filter((x) => x !== uid);
     }
   }
 
@@ -238,7 +210,7 @@
     if (L.lv > 1) out.push({ label: 'Level ' + L.lv, cost: LEVEL_COST[L.lv] });
     if (L.a1) out.push({ label: ABILITIES[L.a1].name, cost: abilityCost(L.a1) });
     if (L.lv >= 2 && L.a2) out.push({ label: ABILITIES[L.a2].name, cost: abilityCost(L.a2) });
-    for (const uid of L.skills.concat(L.gear)) {
+    for (const uid of L.talents.concat(L.skills, L.gear)) {
       const d = itemDef(itemByUid(run, uid));
       if (d) out.push({ label: d.name, cost: d.cost });
     }
@@ -268,6 +240,7 @@
       level: L.lv,
       a1: L.a1,
       a2: L.a2,
+      talents: L.talents.map((uid) => itemByUid(run, uid).id),
       skills: L.skills.map((uid) => itemByUid(run, uid).id),
       gear: L.gear.map((uid) => itemByUid(run, uid).id),
       enchant: r.enchant,
@@ -313,7 +286,7 @@
     const diff = DIFFICULTIES.find((d) => d.id === opts.difficulty) || DIFFICULTIES[1];
     const run = {
       v: 2,
-      talents: 1,
+      talents: 2,
       seed,
       warband: wb.id,
       difficulty: diff.id,
@@ -1156,8 +1129,9 @@
     return ids.length ? rng.pick(ids) : null;
   }
 
-  // A talent for one of your classes. Level 2 talents turn up half as often, and ones you
-  // already own less often still, so a full build takes some hunting.
+  // A talent for a class in your army, never for one you do not field. The stronger ones
+  // (from the Level 2 list) turn up half as often, and ones you already own less often
+  // still, so a full build takes some hunting.
   function rollTalent(run, rng, exclude) {
     const types = [...new Set(run.roster.map((r) => r.type))];
     const opts = Object.values(TALENTS)
@@ -1977,8 +1951,7 @@
       normalizeLoad(run, r);
       r.load.a1 = UNITS[r.type].abilities[1][0];
       r.load.a2 = UNITS[r.type].abilities[2][0];
-      r.load.t1 = null;
-      r.load.t2 = null;
+      r.load.talents = [];
     }
     const prof = damageProfile(enc);
     const kind = (r) => UNITS[r.type].act.dmg;
@@ -2141,14 +2114,22 @@
     }
   }
 
-  // Saves from before talents: a unit keeps a talent it had picked, as an item it holds.
+  // Older saves picked talents as level abilities (with the copy in t1/t2, or with no item
+  // before talents were items). Each unit keeps them, as talents in its slots.
   function grantPickedTalents(run) {
-    if (run.talents) return;
-    run.talents = 1;
+    if (run.talents === 2) return;
+    run.talents = 2;
     for (const r of run.roster) {
+      const L = r.load;
+      L.talents = L.talents || [];
       for (const tier of [1, 2]) {
-        const id = r.load['a' + tier];
-        if (isTalent(id) && !r.load['t' + tier]) r.load['t' + tier] = addItem(run, 'talent', id).uid;
+        const id = L['a' + tier];
+        if (isTalent(id)) {
+          const held = itemByUid(run, L['t' + tier]);
+          L.talents.push(held && held.id === id ? held.uid : addItem(run, 'talent', id).uid);
+          L['a' + tier] = UNITS[r.type].abilities[tier][0];
+        }
+        delete L['t' + tier];
       }
     }
   }

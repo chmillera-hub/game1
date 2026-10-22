@@ -19,6 +19,7 @@
   const LEVEL_POW = [1, 1, 1.15, 1.3];
   const SKILL_SLOTS = [0, 1, 2, 2];
   const GEAR_SLOTS = [0, 1, 1, 2];
+  const TALENT_SLOTS = [0, 1, 2, 3];
   const RES_CAP = 0.5; // armor and magic resistance never go above 50%, or below -50%
 
   // Commander level: total Supply per battle and how many units may take the field.
@@ -751,9 +752,10 @@
 
   const RECRUITABLE = Object.keys(UNITS).filter((k) => ['common', 'uncommon', 'rare', 'legendary'].includes(UNITS[k].rarity));
 
-  // Talents: a class's passive picks that cost Supply. They are not free choices: you find
-  // them in shops and battle spoils, then slot one into that level's ability pick. The free
-  // option at each level and the active abilities stay open to every unit of the class.
+  // Talents: a class's passives that cost Supply. They are not level picks: you find them
+  // in shops and battle spoils and slot them into a unit of that class, one slot per level.
+  // The level picks keep the free option and the active abilities. `tier` is the level list
+  // a talent came from; the Level 2 ones are the stronger, rarer finds.
   const TALENTS = {};
   for (const [type, T] of Object.entries(UNITS)) {
     if (!T.abilities) continue;
@@ -1023,7 +1025,7 @@
   ];
 
   AG.Data = {
-    DIRS, MAX_LEVEL, LEVEL_COST, LEVEL_HP, LEVEL_POW, SKILL_SLOTS, GEAR_SLOTS, RES_CAP, COMMAND,
+    DIRS, MAX_LEVEL, LEVEL_COST, LEVEL_HP, LEVEL_POW, SKILL_SLOTS, GEAR_SLOTS, TALENT_SLOTS, RES_CAP, COMMAND,
     ABILITIES: A, TALENTS, MASTERY, UNITS, RECRUITABLE, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS,
     DIFFICULTIES, ACTS, ENCOUNTERS, NAMES, unitTags, itemDef, eligible,
   };

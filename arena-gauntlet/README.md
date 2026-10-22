@@ -22,17 +22,18 @@ on a phone turned sideways, but portrait works too.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 14 Supply and 4 units on the field at Level 1 to
   33 Supply and 8 units at Level 10.
-- **Unit levels**: Level 1 picks one of three abilities; the free one comes first
-  and stronger picks cost extra Supply. For example, the Archer chooses Snare Shot,
-  Poison Arrows or Smoke Screen. Level 2 (+2 Supply) gets more HP and damage,
-  another skill slot and a second pick of three. Level 3 (+5) adds a class mastery
-  and a second gear slot.
-- **Talents**: the passive picks that cost Supply (Shield Wall, Riposte, Poison
-  Arrows and the like) are class-specific talents. You find them in shops and
-  battle spoils instead of choosing them freely, and each copy fits one unit at a
-  time. The free pick and active abilities are always open. Level 2 talents turn
-  up half as often, and copies you already own less often still, so a strong build
-  takes some hunting.
+- **Unit levels**: Level 1 picks an ability: the free one, or an active ability
+  that costs extra Supply. For example, the Archer chooses Snare Shot or Smoke
+  Screen. Level 2 (+2 Supply) gets more HP and damage,
+  another skill slot, a talent slot and a second ability pick. Level 3 (+5) adds a
+  class mastery, a third talent slot and a second gear slot.
+- **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
+  and the like) are class talents. You find them in shops and battle spoils, and
+  only for classes in your army. A unit has one talent slot per level, three at
+  Level 3, and can mix and match any of its class's talents you own (one copy of
+  each per unit; each copy fits one unit at a time). The level picks keep the free
+  option and the active abilities. The stronger talents turn up half as often, and
+  copies you already own less often still, so a great combination takes hunting.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
