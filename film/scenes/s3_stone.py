@@ -821,6 +821,246 @@ def _dress_houses(cr, rigs, glass=False):
     return lamps
 
 
+# ---------------------------------------------------------------------------------------------
+# the wet edges: the far side's eaves, jetties and door-lamp hoods drip (world-locked drip
+# slots in the houses' plane, set up once), and the street lamps' hoods drip into their pools
+# ---------------------------------------------------------------------------------------------
+G_HOUSES = 1050.0                 # gravity in the houses' plane (world px / s^2; his plane: 2100)
+G_STREET = 2100.0
+
+
+def _house_specs(rect):
+    """env.draw_street_row's deterministic layout of the far side (same arguments as
+    _houses_rows), replayed: per house (anchor x, width, storeys, house seed)."""
+    seed, floors, widths, alley, s = 23, (1, 3), (480.0, 760.0), 0.3, HOUSE_SC
+    x, x1 = rect[0] - 60.0, rect[0] + rect[2] + 60.0
+    out, k = [], 0
+    while x < x1:
+        w = lerp(widths[0], widths[1], core.hash01(k, seed + 1))
+        f = floors[0] + int(core.hash01(k, seed + 2) * (floors[1] - floors[0] + 1))
+        if k > 0 and core.hash01(k, seed + 3) < alley:
+            x += (60.0 + 80.0 * core.hash01(k, seed + 4)) * s
+        jx = 34.0 * (f - 1) * s
+        out.append((x + jx, w, f, seed * 97 + k))
+        x += w * s + jx * 2 - 6.0 * s
+        k += 1
+    return out
+
+
+def _eave_lines(hx, w, f, hseed):
+    """The edges one house sheds rain from (env.draw_house's geometry, world coords of the
+    houses' plane): [(xa, xb, y)] -- the jetty bressumers' lower edges and the roof's eave (a
+    tiled eave or a thatch along its length; a gable end only at its two lower corners)."""
+    s = HOUSE_SC
+    rnd = lambda k: core.hash01(k, hseed * 31 + 7)            # noqa: E731
+    lean = (rnd(99) - 0.5) * 0.022
+    roof = ("gable", "side", "gable", "thatch")[int(rnd(2) * 4)]
+
+    def wx(px, py):
+        return hx + (px + lean * py) * s
+
+    lines = []
+    top = -env.GROUND_H
+    for fl in range(f - 1):
+        jxf = 34.0 * (fl + 1)
+        yy = top + 3.0
+        lines.append((wx(-jxf - 4.0, yy), wx(w + jxf + 4.0, yy), HOUSE_Y + yy * s))
+        top -= env.FLOOR_H
+    jx = 34.0 * (f - 1)
+    rx0, rx1 = -jx - 30.0, w + jx + 30.0
+    if roof == "side":
+        yy = top + 12.0
+        lines.append((wx(rx0 + 6.0, yy), wx(rx1 - 6.0, yy), HOUSE_Y + yy * s))
+    elif roof == "thatch":
+        yy = top + 40.0
+        lines.append((wx(rx0 - 26.0, yy), wx(rx1 + 26.0, yy), HOUSE_Y + yy * s))
+    else:
+        yy = top + 28.0
+        for ex in (rx0 - 14.0, rx1 + 14.0):
+            lines.append((wx(ex - 8.0, yy), wx(ex + 8.0, yy), HOUSE_Y + yy * s))
+    return lines
+
+
+def text_veil_boxes(t):
+    """Screen boxes (x0, y0, x1, y1, strength) of the rune text written so far at t: things
+    passing behind it (drips, the lamp posts) fade out of the way of the letters."""
+    out = []
+    if t < TEXT_T[0] or t > T_DISSOLVE1:
+        return out
+    lay = text_layout(t)
+    fade_all = 1.0 - core.smoothstep(T_DISSOLVE0, T_DISSOLVE1 - 0.15, t)
+    for li, (ln, ly) in enumerate(zip(PHONE_LINES, lay)):
+        if ly is None:
+            continue
+        on = core.smoothstep(ln.start - 0.3, ln.start + 0.1, t)
+        if on <= 0.0:
+            continue
+        ox, oy, s, a = ly
+        wl = text_widths()[li] * s * min(1.0, 0.25 + core.smoothstep(ln.start - 0.1, WORDS[ln.id][-1][2] + 0.4, t))
+        out.append((ox - 24.0 * s, oy - 54.0 * s, ox + wl + 24.0 * s, oy + 20.0 * s, on * fade_all * (0.55 + 0.45 * a)))
+    return out
+
+
+def veil_at(sx, sy, boxes, feather=26.0):
+    """0..1: how much of a thing at screen (sx, sy) shows past the rune text's veil."""
+    v = 1.0
+    for (x0, y0, x1, y1, k) in boxes:
+        dx = max(x0 - sx, sx - x1, 0.0)
+        dy = max(y0 - sy, sy - y1, 0.0)
+        d = math.hypot(dx, dy)
+        if d < feather:
+            v = min(v, 1.0 - k * (1.0 - core.smoothstep(0.0, feather, d)))
+    return v
+
+
+def _warm_at(x, y, windows, lamps):
+    """How much warm light a drop at (x, y) in the houses' plane catches (0..1): it flashes gold
+    passing in front of a candle-lit pane or under a door lamp."""
+    v = 0.0
+    for (wx_, wy_, ww, wh) in windows:
+        d = math.hypot((x - wx_) / (ww * 1.25), (y - wy_) / (wh * 0.95))
+        if d < 1.0:
+            v = max(v, (1.0 - d) ** 1.3)
+    for (lx, ly) in lamps:
+        d = math.hypot(x - lx, (y - ly) * 0.8) / 62.0
+        if d < 1.0:
+            v = max(v, (1.0 - d) ** 1.1)
+    return v
+
+
+def make_drips(rect, windows, lamps):
+    """The far side's drip slots (setup): world-locked along every eave line, a few more on
+    the edges right above the candle-lit panes (those drops flash gold as they fall past the
+    glass), and one off each corner of every door lamp's hood; each slot with its own period,
+    phase, bead size and the warm light it catches along its fall (12 samples)."""
+    slots = []
+    lines = []
+    for (hx, w, f, hseed) in _house_specs(rect):
+        lines += _eave_lines(hx, w, f, hseed)
+    pts = []
+    for li, (xa, xb, y) in enumerate(lines):
+        n = max(1, int(round((xb - xa) / 46.0)))
+        for j in range(n):
+            h = core.hash01(li * 131 + j, 401)
+            x = xa + (xb - xa) * ((j + 0.15 + 0.7 * h) / n) if n > 1 else 0.5 * (xa + xb)
+            pts.append((x, y, li * 131 + j))
+    for wi, (wx_, wy_, ww, wh) in enumerate(windows):     # the edge right above each lit pane
+        above = [(y, xa, xb) for (xa, xb, y) in lines if xa < wx_ < xb and y < wy_ - wh * 0.4]
+        if above:
+            y = max(above)[0]
+            for j, dx in enumerate((-0.28, 0.31)):
+                pts.append((wx_ + dx * ww, y, 9000 + wi * 7 + j))
+    s = HOUSE_SC
+    for (lx, ly) in lamps:                                  # the door lamps' hoods
+        for j, dx in enumerate((-14.0, 14.0)):
+            pts.append((lx + dx * s, ly - 19.0 * s, 9500 + int(lx) * 3 + j))
+    for (x, y, k) in pts:
+        y1 = HOUSE_Y + 2.0 + 4.0 * core.hash01(k, 402)
+        if y1 - y < 12.0:
+            continue
+        per = 0.42 + 0.75 * core.hash01(k, 403)
+        lut = [_warm_at(x, lerp(y, y1, q / 11.0), windows, lamps) for q in range(12)]
+        slots.append((x, y, y1, per, per * core.hash01(k, 404), 1.3 + 0.7 * core.hash01(k, 405), lut))
+    slots.sort(key=lambda sl: sl[0])
+    return slots
+
+
+DRIP_COOL = core.col("#bfd2ee")
+DRIP_WARM = core.col("#ffd590")
+
+
+def _drip_drops(t, x, y0, y1, per, ph, r, g, ncyc=3):
+    """A drip slot at t: the bead hanging at the edge (radius, or 0), the drops falling
+    [(y, v)] and the splashes [(u 0..1)] at y1."""
+    grow = 0.72 * per
+    cyc = math.floor((t + ph) / per)
+    ub = ((t + ph) - cyc * per) / grow
+    bead = r * math.sqrt(ub) if ub < 1.0 else 0.0
+    fall_t = math.sqrt(2.0 * max(1.0, y1 - y0) / g)
+    falling, splashes = [], []
+    for j in range(ncyc + 1):
+        tr = (cyc - j) * per - ph + grow
+        dt = t - tr
+        if dt < 0.0:
+            continue
+        if dt < fall_t:
+            falling.append((y0 + r + 0.5 * g * dt * dt, g * dt))
+        elif dt < fall_t + 0.24:
+            splashes.append((dt - fall_t) / 0.24)
+    return bead, falling, splashes
+
+
+def draw_drips(cr, cam, t, slots, alpha=1.0, soft=1.0):
+    """(screen) The far side's eaves dripping, in the houses' plane: a bead swelling at the edge,
+    the drop falling (a short streak, longer as it speeds up) and two flecks where it lands;
+    cold grey-blue, flashing gold in front of a lit pane or a door lamp. soft > 1: the close
+    shots' depth of field (wider, fainter)."""
+    if alpha <= 0.01 or not slots:
+        return
+    xa, _ = cam.to_world(-40.0, 0.0, PX_HOUSES)
+    xb, _ = cam.to_world(W + 40.0, 0.0, PX_HOUSES)
+    pz = cam.scale_at(PX_HOUSES)                      # screen px per world px in this plane
+    lw = 1.5 * soft / pz
+    boxes = text_veil_boxes(t)
+    bx0 = min((b[0] for b in boxes), default=1e9) - 30.0
+    bx1 = max((b[2] for b in boxes), default=-1e9) + 30.0
+    a_soft = alpha / soft ** 0.7
+    with cam.view(cr, PX_HOUSES):
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        for (x, y0, y1, per, ph, r, lut) in slots:
+            if x < xa or x > xb:
+                continue
+            bead, falling, splashes = _drip_drops(t, x, y0, y1, per, ph, r, G_HOUSES)
+            sx = cam.to_screen(x, y0, PX_HOUSES)[0]
+            veiled = bx0 < sx < bx1
+
+            def warm(y):
+                q = clamp((y - y0) / max(1.0, y1 - y0)) * 11.0
+                i = min(10, int(q))
+                return lut[i] + (lut[i + 1] - lut[i]) * (q - i)
+
+            def vis(y):
+                return veil_at(sx, cam.to_screen(x, y, PX_HOUSES)[1], boxes) if veiled else 1.0
+
+            if bead > 0.25:
+                wv = warm(y0)
+                a = (0.5 + 0.5 * wv) * a_soft * vis(y0)
+                if a > 0.01:
+                    core.ellipse(cr, x, y0 + bead * 0.9, bead * 0.78 * soft, bead * soft)
+                    core.src(cr, core.mix(DRIP_COOL, DRIP_WARM, wv), a)
+                    cr.fill()
+                    core.circle(cr, x - bead * 0.25, y0 + bead * 0.6, bead * 0.32)
+                    core.src(cr, "#f4f8ff", 0.55 * a)
+                    cr.fill()
+            for (y, v) in falling:
+                wv = warm(y)
+                a = (0.46 + 0.54 * wv) * a_soft * vis(y)
+                if a <= 0.01:
+                    continue
+                c = core.mix(DRIP_COOL, DRIP_WARM, wv)
+                ln = max(3.0 / pz, v / 40.0)
+                cr.move_to(x, y - ln)
+                cr.line_to(x, y)
+                cr.set_line_width(lw)
+                core.src(cr, c, a)
+                cr.stroke()
+                core.circle(cr, x, y, 0.62 * lw * (1.0 + 0.6 * wv))     # the drop's bright head
+                core.src(cr, core.mix("#e6efff", "#fff1d0", wv), min(1.0, a * 1.25))
+                cr.fill()
+                if wv > 0.3:                                             # a lit drop glints
+                    fx.glow(cr, x, y, 6.0 / pz, "#ffcf86", 0.5 * wv * a)
+            for u in splashes:
+                wv = lut[-1]
+                a = (0.55 + 0.4 * wv) * (1.0 - u) ** 1.4 * a_soft * vis(y1)
+                if a <= 0.01:
+                    continue
+                core.src(cr, core.mix(DRIP_COOL, DRIP_WARM, wv), a)
+                for sg in (-1.0, 1.0):
+                    core.circle(cr, x + sg * (1.5 + 6.0 * u) / pz, y1 - (9.0 * u * (1.0 - u) * 2.0) / pz,
+                                max(0.5, 0.9 / pz))
+                    cr.fill()
+
+
 GROUND_Y0, GROUND_Y1 = HOUSE_Y + 2.0, 1268.0
 _GROUND = {}
 
@@ -907,6 +1147,7 @@ def setup():
     st["houses"] = _layer(lambda cr, r: _draw_houses(cr, r, hs), PX_HOUSES, blur=1.0)
     st["house_windows"] = hs["windows"]
     st["house_lamps"] = hs["lamps"]
+    st["drips"] = make_drips(_extent(PX_HOUSES), hs["windows"], hs["lamps"])
     wl = [(wx, wy, "#ffbf5f", 0.55, HOUSE_Y + 6.0) for (wx, wy, ww, wh) in hs["windows"]]
     wl += [(lx, ly, "#ffc870", 0.9, HOUSE_Y + 6.0) for (lx, ly) in hs["lamps"]]
     st["house_refl"] = _layer(lambda cr, r: env.draw_wet_reflections(cr, wl, stretch=0.42, width=0.8, alpha=1.0,
@@ -1075,6 +1316,52 @@ def stone_amp(t):
     if t >= T_HOLD:
         a = max(a, 0.6 * note_flash(t))
     return a
+
+
+# The stone's glow is ONE continuous level for the runes, the halo at his ear and the cold light
+# on his face: while the call is open the runes keep a low steady glow (the floor, below the
+# speech range); the voice and then the music box's notes lift it. The drive is smoothed once for
+# the whole scene (attack 0.04 s, release 0.15 s), so the light swells on each phrase and ebbs in
+# the pauses -- never a state switch at a phrase edge or at the start of the hold music.
+STONE_FLOOR = 0.46
+STONE_ATTACK, STONE_RELEASE = 0.04, 0.15
+_STONE_TRACK = []
+
+
+def _stone_track():
+    if not _STONE_TRACK:
+        dt = 1.0 / 480.0
+        ts = np.arange(-0.5, DUR + 0.5, dt)
+        raw = [stone_amp(float(t)) for t in ts]
+        ka = 1.0 - math.exp(-dt / STONE_ATTACK)
+        kr = 1.0 - math.exp(-dt / STONE_RELEASE)
+        out, y = np.empty(len(ts)), 0.0
+        for i, x in enumerate(raw):
+            y += (x - y) * (ka if x > y else kr)
+            out[i] = y
+        _STONE_TRACK[:] = [ts, out]
+    return _STONE_TRACK
+
+
+def stone_drive(t):
+    """The smoothed voice / music-box drive (0..1) of the stone at t."""
+    ts, a = _stone_track()
+    return float(np.interp(t, ts, a))
+
+
+def stone_lvl(t):
+    """The stone's glow level at t (0..1): the open call's floor plus the smoothed drive."""
+    return clamp(STONE_FLOOR + 0.035 * core.noise1(t * 5.0, 11) + (1.0 - STONE_FLOOR) * stone_drive(t))
+
+
+_TEXT_W = []
+
+
+def text_widths():
+    """Each menu line's full width at scale 1 (its words and the scribe's swash after them)."""
+    if not _TEXT_W:
+        _TEXT_W[:] = [ln["end_x"] + 100.0 for ln in RuneText().lines]
+    return _TEXT_W
 
 
 class RuneText:
@@ -1995,10 +2282,8 @@ def draw(cr, t, st):
     xd = walk_x(t)
     flick = 0.85 + 0.15 * (0.5 + 0.5 * core.noise1(t * 6.0, 4))
     light = dragon_light(xd)
-    amp = stone_amp(t)
-    state = "pulsing" if (amp > 0.02 or t >= T_HOLD) else "active"
-    lvl = P.stone_level(state, amp, t)
-    stone_cb = P.stone_hold(light, state, amp, t)
+    lvl = stone_lvl(t)                       # one continuous level: runes, halo, light on his face
+    stone_cb = P.stone_hold(light, lvl, 0.0, t)   # (a number as the state: drawn at exactly lvl)
 
     # the sack: soaked grey paper in the night, kept down near his face's value (the brightest
     # things on the figure stay his eyes, his face and the stone)
@@ -2034,6 +2319,8 @@ def draw(cr, t, st):
                 st[key].paint(cr)
     with cam.view(cr, PX_HOUSES):
         st["house_refl"].paint(cr, alpha=0.9 * flick)
+    if shot != "C":                       # the far side's eaves dripping (soft in the medium shot)
+        draw_drips(cr, cam, t, st["drips"], alpha=0.6 if shot == "B" else 1.0, soft=2.4 if shot == "B" else 1.0)
     if not close:
         with cam.view(cr, PX_B):
             st["post_refl"].paint(cr, alpha=flick)

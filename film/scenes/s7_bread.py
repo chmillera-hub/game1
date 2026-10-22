@@ -53,20 +53,21 @@ SHOTS (hard cuts on action; eased moves + a breathing drift; never a frozen fram
      2.8x hers): her lavender sleeve from the upper left, his navy sleeve from the right, the
      open palm with its sand pads and dark claws. She lowers the golden half into his palm
      (2.45; a tiny give), slides her hand onto his claw-fingers, two pats -- his fingers flex
-     once at the touch, his thumb curls toward her hand -- and it RESTS there (2.69-3.42, a
+     once at the touch, his thumb curls toward her hand -- and it RESTS there (2.81-3.45, a
      held breath, the steam curling up through the sun). She lifts it away; his fingers begin,
      very carefully, to close round the bread. Slow push-in.
   B  3.72-6.45 TWO-SHOT easing back to show the gravel and the birds: his fingers finish
      closing as he draws the bread to his chest in both hands (wings lift: he is moved). She
-     flicks crumbs (4.40); he copies with one enormous clumsy toss (4.90); four more pigeons
-     flutter in from both sides; they toss together (5.80/5.82) and he chuckles: a puff of
-     golden embers (5.98); one ember floats off and lingers over the bench like a firefly.
+     flicks crumbs (4.40); he copies with one enormous clumsy toss (4.94); four more pigeons
+     flutter in from both sides; they toss together (5.59/5.60) and he chuckles: a puff of
+     golden embers (5.76); one ember floats off and lingers over the bench like a firefly.
   C  6.45-7.95 WIDE from the oak: s7_teen -- a teen faun in a red wool hood walks along the
      lawn at the left, head down over his reed-pipe; he notices them, slows, stops by the bench
      end (7.50) and watches. The dragon sees him (6.70) and quietly lifts the coloring book off
      the seat (7.12-7.48), lowers it hanging from his fingertips over his sack and lets it drop
      in (7.80; it lands 7.96 and stands there, top showing, for the rest of the scene): room.
-  C2 7.95-12.45 THE OFFER, THE SIT, THE LANTERN -- one take: she clocks the kid (7.45), breaks a
+     She has clocked the kid too (7.45).
+  C2 7.95-12.45 THE OFFER, THE SIT, THE LANTERN -- one take: she breaks a
      piece off her half and holds it right out to him at arm's length on her open palm
      (s7_offer 8.05). The camera eases in on his HESITATION: "me?" (a hand to his chest, 8.25,
      brows up), ears down, the back of his neck rubbed, a glance back the way he came, half a
@@ -145,6 +146,7 @@ SOUND: SFX_CUES (module level) lists every on-screen event with its local time, 
 the same constants the animation uses.
 """
 
+import dataclasses
 import math
 
 import cairocffi as cairo
@@ -213,7 +215,7 @@ CUT_H = L3.start - 0.35                     # 24.25 a loaf of bread
 CUT_I = L3.end + 0.30                       # 27.44 the warm pool
 # B -- feeding the pigeons together: (start, duration) of each toss
 TOSS_G = [(CUT_B + 0.38, 0.58), (CUT_B + 1.0, 0.58), (CUT_B + 1.6, 0.58)]
-TOSS_D = [(T_SWAP + 0.12, 0.62), (CUT_B + 1.58, 0.6)]
+TOSS_D = [(T_SWAP + 0.24, 0.56), (CUT_B + 1.58, 0.6)]     # (his first: from the bread at his chest)
 REL_G = [a + 0.47 * d for a, d in TOSS_G]   # her crumbs leave her fingers
 REL_D = [a + 0.50 * d for a, d in TOSS_D]   # his
 T_CHUCKLE = REL_D[-1] + 0.16                # he chuckles: a puff of golden embers ...
@@ -311,6 +313,12 @@ _MEAS = {}         # world bread centres to solve the receivers against (setup)
 
 def _r(t, a, b, e="inout_sine"):
     return core.ramp(t, a, b, e)
+
+
+def _ra(t, a, b):
+    """An arm blend's amt: LINEAR -- the rigs ease every blend themselves (inout_sine), so an
+    eased amt would ease twice (a dead start, a whip through the middle, a dead stop)."""
+    return core.ramp(t, a, b)
 
 
 def _win(t, a, b, fi=0.2, fo=0.3):
@@ -608,6 +616,32 @@ def _gg_tear0(sk, side, c):
     return _G_TEAR(sk, side, dict(c, phase=0.0))
 
 
+def _gg_tearp(sk, side, c):
+    # tear_bread's grip and strain before the snap, outside the library's two-hand tear mode: the
+    # loaf stays in her near hand (drawn between its palm and fingers), so her far hand stays
+    # where it came in -- behind the loaf's far side -- until the SNAP (no hand popping in front)
+    return _G_TEAR(sk, side, c)
+
+
+_G_TOSS = ch.GNOME_GESTURES["toss_crumbs"]
+
+
+def _gg_toss_at(ph):
+    def fn(sk, side, c):
+        return _G_TOSS(sk, side, dict(c, phase=ph))
+    return fn
+
+
+def _gg_toss_full(sk, side, c):
+    # toss_crumbs, but the hand comes all the way back to where it pinches the next crumbs
+    ph = c["phase"]
+    if ph < 0.55:
+        return _G_TOSS(sk, side, c)
+    rel, _hp, hang, z = _G_TOSS(sk, side, dict(c, phase=0.55))
+    base = _G_TOSS(sk, side, dict(c, phase=0.0))[0]
+    return B.v_lerp(rel, base, core.inout_sine((ph - 0.55) / 0.45)), "open", hang, z
+
+
 def _gg_tear1(sk, side, c):
     return _G_TEAR(sk, side, dict(c, phase=1.0))
 
@@ -662,7 +696,9 @@ for _n, _f in (("s7_tear0", _gg_tear0), ("s7_tear1", _gg_tear1), ("s7_hold", _gg
                ("s7_give", _gg_world("g_give", "grip")), ("s7_pat", _gg_pat("g_pat")),
                ("s7_offer_d", _gg_world("g_offer_d", "grip")),
                ("s7_out_f", _gg_world("g_out_f", "offer")), ("s7_out_d", _gg_world("g_out_d", "grip")),
-               ("s7_pat2", _gg_world("g_pat2", "flat")), ("s7_sprinkle", _gg_sprinkle)):
+               ("s7_pat2", _gg_world("g_pat2", "flat")), ("s7_sprinkle", _gg_sprinkle), ("s7_tearp", _gg_tearp),
+               ("s7_gtoss0", _gg_toss_at(0.0)), ("s7_gtoss1", _gg_toss_at(1.0)), ("s7_gtossf", _gg_toss_full),
+               ("s7_grest", _G_REST)):
     ch.GNOME_GESTURES[_n] = _f
 
 # dragon: fn(sk, side, c) -> (target, hand pose, hang, layer)
@@ -695,6 +731,25 @@ def _dg_eat(sk, side, c):
     return B.v_add(hc, (side * 6.0, 52.0, 66.0)), "grip", -0.6, "front"
 
 
+_D_TOSS = ch.DRAGON_GESTURES["toss_crumbs"]
+
+
+def _dg_toss_at(ph):
+    def fn(sk, side, c):
+        return _D_TOSS(sk, side, dict(c, phase=ph))
+    return fn
+
+
+def _dg_toss_full(sk, side, c):
+    # toss_crumbs, but the hand comes all the way back to where it pinches the next crumbs
+    ph = c["phase"]
+    if ph < 0.55:
+        return _D_TOSS(sk, side, c)
+    rel, _hp, hang, z = _D_TOSS(sk, side, dict(c, phase=0.55))
+    base = _D_TOSS(sk, side, dict(c, phase=0.0))[0]
+    return B.v_lerp(rel, base, core.inout_sine((ph - 0.55) / 0.45)), "open", hang, z
+
+
 def _dg_lapc(sk, side, c):
     # hands folded in his lap, in front of his own middle -- never across her (she sits close)
     hc = B.v_lerp(c["hip"][-1.0], c["hip"][1.0], 0.5)
@@ -704,7 +759,9 @@ def _dg_lapc(sk, side, c):
 
 for _n, _f in (("s7_receive", _dg_world("d_receive", "offer")), ("s7_lap", _dg_lap), ("s7_cradle", _dg_cradle),
                ("s7_lapc", _dg_lapc),
-               ("s7_eat", _dg_eat), ("s7_book", _dg_world("d_book", "grip")), ("s7_sack", _dg_world("d_sack", "grip"))):
+               ("s7_eat", _dg_eat), ("s7_book", _dg_world("d_book", "grip")), ("s7_sack", _dg_world("d_sack", "grip")),
+               ("s7_dtoss0", _dg_toss_at(0.0)), ("s7_dtoss1", _dg_toss_at(1.0)), ("s7_dtossf", _dg_toss_full),
+               ("s7_drest", _D_REST)):
     ch.DRAGON_GESTURES[_n] = _f
 
 
@@ -749,14 +806,14 @@ def _dev_scale(cr):
 _INSERT = {"on": False}          # A3 (the hands insert) is being drawn: the close-up loaf
 
 
-def _bread(cr, x, y, size, light, state, face, seed):
+def _bread(cr, x, y, size, light, state, face, seed, crack=0.0):
     """Her bread. In the close insert (A3) a torn half is drawn as the props loaf -- the rig's
     half reads like a shell at that size -- with its fluffy torn face toward `face` and warm
     from the oven; everywhere else (and at every other size) the gnome's own bread."""
     if _INSERT["on"] and state == "half":
         P.draw_bread(cr, x, y, size * 0.94, light, 0.0, state="half", face=face, seed=seed)
         return
-    ch.gnome_bread(cr, x, y, size, light, state, face=face, seed=seed, detail=_bread_detail(cr))
+    ch.gnome_bread(cr, x, y, size, light, state, face=face, seed=seed, detail=_bread_detail(cr), crack=crack)
 
 
 def bread_giver(state, face, size, light, seed=3, ofs=None, cap=None):
@@ -780,7 +837,7 @@ def bread_giver(state, face, size, light, seed=3, ofs=None, cap=None):
     return cb
 
 
-def bread_receiver(key, state, face, size, light, seed=3, cap=None, upright=True, scale=1.0, hang=False):
+def bread_receiver(key, state, face, size, light, seed=3, cap=None, upright=True, scale=1.0, hang=False, crack=0.0):
     """A hold callback for the receiver of hand-off `key`: draws the bread exactly where (and
     as big as) the giver drew it at the hand-off instant (offset, angle and scale solved once in
     setup from _MEAS[key]), riding with this hand from then on. hang=True keeps the offset
@@ -808,7 +865,7 @@ def bread_receiver(key, state, face, size, light, seed=3, cap=None, upright=True
             cr.scale(k, k)
         if cap:
             _CAP[cap] = (*cr.user_to_device(0.0, 0.0), _dev_scale(cr))
-        _bread(cr, 0.0, 0.0, size, light, state, face, seed)
+        _bread(cr, 0.0, 0.0, size, light, state, face, seed, crack=crack)
         cr.restore()
     return cb
 
@@ -943,7 +1000,8 @@ def gnome_pose(t, light=None):
                       (T_GRAB + 0.15, (0.2, 0.75)), (T_SNAP + 0.05, (0.25, 0.7)), (T_TEAR1 - 0.1, (0.85, -0.2)),
                       (T_GIVE - 0.12, (0.85, 0.55)), (T_GIVE + 0.2, (0.85, 0.55)), (T_PAT1 + 0.05, (0.85, -0.3)),
                       (CUT_B + 0.1, (0.85, -0.25)), (TOSS_G[0][0] - 0.05, (0.5, 0.85)), (REL_G[0] + 0.15, (0.5, 0.9)),
-                      (TOSS_D[0][0] + 0.05, (0.95, 0.3)), (REL_D[0] + 0.1, (0.8, 0.85)), (REL_G[1], (0.4, 0.9)),
+                      (TOSS_D[0][0] + 0.05, (0.95, 0.3)), (min(REL_D[0] + 0.1, REL_G[1]) - 0.08, (0.8, 0.85)),
+                      (REL_G[1], (0.4, 0.9)),
                       (REL_G[1] + 0.25, (0.6, -0.3)), (REL_G[2] - 0.2, (0.5, 0.8)), (T_CHUCKLE + 0.05, (0.9, -0.2)),
                       (CUT_C, (0.5, 0.7)),
                       (T_G_NOTICE, (0.5, 0.7)), (T_G_NOTICE + 0.12, (-0.9, -0.35)), (T_G_TEAR2_0, (-0.3, 0.6)),
@@ -1032,77 +1090,122 @@ def _sprinkle_k(t):
     return 1.0 - _r(t, T_SPRINKLE0 + 0.4, T_SPRINKLE1 - 0.02, "linear")
 
 
+def _toss_run(t, tosses, Arm, before, before_t, g0, g1, gfull, glib, hand, post=0.38, rest="rest"):
+    """An arm through a run of crumb tosses with no jumps: from `before` (held until before_t)
+    it eases to the first toss's start; each toss but the last comes all the way back (gfull) to
+    pinch the next; the last ends on the library's follow-through (glib) and eases from there
+    (g1 = glib at phase 1) back to `rest` (a rest gesture under the tosses' own IK pole: the
+    library's "rest" swaps the elbow pole, and the forearm would flip as it settles)."""
+    ts = sorted(tosses)
+    for i, (a, d) in enumerate(ts):
+        last = i == len(ts) - 1
+        if t < a:
+            if i == 0:
+                return Arm(g0, amt=_ra(t, before_t, a), prev=before, hand=hand)
+            return Arm(g0, hand=hand)                 # back where it pinches the next crumbs
+        if t < a + d:
+            return Arm(glib if last else gfull, phase=core.clamp((t - a) / d), hand=hand)
+    a, d = ts[-1]
+    return Arm(rest, amt=_ra(t, a + d, a + d + post), prev=g1, hand=hand)
+
+
+def _g_hand_keys():
+    """Her fingers through the scene (blended by _hand_track: they never snap between poses)."""
+    r = [(0.0, "relaxed"), (T_SATCHEL + 0.04, "pinch"), (T_GRAB - 0.1, "grip"), (T_SPRINKLE0, "pinch"),
+         (T_SPRINKLE1 + 0.05, "relaxed")]
+    lf = [(0.0, "relaxed"), (T_JOIN, "open"), (T_TEAR0 - 0.15, "grip"), (T_GIVE, "flat"), (T_LET, "relaxed")]
+    ts = sorted(TOSS_G)
+    for i, (a, d) in enumerate(ts):
+        lf += [(a - 0.15, "pinch"), (a + 0.55 * d - 0.02, "open")]
+        if i == len(ts) - 1:
+            lf.append((a + d + 0.05, "relaxed"))
+    lf += [(T_G_TEAR2_0, "pinch"), (T_G_TEAR2_1, "offer"), (T_F_TAKE + 0.05, "relaxed"), (T_G_TEAR3_0, "pinch"),
+           (T_G_TEAR3_1 + 0.05, "grip"), (T_LAST_D, "flat"), (T_LAST_D + 0.4, "relaxed")]
+    return sorted(r, key=lambda k: k[0]), sorted(lf, key=lambda k: k[0])
+
+
+G_HAND_R, G_HAND_L = _g_hand_keys()
+
+
 def _gnome_arms(t, L):
     """Her right (R) and left (Lf) GnomeArm at t."""
     hl = _STATE.get("g_inward", {-1.0: 1.0, 1.0: -1.0})
+    hR, hL = _hand_track(t, G_HAND_R), _hand_track(t, G_HAND_L)
     # --- right hand: the satchel, the loaf, her half (and finally the bit for the pigeons)
     if t < T_SATCHEL:
-        R = ch.GnomeArm("rest")
+        R = ch.GnomeArm("rest", hand=hR)
     elif t < T_GRAB:
-        R = ch.GnomeArm("reach_satchel", amt=_r(t, T_SATCHEL, T_GRAB - 0.03), prev="rest")
+        R = ch.GnomeArm("reach_satchel", amt=_ra(t, T_SATCHEL, T_GRAB - 0.03), prev="rest", hand=hR)
     elif t < T_TEAR0:
-        R = ch.GnomeArm("s7_tear0", amt=_r(t, T_GRAB, T_TEAR0 - 0.02), prev="reach_satchel", hold=_loaf_up(L, t))
+        R = ch.GnomeArm("s7_tear0", amt=_ra(t, T_GRAB, T_TEAR0 - 0.02), prev="reach_satchel", hold=_loaf_up(L, t),
+                        hand=hR)
+    elif t < T_SNAP:
+        # grip and strain, the loaf still in her near hand (the crack opening) -- see _gg_tearp
+        ph = tear_phase(t)
+        crack = core.smooth(core.clamp((ph - 0.25) / 0.25))
+        R = ch.GnomeArm("s7_tearp", phase=ph, hand=hR,
+                        hold=bread_receiver("loaf", "loaf", 1.0, LOAF, L, seed=0, hang=True, crack=crack))
     elif t < T_TEAR1:
-        R = ch.GnomeArm("tear_bread", phase=tear_phase(t))
+        R = ch.GnomeArm("tear_bread", phase=tear_phase(t), hand=hR)
     elif t < T_G_TEAR3_1:
         half_g = bread_giver("half", hl[-1.0], _half_size(t), L, seed=1, cap="g_half")
-        R = ch.GnomeArm("s7_hold", amt=_r(t, T_TEAR1, T_TEAR1 + 0.45), prev="s7_tear1", hold=half_g)
+        R = ch.GnomeArm("s7_hold", amt=_ra(t, T_TEAR1, T_TEAR1 + 0.45), prev="s7_tear1", hold=half_g, hand=hR)
     elif t < T_SPRINKLE0:
-        R = ch.GnomeArm("s7_hold", hold=bread_giver("piece", hl[-1.0], PIECE * 0.7, L, seed=8))
+        R = ch.GnomeArm("s7_hold", hold=bread_giver("piece", hl[-1.0], PIECE * 0.7, L, seed=8), hand=hR)
     elif t < T_SPRINKLE1 + 0.05:
         k = _sprinkle_k(t)
         bit = bread_giver("piece", hl[-1.0], PIECE * 0.7 * max(0.25, k), L, seed=8, cap="g_sprinkle") if k > 0.02 else None
-        R = ch.GnomeArm("s7_sprinkle", amt=_r(t, T_SPRINKLE0, T_SPRINKLE0 + 0.42), prev="s7_hold", hold=bit,
-                        phase=(t - T_SPRINKLE0) * 2.2)
+        R = ch.GnomeArm("s7_sprinkle", amt=_ra(t, T_SPRINKLE0, T_SPRINKLE0 + 0.42), prev="s7_hold", hold=bit,
+                        phase=(t - T_SPRINKLE0) * 2.2, hand=hR)
     else:
-        R = ch.GnomeArm("rest", amt=_r(t, T_SPRINKLE1 + 0.05, T_SPRINKLE1 + 0.55), prev="s7_sprinkle")
+        R = ch.GnomeArm("rest", amt=_ra(t, T_SPRINKLE1 + 0.05, T_SPRINKLE1 + 0.55), prev="s7_sprinkle", hand=hR)
     # --- left hand: the tear, his half, the tosses, the faun's piece, the last piece for him
     if t < T_JOIN:
-        Lf = ch.GnomeArm("rest")
+        Lf = ch.GnomeArm("rest", hand=hL)
     elif t < T_TEAR0:
-        Lf = ch.GnomeArm("s7_tear0", amt=_r(t, T_JOIN, T_TEAR0 - 0.02), prev="rest")
+        Lf = ch.GnomeArm("s7_tear0", amt=_ra(t, T_JOIN, T_TEAR0 - 0.02), prev="rest", hand=hL)
+    elif t < T_SNAP:
+        Lf = ch.GnomeArm("s7_tearp", phase=tear_phase(t), hand=hL)
     elif t < T_TEAR1:
-        Lf = ch.GnomeArm("tear_bread", phase=tear_phase(t))
+        Lf = ch.GnomeArm("tear_bread", phase=tear_phase(t), hand=hL)
     elif t < T_G_OFFER0:
-        Lf = ch.GnomeArm("s7_tear1", hold=bread_giver("half", hl[1.0], LOAF, L, seed=2))
+        Lf = ch.GnomeArm("s7_tear1", hold=bread_giver("half", hl[1.0], LOAF, L, seed=2), hand=hL)
     elif t < T_G_LOWER0:
         # she holds his half out to him, at her chest height, toward his face: for you
-        Lf = ch.GnomeArm("s7_offer_d", amt=_r(t, T_G_OFFER0, T_G_LOWER0 - 0.02), prev="s7_tear1",
-                         hold=bread_giver("half", hl[1.0], LOAF, L, seed=2))
+        Lf = ch.GnomeArm("s7_offer_d", amt=_ra(t, T_G_OFFER0, T_G_LOWER0 - 0.02), prev="s7_tear1",
+                         hold=bread_giver("half", hl[1.0], LOAF, L, seed=2), hand=hL)
     elif t < T_GIVE:
         # ... and lowers it into his open palm
-        Lf = ch.GnomeArm("s7_give", amt=_r(t, T_G_LOWER0, T_GIVE - 0.03), prev="s7_offer_d",
-                         hold=bread_giver("half", hl[1.0], LOAF, L, seed=2, cap="g_give_d"))
+        Lf = ch.GnomeArm("s7_give", amt=_ra(t, T_G_LOWER0, T_GIVE - 0.03), prev="s7_offer_d",
+                         hold=bread_giver("half", hl[1.0], LOAF, L, seed=2, cap="g_give_d"), hand=hL)
     elif t < T_LET:
         # her tiny hand comes to rest on his claw-fingers, and stays
-        Lf = ch.GnomeArm("s7_pat", amt=_r(t, T_GIVE, T_PAT1), prev="s7_give", phase=t - T_PAT1)
+        Lf = ch.GnomeArm("s7_pat", amt=_ra(t, T_GIVE, T_PAT1), prev="s7_give", phase=t - T_PAT1, hand=hL)
     elif t < CUT_B + 0.4:
-        Lf = ch.GnomeArm("rest", amt=_r(t, T_LET, T_LET + 0.5), prev="s7_pat")
+        Lf = ch.GnomeArm("rest", amt=_ra(t, T_LET, T_LET + 0.5), prev="s7_pat", hand=hL)
     elif t < CUT_C:
-        Lf = ch.GnomeArm("rest")
-        for (a, d) in TOSS_G:
-            if a - 0.05 <= t < a + d + 0.35:
-                ph = core.clamp((t - a) / d)
-                Lf = ch.GnomeArm("toss_crumbs", phase=ph) if t < a + d else \
-                    ch.GnomeArm("rest", amt=_r(t, a + d, a + d + 0.35), prev="toss_crumbs")
+        Lf = _toss_run(t, TOSS_G, ch.GnomeArm, "rest", TOSS_G[0][0] - 0.22, "s7_gtoss0", "s7_gtoss1",
+                       "s7_gtossf", "toss_crumbs", hL, post=0.35, rest="s7_grest")
     elif t < T_G_TEAR2_0:
-        Lf = ch.GnomeArm("rest")
+        Lf = ch.GnomeArm("rest", hand=hL)
     elif t < T_G_TEAR2_1:
-        Lf = ch.GnomeArm("s7_pinch", amt=_r(t, T_G_TEAR2_0, T_G_TEAR2_0 + 0.22), prev="rest")
+        Lf = ch.GnomeArm("s7_pinch", amt=_ra(t, T_G_TEAR2_0, T_G_TEAR2_0 + 0.22), prev="rest", hand=hL)
     elif t < T_F_TAKE:
         piece_f = bread_giver("piece", -1.0, PIECE, L, seed=4, cap="g_give_f")
-        Lf = ch.GnomeArm("s7_out_f", amt=_r(t, T_G_TEAR2_1, T_G_HOLDOUT + 0.4), prev="s7_pinch", hold=piece_f)
+        Lf = ch.GnomeArm("s7_out_f", amt=_ra(t, T_G_TEAR2_1, T_G_HOLDOUT + 0.4), prev="s7_pinch", hold=piece_f,
+                         hand=hL)
     elif t < T_G_TEAR3_0:
-        Lf = ch.GnomeArm("rest", amt=_r(t, T_F_TAKE + 0.05, T_F_TAKE + 0.5), prev="s7_out_f")
+        Lf = ch.GnomeArm("rest", amt=_ra(t, T_F_TAKE + 0.05, T_F_TAKE + 0.5), prev="s7_out_f", hand=hL)
     elif t < T_G_TEAR3_1:
-        Lf = ch.GnomeArm("s7_pinch", amt=_r(t, T_G_TEAR3_0, T_G_TEAR3_0 + 0.25), prev="rest")
+        Lf = ch.GnomeArm("s7_pinch", amt=_ra(t, T_G_TEAR3_0, T_G_TEAR3_0 + 0.25), prev="rest", hand=hL)
     elif t < T_LAST_D:
         last_l = bread_giver("piece", 1.0, PIECE * 0.85, L, seed=6, cap="g_last_d")
-        Lf = ch.GnomeArm("s7_out_d", amt=_r(t, T_G_TEAR3_1 + 0.05, T_LAST_D - 0.04), prev="s7_pinch", hold=last_l)
+        Lf = ch.GnomeArm("s7_out_d", amt=_ra(t, T_G_TEAR3_1 + 0.05, T_LAST_D - 0.04), prev="s7_pinch", hold=last_l,
+                         hand=hL)
     elif t < T_LAST_D + 0.4:
-        Lf = ch.GnomeArm("s7_pat2", amt=_r(t, T_LAST_D, T_LAST_D + 0.18), prev="s7_out_d")   # her tiny hand rests on his
+        Lf = ch.GnomeArm("s7_pat2", amt=_ra(t, T_LAST_D, T_LAST_D + 0.18), prev="s7_out_d", hand=hL)   # her tiny hand rests on his
     else:
-        Lf = ch.GnomeArm("rest", amt=_r(t, T_LAST_D + 0.4, T_LAST_D + 0.9), prev="s7_pat2")
+        Lf = ch.GnomeArm("rest", amt=_ra(t, T_LAST_D + 0.4, T_LAST_D + 0.9), prev="s7_pat2", hand=hL)
     return R, Lf
 
 
@@ -1331,7 +1434,7 @@ def _dragon_arms(t, L):
     if t < T_D_REACH0:
         Lt = ch.Arm("rest", hand=hl)
     elif t < T_GIVE - 0.1:
-        Lt = ch.Arm("s7_receive", amt=_r(t, T_D_REACH0, T_GIVE - 0.1), prev="rest", hand=hl)
+        Lt = ch.Arm("s7_receive", amt=_ra(t, T_D_REACH0, T_GIVE - 0.1), prev="rest", hand=hl)
     elif t < CUT_B:
         # palm up and open (the library's offer shows the palm pads): the half is laid IN it --
         # drawn on top of the open hand by draw() (palm_bread), as bread lying on a palm is;
@@ -1339,28 +1442,25 @@ def _dragon_arms(t, L):
         Lt = ch.Arm("hand_out_offer", target=_gx("d_receive", 1.0), hand=_hand_mix("offer", "cup", _d_close(t)))
     elif t < T_SWAP:
         # (B) his great fingers close round it and he draws it in to his chest, both hands round it
-        Lt = ch.Arm("s7_cradle", amt=_r(t, CUT_B, T_SWAP - 0.2), prev="s7_receive",
+        Lt = ch.Arm("s7_cradle", amt=_ra(t, CUT_B, T_SWAP - 0.2), prev="s7_receive",
                     hand=_hand_mix("offer", "cup", _d_close(t)), hold=half_d)
     elif t < CUT_C:
-        Lt = ch.Arm("rest", amt=_r(t, T_SWAP, T_SWAP + 0.35), prev="s7_cradle", hand=hl)
-        for (a, d) in TOSS_D:
-            if a - 0.05 <= t < a + d + 0.4:
-                ph = core.clamp((t - a) / d)
-                Lt = ch.Arm("toss_crumbs", phase=ph, hand=hl) if t < a + d else \
-                    ch.Arm("rest", amt=_r(t, a + d, a + d + 0.4), prev="toss_crumbs", hand=hl)
+        # from the bread at his chest straight into his first clumsy toss, a second, then rest
+        Lt = _toss_run(t, TOSS_D, ch.Arm, "s7_cradle", T_SWAP, "s7_dtoss0", "s7_dtoss1", "s7_dtossf",
+                       "toss_crumbs", hl, post=0.4, rest="s7_drest")
     elif t < T_D_BOOK0:
         Lt = ch.Arm("rest", hand=hl)
     elif t < T_D_BOOK1:
-        Lt = ch.Arm("s7_book", amt=_r(t, T_D_BOOK0, T_D_BOOK1 - 0.02), prev="rest", hand=hl)
+        Lt = ch.Arm("s7_book", amt=_ra(t, T_D_BOOK0, T_D_BOOK1 - 0.02), prev="rest", hand=hl)
     elif t < T_D_SACK:
         lay = 1.0 - _r(t, T_D_BOOK1 + 0.04, T_D_SACK - 0.06)
-        Lt = ch.Arm("s7_sack", amt=_r(t, T_D_BOOK1, T_D_SACK - 0.02), prev="s7_book", hand=hl,
+        Lt = ch.Arm("s7_sack", amt=_ra(t, T_D_BOOK1, T_D_SACK - 0.02), prev="s7_book", hand=hl,
                     hold=_book_in_hand(L, lay))
     elif t < T_LAST_D - 0.55:
         # he lets the book drop (fingers opening); his near hand settles in his lap, clear of her
-        Lt = ch.Arm("s7_lapc", amt=_r(t, T_D_SACK + 0.06, T_D_SACK + 0.7), prev="s7_sack", hand=hl)
+        Lt = ch.Arm("s7_lapc", amt=_ra(t, T_D_SACK + 0.06, T_D_SACK + 0.7), prev="s7_sack", hand=hl)
     elif t < T_LAST_D - 0.1:
-        Lt = ch.Arm("s7_receive", amt=_r(t, T_LAST_D - 0.55, T_LAST_D - 0.1), prev="s7_lapc", hand=hl)
+        Lt = ch.Arm("s7_receive", amt=_ra(t, T_LAST_D - 0.55, T_LAST_D - 0.1), prev="s7_lapc", hand=hl)
     elif t < T_LAST_D:
         Lt = ch.Arm("hand_out_offer", target=_gx("d_receive", 1.0), hand="offer")
     elif t < T_LAST_D + 0.45:
@@ -1368,7 +1468,7 @@ def _dragon_arms(t, L):
         Lt = ch.Arm("s7_receive", hand="offer", hold=last_d)
     else:
         last_d = bread_receiver("last_d", "piece", 1.0, PIECE * 0.85, L, seed=6, cap="d_last")
-        Lt = ch.Arm("s7_lapc", amt=_r(t, T_LAST_D + 0.45, T_D_LAP + 0.4), prev="s7_receive", hand="offer", hold=last_d)
+        Lt = ch.Arm("s7_lapc", amt=_ra(t, T_LAST_D + 0.45, T_D_LAP + 0.4), prev="s7_receive", hand="offer", hold=last_d)
     # --- right hand: (B) comes to the bread at his chest and takes it, holds it on his thigh;
     # (F) pops the last of it into his mouth
     half_r = bread_receiver("half_r", "half", _half_face(), LOAF, L, seed=2, cap="half_r",
@@ -1376,15 +1476,15 @@ def _dragon_arms(t, L):
     if t < T_CRADLE + 0.15:
         Rt = ch.Arm("rest", hand=hr)
     elif t < T_SWAP:
-        Rt = ch.Arm("s7_cradle", amt=_r(t, T_CRADLE + 0.15, T_SWAP - 0.12), prev="rest", hand=hr)
+        Rt = ch.Arm("s7_cradle", amt=_ra(t, T_CRADLE + 0.15, T_SWAP - 0.12), prev="rest", hand=hr)
     elif t < T_D_EAT0:
-        Rt = ch.Arm("s7_lap", amt=_r(t, T_SWAP + 0.05, T_SWAP + 0.55), prev="s7_cradle", hand=hr, hold=half_r)
+        Rt = ch.Arm("s7_lap", amt=_ra(t, T_SWAP + 0.05, T_SWAP + 0.55), prev="s7_cradle", hand=hr, hold=half_r)
     elif t < T_D_EAT1 + 0.6:
         bite = core.clamp((t - T_D_EAT0) / (T_D_EAT1 - T_D_EAT0))
-        u = core.inout_sine(bite) if t < T_D_EAT1 else 1.0 - _r(t, T_D_EAT1, T_D_EAT1 + 0.6)
+        u = bite if t < T_D_EAT1 else 1.0 - _ra(t, T_D_EAT1, T_D_EAT1 + 0.6)     # (linear: the rig eases)
         Rt = ch.Arm("s7_eat", amt=u, prev="s7_lap", hand=hr, hold=half_r if t < T_D_EAT1 - 0.1 else None)
     else:
-        Rt = ch.Arm("s7_lapc", amt=_r(t, T_D_EAT1 + 0.6, T_D_EAT1 + 1.2), prev="s7_lap", hand=hr)
+        Rt = ch.Arm("s7_lapc", amt=_ra(t, T_D_EAT1 + 0.6, T_D_EAT1 + 1.2), prev="s7_lap", hand=hr)
     return Lt, Rt
 # ----------------------------------------------------------------------------------------
 # the faun (teen): walks in at the left, slows, watches, hesitates, takes the bread, sits; and
@@ -1492,43 +1592,60 @@ def _faun_piece_scale(t):
     return 0.8 ** n
 
 
+F_HAND_NEAR = [(0.0, "pinch"), (T_F_NOTICE + 0.3, "grip"), (T_F_ME, "flat"), (T_F_RUB0, "relaxed"),
+               (T_F_RUB1 + 0.1, "cup"), (T_F_TAKE + 0.02, "grip"), (T_F_GIVE + 0.04, "relaxed")]
+
+
 def _faun_arms(t, L):
-    """(near, far): his right arm is the near one while he faces right (all scene)."""
+    """(near, far): his right arm is the near one while he faces right (all scene). Each move
+    blends from the gesture he is actually in (chest -> neck -> the piece; the piece held up ->
+    held out), and his fingers blend from pose to pose."""
     far = ch.Arm("rest")
     if T_F_HOOD - 0.4 <= t < CUT_G3 + 0.75:
         far = ch.Arm("neck_rub", amt=_win(t, T_F_HOOD - 0.4, CUT_G3 + 0.75, 0.3, 0.55), prev="rest",
                      phase=(t - T_F_HOOD) * 0.8)
+    hN = _hand_track(t, F_HAND_NEAR)
+    rub_ph = (t - T_F_RUB0) * 1.4
     if t < T_F_NOTICE + 0.3:
-        return ch.Arm("pipe", phase=t * 0.8), far
-    if t < B_OFFER.t + 0.2:
-        return ch.Arm("strap", amt=_r(t, T_F_NOTICE + 0.3, T_F_NOTICE + 0.75), prev="pipe"), far
-    if t < T_F_RUB0:
-        me = _win(t, T_F_ME, T_F_RUB0 + 0.05, 0.18, 0.25)
-        return ch.Arm("hand_on_chest", amt=me, prev="strap"), far
-    if t < T_F_RUB1 + 0.25:
-        rub = _win(t, T_F_RUB0, T_F_RUB1 + 0.25, 0.22, 0.3)
-        return ch.Arm("neck_rub", amt=rub, prev="strap", phase=(t - T_F_RUB0) * 1.4), far
+        return ch.Arm("pipe", phase=t * 0.8, hand=hN), far
+    if t < T_F_ME:
+        return ch.Arm("strap", amt=_ra(t, T_F_NOTICE + 0.3, T_F_NOTICE + 0.75), prev="pipe", hand=hN), far
+    if t < T_F_RUB0 - 0.05:
+        # "me?": a hand to his chest
+        return ch.Arm("hand_on_chest", amt=_ra(t, T_F_ME, T_F_ME + 0.2), prev="strap", hand=hN), far
+    if t < T_F_RUB1:
+        # ... up to the back of his neck (doubt)
+        return ch.Arm("neck_rub", amt=_ra(t, T_F_RUB0 - 0.05, T_F_RUB0 + 0.32), prev="hand_on_chest", phase=rub_ph,
+                      hand=hN), far
     if t < T_F_TAKE:
-        return ch.Arm("s7_take_f", amt=_r(t, T_F_RUB1 + 0.15, T_F_TAKE - 0.04), prev="rest"), far
+        # ... and, a brave yes, down from his neck and out to her piece
+        return ch.Arm("s7_take_f", amt=_ra(t, T_F_RUB1, T_F_TAKE - 0.04), prev="neck_rub", phase=rub_ph,
+                      hand=hN), far
     piece = bread_receiver("piece_f", "piece", -1.0, PIECE, L, seed=4, scale=_faun_piece_scale(t), cap="f_piece")
     if t < FAUN_BITES[0] - 0.45:
-        return ch.Arm("s7_take_f", amt=1.0 - _r(t, T_F_TAKE + 0.04, T_F_TAKE + 0.42), prev="s7_hold_f", hold=piece), far
+        return ch.Arm("s7_take_f", amt=1.0 - _ra(t, T_F_TAKE + 0.04, T_F_TAKE + 0.42), prev="s7_hold_f", hold=piece,
+                      hand=hN), far
+    ph = 0.25                                      # = s7_hold_f: the piece held before his chest
+    for b in FAUN_BITES:
+        if b - 0.45 <= t < b + 0.55:
+            u = core.inout_sine(core.clamp((t - (b - 0.45)) / 0.45)) if t < b else \
+                1.0 - core.inout_sine(core.clamp((t - b - 0.1) / 0.45))
+            ph = 0.25 + 0.75 * u
     if t < T_F_GIVE0:
-        ph = 0.25                                  # = s7_hold_f: the piece held before his chest
-        for b in FAUN_BITES:
-            if b - 0.45 <= t < b + 0.55:
-                u = core.inout_sine(core.clamp((t - (b - 0.45)) / 0.45)) if t < b else \
-                    1.0 - core.inout_sine(core.clamp((t - b - 0.1) / 0.45))
-                ph = 0.25 + 0.75 * u
-        return ch.Arm("eat", phase=ph, hold=piece), far
+        return ch.Arm("eat", phase=ph, hold=piece, hand=hN), far
     if t < T_F_GIVE:
-        return ch.Arm("s7_give_f", amt=_r(t, T_F_GIVE0, T_F_GIVE - 0.04), prev="eat", hold=piece), far
-    return ch.Arm("rest", amt=_r(t, T_F_GIVE + 0.05, T_F_GIVE + 0.6), prev="s7_give_f"), far
+        # (from wherever the bite has brought the piece -- eat at its phase -- out to the courier's beak)
+        return ch.Arm("s7_give_f", amt=_ra(t, T_F_GIVE0, T_F_GIVE - 0.04), prev="eat", phase=ph, hold=piece,
+                      hand=hN), far
+    return ch.Arm("rest", amt=_ra(t, T_F_GIVE + 0.05, T_F_GIVE + 0.6), prev="s7_give_f", hand=hN), far
 
 
 # ----------------------------------------------------------------------------------------
 # the griffin courier: plods in from the left, settles by the bench end, takes the faun's bread
 # ----------------------------------------------------------------------------------------
+
+GR_BLINKS = [T_GR_IN + 0.7, T_GR_STOP + 0.55, B_FULL.t + 0.32, CUT_F + 1.1, CUT_G + 1.7, CUT_G3 + 0.9, CUT_H + 1.4]
+
 
 def griffin_x(t):
     u = core.clamp((t - T_GR_IN) / (T_GR_STOP - T_GR_IN))
@@ -1565,11 +1682,14 @@ def griffin_pose(t, light=None):
         mood, mood2, mix = "tired", "surprised", 0.6 * _win(t, T_F_GIVE0, T_F_GIVE + 0.2, 0.15, 0.3)
     if t > T_GR_GULP:
         mood, mood2, mix = "warm", "happy", 0.5 * _r(t, T_GR_GULP, T_GR_GULP + 0.5)
-    blink = 0.6 * _win(t, T_GR_GULP + 0.05, T_GR_GULP + 0.5, 0.06, 0.15)
+    # his own few slow blinks (the library's automatic double-blinks read as a flicker at the edge
+    # of G's frame), the happy squint after the gulp, and in I he is nodding off
+    blink = max(0.6 * _win(t, T_GR_GULP + 0.05, T_GR_GULP + 0.5, 0.06, 0.15), _blink_at(t, GR_BLINKS, 0.26),
+                0.55 * _r(t, CUT_I + 0.5, CUT_I + 1.6) * (1.0 - _blink_at(t, [CUT_I + 2.0], 0.5)))
     wings = -0.2 + 0.6 * yawn
     pose = ch.GriffinPose(facing=1, turn=turn, walk=walk, phase=phase, sit=sit, yawn=yawn, look=look,
                           head_nod=head_nod, beak_open=beak, beak_hold=hold, mood=mood, mood2=mood2, mood_mix=mix,
-                          blink=blink if blink > 0 else None, wings=wings, tail_curl=1.0, seed=23)
+                          blink=blink, wings=wings, tail_curl=1.0, seed=23)
     return x, y, pose
 
 
@@ -1810,8 +1930,9 @@ def dwarf_state(t, light=None):
         look = _track(t, [(T_DW_STOP, (-0.95, -0.05)), (T_DW_STOP + 0.15, (-0.95, -0.05)),
                           (T_DW_STOP + 0.3, (0.5, 0.45)), (T_DRAG0, (0.4, 0.5))])
         ax, ay = _drag_anchor(t)
-        pose = ch.DwarfPose(yaw=yaw, drag=0.55 * u, grip=DW_GRIP, near=ch.Arm("drag", amt=u, prev="rest"),
-                            far=ch.Arm("drag", amt=u, prev="rest"), look=look, head_nod=-0.15 * u,
+        ua = _ra(t, T_DW_STOP + 0.15, T_DRAG0 - 0.08)
+        pose = ch.DwarfPose(yaw=yaw, drag=0.55 * u, grip=DW_GRIP, near=ch.Arm("drag", amt=ua, prev="rest"),
+                            far=ch.Arm("drag", amt=ua, prev="rest"), look=look, head_nod=-0.15 * u,
                             mood="tired", mood2="determined" if "determined" in B.MOODS else "angry",
                             mood_mix=0.5 * u, blink=_blink_at(t, DW_BLINKS), seed=29)
         return core.lerp(ax0, ax, u), core.lerp(ay0, ay, u), pose, False
@@ -1838,7 +1959,8 @@ def dwarf_state(t, light=None):
         settle = _r(t, T_DW_LET, T_DW_LET + 0.35)
         mood_u = _r(t, T_DW_LET + 0.1, T_DW_LET + 0.6)
         pose = ch.DwarfPose(yaw=yaw, drag=drag0 * (1.0 - u), grip=DW_GRIP, walk=1.0 - settle, phase=ph,
-                            near=ch.Arm("rest", amt=u, prev="drag"), far=ch.Arm("rest", amt=u, prev="drag"),
+                            near=ch.Arm("rest", amt=_ra(t, T_DW_LET, T_DW_LET + 0.45), prev="drag"),
+                            far=ch.Arm("rest", amt=_ra(t, T_DW_LET, T_DW_LET + 0.45), prev="drag"),
                             look=_track(t, [(T_DW_LET, (0.3, 0.35)), (T_DW_LET + 0.35, (-0.9, -0.1)),
                                             (CUT_G, (-0.9, -0.1))]),
                             head_nod=-0.18 * e0 * (1.0 - u) + 0.12 * _pulse(t, T_DW_LET + 0.5, 0.15, 0.35),
@@ -2286,12 +2408,19 @@ EMBER_HOVER = (986.0, 572.0)                 # it lingers over the bench like a 
 EMBER_FACE = (1012.0, 636.0)                 # ... comes down before his face as the faun sits (he sees it) ...
 
 
+EMBER_SEED = 0.16                    # the ember glows on inside the lantern as it catches
+
+
 def ember_pos(t):
     """The one ember of his chuckle that floats off, lingers over the bench (bobbing like a
     firefly) and, as the faun sits, drifts up into the lantern -- arriving exactly as it catches
-    (T_LIGHT). None outside its flight."""
-    if not (T_EMBER0 <= t <= T_LIGHT):
+    (T_LIGHT), where it stays as the seed of the flame while the glass fills (EMBER_SEED s: no
+    dark frame between the ember going in and the flare). None outside its flight."""
+    if not (T_EMBER0 <= t <= T_LIGHT + EMBER_SEED):
         return None
+    if t > T_LIGHT:
+        lx, ly = _LAMP
+        return lx, ly + 6.0
     mx, my = _STATE.get("chuckle_mouth", (985.0, 640.0))
     hx, hy = EMBER_HOVER
     bob = (14.0 * math.sin(t * 1.1 + 0.7) + 6.0 * core.noise1(t * 0.7, 31),
@@ -2332,9 +2461,12 @@ def _draw_ember(cr, t):
                         2.0 * (1.0 - k / 7.0))
             cr.fill()
     big = 1.0 + 0.6 * _r(t, T_EMBER0, T_EMBER0 + 1.3) * (1.0 - _r(t, T_LIGHT - 0.12, T_LIGHT))   # a real little coal
-    fx.glow(cr, p[0], p[1], 34.0 * big, "#ff8a28", 0.22 * fl)
-    fx.glow(cr, p[0], p[1], 15.0 * big, "#ffa040", 0.7 * fl)
-    core.src(cr, "#fff3c4", 0.98)
+    fade = 1.0 - _r(t, T_LIGHT, T_LIGHT + EMBER_SEED)                  # ... handing over to the flame
+    if fade <= 0.0:
+        return
+    fx.glow(cr, p[0], p[1], 34.0 * big, "#ff8a28", 0.22 * fl * fade)
+    fx.glow(cr, p[0], p[1], 15.0 * big, "#ffa040", 0.7 * fl * fade)
+    core.src(cr, "#fff3c4", 0.98 * fade)
     core.circle(cr, p[0], p[1], 2.4 * big)
     cr.fill()
 
@@ -2538,7 +2670,12 @@ def setup():
     # ---- the loaf: in her hand from the satchel exactly where tear_bread holds it at phase 0
     rig = _scratch_draw("gnome", T_GRAB - 1e-3)
     _STATE["loaf_sat"] = (rig.satchel[0], rig.satchel[1] - 9.5 * SC)    # the satchel's peeking loaf
-    rig = _scratch_draw("gnome", T_TEAR0 + 1e-4)
+    # (measured with the library's own two-hand tear at phase 0: where its loaf sits)
+    _set_targets(T_TEAR0 + 1e-4)
+    x, y, gp = gnome_pose(T_TEAR0 + 1e-4)
+    gp = gp.with_(near=dataclasses.replace(gp.near, gesture="tear_bread", phase=0.0, hold=None, amt=1.0),
+                  far=dataclasses.replace(gp.far, gesture="tear_bread", phase=0.0, hold=None, amt=1.0))
+    rig = ch.draw_gnome(_scratch(), x, y, SC, gp, L_GOLD, T_TEAR0 + 1e-4)
     _MEAS["loaf"] = (rig.bread[0], rig.bread[1] + 4.0 * SC, SC)
     _scratch_draw("gnome", T_TEAR0 - 1e-3)                  # solves _HOLD["loaf"]
     rig = _scratch_draw("gnome", T_SNAP + 1e-3)
@@ -3032,7 +3169,7 @@ def draw(cr, t, st):
             fx.light_pool(lc, 890.0, BENCH.y - 100.0, 330.0, 74.0, "#ffb070", 0.06 * w)
         p = ember_pos(t)
         if p is not None:
-            fx.glow(lc, p[0], p[1], 46.0, "#ff9a40", 0.3)
+            fx.glow(lc, p[0], p[1], 46.0, "#ff9a40", 0.3 * (1.0 - _r(t, T_LIGHT, T_LIGHT + EMBER_SEED)))
         if lit > 0.0:
             lx, ly = _LAMP
             fl = 0.93 + 0.05 * core.noise1(t * 5.0, 3) + 0.02 * math.sin(t * 13.0)
