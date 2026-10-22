@@ -1526,13 +1526,14 @@ def make_piece(name, lines, grid, chords, arrange, log):
     for arr in (mix, acc_stem):
         arr[-fo:] *= ramp[:, None]
     voc_stem[-fo:] *= ramp
-    # loudness: mix to -17 LUFS, true peak <= -1.3 dBFS
+    # loudness: mix to the target LUFS; every stem limited to <= -1.5 dBTP *before* the stems are summed,
+    # so vocal(both channels) + vocal hall + accomp == mix before the final bus limiter (-1.3 dBTP)
     target = -17.0 if name == "prologue" else -19.0
     g = 10 ** ((target - kweight_lufs(mix)) / 20)
-    mix *= g
-    voc_stem *= g * 0.7071
-    acc_stem *= g
+    voc_stem = limiter(voc_stem * g * 0.7071, SR, ceiling_db=-1.5)
+    acc_stem = limiter(acc_stem * g, SR, ceiling_db=-1.5)
     v_wet *= g
+    mix = np.stack([voc_stem, voc_stem], 1) + v_wet + acc_stem
     mix_l = limiter(mix, SR, ceiling_db=-1.3)
     stems = dict(vocal=voc_stem, accomp=acc_stem, mix=mix_l, vocal_wet=v_wet, lead=lead, double=double,
                  lute=lute)

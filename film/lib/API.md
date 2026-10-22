@@ -1170,13 +1170,829 @@ The other helpers:
 
 ## Props
 
-*(film/lib/props.py: each recurring prop, its draw signature, anchor, size at scale 1.0 and
-how it attaches to a hand via `hold`.)*
+File: `film/lib/props.py` (`from film.lib import props as P`).
+
+Sheets:
+
+* `python3 film/render.py --sheet --only props` (7 pages).
+* `python3 film/build/props_env_showcase.py` writes four files to `film/build/preview/`:
+  * `props_sheet.png`: every prop, its states, in hands, at film scale;
+  * `env_sheet.png`;
+  * two composed frames, `showcase_street_rain.png` (S3) and `showcase_dusk_garden.png` (S6).
+* Pass `props`, `env`, `street` or `garden` to build one of them. The two frames are written
+  like scenes (`setup()` + `draw(cr, t, st)`): read them as worked examples.
+
+The props are every recurring object in the film, in the house style and the period (SPEC
+§0.1):
+
+* materials: slate, parchment, glass, brass, oak and wrought iron;
+* light: candles, the moon and caged wisps;
+* storybook lettering throughout;
+* nothing electric, plastic or printed.
+
+```python
+L = ch.LIGHTS["street_night"]                                   # S3: the walk home
+amp = tl.talk(3, t, "PHONE")
+pose = ch.DragonPose(facing=1, walk=1, phase=ph, damp=1.0, mood="sad",
+                     near=ch.Arm("hand_to_ear", hold=P.stone_hold(L, "pulsing", amp, t)),
+                     far=ch.Arm("carry_bag", hold=P.bag_hold(L, t, 0.1 * math.sin(ph * math.tau), damp=1.0)))
+rig = ch.draw_dragon(cr, x, ground_y, 0.62, pose, L, t)
+lvl = P.stone_level("pulsing", amp, t)
+P.stone_glow(cr, rig.hand_near.x, rig.hand_near.y, 0.62, lvl, t)       # after him
+# ... and on the light pass:  P.stone_light(lc, rig.hand_near.x, rig.hand_near.y, 0.62, lvl)
+```
+
+### Conventions
+
+* **Call shape.** `P.draw_<prop>(cr, x, y, scale=1.0, light=None, t=0.0, ..., detail=None)`.
+  * Units are px at scale 1.0, the cast's scale (the dragon stands 520). Give a prop the scale
+    of whoever uses it.
+  * `light` is a `B.Light`. Pass the scene's preset (the default is `LIGHTS["neutral"]`).
+  * `detail=None` picks the level of detail from the on-screen size, like the cast: 2 at
+    ≥ 0.9, 1 at ≥ 0.55, else 0. Line widths never drop below STYLE's minimum.
+  * Anything that moves is a pure function of `t` (and `seed`).
+* **Outlines.** Props a character touches get the dilated-fill outline and `B.shade`:
+  * the stone, the sack, the note, the remedies and the book;
+  * the bread, the stamp and the tankard;
+  * the till, the benches, the stool and the plaque.
+
+  Set dressing has no outline, like the environment: shelves, tables, lantern posts and
+  strings, wisp lamps, drums and hanging signs.
+* **Returns.**
+  * Most calls return a `P.PropRig` of attach points in the caller's coordinates, read as
+    attributes (e.g. `rig.mouth`).
+  * Seats return a `P.BenchRig`.
+  * A lantern string returns a list.
+* **Holding.** `P.<prop>_hold(...)` returns a hold callback for `Arm(..., hold=cb)` on any
+  creature.
+  * Its frame is the grip: +x runs along the fingers, and 1 unit is 1 px at the holder's scale
+    1.0.
+  * Most callbacks keep the prop upright in a turning hand (`upright=True`, `die_down=True`),
+    and the sack hangs plumb. `note_hold` defaults to `upright=False`, so the note turns with
+    the fingers.
+* **Light on the world.** `P.<prop>_light(lc, ...)` paints a prop's light onto the world: lamp
+  halos, pools on the ground, the stone's cold glow on his face.
+  * Call it on `st["light"].begin()`, inside the same camera view.
+  * Do this before `fx.post(cr, t, light=...)`.
+* **Colours and lettering.**
+  * `P.PROP_COLORS` holds hex colours; `P.prop_mats()` holds the matching `B.Mat`s, keyed the
+    same way.
+  * In-world lettering: `P.FONTS.label` (IM FELL English SC), `.text` (IM FELL English),
+    `.sign` (Uncial Antiqua) and `.hand` (Caveat).
+  * The "digits" on the stone and the till are Cistercian numerals: real medieval digits that
+    read as runes.
+
+### Hand props
+
+| prop | draw call | anchor | size at scale 1.0 | hold callback |
+|---|---|---|---|---|
+| speaking stone | `draw_speaking_stone` | centre, long axis on +x | 70 × 34 | `stone_hold` |
+| apothecary sack | `draw_apothecary_bag` | grip on the tied neck | 64 × 100 | `bag_hold` |
+| note | `draw_note` | centre (the fold line) | 80 × 50 open, 80 × 25 folded | `note_hold` |
+| SLEEP DRAUGHT | `draw_sleep_draught` | bottom centre | 50 × 81 | `remedy_hold("sleep")` |
+| VITAMINS | `draw_vitamins` | bottom centre | 48 × 62 | `remedy_hold("vitamins")` |
+| CALM candle | `draw_calm_candle` | bottom centre | 47 × 53, flame +16 | `remedy_hold("calm")` |
+| coloring book | `draw_coloring_book` | centre (open: middle of the spine) | 64 × 72 per page, 128 wide open | `book_hold` |
+| bread | `draw_bread` | centre | diameter `size`, 46 (`LOAF`) | `bread_hold` |
+| stamp | `draw_stamp` | middle of the die's face | 60 × 54 | `stamp_hold` |
+| SMILE print | `draw_smile_mark` | centre | 64 × 30 | `smile_stamp` (a `stamp=` callback) |
+| tankard | `draw_tankard` | bottom centre | 38 (+16 handle) × 50 (+ foam) | `tankard_hold` |
+
+The sizes are also constants: `STONE_W/H`, `BAG_W/H`, `NOTE_W/H`, `BOOK_W/H`, `LOAF`, and
+`REMEDIES` = {name: (w, h)}.
+
+#### The speaking stone (the "phone", S3 onward)
+
+```python
+rig = P.draw_speaking_stone(cr, x, y, scale, light, t, angle=0.0, state="idle", amp=0.0,
+                            pressed=None, face="front")    # -> PropRig(center, mouth, level, glow_r)
+```
+
+* It is a palm-sized slate pebble.
+  * The front (`face="front"`) has nine carved rune keys (Cistercian 1–9) and a spiral "mouth"
+    at its +x end that pulses with the voice. `pressed` (1..9) lights a key.
+  * The back (`face="back"`) is one big carved spiral. This is the side that shows round his
+    hand.
+  * A band of small runes round the edge glows cold cyan when the stone is awake.
+* `P.stone_level(state, amp, t)` returns the glow, 0..1. `state` is one of:
+  * `"off"`;
+  * `"idle"`: a slow, faint breathing;
+  * `"active"`: lit, with a gentle shimmer;
+  * `"pulsing"`: follows `amp`, e.g. `tl.talk(3, t, "PHONE")`;
+  * a number, used as the level.
+* `P.stone_hold(light, state, amp, t, pressed, face="back")` is the callback for the dragon's
+  `hand_to_ear`. The stone is drawn **behind** his hand; its ends and its glow show past the
+  palm.
+* **After** drawing the character, call
+  `P.stone_glow(cr, rig.hand_near.x, rig.hand_near.y, scale, level, t)`: a cyan halo and rising
+  rune motes.
+* On the light pass, call `P.stone_light(lc, x, y, scale, level)`: the cold spill on his face.
+* Two pieces of the S3 hold loop:
+  * `P.draw_hourglass(cr, x, y, scale, light, t, period=4, flip_time=0.6, glow=1,
+    label="on hold")`: 34 × 56 plus a ribbon, anchored at its centre. It flips over every
+    `period` seconds.
+  * `P.draw_music_note(cr, x, y, size, t, color, alpha, kind, angle, glow)`: a medieval
+    mensural note, anchored at its head, ~14 × 38. `kind` is `"minim"`, `"semiminim"` or
+    `"fusa"`.
+
+#### The apothecary's sack (S2, S3, S6)
+
+```python
+rig = P.draw_apothecary_bag(cr, x, y, scale, light, t, angle=0.0, state="tied", swing=0.0,
+                            damp=0.0)                       # -> PropRig(grip, bottom, mouth)
+```
+
+* It is stiff white paper gathered at the neck and tied with twine, with the green cross
+  block-printed on its belly (SPEC S2, S3).
+* It hangs along +y from the grip. The paper ruff rises 14 above the grip and the bottom is 87
+  below it.
+* `state="open"` (S6) unties it: the coloring book and the SLEEP DRAUGHT peek out.
+* `damp` (0..1, the S3 rain) greys and spots it.
+* `P.bag_hold(light, t, swing, state, damp)` is the callback for `carry_bag`.
+  * The sack hangs plumb from the fist whatever the hand's angle.
+  * Swing it with `swing = 0.1 * math.sin(walk_phase * math.tau)`.
+
+#### The note (S2)
+
+```python
+rig = P.draw_note(cr, x, y, scale, light, t, angle=0.0, unfold=1.0,
+                  text=P.NOTE_TEXT)                         # -> PropRig(center, top, bottom)
+```
+
+* It is a parchment slip, handwritten in iron-gall ink: "Something for / loneliness?".
+* `unfold` runs from 0 (folded in half) to 1 (open flat). The flap is edge-on at 0.5; animate
+  it for the reveal.
+* For the S2 insert, draw it at scale 5–7.
+* `P.note_hold(light, t, unfold=0, angle=0, upright=False)` is the callback for `slide_note`
+  and `hold_item`.
+
+#### The remedies (the S2 pile, the S6 sack)
+
+* The three remedies:
+  * `P.draw_sleep_draught(...)`: a round blue flask, corked and sealed with midnight wax, with
+    a parchment label and a crescent moon.
+  * `P.draw_vitamins(..., glow=1)`: a squat jar of softly glowing berry-pills under a linen
+    cover.
+  * `P.draw_calm_candle(..., lit=1, flame="cool")`: a lavender candle in a glass tumbler.
+    * `lit=0` shows a dark wick and a thread of smoke.
+    * `flame="cool"` is a pale lavender spell-flame: the remedies are stones, not kindness.
+      `"warm"` is an ordinary flame.
+    * Paint its halo with `P.candle_glow(cr, rig, scale, t, flame, strength)`.
+* All three:
+  * stand on their bottom centre;
+  * take `label=True`;
+  * return `PropRig(top, center, label)`, and the candle adds `flame`.
+* `P.draw_remedy(cr, name, x, y, ...)` dispatches on `name`: `"sleep"`, `"vitamins"`, `"calm"`,
+  `"book"` (the coloring book lying flat) or `"book_up"` (standing, cover out).
+* `P.remedy_hold(name, light, t, upright=True)` puts one in any hand (the lioness's `place`).
+* `P.pile_layout(n)` returns `[(name, dx, dy)]`: offsets from the pile's bottom centre for the
+  first `n` items of the absurdly neat S2 pile, in the order she sets them down. Draw them in
+  that order.
+* **The labels read from an on-screen scale of about 1.5** (an item ~120 px tall). Stage the
+  S2 beat where the words matter as a push-in or an insert.
+
+#### The coloring book (S2, S6)
+
+```python
+P.draw_coloring_book(cr, x, y, scale, light, t, angle=0.0, state="closed", flip=0.0, page=0,
+                     colored=0.0)
+```
+
+* It is MINDFUL COLORING FOR ADULTS: parchment covers with a rose-window mandala.
+* `state`:
+  * `"closed"`: the front cover;
+  * `"back"`: the back cover;
+  * `"open"`: two line-art pages;
+  * `"flat"`: lying on a counter, 66 × ~22, anchored at the centre of its top face.
+* `flip` (0..1, open only) turns the right-hand page over to the left.
+* `page` picks the mandalas.
+* `colored` (0..1) fills a few petals: someone tried.
+* `P.book_hold(light, t, state="open", flip, page, colored)` is the callback for the dragon's
+  two-hand `hold_book`. The open book faces the camera between his grips.
+
+#### Bread (S6–S8)
+
+```python
+rig = P.draw_bread(cr, x, y, size=P.LOAF, light=L, t=t, angle=0.0, state="loaf", face=1.0,
+                   tear=0.0, seed=0, scale=1.0)          # -> PropRig(center, top, tear)
+```
+
+* It is a golden boule with three scored ears and a dusting of flour.
+* `size` is its diameter at scale 1.0. `LOAF` = 46 is the gnome's loaf; a piece is about 0.45
+  of it.
+* `state`:
+  * `"loaf"`: `tear` (0..1) pulls it into two halves with strands of crumb;
+  * `"half"`: a torn half, its fluffy face turned toward `face` (+1 = +x);
+  * `"piece"`: a torn chunk, varied by `seed`;
+  * `"crumb"`.
+* `P.bread_hold(state="piece", light, size, face, seed, upright=True, rest="palm")` puts bread
+  in any hand.
+  * `rest="palm"` sits it on an open palm (`hand_out_offer`).
+  * `rest="grip"` closes the hand round it.
+* `P.draw_crumbs(cr, pts, scale, light, seed, size=3)` draws crumbs lying still. For crumbs in
+  flight use `fx.crumbs`; for the pigeons' landing spots use `fx.crumb_landings`.
+* The gnome draws her own loaf through `GnomeArm(bread=...)`. These calls are for everyone
+  else.
+
+#### The SMILE stamp (S4)
+
+* `P.draw_stamp(cr, x, y, scale, light, t, angle=0, ink=1)` returns `PropRig(die, grip)`.
+  * It is a turned oak knob, a block and a felt die wet with pink ink.
+  * The anchor is the middle of the die's face.
+* `P.stamp_hold(light, t, ink, die_down=True)` holds it by the neck in any hand. The troll's
+  `press_stamp` draws his own stamp (`ch.troll_stamp`).
+* `P.draw_smile_mark(cr, x, y, scale, angle=-0.12, ink=1, seed=0, text="SMILE", color=None)` is
+  the print.
+  * SMILE in a double border, slightly rotated and unevenly inked.
+  * `ink` fades it; a fresh print is about 0.9.
+  * It is a cached mask (~0.1 ms).
+* `P.smile_stamp(size=0.52, angle=-0.1, ink=1, seed=0)` is the `stamp=` callback for the
+  dragon's `look_at_hand`: the print on the back of his hand.
+
+#### Tankards (S4)
+
+```python
+rig = P.draw_tankard(cr, x, y, scale, light, t, kind="wood", foam=1.0, angle=0.0, flip=False,
+                     outline=True)                          # -> PropRig(handle, top)
+```
+
+* `kind` is `"wood"` (oak staves, iron hoops) or `"pewter"`.
+* The handle is on +x; `flip=True` puts it on -x.
+* Use `outline=False` for far-away dressing.
+* `P.tankard_hold(light, t, kind, foam, side=1, tilt=0)` puts the fist round the handle, with
+  the mug upright beside it. `tilt=-0.3` is a toast.
+* Cast B's `ch.draw_tankard` (pewter, 34 px at size 1) is the crowd's built-in mug. Use the
+  props tankard on tables and in the leads' hands. Don't mix the two in one shot.
+
+### Seats, tables, the till and shelves
+
+**Seats** are built in 3D and projected with `B.Proj(yaw, elev)`, exactly like the cast.
+
+* They turn continuously: yaw 0 is the front view, ±0.5 is 3/4 and ±1.45 is the side view.
+* They agree with their sitters at any yaw.
+
+#### The garden bench (S6–S8)
+
+```python
+bench = P.draw_garden_bench(cr, x, y, scale, light, t, yaw=0.0, elev=0.12, length=440,
+                            seat_h=125, part="all", crumbs=0)        # -> BenchRig
+```
+
+* It has oak slats on wrought-iron ends with scrolled arms, and a crest board with quatrefoil
+  cut-outs.
+* The anchor is the ground point below the middle of the seat.
+* Measurements at scale 1.0:
+  * The seat top is `BENCH_SEAT_H` = 125 (the same as `B.BENCH_SEAT_H`).
+  * The depth is `BENCH_DEPTH` = 84: the front edge is 42 ahead of a sitter's anchor and the
+    backrest is 46 behind it.
+  * The back top is ~245.
+  * The length is `BENCH_LEN` = 440.
+* `crumbs=n` scatters `n` crumbs on the seat.
+* The `BenchRig` places the sitters:
+  * `rig.place(u)` is the **ground anchor** for a sitter at fraction `u` (0 is the bench's left
+    end, 1 its right end). Draw the sitter with `pose.sit=1` and `seat_h=rig.seat_h`, e.g.
+    `ch.draw_gnome(cr, *rig.place(0.18), sc, pose, L, t)`.
+  * `rig.seat(u)` is the point on the seat surface, for `pose.anchor="seat"`.
+  * `rig.ends` and `rig.back_top` are also available.
+* Draw order:
+  1. `part="back"`;
+  2. the sitters;
+  3. `part="front"`: the near end's front leg and arm.
+
+  In the front view there is no near end, so `"back"` is the whole bench.
+
+#### The stool, the wash-house form and the tavern table
+
+* `P.draw_stool(cr, x, y, scale, light, t, yaw=0.3, elev=0.16, seat_h=72, radius=42,
+  part="all", wobble=0)`: the three-legged milking stool, far too small for the dragon (S1).
+  * The anchor is the sitter's anchor. The seat top is `STOOL_SEAT_H` = 72.
+  * `part="back"` draws two legs and the seat; `part="front"` draws the front leg.
+  * `wobble` rocks it, e.g. `B.wobble(t, t_sit) * 0.04` as he sits.
+  * It returns `PropRig(seat, ground)`.
+* `P.draw_washhouse_bench(cr, x, y, scale, light, t, yaw=0, elev=0.12, length=260,
+  seat_h=125)`: the elf's medieval "form" (S1).
+  * It is a thick plank on splayed slab ends, 56 deep.
+  * It returns a `BenchRig`.
+* `P.draw_tavern_table(cr, x, y, scale, light, t, yaw=0, elev=0.28, length=420, depth=110,
+  height=115, clutter=True, seed=0)`: a dark-oak trestle table with tankards and a candle stub
+  (S4).
+  * The anchor is the ground below its middle. The top is 115 up: elbow height for the cast.
+  * It returns `PropRig(top_center, top_y)`.
+
+#### The till (S2)
+
+```python
+till = P.draw_till(cr, x, y, scale, light, t, ring=None, receipt=0.0, pressed=None,
+                   drawer=0.0)                 # -> PropRig(key, bell, slot, receipt_end)
+```
+
+* It is an engraved brass cabinet on an oak plinth, with:
+  * eight ivory rune keys;
+  * a side crank;
+  * a bell on a curly bracket;
+  * number flags;
+  * a parchment receipt.
+* The anchor is the bottom centre, on the counter. It is ~136 × 130.
+* `ring` is the local time the key went down: the bell rocks and dings, and the flags pop.
+* `receipt` (0..1) is how far the strip has curled out. Animate it after the ring.
+* `pressed` (1..8) holds a key down.
+* `drawer` (0..1) opens the cash drawer.
+
+#### The shelves (S2)
+
+```python
+P.draw_shelves(cr, x, y, w=420, h=420, scale=1.0, light=L, t=0.0, rows=4, seed=0, depth=34,
+               gaps=(), herbs=True)                   # -> PropRig(boards=[y of each shelf top])
+```
+
+* A wall of dark-oak shelves, filled from `seed` with flasks, jars and glazed pots, and dried
+  herbs hanging from the top board.
+* The anchor is the **top-left**.
+* `gaps=[(row, slot)]` leaves those spaces empty: where she took something.
+* It costs ~10 ms, so always put it in a Layer.
+
+### Lights, signs and the wash-house (set dressing)
+
+#### Lantern posts
+
+```python
+post = P.draw_lantern_post(cr, x, y, scale, light, t, lit=1.0, kind="warm", style="crook",
+                           side=1, height=600, seed=0)  # -> PropRig(lamp, flame, top, ground, kind, lit)
+```
+
+* A flared foot, a twisted-iron column, and a glass-and-iron lantern with a candle in it.
+  `kind="wisp"` cages a cold green-cyan wisp instead.
+* The anchor is the foot.
+* `style`:
+  * `"crook"` hangs the lantern from a scrolled arm on `side` (+1 is right). Its centre is
+    ~`height - 50` up.
+  * `"top"` sits it on the post's head.
+* `lit` (0..1) lights it. Animate it in S7.
+* The flame flickers, so draw the post every frame (1.7 ms).
+* Its light is `P.lantern_light(lc, rig, scale, t, strength=1, ground_y=None, pool=1)`: a big
+  soft halo, plus a pool on the ground when you give `ground_y`.
+
+#### Wisp lamps and lantern strings
+
+* `P.draw_wisp_lamp(cr, x, y, scale, light, t, seed=0, top=None, intensity=1)` returns
+  `PropRig(center, level, scale)`.
+  * An iron cage on a chain from the vault, with a flickering wisp inside (S1).
+  * The anchor is the cage centre; the cage is 40 × 56.
+  * The chain runs up to caller-y `top` (default: 220 above).
+  * Its light is `P.wisp_light(lc, rig, scale, floor_y, strength)`.
+* `P.draw_lantern_string(cr, p0, p1, t, scale, light, n=9, sag=0.16, seed=0,
+  palette="tavern", lit=1, swing=1)` returns `[(x, y, colour, level)]`.
+  * Candle-lit paper lanterns (~22 × 26) on a swaying cord between the fixings `p0` and `p1`
+    (S4).
+  * `sag` is a fraction of the span, or px if it is > 1.
+  * `palette` is `"tavern"`, `"warm"`, `"cold"` or a list of colours.
+  * Its light is `P.lantern_string_light(lc, lanterns, scale, strength)`.
+
+#### Hanging signs and the plaque
+
+* `P.draw_hanging_sign(cr, x, y, kind="apothecary", scale, light, t, side=1, text=None,
+  emblem=None, paint=None, ink=None, swing=1, glow=0, seed=0)` returns
+  `PropRig(board, emblem, glow)`.
+  * A painted board on a scrolled iron wall bracket, rocking gently.
+  * `kind`:
+    * `"apothecary"`: a cream arch, the green cross, APOTHECARY;
+    * `"flagon"`: a burgundy shield, a gold tankard, THE MERRY FLAGON;
+    * `"washhouse"`: a blue board, a washtub, WASH-HOUSE;
+    * `None`: your own `text=(line1[, line2])`, `emblem` (`"cross"`, `"tankard"` or `"tub"`),
+      `paint` and `ink`.
+  * The anchor is where the bracket meets the wall. The arm reaches 150 toward `side`, and the
+    ~120 × 120 board hangs below it.
+  * `glow` lights the emblem from within (S8, small and far away). Add
+    `P.sign_light(lc, rig, scale, color, strength)` on the light pass.
+* `P.draw_plaque(cr, x, y, text="SELF-SERVICE", scale, light, t, taps=(), swing=0, size=34,
+  paint, letter)` returns `PropRig(nail, center, tap_point, size)`.
+  * A notched oak board, painted deep green with cream uncial letters, hanging from a nail by a
+    cord (S1).
+  * The anchor is the **nail**. The board hangs ~22 below it and is ~300 × 74 for
+    SELF-SERVICE.
+  * `taps` are the times (local s) it was tapped. Each one sets it rocking: the elf's two taps.
+  * It is outlined, because it is touched.
+
+#### The tumbling drums (S1)
+
+```python
+rig = P.draw_tumbling_drum(cr, x, y, scale, light, t, seed=0, speed=1.0, glow=1.0, rumble=1.0,
+                           vp=None, depth=(62, -24))   # -> PropRig(center, radius, glow): the porthole
+```
+
+* The S1 "dryer": an oak barrel on its side in a cradle, with brass hoops and staves that turn
+  by themselves.
+* Its brass lid has a round glass porthole. Behind it a stranger's laundry tumbles, set by each
+  drum's own `seed` and `speed`.
+* Faint runes breathe on the bezel.
+* The anchor is the ground below the lid's centre. The lid radius is `DRUM_R` = 92 and the axle
+  is 130 up.
+* The barrel recedes by `depth`. Give it a vanishing point `vp` (caller coordinates) instead,
+  and a row of drums shares one perspective.
+* Its light is `P.drum_light(lc, rig, strength)`.
+* `P.drum_body(...)` and `P.drum_porthole(...)` draw the two halves separately, with the same
+  arguments, when something must go between them.
+
+### Recipes
+
+These are tested in `props_env_showcase.py` and the sheets.
+
+```python
+# S6: two on the bench, a book between his hands; the bench's near end goes over them
+bench = P.draw_garden_bench(cr, 1000, 925, 0.78, L, t, part="back")
+ch.draw_gnome(cr, *bench.place(0.18), 0.78, ch.GnomePose(facing=1, sit=1.0), L, t)
+ch.draw_dragon(cr, *bench.place(0.8), 0.78,
+               ch.DragonPose(facing=-1, sit=1.0, near=ch.Arm("hold_book", hold=P.book_hold(L, t, flip=0.3)),
+                             far=ch.Arm("hold_book")), L, t)
+P.draw_garden_bench(cr, 1000, 925, 0.78, L, t, part="front")
+
+# S2: the pile, then the till rings at 11.2 s and the receipt curls out
+for name, dx, dy in P.pile_layout(4):
+    P.draw_remedy(cr, name, px + dx * sc, py + dy * sc, sc, La, t)
+till = P.draw_till(cr, tx, counter_y, sc, La, t, ring=11.2, receipt=core.ramp(t, 11.5, 13.0))
+
+# S1: a row of drums sharing one vanishing point, their portholes lighting the floor
+rigs = [P.draw_tumbling_drum(cr, x, 905, 0.9, Lw, t, seed=i, vp=(1500, 560))
+        for i, x in enumerate((420, 760, 1100))]
+lc = st["light"].begin()
+with cam.view(lc, 1.0):
+    for rig in rigs:
+        P.drum_light(lc, rig)
+
+# S4: the print on the back of his hand, as he looks at it
+pose = ch.DragonPose(near=ch.Arm("look_at_hand", stamp=P.smile_stamp(ink=0.9)), mood="sad")
+```
+
+* **Rigs you need in `setup()`.** You may need a rig before the frame, e.g. a lamp position for
+  the wet reflections, or the bench for a sitter's layout. Draw the prop once onto a scratch
+  surface to get it: `P.draw_garden_bench(core.frame(4, 4)[1], ...)`.
+* **Cache whatever doesn't move.** Shelves, tables, a bench nobody shifts, a sign with
+  `swing=0`: put them in an `fx.Layer`.
+
+### Cost
+
+CPU per call, at scale 1.0 unless noted (best of 3 × 12 runs).
+
+| call | ms |
+|---|---|
+| speaking stone (active) / `stone_glow` | 1.9 / 0.4 |
+| sack / note (scale 1, scale 5) | 1.3 / 0.6, 1.0 |
+| SLEEP DRAUGHT / VITAMINS / CALM | 1.5 / 2.7 / 1.1 |
+| coloring book (open) | 6.5 |
+| loaf / stamp / SMILE print | 0.8 / 0.7 / 0.1 |
+| till | 3.1 |
+| garden bench (scale 0.78) / stool / wash-house form | 7.6 / 1.8 / 0.8 |
+| lantern post / wisp lamp / lantern string (9) | 1.7 / 1.0 / 2.6 |
+| tumbling drum | 5.2 |
+| plaque / hanging sign | 1.2 / 0.9 |
+| shelves (420 × 420) / tavern table / tankard | 9.9 / 4.3 / 1.0 |
+| hourglass / music note | 0.8 / 0.1 |
 
 ## Environment
 
-*(film/lib/env.py: the environment kit: walls, timber facades, cobbles, sky, trees, castle;
-how to cache it in `fx.Layer`s and its parallax planes.)*
+File: `film/lib/env.py` (`from film.lib import env`).
+
+Sheets:
+
+* `python3 film/render.py --sheet --only env` (6 pages);
+* `env_sheet.png` from `film/build/props_env_showcase.py` (see **Props**).
+
+The kit paints storybook-medieval backgrounds with **no outlines** (STYLE.md): shapes, value,
+colour, texture and blur carry the depth. Backgrounds sit in a narrower value band than the
+cast and lose saturation and contrast with distance.
+
+```python
+def setup():                                       # S6 at dusk (the showcase's Garden, condensed)
+    k = "dusk"
+    def far(cr):
+        env.draw_castle_hill(cr, 1380, 430, 0.72, kind=k, hill_w=900, hill_h=150, seed=1)
+        env.draw_hills(cr, -90, 2100, 640, kind=k, height=(40, 120), seed=2)
+    return {"sky": env.layer(lambda cr: env.draw_sky(cr, kind=k, horizon=600, seed=1), blur=3, opaque=True),
+            "far": env.layer(far, blur=1.6),
+            "garden": env.layer(draw_garden, blur=0.6),      # grass, hedges, path, flower beds
+            "tree": env.OakTree(330, 790, 0.62, kind=k, blur=0.8),
+            "light": fx.LightLayer()}
+
+def draw(cr, t, st):
+    cam = core.Camera.about(980, 640, 1.0)
+    with cam.view(cr, 0.1): st["sky"].paint(cr)
+    with cam.view(cr, 0.4): st["far"].paint(cr)
+    with cam.view(cr, 1.0):
+        st["garden"].paint(cr)
+        st["tree"].draw(cr, t)                     # the crown sways: ~3 ms
+        ...                                        # props, then the cast
+```
+
+### Conventions
+
+* Every call takes **world coordinates** (px, y down) and only draws into the context.
+* **Cache static art.** Build it in `setup()` with
+  `env.layer(fn, blur=0, res=1, opaque=False)`.
+  * This is an `fx.Layer` with the standard margin `env.MARGIN` = `dict(w=2100, h=1240,
+    x=-90, y=-80)`, so camera moves never show an edge.
+  * The layer is drawn as soon as you create it, so anything `fn` returns or collects is ready
+    on the next line of `setup()`.
+  * Painting a layer costs ~0.5–1.3 ms.
+  * A `res=0.5` layer builds faster but paints in ~4.5 ms (a bilinear upscale). Keep it for
+    strongly blurred planes.
+* **Per-frame pieces** are pure functions of `t`:
+  * `StarField.draw`, `OakTree.draw`, `Rain.draw`, `Mist.draw` and `puddle_ripples`;
+  * the lantern flames, which live in **Props**.
+* **Palettes.** Pass `kind=` to every call: a name in `env.PALETTES` or your own dict.
+  `env.palette(kind)` returns the dict.
+
+  | kind | scenes |
+  |---|---|
+  | `"night"` | S3 dry, S8; stars and a moon |
+  | `"rain_night"` | S3; an overcast lid of cloud |
+  | `"dusk"` | S6 |
+  | `"golden"` | S7 |
+  | `"blue_hour"` | S7 later; the first stars |
+  | `"evening"` | S5; the cold grey-blue square |
+  | `"washhouse"` | S1 |
+
+  * Each palette has these keys: `sky` (stops, top to horizon), `cloud`, `haze`, `far`, `mid`,
+    `near`, `ground`, `foliage` (dark, mid, lit), `stone`, `plaster` (three tints), `timber`,
+    `roof`, `window`, `window_dark`, `star` and `moon`.
+* **Atmosphere.**
+  * `env.haze_toward(c, haze, k)` pushes a colour toward the haze (`k` 0 near .. 1 far) and
+    desaturates it.
+  * `env.draw_haze(cr, x, y, w, h, color, top_alpha=0, bottom_alpha=0.5, additive=False)`
+    washes over whatever is already drawn. Use it between planes.
+* **Texture.** `env.texture(cr, kind, alpha, scale, angle, offset, sx, sy)` paints a seamless
+  granulation over the current clip: the painterly finish on any flat shape.
+  * `kind` is `"paint"`, `"plaster"`, `"stone"`, `"foliage"`, `"grain"` or `"wood"`.
+  * For wood, try `sx=4, sy=0.25`.
+* **Captions.** Keep the bottom 180 px free of anything the eye must read.
+* **The period** (SPEC §0.1).
+  * Light: candles and the moon only.
+  * Materials: wood, plaster, stone and thatch.
+  * Windows: leaded diamond panes.
+  * Nothing modern.
+
+### Planes and cost
+
+| plane | what | `cam.view` factor | layer | build (ms) |
+|---|---|---|---|---|
+| sky | `draw_sky`, plus `StarField` per frame | 0.05–0.15 | `blur=2–3, opaque=True` | 53 |
+| far | `draw_castle_hill`, `draw_hills`, `draw_roofline`, `draw_haze` | 0.3–0.45 | `blur=1.5–3` | 6 + 100 |
+| mid | `draw_street_row`, `draw_vaulted_hall`, hedges, grass | 0.7–1.0 | `blur=0.6–1.5` | 190 / 58 / 83 |
+| ground | `draw_cobbles`, `draw_gravel_path`, puddles, reflections | 1.0 | sharp | 320 (the wet street) |
+| per frame | `OakTree` 2.8, `Rain` 9.3, `Mist` 1.6, `StarField` 1.3, ripples 0.3 ms | 1.0 | none | |
+
+Whole frames: `showcase_street_rain.png` costs ~100 ms and `showcase_dusk_garden.png` ~90 ms.
+Both include the cast and `fx.post`.
+
+### Sky and distance
+
+* `env.draw_sky(cr, x=-90, y=-80, w=2100, h=1240, kind="dusk", horizon=640, seed=0,
+  clouds=True, stars=None, moon=None, sun=None, glow=None, texture_alpha=0.05)` paints:
+  * the palette's gradient down to `horizon`;
+  * a soft glow low on the sun's side;
+  * cloud banks, lit from below or from the side;
+  * static stars and the moon on clear nights.
+
+  Its options:
+  * `stars` and `moon` default to the palette's choice.
+  * `moon` can be `(mx, my, r)` or `True`.
+  * `sun=(sx, sy, r)` is for golden hour.
+  * `glow` overrides the horizon glow's colour.
+* `env.StarField(rect, n=120, seed=0, color).draw(cr, t, alpha=1)` draws twinkling stars per
+  frame; a few get four-point glints.
+* `env.draw_moon(cr, x, y, r, kind="night", glow=0.5)` and
+  `env.draw_clouds(cr, x, y, w, h, kind, seed, light_from=None, n=None, alpha=1, streaks=None)`
+  are for building a sky by hand.
+* **The castle.**
+  `env.draw_castle_hill(cr, x, y, scale=1, kind="dusk", seed=0, color=None, rim=None,
+  windows=9, window_color=None, window_alpha=None, banners=True, t=0, hill=True, hill_w=1100,
+  hill_h=170, road=True, light_dx=-0.6)` draws the kingdom's castle as a distant silhouette:
+  * curtain walls, round towers with conical roofs and pennants, and the keep with its spire;
+  * a winding road, and lit windows at night;
+  * a rim of sky light on the light side (`light_dx` < 0 is the left), with each tower shaded
+    as a drum.
+
+  Placing it:
+  * The anchor is the castle's foot on the hilltop. The castle is ~360 × 290 at scale 1.
+  * The hill (`hill_w` × `hill_h`) has a broad crown the castle stands on. Where the ground
+    falls away, its outer walls carry on down into the hill.
+  * `hill=False` draws the castle alone, with foundations 64 deep: sink them into a ridge.
+* `env.draw_hills(cr, x=-90, w=2100, base_y=760, kind="dusk", layers=3, seed=0,
+  height=(70, 190), trees=True, fields=True, bottom=1200, colors=None, light_dx=-0.6,
+  rim=True)` draws rolling bands from far (hazy) to near:
+  * hedgerows and strips of field follow their contours;
+  * copses of round trees and poplars stand along them.
+
+  Its options:
+  * Ridges peak about `height[1]` above `base_y` for the far band, and `height[0]` for the near
+    one.
+  * `colors` sets your own band colours, far to near.
+* `env.draw_roofline(cr, x0, x1, y, scale=0.25, kind="night", seed=0, color=None, lit=0.3,
+  spire=True, haze=0)` draws a distant town as a roofline: gables, chimneys, a church spire and
+  a few tiny lit windows. Use it behind S3's street and for S8's town far away.
+* **Mist.**
+  * `env.draw_mist(cr, x, y, w, h, color, alpha=0.35, seed=0, scale=2, offset=0)` is a static
+    band.
+  * `env.Mist(x, y, w, h, color, alpha=0.3, seed=0, speed=8, scale=2).draw(cr, t, alpha=1)`
+    drifts (~1.6 ms).
+
+### The town
+
+```python
+house = env.draw_house(cr, x, y, w=620, floors=2, scale=1.0, kind="night", seed=0, lit=0.4,
+                       roof=None, ground="stone", shutters=None, shop=None, chimney=True,
+                       jetty=34, plaster=None, detail=2)        # -> HouseRig
+```
+
+* It is a half-timbered house seen face-on.
+* The anchor is the **bottom-left** of its ground storey; `w` is its width at scale 1.
+* Storeys:
+  * The ground storey is `GROUND_H` = 600 tall, stone or timber (`ground="stone"`).
+  * Each upper storey is `FLOOR_H` = 520 and jetties out `jetty` per side.
+  * `floors` is 1–3.
+* `roof`:
+  * `"gable"`: the gable end to the street, carved bargeboards and a finial;
+  * `"side"`: the eaves to the street, and a dormer;
+  * `"thatch"`;
+  * `None` picks one by seed.
+* The rest:
+  * timber framing (posts, braces, crosses);
+  * granulated lime plaster, tinted by seed or by `plaster=`;
+  * leaded diamond-pane windows, with `shutters` `"open"`, `"closed"` or `None` (by seed);
+  * an arched plank door, or a shuttered shop front (`shop` True, False or None).
+* `lit` (0..1) is the chance a window is lit, deterministic by seed.
+* The `HouseRig` holds:
+  * `rect` = (x, y_top, w, h);
+  * `windows` = [(cx, cy, w, h, lit)];
+  * `door` = (x, y, w, h);
+  * `roof_top`;
+  * `lights` = [((x, y), colour, level, width)] for the lit windows.
+* `env.draw_street_row(cr, x0, x1, ground_y, scale=0.5, kind="night", seed=0, lit=0.4,
+  floors=(2, 3), widths=(520, 760), alley=0.25, detail=2)` returns `[HouseRig]`.
+  * It is a varied row of houses across a street, with the odd dark alley.
+  * Use a scale of 0.35–0.6 behind the cast.
+
+### Stone interiors
+
+* `env.draw_stone_wall(cr, x, y, w, h, kind="washhouse", seed=0, block=(84, 46), color=None,
+  mortar=None, texture_alpha=0.16, light_top=0.035, variation=0.08)` lays coursed blocks.
+  * Each block is a little different, with a lit top edge and a shadowed foot, set in darker
+    mortar.
+  * `block` is (typical width, course height).
+* `env.draw_arch(cr, cx, base_y, w, h, kind="washhouse", fill=None, depth=24, voussoirs=True,
+  color=None, seed=0)` draws a round-headed arch: a window, a door or an arcade bay.
+  * `(cx, base_y)` is the middle of its sill.
+  * `w` × `h` is the opening; `h` includes the head.
+  * `fill` is a colour, a callable `fill(cr)` clipped to the opening, or `None` to leave it
+    open.
+* `env.draw_vaulted_hall(cr, x=-90, y=-80, w=2100, h=1240, kind="washhouse", seed=0,
+  floor_y=700, vp=(900, 520), bays=4, window_fill=None, moon=True)` draws the S1 back wall:
+  * an arcade of bays on heavy pillars;
+  * tall arched night windows, the moon in one;
+  * the ribs of the vault;
+  * a flagstone floor in one-point perspective toward `vp`.
+
+  Cache it, with a blur of ~1.5.
+
+### Ground
+
+* `env.draw_cobbles(cr, x, y_top, w, y_bot, kind="night", seed=0, wet=False, size=(9, 44),
+  vp=None, color=None, texture_alpha=0.14, sheen=None, contrast=1.0)` lays rows of rounded
+  stones. They grow from `size[0]` px tall (far, at `y_top`) to `size[1]` (near, at `y_bot`).
+  * Every stone varies in size, shape and tone. Broad patches of the street run lighter or
+    darker, and most crowns catch the light.
+  * `vp=(vx, vy)` converges the joints to a vanishing point (the town square). `None` keeps the
+    rows straight: a street seen from the side (S3).
+  * `wet=True` gives darker, glossy stones, water in the joints, glints of sky, and a sheen that
+    grows toward the far rows.
+  * `contrast` scales the stone-to-stone variation.
+* `env.draw_wet_reflections(cr, lights, ground_y=None, stretch=0.85, width=1.0, seed=0,
+  alpha=1.0, clip=None)` adds the reflections of the lights.
+  * Each light is `(x, y, colour, level[, base_y])`.
+  * Each one becomes a long vertical streak of broken glints. It runs down from where its wall
+    or post meets the ground (`base_y`, else `ground_y`), as long as the light is high ×
+    `stretch`.
+  * It is additive. Cache it, and paint the layer with a flickering alpha.
+* `env.draw_puddle(cr, x, y, rx, ry, kind="rain_night", seed=0, reflections=(), sky=None,
+  rim=True, lights=(), stretch=0.85, stones=True)` draws a rain puddle:
+  * a flat sheet of water, darker than the stones round it;
+  * a pale sheen along its far edge;
+  * a few drowned stone crowns near the edge;
+  * crisp reflections.
+
+  Its options:
+  * Pass `lights` (and `stretch`) exactly as you gave them to `draw_wet_reflections`. Every
+    streak that runs over the puddle continues through it, sharper and brighter: a mirror holds
+    the light further out than the stones do.
+  * `reflections=[(x, colour, level)]` adds a streak at world x.
+  * Keep `ry/rx` near the ground's perspective (the cobbles' aspect, ~0.25–0.5). Very flat
+    puddles read as slugs.
+* `env.puddle_ripples(cr, t, x, y, rx, ry, n=5, seed=0, color="#cfe0ff", alpha=0.32,
+  rate=1.0, squash=None)` animates the rain on a puddle, per frame.
+  * Each drop is a bright fleck, then one thin ring that widens and fades.
+  * The rings lie on the ground: `squash` defaults to `max(0.35, ry/rx)`.
+* `env.draw_gravel_path(cr, pts, widths=(60, 360), kind="dusk", seed=0, color=None,
+  edge_tufts=True)` lays a gravel path along the centre line `pts`, far end first.
+  * It widens toward us, is speckled light and dark, and its edges are nibbled by grass.
+* `env.draw_grass(cr, x, y, w, h, kind="dusk", seed=0, density=1, light_dx=-0.6, color=None,
+  flowers=True, blades=True)` paints a meadow lawn; `y` is its far edge.
+  * It is finer and hazier at the back, with blade tufts in three tones that grow toward us,
+    and tiny wild flowers.
+* `env.draw_ground_shadow(cr, x, y, rx, ry, alpha=0.35, color)` is a soft contact shadow for
+  posts, benches, trees and carts.
+
+### The garden
+
+* `env.draw_hedge(cr, x, y, w, h, kind="dusk", seed=0, light_dx=-0.6, color=None,
+  shadow=True)` draws a clipped box hedge; `(x, y)` is its bottom-left on the ground.
+  * It has a bumpy, leafy crown, lit along its top and light side, and darker toward its foot.
+* `env.draw_flower_bed(cr, x, y, w, h, kind="dusk", seed=0, colors=None, wattle=True)` draws a
+  mound of leafy plants starred with small blooms, behind a woven-willow edging; `(x, y)` is
+  its bottom-left.
+* **The old oak** stands behind the bench (S6–S8).
+  * A stout flared trunk with a knot hole parts into great limbs: two reach out nearly level
+    and three climb.
+  * Above them is a broad, arched crown of leaf clumps.
+  * The anchor is the base of the trunk. At scale 1 it is ~1200 wide × 1030 tall.
+  * The crown's underside is ~370 up at its ends and ~520 in the middle, so the limbs show
+    under it. That is what makes it read as an oak.
+  * Use a scale of 0.45–0.7 behind the bench.
+
+  The two calls:
+  * `env.OakTree(x, y, scale=1, kind="dusk", seed=0, light_dx=-0.6, blur=0, sway=1)` caches
+    the trunk and each leaf clump in its own small layer (setup ~130 ms).
+    `.draw(cr, t, sway=None, alpha=1)` then sways the crown for ~3 ms a frame.
+  * `env.draw_oak(cr, x, y, scale, kind, seed, t, sway=0, light_dx, part="all")` draws it
+    uncached (~74 ms at 0.62), for sheets and stills. `part` is `"all"`, `"trunk"` or
+    `"crown"`.
+
+### Weather
+
+```python
+rain = env.Rain(rect=(-90, -80, 2100, 1240), kind="rain_night", density=1.0, angle=0.16, seed=0,
+                ground=(830, 1080), color=None, near=True)        # in setup()
+rain.draw(cr, t, lights=[(x, y, radius, colour)], alpha=1.0)      # every frame, after the set and the cast
+```
+
+* Rain falls in three depths:
+  * far: fine and faint;
+  * mid;
+  * near: long bright streaks.
+* Drops splash on the `ground=(y0, y1)` band.
+* Drops light up inside each lamp's glow (`lights`).
+* It costs ~9 ms at density 1 with two lamps.
+* `near=False` drops the closest layer, e.g. for rain seen through a window.
+
+### Recipe: the S3 street at night in the rain
+
+This is `Street` in `film/build/props_env_showcase.py`, condensed.
+
+```python
+k, POSTS, PUDDLES = "rain_night", [(470, 905), (1560, 905)], [(800, 1016, 118, 30), (1250, 900, 72, 15)]
+
+def setup():
+    st = {"light": fx.LightLayer()}
+    st["sky"] = env.layer(lambda cr: env.draw_sky(cr, kind=k, horizon=560, seed=3), blur=3, opaque=True)
+    st["far"] = env.layer(lambda cr: (env.draw_castle_hill(cr, 1420, 300, 0.42, kind=k, hill_w=700, hill_h=120),
+                                      env.draw_roofline(cr, -100, 2020, 520, 0.2, k, seed=4, haze=0.35)),
+                          blur=2.5, res=0.5)
+    rows = []
+    def houses(cr):
+        rows.extend(env.draw_street_row(cr, -120, 2060, 800, 0.43, k, seed=11, lit=0.5))
+        env.draw_haze(cr, -90, -80, 2100, 880, env.palette(k)["haze"], 0.38, 0.16)   # into the rain
+    st["houses"] = env.layer(houses, blur=1.4)                      # drawn now: `rows` is filled
+    lamps = [P.draw_lantern_post(core.frame(4, 4)[1], px, gy, 0.95) for px, gy in POSTS]   # rigs only
+    lights = ([(p[0], p[1], c, lv * 0.55, 822) for r in rows for (p, c, lv, w) in r.lights] +
+              [(r.lamp[0], r.lamp[1], P.PROP_COLORS["candle"], 1.0, r.ground[1] + 6) for r in lamps])
+    st["street"] = env.layer(lambda cr: env.draw_cobbles(cr, -90, 820, 2100, 1160, k, wet=True, size=(6, 34)))
+    st["refl"] = env.layer(lambda cr: env.draw_wet_reflections(cr, lights, stretch=0.75, width=1.3, alpha=1.4))
+    st["puddles"] = env.layer(lambda cr: [env.draw_puddle(cr, *pd, k, seed=i, lights=lights, stretch=0.75)
+                                          for i, pd in enumerate(PUDDLES)])
+    st["rain"] = env.Rain(kind=k, ground=(830, 1080), seed=7)
+    st["mist"] = env.Mist(-90, 680, 2100, 220, env.palette(k)["haze"], 0.22, seed=3, speed=12)
+    return st
+
+def draw(cr, t, st):
+    L = ch.LIGHTS["street_night"]
+    cam = core.Camera.about(960, 620, 1.0 + 0.004 * t)
+    with cam.view(cr, 0.1): st["sky"].paint(cr)
+    with cam.view(cr, 0.35): st["far"].paint(cr)
+    with cam.view(cr, 1.0):
+        st["houses"].paint(cr)
+        st["street"].paint(cr)
+        st["refl"].paint(cr, alpha=0.85 + 0.15 * (0.5 + 0.5 * core.noise1(t * 6, 4)))   # candle flicker
+        st["puddles"].paint(cr)
+        for i, pd in enumerate(PUDDLES):
+            env.puddle_ripples(cr, t, *pd, seed=i)
+        st["mist"].draw(cr, t)
+        posts = [P.draw_lantern_post(cr, px, gy, 0.95, L, t, seed=i) for i, (px, gy) in enumerate(POSTS)]
+        ...                                                         # the dragon, the stone, the hourglass
+        st["rain"].draw(cr, t, lights=[(p.lamp[0], p.lamp[1], 230, "#ffb860") for p in posts])
+    lc = st["light"].begin()
+    with cam.view(lc, 1.0):
+        for p in posts:
+            P.lantern_light(lc, p, 0.95, t, ground_y=p.ground[1] + 10)
+    fx.post(cr, t, light=st["light"], bloom_strength=0.55, threshold=0.62, grain=0.04, vignette=0.55)
+```
 
 ## Bard
 
