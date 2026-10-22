@@ -163,7 +163,7 @@ T_SETTLE = L2.end + 0.5
 T_PIPE = L2.end + 0.75                           # the faun takes up his reed-pipe and fingers it along with the bard
 T_THINK = L3.start - 0.95                        # his eyes drift down to the bread in his lap: the thought before L3
 T_LIFT = W_SOMEBODY - 0.08                       # L3, "somebody": he lifts the piece up to look at it ...
-T_HOLD2 = T_LIFT + 0.55                          # ... his other hand comes to it: a claw-tip at each end
+T_HOLD2 = T_LIFT + 0.72                          # ... his other hand comes to it: a claw-tip at each end
 T_GRIP = W_BREAK - 0.45                          # the grip firms: the strain (the crust creaks open from the top)
 T_SNAP = W_BREAK + 0.06                          # it snaps on "break"
 T_PART = T_SNAP + 0.3                            # the halves apart
@@ -318,6 +318,53 @@ def lamp():
     return _STATE.get("lamp", (1253.0, 446.0))
 
 
+def draw_lantern_glass(cr, t):
+    """Over the lantern's glass (props draws it a flat near-white): amber panes lit from inside
+    and a real candle flame you can see -- the one warm light of the film's last image is a
+    candle, not a frosted lamp. The lantern's own geometry (props.draw_lantern_post, "crook",
+    side -1): world = the post's foot + LANTERN_SCALE * local; the lantern centred at (-58, -548)."""
+    fl = flicker(t)
+    cr.save()
+    cr.translate(G.LANTERN[0], G.LANTERN[1])
+    cr.scale(G.LANTERN_SCALE, G.LANTERN_SCALE)
+    lx, ly = -58.0, -(G.LANTERN_HEIGHT - 40.0) + 52.0
+    cr.translate(lx, 0.0)
+    hw, top, bot = 22.0, ly - 30.0, ly + 24.0
+    posts = (-hw, -hw * 0.38, hw * 0.38, hw)
+    ks = (0.86, 0.9, 0.9, 0.86)
+    fy = ly - 1.0                                          # the flame's heart
+    for i in range(3):
+        x0, x1 = posts[i], posts[i + 1]
+        pane = [(x0 + 2.2, top + 1.0), (x1 - 2.2, top + 1.0), (x1 * ks[i + 1] - 2.2, bot - 1.0), (x0 * ks[i] + 2.2, bot - 1.0)]
+        cr.new_path()
+        core.polygon(cr, pane)
+        pat = cairo.RadialGradient(0.0, fy, 2.0, 0.0, fy, 36.0)
+        pat.add_color_stop_rgba(0.0, 1.0, 0.86, 0.52, 1.0)
+        pat.add_color_stop_rgba(0.45, 0.98, 0.66, 0.26, 1.0)
+        pat.add_color_stop_rgba(1.0, 0.62, 0.32, 0.1, 1.0)
+        cr.set_source(pat)
+        cr.fill()
+    # the candle in the middle pane, and its flame (drawn hot and clear over the glass)
+    core.rounded_rect(cr, -3.6, ly + 4.0, 7.2, 15.0, 1.6)
+    core.src(cr, "#f1dcb2")
+    cr.fill()
+    sway = 0.9 * core.noise1(t * 3.1, 7)
+    h = 15.0 * (0.94 + 0.1 * fl)
+    for (w, hh, col, a) in ((4.6, 1.0, "#ff9a2e", 0.95), (3.1, 0.8, "#ffd760", 1.0), (1.6, 0.52, "#fff6dc", 1.0)):
+        base = ly + 4.0
+        tip = (sway * hh, base - h * hh)
+        cr.new_path()
+        cr.move_to(0.0, base + 0.6)
+        cr.curve_to(-w * 1.15, base - 1.0, -w * 0.7 + tip[0] * 0.4, base - h * hh * 0.62, tip[0], tip[1])
+        cr.curve_to(w * 0.7 + tip[0] * 0.4, base - h * hh * 0.62, w * 1.15, base - 1.0, 0.0, base + 0.6)
+        core.src(cr, col, a)
+        cr.fill()
+    core.src(cr, "#3a2614", 0.9)                           # the wick
+    cr.rectangle(-0.4, ly + 1.5, 0.8, 2.6)
+    cr.fill()
+    cr.restore()
+
+
 def flicker(t):
     """The candle in the lantern: a soft, slow flicker (shared by the pool, the halo, the key)."""
     return 0.93 + 0.05 * core.noise1(t * 5.0, 3) + 0.02 * math.sin(t * 13.0)
@@ -442,32 +489,34 @@ def _hand_track(t, keys):
 # "somebody" lifted between two claw-tips; the strain (wrists turning, the ends going down and
 # out); the snap (apart, a little up); her half held out to her on his palm; home.
 N_CRADLE = (-24.0, -6.0, 36.0)
+N_LIFT = (-48.0, -58.0, 50.0)        # "somebody": lifted up before his eyes, still cradled on his fingers
 F_REST = (40.0, 14.0, 22.0)
-N_UP = (-37.0, -38.0, 52.0)
-F_UP = (37.0, -38.0, 52.0)
-N_STRAIN = (-39.0, -33.0, 52.0)
-F_STRAIN = (39.0, -33.0, 52.0)
-N_APART = (-55.0, -44.0, 54.0)
-F_APART = (55.0, -44.0, 54.0)
+N_UP = (-63.0, -58.0, 52.0)          # (the hands this far apart: only the claw-tips touch the piece -- it shows)
+F_UP = (63.0, -61.0, 52.0)           # (the far hand sits nearer the camera: lifted to match)
+N_STRAIN = (-65.0, -53.0, 52.0)
+F_STRAIN = (65.0, -56.0, 52.0)
+N_APART = (-78.0, -64.0, 54.0)
+F_APART = (78.0, -66.0, 54.0)
 N_HOME = (-36.0, 4.0, 26.0)
 F_HOME = (22.0, -6.0, 36.0)          # his own half, cradled in his lap
 STRAIN_TURN = -0.22                  # the wrists turn as he bends the piece (the claw-tips rise)
+CLAW = {"curl": (0.26, 0.38, 0.48), "spread": 0.03, "thumb": (-0.45, 0.32)}   # holding it by the claw-tips
 
 
 def _near_keys():
     off = _STATE["offer_rel"]
     return [(0.0, N_CRADLE, "offer", -0.25), (T_LIFT, N_CRADLE, "offer", -0.25),
-            (T_HOLD2, N_UP, "pinch", 0.05), (T_GRIP, _v_add(N_UP, (-1.0, 1.0, 0.0)), "pinch", 0.05),
+            (T_LIFT + 0.5, N_LIFT, "offer", -0.2), (T_HOLD2, N_UP, CLAW, 0.05), (T_GRIP, _v_add(N_UP, (-1.0, 1.0, 0.0)), "pinch", 0.05),
             (T_SNAP, N_STRAIN, "pinch", STRAIN_TURN, "in_quad"), (T_PART, N_APART, "pinch", -0.12, "out_cubic"),
-            (T_OFFER0, N_APART, "pinch", -0.12), (T_OFFER, off, "cup", OFFER_TURN),
-            (T_TAKE, _v_add(off, (-1.0, -2.0, 1.0)), "cup", OFFER_TURN),
-            (T_SWITCH, _v_add(off, (2.0, 9.0, -2.0)), "open", OFFER_TURN + 0.12),
+            (T_OFFER0, N_APART, "pinch", -0.12), (T_OFFER, off, "offer", OFFER_TURN),
+            (T_TAKE, _v_add(off, (-1.0, -2.0, 1.0)), "offer", OFFER_TURN),
+            (T_SWITCH, _v_add(off, (2.0, 10.0, -2.0)), "open", OFFER_TURN + 0.1),
             (T_SWITCH + 0.95, N_HOME, "relaxed", 0.35)]
 
 
 def _far_keys():
-    return [(0.0, F_REST, "relaxed", 0.6), (T_LIFT + 0.08, F_REST, "relaxed", 0.6),
-            (T_HOLD2, F_UP, "pinch", 0.05), (T_GRIP, _v_add(F_UP, (1.0, 1.0, 0.0)), "pinch", 0.05),
+    return [(0.0, F_REST, "relaxed", 0.6), (T_LIFT + 0.2, F_REST, "relaxed", 0.6),
+            (T_HOLD2, F_UP, CLAW, 0.05), (T_GRIP, _v_add(F_UP, (1.0, 1.0, 0.0)), "pinch", 0.05),
             (T_SNAP, F_STRAIN, "pinch", STRAIN_TURN, "in_quad"), (T_PART, F_APART, "pinch", -0.12, "out_cubic"),
             (T_PART + 0.95, F_HOME, "offer", -0.2)]
 
@@ -493,10 +542,12 @@ def dragon_arms(t):
 # ----------------------------------------------------------------------------------------
 # the bread: the last piece of her loaf (S7's), cradled, lifted, broken, half of it given
 # ----------------------------------------------------------------------------------------
-CRADLE_OFF = (6.0, -13.0)            # on his near palm (hand-local body px: +x along the fingers)
+CRADLE_U, CRADLE_LIFT = 9.0, 15.5     # cradled on his near hand: along the fingers, then up (body px) -- it sits
+                                       # ON his fingers, in view (as S7 left it in his palm)
 TIP_LIFT = 3.5                       # held between the claw-tips: its centre this far above them
-PALM_OFF = (20.0, 9.0)               # her half on his palm-up near hand (the fingers curl up round it)
-OFFER_TURN = 0.55                    # his wrist turned palm-up as he holds it out to her
+PALM_U, PALM_LIFT = 10.0, 13.0        # a half resting on his open fingers: along them, then up (body px)
+OFFER_TURN = -0.25                   # his wrist as he holds her half out to her on his open fingers (as he
+                                     # cradled the piece: the same gentle, flat hand)
 HER_OFF = (1.0, -4.5)                # her half in her hand: its centre from her grip (world-aligned body px)
 
 
@@ -510,6 +561,12 @@ def _hpt(hf, u, v=0.0):
     """A point in a hand's frame (body px along the fingers / across) -> world."""
     c, s = math.cos(hf.angle), math.sin(hf.angle)
     return hf.x + (c * u - s * v) * SC, hf.y + (s * u + c * v) * SC
+
+
+def _palm_pt(hf, du=0.0):
+    """Where a half rests on top of an open hand (world): a little along the fingers, then up."""
+    x, y = _hpt(hf, PALM_U + du)
+    return x, y - PALM_LIFT * SC
 
 
 def _about(m, part, keep):
@@ -534,16 +591,14 @@ def _whole_matrix(t, rig):
     """The whole piece before the snap: on his near palm, rolled to the claw-tips as he lifts
     it, then between both claw-tips (level)."""
     hn, hf = rig.hand_near, rig.hand_far
-    cradle = _hpt(hn, *CRADLE_OFF)
+    cx_, cy_ = _hpt(hn, CRADLE_U + 9.0 * core.inout_sine(core.clamp((t - T_LIFT) / 0.5)))   # it rolls toward his claw-tips
+    cradle = (cx_, cy_ - CRADLE_LIFT * SC)
     if t < T_LIFT:
         return SB.piece_matrix(cradle[0], cradle[1], 0.0, SC)
     a, b = _mean_tip(hn), _mean_tip(hf)
     mid = ((a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5 - TIP_LIFT * SC)
-    u1 = core.inout_sine(core.clamp((t - T_LIFT) / 0.45))
-    near_tip = (a[0] + SB.HALF_W * 0.55 * SC, a[1] - TIP_LIFT * SC)
-    on_near = core.lerp_pt(cradle, near_tip, u1)
-    w2 = core.inout_sine(core.clamp((t - (T_HOLD2 - 0.24)) / 0.24))
-    c = core.lerp_pt(on_near, mid, w2)
+    w2 = core.inout_sine(core.clamp((t - (T_LIFT + 0.42)) / (T_HOLD2 - (T_LIFT + 0.42))))
+    c = core.lerp_pt(cradle, mid, w2)
     return SB.piece_matrix(c[0], c[1], 0.0, SC)
 
 
@@ -571,7 +626,7 @@ def bread_layout(t, rig):
     mr = _about(rel[1].multiply(SB.hand_matrix(rig.hand_far)), 1, keep)
     u = core.inout_sine(core.clamp((t - T_PART) / 0.95))
     if u > 0.0:
-        cx, cy = _hpt(rig.hand_far, PALM_OFF[0] - 2.0, PALM_OFF[1] - 2.0)
+        cx, cy = _palm_pt(rig.hand_far, -2.0)
         mr = SB.lerp_matrix(mr, _at_centroid(cx, cy, 1), u)
     out.append(("near" if t < T_PART else "far", 1, mr))
     # her half: rides his near hand; on the way to her it settles onto his palm
@@ -583,7 +638,7 @@ def bread_layout(t, rig):
         ml = _about(rel[-1].multiply(SB.hand_matrix(rig.hand_near)), -1, keep)
         u = core.inout_sine(core.clamp((t - T_OFFER0) / (T_OFFER - T_OFFER0)))
         if u > 0.0:
-            cx, cy = _hpt(rig.hand_near, *PALM_OFF)
+            cx, cy = _palm_pt(rig.hand_near)
             ml = SB.lerp_matrix(ml, _at_centroid(cx, cy, -1), u)
         out.append(("near", -1, ml))
     return out
@@ -1743,9 +1798,11 @@ def _probe_dragon():
     _STATE["lap"] = _lap(c)
 
 
-OFFER_REL0 = (-62.0, -36.0, 48.0)      # a first guess at his near wrist (from his lap) as he holds her half out
-OFFER_AT = (17.0, 36.0)                # ... solved so her half arrives here: from her anchor (body px: toward
-                                       # him, above her seat) -- in front of her chest, where her hands reach
+OFFER_REL0 = (-46.0, -10.0, 32.0)      # a first guess at his near wrist (from his lap) as he holds her half out
+OFFER_AT = (54.0, 40.0)                # ... solved so her half arrives here: from her anchor (body px: toward
+                                       # him, above her seat) -- by his near knee, in front of his lap (if he
+                                       # reached on to her chest his hand would pass BEHIND her: she sits in
+                                       # front of his near side), where her hands reach it
 
 
 def _measure_snap():
@@ -1772,14 +1829,14 @@ def _solve_offer():
     want = _offer_target()
     rel = list(OFFER_REL0)
     cy_, ce = math.cos(D_YAW), math.cos(_ELEV)
-    for _ in range(6):
+    for _ in range(12):                  # damped: near full reach the hand's angle swings with the wrist
         _STATE["offer_rel"] = tuple(rel)
         x, y, pose = dragon_pose(T_OFFER)
         rig = dragon_probe(T_OFFER, pose)
         m = [m for _w, p_, m in bread_layout(T_OFFER, rig) if p_ == -1][0]
         got = m.transform_point(*SB.CENTROID[-1])
-        rel[0] += (want[0] - got[0]) / SC / cy_
-        rel[1] += (want[1] - got[1]) / SC / ce
+        rel[0] += 0.5 * (want[0] - got[0]) / SC / cy_
+        rel[1] += 0.5 * (want[1] - got[1]) / SC / ce
     _STATE["offer_rel"] = tuple(rel)
 
 
@@ -1871,6 +1928,7 @@ def draw(cr, t, st):
     rigs = {}
     with cam.view(cr, 1.0):
         post = g.draw_lantern(cr, t, Lnight.with_(exposure=0.8), lit=1.0)
+        draw_lantern_glass(cr, t)
         # bench 1 and its sitters
         paint_bench(cr, st, 1, "back")
         draw_umpire(cr, t, b1)
@@ -1936,7 +1994,7 @@ def draw(cr, t, st):
         kd = kindness(t)
         fx.glow(lc, lx, ly, 560.0, "#ff9a48", (0.045 + 0.02 * kd) * fl)
         fx.glow(lc, lx, ly, 230.0, "#ffb05a", (0.2 + 0.04 * kd) * fl)
-        fx.glow(lc, lx, ly, 90.0, "#ffe6b0", 0.5 * fl)
+        fx.glow(lc, lx, ly, 90.0, "#ffe6b0", 0.2 * fl)          # (soft: the candle in the glass must still show)
         if kd > 0.0:                                # the pool swells round the two of them
             fx.light_pool(lc, POOL_C[0] - 120.0, POOL_C[1] - 10.0, 640.0, 150.0, "#ffa956", 0.085 * kd * fl)
             fx.glow(lc, KIND_C[0], KIND_C[1], 320.0, "#ffb26a", 0.08 * kd * fl)

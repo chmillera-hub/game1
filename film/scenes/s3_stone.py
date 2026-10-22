@@ -33,10 +33,12 @@ every one from timeline.json lines, beats and word times):
     and warm bokeh, and the stop lamp's post, a step upstage of him, is softly out of focus as it
     passes behind him. Cut in on the third option: the two options already heard sit small and dim
     above; the third is written big. "loneliness" (6.77) lands at 7.09 with a pop, a flash and a
-    burst of cold sparks: HOPE -- his eyes lift to the word, wide, no blink, brows up, wings lift a
-    little, his walk falters. "please hold" (8.06): the eyes drift down, a slow blink, the head
-    drops, the hunch deepens, the wings sag. 9.3: the menu breaks into motes that stream into the
-    HOLD EMBLEM ahead of his face: a small hourglass (it runs out every two loops and flips as
+    burst of cold sparks: HOPE -- his eyes lift to the word, wide, no blink, brows up, his wings
+    (held clamped against the cold all scene) loosen and lift a little, his walk falters. "please
+    hold" (8.06): the eyes drift down, a slow blink, the head drops, the hunch deepens, the wings
+    clamp back in. 9.3: the menu breaks into motes that stream into the HOLD EMBLEM ahead of his
+    face, on the right third (over the far side's doors and windows, clear of the dark alley
+    between two houses that would otherwise stand under it like a signpost): a small hourglass (it runs out every two loops and flips as
     the loop comes round again: 12.45 / 15.45 / 18.45) under a banderole lettered "On hold", and
     the music box's four notes riding round it on a tilted ring of light -- one turn per loop,
     each note flaring and pinging as it comes round to the front EXACTLY as the music box plays
@@ -59,7 +61,9 @@ every one from timeline.json lines, beats and word times):
     him and the emblem keep their light). The rain is as heavy as in the close shot it cuts
     from: the cone is full of long gold streaks glinting by the lamp, drops burst gold on his
     horns and shoulders, the hood drips rings into the pool, gutter spouts pour across the
-    street. A few warm windows across the street, none for him.
+    street (each set-up shows its own pair, clear of the emblem). A few warm windows across the
+    street, none for him. The emblem floats over a dark house front, clear of the alley; the
+    soaked sack is kept a step below his face's value.
     Last image: a small cold figure in a warm pool of lamplight, the stone at his ear, the steam
     of his breath thinning away, the four notes still going round.
 
@@ -106,6 +110,7 @@ constants and hourglass clock the picture uses.
 
 import math
 import re
+from contextlib import contextmanager
 
 import cairocffi as cairo
 import numpy as np
@@ -114,6 +119,7 @@ from film.lib import core, env, fx, timeline as tl
 from film.lib import props as P
 from film.lib import characters as ch
 from film.lib.characters import base as B
+from film.lib.characters import dragon as DRAGON_RIG
 from film.lib.core import clamp, lerp, ramp, smooth
 
 SCENE = 3
@@ -562,6 +568,7 @@ L_POOL = L_COLD.with_(rim=(1.0, 0.64, 0.28), rim_strength=0.95, rim_direction=(-
                       key=(0.7, 0.74, 0.9), name="s3_pool")
 L_SET = L_BASE.with_(name="s3_set")
 BAG_EXPOSURE = 0.52
+BAG_EXPOSURE_D = 0.38       # the final wide: the white sack sits a step below his face's value
 
 
 def dragon_light(x):
@@ -1116,14 +1123,19 @@ def draw_drips(cr, cam, t, slots, alpha=1.0, soft=1.0, which=None):
                     cr.fill()
 
 
-# screen points in the final wide (t = 18.5): two eave ends right of the stop lamp and the hold
-# emblem, which in the tracking wide stay clear of him (they enter at the right edge)
-SPOUT_TARGETS = ((1197.0, 488.0), (1468.0, 494.0))
+# screen points in the final wide (t = 18.5): eave ends right of the stop lamp, which in the
+# tracking wide stay clear of him (they enter at the right edge). Each set-up shows its own pair,
+# the usual per-set-up cheat of set dressing. Spout 0 pours on the right of the tracking wide,
+# but from B on it would fall right under the "On hold" banner (B) or beside it (D), so it is
+# left out after the first cut. Spout 2 takes its place in the final wide.
+SPOUT_TARGETS = ((1197.0, 488.0), (1468.0, 494.0), (1733.0, 484.0))
+SPOUTS_IN = {"A": (0, 1), "B": (1,), "C": (), "D": (1, 2)}
 
 
 def make_spouts(rect, windows, lamps):
-    """Two gutter spouts pouring off the far side's eaves, right of the stop lamp in the final
-    wide (the eave ends nearest SPOUT_TARGETS there): [(x, y_top, y_bot, lut)]."""
+    """The gutter spouts pouring off the far side's eaves, right of the stop lamp in the final
+    wide (the eave ends nearest SPOUT_TARGETS there; SPOUTS_IN picks each set-up's pair):
+    [(x, y_top, y_bot, lut)]."""
     cam = camera_base(T_CUT3 + 1.5)
     ends = []
     for (hx, w, f, hseed) in _house_specs(rect):
@@ -1151,8 +1163,11 @@ def draw_spouts(cr, cam, t, spouts, alpha=1.0, soft=1.0, lamp_xy=None):
         return
     pz = cam.scale_at(PX_HOUSES)
     boxes = text_veil_boxes(t)
+    which = SPOUTS_IN[shot_at(t)]
     with cam.view(cr, PX_HOUSES):
         for i, (x, y0, y1, lut) in enumerate(spouts):
+            if i not in which:
+                continue
             sx, sy0 = cam.to_screen(x, y0, PX_HOUSES)
             if sx < -40 or sx > W + 40:
                 continue
@@ -1418,6 +1433,80 @@ def _k(t, keys, ease="inout_sine"):
     return core.track(t, keys, ease)
 
 
+# ---------------------------------------------------------------------------------------------
+# the wings clamped against the cold. The rig's tightest fold (wings=-1) is a drooped, half-open
+# wing: an open membrane fanned out behind his shoulder. While this scene draws him, the rig's
+# own wing is drawn through a projection that folds it about its root (fingers closed up, a
+# shorter hang, pulled in against his back), so the coat hides the membrane and only the wrist
+# knuckle and the folded fingers show. This is scene-local and the library is untouched: the
+# swap lasts one draw and falls back to the rig's own wing if its internals ever change.
+# ---------------------------------------------------------------------------------------------
+WING_FOLD = (0.55, 0.7, 0.3)      # at tuck 1: spread (x), hang (y), distance behind the back (z)
+_RIG_WING = getattr(DRAGON_RIG, "_wing", None)
+_TUCK = [0.0]
+
+
+class _FoldProj:
+    """Projects body-space points after folding them about the wing root by (kx, ky, kz)."""
+    __slots__ = ("proj", "root", "k")
+
+    def __init__(self, proj, root, k):
+        self.proj, self.root, self.k = proj, root, k
+
+    def xy(self, v):
+        r, (kx, ky, kz) = self.root, self.k
+        return self.proj.xy((r[0] + (v[0] - r[0]) * kx, r[1] + (v[1] - r[1]) * ky, r[2] + (v[2] - r[2]) * kz))
+
+
+def _tucked_wing(q, side):
+    k = _TUCK[0]
+    if k <= 0.0:
+        return _RIG_WING(q, side)
+    try:
+        h = q.S["hunch"]
+        root = q.S["T"]((side * 22.0, -121.0 + 8.0 * h, -24.0 - 8.0 * h))     # the rig's wing root
+        q2 = type(q)()
+        for name in type(q).__slots__:
+            setattr(q2, name, getattr(q, name))
+        q2.proj = _FoldProj(q.proj, root, tuple(1.0 + (f - 1.0) * k for f in WING_FOLD))
+    except Exception:                                     # the rig changed: its own wing, untucked
+        return _RIG_WING(q, side)
+    return _RIG_WING(q2, side)
+
+
+@contextmanager
+def wings_tucked(k):
+    """Draw the dragon inside this block with his wings folded by k (0 = the rig's own fold)."""
+    if _RIG_WING is None or k <= 0.0:
+        yield
+        return
+    _TUCK[0] = k
+    DRAGON_RIG._wing = _tucked_wing
+    try:
+        yield
+    finally:
+        DRAGON_RIG._wing = _RIG_WING
+        _TUCK[0] = 0.0
+
+
+def _shiver(t):
+    """The shiver: (amount 0..1, tremble -1..1). The shoulders jerk up into the scarf, tremble at
+    SHIVER_HZ, dying away, and settle."""
+    sh = core.window(t, T_SHIVER, T_SHIVER + 0.8, 0.07, 0.45)
+    u = t - T_SHIVER
+    trem = math.sin(TAU * SHIVER_HZ * u) * math.exp(-u / 0.32) * clamp(u / 0.06) if u > 0 else 0.0
+    return sh, trem
+
+
+def wing_tuck(t):
+    """How tightly he holds his wings in (1 = clamped): they loosen a little with the hope at
+    "loneliness" and clamp again at "please hold"; in the shiver they clamp harder and quiver."""
+    k = _k(t, [(0.0, 1.0), (T_LONELY, 1.0), (T_LONELY + 0.3, 0.45), (T_PLEASE + 0.05, 0.5),
+               (T_PLEASE + 0.55, 1.0)])
+    sh, trem = _shiver(t)
+    return k + 0.15 * sh + 0.12 * trem          # signed: on the shoulders' 5-frame tremble
+
+
 def dragon_pose(t, stone_cb, bag_cb):
     walk = walk_amt(t)
     ph = walk_phase(t)
@@ -1443,10 +1532,8 @@ def dragon_pose(t, stone_cb, bag_cb):
     hunch = _k(t, [(0.0, 0.55), (T_PLEASE + 0.2, 0.55), (T_PLEASE + 0.9, 0.66), (T_STOP, 0.68),
                    (T_BREATH, 0.66), (T_BREATH + 0.3, 0.5), (L4.end, 0.56), (T_SIGH + 0.8, 0.8), (DUR, 0.82)])
     # the shiver: the shoulders jerk up into the scarf, tremble (4.8 Hz, dying away) and settle;
-    # the wings clamp and quiver with them; the head only rides along
-    shiver = core.window(t, T_SHIVER, T_SHIVER + 0.8, 0.07, 0.45)
-    u_sh = t - T_SHIVER
-    trem = math.sin(TAU * SHIVER_HZ * u_sh) * math.exp(-u_sh / 0.32) * clamp(u_sh / 0.06) if u_sh > 0 else 0.0
+    # the wings clamp and quiver with them (wing_tuck); the head only rides along
+    shiver, trem = _shiver(t)
     hunch += 0.2 * shiver + 0.07 * trem
     # a slight wistful tilt as he looks up at the hourglass and says it
     tilt = 0.012 * trem + 0.07 * core.window(t, T_GLANCE + 0.25, L4.start + 1.5, 0.6, 0.7)
@@ -1468,8 +1555,8 @@ def dragon_pose(t, stone_cb, bag_cb):
     blink = max(blink, 0.85 * core.window(t, L2.end + 0.05, L2.end + 0.5, 0.15, 0.2))      # heard it all
     if T_LONELY - 0.3 < t < T_PLEASE:                                                     # hope: eyes wide
         blink = 0.0
-    # wings held tight (the rig's most compact fold is its lowest droop): a little lift of hope
-    # at "loneliness", a quiver in the shiver
+    # wings: the rig's lowest droop, folded tight against his back by wing_tuck() (applied in
+    # render_dragon). A little lift of hope at "loneliness", a quiver in the shiver
     wings = _k(t, [(0.0, -1.0), (T_LONELY, -1.0), (T_LONELY + 0.3, -0.8), (T_PLEASE + 0.5, -1.0)])
     wings = min(-0.75, wings + 0.12 * abs(trem))
     swing = 0.11 * math.sin(ph * TAU) * walk + 0.06 * B.wobble(t, T_STOP, 1.4, 1.2)
@@ -1828,7 +1915,7 @@ class RuneText:
 # puts the emblem on the right third, where the C set-up finds it after the cut.
 EMB_DX, EMB_UP = 335.0, 44.0
 EMB_DX_C, EMB_UP_C = 182.0, 22.0     # shot C's angle: nearer (foreshortened) and nearer his eye line
-EMB_DX_D, EMB_UP_D = 330.0, 44.0     # the final wide: clear of the same alley as the camera rises
+EMB_DX_D, EMB_UP_D = 380.0, 44.0     # the final wide: clear of the same alley as the camera rises
 EMB_SCALE = {"A": 1.0, "B": 1.0, "C": 0.84}   # screen-size balance per shot ...
 EMB_D = 1.42                         # ... and the final wide counter-scales it as the camera pulls away
 RING_RX, RING_RY, RING_TILT = 56.0, 13.0, -0.07
@@ -2382,7 +2469,8 @@ def render_dragon(cam, t, xd, pose, light, full=False):
     c.set_operator(cairo.OPERATOR_OVER)
     c.translate(-ox, -oy)
     c.transform(cam.matrix(PX_B))
-    rig = ch.draw_dragon(c, xd, GY, SC, pose.with_(shadow=False), light, t)
+    with wings_tucked(wing_tuck(t)):
+        rig = ch.draw_dragon(c, xd, GY, SC, pose.with_(shadow=False), light, t)
     surf.flush()
     return surf, ox, oy, rig
 
@@ -2700,7 +2788,7 @@ def draw(cr, t, st):
 
     # the sack: soaked grey paper in the night, kept down near his face's value (the brightest
     # things on the figure stay his eyes, his face and the stone)
-    bag_light = B.Light.lerp(light, L_COLD, 0.5).with_(exposure=BAG_EXPOSURE)
+    bag_light = B.Light.lerp(light, L_COLD, 0.5).with_(exposure=BAG_EXPOSURE_D if shot == "D" else BAG_EXPOSURE)
 
     def bag_cb(swing):
         return P.bag_hold(bag_light, t, swing, state="open", damp=1.0)
