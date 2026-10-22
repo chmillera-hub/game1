@@ -1849,7 +1849,7 @@ class DragonStreet(_Synced):
         """(kind, start time, glance, bundle): the neighbours who hurry by during "neighbours,
         who hurried on by"."""
         e = self.e
-        t0 = e("waved") - 0.25                # already coming up the street as he raises his hand
+        t0 = e("wave") - 0.25                 # already coming up the street as he raises his hand
         return (("goblin", t0, 0.0, None), ("kobold", t0 + 0.36, 1.0, None), ("mouse", t0 + 0.74, 0.0, P["ochre"]))
 
     def passer_at(self, t, t0, glance):

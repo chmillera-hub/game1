@@ -776,8 +776,8 @@ ch.REGISTRY["dwarf"].DWARF_GESTURES["s8_tale"] = _g_s8_tale
 
 def dwarf_pose(t):
     x, y = _STATE["b2"].place(U2["dwarf"])
-    tale = _win(t, T_TALE0, T_TALE1, 0.25, 0.35)
-    punch = _win(t, T_PUNCH - 0.12, T_LAUGH1 - 0.2, 0.12, 0.4)
+    tale = _win(t, T_TALE0, T_TALE1, 0.4, 0.45)
+    punch = _win(t, T_PUNCH - 0.22, T_LAUGH1 - 0.2, 0.22, 0.5)
     laugh = _win(t, T_LAUGH, T_LAUGH1 + 0.2, 0.1, 0.5)
     # the tale: his near hand explains; the punchline: both hands come up ("...and THAT was the
     # last of the cheese!"); one custom gesture throughout (no hand flips, no layer swaps)
