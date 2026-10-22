@@ -189,7 +189,7 @@ def lit_window(cr, x, y, w, h, lit, seed=0, arch=True, frame=INK):
 
 FOLK = {
     "goblin": dict(skin="#8faa62", cloak="#7a4e30", trim="#c79a62", hood=False, ears="goblin", nose=1.0, h=1.0),
-    "elf": dict(skin="#e8d3c0", cloak="#3f6e5c", trim="#c9b48a", hood=True, ears="elf", nose=0.2, h=1.12),
+    "elf": dict(skin="#dcd3ee", cloak="#3f6e5c", trim="#c9b48a", hood=True, ears="elf", nose=0.2, h=1.12),
     "mouse": dict(skin="#b3a596", cloak="#8f3236", trim="#d9b77c", hood=False, ears="mouse", nose=0.8, h=0.82,
                   tail=True),
     "dwarf": dict(skin="#d9a582", cloak="#a8622f", trim="#5e3b25", hood=False, ears="dwarf", nose=0.5, h=0.86,
@@ -438,98 +438,6 @@ class _Synced(sb.Illustration):
         return self.ev.get(name, default)
 
 
-def _house_front(cr, x, y, w, h_ground, h_upper, roof_h, wall, roof, seed, jetty=4.0, shutters="#4e8a6c"):
-    """A half-timbered storybook house front with its ground at y; returns its features:
-    door rect, lower window rect, upper windows [rects], the gable apex, the jetty line."""
-    rng = random.Random(seed)
-    ground_top = y - h_ground
-    up_top = ground_top - h_upper
-    # ground storey: stone with a plaster wash
-    gs = sb.wobble([(x, y), (x, ground_top), (x + w, ground_top), (x + w, y)], 0.4, seed)
-    pg = sb.wash(cr, gs, core.mix(wall, P["stone"], 0.45), 0.97, 0.35, w=0.7)
-    cr.save()
-    pg.add(cr)
-    cr.clip()
-    blocks = []
-    for r in range(int(h_ground / 6.0) + 1):
-        yy = y - r * 6.0
-        xx = x - (r % 2) * 5.0
-        while xx < x + w:
-            ww = rng.uniform(8.0, 13.0)
-            blocks.append([(xx, yy), (xx, yy - 6.0)])
-            xx += ww
-        blocks.append([(x, yy), (x + w, yy)])
-    B.detail_lines(cr, blocks, 0.3, INK, 0.22, taper=(1.0, 1.0, 1.0))
-    cr.restore()
-    sb.ink_outline(cr, pg, 0.6, INK, 0.75)
-    # upper storey: jettied, plaster + timber frame
-    us = sb.wobble([(x - jetty, ground_top), (x - jetty, up_top), (x + w + jetty, up_top), (x + w + jetty, ground_top)],
-                   0.4, seed + 1)
-    pu = sb.wash(cr, us, wall, 0.97, 0.35, w=0.7)
-    beams = [[(x - jetty - 1.0, ground_top), (x + w + jetty + 1.0, ground_top)],
-             [(x - jetty, up_top), (x + w + jetty, up_top)]]
-    for k in range(5):
-        bx = x - jetty + (w + 2 * jetty) * k / 4.0
-        beams.append([(bx, up_top), (bx, ground_top)])
-    beams.append([(x - jetty, ground_top), (x - jetty + (w + 2 * jetty) / 4.0, up_top)])
-    beams.append([(x + w + jetty, ground_top), (x + w + jetty - (w + 2 * jetty) / 4.0, up_top)])
-    for b_ in beams:
-        sb.ink(cr, b_, 1.9, P["umber"], 0.95, (0.9, 1.0, 0.9))
-    sb.ink_outline(cr, pu, 0.6, INK, 0.75)
-    # the corbels under the jetty
-    for cx_ in (x + 2.0, x + w - 2.0):
-        sb.ink(cr, [(cx_, ground_top), (cx_, ground_top + 4.5)], 1.6, P["umber"], 0.9)
-    # gable roof
-    apex = (x + w * 0.5, up_top - roof_h)
-    rf = sb.wobble([(x - jetty - 4.0, up_top + 1.0), apex, (x + w + jetty + 4.0, up_top + 1.0)], 0.5, seed + 3)
-    pr = sb.wash(cr, rf, roof, 0.97, 0.5, w=0.8)
-    sb.hatch(cr, pr, 0.55, 2.4, 0.32, INK, 0.25)
-    cr.save()
-    pr.add(cr)
-    cr.clip()
-    tiles = []
-    for r in range(1, int(roof_h / 3.2)):
-        yy = up_top - r * 3.2
-        tiles.append([(x - jetty - 6.0, yy), (x + w + jetty + 6.0, yy)])
-    B.detail_lines(cr, tiles, 0.3, INK, 0.3, taper=(1.0, 1.0, 1.0))
-    cr.restore()
-    sb.ink_outline(cr, pr, 0.75, INK, 0.85)
-    # carved bargeboard trim
-    sb.ink(cr, [(x - jetty - 3.0, up_top + 0.5), apex, (x + w + jetty + 3.0, up_top + 0.5)], 1.0, P["umber"], 0.8)
-    # windows: two upper (with shutters, animated by the caller), one lower beside the door
-    uw, uh = w * 0.2, h_upper * 0.52
-    ups = [(x + w * 0.26 - uw * 0.5, up_top + h_upper * 0.22, uw, uh), (x + w * 0.74 - uw * 0.5, up_top + h_upper * 0.22, uw, uh)]
-    dw, dh = w * 0.24, h_ground * 0.74
-    door = (x + w * 0.62 - dw * 0.5, y - dh, dw, dh)
-    lw_ = (x + w * 0.2 - w * 0.09, y - h_ground * 0.72, w * 0.18, h_ground * 0.36)
-    return {"door": door, "low": lw_, "ups": ups, "apex": apex, "jetty": ground_top, "top": up_top, "x": x, "w": w,
-            "y": y, "shutters": shutters}
-
-
-def _dress_house(cr, hf, lit=(0.0, 0.0), low_lit=0.0, door=True, flowers=None, seed=0):
-    """Static dressing for a _house_front: leaded upper windows (lamplit or dark) with their
-    shutters folded open, the lower window with a sill (or a flower box), a shut oak door."""
-    for k, rect in enumerate(hf["ups"]):
-        x, y0, w, h = rect
-        lit_window(cr, x, y0, w, h, lit[k % len(lit)], arch=False)
-        draw_shutters(cr, rect, 0.0, hf["shutters"])
-    lx, ly, lw_, lh = hf["low"]
-    lit_window(cr, lx, ly, lw_, lh, low_lit, arch=True)
-    sb.ink(cr, [(lx - 1.2, ly + lh + 0.5), (lx + lw_ + 1.2, ly + lh + 0.5)], 1.3, P["umber"], 0.95)
-    if flowers:
-        rng = random.Random(seed)
-        box = [(lx - 1.5, ly + lh + 0.6), (lx + lw_ + 1.5, ly + lh + 0.6), (lx + lw_ + 1.0, ly + lh + 4.0), (lx - 1.0, ly + lh + 4.0)]
-        sb.ink_outline(cr, sb.wash(cr, box, "#7a4d2c", 0.98, 0.3), 0.4, INK, 0.8)
-        for q in range(6):
-            fx_ = lx + lw_ * (q + 0.5) / 6.0
-            cr.new_path()
-            core.circle(cr, fx_, ly + lh - 0.6 + rng.uniform(-0.8, 0.8), 1.2)
-            core.src(cr, flowers[q % len(flowers)], 0.95)
-            cr.fill()
-    if door:
-        draw_door(cr, hf["door"], open_=0.0, heart=1.0)
-
-
 def _door_arch(dx, dy, dw, dh, n=8):
     pts = [(dx, dy + dh), (dx, dy + dw * 0.5)]
     for k in range(1, n):
@@ -547,88 +455,6 @@ def heart_pts(cx, cy, r, n=28):
         y_ = -(13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a))
         out.append((cx + x_ * r / 16.0, cy + y_ * r / 16.0))
     return out
-
-
-def draw_door(cr, rect, open_=0.0, slam=-1.0, t=0.0, heart=0.0, heart_glint=0.0, wood="#7a4d2c", interior=None):
-    """An arched oak door with iron straps and a HEART-SHAPED iron lock plate.
-    open_ 0 shut .. 1 wide (the dark interior shows); slam = seconds since it slammed (<0: not yet):
-    a little shake; heart 0..1 the lock's bolt shot home (the plate goes dark iron, the keyhole
-    closes); heart_glint 0..1 a gold glint on the plate."""
-    dx, dy, dw, dh = rect
-    arch = _door_arch(dx, dy, dw, dh)
-    sb.wash(cr, arch, interior or "#1a120c", 0.98, 0.15)
-    k = clamp(1.0 - open_)
-    shake = 0.0
-    if slam >= 0.0:
-        shake = math.exp(-slam / 0.09) * math.sin(slam * 70.0) * 0.6
-    if k > 0.02:
-        cr.save()
-        cr.new_path()
-        core.polygon(cr, arch)
-        cr.clip()
-        cr.translate(dx, 0.0)
-        cr.scale(k, 1.0)
-        cr.translate(-dx + shake, 0.0)
-        leaf = [(dx, dy - 2.0), (dx + dw, dy - 2.0), (dx + dw, dy + dh), (dx, dy + dh)]
-        sb.wash(cr, leaf, wood, 0.99, 0.4, w=0.6)
-        planks = [[(dx + dw * j / 4.0, dy), (dx + dw * j / 4.0, dy + dh)] for j in (1, 2, 3)]
-        B.detail_lines(cr, planks, 0.35, INK, 0.5, taper=(1.0, 1.0, 1.0))
-        straps = []
-        for hy in (dy + dh * 0.32, dy + dh * 0.78):
-            straps.append([(dx + 0.4, hy), (dx + dw * 0.7, hy)])
-        B.detail_lines(cr, straps, 1.0, "#2b2522", 0.95, taper=(1.0, 1.0, 1.0))
-        # the heart lock plate on the latch side
-        hx, hy = dx + dw * 0.78, dy + dh * 0.55
-        r = dw * 0.17
-        hp = heart_pts(hx, hy, r)
-        iron = core.mix("#6e6862", "#2e2926", heart)
-        ph = sb.wash(cr, hp, iron, 0.99, 0.3)
-        sb.ink_outline(cr, ph, 0.35, INK, 0.9)
-        if heart < 0.95:
-            cr.new_path()
-            core.circle(cr, hx, hy - r * 0.1, r * 0.22 * (1.0 - heart))
-            core.src(cr, "#120c08")
-            cr.fill()
-        # the bolt shooting home across the plate
-        bx = lerp(hx - r * 2.2, hx - r * 0.2, heart)
-        sb.ink(cr, [(bx - r * 1.4, hy + r * 0.9), (bx, hy + r * 0.9)], max(0.5, r * 0.32), "#3a3633", 1.0)
-        if heart_glint > 0.01:
-            fx.sparkle(cr, hx - r * 0.3, hy - r * 0.35, r * 1.6 * (0.6 + 0.4 * heart_glint), P["gold_hi"],
-                       0.95 * heart_glint, angle=0.4)
-        cr.restore()
-    sb.ink_outline(cr, _poly(cr, arch), 0.75, INK, 0.9)
-
-
-def draw_shutters(cr, rect, close=0.0, color="#4e8a6c", glow=0.0, latch_glint=0.0):
-    """A pair of wooden shutters on a window: close 0 folded open beside it .. 1 shut over it
-    (they swing on their hinges: a leaf is edge-on half way). glow: lamplight leaking between
-    the slats when shut."""
-    x, y, w, h = rect
-    for side in (-1, 1):
-        u = clamp(close)
-        a = math.pi * (1.0 - u)               # pi = folded open flat against the wall, 0 = shut
-        hinge = x if side < 0 else x + w
-        half = w * 0.5
-        span = half * math.cos(a)             # signed extent toward the window centre
-        x0, x1 = hinge, hinge - side * span
-        if abs(x1 - x0) < 0.2:
-            sb.ink(cr, [(hinge, y), (hinge, y + h)], 0.8, core.shade(color, 0.4), 1.0)
-            continue
-        lo, hi = min(x0, x1), max(x0, x1)
-        face_out = math.cos(a) < 0            # open: we see its painted outside face
-        c = color if face_out or u > 0.5 else core.shade(color, 0.3)
-        leaf = [(lo, y - 0.6), (hi, y - 0.6), (hi, y + h + 0.6), (lo, y + h + 0.6)]
-        pl = sb.wash(cr, leaf, c, 0.99, 0.35, w=0.5)
-        slats = [[(lo + 0.4, y + h * k / 5.0), (hi - 0.4, y + h * k / 5.0)] for k in range(1, 5)]
-        B.detail_lines(cr, slats, 0.3, INK, 0.45, taper=(1.0, 1.0, 1.0))
-        sb.ink_outline(cr, pl, 0.45, INK, 0.85)
-    if close > 0.97:
-        # the latch bar across the middle and a thread of light between the leaves
-        if glow > 0.01:
-            sb.ink(cr, [(x + w * 0.5, y + 0.5), (x + w * 0.5, y + h - 0.5)], 0.6, "#ffd27a", 0.9 * glow)
-        sb.ink(cr, [(x + w * 0.22, y + h * 0.5), (x + w * 0.78, y + h * 0.5)], 0.9, "#2e2926", 1.0)
-        if latch_glint > 0.01:
-            fx.sparkle(cr, x + w * 0.55, y + h * 0.5, w * 0.28, P["gold_hi"], 0.85 * latch_glint)
 
 
 # ----------------------------------------------------------------------------------------
@@ -1081,9 +907,9 @@ class CastleTown(_Synced):
     tilts down it. Life, on the lyrics: pennants fly; the castle's windows light on "kingdom of
     stone"; folk walk the street alone (one turns away from another); a lone figure appears in each
     upper window on "living alone"; potions glint on the sills on "potions"; a yawn and ink z's on
-    "sleeping"; charms swing on "charms"; painted rain on "rain"; the folk hurry home, doors slam and
-    the heart-shaped locks shoot home on "lock" (glinting on "heart"); the shutters swing shut and
-    latch, one after another, on "latch"."""
+    "sleeping"; charms swing on "charms"; painted rain on "rain"; the folk hurry home, the doors slam
+    and the iron heart padlocks snap shut on "lock" (the candlelight burnishes them on "heart"); the
+    shutters clap shut one after another and an iron latch bar drops across each on "latch"."""
     DW, DH = 200.0, 287.0
     grain = 0.3
     STREET_Y = 268.0                  # the doorsteps (ground line of the house fronts)
@@ -1778,13 +1604,15 @@ class DragonStreet(_Synced):
     """Verse 2, left page: the dragon -- on-model, the real rig -- in his charcoal-navy coat and
     mustard scarf on a cobbled dusk street, the far castle above the roofs. "with a scarf and a
     sigh": he sighs (a curl of smoke); "And he waved at his neighbours": he waves, hopeful; "who
-    hurried on by": three folk hurry past, heads down (the kobold glances and speeds up) and his
-    wave sinks. "But for what he was missing": the cold glow of the merchants' wares spills across
-    the gutter onto his page and he turns toward it; "there wasn't a spell": he turns away, head
-    down, and the cold light dies."""
+    hurried on by": a goblin, a kobold and a mouse-folk hurry past in front of him, heads down (the
+    kobold glances up and scurries faster), his eyes follow them and the wave sinks. "But for what
+    he was missing": the cold glow of the merchants' wares spills across the gutter onto his page
+    (the scene paints the rune-light crossing over) and he turns toward it; "there wasn't a spell":
+    he turns away, head down, and the cold light dies."""
     DW, DH = 200.0, 212.0
     grain = 0.3
-    GROUND = 176.0
+    GROUND = 168.0                           # the doorsteps (raised: wide shots keep him above the captions)
+    WALK_Y = 193.0                           # where the neighbours hurry past, in front of him
 
     def back(self, cr):
         _dusk_sky(cr, self.DW, self.DH, 150, self.seed + 3)
@@ -1923,13 +1751,13 @@ class DragonStreet(_Synced):
                         break
                     x_ = lerp(self.DW + 6.0, 104.0, u)
                     y_ = lerp(y0_, y1_, u) + 5.0 * math.sin(u * 5.0 + t * 2.2 + ph_)
-                    soft_glow(cr, x_, y_, 6.0 + 4.0 * u, "#8fe8ff", 0.13 * off * (1.0 - 0.5 * u))
+                    soft_glow(cr, x_, y_, 6.0 + 4.0 * u, "#8fe8ff", 0.2 * off * (1.0 - 0.5 * u))
                     if j % 3 == 0:
                         sb.ink(cr, [(x_ - 1.2, y_ - 0.6), (x_ + 0.4, y_ + 0.5), (x_ + 1.4, y_ - 0.7)], 0.35, P["rune"],
                                0.6 * off * (1.0 - u))
             cr.restore()
         pose = self.pose(t)
-        dx, dy, ds = 84.0, self.GROUND + 20.0, 0.232
+        dx, dy, ds = 84.0, self.GROUND + 8.0, 0.232           # mid-street, feet clear of the caption band
         B.contact_shadow(cr, dx, dy, 36.0, 6.0, alpha=0.25)
         rig = storybook_dragon_posed(cr, dx, dy, ds, t, pose)
         if off > 0.01:      # the cold rim the stones throw on him
@@ -1942,7 +1770,7 @@ class DragonStreet(_Synced):
             ch.dragon_smoke(cr, t, wasnt + 0.3, rig, scale=0.9, dur=2.4, alpha=0.7, light_tint="#f4f0ff")
         # the neighbours hurrying by in the foreground, heads down, all the same way ("on by"),
         # one after another; the kobold glances up at him and scurries faster
-        y = self.DH - 11.0
+        y = self.WALK_Y
         for k, (kind, t0, glance, bundle) in enumerate(self.passers()):
             x, dist, g = self.passer_at(t, t0, glance)
             if x is None:
@@ -1955,7 +1783,7 @@ class DragonStreet(_Synced):
 class Market(_Synced):
     """Verse 2, right page: the merchants' stalls -- STONES, POTIONS, CANDLES (the city's remedies:
     stones, all of them). On "stone" the goblin lifts a rune-stone that flares cold; on "sell" the
-    dwarf and the kobold hold up a sleeping draught and a spell-candle; "But for what he was
+    frog apothecary and the kobold chandler hold up a sleeping draught and a spell-candle; "But for what he was
     missing" all three hold their glowing wares out toward the dragon across the gutter (their cold
     light spills onto his page); "there wasn't a spell": they lower them and shrug."""
     DW, DH = 200.0, 212.0
@@ -2243,226 +2071,356 @@ class PotionShelf(_Synced):
 # ----------------------------------------------------------------------------------------
 
 class WashHouseNight(_Synced):
-    """The tale begins here: the wash-house at night -- grey stone and slate under a cold indigo sky,
-    the gold moon, three tall arched windows glowing sickly teal with tumbling drums behind round
-    portholes, a hanging WASH-HOUSE board, cold steam from the chimney, a caged wisp-lamp, and the
-    dragon himself, small, trudging toward the door with his laundry sack. The camera pushes into
-    the middle window as the picture goes to black (S1 opens inside)."""
+    """The tale begins here: the wash-house at night, painted cold. A long grey-stone hall under a slate
+    roof with a louvred steam vent, its two tall arched windows glowing sickly teal with tumbling
+    drums behind round portholes, a WASH-HOUSE board over a great arched door, a caged wisp-lamp; a
+    cold indigo sky, a gilt moon, and verse 1's castle small and dark on its hill. The dragon --
+    small, alone, his laundry sack in his fist -- trudges along the street to the door; the
+    enchanted doors swing open by themselves ("self-service"), the cold light spills over him, and he
+    steps in as the picture goes to black. S1 opens in there."""
     DW, DH = 200.0, 287.0
     grain = 0.3
-    WIN = ((44.0, 236.0), (100.0, 236.0), (156.0, 236.0))     # window centres (x) and sills (y)
+    GROUND = 262.0                                   # the foot of the walls (the door's threshold)
+    STREET = 279.0                                   # where he walks
+    DOOR = (78.0, 184.0, 44.0, 78.0)                 # the arched doorway: x, top, w, h (bottom = GROUND)
+    WIN = ((40.0, 250.0), (160.0, 250.0))            # window centres and sills
+    WIN_W, WIN_H = 40.0, 66.0
 
     def back(self, cr):
-        sb._sky(cr, self.DW, self.DH, [(0.0, "#0f1430"), (0.35, "#18224a"), (0.7, "#1f3a52"), (1.0, "#2d5058")],
-                seed=self.seed + 8, blooms=6, bottom=210)
-        sb.gild(cr, crescent_pts(52, 40, 15, 6.5, -4.5, 13.5), outline=0.6, shimmer=0.4)
-        self._stars = [(16, 18, 2.4), (90, 14, 1.8), (128, 34, 2.6), (176, 16, 2.0), (186, 70, 1.6), (110, 60, 1.4),
-                       (24, 88, 1.6), (150, 92, 1.4)]
+        rng = random.Random(self.seed + 3)
+        sb._sky(cr, self.DW, self.DH, [(0.0, "#0b1030"), (0.3, "#15204a"), (0.58, "#1c3656"), (0.8, "#244a58")],
+                seed=self.seed + 8, blooms=6, bottom=205)
+        # cold Kells cloud-curls
+        for (cx, cy, L, s_) in ((60, 96, 80, 1.0), (150, 64, 60, -1.0)):
+            band = [(cx - s_ * L * 0.5 + s_ * L * i / 8.0, cy + 2.0 * math.sin(i * 0.7 + cx)) for i in range(9)]
+            top = [(px, py - 3.0 - 1.2 * math.sin(i * 1.1)) for i, (px, py) in enumerate(band)]
+            bot = [(px, py + 2.4) for (px, py) in band]
+            sb.wash(cr, top + bot[::-1], "#7a92b8", 0.22, 0.25, smooth_t=0.6, w=0.5)
+            sp = spiral_pts(band[-1][0] + s_ * 2.0, band[-1][1] - 2.0, 0.6, 5.0, turns=1.4, n=18, a0=math.pi * 0.5,
+                            cw=1 if s_ > 0 else -1)
+            sb.ink(cr, sp, 0.8, P["gold_dk"], 0.6, (0.4, 1.0, 0.8))
+        sb.gild(cr, crescent_pts(44, 40, 15, 6.5, -4.5, 13.5), outline=0.6, shimmer=0.4)
+        self._stars = [(16, 16, 2.4), (92, 14, 1.8), (124, 32, 2.6), (178, 18, 2.0), (190, 54, 1.6), (106, 52, 1.4),
+                       (22, 74, 1.5), (72, 30, 1.3)]
         for (sx_, sy_, r) in self._stars:
             gold_star(cr, sx_, sy_, r, shimmer=0.3)
-        stipple(cr, 0, 0, self.DW, 120, 40, "#dfe8ff", 0.3, (0.2, 0.45), seed=self.seed + 4)
-        # the building
-        body = sb.wobble([(10, 268), (10, 150), (190, 150), (190, 268)], 0.6, 2)
-        pb = sb.wash(cr, body, "#7a868c", 0.97, 0.45)
+        stipple(cr, 0, 0, self.DW, 130, 40, "#dfe8ff", 0.3, (0.2, 0.45), seed=self.seed + 4)
+        # verse 1's castle, small and dark on its hill to the right; the town's far roofs
+        # verse 1's castle, far away on its hill above the roofs (to the right): small, dark, a lit window
+        hill = [(132, 132), (156, 110), (176, 104), (196, 110), (214, 122), (214, 150), (132, 150)]
+        sb.wash(cr, hill, "#2a3a5c", 0.97, 0.2, smooth_t=0.5)
+        cst = "#3a4a6c"
+        sb.wash(cr, [(168, 106), (168, 94), (186, 94), (186, 106)], cst, 0.98, 0.15)
+        for (tx, top, tw) in ((164, 89, 5.0), (184, 89, 5.0), (174, 79, 6.0)):
+            sb.wash(cr, [(tx, 106), (tx, top), (tx + tw, top), (tx + tw, 106)], cst, 0.98, 0.15)
+            sb.wash(cr, [(tx - 1.0, top), (tx + tw * 0.5, top - tw * 1.5), (tx + tw + 1.0, top)], "#4a3a6a", 0.98, 0.15)
+        for (wx, wy) in ((170.0, 98), (176.4, 84), (184.0, 98)):
+            sb.wash(cr, [(wx, wy), (wx + 1.3, wy), (wx + 1.3, wy + 2.4), (wx, wy + 2.4)], "#ffcf7a", 0.8, 0.0)
+        # --- the hall: cold grey stone, coursed, darker toward its ends
+        wall = sb.wobble([(2, self.GROUND), (2, 148), (198, 148), (198, self.GROUND)], 0.5, 2)
+        pw = sb.wash(cr, wall, "#6b777f", 0.98, 0.4)
         cr.save()
-        pb.add(cr)
+        pw.add(cr)
         cr.clip()
-        rng = random.Random(self.seed + 3)
         blocks = []
         for row in range(14):
-            y = 152 + row * 8.6
-            x = 10 + (row % 2) * 8
-            blocks.append([(10, y), (190, y)])
-            while x < 190:
-                w = rng.uniform(13, 21)
-                blocks.append([(x, y), (x, y + 8.6)])
-                x += w
+            y = 150 + row * 8.2
+            x = 2 + (row % 2) * 8
+            blocks.append([(2, y), (198, y)])
+            while x < 198:
+                blocks.append([(x, y), (x, y + 8.2)])
+                x += rng.uniform(13, 21)
         B.detail_lines(cr, blocks, 0.38, INK, 0.3, taper=(1.0, 1.0, 1.0))
-        stipple(cr, 10, 150, 190, 268, 120, "#2a3338", 0.25, (0.2, 0.5), seed=12)
-        g = core.linear(10, 0, 190, 0, [(0.0, (0.0, 0.0, 0.0, 0.0)), (0.6, (0.0, 0.0, 0.0, 0.0)), (1.0, (0.05, 0.06, 0.1, 0.35))])
-        cr.set_source(g)
+        stipple(cr, 2, 148, 198, self.GROUND, 140, "#232c32", 0.25, (0.2, 0.5), seed=12)
+        cr.set_source(core.linear(2, 0, 198, 0, [(0.0, (0.03, 0.04, 0.08, 0.4)), (0.25, (0, 0, 0, 0.0)), (0.75, (0, 0, 0, 0.0)),
+                                                  (1.0, (0.03, 0.04, 0.08, 0.45))]))
         cr.paint()
+        cr.set_source(core.linear(0, 148, 0, 160, [(0.0, (0.05, 0.05, 0.1, 0.45)), (1.0, (0.05, 0.05, 0.1, 0.0))]))
+        cr.rectangle(2, 148, 196, 12)
+        cr.fill()
         cr.restore()
-        sb.ink_outline(cr, pb, 0.9, INK, 0.9)
-        roof = sb.wobble([(0, 152), (100, 92), (200, 152)], 0.6, 4)
-        pr = sb.wash(cr, roof, "#3e475c", 0.97, 0.5)
-        sb.hatch(cr, pr, 0.55, 2.4, 0.35, INK, 0.3)
+        sb.ink_outline(cr, pw, 0.9, INK, 0.9)
+        # --- the slate roof (seen from its long side) with a louvred steam vent on the ridge, a chimney
+        roof = [(-6, 150), (34, 104), (166, 104), (206, 150)]
+        pr = sb.wash(cr, roof, "#39435c", 0.98, 0.5)
         cr.save()
         pr.add(cr)
         cr.clip()
-        B.detail_lines(cr, [[(0, y), (200, y)] for y in range(100, 152, 5)], 0.3, INK, 0.3, taper=(1.0, 1.0, 1.0))
+        scallop_rows(cr, -6, 206, 104, 150, 3.2, 4.0, "#1e2538", 0.6)
+        cr.set_source(core.linear(0, 104, 0, 150, [(0.0, (0.75, 0.85, 1.0, 0.12)), (1.0, (0.05, 0.05, 0.12, 0.3))]))
+        cr.paint()
         cr.restore()
         sb.ink_outline(cr, pr, 0.9, INK, 0.9)
-        chn = [(142, 108), (142, 76), (158, 76), (158, 118)]
-        sb.ink_outline(cr, sb.wash(cr, chn, "#5f6672", 0.97, 0.4), 0.8, INK, 0.9)
-        # buttresses
-        for bx in (66, 130):
-            bt = [(bx - 4, 268), (bx - 3, 160), (bx + 3, 160), (bx + 4, 268)]
-            sb.ink_outline(cr, sb.wash(cr, bt, "#6c777e", 0.97, 0.35), 0.6, INK, 0.8)
-        # the window openings (filled per frame), deep reveals
+        seg_ink(cr, [(-6, 150.5), (34, 104), (166, 104), (206, 150.5)], 1.1, "#252b3c", 0.95)
+        vent = [(88, 104), (88, 88), (112, 88), (112, 104)]
+        sb.ink_outline(cr, sb.wash(cr, vent, "#5d6872", 0.98, 0.3), 0.6, INK, 0.9)
+        B.detail_lines(cr, [[(90, 91.5 + 3.0 * k), (110, 91.5 + 3.0 * k)] for k in range(4)], 0.9, "#1c2228", 0.9,
+                       taper=(1.0, 1.0, 1.0))
+        cap = [(85, 88.5), (100, 76), (115, 88.5)]
+        sb.ink_outline(cr, sb.wash(cr, cap, "#2c3448", 0.98, 0.3), 0.6, INK, 0.9)
+        self._vent = (100.0, 84.0)
+        chn = [(152, 112), (152, 92), (162, 92), (162, 116)]
+        sb.ink_outline(cr, sb.wash(cr, chn, "#566069", 0.98, 0.3), 0.6, INK, 0.9)
+        self._chimney = (157.0, 90.0)
+        # --- the two tall windows: deep stone reveals (glass + drums are drawn per frame)
         self._wins = []
         for (wx, sill) in self.WIN:
-            ww, wh = 30.0, 66.0
-            arch = _door_arch(wx - ww * 0.5, sill - wh, ww, wh, n=10)
-            outer = _door_arch(wx - ww * 0.5 - 3.0, sill - wh - 3.0, ww + 6.0, wh + 3.0, n=10)
-            sb.ink_outline(cr, sb.wash(cr, outer, "#5a646c", 0.97, 0.3), 0.6, INK, 0.85)
+            ww, wh = self.WIN_W, self.WIN_H
+            arch = _door_arch(wx - ww * 0.5, sill - wh, ww, wh, n=12)
+            outer = _door_arch(wx - ww * 0.5 - 3.5, sill - wh - 3.5, ww + 7.0, wh + 3.5, n=12)
+            sb.ink_outline(cr, sb.wash(cr, outer, "#808c93", 0.98, 0.3), 0.6, INK, 0.85)
             self._wins.append((wx, sill, ww, wh, arch))
-            sb.wash(cr, [(wx - ww * 0.5 - 4, sill), (wx + ww * 0.5 + 4, sill), (wx + ww * 0.5 + 5, sill + 3),
-                         (wx - ww * 0.5 - 5, sill + 3)], "#6c777e", 0.97, 0.3)
-        # the door at the right end, under its caged wisp-lamp
-        door = _door_arch(171.0, 236.0, 15.0, 32.0, n=8)
-        sb.ink_outline(cr, sb.wash(cr, _door_arch(168.0, 233.0, 21.0, 35.0, n=8), "#5a646c", 0.97, 0.3), 0.6, INK, 0.85)
-        pin = sb.wash(cr, door, "#163c3c", 0.99, 0.3)            # the doorway: the cold-lit wash-house inside
-        cr.save()
-        pin.add(cr)
-        cr.clip()
-        soft_glow(cr, 178.5, 256.0, 22.0, P["wisp"], 0.45)
-        cr.restore()
-        self._door = door
-        sb.wash(cr, [(166.0, 268.0), (192.0, 268.0), (194.0, 271.0), (164.0, 271.0)], "#6c777e", 0.97, 0.3)
-        # cobbles
-        street = [(-6, 266), (206, 266), (206, self.DH + 4), (-6, self.DH + 4)]
-        ps = sb.wash(cr, street, "#55616a", 0.97, 0.3)
+            sb.wash(cr, [(wx - ww * 0.5 - 5, sill), (wx + ww * 0.5 + 5, sill), (wx + ww * 0.5 + 6, sill + 3),
+                         (wx - ww * 0.5 - 6, sill + 3)], "#7c878e", 0.98, 0.3)
+        # --- the great door: a round arch of wedge stones with a keystone, a deep reveal, a step
+        dx, dy, dw, dh = self.DOOR
+        r_ = dw * 0.5
+        ring = []
+        for k in range(15):
+            a0 = math.pi + math.pi * k / 15.0
+            a1 = math.pi + math.pi * (k + 1) / 15.0
+            ring.append([(dx + r_ + math.cos(a0) * r_, dy + r_ + math.sin(a0) * r_),
+                         (dx + r_ + math.cos(a0) * (r_ + 7.0), dy + r_ + math.sin(a0) * (r_ + 7.0)),
+                         (dx + r_ + math.cos(a1) * (r_ + 7.0), dy + r_ + math.sin(a1) * (r_ + 7.0)),
+                         (dx + r_ + math.cos(a1) * r_, dy + r_ + math.sin(a1) * r_)])
+        for k, q in enumerate(ring):
+            sb.ink_outline(cr, sb.wash(cr, q, "#8e9aa0" if k != 7 else "#a3aeb3", 0.99, 0.2), 0.45, INK, 0.8)
+        for side in (-1, 1):                          # the jambs
+            jx = dx - 7.0 if side < 0 else dx + dw
+            jamb = [(jx, self.GROUND), (jx, dy + r_), (jx + 7.0, dy + r_), (jx + 7.0, self.GROUND)]
+            pj = sb.wash(cr, jamb, "#848f96", 0.99, 0.25)
+            cr.save()
+            pj.add(cr)
+            cr.clip()
+            B.detail_lines(cr, [[(jx, dy + r_ + 12.0 * k), (jx + 7.0, dy + r_ + 12.0 * k)] for k in range(1, 6)], 0.35, INK,
+                           0.5, taper=(1.0, 1.0, 1.0))
+            cr.restore()
+            sb.ink_outline(cr, pj, 0.45, INK, 0.85)
+        self._door = _door_arch(dx, dy, dw, dh, n=14)
+        sb.wash(cr, [(dx - 9.0, self.GROUND), (dx + dw + 9.0, self.GROUND), (dx + dw + 11.0, self.GROUND + 4.0),
+                     (dx - 11.0, self.GROUND + 4.0)], "#7c878e", 0.99, 0.3)
+        # --- the street: wet-dark cobbles
+        street = [(-6, self.GROUND + 3.0), (206, self.GROUND + 3.0), (206, self.DH + 4), (-6, self.DH + 4)]
+        ps = sb.wash(cr, street, "#46525a", 0.98, 0.3)
         cr.save()
         ps.add(cr)
         cr.clip()
         arcs = []
-        yy = 268.0
+        yy = self.GROUND + 4.0
         row = 0
         while yy < self.DH + 4:
             xx = -8.0 - (row % 2) * 4.0
             while xx < 210:
-                w_ = rng.uniform(7.0, 10.0)
-                arcs.append([(xx + 0.8, yy + 2.0), (xx + w_ * 0.5, yy - 0.4), (xx + w_ - 0.8, yy + 2.0)])
+                w_ = rng.uniform(7.0, 10.0) + row * 0.6
+                arcs.append([(xx + 0.8, yy + 2.0 + row * 0.3), (xx + w_ * 0.5, yy - 0.4), (xx + w_ - 0.8, yy + 2.0 + row * 0.3)])
                 xx += w_
-            yy += 4.0
+            yy += 3.8 + row * 0.7
             row += 1
-        B.detail_lines(cr, arcs, 0.4, INK, 0.4)
+        B.detail_lines(cr, arcs, 0.4, INK, 0.42)
         cr.restore()
+
+    # -- timing (scene seconds)
+    def times(self):
+        e = self.e
+        t0, t1 = e("wash_walk", 0.0), e("wash_door", 9.0)
+        return t0, t1, t1 + 0.05, t1 + 0.4               # walk start, arrival, doors start, he steps in
 
     def anim(self, cr, t):
         if not hasattr(self, "_wins"):
             return
+        t0, t1, t_open, t_in = self.times()
+        opn = smooth((t - t_open) / 0.55)
         for i, (sx_, sy_, r) in enumerate(self._stars):
             a = 0.5 + 0.5 * math.sin(t * (1.2 + 0.3 * (i % 4)) + i * 2.1)
             if a > 0.65:
                 fx.sparkle(cr, sx_, sy_, r * 1.8 * a, "#e8f0ff", 0.5 * (a - 0.65) / 0.35 + 0.1)
+        # cold steam from the vent and the chimney
+        for (vx, vy, k0, sz) in ((self._vent[0], self._vent[1], 0.0, 1.0), (self._chimney[0], self._chimney[1], 0.5, 0.7)):
+            for j in range(5):
+                u = (t * 0.17 + j * 0.2 + k0) % 1.0
+                soft_glow(cr, vx + u * 12.0 * sz + 2.0 * math.sin(u * 4.0 + j), vy - u * 30.0 * sz, (3.0 + 7.0 * u) * sz,
+                          "#b6cad2", 0.3 * math.sin(math.pi * min(1.0, u * 1.2)))
+        # the windows: sickly teal, a drum's porthole behind each, laundry tumbling
         for k, (wx, sill, ww, wh, arch) in enumerate(self._wins):
-            pulse = 0.78 + 0.22 * math.sin(t * 2.2 + k * 1.3) + 0.06 * math.sin(t * 13.0 + k)
-            pw = sb.wash(cr, arch, core.mix("#10302f", P["teal"], 0.62 * pulse), 0.98, 0.3)
+            pulse = 0.8 + 0.2 * math.sin(t * 2.2 + k * 1.3) + 0.05 * math.sin(t * 13.0 + k)
+            soft_glow(cr, wx, sill + 14.0, 28.0, P["wisp"], 0.12 * pulse)          # its light on the cobbles
+            pw = sb.wash(cr, arch, core.mix("#0f2c2c", P["teal"], 0.62 * pulse), 0.99, 0.3)
             cr.save()
             pw.add(cr)
             cr.clip()
-            soft_glow(cr, wx, sill - wh * 0.4, 34.0, P["wisp"], 0.3 * pulse)
-            # leading
-            lines = [[(wx, sill - wh), (wx, sill)]] + [[(wx - ww, sill - wh * q), (wx + ww, sill - wh * q)] for q in (0.3, 0.62)]
-            B.detail_lines(cr, lines, 0.5, "#14201f", 0.75, taper=(1.0, 1.0, 1.0))
-            # a drum's porthole behind the glass, its laundry tumbling
-            cx, cy, r = wx, sill - wh * 0.36, ww * 0.3
-            cr.new_path()
-            core.circle(cr, cx, cy, r + 2.2)
-            core.src(cr, "#b49248", 0.97)
-            cr.fill()
-            cr.new_path()
-            core.circle(cr, cx, cy, r)
-            core.src(cr, "#0d2526", 0.97)
-            cr.fill()
-            ang = t * 2.4 + k * 1.7
-            for j, c in enumerate((P["vermilion"], P["azure"], P["bone"], P["ochre"])):
-                a = ang + j * 1.6
+            soft_glow(cr, wx, sill - wh * 0.45, 40.0, P["wisp"], 0.32 * pulse)
+            for (cx, cy, r, sp_) in ((wx - ww * 0.18, sill - wh * 0.34, ww * 0.26, 1.0), (wx + ww * 0.22, sill - wh * 0.62, ww * 0.16, 0.7)):
                 cr.new_path()
-                core.ellipse(cr, cx + math.cos(a) * r * 0.42, cy + math.sin(a) * r * 0.42 + 0.5, r * 0.36, r * 0.24, a)
-                core.src(cr, c, 0.88)
+                core.circle(cr, cx, cy, r + 2.4)
+                core.src(cr, "#b49248", 0.95)
                 cr.fill()
-            fx.sparkle(cr, cx - r * 0.45, cy - r * 0.45, r * 0.3, "#d8fff6", 0.55)
+                cr.new_path()
+                core.circle(cr, cx, cy, r)
+                core.src(cr, "#0c2425", 0.97)
+                cr.fill()
+                ang = t * 2.4 * sp_ + k * 1.7
+                for j, c in enumerate((P["vermilion"], P["azure"], P["bone"], P["ochre"])):
+                    a = ang + j * 1.6
+                    cr.new_path()
+                    core.ellipse(cr, cx + math.cos(a) * r * 0.42, cy + math.sin(a) * r * 0.42 + 0.5, r * 0.36, r * 0.24, a)
+                    core.src(cr, c, 0.88)
+                    cr.fill()
+                fx.sparkle(cr, cx - r * 0.45, cy - r * 0.45, r * 0.3, "#d8fff6", 0.55)
+            B.detail_lines(cr, [[(wx, sill - wh), (wx, sill)]] + [[(wx - ww, sill - wh * q), (wx + ww, sill - wh * q)]
+                                                                for q in (0.33, 0.66)], 0.6, "#14201f", 0.75, taper=(1.0, 1.0, 1.0))
             cr.restore()
             sb.ink_outline(cr, pw, 0.9, INK, 0.9)
-        # the hanging board
-        sa = 0.06 * math.sin(t * 1.1)
+        # the WASH-HOUSE board on two chains over the door
+        sa = 0.05 * math.sin(t * 1.1)
         cr.save()
         cr.translate(100, 160)
         cr.rotate(sa)
-        board = [(-36, 0), (36, 0), (36, 14), (-36, 14)]
-        sb.ink(cr, [(-28, -6), (-28, 0)], 0.6, INK, 0.9)
-        sb.ink(cr, [(28, -6), (28, 0)], 0.6, INK, 0.9)
-        sb.ink_outline(cr, sb.wash(cr, board, "#6e5034", 0.98, 0.45), 0.7, INK, 0.9)
-        core.text(cr, "WASH-HOUSE", 0, 10.4, 9.0, sb.SIGN_FONT, P["gold_hi"], align="center", alpha_=0.95)
+        sb.ink(cr, [(-26, -10), (-26, 0)], 0.55, "#2a2a30", 0.95)
+        sb.ink(cr, [(26, -10), (26, 0)], 0.55, "#2a2a30", 0.95)
+        board = [(-34, 0), (34, 0), (34, 14), (-34, 14)]
+        sb.ink_outline(cr, sb.wash(cr, board, "#2c4a6c", 0.99, 0.45), 0.7, INK, 0.9)
+        cr.new_path()
+        core.polygon(cr, [(-32.5, 1.5), (32.5, 1.5), (32.5, 12.5), (-32.5, 12.5)])
+        cr.set_line_width(0.5)
+        core.src(cr, P["gold"], 0.9)
+        cr.stroke()
+        core.text(cr, "WASH-HOUSE", 0, 10.3, 8.6, sb.SIGN_FONT, P["gold_hi"], align="center", alpha_=0.95)
         cr.restore()
-        # cold steam from the chimney
-        for j in range(5):
-            u = (t * 0.2 + j * 0.2) % 1.0
-            cr.new_path()
-            core.circle(cr, 150 + 6.0 * math.sin(u * 4 + j) + u * 12, 72 - u * 50, 4.0 + u * 7.0)
-            core.src(cr, "#b8ccd2", 0.24 * (1 - u))
-            cr.fill()
-        # the caged wisp-lamp by the door
-        sb._lantern(cr, 196, 226, t, phase=0.3, scale=0.9, warm=False)
-        # the dragon, small, trudging to the door with his laundry sack. Constant pace, then a short
-        # slow-down at the door (the walk phase comes from the distance actually travelled, so his
-        # feet never skate); the door swings open spilling cold wisp-light on him and he steps inside
-        # as the picture goes dark -- S1 opens in there.
-        e = self.e
-        t0, t1 = e("wash_walk", 0.0), e("wash_door", 9.0)
-        x0, x1 = 64.0, 163.0
-        u = clamp((t - t0) / max(0.1, t1 - t0))
-        k = 0.82                                   # constant pace until here, then ease into the stop
-        if u < k:
-            prog = u / (k + 0.5 * (1.0 - k))
-        else:
-            w = (u - k) / (1.0 - k)
-            prog = (k + (1.0 - k) * (w - 0.5 * w * w)) / (k + 0.5 * (1.0 - k))
-        x = lerp(x0, x1, prog)
-        walk = 1.0 - smooth((u - 0.9) / 0.1)
-        # the door: opens over 0.45 s from his arrival; he takes one step into its light (the picture
-        # is going black by then: S1 finds him inside)
-        opn = smooth((t - t1) / 0.45)
-        step = clamp((t - (t1 + 0.3)) / 0.6)
-        if step > 0.0:
-            x = lerp(x1, 171.0, core.inout_sine(step))
-            walk = math.sin(math.pi * step)
-        alpha = 0.95
-        dist = x - x0
+        # the caged wisp-lamp beside the door
+        town_lantern(cr, 128.0, 196.0, t, phase=0.3, scale=0.95, side=1, warm=False)
+        # the doorway: the cold-lit hall inside (drums in a row, receding), behind the doors
+        dx, dy, dw, dh = self.DOOR
+        pd = sb.wash(cr, self._door, "#0e2a2c", 0.99, 0.1)
+        cr.save()
+        pd.add(cr)
+        cr.clip()
+        glow_in = 0.25 + 0.75 * opn
+        soft_glow(cr, dx + dw * 0.5, dy + dh * 0.6, dw * 1.1, P["wisp"], 0.55 * glow_in)
+        # the hall inside: flagstones running away to a far wall, and a tumbling drum on either side of
+        # the aisle (dark oak barrels, brass-rimmed portholes glowing faintly): the room S1 opens in
+        vx, vy = dx + dw * 0.5, dy + dh * 0.5
+        B.detail_lines(cr, [[(vx + (q - 0.5) * 6.0, vy + 6.0), (dx - 4.0 + dw * 1.08 * q, dy + dh + 1.0)]
+                            for q in (0.0, 0.33, 0.67, 1.0)], 0.32, "#5fb8a8", 0.3 * glow_in, taper=(0.2, 1.0, 1.0))
+        sb.wash(cr, [(vx - 9.0, vy + 6.0), (vx + 9.0, vy + 6.0), (vx + 9.0, vy - 14.0), (vx - 9.0, vy - 14.0)], "#123634",
+                0.6, 0.0)
+        for side in (-1, 1):
+            for (u, r) in ((0.0, 6.2), (0.62, 3.0)):
+                px_ = lerp(vx + side * dw * 0.4, vx + side * 8.0, u)
+                py_ = lerp(dy + dh * 0.74, vy + 1.0, u)
+                cr.new_path()
+                core.ellipse(cr, px_ + side * r * 0.55, py_, r * 1.1, r * 1.15)
+                core.src(cr, "#1a1410", 0.9)
+                cr.fill()
+                cr.new_path()
+                core.circle(cr, px_, py_, r * 0.72)
+                core.src(cr, "#8a7038", 0.85 * glow_in)
+                cr.fill()
+                cr.new_path()
+                core.circle(cr, px_, py_, r * 0.56)
+                core.src(cr, core.mix("#0f2e2c", "#3e9a8c", 0.7 * glow_in), 0.95)
+                cr.fill()
+        cr.restore()
+        # the enchanted doors swing open by themselves (self-service), spilling cold light
         if opn > 0.01:
-            # the cold light spilling out across the cobbles (and onto him)
-            soft_glow(cr, 179.0, 270.0, 26.0 * opn, P["wisp"], 0.35 * opn)
-        self._draw_door_leaf(cr, opn)
-        if alpha > 0.01:
-            pose = ch.DragonPose(facing=1, walk=walk, phase=ch.dragon_walk_phase(dist, 0.12, 1), mood="tired",
-                                 wings=-0.8, hunch=0.8, tail_drag=0.3, seed=5,
-                                 head_turn=0.25 * smooth((u - 0.85) / 0.15) * (1.0 - opn),
-                                 far=ch.Arm("carry_bag", hold=lambda c, f: self._sack(c, f)))
-            storybook_dragon_posed(cr, x, 284.0, 0.12, t, pose, alpha=alpha, tint=0.18)
-            if opn > 0.01:
-                soft_glow(cr, x + 6.0, 262.0, 18.0, P["wisp"], 0.18 * opn * alpha)
+            cr.save()
+            cr.new_path()
+            core.polygon(cr, [(dx - 6.0, self.GROUND + 0.5), (dx + dw + 6.0, self.GROUND + 0.5), (dx + dw + 26.0 * opn, self.DH + 4),
+                              (dx - 26.0 * opn, self.DH + 4)])
+            cr.clip()
+            cr.set_source(core.linear(0, self.GROUND, 0, self.DH, [(0.0, core.alpha(P["wisp"], 0.42 * opn)),
+                                                                    (1.0, core.alpha(P["wisp"], 0.0))]))
+            cr.paint()
+            cr.restore()
+        self._door_leaves(cr, opn)
+        sb.ink_outline(cr, _poly(cr, self._door), 0.8, INK, 0.9)
+        # the dragon
+        self._dragon(cr, t, opn)
 
-    def _draw_door_leaf(self, cr, opn):
-        """The oak door leaf on its left hinge: shut it covers the doorway; it swings inward (narrowing
-        toward the hinge, darkening as it turns away from the moon)."""
-        dx, dy, dw, dh = 171.0, 236.0, 15.0, 32.0
-        k = 1.0 - 0.86 * clamp(opn)
+    def _door_leaves(self, cr, opn):
+        """Two oak leaves on their hinges at the jambs; open = they swing inward (each narrows toward its
+        hinge and darkens as it turns from the moonlight)."""
+        dx, dy, dw, dh = self.DOOR
+        k = 1.0 - 0.88 * clamp(opn)
         if k <= 0.02:
             return
         cr.save()
         cr.new_path()
         core.polygon(cr, self._door)
         cr.clip()
-        cr.translate(dx, 0.0)
-        cr.scale(k, 1.0)
-        cr.translate(-dx, 0.0)
-        leaf = [(dx, dy - 2.0), (dx + dw, dy - 2.0), (dx + dw, dy + dh), (dx, dy + dh)]
-        pl = sb.wash(cr, leaf, core.mix("#3c2a1c", "#1e140e", 0.6 * clamp(opn)), 0.99, 0.3)
-        B.detail_lines(cr, [[(dx + dw * j / 3.0, dy + 2.0), (dx + dw * j / 3.0, dy + dh)] for j in (1, 2)], 0.4, INK, 0.5,
-                       taper=(1.0, 1.0, 1.0))
-        B.detail_lines(cr, [[(dx + 0.5, dy + dh * 0.35), (dx + dw * 0.7, dy + dh * 0.35)],
-                            [(dx + 0.5, dy + dh * 0.78), (dx + dw * 0.7, dy + dh * 0.78)]], 0.8, "#2b2522", 0.95,
-                       taper=(1.0, 1.0, 1.0))
-        cr.new_path()
-        core.circle(cr, dx + dw * 0.8, dy + dh * 0.56, 0.9)
-        core.src(cr, "#b49248", 0.95)
-        cr.fill()
-        sb.ink_outline(cr, pl, 0.5, INK, 0.85)
+        for side in (-1, 1):
+            hinge = dx if side < 0 else dx + dw
+            cr.save()
+            cr.translate(hinge, 0.0)
+            cr.scale(k, 1.0)
+            cr.translate(-hinge, 0.0)
+            x0, x1 = (dx, dx + dw * 0.5) if side < 0 else (dx + dw * 0.5, dx + dw)
+            leaf = [(x0, dy - 2.0), (x1, dy - 2.0), (x1, dy + dh), (x0, dy + dh)]
+            pl = sb.wash(cr, leaf, core.mix("#5a3a24", "#1e140e", 0.65 * clamp(opn)), 0.99, 0.35)
+            B.detail_lines(cr, [[(x0 + (x1 - x0) * j / 3.0, dy + 2.0), (x0 + (x1 - x0) * j / 3.0, dy + dh)] for j in (1, 2)],
+                           0.4, INK, 0.5, taper=(1.0, 1.0, 1.0))
+            for hy in (dy + dh * 0.38, dy + dh * 0.82):
+                xa, xb = (x0 + 0.5, x1 - 4.0) if side < 0 else (x1 - 0.5, x0 + 4.0)
+                B.detail_line(cr, [(xa, hy), (xb, hy)], 1.1, "#24221f", 0.95, taper=(1.0, 1.0, 0.7))
+            cr.new_path()
+            cr.arc(x1 - 3.0 if side < 0 else x0 + 3.0, dy + dh * 0.6, 1.3, 0, TAU)
+            cr.set_line_width(0.5)
+            core.src(cr, "#b49248", 0.95)
+            cr.stroke()
+            sb.ink_outline(cr, pl, 0.5, INK, 0.85)
+            cr.restore()
         cr.restore()
-        sb.ink_outline(cr, _poly(cr, self._door), 0.7, INK, 0.9)
+
+    def _dragon(self, cr, t, opn):
+        t0, t1, t_open, t_in = self.times()
+        x0, x1 = -24.0, 98.0
+        u = clamp((t - t0) / max(0.1, t1 - t0))
+        k = 0.8                                     # constant pace, then ease into the stop at the door
+        if u < k:
+            prog = u / (k + 0.5 * (1.0 - k))
+        else:
+            w = (u - k) / (1.0 - k)
+            prog = (k + (1.0 - k) * (w - 0.5 * w * w)) / (k + 0.5 * (1.0 - k))
+        x = lerp(x0, x1, prog)
+        y = self.STREET
+        sc = 0.12
+        walk = 1.0 - smooth((u - 0.88) / 0.12)
+        dist = x - x0
+        step = clamp((t - t_in) / 0.75)              # up onto the step, into the doorway
+        inside = 0.0
+        if step > 0.0:
+            e_ = core.inout_sine(step)
+            y = lerp(self.STREET, self.GROUND + 1.0, e_)
+            sc = lerp(0.12, 0.112, e_)
+            x = lerp(x1, 100.0, e_)
+            walk = math.sin(math.pi * step) * 0.8
+            dist += 6.0 * step
+            inside = smooth((step - 0.35) / 0.4)
+        look_up = smooth((t - (t1 - 0.25)) / 0.35) * (1.0 - smooth((t - (t_in + 0.1)) / 0.3))
+        pose = ch.DragonPose(facing=1, turn=-0.15 * look_up, walk=walk, phase=ch.dragon_walk_phase(dist, sc, 1),
+                             mood="tired", wings=-0.85, hunch=0.8 + 0.1 * look_up, tail_drag=0.35, seed=5,
+                             head_nod=0.35 * look_up - 0.2 * (1.0 - look_up), look=(0.2, -0.6 * look_up),
+                             far=ch.Arm("carry_bag", hold=lambda c, f: self._sack(c, f)))
+        cr.save()
+        if inside > 0.0:
+            # once he is on the threshold the jambs and the arch hide him: he is in the doorway
+            cr.new_path()
+            core.polygon(cr, self._door)
+            cr.rectangle(-10, self.GROUND + 0.5, self.DW + 20, 40)
+            cr.clip()
+        B.contact_shadow(cr, x, y, 14.0, 2.4, alpha=0.3 * (1.0 - inside))
+        if opn > 0.01:
+            # backlit by the doorway: a teal halo behind him
+            soft_glow(cr, x + 2.0, y - 30.0, 34.0, P["wisp"], 0.22 * opn)
+        rig = storybook_dragon_posed(cr, x, y, sc, t, pose, alpha=0.96, tint=0.12)
+        if opn > 0.01:
+            # silhouetted against the cold light as he steps in: a dark teal veil over him + a cold rim
+            cr.push_group()
+            ch.draw_dragon(cr, x, y, sc, pose, sb.STORYBOOK_LIGHT, t)
+            pat = cr.pop_group()
+            core.src(cr, "#0c2224", 0.55 * opn * (0.4 + 0.6 * step))
+            cr.mask(pat)
+        cr.restore()
+        return rig
 
     @staticmethod
     def _sack(cr, f):

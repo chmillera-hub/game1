@@ -1415,33 +1415,36 @@ def draw_insert(cr, t, u, pulse, st):
 
 POV_LIGHT = B.Light(key=(1.12, 0.80, 0.84), ambient=(0.36, 0.28, 0.44), rim=(1.0, 0.55, 0.78), rim_strength=0.7,
                     direction=(0.55, -0.83), rim_direction=(0.8, -0.6), name="s4_pov")
-POV_WRIST = (640.0, 780.0)
-POV_ANGLE = -0.30                      # the fingers point away (toward the room), a little up: the word reads
+# his RIGHT hand, from his own eyes: the forearm comes up from the lower RIGHT, the fingers point
+# away to the upper left, the back of the hand toward him -- so the thumb sits on the near
+# (lower-left) side, as on a real right hand (the hand is rotated, never mirrored)
+POV_WRIST = (1280.0, 780.0)
+POV_ANGLE = math.pi + 0.30             # the fingers point away (toward the room), a little up
 POV_SIZE = 700.0
 
 
 def draw_hand_pov(cr, t, u, pulse):
-    """His own forearm up from the bottom of frame, the back of the hand toward him (and us), SMILE
-    big and readable -- the ink dry now, a little smudged. It rises into place (the cut is on the
-    action), hangs there with a small tremor, and the fingers slowly curl in."""
+    """His own right forearm up from the bottom right of frame, the back of the hand toward him
+    (and us), SMILE big and readable -- the ink dry now, a little smudged. It rises into place
+    (the cut is on the action), hangs there with a small tremor, and the fingers slowly curl in."""
     from film.lib.characters import dragon as DR
     M = DR.dragon_mats()
     L = POV_LIGHT.with_(exposure=0.95 + 0.06 * min(1.2, pulse))
     rise = core.out_cubic(core.clamp(u / 0.22, 0.0, 1.0))
     trem = 2.2 * math.sin(t * 13.0) * math.sin(t * 2.1)
-    ang = POV_ANGLE + 0.012 * math.sin(t * 1.6) + 0.06 * (1.0 - rise)
-    wx = POV_WRIST[0] - 40.0 * (1.0 - rise)
+    ang = POV_ANGLE - 0.012 * math.sin(t * 1.6) - 0.06 * (1.0 - rise)
+    wx = POV_WRIST[0] + 40.0 * (1.0 - rise)
     wy = POV_WRIST[1] + 190.0 * (1.0 - rise) + trem
     lw = 4.0
-    # the coat sleeve from the bottom-left corner, the plum cuff
+    # the coat sleeve from the bottom-right corner, the plum cuff
     ca, sa = math.cos(ang), math.sin(ang)
-    sl, so = B.tube_paths(cr, [(wx - ca * 720 - 120, wy - sa * 720 + 260), (wx - ca * 300, wy - sa * 300 + 30), (wx - ca * 36, wy - sa * 36)],
+    sl, so = B.tube_paths(cr, [(wx - ca * 720 + 120, wy - sa * 720 + 260), (wx - ca * 300, wy - sa * 300 + 30), (wx - ca * 36, wy - sa * 36)],
                           [150.0, 128.0, 112.0], lw, samples=5, tension=0.7)
     B.shade(cr, sl, M["coat"], L, lw, outline=so, size=420)
     cr.save()
     sl.add(cr)
     cr.clip()
-    cr.set_source(core.linear(wx + 200, wy - 200, wx - 300, wy + 300, [core.alpha("#ff6aa6", 0.22), core.alpha("#ff6aa6", 0.0)]))
+    cr.set_source(core.linear(wx - 200, wy - 200, wx + 300, wy + 300, [core.alpha("#ff6aa6", 0.22), core.alpha("#ff6aa6", 0.0)]))
     cr.paint()
     cr.restore()
     cs, co = B.ellipse_paths(cr, wx - ca * 28, wy - sa * 28, 58.0, 116.0, lw, ang)
@@ -1455,8 +1458,10 @@ def draw_hand_pov(cr, t, u, pulse):
     cr.set_source(hand)
     cr.paint()
     _light_hand(cr, hand, wx, wy, ang, pulse)
+    # the print, turned to read upright for him (and us): its frame runs from the fingers back
+    # toward the wrist, so it is centred a little further along the hand to stay on its back
     cr.save()
-    cr.translate(wx + ca * 0.21 * POV_SIZE, wy + sa * 0.21 * POV_SIZE)
-    cr.rotate(ang)
+    cr.translate(wx + ca * 0.29 * POV_SIZE, wy + sa * 0.29 * POV_SIZE)
+    cr.rotate(ang - math.pi)
     _print_cb(0.92, 1.0, 0.0, t, POV_SIZE)(cr)
     cr.restore()

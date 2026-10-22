@@ -487,6 +487,7 @@ palm_w=1, curl_add=0, knuckles=True, detail=2, hold_behind=False)`
 | `elev` | camera elevation, default 0.12 |
 | `shadow` | draw the contact shadow |
 | `seed` | per-instance idle variation |
+| `seat_prop` | seated only: a callback, called as seat_prop(cr, proj, feet), that draws a small seat his coat drapes over (the S1 stool) in body-local coords (origin = the ground point under the pelvis, 1 unit = 1 px at scale 1), after his far leg and the coat's back flap, before the coat, near leg and lap, so the seat shows in front of the coat tail and behind his shins. feet is a list of {hip, knee, ankle, side} in body space (proj.xy maps them), e.g. to clip the far shin out. Draw the whole stool in it with `P.draw_stool(cr, 0, 0, 1.0, ...)` |
 
 ### Arm(gesture, amt=1, prev="rest", hold=None, stamp=None, target=None, hand=None, phase=0)
 
@@ -1488,6 +1489,8 @@ bench = P.draw_garden_bench(cr, x, y, scale, light, t, yaw=0.0, elev=0.12, lengt
   part="all", wobble=0)`: the three-legged milking stool, far too small for the dragon (S1).
   * The anchor is the sitter's anchor. The seat top is `STOOL_SEAT_H` = 72.
   * `part="back"` draws two legs and the seat; `part="front"` draws the front leg.
+  * Under the dragon, draw it from his `DragonPose(seat_prop=...)` callback instead: the coat's
+    back flap would otherwise hide the seat, and the front leg would paint over his shins.
   * `wobble` rocks it, e.g. `B.wobble(t, t_sit) * 0.04` as he sits.
   * It returns `PropRig(seat, ground)`.
 * `P.draw_washhouse_bench(cr, x, y, scale, light, t, yaw=0, elev=0.12, length=260,

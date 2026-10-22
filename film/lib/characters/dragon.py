@@ -144,6 +144,12 @@ class DragonPose:
     damp      0..1 rain-soaked (darker coat/scarf, droopier fringe)
     anchor    "ground" (default: ground point below the pelvis) or "seat" (the seat point)
     elev      camera elevation (0 eye level .. 0.3 from above); shadow: draw the contact shadow
+    seat_prop callback seat_prop(cr, proj, feet) for a small seat his coat drapes over (the S1
+              stool): called only when seated (sit >= 0.6), in body-local coords (origin = the
+              ground point below the pelvis, 1 unit = 1 px at scale 1.0), AFTER his far leg and
+              the coat's back flap and BEFORE the coat, his near leg and the lap -- so the seat
+              shows in front of the coat tail and behind his shins. feet: [{hip, knee, ankle,
+              side}] in body space (proj.xy() -> local 2D), e.g. to clip the far shin out
     """
     facing: int = 1
     turn: float = 0.0
@@ -177,6 +183,7 @@ class DragonPose:
     elev: float = ELEV
     shadow: bool = True
     seed: int = 0
+    seat_prop: object = None
 
     def with_(self, **kw):
         return replace(self, **kw)
@@ -420,6 +427,12 @@ def draw_dragon(cr, x, y, scale=1.0, pose=None, light=None, t=0.0, detail=None):
         _coat(q)
     else:
         _coat_back_flap(q)
+        if pose.seat_prop is not None:          # a seat between the coat tail and his legs
+            cr.save()
+            cr.new_path()
+            pose.seat_prop(cr, proj, S["feet"])
+            cr.restore()
+            cr.new_path()
         _coat(q)
         _leg(q, near_side)
         _lap(q)

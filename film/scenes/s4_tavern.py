@@ -24,7 +24,9 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
 1  EXT_IN    0.0 -> s4_smile (3.6). The street at night, a slow push from the wide to a two-shot
    framed on the stamp. BLOCKING: the troll (leather jerkin) guards the door from its LEFT side,
    in front of the big ground-floor window; the dragon walks in from the left (feet planted by
-   distance, eyes on the cobbles, wings drooped) and stops before that window -- so his
+   distance, eyes on the cobbles, wings drooped, the apothecary's sack from S3 still in his LEFT
+   hand) and stops before that window on a settling step (the rear foot comes up beside the
+   planted one -- no skate) -- so his
    outstretched hand and the stamp coming down on it are silhouetted against the hot glass (its
    middle panes are kept clear of patrons). Faces stay apart: the hand is at arm's length.
    ACTING: the troll presents the stamp at chest height, bored, eyes sliding over as he arrives.
@@ -44,27 +46,32 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    pulses on the skin; at the end his fingers curl in a little (he takes it in). The print is
    the library mark (P.smile_stamp / P.draw_smile_mark, seed 0, angle -0.1) so S5-S7 match.
 3  CHORUS    s4_inside -> +1.8 s. MATCH CUT: the word SMILE -> a row of identical grins. Tight on
-   the long table: five patrons facing us (goblin, dwarf, satyr, elf, minotaur), the back of the
+   the long table: five patrons facing us on their oak form (goblin, dwarf, satyr, elf,
+   minotaur), the back of the
    hall soft behind them. One volley of six HAs on ONE laugh clock -- heads back on the same
-   frame, tankards thrown up and OUT in a toast together (never by the ear) -- then all stop on
+   frame, tankards thrown up HIGH in a toast together (never by the ear) -- then all stop on
    the same frame into the same frozen, polite grin. Funny, then eerie. A slow truck along them.
 4  INT_A     -> s4_lookbouncer + 0.85 (one continuous shot). WIDE on the hall: the cold blue
    doorway (left) with the troll filling it, arms folded; the dragon just inside, small and dark;
    the band on a low dais under the house banner (an embroidered shield with a flagon -- thread,
-   not a lamp): satyr fiddler, dwarf tabor-drummer (felt cap), goblin shawm-player; the table
+   not a lamp): satyr fiddler, dwarf tabor-drummer (dark braided beard hiding his mouth, a teal
+   tunic, a wooden tabor laced with rope), goblin shawm-player; the table
    right; standing laughers; a soft-focus foreground table corner (tankards, candle) frames the
    bottom left. The room bursts again on the clock; he tries a small smile... it doesn't take.
    The camera starts a long, eased push in on him through the laugh (it lands as the laugh stops).
    THOUGHT -> GLANCE -> BREATH -> LINE: his eyes drop (thought, a blink: the decision), flick to
    the goblin beside him (glance), chest up, brows lift into a hopeful look (breath) -- and at
-   s4_l1, in the hush with the whole room frozen in its grin, he leans in with an open palm and
-   speaks softly ("Can I tell you something? Lately I--"), thin pale-gold ripples leaving his mouth.
+   s4_l1, in the hush with the whole room frozen in its grin, he leans in, his stamped hand
+   turning over to an open palm, and speaks softly ("Can I tell you something? Lately I--"), thin
+   pale-gold ripples leaving his mouth.
    s4_swell: the band SURGES (bowing doubles, the drummer's sticks fly, the shawm blasts), the
    room's light flares (exposure + bloom + lanterns), triple arcs of sound roll out of the band
    BEHIND him on every beat and a storm of hot-pink notes swarms round his head (swallowed before
-   they cross his face); his ripples are crushed mid-air; the camera thumps and shakes. He winces,
-   shrinks back, the open hand pulls in to his chest -- his mouth keeps moving under the noise
-   (lip-synced to the real line, which is cut off). The swell eases off before the heads turn.
+   they cross his face); his ripples are crushed mid-air; the camera thumps and shakes. He
+   FLINCHES (eyes squeezed, head jerked away from the band, shoulders up), then crushed -- brows
+   knit up, eyes down and away -- the hand turns back over and pulls in to his chest; his mouth
+   keeps moving under the noise (lip-synced to the real line, which is cut off). The swell eases
+   off before the heads turn.
    s4_turn: a few patrons stop MID-laugh (mouth and toast frozen where they were; the forgotten
    toasts then sink) and their heads snap round to stare; everyone else laughs on. His eyes dart
    between the starers; hurt settles on his face; his hand drops.
@@ -73,21 +80,25 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    (no stray blink: the eyes ARE the action). CUT ON THE ACTION.
 5  INT_B     -> s4_l2 end + 0.35. Two-shot creeping in on the troll in the cold doorway (grounded
    in a pool of night light, the hall soft behind), the goblin in the foreground looking up at
-   him. The troll's eyes slide over first, then his head. s4_l2 "Keep it light, buddy.": a slow
-   flat jaw, heavy bored lids, a tiny shrug on "buddy". The words land: the dragon blinks.
+   him (his face kept above the caption band). The troll's eyes slide over first, then his head.
+   s4_l2 "Keep it light, buddy.": a slow flat jaw that still closes between Keep / it / light /
+   bud-dy, a heavy dip of the head on each stressed word, heavy bored lids, a tiny shrug on
+   "buddy". The words land: the dragon blinks.
 6  INT_C     -> s4_exit + 0.9. MCU, the room soft, only he is sharp: he turns away from the troll
    toward us, eyes dropping; at s4_lookhand the stamped hand comes up --
    POV (cut on the hand's rise, ~1.2 s): HIS view of the back of his own hand, SMILE big and
    legible, a small tremor, the fingers slowly curling in -- and behind it, out of focus, the
    long table still toasting on the clock. (The irony lands here.)
-   -- back on him: a small sigh through the nose (eyes close, wings sag, a curl of grey smoke),
-   the hand lowers, eyes to the door, and at s4_exit he turns and walks (eyes, head, then body).
-7  EXT_OUT   -> 25.0. The street again: he steps out of the hot doorway down onto the cobbles and
-   walks on the way he was going (right), away from the troll -- who has stepped back against
+   -- back on him: a small sigh through the nose (eyes close, wings sag, a curl of grey smoke
+   out of his nostrils, drifting up and away), the hand lowers; heavy-lidded and resigned, his
+   eyes go to the door, then his head, then his body, and he walks.
+7  EXT_OUT   -> 25.0. The street again: he comes out of the hot doorway and walks on along the foot
+   of the facade the way he was going (right), away from the troll -- who has stepped back against
    the wall to let him out, arms folded, side-eyeing him go. Behind him the oak door swings shut
    on the party (silhouettes toasting on the beat in the narrowing gap) and LANDS: the hot spill
-   on the cobbles cuts, the light on him goes cold, the vignette closes, the troll shrugs. His
-   hands sink into his coat pockets (as in S5). A slow pull back and rise leaves him small and dark
+   on the cobbles cuts, the light on him (and on the troll) goes cold, the vignette closes, the
+   troll shrugs. His stamped hand sinks into his coat pocket; the other still carries the sack.
+   A slow pull back and rise leaves him small and dark
    against the hot window at the other end of the facade (a bookend of the walk up); mist breathes
    off the wet cobbles. The music is muffled again (sound).
 
@@ -125,13 +136,17 @@ DUR = tl.scene(SCENE).duration
 
 
 def _g_toast(q, sk, side, arm):
-    """S4's toast: the tankard raised up and OUT to the side (a clear "cheers!", never held by the
-    ear like a speaking-stone); phase pumps it on the laugh. Registered under a scene-local name
-    in the folk rig's gesture tables at import (no library file changes)."""
+    """S4's toast: the tankard thrown up HIGH, above the head and a little out and toward us (a
+    clear "cheers!", never held by the ear like a speaking-stone -- big goblin ears included:
+    their arm goes nearly straight up so the mug clears the ear above it); phase pumps it on the
+    laugh. Registered under a scene-local name in the folk rig's gesture tables at import (no
+    library file changes)."""
     from film.lib.characters import _folk as F
+    from film.lib.characters import crowd as CB
     AL = F._AL(q)
     pump = 0.06 * math.sin(arm.phase * math.tau)
-    return F.G(B.v_add(sk, (side * 0.60 * AL, -(0.66 + pump) * AL, 0.20 * AL)), "grip", -0.3 * side, "front",
+    out, up, fwd = (0.30, 0.92, 0.14) if q.b is CB.BUILDS["goblin"] else (0.42, 0.86, 0.22)
+    return F.G(B.v_add(sk, (side * out * AL, -(up + pump) * AL, fwd * AL)), "grip", -0.3 * side, "front",
                (side * 1.0, 0.5, -0.3), "up")
 
 
@@ -182,8 +197,12 @@ SC_EXT = 0.75
 # the stamp coming down on it -- read in silhouette against the hot glass (whose middle panes are
 # kept clear of patrons). Faces stay apart: the hand is at arm's length, the slam comes from above.
 TROLL_X = 1125.0
-DRAGON_X0, DRAGON_STOP = 548.0, 735.0
 WALK_T1, WALK_T2 = 1.45, 2.30           # full speed until T1, decelerate to a stop at T2
+STRIDE_IN = ch.dragon_stride(SC_EXT, 1)  # screen px per walk cycle (two steps)
+DRAGON_STOP = 735.0
+# he stops on a settling step: the walk ends at phase .75, so the last quarter cycle is the rear
+# foot lifting and coming up beside the planted one (see _walk_state)
+DRAGON_X0 = DRAGON_STOP - 1.75 * STRIDE_IN
 
 EXT_LIGHT = B.Light(key=(1.10, 0.76, 0.74), ambient=(0.30, 0.30, 0.52), rim=(0.62, 0.74, 1.0), rim_strength=0.75,
                     direction=(0.45, -0.89), rim_direction=(-0.85, -0.5), name="s4_ext")
@@ -193,6 +212,16 @@ EXT_COLD = B.Light(key=(0.66, 0.72, 0.98), ambient=(0.22, 0.25, 0.46), rim=(0.62
 # length, a little below it, the back of the hand up (he knows the routine)
 OFFER_REL = (-2.0, 100.0, 166.0)
 REST_REL = (-12.0, 172.0, 16.0)            # dragon.py's standing "rest" (hanging hand), from the shoulder
+
+
+BAG_DAMP = 0.6                             # the S3 rain is drying off it (S3 0.85 .. S6 dry)
+
+
+def _bag_cb(light, t, swing=0.0):
+    """The apothecary's sack from S3, still in his LEFT hand (the far arm whenever he faces
+    right): open at the neck as in S3, the remedies peeking out -- he carries the city's stones
+    into the tavern and back out again (continuity S3 -> S4 -> S6)."""
+    return P.bag_hold(light, t, swing, state="open", damp=BAG_DAMP)
 
 
 def _rel_target(pose, t, rel, side=-1.0):
@@ -230,18 +259,40 @@ T_SLAM0 = B_STAMP - 0.15                 # ...and comes down: accelerating, over
 T_LIFT0 = B_STAMP + 0.42                 # held pressed (a wobble), then it starts to peel off (the cut
                                          # at s4_smile picks the lift up in the insert)
 DIE_IDLE = (-232.0, -352.0)              # troll units (x, y from his anchor, scale 1): presented at chest height
-DIE_TOP = (-70.0, -760.0)                # ...raised high over his head
+DIE_TOP = (-40.0, -700.0)                # ...raised high over his head (elbow still bent: no straight tube)
+
+
+def _walk_v(t):
+    """Distance walked up the street (screen px): constant speed, then a linear slow-down to the
+    stop at WALK_T2 -- the walk phase follows it, so a planted foot never slides."""
+    v = (DRAGON_STOP - DRAGON_X0) / (WALK_T1 + 0.5 * (WALK_T2 - WALK_T1))
+    if t <= WALK_T1:
+        return v * t
+    if t >= WALK_T2:
+        return DRAGON_STOP - DRAGON_X0
+    u = t - WALK_T1
+    return v * WALK_T1 + v * u - v * u * u / (2.0 * (WALK_T2 - WALK_T1))
+
+
+def _walk_state(t):
+    """(anchor x, walk amount, phase) on the walk up. Over the last quarter cycle the walk blends
+    out while the anchor is carried so that the planted foot stays exactly where it landed (the
+    rig places the stance foot at anchor + dz * walk), and the rear foot lifts and steps up beside
+    it: a real settling step, no skate."""
+    from film.lib.characters import dragon as DR
+    p = _walk_v(t) / STRIDE_IN
+    q = core.clamp((p - 1.5) / 0.25)
+    walk = 1.0 - core.smooth(q)
+    x = DRAGON_X0 + _walk_v(t)
+    if q > 0.0:
+        v1 = ((p % 1.0) - 0.5) / 0.5                      # the stance foot's progress (foot 1)
+        dz1 = DR.STRIDE * (0.25 - 0.5 * min(0.5, v1))
+        x += dz1 * math.sin(1.0) * SC_EXT * (1.0 - walk)
+    return x, walk, p % 1.0
 
 
 def _walk_x(t):
-    """The dragon's anchor x on the walk up: constant speed, then a linear slow-down to the stop."""
-    v = (DRAGON_STOP - DRAGON_X0) / (WALK_T1 + 0.5 * (WALK_T2 - WALK_T1))
-    if t <= WALK_T1:
-        return DRAGON_X0 + v * t
-    if t >= WALK_T2:
-        return DRAGON_STOP
-    u = t - WALK_T1
-    return DRAGON_X0 + v * WALK_T1 + v * u - v * u * u / (2.0 * (WALK_T2 - WALK_T1))
+    return _walk_state(t)[0]
 
 
 def _die_path(t, palm):
@@ -285,38 +336,32 @@ def _troll_tilt(t):
                           (T_LIFT0 + 0.6, 0.30, "inout_sine")])
 
 
-# exit: he steps out of the doorway (from the threshold, down onto the street, toward camera-
-# right -- away from the troll, who stands left of the door), then walks slowly on along the
-# street the way he was going; the door swings shut behind him on its own weight
+# exit: he comes out of the doorway and walks slowly on along the foot of the facade the way he
+# was going (right) -- away from the troll, who stands left of the door; the door swings shut
+# behind him on its own weight. (He walks a level line just in front of the wall: the rig plants
+# its feet along x, so a path down toward the camera would make his planted feet glide.)
 TROLL_X_OUT = 935.0                       # the troll has stepped back against the wall to let him out
-EXIT_P0 = (1236.0, 846.0)                 # the threshold (just inside the open door)
-EXIT_P1 = (1356.0, 948.0)                 # down on the street
-EXIT_STEP = 1.25                          # s to get there
-EXIT_SPEED = 108.0                        # px/s along the street afterwards: slow, heavy
+EXIT_X0, EXIT_Y = 1306.0, 852.0           # in the doorway at the cut .. along the facade's foot
+EXIT_V0, EXIT_V1, EXIT_ACC = 66.0, 80.0, 1.2   # px/s out of the door, then on (slow, heavy); ease time
+SC_OUT = SC_EXT * (EXIT_Y - 600.0) / (S.EXT_GROUND - 600.0)    # his scale at that depth (~0.54)
 DOOR_SHUT0, DOOR_SHUT1 = SH_EXT_OUT[0] + 0.85, SH_EXT_OUT[0] + 1.55
 T_POCKETS = SH_EXT_OUT[0] + 2.2           # the stamped hand goes into his coat pocket (as in S5)
 
 
 def _exit_path(t):
-    """(x, y, scale, distance walked) for the walk out."""
-    u = (t - SH_EXT_OUT[0]) / EXIT_STEP
-    if u <= 1.0:
-        e = core.lerp(u, core.inout_sine(u), 0.35)
-        x = core.lerp(EXIT_P0[0], EXIT_P1[0], e)
-        y = core.lerp(EXIT_P0[1], EXIT_P1[1], e)
-    else:
-        x = EXIT_P1[0] + EXIT_SPEED * (t - SH_EXT_OUT[0] - EXIT_STEP)
-        y = EXIT_P1[1]
-    sc = SC_EXT * (y - 600.0) / (EXIT_P1[1] - 600.0)
-    d0 = math.hypot(EXIT_P1[0] - EXIT_P0[0], (EXIT_P1[1] - EXIT_P0[1]) * 0.6)
-    dist = d0 * min(1.0, max(0.0, u)) + max(0.0, x - EXIT_P1[0])
-    return x, y, sc, dist
+    """(x, y, scale, distance walked) for the walk out: level along the foot of the facade."""
+    u = max(0.0, t - SH_EXT_OUT[0])
+    k = min(1.0, u / EXIT_ACC)
+    ramp_int = EXIT_ACC * (k ** 3 - 0.5 * k ** 4) + max(0.0, u - EXIT_ACC)   # integral of smoothstep
+    d = EXIT_V0 * u + (EXIT_V1 - EXIT_V0) * ramp_int
+    return EXIT_X0 + d, EXIT_Y, SC_OUT, d
 
 
 def _exit_turn(t):
-    """His turn on the way out: 3/4 toward us as he steps down, then profile along the street."""
+    """His turn on the way out: 3/4 toward us as he comes out of the door, then profile along
+    the street."""
     t0 = SH_EXT_OUT[0]
-    return -0.5 * (1.0 - core.ramp(t, t0 + 0.4, t0 + EXIT_STEP + 0.3, "inout_sine"))
+    return -0.5 * (1.0 - core.ramp(t, t0 + 0.3, t0 + 1.5, "inout_sine"))
 
 
 _EXIT_PHASE = {}
@@ -361,17 +406,22 @@ TROLL_INT = (S.INT_DOOR_CX + 8.0, S.WALL_BASE + 12.0)
 SOMEONE = (352.0, 912.0)                         # the goblin (left of him, by the door) who looks at the troll
 STARER = (975.0, 930.0)                          # the goblin (right of him) who stops laughing and stares
 TABLE = (1470.0, 985.0)                          # the front table (anchor: ground below its middle)
-CHORUS_Y = 958.0                                 # its benches: the synchronized chorus line, facing us
+CHORUS_Y = 958.0                                 # its bench: the synchronized chorus line, facing us
+BENCH_X, BENCH_LEN = 1484.0, 790.0               # the chorus's oak form behind the table (screen px long)
+BENCH_SEAT = 125.0                               # built to the standard seat height (STYLE 3)
 CHORUS = [(1185.0, "goblin", 211, -0.30), (1330.0, "dwarf", 205, -0.15), (1478.0, "satyr", 217, 0.0),
           (1626.0, "elf", 223, 0.12), (1790.0, "minotaur", 227, 0.25)]
 TURNERS = {"someone", "starer", "dwarf_st", 0, 1}   # who stops laughing and stares at s4_turn
 BAND_Y = S.DAIS[2] - S.DAIS[3] - 2.0             # the dais top
 BAND_SC = S.int_scale(732.0)
+DRUMMER_HAIR = "#3A2418"                         # dark chestnut-black hair and braided beard
 # standing laughers (x, ground y, kind, seed, facing, turn): around the room, never between the
 # door and the dragon (that eye-line must stay clear for the troll)
-STANDERS = [(1190.0, 812.0, "dwarf", 238, -1, 0.5),
-            (1300.0, 764.0, "goblin", 246, 1, -0.6),
-            (1600.0, 752.0, "elf", 231, -1, 0.5), (1745.0, 760.0, "satyr", 248, -1, 0.3)]
+# (each in a gap between two chorus heads, so every silhouette and pair of feet reads on its own;
+# the satyr further upstage, clear of the minotaur's horns)
+STANDERS = [(1257.0, 812.0, "dwarf", 238, -1, 0.5),
+            (1404.0, 760.0, "goblin", 246, 1, -0.6),
+            (1552.0, 748.0, "elf", 231, -1, 0.5), (1700.0, 712.0, "satyr", 248, -1, 0.3)]
 BACK_ROW = STANDERS[1:]
 
 # the synchronized laugh: bursts (everyone on the same HA), each opening with the tankards
@@ -430,6 +480,7 @@ def setup():
     st["int_floor"] = fx.Layer(S.draw_int_floor, blur=0.4, **LI)
     st["int_dais"] = fx.Layer(S.draw_int_dais, blur=0.5, **LI)
     st["int_table"] = fx.Layer(_draw_front_table, **LI)
+    st["int_bench"] = fx.Layer(_draw_chorus_bench, **LI)
     st["int_fg"] = fx.Layer(_draw_int_foreground, blur=5.0, res=0.5, **LI)
     st["ins_bg"] = fx.Layer(S.draw_insert_bg, blur=22.0, res=0.5, opaque=True, x=-120.0, y=-90.0, w=2160.0, h=1260.0)
     st["specs"] = {seed: ch.random_creature(seed, kind) for (_x, kind, seed, _tn) in CHORUS}
@@ -438,8 +489,11 @@ def setup():
     st["specs"]["someone"] = ch.random_creature(241, "goblin")
     st["specs"]["starer"] = ch.random_creature(243, "goblin")
     st["specs"]["fiddler"] = ch.random_creature(251, "satyr")
-    st["specs"]["drummer"] = ch.random_creature(253, "dwarf")
-    st["specs"]["drummer"].hat = "cap"            # (bald under the lanterns he read as an old man: a dwarf's felt cap)
+    # the drummer: a DWARF, never a little old man in red (SPEC 4) -- a thick dark mop of hair, an
+    # enormous dark braided beard that hides his mouth (drawn at detail 1 so the braids, the
+    # brass ring and the granite flecks show), a teal tunic away from the room's reds
+    dr = st["specs"]["drummer"] = ch.random_creature(253, "dwarf")
+    dr.hair, dr.hat, dr.cloth, dr.cloth2 = DRUMMER_HAIR, "", "#3A5048", "#4A4038"
     st["specs"]["piper"] = ch.random_creature(257, "goblin")
     return st
 
@@ -459,6 +513,25 @@ def _draw_front_table(cr):
         core.ellipse(cr, TABLE[0] + dx, ty, 24 * sc, 5 * sc)
         core.src(cr, "#b8a890")
         cr.fill()
+
+
+def _draw_chorus_bench(cr):
+    """The long oak form the chorus line sits on (behind the front table): a thick plank on
+    splayed slab ends with a stretcher, built to the sitters' seat height and seen from the
+    table's camera height; a soft contact shadow where it meets the boards. Drawn BEFORE the
+    sitters, so their shins hang in front of its edge."""
+    sc = S.int_scale(CHORUS_Y)
+    env.draw_ground_shadow(cr, BENCH_X, CHORUS_Y + 2.0, BENCH_LEN * 0.54, 15.0 * sc, alpha=0.5, color="#12060a")
+    # the shade under the seat (the plank blocks the lanterns): grounds the dangling legs
+    cr.save()
+    y0, y1 = CHORUS_Y - BENCH_SEAT * sc + 8.0, CHORUS_Y + 4.0
+    cr.rectangle(BENCH_X - BENCH_LEN / 2 + 10.0, y0, BENCH_LEN - 20.0, y1 - y0)
+    cr.set_source(core.linear(0, y0, 0, y1, [core.alpha("#14060c", 0.5), core.alpha("#14060c", 0.22),
+                                             core.alpha("#14060c", 0.38)]))
+    cr.fill()
+    cr.restore()
+    P.draw_washhouse_bench(cr, BENCH_X, CHORUS_Y, sc, L_INT, 0.0, yaw=0.0, elev=0.30, length=BENCH_LEN / sc,
+                           seat_h=BENCH_SEAT)
 
 
 def _draw_int_foreground(cr):
@@ -574,9 +647,7 @@ def draw_ext_in(cr, t, st):
     lanterns, pulse = _draw_ext_world(cr, t, st, cam)
     L = EXT_LIGHT
     with cam.view(cr, 1.0):
-        x = _walk_x(t)
-        walk = 1.0 - core.ramp(t, WALK_T1 + 0.2, WALK_T2 + 0.15, "inout_sine")
-        phase = ch.dragon_walk_phase(x - DRAGON_X0, SC_EXT, 1)
+        x, walk, phase = _walk_state(t)
         offer = core.ramp(t, B_STAMP - 0.98, B_STAMP - 0.5, "inout_sine")
         squash = core.window(t, B_STAMP - 0.01, B_STAMP + 0.18, 0.0, 0.14)
         brace = core.ramp(t, T_RAISE0 + 0.1, T_SLAM0, "inout_sine") * (1.0 - core.ramp(t, B_STAMP + 0.2, B_STAMP + 0.6))
@@ -597,9 +668,13 @@ def draw_ext_in(cr, t, st):
                            head_nod=-0.3 + 0.25 * core.window(t, WALK_T2 - 0.3, B_STAMP - 0.9, 0.2, 0.3)
                            + 0.2 * brace - 0.12 * squash,
                            blink=1.0 if squash > 0.25 else None, lean=-0.12 * brace - 0.12 * squash)
+        # the sack swings with his stride, settles when he stops, jolts on the slam
+        swing = (0.11 * math.sin(phase * math.tau) * walk + 0.05 * B.wobble(t, WALK_T2, 1.4, 1.2) * (t >= WALK_T2)
+                 + 0.04 * B.wobble(t, B_STAMP, 2.2, 2.5) * (t >= B_STAMP))
         dp = dp.with_(near=ch.Arm("hand_out_offer", hand="flat" if squash > 0.3 else ("relaxed" if offer < 0.5 else "back"),
                                   target=_reach_target(dp, t, OFFER_REL, offer),
-                                  stamp=_stamp_cb(T_LIFT0 + 0.08, t) if t > T_LIFT0 + 0.08 else None))
+                                  stamp=_stamp_cb(T_LIFT0 + 0.08, t) if t > T_LIFT0 + 0.08 else None),
+                      far=ch.Arm("carry_bag", hold=_bag_cb(L, t, swing)))
         drig = ch.draw_dragon(cr, x, S.EXT_GROUND, SC_EXT, dp, L, t)
         die = _die_path(t, drig.hand_near.palm)
         arm = ch.TrollArm("press_stamp", phase=0.5, screen=die)
@@ -659,10 +734,11 @@ def _int_camera(t):
         return cam
     if t < SH_INT_B[1]:
         # the two-shot: the troll in the doorway (upper left), the dragon, the goblin who looks;
-        # it creeps in on the troll for his line
-        return core.Camera.track(t, [(SH_INT_B[0], core.Camera(420, 600, 2.15)),
-                                     (L2.start - 0.1, core.Camera(404, 596, 2.2), "inout_sine"),
-                                     (SH_INT_B[1], core.Camera(384, 586, 2.3), "inout_sine")])
+        # it creeps in on the troll for his line (framed with headroom over the troll and less
+        # floor, so the goblin's face stays above the caption band while the line is captioned)
+        return core.Camera.track(t, [(SH_INT_B[0], core.Camera(420, 634, 2.15)),
+                                     (L2.start - 0.1, core.Camera(404, 632, 2.2), "inout_sine"),
+                                     (SH_INT_B[1], core.Camera(386, 630, 2.3), "inout_sine")])
     # the medium close-up: his face and the hand he lifts to look at
     # ...and as he reads his hand it creeps in to his face and the word (then eases back out
     # a touch as he turns to go)
@@ -682,19 +758,73 @@ T_SIGH = B_EXIT - 0.6                                      # a small sigh, a cur
 T_GO = B_EXIT + 0.35                                       # he starts walking to the door
 
 
-def _stamp_cb(t0=None, t=0.0):
+def _stamp_cb(t0=None, t=0.0, k=1.0):
     """The SMILE print on the back of his RIGHT hand from the moment it was stamped (same mark,
-    seed and angle everywhere; S5-S7 show it fading)."""
-    ink = 0.9 if t0 is None else 0.9 * core.ramp(t, t0, t0 + 0.08)
+    seed and angle everywhere; S5-S7 show it fading). k fades it while the hand turns palm-up."""
+    ink = (0.9 if t0 is None else 0.9 * core.ramp(t, t0, t0 + 0.08)) * k
     return P.smile_stamp(ink=ink) if ink > 0.01 else None
 
 
 HOPE = B.Expr(brow_in=0.72, brow_out=-0.12, brow_y=0.22, lid=0.36, lid_bot=0.13, lid_tilt=0.35, smile=0.06)
-WINCE = B.Expr(brow_in=0.85, brow_out=-0.3, brow_y=0.05, lid=0.56, lid_bot=0.3, lid_tilt=0.5, smile=-0.32)
+# under the swell: CRUSHED, not annoyed -- the brows knit UP at their inner ends, the lids heavy
+# and drooping at the outer corners, the mouth corners pulled down (his words keep coming)
+WINCE = B.Expr(brow_in=1.45, brow_out=-0.45, brow_y=0.18, lid=0.36, lid_bot=0.2, lid_tilt=0.85, smile=-0.7)
 HURT = B.expr("sad", lid=0.5, smile=-0.38)
+# after the sigh: resigned -- heavy lids (they stay heavy while his eyes travel to the door)
+RESIGNED = B.expr("sad", lid=0.66, lid_tilt=0.6, brow_in=0.6, smile=-0.4)
+# he tries to join the room's second laugh: a small hopeful smile, cheeks up, brows lifting
+TRY_SMILE = B.Expr(brow_in=0.35, brow_out=0.2, brow_y=0.28, lid=0.28, lid_bot=0.24, lid_tilt=0.0, smile=0.6, cheek=0.55)
 # arm targets for his right (near) hand, written as offsets from his own shoulder (see _reach_target)
 PALM_REL = (-2.0, 100.0, 116.0)            # dragon.py's hand_out_offer point: an open palm, "may I...?"
 CHEST_REL = (40.0, 92.0, 50.0)             # pulled in to his chest under the swell (small, protective)
+
+# the open palm: his right hand TURNS over (no pop) -- back up (the SMILE print showing) as it
+# reaches out, palm up for "Can I tell you something?", back over as the swell pulls it in
+T_ROLL_UP = L1.start + 0.14                # (the reach is half-way out)
+T_ROLL_DOWN = B_SWELL + 0.275              # (half-way in to his chest)
+ROLL_HALF = 0.1                            # ~5 frames per turn
+_EDGE_HAND = dict(curl=(0.34, 0.40, 0.46), spread=0.02, thumb=(-0.25, 0.35))   # mid-turn, fingers gathered
+
+
+def hand_roll(t):
+    """0 = the back of his right hand up (the print shows) .. 1 = palm up (the offer)."""
+    up = core.ramp(t, T_ROLL_UP - ROLL_HALF, T_ROLL_UP + ROLL_HALF, "inout_sine")
+    down = core.ramp(t, T_ROLL_DOWN - ROLL_HALF, T_ROLL_DOWN + ROLL_HALF, "inout_sine")
+    return up * (1.0 - down)
+
+
+def _roll_hand(roll):
+    """The hand pose through the turn: relaxed (back up) -> gathered (edge-on) -> offer (palm up)."""
+    if roll <= 0.0:
+        return "relaxed"
+    if roll >= 1.0:
+        return "offer"
+    a, b, u = ((B.HAND_POSES["relaxed"], _EDGE_HAND, roll / 0.5) if roll < 0.5 else
+               (_EDGE_HAND, B.HAND_POSES["offer"], (roll - 0.5) / 0.5))
+    u = core.smooth(u)
+    return dict(curl=tuple(core.lerp(x, y, u) for x, y in zip(a["curl"], b["curl"])),
+                spread=core.lerp(a["spread"], b["spread"], u),
+                thumb=(core.lerp(a["thumb"][0], b["thumb"][0], u), core.lerp(a["thumb"][1], b["thumb"][1], u)))
+
+
+def _palm_pads(cr, hf, roll, light):
+    """The palm pads fading in as the hand turns palm-up (B.hand draws them only for the named
+    'offer' pose, i.e. at roll 1; during the turn they are drawn here with B.hand's geometry)."""
+    a = core.smoothstep(0.45, 0.95, roll) if roll < 1.0 else 0.0
+    if hf is None or a <= 0.01:
+        return
+    from film.lib.characters import dragon as DR
+    s = hf.scale
+    pp = B.palette(light, B.Mat.of(DR.DRAGON_COLORS["belly"], sss=0.4))
+    cr.save()
+    cr.translate(hf.palm[0], hf.palm[1])
+    cr.rotate(hf.angle)
+    core.ellipse(cr, 0.0, 0.0, 0.15 * s, 0.108 * s)
+    cr.restore()
+    for k, (tx, ty) in enumerate(hf.tips):
+        core.circle(cr, tx, ty, (0.041 if k == 1 else 0.038) * s)
+    core.src(cr, pp.lit, a)
+    cr.fill()
 
 
 def _blend_rel(keys):
@@ -705,62 +835,82 @@ def _blend_rel(keys):
     return r
 
 
+T_EYES_DOOR = B_EXIT                        # after the sigh his eyes go to the door first...
+T_HEAD_DOOR = B_EXIT + 0.13                 # ...then his head (3 frames later)...
+T_BODY_DOOR = B_EXIT + 0.22                 # ...then his body
+
+
 def _dragon_int_pose(t):
     """The dragon's acting inside: watches the room laugh -> tries a small smile on the second
     burst (it doesn't take) -> THOUGHT (eyes down), GLANCE (the goblin beside him), BREATH (chest
-    up, brows lift: courage) -> the line, open palm, soft hopeful eyes -> the swell hits: he
-    winces, shrinks back, the hand pulls in to his chest, his mouth keeps going under the noise
-    -> stared at: eyes dart between the starers -> eyes, head, then body follow the goblin's look
-    to the troll -> the troll's line lands (a blink) -> hurt; he turns away, eyes drop -> lifts the
-    stamped hand and reads it -> a sigh through the nose -> lowers it -> eyes to the door ->
-    walks."""
+    up, brows lift: courage) -> the line, the hand turning palm-up, soft hopeful eyes -> the swell
+    HITS: a flinch (eyes squeezed, head jerked away from the band, shoulders up), then crushed --
+    brows knit up, eyes down and away, the hand turned back over and pulled in to his chest, his
+    mouth still going under the noise -> stared at: eyes dart between the starers -> eyes, head,
+    then body follow the goblin's look to the troll -> the troll's line lands (a blink) -> hurt;
+    he turns away, eyes drop -> lifts the stamped hand and reads it -> a sigh through the nose ->
+    lowers it -> heavy-lidded, eyes to the door, then the head, then the body -> walks."""
     talk = 0.8 * tl.talk(SCENE, t, "MAN")                         # soft, tentative: the jaw opens less
     sw = swell_k(t)
     face = core.ramp(t, T_FACE0, T_FACE1, "inout_sine")            # 0 facing the room .. 1 facing the troll
     away = core.ramp(t, T_AWAY0, T_AWAY1, "inout_sine")            # 1: turned away, toward us
     t_think, t_glance, t_breath = L1.start - 0.62, L1.start - 0.42, L1.start - 0.26
+    # the swell's hit: a hard squeeze of the eyes for a moment, the head jerked away from the band
+    # (screen-right) and down; it eases back as the music eases off before the heads turn
+    flinch = core.window(t, B_SWELL + 0.02, B_SWELL + 0.36, 0.05, 0.15)
+    shy = core.ramp(t, B_SWELL, B_SWELL + 0.16, "out_quad") * (1.0 - core.ramp(t, SWELL_END - 0.35, SWELL_END + 0.3, "inout_sine"))
+    jolt = B.wobble(t, B_SWELL, 5.0, 6.0) if t >= B_SWELL else 0.0
     look_x = core.track(t, [(SH_CHORUS[1], 0.55), (SH_CHORUS[1] + 0.5, 0.85), (t_think - 0.1, 0.8),
                             (t_think + 0.08, 0.35, "out_quad"), (t_glance, 0.35), (t_glance + 0.1, 0.95, "out_quad"),
-                            (L1.start, 0.88), (B_SWELL + 0.05, 0.85), (B_SWELL + 0.25, 0.45, "out_quad"),
-                            (B_TURN - 0.05, 0.5), (B_TURN + 0.12, 0.95, "out_quad"), (B_TURN + 0.6, 0.95),
+                            (L1.start, 0.88), (B_SWELL + 0.05, 0.85), (B_SWELL + 0.3, -0.05, "out_quad"),
+                            (B_TURN - 0.05, 0.05), (B_TURN + 0.12, 0.95, "out_quad"), (B_TURN + 0.6, 0.95),
                             (B_TURN + 0.72, 0.6, "out_quad"), (B_TURN + 0.95, 0.6), (B_TURN + 1.05, 0.95, "out_quad"),
                             (B_LOOKB + 0.15, 0.9), (B_LOOKB + 0.4, -0.9, "out_quad"),
                             (T_FACE1, -0.45), (L2.end + 0.05, -0.45), (T_AWAY0 + 0.25, 0.1), (T_HAND1, 0.5),
-                            (B_EXIT - 0.1, 0.45), (B_EXIT + 0.1, -0.9)])
+                            (T_EYES_DOOR - 0.05, 0.4), (T_EYES_DOOR + 0.12, -0.9, "inout_sine")])
     look_y = core.track(t, [(SH_CHORUS[1], 0.05), (t_think - 0.1, 0.05), (t_think + 0.08, 0.6, "out_quad"),
                             (t_glance, 0.55), (t_glance + 0.1, 0.12, "out_quad"), (L1.start, 0.12),
-                            (B_SWELL + 0.25, 0.35), (B_TURN - 0.05, 0.3), (B_TURN + 0.12, 0.0),
+                            (B_SWELL + 0.3, 0.55), (B_TURN - 0.05, 0.5), (B_TURN + 0.12, 0.0),
                             (B_LOOKB + 0.4, -0.3), (L2.start + 1.0, -0.3), (L2.end + 0.05, -0.15),
-                            (T_AWAY0 + 0.25, 0.6), (T_HAND1, 0.85), (B_EXIT - 0.1, 0.8), (B_EXIT + 0.1, 0.1)])
+                            (T_AWAY0 + 0.25, 0.6), (T_HAND1, 0.85), (T_EYES_DOOR - 0.05, 0.7),
+                            (T_EYES_DOOR + 0.12, 0.42, "inout_sine")])
     head_turn = core.track(t, [(B_LOOKB + 0.3, 0.0), (B_LOOKB + 0.55, -0.6), (T_FACE1, -0.12), (T_AWAY0, -0.12),
-                               (T_AWAY1, 0.0), (B_EXIT, 0.0), (B_EXIT + 0.25, -0.5)])
+                               (T_AWAY1, 0.0), (T_HEAD_DOOR, 0.0), (T_HEAD_DOOR + 0.28, -0.5, "inout_sine")])
+    head_turn -= 0.32 * shy
+    head_tilt = -0.1 * shy + 0.025 * jolt
     breath = core.window(t, t_breath, L1.start + 0.08, 0.16, 0.14)
     lean = (0.12 * core.ramp(t, L1.start - 0.05, L1.start + 0.4) * (1.0 - face) - 0.24 * sw - 0.06 * breath
-            - 0.06 * core.window(t, B_TURN, B_LOOKB, 0.2, 0.4))
-    hunch = 0.6 - 0.25 * breath + 0.25 * sw + 0.15 * core.ramp(t, L2.end, L2.end + 0.6)
-    # the face: tired -> (hope, for the line) -> wince under the swell -> hurt
+            - 0.06 * core.window(t, B_TURN, B_LOOKB, 0.2, 0.4) - 0.05 * flinch)
+    hunch = 0.6 - 0.25 * breath + 0.25 * sw + 0.15 * core.ramp(t, L2.end, L2.end + 0.6) + 0.12 * flinch
+    # the face: tired -> (a try at a smile) -> hope, for the line -> crushed under the swell -> hurt
+    try_smile = core.window(t, LAUGH_BURSTS[1][0] + 0.12, t_think + 0.04, 0.26, 0.3)
     hope = core.ramp(t, t_glance, t_breath + 0.1) * (1.0 - core.ramp(t, B_SWELL, B_SWELL + 0.2))
-    wince = core.ramp(t, B_SWELL, B_SWELL + 0.18) * (1.0 - core.ramp(t, SWELL_END - 0.3, SWELL_END + 0.3))
+    wince = core.ramp(t, B_SWELL, B_SWELL + 0.12) * (1.0 - core.ramp(t, SWELL_END - 0.3, SWELL_END + 0.3))
     hurt = core.ramp(t, SWELL_END - 0.3, SWELL_END + 0.5)
-    e = B.MOODS["tired"].blend(HOPE, hope)
+    e = B.MOODS["tired"].blend(TRY_SMILE, try_smile)
+    e = e.blend(HOPE, hope)
     e = e.blend(WINCE, wince)
     e = e.blend(HURT, hurt * (1.0 - wince))
-    # he tries a small smile on the room's second burst... it doesn't take
-    try_smile = core.window(t, LAUGH_BURSTS[1][0] + 0.05, LAUGH_BURSTS[1][0] + 1.05, 0.3, 0.45)
-    smile = core.lerp(e.smile, 0.32, try_smile) if try_smile > 0.01 else None
+    e = e.blend(RESIGNED, core.ramp(t, T_SIGH + 0.3, T_SIGH + 0.6))
     nod = (-0.15 - 0.2 * sw + 0.12 * core.window(t, B_LOOKB + 0.3, L2.end, 0.4, 0.3)
            - 0.3 * core.ramp(t, L2.end + 0.3, L2.end + 0.8) - 0.12 * core.window(t, t_think, t_glance + 0.05, 0.08, 0.08)
-           + 0.06 * breath)
+           + 0.06 * breath - 0.12 * shy + 0.08 * try_smile)
     # facing: the room (yaw 0.85) -> the troll (yaw -0.5) -> away from him, toward us (yaw 0.25)
     # -> the door (yaw -1.0)
-    turn = -0.25 - 2.25 * face + 1.25 * away - 2.1 * core.ramp(t, B_EXIT + 0.1, T_GO + 0.25, "inout_sine")
+    turn = -0.25 - 2.25 * face + 1.25 * away - 2.1 * core.ramp(t, T_BODY_DOOR, T_GO + 0.3, "inout_sine")
     yaw = 1.0 + 0.6 * turn
     # his RIGHT hand (stamped): the open palm on the line, pulled in to his chest by the swell,
     # down again as the heads turn; later (facing the troll) it comes up so he can read it
     offer = core.ramp(t, L1.start - 0.12, L1.start + 0.4)
     chest = core.ramp(t, B_SWELL + 0.05, B_SWELL + 0.5)
     down = core.ramp(t, B_TURN + 0.25, B_TURN + 0.9)
-    left = ch.Arm("rest")
+    # walking to the door at the end of the shot (the anchor moves in draw_interior)
+    walk = core.ramp(t, T_GO, T_GO + 0.3)
+    wphase = ch.dragon_walk_phase(_int_walk_dist(t), SC_INT, 1, turn) if t >= T_GO else 0.0
+    # his LEFT hand still carries the apothecary's sack (it sways when he flinches, and swings
+    # as he walks out)
+    swing = 0.1 * math.sin(wphase * math.tau) * walk + 0.05 * B.wobble(t, B_SWELL, 1.6, 1.3) * (t >= B_SWELL)
+    left = ch.Arm("carry_bag", hold=_bag_cb(L_DRAGON_INT, t, swing))
     if face > 0.5:
         up = core.ramp(t, T_HAND0, T_HAND1, "inout_sine") * (1.0 - core.ramp(t, T_LOWER0, T_LOWER1, "inout_sine"))
         right = ch.Arm("look_at_hand", amt=up, prev="rest", stamp=_stamp_cb())
@@ -768,26 +918,35 @@ def _dragon_int_pose(t):
         up = 0.0
         pose0 = ch.DragonPose(facing=1, turn=turn, lean=lean, hunch=hunch)
         rel = _blend_rel([(PALM_REL, offer), (CHEST_REL, chest), (REST_REL, down)])
-        palm_up = offer > 0.5 and chest < 0.5
-        right = ch.Arm("hand_out_offer", hand="offer" if palm_up else "relaxed",
+        roll = hand_roll(t)
+        right = ch.Arm("hand_out_offer", hand=_roll_hand(roll),
                        target=_rel_target(pose0, t, rel, -1.0),        # his right arm is body side -1 in any view
-                       stamp=None if palm_up else _stamp_cb())
+                       stamp=_stamp_cb(k=1.0 - core.smoothstep(0.1, 0.5, roll)))
     # the right hand is the near one whenever he faces right of the camera (yaw >= 0)
     near, far = (right, left) if yaw >= 0.0 else (left, right)
     # the sigh, through the nose (the library's sigh opens the jaw; this one keeps it shut):
     # deflate, eyes close, wings sag, and a curl of grey smoke from the nostrils
     sigh = core.window(t, T_SIGH, T_SIGH + 0.75, 0.25, 0.45)
-    walk = core.ramp(t, T_GO, T_GO + 0.3)
     # a blink as he decides (the thought), and one as the troll's words land; no stray auto-blink
-    # while his eyes lead the look to the troll and across that cut (the eyes ARE the action)
-    blink = 0.0 if B_LOOKB - 0.1 <= t <= SH_INT_A[1] + 0.35 else None
+    # while his eyes lead the look to the troll and across that cut, nor from the cut back from
+    # his POV through the sigh and the look to the door (the eyes ARE the action there)
+    blink = 0.0 if (B_LOOKB - 0.1 <= t <= SH_INT_A[1] + 0.35 or SH_POV[1] - 0.1 <= t <= T_BODY_DOOR + 0.5
+                    or B_SWELL - 0.2 <= t <= B_SWELL + 1.3) else None      # (no flutter after the flinch)
     for tb in (t_think + 0.12, L2.end - 0.3):
         if tb - 0.01 <= t <= tb + 0.17:
             blink = core.window(t, tb, tb + 0.16, 0.06, 0.08)
+    if flinch > 0.0:
+        blink = max(blink or 0.0, 0.95 * flinch)
     return ch.DragonPose(facing=1, turn=turn, mood=e, mood2=SIGH_SHUT if sigh > 0 else None, mood_mix=sigh,
-                         blink=blink, talk=talk, smile=smile, look=(look_x, look_y),
-                         head_turn=head_turn, head_nod=nod - 0.25 * up - 0.5 * sigh, lean=lean,
-                         hunch=hunch + 0.35 * sigh, wings=-0.6 - 0.4 * sw - 0.4 * sigh, near=near, far=far, walk=walk)
+                         blink=blink, talk=talk, look=(look_x, look_y),
+                         head_turn=head_turn, head_tilt=head_tilt, head_nod=nod - 0.25 * up - 0.5 * sigh, lean=lean,
+                         hunch=hunch + 0.35 * sigh, wings=-0.6 - 0.4 * sw - 0.4 * sigh, near=near, far=far, walk=walk,
+                         phase=wphase)
+
+
+def _int_walk_dist(t):
+    """How far he has walked toward the door (screen px, leftward) at the end of INT_C."""
+    return 52.0 * max(0.0, t - T_GO) ** 1.25
 
 
 SIGH_SHUT = B.expr("sigh", open=0.0, mouth="")
@@ -798,7 +957,8 @@ def _crowd_pose_for(t, spec, facing, turn, who, lp, up, a, sit=False):
     ha_phase = (t - a) * 2.33 if a is not None else 0.0
     kw = dict(facing=facing, turn=turn)
     if sit:
-        kw.update(sit=1.0, seat_h=125.0)
+        # every sitter's seat lands exactly on the form's plank (draw_crowd scales by spec.size)
+        kw.update(sit=1.0, seat_h=BENCH_SEAT / spec.size)
     if who in TURNERS and B_TURN <= t < T_REJOIN + 0.35:
         # frozen mid-laugh: the HA and the tankard stop where they were; the head turns to stare
         lp0, up0, a0 = laugh_state(B_TURN)
@@ -947,16 +1107,18 @@ def _draw_band(cr, t, st, L):
     upL = abs(math.sin(math.pi * min(1.0, ph)))
     upR = abs(math.sin(math.pi * max(0.0, ph - 1.0)))
     big = 1.0 + 0.8 * sw
+    # (talk 0: the beard hides his mouth; he grins with his eyes and cheeks)
     dp = ch.CrowdPose(action="idle", facing=0, turn=0.35, mood="happy", seed=spec.seed, lean=0.1 + 0.15 * sw,
-                      head_nod=-0.2 + 0.1 * upL, smile=0.6, talk=0.15 + 0.4 * sw,
-                      near=ch.Arm("point", target=(-62.0, -150.0 - 64.0 * upL * big, 52.0), hand="fist"),
-                      far=ch.Arm("point", target=(64.0, -150.0 - 64.0 * upR * big, 52.0), hand="fist"))
+                      head_nod=-0.2 + 0.1 * upL, smile=0.6, talk=0.0,
+                      # (the sticks fly up and OUT on the swell, clear of his face)
+                      near=ch.Arm("point", target=(-62.0 - 30.0 * upL * sw, -150.0 - 64.0 * upL * big, 52.0), hand="fist"),
+                      far=ch.Arm("point", target=(64.0 + 30.0 * upR * sw, -150.0 - 64.0 * upR * big, 52.0), hand="fist"))
     dx_ = 905.0
     dy_ = BAND_Y - hop
     if _on_screen(dx_, dy_, 300.0 * sc):
-        r = ch.draw_crowd(cr, dx_, dy_, sc, spec, dp, L, t, parts=("back", "body", "mid", "head"))
+        r = ch.draw_crowd(cr, dx_, dy_, sc, spec, dp, L, t, detail=1, parts=("back", "body", "mid", "head"))
         _tabor(cr, dx_ + 4 * sc, BAND_Y - 120 * sc, sc, L, sw)
-        r2 = ch.draw_crowd(cr, dx_, dy_, sc, spec, dp, L, t, parts=("front",))
+        r2 = ch.draw_crowd(cr, dx_, dy_, sc, spec, dp, L, t, detail=1, parts=("front",))
         for hf in (r2.hand_near, r2.hand_far):
             _stick(cr, (hf.x, hf.y), (dx_ + 4 * sc, BAND_Y - 128 * sc), sc)
     # ---- piper: a goblin on a shawm, swaying
@@ -1038,8 +1200,13 @@ def _fiddle_bow(cr, hand, chin, s, scroll):
 
 
 def _tabor(cr, x, y, s, light, sw):
-    """A medieval tabor (a deep two-headed drum) on a stand, the near head toward us."""
+    """A medieval tabor (a deep two-headed drum) on a stand, the near head toward us: a shell of
+    honey-brown wood between two darker hoops, laced with dark rope in a V-pattern, and a pale
+    hide head on top (natural materials -- no painted stripes)."""
     w, h = 64 * s, 46 * s
+    wood = B.palette(light, B.Mat.of("#8a6038", sheen=0.25))
+    hoop = B.palette(light, B.Mat.of("#4a2c18"))
+    hide = B.palette(light, B.Mat.of("#e6d6b4", shadow_k=0.85))
     cr.save()
     cr.set_line_width(max(1.0, 2.0 * s))
     core.src(cr, "#2a1410")
@@ -1048,21 +1215,38 @@ def _tabor(cr, x, y, s, light, sw):
     cr.move_to(x + w * 0.3, y + h * 0.5)
     cr.line_to(x + w * 0.42, y + 120 * s)
     cr.stroke()
+    # the shell: lit toward the key (top left), shadowed toward its right side
     cr.rectangle(x - w / 2, y - h / 2, w, h)
-    core.src(cr, B.palette(light, B.Mat.of("#9a3a2a")).lit)
+    cr.set_source(core.linear(x - w / 2, 0, x + w / 2, 0, [wood.lit, wood.lit, wood.shadow]))
     cr.fill()
-    cr.set_line_width(max(0.6, 1.0 * s))
-    core.src(cr, "#e8d0a0", 0.7)
-    for k in range(6):
-        u = k / 5.0
-        cr.move_to(x - w / 2 + w * u, y - h / 2)
-        cr.line_to(x - w / 2 + w * ((k + 0.5) / 5.0 if k < 5 else 1.0), y + h / 2)
+    core.ellipse(cr, x, y + h / 2, w / 2, 9 * s)                 # the round bottom of the shell
+    core.src(cr, wood.shadow)
+    cr.fill()
+    # the rope lacing: a dark V between the hoops, with a tug knot at each point
+    cr.set_line_width(max(0.7, 1.2 * s))
+    core.src(cr, "#2a1810", 0.9)
+    n = 6
+    for k in range(n):
+        xa = x - w / 2 + w * k / n
+        xb = x - w / 2 + w * (k + 0.5) / n
+        xc = x - w / 2 + w * (k + 1) / n
+        cr.move_to(xa, y - h / 2 + 5 * s)
+        cr.line_to(xb, y + h / 2 - 3 * s)
+        cr.line_to(xc, y - h / 2 + 5 * s)
     cr.stroke()
-    core.ellipse(cr, x, y - h / 2, w / 2, 9 * s)
-    core.src(cr, B.palette(light, B.Mat.of("#efe0c0")).lit)
+    for (yy, hh) in ((y - h / 2, 6.0 * s), (y + h / 2 - 5.0 * s, 6.0 * s)):        # the two hoops
+        cr.rectangle(x - w / 2 - 1.5 * s, yy, w + 3 * s, hh)
+        core.src(cr, hoop.lit)
+        cr.fill()
+    # the hide head (its far rim a touch darker), a glint that flashes on the swell's hits
+    core.ellipse(cr, x, y - h / 2, w / 2 + 1.5 * s, 10 * s)
+    core.src(cr, hoop.shadow)
     cr.fill()
-    core.src(cr, "#ffffff", 0.18 + 0.3 * sw)
-    core.ellipse(cr, x - 6 * s, y - h / 2 - 1 * s, w * 0.25, 4 * s)
+    core.ellipse(cr, x, y - h / 2, w / 2 - 1.0 * s, 8 * s)
+    core.src(cr, hide.lit)
+    cr.fill()
+    core.src(cr, "#fff4e0", 0.12 + 0.25 * sw)
+    core.ellipse(cr, x - 6 * s, y - h / 2 - 1 * s, w * 0.22, 3.5 * s)
     cr.fill()
     cr.restore()
 
@@ -1205,20 +1389,19 @@ def draw_interior(cr, t, st):
         # ---- the dragon (not in the chorus shot: he is across the room)
         if shot != "chorus":
             dp = _dragon_int_pose(t)
-            dx = DR_X
-            if t >= T_GO:
-                dist = 52.0 * max(0.0, t - T_GO) ** 1.25
-                dx = DR_X - dist
-                dp = dp.with_(phase=ch.dragon_walk_phase(dist, SC_INT, 1, dp.turn))
+            dx = DR_X - _int_walk_dist(t)
             Ld = L_DRAGON_INT.with_(rim_strength=1.0) if shot_c else L_DRAGON_INT
             drig = ch.draw_dragon(cr, dx, DR_Y, SC_INT, dp, Ld, t)
+            if not shot_c:
+                _palm_pads(cr, drig.hand_near if drig.yaw >= 0 else drig.hand_far, hand_roll(t), Ld)
         if shot_c:
-            ch.dragon_smoke(cr, t, T_SIGH + 0.15, drig, alpha=0.6)
+            _sigh_smoke(cr, t, st)
         else:
             # the goblin who stares (right), the goblin who looks at the troll (left)
             _draw_starer(cr, t, st, L, lp, up, a)
             _draw_someone(cr, t, st, L, lp, up, a)
-            # the chorus line behind the front table
+            # the chorus line on its bench behind the front table
+            st["int_bench"].paint(cr)
             for i, (x, kind, seed, tn) in enumerate(CHORUS):
                 spec = st["specs"][seed]
                 _crowd(cr, x, CHORUS_Y, spec, _crowd_pose_for(t, spec, 0, tn, i, lp, up, a, sit=True), L, t)
@@ -1257,12 +1440,13 @@ def draw_pov(cr, t, st):
     pulse = S.jig_pulse(t)
     lp, up, a = laugh_state(t)
     L = L_INT.with_(exposure=1.0 + 0.05 * min(1.0, pulse))
-    cam = core.Camera(1330 - 40 * u, 610, 1.45)
+    cam = core.Camera(1420 - 40 * u, 586, 1.45)          # the long table toasting on, beside his hand
     _CAM["cam"] = cam
 
     def back(c):
         _draw_int_room(c, t, st, cam, L, lp, up, a)
         with cam.view(c, 1.0):
+            st["int_bench"].paint(c)
             for i, (x, kind, seed, tn) in enumerate(CHORUS):
                 spec = st["specs"][seed]
                 _crowd(c, x, CHORUS_Y, spec, _crowd_pose_for(t, spec, 0, tn, i, lp, up, a, sit=True), L, t)
@@ -1278,6 +1462,24 @@ def draw_pov(cr, t, st):
     fx.post(cr, t, light=st["light"], bloom_strength=0.3, threshold=0.78, grain=0.045, vignette=0.55)
 
 
+def _troll_talk(t):
+    """His jaw for "Keep it light, buddy.": flat and slow, but every syllable reads -- the
+    smoothed envelope is sharpened toward the raw one and gated, so the jaw closes in the dips
+    between Keep / it / light / bud-dy instead of hanging open as one slot."""
+    if not (L2.start - 0.05 <= t <= L2.end + 0.1):
+        return 0.0
+    v = 0.5 * tl.talk(SCENE, t, "BOUNCER") + 0.5 * L2.env_at(t)
+    return core.clamp((v - 0.3) / 0.7) ** 0.85
+
+
+_TROLL_STRESS = [w0 for (w, w0, _w1) in tl.word_times("s4_l2") if w.lower().strip(",.") in ("keep", "light", "buddy")]
+
+
+def _troll_dip(t):
+    """A small, heavy dip of his head on each stressed word (KEEP, LIGHT, BUD-dy)."""
+    return sum(core.window(t, w0 - 0.04, w0 + 0.34, 0.09, 0.25) for w0 in _TROLL_STRESS)
+
+
 def _draw_troll_int(cr, t):
     """The troll filling the doorway, arms folded, watching the room with bored eyes; when the
     goblin looks at him he turns his head to the dragon (eyes slide first), then says his line
@@ -1286,7 +1488,7 @@ def _draw_troll_int(cr, t):
     eyes = core.ramp(t, B_LOOKB + 0.15, B_LOOKB + 0.45, "inout_sine")
     tp = ch.TrollPose(facing=1, turn=-0.75, near=ch.TrollArm("arms_crossed"), far=ch.TrollArm("arms_crossed"),
                       mood="bored", look=(0.25 + 0.5 * eyes, 0.2 + 0.25 * eyes), head_turn=-0.3 * u,
-                      head_nod=-0.1 * u, talk=tl.talk(SCENE, t, "BOUNCER"), lean=0.12 * u,
+                      head_nod=-0.1 * u - 0.4 * _troll_dip(t), talk=_troll_talk(t), lean=0.12 * u,
                       shrug=0.55 * core.window(t, L2.start + 0.95, L2.end + 0.25, 0.25, 0.4))
     sc = S.int_scale(TROLL_INT[1])
     if _on_screen(TROLL_INT[0], TROLL_INT[1], 0.75 * 660.0 * sc):
@@ -1301,6 +1503,70 @@ def _draw_troll_int(cr, t):
         cr.restore()
         env.draw_ground_shadow(cr, gx, gy + 3, 120 * sc, 18 * sc, alpha=0.6, color="#0c0610")
         ch.draw_troll(cr, TROLL_INT[0], TROLL_INT[1], sc, tp, L_TROLL_INT, t)
+
+
+SMOKE_T0 = T_SIGH + 0.12                      # the exhale through his nostrils
+SMOKE_N, SMOKE_GAP, SMOKE_LIFE = 6, 0.06, 0.95
+
+
+def _smoke_sources(st):
+    """Where his nostrils were when each wisp left them (world px), his facing and scale: the
+    smoke stays where it was breathed out -- it does not ride along on his head."""
+    if "smoke_src" not in st:
+        out = []
+        for k in range(SMOKE_N):
+            tb = SMOKE_T0 + SMOKE_GAP * k
+            rig = ch.draw_dragon(core.frame(4, 4)[1], DR_X - _int_walk_dist(tb), DR_Y, SC_INT, _dragon_int_pose(tb),
+                                 L_DRAGON_INT, tb)
+            out.append((tb, rig.nose, rig.facing, rig.scale))
+        st["smoke_src"] = out
+    return st["smoke_src"]
+
+
+def _sigh_smoke(cr, t, st):
+    """The sigh: a small curl of grey smoke out of his nostrils -- it leaves forward and a little
+    down (an exhale), slows, curls over and drifts up and AWAY from his face, thinning fast (gone
+    before he turns to the door). Soft puffs along the path plus a thin tapered wisp on top."""
+    if not (SMOKE_T0 <= t <= SMOKE_T0 + SMOKE_GAP * SMOKE_N + SMOKE_LIFE):
+        return
+
+    def path(k, u, fac, s):
+        e = core.out_cubic(min(1.0, u * 1.5))
+        cx = fac * (30.0 * e + 26.0 * u) * s
+        cy = (12.0 * e - 58.0 * u * u) * s
+        a = 4.2 * u + 0.7 * k
+        r = 9.0 * u * s
+        return cx + fac * r * math.sin(a), cy - r * (1.0 - math.cos(a))
+
+    col = core.mix("#c4c6cc", "#f0c8d4", 0.25)          # pale grey, warmed a little by the room
+    c = core.col(col)
+    cr.save()
+    for k, (tb, (nx, ny), fac, s) in enumerate(_smoke_sources(st)):
+        age = t - tb
+        if age <= 0.0 or age >= SMOKE_LIFE:
+            continue
+        u = age / SMOKE_LIFE
+        a = 0.62 * min(1.0, u * 7.0) * (1.0 - u) ** 2.0
+        px, py = path(k, u, fac, s)
+        rr = (4.0 + 17.0 * u) * s
+        g = cairo.RadialGradient(nx + px, ny + py, 0, nx + px, ny + py, rr)
+        g.add_color_stop_rgba(0.0, c[0], c[1], c[2], a)
+        g.add_color_stop_rgba(0.6, c[0], c[1], c[2], a * 0.5)
+        g.add_color_stop_rgba(1.0, c[0], c[1], c[2], 0.0)
+        cr.set_source(g)
+        cr.arc(nx + px, ny + py, rr, 0, math.tau)
+        cr.fill()
+    # the wisp: the first breath's path, drawn as a thin tapered curl that unrolls and fades
+    tb, (nx, ny), fac, s = _smoke_sources(st)[0]
+    u1 = core.clamp((t - tb) / SMOKE_LIFE)
+    if 0.0 < u1 < 1.0:
+        u0 = max(0.0, u1 - 0.45)
+        pts = [path(0, u0 + (u1 - u0) * i / 9.0, fac, s) for i in range(10)]
+        pts = [(nx + x, ny + y) for (x, y) in pts]
+        core.tapered(cr, pts, 0.6 * s, 3.4 * s, profile=lambda q: s * (0.6 + 2.8 * math.sin(math.pi * q)))
+        core.src(cr, col, 0.75 * min(1.0, u1 * 6.0) * (1.0 - u1) ** 1.5)
+        cr.fill()
+    cr.restore()
 
 
 def _air_haze(cr, alpha):
@@ -1550,9 +1816,9 @@ def _ext_cam_out(t):
     """Starts close on the doorway, then lets him go: a slow pull back and rise that leaves him
     small, dark and alone against the hot window he walks past (a bookend of the walk up)."""
     t0 = SH_EXT_OUT[0]
-    return core.Camera.track(t, [(t0, core.Camera(1262, 612, 1.24)),
-                                 (t0 + 1.3, core.Camera(1300, 604, 1.16), "inout_sine"),
-                                 (SH_EXT_OUT[1], core.Camera(1236, 552, 0.985), "inout_sine")])
+    return core.Camera.track(t, [(t0, core.Camera(1268, 600, 1.24)),
+                                 (t0 + 1.3, core.Camera(1306, 594, 1.16), "inout_sine"),
+                                 (SH_EXT_OUT[1], core.Camera(1262, 552, 0.985), "inout_sine")])
 
 
 def draw_ext_out(cr, t, st):
@@ -1586,21 +1852,24 @@ def draw_ext_out(cr, t, st):
     L = B.Light.lerp(EXT_LIGHT.with_(key=(0.62, 0.46, 0.54), rim=(1.0, 0.55, 0.75), rim_direction=(0.75, -0.66),
                                      rim_strength=1.0), EXT_COLD, cold)
     with cam.view(cr, 1.0):
-        # the troll at his post, arms folded, side-eyeing him go; a tiny shrug when the door lands
         # the troll at his post left of the door, arms folded, side-eyeing him go; a tiny shrug
-        # when the door lands
+        # when the door lands -- and with the door shut the hot light leaves him too (the last
+        # image belongs to the dragon against the window, not to the bouncer)
         eye = core.ramp(t, t0 + 0.3, t0 + 0.9, "inout_sine")
+        Lt = B.Light.lerp(EXT_LIGHT, EXT_COLD.with_(exposure=0.78), core.ramp(t, DOOR_SHUT0 + 0.35, DOOR_SHUT1 + 0.7))
         tp = ch.TrollPose(facing=1, turn=-0.25, mood="bored", near=ch.TrollArm("arms_crossed"),
                           far=ch.TrollArm("arms_crossed"), look=(0.3 + 0.45 * eye, 0.2),
                           head_turn=0.15 * core.ramp(t, t0 + 0.8, t0 + 1.8, "inout_sine"),
                           shrug=0.4 * core.window(t, DOOR_SHUT1 + 0.1, DOOR_SHUT1 + 1.1, 0.25, 0.5))
-        ch.draw_troll(cr, TROLL_X_OUT, S.EXT_GROUND + 4, SC_EXT, tp, EXT_LIGHT, t)
+        ch.draw_troll(cr, TROLL_X_OUT, S.EXT_GROUND + 4, SC_EXT, tp, Lt, t)
         pockets = core.ramp(t, T_POCKETS, T_POCKETS + 0.7, "inout_sine")
         turn = _exit_turn(t)
-        dp = ch.DragonPose(facing=1, turn=turn, walk=1.0, phase=_exit_phase(t) % 1.0,
+        ph = _exit_phase(t) % 1.0
+        # the stamped right hand goes into his coat pocket; the left keeps carrying the sack
+        dp = ch.DragonPose(facing=1, turn=turn, walk=1.0, phase=ph,
                            mood="sad", wings=-1.0, hunch=0.8, head_nod=-0.35 - 0.1 * pockets, look=(0.2, 0.5),
                            tail_drag=0.4, near=ch.Arm("pockets", amt=pockets, prev="rest", stamp=_stamp_cb()),
-                           far=ch.Arm("pockets", amt=pockets, prev="rest"))
+                           far=ch.Arm("carry_bag", hold=_bag_cb(L, t, 0.1 * math.sin(ph * math.tau))))
         ch.draw_dragon(cr, x, y, sc, dp, L, t)
     lc = st["light"].begin()
     with cam.view(lc, 1.0):
@@ -1652,14 +1921,14 @@ def _heel_strikes(t0, t1, dist_fn, stride_fn, dt=1.0 / 240.0):
 def _build_sfx():
     cues = []
     # the walk up (steps soften as he slows to a stop)
-    stride_in = lambda t: ch.dragon_stride(SC_EXT, 1)                           # noqa: E731
-    for tt in _heel_strikes(0.0, WALK_T2 + 0.1, lambda t: _walk_x(t) - DRAGON_X0, stride_in):
-        walk = 1.0 - core.ramp(tt, WALK_T1 + 0.2, WALK_T2 + 0.15, "inout_sine")
+    stride_in = lambda t: STRIDE_IN                                             # noqa: E731
+    for tt in _heel_strikes(0.0, WALK_T2 - 0.05, _walk_v, stride_in):
+        walk = _walk_state(tt)[1]
         sx = _ext_cam_in(tt).to_screen(_walk_x(tt), S.EXT_GROUND)[0]
         cues.append((round(tt, 3), "footstep_wet", {"gain": round(0.45 + 0.4 * walk, 2), "pan": _pan(sx)}))
-    # the last, softer step as he settles to a stop in front of the troll
+    # the last, softer step: the rear foot comes down beside the planted one as he stops
     sx = _ext_cam_in(WALK_T2).to_screen(DRAGON_STOP, S.EXT_GROUND)[0]
-    cues.append((round(WALK_T2 + 0.08, 3), "footstep_wet", {"gain": 0.45, "pan": _pan(sx)}))
+    cues.append((round(WALK_T2 - 0.04, 3), "footstep_wet", {"gain": 0.45, "pan": _pan(sx)}))
     # the troll's wind-up (his leather jerkin creaks as the stamp goes up over his head)
     sx = _ext_cam_in(T_RAISE0).to_screen(TROLL_X, S.EXT_GROUND - 400.0)[0]
     cues.append((round(T_RAISE0 + 0.05, 3), "cloth_rustle", {"gain": 0.4, "pan": _pan(sx), "size": 1.4}))
@@ -1684,7 +1953,7 @@ def _build_sfx():
     cues.append((round(T_LOWER0 + 0.05, 3), "cloth_rustle", {"gain": 0.35, "pan": -0.1}))
     cues.append((round(B_EXIT + 0.15, 3), "cloth_rustle", {"gain": 0.4, "pan": -0.2}))
     # his first steps inside, toward the door (until the cut)
-    for tt in _heel_strikes(T_GO, SH_INT_C[1] - 1e-3, lambda t: 52.0 * max(0.0, t - T_GO) ** 1.25,
+    for tt in _heel_strikes(T_GO, SH_INT_C[1] - 1e-3, _int_walk_dist,
                             lambda t: max(1.0, ch.dragon_stride(SC_INT, 1, _dragon_int_pose(t).turn))):
         cues.append((round(tt, 3), "footstep", {"gain": 0.4, "pan": -0.45}))
     # out on the street: steps on wet cobbles, the hands into the pockets, the door landing

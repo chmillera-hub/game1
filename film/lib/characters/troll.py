@@ -650,9 +650,9 @@ def _head(q):
     ja = 0.32 * jaw
     cj, sj = math.cos(ja), math.sin(ja)
 
-    def J(v):            # rotate about the jaw hinge (0, 10, 0)
+    def J(v):            # rotate about the jaw hinge (0, 10, 0): the chin swings DOWN as it opens
         yy, zz = v[1] - 10.0, v[2]
-        return (v[0], 10.0 + yy * cj - zz * sj, yy * sj + zz * cj)
+        return (v[0], 10.0 + yy * cj + zz * sj, -yy * sj + zz * cj)
 
     jaw_pts = B.ellipsoid_pts(lambda v: P(J(v)), (0.0, 42.0, 34.0), 64.0, 26.0, 40.0, 8)
     hull_s = core.convex_hull(skull + brow)

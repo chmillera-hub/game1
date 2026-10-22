@@ -45,13 +45,18 @@ SHOT B -- 8.55 -> 11.0 (s1_tap.end)   INSERT, tight, slow push
   eyes never leave the mirror (runes scrolling, thumb idling, shells humming). tap (9.02), tap
   (9.42): the board jolts and rocks on its nail each time; then the finger simply stays there
   while she keeps scrolling. SELF-SERVICE large and legible, uncial lettering; the nave soft.
+  At this size the mirror's light is held local (a lower key on her, a clamped spill, a higher
+  bloom threshold) so her pale green-grey skin keeps its shadow side and cyan underlight, and
+  the tap is one long elegant finger (a pointing hand drawn over the rig's, the rest folded).
 SHOT C -- 11.0 -> 14.25   MEDIUM on him, eye level
   Cut back: he is still looking up at the sign; the hand has sunk back to his knee, the wings are
   still half-lifted. s1_l1 (11.80) "Self-service." -- read FLAT, a fact: heavy lids, no smile, no
-  joke; the wings sink all the way down over the line. A blink. ~13.0: the eyes drop to his own
-  drum, the head follows, the body turns back to it. (Off screen she lowers her hand.) s1_lookaround (13.5): from his drum the eyes
-  start to travel the row -- the next drum, the next -- the head follows... cut on the look.
-SHOT D -- 14.25 -> 17.4   THE ROW (what he sees; the camera drifts along his side of the nave)
+  joke (a small, deadpan jaw); the wings sink all the way down over the line. Then the numb
+  sink back (T_SINK 12.96): the eyes drop to his drum, the head follows 0.2 s later, easing
+  round over 0.8 s with a blink on the turn, the body after it, landing 0.3 s behind the head.
+  (Off screen she lowers her hand.) s1_lookaround: from his drum the eyes start to travel the
+  row -- the next drum, the next -- the head follows, slowly, on camera... cut on the look (14.5).
+SHOT D -- 14.5 -> 17.4   THE ROW (what he sees; the camera drifts along his side of the nave)
   At porthole height the camera drifts slowly down the nave beside the left arcade: drum after drum
   slides past, lids toward us, each porthole tumbling a different stranger's colourful laundry at
   its own speed, steam curling, runes breathing -- and in front of them the absence: an empty
@@ -69,14 +74,20 @@ SHOT E -- 17.4 -> 25.0   back on him, wider: him left, the receding nave, the el
 
 COLOUR / VALUE. Sickly cold teal-green (wisps, portholes), blue-white moonlight, blue-black vault.
 His mustard scarf is the one warm note (his key light is near-neutral so it stays mustard); the
-machines -- tarnished brass, grey oak, the strangers' stools -- sit under a darker, colder light. Brightest values: the moon window
-(far), the portholes, the wisps, her mirror -- each placed to frame a face; the far hall is held
-down so the actors carry the frame; haze gathers toward the vanishing point. The wisps' buzz
-flickers the cold rim on him. Grain + teal-black vignette on every frame.
+machines and furniture are pushed cold: verdigris-tarnished brass (L_BRASS), weathered grey oak
+for the stools and her form (L_OAK), grey-olive barrels. Brightest values: the moon window (far),
+the portholes, the wisps, her mirror -- each placed to frame a face; the far hall is held down so
+the actors carry the frame; haze gathers toward the vanishing point. He is the subject: a little
+more exposure and a stronger cold rim on him, a step less on her (and her mirror dims as the last
+pull-back opens out). The wisps' buzz flickers the cold rim on him. Grain + teal-black vignette.
 
 PERIOD. Romanesque vault, coursed stone, leaded night windows, caged will-o'-wisps on chains, oak-
 and-brass drums with runes, wicker baskets, an oak tub and beetle, a plank form, milking stools, a
 painted wooden plaque on a nail, a striped woollen stocking. Nothing modern on screen.
+
+THE STOOL. His milking stool is drawn from inside the dragon rig (DragonPose.seat_prop): after
+the coat's back flap, before the coat, his near leg and the lap -- so its little seat shows under
+his bulk and its legs stand behind his shins (his far shin is clipped out of it).
 """
 
 
@@ -119,7 +130,15 @@ T_REACH0, T_REACH1 = T_TAP, T_TAP + 0.5
 T_HIT1 = T_TAP + 0.72                # finger contacts
 T_HIT2 = T_HIT1 + 0.40
 T_REST = T_HIT2 + 0.42               # ...and the finger stays on the board
-T_ROW0 = T_LOOK0 + 0.75              # cut to the row, on his look
+# after the flat line, the numb sink back to his drum: eyes first, the head 0.2 s later (eased
+# over 0.8 s, a blink on the turn), the body after the head, landing 0.3 s after it; then his
+# eyes start along the row and the head follows them on camera before the cut
+T_SINK = L1.end + 0.14               # the eyes drop to his drum
+T_HEAD0 = T_SINK + 0.2               # the head starts round...
+T_HEAD1 = T_HEAD0 + 0.8              # ...and arrives
+T_BODY0 = T_HEAD0 + 0.15             # the body follows the head
+T_BODY1 = T_HEAD1 + 0.3
+T_ROW0 = max(T_LOOK0 + 0.75, T_HEAD1 + 0.55)   # cut to the row, on his look along it
 T_ROW1 = T_LOOK1 - 0.6               # back on him, still looking down the rows
 T_GLANCE2 = T_ROW1 + 0.55            # his eyes go to her before the line...
 T_BACK2 = T_GLANCE2 + 0.5            # ...and back down the rows
@@ -159,8 +178,10 @@ HIS_BAY, HIS_SLOT = 0, 1            # his drum: left side, bay 0, the far one of
 Z_PLAQUE = PIER_Z[1] - PIER_D / 2.0  # the plaque hangs on pier 1's front face (right)
 X_PLAQUE, H_NAIL = NAVE + PIER_W / 2.0 - 10.0, 448.0
 SOCK = (40.0, 1760.0)               # (X, z) one lost stocking on the aisle floor
-LAMPS = [(-150.0, 900.0, 1250.0, 0), (0.0, 980.0, 2110.0, 1), (0.0, 1010.0, 3010.0, 2),
-         (0.0, 1030.0, 3910.0, 3), (0.0, 1040.0, 4810.0, 4)]          # (X, h, z, seed)
+# (X, h, z, seed): staggered left/right down the nave, so the far cages and chains never stack
+# in a line over the end window -- the moon stays the one clean bright thing at the end
+LAMPS = [(-150.0, 900.0, 1250.0, 0), (200.0, 980.0, 2110.0, 1), (-240.0, 1010.0, 3010.0, 2),
+         (280.0, 1030.0, 3910.0, 3), (-300.0, 1040.0, 4810.0, 4)]
 LINES = [(2110.0, 980.0, 11), (3010.0, 1000.0, 12), (3910.0, 1010.0, 13)]     # (z, h, seed)
 # nobody there: empty stools and a forgotten basket in front of other people's drums
 ABSENT = [("stool", -470.0, 2215.0, 0.45, 3), ("basket", -455.0, 2735.0, 0.0, 4),
@@ -170,18 +191,28 @@ FG_PIECES = [("basket", -660.0, 830.0), ("tub", 690.0, 880.0)]      # (layer, X,
 
 # lights
 L_BASE = ch.LIGHTS["washhouse"]
-L_DRAGON = L_BASE.with_(key=(0.9, 0.99, 0.95), rim=(0.70, 0.88, 1.0), rim_strength=0.8, direction=(-0.7, -0.6),
+L_DRAGON = L_BASE.with_(key=(0.9, 0.99, 0.95), rim=(0.70, 0.88, 1.0), rim_strength=0.8, direction=(-0.7, -0.6), exposure=1.06,
                         rim_direction=(0.55, -0.83))
-L_ELF = L_BASE.with_(rim=(0.70, 0.88, 1.0), rim_strength=0.7, rim_direction=(-0.5, -0.86))
+# she is pale and lit by her mirror: held a step below him in value (he is the subject)
+L_ELF = L_BASE.with_(rim=(0.70, 0.88, 1.0), rim_strength=0.55, rim_direction=(-0.5, -0.86), exposure=0.74)
+# the insert: at ~3.8x her face would otherwise burn out under the mirror light -- a lower key so
+# the pale green-grey skin, its shadow side and the cyan underlight survive
+L_ELF_B = L_ELF.with_(exposure=0.74, rim_strength=0.45)
 L_SET = L_BASE.with_(key=(0.62, 0.84, 0.86), ambient=(0.2, 0.32, 0.36), rim_strength=0.3)
 # the machines (drums, strangers' stools): colder still -- tarnished brass and grey oak, so his
 # mustard scarf stays the one warm note in the room
 L_DRUM = L_BASE.with_(key=(0.47, 0.69, 0.74), ambient=(0.16, 0.28, 0.32), rim_strength=0.3)
+# lights that render the props kit's warm oak (stools, her form) as weathered grey oak and its
+# gold brass (the porthole rings) as tarnished, verdigris-olive brass: lit/shadow tones solved
+# from the props' base colours (palette: lit = base * (1 + (key - 1) * 0.55), shadow = base * ambient)
+L_OAK = L_BASE.with_(key=(0.526, 0.993, 1.914), ambient=(0.277, 0.438, 0.751), rim_strength=0.3)
+L_OAK_FAR = L_OAK.with_(exposure=0.82)                       # the strangers' empty stools, down the row
+L_BRASS = L_BASE.with_(key=(0.265, 0.717, 2.052), ambient=(0.208, 0.352, 0.688), rim_strength=0.3)
 _C0 = C = {
     "stone": "#2c4a4a", "stone_lt": "#3d6260", "stone_dk": "#152727", "mortar": "#0b1717",
     "vault": "#0a1415", "aisle": "#0d1a1b", "haze": "#3a6c68", "moon_glow": "#a9c4f0",
     "shaft": "#9cc4ff", "wisp": "#4dffc4", "porthole": "#5fe8d0", "mirror": "#5fe0ff",
-    "oak": "#4a4235", "oak_dk": "#201c16", "oak_lt": "#655d4b", "brass": "#706a4a",
+    "oak": "#47443a", "oak_dk": "#1d1c17", "oak_lt": "#5f5c50", "brass": "#5f6a56", "hoop_dk": "#2e3228",
     "vig": (0.0, 0.025, 0.035),
 }
 
@@ -891,9 +922,12 @@ def _rib(cr, cam, zc):
 
 
 _PH = 116.0                     # half-size of the porthole texture, in lid units (ring + hinge + latch)
+# the props kit's rune glyphs for the bezel (drum_porthole's band), to lay their glow in the light
+# pass; a private helper of the kit, so the glow is simply skipped if it ever goes away
+_RUNE_STROKES = getattr(P, "_rune_strokes", None)
 
 
-def _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, det, k):
+def _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, det, k, runes=1.0):
     """The porthole in TRUE perspective (close drums): drawn once into a texture in lid
     coordinates, then painted through a polar grid of small triangles (16-32 wedges x 6 rings,
     the rings on the porthole's own circles: glass, bezel, rim) whose corners are projected
@@ -910,7 +944,7 @@ def _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, d
     c.scale(s_tex, s_tex)
     c.translate(_PH, _PH + DRUM_AXLE)
     P.drum_porthole(c, 0.0, 0.0, 1.0, light, t, seed=seed, speed=speed, glow=glow, rumble=0.0, vp=None,
-                    depth=(0.0, 0.0), detail=det)
+                    depth=(0.0, 0.0), runes=runes, detail=det)
     del c
     tex.flush()
     m_lt = cairo.Matrix(s_tex, 0.0, 0.0, s_tex, s_tex * _PH, s_tex * (_PH + DRUM_AXLE))   # lid -> texture px
@@ -974,7 +1008,7 @@ def _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, d
     cr.restore()
 
 
-def _side_drum(cr, cam, side, z, t, seed, speed=1.0, glow=1.0, light=L_DRUM, rumble=1.0, exact=False):
+def _side_drum(cr, cam, side, z, t, seed, speed=1.0, glow=1.0, light=L_BRASS, rumble=1.0, exact=False):
     """An enchanted drum in a bay of the arcade, its lid toed in toward the aisle and the camera.
     The body is projected here (true perspective); the porthole -- brass ring, runes, glass,
     someone's laundry tumbling -- is the props kit's, put onto the lid's plane (exact=True: in true
@@ -1050,7 +1084,7 @@ def _side_drum(cr, cam, side, z, t, seed, speed=1.0, glow=1.0, light=L_DRUM, rum
         pts = ring(c0, DRUM_R * (1.0 - 0.07 * f), 24)
         vis = [_visible(cam, q, (sa * u_dir[0], ca, sa * u_dir[2])) for q, ca, sa in pts]
         cr.set_line_width(max(0.8, 7.0 * k))
-        core.src(cr, "#3a3218")
+        core.src(cr, C["hoop_dk"])
         for i in range(24):
             if vis[i] and vis[(i + 1) % 24]:
                 cr.move_to(*pp(pts[i][0]))
@@ -1069,36 +1103,40 @@ def _side_drum(cr, cam, side, z, t, seed, speed=1.0, glow=1.0, light=L_DRUM, rum
     S0 = pp(Cl)
     sgn = 1.0 if (pp((Cl[0] + u_dir[0], Cl[1], Cl[2] + u_dir[2]))[0] >= S0[0]) else -1.0   # un-mirrored
     det = 2 if k >= 0.9 else 1 if k >= 0.45 else 0
+    ring = None
     if _visible(cam, Cl, n_lid):
-        dzc = z - cam.z
+        # one affine map fitted to the PROJECTED RIM (its first Fourier terms): the soft buffers
+        # draw the porthole through it (within a few px of true perspective, and blurred anyway);
+        # the light pass uses it to lay the runes' glow round the bezel
+        nrim = 16
+        cx_ = cy_ = mxx = mxy = myx = myy = 0.0
+        for i in range(nrim):
+            a = TAU * i / nrim
+            ca, sa = math.cos(a), math.sin(a)
+            q = pp((Cl[0] + DRUM_R * ca * sgn * u_dir[0], Cl[1] - DRUM_R * sa, Cl[2] + DRUM_R * ca * sgn * u_dir[2]))
+            cx_ += q[0]
+            cy_ += q[1]
+            mxx += q[0] * ca
+            mxy += q[0] * sa
+            myx += q[1] * ca
+            myy += q[1] * sa
+        cx_, cy_ = cx_ / nrim, cy_ / nrim
+        f2 = 2.0 / (nrim * DRUM_R)
+        mxx, mxy, myx, myy = mxx * f2, mxy * f2, myx * f2, myy * f2
+        m_lid = cairo.Matrix(mxx, myx, mxy, myy, cx_ + mxy * DRUM_AXLE, cy_ + myy * DRUM_AXLE)
         if exact:            # the sharp band: always in true perspective (no mode switch, no pop)
-            _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, det, k)
+            # ...and the runes on its bezel breathe brighter: they must read on the near drums
+            _porthole_projective(cr, cam, Cl, u_dir, sgn, light, t, seed, speed, glow, det, k, runes=1.7)
+            ring = (m_lid, 0.5 + 0.5 * math.sin(t * 1.4 + seed * 1.3), seed)
         else:
-            # the soft (out-of-focus) buffers: one affine map fitted to the PROJECTED RIM (its
-            # first Fourier terms) -- within a few px of true perspective, and blurred anyway
-            nrim = 16
-            cx_ = cy_ = mxx = mxy = myx = myy = 0.0
-            for i in range(nrim):
-                a = TAU * i / nrim
-                ca, sa = math.cos(a), math.sin(a)
-                q = pp((Cl[0] + DRUM_R * ca * sgn * u_dir[0], Cl[1] - DRUM_R * sa, Cl[2] + DRUM_R * ca * sgn * u_dir[2]))
-                cx_ += q[0]
-                cy_ += q[1]
-                mxx += q[0] * ca
-                mxy += q[0] * sa
-                myx += q[1] * ca
-                myy += q[1] * sa
-            cx_, cy_ = cx_ / nrim, cy_ / nrim
-            f2 = 2.0 / (nrim * DRUM_R)
-            mxx, mxy, myx, myy = mxx * f2, mxy * f2, myx * f2, myy * f2
             cr.save()
-            cr.transform(cairo.Matrix(mxx, myx, mxy, myy, cx_ + mxy * DRUM_AXLE, cy_ + myy * DRUM_AXLE))
+            cr.transform(m_lid)
             P.drum_porthole(cr, 0.0, 0.0, 1.0, light, t, seed=seed, speed=speed, glow=glow, rumble=0.0,
                             vp=None, depth=(0.0, 0.0), detail=det)
             cr.restore()
     # its light: hidden behind a pier -> none; nearing the camera -> fades before the drum is culled
     near = core.smoothstep(200.0, 430.0, z - cam.z)
-    return (S0, DRUM_R * k, glow * _seen(cam, Cl[0], z) * near)
+    return (S0, DRUM_R * k, glow * _seen(cam, Cl[0], z) * near, ring)
 
 
 def _drum_on_screen(cam, side, z):
@@ -1190,60 +1228,74 @@ def _steam(cr, t, x, y, k, seed):
                  alpha=0.16, seed=seed * 7 + j, scale=k)
 
 
-# the stocking, flat on the floor: (X, z) offsets along its centre line, cuff -> heel -> toe
-_SOCK_LINE = [(-78.0, 26.0), (-56.0, 18.0), (-34.0, 11.0), (-14.0, 5.0), (0.0, 0.0), (12.0, -2.0),
-              (30.0, -4.0), (48.0, -5.0), (60.0, -3.0)]
-_SOCK_W = [15.0, 15.0, 14.5, 14.0, 15.5, 14.0, 13.0, 12.5, 9.0]
+# the lost stocking, lying flat in the aisle as a sock's L (the leg, the heel's corner, the
+# foot); outline points in its own little frame, 1 unit = 1 px at scale 1.0, y down
+_SOCK_OUT = [(-84.0, -8.0), (-60.0, -9.5), (-36.0, -8.5), (-16.0, -9.0), (-4.0, -7.5),      # leg, top edge
+             (6.0, -2.0), (13.0, 7.0), (18.0, 16.0), (22.0, 24.0),                           # the instep
+             (24.0, 31.0), (20.0, 36.0), (13.0, 35.0),                                       # the toe
+             (8.0, 28.0), (1.0, 20.0), (-6.0, 14.0),                                         # the sole
+             (-12.0, 15.5), (-19.0, 14.5), (-24.0, 9.5), (-26.0, 5.5),                       # the heel
+             (-40.0, 7.5), (-62.0, 7.0), (-84.0, 7.5), (-87.0, 0.0)]                         # leg, under edge; cuff
 
 
 def _sock(cr, cam):
-    """One lost striped woollen stocking on the flagstones of the aisle (built on the floor,
-    projected): a long leg, the heel turned, the foot -- with three cream stripes round the leg
-    and a darned heel."""
+    """One lost striped woollen stocking in the aisle: drawn as a sock reads, the L of leg, heel
+    and foot (the emoji's silhouette, lying down) with a ribbed cuff, cream stripes and the classic
+    contrasting heel and toe. Projected flat onto the flagstones it was a 20 px sliver at these
+    grazing angles -- a ribbon or a blade -- so it is drawn in its own camera-facing plane like
+    the stools, no outline (set dressing), and kept quiet: muted cream, the faintest moonlit edge."""
     X0, Z0 = SOCK
     if not cam.ahead(Z0, 120.0):
         return
-    pts = [(X0 + dx, Z0 + dz * 2.2) for dx, dz in _SOCK_LINE]
-    left, right, norms = [], [], []
-    for i, (x, z) in enumerate(pts):
-        a = pts[max(0, i - 1)]
-        b = pts[min(len(pts) - 1, i + 1)]
-        tx, tz = b[0] - a[0], b[1] - a[1]
-        n = math.hypot(tx, tz) or 1.0
-        nx, nz = -tz / n * _SOCK_W[i], tx / n * _SOCK_W[i]
-        norms.append((nx, nz))
-        left.append(cam.p(x + nx, 0.0, z + nz))
-        right.append(cam.p(x - nx, 0.0, z - nz))
-    k = cam.k(Z0)
-    cx, cy = cam.p(X0 - 10.0, 0.0, Z0)
-    B.contact_shadow(cr, cx, cy + 2 * k, 95 * k, 10 * k, alpha=0.38)
-    core.smooth_closed(cr, left + right[::-1], 0.55)
-    core.src(cr, "#56688a")
-    cr.fill()
-    # stripes round the leg (between centre-line points 0..3)
-    core.src(cr, "#d2cfbb", 0.92)
-    for i in (0, 2):
-        u0, u1 = i + 0.25, i + 0.75
-        q = []
-        for u, sg in ((u0, 1), (u1, 1), (u1, -1), (u0, -1)):
-            j = int(u)
-            f = u - j
-            x = pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f
-            z = pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f
-            nx, nz = norms[j]
-            q.append(cam.p(x + sg * nx * 0.98, 0.0, z + sg * nz * 0.98))
-        core.polygon(cr, q)
-    cr.fill()
-    # the darned heel: a paler patch with a few cross-stitches
-    hx, hz = pts[4]
-    core.ellipse(cr, *cam.p(hx + 2.0, 0.0, hz - 6.0), 13 * k, 5 * k)
-    core.src(cr, "#8e9cb0", 0.85)
-    cr.fill()
-    # cold moonlight along its upper edge
-    core.smooth_open(cr, left, 0.55)
-    cr.set_line_width(max(0.6, 2.0 * k))
-    core.src(cr, "#b8d4ff", 0.35)
-    cr.stroke()
+    with plane(cr, cam, Z0) as s:
+        gx, gy = ref(X0, 0.0, Z0)
+        cr.save()
+        cr.translate(gx, gy - 10.0 * s)
+        cr.scale(s, s)
+        B.contact_shadow(cr, -26.0, 10.0, 66.0, 11.0, alpha=0.42)
+        wool, wool_dk = "#4a5a7a", "#2c374a"
+        cream, cuff = "#9c9888", "#7f7d70"
+        cr.new_path()
+        core.smooth_closed(cr, _SOCK_OUT, 0.55)
+        shape = B.Path(cr)
+        shape.add(cr)
+        core.src(cr, wool)
+        cr.fill()
+        cr.save()
+        shape.add(cr)
+        cr.clip()
+        shape.add(cr, 0.0, -4.0)                         # the near (lower) edge in shadow
+        cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        cr.rectangle(-150.0, -100.0, 300.0, 200.0)
+        core.src(cr, wool_dk)
+        cr.fill()
+        cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+        core.src(cr, cream)                              # heel and toe, the stripes
+        core.circle(cr, -17.0, 12.5, 9.5)
+        cr.fill()
+        core.circle(cr, 19.0, 33.0, 10.0)
+        cr.fill()
+        for x0 in (-66.0, -52.0, -38.0):
+            core.polygon(cr, [(x0, -12.0), (x0 + 6.0, -12.0), (x0 + 7.0, 12.0), (x0 + 1.0, 12.0)])
+        cr.fill()
+        core.src(cr, cuff)                               # the ribbed cuff
+        core.polygon(cr, [(-90.0, -12.0), (-78.0, -12.0), (-77.0, 12.0), (-90.0, 12.0)])
+        cr.fill()
+        cr.set_line_width(1.0)
+        core.src(cr, "#55534a", 0.8)
+        for xx in (-87.0, -84.0, -81.0):
+            cr.move_to(xx, -12.0)
+            cr.line_to(xx + 0.5, 12.0)
+        cr.stroke()
+        cr.restore()
+        core.src(cr, "#161c26")                          # the opening
+        core.ellipse(cr, -86.0, -0.5, 1.8, 6.5)
+        cr.fill()
+        cr.set_line_width(1.4)
+        core.src(cr, "#a9c6ee", 0.14)                    # a whisper of the moon on its far edge
+        core.smooth_open(cr, _SOCK_OUT[:9], 0.55)
+        cr.stroke()
+        cr.restore()
 
 
 def _sigh_smoke(cr, t, t0, x, y, s, d):
@@ -1324,29 +1376,84 @@ def _sigh_smoke(cr, t, t0, x, y, s, d):
     cr.restore()
 
 
+def _stool_under(cr, proj, feet, t, yaw, wobble):
+    """His milking stool, drawn from inside the dragon rig (DragonPose.seat_prop): after his far
+    leg and the coat's back flap, before the coat, his near leg and the lap -- so the little seat
+    shows under his bulk, in front of the coat tail, and its legs stand behind his shins (the near
+    one is drawn over it). Body-local coords: origin = the ground under his pelvis, scale 1. His
+    far shin and foot were drawn before it but are nearer the camera than any of it: clipped out."""
+    far = 1.0 if proj.yaw >= 0 else -1.0
+    cr.save()
+    for f in feet:
+        if f["side"] != far:
+            continue
+        a = f["ankle"]
+        kn, an = proj.xy(f["knee"]), proj.xy(a)
+        toe = proj.xy((a[0], a[1] + 14.0, a[2] + 34.0))
+        for (p0, r0, p1, r1) in ((kn, 17.0, an, 13.0), (an, 14.0, toe, 13.0)):
+            cr.new_path()
+            cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+            cr.rectangle(-700.0, -700.0, 1400.0, 1400.0)
+            core.capsule(cr, p0[0], p0[1], r0, p1[0], p1[1], r1)
+            cr.clip()
+    cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+    cr.new_path()
+    P.draw_stool(cr, 0.0, 0.0, 1.0, L_OAK, t, yaw=yaw, wobble=wobble)
+    cr.restore()
+
+
 # ----------------------------------------------------------------------------------------
 # acting
 # ----------------------------------------------------------------------------------------
+
+_YAW_KEYS = [
+    (0.0, -0.75), (T_SWIVEL0, -0.75), (T_SWIVEL1, 0.88, "inout_sine"), (T_CUT_INSERT, 0.92),
+    (T_CUT_BACK - 0.5, 0.42, "inout_sine"),                                  # (during the insert)
+    (T_BODY0, 0.42), (T_BODY1, -0.32, "inout_sine"),                         # back toward his drum
+    (T_ROW1 - 0.4, 0.36, "inout_sine"),                                      # opens to the nave (off)
+    (T_SIGH + 1.5, 0.34), (T_SIGH + 3.1, -0.62, "inout_sine"), (DUR, -0.64)]
+
+
+def _body_yaw(t):
+    """His body yaw (absolute, rad): -0.75 = 3/4 left watching his drum; +0.88 = near-profile
+    toward her for the lean; +0.42 = 3/4 right looking up at the sign; +0.38 open to the nave."""
+    return core.track(t, _YAW_KEYS)
+
+
+def _tail_side(y):
+    """Which way the rig lays a seated tail out along the floor for body yaw y (dragon.py's
+    _tail_spine: toward the side the camera sees best), -1..1."""
+    return core.clamp(0.6 * math.cos(y) - 1.3 * math.sin(y), -1.0, 1.0)
+
+
+_TAIL_DT, _TAIL_N = 1.0 / 48.0, 72
+_TAIL_W = [B.spring((k + 1) * _TAIL_DT, 0.0, 1.3, 0.6) - B.spring(k * _TAIL_DT, 0.0, 1.3, 0.6) for k in range(_TAIL_N)]
+_TAIL_W = [w / sum(_TAIL_W) for w in _TAIL_W]
+
+
+def _tail_drag(t):
+    """Overlapping action for the tail: the rig slaves the tail's side to the body yaw, so a turn
+    through the front view flips it across in a frame or two. Its side follows a sprung, lagging
+    copy of the yaw instead (the impulse response of a 1.3 Hz spring, ~0.2 s late, a little
+    overshoot), handed to tail_swing as the difference: the tip trails the turn and swings over."""
+    y_lag = sum(w * _body_yaw(t - k * _TAIL_DT) for k, w in enumerate(_TAIL_W))
+    return core.clamp(5.0 * (_tail_side(y_lag) - _tail_side(_body_yaw(t))), -2.6, 2.6)
+
 
 def _dragon_pose(t):
     """The dragon's performance. Eyes lead, the head follows, the body last.
     Body yaw (absolute, rad): -0.75 = 3/4 left watching his drum; +0.88 = near-profile toward her
     for the lean; +0.42 = 3/4 right looking up at the sign; +0.38 open to the nave."""
-    yaw = core.track(t, [
-        (0.0, -0.75), (T_SWIVEL0, -0.75), (T_SWIVEL1, 0.88, "inout_sine"), (T_CUT_INSERT, 0.92),
-        (T_CUT_BACK - 0.5, 0.42, "inout_sine"),                                  # (during the insert)
-        (L1.end + 0.25, 0.42), (T_LOOK0 - 0.05, -0.32, "inout_sine"),            # back toward his drum
-        (T_ROW0, -0.2), (T_ROW1 - 0.4, 0.36, "inout_sine"),                      # opens to the nave (off)
-        (T_SIGH + 1.5, 0.34), (T_SIGH + 3.1, -0.62, "inout_sine"), (DUR, -0.64)])
+    yaw = _body_yaw(t)
     # the tiny head-shake on "isn't it"
     shake = 0.065 * math.sin((t - _SHAKE0) * TAU * 2.3) * core.window(t, _SHAKE0 - 0.05, L2.end + 0.05, 0.12, 0.25)
     # where his head points (absolute yaw)
     head_yaw = core.track(t, [
         (0.0, -0.95), (T_GLANCE + 0.12, -0.95), (T_GLANCE + 0.55, 0.35, "inout_sine"),
         (T_SWIVEL1, 0.98), (T_CUT_INSERT, 1.0),
-        (T_CUT_BACK, 0.55), (L1.end + 0.3, 0.5),
-        (T_LOOK0 - 0.05, -0.92, "inout_sine"),                                   # down to his own drum
-        (T_LOOK0 + 0.3, -0.88), (T_ROW0 + 0.3, -0.35, "inout_sine"),             # ...drum after drum
+        (T_CUT_BACK, 0.55), (T_HEAD0, 0.5),
+        (T_HEAD1, -0.92, "inout_sine"),                                          # down to his own drum
+        (T_HEAD1 + 0.22, -0.89), (T_ROW0 + 0.45, -0.42, "inout_sine"),           # ...drum after drum
         (T_ROW1 - 0.3, 0.92, "inout_sine"),                                      # (off) down the nave
         (T_GLANCE2 - 0.05, 0.92), (T_GLANCE2 + 0.3, 1.12, "inout_sine"),         # a look at her
         (T_BACK2, 1.12), (T_BACK2 + 0.35, 0.95, "inout_sine"),                   # back down the rows
@@ -1359,11 +1466,13 @@ def _dragon_pose(t):
         (T_GLANCE + 0.14, (0.9, -0.1), "out_cubic"),
         (T_LEAN, (0.85, -0.05)), (T_CUT_INSERT, (0.85, -0.02)),
         (T_CUT_BACK - 0.3, (0.75, -0.32), "inout_sine"),                        # up at the sign
-        (L1.start - 0.1, (0.75, -0.3)), (L1.end + 0.2, (0.62, -0.18)),
-        (L1.end + 0.5, (-0.7, 0.6), "inout_sine"),                               # eyes sink to his drum
-        (T_LOOK0, (-0.65, 0.55)),
-        (T_LOOK0 + 0.25, (-0.25, 0.35), "out_cubic"), (T_LOOK0 + 0.5, (-0.2, 0.33)),   # the next drum
-        (T_LOOK0 + 0.68, (0.25, 0.18), "out_cubic"), (T_ROW0, (0.3, 0.15)),       # the next...
+        (L1.start - 0.1, (0.75, -0.3)), (T_SINK, (0.62, -0.18)),
+        (T_SINK + 0.32, (-0.78, 0.58), "inout_sine"),                            # eyes sink to his drum
+        (T_HEAD0 + 0.1, (-0.78, 0.58)),
+        (T_HEAD1, (-0.3, 0.5), "inout_sine"),                                    # (the head catches up)
+        (T_HEAD1 + 0.1, (-0.3, 0.5)),
+        (T_HEAD1 + 0.22, (0.12, 0.38), "out_cubic"), (T_HEAD1 + 0.42, (0.15, 0.36)),   # the next drum
+        (T_HEAD1 + 0.54, (0.45, 0.24), "out_cubic"), (T_ROW0, (0.5, 0.22)),       # the next...
         (T_ROW1 - 0.2, (0.75, 0.05), "inout_sine"),
         (T_GLANCE2, (0.75, 0.05)), (T_GLANCE2 + 0.12, (0.95, 0.12), "out_cubic"),  # her
         (T_BACK2, (0.95, 0.12)), (T_BACK2 + 0.14, (0.7, 0.08), "out_cubic"),     # the rows
@@ -1377,8 +1486,8 @@ def _dragon_pose(t):
     head_nod = core.track(t, [
         (0.0, -0.3), (T_GLANCE + 0.15, -0.3), (T_GLANCE + 0.55, 0.0, "inout_sine"),
         (T_LEAN - 0.3, 0.08), (T_LEAN + 0.5, 0.0, "inout_sine"), (T_CUT_INSERT, 0.0),
-        (T_CUT_BACK, 0.12), (L1.start, 0.12), (L1.end - 0.15, 0.04),
-        (T_LOOK0 - 0.1, -0.25, "inout_sine"), (T_ROW0, -0.1), (T_ROW1, 0.0),
+        (T_CUT_BACK, 0.12), (L1.start, 0.12), (L1.end - 0.15, 0.04), (T_HEAD0, 0.0),
+        (T_HEAD1, -0.25, "inout_sine"), (T_ROW0, -0.12, "inout_sine"), (T_ROW1, 0.0),
         (L2.end, -0.05), (L2.end + 1.0, -0.28, "inout_sine"), (DUR, -0.32)])
     # the lean: a little intake (sits up) -> leans across the gap toward her (ease-out) -> holds
     lean = core.track(t, [
@@ -1396,11 +1505,14 @@ def _dragon_pose(t):
     # the aborted line: the mouth opens and stays open -- nothing comes out
     gape = core.track(t, [(T_LEAN + 0.4, 0.0), (T_LEAN + 0.7, 0.3, "out_cubic"), (T_CUT_INSERT + 0.2, 0.3),
                           (T_CUT_INSERT + 0.6, 0.0, "inout_sine")])
-    talk = max(tl.talk(SCENE, t, "MAN"), gape)
+    # both lines are quiet and flat: a deadpan jaw (half the envelope's size, the dips between
+    # syllables pressed toward closed so the consonants articulate), never the laugh-sized gape
+    env = tl.talk(SCENE, t, "MAN")
+    talk = max(0.58 * core.smoothstep(0.25, 0.95, env), gape)
     hope = core.window(t, T_LEAN - 0.1, T_CUT_INSERT + 0.4, 0.5, 0.3)
     sigh = core.window(t, T_SIGH, T_SIGH + 2.6, 0.55, 1.4)
     blink = None
-    for tb in (T_GLANCE + 0.75, L1.end + 0.35, T_ROW1 + 0.22, L2.end + 0.45):
+    for tb in (T_GLANCE + 0.75, T_HEAD0 + 0.04, T_ROW1 + 0.22, L2.end + 0.45):
         if tb <= t <= tb + 0.2:
             blink = core.window(t, tb, tb + 0.2, 0.06, 0.12)
         elif blink is None and abs(t - tb) < 0.9:
@@ -1414,7 +1526,7 @@ def _dragon_pose(t):
             mood, mood2, mix = "tired", "sad", core.ramp(t, L1.end + 0.6, T_LOOK0, "inout_sine") * 0.6
     if t >= T_ROW1 - 0.3:
         mood, mood2, mix = "tired", "lonely", core.ramp(t, T_ROW1 - 0.3, L2.start + 0.4)
-    tail_swing = -0.25 + 0.12 * B.sway(t, 0.21, 11) + 0.3 * B.wobble(t, T_LEAN + 0.5, 1.6, 2.2)
+    tail_swing = -0.25 + 0.12 * B.sway(t, 0.21, 11) + 0.3 * B.wobble(t, T_LEAN + 0.5, 1.6, 2.2) + _tail_drag(t)
     # the attempt: his far hand lifts off the knee and opens palm-up toward her ("may I...")
     reach = core.track(t, [(T_LEAN + 0.2, 0.0), (T_LEAN + 0.95, 1.0, "out_cubic"), (T_CUT_INSERT + 0.1, 1.0),
                            (T_CUT_BACK - 0.8, 0.0, "inout_sine")])
@@ -1451,6 +1563,91 @@ def _elf_pose(t, tap_target):
     return ch.ElfPose(facing=-1, sit=1.0, glow=1.0, shells=0.8 + 0.2 * (0.5 + 0.5 * math.sin(t * TAU * 1.15)),
                       look=(-0.12 + 0.05 * B.sway(t, 0.3, 4), 0.92), head_nod=-0.42 + groove, head_tilt=tilt,
                       near=ch.ElfArm("mirror", phase=t * 0.3), far=far, seed=5)
+
+
+def _hand_matrix(hf):
+    """The base.hand frame of a rig's HandFrame as a matrix: hand units (wrist at the origin, +u
+    along the fingers, +v toward the little finger, 1 = the hand's length) -> the caller's
+    coordinates (base.hand: translate(wrist), rotate(angle), scale(s, s * flip))."""
+    s = hf.scale
+    fy = -1.0 if hf.flip else 1.0
+    ca, sa = math.cos(hf.angle), math.sin(hf.angle)
+    wx, wy = hf.palm[0] - s * 0.21 * ca, hf.palm[1] - s * 0.21 * sa          # palm = wrist + 0.21 along
+    return cairo.Matrix(s * ca, s * sa, -s * fy * sa, s * fy * ca, wx, wy)
+
+
+def _point_hand(cr, hf, mat, light, lw):
+    """The insert's tapping hand, drawn over the rig's (whose own is clipped away beyond the
+    wrist): at ~3.8x the house 3-finger hand's curled fingers fold sideways in the picture plane
+    and read as a V. Here: one long tapered index finger to the rig's own fingertip (so the tap
+    lands where the reach was solved), the other fingers folded under the knuckles as a soft
+    fist-lobe, the thumb tucked along the side; one outline, the house shading, a little ink."""
+    m = _hand_matrix(hf)
+    inv = cairo.Matrix(*m)
+    inv.invert()
+    tx, ty = inv.transform_point(*hf.tips[0])                     # the index tip, in hand units
+    lw_h = lw / hf.scale
+    cr.save()
+    cr.transform(m)
+    back = [(-0.04, -0.125), (0.10, -0.142), (0.26, -0.150), (0.40, -0.136), (0.47, -0.092),
+            (0.505, -0.02), (0.50, 0.06), (0.46, 0.13), (0.36, 0.165), (0.20, 0.158), (0.06, 0.135), (-0.04, 0.115),
+            (-0.075, 0.0)]
+    lobe = [(0.42 + 0.115 * math.cos(a), 0.095 + 0.105 * math.sin(a)) for a in (TAU * i / 14 for i in range(14))]
+    k0 = (0.44, -0.082)
+    dx, dy = tx - k0[0], ty - k0[1]
+    Lf = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / Lf, dx / Lf
+    j1 = (k0[0] + dx * 0.52 - nx * 0.012, k0[1] + dy * 0.52 - ny * 0.012)
+    th0, th1 = (0.13, -0.118), (0.34, -0.112)
+
+    def add_shape(d):
+        core.smooth_closed(cr, B.offset_closed(back, d) if d else back, 0.8)
+        core.smooth_closed(cr, B.offset_closed(lobe, d) if d else lobe, 0.9)
+        core.capsule(cr, k0[0], k0[1], 0.066 + d, j1[0], j1[1], 0.056 + d)
+        core.capsule(cr, j1[0], j1[1], 0.056 + d, tx, ty, 0.043 + d)
+        core.capsule(cr, th0[0], th0[1], 0.052 + d, th1[0], th1[1], 0.043 + d)
+    p = B.palette(light, mat)
+    cr.new_path()
+    add_shape(lw_h)
+    core.src(cr, p.line)
+    cr.fill()
+    # the hand (back, folded fingers, thumb), then the finger with its own, slimmer crescent
+    core.smooth_closed(cr, back, 0.8)
+    core.smooth_closed(cr, lobe, 0.9)
+    core.capsule(cr, th0[0], th0[1], 0.052, th1[0], th1[1], 0.043)
+    B.shade(cr, B.Path(cr), mat, light, lw_h, rim=0.5, size=0.32, shadow=2.3, outline=False)
+    cr.save()
+    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    cr.rectangle(-2.0, -2.0, 4.0, 4.0)
+    core.smooth_closed(cr, back, 0.8)
+    cr.clip()
+    cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+    core.capsule(cr, k0[0], k0[1], 0.066, j1[0], j1[1], 0.056)
+    core.capsule(cr, j1[0], j1[1], 0.056, tx, ty, 0.043)
+    B.shade(cr, B.Path(cr), mat, light, lw_h, rim=0.5, size=0.12, shadow=1.8, outline=False)
+    cr.restore()
+    ux, uy = dx / Lf, dy / Lf
+    lines = [[(0.37, 0.03), (0.45, 0.05), (0.52, 0.08)],                     # the folded fingers
+             [(0.40, 0.11), (0.47, 0.135), (0.52, 0.15)],
+             [(0.17, -0.09), (0.27, -0.082), (0.35, -0.085)],                 # the thumb's edge
+             [(j1[0] - nx * 0.03 - ux * 0.02, j1[1] - ny * 0.03 - uy * 0.02), j1,  # the middle joint
+              (j1[0] + nx * 0.03 - ux * 0.02, j1[1] + ny * 0.03 - uy * 0.02)]]
+    B.detail_lines(cr, lines, lw_h * 0.85, p.line, 0.6)
+    cr.restore()
+
+
+def _elf_light(t):
+    """Her light in the wides: a step below him, and a little lower again as the last pull-back
+    opens out, so the small hunched dragon holds the final frame. Quantised to 1 % steps (the
+    palettes are cached per light; the steps are lost in the grain)."""
+    k = round(core.ramp(t, T_PULL0 + 0.5, T_PULL1, "inout_sine") * 10.0) / 10.0
+    return L_ELF if k <= 0.0 else L_ELF.with_(exposure=L_ELF.exposure - 0.08 * k)
+
+
+def _mirror_dim(t):
+    """Her mirror's light: steady, then a little lower as the camera pulls back at the end, so the
+    small hunched dragon -- not her glow -- holds the final frame."""
+    return 1.0 - 0.35 * core.ramp(t, T_PULL0 + 0.5, T_PULL1, "inout_sine")
 
 
 def _shell_hum(cr, t, rig, scale):
@@ -1626,7 +1823,7 @@ def _items(cam, shot, t, st, out):
                 gx, gy = ref(X, 0.0, z)
                 if kind == "stool":
                     B.contact_shadow(c, gx, gy + 2 * s, 60 * s, 10 * s, alpha=0.45)
-                    P.draw_stool(c, gx, gy, s, L_DRUM, t, yaw=yaw)
+                    P.draw_stool(c, gx, gy, s, L_OAK_FAR, t, yaw=yaw)
                 else:
                     c.translate(gx, gy)
                     c.scale(s * 0.42, s * 0.42)
@@ -1649,10 +1846,31 @@ def _items(cam, shot, t, st, out):
             target = (tgt[0] + back[0] * off, tgt[1] + back[1] * off)
             with plane(c, cam, Z_ELF) as s:
                 ex, ey = ref(X_ELF, 0.0, Z_ELF)
-                P.draw_washhouse_bench(c, ex, ey, s, L_SET, t, yaw=-0.12)
-                erig = ch.draw_elf(c, ex, ey, s, _elf_pose(t, target), L_ELF, t)
-                if erig.mirror:
-                    fx.glow(c, erig.mirror[0], erig.mirror[1], 70 * s, C["mirror"], 0.32)
+                P.draw_washhouse_bench(c, ex, ey, s, L_OAK, t, yaw=-0.12)
+                epose = _elf_pose(t, target)
+                elight = L_ELF_B if shot == "B" else _elf_light(t)
+                hand = None
+                if shot == "B" and epose.far.gesture == "tap_sign":
+                    # the insert's hand: find it (a draw on a scratch surface), clip the rig's own
+                    # hand away beyond the wrist, draw the pointing hand over it afterwards
+                    hand = ch.draw_elf(core.frame(8, 8)[1], ex, ey, s, epose, elight, t).hand_far
+                    hm = _hand_matrix(hand)
+                    c.save()
+                    c.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+                    c.rectangle(-4000.0, -4000.0, 8000.0, 8000.0)
+                    core.polygon(c, [hm.transform_point(u, v) for u, v in ((0.12, -0.6), (1.7, -0.6), (1.7, 0.7), (0.12, 0.7))])
+                    c.clip()
+                    c.set_fill_rule(cairo.FILL_RULE_WINDING)
+                erig = ch.draw_elf(c, ex, ey, s, epose, elight, t)
+                if hand is not None:
+                    c.restore()
+                    k_el = s * ch.REGISTRY["elf"].SIZE_K
+                    lw = B.line_for(B.LINE / ch.REGISTRY["elf"].SIZE_K, k_el * B.device_scale(c),
+                                    1.0 / ch.REGISTRY["elf"].SIZE_K) * k_el
+                    _point_hand(c, erig.hand_far, ch.elf_mats()["skin"], elight, lw)
+                if erig.mirror:          # the mirror's spill: a local glow, never a wash over her
+                    fx.glow(c, erig.mirror[0], erig.mirror[1], (52 if shot == "B" else 64) * s, C["mirror"],
+                            (0.1 if shot == "B" else 0.18) * _mirror_dim(t))
                 _shell_hum(c, t, erig, s)
                 out["mirror"] = cam.matrix(Z_ELF).transform_point(*erig.mirror) if erig.mirror else None
         items.append((Z_ELF, elf))
@@ -1664,11 +1882,13 @@ def _items(cam, shot, t, st, out):
                 sw = 0.03 * B.wobble(t, 2.75, 3.2, 3.0) + 0.025 * B.wobble(t, T_SWIVEL1 - 0.1, 3.0, 3.0)
                 yaw = dpose.turn * 0.6
                 # the wisps' buzz flickers the cold rim on him (quantised so the palette cache holds)
-                rim = round((0.62 + 0.24 * _wisp_level(t, 0)) * 50.0) / 50.0
+                rim = round((0.74 + 0.26 * _wisp_level(t, 0)) * 50.0) / 50.0
                 light = L_DRAGON.with_(rim_strength=rim)
-                P.draw_stool(c, dx, dy, s, L_SET, t, yaw=0.3 + yaw * 0.25, part="back", wobble=sw)
-                drig = ch.draw_dragon(c, dx, dy, s, dpose, light, t)
-                P.draw_stool(c, dx, dy, s, L_SET, t, yaw=0.3 + yaw * 0.25, part="front", wobble=sw)
+                syaw = 0.3 + yaw * 0.25
+
+                def seat(cc, proj, feet, syaw=syaw, sw=sw):
+                    _stool_under(cc, proj, feet, t, syaw, sw)
+                drig = ch.draw_dragon(c, dx, dy, s, dpose.with_(seat_prop=seat), light, t)
                 nx, ny, ndir = st["smoke_at"]
                 _sigh_smoke(c, t, T_SIGH + 0.3, nx, ny, s, ndir)
                 out["head"] = cam.matrix(Z_DRAGON).transform_point(*drig.head)
@@ -1736,13 +1956,31 @@ def draw(cr, t, st):
 
     # ================= light
     lc = st["light"].begin()
-    for (S0, r, g) in out["drums"]:
+    for (S0, r, g, ring) in out["drums"]:
         if g < 0.01:
             continue
         fx.glow(lc, S0[0], S0[1], r * 3.0, C["porthole"], 0.2 * g)
         if r > 22.0:                                 # a wet streak of it on the flagstones below
             fx.light_shaft(lc, S0[0], S0[1] + r * 1.6, S0[0], S0[1] + r * 4.2, r * 0.9, r * 1.4, C["porthole"],
                            alpha=0.07 * g, soft=2, fade_start=0.0, fade_end=1.0)
+        if ring is not None and r > 40.0 and _RUNE_STROKES is not None:
+            # the runes breathe: a soft cyan glow laid over each glyph on the bezel (the props
+            # kit's own rune band, same glyphs and places, through the lid's rim-fitted affine)
+            m_lid, pulse, seed = ring
+            lc.save()
+            lc.transform(m_lid)
+            lc.new_path()
+            for k in range(12):
+                a = k / 12.0 * TAU + 0.13
+                for seg in _RUNE_STROKES(k + seed, math.cos(a) * DRUM_R * 0.765,
+                                           -DRUM_AXLE + math.sin(a) * DRUM_R * 0.765, 9.0, a + math.pi / 2.0):
+                    lc.move_to(*seg[0])
+                    lc.line_to(*seg[1])
+            lc.restore()
+            lc.set_line_width(max(3.0, r * 0.045))
+            lc.set_line_cap(cairo.LINE_CAP_ROUND)
+            core.src(lc, "#7fffe0", (0.2 + 0.35 * pulse) * g)
+            lc.stroke()
     for (lp, z) in out["lamps"]:
         with plane(lc, cam, z) as s:
             P.wisp_light(lc, lp, s, None, 0.8)
@@ -1750,8 +1988,9 @@ def draw(cr, t, st):
         pc = cam.p(X, 0.0, z)
         kk = cam.k(z)
         fx.light_pool(lc, pc[0], pc[1], 520 * kk, 110 * kk, "#6fffd0", 0.24 * lp.level)
-    # the moon: a long cold shaft down the nave, landing in the empty aisle between them
-    z_land = max(1700.0, cam.z + 700.0)
+    # the moon: a long cold shaft down the nave, landing in the empty aisle between them -- at a
+    # fixed place in the world for each shot, so the flagstones never slide under the light
+    z_land = {"D": 2600.0, "B": 1900.0}.get(shot, 1700.0)
     w0 = cam.p(0.0, 1050.0, WALL_Z)
     w1 = cam.p(40.0, 0.0, z_land)
     fx.light_shaft(lc, w0[0], w0[1], w1[0], w1[1], 90 * cam.k(WALL_Z), 520 * cam.k(z_land), C["shaft"], alpha=0.13,
@@ -1763,18 +2002,21 @@ def draw(cr, t, st):
         kk = cam.k(Z_DRAGON)
         hp = out["his"][0]
         d_head = out["head"]
-        fx.glow(lc, 0.6 * d_head[0] + 0.4 * hp[0], 0.6 * d_head[1] + 0.4 * hp[1], 130 * kk, C["porthole"], 0.07)
+        fx.glow(lc, 0.6 * d_head[0] + 0.4 * hp[0], 0.6 * d_head[1] + 0.4 * hp[1], 130 * kk, C["porthole"], 0.09)
         # his porthole's cold light pooled on the floor round the stool
         fp = cam.p(X_DRAGON - 120.0, 0.0, Z_DRAGON + 40.0)
         fx.light_pool(lc, fp[0], fp[1], 360 * kk, 76 * kk, C["porthole"], 0.3)
-        fx.glow(lc, d_head[0] - 60 * kk, d_head[1] + 60 * kk, 240 * kk, C["porthole"], 0.08)
+        fx.glow(lc, d_head[0] - 60 * kk, d_head[1] + 60 * kk, 240 * kk, C["porthole"], 0.1)
     if shot in CAST_SHOTS:
         ep = cam.p(X_ELF - 40.0, 0.0, Z_ELF - 30.0)
         kk = cam.k(Z_ELF)
-        fx.light_pool(lc, ep[0], ep[1], 260 * kk, 55 * kk, C["mirror"], 0.16)
+        md = _mirror_dim(t)
+        fx.light_pool(lc, ep[0], ep[1], 260 * kk, 55 * kk, C["mirror"], 0.14 * md)
         if out["mirror"]:
+            # sized in world units, but never wider than the wide shot's: in the insert (kk ~3)
+            # a 600 px additive wash would bleach her face
             em = out["mirror"]
-            fx.glow(lc, em[0], em[1] - 30, 200 * kk, C["mirror"], 0.14)
+            fx.glow(lc, em[0], em[1] - 30, 200 * min(kk, 1.1), C["mirror"], (0.08 if shot == "B" else 0.12) * md)
     # dust motes turning in the shaft
     sx0, sy0 = w0
     sx1, sy1 = w1
@@ -1788,7 +2030,10 @@ def draw(cr, t, st):
 
     fx.dust(cr, t, (min(sx0, sx1) - 300 * kk, sy0, abs(sx1 - sx0) + 600 * kk, sy1 - sy0), n=110,
             color="#d8ecff", alpha=0.75, size=(0.9 * kk, 2.4 * kk), seed=3, drift=(5.0, -2.5), mask=in_shaft)
-    fx.post(cr, t, light=st["light"], bloom_strength=0.55, threshold=0.6, bloom_radius=2.2, wide=0.4,
+    # the insert is a big pale face beside a bright mirror: a higher bloom threshold, or the
+    # bloom of a large bright area lands back on itself and clips her skin
+    fx.post(cr, t, light=st["light"], bloom_strength=0.45 if shot == "B" else 0.55,
+            threshold=0.74 if shot == "B" else 0.6, bloom_radius=2.2, wide=0.3 if shot == "B" else 0.4,
             grain=0.035, vignette=0.66, vignette_color=C["vig"])
     if t < T_FADE1:
         fx.fade(cr, 1.0 - core.ramp(t, T_FADE0, T_FADE1, "inout_sine"))
@@ -1858,7 +2103,7 @@ SFX_CUES = sorted([
     (T_REST, "tap_wood", {"gain": 0.3, "pan": 0.2}),                                   # ...and the finger stays
     (L1.end + 0.25, "wing_flutter", {"gain": 0.15, "pan": 0.0, "size": 0.3}),          # wings sink
     (T_WITHDRAW0 + 0.1, "cloth_rustle", {"gain": 0.18, "pan": 0.85}),                  # she lowers her hand (off)
-    (L1.end + 0.45, "bench_creak", {"gain": 0.25, "pan": 0.0, "size": 0.35}),          # turns back to his drum
+    (T_BODY0 + 0.12, "bench_creak", {"gain": 0.25, "pan": 0.0, "size": 0.35}),         # turns back to his drum
     (T_SIGH, "sigh", {"gain": 0.75, "pan": -0.4}),
     (T_SIGH + 0.35, "smoke_puff", {"gain": 0.3, "pan": -0.4}),
     (T_SIGH + 1.6, "bench_creak", {"gain": 0.2, "pan": -0.35, "size": 0.35}),          # back round to his drum

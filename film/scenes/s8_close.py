@@ -4,58 +4,69 @@ THE IDEA (SPEC 0.3, S8)
   Everything the city handed him was a stone: SELF-SERVICE, a pile of remedies, a queue on a
   speaking stone, a SMILE stamp, a crowd that looked away. Now it is night in the castle garden
   and he sits in a ring of company under ONE iron lantern. The image is the parable: a small
-  pool of warmth -- company, honesty, bread -- in a big dark world; far away on the castle hill
-  the places that handed him stones (the wash-house, the apothecary's green cross, the tavern's
-  lantern strings) glow small and cold. The voice-over says what he learned; the picture shows
-  it: on "break" HE breaks his bread and holds half out to the grandmother who first broke hers
-  for him (she gave away the last of hers in S7). The given-to becomes the giver; she leans her
-  head on his arm. Then the night closes gently round the light, like a storybook closing.
+  island of warmth -- company, honesty, bread -- in a big dark world; far away at the foot of the
+  castle hill the places that handed him stones (the wash-house, the apothecary's green cross,
+  the tavern's lantern strings) glow small and cold. The voice-over says what he learned; the
+  picture shows it: on "break" HE breaks his bread and holds half out to the grandmother who first
+  broke hers for him (she gave away the last of hers in S7). The given-to becomes the giver; the
+  warmth swells round them; she leans her head on his arm. Then the night closes gently round the
+  two of them under the light, like a storybook closing.
 
-ONE SHOT -- a very slow pull-back, no cuts: the stillest shot of the film
-  0.0 -> 16.9  one eased pull-back, Camera(1170, 716) z1.33 -> Camera(1060, 628) z1.10, with a
-               barely-there breathing drift. It opens on ~S7's last framing (S7 ends on a slow
-               pull-back over this ring at blue hour), so the move carries on across the cut and
-               the cut reads as time passing. Multiplane: sky 0.06, the castle hill + town 0.28,
-               the near hills 0.45, the garden 1.0, soft foreground grass 1.3 -- the warm ring
-               gets smaller in a world that gets bigger; the oak comes in to frame the left.
-  16.9 -> 20   the final painting holds (only life moves: breath, the bard's silent strum,
-               fireflies, the flame). s8_fade 17.5 -> 19.8: the night closes in from the edges
-               toward the lantern's pool (a storybook iris), then black; the last 5 frames are
-               black for a clean cut to S9's fade-in.
+ONE SHOT -- a slow crane-back from the ring to the whole garden, no cuts (the stillest shot)
+  0.0 -> 16.9  one eased pull-back, Camera(1128, 716) z1.30 -> Camera(975, 578) z0.94, with a
+               barely-there breathing drift. It opens on EXACTLY S7's last framing (S7 ends on a
+               slow pull-back over this ring at blue hour; the two cameras agree to < 1 px), so
+               the hard cut is a locked-off time cut: same ring, same benches, the umpire still on
+               the crest board -- but the dusk has gone to night, the lamp is the only light, and
+               two more have joined bench 2. Then the camera keeps going back until the warm ring
+               is a small island in the night: the old oak frames the left, the castle on its hill
+               stands black against moonlit air in the middle, the moon at the upper right, the
+               ring across the lower middle (the widest the cached garden planes allow).
+               Multiplane: sky 0.06, the castle hill + town 0.28, the near hills 0.45, the garden
+               1.0, soft foreground grass and near fireflies 1.3 -- the warm ring gets smaller in a
+               world that gets bigger. The slow early part keeps the faces readable for L1/L2.
+  16.9 -> 20   the final painting holds (only life moves: breath, the bard's silent strum and his
+               warm notes, fireflies, moths, the flame). s8_fade 17.5 -> 19.8: the night closes in
+               from the edges on the dragon and the gnome under the lamp (a soft storybook iris,
+               IRIS_C), then black from 19.8 s (the last 4 frames) for a clean cut to S9's fade-in.
 
-THE RING (world px, the shared layout of film/scenes/_garden.py; S7 hands these over -- S7_END)
-  bench 1: the faun (u 0.20), three pigeons roosting on the seat (u 0.34-0.46, S7's), the gnome
-  (u 0.60), the dragon (u 0.845, front-on, tail curled round in front of his feet, wings
-  relaxed); the tied-open apothecary sack -- the stones -- forgotten in the dark at the bench
-  end. The griffin courier dozes on his haunches on the grass left of bench 1 (520, 956).
+THE RING (world px, the shared layout of film/scenes/_garden.py; S7 hands these over)
+  bench 1: the faun (u 0.20), three pigeons roosting on the seat (S7's) and S6's umpire asleep on
+  the crest board above them (one eye opens at the chuckle), the gnome (u 0.60), the dragon
+  (u 0.845, front-on, tail curled round in front of his feet, wings relaxed); the tied-open
+  apothecary sack -- the stones -- forgotten in the shadow at the bench end. The griffin courier
+  dozes on his haunches at the pool's edge left of bench 1 (520, 956): a moon-rimmed silhouette.
   bench 2 (G.BENCH2, angled in): the cockatrice BARD (u 0.14, silent cameo, quietly strumming,
   eyes half closed -- the storyteller of S0 has joined the tale he told), the dwarf (u 0.45, his
-  cap candle lit), and an elf in a plum cloak, hood down, ear-shells dark (the wash-house
-  stranger of S1 who pointed at SELF-SERVICE: even she came). Two pigeons roost at the lamp's foot.
+  cap candle lit), and the elf of S1 (u 0.80, sat square to us, hands folded on her own knees):
+  hood down, ear-shells dark, no mirror -- the stranger who pointed at SELF-SERVICE came, and she
+  is listening. Two pigeons roost at the lamp's foot.
 
 COMPOSITION / EYE-TRACE
   The lantern post is the axis between the two benches, which angle toward each other round it
-  like hands cupped round a candle. Values: the flame is the brightest point; the faces nearest
-  it (the dragon, the gnome, the bard, the dwarf) are keyed warm FROM the lamp's direction and
-  rimmed cool by the moon on their far sides (light_at); the garden falls away into a cached
-  night falloff beyond the ring (_draw_dark), so the eye goes lamp -> dragon -> gnome -> their
-  hands, where the story happens. The far town lights sit between the heads (never behind one)
-  and clear of the post through the whole move. Depth: foreground grass (1.3, blurred, nearly
-  black) / the ring / the hedges / mist in the valley / the town and the castle on its hill
-  against a band of moonlit haze / the sky. The caption band (bottom 180 px) holds only gravel,
-  bench feet and fireflies.
+  like hands cupped round a candle. The warm pool lies broad and even over the ring (not a hot
+  spot on the empty walk), so after the flame the brightest things are the faces: the lamp ->
+  the dragon and the gnome (the bread) -> round the ring. Bench 2 sits a half-step under the two
+  leads. The far town lights sit between the heads and clear of the post through the move.
+  Depth: near fireflies and foreground grass (1.3, soft) / the ring / the hedges sunk in the
+  dark / mist in the valley / the town and the castle hill silhouetted against moonlit air / the
+  sky. The caption band (bottom 180 px) holds only gravel, dark lawn and fireflies.
 
 COLOUR / VALUE SCRIPT (light is kindness, STYLE 6)
-  Dominant deep night blue (#0b1226 .. #1d2a4a), graded cooler in the shadows (_night_lut) and
-  graduated darker toward the top (_sky_grad). ONE accent: the lantern's amber -- its halo, a
-  soft cone of light falling onto the ring, the warm pool on the gravel (and the dwarf's tiny
-  cap candle). Far away, three small COLD accents: wash-house teal, apothecary mint-green, tavern
-  magenta -- the stones, still lit, no longer the subject. At the break the bread gives off a
-  soft warm breath of light and a curl of steam (as her loaf did in S7): the warmth now comes
-  from his hands. Fireflies (yellow-green) and moths round the lamp are the only other lights.
+  A deep night: the sky graduated darker upward (_sky_grad), the castle hill and the town graded
+  into black silhouettes (FAR_GRADE, HILLS_GRADE), the hedges behind the ring sunk (BACK_GRADE),
+  and the garden beyond the ring falling away into the dark (_draw_dark) -- squint and only the
+  island of lamplight remains. ONE warm accent: the lantern's amber -- a tight halo, a faint cone,
+  the broad warm pool, the warmth on the faces nearest it (face glows, as S7's lantern) -- and
+  the dwarf's tiny cap candle. Far away, three small COLD accents: wash-house teal, apothecary
+  mint, tavern magenta -- the stones, still lit, no longer the subject. The bread is the warmest
+  thing in the frame (as her loaf was in S7): warmth gathers in the round as he grips it, the
+  break releases a breath of light, each half keeps a small glow, and hers lights her face as she
+  holds it to her heart; then the whole pool swells a little round them (kindness()) and stays.
+  Fireflies (yellow-green) and moths round the lamp are the only other lights.
 
 ACTING (thought -> glance -> breath -> line; the VO is his THOUGHT: NOBODY'S lips move on it --
-  checked: every mouth is closed during s8_l1..l3, and the ring's laugh is a silent chuckle)
+  every mouth is closed during s8_l1..l3, and the ring's laugh is a silent chuckle)
   0.3-2.2   the dwarf tells a tale in gestures (an explaining hand, head bobbing); the ring
             listens toward him. The dragon cradles a small round of bread in his lap.
   L1 2.50   "They kept handing me stones." -- his eyes drift off the dwarf down to the bread
@@ -64,35 +75,41 @@ ACTING (thought -> glance -> breath -> line; the VO is his THOUGHT: NOBODY'S lip
             (closed smiles, squeezed eyes, heads and shoulders bobbing; the dragon's wings lift);
             the seat pigeons stir; the courier wakes with a start and yawns.
   L2 7.00   "We were hungry for bread the whole time." -- he looks round at the people near him:
-            eyes first, then the head -- down to her (7.05; she looks up at him on "bread"), past
-            her to the faun (8.47), across the ring to the bard and the dwarf (8.91). A warm
-            smile; he settles (10.06). The faun bites his crust (10.36); the courier dozes off.
+            eyes first, then the head -- down to her (7.05); on "bread" she looks up at him and
+            their eyes meet and hold (he blinks only as his eyes move on), past her to the faun
+            (8.47), across the ring to the bard and the dwarf (8.91). A warm smile; he settles
+            (10.06). The faun bites his crust (10.36); the courier dozes off.
   L3 11.80  "All it took was somebody to break it." -- on "somebody" (12.85) his eyes go down to
-            the bread; he lifts it a little out of his lap, the hands take a grip (13.64), a
-            strain, and on "break" it snaps in two (14.15): crumbs, a warm breath of light, steam.
-            His face softens to tender. His near hand turns palm-up and holds her half out at
-            the edge of his lap (14.49-14.99). She looks at it, up at him ("for me?"), hops once
-            along the seat to him (15.29, her S6 hop), takes it off his palm (15.84) -- tiny hand,
-            huge claw -- looks up at him with a hand to her heart (16.24; her spectacles catch
-            the lamplight) and leans her head against his arm, eyes closing (16.69). He looks
-            down at her, his head tipping toward hers, and gives one slow content blink.
-  16.9-     the final painting; the night closes in (s8_fade). The bard has nodded to them.
+            the bread; he lifts it a little out of his lap, the hands take a grip (13.64) -- the
+            loaf stays seated high in them, its crack opening above his fingers -- a strain, and
+            on "break" it snaps in two (14.15): crumbs, a warm breath of light, steam. His face
+            softens to tender. His near hand turns palm-up and holds her half out at the edge of
+            his lap (14.49-14.99). She looks at it, up at him ("for me?"), hops once along the
+            seat to him (15.29, her S6 hop), takes it off his palm (15.84) -- tiny hand, huge claw
+            -- looks up at him with a hand to her heart (16.24; her spectacles catch the
+            lamplight, her bread lights her face) and leans her head against his arm, eyes
+            closing (16.69). He looks down at her, his head tipping toward hers, and gives one
+            slow content blink. The warmth round them swells and stays.
+  16.9-     the final painting; the night closes in on the two of them (s8_fade). The bard has
+            nodded to them; his four warm notes (the hold music's motif, set free) drift up.
 
 PERIOD (SPEC 0.1): an iron candle lantern, wrought-iron-and-oak benches, a gravel walk, clipped
 hedges, a paper apothecary sack tied with twine, wool, linen, leather, felt, a lute, a miner's
 cap candle, bread; the castle and a medieval roofline far away; the town's lights are candle-lit
 signs, portholes and paper lanterns (cold only in colour). Nothing electric, nothing modern.
 
-TECHNICAL: the static art is merged per plane into cached layers (build_planes: far = haze +
-castle hill + the town's houses; garden = lawn, hedges, walk, beds + the warm pool); the benches
-never move and are cached in tight supersampled layers (build_benches); level of detail is fixed
-per character for the whole shot (LOD) because the pull-back crosses the library's automatic
-thresholds; the bread's two-hand grips and both hand-overs are measured once in setup
-(_calibrate_grips, _solve_handoff) so the bread never jumps between hands.
+TECHNICAL: the static art is merged per plane into cached, pre-graded layers (build_planes: sky =
+night sky + moonlit air; far = castle hill + the town's houses; hills; garden = the sunk back
+strip, lawn, walk, beds + the warm pool); the benches never move and are cached in tight
+supersampled layers (build_benches); level of detail is fixed per character for the whole shot
+(LOD) because the pull-back crosses the library's automatic thresholds; the bread's two-hand
+grips and both hand-overs are measured once in setup (_calibrate_grips, _solve_handoff) so the
+bread never jumps between hands; the bread and face glows are placed from this frame's rig and
+hold-callback positions (_CAP, rigs) in the quarter-res light layer.
 
 SOUND: SFX_CUES (module level) lists every on-screen event with its local time, computed from the
-same constants the animation uses. The bard's strumming is silent (the score carries the music);
-the VO, crickets and the murmur are handled elsewhere.
+same constants the animation uses (pans follow the camera path). The bard's strumming is silent
+(the score carries the music); the VO, crickets and the murmur are handled elsewhere.
 """
 
 import math
@@ -155,10 +172,12 @@ T_FADE1 = DUR - 0.2                              # ... black (the last frames ar
 # ----------------------------------------------------------------------------------------
 SC = G.SCALE
 U1 = {"faun": 0.2, "gnome": 0.6, "dragon": 0.845}             # bench 1 (BenchRig.place fractions)
-U2 = {"bard": 0.14, "dwarf": 0.45, "elf": 0.76}               # bench 2
+U2 = {"bard": 0.14, "dwarf": 0.45, "elf": 0.8}                # bench 2
+ELF_TURN = 0.5                                                # the elf sits more square to us (see elf_pose)
 GRIFFIN = (520.0, 956.0)                                      # on the grass at bench 1's left end
 PIGEONS = [(1336.0, 921.0, -1, 71), (1366.0, 926.0, -1, 72)]  # roosting at the lantern's foot (x, y, facing, seed)
-SEAT_BIRDS = [(0.40, -1, 101), (0.34, 1, 77), (0.46, -1, 78)]     # S7's three seat pigeons (u, facing, seed), roosting
+SEAT_BIRDS = [(0.40, -1, 79), (0.34, 1, 77), (0.46, -1, 78)]      # S7's three seat pigeons (u, facing, seed), roosting
+UMPIRE = (0.44, -1, 101)             # S6/S7's umpire, still on the crest board (S7: u 0.38; shuffled clear of the faun's head) -- asleep
 SACK = (1118.0, 876.0)                                        # the apothecary sack (grip), forgotten by the bench end
 # the far town (hills plane, PARALLAX["hills"]): the three cold lights of the places that
 # handed him stones -- positions in that plane's world coordinates
@@ -171,8 +190,9 @@ TOWN_PLANE = "far"                   # they stand on the castle hill's slopes, u
 LOD = {"dragon": 2, "gnome": 2, "faun": 1, "bard": 1, "elf": 1, "griffin": 1, "dwarf": 1, "props": 1}
 
 Cam = core.Camera
-CAM_A = Cam(1170.0, 716.0, 1.33)       # ~S7's last framing: its slow pull-back continues across the cut
-CAM_B = Cam(1060.0, 628.0, 1.1)        # the garden in the night round the ring: the final painting
+CAM_A = Cam(1128.0, 716.0, 1.30)       # = S7's last framing (its shot I at DUR): its slow pull-back continues across the cut
+CAM_B = Cam(975.0, 578.0, 0.94)        # the whole garden in the night round the ring: the final painting
+                                       # (the widest the cached garden planes allow: x -46..1996, y 4..1152)
 
 _STATE = {}
 _GX = {}                               # per-frame gesture targets (body space) for the dragon's s8_* gestures
@@ -210,6 +230,11 @@ def _blink_at(t, times, dur=0.18):
     return best
 
 
+def _unit(v):
+    n = math.hypot(v[0], v[1]) or 1.0
+    return (v[0] / n, v[1] / n)
+
+
 def _v_add(a, b):
     return (a[0] + b[0], a[1] + b[1], a[2] + b[2])
 
@@ -239,11 +264,12 @@ def camera(t):
 # ----------------------------------------------------------------------------------------
 # light: ONE warm lantern; everything else is the cold night
 # ----------------------------------------------------------------------------------------
-WARM_KEY = (1.16, 0.84, 0.52)
+WARM_KEY = (1.2, 0.85, 0.5)
 WARM_AMB = (0.22, 0.23, 0.42)
+WARM_EXPOSURE = 1.38                   # the lamp's key on the faces nearest it (they carry the frame)
 MOON_RIM = (0.6, 0.72, 1.0)
 NIGHT = ch.Light(key=(0.5, 0.58, 0.86), ambient=(0.16, 0.18, 0.36), rim=MOON_RIM, rim_strength=0.45,
-                 direction=(0.55, -0.83), exposure=0.5, name="s8_night")
+                 direction=(0.55, -0.83), exposure=0.58, name="s8_night")
 
 
 def lamp():
@@ -255,11 +281,17 @@ def flicker(t):
     return 0.93 + 0.05 * core.noise1(t * 5.0, 3) + 0.02 * math.sin(t * 13.0)
 
 
+def kindness(t):
+    """0 -> 1: after he gives her the half, the warmth in the ring swells a little and stays --
+    felt more than seen (the light is the emotional score: S6's laugh, S7's spreading pool)."""
+    return _r(t, T_HANDOFF - 0.1, T_LEAN + 1.0)
+
+
 def warmth_at(x, y):
     """0..1: how much of the lantern's light reaches the world point (x, y)."""
     lx, ly = lamp()
     d = math.hypot(x - lx, (y - ly) * 0.9)
-    return 1.0 - core.smoothstep(200.0, 960.0, d)
+    return 1.0 - core.smoothstep(180.0, 860.0, d)
 
 
 def light_at(x, y, boost=1.0, rim_k=1.0):
@@ -274,7 +306,7 @@ def light_at(x, y, boost=1.0, rim_k=1.0):
     rd = (-0.72 * side, -0.69)
     k = core.clamp(warmth_at(x, y) * boost)
     warm = ch.Light(key=WARM_KEY, ambient=WARM_AMB, rim=MOON_RIM, rim_strength=0.5 * rim_k, direction=kd,
-                    rim_direction=rd, exposure=1.26, name="s8_lamp")
+                    rim_direction=rd, exposure=WARM_EXPOSURE, name="s8_lamp")
     night = NIGHT.with_(rim_direction=rd, rim_strength=0.45 * rim_k)
     return ch.Light.lerp(night, warm, k)
 
@@ -335,6 +367,7 @@ BREAD_SIZE = ch.GNOME_LOAF * 1.0    # the round of bread he kept from her loaf
 HALF_DX = 9.0                       # each half sits this far in from its grip (body px): the torn faces show
 OFFER_LIFT = 15.0                   # on the open palm the half sits this much above the grip (body px)
 OFFER_AT = (-74.0, -4.0, 18.0)      # her half on his palm: at the near edge of his lap (body px from its middle)
+GRIP_SINK = 0.1                     # how far the loaf sinks into his grip as he takes hold (x BREAD_SIZE)
 
 
 def _bread_cb(state, face=1.0, key=None, light=None, dx=0.0, dy=0.0, size=BREAD_SIZE):
@@ -406,12 +439,17 @@ def _two_cb(t, light):
         if t < T_SNAP:
             mx, my = (n[0] + fa[0]) * 0.5, (n[1] + fa[1]) * 0.5
             crack = core.clamp((t - (T_SNAP - 0.25)) / 0.25)
-            seat = BREAD_SIZE * (0.42 - 0.3 * _r(t, T_GRIP - 0.3, T_GRIP + 0.1))   # on the palms -> in the grip
+            # on the palms -> held up in the grip: the loaf stays seated high, its top and the
+            # opening crack above his fingers (the object must never vanish at the climax)
+            seat = BREAD_SIZE * (0.42 - GRIP_SINK * _r(t, T_GRIP - 0.3, T_GRIP + 0.1))
             ch.gnome_bread(cr, mx, my - seat, BREAD_SIZE, light, "loaf", crack=0.6 * crack)
             _CAP["whole"] = cr.user_to_device(mx, my - seat)
         else:
-            for (gx_, gy_), face, sgn in ((n, 1.0, 1.0), (fa, -1.0, -1.0)):
-                ch.gnome_bread(cr, gx_ + sgn * HALF_DX, gy_ - BREAD_SIZE * 0.12, BREAD_SIZE, light, "half", face=face)
+            # the halves leave the loaf's seat and settle to the one-hand hold height as they part
+            lift = BREAD_SIZE * (0.12 + (0.42 - GRIP_SINK - 0.12) * (1.0 - part_at(t)))
+            for (gx_, gy_), face, sgn, key in ((n, 1.0, 1.0, "half_n"), (fa, -1.0, -1.0, "half_f")):
+                ch.gnome_bread(cr, gx_ + sgn * HALF_DX, gy_ - lift, BREAD_SIZE, light, "half", face=face)
+                _CAP[key] = cr.user_to_device(gx_ + sgn * HALF_DX, gy_ - lift)
         cr.restore()
     return cb
 
@@ -514,7 +552,9 @@ def dragon_pose(t):
     if tender > 0:
         mood2, mix = TENDER, tender
     # blinks are acted: on thought changes; never while she looks up at him (that look must land)
-    blink = _blink_at(t, [1.4, T_LAUGH + 1.6, T_LOOK_F - 0.25, T_SETTLE + 0.8, T_LIFT + 0.5])
+    # (on "bread" she looks up at him: their eyes meet and HOLD -- he blinks only as his eyes move
+    # on to the faun)
+    blink = _blink_at(t, [1.4, T_LAUGH + 1.6, T_LOOK_F - 0.03, T_SETTLE + 0.8, T_LIFT + 0.5])
     if T_LEAN + 0.45 < t < T_LEAN + 1.05:                             # a slow, content blink as she leans on him
         blink = max(blink, math.sin(math.pi * (t - (T_LEAN + 0.45)) / 0.6) ** 0.7)
     if abs(t - (W_STONES + 0.2)) < 0.25:                               # a slow blink on "stones"
@@ -676,6 +716,35 @@ def gnome_pose(t):
     return x, y, pose
 
 
+# the bard's silent strum, made visible: now and then the film's FOUR-NOTE MOTIF floats up from his
+# lute as four small warm notes -- the very notes that looped cold on the speaking stone's hold
+# music in S3, now warm and drifting free (their heights follow the motif's contour)
+NOTE_GROUPS = (0.9, 9.95, 15.85)
+try:
+    from film.audio import motif as _motif
+    _MOTIF = tuple(_motif.MOTIF)
+except Exception:                                   # pragma: no cover - the audio package is optional here
+    _MOTIF = (59, 57, 54, 52)
+
+
+def bard_notes(cr, t, origin):
+    ox, oy = origin
+    lo = min(_MOTIF)
+    for g, t0 in enumerate(NOTE_GROUPS):
+        for k, pitch in enumerate(_MOTIF):
+            born = t0 + 0.42 * k
+            life = 3.1
+            u = (t - born) / life
+            if not 0.0 <= u < 1.0:
+                continue
+            e = 1.0 - (1.0 - u) ** 2
+            a = core.smoothstep(0.0, 0.12, u) * (1.0 - core.smoothstep(0.55, 1.0, u))
+            x = ox - 10.0 - 34.0 * e + 7.0 * math.sin(u * 5.0 + k * 1.7 + g)
+            y = oy - 28.0 - 96.0 * e - 2.2 * (pitch - lo)
+            P.draw_music_note(cr, x, y, 0.52, t, color="#ffd486", alpha=0.9 * a,
+                              kind="minim" if k % 2 else "semiminim", angle=0.15 * math.sin(u * 4.0 + k), glow=True)
+
+
 def draw_seat_birds(cr, t, bench):
     """S7's three pigeons, roosting on the seat between the faun and her: puffed up, asleep,
     breathing; the ring's laugh wakes them for a moment (an eye, a ruffle), then they settle."""
@@ -689,11 +758,22 @@ def draw_seat_birds(cr, t, bench):
         ch.draw_pigeon(cr, x, y, SC, pose, light_at(x, y - 20.0), t)
 
 
+def draw_umpire(cr, t, bench):
+    """The S6 umpire on bench 1's crest board (S7 leaves him at u 0.38, by the faun's ear): asleep, puffed round;
+    the ring's chuckle opens one eye a beat after the others -- then he settles again."""
+    u, f, seed = UMPIRE
+    x, y = bench._pt((u - 0.5) * (G.BENCH1.length - 60.0), -(P.BENCH_SEAT_H + 108.0 + 9.0), -48.0 - 0.22 * 117.0)
+    wake = _win(t, T_LAUGH + 0.45, T_LAUGH + 1.5, 0.15, 0.55)
+    pose = ch.PigeonPose(facing=f, puff=0.95 + 0.05 * B.breathing(t, 0.27, seed) - 0.25 * wake, blink=1.0 - 0.85 * wake,
+                         look=core.lerp(float(f), 0.3, wake), tilt=0.1 * wake, seed=seed)   # a quick swivel, no snap
+    ch.draw_pigeon(cr, x, y, SC, pose, light_at(x, y - 20.0), t)
+
+
 def draw_sack(cr, t):
     """The apothecary sack of remedies -- the stones -- forgotten on the gravel by his foot."""
     x, y = SACK
     L = light_at(x, y + 40.0)
-    P.draw_apothecary_bag(cr, x, y, SC, L.with_(exposure=L.exposure * 0.42, rim_strength=0.2), t, angle=0.05,
+    P.draw_apothecary_bag(cr, x, y, SC, L.with_(exposure=L.exposure * 0.3, rim_strength=0.15), t, angle=0.05,
                           state="open", detail=LOD["props"])
 
 
@@ -709,6 +789,13 @@ def draw_gnome_leaning(cr, t, gx, gy, gpose):
     rig = ch.draw_gnome(cr, gx, gy, SC, gpose, light_at(gx, gy - 160.0, boost=1.25), t, detail=LOD["gnome"])
     if lean:
         cr.restore()
+        # her rig's points are in the leaned frame: bring the head back to world coordinates
+        px, py = gnome_pivot(gx, gy)
+        hx, hy = rig.head
+        c, s_ = math.cos(lean), math.sin(lean)
+        _STATE["gnome_head"] = (px + (hx - px) * c - (hy - py) * s_, py + (hx - px) * s_ + (hy - py) * c)
+    else:
+        _STATE["gnome_head"] = rig.head
     return rig
 
 
@@ -796,11 +883,16 @@ def dwarf_pose(t):
 
 
 def elf_pose(t):
+    # sat a touch more square to us than the others (her lap -- and her hands, folded in it -- stay
+    # in front of her own knees instead of reaching across the dwarf's), head turned to the ring
     x, y = _STATE["b2"].place(U2["elf"])
     laugh = _win(t, T_LAUGH + 0.1, T_LAUGH1 + 0.1, 0.2, 0.5)
-    p = ch.ElfPose(facing=-1, turn=0.1, sit=1.0, hood=0.0, shells=0.0, glow=0.0, mood="kind",
+    # listening: a little lean in toward the ring, the head tipped toward the tale
+    lean = 0.12 + 0.03 * B.breathing(t, 0.18, 52)
+    p = ch.ElfPose(facing=-1, turn=ELF_TURN, sit=1.0, hood=0.0, shells=0.0, glow=0.0, mood="kind",
                    mood2=RING_CHUCKLE if laugh > 0 else None, mood_mix=0.75 * laugh, smile=0.35 + 0.45 * laugh,
-                   look=(-0.85, 0.0), head_nod=0.04 * laugh + chuckle_bob(t, 0.6 * laugh, 3.5, 0.4), seed=51)
+                   lean=lean, head_turn=-0.35, head_tilt=-0.08, look=(-0.8, 0.05),
+                   head_nod=0.04 * laugh + chuckle_bob(t, 0.6 * laugh, 3.5, 0.4), seed=51)
     return x, y, p
 
 
@@ -811,19 +903,23 @@ _SET_KEYS = ("sky", "far", "hills", "back", "ground", "oak")
 
 
 def _draw_moonhaze(cr):
-    """A pale band of moonlit haze low in the sky behind the castle hill (far plane, cached): the
-    castle, the hill and the town's roofs stand out against it as soft silhouettes."""
-    cr.save()
-    cr.translate(1000.0, 548.0)
-    cr.scale(1.0, 0.16)
-    pat = cairo.RadialGradient(0, 0, 0, 0, 0, 1250.0)
-    c = core.col("#5a6c9c")
-    for off, a in ((0.0, 0.42), (0.35, 0.3), (0.7, 0.12), (1.0, 0.0)):
-        pat.add_color_stop_rgba(off, c[0], c[1], c[2], a)
-    cr.set_source(pat)
-    cr.arc(0, 0, 1250.0, 0, math.tau)
-    cr.fill()
-    cr.restore()
+    """Moonlit air low in the sky (sky plane, cached): a pale band along the horizon behind the
+    hill's slopes and a soft bloom of moonlit sky behind the castle, so the castle, the hill and
+    the town's roofs stand out against it as clean dark silhouettes."""
+    for (x, y, rx, ry, col_, stops) in (
+            (1000.0, 560.0, 1250.0, 190.0, "#5a6c9c", ((0.0, 0.4), (0.35, 0.28), (0.7, 0.11), (1.0, 0.0))),
+            (960.0, 330.0, 640.0, 250.0, "#4a5c8e", ((0.0, 0.26), (0.45, 0.15), (1.0, 0.0)))):
+        cr.save()
+        cr.translate(x, y)
+        cr.scale(1.0, ry / rx)
+        pat = cairo.RadialGradient(0, 0, 0, 0, 0, rx)
+        c = core.col(col_)
+        for off, a in stops:
+            pat.add_color_stop_rgba(off, c[0], c[1], c[2], a)
+        cr.set_source(pat)
+        cr.arc(0, 0, rx, 0, math.tau)
+        cr.fill()
+        cr.restore()
 
 
 def paint_set(cr, cam, t, st):
@@ -841,17 +937,19 @@ def paint_set(cr, cam, t, st):
     Lk = g.L["night"]
     PX = G.PARALLAX
     with cam.view(cr, PX["sky"]):
-        Lk["sky"].paint(cr)
+        st["sky_all"].paint(cr)                      # the night sky + the moonlit air low behind the hill
         if "stars" in Lk:
             Lk["stars"].draw(cr, t, alpha=1.0)
     _sky_grad(cr)
+    with cam.view(cr, PX["sky"]):
+        st["stars"].draw(cr, t, alpha=0.9)           # a few brighter stars over the graduated sky
     with cam.view(cr, PX["far"]):
-        st["far_all"].paint(cr)                      # moonlit haze + castle hill + the town's houses
+        st["far_all"].paint(cr)                      # the castle hill + the town's houses (graded into the night)
     draw_town(cr, cam, t)
     with cam.view(cr, PX["far"]):
-        st["mist"].draw(cr, t)
+        st["mist"].draw(cr, t, alpha=0.6)
     with cam.view(cr, PX["hills"]):
-        Lk["hills"].paint(cr)
+        st["hills_n"].paint(cr)
     with cam.view(cr, PX["garden"]):
         st["garden_all"].paint(cr)                   # lawn, hedges, walk, beds + the lantern's warm pool
         Lk["oak"].draw(cr, t, alpha=1.0)
@@ -898,18 +996,33 @@ def build_planes(st):
     if any(k not in Lk for k in _SET_KEYS):
         return
 
-    def far_all(cr):
+    def sky_all(cr):
+        Lk["sky"].paint(cr)
         st["moonhaze"].paint(cr)
+
+    def far_all(cr):
         Lk["far"].paint(cr)
         _town_static(cr)
 
-    def garden_all(cr):
-        Lk["back"].paint(cr)
-        Lk["ground"].paint(cr)
-        st["pool"].paint(cr, alpha=0.96, operator=cairo.OPERATOR_ADD)
+    # the back strip (far lawn + the clipped hedges behind the ring) lies well behind the benches:
+    # the lamp barely reaches it, so it sinks into the night -- the faces read against dark leaves
+    back_n = env.layer(lambda cr: Lk["back"].paint(cr))
+    G._grade_layer(back_n, [("#03060f", BACK_GRADE)])
 
+    def garden_all(cr):
+        back_n.paint(cr)
+        Lk["ground"].paint(cr)
+        st["pool"].paint(cr, alpha=1.0, operator=cairo.OPERATOR_ADD)
+
+    st["sky_all"] = env.layer(sky_all, opaque=True)
     st["far_all"] = env.layer(far_all)
+    st["hills_n"] = env.layer(lambda cr: Lk["hills"].paint(cr))
     st["garden_all"] = env.layer(garden_all)
+    # the far planes sink into the night (washes ATOP the paint: the castle and its hill become a
+    # clean dark silhouette against the moonlit air; the near hills and the town's roofline darker
+    # still, so nothing behind the ring competes with the faces in the lamplight)
+    G._grade_layer(st["far_all"], [("#070b1c", FAR_GRADE)])
+    G._grade_layer(st["hills_n"], [("#05081a", HILLS_GRADE)])
 
 
 # ----------------------------------------------------------------------------------------
@@ -1027,7 +1140,10 @@ def town_light(lc, cam, t, k=1.0):
         fx.glow(lc, x, y + 9 * K, 66.0 * K, MAGENTA, 0.3 * k)
 
 
-BENCH_DIM = 0.72                       # the benches' wood a step under the cast (and it is night)
+BENCH_DIM = 0.84                       # the benches' wood a step under the cast (and it is night)
+FAR_GRADE = 0.36                       # how far the castle hill + town sink into the night
+HILLS_GRADE = 0.42                     # ... and the near hills + the town's roofline
+BACK_GRADE = 0.5                       # ... and the hedges + far lawn behind the ring
 
 
 def _sky_grad(cr):
@@ -1057,51 +1173,59 @@ def _night_lut():
 # ----------------------------------------------------------------------------------------
 # the dark: a cached world-space falloff (the garden falls away into night beyond the ring)
 # ----------------------------------------------------------------------------------------
-POOL_C = (1240.0, 935.0)               # the middle of the warm pool on the ground (under the lamp)
-DARK_C = (1235.0, 770.0)               # the centre of the light's reach (between the lamp and its pool)
+POOL_C = (1196.0, 944.0)               # the middle of the warm pool on the ground: under the lamp, drawn toward the ring
+DARK_C = (1190.0, 800.0)               # the centre of the light's reach (the ring between the benches)
+DARK_R = (700.0, 330.0)                # ... and its radii: inside ~0.55 of them nothing darkens
+NIGHT_INK = (0.004, 0.008, 0.026)      # the colour of the dark beyond the ring
 
 
 def _draw_dark(cr):
-    """The night beyond the ring (world space, cached): clear round the lamp, darkening with
-    distance; the sky above the hedges is spared (moon, stars, castle), the oak sinks into
-    silhouette, the near ground darkens toward the lens."""
+    """The night beyond the ring (world space, cached): clear over the ring, falling away into
+    the dark with distance -- the faun and the courier at the pool's edge, the oak, the far lawn
+    and the flower beds sink toward silhouette, the near ground darkens toward the lens. The sky,
+    the castle hill and the town (other planes) are graded separately: this layer is masked to
+    the garden (below the back hedge's top)."""
     cx, cy = DARK_C
+    rx, ry = DARK_R
     cr.push_group()
     cr.save()
     cr.translate(cx, cy)
-    cr.scale(1.0, 0.6)
-    R = 1150.0
+    cr.scale(1.0, ry / rx)
+    R = rx * 2.6
     pat = cairo.RadialGradient(0, 0, 0, 0, 0, R)
-    for off, a in ((0.0, 0.0), (0.22, 0.0), (0.36, 0.14), (0.5, 0.36), (0.65, 0.57), (0.8, 0.72), (1.0, 0.84)):
-        pat.add_color_stop_rgba(off, 0.006, 0.012, 0.035, a)
+    ink = NIGHT_INK
+    for r, a in ((0.0, 0.0), (0.42, 0.0), (0.62, 0.17), (0.85, 0.4), (1.15, 0.62), (1.55, 0.78), (2.1, 0.87), (2.6, 0.9)):
+        pat.add_color_stop_rgba(r / 2.6, ink[0], ink[1], ink[2], a)
     cr.set_source(pat)
     cr.paint()
     cr.restore()
     cr.pop_group_to_source()
-    cr.mask(core.linear(0, 520.0, 0, 720.0, [(0.0, (0, 0, 0, 0.0)), (1.0, (0, 0, 0, 1.0))]))
-    # the old oak's crown: a dark silhouette against the night sky
+    cr.mask(core.linear(0, 640.0, 0, 770.0, [(0.0, (0, 0, 0, 0.0)), (1.0, (0, 0, 0, 1.0))]))
+    # the old oak: its crown sinks into a dark silhouette against the night sky (moon-rimmed edges survive)
     cr.save()
     cr.translate(G.OAK[0] + 40.0, 470.0)
     cr.scale(1.0, 0.62)
-    pat = cairo.RadialGradient(0, 0, 0, 0, 0, 560.0)
-    pat.add_color_stop_rgba(0.0, 0.006, 0.012, 0.035, 0.55)
-    pat.add_color_stop_rgba(0.7, 0.006, 0.012, 0.035, 0.42)
-    pat.add_color_stop_rgba(1.0, 0.006, 0.012, 0.035, 0.0)
+    pat = cairo.RadialGradient(0, 0, 0, 0, 0, 600.0)
+    pat.add_color_stop_rgba(0.0, ink[0], ink[1], ink[2], 0.62)
+    pat.add_color_stop_rgba(0.7, ink[0], ink[1], ink[2], 0.5)
+    pat.add_color_stop_rgba(1.0, ink[0], ink[1], ink[2], 0.0)
     cr.set_source(pat)
     cr.paint()
     cr.restore()
 
 
 def _draw_pool(cr):
-    """The lantern's warm pool on the gravel and grass (world space, cached; painted ADD)."""
+    """The lantern's warm pool on the gravel and grass (world space, cached; painted ADD): broad
+    and even over the ring -- the benches' feet, the gravel between them -- rather than a hot spot
+    on the empty walk, so the brightest things in the pool are the faces, not the ground."""
     cx, cy = POOL_C
+    c = core.col("#ff9e48")
     cr.save()
     cr.translate(cx, cy)
-    cr.scale(1.0, 0.25)
-    R = 720.0
+    cr.scale(1.0, 0.27)
+    R = 820.0
     pat = cairo.RadialGradient(0, 0, 0, 0, 0, R)
-    c = core.col("#ffae5c")
-    for off, a in ((0.0, 0.5), (0.15, 0.42), (0.35, 0.26), (0.6, 0.11), (0.82, 0.035), (1.0, 0.0)):
+    for off, a in ((0.0, 0.5), (0.16, 0.45), (0.34, 0.31), (0.52, 0.16), (0.72, 0.055), (0.88, 0.015), (1.0, 0.0)):
         pat.add_color_stop_rgba(off, c[0], c[1], c[2], a)
     cr.set_source(pat)
     cr.arc(0, 0, R, 0, math.tau)
@@ -1109,13 +1233,13 @@ def _draw_pool(cr):
     cr.restore()
     # light on the back hedge behind the lamp (it lights what is behind it too)
     cr.save()
-    cr.translate(cx + 10.0, 760.0)
-    cr.scale(1.0, 0.45)
-    pat = cairo.RadialGradient(0, 0, 0, 0, 0, 520.0)
-    for off, a in ((0.0, 0.16), (0.5, 0.06), (1.0, 0.0)):
+    cr.translate(cx + 30.0, 760.0)
+    cr.scale(1.0, 0.42)
+    pat = cairo.RadialGradient(0, 0, 0, 0, 0, 560.0)
+    for off, a in ((0.0, 0.12), (0.5, 0.045), (1.0, 0.0)):
         pat.add_color_stop_rgba(off, c[0], c[1], c[2], a)
     cr.set_source(pat)
-    cr.arc(0, 0, 520.0, 0, math.tau)
+    cr.arc(0, 0, 560.0, 0, math.tau)
     cr.fill()
     cr.restore()
 
@@ -1157,6 +1281,38 @@ def _shadows(cr, cam, casters):
 
 
 # ----------------------------------------------------------------------------------------
+# warm light that comes from the people, not the lamp: faces, and the bread
+# ----------------------------------------------------------------------------------------
+FACE_GLOW_R = {"dragon": 95.0, "griffin": 78.0, "faun": 70.0, "elf": 64.0, "dwarf": 66.0, "bard": 54.0,
+               "gnome": 48.0}
+FACE_GLOW_A = 0.12
+BREAD_GLOW = "#ffc070"
+
+
+def bread_light(lc, cam, t):
+    """The bread is the warmest thing in the frame (as her loaf was in S7): warmth gathers in the
+    round as he lifts and grips it ("somebody"), the break releases a breath of light (draw()), and
+    from then on each half keeps a small warm glow of its own -- hers lights her face from below as
+    she holds it to her heart and leans on him. Screen space: the halves' positions are captured
+    by their hold callbacks this frame (_CAP)."""
+    z = cam.zoom
+    br = 1.0 + 0.08 * math.sin(t * 2.1)
+
+    def g(key, r, a):
+        p = _CAP.get(key)
+        if p is not None and a > 0.004:
+            fx.glow(lc, p[0], p[1], r * z, BREAD_GLOW, a * br)
+            fx.glow(lc, p[0], p[1], r * 0.35 * z, "#ffe2b0", 0.6 * a * br)
+
+    g("whole", 50.0, 0.03 + 0.15 * _r(t, T_LIFT, T_SNAP))
+    g("half_n", 50.0, 0.2)
+    g("half_f", 50.0, 0.2)
+    g("give", 54.0, 0.2 + 0.03 * _r(t, T_OFFER0, T_OFFER))
+    g("keep", 46.0, 0.15)
+    g("gnome", 56.0, 0.23 + 0.05 * _win(t, T_LOOKUP - 0.1, T_LEAN + 0.4, 0.3, 0.6))
+
+
+# ----------------------------------------------------------------------------------------
 # life in the air: fireflies over the dark lawn, moths round the lamp
 # ----------------------------------------------------------------------------------------
 
@@ -1174,10 +1330,22 @@ def _moths(cr, t):
 
 
 def _fireflies(cr, t, k=1.0):
-    fx.fireflies(cr, t, (-60.0, 760.0, 700.0, 300.0), n=9, color="#d8ff7a", size=2.0, seed=91, alpha=0.85 * k, speed=0.8)
-    fx.fireflies(cr, t, (1780.0, 720.0, 260.0, 330.0), n=5, color="#d8ff7a", size=2.0, seed=92, alpha=0.85 * k, speed=0.8)
-    fx.fireflies(cr, t, (300.0, 640.0, 1500.0, 120.0), n=8, color="#c8f070", size=1.6, seed=93, alpha=0.7 * k, speed=0.7)
-    fx.fireflies(cr, t, (200.0, 1000.0, 1700.0, 140.0), n=6, color="#d8ff7a", size=2.3, seed=94, alpha=0.8 * k, speed=0.9)
+    """Fireflies over the dark lawn (action plane, inside cam.view): the only other little lights
+    in the night -- round the oak, along the hedges, over the far lawn on both sides of the ring,
+    a few drifting low over the gravel in front."""
+    fx.fireflies(cr, t, (-60.0, 700.0, 760.0, 330.0), n=13, color="#d8ff7a", size=2.2, seed=91, alpha=0.9 * k, speed=0.8)
+    fx.fireflies(cr, t, (1760.0, 690.0, 300.0, 360.0), n=7, color="#d8ff7a", size=2.2, seed=92, alpha=0.9 * k, speed=0.8)
+    fx.fireflies(cr, t, (260.0, 640.0, 1600.0, 110.0), n=11, color="#c8f070", size=1.6, seed=93, alpha=0.75 * k, speed=0.7)
+    fx.fireflies(cr, t, (120.0, 990.0, 1800.0, 150.0), n=8, color="#d8ff7a", size=2.5, seed=94, alpha=0.85 * k, speed=0.9)
+
+
+def _near_fireflies(cr, cam, t, k=1.0):
+    """A few big soft fireflies drifting close to the lens (parallax 1.3, out of focus): depth."""
+    with cam.view(cr, G.PARALLAX["fg"]):
+        fx.fireflies(cr, t, (-160.0, 820.0, 520.0, 360.0), n=3, color="#e2ff8a", size=4.6, seed=95,
+                     alpha=0.42 * k, speed=0.55, halo=5.0)
+        fx.fireflies(cr, t, (1620.0, 760.0, 520.0, 420.0), n=3, color="#e2ff8a", size=4.6, seed=96,
+                     alpha=0.42 * k, speed=0.55, halo=5.0)
 
 
 # ----------------------------------------------------------------------------------------
@@ -1248,6 +1416,7 @@ def setup():
     _STATE["lamp"] = post.lamp
     st["dark"] = env.layer(_draw_dark)
     st["moonhaze"] = env.layer(_draw_moonhaze, blur=4.0)
+    st["stars"] = env.StarField((-90.0, -60.0, 2100.0, 420.0), n=34, seed=88, color="#f2f4ff")
     st["mist"] = env.Mist(-90.0, 538.0, 2100.0, 70.0, "#4c5a86", alpha=0.32, seed=8, speed=3.0, scale=2.6)
     st["pool"] = env.layer(_draw_pool)
     build_planes(st)
@@ -1358,14 +1527,20 @@ def draw(cr, t, st):
                (G.BENCH2.x, G.BENCH2.y, 260.0, 200.0, 0.6)]
     _shadows(cr, cam, casters)
 
+    for k in ("whole", "give", "keep", "gnome", "half_n", "half_f"):
+        _CAP.pop(k, None)                               # this frame's bread positions (screen px)
+    rigs = {}
     with cam.view(cr, 1.0):
         post = g.draw_lantern(cr, t, Lnight.with_(exposure=0.8), lit=1.0)
         # bench 1 and its sitters
         paint_bench(cr, st, 1, "back")
+        draw_umpire(cr, t, b1)
         draw_seat_birds(cr, t, b1)
-        ch.draw_faun(cr, fx_, fy_, SC, fpose, light_at(fx_, fy_ - 230.0), t, detail=LOD["faun"])
-        ch.draw_dragon(cr, dx, dy, SC, dpose, light_at(dx, dy - 260.0, boost=1.1), t, detail=LOD["dragon"])
-        draw_gnome_leaning(cr, t, gx, gy, gpose)       # at the seat's front edge: in front of his near side
+        rigs["faun"] = ch.draw_faun(cr, fx_, fy_, SC, fpose, light_at(fx_, fy_ - 230.0, rim_k=1.5), t,
+                                    detail=LOD["faun"])
+        rigs["dragon"] = ch.draw_dragon(cr, dx, dy, SC, dpose, light_at(dx, dy - 260.0, boost=1.1), t,
+                                        detail=LOD["dragon"])
+        rigs["gnome"] = draw_gnome_leaning(cr, t, gx, gy, gpose)   # at the seat's front edge: in front of his near side
         draw_sack(cr, t)                                # set down by the bench end: its leg in front
         paint_bench(cr, st, 1, "front")
         # the little spray of crumbs when the bread snaps, and a curl of steam from the soft crumb
@@ -1379,13 +1554,18 @@ def draw(cr, t, st):
                      color="#f6e6cc", alpha=0.55, seed=12, scale=SC, spread=0.5)
         # bench 2 and its sitters
         paint_bench(cr, st, 2, "back")
-        ch.draw_bard(cr, bx, by, SC, bpose, light_at(bx, by - 170.0, boost=1.1), t, detail=LOD["bard"])
-        ch.draw_dwarf(cr, wx, wy, SC, wpose, light_at(wx, wy - 200.0), t, detail=LOD["dwarf"])
+        # (bench 2 a half-step under the two leads: the eye goes to the dragon and the gnome)
+        brig = ch.draw_bard(cr, bx, by, SC, bpose, light_at(bx, by - 170.0, boost=0.98), t, detail=LOD["bard"])
+        rigs["bard"] = brig
+        rigs["dwarf"] = ch.draw_dwarf(cr, wx, wy, SC, wpose, light_at(wx, wy - 200.0, boost=0.9), t,
+                                      detail=LOD["dwarf"])
         Le = light_at(ex, ey - 220.0)
-        ch.draw_elf(cr, ex, ey, SC, epose, Le.with_(exposure=Le.exposure * 0.8), t, detail=LOD["elf"])
+        rigs["elf"] = ch.draw_elf(cr, ex, ey, SC, epose, Le.with_(exposure=Le.exposure * 0.8), t, detail=LOD["elf"])
         paint_bench(cr, st, 2, "front")
+        bard_notes(cr, t, brig.lute.get("strum", brig.chest) if isinstance(brig.lute, dict) else brig.chest)
         # the griffin on the grass, the pigeons roosting by the post
-        ch.draw_griffin(cr, rx, ry, SC, rpose, light_at(rx, ry - 200.0, rim_k=1.3), t, detail=LOD["griffin"])
+        rigs["griffin"] = ch.draw_griffin(cr, rx, ry, SC, rpose, light_at(rx, ry - 200.0, rim_k=2.3), t,
+                                          detail=LOD["griffin"])   # at the pool's edge: a moonlit silhouette
         for (px, py, f, seed) in PIGEONS:
             ch.draw_pigeon(cr, px, py, SC, ch.PigeonPose(facing=f, puff=0.9 + 0.08 * B.breathing(t, 0.33, seed),
                                                          blink=1.0, seed=seed), light_at(px, py - 20.0), t)
@@ -1395,6 +1575,7 @@ def draw(cr, t, st):
         _moths(cr, t)
         _fireflies(cr, t)
     g.paint_fg(cr, cam, t, "night")
+    _near_fireflies(cr, cam, t)
 
     # ---- light
     lc = st["light"].begin()
@@ -1402,33 +1583,51 @@ def draw(cr, t, st):
     town_light(lc, cam, t)
     with cam.view(lc, 1.0):
         lx, ly = lamp()
-        fx.glow(lc, lx, ly, 420.0, "#ffb05a", 0.3 * fl)
-        # the light falling from the lantern: a soft warm cone down onto the ring and the gravel
-        fx.light_shaft(lc, lx, ly + 18.0, lx - 70.0, G.GROUND_Y + 30.0, 70.0, 820.0, "#ffb468", 0.11 * fl,
-                       soft=4, fade_start=0.2, fade_end=0.55)
-        fx.glow(lc, lx, ly, 110.0, "#ffe2a8", 0.45 * fl)
-        fx.glow(lc, DARK_C[0] - 60.0, DARK_C[1], 700.0, "#ff9d50", 0.05 * fl)
+        # the lantern: its glass, a warm halo, and the night air faintly lit round it -- small
+        # and clean, so the dark stays dark and the faces in its light carry the frame
+        kd = kindness(t)
+        fx.glow(lc, lx, ly, 560.0, "#ff9a48", (0.045 + 0.02 * kd) * fl)
+        fx.glow(lc, lx, ly, 230.0, "#ffb05a", (0.2 + 0.04 * kd) * fl)
+        fx.glow(lc, lx, ly, 90.0, "#ffe6b0", 0.5 * fl)
+        if kd > 0.0:                                # the pool swells round the two of them
+            fx.light_pool(lc, POOL_C[0] - 120.0, POOL_C[1] - 10.0, 640.0, 150.0, "#ffa956", 0.085 * kd * fl)
+            fx.glow(lc, IRIS_C[0] - 60.0, IRIS_C[1] + 90.0, 300.0, "#ffb26a", 0.06 * kd * fl)
+        # the light falling from it: a faint warm cone down over the ring
+        fx.light_shaft(lc, lx, ly + 22.0, lx - 60.0, G.GROUND_Y + 10.0, 60.0, 560.0, "#ffb468", 0.045 * fl,
+                       soft=6, fade_start=0.15, fade_end=0.7)
+        # the lamp's warmth on the faces nearest it (from its side, by how far it reaches): at
+        # this size the faces must glow, as in S7's lantern light
+        for who, rg in rigs.items():
+            if rg is None or getattr(rg, "head", None) is None:
+                continue
+            hx, hy = _STATE["gnome_head"] if who == "gnome" else rg.head
+            k = warmth_at(hx, hy)
+            if k > 0.03:
+                d = _unit((lx - hx, ly - hy))
+                r = FACE_GLOW_R.get(who, 62.0)
+                fx.glow(lc, hx + d[0] * r * 0.25, hy + d[1] * r * 0.25, r, "#ffb26a",
+                        FACE_GLOW_A * k * fl * (1.0 + 0.25 * kd))
         # the break: a soft warm breath of light from the torn crumb, swelling and settling
         if "snap_at" in _STATE:
             k = _win(t, T_SNAP - 0.05, T_SNAP + 1.6, 0.12, 1.1)
             if k > 0:
                 bx_, by_ = _STATE["snap_at"]
-                fx.glow(lc, bx_, by_, 120.0, "#ffc070", 0.28 * k)
-        # the lamplight's warm radiance round the ring (it lights the faces nearest it most)
-        fx.glow(lc, lx - 170.0, 735.0, 470.0, "#ffa860", 0.13 * fl)
-        fx.glow(lc, lx + 230.0, 790.0, 330.0, "#ffa860", 0.07 * fl)
+                fx.glow(lc, bx_, by_, 130.0, "#ffc070", 0.34 * k)
+    bread_light(lc, cam, t)
     fx.grade_lut(cr, _night_lut())
-    fx.post(cr, t, light=st["light"], bloom_strength=0.62, threshold=0.6, bloom_radius=2.2, wide=0.4, grain=0.038,
-            vignette=0.56, vignette_color=(0.01, 0.01, 0.04))
+    fx.post(cr, t, light=st["light"], bloom_strength=0.55, threshold=0.62, bloom_radius=2.2, wide=0.25, grain=0.038,
+            vignette=0.6, vignette_color=(0.008, 0.01, 0.035))
     # ---- the night closes in toward the lantern, then black
     if t > T_FADE0:
         _fade(cr, cam, t)
 
 
+IRIS_C = (1095.0, 612.0)               # the night closes in on the two of them under the lamp
+
+
 def _fade(cr, cam, t):
     u = core.clamp((t - T_FADE0) / (T_FADE1 - T_FADE0))
-    lx, ly = cam.to_screen(*lamp())
-    cx, cy = (lx + cam.to_screen(*POOL_C)[0]) * 0.5, (ly + cam.to_screen(*POOL_C)[1]) * 0.5
+    cx, cy = cam.to_screen(*IRIS_C)
     r0 = core.lerp(1500.0, 0.0, core.inout_sine(u))
     pat = cairo.RadialGradient(cx, cy, r0 * 0.25, cx, cy, r0 + 700.0)
     pat.add_color_stop_rgba(0.0, 0, 0, 0, 0.0)
