@@ -79,6 +79,7 @@ SONG = Song()
 LATCH_LEAD, LATCH_STEP = 0.1, 0.075            # the shutter run: starts just before "latch", 75 ms apart
 LATCH_CLOSE, LATCH_BAR = 0.26, 0.18           # each pair swings shut in 0.26 s, then its bar drops in 0.18 s
 PADLOCK_DELAY = 0.12                          # the heart padlock snaps shut this long after its door slams
+DOOR_OPEN = 0.88                              # verse 1's doors open this far (the leaf folds back against the hinge jamb)
 
 
 # ----------------------------------------------------------------------------------------
@@ -204,7 +205,7 @@ FOLK = {
 
 def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, hurry=0.0, away=0.0,
           look=0.0, reach=0.0, lantern=False, lantern_lit=1.0, alpha=1.0, seed=0, hood=None, bundle=None,
-          lift=0.0, hold=None, shrug=0.0, ear_k=1.0):
+          lift=0.0, hold=None, shrug=0.0, ear_k=1.0, tail_k=1.0):
     """A painted creature figure standing at (x, y) (feet), ~38*s units tall, facing +1 right / -1
     left. walk 0..1 + phase (legs, bob); hurry 0..1 (leans, head down, hood up); away 0..1 (turned
     away from us: the face hides behind the hood/head); look -1..1 glance (head turned toward the
@@ -239,9 +240,10 @@ def pfolk(cr, x, y, s=1.0, kind="goblin", t=0.0, facing=1, walk=0.0, phase=0.0, 
     ch_ = 23.0 * hs
     # --- tail
     if F.get("tail"):
-        tw = math.sin(t * 2.3 + seed) * 2.0 + walk * math.sin(ph) * 1.5
-        sb.ink(cr, [(-5.0, -8.0), (-11.0, -5.5 + tw), (-15.5, -9.0 + tw), (-16.5, -12.0 + tw * 0.6)], 1.4,
-               F["skin"], 1.0, (1.0, 0.8, 0.25))
+        tw = (math.sin(t * 2.3 + seed) * 2.0 + walk * math.sin(ph) * 1.5) * tail_k
+        tk = tail_k
+        sb.ink(cr, [(-5.0, -8.0), (-5.0 - 6.0 * tk, -5.5 - 2.5 * (1 - tk) + tw), (-5.0 - 10.5 * tk, -9.0 - 3.0 * (1 - tk) + tw),
+                    (-5.0 - 11.5 * tk, -12.0 - 4.0 * (1 - tk) + tw * 0.6)], 1.4, F["skin"], 1.0, (1.0, 0.8, 0.25))
     # --- back arm (swinging)
     sw_b = -math.sin(ph) * 2.8 * walk
     sb.ink(cr, [(-1.5, -ch_ * 0.72), (-3.0 + sw_b, -ch_ * 0.42), (-2.0 + sw_b, -ch_ * 0.3)], 2.6,
@@ -917,8 +919,8 @@ class CastleTown(_Synced):
     tilts down it. Life, on the lyrics: pennants fly; the castle's windows light on "kingdom of
     stone"; folk walk the street alone (one turns away from another); a lone figure appears in each
     upper window on "living alone"; potions glint on the sills on "potions"; a yawn and ink z's on
-    "sleeping"; charms swing on "charms"; painted rain on "rain"; the folk hurry home, the doors slam
-    and the iron heart padlocks snap shut on "lock" (the candlelight burnishes them on "heart"); the
+    "sleeping"; charms swing on "charms"; painted rain on "rain"; the folk hurry home and step in over
+    their thresholds, the doors slam in front of them and the iron heart padlocks snap shut on "lock" (the candlelight burnishes them on "heart"); the
     shutters clap shut one after another and an iron latch bar drops across each on "latch"."""
     DW, DH = 200.0, 287.0
     grain = 0.3
@@ -1337,15 +1339,16 @@ class CastleTown(_Synced):
         # the doors: open while their folk come home, SLAM on "lock" and the heart padlocks snap
         # shut (a little 'clack' of ink); on "heart" the candlelight burnishes each lock in turn
         lock0, heart0 = e("lock"), e("heart")
+        folks = self.folk_states(t, rain_u)
         for k, hf in enumerate(self._houses):
             o0, o1 = self._door_plan(k)
             open_ = 0.0
             t_slam = lock0 + 0.04 * k
             if o0 <= t < t_slam:
-                open_ = smooth((t - o0) / 0.35) * 0.8
+                open_ = smooth((t - o0) / 0.35) * DOOR_OPEN
             slam = t - t_slam
             if slam >= 0.0:
-                open_ = 0.8 * (1.0 - core.in_quad(clamp(slam / 0.09)))
+                open_ = DOOR_OPEN * (1.0 - core.in_quad(clamp(slam / 0.09)))
             tl_ = t_slam + PADLOCK_DELAY
             lk = core.out_back(clamp((t - tl_) / 0.1)) if t > tl_ else 0.0
             swing = 0.0
@@ -1358,8 +1361,10 @@ class CastleTown(_Synced):
                 gu = (t - (heart0 + 0.12 * k)) / 0.6
                 glint = gu if gu < 1.0 else 0.0
             lamp = clamp(open_ / 0.4) * (1.0 if t < t_slam + 0.09 else 0.0)
+            inn = [f for f in folks if f["layer"] == "door" and f["home"] == k]
             draw_town_door(cr, hf["door"], open_=open_, slam=slam - 0.09 if slam > 0.09 else -1.0, t=t, lock=clamp(lk, 0.0, 1.08),
-                           swing=swing, glint=glint, lamp=lamp)
+                           swing=swing, glint=glint, lamp=lamp,
+                           within=(lambda c, inn=inn: self._draw_folk(c, inn, t)) if inn else None)
             dx, dy, dw, dh = hf["door"]
             if lk > 0.0:
                 ink_clack(cr, dx + dw * 0.8, dy + dh * 0.47 + dw * 0.3, dw * 0.42, (t - tl_) / 0.4, n=5, a0=-0.3, a1=1.0)
@@ -1411,8 +1416,8 @@ class CastleTown(_Synced):
         if "dormer" in self._houses[1]:
             dx_, dy_, dw_, dh_ = self._houses[1]["dormer"]
             lit_window(cr, dx_, dy_, dw_, dh_, 0.75 + 0.1 * math.sin(t * 3.0), arch=True)
-        # folk in the street
-        self._street_folk(cr, t, rain_u)
+        # folk in the street (whoever is already in a doorway was drawn with the door, behind its leaf)
+        self._draw_folk(cr, [f for f in folks if f["layer"] == "street"], t)
         # the rain: painted streaks over the town (and a cold wash that dims it)
         if rain_u > 0.01:
             cr.save()
@@ -1524,19 +1529,24 @@ class CastleTown(_Synced):
             dist += abs(x1 - x0)
         return keys[-1][1], dist, 0.0
 
-    def _street_folk(self, cr, t, rain_u):
-        """Three folk, each alone: two cross without a word (one turns away), one fumbles with her
-        own latch; when the rain comes they hurry home and vanish through their doors just before
-        the doors slam on "lock"."""
+    STEP_IN = 0.3                                   # up over the threshold into the doorway (s)
+
+    def folk_states(self, t, rain_u):
+        """The three street folk at t, each alone: two cross without a word (one turns his face away), one
+        fumbles with her own latch; when the rain comes they hurry home, step up over their thresholds and
+        are IN their doorways when the doors slam on "lock" -- nobody fades. Each is a dict of pfolk()
+        arguments plus "layer": "street" (in front of the house fronts, drawn over the doors) or "door"
+        (in its own doorway: drawn by draw_town_door between the lit hall and the door leaf, clipped by
+        the jambs and the arch, so the door shuts in front of it), "home" and "dark" (doorway shadow)."""
         e = self.e
-        y = self.STREET_Y + 9.0
+        y_st = self.STREET_Y + 9.0
         lock0 = e("lock")
         cross = e("cross")
+        out = []
         for kind, (keys, facing, home, lantern, seed) in self.folk_plan().items():
-            dx, dy, dw, dh = self._houses[home]["door"]
             t_in = keys[-1][0]                              # reaches the open doorway
-            t_gone = lock0 + 0.04 * home - 0.03             # gone into the dark before the door slams
-            if t >= t_gone:
+            t_shut = lock0 + 0.04 * home + 0.09             # its door has slammed shut in front of it
+            if t >= t_shut:
                 continue
             x, dist, speed = self._along(keys, t)
             walking = clamp(speed / 6.0) if t < t_in else 0.0
@@ -1545,29 +1555,96 @@ class CastleTown(_Synced):
                 look = math.sin(math.pi * clamp((t - (cross - 0.55)) / 1.1)) * 0.9
             else:
                 away = smooth((t - (cross - 0.25)) / 0.25) * (1.0 - smooth((t - (cross + 1.1)) / 0.3))
-            step_in = smooth((t - t_in) / max(0.05, t_gone - t_in))
-            vis = 1.0 - step_in
-            yy = lerp(y, dy + dh + 0.6, step_in)
-            fac = facing
             if t >= t_in - 0.05:
                 away = max(away, smooth((t - (t_in - 0.05)) / 0.15))     # turns into the doorway
-            pfolk(cr, x, yy, 0.78 * (1.0 - 0.14 * step_in), kind, t, facing=fac, walk=walking, phase=dist / 8.5,
-                  hurry=rain_u, away=away, look=look, lantern=lantern, alpha=vis, seed=seed)
+            f = dict(kind=kind, x=x, y=y_st, s=0.78, facing=facing, walk=walking, phase=dist / 8.5, hurry=rain_u,
+                     away=away, look=look, lantern=lantern, seed=seed, layer="street", home=home, dark=0.0)
+            self._step_in(f, t, t_in, self.STEP_IN, t_shut)
+            out.append(f)
         # the mouse-folk: at her own door all along, back to us, fumbling with her latch; in she goes
         home = 2
         dx, dy, dw, dh = self._houses[home]["door"]
-        t_in = self._door_plan(home)[0] + 0.32
-        t_gone = lock0 + 0.04 * home - 0.03
-        if t < t_gone:
-            step_in = smooth((t - t_in) / max(0.05, t_gone - t_in))
-            fumble = 0.55 + 0.25 * math.sin(t * 4.2) * (1.0 - step_in)
-            pfolk(cr, dx + dw * 0.5, lerp(y - 1.0, dy + dh + 0.6, step_in), 0.74 * (1.0 - 0.14 * step_in), "mouse", t,
-                  facing=1, away=1.0, reach=fumble, alpha=1.0 - step_in, seed=3, hurry=rain_u * 0.6)
+        t_in = lock0 - 0.36
+        t_shut = lock0 + 0.04 * home + 0.09
+        if t < t_shut:
+            fumble = (0.55 + 0.25 * math.sin(t * 4.2)) * (1.0 - smooth((t - t_in) / 0.15))
+            f = dict(kind="mouse", x=dx + dw * 0.5, y=y_st - 1.0, s=0.74, facing=1, walk=0.0, phase=0.0, away=1.0,
+                     reach=fumble, seed=3, hurry=rain_u * 0.6, layer="street", home=home, dark=0.0)
+            self._step_in(f, t, t_in, 0.22, t_shut)
+            out.append(f)
+        return out
+
+    def _step_in(self, f, t, t_in, step_dur, t_shut):
+        """From t_in: one step up over the threshold (still in front of the wall: the street layer), then on
+        into the lamplit hall (the doorway layer: further, smaller, darker against the light) until the
+        door shuts in front of them. At the threshold the figure fits between the folded-back leaf and the
+        far jamb (shrunk with distance, long ears flattened, tail tucked), so changing layers never pops."""
+        if t < t_in:
+            return
+        dx, dy, dw, dh = self._houses[f["home"]]["door"]
+        y_door = dy + dh - 0.1                              # feet on the threshold, just inside the opening
+        x_door = dx + dw * (1.0 + (1.0 - DOOR_OPEN)) * 0.5 - 0.14 * f["s"] * f["facing"]   # centred in the free opening
+        step = clamp((t - t_in) / step_dur)
+        se = core.inout_sine(step)
+        x0, y0, s0 = f["x"], f["y"], f["s"]
+        f["x"] = lerp(x0, x_door, se)
+        f["y"] = lerp(y0, y_door, se)
+        f["s"] = lerp(s0, 0.7, se)
+        f["walk"] = max(f["walk"] * (1.0 - se), 0.7 * math.sin(math.pi * step))   # one step up
+        f["phase"] += 0.5 * step
+        f["away"] = max(f.get("away", 0.0), se)
+        f["dark"] = 0.2 * se
+        f["ear_k"] = 1.0 - 0.5 * se                          # long ears flatten to duck under the arch
+        f["tail_k"] = 1.0 - 0.7 * se                         # a tail tucked in
+        f["reach"] = f.get("reach", 0.0) * (1.0 - se)
+        if step >= 1.0:
+            u = clamp((t - (t_in + step_dur)) / max(0.1, t_shut - (t_in + step_dur)))
+            f["layer"] = "door"
+            f["y"] = y_door - 2.4 * u                        # on into the hall, away from us
+            f["s"] = 0.7 * (1.0 - 0.1 * u)
+            f["walk"] = 0.55
+            f["phase"] += 1.1 * u
+            f["dark"] = 0.2 + 0.42 * u
+
+    def _draw_folk(self, cr, folks, t):
+        """Draw folk_states() figures; a figure in a doorway's shadow is darkened toward a silhouette."""
+        for f in folks:
+            kw = {k: v for k, v in f.items() if k not in ("layer", "home", "dark", "x", "y", "s", "kind")}
+            x, y, s, dark = f["x"], f["y"], f["s"], f["dark"]
+            if dark <= 0.01:
+                pfolk(cr, x, y, s, f["kind"], t, **kw)
+                continue
+            cr.save()
+            cr.rectangle(x - 24.0 * s, y - 52.0 * s, 48.0 * s, 57.0 * s)
+            cr.clip()
+            cr.push_group()
+            pfolk(cr, x, y, s, f["kind"], t, **kw)
+            pat = cr.pop_group()
+            cr.set_source(pat)
+            cr.paint()
+            core.src(cr, "#21140d", dark)
+            cr.mask(pat)
+            cr.restore()
 
 
 # ----------------------------------------------------------------------------------------
 # verse 2: the dragon's street (left) and the merchants' market (right)
 # ----------------------------------------------------------------------------------------
+
+def _catmull(pts, u):
+    """Uniform Catmull-Rom through pts (tuples) at u in 0..1, continued linearly past either end."""
+    n = len(pts) - 1
+    if u <= 0.0:
+        return tuple(a + (b - a) * u * n for a, b in zip(pts[0], pts[1]))
+    if u >= 1.0:
+        return tuple(b + (b - a) * (u - 1.0) * n for a, b in zip(pts[-2], pts[-1]))
+    f = u * n
+    i = min(int(f), n - 1)
+    s = f - i
+    p0, p1, p2, p3 = pts[max(0, i - 1)], pts[i], pts[i + 1], pts[min(n, i + 2)]
+    return tuple(0.5 * (2 * b + (c - a) * s + (2 * a - 5 * b + 4 * c - d) * s * s + (3 * b - a - 3 * c + d) * s ** 3)
+                 for a, b, c, d in zip(p0, p1, p2, p3))
+
 
 def storybook_dragon_posed(cr, x, y, s, t, pose, alpha=0.97, tint=0.14):
     """THE DRAGON on-model (the real rig) painted into a page: soft storybook light, then washed a
@@ -1705,6 +1782,57 @@ class DragonStreet(_Synced):
         g = glance * math.sin(math.pi * clamp((t - (t0 + 1.15)) / 0.75))
         return x, dist, g
 
+    # the waving arm's path, relative to his near shoulder in body space (side-signed x): hanging at rest
+    # -> swung out-and-down with the forearm hanging -> the forearm forward (foreshortened) -> the hand
+    # up at shoulder height on a dropped elbow -> the wave beside his head. The rig's two elbow
+    # directions (the "wave" pole: elbow out and down; the "rest" pole: elbow back) agree exactly where
+    # the hand lies along _ARM_SWITCH, so the arm changes gesture there without a pop.
+    _ARM_SWITCH = (0.677, 0.671, 0.304)
+
+    def _arm_lift(self, t):
+        """(lift, wag): 0 = arm hanging .. 1 = the wave. Up on "waved" (a quick swing with an eager
+        overshoot); on "on by" the wag stops, the hand sinks on its dropped elbow, the forearm falls
+        and the arm hangs heavy, easing into the hang with a small settle."""
+        e = self.e
+        wav, by_ = e("wave"), e("by")
+        w_in = core.out_back(clamp((t - (wav - 0.2)) / 0.34)) if t > wav - 0.2 else 0.0
+        t0, dur = by_ - 0.2, 0.95
+        wag = 1.0 - smooth((t - (t0 - 0.3)) / 0.3)
+        if t < t0:
+            return w_in, wag
+        u = (t - t0) / dur
+        if u <= 1.0:
+            return 1.0 - core.inout_sine(u), 0.0
+        x = t - (t0 + dur)
+        return -0.05 * math.sin(math.pi * clamp(x / 0.35)) * (1.0 - smooth(x / 0.5)), 0.0
+
+    def _near_arm(self, t, pose):
+        """His near arm through the wave, as hand targets on one path (see _ARM_SWITCH)."""
+        lift, wag = self._arm_lift(t)
+        if lift <= 0.0 and abs(lift) < 1e-4:
+            return ch.Arm("rest")
+        try:
+            from film.lib.characters import dragon as _D
+            yaw = _D._yaw_of(pose.facing, pose.turn)
+            side = -1.0 if yaw >= 0 else 1.0
+            sk = _D._skeleton(pose, t, clamp(pose.sit), pose.seat_h)["shoulders"][side]
+        except Exception:                                   # rig internals moved: the plain blend
+            return ch.Arm("wave", amt=clamp(lift), prev="rest", phase=(t - self.e("wave")) * 0.9)
+        ph = (t - self.e("wave")) * 0.9
+        sw = self._ARM_SWITCH
+        pts = [(side * 12.0, 172.0, 16.0),                                       # hanging (the rest pose)
+               (side * sw[0] * 120.0, sw[1] * 120.0, sw[2] * 120.0),              # out and down: the switch
+               (side * 78.0, 70.0, 70.0),                                         # forearm forward
+               (side * 78.0, 10.0, 35.0),                                         # hand up on a dropped elbow
+               (side * (74.0 + 16.0 * math.sin(ph * TAU * 2) * wag), -60.0, 34.0)]   # the wave (wagging)
+        rel = _catmull(pts, lift)
+        tgt = (sk[0] + rel[0], sk[1] + rel[1], sk[2] + rel[2])
+        if lift < 0.25:
+            return ch.Arm("rest", target=tgt, hand="relaxed")
+        # the rig adds its idle sway to a "rest" target; match it so the change of gesture is seamless
+        tgt = (tgt[0], tgt[1], tgt[2] + 3.0 * math.sin(t * 0.9 + side))
+        return ch.Arm("wave", target=tgt, hand="open" if lift > 0.8 else "relaxed")
+
     def pose(self, t):
         e = self.e
         sig, wav, hur = e("sigh"), e("wave"), e("hurried")
@@ -1712,9 +1840,8 @@ class DragonStreet(_Synced):
         wasnt = e("wasnt", spell - 0.75)
         sigh = smooth((t - (sig - 0.08)) / 0.22) * (1.0 - smooth((t - (sig + 0.6)) / 0.6))
         sigh = max(sigh, 0.5 * smooth((t - (wasnt + 0.2)) / 0.4) * (1.0 - smooth((t - (spell + 1.4)) / 0.6)))
-        w_in = core.out_back(clamp((t - (wav - 0.2)) / 0.32)) if t > wav - 0.2 else 0.0
-        w_out = core.inout_sine(clamp((t - (by_ - 0.45)) / 0.9))
-        amt = clamp(w_in) * (1.0 - w_out)
+        # as the wave sinks his shoulders sink with it (until the cold light draws him round on "But")
+        droop = smooth((t - (by_ - 0.2)) / 0.9) * (1.0 - smooth((t - (but_ - 0.1)) / 0.5))
         hope = smooth((t - (wav - 0.3)) / 0.3) * (1.0 - smooth((t - (hur + 0.2)) / 0.6))
         look_x = 0.35 * math.sin(t * 0.7) * (1.0 - hope)
         # his eyes follow the passers-by as they go (eyes first, the head after)
@@ -1726,13 +1853,13 @@ class DragonStreet(_Synced):
         head_turn = 0.6 * across - 0.25 * away + 0.35 * smooth((t - (t_pass + 1.1)) / 0.6) * (1.0 - smooth((t - (e("by") + 0.4)) / 0.7))
         look_x = lerp(look_x, 1.0, across)
         look_x = lerp(look_x, -0.3, away)
-        nod = -0.15 - 0.4 * away - 0.2 * smooth((t - (hur + 0.3)) / 0.5) * (1.0 - smooth((t - but_) / 0.3))
+        nod = -0.15 - 0.4 * away - 0.2 * smooth((t - (hur + 0.3)) / 0.5) * (1.0 - smooth((t - but_) / 0.3)) - 0.1 * droop
         look_y = 0.1 + 0.6 * away
-        wings = lerp(-0.45, 0.25, hope) + 0.15 * across - 0.5 * away
-        near = ch.Arm("wave", amt=amt, prev="rest", phase=(t - wav) * 0.9) if amt > 0.001 else ch.Arm("rest")
-        return ch.DragonPose(facing=0, turn=0.25, mood="lonely", mood2="happy", mood_mix=hope * (1.0 - away),
-                             sigh=sigh, wings=wings, head_turn=head_turn, head_nod=nod, look=(look_x, look_y), near=near,
-                             far=ch.Arm("rest"), hunch=0.55 + 0.3 * away, seed=3, tail_curl=0.5)
+        wings = lerp(-0.45, 0.25, hope) + 0.15 * across - 0.5 * away - 0.2 * droop
+        p = ch.DragonPose(facing=0, turn=0.25, mood="lonely", mood2="happy", mood_mix=hope * (1.0 - away),
+                          sigh=sigh, wings=wings, head_turn=head_turn, head_nod=nod, look=(look_x, look_y),
+                          far=ch.Arm("rest"), hunch=0.55 + 0.3 * away + 0.16 * droop, seed=3, tail_curl=0.5)
+        return p.with_(near=self._near_arm(t, p))
 
     def anim(self, cr, t):
         e = self.e
@@ -2903,7 +3030,9 @@ def make_book(ev):
                   sb.Page(illus=PageArt(wash_, BOX_TALL, "gothic", side=1, seed=8), box=full, frame=None, folio="viij",
                           seed=8, border=None)),
     ]
-    book = sb.Book(spreads=spreads)
+    # the gilt cover title is set in the uncial hand, whose small 't' reads as a 'c' at this size
+    # ("The Scone..."): the uncial capital T keeps it "The STONE" at a glance
+    book = sb.Book(spreads=spreads, title="The STone and the Bread")
     book.art = {"castle": castle, "shelf": shelf, "dragon": dragon, "market": market, "wash": wash_,
                 "v1": v1, "v2a": v2a, "v2b": v2b, "coda": coda}
     return book

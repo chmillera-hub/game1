@@ -28,7 +28,9 @@ SHOT A -- 0.0 -> 8.55 (T_CUT_INSERT = s1_tap + 0.25)   WIDE -> TWO-SHOT, one slo
   s1_fadein (0-1): fade up from black on a room already in motion -- drums tumbling and steaming,
   wisps buzzing and dipping in their iron cages, dust turning in the moon shaft. High camera down
   the nave: the dragon left of centre on the stool beside HIS drum (3/4 left, watching his own
-  laundry go round), the elf right of centre on a plank form under the SELF-SERVICE plaque.
+  laundry go round; his emptied laundry sack -- the one he carried in on the prologue's last
+  page -- slumped by the stool, a purple sleeve trailing out of it), the elf right of centre on a
+  plank form under the SELF-SERVICE plaque.
   Framing: soft dark near piers at both edges, a wicker laundry basket (bottom-left) and an oak
   wash-tub with a beetle-paddle (bottom-right) as soft foreground; the side aisles' tall black
   windows; receding arches overhead; the moon window the far focal point. Eye-trace: the lit gap
@@ -42,13 +44,15 @@ SHOT A -- 0.0 -> 8.55 (T_CUT_INSERT = s1_tap + 0.25)   WIDE -> TWO-SHOT, one slo
   opens and STAYS open. Nothing comes out. Hold. 8.3: her far hand starts up -- cut on the reach.
 SHOT B -- 8.55 -> 11.0 (s1_tap.end)   INSERT, tight, slow push
   Her lit face (lower left third), the plaque (upper right), her arm the diagonal between. Her
-  eyes never leave the mirror (runes scrolling, thumb idling, shells humming). tap (9.02), tap
+  eyes never leave the mirror (half-lidded, the irises down-left on the glass; runes scrolling,
+  thumb idling, shells humming; one calm blink after the taps, none on them). tap (9.02), tap
   (9.42): the board jolts and rocks on its nail each time; then the finger simply stays there
   while she keeps scrolling. SELF-SERVICE large and legible, uncial lettering; the nave soft.
   At this size the mirror's light is held local (a lower key on her, a clamped spill, a higher
   bloom threshold) so her pale green-grey skin keeps its shadow side and cyan underlight, and
   the tap is one long elegant finger (a pointing hand drawn over the rig's, the rest folded).
-SHOT C -- 11.0 -> 14.25   MEDIUM on him, eye level
+  The moon shaft lands behind her here, so its dust is drawn soft into the far buffer.
+SHOT C -- 11.0 -> 14.5   MEDIUM on him, eye level (framed high: his feet stay above the caption band)
   Cut back: he is still looking up at the sign; the hand has sunk back to his knee, the wings are
   still half-lifted. s1_l1 (11.80) "Self-service." -- read FLAT, a fact: heavy lids, no smile, no
   joke (a small, deadpan jaw); the wings sink all the way down over the line. Then the numb
@@ -66,11 +70,13 @@ SHOT E -- 17.4 -> 25.0   back on him, wider: him left, the receding nave, the el
   He is still looking down the rows. THOUGHT -> GLANCE -> BREATH -> LINE: his eyes go to her (she
   scrolls, oblivious), come back down the rows; a breath. s1_l2 (18.50) "That's the whole city,
   isn't it." -- quiet, to himself, near-profile, a tiny head-shake on "isn't it". The camera holds.
-  s1_hold: his gaze sinks; T_SIGH (21.35) a long sigh -- shoulders drop, eyes close, head bows --
-  and a curl of grey smoke rises from his nostrils and hangs in the air. Meanwhile the camera has
-  begun to pull back and crane up (21.0 -> 24.55, eased): he turns back to his drum, small among
-  the spinning drums, the elf scrolling across the aisle, the moon at the end. It settles before
-  the hard cut to S2.
+  His gaze sinks; T_SIGH (20.86, a beat after the line) a long sigh -- shoulders drop, eyes close,
+  head bows -- and on the still camera a thin wisp of grey smoke leaves his nostrils (21.11),
+  builds into a curl and hangs in the air. Only then does the camera pull back and crane up
+  (21.71 -> 23.86, eased; about as fast as the old 3.5 s move at its peak): he turns back to his
+  drum, small among the spinning drums, the elf scrolling across the aisle, the moon at the end.
+  The tableau HOLDS still for over a second, the curl of smoke still thinning above him, to the
+  hard cut to S2.
 
 COLOUR / VALUE. Sickly cold teal-green (wisps, portholes), blue-white moonlight, blue-black vault.
 His mustard scarf is the one warm note (his key light is near-neutral so it stays mustard); the
@@ -142,9 +148,13 @@ T_ROW0 = max(T_LOOK0 + 0.75, T_HEAD1 + 0.55)   # cut to the row, on his look alo
 T_ROW1 = T_LOOK1 - 0.6               # back on him, still looking down the rows
 T_GLANCE2 = T_ROW1 + 0.55            # his eyes go to her before the line...
 T_BACK2 = T_GLANCE2 + 0.5            # ...and back down the rows
-T_SIGH = T_HOLD + 0.35
-T_PULL0 = T_HOLD                     # the last pull-back
-T_PULL1 = DUR - 0.45
+# the button: a beat after the line, the sigh plays on the still medium-wide (the curl of smoke
+# forms in front of a camera that has not moved yet); the pull-back starts as the curl completes
+# and settles more than a second before the cut, so the small-among-the-drums tableau HOLDS
+T_SIGH = L2.end + 0.55
+T_SMOKE = T_SIGH + 0.25              # the smoke leaves his nostrils (the exhale takes ~0.9 s)
+T_PULL0 = T_SIGH + 0.85              # the last pull-back (a slow ease-in: ~5 % by the curl's end)...
+T_PULL1 = min(DUR - 1.1, T_PULL0 + 2.15)   # ...then held still to the cut
 _SHAKE0 = next((w[1] for w in tl.word_times("s1_l2") if w[0].lower().startswith("isn")), L2.end - 0.8)
 
 # ----------------------------------------------------------------------------------------
@@ -178,6 +188,7 @@ HIS_BAY, HIS_SLOT = 0, 1            # his drum: left side, bay 0, the far one of
 Z_PLAQUE = PIER_Z[1] - PIER_D / 2.0  # the plaque hangs on pier 1's front face (right)
 X_PLAQUE, H_NAIL = NAVE + PIER_W / 2.0 - 10.0, 448.0
 SOCK = (40.0, 1760.0)               # (X, z) one lost stocking on the aisle floor
+SACK = (X_DRAGON - 150.0, Z_DRAGON + 25.0)   # (X, z) his emptied laundry sack, by the stool
 # (X, h, z, seed): staggered left/right down the nave, so the far cages and chains never stack
 # in a line over the end window -- the moon stays the one clean bright thing at the end
 LAMPS = [(-150.0, 900.0, 1250.0, 0), (200.0, 980.0, 2110.0, 1), (-240.0, 1010.0, 3010.0, 2),
@@ -208,6 +219,7 @@ L_DRUM = L_BASE.with_(key=(0.47, 0.69, 0.74), ambient=(0.16, 0.28, 0.32), rim_st
 L_OAK = L_BASE.with_(key=(0.526, 0.993, 1.914), ambient=(0.277, 0.438, 0.751), rim_strength=0.3)
 L_OAK_FAR = L_OAK.with_(exposure=0.82)                       # the strangers' empty stools, down the row
 L_BRASS = L_BASE.with_(key=(0.265, 0.717, 2.052), ambient=(0.208, 0.352, 0.688), rim_strength=0.3)
+L_SACK = L_SET.with_(rim_strength=0.35, exposure=0.74)       # his laundry sack on the floor
 _C0 = C = {
     "stone": "#2c4a4a", "stone_lt": "#3d6260", "stone_dk": "#152727", "mortar": "#0b1717",
     "vault": "#0a1415", "aisle": "#0d1a1b", "haze": "#3a6c68", "moon_glow": "#a9c4f0",
@@ -218,6 +230,7 @@ _C0 = C = {
 
 # expressions (shared MOODS blended with these)
 HOPE = B.Expr(brow_in=0.7, brow_out=0.35, brow_y=0.4, lid=0.12, lid_bot=0.04, lid_tilt=0.2, smile=0.05, pupil=1.0)
+ELF_B_EYES = B.expr("bored", lid=0.42)           # her eyes in the insert: half-lidded, on the glass
 FLAT = B.Expr(brow_in=0.25, brow_out=-0.18, brow_y=-0.08, lid=0.6, lid_bot=0.1, lid_tilt=0.3, smile=-0.12)
 
 
@@ -306,16 +319,17 @@ _TAPPT = (X_ELF + 150.0, 330.0, Z_ELF)
 SHOT_B = [(T_CUT_INSERT, (560.0, 200.0, 1150.0, 1.0) + _TAPPT + (930.0, 500.0)),
           (T_CUT_BACK, (560.0, 200.0, 1245.0, 1.0) + _TAPPT + (950.0, 490.0), "inout_sine")]
 _HEAD = (X_DRAGON + 20.0, 245.0, Z_DRAGON)
-_MED = (-250.0, 285.0, 830.0, 1.0) + _HEAD + (1010.0, 455.0)
-_MED2 = (-252.0, 285.0, 845.0, 1.0) + _HEAD + (1006.0, 452.0)
-_MED3 = (-255.0, 285.0, 868.0, 1.0) + _HEAD + (1000.0, 452.0)
+# framed high enough that his feet stay above the caption band during "Self-service."
+_MED = (-250.0, 285.0, 830.0, 1.0) + _HEAD + (1010.0, 342.0)
+_MED2 = (-252.0, 285.0, 845.0, 1.0) + _HEAD + (1006.0, 336.0)
+_MED3 = (-255.0, 285.0, 868.0, 1.0) + _HEAD + (1000.0, 330.0)
 SHOT_C = [(T_CUT_BACK, _MED), (L1.end + 0.5, _MED2, "inout_sine"), (T_ROW0, _MED3, "inout_sine")]
 SHOT_D = [(T_ROW0, _down_nave(-240.0, 340.0, 1480.0, 1300.0, 440.0)),       # at porthole height
           (T_ROW1, _down_nave(-240.0, 340.0, 1940.0, 1296.0, 442.0), "out_sine")]
 _E1 = (-150.0, 245.0, 672.0, 1.0) + _HEAD + (486.0, 470.0)
 _E2 = (-149.0, 244.0, 684.0, 1.0) + _HEAD + (488.0, 468.0)
 _WIDE_END = (0.0, -80.0, 20.0, 1.0) + _MID + (960.0, 585.0)
-SHOT_E = [(T_ROW1, _E1), (T_PULL0, _E2, "inout_sine"), (T_PULL1, _WIDE_END, "inout_cubic")]
+SHOT_E = [(T_ROW1, _E1), (T_PULL0, _E2, "inout_sine"), (T_PULL1, _WIDE_END, "inout_sine")]
 
 SHOTS = [("A", 0.0, SHOT_A), ("B", T_CUT_INSERT, SHOT_B), ("C", T_CUT_BACK, SHOT_C),
          ("D", T_ROW0, SHOT_D), ("E", T_ROW1, SHOT_E)]
@@ -1298,20 +1312,79 @@ def _sock(cr, cam):
         cr.restore()
 
 
+# his laundry sack (the prologue's last page shows him carrying it in): emptied into his drum,
+# it lies crumpled on the flagstones by his stool -- linen, its gathered neck tied with twine and
+# pointing at the drum it came from, one purple sleeve still trailing out of the mouth.
+# Outline points in its own frame: origin = its ground centre, 1 unit = 1 px at scale 1.0
+_SACK_BODY = [(-46.0, -3.0), (-41.0, -15.0), (-27.0, -23.0), (-11.0, -21.0), (4.0, -26.0), (22.0, -32.0),
+              (40.0, -31.0), (54.0, -23.0), (60.0, -10.0), (56.0, 1.0), (34.0, 5.0), (6.0, 6.0), (-24.0, 5.0)]
+_SACK_NECK = [(-36.0, -11.0), (-50.0, -15.0), (-62.0, -19.0)]
+_SACK_MOUTH = [(-60.0, -28.0), (-68.0, -29.0), (-75.0, -23.0), (-74.0, -14.0), (-67.0, -10.0), (-60.0, -13.0)]
+_SACK_SLEEVE = [(-70.0, -17.0), (-80.0, -10.0), (-90.0, -2.0), (-101.0, 1.0)]
+
+
+def _sack(cr, light, detail=2):
+    """His emptied laundry sack lying by the stool (see _SACK_BODY): a prop he carried, so it is
+    outlined and shaded like the cast's props, held down in value in the room's cold light (dull
+    linen, a muted plum sleeve): it tells which drum is his without pulling the eye from him."""
+    lw = B.line_for(B.LINE, B.device_scale(cr))
+    linen = B.Mat.of("#a99e82", shadow_k=1.2)
+    twine = B.Mat.of("#6e6046", shadow_k=1.1)
+    plum = B.Mat.of("#76566e", shadow_k=1.25)
+    B.contact_shadow(cr, 2.0, 3.0, 78.0, 10.0, alpha=0.55)
+    # the sleeve trails out of the mouth onto the floor (behind the frill)
+    sp, so = B.taper_paths(cr, _SACK_SLEEVE, 11.0, 9.0, lw)
+    B.shade(cr, sp, plum, light, lw, outline=so, size=10, rim=0.4)
+    cuff = _SACK_SLEEVE[-1]
+    cp, co = B.ellipse_paths(cr, cuff[0] - 1.0, cuff[1] - 0.5, 4.0, 5.5, lw, 0.3)
+    B.shade(cr, cp, B.Mat.of("#8a7a8c", shadow_k=1.1), light, lw, outline=co, size=6, rim=0.4)
+    # the crumpled body, its gathered neck and the frill of the mouth: one union of linen
+    bs, bo = B.smooth_paths(cr, _SACK_BODY, lw, 0.85)
+    ns, no = B.taper_paths(cr, _SACK_NECK, 18.0, 12.0, lw, cap=False)
+    ms, mo = B.smooth_paths(cr, _SACK_MOUTH, lw, 0.9)
+    B.fill_outlines(cr, [bo, no, mo], B.palette(light, linen).line)
+    cr.new_path()
+    bs.add(cr)
+    ns.add(cr)
+    ms.add(cr)
+    p = B.shade(cr, B.Path(cr), linen, light, lw, outline=False, size=34, rim=0.5)
+    # the mouth's dark inside, the sleeve going into it
+    core.src(cr, p.deep, 0.85)
+    core.ellipse(cr, -68.5, -19.5, 3.6, 6.0, 0.25)
+    cr.fill()
+    # twine round the neck
+    tw = []
+    for k, u in enumerate((0.4, 0.62)):
+        x = _SACK_NECK[0][0] + (_SACK_NECK[-1][0] - _SACK_NECK[0][0]) * u
+        y = _SACK_NECK[0][1] + (_SACK_NECK[-1][1] - _SACK_NECK[0][1]) * u
+        tw.append([(x + 2.0, y - 8.0 + k), (x - 1.0, y), (x + 1.5, y + 7.0 - k)])
+    B.detail_lines(cr, tw, lw * 1.4, B.palette(light, twine).lit, 0.95, taper=(0.8, 1.0, 0.8))
+    if detail >= 1:
+        # the folds of the empty linen, gathered toward the neck
+        folds = [[(-36.0, -14.0), (-22.0, -16.0), (-6.0, -14.0)],
+                 [(-34.0, -5.0), (-8.0, -6.0), (22.0, -9.0), (44.0, -15.0)],
+                 [(6.0, -21.0), (24.0, -26.0), (42.0, -25.0)]]
+        B.detail_lines(cr, folds, lw * 0.9, p.line, 0.6)
+
+
 def _sigh_smoke(cr, t, t0, x, y, s, d):
     """The sigh: a curl of grey smoke from his nostrils at t0 -- exhaled forward in a lazy S, the
     tip curling over into a loop, then it hangs, swells, rises and thins away (drawn in his
     plane, so it stays put in the air as the camera moves). It is painted into a small
     device-space buffer and blurred, so it is soft like smoke, not a brush stroke.
     (x, y) the nostril, s his scale, d = +1/-1 the way his snout points."""
-    T_EX, T_LIFE = 1.0, 4.2                         # the exhale, then how long it hangs
+    T_EX, T_LIFE = 0.9, 5.2                         # the exhale, then how long it hangs
     if t < t0 or t > t0 + T_LIFE:
         return
     a = t - t0
     grow = core.out_cubic(core.clamp(a / T_EX))     # how much of the curl has left his nostrils
     if grow < 0.02:
         return
-    fade = core.clamp(1.0 - (a - 1.2) / (T_LIFE - 1.2)) ** 1.4
+    # it hangs on into the held final wide, thinning slowly
+    fade = core.clamp(1.0 - (a - 1.6) / (T_LIFE - 1.6)) ** 1.3
+    # a wisp first, never a puff: while the curl is short all its segments lie on top of each
+    # other, so their alpha and width build with how much of it is out
+    g_alpha, g_width = grow ** 0.7, 0.35 + 0.65 * grow
     swell = 1.0 + 1.1 * core.clamp(a / T_LIFE)      # it thickens and loosens as it hangs
     rise = 9.0 * a + 4.0 * a * a                    # ...and drifts up, slowly
     drift = 7.0 * a
@@ -1349,8 +1422,8 @@ def _sigh_smoke(cr, t, t0, x, y, s, d):
         for j in range(n - 1):
             (ax_, ay_, u0), (bx_, by_, u1) = pts[j], pts[j + 1]
             um = 0.5 * (u0 + u1)
-            w = (2.6 + 7.5 * um ** 0.8) * swell * wk * sd
-            al = ak * fade * (0.35 + 0.65 * min(1.0, um * 3.0)) * (1.0 - 0.45 * um * core.clamp(a - 1.0))
+            w = (2.6 + 7.5 * um ** 0.8) * swell * wk * sd * g_width
+            al = ak * fade * g_alpha * (0.35 + 0.65 * min(1.0, um * 3.0)) * (1.0 - 0.45 * um * core.clamp(a - 1.0))
             c.set_line_width(max(0.8, w))
             core.src(c, col, al)
             c.move_to(ax_, ay_)
@@ -1362,7 +1435,7 @@ def _sigh_smoke(cr, t, t0, x, y, s, d):
     if r > 1.0:
         pat = cairo.RadialGradient(hx, hy, 0, hx, hy, r)
         cc = core.col("#c3cecc")
-        pat.add_color_stop_rgba(0.0, cc[0], cc[1], cc[2], 0.2 * fade)
+        pat.add_color_stop_rgba(0.0, cc[0], cc[1], cc[2], 0.2 * fade * core.smoothstep(0.15, 0.6, a))
         pat.add_color_stop_rgba(1.0, cc[0], cc[1], cc[2], 0.0)
         c.set_source(pat)
         c.arc(hx, hy, r, 0, TAU)
@@ -1512,13 +1585,15 @@ def _dragon_pose(t):
     hope = core.window(t, T_LEAN - 0.1, T_CUT_INSERT + 0.4, 0.5, 0.3)
     sigh = core.window(t, T_SIGH, T_SIGH + 2.6, 0.55, 1.4)
     blink = None
-    for tb in (T_GLANCE + 0.75, T_HEAD0 + 0.04, T_ROW1 + 0.22, L2.end + 0.45):
+    for tb in (T_GLANCE + 0.75, T_HEAD0 + 0.04, T_ROW1 + 0.22):
         if tb <= t <= tb + 0.2:
             blink = core.window(t, tb, tb + 0.2, 0.06, 0.12)
         elif blink is None and abs(t - tb) < 0.9:
             blink = 0.0                     # no automatic blink crowding a deliberate one
     if T_LEAN - 0.4 <= t <= T_CUT_INSERT + 0.2 and blink is None:
         blink = 0.0                         # wide-eyed hope: no blink in the held lean
+    if L2.end - 0.2 <= t <= T_SIGH + 1.2 and blink is None:
+        blink = 0.0                         # the sigh closes his eyes: no blink crowding it
     mood, mood2, mix = "lonely", HOPE, hope * 0.75
     if t >= T_CUT_BACK - 0.3:
         mood, mood2, mix = "tired", FLAT, 0.75 * (1.0 - core.ramp(t, L1.end + 0.6, T_LOOK0, "inout_sine"))
@@ -1734,7 +1809,7 @@ def setup():
     st["plaque_rig"] = pq
     st["reach"] = _solve_reach(st)
     # where the sigh leaves his nostrils (fixed in his plane, so the curl stays in the air)
-    ts = T_SIGH + 0.3
+    ts = T_SMOKE
     dx, dy = ref(X_DRAGON, 0.0, Z_DRAGON)
     nr = ch.draw_dragon(scratch, dx, dy, F / Z_DRAGON, _dragon_pose(ts), L_DRAGON, ts)
     st["smoke_at"] = (nr.nose[0], nr.nose[1], 1.0 if nr.nose[0] >= nr.head[0] else -1.0)
@@ -1840,6 +1915,18 @@ def _items(cam, shot, t, st, out):
         if shot != "B":
             items.append((SOCK[1], lambda c, soft: _sock(c, cam)))
 
+            def sack(c, soft):
+                X0, Z0 = SACK
+                if not cam.ahead(Z0, 120.0):
+                    return
+                k = cam.k(Z0)
+                with plane(c, cam, Z0) as s:
+                    gx, gy = ref(X0, 0.0, Z0)
+                    c.translate(gx, gy)
+                    c.scale(s, s)
+                    _sack(c, L_SACK, 2 if k >= 0.9 else 1 if k >= 0.45 else 0)
+            items.append((SACK[1], sack))
+
         def elf(c, soft):
             tgt, back = st["reach"]
             off = _tap_offset(t)
@@ -1848,6 +1935,12 @@ def _items(cam, shot, t, st, out):
                 ex, ey = ref(X_ELF, 0.0, Z_ELF)
                 P.draw_washhouse_bench(c, ex, ey, s, L_OAK, t, yaw=-0.12)
                 epose = _elf_pose(t, target)
+                if shot == "B":
+                    # the close-up: her lids lifted just enough that the irises show, aimed down-
+                    # left at the glass -- her eyes never leave it (closed lids read as serene
+                    # listening); one calm blink after the taps, none on them
+                    epose = epose.with_(mood=ELF_B_EYES, look=(-0.35 + 0.04 * B.sway(t, 0.3, 4), 0.65),
+                                        blink=core.window(t, T_REST + 0.45, T_REST + 0.65, 0.06, 0.12))
                 elight = L_ELF_B if shot == "B" else _elf_light(t)
                 hand = None
                 if shot == "B" and epose.far.gesture == "tap_sign":
@@ -1890,7 +1983,7 @@ def _items(cam, shot, t, st, out):
                     _stool_under(cc, proj, feet, t, syaw, sw)
                 drig = ch.draw_dragon(c, dx, dy, s, dpose.with_(seat_prop=seat), light, t)
                 nx, ny, ndir = st["smoke_at"]
-                _sigh_smoke(c, t, T_SIGH + 0.3, nx, ny, s, ndir)
+                _sigh_smoke(c, t, T_SMOKE, nx, ny, s, ndir)
                 out["head"] = cam.matrix(Z_DRAGON).transform_point(*drig.head)
         items.append((Z_DRAGON, dragon))
         for name, X, z in FG_PIECES:
@@ -1905,6 +1998,29 @@ def _items(cam, shot, t, st, out):
                     st[name].paint(c)
             items.append((PIER_Z[0] - PIER_D / 2.0 - 5.0, piece))   # framing pieces: over the first piers
     return items
+
+
+def _shaft(cam, shot):
+    """The moon's shaft down the nave: where it lands (a fixed place in the world for each shot,
+    so the flagstones never slide under the light) and its two screen end points."""
+    z_land = {"D": 2600.0, "B": 1900.0}.get(shot, 1700.0)
+    return z_land, cam.p(0.0, 1050.0, WALL_Z), cam.p(40.0, 0.0, z_land)
+
+
+def _shaft_dust(c, t, cam, shot, size_k=1.0, alpha=0.75):
+    """Dust motes turning in the moon shaft."""
+    z_land, (sx0, sy0), (sx1, sy1) = _shaft(cam, shot)
+    kk = cam.k(z_land)
+
+    def in_shaft(x, y):
+        u = core.clamp((y - sy0) / max(1.0, sy1 - sy0))
+        cx_ = sx0 + (sx1 - sx0) * u
+        half = (45 + 230 * u) * kk
+        return core.clamp(1.0 - abs(x - cx_) / max(1.0, half)) * core.smoothstep(0.08, 0.35, u)
+
+    fx.dust(c, t, (min(sx0, sx1) - 300 * kk, sy0, abs(sx1 - sx0) + 600 * kk, sy1 - sy0), n=110,
+            color="#d8ecff", alpha=alpha, size=(0.9 * kk * size_k, 2.4 * kk * size_k), seed=3, drift=(5.0, -2.5),
+            mask=in_shaft)
 
 
 def draw(cr, t, st):
@@ -1940,6 +2056,10 @@ def draw(cr, t, st):
     bc.rectangle(-20, -20, W + 40, H + 40)
     bc.fill()
     bc.restore()
+    if shot == "B":
+        # the insert: the shaft lands behind her (z 1900 > her 1560), so its motes are drawn
+        # here, soft, BEHIND her -- not over her face as blemishes or a false tear
+        _shaft_dust(bc, t, cam, shot, size_k=1.5, alpha=0.8)
     bg.paint(cr)
 
     # ================= the focus band, full resolution
@@ -1990,9 +2110,7 @@ def draw(cr, t, st):
         fx.light_pool(lc, pc[0], pc[1], 520 * kk, 110 * kk, "#6fffd0", 0.24 * lp.level)
     # the moon: a long cold shaft down the nave, landing in the empty aisle between them -- at a
     # fixed place in the world for each shot, so the flagstones never slide under the light
-    z_land = {"D": 2600.0, "B": 1900.0}.get(shot, 1700.0)
-    w0 = cam.p(0.0, 1050.0, WALL_Z)
-    w1 = cam.p(40.0, 0.0, z_land)
+    z_land, w0, w1 = _shaft(cam, shot)
     fx.light_shaft(lc, w0[0], w0[1], w1[0], w1[1], 90 * cam.k(WALL_Z), 520 * cam.k(z_land), C["shaft"], alpha=0.13,
                    soft=3, fade_start=0.4, fade_end=0.3)
     mp = cam.p(40.0, 0.0, max(2100.0, z_land + 400.0))
@@ -2017,19 +2135,8 @@ def draw(cr, t, st):
             # a 600 px additive wash would bleach her face
             em = out["mirror"]
             fx.glow(lc, em[0], em[1] - 30, 200 * min(kk, 1.1), C["mirror"], (0.08 if shot == "B" else 0.12) * md)
-    # dust motes turning in the shaft
-    sx0, sy0 = w0
-    sx1, sy1 = w1
-    kk = cam.k(z_land)
-
-    def in_shaft(x, y):
-        u = core.clamp((y - sy0) / max(1.0, sy1 - sy0))
-        cx_ = sx0 + (sx1 - sx0) * u
-        half = (45 + 230 * u) * kk
-        return core.clamp(1.0 - abs(x - cx_) / max(1.0, half)) * core.smoothstep(0.08, 0.35, u)
-
-    fx.dust(cr, t, (min(sx0, sx1) - 300 * kk, sy0, abs(sx1 - sx0) + 600 * kk, sy1 - sy0), n=110,
-            color="#d8ecff", alpha=0.75, size=(0.9 * kk, 2.4 * kk), seed=3, drift=(5.0, -2.5), mask=in_shaft)
+    if shot != "B":                                   # dust motes turning in the shaft
+        _shaft_dust(cr, t, cam, shot)
     # the insert is a big pale face beside a bright mirror: a higher bloom threshold, or the
     # bloom of a large bright area lands back on itself and clips her skin
     fx.post(cr, t, light=st["light"], bloom_strength=0.45 if shot == "B" else 0.55,
@@ -2105,7 +2212,7 @@ SFX_CUES = sorted([
     (T_WITHDRAW0 + 0.1, "cloth_rustle", {"gain": 0.18, "pan": 0.85}),                  # she lowers her hand (off)
     (T_BODY0 + 0.12, "bench_creak", {"gain": 0.25, "pan": 0.0, "size": 0.35}),         # turns back to his drum
     (T_SIGH, "sigh", {"gain": 0.75, "pan": -0.4}),
-    (T_SIGH + 0.35, "smoke_puff", {"gain": 0.3, "pan": -0.4}),
+    (T_SMOKE + 0.05, "smoke_puff", {"gain": 0.3, "pan": -0.4}),
     (T_SIGH + 1.6, "bench_creak", {"gain": 0.2, "pan": -0.35, "size": 0.35}),          # back round to his drum
 ] + _row_thunks() + [(tt, "drum_spin_thunk", {"gain": 0.22, "pan": -0.45, "size": 0.5}) for tt in _his_drum_landings()],
     key=lambda c: c[0])

@@ -36,8 +36,10 @@ SHOT LIST (one continuous camera in the nook and into the book, two cuts at musi
      alleys, lanterns throwing pools on the cobbles. "who were living alone": a lone lamplit figure in
      every window; two folk cross without a word (one turns his face away). "potions for sleeping":
      potions gleam on the sills, one window sips and yawns ink z's. "charms for the rain": the rune
-     charms swing, painted rain starts, the folk hurry home. "And a LOCK on each heart" [14.32]: push
-     in as the three doors SLAM (ink impact strokes, a puff of dust) and each iron HEART PADLOCK snaps
+     charms swing, painted rain starts, the folk hurry home and step up over their own thresholds into
+     their lamplit doorways (solid, never fading: the jambs hide them, the hall's light silhouettes
+     them). "And a LOCK on each heart" [14.32]: push in as the three doors SLAM in front of them (ink
+     impact strokes, a puff of dust) and each iron HEART PADLOCK snaps
      shut on its hasp with an inked "clack" (it rocks and settles); on "heart" [15.10] the candlelight
      burnishes each heart in turn. "and a LATCH on each pane" [15.94]: tilt up as six pairs of shutters
      clap shut one after another and an iron latch bar drops across each -- all before "pane".
@@ -48,13 +50,16 @@ SHOT LIST (one continuous camera in the nook and into the book, two cuts at musi
      the book. A breath between verses.
  C1  THE DRAGON (verse 2)  cut on "Now" [18.59]. The spread fills the frame (no room shows): the dragon
      -- the real rig, on model, painted in -- alone on a dusk street of padlocked doors, the market
-     waiting on the facing page, the verse writing itself at the top of both pages. Push in on him
-     for "with a scarf and a SIGH" [21.57] (a curl of smoke); "And he WAVED" [22.44]: a hopeful wave
-     and a smile as a goblin, a kobold and a mouse-folk hurry past in front of him, heads down (the
-     kobold glances up, hitches, scurries faster); his eyes follow them; on "by" [24.85] the hand
-     sinks. Ease back.
- C2  THE MARKET  "Every merchant in town" [25.30]: back to the spread, then in on the STONES / POTIONS /
-     CANDLES stalls (a goblin, a frog apothecary, a kobold chandler). "STONE" [27.24]: the goblin
+     waiting on the facing page, the verse writing itself at the top of both pages (held whole in
+     frame while "Now a dragon lived there" is written). One push in on him for "with a scarf and a
+     SIGH" [21.57] (a curl of smoke); "And he WAVED" [22.44]: he swings a hopeful wave up and a smile
+     as a goblin, a kobold and a mouse-folk hurry past in front of him, heads down (the kobold glances
+     up, hitches, scurries faster); his eyes follow them; on "on BY" [24.85] the wave dies: the hand
+     sinks on its dropped elbow, the forearm falls and the arm hangs heavy (never a hand on the hip)
+     while his shoulders and wings sag. Ease back a little (the verse stays above frame).
+ C2  THE MARKET  "Every merchant in town" [25.30]: the camera glides ACROSS the gutter below the verse
+     and in on the STONES / POTIONS / CANDLES stalls (a goblin, a frog apothecary, a kobold
+     chandler). "STONE" [27.24]: the goblin
      hoists a rune-stone that flares cold; "sell" [28.11]: all three hold up their wares. "But for what
      he was MISSING" [29.72]: back to the spread -- the wares pour their cold rune-light out of the
      market picture, ACROSS the gutter, onto the dragon in his (the pictures talk to each other); he
@@ -65,15 +70,25 @@ SHOT LIST (one continuous camera in the nook and into the book, two cuts at musi
      [32.19] to the coda spread (the empty-stool vignette; the stone and the loaf).
  C4  THE INVITATION  "So pull up a STOOL" [33.72]: push in on the bard -- eyes, then a nod to the empty
      stool beside him; back to us on "FRIEND" [34.03], a sly smile, the WINK and a gold "ting!" on
-     "hear HOW" [34.85]. "How a kingdom of stone" [35.78]: he turns back to the book; ease out.
+     "hear HOW" [34.85] (shut in two frames -- the cheek pushing up, the head tipping toward it --
+     held, popped open with a little overshoot). "How a kingdom of stone" [35.78]: he turns back to
+     the book; ease out.
  C5  BACK TO BREAD  The page turns on "BREAD" [38.94] while he holds "breeead" eyes closed and lands on
      the final chord [39.77]: the strum sweeps on, off the strings, into a hand on his heart. The
      camera follows into the book: the wash-house at night, painted cold (teal windows, tumbling
      drums behind portholes, the WASH-HOUSE board over a great arched door, verse 1's castle small and
      dark on its hill). The dragon trudges along the street with his laundry sack and stops at the
-     door [41.37]; the enchanted doors swing open BY THEMSELVES (self-service) spilling cold wisp-light
-     over the cobbles; he looks up, steps in [41.77] and is swallowed by the doorway as the picture
-     fades to black [41.97 -> 43.17]. S1 fades up inside.
+     door [41.37] (framed so the street and threshold sit above the caption band until the lyric's
+     caption is gone); the enchanted doors swing open BY THEMSELVES (self-service) spilling cold
+     wisp-light over the cobbles; he looks up, steps in [41.77] and is swallowed by the doorway as the
+     picture fades to black [41.97 -> 43.17]. S1 fades up inside.
+
+CAMERA CRAFT. Keys inside the book are clamped onto the open book once, at the key (never per frame),
+so every move between keys is one pure eased dolly (no swim as a clamp engages mid-move). Verse 2's
+keys hold the verse block wholly in frame or wholly out of it. The fastest moves (the dive into the
+castle, the push into the wash-house, the big pull-outs) get camera motion blur: the frame re-sampled
+along the camera's own motion over a ~145-degree shutter, so gilt rules and lettering smear instead
+of strobing.
 
 ACTING (thought -> glance -> breath -> line). Eyes lead, head 0.15-0.25 s later, body last.
  - Tuning: head cocked toward the pegbox, eyes half-lidded, listening; a pleased little nod when the
@@ -81,11 +96,12 @@ ACTING (thought -> glance -> breath -> line). Eyes lead, head 0.15-0.25 s later,
  - Before "Once": a look to camera on the vamp, an inhale (beak closed, chest up), then sing. Singing
    to us the head stays 3/4 (a full-front beak hides its gape) and the eyes finish the look.
  - Long notes ("pane", "spell", "bread"): eyes close, brows lift, head tips up (rapture).
- - The coda: eyes to the stool, a nod at it, back to us on "friend"; the wink snaps shut and open on
-   "HOW"; "kingdom of stone" -- eyes return to the book (he's reading it to us); the final chord ends
-   in a hand on the heart.
+ - The coda: eyes to the stool, a nod at it, back to us on "friend"; the wink on "HOW" (an acted
+   wink: cheek up, head tipped, a two-frame close, a springy open); "kingdom of stone" -- eyes return
+   to the book (he's reading it to us); the final chord ends in a hand on the heart.
  - The painted dragon: lonely -> a hopeful smile and wave -> eyes following the backs of the passers ->
-   the hand sinks -> drawn toward the cold light -> turns away, head down, a smaller sigh.
+   the wave dies and the arm hangs heavy, shoulders sagging -> drawn toward the cold light -> turns
+   away, head down, a smaller sigh.
  - The music drives the body: the strum hand hits on every stroke time (anticipation, 75 ms sweep,
    follow-through), the fret hand slides to each chord change, head bob + left-boot tap on the beat
    grid, groove by section. The beak follows the vocal envelope timeline.talk(0, t, "BARD") (there
@@ -97,7 +113,9 @@ window and a faint moon shaft) so the warm reads warm. The room's falloff is bak
 maps round the real flame positions and laid over the set and the actors alike. Klaus lighting on the
 bard: warm key from the lectern candles (screen right), hearth-orange rim from the left, a big soft
 cast shadow of him playing on the stone wall. The subject is always the brightest, most contrasted
-area: A1 the flame and the gilt title; A2 the opened pages; B/C3-C5 the bard's face and the pages.
+area: A1 the flame and the gilt title; A2 the opened pages; B/C3-C5 the bard's face and the pages --
+in his close shots (the long note, the coda's invitation) the page behind him is flagged a stop
+down and the candle key and hearth rim pushed onto his face, so the storyteller out-shines the book.
 Inside the book: the pages' own palettes (dusk indigo/peach; cold teal for the stones and the
 wash-house) under a gentle candle wash; Kells illumination (lapis, vermilion, gold leaf, red dots);
 gold leaf glints slide along the gilt rules as the light and the camera move. Cold cyan magic only
@@ -171,6 +189,7 @@ TURN3_DUR = max(0.6, T_FINAL - T_TURN3)          # ...and lands with the final c
 T_CUT_B = wt(4, "pane")                           # cut to the bard on his long note
 T_CUT_C = LN[5].start                             # cut back into the book: "Now a dragon..."
 T_WINK = wt(9, "how")                             # "...and hear HOW it's said"
+T_WINK_SHUT = math.ceil(T_WINK * core.FPS - 1e-6) / core.FPS   # the first frame the winking eye is shut
 T_STOOL = wt(9, "stool")
 T_FRIEND = wt(9, "friend")
 
@@ -826,6 +845,45 @@ def fg_focus(t):
     return core.inout_sine(clamp((t - 0.9) / 1.0))
 
 
+def bard_focus(cam):
+    """0..1: how far the camera is ON the storyteller (his close shots: the long note, the coda's
+    invitation and wink). Then the bright page behind him is flagged down and his face lit up, so he
+    is the brightest, most contrasted shape in frame."""
+    return smooth((cam.zoom - 1.5) / 0.45) * smooth((1010.0 - cam.x) / 120.0)
+
+
+FLAG_RES = 4
+
+
+def focus_flag(cr, st, cx, cy, amount):
+    """An off-centre vignette round the bard's face at screen (cx, cy): the frame darkens toward plum
+    away from him (the book page in the top corner sinks a stop), a quarter-res mask scaled up."""
+    if amount <= 0.01:
+        return
+    sw, sh = W // FLAG_RES, H // FLAG_RES
+    surf = st.get("_flag_surf")
+    if surf is None:
+        surf = core.new_surface(sw, sh)
+        st["_flag_surf"] = surf
+    c = cairo.Context(surf)
+    c.set_operator(cairo.OPERATOR_SOURCE)
+    k = 1.0 / FLAG_RES
+    g = cairo.RadialGradient(cx * k, cy * k, 260.0 * k, cx * k, cy * k, 1500.0 * k)
+    r_, g_, b_ = core.col(DARK)[:3]
+    for off, a in ((0.0, 0.0), (0.22, 0.2), (0.5, 0.62), (1.0, 0.82)):
+        g.add_color_stop_rgba(off, r_, g_, b_, a * amount)
+    c.set_source(g)
+    c.paint()
+    surf.flush()
+    cr.save()
+    cr.identity_matrix()
+    cr.scale(FLAG_RES, FLAG_RES)
+    cr.set_source_surface(surf, 0, 0)
+    cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+    cr.paint()
+    cr.restore()
+
+
 def camera_at(t):
     keys = SHOT_A if t < T_CUT_B else SHOT_B if t < T_CUT_C else SHOT_C
     if t <= keys[0][0]:
@@ -881,6 +939,39 @@ def _bump(t, t0, rise, hold, fall):
     return smooth((t - t0) / rise) * (1.0 - smooth((t - (t0 + rise + hold)) / fall))
 
 
+WINK_HOLD = 9                                     # frames the winking eye stays shut
+
+
+def wink_curve(t):
+    """The wink on "hear HOW": (eye, env). eye is the near eye's closure for the rig, frame-exact so it
+    never lands on the rig's half-shut frame (which reads as a patch): one heavy-lid in-between, shut
+    for WINK_HOLD frames, two opening in-betweens. env is the acting round it -- the cheek pushing up,
+    the lower lid rising, the head tipping toward the winking side -- eased in over the close and
+    springing back with a little overshoot as the eye pops open."""
+    fps = core.FPS
+    fw = math.ceil(T_WINK * fps - 1e-6)                 # the first frame on "HOW": the eye is shut
+    d = math.floor(t * fps + 1e-6) - fw
+    if d == -1:
+        eye = 0.35
+    elif 0 <= d < WINK_HOLD:
+        eye = 1.0
+    elif d == WINK_HOLD:
+        eye = 0.3
+    elif d == WINK_HOLD + 1:
+        eye = 0.1
+    else:
+        eye = 0.0
+    t0, t_open = (fw - 1.6) / fps, (fw + WINK_HOLD) / fps
+    if t < t0:
+        env = 0.0
+    elif t < t_open:
+        env = smooth((t - t0) / 0.1)
+    else:
+        x = t - t_open
+        env = math.exp(-x / 0.11) * math.cos(TAU * x / 0.42)
+    return eye, env
+
+
 def bard_pose(t):
     """The bard's performance. The MUSIC (strum hand on every stroke, fret hand to each chord, head
     bob + foot tap on the beat grid, groove by section, tuning, vowels, long-note rapture) comes
@@ -918,9 +1009,8 @@ def bard_pose(t):
     head_turn = 0.38 * head_book * (1.0 - to_us) + 0.3 * watch + 0.22 * stool_head + 0.35 * to_book_end
     nod = (0.12 * pleased - 0.3 * math.sin(math.pi * clamp((t - (T_STOOL - 0.2)) / 0.5)) * stool_head
            + 0.16 * inhale + 0.08 * delight)
-    # the wink snaps shut on "HOW" and snaps open again (the rig's half-shut wink frame reads as a
-    # patch over the eye, and a real wink is that fast anyway)
-    wink = 1.0 if T_WINK <= t < T_WINK + 0.42 else 0.0
+    # the wink on "HOW": shut in two frames, held, open in three; the cheek and the head act round it
+    wink, wenv = wink_curve(t)
     # -- the face
     mood, mood2, mix_ = "twinkle", "listen", tune
     if delight > 0.01:
@@ -929,6 +1019,14 @@ def bard_pose(t):
         mood2, mix_ = "raised", 0.55 * watch
     if T_FRIEND - 0.1 < t < LN[10].start:
         mood, mood2, mix_ = "warm", "sly", smooth((t - (wt(9, "hear") - 0.1)) / 0.25)
+    if abs(wenv) > 0.002:
+        # the wink squashes the face: the cheek pushes up under the shut eye, the lower lids rise
+        e = ch.BARD_MOODS.get(mood, ch.BARD_MOODS["twinkle"]) if isinstance(mood, str) else mood
+        if mood2 is not None and mix_ > 0:
+            e = e.blend(ch.BARD_MOODS[mood2], mix_)
+        wp = max(0.0, wenv)
+        mood, mood2, mix_ = e.with_(cheek=e.cheek + 1.1 * wenv, lid_bot=e.lid_bot + 0.16 * wp,
+                                    smile=e.smile + 0.15 * wp), None, 0.0
     rap = song.get("rapture", 0.0) * (1.0 - 0.85 * up * (1.0 - to_book_end))
     # the beak: the vocal envelope from the timeline (BARD lines; none are voice-over), with the
     # rig's narrow "e" opened up a touch so every syllable reads
@@ -947,7 +1045,8 @@ def bard_pose(t):
     if pres > 0.0:
         arms["right"] = ch.BardArm("point", amt=clamp(pres, 0.0, 1.08), prev="play", hand="offer")
     return ch.BardPose(sit=1.0, facing=1, turn=-0.45, look_cam=look_cam, look=(look_x, look_y), head_turn=head_turn,
-                       head_nod=nod + 0.12 * smooth((t - T_FINAL) / 0.5), lean=-0.1 * inhale + 0.08 * pres, mood=mood,
+                       head_nod=nod + 0.12 * smooth((t - T_FINAL) / 0.5) - 0.06 * wenv, head_tilt=0.08 * wenv,
+                       lean=-0.1 * inhale + 0.08 * pres, mood=mood,
                        mood2=mood2, mood_mix=mix_, wink=wink, tail_swing=-0.6, seed=2, **song, **arms)
 
 
@@ -1228,6 +1327,68 @@ def wink_ting(cr, t, t0, rig, dur=0.6):
     fx.sparkle(cr, ex + side * 25.0 * s, ey - 4.0 * s, 5.0 * s * p2, "#ffe7a8", 0.8 * p2, angle=-0.4 * u)
 
 
+MB_SHUTTER = 0.4                                  # a ~145-degree shutter: smear the motion over 0.4 of a frame
+MB_MIN_PX = 8.0                                   # ...once the frame corners travel this far in it (~20 px/frame)
+
+
+def camera_blur(cr, st, t, cam):
+    """Camera motion blur for the fast moves (the dive into the castle, the push into the wash-house,
+    the big pull-outs): the finished frame is re-sampled along the camera's own motion across a
+    180-degree shutter -- N warped copies averaged -- so gilt rules, lettering and page borders smear
+    like a real whoosh instead of strobing. In these moves the camera's motion IS the motion (the
+    pictures' life is slow beside it). Only frames whose corners travel more than MB_MIN_PX in the
+    shutter pay for it; the shutter never straddles a cut. Returns the number of taps (0 = none)."""
+    s0, s1 = shot_span(t)
+    half = MB_SHUTTER * 0.5 / core.FPS
+    ta, tb = max(s0, t - half), min(s1 - 1e-4, t + half)
+    if tb - ta < 1e-4:
+        return 0
+    ca, cb = camera_at(ta), camera_at(tb)
+    inv = cam.matrix()
+    inv.invert()
+    disp = 0.0
+    for (sx, sy) in ((0.0, 0.0), (W, 0.0), (0.0, H), (W, H), (W * 0.5, H * 0.5)):
+        wx, wy = inv.transform_point(sx, sy)
+        ax, ay = ca.to_screen(wx, wy)
+        bx, by = cb.to_screen(wx, wy)
+        disp = max(disp, math.hypot(bx - ax, by - ay))
+    if disp < MB_MIN_PX:
+        return 0
+    n = int(clamp(math.ceil(disp / 5.0) + 1, 3, 13))
+    target = cr.get_target()
+    target.flush()
+    src = st.get("_mb_src")
+    if src is None:
+        src = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
+        st["_mb_src"] = src
+    c = cairo.Context(src)
+    c.set_operator(cairo.OPERATOR_SOURCE)
+    c.set_source_surface(target, 0, 0)
+    c.paint()
+    src.flush()
+    m_t = cam.matrix()
+    cr.save()
+    cr.identity_matrix()
+    for k in range(n):
+        ck = camera_at(ta + (tb - ta) * k / (n - 1))
+        pm = ck.matrix()
+        pm.invert()                                 # output pixel -> world (this tap's camera)...
+        pm = pm.multiply(m_t)                       # ...-> the rendered frame's pixel
+        pat = cairo.SurfacePattern(src)
+        pat.set_extend(cairo.EXTEND_PAD)
+        pat.set_filter(cairo.FILTER_BILINEAR)
+        pat.set_matrix(pm)
+        cr.set_source(pat)
+        if k == 0:
+            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.paint()
+        else:
+            cr.set_operator(cairo.OPERATOR_OVER)
+            cr.paint_with_alpha(1.0 / (k + 1))
+    cr.restore()
+    return n
+
+
 def _on_screen(cam, x0, y0, x1, y1, p=1.0, pad=40):
     ax, ay = cam.to_screen(x0, y0, p)
     bx, by = cam.to_screen(x1, y1, p)
@@ -1292,7 +1453,7 @@ def draw(cr, t, st):
                 ch.draw_bard_stool(cr, BARD_X, BARD_Y, BARD_SC, L_BARD, yaw=ch.bard_yaw(pose))
                 rig = ch.draw_bard(cr, BARD_X, BARD_Y, BARD_SC, pose, L_BARD, t)
                 st["_rig"] = rig
-                wink_ting(cr, t, T_WINK + 0.06, rig)
+                wink_ting(cr, t, T_WINK_SHUT - 0.01, rig)      # the "ting!" pops as the eye shuts
             sx, sy = st["stack_top"]
             if _on_screen(cam, sx - 60, sy - 120, sx + 60, sy + 20):
                 flames.append(sb.draw_candle(cr, sx + 10, sy, 1.9, t=t + 2.1, light=L_CANDLE, seed=7, height=22.0,
@@ -1300,6 +1461,12 @@ def draw(cr, t, st):
         # the room's falloff over everything (fades out as we dive into the page)
         if not deep:
             st["shade"].paint(cr, alpha=1.0 - k_book)
+    # ---- his close shots: the page behind him sinks a stop (a flag), so he is the brightest shape
+    bf = bard_focus(cam) if st.get("_pose") is not None else 0.0
+    if bf > 0.01:
+        fhx, fhy = cam.to_screen(*st["_rig"].head)
+        focus_flag(cr, st, fhx + 30.0, fhy + 40.0, 0.5 * bf)
+    with cam.view(cr, 1.0):
         # gold motes rising off the open pages (the pages come alive)
         if o > 0.3:
             (lx0, ly0), (rx1, ry1) = brig.pages["left"][0], brig.pages["right"][2]
@@ -1334,7 +1501,7 @@ def draw(cr, t, st):
         sbx, sby = cam.to_screen(bx, by)
         fl = sb.candle_flicker(t, 3)[0]
         fx.light_pool(lc, sbx, sby, min(1500, 520 * z), min(900, 280 * z), "#ffcf8a",
-                      lerp(0.08, 0.16, k_book) * clamp((o - 0.2) / 0.3) * fl)
+                      lerp(0.08, 0.16, k_book) * clamp((o - 0.2) / 0.3) * fl * (1.0 - 0.8 * bf))
     if not deep:
         mx, my = cam.to_screen(WIN_X + 75, WIN_Y + 120, WALL_P)
         fx.glow(lc, mx, my, 300 * z, "#7f9fe0", 0.12)
@@ -1352,9 +1519,16 @@ def draw(cr, t, st):
             wx, wy = cam.to_screen(hx_ + 70.0, hy_ + 60.0)
             fl = sb.candle_flicker(t + 0.9, 2)[0]
             fx.glow(lc, wx, wy, 300 * z, "#ffb070", 0.11 * fl)
+            if bf > 0.01:
+                # his close shots: the candle's warm key full on his face, the hearth rimming his crown
+                fx2, fy2 = cam.to_screen(hx_ + 22.0, hy_ + 6.0)
+                fx.glow(lc, fx2, fy2, 120 * z, "#ffd6a0", 0.16 * bf * fl)
+                rx2, ry2 = cam.to_screen(hx_ - 46.0, hy_ - 30.0)
+                fx.glow(lc, rx2, ry2, 150 * z, "#ff7a30", 0.12 * bf * fire.flicker)
     if fg_vis:
         fl = sb.candle_flicker(t, 9)[0]
         fx.glow(lc, fgx, fgy - 26 * fz, 340 * fz * fl, "#ffa850", 0.3)
+    camera_blur(cr, st, t, cam)
     fx.post(cr, t, light=st["light"], bloom_strength=lerp(0.6, 0.28, k_book), threshold=lerp(0.8, 0.92, k_book),
             bloom_radius=2.4, grain=0.035, vignette=lerp(0.55, 0.42, k_book), vignette_color=(0.06, 0.02, 0.04))
     # ---- the fades (the near candle's flame is the first and last thing we see)
@@ -1385,7 +1559,7 @@ def _sfx_cues():
         (0.3, "candle_flicker", {"gain": 0.5, "pan": -0.45}),                    # the near flame: the first light
         (T_COVER_LAND - 0.58, "book_open", {"gain": 0.9, "pan": 0.25}),            # creak, the cover lands, pages flutter
         (EV["stone"] - 0.35, "rune_glow", {"gain": 0.25, "pan": -0.1, "dist": 0.5}),  # the rune-stone flares cold
-        (T_WINK + 0.04, "crystal_chime", {"gain": 0.3, "pan": -0.1}),              # the wink's "ting!"
+        (T_WINK_SHUT + 0.01, "crystal_chime", {"gain": 0.3, "pan": -0.1}),         # the wink's "ting!" (the eye shuts)
         (t_open - 0.02, "door_open", {"gain": 0.4, "pan": 0.0, "dist": 0.55}),     # the enchanted doors swing open
     ]
     # "a LOCK on each heart": the three painted doors slam shut 40 ms apart (shut at lock + 0.04 k + 0.09),

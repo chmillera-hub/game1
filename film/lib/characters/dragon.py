@@ -23,6 +23,8 @@ turns continuously from 3/4-left through front to 3/4-right, nods and sits down 
 import math
 from dataclasses import dataclass, field, replace
 
+import cairocffi as cairo
+
 from .. import core, fx
 from ..core import clamp, lerp, smooth
 from . import base as B
@@ -654,6 +656,18 @@ def _two_hand_prop(q, A0, A1, draw):
     return _arm(q, A0, A0["side"], parts="hand", hold=False), _arm(q, A1, A1["side"], parts="hand", hold=False)
 
 
+def _wind_pos(pts):
+    """The polygon wound the positive way (shoelace area >= 0). Every piece of a union must wind
+    the same way, or the nonzero fill cancels where two pieces overlap."""
+    a = 0.0
+    n = len(pts)
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        a += x0 * y1 - x1 * y0
+    return pts if a >= 0.0 else pts[::-1]
+
+
 def _leg(q, side):
     """Shin + foot (+ toes) as ONE union: a single outline and shading pass."""
     cr, proj, M = q.cr, q.proj, q.M
@@ -664,7 +678,10 @@ def _leg(q, side):
         spine, radii = [knee, ank], [13.5, 8.5]
     else:
         spine, radii = [proj.xy(f["hip"]), knee, ank], [18.0, 11.0, 8.2]
-    shin, shin_o = B.tube_outline(spine, radii, 4, 0.8, (0.0, lw))
+    # the tube's contour runs the other way round from the foot's hull and the toes' capsules
+    # (core.capsule's arcs run positive): wound alike, the nonzero fill no longer cancels where
+    # shin and foot overlap -- that was a see-through hole at every ankle
+    shin, shin_o = (_wind_pos(c) for c in B.tube_outline(spine, radii, 4, 0.8, (0.0, lw)))
     a = f["ankle"]
     toe = f["toe"]
     base = (a[0], a[1] + ANKLE_H, a[2])
@@ -681,7 +698,7 @@ def _leg(q, side):
         pts.append(P(ca * 6.5, -6.5 + sa * 6.0, -7.0))                   # heel
         pts.append(P(ca * 11.0, -6.0 + sa * 5.5, 12.0))                  # ball of the foot
     pts += [P(0.0, -13.0, 4.0), P(-9.0, -11.0, 6.0), P(9.0, -11.0, 6.0)]
-    hull = core.convex_hull(pts)
+    hull = _wind_pos(core.convex_hull(pts))
     toes = []
     for tx_, tz, tr in ((-8.0, 25.0, 5.4), (0.0, 30.0, 6.0), (8.0, 25.0, 5.4)):
         toes.append((P(tx_ * 0.55, -6.0, 11.0), P(tx_, -tr * 0.95, tz), tr, tx_, tz))
@@ -1312,6 +1329,12 @@ def _scarf_back_end(q):
     _fringe(q, pts2[-1], pts2[-2], 26.0, seed=3)
 
 
+def _scarf_end_width(s):
+    """The front hanging end's width along it (0 = root, 1 = fringe): the knit swells a little
+    over the chest and narrows toward the fringe -- never a constant-width plank."""
+    return 30.0 - 4.5 * s + 1.6 * math.sin(math.pi * s)
+
+
 def _scarf(q):
     cr, proj, pose, t, S = q.cr, q.proj, q.pose, q.t, q.S
     sm = _scarf_mat(q)
@@ -1319,6 +1342,26 @@ def _scarf(q):
     nb = S["neck_base"]
     R = S["R"]
     lw = q.lw
+    # front hanging end (his right side) with fringe -- drawn BEFORE the wraps, so they lie over
+    # its root: it comes out from under the knit in every pose (hunched or turned, its square
+    # top never shows). A gentle drape, a little taper, and the thin-part rim (STYLE 5), so a
+    # strong scene rim light does not turn its edge into a white pinstripe.
+    sway = B.chain(t, 4, freq=0.42, delay=0.14, amp=0.5, seed=pose.seed + 9)
+    c1 = v_add(nb, m_vec(R, (0.0, -6.0, 3.0)))
+    walk_sw = S["walk"] * 4.0 * math.sin(math.tau * S["wc"].phase * 2 + 0.6)
+    pts3 = [v_add(c1, m_vec(R, (-12.0, 0.0, 25.0))), v_add(c1, m_vec(R, (-16.5, 40.0, 36.0))),
+            v_add(c1, m_vec(R, (-14.0, 82.0, 40.0))), v_add(c1, m_vec(R, (-16.5, 120.0, 41.0)))]
+    if q.sit > 0.0:                         # seated: the end rests forward on the lap
+        pts3[-1] = v_lerp(pts3[-1], v_add(c1, m_vec(R, (-17.0, 112.0, 54.0))), smooth(q.sit))
+    pts2 = []
+    for i, pp in enumerate(pts3):
+        p2 = proj.xy(pp)
+        pts2.append((p2[0] + (sway[min(i, 3)] * 16 + walk_sw) * i * 0.6, p2[1] - S["shake"] * 0.3))
+    end_w = _scarf_end_width(1.0)
+    shp, so = B.taper_paths(cr, pts2, 30.0, end_w, lw, cap=False, profile=_scarf_end_width)
+    q.shade(shp, sm, outline=so, size=28, rim=0.5)
+    _knit_lines(q, pts2, 26.0)
+    _fringe(q, pts2[-1], pts2[-2], end_w, seed=1)
     for (dy, rad, th) in ((-6.0, 30.0, 15.0), (-25.0, 27.0, 13.5)):      # two chunky wraps
         c = v_add(nb, m_vec(R, (0.0, dy, 3.0)))
         ring = [proj.xy((c[0] + math.sin(math.tau * i / 16) * rad, c[1] + 2.5 * math.sin(math.tau * i / 8),
@@ -1349,27 +1392,55 @@ def _scarf(q):
             core.src(cr, p.line, 0.32)
             cr.stroke()
             cr.restore()
-    # front hanging end (his right side) with fringe
-    sway = B.chain(t, 4, freq=0.42, delay=0.14, amp=0.5, seed=pose.seed + 9)
-    c1 = v_add(nb, m_vec(R, (0.0, -6.0, 3.0)))
-    walk_sw = S["walk"] * 4.0 * math.sin(math.tau * S["wc"].phase * 2 + 0.6)
-    pts3 = [v_add(c1, m_vec(R, (-12.0, 8.0, 26.0))), v_add(c1, m_vec(R, (-15.0, 40.0, 36.0))),
-            v_add(c1, m_vec(R, (-17.0, 82.0, 40.0))), v_add(c1, m_vec(R, (-16.0, 120.0, 41.0)))]
-    if q.sit > 0.0:                         # seated: the end rests forward on the lap
-        pts3[-1] = v_lerp(pts3[-1], v_add(c1, m_vec(R, (-17.0, 112.0, 54.0))), smooth(q.sit))
-    pts2 = []
-    for i, pp in enumerate(pts3):
-        p2 = proj.xy(pp)
-        pts2.append((p2[0] + (sway[min(i, 3)] * 16 + walk_sw) * i * 0.6, p2[1] - S["shake"] * 0.3))
-    shp, so = B.taper_paths(cr, pts2, 30.0, 27.0, lw, cap=False)
-    q.shade(shp, sm, outline=so, size=28)
-    _knit_lines(q, pts2, 27.0)
-    _fringe(q, pts2[-1], pts2[-2], 27.0, seed=1)
 
 
 # ----------------------------------------------------------------------------------------
 # head
 # ----------------------------------------------------------------------------------------
+
+FRONT_BAND = 0.3           # head yaw (rad) over which a horn / ear-fin comes round the skull
+
+
+def _round_the_skull(q, sil, root, center, reveal, draw):
+    """Draw a head feature (a horn, an ear-fin) whose root is coming round from behind the skull.
+    reveal 0: hidden wherever the head's silhouette covers it -- exactly as if drawn behind the
+    head; 1: drawn whole, over the head. In between, the hiding silhouette slides away from the
+    feature's root by just the depth the root sits inside it, so the root comes into view over
+    the skull's edge continuously as the head turns: no one-frame swap of layers when the head
+    turns through the front view. sil: the dilated silhouette pieces [("pts", polygon) |
+    ("circle", ((x, y), r))]."""
+    if reveal >= 0.999:
+        draw()
+        return
+    cr = q.cr
+    ux, uy = center[0] - root[0], center[1] - root[1]
+    L = math.hypot(ux, uy) or 1.0
+    ux, uy = ux / L, uy / L
+    reach = q.lw                            # how far the silhouette extends past the root
+    for kind, data in sil:
+        if kind == "pts":
+            reach = max(reach, max((x - root[0]) * -ux + (y - root[1]) * -uy for x, y in data))
+        else:
+            (cx_, cy_), r = data
+            reach = max(reach, (cx_ - root[0]) * -ux + (cy_ - root[1]) * -uy + r)
+    d = reveal * (reach + 12.0 * HS)        # + the feature's half-width at its root
+    ox, oy = ux * d, uy * d
+    cr.save()
+    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    for kind, data in sil:                  # outside every piece = outside their union
+        cr.new_path()
+        cr.rectangle(-1.0e4, -1.0e4, 2.0e4, 2.0e4)
+        if kind == "pts":
+            core.smooth_closed(cr, [(x + ox, y + oy) for x, y in data], 0.85)
+        else:
+            (cx_, cy_), r = data
+            core.circle(cr, cx_ + ox, cy_ + oy, r)
+        cr.clip()
+    cr.set_fill_rule(cairo.FILL_RULE_WINDING)
+    cr.new_path()
+    draw()
+    cr.restore()
+
 
 def _expr(pose):
     e = B.expr(pose.mood)
@@ -1390,10 +1461,12 @@ def _head(q):
     HC = S["head_c"]
     e = _expr(pose)
     jaw_open = clamp(clamp(pose.talk) * 0.85 + e.open * 0.9)
-    near = -1.0 if q.yaw + pose.head_turn * 1.1 >= 0 else 1.0
+    hyaw = q.yaw + pose.head_turn * 1.1
+    near = -1.0 if hyaw >= 0 else 1.0
     far = -near
     lw = q.lw
     pal = q.P(M["scales"])
+    turned = smooth(abs(hyaw) / FRONT_BAND)  # 0 head-on .. 1 turned past the front band
 
     def P(v):
         w = m_vec(RH, (v[0] * HS, v[1] * HS, v[2] * HS))
@@ -1424,15 +1497,29 @@ def _head(q):
     jaw += _circle2(P(J((0.0, 33.0, 46.0))), 10.0 * HS, 10)
     cheeks = [(P((s * 25.0, 17.0, 6.0)), 16.5 * HS * (0.65 + 0.35 * abs(nz((s, 0.2, 0.6))))) for s in (-1.0, 1.0)]
 
-    _horn(q, P, far)
-    _ear_fin(q, P, far, e)
+    # The horns root on the top-back of the skull, the ear-fins on its sides. Turned past the
+    # front band the far ones are behind the head and the near ones over it (as always); within
+    # it they come round the skull continuously (_round_the_skull), so a head turn through the
+    # front view never swaps them in one frame. Head-on, both horns rise from behind the skull
+    # and both ear-fins show.
+    feats = {"horn": lambda s: _horn(q, P, s), "ear": lambda s: _ear_fin(q, P, s, e)}
+    roots = {"horn": (15.0, -30.0, -12.0), "ear": (33.0, 3.0, -12.0)}
+    late = []                               # (feature, side, reveal): drawn after the face
+    feats["horn"](far)
+    if turned < 1.0:
+        late.append(("ear", far, 1.0 - turned))
+    else:
+        feats["ear"](far)
+    late += [("horn", near, turned), ("ear", near, 1.0)]
     # ---- one seamless silhouette: all dilated pieces filled once in the line color
     hulls = [core.convex_hull(pts) for pts in (cran, jaw, snout)]
+    sil = [("pts", B.offset_closed(h, lw)) for h in hulls] + [("circle", (c, r + lw)) for (c, r) in cheeks]
     cr.new_path()
-    for h in hulls:
-        core.smooth_closed(cr, B.offset_closed(h, lw), 0.85)
-    for (c, r) in cheeks:
-        core.circle(cr, c[0], c[1], r + lw)
+    for kind, data in sil:
+        if kind == "pts":
+            core.smooth_closed(cr, data, 0.85)
+        else:
+            core.circle(cr, data[0][0], data[0][1], data[1])
     core.src(cr, pal.line)
     cr.fill()
     paths = []
@@ -1533,9 +1620,11 @@ def _head(q):
               pupil_size=0.5 * e.pupil, pupil_aspect=0.78, skin=DRAGON_COLORS["scales"], crease=0.0,
               bags=(0.5 if tired else 0.2) if q.detail >= 1 else 0.0, line=pal.line, lid_shade=0.18)
         _brow_ridge(q, P, nz, s, e, near, None if s == near else paths + [cheek_p])
-    _horn(q, P, near)
-    _ear_fin(q, P, near, e)
-    return {"center": P((0.0, 0.0, 0.0)), "mouth": mouth, "nose": nose, "eyes": eyes,
+    center = P((0.0, 0.0, 0.0))
+    for name, s, rv in late:
+        rt = roots[name]
+        _round_the_skull(q, sil, P((s * rt[0], rt[1], rt[2])), center, rv, lambda name=name, s=s: feats[name](s))
+    return {"center": center, "mouth": mouth, "nose": nose, "eyes": eyes,
             "ear_near": P((near * 38.0, 6.0, -4.0)), "top": P((0.0, -40.0, 0.0))}
 
 

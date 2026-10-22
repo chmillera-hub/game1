@@ -29,7 +29,8 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    planted one -- no skate) -- so his
    outstretched hand and the stamp coming down on it are silhouetted against the hot glass (its
    middle panes are kept clear of patrons). Faces stay apart: the hand is at arm's length.
-   ACTING: the troll presents the stamp at chest height, bored, eyes sliding over as he arrives.
+   ACTING: the troll presents the stamp at chest height, bored, eyes sliding over as he arrives
+   (his other arm hangs, knuckles by the knee, and trails his body a beat on the wind-up and lunge).
    The dragon glances up at it, a small resigned breath, and holds out his RIGHT hand, back up
    (he knows the routine), eyes on it. WIND-UP: the troll swings the stamp up over his head along
    an arc, leaning back (his jerkin creaks); the dragon's eyes go up with it, he leans away, head
@@ -49,9 +50,13 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    the long table: five patrons facing us on their oak form (goblin, dwarf, satyr, elf,
    minotaur), the back of the
    hall soft behind them. One volley of six HAs on ONE laugh clock -- heads back on the same
-   frame, tankards thrown up HIGH in a toast together (never by the ear) -- then all stop on
-   the same frame into the same frozen, polite grin. Funny, then eerie. A slow truck along them.
-4  INT_A     -> s4_lookbouncer + 0.85 (one continuous shot). WIDE on the hall: the cold blue
+   frame, tankards thrown up HIGH in a toast together, every one with the SAME hand (never by
+   the ear; free hands in laps, elbows tucked: no one's limbs cross a neighbour's) -- then all
+   stop on the same frame into the same frozen, toothy, polite grin. Funny, then eerie. A slow
+   truck along them. (The tankards are all in hands; the table holds plates and one ale jug.)
+4  INT_A     -> his turn to the troll (~s4_lookbouncer + 0.74: the frame the turn would carry the
+   sack in his far hand from behind his coat to over it -- the cut hides that switch). One shot.
+   WIDE on the hall: the cold blue
    doorway (left) with the troll filling it, arms folded; the dragon just inside, small and dark;
    the band on a low dais under the house banner (an embroidered shield with a flagon -- thread,
    not a lamp): satyr fiddler, dwarf tabor-drummer (dark braided beard hiding his mouth, a teal
@@ -63,7 +68,7 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    the goblin beside him (glance), chest up, brows lift into a hopeful look (breath) -- and at
    s4_l1, in the hush with the whole room frozen in its grin, he leans in, his stamped hand
    turning over to an open palm, and speaks softly ("Can I tell you something? Lately I--"), thin
-   pale-gold ripples leaving his mouth.
+   pale silver ripples leaving his mouth (cool: the first warm light from him is S6's laugh).
    s4_swell: the band SURGES (bowing doubles, the drummer's sticks fly, the shawm blasts), the
    room's light flares (exposure + bloom + lanterns), triple arcs of sound roll out of the band
    BEHIND him on every beat and a storm of hot-pink notes swarms round his head (swallowed before
@@ -77,13 +82,17 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    between the starers; hurt settles on his face; his hand drops.
    s4_lookbouncer: the goblin on his left flicks his eyes, swings round to the doorway and jerks
    his chin up at the troll ("yours"). The dragon's eyes follow, then his head, then his body
-   (no stray blink: the eyes ARE the action). CUT ON THE ACTION.
+   (no stray blink: the eyes ARE the action). CUT ON THE ACTION (mid-turn).
 5  INT_B     -> s4_l2 end + 0.35. Two-shot creeping in on the troll in the cold doorway (grounded
-   in a pool of night light, the hall soft behind), the goblin in the foreground looking up at
+   in a pool of night light and a dark contact shadow; the doorway and the boards he stands on
+   share his focus, only the hall beyond goes soft), the goblin in the foreground looking up at
    him (his face kept above the caption band). The troll's eyes slide over first, then his head.
    s4_l2 "Keep it light, buddy.": a slow flat jaw that still closes between Keep / it / light /
-   bud-dy, a heavy dip of the head on each stressed word, heavy bored lids, a tiny shrug on
-   "buddy". The words land: the dragon blinks.
+   bud-dy, a heavy dip of the head on each stressed word, heavy bored lids (a sliver of iris
+   always shows: he looks AT the dragon), a tiny shrug on "buddy". The words land on the
+   dragon's face inside the shot (word-timed): listening, open -> on "light" the brows knit up
+   and the lids drop -> on "buddy" his eyes fall to the floor, a swallow, the wings sag -> a
+   blink brings his eyes back up to the troll, and he is already sinking as we cut.
 6  INT_C     -> s4_exit + 0.9. MCU, the room soft, only he is sharp: he turns away from the troll
    toward us, eyes dropping; at s4_lookhand the stamped hand comes up --
    POV (cut on the hand's rise, ~1.2 s): HIS view of the back of his own hand, SMILE big and
@@ -94,7 +103,8 @@ SHOTS (all times from timeline.json beats/lines; every cut is derived from them)
    eyes go to the door, then his head, then his body, and he walks.
 7  EXT_OUT   -> 25.0. The street again: he comes out of the hot doorway and walks on along the foot
    of the facade the way he was going (right), away from the troll -- who has stepped back against
-   the wall to let him out, arms folded, side-eyeing him go. Behind him the oak door swings shut
+   the wall to let him out (clear of the door: it is not he who shuts it), arms folded,
+   side-eyeing him go. Behind him the oak door swings shut
    on the party (silhouettes toasting on the beat in the narrowing gap) and LANDS: the hot spill
    on the cobbles cuts, the light on him (and on the troll) goes cold, the vignette closes, the
    troll shrugs. His stamped hand sinks into his coat pocket; the other still carries the sack.
@@ -108,10 +118,11 @@ banner, pewter tankards, fiddle / tabor / shawm, wool and leather clothes; no mo
 lettering anywhere. Nobody is human: goblins, dwarves, satyrs, elves, a minotaur, a stone troll,
 a dragon.
 
-LIBRARY USE: the toast is a scene-local gesture ("s4_toast") registered at import in the folk
-rig's gesture tables (no library file is changed); the dragon's reaching arm uses explicit body-
-space targets (shoulder-relative offsets) so it can reach further than the library's offer
-gesture without a pop.
+LIBRARY USE: the toast, the tucked chest hold and the seated lap rest are scene-local gestures
+("s4_toast", "s4_tankard", "s4_lap") registered at import in the folk rig's gesture tables (no
+library file is changed); the dragon's reaching arm uses explicit body-space targets (shoulder-
+relative offsets) so it can reach further than the library's offer gesture without a pop; the
+troll's hanging far arm on the stamp is the library's "rest" target, lagged (body-space target).
 
 SOUND CUES: SFX_CUES (bottom) -- footsteps on the walk up and out, the troll's jerkin on the
 wind-up, the stamp's thunk, every volley of the synchronized laugh (inside; one muffled through
@@ -135,26 +146,53 @@ SCENE = 4
 DUR = tl.scene(SCENE).duration
 
 
+TOAST = (0.42, 0.86, 0.22)                 # (out, up, forward) x arm length, from the shoulder
+# a goblin's arm is about as long as his head and cap are tall: straight up, the mug only reaches
+# the top of the cap (it reads as balanced on the head) -- so his toast goes up and OUT past the
+# back of his head, a little behind it, the arm at full stretch: the mug clears the cap and ears
+GOBLIN_TOAST = (0.55, 0.82, -0.10)
+
+
 def _g_toast(q, sk, side, arm):
     """S4's toast: the tankard thrown up HIGH, above the head and a little out and toward us (a
-    clear "cheers!", never held by the ear like a speaking-stone -- big goblin ears included:
-    their arm goes nearly straight up so the mug clears the ear above it); phase pumps it on the
-    laugh. Registered under a scene-local name in the folk rig's gesture tables at import (no
-    library file changes)."""
+    clear "cheers!", never held by the ear like a speaking-stone; goblins: see GOBLIN_TOAST);
+    phase pumps it on the laugh. Registered under a scene-local name in the folk rig's gesture
+    tables at import (no library file changes)."""
     from film.lib.characters import _folk as F
     from film.lib.characters import crowd as CB
     AL = F._AL(q)
     pump = 0.06 * math.sin(arm.phase * math.tau)
-    out, up, fwd = (0.30, 0.92, 0.14) if q.b is CB.BUILDS["goblin"] else (0.42, 0.86, 0.22)
+    out, up, fwd = GOBLIN_TOAST if q.b is CB.BUILDS["goblin"] else TOAST
     return F.G(B.v_add(sk, (side * out * AL, -(up + pump) * AL, fwd * AL)), "grip", -0.3 * side, "front",
                (side * 1.0, 0.5, -0.3), "up")
+
+
+def _g_lap(q, sk, side, arm):
+    """Seated at the long table, the free hand rests on the thigh near the knee with the elbow
+    tucked back along the body -- the library's seated rest flares the elbow out sideways, into
+    the next sitter's ribs."""
+    from film.lib.characters import _folk as F
+    S = q.S
+    kn = S["knee"][0 if side < 0 else 1]
+    tgt = B.v_add(B.v_lerp(S["hip"][side], kn, 0.72), (-side * 4.0, -0.12 * q.b.thigh - 6.0, 4.0))
+    return F.G(tgt, "relaxed", 0.25, "auto", (side * 0.3, 0.45, -1.0))
+
+
+def _g_tankard(q, sk, side, arm):
+    """The tankard held at the chest between toasts, elbow tucked down along the body (the
+    library's chest hold flares the elbow sideways, across the next drinker on the bench): the
+    same polite, identical hold on everyone."""
+    from film.lib.characters import _folk as F
+    AL = F._AL(q)
+    return F.G(B.v_add(sk, (side * 0.02 * AL, 0.52 * AL, 0.44 * AL)), "grip", -1.25, "front", (side * 0.3, 1.0, -0.6), "up")
 
 
 def _register_gestures():
     from film.lib.characters import _folk as F
     from film.lib.characters import minotaur as MT
-    F.GESTURES.setdefault("s4_toast", _g_toast)
-    MT.MINOTAUR_GESTURES.setdefault("s4_toast", _g_toast)
+    for name, fn in (("s4_toast", _g_toast), ("s4_lap", _g_lap), ("s4_tankard", _g_tankard)):
+        F.GESTURES.setdefault(name, fn)
+        MT.MINOTAUR_GESTURES.setdefault(name, fn)
 
 
 _register_gestures()
@@ -180,10 +218,22 @@ SH_INSERT = (B_SMILE, B_INSIDE)                # the back of his hand: SMILE
 # its frozen grin), then the wide hall (the room laughs again; he tries a smile), then the
 # medium on him for the line, the swell, the heads turning and the look to the troll
 _VOLLEY = 6 * 60.0 / S.LAUGH_BPM
+T_FACE0, T_FACE1 = B_LOOKB + 0.5, B_LOOKB + 1.1            # (inside) he turns his body to face the troll
+
+
+def _turn_cut():
+    """The cut from the hall to the two-shot lands on the instant his turn toward the troll
+    enters the dragon rig's frontish band (|yaw| < 0.38). There his far arm -- the sack --
+    switches from behind his coat to over it; on the cut that switch is never seen. (yaw = 1 +
+    0.6 turn and turn = -0.25 - 2.25 face, as in _dragon_int_pose; face eases in_out_sine.)"""
+    face = (-0.25 - (0.38 - 1.0) / 0.6) / 2.25
+    return T_FACE0 + (T_FACE1 - T_FACE0) * math.acos(1.0 - 2.0 * face) / math.pi
+
+
 SH_CHORUS = (B_INSIDE, B_INSIDE + _VOLLEY + 0.16 + 0.32)
 SH_WIDE = (SH_CHORUS[1], L1.start - 0.66)
-SH_INT_A = (SH_CHORUS[1], B_LOOKB + 0.85)      # the hall (wide), the push in; his line; the swell; heads turn; the look
-SH_INT_B = (B_LOOKB + 0.85, L2.end + 0.35)     # the troll and the dragon: "Keep it light, buddy."
+SH_INT_A = (SH_CHORUS[1], _turn_cut())         # the hall (wide), the push in; his line; the swell; heads turn; the look
+SH_INT_B = (SH_INT_A[1], L2.end + 0.35)        # the troll and the dragon: "Keep it light, buddy."
 SH_INT_C = (L2.end + 0.35, B_EXIT + 0.9)       # he looks at the SMILE; turns to go
 SH_POV = (B_LOOKHAND + 0.12, B_LOOKHAND + 1.3)  # ...cut on the hand's rise to his POV: SMILE, the room laughing on
 SH_EXT_OUT = (B_EXIT + 0.9, DUR)               # back out into the night; the door shuts
@@ -328,6 +378,21 @@ def _die_path(t, palm):
     return (palm[0] + 10.0 * s * lift, palm[1] + squash - 120.0 * s * lift)
 
 
+TROLL_ARM_LAG = 0.09                     # the hanging arm trails the body by ~2 frames
+
+
+def _troll_far_arm(t):
+    """His far arm on the walk up and the stamp: hanging, the knuckles by his knee -- the
+    boulder-thick arm of his sheet (a fist at the belt is seen edge-on from here and thins to
+    a stick behind his gut). It hangs from where his shoulder was a beat ago, so it trails as
+    he leans back into the wind-up and drags behind the lunge (overlapping action: weight)."""
+    from film.lib.characters import troll as TR
+    tl_ = t - TROLL_ARM_LAG
+    lagged = ch.TrollPose(facing=-1, lean=(_troll_tilt(tl_) - 0.54) / 0.2, near=ch.TrollArm("press_stamp", phase=0.5))
+    sk = TR._skeleton(lagged, tl_, 0.0)["shoulders"][-1.0]     # facing left: his far side is body -1
+    return ch.TrollArm("rest", target=B.v_add(sk, (-24.0, 320.0, 30.0)))     # = the library's "rest" target
+
+
 def _troll_tilt(t):
     """The troll's body tilt (rad, forward): idle hunch -> leans back on the wind-up -> lunges
     his whole bulk into the slam -> holds -> settles."""
@@ -340,7 +405,9 @@ def _troll_tilt(t):
 # was going (right) -- away from the troll, who stands left of the door; the door swings shut
 # behind him on its own weight. (He walks a level line just in front of the wall: the rig plants
 # its feet along x, so a path down toward the camera would make his planted feet glide.)
-TROLL_X_OUT = 935.0                       # the troll has stepped back against the wall to let him out
+TROLL_X_OUT = 870.0                       # the troll has stepped back against the wall to let him out
+# (far enough left that his crossed near hand never touches the door leaf: he must not seem to
+# push it shut -- it swings shut on its own weight)
 EXIT_X0, EXIT_Y = 1306.0, 852.0           # in the doorway at the cut .. along the facade's foot
 EXIT_V0, EXIT_V1, EXIT_ACC = 66.0, 80.0, 1.2   # px/s out of the door, then on (slow, heavy); ease time
 SC_OUT = SC_EXT * (EXIT_Y - 600.0) / (S.EXT_GROUND - 600.0)    # his scale at that depth (~0.54)
@@ -399,6 +466,10 @@ def _door_open_out(t):
 L_INT = ch.LIGHTS["tavern"]
 L_DRAGON_INT = ch.LIGHTS["tavern"].with_(rim=(0.55, 0.72, 1.0), rim_direction=(-0.85, -0.45), rim_strength=0.8)
 L_TROLL_INT = ch.LIGHTS["tavern"].with_(rim=(0.55, 0.72, 1.0), rim_direction=(-0.6, -0.8), rim_strength=0.9)
+# the sack inside, lit lower and toward the room's magenta key: cream paper with a green cross is
+# otherwise the brightest, most contrasted shape near him and pulls the eye off the faces (it
+# hangs low, on his shadow side)
+L_BAG_INT = L_DRAGON_INT.with_(key=(1.06, 0.70, 0.80), exposure=0.68, rim_strength=0.45)
 
 DR_X, DR_Y = 560.0, 900.0                        # the dragon, just inside
 SC_INT = S.int_scale(DR_Y)                       # 0.72
@@ -409,8 +480,8 @@ TABLE = (1470.0, 985.0)                          # the front table (anchor: grou
 CHORUS_Y = 958.0                                 # its bench: the synchronized chorus line, facing us
 BENCH_X, BENCH_LEN = 1484.0, 790.0               # the chorus's oak form behind the table (screen px long)
 BENCH_SEAT = 125.0                               # built to the standard seat height (STYLE 3)
-CHORUS = [(1185.0, "goblin", 211, -0.30), (1330.0, "dwarf", 205, -0.15), (1478.0, "satyr", 217, 0.0),
-          (1626.0, "elf", 223, 0.12), (1790.0, "minotaur", 227, 0.25)]
+CHORUS = [(1172.0, "goblin", 211, -0.30), (1324.0, "dwarf", 205, -0.15), (1476.0, "satyr", 217, 0.0),
+          (1628.0, "elf", 223, 0.12), (1790.0, "minotaur", 227, 0.25)]
 TURNERS = {"someone", "starer", "dwarf_st", 0, 1}   # who stops laughing and stares at s4_turn
 BAND_Y = S.DAIS[2] - S.DAIS[3] - 2.0             # the dais top
 BAND_SC = S.int_scale(732.0)
@@ -502,10 +573,10 @@ def _draw_front_table(cr):
     sc = S.int_scale(TABLE[1])
     rig = P.draw_tavern_table(cr, TABLE[0], TABLE[1], sc, L_INT, 0.0, yaw=0.0, elev=0.30, length=860.0 / sc, depth=120.0,
                               height=200.0, clutter=False, seed=2)
-    # the table's own clutter: the crowd's pewter tankards (one design in the shot), plates, a candle
+    # the table's own clutter: plates and one pewter ale jug (the tankards are all in hands: a
+    # second tankard on the table in front of every drinker read as doubled props)
     ty = rig.top_y
-    for k, (dx, f) in enumerate(((-330, 1.0), (-170, 0.6), (40, 1.0), (210, 0.0), (330, 1.0))):
-        ch.draw_tankard(cr, TABLE[0] + dx, ty - 14 * sc, 0.95 * sc / 0.8, L_INT, foam=f)
+    _jug(cr, TABLE[0] - 78.0, ty + 2.0, 1.15 * sc / 0.8, L_INT)
     for dx in (-250.0, 120.0):
         core.ellipse(cr, TABLE[0] + dx, ty + 2, 34 * sc, 9 * sc)
         core.src(cr, "#d8c8b0")
@@ -513,6 +584,39 @@ def _draw_front_table(cr):
         core.ellipse(cr, TABLE[0] + dx, ty, 24 * sc, 5 * sc)
         core.src(cr, "#b8a890")
         cr.fill()
+
+
+def _jug(cr, x, y, s, light):
+    """A pewter ale jug (the tankards' metal): a round belly, a pinched neck, a lip with a pour
+    spout and a strap handle; (x, y) = the middle of its foot, s = 1 -> 40 px tall."""
+    lw = B.line_for(B.LINE * 0.8, B.device_scale(cr) * s)
+    pw = B.pal(light, "#9AA0A6", sheen=0.7)
+    cr.save()
+    cr.translate(x, y)
+    cr.scale(s, s)
+    cr.set_line_cap(1)
+    cr.new_path()                                         # the strap handle, behind the body
+    cr.move_to(-9.0, -31.0)
+    cr.curve_to(-26.0, -31.0, -27.0, -12.0, -13.0, -9.0)
+    core.src(cr, pw.line)
+    cr.set_line_width(5.0 + 2.0 * lw)
+    cr.stroke_preserve()
+    core.src(cr, pw.shadow)
+    cr.set_line_width(5.0)
+    cr.stroke()
+    body = [(-12.0, 0.0), (-17.0, -9.0), (-15.5, -20.0), (-9.0, -29.0), (-10.5, -36.0), (-4.0, -37.5), (8.0, -37.5),
+            (17.0, -41.0), (11.0, -33.0), (9.5, -28.0), (15.5, -20.0), (17.0, -9.0), (12.0, 0.0)]
+    cr.new_path()
+    core.smooth_closed(cr, B.offset_closed(body, lw), 0.6)
+    core.src(cr, pw.line)
+    cr.fill()
+    cr.new_path()
+    core.smooth_closed(cr, body, 0.6)
+    B.shade(cr, B.Path(cr), B.Mat.of("#9AA0A6", sheen=0.7), light, lw, outline=False, size=28.0, rim=0.6)
+    core.src(cr, pw.line, 0.7)                            # a band at the neck
+    cr.rectangle(-11.0, -30.0, 21.0, 1.6)
+    cr.fill()
+    cr.restore()
 
 
 def _draw_chorus_bench(cr):
@@ -682,7 +786,7 @@ def draw_ext_in(cr, t, st):
         ey = core.ramp(t, 0.5, 1.3, "inout_sine")
         stamp_k = core.ramp(t, T_RAISE0, T_TOP)
         tp = ch.TrollPose(facing=-1, look=(-0.25 - 0.45 * ey, 0.1 + 0.4 * offer + 0.2 * core.ramp(t, T_SLAM0, B_STAMP)),
-                          mood="bored", near=arm, far=ch.TrollArm("belt"),
+                          mood="bored", near=arm, far=_troll_far_arm(t),
                           head_nod=0.12 * stamp_k * (1.0 - core.ramp(t, T_SLAM0, B_STAMP)) - 0.2 * core.ramp(t, T_SLAM0, B_STAMP + 0.1),
                           lean=(_troll_tilt(t) - 0.54) / 0.2)
         trig = ch.draw_troll(cr, TROLL_X, S.EXT_GROUND + 4, SC_EXT, tp, L, t)
@@ -750,7 +854,11 @@ def _int_camera(t):
                                  (SH_INT_C[1], core.Camera(634, 640, 2.88), "inout_sine")])
 
 
-T_FACE0, T_FACE1 = B_LOOKB + 0.5, B_LOOKB + 1.1            # he turns his body to face the troll
+# (T_FACE0 / T_FACE1, his turn to face the troll, are with the shot table: the cut is on it)
+# "Keep it light, buddy." lands on his face inside the two-shot, keyed to the troll's words
+_L2_WORDS = {w.lower().strip(",.?!"): w0 for (w, w0, _w1) in tl.word_times("s4_l2")}
+W_LIGHT = _L2_WORDS["light"]                                 # the sting: brows knit up, lids drop
+W_BUDDY = _L2_WORDS["buddy"]                                 # his eyes fall off the troll; a swallow
 T_AWAY0, T_AWAY1 = L2.end + 0.15, L2.end + 0.85            # ...and, after the line, turns away from him
 T_HAND0, T_HAND1 = B_LOOKHAND - 0.25, B_LOOKHAND + 0.35    # the stamped (right) hand comes up
 T_LOWER0, T_LOWER1 = B_EXIT - 0.45, B_EXIT - 0.05          # ...and goes down
@@ -878,10 +986,23 @@ def _dragon_int_pose(t):
                                (T_AWAY1, 0.0), (T_HEAD_DOOR, 0.0), (T_HEAD_DOOR + 0.28, -0.5, "inout_sine")])
     head_turn -= 0.32 * shy
     head_tilt = -0.1 * shy + 0.025 * jolt
+    # the troll's line lands on him while we watch: open, listening (a flicker of hope that the
+    # big one might hear him) -> on "light" the brows knit up, the lids drop, a hair of a flinch
+    # -> on "buddy" his eyes fall off the troll to the floor, a swallow, the wings sag -> a blink
+    # brings the eyes back up to him, and he is already sinking into himself as we cut
+    listen = core.ramp(t, T_FACE1 - 0.3, T_FACE1 + 0.2) * (1.0 - core.ramp(t, W_LIGHT - 0.04, W_LIGHT + 0.12))
+    sting = core.ramp(t, W_LIGHT - 0.03, W_LIGHT + 0.14, "out_quad") * (1.0 - core.ramp(t, T_AWAY0, T_AWAY1))
+    drop = core.window(t, W_BUDDY + 0.02, W_BUDDY + 0.4, 0.1, 0.08)     # (the L2.end - 0.3 blink covers the return)
+    swallow = core.window(t, W_BUDDY + 0.06, W_BUDDY + 0.5, 0.14, 0.24)
+    sag = core.ramp(t, W_BUDDY, W_BUDDY + 0.45, "inout_sine")
+    deflate = core.ramp(t, W_BUDDY + 0.15, L2.end + 0.5, "inout_sine")
+    look_x += 0.3 * drop
+    look_y += 0.6 * drop
     breath = core.window(t, t_breath, L1.start + 0.08, 0.16, 0.14)
     lean = (0.12 * core.ramp(t, L1.start - 0.05, L1.start + 0.4) * (1.0 - face) - 0.24 * sw - 0.06 * breath
-            - 0.06 * core.window(t, B_TURN, B_LOOKB, 0.2, 0.4) - 0.05 * flinch)
-    hunch = 0.6 - 0.25 * breath + 0.25 * sw + 0.15 * core.ramp(t, L2.end, L2.end + 0.6) + 0.12 * flinch
+            - 0.06 * core.window(t, B_TURN, B_LOOKB, 0.2, 0.4) - 0.05 * flinch
+            - 0.035 * core.window(t, W_LIGHT - 0.02, W_LIGHT + 0.4, 0.06, 0.28))
+    hunch = 0.6 - 0.25 * breath + 0.25 * sw + 0.15 * deflate + 0.12 * flinch
     # the face: tired -> (a try at a smile) -> hope, for the line -> crushed under the swell -> hurt
     try_smile = core.window(t, LAUGH_BURSTS[1][0] + 0.12, t_think + 0.04, 0.26, 0.3)
     hope = core.ramp(t, t_glance, t_breath + 0.1) * (1.0 - core.ramp(t, B_SWELL, B_SWELL + 0.2))
@@ -891,9 +1012,12 @@ def _dragon_int_pose(t):
     e = e.blend(HOPE, hope)
     e = e.blend(WINCE, wince)
     e = e.blend(HURT, hurt * (1.0 - wince))
+    e = e.blend(HOPE, 0.35 * listen)
+    e = e.blend(WINCE, 0.32 * sting)
     e = e.blend(RESIGNED, core.ramp(t, T_SIGH + 0.3, T_SIGH + 0.6))
     nod = (-0.15 - 0.2 * sw + 0.12 * core.window(t, B_LOOKB + 0.3, L2.end, 0.4, 0.3)
-           - 0.3 * core.ramp(t, L2.end + 0.3, L2.end + 0.8) - 0.12 * core.window(t, t_think, t_glance + 0.05, 0.08, 0.08)
+           - 0.12 * deflate - 0.18 * core.ramp(t, L2.end + 0.3, L2.end + 0.8) - 0.07 * swallow
+           - 0.12 * core.window(t, t_think, t_glance + 0.05, 0.08, 0.08)
            + 0.06 * breath - 0.12 * shy + 0.08 * try_smile)
     # facing: the room (yaw 0.85) -> the troll (yaw -0.5) -> away from him, toward us (yaw 0.25)
     # -> the door (yaw -1.0)
@@ -910,7 +1034,7 @@ def _dragon_int_pose(t):
     # his LEFT hand still carries the apothecary's sack (it sways when he flinches, and swings
     # as he walks out)
     swing = 0.1 * math.sin(wphase * math.tau) * walk + 0.05 * B.wobble(t, B_SWELL, 1.6, 1.3) * (t >= B_SWELL)
-    left = ch.Arm("carry_bag", hold=_bag_cb(L_DRAGON_INT, t, swing))
+    left = ch.Arm("carry_bag", hold=_bag_cb(L_BAG_INT, t, swing))
     if face > 0.5:
         up = core.ramp(t, T_HAND0, T_HAND1, "inout_sine") * (1.0 - core.ramp(t, T_LOWER0, T_LOWER1, "inout_sine"))
         right = ch.Arm("look_at_hand", amt=up, prev="rest", stamp=_stamp_cb())
@@ -940,7 +1064,7 @@ def _dragon_int_pose(t):
     return ch.DragonPose(facing=1, turn=turn, mood=e, mood2=SIGH_SHUT if sigh > 0 else None, mood_mix=sigh,
                          blink=blink, talk=talk, look=(look_x, look_y),
                          head_turn=head_turn, head_tilt=head_tilt, head_nod=nod - 0.25 * up - 0.5 * sigh, lean=lean,
-                         hunch=hunch + 0.35 * sigh, wings=-0.6 - 0.4 * sw - 0.4 * sigh, near=near, far=far, walk=walk,
+                         hunch=hunch + 0.35 * sigh, wings=-0.6 - 0.4 * sw - 0.4 * sigh - 0.15 * sag, near=near, far=far, walk=walk,
                          phase=wphase)
 
 
@@ -1008,7 +1132,7 @@ def _crowd_pose_for(t, spec, facing, turn, who, lp, up, a, sit=False):
         p = ch.CrowdPose(action="idle", tankard=True, mood=mood if back < 0.5 else "happy", talk=talk,
                          laugh=core.lerp(0.7 * (1.0 - u), 0.7, back),
                          look=stare, head_turn=head_turn, head_nod=nod,
-                         near=ch.Arm("s4_toast", amt=up0, prev="tankard", phase=ph0), seed=spec.seed, **kw)
+                         near=ch.Arm("s4_toast", amt=up0, prev="s4_tankard", phase=ph0), seed=spec.seed, **kw)
         return p
     # between bursts: everyone holds the SAME frozen grin and takes the same breath (a held
     # beat, eyes still squeezed, tankards at the chest), then they all burst again on one frame
@@ -1018,7 +1142,7 @@ def _crowd_pose_for(t, spec, facing, turn, who, lp, up, a, sit=False):
     # one phase drives both gestures: the cheer's pump is periodic, the tankard's toast height is
     # clamped -- kept in [-1, 0) the blend always starts from (and comes back down to) the chest
     p = ch.crowd_pose("laugh", t, spec, laugh_pulse=0.55 + 0.45 * lp, amount=1.0,
-                      near=ch.Arm("s4_toast", amt=up, prev="tankard", phase=(ha_phase % 1.0) - 1.0), **kw)
+                      near=ch.Arm("s4_toast", amt=up, prev="s4_tankard", phase=(ha_phase % 1.0) - 1.0), **kw)
     g = grin_k(t)
     if g > 0.0:
         # between bursts: the SAME frozen grin on every face, held (a beat too long), tankards at
@@ -1026,12 +1150,40 @@ def _crowd_pose_for(t, spec, facing, turn, who, lp, up, a, sit=False):
         lpb = p.laugh_pulse
         talk_b, nod_b, laugh_b = 0.4 + 0.6 * lpb, 0.25 + 0.2 * lpb, max(p.laugh, 0.7)      # as crowd.py draws a laugh
         p = p.with_(action="idle", tankard=True, mood="happy", smile=1.0,
-                    talk=core.lerp(talk_b, 0.04, g), laugh=core.lerp(laugh_b, 0.0, g),
+                    talk=core.lerp(talk_b, GRIN_TALK_BULL if spec.kind == "minotaur" else GRIN_TALK, g),
+                    laugh=core.lerp(laugh_b, 0.0, g),
                     head_nod=core.lerp(nod_b, 0.06, g), look=(0.0, 0.0))
     return p
 
 
 SYNC_SEED = 7
+# the frozen grin between bursts is held OPEN a crack, teeth showing, corners up: a closed smile
+# line reads as a blank stare on the muzzled builds (satyr, minotaur) -- this is the SAME toothy
+# grin on every face (the dwarf grins under his beard: cheeks and eyes)
+GRIN_TALK = 0.18
+GRIN_TALK_BULL = 0.55                # the minotaur: his muzzle hides the mouth -- part the lips enough to show
+
+
+def _chorus_pose(t, spec, i, tn, lp, up, a, L):
+    """A chorus sitter's pose with the row's arms made uniform: every one of them toasts with the
+    SAME hand (their right: screen-left) -- the rig's toast arm is the near one, which flips
+    with the sign of the small fan of turns, so the two left sitters would raise the other hand
+    and cross the next sitter's toast -- and the free hand rests in the lap, elbow tucked."""
+    p = _crowd_pose_for(t, spec, 0, tn, i, lp, up, a, sit=True)
+    lap = ch.Arm("s4_lap")
+    if tn >= 0.0:                                    # their right hand is already the near one
+        return p.with_(far=lap)
+    hold = ch.tankard_hold(light=L, slosh=2.0 * p.laugh_pulse)
+    return p.with_(near=lap, far=ch.Arm(**{**p.near.__dict__, "hold": hold}), tankard=False)
+
+
+def _draw_chorus(cr, t, st, L, lp, up, a):
+    """The chorus line on its oak form behind the front table."""
+    st["int_bench"].paint(cr)
+    for i, (x, kind, seed, tn) in enumerate(CHORUS):
+        spec = st["specs"][seed]
+        _crowd(cr, x, CHORUS_Y, spec, _chorus_pose(t, spec, i, tn, lp, up, a, L), L, t)
+    st["int_table"].paint(cr)
 
 
 def grin_k(t):
@@ -1348,6 +1500,27 @@ def _dof_pass(cr, st, draw_fn, blur):
     cr.restore()
 
 
+def _sharp_doorway(cr, st, cam):
+    """The two-shot's focus plane: the troll is sharp, so the doorway he fills and the floor under
+    his feet must be too (a sharp troll pasted on a blurred threshold reads as a cut-out). The set
+    there -- night, wall, floor, hazed exactly as in the soft pass -- is laid back over the blurred
+    pass through a mask that fades out to the right of the doorway (the hall beyond stays soft)."""
+    x1 = cam.to_screen(S.INT_DOOR_CX + S.INT_DOOR_W + 60.0, 0.0)[0]
+    cr.push_group()
+    with cam.view(cr, 0.55):
+        st["int_night"].paint(cr)
+    with cam.view(cr, 0.92):
+        st["int_wall"].paint(cr)
+    with cam.view(cr, 1.0):
+        st["int_floor"].paint(cr)
+    _air_haze(cr, 0.12)
+    cr.pop_group_to_source()
+    m = cairo.LinearGradient(x1 - 220.0, 0.0, x1, 0.0)
+    m.add_color_stop_rgba(0.0, 0, 0, 0, 1.0)
+    m.add_color_stop_rgba(1.0, 0, 0, 0, 0.0)
+    cr.mask(m)
+
+
 def _int_shot(t):
     if t < SH_CHORUS[1]:
         return "chorus"
@@ -1375,9 +1548,11 @@ def draw_interior(cr, t, st):
         # the chorus line is the subject: the back of the hall (band, standing laughers) goes soft
         _dof_pass(cr, st, lambda c: (_draw_int_room(c, t, st, cam, L, lp, up, a), _air_haze(c, 0.12)), blur=4.5)
     elif shot == "b":
-        # the two-shot: the troll (in the doorway) and the dragon are sharp; the hall goes soft
+        # the two-shot: the troll (in the doorway) and the dragon are sharp; the hall goes soft --
+        # but the doorway he fills and the boards he stands on share his focus plane
         _dof_pass(cr, st, lambda c: (_draw_int_room(c, t, st, cam, L, lp, up, a, troll=False), _air_haze(c, 0.12)),
                   blur=3.2)
+        _sharp_doorway(cr, st, cam)
         with cam.view(cr, 1.0):
             _draw_troll_int(cr, t)
     else:
@@ -1397,15 +1572,12 @@ def draw_interior(cr, t, st):
         if shot_c:
             _sigh_smoke(cr, t, st)
         else:
-            # the goblin who stares (right), the goblin who looks at the troll (left)
-            _draw_starer(cr, t, st, L, lp, up, a)
-            _draw_someone(cr, t, st, L, lp, up, a)
-            # the chorus line on its bench behind the front table
-            st["int_bench"].paint(cr)
-            for i, (x, kind, seed, tn) in enumerate(CHORUS):
-                spec = st["specs"][seed]
-                _crowd(cr, x, CHORUS_Y, spec, _crowd_pose_for(t, spec, 0, tn, i, lp, up, a, sit=True), L, t)
-            st["int_table"].paint(cr)
+            if shot != "chorus":
+                # the goblin who stares (right), the goblin who looks at the troll (left) -- cheated
+                # out of the chorus close-up, where the starer would stand sliced by the frame edge
+                _draw_starer(cr, t, st, L, lp, up, a)
+                _draw_someone(cr, t, st, L, lp, up, a)
+            _draw_chorus(cr, t, st, L, lp, up, a)
         lanterns = _int_lanterns(cr, t, L) if shot in ("a", "b") else []
         if not shot_c:
             # smoky motes drifting in the lantern light (warm, additive, brighter in the light cones)
@@ -1446,11 +1618,7 @@ def draw_pov(cr, t, st):
     def back(c):
         _draw_int_room(c, t, st, cam, L, lp, up, a)
         with cam.view(c, 1.0):
-            st["int_bench"].paint(c)
-            for i, (x, kind, seed, tn) in enumerate(CHORUS):
-                spec = st["specs"][seed]
-                _crowd(c, x, CHORUS_Y, spec, _crowd_pose_for(t, spec, 0, tn, i, lp, up, a, sit=True), L, t)
-            st["int_table"].paint(c)
+            _draw_chorus(c, t, st, L, lp, up, a)
             _int_lanterns(c, t, L)
         _air_haze(c, 0.16)
 
@@ -1486,8 +1654,10 @@ def _draw_troll_int(cr, t):
     flat, with the smallest shrug on "buddy"."""
     u = core.ramp(t, B_LOOKB + 0.35, B_LOOKB + 0.95, "inout_sine")
     eyes = core.ramp(t, B_LOOKB + 0.15, B_LOOKB + 0.45, "inout_sine")
+    # (a shallow downward look: his lids follow the iris, and any lower closes his heavy bored
+    # lids to slits -- a sliver of iris and pupil must show, or he reads as dozing)
     tp = ch.TrollPose(facing=1, turn=-0.75, near=ch.TrollArm("arms_crossed"), far=ch.TrollArm("arms_crossed"),
-                      mood="bored", look=(0.25 + 0.5 * eyes, 0.2 + 0.25 * eyes), head_turn=-0.3 * u,
+                      mood="bored", look=(0.25 + 0.5 * eyes, 0.12 + 0.06 * eyes), head_turn=-0.3 * u,
                       head_nod=-0.1 * u - 0.4 * _troll_dip(t), talk=_troll_talk(t), lean=0.12 * u,
                       shrug=0.55 * core.window(t, L2.start + 0.95, L2.end + 0.25, 0.25, 0.4))
     sc = S.int_scale(TROLL_INT[1])
@@ -1497,11 +1667,12 @@ def _draw_troll_int(cr, t):
         cr.save()
         cr.translate(gx, gy + 4)
         cr.scale(1.0, 0.22)
-        cr.set_source(core.radial(0, 0, 230 * sc, [(0.0, core.alpha(S.COLD, 0.28)), (1.0, core.alpha(S.COLD, 0.0))]))
+        cr.set_source(core.radial(0, 0, 230 * sc, [(0.0, core.alpha(S.COLD, 0.4)), (1.0, core.alpha(S.COLD, 0.0))]))
         cr.arc(0, 0, 230 * sc, 0, math.tau)
         cr.fill()
         cr.restore()
-        env.draw_ground_shadow(cr, gx, gy + 3, 120 * sc, 18 * sc, alpha=0.6, color="#0c0610")
+        env.draw_ground_shadow(cr, gx, gy + 3, 120 * sc, 18 * sc, alpha=0.8, color="#0c0610")
+        env.draw_ground_shadow(cr, gx, gy + 2, 70 * sc, 8 * sc, alpha=0.7, color="#07030a")     # occlusion under his feet
         ch.draw_troll(cr, TROLL_INT[0], TROLL_INT[1], sc, tp, L_TROLL_INT, t)
 
 
@@ -1772,9 +1943,13 @@ def _note_list(t):
     return out
 
 
+VOICE_COLOR = "#e6e4f6"
+
+
 def _voice_ripples(cr, t, drig):
-    """His small, honest voice: thin pale-gold ripples from his mouth while he speaks -- they
-    travel before the swell, and are crushed (swallowed) the instant it hits."""
+    """His small, honest voice: thin pale ripples from his mouth while he speaks -- they travel
+    before the swell, and are crushed (swallowed) the instant it hits. Cool silver-lilac, never
+    gold: the first warm light that comes from HIM is the laugh's embers in S6 (SPEC 0.3, 4)."""
     if not (L1.start - 0.05 <= t <= L1.end + 0.6):
         return
     mx, my = drig.mouth
@@ -1802,7 +1977,7 @@ def _voice_ripples(cr, t, drig):
             continue
         cr.save()
         cr.set_line_width(max(1.0, 3.6 * s))
-        core.src(cr, "#ffe2a0", a)
+        core.src(cr, VOICE_COLOR, a)
         cr.arc(mx + 8 * s, my, r, -0.55, 0.55)
         cr.stroke()
         cr.restore()
