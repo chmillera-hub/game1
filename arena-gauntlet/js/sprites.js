@@ -1234,6 +1234,613 @@
     poly(ctx, [-13, -38, -6, -37, -6, -33, -13, -33.5], T.main);
   };
 
+  // ------------------------------------------------------------ siege engines, standing stones and lairs
+
+  // A rope or cord: a thin dark stroke under a pale one (lighter than an outlined line()).
+  function cord(ctx, x1, y1, x2, y2, color, w) {
+    w = w || 0.7;
+    ctx.lineCap = 'round';
+    for (const [lw, c] of [[w + 1, OUT], [w, color || '#cdb27a']]) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = c;
+      ctx.stroke();
+    }
+  }
+
+  // An outlined quadratic curve: roots, horns, sagging ropes.
+  function curve(ctx, x1, y1, cx, cy, x2, y2, w, color) {
+    ctx.lineCap = 'round';
+    for (const [lw, c] of [[w + 2.2, OUT], [w, color]]) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cx, cy, x2, y2);
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = c;
+      ctx.stroke();
+    }
+  }
+
+  // A glowing seam (molten crack or rune stroke): a colored pass under a bright core, unoutlined.
+  function seam(ctx, pts, color, core, w) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const [lw, c] of [[w, color], [w * 0.45, core]]) {
+      ctx.beginPath();
+      ctx.moveTo(pts[0], pts[1]);
+      for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = c;
+      ctx.stroke();
+    }
+  }
+
+  // Sparks that drift upward and fade; color is an 'rgba(r,g,b,' prefix as for glow().
+  function motes(ctx, t, xs, y0, rise, color, r) {
+    xs.forEach((x, i) => {
+      const p = (t * 0.4 + i / xs.length) % 1;
+      const a = Math.sin(p * Math.PI);
+      ctx.fillStyle = color + (0.85 * a).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(x + Math.sin(t * 1.7 + i * 2.1) * 1.2, y0 - p * rise, r * (0.5 + 0.5 * a), 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function wheel(ctx, x, y, r, c) {
+    circle(ctx, x, y, r, c);
+    circle(ctx, x, y, r - 1.5, shade(c, 0.12), 0.7);
+    for (let k = 0; k < 3; k++) {
+      const a = 0.3 + (k * Math.PI) / 3;
+      const s = r - 1.5;
+      line(ctx, x - Math.cos(a) * s, y - Math.sin(a) * s, x + Math.cos(a) * s, y + Math.sin(a) * s, 0.7, OUT, false);
+    }
+    circle(ctx, x, y, 1.1, '#3e3a36', 0);
+  }
+
+  // A sharpened stake from its foot (x1, y1) to its point (x2, y2), the point freshly cut.
+  function stake(ctx, x1, y1, x2, y2, w, color) {
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const nx = (-(y2 - y1) / len) * (w / 2);
+    const ny = ((x2 - x1) / len) * (w / 2);
+    const sx = x1 + (x2 - x1) * 0.8;
+    const sy = y1 + (y2 - y1) * 0.8;
+    const body = [x1 + nx, y1 + ny, sx + nx, sy + ny, x2, y2, sx - nx, sy - ny, x1 - nx, y1 - ny];
+    poly(ctx, body, color, 0);
+    poly(ctx, [sx + nx, sy + ny, x2, y2, sx - nx, sy - ny], '#d9bb8c', 0);
+    poly(ctx, body, null);
+  }
+
+  D.trebuchet = (ctx, o) => {
+    const T = o.tc;
+    const wood = '#8a5a30';
+    const far = '#5c4029';
+    const iron = '#3e3a36';
+    const w = Math.sin(o.t * 3);
+    // far wheels and the far A-frame, set back up and to the right
+    wheel(ctx, -5.5, -6.8, 3.6, far);
+    wheel(ctx, 10.5, -6.8, 3.6, far);
+    line(ctx, -7, -11, 1, -28.5, 1.8, far);
+    line(ctx, 9, -11, 1, -28.5, 1.8, far);
+    // the chassis: a deck and the near beam
+    poly(ctx, [-14, -9.5, 13, -9.5, 16, -12.2, -11, -12.2], shade(wood, 0.08));
+    poly(ctx, [13, -9.5, 16, -12.2, 16, -8.2, 13, -5.5], shade(wood, -0.3));
+    rect(ctx, -14, -9.5, 27, 4, 1, wood);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fillRect(-13, -9, 25, 1);
+    // the near A-frame, with a pennant staff rising from its peak
+    line(ctx, -10, -8.5, -2, -26, 2.4, wood);
+    line(ctx, 6, -8.5, -2, -26, 2.4, shade(wood, -0.12));
+    line(ctx, -6.8, -15.5, 2.8, -15.5, 1.6, wood);
+    line(ctx, -2, -26, -2, -39.5, 1, '#5a3d22');
+    poly(ctx, [-2, -39.5, -10.5, -37.6 + w * 0.6, -2, -34.8], T.main);
+    // the throwing arm rests with its long end raised toward the target (+x)
+    const ca = Math.cos(0.98);
+    const sa = Math.sin(0.98);
+    const tx = -2 + 19 * ca;
+    const ty = -26 - 19 * sa;
+    const bx = -2 - 8 * ca;
+    const by = -26 + 8 * sa;
+    // the counterweight box, heaped with stones, hangs from the short end
+    line(ctx, bx, by, bx, by + 3, 1, iron);
+    for (const [x, y, r] of [[-2.8, 2.6, 1.7], [0.6, 2.1, 1.9], [3.2, 2.8, 1.5]]) circle(ctx, bx + x, by + y, r, '#9a9388', 0.7);
+    poly(ctx, [bx - 5.5, by + 2.6, bx + 5.5, by + 2.6, bx + 4.6, by + 9.6, bx - 4.6, by + 9.6], '#6b4a2b');
+    poly(ctx, [bx - 5.5, by + 2.6, bx - 1, by + 2.6, bx - 1.2, by + 9.6, bx - 4.6, by + 9.6], shade('#6b4a2b', 0.12), 0);
+    rect(ctx, bx - 5.1, by + 5.4, 10.2, 1.4, 0.3, iron, 0);
+    line(ctx, bx, by, tx, ty, 2.8, wood);
+    line(ctx, bx + 0.4, by - 0.9, tx - 0.5, ty - 0.5, 0.7, 'rgba(255,255,255,0.22)', false);
+    circle(ctx, -2, -26, 1.6, iron, 0.8);
+    // the sling sways gently under the tip
+    const sw = Math.sin(o.t * 1.6) * 0.13 + Math.sin(o.t * 2.7 + 1) * 0.05;
+    const sx = tx + Math.sin(sw) * 9;
+    const sy = ty + Math.cos(sw) * 9;
+    cord(ctx, tx, ty, sx - 2.3, sy - 0.6);
+    cord(ctx, tx, ty, sx + 2.3, sy - 0.6);
+    ellipse(ctx, sx, sy + 0.8, 3, 1.8, '#5a3d22', 0.8);
+    circle(ctx, sx, sy - 0.4, 2.5, '#8d877d');
+    circle(ctx, sx - 0.8, sy - 1.2, 0.8, '#b5afa4', 0);
+    wheel(ctx, -9, -4, 4, '#6b4a2b');
+    wheel(ctx, 7, -4, 4, '#6b4a2b');
+  };
+
+  D.totem = (ctx, o) => {
+    const T = o.tc;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2.4);
+    const stone = '#8c8579';
+    const paint = '#b8352a';
+    const bone = '#e8dfc4';
+    glow(ctx, 0, -20, 22, 'rgba(200,235,110,', 0.1 + 0.1 * pulse);
+    // a cairn of rough stones at the foot
+    for (const [x, y, rx, ry, c] of [[-7.5, -1.5, 4.2, 2.8, '#7a7368'], [7.8, -1.6, 4, 2.7, '#5f594f'], [0, -0.6, 5.5, 2.6, '#6e675d']]) {
+      ellipse(ctx, x, y, rx, ry, c);
+    }
+    // the pillar: lit left, shadowed right, its crown worn round
+    const body = [-7.4, -2, 7.4, -2, 6.6, -28.5, 4.6, -32.2, 1.4, -33.6, -2.4, -33.4, -5, -31.8, -6.6, -28.5];
+    poly(ctx, body, stone, 0);
+    poly(ctx, [-7.4, -2, -3.4, -2, -3.1, -33.5, -5, -31.8, -6.6, -28.5], shade(stone, 0.14), 0);
+    poly(ctx, [3.6, -2, 7.4, -2, 6.6, -28.5, 4.6, -32.2, 3.3, -32.9], shade(stone, -0.22), 0);
+    poly(ctx, body, null);
+    line(ctx, -5.6, -10, -4.2, -6.5, 0.6, 'rgba(0,0,0,0.35)', false);
+    line(ctx, 5.2, -31, 3.8, -28.6, 0.6, 'rgba(0,0,0,0.35)', false);
+    // horns
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 3, -31.5);
+      ctx.quadraticCurveTo(s * 10, -31, s * 10.5, -40.5);
+      ctx.quadraticCurveTo(s * 8, -34.5, s * 5.8, -28.5);
+      ctx.closePath();
+      finish(ctx, bone, 1);
+      line(ctx, s * 6.3, -30.4, s * 7.4, -32.2, 0.5, 'rgba(120,100,70,0.6)', false);
+    }
+    // war paint across the eyes, then the grim carved face
+    poly(ctx, [-7, -26, 6.8, -26, 6.6, -20.5, -6.9, -20.5], paint, 0);
+    poly(ctx, [-6.6, -28.5, 0, -25.6, 6.4, -28.5, 6.3, -26, 0, -23.4, -6.5, -26], shade(stone, 0.2), 0.8);
+    poly(ctx, [-5.4, -24.6, -1.3, -22.9, -1.5, -21.2, -5.1, -21.8], '#1a1410', 0);
+    poly(ctx, [1.3, -22.9, 5.2, -24.6, 4.9, -21.8, 1.5, -21.2], '#1a1410', 0);
+    ctx.fillStyle = 'rgba(225,245,120,' + (0.65 + 0.35 * pulse) + ')';
+    ctx.fillRect(-3.6, -23, 1.4, 1.1);
+    ctx.fillRect(2.4, -23, 1.4, 1.1);
+    glow(ctx, -2.9, -22.5, 3.5, 'rgba(220,245,120,', 0.15 + 0.35 * pulse);
+    glow(ctx, 3.1, -22.5, 3.5, 'rgba(220,245,120,', 0.15 + 0.35 * pulse);
+    poly(ctx, [-1.4, -22.5, 1.4, -22.5, 2.4, -18.6, -2.4, -18.6], shade(stone, 0.05), 0.8);
+    poly(ctx, [-5, -15.2, -3.8, -17.4, 3.8, -17.4, 5, -15.2, 3.8, -14.2, -3.8, -14.2], '#1a1410', 0.8);
+    poly(ctx, [-5.4, -13.4, -6.2, -21, -2.9, -14.8], bone, 0.8);
+    poly(ctx, [2.9, -14.8, 6.2, -21, 5.4, -13.4], bone, 0.8);
+    for (const x of [-2.2, 0, 2.2]) line(ctx, x, -13, x, -10.5 + Math.abs(x) * 0.3, 0.9, paint, false);
+    // team cloth wound round the foot of the pillar
+    poly(ctx, [-7.4, -9.2, 7.3, -9.2, 7.4, -6.2, -7.5, -6.2], T.main, 0.8);
+    poly(ctx, [5, -7, 8.5, -3.2, 6.8, -2.4, 4.4, -5.8], T.dark, 0.8);
+    motes(ctx, o.t, [-9, 8.5, -4, 4], -6, 30, 'rgba(225,240,130,', 0.9);
+  };
+
+  D.hexstone = (ctx, o) => {
+    const T = o.tc;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2);
+    const rock = '#4b4656';
+    const w = Math.sin(o.t * 2.6);
+    glow(ctx, 0, -20, 22, 'rgba(170,90,255,', 0.1 + 0.1 * pulse);
+    ellipse(ctx, 0, -0.5, 12, 3.2, '#3a3a2b');
+    const body = [-8, -0.5, -9.4, -11, -8.2, -24, -5, -34.5, 0, -39.5, 4.5, -36.5, 7.6, -27, 9, -12, 8.4, -0.5];
+    poly(ctx, body, rock, 0);
+    poly(ctx, [-8, -0.5, -9.4, -11, -8.2, -24, -5, -34.5, 0, -39.5, -1.8, -30, -3.4, -18, -3.2, -0.5], shade(rock, 0.16), 0);
+    poly(ctx, [3.6, -0.5, 4.4, -14, 3.2, -28, 0, -39.5, 4.5, -36.5, 7.6, -27, 9, -12, 8.4, -0.5], shade(rock, -0.3), 0);
+    poly(ctx, body, null);
+    // the runes, glowing in time
+    const rc = 'rgba(196,128,255,' + (0.65 + 0.35 * pulse) + ')';
+    for (const [x, y] of [[-0.6, -24], [-1, -15.5], [-0.4, -7.5]]) glow(ctx, x, y, 6, 'rgba(180,100,255,', 0.25 + 0.25 * pulse);
+    seam(ctx, [-0.6, -27, 1.4, -24, -0.6, -21, -2.6, -24, -0.6, -27], rc, '#f4e6ff', 1.2);
+    seam(ctx, [-1, -12.5, -1, -18.5], rc, '#f4e6ff', 1.2);
+    seam(ctx, [-3.2, -18.5, -1, -15.8, 1.2, -18.5], rc, '#f4e6ff', 1.2);
+    seam(ctx, [-2, -10, 1.2, -8.3, -2, -6.6, 1.2, -4.9], rc, '#f4e6ff', 1.2);
+    // moss on the lit face
+    for (const [x, y, r] of [[-7.6, -4.5, 1.5], [-6.2, -3, 1.2], [-8.2, -16, 1], [-4.6, -33.2, 0.9]]) circle(ctx, x, y, r, '#4e6b35', 0);
+    // roots creeping out of the earth and over the foot of the stone
+    const root = '#4a3424';
+    curve(ctx, -14, 1, -11, 0.4, -8.9, -4.2, 1.1, root);
+    curve(ctx, -8.9, -4.2, -7.6, -7.6, -4.6, -8.6, 0.8, root);
+    curve(ctx, 13.5, 0.6, 10.5, 0, 8.9, -3.6, 1.1, root);
+    curve(ctx, 8.9, -3.6, 8, -7.4, 5.4, -9.8, 0.8, root);
+    curve(ctx, -2.8, 2.6, -1, 0.2, 1.4, -2.8, 1, root);
+    curve(ctx, 1.4, -2.8, 2.6, -4.4, 2.2, -6.6, 0.7, root);
+    curve(ctx, -10.6, 0.8, -12.6, -0.6, -13.4, -3, 0.6, root);
+    curve(ctx, 10.4, 0.4, 11.4, 2.2, 13.8, 2.4, 0.6, root);
+    // team ribbon tied round the neck of the stone
+    poly(ctx, [-6.2, -32.4, 5.6, -31, 6.2, -28.6, -6.6, -30], T.main, 0.8);
+    poly(ctx, [5, -30.6, 9.6, -27.4 + w, 9, -24.6 + w, 7.4, -26.4 + w * 0.5, 4.6, -28.8], T.dark, 0.8);
+  };
+
+  D.obelisk = (ctx, o) => {
+    const T = o.tc;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 3);
+    glow(ctx, 0, -20, 24, 'rgba(255,110,40,', 0.1 + 0.1 * pulse);
+    // stepped basalt plinth
+    poly(ctx, [-12, 1, 12, 1, 11, -3, -11, -3], '#3d3532');
+    poly(ctx, [-8.5, -3, 8.5, -3, 7.8, -6.8, -7.8, -6.8], '#4a413c');
+    // the shaft: a lit left face and a shadowed right face meeting at the front edge
+    const L = [-6.2, -6.5, 0, -5.8, 0, -36.2, -3.7, -36.8];
+    const R = [0, -5.8, 6.2, -6.5, 3.7, -36.8, 0, -36.2];
+    poly(ctx, L, '#2e2836', 0);
+    poly(ctx, R, '#16121a', 0);
+    poly(ctx, [-6.2, -6.5, 0, -5.8, 6.2, -6.5, 3.7, -36.8, 0, -36.2, -3.7, -36.8], null);
+    line(ctx, -4.6, -9, -2.7, -34, 0.8, 'rgba(200,180,240,0.25)', false);
+    poly(ctx, [-3.7, -36.8, 0, -36.2, 0, -44.5], '#4a4054', 0);
+    poly(ctx, [0, -36.2, 3.7, -36.8, 0, -44.5], '#231d29', 0);
+    poly(ctx, [-3.7, -36.8, 0, -36.2, 3.7, -36.8, 0, -44.5], null);
+    // molten cracks
+    const hot = 'rgba(255,' + Math.round(110 + 40 * pulse) + ',40,0.95)';
+    for (const [x, y] of [[-2.6, -14], [-2.4, -24], [2.4, -27], [-7.6, -1.2]]) glow(ctx, x, y, 6, 'rgba(255,120,40,', 0.25 + 0.2 * pulse);
+    seam(ctx, [-2.6, -7, -3.6, -12, -2, -16.5, -3.2, -21, -1.6, -25.5, -2.4, -29], hot, '#ffe08a', 1.4);
+    seam(ctx, [-3.6, -12, -5.4, -14.2], hot, '#ffe08a', 1.1);
+    seam(ctx, [2.2, -33, 3.1, -29, 1.6, -25, 2.9, -20.5, 2, -17], hot, '#ffe08a', 1.3);
+    seam(ctx, [1.6, -25, 0.6, -23], hot, '#ffe08a', 1);
+    seam(ctx, [-9, -0.4, -7.4, -1.2, -6.8, -2.6], hot, '#ffe08a', 1.1);
+    seam(ctx, [6.2, -3.4, 5.4, -4.6, 6, -6], hot, '#ffe08a', 0.9);
+    glow(ctx, 0, -42, 8, 'rgba(255,150,60,', 0.25 + 0.3 * pulse);
+    // team band round the foot of the shaft
+    poly(ctx, [-5.75, -12, 0, -11.3, 0, -8.8, -5.95, -9.5], T.main, 0.8);
+    poly(ctx, [0, -11.3, 5.75, -12, 5.95, -9.5, 0, -8.8], T.dark, 0.8);
+    motes(ctx, o.t, [-6, 5, -2, 7], -10, 34, 'rgba(255,170,70,', 0.8);
+  };
+
+  D.war_tent = (ctx, o) => {
+    const T = o.tc;
+    const hide = '#b08a5c';
+    const bone = '#e8dfc4';
+    const w = Math.sin(o.t * 3);
+    // centre pole, crowned with a spike
+    line(ctx, 0, -24, 0, -34, 1.3, '#5a3d22');
+    poly(ctx, [-0.8, -33.6, 0.8, -33.6, 0, -36.5], '#aeb6be', 0.8);
+    // the round wall of stitched hides: lit left, patched middle, shaded right
+    const wall = () => {
+      ctx.beginPath();
+      ctx.moveTo(-13, -11);
+      ctx.lineTo(-13, -1);
+      ctx.ellipse(0, -1, 13, 3.5, 0, Math.PI, 0, true);
+      ctx.lineTo(13, -11);
+      ctx.ellipse(0, -11, 13, 3, 0, 0, Math.PI, false);
+      ctx.closePath();
+    };
+    const roof = () => {
+      ctx.beginPath();
+      ctx.moveTo(0, -28);
+      ctx.lineTo(-14.6, -11.6);
+      ctx.ellipse(0, -11.6, 14.6, 3.6, 0, Math.PI, 0, true);
+      ctx.closePath();
+    };
+    const panels = (shape, light, dark) => {
+      shape();
+      ctx.fillStyle = hide;
+      ctx.fill();
+      ctx.save();
+      shape();
+      ctx.clip();
+      poly(ctx, [-1.5, -30, -20, -30, -20, 6, -7.5, 6], shade(hide, light), 0);
+      poly(ctx, [0.5, -30, 1, 6, 6.5, 6], '#9b7752', 0);
+      poly(ctx, [2, -30, 20, -30, 20, 6, 8, 6], shade(hide, dark), 0);
+      for (const x of [-7.5, 1, 8]) line(ctx, 0, -28, x * 1.2, 6, 0.6, 'rgba(50,30,15,0.4)', false);
+      ctx.restore();
+      shape();
+      finish(ctx, null, 1.2);
+    };
+    panels(wall, 0.1, -0.32);
+    // the doorway, its flaps tied back
+    ctx.beginPath();
+    ctx.moveTo(-3.8, 2.2);
+    ctx.lineTo(-3.4, -9.5);
+    ctx.lineTo(3.4, -9.5);
+    ctx.lineTo(3.8, 2.2);
+    ctx.quadraticCurveTo(0, 2.9, -3.8, 2.2);
+    ctx.closePath();
+    finish(ctx, '#1c140f', 1);
+    poly(ctx, [-3.4, -9.5, -3.8, 2.2, -6.2, 1.9, -4.8, -4.5], '#cdb68a', 0.8);
+    poly(ctx, [3.4, -9.5, 3.8, 2.2, 6.2, 1.9, 4.8, -4.5], shade('#cdb68a', -0.18), 0.8);
+    // the roof cone, with ragged hide strips hanging over the wall
+    panels(roof, 0.18, -0.25);
+    ctx.beginPath();
+    for (let i = 0; i <= 12; i++) {
+      const a = Math.PI - (i / 12) * Math.PI;
+      const x = Math.cos(a) * 14.6;
+      const y = -11.6 + Math.sin(a) * 3.6;
+      if (i) ctx.lineTo(x, y);
+      else ctx.moveTo(x, y);
+      if (i < 12) {
+        const a2 = Math.PI - ((i + 0.5) / 12) * Math.PI;
+        ctx.lineTo(Math.cos(a2) * 14.2, -11.6 + Math.sin(a2) * 3.6 + 2.2);
+      }
+    }
+    ctx.ellipse(0, -11.6, 14.6, 3.6, 0, 0, Math.PI, false);
+    ctx.closePath();
+    finish(ctx, '#8a6a44', 0.8);
+    curve(ctx, -8.2, -19.5, 0, -15.2, 8.2, -19.5, 0.7, '#c9ad78');
+    // tusks flanking the door and a horned skull over it
+    curve(ctx, -6.4, 2.4, -9.4, -4.5, -5.6, -9.8, 1.4, bone);
+    curve(ctx, 6.4, 2.4, 9.4, -4.5, 5.6, -9.8, 1.4, bone);
+    curve(ctx, -1.8, -17.6, -6, -17.8, -6.4, -21.6, 1, bone);
+    curve(ctx, 1.8, -17.6, 6, -17.8, 6.4, -21.6, 1, bone);
+    poly(ctx, [-2.4, -18.2, 2.4, -18.2, 2.7, -15.6, 1.2, -12.8, -1.2, -12.8, -2.7, -15.6], bone, 0.9);
+    ctx.fillStyle = OUT;
+    ctx.fillRect(-1.8, -16.6, 1.3, 1.2);
+    ctx.fillRect(0.5, -16.6, 1.3, 1.2);
+    ctx.fillRect(-0.4, -14.6, 0.8, 1);
+    // the war banner, planted at the side
+    line(ctx, 11.4, 2.5, 11.4, -29, 1.3, '#5a3d22');
+    poly(ctx, [10.7, -29, 12.1, -29, 11.4, -32.5], '#aeb6be', 0.8);
+    line(ctx, 11, -27.5, 15.4, -27.5, 1, '#5a3d22');
+    poly(ctx, [11.7, -27.2, 15.2, -27.2, 15.2 + w * 0.3, -16.5, 13.45, -18.5, 11.7 + w * 0.2, -16.5], T.main);
+    poly(ctx, [11.7, -27.2, 15.2, -27.2, 15.2, -25.4, 11.7, -25.4], T.dark, 0);
+    poly(ctx, [12.5, -23.5, 14.4, -23.5, 13.45, -19.6], bone, 0.6);
+  };
+
+  D.crypt = (ctx, o) => {
+    const T = o.tc;
+    const stone = '#8b867d';
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2.2);
+    // side wall and roof, receding up and to the right
+    poly(ctx, [6, 1, 12, -3, 12, -27, 6, -23], shade(stone, -0.3));
+    poly(ctx, [7, -25, 13, -29, 13, -26.6, 7, -22.6], shade(stone, -0.2), 0.8);
+    poly(ctx, [-3, -33.5, 7, -25, 13, -29, 3, -37.5], '#6d6860');
+    for (const f of [1 / 3, 2 / 3]) line(ctx, -3 + 6 * f, -33.5 - 4 * f, 7 + 6 * f, -25 - 4 * f, 0.5, 'rgba(0,0,0,0.3)', false);
+    // a hole broken through the slabs, lit from below, and the cracks round it
+    poly(ctx, [3.5, -31.5, 6, -30.6, 6.6, -28.6, 4.6, -28.2, 3, -29.6], '#141014', 0.8);
+    glow(ctx, 4.8, -29.8, 4, 'rgba(120,255,150,', 0.35 + 0.2 * pulse);
+    line(ctx, 0.6, -34.6, 3.5, -31.5, 0.6, OUT, false);
+    line(ctx, 6.6, -28.6, 9.4, -27.2, 0.6, OUT, false);
+    line(ctx, 9.4, -27.2, 9, -25.4, 0.6, OUT, false);
+    // the front wall, pilasters, cornice and pediment
+    rect(ctx, -12, -23, 18, 24, 0, stone);
+    rect(ctx, -12, -23, 3, 24, 0, shade(stone, 0.12), 0.8);
+    rect(ctx, 3, -23, 3, 24, 0, shade(stone, -0.06), 0.8);
+    rect(ctx, -13, -25, 20, 2.4, 0.4, shade(stone, 0.14));
+    poly(ctx, [-13, -25, 7, -25, -3, -33.5], shade(stone, 0.06));
+    line(ctx, -7.2, -26.5, -5.6, -28.8, 0.5, OUT, false);
+    circle(ctx, -3, -35, 1.5, shade(stone, 0.1), 0.8);
+    glow(ctx, -3, -28.6, 4.5, T.glow, 0.6);
+    circle(ctx, -3, -28.6, 1.6, T.main, 0.8);
+    // ivy trailing down the corner
+    curve(ctx, -9, -25.4, -12.8, -22, -11.2, -14, 0.5, '#3d5e2a');
+    for (const [x, y, a] of [[-9.8, -25.4, 0.4], [-11.8, -23.4, -0.5], [-12.1, -20.6, 0.6], [-11.6, -17.6, -0.4], [-11.1, -14.6, 0.5]]) {
+      ellipse(ctx, x, y, 1.3, 0.8, '#5a8a3c', 0.6, a);
+    }
+    // a lintel over the door
+    rect(ctx, -9, -16.6, 12, 1.6, 0.3, shade(stone, -0.08), 0.8);
+    // the doorway, with the green light of the dead inside
+    ctx.beginPath();
+    ctx.moveTo(-8.2, 1);
+    ctx.lineTo(-8.2, -9);
+    ctx.arc(-3, -9, 5.2, Math.PI, 0);
+    ctx.lineTo(2.2, 1);
+    ctx.closePath();
+    finish(ctx, shade(stone, 0.08), 1);
+    const door = () => {
+      ctx.beginPath();
+      ctx.moveTo(-6.6, 1);
+      ctx.lineTo(-6.6, -9);
+      ctx.arc(-3, -9, 3.6, Math.PI, 0);
+      ctx.lineTo(0.6, 1);
+      ctx.closePath();
+    };
+    door();
+    finish(ctx, '#0c0a0d', 0.8);
+    ctx.save();
+    door();
+    ctx.clip();
+    const gr = ctx.createRadialGradient(-3, -1, 0, -3, -1, 9);
+    gr.addColorStop(0, 'rgba(120,255,150,' + (0.35 + 0.2 * pulse) + ')');
+    gr.addColorStop(1, 'rgba(120,255,150,0)');
+    ctx.fillStyle = gr;
+    ctx.fillRect(-7, -13, 8, 14);
+    ctx.restore();
+    glow(ctx, -3, -4, 12, 'rgba(110,255,150,', 0.08 + 0.1 * pulse);
+    poly(ctx, [-9.5, 1, 3.5, 1, 4.5, 3.2, -10.5, 3.2], shade(stone, 0.04), 1);
+  };
+
+  D.den = (ctx, o) => {
+    const T = o.tc;
+    const rock = '#7d776c';
+    const w = Math.sin(o.t * 2.5);
+    // the mound: back boulders first
+    poly(ctx, [-13, -2, -12.5, -13, -8, -21, -1, -25.5, 7, -24, 12.5, -16, 14, -5, 13, -1], shade(rock, -0.12));
+    poly(ctx, [-12.5, -13, -8, -21, -1, -25.5, -2, -20, -8, -14], shade(rock, 0.05), 0);
+    // a stick with the team's rag, wedged among the stones
+    line(ctx, 6.5, -22.5, 8.2, -30.2, 1.1, '#5a3d22');
+    poly(ctx, [8, -29.7, 12.2, -28.7 + w * 0.5, 11.7, -25.2 + w, 9.9, -26.2 + w * 0.6, 8.3, -25.2], T.main, 1);
+    poly(ctx, [-5.5, -21.5, -2, -29, 4.5, -29.5, 8.5, -23.5, 4, -20], rock);
+    poly(ctx, [-5.5, -21.5, -2, -29, 1, -28, -1, -22], shade(rock, 0.15), 0);
+    for (const [x, y] of [[-3, -29.5], [2, -30], [-9, -21]]) {
+      line(ctx, x, y, x - 1, y - 2, 0.8, '#5f8a3a', false);
+      line(ctx, x + 1, y, x + 1.5, y - 2.2, 0.8, '#6f9a46', false);
+    }
+    // the cave mouth, and something watching from inside
+    ctx.beginPath();
+    ctx.moveTo(-6, 1);
+    ctx.lineTo(-6, -5);
+    ctx.quadraticCurveTo(-5, -14, 0.5, -14);
+    ctx.quadraticCurveTo(6, -14, 6.5, -5);
+    ctx.lineTo(6.5, 1);
+    ctx.closePath();
+    finish(ctx, '#120e0c', 1.2);
+    const blink = o.t % 4.7 < 0.15;
+    const ex = Math.sin(o.t * 0.6) * 0.6;
+    glow(ctx, 0.3 + ex, -6.5, 6, 'rgba(255,190,60,', 0.3);
+    ctx.fillStyle = '#ffd04a';
+    for (const x of [-1.8, 1.6]) ctx.fillRect(x + ex, blink ? -6.3 : -7, 1.6, blink ? 0.3 : 1.1);
+    // front boulders framing the mouth
+    poly(ctx, [-15.5, 1, -15, -7, -11, -12.5, -6, -11, -4.5, -5, -5.5, 1.5], shade(rock, 0.12));
+    poly(ctx, [-15, -7, -11, -12.5, -6, -11, -9, -9], shade(rock, 0.25), 0);
+    poly(ctx, [5.5, 1.5, 4.8, -5, 7.5, -11.5, 12.5, -12.5, 15.5, -7, 15.5, 1], shade(rock, -0.22));
+    poly(ctx, [7.5, -11.5, 12.5, -12.5, 11, -9, 7.5, -8.5], shade(rock, -0.08), 0);
+    // bones strewn before the den
+    const bone = '#e6dfc9';
+    line(ctx, -11, 2.2, -6.8, 0.8, 0.9, bone);
+    for (const [x, y] of [[-11, 2.2], [-6.8, 0.8]]) circle(ctx, x, y, 0.9, bone, 0.6);
+    line(ctx, -2.5, 3, 0.6, 2.4, 0.8, bone);
+    // a gnawed skull, facing out
+    poly(ctx, [7.6, 0.6, 7.2, -1.8, 8.2, -3.4, 10.2, -3.6, 11.4, -2, 11, 0.6, 10.2, 1.6, 8.4, 1.6], bone, 0.9);
+    ctx.fillStyle = OUT;
+    ctx.fillRect(8, -1.6, 1.2, 1.1);
+    ctx.fillRect(9.8, -1.6, 1.2, 1.1);
+    ctx.fillRect(9.05, 0, 0.8, 0.8);
+  };
+
+  D.portal = (ctx, o) => {
+    const T = o.tc;
+    const stone = '#6f6878';
+    const cx = 0;
+    const cy = -26;
+    const R = 15;
+    const r = 10.4;
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2);
+    glow(ctx, cx, cy, 25, 'rgba(150,70,230,', 0.18 + 0.1 * pulse);
+    // stepped base and the cradle holding the ring
+    poly(ctx, [-14, 1, 14, 1, 13, -3, -13, -3], shade(stone, -0.12));
+    poly(ctx, [-10.5, -3, 10.5, -3, 9.5, -6.5, -9.5, -6.5], stone);
+    poly(ctx, [-11.5, -6, 11.5, -6, 10, -14, 6, -16, -6, -16, -10, -14], shade(stone, -0.05));
+    // the vortex
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 0.6, 0, Math.PI * 2);
+    ctx.clip();
+    const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, r + 0.6);
+    gr.addColorStop(0, '#040108');
+    gr.addColorStop(0.5, '#25103d');
+    gr.addColorStop(1, '#7436b8');
+    ctx.fillStyle = gr;
+    ctx.fillRect(cx - r - 1, cy - r - 1, 2 * r + 2, 2 * r + 2);
+    const spin = o.t * 1.8;
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 4; k++) {
+      ctx.beginPath();
+      for (let i = 0; i <= 20; i++) {
+        const s = i / 20;
+        const a = spin + (k * Math.PI) / 2 + s * 3.4;
+        const rr = 0.8 + s * r;
+        if (i) ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        else ctx.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+      }
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(205,150,255,0.5)';
+      ctx.stroke();
+      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(240,220,255,0.6)';
+      ctx.stroke();
+    }
+    for (let i = 0; i < 5; i++) {
+      const p = (o.t * 0.3 + i / 5) % 1;
+      const a = i * 1.26 + p * 4 + spin * 0.5;
+      const rr = (1 - p) * (r - 1);
+      ctx.fillStyle = 'rgba(235,210,255,' + (0.8 * Math.sin(p * Math.PI)).toFixed(3) + ')';
+      ctx.fillRect(cx + Math.cos(a) * rr - 0.5, cy + Math.sin(a) * rr - 0.5, 1, 1);
+    }
+    circle(ctx, cx, cy, 2.2, '#030006', 0);
+    ctx.restore();
+    // the ring of stone blocks, lit from the upper left
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
+    finish(ctx, stone, 1.2);
+    ctx.lineWidth = R - r - 1.6;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, (R + r) / 2, Math.PI * 0.8, Math.PI * 1.7);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, (R + r) / 2, -0.2, Math.PI * 0.7);
+    ctx.stroke();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + 0.22 + (i * (Math.PI * 2 - 0.44)) / 9;
+      line(ctx, cx + Math.cos(a) * r, cy + Math.sin(a) * r, cx + Math.cos(a) * R, cy + Math.sin(a) * R, 0.7, OUT, false);
+    }
+    // keystone with the owner's rune
+    poly(ctx, [-3.4, cy - R - 2.2, 3.4, cy - R - 2.2, 2.4, cy - r + 0.3, -2.4, cy - r + 0.3], shade(stone, 0.15));
+    glow(ctx, 0, cy - R + 0.6, 5, T.glow, 0.55 + 0.25 * pulse);
+    poly(ctx, [0, cy - R - 1.4, 1.3, cy - R + 0.6, 0, cy - R + 2.6, -1.3, cy - R + 0.6], T.light, 0.6);
+  };
+
+  D.guardhouse = (ctx, o) => {
+    const T = o.tc;
+    const stone = '#9b958a';
+    const slate = '#5c6374';
+    // side wall in shade, then the lit front
+    poly(ctx, [5.5, 1, 11.5, -3, 11.5, -27, 5.5, -23], shade(stone, -0.3));
+    poly(ctx, [7.6, -17, 9.4, -18.2, 9.4, -13.2, 7.6, -12], '#1b1714', 0);
+    rect(ctx, -12.5, -23, 18, 24, 0, stone);
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    for (let r = 0; r < 4; r++) ctx.fillRect(-12, -18.5 + r * 5, 17, 0.6);
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) ctx.fillRect(-7.5 + c * 5 + (r % 2) * 2.5, -22.5 + r * 5, 0.6, 4.4);
+    for (let r = 0; r < 5; r++) rect(ctx, -12.5, -23 + r * 5, r % 2 ? 2.4 : 3.4, r < 4 ? 5 : 4, 0, shade(stone, 0.14), 0);
+    rect(ctx, -12.5, -23, 18, 24, 0, null);
+    // the door, an arrow slit above it, and the team banner
+    ctx.beginPath();
+    ctx.moveTo(-8.8, 1);
+    ctx.lineTo(-8.8, -8);
+    ctx.arc(-5.2, -8, 3.6, Math.PI, 0);
+    ctx.lineTo(-1.6, 1);
+    ctx.closePath();
+    finish(ctx, shade(stone, 0.1), 1);
+    ctx.beginPath();
+    ctx.moveTo(-7.6, 1);
+    ctx.lineTo(-7.6, -8);
+    ctx.arc(-5.2, -8, 2.4, Math.PI, 0);
+    ctx.lineTo(-2.8, 1);
+    ctx.closePath();
+    finish(ctx, '#7a4f28', 0.8);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-6.1, -9.5, 0.5, 10.5);
+    ctx.fillRect(-4.6, -9.5, 0.5, 10.5);
+    ctx.fillStyle = '#3e3a36';
+    ctx.fillRect(-7.6, -6.5, 4.8, 0.9);
+    ctx.fillRect(-7.6, -2.2, 4.8, 0.9);
+    circle(ctx, -3.6, -4, 0.5, '#c9a94a', 0);
+    rect(ctx, -5.9, -20.5, 1.4, 4, 0.4, '#1b1714', 0);
+    line(ctx, -0.2, -19.6, 5, -19.6, 0.9, '#3e3a36');
+    poly(ctx, [0.4, -19.2, 4.4, -19.2, 4.4, -7, 2.4, -9.1, 0.4, -7], T.main);
+    poly(ctx, [0.4, -19.2, 4.4, -19.2, 4.4, -17.4, 0.4, -17.4], T.dark, 0);
+    circle(ctx, 2.4, -13, 1.3, T.light, 0.6);
+    // hipped slate roof with a small overhang
+    const ax = -0.5;
+    const ay = -35.5;
+    poly(ctx, [7, -22, 13.3, -26.2, ax, ay], shade(slate, -0.25));
+    poly(ctx, [-14, -22, 7, -22, ax, ay], slate);
+    for (const y of [-25.2, -28.6, -32]) {
+      const f = (-22 - y) / 13.5;
+      line(ctx, -14 + f * 13.5 + 0.8, y, 7 - f * 7.5 - 0.8, y, 0.6, 'rgba(0,0,0,0.28)', false);
+    }
+    line(ctx, 7, -22, ax, ay, 0.8, 'rgba(255,255,255,0.18)', false);
+    rect(ctx, -14.2, -22.6, 21.3, 1.6, 0.3, '#5a3d22', 0.8);
+    poly(ctx, [7.1, -22.6, 13.4, -26.8, 13.4, -25.2, 7.1, -21], '#4a3220', 0.8);
+    line(ctx, ax, ay, ax, ay - 2.8, 0.9, '#3e3a36');
+    circle(ctx, ax, ay - 3.2, 1, '#c9a94a', 0.6);
+    // spears stacked against the side wall
+    for (const [x1, x2, y2] of [[13.6, 10.2, -29.5], [14.8, 12.2, -28]]) {
+      line(ctx, x1, 1.5, x2, y2, 0.9, '#7a5634');
+      const dx = (x2 - x1) / 31;
+      poly(ctx, [x2 - 0.9, y2 + 0.4, x2 + 0.9, y2 + 0.4, x2 + dx * 4.5, y2 - 4], '#cfd6de', 0.7);
+    }
+  };
+
+  D.barricade = (ctx, o) => {
+    const T = o.tc;
+    const wood = '#8a5a30';
+    const w = Math.sin(o.t * 3);
+    const tips = [-20.5, -21.5, -19.8];
+    [-9.5, 0, 9.5].forEach((x, i) => stake(ctx, x + 4.8, 0.5, x - 4.4, tips[(i + 1) % 3], 2.8, shade(wood, -0.22)));
+    // the rail the stakes are lashed through
+    rect(ctx, -14.6, -12.4, 29.2, 4.2, 2, '#6b4a2b');
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.fillRect(-13.6, -11.8, 27.2, 1);
+    ellipse(ctx, -14.1, -10.3, 1.4, 2.1, '#b08a5c', 0.8);
+    [-9.5, 0, 9.5].forEach((x, i) => stake(ctx, x - 4.8, 0.5, x + 4.4, tips[i], 2.8, wood));
+    // rope wound round each crossing
+    for (const x of [-9.5, 0, 9.5]) {
+      for (const d of [-0.9, 0.9]) cord(ctx, x - 1.6 + d, -12, x + 1.6 + d, -8.6, '#b39463', 0.8);
+    }
+    // team rag tied near the point of the middle stake
+    poly(ctx, [3.4, -18.6, 8.6, -17.6 + w * 0.8, 8, -14.6 + w, 5.6, -15.8 + w * 0.5, 3.8, -15.4], T.main, 0.9);
+  };
+
   // Pick-ups that lie on a tile: a war chest, a tome on a lectern, or a relic on a plinth.
   function drawLoot(ctx, kind, t) {
     const sp = Math.sin(t * 3);
@@ -1269,6 +1876,8 @@
     mageknight: 43, skelarcher: 37, orc: 41, brute: 52, goblin_archer: 31, sapper: 31, shaman: 43, warg: 26, wolf: 22,
     spider: 25, troll: 54, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
+    trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
+    barricade: 22,
   };
 
   const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };

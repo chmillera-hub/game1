@@ -319,6 +319,131 @@
     return t + edgeText(a) + fxText(u, a) + usesText(a);
   }
 
+  // ------------------------------------------------------------ attack patterns
+
+  const FRIENDLY_KINDS = new Set(['heal', 'shield', 'revive', 'pray', 'drum', 'rally', 'grow', 'raise', 'blink']);
+
+  // A small top-down map of one attack, built from the engine's own geometry: the unit
+  // (facing up), the tiles it can aim at, and everything a single use hits.
+  function patternSVG(a, team) {
+    if (!a || !a.kind || a.kind === 'none') return '';
+    const N = 17;
+    const ms = { w: N, h: N, terrain: new Array(N * N).fill(0), occ: new Array(N * N).fill(0), byId: {} };
+    const ux = 8;
+    const uy = 11;
+    const r = a.range || [1, 1];
+    const dist = r[0] === r[1] ? r[0] : Math.min(r[1], Math.max(r[0], Math.ceil((r[0] + r[1]) / 2)));
+    const ring = (r0, r1) => E.radiusTiles(ms, ux, uy, r1, r0 === 0).filter(([x, y]) => E.manhattan(ux, uy, x, y) >= r0);
+    const ahead = [ux, uy - dist];
+    let reach = [];
+    let hit = [];
+    let aim = null;
+    let land = null;
+    switch (a.kind) {
+      case 'strike':
+      case 'heal':
+      case 'shield':
+      case 'revive':
+      case 'grow':
+      case 'raise':
+        reach = ring(r[0], r[1]);
+        aim = ahead;
+        hit = [aim];
+        break;
+      case 'blast':
+      case 'hazard':
+        reach = ring(r[0], r[1]);
+        aim = ahead;
+        hit = E.patternTiles(ms, a.pattern || 'single', aim[0], aim[1]);
+        break;
+      case 'quake':
+        reach = ring(r[0], r[1]);
+        aim = ahead;
+        hit = E.radiusTiles(ms, aim[0], aim[1], 1, true);
+        break;
+      case 'cleave':
+        hit = E.radiusTiles(ms, ux, uy, 1);
+        break;
+      case 'line':
+        hit = E.lineTiles(ms, ux, uy, 0, a.len);
+        break;
+      case 'cone':
+        hit = E.coneTiles(ms, ux, uy, 0, a.len);
+        break;
+      case 'cross':
+        for (let d = 0; d < 4; d++) hit.push(...E.lineTiles(ms, ux, uy, d, a.len));
+        break;
+      case 'nova':
+      case 'detonate':
+      case 'rally':
+        hit = E.radiusTiles(ms, ux, uy, a.radius);
+        break;
+      case 'pray':
+      case 'drum':
+        hit = E.radiusTiles(ms, ux, uy, a.radius, true);
+        break;
+      case 'leap':
+        reach = ring(r[0], r[1]);
+        land = ahead;
+        hit = E.radiusTiles(ms, land[0], land[1], 1);
+        break;
+      case 'blink':
+        reach = ring(r[0], r[1]);
+        land = ahead;
+        break;
+      case 'shadowstrike':
+        reach = ring(r[0], r[1]);
+        aim = ahead;
+        hit = [aim];
+        land = [aim[0], aim[1] - 1];
+        break;
+      default:
+        return '';
+    }
+    const selfHit = a.kind === 'pray' || a.kind === 'drum';
+    hit = hit.filter(([x, y]) => selfHit || x !== ux || y !== uy);
+    // Crop to what matters, keeping the unit centered left to right.
+    const all = [[ux, uy], ...reach, ...hit, ...(land ? [land] : [])];
+    const half = Math.max(2, ...all.map(([x]) => Math.abs(x - ux))) + 1;
+    const minX = ux - half;
+    const maxX = ux + half;
+    const minY = Math.min(...all.map(([, y]) => y)) - 1;
+    const maxY = Math.max(uy + 1, ...all.map(([, y]) => y + 1));
+    const cols = maxX - minX + 1;
+    const rows = maxY - minY + 1;
+    const cs = Math.max(5, Math.min(12, Math.floor(Math.min(96 / cols, 104 / rows))));
+    const W = cols * cs;
+    const H = rows * cs;
+    const friendly = FRIENDLY_KINDS.has(a.kind);
+    const key = (x, y) => x + ',' + y;
+    const inReach = new Set(reach.map(([x, y]) => key(x, y)));
+    const inHit = new Set(hit.map(([x, y]) => key(x, y)));
+    const cell = (x, y, fill, extra) =>
+      `<rect x="${(x - minX) * cs + 0.5}" y="${(y - minY) * cs + 0.5}" width="${cs - 1}" height="${cs - 1}" rx="${Math.max(1, cs * 0.18)}" fill="${fill}"${extra || ''}/>`;
+    const parts = [];
+    for (let y = minY; y <= maxY; y++)
+      for (let x = minX; x <= maxX; x++) {
+        const k = key(x, y);
+        const fill = inHit.has(k)
+          ? friendly ? '#5fcf68' : '#e2574c'
+          : inReach.has(k)
+            ? friendly ? 'rgba(110,220,140,0.3)' : 'rgba(255,120,100,0.32)'
+            : 'rgba(255,255,255,0.07)';
+        parts.push(cell(x, y, fill));
+      }
+    if (land) parts.push(cell(land[0], land[1], 'rgba(140,200,255,0.4)', ' stroke="#8cc8ff" stroke-width="1.4"'));
+    if (aim) parts.push(cell(aim[0], aim[1], 'none', ' stroke="#fff6d8" stroke-width="1.2"'));
+    const cx = (ux - minX + 0.5) * cs;
+    const cy = (uy - minY + 0.5) * cs;
+    const tc = team === 'E' ? '#ff5d52' : '#5ea2ff';
+    const rr = cs * 0.34;
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${rr}" fill="${tc}" stroke="#fff" stroke-width="1"/>`);
+    parts.push(`<path d="M${cx - rr * 0.8} ${cy - rr * 0.9} L${cx} ${cy - rr * 2} L${cx + rr * 0.8} ${cy - rr * 0.9}Z" fill="#fff"/>`);
+    return `<svg class="pattern" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(a.name)}: attack pattern">${parts.join('')}</svg>`;
+  }
+
+  const PATTERN_LEGEND = '<p class="small muted pattern-legend">Diagrams: the dot is the unit, facing up. Pale tiles: where it can aim. Bright tiles: what one use hits.</p>';
+
   const TRAIT_TEXT = {
     shadowstep: 'Slips through enemy units.',
     stoneskin: 'Immune to poison and paralysis.',
@@ -438,11 +563,14 @@
     ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
   }
 
-  // The attack and every active ability of a unit, as rules text.
+  // The attack and every active ability of a unit, as rules text with a pattern diagram.
   function actsHTML(u) {
-    return u.acts
-      .map((a, i) => `<p class="ability"><b>${esc(a.name)}${i > 0 ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p>`)
-      .join('');
+    const rows = u.acts.map((a, i) => actRow(u, a, i > 0));
+    return rows.join('') + (u.acts.some((a) => a.kind !== 'none') ? PATTERN_LEGEND : '');
+  }
+
+  function actRow(u, a, ability) {
+    return `<div class="act-row">${patternSVG(a, u.team)}<p class="ability"><b>${esc(a.name)}${ability ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p></div>`;
   }
 
   function levelBadge(lv) {
@@ -1049,9 +1177,12 @@
   function abilityCard(r, tier, id, locked) {
     const ab = ABILITIES[id];
     const on = r.load[tier === 1 ? 'a1' : 'a2'] === id;
+    // Show the shape of a new active, or of the main attack when the pick reshapes it.
+    const m = ab.mod;
+    const shape = m.active ? m.active : m.act && (m.act.kind || m.act.pattern) ? Object.assign({}, UNITS[r.type].act, m.act) : null;
     return `<button class="pick ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-ab="${tier}:${id}">
       <span class="pk-head"><b>${esc(ab.name)}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
-      <span class="pk-desc">${esc(ab.desc)}</span></button>`;
+      <span class="pk-body">${shape ? patternSVG(shape, 'P') : ''}<span class="pk-desc">${esc(ab.desc)}</span></span></button>`;
   }
 
   function slotButton(run, r, kind, i) {
@@ -1486,7 +1617,8 @@
         <button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>`;
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
-      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: <b>${esc(u.act.name)}</b>. ${esc(actText(u, u.act))} ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles show where it can strike next turn.</div>
+      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit next turn, splash included.</div>
+        ${actsHTML(u)}
         <div class="actions"><button class="btn" id="wrEInfo">${ic('help')} Details</button></div>`;
     } else if (wr.dep.size === 0) {
       selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit again to change its level, abilities, skills and gear. Every point of Supply counts.</div>`;
@@ -1835,7 +1967,7 @@
         prev = previewHTML(u, act, pv);
       }
       panel = `${unitInfoHTML(u, { status: true })}
-        <p class="ability"><b>${esc(act.name)}.</b> ${esc(actText(u, act))}</p>
+        ${actRow(u, act, false)}
         ${B.mode === 'confirm' ? prev : `<div class="hint">Choose a target: tap a red tile${act.kind === 'line' || act.kind === 'cone' ? ' or a unit in that direction' : ''}.</div>`}
         <div class="actions">
           ${B.mode === 'confirm' ? `<button class="btn primary" id="btConfirm">${ic('check')} ${esc(act.name)}</button>` : ''}
@@ -2099,10 +2231,11 @@
       const A = activationOf(u);
       const tileUnit = hit.tile ? E.at(s, hit.tile.x, hit.tile.y) : null;
       const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
-      // 1. An enemy under the finger (sprite or tile) that the main attack can hit: aim at it.
+      // 1. An enemy under the finger that the main attack can hit: aim at it. The sprite the
+      // player sees comes first, then whoever stands on the tile beneath it.
       if (!(A && A.acted) && directKinds(u.act.kind) && E.actUsable(s, u, 0)) {
         const tgts = E.targetsFrom(s, u, 0);
-        for (const cand of [tileUnit, spriteUnit]) {
+        for (const cand of [spriteUnit, tileUnit]) {
           if (!cand || cand.team === u.team) continue;
           const t = tgts.find((k) => k.uid === cand.uid);
           if (t) {

@@ -557,7 +557,7 @@
         for (const [x, y] of o.deploy) this.tileFill(g, x, y, 'rgba(90,160,255,0.16)', 'rgba(150,200,255,0.55)', 3, 1);
       if (o.danger)
         for (const [x, y, lvl] of o.danger) this.tileFill(g, x, y, lvl > 1 ? 'rgba(200,60,220,0.2)' : 'rgba(230,50,40,0.22)', null, 1);
-      if (o.range) for (const [x, y] of o.range) this.tileFill(g, x, y, 'rgba(255,90,70,0.12)', 'rgba(255,120,100,0.3)', 3, 1);
+      if (o.range) for (const [x, y] of o.range) this.tileFill(g, x, y, 'rgba(255,45,35,0.34)', 'rgba(255,110,90,0.85)', 3, 1.3);
       if (o.move) for (const [x, y] of o.move) this.tileFill(g, x, y, 'rgba(70,150,255,0.3)', 'rgba(150,205,255,0.85)', 2.5, 1.2);
       if (o.heal) for (const [x, y] of o.heal) this.tileFill(g, x, y, 'rgba(90,220,120,0.22)', 'rgba(140,240,160,0.6)', 2.5, 1);
       if (o.targets)

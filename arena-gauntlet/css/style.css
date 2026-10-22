@@ -922,6 +922,31 @@ button.card:active {
   color: var(--parchment);
 }
 
+/* An attack's rules text beside a small diagram of its shape. */
+.act-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.act-row .ability {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.pattern {
+  flex: none;
+  display: block;
+  margin-top: 2px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.pattern-legend {
+  margin: 0;
+}
+
 .hint {
   font-size: 0.93rem;
   color: var(--parchment-2);
@@ -1725,6 +1750,12 @@ button.card:active {
   border-color: #c39bff;
   background: linear-gradient(180deg, rgba(195, 155, 255, 0.18), rgba(0, 0, 0, 0.2));
   box-shadow: 0 0 0 1px rgba(195, 155, 255, 0.45);
+}
+
+.pk-body {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .pk-head {

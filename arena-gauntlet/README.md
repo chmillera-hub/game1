@@ -31,6 +31,10 @@ on a phone turned sideways, but portrait works too.
 - **Combat**: each ready unit moves and acts once per turn, then picks a facing.
   Block works from the front, half from the side, never from behind. Acting
   starts a unit's Recover timer.
+- **Reading the enemy**: tap any unit, yours or theirs, to see a small diagram of
+  every attack: where it can aim and exactly which tiles one use hits (a Brute's
+  maul strikes its target and the three tiles around it; a Witch's lightning runs
+  five tiles straight). The board shows everywhere it could hit next turn.
 - **Missions**: rout the enemy, burn a War Banner, break a prison cage, kill a
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
