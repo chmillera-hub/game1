@@ -1,0 +1,25 @@
+const CAST = {
+  writer: { name: 'The Writer', voice: 'WRITER', seed: 3, skin: '#a8714f', hair: '#1c1410', hairStyle: 'curly', eye: '#3b2414', lip: '#8e5446', faceW: 1, jaw: 1.02,
+    stubble: '#2a1c14', cloth: { type: 'hoodie', color: '#4a5a3c', sleeveLen: 'long' } },
+  paul: { name: 'Paul', voice: 'PAUL', seed: 11, skin: '#c48d68', hair: '#4a4038', hairStyle: 'bald', beard: 'full', beardCol: '#5d544c', beardLen: 1.2, eye: '#2e2016', old: true, faceW: .98, jaw: 1,
+    cloth: { type: 'tunic', color: '#7a5634', sleeveLen: 'mid', neck: 10, trim: '#5a3c22' }, mantle: { color: '#d8ccb0' } },
+  luke: { name: 'Luke', voice: 'LUKE', seed: 23, skin: '#b88058', hair: '#2b1d14', hairStyle: 'wavy', beard: 'short', beardLen: .3, eye: '#4a3020', faceW: .96, jaw: .95,
+    cloth: { type: 'tunic', color: '#3f5f7a', sleeveLen: 'mid', neck: 8, belt: '#5a3a20' } },
+  guard: { name: 'Roman guard', voice: 'GUARD', seed: 37, skin: '#c99878', hair: '#3a2a1c', hairStyle: 'roman', stubble: '#3a2a1c', eye: '#3a3020', faceW: 1.04, jaw: 1.1,
+    cloth: { type: 'armor', color: '#8c2a22', sleeveLen: 'short' }, headwear: { type: 'helmet' } },
+  official: { name: 'Roman official', voice: 'OFFICIAL', seed: 41, skin: '#d4a584', hair: '#3b3330', hairStyle: 'roman', gray: true, eye: '#2a2a24', faceW: 1.06, jaw: 1.08, old: true, noseW: 1.15,
+    cloth: { type: 'toga', color: '#ece6da', sleeveLen: 'mid', neck: 6, stripe: '#6b2d5c' }, mantle: { color: '#f2ede2' } },
+  lydia: { name: 'Lydia of Philippi', voice: 'LYDIA', seed: 53, skin: '#b07656', hair: '#20150f', hairStyle: 'bun', eye: '#3a2414', lip: '#9a5048', lashes: true, faceW: .92, jaw: .88, chin: .96, mouthW: .9, browW: 3.2,
+    cloth: { type: 'dress', color: '#6a2e6e', sleeveLen: 'long', neck: 6, trim: '#c9a24a' }, headwear: { type: 'veil', color: '#8a4a8c' } },
+  jailer: { name: 'The jailer', voice: 'JAILER', seed: 61, skin: '#9c6a4a', hair: '#2a2018', hairStyle: 'roman', beard: 'full', beardCol: '#3a2a1e', beardLen: .7, eye: '#2a1c12', faceW: 1.1, jaw: 1.15, build: 1.15, scar: true, noseW: 1.2,
+    cloth: { type: 'tunic', color: '#5b6b3a', sleeveLen: 'mid', neck: 10, belt: '#4a321c' } },
+  child: { name: 'child', voice: 'CHILD', seed: 71, skin: '#a87050', hair: '#241810', hairStyle: 'curly', eye: '#3a2414', child: true, faceW: .95, jaw: .85, chin: .9,
+    cloth: { type: 'tunic', color: '#c9a35a', sleeveLen: 'mid', neck: 6 } },
+};
+Object.assign(CAST, {
+  f1: { name: 'friend', voice: 'F1', seed: 81, skin: '#e0b08c', hair: '#c9963c', hairStyle: 'ponytail', eye: '#3a5a7a', lip: '#b0605a', lashes: true, faceW: .93, jaw: .88, browW: 3.2, cloth: { type: 'tunic', color: '#e0b43c', sleeveLen: 'long', neck: 4 } },
+  f2: { name: 'friend', voice: 'F2', seed: 89, skin: '#6e4630', hair: '#141010', hairStyle: 'afro', eye: '#2a1810', faceW: 1.02, jaw: 1.05, cloth: { type: 'tunic', color: '#b8443a', sleeveLen: 'long', neck: 4 } },
+  f3: { name: 'friend', voice: 'F3', seed: 97, skin: '#e8c0a0', hair: '#d8c08a', hairStyle: 'short', eye: '#4a6a4a', faceW: 1, jaw: 1.06, stubble: '#9a8060', cloth: { type: 'tunic', color: '#3a6ea8', sleeveLen: 'long', neck: 4 } },
+  servant: { name: 'servant', voice: 'SV', seed: 103, skin: '#8a5a3c', hair: '#1a1210', hairStyle: 'curly', eye: '#2a1a10', faceW: .97, cloth: { type: 'tunic', color: '#a89a78', sleeveLen: 'short', neck: 6, belt: '#5a4028' } },
+  courier: { name: 'courier', voice: 'CR', seed: 109, skin: '#b07a52', hair: '#2a1c12', hairStyle: 'wavy', beard: 'short', beardLen: .25, eye: '#3a2414', faceW: 1, cloth: { type: 'tunic', color: '#7a6a3a', sleeveLen: 'short', neck: 8, belt: '#4a3018' } },
+});
