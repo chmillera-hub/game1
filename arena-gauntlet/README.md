@@ -57,6 +57,10 @@ on a phone turned sideways, but portrait works too.
   starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
   when every unit of a side must sit out, the side passes. Bosses sit out their
   first turn.
+- **Overtime**: from turn 50, every fighter loses HP at the start of its side's
+  turn, 2 more each round (2, 4, 6...), past armor and shields, and reinforcements
+  stop. Big units last longest; the last side standing wins. A tough tank can win a
+  long battle on its own.
 - **Combat**: block works from the front, half from the side, never from behind.
   Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
   counts the attacker side's turns.

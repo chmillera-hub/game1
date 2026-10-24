@@ -211,4 +211,40 @@ test('reinforcements join the current cycle in speed order', () => {
   assert.strictEqual(warg.cycles, orc.cycles, 'it joins the cycle the orc is on');
 });
 
+test('overtime: fighters lose 2 more HP each round, past armor and shields', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  const [pg, eg] = s.units;
+  pg.shield = 50;
+  E.pass(s); // the enemy's turn 1
+  assert.strictEqual(pg.hp, pg.maxHp, 'no overtime yet');
+  E.pass(s); // your turn 1; the enemy's turn 2 opens overtime
+  assert.ok(s.events.some((e) => e.t === 'overtime'));
+  assert.strictEqual(eg.hp, eg.maxHp - 2);
+  E.pass(s);
+  assert.strictEqual(pg.hp, pg.maxHp - 2, 'shields do not stop it');
+  E.pass(s);
+  assert.strictEqual(eg.hp, eg.maxHp - 2 - 4, 'and it grows each round');
+});
+
+test('overtime: the bigger side outlasts the smaller, and reinforcements stop', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'scout', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2, waves: [{ turn: 5, team: 'E', tiles: [[0, 0], [1, 0]], units: [{ type: 'warg' }] }] }
+  );
+  for (let i = 0; i < 200 && !s.over; i++) E.pass(s);
+  assert.ok(s.over);
+  assert.strictEqual(s.winner, 'P', 'the golem outlasts the scout');
+  assert.ok(!s.timeout);
+  assert.ok(!s.units.some((u) => u.type === 'warg'), 'the warg never came');
+});
+
 console.log(`queue: ${passed} tests passed`);

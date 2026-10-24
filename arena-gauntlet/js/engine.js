@@ -289,6 +289,8 @@
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
       queue: !!cfg.queue,
       due: 0,
+      // Overtime from this turn on (0: never); see overtimeDrain.
+      overtime: cfg.overtime || 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     (cfg.waves || []).forEach((w, i) => {
@@ -1143,7 +1145,7 @@
 
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
-    if (tgt.shield > 0 && info.dmgType !== 'poison') {
+    if (tgt.shield > 0 && info.dmgType !== 'poison' && info.dmgType !== 'overtime') {
       const ab = Math.min(tgt.shield, amount);
       tgt.shield -= ab;
       amount -= ab;
@@ -2045,6 +2047,7 @@
       if (s.surviveTurns && s.turn > s.surviveTurns) return finish(s, 'P', { survived: true });
     }
     startEffects(s, side);
+    overtimeDrain(s, side);
     checkOutcome(s);
     if (s.over) return;
     if (side === 'P' && s.hold) {
@@ -2058,6 +2061,25 @@
     // The other side's next waves mark where they land, a turn before they arrive.
     planWaves(s, other(side), side === 'P' ? s.turn + 1 : s.turn);
     if (s.queue) pickDue(s, side);
+  }
+
+  // Overtime: from turn `s.overtime` on, every fighter of the side to move loses HP at the
+  // start of its turn, 2 more each round (2, 4, 6...), past armor and shields, and no more
+  // reinforcements come. Big units last longest; the last side standing wins.
+  function overtimeDrain(s, side) {
+    if (!s.overtime || s.turn < s.overtime || s.over) return;
+    if (!s.inOvertime) {
+      s.inOvertime = true;
+      for (const w of s.waves) if (w.state === 'pending') w.state = 'cancelled';
+      emit(s, { t: 'overtime', turn: s.turn });
+    }
+    const amount = overtimeLoss(s);
+    for (const u of s.units) if (u.alive && u.team === side && counts(u)) applyDamage(s, null, u, amount, { cat: 'none', dmgType: 'overtime' });
+  }
+
+  // HP each fighter loses at the start of its side's turn this round (0 before overtime).
+  function overtimeLoss(s) {
+    return s.overtime && s.turn >= s.overtime ? 2 * (s.turn - s.overtime + 1) : 0;
   }
 
   // ---------------------------------------------------------------- unit queue
@@ -2239,7 +2261,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, overtimeLoss, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

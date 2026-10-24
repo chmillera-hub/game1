@@ -2243,6 +2243,14 @@
     return out.join('');
   }
 
+  // The top bar's clock: turns to go before overtime, then what overtime costs.
+  function turnLine(s) {
+    const loss = E.overtimeLoss(s);
+    if (loss) return `<span class="overtime">Overtime</span> −${loss} HP each turn`;
+    if (s.overtime) return `Turn ${s.turn} of ${s.overtime}`;
+    return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
+  }
+
   // A unit as the battle log names it.
   function logName(v) {
     return v.team === 'P' ? `${v.name} (${UNITS[v.type].name})` : `Enemy ${UNITS[v.type].name}`;
@@ -2288,6 +2296,9 @@
       else if (e.t === 'sitout' && v && v.team && SIT_OUT[e.why]) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
+      } else if (e.t === 'overtime') {
+        finish();
+        add({ team: 'O', html: `<b class="overtime">Overtime!</b> Every fighter now loses HP at the start of its side's turn, 2 more each round. The last side standing wins.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -2474,7 +2485,7 @@
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
     $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : s.side === 'P' ? 'Your turn' : 'Enemy turn'}</b>
-      <span>Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
+      <span>${turnLine(s)} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#cmd').innerHTML = panel;
@@ -2591,6 +2602,10 @@
     UI.board.activeSide = null;
     const ev = E.drainEvents(B.s);
     logEvents(ev);
+    if (ev.some((e) => e.t === 'overtime')) {
+      showBanner('Overtime', true);
+      toast('Overtime: every fighter loses HP each turn, more each round. The last side standing wins.', 4000);
+    }
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
     // Your own passes need no news; the enemy's, and turns you had to skip, do.
@@ -3382,6 +3397,7 @@
           <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
+          <li><b>Overtime</b>: at turn 50, every fighter starts losing HP at the start of its side's turn: 2, then 4, then 6 and so on, past armor and shields. No more reinforcements come. Big units last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>
         <h4>Damage, facing and defense</h4>

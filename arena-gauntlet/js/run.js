@@ -537,6 +537,8 @@
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   const TURN_LIMIT = 90;
+  // From this turn every fighter loses more HP each turn until one side is left.
+  const OVERTIME = 50;
   const HOLD_NEED = 4;
 
   // When buildings send their reinforcements: the first, then one every few turns.
@@ -1081,6 +1083,7 @@
       waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),
       // Both sides take their turns in a speed-ordered unit rotation.
       queue: true,
+      overtime: OVERTIME,
     };
   }
 

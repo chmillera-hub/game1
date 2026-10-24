@@ -44,6 +44,7 @@ function playBattle(run) {
   assert.ok(s.over, 'battle ended');
   const len = (results.lens[p.enc.primary] = results.lens[p.enc.primary] || []);
   len.push(s.turn);
+  if (s.inOvertime) results.overtime[s.winner]++;
   if (s.timeout) {
     results.timeouts++;
     if (process.env.VERBOSE) console.log(`  TIMEOUT ${p.enc.name} (${p.enc.primary}) winner ${s.winner}: E left ${s.units.filter((u) => u.alive && u.team === 'E' && !u.nonCombat).map((u) => u.type).join(' ')} | P left ${s.units.filter((u) => u.alive && u.team === 'P').map((u) => u.type).join(' ')}`);
@@ -61,7 +62,7 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0] };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 } };
 const t0 = Date.now();
 for (let i = 0; i < N; i++) {
   const run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
@@ -163,6 +164,7 @@ console.log(
   `battle length in turns (p25/median/p75), ${results.timeouts} timeouts:`,
   Object.entries(results.lens).map(([k, v]) => `${k} ${q(v, 0.25)}/${q(v, 0.5)}/${q(v, 0.75)}`).join(' · ')
 );
+console.log(`overtime: ${results.overtime.P + results.overtime.E} battles reached it (you won ${results.overtime.P})`);
 console.log(`fast-win bonus met in ${pct(results.swift)} of ${results.swift[1]} wins that offered it`);
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
 console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

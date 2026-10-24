@@ -2207,3 +2207,12 @@ button.card:active {
   font-size: 0.62rem;
   font-weight: 700;
 }
+
+.overtime {
+  color: #ffd27a;
+  font-weight: 700;
+}
+
+.blog li.team-O {
+  border-left-color: #ffd27a;
+}
