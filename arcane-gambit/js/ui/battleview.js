@@ -359,7 +359,8 @@
           h('div.big.' + (won ? 'win' : 'lose'), won ? 'Victory' : 'Defeat'),
           h('p.muted', 'That was a replay; nothing changed. Battles always play out the same way for the same setup, so change something before you retry.'),
           report(),
-          h('div.row', { style: { justifyContent: 'center' } }, h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } }, 'Back to the war room')),
+          h('div.row', { style: { justifyContent: 'center' } }, h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } },
+            !isSandbox && App.run.screen === 'reward' ? 'Collect rewards' : 'Back to the war room')),
         ), { dismissable: false });
         return;
       }
@@ -378,6 +379,7 @@
       const m = UI.modal(card, { dismissable: false });
       if (won) {
         buttons.appendChild(h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(true); } } }, isSandbox ? 'Back to setup' : 'Collect rewards'));
+        buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.replay(); } } }, 'Watch again'));
         if (isSandbox) buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.go('sandbox'); } } }, 'Other fights'));
       } else if (!isSandbox && App.run.screen === 'gameover') {
         buttons.appendChild(h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } }, 'Your Resolve breaks…'));

@@ -164,10 +164,12 @@
     App.render();
     try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
   };
-  function makeBattle() {
-    const run = App.run;
-    const enc = AG.Encounters[run.battle.enc];
-    return AG.B.create(enc, Run.armyFor(run, run.battle.formation), Object.assign({ record: true }, Run.battleOpts(run)));
+  // Everything needed to rebuild the same battle, kept for replays (after a
+  // win the run has already moved on to its rewards).
+  App.lastSetup = null;
+  function makeBattle(setup) {
+    const enc = AG.Encounters[setup.enc];
+    return AG.B.create(enc, setup.army, Object.assign({ record: true }, setup.opts));
   }
   App.startBattle = function () {
     const run = App.run;
@@ -175,13 +177,15 @@
     run.lastArmy = AG.deepCopy(F);
     run.formations[run.battle.enc] = AG.deepCopy(F);
     App.save();
-    App.battle = { s: makeBattle(), replay: false };
+    App.lastSetup = { enc: run.battle.enc, army: Run.armyFor(run, F), opts: AG.deepCopy(Run.battleOpts(run)) };
+    App.battle = { s: makeBattle(App.lastSetup), replay: false };
     App.view = 'battle';
     App.render();
     try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
   };
   App.replay = function () {
-    App.battle = { s: makeBattle(), replay: true };
+    if (!App.lastSetup) return;
+    App.battle = { s: makeBattle(App.lastSetup), replay: true };
     App.view = 'battle';
     App.render();
   };
