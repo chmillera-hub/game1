@@ -60,6 +60,11 @@ on a phone turned sideways, but portrait works too.
   when it is winning) and takes one in reach rather than make an ordinary attack,
   though a kill still comes first. It does not walk up to loot whose guards are
   asleep, but grabs it if a unit can reach it in one move.
+- **Playing for the mission**: your army also knows the mission and its bonus goals.
+  It goes for the Commander when killing it wins, hits the wagon nearest its way out
+  first, presses harder toward the end of a "win within N turns" goal (but never off
+  a shrine it must hold), and values stepping onto a red landing tile far more while
+  a "block reinforcements" goal is open.
 - **Taking turns**: the sides alternate one unit at a time, and the enemy goes
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
@@ -131,6 +136,7 @@ node tests/engine.test.js        # rule checks
 node tests/deploy.test.js        # the War Room's Auto button
 node tests/goals.test.js         # bonus goals, and retrying a won battle for them
 node tests/priority.test.js      # the priority target your army goes all out for
+node tests/objectives.test.js    # your army playing for the mission and bonus goals
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries

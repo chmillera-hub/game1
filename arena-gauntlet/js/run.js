@@ -1104,6 +1104,7 @@
       hold: enc.hold,
       surviveTurns: enc.surviveTurns,
       loot: enc.loot,
+      goals: enc.bonus || [],
       cartExit: 0,
       turnLimit: TURN_LIMIT,
       waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),

@@ -288,6 +288,8 @@
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
       surviveTurns: cfg.surviveTurns || 0,
       loot: (cfg.loot || []).map((l) => ({ id: l.id, kind: l.kind, x: l.x, y: l.y, taken: false, by: 0 })),
+      // The player's bonus goals ({ type, ... }), for the AI that fights for them.
+      goals: (cfg.goals || []).map((g) => Object.assign({}, g)),
       tfx: [],
       booms: [],
       cartExit: cfg.cartExit != null ? cfg.cartExit : 0,

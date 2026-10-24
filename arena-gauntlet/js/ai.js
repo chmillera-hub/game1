@@ -320,8 +320,9 @@
       allies: s.units.filter((u) => u.alive && u.team === team && !u.nonCombat && !u.structure),
       foes,
       objects: s.units.filter((u) => u.alive && u.team === team && u.goal),
-      // Enemy buildings to bring down: goals of a 'destroy' battle, and anything still spawning.
-      siege: s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u))),
+      // Enemies to march on: buildings that must fall, anything still spawning, and the
+      // Commander whose death wins the battle.
+      siege: s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u) || (s.objective === 'vip' && u.vip))),
       // Tiles where enemy reinforcements land at the end of the enemy's next turn.
       marks: new Set(
         s.waves
@@ -357,6 +358,15 @@
     ctx.risk *= Math.min(1.3, Math.max(0.7, 1 / ratio));
     // The further ahead, the more a detour for loot is worth: up to 3 times the pull.
     ctx.lootPull = LOOT_PULL * Math.min(3, Math.max(1, ratio));
+    // The player's bonus goals.
+    const goal = (type) => (team === 'P' ? (s.goals || []).find((g) => g.type === type) : null);
+    // Win within N turns: press on, harder in the last few turns before the deadline (not
+    // when holding the shrine is what wins).
+    const swift = goal('swift');
+    if (swift && !s.hold && s.turn <= swift.turns) ctx.approach *= 1.3 + 0.7 * Math.min(1, Math.max(0, (s.turn - swift.turns + 8) / 8));
+    // Block reinforcements: stepping onto a landing tile is worth much more until enough are.
+    const block = goal('blockade');
+    ctx.markValue = block && (s.stats.blocked || 0) < block.n ? 20 : 7;
     let cx = 0;
     let cy = 0;
     for (const a of ctx.allies) {
@@ -477,16 +487,18 @@
       const dp = Math.abs(x - u.post.x) + Math.abs(y - u.post.y);
       if (dp > 1) v -= (dp - 1) * 6;
     }
-    // Push on toward the buildings that must fall.
+    // Push on toward the buildings that must fall (wagons: the one nearest its way out).
     if (ctx.siege.length && u.acts.some((x2) => x2.dmg)) {
       let dg = 99;
-      for (const o of ctx.siege) dg = Math.min(dg, Math.abs(x - o.x) + Math.abs(y - o.y));
+      const carts = ctx.siege.filter((o) => o.traits.has('cart'));
+      const lead = carts.length ? carts.reduce((a, b) => (Math.abs(b.x - s.cartExit) < Math.abs(a.x - s.cartExit) ? b : a)) : null;
+      for (const o of lead ? [lead] : ctx.siege) dg = Math.min(dg, Math.abs(x - o.x) + Math.abs(y - o.y));
       const r = primaryRange(u);
       const ideal = r && r[1] >= 2 ? r[1] : 1;
       v -= Math.abs(dg - ideal) * 0.5 * ctx.approach;
     }
     // Stand on a marked tile to stop a reinforcement from arriving.
-    if (ctx.marks.has(E.idx(s, x, y)) && !u.nonCombat && u.hp > E.BLOCK_DMG + 4) v += 7 - E.BLOCK_DMG * hpv * 0.4;
+    if (ctx.marks.has(E.idx(s, x, y)) && !u.nonCombat && u.hp > E.BLOCK_DMG + 4) v += ctx.markValue - E.BLOCK_DMG * hpv * 0.4;
     if (ctx.objects.length && s.objective === 'destroy') {
       for (const o of ctx.objects) {
         if (Math.abs(x - o.x) + Math.abs(y - o.y) <= 2) {
@@ -609,13 +621,15 @@
         v -= u.value;
         continue;
       }
-      const bossTarget = t.team !== u.team && ((s.objective === 'boss' && t.boss) || (s.objective === 'destroy' && isGoal(t)));
+      const bossTarget = t.team !== u.team && ((s.objective === 'boss' && t.boss) || (s.objective === 'vip' && t.vip) || (s.objective === 'destroy' && isGoal(t)));
       if (e.dmg != null) {
         const p = 1 - e.block;
         const dealt = Math.min(e.dmg, t.hp + t.shield);
         let val = Math.max(0, dealt - t.shield) * hpv + Math.min(dealt, t.shield) * 0.2;
         if (e.kill) val += t.value * 0.8;
-        if (bossTarget) val *= t.boss ? 2.5 : 3;
+        if (bossTarget) val *= t.boss || t.vip ? 2.5 : 3;
+        // A wagon about to get away matters most.
+        if (t.team !== u.team && t.traits.has('cart')) val *= 1 + 4 / (1 + Math.abs(t.x - s.cartExit));
         else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
         // A hit on the priority target outweighs anything else this unit could do.
