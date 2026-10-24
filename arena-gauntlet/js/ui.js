@@ -23,9 +23,9 @@
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it. At 1x a battle plays at
-  // 64% of the animations' full pace, easy to follow.
+  // about half the animations' full pace, easy to follow.
   const speedOf = () => (UI.prefs.speed > 1 ? UI.prefs.speed : UI.prefs.fast ? 2 : 1);
-  const BASE_PACE = 0.64;
+  const BASE_PACE = 0.512;
   const paceOf = () => speedOf() * BASE_PACE;
   const pause = (ms) => sleep(ms / paceOf());
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
@@ -608,7 +608,6 @@
       <button class="res cmdlv" data-cmd title="Commander level">${ic('crown')}<span class="num">Lv ${li.lv}</span>
         <span class="xpbar"><i style="width:${Math.round(frac * 100)}%"></i></span></button>
       <span class="res" title="Supply each battle">${ic('command')}<span class="num">${R.supplyFor(run)}</span></span>
-      <span class="res" title="Units allowed on the field">${ic('army')}<span class="num">${R.unitCap(run)}</span></span>
     </div>`;
   }
 
@@ -618,14 +617,14 @@
     const rows = COMMAND.slice(1)
       .map((c, i) => {
         const lv = i + 1;
-        return `<tr class="${lv === li.lv ? 'cur' : lv < li.lv ? 'past' : ''}"><td>${lv}</td><td>${c.xp}</td><td>${c.supply}</td><td>${c.cap}</td></tr>`;
+        return `<tr class="${lv === li.lv ? 'cur' : lv < li.lv ? 'past' : ''}"><td>${lv}</td><td>${c.xp}</td><td>${c.supply}</td></tr>`;
       })
       .join('');
     openSheet(
       `${sheetHead('Commander level', `${li.max ? 'Maximum level reached.' : `${li.xp} XP · ${li.to - li.xp} XP to level ${li.lv + 1}`}`)}
-      <p class="muted">Victories earn XP. Each commander level raises the Supply you can spend in every battle, and sometimes how many units may take the field. Elites, bosses and bonus goals pay more XP.</p>
-      <table class="lvtable"><thead><tr><th>Level</th><th>XP</th><th>Supply</th><th>Units</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="small muted">Right now: ${R.supplyFor(run)} Supply and ${R.unitCap(run)} units, after relics and bonuses.</p>
+      <p class="muted">Victories earn XP. Each commander level raises the Supply you can spend in every battle. Field as many units as your Supply pays for. Elites, bosses and bonus goals pay more XP.</p>
+      <table class="lvtable"><thead><tr><th>Level</th><th>XP</th><th>Supply</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="small muted">Right now: ${R.supplyFor(run)} Supply, after relics and bonuses.</p>
       <div class="actions"><button class="btn primary" data-close>Got it</button></div>`
     );
   }
@@ -863,7 +862,7 @@
           <div class="choice-grid">${offer.options.map((id, i) => option(offer.kind, id, i)).join('')}</div>`
         : `<div><p class="eyebrow">New campaign · your army</p><h2>Ready to march</h2></div>
           ${armyHTML()}
-          <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field.</p>
+          <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle. Field as many units as your Supply pays for.</p>
           <h3>Difficulty</h3>
           <div class="seg">${DIFFICULTIES.map(
             (d) => `<button class="card ${d.id === diff ? 'selected' : ''}" data-diff="${d.id}"><div class="title" style="font-size:1.15rem">${d.name}</div><div class="desc small">${esc(d.desc)}</div></button>`
@@ -1765,10 +1764,9 @@
       const r = R.unitById(run, d.rid);
       if (!r || !rows.includes(d.y) || enc.terrain[d.y * enc.w + d.x] !== 0) continue;
       if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
-      if (dep.size >= R.unitCap(run)) break;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
-    UI.wr = { supply: R.supplyFor(run), cap: R.unitCap(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
+    UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
     boardTools();
@@ -1946,7 +1944,6 @@
     if (!wr || !run.pending || run.pending.type !== 'battle') return;
     for (const rid of [...wr.dep.keys()]) if (!R.unitById(run, rid)) wr.dep.delete(rid);
     wr.supply = R.supplyFor(run);
-    wr.cap = R.unitCap(run);
     const enc = wr.enc;
     const s = E.createBattle(R.battleConfig(run, wrDepArray()));
     wr.s = s;
@@ -1995,7 +1992,7 @@
         .map((u) => {
           const deployed = wr.dep.has(u.id);
           const cost = R.unitCost(run, u);
-          const cant = !deployed && (cost > left || wr.dep.size >= wr.cap);
+          const cant = !deployed && cost > left;
           const featured = u === star;
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
             <span class="cost">${cost}</span>${featured ? '<span class="flag feat">Bonus</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
@@ -2048,13 +2045,12 @@
           .join('')}${wr.dep.size ? '' : '<div class="small muted">No units deployed yet.</div>'}</div>`
       : '';
 
-    const overCap = wr.dep.size > wr.cap;
     const over = used > wr.supply;
     $('#cmd').innerHTML = `
       <button class="cp-meter tap" id="wrMeter" aria-label="What each unit costs"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
-        <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}/${wr.cap}</span></span></button>
-      <div class="small ${over || overCap ? 'bad-text' : 'muted'}">${
-        over ? `Over budget by ${used - wr.supply} Supply: lower a level, drop an item, or remove a unit.` : overCap ? 'Too many units for your commander level.' : left > 0 ? `${left} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : 'Every point of Supply committed.'
+        <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}</span></span></button>
+      <div class="small ${over ? 'bad-text' : 'muted'}">${
+        over ? `Over budget by ${used - wr.supply} Supply: lower a level, drop an item, or remove a unit.` : left > 0 ? `${left} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : 'Every point of Supply committed.'
       } <span class="muted">· Tap the bar to ${wr.costOpen ? 'hide' : 'see'} what each unit costs.</span></div>
       ${costList}
       <div class="tabs"><button class="btn ${wr.tab === 'army' ? 'on' : ''}" id="wrTabA">${ic('army')} Your army</button>
@@ -2063,7 +2059,7 @@
       ${selBlock}
       ${objectivesHTML(enc)}
       <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button></div>
-      <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
+      <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
     $('#wrTabA').onclick = () => {
@@ -2192,10 +2188,6 @@
     const run = UI.run;
     const wr = UI.wr;
     const r = R.unitById(run, rid);
-    if (wr.dep.size >= wr.cap) {
-      toast(`Only ${wr.cap} units may take the field. Remove one first, or raise your commander level.`);
-      return;
-    }
     const taken = new Set([...wr.dep.values()].map((d) => d.x + ',' + d.y));
     const slot = R.deploySlots(run, wr.enc, R.isFront(r.type), taken)[0];
     if (!slot) {
@@ -2280,7 +2272,6 @@
       d.x = x;
       d.y = y;
     } else {
-      if (wr.dep.size >= wr.cap) return toast(`Only ${wr.cap} units may take the field. Take one out first.`);
       wr.dep.set(wr.sel, { x, y, facing: 0 });
       const over = wrUsed() - wr.supply;
       if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
@@ -2333,10 +2324,6 @@
     if (!dep.length) return;
     if (wrUsed() > wr.supply) {
       toast('You are over your Supply budget.');
-      return;
-    }
-    if (dep.length > wr.cap) {
-      toast(`Only ${wr.cap} units may take the field.`);
       return;
     }
     if (!dep.some((d) => isAttacker(R.unitById(run, d.rid).type))) {
@@ -3435,7 +3422,8 @@
     }
     if (kind === 'talent') {
       const t = TALENTS[id];
-      return `<button class="card" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
+      // Talents are the rarer, build-shaping finds: their own colour, a stronger one when rare.
+      return `<button class="card talent ${t.tier === 2 ? 'rare' : ''}" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
     }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
     return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
@@ -3456,8 +3444,15 @@
       <div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>${extra || ''}</button>`;
   }
 
-  function spoilCard(sp, i, taken) {
-    const attrs = `data-spoil="${i}" ${taken ? 'disabled' : ''}`;
+  // Reward cards: what you got anyway is lit up as collected; a choice stays plain until you
+  // pick, then the pick lights up and the rest go grey.
+  const GOT = 'data-got="✓ Collected" disabled';
+  function pickState(taken, chosen) {
+    return !taken ? '' : chosen ? 'data-got="✓ Chosen" disabled' : 'data-passed disabled';
+  }
+
+  function spoilCard(sp, i, taken, chosen) {
+    const attrs = `data-spoil="${i}" ${pickState(taken, chosen)}`;
     if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs);
     if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs);
     return `<button class="card" ${attrs}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
@@ -3467,7 +3462,7 @@
     if (!to || to <= from) return '';
     const a = COMMAND[from];
     const b = COMMAND[to];
-    return `<div class="levelup">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}${b.cap > a.cap ? ` · units on the field ${a.cap} → ${b.cap}` : ''}</div></div></div>`;
+    return `<div class="levelup">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}</div></div></div>`;
   }
 
   function rewardScreen() {
@@ -3479,7 +3474,8 @@
       `<div class="wrap">
         <div class="reward-head"><p class="eyebrow">${p.kind === 'boss' ? 'The champion falls' : 'The field is yours'}</p><h2>Victory</h2></div>
         ${levelUpHTML(p.lvFrom, p.lvTo)}
-        <div class="panel loot">
+        <div class="eyebrow">Collected</div>
+        <div class="panel loot got">
           <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? 'max level' : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
@@ -3489,14 +3485,14 @@
         ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
           .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
-        ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small good-text">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</p>` : ''}
-        ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, 'disabled style="opacity:1"')}</div></div>` : ''}
-        ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, 'disabled style="opacity:1"')}</div></div>` : ''}
+        ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
+        ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
+        ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, GOT)}</div></div>` : ''}
         ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
-          <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${p.tomeTaken ? 'disabled' : ''}`)).join('')}</div></div>` : ''}
-        ${p.bossRelics && p.bossRelics.length ? `<div><div class="eyebrow">${p.bossRelicTaken ? 'Boss relic claimed' : 'Choose a boss relic'}</div><div class="cards">${p.bossRelics.map((id) => relicCard(id, `data-boss="${id}" ${p.bossRelicTaken ? 'disabled' : ''}`)).join('')}</div></div>` : ''}
+          <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${pickState(p.tomeTaken, p.tomePick === i)}`)).join('')}</div></div>` : ''}
+        ${p.bossRelics && p.bossRelics.length ? `<div><div class="eyebrow">${p.bossRelicTaken ? 'Boss relic claimed' : 'Choose a boss relic'}</div><div class="cards">${p.bossRelics.map((id) => relicCard(id, `data-boss="${id}" ${pickState(p.bossRelicTaken, p.bossPick === id)}`)).join('')}</div></div>` : ''}
         <div><div class="eyebrow">${p.spoilTaken ? 'Spoils claimed' : 'Choose your spoils'}</div>
-          <div class="cards">${p.spoils.map((sp, i) => spoilCard(sp, i, p.spoilTaken)).join('')}</div>
+          <div class="cards">${p.spoils.map((sp, i) => spoilCard(sp, i, p.spoilTaken, p.spoilPick === i)).join('')}</div>
           <p class="small muted">Skills and gear go to your pack: slot them into units from the War Room or the Army screen.</p></div>
         <div class="row end">
           <button class="btn" id="rwArmy">${ic('army')} Army</button>
@@ -3607,7 +3603,7 @@
         <div class="row">${resbar(run)}</div>
         ${p.done ? `<p class="hint">${p.done === 'drill' ? 'Your soldiers drill until dawn. Your command grows sharper.' : 'A quiet night of study and repair. The new item is in your pack.'}</p>${p.levels ? levelUpHTML(p.levels.from, p.levels.to) : ''}` : `
         <div class="cards">
-          <button class="card" id="rsDrill"><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level: more Supply, and in time more units on the field.</div></button>
+          <button class="card" id="rsDrill"><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level and more Supply for every battle.</div></button>
         </div>
         <div><div class="eyebrow">Or study: take one skill</div><div class="cards">${p.skills.map((id, i) => itemCard('skill', id, `data-study="${i}"`)).join('')}</div></div>
         <div><div class="eyebrow">Or tinker: take one piece of gear</div><div class="cards">${p.gear.map((id, i) => itemCard('gear', id, `data-tinker="${i}"`)).join('')}</div></div>`}
@@ -3769,7 +3765,7 @@
           <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
         <h4>Commander level</h4>
-        <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
+        <p>Victories earn XP. Each commander level raises your Supply. There is no limit on units in a battle: field as many as your Supply pays for. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
           <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>

@@ -12,7 +12,6 @@
   const ROWS = 7; // regular rows per act; the boss sits on row ROWS
   const COLS = 5;
   const BOARD = 9;
-  const MAX_FIELD = 9;
   const LEAN_GOLD = 3;
   const RECRUIT_PRICE = { common: 40, uncommon: 60, rare: 85, legendary: 140 };
   const RELIC_PRICE = { common: 85, uncommon: 115, rare: 150, boss: 200, event: 120 };
@@ -53,21 +52,20 @@
     if (hasRelic(run, 'war_horn')) s += 1;
     if (hasRelic(run, 'legion_banner')) s += 2;
     if (hasRelic(run, 'tyrant_heart')) s += 3;
-    if (hasRelic(run, 'crown_command')) s += 1;
+    if (hasRelic(run, 'crown_command')) s += 2;
     if (hasRelic(run, 'titan_gauntlet')) s -= 1;
     return s;
   }
 
-  function unitCap(run) {
-    let c = COMMAND[commanderLevel(run)].cap + (run.capBonus || 0);
-    if (hasRelic(run, 'recruiters_bell')) c += 1;
-    if (hasRelic(run, 'crown_command')) c += 1;
-    return Math.min(MAX_FIELD, c);
+  // How many units a commander of this level usually fields. Not a limit (Supply is the
+  // only one): it sizes enemy armies and is how many units Auto starts from.
+  function armySize(run) {
+    return COMMAND[commanderLevel(run)].cap;
   }
 
   function gainXp(run, amount) {
     const from = commanderLevel(run);
-    const amt = Math.round(amount * (hasRelic(run, 'drill_manual') ? 1.25 : 1));
+    const amt = Math.round(amount * (hasRelic(run, 'drill_manual') ? 1.25 : 1) * (hasRelic(run, 'crown_command') ? 1.25 : 1));
     run.xp += amt;
     run.stats.xp += amt;
     return { amount: amt, from, to: commanderLevel(run) };
@@ -232,6 +230,7 @@
       if (d) out.push({ label: d.name, cost: d.cost });
     }
     if (r.enchant) out.push({ label: ENCHANTS[r.enchant].name + ' (enchantment)', cost: ENCHANTS[r.enchant].surcharge });
+    if (L.lv === 1 && hasRelic(run, 'recruiters_bell') && out.reduce((t, x) => t + x.cost, 0) > 2) out.push({ label: RELICS.recruiters_bell.name, cost: -1 });
     return out;
   }
 
@@ -361,7 +360,6 @@
       gold: wb.gold,
       xp: 0,
       supplyBonus: 0,
-      capBonus: 0,
       roster: [],
       items: [],
       relics: [wb.relic],
@@ -772,8 +770,8 @@
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
     const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
-    // Enemy armies obey a unit cap a little above yours; spare Supply buys levels instead.
-    const maxUnits = Math.min(8, unitCap(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2));
+    // Enemy armies stay a little above your usual army size; spare Supply buys levels instead.
+    const maxUnits = Math.min(8, armySize(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2));
     while ((cost() + structures > budget + 0.5 && units.length > 2) || units.length > maxUnits) {
       let i = units.length - 1;
       while (i >= 0 && UNITS[units[i].type].boss) i--;
@@ -1434,6 +1432,7 @@
     else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
     else if (sp.type === 'gold') run.gold += sp.amount;
     p.spoilTaken = true;
+    p.spoilPick = index;
     save(run);
     return true;
   }
@@ -1453,6 +1452,7 @@
     if (!id) return false;
     addItem(run, 'skill', id);
     p.tomeTaken = true;
+    p.tomePick = index;
     save(run);
     return true;
   }
@@ -1470,6 +1470,7 @@
     if (!p || !p.bossRelics || p.bossRelicTaken || !p.bossRelics.includes(id)) return false;
     gainRelic(run, id);
     p.bossRelicTaken = true;
+    p.bossPick = id;
     save(run);
     return true;
   }
@@ -1879,15 +1880,15 @@
       title: "Veterans' Lodge",
       text: 'Old soldiers drink by a long fire. "We drilled the king\'s own guard once," says one. "Pay us and we will teach your sergeants to run a bigger line."',
       choices: (run) => [
-        { id: 'train', label: 'Pay for drills (90 gold)', detail: '+1 unit allowed on the field for the rest of the run.', enabled: run.gold >= 90 },
+        { id: 'train', label: 'Pay for drills (90 gold)', detail: '+1 Supply in every battle for the rest of the run.', enabled: run.gold >= 90 },
         { id: 'stories', label: 'Listen to their stories', detail: 'Gain 8 XP.' },
         { id: 'leave', label: 'Leave', detail: 'March on.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'train') {
           run.gold -= 90;
-          run.capBonus = (run.capBonus || 0) + 1;
-          return 'Your sergeants learn to hold a wider line. +1 unit on the field.';
+          run.supplyBonus = (run.supplyBonus || 0) + 1;
+          return 'Your sergeants learn to hold a wider line. +1 Supply in every battle.';
         }
         if (choice === 'stories') {
           gainXp(run, 8);
@@ -2024,7 +2025,7 @@
     return Math.max(0.4, k * siege);
   }
 
-  // A reasonable army for this battle within Supply and the unit cap: picks units,
+  // A reasonable army for this battle within Supply: picks units,
   // levels, abilities and items, and places them. Rewrites the chosen units' loadouts.
   // variant > 0 shuffles the priorities a little, for a different suggestion each time.
   function autoDeploy(run, variant) {
@@ -2033,7 +2034,7 @@
     const jitter = {};
     for (const r of run.roster) jitter[r.id] = vr ? 0.6 + vr.next() * 0.8 : 1;
     const supply = supplyFor(run);
-    const cap = unitCap(run);
+    const cap = armySize(run);
     for (const r of run.roster) {
       r.load.lv = 1;
       r.load.skills = [];
@@ -2081,12 +2082,14 @@
       let did = false;
       for (const r of pick) {
         if (r.load.lv >= 2) continue;
-        const delta = LEVEL_COST[2] + abilityCost(r.load.a2);
-        if (delta <= left) {
-          r.load.lv = 2;
+        // Priced by trying it: Level 2 also loses the Recruiter's Bell discount.
+        const before = unitCost(run, r);
+        r.load.lv = 2;
+        if (unitCost(run, r) - before <= left) {
           did = true;
           break;
         }
+        r.load.lv = 1;
       }
       if (!did) {
         // Siege gear first when buildings must fall; left in the pack otherwise.
@@ -2111,6 +2114,14 @@
             did = true;
             break;
           }
+        }
+      }
+      if (!did) {
+        // No field limit: Supply left over after all that buys one more unit.
+        const extra = pool.find((r) => !pick.includes(r) && unitCost(run, r) <= left);
+        if (extra) {
+          pick.push(extra);
+          did = true;
         }
       }
       if (!did) break;
@@ -2238,6 +2249,11 @@
       if (!r || r.v !== 2 || r.over) return null;
       if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
       grantPickedTalents(r);
+      // Saves from before the field limit went: a paid-for wider line becomes Supply.
+      if (r.capBonus) {
+        r.supplyBonus = (r.supplyBonus || 0) + r.capBonus;
+        delete r.capBonus;
+      }
       return r;
     } catch (e) {
       return null;
@@ -2276,9 +2292,9 @@
   }
 
   AG.Run = {
-    ROWS, COLS, MAX_FIELD, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    ROWS, COLS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
-    commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
+    commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,

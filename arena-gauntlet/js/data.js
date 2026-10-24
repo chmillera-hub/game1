@@ -22,7 +22,8 @@
   const TALENT_SLOTS = [0, 1, 2, 3];
   const RES_CAP = 0.5; // armor and magic resistance never go above 50%, or below -50%
 
-  // Commander level: total Supply per battle and how many units may take the field.
+  // Commander level: total Supply per battle, and the usual army size (cap): how big enemy
+  // armies get and how many units Auto starts from. It does not limit your own army.
   const COMMAND = [
     null,
     { xp: 0, supply: 14, cap: 4 },
@@ -898,7 +899,7 @@
     guild_seal: { name: 'Guild Seal', tier: 'uncommon', desc: 'Shop prices are 25% lower.' },
     legion_banner: { name: 'Banner of the Legion', tier: 'uncommon', desc: '+2 Supply in every battle.' },
     sands_of_haste: { name: 'Sands of Haste', tier: 'uncommon', desc: 'Enemy spellcasters (Cooldown 2 or more) start each battle cooling down and sit out the first enemy turn.' },
-    recruiters_bell: { name: "Recruiter's Bell", tier: 'uncommon', desc: '+1 unit allowed on the field.' },
+    recruiters_bell: { name: "Recruiter's Bell", tier: 'uncommon', desc: 'Level 1 units cost 1 less Supply, never below 2.' },
     old_crown: { name: 'Crown of the Old King', tier: 'rare', desc: 'Your units deal 15% more damage.' },
     shadow_cloak: { name: 'Shadow Cloak', tier: 'rare', desc: 'Your attacks from behind deal 40% more damage.' },
     aegis: { name: 'Aegis of Dawn', tier: 'rare', desc: 'Attacks against the sides of your units face full block.' },
@@ -909,7 +910,7 @@
     titan_gauntlet: { name: "Titan's Gauntlet", tier: 'boss', desc: 'Your units deal 25% more damage, but you have 1 less Supply.' },
     eternal_flame: { name: 'Eternal Flame', tier: 'boss', desc: "Each unit's first action in a battle has no cooldown: it is ready again next turn." },
     kings_ransom: { name: "King's Ransom", tier: 'boss', desc: 'Gain 150 gold now and 20 extra gold after each victory.' },
-    crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+1 unit allowed on the field and +1 Supply.' },
+    crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+2 Supply in every battle, and 25% more XP.' },
     sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'Your units have +2 Regen.' },
     cursed_blade: { name: 'Bloodthirst Blade', tier: 'event', desc: 'Your units deal 20% more damage and take 10% more damage.' },
   };

@@ -35,7 +35,7 @@ test('Auto always fields the unit a bonus goal asks for', () => {
         for (let variant = 0; variant < 3; variant++) {
           const dep = R.autoDeploy(run, variant);
           assert.ok(dep.some((d) => d.rid === u.id), `${warband} ${seed}: ${u.type} left out`);
-          assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run) && dep.length <= R.unitCap(run));
+          assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run));
         }
         enc.bonus.pop();
       }
@@ -49,6 +49,47 @@ test('no bonus unit, no change', () => {
   run.pending.enc.bonus = [];
   assert.strictEqual(R.bonusUnit(run, run.pending.enc), null);
   assert.ok(R.autoDeploy(run, 0).length > 0);
+});
+
+test('no field limit: eight Archers take the field when Supply pays for them', () => {
+  const run = atBattle(3, 'vanguard');
+  run.roster.length = 0;
+  for (let i = 0; i < 8; i++) {
+    const u = R.addRecruit(run, 'archer');
+    u.load.talents = [];
+  }
+  run.supplyBonus = 24 - R.supplyFor(run);
+  const enc = run.pending.enc;
+  const rows = R.deployRows(run, enc);
+  const dep = [];
+  for (const y of rows) for (let x = 0; x < enc.w && dep.length < 8; x++) if (enc.terrain[y * enc.w + x] === 0) dep.push({ rid: run.roster[dep.length].id, x, y, facing: 0 });
+  assert.strictEqual(dep.length, 8);
+  assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run), 'eight 3-Supply Archers fit in 24 Supply');
+  const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+  assert.strictEqual(s.units.filter((u) => u.team === 'P').length, 8);
+  // Auto starts from the commander's usual army size, then spends what is left on one more unit.
+  run.supplyBonus += 20;
+  const auto = R.autoDeploy(run, 0);
+  assert.ok(auto.length > R.armySize(run), `Auto used the spare Supply on more units (${auto.length})`);
+  assert.ok(R.supplyUsed(run, auto) <= R.supplyFor(run));
+});
+
+test("Recruiter's Bell makes Level 1 units 1 Supply cheaper, never below 2", () => {
+  const run = atBattle(4, 'vanguard');
+  const archer = R.addRecruit(run, 'archer');
+  archer.load.talents = [];
+  const scout = R.addRecruit(run, 'scout');
+  scout.load.talents = [];
+  scout.load.a1 = AG.Data.UNITS.scout.abilities[1].find((id) => !AG.Data.ABILITIES[id].cost);
+  const before = [R.unitCost(run, archer), R.unitCost(run, scout)];
+  run.relics.push('recruiters_bell');
+  assert.strictEqual(R.unitCost(run, archer), before[0] - 1);
+  assert.strictEqual(R.unitCost(run, scout), Math.max(2, before[1] - 1));
+  archer.load.lv = 2;
+  R.normalizeLoad(run, archer);
+  const lv2 = R.unitCost(run, archer);
+  run.relics.pop();
+  assert.strictEqual(R.unitCost(run, archer), lv2, 'no discount at Level 2');
 });
 
 console.log(`deploy: ${passed} tests passed`);

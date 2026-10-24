@@ -27,7 +27,6 @@ function playBattle(run) {
   const dep = R.autoDeploy(run, p.attempt || 0);
   assert.ok(dep.length > 0, 'deployment possible');
   assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run), 'within Supply');
-  assert.ok(dep.length <= R.unitCap(run), 'within the unit cap');
   const star = R.bonusUnit(run, p.enc);
   if (star) assert.ok(dep.some((d) => d.rid === star.id), 'Auto fields the unit a bonus goal asks for');
   const rows = R.deployRows(run, p.enc);
@@ -181,7 +180,7 @@ for (let i = 0; i < N; i++) {
   else results.stuck++;
   results.lv.push(R.commanderLevel(run));
   console.log(
-    `run ${i} ${run.warband.padEnd(8)} ${run.won ? 'WON  ' : 'STUCK'} act ${run.act} lv ${R.commanderLevel(run)} xp ${run.xp} supply ${R.supplyFor(run)} cap ${R.unitCap(run)} roster=${run.roster.length} items=${run.items.length} relics=${run.relics.length} gold=${run.gold} battles=${run.stats.battles} losses=${run.stats.losses}`
+    `run ${i} ${run.warband.padEnd(8)} ${run.won ? 'WON  ' : 'STUCK'} act ${run.act} lv ${R.commanderLevel(run)} xp ${run.xp} supply ${R.supplyFor(run)} army ${R.armySize(run)} roster=${run.roster.length} items=${run.items.length} relics=${run.relics.length} gold=${run.gold} battles=${run.stats.battles} losses=${run.stats.losses}`
   );
 }
 const pct = ([a, b]) => (b ? Math.round((100 * a) / b) + '%' : '-');

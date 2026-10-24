@@ -301,6 +301,93 @@ button.card:active {
   cursor: default;
 }
 
+/* Rewards: what you collect anyway (and the choice you made) glows gold with a badge; the
+   options you passed on go grey. A choice still open stays plain. */
+.card[data-got],
+.panel.got {
+  opacity: 1;
+  border-color: var(--brass-hi);
+  background:
+    linear-gradient(180deg, rgba(240, 207, 134, 0.16), rgba(240, 207, 134, 0.04)),
+    linear-gradient(180deg, var(--leather-2), var(--leather));
+  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.45), 0 0 18px rgba(240, 207, 134, 0.22), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card[data-got]::after {
+  content: attr(data-got);
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass));
+  color: var(--ink);
+  font-family: var(--font-caps);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.card[data-passed] {
+  opacity: 0.32;
+  filter: grayscale(0.9);
+  box-shadow: none;
+}
+
+.gotline {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--brass-hi);
+  background: linear-gradient(180deg, rgba(240, 207, 134, 0.16), rgba(240, 207, 134, 0.04));
+  box-shadow: 0 0 14px rgba(240, 207, 134, 0.18);
+  color: var(--parchment);
+  font-size: 0.93rem;
+}
+
+.gotline .icon {
+  flex: none;
+  color: var(--brass-hi);
+  position: relative;
+  top: 0.12em;
+}
+
+/* Talents are the rarer, build-shaping finds: teal cards, and rare ones in a glowing magenta. */
+.card.talent {
+  border-color: rgba(86, 214, 196, 0.75);
+  background:
+    linear-gradient(180deg, rgba(86, 214, 196, 0.2), rgba(86, 214, 196, 0.05)),
+    linear-gradient(180deg, var(--leather-2), var(--leather));
+  box-shadow: inset 0 1px 0 rgba(170, 255, 240, 0.12), 0 0 14px rgba(86, 214, 196, 0.18), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card.talent .kind {
+  color: #7fe8d8;
+}
+
+.card.talent.rare {
+  border-color: rgba(236, 120, 255, 0.85);
+  background:
+    linear-gradient(160deg, rgba(236, 120, 255, 0.26), rgba(120, 90, 255, 0.08) 60%, rgba(236, 120, 255, 0.14)),
+    linear-gradient(180deg, var(--leather-2), var(--leather));
+  box-shadow: inset 0 1px 0 rgba(255, 210, 255, 0.16), 0 0 0 1px rgba(236, 120, 255, 0.35), 0 0 20px rgba(236, 120, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card.talent.rare .kind {
+  color: #f4a8ff;
+}
+
+.card.talent[data-got] {
+  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.6), 0 0 18px rgba(240, 207, 134, 0.25), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card.talent[data-passed] {
+  box-shadow: none;
+}
+
 .card .kind {
   font-family: var(--font-caps);
   font-size: 0.78rem;

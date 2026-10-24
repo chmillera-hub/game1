@@ -27,8 +27,11 @@ on a phone turned sideways, but portrait works too.
   tap, or takes the place of the unit you tap. A move lets go of the unit, and a tap
   that misses keeps it picked up. Tap the Supply bar to see what every deployed unit
   costs. Begin battle stays in view at the bottom.
-- **Army size**: there is no limit on how many units you recruit; your commander
-  level limits only how many take the field in a battle.
+- **Army size**: there is no limit on how many units you recruit, or on how many
+  take the field. Supply is the only limit: eight cheap Archers or four
+  veterans, your call. Your commander level sets how big enemy armies get and
+  how many units Auto starts from (Auto then spends what Supply is left on
+  levels, items and, if it fits, one more unit).
 - **Supply**: each battle gives you Supply to spend. A unit costs its base price,
   plus its level, plus any ability, skill, gear or enchantment it carries.
   Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight
@@ -39,8 +42,7 @@ on a phone turned sideways, but portrait works too.
   scout report shows the same comparison. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
-  your commander level, from 14 Supply and 4 units on the field at Level 1 to
-  33 Supply and 8 units at Level 10.
+  your commander level, from 14 Supply at Level 1 to 33 Supply at Level 10.
 - **Unit levels**: Level 1 picks an ability: the free one, or an active ability
   that costs extra Supply. For example, the Archer chooses Snare Shot or Smoke
   Screen. Level 2 (+2 Supply) gets more HP and damage,
@@ -55,6 +57,7 @@ on a phone turned sideways, but portrait works too.
   each per unit; each copy fits one unit at a time). The level picks keep the free
   option and the active abilities. The stronger talents turn up half as often, and
   copies you already own less often still, so a great combination takes hunting.
+  Talent cards are teal in shops and spoils, and the rare ones glow magenta.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
@@ -66,7 +69,7 @@ on a phone turned sideways, but portrait works too.
   and watch it fight; the same AI that runs the enemy runs your units, using their
   abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x),
   pause, skip-to-result and tap-a-unit-to-inspect are beside the board; 1x plays at
-  about two-thirds of the animations' full pace, to be easy to follow. The menu's
+  about half of the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).
 - **Priority**: while watching, tap an enemy unit, a building or a chest, then
@@ -132,6 +135,10 @@ on a phone turned sideways, but portrait works too.
   turns) pauses before the rewards and shows which goals you met. Retry the battle
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
+- **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
+  prisoner, a relic) glows gold and says Collected. A choice (spoils, the Lost
+  Tome, a boss relic) stays plain until you pick; then your pick glows and the
+  rest go grey.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
   events, and camps to drill, study or tinker. A shop sells one of each kind of thing,
   eight at most: a recruit, a talent, a skill, gear, an enchantment scroll, a relic,
