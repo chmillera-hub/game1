@@ -97,6 +97,10 @@ on a phone turned sideways, but portrait works too.
   Destroy a building and its remaining waves are cut off.
 - **Defeat**: lose as often as you need. Retry with a new setup, or quit; Continue
   on the title screen returns to the same battle.
+- **Missed bonus goals**: a win that misses a bonus goal (say, winning within 30
+  turns) pauses before the rewards and shows which goals you met. Retry the battle
+  with a new setup (the win and its rewards are set aside, and it does not count as
+  a loss), or keep the win and continue. You can retry as often as you like.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
   events, and camps to drill, study or tinker.
 
@@ -116,6 +120,7 @@ on a phone turned sideways, but portrait works too.
 ```
 node tests/engine.test.js        # rule checks
 node tests/deploy.test.js        # the War Room's Auto button
+node tests/goals.test.js         # bonus goals, and retrying a won battle for them
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries

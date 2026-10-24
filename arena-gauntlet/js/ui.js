@@ -63,6 +63,11 @@
     toastTimer = setTimeout(() => (t.hidden = true), ms || 2400);
   }
 
+  function hideToast() {
+    clearTimeout(toastTimer);
+    $('#toast').hidden = true;
+  }
+
   function drawPortraits(el) {
     for (const cv of $$('canvas[data-p]', el)) {
       const [type, team, gray] = cv.dataset.p.split(':');
@@ -2086,6 +2091,7 @@
   // ------------------------------------------------------------ battle
 
   async function startBattle(dep) {
+    hideToast(); // what the War Room said is no use on the battlefield
     const run = UI.run;
     const enc = run.pending.enc;
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
@@ -3017,10 +3023,15 @@
     sfx(won ? 'victory' : 'defeat');
     renderBattle();
     await sleep(1500);
+    // A win that missed a bonus goal pauses here, with the run as it was before the
+    // rewards, so it can be fought again.
+    const goals = won ? R.goalResults(UI.run, s, B.dep) : [];
+    const before = goals.some((g) => !g.done) ? R.snapshot(UI.run) : null;
     const res = R.finishBattle(UI.run, s, B.dep);
     UI.battle = null;
     if (won) {
-      route();
+      if (before) missedGoals(goals, before);
+      else route();
       return;
     }
     const reason = s.timeout
@@ -3050,6 +3061,31 @@
     );
     UI.onSheetClose = () => warRoom();
     void res;
+  }
+
+  // Victory with bonus goals missed: fight again for them, or keep the win. The rewards are
+  // already saved, so leaving the app here keeps the win.
+  function missedGoals(goals, before) {
+    const missed = goals.filter((g) => !g.done).length;
+    openSheet(
+      `${sheetHead('Victory')}
+      <p>You won, but missed ${missed === 1 ? 'a bonus goal' : missed + ' bonus goals'}.</p>
+      <div class="panel objectives">${goals
+        .map((g) => `<div class="obj bonus ${g.done ? 'done' : 'failed'}">${ic(g.done ? 'check' : 'close')}<span>${esc(g.text)} <span class="reward">${esc(g.reward)}</span></span></div>`)
+        .join('')}</div>
+      <p class="muted">Retry to change your army and go for every goal. This victory and its rewards are set aside, and the battle starts over. Or keep the win and continue.</p>
+      <div class="actions"><button class="btn" id="mgRetry">${ic('swords')} Retry battle</button><button class="btn primary" id="mgGo">Continue</button></div>`,
+      (sh) => {
+        $('#mgRetry', sh).onclick = () => {
+          UI.onSheetClose = null;
+          closeSheet();
+          UI.run = R.restore(before);
+          warRoom();
+        };
+        $('#mgGo', sh).onclick = () => closeSheet();
+      }
+    );
+    UI.onSheetClose = () => route();
   }
 
   // ------------------------------------------------------------ rewards

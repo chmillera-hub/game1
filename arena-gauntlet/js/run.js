@@ -1222,6 +1222,37 @@
   }
 
   // Apply the outcome of a finished battle. `s` is the engine state.
+  // Whether a won battle met one bonus goal.
+  function bonusDone(s, deployment, b) {
+    if (b.type === 'loot') return s.loot.some((l) => l.id === b.lootId && l.taken);
+    if (b.type === 'swift') return s.turn <= b.turns;
+    if (b.type === 'flawless') return !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
+    if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
+    if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
+    if (b.type === 'plunder') {
+      const carts = s.units.filter((u) => u.type === 'cart');
+      return carts.length > 0 && carts.every((u) => !u.alive && !u.escaped);
+    }
+    return false;
+  }
+
+  // Every bonus goal of the battle in progress, met or not, before the rewards are paid.
+  function goalResults(run, s, deployment) {
+    return objectiveInfo(run, run.pending.enc).bonus.map((it) => ({ text: it.text, reward: it.reward, done: bonusDone(s, deployment, it.b) }));
+  }
+
+  // A copy of the run to come back to: a won battle with goals missed can be fought again,
+  // setting its victory and rewards aside.
+  function snapshot(run) {
+    return JSON.stringify(run);
+  }
+
+  function restore(copy) {
+    const run = JSON.parse(copy);
+    save(run);
+    return run;
+  }
+
   function finishBattle(run, s, deployment) {
     const p = run.pending;
     const node = getNode(run, p.nodeId);
@@ -1275,16 +1306,7 @@
     const info = objectiveInfo(run, p.enc);
     for (const it of info.bonus) {
       const b = it.b;
-      let done = false;
-      if (b.type === 'loot') done = s.loot.some((l) => l.id === b.lootId && l.taken);
-      else if (b.type === 'swift') done = s.turn <= b.turns;
-      else if (b.type === 'flawless') done = !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
-      else if (b.type === 'muster') done = deployment.some((d) => d.rid === b.rid);
-      else if (b.type === 'blockade') done = (s.stats.blocked || 0) >= b.n;
-      else if (b.type === 'plunder') {
-        const carts = s.units.filter((u) => u.type === 'cart');
-        done = carts.length > 0 && carts.every((u) => !u.alive && !u.escaped);
-      }
+      const done = bonusDone(s, deployment, b);
       let got = '';
       if (done) {
         if (b.type === 'loot' && b.kind === 'chest') {
@@ -2228,6 +2250,6 @@
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent, scoutTips,
-    save, load, clearSave, loadMeta, recordMeta,
+    save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
