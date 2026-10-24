@@ -473,7 +473,7 @@
     aura_barrier: 'Barrier Aura: allies within reach gain +25% magic resistance and are immune to poison and paralysis.',
     aegisfield: 'Its aura also softens physical blows by 15%.',
     steelfield: 'Its aura also grants +10% armor.',
-    auramend: 'Allies in its aura heal 3 HP at the start of each of its turns.',
+    auramend: 'Allies in its aura have +2 Regen.',
     purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
     ironwood: 'Its shrubs have 40% armor and magic resistance.',
@@ -515,7 +515,7 @@
     }
     if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
     if (P.magicGuard) out.push(`Adjacent allies take ${pct(P.magicGuard)} less magic damage.`);
-    if (P.regen) out.push(`Heals ${P.regen} HP at the start of each of its turns.`);
+    if (u.regen) out.push(`Regen ${u.regen}: heals ${u.regen} HP at the start of each of its turns (${E.REGEN_CAP} at most, from all sources).`);
     if (P.lifesteal) out.push(`Heals for ${pct(P.lifesteal)} of the damage it deals.`);
     if (P.thorns) out.push(`Melee attackers take ${P.thorns} damage.`);
     if (P.backMult) out.push(`+${pct(P.backMult)} damage from behind.`);
@@ -564,6 +564,9 @@
       else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
     }
     if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
+    // Regen counts a Mending Light aura it stands in during a battle.
+    const regen = o.status && UI.battle && u.alive ? E.regenOf(UI.battle.s, u) : u.regen;
+    if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP at the start of each of its turns">${ic('heart')} Regen ${regen}</span>`);
     return `<div class="unitcard">
       <canvas class="portrait" data-p="${u.type}:${u.team}"></canvas>
       <div class="name"><b class="team-${u.team}">${esc(o.name || u.name)}</b><span class="stars">${stars(u.level)}</span>
@@ -2289,6 +2292,9 @@
         }
         if (e.t === 'move') line.moved = true;
         else line.act = e.name;
+      } else if (e.t === 'heal' && e.why === 'regen' && v) {
+        finish();
+        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });
       } else if (e.t === 'dmg' && line && e.src === line.uid) line.dmg += e.amount || 0;
       else if (e.t === 'heal' && line && e.amount > 0) line.heal += e.amount;
       else if (e.t === 'death' && line && e.src === line.uid && v) line.kills.push(v.team === 'P' ? v.name : UNITS[v.type].name);
@@ -3397,6 +3403,7 @@
           <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
+          <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and never adds up to more than ${E.REGEN_CAP} a turn. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Overtime</b>: at turn 50, every fighter starts losing HP at the start of its side's turn: 2, then 4, then 6 and so on, past armor and shields. No more reinforcements come. Big units last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>

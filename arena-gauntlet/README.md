@@ -57,6 +57,10 @@ on a phone turned sideways, but portrait works too.
   starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
   when every unit of a side must sit out, the side passes. Bosses sit out their
   first turn.
+- **Regen**: some talents, gear, relics and units heal at the start of each of the
+  unit's own turns (Living Moss 4, Healing Charm 3, the Furgon 3, the Healing Salve
+  relic 1, Sacred Chalice 2, a Mending Light aura 2). It never adds up to more than 5
+  a turn, and unit cards and the battle log show it.
 - **Overtime**: from turn 50, every fighter loses HP at the start of its side's
   turn, 2 more each round (2, 4, 6...), past armor and shields, and reinforcements
   stop. Big units last longest; the last side standing wins. A tough tank can win a

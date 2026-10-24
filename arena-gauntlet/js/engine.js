@@ -235,6 +235,13 @@
       value: unitValue(spec.type, b.level),
     };
     if (spec.thorns) u.props.thorns = (u.props.thorns || 0) + spec.thorns;
+    // Regen: HP healed at the start of each of the unit's own turns, from its type,
+    // talents, gear and relics, never more than REGEN_CAP in all.
+    if (!u.nonCombat && !u.structure) {
+      const rel = s.relics[team];
+      const total = (u.props.regen || 0) + (rel.has('healing_salve') ? 1 : 0) + (rel.has('sacred_chalice') ? 2 : 0);
+      u.regen = Math.min(REGEN_CAP, total);
+    } else u.regen = 0;
     if (spec.armor != null) u.armor = spec.armor;
     if (spec.res != null) u.res = spec.res;
     if (spec.vip && !T.boss) u.value *= 1.8;
@@ -1757,6 +1764,9 @@
   // ------------------------------------------------------------ reinforcements
 
   const BLOCK_DMG = 10;
+  // No unit regenerates more than this a turn, whatever it stacks.
+  const REGEN_CAP = 5;
+  const MEND_REGEN = 2;
   const FIRE_DMG = 6;
 
   function pendingWaves(s, team) {
@@ -1962,15 +1972,8 @@
         magicDamage(s, s.byId[fire.src] || null, u, fire.dmg || FIRE_DMG, 'burn');
       }
     }
-    for (const u of mine) {
-      if (!u.alive || u.nonCombat) continue;
-      if (u.props.regen) {
-        if (u.traits.has('trollblood') && u.scorched) emit(s, { t: 'noregen', uid: u.uid });
-        else heal(s, u, u.props.regen, 'regrowth');
-      }
-      u.scorched = false;
-      if (s.relics[team].has('sacred_chalice')) heal(s, u, 2, 'chalice');
-    }
+    // In queue battles each unit regenerates on its own turn instead (see pickDue).
+    if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) regenerate(s, u);
     // Totems mend allies within 2 tiles. Several totems in reach do not stack.
     const totems = mine.filter((w) => w.alive && w.props.totemHeal);
     if (totems.length) {
@@ -1989,17 +1992,14 @@
     }
     for (const w of mine) {
       if (!w.alive || !w.traits.has('aura_barrier')) continue;
-      const mend = w.traits.has('auramend');
-      const purge = w.traits.has('purge');
-      if (!mend && !purge) continue;
+      if (!w.traits.has('purge')) continue;
       for (const v of s.units) {
         if (!v.alive || v.team !== team || v.nonCombat || v.structure || manhattan(v.x, v.y, w.x, w.y) > auraRadius(w)) continue;
-        if (purge && (v.root || v.burn)) {
+        if (v.root || v.burn) {
           v.root = 0;
           v.burn = null;
           emit(s, { t: 'cleanse', uid: v.uid });
         }
-        if (mend) heal(s, v, 3, 'aura');
       }
     }
     for (const u of mine) {
@@ -2016,14 +2016,28 @@
       }
     }
     resolveBooms(s);
-    if (s.relics[team].has('healing_salve')) {
-      let best = null;
-      for (const u of s.units) {
-        if (!u.alive || u.team !== team || u.nonCombat || u.structure || u.poison) continue;
-        if (!best || u.maxHp - u.hp > best.maxHp - best.hp) best = u;
+  }
+
+  // A unit's regen at the start of its turn: its own, plus a Mending Light aura it stands
+  // in, capped. A troll hurt by magic or fire since its last turn does not regenerate.
+  function regenOf(s, u) {
+    let r = u.regen || 0;
+    for (const w of s.units) {
+      if (w.alive && w.team === u.team && w.traits.has('auramend') && manhattan(u.x, u.y, w.x, w.y) <= auraRadius(w)) {
+        r += MEND_REGEN;
+        break;
       }
-      if (best && best.hp < best.maxHp) heal(s, best, 4, 'salve');
     }
+    return Math.min(REGEN_CAP, r);
+  }
+
+  function regenerate(s, u) {
+    const r = regenOf(s, u);
+    if (r > 0) {
+      if (u.traits.has('trollblood') && u.scorched) emit(s, { t: 'noregen', uid: u.uid });
+      else heal(s, u, r, 'regen');
+    }
+    u.scorched = false;
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2130,6 +2144,7 @@
       const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];
       if (!u || seen.has(u.uid)) return;
       seen.add(u.uid);
+      regenerate(s, u);
       const why = sitOutReason(s, u);
       if (!why) {
         s.due = u.uid;
@@ -2261,7 +2276,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, overtimeLoss, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, overtimeLoss, regenOf, REGEN_CAP, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

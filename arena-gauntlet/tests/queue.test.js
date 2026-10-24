@@ -247,4 +247,41 @@ test('overtime: the bigger side outlasts the smaller, and reinforcements stop', 
   assert.ok(!s.units.some((u) => u.type === 'warg'), 'the warg never came');
 });
 
+test('regen heals only on the unit’s own turn', () => {
+  const s = battle([
+    { type: 'furgon', team: 'P', x: 2, y: 8 },
+    { type: 'scout', team: 'P', x: 4, y: 8 },
+    { type: 'archer', team: 'P', x: 6, y: 8 },
+    { type: 'golem', team: 'E', x: 4, y: 0 },
+  ]);
+  const fu = s.units[0];
+  assert.strictEqual(fu.regen, 3);
+  fu.hp = 20;
+  const heals = () => s.events.filter((e) => e.t === 'heal' && e.uid === fu.uid && e.why === 'regen').length;
+  toPlayer(s);
+  shuffle(s); // scout (speed 8)
+  toPlayer(s);
+  shuffle(s); // archer (speed 5)
+  assert.strictEqual(fu.hp, 20, 'not on the others’ turns');
+  assert.strictEqual(heals(), 0);
+  toPlayer(s);
+  assert.strictEqual(s.due, fu.uid);
+  assert.strictEqual(fu.hp, 23, 'its own turn: +3');
+});
+
+test('regen never adds up to more than 5', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8, level: 2, talents: ['g_moss'], gear: ['healing_charm'] },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { relics: { P: ['sacred_chalice', 'healing_salve'], E: [] } }
+  );
+  const g = s.units[0];
+  assert.strictEqual(g.regen, E.REGEN_CAP, '4 + 3 + 2 + 1 caps at 5');
+  g.hp = 30;
+  toPlayer(s);
+  assert.strictEqual(g.hp, 35);
+});
+
 console.log(`queue: ${passed} tests passed`);

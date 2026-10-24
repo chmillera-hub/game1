@@ -124,7 +124,7 @@
     g_toss: { name: 'Boulder Toss', cost: 0, desc: 'Active: hurl a boulder at an enemy 2 to 4 tiles away for 80% damage, double against buildings.',
       mod: { active: { name: 'Boulder Toss', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, vs: { structure: 1 } } } },
     g_quake: { name: 'Earthshaker', cost: 1, desc: 'Stone Fist also hits every enemy beside the target.', mod: { act: { kind: 'quake' } } },
-    g_moss: { name: 'Living Moss', cost: 1, desc: 'Heals 4 HP at the start of each of your turns.', mod: { props: { regen: 4 } } },
+    g_moss: { name: 'Living Moss', cost: 1, desc: '+4 Regen: heals 4 HP at the start of each of its turns.', mod: { props: { regen: 4 } } },
     g_bulwark: { name: 'Bulwark', cost: 1, desc: 'Its Guardian protection rises to 35%.', mod: { props: { guard: 0.35 } } },
     g_runes: { name: 'Runic Core', cost: 0, desc: '+30% magic resistance.', mod: { stat: { res: 0.3 } } },
     g_slam: { name: 'Ground Slam', cost: 2, desc: 'Active, 2 uses: strike every adjacent enemy for 80% damage and knock them back.',
@@ -159,7 +159,7 @@
 
     // Barrier Ward
     bw_crystal: { name: 'Hardened Crystal', cost: 0, desc: '+20 max HP.', mod: { stat: { hp: 20 } } },
-    bw_mend: { name: 'Mending Light', cost: 1, desc: 'Allies in its aura heal 3 HP at the start of your turn.', mod: { traits: ['auramend'] } },
+    bw_mend: { name: 'Mending Light', cost: 1, desc: 'Allies in its aura have +2 Regen.', mod: { traits: ['auramend'] } },
     bw_reach: { name: 'Wide Field', cost: 2, desc: 'Its aura reaches 3 tiles.', mod: { props: { auraR: 1 } } },
     bw_reflect: { name: 'Reflection', cost: 0, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
     bw_steel: { name: 'Steel Field', cost: 1, desc: 'Its aura also grants +10% armor.', mod: { traits: ['steelfield'] } },
@@ -241,7 +241,7 @@
     assassin: { name: 'Deathmark', desc: 'Attacks from behind deal double damage.', mod: { props: { backMult: 0.5 } } },
     golem: { name: 'Colossus', desc: '+25 max HP and +1 Move.', mod: { stat: { hp: 25, move: 1 } } },
     beastrider: { name: 'Ride Down', desc: 'After moving 3 or more tiles, its Lance knocks the target back.', mod: { traits: ['ridedown'] } },
-    furgon: { name: 'Ancient Bark', desc: '+20 max HP, and Regrowth heals 5.', mod: { stat: { hp: 20 }, props: { regen: 2 } } },
+    furgon: { name: 'Ancient Bark', desc: '+20 max HP and +2 Regen.', mod: { stat: { hp: 20 }, props: { regen: 2 } } },
     wisp: { name: 'Pestilence', desc: 'Miasma also deals 8 magic damage.', mod: { act: { dmg: 'magic', fixed: 8 } } },
     barrier: { name: 'Aegis Field', desc: 'Its aura also softens physical blows by 15%.', mod: { traits: ['aegisfield'] } },
     enchantress: { name: 'Grand Illusion', desc: 'Mesmerize covers a full 3x3 area.', mod: { act: { pattern: 'square' } } },
@@ -380,7 +380,7 @@
       act: { name: 'Grow Shrub', kind: 'grow', range: [1, 3] },
       traits: [], tags: ['beast'], props: { regen: 3 },
       abilities: { 1: ['f_bark', 'f_roots', 'f_thorn'], 2: ['f_grove', 'f_rejuv', 'f_ironwood'] },
-      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regains 3 HP each turn.',
+      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regen 3.',
       tip: 'Shrubs can be cut down, and flyers and arcing shots ignore them.',
     },
     wisp: {
@@ -673,8 +673,8 @@
       name: 'Bog Troll', rarity: 'enemy', cost: 5, role: 'tank',
       hp: 80, pow: 20, armor: 0.15, res: -0.1, block: 0.1, rec: 1, move: 3,
       act: { name: 'Club', kind: 'strike', range: [1, 1], dmg: 'phys' },
-      traits: ['trollblood', 'big'], tags: ['beast', 'big'], props: { regen: 6 },
-      desc: 'Heals 6 HP every turn unless magic or fire hurt it since its last turn.',
+      traits: ['trollblood', 'big'], tags: ['beast', 'big'], props: { regen: 5 },
+      desc: 'Regen 5, unless magic or fire hurt it since its last turn.',
       tip: 'Burn it. Any magic damage stops its regeneration for a turn.',
     },
     drake: {
@@ -705,7 +705,7 @@
     // ------------------------------------------------ bosses
     golem_king: {
       name: 'Golem King', rarity: 'boss', cost: 12, role: 'tank', boss: true,
-      hp: 150, pow: 22, armor: 0.5, res: -0.15, block: 0, rec: 2, move: 2,
+      hp: 135, pow: 22, armor: 0.5, res: -0.15, block: 0, rec: 2, move: 2,
       act: { name: 'Earthshatter', kind: 'quake', range: [1, 1], dmg: 'phys' },
       extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8 }],
       traits: ['stoneskin', 'big'], tags: ['construct', 'big'], props: { guard: 0.2 },
@@ -714,7 +714,7 @@
     },
     warlord: {
       name: 'Grukk the Warlord', rarity: 'boss', cost: 12, role: 'melee', boss: true,
-      hp: 165, pow: 23, armor: 0.35, res: 0.1, block: 0.45, rec: 2, move: 3,
+      hp: 150, pow: 23, armor: 0.35, res: 0.1, block: 0.45, rec: 2, move: 3,
       act: { name: 'Brutal Cleave', kind: 'cleave', range: [1, 1], dmg: 'phys' },
       extra: [{ name: 'War Roar', kind: 'drum', radius: 3, noHeal: true, uses: 2 }],
       traits: ['big'], tags: ['greenskin', 'big'],
@@ -723,7 +723,7 @@
     },
     witch_queen: {
       name: 'Witch Queen', rarity: 'boss', cost: 13, role: 'caster', boss: true,
-      hp: 140, pow: 18, armor: 0.1, res: 0.5, block: 0.3, rec: 2, move: 3,
+      hp: 126, pow: 18, armor: 0.1, res: 0.5, block: 0.3, rec: 2, move: 3,
       act: { name: 'Hexstorm', kind: 'cross', len: 4, dmg: 'magic', ff: false },
       extra: [{ name: 'Hex', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 } }],
       traits: [], tags: ['human', 'caster', 'big'],
@@ -732,7 +732,7 @@
     },
     lich: {
       name: 'The Lich', rarity: 'boss', cost: 13, role: 'caster', boss: true,
-      hp: 135, pow: 18, armor: 0.25, res: 0.4, block: 0, rec: 2, move: 3,
+      hp: 122, pow: 18, armor: 0.25, res: 0.4, block: 0, rec: 2, move: 3,
       act: { name: 'Frost Bolt', kind: 'strike', range: [1, 4], dmg: 'magic', arc: true, fx: { root: 1 } },
       extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 4 }],
       traits: ['flying', 'undead'], tags: ['undead', 'big'],
@@ -741,7 +741,7 @@
     },
     ashen_tyrant: {
       name: 'Ashen Tyrant', rarity: 'boss', cost: 17, role: 'monster', boss: true,
-      hp: 170, pow: 20, armor: 0.35, res: 0.35, block: 0, rec: 2, move: 4,
+      hp: 155, pow: 20, armor: 0.35, res: 0.35, block: 0, rec: 2, move: 4,
       act: { name: 'Cinder Breath', kind: 'cone', len: 3, dmg: 'magic', ff: false },
       extra: [{ name: 'Wing Buffet', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.6, fx: { knock: 1 } }],
       traits: ['flying', 'big'], tags: ['big', 'beast'],
@@ -827,7 +827,7 @@
     dragonslayer: { name: 'Dragonslayer Spear', cost: 2, desc: '+50% damage against huge foes: dragons, trolls, brutes and bosses.', req: 'damage', mod: { props: { vs: { big: 0.5 } } } },
     siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
     war_pick: { name: 'War Pick', cost: 2, desc: 'Physical attacks ignore half of armor.', req: 'phys', mod: { props: { pierce: 0.5 } } },
-    healing_charm: { name: 'Healing Charm', cost: 1, desc: 'Heals 3 HP at the start of each of your turns.', mod: { props: { regen: 3 } } },
+    healing_charm: { name: 'Healing Charm', cost: 1, desc: '+3 Regen: heals 3 HP at the start of each of its turns.', mod: { props: { regen: 3 } } },
     thorn_ring: { name: 'Thorn Ring', cost: 1, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
     iron_will: { name: 'Iron Will', cost: 1, desc: 'Immune to paralysis, roots and knockback.', mod: { traits: ['steadfast'] } },
     focus_amulet: { name: 'Focus Amulet', cost: 2, desc: '+15% magic damage and healing.', req: 'magic', mod: { props: { magicMult: 0.15 } } },
@@ -884,7 +884,7 @@
     steel_bucklers: { name: 'Steel Bucklers', tier: 'common', desc: 'Your units have +8% block.' },
     iron_plating: { name: 'Iron Plating', tier: 'common', desc: 'Your units have +6% armor.' },
     coin_purse: { name: "Merchant's Purse", tier: 'common', desc: 'Gain 12 extra gold after each victory.' },
-    healing_salve: { name: 'Healing Salve', tier: 'common', desc: 'At the start of your turn, your most injured unit heals 4 HP.' },
+    healing_salve: { name: 'Healing Salve', tier: 'common', desc: 'Your units have +1 Regen.' },
     scout_map: { name: "Cartographer's Map", tier: 'common', desc: 'Your deployment zone reaches one row further forward.' },
     drill_manual: { name: 'Drill Manual', tier: 'common', desc: 'Gain 25% more XP from battles.' },
     pathfinder: { name: 'Pathfinder Boots', tier: 'common', desc: 'Units with 3 Move or less gain +1 Move.' },
@@ -910,7 +910,7 @@
     eternal_flame: { name: 'Eternal Flame', tier: 'boss', desc: "Each unit's first action in a battle has no cooldown: it is ready again next turn." },
     kings_ransom: { name: "King's Ransom", tier: 'boss', desc: 'Gain 150 gold now and 20 extra gold after each victory.' },
     crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+1 unit allowed on the field and +1 Supply.' },
-    sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'At the start of your turn, all your units heal 2 HP.' },
+    sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'Your units have +2 Regen.' },
     cursed_blade: { name: 'Bloodthirst Blade', tier: 'event', desc: 'Your units deal 20% more damage and take 10% more damage.' },
   };
 

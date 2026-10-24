@@ -579,14 +579,14 @@ test('troll regeneration stops after magic damage', () => {
   const [py, tr] = s.units;
   tr.hp = 40;
   E.endTurn(s);
-  assert.strictEqual(tr.hp, 46, 'regenerates 6 at the start of its turn');
+  assert.strictEqual(tr.hp, 45, 'regenerates 5 at the start of its turn');
   until(s, 'P');
   act(s, py, { kind: 'tile', x: 4, y: 4 });
   const after = tr.hp;
   E.endTurn(s);
   assert.strictEqual(tr.hp, after, 'scorched: no regeneration');
   until(s, 'E');
-  assert.strictEqual(tr.hp, Math.min(tr.maxHp, after + 6));
+  assert.strictEqual(tr.hp, Math.min(tr.maxHp, after + 5));
 });
 
 test('loot wagons flee for the exit; breaking them all wins', () => {
