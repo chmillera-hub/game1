@@ -8,7 +8,7 @@ const D = AG.Data;
 const N = +process.argv[2] || 12;
 const DIFF = process.argv[3] || 'knight';
 const MAX_TRIES = +process.argv[4] || 6;
-const OVERTIME = 50;
+const OVERTIME = R.OVERTIME;
 
 function checkLoadouts(run) {
   const seen = new Set();

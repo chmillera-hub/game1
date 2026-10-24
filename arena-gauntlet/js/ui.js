@@ -3454,7 +3454,7 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Fatigue</b>: from turn 50, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>
         <h4>Damage, facing and defense</h4>

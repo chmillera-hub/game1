@@ -556,8 +556,9 @@
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   // A backstop only: fatigue ends battles long before it.
   const TURN_LIMIT = 250;
-  // From this turn every fighter loses 1 more HP each of its turns until one side is left.
-  const OVERTIME = 50;
+  // Fatigue sets in on this turn: each round every fighter loses 1 HP more at the start of
+  // its turn, until one side is left.
+  const OVERTIME = 30;
   const HOLD_NEED = 4;
 
   // When buildings send their reinforcements: the first, then one every few turns.
@@ -2242,7 +2243,7 @@
   }
 
   AG.Run = {
-    ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, EVENTS, LOOT_NAMES,
+    ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
     addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
