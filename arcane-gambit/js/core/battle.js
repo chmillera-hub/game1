@@ -1175,7 +1175,7 @@
     let plan = null;
     if (!skipped && u.alive && !s.over) {
       plan = AG.AI.choose(s, u);
-      emit(s, 'think', { uid, reason: plan.reason, score: plan.score, alts: plan.alts, mv: plan.mv });
+      emit(s, 'think', { uid, reason: plan.reason, score: plan.score, alts: plan.alts, mv: plan.mv, from: [u.x, u.y] });
       B.execPlan(s, u, plan);
     }
     if (u.alive && !s.over) B.endTurn(s, u);

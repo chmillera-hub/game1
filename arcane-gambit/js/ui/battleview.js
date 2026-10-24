@@ -100,11 +100,12 @@
       }
       stormEl.setAttribute('data-tip', 'Fatigue: from round ' + at + ' (sooner if three rounds pass without anyone being hurt) every unit takes 1 damage at the start of the round, then 2, then 3… so every battle ends.');
     }
-    function showThought(uid, reason, alts) {
+    function showThought(uid, reason, alts, at) {
       const u = B.U(s, uid);
+      const where = at || [u.x, u.y];
       UI.clear(thought);
       thought.appendChild(h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '40px', height: '40px' } }, UI.icon(u)));
-      thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ', h('span.sq', sq(u.x, u.y))));
+      thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ', h('span.sq', sq(where[0], where[1]))));
       thought.appendChild(h('div.what', reason));
       if (App.prefs.showAlts && alts && alts.length) {
         thought.appendChild(h('div.alts', h('span.faint', 'Also weighed: '), alts.map((a, i) => h('span', (i ? ' · ' : '') + a.label + ' ', h('span.mono.faint', '(' + (a.delta <= -99 ? 'far worse' : a.delta.toFixed(1)) + ')')))));
@@ -177,9 +178,10 @@
             break;
           case 'think': {
             const u = B.U(s, e.uid);
-            showThought(e.uid, e.reason, e.alts);
+            showThought(e.uid, e.reason, e.alts, e.from);
+            const from = e.from || [u.x, u.y];
             const dest = e.mv >= 0 ? '→' + sq(e.mv % s.board.w, (e.mv / s.board.w) | 0) : '';
-            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(u.x, u.y) + dest), ' ', e.reason]);
+            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(from[0], from[1]) + dest), ' ', e.reason]);
             await wait(520);
             break;
           }
