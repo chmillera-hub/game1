@@ -4,6 +4,9 @@
    the shapes come from a position-based paper simulation
    (bends, doesn't stretch, can't pass through itself). Links and
    knots are measured from the simulated paper and checked.
+   Cut again: any piece can be cut down its own middle, starting from
+   its current shape. A two-sided piece splits into two; a one-sided
+   piece becomes one piece twice as long.
    ============================================================ */
 {
   const TAU = Lab.TAU;
@@ -17,11 +20,12 @@
 
   const st = {
     n: 1, chi: 1, fracs: [1 / 3], phase: 'ready', guessN: null, guessOne: null, desk: false, mode: 'apart', autoJig: false,
-    plan: null, predicted: null, measured: null, t: 0, cutT: 0, verifyT: 0, jiggle: 0
+    plan: null, predicted: null, measured: null, t: 0, cutT: 0, verifyT: 0, jiggle: 0,
+    recut: null, history: [], script: null, checks: {}
   };
   const ch = { token: 'scissors', gl: true, background: () => Lab.stageBg() };
   let colsPerLap = 150;
-  let sim = null, meshes = [], cutObjs = [], scissorSprites = [], deskMesh, hud = {}, btn = {}, readout, diagram;
+  let sim = null, meshes = [], cutObjs = [], scissorSprites = [], deskMesh, hud = {}, btn = {}, ctl = {}, readout, diagram, notebook;
 
   /* ---------------- the fold rule ---------------- */
   function planPieces(n, fracs) {
@@ -88,6 +92,9 @@
       this.cellCount = new Int32Array(this.T); this.cellStart = new Int32Array(this.T + 1); this.sorted = new Int32Array(N); this.keys = new Int32Array(N); this.fillBuf = new Int32Array(this.T);
       this.cx = new Int32Array(N); this.cy = new Int32Array(N); this.cz = new Int32Array(N); this.asleep = false; this.calm = 0;
       this.blend = 0; this.gravity = 0; this.floorZ = -0.92; this.dragId = -1; this.dragTarget = [0, 0, 0]; this.rScale = 0.3;
+      // Just-cut pieces sit closer than the contact distance, so their contact radius grows in gently.
+      // Pieces that were already apart keep the full radius, so they can't slip through each other meanwhile.
+      this.fresh = new Uint8Array(specs.length).fill(1);
     }
     solve() {
       const P = this.pos, ca = this.ca, cb = this.cb, RS = this.rest, K = this.k, nc = ca.length, drag = this.dragId;
@@ -123,7 +130,7 @@
     }
     collide() {
       const P = this.pos, N = this.N, inv = this.inv, T = this.T, mask = T - 1;
-      const r = this.r * this.rScale, h = 2 * r, d2max = h * h;
+      const h = 2 * this.r, hFresh = h * this.rScale, fresh = this.fresh;
       const cc = this.cellCount, cs = this.cellStart, sorted = this.sorted, keys = this.keys;
       cc.fill(0);
       const key = (x, y, z) => (((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) & mask);
@@ -145,10 +152,10 @@
               if (d <= 2) continue;
             }
             const ex = P[b * 3] - ax, ey = P[b * 3 + 1] - ay, ez = P[b * 3 + 2] - az;
-            const dd = ex * ex + ey * ey + ez * ez;
-            if (dd >= d2max || dd < 1e-14) continue;
+            const dd = ex * ex + ey * ey + ez * ez, lim = fresh[piece[a]] && fresh[piece[b]] ? hFresh : h;
+            if (dd >= lim * lim || dd < 1e-14) continue;
             const L = Math.sqrt(dd), wa = inv[a], wb = inv[b], ws = wa + wb; if (!ws) continue;
-            const corr = (h - L) / (L * ws);
+            const corr = (lim - L) / (L * ws);
             P[a * 3] -= wa * corr * ex; P[a * 3 + 1] -= wa * corr * ey; P[a * 3 + 2] -= wa * corr * ez;
             P[b * 3] += wb * corr * ex; P[b * 3 + 1] += wb * corr * ey; P[b * 3 + 2] += wb * corr * ez;
           }
@@ -216,6 +223,7 @@
           if (q === p) return;
           let dx = cents[p][0] - cents[q][0], dy = cents[p][1] - cents[q][1], dz = cents[p][2] - cents[q][2];
           const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 > 9) return;   // far enough apart: let them come to rest
           if (d2 < 1e-4) { dx = (p - q) * 0.01; dz = 0.01; }
           const f = push / (d2 + 0.3); fx += dx * f; fy += dy * f; fz += dz * f;
         });
@@ -269,6 +277,95 @@
       m.geo.computeBoundingSphere();
     });
   }
+  /* ---------------- cutting a piece again ---------------- */
+  const widthOf = sp => sp.dV.reduce((a, b) => a + b, 0);
+  // Current position of the point at flat width w (0 … widthOf) on column i of a piece.
+  function posAt(sp, i, w) {
+    const P = sim.pos; let j = 0, c = 0;
+    while (j < sp.K - 2 && c + sp.dV[j] < w) { c += sp.dV[j]; j++; }
+    const t = Lab.clamp((w - c) / sp.dV[j], 0, 1), a = sp.node(i, j) * 3, b = sp.node(i, j + 1) * 3;
+    return [P[a] + (P[b] - P[a]) * t, P[a + 1] + (P[b + 1] - P[a + 1]) * t, P[a + 2] + (P[b + 2] - P[a + 2]) * t];
+  }
+  function specFromCurrent(sp) {
+    const init = [];
+    for (let i = 0; i < sp.M; i++) for (let j = 0; j < sp.K; j++) init.push(sim.p(sp.node(i, j)));
+    return { M: sp.M, K: sp.K, flip: sp.flip, init, dU: sp.dU, dV: sp.dV.slice(), laps: sp.laps, oneSided: sp.oneSided, name: sp.name, color: sp.color };
+  }
+  const halfWidth = sp => widthOf(sp) / 2 - GAP_S * W / 2;
+  const railsFor = half => Math.max(2, Math.ceil(half / (RAIL_STEP * W / 2) - 1e-9) + 1);
+  // Cut down the middle. Two-sided: two halves side by side. One-sided: the far half continues the near
+  // half across the joint (x meets 1 − x), so it becomes one piece going around twice.
+  function splitSpec(sp) {
+    const Wp = widthOf(sp), g = GAP_S * W / 2, half = halfWidth(sp), K = railsFor(half);
+    const lo = [], hi = [];
+    for (let j = 0; j < K; j++) { lo.push(half * j / (K - 1)); hi.push(Wp / 2 + g + half * j / (K - 1)); }
+    const dV = new Array(K - 1).fill(half / (K - 1));
+    const make = (cols, ws, laps) => {
+      const init = [];
+      for (let i = 0; i < cols; i++) { const rail = ws(i); for (let j = 0; j < K; j++) init.push(posAt(sp, i % sp.M, rail[j])); }
+      return { M: cols, K, flip: false, init, dU: sp.dU, dV: dV.slice(), laps, oneSided: false };
+    };
+    if (!sp.oneSided) return [make(sp.M, () => lo, sp.laps), make(sp.M, () => hi, sp.laps)];
+    const mirrored = hi.map(w => Wp - w);
+    return [make(2 * sp.M, i => (i < sp.M ? hi : mirrored), 2 * sp.laps)];
+  }
+  function recutBlocker(sp) {
+    if (!sp.oneSided && sim.specs.length >= NAMES.length) return `That would make more than ${NAMES.length} pieces. Press Reset to start over.`;
+    if (halfWidth(sp) < 0.03) return `Piece ${sp.name} is too thin to cut down the middle again.`;
+    if (sim.N + sp.M * (2 * railsFor(halfWidth(sp)) - sp.K) > 7200) return 'That is more paper than this simulation can carry. Press Reset to start over.';
+    return null;
+  }
+  function startRecut(idx) {
+    if (!sim || st.phase !== 'relaxing') return;
+    const sp = sim.specs[idx]; if (!sp) return;
+    const why = recutBlocker(sp); if (why) { Lab.toast(ch.stage, why); return false; }
+    onUp();
+    const M = sp.M, Wp = widthOf(sp), g = GAP_S * W / 2;
+    const pos = new Float32Array((M + 1) * 6), mid = [];
+    for (let i = 0; i <= M; i++) {
+      const a = posAt(sp, i, Wp / 2 - g), b = posAt(sp, i, Wp / 2 + g);
+      pos.set(a, i * 6); pos.set(b, i * 6 + 3); mid.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+    }
+    const idxs = []; for (let i = 0; i < M; i++) { const a = i * 2; idxs.push(a, a + 2, a + 1, a + 2, a + 3, a + 1); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(idxs); geo.setDrawRange(0, 0);
+    const slit = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x1b2140, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: scissorsTexture(), depthTest: false, transparent: true }));
+    sprite.scale.set(0.26, 0.26, 1); sprite.renderOrder = 10; sprite.position.set(...mid[0]);
+    ch.scene.add(slit, sprite); cutObjs.push(slit); scissorSprites.push(sprite);
+    st.recut = { idx, slit, sprite, mid, M, t: 0, dur: 1.5 + 0.7 * sp.laps };
+    st.phase = 'recutting'; st.userCam = false;
+    hud.right.textContent = `Scissors: down the middle of ${sp.name}`;
+    renderReadout(); syncButtons();
+    return true;
+  }
+  function finishRecut() {
+    const R = st.recut; st.recut = null;
+    const old = sim.specs, target = old[R.idx];
+    const kids = splitSpec(target);
+    const used = new Set(old.filter(sp => sp !== target).map(sp => sp.name));
+    kids[0].name = target.name; kids[0].color = target.color; used.add(target.name);
+    kids.slice(1).forEach(k => { const i = [...NAMES].findIndex(l => !used.has(l)); k.name = NAMES[i]; k.color = COLORS[i]; used.add(NAMES[i]); });
+    const specs = [];
+    old.forEach(sp => { if (sp === target) specs.push(...kids); else specs.push(specFromCurrent(sp)); });
+    clearScene();
+    sim = new PaperSim(specs, RAD);
+    specs.forEach((sp, i) => { sim.fresh[i] = kids.includes(sp) ? 1 : 0; });
+    specs.forEach(sp => { const m = makeMesh(sp, sp.color); meshes.push(m); ch.scene.add(m.group); });
+    syncMeshes();
+    st.predicted = measure(); st.measured = null;
+    st.phase = 'relaxing'; st.t = 0; st.verifyT = 0; st.autoJig = false;
+    sim.gravity = st.desk ? 24 : 0;
+    st.history.push(target.name);
+    hud.top.innerHTML = cutsLabel();
+    hud.right.textContent = `${specs.length} piece${specs.length === 1 ? '' : 's'}`;
+    renderReadout(); renderDiagram(); syncButtons();
+  }
+  function cutsLabel() {
+    let t = `<b>${st.n}</b> half-twist${st.n === 1 ? '' : 's'} · cut at <b>${st.fracs.map(fracLabel).join(', ') || 'nowhere'}</b>`;
+    if (st.history.length) t += ` · then <b>${st.history.join(', ')}</b> again`;
+    return t;
+  }
+
   function clearScene() {
     meshes.forEach(m => { ch.scene.remove(m.group); m.geo.dispose(); m.front.material.dispose(); m.back.material.dispose(); });
     meshes = [];
@@ -314,6 +411,23 @@
     if (t === 0) return 'no twist';
     return `${t} full twist${t === 1 ? '' : 's'} (${2 * t} half)`;
   }
+  const lenText = laps => (laps === 1 ? 'the same length as the original' : laps === 2 ? 'twice as long' : `${laps}× as long`);
+  function describe(specs, m) {
+    const k = specs.length, one = specs.filter(s => s.oneSided).length, knotted = m.pieces.filter(p => p.knot !== 1).length;
+    const linked = m.links.filter(l => l.lk !== 0), bits = [];
+    if (one) bits.push(`${one === 1 ? 'a' : one} one-sided Möbius-type strip${one > 1 ? 's' : ''} the same length as the original`);
+    [...new Set(specs.filter(s => !s.oneSided).map(s => s.laps))].sort((a, b) => a - b).forEach(L => {
+      const c = specs.filter(s => !s.oneSided && s.laps === L).length;
+      bits.push(`${c === 1 ? 'a' : c} two-sided loop${c > 1 ? 's' : ''} ${lenText(L)}`);
+    });
+    let sum = `${k} piece${k === 1 ? '' : 's'}: ${bits.join(', ')}.`;
+    if (knotted) {
+      const name = Lab.knotName(m.pieces.find(p => p.knot !== 1).knot), many = /knot$/.test(name) ? name + 's' : name;
+      sum += knotted === 1 ? ` ${k === 1 ? 'It is' : 'One is'} tied in a ${name}.` : ` ${knotted === k ? (k === 2 ? 'Both are' : `All ${k} are`) : knotted + ' are'} tied in ${many}.`;
+    }
+    if (k > 1) sum += linked.length ? ` ${linked.length === k * (k - 1) / 2 && k > 2 ? 'Every pair is linked.' : linked.length === 1 ? 'They are ' + linkName(linked[0].lk, k) + '.' : linked.length + ' pairs are linked.'}` : ' None of them are linked; they just fall apart.';
+    return sum;
+  }
   function linkName(lk, total) {
     const a = Math.abs(lk);
     if (a === 1 && total === 2) return 'linked once (a Hopf link)';
@@ -321,32 +435,25 @@
     return `linked ${a}×`;
   }
   function renderReadout() {
-    if (st.phase === 'ready' || st.phase === 'cutting') {
-      readout.innerHTML = `<h4>Result</h4><p style="margin:0;color:var(--muted)">${st.phase === 'ready' ? 'Make a guess above if you like, then press Cut. The rule is in the diagram below if you want a hint.' : 'Cutting…'}</p>`;
+    if (st.phase === 'ready' || st.phase === 'cutting' || st.phase === 'recutting') {
+      const msg = st.phase === 'ready' ? 'Make a guess above if you like, then press Cut. The rule is in the diagram below if you want a hint.'
+        : st.phase === 'cutting' ? 'Cutting…' : `Cutting ${sim.specs[st.recut.idx].name} down its middle…`;
+      readout.innerHTML = `<h4>Result</h4><p style="margin:0;color:var(--muted)">${msg}</p>`;
       return;
     }
     const pr = st.predicted, specs = sim.specs, k = specs.length;
     const rows = specs.map((sp, i) => {
       const m = pr.pieces[i];
-      const lk = pr.links.filter(l => (l.a === i || l.b === i) && l.lk !== 0).map(l => `${NAMES[l.a === i ? l.b : l.a]} (${Math.abs(l.lk)}×)`);
-      return `<tr><td><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${NAMES[i]}</td>
-        <td>${sp.laps === 2 ? '2× the original' : 'same as original'}</td>
+      const lk = pr.links.filter(l => (l.a === i || l.b === i) && l.lk !== 0).map(l => `${specs[l.a === i ? l.b : l.a].name} (${Math.abs(l.lk)}×)`);
+      return `<tr><td><span class="swatch" style="background:${sp.color}"></span>${sp.name}</td>
+        <td>${sp.laps === 1 ? 'same as original' : sp.laps + '× the original'}</td>
         <td>${sp.oneSided ? '<b>one</b> (Möbius-type)' : 'two'}</td>
         <td>${twistText(sp, m)}</td>
         <td>${Lab.knotName(m.knot)}</td>
         <td>${lk.length ? lk.join(', ') : '–'}</td></tr>`;
     }).join('');
-    // summary sentence
-    const one = specs.filter(s => s.oneSided).length, longs = specs.filter(s => s.laps === 2).length, knotted = pr.pieces.filter(p => p.knot !== 1).length;
-    const linked = pr.links.filter(l => l.lk !== 0);
-    let sum = `${k} piece${k === 1 ? '' : 's'}`;
-    const bits = [];
-    if (one) bits.push(`${one === 1 ? 'a' : one} one-sided Möbius-type strip${one > 1 ? 's' : ''} the same length as the original`);
-    if (longs) bits.push(`${longs === 1 ? 'a' : longs} two-sided loop${longs > 1 ? 's' : ''} twice as long`);
-    if (k - one - longs) bits.push(`${k - one - longs === 1 ? 'a' : k - one - longs} two-sided loop${k - one - longs > 1 ? 's' : ''} the same length as the original`);
-    sum += ': ' + bits.join(', ') + '.';
-    if (knotted) sum += ` ${knotted === 1 ? 'One is' : knotted + ' are'} tied in a ${Lab.knotName(pr.pieces.find(p => p.knot !== 1).knot)}.`;
-    if (k > 1) sum += linked.length ? ` ${linked.length === k * (k - 1) / 2 && k > 2 ? 'Every pair is linked.' : linked.length === 1 ? 'They are ' + linkName(linked[0].lk, k) + '.' : linked.length + ' pairs are linked.'}` : ' None of them are linked; they just fall apart.';
+    const one = specs.filter(s => s.oneSided).length;
+    const sum = describe(specs, pr);
     // guess
     let guess = '';
     if (st.guessN != null || st.guessOne != null) {
@@ -360,9 +467,11 @@
     const ver = st.measured == null ? '<span style="color:var(--muted)">measuring the simulated paper…</span>'
       : sameTopology(st.predicted, st.measured) ? '<span class="ok">✓</span> Measured from the relaxed simulated paper: same twists, knots and links as the rule predicts.'
         : '<span class="miss">⚠</span> The simulated paper slipped through itself, which real paper can\'t do. Press Reset and cut again.';
-    readout.innerHTML = `<h4>Result</h4><p style="margin:0 0 8px">${sum}</p>
+    const again = specs.map((sp, i) => `<button type="button" class="btn" id="s-again-${i}" data-recut="${i}"><span class="swatch" style="background:${sp.color}"></span>${sp.name}</button>`).join('');
+    readout.innerHTML = `<h4>Result${st.history.length ? ` after cutting ${st.history.join(', then ')} again` : ''}</h4><p style="margin:0 0 8px">${sum}</p>
       <div class="tbl-wrap"><table class="pieces"><thead><tr><th>Piece</th><th>Length</th><th>Sides</th><th>Twist</th><th>Knot</th><th>Linked with</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${guess}<p class="verdict-line" style="font-size:.875rem">${ver}</p>
+      <div class="ctl" style="margin-top:12px"><span class="lbl">Cut a piece again, down its middle</span><div class="btn-row">${again}</div></div>
       <p class="verdict-line" style="font-size:.8125rem;color:var(--muted)">Colors are added so you can tell the pieces apart. Drag a piece to pull it around.</p>`;
   }
 
@@ -407,6 +516,7 @@
     if (!st.fracs.length) txt = 'Pick at least one place to cut.';
     else if (!odd) txt = `${st.n === 0 ? 'No twist' : 'An even number of half-twists'}: no flip at the joint, so each stripe closes on itself after one lap. ${st.fracs.length} cut${st.fracs.length > 1 ? 's' : ''} → ${k} loops, each as long as the original${st.n ? `, and every pair links ${st.n / 2}×` : ', and none of them link'}.`;
     else txt = `An odd number of half-twists: the joint flips the strip, so the stripe at x continues at 1 − x. Same color means same piece. A stripe joined to its mirror becomes one loop twice as long.${one ? ' The middle stripe is its own mirror, so it stays one-sided.' : ' Nothing is left in the middle, so no piece stays one-sided.'}${st.n >= 3 ? ` With ${st.n} half-twists the long loops come out knotted.` : ''}`;
+    if (st.history.length) txt += ' Cutting a piece again follows the same rule on that piece: a two-sided loop falls into two loops of the same length, linked as many times as its two edges were (its Twist), and a one-sided loop becomes one loop twice as long.';
     diagram.innerHTML = `<h4>The rule, drawn as a gluing diagram</h4>${svg}<p class="cap">${txt}</p>`;
   }
 
@@ -414,6 +524,7 @@
   function buildUncut() {
     clearScene();
     const spec = pieceSpec({ laps: 1, oneSided: st.n % 2 === 1, s0: -1, s1: 1 }, st.n, st.chi);
+    spec.name = NAMES[0]; spec.color = COLORS[0];
     sim = new PaperSim([spec], RAD);
     meshes.push(makeMesh(spec, COLORS[0]));
     ch.scene.add(meshes[0].group);
@@ -453,28 +564,14 @@
       sp.scale.set(0.26, 0.26, 1); sp.renderOrder = 10; sp.visible = false;
       ch.scene.add(sp); scissorSprites.push(sp); L.sprite = sp;
     });
-    st.phase = 'ready';
+    st.phase = 'ready'; st.history = []; st.recut = null;
     st.predicted = st.measured = null;
-    hud.top.innerHTML = `<b>${st.n}</b> half-twist${st.n === 1 ? '' : 's'} · cut at <b>${st.fracs.map(fracLabel).join(', ') || 'nowhere'}</b>`;
+    hud.top.innerHTML = cutsLabel();
     hud.right.textContent = st.n % 2 ? 'One-sided strip' : 'Two-sided strip';
     hud.tip.hidden = true;
     renderReadout(); renderDiagram(); syncButtons();
   }
-  let _sciTex = null;
-  function scissorsTexture() {
-    if (_sciTex) return _sciTex;
-    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-    g.translate(64, 64); g.rotate(-0.5);
-    g.lineCap = 'round'; g.strokeStyle = '#1b2140'; g.fillStyle = '#ffffff';
-    g.lineWidth = 9;
-    g.beginPath(); g.moveTo(-6, 4); g.lineTo(52, -22); g.stroke();
-    g.beginPath(); g.moveTo(-6, -4); g.lineTo(52, 22); g.stroke();
-    g.lineWidth = 8;
-    [[-30, -18], [-30, 18]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 15, 0, TAU); g.fill(); g.stroke(); });
-    g.fillStyle = '#e8457a'; g.beginPath(); g.arc(-4, 0, 6, 0, TAU); g.fill();
-    _sciTex = new THREE.CanvasTexture(c); _sciTex.encoding = THREE.sRGBEncoding;
-    return _sciTex;
-  }
+  const scissorsTexture = Lab.scissorsTexture;
   function startCut() {
     st.userCam = false;
     if (!st.fracs.length) { Lab.toast(ch.stage, 'Pick at least one place to cut first.'); return; }
@@ -488,8 +585,9 @@
     st.plan = plan;
     clearScene();
     const specs = plan.pieces.map(pc => pieceSpec(pc, st.n, st.chi));
+    specs.forEach((sp, i) => { sp.name = NAMES[i]; sp.color = COLORS[i % COLORS.length]; });
     sim = new PaperSim(specs, RAD);
-    specs.forEach((sp, i) => { const m = makeMesh(sp, COLORS[i % COLORS.length]); meshes.push(m); ch.scene.add(m.group); });
+    specs.forEach(sp => { const m = makeMesh(sp, sp.color); meshes.push(m); ch.scene.add(m.group); });
     syncMeshes();
     st.predicted = measure();
     st.measured = null;
@@ -502,6 +600,77 @@
   function syncButtons() {
     btn.cut.disabled = st.phase !== 'ready';
     btn.jiggle.disabled = st.phase !== 'relaxing';
+  }
+
+  /* ---------------- your notebook, re-run ---------------- */
+  // Cut results copied from the notes. Each one is re-made and cut, and the claim is checked
+  // against what the simulated paper actually does.
+  const CHECKS = [
+    { key: 'half', quote: 'Mobius with ½ cut = 2 linked Mobius', setup: '1 half-twist · cut at ½', n: 1, fracs: [1 / 2],
+      test: r => r.count === 2 && r.oneSided === 2 && r.linked > 0, miss: 'Two linked pieces come from the ⅓ cut, and only one of those is a Möbius strip.' },
+    { key: 'inf', quote: 'Infinity symbol = circle + 0.5 turns + ½ cut', setup: '1 half-twist · cut at ½', n: 1, fracs: [1 / 2],
+      test: r => r.count === 1 && r.oneSided === 0, hit: 'One long loop, as your notes say.' },
+    { key: 'inf2', quote: 'Infinity symbol with ½ cut = two linked infinity symbols', setup: 'that long loop, cut down its middle', n: 1, fracs: [1 / 2], recut: true,
+      test: r => r.count === 2 && r.oneSided === 0 && r.linked === 1, hit: 'Two loops shaped like the first one, linked.' },
+    { key: 'mirror', quote: '⅓ cut from the inside is the same as 1/3 cut from the outside', setup: '1 half-twist · cut at ⅓ and ⅔ together', n: 1, fracs: [1 / 3, 2 / 3],
+      test: r => r.count === 2 && r.oneSided === 1, hit: 'The same two pieces you get from ⅓ alone, because ⅓ and ⅔ are one cut line.' },
+    { key: 'sixth', quote: 'cut strips at 1/3 and at 1/6 and see what happens?', setup: '1 half-twist · cut at ⅙ and ⅓', n: 1, fracs: [1 / 6, 1 / 3], test: null,
+      hit: 'The cut lines never cross: each one runs alongside the edge.' },
+    { key: 'rec', quote: 'Recycling symbol with ½ cut = … 1 piece', setup: '3 half-twists (our reading of your recycling symbol) · cut at ½', n: 3, fracs: [1 / 2],
+      test: r => r.count === 1, hit: 'One piece, as your notes say.' },
+    { key: 'rec2', quote: 'Rectangle “|X|” with middle loop cut ½ = … 1 piece', setup: 'that knotted loop, cut down its middle', n: 3, fracs: [1 / 2], recut: true,
+      test: r => r.count === 1, miss: 'A two-sided loop cut down its middle always falls into two. If your paper stayed in one piece, the cut probably wandered off the middle line, which is easy on a long knotted strip.' }
+  ];
+  function renderNotebook() {
+    if (!notebook) return;
+    const rows = CHECKS.map(c => {
+      const r = st.checks[c.key] || {};
+      let res = '';
+      if (r.state === 'running') res = '<span style="color:var(--muted)">Cutting… watch the strip.</span>';
+      else if (r.state === 'yes') res = `<span class="ok">✓ Matches.</span> ${c.hit || ''} Simulated: ${r.text}`;
+      else if (r.state === 'no') res = `<span class="miss">✗ Doesn't match.</span> Simulated: ${r.text} ${c.miss || ''}`;
+      else if (r.state === 'answer') res = `<b>Answer:</b> ${r.text} ${c.hit || ''}`;
+      else if (r.state === 'glitch') res = '<span class="miss">⚠</span> The simulated paper slipped through itself. Run it again.';
+      return `<li><span class="nb-q">“${c.quote}”</span><button type="button" class="btn" data-check="${c.key}" id="s-check-${c.key}"${r.state === 'running' ? ' disabled' : ''}>${r.state && r.state !== 'running' ? 'Run again' : 'Run it'}</button>
+        <span class="nb-setup">${c.setup}</span><p class="nb-res">${res}</p></li>`;
+    }).join('');
+    notebook.innerHTML = `<h4>Your notebook, re-run</h4>
+      <p class="cap">Cut results copied from your notes. Run one and the simulation makes the same strip, makes the same cuts, and checks the result.</p>
+      <ol class="nb-list">${rows}</ol>`;
+  }
+  function cancelScript() {
+    if (!st.script) return;
+    const k = st.script.c.key;
+    if (st.checks[k] && st.checks[k].state === 'running') delete st.checks[k];
+    st.script = null; renderNotebook();
+  }
+  function runCheck(key) {
+    const c = CHECKS.find(x => x.key === key); if (!c) return;
+    cancelScript();
+    st.n = c.n; st.chi = 1; st.fracs = c.fracs.slice().sort((a, b) => a - b);
+    ctl.n.set(st.n); ctl.chi.set(1); ctl.cut.set(st.fracs);
+    st.guessN = st.guessOne = null; ctl.gN.set(null); ctl.gO.set(null);
+    buildUncut();
+    st.checks[key] = { state: 'running' }; st.script = { c, step: 0 };
+    renderNotebook();
+    startCut();
+    const nav = document.querySelector('.nav'), top = ch.stage.getBoundingClientRect().top + window.scrollY - (nav ? nav.offsetHeight : 0) - 10;
+    if (Math.abs(window.scrollY - top) > 40) window.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  function judge(c) {
+    const m = st.measured, specs = sim.specs;
+    if (!sameTopology(st.predicted, m)) { st.checks[c.key] = { state: 'glitch' }; renderNotebook(); return; }
+    const r = { count: specs.length, oneSided: specs.filter(x => x.oneSided).length, linked: m.links.filter(l => l.lk !== 0).length };
+    const state = c.test ? (c.test(r) ? 'yes' : 'no') : 'answer';
+    st.checks[c.key] = { state, text: describe(specs, m) };
+    renderNotebook();
+    Lab.toast(ch.stage, state === 'yes' ? '✓ Your notes match the simulated paper.' : state === 'no' ? '✗ The simulated paper disagrees with your notes.' : 'Done. The answer is in the notebook list.', 2800);
+  }
+  function tickScript() {
+    const S = st.script;
+    if (!S || st.phase !== 'relaxing' || !st.measured || st.t < 3.2) return;
+    if (S.c.recut && S.step === 0) { S.step = 1; if (startRecut(0) !== true) cancelScript(); return; }
+    st.script = null; judge(S.c);
   }
 
   /* ---------------- dragging pieces ---------------- */
@@ -576,10 +745,11 @@
     stage.append(hud.wrap, bottom);
 
     const c = section.querySelector('[data-controls]');
-    Lab.ui.seg(c, { label: 'Half-twists', id: 's-n', value: st.n, options: [0, 1, 2, 3, 4, 5].map(v => ({ value: v, label: String(v) })), onChange: v => { st.n = v; buildUncut(); } });
-    Lab.ui.seg(c, { label: 'Handedness', id: 's-chi', value: st.chi, options: [{ value: 1, label: 'Left' }, { value: -1, label: 'Right' }], onChange: v => { st.chi = v; buildUncut(); } });
-    Lab.ui.chips(c, { label: 'Cut at (fraction of the width)', id: 's-cut', options: FRACS.map(f => ({ value: f.v, label: f.l })), values: st.fracs,
+    ctl.n = Lab.ui.seg(c, { label: 'Half-twists', id: 's-n', value: st.n, options: [0, 1, 2, 3, 4, 5].map(v => ({ value: v, label: String(v) })), onChange: v => { cancelScript(); st.n = v; buildUncut(); } });
+    ctl.chi = Lab.ui.seg(c, { label: 'Handedness', id: 's-chi', value: st.chi, options: [{ value: 1, label: 'Left' }, { value: -1, label: 'Right' }], onChange: v => { cancelScript(); st.chi = v; buildUncut(); } });
+    ctl.cut = Lab.ui.chips(c, { label: 'Cut at (fraction of the width)', id: 's-cut', options: FRACS.map(f => ({ value: f.v, label: f.l })), values: st.fracs,
       onChange: vals => {
+        cancelScript();
         const odd = st.n % 2 === 1;
         if (odd && vals.some(a => vals.some(b => a !== b && near(a + b, 1)))) Lab.toast(ch.stage, 'On an odd strip, x and 1 − x are the same cut line. Watch.');
         st.fracs = vals.slice().sort((a, b) => a - b); buildUncut();
@@ -589,15 +759,20 @@
     const gN = Lab.ui.seg(gr, { label: null, id: 's-gn', value: null, options: [1, 2, 3, 4].map(v => ({ value: v, label: v === 4 ? '4+ pieces' : v + (v === 1 ? ' piece' : '') })), onChange: v => { st.guessN = v; } });
     const gO = Lab.ui.seg(gr, { label: null, id: 's-go', value: null, options: [{ value: 'yes', label: 'one-sided piece' }, { value: 'no', label: 'none one-sided' }], onChange: v => { st.guessOne = v; } });
     gN.el.querySelector('.lbl') && gN.el.querySelector('.lbl').remove();
+    ctl.gN = gN; ctl.gO = gO;
     const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
-    btn.cut = Lab.ui.button(row, { label: '✂ Cut', id: 's-cutbtn', primary: true, onClick: startCut });
+    btn.cut = Lab.ui.button(row, { label: '✂ Cut', id: 's-cutbtn', primary: true, onClick: () => { cancelScript(); startCut(); } });
     btn.jiggle = Lab.ui.button(row, { label: 'Jiggle', id: 's-jiggle', onClick: () => { st.jiggle = 0.9; st.measured = null; st.verifyT = 1.6; renderReadout(); } });
-    Lab.ui.button(row, { label: 'Reset', id: 's-reset', onClick: () => { st.userCam = false; st.guessN = st.guessOne = null; gN.set(null); gO.set(null); buildUncut(); Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
+    Lab.ui.button(row, { label: 'Reset', id: 's-reset', onClick: () => { cancelScript(); st.userCam = false; st.guessN = st.guessOne = null; gN.set(null); gO.set(null); buildUncut(); Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
     Lab.ui.seg(c, { label: 'Hands', id: 's-desk', value: 'apart', options: [{ value: 'apart', label: 'Pull apart' }, { value: 'off', label: 'Let it float' }, { value: 'on', label: 'Drop on desk' }],
       onChange: v => { st.mode = v; st.desk = v === 'on'; if (sim && st.phase === 'relaxing') { sim.gravity = st.desk ? 24 : 0; sim.wake(); st.measured = null; st.verifyT = 2.5; renderReadout(); } Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
 
     readout = section.querySelector('[data-readout]');
     diagram = section.querySelector('[data-diagram]');
+    notebook = section.querySelector('[data-notebook]');
+    readout.addEventListener('click', ev => { const b = ev.target.closest('[data-recut]'); if (b) { cancelScript(); startRecut(+b.dataset.recut); } });
+    if (notebook) notebook.addEventListener('click', ev => { const b = ev.target.closest('[data-check]'); if (b && !b.disabled) runCheck(b.dataset.check); });
+    renderNotebook();
     const cv = Lab.getRenderer().domElement;
     cv.addEventListener('pointerdown', onDown, { capture: true });
     cv.addEventListener('touchstart', ev => { if (Lab.active === ch && sim && sim.dragId >= 0) { ev.stopImmediatePropagation(); } }, { capture: true, passive: true });
@@ -625,6 +800,14 @@
       if (done) { st.cutLines.forEach(L => (L.sprite.visible = false)); finishCut(); }
       return;
     }
+    if (st.phase === 'recutting') {
+      const R = st.recut; R.t += dt;
+      const prog = Math.min(1, R.t / R.dur), k = Math.floor(prog * R.M);
+      R.slit.geometry.setDrawRange(0, k * 6);
+      R.sprite.position.set(...R.mid[Math.min(k, R.M)]);
+      if (prog >= 1) finishRecut();
+      return;
+    }
     if (st.phase !== 'relaxing') return;
     st.t += dt;
     sim.setBlend(Lab.smooth(Math.min(1, st.t / 2.2)));
@@ -647,6 +830,7 @@
       st.measured = m;
       if (changed) renderReadout();
     }
+    tickScript();
   };
   ch.leave = function () { onUp(); };
 

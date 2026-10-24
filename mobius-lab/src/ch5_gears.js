@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 5: Gear Lock (geometric frustration).
+   Experiment 6: Gear Lock (geometric frustration).
    Gears are rotors joined by stiff tooth springs. Touching gears of
    equal size need θi + θj = const (they counter-rotate). Across a
    Möbius joint the rule flips to θi − θj = const, because that gear is

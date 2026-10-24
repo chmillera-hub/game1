@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 8: Drain Gravity.
+   Experiment 9: Drain Gravity.
    Space flows radially inward with speed v(r) (a 2D slice of 3D).
    Anything floating in it accelerates with the flow: a = ∇(v²/2).
      drain (space vanishes only at the planet, so the flux through

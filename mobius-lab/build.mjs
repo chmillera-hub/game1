@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 const dir = path.dirname(new URL(import.meta.url).pathname);
 const src = f => fs.readFileSync(path.join(dir, 'src', f), 'utf8');
-const order = ['core.js', 'ch1_finger.js', 'ch2_scissors.js', 'ch3_spin.js', 'ch4_music.js', 'ch5_gears.js', 'ch6_forge.js', 'ch7_ribbon.js', 'ch8_drain.js', 'verdict.js', 'main.js'];
+const order = ['core.js', 'ch1_finger.js', 'ch2_scissors.js', 'ch2b_tape.js', 'ch3_spin.js', 'ch4_music.js', 'ch5_gears.js', 'ch6_forge.js', 'ch7_ribbon.js', 'ch8_drain.js', 'verdict.js', 'main.js'];
 const js = order.map(f => `/* ---- ${f} ---- */\n` + src(f)).join('\n');
 if (js.includes('</script')) throw new Error('JS contains </script');
 const frag = src('shell.html').replace('/*__CSS__*/', () => src('styles.css')).replace('//__JS__', () => js);

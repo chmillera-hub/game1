@@ -1,20 +1,18 @@
 /* ============================================================
-   Experiment 4: Strip Music.
+   Experiment 5: Strip Music.
    A standing wave displaces the band along its normal:
    d(θ) = A cos(mθ) cos(ωt). After one lap the band comes back with
    its normal flipped (Möbius) or not (ring), so the wave fits only
    if cos(2πm) = −1 (Möbius: m = ½, 1½, …) or +1 (ring: m = 0, 1, …).
-   Zero-point sums use a smooth cutoff e^{-kε}; after removing the
-   1/ε² bulk term the leftovers tend to −1/12 (ring) and +1/24 (Möbius).
    ============================================================ */
 {
   const TAU = Lab.TAU;
   const R = 1.25, W = 0.62, SEGU = 240, SEGV = 8, NV = SEGV + 1, AMP = 0.13;
   const MODES = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5];
   const mLabel = m => (m % 1 ? (m === 0.5 ? '½' : `${Math.floor(m)}½`) : String(m));
-  const st = { n: 1, m: 0.5, t: 0, electrons: 4, eps: 1, sweep: true, lastPartials: null };
+  const st = { n: 1, m: 0.5, t: 0, electrons: 4, last: { ring: null, mob: null } };
   const ch = { token: 'music', gl: true, background: () => Lab.stageBg() };
-  let geo, base, baseN, meshF, meshB, seamLines, hud = {}, readout, ladder, spec, zp, zpOut, ac = null;
+  let geo, base, baseN, meshF, meshB, seamLines, hud = {}, readout, ladder, spec, ac = null;
 
   function fits() { const c = Math.cos(TAU * st.m); return st.n % 2 ? c < -0.99 : c > 0.99; }
 
@@ -102,34 +100,16 @@
     const fmax = 2200; const xOf = f => x0 + f / fmax * (x1 - x0);
     ctx.fillStyle = muted; ctx.font = `10px ${mono}`; ctx.textAlign = 'center';
     [0, 500, 1000, 1500, 2000].forEach(f => ctx.fillText(f + (f === 2000 ? ' Hz' : ''), xOf(f), h - 6));
-    const P = st.lastPartials; if (!P) { ctx.textAlign = 'left'; ctx.fillText('press a pluck button', x0 + 6, y0 + 12); return; }
-    P.parts.forEach(p => { const x = xOf(p.f); if (x > x1) return; ctx.fillStyle = P.color; ctx.fillRect(x - 3, y1 - p.a * (y1 - y0), 6, p.a * (y1 - y0)); });
-    ctx.textAlign = 'left'; ctx.fillStyle = muted; ctx.fillText(P.label, x0 + 6, y0 + 12);
-  }
-  function zeroPoint(eps) {
-    const x = Math.exp(-eps);
-    return { ring: x / (1 - x) ** 2 - 1 / eps ** 2, mob: Math.sqrt(x) * (1 + x) / (2 * (1 - x) ** 2) - 1 / eps ** 2 };
-  }
-  function drawZP() {
-    const { ctx, w, h } = Lab.fitCanvas(zp);
-    ctx.clearRect(0, 0, w, h);
-    const ink = Lab.cssVar('--ink'), muted = Lab.cssVar('--muted'), pink = Lab.cssVar('--pink'), blue = Lab.cssVar('--blue'), rule = Lab.cssVar('--rule'), mono = Lab.cssVar('--font-mono');
-    const x0 = 48, x1 = w - 12, y0 = 12, y1 = h - 26;
-    const lx = e => x0 + (Math.log10(2) - Math.log10(e)) / (Math.log10(2) - Math.log10(0.02)) * (x1 - x0);
-    const yv = v => y1 - (v + 0.1) / 0.16 * (y1 - y0);
-    ctx.strokeStyle = rule; ctx.lineWidth = 1;
-    [-0.08, -0.04, 0, 0.04].forEach(v => { ctx.beginPath(); ctx.moveTo(x0, yv(v)); ctx.lineTo(x1, yv(v)); ctx.stroke(); ctx.fillStyle = muted; ctx.font = `10px ${mono}`; ctx.textAlign = 'right'; ctx.fillText(v.toFixed(2), x0 - 4, yv(v) + 3); });
-    ctx.textAlign = 'center'; ctx.fillText('more modes counted →', (x0 + x1) / 2, h - 6);
-    const target = [{ v: -1 / 12, c: blue, t: '−1/12' }, { v: 1 / 24, c: pink, t: '+1/24' }];
-    target.forEach(T => { ctx.setLineDash([5, 4]); ctx.strokeStyle = T.c; ctx.beginPath(); ctx.moveTo(x0, yv(T.v)); ctx.lineTo(x1, yv(T.v)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = T.c; ctx.textAlign = 'right'; ctx.font = `600 11px ${mono}`; ctx.fillText(T.t, x1, yv(T.v) - 4); });
-    ['ring', 'mob'].forEach((k, i) => {
-      ctx.strokeStyle = i ? pink : blue; ctx.lineWidth = 2.5; ctx.beginPath();
-      let first = true;
-      for (let e = 2; e >= Math.max(0.02, st.eps); e *= 0.97) { const v = zeroPoint(e)[k]; const X = lx(e), Y = yv(Lab.clamp(v, -0.1, 0.06)); first ? ctx.moveTo(X, Y) : ctx.lineTo(X, Y); first = false; }
-      ctx.stroke();
+    const shown = ['ring', 'mob'].filter(k => st.last[k]);
+    ctx.textAlign = 'left';
+    if (!shown.length) { ctx.fillText('press a pluck button', x0 + 6, y0 + 12); return; }
+    // side by side when both are shown, so notes that coincide stay visible
+    shown.forEach((k, i) => {
+      const P = st.last[k], dx = shown.length > 1 ? (i ? 2.5 : -2.5) : 0, bw = shown.length > 1 ? 4 : 6;
+      ctx.fillStyle = Lab.cssVar(k === 'ring' ? '--blue' : '--pink');
+      P.parts.forEach(p => { const x = xOf(p.f) + dx; if (x > x1) return; ctx.fillRect(x - bw / 2, y1 - p.a * (y1 - y0 - 26), bw, p.a * (y1 - y0 - 26)); });
+      ctx.fillText(P.label, x0 + 6, y0 + 10 + i * 13);
     });
-    const z = zeroPoint(Math.max(0.02, st.eps));
-    zpOut.innerHTML = `plain ring leftover <b style="color:var(--blue)">${z.ring.toFixed(5)}</b> · Möbius ring leftover <b style="color:var(--pink)">${z.mob >= 0 ? '+' : ''}${z.mob.toFixed(5)}</b>`;
   }
 
   /* ---------------- sound ---------------- */
@@ -154,7 +134,7 @@
       g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(p.a, now + 0.006); g.gain.exponentialRampToValueAtTime(0.0008, now + tau * 3);
       o.connect(g); g.connect(master); o.start(now); o.stop(now + tau * 3 + 0.05);
     });
-    st.lastPartials = { parts, color: which === 'ring' ? Lab.cssVar('--blue') : Lab.cssVar('--pink'), label: which === 'ring' ? `plain ring: ${f0} Hz × 1, 2, 3, 4 … (every harmonic)` : same ? `Möbius ring: ${f0} Hz × 1, 3, 5, 7 … (odd harmonics only)` : `Möbius ring: ${f0 / 2} Hz × 1, 3, 5 … (an octave lower, odd only)` };
+    st.last[which] = { parts, label: which === 'ring' ? `plain ring: ${f0} Hz × 1, 2, 3, 4 … (every harmonic)` : same ? `Möbius ring: ${f0} Hz × 1, 3, 5, 7 … (odd harmonics only)` : `Möbius ring: ${f0 / 2} Hz × 1, 3, 5 … (an octave lower, odd only)` };
     drawSpectrum();
   }
 
@@ -182,18 +162,13 @@
       <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Each line is an allowed wave; two electrons fit per wave. A ring of atoms is extra stable when its electrons exactly fill a set of levels. Plain rings fill at 2, 6, 10 (the 4n + 2 rule, like benzene's 6). Möbius rings fill at 4, 8, 12 (the 4n rule).</p>
       <h4 style="margin-top:14px">What you just heard</h4>
       <canvas data-spec class="plot short" aria-label="Spectrum of the last pluck"></canvas>
-      <h4 style="margin-top:14px">Where 1 + 2 + 3 + … = −1/12 lives</h4>
-      <canvas data-zp class="plot" aria-label="Zero-point energy leftovers converging to minus one twelfth for the ring and plus one twenty-fourth for the Möbius ring"></canvas>
-      <p class="verdict-line" data-zpout style="font-family:var(--font-mono);font-size:.8125rem"></p>
-      <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Quantum physics gives every wave a minimum energy, even at rest. Add them up over all the waves and you get infinity. But the infinite part grows with the ring's length, the same everywhere, so it can't push or pull on anything. What's left over is finite: −1/12 for the plain ring, which pulls it smaller, and +1/24 for the Möbius ring, which pushes it bigger (in units of 2πħc/L). This is the Casimir effect in a one-dimensional world.</p>`;
-    ladder = readout.querySelector('[data-ladder]'); spec = readout.querySelector('[data-spec]'); zp = readout.querySelector('[data-zp]'); zpOut = readout.querySelector('[data-zpout]');
+      <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Each bar is one wave the loop can hold. The plain ring has every whole number, so its notes run 1, 2, 3, 4 … times its lowest. The Möbius ring has only half-numbers, ½, 1½, 2½ …: the odd multiples 1, 3, 5 … of a lowest note an octave down. Pluck both. At the same size, every Möbius note falls exactly between two plain-ring notes, so neither ring can make the other resonate. Switch Möbius pitch to Same note and they share every other harmonic.</p>`;
+    ladder = readout.querySelector('[data-ladder]'); spec = readout.querySelector('[data-spec]');
     Lab.ui.slider(readout.querySelector('[data-elec]'), { label: 'Electrons in the ring', id: 'm-e', min: 2, max: 12, step: 1, value: st.electrons, format: v => String(v), onInput: v => { st.electrons = v; drawLadder(); } });
-    Lab.ui.button(readout.querySelector('[data-elec]'), { label: 'Replay the sum', id: 'm-zp', onClick: () => { st.eps = 2; st.sweep = true; } });
-    st.eps = 2; st.sweep = true;
     drawLadder(); drawSpectrum();
   };
   ch.enter = function () { drawLadder(); drawSpectrum(); };
-  ch.resize = function () { if (ladder) { drawLadder(); drawSpectrum(); drawZP(); } };
+  ch.resize = function () { if (ladder) { drawLadder(); drawSpectrum(); } };
   ch.frame = function (dt) {
     if (!Lab.stepTween(ch, dt)) ch.controls.update();
     st.t += dt;
@@ -202,7 +177,6 @@
     hud.mode.innerHTML = `<b>${mLabel(st.m)}</b> wave${st.m === 1 ? '' : 's'} around a ${st.n ? 'Möbius' : 'plain'} ring`;
     hud.fit.textContent = ok ? (st.m === 0 ? 'fits: the flat zero mode, frequency 0' : 'fits: it meets itself at the joint') : 'doesn’t fit: it tears at the joint';
     hud.fit.className = 'chip ' + (ok ? 'good' : 'alert');
-    if (st.sweep) { st.eps *= Math.pow(0.5, dt * 0.9); if (st.eps <= 0.02) { st.eps = 0.02; st.sweep = false; } drawZP(); }
   };
   Lab.register(ch);
 }

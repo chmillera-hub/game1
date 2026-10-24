@@ -282,6 +282,22 @@ const Lab = (() => {
     return tex;
   }
 
+  // A small pair of scissors, drawn as a sprite that rides along the cut line.
+  function scissorsTexture() {
+    if (texCache.scissors) return texCache.scissors;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    g.translate(64, 64); g.rotate(-0.5);
+    g.lineCap = 'round'; g.strokeStyle = '#1b2140'; g.fillStyle = '#ffffff';
+    g.lineWidth = 9;
+    g.beginPath(); g.moveTo(-6, 4); g.lineTo(52, -22); g.stroke();
+    g.beginPath(); g.moveTo(-6, -4); g.lineTo(52, 22); g.stroke();
+    g.lineWidth = 8;
+    [[-30, -18], [-30, 18]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 15, 0, TAU); g.fill(); g.stroke(); });
+    g.fillStyle = '#e8457a'; g.beginPath(); g.arc(-4, 0, 6, 0, TAU); g.fill();
+    const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+    return (texCache.scissors = tex);
+  }
+
   /* ---------------- band math ---------------- */
   // Core circle radius R, width W, n half-twists, chirality chi (+1/-1), s in [-1,1].
   // a0 stands the strip up: at a0 = pi/2 a plain ring is a cylinder, which is what paper can actually make.
@@ -496,7 +512,7 @@ const Lab = (() => {
 
   return {
     TAU, register, start, activate, isDark, cssVar, onTheme, getRenderer, el, ui, toast, fitCanvas,
-    paperTexture, woodTexture, bandPoint, bandFrame, bandGeometry, makeScene, stageBg, tweenCamera, stepTween, paintMaterial,
+    paperTexture, woodTexture, scissorsTexture, bandPoint, bandFrame, bandGeometry, makeScene, stageBg, tweenCamera, stepTween, paintMaterial,
     linking, knotDet, knotName, rng, gauss, fmt, clamp, lerp, smooth, get active() { return active; }
   };
 })();

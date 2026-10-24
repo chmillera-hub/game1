@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 3: 720°, Dirac's belt trick.
+   Experiment 4: 720°, Dirac's belt trick.
    Every tether point at distance fraction s from the cube is
    rotated by the quaternion Q(s, t). Points at the same s share
    one rigid rotation and sit on one sphere, so tethers can never

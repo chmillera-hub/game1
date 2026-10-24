@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Möbius Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Eight interactive physics experiments built from a Möbius strip notebook, each sorted into what is established, what is a real rhyme, and where it breaks.">
+<meta name="description" content="Nine interactive experiments built from a Möbius strip notebook and its paper-cutting tests, each sorted into what is established, what is a real rhyme, and where it breaks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
@@ -439,6 +439,17 @@ canvas.plot.short { height: 150px; }
 .diagram svg { width: 100%; height: auto; display: block; }
 .diagram .cap { font-size: .875rem; color: var(--muted); margin: 6px 0 0; }
 
+/* ---------- Notebook re-runs (scissors, tape) ---------- */
+.notebook .cap { font-size: .875rem; color: var(--muted); margin: 0 0 6px; }
+.nb-list { list-style: none; margin: 0; padding: 0; }
+.nb-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
+.nb-list li:first-child { border-top: 0; }
+.nb-q { font-family: var(--font-hand); font-size: 1.3125rem; line-height: 1.15; color: var(--ink); }
+.nb-list .btn { grid-row: span 2; align-self: center; }
+.nb-setup { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); }
+.nb-res { grid-column: 1 / -1; margin: 4px 0 0; font-size: .875rem; }
+.nb-res:empty { display: none; }
+
 /* ---------- Verdict ---------- */
 .verdict-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 28px; align-items: start; }
 @media (max-width: 920px) { .verdict-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -490,7 +501,7 @@ canvas.plot.short { height: 150px; }
       </svg>
       <h1>The <em>Möbius</em> Lab</h1>
     </div>
-    <p class="dek">Eight experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
+    <p class="dek">Nine experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
     <div class="legend" aria-label="Legend">
       <span><span class="tag real">REAL</span> established math or physics</span>
       <span><span class="tag rhyme">RHYME</span> your idea lines up with a real one, and here is its name</span>
@@ -504,12 +515,13 @@ canvas.plot.short { height: 150px; }
     <ol>
       <li><a href="#finger" data-token="finger"><span class="n">1</span>Finger vs. Eyes</a></li>
       <li><a href="#scissors" data-token="scissors"><span class="n">2</span>Scissors</a></li>
-      <li><a href="#spin" data-token="spin"><span class="n">3</span>720°</a></li>
-      <li><a href="#music" data-token="music"><span class="n">4</span>Strip Music</a></li>
-      <li><a href="#gears" data-token="gears"><span class="n">5</span>Gear Lock</a></li>
-      <li><a href="#forge" data-token="forge"><span class="n">6</span>Cosmic Forge</a></li>
-      <li><a href="#ribbon" data-token="ribbon"><span class="n">7</span>Spooky Ribbon</a></li>
-      <li><a href="#drain" data-token="drain"><span class="n">8</span>Drain Gravity</a></li>
+      <li><a href="#tape" data-token="tape"><span class="n">3</span>Tape</a></li>
+      <li><a href="#spin" data-token="spin"><span class="n">4</span>720°</a></li>
+      <li><a href="#music" data-token="music"><span class="n">5</span>Strip Music</a></li>
+      <li><a href="#gears" data-token="gears"><span class="n">6</span>Gear Lock</a></li>
+      <li><a href="#forge" data-token="forge"><span class="n">7</span>Cosmic Forge</a></li>
+      <li><a href="#ribbon" data-token="ribbon"><span class="n">8</span>Spooky Ribbon</a></li>
+      <li><a href="#drain" data-token="drain"><span class="n">9</span>Drain Gravity</a></li>
       <li><a href="#verdict" data-token="verdict"><span class="n">✓</span>Verdict</a></li>
     </ol>
   </div>
@@ -546,7 +558,7 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your eyes and your finger aren't disagreeing. They measure different things. Eyes measure locally: any small patch of the strip has two faces. The finger measures globally: follow the surface far enough and the two faces turn out to be one. Local versus global is the central idea of topology.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 3), waves (4), gears (5) and liquid crystals (6).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 4), waves (5), gears (6) and liquid crystals (7).</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Turn on Monsters. The fear predictor learns where monsters hide and warns the ant early, which matches a real theory of emotions as predictions (predictive processing; Lisa Feldman Barrett). The Möbius shape isn't doing the work here, though. The same learning helps on any track with blind spots. Also notice that the jumpy setting fails as badly as the silenced one. What works is calibration, and calibration comes from being wrong and updating.</p></div>
       </div>
       <div class="note deeper">
@@ -566,7 +578,7 @@ canvas.plot.short { height: 150px; }
   <div class="ch-head">
     <p class="eyebrow">Experiment 2 · predict, then cut</p>
     <h2 id="h-scissors">Scissors</h2>
-    <p class="lede">Your notes ask if there's any way to predict the shape before cutting. There is. Set the twists, pick where to cut, make a guess, then cut. The paper is simulated, so the pieces flop, coil and link the way real paper does.</p>
+    <p class="lede">Your notes ask if there's any way to predict the shape before cutting. There is. Set the twists, pick where to cut, make a guess, then cut, and cut the pieces again. The paper is simulated, so the pieces flop, coil and link the way real paper does. Under the diagram, your notebook's own cut results are lined up to re-run one at a time.</p>
   </div>
   <div class="ch-body">
     <div class="stage-col">
@@ -574,6 +586,7 @@ canvas.plot.short { height: 150px; }
       <div class="controls" data-controls></div>
       <div class="readout" data-readout></div>
       <div class="readout diagram" data-diagram></div>
+      <div class="readout notebook" data-notebook></div>
     </div>
     <aside class="notes">
       <div class="note card-index">
@@ -586,17 +599,18 @@ canvas.plot.short { height: 150px; }
         <h3>What you're seeing</h3>
         <p>The scissors follow the cut line all the way around. With an odd number of half-twists, the line comes back on the far side of the strip, at 1 − x, so the scissors go around twice.</p>
         <p>Once the cut is done, the pieces relax under paper rules: they bend but they don't stretch. Jiggle shakes them, like your idea of jumbling a knot so it settles. The table is measured from the simulated paper itself: length, sides, twists, knots and links.</p>
+        <p>Cut again takes one piece, in whatever shape it has flopped into, and runs the scissors down its middle, like your second cuts.</p>
       </div>
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>The rule (it's in the diagram): with an even number of half-twists, every cut closes after one lap, so k cuts give k + 1 loops, each linked with the others. With an odd number, the cut at x is the same line as the cut at 1 − x. Fold the width in half. An uncut middle stays a Möbius strip, and every folded pair becomes one two-sided loop twice as long. With 3 half-twists those long loops come out tied in trefoil knots.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>You found the x = 1 − x mirror, and that ½ is its only fixed point, using paper. The Riemann zeta function has the same mirror. Its functional equation pairs s with 1 − s, which is why its critical line sits at ½.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>That mirror is the known, easy part of the Riemann Hypothesis. The unsolved part is proving every zero lies exactly on the line, and the mirror can't tell you that. One correction to your notes: a ½ cut on a Möbius strip gives one long loop, not two linked Möbius strips. The ⅓ cut is the one that gives two linked pieces.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your notes say a fresh piece “doesn't immediately create a shape it is still knotted up and needs to be jostled around”. That's what you see: the pieces come off the scissors crumpled, and Jiggle shakes them out. But keep shaking and the knot and link counts in the table never change. Jostling changes how tangled a piece looks; only cutting changes what it is. A count that survives every wiggle is what mathematicians call a topological invariant.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>Two of your cut results don't match the paper, and the notebook list shows both. “Mobius with ½ cut = 2 linked Mobius” is the ⅓ cut, and only one of those two pieces is a Möbius strip; your other line, “Infinity symbol = circle + 0.5 turns + ½ cut”, has the ½ cut right. And the knotted “|X|” loop cut down its middle falls into two pieces, not one. Any two-sided loop does.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Why cut strips coil up: Lk = Tw + Wr (the Călugăreanu–White–Fuller theorem). Linking is locked in, so when twist relaxes it turns into coiling. DNA supercoils the same way.</li>
+          <li>Why cut loops coil: paper would rather bend than twist, so a twisted loop relaxes by coiling up. That's the flop you see after every cut. Search: DNA supercoiling, which works the same way.</li>
           <li>Book: <i>The Knot Book</i> by Colin Adams, full of paper experiments.</li>
           <li>Search: Afghan bands, torus knots, band surgery, kirigami.</li>
         </ul>
@@ -607,9 +621,55 @@ canvas.plot.short { height: 150px; }
 </section>
 
 <!-- ============ 3 ============ -->
+<section class="chapter wrap" id="ch-tape" hidden aria-labelledby="h-tape">
+  <div class="ch-head">
+    <p class="eyebrow">Experiment 3 · two loops and some tape</p>
+    <h2 id="h-tape">Tape</h2>
+    <p class="lede">Your notes go past single strips: two loops taped crosswise, or face to face, and then cut. Build them here and cut them, and count what you get: objects, pieces, sides and edges.</p>
+  </div>
+  <div class="ch-body">
+    <div class="stage-col">
+      <div class="stage" data-stage></div>
+      <div class="controls" data-controls></div>
+      <div class="readout" data-readout></div>
+      <div class="readout notebook" data-notebook></div>
+    </div>
+    <aside class="notes">
+      <div class="note card-index">
+        <h3>From your notes</h3>
+        <blockquote>“Mobius + |x| simple (non mobius!) cross cut. Step 1: looks like infinity + arrow = upvote 🤔”</blockquote>
+        <blockquote>“Butterfly + half cut = double butterfly but the tape is holding the sides together 😣 … Wtf mobius didn't stay together 🤔”</blockquote>
+        <blockquote>“mark the edges of the Mobius strip”</blockquote>
+        <span class="src">Mobius strips 2</span>
+      </div>
+      <div class="note">
+        <h3>What you're seeing</h3>
+        <p>Loop A stands on the tape and loop B hangs under it, either turned crosswise (your |X|) or lined up face to face (your butterfly). The paler patch is the tape. Where the scissors cross it they cut through both layers, as real scissors would, so cutting one loop can slice straight across the other.</p>
+        <p>Each separate edge of the paper is marked in its own dark color, like running a marker along it until you're back where you started. Count the colors to count the edges. Paint by side colors one face blue and the other orange, spreading out from the tape without crossing an edge.</p>
+      </div>
+      <div class="note">
+        <h3>Reality check</h3>
+        <div class="check"><span class="tag real">REAL</span><p>Two plain loops taped crosswise and cut down both middles make a square frame: one closed band with no twist. It's a classic of paper topology (run “The classic” in the list). The tape is the reason. Each cut runs straight through it and slices the other loop crosswise, so four strips end up taped corner to corner in a ring.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your Step 1 hides a real surprise. Once the Möbius loop is cut, every piece of paper is two-sided, yet the taped whole is still one-sided. Paint by side and the blue runs into the orange. The strap (your arrow) carries the paint from one face of the long loop to the other, the job the half-twist did before the cut. Which properties survive cutting and gluing is exactly what topologists track.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>“Mobius didn't stay together” has a clean reason. A loop is one-sided because one trip around flips it over. Cut a Möbius loop down its middle and the new loop goes around twice, so it flips twice and comes back unflipped. And you're right that the tape is doing the holding: the two long loops aren't linked, so peel the tape and they fall apart.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>Skull, frog, butterfly, superhero: those names depend on how the paper happens to lie, so the simulation can't check them, and its paper lies a little differently every run. What it can check, and what no amount of jostling changes, are the counts: objects, pieces, sides, edges, twists and links. Those are worth writing next to each photo.</p></div>
+      </div>
+      <div class="note deeper">
+        <h3>Go deeper</h3>
+        <ul>
+          <li>Search: Afghan bands, a magic trick built on these cuts, written up by Martin Gardner.</li>
+          <li>Search: non-orientable surface, Euler characteristic, cut-and-paste topology.</li>
+        </ul>
+      </div>
+      <p class="strip-says">Strip says: “Tape doesn't care how many sides I have. It just holds on.”</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
 <section class="chapter wrap" id="ch-spin" hidden aria-labelledby="h-spin">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 3 · the two-turn memory</p>
+    <p class="eyebrow">Experiment 4 · the two-turn memory</p>
     <h2 id="h-spin">720°</h2>
     <p class="lede">Your notes link the Möbius strip to spin-½ and its strange 720° rotation. This is the physical version, known as Dirac's belt trick.</p>
   </div>
@@ -627,7 +687,7 @@ canvas.plot.short { height: 150px; }
       </div>
       <div class="note">
         <h3>What you're seeing</h3>
-        <p>A cube is tied to the frame by eight paper tethers. Spin it. At 360° the cube looks exactly like it did at the start, but the tethers are wound up. Keep going. At 720° everything is back, and at no moment do the tethers pass through each other or the cube.</p>
+        <p>A cube is tied to the frame by six paper tethers. Spin it. At 360° the cube looks exactly like it did at the start, but the tethers are wound up. Keep going. At 720° everything is back, and at no moment do the tethers pass through each other or the cube.</p>
         <p>Now switch to One-turn tethers. They only remember one turn, so twice per cycle they have to jump through each other.</p>
       </div>
       <div class="note">
@@ -648,12 +708,12 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 4 ============ -->
+<!-- ============ 5 ============ -->
 <section class="chapter wrap" id="ch-music" hidden aria-labelledby="h-music">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 4 · vibrations on a twisted loop</p>
+    <p class="eyebrow">Experiment 5 · vibrations on a twisted loop</p>
     <h2 id="h-music">Strip Music</h2>
-    <p class="lede">You wondered about a Möbius strip's fundamental frequency, about octaves, and whether 1 + 2 + 3 + … = −1/12 fits in. It does, and the twist changes the answer.</p>
+    <p class="lede">You wondered about a Möbius strip's fundamental frequency and about octaves on a piano. Both show up here, and the twist changes which notes a loop can play.</p>
   </div>
   <div class="ch-body">
     <div class="stage-col">
@@ -665,25 +725,25 @@ canvas.plot.short { height: 150px; }
       <div class="note card-index">
         <h3>From your notes</h3>
         <blockquote>“Fundamental frequency (in hertz, how the Mobius strip vibrates in response to a stimulus”</blockquote>
-        <blockquote>“Is the fundamental addition (1+2+3…=-1/12 related to octaves on a piano”</blockquote>
+        <blockquote>“…octaves on a piano with the keys related to mobius waves…”</blockquote>
         <span class="src">Mobius strips 2, properties list</span>
       </div>
       <div class="note">
         <h3>What you're seeing</h3>
         <p>A wave running around a loop has to match itself when it gets back. On a plain ring that means a whole number of waves. A Möbius ring comes back flipped, so the wave has to come back flipped too, and only half-numbers fit: ½, 1½, 2½ and so on.</p>
-        <p>Force a whole-number wave onto the Möbius ring and it tears at the seam. Use the pluck buttons to hear both rings.</p>
+        <p>Force a whole-number wave onto the Möbius ring and it tears at the seam. Use the pluck buttons to hear both rings, and the spectrum under the ladder to see their notes side by side.</p>
       </div>
       <div class="note">
         <h3>Reality check</h3>
-        <div class="check"><span class="tag real">REAL</span><p>Half-number waves on twisted loops are standard physics, and chemists use them. A ring of atoms with a Möbius twist is stable with 4, 8, 12 … electrons instead of the usual 2, 6, 10 … (predicted in 1964; a Möbius molecule was made in 2003). The twist also removes the flat, zero-energy state, so the lowest level rises from 0 to ¼.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>That's your “topological ground state” made precise: the twist puts a floor under the energy. Your piano hunch holds up too. A Möbius ring plays only odd harmonics, the hollow sound of a clarinet, an octave below a plain ring of the same size. And −1/12 really is a sum over vibration modes. The twist turns it into +1/24.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>None of this makes a Möbius ring a model of an atom, and the outward push from +1/24 lives in a one-dimensional toy universe. People have tried to get dark energy from vacuum energy for decades. The straightforward estimate is off by roughly a factor of 10¹²⁰.</p></div>
+        <div class="check"><span class="tag real">REAL</span><p>Half-number waves on twisted loops are standard physics, and chemists use them. A ring of atoms with a Möbius twist is stable with 4, 8, 12 … electrons instead of the usual 2, 6, 10 … (predicted in 1964; a Möbius molecule was made in 2003). The twist also removes the flat wave with zero frequency, so the lowest level lifts off the zero line, to ½ (the ladder).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>That's your “topological ground state” made precise: the twist puts a floor under the waves. Your piano hunch holds up too. A Möbius ring plays only odd harmonics, the hollow sound of a clarinet, an octave below a plain ring of the same size. And your speaker idea, one strip set vibrating by another's frequencies, is resonance. Pluck both rings: at the same size every Möbius note lands between two plain-ring notes, so neither can make the other ring.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The tones are computed, not recorded. A real paper strip is floppy, so the sound it makes depends on its stiffness and how you hold it; the half-number rule only decides which waves fit around the loop. And sharing a ladder with Möbius molecules doesn't make a Möbius ring a model of an atom.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: Casimir effect (measured by Lamoreaux in 1997), zeta-function regularization.</li>
           <li>Search: Möbius aromaticity, antiperiodic boundary conditions.</li>
+          <li>Search: why a clarinet plays only odd harmonics.</li>
         </ul>
       </div>
       <p class="strip-says">Strip says: “I'm a clarinet. Deal with it.”</p>
@@ -691,10 +751,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 5 ============ -->
+<!-- ============ 6 ============ -->
 <section class="chapter wrap" id="ch-gears" hidden aria-labelledby="h-gears">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 5 · frustration</p>
+    <p class="eyebrow">Experiment 6 · frustration</p>
     <h2 id="h-gears">Gear Lock</h2>
     <p class="lede">You guessed an odd ring of gears locks up with invisible tension, and that the minimum is three. Both right. Then put the ring on a Möbius band and the rule flips.</p>
   </div>
@@ -719,7 +779,7 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your lock is a theorem: you can alternate two directions around a loop only if the loop has an even number of steps. Physicists call the locked version frustration. It matters in real magnets, where atoms arranged in triangles can't all point opposite to their neighbors (triangular antiferromagnets, spin ice).</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is measurable. Frustrated materials keep leftover disorder even near absolute zero; spin ice's was measured in 1999 (Ramirez et al.). Slipping matches too, since real frustrated systems release strain through defects. And the seam flipping the rule is the ℤ₂ twist again, the same one behind Möbius molecules.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is real: a locked ring shows strain on every tooth even though nothing turns. Slipping matches too, since real frustrated materials release strain through defects, the sparks here. And the seam flipping the rule is the ℤ₂ twist again, the same one that changes which waves fit in Experiment 5.</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Gears don't explain particles. Frustration is a deep, active idea in physics, though, and you reached it with paper circles.</p></div>
       </div>
       <div class="note deeper">
@@ -733,10 +793,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 6 ============ -->
+<!-- ============ 7 ============ -->
 <section class="chapter wrap" id="ch-forge" hidden aria-labelledby="h-forge">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 6 · twists that freeze in</p>
+    <p class="eyebrow">Experiment 7 · twists that freeze in</p>
     <h2 id="h-forge">Cosmic Forge</h2>
     <p class="lede">Your notes describe flat space as an unstable high-energy state that decays into locked twists, made in a “cosmic forge”. This is a field doing exactly that, with real equations.</p>
   </div>
@@ -761,13 +821,13 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>This is the Kibble mechanism (1976): cool a field quickly through a transition and topological defects freeze in. Zurek (1985) predicted that faster cooling leaves more of them, and experiments in liquid crystals, superfluid helium and superconductors agree. Half-twist (±½) defects are real. They make the dark brushes you see in liquid crystal under a polarizing microscope (try the Polarizer view).</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your false vacuum decaying into locked twists is spontaneous symmetry breaking plus the Kibble mechanism. Your forge is the cooling rate. In 3D the defects are lines and closed loops, called cosmic strings. Particles as locked twists of a field is a respected idea too: the Skyrme model (1961) treats protons and neutrons as twisted knots of a field, and it works surprisingly well.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>In real physics the twists aren't the low-energy state. They're leftover mistakes that cost energy but can't escape, which explains their stability better anyway. Our actual Higgs field has the wrong shape to leave stable twists behind, so the Standard Model doesn't make matter this way. Cosmic strings are being searched for in the cosmic microwave background and in pulsar timing data. None have been confirmed.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your false vacuum decaying into locked twists is spontaneous symmetry breaking plus the Kibble mechanism, and your forge is the cooling rate. Your “seed crystal” shows up too: tap the field to drop in a pair of twists, and they hold their shape while the field around them settles, until the two find each other.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The twists aren't the low-energy state. They're leftover mistakes that cost energy but can't escape, which explains their stability better anyway. Watch the census once cooling ends: the count only goes down, as opposite twists meet and cancel. Left alone long enough, the field heads toward none.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: Kibble–Zurek mechanism, nematic schlieren texture, skyrmion, cosmic strings.</li>
+          <li>Search: Kibble–Zurek mechanism, nematic schlieren texture, topological defects.</li>
           <li>Paper: Chuang, Durrer, Turok and Yurke (1991), “Cosmology in the laboratory”, <i>Science</i>.</li>
         </ul>
       </div>
@@ -776,10 +836,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 7 ============ -->
+<!-- ============ 8 ============ -->
 <section class="chapter wrap" id="ch-ribbon" hidden aria-labelledby="h-ribbon">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 7 · hidden timing and Bell's test</p>
+    <p class="eyebrow">Experiment 8 · hidden timing and Bell's test</p>
     <h2 id="h-ribbon">Spooky Ribbon</h2>
     <p class="lede">Two of your questions turn out to be one question. What does a spinning corkscrew do to a billiard ball? And is entanglement one long stretched ribbon?</p>
   </div>
@@ -804,8 +864,8 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Corkscrew light (circularly polarized light) really does hand its spin to whatever absorbs it; Beth measured the torque in 1936. Bell's theorem (1964) and the experiments (Aspect 1982, loophole-free tests in 2015, the 2022 Nobel Prize) are settled.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your “one object, not two talking” instinct matches a real school of thought, non-local hidden variables (de Broglie–Bohm theory). The snapping ribbon only matches experiments if Bob's odds follow cos² of half the angle, and that half-angle is Möbius geometry: the cross-lines on a Möbius strip tilt by half the angle you've traveled. It's the 720° fact again.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>The version in your notes, where the halves leave as spin up and spin down and keep those answers, is the pre-twisted ribbon. It scores 2.00 and nature scores about 2.7, so experiments rule it out. The snapping ribbon works only because Bob's end reacts instantly to Alice's choice, and even then nobody can use it to send a message. That moves the mystery somewhere else. The earlier AI telling you this “instantly cures” entanglement was overselling.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your “one object, not two talking” instinct matches a real school of thought, non-local hidden variables (de Broglie–Bohm theory). Switch to the snapping ribbon and its dots land on the quantum curve, not the straight line, and it scores about 2.8.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The version in your notes, where the halves leave as spin up and spin down and keep those answers, is the pre-twisted ribbon. It scores 2.00 and the experiments (green dots) score about 2.7, so they rule it out. The snapping ribbon works only because Bob's end reacts instantly to Alice's choice, with odds set by hand to match quantum mechanics, and even then nobody can use it to send a message (try it). That moves the mystery somewhere else. The earlier AI telling you this “instantly cures” entanglement was overselling.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
@@ -819,10 +879,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 8 ============ -->
+<!-- ============ 9 ============ -->
 <section class="chapter wrap" id="ch-drain" hidden aria-labelledby="h-drain">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 8 · gravity as flowing space</p>
+    <p class="eyebrow">Experiment 9 · gravity as flowing space</p>
     <h2 id="h-drain">Drain Gravity</h2>
     <p class="lede">Your notes picture gravity as flat space flowing into matter, with falling things floating downstream. Launch some moons and see which version of that idea can hold an orbit.</p>
   </div>
@@ -846,14 +906,14 @@ canvas.plot.short { height: 150px; }
       </div>
       <div class="note">
         <h3>Reality check</h3>
-        <div class="check"><span class="tag real">REAL</span><p>River mode is a real, exact way to picture a black hole, the “river model” (Hamilton and Lisle, 2008). Space flows in at the escape speed, and the horizon is where the flow reaches light speed. Sound in moving fluids behaves the same way, and lab versions have shown analog Hawking radiation (Steinhauer, 2016).</p></div>
+        <div class="check"><span class="tag real">REAL</span><p>River mode is a real, exact way to picture a black hole, the “river model” (Hamilton and Lisle, 2008). Space flows in at the escape speed, and the horizon is where the flow reaches light speed (turn on Black hole).</p></div>
         <div class="check"><span class="tag rhyme">RHYME</span><p>“Floating downstream” is close to word for word how the river model describes falling.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>In Drain mode the pull fades like 1/r⁵ instead of 1/r², and orbits fall apart. To get Newton's law, space would have to vanish everywhere around the planet, in a halo that thins out like r⁻¹·⁵ (the heat map). A real fluid would also have a speed you could detect, and no experiment since Michelson and Morley (1887) has found one. In relativity the river is a way of drawing the geometry, not a substance draining somewhere. Your version is close to Le Sage's “push gravity” from the 1700s, which failed because the push would also cause drag and heating.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>In Drain mode the pull fades like 1/r⁵ instead of 1/r² (the force plot), and orbits fall apart. To get Newton's law, space would have to vanish everywhere around the planet, in a halo that thins out like r⁻¹·⁵ (the heat map). And River mode only works because its flow speed was set by hand from Newton's law. The picture doesn't explain gravity; it redraws it.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: river model of black holes, Gullstrand–Painlevé coordinates, analog gravity, Le Sage gravitation.</li>
+          <li>Search: river model of black holes, Gullstrand–Painlevé coordinates.</li>
         </ul>
       </div>
       <p class="strip-says">Strip says: “Gravity, but make it plumbing.”</p>
@@ -870,54 +930,55 @@ canvas.plot.short { height: 150px; }
   <div class="verdict-grid">
     <div class="prose">
       <p class="answer">Yes, if you aim the energy at the parts that are paying off. You have a good nose for deep patterns. You don't have a theory yet, and the gap between the two is a number.</p>
-      <p>Across eight experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, half-angles, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
-      <p>None of the experiments produced a new prediction, though. Every match came from an idea physicists already have, sometimes under another name. That isn't failure. It's the normal first stage, and it tells you where the frontier actually is.</p>
+      <p>Across nine experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, the rule for where a cut ends up, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
+      <p>The physics experiments didn't produce a new prediction, though. Every match came from an idea physicists already have, sometimes under another name. That isn't failure. It's the normal first stage, and it tells you where the frontier actually is.</p>
+      <p>The paper experiments are different. There the simulation does predict, so your notebook can be checked line by line (Experiments 2 and 3, the lists under each stage). Most of your cut and tape results hold up. Two don't, and the scorecard says which.</p>
       <h3>About the earlier AI replies in your documents</h3>
       <p>Lines like “You just solved the Mass Accumulation Paradox” and “completely solving the Black Hole Information Paradox” were flattery. A story built to match facts we already know will always match them. What turns a story into physics is a number it predicts that nobody put in by hand, plus a way it could turn out wrong.</p>
       <h3>Scorecard</h3>
       <div class="tbl-wrap">
         <table class="score">
-          <thead><tr><th>Your idea</th><th>Status</th><th>What's true, or what it would take</th></tr></thead>
+          <thead><tr><th>Your idea</th><th>Status</th><th>What the lab shows</th></tr></thead>
           <tbody>
             <tr><td>One side to the finger, two to the eyes</td><td><span class="tag real">REAL</span></td><td>Local versus global structure. Exactly right. <a href="#finger" data-goto="finger">Exp. 1</a></td></tr>
-            <tr><td>The ½ cut is special because x = 1 − x</td><td><span class="tag real">REAL</span></td><td>Your own discovery, from paper. Same mirror as the zeta function's s ↔ 1 − s. It doesn't prove the Riemann Hypothesis. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
-            <tr><td>A ½ cut gives 2 linked Möbius strips</td><td><span class="tag stretch">FIX</span></td><td>½ gives one long two-sided loop. ⅓ gives a Möbius strip linked through a long loop.</td></tr>
-            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 3</a></td></tr>
-            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: half-number waves raise the floor from 0 to ¼. The √3 paper limit (Schwartz, 2023) is real math but isn't an energy floor. <a href="#music" data-goto="music">Exp. 4</a></td></tr>
-            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, measured in real magnets. <a href="#gears" data-goto="gears">Exp. 5</a></td></tr>
-            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>The Kibble mechanism and topological solitons are real. Our Higgs field doesn't leave stable twists behind. <a href="#forge" data-goto="forge">Exp. 6</a></td></tr>
-            <tr><td>Protons are knots of space</td><td><span class="tag rhyme">RHYME</span></td><td>Lord Kelvin proposed knotted “vortex atoms” in 1867. Wrong as atomic theory, but it started knot theory. Modern cousins: the Skyrme model and knotted solitons (Faddeev and Niemi, 1997).</td></tr>
-            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by restating the quantum rule. <a href="#ribbon" data-goto="ribbon">Exp. 7</a></td></tr>
-            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵. The river picture works, as geometry rather than plumbing. <a href="#drain" data-goto="drain">Exp. 8</a></td></tr>
-            <tr><td>Dark energy is piled-up simple loops; dark matter is ghost loops</td><td><span class="tag open">OPEN</span></td><td>Needs numbers: how fast loops form, and what that predicts for how dark energy changes over time. Astronomers argue about this with data. A 2023 paper (Farrah et al., disputed) proposed black holes as the source, and DESI's 2024–25 survey results hint that dark energy may weaken over time.</td></tr>
-            <tr><td>Black hole as a seamless sphere; Hawking radiation as a loop-making tax</td><td><span class="tag open">OPEN</span></td><td>The bar to clear: Hawking temperature goes as 1/mass, so small black holes run hotter. Does your mechanism give that?</td></tr>
-            <tr><td>The Möbius strip is the only shape an ant can fully explore</td><td><span class="tag stretch">STRETCH</span></td><td>An ant can walk every point of a sphere's surface too, and Klein bottles and projective planes are one-sided as well.</td></tr>
+            <tr><td>The ½ cut is special because x = 1 − x</td><td><span class="tag real">REAL</span></td><td>Your own discovery, from paper. It's the fold in the diagram: ½ is the only cut that is its own mirror, so on an odd strip it's the only one that goes around once. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>A ½ cut gives 2 linked Möbius strips</td><td><span class="tag stretch">FIX</span></td><td>½ gives one long two-sided loop. ⅓ gives a Möbius strip linked through a long loop. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Infinity symbol with ½ cut = two linked infinity symbols</td><td><span class="tag real">REAL</span></td><td>The long loop, cut again, gives two loops just like it, linked twice. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Recycling symbol with ½ cut = 1 piece</td><td><span class="tag real">REAL</span></td><td>Reading it as 3 half-twists: one piece, tied in a trefoil knot. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>That knotted “|X|” loop cut ½ = 1 piece</td><td><span class="tag stretch">FIX</span></td><td>Two pieces, both trefoils, linked 6×. Any two-sided loop cut down its middle falls in two. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Möbius + |x| cross, cut the Möbius: infinity + arrow</td><td><span class="tag real">REAL</span></td><td>A long two-sided loop with the cut-open plain loop as a strap. Taped together, the whole thing is still one-sided. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Then cut the other loop: a skull in a box</td><td><span class="tag real">REAL</span></td><td>The box part: four strips taped into one closed band, like the classic square. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Butterfly + half cut: the Möbius didn't stay together, and the tape holds the sides together</td><td><span class="tag real">REAL</span></td><td>Two two-sided loops, twice as long, not linked, held together only by the tape. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 4</a></td></tr>
+            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: the twist removes the zero-frequency wave, so the lowest level lifts off zero. <a href="#music" data-goto="music">Exp. 5</a></td></tr>
+            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, the same thing real magnets on triangles do. <a href="#gears" data-goto="gears">Exp. 6</a></td></tr>
+            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>Cool a field fast and twists freeze in (the Kibble mechanism). They're leftover mistakes that cost energy, not the low-energy state. <a href="#forge" data-goto="forge">Exp. 7</a></td></tr>
+            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by having the quantum rule built in. <a href="#ribbon" data-goto="ribbon">Exp. 8</a></td></tr>
+            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵ and orbits fall apart. The river picture works, but only because its flow was set from Newton's law. <a href="#drain" data-goto="drain">Exp. 9</a></td></tr>
           </tbody>
         </table>
       </div>
       <h3>How to share it</h3>
-      <p>Physics forums are hard on theory-of-everything posts because they get so many of them. Post the scissors results instead: your prediction, the cut, the photo, the outcome. Show the rule working on real paper. Your notes already guessed that the strange shapes in the background would get more attention than the theory, and that guess is probably right.</p>
+      <p>Physics forums are hard on theory-of-everything posts because they get so many of them. Post the paper results instead: your prediction, the cut, the photo, the outcome. Show the rule working on real paper. Your notes already guessed that the strange shapes in the background would get more attention than the theory, and that guess is probably right.</p>
     </div>
     <aside>
       <div class="side-card">
         <h4>Threads worth your time</h4>
         <ol>
-          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Then go past single strips: two loops glued crosswise (cut both and you get a square), or strips with different twists glued together. A clean, photographed catalog with predictions is something people would share.</li>
+          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Experiments 2 and 3 do the prediction for you, so each photo can be checked. Next to each one, write the counts that jostling can't change: pieces, sides, edges, twists, links.</li>
           <li><b>Knot theory, hands-on.</b> <i>The Knot Book</i> by Colin Adams.</li>
-          <li><b>Lk = Tw + Wr.</b> Count half-twists before you cut, count coils after. It's the same law that makes DNA supercoil.</li>
           <li><b>Cut-paper physics is a field.</b> Search “kirigami metamaterials”: researchers cut paper patterns to design materials that stretch and fold in odd ways.</li>
-          <li><b>The shaking-box test.</b> Raymer and Smith (2007) tumbled strings in a box and counted the knots. Long strings knotted easily and often. Repeat it at home to test your knot-probability idea with real tallies.</li>
           <li><b>Emotions as predictions.</b> Your CEO-and-crew idea is close to a mainstream theory, predictive processing (Lisa Feldman Barrett, <i>How Emotions Are Made</i>). It doesn't need the Möbius strip to be true.</li>
         </ol>
       </div>
       <div class="side-card">
         <h4>Try with paper this week</h4>
         <ul>
-          <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot.</li>
+          <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot. Cut it down the middle again: two trefoils, linked.</li>
           <li>1 half-twist, cut at ⅓: a thin Möbius strip linked through a loop twice as long.</li>
           <li>2 half-twists, cut at ⅓ and ⅔: three loops, every pair linked once.</li>
-          <li>1 half-twist, cut at ⅕ and ⅖: a Möbius strip plus two long loops, all linked.</li>
-          <li>The √3 challenge: make a Möbius strip shorter than 1.73 × its width without crumpling. Folding it flat into a triangle gets close. Richard Schwartz proved in 2023 that you can't go below.</li>
+          <li>A Möbius loop taped crosswise to a plain loop. Cut only the Möbius, then color one face with a marker without crossing an edge. You'll end up coloring both faces.</li>
+          <li>Two Möbius loops twisted the same way, taped crosswise, both cut: two separate closed bands that come apart.</li>
         </ul>
       </div>
     </aside>
@@ -1219,6 +1280,22 @@ const Lab = (() => {
     return tex;
   }
 
+  // A small pair of scissors, drawn as a sprite that rides along the cut line.
+  function scissorsTexture() {
+    if (texCache.scissors) return texCache.scissors;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    g.translate(64, 64); g.rotate(-0.5);
+    g.lineCap = 'round'; g.strokeStyle = '#1b2140'; g.fillStyle = '#ffffff';
+    g.lineWidth = 9;
+    g.beginPath(); g.moveTo(-6, 4); g.lineTo(52, -22); g.stroke();
+    g.beginPath(); g.moveTo(-6, -4); g.lineTo(52, 22); g.stroke();
+    g.lineWidth = 8;
+    [[-30, -18], [-30, 18]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 15, 0, TAU); g.fill(); g.stroke(); });
+    g.fillStyle = '#e8457a'; g.beginPath(); g.arc(-4, 0, 6, 0, TAU); g.fill();
+    const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+    return (texCache.scissors = tex);
+  }
+
   /* ---------------- band math ---------------- */
   // Core circle radius R, width W, n half-twists, chirality chi (+1/-1), s in [-1,1].
   // a0 stands the strip up: at a0 = pi/2 a plain ring is a cylinder, which is what paper can actually make.
@@ -1433,7 +1510,7 @@ const Lab = (() => {
 
   return {
     TAU, register, start, activate, isDark, cssVar, onTheme, getRenderer, el, ui, toast, fitCanvas,
-    paperTexture, woodTexture, bandPoint, bandFrame, bandGeometry, makeScene, stageBg, tweenCamera, stepTween, paintMaterial,
+    paperTexture, woodTexture, scissorsTexture, bandPoint, bandFrame, bandGeometry, makeScene, stageBg, tweenCamera, stepTween, paintMaterial,
     linking, knotDet, knotName, rng, gauss, fmt, clamp, lerp, smooth, get active() { return active; }
   };
 })();
@@ -1803,6 +1880,9 @@ const Lab = (() => {
    the shapes come from a position-based paper simulation
    (bends, doesn't stretch, can't pass through itself). Links and
    knots are measured from the simulated paper and checked.
+   Cut again: any piece can be cut down its own middle, starting from
+   its current shape. A two-sided piece splits into two; a one-sided
+   piece becomes one piece twice as long.
    ============================================================ */
 {
   const TAU = Lab.TAU;
@@ -1816,11 +1896,12 @@ const Lab = (() => {
 
   const st = {
     n: 1, chi: 1, fracs: [1 / 3], phase: 'ready', guessN: null, guessOne: null, desk: false, mode: 'apart', autoJig: false,
-    plan: null, predicted: null, measured: null, t: 0, cutT: 0, verifyT: 0, jiggle: 0
+    plan: null, predicted: null, measured: null, t: 0, cutT: 0, verifyT: 0, jiggle: 0,
+    recut: null, history: [], script: null, checks: {}
   };
   const ch = { token: 'scissors', gl: true, background: () => Lab.stageBg() };
   let colsPerLap = 150;
-  let sim = null, meshes = [], cutObjs = [], scissorSprites = [], deskMesh, hud = {}, btn = {}, readout, diagram;
+  let sim = null, meshes = [], cutObjs = [], scissorSprites = [], deskMesh, hud = {}, btn = {}, ctl = {}, readout, diagram, notebook;
 
   /* ---------------- the fold rule ---------------- */
   function planPieces(n, fracs) {
@@ -1887,6 +1968,9 @@ const Lab = (() => {
       this.cellCount = new Int32Array(this.T); this.cellStart = new Int32Array(this.T + 1); this.sorted = new Int32Array(N); this.keys = new Int32Array(N); this.fillBuf = new Int32Array(this.T);
       this.cx = new Int32Array(N); this.cy = new Int32Array(N); this.cz = new Int32Array(N); this.asleep = false; this.calm = 0;
       this.blend = 0; this.gravity = 0; this.floorZ = -0.92; this.dragId = -1; this.dragTarget = [0, 0, 0]; this.rScale = 0.3;
+      // Just-cut pieces sit closer than the contact distance, so their contact radius grows in gently.
+      // Pieces that were already apart keep the full radius, so they can't slip through each other meanwhile.
+      this.fresh = new Uint8Array(specs.length).fill(1);
     }
     solve() {
       const P = this.pos, ca = this.ca, cb = this.cb, RS = this.rest, K = this.k, nc = ca.length, drag = this.dragId;
@@ -1922,7 +2006,7 @@ const Lab = (() => {
     }
     collide() {
       const P = this.pos, N = this.N, inv = this.inv, T = this.T, mask = T - 1;
-      const r = this.r * this.rScale, h = 2 * r, d2max = h * h;
+      const h = 2 * this.r, hFresh = h * this.rScale, fresh = this.fresh;
       const cc = this.cellCount, cs = this.cellStart, sorted = this.sorted, keys = this.keys;
       cc.fill(0);
       const key = (x, y, z) => (((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) & mask);
@@ -1944,10 +2028,10 @@ const Lab = (() => {
               if (d <= 2) continue;
             }
             const ex = P[b * 3] - ax, ey = P[b * 3 + 1] - ay, ez = P[b * 3 + 2] - az;
-            const dd = ex * ex + ey * ey + ez * ez;
-            if (dd >= d2max || dd < 1e-14) continue;
+            const dd = ex * ex + ey * ey + ez * ez, lim = fresh[piece[a]] && fresh[piece[b]] ? hFresh : h;
+            if (dd >= lim * lim || dd < 1e-14) continue;
             const L = Math.sqrt(dd), wa = inv[a], wb = inv[b], ws = wa + wb; if (!ws) continue;
-            const corr = (h - L) / (L * ws);
+            const corr = (lim - L) / (L * ws);
             P[a * 3] -= wa * corr * ex; P[a * 3 + 1] -= wa * corr * ey; P[a * 3 + 2] -= wa * corr * ez;
             P[b * 3] += wb * corr * ex; P[b * 3 + 1] += wb * corr * ey; P[b * 3 + 2] += wb * corr * ez;
           }
@@ -2015,6 +2099,7 @@ const Lab = (() => {
           if (q === p) return;
           let dx = cents[p][0] - cents[q][0], dy = cents[p][1] - cents[q][1], dz = cents[p][2] - cents[q][2];
           const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 > 9) return;   // far enough apart: let them come to rest
           if (d2 < 1e-4) { dx = (p - q) * 0.01; dz = 0.01; }
           const f = push / (d2 + 0.3); fx += dx * f; fy += dy * f; fz += dz * f;
         });
@@ -2068,6 +2153,95 @@ const Lab = (() => {
       m.geo.computeBoundingSphere();
     });
   }
+  /* ---------------- cutting a piece again ---------------- */
+  const widthOf = sp => sp.dV.reduce((a, b) => a + b, 0);
+  // Current position of the point at flat width w (0 … widthOf) on column i of a piece.
+  function posAt(sp, i, w) {
+    const P = sim.pos; let j = 0, c = 0;
+    while (j < sp.K - 2 && c + sp.dV[j] < w) { c += sp.dV[j]; j++; }
+    const t = Lab.clamp((w - c) / sp.dV[j], 0, 1), a = sp.node(i, j) * 3, b = sp.node(i, j + 1) * 3;
+    return [P[a] + (P[b] - P[a]) * t, P[a + 1] + (P[b + 1] - P[a + 1]) * t, P[a + 2] + (P[b + 2] - P[a + 2]) * t];
+  }
+  function specFromCurrent(sp) {
+    const init = [];
+    for (let i = 0; i < sp.M; i++) for (let j = 0; j < sp.K; j++) init.push(sim.p(sp.node(i, j)));
+    return { M: sp.M, K: sp.K, flip: sp.flip, init, dU: sp.dU, dV: sp.dV.slice(), laps: sp.laps, oneSided: sp.oneSided, name: sp.name, color: sp.color };
+  }
+  const halfWidth = sp => widthOf(sp) / 2 - GAP_S * W / 2;
+  const railsFor = half => Math.max(2, Math.ceil(half / (RAIL_STEP * W / 2) - 1e-9) + 1);
+  // Cut down the middle. Two-sided: two halves side by side. One-sided: the far half continues the near
+  // half across the joint (x meets 1 − x), so it becomes one piece going around twice.
+  function splitSpec(sp) {
+    const Wp = widthOf(sp), g = GAP_S * W / 2, half = halfWidth(sp), K = railsFor(half);
+    const lo = [], hi = [];
+    for (let j = 0; j < K; j++) { lo.push(half * j / (K - 1)); hi.push(Wp / 2 + g + half * j / (K - 1)); }
+    const dV = new Array(K - 1).fill(half / (K - 1));
+    const make = (cols, ws, laps) => {
+      const init = [];
+      for (let i = 0; i < cols; i++) { const rail = ws(i); for (let j = 0; j < K; j++) init.push(posAt(sp, i % sp.M, rail[j])); }
+      return { M: cols, K, flip: false, init, dU: sp.dU, dV: dV.slice(), laps, oneSided: false };
+    };
+    if (!sp.oneSided) return [make(sp.M, () => lo, sp.laps), make(sp.M, () => hi, sp.laps)];
+    const mirrored = hi.map(w => Wp - w);
+    return [make(2 * sp.M, i => (i < sp.M ? hi : mirrored), 2 * sp.laps)];
+  }
+  function recutBlocker(sp) {
+    if (!sp.oneSided && sim.specs.length >= NAMES.length) return `That would make more than ${NAMES.length} pieces. Press Reset to start over.`;
+    if (halfWidth(sp) < 0.03) return `Piece ${sp.name} is too thin to cut down the middle again.`;
+    if (sim.N + sp.M * (2 * railsFor(halfWidth(sp)) - sp.K) > 7200) return 'That is more paper than this simulation can carry. Press Reset to start over.';
+    return null;
+  }
+  function startRecut(idx) {
+    if (!sim || st.phase !== 'relaxing') return;
+    const sp = sim.specs[idx]; if (!sp) return;
+    const why = recutBlocker(sp); if (why) { Lab.toast(ch.stage, why); return false; }
+    onUp();
+    const M = sp.M, Wp = widthOf(sp), g = GAP_S * W / 2;
+    const pos = new Float32Array((M + 1) * 6), mid = [];
+    for (let i = 0; i <= M; i++) {
+      const a = posAt(sp, i, Wp / 2 - g), b = posAt(sp, i, Wp / 2 + g);
+      pos.set(a, i * 6); pos.set(b, i * 6 + 3); mid.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+    }
+    const idxs = []; for (let i = 0; i < M; i++) { const a = i * 2; idxs.push(a, a + 2, a + 1, a + 2, a + 3, a + 1); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(idxs); geo.setDrawRange(0, 0);
+    const slit = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x1b2140, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: scissorsTexture(), depthTest: false, transparent: true }));
+    sprite.scale.set(0.26, 0.26, 1); sprite.renderOrder = 10; sprite.position.set(...mid[0]);
+    ch.scene.add(slit, sprite); cutObjs.push(slit); scissorSprites.push(sprite);
+    st.recut = { idx, slit, sprite, mid, M, t: 0, dur: 1.5 + 0.7 * sp.laps };
+    st.phase = 'recutting'; st.userCam = false;
+    hud.right.textContent = `Scissors: down the middle of ${sp.name}`;
+    renderReadout(); syncButtons();
+    return true;
+  }
+  function finishRecut() {
+    const R = st.recut; st.recut = null;
+    const old = sim.specs, target = old[R.idx];
+    const kids = splitSpec(target);
+    const used = new Set(old.filter(sp => sp !== target).map(sp => sp.name));
+    kids[0].name = target.name; kids[0].color = target.color; used.add(target.name);
+    kids.slice(1).forEach(k => { const i = [...NAMES].findIndex(l => !used.has(l)); k.name = NAMES[i]; k.color = COLORS[i]; used.add(NAMES[i]); });
+    const specs = [];
+    old.forEach(sp => { if (sp === target) specs.push(...kids); else specs.push(specFromCurrent(sp)); });
+    clearScene();
+    sim = new PaperSim(specs, RAD);
+    specs.forEach((sp, i) => { sim.fresh[i] = kids.includes(sp) ? 1 : 0; });
+    specs.forEach(sp => { const m = makeMesh(sp, sp.color); meshes.push(m); ch.scene.add(m.group); });
+    syncMeshes();
+    st.predicted = measure(); st.measured = null;
+    st.phase = 'relaxing'; st.t = 0; st.verifyT = 0; st.autoJig = false;
+    sim.gravity = st.desk ? 24 : 0;
+    st.history.push(target.name);
+    hud.top.innerHTML = cutsLabel();
+    hud.right.textContent = `${specs.length} piece${specs.length === 1 ? '' : 's'}`;
+    renderReadout(); renderDiagram(); syncButtons();
+  }
+  function cutsLabel() {
+    let t = `<b>${st.n}</b> half-twist${st.n === 1 ? '' : 's'} · cut at <b>${st.fracs.map(fracLabel).join(', ') || 'nowhere'}</b>`;
+    if (st.history.length) t += ` · then <b>${st.history.join(', ')}</b> again`;
+    return t;
+  }
+
   function clearScene() {
     meshes.forEach(m => { ch.scene.remove(m.group); m.geo.dispose(); m.front.material.dispose(); m.back.material.dispose(); });
     meshes = [];
@@ -2113,6 +2287,23 @@ const Lab = (() => {
     if (t === 0) return 'no twist';
     return `${t} full twist${t === 1 ? '' : 's'} (${2 * t} half)`;
   }
+  const lenText = laps => (laps === 1 ? 'the same length as the original' : laps === 2 ? 'twice as long' : `${laps}× as long`);
+  function describe(specs, m) {
+    const k = specs.length, one = specs.filter(s => s.oneSided).length, knotted = m.pieces.filter(p => p.knot !== 1).length;
+    const linked = m.links.filter(l => l.lk !== 0), bits = [];
+    if (one) bits.push(`${one === 1 ? 'a' : one} one-sided Möbius-type strip${one > 1 ? 's' : ''} the same length as the original`);
+    [...new Set(specs.filter(s => !s.oneSided).map(s => s.laps))].sort((a, b) => a - b).forEach(L => {
+      const c = specs.filter(s => !s.oneSided && s.laps === L).length;
+      bits.push(`${c === 1 ? 'a' : c} two-sided loop${c > 1 ? 's' : ''} ${lenText(L)}`);
+    });
+    let sum = `${k} piece${k === 1 ? '' : 's'}: ${bits.join(', ')}.`;
+    if (knotted) {
+      const name = Lab.knotName(m.pieces.find(p => p.knot !== 1).knot), many = /knot$/.test(name) ? name + 's' : name;
+      sum += knotted === 1 ? ` ${k === 1 ? 'It is' : 'One is'} tied in a ${name}.` : ` ${knotted === k ? (k === 2 ? 'Both are' : `All ${k} are`) : knotted + ' are'} tied in ${many}.`;
+    }
+    if (k > 1) sum += linked.length ? ` ${linked.length === k * (k - 1) / 2 && k > 2 ? 'Every pair is linked.' : linked.length === 1 ? 'They are ' + linkName(linked[0].lk, k) + '.' : linked.length + ' pairs are linked.'}` : ' None of them are linked; they just fall apart.';
+    return sum;
+  }
   function linkName(lk, total) {
     const a = Math.abs(lk);
     if (a === 1 && total === 2) return 'linked once (a Hopf link)';
@@ -2120,32 +2311,25 @@ const Lab = (() => {
     return `linked ${a}×`;
   }
   function renderReadout() {
-    if (st.phase === 'ready' || st.phase === 'cutting') {
-      readout.innerHTML = `<h4>Result</h4><p style="margin:0;color:var(--muted)">${st.phase === 'ready' ? 'Make a guess above if you like, then press Cut. The rule is in the diagram below if you want a hint.' : 'Cutting…'}</p>`;
+    if (st.phase === 'ready' || st.phase === 'cutting' || st.phase === 'recutting') {
+      const msg = st.phase === 'ready' ? 'Make a guess above if you like, then press Cut. The rule is in the diagram below if you want a hint.'
+        : st.phase === 'cutting' ? 'Cutting…' : `Cutting ${sim.specs[st.recut.idx].name} down its middle…`;
+      readout.innerHTML = `<h4>Result</h4><p style="margin:0;color:var(--muted)">${msg}</p>`;
       return;
     }
     const pr = st.predicted, specs = sim.specs, k = specs.length;
     const rows = specs.map((sp, i) => {
       const m = pr.pieces[i];
-      const lk = pr.links.filter(l => (l.a === i || l.b === i) && l.lk !== 0).map(l => `${NAMES[l.a === i ? l.b : l.a]} (${Math.abs(l.lk)}×)`);
-      return `<tr><td><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${NAMES[i]}</td>
-        <td>${sp.laps === 2 ? '2× the original' : 'same as original'}</td>
+      const lk = pr.links.filter(l => (l.a === i || l.b === i) && l.lk !== 0).map(l => `${specs[l.a === i ? l.b : l.a].name} (${Math.abs(l.lk)}×)`);
+      return `<tr><td><span class="swatch" style="background:${sp.color}"></span>${sp.name}</td>
+        <td>${sp.laps === 1 ? 'same as original' : sp.laps + '× the original'}</td>
         <td>${sp.oneSided ? '<b>one</b> (Möbius-type)' : 'two'}</td>
         <td>${twistText(sp, m)}</td>
         <td>${Lab.knotName(m.knot)}</td>
         <td>${lk.length ? lk.join(', ') : '–'}</td></tr>`;
     }).join('');
-    // summary sentence
-    const one = specs.filter(s => s.oneSided).length, longs = specs.filter(s => s.laps === 2).length, knotted = pr.pieces.filter(p => p.knot !== 1).length;
-    const linked = pr.links.filter(l => l.lk !== 0);
-    let sum = `${k} piece${k === 1 ? '' : 's'}`;
-    const bits = [];
-    if (one) bits.push(`${one === 1 ? 'a' : one} one-sided Möbius-type strip${one > 1 ? 's' : ''} the same length as the original`);
-    if (longs) bits.push(`${longs === 1 ? 'a' : longs} two-sided loop${longs > 1 ? 's' : ''} twice as long`);
-    if (k - one - longs) bits.push(`${k - one - longs === 1 ? 'a' : k - one - longs} two-sided loop${k - one - longs > 1 ? 's' : ''} the same length as the original`);
-    sum += ': ' + bits.join(', ') + '.';
-    if (knotted) sum += ` ${knotted === 1 ? 'One is' : knotted + ' are'} tied in a ${Lab.knotName(pr.pieces.find(p => p.knot !== 1).knot)}.`;
-    if (k > 1) sum += linked.length ? ` ${linked.length === k * (k - 1) / 2 && k > 2 ? 'Every pair is linked.' : linked.length === 1 ? 'They are ' + linkName(linked[0].lk, k) + '.' : linked.length + ' pairs are linked.'}` : ' None of them are linked; they just fall apart.';
+    const one = specs.filter(s => s.oneSided).length;
+    const sum = describe(specs, pr);
     // guess
     let guess = '';
     if (st.guessN != null || st.guessOne != null) {
@@ -2159,9 +2343,11 @@ const Lab = (() => {
     const ver = st.measured == null ? '<span style="color:var(--muted)">measuring the simulated paper…</span>'
       : sameTopology(st.predicted, st.measured) ? '<span class="ok">✓</span> Measured from the relaxed simulated paper: same twists, knots and links as the rule predicts.'
         : '<span class="miss">⚠</span> The simulated paper slipped through itself, which real paper can\'t do. Press Reset and cut again.';
-    readout.innerHTML = `<h4>Result</h4><p style="margin:0 0 8px">${sum}</p>
+    const again = specs.map((sp, i) => `<button type="button" class="btn" id="s-again-${i}" data-recut="${i}"><span class="swatch" style="background:${sp.color}"></span>${sp.name}</button>`).join('');
+    readout.innerHTML = `<h4>Result${st.history.length ? ` after cutting ${st.history.join(', then ')} again` : ''}</h4><p style="margin:0 0 8px">${sum}</p>
       <div class="tbl-wrap"><table class="pieces"><thead><tr><th>Piece</th><th>Length</th><th>Sides</th><th>Twist</th><th>Knot</th><th>Linked with</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${guess}<p class="verdict-line" style="font-size:.875rem">${ver}</p>
+      <div class="ctl" style="margin-top:12px"><span class="lbl">Cut a piece again, down its middle</span><div class="btn-row">${again}</div></div>
       <p class="verdict-line" style="font-size:.8125rem;color:var(--muted)">Colors are added so you can tell the pieces apart. Drag a piece to pull it around.</p>`;
   }
 
@@ -2206,6 +2392,7 @@ const Lab = (() => {
     if (!st.fracs.length) txt = 'Pick at least one place to cut.';
     else if (!odd) txt = `${st.n === 0 ? 'No twist' : 'An even number of half-twists'}: no flip at the joint, so each stripe closes on itself after one lap. ${st.fracs.length} cut${st.fracs.length > 1 ? 's' : ''} → ${k} loops, each as long as the original${st.n ? `, and every pair links ${st.n / 2}×` : ', and none of them link'}.`;
     else txt = `An odd number of half-twists: the joint flips the strip, so the stripe at x continues at 1 − x. Same color means same piece. A stripe joined to its mirror becomes one loop twice as long.${one ? ' The middle stripe is its own mirror, so it stays one-sided.' : ' Nothing is left in the middle, so no piece stays one-sided.'}${st.n >= 3 ? ` With ${st.n} half-twists the long loops come out knotted.` : ''}`;
+    if (st.history.length) txt += ' Cutting a piece again follows the same rule on that piece: a two-sided loop falls into two loops of the same length, linked as many times as its two edges were (its Twist), and a one-sided loop becomes one loop twice as long.';
     diagram.innerHTML = `<h4>The rule, drawn as a gluing diagram</h4>${svg}<p class="cap">${txt}</p>`;
   }
 
@@ -2213,6 +2400,7 @@ const Lab = (() => {
   function buildUncut() {
     clearScene();
     const spec = pieceSpec({ laps: 1, oneSided: st.n % 2 === 1, s0: -1, s1: 1 }, st.n, st.chi);
+    spec.name = NAMES[0]; spec.color = COLORS[0];
     sim = new PaperSim([spec], RAD);
     meshes.push(makeMesh(spec, COLORS[0]));
     ch.scene.add(meshes[0].group);
@@ -2252,28 +2440,14 @@ const Lab = (() => {
       sp.scale.set(0.26, 0.26, 1); sp.renderOrder = 10; sp.visible = false;
       ch.scene.add(sp); scissorSprites.push(sp); L.sprite = sp;
     });
-    st.phase = 'ready';
+    st.phase = 'ready'; st.history = []; st.recut = null;
     st.predicted = st.measured = null;
-    hud.top.innerHTML = `<b>${st.n}</b> half-twist${st.n === 1 ? '' : 's'} · cut at <b>${st.fracs.map(fracLabel).join(', ') || 'nowhere'}</b>`;
+    hud.top.innerHTML = cutsLabel();
     hud.right.textContent = st.n % 2 ? 'One-sided strip' : 'Two-sided strip';
     hud.tip.hidden = true;
     renderReadout(); renderDiagram(); syncButtons();
   }
-  let _sciTex = null;
-  function scissorsTexture() {
-    if (_sciTex) return _sciTex;
-    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-    g.translate(64, 64); g.rotate(-0.5);
-    g.lineCap = 'round'; g.strokeStyle = '#1b2140'; g.fillStyle = '#ffffff';
-    g.lineWidth = 9;
-    g.beginPath(); g.moveTo(-6, 4); g.lineTo(52, -22); g.stroke();
-    g.beginPath(); g.moveTo(-6, -4); g.lineTo(52, 22); g.stroke();
-    g.lineWidth = 8;
-    [[-30, -18], [-30, 18]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 15, 0, TAU); g.fill(); g.stroke(); });
-    g.fillStyle = '#e8457a'; g.beginPath(); g.arc(-4, 0, 6, 0, TAU); g.fill();
-    _sciTex = new THREE.CanvasTexture(c); _sciTex.encoding = THREE.sRGBEncoding;
-    return _sciTex;
-  }
+  const scissorsTexture = Lab.scissorsTexture;
   function startCut() {
     st.userCam = false;
     if (!st.fracs.length) { Lab.toast(ch.stage, 'Pick at least one place to cut first.'); return; }
@@ -2287,8 +2461,9 @@ const Lab = (() => {
     st.plan = plan;
     clearScene();
     const specs = plan.pieces.map(pc => pieceSpec(pc, st.n, st.chi));
+    specs.forEach((sp, i) => { sp.name = NAMES[i]; sp.color = COLORS[i % COLORS.length]; });
     sim = new PaperSim(specs, RAD);
-    specs.forEach((sp, i) => { const m = makeMesh(sp, COLORS[i % COLORS.length]); meshes.push(m); ch.scene.add(m.group); });
+    specs.forEach(sp => { const m = makeMesh(sp, sp.color); meshes.push(m); ch.scene.add(m.group); });
     syncMeshes();
     st.predicted = measure();
     st.measured = null;
@@ -2301,6 +2476,77 @@ const Lab = (() => {
   function syncButtons() {
     btn.cut.disabled = st.phase !== 'ready';
     btn.jiggle.disabled = st.phase !== 'relaxing';
+  }
+
+  /* ---------------- your notebook, re-run ---------------- */
+  // Cut results copied from the notes. Each one is re-made and cut, and the claim is checked
+  // against what the simulated paper actually does.
+  const CHECKS = [
+    { key: 'half', quote: 'Mobius with ½ cut = 2 linked Mobius', setup: '1 half-twist · cut at ½', n: 1, fracs: [1 / 2],
+      test: r => r.count === 2 && r.oneSided === 2 && r.linked > 0, miss: 'Two linked pieces come from the ⅓ cut, and only one of those is a Möbius strip.' },
+    { key: 'inf', quote: 'Infinity symbol = circle + 0.5 turns + ½ cut', setup: '1 half-twist · cut at ½', n: 1, fracs: [1 / 2],
+      test: r => r.count === 1 && r.oneSided === 0, hit: 'One long loop, as your notes say.' },
+    { key: 'inf2', quote: 'Infinity symbol with ½ cut = two linked infinity symbols', setup: 'that long loop, cut down its middle', n: 1, fracs: [1 / 2], recut: true,
+      test: r => r.count === 2 && r.oneSided === 0 && r.linked === 1, hit: 'Two loops shaped like the first one, linked.' },
+    { key: 'mirror', quote: '⅓ cut from the inside is the same as 1/3 cut from the outside', setup: '1 half-twist · cut at ⅓ and ⅔ together', n: 1, fracs: [1 / 3, 2 / 3],
+      test: r => r.count === 2 && r.oneSided === 1, hit: 'The same two pieces you get from ⅓ alone, because ⅓ and ⅔ are one cut line.' },
+    { key: 'sixth', quote: 'cut strips at 1/3 and at 1/6 and see what happens?', setup: '1 half-twist · cut at ⅙ and ⅓', n: 1, fracs: [1 / 6, 1 / 3], test: null,
+      hit: 'The cut lines never cross: each one runs alongside the edge.' },
+    { key: 'rec', quote: 'Recycling symbol with ½ cut = … 1 piece', setup: '3 half-twists (our reading of your recycling symbol) · cut at ½', n: 3, fracs: [1 / 2],
+      test: r => r.count === 1, hit: 'One piece, as your notes say.' },
+    { key: 'rec2', quote: 'Rectangle “|X|” with middle loop cut ½ = … 1 piece', setup: 'that knotted loop, cut down its middle', n: 3, fracs: [1 / 2], recut: true,
+      test: r => r.count === 1, miss: 'A two-sided loop cut down its middle always falls into two. If your paper stayed in one piece, the cut probably wandered off the middle line, which is easy on a long knotted strip.' }
+  ];
+  function renderNotebook() {
+    if (!notebook) return;
+    const rows = CHECKS.map(c => {
+      const r = st.checks[c.key] || {};
+      let res = '';
+      if (r.state === 'running') res = '<span style="color:var(--muted)">Cutting… watch the strip.</span>';
+      else if (r.state === 'yes') res = `<span class="ok">✓ Matches.</span> ${c.hit || ''} Simulated: ${r.text}`;
+      else if (r.state === 'no') res = `<span class="miss">✗ Doesn't match.</span> Simulated: ${r.text} ${c.miss || ''}`;
+      else if (r.state === 'answer') res = `<b>Answer:</b> ${r.text} ${c.hit || ''}`;
+      else if (r.state === 'glitch') res = '<span class="miss">⚠</span> The simulated paper slipped through itself. Run it again.';
+      return `<li><span class="nb-q">“${c.quote}”</span><button type="button" class="btn" data-check="${c.key}" id="s-check-${c.key}"${r.state === 'running' ? ' disabled' : ''}>${r.state && r.state !== 'running' ? 'Run again' : 'Run it'}</button>
+        <span class="nb-setup">${c.setup}</span><p class="nb-res">${res}</p></li>`;
+    }).join('');
+    notebook.innerHTML = `<h4>Your notebook, re-run</h4>
+      <p class="cap">Cut results copied from your notes. Run one and the simulation makes the same strip, makes the same cuts, and checks the result.</p>
+      <ol class="nb-list">${rows}</ol>`;
+  }
+  function cancelScript() {
+    if (!st.script) return;
+    const k = st.script.c.key;
+    if (st.checks[k] && st.checks[k].state === 'running') delete st.checks[k];
+    st.script = null; renderNotebook();
+  }
+  function runCheck(key) {
+    const c = CHECKS.find(x => x.key === key); if (!c) return;
+    cancelScript();
+    st.n = c.n; st.chi = 1; st.fracs = c.fracs.slice().sort((a, b) => a - b);
+    ctl.n.set(st.n); ctl.chi.set(1); ctl.cut.set(st.fracs);
+    st.guessN = st.guessOne = null; ctl.gN.set(null); ctl.gO.set(null);
+    buildUncut();
+    st.checks[key] = { state: 'running' }; st.script = { c, step: 0 };
+    renderNotebook();
+    startCut();
+    const nav = document.querySelector('.nav'), top = ch.stage.getBoundingClientRect().top + window.scrollY - (nav ? nav.offsetHeight : 0) - 10;
+    if (Math.abs(window.scrollY - top) > 40) window.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  function judge(c) {
+    const m = st.measured, specs = sim.specs;
+    if (!sameTopology(st.predicted, m)) { st.checks[c.key] = { state: 'glitch' }; renderNotebook(); return; }
+    const r = { count: specs.length, oneSided: specs.filter(x => x.oneSided).length, linked: m.links.filter(l => l.lk !== 0).length };
+    const state = c.test ? (c.test(r) ? 'yes' : 'no') : 'answer';
+    st.checks[c.key] = { state, text: describe(specs, m) };
+    renderNotebook();
+    Lab.toast(ch.stage, state === 'yes' ? '✓ Your notes match the simulated paper.' : state === 'no' ? '✗ The simulated paper disagrees with your notes.' : 'Done. The answer is in the notebook list.', 2800);
+  }
+  function tickScript() {
+    const S = st.script;
+    if (!S || st.phase !== 'relaxing' || !st.measured || st.t < 3.2) return;
+    if (S.c.recut && S.step === 0) { S.step = 1; if (startRecut(0) !== true) cancelScript(); return; }
+    st.script = null; judge(S.c);
   }
 
   /* ---------------- dragging pieces ---------------- */
@@ -2375,10 +2621,11 @@ const Lab = (() => {
     stage.append(hud.wrap, bottom);
 
     const c = section.querySelector('[data-controls]');
-    Lab.ui.seg(c, { label: 'Half-twists', id: 's-n', value: st.n, options: [0, 1, 2, 3, 4, 5].map(v => ({ value: v, label: String(v) })), onChange: v => { st.n = v; buildUncut(); } });
-    Lab.ui.seg(c, { label: 'Handedness', id: 's-chi', value: st.chi, options: [{ value: 1, label: 'Left' }, { value: -1, label: 'Right' }], onChange: v => { st.chi = v; buildUncut(); } });
-    Lab.ui.chips(c, { label: 'Cut at (fraction of the width)', id: 's-cut', options: FRACS.map(f => ({ value: f.v, label: f.l })), values: st.fracs,
+    ctl.n = Lab.ui.seg(c, { label: 'Half-twists', id: 's-n', value: st.n, options: [0, 1, 2, 3, 4, 5].map(v => ({ value: v, label: String(v) })), onChange: v => { cancelScript(); st.n = v; buildUncut(); } });
+    ctl.chi = Lab.ui.seg(c, { label: 'Handedness', id: 's-chi', value: st.chi, options: [{ value: 1, label: 'Left' }, { value: -1, label: 'Right' }], onChange: v => { cancelScript(); st.chi = v; buildUncut(); } });
+    ctl.cut = Lab.ui.chips(c, { label: 'Cut at (fraction of the width)', id: 's-cut', options: FRACS.map(f => ({ value: f.v, label: f.l })), values: st.fracs,
       onChange: vals => {
+        cancelScript();
         const odd = st.n % 2 === 1;
         if (odd && vals.some(a => vals.some(b => a !== b && near(a + b, 1)))) Lab.toast(ch.stage, 'On an odd strip, x and 1 − x are the same cut line. Watch.');
         st.fracs = vals.slice().sort((a, b) => a - b); buildUncut();
@@ -2388,15 +2635,20 @@ const Lab = (() => {
     const gN = Lab.ui.seg(gr, { label: null, id: 's-gn', value: null, options: [1, 2, 3, 4].map(v => ({ value: v, label: v === 4 ? '4+ pieces' : v + (v === 1 ? ' piece' : '') })), onChange: v => { st.guessN = v; } });
     const gO = Lab.ui.seg(gr, { label: null, id: 's-go', value: null, options: [{ value: 'yes', label: 'one-sided piece' }, { value: 'no', label: 'none one-sided' }], onChange: v => { st.guessOne = v; } });
     gN.el.querySelector('.lbl') && gN.el.querySelector('.lbl').remove();
+    ctl.gN = gN; ctl.gO = gO;
     const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
-    btn.cut = Lab.ui.button(row, { label: '✂ Cut', id: 's-cutbtn', primary: true, onClick: startCut });
+    btn.cut = Lab.ui.button(row, { label: '✂ Cut', id: 's-cutbtn', primary: true, onClick: () => { cancelScript(); startCut(); } });
     btn.jiggle = Lab.ui.button(row, { label: 'Jiggle', id: 's-jiggle', onClick: () => { st.jiggle = 0.9; st.measured = null; st.verifyT = 1.6; renderReadout(); } });
-    Lab.ui.button(row, { label: 'Reset', id: 's-reset', onClick: () => { st.userCam = false; st.guessN = st.guessOne = null; gN.set(null); gO.set(null); buildUncut(); Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
+    Lab.ui.button(row, { label: 'Reset', id: 's-reset', onClick: () => { cancelScript(); st.userCam = false; st.guessN = st.guessOne = null; gN.set(null); gO.set(null); buildUncut(); Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
     Lab.ui.seg(c, { label: 'Hands', id: 's-desk', value: 'apart', options: [{ value: 'apart', label: 'Pull apart' }, { value: 'off', label: 'Let it float' }, { value: 'on', label: 'Drop on desk' }],
       onChange: v => { st.mode = v; st.desk = v === 'on'; if (sim && st.phase === 'relaxing') { sim.gravity = st.desk ? 24 : 0; sim.wake(); st.measured = null; st.verifyT = 2.5; renderReadout(); } Lab.tweenCamera(ch, ...(st.desk ? POSE_DESK : POSE)); } });
 
     readout = section.querySelector('[data-readout]');
     diagram = section.querySelector('[data-diagram]');
+    notebook = section.querySelector('[data-notebook]');
+    readout.addEventListener('click', ev => { const b = ev.target.closest('[data-recut]'); if (b) { cancelScript(); startRecut(+b.dataset.recut); } });
+    if (notebook) notebook.addEventListener('click', ev => { const b = ev.target.closest('[data-check]'); if (b && !b.disabled) runCheck(b.dataset.check); });
+    renderNotebook();
     const cv = Lab.getRenderer().domElement;
     cv.addEventListener('pointerdown', onDown, { capture: true });
     cv.addEventListener('touchstart', ev => { if (Lab.active === ch && sim && sim.dragId >= 0) { ev.stopImmediatePropagation(); } }, { capture: true, passive: true });
@@ -2424,6 +2676,14 @@ const Lab = (() => {
       if (done) { st.cutLines.forEach(L => (L.sprite.visible = false)); finishCut(); }
       return;
     }
+    if (st.phase === 'recutting') {
+      const R = st.recut; R.t += dt;
+      const prog = Math.min(1, R.t / R.dur), k = Math.floor(prog * R.M);
+      R.slit.geometry.setDrawRange(0, k * 6);
+      R.sprite.position.set(...R.mid[Math.min(k, R.M)]);
+      if (prog >= 1) finishRecut();
+      return;
+    }
     if (st.phase !== 'relaxing') return;
     st.t += dt;
     sim.setBlend(Lab.smooth(Math.min(1, st.t / 2.2)));
@@ -2446,6 +2706,786 @@ const Lab = (() => {
       st.measured = m;
       if (changed) renderReadout();
     }
+    tickScript();
+  };
+  ch.leave = function () { onUp(); };
+
+  Lab.register(ch);
+}
+
+/* ---- ch2b_tape.js ---- */
+/* ============================================================
+   Experiment 3: Tape.
+   Two paper loops taped together, crosswise (|X|) or face to face
+   (the butterfly), then cut down their middles. Each loop is a grid
+   of square cells. Tape holds the overlapping cells of the two loops
+   together, so where the scissors cross the tape they cut through
+   both layers. Pieces, sides and edges are counted exactly from the
+   cells; the shapes come from paper physics like Scissors'.
+   ============================================================ */
+{
+  const TAU = Lab.TAU;
+  const W = 0.62, ROWS = 9, NJ = ROWS + 1, NI = 91, H = W / ROWS, R = NI * H / TAU;   // square cells, so the crosswise tape is square
+  const MID = (ROWS - 1) / 2;                       // the middle row of cells, where the scissors go
+  const GAP = 0.08, RAD = 0.04, CUT_SPEED = 26, FLOOR = -2.45, SPREAD_PUSH = 6e-5, FREE_PUSH = 3e-4, SPREAD_INFLATE = 1.5e-5;
+  const NPS = NI * NJ, CPS = NI * ROWS, NN = 2 * NPS, NC = 2 * CPS;
+  const PATCH = { cross: [41, ROWS], par: [40, 12] };   // first column and length of the taped stretch
+  const PAL = [['#f27aa2', '#f1b93f', '#ff9668', '#e15c88'], ['#45bdb7', '#5f9bff', '#86cc58', '#9f86f5']];
+  const MARKS = ['#1b2140', '#2b8a3e', '#862e9c', '#a61e4d', '#5c3d2e', '#0b7285'];   // dark marker colors, unlike either side paint
+  const SIDES = ['#4c6ef5', '#ffa94d'];             // paint for the two faces, when painting by sides
+  const CORNER = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const LOOPS = [{ value: 'plain', label: 'Plain ring', n: 0, chi: 1 }, { value: 'left', label: 'Möbius, left', n: 1, chi: 1 },
+    { value: 'right', label: 'Möbius, right', n: 1, chi: -1 }, { value: 'full', label: 'Full twist', n: 2, chi: 1 }];
+  const loopOf = v => LOOPS.find(l => l.value === v);
+
+  const st = {
+    A: 'left', B: 'plain', join: 'cross', mode: 'apart', desk: false, marks: true, paint: 'pieces',
+    t: 0, tCut: 0, jiggle: 0, autoJig: true, cutting: null, done: { A: false, B: false }, history: [], lastAnalyze: 0,
+    res: null, geo: null, geoOk: null, verifyT: 0, script: null, checks: {}, userCam: false
+  };
+  const ch = { token: 'tape', gl: true, background: () => Lab.stageBg() };
+
+  /* ---------------- the paper ---------------- */
+  const pos = new Float64Array(NN * 3), prev = new Float64Array(NN * 3), inv = new Float32Array(NN);
+  const active = new Uint8Array(NC), alive = new Uint8Array(NN), linkCell = new Int32Array(NC), tapeOf = new Int32Array(NN), onTape = new Uint8Array(NN);
+  const pieceOfNode = new Int16Array(NN), objOfNode = new Int16Array(NN), markOf = new Int16Array(NC);
+  let tapePairs = [], CA, CB, R0, R1, KK, REST, TA, TB, TC, excl = new Set(), blend = -1, gravity = 0, asleep = false, calm = 0, dragId = -1, dragTarget = [0, 0, 0];
+  let HT = 1; while (HT < NN * 2) HT <<= 1;
+  const hCount = new Int32Array(HT), hStart = new Int32Array(HT + 1), hSorted = new Int32Array(NN), hKey = new Int32Array(NN), hFill = new Int32Array(HT);
+  const CX = new Int32Array(NN), CY = new Int32Array(NN), CZ = new Int32Array(NN);
+  let meshes = [], deskMesh, sprite, hud = {}, btn = {}, ctl = {}, readout, notebook;
+
+  const nOf = s => loopOf(s ? st.B : st.A).n;
+  // Past its last column a loop carries on at column 0, flipped across its width if it has an odd number of half-twists.
+  function node(s, i, j) {
+    if (i < 0 || i >= NI) { i = (i + NI) % NI; if (nOf(s) % 2) j = ROWS - j; }
+    return s * NPS + i * NJ + j;
+  }
+  function cellAt(s, i, v) {
+    if (i < 0 || i >= NI) { i = (i + NI) % NI; if (nOf(s) % 2) v = ROWS - 1 - v; }
+    return s * CPS + i * ROWS + v;
+  }
+  const sivOf = c => { const s = c >= CPS ? 1 : 0, k = c - s * CPS; return [s, (k / ROWS) | 0, k % ROWS]; };
+  function corners(c) { const [s, i, v] = sivOf(c); return [node(s, i, v), node(s, i + 1, v), node(s, i + 1, v + 1), node(s, i, v + 1)]; }
+  function neighbours(c) {
+    const [s, i, v] = sivOf(c), nb = [cellAt(s, i - 1, v), cellAt(s, i + 1, v)];
+    if (v > 0) nb.push(cellAt(s, i, v - 1));
+    if (v < ROWS - 1) nb.push(cellAt(s, i, v + 1));
+    return nb;
+  }
+  const ekey = (a, b) => (a < b ? a * NN + b : b * NN + a);
+  const dist = (a, b) => Math.hypot(pos[b * 3] - pos[a * 3], pos[b * 3 + 1] - pos[a * 3 + 1], pos[b * 3 + 2] - pos[a * 3 + 2]);
+  const pt = n => [pos[n * 3], pos[n * 3 + 1], pos[n * 3 + 2]];
+
+  // Loop A stands on the tape and loop B hangs under it, turned 90° (crosswise) or lined up (face to face).
+  // The twisting happens away from the tape, so the taped stretch starts out flat.
+  function place() {
+    for (let s = 0; s < 2; s++) {
+      const L = loopOf(s ? st.B : st.A), cross = st.join === 'cross';
+      for (let i = 0; i < NI; i++) {
+        const th = (i - NI / 2) * TAU / NI, a = Math.abs(th), t0 = 0.75;
+        const prof = a <= t0 ? 0 : Math.sign(th) * Lab.smooth(Math.min(1, (a - t0) / (Math.PI - t0)));
+        const al = L.chi * L.n * Math.PI / 2 * prof, sn = Math.sin(th), cs = Math.cos(th), ca = Math.cos(al), sa = Math.sin(al);
+        let c, nin, side;
+        if (s === 0) { c = [R * sn, 0, R * (1 - cs)]; nin = [-sn, 0, cs]; side = [0, 1, 0]; }
+        else if (cross) { c = [0, R * sn, -GAP - R * (1 - cs)]; nin = [0, -sn, -cs]; side = [1, 0, 0]; }
+        else { c = [R * sn, 0, -GAP - R * (1 - cs)]; nin = [-sn, 0, -cs]; side = [0, 1, 0]; }
+        for (let j = 0; j < NJ; j++) {
+          const o = (j - ROWS / 2) * H, id = (s * NPS + i * NJ + j) * 3;
+          for (let k = 0; k < 3; k++) pos[id + k] = c[k] + (ca * side[k] + sa * nin[k]) * o;
+        }
+      }
+    }
+    prev.set(pos);
+  }
+  function setupTape() {
+    linkCell.fill(-1); onTape.fill(0); tapePairs = [];
+    const [c0, len] = PATCH[st.join], cross = st.join === 'cross';
+    for (let u = 0; u < len; u++) for (let v = 0; v < ROWS; v++) {
+      const a = cellAt(0, c0 + u, v), b = cross ? cellAt(1, c0 + v, u) : cellAt(1, c0 + u, v);
+      linkCell[a] = b; linkCell[b] = a;
+    }
+    for (let p = 0; p <= len; p++) for (let q = 0; q <= ROWS; q++) {
+      const a = node(0, c0 + p, q), b = cross ? node(1, c0 + q, p) : node(1, c0 + p, q);
+      tapePairs.push([a, b]); onTape[a] = onTape[b] = 1;
+    }
+  }
+  // Constraints come from the cells that are still there, so a cut is just cells going missing.
+  function rebuild() {
+    alive.fill(0);
+    for (let c = 0; c < NC; c++) if (active[c]) for (const n of corners(c)) alive[n] = 1;
+    const E = new Map(), add = (a, b, r, k) => { const key = ekey(a, b); if (!E.has(key)) E.set(key, [a, b, r, k]); };
+    for (let c = 0; c < NC; c++) if (active[c]) {
+      const [a, b, c2, d] = corners(c);
+      add(a, b, H, 1); add(d, c2, H, 1); add(a, d, H, 1); add(b, c2, H, 1);
+      add(a, c2, H * Math.SQRT2, 0.9); add(b, d, H * Math.SQRT2, 0.9);
+    }
+    const paper = [...E.values()];
+    tapeOf.fill(-1);
+    for (const [a, b] of tapePairs) if (alive[a] && alive[b]) { tapeOf[a] = b; tapeOf[b] = a; add(a, b, GAP, 1); }
+    // tape also stops the two layers sliding over each other
+    const dg = Math.hypot(GAP, H);
+    for (const [a, b, , k] of paper) {
+      if (k !== 1 || a >= NPS || b >= NPS || tapeOf[a] < 0 || tapeOf[b] < 0) continue;
+      if (E.has(ekey(tapeOf[a], tapeOf[b]))) { add(a, tapeOf[b], dg, 0.8); add(b, tapeOf[a], dg, 0.8); }
+    }
+    const list = [...E.values()], n = list.length;
+    CA = new Int32Array(n); CB = new Int32Array(n); R0 = new Float64Array(n); R1 = new Float64Array(n); KK = new Float64Array(n); REST = new Float64Array(n);
+    list.forEach(([a, b, r, k], c) => { CA[c] = a; CB[c] = b; R1[c] = r; KK[c] = k; R0[c] = dist(a, b); });
+    setBlend(blend, true);
+    // bending: paper resists curving, along its length and across its width
+    const A3 = [], B3 = [], C3 = [];
+    for (let s = 0; s < 2; s++) for (let i = 0; i < NI; i++) for (let j = 0; j < NJ; j++) {
+      const m = node(s, i, j); if (!alive[m]) continue;
+      const l = node(s, i - 1, j), r = node(s, i + 1, j);
+      if (E.has(ekey(l, m)) && E.has(ekey(m, r))) { A3.push(l); B3.push(m); C3.push(r); }
+      if (j > 0 && j < ROWS) { const d = node(s, i, j - 1), u = node(s, i, j + 1); if (E.has(ekey(d, m)) && E.has(ekey(m, u))) { A3.push(d); B3.push(m); C3.push(u); } }
+    }
+    TA = Int32Array.from(A3); TB = Int32Array.from(B3); TC = Int32Array.from(C3);
+    excl = new Set(E.keys());
+    for (let i = 0; i < NN; i++) inv[i] = alive[i] && i !== dragId ? 1 : 0;
+  }
+  function setBlend(b, force) {
+    if (b === blend && !force) return;
+    blend = b;
+    for (let c = 0; c < REST.length; c++) REST[c] = R0[c] + (R1[c] - R0[c]) * Math.max(0, b);
+  }
+  function solve() {
+    const P = pos, n = CA.length;
+    for (let c = 0; c < n; c++) {
+      const ia = CA[c], ib = CB[c], wa = inv[ia], wb = inv[ib], ws = wa + wb; if (!ws) continue;
+      const a = ia * 3, b = ib * 3, dx = P[b] - P[a], dy = P[b + 1] - P[a + 1], dz = P[b + 2] - P[a + 2];
+      const L = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-12, s = KK[c] * (L - REST[c]) / (L * ws);
+      P[a] += wa * s * dx; P[a + 1] += wa * s * dy; P[a + 2] += wa * s * dz;
+      P[b] -= wb * s * dx; P[b + 1] -= wb * s * dy; P[b + 2] -= wb * s * dz;
+    }
+  }
+  // Pull each point toward its neighbours' midpoint: paper wants to be flat.
+  function bend() {
+    const P = pos, k = 0.12, h = 0.5 * k, n = TA.length;
+    for (let t = 0; t < n; t++) {
+      const ia = TA[t], ib = TB[t], ic = TC[t], a = ia * 3, b = ib * 3, c = ic * 3;
+      const dx = (2 * P[b] - P[a] - P[c]) / 3, dy = (2 * P[b + 1] - P[a + 1] - P[c + 1]) / 3, dz = (2 * P[b + 2] - P[a + 2] - P[c + 2]) / 3;
+      if (inv[ib]) { P[b] -= k * dx; P[b + 1] -= k * dy; P[b + 2] -= k * dz; }
+      if (inv[ia]) { P[a] += h * dx; P[a + 1] += h * dy; P[a + 2] += h * dz; }
+      if (inv[ic]) { P[c] += h * dx; P[c + 1] += h * dy; P[c + 2] += h * dz; }
+    }
+  }
+  // Paper can't pass through paper: keep points that aren't joined at least one paper thickness apart.
+  function collide() {
+    const P = pos, h = 2 * RAD, h2 = h * h, mask = HT - 1;
+    const hk = (x, y, z) => (((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) & mask);
+    hCount.fill(0);
+    for (let i = 0; i < NN; i++) {
+      if (!alive[i]) { hKey[i] = -1; continue; }
+      const x = Math.floor(P[i * 3] / h), y = Math.floor(P[i * 3 + 1] / h), z = Math.floor(P[i * 3 + 2] / h);
+      CX[i] = x; CY[i] = y; CZ[i] = z; const k = hk(x, y, z); hKey[i] = k; hCount[k]++;
+    }
+    let acc = 0; for (let k = 0; k < HT; k++) { hStart[k] = acc; acc += hCount[k]; } hStart[HT] = acc;
+    hFill.fill(0); for (let i = 0; i < NN; i++) { const k = hKey[i]; if (k >= 0) hSorted[hStart[k] + hFill[k]++] = i; }
+    for (let a = 0; a < NN; a++) {
+      if (!alive[a]) continue;
+      const ax = P[a * 3], ay = P[a * 3 + 1], az = P[a * 3 + 2];
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+        const k = hk(CX[a] + dx, CY[a] + dy, CZ[a] + dz);
+        for (let q = hStart[k], qe = hStart[k] + hCount[k]; q < qe; q++) {
+          const b = hSorted[q]; if (b <= a) continue;
+          const ex = P[b * 3] - ax, ey = P[b * 3 + 1] - ay, ez = P[b * 3 + 2] - az, dd = ex * ex + ey * ey + ez * ez;
+          if (dd >= h2 || dd < 1e-14 || excl.has(a * NN + b)) continue;
+          const wa = inv[a], wb = inv[b], ws = wa + wb; if (!ws) continue;
+          const L = Math.sqrt(dd), corr = (h - L) / (L * ws);
+          P[a * 3] -= wa * corr * ex; P[a * 3 + 1] -= wa * corr * ey; P[a * 3 + 2] -= wa * corr * ez;
+          P[b * 3] += wb * corr * ex; P[b * 3 + 1] += wb * corr * ey; P[b * 3 + 2] += wb * corr * ez;
+        }
+      }
+    }
+  }
+  function step(dt, iters) {
+    const sub = 2, hdt = dt / sub, P = pos, Q = prev, g = gravity * hdt * hdt, vmax = RAD * 0.45;
+    for (let s = 0; s < sub; s++) {
+      for (let i = 0; i < NN; i++) {
+        if (!alive[i]) continue;
+        const a = i * 3;
+        let vx = (P[a] - Q[a]) * 0.985, vy = (P[a + 1] - Q[a + 1]) * 0.985, vz = (P[a + 2] - Q[a + 2]) * 0.985;
+        const vv = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        if (vv > vmax) { const f = vmax / vv; vx *= f; vy *= f; vz *= f; }
+        Q[a] = P[a]; Q[a + 1] = P[a + 1]; Q[a + 2] = P[a + 2];
+        if (!inv[i]) continue;
+        P[a] += vx; P[a + 1] += vy; P[a + 2] += vz - g;
+      }
+      if (dragId >= 0) { const a = dragId * 3; P[a] = dragTarget[0]; P[a + 1] = dragTarget[1]; P[a + 2] = dragTarget[2]; }
+      for (let it = 0; it < iters; it++) { solve(); if (it % 2 === 0) bend(); }
+      if (s === sub - 1) collide();
+      if (gravity > 0) {
+        const fz = FLOOR + RAD;
+        for (let i = 0; i < NN; i++) {
+          const a = i * 3;
+          if (alive[i] && P[a + 2] < fz) { P[a + 2] = fz; Q[a] += (P[a] - Q[a]) * 0.7; Q[a + 1] += (P[a + 1] - Q[a + 1]) * 0.7; if (Q[a + 2] < fz) Q[a + 2] = fz; }
+        }
+      }
+    }
+    let vmaxNow = 0;
+    for (let i = 0; i < NN * 3; i++) { const d = Math.abs(P[i] - Q[i]); if (d > vmaxNow) vmaxNow = d; }
+    calm = vmaxNow < 2.5e-5 ? calm + 1 : 0;
+    if (calm > 45 && dragId < 0 && blend >= 1 && !st.cutting) asleep = true;
+  }
+  function wake() { asleep = false; calm = 0; }
+  function recenter() {
+    if (gravity > 0 || dragId >= 0) return;
+    let x = 0, y = 0, z = 0, m = 0;
+    for (let i = 0; i < NN; i++) if (alive[i]) { x += pos[i * 3]; y += pos[i * 3 + 1]; z += pos[i * 3 + 2]; m++; }
+    if (!m) return;
+    const f = 0.03 / m; x *= f; y *= f; z *= f;
+    for (let i = 0; i < NN; i++) if (alive[i]) { pos[i * 3] -= x; pos[i * 3 + 1] -= y; pos[i * 3 + 2] -= z; prev[i * 3] -= x; prev[i * 3 + 1] -= y; prev[i * 3 + 2] -= z; }
+  }
+  function kick(strength) {
+    for (let hh = 0; hh < 3; hh++) {
+      let c = -1; for (let tries = 0; tries < 20 && c < 0; tries++) { const k = Math.floor(Math.random() * NN); if (alive[k]) c = k * 3; }
+      if (c < 0) return;
+      const jx = (Math.random() - 0.5) * strength, jy = (Math.random() - 0.5) * strength, jz = (Math.random() - 0.3) * strength;
+      for (let i = 0; i < NN; i++) {
+        if (!alive[i]) continue;
+        const a = i * 3, d2 = (pos[a] - pos[c]) ** 2 + (pos[a + 1] - pos[c + 1]) ** 2 + (pos[a + 2] - pos[c + 2]) ** 2, f = Math.exp(-d2 / 0.5);
+        prev[a] -= jx * f; prev[a + 1] -= jy * f; prev[a + 2] -= jz * f;
+      }
+    }
+  }
+  // "Pull apart": like holding the objects away from each other. Objects repel; each one is gently inflated.
+  // Objects measured as unlinked get a firm pull so they visibly come apart; linked ones only a gentle one,
+  // since paper pulled hard against paper can be forced through itself.
+  function spread(push, inflate) {
+    const r = st.res; if (!r) return;
+    const no = r.objects.length, c = new Float64Array(no * 3), cnt = new Float64Array(no), f = new Float64Array(no * 3);
+    for (let i = 0; i < NN; i++) if (alive[i]) { const o = objOfNode[i]; c[o * 3] += pos[i * 3]; c[o * 3 + 1] += pos[i * 3 + 1]; c[o * 3 + 2] += pos[i * 3 + 2]; cnt[o]++; }
+    for (let o = 0; o < no; o++) if (cnt[o]) { c[o * 3] /= cnt[o]; c[o * 3 + 1] /= cnt[o]; c[o * 3 + 2] /= cnt[o]; }
+    const g = st.geo && st.geo.olinks.length === no * (no - 1) / 2 ? st.geo.olinks : null;
+    for (let p = 0; p < no; p++) for (let q = 0; q < no; q++) {
+      if (p === q) continue;
+      let dx = c[p * 3] - c[q * 3], dy = c[p * 3 + 1] - c[q * 3 + 1], dz = c[p * 3 + 2] - c[q * 3 + 2];
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > 30) continue;   // far enough apart: let them come to rest
+      if (d2 < 1e-4) { dx = (p - q) * 0.01; dz = 0.01; }
+      const a = Math.min(p, q), b = Math.max(p, q), free = g && g[a * no - a * (a + 1) / 2 + b - a - 1] === 0;
+      const k = (free ? FREE_PUSH : push) / (d2 + 0.3); f[p * 3] += dx * k; f[p * 3 + 1] += dy * k; f[p * 3 + 2] += dz * k;
+    }
+    for (let i = 0; i < NN; i++) {
+      if (!alive[i] || !inv[i]) continue;
+      const o = objOfNode[i];
+      prev[i * 3] -= f[o * 3] + (pos[i * 3] - c[o * 3]) * inflate;
+      prev[i * 3 + 1] -= f[o * 3 + 1] + (pos[i * 3 + 1] - c[o * 3 + 1]) * inflate;
+      prev[i * 3 + 2] -= f[o * 3 + 2] + (pos[i * 3 + 2] - c[o * 3 + 2]) * inflate;
+    }
+  }
+
+  /* ---------------- counting pieces, sides and edges ---------------- */
+  // Faces are quads of point ids. Returns the Euler number, whether the faces can be given one consistent
+  // side, whether it's a proper surface (no edge shared by three faces), and its free edges.
+  function topo(faces, seed = 0) {
+    const E = new Map(), V = new Set();
+    faces.forEach((f, fi) => {
+      for (let k = 0; k < 4; k++) {
+        const a = f[k], b = f[(k + 1) & 3], key = ekey(a, b);
+        V.add(a);
+        let e = E.get(key); if (!e) E.set(key, e = { a: Math.min(a, b), b: Math.max(a, b), f: [] });
+        e.f.push(fi, a < b ? 1 : -1);
+      }
+    });
+    let manifold = true;
+    const adj = faces.map(() => []), bnd = [];
+    for (const e of E.values()) {
+      if (e.f.length > 4) manifold = false;
+      else if (e.f.length === 4) { const rel = -e.f[1] * e.f[3]; adj[e.f[0]].push(e.f[2], rel); adj[e.f[2]].push(e.f[0], rel); }
+      else if (e.f.length === 2) bnd.push([e.a, e.b]);
+    }
+    // Spread one consistent side outward from the seed. On a one-sided surface the spreading
+    // eventually meets itself flipped; that is where painting by sides shows a sharp line.
+    const o = new Int8Array(faces.length); let orientable = true;
+    for (const s0 of [seed, ...faces.keys()]) {
+      if (s0 >= faces.length || o[s0]) continue;
+      o[s0] = 1; const queue = [s0];
+      for (let h = 0; h < queue.length; h++) {
+        const f = queue[h], A = adj[f];
+        for (let k = 0; k < A.length; k += 2) { const g = A[k], want = o[f] * A[k + 1]; if (!o[g]) { o[g] = want; queue.push(g); } else if (o[g] !== want) orientable = false; }
+      }
+    }
+    const par = new Map(), find = x => { let r = x; while (par.get(r) !== r) r = par.get(r); while (par.get(x) !== r) { const nx = par.get(x); par.set(x, r); x = nx; } return r; };
+    for (const [a, b] of bnd) { if (!par.has(a)) par.set(a, a); if (!par.has(b)) par.set(b, b); const ra = find(a), rb = find(b); if (ra !== rb) par.set(ra, rb); }
+    const nB = new Set([...par.keys()].map(find)).size;
+    return { chi: V.size - E.size + faces.length, orientable, manifold, bnd, nB, find, o };
+  }
+  function traceLoops(bnd) {
+    const adj = new Map();
+    for (const [a, b] of bnd) { if (!adj.has(a)) adj.set(a, []); if (!adj.has(b)) adj.set(b, []); adj.get(a).push(b); adj.get(b).push(a); }
+    const seen = new Set(), loops = [];
+    for (const v0 of adj.keys()) {
+      if (seen.has(v0)) continue;
+      const loop = [v0]; seen.add(v0);
+      let from = -1, cur = v0;
+      for (;;) {
+        const nb = adj.get(cur), nxt = nb[0] !== from ? nb[0] : nb[1];
+        if (nxt === undefined || seen.has(nxt)) break;
+        loop.push(nxt); seen.add(nxt); from = cur; cur = nxt;
+      }
+      if (loop.length > 2) loops.push(loop);
+    }
+    return loops;
+  }
+  function regions(cells) {
+    const set = new Set(cells), seen = new Set(); let k = 0;
+    for (const c0 of cells) {
+      if (seen.has(c0)) continue;
+      k++; const stack = [c0]; seen.add(c0);
+      while (stack.length) for (const d of neighbours(stack.pop())) if (set.has(d) && !seen.has(d)) { seen.add(d); stack.push(d); }
+    }
+    return k;
+  }
+  function analyze() {
+    // pieces of paper: cells that are still joined to each other, within one loop
+    const pieceOfCell = new Int32Array(NC).fill(-1), pieces = [];
+    for (let c0 = 0; c0 < NC; c0++) {
+      if (!active[c0] || pieceOfCell[c0] >= 0) continue;
+      const id = pieces.length, cells = [c0]; pieceOfCell[c0] = id;
+      for (let q = 0; q < cells.length; q++) for (const d of neighbours(cells[q])) if (active[d] && pieceOfCell[d] < 0) { pieceOfCell[d] = id; cells.push(d); }
+      pieces.push({ s: c0 >= CPS ? 1 : 0, cells, id });
+    }
+    pieceOfNode.fill(-1);
+    pieces.forEach(p => p.cells.forEach(c => corners(c).forEach(n => { pieceOfNode[n] = p.id; })));
+    [0, 1].forEach(s => { const mine = pieces.filter(p => p.s === s); mine.forEach((p, k) => { p.name = 'AB'[s] + (mine.length > 1 ? k + 1 : ''); p.color = PAL[s][k % PAL[s].length]; }); });
+    const side = new Int8Array(NC), cross = st.join === 'cross';
+    const seedOf = cells => Math.max(0, cells.findIndex(c => linkCell[c] >= 0));
+    pieces.forEach(p => {
+      const t = topo(p.cells.map(corners), seedOf(p.cells));
+      if (!cross) p.cells.forEach((c, k) => { side[c] = t.o[k]; });
+      p.oneSided = !t.orientable; p.nB = t.nB; p.loops = traceLoops(t.bnd);
+      let along = 0;
+      for (const [a, b] of t.bnd) if ((((a % NPS) / NJ) | 0) !== (((b % NPS) / NJ) | 0)) along++;
+      p.laps = Math.round(along / NI) / 2;
+      p.kind = t.chi === 0 ? 'loop' : t.chi === 1 ? 'strip' : t.chi === -1 && t.nB === (t.orientable ? 3 : 2) ? 'slit' : 'other';
+    });
+    // objects: pieces held together by tape
+    const par = pieces.map((_, i) => i), find = x => (par[x] === x ? x : (par[x] = find(par[x])));
+    const contact = new Map();
+    for (let c = 0; c < CPS; c++) {
+      const o = linkCell[c]; if (o < 0 || !active[c] || !active[o]) continue;
+      const p = pieceOfCell[c], q = pieceOfCell[o];
+      par[find(p)] = find(q);
+      const key = p * 64 + q; if (!contact.has(key)) contact.set(key, []); contact.get(key).push(c);
+    }
+    for (const [a, b] of tapePairs) if (alive[a] && alive[b]) par[find(pieceOfNode[a])] = find(pieceOfNode[b]);
+    const taped = [...contact.entries()].map(([key, cells]) => ({ p: Math.floor(key / 64), q: key % 64, places: regions(cells) }));
+    const roots = [...new Set(pieces.map((_, i) => find(i)))];
+    const objects = roots.map(rt => ({ pieces: pieces.filter((_, i) => find(i) === rt) }));
+    objects.forEach((o, k) => o.pieces.forEach(p => { p.obj = k; }));
+    objOfNode.fill(0);
+    for (let i = 0; i < NN; i++) if (pieceOfNode[i] >= 0) objOfNode[i] = pieces[pieceOfNode[i]].obj;
+    // each object as one glued surface: a taped pair of cells counts once, and taped points are one point
+    const vid = n => (n >= NPS && tapeOf[n] >= 0 ? tapeOf[n] : n);
+    markOf.fill(-1); let mark = 0;   // per cell: the marker color of the free edge it runs along
+    objects.forEach(o => {
+      const faces = [], owner = [];
+      o.pieces.forEach(p => p.cells.forEach(c => { if (c >= CPS && linkCell[c] >= 0 && active[linkCell[c]]) return; faces.push(corners(c).map(vid)); owner.push(c); }));
+      const t = topo(faces, seedOf(owner));
+      o.chi = t.chi; o.manifold = t.manifold; o.oneSided = t.manifold ? !t.orientable : null; o.nB = t.nB;
+      o.loops = t.manifold ? traceLoops(t.bnd) : [];
+      // crosswise tape fuses the layers into one sheet, so sides are the glued surface's sides
+      // (B's frame is mirrored against A's there); face to face, each piece keeps its own two sides
+      if (cross) owner.forEach((c, k) => { side[c] = t.o[k]; const b = linkCell[c]; if (c < CPS && b >= 0 && active[b]) side[b] = -t.o[k]; });
+      // mark each free edge in its own color: the row of cells along it, on both layers where it runs along the tape
+      const comp = new Map(), free = new Map();
+      for (const [a, b] of t.bnd) { const rt = t.find(a); if (!comp.has(rt)) comp.set(rt, mark++); free.set(ekey(a, b), comp.get(rt)); }
+      o.pieces.forEach(p => p.cells.forEach(c => {
+        const q = corners(c).map(vid);
+        for (let k = 0; k < 4; k++) { const m = free.get(ekey(q[k], q[(k + 1) & 3])); if (m !== undefined) { markOf[c] = m; if (linkCell[c] >= 0) markOf[linkCell[c]] = m; break; } }
+      }));
+    });
+    return { pieces, objects, taped, side };
+  }
+  // Twists and links, measured from where the simulated paper actually is.
+  function measureGeo() {
+    const r = st.res, lk = (a, b) => Math.abs(Lab.linking(a.map(pt), b.map(pt)));
+    const twist = r.pieces.map(p => (p.kind === 'loop' && !p.oneSided && p.loops.length === 2 ? lk(p.loops[0], p.loops[1]) : null));
+    // a closed band glued from several pieces: its twist is how often its two edges wind round each other
+    const otwist = r.objects.map(o => (o.manifold && o.chi === 0 && !o.oneSided && o.pieces.length > 1 && o.loops.length === 2 ? lk(o.loops[0], o.loops[1]) : null));
+    const outline = o => (o.manifold ? o.loops : o.pieces.filter(p => p.kind === 'loop').map(p => p.loops[0]));
+    const olinks = [];
+    for (let a = 0; a < r.objects.length; a++) for (let b = a + 1; b < r.objects.length; b++) {
+      let m = 0; for (const l1 of outline(r.objects[a])) for (const l2 of outline(r.objects[b])) m = Math.max(m, lk(l1, l2));
+      olinks.push(m);
+    }
+    const links = [];
+    for (let a = 0; a < r.pieces.length; a++) for (let b = a + 1; b < r.pieces.length; b++) {
+      const P = r.pieces[a], Q = r.pieces[b];
+      if (P.kind !== 'loop' || Q.kind !== 'loop' || !P.loops.length || !Q.loops.length) { links.push(0); continue; }
+      links.push(lk(P.loops[0], Q.loops[0]));
+    }
+    return { twist, otwist, links, olinks };
+  }
+  const sameArr = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+  const sameGeo = (a, b) => !!(a && b) && ['twist', 'otwist', 'links', 'olinks'].every(k => sameArr(a[k], b[k]));
+
+  /* ---------------- describing ---------------- */
+  function shapeName(p) {
+    if (p.kind === 'loop') return `${p.oneSided ? 'one-sided' : 'two-sided'} loop`;
+    if (p.kind === 'strip') return 'strip with two ends';
+    if (p.kind === 'slit') return `${p.oneSided ? 'one-sided' : 'two-sided'} loop with a slit`;
+    return `piece with ${p.nB} edges`;
+  }
+  const lengthText = p => (p.kind === 'strip' ? `${p.laps === 1 ? 'one' : p.laps} lap long` : p.laps === 1 ? 'one lap' : p.laps === 2 ? 'twice as long' : `${p.laps} laps`);
+  const article = s => (/^(?!one)[aeiou]/i.test(s) ? 'an ' : 'a ') + s;
+  function pieceText(p) {
+    if (p.kind === 'loop') return `${article(shapeName(p))}${p.laps === 2 ? ' twice as long' : ''}`;
+    return article(shapeName(p));
+  }
+  function objectText(o, r, k) {
+    const ps = o.pieces;
+    let s;
+    if (ps.length === 1) s = `${ps[0].name}, ${pieceText(ps[0])}, on its own.`;
+    else {
+      const links = r.taped.filter(t => ps.includes(r.pieces[t.p]));
+      const names = ps.map(p => `${p.name}, ${pieceText(p)}`);
+      const list = names.length === 2 ? names.join(', and ') : names.slice(0, -1).join('; ') + '; and ' + names[names.length - 1];
+      const ring = ps.length > 2 && links.length === ps.length && ps.every(p => links.filter(t => t.p === p.id || t.q === p.id).length === 2);
+      const places = links.reduce((a, t) => a + t.places, 0);
+      s = ps.length === 2 ? `${list}, taped together${places > 1 ? ` in ${places} places` : ''}.` : `${list}${ring ? ', taped end to end in a ring' : ', taped together'}.`;
+    }
+    const tw = st.geo && st.geo.otwist[k];
+    if (o.manifold) s += ` As one surface it is ${o.oneSided ? '<b>one-sided</b>' : 'two-sided'}, with ${o.nB} edge${o.nB === 1 ? '' : 's'}${o.chi === 0 && ps.length > 1 ? `: one closed band${tw == null ? '' : tw === 0 ? ' with no twist' : ` with ${tw} full twist${tw > 1 ? 's' : ''}`}` : ''}.`;
+    else s += ' Where it is taped face to face it is two layers, so sides belong to each piece, listed in the table.';
+    return s;
+  }
+  function describe(r) {
+    const k = r.objects.length;
+    let s = k === 1 ? '1 object: ' + objectText(r.objects[0], r, 0) : `${k} separate objects. ` + r.objects.map((o, i) => `(${i + 1}) ${objectText(o, r, i)}`).join(' ');
+    if (k > 1 && st.geo) {
+      const linked = st.geo.olinks.filter(v => v > 0).length;
+      s += linked ? (k === 2 ? ` The two are linked ${st.geo.olinks[0]}×, so they can't be pulled apart.` : ` ${linked} pairs of them are linked.`) : (k === 2 ? ' They are not linked, so they come apart.' : ' None of them are linked, so they all come apart.');
+    }
+    if (st.history.length && (nOf(0) % 2 || nOf(1) % 2) && !r.pieces.some(p => p.oneSided)) {
+      s += r.objects.some(o => o.oneSided) ? ' Every piece of paper is two-sided on its own; the tape is what keeps the whole thing one-sided.' : ' No one-sided piece of paper is left.';
+    }
+    return s;
+  }
+  function renderReadout() {
+    const r = st.res; if (!r || !readout) return;
+    if (st.cutting) { readout.innerHTML = `<h4>Result</h4><p style="margin:0;color:var(--muted)">Cutting ${st.cutting.sheet} down its middle…</p>`; return; }
+    const g = st.geo, k = r.pieces.length;
+    let li = 0; const linkOf = {};
+    for (let a = 0; a < k; a++) for (let b = a + 1; b < k; b++) { const v = g ? g.links[li] : 0; li++; if (v) { (linkOf[a] = linkOf[a] || []).push(`${r.pieces[b].name} (${v}×)`); (linkOf[b] = linkOf[b] || []).push(`${r.pieces[a].name} (${v}×)`); } }
+    const rows = r.pieces.map((p, i) => {
+      const tw = !g || g.twist[i] == null ? '–' : g.twist[i] === 0 ? 'no twist' : `${g.twist[i]} full twist${g.twist[i] > 1 ? 's' : ''}`;
+      const taped = r.taped.filter(t => t.p === i || t.q === i).map(t => `${r.pieces[t.p === i ? t.q : t.p].name}${t.places > 1 ? ` (${t.places}×)` : ''}`);
+      return `<tr><td><span class="swatch" style="background:${p.color}"></span>${p.name}</td><td>${shapeName(p)}</td><td>${p.oneSided ? '<b>one</b>' : 'two'}</td>
+        <td>${lengthText(p)}</td><td>${tw}</td><td>${taped.join(', ') || '–'}</td><td>${(linkOf[i] || []).join(', ') || '–'}</td></tr>`;
+    }).join('');
+    const ver = !g ? '<span style="color:var(--muted)">measuring the simulated paper…</span>'
+      : st.geoOk === false ? '<span class="miss">⚠</span> The simulated paper slipped through itself, which real paper can\'t do. Press Reset and try again.'
+        : '<span class="ok">✓</span> Twists and links measured from the simulated paper, and re-checked every two seconds.';
+    const head = st.history.length ? `After cutting ${st.history.join(', then ')}` : 'Before cutting';
+    readout.innerHTML = `<h4>${head}</h4><p style="margin:0 0 8px">${describe(r)}</p>
+      <div class="tbl-wrap"><table class="pieces"><thead><tr><th>Piece</th><th>Shape</th><th>Sides</th><th>Length</th><th>Twist</th><th>Taped to</th><th>Linked with</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="verdict-line" style="font-size:.875rem">${ver}</p>
+      <p class="verdict-line" style="font-size:.8125rem;color:var(--muted)">${st.paint === 'sides'
+        ? `Painted by side: blue on one face, orange on the other, spreading out from the tape without crossing an edge. ${st.join === 'cross' ? 'Crosswise tape fuses the two layers, so paint carries across it.' : 'Face to face, each piece is painted on its own.'} On a one-sided surface the paint comes back around onto the other face, so somewhere blue has to meet orange along a sharp line.`
+        : 'Pink pieces came from loop A, blue-green from loop B. The paler patch is the tape.'} ${st.marks ? 'Each separate edge is marked in its own dark color.' : ''} Drag a piece to pull it around.</p>`;
+  }
+
+  /* ---------------- your notebook, re-run ---------------- */
+  const CHECKS = [
+    { key: 'square', label: 'The classic: two plain loops taped crosswise, both cut', setup: 'plain A × plain B, crosswise · cut A, then B', A: 'plain', B: 'plain', join: 'cross', cuts: ['A', 'B'],
+      test: r => r.objects.length === 1 && r.objects[0].chi === 0 && r.objects[0].oneSided === false, hit: 'One closed two-sided band: the square frame.' },
+    { key: 'step1', quote: 'Mobius + |x| simple (non mobius!) cross cut. Step 1: looks like infinity + arrow', setup: 'our reading: Möbius A taped crosswise to plain loop B · cut A', A: 'left', B: 'plain', join: 'cross', cuts: ['A'],
+      test: r => r.objects.length === 1 && r.pieces.some(p => p.kind === 'loop' && p.laps === 2) && r.pieces.some(p => p.kind === 'strip'),
+      hit: 'The long loop is your infinity, and plain loop B, cut open by the scissors going through the tape, is the strap across it: your arrow.' },
+    { key: 'step2', quote: 'Step2: looks like a skull in a box or a frog in a box', setup: 'the same, then cut B too', A: 'left', B: 'plain', join: 'cross', cuts: ['A', 'B'],
+      test: r => r.objects.length === 1 && r.objects[0].chi === 0, hit: 'Everything is one closed band, so “box” fits. Whether it looks like a skull or a frog depends on how it lies.' },
+    { key: 'butterfly', quote: 'Left + right mobius taped parallel overlapped = butterfly. Butterfly + half cut = … the tape is holding the sides together … Infinity (non mobius) + nested loop (non mobius)… mobius didn\'t stay together', setup: 'left and right Möbius loops, face to face · cut A, then B', A: 'left', B: 'right', join: 'par', cuts: ['A', 'B'],
+      test: r => r.objects.length === 1 && r.pieces.length === 2 && r.pieces.every(p => p.kind === 'loop' && !p.oneSided), hit: 'Two two-sided loops held together only by the tape, and nothing one-sided is left.' }
+  ];
+  function renderNotebook() {
+    if (!notebook) return;
+    const rows = CHECKS.map(c => {
+      const r = st.checks[c.key] || {};
+      let res = '';
+      if (r.state === 'running') res = '<span style="color:var(--muted)">Taping and cutting… watch the stage.</span>';
+      else if (r.state === 'yes') res = `<span class="ok">✓ Matches.</span> ${c.hit} Simulated: ${r.text}`;
+      else if (r.state === 'no') res = `<span class="miss">✗ Doesn't match.</span> Simulated: ${r.text}`;
+      return `<li><span class="nb-q">${c.quote ? `“${c.quote}”` : c.label}</span><button type="button" class="btn" data-check="${c.key}" id="t-check-${c.key}"${r.state === 'running' ? ' disabled' : ''}>${r.state && r.state !== 'running' ? 'Run again' : 'Run it'}</button>
+        <span class="nb-setup">${c.setup}</span><p class="nb-res">${res}</p></li>`;
+    }).join('');
+    notebook.innerHTML = `<h4>Your notebook, re-run</h4>
+      <p class="cap">Taped constructions from your notes. Run one and the simulation builds it, cuts it the same way, and checks what your notes say.</p>
+      <ol class="nb-list">${rows}</ol>`;
+  }
+  function cancelScript() {
+    if (!st.script) return;
+    const k = st.script.c.key;
+    if (st.checks[k] && st.checks[k].state === 'running') delete st.checks[k];
+    st.script = null; renderNotebook();
+  }
+  function runCheck(key) {
+    const c = CHECKS.find(x => x.key === key); if (!c) return;
+    cancelScript();
+    st.A = c.A; st.B = c.B; st.join = c.join;
+    ctl.A.set(c.A); ctl.B.set(c.B); ctl.join.set(c.join);
+    reset();
+    st.checks[key] = { state: 'running' }; st.script = { c, k: 0 };
+    renderNotebook();
+    const nav = document.querySelector('.nav'), top = ch.stage.getBoundingClientRect().top + window.scrollY - (nav ? nav.offsetHeight : 0) - 10;
+    if (Math.abs(window.scrollY - top) > 40) window.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  function tickScript() {
+    const S = st.script;
+    if (!S || st.cutting || st.t < 2.4 || st.tCut < (S.k ? 2.2 : 0)) return;
+    if (S.k < S.c.cuts.length) { if (!startCut(S.c.cuts[S.k])) { cancelScript(); return; } S.k++; return; }
+    if (st.tCut < 3 || !st.geo) return;
+    st.script = null;
+    const ok = S.c.test(st.res);
+    st.checks[S.c.key] = { state: ok ? 'yes' : 'no', text: describe(st.res).replace(/<\/?b>/g, '') };
+    renderNotebook();
+    Lab.toast(ch.stage, ok ? '✓ Your notes match the simulated paper.' : '✗ The simulated paper disagrees with your notes.', 2800);
+  }
+
+  /* ---------------- cutting ---------------- */
+  function startCut(sheet) {
+    if (st.cutting || st.done[sheet]) return false;
+    onUp();
+    st.cutting = { s: sheet === 'A' ? 0 : 1, sheet, k: 0, f: 0 };
+    st.userCam = false; st.geo = null; st.geoOk = null; wake();
+    if (sprite) sprite.visible = true;
+    if (hud.right) hud.right.textContent = `Scissors: down the middle of ${sheet}`;
+    renderReadout(); syncButtons();
+    return true;
+  }
+  function stepCut(dt) {
+    const C = st.cutting; C.f += dt * CUT_SPEED;
+    let changed = false;
+    while (C.k < NI && C.k < C.f) {
+      const c = cellAt(C.s, C.k, MID), o = linkCell[c];
+      if (active[c]) { active[c] = 0; changed = true; }
+      if (o >= 0 && active[o]) { active[o] = 0; changed = true; }   // through the tape: both layers
+      C.k++;
+    }
+    if (changed) { rebuild(); updateIndex(); wake(); }
+    if (changed && (st.t - st.lastAnalyze > 0.2 || C.k >= NI)) { st.lastAnalyze = st.t; st.res = analyze(); paint(); }
+    const cs = corners(cellAt(C.s, Math.min(NI - 1, C.k), MID));
+    if (sprite) sprite.position.set(...[0, 1, 2].map(k => cs.reduce((a, n) => a + pos[n * 3 + k], 0) / 4));
+    if (C.k >= NI) {
+      st.cutting = null; if (sprite) sprite.visible = false;
+      st.done[C.sheet] = true; st.history.push(C.sheet); st.tCut = 0; st.autoJig = false;
+      st.res = analyze(); paint(); setHud();
+      renderReadout(); syncButtons();
+    }
+  }
+  function hudText() {
+    const a = loopOf(st.A), b = loopOf(st.B);
+    let t = `A: <b>${a.label}</b> · B: <b>${b.label}</b> · ${st.join === 'cross' ? 'crosswise' : 'face to face'}`;
+    if (st.history.length) t += ` · cut <b>${st.history.join(', ')}</b>`;
+    return t;
+  }
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  function setHud() {
+    if (!hud.top) return;
+    hud.top.innerHTML = hudText();
+    hud.right.textContent = `${plural(st.res.objects.length, 'object')} · ${plural(st.res.pieces.length, 'piece')}`;
+  }
+  function syncButtons() {
+    if (!btn.cutA) return;
+    btn.cutA.disabled = !!st.cutting || st.done.A;
+    btn.cutB.disabled = !!st.cutting || st.done.B;
+  }
+  function reset() {
+    onUp();
+    active.fill(1); st.cutting = null; st.done = { A: false, B: false }; st.history = [];
+    st.t = 0; st.tCut = 0; st.autoJig = true; st.jiggle = 0; st.geo = null; st.geoOk = null; st.userCam = false;
+    blend = 0; place(); setupTape(); rebuild(); setBlend(0, true);
+    st.res = analyze();
+    if (meshes.length) { updateIndex(); paint(); syncMeshes(); }
+    gravity = st.desk ? 24 : 0; wake();
+    if (sprite) sprite.visible = false;
+    setHud(); renderReadout(); syncButtons();
+  }
+
+  /* ---------------- drawing ---------------- */
+  // Each loop is drawn from a hidden grid (for smooth normals) copied into four corners per cell,
+  // so a cell can be painted by its own side. Front and back share everything except color.
+  function makeSheetMesh(s) {
+    const grid = new THREE.BufferGeometry();
+    grid.setAttribute('position', new THREE.BufferAttribute(new Float32Array((NI + 1) * NJ * 3), 3));
+    const nv = CPS * 4, geoF = new THREE.BufferGeometry(), geoB = new THREE.BufferGeometry();
+    const P = new THREE.BufferAttribute(new Float32Array(nv * 3), 3), N = new THREE.BufferAttribute(new Float32Array(nv * 3), 3), U = new THREE.BufferAttribute(new Float32Array(nv * 2), 2);
+    for (let i = 0; i < NI; i++) for (let v = 0; v < ROWS; v++) CORNER.forEach(([di, dv], k) => { const q = ((i * ROWS + v) * 4 + k) * 2; U.array[q] = (i + di) * H / (W * 1.6); U.array[q + 1] = (v + dv) / ROWS; });
+    [geoF, geoB].forEach(g => { g.setAttribute('position', P); g.setAttribute('normal', N); g.setAttribute('uv', U); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(nv * 3), 3)); });
+    const front = new THREE.Mesh(geoF, new THREE.MeshStandardMaterial({ map: Lab.paperTexture(true, '#ffffff', 'tape-white'), roughness: 0.88, side: THREE.FrontSide, vertexColors: true }));
+    const back = new THREE.Mesh(geoB, new THREE.MeshStandardMaterial({ map: Lab.paperTexture(false, '#ffffff', 'tape-white'), roughness: 0.88, side: THREE.BackSide, vertexColors: true }));
+    const group = new THREE.Group(); group.add(front, back);
+    return { s, grid, geoF, geoB, front, back, group };
+  }
+  function updateIndex() {
+    meshes.forEach(m => {
+      const gi = [], ri = [];
+      for (let i = 0; i < NI; i++) for (let v = 0; v < ROWS; v++) if (active[m.s * CPS + i * ROWS + v]) {
+        const a = i * NJ + v, b = (i + 1) * NJ + v, q = (i * ROWS + v) * 4;
+        gi.push(a, b, a + 1, b, b + 1, a + 1); ri.push(q, q + 1, q + 3, q + 1, q + 2, q + 3);
+      }
+      m.grid.setIndex(gi); m.geoF.setIndex(ri); m.geoB.setIndex(ri);
+    });
+  }
+  function syncMeshes() {
+    meshes.forEach(m => {
+      const g = m.grid.getAttribute('position').array;
+      for (let i = 0; i <= NI; i++) for (let j = 0; j < NJ; j++) { const id = node(m.s, i, j) * 3, v = (i * NJ + j) * 3; g[v] = pos[id]; g[v + 1] = pos[id + 1]; g[v + 2] = pos[id + 2]; }
+      m.grid.getAttribute('position').needsUpdate = true;
+      m.grid.computeVertexNormals();
+      const gn = m.grid.getAttribute('normal').array, P = m.geoF.getAttribute('position'), N = m.geoF.getAttribute('normal');
+      for (let i = 0; i < NI; i++) for (let v = 0; v < ROWS; v++) {
+        if (!active[m.s * CPS + i * ROWS + v]) continue;
+        const q = (i * ROWS + v) * 4;
+        for (let k = 0; k < 4; k++) {
+          const gv = ((i + CORNER[k][0]) * NJ + v + CORNER[k][1]) * 3, o = (q + k) * 3;
+          P.array[o] = g[gv]; P.array[o + 1] = g[gv + 1]; P.array[o + 2] = g[gv + 2];
+          N.array[o] = gn[gv]; N.array[o + 1] = gn[gv + 1]; N.array[o + 2] = gn[gv + 2];
+        }
+      }
+      P.needsUpdate = true; N.needsUpdate = true;
+      m.geoF.computeBoundingSphere(); m.geoB.boundingSphere = m.geoF.boundingSphere;
+    });
+  }
+  const linCol = hex => new THREE.Color(hex).convertSRGBToLinear();
+  function paint() {
+    const r = st.res; if (!r || !meshes.length) return;
+    const white = linCol('#ffffff'), pc = r.pieces.map(p => linCol(p.color)), mk = MARKS.map(linCol), sd = SIDES.map(linCol);
+    meshes.forEach(m => {
+      const F = m.geoF.getAttribute('color').array, B = m.geoB.getAttribute('color').array;
+      for (let i = 0; i < NI; i++) for (let v = 0; v < ROWS; v++) {
+        const c = m.s * CPS + i * ROWS + v; if (!active[c]) continue;
+        const q = (i * ROWS + v) * 4, o = r.side[c] >= 0 ? 0 : 1;
+        for (let k = 0; k < 4; k++) {
+          const n = node(m.s, i + CORNER[k][0], v + CORNER[k][1]);
+          let f, b;
+          if (st.paint === 'sides') { f = sd[o]; b = sd[1 - o]; }
+          else { f = pc[pieceOfNode[n]].clone(); if (onTape[n] && tapeOf[n] >= 0) f.lerp(white, 0.42); b = f; }
+          if (st.marks && markOf[c] >= 0) f = b = mk[markOf[c] % mk.length];
+          const x = (q + k) * 3;
+          F[x] = f.r; F[x + 1] = f.g; F[x + 2] = f.b; B[x] = b.r; B[x + 1] = b.g; B[x + 2] = b.b;
+        }
+      }
+      m.geoF.getAttribute('color').needsUpdate = true; m.geoB.getAttribute('color').needsUpdate = true;
+    });
+  }
+
+  /* ---------------- dragging pieces ---------------- */
+  let ray = null, ndc = null, dragPlane = null;
+  function pointerNDC(ev) { const r = Lab.getRenderer().domElement.getBoundingClientRect(); ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); }
+  function onDown(ev) {
+    if (Lab.active !== ch || st.cutting) return;
+    pointerNDC(ev); ray.setFromCamera(ndc, ch.camera);
+    const hits = ray.intersectObjects(meshes.flatMap(m => [m.front, m.back]), false);
+    if (!hits.length) return;
+    const hp = hits[0].point;
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < NN; i++) { if (!alive[i]) continue; const d = (pos[i * 3] - hp.x) ** 2 + (pos[i * 3 + 1] - hp.y) ** 2 + (pos[i * 3 + 2] - hp.z) ** 2; if (d < bd) { bd = d; best = i; } }
+    if (best < 0) return;
+    ev.stopImmediatePropagation(); ev.preventDefault();
+    dragId = best; inv[best] = 0; wake();
+    dragTarget = pt(best);
+    dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(ch.camera.getWorldDirection(new THREE.Vector3()).negate(), hp.clone());
+    ch.controls.enabled = false;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+    window.addEventListener('pointercancel', onUp, { once: true });
+  }
+  function onMove(ev) {
+    if (dragId < 0) return;
+    pointerNDC(ev); ray.setFromCamera(ndc, ch.camera);
+    const p = new THREE.Vector3();
+    if (ray.ray.intersectPlane(dragPlane, p)) { const lim = 4; dragTarget = [Lab.clamp(p.x, -lim, lim), Lab.clamp(p.y, -lim, lim), Lab.clamp(p.z, FLOOR + 0.05, lim)]; }
+  }
+  function onUp() {
+    window.removeEventListener('pointermove', onMove);
+    if (dragId >= 0) { inv[dragId] = alive[dragId] ? 1 : 0; dragId = -1; st.verifyT = 0.6; }
+    if (Lab.active === ch && ch.controls) ch.controls.enabled = true;
+  }
+  // Keep everything in view until the person takes over the camera.
+  function fitCamera(dt) {
+    let cx = 0, cy = 0, cz = 0, m = 0;
+    for (let i = 0; i < NN; i++) if (alive[i]) { cx += pos[i * 3]; cy += pos[i * 3 + 1]; cz += pos[i * 3 + 2]; m++; }
+    if (!m) return;
+    cx /= m; cy /= m; cz /= m;
+    let r2 = 0; for (let i = 0; i < NN; i += 3) if (alive[i]) { const d = (pos[i * 3] - cx) ** 2 + (pos[i * 3 + 1] - cy) ** 2 + (pos[i * 3 + 2] - cz) ** 2; if (d > r2) r2 = d; }
+    const cam = ch.camera, half = THREE.MathUtils.degToRad(cam.fov / 2), hfov = Math.atan(Math.tan(half) * cam.aspect);
+    const want = Math.max(4.6, Math.sqrt(r2) / Math.sin(Math.min(half, hfov)) * 1.06);
+    const tgt = ch.controls.target, k = Math.min(1, dt * 1.5);
+    tgt.x += (cx - tgt.x) * k; tgt.y += (cy - tgt.y) * k; tgt.z += (cz - tgt.z) * k;
+    const dir = cam.position.clone().sub(tgt), d = dir.length();
+    cam.position.copy(tgt).add(dir.multiplyScalar((d + (want - d) * k) / d));
+  }
+
+  /* ---------------- init ---------------- */
+  const POSE = [[5.4, -6.0, 2.2], [0, 0, 0]];
+  ch.init = function (section, stage) {
+    ray = new THREE.Raycaster(); ndc = new THREE.Vector2();
+    const { scene, camera, controls } = Lab.makeScene({ pos: POSE[0] });
+    ch.scene = scene; ch.camera = camera; ch.controls = controls;
+    controls.addEventListener('start', () => { st.userCam = true; });
+    const wood = Lab.woodTexture().clone(); wood.needsUpdate = true; wood.repeat.set(2, 2);
+    deskMesh = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: wood, roughness: 0.92 }));
+    deskMesh.position.z = FLOOR; deskMesh.visible = false; scene.add(deskMesh);
+    meshes = [makeSheetMesh(0), makeSheetMesh(1)];
+    meshes.forEach(m => scene.add(m.group));
+    sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: Lab.scissorsTexture(), depthTest: false, transparent: true }));
+    sprite.scale.set(0.3, 0.3, 1); sprite.renderOrder = 10; sprite.visible = false; scene.add(sprite);
+
+    hud.wrap = Lab.el('div', { class: 'hud' });
+    hud.top = Lab.el('div', { class: 'chip' }); hud.right = Lab.el('div', { class: 'chip' });
+    hud.wrap.append(hud.top, hud.right);
+    const bottom = Lab.el('div', { class: 'hud hud-bottom' });
+    bottom.append(Lab.el('div', { class: 'chip', text: 'Drag a piece to pull it. Drag empty space to turn the view.' }));
+    stage.append(hud.wrap, bottom);
+
+    const c = section.querySelector('[data-controls]');
+    const loopOpts = LOOPS.map(l => ({ value: l.value, label: l.label }));
+    ctl.A = Lab.ui.seg(c, { label: 'Loop A (pink, on top)', id: 't-a', value: st.A, options: loopOpts, onChange: v => { cancelScript(); st.A = v; reset(); } });
+    ctl.B = Lab.ui.seg(c, { label: 'Loop B (blue-green, underneath)', id: 't-b', value: st.B, options: loopOpts, onChange: v => { cancelScript(); st.B = v; reset(); } });
+    ctl.join = Lab.ui.seg(c, { label: 'Tape them', id: 't-join', value: st.join, options: [{ value: 'cross', label: 'Crosswise |X|' }, { value: 'par', label: 'Face to face (butterfly)' }], onChange: v => { cancelScript(); st.join = v; reset(); } });
+    const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
+    btn.cutA = Lab.ui.button(row, { label: '✂ Cut A down the middle', id: 't-cuta', primary: true, onClick: () => { cancelScript(); startCut('A'); } });
+    btn.cutB = Lab.ui.button(row, { label: '✂ Cut B down the middle', id: 't-cutb', onClick: () => { cancelScript(); startCut('B'); } });
+    Lab.ui.button(row, { label: 'Jiggle', id: 't-jiggle', onClick: () => { st.jiggle = 0.9; st.verifyT = 1.6; wake(); } });
+    Lab.ui.button(row, { label: 'Reset', id: 't-reset', onClick: () => { cancelScript(); reset(); Lab.tweenCamera(ch, ...POSE); } });
+    Lab.ui.seg(c, { label: 'Hands', id: 't-desk', value: 'apart', options: [{ value: 'apart', label: 'Pull apart' }, { value: 'off', label: 'Let it float' }, { value: 'on', label: 'Drop on desk' }],
+      onChange: v => { st.mode = v; st.desk = v === 'on'; gravity = st.desk ? 24 : 0; deskMesh.visible = st.desk; st.verifyT = 2.5; wake(); } });
+    Lab.ui.seg(c, { label: 'Paint', id: 't-paint', value: st.paint, options: [{ value: 'pieces', label: 'By piece' }, { value: 'sides', label: 'By side' }], onChange: v => { st.paint = v; paint(); renderReadout(); } });
+    Lab.ui.seg(c, { label: 'Edges', id: 't-marks', value: 'on', options: [{ value: 'on', label: 'Marked' }, { value: 'off', label: 'Plain' }], onChange: v => { st.marks = v === 'on'; paint(); renderReadout(); } });
+
+    readout = section.querySelector('[data-readout]');
+    notebook = section.querySelector('[data-notebook]');
+    if (notebook) notebook.addEventListener('click', ev => { const b = ev.target.closest('[data-check]'); if (b && !b.disabled) runCheck(b.dataset.check); });
+    const cv = Lab.getRenderer().domElement;
+    cv.addEventListener('pointerdown', onDown, { capture: true });
+    cv.addEventListener('touchstart', ev => { if (Lab.active === ch && dragId >= 0) ev.stopImmediatePropagation(); }, { capture: true, passive: true });
+    reset(); renderNotebook();
+  };
+
+  ch.frame = function (dt) {
+    if (!Lab.stepTween(ch, dt)) ch.controls.update();
+    st.t += dt; st.tCut += dt;
+    setBlend(Lab.smooth(Math.min(1, st.t / 2.2)));
+    if (st.cutting) stepCut(dt);
+    if (!st.autoJig && st.tCut > 0.8 && !st.cutting) { st.autoJig = true; if (st.mode !== 'on') st.jiggle = 0.4; }
+    if (st.jiggle > 0) { wake(); kick(0.016 * st.jiggle); st.jiggle = Math.max(0, st.jiggle - dt); }
+    if (dragId >= 0) wake();
+    if (st.mode === 'apart' && st.t > 2.4 && !asleep) spread(SPREAD_PUSH, SPREAD_INFLATE);
+    if (!asleep) { step(Math.min(dt, 1 / 30), blend < 1 ? 6 : 4); recenter(); syncMeshes(); }
+    if (!st.userCam && !ch._tween) fitCamera(dt);
+    // twists and links: measure once things settle, then keep re-checking
+    st.verifyT -= dt;
+    if (!st.cutting && st.t > 2.6 && st.tCut > 1.5 && st.jiggle <= 0 && dragId < 0 && st.verifyT <= 0) {
+      st.verifyT = 2;
+      const g = measureGeo();
+      if (!st.geo) { st.geo = g; st.geoOk = true; renderReadout(); }
+      else { const ok = sameGeo(st.geo, g); if (ok !== st.geoOk) { st.geoOk = ok; renderReadout(); } }
+    }
+    tickScript();
   };
   ch.leave = function () { onUp(); };
 
@@ -2454,7 +3494,7 @@ const Lab = (() => {
 
 /* ---- ch3_spin.js ---- */
 /* ============================================================
-   Experiment 3: 720°, Dirac's belt trick.
+   Experiment 4: 720°, Dirac's belt trick.
    Every tether point at distance fraction s from the cube is
    rotated by the quaternion Q(s, t). Points at the same s share
    one rigid rotation and sit on one sphere, so tethers can never
@@ -2666,22 +3706,20 @@ const Lab = (() => {
 
 /* ---- ch4_music.js ---- */
 /* ============================================================
-   Experiment 4: Strip Music.
+   Experiment 5: Strip Music.
    A standing wave displaces the band along its normal:
    d(θ) = A cos(mθ) cos(ωt). After one lap the band comes back with
    its normal flipped (Möbius) or not (ring), so the wave fits only
    if cos(2πm) = −1 (Möbius: m = ½, 1½, …) or +1 (ring: m = 0, 1, …).
-   Zero-point sums use a smooth cutoff e^{-kε}; after removing the
-   1/ε² bulk term the leftovers tend to −1/12 (ring) and +1/24 (Möbius).
    ============================================================ */
 {
   const TAU = Lab.TAU;
   const R = 1.25, W = 0.62, SEGU = 240, SEGV = 8, NV = SEGV + 1, AMP = 0.13;
   const MODES = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5];
   const mLabel = m => (m % 1 ? (m === 0.5 ? '½' : `${Math.floor(m)}½`) : String(m));
-  const st = { n: 1, m: 0.5, t: 0, electrons: 4, eps: 1, sweep: true, lastPartials: null };
+  const st = { n: 1, m: 0.5, t: 0, electrons: 4, last: { ring: null, mob: null } };
   const ch = { token: 'music', gl: true, background: () => Lab.stageBg() };
-  let geo, base, baseN, meshF, meshB, seamLines, hud = {}, readout, ladder, spec, zp, zpOut, ac = null;
+  let geo, base, baseN, meshF, meshB, seamLines, hud = {}, readout, ladder, spec, ac = null;
 
   function fits() { const c = Math.cos(TAU * st.m); return st.n % 2 ? c < -0.99 : c > 0.99; }
 
@@ -2769,34 +3807,16 @@ const Lab = (() => {
     const fmax = 2200; const xOf = f => x0 + f / fmax * (x1 - x0);
     ctx.fillStyle = muted; ctx.font = `10px ${mono}`; ctx.textAlign = 'center';
     [0, 500, 1000, 1500, 2000].forEach(f => ctx.fillText(f + (f === 2000 ? ' Hz' : ''), xOf(f), h - 6));
-    const P = st.lastPartials; if (!P) { ctx.textAlign = 'left'; ctx.fillText('press a pluck button', x0 + 6, y0 + 12); return; }
-    P.parts.forEach(p => { const x = xOf(p.f); if (x > x1) return; ctx.fillStyle = P.color; ctx.fillRect(x - 3, y1 - p.a * (y1 - y0), 6, p.a * (y1 - y0)); });
-    ctx.textAlign = 'left'; ctx.fillStyle = muted; ctx.fillText(P.label, x0 + 6, y0 + 12);
-  }
-  function zeroPoint(eps) {
-    const x = Math.exp(-eps);
-    return { ring: x / (1 - x) ** 2 - 1 / eps ** 2, mob: Math.sqrt(x) * (1 + x) / (2 * (1 - x) ** 2) - 1 / eps ** 2 };
-  }
-  function drawZP() {
-    const { ctx, w, h } = Lab.fitCanvas(zp);
-    ctx.clearRect(0, 0, w, h);
-    const ink = Lab.cssVar('--ink'), muted = Lab.cssVar('--muted'), pink = Lab.cssVar('--pink'), blue = Lab.cssVar('--blue'), rule = Lab.cssVar('--rule'), mono = Lab.cssVar('--font-mono');
-    const x0 = 48, x1 = w - 12, y0 = 12, y1 = h - 26;
-    const lx = e => x0 + (Math.log10(2) - Math.log10(e)) / (Math.log10(2) - Math.log10(0.02)) * (x1 - x0);
-    const yv = v => y1 - (v + 0.1) / 0.16 * (y1 - y0);
-    ctx.strokeStyle = rule; ctx.lineWidth = 1;
-    [-0.08, -0.04, 0, 0.04].forEach(v => { ctx.beginPath(); ctx.moveTo(x0, yv(v)); ctx.lineTo(x1, yv(v)); ctx.stroke(); ctx.fillStyle = muted; ctx.font = `10px ${mono}`; ctx.textAlign = 'right'; ctx.fillText(v.toFixed(2), x0 - 4, yv(v) + 3); });
-    ctx.textAlign = 'center'; ctx.fillText('more modes counted →', (x0 + x1) / 2, h - 6);
-    const target = [{ v: -1 / 12, c: blue, t: '−1/12' }, { v: 1 / 24, c: pink, t: '+1/24' }];
-    target.forEach(T => { ctx.setLineDash([5, 4]); ctx.strokeStyle = T.c; ctx.beginPath(); ctx.moveTo(x0, yv(T.v)); ctx.lineTo(x1, yv(T.v)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = T.c; ctx.textAlign = 'right'; ctx.font = `600 11px ${mono}`; ctx.fillText(T.t, x1, yv(T.v) - 4); });
-    ['ring', 'mob'].forEach((k, i) => {
-      ctx.strokeStyle = i ? pink : blue; ctx.lineWidth = 2.5; ctx.beginPath();
-      let first = true;
-      for (let e = 2; e >= Math.max(0.02, st.eps); e *= 0.97) { const v = zeroPoint(e)[k]; const X = lx(e), Y = yv(Lab.clamp(v, -0.1, 0.06)); first ? ctx.moveTo(X, Y) : ctx.lineTo(X, Y); first = false; }
-      ctx.stroke();
+    const shown = ['ring', 'mob'].filter(k => st.last[k]);
+    ctx.textAlign = 'left';
+    if (!shown.length) { ctx.fillText('press a pluck button', x0 + 6, y0 + 12); return; }
+    // side by side when both are shown, so notes that coincide stay visible
+    shown.forEach((k, i) => {
+      const P = st.last[k], dx = shown.length > 1 ? (i ? 2.5 : -2.5) : 0, bw = shown.length > 1 ? 4 : 6;
+      ctx.fillStyle = Lab.cssVar(k === 'ring' ? '--blue' : '--pink');
+      P.parts.forEach(p => { const x = xOf(p.f) + dx; if (x > x1) return; ctx.fillRect(x - bw / 2, y1 - p.a * (y1 - y0 - 26), bw, p.a * (y1 - y0 - 26)); });
+      ctx.fillText(P.label, x0 + 6, y0 + 10 + i * 13);
     });
-    const z = zeroPoint(Math.max(0.02, st.eps));
-    zpOut.innerHTML = `plain ring leftover <b style="color:var(--blue)">${z.ring.toFixed(5)}</b> · Möbius ring leftover <b style="color:var(--pink)">${z.mob >= 0 ? '+' : ''}${z.mob.toFixed(5)}</b>`;
   }
 
   /* ---------------- sound ---------------- */
@@ -2821,7 +3841,7 @@ const Lab = (() => {
       g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(p.a, now + 0.006); g.gain.exponentialRampToValueAtTime(0.0008, now + tau * 3);
       o.connect(g); g.connect(master); o.start(now); o.stop(now + tau * 3 + 0.05);
     });
-    st.lastPartials = { parts, color: which === 'ring' ? Lab.cssVar('--blue') : Lab.cssVar('--pink'), label: which === 'ring' ? `plain ring: ${f0} Hz × 1, 2, 3, 4 … (every harmonic)` : same ? `Möbius ring: ${f0} Hz × 1, 3, 5, 7 … (odd harmonics only)` : `Möbius ring: ${f0 / 2} Hz × 1, 3, 5 … (an octave lower, odd only)` };
+    st.last[which] = { parts, label: which === 'ring' ? `plain ring: ${f0} Hz × 1, 2, 3, 4 … (every harmonic)` : same ? `Möbius ring: ${f0} Hz × 1, 3, 5, 7 … (odd harmonics only)` : `Möbius ring: ${f0 / 2} Hz × 1, 3, 5 … (an octave lower, odd only)` };
     drawSpectrum();
   }
 
@@ -2849,18 +3869,13 @@ const Lab = (() => {
       <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Each line is an allowed wave; two electrons fit per wave. A ring of atoms is extra stable when its electrons exactly fill a set of levels. Plain rings fill at 2, 6, 10 (the 4n + 2 rule, like benzene's 6). Möbius rings fill at 4, 8, 12 (the 4n rule).</p>
       <h4 style="margin-top:14px">What you just heard</h4>
       <canvas data-spec class="plot short" aria-label="Spectrum of the last pluck"></canvas>
-      <h4 style="margin-top:14px">Where 1 + 2 + 3 + … = −1/12 lives</h4>
-      <canvas data-zp class="plot" aria-label="Zero-point energy leftovers converging to minus one twelfth for the ring and plus one twenty-fourth for the Möbius ring"></canvas>
-      <p class="verdict-line" data-zpout style="font-family:var(--font-mono);font-size:.8125rem"></p>
-      <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Quantum physics gives every wave a minimum energy, even at rest. Add them up over all the waves and you get infinity. But the infinite part grows with the ring's length, the same everywhere, so it can't push or pull on anything. What's left over is finite: −1/12 for the plain ring, which pulls it smaller, and +1/24 for the Möbius ring, which pushes it bigger (in units of 2πħc/L). This is the Casimir effect in a one-dimensional world.</p>`;
-    ladder = readout.querySelector('[data-ladder]'); spec = readout.querySelector('[data-spec]'); zp = readout.querySelector('[data-zp]'); zpOut = readout.querySelector('[data-zpout]');
+      <p class="verdict-line" style="font-size:.875rem;color:var(--muted)">Each bar is one wave the loop can hold. The plain ring has every whole number, so its notes run 1, 2, 3, 4 … times its lowest. The Möbius ring has only half-numbers, ½, 1½, 2½ …: the odd multiples 1, 3, 5 … of a lowest note an octave down. Pluck both. At the same size, every Möbius note falls exactly between two plain-ring notes, so neither ring can make the other resonate. Switch Möbius pitch to Same note and they share every other harmonic.</p>`;
+    ladder = readout.querySelector('[data-ladder]'); spec = readout.querySelector('[data-spec]');
     Lab.ui.slider(readout.querySelector('[data-elec]'), { label: 'Electrons in the ring', id: 'm-e', min: 2, max: 12, step: 1, value: st.electrons, format: v => String(v), onInput: v => { st.electrons = v; drawLadder(); } });
-    Lab.ui.button(readout.querySelector('[data-elec]'), { label: 'Replay the sum', id: 'm-zp', onClick: () => { st.eps = 2; st.sweep = true; } });
-    st.eps = 2; st.sweep = true;
     drawLadder(); drawSpectrum();
   };
   ch.enter = function () { drawLadder(); drawSpectrum(); };
-  ch.resize = function () { if (ladder) { drawLadder(); drawSpectrum(); drawZP(); } };
+  ch.resize = function () { if (ladder) { drawLadder(); drawSpectrum(); } };
   ch.frame = function (dt) {
     if (!Lab.stepTween(ch, dt)) ch.controls.update();
     st.t += dt;
@@ -2869,14 +3884,13 @@ const Lab = (() => {
     hud.mode.innerHTML = `<b>${mLabel(st.m)}</b> wave${st.m === 1 ? '' : 's'} around a ${st.n ? 'Möbius' : 'plain'} ring`;
     hud.fit.textContent = ok ? (st.m === 0 ? 'fits: the flat zero mode, frequency 0' : 'fits: it meets itself at the joint') : 'doesn’t fit: it tears at the joint';
     hud.fit.className = 'chip ' + (ok ? 'good' : 'alert');
-    if (st.sweep) { st.eps *= Math.pow(0.5, dt * 0.9); if (st.eps <= 0.02) { st.eps = 0.02; st.sweep = false; } drawZP(); }
   };
   Lab.register(ch);
 }
 
 /* ---- ch5_gears.js ---- */
 /* ============================================================
-   Experiment 5: Gear Lock (geometric frustration).
+   Experiment 6: Gear Lock (geometric frustration).
    Gears are rotors joined by stiff tooth springs. Touching gears of
    equal size need θi + θj = const (they counter-rotate). Across a
    Möbius joint the rule flips to θi − θj = const, because that gear is
@@ -3104,7 +4118,7 @@ const Lab = (() => {
 
 /* ---- ch6_forge.js ---- */
 /* ============================================================
-   Experiment 6: Cosmic Forge (topological defects, Kibble–Zurek).
+   Experiment 7: Cosmic Forge (topological defects, Kibble–Zurek).
    Time-dependent Ginzburg–Landau on a periodic grid:
      dψ/dt = ∇²ψ + (μ(t) − |ψ|²) ψ + noise
    μ ramps from −1 (the flat, symmetric state) to +1 over the cooling
@@ -3373,7 +4387,7 @@ const Lab = (() => {
 
 /* ---- ch7_ribbon.js ---- */
 /* ============================================================
-   Experiment 7: Spooky Ribbon.
+   Experiment 8: Spooky Ribbon.
    Part A, corkscrew: the helix tip circles with radius r; it hits the
    ball at phase θ, pushing it sideways by −cos θ (in the table's
    plane). Random timing means uniform θ, so the sideways kick has the
@@ -3381,7 +4395,7 @@ const Lab = (() => {
    Part B, Bell/CHSH with a spin-½ pair, angles a and b:
      pre-twisted ribbon: shared hidden angle λ, A = sgn cos(λ−a), B = −sgn cos(λ−b)
      snapping ribbon: A = ±1; Bob's end flips to oppose A; B agrees with that
-       with probability cos²((a−b)/2), the overlap of Möbius rulings
+       with probability cos²((a−b)/2), chosen to reproduce quantum mechanics
      quantum mechanics: P(A = B) = sin²((a−b)/2)
    ============================================================ */
 {
@@ -3491,7 +4505,7 @@ const Lab = (() => {
   function trial(model, a, b) {
     if (model === 'pre') { const l = rnd() * TAU; return [Math.cos(l - a) >= 0 ? 1 : -1, Math.cos(l - b) >= 0 ? -1 : 1, l]; }
     const A = rnd() < 0.5 ? 1 : -1;
-    const pOpp = Math.cos((a - b) / 2) ** 2;            // snap: overlap of half-angle rulings; QM gives the same odds
+    const pOpp = Math.cos((a - b) / 2) ** 2;            // snap: odds set by hand to match quantum mechanics
     return [A, rnd() < pOpp ? -A : A, null];
   }
   function E(model, a, b, n) { let s = 0; for (let i = 0; i < n; i++) { const r = trial(model, a, b); s += r[0] * r[1]; } return s / n; }
@@ -3672,7 +4686,7 @@ const Lab = (() => {
 
 /* ---- ch8_drain.js ---- */
 /* ============================================================
-   Experiment 8: Drain Gravity.
+   Experiment 9: Drain Gravity.
    Space flows radially inward with speed v(r) (a 2D slice of 3D).
    Anything floating in it accelerates with the flow: a = ∇(v²/2).
      drain (space vanishes only at the planet, so the flux through
@@ -3878,8 +4892,8 @@ Lab.register({ token: 'verdict', gl: false });
 (function boot() {
   if (typeof THREE === 'undefined') {
     document.querySelectorAll('[data-stage]').forEach(s => {
-      if (s.closest('#ch-finger, #ch-scissors, #ch-spin, #ch-music')) {
-        s.append(Lab.el('p', { class: 'chip alert', style: 'position:absolute;inset:auto 12px 12px 12px', text: 'The 3D library did not load, so this experiment cannot run here. The 2D experiments (5 to 8) still work.' }));
+      if (s.closest('#ch-finger, #ch-scissors, #ch-tape, #ch-spin, #ch-music')) {
+        s.append(Lab.el('p', { class: 'chip alert', style: 'position:absolute;inset:auto 12px 12px 12px', text: 'The 3D library did not load, so this experiment cannot run here. The 2D experiments (6 to 9) still work.' }));
       }
     });
   }

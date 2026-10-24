@@ -1,6 +1,6 @@
 <title>The Möbius Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Eight interactive physics experiments built from a Möbius strip notebook, each sorted into what is established, what is a real rhyme, and where it breaks.">
+<meta name="description" content="Nine interactive experiments built from a Möbius strip notebook and its paper-cutting tests, each sorted into what is established, what is a real rhyme, and where it breaks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
@@ -17,7 +17,7 @@
       </svg>
       <h1>The <em>Möbius</em> Lab</h1>
     </div>
-    <p class="dek">Eight experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
+    <p class="dek">Nine experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
     <div class="legend" aria-label="Legend">
       <span><span class="tag real">REAL</span> established math or physics</span>
       <span><span class="tag rhyme">RHYME</span> your idea lines up with a real one, and here is its name</span>
@@ -31,12 +31,13 @@
     <ol>
       <li><a href="#finger" data-token="finger"><span class="n">1</span>Finger vs. Eyes</a></li>
       <li><a href="#scissors" data-token="scissors"><span class="n">2</span>Scissors</a></li>
-      <li><a href="#spin" data-token="spin"><span class="n">3</span>720°</a></li>
-      <li><a href="#music" data-token="music"><span class="n">4</span>Strip Music</a></li>
-      <li><a href="#gears" data-token="gears"><span class="n">5</span>Gear Lock</a></li>
-      <li><a href="#forge" data-token="forge"><span class="n">6</span>Cosmic Forge</a></li>
-      <li><a href="#ribbon" data-token="ribbon"><span class="n">7</span>Spooky Ribbon</a></li>
-      <li><a href="#drain" data-token="drain"><span class="n">8</span>Drain Gravity</a></li>
+      <li><a href="#tape" data-token="tape"><span class="n">3</span>Tape</a></li>
+      <li><a href="#spin" data-token="spin"><span class="n">4</span>720°</a></li>
+      <li><a href="#music" data-token="music"><span class="n">5</span>Strip Music</a></li>
+      <li><a href="#gears" data-token="gears"><span class="n">6</span>Gear Lock</a></li>
+      <li><a href="#forge" data-token="forge"><span class="n">7</span>Cosmic Forge</a></li>
+      <li><a href="#ribbon" data-token="ribbon"><span class="n">8</span>Spooky Ribbon</a></li>
+      <li><a href="#drain" data-token="drain"><span class="n">9</span>Drain Gravity</a></li>
       <li><a href="#verdict" data-token="verdict"><span class="n">✓</span>Verdict</a></li>
     </ol>
   </div>
@@ -73,7 +74,7 @@
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your eyes and your finger aren't disagreeing. They measure different things. Eyes measure locally: any small patch of the strip has two faces. The finger measures globally: follow the surface far enough and the two faces turn out to be one. Local versus global is the central idea of topology.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 3), waves (4), gears (5) and liquid crystals (6).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 4), waves (5), gears (6) and liquid crystals (7).</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Turn on Monsters. The fear predictor learns where monsters hide and warns the ant early, which matches a real theory of emotions as predictions (predictive processing; Lisa Feldman Barrett). The Möbius shape isn't doing the work here, though. The same learning helps on any track with blind spots. Also notice that the jumpy setting fails as badly as the silenced one. What works is calibration, and calibration comes from being wrong and updating.</p></div>
       </div>
       <div class="note deeper">
@@ -93,7 +94,7 @@
   <div class="ch-head">
     <p class="eyebrow">Experiment 2 · predict, then cut</p>
     <h2 id="h-scissors">Scissors</h2>
-    <p class="lede">Your notes ask if there's any way to predict the shape before cutting. There is. Set the twists, pick where to cut, make a guess, then cut. The paper is simulated, so the pieces flop, coil and link the way real paper does.</p>
+    <p class="lede">Your notes ask if there's any way to predict the shape before cutting. There is. Set the twists, pick where to cut, make a guess, then cut, and cut the pieces again. The paper is simulated, so the pieces flop, coil and link the way real paper does. Under the diagram, your notebook's own cut results are lined up to re-run one at a time.</p>
   </div>
   <div class="ch-body">
     <div class="stage-col">
@@ -101,6 +102,7 @@
       <div class="controls" data-controls></div>
       <div class="readout" data-readout></div>
       <div class="readout diagram" data-diagram></div>
+      <div class="readout notebook" data-notebook></div>
     </div>
     <aside class="notes">
       <div class="note card-index">
@@ -113,17 +115,18 @@
         <h3>What you're seeing</h3>
         <p>The scissors follow the cut line all the way around. With an odd number of half-twists, the line comes back on the far side of the strip, at 1 − x, so the scissors go around twice.</p>
         <p>Once the cut is done, the pieces relax under paper rules: they bend but they don't stretch. Jiggle shakes them, like your idea of jumbling a knot so it settles. The table is measured from the simulated paper itself: length, sides, twists, knots and links.</p>
+        <p>Cut again takes one piece, in whatever shape it has flopped into, and runs the scissors down its middle, like your second cuts.</p>
       </div>
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>The rule (it's in the diagram): with an even number of half-twists, every cut closes after one lap, so k cuts give k + 1 loops, each linked with the others. With an odd number, the cut at x is the same line as the cut at 1 − x. Fold the width in half. An uncut middle stays a Möbius strip, and every folded pair becomes one two-sided loop twice as long. With 3 half-twists those long loops come out tied in trefoil knots.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>You found the x = 1 − x mirror, and that ½ is its only fixed point, using paper. The Riemann zeta function has the same mirror. Its functional equation pairs s with 1 − s, which is why its critical line sits at ½.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>That mirror is the known, easy part of the Riemann Hypothesis. The unsolved part is proving every zero lies exactly on the line, and the mirror can't tell you that. One correction to your notes: a ½ cut on a Möbius strip gives one long loop, not two linked Möbius strips. The ⅓ cut is the one that gives two linked pieces.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your notes say a fresh piece “doesn't immediately create a shape it is still knotted up and needs to be jostled around”. That's what you see: the pieces come off the scissors crumpled, and Jiggle shakes them out. But keep shaking and the knot and link counts in the table never change. Jostling changes how tangled a piece looks; only cutting changes what it is. A count that survives every wiggle is what mathematicians call a topological invariant.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>Two of your cut results don't match the paper, and the notebook list shows both. “Mobius with ½ cut = 2 linked Mobius” is the ⅓ cut, and only one of those two pieces is a Möbius strip; your other line, “Infinity symbol = circle + 0.5 turns + ½ cut”, has the ½ cut right. And the knotted “|X|” loop cut down its middle falls into two pieces, not one. Any two-sided loop does.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Why cut strips coil up: Lk = Tw + Wr (the Călugăreanu–White–Fuller theorem). Linking is locked in, so when twist relaxes it turns into coiling. DNA supercoils the same way.</li>
+          <li>Why cut loops coil: paper would rather bend than twist, so a twisted loop relaxes by coiling up. That's the flop you see after every cut. Search: DNA supercoiling, which works the same way.</li>
           <li>Book: <i>The Knot Book</i> by Colin Adams, full of paper experiments.</li>
           <li>Search: Afghan bands, torus knots, band surgery, kirigami.</li>
         </ul>
@@ -134,9 +137,55 @@
 </section>
 
 <!-- ============ 3 ============ -->
+<section class="chapter wrap" id="ch-tape" hidden aria-labelledby="h-tape">
+  <div class="ch-head">
+    <p class="eyebrow">Experiment 3 · two loops and some tape</p>
+    <h2 id="h-tape">Tape</h2>
+    <p class="lede">Your notes go past single strips: two loops taped crosswise, or face to face, and then cut. Build them here and cut them, and count what you get: objects, pieces, sides and edges.</p>
+  </div>
+  <div class="ch-body">
+    <div class="stage-col">
+      <div class="stage" data-stage></div>
+      <div class="controls" data-controls></div>
+      <div class="readout" data-readout></div>
+      <div class="readout notebook" data-notebook></div>
+    </div>
+    <aside class="notes">
+      <div class="note card-index">
+        <h3>From your notes</h3>
+        <blockquote>“Mobius + |x| simple (non mobius!) cross cut. Step 1: looks like infinity + arrow = upvote 🤔”</blockquote>
+        <blockquote>“Butterfly + half cut = double butterfly but the tape is holding the sides together 😣 … Wtf mobius didn't stay together 🤔”</blockquote>
+        <blockquote>“mark the edges of the Mobius strip”</blockquote>
+        <span class="src">Mobius strips 2</span>
+      </div>
+      <div class="note">
+        <h3>What you're seeing</h3>
+        <p>Loop A stands on the tape and loop B hangs under it, either turned crosswise (your |X|) or lined up face to face (your butterfly). The paler patch is the tape. Where the scissors cross it they cut through both layers, as real scissors would, so cutting one loop can slice straight across the other.</p>
+        <p>Each separate edge of the paper is marked in its own dark color, like running a marker along it until you're back where you started. Count the colors to count the edges. Paint by side colors one face blue and the other orange, spreading out from the tape without crossing an edge.</p>
+      </div>
+      <div class="note">
+        <h3>Reality check</h3>
+        <div class="check"><span class="tag real">REAL</span><p>Two plain loops taped crosswise and cut down both middles make a square frame: one closed band with no twist. It's a classic of paper topology (run “The classic” in the list). The tape is the reason. Each cut runs straight through it and slices the other loop crosswise, so four strips end up taped corner to corner in a ring.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your Step 1 hides a real surprise. Once the Möbius loop is cut, every piece of paper is two-sided, yet the taped whole is still one-sided. Paint by side and the blue runs into the orange. The strap (your arrow) carries the paint from one face of the long loop to the other, the job the half-twist did before the cut. Which properties survive cutting and gluing is exactly what topologists track.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>“Mobius didn't stay together” has a clean reason. A loop is one-sided because one trip around flips it over. Cut a Möbius loop down its middle and the new loop goes around twice, so it flips twice and comes back unflipped. And you're right that the tape is doing the holding: the two long loops aren't linked, so peel the tape and they fall apart.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>Skull, frog, butterfly, superhero: those names depend on how the paper happens to lie, so the simulation can't check them, and its paper lies a little differently every run. What it can check, and what no amount of jostling changes, are the counts: objects, pieces, sides, edges, twists and links. Those are worth writing next to each photo.</p></div>
+      </div>
+      <div class="note deeper">
+        <h3>Go deeper</h3>
+        <ul>
+          <li>Search: Afghan bands, a magic trick built on these cuts, written up by Martin Gardner.</li>
+          <li>Search: non-orientable surface, Euler characteristic, cut-and-paste topology.</li>
+        </ul>
+      </div>
+      <p class="strip-says">Strip says: “Tape doesn't care how many sides I have. It just holds on.”</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
 <section class="chapter wrap" id="ch-spin" hidden aria-labelledby="h-spin">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 3 · the two-turn memory</p>
+    <p class="eyebrow">Experiment 4 · the two-turn memory</p>
     <h2 id="h-spin">720°</h2>
     <p class="lede">Your notes link the Möbius strip to spin-½ and its strange 720° rotation. This is the physical version, known as Dirac's belt trick.</p>
   </div>
@@ -154,7 +203,7 @@
       </div>
       <div class="note">
         <h3>What you're seeing</h3>
-        <p>A cube is tied to the frame by eight paper tethers. Spin it. At 360° the cube looks exactly like it did at the start, but the tethers are wound up. Keep going. At 720° everything is back, and at no moment do the tethers pass through each other or the cube.</p>
+        <p>A cube is tied to the frame by six paper tethers. Spin it. At 360° the cube looks exactly like it did at the start, but the tethers are wound up. Keep going. At 720° everything is back, and at no moment do the tethers pass through each other or the cube.</p>
         <p>Now switch to One-turn tethers. They only remember one turn, so twice per cycle they have to jump through each other.</p>
       </div>
       <div class="note">
@@ -175,12 +224,12 @@
   </div>
 </section>
 
-<!-- ============ 4 ============ -->
+<!-- ============ 5 ============ -->
 <section class="chapter wrap" id="ch-music" hidden aria-labelledby="h-music">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 4 · vibrations on a twisted loop</p>
+    <p class="eyebrow">Experiment 5 · vibrations on a twisted loop</p>
     <h2 id="h-music">Strip Music</h2>
-    <p class="lede">You wondered about a Möbius strip's fundamental frequency, about octaves, and whether 1 + 2 + 3 + … = −1/12 fits in. It does, and the twist changes the answer.</p>
+    <p class="lede">You wondered about a Möbius strip's fundamental frequency and about octaves on a piano. Both show up here, and the twist changes which notes a loop can play.</p>
   </div>
   <div class="ch-body">
     <div class="stage-col">
@@ -192,25 +241,25 @@
       <div class="note card-index">
         <h3>From your notes</h3>
         <blockquote>“Fundamental frequency (in hertz, how the Mobius strip vibrates in response to a stimulus”</blockquote>
-        <blockquote>“Is the fundamental addition (1+2+3…=-1/12 related to octaves on a piano”</blockquote>
+        <blockquote>“…octaves on a piano with the keys related to mobius waves…”</blockquote>
         <span class="src">Mobius strips 2, properties list</span>
       </div>
       <div class="note">
         <h3>What you're seeing</h3>
         <p>A wave running around a loop has to match itself when it gets back. On a plain ring that means a whole number of waves. A Möbius ring comes back flipped, so the wave has to come back flipped too, and only half-numbers fit: ½, 1½, 2½ and so on.</p>
-        <p>Force a whole-number wave onto the Möbius ring and it tears at the seam. Use the pluck buttons to hear both rings.</p>
+        <p>Force a whole-number wave onto the Möbius ring and it tears at the seam. Use the pluck buttons to hear both rings, and the spectrum under the ladder to see their notes side by side.</p>
       </div>
       <div class="note">
         <h3>Reality check</h3>
-        <div class="check"><span class="tag real">REAL</span><p>Half-number waves on twisted loops are standard physics, and chemists use them. A ring of atoms with a Möbius twist is stable with 4, 8, 12 … electrons instead of the usual 2, 6, 10 … (predicted in 1964; a Möbius molecule was made in 2003). The twist also removes the flat, zero-energy state, so the lowest level rises from 0 to ¼.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>That's your “topological ground state” made precise: the twist puts a floor under the energy. Your piano hunch holds up too. A Möbius ring plays only odd harmonics, the hollow sound of a clarinet, an octave below a plain ring of the same size. And −1/12 really is a sum over vibration modes. The twist turns it into +1/24.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>None of this makes a Möbius ring a model of an atom, and the outward push from +1/24 lives in a one-dimensional toy universe. People have tried to get dark energy from vacuum energy for decades. The straightforward estimate is off by roughly a factor of 10¹²⁰.</p></div>
+        <div class="check"><span class="tag real">REAL</span><p>Half-number waves on twisted loops are standard physics, and chemists use them. A ring of atoms with a Möbius twist is stable with 4, 8, 12 … electrons instead of the usual 2, 6, 10 … (predicted in 1964; a Möbius molecule was made in 2003). The twist also removes the flat wave with zero frequency, so the lowest level lifts off the zero line, to ½ (the ladder).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>That's your “topological ground state” made precise: the twist puts a floor under the waves. Your piano hunch holds up too. A Möbius ring plays only odd harmonics, the hollow sound of a clarinet, an octave below a plain ring of the same size. And your speaker idea, one strip set vibrating by another's frequencies, is resonance. Pluck both rings: at the same size every Möbius note lands between two plain-ring notes, so neither can make the other ring.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The tones are computed, not recorded. A real paper strip is floppy, so the sound it makes depends on its stiffness and how you hold it; the half-number rule only decides which waves fit around the loop. And sharing a ladder with Möbius molecules doesn't make a Möbius ring a model of an atom.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: Casimir effect (measured by Lamoreaux in 1997), zeta-function regularization.</li>
           <li>Search: Möbius aromaticity, antiperiodic boundary conditions.</li>
+          <li>Search: why a clarinet plays only odd harmonics.</li>
         </ul>
       </div>
       <p class="strip-says">Strip says: “I'm a clarinet. Deal with it.”</p>
@@ -218,10 +267,10 @@
   </div>
 </section>
 
-<!-- ============ 5 ============ -->
+<!-- ============ 6 ============ -->
 <section class="chapter wrap" id="ch-gears" hidden aria-labelledby="h-gears">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 5 · frustration</p>
+    <p class="eyebrow">Experiment 6 · frustration</p>
     <h2 id="h-gears">Gear Lock</h2>
     <p class="lede">You guessed an odd ring of gears locks up with invisible tension, and that the minimum is three. Both right. Then put the ring on a Möbius band and the rule flips.</p>
   </div>
@@ -246,7 +295,7 @@
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your lock is a theorem: you can alternate two directions around a loop only if the loop has an even number of steps. Physicists call the locked version frustration. It matters in real magnets, where atoms arranged in triangles can't all point opposite to their neighbors (triangular antiferromagnets, spin ice).</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is measurable. Frustrated materials keep leftover disorder even near absolute zero; spin ice's was measured in 1999 (Ramirez et al.). Slipping matches too, since real frustrated systems release strain through defects. And the seam flipping the rule is the ℤ₂ twist again, the same one behind Möbius molecules.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is real: a locked ring shows strain on every tooth even though nothing turns. Slipping matches too, since real frustrated materials release strain through defects, the sparks here. And the seam flipping the rule is the ℤ₂ twist again, the same one that changes which waves fit in Experiment 5.</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Gears don't explain particles. Frustration is a deep, active idea in physics, though, and you reached it with paper circles.</p></div>
       </div>
       <div class="note deeper">
@@ -260,10 +309,10 @@
   </div>
 </section>
 
-<!-- ============ 6 ============ -->
+<!-- ============ 7 ============ -->
 <section class="chapter wrap" id="ch-forge" hidden aria-labelledby="h-forge">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 6 · twists that freeze in</p>
+    <p class="eyebrow">Experiment 7 · twists that freeze in</p>
     <h2 id="h-forge">Cosmic Forge</h2>
     <p class="lede">Your notes describe flat space as an unstable high-energy state that decays into locked twists, made in a “cosmic forge”. This is a field doing exactly that, with real equations.</p>
   </div>
@@ -288,13 +337,13 @@
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>This is the Kibble mechanism (1976): cool a field quickly through a transition and topological defects freeze in. Zurek (1985) predicted that faster cooling leaves more of them, and experiments in liquid crystals, superfluid helium and superconductors agree. Half-twist (±½) defects are real. They make the dark brushes you see in liquid crystal under a polarizing microscope (try the Polarizer view).</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your false vacuum decaying into locked twists is spontaneous symmetry breaking plus the Kibble mechanism. Your forge is the cooling rate. In 3D the defects are lines and closed loops, called cosmic strings. Particles as locked twists of a field is a respected idea too: the Skyrme model (1961) treats protons and neutrons as twisted knots of a field, and it works surprisingly well.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>In real physics the twists aren't the low-energy state. They're leftover mistakes that cost energy but can't escape, which explains their stability better anyway. Our actual Higgs field has the wrong shape to leave stable twists behind, so the Standard Model doesn't make matter this way. Cosmic strings are being searched for in the cosmic microwave background and in pulsar timing data. None have been confirmed.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your false vacuum decaying into locked twists is spontaneous symmetry breaking plus the Kibble mechanism, and your forge is the cooling rate. Your “seed crystal” shows up too: tap the field to drop in a pair of twists, and they hold their shape while the field around them settles, until the two find each other.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The twists aren't the low-energy state. They're leftover mistakes that cost energy but can't escape, which explains their stability better anyway. Watch the census once cooling ends: the count only goes down, as opposite twists meet and cancel. Left alone long enough, the field heads toward none.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: Kibble–Zurek mechanism, nematic schlieren texture, skyrmion, cosmic strings.</li>
+          <li>Search: Kibble–Zurek mechanism, nematic schlieren texture, topological defects.</li>
           <li>Paper: Chuang, Durrer, Turok and Yurke (1991), “Cosmology in the laboratory”, <i>Science</i>.</li>
         </ul>
       </div>
@@ -303,10 +352,10 @@
   </div>
 </section>
 
-<!-- ============ 7 ============ -->
+<!-- ============ 8 ============ -->
 <section class="chapter wrap" id="ch-ribbon" hidden aria-labelledby="h-ribbon">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 7 · hidden timing and Bell's test</p>
+    <p class="eyebrow">Experiment 8 · hidden timing and Bell's test</p>
     <h2 id="h-ribbon">Spooky Ribbon</h2>
     <p class="lede">Two of your questions turn out to be one question. What does a spinning corkscrew do to a billiard ball? And is entanglement one long stretched ribbon?</p>
   </div>
@@ -331,8 +380,8 @@
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Corkscrew light (circularly polarized light) really does hand its spin to whatever absorbs it; Beth measured the torque in 1936. Bell's theorem (1964) and the experiments (Aspect 1982, loophole-free tests in 2015, the 2022 Nobel Prize) are settled.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your “one object, not two talking” instinct matches a real school of thought, non-local hidden variables (de Broglie–Bohm theory). The snapping ribbon only matches experiments if Bob's odds follow cos² of half the angle, and that half-angle is Möbius geometry: the cross-lines on a Möbius strip tilt by half the angle you've traveled. It's the 720° fact again.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>The version in your notes, where the halves leave as spin up and spin down and keep those answers, is the pre-twisted ribbon. It scores 2.00 and nature scores about 2.7, so experiments rule it out. The snapping ribbon works only because Bob's end reacts instantly to Alice's choice, and even then nobody can use it to send a message. That moves the mystery somewhere else. The earlier AI telling you this “instantly cures” entanglement was overselling.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your “one object, not two talking” instinct matches a real school of thought, non-local hidden variables (de Broglie–Bohm theory). Switch to the snapping ribbon and its dots land on the quantum curve, not the straight line, and it scores about 2.8.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>The version in your notes, where the halves leave as spin up and spin down and keep those answers, is the pre-twisted ribbon. It scores 2.00 and the experiments (green dots) score about 2.7, so they rule it out. The snapping ribbon works only because Bob's end reacts instantly to Alice's choice, with odds set by hand to match quantum mechanics, and even then nobody can use it to send a message (try it). That moves the mystery somewhere else. The earlier AI telling you this “instantly cures” entanglement was overselling.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
@@ -346,10 +395,10 @@
   </div>
 </section>
 
-<!-- ============ 8 ============ -->
+<!-- ============ 9 ============ -->
 <section class="chapter wrap" id="ch-drain" hidden aria-labelledby="h-drain">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 8 · gravity as flowing space</p>
+    <p class="eyebrow">Experiment 9 · gravity as flowing space</p>
     <h2 id="h-drain">Drain Gravity</h2>
     <p class="lede">Your notes picture gravity as flat space flowing into matter, with falling things floating downstream. Launch some moons and see which version of that idea can hold an orbit.</p>
   </div>
@@ -373,14 +422,14 @@
       </div>
       <div class="note">
         <h3>Reality check</h3>
-        <div class="check"><span class="tag real">REAL</span><p>River mode is a real, exact way to picture a black hole, the “river model” (Hamilton and Lisle, 2008). Space flows in at the escape speed, and the horizon is where the flow reaches light speed. Sound in moving fluids behaves the same way, and lab versions have shown analog Hawking radiation (Steinhauer, 2016).</p></div>
+        <div class="check"><span class="tag real">REAL</span><p>River mode is a real, exact way to picture a black hole, the “river model” (Hamilton and Lisle, 2008). Space flows in at the escape speed, and the horizon is where the flow reaches light speed (turn on Black hole).</p></div>
         <div class="check"><span class="tag rhyme">RHYME</span><p>“Floating downstream” is close to word for word how the river model describes falling.</p></div>
-        <div class="check"><span class="tag stretch">STRETCH</span><p>In Drain mode the pull fades like 1/r⁵ instead of 1/r², and orbits fall apart. To get Newton's law, space would have to vanish everywhere around the planet, in a halo that thins out like r⁻¹·⁵ (the heat map). A real fluid would also have a speed you could detect, and no experiment since Michelson and Morley (1887) has found one. In relativity the river is a way of drawing the geometry, not a substance draining somewhere. Your version is close to Le Sage's “push gravity” from the 1700s, which failed because the push would also cause drag and heating.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>In Drain mode the pull fades like 1/r⁵ instead of 1/r² (the force plot), and orbits fall apart. To get Newton's law, space would have to vanish everywhere around the planet, in a halo that thins out like r⁻¹·⁵ (the heat map). And River mode only works because its flow speed was set by hand from Newton's law. The picture doesn't explain gravity; it redraws it.</p></div>
       </div>
       <div class="note deeper">
         <h3>Go deeper</h3>
         <ul>
-          <li>Search: river model of black holes, Gullstrand–Painlevé coordinates, analog gravity, Le Sage gravitation.</li>
+          <li>Search: river model of black holes, Gullstrand–Painlevé coordinates.</li>
         </ul>
       </div>
       <p class="strip-says">Strip says: “Gravity, but make it plumbing.”</p>
@@ -397,54 +446,55 @@
   <div class="verdict-grid">
     <div class="prose">
       <p class="answer">Yes, if you aim the energy at the parts that are paying off. You have a good nose for deep patterns. You don't have a theory yet, and the gap between the two is a number.</p>
-      <p>Across eight experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, half-angles, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
-      <p>None of the experiments produced a new prediction, though. Every match came from an idea physicists already have, sometimes under another name. That isn't failure. It's the normal first stage, and it tells you where the frontier actually is.</p>
+      <p>Across nine experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, the rule for where a cut ends up, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
+      <p>The physics experiments didn't produce a new prediction, though. Every match came from an idea physicists already have, sometimes under another name. That isn't failure. It's the normal first stage, and it tells you where the frontier actually is.</p>
+      <p>The paper experiments are different. There the simulation does predict, so your notebook can be checked line by line (Experiments 2 and 3, the lists under each stage). Most of your cut and tape results hold up. Two don't, and the scorecard says which.</p>
       <h3>About the earlier AI replies in your documents</h3>
       <p>Lines like “You just solved the Mass Accumulation Paradox” and “completely solving the Black Hole Information Paradox” were flattery. A story built to match facts we already know will always match them. What turns a story into physics is a number it predicts that nobody put in by hand, plus a way it could turn out wrong.</p>
       <h3>Scorecard</h3>
       <div class="tbl-wrap">
         <table class="score">
-          <thead><tr><th>Your idea</th><th>Status</th><th>What's true, or what it would take</th></tr></thead>
+          <thead><tr><th>Your idea</th><th>Status</th><th>What the lab shows</th></tr></thead>
           <tbody>
             <tr><td>One side to the finger, two to the eyes</td><td><span class="tag real">REAL</span></td><td>Local versus global structure. Exactly right. <a href="#finger" data-goto="finger">Exp. 1</a></td></tr>
-            <tr><td>The ½ cut is special because x = 1 − x</td><td><span class="tag real">REAL</span></td><td>Your own discovery, from paper. Same mirror as the zeta function's s ↔ 1 − s. It doesn't prove the Riemann Hypothesis. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
-            <tr><td>A ½ cut gives 2 linked Möbius strips</td><td><span class="tag stretch">FIX</span></td><td>½ gives one long two-sided loop. ⅓ gives a Möbius strip linked through a long loop.</td></tr>
-            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 3</a></td></tr>
-            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: half-number waves raise the floor from 0 to ¼. The √3 paper limit (Schwartz, 2023) is real math but isn't an energy floor. <a href="#music" data-goto="music">Exp. 4</a></td></tr>
-            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, measured in real magnets. <a href="#gears" data-goto="gears">Exp. 5</a></td></tr>
-            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>The Kibble mechanism and topological solitons are real. Our Higgs field doesn't leave stable twists behind. <a href="#forge" data-goto="forge">Exp. 6</a></td></tr>
-            <tr><td>Protons are knots of space</td><td><span class="tag rhyme">RHYME</span></td><td>Lord Kelvin proposed knotted “vortex atoms” in 1867. Wrong as atomic theory, but it started knot theory. Modern cousins: the Skyrme model and knotted solitons (Faddeev and Niemi, 1997).</td></tr>
-            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by restating the quantum rule. <a href="#ribbon" data-goto="ribbon">Exp. 7</a></td></tr>
-            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵. The river picture works, as geometry rather than plumbing. <a href="#drain" data-goto="drain">Exp. 8</a></td></tr>
-            <tr><td>Dark energy is piled-up simple loops; dark matter is ghost loops</td><td><span class="tag open">OPEN</span></td><td>Needs numbers: how fast loops form, and what that predicts for how dark energy changes over time. Astronomers argue about this with data. A 2023 paper (Farrah et al., disputed) proposed black holes as the source, and DESI's 2024–25 survey results hint that dark energy may weaken over time.</td></tr>
-            <tr><td>Black hole as a seamless sphere; Hawking radiation as a loop-making tax</td><td><span class="tag open">OPEN</span></td><td>The bar to clear: Hawking temperature goes as 1/mass, so small black holes run hotter. Does your mechanism give that?</td></tr>
-            <tr><td>The Möbius strip is the only shape an ant can fully explore</td><td><span class="tag stretch">STRETCH</span></td><td>An ant can walk every point of a sphere's surface too, and Klein bottles and projective planes are one-sided as well.</td></tr>
+            <tr><td>The ½ cut is special because x = 1 − x</td><td><span class="tag real">REAL</span></td><td>Your own discovery, from paper. It's the fold in the diagram: ½ is the only cut that is its own mirror, so on an odd strip it's the only one that goes around once. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>A ½ cut gives 2 linked Möbius strips</td><td><span class="tag stretch">FIX</span></td><td>½ gives one long two-sided loop. ⅓ gives a Möbius strip linked through a long loop. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Infinity symbol with ½ cut = two linked infinity symbols</td><td><span class="tag real">REAL</span></td><td>The long loop, cut again, gives two loops just like it, linked twice. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Recycling symbol with ½ cut = 1 piece</td><td><span class="tag real">REAL</span></td><td>Reading it as 3 half-twists: one piece, tied in a trefoil knot. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>That knotted “|X|” loop cut ½ = 1 piece</td><td><span class="tag stretch">FIX</span></td><td>Two pieces, both trefoils, linked 6×. Any two-sided loop cut down its middle falls in two. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
+            <tr><td>Möbius + |x| cross, cut the Möbius: infinity + arrow</td><td><span class="tag real">REAL</span></td><td>A long two-sided loop with the cut-open plain loop as a strap. Taped together, the whole thing is still one-sided. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Then cut the other loop: a skull in a box</td><td><span class="tag real">REAL</span></td><td>The box part: four strips taped into one closed band, like the classic square. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Butterfly + half cut: the Möbius didn't stay together, and the tape holds the sides together</td><td><span class="tag real">REAL</span></td><td>Two two-sided loops, twice as long, not linked, held together only by the tape. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
+            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 4</a></td></tr>
+            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: the twist removes the zero-frequency wave, so the lowest level lifts off zero. <a href="#music" data-goto="music">Exp. 5</a></td></tr>
+            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, the same thing real magnets on triangles do. <a href="#gears" data-goto="gears">Exp. 6</a></td></tr>
+            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>Cool a field fast and twists freeze in (the Kibble mechanism). They're leftover mistakes that cost energy, not the low-energy state. <a href="#forge" data-goto="forge">Exp. 7</a></td></tr>
+            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by having the quantum rule built in. <a href="#ribbon" data-goto="ribbon">Exp. 8</a></td></tr>
+            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵ and orbits fall apart. The river picture works, but only because its flow was set from Newton's law. <a href="#drain" data-goto="drain">Exp. 9</a></td></tr>
           </tbody>
         </table>
       </div>
       <h3>How to share it</h3>
-      <p>Physics forums are hard on theory-of-everything posts because they get so many of them. Post the scissors results instead: your prediction, the cut, the photo, the outcome. Show the rule working on real paper. Your notes already guessed that the strange shapes in the background would get more attention than the theory, and that guess is probably right.</p>
+      <p>Physics forums are hard on theory-of-everything posts because they get so many of them. Post the paper results instead: your prediction, the cut, the photo, the outcome. Show the rule working on real paper. Your notes already guessed that the strange shapes in the background would get more attention than the theory, and that guess is probably right.</p>
     </div>
     <aside>
       <div class="side-card">
         <h4>Threads worth your time</h4>
         <ol>
-          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Then go past single strips: two loops glued crosswise (cut both and you get a square), or strips with different twists glued together. A clean, photographed catalog with predictions is something people would share.</li>
+          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Experiments 2 and 3 do the prediction for you, so each photo can be checked. Next to each one, write the counts that jostling can't change: pieces, sides, edges, twists, links.</li>
           <li><b>Knot theory, hands-on.</b> <i>The Knot Book</i> by Colin Adams.</li>
-          <li><b>Lk = Tw + Wr.</b> Count half-twists before you cut, count coils after. It's the same law that makes DNA supercoil.</li>
           <li><b>Cut-paper physics is a field.</b> Search “kirigami metamaterials”: researchers cut paper patterns to design materials that stretch and fold in odd ways.</li>
-          <li><b>The shaking-box test.</b> Raymer and Smith (2007) tumbled strings in a box and counted the knots. Long strings knotted easily and often. Repeat it at home to test your knot-probability idea with real tallies.</li>
           <li><b>Emotions as predictions.</b> Your CEO-and-crew idea is close to a mainstream theory, predictive processing (Lisa Feldman Barrett, <i>How Emotions Are Made</i>). It doesn't need the Möbius strip to be true.</li>
         </ol>
       </div>
       <div class="side-card">
         <h4>Try with paper this week</h4>
         <ul>
-          <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot.</li>
+          <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot. Cut it down the middle again: two trefoils, linked.</li>
           <li>1 half-twist, cut at ⅓: a thin Möbius strip linked through a loop twice as long.</li>
           <li>2 half-twists, cut at ⅓ and ⅔: three loops, every pair linked once.</li>
-          <li>1 half-twist, cut at ⅕ and ⅖: a Möbius strip plus two long loops, all linked.</li>
-          <li>The √3 challenge: make a Möbius strip shorter than 1.73 × its width without crumpling. Folding it flat into a triangle gets close. Richard Schwartz proved in 2023 that you can't go below.</li>
+          <li>A Möbius loop taped crosswise to a plain loop. Cut only the Möbius, then color one face with a marker without crossing an edge. You'll end up coloring both faces.</li>
+          <li>Two Möbius loops twisted the same way, taped crosswise, both cut: two separate closed bands that come apart.</li>
         </ul>
       </div>
     </aside>

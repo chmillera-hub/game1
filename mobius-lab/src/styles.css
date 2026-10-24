@@ -427,6 +427,17 @@ canvas.plot.short { height: 150px; }
 .diagram svg { width: 100%; height: auto; display: block; }
 .diagram .cap { font-size: .875rem; color: var(--muted); margin: 6px 0 0; }
 
+/* ---------- Notebook re-runs (scissors, tape) ---------- */
+.notebook .cap { font-size: .875rem; color: var(--muted); margin: 0 0 6px; }
+.nb-list { list-style: none; margin: 0; padding: 0; }
+.nb-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
+.nb-list li:first-child { border-top: 0; }
+.nb-q { font-family: var(--font-hand); font-size: 1.3125rem; line-height: 1.15; color: var(--ink); }
+.nb-list .btn { grid-row: span 2; align-self: center; }
+.nb-setup { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); }
+.nb-res { grid-column: 1 / -1; margin: 4px 0 0; font-size: .875rem; }
+.nb-res:empty { display: none; }
+
 /* ---------- Verdict ---------- */
 .verdict-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 28px; align-items: start; }
 @media (max-width: 920px) { .verdict-grid { grid-template-columns: minmax(0, 1fr); } }

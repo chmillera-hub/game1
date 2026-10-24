@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 6: Cosmic Forge (topological defects, Kibble–Zurek).
+   Experiment 7: Cosmic Forge (topological defects, Kibble–Zurek).
    Time-dependent Ginzburg–Landau on a periodic grid:
      dψ/dt = ∇²ψ + (μ(t) − |ψ|²) ψ + noise
    μ ramps from −1 (the flat, symmetric state) to +1 over the cooling

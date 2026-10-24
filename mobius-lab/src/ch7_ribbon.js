@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 7: Spooky Ribbon.
+   Experiment 8: Spooky Ribbon.
    Part A, corkscrew: the helix tip circles with radius r; it hits the
    ball at phase θ, pushing it sideways by −cos θ (in the table's
    plane). Random timing means uniform θ, so the sideways kick has the
@@ -7,7 +7,7 @@
    Part B, Bell/CHSH with a spin-½ pair, angles a and b:
      pre-twisted ribbon: shared hidden angle λ, A = sgn cos(λ−a), B = −sgn cos(λ−b)
      snapping ribbon: A = ±1; Bob's end flips to oppose A; B agrees with that
-       with probability cos²((a−b)/2), the overlap of Möbius rulings
+       with probability cos²((a−b)/2), chosen to reproduce quantum mechanics
      quantum mechanics: P(A = B) = sin²((a−b)/2)
    ============================================================ */
 {
@@ -117,7 +117,7 @@
   function trial(model, a, b) {
     if (model === 'pre') { const l = rnd() * TAU; return [Math.cos(l - a) >= 0 ? 1 : -1, Math.cos(l - b) >= 0 ? -1 : 1, l]; }
     const A = rnd() < 0.5 ? 1 : -1;
-    const pOpp = Math.cos((a - b) / 2) ** 2;            // snap: overlap of half-angle rulings; QM gives the same odds
+    const pOpp = Math.cos((a - b) / 2) ** 2;            // snap: odds set by hand to match quantum mechanics
     return [A, rnd() < pOpp ? -A : A, null];
   }
   function E(model, a, b, n) { let s = 0; for (let i = 0; i < n; i++) { const r = trial(model, a, b); s += r[0] * r[1]; } return s / n; }
