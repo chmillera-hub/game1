@@ -152,6 +152,12 @@
     unlock() {
       if (enabled) ensure();
     },
+    // The shared audio context, for the music: made now when `make` (during a tap), else
+    // only if it already exists.
+    context(make) {
+      if (make && !ensure()) return null;
+      return ctx;
+    },
     get enabled() {
       return enabled;
     },

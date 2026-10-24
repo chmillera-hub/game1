@@ -54,6 +54,8 @@
   }
 
   const sfx = (n) => AG.Audio && AG.Audio.play(n);
+  // The background music's mood: 'camp' between battles, 'battle' or 'boss' in one.
+  const music = (mood) => AG.Music && AG.Music.set(mood);
 
   // ------------------------------------------------------------ shared bits
 
@@ -643,6 +645,7 @@
   // ------------------------------------------------------------ views
 
   function showView(html, cls) {
+    music('camp');
     stopDiorama();
     $('#battle').hidden = true;
     if (UI.board) UI.board.stop();
@@ -1062,6 +1065,7 @@
         <button class="btn wide" id="muHelp">${ic('help')} How to play</button>
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
+        ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
         <button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
         <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
         ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
@@ -1075,6 +1079,11 @@
           AG.Audio.toggle();
           menuSheet(inBattle);
         };
+        if ($('#muMusic', sh))
+          $('#muMusic', sh).onclick = () => {
+            AG.Music.toggle();
+            menuSheet(inBattle);
+          };
         $('#muAuto', sh).onclick = () => {
           UI.prefs.autoBattle = !UI.prefs.autoBattle;
           savePrefs();
@@ -1701,6 +1710,7 @@
   }
 
   function warRoom() {
+    music('camp');
     const run = UI.run;
     const p = run.pending;
     const enc = p.enc;
@@ -2095,6 +2105,7 @@
 
   async function startBattle(dep) {
     hideToast(); // what the War Room said is no use on the battlefield
+    music(UI.run.pending.enc.kind === 'boss' ? 'boss' : 'battle');
     const run = UI.run;
     const enc = run.pending.enc;
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
@@ -3095,6 +3106,7 @@
     B.ending = true;
     B.busy = true;
     UI.board.focus = null;
+    music(null); // quiet for the victory or defeat fanfare
     const s = B.s;
     const won = s.winner === 'P';
     const endEv = s.end;
@@ -3645,8 +3657,12 @@
       updateRotateHint();
       if (!$('#view').hidden && UI.mapWide != null && $('.map-screen') && isWide() !== UI.mapWide) mapScreen();
     });
-    const unlock = () => AG.Audio && AG.Audio.unlock();
+    const unlock = () => {
+      if (AG.Audio) AG.Audio.unlock();
+      if (AG.Music) AG.Music.kick();
+    };
     root.addEventListener('pointerdown', unlock, { once: true });
+    root.addEventListener('keydown', unlock, { once: true });
     $('#rotateHint').addEventListener('click', () => {
       UI.prefs.hideRotate = true;
       savePrefs();

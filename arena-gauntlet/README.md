@@ -117,6 +117,12 @@ on a phone turned sideways, but portrait works too.
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
   events, and camps to drill, study or tinker.
+- **Music**: synthesized in the browser like the sound effects, no audio files. Two
+  camp tracks between battles (Campfire, a lute and flute; Tavern Jig, a fiddle jig),
+  two battle tracks (March of Iron, war drums and horns; Clash of Steel, a faster
+  charge) and a boss track (The Ashen Tyrant, choir and great drums). Each mood moves
+  on to its next track every couple of loops, and battles alternate. The menu has its
+  own Music switch, apart from Sound.
 
 ## Code
 
@@ -128,6 +134,7 @@ on a phone turned sideways, but portrait works too.
 | `js/run.js` | Campaign map, Supply and XP, loadouts, missions, rewards, saving |
 | `js/sprites.js`, `js/render.js` | Procedural sprites and the isometric board |
 | `js/ui.js`, `js/main.js` | Screens and touch controls |
+| `js/audio.js`, `js/music.js` | Synthesized sound effects and background music |
 
 ## Tests
 
@@ -137,6 +144,7 @@ node tests/deploy.test.js        # the War Room's Auto button
 node tests/goals.test.js         # bonus goals, and retrying a won battle for them
 node tests/priority.test.js      # the priority target your army goes all out for
 node tests/objectives.test.js    # your army playing for the mission and bonus goals
+node tests/music.test.js         # the music's notation: every bar the right length
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries
