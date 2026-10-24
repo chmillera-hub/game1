@@ -536,8 +536,9 @@
   // Totems and spawners grow sturdier act by act.
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
-  const TURN_LIMIT = 90;
-  // From this turn every fighter loses more HP each turn until one side is left.
+  // A backstop only: fatigue ends battles long before it.
+  const TURN_LIMIT = 250;
+  // From this turn every fighter loses 1 more HP each of its turns until one side is left.
   const OVERTIME = 50;
   const HOLD_NEED = 4;
 

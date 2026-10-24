@@ -1746,7 +1746,7 @@
             v.hp = Math.max(0, v.hp - e.amount);
             v.shake = 1;
             setTimeout(() => (v.shake = 0), 220);
-            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? '#b6f070' : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'overtime' ? '#ffd27a' : '#ffffff';
+            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? '#b6f070' : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'fatigue' ? '#ffd27a' : '#ffffff';
             this.addText(v.x, v.y, String(e.amount), col, { height: h, big: e.amount >= 25 });
             if (e.cat === 'back' && e.dmgType === 'phys') {
               const src = state && state.byId[e.src];

@@ -236,12 +236,13 @@
     };
     if (spec.thorns) u.props.thorns = (u.props.thorns || 0) + spec.thorns;
     // Regen: HP healed at the start of each of the unit's own turns, from its type,
-    // talents, gear and relics, never more than REGEN_CAP in all.
+    // talents, gear and relics, all added up.
     if (!u.nonCombat && !u.structure) {
       const rel = s.relics[team];
-      const total = (u.props.regen || 0) + (rel.has('healing_salve') ? 1 : 0) + (rel.has('sacred_chalice') ? 2 : 0);
-      u.regen = Math.min(REGEN_CAP, total);
+      u.regen = (u.props.regen || 0) + (rel.has('healing_salve') ? 1 : 0) + (rel.has('sacred_chalice') ? 2 : 0);
     } else u.regen = 0;
+    // Fatigue: HP it loses at its next turn once fatigue sets in (it grows by 1 each turn).
+    u.fatigue = 0;
     if (spec.armor != null) u.armor = spec.armor;
     if (spec.res != null) u.res = spec.res;
     if (spec.vip && !T.boss) u.value *= 1.8;
@@ -1152,7 +1153,7 @@
 
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
-    if (tgt.shield > 0 && info.dmgType !== 'poison' && info.dmgType !== 'overtime') {
+    if (tgt.shield > 0 && info.dmgType !== 'poison' && info.dmgType !== 'fatigue') {
       const ab = Math.min(tgt.shield, amount);
       tgt.shield -= ab;
       amount -= ab;
@@ -1764,8 +1765,6 @@
   // ------------------------------------------------------------ reinforcements
 
   const BLOCK_DMG = 10;
-  // No unit regenerates more than this a turn, whatever it stacks.
-  const REGEN_CAP = 5;
   const MEND_REGEN = 2;
   const FIRE_DMG = 6;
 
@@ -1972,8 +1971,8 @@
         magicDamage(s, s.byId[fire.src] || null, u, fire.dmg || FIRE_DMG, 'burn');
       }
     }
-    // In queue battles each unit regenerates on its own turn instead (see pickDue).
-    if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) regenerate(s, u);
+    // In queue battles each unit's turn starts on its own instead (see pickDue).
+    if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) unitTurnStart(s, u);
     // Totems mend allies within 2 tiles. Several totems in reach do not stack.
     const totems = mine.filter((w) => w.alive && w.props.totemHeal);
     if (totems.length) {
@@ -2019,7 +2018,7 @@
   }
 
   // A unit's regen at the start of its turn: its own, plus a Mending Light aura it stands
-  // in, capped. A troll hurt by magic or fire since its last turn does not regenerate.
+  // in. A troll hurt by magic or fire since its last turn does not regenerate.
   function regenOf(s, u) {
     let r = u.regen || 0;
     for (const w of s.units) {
@@ -2028,7 +2027,7 @@
         break;
       }
     }
-    return Math.min(REGEN_CAP, r);
+    return r;
   }
 
   function regenerate(s, u) {
@@ -2038,6 +2037,15 @@
       else heal(s, u, r, 'regen');
     }
     u.scorched = false;
+  }
+
+  // The start of one unit's turn: it regenerates, then, once fatigue has set in, loses
+  // 1 HP more than it did on its last turn (1, 2, 3...), past armor and shields.
+  function unitTurnStart(s, u) {
+    regenerate(s, u);
+    if (!s.inOvertime || !u.alive || !counts(u)) return;
+    u.fatigue++;
+    applyDamage(s, null, u, u.fatigue, { cat: 'none', dmgType: 'fatigue' });
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2060,8 +2068,8 @@
       }
       if (s.surviveTurns && s.turn > s.surviveTurns) return finish(s, 'P', { survived: true });
     }
+    startFatigue(s);
     startEffects(s, side);
-    overtimeDrain(s, side);
     checkOutcome(s);
     if (s.over) return;
     if (side === 'P' && s.hold) {
@@ -2077,23 +2085,14 @@
     if (s.queue) pickDue(s, side);
   }
 
-  // Overtime: from turn `s.overtime` on, every fighter of the side to move loses HP at the
-  // start of its turn, 2 more each round (2, 4, 6...), past armor and shields, and no more
-  // reinforcements come. Big units last longest; the last side standing wins.
-  function overtimeDrain(s, side) {
-    if (!s.overtime || s.turn < s.overtime || s.over) return;
-    if (!s.inOvertime) {
-      s.inOvertime = true;
-      for (const w of s.waves) if (w.state === 'pending') w.state = 'cancelled';
-      emit(s, { t: 'overtime', turn: s.turn });
-    }
-    const amount = overtimeLoss(s);
-    for (const u of s.units) if (u.alive && u.team === side && counts(u)) applyDamage(s, null, u, amount, { cat: 'none', dmgType: 'overtime' });
-  }
-
-  // HP each fighter loses at the start of its side's turn this round (0 before overtime).
-  function overtimeLoss(s) {
-    return s.overtime && s.turn >= s.overtime ? 2 * (s.turn - s.overtime + 1) : 0;
+  // Fatigue: from turn `s.overtime` on, every fighter loses HP at the start of each of its
+  // own turns, 1 more each time (see unitTurnStart), and no more reinforcements come. Big
+  // units and regen last longest; the last side standing wins.
+  function startFatigue(s) {
+    if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
+    s.inOvertime = true;
+    for (const w of s.waves) if (w.state === 'pending') w.state = 'cancelled';
+    emit(s, { t: 'overtime', turn: s.turn });
   }
 
   // ---------------------------------------------------------------- unit queue
@@ -2144,7 +2143,12 @@
       const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];
       if (!u || seen.has(u.uid)) return;
       seen.add(u.uid);
-      regenerate(s, u);
+      unitTurnStart(s, u);
+      if (!u.alive) {
+        checkOutcome(s);
+        if (s.over) return;
+        continue;
+      }
       const why = sitOutReason(s, u);
       if (!why) {
         s.due = u.uid;
@@ -2276,7 +2280,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, overtimeLoss, regenOf, REGEN_CAP, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -8,6 +8,7 @@ const D = AG.Data;
 const N = +process.argv[2] || 12;
 const DIFF = process.argv[3] || 'knight';
 const MAX_TRIES = +process.argv[4] || 6;
+const OVERTIME = 50;
 
 function checkLoadouts(run) {
   const seen = new Set();
@@ -169,7 +170,8 @@ console.log(
   `battle length in turns (p25/median/p75), ${results.timeouts} timeouts:`,
   Object.entries(results.lens).map(([k, v]) => `${k} ${q(v, 0.25)}/${q(v, 0.5)}/${q(v, 0.75)}`).join(' · ')
 );
-console.log(`overtime: ${results.overtime.P + results.overtime.E} battles reached it (you won ${results.overtime.P}) · ${Object.entries(results.otKinds).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ')}`);
+const otLens = Object.values(results.lens).flat().filter((n) => n > OVERTIME);
+console.log(`fatigue: ${results.overtime.P + results.overtime.E} battles reached it (you won ${results.overtime.P}), lasting ${otLens.length ? `${q(otLens, 0.5) - OVERTIME} turns (median), ${Math.max(...otLens) - OVERTIME} at most` : '-'} · ${Object.entries(results.otKinds).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ')}`);
 console.log(`fast-win bonus met in ${pct(results.swift)} of ${results.swift[1]} wins that offered it`);
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
 console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

@@ -211,40 +211,54 @@ test('reinforcements join the current cycle in speed order', () => {
   assert.strictEqual(warg.cycles, orc.cycles, 'it joins the cycle the orc is on');
 });
 
-test('overtime: fighters lose 2 more HP each round, past armor and shields', () => {
+test('fatigue: each unit loses 1, then 2, then 3 on its own turns, past shields', () => {
   const s = battle(
     [
-      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'golem', team: 'P', x: 2, y: 8 },
+      { type: 'golem', team: 'P', x: 6, y: 8 },
       { type: 'golem', team: 'E', x: 4, y: 0 },
     ],
     { overtime: 2 }
   );
-  const [pg, eg] = s.units;
-  pg.shield = 50;
-  E.pass(s); // the enemy's turn 1
-  assert.strictEqual(pg.hp, pg.maxHp, 'no overtime yet');
-  E.pass(s); // your turn 1; the enemy's turn 2 opens overtime
-  assert.ok(s.events.some((e) => e.t === 'overtime'));
-  assert.strictEqual(eg.hp, eg.maxHp - 2);
-  E.pass(s);
-  assert.strictEqual(pg.hp, pg.maxHp - 2, 'shields do not stop it');
-  E.pass(s);
-  assert.strictEqual(eg.hp, eg.maxHp - 2 - 4, 'and it grows each round');
+  const [a, b] = s.units;
+  a.shield = 50;
+  const seen = [];
+  for (let i = 0; i < 16 && !s.over; i++) {
+    const before = a.hp;
+    E.pass(s);
+    if (a.hp !== before) seen.push(before - a.hp);
+  }
+  assert.ok(s.events.some((e) => e.t === 'overtime'), 'fatigue set in');
+  assert.deepStrictEqual(seen.slice(0, 3), [1, 2, 3], 'one more each of its own turns, shields or not');
+  assert.ok(b.fatigue >= 2 && Math.abs(a.fatigue - b.fatigue) <= 1, 'the other golem counts its own turns');
 });
 
-test('overtime: the bigger side outlasts the smaller, and reinforcements stop', () => {
+test('fatigue: the bigger side outlasts the smaller, and reinforcements stop', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 4, y: 8 },
       { type: 'scout', team: 'E', x: 4, y: 0 },
     ],
-    { overtime: 2, waves: [{ turn: 5, team: 'E', tiles: [[0, 0], [1, 0]], units: [{ type: 'warg' }] }] }
+    { overtime: 2, turnLimit: 500, waves: [{ turn: 5, team: 'E', tiles: [[0, 0], [1, 0]], units: [{ type: 'warg' }] }] }
   );
-  for (let i = 0; i < 200 && !s.over; i++) E.pass(s);
+  for (let i = 0; i < 400 && !s.over; i++) E.pass(s);
   assert.ok(s.over);
   assert.strictEqual(s.winner, 'P', 'the golem outlasts the scout');
   assert.ok(!s.timeout);
   assert.ok(!s.units.some((u) => u.type === 'warg'), 'the warg never came');
+});
+
+test('fatigue: regen holds it off for a while, but not for ever', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8, level: 2, talents: ['g_moss'], gear: ['healing_charm'] },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2, turnLimit: 500 }
+  );
+  for (let i = 0; i < 600 && !s.over; i++) E.pass(s);
+  assert.ok(s.over && !s.timeout, 'fatigue ends it');
+  assert.strictEqual(s.winner, 'P', 'regen 7 outlasts no regen');
 });
 
 test('regen heals only on the unit’s own turn', () => {
@@ -269,7 +283,7 @@ test('regen heals only on the unit’s own turn', () => {
   assert.strictEqual(fu.hp, 23, 'its own turn: +3');
 });
 
-test('regen never adds up to more than 5', () => {
+test('regen from every source adds up, with no cap', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 4, y: 8, level: 2, talents: ['g_moss'], gear: ['healing_charm'] },
@@ -278,10 +292,10 @@ test('regen never adds up to more than 5', () => {
     { relics: { P: ['sacred_chalice', 'healing_salve'], E: [] } }
   );
   const g = s.units[0];
-  assert.strictEqual(g.regen, E.REGEN_CAP, '4 + 3 + 2 + 1 caps at 5');
+  assert.strictEqual(g.regen, 10, 'Living Moss 4 + Healing Charm 3 + Chalice 2 + Salve 1');
   g.hp = 30;
   toPlayer(s);
-  assert.strictEqual(g.hp, 35);
+  assert.strictEqual(g.hp, 40);
 });
 
 console.log(`queue: ${passed} tests passed`);

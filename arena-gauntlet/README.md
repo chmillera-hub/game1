@@ -59,12 +59,12 @@ on a phone turned sideways, but portrait works too.
   first turn.
 - **Regen**: some talents, gear, relics and units heal at the start of each of the
   unit's own turns (Living Moss 4, Healing Charm 3, the Furgon 3, the Healing Salve
-  relic 1, Sacred Chalice 2, a Mending Light aura 2). It never adds up to more than 5
-  a turn, and unit cards and the battle log show it.
-- **Overtime**: from turn 50, every fighter loses HP at the start of its side's
-  turn, 2 more each round (2, 4, 6...), past armor and shields, and reinforcements
-  stop. Big units last longest; the last side standing wins. A tough tank can win a
-  long battle on its own.
+  relic 1, Sacred Chalice 2, a Mending Light aura 2). Sources add up with no cap;
+  unit cards and the battle log show it.
+- **Fatigue**: from turn 50, every fighter loses HP at the start of each of its own
+  turns, 1 more each time (1, 2, 3...), past armor and shields, like fatigue in
+  Hearthstone. Reinforcements stop. Big units and regen last longest; the last side
+  standing wins. A tough tank can win a long battle on its own.
 - **Combat**: block works from the front, half from the side, never from behind.
   Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
   counts the attacker side's turns.
