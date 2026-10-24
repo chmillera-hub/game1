@@ -1859,13 +1859,16 @@ button.card:active {
   font-size: 1.15rem;
 }
 
+/* Messages show near the top, over the board, clear of the buttons below; a tap closes
+   one. On the battlefield they stay clear of the board's tool buttons (and, sideways, of
+   the side panel). */
 .toast {
   position: fixed;
-  left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: calc((100vw - var(--toast-gap, 0px)) / 2);
+  top: calc(70px + env(safe-area-inset-top, 0px));
   transform: translateX(-50%);
   z-index: 30;
-  max-width: min(90vw, 460px);
+  max-width: min(calc(100vw - var(--toast-gap, 0px) - 24px), 460px);
   padding: 10px 16px;
   border-radius: 10px;
   background: rgba(20, 17, 24, 0.95);
@@ -1874,11 +1877,24 @@ button.card:active {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   font-size: 0.95rem;
   text-align: center;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .toast[hidden] {
   display: none;
+}
+
+body:has(#battle:not([hidden])) {
+  --toast-gap: 84px;
+}
+
+@media (min-aspect-ratio: 5/4) {
+  body:has(#battle:not([hidden])) {
+    --toast-gap: calc(clamp(290px, 34vw, 400px) + 84px);
+  }
+  .toast {
+    top: calc(14px + env(safe-area-inset-top, 0px));
+  }
 }
 
 .help h4 {

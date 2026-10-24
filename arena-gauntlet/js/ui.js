@@ -3803,6 +3803,14 @@
       updateRotateHint();
       if (!$('#view').hidden && UI.mapWide != null && $('.map-screen') && isWide() !== UI.mapWide) mapScreen();
     });
+    // A message box goes the moment you tap it (and the tap stops there), or when you tap
+    // anything else (that tap still does what it does).
+    const toastEl = $('#toast');
+    toastEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideToast();
+    });
+    root.addEventListener('pointerdown', (e) => !toastEl.hidden && !toastEl.contains(e.target) && hideToast(), true);
     const unlock = () => {
       if (AG.Audio) AG.Audio.unlock();
       if (AG.Music) AG.Music.kick();
