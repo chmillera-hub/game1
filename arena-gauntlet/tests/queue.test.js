@@ -237,7 +237,7 @@ test('fatigue: the enemy loses 1, then you 1, then the enemy 2, you 2, and so on
   assert.ok(s.units.every((u) => u.shield === 50), 'shields do not stop it');
 });
 
-test('fatigue: units that sit out in the same turn all lose the same', () => {
+test('fatigue: only the unit taking the turn loses HP, not the ones that sit it out', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -254,9 +254,77 @@ test('fatigue: units that sit out in the same turn all lose the same', () => {
   const ev = s.events.length;
   E.pass(s); // your turn 2 starts
   const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue');
-  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]], 'both of yours lose 1, like the enemy did');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[b.uid, 1]], 'only b, which takes the turn, loses 1');
   assert.strictEqual(s.due, b.uid);
 });
+
+test('fatigue: when every unit sits the turn out, the first in line still takes it', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 2, y: 8 },
+      { type: 'golem', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  E.pass(s);
+  E.pass(s);
+  const [a, b] = s.units;
+  a.wait = 1;
+  b.wait = 1;
+  b.cycles = a.cycles;
+  const ev = s.events.length;
+  E.pass(s);
+  const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid].team === 'P');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1]], 'one unit a turn, even when nobody acts');
+});
+
+test('poison ticks on the poisoned unit\'s own turn, not for the whole side at once', () => {
+  const s = battle([
+    { type: 'knight', team: 'P', x: 2, y: 8 },
+    { type: 'knight', team: 'P', x: 6, y: 8 },
+    { type: 'golem', team: 'E', x: 4, y: 0 },
+  ]);
+  toPlayer(s);
+  const [a, b] = s.units;
+  a.poison = { turns: 2, dmg: 5, src: 0 };
+  b.poison = { turns: 2, dmg: 5, src: 0 };
+  E.pass(s); // your turn ends
+  const ev = s.events.length;
+  E.pass(s); // the enemy's ends; your next turn starts with one of your knights
+  const due = s.byId[s.due];
+  const ticks = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'poison');
+  assert.deepStrictEqual(ticks.map((e) => e.uid), [due.uid], 'only the unit whose turn it is');
+});
+
+test('a Poison Wisp cloud: foes that start their own turn in it lose HP; step out and it stops', () => {
+  const s = battle([
+    { type: 'wisp', team: 'P', x: 4, y: 6 },
+    { type: 'knight', team: 'E', x: 4, y: 4 },
+  ]);
+  toPlayer(s);
+  const [wi, kn] = s.units;
+  assert.strictEqual(s.due, wi.uid);
+  assert.ok(E.beginActivation(s, wi.uid));
+  assert.ok(E.performAction(s, wi.uid, { kind: 'self', ai: 0 }));
+  E.finishActivation(s, null);
+  assert.strictEqual(kn.poison, null, 'no poison on the knight itself');
+  assert.ok(E.cloudOn(s, kn), 'the knight stands in the cloud');
+  E.endTurn(s);
+  assert.strictEqual(s.due, kn.uid);
+  assert.strictEqual(kn.hp, kn.maxHp - E.poisonDamage(wi), 'its turn starts in the cloud');
+  // It walks out of the cloud and the damage stops.
+  const out = [...E.reachable(s, kn).values()].find((t) => !E.tileFx(s, t.x, t.y, 'miasma'));
+  assert.ok(out, 'a way out');
+  const hp = kn.hp;
+  assert.ok(E.beginActivation(s, kn.uid));
+  E.moveUnit(s, kn.uid, out.x, out.y);
+  E.finishActivation(s, null);
+  E.endTurn(s); // your turn
+  E.pass(s); // the enemy's again
+  assert.strictEqual(kn.hp, hp, 'no more damage outside the cloud');
+});
+
 
 test('fatigue: the bigger side outlasts the smaller, and reinforcements stop', () => {
   const s = battle(
@@ -317,10 +385,46 @@ test('regen from every source adds up, with no cap', () => {
     { relics: { P: ['sacred_chalice', 'healing_salve'], E: [] } }
   );
   const g = s.units[0];
-  assert.strictEqual(g.regen, 10, 'Living Moss 4 + Healing Charm 3 + Chalice 2 + Salve 1');
+  assert.strictEqual(g.regen, 11, 'Living Moss 4 + Healing Charm 3 + Salve 2 + Chalice 2');
   g.hp = 30;
   toPlayer(s);
-  assert.strictEqual(g.hp, 40);
+  assert.strictEqual(g.hp, 41);
+});
+
+test('the Healing Salve only adds to regen a unit already has', () => {
+  const s = battle(
+    [
+      { type: 'furgon', team: 'P', x: 2, y: 8 },
+      { type: 'knight', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { relics: { P: ['healing_salve'], E: [] } }
+  );
+  const [fu, kn] = s.units;
+  assert.strictEqual(fu.regen, 5, 'Furgon 3 + Salve 2');
+  assert.strictEqual(kn.regen, 0, 'no regen of its own, none from the Salve');
+});
+
+test('regen comes only to the unit taking the turn, not to the ones that sit it out', () => {
+  const s = battle(
+    [
+      { type: 'knight', team: 'P', x: 2, y: 8 },
+      { type: 'knight', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { relics: { P: ['sacred_chalice'], E: [] } }
+  );
+  toPlayer(s);
+  const [a, b] = s.units;
+  E.pass(s);
+  a.hp = 20;
+  b.hp = 20;
+  a.wait = 1; // a sits its next turn out, so b takes it
+  b.cycles = a.cycles;
+  E.pass(s);
+  assert.strictEqual(s.due, b.uid);
+  assert.strictEqual(b.hp, 22, 'b takes the turn: +2');
+  assert.strictEqual(a.hp, 20, 'a sat out: no regen');
 });
 
 console.log(`queue: ${passed} tests passed`);

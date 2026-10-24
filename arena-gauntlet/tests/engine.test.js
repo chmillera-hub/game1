@@ -321,27 +321,52 @@ test('paralysis costs a turn on top of the cooldown and removes block', () => {
   assert.ok(E.canActivate(s, kn), 'free again');
 });
 
-test('poison ticks, blocks healing; golems and the undead are immune', () => {
+test('Miasma leaves a poison cloud: no healing inside; buildings, constructs and the undead are immune', () => {
   const s = board([
     { type: 'wisp', team: 'P', x: 4, y: 6 },
     { type: 'knight', team: 'E', x: 4, y: 4 },
     { type: 'golem', team: 'E', x: 5, y: 5 },
     { type: 'skeleton', team: 'E', x: 3, y: 5 },
     { type: 'cleric', team: 'E', x: 3, y: 1 },
+    { type: 'lightning', team: 'E', x: 2, y: 6 },
+    { type: 'barrier', team: 'E', x: 6, y: 6 },
+    { type: 'cage', team: 'E', x: 4, y: 8 },
   ]);
-  const [wi, kn, go, sk, cl] = s.units;
+  const [wi, kn, go, sk, cl, lw, bw, cage] = s.units;
   act(s, wi, { kind: 'self' });
-  assert.ok(kn.poison && kn.poison.turns === 3);
-  assert.strictEqual(go.poison, null);
-  assert.strictEqual(sk.poison, null);
+  assert.ok(s.units.every((u) => !u.poison), 'the cast poisons nobody directly');
+  assert.strictEqual(s.tfx.filter((f) => f.kind === 'miasma').length, 13, 'a cloud over every tile within 2, its own too');
   E.endTurn(s);
   assert.strictEqual(s.side, 'E');
-  assert.strictEqual(kn.hp, kn.maxHp - 6, 'ticks at the start of its turn');
-  assert.strictEqual(kn.poison.turns, 2);
+  assert.strictEqual(kn.hp, kn.maxHp - 8, 'the knight starts its turn in the cloud');
+  for (const u of [go, sk, lw, bw, cage]) assert.strictEqual(u.hp, u.maxHp, u.type + ' is immune');
   const before = kn.hp;
   assert.ok(E.beginActivation(s, cl.uid));
   E.performAction(s, cl.uid, { kind: 'self' });
-  assert.strictEqual(kn.hp, before, 'poisoned unit not healed');
+  assert.strictEqual(kn.hp, before, 'no healing inside the cloud');
+});
+
+test('Pestilence never hits buildings; the cloud clears on the wisp\'s turns and when it casts again', () => {
+  const s = board([
+    { type: 'wisp', team: 'P', x: 4, y: 6, level: 3 },
+    { type: 'knight', team: 'E', x: 4, y: 4 },
+    { type: 'cage', team: 'E', x: 4, y: 8 },
+    { type: 'knight', team: 'P', x: 8, y: 0 },
+  ]);
+  const [wi, kn, cage] = s.units;
+  act(s, wi, { kind: 'self' });
+  assert.ok(kn.hp < kn.maxHp, 'Pestilence hits the knight');
+  assert.strictEqual(cage.hp, cage.maxHp, 'but not the cage');
+  const cloud = () => s.tfx.filter((f) => f.kind === 'miasma' && f.src === wi.uid);
+  assert.ok(cloud().every((f) => f.turns === 2));
+  until(s, 'P'); // the wisp's next turn: its cooldown
+  assert.ok(cloud().length && cloud().every((f) => f.turns === 1), 'still out while it cools down');
+  place(s, wi, 4, 2);
+  act(s, wi, { kind: 'self' }, 0);
+  assert.ok(cloud().every((f) => Math.abs(f.x - 4) + Math.abs(f.y - 2) <= 2), 'the old cloud cleared for the new one');
+  until(s, 'P');
+  until(s, 'P');
+  assert.strictEqual(cloud().length, 0, 'gone two of its turns later');
 });
 
 test('fireball hurts allies but not the caster; Controlled Burn spares them', () => {

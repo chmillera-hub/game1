@@ -703,7 +703,7 @@
       }
     }
 
-    // Fire and caltrops lie on the ground; smoke is drawn over the units.
+    // Fire, poison clouds and caltrops lie on the ground; smoke is drawn over the units.
     drawHazards(g) {
       for (const f of this.tfx) {
         const [cx, cy] = this.center(f.x, f.y);
@@ -717,6 +717,18 @@
             g.beginPath();
             g.moveTo(fx - this.tw * 0.05, cy + this.th * 0.05);
             g.quadraticCurveTo(fx, cy - fh, fx + this.tw * 0.05, cy + this.th * 0.05);
+            g.fill();
+          }
+        } else if (f.kind === 'miasma') {
+          // A poison cloud: a sickly green haze, its rim in the caster's colour.
+          const ph = this.time * 1.6 + f.x * 1.3 + f.y * 0.7;
+          const rim = f.team === 'P' ? 'rgba(150,200,255,0.55)' : 'rgba(255,150,140,0.55)';
+          this.tileFill(g, f.x, f.y, 'rgba(175,245,80,' + (0.3 + 0.08 * Math.sin(ph)) + ')', rim, 1.5, 1);
+          for (let i = 0; i < 2; i++) {
+            const a = ph + i * 3.1;
+            g.fillStyle = 'rgba(210,255,150,' + (0.3 + 0.08 * Math.sin(a * 1.4)) + ')';
+            g.beginPath();
+            g.ellipse(cx + Math.cos(a) * this.tw * 0.12, cy - this.th * 0.12 + Math.sin(a) * this.th * 0.1, this.tw * 0.16, this.th * 0.2, 0, 0, Math.PI * 2);
             g.fill();
           }
         } else if (f.kind === 'caltrops') {
@@ -2028,6 +2040,9 @@
             break;
           case 'scorch':
             if (v) this.particles(v.x, v.y, 6, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 6, rise: 0.8, max: 0.5 });
+            break;
+          case 'miasma':
+            if (v) this.particles(v.x, v.y, 8, ['#b6f07a', '#7fd04a', '#4f9a2c'], { lift: 6, rise: 0.6, max: 0.6 });
             break;
           case 'boom':
             any = true;

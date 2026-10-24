@@ -234,7 +234,7 @@
     const fx = E.hitFx(u, a);
     const bits = [];
     if (fx.para) bits.push(`paralyzes for ${fx.para} turn${fx.para > 1 ? 's' : ''}`);
-    if (fx.poison) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
+    if (fx.poison && !a.cloud) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
     if (fx.burn) bits.push(`burns for ${fx.burn[0]} turns (${fx.burn[1]} a turn)`);
     if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
     if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
@@ -289,7 +289,10 @@
         t = `${base} ${dt} damage to enemies in all four directions, up to ${a.len} tiles.`;
         break;
       case 'nova':
-        t = a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.` : `Affects every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.`;
+        if (a.cloud) {
+          const turns = a.cloud + (u.props.poisonTurns || 0);
+          t = `${a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}, and l` : 'L'}eaves a poison cloud over every tile within ${a.radius} for ${turns} of its own turns${u.props.poisonTurns ? '' : ' (its old cloud clears when it casts again)'}. Enemies that start their turn inside lose ${E.poisonDamage(u, a)} HP and cannot heal; stepping out stops it. Buildings, wagons, cages and constructs are immune.`;
+        } else t = a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.` : `Affects every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.`;
         break;
       case 'pray':
         t = `Heals ${E.healAmount(u, a)} HP to every ally within ${a.radius} tiles.${a.cleanse ? ' Also cures poison, burns, paralysis and roots.' : ''}`;
@@ -525,7 +528,7 @@
     }
     if (P.guard) out.push(`Adjacent allies take ${pct(P.guard)} less damage.`);
     if (P.magicGuard) out.push(`Adjacent allies take ${pct(P.magicGuard)} less magic damage.`);
-    if (u.regen) out.push(`Regen ${u.regen}: heals ${u.regen} HP at the start of each of its turns.`);
+    if (u.regen) out.push(`Regen ${u.regen}: heals ${u.regen} HP each time it takes a turn (not when it sits one out).`);
     if (P.lifesteal) out.push(`Heals for ${pct(P.lifesteal)} of the damage it deals.`);
     if (P.thorns) out.push(`Melee attackers take ${P.thorns} damage.`);
     if (P.backMult) out.push(`+${pct(P.backMult)} damage from behind.`);
@@ -576,7 +579,7 @@
     if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
     // Regen counts a Mending Light aura it stands in during a battle.
     const regen = o.status && UI.battle && u.alive ? E.regenOf(UI.battle.s, u) : u.regen;
-    if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP at the start of each of its turns">${ic('heart')} Regen ${regen}</span>`);
+    if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP each time it takes a turn">${ic('heart')} Regen ${regen}</span>`);
     return `<div class="unitcard">
       <canvas class="portrait" data-p="${u.type}:${u.team}"></canvas>
       <div class="name"><b class="team-${u.team}">${esc(o.name || u.name)}</b><span class="stars">${stars(u.level)}</span>
@@ -834,7 +837,7 @@
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
     };
     const option = (kind, id, i) => {
-      const attrs = `data-dpick="${i}"`;
+      const attrs = `data-dpick="${i}" data-choose`;
       if (kind === 'unit') {
         const T = UNITS[id];
         const reach = T.act.range ? ` · range ${T.act.range[1]}` : '';
@@ -1183,6 +1186,48 @@
 
   const SLOT_KEY = { skill: 'skills', gear: 'gear', talent: 'talents' };
 
+  // Owned items of a kind that unit r could put in a slot: free ones, and ones another unit
+  // holds (equipping one moves it).
+  function slotOptions(run, r, kind) {
+    const held = r.load.talents.map((uid) => R.itemByUid(run, uid).id);
+    const n = { free: 0, elsewhere: 0 };
+    for (const it of run.items) {
+      if (it.kind !== kind || (kind === 'talent' && TALENTS[it.id].cls !== r.type)) continue;
+      if (!D.eligible(r.type, R.itemDef(it))) continue;
+      const holder = R.itemHolder(run, it.uid);
+      if (holder && holder.id === r.id) continue;
+      if (kind === 'talent' && held.includes(it.id)) continue;
+      if (holder) n.elsewhere++;
+      else n.free++;
+    }
+    n.total = n.free + n.elsewhere;
+    return n;
+  }
+
+  function kindPlural(kind, r) {
+    return kind === 'talent' ? `${UNITS[r.type].name} talents` : kind === 'skill' ? 'skills' : kind === 'scroll' ? 'enchantment scrolls' : 'gear';
+  }
+
+  function slotOptionsText(kind, r, n) {
+    if (!n.total) return `No ${kindPlural(kind, r)} you could equip yet`;
+    const away = n.elsewhere === 1 ? '1 on another unit' : `${n.elsewhere} on other units`;
+    return n.free && n.elsewhere ? `${n.free} free, ${away}` : n.free ? `${n.free} free` : away;
+  }
+
+  // How many of a reward's kind you already own, to weigh taking or buying it.
+  function ownedNote(run, kind, id) {
+    if (!run) return '';
+    if (kind === 'recruit') {
+      const same = run.roster.filter((u) => u.type === id).length;
+      return `<div class="owned">${ic('army')}<span>${same ? `You have ${same} of these` : 'None of these yet'} · ${run.roster.length} unit${run.roster.length === 1 ? '' : 's'} in all</span></div>`;
+    }
+    const cls = kind === 'talent' ? TALENTS[id].cls : null;
+    const mine = run.items.filter((i) => i.kind === kind && (!cls || TALENTS[i.id].cls === cls));
+    const same = mine.filter((i) => i.id === id).length;
+    const what = kindPlural(kind, { type: cls });
+    return `<div class="owned">${ic(ITEM_ICON[kind])}<span>${mine.length ? `You have ${mine.length} ${what}${same ? ` (${same} of this one)` : ''}` : `You have no ${what} yet`}</span></div>`;
+  }
+
   // Where a talent goes: any talent slot of one class.
   function talentWhere(t) {
     return `Only for the ${UNITS[t.cls].name}. It fits any of its talent slots: one at Level 1, two at Level 2, three at Level 3.`;
@@ -1332,10 +1377,16 @@
     const uid = r.load[SLOT_KEY[kind]][i];
     const it = uid && R.itemByUid(run, uid);
     const d = it && R.itemDef(it);
-    return `<button class="slot ${d ? 'full' : ''}" data-slot="${kind}:${i}">
+    if (d)
+      return `<button class="slot full" data-slot="${kind}:${i}">
       <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
-      <span class="sl-body">${d ? `<b>${esc(d.name)}</b><span class="small muted">${esc(d.desc)}</span>` : `<b class="muted">Empty ${kind} slot</b><span class="small muted">Tap to equip</span>`}</span>
-      ${d ? `<span class="cost">+${d.cost}</span>` : ''}</button>`;
+      <span class="sl-body"><b>${esc(d.name)}</b><span class="small muted">${esc(d.desc)}</span></span>
+      <span class="cost">+${d.cost}</span></button>`;
+    const n = slotOptions(run, r, kind);
+    return `<button class="slot ${n.total ? '' : 'none'}" data-slot="${kind}:${i}" ${n.total ? '' : 'disabled'}>
+      <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
+      <span class="sl-body"><b class="muted">Empty ${kind} slot</b><span class="small muted">${slotOptionsText(kind, r, n)}${n.total ? ' · tap to equip' : ''}</span></span>
+      ${n.total ? `<span class="avail" title="${n.total} you could equip here">${n.total}</span>` : ''}</button>`;
   }
 
   // Edit one unit's level, ability picks, skills and gear. Costs update live.
@@ -1621,6 +1672,10 @@
       } else if (fx.kind === 'smoke') {
         name('Smoke', 'eye');
         f.lines.push(`Nobody inside can be targeted from more than 1 tile away. Clears in ${left}.`);
+      } else if (fx.kind === 'miasma') {
+        name('Poison cloud', 'skull');
+        const src = s.byId[fx.src];
+        f.lines.push(`${mine ? 'Your miasma: enemy' : 'Enemy miasma: your'} units that start their turn here lose ${fx.dmg} HP and cannot heal. Buildings and constructs are immune. ${src && src.alive ? `Clears in ${fx.turns} of the ${src.name}'s turns, or when it casts again.` : `Clears in ${left}.`}`);
       } else if (fx.kind === 'caltrops') {
         name('Caltrops', 'target');
         f.lines.push(`${mine ? 'Your caltrops: the first enemy' : 'Enemy caltrops: the first of your units'} to step here stops, takes 6 damage and is rooted for 1 turn. They stay for ${left}.`);
@@ -1852,10 +1907,14 @@
       .filter((x) => x.cost)
       .map((x) => `<span class="cb">${esc(costLabel(x.label))} <b>${x.cost}</b></span>`)
       .join('<span class="cb-op">+</span>');
+    // An empty slot shows how many owned items could go in it, and greys out at none.
+    const opts = { talent: slotOptions(run, r, 'talent'), skill: slotOptions(run, r, 'skill'), gear: slotOptions(run, r, 'gear') };
     const slot = (kind, i) => {
       const uid = L[SLOT_KEY[kind]][i];
       const d = uid && R.itemDef(R.itemByUid(run, uid));
-      return `<button class="qchip ${kind} ${d ? 'full' : ''}" data-qslot="${kind}:${i}">${ic(ITEM_ICON[kind])}<span>${d ? esc(d.name) : 'Empty'}</span>${d ? `<b>+${d.cost}</b>` : ''}</button>`;
+      if (d) return `<button class="qchip ${kind} full" data-qslot="${kind}:${i}" title="${esc(d.name)}: ${esc(d.desc)}">${ic(ITEM_ICON[kind])}<span>${esc(d.name)}</span><b>+${d.cost}</b></button>`;
+      const n = opts[kind];
+      return `<button class="qchip ${kind} ${n.total ? '' : 'none'}" data-qslot="${kind}:${i}" ${n.total ? '' : 'disabled'} title="${esc(slotOptionsText(kind, r, n))}">${ic(ITEM_ICON[kind])}<span>${n.total ? 'Empty' : 'None'}</span>${n.total ? `<i class="avail">${n.total}</i>` : ''}</button>`;
     };
     const locked = (icon, lv) => `<span class="qchip locked">${ic(icon)}<span>Lv ${lv}</span></span>`;
     const ability = (tier) => {
@@ -1864,8 +1923,14 @@
       const inner = `${ic('up')}<span>${esc(ab.name)}</span>${ab.cost ? `<b>+${ab.cost}</b>` : ''}`;
       // With only one to choose from, there is nothing to pick.
       const choices = T.abilities[tier].filter((id) => !TALENTS[id]).length;
-      return choices > 1 ? `<button class="qchip ability full" data-qab="${tier}">${inner}</button>` : `<span class="qchip ability full fixed">${inner}</span>`;
+      return choices > 1 ? `<button class="qchip ability full" data-qab="${tier}" title="${esc(ab.desc)}">${inner}</button>` : `<span class="qchip ability full fixed" title="${esc(ab.desc)}">${inner}</span>`;
     };
+    // What the chosen abilities do, right under them.
+    const abDesc = [1, 2]
+      .filter((tier) => tier === 1 || L.lv >= 2)
+      .map((tier) => ABILITIES[L['a' + tier]])
+      .map((ab) => `<div><b>${esc(ab.name)}:</b> ${esc(ab.desc)}</div>`)
+      .join('');
     const row = (label, chips) => `<div class="qrow"><span class="qlabel">${label}</span><div class="qchips">${chips}</div></div>`;
     const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-qlv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
     return `<div class="qload">
@@ -1876,6 +1941,7 @@
       <div class="costline">${parts}</div>
       <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
       ${row('Abilities', ability(1) + ability(2))}
+      <div class="qdesc">${abDesc}</div>
       ${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
       ${row('Skills', [...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slot('skill', i) : locked('scroll', 2))).join(''))}
       ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}
@@ -2046,6 +2112,9 @@
       : '';
 
     const over = used > wr.supply;
+    // The unit strips keep where you scrolled them to when the panel redraws.
+    wr.stripX = wr.stripX || {};
+    for (const el of $$('#cmd .roster, #cmd .intel-list')) wr.stripX[el.className] = el.scrollLeft;
     $('#cmd').innerHTML = `
       <button class="cp-meter tap" id="wrMeter" aria-label="What each unit costs"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
         <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}</span></span></button>
@@ -2062,6 +2131,7 @@
       <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
+    for (const el of $$('.roster, .intel-list', cmd)) el.scrollLeft = wr.stripX[el.className] || 0;
     $('#wrTabA').onclick = () => {
       wr.tab = 'army';
       renderWarRoom();
@@ -2557,7 +2627,7 @@
 
   // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
-    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> each`;
+    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> to whoever acts`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
@@ -2946,7 +3016,7 @@
     logEvents(ev);
     if (ev.some((e) => e.t === 'overtime')) {
       showBanner('Fatigue', true);
-      toast('Fatigue: each unit loses HP at the start of its turn, 1 more each round, the same for both sides. The last side standing wins.', 4000);
+      toast('Fatigue: the unit taking each turn loses HP, 1 more each round, the same for both sides. The last side standing wins.', 4000);
     }
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
@@ -3444,17 +3514,18 @@
       <div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>${extra || ''}</button>`;
   }
 
-  // Reward cards: what you got anyway is lit up as collected; a choice stays plain until you
-  // pick, then the pick lights up and the rest go grey.
+  // Reward cards: what you got anyway is lit up as collected; a choice waiting for you has a
+  // soft aura that fades in and out (data-choose) until you pick, then the pick lights up
+  // and the rest go grey.
   const GOT = 'data-got="✓ Collected" disabled';
   function pickState(taken, chosen) {
-    return !taken ? '' : chosen ? 'data-got="✓ Chosen" disabled' : 'data-passed disabled';
+    return !taken ? 'data-choose' : chosen ? 'data-got="✓ Chosen" disabled' : 'data-passed disabled';
   }
 
   function spoilCard(sp, i, taken, chosen) {
     const attrs = `data-spoil="${i}" ${pickState(taken, chosen)}`;
-    if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs);
-    if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs);
+    if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs, ownedNote(UI.run, 'recruit', sp.unit));
+    if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs, ownedNote(UI.run, sp.type, sp.id));
     return `<button class="card" ${attrs}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
   }
 
@@ -3489,7 +3560,7 @@
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, GOT)}</div></div>` : ''}
         ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
-          <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${pickState(p.tomeTaken, p.tomePick === i)}`)).join('')}</div></div>` : ''}
+          <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${pickState(p.tomeTaken, p.tomePick === i)}`, ownedNote(run, 'skill', id))).join('')}</div></div>` : ''}
         ${p.bossRelics && p.bossRelics.length ? `<div><div class="eyebrow">${p.bossRelicTaken ? 'Boss relic claimed' : 'Choose a boss relic'}</div><div class="cards">${p.bossRelics.map((id) => relicCard(id, `data-boss="${id}" ${pickState(p.bossRelicTaken, p.bossPick === id)}`)).join('')}</div></div>` : ''}
         <div><div class="eyebrow">${p.spoilTaken ? 'Spoils claimed' : 'Choose your spoils'}</div>
           <div class="cards">${p.spoils.map((sp, i) => spoilCard(sp, i, p.spoilTaken, p.spoilPick === i)).join('')}</div>
@@ -3555,8 +3626,8 @@
       const can = R.canBuy(run, it);
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
       const dis = `data-buy="${i}" ${can ? '' : 'disabled'}`;
-      if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, price);
-      if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, price);
+      if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price);
+      if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
         return `<button class="card" ${dis}><div class="kind">${ic('gem')} Relic · ${RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
       if (it.kind === 'supply')
@@ -3603,10 +3674,10 @@
         <div class="row">${resbar(run)}</div>
         ${p.done ? `<p class="hint">${p.done === 'drill' ? 'Your soldiers drill until dawn. Your command grows sharper.' : 'A quiet night of study and repair. The new item is in your pack.'}</p>${p.levels ? levelUpHTML(p.levels.from, p.levels.to) : ''}` : `
         <div class="cards">
-          <button class="card" id="rsDrill"><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level and more Supply for every battle.</div></button>
+          <button class="card" id="rsDrill" data-choose><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level and more Supply for every battle.</div></button>
         </div>
-        <div><div class="eyebrow">Or study: take one skill</div><div class="cards">${p.skills.map((id, i) => itemCard('skill', id, `data-study="${i}"`)).join('')}</div></div>
-        <div><div class="eyebrow">Or tinker: take one piece of gear</div><div class="cards">${p.gear.map((id, i) => itemCard('gear', id, `data-tinker="${i}"`)).join('')}</div></div>`}
+        <div><div class="eyebrow">Or study: take one skill</div><div class="cards">${p.skills.map((id, i) => itemCard('skill', id, `data-study="${i}" data-choose`, ownedNote(run, 'skill', id))).join('')}</div></div>
+        <div><div class="eyebrow">Or tinker: take one piece of gear</div><div class="cards">${p.gear.map((id, i) => itemCard('gear', id, `data-tinker="${i}" data-choose`, ownedNote(run, 'gear', id))).join('')}</div></div>`}
         <div class="row end"><button class="btn" id="rsArmy">${ic('army')} Army</button><button class="btn primary" id="rsGo" ${p.done ? '' : 'disabled'}>Break camp</button></div>
       </div>`
     );
@@ -3645,7 +3716,7 @@
         <div><p class="eyebrow">Treasure</p><h2>A forgotten cache</h2></div>
         <div class="cards">${p.relic ? relicCard(p.relic, 'disabled style="opacity:1"') : ''}
           <div class="card"><div class="kind">${ic('gold')} Coin</div><div class="title">${p.gold} gold</div></div></div>
-        <div class="row end">${p.taken ? '' : `<button class="btn primary" id="trTake">${ic('chest')} Take it all</button>`}
+        <div class="row end">${p.taken ? '' : `<button class="btn primary" id="trTake" data-choose>${ic('chest')} Take it all</button>`}
           <button class="btn ${p.taken ? 'primary' : ''}" id="trGo" ${p.taken ? '' : 'disabled'}>Continue</button></div>
       </div>`
     );
@@ -3674,7 +3745,7 @@
           <h2>${esc(ev.title)}</h2>
           <p>${esc(ev.text)}</p>
           ${p.result ? `<p class="result">${esc(p.result)}</p>` : choices
-            .map((c) => `<button class="choice" data-choice="${esc(c.id)}" ${c.enabled ? '' : 'disabled'}><b>${esc(c.label)}</b><span>${esc(c.detail)}</span></button>`)
+            .map((c) => `<button class="choice" data-choice="${esc(c.id)}" ${c.enabled ? 'data-choose' : 'disabled'}><b>${esc(c.label)}</b><span>${esc(c.detail)}</span></button>`)
             .join('')}
         </div>
         ${p.result ? `<div class="row end"><button class="btn" id="evArmy">${ic('army')} Army</button><button class="btn primary" id="evGo">Continue</button></div>` : ''}
@@ -3773,8 +3844,9 @@
           <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
-          <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
+          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn. The Poison Wisp leaves a poison cloud around it that stays while it cools down: enemies that start their turn inside lose HP and cannot heal, so they step out. Buildings, wagons, cages and constructs are immune.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
           <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>

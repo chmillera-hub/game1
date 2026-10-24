@@ -690,7 +690,7 @@
   const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
   // With one unit acting a turn, a bigger army counts for less, so ordinary foes get a
   // little more to spend.
-  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 1 };
+  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 0.95 };
 
   function enemyBudget(run, node, kind) {
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];

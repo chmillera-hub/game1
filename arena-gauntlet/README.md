@@ -26,7 +26,9 @@ on a phone turned sideways, but portrait works too.
   swap places; a unit from the bench whose loadout is open goes onto the blue tile you
   tap, or takes the place of the unit you tap. A move lets go of the unit, and a tap
   that misses keeps it picked up. Tap the Supply bar to see what every deployed unit
-  costs. Begin battle stays in view at the bottom.
+  costs. Begin battle stays in view at the bottom. The loadout says what each chosen
+  ability does, and each empty slot shows how many of your items could go in it
+  (greyed out when none could). The unit strip stays where you scrolled it.
 - **Army size**: there is no limit on how many units you recruit, or on how many
   take the field. Supply is the only limit: eight cheap Archers or four
   veterans, your call. Your commander level sets how big enemy armies get and
@@ -94,15 +96,26 @@ on a phone turned sideways, but portrait works too.
   starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
   when every unit of a side must sit out, the side passes. Bosses sit out their
   first turn.
-- **Regen**: some talents, gear, relics and units heal at the start of each of the
-  unit's own turns (Living Moss 4, Healing Charm 3, the Furgon 3, the Healing Salve
-  relic 1, Sacred Chalice 2, a Mending Light aura 2). Sources add up with no cap;
+- **Regen**: some talents, gear, relics and units heal as the unit takes its turn,
+  one unit a turn: units that sit a turn out do not regenerate (Living Moss 4,
+  Healing Charm 3, the Furgon 3, a Mending Light aura 2). The only army-wide source
+  is the boss relic Sacred Chalice (+2); the common Healing Salve adds 2 only to
+  units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 30, each unit loses HP at the start of its turn, past armor
-  and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next,
-  then 3 and so on, the same for both sides, like fatigue in Hearthstone. The top bar
-  shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
+- **Fatigue**: from turn 30, the unit taking each turn loses HP as its turn starts,
+  past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in
+  the next, then 3 and so on, the same for both sides, like fatigue in Hearthstone.
+  One unit a turn: units that sit the turn out (cooling down) are spared, and if a
+  whole side sits out, the first in line takes it. The top bar shows this round's
+  hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
+- **Poison**: poison and burns tick at the start of the poisoned unit's own turn.
+  The Poison Wisp's Miasma leaves a poison cloud over every tile within 2 of it,
+  which stays out while the wisp cools down and clears when it casts again
+  (Lingering Spores keeps it one turn longer). Enemies that start their turn in the
+  cloud lose HP and cannot heal; walking out stops it, and the AI tries to.
+  Buildings, wagons, cages and constructs (golems, wards, the trebuchet) are immune,
+  and Pestilence's extra damage never hits buildings.
 - **Combat**: block works from the front, half from the side, never from behind.
   Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
   counts the attacker side's turns.
@@ -136,9 +149,10 @@ on a phone turned sideways, but portrait works too.
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
-  prisoner, a relic) glows gold and says Collected. A choice (spoils, the Lost
-  Tome, a boss relic) stays plain until you pick; then your pick glows and the
-  rest go grey.
+  prisoner, a relic) glows gold and says Collected. A choice still waiting for you
+  (spoils, the Lost Tome, a boss relic, campfire and event choices, the draft) has
+  a soft aura that fades in and out; once you pick, your pick glows and the rest
+  go grey. Reward and shop cards say how many of that kind you already have.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
   events, and camps to drill, study or tinker. A shop sells one of each kind of thing,
   eight at most: a recruit, a talent, a skill, gear, an enchantment scroll, a relic,
