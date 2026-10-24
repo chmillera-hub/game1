@@ -36,7 +36,7 @@
     const out = [];
     radius = radius == null ? 1 : radius;
     for (const o of s.units) {
-      if (!o.alive || o.side === u.side) continue;
+      if (!o.alive || o.side === u.side || o.st.stealth) continue;
       for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
           const x = o.x + dx, y = o.y + dy;
@@ -235,15 +235,18 @@
       desc: (p) => 'An ally within ' + p.range + ' takes an extra turn right away.' + (p.spd ? ' It also gains +' + p.spd + ' SPD for the rest of the battle (up to +4).' : ''),
       targets(s, u, p) {
         if (s.extra.length) return [];
-        return allies(s, u, p.range, false, (o) => !o.noTurn && !o.st.frozen && !o.st.stunned && o.at);
+        return allies(s, u, p.range, false, (o) => !o.noTurn && !o.st.frozen && !o.st.stunned && o.at && o.fl.extraRound !== s.round);
       },
       exec(s, u, t, p) {
         const o = B.U(s, t);
+        o.fl.extraRound = s.round;
         s.extra.push(o.uid);
         B.emit(s, 'note', { uid: o.uid, text: 'hasted!' });
         if (p.spd && (o.ctr.accel || 0) < 4) {
           o.ctr.accel = (o.ctr.accel || 0) + p.spd;
           o.spd += p.spd;
+          // A faster unit moves up the rest of this round's queue too.
+          if (s.queue.indexOf(o.uid) >= 0) B.resortQueue(s);
         }
       },
     },
@@ -402,7 +405,8 @@
       },
       exec(s, u, t, p) {
         const cells = AG.emptyAround(s, u.x, u.y, false);
-        for (let k = 0; k < p.n && k < cells.length; k++) B.summon(s, 'bat', u.side, cells[k], { owner: u.uid });
+        const room = Math.min(p.n, p.max - AG.countOwned(s, u, 'bat'));
+        for (let k = 0; k < room && k < cells.length; k++) B.summon(s, 'bat', u.side, cells[k], { owner: u.uid });
       },
     },
     elixir: {

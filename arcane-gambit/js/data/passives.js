@@ -384,15 +384,15 @@
     regen: {
       name: 'Regenerate',
       desc: (p) => 'Heals ' + p.amt + ' at the start of its turn unless it is burning.',
-      turnStart(s, u, p) { if (!u.st.burn) B.heal(s, u, u, p.amt, true); },
+      turnStart(s, u, p) { if (!u.st.burn && !u.fl.burning) B.heal(s, u, u, p.amt, true); },
     },
     reassemble: {
       name: 'Reassemble',
       desc: () => 'Collapses into a bone pile when killed; unless the pile is smashed or the killing blow was fire or holy, it stands back up after a round.',
       onDeath(s, u, p, killer, o) {
-        if (u.fl.reassembled || (o && (o.tag === 'fire' || o.tag === 'holy' || o.kind === 'fall'))) return;
-        const pile = B.summon(s, 'bonePile', u.side, u.y * s.board.w + u.x, {});
-        if (pile) { pile.ctr.hatch = 2; pile.fl.into = u.def; pile.fl.mods = { hp: 0 }; }
+        if (u.fl.reassembled || (o && (o.tag === 'fire' || o.tag === 'holy' || o.kind === 'fall' || o.kind === 'sacrifice'))) return;
+        const pile = B.summon(s, 'bonePile', u.side, u.y * s.board.w + u.x, { owner: u.owner });
+        if (pile) { pile.ctr.hatch = 2; pile.fl.into = u.def; pile.fl.owner = u.owner; }
       },
     },
     reform: {
@@ -405,7 +405,7 @@
         u.alive = false;
         s.occ[i] = 0;
         B.emit(s, 'vanish', { uid: u.uid });
-        const sk = B.summon(s, u.fl.into || 'skeleton', u.side, i, { hpPct: 0.5 });
+        const sk = B.summon(s, u.fl.into || 'skeleton', u.side, i, { hpPct: 0.5, owner: u.fl.owner || 0 });
         if (sk) { sk.fl.reassembled = true; sk.acted = false; B.emit(s, 'note', { uid: sk.uid, text: 'reassembles' }); }
       },
     },

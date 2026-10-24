@@ -161,7 +161,7 @@
       turnCount: 0,
       flags: {},
       lastHit: 0,
-      holdEnd: false,
+      holdEnd: 0,
     };
     for (const a of army) {
       const u = B.makeUnit(a.def, 0, a.x, a.y, { talents: a.talents, rune: a.rune, rank: a.rank });
@@ -233,7 +233,7 @@
       over: s.over, winner: s.winner, ev: null, stats: null,
       objective: s.objective, rules: s.rules, relics: s.relics, encounter: s.encounter,
       turnCount: s.turnCount, sim: true, flags: Object.assign({}, s.flags), hpBoost: s.hpBoost, atkBoost: s.atkBoost,
-      lastHit: s.lastHit, holdEnd: false,
+      lastHit: s.lastHit, holdEnd: 0,
     };
   };
 
@@ -485,6 +485,10 @@
     s.occ[cellOf(s, u)] = 0;
     emit(s, 'death', { uid: u.uid, by: killer ? killer.uid : 0, how: o && o.kind });
     if (s.stats && killer && killer.side !== u.side) stat(s, killer).kills++;
+    // Death effects (bursts, eggs, revivals) all resolve before the battle
+    // is judged, so a burst that kills the last enemy cannot end the fight
+    // as a defeat while the dying unit's successor is still on its way.
+    s.holdEnd = (s.holdEnd || 0) + 1;
     passiveHook(s, u, 'onDeath', killer, o);
     if (killer && killer.alive) passiveHook(s, killer, 'onKill', u, o);
     for (const w of s.units) {
@@ -492,6 +496,7 @@
     }
     relicHook(s, u.side, 'onAllyDeath', u, killer);
     relicHook(s, 1 - u.side, 'onEnemyDeath', u, killer);
+    s.holdEnd--;
     B.checkEnd(s);
   };
 
@@ -938,6 +943,7 @@
     } else {
       const hits = at.hits || 1;
       for (let h = 0; h < hits && t.alive && u.alive; h++) {
+        if (h > 0 && B.attackTargets(s, u).indexOf(t.uid) < 0) break;
         B.hit(s, u, t, base, o);
         onHitFx(s, u, t, at.fx);
         o.second = true;
@@ -949,13 +955,13 @@
         const x = tx + dx, y = ty + dy;
         if (!AG.inBounds(s.board, x, y)) continue;
         const id = s.occ[y * s.board.w + x];
-        if (!id || id === u.uid) continue;
+        if (!id || id === u.uid || id === t.uid) continue;
         B.hit(s, u, U(s, id), at.splash, { kind: 'splash', tag: at.tag });
       }
       emit(s, 'aoe', { cells: [[tx, ty]], r: 1, vfx: at.vfx || 'blast' });
     }
     if (at.blast) {
-      for (const o2 of AG.adjacentUnits(s, tx, ty, (q) => q.side !== u.side)) {
+      for (const o2 of AG.adjacentUnits(s, tx, ty, (q) => q.side !== u.side && q !== t)) {
         B.hit(s, u, o2, at.blast, { kind: 'splash', tag: at.tag });
       }
     }
@@ -1057,11 +1063,11 @@
       const dmg = s.round - s.rules.storm + 1;
       emit(s, 'storm', { dmg });
       // The storm strikes everyone at once; the outcome is judged afterwards.
-      s.holdEnd = true;
+      s.holdEnd = (s.holdEnd || 0) + 1;
       for (const u of s.units.slice()) {
         if (u.alive && !u.object) B.hit(s, null, u, dmg, { kind: 'storm', label: 'Arcane Storm' });
       }
-      s.holdEnd = false;
+      s.holdEnd--;
       if (B.checkEnd(s)) return;
     }
     for (const u of s.units.slice()) {
@@ -1101,6 +1107,7 @@
     u.moveKind = null;
     u.moveDist = 0;
     for (const k in u.cd) if (u.cd[k] > 0) u.cd[k]--;
+    u.fl.burning = !!u.st.burn;
     if (u.st.burn) {
       const b = u.st.burn;
       B.hit(s, null, u, b.d, { kind: 'dot', tag: 'fire', label: 'Burn' });
@@ -1141,7 +1148,7 @@
 
   B.checkEnd = function (s) {
     if (s.over) return true;
-    if (s.holdEnd) return false;
+    if (s.holdEnd > 0) return false;
     let p = false, e = false;
     for (const u of s.units) {
       if (!u.alive) continue;

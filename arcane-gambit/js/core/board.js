@@ -41,16 +41,21 @@
     return { board, spawns };
   };
 
-  // Promotion rows: the furthest floor square in each file, as seen by each side.
+  // Promotion rows: the enemy's back rank (topmost rank with floor) for the
+  // player, and the player's back rank (bottommost) for the enemy.
   function computeFar(b) {
     b.farP = new Uint8Array(b.n);
     b.farE = new Uint8Array(b.n);
+    let top = -1, bot = -1;
+    for (let i = 0; i < b.n; i++) {
+      if (b.terr[i] !== FLOOR) continue;
+      const y = (i / b.w) | 0;
+      if (top < 0 || y < top) top = y;
+      if (y > bot) bot = y;
+    }
     for (let x = 0; x < b.w; x++) {
-      let top = -1, bot = -1;
-      for (let y = 0; y < b.h; y++) {
-        if (b.terr[y * b.w + x] === FLOOR) { if (top < 0) top = y; bot = y; }
-      }
-      if (top >= 0) { b.farP[top * b.w + x] = 1; b.farE[bot * b.w + x] = 1; }
+      if (top >= 0 && b.terr[top * b.w + x] === FLOOR) b.farP[top * b.w + x] = 1;
+      if (bot >= 0 && b.terr[bot * b.w + x] === FLOOR) b.farE[bot * b.w + x] = 1;
     }
   }
 

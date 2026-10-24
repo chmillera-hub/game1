@@ -75,9 +75,18 @@
       desc: 'The first of your units to fall in each battle rises again at once with half its health.',
       onAllyDeath(s, side, u) {
         if (s.flags['shard' + side] || u.summoned || u.object) return;
-        s.flags['shard' + side] = true;
-        const r = B.summon(s, u.def, side, u.y * s.board.w + u.x, { talents: u.talents, rune: u.rune, rank: u.rank, hpPct: 0.5 });
-        if (r) { r.summoned = false; B.emit(s, 'note', { uid: r.uid, text: 'rises again!' }); }
+        // Rise where it fell, or beside it if that square is taken (or a chasm).
+        const flies = !!AG.Units[u.def].flying;
+        const here = u.y * s.board.w + u.x;
+        const cells = (!s.occ[here] && AG.standable(s.board, here, flies) ? [here] : []).concat(AG.emptyAround(s, u.x, u.y, false));
+        for (const c of cells) {
+          const r = B.summon(s, u.def, side, c, { talents: u.talents, rune: u.rune, rank: u.rank, hpPct: 0.5 });
+          if (!r) continue;
+          s.flags['shard' + side] = true;
+          r.summoned = false;
+          B.emit(s, 'note', { uid: r.uid, text: 'rises again!' });
+          return;
+        }
       },
     },
     thunderDrum: {

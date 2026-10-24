@@ -14,10 +14,10 @@ function eq(a, b, msg) { if (a !== b) throw new Error((msg || 'expected') + ' ' 
 function ok(v, msg) { if (!v) throw new Error(msg || 'expected truthy'); }
 
 let n = 0;
-function battle(map, legend, army, opts) {
+function battle(map, legend, army, opts, bopts) {
   const enc = Object.assign({ id: 'rt' + n++, act: 1, tier: 'normal', name: 'test', map, legend, supply: 99, slots: 9 }, opts || {});
   AG.Encounters[enc.id] = enc;
-  return B.create(enc, army.map((a) => Object.assign({ talents: [], rune: null, rank: 0 }, a)), { record: true });
+  return B.create(enc, army.map((a) => Object.assign({ talents: [], rune: null, rank: 0 }, a)), Object.assign({ record: true }, bopts));
 }
 const find = (s, def, side) => s.units.find((u) => u.def === def && (side == null || u.side === side));
 
@@ -154,6 +154,161 @@ test('the AI will not fireball its own allies for a small gain', () => {
     const tx = t % s.board.w, ty = (t / s.board.w) | 0;
     ok(AG.cheb(tx, ty, 3, 2) > 1, 'fireball does not splash the knight');
   }
+});
+
+test('a death burst cannot end the battle before the phoenix lays its egg', () => {
+  const s = battle(['g....', '.....', '..g..', '.....'], { g: 'goblin' }, [{ def: 'phoenix', x: 2, y: 3 }]);
+  const near = s.units.find((u) => u.def === 'goblin' && u.y === 2);
+  near.hp = 1;
+  B.hit(s, near, find(s, 'phoenix'), 999, { kind: 'true' });
+  eq(near.alive, false, 'the burst killed the goblin');
+  ok(s.units.some((u) => u.def === 'emberEgg' && u.alive), 'egg laid');
+  eq(s.over, false, 'battle goes on');
+});
+
+test('a unit can be hasted only once per round', () => {
+  const s = battle(['g....', '.....', 'ppp..'], { g: 'goblin' }, [{ def: 'chronomancer', x: 0, y: 2 }, { def: 'chronomancer', x: 1, y: 2 }, { def: 'knight', x: 2, y: 2 }]);
+  B.startRound(s);
+  const [c1, c2] = s.units.filter((u) => u.def === 'chronomancer');
+  const k = find(s, 'knight');
+  B.useAbility(s, c1, 'haste', k.uid);
+  s.extra.length = 0; // the knight has taken its extra turn
+  const ts = AG.Abilities.haste.targets(s, c2, c2.abil[0].p);
+  ok(ts.indexOf(k.uid) < 0, 'knight cannot be hasted again');
+  ok(ts.indexOf(c1.uid) >= 0, 'the other chronomancer still can');
+});
+
+test('the Phylactery Shard raises a unit that fell into a chasm beside it', () => {
+  const s = battle(['g...', '....', '.~..', 'pppp'], { g: 'goblin' }, [{ def: 'knight', x: 1, y: 1 }], null, { relics: ['phylacteryShard'] });
+  B.push(s, find(s, 'goblin'), find(s, 'knight'), 0, 1);
+  const k = s.units.find((u) => u.def === 'knight' && u.alive);
+  ok(k, 'knight rose again');
+  ok(AG.cheb(k.x, k.y, 1, 2) === 1, 'next to the chasm');
+  eq(k.hp, Math.round(k.maxHp / 2), 'with half its health');
+  eq(s.flags.shard0, true, 'shard spent');
+});
+
+test('Corpse Explosion leaves no bone pile', () => {
+  const s = battle(['.....', '..g..', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'necromancer', x: 0, y: 3 }]);
+  const nec = find(s, 'necromancer');
+  const sk = B.summon(s, 'skeleton', 0, 2 * s.board.w + 2, { owner: nec.uid });
+  B.useAbility(s, nec, 'corpseExplosion', sk.uid);
+  eq(sk.alive, false, 'skeleton detonated');
+  ok(!s.units.some((u) => u.def === 'bonePile' && u.alive), 'nothing left to reassemble');
+});
+
+test('a reassembled skeleton still counts toward its necromancer', () => {
+  const s = battle(['..g..', '.....', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'necromancer', x: 0, y: 3 }]);
+  const nec = find(s, 'necromancer');
+  const sk = B.summon(s, 'skeleton', 0, 2 * s.board.w + 2, { owner: nec.uid });
+  B.hit(s, null, sk, 99, { kind: 'true' });
+  const pile = s.units.find((u) => u.def === 'bonePile' && u.alive);
+  ok(pile, 'bone pile');
+  eq(pile.owner, nec.uid, 'pile owned by the necromancer');
+  B.startRound(s);
+  B.startRound(s);
+  const back = s.units.find((u) => u.def === 'skeleton' && u.alive);
+  ok(back, 'skeleton stood back up');
+  eq(AG.countOwned(s, nec, 'skeleton'), 1, 'counted toward Raise Dead');
+});
+
+test('on an odd-shaped board only the true far rank promotes', () => {
+  const s = battle(['  .  ', ' ... ', '....g', ' ppp ', '  p  '], { g: 'goblin' }, [{ def: 'squire', x: 1, y: 3 }]);
+  const sq = find(s, 'squire');
+  const w = s.board.w;
+  B.applyMove(s, sq, 2 * w + 0, 'walk');
+  eq(sq.name, 'Squire', 'top of the left column is not the far rank');
+  B.applyMove(s, sq, 1 * w + 1, 'walk');
+  eq(sq.name, 'Squire', 'nor is the next one');
+  B.applyMove(s, sq, 0 * w + 2, 'walk');
+  eq(sq.name, 'Champion', 'the apex is');
+});
+
+test('area spells are not aimed at stealthed enemies', () => {
+  const s = battle(['.....', '..g..', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'pyromancer', x: 2, y: 3 }]);
+  const pyro = find(s, 'pyromancer');
+  const fb = pyro.abil.find((a) => a.id === 'fireball');
+  ok(AG.Abilities.fireball.targets(s, pyro, fb.p).length > 0, 'a visible goblin can be targeted');
+  B.addStatus(s, find(s, 'goblin'), 'stealth', { t: 2 });
+  eq(AG.Abilities.fireball.targets(s, pyro, fb.p).length, 0, 'a hidden one cannot');
+});
+
+const hitsOn = (s, u) => s.ev.filter((e) => e.type === 'dmg' && e.uid === u.uid).length;
+
+test('a shell that knocks its target back does not splash it too', () => {
+  const s = battle(['.....', '..g..', '.....', '.....', '..p..'], { g: 'goblin' }, [{ def: 'cannoneer', x: 2, y: 4, talents: ['heavyShells'] }]);
+  const g = find(s, 'goblin');
+  g.maxHp = g.hp = 30;
+  B.doAttack(s, find(s, 'cannoneer'), g);
+  eq(g.y, 0, 'knocked back');
+  eq(hitsOn(s, g), 1, 'hit once');
+});
+
+test('Iron Fist: the second strike needs the target still in reach', () => {
+  const s = battle(['.....', '..g..', '..p..', '.....'], { g: 'goblin' }, [{ def: 'monk', x: 2, y: 2, talents: ['ironFist'] }]);
+  const g = find(s, 'goblin');
+  g.maxHp = g.hp = 30;
+  B.doAttack(s, find(s, 'monk'), g);
+  eq(g.y, 0, 'knocked back');
+  eq(hitsOn(s, g), 1, 'one strike landed');
+});
+
+test('Bat Swarm never exceeds its cap', () => {
+  const s = battle(['.......', '...V...', '.......', '.......', 'ppppppp'], { V: 'vampireLord' }, [{ def: 'knight', x: 0, y: 4 }]);
+  const v = find(s, 'vampireLord');
+  for (const x of [0, 5, 6]) B.summon(s, 'bat', 1, 3 * s.board.w + x, { owner: v.uid });
+  B.useAbility(s, v, 'batSwarm', v.uid);
+  eq(AG.countOwned(s, v, 'bat'), 4, 'capped at 4');
+});
+
+test('a troll does not regenerate on the turn its burn runs out', () => {
+  const s = battle(['.....', '..T..', '.....', 'ppppp'], { T: 'troll' }, [{ def: 'knight', x: 0, y: 3 }]);
+  const t = find(s, 'troll');
+  t.hp = t.maxHp - 6;
+  B.addStatus(s, t, 'burn', { d: 1, t: 1 });
+  const before = t.hp;
+  B.startTurn(s, t);
+  ok(!t.st.burn && t.hp < before, 'burned without healing: ' + before + ' -> ' + t.hp);
+  const mid = t.hp;
+  B.startTurn(s, t);
+  eq(t.hp, mid + 3, 'regenerates once the fire is out');
+});
+
+test('Accelerate moves a hasted ally up the rest of the round', () => {
+  const s = battle(['...s', '....', 'pp..'], { s: 'slimeling' }, [{ def: 'chronomancer', x: 0, y: 2, talents: ['accelerate'] }, { def: 'knight', x: 1, y: 2 }]);
+  B.startRound(s);
+  const c = find(s, 'chronomancer'), k = find(s, 'knight'), sl = find(s, 'slimeling');
+  eq(s.queue.indexOf(sl.uid) < s.queue.indexOf(k.uid), true, 'slimeling (SPD 3) starts ahead of the knight (SPD 2)');
+  s.queue.splice(s.queue.indexOf(c.uid), 1);
+  B.useAbility(s, c, 'haste', k.uid);
+  eq(s.queue[0], k.uid, 'the knight (now SPD 4) goes next');
+});
+
+test('when valuing Haste the AI only replays turns that are still legal', () => {
+  // The Ranger shoots up the file; squares the Chronomancer can blink to
+  // block that shot, so a cached plan must not be replayed there.
+  const s = battle(['...g...', '.......', '.......', '.......', '.......', '.......', 'ppppppp'], { g: 'goblin' }, [{ def: 'chronomancer', x: 1, y: 6 }, { def: 'ranger', x: 3, y: 6 }]);
+  B.startRound(s);
+  const orig = B.execPlan;
+  const bad = [];
+  B.execPlan = function (s2, u2, plan) {
+    const c = B.clone(s2), cu = B.U(c, u2.uid), here = B.cellOf(c, cu);
+    if (plan.mv >= 0 && plan.mv !== here) {
+      if (!B.moveOptions(c, cu).some((m) => m.i === plan.mv && m.k === plan.mk)) bad.push(cu.name + ' move');
+      else B.applyMove(c, cu, plan.mv, plan.mk);
+    }
+    const a = plan.act;
+    if (a && cu.alive && !c.over) {
+      const ab = a.k === 'ab' ? cu.abil.find((x) => x.id === a.id) : null;
+      const legal = a.k === 'atk' ? B.attackTargets(c, cu) : ab && !cu.cd[a.id] ? AG.Abilities[a.id].targets(c, cu, ab.p) : [];
+      if (legal.indexOf(a.t) < 0) bad.push(cu.name + ' ' + (a.id || 'attack'));
+    }
+    return orig.apply(this, arguments);
+  };
+  let plan;
+  try { plan = AG.AI.choose(s, find(s, 'chronomancer')); } finally { B.execPlan = orig; }
+  ok(plan, 'a plan was chosen');
+  eq(bad.length, 0, 'illegal replays: ' + bad.join(', '));
 });
 
 console.log(passed + ' passed' + (failed.length ? ', ' + failed.length + ' failed:\n  ' + failed.join('\n  ') : ''));

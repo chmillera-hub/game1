@@ -465,18 +465,42 @@
     return best;
   }
 
+  // Is every step of a cached turn still legal in s2? The caster now stands
+  // somewhere else, which can block a slide, a landing square or a line shot.
+  function stillLegal(s2, ally, sub) {
+    const here = B.cellOf(s2, ally);
+    const dest = sub.mv >= 0 ? sub.mv : here;
+    if (dest !== here && !B.moveOptions(s2, ally).some((m) => m.i === dest && m.k === sub.mk)) return false;
+    const a = sub.act;
+    if (!a) return true;
+    let ab = null;
+    if (a.k === 'atk') {
+      const t = B.U(s2, a.t);
+      if (!t || !t.alive) return false;
+    } else {
+      ab = ally.abil.find((x) => x.id === a.id);
+      if (!ab || ally.cd[a.id]) return false;
+    }
+    // Measure the action from the square the ally will act from.
+    const ox = ally.x, oy = ally.y;
+    s2.occ[here] = 0; s2.occ[dest] = ally.uid;
+    ally.x = dest % s2.board.w; ally.y = (dest / s2.board.w) | 0;
+    const legal = ab ? AG.Abilities[a.id].targets(s2, ally, ab.p) : B.attackTargets(s2, ally);
+    s2.occ[dest] = 0; s2.occ[here] = ally.uid;
+    ally.x = ox; ally.y = oy;
+    return legal.indexOf(a.t) >= 0;
+  }
+
   // A hasted ally's best turn hardly depends on where the caster stands, so
-  // plan it once per ally and replay it for every square the caster tries.
+  // plan it once per ally and replay it for every square the caster tries,
+  // planning afresh whenever the cached turn is no longer possible.
   function playHaste(s2, ally, cache) {
     let sub = cache[ally.uid];
-    if (sub) {
-      const dest = sub.mv;
-      const ok = dest < 0 || !s2.occ[dest] || s2.occ[dest] === ally.uid;
-      const tOk = !sub.act || sub.act.k !== 'atk' || (B.U(s2, sub.act.t) && B.U(s2, sub.act.t).alive);
-      if (ok && tOk) { B.execPlan(s2, ally, sub); return sub; }
+    if (!sub || !stillLegal(s2, ally, sub)) {
+      const fresh = AI.choose(s2, ally, { nested: true });
+      if (!sub) cache[ally.uid] = fresh;
+      sub = fresh;
     }
-    sub = AI.choose(s2, ally, { nested: true });
-    if (!cache[ally.uid]) cache[ally.uid] = sub;
     B.execPlan(s2, ally, sub);
     return sub;
   }
