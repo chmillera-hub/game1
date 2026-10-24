@@ -76,13 +76,17 @@ for (let i = 0; i < N; i++) {
     if (!used.has(x + ',' + y)) terrain[y * 9 + x] = rng.pick([1, 2, 3]);
   }
   const objective = units.some((u) => D.UNITS[u.type].boss) ? 'boss' : rng.pick(['all', 'all', 'destroy', 'survive']);
-  const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective, surviveTurns: objective === 'survive' ? 6 : 0, waves });
+  // Every other battle uses the unit queue, as the campaign does.
+  const queue = i % 2 === 0;
+  const s = E.createBattle({ w: 9, h: 9, terrain, units, relics, seed: 77 + i, objective, surviveTurns: objective === 'survive' ? 6 : 0, waves, queue });
   let turns = 0;
   while (!s.over && turns++ < 4000) {
     const side = s.side;
+    const due = s.due;
     AG.AI.playTurn(s, side, { stance: rng.pick(['aggressive', 'balanced', 'defensive']), temp: 1 });
     const done = s.events.filter((e) => e.t === 'done');
     if (done.length > 1 || done.some((e) => s.byId[e.uid].team !== side)) throw new Error('more than one unit acted in a turn, seed ' + i);
+    if (queue && done.length && done[0].uid !== due) throw new Error('a unit acted out of its turn, seed ' + i);
     s.events.length = 0;
     for (const u of s.units) {
       if (u.alive && s.occ[E.idx(s, u.x, u.y)] !== u.uid) throw new Error('occupancy mismatch, seed ' + i + ' ' + u.type);

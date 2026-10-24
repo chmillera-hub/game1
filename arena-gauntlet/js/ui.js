@@ -22,6 +22,9 @@
   };
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it.
+  const speedOf = () => (UI.prefs.speed > 1 ? UI.prefs.speed : UI.prefs.fast ? 2 : 1);
+  const pause = (ms) => sleep(ms / speedOf());
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
   const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const PREFS_KEY = 'arena-gauntlet-prefs';
@@ -32,7 +35,7 @@
     battle: null,
     wr: null,
     mapSel: null,
-    prefs: { fast: false, threat: false, manualFacing: false },
+    prefs: { fast: false, speed: 1, threat: false, manualFacing: false, autoBattle: true },
   };
   try {
     Object.assign(UI.prefs, JSON.parse(root.localStorage.getItem(PREFS_KEY) || '{}'));
@@ -214,7 +217,7 @@
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
     const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
-    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it sits out this many turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}</div>`;
+    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it sits out this many turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
   }
 
   function fxText(u, a) {
@@ -1048,6 +1051,7 @@
         <button class="btn wide" id="muHelp">${ic('help')} How to play</button>
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
+        <button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
         <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
         ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
         <button class="btn wide" id="muTitle">Save and quit to title</button>
@@ -1059,6 +1063,18 @@
         $('#muSound', sh).onclick = () => {
           AG.Audio.toggle();
           menuSheet(inBattle);
+        };
+        $('#muAuto', sh).onclick = () => {
+          UI.prefs.autoBattle = !UI.prefs.autoBattle;
+          savePrefs();
+          menuSheet(inBattle);
+          // Switched on mid-battle, your army takes over at once.
+          const B = UI.battle;
+          if (B) battleTools();
+          if (B && UI.prefs.autoBattle && !B.busy && B.s.side === 'P') {
+            E.cancelActivation(B.s);
+            runBattle();
+          }
         };
         $('#muFacing', sh).onclick = () => {
           UI.prefs.manualFacing = !UI.prefs.manualFacing;
@@ -1077,7 +1093,11 @@
             closeSheet();
             if (!(await confirmSheet('Retreat?', 'The battle counts as lost. You go back to the war room to change your army and try again, as many times as you like.', 'Retreat', 'Keep fighting', true))) return;
             const B = UI.battle;
-            if (!B || B.busy) return;
+            if (!B) return;
+            // Let the unit in motion finish first.
+            B.paused = true;
+            for (let i = 0; i < 100 && B.busy && UI.battle === B; i++) await sleep(50);
+            if (UI.battle !== B || B.s.over) return;
             E.forfeit(B.s);
             E.drainEvents(B.s);
             battleOver();
@@ -1839,7 +1859,7 @@
       ${body}
       ${selBlock}
       <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>
-        <button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} Fight</button></div>`;
+        <button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
     $('#wrTabA').onclick = () => {
@@ -2069,16 +2089,34 @@
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
-    b.speed = UI.prefs.fast ? 2 : 1;
+    b.speed = speedOf();
     b.syncFromState(s);
     b.setObjectives(s.loot, s.hold);
     b.activeSide = 'P';
     UI.boardTap = btTap;
     UI.boardLong = btLong;
+    battleTools();
+    UI.battle.log = [];
+    showBanner(s.side === 'E' ? 'Enemy moves first' : 'Your turn', s.side === 'E');
+    sfx(s.side === 'E' ? 'enemyturn' : 'turn');
+    renderBattle();
+    // The enemy opens the battle; then the sides take turns, one unit each, in the order
+    // of each side's unit queue.
+    UI.battle.busy = true;
+    await pause(800);
+    if (UI.battle && UI.battle.s === s) await runBattle();
+  }
+
+  // The buttons beside the board: enemy reach, speed, and in an auto battle pause and skip.
+  function battleTools() {
+    const b = UI.board;
     boardTools(
       `<button class="btn icon-only ${UI.prefs.threat ? 'on' : ''}" id="btThreat" aria-label="Show enemy reach">${ic('eye')}</button>
-       <button class="btn icon-only ${UI.prefs.fast ? 'on' : ''}" id="btFast" aria-label="Fast animations">${ic('fast')}</button>`
+       <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed">${ic('fast')}<small>${speedOf()}×</small></button>
+       ${UI.prefs.autoBattle ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button><button class="btn icon-only" id="btSkipT" aria-label="Skip to the end">${ic('skip')}</button>` : ''}`
     );
+    if ($('#btPauseT')) $('#btPauseT').onclick = () => togglePause(UI.battle);
+    if ($('#btSkipT')) $('#btSkipT').onclick = () => skipBattle(UI.battle);
     $('#btThreat').onclick = () => {
       UI.prefs.threat = !UI.prefs.threat;
       savePrefs();
@@ -2087,20 +2125,81 @@
       renderBattle();
     };
     $('#btFast').onclick = () => {
-      UI.prefs.fast = !UI.prefs.fast;
+      UI.prefs.speed = { 1: 2, 2: 4, 4: 1 }[speedOf()];
+      UI.prefs.fast = UI.prefs.speed > 1;
       savePrefs();
-      b.speed = UI.prefs.fast ? 2 : 1;
-      $('#btFast').classList.toggle('on', UI.prefs.fast);
+      b.speed = speedOf();
+      $('#btFast').classList.toggle('on', speedOf() > 1);
+      $('#btFast small').textContent = speedOf() + '×';
     };
-    showBanner(s.side === 'E' ? 'Enemy moves first' : 'Your turn', s.side === 'E');
-    sfx(s.side === 'E' ? 'enemyturn' : 'turn');
-    renderBattle();
-    // The enemy opens the battle; then the sides take turns, one unit each.
-    if (s.side === 'E') {
-      UI.battle.busy = true;
-      await sleep(UI.prefs.fast ? 300 : 800);
-      if (UI.battle && UI.battle.s === s) await enemyMoves();
+  }
+
+  // Play turns until the battle ends, or until it is your turn and you command by hand.
+  async function runBattle() {
+    const B = UI.battle;
+    if (!B || B.running) return;
+    B.running = true;
+    try {
+      while (UI.battle === B && !B.s.over) {
+        if (B.skip) return skipToEnd(B);
+        if (B.paused) {
+          B.busy = false;
+          renderBattle();
+          while (B.paused && UI.battle === B && !B.skip) await sleep(120);
+          continue;
+        }
+        if (B.s.side === 'P' && !UI.prefs.autoBattle) {
+          B.busy = false;
+          B.mode = 'idle';
+          B.sel = null;
+          sfx('select');
+          renderBattle();
+          return;
+        }
+        await sideMoves(B.s.side);
+      }
+      if (UI.battle === B && B.s.over) battleOver();
+    } finally {
+      B.running = false;
     }
+  }
+
+  // One side turn played by the AI: the side's due unit moves, acts and faces.
+  async function sideMoves(team) {
+    const B = UI.battle;
+    const s = B.s;
+    const b = UI.board;
+    B.busy = true;
+    if (!B.paused) {
+      B.mode = 'idle';
+      B.sel = null;
+    }
+    const opts = team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3 };
+    const plan = AI.chooseActivation(s, team, opts);
+    const u = (plan && s.byId[plan.uid]) || (s.due && s.byId[s.due]);
+    if (u) {
+      B.acting = u.uid;
+      renderBattle();
+      b.ov = Object.assign({}, b.ov, { select: [u.x, u.y] });
+      await pause(380);
+    }
+    AI.runPlan(s, plan, opts);
+    b.ov = {};
+    await play(true);
+    B.acting = null;
+  }
+
+  // Finish the battle at once: both sides play on with no animation.
+  function skipToEnd(B) {
+    const s = B.s;
+    for (let guard = 0; guard < 2000 && !s.over; guard++) {
+      const team = s.side;
+      AI.playTurn(s, team, team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3 });
+    }
+    logEvents(E.drainEvents(s));
+    UI.board.syncFromState(s);
+    B.busy = false;
+    battleOver();
   }
 
   // Ready units that can actually do something this turn.
@@ -2144,6 +2243,87 @@
     return out.join('');
   }
 
+  // A unit as the battle log names it.
+  function logName(v) {
+    return v.team === 'P' ? `${v.name} (${UNITS[v.type].name})` : `Enemy ${UNITS[v.type].name}`;
+  }
+
+  const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', idle: 'nothing in reach' };
+
+  // Turn a batch of engine events into battle log lines, newest first.
+  function logEvents(ev) {
+    const B = UI.battle;
+    if (!B || !B.log) return;
+    const s = B.s;
+    let line = null;
+    const add = (l) => {
+      B.log.unshift(l);
+      B.log.length = Math.min(B.log.length, 30);
+    };
+    const finish = () => {
+      if (!line) return;
+      const v = s.byId[line.uid];
+      const bits = [];
+      if (line.act) bits.push(esc(line.act));
+      else if (line.moved) bits.push('moves');
+      if (line.dmg) bits.push(`<b>${line.dmg}</b> damage`);
+      if (line.heal) bits.push(`<b>+${line.heal}</b> HP`);
+      for (const k of line.kills) bits.push(`<span class="kill">${esc(k)} falls</span>`);
+      if (bits.length) add({ team: v.team, html: `<b>${esc(logName(v))}</b>: ${bits.join(' · ')}` });
+      line = null;
+    };
+    for (const e of ev) {
+      const v = e.uid && s.byId[e.uid];
+      if (e.t === 'move' || e.t === 'action') {
+        if (!line || line.uid !== e.uid) {
+          finish();
+          line = { uid: e.uid, moved: false, act: null, dmg: 0, heal: 0, kills: [] };
+        }
+        if (e.t === 'move') line.moved = true;
+        else line.act = e.name;
+      } else if (e.t === 'dmg' && line && e.src === line.uid) line.dmg += e.amount || 0;
+      else if (e.t === 'heal' && line && e.amount > 0) line.heal += e.amount;
+      else if (e.t === 'death' && line && e.src === line.uid && v) line.kills.push(v.team === 'P' ? v.name : UNITS[v.type].name);
+      else if (e.t === 'done') finish();
+      else if (e.t === 'sitout' && v && v.team && SIT_OUT[e.why]) {
+        finish();
+        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
+      } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
+        finish();
+        add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
+      }
+    }
+    finish();
+  }
+
+  // Who acts next, both sides interleaved as their turns alternate.
+  function queueHTML(s, n) {
+    const a = E.upcoming(s, s.side, n);
+    const b = E.upcoming(s, E.other(s.side), n);
+    const items = [];
+    for (let i = 0; i < n; i++) for (const x of [a[i], b[i]]) if (x && items.length < n) items.push(x);
+    return `<div class="queue">${items
+      .map((x, i) => {
+        const v = x.uid && s.byId[x.uid];
+        if (!v) return `<div class="q-item pass"><span class="q-pass">Pass</span></div>`;
+        return `<div class="q-item team-${v.team} ${i === 0 ? 'now' : ''}" title="${esc(logName(v))} · Speed ${v.spd}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas><span>${esc(v.team === 'P' ? v.name : UNITS[v.type].name)}</span></div>`;
+      })
+      .join('')}</div>`;
+  }
+
+  // While your army fights on its own: who is acting, who is next, what just happened.
+  function autoPanelHTML(B) {
+    const s = B.s;
+    const actor = B.acting && s.byId[B.acting];
+    return `${actor && actor.alive ? unitInfoHTML(actor, { status: true }) : ''}
+      <div class="eyebrow">Turn order</div>
+      ${queueHTML(s, 8)}
+      ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
+      ${objectivesHTML(B.enc, s)}
+      ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
+      <p class="small muted">Tap any unit to pause and look at it. ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
+  }
+
   function renderBattle() {
     const B = UI.battle;
     if (!B) return;
@@ -2160,13 +2340,19 @@
     const u = B.sel ? s.byId[B.sel] : null;
     const A = u ? activationOf(u) : null;
     let panel = '';
+    const auto = UI.prefs.autoBattle;
     const endBtn = (primary) =>
-      `<button class="btn ${primary ? 'primary' : ''}" id="btEnd" ${s.side !== 'P' || B.busy ? 'disabled' : ''}>${B.confirmEnd ? 'Confirm pass' : 'Pass'}</button>`;
+      auto ? '' : `<button class="btn ${primary ? 'primary' : ''}" id="btEnd" ${s.side !== 'P' || B.busy ? 'disabled' : ''}>${B.confirmEnd ? 'Confirm pass' : 'Pass'}</button>`;
     const inProgress = !!(s.act && (s.act.moved || s.act.acted));
     const tileF = B.mode === 'tile' && B.tile ? tileFacts(s, B.tile.x, B.tile.y, B.enc) : null;
     if (B.mode === 'tile' && !tileF) B.mode = 'idle';
 
-    if (s.side !== 'P' || B.busy) {
+    // Watching an auto battle, the panel follows the fight unless you paused to look at
+    // a unit or a tile.
+    if (auto && !(B.paused && ((B.mode === 'inspect' && u && u.alive) || (B.mode === 'tile' && tileF)))) {
+      panel = autoPanelHTML(B);
+      if (B.acting && s.byId[B.acting]) ov.select = [s.byId[B.acting].x, s.byId[B.acting].y];
+    } else if (!auto && (s.side !== 'P' || B.busy)) {
       const actor = B.acting && s.byId[B.acting];
       panel = actor && actor.alive
         ? `${unitInfoHTML(actor, { status: true })}<div class="hint">Enemy turn: their ${esc(UNITS[actor.type].name)}. Your turn comes next.</div>`
@@ -2251,18 +2437,20 @@
                   ? `Paralyzed: it sits out ${u.para === 1 ? 'this turn' : 'this turn and ' + (u.para - 1) + ' more'}.`
                   : 'Cannot act right now.'
         }</div>
-        <div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`;
+        ${auto
+          ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+          : `<div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`}`;
     } else if (B.mode === 'tile') {
       ov.select = [B.tile.x, B.tile.y];
       if (tileF.zone) ov.range = tileF.zone;
       panel = `${tileInfoHTML(tileF)}
-        <div class="actions"><button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
+        <div class="actions">${auto ? `<button class="btn primary" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
       panel = `<div class="hint">${
         ready.length
-          ? 'Your turn: pick one glowing unit to move, act, or both. Then the enemy picks one. Long-press any unit for details.'
+          ? `${esc(ready[0].name)}'s turn (units go in speed order): tap it to move, act, or both. Long-press any unit for details.`
           : 'None of your units can act right now. Pass.'
       }</div>
         ${ready.length ? `<div class="roster">${ready
@@ -2285,13 +2473,19 @@
         : goals.length
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
-    $('#topbar').innerHTML = `<div class="title"><b>${s.side === 'P' && !B.busy ? 'Your turn' : 'Enemy turn'}</b>
+    $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : s.side === 'P' ? 'Your turn' : 'Enemy turn'}</b>
       <span>Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#cmd').innerHTML = panel;
     drawPortraits($('#cmd'));
     bindBattlePanel();
+    const pt = $('#btPauseT');
+    if (pt) {
+      pt.innerHTML = ic(B.paused ? 'play' : 'pause');
+      pt.classList.toggle('on', !!B.paused);
+      pt.setAttribute('aria-label', B.paused ? 'Resume' : 'Pause');
+    }
   }
 
   function previewHTML(u, act, pv) {
@@ -2342,6 +2536,9 @@
     on('btMenu', () => menuSheet(true));
     on('btEnd', () => passMove());
     on('btDesel', () => deselect());
+    // Watching an auto battle: pause, resume, or jump to the result.
+    on('btPause', () => togglePause(B));
+    on('btSkip', () => skipBattle(B));
     on('btUndo', async () => {
       if (B.busy) return;
       E.undoMove(s);
@@ -2393,14 +2590,16 @@
     B.busy = true;
     UI.board.activeSide = null;
     const ev = E.drainEvents(B.s);
+    logEvents(ev);
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
     // Your own passes need no news; the enemy's, and turns you had to skip, do.
-    const passes = B.s.over ? [] : ev.filter((e) => e.t === 'pass' && (e.side === 'E' || e.auto));
+    // The battle log tells of passes in an auto battle; by hand, a toast does.
+    const passes = B.s.over || UI.prefs.autoBattle ? [] : ev.filter((e) => e.t === 'pass' && (e.side === 'E' || e.auto));
     if (passes.length) {
       const mine = passes.filter((e) => e.side === 'P').length;
       toast(mine ? `None of your units could act, so your turn passed${mine > 1 ? ' ' + mine + ' times' : ''}.` : 'The enemy passes.');
-      await sleep(UI.prefs.fast ? 250 : 600);
+      await pause(600);
     }
     if (!keepBusy) B.busy = false;
   }
@@ -2411,7 +2610,7 @@
     if (!B) return;
     const s = B.s;
     if (s.over) return battleOver();
-    if (s.side === 'E') return enemyMoves();
+    if (s.side === 'E' || UI.prefs.autoBattle) return runBattle();
     B.mode = 'idle';
     B.sel = null;
     renderBattle();
@@ -2499,7 +2698,9 @@
 
   function btTap(hit) {
     const B = UI.battle;
-    if (!B || B.busy || B.s.over) return;
+    if (!B || B.s.over) return;
+    if (UI.prefs.autoBattle) return watchTap(B, hit);
+    if (B.busy) return;
     const s = B.s;
     if (s.side !== 'P') return;
     const u = B.sel ? s.byId[B.sel] : null;
@@ -2580,6 +2781,47 @@
     B.tile = spot;
     B.sel = null;
     if (spot) sfx('select');
+    renderBattle();
+  }
+
+  // Watching an auto battle: pause or resume, or jump to the result.
+  function togglePause(B) {
+    if (!B || B.s.over) return;
+    B.paused = !B.paused;
+    if (!B.paused) {
+      B.mode = 'idle';
+      B.sel = null;
+      B.tile = null;
+    }
+    sfx('click');
+    renderBattle();
+    if (!B.paused && !B.running) runBattle();
+  }
+
+  function skipBattle(B) {
+    if (!B || B.s.over) return;
+    B.skip = true;
+    B.paused = false;
+    sfx('click');
+    if (!B.running) runBattle();
+  }
+
+  // While your army fights on its own, a tap pauses the battle and shows what is there.
+  function watchTap(B, hit) {
+    const s = B.s;
+    const v = unitInFront(hit, s);
+    const spot = v ? null : featureAt(hit, s, B.enc);
+    if (v || spot) {
+      B.paused = true;
+      B.sel = v ? v.uid : null;
+      B.mode = v ? 'inspect' : 'tile';
+      B.tile = spot;
+      sfx('select');
+    } else if (B.paused && B.mode !== 'idle') {
+      B.mode = 'idle';
+      B.sel = null;
+      B.tile = null;
+    } else return;
     renderBattle();
   }
 
@@ -2735,34 +2977,6 @@
   }
 
   // The enemy's turn: one unit. If none of yours can act, it goes again.
-  async function enemyMoves() {
-    const B = UI.battle;
-    const s = B.s;
-    const b = UI.board;
-    B.busy = true;
-    B.mode = 'idle';
-    B.sel = null;
-    let guard = 0;
-    while (!s.over && s.side === 'E' && guard++ < 400) {
-      const plan = AI.chooseActivation(s, 'E', { stance: B.enc.stance, temp: B.temp });
-      const u = plan && s.byId[plan.uid];
-      if (u && plan.kind !== 'turn') {
-        B.acting = u.uid;
-        renderBattle();
-        b.ov = { select: [u.x, u.y] };
-        await sleep(UI.prefs.fast ? 140 : 380);
-      }
-      AI.runPlan(s, plan, { stance: B.enc.stance });
-      b.ov = {};
-      await play(true);
-    }
-    B.acting = null;
-    B.busy = false;
-    if (s.over) return battleOver();
-    sfx('select');
-    renderBattle();
-  }
-
   async function battleOver() {
     const B = UI.battle;
     if (!B || B.ending) return;
@@ -3163,10 +3377,12 @@
         <p>Victories earn XP. Each commander level raises your Supply, and some raise how many units may take the field. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
-          <li>The sides take turns, and the enemy goes first (a boss waits for its side's second turn). On your turn you pick <b>one unit</b>: it moves, acts, or both. Tap <b>Done</b> to end its turn, and it turns toward the nearest enemy. Then the enemy picks one of theirs.</li>
-          <li>Acting starts that unit's <b>cooldown</b> (CD on its card): it sits out that many of your turns, then it is ready again. A Knight (CD 1) can attack every other turn, a Witch (CD 2) every third turn and a Scout (CD 0) every turn. Moving alone never starts a cooldown.</li>
-          <li>Any unit that is not cooling down can be picked. If none can do anything, your turn passes on its own. You can also <b>Pass</b> on purpose.</li>
-          <li>The turn counter counts rounds: the enemy's move, then yours. Durations such as "roots for 2 turns" count the turns of the side they affect.</li>
+          <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>
+          <li>The sides take turns, and the enemy goes first. Each turn, one unit acts: it moves, attacks or uses an ability, and faces.</li>
+          <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
+          <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
+          <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
+          <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

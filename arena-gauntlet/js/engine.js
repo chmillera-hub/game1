@@ -202,6 +202,9 @@
       block: b.block,
       rec: b.rec,
       move: b.move,
+      spd: T.spd || 0,
+      // Turns taken in the unit queue; a newcomer joins the current cycle.
+      cycles: queueStart(s, team),
       wait: spec.wait || 0,
       para: 0,
       poison: null,
@@ -283,6 +286,9 @@
       booms: [],
       cartExit: cfg.cartExit != null ? cfg.cartExit : 0,
       waves: [],
+      // Queue battles: each side's units take its turns in a set rotation (see pickDue).
+      queue: !!cfg.queue,
+      due: 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     (cfg.waves || []).forEach((w, i) => {
@@ -1061,6 +1067,7 @@
   }
 
   function revive(s, u, frac, why) {
+    u.cycles = Math.max(u.cycles, queueStart(s, u.team));
     u.alive = true;
     u.hp = Math.max(1, Math.ceil(u.maxHp * frac));
     u.poison = null;
@@ -1406,6 +1413,7 @@
   }
 
   function canActivateFor(s, u, team) {
+    if (s.queue && !(s.side === team && s.due === u.uid)) return false;
     return !!(u.alive && u.team === team && !u.activated && u.wait === 0 && u.para === 0 && !u.nonCombat && hasAction(u));
   }
 
@@ -1700,6 +1708,10 @@
     u.activated = true;
     s.spent = true;
     emit(s, { t: 'done', uid: u.uid, wait: w });
+    if (s.queue) {
+      ownTurnDone(s, u);
+      s.due = 0;
+    }
   }
 
   // The CD on a unit's card: how many of its turns it sits out after acting.
@@ -1867,7 +1879,9 @@
       if (s.act.moved || s.act.acted) finishActivation(s, null);
       else s.act = null;
     }
-    if (!s.spent) emit(s, { t: 'pass', side: s.side, auto: !!auto });
+    if (!s.spent) emit(s, { t: 'pass', side: s.side, auto: !!auto, uid: s.due || 0 });
+    if (s.queue && s.due && !s.spent && s.byId[s.due].alive) ownTurnDone(s, s.byId[s.due]);
+    s.due = 0;
     // Bounded: cooldowns run out, and the turn limit ends the battle well before this.
     for (let guard = 0; guard < 1000 && !s.over; guard++) {
       closeTurn(s, s.side);
@@ -1898,11 +1912,13 @@
         if (u[k] > 0 && fresh[k] !== s.ply) u[k]--;
       };
       if (u.team === side) {
-        if (u.wait > 0) tick('wait');
-        else tick('para');
-        tick('root');
-        tick('weak');
-        tick('frenzy');
+        if (!s.queue) {
+          if (u.wait > 0) tick('wait');
+          else tick('para');
+          tick('root');
+          tick('weak');
+          tick('frenzy');
+        }
         u.activated = false;
       } else tick('mark');
     }
@@ -2041,6 +2057,106 @@
     }
     // The other side's next waves mark where they land, a turn before they arrive.
     planWaves(s, other(side), side === 'P' ? s.turn + 1 : s.turn);
+    if (s.queue) pickDue(s, side);
+  }
+
+  // ---------------------------------------------------------------- unit queue
+  //
+  // In queue battles each side's units take that side's turns in a set rotation: every
+  // unit gets one turn per cycle, faster units first (ties: the earlier unit). A unit that
+  // is cooling down, paralyzed or has nothing it could do sits its turn out, and the next
+  // in line goes instead. Cooldowns, paralysis, roots, weakness and frenzy count the
+  // unit's own turns, taken or sat out.
+
+  function inQueue(u) {
+    return u.alive && !u.nonCombat && hasAction(u);
+  }
+
+  function byQueue(a, b) {
+    return a.cycles - b.cycles || b.spd - a.spd || a.uid - b.uid;
+  }
+
+  function queueStart(s, team) {
+    let m = Infinity;
+    for (const v of s.units) if (v.team === team && inQueue(v)) m = Math.min(m, v.cycles);
+    return m === Infinity ? 0 : m;
+  }
+
+  function ownTurnDone(s, u) {
+    u.cycles++;
+    const fresh = u.fresh || {};
+    const tick = (k) => {
+      if (u[k] > 0 && fresh[k] !== s.ply) u[k]--;
+    };
+    if (u.wait > 0) tick('wait');
+    else tick('para');
+    tick('root');
+    tick('weak');
+    tick('frenzy');
+  }
+
+  function sitOutReason(s, u) {
+    return u.para > 0 ? 'para' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
+  }
+
+  // The side's unit for this turn. Those who must sit out are passed over, each at most
+  // once a turn; if everyone does, the side passes.
+  function pickDue(s, side) {
+    s.due = 0;
+    const seen = new Set();
+    for (;;) {
+      const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];
+      if (!u || seen.has(u.uid)) return;
+      seen.add(u.uid);
+      const why = sitOutReason(s, u);
+      if (!why) {
+        s.due = u.uid;
+        return;
+      }
+      emit(s, { t: 'sitout', uid: u.uid, why, wait: u.wait });
+      ownTurnDone(s, u);
+    }
+  }
+
+  // Who takes each of `team`'s next `n` turns, predicted from the rotation as it stands
+  // (each assumed to act and start its cooldown). Entries: { uid } or { uid: 0 } for a
+  // turn nobody can take.
+  function upcoming(s, team, n) {
+    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid }));
+    const out = [];
+    for (let turn = 0; turn < n && vs.length; turn++) {
+      let picked = null;
+      if (turn === 0 && s.side === team && s.due) picked = vs.find((x) => x.uid === s.due) || null;
+      const seen = new Set();
+      while (!picked) {
+        vs.sort(byQueue);
+        const x = vs[0];
+        if (seen.has(x)) break;
+        seen.add(x);
+        const resting = x.para > 0 || x.wait > 0;
+        x.cycles++;
+        if (x.wait > 0) x.wait--;
+        else if (x.para > 0) x.para--;
+        if (!resting) picked = x;
+        else continue;
+        break;
+      }
+      if (!picked) {
+        out.push({ uid: 0 });
+        continue;
+      }
+      if (turn === 0 && s.side === team && s.due) picked.cycles++;
+      picked.wait = picked.v.rec;
+      out.push({ uid: picked.uid });
+    }
+    return out;
+  }
+
+  // In a queue battle: how many of its side's turns pass before `u` acts (0: next).
+  function queueDelay(s, u, horizon) {
+    const list = upcoming(s, u.team, horizon || 12);
+    const i = list.findIndex((x) => x.uid === u.uid);
+    return i < 0 ? horizon || 12 : i;
   }
 
   function canDealDamage(u) {
@@ -2123,7 +2239,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

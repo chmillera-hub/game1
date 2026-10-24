@@ -31,15 +31,41 @@
     return a.kind !== 'none' && a.left > 0 && !!(a.dmg || (a.fx && (a.fx.para || a.fx.poison)));
   }
 
-  // Everything the opposing side could do on its next turn, one entry per unit.
+  // How many of its side's turns pass before a unit acts: its cooldown and paralysis, or
+  // in a queue battle its place in the rotation (cached for the turn being planned).
+  const delayCache = new WeakMap();
+  function delayOf(s, v) {
+    if (!s.queue) return E.turnsUntilReady(v);
+    let c = delayCache.get(s);
+    if (!c || c.ply !== s.ply || c.due !== s.due) {
+      c = { ply: s.ply, due: s.due, map: new Map() };
+      for (const team of ['P', 'E']) {
+        const n = s.units.filter((u) => u.team === team && E.inQueue(u)).length * 2 + 1;
+        E.upcoming(s, team, n).forEach((x, i) => {
+          if (x.uid && !c.map.has(x.uid)) c.map.set(x.uid, i);
+        });
+      }
+      delayCache.set(s, c);
+    }
+    return c.map.has(v.uid) ? c.map.get(v.uid) : 99;
+  }
+
+  // How much a foe's reach counts: whoever acts next fully; in a queue battle the units
+  // behind it in the rotation count less the longer they wait.
+  function threatWeight(s, delay) {
+    if (s.queue) return delay === 0 ? 1 : delay === 1 ? 0.6 : delay === 2 ? 0.4 : delay < 99 ? 0.25 : 0;
+    return delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
+  }
+
+  // Everything the opposing side could do on its next turns, one entry per unit.
   function buildSources(s, foeTeam) {
     const out = [];
     for (const v of s.units) {
       if (!v.alive || v.team !== foeTeam || v.nonCombat || dormant(s, v)) continue;
       const acts = v.acts.filter(harmful);
       if (!acts.length) continue;
-      const delay = E.turnsUntilReady(v);
-      const weight = delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
+      const delay = delayOf(s, v);
+      const weight = threatWeight(s, delay);
       if (weight === 0) continue;
       // Reach as if it could move next turn (paralysis and roots wear off by then for weight>0 cases).
       const savedPara = v.para;
@@ -437,8 +463,8 @@
     return { score: v, facing, danger };
   }
 
-  function paraValue(t) {
-    const ready = E.turnsUntilReady(t) === 0 ? 1 : 0.6;
+  function paraValue(s, t) {
+    const ready = delayOf(s, t) === 0 ? 1 : 0.6;
     return (t.pow * 0.8 + 6) * ready;
   }
 
@@ -551,7 +577,7 @@
       }
       if (t.nonCombat || t.structure) continue;
       const p = e.block != null ? 1 - e.block : 1;
-      if (e.para && e.para !== 'resist') v += p * e.para * paraValue(t);
+      if (e.para && e.para !== 'resist') v += p * e.para * paraValue(ctx.s, t);
       if (e.poison && e.poison !== 'resist') {
         const fresh = t.poison ? Math.max(0, e.poison.turns - t.poison.turns) : e.poison.turns;
         v += p * (Math.min(fresh * e.poison.dmg, t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
@@ -561,7 +587,7 @@
         v += p * Math.min(fresh * e.burn.dmg * (1 - t.res), t.hp) * hpv * 0.8;
       }
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
-      if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (E.turnsUntilReady(t) === 0 ? 1 : 0.6);
+      if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (delayOf(ctx.s, t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
       if (e.knock === true) v += p * 2;
     }
@@ -669,15 +695,18 @@
     const ctx = makeCtx(s, team, opts);
     const candidates = [];
     const holds = [];
+    // In a queue battle the turn belongs to this unit whatever it does, so any gain is worth
+    // taking; otherwise only a clear one beats leaving the turn to another unit.
+    const minGain = s.queue ? 0.1 : 0.75;
     for (const u of ready) {
       const plans = planFor(ctx, u);
       const best = plans[0];
-      if (best.kind === 'hold' || best.gain < 0.75) {
+      if (best.kind === 'hold' || best.gain < minGain) {
         holds.push({ u, plan: plans.find((p) => p.kind === 'hold') });
         continue;
       }
       // Keep a few top options per unit for variety.
-      for (const p of plans.slice(0, 3)) if (p.kind !== 'hold' && p.gain >= 0.75) candidates.push(p);
+      for (const p of plans.slice(0, 3)) if (p.kind !== 'hold' && p.gain >= minGain) candidates.push(p);
     }
     if (candidates.length) {
       candidates.sort((a, b) => b.gain - a.gain);

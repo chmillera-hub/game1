@@ -923,7 +923,7 @@
       const c = rng.weighted(opts);
       if (c === 'swift') {
         const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
-        enc.bonus.push({ type: 'swift', turns: Math.round(2.5 * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
+        enc.bonus.push({ type: 'swift', turns: Math.round(3.75 * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
       else if (c === 'blockade') enc.bonus.push({ type: 'blockade', n: 2 });
       else enc.bonus.push({ type: 'flawless' });
@@ -1079,6 +1079,8 @@
       cartExit: 0,
       turnLimit: TURN_LIMIT,
       waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),
+      // Both sides take their turns in a speed-ordered unit rotation.
+      queue: true,
     };
   }
 

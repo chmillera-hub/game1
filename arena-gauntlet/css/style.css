@@ -397,7 +397,7 @@ button.card:active {
 .stats {
   display: grid;
   /* DMG is a touch wider: it carries its damage-type icon. */
-  grid-template-columns: minmax(0, 1.2fr) repeat(6, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.2fr) repeat(7, minmax(0, 1fr));
   gap: 4px;
   font-variant-numeric: tabular-nums;
 }
@@ -2108,4 +2108,102 @@ button.card:active {
   font-size: 0.92rem;
   line-height: 1.35;
   text-align: left;
+}
+
+/* Auto battle: who acts next, and what just happened. */
+.queue {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 6px;
+  scrollbar-width: none;
+}
+
+.q-item {
+  flex: none;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  line-height: 1.1;
+  color: var(--muted);
+  text-align: center;
+}
+
+.q-item .portrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid rgba(120, 160, 230, 0.6);
+}
+
+.q-item.team-E .portrait {
+  border-color: rgba(230, 110, 90, 0.7);
+}
+
+.q-item span {
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.q-item.now .portrait {
+  border-color: var(--brass-hi);
+  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.35);
+}
+
+.q-item.now span {
+  color: var(--brass-hi);
+  font-weight: 700;
+}
+
+.q-pass {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px dashed rgba(197, 154, 76, 0.4);
+}
+
+.blog {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.blog li {
+  padding: 3px 0 3px 8px;
+  border-left: 3px solid rgba(120, 160, 230, 0.6);
+  margin-bottom: 3px;
+}
+
+.blog li.team-E {
+  border-left-color: rgba(230, 110, 90, 0.7);
+}
+
+.blog li:first-child {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.blog .kill {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.speedbtn {
+  position: relative;
+}
+
+.speedbtn small {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 0.62rem;
+  font-weight: 700;
 }

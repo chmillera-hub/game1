@@ -1,8 +1,9 @@
 # Arena Gauntlet
 
-A single-player tactics roguelike in the style of classic isometric arena battles
-(think Tactics Arena Online meets Slay the Spire). Scout the enemy army, spend
-Supply on a counter-army, and fight across three acts to the Ashen Tyrant.
+A single-player auto-battler roguelike in the style of classic isometric arena
+battles (think Tactics Arena Online meets Slay the Spire). Scout the enemy army,
+spend Supply on a counter-army, set it up, and watch it fight across three acts to
+the Ashen Tyrant.
 
 ## Play
 
@@ -41,18 +42,24 @@ on a phone turned sideways, but portrait works too.
   resistance both cap at 50%, and some units go as low as -50%: Specters shrug
   off steel but melt to spells, and Mage Knights do the reverse. A unit's DMG stat,
   its attacks and every damage preview show the damage-type icon.
-- **Taking turns**: the sides alternate one unit at a time, like chess, and the enemy
-  goes first. On your turn you pick one unit: it moves, acts or both, and Done
-  ends its turn, turning it to face the nearest enemy. Tap Face to pick the facing yourself,
-  before or after it moves and acts, or switch Facing to manual in the menu to
-  always pick it. Then the enemy picks one of theirs.
+- **Auto battle**: you build and place the army in the war room, tap Begin battle,
+  and watch it fight; the same AI that runs the enemy runs your units, using their
+  abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x),
+  pause, skip-to-result and tap-a-unit-to-inspect are beside the board. The menu's
+  Battles setting switches to commanding each turn yourself (the classic version
+  lives on the `arena-gauntlet-tactics-classic` branch).
+- **Taking turns**: the sides alternate one unit at a time, and the enemy goes
+  first. Each side's units take its turns in a rotation, faster units first (Speed,
+  SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
+  shows who is next.
 - **Cooldowns**: acting starts a unit's cooldown (CD on its card): it sits out that
-  many of your turns, and the count drops at the end of each one. A Scout (CD 0)
-  can act every turn, a Knight (CD 1) every other turn and a Witch (CD 2) every
-  third. Moving alone never starts a cooldown. When nothing of yours is ready, your
-  turn passes on its own. Bosses sit out the enemy's first turn.
-- **Combat**: block works from the front, half from the side, never from behind. Statuses count the turns of the side they
-  affect: a root lasts its victim's next turns, a mark the attacker's.
+  many of its own turns, and the next unit in line goes instead. Moving alone never
+  starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
+  when every unit of a side must sit out, the side passes. Bosses sit out their
+  first turn.
+- **Combat**: block works from the front, half from the side, never from behind.
+  Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
+  counts the attacker side's turns.
 - **Board features**: tap a rock, tree, water, lava, a treasure chest, the shrine,
   fire, smoke, caltrops or a red landing tile to see what it does: whether it blocks
   movement or attacks, what loot pays and which tiles wake its guards, and how long
