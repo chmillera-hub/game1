@@ -44,6 +44,17 @@
     const board = parsed.board;
     if (!run.battle.formation) run.battle.formation = [];
     const F = run.battle.formation;
+    // Saved formations can predate a map change: keep only legal placements.
+    for (let i = F.length - 1; i >= 0; i--) {
+      const e = F[i];
+      const legal = AG.inBounds(board, e.x, e.y) && board.deploy[e.y * board.w + e.x] && run.units.indexOf(e.def) >= 0 &&
+        F.findIndex((o) => o.x === e.x && o.y === e.y) === i && AG.Units[e.def];
+      if (!legal) F.splice(i, 1);
+      else {
+        e.talents = (e.talents || []).filter((t) => AG.Talents[t] && AG.Talents[t].unit === e.def);
+        if (e.rune && !AG.Runes[e.rune]) e.rune = null;
+      }
+    }
     const narrow = () => window.innerWidth < 980;
     let sel = { kind: null };
     let preview = null;
