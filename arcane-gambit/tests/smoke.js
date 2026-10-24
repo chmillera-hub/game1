@@ -63,11 +63,12 @@ const { chromium } = require('playwright');
     const order = free.sort((a, b) => a.y - b.y || Math.abs(a.x - (w - 1) / 2) - Math.abs(b.x - (w - 1) / 2));
     let placed = false;
     for (const c of order) {
+      // Ask the game which squares are taken (screen hit-tests miss squares that are scrolled out of view).
       const occupied = await page.evaluate(([x, y]) => {
-        const cell = document.querySelector('.cell[data-x="' + x + '"][data-y="' + y + '"]');
-        const r = cell.getBoundingClientRect();
-        const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return !!(el && el.closest('.token'));
+        const run = AG.App.run;
+        if (run.battle.formation.some((e) => e.x === x && e.y === y)) return true;
+        const enc = AG.Encounters[run.battle.enc];
+        return AG.parseBoard(enc.map, enc.legend).spawns.some((sp) => sp.x === x && sp.y === y);
       }, [c.x, c.y]);
       if (occupied) continue;
       await page.locator('.cell[data-x="' + c.x + '"][data-y="' + c.y + '"]').click();
