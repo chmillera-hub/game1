@@ -40,6 +40,7 @@ The engine (`js/core`, `js/data`, `js/game`) has no DOM code and runs under Node
 ## Tools
 
 ```
+node tests/rules.js                                      # deterministic rule and AI checks
 node tests/watch.js goblinSkirmish knight scout cleric   # watch one battle as text
 node tests/balance.js --act 1 --n 24                     # random legal armies vs each encounter
 node tests/runsim.js --runs 24                           # whole runs played by a simple bot
