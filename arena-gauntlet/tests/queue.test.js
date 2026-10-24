@@ -211,7 +211,7 @@ test('reinforcements join the current cycle in speed order', () => {
   assert.strictEqual(warg.cycles, orc.cycles, 'it joins the cycle the orc is on');
 });
 
-test('fatigue: each unit loses 1, then 2, then 3 on its own turns, past shields', () => {
+test('fatigue: the first unit to start a turn loses 1, the next 2, the next 3, whichever side, past shields', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -220,17 +220,19 @@ test('fatigue: each unit loses 1, then 2, then 3 on its own turns, past shields'
     ],
     { overtime: 2 }
   );
-  const [a, b] = s.units;
-  a.shield = 50;
-  const seen = [];
-  for (let i = 0; i < 16 && !s.over; i++) {
-    const before = a.hp;
+  for (const u of s.units) u.shield = 50;
+  const hits = [];
+  for (let i = 0; i < 8 && !s.over; i++) {
+    const due = [];
     E.pass(s);
-    if (a.hp !== before) seen.push(before - a.hp);
+    for (const e of s.events) if (e.t === 'dmg' && e.dmgType === 'fatigue') due.push(e);
+    hits.push(...due.filter((e) => !hits.includes(e)));
   }
   assert.ok(s.events.some((e) => e.t === 'overtime'), 'fatigue set in');
-  assert.deepStrictEqual(seen.slice(0, 3), [1, 2, 3], 'one more each of its own turns, shields or not');
-  assert.ok(b.fatigue >= 2 && Math.abs(a.fatigue - b.fatigue) <= 1, 'the other golem counts its own turns');
+  assert.deepStrictEqual(hits.map((e) => e.amount), [1, 2, 3, 4, 5, 6, 7], 'one more for every unit turn');
+  assert.deepStrictEqual(hits.slice(0, 4).map((e) => s.byId[e.uid].team), ['E', 'P', 'E', 'P'], 'both sides share the count');
+  assert.notStrictEqual(hits[1].uid, hits[3].uid, 'the two player golems take turns');
+  assert.ok(s.units.every((u) => u.shield === 50), 'shields do not stop it');
 });
 
 test('fatigue: the bigger side outlasts the smaller, and reinforcements stop', () => {

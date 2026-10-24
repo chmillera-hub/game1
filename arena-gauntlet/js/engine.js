@@ -241,8 +241,6 @@
       const rel = s.relics[team];
       u.regen = (u.props.regen || 0) + (rel.has('healing_salve') ? 1 : 0) + (rel.has('sacred_chalice') ? 2 : 0);
     } else u.regen = 0;
-    // Fatigue: HP it loses at its next turn once fatigue sets in (it grows by 1 each turn).
-    u.fatigue = 0;
     if (spec.armor != null) u.armor = spec.armor;
     if (spec.res != null) u.res = spec.res;
     if (spec.vip && !T.boss) u.value *= 1.8;
@@ -297,8 +295,10 @@
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
       queue: !!cfg.queue,
       due: 0,
-      // Overtime from this turn on (0: never); see overtimeDrain.
+      // Fatigue from this turn on (0: never), and the HP the last unit lost to it; see
+      // startFatigue.
       overtime: cfg.overtime || 0,
+      fatigue: 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     (cfg.waves || []).forEach((w, i) => {
@@ -2040,12 +2040,13 @@
   }
 
   // The start of one unit's turn: it regenerates, then, once fatigue has set in, loses
-  // 1 HP more than it did on its last turn (1, 2, 3...), past armor and shields.
+  // 1 HP more than the last unit to start a turn did, whichever side (1, 2, 3...), past
+  // armor and shields.
   function unitTurnStart(s, u) {
     regenerate(s, u);
     if (!s.inOvertime || !u.alive || !counts(u)) return;
-    u.fatigue++;
-    applyDamage(s, null, u, u.fatigue, { cat: 'none', dmgType: 'fatigue' });
+    s.fatigue++;
+    applyDamage(s, null, u, s.fatigue, { cat: 'none', dmgType: 'fatigue' });
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2085,8 +2086,8 @@
     if (s.queue) pickDue(s, side);
   }
 
-  // Fatigue: from turn `s.overtime` on, every fighter loses HP at the start of each of its
-  // own turns, 1 more each time (see unitTurnStart), and no more reinforcements come. Big
+  // Fatigue: from turn `s.overtime` on, each fighter loses HP at the start of its turn, 1
+  // more than the one before it (see unitTurnStart), and no more reinforcements come. Big
   // units and regen last longest; the last side standing wins.
   function startFatigue(s) {
     if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;

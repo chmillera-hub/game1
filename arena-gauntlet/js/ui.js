@@ -564,7 +564,6 @@
       else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
     }
     if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
-    if (o.status && UI.battle && UI.battle.s.inOvertime && u.alive && !u.nonCombat && !u.structure) chips.push(`<span class="chip warn" title="Fatigue: HP it loses at the start of its next turn">Fatigue −${(u.fatigue || 0) + 1}</span>`);
     // Regen counts a Mending Light aura it stands in during a battle.
     const regen = o.status && UI.battle && u.alive ? E.regenOf(UI.battle.s, u) : u.regen;
     if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP at the start of each of its turns">${ic('heart')} Regen ${regen}</span>`);
@@ -2247,9 +2246,9 @@
     return out.join('');
   }
 
-  // The top bar's clock: turns to go before fatigue sets in, then the turn and fatigue.
+  // The top bar's clock: turns to go before fatigue sets in, then the next fatigue hit.
   function turnLine(s) {
-    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue</span>`;
+    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${s.fatigue + 1}</span> next`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
@@ -2308,7 +2307,7 @@
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
       } else if (e.t === 'overtime') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Every fighter now loses HP at the start of each of its turns: 1, then 2, then 3, and so on. The last side standing wins.` });
+        add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: the first 1, the next 2, the next 3, and so on, whichever side. The last side standing wins.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -2614,7 +2613,7 @@
     logEvents(ev);
     if (ev.some((e) => e.t === 'overtime')) {
       showBanner('Fatigue', true);
-      toast('Fatigue: every fighter loses HP at the start of each of its turns, 1 more each time. The last side standing wins.', 4000);
+      toast('Fatigue: each unit loses HP at the start of its turn, 1 more than the unit before it. The last side standing wins.', 4000);
     }
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
@@ -3408,7 +3407,7 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Fatigue</b>: from turn 50, every fighter loses HP at the start of each of its own turns: 1, then 2, then 3 and so on, past armor and shields. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Fatigue</b>: from turn 50, each unit loses HP at the start of its turn, 1 more than the unit before it, whichever side: the first loses 1, the next 2, the next 3 and so on, past armor and shields. The top bar shows the next hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
