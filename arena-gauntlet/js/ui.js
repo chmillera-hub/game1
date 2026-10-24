@@ -1235,7 +1235,7 @@
         .join('')}</div>`;
     }
     openSheet(
-      `${sheetHead('Your army', `${run.roster.length}/${R.MAX_ROSTER} units · ${ic('gold')} ${run.gold} gold · Commander Lv ${R.commanderLevel(run)}`)}
+      `${sheetHead('Your army', `${run.roster.length} unit${run.roster.length === 1 ? '' : 's'} · ${ic('gold')} ${run.gold} gold · Commander Lv ${R.commanderLevel(run)}`)}
       <div class="tabs"><button class="btn ${t === 'units' ? 'on' : ''}" data-tab="units">${ic('army')} Units</button>
         <button class="btn ${t === 'items' ? 'on' : ''}" data-tab="items">${ic('bag')} Items (${run.items.length})</button>
         <button class="btn ${t === 'relics' ? 'on' : ''}" data-tab="relics">${ic('gem')} Relics</button></div>
@@ -1800,6 +1800,43 @@
     return !!(T.act.dmg || (T.act.fx && T.act.fx.poison));
   }
 
+  // A tap and a press-and-hold on the same element: `tap` on a quick tap, `hold` once held
+  // still for about half a second (or on a right click); the tap that ends a hold is
+  // swallowed.
+  function tapHold(el, tap, hold) {
+    let timer = 0;
+    let held = false;
+    let from = null;
+    const cancel = () => clearTimeout(timer);
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      held = false;
+      from = [e.clientX, e.clientY];
+      cancel();
+      timer = setTimeout(() => {
+        held = true;
+        hold();
+      }, 450);
+    });
+    el.addEventListener('pointermove', (e) => from && Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 10 && cancel());
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, cancel);
+    el.addEventListener('click', (e) => {
+      if (held) {
+        held = false;
+        e.preventDefault();
+        return;
+      }
+      tap();
+    });
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (!held) {
+        held = true;
+        hold();
+      }
+    });
+  }
+
   // A cost line's label, short: "Knight (Level 1)" is just "Knight".
   function costLabel(label) {
     return label.replace(' (Level 1)', '').replace(' (enchantment)', '');
@@ -1808,7 +1845,7 @@
   // The picked unit's loadout, right in the War Room: what each part costs, its level, and
   // a button for every ability pick and slot. A tap on one opens its picker, and you come
   // straight back here.
-  function quickLoadoutHTML(run, r) {
+  function quickLoadoutHTML(run, r, deployed) {
     R.normalizeLoad(run, r);
     const T = UNITS[r.type];
     const L = r.load;
@@ -1835,7 +1872,7 @@
     const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-qlv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
     return `<div class="qload">
       <div class="qhead"><canvas class="portrait" data-p="${r.type}:P"></canvas>
-        <div class="qname"><b>${esc(r.name)}</b> ${levelBadge(L.lv)}<span class="small muted">${esc(T.name)}${r.enchant ? ` · ${esc(ENCHANTS[r.enchant].name)}` : ''} · tap a blue tile to move it</span></div>
+        <div class="qname"><b>${esc(r.name)}</b> ${levelBadge(L.lv)}<span class="small muted">${esc(T.name)}${r.enchant ? ` · ${esc(ENCHANTS[r.enchant].name)}` : ''} · ${deployed ? 'tap a blue tile to move it' : 'on the bench: tap a blue tile to place it'}</span></div>
         <span class="qcost"><b>${R.unitCost(run, r)}</b><span>Supply</span></span>
         <button class="btn ghost icon-only" id="wrDesel" aria-label="Done">${ic('close')}</button></div>
       <div class="costline">${parts}</div>
@@ -1844,7 +1881,11 @@
       ${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
       ${row('Skills', [...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slot('skill', i) : locked('scroll', 2))).join(''))}
       ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}
-      <div class="actions"><button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button><button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>
+      <div class="actions">${
+        deployed
+          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button><button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`
+          : `<button class="btn primary" id="wrAdd">${ic('plus')} Add to battle</button><button class="btn" id="wrLoad">${ic('help')} Details</button>`
+      }</div>
     </div>`;
   }
 
@@ -1981,8 +2022,8 @@
     }
 
     let selBlock = '';
-    if (wr.sel && wr.dep.has(wr.sel)) {
-      selBlock = quickLoadoutHTML(run, R.unitById(run, wr.sel));
+    if (wr.sel && R.unitById(run, wr.sel)) {
+      selBlock = quickLoadoutHTML(run, R.unitById(run, wr.sel), wr.dep.has(wr.sel));
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
       selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
@@ -1991,8 +2032,8 @@
     } else if (tileF) {
       selBlock = tileInfoHTML(tileF);
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit to change its level, abilities, talents, skills and gear right here. Every point of Supply counts.</div>`;
-    } else selBlock = `<div class="small muted">Tap one of your units to change its loadout, or to move it: then tap a blue tile, or another unit to swap places.</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card to change that unit's level, abilities, talents, skills and gear. Every point of Supply counts.</div>`;
+    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places).</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2033,13 +2074,7 @@
       wr.tab = 'intel';
       renderWarRoom();
     };
-    for (const c of $$('.rcard[data-rid]', cmd)) {
-      c.onclick = () => wrCard(c.dataset.rid);
-      c.oncontextmenu = (e) => {
-        e.preventDefault();
-        loadoutSheet(c.dataset.rid, () => closeSheet());
-      };
-    }
+    for (const c of $$('.rcard[data-rid]', cmd)) tapHold(c, () => wrCard(c.dataset.rid), () => wrPick(c.dataset.rid));
     for (const c of $$('.rcard[data-uid]', cmd))
       c.onclick = () => {
         wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
@@ -2078,6 +2113,12 @@
         wr.dep.delete(wr.sel);
         wr.sel = null;
         renderWarRoom();
+      };
+    if ($('#wrAdd'))
+      $('#wrAdd').onclick = () => {
+        const rid = wr.sel;
+        wr.sel = null;
+        wrAdd(rid);
       };
     if ($('#wrEInfo')) $('#wrEInfo').onclick = () => battleUnitSheet(s.byId[wr.inspect]);
     $('#wrAuto').onclick = async () => {
@@ -2121,18 +2162,35 @@
     $('#wrFight').onclick = () => wrFight();
   }
 
+  // A tap on a unit card puts the unit in the battle, or takes it out again: quick to try
+  // armies out. Holding the card opens its loadout instead (wrPick).
   function wrCard(rid) {
-    const run = UI.run;
     const wr = UI.wr;
     wr.tile = null;
     if (wr.dep.has(rid)) {
-      // Tapping the picked unit again lets it go.
-      wr.sel = wr.sel === rid ? null : rid;
-      wr.inspect = null;
+      wr.dep.delete(rid);
+      if (wr.sel === rid) wr.sel = null;
       sfx('click');
       renderWarRoom();
       return;
     }
+    wrAdd(rid);
+  }
+
+  // Pick a unit up: its loadout opens below the army, and a blue tile puts it there.
+  function wrPick(rid) {
+    const wr = UI.wr;
+    wr.sel = rid;
+    wr.inspect = null;
+    wr.tile = null;
+    sfx('select');
+    renderWarRoom();
+  }
+
+  // Put a unit in the battle on the first free blue tile that suits it.
+  function wrAdd(rid) {
+    const run = UI.run;
+    const wr = UI.wr;
     const r = R.unitById(run, rid);
     if (wr.dep.size >= wr.cap) {
       toast(`Only ${wr.cap} units may take the field. Remove one first, or raise your commander level.`);
@@ -2145,7 +2203,6 @@
       return;
     }
     wr.dep.set(rid, { x: slot.x, y: slot.y, facing: 0 });
-    wr.sel = rid;
     wr.inspect = null;
     sfx('select');
     const over = wrUsed() - wr.supply;
@@ -2165,7 +2222,7 @@
     const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
     let t = raw;
     // With a unit picked up, an open blue tile under the finger is where it goes.
-    const placing = wr.sel && wr.dep.has(wr.sel) && raw && !tileUnit && isDeployTile(raw.x, raw.y);
+    const placing = wr.sel && raw && !tileUnit && isDeployTile(raw.x, raw.y);
     if (!placing && spriteUnit) t = { x: spriteUnit.x, y: spriteUnit.y };
     // A rock or chest in front of everything else: say what it is.
     if (!placing && !unitInFront(hit, s) && (hit.props || []).length) t = null;
@@ -2180,7 +2237,13 @@
     }
     const rid = wrRidAt(t.x, t.y);
     if (rid) {
-      if (wr.sel && wr.sel !== rid && wr.dep.has(wr.sel)) {
+      if (wr.sel && wr.sel !== rid && !wr.dep.has(wr.sel)) {
+        // A unit from the bench takes this one's place, which goes to the bench.
+        wr.dep.set(wr.sel, Object.assign({}, wr.dep.get(rid)));
+        wr.dep.delete(rid);
+        wr.sel = null;
+        sfx('step');
+      } else if (wr.sel && wr.sel !== rid && wr.dep.has(wr.sel)) {
         const a = wr.dep.get(wr.sel);
         const bpos = wr.dep.get(rid);
         const ax = a.x;
@@ -2200,7 +2263,7 @@
       return;
     }
     if (isDeployTile(t.x, t.y)) {
-      if (wr.sel && wr.dep.has(wr.sel)) return wrPlace(t.x, t.y);
+      if (wr.sel) return wrPlace(t.x, t.y);
       toast('Pick a unit from your army first, then tap a blue tile.');
       renderWarRoom();
       return;
@@ -2208,13 +2271,20 @@
     wrMiss(hit, shown);
   }
 
-  // Put the picked unit down on a free blue tile, and let it go so the next tap does not
-  // move it again.
+  // Put the picked unit down on a free blue tile (from the bench too, room allowing), and
+  // let it go so the next tap does not move it again.
   function wrPlace(x, y) {
     const wr = UI.wr;
     const d = wr.dep.get(wr.sel);
-    d.x = x;
-    d.y = y;
+    if (d) {
+      d.x = x;
+      d.y = y;
+    } else {
+      if (wr.dep.size >= wr.cap) return toast(`Only ${wr.cap} units may take the field. Take one out first.`);
+      wr.dep.set(wr.sel, { x, y, facing: 0 });
+      const over = wrUsed() - wr.supply;
+      if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
+    }
     wr.sel = null;
     sfx('step');
     renderWarRoom();
@@ -2225,7 +2295,7 @@
   // picked up. With nothing picked up, explain the rock or chest there.
   function wrMiss(hit, shown) {
     const wr = UI.wr;
-    if (!(wr.sel && wr.dep.has(wr.sel))) return wrFeature(hit, shown);
+    if (!wr.sel) return wrFeature(hit, shown);
     const free = [];
     for (const y of wr.rows) for (let x = 0; x < wr.enc.w; x++) if (isDeployTile(x, y) && !wrRidAt(x, y)) free.push({ x, y });
     const m = snap({ px: hit.px, py: hit.py, tile: null, unitTile: null }, free);
@@ -2252,7 +2322,7 @@
     if (!t) return;
     const u = E.at(wr.s, t.x, t.y);
     if (!u) return;
-    if (u.team === 'P' && u.rid) loadoutSheet(u.rid, () => closeSheet());
+    if (u.team === 'P' && u.rid) wrPick(u.rid);
     else battleUnitSheet(u);
   }
 
@@ -3420,7 +3490,6 @@
           .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
         ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small good-text">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</p>` : ''}
-        ${p.prisonerGold ? `<p class="small muted">The freed prisoner could not join a full army, but leaves you ${p.prisonerGold} gold in thanks.</p>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, 'disabled style="opacity:1"')}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, 'disabled style="opacity:1"')}</div></div>` : ''}
         ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
@@ -3448,10 +3517,6 @@
       b.onclick = () => {
         const i = +b.dataset.spoil;
         const sp = p.spoils[i];
-        if (sp.type === 'recruit' && run.roster.length >= R.MAX_ROSTER) {
-          toast('Your army is full. Dismiss a unit from the Army screen first.');
-          return;
-        }
         if (R.takeSpoil(run, i)) {
           sfx('coin');
           if (sp.type === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));

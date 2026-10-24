@@ -18,13 +18,17 @@ on a phone turned sideways, but portrait works too.
   first, all three), and the skills and gear offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. You start with 60 gold.
 
-- **War Room**: tap a unit card to deploy it, then a blue tile to place it, or another
-  of your units to swap places; a move lets go of the unit, so the next tap does not
-  move it again. A tap that misses (a rock, open ground, the board's rim) keeps the
-  unit picked up, and a near miss by a corner tile puts it there. A picked unit's loadout opens right under your army: what each part
-  costs (Knight 3 + Level 2 2 + Guardian 1 ...), its level, and a button for each
-  ability, talent, skill and gear slot. Tap the Supply bar to see what every deployed
-  unit costs. Details opens the full sheet; Begin battle stays in view at the bottom.
+- **War Room**: tap a unit card to put that unit in the battle, and tap it again to
+  take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
+  to open its loadout right under your army: what each part costs (Knight 3 + Level 2
+  2 + Guardian 1 ...), its level, and a button for each ability, talent, skill and
+  gear slot. To move a unit, tap it on the board, then a blue tile, or another unit to
+  swap places; a unit from the bench whose loadout is open goes onto the blue tile you
+  tap, or takes the place of the unit you tap. A move lets go of the unit, and a tap
+  that misses keeps it picked up. Tap the Supply bar to see what every deployed unit
+  costs. Begin battle stays in view at the bottom.
+- **Army size**: there is no limit on how many units you recruit; your commander
+  level limits only how many take the field in a battle.
 - **Supply**: each battle gives you Supply to spend. A unit costs its base price,
   plus its level, plus any ability, skill, gear or enchantment it carries.
   Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight

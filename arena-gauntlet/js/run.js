@@ -12,7 +12,6 @@
   const ROWS = 7; // regular rows per act; the boss sits on row ROWS
   const COLS = 5;
   const BOARD = 9;
-  const MAX_ROSTER = 12;
   const MAX_FIELD = 9;
   const LEAN_GOLD = 3;
   const RECRUIT_PRICE = { common: 40, uncommon: 60, rare: 85, legendary: 140 };
@@ -1404,15 +1403,7 @@
     reward.xp = lv.amount;
     reward.lvFrom = lv.from;
     reward.lvTo = lv.to;
-    if (p.enc.prisoner) {
-      if (run.roster.length < MAX_ROSTER) {
-        const u = addRecruit(run, p.enc.prisoner.type);
-        reward.prisoner = u.id;
-      } else {
-        run.gold += 30;
-        reward.prisonerGold = 30;
-      }
-    }
+    if (p.enc.prisoner) reward.prisoner = addRecruit(run, p.enc.prisoner.type).id;
     if (kind === 'elite') {
       const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
       if (id) {
@@ -1439,10 +1430,8 @@
     if (!p || p.type !== 'reward' || p.spoilTaken) return false;
     const sp = p.spoils[index];
     if (!sp) return false;
-    if (sp.type === 'recruit') {
-      if (run.roster.length >= MAX_ROSTER) return false;
-      addRecruit(run, sp.unit, { enchant: sp.enchant || null });
-    } else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
+    if (sp.type === 'recruit') addRecruit(run, sp.unit, { enchant: sp.enchant || null });
+    else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
     else if (sp.type === 'gold') run.gold += sp.amount;
     p.spoilTaken = true;
     save(run);
@@ -1512,7 +1501,6 @@
 
   function canBuy(run, item) {
     if (item.sold || run.gold < item.price) return false;
-    if (item.kind === 'recruit') return run.roster.length < MAX_ROSTER;
     return true;
   }
 
@@ -1578,7 +1566,6 @@
 
   // ------------------------------------------------------------ events
 
-  const fullRoster = (run) => run.roster.length >= MAX_ROSTER;
   const uname = (t) => UNITS[t].name;
 
   const EVENTS = [
@@ -1591,8 +1578,8 @@
         return { unit, enchant: rollEnchant(run, rng, unit) };
       },
       choices: (run, c) => [
-        { id: 'hire', label: 'Hire (65 gold)', detail: `An enchanted ${uname(c.unit)} joins, bound with ${ENCHANTS[c.enchant].name}: ${ENCHANTS[c.enchant].desc}`, enabled: run.gold >= 65 && !fullRoster(run) },
-        { id: 'haggle', label: 'Haggle (30 gold)', detail: `Even odds: a plain ${uname(c.unit)} joins, or the coin is simply gone.`, enabled: run.gold >= 30 && !fullRoster(run) },
+        { id: 'hire', label: 'Hire (65 gold)', detail: `An enchanted ${uname(c.unit)} joins, bound with ${ENCHANTS[c.enchant].name}: ${ENCHANTS[c.enchant].desc}`, enabled: run.gold >= 65 },
+        { id: 'haggle', label: 'Haggle (30 gold)', detail: `Even odds: a plain ${uname(c.unit)} joins, or the coin is simply gone.`, enabled: run.gold >= 30 },
         { id: 'leave', label: 'Move on', detail: 'Keep your gold.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
@@ -1671,7 +1658,7 @@
       text: 'A soldier in a torn tabard limps out of the brush, hands raised. "I am done with my old lord. Take me in, or take my purse. Just let me live."',
       prepare: (run, rng) => ({ unit: rng.pick(RECRUITABLE.filter((t) => UNITS[t].rarity === 'common')) }),
       choices: (run, c) => [
-        { id: 'take', label: 'Take them in', detail: `A ${uname(c.unit)} joins your army.`, enabled: !fullRoster(run) },
+        { id: 'take', label: 'Take them in', detail: `A ${uname(c.unit)} joins your army.` },
         { id: 'rob', label: 'Take the purse', detail: 'Gain 35 gold.' },
         { id: 'leave', label: 'Let them go', detail: 'Nothing gained, nothing lost.' },
       ],
@@ -1824,7 +1811,6 @@
       ],
       resolve: (run, c, choice) => {
         if (choice === 'raise') {
-          if (fullRoster(run)) return 'Your army is full. The bones settle back into the mud.';
           const u = addRecruit(run, 'skelarcher');
           return `${u.name}, long dead, takes up a bow for you.${talentNote(run, u)}`;
         }
@@ -1847,7 +1833,7 @@
         return { units: [a, rollUnitType(run, rng, 'normal', [a])] };
       },
       choices: (run, c) => [
-        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A ${uname(t)} joins for free.`, enabled: !fullRoster(run) })),
+        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A ${uname(t)} joins for free.` })),
         { id: 'leave', label: 'Wish them luck', detail: 'Ride on.' },
       ],
       resolve: (run, c, choice) => {
@@ -2290,7 +2276,7 @@
   }
 
   AG.Run = {
-    ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    ROWS, COLS, MAX_FIELD, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
