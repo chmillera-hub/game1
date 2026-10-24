@@ -49,6 +49,7 @@ Every unit is a small statue on a pedestal: white for your side, black for the e
 
 ```
 node tests/rules.js                                      # deterministic rule and AI checks
+node tests/art.js                                        # every unit has a figurine that draws cleanly
 node tests/watch.js goblinSkirmish knight scout cleric   # watch one battle as text
 node tests/balance.js --act 1 --n 24                     # random legal armies vs each encounter
 node tests/runsim.js --runs 24                           # whole runs played by a simple bot
