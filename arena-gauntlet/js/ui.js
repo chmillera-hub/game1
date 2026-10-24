@@ -23,9 +23,9 @@
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it. At 1x a battle plays at
-  // 80% of the animations' full pace, easier to follow.
+  // 64% of the animations' full pace, easy to follow.
   const speedOf = () => (UI.prefs.speed > 1 ? UI.prefs.speed : UI.prefs.fast ? 2 : 1);
-  const BASE_PACE = 0.8;
+  const BASE_PACE = 0.64;
   const paceOf = () => speedOf() * BASE_PACE;
   const pause = (ms) => sleep(ms / paceOf());
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');

@@ -54,8 +54,8 @@ on a phone turned sideways, but portrait works too.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
   abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x),
-  pause, skip-to-result and tap-a-unit-to-inspect are beside the board; 1x plays a
-  little slower than the animations' full pace, to be easy to follow. The menu's
+  pause, skip-to-result and tap-a-unit-to-inspect are beside the board; 1x plays at
+  about two-thirds of the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).
 - **Priority**: while watching, tap an enemy unit, a building or a chest, then

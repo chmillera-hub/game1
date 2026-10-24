@@ -24,7 +24,7 @@
     try {
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.35;
+      master.gain.value = 0.42;
       master.connect(ctx.destination);
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
       const d = noiseBuf.getChannelData(0);
