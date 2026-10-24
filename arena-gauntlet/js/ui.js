@@ -1344,37 +1344,39 @@
     const owned = run.items.filter((i) => i.kind === 'talent' && TALENTS[i.id].cls === r.type).length;
     const lockedSlot = (kind, icon, title, lv) => `<div class="slot locked"><span class="itemico ${kind}">${ic(icon)}</span><span class="sl-body"><b class="muted">${title}</b><span class="small muted">Unlocks at Level ${lv}</span></span></div>`;
     const scrolls = run.items.filter((i) => i.kind === 'scroll' && D.eligible(r.type, ENCHANTS[i.id]));
-    const breakdown = R.costBreakdown(run, r)
-      .map((x) => `<tr><td>${esc(x.label)}</td><td>${x.cost ? x.cost : 'free'}</td></tr>`)
-      .join('');
+    // What you change most comes first: the cost, the level, the slots, the picks. The
+    // unit's numbers and attacks follow.
     const html = `${sheetHead(esc(r.name), `${esc(T.name)} · fielding costs <b class="cost-big">${cost}</b> Supply`)}
       ${budget}
+      <div class="costline">${R.costBreakdown(run, r)
+        .filter((x) => x.cost)
+        .map((x) => `<span class="cb">${esc(costLabel(x.label))} <b>${x.cost}</b></span>`)
+        .join('<span class="cb-op">+</span>')}<span class="cb-op">=</span><span class="cb"><b>${cost}</b></span></div>
       ${unitInfoHTML(u, { name: r.name })}
-      ${statsHTML(u)}
       <div class="lo-sec"><div class="eyebrow">Level</div>
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
         <p class="small muted">Level 2: +20% HP, +15% damage, a second ability, a second talent slot and a second skill slot. Level 3: +40% HP, +30% damage, its Mastery, a third talent slot and a second gear slot.</p></div>
-      <div class="lo-sec"><div class="eyebrow">Ability${pickHead(1)}</div>
-        <div class="picks">${picks(1).map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Level 2 ability${pickHead(2)}${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
-        <div class="picks">${picks(2).map((id) => abilityCard(r, 2, id, L.lv < 2)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">${ic('star')} ${UNITS[r.type].name} talents · ${sl.talents} slot${sl.talents > 1 ? 's' : ''}</div>
         <p class="small muted">Class passives. Every unit comes with one, and you find more in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
         <div class="slots">${[...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slotButton(run, r, 'talent', i) : lockedSlot('talent', 'star', 'Talent slot', i + 1))).join('')}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Mastery${L.lv < 3 ? ' <span class="lockline">unlocks at Level 3</span>' : ''}</div>
-        <div class="pick static ${L.lv < 3 ? 'locked' : 'on'}"><span class="pk-head"><b>${esc(MASTERY[r.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[r.type].desc)}</span></div></div>
       <div class="lo-sec"><div class="eyebrow">Skills · ${sl.skills} slot${sl.skills > 1 ? 's' : ''}</div>
         <div class="slots">${[...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slotButton(run, r, 'skill', i) : `<div class="slot locked"><span class="itemico skill">${ic('scroll')}</span><span class="sl-body"><b class="muted">Skill slot</b><span class="small muted">Unlocks at Level 2</span></span></div>`)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Gear · ${sl.gear} slot${sl.gear > 1 ? 's' : ''}</div>
         <div class="slots">${[...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slotButton(run, r, 'gear', i) : `<div class="slot locked"><span class="itemico gear">${ic('sword')}</span><span class="sl-body"><b class="muted">Gear slot</b><span class="small muted">Unlocks at Level 3</span></span></div>`)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Ability${pickHead(1)}</div>
+        <div class="picks">${picks(1).map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Level 2 ability${pickHead(2)}${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
+        <div class="picks">${picks(2).map((id) => abilityCard(r, 2, id, L.lv < 2)).join('')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Mastery${L.lv < 3 ? ' <span class="lockline">unlocks at Level 3</span>' : ''}</div>
+        <div class="pick static ${L.lv < 3 ? 'locked' : 'on'}"><span class="pk-head"><b>${esc(MASTERY[r.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[r.type].desc)}</span></div></div>
       <div class="lo-sec"><div class="eyebrow">Enchantment</div>
         ${r.enchant
           ? `<div class="pick static on ench"><span class="pk-head"><b>${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</b><span class="cost">+${ENCHANTS[r.enchant].surcharge}</span></span><span class="pk-desc">${esc(ENCHANTS[r.enchant].desc)} Bound for good.</span></div>`
           : `<p class="small muted">None. ${scrolls.length ? `You have ${scrolls.length} scroll${scrolls.length > 1 ? 's' : ''} that could be bound to this unit.` : 'Enchantment scrolls bind a permanent bonus to one unit.'}</p>
             ${scrolls.length ? `<button class="btn" id="loBind">${ic('gem')} Bind a scroll…</button>` : ''}`}</div>
+      <div class="lo-sec"><div class="eyebrow">Stats</div>${statsHTML(u)}</div>
       <div class="lo-sec"><div class="eyebrow">In battle</div>${actsHTML(u)}
         ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
-      <div class="lo-sec"><div class="eyebrow">Supply cost</div><table class="costtable">${breakdown}<tr class="tot"><td>Total</td><td>${cost}</td></tr></table></div>
       <p class="small muted">Battles: ${r.battles} · Enemies slain: ${r.kills}</p>
       <div class="actions">
         <button class="btn" id="loDismiss" ${run.roster.length <= 2 ? 'disabled' : ''}>Dismiss (+15 gold)</button>
@@ -1399,22 +1401,31 @@
           R.setAbility(run, rid, +tier, id);
           changed();
         };
+      // Back from a picker, the sheet returns to where you were.
+      const here = () => {
+        const top = sh.scrollTop;
+        return () => {
+          loadoutSheet(rid, back);
+          $('#sheet').scrollTop = top;
+        };
+      };
       for (const b of $$('[data-slot]', sh))
         b.onclick = () => {
           const [kind, i] = b.dataset.slot.split(':');
-          itemPicker(rid, kind, +i, () => loadoutSheet(rid, back));
+          itemPicker(rid, kind, +i, here());
         };
       if ($('#loBind', sh))
         $('#loBind', sh).onclick = async () => {
           const pick = scrolls.length === 1 ? scrolls[0] : null;
-          if (pick) return bindFlow(pick.uid, rid, () => loadoutSheet(rid, back));
+          const ret = here();
+          if (pick) return bindFlow(pick.uid, rid, ret);
           openSheet(
             `${sheetHead('Choose a scroll')}<div class="army-list">${scrolls
               .map((s) => `<button class="army-row" data-sc="${s.uid}"><div class="itemico scroll">${ic('gem')}</div><div class="nm"><b>${esc(ENCHANTS[s.id].name)}</b><div class="small muted">${esc(ENCHANTS[s.id].desc)}</div></div><span class="chip warn">+${ENCHANTS[s.id].surcharge}</span></button>`)
               .join('')}</div><div class="actions"><button class="btn" id="scBack">Back</button></div>`,
             (s2) => {
-              for (const b of $$('[data-sc]', s2)) b.onclick = () => bindFlow(b.dataset.sc, rid, () => loadoutSheet(rid, back));
-              $('#scBack', s2).onclick = () => loadoutSheet(rid, back);
+              for (const b of $$('[data-sc]', s2)) b.onclick = () => bindFlow(b.dataset.sc, rid, ret);
+              $('#scBack', s2).onclick = ret;
             }
           );
         };
@@ -1767,6 +1778,105 @@
     return !!(T.act.dmg || (T.act.fx && T.act.fx.poison));
   }
 
+  // A cost line's label, short: "Knight (Level 1)" is just "Knight".
+  function costLabel(label) {
+    return label.replace(' (Level 1)', '').replace(' (enchantment)', '');
+  }
+
+  // The picked unit's loadout, right in the War Room: what each part costs, its level, and
+  // a button for every ability pick and slot. A tap on one opens its picker, and you come
+  // straight back here.
+  function quickLoadoutHTML(run, r) {
+    R.normalizeLoad(run, r);
+    const T = UNITS[r.type];
+    const L = r.load;
+    const sl = R.slotsFor(L.lv);
+    const parts = R.costBreakdown(run, r)
+      .filter((x) => x.cost)
+      .map((x) => `<span class="cb">${esc(costLabel(x.label))} <b>${x.cost}</b></span>`)
+      .join('<span class="cb-op">+</span>');
+    const slot = (kind, i) => {
+      const uid = L[SLOT_KEY[kind]][i];
+      const d = uid && R.itemDef(R.itemByUid(run, uid));
+      return `<button class="qchip ${kind} ${d ? 'full' : ''}" data-qslot="${kind}:${i}">${ic(ITEM_ICON[kind])}<span>${d ? esc(d.name) : 'Empty'}</span>${d ? `<b>+${d.cost}</b>` : ''}</button>`;
+    };
+    const locked = (icon, lv) => `<span class="qchip locked">${ic(icon)}<span>Lv ${lv}</span></span>`;
+    const ability = (tier) => {
+      if (tier === 2 && L.lv < 2) return locked('up', 2);
+      const ab = ABILITIES[L['a' + tier]];
+      const inner = `${ic('up')}<span>${esc(ab.name)}</span>${ab.cost ? `<b>+${ab.cost}</b>` : ''}`;
+      // With only one to choose from, there is nothing to pick.
+      const choices = T.abilities[tier].filter((id) => !TALENTS[id]).length;
+      return choices > 1 ? `<button class="qchip ability full" data-qab="${tier}">${inner}</button>` : `<span class="qchip ability full fixed">${inner}</span>`;
+    };
+    const row = (label, chips) => `<div class="qrow"><span class="qlabel">${label}</span><div class="qchips">${chips}</div></div>`;
+    const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-qlv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
+    return `<div class="qload">
+      <div class="qhead"><canvas class="portrait" data-p="${r.type}:P"></canvas>
+        <div class="qname"><b>${esc(r.name)}</b> ${levelBadge(L.lv)}<span class="small muted">${esc(T.name)}${r.enchant ? ` · ${esc(ENCHANTS[r.enchant].name)}` : ''} · tap a blue tile to move it</span></div>
+        <span class="qcost"><b>${R.unitCost(run, r)}</b><span>Supply</span></span>
+        <button class="btn ghost icon-only" id="wrDesel" aria-label="Done">${ic('close')}</button></div>
+      <div class="costline">${parts}</div>
+      <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
+      ${row('Abilities', ability(1) + ability(2))}
+      ${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
+      ${row('Skills', [...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slot('skill', i) : locked('scroll', 2))).join(''))}
+      ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}
+      <div class="actions"><button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button><button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>
+    </div>`;
+  }
+
+  function bindQuickLoadout(el) {
+    const run = UI.run;
+    const wr = UI.wr;
+    const rid = wr.sel;
+    if (!rid) return;
+    const back = () => {
+      closeSheet();
+      renderWarRoom();
+    };
+    for (const b of $$('[data-qlv]', el))
+      b.onclick = () => {
+        R.setLevel(run, rid, +b.dataset.qlv);
+        R.save(run);
+        sfx('click');
+        renderWarRoom();
+      };
+    for (const b of $$('[data-qslot]', el))
+      b.onclick = () => {
+        const [kind, i] = b.dataset.qslot.split(':');
+        itemPicker(rid, kind, +i, back);
+      };
+    for (const b of $$('[data-qab]', el)) b.onclick = () => abilityPicker(rid, +b.dataset.qab, back);
+    if ($('#wrDesel', el))
+      $('#wrDesel', el).onclick = () => {
+        wr.sel = null;
+        renderWarRoom();
+      };
+  }
+
+  // Choose a unit's ability for one level.
+  function abilityPicker(rid, tier, back) {
+    const run = UI.run;
+    const r = R.unitById(run, rid);
+    const picks = UNITS[r.type].abilities[tier].filter((id) => !TALENTS[id]);
+    openSheet(
+      `${sheetHead(tier === 1 ? 'Ability' : 'Level 2 ability', `${esc(r.name)} the ${esc(UNITS[r.type].name)}: pick one.`)}
+      <div class="picks">${picks.map((id) => abilityCard(r, tier, id, false)).join('')}</div>
+      <div class="actions"><button class="btn" id="apBack">Back</button></div>`,
+      (sh) => {
+        for (const b of $$('[data-ab]', sh))
+          b.onclick = () => {
+            R.setAbility(run, rid, tier, b.dataset.ab.split(':')[1]);
+            R.save(run);
+            sfx('select');
+            back();
+          };
+        $('#apBack', sh).onclick = () => back();
+      }
+    );
+  }
+
   function renderWarRoom() {
     const run = UI.run;
     const wr = UI.wr;
@@ -1850,13 +1960,7 @@
 
     let selBlock = '';
     if (wr.sel && wr.dep.has(wr.sel)) {
-      const r = R.unitById(run, wr.sel);
-      const L = r.load;
-      selBlock = `<div class="selunit"><div><b>${esc(r.name)}</b> ${levelBadge(L.lv)} <span class="small muted">${esc(UNITS[r.type].name)} · ${esc(ABILITIES[L.a1].name)}${L.lv >= 2 ? ' · ' + esc(ABILITIES[L.a2].name) : ''} · ${R.unitCost(run, r)} Supply</span></div>
-        <div class="small muted">Tap a blue tile to move it, or another of your units to swap places. Tap it again for its loadout.</div></div>
-        <div class="actions"><button class="btn primary" id="wrLoad">${ic('up')} Loadout</button>
-        <button class="btn" id="wrTurn">${ic('rotate')} Turn</button>
-        <button class="btn danger" id="wrRemove">${ic('close')} Remove</button></div>`;
+      selBlock = quickLoadoutHTML(run, R.unitById(run, wr.sel));
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
       selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
@@ -1865,24 +1969,38 @@
     } else if (tileF) {
       selBlock = tileInfoHTML(tileF);
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit again to change its level, abilities, skills and gear. Every point of Supply counts.</div>`;
-    }
+      selBlock = `<div class="hint">Study the enemy, then tap units to deploy them into the blue zone. Tap a deployed unit to change its level, abilities, talents, skills and gear right here. Every point of Supply counts.</div>`;
+    } else selBlock = `<div class="small muted">Tap one of your units to change its loadout, or to move it: then tap a blue tile, or another unit to swap places.</div>`;
+
+    // Every deployed unit's cost, when the Supply bar is tapped.
+    const costList = wr.costOpen
+      ? `<div class="armycost">${[...wr.dep.keys()]
+          .map((rid) => {
+            const r = R.unitById(run, rid);
+            return `<button class="ac-row" data-acrid="${rid}"><span>${esc(r.name)} <span class="muted">${esc(UNITS[r.type].name)}</span></span><span class="ac-parts">${R.costBreakdown(run, r)
+              .filter((x) => x.cost)
+              .map((x) => `${esc(costLabel(x.label))} ${x.cost}`)
+              .join(' + ')}</span><b>${R.unitCost(run, r)}</b></button>`;
+          })
+          .join('')}${wr.dep.size ? '' : '<div class="small muted">No units deployed yet.</div>'}</div>`
+      : '';
 
     const overCap = wr.dep.size > wr.cap;
     const over = used > wr.supply;
     $('#cmd').innerHTML = `
-      <div class="cp-meter"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
-        <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}/${wr.cap}</span></span></div>
+      <button class="cp-meter tap" id="wrMeter" aria-label="What each unit costs"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
+        <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}/${wr.cap}</span></span></button>
       <div class="small ${over || overCap ? 'bad-text' : 'muted'}">${
         over ? `Over budget by ${used - wr.supply} Supply: lower a level, drop an item, or remove a unit.` : overCap ? 'Too many units for your commander level.' : left > 0 ? `${left} unspent → <b style="color:var(--brass-hi)">+${gold} gold</b> if you win` : 'Every point of Supply committed.'
-      }</div>
-      ${objectivesHTML(enc)}
+      } <span class="muted">· Tap the bar to ${wr.costOpen ? 'hide' : 'see'} what each unit costs.</span></div>
+      ${costList}
       <div class="tabs"><button class="btn ${wr.tab === 'army' ? 'on' : ''}" id="wrTabA">${ic('army')} Your army</button>
         <button class="btn ${wr.tab === 'intel' ? 'on' : ''}" id="wrTabI">${ic('eye')} Enemy (${s.units.filter((u) => u.team === 'E' && E.counts(u)).length})</button></div>
       ${body}
       ${selBlock}
-      <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>
-        <button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
+      ${objectivesHTML(enc)}
+      <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button></div>
+      <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over && !overCap ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
     $('#wrTabA').onclick = () => {
@@ -1907,6 +2025,25 @@
         wr.tile = null;
         renderWarRoom();
       };
+    $('#wrMeter').onclick = () => {
+      wr.costOpen = !wr.costOpen;
+      sfx('click');
+      renderWarRoom();
+    };
+    for (const b of $$('[data-acrid]', cmd))
+      b.onclick = () => {
+        wr.sel = b.dataset.acrid;
+        wr.inspect = null;
+        renderWarRoom();
+      };
+    bindQuickLoadout(cmd);
+    // A newly picked unit's editor scrolls up to just under the Supply bar.
+    const q = $('.qload', cmd);
+    if (q && wr.sel !== wr.shownSel) {
+      const meter = $('#wrMeter', cmd);
+      cmd.scrollTop += q.getBoundingClientRect().top - cmd.getBoundingClientRect().top - (meter ? meter.offsetHeight : 0) - 6;
+    }
+    wr.shownSel = wr.sel;
     if ($('#wrLoad')) $('#wrLoad').onclick = () => loadoutSheet(wr.sel, () => closeSheet());
     if ($('#wrTurn'))
       $('#wrTurn').onclick = () => {
@@ -1967,11 +2104,8 @@
     const wr = UI.wr;
     wr.tile = null;
     if (wr.dep.has(rid)) {
-      if (wr.sel === rid) {
-        loadoutSheet(rid, () => closeSheet());
-        return;
-      }
-      wr.sel = rid;
+      // Tapping the picked unit again lets it go.
+      wr.sel = wr.sel === rid ? null : rid;
       wr.inspect = null;
       sfx('click');
       renderWarRoom();
@@ -2048,6 +2182,8 @@
         const d = wr.dep.get(wr.sel);
         d.x = t.x;
         d.y = t.y;
+        // Moved: let it go, so the next tap does not move it again.
+        wr.sel = null;
         sfx('step');
       } else toast('Pick a unit from your army first, then tap a blue tile.');
       renderWarRoom();

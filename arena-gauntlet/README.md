@@ -12,6 +12,12 @@ on a phone turned sideways, but portrait works too.
 
 ## How it works
 
+- **War Room**: tap a unit card to deploy it, then a blue tile to place it, or another
+  of your units to swap places; a move lets go of the unit, so the next tap does not
+  move it again. A picked unit's loadout opens right under your army: what each part
+  costs (Knight 3 + Level 2 2 + Guardian 1 ...), its level, and a button for each
+  ability, talent, skill and gear slot. Tap the Supply bar to see what every deployed
+  unit costs. Details opens the full sheet; Begin battle stays in view at the bottom.
 - **Supply**: each battle gives you Supply to spend. A unit costs its base price,
   plus its level, plus any ability, skill, gear or enchantment it carries.
   Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight

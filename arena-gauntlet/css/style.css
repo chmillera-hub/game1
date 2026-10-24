@@ -1113,6 +1113,249 @@ button.card:active {
   box-shadow: -24px 0 0 var(--leather-2), 24px 0 0 var(--leather-2);
 }
 
+/* In the War Room the meter is a button: a tap lists what each unit costs. */
+.cp-meter.tap {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.armycost {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ac-row {
+  appearance: none;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 154, 76, 0.25);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ac-parts {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.ac-row b {
+  color: var(--brass-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Begin battle stays in view at the bottom of the War Room panel. */
+.cmd > .actions.sticky {
+  position: sticky;
+  bottom: calc(-10px - env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--leather);
+  box-shadow: -24px 0 0 var(--leather), 24px 0 0 var(--leather);
+  border-top: 1px solid rgba(197, 154, 76, 0.25);
+}
+
+/* The picked unit's loadout, edited in place. */
+.qload {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(197, 154, 76, 0.45);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.qhead {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.qhead .portrait {
+  width: 38px;
+  height: 38px;
+}
+
+.qname {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  min-width: 0;
+}
+
+.qname b {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.qname .small {
+  flex-basis: 100%;
+}
+
+.qcost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.qcost b {
+  font-size: 1.45rem;
+  color: var(--brass-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+.qcost span {
+  font-family: var(--font-caps);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.costline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.cb {
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(197, 154, 76, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--parchment-2);
+  white-space: nowrap;
+}
+
+.cb b {
+  color: var(--brass-hi);
+}
+
+.cb-op {
+  color: var(--faint);
+}
+
+.qrow {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.qlabel {
+  font-family: var(--font-caps);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.qchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.qchip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(197, 154, 76, 0.45);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.qchip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qchip.full {
+  border-style: solid;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+}
+
+.qchip b {
+  color: var(--brass-hi);
+  font-size: 0.82rem;
+}
+
+.qchip.locked {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.qchip.fixed {
+  cursor: default;
+  border-color: rgba(197, 154, 76, 0.25);
+}
+
+.qload .lv-seg .btn,
+.qload .actions .btn {
+  min-height: 34px;
+  padding-block: 2px;
+}
+
+.qload .actions {
+  flex-wrap: nowrap;
+}
+
+.qload .actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+
+.qchip.talent .icon {
+  color: #8fd18a;
+}
+
+.qchip.skill .icon {
+  color: #9cc6ff;
+}
+
+.qchip.gear .icon {
+  color: var(--brass-hi);
+}
+
+.qchip.ability .icon {
+  color: var(--violet);
+}
+
 .cp-meter .pips {
   display: flex;
   gap: 3px;
