@@ -116,7 +116,9 @@ on a phone turned sideways, but portrait works too.
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
-  events, and camps to drill, study or tinker.
+  events, and camps to drill, study or tinker. A shop sells one of each kind of thing,
+  eight at most: a recruit, a talent, a skill, gear, an enchantment scroll, a relic,
+  a Supply Cache and a War Manual.
 - **Music**: synthesized in the browser like the sound effects, no audio files. Two
   camp tracks between battles (Campfire, a lute and flute; Tavern Jig, a fiddle jig),
   two battle tracks (March of Iron, war drums and horns; Clash of Steel, a faster

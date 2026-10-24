@@ -3325,21 +3325,12 @@
         return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
     };
-    const section = (title, kinds) => {
-      const items = p.stock.map((it, i) => [it, i]).filter(([it]) => kinds.includes(it.kind));
-      return items.length ? `<div><div class="eyebrow">${title}</div><div class="cards">${items.map(([it, i]) => card(it, i)).join('')}</div></div>` : '';
-    };
+    // One of each kind, so one list: each card says what it is.
     const v = showView(
       `<div class="wrap">
         <div class="row"><div class="grow"><p class="eyebrow">Merchant</p><h2>The Wandering Market</h2></div></div>
         <div class="row">${resbar(run)}<span class="grow"></span><button class="btn" id="shArmy">${ic('army')} Army</button></div>
-        ${section('Recruits', ['recruit'])}
-        ${section('Talents', ['talent'])}
-        ${section('Skills', ['skill'])}
-        ${section('Gear', ['gear'])}
-        ${section('Enchantments', ['scroll'])}
-        ${section('Relics', ['relic'])}
-        ${section('Services', ['supply', 'manual'])}
+        <div class="cards">${p.stock.map((it, i) => card(it, i)).join('')}</div>
         <div class="row end"><button class="btn primary" id="shLeave">Leave the market</button></div>
       </div>`
     );

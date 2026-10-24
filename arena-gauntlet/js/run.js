@@ -1437,28 +1437,24 @@
 
   // ------------------------------------------------------------ shop, rest, treasure
 
+  // One of each kind of thing, at most eight: a recruit, a talent, a skill, gear, an
+  // enchantment scroll, a relic, and the two services.
   function genShop(run, node) {
     const rng = AG.derive(run.seed, 'shop:' + run.act + ':' + node.id);
     const items = [];
-    const seen = [];
-    for (let i = 0; i < 3; i++) {
-      const r = rollRecruit(run, rng, 'normal', seen);
-      seen.push(r.unit);
-      const price = RECRUIT_PRICE[UNITS[r.unit].rarity] + (r.enchant ? 40 : 0);
-      items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, price: discount(run, price), sold: false });
-    }
-    for (const id of rollMany(rng, 2, () => rollSkill(run, rng))) items.push({ kind: 'skill', id, price: discount(run, ITEM_PRICE(SKILLS[id].cost)), sold: false });
-    for (const id of rollMany(rng, 3, () => rollGear(run, rng))) items.push({ kind: 'gear', id, price: discount(run, ITEM_PRICE(GEAR[id].cost)), sold: false });
-    for (const id of rollMany(rng, 2, () => rollTalent(run, rng))) items.push({ kind: 'talent', id, price: discount(run, TALENT_PRICE(TALENTS[id].cost)), sold: false });
+    const r = rollRecruit(run, rng, 'normal');
+    const price = RECRUIT_PRICE[UNITS[r.unit].rarity] + (r.enchant ? 40 : 0);
+    items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, price: discount(run, price), sold: false });
+    const talent = rollTalent(run, rng);
+    if (talent) items.push({ kind: 'talent', id: talent, price: discount(run, TALENT_PRICE(TALENTS[talent].cost)), sold: false });
+    const skill = rollSkill(run, rng);
+    if (skill) items.push({ kind: 'skill', id: skill, price: discount(run, ITEM_PRICE(SKILLS[skill].cost)), sold: false });
+    const gear = rollGear(run, rng);
+    if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, ITEM_PRICE(GEAR[gear].cost)), sold: false });
     const sc = rollEnchant(run, rng);
     if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
-    const rl = [];
-    for (let i = 0; i < 2; i++) {
-      const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)], rl) || pickRelic(run, rng, ['common', 'uncommon', 'rare'], rl);
-      if (!id) break;
-      rl.push(id);
-      items.push({ kind: 'relic', relic: id, price: discount(run, RELIC_PRICE[RELICS[id].tier]), sold: false });
-    }
+    const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+    if (relic) items.push({ kind: 'relic', relic, price: discount(run, RELIC_PRICE[RELICS[relic].tier]), sold: false });
     items.push({ kind: 'supply', price: discount(run, 70 + 20 * (run.supplyBonus || 0)), sold: false });
     items.push({ kind: 'manual', price: discount(run, 45), sold: false });
     return items;
