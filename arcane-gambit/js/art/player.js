@@ -19,6 +19,13 @@
   // An elliptical band: the inner edge runs the other way round, so the
   // middle stays open (and P.solid clips to the band).
   const band = (cx, cy, rx, ry, irx, iry) => D.ellipse(cx, cy, rx, ry) + D.mx(D.ellipse(100 - cx, cy, irx, iry));
+  // The front (lower) half of the same band, drawn again over whatever the
+  // ring passes in front of.
+  const halfBand = (cx, cy, rx, ry, irx, iry) => {
+    const o = D.arcPts(cx, cy, rx, ry, 0, 180, 12), i = D.arcPts(cx, cy, irx, iry, 180, 0, 12);
+    for (const a of [o, i]) { a[0].push(1); a[a.length - 1].push(1); }
+    return D.curve(o.concat(i), true);
+  };
   // A cross from its top at (cx, y0), h tall, arms w wide, bars t thick.
   const cross = (cx, y0, h, w, t) => {
     const y1 = y0 + h * 0.3 - t / 2, y2 = y1 + t, a = t / 2, b = w / 2;
@@ -49,13 +56,6 @@
       pts.push(...arc);
     });
     return D.curve(pts, true);
-  };
-  // The front (lower) half of the same band, drawn again over whatever the
-  // ring passes in front of.
-  const halfBand = (cx, cy, rx, ry, irx, iry) => {
-    const o = D.arcPts(cx, cy, rx, ry, 0, 180, 12), i = D.arcPts(cx, cy, irx, iry, 180, 0, 12);
-    for (const a of [o, i]) { a[0].push(1); a[a.length - 1].push(1); }
-    return D.curve(o.concat(i), true);
   };
   // A bone centred on (cx, cy), len long and w across the knuckles, turned deg.
   const bone = (cx, cy, len, w, deg) => {
@@ -236,7 +236,9 @@
   A.imp = function (P, D) {
     P.base('low');
     P.column(50, 64, 86, 7, 15);
-    P.pair(D.batWing(45, 52, 30, 26, 3), 'solid', { light: 0.72 });
+    P.pair(D.batWing(45, 50, 25, 22, 3), 'solid', { light: 0.72 });
+    P.solid(D.curve([[53, 64, 1], [60, 69], [66.5, 66], [68.5, 59, 1], [65.5, 56.5, 1], [72, 50, 1], [74.5, 57.5, 1], [71.5, 58.5, 1],
+      [69.5, 66.5], [61, 72.5], [53, 69.5, 1]], true), { light: 0.5 });
     P.solid(D.ellipse(50, 62, 9, 7.5), { light: 0.6 });
     P.pair(D.curve([[40.5, 37, 1], [35.5, 32], [33.5, 25.5], [35, 18.5, 1], [37.5, 24.5], [40.5, 29.5], [45.5, 33, 1]], true), 'solid', { light: 0.7 });
     P.ball(50, 44, 12.5);
@@ -306,6 +308,7 @@
   A.shade = function (P, D) {
     P.base('std');
     P.solid(D.blade(66, 52, 74, 17, 5.5), { light: 0.5 });
+    P.accLine('M67.2,46.5L71.6,27');
     P.solid(D.curve([[60, 11, 1], [61.5, 19], [63, 30], [62.5, 42], [64, 54], [66, 66], [68, 79, 1], [62, 74, 1], [57.5, 80, 1],
       [53, 74.5, 1], [48, 80, 1], [43.5, 74.5, 1], [38.5, 80, 1], [34, 73, 1], [35.5, 62], [36.5, 50], [36.5, 38], [38.5, 26], [45, 16]], true), { light: 0.62 });
     P.ink(D.curve([[47, 21, 1], [53, 24], [55.5, 31], [54.5, 39], [49.5, 44], [43.5, 43], [40, 37], [40.5, 28]], true));
@@ -419,6 +422,7 @@
   A.skeleton = function (P, D) {
     P.base('low');
     P.column(50, 66, 86, 6, 12);
+    P.pair(bone(34, 64, 22, 7, -64), 'solid', { light: 0.6 });
     P.solid(D.lathe([[50, 49], [42, 50], [37, 54.5], [35.5, 61], [37, 67.5], [42.5, 71.5], [50, 72.5]]), { light: 0.62 });
     for (const y of [55, 60.5, 66]) {
       P.pair(D.curve([[47, y - 0.8, 1], [42, y - 1.2], [39.2, y + 0.6], [38.8, y + 2.2, 1], [42.2, y + 1.2], [47, y + 1.3, 1]], true), 'ink');
@@ -429,12 +433,13 @@
   // A spirit wolf howling, its body trailing away into a wisp.
   A.spiritWolf = function (P, D) {
     P.base('low');
-    P.solid(D.curve([[58, 56, 1], [68, 60], [73, 68], [69, 76, 1], [69.5, 69], [64, 64]], true, 0.9), { light: 0.6 });
-    P.solid(D.shift(D.curve([[18, 19, 1], [23, 15.5], [30, 13.5], [36, 12], [39, 7.5], [41.5, 1.5, 1], [45.5, 7], [49.5, 2.5, 1], [52, 10],
-      [56, 16], [60, 24], [67, 30, 1], [62.5, 32.5], [67, 39.5, 1], [61.5, 41.5], [61, 51], [57.5, 61], [52, 69], [47, 75], [38, 80.5, 1],
-      [47, 70.5], [50, 63], [49.5, 55], [43, 52, 1], [45, 47], [38, 44, 1], [37, 38], [31, 31], [22, 26, 1], [30.5, 23.5, 1]], true, 0.9), 0, 5), { light: 0.6 });
-    P.eye(D.poly([[30.5, 23.5], [37.5, 22], [36.5, 25], [31.5, 25.5]]));
-    P.line('M44,12.5L45,18M51,30C54.5,38 55.5,46 54,56');
+    const z = (d) => D.scale(d, 0.86, 48, 86);
+    P.solid(z(D.curve([[58, 56, 1], [68, 60], [73, 68], [69, 76, 1], [69.5, 69], [64, 64]], true, 0.9)), { light: 0.6 });
+    P.solid(z(D.curve([[18, 24, 1], [23, 20.5], [30, 18.5], [36, 17], [39, 12.5], [41.5, 6.5, 1], [45.5, 12], [49.5, 7.5, 1], [52, 15],
+      [56, 21], [60, 29], [67, 35, 1], [62.5, 37.5], [67, 44.5, 1], [61.5, 46.5], [61, 56], [57.5, 66], [52, 74], [47, 80], [38, 85.5, 1],
+      [47, 75.5], [50, 68], [49.5, 60], [43, 57, 1], [45, 52], [38, 49, 1], [37, 43], [31, 36], [22, 31, 1], [30.5, 28.5, 1]], true, 0.9)), { light: 0.6 });
+    P.eye(z(D.poly([[30.5, 23.5], [37.5, 22], [36.5, 25], [31.5, 25.5]])));
+    P.line(z('M44,12.5L45,18M51,30C54.5,38 55.5,46 54,56'));
   };
 
   // A cracked egg sitting in its own fire, on a bed of embers.
@@ -448,9 +453,6 @@
       P.acc(D.flame(x + lean * 0.2, 90, w * 0.42, h * 0.45, lean * 0.4));
     }
   };
-
-
-
 
   // A heap of bones with a skull on top.
   A.bonePile = function (P, D) {
