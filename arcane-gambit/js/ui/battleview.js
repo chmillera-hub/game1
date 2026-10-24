@@ -178,7 +178,8 @@
           case 'think': {
             const u = B.U(s, e.uid);
             showThought(e.uid, e.reason, e.alts);
-            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(u.x, u.y)), ' ', e.reason]);
+            const dest = e.mv >= 0 ? '→' + sq(e.mv % s.board.w, (e.mv / s.board.w) | 0) : '';
+            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(u.x, u.y) + dest), ' ', e.reason]);
             await wait(520);
             break;
           }
