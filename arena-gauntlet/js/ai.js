@@ -277,6 +277,11 @@
     return null;
   }
 
+  // Loot the player's army goes for on its own: worth more than an ordinary hit, less than
+  // a kill. Units drift toward it while it lies there (LOOT_PULL a tile).
+  const LOOT_VALUE = { chest: 18, tome: 20, relic: 24 };
+  const LOOT_PULL = 0.5;
+
   // How much a tile costs a unit for being far from the priority target: walking distance
   // to loot, or distance beyond striking range of a unit.
   const FOCUS_PULL = 5;
@@ -327,12 +332,18 @@
       approach: st.approach,
       risk: st.risk,
       focus: focusOf(s, team, opts.focus),
+      // Loot lying there for the taking (only the player's side takes loot).
+      loot: team === 'P' ? (s.loot || []).filter((l) => !l.taken) : [],
     };
     if (ctx.focus) {
       ctx.focusField = buildDistField(s, [ctx.focus]);
       // Everything else gives way to the priority target: danger barely counts.
       ctx.risk *= 0.15;
     }
+    // Loot to drift toward, unless sleeping guards lie around it (walking up would wake
+    // them) or an enemy is the priority.
+    const lure = ctx.loot.filter((l) => !s.units.some((g) => g.alive && g.post && g.post.x === l.x && g.post.y === l.y && dormant(s, g)));
+    ctx.lootField = lure.length && !(ctx.focus && ctx.focus.unit) ? buildDistField(s, lure) : null;
     if (stanceName === 'defensive') {
       // Defenders hold their line until the enemy closes in or time passes.
       let closest = 99;
@@ -344,6 +355,8 @@
     const ratio = strength(ctx.allies) / Math.max(1, strength(ctx.foes.filter((u) => !u.nonCombat)));
     ctx.approach *= (1 + 0.08 * Math.max(0, s.turn - 4)) * Math.min(1.5, Math.max(0.7, ratio));
     ctx.risk *= Math.min(1.3, Math.max(0.7, 1 / ratio));
+    // The further ahead, the more a detour for loot is worth: up to 3 times the pull.
+    ctx.lootPull = LOOT_PULL * Math.min(3, Math.max(1, ratio));
     let cx = 0;
     let cy = 0;
     for (const a of ctx.allies) {
@@ -502,6 +515,7 @@
       }
     }
     if (ctx.focus && u.team === ctx.team) v -= focusPull(ctx, u, x, y);
+    if (ctx.lootField && u.team === ctx.team && !u.nonCombat) v -= Math.min(14, ctx.lootField[E.idx(s, x, y)]) * ctx.lootPull;
     return { score: v, facing, danger };
   }
 
@@ -682,11 +696,16 @@
     const hold = posAt(start);
     const plans = [{ uid: u.uid, kind: 'hold', score: hold.score, facing: hold.facing, gain: 0 }];
     const holdScore = hold.score;
-    // Priority loot within reach: step onto it and take it, whatever else is going on.
-    const lootTile = ctx.focus && ctx.focus.loot && u.team === 'P' && !u.nonCombat ? reach.get(E.idx(s, ctx.focus.x, ctx.focus.y)) : null;
-    if (lootTile) {
-      const p = E.withUnitAt(s, u, lootTile.x, lootTile.y, () => positionValue(ctx, u, lootTile.x, lootTile.y));
-      plans.push({ uid: u.uid, kind: lootTile.d > 0 ? 'moveLoot' : 'loot', to: lootTile, score: p.score + 1000, facing: p.facing });
+    // Loot within reach: step onto it and take it. Priority loot beats anything else;
+    // otherwise it beats an ordinary hit but not a kill. Not while an enemy is the priority.
+    if (u.team === 'P' && !u.nonCombat && !(ctx.focus && ctx.focus.unit)) {
+      for (const l of ctx.loot) {
+        const r = reach.get(E.idx(s, l.x, l.y));
+        if (!r) continue;
+        const p = E.withUnitAt(s, u, r.x, r.y, () => positionValue(ctx, u, r.x, r.y));
+        const prize = ctx.focus && ctx.focus.loot === l ? 1000 : LOOT_VALUE[l.kind] || LOOT_VALUE.chest;
+        plans.push({ uid: u.uid, kind: r.d > 0 ? 'moveLoot' : 'loot', to: r, score: p.score + prize, facing: p.facing });
+      }
     }
     const acts = [];
     for (let i = 0; i < u.acts.length; i++) if (E.actUsable(s, u, i)) acts.push(i);

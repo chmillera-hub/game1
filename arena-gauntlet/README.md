@@ -56,6 +56,10 @@ on a phone turned sideways, but portrait works too.
   Priority. Your army goes all out for it, whatever the cost: every unit attacks it,
   or heads for the chest and takes it. A marker shows the target. Once it falls or is
   taken, the army goes back to normal orders; you can also clear it.
+- **Loot on its own**: without a priority, your army drifts toward chests (more so
+  when it is winning) and takes one in reach rather than make an ordinary attack,
+  though a kill still comes first. It does not walk up to loot whose guards are
+  asleep, but grabs it if a unit can reach it in one move.
 - **Taking turns**: the sides alternate one unit at a time, and the enemy goes
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board

@@ -2358,6 +2358,9 @@
       } else if (e.t === 'heal' && e.why === 'regen' && v) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });
+      } else if (e.t === 'loot' && v) {
+        finish();
+        add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
       } else if (e.t === 'dmg' && e.dmgType === 'fatigue' && v) {
         finish();
         const dead = !v.alive && ev.some((d) => d.t === 'death' && d.uid === v.uid);
@@ -3532,7 +3535,7 @@
           <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
-          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

@@ -39,10 +39,59 @@ const army = () => [
 ];
 const chest = { loot: [{ id: 'c1', kind: 'chest', x: 0, y: 2 }] };
 
-test('left alone, the army ignores a chest', () => {
-  const s = battle(army(), chest);
+test('left alone, the army heads for a chest and takes it', () => {
+  const s = battle(army(), { loot: [{ id: 'c1', kind: 'chest', x: 8, y: 5 }] });
   play(s, 8, null);
-  assert.ok(!s.loot[0].taken);
+  assert.ok(s.loot[0].taken);
+  assert.strictEqual(s.byId[s.loot[0].by].team, 'P');
+});
+
+// An archer that can reach a chest this turn, with an orc in range: `orcHp` sets how
+// close the orc is to falling.
+function chestOrOrc(orcHp) {
+  const s = battle(
+    [
+      { type: 'archer', team: 'P', x: 4, y: 8 },
+      { type: 'orc', team: 'E', x: 4, y: 4 },
+      { type: 'golem', team: 'E', x: 8, y: 0 },
+    ],
+    { loot: [{ id: 'c1', kind: 'chest', x: 2, y: 8 }] }
+  );
+  E.pass(s);
+  s.units[1].hp = orcHp;
+  const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0 });
+  return plan.kind === 'moveLoot' || plan.kind === 'loot' ? 'chest' : plan.target && s.byId[plan.target.uid] ? s.byId[plan.target.uid].type : plan.kind;
+}
+
+test('a chest in reach beats an ordinary hit', () => {
+  assert.strictEqual(chestOrOrc(46), 'chest');
+});
+
+test('but a kill comes first', () => {
+  assert.strictEqual(chestOrOrc(5), 'orc');
+});
+
+test('an enemy as the priority comes before any chest', () => {
+  const s = battle(army(), { loot: [{ id: 'c1', kind: 'chest', x: 3, y: 7 }] });
+  E.pass(s);
+  const ctx = AI.makeCtx(s, 'P', { focus: { uid: s.units[3].uid } });
+  assert.strictEqual(ctx.lootField, null, 'no drift toward the chest');
+  const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0, focus: { uid: s.units[3].uid } });
+  assert.ok(plan.kind !== 'loot' && plan.kind !== 'moveLoot');
+});
+
+test('nobody wanders up to loot with sleeping guards', () => {
+  const s = battle(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 8 },
+      { type: 'orc', team: 'E', x: 4, y: 2 },
+      { type: 'specter', team: 'E', x: 0, y: 1, post: { x: 0, y: 0 } },
+    ],
+    { loot: [{ id: 't1', kind: 'tome', x: 0, y: 0 }] }
+  );
+  const g = s.units[2];
+  assert.ok(AI.dormant(s, g), 'the guard sleeps');
+  assert.strictEqual(AI.makeCtx(s, 'P', {}).lootField, null);
 });
 
 test('made the priority, a unit goes and takes the chest', () => {
