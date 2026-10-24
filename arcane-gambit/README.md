@@ -48,5 +48,6 @@ node tests/calibrate.js snaps.json --n 40                # replay every fight ag
 node tests/fuzz.js --n 4                                 # invariant fuzzer: random armies, relics, every encounter
 node tests/smoke.js [outDir] [--mobile]                  # browser play-through with screenshots (Playwright)
 node tests/tour.js [outDir] [--mobile]                   # visit every screen
+node tests/longrun.js 10 [--mobile]                      # drive the real UI through ten floors of a run
 node tools/bundle.js dist/arcane-gambit.html             # single-file build
 ```
