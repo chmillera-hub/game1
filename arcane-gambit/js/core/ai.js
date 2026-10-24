@@ -562,10 +562,48 @@
     };
     if (!opts.nested) {
       plan.reason = explain(s, u, best, ctx, prof);
+      // The runner-up options, for players who want to see the reasoning.
+      const seen = new Set([planLabel(s, u, best)]);
+      plan.alts = [];
+      for (const c of pool.slice().sort((a, b) => b.f - a.f)) {
+        if (c === best) continue;
+        const label = planLabel(s, u, c);
+        if (seen.has(label)) continue;
+        seen.add(label);
+        plan.alts.push({ label, delta: Math.max(-99, c.f - best.f) });
+        if (plan.alts.length >= 3) break;
+      }
       if (opts.debug) plan.debug = pool.map((c) => ({ d: c.d, a: c.a, q: c.q, f: c.f }));
     }
     return plan;
   };
+
+  function planLabel(s, u, c) {
+    const w = s.board.w;
+    const moved = c.d.k !== 'stay';
+    const to = moved ? AG.squareName(s.board, c.d.i % w, (c.d.i / w) | 0) : '';
+    if (!c.a) return moved ? 'move to ' + to : 'hold';
+    if (c.a.k === 'atk') return 'attack ' + B.U(s, c.a.t).name + (moved ? ' from ' + to : '');
+    const Ad = AG.Abilities[c.a.id];
+    let tgt = '';
+    if (Ad.target === 'cell') tgt = ' at ' + AG.squareName(s.board, c.a.t % w, (c.a.t / w) | 0);
+    else if (Ad.target !== 'self' && B.U(s, c.a.t)) tgt = ' on ' + B.U(s, c.a.t).name;
+    return Ad.name + tgt + (moved ? ' from ' + to : '');
+  }
+
+  // Named damage bonuses the chosen attack will enjoy (Charge, Marked...).
+  function attackMods(s, u, c) {
+    const sc = B.clone(s);
+    const uc = B.U(sc, u.uid);
+    if (c.d.k !== 'stay') B.applyMove(sc, uc, c.d.i, c.d.k);
+    const t = B.U(sc, c.a.t);
+    if (!t || !t.alive || !uc.at) return [];
+    const parts = [];
+    if (uc.st.emp) parts.push({ label: 'Empowered', amt: uc.st.emp.a });
+    const base = Math.max(1, uc.atk + (uc.st.emp ? uc.st.emp.a : 0) - (uc.st.weak ? uc.st.weak.a : 0));
+    B.calcDamage(sc, uc, t, base, { kind: 'attack', melee: B.isMelee(uc.at), pierceArmor: !!uc.at.ignoreArmor }, parts);
+    return parts.filter((p) => p.amt > 0);
+  }
 
   // ------------------------------------------------------------ explanation
   function nameOf(u) { return u.name; }
@@ -695,8 +733,10 @@
       const t = B.U(s, a.t);
       const verb = VERB[(u.at && u.at.vfx) || 'slash'] || 'attacks';
       const h = hurt.find((x) => x.o.uid === t.uid);
-      if (kills.indexOf(t) >= 0) parts.push((moved && u.mv.type === 'leap' ? 'Leaps in and ' : moved ? 'Closes in and ' : '') + (moved ? verb : verb[0].toUpperCase() + verb.slice(1)) + ' ' + nameOf(t) + ' down.');
-      else parts.push((moved ? 'Moves up and ' + verb : verb[0].toUpperCase() + verb.slice(1)) + ' ' + nameOf(t) + (h ? ' for ' + h.d : '') + '.');
+      const mods = attackMods(s, u, c);
+      const why = mods.length ? ' (' + mods.map((m) => m.label + ' +' + m.amt).join(', ') + ')' : '';
+      if (kills.indexOf(t) >= 0) parts.push((moved && u.mv.type === 'leap' ? 'Leaps in and ' : moved ? 'Closes in and ' : '') + (moved ? verb : verb[0].toUpperCase() + verb.slice(1)) + ' ' + nameOf(t) + ' down' + why + '.');
+      else parts.push((moved ? 'Moves up and ' + verb : verb[0].toUpperCase() + verb.slice(1)) + ' ' + nameOf(t) + (h ? ' for ' + h.d : '') + why + '.');
     }
     const extraKills = kills.filter((k) => !a || a.t !== k.uid);
     if (extraKills.length) parts.push('Takes out ' + listNames(extraKills.map(nameOf)) + '.');

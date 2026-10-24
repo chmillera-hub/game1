@@ -270,7 +270,7 @@ p { margin: 0; }
 .roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .rcard {
   position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 2px 10px; align-items: center; text-align: left;
-  padding: 8px 10px; border-radius: 12px; background: var(--ink-2); border: 1px solid var(--line); cursor: pointer; min-width: 0; touch-action: none;
+  padding: 8px 10px; border-radius: 12px; background: var(--ink-2); border: 1px solid var(--line); cursor: pointer; min-width: 0;
 }
 .rcard:hover { border-color: var(--line-2); background: var(--ink-3); }
 .rcard.sel { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass) inset, 0 0 14px rgba(214, 170, 82, 0.25); }
@@ -284,7 +284,16 @@ p { margin: 0; }
 .rcard .cost { position: absolute; top: 6px; right: 8px; font-family: var(--f-mono); font-weight: 700; font-size: 13px; color: var(--brass-2); }
 .rcard .stars { color: var(--brass-2); font-size: 11px; }
 .hint { font-size: 14px; color: var(--parch-3); }
+.mini-meter { display: none; font-size: 13px; color: var(--parch-2); }
+.mini-meter.over { color: var(--danger); }
 .errors { color: var(--danger); font-size: 14px; }
+
+.coach {
+  display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding: 12px 14px; border-radius: 14px;
+  border: 1px solid rgba(116, 214, 208, 0.4); background: rgba(116, 214, 208, 0.06);
+}
+.coach-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; flex: 1 1 520px; min-width: 0; font-size: 14px; color: var(--parch-2); }
+.coach-steps b { color: var(--arcane-2); }
 
 /* ------------------------------------------------------- inspector */
 .insp { display: flex; flex-direction: column; gap: 12px; }
@@ -338,7 +347,10 @@ p { margin: 0; }
 .thought .ic { grid-row: span 2; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 21px;
   font-family: 'Segoe UI Symbol', 'Noto Sans Symbols 2', 'DejaVu Sans', var(--f-body); }
 .thought .who { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--arcane-2); }
+.thought .who .sq { text-transform: none; font-family: var(--f-mono); letter-spacing: 0; }
 .thought .what { font-size: 16px; color: var(--parch); }
+.thought .alts { grid-column: 2; font-size: 13px; color: var(--parch-2); }
+.float.bonus { color: var(--brass-2); font-size: max(11px, calc(var(--cell) * 0.2)); font-weight: 800; }
 .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; }
 .seg button { background: var(--ink-3); border: 0; padding: 7px 12px; cursor: pointer; font-weight: 700; font-family: var(--f-mono); font-size: 13px; color: var(--parch-2); min-height: 36px; }
@@ -460,6 +472,11 @@ p { margin: 0; }
 .collection-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 
 /* ---------------------------------------------------------- sandbox */
+.relic-details summary { cursor: pointer; font-weight: 700; color: var(--parch-2); padding: 6px 0; }
+.relic-picks { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
+.relic-pick { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--ink-2); cursor: pointer; font-size: 14px; color: var(--parch-2); }
+.relic-pick .ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--ink-3); color: var(--brass-2); font-size: 13px; }
+.relic-pick.on { border-color: var(--brass); color: var(--parch); background: rgba(214, 170, 82, 0.12); }
 .enc-list { display: grid; gap: 14px; }
 .enc-act { display: grid; gap: 8px; }
 .enc-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
@@ -473,6 +490,13 @@ p { margin: 0; }
   .setup-grid, .battle-grid, .map-wrap { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; }
   .battle-side .log { max-height: 260px; }
+}
+@media (max-width: 980px) {
+  .setup-actions {
+    position: sticky; bottom: 0; z-index: 20; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(15, 19, 27, 0.85), var(--ink) 40%); border-top: 1px solid var(--line);
+  }
+  .mini-meter { display: inline; }
 }
 @media (max-width: 560px) {
   body { font-size: 15px; }

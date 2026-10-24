@@ -35,9 +35,14 @@
       seg.appendChild(h('button', { type: 'button', class: sp.k === view.k ? 'on' : '', on: { click: () => setSpeed(sp.k) } }, sp.label));
     }
     const skipBtn = h('button.btn.small', { type: 'button', title: 'Keys: Space pause, → step, 1–3 speed, S skip', on: { click: skip } }, 'Skip to result ⏭');
+    const altsBtn = h('button.btn.small.ghost', {
+      type: 'button', 'aria-pressed': App.prefs.showAlts ? 'true' : 'false',
+      'data-tip': 'Also show the runner-up options each unit weighed, and how much worse it judged them.',
+      on: { click: () => { App.prefs.showAlts = !App.prefs.showAlts; App.savePrefs(); altsBtn.setAttribute('aria-pressed', App.prefs.showAlts ? 'true' : 'false'); altsBtn.textContent = App.prefs.showAlts ? 'Hide alternatives' : 'Show alternatives'; } },
+    }, App.prefs.showAlts ? 'Hide alternatives' : 'Show alternatives');
     const logEl = h('div.log', { 'aria-live': 'off' });
     const boardWrap = h('div.board-wrap', view.el);
-    const controls = h('div.controls', playBtn, stepBtn, seg, h('span.spacer'), skipBtn);
+    const controls = h('div.controls', playBtn, stepBtn, seg, altsBtn, h('span.spacer'), skipBtn);
     root.appendChild(h('div.screen-head',
       h('div.stack', { style: { gap: '4px' } },
         h('div.row', h('span.eyebrow', enc.name), roundEl, stormEl),
@@ -95,12 +100,15 @@
       }
       stormEl.setAttribute('data-tip', 'Fatigue: from round ' + at + ' (sooner if three rounds pass without anyone being hurt) every unit takes 1 damage at the start of the round, then 2, then 3… so every battle ends.');
     }
-    function showThought(uid, reason) {
+    function showThought(uid, reason, alts) {
       const u = B.U(s, uid);
       UI.clear(thought);
       thought.appendChild(h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '40px', height: '40px' } }, UI.icon(u)));
-      thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ' + sq(u.x, u.y)));
+      thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ', h('span.sq', sq(u.x, u.y))));
       thought.appendChild(h('div.what', reason));
+      if (App.prefs.showAlts && alts && alts.length) {
+        thought.appendChild(h('div.alts', h('span.faint', 'Also weighed: '), alts.map((a, i) => h('span', (i ? ' · ' : '') + a.label + ' ', h('span.mono.faint', '(' + (a.delta <= -99 ? 'far worse' : a.delta.toFixed(1)) + ')')))));
+      }
     }
     function inspect(uid) {
       const u = B.U(s, uid);
@@ -169,7 +177,7 @@
             break;
           case 'think': {
             const u = B.U(s, e.uid);
-            showThought(e.uid, e.reason);
+            showThought(e.uid, e.reason, e.alts);
             log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(u.x, u.y)), ' ', e.reason]);
             await wait(520);
             break;
@@ -211,6 +219,9 @@
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp, shield: e.shield });
             if (view.tokens.has(e.uid)) {
               view.floatOn(e.uid, '−' + e.amt + (e.absorbed ? ' ⛨' : ''), 'dmg' + (e.amt >= 6 ? ' big' : ''));
+              // Make synergies visible: Charge +2, Shatter +2, Marked +1...
+              const plus = (e.mods || []).filter((m) => m.amt > 0);
+              if (plus.length) view.floatOn(e.uid, plus.map((m) => m.label + ' +' + m.amt).join(' · '), 'note bonus', 1.35);
               view.shake(e.uid);
               refreshToken(e.uid);
             }

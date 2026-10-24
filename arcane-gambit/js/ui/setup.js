@@ -163,7 +163,8 @@
     const queueEl = h('div.queue', { 'aria-label': 'Turn order preview' });
     const selBar = h('div.row');
     const rosterEl = h('div.roster');
-    const actions = h('div.row');
+    const actions = h('div.row.setup-actions');
+    const tools = h('div.row');
     const errorsEl = h('div.errors');
     const sideEl = h('div.panel.side');
     const boardWrap = h('div.board-wrap', view.el);
@@ -172,13 +173,25 @@
       meters,
       h('div', h('div.eyebrow', 'Turn order · fastest first'), queueEl),
       boardWrap,
+      tools,
       selBar,
-      h('div.row', h('div.eyebrow', 'Your army'), h('span.hint', 'Tap a unit, then a gold square. Drag pieces to rearrange.')),
+      h('div.row', h('div.eyebrow', 'Your army'), h('span.hint', 'Tap a unit, then a gold square. Tap a placed piece, then another square, to move it.')),
       rosterEl,
       errorsEl,
       actions,
     );
     root.appendChild(head);
+    if (!App.prefs.seenWarRoom) {
+      const coach = h('div.coach',
+        h('div.coach-steps',
+          h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; the fight limits how many units you may bring.'),
+          h('div', h('b', '2. Deploy'), ' Tap a gold square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
+          h('div', h('b', '3. Watch'), ' Press Begin. Every unit acts once per round, fastest first, and thinks for itself. If you lose, rethink and retry.'),
+        ),
+        h('button.btn.small', { type: 'button', on: { click: () => { App.prefs.seenWarRoom = true; App.savePrefs(); coach.remove(); } } }, 'Got it'),
+      );
+      root.appendChild(coach);
+    }
     root.appendChild(h('div.setup-grid', main, sideEl));
 
     function renderMeters() {
@@ -313,20 +326,22 @@
     }
     function renderActions() {
       UI.clear(actions);
+      UI.clear(tools);
       UI.clear(errorsEl);
       const v = Run.validate(run, enc, F);
       if (!v.ok && F.length) errorsEl.textContent = v.errors.join(' ');
       actions.appendChild(h('button.btn.primary', { type: 'button', disabled: !v.ok, on: { click: begin } }, '⚔ Begin battle'));
-      if (F.length) actions.appendChild(h('button.btn', { type: 'button', on: { click: () => { F.length = 0; sel = { kind: null }; changed(); } } }, 'Clear board'));
+      actions.appendChild(h('span.mini-meter.mono' + (v.cost > v.lim.supply ? '.over' : ''), v.cost + '/' + v.lim.supply + ' supply · ' + F.length + '/' + v.lim.slots + ' units'));
       if (!F.length && run.lastArmy && run.lastArmy.length) {
-        actions.appendChild(h('button.btn', { type: 'button', on: { click: useLast } }, '↺ Use last army'));
+        tools.appendChild(h('button.btn.small', { type: 'button', on: { click: useLast } }, '↺ Use last army'));
       }
-      actions.appendChild(h('button.btn' + (showDanger ? '.on-toggle' : ''), {
+      tools.appendChild(h('button.btn.small' + (showDanger ? '.on-toggle' : ''), {
         type: 'button', 'aria-pressed': showDanger ? 'true' : 'false',
         'data-tip': 'Shades every square the enemy could strike on its first turn. Darker means more enemies can reach it.',
         on: { click: () => { showDanger = !showDanger; refresh(); } },
       }, showDanger ? 'Hide enemy reach' : 'Show enemy reach'));
-      if (App.mode === 'sandbox') actions.appendChild(h('button.btn.ghost', { type: 'button', on: { click: () => App.go('sandbox') } }, '← Other fights'));
+      if (F.length) tools.appendChild(h('button.btn.small', { type: 'button', on: { click: () => { F.length = 0; sel = { kind: null }; changed(); } } }, 'Clear board'));
+      if (App.mode === 'sandbox') tools.appendChild(h('button.btn.small.ghost', { type: 'button', on: { click: () => App.go('sandbox') } }, '← Other fights'));
     }
     function useLast() {
       const army = adaptArmy(run.lastArmy, board);
@@ -374,7 +389,8 @@
     // Drag a roster card straight onto the board.
     function enableCardDrag(card, def) {
       card.addEventListener('pointerdown', function (e) {
-        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        // Touch uses tap-to-select, tap-to-place so swipes can still scroll.
+        if (e.pointerType === 'touch' || (e.button !== 0 && e.pointerType === 'mouse')) return;
         const sx = e.clientX, sy = e.clientY;
         let ghost = null;
         function move(ev) {

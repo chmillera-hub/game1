@@ -183,7 +183,7 @@
 
   // ------------------------------------------------------------ dragging
   BoardView.prototype.onTokenDown = function (t, e) {
-    if (!this.opts.canDrag || !this.opts.canDrag(t.uid)) return;
+    if (e.pointerType === 'touch' || !this.opts.canDrag || !this.opts.canDrag(t.uid)) return;
     const self = this;
     const sx = e.clientX, sy = e.clientY;
     let dragging = false;

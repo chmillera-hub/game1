@@ -437,12 +437,28 @@
       h('span.v', '+' + (run[key] || 0)),
       h('button.btn.small.icon', { type: 'button', 'aria-label': 'More', on: { click: () => { run[key] = Math.min(max, (run[key] || 0) + 1); App.save(); App.render(); } } }, '+'),
     );
+    const relicBox = h('div.relic-picks');
+    for (const id of AG.relicList()) {
+      const R = AG.Relics[id];
+      const on = run.relics.indexOf(id) >= 0;
+      relicBox.appendChild(h('button.relic-pick' + (on ? '.on' : ''), {
+        type: 'button', 'aria-pressed': on ? 'true' : 'false', 'data-tip': R.desc, 'data-tip-title': R.name,
+        on: { click: () => {
+          const k = run.relics.indexOf(id);
+          if (k >= 0) run.relics.splice(k, 1); else run.relics.push(id);
+          App.save(); App.render();
+        } },
+      }, h('span.ic', R.icon), R.name));
+    }
     return h('div',
       h('div.hud', h('button.brand', { type: 'button', on: { click: () => App.toTitle() } }, 'Arcane Gambit'), h('span.chip.arcane', 'Skirmish'), h('span.spacer'),
         h('button.btn.small.ghost', { type: 'button', on: { click: () => App.help() } }, 'How to play')),
       h('div.screen-head', h('div.stack', { style: { gap: '4px' } }, h('h2', 'Skirmish'), h('p.flavor', 'Every unit and two of each rune are unlocked. Pick any fight, try any army, lose as often as you like.'))),
       h('div.meters', { style: { marginBottom: '14px' } }, stepper('Extra supply', 'supplyBonus', 20), stepper('Extra units', 'slotBonus', 4),
         h('span.chip', run.stats.wins + ' wins · ' + run.stats.losses + ' losses')),
+      h('details.relic-details', { style: { marginBottom: '14px' }, open: !!App.sandboxRelicsOpen, on: { toggle: (e) => { App.sandboxRelicsOpen = e.target.open; } } },
+        h('summary', 'Relics in play (' + run.relics.length + ')'),
+        relicBox),
       list,
     );
   };
@@ -481,7 +497,7 @@
       h('h4', 'Before each battle'),
       h('ul',
         h('li', 'Each fight gives you a supply budget and a number of unit slots. Units, talents and runes all cost supply.'),
-        h('li', 'Tap a unit in your army, then a gold square on your side of the board. Drag placed pieces to rearrange them.'),
+        h('li', 'Tap a unit in your army, then a gold square on your side of the board. To move a placed piece, tap it and then another gold square (with a mouse you can also drag it).'),
         h('li', 'Tap a placed piece to give it a talent (one per unit, two once it is Elite) and a rune from your satchel.'),
         h('li', 'Tap any enemy to read exactly how it moves, attacks and what its traits do.'),
       ),

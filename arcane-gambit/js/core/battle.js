@@ -351,14 +351,19 @@
 
   /* Final damage of one hit before shields, with no side effects. Shared by
      real hits and by the AI's estimates (o.est = true). */
-  B.calcDamage = function (s, src, tgt, base, o) {
+  // `parts`, when given, collects each named modifier ({label, amt}) so the
+  // UI can show synergies such as Charge +2 or Shatter +2.
+  B.calcDamage = function (s, src, tgt, base, o, parts) {
     let d = base;
+    let v;
     if (src) {
       for (const k in src.pas) {
         const P = AG.Passives[k];
-        if (P && P.outBonus) d += P.outBonus(s, src, src.pas[k], tgt, o);
+        if (P && P.outBonus && (v = P.outBonus(s, src, src.pas[k], tgt, o))) {
+          d += v;
+          if (parts) parts.push({ label: P.name, amt: v });
+        }
       }
-      if (o.kind === 'attack' && src.st.emp && !o.est) d += 0; // empowered is folded into base
     }
     // Auras from nearby units (Rally, Guardian...)
     const units = s.units;
@@ -368,18 +373,30 @@
       for (const k in w.pas) {
         const P = AG.Passives[k];
         if (!P) continue;
-        if (src && P.auraOut && w.side === src.side) d += P.auraOut(s, w, w.pas[k], src, tgt, o);
-        if (P.auraIn && w.side === tgt.side && w !== tgt) d += P.auraIn(s, w, w.pas[k], tgt, src, o);
+        if (src && P.auraOut && w.side === src.side && (v = P.auraOut(s, w, w.pas[k], src, tgt, o))) {
+          d += v;
+          if (parts) parts.push({ label: P.name, amt: v });
+        }
+        if (P.auraIn && w.side === tgt.side && w !== tgt && (v = P.auraIn(s, w, w.pas[k], tgt, src, o))) {
+          d += v;
+          if (parts) parts.push({ label: P.name, amt: v });
+        }
       }
     }
-    if (tgt.st.marked) d += tgt.st.marked.a;
-    if (tgt.st.cursed) d += tgt.st.cursed.a;
-    if (tgt.st.frozen) d += SHATTER;
+    if (tgt.st.marked) { d += tgt.st.marked.a; if (parts) parts.push({ label: 'Marked', amt: tgt.st.marked.a }); }
+    if (tgt.st.cursed) { d += tgt.st.cursed.a; if (parts) parts.push({ label: 'Hex', amt: tgt.st.cursed.a }); }
+    if (tgt.st.frozen) { d += SHATTER; if (parts) parts.push({ label: 'Shatter', amt: SHATTER }); }
     for (const k in tgt.pas) {
       const P = AG.Passives[k];
-      if (P && P.inBonus) d += P.inBonus(s, tgt, tgt.pas[k], src, o);
+      if (P && P.inBonus && (v = P.inBonus(s, tgt, tgt.pas[k], src, o))) {
+        d += v;
+        if (parts) parts.push({ label: P.name, amt: v });
+      }
     }
-    if (!o.pierceArmor) d -= B.armorOf(s, tgt);
+    if (!o.pierceArmor && (v = B.armorOf(s, tgt))) {
+      d -= v;
+      if (parts) parts.push({ label: 'Armor', amt: -v });
+    }
     return d < 1 ? 1 : d;
   };
 
@@ -388,7 +405,8 @@
   B.hit = function (s, src, tgt, base, o) {
     if (!tgt || !tgt.alive || base <= 0) return 0;
     const raw = o.kind === 'dot' || o.kind === 'storm' || o.kind === 'true';
-    let dmg = raw ? base : B.calcDamage(s, src, tgt, base, o);
+    const parts = s.ev && !raw ? [] : null;
+    let dmg = raw ? base : B.calcDamage(s, src, tgt, base, o, parts);
     if (!raw) {
       for (const k in tgt.pas) {
         const P = AG.Passives[k];
@@ -411,7 +429,7 @@
     }
     emit(s, 'dmg', {
       uid: tgt.uid, src: src ? src.uid : 0, amt: dmg, absorbed, hp: tgt.hp, shield: tgt.shield,
-      kind: o.kind, tag: o.tag || null, label: o.label || null,
+      kind: o.kind, tag: o.tag || null, label: o.label || null, mods: parts && parts.length ? parts : null,
     });
     if (s.stats) {
       if (src) stat(s, src).dealt += dmg;
@@ -1157,7 +1175,7 @@
     let plan = null;
     if (!skipped && u.alive && !s.over) {
       plan = AG.AI.choose(s, u);
-      emit(s, 'think', { uid, reason: plan.reason, score: plan.score });
+      emit(s, 'think', { uid, reason: plan.reason, score: plan.score, alts: plan.alts });
       B.execPlan(s, u, plan);
     }
     if (u.alive && !s.over) B.endTurn(s, u);
