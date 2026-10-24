@@ -27,7 +27,7 @@
       h('div.nm', h('span.ic', d.icon), d.name),
       h('div.mono.muted', { style: { fontSize: '13px' } }, d.cost + ' supply · HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd + (u.armor ? ' · Armor ' + u.armor : '')),
       h('div.d', d.blurb),
-      h('div.d', UI.moveText(u)),
+      h('div.offer-pattern', UI.patternDiagram(u), h('div.d', UI.moveText(u))),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
       h('span.btn.small.ghost', { role: 'presentation', on: { click: (e) => { e.stopPropagation(); UI.modal(UI.inspector(u, { showTalents: true }), {}); } } }, 'Details'),
     );
@@ -229,6 +229,10 @@
       }, N.icon);
       wrap.appendChild(btn);
     }
+    const bossEnc = AG.encounterList((e) => e.act === run.act && e.tier === 'boss')[0];
+    const bossDef = bossEnc ? AG.parseBoard(bossEnc.map, bossEnc.legend).spawns.map((x) => x.def).find((d) => AG.Units[d].boss) : null;
+    const bossBtn = wrap.querySelector('.mnode.boss');
+    if (bossBtn && bossDef) bossBtn.setAttribute('data-tip', AG.Units[bossDef].name + ': ' + AG.Units[bossDef].blurb);
     const legend = h('div.map-legend');
     for (const k of ['battle', 'elite', 'event', 'shop', 'rest', 'treasure', 'boss']) {
       legend.appendChild(h('span', h('b', NODE[k].icon), NODE[k].name));

@@ -435,6 +435,7 @@ p { margin: 0; }
 .offer .nm .ic.rune, .offer .nm .ic.relic { border-radius: 10px; background: var(--ink-3); color: var(--brass-2); box-shadow: inset 0 0 0 1px var(--brass); }
 .offer .d { font-size: 14px; color: var(--parch-2); }
 .offer .price { font-family: var(--f-mono); font-weight: 700; color: var(--brass-2); }
+.offer-pattern { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; }
 .rarity { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .rarity.common, .rarity.starter { color: var(--parch-3); }
 .rarity.uncommon { color: var(--arcane-2); }
