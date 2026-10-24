@@ -2147,7 +2147,7 @@
     if (!placing && spriteUnit) t = { x: spriteUnit.x, y: spriteUnit.y };
     // A rock or chest in front of everything else: say what it is.
     if (!placing && !unitInFront(hit, s) && (hit.props || []).length) t = null;
-    if (!t) return wrFeature(hit, shown);
+    if (!t) return wrMiss(hit, shown);
     const unit = E.at(s, t.x, t.y);
     if (unit && unit.team === 'E') {
       wr.inspect = wr.inspect === unit.uid ? null : unit.uid;
@@ -2178,18 +2178,37 @@
       return;
     }
     if (isDeployTile(t.x, t.y)) {
-      if (wr.sel && wr.dep.has(wr.sel)) {
-        const d = wr.dep.get(wr.sel);
-        d.x = t.x;
-        d.y = t.y;
-        // Moved: let it go, so the next tap does not move it again.
-        wr.sel = null;
-        sfx('step');
-      } else toast('Pick a unit from your army first, then tap a blue tile.');
+      if (wr.sel && wr.dep.has(wr.sel)) return wrPlace(t.x, t.y);
+      toast('Pick a unit from your army first, then tap a blue tile.');
       renderWarRoom();
       return;
     }
-    wrFeature(hit, shown);
+    wrMiss(hit, shown);
+  }
+
+  // Put the picked unit down on a free blue tile, and let it go so the next tap does not
+  // move it again.
+  function wrPlace(x, y) {
+    const wr = UI.wr;
+    const d = wr.dep.get(wr.sel);
+    d.x = x;
+    d.y = y;
+    wr.sel = null;
+    sfx('step');
+    renderWarRoom();
+  }
+
+  // A tap that found no blue tile. With a unit picked up, the nearest free blue tile within
+  // reach of the finger takes it (corner tiles are small targets); failing that, it stays
+  // picked up. With nothing picked up, explain the rock or chest there.
+  function wrMiss(hit, shown) {
+    const wr = UI.wr;
+    if (!(wr.sel && wr.dep.has(wr.sel))) return wrFeature(hit, shown);
+    const free = [];
+    for (const y of wr.rows) for (let x = 0; x < wr.enc.w; x++) if (isDeployTile(x, y) && !wrRidAt(x, y)) free.push({ x, y });
+    const m = snap({ px: hit.px, py: hit.py, tile: null, unitTile: null }, free);
+    if (m) return wrPlace(m.x, m.y);
+    toast(`Tap a blue tile to place ${R.unitById(UI.run, wr.sel).name}, or the ✕ to let go.`);
   }
 
   // A tap on the board that is not about a unit: explain the rock, chest or shrine under
@@ -3024,10 +3043,10 @@
         }
         return selectUnit(other);
       }
-      // 4. A near miss: snap to the closest legal move.
+      // 4. A near miss: snap to the closest legal move. Anywhere else, the unit stays
+      // picked (the ✕ lets it go).
       const m = snap({ px: hit.px, py: hit.py, tile: null, unitTile: null }, moves);
       if (m) return doMove(m.x, m.y);
-      if (!A || (!A.moved && !A.acted)) deselect();
       return;
     }
     const other = unitInFront(hit, s);

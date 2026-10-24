@@ -189,11 +189,14 @@
       return [(dx + dy) / 2, (dy - dx) / 2];
     }
 
+    // The tile under a point. A little past the board's edge (on its rim, or just beyond the
+    // tip of a corner tile) still counts as the edge tile.
     tileAt(px, py) {
       const [fx, fy] = this.toGrid(px, py);
-      const x = Math.round(fx);
-      const y = Math.round(fy);
-      if (x < 0 || y < 0 || x >= this.w || y >= this.h) return null;
+      const slack = 0.6;
+      if (fx < -0.5 - slack || fy < -0.5 - slack || fx > this.w - 0.5 + slack || fy > this.h - 0.5 + slack) return null;
+      const x = Math.min(this.w - 1, Math.max(0, Math.round(fx)));
+      const y = Math.min(this.h - 1, Math.max(0, Math.round(fy)));
       return { x, y, fx, fy };
     }
 
