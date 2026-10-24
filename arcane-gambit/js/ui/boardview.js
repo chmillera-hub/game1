@@ -8,13 +8,13 @@
   const h = UI.h;
   const { FLOOR, WALL, PIT } = AG.TER;
 
-  // Effect colours, saturated enough to read on white and grey squares.
+  // Effect colours, bright enough to read on the slate squares.
   const VFX = {
-    slash: '#4a4a55', stab: '#4a4a55', claw: '#a8322e', smash: '#7a5a3a', gore: '#a8322e', fist: '#4a4a55', cleave: '#7a5a3a',
-    whirl: '#7a5a3a', lance: '#4a4a55', pierce: '#4a4a55', bite: '#d6283b', dart: '#7a6a55', arrow: '#7a6a55', rock: '#8a7a68',
-    shell: '#ff7a1a', bolt: '#ffb000', beam: '#ff2bd6', arcane: '#8a3ffc', fire: '#ff5a00', frost: '#18a0ff', lightning: '#ffd000',
-    storm: '#9634e8', shadow: '#6a2fb0', holy: '#ffbf00', smite: '#ffbf00', nature: '#2f9e44', thorn: '#2f9e44', psychic: '#e0359b',
-    time: '#00a6c8', goo: '#5cb82e', heal: '#1d9e39', rally: '#f5b400', taunt: '#e2242c', bone: '#a89c84', meteor: '#ff4d00', blast: '#ff7a1a',
+    slash: '#f2f2f7', stab: '#f2f2f7', claw: '#ffb0a0', smash: '#f0c890', gore: '#ffa080', fist: '#f2f2f7', cleave: '#f0c890',
+    whirl: '#f0c890', lance: '#f2f2f7', pierce: '#f2f2f7', bite: '#ff7080', dart: '#e8dcc0', arrow: '#e8dcc0', rock: '#cbbca8',
+    shell: '#ff9a40', bolt: '#ffd040', beam: '#ff5ae0', arcane: '#b48cff', fire: '#ff7a1a', frost: '#7fd4ff', lightning: '#ffe24a',
+    storm: '#c08cff', shadow: '#b07aea', holy: '#ffe07a', smite: '#ffe07a', nature: '#7ed957', thorn: '#7ed957', psychic: '#ff8ad8',
+    time: '#5fe0ff', goo: '#8fe060', heal: '#45d062', rally: '#ffcf4d', taunt: '#ff6b72', bone: '#e6dcc6', meteor: '#ff6a2a', blast: '#ff9a40',
   };
   UI.VFX = VFX;
   const MELEE = { slash: 1, stab: 1, claw: 1, smash: 1, gore: 1, fist: 1, cleave: 1, whirl: 1, lance: 1, pierce: 1, bite: 1 };
@@ -352,7 +352,7 @@
     const t = this.tokens.get(uid);
     if (!t) return Promise.resolve();
     const piece = t.el.querySelector('.piece');
-    const c = color || '#2d6bff';
+    const c = color || '#5b8cff';
     return done(piece.animate([{ filter: 'drop-shadow(0 0 0 ' + c + ')' }, { filter: 'drop-shadow(0 0 7px ' + c + ') drop-shadow(0 0 3px ' + c + ')' }, { filter: 'drop-shadow(0 0 0 ' + c + ')' }], { duration: this.d(300) }));
   };
   BoardView.prototype.shake = function (uid) {

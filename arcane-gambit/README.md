@@ -41,7 +41,7 @@ The engine (`js/core`, `js/data`, `js/game`) has no DOM code and runs under Node
 
 ## The look
 
-The game is drawn in the manner of Chess Evolved Online: white paper with a faint doodled maze, black ink outlines, bevelled grey-and-white squares in a dark frame, and colour only where it means something. Blue brackets mark where a piece can move, red where it can strike, black where it can do both.
+The game is drawn in the manner of Chess Evolved Online, set on dark slate so it is easy on the eyes: chunky ink outlines, bevelled grey squares in a dark frame, a faint doodled maze in the background, and colour only where it means something. Blue brackets mark where a piece can move, red where it can strike, white where it can do both.
 
 Every unit is a small statue on a pedestal: white for your side, black for the enemy, with coloured flares for rarity (blue uncommon, purple rare, red for the enemy's heavies, gold for bosses). The figures are drawn in code, not stored as images. `js/ui/pieces.js` provides a pen (`P.solid` shades and outlines a shape, `P.base` draws the pedestal, `P.eye` marks details that flip between dark and light with the side) and path helpers (`D.lathe` turns a half-profile into a symmetric piece; `D.flame`, `D.gear`, `D.batWing` and friends draw common motifs). Each unit's drawing is built once into an SVG symbol, and the side, glow and line weight come from CSS custom properties.
 

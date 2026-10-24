@@ -211,10 +211,8 @@
         line.setAttribute('x2', b[0]); line.setAttribute('y2', b[1]);
         const walked = n.visited && map.nodes[m].visited;
         const open = run.pos === n.id && reach.has(m);
-        line.setAttribute('stroke', walked ? '#16161b' : open ? '#f5b400' : '#a9a9b2');
-        line.setAttribute('stroke-width', walked || open ? '3' : '1.8');
+        if (walked || open) line.setAttribute('class', walked ? 'walked' : 'open');
         line.setAttribute('vector-effect', 'non-scaling-stroke');
-        if (!walked && !open) line.setAttribute('stroke-dasharray', '4 5');
         svg.appendChild(line);
       }
     }

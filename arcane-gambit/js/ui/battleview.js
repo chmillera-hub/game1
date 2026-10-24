@@ -206,7 +206,7 @@
           case 'ability': {
             const A = AG.Abilities[e.id];
             view.callout(e.uid, [UI.glyph(A.icon), ' ' + A.name]);
-            await view.flash(e.uid, UI.VFX[A.vfx] || '#2d6bff');
+            await view.flash(e.uid, UI.VFX[A.vfx] || '#5b8cff');
             break;
           }
           case 'aoe':
@@ -284,7 +284,7 @@
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp });
             refreshToken(e.uid);
             view.floatOn(e.uid, e.label + '!', 'note big', 1.2);
-            await view.flash(e.uid, '#1d9e39');
+            await view.flash(e.uid, '#45d062');
             break;
           case 'negate':
             view.floatOn(e.uid, e.label === 'Zen' ? 'Dodged!' : e.label + '!', 'note');
