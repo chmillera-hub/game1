@@ -173,12 +173,12 @@
       meters,
       h('div', h('div.eyebrow', 'Turn order · fastest first'), queueEl),
       boardWrap,
-      tools,
+      actions,
+      errorsEl,
       selBar,
       h('div.row', h('div.eyebrow', 'Your army'), h('span.hint', 'Tap a unit, then a gold square. Tap a placed piece, then another square, to move it.')),
       rosterEl,
-      errorsEl,
-      actions,
+      tools,
     );
     root.appendChild(head);
     if (!App.prefs.seenWarRoom) {

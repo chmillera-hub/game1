@@ -284,7 +284,7 @@ p { margin: 0; }
 .rcard .cost { position: absolute; top: 6px; right: 8px; font-family: var(--f-mono); font-weight: 700; font-size: 13px; color: var(--brass-2); }
 .rcard .stars { color: var(--brass-2); font-size: 11px; }
 .hint { font-size: 14px; color: var(--parch-3); }
-.mini-meter { display: none; font-size: 13px; color: var(--parch-2); }
+.mini-meter { font-size: 13px; color: var(--parch-2); }
 .mini-meter.over { color: var(--danger); }
 .errors { color: var(--danger); font-size: 14px; }
 
@@ -490,13 +490,6 @@ p { margin: 0; }
   .setup-grid, .battle-grid, .map-wrap { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; }
   .battle-side .log { max-height: 260px; }
-}
-@media (max-width: 980px) {
-  .setup-actions {
-    position: sticky; bottom: 0; z-index: 20; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(15, 19, 27, 0.85), var(--ink) 40%); border-top: 1px solid var(--line);
-  }
-  .mini-meter { display: inline; }
 }
 @media (max-width: 560px) {
   body { font-size: 15px; }
