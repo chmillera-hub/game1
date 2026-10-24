@@ -157,6 +157,14 @@
     tempo: { name: 'Rune of Tempo', icon: '⧖', cost: 3, rarity: 'rare', desc: 'Takes an extra turn at the start of the first round.', apply(u) { addPassive(u, 'tempoRune', {}); } },
   };
 
+  // Would this rune change the unit at all (some already have the effect)?
+  AG.runeHasEffect = function (defId, runeId, talents) {
+    const snap = (u) => JSON.stringify([u.maxHp, u.atk, u.spd, u.armor, u.shield, u.mv, u.mv2, u.at, u.abil, u.pas]);
+    const base = AG.B.makeUnit(defId, 0, 0, 0, { talents: talents || [] });
+    const withRune = AG.B.makeUnit(defId, 0, 0, 0, { talents: talents || [], rune: runeId });
+    return snap(base) !== snap(withRune);
+  };
+
   // Training at camps: Veteran (rank 1) and Elite (rank 2, second talent slot).
   AG.RANKS = ['Recruit', 'Veteran', 'Elite'];
   AG.applyRank = function (u, rank) {

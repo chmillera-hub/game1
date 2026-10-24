@@ -243,8 +243,10 @@
     for (const k of ids) {
       const R = AG.Runes[k];
       const on = L.entry.rune === k;
-      rl.appendChild(h('button.opt' + (on ? '.on' : ''), { type: 'button', on: { click: () => L.onRune(k) } },
-        h('span.t', R.icon + ' ' + R.name + (free[k] > 1 || (on && free[k] > 0) ? ' ×' + (free[k] + (on ? 1 : 0)) : '')), h('span.c', '+' + R.cost), h('span.d', R.desc)));
+      const useless = !on && !AG.runeHasEffect(L.entry.def, k, L.entry.talents);
+      rl.appendChild(h('button.opt' + (on ? '.on' : '') + (useless ? '.off' : ''), { type: 'button', disabled: useless, on: { click: () => { if (!useless) L.onRune(k); } } },
+        h('span.t', R.icon + ' ' + R.name + (free[k] > 1 || (on && free[k] > 0) ? ' ×' + (free[k] + (on ? 1 : 0)) : '')), h('span.c', '+' + R.cost),
+        h('span.d', useless ? 'This unit already has this effect.' : R.desc)));
     }
     wrap.appendChild(rl);
     if (L.onRemove) wrap.appendChild(h('div.row', h('button.btn.small.danger', { type: 'button', on: { click: L.onRemove } }, 'Remove from board')));
