@@ -305,6 +305,23 @@
     }
   }
 
+  /* For the UI: squares unit u could move to, and squares it threatens
+     (from where it stands, or from anywhere it can reach this turn). */
+  AI.reachInfo = function (s, u, fromAnywhere) {
+    const reach = reachOf(s, u);
+    const mask = new Uint8Array(s.board.n);
+    if (u.at) coverMask(s, u, fromAnywhere ? reach : { list: [B.cellOf(s, u)] }, mask, -1);
+    for (const ab of u.abil) {
+      const Ad = AG.Abilities[ab.id];
+      if (Ad.kind !== 'damage' || !ab.p.dmg || !fromAnywhere) continue;
+      const r = (ab.p.range || ab.p.r || 1) + (Ad.target === 'cell' ? 1 : 0);
+      for (const i of reach.list) markRadius(s, i, r, mask);
+    }
+    const attack = [];
+    for (let i = 0; i < mask.length; i++) if (mask[i] && s.board.terr[i] !== AG.TER.WALL && s.board.terr[i] !== AG.TER.VOID) attack.push(i);
+    return { move: reach.list.slice(1), attack };
+  };
+
   function field(s, ctx, foe, fly) {
     const key = foe.uid + (fly ? 'f' : 'w');
     let f = ctx.fields[key];
