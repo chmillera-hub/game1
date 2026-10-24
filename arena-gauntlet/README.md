@@ -29,8 +29,10 @@ on a phone turned sideways, but portrait works too.
   another skill slot, a talent slot and a second ability pick. Level 3 (+5) adds a
   class mastery, a third talent slot and a second gear slot.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
-  and the like) are class talents. You find them in shops and battle spoils, and
-  only for classes in your army. A unit has one talent slot per level, three at
+  and the like) are class talents. Every unit you get comes with one random talent
+  of its class, equipped (it costs Supply like any talent, and you can unequip it or
+  move it to another unit of the class). You find more in shops and battle spoils,
+  and only for classes in your army. A unit has one talent slot per level, three at
   Level 3, and can mix and match any of its class's talents you own (one copy of
   each per unit; each copy fits one unit at a time). The level picks keep the free
   option and the active abilities. The stronger talents turn up half as often, and

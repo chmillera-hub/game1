@@ -18,6 +18,51 @@ function test(name, fn) {
 }
 
 const fresh = () => R.newRun({ seed: 3, warband: 'vanguard', difficulty: 'knight' });
+// A recruit with the talent it came with taken off, so its slots start empty.
+const bare = (run, type) => {
+  const u = R.addRecruit(run, type);
+  for (const uid of u.load.talents.slice()) R.unassignItem(run, uid);
+  return u;
+};
+const talentsOf = (run, u) => u.load.talents.map((uid) => R.itemByUid(run, uid).id);
+
+test('every new unit comes with one random talent of its class, equipped', () => {
+  const run = fresh();
+  for (const u of run.roster) {
+    const ids = talentsOf(run, u);
+    assert.strictEqual(ids.length, 1, u.type);
+    assert.strictEqual(D.TALENTS[ids[0]].cls, u.type);
+    assert.ok(R.costBreakdown(run, u).some((x) => x.label === D.TALENTS[ids[0]].name), 'it costs Supply like any talent');
+  }
+  const seen = {};
+  for (let seed = 1; seed <= 200; seed++) {
+    const r = R.newRun({ seed, warband: 'vanguard', difficulty: 'knight' });
+    const ar = R.addRecruit(r, 'archer');
+    const id = talentsOf(r, ar)[0];
+    seen[id] = (seen[id] || 0) + 1;
+    assert.ok(R.talentNote(r, ar).includes(D.TALENTS[id].name));
+  }
+  assert.ok(seen.a_poison && seen.a_bodkin, 'either archer talent can come');
+  assert.ok(seen.a_poison > seen.a_bodkin, 'the stronger one less often');
+});
+
+test('the talent a unit came with can move to another unit of its class', () => {
+  const run = fresh();
+  const a = R.addRecruit(run, 'archer');
+  const b = R.addRecruit(run, 'archer');
+  const k = bare(run, 'knight');
+  const [uid] = a.load.talents;
+  assert.ok(!R.assignItem(run, k.id, uid), 'not to a knight');
+  R.setLevel(run, b.id, 2);
+  const same = R.itemByUid(run, uid).id === talentsOf(run, b)[0];
+  assert.strictEqual(R.assignItem(run, b.id, uid), !same, 'to another archer with room, unless it has that talent already');
+  if (!same) {
+    assert.deepStrictEqual(a.load.talents, [], 'it leaves the first archer');
+    assert.strictEqual(b.load.talents.length, 2);
+  }
+  R.unassignItem(run, uid);
+  assert.ok(R.freeItems(run, 'talent').some((i) => i.uid === uid), 'or back to the pack');
+});
 
 test('talents are the passives that cost Supply', () => {
   for (const t of Object.values(D.TALENTS)) {
@@ -30,7 +75,7 @@ test('talents are the passives that cost Supply', () => {
 
 test('talents are not level picks; they go in their own slots', () => {
   const run = fresh();
-  const k = R.addRecruit(run, 'knight');
+  const k = bare(run, 'knight');
   assert.ok(!R.setAbility(run, k.id, 1, 'k_wall'), 'not a level pick');
   assert.ok(R.setAbility(run, k.id, 1, 'k_bash'), 'actives stay free');
   const wall = R.addItem(run, 'talent', 'k_wall');
@@ -44,7 +89,7 @@ test('talents are not level picks; they go in their own slots', () => {
 
 test('one slot per level, any talent of the class in any slot', () => {
   const run = fresh();
-  const k = R.addRecruit(run, 'knight');
+  const k = bare(run, 'knight');
   const [wall, rip, guard] = ['k_wall', 'k_riposte', 'k_guard'].map((id) => R.addItem(run, 'talent', id));
   assert.ok(R.assignItem(run, k.id, rip.uid), 'a stronger talent fits a Level 1 unit too');
   assert.ok(!R.assignItem(run, k.id, wall.uid), 'Level 1: one slot');
@@ -62,8 +107,8 @@ test('one slot per level, any talent of the class in any slot', () => {
 
 test('one copy, one unit; no doubling up on one unit', () => {
   const run = fresh();
-  const a = R.addRecruit(run, 'knight');
-  const b = R.addRecruit(run, 'knight');
+  const a = bare(run, 'knight');
+  const b = bare(run, 'knight');
   const w1 = R.addItem(run, 'talent', 'k_wall');
   const w2 = R.addItem(run, 'talent', 'k_wall');
   R.setLevel(run, a.id, 2);
@@ -76,7 +121,7 @@ test('one copy, one unit; no doubling up on one unit', () => {
 
 test('class limits', () => {
   const run = fresh();
-  const ar = R.addRecruit(run, 'archer');
+  const ar = bare(run, 'archer');
   const wall = R.addItem(run, 'talent', 'k_wall');
   assert.ok(!R.assignItem(run, ar.id, wall.uid), 'an archer cannot use a knight talent');
   const spec = R.specFor(run, ar);
@@ -100,7 +145,7 @@ test('shops and spoils only offer talents for classes in your army', () => {
 
 test('saves from before talent slots keep what units had', () => {
   const run = fresh();
-  const k = R.addRecruit(run, 'knight');
+  const k = bare(run, 'knight');
   const old = R.addItem(run, 'talent', 'k_riposte');
   run.talents = 1;
   k.load.lv = 2;
@@ -108,6 +153,7 @@ test('saves from before talent slots keep what units had', () => {
   k.load.a2 = 'k_riposte';
   k.load.t2 = old.uid;
   delete k.load.talents;
+  const before = run.items.filter((i) => i.kind === 'talent').length;
   R.save(run);
   const back = R.load();
   const k2 = back.roster.find((r) => r.id === k.id);
@@ -117,7 +163,7 @@ test('saves from before talent slots keep what units had', () => {
   const ids = k2.load.talents.map((uid) => back.items.find((i) => i.uid === uid).id).sort();
   assert.deepStrictEqual(ids, ['k_riposte', 'k_wall']);
   assert.ok(k2.load.talents.includes(old.uid), 'the copy it held is the one it keeps');
-  assert.strictEqual(back.items.filter((i) => i.kind === 'talent').length, 2);
+  assert.strictEqual(back.items.filter((i) => i.kind === 'talent').length, before + 1, 'one new item, for Shield Wall');
 });
 
 console.log(`talents: ${passed} tests passed`);

@@ -96,7 +96,25 @@
     if (extra) Object.assign(u, extra);
     if (u.enchant && !D.eligible(type, ENCHANTS[u.enchant])) u.enchant = null;
     run.roster.push(u);
+    giveTalent(run, u);
     return u;
+  }
+
+  // Every new unit comes with one random talent of its class, equipped. It is an ordinary
+  // talent: it costs Supply while slotted and can move to another unit of the class.
+  function giveTalent(run, u) {
+    const opts = Object.values(TALENTS)
+      .filter((t) => t.cls === u.type)
+      .map((t) => [t.id, talentWeight(run, t)]);
+    if (!opts.length) return;
+    const rng = AG.derive(run.seed, 'talent:' + u.id);
+    u.load.talents.push(addItem(run, 'talent', rng.weighted(opts)).uid);
+  }
+
+  // " Mira comes with the Poison Arrows talent." for a unit that just joined.
+  function talentNote(run, u) {
+    const it = u && u.load.talents.length ? itemByUid(run, u.load.talents[0]) : null;
+    return it ? ` ${u.name} comes with the ${TALENTS[it.id].name} talent.` : '';
   }
 
   function addItem(run, kind, id) {
@@ -1135,14 +1153,18 @@
     return ids.length ? rng.pick(ids) : null;
   }
 
-  // A talent for a class in your army, never for one you do not field. The stronger ones
-  // (from the Level 2 list) turn up half as often, and ones you already own less often
-  // still, so a full build takes some hunting.
+  // How often a talent turns up: the stronger ones (from the Level 2 list) half as often,
+  // and ones you already own less often still, so a full build takes some hunting.
+  function talentWeight(run, t) {
+    return (t.tier === 2 ? 1 : 2) / (1 + 2 * run.items.filter((i) => i.kind === 'talent' && i.id === t.id).length);
+  }
+
+  // A talent for a class in your army, never for one you do not field.
   function rollTalent(run, rng, exclude) {
     const types = [...new Set(run.roster.map((r) => r.type))];
     const opts = Object.values(TALENTS)
       .filter((t) => types.includes(t.cls) && !(exclude || []).includes(t.id))
-      .map((t) => [t.id, (t.tier === 2 ? 1 : 2) / (1 + 2 * run.items.filter((i) => i.kind === 'talent' && i.id === t.id).length)]);
+      .map((t) => [t.id, talentWeight(run, t)]);
     return opts.length ? rng.weighted(opts) : null;
   }
 
@@ -1501,13 +1523,13 @@
         if (choice === 'hire') {
           run.gold -= 65;
           const u = addRecruit(run, c.unit, { enchant: c.enchant });
-          return `${u.name} the ${uname(u.type)} counts the coin twice, then falls in line.`;
+          return `${u.name} the ${uname(u.type)} counts the coin twice, then falls in line.${talentNote(run, u)}`;
         }
         if (choice === 'haggle') {
           run.gold -= 30;
           if (rng.chance(0.5)) {
             const u = addRecruit(run, c.unit);
-            return `${u.name} the ${uname(u.type)} shrugs, takes the coin and joins you.`;
+            return `${u.name} the ${uname(u.type)} shrugs, takes the coin and joins you.${talentNote(run, u)}`;
           }
           return 'The mercenary bites the coin, grins, and is gone before you can blink.';
         }
@@ -1580,7 +1602,7 @@
       resolve: (run, c, choice) => {
         if (choice === 'take') {
           const u = addRecruit(run, c.unit);
-          return `${u.name} the ${uname(u.type)} swears a new oath.`;
+          return `${u.name} the ${uname(u.type)} swears a new oath.${talentNote(run, u)}`;
         }
         if (choice === 'rob') {
           run.gold += 35;
@@ -1728,7 +1750,7 @@
         if (choice === 'raise') {
           if (fullRoster(run)) return 'Your army is full. The bones settle back into the mud.';
           const u = addRecruit(run, 'skelarcher');
-          return `${u.name}, long dead, takes up a bow for you.`;
+          return `${u.name}, long dead, takes up a bow for you.${talentNote(run, u)}`;
         }
         if (choice !== 'search') return 'You leave the field to its ghosts.';
         if (c.roll < 0.6 && c.relic && !run.relics.includes(c.relic)) {
@@ -1755,7 +1777,7 @@
       resolve: (run, c, choice) => {
         if (choice.startsWith('take:')) {
           const u = addRecruit(run, choice.slice(5));
-          return `${u.name} picks up a weapon and joins your column.`;
+          return `${u.name} picks up a weapon and joins your column.${talentNote(run, u)}`;
         }
         return 'The villagers watch you go.';
       },
@@ -2189,7 +2211,7 @@
     ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
-    addRecruit, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
+    addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
     objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,

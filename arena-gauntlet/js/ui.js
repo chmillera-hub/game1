@@ -834,7 +834,7 @@
         `<div class="wrap">
           <div class="row"><button class="btn ghost" id="ncBack">Back</button></div>
           <div><p class="eyebrow">New campaign</p><h2>Choose your warband</h2></div>
-          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Choose wisely who fights. Tap a relic or item to see what it does.</p>
+          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Every unit comes with one random talent of its class. Choose wisely who fights. Tap a relic or item to see what it does.</p>
           <div class="choice-grid">${WARBANDS.map(
             (w) => `<button class="card ${w.id === wb ? 'selected' : ''}" data-wb="${w.id}">
               <div class="unit-strip">${w.units.map((t) => `<canvas data-p="${t}:P"></canvas>`).join('')}</div>
@@ -1342,7 +1342,7 @@
       <div class="lo-sec"><div class="eyebrow">Level 2 ability${pickHead(2)}${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
         <div class="picks">${picks(2).map((id) => abilityCard(r, 2, id, L.lv < 2)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">${ic('star')} ${UNITS[r.type].name} talents · ${sl.talents} slot${sl.talents > 1 ? 's' : ''}</div>
-        <p class="small muted">Class passives you find in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
+        <p class="small muted">Class passives. Every unit comes with one, and you find more in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
         <div class="slots">${[...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slotButton(run, r, 'talent', i) : lockedSlot('talent', 'star', 'Talent slot', i + 1))).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Mastery${L.lv < 3 ? ' <span class="lockline">unlocks at Level 3</span>' : ''}</div>
         <div class="pick static ${L.lv < 3 ? 'locked' : 'on'}"><span class="pk-head"><b>${esc(MASTERY[r.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[r.type].desc)}</span></div></div>
@@ -3063,13 +3063,19 @@
     return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
+  // A toast line for a unit that just joined, with the talent it came with.
+  function joinedText(u) {
+    return `${u.name} the ${UNITS[u.type].name} joins your army.${R.talentNote(UI.run, u)}`;
+  }
+
   function recruitCard(unit, enchant, attrs, extra) {
     const T = UNITS[unit];
     return `<button class="card" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
       <div><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}</div></div></div>
       ${enchant ? `<div class="chips"><span class="chip magic">${ic('gem')} ${esc(ENCHANTS[enchant].name)} +${ENCHANTS[enchant].surcharge}</span></div>` : ''}
-      <div class="desc">${esc(T.desc)}${enchant ? ' ' + esc(ENCHANTS[enchant].desc) : ''}</div>${extra || ''}</button>`;
+      <div class="desc">${esc(T.desc)}${enchant ? ' ' + esc(ENCHANTS[enchant].desc) : ''}</div>
+      <div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>${extra || ''}</button>`;
   }
 
   function spoilCard(sp, i, taken) {
@@ -3105,7 +3111,7 @@
         ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
           .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
-        ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small good-text">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.</p>` : ''}
+        ${p.prisoner && R.unitById(run, p.prisoner) ? `<p class="small good-text">The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</p>` : ''}
         ${p.prisonerGold ? `<p class="small muted">The freed prisoner could not join a full army, but leaves you ${p.prisonerGold} gold in thanks.</p>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, 'disabled style="opacity:1"')}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, 'disabled style="opacity:1"')}</div></div>` : ''}
@@ -3140,7 +3146,7 @@
         }
         if (R.takeSpoil(run, i)) {
           sfx('coin');
-          if (sp.type === 'recruit') toast(`${run.roster[run.roster.length - 1].name} the ${UNITS[sp.unit].name} joins your army.`);
+          if (sp.type === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));
           else if (sp.type !== 'gold') toast(`Added to your pack. Equip it from a unit's loadout.`);
           rewardScreen();
         }
@@ -3214,6 +3220,7 @@
         if (R.buy(run, i)) {
           sfx('coin');
           if (it.kind === 'manual' && R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
+          if (it.kind === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));
           shopScreen();
         }
       };
