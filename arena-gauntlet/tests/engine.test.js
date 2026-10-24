@@ -123,6 +123,22 @@ test('levels scale stats; abilities need the right class and level', () => {
   assert.ok(Math.abs(ar.props.dmgMult - 0.2) < 1e-9);
 });
 
+test('no Level 3 mastery shortens a cooldown', () => {
+  for (const [cls, m] of Object.entries(AG.Data.MASTERY)) assert.ok(!(m.mod.stat && m.mod.stat.rec), cls);
+  const s = board([
+    { type: 'cleric', team: 'P', x: 0, y: 8, level: 2 },
+    { type: 'cleric', team: 'P', x: 1, y: 8, level: 3 },
+    { type: 'dragon', team: 'P', x: 3, y: 8, level: 2 },
+    { type: 'dragon', team: 'P', x: 6, y: 8, level: 3 },
+  ]);
+  const [c2, c3, d2, d3] = s.units;
+  assert.strictEqual(c3.rec, c2.rec, 'the Cleric still waits as long');
+  assert.strictEqual(d3.rec, d2.rec, 'and so does the Dragon');
+  assert.ok(E.healAmount(c3) >= 1.5 * E.healAmount(c2), 'Devotion: prayer heals 50% more');
+  assert.ok(c3.maxHp > c2.maxHp + 10 && d3.maxHp > d2.maxHp + 20);
+  assert.ok(Math.abs(d3.props.dmgMult - 0.25) < 1e-9, 'Wyrmlord: +25% damage');
+});
+
 test('barrier aura grants magic resistance and immunity', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 8 },
