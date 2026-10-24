@@ -260,6 +260,41 @@
     return u.traits.has('spawner') && s.waves.some((w) => w.src === u.uid && w.state === 'pending');
   }
 
+  // ------------------------------------------------------------ priority target
+
+  // A target the player has told their army to go all out for: an enemy unit or building
+  // to destroy ({ uid }), or loot to take ({ loot: id }). Null once it is gone or taken.
+  function focusOf(s, team, f) {
+    if (!f) return null;
+    if (f.uid) {
+      const v = s.byId[f.uid];
+      return v && v.alive && v.team !== team ? { unit: v, x: v.x, y: v.y } : null;
+    }
+    if (f.loot != null && team === 'P') {
+      const l = (s.loot || []).find((x) => x.id === f.loot && !x.taken);
+      return l ? { loot: l, x: l.x, y: l.y } : null;
+    }
+    return null;
+  }
+
+  // How much a tile costs a unit for being far from the priority target: walking distance
+  // to loot, or distance beyond striking range of a unit.
+  const FOCUS_PULL = 5;
+  function focusPull(ctx, u, x, y) {
+    const f = ctx.focus;
+    const flat = Math.abs(x - f.x) + Math.abs(y - f.y);
+    const walk = u.traits.has('flying') ? flat : Math.min(ctx.focusField[E.idx(ctx.s, x, y)], flat + 6);
+    if (f.loot) return walk * FOCUS_PULL;
+    let best = null;
+    for (const a of u.acts) if (a.dmg && a.kind !== 'none' && a.left > 0 && (!best || actSpan(a) > actSpan(best))) best = a;
+    // Units that cannot hurt it tag along.
+    if (!best) return walk * FOCUS_PULL * 0.3;
+    const reach = actSpan(best);
+    const d = reach > 1 ? flat : walk;
+    const near = best.range ? best.range[0] : 1;
+    return Math.max(0, d - reach) * FOCUS_PULL + (d < near ? (near - d) * FOCUS_PULL * 0.5 : 0);
+  }
+
   function makeCtx(s, team, opts) {
     opts = opts || {};
     const foe = E.other(team);
@@ -291,7 +326,13 @@
       foeRanged: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.range && a.range[1] >= 2 && a.dmg)),
       approach: st.approach,
       risk: st.risk,
+      focus: focusOf(s, team, opts.focus),
     };
+    if (ctx.focus) {
+      ctx.focusField = buildDistField(s, [ctx.focus]);
+      // Everything else gives way to the priority target: danger barely counts.
+      ctx.risk *= 0.15;
+    }
     if (stanceName === 'defensive') {
       // Defenders hold their line until the enemy closes in or time passes.
       let closest = 99;
@@ -460,6 +501,7 @@
         if (b && b.alive && b.traits.has('volatile') && b !== u) v -= 0.12 * (b.props.boom || 15) * hpv * 2;
       }
     }
+    if (ctx.focus && u.team === ctx.team) v -= focusPull(ctx, u, x, y);
     return { score: v, facing, danger };
   }
 
@@ -562,6 +604,8 @@
         if (bossTarget) val *= t.boss ? 2.5 : 3;
         else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
+        // A hit on the priority target outweighs anything else this unit could do.
+        if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
         if (e.friendly) v -= p * val * 1.4;
         else v += p * val;
       }
@@ -638,6 +682,12 @@
     const hold = posAt(start);
     const plans = [{ uid: u.uid, kind: 'hold', score: hold.score, facing: hold.facing, gain: 0 }];
     const holdScore = hold.score;
+    // Priority loot within reach: step onto it and take it, whatever else is going on.
+    const lootTile = ctx.focus && ctx.focus.loot && u.team === 'P' && !u.nonCombat ? reach.get(E.idx(s, ctx.focus.x, ctx.focus.y)) : null;
+    if (lootTile) {
+      const p = E.withUnitAt(s, u, lootTile.x, lootTile.y, () => positionValue(ctx, u, lootTile.x, lootTile.y));
+      plans.push({ uid: u.uid, kind: lootTile.d > 0 ? 'moveLoot' : 'loot', to: lootTile, score: p.score + 1000, facing: p.facing });
+    }
     const acts = [];
     for (let i = 0; i < u.acts.length; i++) if (E.actUsable(s, u, i)) acts.push(i);
 
@@ -737,11 +787,15 @@
   function executePlan(s, plan, opts) {
     const u = s.byId[plan.uid];
     if (!E.beginActivation(s, plan.uid)) return false;
-    if (plan.kind === 'move' || plan.kind === 'moveAct') {
+    if (plan.kind === 'move' || plan.kind === 'moveAct' || plan.kind === 'moveLoot') {
       if (!E.moveUnit(s, plan.uid, plan.to.x, plan.to.y)) {
         E.cancelActivation(s);
         return false;
       }
+    }
+    if (plan.kind === 'loot' || plan.kind === 'moveLoot') {
+      if (s.over || !u.alive) return true;
+      E.takeLoot(s, plan.uid);
     }
     if (plan.kind === 'moveAct' || plan.kind === 'act' || plan.kind === 'actMove') {
       if (s.over || !u.alive) return true;
@@ -874,5 +928,5 @@
     runPlan(s, chooseActivation(s, team, opts), opts);
   }
 
-  AG.AI = { chooseActivation, executePlan, runPlan, smartFacing, nearestFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant };
+  AG.AI = { chooseActivation, executePlan, runPlan, smartFacing, nearestFacing, threatMap, unitThreat, playTurn, dangerAt, makeCtx, positionValue, dormant, focusOf };
 })(typeof window !== 'undefined' ? window : globalThis);

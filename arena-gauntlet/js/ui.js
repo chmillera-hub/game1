@@ -22,9 +22,12 @@
   };
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it.
+  // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it. At 1x a battle plays at
+  // 80% of the animations' full pace, easier to follow.
   const speedOf = () => (UI.prefs.speed > 1 ? UI.prefs.speed : UI.prefs.fast ? 2 : 1);
-  const pause = (ms) => sleep(ms / speedOf());
+  const BASE_PACE = 0.8;
+  const paceOf = () => speedOf() * BASE_PACE;
+  const pause = (ms) => sleep(ms / paceOf());
   const stars = (n) => (n > 1 ? '★'.repeat(n) : '');
   const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const PREFS_KEY = 'arena-gauntlet-prefs';
@@ -2102,7 +2105,8 @@
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
-    b.speed = speedOf();
+    b.speed = paceOf();
+    b.focus = null;
     b.syncFromState(s);
     b.setObjectives(s.loot, s.hold);
     b.activeSide = 'P';
@@ -2141,7 +2145,7 @@
       UI.prefs.speed = { 1: 2, 2: 4, 4: 1 }[speedOf()];
       UI.prefs.fast = UI.prefs.speed > 1;
       savePrefs();
-      b.speed = speedOf();
+      b.speed = paceOf();
       $('#btFast').classList.toggle('on', speedOf() > 1);
       $('#btFast small').textContent = speedOf() + '×';
     };
@@ -2177,6 +2181,54 @@
     }
   }
 
+  // The AI's orders for a side: yours chase your priority target, if you set one.
+  function aiOpts(B, team) {
+    return team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3, focus: B.focus };
+  }
+
+  // Where the priority target is now, for its marker on the board.
+  function focusSpot(B) {
+    const f = B && B.focus && AI.focusOf(B.s, 'P', B.focus);
+    return f ? { x: f.x, y: f.y } : null;
+  }
+
+  // Your army goes all out for what you picked: an enemy unit or building, or loot.
+  function setFocus(B) {
+    const s = B.s;
+    const u = B.mode === 'inspect' && B.sel ? s.byId[B.sel] : null;
+    const l = !u && B.mode === 'tile' && B.tile ? E.lootAt(s, B.tile.x, B.tile.y) : null;
+    if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
+    else if (l) B.focus = { loot: l.id, label: `the ${R.LOOT_NAMES[l.kind]}` };
+    else return;
+    toast(`Priority: ${B.focus.label}. Your army goes all out for it, whatever the cost.`, 3500);
+    sfx('click');
+    B.paused = false;
+    B.mode = 'idle';
+    B.sel = null;
+    B.tile = null;
+    renderBattle();
+    if (!B.running) runBattle();
+  }
+
+  function clearFocus(B) {
+    B.focus = null;
+    UI.board.focus = null;
+    toast('Priority cleared. Your army is back to normal orders.');
+    renderBattle();
+  }
+
+  // A priority that has been met, or is gone, ends: back to normal orders.
+  function checkFocus(B) {
+    if (!B.focus || AI.focusOf(B.s, 'P', B.focus)) return;
+    const was = B.focus;
+    const v = was.uid && B.s.byId[was.uid];
+    B.focus = null;
+    UI.board.focus = null;
+    if (B.s.over) return;
+    const how = was.loot != null ? 'is yours' : v && v.escaped ? 'got away' : 'is down';
+    toast(`Priority ${how === 'got away' ? 'over' : 'done'}: ${was.label} ${how}. Your army is back to normal orders.`, 3500);
+  }
+
   // One side turn played by the AI: the side's due unit moves, acts and faces.
   async function sideMoves(team) {
     const B = UI.battle;
@@ -2187,7 +2239,7 @@
       B.mode = 'idle';
       B.sel = null;
     }
-    const opts = team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3 };
+    const opts = aiOpts(B, team);
     const plan = AI.chooseActivation(s, team, opts);
     const u = (plan && s.byId[plan.uid]) || (s.due && s.byId[s.due]);
     if (u) {
@@ -2200,6 +2252,8 @@
     b.ov = {};
     await play(true);
     B.acting = null;
+    checkFocus(B);
+    b.focus = focusSpot(B);
   }
 
   // Finish the battle at once: both sides play on with no animation.
@@ -2207,7 +2261,7 @@
     const s = B.s;
     for (let guard = 0; guard < 2000 && !s.over; guard++) {
       const team = s.side;
-      AI.playTurn(s, team, team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3 });
+      AI.playTurn(s, team, aiOpts(B, team));
     }
     logEvents(E.drainEvents(s));
     UI.board.syncFromState(s);
@@ -2342,6 +2396,19 @@
   }
 
   // While your army fights on its own: who is acting, who is next, what just happened.
+  // An enemy unit or building your army could be told to go after.
+  function canFocusUnit(B, u) {
+    return !B.s.over && u.alive && u.team !== 'P' && !u.traits.has('scenery');
+  }
+
+  // Make this your army's priority, or stop, while watching an auto battle.
+  function focusButton(B, can, is) {
+    if (!can || B.s.over) return '';
+    return is
+      ? `<button class="btn" id="btUnfocus">${ic('close')} Clear priority</button>`
+      : `<button class="btn primary" id="btFocus">${ic('target')} Priority</button>`;
+  }
+
   function autoPanelHTML(B) {
     const s = B.s;
     const actor = B.acting && s.byId[B.acting];
@@ -2349,9 +2416,10 @@
       <div class="eyebrow">Turn order</div>
       ${queueHTML(s, 8)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
+      ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army goes all out for it.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">Tap any unit to pause and look at it. ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
+      <p class="small muted">Tap a unit or a chest to pause and look at it, and make it your army's <b>Priority</b>. ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
   }
 
   function renderBattle() {
@@ -2362,6 +2430,7 @@
     const ov = {};
     b.activeSide = s.side === 'P' && !B.busy ? 'P' : null;
     b.readySet = new Set(usefulReady(s).map((x) => x.uid));
+    b.focus = focusSpot(B);
     if (UI.prefs.threat && s.side === 'P' && !s.over) {
       const m = AI.threatMap(s, 'P');
       ov.danger = [];
@@ -2454,7 +2523,11 @@
       ov.range = th.hit;
       ov.move = th.move.filter(([x, y]) => x !== u.x || y !== u.y);
       ov.select = [u.x, u.y];
-      panel = `${unitInfoHTML(u, { status: true })}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
+      // Watching, the buttons come first so Priority is in view without scrolling.
+      const watchBtns = auto
+        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && B.focus.uid === u.uid)}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+        : '';
+      panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${actsHTML(u)}
         <div class="hint">${
           u.team === 'E'
@@ -2468,13 +2541,13 @@
                   : 'Cannot act right now.'
         }</div>
         ${auto
-          ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+          ? ''
           : `<div class="actions">${s.act && s.act.uid !== u.uid ? `<button class="btn primary" id="btBack">Back to ${esc(s.byId[s.act.uid].name)}</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button>${s.act ? '' : `<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}`}</div>`}`;
     } else if (B.mode === 'tile') {
       ov.select = [B.tile.x, B.tile.y];
       if (tileF.zone) ov.range = tileF.zone;
       panel = `${tileInfoHTML(tileF)}
-        <div class="actions">${auto ? `<button class="btn primary" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
+        <div class="actions">${auto ? `${focusButton(B, !!E.lootAt(s, B.tile.x, B.tile.y), B.focus && B.focus.loot != null && E.lootAt(s, B.tile.x, B.tile.y) && B.focus.loot === E.lootAt(s, B.tile.x, B.tile.y).id)}<button class="btn ${E.lootAt(s, B.tile.x, B.tile.y) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
@@ -2569,6 +2642,8 @@
     // Watching an auto battle: pause, resume, or jump to the result.
     on('btPause', () => togglePause(B));
     on('btSkip', () => skipBattle(B));
+    on('btFocus', () => setFocus(B));
+    on('btUnfocus', () => clearFocus(B));
     on('btUndo', async () => {
       if (B.busy) return;
       E.undoMove(s);
@@ -3016,6 +3091,7 @@
     if (!B || B.ending) return;
     B.ending = true;
     B.busy = true;
+    UI.board.focus = null;
     const s = B.s;
     const won = s.winner === 'P';
     const endEv = s.end;
@@ -3456,6 +3532,7 @@
           <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

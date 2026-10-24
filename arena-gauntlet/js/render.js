@@ -623,6 +623,30 @@
       if (o.select) this.tileFill(g, o.select[0], o.select[1], 'rgba(255,215,90,0.25)', 'rgba(255,220,110,' + (0.6 + pulse * 0.4) + ')', 1.5, 2);
       if (o.ghost) this.tileFill(g, o.ghost[0], o.ghost[1], 'rgba(255,255,255,0.18)', 'rgba(255,255,255,0.7)', 2, 1.2);
       if (o.press && o.press.tile) this.tileFill(g, o.press.tile.x, o.press.tile.y, 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.75)', 2, 1.2);
+      if (this.focus) this.drawFocus(g);
+    }
+
+    // The player's priority target: a pulsing amber crosshair.
+    drawFocus(g) {
+      const [cx, cy] = this.center(this.focus.x, this.focus.y);
+      const p = 0.5 + 0.5 * Math.sin(this.time * 4);
+      const rx = this.tw * (0.34 + 0.05 * p);
+      const ry = this.th * (0.34 + 0.05 * p);
+      g.save();
+      g.strokeStyle = 'rgba(255,170,40,' + (0.7 + 0.3 * p) + ')';
+      g.fillStyle = 'rgba(255,170,40,' + (0.1 + 0.08 * p) + ')';
+      g.lineWidth = Math.max(1.5, this.tw * 0.035);
+      g.beginPath();
+      g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        g.moveTo(cx + dx * rx * 0.7, cy + dy * ry * 0.7);
+        g.lineTo(cx + dx * rx * 1.3, cy + dy * ry * 1.3);
+      }
+      g.stroke();
+      g.restore();
     }
 
     drawHold(g) {

@@ -48,9 +48,14 @@ on a phone turned sideways, but portrait works too.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
   abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x),
-  pause, skip-to-result and tap-a-unit-to-inspect are beside the board. The menu's
+  pause, skip-to-result and tap-a-unit-to-inspect are beside the board; 1x plays a
+  little slower than the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).
+- **Priority**: while watching, tap an enemy unit, a building or a chest, then
+  Priority. Your army goes all out for it, whatever the cost: every unit attacks it,
+  or heads for the chest and takes it. A marker shows the target. Once it falls or is
+  taken, the army goes back to normal orders; you can also clear it.
 - **Taking turns**: the sides alternate one unit at a time, and the enemy goes
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
@@ -121,6 +126,7 @@ on a phone turned sideways, but portrait works too.
 node tests/engine.test.js        # rule checks
 node tests/deploy.test.js        # the War Room's Auto button
 node tests/goals.test.js         # bonus goals, and retrying a won battle for them
+node tests/priority.test.js      # the priority target your army goes all out for
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries
