@@ -4,7 +4,7 @@
   'use strict';
   const AG = root.AG;
   const D = AG.Data;
-  const { UNITS, ABILITIES, TALENTS, MASTERY, SKILLS, GEAR, ENCHANTS, RELICS, WARBANDS, DIFFICULTIES, ACTS, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS, TALENT_SLOTS } = D;
+  const { UNITS, ABILITIES, TALENTS, MASTERY, SKILLS, GEAR, ENCHANTS, RELICS, DIFFICULTIES, ACTS, COMMAND, LEVEL_COST, SKILL_SLOTS, GEAR_SLOTS, TALENT_SLOTS } = D;
   const R = AG.Run;
   const E = AG.Engine;
   const AI = AG.AI;
@@ -820,69 +820,90 @@
 
   // ------------------------------------------------------------ new campaign
 
+  // A new campaign drafts its army: five units, a relic, a skill and a piece of gear, each
+  // one of three, then the difficulty. Back undoes a pick; Start over deals a fresh draft.
   function newCampaign() {
-    let wb = WARBANDS[0].id;
+    let seed = ((Math.random() * 2 ** 31) >>> 0) + 1;
+    const picks = [];
     let diff = 'knight';
-    // The chip whose meaning is shown under a warband's chips: [warband, chip key].
-    let info = null;
-    const itemDefOf = ([kind, id]) => (kind === 'skill' ? SKILLS[id] : GEAR[id]);
-    const chipInfo = (w, key) => {
-      if (key === 'relic') return { name: RELICS[w.relic].name, kind: 'Relic', desc: RELICS[w.relic].desc };
-      if (key === 'gold') return { name: `${w.gold} gold`, kind: 'Starting gold', desc: 'Spend it at merchants on recruits, talents, skills, gear and relics.' };
-      const it = w.items[+key];
-      const d = itemDefOf(it);
-      return { name: d.name, kind: `${it[0] === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply`, desc: d.desc + ' Slot it into a unit from its loadout.' };
+    const steps = R.DRAFT_STEPS;
+    const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
+    const WHY = {
+      unit: 'Five units make your starting army. Every unit comes with a random talent of its class.',
+      relic: 'A relic works for the whole campaign.',
+      skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
+      gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
     };
-    const chip = (w, key, cls, icon, label) => {
-      const c = chipInfo(w, key);
-      return `<span class="chip tappable ${cls}" data-chip="${w.id}:${key}" title="${esc(c.name + ': ' + c.desc)}">${ic(icon)} ${esc(label)}</span>`;
+    const option = (kind, id, i) => {
+      const attrs = `data-dpick="${i}"`;
+      if (kind === 'unit') {
+        const T = UNITS[id];
+        const reach = T.act.range ? ` · range ${T.act.range[1]}` : '';
+        const hit = T.act.dmg ? `${T.pow} ${dmgIcon(T.act.dmg)} damage` : 'no attack';
+        return recruitCard(id, null, attrs, `<div class="small">${esc(cap1(T.role))} · ${T.hp} HP · ${hit}${reach}</div>`);
+      }
+      if (kind === 'relic') return relicCard(id, attrs);
+      return itemCard(kind, id, attrs);
     };
-    const infoHTML = (c) => `<div class="chip-info"><b>${esc(c.name)}</b> <span class="muted">${esc(c.kind)}</span><br>${esc(c.desc)}</div>`;
-    // Built once. Taps only move the highlight and the explanation, so the page never
-    // redraws or scrolls under the finger.
+    // The army so far, with the picks still to come as empty places.
+    const armyHTML = () => {
+      const units = [0, 1, 2, 3, 4].map((i) => (picks[i] ? `<canvas data-p="${picks[i]}:P" title="${esc(UNITS[picks[i]].name)}"></canvas>` : '<span class="draft-empty"></span>')).join('');
+      const thing = (i, icon, name) => (picks[i] ? `<span class="chip">${ic(icon)} ${esc(name(picks[i]))}</span>` : `<span class="chip draft-todo">${ic(icon)} …</span>`);
+      return `<div class="draft-army"><div class="unit-strip">${units}</div>
+        <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>`;
+    };
     const render = () => {
-      const v = showView(
-        `<div class="wrap">
-          <div class="row"><button class="btn ghost" id="ncBack">Back</button></div>
-          <div><p class="eyebrow">New campaign</p><h2>Choose your warband</h2></div>
-          <p class="muted">You start with 5 units, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field. Every unit comes with one random talent of its class. Choose wisely who fights. Tap a relic or item to see what it does.</p>
-          <div class="choice-grid">${WARBANDS.map(
-            (w) => `<button class="card ${w.id === wb ? 'selected' : ''}" data-wb="${w.id}">
-              <div class="unit-strip">${w.units.map((t) => `<canvas data-p="${t}:P"></canvas>`).join('')}</div>
-              <div class="title">${esc(w.name)}</div>
-              <div class="desc">${esc(w.desc)}</div>
-              <div class="small">${w.units.map((t) => UNITS[t].name).join(', ')}</div>
-              <div class="chips">${chip(w, 'relic', 'magic', 'gem', RELICS[w.relic].name)}${(w.items || []).map((it, i) => chip(w, String(i), '', it[0] === 'skill' ? 'scroll' : 'sword', itemDefOf(it).name)).join('')}${chip(w, 'gold', 'warn', 'gold', String(w.gold))}</div>
-            </button>`
-          ).join('')}</div>
+      const step = picks.length;
+      const offer = R.draftOffer(seed, step, picks);
+      // Each pick is a new heading, so the page starts at the top.
+      const body = offer
+        ? `<div><p class="eyebrow">New campaign · pick ${step + 1} of ${steps.length}</p><h2>${HEAD[offer.kind]}${offer.kind === 'unit' ? ` (${step + 1} of 5)` : ''}</h2></div>
+          ${armyHTML()}
+          <p class="muted">${WHY[offer.kind]}</p>
+          <div class="choice-grid">${offer.options.map((id, i) => option(offer.kind, id, i)).join('')}</div>`
+        : `<div><p class="eyebrow">New campaign · your army</p><h2>Ready to march</h2></div>
+          ${armyHTML()}
+          <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle and room for ${COMMAND[1].cap} units on the field.</p>
           <h3>Difficulty</h3>
           <div class="seg">${DIFFICULTIES.map(
             (d) => `<button class="card ${d.id === diff ? 'selected' : ''}" data-diff="${d.id}"><div class="title" style="font-size:1.15rem">${d.name}</div><div class="desc small">${esc(d.desc)}</div></button>`
           ).join('')}</div>
           <button class="btn primary wide" id="ncGo">${ic('swords')} March to the Borderlands</button>
+          <h3>Your army</h3>
+          <div class="army-list">${picks
+            .slice(0, 5)
+            .map((t) => `<div class="army-row"><canvas class="portrait" data-p="${t}:P"></canvas><div class="nm"><b>${esc(UNITS[t].name)}</b><div class="small muted">${esc(UNITS[t].desc)}</div></div><span class="chip warn">${UNITS[t].cost}</span></div>`)
+            .join('')}</div>
+          <div class="army-list">${[
+            ['scroll', 'gem', RELICS[picks[5]], 'Relic'],
+            ['skill', 'scroll', SKILLS[picks[6]], `Skill · ${SKILLS[picks[6]].cost} Supply`],
+            ['gear', 'sword', GEAR[picks[7]], `Gear · ${GEAR[picks[7]].cost} Supply`],
+          ]
+            .map(([cls, icon, d, kind]) => `<div class="army-row"><div class="itemico ${cls}">${ic(icon)}</div><div class="nm"><b>${esc(d.name)}</b> <span class="small muted">${kind}</span><div class="small muted">${esc(d.desc)}</div></div></div>`)
+            .join('')}</div>`;
+      const v = showView(
+        `<div class="wrap">
+          <div class="row"><button class="btn ghost" id="ncBack">${ic('undo')} Back</button><span class="grow"></span><button class="btn ghost" id="ncAgain">Start over</button></div>
+          ${body}
         </div>`
       );
-      $('#ncBack', v).onclick = () => title();
-      const pickWarband = (id) => {
-        wb = id;
-        for (const b of $$('[data-wb]', v)) b.classList.toggle('selected', b.dataset.wb === id);
+      $('#ncBack', v).onclick = () => {
+        if (!picks.length) return title();
+        picks.pop();
+        sfx('click');
+        render();
       };
-      // Tapping a chip picks that warband and explains the chip; tapping it again hides it.
-      for (const c of $$('[data-chip]', v))
-        c.onclick = (e) => {
-          e.stopPropagation();
-          const [id, key] = c.dataset.chip.split(':');
-          pickWarband(id);
-          info = info && info[0] === id && info[1] === key ? null : [id, key];
-          for (const x of $$('.chip-info', v)) x.remove();
-          for (const x of $$('[data-chip]', v)) x.classList.toggle('on', x === c && !!info);
-          if (info) c.parentElement.insertAdjacentHTML('afterend', infoHTML(chipInfo(WARBANDS.find((w) => w.id === id), key)));
-          sfx('click');
-        };
-      for (const b of $$('[data-wb]', v))
+      $('#ncAgain', v).onclick = () => {
+        seed = ((Math.random() * 2 ** 31) >>> 0) + 1;
+        picks.length = 0;
+        sfx('click');
+        render();
+      };
+      for (const b of $$('[data-dpick]', v))
         b.onclick = () => {
-          pickWarband(b.dataset.wb);
-          sfx('click');
+          picks.push(offer.options[+b.dataset.dpick]);
+          sfx('select');
+          render();
         };
       for (const b of $$('[data-diff]', v))
         b.onclick = () => {
@@ -890,18 +911,19 @@
           for (const x of $$('[data-diff]', v)) x.classList.toggle('selected', x === b);
           sfx('click');
         };
-      $('#ncGo', v).onclick = () => {
-        R.clearSave();
-        UI.run = R.newRun({ warband: wb, difficulty: diff });
-        R.save(UI.run);
-        sfx('turn');
-        mapScreen();
-        if (!UI.prefs.seenHelp2) {
-          UI.prefs.seenHelp2 = true;
-          savePrefs();
-          helpSheet();
-        }
-      };
+      if ($('#ncGo', v))
+        $('#ncGo', v).onclick = () => {
+          R.clearSave();
+          UI.run = R.newRun({ seed, difficulty: diff, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+          R.save(UI.run);
+          sfx('turn');
+          mapScreen();
+          if (!UI.prefs.seenHelp2) {
+            UI.prefs.seenHelp2 = true;
+            savePrefs();
+            helpSheet();
+          }
+        };
     };
     render();
   }

@@ -297,10 +297,60 @@
 
   // ------------------------------------------------------------ new run
 
+  // ------------------------------------------------------------ the draft
+  //
+  // A new campaign drafts its army instead of taking a ready-made warband: five units, a
+  // relic, a skill and a piece of gear, each one of three. The offers come from the draft's
+  // seed (and, for the items, the units chosen), so stepping back shows the same three.
+
+  const DRAFT_STEPS = ['unit', 'unit', 'unit', 'unit', 'unit', 'relic', 'skill', 'gear'];
+  const DRAFT_GOLD = 60;
+  // Units fit to start a campaign with: the common and uncommon ones, and the Witch.
+  const DRAFT_POOL = RECRUITABLE.filter((t) => UNITS[t].rarity === 'common' || UNITS[t].rarity === 'uncommon').concat(['witch']);
+
+  // The three options for a step of the draft, given the picks so far.
+  function draftOffer(seed, step, picks) {
+    const kind = DRAFT_STEPS[step];
+    if (!kind) return null;
+    const units = picks.slice(0, 5);
+    const rng = AG.derive(seed, 'draft:' + step + (kind === 'skill' || kind === 'gear' ? ':' + units.join(',') : ''));
+    const three = (list, weight, ok) => {
+      for (let tries = 0; tries < 60; tries++) {
+        const out = [];
+        while (out.length < 3) {
+          const v = rng.weighted(list.filter((x) => !out.includes(x)).map((x) => [x, weight(x)]));
+          out.push(v);
+        }
+        if (!ok || ok(out) || tries === 59) return out;
+      }
+      return null;
+    };
+    if (kind === 'unit') {
+      // Commons come up most; every offer has at least two units that deal damage (the
+      // first, three) and at most one healer or ward.
+      const support = (t) => ['support', 'ward'].includes(UNITS[t].role);
+      const weight = (t) => (UNITS[t].rarity === 'common' ? 3 : UNITS[t].rarity === 'uncommon' ? 2 : 1);
+      const options = three(DRAFT_POOL, weight, (o) => o.filter(isAttacker).length >= (step === 0 ? 3 : 2) && o.filter(support).length <= 1);
+      return { kind, options };
+    }
+    if (kind === 'relic') {
+      const options = three(Object.keys(RELICS).filter((id) => RELICS[id].tier === 'common'), () => 1);
+      return { kind, options };
+    }
+    // A skill or gear that at least one of the units chosen can use.
+    const table = kind === 'skill' ? SKILLS : GEAR;
+    const fit = Object.keys(table).filter((id) => table[id].cost <= 2 && units.some((t) => D.eligible(t, table[id])));
+    return { kind, options: three(fit, () => 1) };
+  }
+
   function newRun(opts) {
     opts = opts || {};
     const seed = opts.seed >>> 0 || ((Math.random() * 2 ** 31) >>> 0) + 1;
-    const wb = WARBANDS.find((w) => w.id === opts.warband) || WARBANDS[0];
+    // A drafted army, or one of the old ready-made warbands (tests and simulations).
+    const draft = opts.draft;
+    const wb = draft
+      ? { id: 'draft', units: draft.units, relic: draft.relic, items: draft.items, gold: DRAFT_GOLD }
+      : WARBANDS.find((w) => w.id === opts.warband) || WARBANDS[0];
     const diff = DIFFICULTIES.find((d) => d.id === opts.difficulty) || DIFFICULTIES[1];
     const run = {
       v: 2,
@@ -2243,7 +2293,7 @@
     ROWS, COLS, MAX_ROSTER, MAX_FIELD, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
-    addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
+    DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,

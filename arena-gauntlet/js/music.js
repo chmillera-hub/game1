@@ -466,7 +466,7 @@
     hp.frequency.value = 80;
     hp.connect(comp);
     const bus = c.createGain();
-    bus.gain.value = 0.44;
+    bus.gain.value = 0.35;
     bus.connect(hp);
     const verb = c.createConvolver();
     const len = Math.floor(c.sampleRate * 2.2);

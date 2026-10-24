@@ -88,7 +88,14 @@ function pickUnit(run, pick) {
 const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {} };
 const t0 = Date.now();
 for (let i = 0; i < N; i++) {
-  const run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
+  // DRAFT=1: draft each army, picking at random as a player might, instead of a warband.
+  let run;
+  if (process.env.DRAFT) {
+    const pick = AG.derive(9000 + i, 'sim-draft');
+    const picks = [];
+    for (let s = 0; s < R.DRAFT_STEPS.length; s++) picks.push(pick.pick(R.draftOffer(9000 + i, s, picks).options));
+    run = R.newRun({ seed: 9000 + i, difficulty: DIFF, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+  } else run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
   const rng = new AG.RNG(i + 1);
   let steps = 0;
   let stuck = false;

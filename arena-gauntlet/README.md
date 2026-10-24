@@ -12,6 +12,12 @@ on a phone turned sideways, but portrait works too.
 
 ## How it works
 
+- **The draft**: a new campaign drafts its army instead of taking a ready-made
+  warband. Eight picks, each one of three: five units, a relic, a skill and a piece of
+  gear, then the difficulty. Every unit offer has at least two that deal damage (the
+  first, all three), and the skills and gear offered are ones your units can use. Back
+  undoes a pick; Start over deals a fresh draft. You start with 60 gold.
+
 - **War Room**: tap a unit card to deploy it, then a blue tile to place it, or another
   of your units to swap places; a move lets go of the unit, so the next tap does not
   move it again. A tap that misses (a rock, open ground, the board's rim) keeps the
@@ -154,7 +160,9 @@ node tests/goals.test.js         # bonus goals, and retrying a won battle for th
 node tests/priority.test.js      # the priority target your army goes all out for
 node tests/objectives.test.js    # your army playing for the mission and bonus goals
 node tests/music.test.js         # the music's notation: every bar the right length
+node tests/draft.test.js         # drafting a starting army
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries
+DRAFT=1 node tests/run.test.js 20 knight # the same, with randomly drafted armies
 ```
