@@ -1,12 +1,16 @@
 // Plays whole campaigns with the AI on both sides. Losses are retried, as in the game.
-// Run: node tests/run.test.js [runs] [difficulty] [maxTries]
+// Run: node tests/run.test.js [runs] [policy] [maxTries]
+// policy, which challenge to pick each round: medium (default: medium, easy after a loss),
+// easy, elite (elite, then medium, then easy after losses) or mix (mostly medium, some easy
+// and elite). MEGA=1 also tries the optional final challenge.
 const assert = require('assert');
 const AG = require('./load')();
 const R = AG.Run;
 const E = AG.Engine;
 const D = AG.Data;
 const N = +process.argv[2] || 12;
-const DIFF = process.argv[3] || 'knight';
+const POLICY = process.argv[3] || 'medium';
+const TIER_ORDER = ['elite', 'medium', 'easy'];
 const MAX_TRIES = +process.argv[4] || 6;
 const OVERTIME = R.OVERTIME;
 
@@ -30,7 +34,7 @@ function playBattle(run) {
   const star = R.bonusUnit(run, p.enc);
   if (star) assert.ok(dep.some((d) => d.rid === star.id), 'Auto fields the unit a bonus goal asks for');
   const rows = R.deployRows(run, p.enc);
-  for (const d of dep) assert.ok(rows.includes(d.y) && p.enc.terrain[d.y * p.enc.w + d.x] === 0, 'valid deploy tile');
+  for (const d of dep) assert.ok(rows.includes(d.y) && R.deployOpen(p.enc, d.x, d.y), 'valid deploy tile');
   checkLoadouts(run);
   for (const w of p.enc.waves || []) {
     assert.ok(w.units.length > 0, 'a wave brings someone');
@@ -84,7 +88,14 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {} };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0] };
+
+// The tier a player of this policy picks first in a round.
+function firstTier(rng) {
+  if (POLICY === 'easy' || POLICY === 'elite') return POLICY;
+  if (POLICY === 'mix') return rng.weighted([['medium', 70], ['easy', 15], ['elite', 15]]);
+  return 'medium';
+}
 const t0 = Date.now();
 for (let i = 0; i < N; i++) {
   // DRAFT=1: draft each army, picking at random as a player might, instead of a warband.
@@ -93,46 +104,77 @@ for (let i = 0; i < N; i++) {
     const pick = AG.derive(9000 + i, 'sim-draft');
     const picks = [];
     for (let s = 0; s < R.DRAFT_STEPS.length; s++) picks.push(pick.pick(R.draftOffer(9000 + i, s, picks).options));
-    run = R.newRun({ seed: 9000 + i, difficulty: DIFF, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
-  } else run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id, difficulty: DIFF });
+    run = R.newRun({ seed: 9000 + i, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+  } else run = R.newRun({ seed: 9000 + i, warband: D.WARBANDS[i % D.WARBANDS.length].id });
   const rng = new AG.RNG(i + 1);
   let steps = 0;
   let stuck = false;
   while (!run.over && steps++ < 500 && !stuck) {
     if (!run.pending) {
-      const opts = R.availableNodes(run);
-      assert.ok(opts.length, 'map has a way forward');
-      assert.ok(R.enterNode(run, rng.pick(opts).id));
+      // A round of challenges (or the boss, or the final challenge): pick one, and after a
+      // loss pick again, a tier easier, up to MAX_TRIES tries in all.
+      const offer = run.offer;
+      assert.ok(offer && offer.length, 'a challenge on offer');
+      const act = run.act;
+      let tier = offer.length === 1 ? offer[0].tier : firstTier(rng);
+      let res;
+      let tries = 0;
+      let firstKind = null;
+      let enc = null;
+      do {
+        const idx = offer.findIndex((o) => o.tier === tier);
+        assert.ok(R.chooseChallenge(run, idx), 'challenge taken');
+        enc = run.pending.enc;
+        if (!firstKind) firstKind = enc.kind + (offer.length === 1 ? '' : '/' + tier);
+        res = playBattle(run);
+        tries++;
+        if (!res.won) {
+          R.backToChoice(run);
+          const t = TIER_ORDER.indexOf(tier);
+          if (offer.length > 1 && t < TIER_ORDER.length - 1) tier = TIER_ORDER[t + 1];
+        }
+      } while (!res.won && tries < MAX_TRIES);
+      const isMega = offer[0].tier === 'mega';
+      if (isMega) {
+        results.mega[1]++;
+        if (res.won) results.mega[0]++;
+        else R.endRun(run);
+        continue;
+      }
+      results.battles++;
+      results.tries += tries;
+      results.first[act][1]++;
+      if (tries === 1) results.first[act][0]++;
+      const k = (results.kinds[firstKind + act] = results.kinds[firstKind + act] || [0, 0]);
+      k[1]++;
+      if (tries === 1) k[0]++;
+      const tk = (results.tiers[tier] = results.tiers[tier] || [0, 0]);
+      tk[1]++;
+      if (res.won) tk[0]++;
+      const m = (results.missions[enc.primary] = results.missions[enc.primary] || [0, 0]);
+      m[1]++;
+      if (tries === 1) m[0]++;
+      if (!res.won) {
+        stuck = true;
+        results.walls.push(`${run.warband} act ${act} ${firstKind} ${enc.name}`);
+      }
       continue;
     }
     const p = run.pending;
+    if (p.type === 'summit') {
+      if (process.env.MEGA) R.faceFinal(run);
+      else R.endRun(run);
+      continue;
+    }
     if (p.type === 'battle') {
-      const act = run.act;
-      const kind = p.enc.kind;
+      // A battle an event started: retried as it is.
       let res;
       let tries = 0;
       do {
         res = playBattle(run);
         tries++;
       } while (!res.won && tries < MAX_TRIES);
-      results.battles++;
-      results.tries += tries;
-      results.first[act][1]++;
-      if (tries === 1) results.first[act][0]++;
-      const k = (results.kinds[kind + act] = results.kinds[kind + act] || [0, 0]);
-      k[1]++;
-      if (tries === 1) k[0]++;
-      const m = (results.missions[p.enc.primary] = results.missions[p.enc.primary] || [0, 0]);
-      m[1]++;
-      if (tries === 1) m[0]++;
-      if (!res.won) {
-        stuck = true;
-        results.walls.push(`${run.warband} act ${act} ${kind} ${p.enc.name}`);
-        if (process.env.VERBOSE) {
-          const army = R.autoDeploy(run).map((d) => { const r = R.unitById(run, d.rid); return r.type + 'L' + r.load.lv; });
-          console.log(`  WALL ${p.enc.name} (${p.enc.primary}, budget ${p.enc.budget}) E: ${p.enc.units.map((u) => u.type + 'L' + (u.level || 1)).join(' ')} | P supply ${R.supplyFor(run)}: ${army.join(' ')}`);
-        }
-      }
+      if (!res.won) stuck = true;
       continue;
     }
     if (p.type === 'reward') {
@@ -149,17 +191,6 @@ for (let i = 0; i < N; i++) {
     }
     if (p.type === 'shop') {
       for (let k = 0; k < p.stock.length; k++) if (R.canBuy(run, p.stock[k]) && rng.chance(0.5)) R.buy(run, k);
-      R.completeNode(run);
-      continue;
-    }
-    if (p.type === 'rest') {
-      const c = rng.pick(['drill', 'study', 'tinker']);
-      assert.ok(R.rest(run, c, 0) || R.rest(run, 'drill'));
-      R.completeNode(run);
-      continue;
-    }
-    if (p.type === 'treasure') {
-      R.takeTreasure(run);
       R.completeNode(run);
       continue;
     }
@@ -185,7 +216,9 @@ for (let i = 0; i < N; i++) {
 }
 const pct = ([a, b]) => (b ? Math.round((100 * a) / b) + '%' : '-');
 console.log(`campaigns: won ${results.done}, stuck ${results.stuck} (more than ${MAX_TRIES} tries) · battles ${results.battles}, avg tries ${(results.tries / Math.max(1, results.battles)).toFixed(2)}`);
-console.log(`first-try wins: act1 ${pct(results.first[1])} act2 ${pct(results.first[2])} act3 ${pct(results.first[3])}`);
+console.log(`first-try wins: act1 ${pct(results.first[1])} act2 ${pct(results.first[2])} act3 ${pct(results.first[3])} · policy ${POLICY}`);
+console.log('won with (the tier that finally won each round):', Object.entries(results.tiers).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · '));
+if (results.mega[1]) console.log(`final challenge: won ${results.mega[0]} of ${results.mega[1]} tries`);
 console.log('by kind:', Object.entries(results.kinds).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
 console.log('by mission:', Object.entries(results.missions).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
 const q = (list, f) => list.slice().sort((a, b) => a - b)[Math.min(list.length - 1, Math.floor(list.length * f))];

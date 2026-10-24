@@ -59,14 +59,14 @@ test('offered items fit the units chosen; the same picks give the same offers', 
 
 test('a drafted army starts the campaign', () => {
   const picks = draftAll(77, (o) => o[0]);
-  const run = R.newRun({ seed: 77, difficulty: 'knight', draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+  const run = R.newRun({ seed: 77, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
   assert.deepStrictEqual(run.roster.map((r) => r.type), picks.slice(0, 5));
   assert.deepStrictEqual(run.relics, [picks[5]]);
   assert.ok(run.items.some((i) => i.kind === 'skill' && i.id === picks[6]));
   assert.ok(run.items.some((i) => i.kind === 'gear' && i.id === picks[7]));
   assert.strictEqual(run.gold, R.DRAFT_GOLD);
   assert.ok(run.roster.every((r) => r.load.talents.length === 1), 'each with its random talent');
-  assert.ok(run.map && R.availableNodes(run).length > 0);
+  assert.ok(run.offer && run.offer.length === 3, 'the first round of challenges is on offer');
 });
 
 console.log(`draft: ${passed} tests passed`);

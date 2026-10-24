@@ -553,10 +553,12 @@
     const T = o.tc;
     const ash = o.tyrant;
     const drake = o.drake;
-    const body = ash ? '#3d3633' : drake ? '#c0602e' : '#8e2f24';
-    const belly = ash ? '#7a5a44' : drake ? '#f0c060' : '#e3a24c';
-    const wing = ash ? '#2a2422' : drake ? '#8a3a1c' : '#6d2119';
-    const memb = ash ? '#5a2f20' : drake ? '#d97a3a' : '#a8432f';
+    // The Eclipse Wyrm: the Tyrant's shape in the colours of a night with no stars.
+    const ecl = o.eclipse;
+    const body = ecl ? '#2b2140' : ash ? '#3d3633' : drake ? '#c0602e' : '#8e2f24';
+    const belly = ecl ? '#7d5fb0' : ash ? '#7a5a44' : drake ? '#f0c060' : '#e3a24c';
+    const wing = ecl ? '#160f24' : ash ? '#2a2422' : drake ? '#8a3a1c' : '#6d2119';
+    const memb = ecl ? '#4a2a7a' : ash ? '#5a2f20' : drake ? '#d97a3a' : '#a8432f';
     const flap = Math.sin(o.t * 3) * 3;
     // far wing
     poly(ctx, [-4, -26, -16, -48 - flap, -24, -40 - flap, -22, -28, -12, -24], wing);
@@ -1877,10 +1879,10 @@
     spider: 25, troll: 54, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
-    barricade: 22,
+    barricade: 22, void_wyrm: 96,
   };
 
-  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };
+  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };
 
   // Draw a unit with feet at the current origin. view: 'front' or 'back'.
   function drawUnit(ctx, type, team, view, t, extra) {
@@ -1901,6 +1903,9 @@
         break;
       case 'ashen_tyrant':
         D.dragon(ctx, Object.assign(o, { tyrant: true }));
+        break;
+      case 'void_wyrm':
+        D.dragon(ctx, Object.assign(o, { tyrant: true, eclipse: true }));
         break;
       case 'drake':
         D.dragon(ctx, Object.assign(o, { drake: true }));

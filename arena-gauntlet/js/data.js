@@ -68,7 +68,7 @@
     a_eagle: { name: 'Eagle Eye', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     a_bodkin: { name: 'Bodkin Arrows', cost: 1, desc: "Arrows ignore half of the target's armor.", mod: { props: { pierce: 0.5 } } },
     a_volley: { name: 'Arrow Volley', cost: 2, desc: 'Active, 2 uses: rain arrows on a 5-tile area 3 to 5 tiles away, 70% damage to each enemy.',
-      mod: { active: { name: 'Arrow Volley', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, ff: false, uses: 2 } } },
+      mod: { active: { name: 'Arrow Volley', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, uses: 2 } } },
 
     // Scout
     s_caltrops: { name: 'Caltrops', cost: 0, desc: 'Active, 2 uses: scatter caltrops on an empty tile up to 3 away. The first enemy to step there stops, takes 6 damage and is rooted for 1 turn.',
@@ -143,7 +143,7 @@
     // Furgon
     f_bark: { name: 'Barkskin', cost: 0, desc: '+10% armor and +10% magic resistance.', mod: { stat: { armor: 0.1, res: 0.1 } } },
     f_roots: { name: 'Entangling Roots', cost: 1, desc: 'Active, 2 uses: roots every enemy in a 5-tile area 2 to 4 tiles away for 2 turns.',
-      mod: { active: { name: 'Entangling Roots', kind: 'blast', range: [2, 4], pattern: 'plus', arc: true, ff: false, fx: { root: 2 }, uses: 2 } } },
+      mod: { active: { name: 'Entangling Roots', kind: 'blast', range: [2, 4], pattern: 'plus', arc: true, fx: { root: 2 }, uses: 2 } } },
     f_thorn: { name: 'Thornwall', cost: 1, desc: 'Its shrubs have double HP and prick melee attackers for 6.', mod: { traits: ['thornwall'] } },
     f_grove: { name: 'Grove Keeper', cost: 0, desc: 'Grow reaches 1 tile further, and 4 shrubs can stand at once.', mod: { stat: { range: 1 }, props: { shrubs: 1 } } },
     f_rejuv: { name: 'Rejuvenate', cost: 1, desc: 'Active, 2 uses: heal an ally up to 3 tiles away for 16 and cure its poison and burns.',
@@ -152,10 +152,10 @@
 
     // Poison Wisp
     w_drift: { name: 'Drift', cost: 0, desc: '+1 Move.', mod: { stat: { move: 1 } } },
-    w_virulent: { name: 'Virulence', cost: 1, desc: 'Its poison cloud deals 2 more damage.', mod: { props: { poisonDmg: 2 } } },
+    w_virulent: { name: 'Virulence', cost: 1, desc: 'Its poison deals 2 more damage a turn.', mod: { props: { poisonDmg: 2 } } },
     w_wither: { name: 'Withering Mist', cost: 1, desc: 'Miasma also weakens the enemies in reach for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
     w_ethereal: { name: 'Ethereal', cost: 0, desc: '+20% armor.', mod: { stat: { armor: 0.2 } } },
-    w_linger: { name: 'Lingering Spores', cost: 1, desc: 'Its poison cloud lasts 1 more of its turns, so the old cloud is still out when it casts a new one.', mod: { props: { poisonTurns: 1 } } },
+    w_linger: { name: 'Lingering Spores', cost: 1, desc: 'Its poison lasts 1 turn longer: 3 turns.', mod: { props: { poisonTurns: 1 } } },
     w_plague: { name: 'Plague', cost: 2, desc: 'Miasma reaches 3 tiles.', mod: { stat: { radius: 1 } } },
 
     // Barrier Ward
@@ -182,7 +182,7 @@
     wi_long: { name: 'Long Reach', cost: 0, desc: 'Dark Lightning reaches 1 tile further.', mod: { stat: { len: 1 } } },
     wi_curse: { name: 'Withering Curse', cost: 1, desc: 'Dark Lightning weakens its targets for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
     wi_storm: { name: 'Black Storm', cost: 2, desc: 'Active, 1 use: dark lightning lashes out 4 tiles in all four directions, striking only enemies.',
-      mod: { active: { name: 'Black Storm', kind: 'cross', len: 4, dmg: 'magic', ff: false, uses: 1 } } },
+      mod: { active: { name: 'Black Storm', kind: 'cross', len: 4, dmg: 'magic', uses: 1 } } },
 
     // Lightning Ward
     l_cap: { name: 'Capacitor', cost: 0, desc: '+15 max HP.', mod: { stat: { hp: 15 } } },
@@ -207,8 +207,8 @@
     mk_arcane: { name: 'Arcane Edge', cost: 1, desc: 'Runeblade deals magic damage: armor and block do not stop it.', mod: { act: { dmg: 'magic' } } },
     mk_brand: { name: 'Rune Brand', cost: 1, desc: 'Hits mark the target for 2 turns: it takes 25% more damage.', mod: { onHit: { mark: 2 } } },
     mk_spellbreak: { name: 'Spellbreaker', cost: 0, desc: '+30% damage against spellcasters.', mod: { props: { vs: { caster: 0.3 } } } },
-    mk_blink: { name: 'Blink', cost: 1, desc: 'Active, 2 uses: instead of walking, teleport to an empty tile up to 3 tiles away, ignoring anything in between. It can still attack afterward.',
-      mod: { active: { name: 'Blink', kind: 'blink', range: [1, 3], uses: 2, asMove: true } } },
+    mk_blink: { name: 'Blink', cost: 1, desc: 'Active, 2 uses: teleport to an empty tile up to 3 tiles away, ignoring anything in between. It is its action for the turn.',
+      mod: { active: { name: 'Blink', kind: 'blink', range: [1, 3], uses: 2 } } },
     mk_burst: { name: 'Arcane Burst', cost: 2, desc: 'Active, 2 uses: arcane force strikes every adjacent enemy for 80% magic damage.',
       mod: { active: { name: 'Arcane Burst', kind: 'nova', radius: 1, dmg: 'magic', mult: 0.8, uses: 2 } } },
 
@@ -218,18 +218,46 @@
     sa_frost: { name: 'Frost Arrows', cost: 1, desc: 'Hits root the target for 1 turn.', mod: { onHit: { root: 1 } } },
     sa_gaze: { name: 'Hollow Gaze', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     sa_volley: { name: 'Bone Volley', cost: 1, desc: 'Active, 2 uses: bones rain on a 5-tile area 2 to 4 tiles away, 60% damage to each enemy.',
-      mod: { active: { name: 'Bone Volley', kind: 'blast', range: [2, 4], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.6, ff: false, uses: 2 } } },
+      mod: { active: { name: 'Bone Volley', kind: 'blast', range: [2, 4], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.6, uses: 2 } } },
     sa_reform: { name: 'Reassemble', cost: 2, desc: 'Once per battle, survives a fatal blow with 1 HP.', mod: { traits: ['secondwind'] } },
 
     // Trebuchet
     tb_counter: { name: 'Counterweight', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
     tb_firepots: { name: 'Fire Pots', cost: 1, desc: 'Boulders set targets burning: 5 damage a turn for 2 turns.', mod: { onHit: { burn: [2, 5] } } },
     tb_scatter: { name: 'Scattershot', cost: 2, desc: 'Active, 2 uses: stones rain on a 5-tile area 3 to 5 tiles away, 70% damage to each enemy.',
-      mod: { active: { name: 'Scattershot', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, ff: false, uses: 2 } } },
+      mod: { active: { name: 'Scattershot', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, uses: 2 } } },
     tb_frame: { name: 'Reinforced Frame', cost: 0, desc: '+20 max HP and +10% armor.', mod: { stat: { hp: 20, armor: 0.1 } } },
     tb_wreck: { name: 'Wrecking Shot', cost: 1, desc: "Boulders ignore half of the target's armor.", mod: { props: { pierce: 0.5 } } },
     tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
   };
+
+  // Every active ability: [uses a battle, cooldown]. Uses never come back. The cooldown is
+  // its own, counted in the unit's turns after each use and on top of the unit's cooldown,
+  // so a strong one cannot come out every turn. Using one is the unit's action that turn,
+  // in place of its attack.
+  const ACTIVE_LIMITS = {
+    k_bash: [3, 2], k_rally: [1, 0],
+    a_snare: [3, 2], a_smoke: [2, 3], a_volley: [3, 4],
+    s_caltrops: [2, 2], s_mark: [2, 2],
+    c_mend: [3, 2], c_smite: [3, 2], c_shield: [2, 2], c_revive: [1, 0],
+    b_warcry: [2, 3], b_leap: [3, 3],
+    p_firewall: [2, 3],
+    as_smoke: [2, 2], as_shadow: [2, 3],
+    g_toss: [3, 2], g_slam: [2, 3],
+    br_howl: [2, 3],
+    f_roots: [2, 3], f_rejuv: [2, 2],
+    wi_hex: [2, 2], wi_storm: [1, 0],
+    d_buffet: [3, 2], d_terror: [1, 0],
+    mk_blink: [2, 2], mk_burst: [3, 3],
+    sa_volley: [2, 3],
+    tb_scatter: [3, 4],
+  };
+  const activeTag = (a) => `Active, ${a.uses} use${a.uses > 1 ? 's' : ''}${a.cd ? `, cooldown ${a.cd}` : ''}`;
+  for (const id in ACTIVE_LIMITS) {
+    const ab = A[id];
+    [ab.mod.active.uses, ab.mod.active.cd] = ACTIVE_LIMITS[id];
+    ab.desc = ab.desc.replace(/^Active(, \d+ uses?)?:/, activeTag(ab.mod.active) + ':');
+  }
 
   // Level 3 masteries (fixed per class).
   const MASTERY = {
@@ -243,7 +271,7 @@
     golem: { name: 'Colossus', desc: '+25 max HP and +1 Move.', mod: { stat: { hp: 25, move: 1 } } },
     beastrider: { name: 'Ride Down', desc: 'After moving 3 or more tiles, its Lance knocks the target back.', mod: { traits: ['ridedown'] } },
     furgon: { name: 'Ancient Bark', desc: '+20 max HP and +2 Regen.', mod: { stat: { hp: 20 }, props: { regen: 2 } } },
-    wisp: { name: 'Pestilence', desc: 'Miasma also deals 8 magic damage to the enemies in reach as it is cast (never to buildings).', mod: { act: { dmg: 'magic', fixed: 8 } } },
+    wisp: { name: 'Pestilence', desc: 'Miasma also deals 8 magic damage (never to buildings).', mod: { act: { dmg: 'magic', fixed: 8 } } },
     barrier: { name: 'Aegis Field', desc: 'Its aura also softens physical blows by 15%.', mod: { traits: ['aegisfield'] } },
     enchantress: { name: 'Grand Illusion', desc: 'Mesmerize covers a full 3x3 area.', mod: { act: { pattern: 'square' } } },
     witch: { name: 'Shadow Pact', desc: '+25% damage.', mod: { props: { dmgMult: 0.25 } } },
@@ -387,10 +415,10 @@
     wisp: {
       name: 'Poison Wisp', rarity: 'uncommon', cost: 3, role: 'caster',
       hp: 24, pow: 8, armor: 0, res: 0.4, block: 0.4, rec: 1, move: 4,
-      act: { name: 'Miasma', kind: 'nova', radius: 2, cloud: 2, fx: { poison: 2 } },
+      act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 2 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_virulent', 'w_wither'], 2: ['w_ethereal', 'w_linger', 'w_plague'] },
-      desc: 'Floats over anything. Miasma leaves a poison cloud 2 tiles around it until it casts again: enemies that start their turn inside lose HP and cannot heal. Buildings, wagons, cages and constructs are immune.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages and constructs are immune.',
       tip: 'Only 24 HP and no armor. One arrow volley can drop it.',
     },
     barrier: {
@@ -405,7 +433,7 @@
     enchantress: {
       name: 'Enchantress', rarity: 'rare', cost: 4, role: 'caster',
       hp: 30, pow: 10, armor: 0, res: 0.35, block: 0.25, rec: 2, move: 3,
-      act: { name: 'Mesmerize', kind: 'blast', range: [2, 4], dmg: 'magic', pattern: 'plus', ff: false, arc: true, fx: { para: 1 } },
+      act: { name: 'Mesmerize', kind: 'blast', range: [2, 4], dmg: 'magic', pattern: 'plus', arc: true, fx: { para: 1 } },
       traits: [], tags: ['human', 'caster'],
       abilities: { 1: ['e_far', 'e_spike', 'e_chain'], 2: ['e_glamour', 'e_frailty', 'e_trance'] },
       desc: 'Paralyzes enemies in a 5-tile burst. They lose a turn and cannot block until it wears off.',
@@ -648,7 +676,7 @@
       name: 'Necromancer', rarity: 'enemy', cost: 4, role: 'caster',
       hp: 30, pow: 13, armor: 0, res: 0.35, block: 0.2, rec: 2, move: 3,
       act: { name: 'Grave Bolt', kind: 'strike', range: [2, 4], dmg: 'magic', arc: true },
-      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 3 }],
+      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 3, uses: 3, cd: 2 }],
       traits: [], tags: ['human', 'caster'],
       desc: 'Raises skeletons from the earth, up to 3 at a time. They crumble when it dies.',
       tip: 'Kill the Necromancer and every skeleton it raised falls apart.',
@@ -665,7 +693,7 @@
       name: 'Giant Spider', rarity: 'enemy', cost: 3, role: 'skirmisher',
       hp: 36, pow: 14, armor: 0.2, res: 0.1, block: 0.2, rec: 1, move: 4,
       act: { name: 'Venom Fangs', kind: 'strike', range: [1, 1], dmg: 'phys', fx: { poison: 2 }, poisonDmg: 5 },
-      extra: [{ name: 'Web Shot', kind: 'strike', range: [2, 4], arc: true, fx: { root: 2 } }],
+      extra: [{ name: 'Web Shot', kind: 'strike', range: [2, 4], arc: true, fx: { root: 2 }, uses: 3, cd: 2 }],
       traits: [], tags: ['beast'],
       desc: 'Pins prey in webs from range, then poisons it up close.',
       tip: 'Rooted units can still attack and turn. Keep a Cleric near the front.',
@@ -708,7 +736,7 @@
       name: 'Golem King', rarity: 'boss', cost: 12, role: 'tank', boss: true,
       hp: 135, pow: 22, armor: 0.5, res: -0.15, block: 0, rec: 2, move: 2,
       act: { name: 'Earthshatter', kind: 'quake', range: [1, 1], dmg: 'phys' },
-      extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8 }],
+      extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, uses: 3, cd: 2 }],
       traits: ['stoneskin', 'big'], tags: ['construct', 'big'], props: { guard: 0.2 },
       desc: 'Ancient king of the quarry. Hurls boulders, and Earthshatter strikes a foe and everyone beside it.',
       tip: 'Half armor but weak to magic. Slay the King to win.',
@@ -717,7 +745,7 @@
       name: 'Grukk the Warlord', rarity: 'boss', cost: 12, role: 'melee', boss: true,
       hp: 150, pow: 23, armor: 0.35, res: 0.1, block: 0.45, rec: 2, move: 3,
       act: { name: 'Brutal Cleave', kind: 'cleave', range: [1, 1], dmg: 'phys' },
-      extra: [{ name: 'War Roar', kind: 'drum', radius: 3, noHeal: true, uses: 2 }],
+      extra: [{ name: 'War Roar', kind: 'drum', radius: 3, noHeal: true, uses: 2, cd: 3 }],
       traits: ['big'], tags: ['greenskin', 'big'],
       desc: 'Warlord of the border tribes. Cleaves everything around him, and his roar whips the horde into a frenzy.',
       tip: 'Do not surround him with weak units. Strike from behind, where he cannot block.',
@@ -726,7 +754,7 @@
       name: 'Witch Queen', rarity: 'boss', cost: 13, role: 'caster', boss: true,
       hp: 126, pow: 18, armor: 0.1, res: 0.5, block: 0.3, rec: 2, move: 3,
       act: { name: 'Hexstorm', kind: 'cross', len: 4, dmg: 'magic', ff: false },
-      extra: [{ name: 'Hex', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 } }],
+      extra: [{ name: 'Hex', kind: 'strike', range: [1, 5], arc: true, fx: { mark: 2 }, uses: 3, cd: 2 }],
       traits: [], tags: ['human', 'caster', 'big'],
       desc: 'Mistress of the Witchwood. Hexstorm lashes enemies in all four directions. 50% magic resistance.',
       tip: 'Stay off her four lines. Physical attackers and flanks bring her down.',
@@ -735,7 +763,7 @@
       name: 'The Lich', rarity: 'boss', cost: 13, role: 'caster', boss: true,
       hp: 122, pow: 18, armor: 0.25, res: 0.4, block: 0, rec: 2, move: 3,
       act: { name: 'Frost Bolt', kind: 'strike', range: [1, 4], dmg: 'magic', arc: true, fx: { root: 1 } },
-      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 4 }],
+      extra: [{ name: 'Raise Dead', kind: 'raise', range: [1, 2], max: 4, uses: 3, cd: 2 }],
       traits: ['flying', 'undead'], tags: ['undead', 'big'],
       desc: 'A dead sorcerer-king. Its frost roots its victims, and the dead rise at its call.',
       tip: 'Blessed weapons and Smite hurt it badly. Its skeletons crumble when it dies.',
@@ -744,10 +772,23 @@
       name: 'Ashen Tyrant', rarity: 'boss', cost: 17, role: 'monster', boss: true,
       hp: 155, pow: 20, armor: 0.35, res: 0.35, block: 0, rec: 2, move: 4,
       act: { name: 'Cinder Breath', kind: 'cone', len: 3, dmg: 'magic', ff: false },
-      extra: [{ name: 'Wing Buffet', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.6, fx: { knock: 1 } }],
+      extra: [{ name: 'Wing Buffet', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.6, fx: { knock: 1 }, uses: 3, cd: 2 }],
       traits: ['flying', 'big'], tags: ['big', 'beast'],
       desc: 'The great dragon that rules the Spire. Its breath spares its own servants.',
       tip: 'Spread out and strike from several sides at once. Dragonslayer weapons help.',
+    },
+    // The optional final challenge after the campaign is won: not meant to be beaten.
+    void_wyrm: {
+      name: 'Eclipse Wyrm', rarity: 'boss', cost: 24, role: 'monster', boss: true,
+      hp: 250, pow: 21, armor: 0.35, res: 0.35, block: 0, rec: 2, move: 4,
+      act: { name: 'Void Breath', kind: 'cone', len: 4, dmg: 'magic', ff: false },
+      extra: [
+        { name: 'Tail Sweep', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.8, ff: false, fx: { knock: 1 }, uses: 3, cd: 2 },
+        { name: 'Eclipse', kind: 'nova', radius: 3, dmg: 'magic', mult: 0.6, ff: false, fx: { weak: 2 }, uses: 2, cd: 4 },
+      ],
+      traits: ['flying', 'big'], tags: ['big', 'beast'],
+      desc: 'A dragon of the dark between the stars. Its breath and its wings spare its own.',
+      tip: 'Nobody expects you to win this. Bring everything: magic and steel, healers, and units that can take a breath.',
     },
   };
 
@@ -758,7 +799,7 @@
     mageknight: 3, golem: 1, beastrider: 6, furgon: 3, wisp: 6, enchantress: 4, witch: 3, lightning: 3,
     dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 4, warg: 8, wolf: 7,
     cutthroat: 7, crossbow: 3, skeleton: 3, specter: 6, necromancer: 3, colossus: 1, spider: 6, troll: 2,
-    drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4,
+    drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4,
   };
   for (const [k, T] of Object.entries(UNITS)) T.spd = SPEED[k] || 0;
 
@@ -792,6 +833,11 @@
     if (!T.traits.includes('nofacing')) tags.add('facing');
     if (T.rec >= 2) tags.add('slow');
     if (a.kind !== 'none') tags.add('active');
+    // An area attack, its own or from one of its abilities: Disciplined has work to do.
+    const AREA = ['cleave', 'quake', 'cross', 'nova', 'blast', 'line', 'cone', 'leap'];
+    const areaAct = (x) => x && x.dmg && AREA.includes(x.kind);
+    const abil = T.abilities ? [...T.abilities[1], ...T.abilities[2]].map((id) => A[id] && A[id].mod.active) : [];
+    if (areaAct(a) || abil.some(areaAct)) tags.add('area');
     return tags;
   }
 
@@ -800,6 +846,7 @@
 
   const SKILLS = {
     vampiric: { name: 'Vampiric', cost: 2, desc: 'Heals for 30% of the damage it deals.', req: 'damage', mod: { props: { lifesteal: 0.3 } } },
+    disciplined: { name: 'Disciplined', cost: 1, desc: 'Its area attacks and abilities never hit allies.', req: 'area', mod: { traits: ['precise'] } },
     swift: { name: 'Swift', cost: 2, desc: '+1 Move.', req: 'mobile', mod: { stat: { move: 1 } } },
     hardened: { name: 'Hardened', cost: 1, desc: '+10% armor.', mod: { stat: { armor: 0.1 } } },
     warded: { name: 'Warded', cost: 1, desc: '+15% magic resistance.', mod: { stat: { res: 0.15 } } },
@@ -1025,6 +1072,8 @@
         ashen_tyrant: { name: 'The Ashen Tyrant', units: ['ashen_tyrant', 'pyromancer', 'knight', 'knight', 'drake', 'cleric'], stance: 'balanced', pool: ['knight', 'archer'] },
       },
     },
+    // The optional final challenge: the Eclipse Wyrm and the best of the Spire.
+    mega: { name: 'The Eclipse Wyrm', units: ['void_wyrm', 'drake', 'drake', 'lich', 'mageknight', 'knight', 'cleric', 'witch'], lv: [3, 2, 2, 2, 3, 3, 3, 2], stance: 'aggressive', pool: ['knight', 'crossbow', 'drake'] },
   };
 
   const NAMES = [

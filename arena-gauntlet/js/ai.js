@@ -514,14 +514,13 @@
         v += r === 'ranged' || r === 'caster' || r === 'support' ? 2.5 : 1;
       }
     }
-    // Hazards underfoot, and powder kegs that the enemy could set off. A poison cloud
-    // reaches flyers too: its next turn would start in it.
-    for (const f of s.tfx) {
-      if (f.x !== x || f.y !== y || f.team === u.team) continue;
-      if (f.kind === 'miasma' && !E.statusImmune(s, u, 'poison')) v -= f.dmg * hpv * 1.5 + 2;
-      if (flying) continue;
-      if (f.kind === 'fire') v -= (f.dmg || 8) * hpv * 1.2;
-      if (f.kind === 'caltrops') v -= 6 * hpv + 3;
+    // Hazards underfoot, and powder kegs that the enemy could set off.
+    if (!flying) {
+      for (const f of s.tfx) {
+        if (f.x !== x || f.y !== y || f.team === u.team) continue;
+        if (f.kind === 'fire') v -= (f.dmg || 8) * hpv * 1.2;
+        if (f.kind === 'caltrops') v -= 6 * hpv + 3;
+      }
     }
     if (ctx.foeRanged) {
       for (const [bx, by] of E.radiusTiles(s, x, y, 1)) {

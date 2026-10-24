@@ -37,7 +37,6 @@
     board: null,
     battle: null,
     wr: null,
-    mapSel: null,
     prefs: { fast: false, speed: 1, threat: false, manualFacing: false, autoBattle: true },
   };
   try {
@@ -234,7 +233,7 @@
     const fx = E.hitFx(u, a);
     const bits = [];
     if (fx.para) bits.push(`paralyzes for ${fx.para} turn${fx.para > 1 ? 's' : ''}`);
-    if (fx.poison && !a.cloud) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
+    if (fx.poison) bits.push(`poisons for ${fx.poison[0]} turns (${fx.poison[1]} a turn, no healing)`);
     if (fx.burn) bits.push(`burns for ${fx.burn[0]} turns (${fx.burn[1]} a turn)`);
     if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
     if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
@@ -254,45 +253,48 @@
     return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
   }
 
+  // Charges left and the act's own cooldown: how long until it can be used again.
   function usesText(a) {
-    if (!a.uses) return '';
-    const left = a.left === Infinity || a.left == null ? a.uses : a.left;
-    return ` ${left} of ${a.uses} use${a.uses > 1 ? 's' : ''} left.`;
+    const bits = [];
+    if (a.uses) {
+      const left = a.left === Infinity || a.left == null ? a.uses : a.left;
+      bits.push(`${left} of ${a.uses} use${a.uses > 1 ? 's' : ''} left`);
+    }
+    if (a.cd) bits.push(a.cdLeft > 0 ? `usable again in ${a.cdLeft} of its turns` : `after each use it waits ${a.cd} of its turns`);
+    return bits.length ? ' ' + cap1(bits.join('; ')) + '.' : '';
   }
 
   // Plain-language rules text for one of a unit's acts.
   function actText(u, a) {
     const base = a.fixed != null ? Math.round(a.fixed * (a.dmg === 'magic' ? 1 + (u.props.magicMult || 0) : 1)) : Math.round(u.pow * (a.mult || 1));
     const dt = a.dmg === 'magic' ? 'magic' : 'physical';
-    const ff = a.ff ? ' Hits allies too.' : '';
+    const area = a.dmg && ['cleave', 'quake', 'cross', 'nova', 'blast', 'line', 'cone', 'leap'].includes(a.kind);
+    const ff = !area ? '' : E.hitsAllies(u, a) ? ' Hits allies in the area too.' : ' Spares allies.';
     let t;
     switch (a.kind) {
       case 'strike':
         t = a.dmg ? `${base} ${dt} damage to one enemy ${rangeText(a.range)}.` : `Targets one enemy ${rangeText(a.range)}.`;
         break;
       case 'cleave':
-        t = `${base} ${dt} damage to every adjacent enemy.`;
+        t = `${base} ${dt} damage to every adjacent ${E.hitsAllies(u, a) ? 'unit, friend or foe' : 'enemy'}.`;
         break;
       case 'quake':
-        t = `${base} ${dt} damage to an adjacent enemy and every enemy beside it.`;
+        t = `${base} ${dt} damage to an adjacent enemy and every unit beside it.${ff}`;
         break;
       case 'blast':
         t = `${a.dmg ? base + ' ' + dt + ' damage to' : 'Affects enemies in'} a ${a.pattern === 'square' ? '3x3' : '5-tile'} area ${rangeText(a.range)}.${ff}`;
         break;
       case 'line':
-        t = `${base} ${dt} damage to every unit in a straight line up to ${a.len} tiles.${a.ff ? ' Hits allies too.' : ' Passes through allies.'}`;
+        t = `${base} ${dt} damage to every unit in a straight line up to ${a.len} tiles.${E.hitsAllies(u, a) ? ' Hits allies too.' : ' Passes through allies.'}`;
         break;
       case 'cone':
         t = `${base} ${dt} damage across a cone ${a.len} tiles deep.${ff}`;
         break;
       case 'cross':
-        t = `${base} ${dt} damage to enemies in all four directions, up to ${a.len} tiles.`;
+        t = `${base} ${dt} damage in all four directions, up to ${a.len} tiles.${ff}`;
         break;
       case 'nova':
-        if (a.cloud) {
-          const turns = a.cloud + (u.props.poisonTurns || 0);
-          t = `${a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}, and l` : 'L'}eaves a poison cloud over every tile within ${a.radius} for ${turns} of its own turns${u.props.poisonTurns ? '' : ' (its old cloud clears when it casts again)'}. Enemies that start their turn inside lose ${E.poisonDamage(u, a)} HP and cannot heal; stepping out stops it. Buildings, wagons, cages and constructs are immune.`;
-        } else t = a.dmg ? `${base} ${dt} damage to every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.` : `Affects every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.`;
+        t = a.dmg ? `${base} ${dt} damage to everyone within ${a.radius} tile${a.radius > 1 ? 's' : ''}.${ff}` : `Affects every enemy within ${a.radius} tile${a.radius > 1 ? 's' : ''}.`;
         break;
       case 'pray':
         t = `Heals ${E.healAmount(u, a)} HP to every ally within ${a.radius} tiles.${a.cleanse ? ' Also cures poison, burns, paralysis and roots.' : ''}`;
@@ -714,6 +716,31 @@
       <button class="btn icon-only" id="zOut" aria-label="Zoom out">${ic('minus')}</button>`;
     $('#zIn').onclick = () => UI.board.setZoom(UI.board.zoom * 1.35);
     $('#zOut').onclick = () => UI.board.setZoom(UI.board.zoom / 1.35);
+    relicBar();
+  }
+
+  // Your relics as small round badges over the board, in the War Room and in battle: tap
+  // one to see what it does.
+  const RELIC_ICON = {
+    war_horn: 'banner', whetstone: 'sword', steel_bucklers: 'shield', iron_plating: 'block', coin_purse: 'gold', healing_salve: 'heart',
+    scout_map: 'eye', drill_manual: 'book', pathfinder: 'boot', oak_charm: 'heart', sappers_kit: 'fire', mana_crystal: 'magic',
+    bloodstone: 'heart', thorned_mail: 'block', headsman_axe: 'skull', phoenix_feather: 'fire', guild_seal: 'bag', legion_banner: 'banner',
+    sands_of_haste: 'hourglass', recruiters_bell: 'army', old_crown: 'crown', shadow_cloak: 'eye', aegis: 'shield', warlord_helm: 'crown',
+    alchemist_stone: 'gem', dragon_scale: 'shield', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire',
+    kings_ransom: 'gold', crown_command: 'crown', sacred_chalice: 'heart', cursed_blade: 'sword',
+  };
+  function relicBar() {
+    const bar = $('#relicBar');
+    const run = UI.run;
+    const ids = run ? run.relics.filter((id) => RELICS[id]) : [];
+    bar.innerHTML = ids
+      .map((id) => `<button class="relic-dot tier-${RELICS[id].tier}" data-relic="${id}" aria-label="${esc(RELICS[id].name)}">${ic(RELIC_ICON[id] || 'gem')}</button>`)
+      .join('');
+    for (const b of $$('[data-relic]', bar))
+      b.onclick = () => {
+        const r = RELICS[b.dataset.relic];
+        toast(`${r.name}: ${r.desc}`, 3500);
+      };
   }
 
   function showBanner(text, enemy) {
@@ -823,11 +850,10 @@
   // ------------------------------------------------------------ new campaign
 
   // A new campaign drafts its army: five units, a relic, a skill and a piece of gear, each
-  // one of three, then the difficulty. Back undoes a pick; Start over deals a fresh draft.
+  // one of three. Back undoes a pick; Start over deals a fresh draft.
   function newCampaign() {
     let seed = ((Math.random() * 2 ** 31) >>> 0) + 1;
     const picks = [];
-    let diff = 'knight';
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
@@ -865,11 +891,7 @@
           <div class="choice-grid">${offer.options.map((id, i) => option(offer.kind, id, i)).join('')}</div>`
         : `<div><p class="eyebrow">New campaign · your army</p><h2>Ready to march</h2></div>
           ${armyHTML()}
-          <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle. Field as many units as your Supply pays for.</p>
-          <h3>Difficulty</h3>
-          <div class="seg">${DIFFICULTIES.map(
-            (d) => `<button class="card ${d.id === diff ? 'selected' : ''}" data-diff="${d.id}"><div class="title" style="font-size:1.15rem">${d.name}</div><div class="desc small">${esc(d.desc)}</div></button>`
-          ).join('')}</div>
+          <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle. Field as many units as your Supply pays for. There is no difficulty setting: each round you choose an easy, a medium or an elite battle.</p>
           <button class="btn primary wide" id="ncGo">${ic('swords')} March to the Borderlands</button>
           <h3>Your army</h3>
           <div class="army-list">${picks
@@ -907,19 +929,13 @@
           sfx('select');
           render();
         };
-      for (const b of $$('[data-diff]', v))
-        b.onclick = () => {
-          diff = b.dataset.diff;
-          for (const x of $$('[data-diff]', v)) x.classList.toggle('selected', x === b);
-          sfx('click');
-        };
       if ($('#ncGo', v))
         $('#ncGo', v).onclick = () => {
           R.clearSave();
-          UI.run = R.newRun({ seed, difficulty: diff, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+          UI.run = R.newRun({ seed, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
           R.save(UI.run);
           sfx('turn');
-          mapScreen();
+          route();
           if (!UI.prefs.seenHelp2) {
             UI.prefs.seenHelp2 = true;
             savePrefs();
@@ -930,156 +946,118 @@
     render();
   }
 
-  // ------------------------------------------------------------ map
+  // ------------------------------------------------------------ the road
 
-  const NODE_INFO = {
-    battle: { icon: 'swords', name: 'Battle', desc: 'A standard enemy warband. Victory pays XP, gold and spoils.' },
-    elite: { icon: 'skull', name: 'Elite', desc: 'A tougher warband. Pays more XP and a relic.' },
-    event: { icon: 'event', name: 'Unknown', desc: 'Something waits on the road.' },
-    shop: { icon: 'bag', name: 'Merchant', desc: 'Recruits, skills, gear, enchantments and relics for gold.' },
-    rest: { icon: 'fire', name: 'Campfire', desc: 'Drill for XP, study a skill, or tinker with gear.' },
-    treasure: { icon: 'chest', name: 'Treasure', desc: 'A relic and some gold for the taking.' },
-    boss: { icon: 'crown', name: 'Boss', desc: '' },
+  const STEP_INFO = {
+    fight: { icon: 'swords', name: 'Battle' },
+    event: { icon: 'event', name: 'Event' },
+    shop: { icon: 'bag', name: 'Merchant' },
+    boss: { icon: 'crown', name: 'Boss' },
+    mega: { icon: 'skull', name: 'Final challenge' },
   };
 
-  function isWide() {
-    return root.innerWidth > root.innerHeight * 1.15;
+  // The act's road as a strip of steps: done, here, and still to come.
+  function roadHTML(run) {
+    return `<div class="road">${run.plan
+      .map((st, i) => `<span class="road-step ${i < run.step ? 'done' : i === run.step ? 'here' : ''}" title="${STEP_INFO[st.kind].name}">${ic(i < run.step ? 'check' : STEP_INFO[st.kind].icon)}</span>`)
+      .join('<span class="road-link"></span>')}</div>`;
   }
 
-  function mapSVG(run, avail) {
-    const rows = R.ROWS;
-    const horiz = isWide();
-    let W;
-    let H;
-    let pos;
-    if (horiz) {
-      const colW = 104;
-      const rowH = 62;
-      const left = 54;
-      const top = 40;
-      W = left * 2 + rows * colW + 40;
-      H = top * 2 + (R.COLS - 1) * rowH + 18;
-      pos = (n) => (n.id === 'boss' ? [left + rows * colW + 20, H / 2 - 9] : [left + n.row * colW + n.jx * 18, top + n.col * rowH]);
-    } else {
-      const rowH = 86;
-      const top = 56;
-      W = 500;
-      H = top * 2 + rows * rowH;
-      pos = (n) => (n.id === 'boss' ? [W / 2, top] : [70 + n.col * 90 + n.jx * 24, top + (rows - n.row) * rowH]);
-    }
-    const visited = new Set(run.visited.filter((v) => v.startsWith(run.act + ':')).map((v) => v.slice(2)));
-    const bossName = UNITS[R.bossOf(run)].name;
-    let lines = '';
-    let nodes = '';
-    for (const n of run.map.nodes) {
-      const [x, y] = pos(n);
-      for (const id of n.next) {
-        const m = run.map.nodes.find((k) => k.id === id);
-        const [x2, y2] = pos(m);
-        const walked = visited.has(n.id) && (visited.has(id) || run.cur === id);
-        lines += `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="${walked ? '#5a3c1e' : '#8b6d45'}" stroke-width="${walked ? 3.5 : 2}" stroke-dasharray="${walked ? '' : '5 6'}" stroke-linecap="round" opacity="${walked ? 0.95 : 0.6}"/>`;
-      }
-    }
-    for (const n of run.map.nodes) {
-      const [x, y] = pos(n);
-      const info = NODE_INFO[n.kind];
-      const isAvail = avail.includes(n.id);
-      const isVisited = visited.has(n.id);
-      const isPos = run.pos === n.id;
-      const sel = UI.mapSel === n.id;
-      const r = n.id === 'boss' ? 30 : 21;
-      const fill = isVisited ? '#6b4f2e' : n.kind === 'elite' ? '#f3d6c8' : n.id === 'boss' ? '#f1d9a4' : '#f6ecd4';
-      const stroke = isAvail ? '#a3331f' : isVisited ? '#3e2a14' : '#7b5d36';
-      const col = isVisited ? '#f3e6c8' : n.kind === 'elite' || n.id === 'boss' ? '#8a1f15' : '#4a3520';
-      const dim = !isAvail && !isVisited && !isPos ? 0.72 : 1;
-      nodes += `<g class="node" data-node="${n.id}" transform="translate(${x},${y})" opacity="${dim}" ${isAvail ? 'tabindex="0" role="button"' : ''} aria-label="${info.name}">
-        ${isAvail ? `<circle r="${r + 7}" fill="none" stroke="#a3331f" stroke-width="2" opacity="0.7"><animate attributeName="r" values="${r + 3};${r + 9};${r + 3}" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.6s" repeatCount="indefinite"/></circle>` : ''}
-        ${sel ? `<circle r="${r + 6}" fill="rgba(163,51,31,0.18)" stroke="#a3331f" stroke-width="3"/>` : ''}
-        <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${isAvail || isPos ? 3 : 2}"/>
-        ${isPos ? `<circle r="${r - 4}" fill="none" stroke="#f3e6c8" stroke-width="1.5"/>` : ''}
-        <svg x="${-r * 0.55}" y="${-r * 0.55}" width="${r * 1.1}" height="${r * 1.1}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-${info.icon}"/></svg>
-        ${n.id === 'boss' ? `<text y="${r + 18}" text-anchor="middle" font-family="Grenze Gotisch, Georgia, serif" font-size="17" fill="#5b3417">${esc(bossName)}</text>` : ''}
-        <circle r="${r + 10}" fill="transparent"/>
-      </g>`;
-    }
-    return `<svg class="mapsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Campaign map">${lines}${nodes}</svg>`;
+  // A small picture of a challenge's battlefield: the ground, the enemy army and any loot.
+  function drawThumb(cv, enc, palette) {
+    const b = new AG.Render.Board(cv);
+    b.resize(cv.clientWidth || 280, cv.clientHeight || 150);
+    b.setBoard(enc.w, enc.h, enc.terrain, palette);
+    b.setObjectives(enc.loot, enc.hold);
+    b.syncFromState(E.createBattle(R.battleConfig(UI.run, [], enc)));
+    b.frame();
   }
 
-  function nodeDesc(run, n) {
-    const info = NODE_INFO[n.kind];
-    if (n.kind === 'boss') {
-      const b = UNITS[R.bossOf(run)];
-      return `${b.name}. ${b.desc}`;
-    }
-    if (n.kind === 'battle' || n.kind === 'elite') return `${info.desc} Victory: +${R.battleXp(run, n.kind)} XP.`;
-    return info.desc;
-  }
-
-  function mapFoot(run) {
-    const n = UI.mapSel && R.getNode(run, UI.mapSel);
-    if (!n) return `<span class="muted grow">Tap a glowing stop on the map to choose your path.</span>`;
-    const info = NODE_INFO[n.kind];
-    return `<div class="grow" style="min-width:0"><b>${info.name}</b><div class="small muted">${esc(nodeDesc(run, n))}</div></div>
-      <button class="btn primary" id="mGo">${ic(info.icon)} Enter</button>`;
-  }
-
-  function mapScreen() {
+  // Each round: three battles to choose from, easy, medium and elite, each with a look at
+  // the field, its goals and what it pays. The boss (and the final challenge) comes alone.
+  // A defeat brings you back here, with the same three on offer.
+  function challengeScreen() {
     const run = UI.run;
     UI.battle = null;
     UI.wr = null;
     const act = ACTS[run.act];
-    const avail = R.availableNodes(run).map((n) => n.id);
-    if (UI.mapSel && !avail.includes(UI.mapSel)) UI.mapSel = null;
-    if (!UI.mapSel && avail.length === 1) UI.mapSel = avail[0];
-    const wide = isWide();
+    const st = R.curStep(run);
+    const offer = run.offer || [];
+    const mega = st && st.kind === 'mega';
+    const head = mega ? 'The final challenge' : st.kind === 'boss' ? 'The boss awaits' : 'Choose your next battle';
+    const sub = mega
+      ? 'The campaign is already won. This fight is not meant to be won: it is for a super victory.'
+      : st.kind === 'boss'
+        ? `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}.`
+        : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic. Lose, and you come back here to choose again.`;
+    const card = (o, i) => {
+      const rw = R.challengeReward(run, o);
+      const pays = mega
+        ? 'A super victory, and a place in legend.'
+        : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} a relic` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
+            .filter(Boolean)
+            .join(' · ');
+      return `<button class="card challenge tier-${o.tier}" data-ch="${i}" data-choose>
+        <div class="ch-top"><span class="tier-chip tier-${o.tier}">${R.TIERS[o.tier].name}</span>${o.attempts ? `<span class="small muted">${o.attempts} ${o.attempts === 1 ? 'try' : 'tries'} so far</span>` : ''}</div>
+        <canvas class="ch-thumb" data-thumb="${i}"></canvas>
+        <div class="title">${esc(o.enc.name)}</div>
+        <div class="ch-goals">${objectivesHTML(o.enc)}</div>
+        <div class="ch-pay">${pays}</div>
+      </button>`;
+    };
     const v = showView(
-      `<div class="map-head">
-        <div class="act"><span class="eyebrow">${act.short}</span><h2>${esc(act.name)}</h2></div>
-        <div class="controls">${resbar(run)}
-          <button class="btn" id="mRelics">${ic('gem')} ${run.relics.length}</button>
-          <button class="btn" id="mArmy">${ic('army')} Army</button>
-          <button class="btn icon-only" id="mMenu" aria-label="Menu">${ic('menu')}</button></div>
-      </div>
-      <div class="map-body"><div class="parchment ${wide ? 'horiz' : ''}">${mapSVG(run, avail)}
-        <div class="legend">${['battle', 'elite', 'event', 'shop', 'rest', 'treasure']
-          .map((k) => `<span>${ic(NODE_INFO[k].icon)} ${NODE_INFO[k].name}</span>`)
-          .join('')}</div></div></div>
-      <div class="map-foot"><div class="inner ${wide ? 'horiz' : ''}" id="mFoot">${mapFoot(run)}</div></div>`,
-      'map-screen'
+      `<div class="wrap">
+        <div><p class="eyebrow">${act.short} · ${esc(act.name)}</p><h2>${head}</h2></div>
+        <div class="row">${resbar(run)}<span class="grow"></span>
+          <button class="btn" id="chRelics">${ic('gem')} ${run.relics.length}</button>
+          <button class="btn" id="chArmy">${ic('army')} Army</button>
+          <button class="btn icon-only" id="chMenu" aria-label="Menu">${ic('menu')}</button></div>
+        ${roadHTML(run)}
+        <p class="muted">${sub}</p>
+        <div class="cards challenges">${offer.map(card).join('')}</div>
+        ${mega ? `<div class="row end"><button class="btn" id="chClaim">${ic('crown')} Claim your victory instead</button></div>` : ''}
+      </div>`
     );
-    UI.mapWide = wide;
-    const go = $('#mGo', v);
-    if (go)
-      go.onclick = () => {
-        const id = UI.mapSel;
-        UI.mapSel = null;
-        if (R.enterNode(run, id)) {
+    for (const cv of $$('[data-thumb]', v)) drawThumb(cv, offer[+cv.dataset.thumb].enc, act.palette);
+    for (const b of $$('[data-ch]', v))
+      b.onclick = () => {
+        if (R.chooseChallenge(run, +b.dataset.ch)) {
           sfx('select');
           route();
         }
       };
-    for (const g of $$('[data-node]', v)) {
-      const pick = () => {
-        const id = g.dataset.node;
-        if (!avail.includes(id)) {
-          const n = R.getNode(run, id);
-          toast(NODE_INFO[n.kind].name + ': ' + nodeDesc(run, n));
-          return;
-        }
-        UI.mapSel = id;
-        sfx('click');
-        mapScreen();
+    if ($('#chClaim', v))
+      $('#chClaim', v).onclick = () => {
+        R.endRun(run);
+        route();
       };
-      g.addEventListener('click', pick);
-      g.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') pick();
-      });
-    }
-    $('#mArmy', v).onclick = () => armySheet(() => mapScreen());
-    $('#mMenu', v).onclick = () => menuSheet();
-    $('#mRelics', v).onclick = () => relicSheet();
-    const focus = $(`[data-node="${UI.mapSel || avail[0] || run.pos}"]`, v);
-    if (focus && focus.scrollIntoView) setTimeout(() => focus.scrollIntoView({ block: 'center' }), 30);
+    $('#chArmy', v).onclick = () => armySheet(() => challengeScreen());
+    $('#chMenu', v).onclick = () => menuSheet();
+    $('#chRelics', v).onclick = () => relicSheet();
+  }
+
+  // The Act III boss is down: the campaign is won. Claim it, or take on the final challenge.
+  function summitScreen() {
+    const run = UI.run;
+    const v = showView(
+      `<div class="wrap">
+        <div><p class="eyebrow">The Spire is silent</p><h2>Campaign won</h2></div>
+        <p>${esc(UNITS[R.bossOf(run)].name)} is slain, and the arena bows to your warband. The victory is yours whatever you choose now.</p>
+        <div class="panel summit">
+          <p><b>Something stirs beyond the Spire: the Eclipse Wyrm.</b> It is not meant to be beaten. Throw everything this army has at it for a super victory, as often as you like, or call it a day.</p>
+          <div class="actions"><button class="btn" id="smClaim">${ic('crown')} Claim victory</button><button class="btn primary" id="smFace" data-choose>${ic('skull')} Face the Eclipse Wyrm</button></div>
+        </div>
+      </div>`
+    );
+    $('#smClaim', v).onclick = () => {
+      R.endRun(run);
+      route();
+    };
+    $('#smFace', v).onclick = () => {
+      R.faceFinal(run);
+      sfx('select');
+      route();
+    };
   }
 
   function menuSheet(inBattle) {
@@ -1272,7 +1250,7 @@
       };
       body =
         group('talent', 'Talents') + group('skill', 'Skills') + group('gear', 'Gear') + group('scroll', 'Enchantment scrolls') ||
-        '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants, rest at campfires and explore events to find them.</p>';
+        '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants and explore events to find them.</p>';
     } else {
       body = `<div class="army-list">${run.relics
         .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
@@ -1451,7 +1429,6 @@
         ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
       <p class="small muted">Battles: ${r.battles} · Enemies slain: ${r.kills}</p>
       <div class="actions">
-        <button class="btn" id="loDismiss" ${run.roster.length <= 2 ? 'disabled' : ''}>Dismiss (+15 gold)</button>
         <button class="btn primary" id="loDone">${ic('check')} Done</button>
       </div>`;
     const changed = () => {
@@ -1501,22 +1478,6 @@
             }
           );
         };
-      $('#loDismiss', sh).onclick = async () => {
-        UI.onSheetClose = null;
-        const ok = await confirmSheet('Dismiss ' + r.name + '?', 'They leave your army for good, and their skills and gear return to your pack. You get 15 gold.', 'Dismiss', 'Keep', true);
-        if (ok && R.dismiss(run, rid)) {
-          R.save(run);
-          if (UI.wr) {
-            UI.wr.dep.delete(rid);
-            UI.wr.sel = null;
-            renderWarRoom();
-          }
-          UI.onSheetClose = after;
-          return back ? back() : closeSheet();
-        }
-        UI.onSheetClose = after;
-        loadoutSheet(rid, back);
-      };
       $('#loDone', sh).onclick = () => (back ? back() : closeSheet());
     });
     UI.onSheetClose = after;
@@ -1561,7 +1522,7 @@
       .join('');
     openSheet(
       `${sheetHead(`Equip ${kind}`, `${esc(r.name)} the ${esc(UNITS[r.type].name)}. Taking an item from another unit moves it here.`)}
-      ${list.length ? `<div class="army-list">${rows}</div>` : `<p class="muted">${kind === 'talent' ? `You own no ${esc(UNITS[r.type].name)} talents yet. Find them in battle spoils and shops.` : `You own no ${kind === 'skill' ? 'skills' : 'gear'} yet. Find them in battle spoils, shops, campfires and events.`}</p>`}
+      ${list.length ? `<div class="army-list">${rows}</div>` : `<p class="muted">${kind === 'talent' ? `You own no ${esc(UNITS[r.type].name)} talents yet. Find them in battle spoils and shops.` : `You own no ${kind === 'skill' ? 'skills' : 'gear'} yet. Find them in battle spoils, shops and events.`}</p>`}
       <div class="actions">${cur ? `<button class="btn" id="ipClear">Empty this slot</button>` : ''}<button class="btn" id="ipBack">Back</button></div>`,
       (sh) => {
         for (const b of $$('[data-pick]', sh))
@@ -1672,10 +1633,6 @@
       } else if (fx.kind === 'smoke') {
         name('Smoke', 'eye');
         f.lines.push(`Nobody inside can be targeted from more than 1 tile away. Clears in ${left}.`);
-      } else if (fx.kind === 'miasma') {
-        name('Poison cloud', 'skull');
-        const src = s.byId[fx.src];
-        f.lines.push(`${mine ? 'Your miasma: enemy' : 'Enemy miasma: your'} units that start their turn here lose ${fx.dmg} HP and cannot heal. Buildings and constructs are immune. ${src && src.alive ? `Clears in ${fx.turns} of the ${src.name}'s turns, or when it casts again.` : `Clears in ${left}.`}`);
       } else if (fx.kind === 'caltrops') {
         name('Caltrops', 'target');
         f.lines.push(`${mine ? 'Your caltrops: the first enemy' : 'Enemy caltrops: the first of your units'} to step here stops, takes 6 damage and is rooted for 1 turn. They stay for ${left}.`);
@@ -1817,7 +1774,7 @@
     const dep = new Map();
     for (const d of p.lastDep || []) {
       const r = R.unitById(run, d.rid);
-      if (!r || !rows.includes(d.y) || enc.terrain[d.y * enc.w + d.x] !== 0) continue;
+      if (!r || !rows.includes(d.y) || !R.deployOpen(enc, d.x, d.y)) continue;
       if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
@@ -1840,7 +1797,7 @@
 
   function isDeployTile(x, y) {
     const wr = UI.wr;
-    return wr.rows.includes(y) && x >= 0 && x < wr.enc.w && wr.enc.terrain[y * wr.enc.w + x] === 0;
+    return wr.rows.includes(y) && R.deployOpen(wr.enc, x, y);
   }
 
   function wrRidAt(x, y) {
@@ -2127,7 +2084,7 @@
       ${body}
       ${selBlock}
       ${objectivesHTML(enc)}
-      <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button></div>
+      <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>${run.pending.fromEvent ? '' : `<button class="btn" id="wrBack">${ic('undo')} Other battles</button>`}</div>
       <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
@@ -2225,6 +2182,12 @@
       wr.sel = null;
       renderWarRoom();
     };
+    if ($('#wrBack'))
+      $('#wrBack').onclick = () => {
+        R.backToChoice(run);
+        if (UI.board) UI.board.stop();
+        route();
+      };
     $('#wrFight').onclick = () => wrFight();
   }
 
@@ -2352,8 +2315,9 @@
   }
 
   // A tap that found no blue tile. With a unit picked up, the nearest free blue tile within
-  // reach of the finger takes it (corner tiles are small targets); failing that, it stays
-  // picked up. With nothing picked up, explain the rock or chest there.
+  // reach of the finger takes it (corner tiles are small targets); failing that (a tap on
+  // the empty space around the board, or far from the blue tiles), the unit is let go.
+  // With nothing picked up, explain the rock or chest there.
   function wrMiss(hit, shown) {
     const wr = UI.wr;
     if (!wr.sel) return wrFeature(hit, shown);
@@ -2361,7 +2325,9 @@
     for (const y of wr.rows) for (let x = 0; x < wr.enc.w; x++) if (isDeployTile(x, y) && !wrRidAt(x, y)) free.push({ x, y });
     const m = snap({ px: hit.px, py: hit.py, tile: null, unitTile: null }, free);
     if (m) return wrPlace(m.x, m.y);
-    toast(`Tap a blue tile to place ${R.unitById(UI.run, wr.sel).name}, or the ✕ to let go.`);
+    wr.sel = null;
+    sfx('click');
+    renderWarRoom();
   }
 
   // A tap on the board that is not about a unit: explain the rock, chest or shrine under
@@ -2614,9 +2580,10 @@
       if (a.kind === 'none') return;
       const usable = E.actUsable(s, u, i);
       const n = usable ? E.targetsFrom(s, u, i).length : 0;
-      const uses = a.uses ? ` <span class="uses">${a.left}/${a.uses}</span>` : '';
+      const uses = a.uses ? ` <span class="uses">${a.cdLeft > 0 ? `⏳${a.cdLeft}` : `${a.left}/${a.uses}`}</span>` : '';
       let why = '';
       if (a.left <= 0) why = 'no uses left';
+      else if (a.cdLeft > 0) why = `cooling down: usable again in ${a.cdLeft} turn${a.cdLeft === 1 ? '' : 's'}`;
       else if (!usable) why = a.asMove ? 'already moved' : 'already acted';
       else if (!n) why = 'no targets';
       const icon = a.dmg ? dmgIcon(a.dmg) : ic(i === 0 ? 'target' : 'star');
@@ -3436,25 +3403,34 @@
         : endEv && endEv.surrender
           ? 'None of your remaining units could fight.'
           : 'Your army was broken.';
+    // A battle an event started is fought again from the war room; a challenge sends you
+    // back to the round's choice, where it is still on offer beside the others.
+    const fromEvent = UI.run.pending && UI.run.pending.fromEvent;
+    const again = () => {
+      if (fromEvent) return warRoom();
+      R.backToChoice(UI.run);
+      route();
+    };
     openSheet(
       `${sheetHead('Defeat')}
       <p>${reason} The enemy holds the field, but your campaign goes on: there is no limit on retries.</p>
-      <p class="muted">Re-plan your army against the same enemy. Swap units, change levels and abilities, move your archers back, bring the counter they fear.</p>
-      <div class="actions"><button class="btn" id="dfTitle">Main menu</button><button class="btn primary" id="dfRetry">${ic('swords')} Re-plan and fight</button></div>`,
+      <p class="muted">${fromEvent ? 'Re-plan your army against the same enemy.' : 'Back to the choice of battles: try this one again with a new plan, or pick another, maybe an easier one.'} Swap units, change levels and abilities, move your archers back, bring the counter they fear.</p>
+      <div class="actions"><button class="btn" id="dfTitle">Main menu</button><button class="btn primary" id="dfRetry">${ic('swords')} ${fromEvent ? 'Re-plan and fight' : 'Back to the battles'}</button></div>`,
       (sh) => {
         $('#dfRetry', sh).onclick = () => {
           UI.onSheetClose = null;
           closeSheet();
-          warRoom();
+          again();
         };
         $('#dfTitle', sh).onclick = () => {
           UI.onSheetClose = null;
           closeSheet();
+          if (!fromEvent) R.backToChoice(UI.run);
           title();
         };
       }
     );
-    UI.onSheetClose = () => warRoom();
+    UI.onSheetClose = again;
     void res;
   }
 
@@ -3545,8 +3521,7 @@
       `<div class="wrap">
         <div class="reward-head"><p class="eyebrow">${p.kind === 'boss' ? 'The champion falls' : 'The field is yours'}</p><h2>Victory</h2></div>
         ${levelUpHTML(p.lvFrom, p.lvTo)}
-        <div class="eyebrow">Collected</div>
-        <div class="panel loot got">
+        <div class="panel loot" data-got="✓ Collected">
           <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? 'max level' : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
@@ -3556,7 +3531,7 @@
         ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
           .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
-        ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
+        ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline" data-got="✓ Collected">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, GOT)}</div></div>` : ''}
         ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
@@ -3634,15 +3609,23 @@
         return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
     };
-    // One of each kind, so one list: each card says what it is.
+    // Six things, one of each kind, so one list: each card says what it is. Resupply brings
+    // out a fresh stock, a little dearer each time.
+    const reroll = R.rerollPrice(run);
     const v = showView(
       `<div class="wrap">
         <div class="row"><div class="grow"><p class="eyebrow">Merchant</p><h2>The Wandering Market</h2></div></div>
         <div class="row">${resbar(run)}<span class="grow"></span><button class="btn" id="shArmy">${ic('army')} Army</button></div>
         <div class="cards">${p.stock.map((it, i) => card(it, i)).join('')}</div>
-        <div class="row end"><button class="btn primary" id="shLeave">Leave the market</button></div>
+        <div class="row end"><button class="btn" id="shReroll" ${run.gold >= reroll ? '' : 'disabled'}>${ic('rotate')} Resupply · ${ic('gold')} ${reroll}</button><button class="btn primary" id="shLeave">Leave the market</button></div>
       </div>`
     );
+    $('#shReroll', v).onclick = () => {
+      if (R.rerollShop(run)) {
+        sfx('coin');
+        shopScreen();
+      }
+    };
     for (const b of $$('[data-buy]', v))
       b.onclick = () => {
         const i = +b.dataset.buy;
@@ -3663,74 +3646,6 @@
   }
 
   // ------------------------------------------------------------ rest, treasure, event
-
-  function restScreen() {
-    const run = UI.run;
-    const p = run.pending;
-    const xp = 12 + 2 * (run.act - 1);
-    const v = showView(
-      `<div class="wrap">
-        <div><p class="eyebrow">Campfire</p><h2>A night by the fire</h2></div>
-        <div class="row">${resbar(run)}</div>
-        ${p.done ? `<p class="hint">${p.done === 'drill' ? 'Your soldiers drill until dawn. Your command grows sharper.' : 'A quiet night of study and repair. The new item is in your pack.'}</p>${p.levels ? levelUpHTML(p.levels.from, p.levels.to) : ''}` : `
-        <div class="cards">
-          <button class="card" id="rsDrill" data-choose><div class="kind">${ic('crown')} Drill</div><div class="title">Drill the troops</div><div class="desc">Gain ${xp} XP toward your next commander level and more Supply for every battle.</div></button>
-        </div>
-        <div><div class="eyebrow">Or study: take one skill</div><div class="cards">${p.skills.map((id, i) => itemCard('skill', id, `data-study="${i}" data-choose`, ownedNote(run, 'skill', id))).join('')}</div></div>
-        <div><div class="eyebrow">Or tinker: take one piece of gear</div><div class="cards">${p.gear.map((id, i) => itemCard('gear', id, `data-tinker="${i}" data-choose`, ownedNote(run, 'gear', id))).join('')}</div></div>`}
-        <div class="row end"><button class="btn" id="rsArmy">${ic('army')} Army</button><button class="btn primary" id="rsGo" ${p.done ? '' : 'disabled'}>Break camp</button></div>
-      </div>`
-    );
-    if ($('#rsDrill', v))
-      $('#rsDrill', v).onclick = () => {
-        R.rest(run, 'drill');
-        sfx('heal');
-        restScreen();
-      };
-    for (const b of $$('[data-study]', v))
-      b.onclick = () => {
-        if (R.rest(run, 'study', +b.dataset.study)) {
-          sfx('coin');
-          restScreen();
-        }
-      };
-    for (const b of $$('[data-tinker]', v))
-      b.onclick = () => {
-        if (R.rest(run, 'tinker', +b.dataset.tinker)) {
-          sfx('coin');
-          restScreen();
-        }
-      };
-    $('#rsArmy', v).onclick = () => armySheet(() => restScreen());
-    $('#rsGo', v).onclick = () => {
-      R.completeNode(run);
-      route();
-    };
-  }
-
-  function treasureScreen() {
-    const run = UI.run;
-    const p = run.pending;
-    const v = showView(
-      `<div class="wrap">
-        <div><p class="eyebrow">Treasure</p><h2>A forgotten cache</h2></div>
-        <div class="cards">${p.relic ? relicCard(p.relic, 'disabled style="opacity:1"') : ''}
-          <div class="card"><div class="kind">${ic('gold')} Coin</div><div class="title">${p.gold} gold</div></div></div>
-        <div class="row end">${p.taken ? '' : `<button class="btn primary" id="trTake" data-choose>${ic('chest')} Take it all</button>`}
-          <button class="btn ${p.taken ? 'primary' : ''}" id="trGo" ${p.taken ? '' : 'disabled'}>Continue</button></div>
-      </div>`
-    );
-    if ($('#trTake', v))
-      $('#trTake', v).onclick = () => {
-        R.takeTreasure(run);
-        sfx('coin');
-        treasureScreen();
-      };
-    $('#trGo', v).onclick = () => {
-      R.completeNode(run);
-      route();
-    };
-  }
 
   function eventScreen() {
     const run = UI.run;
@@ -3790,9 +3705,9 @@
     R.clearSave();
     const v = showView(
       `<div class="wrap">
-        <div><p class="eyebrow">${run.won ? 'The Spire is silent' : 'The campaign is over'}</p>
-        <h2>${run.won ? 'Campaign won' : 'Campaign ended'}</h2></div>
-        <p class="muted">${run.won ? 'The Ashen Tyrant is slain and the arena bows to your warband.' : `Your march ended in ${ACTS[run.act].short}, ${esc(ACTS[run.act].name)}.`}</p>
+        <div><p class="eyebrow">${run.superWon ? 'Beyond the Spire' : run.won ? 'The Spire is silent' : 'The campaign is over'}</p>
+        <h2>${run.superWon ? 'Super victory' : run.won ? 'Campaign won' : 'Campaign ended'}</h2></div>
+        <p class="muted">${run.superWon ? 'The Eclipse Wyrm falls. Nobody was supposed to do that. Your warband is legend.' : run.won ? 'The Ashen Tyrant is slain and the arena bows to your warband.' : `Your march ended in ${ACTS[run.act].short}, ${esc(ACTS[run.act].name)}.`}</p>
         <div class="end-stats">
           <div class="stat"><b>${st.battles}</b><span>Battles won</span></div>
           <div class="stat"><b>${st.losses}</b><span>Retries</span></div>
@@ -3824,12 +3739,13 @@
       `${sheetHead('How to play')}
       <div class="help">
         <h4>The campaign</h4>
-        <p>March through three acts on a branching map: battles, elites, merchants, campfires, events and treasure. Each act ends with a boss. You can lose as often as you need: a defeat sends you back to the war room to re-plan against the same enemy.</p>
+        <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>
         <ul>
           <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
+          <li><b>Active abilities</b> have 1 to 3 uses a battle that never come back, and most a cooldown of their own: after a use they wait that many of the unit's turns. Using one is the unit's action for the turn, instead of its attack.</li>
           <li>${ic('star')} <b>Talents</b> are class passives you find in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
@@ -3846,13 +3762,14 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
-          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn. The Poison Wisp leaves a poison cloud around it that stays while it cools down: enemies that start their turn inside lose HP and cannot heal, so they step out. Buildings, wagons, cages and constructs are immune.</li>
+          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
           <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
+          <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, pulses, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
           <li>When a unit finishes its turn it turns to face the nearest enemy. Tap <b>Face</b> during its turn to pick the facing yourself, before or after it moves and acts. To always pick with arrows, switch <b>Facing</b> in the menu.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
@@ -3929,7 +3846,7 @@
     if (!run) return title();
     if (run.over) return endScreen();
     const p = run.pending;
-    if (!p) return mapScreen();
+    if (!p) return challengeScreen();
     switch (p.type) {
       case 'battle':
         return warRoom();
@@ -3937,14 +3854,12 @@
         return rewardScreen();
       case 'shop':
         return shopScreen();
-      case 'rest':
-        return restScreen();
       case 'event':
         return eventScreen();
-      case 'treasure':
-        return treasureScreen();
+      case 'summit':
+        return summitScreen();
     }
-    return mapScreen();
+    return challengeScreen();
   }
 
   function init() {
@@ -3954,10 +3869,7 @@
     root.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !$('#modal').hidden) closeSheet();
     });
-    root.addEventListener('resize', () => {
-      updateRotateHint();
-      if (!$('#view').hidden && UI.mapWide != null && $('.map-screen') && isWide() !== UI.mapWide) mapScreen();
-    });
+    root.addEventListener('resize', updateRotateHint);
     // A message box goes the moment you tap it (and the tap stops there), or when you tap
     // anything else (that tap still does what it does).
     const toastEl = $('#toast');

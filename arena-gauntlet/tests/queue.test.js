@@ -297,35 +297,6 @@ test('poison ticks on the poisoned unit\'s own turn, not for the whole side at o
   assert.deepStrictEqual(ticks.map((e) => e.uid), [due.uid], 'only the unit whose turn it is');
 });
 
-test('a Poison Wisp cloud: foes that start their own turn in it lose HP; step out and it stops', () => {
-  const s = battle([
-    { type: 'wisp', team: 'P', x: 4, y: 6 },
-    { type: 'knight', team: 'E', x: 4, y: 4 },
-  ]);
-  toPlayer(s);
-  const [wi, kn] = s.units;
-  assert.strictEqual(s.due, wi.uid);
-  assert.ok(E.beginActivation(s, wi.uid));
-  assert.ok(E.performAction(s, wi.uid, { kind: 'self', ai: 0 }));
-  E.finishActivation(s, null);
-  assert.strictEqual(kn.poison, null, 'no poison on the knight itself');
-  assert.ok(E.cloudOn(s, kn), 'the knight stands in the cloud');
-  E.endTurn(s);
-  assert.strictEqual(s.due, kn.uid);
-  assert.strictEqual(kn.hp, kn.maxHp - E.poisonDamage(wi), 'its turn starts in the cloud');
-  // It walks out of the cloud and the damage stops.
-  const out = [...E.reachable(s, kn).values()].find((t) => !E.tileFx(s, t.x, t.y, 'miasma'));
-  assert.ok(out, 'a way out');
-  const hp = kn.hp;
-  assert.ok(E.beginActivation(s, kn.uid));
-  E.moveUnit(s, kn.uid, out.x, out.y);
-  E.finishActivation(s, null);
-  E.endTurn(s); // your turn
-  E.pass(s); // the enemy's again
-  assert.strictEqual(kn.hp, hp, 'no more damage outside the cloud');
-});
-
-
 test('fatigue: the bigger side outlasts the smaller, and reinforcements stop', () => {
   const s = battle(
     [

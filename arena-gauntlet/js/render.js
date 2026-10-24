@@ -24,6 +24,10 @@
   const OBSTACLE_HEIGHT = { rock: 24, tree: 44, basalt: 38 };
 
   const now = () => (root.performance ? root.performance.now() : Date.now());
+  // Frame pacing: 30 frames a second while something moves, 10 when nothing does. A
+  // tactics board needs no more, and phones stay cool.
+  const BUSY_FRAME_MS = 33;
+  const IDLE_FRAME_MS = 100;
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
@@ -78,7 +82,8 @@
     }
 
     resize(cssW, cssH) {
-      const dpr = Math.min(root.devicePixelRatio || 1, 3);
+      // Twice the CSS pixels is plenty sharp for painted sprites, and far cheaper than 3x.
+      const dpr = Math.min(root.devicePixelRatio || 1, 2);
       if (cssW === this.cssW && cssH === this.cssH && dpr === this.dpr) return;
       // Only the height changed (the panel below grew or shrank): the board stays where it
       // is while it still fits, so picking a unit never nudges the view.
@@ -131,9 +136,11 @@
       this.boardBottom = top - head * tw + total + this.panY;
     }
 
+    // The board can be dragged anywhere, even mostly off screen, as long as a corner of it
+    // (about two tiles) stays in view.
     clampPan() {
-      const mx = Math.max(0, (this.boardW - this.cssW) / 2 + this.tw * 0.5);
-      const my = Math.max(0, (this.boardTotalH - this.cssH) / 2 + this.tw * 0.4);
+      const mx = Math.max(0, (this.boardW + this.cssW) / 2 - Math.min(this.boardW, this.tw * 2));
+      const my = Math.max(0, (this.boardTotalH + this.cssH) / 2 - Math.min(this.boardTotalH, this.tw * 1.5));
       this.panX = Math.max(-mx, Math.min(mx, this.panX));
       this.panY = Math.max(-my, Math.min(my, this.panY));
     }
@@ -217,6 +224,7 @@
         this.ov.press = null;
       };
       this.cv.addEventListener('pointerdown', (e) => {
+        this.touched = now();
         const [x, y] = pos(e);
         pts.set(e.pointerId, { x, y });
         try {
@@ -243,6 +251,7 @@
       });
       this.cv.addEventListener('pointermove', (e) => {
         if (!pts.has(e.pointerId)) return;
+        this.touched = now();
         const [x, y] = pos(e);
         pts.set(e.pointerId, { x, y });
         if (pinch && pts.size >= 2) {
@@ -255,11 +264,7 @@
         if (!tap.panning && Math.hypot(x - tap.x, y - tap.y) > 10) {
           clearTimeout(timer);
           this.ov.press = null;
-          if (this.zoom > 1) tap.panning = true;
-          else {
-            tap = null;
-            return;
-          }
+          tap.panning = true;
         }
         if (tap.panning) {
           this.panBy(x - tap.lx, y - tap.ly);
@@ -288,6 +293,7 @@
         'wheel',
         (e) => {
           e.preventDefault();
+          this.touched = now();
           const [x, y] = pos(e);
           this.setZoom(this.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), x, y);
         },
@@ -403,16 +409,29 @@
 
     // ---------------------------------------------------------- loop
 
+    // 30 frames a second while something moves (effects, numbers, a unit walking, a finger
+    // on the board); otherwise 10, plenty for the idle bobbing.
     start() {
       if (this.running) return;
       this.running = true;
       this.last = now();
+      this.lastDraw = 0;
       const loop = () => {
         if (!this.running) return;
-        this.frame();
+        const t = now();
+        if (t - this.lastDraw >= (this.busy(t) ? BUSY_FRAME_MS : IDLE_FRAME_MS) - 2) {
+          this.frame();
+          this.lastDraw = t;
+        }
         this.raf = requestAnimationFrame(loop);
       };
       this.raf = requestAnimationFrame(loop);
+    }
+
+    busy(t) {
+      if (this.fx.length || this.texts.length || this.shakeT > 0 || this.staticDirty || t - (this.touched || 0) < 400) return true;
+      for (const v of this.vis.values()) if (v.moving || v.hop || v.ox || v.oy || v.shake || v.flash || v.alpha < 1) return true;
+      return false;
     }
 
     stop() {
@@ -703,7 +722,7 @@
       }
     }
 
-    // Fire, poison clouds and caltrops lie on the ground; smoke is drawn over the units.
+    // Fire and caltrops lie on the ground; smoke is drawn over the units.
     drawHazards(g) {
       for (const f of this.tfx) {
         const [cx, cy] = this.center(f.x, f.y);
@@ -717,18 +736,6 @@
             g.beginPath();
             g.moveTo(fx - this.tw * 0.05, cy + this.th * 0.05);
             g.quadraticCurveTo(fx, cy - fh, fx + this.tw * 0.05, cy + this.th * 0.05);
-            g.fill();
-          }
-        } else if (f.kind === 'miasma') {
-          // A poison cloud: a sickly green haze, its rim in the caster's colour.
-          const ph = this.time * 1.6 + f.x * 1.3 + f.y * 0.7;
-          const rim = f.team === 'P' ? 'rgba(150,200,255,0.55)' : 'rgba(255,150,140,0.55)';
-          this.tileFill(g, f.x, f.y, 'rgba(175,245,80,' + (0.3 + 0.08 * Math.sin(ph)) + ')', rim, 1.5, 1);
-          for (let i = 0; i < 2; i++) {
-            const a = ph + i * 3.1;
-            g.fillStyle = 'rgba(210,255,150,' + (0.3 + 0.08 * Math.sin(a * 1.4)) + ')';
-            g.beginPath();
-            g.ellipse(cx + Math.cos(a) * this.tw * 0.12, cy - this.th * 0.12 + Math.sin(a) * this.th * 0.1, this.tw * 0.16, this.th * 0.2, 0, 0, Math.PI * 2);
             g.fill();
           }
         } else if (f.kind === 'caltrops') {
@@ -965,13 +972,19 @@
       const flip = f === 2 || f === 3 || (f < 0 && v.team === 'E');
       const lift = v.hop + (v.type === 'wisp' ? 0 : 0);
       g.translate(cx, cy - lift);
-      const sc = u * (v.scale || 1);
-      g.scale(flip ? -sc : sc, sc);
-      if (v.para > 0) g.filter = 'saturate(0.4) brightness(1.15)';
-      S.drawUnit(g, v.type, v.team, view, this.time + v.phase, null);
-      g.filter = 'none';
+      if (flip) g.scale(-1, 1);
+      this.drawSprite(g, v, view);
       g.restore();
       this.drawStatusFx(g, v, cx, cy - lift);
+    }
+
+    // A unit's painted sprite, feet at the origin, facing right.
+    drawSprite(g, v, view) {
+      const sc = this.unit * (v.scale || 1);
+      g.scale(sc, sc);
+      if (v.para > 0) g.filter = 'saturate(0.4) brightness(1.15)';
+      S.drawUnit(g, v.type, v.team, view, this.time + v.phase, null);
+      if (v.para > 0) g.filter = 'none';
     }
 
     // Roots, burns, shields and marks shown on the unit itself.
@@ -2040,9 +2053,6 @@
             break;
           case 'scorch':
             if (v) this.particles(v.x, v.y, 6, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 6, rise: 0.8, max: 0.5 });
-            break;
-          case 'miasma':
-            if (v) this.particles(v.x, v.y, 8, ['#b6f07a', '#7fd04a', '#4f9a2c'], { lift: 6, rise: 0.6, max: 0.6 });
             break;
           case 'boom':
             any = true;

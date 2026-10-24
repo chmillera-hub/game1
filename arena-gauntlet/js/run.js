@@ -9,16 +9,23 @@
 
   const SAVE_KEY = 'arena-gauntlet-run-v2';
   const META_KEY = 'arena-gauntlet-meta-v2';
-  const ROWS = 7; // regular rows per act; the boss sits on row ROWS
-  const COLS = 5;
+  // Each act: FIGHTS challenge rounds (pick one of three: easy, medium or elite), one event
+  // and one merchant somewhere in the middle, then the boss.
+  const FIGHTS = 4;
+  // How far into its act each round is, for enemy strength (0 = the first fight).
+  const ROUND_ROW = [0, 1, 3, 5];
   const BOARD = 9;
   const LEAN_GOLD = 3;
-  const RECRUIT_PRICE = { common: 40, uncommon: 60, rare: 85, legendary: 140 };
-  const RELIC_PRICE = { common: 85, uncommon: 115, rare: 150, boss: 200, event: 120 };
-  const ITEM_PRICE = (cost) => 28 + 14 * cost;
-  const SCROLL_PRICE = 80;
+  // Shop prices. Relics cost about twice as much as anything else: a passive that lasts the
+  // whole campaign can be extraordinarily strong.
+  const RECRUIT_PRICE = { common: 60, uncommon: 90, rare: 128, legendary: 210 };
+  const RELIC_PRICE = { common: 160, uncommon: 200, rare: 250, boss: 320, event: 200 };
+  const ITEM_PRICE = (cost) => 42 + 21 * cost;
+  const SCROLL_PRICE = 120;
+  // Resupplying a merchant (a fresh stock): 20 gold, then 10 more each time.
+  const REROLL_PRICE = (n) => 20 + 10 * n;
   // Class talents cost a little more than skills of the same Supply cost.
-  const TALENT_PRICE = (cost) => 40 + 20 * cost;
+  const TALENT_PRICE = (cost) => 60 + 30 * cost;
 
   const hasRelic = (run, id) => run.relics.includes(id);
   const unitById = (run, id) => run.roster.find((u) => u.id === id);
@@ -272,15 +279,6 @@
     return E.addUnit(s, Object.assign(spec, { team: team || 'P', x: 0, y: 0 }));
   }
 
-  function dismiss(run, rid) {
-    if (run.roster.length <= 2) return false;
-    const i = run.roster.findIndex((u) => u.id === rid);
-    if (i < 0) return false;
-    run.roster.splice(i, 1);
-    run.gold += 15;
-    return true;
-  }
-
   // Bind an enchantment scroll to a unit, for good.
   function applyScroll(run, uid, rid) {
     const it = itemByUid(run, uid);
@@ -349,6 +347,7 @@
     const wb = draft
       ? { id: 'draft', units: draft.units, relic: draft.relic, items: draft.items, gold: DRAFT_GOLD }
       : WARBANDS.find((w) => w.id === opts.warband) || WARBANDS[0];
+    // The old difficulty setting is gone: each round's choice of challenge sets the pace.
     const diff = DIFFICULTIES.find((d) => d.id === opts.difficulty) || DIFFICULTIES[1];
     const run = {
       v: 2,
@@ -366,10 +365,10 @@
       nextId: 1,
       nextItem: 1,
       usedNames: [],
-      map: null,
-      pos: null,
-      cur: null,
-      visited: [],
+      plan: null,
+      step: 0,
+      offer: null,
+      boss: null,
       recentEnc: [],
       seenEvents: [],
       lastDeployed: [],
@@ -380,82 +379,107 @@
     };
     for (const t of wb.units) addRecruit(run, t);
     for (const [kind, id] of wb.items || []) addItem(run, kind, id);
-    run.map = genMap(run, 1);
+    startAct(run, 1);
     return run;
   }
 
-  // ------------------------------------------------------------ map
+  // ------------------------------------------------------------ the road
 
-  function genMap(run, act) {
-    const rng = AG.derive(run.seed, 'map:' + act);
-    const nodes = new Map();
-    const edges = new Set();
-    const get = (r, c) => {
-      const k = r + '-' + c;
-      if (!nodes.has(k)) nodes.set(k, { id: k, row: r, col: c, kind: null, next: [], jx: +(rng.next() - 0.5).toFixed(3) });
-      return nodes.get(k);
-    };
-    const crosses = (r, c, n) =>
-      (n === c + 1 && edges.has(r + ':' + (c + 1) + '>' + c)) || (n === c - 1 && edges.has(r + ':' + (c - 1) + '>' + c));
-    const starts = rng.shuffle([0, 1, 2, 3, 4]).slice(0, 3);
-    const walks = [...starts, rng.int(COLS), rng.int(COLS)];
-    for (const c0 of walks) {
-      let c = c0;
-      for (let r = 0; r < ROWS - 1; r++) {
-        const n = get(r, c);
-        let next = c;
-        for (const o of rng.shuffle([c - 1, c, c + 1].filter((x) => x >= 0 && x < COLS))) {
-          if (!crosses(r, c, o)) {
-            next = o;
-            break;
-          }
-        }
-        edges.add(r + ':' + c + '>' + next);
-        const m = get(r + 1, next);
-        if (!n.next.includes(m.id)) n.next.push(m.id);
-        c = next;
-      }
+  // The steps of one act: the challenge rounds, with the event and the merchant slotted in
+  // after one of the middle rounds (a little random), then the boss.
+  function genPlan(run, act) {
+    const rng = AG.derive(run.seed, 'plan:' + act);
+    const eventAfter = rng.range(1, 2);
+    const shopAfter = rng.range(2, 3);
+    const plan = [];
+    for (let i = 0; i < FIGHTS; i++) {
+      plan.push({ kind: 'fight', round: i });
+      if (i + 1 === eventAfter) plan.push({ kind: 'event' });
+      if (i + 1 === shopAfter) plan.push({ kind: 'shop' });
     }
-    const list = [...nodes.values()].sort((a, b) => a.row - b.row || a.col - b.col);
-    const parentsOf = (n) => list.filter((p) => p.next.includes(n.id));
-    for (const n of list) {
-      if (n.row === 0) n.kind = 'battle';
-      else if (n.row === ROWS - 1) n.kind = 'rest';
-      else if (n.row === 3) n.kind = 'treasure';
-      else {
-        for (let tries = 0; tries < 12 && !n.kind; tries++) {
-          const opts = [['battle', 45], ['event', 24]];
-          if (n.row >= 2) opts.push(['elite', 14]);
-          if (n.row >= 1) opts.push(['shop', 10]);
-          if (n.row >= 2 && n.row <= 4) opts.push(['rest', 7]);
-          const k = rng.weighted(opts);
-          if ((k === 'elite' || k === 'shop' || k === 'rest') && parentsOf(n).some((p) => p.kind === k)) continue;
-          n.kind = k;
-        }
-        if (!n.kind) n.kind = 'battle';
-      }
-    }
-    const plain = () => list.filter((n) => n.row >= 2 && n.row <= 5 && n.kind === 'battle');
-    if (!list.some((n) => n.kind === 'shop') && plain().length) rng.pick(plain()).kind = 'shop';
-    if (!list.some((n) => n.kind === 'elite') && plain().length) rng.pick(plain()).kind = 'elite';
-    for (const n of list) if (n.row === ROWS - 1) n.next = ['boss'];
-    list.push({ id: 'boss', row: ROWS, col: 2, kind: 'boss', next: [], jx: 0 });
-    return { act, nodes: list, boss: rng.pick(D.ACTS[act].bosses) };
+    plan.push({ kind: 'boss' });
+    return plan;
   }
 
-  function getNode(run, id) {
-    return run.map.nodes.find((n) => n.id === id) || null;
+  function startAct(run, act) {
+    run.act = act;
+    run.plan = genPlan(run, act);
+    run.step = 0;
+    run.boss = AG.derive(run.seed, 'boss:' + act).pick(D.ACTS[act].bosses);
+    run.recentEnc = [];
+    enterStep(run);
   }
 
-  function availableNodes(run) {
-    if (run.pending || run.over) return [];
-    if (!run.pos) return run.map.nodes.filter((n) => n.row === 0);
-    const at = getNode(run, run.pos);
-    return at ? at.next.map((id) => getNode(run, id)) : [];
+  function curStep(run) {
+    return run.plan ? run.plan[run.step] || null : null;
+  }
+
+  // Challenge tiers: what each asks of you and pays.
+  const TIERS = {
+    easy: { name: 'Easy', kind: 'battle', mult: 0.8, gold: [10, 14], xp: 0.75, spoils: 2 },
+    medium: { name: 'Medium', kind: 'battle', mult: 1, gold: [14, 20], xp: 1, spoils: 3 },
+    elite: { name: 'Elite', kind: 'elite', mult: 1.85, gold: [30, 38], xp: 1, spoils: 3, relic: true, extraUnits: 1 },
+    boss: { name: 'Boss', kind: 'boss', mult: 1, gold: [75, 75], xp: 1, spoils: 3 },
+    mega: { name: 'Final challenge', kind: 'boss', mult: 1, gold: [0, 0], xp: 1, spoils: 0 },
+  };
+
+  // Arrive at the current step: a round deals three challenges to pick from (the boss and
+  // the final challenge, one); the event and the merchant open at once.
+  function enterStep(run) {
+    const st = curStep(run);
+    run.offer = null;
+    run.pending = null;
+    if (!st) return;
+    const tag = run.act + ':' + run.step;
+    if (st.kind === 'fight' || st.kind === 'boss' || st.kind === 'mega') {
+      const tiers = st.kind === 'fight' ? ['easy', 'medium', 'elite'] : [st.kind];
+      const seen = run.recentEnc.slice();
+      run.offer = tiers.map((tier) => {
+        const T = TIERS[tier];
+        const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega' };
+        const enc = genEncounter(run, node, null, seen);
+        seen.push(enc.name);
+        return { tier, node, enc, attempts: 0 };
+      });
+    } else if (st.kind === 'shop') {
+      run.pending = { type: 'shop', nodeId: tag, stock: genShop(run, { id: tag }), rerolls: 0 };
+    } else if (st.kind === 'event') {
+      const rng = AG.derive(run.seed, 'event:' + tag);
+      const pool = EVENTS.filter((ev) => !run.seenEvents.includes(ev.id));
+      const ev = rng.pick(pool.length ? pool : EVENTS);
+      run.seenEvents = run.seenEvents.concat(ev.id);
+      run.pending = { type: 'event', nodeId: tag, eventId: ev.id, ctx: ev.prepare ? ev.prepare(run, rng) : {}, result: null };
+    }
+  }
+
+  // Take on one of the challenges on offer: off to the war room.
+  function chooseChallenge(run, index) {
+    const o = run.offer && run.offer[index];
+    if (!o || run.pending || run.over) return false;
+    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index };
+    save(run);
+    return true;
+  }
+
+  // After a defeat: back to the choice of challenges (the one you lost stays on offer).
+  function backToChoice(run) {
+    const p = run.pending;
+    if (!p || p.type !== 'battle') return;
+    if (run.offer && run.offer[p.offerIndex]) run.offer[p.offerIndex].attempts = p.attempt || 0;
+    run.pending = null;
+    save(run);
+  }
+
+  // What a challenge pays if won on the first try (bonus goals and loot come on top).
+  function challengeReward(run, o) {
+    const T = TIERS[o.tier];
+    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
+    if (o.tier === 'boss') out.bossRelic = run.act < 3;
+    return out;
   }
 
   function bossOf(run) {
-    return run.map.boss || D.ACTS[run.act].bosses[0];
+    return run.boss || D.ACTS[run.act].bosses[0];
   }
 
   // XP a victory pays, by battle kind.
@@ -690,7 +714,9 @@
   const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
   // With one unit acting a turn, a bigger army counts for less, so ordinary foes get a
   // little more to spend.
-  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 0.95 };
+  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 0.8 };
+  // The optional final challenge is meant to break most armies.
+  const MEGA_BUDGET = 1.5;
 
   function enemyBudget(run, node, kind) {
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
@@ -749,29 +775,33 @@
     }
   }
 
-  function genEncounter(run, node, kindOverride) {
+  // `recent`: encounter names to steer away from (default: the last few you fought).
+  function genEncounter(run, node, kindOverride, recent) {
     const kind = kindOverride || node.kind;
     const act = run.act;
     const rng = AG.derive(run.seed, 'enc:' + act + ':' + node.id + ':' + kind);
     const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
-    // The first two rows of Act I: no sieges or convoys, and a slightly smaller army.
+    // The first two rounds of Act I: no sieges or convoys, and a slightly smaller army.
     const intro = act === 1 && group === 'normal' && node.row <= 1;
     let tpl;
-    if (group === 'boss') tpl = ENCOUNTERS[act].boss[bossOf(run)];
+    if (node.mega) tpl = ENCOUNTERS.mega;
+    else if (group === 'boss') tpl = ENCOUNTERS[act].boss[bossOf(run)];
     else {
+      const avoid = recent || run.recentEnc;
       const pool = ENCOUNTERS[act][group].filter((t) => !intro || !t.layout);
-      const fresh = pool.filter((t) => !run.recentEnc.includes(t.name));
+      const fresh = pool.filter((t) => !avoid.includes(t.name));
       tpl = rng.pick(fresh.length ? fresh : pool);
     }
     const layout = tpl.layout || null;
     let primary = group === 'boss' ? 'boss' : layout === 'siege' ? 'gate' : layout === 'convoy' ? 'convoy' : rng.weighted(PRIMARY[intro ? 'intro' : group]);
-    const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1);
+    const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1) * (node.mult || 1) * (node.mega ? MEGA_BUDGET : 1);
     const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
     const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
     // Enemy armies stay a little above your usual army size; spare Supply buys levels instead.
-    const maxUnits = Math.min(8, armySize(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2));
+    const tierExtra = (TIERS[node.tier] && TIERS[node.tier].extraUnits) || 0;
+    const maxUnits = node.mega ? 10 : Math.min(9, armySize(run) + (group === 'normal' ? 0 : group === 'elite' ? 1 : 2) + tierExtra);
     while ((cost() + structures > budget + 0.5 && units.length > 2) || units.length > maxUnits) {
       let i = units.length - 1;
       while (i >= 0 && UNITS[units[i].type].boss) i--;
@@ -978,7 +1008,8 @@
         used.add(t[0] + ',' + t[1]);
         if (lk !== 'chest') {
           const n = act === 1 ? 1 : lk === 'relic' ? 2 : 1 + (rng.chance(0.4) ? 1 : 0);
-          const spots = [[0, -1], [-1, 0], [1, 0], [0, 1]].map(([dx, dy]) => [t[0] + dx, t[1] + dy]).filter(([x, y]) => open(x, y));
+          // Guards stay out of your deployment zone.
+          const spots = [[0, -1], [-1, 0], [1, 0], [0, 1]].map(([dx, dy]) => [t[0] + dx, t[1] + dy]).filter(([x, y]) => open(x, y) && y < BOARD - DEPLOY_ROWS - 1);
           for (let i = 0; i < n && i < spots.length; i++) {
             const [x, y] = spots[i];
             units.push({ type: 'specter', level: act >= 3 ? 2 : 1, x, y, facing: 0, post: { x: t[0], y: t[1] } });
@@ -1060,78 +1091,73 @@
     return { primary: P[key] || P.rout, short: short[key] || short.rout, key, bonus };
   }
 
+  // Your deployment zone: the three rows nearest you (rocks and water may block a few
+  // tiles), one more with the Cartographer's Map.
+  const DEPLOY_ROWS = 3;
   function deployRows(run, enc) {
-    const rows = [enc.h - 2, enc.h - 1];
-    if (hasRelic(run, 'scout_map')) rows.unshift(enc.h - 3);
+    const rows = [];
+    for (let i = DEPLOY_ROWS; i >= 1; i--) rows.push(enc.h - i);
+    if (hasRelic(run, 'scout_map')) rows.unshift(enc.h - DEPLOY_ROWS - 1);
     return rows;
   }
 
-  // ------------------------------------------------------------ entering nodes
+  // A deployment tile your unit can stand on: open ground, with no enemy, building, chest
+  // or shrine on it.
+  function deployOpen(enc, x, y) {
+    if (x < 0 || y < 0 || x >= enc.w || y >= enc.h || enc.terrain[y * enc.w + x] !== 0) return false;
+    if (enc.units.some((u) => u.x === x && u.y === y)) return false;
+    if ((enc.loot || []).some((l) => l.x === x && l.y === y)) return false;
+    return !(enc.hold && enc.hold.x === x && enc.hold.y === y);
+  }
 
-  function enterNode(run, id) {
-    const node = getNode(run, id);
-    if (!node || !availableNodes(run).some((n) => n.id === id)) return false;
-    run.cur = id;
-    switch (node.kind) {
-      case 'battle':
-      case 'elite':
-      case 'boss':
-        run.pending = { type: 'battle', nodeId: id, enc: genEncounter(run, node), attempt: 0 };
-        break;
-      case 'shop':
-        run.pending = { type: 'shop', nodeId: id, stock: genShop(run, node) };
-        break;
-      case 'rest': {
-        const rng = AG.derive(run.seed, 'rest:' + run.act + ':' + id);
-        run.pending = { type: 'rest', nodeId: id, skills: rollMany(rng, 3, () => rollSkill(run, rng)), gear: rollMany(rng, 3, () => rollGear(run, rng)), done: null };
-        break;
-      }
-      case 'treasure': {
-        const rng = AG.derive(run.seed, 'treasure:' + run.act + ':' + id);
-        const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
-        const gold = rng.range(20, 35);
-        run.pending = { type: 'treasure', nodeId: id, relic, gold, taken: false };
-        break;
-      }
-      case 'event': {
-        const rng = AG.derive(run.seed, 'event:' + run.act + ':' + id);
-        const pool = EVENTS.filter((ev) => !run.seenEvents.includes(ev.id));
-        const ev = rng.pick(pool.length ? pool : EVENTS);
-        run.seenEvents = run.seenEvents.concat(ev.id);
-        run.pending = { type: 'event', nodeId: id, eventId: ev.id, ctx: ev.prepare ? ev.prepare(run, rng) : {}, result: null };
-        break;
-      }
+  // ------------------------------------------------------------ moving on
+
+  // Done with the current step (rewards taken, shop left, event resolved): on to the next.
+  // The boss of Act III wins the campaign; the final challenge after it is optional.
+  function completeNode(run) {
+    const p = run.pending;
+    if (!p) return;
+    const st = curStep(run);
+    run.pending = null;
+    if (p.mega) {
+      run.superWon = true;
+      endRun(run);
+    } else if (st && st.kind === 'boss') {
+      if (run.act >= 3) {
+        run.won = true;
+        recordMeta(run);
+        run.summit = true;
+        run.pending = { type: 'summit' };
+      } else startAct(run, run.act + 1);
+    } else {
+      run.step++;
+      enterStep(run);
     }
+    save(run);
+  }
+
+  // The campaign is won: take on the final challenge, or call it a victory.
+  function faceFinal(run) {
+    if (!run.summit) return false;
+    run.plan.push({ kind: 'mega' });
+    run.step = run.plan.length - 1;
+    enterStep(run);
     save(run);
     return true;
   }
 
-  function completeNode(run) {
-    if (!run.pending) return;
-    const id = run.pending.nodeId;
-    run.visited.push(run.act + ':' + id);
-    run.pos = id;
-    run.cur = null;
+  function endRun(run) {
+    run.over = true;
     run.pending = null;
-    if (id === 'boss') {
-      if (run.act >= 3) {
-        run.over = true;
-        run.won = true;
-        recordMeta(run);
-      } else {
-        run.act++;
-        run.map = genMap(run, run.act);
-        run.pos = null;
-        run.recentEnc = [];
-      }
-    }
+    if (run.superWon) recordMeta(run);
     save(run);
   }
 
   // ------------------------------------------------------------ battles
 
-  function battleConfig(run, deployment) {
-    const enc = run.pending.enc;
+  // `enc` defaults to the battle at hand (another, for a preview of a challenge).
+  function battleConfig(run, deployment, enc) {
+    enc = enc || run.pending.enc;
     const units = [];
     for (const d of deployment) {
       const r = unitById(run, d.rid);
@@ -1146,7 +1172,7 @@
       terrain: enc.terrain,
       units,
       relics: { P: run.relics.slice(), E: [] },
-      seed: enc.seed + (run.pending.attempt || 0) * 7919,
+      seed: enc.seed + ((run.pending && run.pending.attempt) || 0) * 7919,
       objective: enc.objective,
       hold: enc.hold,
       surviveTurns: enc.surviveTurns,
@@ -1304,8 +1330,9 @@
 
   function finishBattle(run, s, deployment) {
     const p = run.pending;
-    const node = getNode(run, p.nodeId);
+    const node = p.node || { id: p.nodeId, row: 0 };
     const kind = p.enc.kind;
+    const tier = TIERS[p.tier] || TIERS[kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'medium'];
     if (s.winner !== 'P') {
       p.attempt = (p.attempt || 0) + 1;
       run.stats.losses++;
@@ -1313,7 +1340,7 @@
       return { won: false, attempt: p.attempt };
     }
     const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id + ':' + (p.attempt || 0));
-    let gold = kind === 'boss' ? 75 : kind === 'elite' ? rng.range(30, 38) : rng.range(14, 20);
+    let gold = rng.range(tier.gold[0], tier.gold[1]);
     if (hasRelic(run, 'coin_purse')) gold += 12;
     if (hasRelic(run, 'kings_ransom')) gold += 20;
     const firstTry = !p.attempt;
@@ -1326,7 +1353,7 @@
     const unspent = Math.max(0, supply - used);
     const lean = unspent * LEAN_GOLD * (hasRelic(run, 'alchemist_stone') ? 3 : 1);
     const midas = s.stats.gold || 0;
-    let xp = battleXp(run, kind) + (firstTry ? 2 : 0);
+    let xp = Math.round(battleXp(run, kind) * tier.xp) + (firstTry ? 2 : 0);
     run.gold += gold + lean + midas;
     run.stats.gold += gold + lean + midas;
     run.stats.lean += lean;
@@ -1348,9 +1375,11 @@
     }
     run.recentEnc = run.recentEnc.concat(p.enc.name).slice(-3);
     run.lastDeployed = deployment.map((d) => d.rid);
+    // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
+    const spoils = tier.spoils ? genSpoils(run, rng, kind).slice(0, tier.spoils) : [];
     const reward = {
-      type: 'reward', nodeId: p.nodeId, kind, gold, lean, unspent, midas, firstTry, fallen,
-      spoils: genSpoils(run, rng, kind), spoilTaken: false, objectives: [],
+      type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, firstTry, fallen,
+      spoils, spoilTaken: !spoils.length, objectives: [], mega: !!node.mega,
     };
     const info = objectiveInfo(run, p.enc);
     for (const it of info.bonus) {
@@ -1402,14 +1431,14 @@
     reward.lvFrom = lv.from;
     reward.lvTo = lv.to;
     if (p.enc.prisoner) reward.prisoner = addRecruit(run, p.enc.prisoner.type).id;
-    if (kind === 'elite') {
+    if (tier.relic) {
       const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
       if (id) {
         gainRelic(run, id);
         reward.relicGained = id;
       }
     }
-    if (kind === 'boss') {
+    if (kind === 'boss' && !node.mega && run.act < 3) {
       const picks = [];
       for (let i = 0; i < 3; i++) {
         const id = pickRelic(run, rng, ['boss'], picks);
@@ -1479,9 +1508,12 @@
 
   // One of each kind of thing, at most eight: a recruit, a talent, a skill, gear, an
   // enchantment scroll, a relic, and the two services.
+  // Six things at most: a recruit, a talent, a skill, gear and a relic, plus one of an
+  // enchantment scroll, a Supply Cache or a War Manual.
   function genShop(run, node) {
     const rng = AG.derive(run.seed, 'shop:' + run.act + ':' + node.id);
     const items = [];
+    const extra = rng.pick(['scroll', 'supply', 'manual']);
     const r = rollRecruit(run, rng, 'normal');
     const price = RECRUIT_PRICE[UNITS[r.unit].rarity] + (r.enchant ? 40 : 0);
     items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, price: discount(run, price), sold: false });
@@ -1491,13 +1523,31 @@
     if (skill) items.push({ kind: 'skill', id: skill, price: discount(run, ITEM_PRICE(SKILLS[skill].cost)), sold: false });
     const gear = rollGear(run, rng);
     if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, ITEM_PRICE(GEAR[gear].cost)), sold: false });
-    const sc = rollEnchant(run, rng);
-    if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
     const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
     if (relic) items.push({ kind: 'relic', relic, price: discount(run, RELIC_PRICE[RELICS[relic].tier]), sold: false });
-    items.push({ kind: 'supply', price: discount(run, 70 + 20 * (run.supplyBonus || 0)), sold: false });
-    items.push({ kind: 'manual', price: discount(run, 45), sold: false });
+    const sc = extra === 'scroll' && rollEnchant(run, rng);
+    if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
+    else if (extra === 'manual') items.push({ kind: 'manual', price: discount(run, 68), sold: false });
+    else items.push({ kind: 'supply', price: discount(run, 105 + 30 * (run.supplyBonus || 0)), sold: false });
     return items;
+  }
+
+  function rerollPrice(run) {
+    const p = run.pending;
+    return REROLL_PRICE((p && p.rerolls) || 0);
+  }
+
+  // Resupply: the merchant brings out a whole new stock.
+  function rerollShop(run) {
+    const p = run.pending;
+    if (!p || p.type !== 'shop') return false;
+    const price = rerollPrice(run);
+    if (run.gold < price) return false;
+    run.gold -= price;
+    p.rerolls = (p.rerolls || 0) + 1;
+    p.stock = genShop(run, { id: p.nodeId + ':r' + p.rerolls });
+    save(run);
+    return true;
   }
 
   function canBuy(run, item) {
@@ -1532,35 +1582,6 @@
     }
     run.gold -= item.price;
     item.sold = true;
-    save(run);
-    return true;
-  }
-
-  // choice: 'drill' | 'study' (index into skills) | 'tinker' (index into gear)
-  function rest(run, choice, index) {
-    const p = run.pending;
-    if (!p || p.type !== 'rest' || p.done) return false;
-    if (choice === 'drill') p.levels = gainXp(run, 12 + 2 * (run.act - 1));
-    else if (choice === 'study') {
-      const id = p.skills[index];
-      if (!id) return false;
-      addItem(run, 'skill', id);
-    } else if (choice === 'tinker') {
-      const id = p.gear[index];
-      if (!id) return false;
-      addItem(run, 'gear', id);
-    } else return false;
-    p.done = choice;
-    save(run);
-    return true;
-  }
-
-  function takeTreasure(run) {
-    const p = run.pending;
-    if (!p || p.type !== 'treasure' || p.taken) return false;
-    gainRelic(run, p.relic);
-    run.gold += p.gold;
-    p.taken = true;
     save(run);
     return true;
   }
@@ -1945,9 +1966,9 @@
     const out = ev.resolve(run, p.ctx, choiceId, rid, rng);
     if (out == null) return null;
     if (typeof out === 'object' && out.battle) {
-      const node = getNode(run, p.nodeId);
+      const node = { id: p.nodeId, row: 3, kind: out.battle };
       p.result = out.text;
-      run.pending = { type: 'battle', nodeId: p.nodeId, enc: genEncounter(run, node, out.battle), attempt: 0, fromEvent: true };
+      run.pending = { type: 'battle', nodeId: p.nodeId, node, enc: genEncounter(run, node, out.battle), attempt: 0, fromEvent: true };
       save(run);
       return out.text;
     }
@@ -1965,13 +1986,16 @@
   }
 
   // Free deploy tiles nearest the center, front row first or back row first.
+  // Free deployment tiles for a unit, best first. Auto keeps to the back two rows (front
+  // liners ahead, the rest behind) and uses the rows further forward only when those fill.
   function deploySlots(run, enc, front, taken) {
-    const rows = deployRows(run, enc);
-    const order = front ? rows.slice().sort((a, b) => a - b) : rows.slice().sort((a, b) => b - a);
+    const back = [enc.h - 2, enc.h - 1];
+    if (!front) back.reverse();
+    const order = back.concat(deployRows(run, enc).filter((y) => !back.includes(y)).sort((a, b) => b - a));
     const out = [];
     for (const y of order) {
       const xs = [...Array(enc.w).keys()].sort((a, b) => Math.abs(a - (enc.w - 1) / 2) - Math.abs(b - (enc.w - 1) / 2) || a - b);
-      for (const x of xs) if (enc.terrain[y * enc.w + x] === 0 && !taken.has(x + ',' + y)) out.push({ x, y });
+      for (const x of xs) if (deployOpen(enc, x, y) && !taken.has(x + ',' + y)) out.push({ x, y });
     }
     return out;
   }
@@ -2246,7 +2270,8 @@
       const j = root.localStorage && root.localStorage.getItem(SAVE_KEY);
       if (!j) return null;
       const r = JSON.parse(j);
-      if (!r || r.v !== 2 || r.over) return null;
+      // Saves from the map days (before the challenge rounds) cannot carry on.
+      if (!r || r.v !== 2 || r.over || !r.plan) return null;
       if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
       grantPickedTalents(r);
       // Saves from before the field limit went: a paid-for wider line becomes Supply.
@@ -2271,19 +2296,24 @@
   function loadMeta() {
     try {
       const j = root.localStorage && root.localStorage.getItem(META_KEY);
-      return Object.assign({ runs: 0, wins: 0, bestAct: 0 }, j ? JSON.parse(j) : {});
+      return Object.assign({ runs: 0, wins: 0, superWins: 0, bestAct: 0 }, j ? JSON.parse(j) : {});
     } catch (e) {
-      return { runs: 0, wins: 0, bestAct: 0 };
+      return { runs: 0, wins: 0, superWins: 0, bestAct: 0 };
     }
   }
 
   function recordMeta(run) {
-    if (run.metaRecorded) return;
-    run.metaRecorded = true;
     const m = loadMeta();
-    m.runs++;
-    if (run.won) m.wins++;
-    m.bestAct = Math.max(m.bestAct, run.won ? 4 : run.act);
+    if (run.superWon && !run.superRecorded) {
+      run.superRecorded = true;
+      m.superWins++;
+    }
+    if (!run.metaRecorded) {
+      run.metaRecorded = true;
+      m.runs++;
+      if (run.won) m.wins++;
+      m.bestAct = Math.max(m.bestAct, run.won ? 4 : run.act);
+    }
     try {
       root.localStorage && root.localStorage.setItem(META_KEY, JSON.stringify(m));
     } catch (e) {
@@ -2292,14 +2322,14 @@
   }
 
   AG.Run = {
-    ROWS, COLS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
-    newRun, genMap, getNode, availableNodes, enterNode, completeNode, bossOf, battleXp,
+    FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
-    costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
-    objectiveInfo, bonusUnit, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
+    costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
+    objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
-    genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent, scoutTips,
+    genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

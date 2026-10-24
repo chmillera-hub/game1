@@ -3,7 +3,7 @@
 A single-player auto-battler roguelike in the style of classic isometric arena
 battles (think Tactics Arena Online meets Slay the Spire). Scout the enemy army,
 spend Supply on a counter-army, set it up, and watch it fight across three acts to
-the Ashen Tyrant.
+the Ashen Tyrant, and, if your army is up to it, the Eclipse Wyrm beyond.
 
 ## Play
 
@@ -14,18 +14,40 @@ on a phone turned sideways, but portrait works too.
 
 - **The draft**: a new campaign drafts its army instead of taking a ready-made
   warband. Eight picks, each one of three: five units, a relic, a skill and a piece of
-  gear, then the difficulty. Every unit offer has at least two that deal damage (the
+  gear. There is no difficulty setting: each round you pick how hard a battle to
+  take (see The road). Every unit offer has at least two that deal damage (the
   first, all three), and the skills and gear offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. You start with 60 gold.
 
+- **The road**: no map. Each act is four rounds; in each you choose one of three
+  battles, shown as cards with a picture of the field, the mission and bonus goals,
+  and what it pays: Easy (a smaller army, less gold and XP, two spoils to pick from),
+  Medium, and Elite (a much tougher army, more gold and XP, and a relic). One event
+  and one merchant sit somewhere in the middle of the act, and a boss ends it. Lose,
+  and you come back to the round's choice (the same three, so you can try again or
+  take an easier one); the War Room's Other battles button goes back too. Mostly
+  medium battles with an easy one now and then should see most armies through; the
+  bosses are the hard part. In the simulations, picking medium first wins about 80%
+  of campaigns, and trying elite first (dropping to medium after a loss) does better
+  still, thanks to the relics.
+- **Victory and the final challenge**: beating the Act III boss wins the campaign.
+  Then you may claim the victory, or face the Eclipse Wyrm for a super victory. It is
+  not meant to be beaten (in the simulations it falls to about one strong army in
+  four, and never to a middling one); losing to it costs you nothing, and you can try
+  again or claim your win at any time.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
   to open its loadout right under your army: what each part costs (Knight 3 + Level 2
   2 + Guardian 1 ...), its level, and a button for each ability, talent, skill and
   gear slot. To move a unit, tap it on the board, then a blue tile, or another unit to
   swap places; a unit from the bench whose loadout is open goes onto the blue tile you
-  tap, or takes the place of the unit you tap. A move lets go of the unit, and a tap
-  that misses keeps it picked up. Tap the Supply bar to see what every deployed unit
+  tap, or takes the place of the unit you tap. A move lets go of the unit; a tap just
+  off a blue tile still places it on the nearest one, and a tap on the empty space
+  around the board lets it go. Your deployment zone is the three rows nearest you
+  (rocks and water may block a few tiles); Auto keeps to the back two unless it needs
+  more room. Drag the board to move it, even partly off screen, and pinch or use the
+  buttons to zoom. Your relics show as small round badges in the board's corner, in
+  the War Room and in battle: tap one to see what it does. Tap the Supply bar to see what every deployed unit
   costs. Begin battle stays in view at the bottom. The loadout says what each chosen
   ability does, and each empty slot shows how many of your items could go in it
   (greyed out when none could). The unit strip stays where you scrolled it.
@@ -46,7 +68,11 @@ on a phone turned sideways, but portrait works too.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 14 Supply at Level 1 to 33 Supply at Level 10.
 - **Unit levels**: Level 1 picks an ability: the free one, or an active ability
-  that costs extra Supply. For example, the Archer chooses Snare Shot or Smoke
+  that costs extra Supply. Every active ability has 1 to 3 uses a battle, which never
+  come back, and most have a cooldown of their own (shown as "Active, 3 uses, cooldown
+  4"): after a use it waits that many of the unit's turns, on top of the unit's own
+  cooldown, so a strong one cannot come out every turn. Using one is the unit's action
+  for the turn, in place of its attack (Blink included). For example, the Archer chooses Snare Shot or Smoke
   Screen. Level 2 (+2 Supply) gets more HP and damage,
   another skill slot, a talent slot and a second ability pick. Level 3 (+5) adds a
   class mastery, a third talent slot and a second gear slot.
@@ -109,13 +135,17 @@ on a phone turned sideways, but portrait works too.
   whole side sits out, the first in line takes it. The top bar shows this round's
   hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
-- **Poison**: poison and burns tick at the start of the poisoned unit's own turn.
-  The Poison Wisp's Miasma leaves a poison cloud over every tile within 2 of it,
-  which stays out while the wisp cools down and clears when it casts again
-  (Lingering Spores keeps it one turn longer). Enemies that start their turn in the
-  cloud lose HP and cannot heal; walking out stops it, and the AI tries to.
+- **Poison**: poison and burns tick at the start of the poisoned unit's own turn,
+  for a set number of its turns. The Poison Wisp poisons every enemy within 2 tiles
+  for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
   Buildings, wagons, cages and constructs (golems, wards, the trebuchet) are immune,
   and Pestilence's extra damage never hits buildings.
+- **Friendly fire**: every damaging area attack hits your own fighters in its area
+  too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's pulse,
+  a breath. Upgrades can make one spare allies: Controlled Burn (fireball), Tamed
+  Fire (dragon breath), Abyssal Bolt (dark lightning), or the Disciplined skill (any
+  unit with an area attack). Some monsters (the bosses' breaths) spare their own.
+  Area spells that only hinder, like roots or smoke, never touch allies.
 - **Combat**: block works from the front, half from the side, never from behind.
   Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
   counts the attacker side's turns.
@@ -142,21 +172,25 @@ on a phone turned sideways, but portrait works too.
   down on each building. Waves land after the enemy's move; a turn ahead, red
   tiles mark where. Standing on one blocks that arrival at a cost of 10 HP.
   Destroy a building and its remaining waves are cut off.
-- **Defeat**: lose as often as you need. Retry with a new setup, or quit; Continue
-  on the title screen returns to the same battle.
+- **Defeat**: lose as often as you need. You go back to the round's choice of
+  battles; a battle an event started is fought again from the War Room.
 - **Missed bonus goals**: a win that misses a bonus goal (say, winning within 30
   turns) pauses before the rewards and shows which goals you met. Retry the battle
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
-  prisoner, a relic) glows gold and says Collected. A choice still waiting for you
-  (spoils, the Lost Tome, a boss relic, campfire and event choices, the draft) has
-  a soft aura that fades in and out; once you pick, your pick glows and the rest
-  go grey. Reward and shop cards say how many of that kind you already have.
-- **Between battles**: recruits, skills, gear, enchantment scrolls, relics, shops,
-  events, and camps to drill, study or tinker. A shop sells one of each kind of thing,
-  eight at most: a recruit, a talent, a skill, gear, an enchantment scroll, a relic,
-  a Supply Cache and a War Manual.
+  prisoner, a relic) has a plain gold edge and a ✓ Collected badge, and no glow. A
+  choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
+  the draft, the challenge cards) has a soft aura that fades in and out; once you
+  pick, your pick gets the gold edge and a ✓ Chosen badge and the rest go grey.
+  Reward and shop cards say how many of that kind you already have.
+- **The merchant**: six things: a recruit, a talent, a skill, gear and a relic, plus
+  one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about
+  twice as much as anything else. Resupply brings out a whole new stock for 20 gold,
+  then 30, 40 and so on; press it as often as you can pay. Units cannot be dismissed.
+- **Performance**: the board draws 30 frames a second while something moves and 10
+  when nothing does, at no more than twice the screen's CSS pixels, to keep phones
+  cool.
 - **Music**: synthesized in the browser like the sound effects, no audio files. Two
   camp tracks between battles (Campfire, a lute and flute; Tavern Jig, a fiddle jig),
   two battle tracks (March of Iron, war drums and horns; Clash of Steel, a faster
@@ -171,7 +205,7 @@ on a phone turned sideways, but portrait works too.
 | `js/data.js` | Units, abilities, skills, gear, enchantments, relics, encounters |
 | `js/engine.js` | Battle rules (pure logic, emits animation events) |
 | `js/ai.js` | Enemy commander |
-| `js/run.js` | Campaign map, Supply and XP, loadouts, missions, rewards, saving |
+| `js/run.js` | The road (challenge rounds), Supply and XP, loadouts, missions, rewards, saving |
 | `js/sprites.js`, `js/render.js` | Procedural sprites and the isometric board |
 | `js/ui.js`, `js/main.js` | Screens and touch controls |
 | `js/audio.js`, `js/music.js` | Synthesized sound effects and background music |
@@ -186,8 +220,11 @@ node tests/priority.test.js      # the priority target your army goes all out fo
 node tests/objectives.test.js    # your army playing for the mission and bonus goals
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
+node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
-node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries
-DRAFT=1 node tests/run.test.js 20 knight # the same, with randomly drafted armies
+node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries
+                                 # (pick medium | easy | elite | mix each round)
+DRAFT=1 node tests/run.test.js 20 mix  # the same, with randomly drafted armies
+MEGA=1 node tests/run.test.js 20 elite # ...and the final challenge after the win
 ```

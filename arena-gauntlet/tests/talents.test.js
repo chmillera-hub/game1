@@ -17,7 +17,7 @@ function test(name, fn) {
   }
 }
 
-const fresh = () => R.newRun({ seed: 3, warband: 'vanguard', difficulty: 'knight' });
+const fresh = () => R.newRun({ seed: 3, warband: 'vanguard' });
 // A recruit with the talent it came with taken off, so its slots start empty.
 const bare = (run, type) => {
   const u = R.addRecruit(run, type);
@@ -36,7 +36,7 @@ test('every new unit comes with one random talent of its class, equipped', () =>
   }
   const seen = {};
   for (let seed = 1; seed <= 200; seed++) {
-    const r = R.newRun({ seed, warband: 'vanguard', difficulty: 'knight' });
+    const r = R.newRun({ seed, warband: 'vanguard' });
     const ar = R.addRecruit(r, 'archer');
     const id = talentsOf(r, ar)[0];
     seen[id] = (seen[id] || 0) + 1;

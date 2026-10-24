@@ -15,8 +15,8 @@ function test(name, fn) {
 }
 
 function atBattle(seed, warband) {
-  const run = R.newRun({ seed, warband, difficulty: 'knight' });
-  R.enterNode(run, R.availableNodes(run).find((n) => n.kind === 'battle').id);
+  const run = R.newRun({ seed, warband });
+  R.chooseChallenge(run, 1);
   return run;
 }
 

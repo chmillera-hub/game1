@@ -321,7 +321,7 @@ test('paralysis costs a turn on top of the cooldown and removes block', () => {
   assert.ok(E.canActivate(s, kn), 'free again');
 });
 
-test('Miasma leaves a poison cloud: no healing inside; buildings, constructs and the undead are immune', () => {
+test('Miasma poisons for 2 turns, blocks healing; buildings, constructs and the undead are immune', () => {
   const s = board([
     { type: 'wisp', team: 'P', x: 4, y: 6 },
     { type: 'knight', team: 'E', x: 4, y: 4 },
@@ -334,39 +334,60 @@ test('Miasma leaves a poison cloud: no healing inside; buildings, constructs and
   ]);
   const [wi, kn, go, sk, cl, lw, bw, cage] = s.units;
   act(s, wi, { kind: 'self' });
-  assert.ok(s.units.every((u) => !u.poison), 'the cast poisons nobody directly');
-  assert.strictEqual(s.tfx.filter((f) => f.kind === 'miasma').length, 13, 'a cloud over every tile within 2, its own too');
+  assert.ok(kn.poison && kn.poison.turns === 2);
+  for (const u of [go, sk, lw, bw, cage]) assert.ok(!u.poison, u.type + ' is immune');
   E.endTurn(s);
   assert.strictEqual(s.side, 'E');
-  assert.strictEqual(kn.hp, kn.maxHp - 8, 'the knight starts its turn in the cloud');
-  for (const u of [go, sk, lw, bw, cage]) assert.strictEqual(u.hp, u.maxHp, u.type + ' is immune');
+  assert.strictEqual(kn.hp, kn.maxHp - 8, 'ticks at the start of its turn');
+  assert.strictEqual(kn.poison.turns, 1);
   const before = kn.hp;
   assert.ok(E.beginActivation(s, cl.uid));
   E.performAction(s, cl.uid, { kind: 'self' });
-  assert.strictEqual(kn.hp, before, 'no healing inside the cloud');
+  assert.strictEqual(kn.hp, before, 'poisoned unit not healed');
 });
 
-test('Pestilence never hits buildings; the cloud clears on the wisp\'s turns and when it casts again', () => {
+test('Lingering Spores: 3 turns; Pestilence never hits buildings', () => {
   const s = board([
-    { type: 'wisp', team: 'P', x: 4, y: 6, level: 3 },
+    { type: 'wisp', team: 'P', x: 4, y: 6, level: 3, a2: 'w_linger' },
     { type: 'knight', team: 'E', x: 4, y: 4 },
     { type: 'cage', team: 'E', x: 4, y: 8 },
-    { type: 'knight', team: 'P', x: 8, y: 0 },
   ]);
   const [wi, kn, cage] = s.units;
   act(s, wi, { kind: 'self' });
+  assert.strictEqual(kn.poison.turns, 3);
   assert.ok(kn.hp < kn.maxHp, 'Pestilence hits the knight');
   assert.strictEqual(cage.hp, cage.maxHp, 'but not the cage');
-  const cloud = () => s.tfx.filter((f) => f.kind === 'miasma' && f.src === wi.uid);
-  assert.ok(cloud().every((f) => f.turns === 2));
-  until(s, 'P'); // the wisp's next turn: its cooldown
-  assert.ok(cloud().length && cloud().every((f) => f.turns === 1), 'still out while it cools down');
-  place(s, wi, 4, 2);
-  act(s, wi, { kind: 'self' }, 0);
-  assert.ok(cloud().every((f) => Math.abs(f.x - 4) + Math.abs(f.y - 2) <= 2), 'the old cloud cleared for the new one');
-  until(s, 'P');
-  until(s, 'P');
-  assert.strictEqual(cloud().length, 0, 'gone two of its turns later');
+});
+
+test('friendly fire: a cleave hits an adjacent ally; Disciplined spares it', () => {
+  const s = board([
+    { type: 'berserker', team: 'P', x: 4, y: 5 },
+    { type: 'knight', team: 'P', x: 3, y: 5 },
+    { type: 'archer', team: 'E', x: 4, y: 4 },
+    { type: 'berserker', team: 'P', x: 7, y: 5, skills: ['disciplined'] },
+    { type: 'knight', team: 'P', x: 6, y: 5 },
+    { type: 'archer', team: 'E', x: 7, y: 4 },
+  ]);
+  const [be, kn, ar, be2, kn2, ar2] = s.units;
+  for (const u of s.units) u.block = 0;
+  act(s, be, { kind: 'unit', uid: ar.uid });
+  assert.ok(ar.hp < ar.maxHp && kn.hp < kn.maxHp, 'the foe and the ally beside it both take the cleave');
+  act(s, be2, { kind: 'unit', uid: ar2.uid });
+  assert.ok(ar2.hp < ar2.maxHp, 'the foe is hit');
+  assert.strictEqual(kn2.hp, kn2.maxHp, 'Disciplined: the ally is spared');
+});
+
+test('friendly fire: an Arrow Volley hits allies in its area', () => {
+  const s = board([
+    { type: 'archer', team: 'P', x: 4, y: 8, level: 2, a2: 'a_volley' },
+    { type: 'knight', team: 'P', x: 4, y: 4 },
+    { type: 'orc', team: 'E', x: 4, y: 3 },
+  ]);
+  const [ar, kn, orc] = s.units;
+  for (const u of s.units) u.block = 0;
+  const vi = ar.acts.findIndex((a) => a.name === 'Arrow Volley');
+  act(s, ar, { kind: 'tile', x: 4, y: 3 }, vi);
+  assert.ok(orc.hp < orc.maxHp && kn.hp < kn.maxHp);
 });
 
 test('fireball hurts allies but not the caster; Controlled Burn spares them', () => {
@@ -675,8 +696,34 @@ test('Divine Shield absorbs damage; charges run out', () => {
   act(s, ea, { kind: 'unit', uid: kn.uid });
   assert.strictEqual(kn.hp, kn.maxHp, 'fully absorbed');
   assert.strictEqual(kn.shield, 5);
+  assert.ok(!E.actUsable(s, cl, 2), 'cooling down');
+  cl.acts[2].cdLeft = 0;
   act(s, cl, { kind: 'unit', uid: kn.uid }, 2);
+  cl.acts[2].cdLeft = 0;
   assert.ok(!E.actUsable(s, cl, 2), 'no charges left');
+});
+
+test("an active's own cooldown counts the unit's turns; uses never come back", () => {
+  const s = board([
+    { type: 'archer', team: 'P', x: 4, y: 7, level: 2, a2: 'a_volley' },
+    { type: 'knight', team: 'P', x: 0, y: 8 },
+    { type: 'knight', team: 'E', x: 4, y: 3 },
+  ]);
+  const [ar] = s.units;
+  const vol = ar.acts.find((a) => a.name === 'Arrow Volley');
+  const vi = ar.acts.indexOf(vol);
+  assert.deepStrictEqual([vol.uses, vol.cd], [3, 4]);
+  act(s, ar, { kind: 'tile', x: 4, y: 3 }, vi);
+  assert.strictEqual(vol.left, 2);
+  let waited = 0;
+  while (!E.actUsable(s, ar, vi)) {
+    until(s, 'P');
+    ar.wait = 0;
+    waited++;
+    assert.ok(waited < 10);
+  }
+  assert.strictEqual(waited, 5, 'usable on its 5th turn after: it waited 4');
+  assert.ok(E.actUsable(s, ar, 0), 'the plain attack was free all along');
 });
 
 test('marks and weakness change damage', () => {
@@ -715,7 +762,7 @@ test('Shadow Strike appears behind the target and strikes its back', () => {
   assert.strictEqual(kn.hp, kn.maxHp - Math.round(as.pow * 1.5 * 0.65));
 });
 
-test('Blink replaces walking but still allows an attack', () => {
+test('Blink is the turn\'s action: it replaces the attack', () => {
   const s = board([
     { type: 'mageknight', team: 'P', x: 4, y: 7, level: 2, a2: 'mk_blink' },
     { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
@@ -723,10 +770,9 @@ test('Blink replaces walking but still allows an attack', () => {
   const [mk, sc] = s.units;
   assert.ok(E.beginActivation(s, mk.uid));
   assert.ok(E.performAction(s, mk.uid, { kind: 'tile', x: 4, y: 5, ai: 1 }));
-  assert.ok(s.act.moved && !s.act.acted);
-  assert.ok(!E.moveUnit(s, mk.uid, 3, 5), 'cannot also walk');
-  assert.ok(E.performAction(s, mk.uid, { kind: 'unit', uid: sc.uid, ai: 0 }), 'can still attack');
-  assert.ok(sc.hp < sc.maxHp);
+  assert.ok(s.act.acted, 'blinking is its action');
+  assert.ok(!E.performAction(s, mk.uid, { kind: 'unit', uid: sc.uid, ai: 0 }), 'no attack after it');
+  assert.strictEqual(sc.hp, sc.maxHp);
 });
 
 test('Resurrection brings back a fallen ally', () => {

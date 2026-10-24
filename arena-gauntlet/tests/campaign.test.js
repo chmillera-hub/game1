@@ -1,0 +1,152 @@
+// The road through a campaign: rounds of three challenges, one event and one merchant an
+// act, the bosses, and the optional final challenge. Run: node tests/campaign.test.js
+const assert = require('assert');
+const AG = require('./load')();
+const R = AG.Run;
+
+let passed = 0;
+function test(name, fn) {
+  try {
+    fn();
+    passed++;
+  } catch (e) {
+    console.error('FAIL', name);
+    throw e;
+  }
+}
+
+// Win the battle at hand without fighting it (the reward logic runs as after a real win).
+function win(run) {
+  const s = AG.Engine.createBattle(R.battleConfig(run, R.autoDeploy(run, 0)));
+  s.over = true;
+  s.winner = 'P';
+  R.finishBattle(run, s, R.autoDeploy(run, 0));
+  const p = run.pending;
+  if (p.bossRelics && !p.bossRelicTaken) R.takeBossRelic(run, p.bossRelics[0]);
+  if (p.tome && !p.tomeTaken) R.skipTome(run);
+  if (!p.spoilTaken) R.skipSpoils(run);
+  R.completeNode(run);
+}
+
+function lose(run) {
+  const s = AG.Engine.createBattle(R.battleConfig(run, R.autoDeploy(run, 0)));
+  s.over = true;
+  s.winner = 'E';
+  R.finishBattle(run, s, R.autoDeploy(run, 0));
+  R.backToChoice(run);
+}
+
+// Get past whatever the current step is.
+function advance(run, tier) {
+  const p = run.pending;
+  if (!p) {
+    const i = run.offer.findIndex((o) => o.tier === tier);
+    assert.ok(R.chooseChallenge(run, i < 0 ? 0 : i));
+    return win(run);
+  }
+  if (p.type === 'shop') return R.completeNode(run);
+  if (p.type === 'event') {
+    const c = R.eventChoices(run).filter((x) => x.enabled && !x.pick).pop();
+    R.chooseEvent(run, c.id, null);
+    if (run.pending.type === 'battle') return win(run);
+    return R.completeNode(run);
+  }
+  throw new Error('unexpected ' + p.type);
+}
+
+test('each act: four rounds of three challenges, one event and one merchant in the middle, then the boss', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    const kinds = run.plan.map((p) => p.kind);
+    assert.strictEqual(kinds.filter((k) => k === 'fight').length, 4);
+    assert.strictEqual(kinds.filter((k) => k === 'event').length, 1);
+    assert.strictEqual(kinds.filter((k) => k === 'shop').length, 1);
+    assert.strictEqual(kinds[kinds.length - 1], 'boss');
+    assert.strictEqual(kinds[0], 'fight', 'it opens with a battle');
+    assert.ok(kinds.indexOf('event') > 0 && kinds.indexOf('event') < kinds.length - 2, 'the event sits in the middle');
+    assert.ok(kinds.indexOf('shop') > 1 && kinds.indexOf('shop') < kinds.length - 1, 'so does the merchant');
+    assert.deepStrictEqual(run.offer.map((o) => o.tier), ['easy', 'medium', 'elite']);
+    assert.strictEqual(new Set(run.offer.map((o) => o.enc.name)).size, 3, 'three different battles');
+  }
+});
+
+test('easy is smaller than medium; elite pays more and drops a relic', () => {
+  let easier = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    const [e, m, el] = run.offer;
+    if (e.enc.budget < m.enc.budget) easier++;
+    const re = R.challengeReward(run, e);
+    const rm = R.challengeReward(run, m);
+    const rel = R.challengeReward(run, el);
+    assert.ok(re.gold < rm.gold && rm.gold < rel.gold && re.xp < rm.xp && rm.xp < rel.xp);
+    assert.ok(rel.relic && !rm.relic && !re.relic);
+    assert.ok(re.spoils < rm.spoils);
+  }
+  assert.ok(easier >= 18, `easy battles are smaller (${easier}/20)`);
+});
+
+test('a defeat goes back to the same three challenges; the lost one counts its tries', () => {
+  const run = R.newRun({ seed: 4, warband: 'vanguard' });
+  const names = run.offer.map((o) => o.enc.name);
+  R.chooseChallenge(run, 2);
+  lose(run);
+  assert.strictEqual(run.pending, null);
+  assert.deepStrictEqual(run.offer.map((o) => o.enc.name), names);
+  assert.strictEqual(run.offer[2].attempts, 1);
+  R.chooseChallenge(run, 0);
+  assert.strictEqual(run.pending.tier, 'easy');
+  win(run);
+  assert.notDeepStrictEqual(run.offer && run.offer.map((o) => o.enc.name), names, 'on to the next step');
+});
+
+test('the whole road: three acts, then the campaign is won and the final challenge is optional', () => {
+  const run = R.newRun({ seed: 11, warband: 'vanguard' });
+  let guard = 0;
+  while (!run.won && guard++ < 60) advance(run, 'medium');
+  assert.ok(run.won && run.act === 3, 'won after the Act III boss');
+  assert.strictEqual(run.pending.type, 'summit');
+  assert.ok(!run.over, 'the final challenge is still open');
+  assert.ok(R.faceFinal(run));
+  assert.strictEqual(run.offer.length, 1);
+  assert.strictEqual(run.offer[0].tier, 'mega');
+  assert.ok(run.offer[0].enc.units.some((u) => u.type === 'void_wyrm'));
+  R.chooseChallenge(run, 0);
+  lose(run);
+  assert.ok(run.won && !run.over && run.offer[0].attempts === 1, 'a loss keeps the win and the offer');
+  R.chooseChallenge(run, 0);
+  win(run);
+  assert.ok(run.over && run.superWon, 'a super victory');
+});
+
+test('claiming the victory instead ends the campaign as won', () => {
+  const run = R.newRun({ seed: 12, warband: 'vanguard' });
+  let guard = 0;
+  while (!run.won && guard++ < 60) advance(run, 'easy');
+  R.endRun(run);
+  assert.ok(run.over && run.won && !run.superWon);
+});
+
+test('the merchant: six things, relics dearer than anything else, and a resupply that costs 20, 30, 40', () => {
+  for (let seed = 1; seed <= 15; seed++) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    run.gold = 1000;
+    let guard = 0;
+    while (!(run.pending && run.pending.type === 'shop') && guard++ < 20) advance(run, 'medium');
+    const p = run.pending;
+    assert.ok(p.stock.length <= 6, 'six at most');
+    const relic = p.stock.find((it) => it.kind === 'relic');
+    const others = p.stock.filter((it) => it.kind !== 'relic').map((it) => it.price);
+    if (relic) assert.ok(relic.price >= 1.5 * Math.min(...others) && relic.price > Math.max(...others.filter((x, i) => p.stock.filter((it) => it.kind !== 'relic')[i].kind !== 'recruit')), 'relics cost the most');
+    const before = run.gold;
+    assert.strictEqual(R.rerollPrice(run), 20);
+    assert.ok(R.rerollShop(run));
+    assert.strictEqual(R.rerollPrice(run), 30);
+    assert.ok(R.rerollShop(run));
+    assert.strictEqual(R.rerollPrice(run), 40);
+    assert.strictEqual(run.gold, before - 50);
+    assert.ok(p.stock.length <= 6 && p.stock.every((it) => !it.sold));
+  }
+});
+
+console.log(`campaign: ${passed} tests passed`);

@@ -301,19 +301,24 @@ button.card:active {
   cursor: default;
 }
 
-/* Rewards: what you collect anyway (and the choice you made) glows gold with a badge; the
-   options you passed on go grey. A choice still open stays plain. */
-.card[data-got],
-.panel.got {
+/* Rewards: what you collect anyway (and the choice you made) gets a plain gold edge and a
+   check badge, with no glow; the options you passed on go grey. Only a choice still waiting
+   for you has an aura (data-choose). */
+[data-got] {
+  position: relative;
   opacity: 1;
-  border-color: var(--brass-hi);
-  background:
-    linear-gradient(180deg, rgba(240, 207, 134, 0.16), rgba(240, 207, 134, 0.04)),
-    linear-gradient(180deg, var(--leather-2), var(--leather));
-  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.45), 0 0 18px rgba(240, 207, 134, 0.22), 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--brass-hi) !important;
+  box-shadow: inset 0 0 0 1px var(--brass-hi) !important;
 }
 
-.card[data-got]::after {
+.card[data-got],
+.panel[data-got] {
+  background:
+    linear-gradient(180deg, rgba(240, 207, 134, 0.1), rgba(240, 207, 134, 0.03)),
+    linear-gradient(180deg, var(--leather-2), var(--leather));
+}
+
+[data-got]::after {
   content: attr(data-got);
   position: absolute;
   top: -10px;
@@ -368,11 +373,10 @@ button.card:active {
   display: flex;
   gap: 8px;
   align-items: baseline;
-  padding: 10px 14px;
+  padding: 14px 14px 10px;
   border-radius: var(--radius);
   border: 1px solid var(--brass-hi);
-  background: linear-gradient(180deg, rgba(240, 207, 134, 0.16), rgba(240, 207, 134, 0.04));
-  box-shadow: 0 0 14px rgba(240, 207, 134, 0.18);
+  background: linear-gradient(180deg, rgba(240, 207, 134, 0.1), rgba(240, 207, 134, 0.03));
   color: var(--parchment);
   font-size: 0.93rem;
 }
@@ -407,10 +411,6 @@ button.card:active {
 
 .card.talent.rare .kind {
   color: #f4a8ff;
-}
-
-.card.talent[data-got] {
-  box-shadow: 0 0 0 2px rgba(240, 207, 134, 0.6), 0 0 18px rgba(240, 207, 134, 0.25), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .card.talent[data-passed] {
@@ -1032,6 +1032,60 @@ button.card:active {
   flex-direction: column;
   gap: 6px;
   z-index: 2;
+}
+
+/* Your relics, as small round badges in the board's top-left corner. */
+.relic-bar {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  right: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.relic-dot {
+  pointer-events: auto;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--relic, var(--brass));
+  background: radial-gradient(circle at 35% 30%, rgba(255, 240, 210, 0.16), rgba(20, 16, 24, 0.86) 70%);
+  color: var(--relic, var(--brass-hi));
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.relic-dot .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.relic-dot.tier-common {
+  --relic: #d8c39a;
+}
+
+.relic-dot.tier-uncommon {
+  --relic: #79d97f;
+}
+
+.relic-dot.tier-rare {
+  --relic: #7fb6ff;
+}
+
+.relic-dot.tier-boss {
+  --relic: #ff9a5a;
+}
+
+.relic-dot.tier-event {
+  --relic: #c39bff;
 }
 
 .board-tools .btn {
@@ -2698,4 +2752,140 @@ body:has(#battle:not([hidden])) {
 
 .blog li.team-O {
   border-left-color: #ffd27a;
+}
+
+/* ---------------------------------------------------------------- the road */
+
+/* The act's steps, left to right: done (a check), here (a gold ring), still to come. */
+.road {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.road-step {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--faint);
+}
+
+.road-step .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.road-step.done {
+  color: var(--green);
+  border-color: rgba(121, 217, 127, 0.5);
+}
+
+.road-step.here {
+  color: var(--brass-hi);
+  border: 2px solid var(--brass-hi);
+  box-shadow: 0 0 10px rgba(240, 207, 134, 0.35);
+}
+
+.road-link {
+  width: 10px;
+  height: 2px;
+  background: rgba(197, 154, 76, 0.35);
+}
+
+/* A challenge to choose: its tier, a look at the field, its goals and what it pays. */
+.cards.challenges {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card.challenge {
+  gap: 6px;
+}
+
+.ch-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tier-chip {
+  font-family: var(--font-caps);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--tier, var(--brass));
+  color: var(--tier, var(--brass-hi));
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.tier-easy {
+  --tier: #79d97f;
+}
+
+.tier-medium {
+  --tier: #e9b440;
+}
+
+.tier-elite {
+  --tier: #ff6f61;
+}
+
+.tier-boss {
+  --tier: #ff9a5a;
+}
+
+.tier-mega {
+  --tier: #c39bff;
+}
+
+.card.challenge.tier-elite,
+.card.challenge.tier-boss {
+  border-color: rgba(255, 111, 97, 0.55);
+}
+
+.card.challenge.tier-mega {
+  border-color: rgba(195, 155, 255, 0.65);
+}
+
+.ch-thumb {
+  display: block;
+  width: 100%;
+  height: 132px;
+  pointer-events: none;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 50% 60%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.25));
+}
+
+.ch-goals .obj {
+  font-size: 0.86rem;
+}
+
+.ch-pay {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--brass-hi);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.ch-pay .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.panel.summit {
+  border-color: rgba(195, 155, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }

@@ -87,12 +87,20 @@
     return out;
   }
 
+  // An act's charges and its own cooldown. Actives have a few uses a battle that never come
+  // back, and many a cooldown of their own: after one is used it waits that many of the
+  // unit's turns (on top of the unit's own cooldown) before it can be used again.
   function prepAct(a) {
     const act = clone(a);
     act.uses = act.uses || 0;
     act.left = act.uses > 0 ? act.uses : Infinity;
+    act.cd = act.cd || 0;
+    act.cdLeft = 0;
     return act;
   }
+
+  // Ready to be used as far as its own cooldown goes.
+  const offCooldown = (a) => !(a.cdLeft > 0);
 
   // Compile a unit spec into battle numbers.
   function buildUnit(spec, relics) {
@@ -357,16 +365,9 @@
     return null;
   }
 
-  // A hostile poison cloud (the Poison Wisp's miasma) over this unit, if it is not immune.
-  function cloudOn(s, u) {
-    if (!u.alive) return null;
-    for (const f of s.tfx) if (f.kind === 'miasma' && f.x === u.x && f.y === u.y && f.team !== u.team) return statusImmune(s, u, 'poison') ? null : f;
-    return null;
-  }
-
-  // Poisoned units, and units standing in a hostile poison cloud, cannot be healed.
+  // Poisoned units cannot be healed.
   function healBlocked(s, u) {
-    return !!u.poison || !!cloudOn(s, u);
+    return !!u.poison;
   }
 
   // A hostile trap on this tile stops a walking unit there. Flyers pass over traps and fire.
@@ -713,6 +714,28 @@
   // Walls and kegs never make a spell worth casting on their own.
   const worthy = (v) => !v.traits.has('scenery');
 
+  // Friendly fire: a damaging area attack (a cleave, a fireball, a volley, a pulse, a breath)
+  // hits your own fighters in its area too, unless something makes it spare them: an
+  // upgrade that sets ff false (Controlled Burn, Tamed Fire, Abyssal Bolt), a monster that
+  // spares its own kind, or the Disciplined skill. Area spells that only hinder hit foes only.
+  function hitsAllies(u, a) {
+    return !!a.dmg && a.ff !== false && !u.traits.has('precise');
+  }
+
+  // Who an area act reaches besides its caster: foes, plus allied fighters on friendly fire.
+  function inArea(u, a, v) {
+    if (!v.alive) return false;
+    if (v.team !== u.team) return true;
+    return hitsAllies(u, a) && !v.nonCombat && !v.structure;
+  }
+
+  // Who a nova reaches: a damaging one (the Lightning Ward) hits buildings too; a poison
+  // one (the Poison Wisp, Pestilence or not) never does, and neither does a pure status one.
+  function novaHits(a, v) {
+    if (!v.nonCombat && !v.structure) return true;
+    return !!a.dmg && !(a.fx && a.fx.poison);
+  }
+
   // A unit in smoke cannot be singled out from more than 1 tile away.
   function concealed(s, v, fx, fy) {
     return !!tileFx(s, v.x, v.y, 'smoke') && manhattan(fx, fy, v.x, v.y) > 1;
@@ -748,7 +771,7 @@
   // Whether act `ai` can be used right now (charges left, move-like acts, roots).
   function actUsable(s, u, ai) {
     const a = u.acts[ai];
-    if (!a || a.kind === 'none' || a.left <= 0) return false;
+    if (!a || a.kind === 'none' || a.left <= 0 || !offCooldown(a)) return false;
     const A = s.act && s.act.uid === u.uid ? s.act : null;
     if (a.asMove) {
       if (A && A.moved) return false;
@@ -762,7 +785,7 @@
     ai = ai || 0;
     const a = u.acts[ai];
     const res = [];
-    if (!a || a.kind === 'none' || a.left <= 0) return res;
+    if (!a || a.kind === 'none' || a.left <= 0 || !offCooldown(a)) return res;
     const push = (t) => {
       t.ai = ai;
       res.push(t);
@@ -820,7 +843,7 @@
       case 'nova':
       case 'detonate': {
         const hits = unitsOnTiles(s, radiusTiles(s, u.x, u.y, a.radius));
-        if (hits.some((v) => isFoe(u, v) && worthy(v) && ((a.dmg && !a.cloud) || (!v.nonCombat && !v.structure)))) push({ kind: 'self', x: u.x, y: u.y });
+        if (hits.some((v) => isFoe(u, v) && worthy(v) && novaHits(a, v))) push({ kind: 'self', x: u.x, y: u.y });
         break;
       }
       case 'pray':
@@ -970,20 +993,20 @@
         return v && v.alive ? [v] : [];
       }
       case 'leap':
-        return unitsOnTiles(s, tiles.slice(1)).filter((v) => v !== u && isFoe(u, v));
+        return unitsOnTiles(s, tiles.slice(1)).filter((v) => v !== u && inArea(u, a, v));
     }
     const units = unitsOnTiles(s, tiles).filter((v) => v !== u || a.kind === 'pray' || a.kind === 'drum');
     switch (a.kind) {
       case 'cleave':
       case 'quake':
       case 'cross':
-        return units.filter((v) => isFoe(u, v));
+        return units.filter((v) => inArea(u, a, v));
       case 'nova':
-        return units.filter((v) => isFoe(u, v) && ((a.dmg && !a.cloud) || (!v.nonCombat && !v.structure)));
+        return units.filter((v) => inArea(u, a, v) && novaHits(a, v));
       case 'blast':
       case 'line':
       case 'cone':
-        return units.filter((v) => (a.ff ? v.alive : isFoe(u, v)) && (a.dmg || (!v.nonCombat && !v.structure)));
+        return units.filter((v) => inArea(u, a, v) && (a.dmg || (!v.nonCombat && !v.structure)));
       case 'detonate':
         return units.filter((v) => v.alive);
       case 'pray':
@@ -1016,7 +1039,7 @@
         const e = { uid: v.uid, friendly: v.team === u.team };
         if (a.kind === 'pray' || a.kind === 'heal') {
           const cures = (a.cleanse && (v.poison || v.para || v.burn || v.root)) || (a.cure && (v.poison || v.burn));
-          e.heal = (v.poison && !cures) || cloudOn(s, v) ? 0 : Math.min(healAmount(u, a), v.maxHp - v.hp);
+          e.heal = v.poison && !cures ? 0 : Math.min(healAmount(u, a), v.maxHp - v.hp);
           if (cures) e.cleanse = true;
         } else if (a.kind === 'drum') {
           if (!a.noHeal) e.heal = healBlocked(s, v) ? 0 : Math.min(healAmount(u, a), v.maxHp - v.hp);
@@ -1034,7 +1057,7 @@
           }
           if (!e.friendly) {
             if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
-            if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: a.cloud ? 1 : fx.poison[0], dmg: fx.poison[1] };
+            if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1] };
             if (fx.burn) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
@@ -1340,34 +1363,6 @@
     return stop;
   }
 
-  // The Poison Wisp's miasma: a poison cloud over every tile it reaches. It lasts through the
-  // wisp's cooldown (counted in the wisp's own turns) and its old cloud clears when it casts
-  // again, unless Lingering Spores keeps it a turn longer. Enemies that start their turn
-  // inside lose HP and cannot be healed; walk out and it stops.
-  function layCloud(s, u, a) {
-    const linger = u.props.poisonTurns || 0;
-    const before = s.tfx.length;
-    if (!linger) s.tfx = s.tfx.filter((f) => !(f.kind === 'miasma' && f.src === u.uid));
-    if (s.tfx.length !== before) emit(s, { t: 'hazardEnd' });
-    const dmg = poisonDamage(u, a);
-    const placed = [];
-    for (const [x, y] of radiusTiles(s, u.x, u.y, a.radius, true)) {
-      if (s.terrain[idx(s, x, y)] === T_ROCK) continue;
-      const old = s.tfx.find((f) => f.kind === 'miasma' && f.x === x && f.y === y && f.team === u.team);
-      if (old) s.tfx.splice(s.tfx.indexOf(old), 1);
-      s.tfx.push({ kind: 'miasma', x, y, team: u.team, turns: a.cloud + linger, dmg, src: u.uid });
-      placed.push([x, y]);
-    }
-    emit(s, { t: 'hazard', kind: 'miasma', tiles: placed, team: u.team });
-  }
-
-  // A wisp's clouds count down on its own turns, and fade with its side's turns once it falls.
-  function ageClouds(s, u) {
-    const before = s.tfx.length;
-    s.tfx = s.tfx.filter((f) => f.kind !== 'miasma' || f.src !== u.uid || --f.turns > 0);
-    if (s.tfx.length !== before) emit(s, { t: 'hazardEnd' });
-  }
-
   function relocate(s, u, x, y) {
     s.occ[idx(s, u.x, u.y)] = 0;
     u.x = x;
@@ -1580,6 +1575,8 @@
     } else A.acted = true;
     A.noUndo = true;
     if (a.left !== Infinity) a.left--;
+    // Counted down at the start of each of the unit's later turns, so it waits a.cd of them.
+    if (a.cd) a.cdLeft = a.cd + 1;
     const opts = { moved: A.movedBeforeAct, moveDist: A.moveDist, fromX: u.x, fromY: u.y, act: a };
     const tiles = affectedTiles(s, u, target);
     const fd = facingToward(u, target);
@@ -1589,7 +1586,6 @@
     }
     emit(s, { t: 'action', uid, kind: a.kind, name: a.name, target, tiles, x: u.x, y: u.y, dmg: a.dmg || null, ai, hz: a.hz || null, fixed: a.fixed != null });
     const fx = hitFx(u, a);
-    if (a.cloud) delete fx.poison;
     const strike = (v, o) => {
       if (!v.alive) return;
       let landed = true;
@@ -1608,7 +1604,6 @@
           if (!u.alive) break;
           strike(v);
         }
-        if (a.cloud && u.alive) layCloud(s, u, a);
         if (a.kind === 'strike' && u.traits.has('ridedown') && opts.moved && opts.moveDist >= 3) {
           const v = s.byId[target.uid];
           if (v && v.alive && u.alive) knockback(s, u, v);
@@ -2002,11 +1997,10 @@
   function startEffects(s, team) {
     // Hazards fade at the start of their owner's turns.
     const before = s.tfx.length;
-    const livingSrc = (f) => f.kind === 'miasma' && s.byId[f.src] && s.byId[f.src].alive;
-    s.tfx = s.tfx.filter((f) => f.team !== team || livingSrc(f) || --f.turns > 0);
+    s.tfx = s.tfx.filter((f) => f.team !== team || --f.turns > 0);
     if (s.tfx.length !== before) emit(s, { t: 'hazardEnd' });
     const mine = s.units.filter((u) => u.alive && u.team === team);
-    // Poison, burns, fire and clouds underfoot, regen and fatigue all come at the start of
+    // Poison, burns, fire underfoot, regen and fatigue all come at the start of
     // each unit's own turn (see unitTurnStart). In queue battles that is when its turn in the
     // rotation comes up (see pickDue), not at the start of its side's turn.
     if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) unitTurnStart(s, u);
@@ -2075,11 +2069,12 @@
     }
   }
 
-  // The start of one unit's own turn: poison and burns tick, fire and hostile poison clouds
-  // underfoot hurt and its own clouds age. Outside queue battles it then regenerates and
+  // The start of one unit's own turn: poison and burns tick and fire underfoot hurts.
+  // Outside queue battles it then regenerates and
   // loses fatigue here too; in queue battles those come only to the unit that takes the
   // turn, not to the ones that sit it out (pickDue).
   function unitTurnStart(s, u) {
+    for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     // A troll hurt by magic or fire since its last turn does not regenerate this turn.
     u.burnt = u.scorched;
     u.scorched = false;
@@ -2092,12 +2087,6 @@
         magicDamage(s, s.byId[fire.src] || null, u, fire.dmg || FIRE_DMG, 'burn');
       }
     }
-    const cloud = cloudOn(s, u);
-    if (cloud) {
-      emit(s, { t: 'miasma', uid: u.uid, x: u.x, y: u.y });
-      applyDamage(s, s.byId[cloud.src] || null, u, cloud.dmg, { cat: 'none', dmgType: 'poison' });
-    }
-    ageClouds(s, u);
     if (!u.alive || s.queue) return;
     regenerate(s, u);
     fatigue(s, u);
@@ -2359,7 +2348,7 @@
     T_GRASS, T_ROCK, T_WATER, T_LAVA,
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
-    patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, cloudOn, healBlocked, concealed,
+    patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
     inBarrier, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,

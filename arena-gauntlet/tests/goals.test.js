@@ -21,8 +21,8 @@ function test(name, fn) {
 // A won first battle, with one goal met (field this unit) and one missed (win in 1 turn).
 function wonBattle() {
   for (let seed = 1; seed < 40; seed++) {
-    const run = R.newRun({ seed, warband: 'vanguard', difficulty: 'squire' });
-    R.enterNode(run, R.availableNodes(run).find((n) => n.kind === 'battle').id);
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    R.chooseChallenge(run, 0);
     const dep = R.autoDeploy(run, 0);
     run.pending.enc.bonus = [
       { type: 'muster', rid: dep[0].rid },
