@@ -1798,12 +1798,14 @@
 
     let body = '';
     if (wr.tab === 'army') {
-      body = `<div class="roster">${run.roster
+      // The unit a bonus goal asks for comes first, where you cannot miss it.
+      const star = R.bonusUnit(run, enc);
+      body = `<div class="roster">${(star ? [star, ...run.roster.filter((u) => u !== star)] : run.roster)
         .map((u) => {
           const deployed = wr.dep.has(u.id);
           const cost = R.unitCost(run, u);
           const cant = !deployed && (cost > left || wr.dep.size >= wr.cap);
-          const featured = (enc.bonus || []).some((x) => x.type === 'muster' && x.rid === u.id);
+          const featured = u === star;
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
             <span class="cost">${cost}</span>${featured ? '<span class="flag feat">Bonus</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
@@ -1930,6 +1932,8 @@
         why = `${name} hits harder here (their ${a}, ${r}).`;
         if (!n(t)) why += owned(t) ? ` Your ${t === 'magic' ? 'magic' : 'physical'} units did not fit this time.` : ` You have no ${t === 'magic' ? 'magic' : 'physical'} attackers yet.`;
       }
+      const star = R.bonusUnit(run, wr.enc);
+      if (star && wr.dep.has(star.id)) why += ` ${star.name} the ${UNITS[star.type].name} is in for the bonus goal.`;
       if (n('magic') + n('phys')) toast(`Auto: ${got}. ${why}`, 5000);
     };
     $('#wrClear').onclick = () => {

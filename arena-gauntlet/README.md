@@ -19,7 +19,8 @@ on a phone turned sideways, but portrait works too.
 - **Auto**: the War Room's Auto button builds an army for you. It weighs the
   enemy's armor against its magic resistance: magic attackers against armored
   armies, physical ones against magic-resistant armies, a mix otherwise. The
-  scout report shows the same comparison.
+  scout report shows the same comparison. If a bonus goal asks for a unit, Auto
+  always fields it, and the War Room lists that unit first.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 14 Supply and 4 units on the field at Level 1 to
   33 Supply and 8 units at Level 10.
@@ -114,6 +115,7 @@ on a phone turned sideways, but portrait works too.
 
 ```
 node tests/engine.test.js        # rule checks
+node tests/deploy.test.js        # the War Room's Auto button
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 knight # whole campaigns played by the AI, with retries

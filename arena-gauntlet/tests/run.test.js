@@ -28,6 +28,8 @@ function playBattle(run) {
   assert.ok(dep.length > 0, 'deployment possible');
   assert.ok(R.supplyUsed(run, dep) <= R.supplyFor(run), 'within Supply');
   assert.ok(dep.length <= R.unitCap(run), 'within the unit cap');
+  const star = R.bonusUnit(run, p.enc);
+  if (star) assert.ok(dep.some((d) => d.rid === star.id), 'Auto fields the unit a bonus goal asks for');
   const rows = R.deployRows(run, p.enc);
   for (const d of dep) assert.ok(rows.includes(d.y) && p.enc.terrain[d.y * p.enc.w + d.x] === 0, 'valid deploy tile');
   checkLoadouts(run);

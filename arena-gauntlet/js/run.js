@@ -624,6 +624,12 @@
     return out.length ? out : [waveSpec(rng, run, pool, group)];
   }
 
+  // The unit a bonus goal asks you to field, if there is one.
+  function bonusUnit(run, enc) {
+    const b = (enc.bonus || []).find((x) => x.type === 'muster');
+    return b ? unitById(run, b.rid) || null : null;
+  }
+
   // Units that sat out the last battle, for the featured-unit bonus.
   function musterCandidates(run) {
     if (!run.lastDeployed || !run.lastDeployed.length) return [];
@@ -1987,6 +1993,12 @@
     const pool = run.roster.slice().sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
     const pick = [];
     let spent = 0;
+    // A unit a bonus goal asks for always goes in, so you can see the goal is in reach.
+    const wanted = bonusUnit(run, enc);
+    if (wanted && unitCost(run, wanted) <= supply) {
+      pick.push(wanted);
+      spent += unitCost(run, wanted);
+    }
     while (pick.length < cap) {
       const open = pool.filter((r) => !pick.includes(r) && spent + unitCost(run, r) <= supply);
       if (!open.length) break;
@@ -2213,7 +2225,7 @@
     commanderLevel, levelInfo, supplyFor, unitCap, gainXp,
     addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, dismiss, applyScroll, unitById, hasRelic,
-    objectiveInfo, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
+    objectiveInfo, bonusUnit, musterCandidates, deployRows, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rest, takeTreasure, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, loadMeta, recordMeta,
