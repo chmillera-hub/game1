@@ -2246,9 +2246,9 @@
     return out.join('');
   }
 
-  // The top bar's clock: turns to go before fatigue sets in, then the next fatigue hit.
+  // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
-    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${s.fatigue + 1}</span> next`;
+    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> each`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
@@ -2307,7 +2307,7 @@
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
       } else if (e.t === 'overtime') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: the first 1, the next 2, the next 3, and so on, whichever side. The last side standing wins.` });
+        add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: 1 this round, 2 the next, then 3 and so on, the same for both sides. The last side standing wins.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -2613,7 +2613,7 @@
     logEvents(ev);
     if (ev.some((e) => e.t === 'overtime')) {
       showBanner('Fatigue', true);
-      toast('Fatigue: each unit loses HP at the start of its turn, 1 more than the unit before it. The last side standing wins.', 4000);
+      toast('Fatigue: each unit loses HP at the start of its turn, 1 more each round, the same for both sides. The last side standing wins.', 4000);
     }
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
@@ -3407,7 +3407,7 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit at the start of each of its own turns. It comes from a few talents, gear, relics and units, and it all adds up. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Fatigue</b>: from turn 50, each unit loses HP at the start of its turn, 1 more than the unit before it, whichever side: the first loses 1, the next 2, the next 3 and so on, past armor and shields. The top bar shows the next hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Fatigue</b>: from turn 50, each unit loses HP at the start of its turn, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
         </ul>
         <h4>Damage, facing and defense</h4>

@@ -211,7 +211,7 @@ test('reinforcements join the current cycle in speed order', () => {
   assert.strictEqual(warg.cycles, orc.cycles, 'it joins the cycle the orc is on');
 });
 
-test('fatigue: the first unit to start a turn loses 1, the next 2, the next 3, whichever side, past shields', () => {
+test('fatigue: the enemy loses 1, then you 1, then the enemy 2, you 2, and so on, past shields', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -223,16 +223,39 @@ test('fatigue: the first unit to start a turn loses 1, the next 2, the next 3, w
   for (const u of s.units) u.shield = 50;
   const hits = [];
   for (let i = 0; i < 8 && !s.over; i++) {
-    const due = [];
     E.pass(s);
-    for (const e of s.events) if (e.t === 'dmg' && e.dmgType === 'fatigue') due.push(e);
-    hits.push(...due.filter((e) => !hits.includes(e)));
+    for (const e of s.events) if (e.t === 'dmg' && e.dmgType === 'fatigue' && !hits.includes(e)) hits.push(e);
   }
   assert.ok(s.events.some((e) => e.t === 'overtime'), 'fatigue set in');
-  assert.deepStrictEqual(hits.map((e) => e.amount), [1, 2, 3, 4, 5, 6, 7], 'one more for every unit turn');
-  assert.deepStrictEqual(hits.slice(0, 4).map((e) => s.byId[e.uid].team), ['E', 'P', 'E', 'P'], 'both sides share the count');
+  assert.deepStrictEqual(
+    hits.map((e) => `${s.byId[e.uid].team}${e.amount}`),
+    ['E1', 'P1', 'E2', 'P2', 'E3', 'P3', 'E4'],
+    'the same each round for both sides, enemy first'
+  );
   assert.notStrictEqual(hits[1].uid, hits[3].uid, 'the two player golems take turns');
+  assert.strictEqual(E.fatigueHit(s), 4);
   assert.ok(s.units.every((u) => u.shield === 50), 'shields do not stop it');
+});
+
+test('fatigue: units that sit out in the same turn all lose the same', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 2, y: 8 },
+      { type: 'golem', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  E.pass(s); // the enemy's turn 1 ends
+  E.pass(s); // yours ends, and fatigue sets in on the enemy's turn 2
+  const [a, b] = s.units;
+  a.wait = 1; // a sits out its next turn, so b goes in the same turn
+  b.cycles = a.cycles;
+  const ev = s.events.length;
+  E.pass(s); // your turn 2 starts
+  const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]], 'both of yours lose 1, like the enemy did');
+  assert.strictEqual(s.due, b.uid);
 });
 
 test('fatigue: the bigger side outlasts the smaller, and reinforcements stop', () => {

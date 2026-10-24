@@ -295,10 +295,8 @@
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
       queue: !!cfg.queue,
       due: 0,
-      // Fatigue from this turn on (0: never), and the HP the last unit lost to it; see
-      // startFatigue.
+      // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
-      fatigue: 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     (cfg.waves || []).forEach((w, i) => {
@@ -2040,13 +2038,17 @@
   }
 
   // The start of one unit's turn: it regenerates, then, once fatigue has set in, loses
-  // 1 HP more than the last unit to start a turn did, whichever side (1, 2, 3...), past
-  // armor and shields.
+  // this round's fatigue, past armor and shields.
   function unitTurnStart(s, u) {
     regenerate(s, u);
-    if (!s.inOvertime || !u.alive || !counts(u)) return;
-    s.fatigue++;
-    applyDamage(s, null, u, s.fatigue, { cat: 'none', dmgType: 'fatigue' });
+    const n = fatigueHit(s);
+    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue' });
+  }
+
+  // HP a unit loses to fatigue at the start of its turn this round: 1 in the round it sets
+  // in, 2 the next, and so on, the same for both sides (0 before it sets in).
+  function fatigueHit(s) {
+    return s.inOvertime ? Math.max(1, s.turn - s.overtime + 1) : 0;
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2087,8 +2089,8 @@
   }
 
   // Fatigue: from turn `s.overtime` on, each fighter loses HP at the start of its turn, 1
-  // more than the one before it (see unitTurnStart), and no more reinforcements come. Big
-  // units and regen last longest; the last side standing wins.
+  // more each round and the same for both sides (see fatigueHit), and no more
+  // reinforcements come. Big units and regen last longest; the last side standing wins.
   function startFatigue(s) {
     if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
     s.inOvertime = true;
@@ -2281,7 +2283,7 @@
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

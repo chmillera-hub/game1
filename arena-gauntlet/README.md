@@ -61,10 +61,10 @@ on a phone turned sideways, but portrait works too.
   unit's own turns (Living Moss 4, Healing Charm 3, the Furgon 3, the Healing Salve
   relic 1, Sacred Chalice 2, a Mending Light aura 2). Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 50, each unit loses HP at the start of its turn, 1 more than
-  the unit before it, whichever side: the first loses 1, the next 2, the next 3 and
-  so on, past armor and shields, like fatigue in Hearthstone or The Bazaar's
-  sandstorm. The top bar shows the next hit. Reinforcements stop. Big units and regen last longest; the last side
+- **Fatigue**: from turn 50, each unit loses HP at the start of its turn, past armor
+  and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next,
+  then 3 and so on, the same for both sides, like fatigue in Hearthstone. The top bar
+  shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Combat**: block works from the front, half from the side, never from behind.
   Roots, weakness, paralysis and frenzy count the affected unit's own turns; a mark
