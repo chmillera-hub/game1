@@ -491,7 +491,7 @@
         h('li', 'On its turn a unit may move and then attack or use an ability. The AI tries every option, simulates the result and picks the best. Its reasoning shows above the board.'),
         h('li', 'Movement is chess-like: knights leap, bishops slide diagonally, rooks along ranks and files, and wizards teleport.'),
         h('li', 'Chasms swallow anything knocked into them that cannot fly. Walls block movement and line of sight.'),
-        h('li', 'From round 12 an Arcane Storm damages every unit each round, so nothing stalls forever.'),
+        h('li', 'Fatigue: from round 12 an Arcane Storm hits every unit at the start of each round for 1, then 2, then 3 and so on, so nothing stalls forever. If three rounds pass without anyone being hurt, the storm arrives early.'),
       ),
       h('h4', 'The run'),
       h('ul',

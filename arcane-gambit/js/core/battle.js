@@ -160,6 +160,8 @@
       encounter: enc.id,
       turnCount: 0,
       flags: {},
+      lastHit: 0,
+      holdEnd: false,
     };
     for (const a of army) {
       const u = B.makeUnit(a.def, 0, a.x, a.y, { talents: a.talents, rune: a.rune, rank: a.rank });
@@ -231,6 +233,7 @@
       over: s.over, winner: s.winner, ev: null, stats: null,
       objective: s.objective, rules: s.rules, relics: s.relics, encounter: s.encounter,
       turnCount: s.turnCount, sim: true, flags: Object.assign({}, s.flags), hpBoost: s.hpBoost, atkBoost: s.atkBoost,
+      lastHit: s.lastHit, holdEnd: false,
     };
   };
 
@@ -395,6 +398,7 @@
         }
       }
     }
+    if (o.kind !== 'storm') s.lastHit = s.round;
     const absorbed = Math.min(tgt.shield, dmg);
     tgt.shield -= absorbed;
     tgt.hp -= dmg - absorbed;
@@ -1024,13 +1028,23 @@
       emit(s, 'timeout', {});
       return;
     }
+    // Fatigue. A stalemate (3 rounds without anyone being hurt once the
+    // fighting has started, 5 before) brings the Arcane Storm early.
+    const quiet = s.lastHit > 0 ? 3 : 5;
+    if (s.round < s.rules.storm && s.round - s.lastHit > quiet) {
+      s.rules = Object.assign({}, s.rules, { storm: s.round });
+      emit(s, 'stormEarly', { round: s.round });
+    }
     if (s.round >= s.rules.storm) {
       const dmg = s.round - s.rules.storm + 1;
       emit(s, 'storm', { dmg });
+      // The storm strikes everyone at once; the outcome is judged afterwards.
+      s.holdEnd = true;
       for (const u of s.units.slice()) {
         if (u.alive && !u.object) B.hit(s, null, u, dmg, { kind: 'storm', label: 'Arcane Storm' });
-        if (s.over) return;
       }
+      s.holdEnd = false;
+      if (B.checkEnd(s)) return;
     }
     for (const u of s.units.slice()) {
       if (u.alive) passiveHook(s, u, 'roundStart');
@@ -1109,6 +1123,7 @@
 
   B.checkEnd = function (s) {
     if (s.over) return true;
+    if (s.holdEnd) return false;
     let p = false, e = false;
     for (const u of s.units) {
       if (!u.alive) continue;

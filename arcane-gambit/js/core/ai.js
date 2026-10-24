@@ -569,9 +569,23 @@
 
   // ------------------------------------------------------------ explanation
   function nameOf(u) { return u.name; }
+  function pluralName(n) {
+    if (/f$/.test(n)) return n.slice(0, -1) + 'ves';
+    if (/(s|ch|sh|x)$/.test(n)) return n + 'es';
+    return n + 's';
+  }
+  AI.pluralName = pluralName;
+  // "Goblin, Goblin and Troll" -> "2 Goblins and Troll"
   function listNames(arr) {
-    if (arr.length <= 1) return arr.join('');
-    return arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1];
+    const counts = [];
+    for (const n of arr) {
+      const c = counts.find((x) => x.n === n);
+      if (c) c.k++;
+      else counts.push({ n, k: 1 });
+    }
+    const words = counts.map((c) => (c.k > 1 ? c.k + ' ' + pluralName(c.n) : c.n));
+    if (words.length <= 1) return words.join('');
+    return words.slice(0, -1).join(', ') + ' and ' + words[words.length - 1];
   }
 
   const VERB = {
@@ -614,47 +628,68 @@
     }
     if (a && a.k === 'ab') {
       const Ad = AG.Abilities[a.id];
-      const tgt = typeof a.t === 'number' && Ad.target !== 'cell' ? B.U(s, a.t) : null;
+      const area = Ad.target === 'cell' || Ad.target === 'self';
+      const tgt = typeof a.t === 'number' && !area ? B.U(s, a.t) : null;
+      const hitCount = hurt.length + kills.length;
+      const hitTotal = hurt.reduce((n, x) => n + x.d, 0);
+      const hits = hitCount ? ' hits ' + (hitCount === 1 ? '1 enemy' : hitCount + ' enemies') + (hitTotal ? ' for ' + hitTotal + (hitCount > 1 ? ' total' : '') : '') : '';
       switch (Ad.kind) {
         case 'heal':
           if (healed.length) parts.push(Ad.name + (healed[0].o.uid === u.uid ? ' on itself' : ' on ' + nameOf(healed[0].o)) + ' (+' + healed[0].d + ' HP).');
+          else parts.push(Ad.name + '.');
           break;
-        case 'buff':
-          if (shielded.length) parts.push(Ad.name + ': shields ' + listNames(shielded.map((x) => nameOf(x.o))) + '.');
-          else if (Ad.name) parts.push(Ad.name + '.');
+        case 'buff': {
+          const sped = [];
+          for (const o of s.units) {
+            const o2 = B.U(s2, o.uid);
+            if (o.alive && o.side === side && o2.st.haste && (!o.st.haste || o2.st.haste.a > o.st.haste.a)) sped.push(o);
+          }
+          if (shielded.length) parts.push(Ad.name + ': shields ' + listNames(shielded.map((x) => (x.o.uid === u.uid ? 'itself' : nameOf(x.o)))) + '.');
+          else if (sped.length) parts.push(Ad.name + ': ' + (sped.length === 1 ? nameOf(sped[0]) + ' surges' : sped.length + ' allies surge') + ' up the turn order.');
+          else if (healed.length) parts.push(Ad.name + ' on ' + nameOf(healed[0].o) + '.');
+          else parts.push(Ad.name + '.');
           break;
-        case 'summon':
-          parts.push(Ad.name + ': ' + (summoned.length ? summoned.length + ' ' + nameOf(summoned[0]) + (summoned.length > 1 ? 's' : '') + ' join the fight.' : 'reinforcements.'));
+        }
+        case 'summon': {
+          const n = summoned.length;
+          parts.push(Ad.name + ': ' + (n ? (n === 1 ? 'a ' + nameOf(summoned[0]) + ' joins' : n + ' ' + pluralName(nameOf(summoned[0])) + ' join') + ' the fight.' : 'reinforcements.'));
           break;
-        case 'swap':
-          if (tgt && tgt.side !== side) parts.push(Ad.name + ': drags ' + nameOf(tgt) + ' into our lines.');
-          else if (tgt) parts.push(Ad.name + ' with ' + nameOf(tgt) + (dangerAt(s, ctx, tgt) > 0 ? ', pulling it out of danger.' : '.'));
+        }
+        case 'swap': {
+          if (tgt && tgt.side !== side) { parts.push(Ad.name + ': drags ' + nameOf(tgt) + ' into our lines.'); break; }
+          const u2 = B.U(s2, u.uid);
+          const meSafer = dangerAt(s2, ctx, u2) < dangerAt(s, ctx, u);
+          if (tgt) parts.push(Ad.name + ' with ' + nameOf(tgt) + (meSafer ? ' to escape danger.' : dangerAt(s, ctx, tgt) > 0 ? ', pulling it out of danger.' : ' to reposition.'));
           break;
+        }
         case 'cc': {
           const names = cc.map((x) => nameOf(x.o));
           const label = { frozen: 'Freezes', stunned: 'Stuns', rooted: 'Roots', taunt: 'Taunts', cursed: 'Hexes' };
           if (cc.length) {
             const k = cc[0].k;
-            let why = '';
-            const t0 = cc[0].o;
-            const qpos = s.queue.indexOf(t0.uid);
-            if (k === 'frozen' || k === 'stunned') why = qpos >= 0 && qpos <= 2 ? ' before it can act.' : ' to buy a turn.';
+            const many = cc.length > 1;
+            const soon = cc.some((x) => { const q = s.queue.indexOf(x.o.uid); return q >= 0 && q <= 2; });
+            let why;
+            if (k === 'frozen' || k === 'stunned') why = soon ? (many ? ' before they can act.' : ' before it can act.') : ' to buy a turn.';
             else if (k === 'taunt') why = ' away from our back line.';
             else if (k === 'cursed') why = ' so the others can finish it.';
+            else if (k === 'rooted') why = many ? ' in place.' : ' in place.';
             else why = '.';
-            parts.push(label[k] + ' ' + listNames(names) + why);
-          } else parts.push(Ad.name + '.');
+            const lead = cc.length > 3 ? cc.length + ' enemies' : listNames(names);
+            parts.push(label[k] + ' ' + lead + why + (hitTotal ? ' (' + hitTotal + ' damage)' : ''));
+          } else parts.push(Ad.name + (hits || '.') + (hits ? '.' : ''));
           break;
         }
         default:
-          if (tgt && kills.indexOf(tgt) >= 0) parts.push(Ad.name + ' destroys ' + nameOf(tgt) + '.');
+          if (a.id === 'corpseExplosion') {
+            parts.push('Detonates a Skeleton' + (kills.length ? ', taking out ' + listNames(kills.map(nameOf)) : hits ? ' and' + hits : '') + '.');
+            lostAllies.length = 0;
+            kills.length = 0;
+          } else if (tgt && kills.indexOf(tgt) >= 0) parts.push(Ad.name + ' destroys ' + nameOf(tgt) + '.');
           else if (tgt) {
             const h = hurt.find((x) => x.o.uid === tgt.uid);
             parts.push(Ad.name + ' on ' + nameOf(tgt) + (h ? ' for ' + h.d : '') + '.');
-          } else {
-            const total = hurt.reduce((n, x) => n + x.d, 0);
-            parts.push(Ad.name + (hurt.length || kills.length ? ' hits ' + AG.plural(hurt.length + kills.length, 'enemy').replace('enemys', 'enemies') + (total ? ' for ' + total + ' total' : '') + '.' : '.'));
-          }
+          } else parts.push(Ad.name + (hits || ' misses everything') + '.');
       }
     } else if (a && a.k === 'atk') {
       const t = B.U(s, a.t);

@@ -83,6 +83,18 @@
       const now = queueEl.querySelector('.now');
       if (now && now.scrollIntoView) { try { now.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ } }
     }
+    // Fatigue status: when the storm arrives, or how hard it is hitting.
+    function stormText(round) {
+      const at = s.rules.storm;
+      if (round >= at) {
+        stormEl.textContent = '⚡ Arcane Storm: ' + (round - at + 1) + ' damage to every unit each round';
+        stormEl.className = 'storm-warn';
+      } else {
+        stormEl.textContent = at - round <= 2 ? '⚡ Arcane Storm in ' + (at - round) : 'Storm from round ' + at;
+        stormEl.className = at - round <= 2 ? 'storm-warn' : 'faint';
+      }
+      stormEl.setAttribute('data-tip', 'Fatigue: from round ' + at + ' (sooner if three rounds pass without anyone being hurt) every unit takes 1 damage at the start of the round, then 2, then 3… so every battle ends.');
+    }
     function showThought(uid, reason) {
       const u = B.U(s, uid);
       UI.clear(thought);
@@ -134,12 +146,19 @@
         switch (e.type) {
           case 'round':
             roundEl.textContent = 'Round ' + e.round;
-            stormEl.textContent = e.storm ? '⚡ Arcane Storm: ' + e.storm + ' damage to all' : s.rules.storm - e.round <= 2 && s.rules.storm > e.round ? 'Arcane Storm in ' + (s.rules.storm - e.round) : '';
+            stormText(e.round);
             log('sys', 'Round ' + e.round);
             await view.banner('Round ' + e.round, e.storm ? 'storm' : '');
             break;
+          case 'stormEarly':
+            stormText(e.round);
+            log('sys', 'Stalemate: the Arcane Storm gathers early');
+            await view.banner('Stalemate!', 'storm');
+            break;
           case 'storm':
-            await view.banner(e.label || 'Arcane Storm', 'storm');
+            stormText(s.round);
+            if (!e.label) log('sys', 'Arcane Storm: ' + e.dmg + ' damage to everything');
+            await view.banner(e.label || 'Arcane Storm ' + e.dmg, 'storm');
             break;
           case 'queue':
             renderQueue(s.active);
@@ -403,6 +422,7 @@
     root.onMount = function () {
       fit();
       App.onResize = fit;
+      stormText(0);
       syncAll();
       renderQueue(0);
       log('sys', enc.name);

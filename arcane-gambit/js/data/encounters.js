@@ -26,16 +26,16 @@
   add({
     id: 'wolfFord', act: 1, tier: 'early', name: 'Wolves at the Ford', theme: 'moss',
     flavor: 'Three wolves pace the far bank. The river can only be crossed at two fords.',
-    supply: 8, slots: 3, boost: 0.1,
+    supply: 8, slots: 3,
     map: [
-      '...w.w.a.',
+      '..w.w.w..',
       '....w....',
       '~~.~~~.~~',
       '.........',
       'ppppppppp',
       'ppppppppp',
     ],
-    legend: { w: 'wolf', a: 'goblinSlinger' },
+    legend: { w: 'wolf' },
   });
   add({
     id: 'slimeCellar', act: 1, tier: 'early', name: 'The Slime Cellar', theme: 'moss',
@@ -55,7 +55,7 @@
   add({
     id: 'banditBridge', act: 1, tier: 'normal', name: 'Bandit Bridge', theme: 'moss',
     flavor: 'A long rope bridge over a gorge. The toll collectors are not friendly.',
-    supply: 10, slots: 3, boost: 0.35,
+    supply: 10, slots: 3, boost: 0.15,
     map: [
       '.a.a.',
       '..b..',
@@ -72,7 +72,7 @@
   add({
     id: 'boarRun', act: 1, tier: 'normal', name: 'Boar Run', theme: 'moss',
     flavor: 'Hedgerows split the field into lanes. The boars like a long run-up.',
-    supply: 10, slots: 4, boost: 0.1,
+    supply: 10, slots: 4,
     map: [
       '.o..a.o.',
       '........',
@@ -137,7 +137,7 @@
   add({
     id: 'trollBridge', act: 1, tier: 'elite', name: 'The Troll Bridge', theme: 'moss',
     flavor: 'Under the bridge lives a troll who regenerates faster than most things can hurt it. Fire helps.',
-    supply: 12, slots: 3,
+    supply: 12, slots: 4, boost: 0.42,
     map: [
       '..t..',
       '.g.g.',
@@ -184,11 +184,11 @@
   add({
     id: 'spiderNest', act: 1, tier: 'elite', name: 'The Spider Nest', theme: 'moss',
     flavor: 'The Brood Mother lays a new spiderling every round. End this quickly.',
-    supply: 12, slots: 4, boost: 0.55,
+    supply: 12, slots: 4, boost: 0.4,
     map: [
       '#..B..#',
       '.x...x.',
-      '.......',
+      '..x....',
       '#.....#',
       '.......',
       'ppppppp',
@@ -200,7 +200,7 @@
   add({
     id: 'goblinThrone', act: 1, tier: 'boss', name: 'Throne of King Grumblewart', theme: 'moss',
     flavor: 'The goblin king holds court on a ruined chessboard. While he lives, every goblin fights harder, and his guard never runs out.',
-    supply: 14, slots: 5, boost: 0.2,
+    supply: 14, slots: 5, boost: 0.1,
     map: [
       '.#.K..#.',
       '..m..s..',

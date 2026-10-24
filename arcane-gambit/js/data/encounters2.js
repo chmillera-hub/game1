@@ -23,7 +23,7 @@
   add({
     id: 'longCrypt', act: 2, tier: 'early', name: 'The Long Crypt', theme: 'bone',
     flavor: 'A narrow crypt, eleven ranks deep. The archers at the far end have a clear shot down every lane.',
-    supply: 14, slots: 4, boost: 0.55,
+    supply: 14, slots: 4, boost: 0.35,
     map: [
       '.a.a.',
       '..g..',
@@ -58,7 +58,7 @@
   add({
     id: 'hauntedCauseway', act: 2, tier: 'normal', name: 'Haunted Causeway', theme: 'bone',
     flavor: 'A wide causeway crumbling into the marsh. Ghosts drift over the gaps; you cannot.',
-    supply: 14, slots: 6,
+    supply: 14, slots: 6, boost: -0.15,
     map: [
       '.bg..b.gg.',
       '~~......~~',
@@ -72,7 +72,7 @@
   add({
     id: 'ossuary', act: 2, tier: 'normal', name: 'The Ossuary', theme: 'bone',
     flavor: 'A diamond vault stacked with bones. The Gravecaller will put them all to use.',
-    supply: 15, slots: 4, boost: 0.35,
+    supply: 15, slots: 4, boost: 0.55,
     map: [
       '    G    ',
       '   s.s   ',
@@ -104,7 +104,7 @@
   add({
     id: 'wailingBridge', act: 2, tier: 'normal', name: 'The Wailing Bridge', theme: 'bone',
     flavor: 'Two banshees haunt a broken bridge. Their wail drags your pieces down the turn order.',
-    supply: 15, slots: 5, boost: 0.4,
+    supply: 15, slots: 5, boost: 0.6,
     map: [
       '.b.ab.',
       '..ss..',
@@ -120,10 +120,10 @@
   add({
     id: 'mausoleum', act: 2, tier: 'normal', name: 'Mausoleum Steps', theme: 'bone',
     flavor: 'An hourglass-shaped hall that pinches to a single doorway in the middle.',
-    supply: 15, slots: 5, boost: 0.4,
+    supply: 15, slots: 5, boost: 0.3,
     map: [
       '.a.g.a.',
-      '..s.s..',
+      '..sgs..',
       ' ..... ',
       '  ...  ',
       ' ..... ',
@@ -153,7 +153,7 @@
   add({
     id: 'colossus', act: 2, tier: 'elite', name: 'The Bone Colossus', theme: 'bone',
     flavor: 'A tower of fused bones whose every swing hits everything around it. Do not crowd it.',
-    supply: 17, slots: 5, boost: 0.8,
+    supply: 17, slots: 5, boost: 0.6,
     map: [
       '.z..C..z.',
       '..s...s..',
@@ -185,7 +185,7 @@
   add({
     id: 'lichVault', act: 2, tier: 'boss', name: 'Vault of Morvane', theme: 'bone',
     flavor: 'Morvane cannot die while the phylactery in the back of the vault stands. Break it, then break him.',
-    supply: 19, slots: 6, boost: 0.15,
+    supply: 19, slots: 6, boost: 0.1,
     map: [
       '....P....',
       '.##...##.',
@@ -220,7 +220,7 @@
   add({
     id: 'confluence', act: 3, tier: 'early', name: 'Elemental Confluence', theme: 'astral',
     flavor: 'Fire and frost meet on a cross-shaped dais.',
-    supply: 19, slots: 5, boost: 0.15,
+    supply: 19, slots: 5,
     map: [
       '  .f.  ',
       '  .i.  ',
@@ -283,7 +283,7 @@
   add({
     id: 'observatory', act: 3, tier: 'normal', name: 'The Observatory', theme: 'astral',
     flavor: 'A star-chart floor where turrets track you and frost slows you down.',
-    supply: 18, slots: 7, boost: -0.1,
+    supply: 18, slots: 7, boost: -0.25,
     map: [
       '   .t.   ',
       '  .i.i.  ',
@@ -299,9 +299,9 @@
   add({
     id: 'starBridge', act: 3, tier: 'normal', name: 'Star Bridge', theme: 'astral',
     flavor: 'A long bridge of light. Turrets fire down its length while pawns advance.',
-    supply: 19, slots: 4, boost: 0.5,
+    supply: 17, slots: 3, boost: 0.8,
     map: [
-      '..c..',
+      '..v..',
       'c.c.c',
       '.c.c.',
       '~t.t~',
@@ -313,7 +313,7 @@
       'ppppp',
       'ppppp',
     ],
-    legend: { t: 'turret', c: 'clockPawn' },
+    legend: { t: 'turret', c: 'clockPawn', v: 'voidStalker' },
   });
   add({
     id: 'forge', act: 3, tier: 'normal', name: 'The Infernal Forge', theme: 'astral',
@@ -335,7 +335,7 @@
   add({
     id: 'archonEngine', act: 3, tier: 'elite', name: 'The Archon Engine', theme: 'astral',
     flavor: 'An ancient war machine that fires a beam down an entire file every other turn.',
-    supply: 22, slots: 6, boost: 0.65,
+    supply: 22, slots: 6, boost: 0.6,
     map: [
       't...A...t',
       '.........',
@@ -351,7 +351,7 @@
   add({
     id: 'drakeLair', act: 3, tier: 'elite', name: 'The Drake’s Lair', theme: 'astral',
     flavor: 'An Infernal Drake and its elemental servants. Bring something that does not burn.',
-    supply: 22, slots: 5, boost: 0.4,
+    supply: 22, slots: 5,
     map: [
       '...D....',
       '.f..f.f.',
@@ -367,7 +367,7 @@
   add({
     id: 'stalkers', act: 3, tier: 'elite', name: 'The Stalkers', theme: 'astral',
     flavor: 'Three Void Stalkers that strike whoever has not moved yet. Speed matters here.',
-    supply: 21, slots: 6, boost: 0.45,
+    supply: 21, slots: 6, boost: 0.5,
     map: [
       '.v..v..v.',
       '....m....',
@@ -397,7 +397,7 @@
   add({
     id: 'ghostDuel2', act: 2, tier: 'event', name: 'Ghost of the Old Champion', theme: 'bone',
     flavor: 'The Old Champion and its spectral retinue. They move like a real army, because once they were one.',
-    supply: 16, slots: 5, boost: -0.25,
+    supply: 16, slots: 5,
     map: [
       '..gCg..',
       '.k...k.',
@@ -411,7 +411,7 @@
   add({
     id: 'ghostDuel3', act: 3, tier: 'event', name: 'Ghost of the Old Champion', theme: 'astral',
     flavor: 'The Old Champion and its spectral retinue, brighter here among the stars.',
-    supply: 21, slots: 6,
+    supply: 21, slots: 6, boost: -0.2,
     map: [
       '.g.C.g.',
       '.k.b.k.',

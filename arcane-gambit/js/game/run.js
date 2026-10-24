@@ -195,7 +195,7 @@
   Run.startBattle = function (run, encId, tier, bonus) {
     const node = run.pos && run.map ? run.map.nodes[run.pos] : null;
     // Later floors of an act are a little tougher.
-    const ramp = tier === 'boss' ? 0 : node ? Math.min(6, node.r) * 0.04 : 0;
+    const ramp = tier === 'boss' ? 0 : node ? Math.min(6, node.r) * 0.03 : 0;
     run.battle = { enc: encId, tier, attempts: 0, bonus: bonus || null, ramp };
     run.screen = 'setup';
   };
@@ -261,13 +261,13 @@
   Run.lossDamage = function (run, s) {
     if (run.mode === 'casual' || run.sandbox) return 0;
     const tier = run.battle.tier;
-    let dmg = { battle: 3, event: 3, elite: 4, boss: 5 }[tier] || 3;
+    let dmg = { battle: 2, event: 2, elite: 3, boss: 4 }[tier] || 2;
     let extra = 0;
     for (const u of s.units) {
       if (!u.alive || u.side !== 1 || u.object) continue;
       extra += u.summoned ? 1 : Math.ceil(u.threat / 2);
     }
-    return Math.min(dmg + extra, tier === 'boss' ? 14 : 10);
+    return Math.min(dmg + extra, tier === 'boss' ? 12 : tier === 'elite' ? 10 : 8);
   };
 
   Run.recordStats = function (run, s) {

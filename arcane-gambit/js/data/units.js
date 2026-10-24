@@ -301,7 +301,7 @@
       blurb: 'Charges in straight lines. The longer the run-up, the worse the gore.',
     },
     troll: {
-      name: 'Bridge Troll', icon: '🧌', pool: 'enemy', hp: 26, atk: 5, spd: 2, armor: 1, big: true, ai: 'brute',
+      name: 'Bridge Troll', icon: '🧌', pool: 'enemy', hp: 22, atk: 5, spd: 2, armor: 1, big: true, ai: 'brute',
       move: walk(2), attack: melee({ vfx: 'smash' }), passives: { regen: { amt: 3 } }, threat: 6,
       blurb: 'Regenerates 3 every turn. Fire stops it.',
     },
@@ -331,7 +331,7 @@
       blurb: 'Venomous and very numerous.',
     },
     goblinKing: {
-      name: 'King Grumblewart', icon: '👑', pool: 'enemy', hp: 40, atk: 4, spd: 4, armor: 1, boss: true, big: true,
+      name: 'King Grumblewart', icon: '👑', pool: 'enemy', hp: 34, atk: 4, spd: 4, armor: 1, boss: true, big: true,
       tags: ['goblin'],
       move: walk(1), attack: melee({ vfx: 'smash' }),
       abilities: [{ id: 'callGuards', p: { n: 2, def: 'goblin', max: 3, initCd: 1 } }],
@@ -394,7 +394,7 @@
       blurb: 'Flutters over the front line to nibble at whoever is behind it.',
     },
     lich: {
-      name: 'Morvane the Lich', icon: '🧙', pool: 'enemy', hp: 34, atk: 4, spd: 5, boss: true, tags: ['undead'], role: 'ranged',
+      name: 'Morvane the Lich', icon: '🧙', pool: 'enemy', hp: 32, atk: 4, spd: 5, boss: true, tags: ['undead'], role: 'ranged',
       move: { type: 'blink', n: 2 }, attack: ranged(4, { vfx: 'frost', tag: 'frost' }),
       abilities: ['frostNova', { id: 'soulDrain', p: { dmg: 5, range: 4 } }],
       passives: { phylacteryBound: {}, raiseDead: { r: 4, max: 3 } }, threat: 14, immune: ['frozen'],
@@ -408,7 +408,7 @@
 
     // ========================================================== ACT III FOES
     clockPawn: {
-      name: 'Clockwork Pawn', icon: '⚙️', pool: 'enemy', hp: 7, atk: 2, spd: 3, armor: 1, tags: ['construct'],
+      name: 'Clockwork Pawn', icon: '⚙️', pool: 'enemy', hp: 7, atk: 2, spd: 3, armor: 1, tags: ['construct'], ai: 'brute',
       move: walk(1), attack: melee(),
       passives: {
         construct: {},

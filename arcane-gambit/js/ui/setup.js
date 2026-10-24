@@ -276,7 +276,7 @@
         h('div.sec-title', 'Enemy forces'),
         list,
         h('p.hint', 'Speed decides the turn order: every unit acts once per round, fastest first. Ties go to your side.'),
-        h('p.hint', 'From round ' + (enc.storm || 12) + ' an Arcane Storm damages everything each round, so slow stalemates end.'),
+        h('p.hint', 'Fatigue: from round ' + (enc.storm || 12) + ' (or after three rounds with no damage) an Arcane Storm hits every unit each round for 1, then 2, then 3…, so stalemates end.'),
       );
     }
     let modalRef = null;
