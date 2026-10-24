@@ -30,12 +30,20 @@ css/style.css
 js/core/              util, board geometry and line of sight, battle rules, AI
 js/data/              passives, abilities, units, talents/runes/ranks, relics, encounters, events
 js/game/run.js        the roguelike run: map, rewards, shop, camp, events, saves
-js/ui/                DOM helpers, board renderer and animations, war room, battle screen, other screens
+js/ui/                DOM helpers, piece-art toolkit, board renderer and animations, war room, battle screen, other screens
+js/art/               one drawing per unit: player.js, enemy.js (acts I–II), enemy3.js (act III)
 tests/                headless and browser tools (below)
 tools/bundle.js       inline everything into one HTML file
+tools/art-sheet.html  contact sheet of every figurine (open it in a browser)
 ```
 
 The engine (`js/core`, `js/data`, `js/game`) has no DOM code and runs under Node.
+
+## The look
+
+The game is drawn in the manner of Chess Evolved Online: white paper with a faint doodled maze, black ink outlines, bevelled grey-and-white squares in a dark frame, and colour only where it means something. Blue brackets mark where a piece can move, red where it can strike, black where it can do both.
+
+Every unit is a small statue on a pedestal: white for your side, black for the enemy, with coloured flares for rarity (blue uncommon, purple rare, red for the enemy's heavies, gold for bosses). The figures are drawn in code, not stored as images. `js/ui/pieces.js` provides a pen (`P.solid` shades and outlines a shape, `P.base` draws the pedestal, `P.eye` marks details that flip between dark and light with the side) and path helpers (`D.lathe` turns a half-profile into a symmetric piece; `D.flame`, `D.gear`, `D.batWing` and friends draw common motifs). Each unit's drawing is built once into an SVG symbol, and the side, glow and line weight come from CSS custom properties.
 
 ## Tools
 
@@ -51,4 +59,5 @@ node tests/smoke.js [outDir] [--mobile]                  # browser play-through 
 node tests/tour.js [outDir] [--mobile]                   # visit every screen
 node tests/longrun.js 10 [--mobile]                      # drive the real UI through ten floors of a run
 node tools/bundle.js dist/arcane-gambit.html             # single-file build
+node tools/art-shot.js sheet.png knight,goblin --size 150 # screenshot of chosen figurines (all if no ids)
 ```

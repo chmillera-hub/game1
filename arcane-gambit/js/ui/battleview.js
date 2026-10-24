@@ -27,14 +27,14 @@
     const roundEl = h('span.round-badge', 'Round 0');
     const stormEl = h('span.storm-warn');
     const queueEl = h('div.queue', { 'aria-label': 'Turn order' });
-    const thought = h('div.thought', h('div.ic', '♟'), h('div.who', 'Ready'), h('div.what', 'Your pieces move by themselves. Watch them think.'));
-    const playBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Pause', on: { click: togglePause } }, '❚❚');
+    const thought = h('div.thought', h('div.ic.qchip.p', UI.piece('squire', { side: 0, cls: 'md' })), h('div.who', 'Ready'), h('div.what', 'Your pieces move by themselves. Watch them think.'));
+    const playBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Pause', on: { click: togglePause } }, UI.uiIcon('pause'));
     const stepBtn = h('button.btn.small', { type: 'button', on: { click: step } }, 'Step');
     const seg = h('div.seg', { role: 'group', 'aria-label': 'Speed' });
     for (const sp of SPEEDS) {
       seg.appendChild(h('button', { type: 'button', class: sp.k === view.k ? 'on' : '', on: { click: () => setSpeed(sp.k) } }, sp.label));
     }
-    const skipBtn = h('button.btn.small', { type: 'button', title: 'Keys: Space pause, → step, 1–3 speed, S skip', on: { click: skip } }, 'Skip to result ⏭');
+    const skipBtn = h('button.btn.small', { type: 'button', title: 'Keys: Space pause, → step, 1–3 speed, S skip', on: { click: skip } }, 'Skip to result', UI.uiIcon('skip'));
     const altsBtn = h('button.btn.small.ghost', {
       type: 'button', 'aria-pressed': App.prefs.showAlts ? 'true' : 'false',
       'data-tip': 'Also show the runner-up options each unit weighed, and how much worse it judged them.',
@@ -74,7 +74,7 @@
         const u = B.U(s, uid);
         if (!u || !u.alive) return;
         queueEl.appendChild(h('div.qchip.' + (u.side === 0 ? 'p' : 'e') + (cls ? '.' + cls : ''), { 'data-tip': u.name + ' · SPD ' + B.spd(s, u) },
-          UI.icon(u), h('span.spd', B.spd(s, u))));
+          UI.icon(u, 'md'), h('span.spd', B.spd(s, u))));
       };
       if (activeUid) add(activeUid, 'now');
       for (const uid of q.now) if (uid !== activeUid) add(uid);
@@ -82,7 +82,7 @@
       const nx = h('div.row.qnext', { style: { gap: '6px', flexWrap: 'nowrap' } });
       for (const uid of q.next) {
         const u = B.U(s, uid);
-        nx.appendChild(h('div.qchip.' + (u.side === 0 ? 'p' : 'e'), UI.icon(u)));
+        nx.appendChild(h('div.qchip.' + (u.side === 0 ? 'p' : 'e'), UI.icon(u, 'md')));
       }
       queueEl.appendChild(nx);
       const now = queueEl.querySelector('.now');
@@ -92,10 +92,10 @@
     function stormText(round) {
       const at = s.rules.storm;
       if (round >= at) {
-        stormEl.textContent = '⚡ Arcane Storm: ' + (round - at + 1) + ' damage to every unit each round';
+        stormEl.textContent = 'ϟ Arcane Storm: ' + (round - at + 1) + ' damage to every unit each round';
         stormEl.className = 'storm-warn';
       } else {
-        stormEl.textContent = at - round <= 2 ? '⚡ Arcane Storm in ' + (at - round) : 'Storm from round ' + at;
+        stormEl.textContent = at - round <= 2 ? 'ϟ Arcane Storm in ' + (at - round) : 'Storm from round ' + at;
         stormEl.className = at - round <= 2 ? 'storm-warn' : 'faint';
       }
       stormEl.setAttribute('data-tip', 'Fatigue: from round ' + at + ' (sooner if three rounds pass without anyone being hurt) every unit takes 1 damage at the start of the round, then 2, then 3… so every battle ends.');
@@ -104,7 +104,7 @@
       const u = B.U(s, uid);
       const where = at || [u.x, u.y];
       UI.clear(thought);
-      thought.appendChild(h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '40px', height: '40px' } }, UI.icon(u)));
+      thought.appendChild(h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), UI.icon(u, 'md')));
       thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ', h('span.sq', sq(where[0], where[1]))));
       thought.appendChild(h('div.what', reason));
       if (App.prefs.showAlts && alts && alts.length) {
@@ -120,7 +120,7 @@
     // ------------------------------------------------------- controls
     function togglePause() {
       paused = !paused;
-      playBtn.textContent = paused ? '▶' : '❚❚';
+      UI.clear(playBtn).appendChild(UI.uiIcon(paused ? 'play' : 'pause'));
       playBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
       if (!paused && resume) { const r = resume; resume = null; r(); }
     }
@@ -140,7 +140,7 @@
       skipping = true;
       skipBtn.disabled = true;
       UI.clear(thought);
-      thought.appendChild(h('div.ic', '⏭'));
+      thought.appendChild(h('div.ic.qchip.p', UI.uiIcon('skip')));
       thought.appendChild(h('div.who', 'Resolving'));
       thought.appendChild(h('div.what', 'Playing out the rest of the battle…'));
       if (paused) togglePause();
@@ -181,15 +181,15 @@
             showThought(e.uid, e.reason, e.alts, e.from);
             const from = e.from || [u.x, u.y];
             const dest = e.mv >= 0 ? '→' + sq(e.mv % s.board.w, (e.mv / s.board.w) | 0) : '';
-            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' ', h('span.sq', sq(from[0], from[1]) + dest), ' ', e.reason]);
+            log(u.side === 0 ? 'p' : 'e', [UI.icon(u), h('b', u.name), ' ', h('span.sq', sq(from[0], from[1]) + dest), ' ', e.reason]);
             await wait(520);
             break;
           }
           case 'skip': {
             const u = B.U(s, e.uid);
-            view.floatOn(e.uid, e.why === 'frozen' ? '🧊 frozen' : '💫 stunned', 'note');
+            view.floatOn(e.uid, [UI.statusIcon(e.why === 'frozen' ? 'frozen' : 'stunned'), e.why], 'note');
             showThought(e.uid, (e.why === 'frozen' ? 'Frozen solid' : 'Stunned') + ': loses this turn.');
-            log(u.side === 0 ? 'p' : 'e', [UI.icon(u) + ' ', h('b', u.name), ' is ' + e.why + ' and loses its turn.']);
+            log(u.side === 0 ? 'p' : 'e', [UI.icon(u), h('b', u.name), ' is ' + e.why + ' and loses its turn.']);
             await wait(500);
             break;
           }
@@ -205,8 +205,8 @@
             break;
           case 'ability': {
             const A = AG.Abilities[e.id];
-            view.callout(e.uid, A.icon + ' ' + A.name);
-            await view.flash(e.uid, UI.VFX[A.vfx] || '#fff');
+            view.callout(e.uid, [UI.glyph(A.icon), ' ' + A.name]);
+            await view.flash(e.uid, UI.VFX[A.vfx] || '#2d6bff');
             break;
           }
           case 'aoe':
@@ -221,7 +221,7 @@
           case 'dmg': {
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp, shield: e.shield });
             if (view.tokens.has(e.uid)) {
-              view.floatOn(e.uid, '−' + e.amt + (e.absorbed ? ' ⛨' : ''), 'dmg' + (e.amt >= 6 ? ' big' : ''));
+              view.floatOn(e.uid, ['−' + e.amt, e.absorbed ? UI.uiIcon('shield') : null], 'dmg' + (e.amt >= 6 ? ' big' : ''));
               // Make synergies visible: Charge +2, Shatter +2, Marked +1...
               const plus = (e.mods || []).filter((m) => m.amt > 0);
               if (plus.length) view.floatOn(e.uid, plus.map((m) => m.label + ' +' + m.amt).join(' · '), 'note bonus', 1.35);
@@ -239,7 +239,7 @@
             break;
           case 'shield':
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { shield: e.shield });
-            view.floatOn(e.uid, '+' + e.amt + ' ⛨', 'shield');
+            view.floatOn(e.uid, ['+' + e.amt, UI.uiIcon('shield')], 'shield');
             refreshToken(e.uid);
             if (!e.quiet) await wait(160);
             break;
@@ -247,7 +247,7 @@
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { st: e.st });
             refreshToken(e.uid);
             const S = UI.STATUS[e.key];
-            if (S && !e.removed) view.floatOn(e.uid, S.icon + ' ' + S.name, 'note', 1.1);
+            if (S && !e.removed) view.floatOn(e.uid, [UI.statusIcon(e.key), S.name], 'note', 1.1);
             break;
           }
           case 'buff':
@@ -255,14 +255,14 @@
             break;
           case 'death': {
             const u = B.U(s, e.uid);
-            log('death', [UI.icon(u) + ' ', h('b', u.name), ' falls.']);
+            log('death', [UI.icon(u), h('b', u.name), ' falls.']);
             await view.fadeOut(e.uid, false);
             break;
           }
           case 'fall': {
             const u = B.U(s, e.uid);
             view.floatOn(e.uid, 'into the abyss!', 'note');
-            log('death', [UI.icon(u) + ' ', h('b', u.name), ' is knocked into the chasm.']);
+            log('death', [UI.icon(u), h('b', u.name), ' is knocked into the chasm.']);
             await view.fadeOut(e.uid, true);
             break;
           }
@@ -276,15 +276,15 @@
           case 'promote':
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.unit.hp });
             refreshToken(e.uid);
-            view.floatOn(e.uid, '♛ Promoted!', 'note big', 1.2);
+            view.floatOn(e.uid, [UI.glyph('♛'), ' Promoted!'], 'note big', 1.2);
             log(e.unit.side === 0 ? 'p' : 'e', [h('b', e.unit.name), ' is promoted!']);
-            await view.flash(e.uid, '#f1d08a');
+            await view.flash(e.uid, '#f5b400');
             break;
           case 'revive':
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp });
             refreshToken(e.uid);
             view.floatOn(e.uid, e.label + '!', 'note big', 1.2);
-            await view.flash(e.uid, '#86d08a');
+            await view.flash(e.uid, '#1d9e39');
             break;
           case 'negate':
             view.floatOn(e.uid, e.label === 'Zen' ? 'Dodged!' : e.label + '!', 'note');
@@ -408,7 +408,7 @@
         const r = st[u.uid];
         const bar = (cls, label, n) => h('div.rep-bar.' + cls, h('span', label), h('span.track', h('i', { style: { width: (100 * n) / max + '%' } })), h('span.n', n));
         return h('div.rep-row',
-          h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '34px', height: '34px', fontSize: '18px' } }, UI.icon(u)),
+          h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '36px', height: '36px' } }, UI.icon(u)),
           h('div.nm', u.name, r.kills ? h('span.faint', AG.plural(r.kills, 'kill')) : null, !u.alive ? h('span.dead', 'fell') : null),
           h('div.rep-bars', { style: { gridColumn: '2' } },
             bar('dealt', 'dealt', r.dealt), bar('taken', 'taken', r.taken), r.healed ? bar('healed', 'healed', r.healed) : null),

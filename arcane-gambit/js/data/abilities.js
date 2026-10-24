@@ -154,7 +154,7 @@
       },
     },
     thunderclap: {
-      name: 'Thunderclap', icon: '⚡', cd: 3, target: 'self', kind: 'damage', hostile: true, vfx: 'storm',
+      name: 'Thunderclap', icon: 'ϟ', cd: 3, target: 'self', kind: 'damage', hostile: true, vfx: 'storm',
       p: { dmg: 3, r: 1 },
       desc: (p) => 'Deal ' + p.dmg + ' to every enemy within ' + p.r + ' and knock them back a square. Chasms swallow those who cannot fly.',
       targets(s, u, p) { return hasFoeWithin(s, u, p.r) ? [u.uid] : []; },

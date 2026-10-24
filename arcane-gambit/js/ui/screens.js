@@ -24,10 +24,10 @@
     const u = AG.B.makeUnit(def, 0, 0, 0, {});
     return h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
       h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', opts.kind || 'New unit'), h('span.rarity.' + d.rarity, d.rarity)),
-      h('div.nm', h('span.ic', d.icon), d.name),
+      h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), d.name),
       h('div.mono.muted', { style: { fontSize: '13px' } }, d.cost + ' supply · HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd + (u.armor ? ' · Armor ' + u.armor : '')),
       h('div.d', d.blurb),
-      h('div.offer-pattern', UI.patternDiagram(u), h('div.d', UI.moveText(u))),
+      h('div.offer-pattern', UI.patternDiagram(u, 10), h('div.d', UI.moveText(u))),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
       h('span.btn.small.ghost', { role: 'presentation', on: { click: (e) => { e.stopPropagation(); UI.modal(UI.inspector(u, { showTalents: true }), {}); } } }, 'Details'),
     );
@@ -36,7 +36,7 @@
     const R = AG.Runes[id];
     return h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
       h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', 'Rune'), h('span.rarity.' + R.rarity, R.rarity)),
-      h('div.nm', h('span.ic.rune', R.icon), R.name),
+      h('div.nm', h('span.ic.rune', UI.glyph(R.icon)), R.name),
       h('div.d', R.desc),
       h('div.mono.muted', { style: { fontSize: '13px' } }, '+' + R.cost + ' supply when socketed'),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
@@ -46,7 +46,7 @@
     const R = AG.Relics[id];
     return h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
       h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', 'Relic'), h('span.rarity.' + R.rarity, R.rarity)),
-      h('div.nm', h('span.ic.relic', R.icon), R.name),
+      h('div.nm', h('span.ic.relic', UI.glyph(R.icon)), R.name),
       h('div.d', R.desc),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
     );
@@ -61,7 +61,7 @@
         const d = AG.Units[def];
         const r = run.ranks[def] || 0;
         list.appendChild(h('button.offer', { type: 'button', on: { click: () => { close(); onPick(def); } } },
-          h('div.nm', h('span.ic', d.icon), d.name, h('span.faint', ' ' + '★'.repeat(r))),
+          h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), d.name, h('span.faint', ' ' + '★'.repeat(r))),
           h('div.d', AG.RANKS[r] + ' → ' + AG.RANKS[r + 1] + ': ' + AG.rankDesc(r + 1, def) + '.'),
         ));
       }
@@ -81,8 +81,13 @@
       h('button.btn', { type: 'button', on: { click: () => App.openSandbox() } }, 'Skirmish (everything unlocked)'),
       h('button.btn.ghost', { type: 'button', on: { click: () => App.help() } }, 'How to play'),
     );
+    // A row of pieces behind the name, as on Chess Evolved's title bar.
+    const frieze = h('div.frieze', { 'aria-hidden': 'true' });
+    for (const def of ['squire', 'cleric', 'golem', 'pyromancer', 'chronomancer', 'archmage', 'phoenix', 'ranger', 'knight', 'frostWitch', 'squire']) {
+      frieze.appendChild(UI.piece(def, { side: 0, glow: '' }));
+    }
     const root = h('div.title-screen',
-      h('div.logo', 'Arcane Gambit', h('small', 'Wizard chess · auto-battler · roguelike')),
+      h('div.frieze-band', frieze, h('h1.logo', 'Arcane Gambit', h('small', 'Wizard chess · auto-battler · roguelike'))),
       demoHost,
       menu,
       h('p.title-foot', 'Draft wizard-chess pieces within a supply budget, place them, and press Begin. Your pieces then think for themselves, one at a time, fastest first. Win, recruit, upgrade, climb three boards.'),
@@ -169,9 +174,11 @@
     const A = Run.ACTS[run.act];
     const boss = AG.encounterList((e) => e.act === run.act && e.tier === 'boss')[0];
     const bossUnit = boss ? AG.Units[AG.parseBoard(boss.map, boss.legend).spawns.map((s) => s.def).find((d) => AG.Units[d].boss)] : null;
+    const bossDef = bossUnit ? Object.keys(AG.Units).find((k) => AG.Units[k] === bossUnit) : null;
     return h('div.title-screen',
       h('span.eyebrow', 'Act ' + ['I', 'II', 'III'][run.act - 1]),
-      h('div.logo', { style: { fontSize: 'clamp(44px, 9vw, 92px)' } }, A.name),
+      bossDef ? h('div', { style: { width: '120px', height: '120px' } }, UI.piece(bossDef, { side: 1 })) : null,
+      h('div.logo', { style: { fontSize: 'clamp(40px, 8vw, 84px)' } }, A.name),
       h('p.flavor', A.blurb + (bossUnit ? ' At the top waits ' + bossUnit.name + '.' : '')),
       h('button.btn.primary', { type: 'button', on: { click: () => App.go('map') } }, 'To the map'),
     );
@@ -204,8 +211,8 @@
         line.setAttribute('x2', b[0]); line.setAttribute('y2', b[1]);
         const walked = n.visited && map.nodes[m].visited;
         const open = run.pos === n.id && reach.has(m);
-        line.setAttribute('stroke', walked ? '#d6aa52' : open ? '#f1d08a' : '#3c4962');
-        line.setAttribute('stroke-width', walked || open ? '2.4' : '1.4');
+        line.setAttribute('stroke', walked ? '#16161b' : open ? '#f5b400' : '#a9a9b2');
+        line.setAttribute('stroke-width', walked || open ? '3' : '1.8');
         line.setAttribute('vector-effect', 'non-scaling-stroke');
         if (!walked && !open) line.setAttribute('stroke-dasharray', '4 5');
         svg.appendChild(line);
@@ -226,7 +233,7 @@
         'data-tip': N.d, 'data-tip-title': N.name + (n.visited ? ' (visited)' : ''), 'aria-label': N.name + (isReach ? ', available' : ''),
         disabled: !isReach,
         on: { click: () => { if (isReach) App.enterNode(n.id); } },
-      }, N.icon);
+      }, UI.glyph(N.icon));
       wrap.appendChild(btn);
     }
     const bossEnc = AG.encounterList((e) => e.act === run.act && e.tier === 'boss')[0];
@@ -235,7 +242,7 @@
     if (bossBtn && bossDef) bossBtn.setAttribute('data-tip', AG.Units[bossDef].name + ': ' + AG.Units[bossDef].blurb);
     const legend = h('div.map-legend');
     for (const k of ['battle', 'elite', 'event', 'shop', 'rest', 'treasure', 'boss']) {
-      legend.appendChild(h('span', h('b', NODE[k].icon), NODE[k].name));
+      legend.appendChild(h('span', h('b', UI.glyph(NODE[k].icon)), NODE[k].name));
     }
     const side = h('div.panel.stack',
       h('div.eyebrow', 'Act ' + ['I', 'II', 'III'][run.act - 1] + ' · ' + Run.ACTS[run.act].name),
@@ -259,8 +266,8 @@
     const body = h('div.stack', { style: { gap: '16px' } });
     const gains = h('div.row');
     if (p.gold) gains.appendChild(h('span.chip.brass', '+' + p.gold + ' gold'));
-    if (p.heal) gains.appendChild(h('span.chip', { style: { color: 'var(--heal)' } }, '+' + p.heal + ' Resolve'));
-    if (p.relic) gains.appendChild(h('span.chip.brass', AG.Relics[p.relic].icon + ' ' + AG.Relics[p.relic].name));
+    if (p.heal) gains.appendChild(h('span.chip', { style: { color: 'var(--green)', borderColor: 'var(--green)' } }, '+' + p.heal + ' Resolve'));
+    if (p.relic) gains.appendChild(h('span.chip.brass', UI.glyph(AG.Relics[p.relic].icon), AG.Relics[p.relic].name));
     body.appendChild(gains);
     if (p.relic) body.appendChild(h('div.offers', relicOffer(p.relic, { kind: 'Relic', cls: 'taken', onClick: () => {} })));
     if (p.relicChoices && p.relicChoices.length) {
@@ -311,8 +318,8 @@
         if (!t.length) { UI.toast('Every unit is fully trained.'); return; }
         if (run.gold < price(shop.train.price)) { UI.toast('You cannot afford that.'); return; }
         UI.pickUnit('Train which unit?', t, run, (def) => buy('train', 0, def));
-      } } }, h('span.kind', 'Service'), h('div.nm', '★ Drill instructor'), h('div.d', 'Train one unit type a rank: Veteran (+HP, +1 ATK), then Elite (+HP, +1 SPD, a second talent slot).'), shop.train.used ? null : h('div.price', price(shop.train.price) + ' gold')),
-      h('button.offer' + (shop.heal.used ? '.gone' : ''), { type: 'button', on: { click: () => !shop.heal.used && buy('heal') } }, h('span.kind', 'Service'), h('div.nm', '♥ Tonic'), h('div.d', 'Recover ' + shop.heal.amt + ' Resolve.'), shop.heal.used ? null : h('div.price', price(shop.heal.price) + ' gold')),
+      } } }, h('span.kind', 'Service'), h('div.nm', h('span.ic', UI.glyph('★')), 'Drill instructor'), h('div.d', 'Train one unit type a rank: Veteran (+HP, +1 ATK), then Elite (+HP, +1 SPD, a second talent slot).'), shop.train.used ? null : h('div.price', price(shop.train.price) + ' gold')),
+      h('button.offer' + (shop.heal.used ? '.gone' : ''), { type: 'button', on: { click: () => !shop.heal.used && buy('heal') } }, h('span.kind', 'Service'), h('div.nm', h('span.ic', UI.glyph('♥')), 'Tonic'), h('div.d', 'Recover ' + shop.heal.amt + ' Resolve.'), shop.heal.used ? null : h('div.price', price(shop.heal.price) + ' gold')),
     );
     return h('div', App.hud(),
       h('div.screen-head', h('div.stack', { style: { gap: '4px' } }, h('span.eyebrow', 'Merchant'), h('h2', 'The Travelling Armoury'), h('p.flavor', 'You have ' + run.gold + ' gold.'))),
@@ -337,11 +344,11 @@
       const t = Run.trainable(run);
       body.appendChild(h('div.offers',
         h('button.offer', { type: 'button', on: { click: () => { Run.rest(run, 'recover'); App.save(); App.render(); } } },
-          h('span.kind', 'Rest'), h('div.nm', '♥ Recover'), h('div.d', 'Recover ' + heal + ' Resolve (' + run.resolve + '/' + run.maxResolve + ' now).')),
+          h('span.kind', 'Rest'), h('div.nm', h('span.ic', UI.glyph('♥')), 'Recover'), h('div.d', 'Recover ' + heal + ' Resolve (' + run.resolve + '/' + run.maxResolve + ' now).')),
         h('button.offer' + (t.length ? '' : '.gone'), { type: 'button', on: { click: () => {
           if (!t.length) return;
           UI.pickUnit('Train which unit?', t, run, (def) => { Run.rest(run, 'train', def); App.save(); App.render(); });
-        } } }, h('span.kind', 'Drill'), h('div.nm', '★ Train'), h('div.d', 'Train one unit type a rank. Elite units can take two talents.')),
+        } } }, h('span.kind', 'Drill'), h('div.nm', h('span.ic', UI.glyph('★')), 'Train'), h('div.d', 'Train one unit type a rank. Elite units can take two talents.')),
       ));
     }
     return h('div', App.hud(),
@@ -399,7 +406,7 @@
   S.gameover = function (App) {
     const run = App.run;
     return h('div.title-screen',
-      h('div.logo', { style: { color: 'var(--garnet-2)', fontSize: 'clamp(48px, 10vw, 100px)' } }, 'Resolve Broken'),
+      h('div.logo.lose', { style: { fontSize: 'clamp(44px, 9vw, 96px)' } }, 'Resolve Broken'),
       h('p.flavor', 'Your army scatters. The board resets. Somewhere, a goblin is laughing.'),
       summary(run),
       h('div.row', { style: { justifyContent: 'center' } },
@@ -411,7 +418,8 @@
   S.victory = function (App) {
     const run = App.run;
     return h('div.title-screen',
-      h('div.logo', { style: { fontSize: 'clamp(48px, 10vw, 100px)' } }, 'Checkmate'),
+      h('div', { style: { width: '120px', height: '120px' } }, UI.piece('ebonKing', { side: 1, glow: 'g-gold' })),
+      h('div.logo.win', { style: { fontSize: 'clamp(44px, 9vw, 96px)' } }, 'Checkmate'),
       h('p.flavor', 'The Mad Grandmaster topples. Every board you crossed is yours.' + (run.mode === 'casual' ? ' (Casual run.)' : '')),
       summary(run),
       h('div.row', { style: { justifyContent: 'center' } },
@@ -452,7 +460,7 @@
           if (k >= 0) run.relics.splice(k, 1); else run.relics.push(id);
           App.save(); App.render();
         } },
-      }, h('span.ic', R.icon), R.name));
+      }, h('span.ic', UI.glyph(R.icon)), R.name));
     }
     return h('div',
       h('div.hud', h('button.brand', { type: 'button', on: { click: () => App.toTitle() } }, 'Arcane Gambit'), h('span.chip.arcane', 'Skirmish'), h('span.spacer'),
@@ -476,7 +484,7 @@
         const u = AG.B.makeUnit(def, 0, 0, 0, { rank: run.ranks[def] || 0 });
         grid.appendChild(h('button.offer', { type: 'button', on: { click: () => UI.modal(UI.inspector(u, { showTalents: true }), {}) } },
           h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', AG.RANKS[run.ranks[def] || 0]), h('span.rarity.' + d.rarity, d.rarity)),
-          h('div.nm', h('span.ic', d.icon), d.name, run.ranks[def] ? h('span.faint', ' ' + '★'.repeat(run.ranks[def])) : null),
+          h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), d.name, run.ranks[def] ? h('span.faint', ' ' + '★'.repeat(run.ranks[def])) : null),
           h('div.mono.muted', { style: { fontSize: '13px' } }, d.cost + ' supply · HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd),
           h('div.d', d.blurb),
         ));
@@ -501,7 +509,7 @@
       h('h4', 'Before each battle'),
       h('ul',
         h('li', 'Each fight gives you a supply budget and a number of unit slots. Units, talents and runes all cost supply.'),
-        h('li', 'Tap a unit in your army, then a gold square on your side of the board. To move a placed piece, tap it and then another gold square (with a mouse you can also drag it).'),
+        h('li', 'Tap a unit in your army, then a blue-bracketed square on your side of the board. To move a placed piece, tap it and then another blue square (with a mouse you can also drag it).'),
         h('li', 'Tap a placed piece to give it a talent (one per unit, two once it is Elite) and a rune from your satchel.'),
         h('li', 'Tap any enemy to read exactly how it moves, attacks and what its traits do.'),
       ),
@@ -522,8 +530,9 @@
       ),
       h('h4', 'Reading the board'),
       h('ul',
-        h('li', 'Gold-rimmed ivory pieces are yours; garnet pieces are the enemy. The bar under a piece is its health; blue is shield.'),
-        h('li', 'Small icons show afflictions: 🔥 burning, 🧪 poisoned, ❄️ chilled (slower), 🧊 frozen (skips a turn, takes +2 damage), ⛓️ rooted, 🎯 marked, ⛧ hexed, ❗ taunted, 🌫️ stealthed.'),
+        h('li', 'White pieces are yours; black pieces are the enemy. A coloured glow marks rarity: blue uncommon, purple rare, red for the enemy’s heavies, gold for bosses. The bar under a piece is its health; blue is shield.'),
+        h('li', 'When you select a piece, blue brackets show where it can move, red brackets what it can strike, and black brackets squares where it can do both.'),
+        h('li', 'Small badges show afflictions: ', ['burn', 'poison', 'chill', 'frozen', 'rooted', 'marked', 'cursed', 'taunt', 'stealth'].map((k, i) => [i ? ', ' : '', UI.statusIcon(k), ' ' + UI.STATUS[k].name.toLowerCase()]), '. Frozen units skip a turn and take +2 damage; chilled ones act later.'),
         h('li', 'Squares are named like chess: files a, b, c… from the left, ranks 1, 2, 3… up from your edge.'),
       ),
     ), { title: 'How to play', wide: true });

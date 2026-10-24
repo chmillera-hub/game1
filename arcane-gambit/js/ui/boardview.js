@@ -8,12 +8,13 @@
   const h = UI.h;
   const { FLOOR, WALL, PIT } = AG.TER;
 
+  // Effect colours, saturated enough to read on white and grey squares.
   const VFX = {
-    slash: '#fff3d6', stab: '#fff3d6', claw: '#ffd9c2', smash: '#ffe0b0', gore: '#ffd0a0', fist: '#fff3d6', cleave: '#ffe0b0',
-    whirl: '#ffe0b0', lance: '#fff3d6', pierce: '#fff3d6', bite: '#ffb4b4', dart: '#f1e7cf', arrow: '#f1e7cf', rock: '#c9b9a6',
-    shell: '#ffb36b', bolt: '#ffd27a', beam: '#ff7ad9', arcane: '#c4a7ff', fire: '#ff9d4d', frost: '#a5e6ff', lightning: '#fff27a',
-    storm: '#bb93ff', shadow: '#c39be6', holy: '#fff1b8', smite: '#fff1b8', nature: '#a6e07c', thorn: '#a6e07c', psychic: '#ff9ee8',
-    time: '#7fe0ff', goo: '#9fe08a', heal: '#86d08a', rally: '#f1d08a', taunt: '#f39185', bone: '#efe8d8', meteor: '#ff7a3d', blast: '#ffb36b',
+    slash: '#4a4a55', stab: '#4a4a55', claw: '#a8322e', smash: '#7a5a3a', gore: '#a8322e', fist: '#4a4a55', cleave: '#7a5a3a',
+    whirl: '#7a5a3a', lance: '#4a4a55', pierce: '#4a4a55', bite: '#d6283b', dart: '#7a6a55', arrow: '#7a6a55', rock: '#8a7a68',
+    shell: '#ff7a1a', bolt: '#ffb000', beam: '#ff2bd6', arcane: '#8a3ffc', fire: '#ff5a00', frost: '#18a0ff', lightning: '#ffd000',
+    storm: '#9634e8', shadow: '#6a2fb0', holy: '#ffbf00', smite: '#ffbf00', nature: '#2f9e44', thorn: '#2f9e44', psychic: '#e0359b',
+    time: '#00a6c8', goo: '#5cb82e', heal: '#1d9e39', rally: '#f5b400', taunt: '#e2242c', bone: '#a89c84', meteor: '#ff4d00', blast: '#ff7a1a',
   };
   UI.VFX = VFX;
   const MELEE = { slash: 1, stab: 1, claw: 1, smash: 1, gore: 1, fist: 1, cleave: 1, whirl: 1, lance: 1, pierce: 1, bite: 1 };
@@ -43,9 +44,10 @@
         this.cellsEl.appendChild(c);
       }
     }
+    this.trailsEl = h('div.trails');
     this.tokensEl = h('div.tokens');
     this.fxEl = h('div.fx');
-    this.boardEl = h('div.board', this.cellsEl, this.tokensEl, this.fxEl);
+    this.boardEl = h('div.board', this.cellsEl, this.trailsEl, this.tokensEl, this.fxEl);
     this.filesEl = h('div.files');
     this.ranksEl = h('div.ranks');
     for (let x = 0; x < b.w; x++) this.filesEl.appendChild(h('span', String.fromCharCode(97 + x)));
@@ -70,7 +72,11 @@
     this.boardEl.style.height = b.h * px + 'px';
     this.filesEl.style.gridTemplateColumns = 'repeat(' + b.w + ', ' + px + 'px)';
     this.ranksEl.style.gridTemplateRows = 'repeat(' + b.h + ', ' + px + 'px)';
-    for (const [uid, t] of this.tokens) this.place(t, t.x, t.y);
+    for (const [uid, t] of this.tokens) {
+      this.place(t, t.x, t.y);
+      const pc = t.el.querySelector('.pc');
+      if (pc) { pc.classList.toggle('sm', px < 40); pc.classList.toggle('md', px >= 40 && px < 60); }
+    }
   };
 
   // Size squares to the space available (and to the screen height).
@@ -111,7 +117,7 @@
   };
   BoardView.prototype.makeToken = function (u) {
     const el = h('div.token.' + (u.side === 0 ? 'p' : 'e'), { role: 'button', tabindex: '-1' },
-      h('div.piece', UI.icon(u)),
+      h('div.piece'),
       h('div.stealth-veil'),
       h('div.sts'),
       h('div.rank'),
@@ -139,14 +145,26 @@
     el.classList.toggle('p', u.side === 0);
     el.classList.toggle('e', u.side !== 0);
     t.side = u.side;
-    el.querySelector('.piece').textContent = UI.icon(u);
+    // Redraw the figure only when it changes (a promotion, Bear Form, a side swap).
+    const look = u.side + ':' + AG.Art.artId(u);
+    if (t.look !== look) {
+      t.look = look;
+      const piece = el.querySelector('.piece');
+      UI.clear(piece);
+      piece.appendChild(UI.piece(u, { cls: this.cell < 40 ? 'sm' : this.cell < 60 ? 'md' : '' }));
+    }
     el.classList.toggle('big', !!u.big || !!u.boss);
     el.classList.toggle('summoned', !!u.summoned && !u.object && !u.big);
     el.classList.toggle('object', !!u.object);
     const st = Array.isArray(u.st) ? u.st : Object.keys(u.st || {});
     el.classList.toggle('stealth', st.indexOf('stealth') >= 0);
-    const icons = st.filter((k) => k !== 'stealth' && UI.STATUS[k]).slice(0, 4).map((k) => UI.STATUS[k].icon).join('');
-    el.querySelector('.sts').textContent = icons;
+    const sts = el.querySelector('.sts');
+    const keys = st.filter((k) => k !== 'stealth' && UI.STATUS[k]).slice(0, 4);
+    if (sts.dataset.k !== keys.join()) {
+      sts.dataset.k = keys.join();
+      UI.clear(sts);
+      for (const k of keys) sts.appendChild(UI.statusIcon(k));
+    }
     el.querySelector('.rank').textContent = u.rank ? '★'.repeat(u.rank) : '';
     const hpPct = Math.max(0, Math.min(100, (100 * u.hp) / u.maxHp));
     const shPct = Math.max(0, Math.min(100 - hpPct, (100 * (u.shield || 0)) / u.maxHp));
@@ -226,9 +244,23 @@
   function done(anim) { return anim && anim.finished ? anim.finished.catch(function () {}) : Promise.resolve(); }
   const tr = (x, y, extra) => 'translate(' + x + 'px,' + y + 'px)' + (extra || '');
 
+  // A fading line from where a piece stood to where it went, as CEO marks
+  // the last move.
+  BoardView.prototype.trail = function (from, to, side) {
+    const [x0, y0] = this.center(from[0], from[1]);
+    const [x1, y1] = this.center(to[0], to[1]);
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 1) return;
+    const el = h('div.trail.' + (side === 0 ? 'p' : 'e'), { style: { left: x0 + 'px', top: y0 + 'px', width: len + 'px', transform: 'rotate(' + Math.atan2(y1 - y0, x1 - x0) + 'rad)' } });
+    this.trailsEl.appendChild(el);
+    const anim = el.animate([{ opacity: 0.9 }, { opacity: 0.9, offset: 0.6 }, { opacity: 0 }], { duration: Math.max(700, this.d(1600)) });
+    done(anim).then(function () { el.remove(); });
+  };
+
   BoardView.prototype.animMove = function (uid, to, kind, path) {
     const t = this.tokens.get(uid);
     if (!t) return Promise.resolve();
+    if (kind !== 'push') this.trail([t.x, t.y], to, t.side);
     const c = this.cell;
     const fx = t.x * c, fy = t.y * c, tx = to[0] * c, ty = to[1] * c;
     let anim;
@@ -320,7 +352,8 @@
     const t = this.tokens.get(uid);
     if (!t) return Promise.resolve();
     const piece = t.el.querySelector('.piece');
-    return done(piece.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(2.2) drop-shadow(0 0 6px ' + (color || '#fff') + ')' }, { filter: 'brightness(1)' }], { duration: this.d(260) }));
+    const c = color || '#2d6bff';
+    return done(piece.animate([{ filter: 'drop-shadow(0 0 0 ' + c + ')' }, { filter: 'drop-shadow(0 0 7px ' + c + ') drop-shadow(0 0 3px ' + c + ')' }, { filter: 'drop-shadow(0 0 0 ' + c + ')' }], { duration: this.d(300) }));
   };
   BoardView.prototype.shake = function (uid) {
     const t = this.tokens.get(uid);

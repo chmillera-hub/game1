@@ -22,7 +22,9 @@
         const v = attrs[k];
         if (v == null || v === false) continue;
         if (k === 'on') for (const ev in v) el.addEventListener(ev, v[ev]);
-        else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+        else if (k === 'style' && typeof v === 'object') {
+          for (const sk in v) { if (sk.slice(0, 2) === '--') el.style.setProperty(sk, v[sk]); else el.style[sk] = v[sk]; }
+        }
         else if (k === 'class') { for (const c of String(v).split(/\s+/)) if (c) el.classList.add(c); }
         else if (k === 'html') el.innerHTML = v;
         else if (k === 'dataset') Object.assign(el.dataset, v);

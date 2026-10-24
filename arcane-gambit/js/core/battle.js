@@ -136,7 +136,7 @@
 
   B.snap = function (u) {
     return {
-      uid: u.uid, def: u.def, side: u.side, x: u.x, y: u.y, name: u.name, icon: u.icon,
+      uid: u.uid, def: u.def, art: u.art, side: u.side, x: u.x, y: u.y, name: u.name, icon: u.icon,
       hp: u.hp, maxHp: u.maxHp, shield: u.shield, atk: u.atk, alive: u.alive,
       st: Object.keys(u.st), summoned: u.summoned, boss: u.boss, object: u.object,
     };
@@ -567,6 +567,7 @@
     delete u.pas.promotion;
     u.name = p.name;
     u.icon = p.icon || u.icon;
+    u.art = p.art || u.art;
     u.maxHp += p.hp || 0;
     u.hp = u.maxHp;
     u.atk += p.atk || 0;

@@ -100,7 +100,7 @@
     // Druid
     alpha: { unit: 'druid', name: 'Alpha Call', cost: 2, desc: 'Its wolves get +3 HP and +1 ATK.', apply(u) { tweak(u, 'summonWolf', { hp: 3, atk: 1 }); } },
     bearForm: { unit: 'druid', name: 'Bear Form', cost: 2, desc: '+8 HP, +2 ATK and 1 armor, but it fights in melee.',
-      apply(u) { u.maxHp += 8; u.atk += 2; u.armor += 1; u.at = { pattern: 'melee', vfx: 'claw' }; u.icon = '🐻'; u.role = 'melee'; } },
+      apply(u) { u.maxHp += 8; u.atk += 2; u.armor += 1; u.at = { pattern: 'melee', vfx: 'claw' }; u.icon = '🐻'; u.art = 'druidBear'; u.role = 'melee'; } },
     overgrowth: { unit: 'druid', name: 'Overgrowth', cost: 1, desc: 'Entangle deals 2 and recharges in 3.', apply(u) { tweak(u, 'entangle', { dmg: 2, cd: 3 }); } },
     // Cannoneer
     grapeshot: { unit: 'cannoneer', name: 'Grapeshot', cost: 1, desc: 'Splash damage rises to 3.', apply(u) { set(u, 'at', { splash: 3 }); } },

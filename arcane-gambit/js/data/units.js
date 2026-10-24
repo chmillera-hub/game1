@@ -23,7 +23,7 @@
       move: walk(1), attack: melee(),
       passives: {
         shieldWall: {},
-        promotion: { name: 'Champion', icon: '⚔️', hp: 6, atk: 2, move: walk(2) },
+        promotion: { name: 'Champion', icon: '⚔️', art: 'champion', hp: 6, atk: 2, move: walk(2) },
       },
       talents: ['pikeman', 'stout', 'eager'],
       blurb: 'Cheap, stubborn, and secretly dreaming of the far rank.',
@@ -412,7 +412,7 @@
       move: walk(1), attack: melee(),
       passives: {
         construct: {},
-        promotion: { name: 'Clockwork Queen', icon: '♛' + T, hp: 6, atk: 2, move: slide(3, 'all'), attack: ranged(3, { vfx: 'arcane' }) },
+        promotion: { name: 'Clockwork Queen', icon: '♛' + T, art: 'clockQueen', hp: 6, atk: 2, move: slide(3, 'all'), attack: ranged(3, { vfx: 'arcane' }) },
       },
       immune: ['burn', 'poison'], threat: 2,
       blurb: 'If it reaches your back rank it becomes a queen.',
@@ -471,7 +471,7 @@
     ebonPawn: {
       name: 'Ebon Pawn', icon: '♟' + T, pool: 'enemy', hp: 6, atk: 2, spd: 3, tags: ['chess'],
       move: walk(1), attack: melee(),
-      passives: { shieldWall: {}, promotion: { name: 'Ebon Queen', icon: '♛' + T, hp: 8, atk: 2, move: slide(4, 'all'), attack: ranged(3, { vfx: 'arcane' }) } },
+      passives: { shieldWall: {}, promotion: { name: 'Ebon Queen', icon: '♛' + T, art: 'ebonQueen', hp: 8, atk: 2, move: slide(4, 'all'), attack: ranged(3, { vfx: 'arcane' }) } },
       threat: 2,
       blurb: 'If it reaches your back rank, it becomes a queen.',
     },

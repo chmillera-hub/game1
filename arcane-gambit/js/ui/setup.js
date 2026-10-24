@@ -99,7 +99,7 @@
       }
       if (sel.kind === 'card') place(sel.def, x, y);
       else if (sel.kind === 'placed') { F[sel.i].x = x; F[sel.i].y = y; changed(); }
-      else UI.toast('Pick a unit from your army below, then tap a gold square.');
+      else UI.toast('Pick a unit from your army below, then tap a blue square.');
     }
     function onToken(uid) {
       if (uid <= F.length) { onPlaced(uid - 1); return; }
@@ -187,7 +187,7 @@
       actions,
       errorsEl,
       selBar,
-      h('div.row', h('div.eyebrow', 'Your army'), h('span.hint', 'Tap a unit, then a gold square. Tap a placed piece, then another square, to move it.')),
+      h('div.row', h('div.eyebrow', 'Your army'), h('span.hint', 'Tap a unit, then a blue square. Tap a placed piece, then another square, to move it.')),
       rosterEl,
       tools,
     );
@@ -196,7 +196,7 @@
       const coach = h('div.coach',
         h('div.coach-steps',
           h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; the fight limits how many units you may bring.'),
-          h('div', h('b', '2. Deploy'), ' Tap a gold square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
+          h('div', h('b', '2. Deploy'), ' Tap a blue square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
           h('div', h('b', '3. Watch'), ' Press Begin. Every unit acts once per round, fastest first, and thinks for itself. If you lose, rethink and retry.'),
         ),
         h('button.btn.small', { type: 'button', on: { click: () => { App.prefs.seenWarRoom = true; App.savePrefs(); coach.remove(); } } }, 'Got it'),
@@ -224,7 +224,7 @@
       for (const uid of preview.queue) {
         const u = B.U(preview, uid);
         queueEl.appendChild(h('div.qchip.' + (u.side === 0 ? 'p' : 'e'), { 'data-tip': u.name + ' · SPD ' + B.spd(preview, u), 'aria-label': u.name },
-          UI.icon(u), h('span.spd', B.spd(preview, u))));
+          UI.icon(u, 'md'), h('span.spd', B.spd(preview, u))));
       }
     }
     function renderRoster() {
@@ -252,16 +252,16 @@
       if (sel.kind === 'placed') {
         const e = F[sel.i];
         const u = previewUnitForEntry(sel.i);
-        selBar.appendChild(h('span.chip.brass', UI.icon(u) + ' ' + u.name + ' · ' + AG.squareName(board, e.x, e.y)));
+        selBar.appendChild(h('span.chip.brass', UI.icon(u), u.name + ' · ' + AG.squareName(board, e.x, e.y)));
         if (e.talents.length) selBar.appendChild(h('span.chip', e.talents.map((t) => AG.Talents[t].name).join(', ')));
-        if (e.rune) selBar.appendChild(h('span.chip', AG.Runes[e.rune].icon + ' ' + AG.Runes[e.rune].name));
+        if (e.rune) selBar.appendChild(h('span.chip', UI.glyph(AG.Runes[e.rune].icon), AG.Runes[e.rune].name));
         selBar.appendChild(h('button.btn.small', { type: 'button', on: { click: openInspector } }, narrow() ? 'Upgrades & details' : 'Details'));
         selBar.appendChild(h('button.btn.small.danger', { type: 'button', on: { click: () => removeEntry(sel.i) } }, 'Remove'));
-        selBar.appendChild(h('span.hint', 'Tap a gold square to move it.'));
+        selBar.appendChild(h('span.hint', 'Tap a blue square to move it.'));
       } else if (sel.kind === 'card') {
         const d = AG.Units[sel.def];
-        selBar.appendChild(h('span.chip.brass', d.icon + ' ' + d.name + ' · ' + d.cost + ' supply'));
-        selBar.appendChild(h('span.hint', 'Tap a gold square to deploy.'));
+        selBar.appendChild(h('span.chip.brass', UI.icon(sel.def), d.name + ' · ' + d.cost + ' supply'));
+        selBar.appendChild(h('span.hint', 'Tap a blue square to deploy.'));
         selBar.appendChild(h('button.btn.small', { type: 'button', on: { click: openInspector } }, 'Details'));
       }
     }
@@ -294,7 +294,7 @@
       const list = h('div.stack', { style: { gap: '6px' } });
       enemyUnits().forEach(function (u, k) {
         list.appendChild(h('button.opt', { type: 'button', on: { click: () => { sel = { kind: 'enemy', k }; refresh(); if (narrow()) openInspector(); } } },
-          h('span.t', UI.icon(u) + ' ' + u.name), h('span.c', 'HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd), h('span.d', AG.Units[u.def].blurb || '')));
+          h('span.t', UI.icon(u), u.name), h('span.c', 'HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd), h('span.d', AG.Units[u.def].blurb || '')));
       });
       return h('div.stack',
         h('div.sec-title', 'Enemy forces'),
@@ -341,10 +341,10 @@
       UI.clear(errorsEl);
       const v = Run.validate(run, enc, F);
       if (!v.ok && F.length) errorsEl.textContent = v.errors.join(' ');
-      actions.appendChild(h('button.btn.primary', { type: 'button', disabled: !v.ok, on: { click: begin } }, '⚔ Begin battle'));
+      actions.appendChild(h('button.btn.fight', { type: 'button', disabled: !v.ok, on: { click: begin } }, UI.uiIcon('swords'), 'Begin battle'));
       actions.appendChild(h('span.mini-meter.mono' + (v.cost > v.lim.supply ? '.over' : ''), v.cost + '/' + v.lim.supply + ' supply · ' + F.length + '/' + v.lim.slots + ' units'));
       if (!F.length && run.lastArmy && run.lastArmy.length) {
-        tools.appendChild(h('button.btn.small', { type: 'button', on: { click: useLast } }, '↺ Use last army'));
+        tools.appendChild(h('button.btn.small', { type: 'button', on: { click: useLast } }, 'Use last army'));
       }
       tools.appendChild(h('button.btn.small' + (showDanger ? '.on-toggle' : ''), {
         type: 'button', 'aria-pressed': showDanger ? 'true' : 'false',
@@ -406,7 +406,7 @@
         let ghost = null;
         function move(ev) {
           if (!ghost && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 10) {
-            ghost = h('div.qchip.p', { style: { position: 'fixed', zIndex: 70, pointerEvents: 'none', width: view.cell * 0.8 + 'px', height: view.cell * 0.8 + 'px', fontSize: view.cell * 0.4 + 'px' } }, AG.Units[def].icon);
+            ghost = h('div.qchip.p', { style: { position: 'fixed', zIndex: 70, pointerEvents: 'none', width: view.cell * 0.8 + 'px', height: view.cell * 0.8 + 'px' } }, UI.icon(def, 'md'));
             document.body.appendChild(ghost);
             card.dataset.dragged = '1';
           }
