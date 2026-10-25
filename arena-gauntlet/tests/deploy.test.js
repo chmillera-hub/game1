@@ -187,7 +187,9 @@ test('a unit whose old tile is blocked on the new field moves to the nearest ope
   run.lastPlan = [{ rid: run.roster[0].id, x, y, facing: 0 }, { rid: run.roster[1].id, x: 3, y, facing: 0 }];
   run.pending.lastDep = null;
   const plan = R.startingPlan(run, enc);
-  assert.strictEqual(plan.length, 2, 'nobody dropped');
+  const core = R.coreUnit(run);
+  assert.ok(plan.some((d) => d.rid === core.id), 'the Cleric always joins');
+  assert.strictEqual(plan.filter((d) => d.rid !== core.id).length, 2, 'nobody dropped');
   const moved = plan.find((d) => d.rid === run.roster[0].id);
   assert.ok(R.deployOpen(enc, moved.x, moved.y) && rows.includes(moved.y));
   assert.ok(Math.abs(moved.x - x) + Math.abs(moved.y - y) <= 2, 'close to where it stood');

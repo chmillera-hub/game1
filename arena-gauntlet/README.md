@@ -127,9 +127,9 @@ on a phone turned sideways, but portrait works too.
 - **The draft**: a new campaign drafts its army instead of taking a ready-made
   warband. Eight picks, each one of three: five units, a relic, a skill and a piece of
   gear. There is no difficulty setting: each round you pick how hard a battle to
-  take (see The road). Every unit offer has at least two that deal damage, and the
-  first one always offers a Cleric, your only healer (exactly once: no later pick
-  offers another). The skills and gear offered are ones your units can use. Back
+  take (see The road). Every unit offer has at least two that deal damage and none
+  is a Cleric: every army starts with its own (see Your Cleric). The skills and gear
+  offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. Every unit card shows all its numbers:
   HP, damage, armor, magic resistance, block, cooldown, move, range and speed. You start with 60 gold.
 
@@ -217,6 +217,11 @@ on a phone turned sideways, but portrait works too.
   base price, plus a small "+N" for whatever its loadout adds. Your plan for a battle
   is kept: lose, or step back to the other battles, and the army is still on the field
   when you return; a new battle opens with the army of your last one, kit and all.
+- **Your Cleric**: every army has a Cleric, the only unit that heals. It fights in
+  every battle: it starts on the field, cannot be taken off, and its base cost is free
+  of Supply (levels, abilities and kit you give it still cost Supply as usual). Where
+  it stands, and who guards it, is up to you. Its cards say Always. More Clerics can
+  still join later; those cost Supply like any unit.
 - **Quest units**: when a bonus goal asks for a unit that sat out your last battle,
   that unit insists on fighting: it starts on the field and cannot be taken off (its
   card says Quest). It fights at full strength; the challenge is fitting a unit you
@@ -284,7 +289,8 @@ on a phone turned sideways, but portrait works too.
   gets driven off; it stays the priority until the shrine is held. Or pick any empty
   tile: your army moves there and huddles as close to it as it can (tap a corner to
   turtle in it, or a choke point to hold it), still attacking whatever comes in reach,
-  until you clear it. Or pick one of your own units: the rest of the army gathers around
+  until you clear it. A boulder, a tree, a basalt spire or a shrub works the same way:
+  the army gathers around it and holds there, without trying to cut it down. Or pick one of your own units: the rest of the army gathers around
   it and follows wherever it goes, until you clear it or it falls. A marker shows the target. Once it falls or is
   taken, the army goes back to normal orders; you can also clear it. You can pick one
   in the War Room too, before the battle: tap an enemy, a building or a chest, then

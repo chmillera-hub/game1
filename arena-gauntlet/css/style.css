@@ -1821,6 +1821,12 @@ button.card:active {
   color: var(--parchment-2);
 }
 
+.rcard .flag.core {
+  background: #2f6e4f;
+  border-color: #9be3b8;
+  color: #eafff1;
+}
+
 .rcard .flag.feat {
   background: rgba(233, 180, 64, 0.9);
   color: #2a1d0e;
