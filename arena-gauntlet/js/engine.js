@@ -1976,7 +1976,7 @@
   // Shoved into water or lava: the hit, then it climbs out onto the nearest dry open tile
   // (back the way it came, if it can) and pays for it.
   function dunk(s, src, u, lava, from) {
-    emit(s, { t: 'splash', uid: u.uid, x: u.x, y: u.y, lava });
+    emit(s, { t: 'dunk', uid: u.uid, x: u.x, y: u.y, lava });
     applyDamage(s, src, u, impactOf(s, src, u, lava ? 'lava' : 'water'), { cat: 'none', dmgType: 'true' });
     if (!u.alive) return;
     let best = null;

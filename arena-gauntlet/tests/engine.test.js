@@ -530,7 +530,7 @@ test('shoved into water: a splash, then it climbs out onto the nearest dry tile,
   assert.ok(Math.abs(orc.x - 4) + Math.abs(orc.y - 4) === 1, 'right beside the water it fell in');
   assert.ok(orc.root > 0, 'rooted while it shakes itself off');
   assert.strictEqual(orc.burn, null, 'the water put the fire out');
-  assert.ok(s.events.some((e) => e.t === 'splash' && !e.lava) && s.events.some((e) => e.t === 'climb'));
+  assert.ok(s.events.some((e) => e.t === 'dunk' && !e.lava) && s.events.some((e) => e.t === 'climb'));
 });
 
 test('shoved into lava: a hard fall, then it climbs out burning; flyers just sail over', () => {
@@ -683,7 +683,7 @@ test('the AI shoves enemies into water when it can, and not when nothing is behi
   const plan = AG.AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0 });
   assert.strictEqual(s.units[0].acts[plan.target.ai].name, 'Shield Bash', 'into the water with it');
   AG.AI.playTurn(s, 'P', { stance: 'balanced', temp: 0 });
-  assert.ok(s.events.some((e) => e.t === 'splash'));
+  assert.ok(s.events.some((e) => e.t === 'dunk'));
   const t = field(new Array(81).fill(0));
   const dry = AG.AI.chooseActivation(t, 'P', { stance: 'balanced', temp: 0 });
   assert.strictEqual(dry.target.ai, 0, 'open ground behind it: a full-strength sword strike');

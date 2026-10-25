@@ -46,7 +46,7 @@ function playBattle(run) {
   while (!s.over && guard++ < 4000) {
     AG.AI.playTurn(s, s.side, { stance: s.side === 'E' ? p.enc.stance : 'balanced', temp: 0.6 });
     for (const e of s.events) {
-      const k = e.t === 'splash' ? (e.lava ? 'lava' : 'water') : e.t === 'push' && e.pull ? null : ['crash', 'slam', 'climb'].includes(e.t) ? e.t : null;
+      const k = e.t === 'dunk' ? (e.lava ? 'lava' : 'water') : e.t === 'push' && e.pull ? null : ['crash', 'slam', 'climb'].includes(e.t) ? e.t : null;
       if (k) results.shoves[k] = (results.shoves[k] || 0) + 1;
       if (e.t === 'push') results.shoves[e.pull ? 'pulled tiles' : 'shoved tiles'] = (results.shoves[e.pull ? 'pulled tiles' : 'shoved tiles'] || 0) + 1;
     }
