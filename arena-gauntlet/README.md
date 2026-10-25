@@ -276,9 +276,10 @@ on a phone turned sideways, but portrait works too.
   about half of the animations' full pace, to be easy to follow. Battles always play
   out on their own (commanding each turn yourself lives on in the classic version, on
   the `arena-gauntlet-tactics-classic` branch); units face the nearest enemy.
-- **Priority**: while watching, tap an enemy unit, a building, a chest or the shrine,
-  then Priority. Your army goes all out for it, whatever the cost: every unit attacks
-  it, or heads for the chest and takes it. With the shrine, one unit makes for it and
+- **Priority**: while watching, tap an enemy unit, a building, a barricade with gold
+  inside, a chest or the shrine, then Priority. Your army goes all out for it, whatever
+  the cost: every unit attacks it (a barricade is broken for its gold), or heads for
+  the chest and takes it. With the shrine, one unit makes for it and
   stays on it while the rest gather round to guard it, and any enemy standing on it
   gets driven off; it stays the priority until the shrine is held. Or pick any empty
   tile: your army moves there and huddles as close to it as it can (tap a corner to
