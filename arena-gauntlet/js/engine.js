@@ -2149,11 +2149,10 @@
 
   // This round's fatigue, past armor and shields.
   function fatigue(s, u) {
-    // A routed enemy tires early: from the rout on, its unit taking each turn loses the
-    // rout's hit (or this round's fatigue, once that is bigger).
-    const rout = s.routed && u.team === 'E' ? routHit(s) : 0;
-    const n = Math.max(rout, fatigueHit(s));
-    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout >= n || undefined });
+    // A routed enemy tires by the rout's rule (routHit); everyone else by the clock.
+    const rout = !!s.routed && u.team === 'E';
+    const n = rout ? routHit(s) : fatigueHit(s);
+    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout || undefined });
   }
 
   // HP a unit loses to fatigue at the start of its turn this round: 1 in the round it sets
@@ -2171,17 +2170,22 @@
   // (turn 30).
   function rout(s, why) {
     if (s.routed || s.over) return;
-    s.routed = Object.assign({ turn: s.turn }, why);
+    // Done after fatigue set in for everyone: from now on the enemy's fatigue doubles.
+    s.routed = Object.assign({ turn: s.turn, late: !!s.inOvertime }, why);
     if (s.surviveTurns) s.surviveTurns = 0;
     if (s.hold) s.hold.done = true;
     for (const w of s.waves) if (w.team === 'E' && w.state === 'pending') w.state = 'cancelled';
-    emit(s, Object.assign({ t: 'routed', turn: s.turn }, why));
+    emit(s, Object.assign({ t: 'routed', turn: s.turn, late: s.routed.late }, why));
   }
 
-  // What the routed enemy's unit loses as its turn starts: 1 in the first enemy turn after
-  // the rout, then 2, 3 and so on (0 before the rout).
+  // What the routed enemy's unit loses as its turn starts (0 before the rout). Routed
+  // before fatigue set in for everyone: 1 in the first enemy turn after the rout, then 2,
+  // 3 and so on (or the clock's fatigue, once that is bigger). Routed after it: double the
+  // clock's fatigue, from then on.
   function routHit(s) {
-    return s.routed ? Math.max(1, s.turn - s.routed.turn) : 0;
+    if (!s.routed) return 0;
+    if (s.routed.late) return 2 * fatigueHit(s);
+    return Math.max(Math.max(1, s.turn - s.routed.turn), fatigueHit(s));
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
