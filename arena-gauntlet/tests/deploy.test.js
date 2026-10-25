@@ -195,4 +195,21 @@ test('a unit whose old tile is blocked on the new field moves to the nearest ope
   assert.ok(Math.abs(moved.x - x) + Math.abs(moved.y - y) <= 2, 'close to where it stood');
 });
 
+test('Auto never fields a ward: Lightning and Barrier Wards are yours to place', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    for (const t of ['lightning', 'barrier', 'lightning']) {
+      const u = { id: 'w' + t + run.nextId++, type: t, name: 'Ward', enchant: null, kills: 0, battles: 0, load: { lv: 1, a1: null, a2: null, talents: [], skills: [], gear: [] } };
+      run.roster.push(u);
+    }
+    run.supplyBonus = 20;
+    R.chooseChallenge(run, 0);
+    for (let v = 0; v < 4; v++) {
+      const dep = R.autoDeploy(run, v);
+      assert.ok(dep.length > 0);
+      assert.ok(!dep.some((d) => AG.Data.UNITS[R.unitById(run, d.rid).type].role === 'ward'), `seed ${seed} variant ${v}: no wards`);
+    }
+  }
+});
+
 console.log(`deploy: ${passed} tests passed`);

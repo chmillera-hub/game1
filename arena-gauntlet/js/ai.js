@@ -102,7 +102,7 @@
           for (let d = 0; d < 4; d++) mark(E.lineTiles(s, r.x, r.y, d, a.len));
           break;
         case 'cone':
-          for (let d = 0; d < 4; d++) mark(E.coneTiles(s, r.x, r.y, d, a.len));
+          for (let d = 0; d < 4; d++) mark(E.coneTiles(s, r.x, r.y, d, a.len, a.fan));
           break;
         case 'nova':
         case 'detonate':
@@ -386,9 +386,13 @@
     // when holding the shrine is what wins).
     const swift = goal('swift');
     if (swift && !s.hold && s.turn <= swift.turns) ctx.approach *= 1.3 + 0.7 * Math.min(1, Math.max(0, (s.turn - swift.turns + 8) / 8));
-    // Block reinforcements: stepping onto a landing tile is worth much more until enough are.
+    // Block reinforcements (an old save's goal): stepping onto a landing tile is worth much
+    // more until enough are. Otherwise a mark is worth stepping on when it is handy.
     const block = goal('blockade');
     ctx.markValue = block && (s.stats.blocked || 0) < block.n ? 20 : 7;
+    // Ambush the reinforcements: new arrivals are worth more to cut down until enough fall.
+    const ambush = goal('ambush');
+    ctx.ambush = !!(ambush && (s.stats.waveKills || 0) < ambush.n);
     let cx = 0;
     let cy = 0;
     for (const a of ctx.allies) {
@@ -448,12 +452,12 @@
     return false;
   }
 
-  // A Lightning Ward lashes one side at a time (a drake's-breath cone); anything else rooted
-  // pulses all around.
+  // A Lightning Ward sprays one side at a time (a fanned cone); anything else rooted pulses
+  // all around.
   function inWardReach(s, w, x, y) {
     if (w.act.kind === 'line' || w.act.kind === 'cone') {
       const tiles = w.act.kind === 'line' ? E.lineTiles : E.coneTiles;
-      for (let d = 0; d < 4; d++) if (tiles(s, w.x, w.y, d, w.act.len).some(([tx, ty]) => tx === x && ty === y)) return true;
+      for (let d = 0; d < 4; d++) if (tiles(s, w.x, w.y, d, w.act.len, w.act.fan).some(([tx, ty]) => tx === x && ty === y)) return true;
       return false;
     }
     return Math.abs(w.x - x) + Math.abs(w.y - y) <= (w.act.radius || 2);
@@ -695,6 +699,7 @@
         if (t.team !== u.team && t.traits.has('cart')) val *= 1 + 4 / (1 + Math.abs(t.x - s.cartExit));
         else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
+        if (ctx.ambush && t.reinforcement && t.team !== u.team) val *= e.kill ? 1.6 : 1.25;
         // A barricade's gold is worth breaking it for when nothing better is in reach.
         if (t.bounty && t.team !== u.team && ctx.idle) val += e.kill ? t.bounty * 0.4 : (dealt / t.maxHp) * t.bounty * 0.15;
         // A hit on the priority target outweighs anything else this unit could do.

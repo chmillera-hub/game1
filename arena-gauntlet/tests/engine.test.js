@@ -842,25 +842,25 @@ test('Rallying Cry speeds up recovering allies', () => {
   assert.ok(E.canActivate(s, ar), 'ready a turn sooner');
 });
 
-test('a Lightning Ward lashes one side at a time: the tile in front and the row of three beyond', () => {
+test('a Lightning Ward sprays one side at a time, like a shotgun: the row of three in front, then one tile', () => {
   const s = board([
     { type: 'lightning', team: 'P', x: 4, y: 5 },
+    { type: 'orc', team: 'E', x: 3, y: 4 },
     { type: 'orc', team: 'E', x: 4, y: 4 },
+    { type: 'orc', team: 'E', x: 5, y: 4 },
+    { type: 'orc', team: 'E', x: 4, y: 3 },
     { type: 'orc', team: 'E', x: 3, y: 3 },
-    { type: 'orc', team: 'E', x: 5, y: 3 },
-    { type: 'orc', team: 'E', x: 4, y: 2 },
     { type: 'orc', team: 'E', x: 7, y: 5 },
-    { type: 'orc', team: 'E', x: 5, y: 6 },
   ]);
-  const [lw, front, left, right, far, east, diag] = s.units;
+  const [lw, l1, m1, r1, tip, offTip, east] = s.units;
+  assert.deepStrictEqual(E.coneTiles(s, 4, 5, E.dirFromDelta(0, -1), 2, true).map((t) => t.join(',')).sort(), ['3,4', '4,3', '4,4', '5,4']);
   const dirs = E.targetsFrom(s, lw, 0);
   assert.ok(dirs.every((t) => t.kind === 'dir'), 'it aims a direction, not a ring');
   const north = dirs.find((t) => t.d === E.dirFromDelta(0, -1));
   act(s, lw, north);
-  for (const o of [front, left, right]) assert.ok(o.hp < o.maxHp, 'the 4-tile breath shape north: hit');
-  assert.strictEqual(far.hp, far.maxHp, '3 tiles straight north: out of reach');
-  assert.strictEqual(east.hp, east.maxHp, 'it lashed north, not east');
-  assert.strictEqual(diag.hp, diag.maxHp, 'the diagonal beside it: never');
+  for (const o of [l1, m1, r1, tip]) assert.ok(o.hp < o.maxHp, 'the row of three and the tip: hit');
+  assert.strictEqual(offTip.hp, offTip.maxHp, 'beside the tip: out of the spray');
+  assert.strictEqual(east.hp, east.maxHp, 'it sprayed north, not east');
 });
 
 test('war drums send allies into a frenzy, but heal no one', () => {
@@ -1300,6 +1300,27 @@ function tentBattle(extra, opts) {
   const units = [{ type: 'knight', team: 'P', x: 4, y: 8 }, { type: 'war_tent', team: 'E', x: 4, y: 1, key: 't1' }].concat(extra || []);
   return board(units, Object.assign({ waves: [{ turn: 2, from: 't1', units: [{ type: 'orc' }] }, { turn: 4, from: 't1', units: [{ type: 'orc' }] }] }, opts));
 }
+
+test('reinforcements are marked as such, and cutting them down counts for the Ambush goal', () => {
+  const s = tentBattle();
+  const kn = s.units[0];
+  for (let g = 0; g < 12 && !s.units.some((u) => u.reinforcement); g++) E.endTurn(s);
+  const arrived = s.units.find((u) => u.reinforcement);
+  assert.ok(arrived && arrived.team === 'E', 'a wave unit landed, tagged');
+  assert.ok(!kn.reinforcement, 'the army a battle starts with is not');
+  assert.strictEqual(s.stats.waveKills, 0);
+  // The knight steps up beside it and cuts it down.
+  s.occ[E.idx(s, kn.x, kn.y)] = 0;
+  kn.x = arrived.x;
+  kn.y = arrived.y + 1;
+  s.occ[E.idx(s, kn.x, kn.y)] = kn.uid;
+  kn.facing = 2;
+  arrived.hp = 1;
+  arrived.block = 0;
+  act(s, kn, { kind: 'unit', uid: arrived.uid });
+  assert.ok(!arrived.alive);
+  assert.strictEqual(s.stats.waveKills, 1);
+});
 
 test("waves are marked a turn ahead and arrive after the enemy's move", () => {
   const s = tentBattle();

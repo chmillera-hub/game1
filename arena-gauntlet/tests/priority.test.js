@@ -158,10 +158,10 @@ test('foes keep out of a Lightning Ward\'s reach unless they can hit a living un
     // Once the knight falls only the ward is left, and then it is fair game.
     if (!kn.alive) break;
     for (const o of s.units.filter((u) => u.team === 'E' && u.alive)) {
-      // The ward lashes one side at a time: the tile in front and the row of three beyond.
+      // The ward sprays one side at a time: the row of three in front, then the tip.
       const dx = Math.abs(o.x - ward.x);
       const dy = Math.abs(o.y - ward.y);
-      const inReach = (dx === 0 && dy === 1) || (dy === 0 && dx === 1) || (dx === 2 && dy <= 1) || (dy === 2 && dx <= 1);
+      const inReach = (dx <= 1 && dy === 1) || (dy <= 1 && dx === 1) || (dx === 0 && dy === 2) || (dy === 0 && dx === 2);
       const canHit = Math.abs(o.x - kn.x) + Math.abs(o.y - kn.y) <= 1;
       if (inReach && !canHit) entered++;
     }

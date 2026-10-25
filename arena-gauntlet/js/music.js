@@ -72,7 +72,7 @@
             'F5:3 E5:1 D5:2 C5:2 | E5:4 G5:4 | A5:2 G5:2 E5:2 C5:2 | D5:8',
         },
         { drum: 'frame', pat: 'x.......', vol: 0.077 },
-        { drum: 'shaker', pat: '..x...x.', vol: 0.02 },
+        { drum: 'shaker', pat: '..x...x.', vol: 0.011 },
       ],
     },
     tavern: {
@@ -95,7 +95,7 @@
             'B4:1 D5:1 G5:1 B5:2 A5:1 | G5:1 E5:1 C5:1 E5:2 G5:1 | F#5:1 A5:1 D6:1 A5:2 F#5:1 | G5:3 -:3',
         },
         { drum: 'frame', pat: 'x..o..', vol: 0.084 },
-        { drum: 'tamb', pat: '.o.x.o', vol: 0.025 },
+        { drum: 'tamb', pat: '.o.x.o', vol: 0.012 },
       ],
     },
     march: {
@@ -267,10 +267,12 @@
     lfo.stop(end);
   }
 
-  function noise(out, t, dur, vol, type, f, q) {
+  // `att`: how fast it comes in. Snappy (2 ms) for drum skins; a rattle eases in, or it
+  // ticks like a gas igniter.
+  function noise(out, t, dur, vol, type, f, q, att) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuf;
-    const g = envGain(out, t, 0.002, 0, dur, vol);
+    const g = envGain(out, t, att || 0.002, 0, dur, vol);
     src.connect(filter(type, f, q || 0.8, g));
     src.start(t);
     src.stop(t + dur + 0.05);
@@ -374,12 +376,12 @@
       noise(out, t, 0.16, v, 'bandpass', 1900, 0.8);
       thump(out, t, 230, 160, 0.07, v * 0.4);
     },
+    // A soft rattle, not a tick: it eases in and stays below the sharpest highs.
     shaker(out, t, v) {
-      noise(out, t, 0.05, v, 'highpass', 6500);
+      noise(out, t, 0.07, v, 'highpass', 5200, 0.7, 0.015);
     },
     tamb(out, t, v) {
-      noise(out, t, 0.13, v, 'highpass', 7200);
-      noise(out, t, 0.08, v * 0.6, 'bandpass', 9500, 3);
+      noise(out, t, 0.12, v, 'highpass', 5800, 0.7, 0.015);
     },
   };
 

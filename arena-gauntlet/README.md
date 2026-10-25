@@ -136,6 +136,8 @@ on a phone turned sideways, but portrait works too.
   armies, physical ones against magic-resistant armies, a mix otherwise. The
   scout report shows the same comparison. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
+  Auto never fields a Lightning or Barrier Ward: a ward is only as good as the exact
+  tile it stands on, so place yours by hand (a quest's ward still goes in).
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 16 Supply at Level 1 to 35 Supply at Level 10 (two more
   than enemy armies are sized for, so there is room for abilities and kit early on).
@@ -177,6 +179,9 @@ on a phone turned sideways, but portrait works too.
   about half of the animations' full pace, to be easy to follow. Battles always play
   out on their own (commanding each turn yourself lives on in the classic version, on
   the `arena-gauntlet-tactics-classic` branch); units face the nearest enemy.
+- **Tapping what is behind**: when one unit stands in front of another (a Lightning
+  Ward before a barricade, say), tap the same spot again to pick the one behind; its
+  panel says when something is hidden there.
 - **Priority**: while watching, tap an enemy unit, a building, a barricade with gold
   inside, a chest or the shrine, then Priority. Your army goes all out for it, whatever
   the cost: every unit attacks it (a barricade is broken for its gold), or heads for
@@ -256,9 +261,9 @@ on a phone turned sideways, but portrait works too.
   healing: its numbers float up in magenta with a minus sign (every damage number has
   one; heals have a plus), with a magenta puff, and a poisoned unit's HP bar turns
   magenta.
-- **Wards**: a Lightning Ward cannot move. Each turn it lashes lightning at one side,
-  north, south, east or west, in a drake's-breath shape: the tile in front of it and
-  the row of three beyond, 4 tiles (7 with Overcharge, a row further). It picks the
+- **Wards**: a Lightning Ward cannot move. Each turn it sprays lightning at one side,
+  north, south, east or west, like a shotgun: the row of three right in front of it and
+  one tile beyond the middle, 4 tiles (7 with Overcharge, a second row of three). It picks the
   side with the most foes and the fewest of its own, so friendly fire still happens,
   but far less than when it zapped everything around it. The AI (yours and the
   enemy's) does not step into its reach unless that move lets it hit a living unit the
@@ -266,7 +271,7 @@ on a phone turned sideways, but portrait works too.
   tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and makes
   them immune to poison and paralysis.
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
-  too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's lash,
+  too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's spray,
   a breath. Upgrades can make one spare allies: Controlled Burn (fireball), Tamed
   Fire (dragon breath), Abyssal Bolt (dark lightning), or the Disciplined skill (any
   unit with an area attack). Some monsters (the bosses' breaths) spare their own.
@@ -300,7 +305,7 @@ on a phone turned sideways, but portrait works too.
   fatigue sets in for everyone on turn 30. A banner, a toast and the battle log say
   when it happens, the top bar shows the rout's bite, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
-  Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
+  Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
   winning with a unit that sat out the last battle) pay extra.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
   portals and barricades are buildings. Stone resists swords and spells alike,

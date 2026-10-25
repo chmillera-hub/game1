@@ -247,6 +247,8 @@
       nonCombat: summon,
       summoner: spec.summoner || 0,
       born: spec.born || 0,
+      // Arrived with a wave of reinforcements (for the Ambush bonus goal).
+      reinforcement: !!spec.reinforcement,
       kills: 0,
       // Gold your army earns for breaking it (a barricade's pouch).
       bounty: spec.bounty || 0,
@@ -304,7 +306,7 @@
       turnLimit: cfg.turnLimit || 90,
       events: [],
       phoenixUsed: { P: false, E: false },
-      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0 },
+      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0, waveKills: 0 },
       summonCount: 0,
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
       surviveTurns: cfg.surviveTurns || 0,
@@ -495,13 +497,15 @@
     return out;
   }
 
-  function coneTiles(s, ox, oy, d, len) {
+  // A cone: one tile, then rows of three (a drake's breath). Fanned (`fan`), it is the
+  // other way round: rows of three, then one tile at the tip (a Lightning Ward's spray).
+  function coneTiles(s, ox, oy, d, len, fan) {
     const [dx, dy] = DIRS[d];
     const px = -dy;
     const py = dx;
     const out = [];
     for (let i = 1; i <= len; i++) {
-      const spread = i === 1 ? 0 : 1;
+      const spread = fan ? (i === len ? 0 : 1) : i === 1 ? 0 : 1;
       for (let j = -spread; j <= spread; j++) {
         const x = ox + dx * i + px * j;
         const y = oy + dy * i + py * j;
@@ -842,7 +846,7 @@
       case 'line':
       case 'cone': {
         for (let d = 0; d < 4; d++) {
-          const tiles = a.kind === 'line' ? lineTiles(s, u.x, u.y, d, a.len) : coneTiles(s, u.x, u.y, d, a.len);
+          const tiles = a.kind === 'line' ? lineTiles(s, u.x, u.y, d, a.len) : coneTiles(s, u.x, u.y, d, a.len, a.fan);
           if (!tiles.length) continue;
           if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) push({ kind: 'dir', d, x: u.x + DIRS[d][0], y: u.y + DIRS[d][1] });
         }
@@ -975,7 +979,7 @@
       case 'line':
         return lineTiles(s, u.x, u.y, target.d, a.len);
       case 'cone':
-        return coneTiles(s, u.x, u.y, target.d, a.len);
+        return coneTiles(s, u.x, u.y, target.d, a.len, a.fan);
       case 'cross': {
         const t = [];
         for (let d = 0; d < 4; d++) t.push(...lineTiles(s, u.x, u.y, d, a.len));
@@ -1145,6 +1149,7 @@
   function kill(s, u, src) {
     u.alive = false;
     u.hp = 0;
+    if (u.reinforcement && u.team === 'E') s.stats.waveKills = (s.stats.waveKills || 0) + 1;
     s.occ[idx(s, u.x, u.y)] = 0;
     if (s.act && s.act.uid === u.uid) {
       // Died mid-action (thorns, a counterattack or its own blast): its turn is over.
@@ -1943,7 +1948,7 @@
         }
         if (!tile) tile = spawnTiles(s, w, 1, taken)[0];
         if (!tile) return;
-        const u = addUnit(s, Object.assign({}, spec, { team, x: tile[0], y: tile[1], facing: team === 'E' ? 2 : 0, born: s.turn }));
+        const u = addUnit(s, Object.assign({}, spec, { team, x: tile[0], y: tile[1], facing: team === 'E' ? 2 : 0, born: s.turn, reinforcement: true }));
         spawned.push(u.uid);
       });
       w.state = 'done';
