@@ -62,7 +62,7 @@ function winCampaign(seed) {
 // A made-up legend: one unit of a type at a spot, for ladder tests that need no real armies.
 const fake = (id, type) => ({ id, name: id, wins: 0, losses: 0, climbed: false, level: 1, relics: [], units: [{ spec: { type, level: 1 }, x: 4, y: 7, facing: 0 }] });
 
-test('winning a campaign enters its final army at the bottom of the Hall', () => {
+test('winning a campaign saves its final army at once: the first takes #1, later ones wait in line', () => {
   clearHall();
   const run = winCampaign(21);
   let h = R.loadHall();
@@ -78,9 +78,16 @@ test('winning a campaign enters its final army at the bottom of the Hall', () =>
 
   const run2 = winCampaign(22);
   h = R.loadHall();
-  assert.strictEqual(h.legends.length, 2);
-  assert.strictEqual(h.legends[1].id, run2.legendId, 'the newest starts at the bottom');
-  assert.ok(!h.legends[1].climbed);
+  assert.strictEqual(h.legends.length, 1);
+  assert.strictEqual(h.queue.length, 1, 'saved right away, waiting to climb');
+  assert.strictEqual(h.queue[0].id, run2.legendId);
+  assert.deepStrictEqual(R.hallPlace(h, run2.legendId), { inLine: 1 });
+  assert.ok(!R.hallClimber(h), 'nothing climbs until you start it');
+  const l = R.hallStart();
+  h = R.loadHall();
+  assert.strictEqual(l.id, run2.legendId);
+  assert.strictEqual(h.legends[1].id, run2.legendId, 'it starts at the bottom');
+  assert.ok(!h.legends[1].climbed && !h.queue.length);
   assert.strictEqual(R.hallNext(h, run2.legendId).id, run.legendId, 'and faces the army above it');
 });
 
@@ -125,26 +132,32 @@ test('reaching the top ends the climb', () => {
   assert.ok(h.legends[0].climbed && !R.hallNext(h, 'B'));
 });
 
-test('one climb at a time: a climb never watched plays out before the next army joins', () => {
+test('armies wait in line, nothing is played without you, and one climbs at a time', () => {
   clearHall();
   winCampaign(26);
   winCampaign(27);
-  let h = R.loadHall();
-  assert.strictEqual(R.hallClimber(h).id, h.legends[1].id, 'the second army climbs');
   winCampaign(28);
+  let h = R.loadHall();
+  assert.strictEqual(h.legends.length, 1);
+  assert.strictEqual(h.queue.length, 2, 'two armies waiting, in the order they won');
+  assert.strictEqual(h.legends.concat(h.queue).reduce((t, l) => t + l.wins + l.losses, 0), 0, 'no match played behind your back');
+  const first = R.hallStart();
+  assert.ok(first && R.hallClimber(R.loadHall()).id === first.id);
+  assert.strictEqual(R.hallStart(), null, 'the next waits while one is climbing');
+  h = R.hallResult(first.id, R.hallNext(R.loadHall(), first.id).id, 'E');
+  assert.ok(!R.hallClimber(h), 'a loss ends the climb');
+  const second = R.hallStart();
   h = R.loadHall();
-  assert.strictEqual(h.legends.length, 3);
-  assert.strictEqual(h.legends.filter((l) => !l.climbed).length, 1, 'only the newest still climbs');
-  assert.strictEqual(R.hallClimber(h).id, h.legends[2].id, 'from the bottom');
-  const played = h.legends.reduce((t, l) => t + l.wins + l.losses, 0);
-  assert.ok(played >= 2, 'the earlier climb was played out');
+  assert.ok(second && second.id !== first.id && !h.queue.length);
+  assert.strictEqual(h.legends[h.legends.length - 1].id, second.id, 'the next starts at the bottom');
 });
 
 test('a Hall match: the armies face each other on a mirrored field, kit and relics intact', () => {
   clearHall();
   winCampaign(24);
   winCampaign(25);
-  const [a, b] = R.loadHall().legends;
+  const hall = R.loadHall();
+  const [a, b] = hall.legends.concat(hall.queue);
   for (let seed = 1; seed <= 10; seed++) {
     const cfg = R.hallBattleConfig(b, a, seed);
     const W = cfg.w;
@@ -170,7 +183,8 @@ test('a Hall match: the armies face each other on a mirrored field, kit and reli
 });
 
 test('a Hall match plays out to a winner', () => {
-  const [a, b] = R.loadHall().legends;
+  const hall = R.loadHall();
+  const [a, b] = hall.legends.concat(hall.queue);
   const wins = { P: 0, E: 0 };
   for (let seed = 1; seed <= 4; seed++) wins[R.playHallMatch(a, b, seed)]++;
   assert.strictEqual(wins.P + wins.E, 4);

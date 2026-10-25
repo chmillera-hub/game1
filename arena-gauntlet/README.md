@@ -18,7 +18,8 @@ on a phone turned sideways, but portrait works too.
   take (see The road). Every unit offer has at least two that deal damage, and the
   first one always offers a Cleric, your only healer (exactly once: no later pick
   offers another). The skills and gear offered are ones your units can use. Back
-  undoes a pick; Start over deals a fresh draft. You start with 60 gold.
+  undoes a pick; Start over deals a fresh draft. Every unit card shows all its numbers:
+  HP, damage, armor, magic resistance, block, cooldown, move, range and speed. You start with 60 gold.
 
 - **The road**: no map. Each act is four rounds; in each you choose one of three
   battles, shown as cards with a picture of the field, the mission and bonus goals,
@@ -39,14 +40,17 @@ on a phone turned sideways, but portrait works too.
 - **Hall of Fame**: every campaign you win enters its final army in the Hall: the
   units that beat the Act III boss (or the Eclipse Wyrm), where they stood, their
   levels, abilities, talents, skills and gear, and your relics. It gets a name (The
-  Iron Company, The Gilded Host ...) and starts at the bottom, then climbs: it fights
+  Iron Company, The Gilded Host ...) and is saved the moment you win, so starting a new
+  campaign never loses it. The first army takes #1; later ones wait in line ("Waiting
+  to climb") until you start their climb from the Hall, whenever you like, even several
+  campaigns later. A climb starts at the bottom: it fights
   the army right above it, on a fresh field with mirrored obstacles, both sides on the
   AI. A win swaps the two; a loss, or reaching #1, ends the climb. Watch each match
   (pause and speed work as in a battle), or simulate the rest of the climb in a
-  second. Tap any two armies for a friendly match that changes nobody's place. Only
-  one army climbs at a time: one you never watched finishes its climb, played out at
-  once, before the next one joins. The Hall is on the title screen and the end screen,
-  and kept in the browser apart from your campaign save.
+  second. Tap any two armies (waiting ones too) for a friendly match that changes
+  nobody's place. One army climbs at a time, and nothing is played out without you.
+  The Hall is on the title screen (with how many armies wait to climb) and the end
+  screen, and kept in the browser apart from your campaign save.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
   for its full loadout: cost, level, every slot and pick spelled out, stats and attacks
@@ -243,15 +247,15 @@ on a phone turned sideways, but portrait works too.
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
-  prisoner, a relic, a commander level-up) has a plain gold edge and a ✓ Collected badge, and no glow; each bonus goal you met has a ✓ Collected tag right after its reward. A
+  prisoner, a relic, a commander level-up, the bonus goals you met) has a plain gold edge and a ✓ Collected badge, and no glow; goals you missed are listed apart, plainly. A
   choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
   the draft, the challenge cards) has a soft aura that fades in and out; once you
   pick, your pick gets the gold edge and a ✓ Chosen badge and the rest go grey.
   Reward and shop cards say how many of that kind you already have. Once your last
   pick on the victory screen is made (spoils, the Lost Tome, a boss relic; picks are
   final), it moves on by itself after a moment; opening the Army screen first holds it. An enchanted
-  recruit shows its enchantment in a violet box of its own (what it does, and the
-  Supply it adds), and every recruit card has a ? button that opens the unit's
+  recruit shows the Supply its enchantment adds right by its name (+2 Supply), and
+  what it does in a violet box of its own, and every recruit card has a ? button that opens the unit's
   details (HP, numbers, attacks, traits, enchantment) without taking it.
 - **The merchant**: six things: a recruit, a talent, a skill, gear and a relic, plus
   one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about

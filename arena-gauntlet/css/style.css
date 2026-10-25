@@ -3095,3 +3095,45 @@ body:has(#battle:not([hidden])) {
 .qchip.full .icon {
   color: var(--brass-hi);
 }
+
+/* An enchanted recruit's extra Supply, right by its name. */
+.ench-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: 3px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(190, 140, 255, 0.6);
+  background: rgba(120, 70, 200, 0.25);
+  color: #e6d4ff;
+  font-family: var(--font-body, inherit);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ench-cost .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Bonus goals missed: plain, no badge. */
+.panel.objectives.missed {
+  opacity: 0.85;
+}
+
+/* A unit's numbers on a card: two rows of four, so they stay readable in narrow columns. */
+.card .stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Armies saved but not yet climbing: dashed, with an hourglass for a rank. */
+.hall-row.waiting {
+  border-style: dashed;
+}
+
+.hall-row.waiting .rank .icon {
+  width: 22px;
+  height: 22px;
+}

@@ -2324,9 +2324,9 @@
     try {
       const j = root.localStorage && root.localStorage.getItem(HALL_KEY);
       const h = j ? JSON.parse(j) : null;
-      return h && Array.isArray(h.legends) ? h : { legends: [] };
+      return h && Array.isArray(h.legends) ? Object.assign({ queue: [] }, h) : { legends: [], queue: [] };
     } catch (e) {
-      return { legends: [] };
+      return { legends: [], queue: [] };
     }
   }
 
@@ -2338,18 +2338,17 @@
     }
   }
 
-  // Enter (or update, after the final challenge) this campaign's army in the Hall.
+  // Enter (or update, after the final challenge) this campaign's army in the Hall. It is
+  // saved at once: the first army takes #1; later ones wait in line to climb, and nothing
+  // is played out until you start a climb from the Hall, whenever you like.
   function recordLegend(run) {
     if (!run.finalArmy || !run.finalArmy.length) return null;
     const h = loadHall();
-    let legend = h.legends.find((l) => l.id === run.legendId);
+    let legend = h.legends.find((l) => l.id === run.legendId) || h.queue.find((l) => l.id === run.legendId);
     if (!legend) {
-      // One army climbs at a time: one still climbing (you never watched) finishes its climb
-      // first, played out at once, then the new one takes the bottom place.
-      for (const l of h.legends.slice()) if (!l.climbed) finishClimb(h, l.id, run.seed);
       const rng = AG.derive(run.seed, 'legend');
       legend = {
-        id: 'L' + run.seed.toString(36) + '-' + (h.legends.length + 1),
+        id: 'L' + run.seed.toString(36) + '-' + (h.legends.length + h.queue.length + 1),
         name: `The ${rng.pick(LEGEND_A)} ${rng.pick(LEGEND_B)}`,
         date: new Date().toISOString().slice(0, 10),
         wins: 0,
@@ -2357,7 +2356,8 @@
         // The first army in an empty Hall has no one to climb past.
         climbed: !h.legends.length,
       };
-      h.legends.push(legend);
+      if (h.legends.length) h.queue.push(legend);
+      else h.legends.push(legend);
       run.legendId = legend.id;
     }
     Object.assign(legend, { level: commanderLevel(run), relics: run.relics.slice(), units: run.finalArmy, superWon: !!run.superWon });
@@ -2444,6 +2444,26 @@
   // The army climbing now, if any (the lowest one that has not finished its climb).
   function hallClimber(h) {
     return h.legends.slice().reverse().find((l) => hallNext(h, l.id)) || null;
+  }
+
+  // The first army waiting in line starts its climb: it takes the bottom place. Only one
+  // climbs at a time, so nothing happens while another is still climbing.
+  function hallStart() {
+    const h = loadHall();
+    if (hallClimber(h) || !h.queue.length) return null;
+    const l = h.queue.shift();
+    l.climbed = !h.legends.length;
+    h.legends.push(l);
+    saveHall(h);
+    return l;
+  }
+
+  // Where an army stands: its place in the ranking, or in the line waiting to climb.
+  function hallPlace(h, id) {
+    const rank = h.legends.findIndex((l) => l.id === id);
+    if (rank >= 0) return { rank: rank + 1 };
+    const inLine = h.queue.findIndex((l) => l.id === id);
+    return inLine >= 0 ? { inLine: inLine + 1 } : null;
   }
 
   // Play a whole climb out at once.
@@ -2551,6 +2571,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, hallNext, hallClimber, finishClimb,
+    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

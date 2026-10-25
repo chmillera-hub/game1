@@ -838,7 +838,7 @@
               <button class="btn ${run ? '' : 'primary'}" id="tNew">${ic('swords')} New campaign</button>
               <div class="row"><button class="btn grow" id="tHelp">${ic('help')} How to play</button>
               <button class="btn grow" id="tCodex">${ic('book')} Codex</button></div>
-              ${hall.legends.length ? `<button class="btn" id="tHall">${ic('crown')} Hall of Fame · ${hall.legends.length}</button>` : ''}
+              ${hall.legends.length + hall.queue.length ? `<button class="btn" id="tHall">${ic('crown')} Hall of Fame · ${hall.legends.length + hall.queue.length}${hall.queue.length ? ` (${hall.queue.length} waiting to climb)` : ''}</button>` : ''}
             </div>
             <p class="meta-line">${meta.runs ? `Campaigns fought: ${meta.runs} · Victories: ${meta.wins}` : 'Inspired by the classic isometric arena tactics games.'}</p>
           </div>
@@ -876,10 +876,11 @@
     const option = (kind, id, i) => {
       const attrs = `data-dpick="${i}" data-choose`;
       if (kind === 'unit') {
+        // Every number up front: HP, damage, armor, magic resistance, block, cooldown,
+        // move, range and speed.
         const T = UNITS[id];
-        const reach = T.act.range ? ` · range ${T.act.range[1]}` : '';
-        const hit = T.act.dmg ? `${T.pow} ${dmgIcon(T.act.dmg)} damage` : 'no attack';
-        return recruitCard(id, null, attrs, `<div class="small">${esc(cap1(T.role))} · ${T.hp} HP · ${hit}${reach}</div>`);
+        const u = recruitStats(id, null);
+        return recruitCard(id, null, attrs, `<div class="small"><b>${esc(cap1(T.role))} · ${u.maxHp} HP</b></div>${statsHTML(u)}`);
       }
       if (kind === 'relic') return relicCard(id, attrs);
       return itemCard(kind, id, attrs);
@@ -3757,9 +3758,11 @@
     const st = state || { pick: [], log: [] };
     const h = R.loadHall();
     const L = h.legends;
+    const Q = h.queue;
+    const all = L.concat(Q);
     const climber = R.hallClimber(h);
     const next = climber && R.hallNext(h, climber.id);
-    st.pick = st.pick.filter((id) => L.some((l) => l.id === id));
+    st.pick = st.pick.filter((id) => all.some((l) => l.id === id));
     const relicNames = (l) => (l.relics || []).filter((id) => RELICS[id]).map((id) => RELICS[id].name).join(', ');
     const row = (l, i) => {
       const units = l.units
@@ -3768,8 +3771,9 @@
         .join('');
       const picked = st.pick.indexOf(l.id);
       const tag = l === climber ? '<span class="chip warn">Climbing</span>' : picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '';
-      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''}" data-legend="${l.id}">
-        <span class="rank">#${i + 1}</span>
+      const waiting = i < 0;
+      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''}" data-legend="${l.id}">
+        <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
         <span class="grow"><span class="nm">${l.superWon ? ic('crown') + ' ' : ''}<b>${esc(l.name)}</b> ${tag}</span>
           <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.wins}–${l.losses}${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
           <span class="unit-strip">${units}</span></span>
@@ -3780,17 +3784,23 @@
           <p><b>${esc(climber.name)}</b> is climbing from #${L.indexOf(climber) + 1}. Next up: <b>${esc(next.name)}</b>, #${L.indexOf(next) + 1}. Win, and they swap places; lose, and the climb ends there.</p>
           <div class="row"><button class="btn primary grow" id="hlWatch" ${st.busy ? 'disabled' : ''}>${ic('eye')} Watch the match</button><button class="btn grow" id="hlSim" ${st.busy ? 'disabled' : ''}>${ic('skip')} ${st.busy ? 'Climbing…' : 'Simulate the climb'}</button></div>
         </div>`
-      : '';
-    const pickA = L.find((l) => l.id === st.pick[0]);
-    const pickB = L.find((l) => l.id === st.pick[1]);
+      : Q.length
+        ? `<div class="panel hall-climb">
+          <p><b>${esc(Q[0].name)}</b> is next in line${Q.length > 1 ? ` (${Q.length} armies waiting)` : ''}. Start its climb: it enters at #${L.length + 1} and fights its way up, one match at a time.</p>
+          <div class="row"><button class="btn primary grow" id="hlStart">${ic('swords')} Start the climb</button></div>
+        </div>`
+        : '';
+    const pickA = all.find((l) => l.id === st.pick[0]);
+    const pickB = all.find((l) => l.id === st.pick[1]);
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Every army that won a campaign</p><h2>Hall of Fame</h2></div>
-        <p class="muted">Each campaign you win enters its final army here, with its gear, talents and relics, at the bottom. It climbs by beating the army right above it, one match at a time, until it loses or reaches the top.</p>
+        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top.</p>
         ${climbPanel}
         ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
         <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
-        ${L.length > 1 ? `<p class="small muted">${pickA && pickB ? '' : 'Tap two armies for a friendly match: it changes nobody\'s place.'}</p>` : ''}
+        ${Q.length ? `<div class="eyebrow">Waiting to climb</div><div class="hall-list">${Q.map((l) => row(l, -1)).join('')}</div>` : ''}
+        ${all.length > 1 ? `<p class="small muted">${pickA && pickB ? '' : 'Tap two armies for a friendly match: it changes nobody\'s place.'}</p>` : ''}
         <div class="row end">
           ${pickA && pickB ? `<button class="btn primary" id="hlFriendly">${ic('swords')} Watch ${esc(pickA.name)} vs ${esc(pickB.name)}</button>` : ''}
           <button class="btn" id="hlBack">Back</button>
@@ -3799,6 +3809,15 @@
     );
     const again = () => hallScreen(back, st);
     $('#hlBack', v).onclick = () => back();
+    if ($('#hlStart', v))
+      $('#hlStart', v).onclick = () => {
+        const l = R.hallStart();
+        if (l) {
+          st.log = [`${ic('swords')} <b>${esc(l.name)}</b> enters the Hall at #${R.loadHall().legends.findIndex((x) => x.id === l.id) + 1} and starts its climb.`];
+          sfx('click');
+        }
+        again();
+      };
     for (const el of $$('[data-legend]', v))
       el.onclick = () => {
         const id = el.dataset.legend;
@@ -3904,19 +3923,25 @@
     const E2 = enchant && ENCHANTS[enchant];
     return `<button class="card" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
-      <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}</div></div>
+      <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
       <div class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</div>${extra || ''}</button>`;
   }
 
+  // A Level 1 unit of a type as it would join, enchantment included: its battle numbers.
+  function recruitStats(unit, enchant) {
+    const T = UNITS[unit];
+    const spec = { type: unit, level: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, talents: [], skills: [], gear: [], enchant: enchant || null, name: T.name };
+    return R.unitStats(UI.run, spec, 'P');
+  }
+
   // A recruit's details before you take it: numbers, attacks, traits and its enchantment.
   function recruitInfoSheet(unit, enchant) {
     const T = UNITS[unit];
     const E2 = enchant && ENCHANTS[enchant];
-    const load = { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, talents: [], skills: [], gear: [] };
-    const u = R.unitStats(UI.run, { type: unit, name: T.name, enchant: enchant || null, load }, 'P');
+    const u = recruitStats(unit, enchant);
     const after = UI.onSheetClose;
     UI.onSheetClose = null;
     openSheet(
@@ -3987,8 +4012,13 @@
           ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold from Midas Touch</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
-        ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
-          .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span> <span class="got-tag">✓ Collected</span>` : ''}</span></div>`)
+        ${(p.objectives || []).some((o) => o.done) ? `<div class="panel objectives" data-got="✓ Collected">${p.objectives
+          .filter((o) => o.done)
+          .map((o) => `<div class="obj bonus done">${ic('check')}<span>${esc(o.text)} <span class="reward">${esc(o.got)}</span></span></div>`)
+          .join('')}</div>` : ''}
+        ${(p.objectives || []).some((o) => !o.done) ? `<div class="panel objectives missed">${p.objectives
+          .filter((o) => !o.done)
+          .map((o) => `<div class="obj bonus failed">${ic('close')}<span>${esc(o.text)}</span></div>`)
           .join('')}</div>` : ''}
         ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline" data-got="✓ Collected">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
@@ -4175,12 +4205,16 @@
     R.clearSave();
     // A won campaign enters its final army in the Hall of Fame, at the bottom.
     const hall = R.loadHall();
-    const rank = run.legendId ? hall.legends.findIndex((l) => l.id === run.legendId) : -1;
-    const legend = rank >= 0 ? hall.legends[rank] : null;
+    const place = run.legendId ? R.hallPlace(hall, run.legendId) : null;
+    const legend = place ? hall.legends.concat(hall.queue).find((l) => l.id === run.legendId) : null;
+    const hallText = !place
+      ? ''
+      : place.inLine
+        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. Start its climb now, or come back any time from the title screen.`
+        : `Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${place.rank} of ${hall.legends.length}. ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}`;
     const hallPanel = legend
-      ? `<div class="panel hall-climb"><p>${ic('crown')} Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${rank + 1} of ${hall.legends.length}.
-          ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}</p>
-          <div class="row"><button class="btn primary grow" id="enHall">${ic('crown')} ${R.hallNext(hall, legend.id) ? 'Climb the Hall of Fame' : 'Hall of Fame'}</button></div></div>`
+      ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}</p>
+          <div class="row"><button class="btn primary grow" id="enHall">${ic('crown')} ${place.inLine || R.hallNext(hall, legend.id) ? 'Climb the Hall of Fame' : 'Hall of Fame'}</button></div></div>`
       : '';
     const v = showView(
       `<div class="wrap">
