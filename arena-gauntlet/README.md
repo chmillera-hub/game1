@@ -294,7 +294,7 @@ on a phone turned sideways, but portrait works too.
   is the boss relic Sacred Chalice (+2); the common Healing Salve adds 2 only to
   units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 36, every unit loses HP whenever its turn comes, acting or
+- **Fatigue**: from turn 30, every unit loses HP whenever its turn comes, acting or
   passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
   and shields: 1 for its side's first, then 2, 3 and so on, one more for every turn
   that side's units take, passes included, like fatigue in Hearthstone. Each side
@@ -378,12 +378,12 @@ on a phone turned sideways, but portrait works too.
   reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
   enemy unit loses HP when its turn comes, acting or passing, 1 for the first, then 2, 3
   and so on, one more every enemy turn, past armor and shields, just like fatigue. Done
-  after fatigue has set in for everyone (turn 36), and the enemy's fatigue doubles from
+  after fatigue has set in for everyone (turn 30), and the enemy's fatigue doubles from
   then on instead (6 becomes 12, then 7 becomes 14), while your side keeps the normal
   amount. The battle
   ends when the last of them falls, so a mission done early tips it well in your favor, without the enemy
   simply giving up. Your own side tires only when
-  fatigue sets in for everyone on turn 36. A short banner ("Enemy fatigued!") and the
+  fatigue sets in for everyone on turn 30. A short banner ("Enemy fatigued!") and the
   battle log say when it happens, the top bar shows the enemy's fatigue, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,

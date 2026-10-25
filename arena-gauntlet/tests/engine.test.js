@@ -559,7 +559,7 @@ test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more
   totem.hp = totem.maxHp = 999;
   sc.hp = 1;
   E.endTurn(s);
-  // Your first unit to act takes the scout down; fatigue is still far off (turn 36).
+  // Your first unit to act takes the scout down; fatigue is still far off (turn 30).
   while (!s.over && !s.cleanup) {
     if (s.side === 'P' && s.due) act(s, s.byId[s.due], { kind: 'unit', uid: sc.uid });
     else E.endTurn(s);
