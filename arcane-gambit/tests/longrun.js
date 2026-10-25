@@ -1,6 +1,7 @@
-/* Drive the real UI through many floors of a run: battles (re-using the
-   last army, skipping to the result), events, shops, camps and rewards.
-   Fails on any page error. node tests/longrun.js [floors] [--mobile] */
+/* Drive the real UI up many floors of a run: the draft, the opening, battle
+   floors (Auto-deploy, skip to the result, retry or take an easier fight),
+   events, the merchant and rewards. Fails on any page error.
+   node tests/longrun.js [floors] [--mobile] */
 'use strict';
 const path = require('path');
 const { chromium } = require('playwright');
@@ -18,60 +19,45 @@ const { chromium } = require('playwright');
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   await page.goto('file://' + path.join(__dirname, '..', 'index.html'));
   await page.waitForTimeout(600);
+  await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* ignore */ } });
   await page.getByRole('button', { name: 'New run' }).click();
-  await page.getByRole('button', { name: /Casual/ }).click();
+  for (let i = 0; i < 5; i++) await page.locator('.offers .offer').first().click();
   await page.locator('.offer').filter({ hasText: 'Quartermaster' }).click();
-  await page.getByRole('button', { name: 'To the map' }).click();
+  await page.getByRole('button', { name: 'Enter the tower' }).click();
   const log = [];
-  let firstBattle = true;
-  for (let step = 0; step < floors * 4 && log.filter((l) => l.startsWith('floor')).length < floors; step++) {
+  let losses = 0, cleared = 0;
+  for (let step = 0; step < floors * 12 && cleared < floors; step++) {
     const screen = await page.evaluate(() => (AG.App.view === 'battle' ? 'battle' : AG.App.run ? AG.App.run.screen : 'title'));
-    if (screen === 'map') {
-      await page.locator('.mnode.reach').first().click();
-      const t = await page.evaluate(() => AG.App.run.map.nodes[AG.App.run.pos].type);
-      log.push('floor ' + t);
+    if (screen === 'tower') {
+      const f = await page.evaluate(() => ({ floor: AG.App.run.floor, type: AG.Run.currentFloor(AG.App.run).type }));
+      log.push('floor ' + (f.floor + 1) + ' ' + f.type);
+      if (f.type === 'battle') await page.locator('.fight.' + (losses >= 2 ? 'easy' : 'medium') + ' .btn.primary').click();
+      else await page.locator('.floor-card .btn').first().click();
     } else if (screen === 'setup') {
       if (await page.getByRole('button', { name: 'Got it' }).count()) await page.getByRole('button', { name: 'Got it' }).click();
-      const last = page.getByRole('button', { name: /Use last army/ });
-      if (!firstBattle && await last.count()) await last.click();
-      else {
-        // Fill the board from the roster: tap a card, then the first free deploy square.
-        for (let k = 0; k < 6; k++) {
-          const cards = page.locator('.rcard:not(.cant)');
-          if (!(await cards.count())) break;
-          await cards.nth(k % (await cards.count())).click();
-          const free = await page.evaluate(() => {
-            const cells = Array.from(document.querySelectorAll('.cell.deploy'));
-            for (const c of cells) {
-              const r = c.getBoundingClientRect();
-              const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-              if (el && !el.closest('.token')) return [+c.dataset.x, +c.dataset.y];
-            }
-            return null;
-          });
-          if (!free) break;
-          await page.locator('.cell[data-x="' + free[0] + '"][data-y="' + free[1] + '"]').click();
-        }
-      }
-      firstBattle = false;
-      const begin = page.getByRole('button', { name: /Begin battle/ });
-      if (await begin.isDisabled()) { await page.getByRole('button', { name: 'Clear board' }).click(); continue; }
-      await begin.click();
+      await page.getByRole('button', { name: 'Auto-deploy' }).click();
+      await page.getByRole('button', { name: /Begin battle/ }).click();
       await page.waitForTimeout(300);
       await page.getByRole('button', { name: /Skip to result/ }).click();
       await page.waitForSelector('.end-card', { timeout: 120000 });
       const won = await page.locator('.end-card .big.win').count();
       log.push('  ' + (won ? 'won' : 'lost') + ' ' + (await page.evaluate(() => AG.App.battle && AG.App.battle.s.encounter)));
-      await page.locator('.end-card .btn.primary').click();
+      if (won) { losses = 0; cleared++; await page.locator('.end-card .btn.primary').click(); continue; }
+      losses++;
+      const another = page.locator('.end-card').getByRole('button', { name: 'Choose another fight' });
+      if (losses === 2 && await another.count()) await another.click();
+      else if (losses > 3 && await page.locator('.end-card').getByRole('button', { name: /Walk away|Choose another fight/ }).count()) {
+        await page.locator('.end-card').getByRole('button', { name: /Walk away|Choose another fight/ }).click();
+      } else await page.locator('.end-card .btn.primary').click();
+      if (losses > 6) { log.push('  stuck'); break; }
     } else if (screen === 'reward') {
       const offers = page.locator('.offer:not(.taken):not(.gone)');
       if (await offers.count()) await offers.first().click();
       await page.waitForTimeout(100);
-      const cont = page.getByRole('button', { name: /^(Continue|Skip)$/ });
-      await cont.click();
+      await page.getByRole('button', { name: /^(Continue|Skip)$/ }).click();
     } else if (screen === 'event') {
-      const cont = page.getByRole('button', { name: 'Continue' });
-      if (await cont.count()) { await cont.click(); continue; }
+      const cont = page.getByRole('button', { name: 'Climb on' });
+      if (await cont.count()) { await cont.click(); cleared++; continue; }
       await page.locator('.choice:not([disabled])').first().click();
       await page.waitForTimeout(150);
       if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
@@ -80,14 +66,11 @@ const { chromium } = require('playwright');
       const buyable = page.locator('.offers .offer:not(.gone)').first();
       if (await buyable.count()) await buyable.click();
       if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
-      await page.getByRole('button', { name: 'Leave' }).click();
-    } else if (screen === 'rest') {
-      const brk = page.getByRole('button', { name: 'Break camp' });
-      if (await brk.count()) { await brk.click(); continue; }
-      await page.locator('.offer').filter({ hasText: 'Recover' }).click();
+      await page.getByRole('button', { name: 'Leave and climb on' }).click();
+      cleared++;
     } else if (screen === 'actIntro') {
-      await page.getByRole('button', { name: 'To the map' }).click();
-    } else if (screen === 'gameover' || screen === 'victory') {
+      await page.getByRole('button', { name: 'Enter the tower' }).click();
+    } else if (screen === 'victory') {
       log.push(screen);
       break;
     } else {

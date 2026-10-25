@@ -1,5 +1,5 @@
 /* Throw random legal armies at encounters and report win rates.
-   node tests/balance.js [--act 1] [--id encounterId] [--n 40] [--pool starter,common] [--seed 7]
+   node tests/balance.js [--act 1] [--id encounterId] [--n 40] [--pool common,uncommon] [--seed 7]
    Uses up to 4 worker processes. */
 'use strict';
 const H = require('./harness');
@@ -23,16 +23,17 @@ function parseArgs() {
 }
 
 const POOL_BY_ACT = {
-  1: ['starter', 'common'],
-  2: ['starter', 'common', 'uncommon'],
-  3: ['starter', 'common', 'uncommon', 'rare'],
+  1: ['common'],
+  2: ['common', 'uncommon'],
+  3: ['common', 'uncommon', 'rare'],
 };
 
 function randomArmy(AG, rng, enc, rarities, upgChance) {
   const ids = AG.playerUnitIds().filter((k) => rarities.indexOf(AG.Units[k].rarity) >= 0);
   let budget = enc.supply;
   const army = [];
-  for (let guard = 0; guard < 50 && army.length < enc.slots; guard++) {
+  const cells = AG.parseBoard(enc.map, enc.legend).board.deploy.reduce((n, v) => n + (v ? 1 : 0), 0);
+  for (let guard = 0; guard < 50 && army.length < cells; guard++) {
     const afford = ids.filter((k) => AG.Units[k].cost <= budget);
     if (!afford.length) break;
     const pick = rng.pick(afford);
@@ -114,7 +115,7 @@ if (process.argv.includes('--child')) {
     }
   }
   function report() {
-    console.log('encounter'.padEnd(22) + 'tier'.padEnd(8) + 'sup/sl  win%   rounds  avg-ms  max-ms  errors');
+    console.log('encounter'.padEnd(22) + 'tier'.padEnd(8) + 'supply  win%   rounds  avg-ms  max-ms  errors');
     for (const e of encs) {
       const r = results[e.id] || [];
       const wins = r.filter((x) => x.win).length;
@@ -122,7 +123,7 @@ if (process.argv.includes('--child')) {
       const ms = r.reduce((n, x) => n + x.ms, 0) / Math.max(1, r.length);
       const mx = r.reduce((n, x) => Math.max(n, x.ms), 0);
       const errs = r.filter((x) => x.err);
-      console.log(e.id.padEnd(22) + e.tier.padEnd(8) + (e.supply + '/' + e.slots).padEnd(8) +
+      console.log(e.id.padEnd(22) + e.tier.padEnd(8) + String(e.supply).padEnd(8) +
         String(Math.round((100 * wins) / Math.max(1, r.length))).padStart(4) + '%  ' +
         rounds.toFixed(1).padStart(6) + '  ' + Math.round(ms).toString().padStart(6) + '  ' + String(mx).padStart(6) + '  ' + errs.length);
       for (const x of errs.slice(0, 2)) console.log('   ERR ' + x.army + '\n' + x.err.split('\n').slice(0, 6).join('\n'));

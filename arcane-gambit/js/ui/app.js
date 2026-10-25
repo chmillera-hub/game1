@@ -9,7 +9,7 @@
 
   const App = (AG.App = {
     run: null, mode: 'title', view: null, battle: null, root: null, current: null,
-    prefs: { speed: 0.5 }, onResize: null,
+    prefs: { speed: 1 }, onResize: null,
   });
 
   App.start = function (hot) {
@@ -33,6 +33,12 @@
 
   App.loadPrefs = function () {
     try { Object.assign(App.prefs, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')); } catch (e) { /* defaults */ }
+    // Battles used to start at double speed; the normal pace is now half that.
+    if (App.prefs.paceV !== 2) {
+      App.prefs.speed = 1;
+      App.prefs.paceV = 2;
+      App.savePrefs();
+    }
   };
   App.savePrefs = function () {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(App.prefs)); } catch (e) { /* ignore */ }
@@ -58,13 +64,14 @@
   }
   App.render = function () {
     UI.hideTip();
+    if (App.mode === 'hall') return App.mount(UI.Screens.hall(App));
     if (App.mode === 'title' || !App.run) return App.mount(UI.Screens.title(App));
     if (App.view === 'battle' && App.battle) return App.mount(UI.BattleScreen(App));
     const sc = App.run.screen;
-    if (sc === 'setup') return App.mount(withHud(UI.SetupScreen(App)));
+    if (sc === 'setup' && App.run.battle) return App.mount(withHud(UI.SetupScreen(App)));
     const fn = UI.Screens[sc];
-    if (fn) return App.mount(fn(App));
-    App.run.screen = App.mode === 'sandbox' ? 'sandbox' : 'map';
+    if (fn && sc !== 'title' && sc !== 'hall') return App.mount(fn(App));
+    App.run.screen = App.mode === 'sandbox' ? 'sandbox' : App.run.tower ? 'tower' : App.run.draft ? 'draft' : 'boon';
     App.mount(UI.Screens[App.run.screen](App));
   };
   App.go = function (screen) {
@@ -89,12 +96,14 @@
     }
     const relics = h('div.relic-row');
     for (const id of run.relics) relics.appendChild(UI.relicIcon(id));
+    const where = run.tower && run.screen !== 'victory' && run.screen !== 'climb'
+      ? ['I', 'II', 'III'][run.act - 1] + ' · floor ' + (run.floor + 1) + '/' + run.tower.length
+      : run.tower ? 'Summit' : 'Drafting';
     return h('div.hud',
       h('button.brand', { type: 'button', 'aria-label': 'Back to title', on: { click: App.toTitle } }, 'Arcane Gambit'),
-      h('span.stat.resolve', { 'data-tip': 'Lose Resolve when you lose a battle. At 0 the run ends.', 'data-tip-title': 'Resolve' }, h('span.lbl', 'Resolve'), h('span.v.num', run.resolve + '/' + run.maxResolve)),
+      h('span.stat', h('span.lbl', 'Act'), h('span.v.num', where)),
       h('span.stat.gold', h('span.lbl', 'Gold'), h('span.v.num', run.gold)),
-      h('span.stat', h('span.lbl', 'Act'), h('span.v.num', ['I', 'II', 'III'][run.act - 1] + ' · floor ' + run.floor)),
-      run.mode === 'casual' ? h('span.chip.arcane', 'Casual') : null,
+      run.supplyBonus ? h('span.stat', { 'data-tip': 'Extra supply in every battle, on top of your relics.' }, h('span.lbl', 'Supply'), h('span.v.num', '+' + run.supplyBonus)) : null,
       relics,
       h('span.spacer'),
       h('button.btn.small', { type: 'button', on: { click: App.armyView } }, 'Army'),
@@ -118,28 +127,31 @@
     App.view = null;
     App.render();
   };
-  App.newRunDialog = function (hasSave) {
-    const m = UI.modal(function (close) {
-      const start = (mode) => {
-        close();
-        Run.clear();
-        App.run = Run.newRun({ mode });
-        App.mode = 'run';
-        App.view = null;
-        App.save();
-        App.render();
-      };
+  // A new run starts with the draft. One in progress is abandoned (after asking).
+  App.newRun = function (hasSave) {
+    const start = () => {
+      Run.clear();
+      App.run = Run.newRun();
+      App.mode = 'run';
+      App.go('draft');
+    };
+    if (!hasSave) { start(); return; }
+    UI.modal(function (close) {
       return h('div.stack',
-        hasSave ? h('p', { style: { color: 'var(--garnet-2)' } }, 'Starting a new run abandons the one in progress.') : null,
-        h('div.offers',
-          h('button.offer', { type: 'button', on: { click: () => start('standard') } }, h('span.kind', 'Standard'), h('div.nm', 'The full climb'),
-            h('div.d', 'Each defeat costs Resolve; at 0 the run ends. Retry any fight as often as your Resolve allows.')),
-          h('button.offer', { type: 'button', on: { click: () => start('casual') } }, h('span.kind', 'Casual'), h('div.nm', 'Tinker freely'),
-            h('div.d', 'Defeats cost nothing. Rearrange and retry until it clicks.')),
-        ),
+        h('p', 'Starting a new run abandons the one in progress.'),
+        h('div.row',
+          h('button.btn.primary', { type: 'button', on: { click: () => { close(); start(); } } }, 'Abandon it and start'),
+          h('button.btn', { type: 'button', on: { click: close } }, 'Keep it')),
       );
-    }, { title: 'New run', wide: true });
-    return m;
+    }, { title: 'New run' });
+  };
+  App.showHall = function () {
+    App.hallFrom = App.mode !== 'title' && App.mode !== 'hall' ? App.mode : null;
+    App.mode = 'hall';
+    App.view = null;
+    App.battle = null;
+    App.render();
+    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
   };
   App.openSandbox = function () {
     const run = Run.load(true) || Run.sandbox();
@@ -152,23 +164,15 @@
   };
   App.sandboxFight = function (encId) {
     const run = App.run;
-    const enc = AG.Encounters[encId];
-    const tier = enc.tier === 'early' || enc.tier === 'normal' ? 'battle' : enc.tier;
-    run.battle = { enc: encId, tier, attempts: 0, ramp: 0, formation: run.formations[encId] ? AG.deepCopy(run.formations[encId]) : [] };
+    const tier = AG.Encounters[encId].tier;
+    run.battle = { enc: encId, tier: tier === 'early' || tier === 'normal' ? 'battle' : tier, attempts: 0, ramp: 0, formation: run.formations[encId] ? AG.deepCopy(run.formations[encId]) : [] };
     App.go('setup');
-  };
-  App.enterNode = function (id) {
-    Run.enter(App.run, id);
-    App.save();
-    App.view = null;
-    App.render();
-    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
   };
   // Everything needed to rebuild the same battle, kept for replays (after a
   // win the run has already moved on to its rewards).
   App.lastSetup = null;
   function makeBattle(setup) {
-    const enc = AG.Encounters[setup.enc];
+    const enc = setup.encounter || AG.Encounters[setup.enc];
     return AG.B.create(enc, setup.army, Object.assign({ record: true }, setup.opts));
   }
   App.startBattle = function () {
@@ -183,9 +187,29 @@
     App.render();
     try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
   };
+  // A Hall of Fame duel: this run's final army against the next champion up.
+  App.startDuel = function () {
+    const run = App.run;
+    const opp = Run.climbOpponent(run);
+    if (!opp) return;
+    const encounter = Run.duelEncounter(run.finalArmy.enc);
+    App.lastSetup = { encounter, army: run.finalArmy.army, opts: Run.duelOpts(run.finalArmy, opp) };
+    App.battle = { s: makeBattle(App.lastSetup), replay: false, duel: opp, encounter };
+    App.view = 'battle';
+    App.render();
+    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+  };
+  App.afterDuel = function (won) {
+    Run.climbResult(App.run, won);
+    App.view = null;
+    App.battle = null;
+    App.save();
+    App.render();
+    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+  };
   App.replay = function () {
     if (!App.lastSetup) return;
-    App.battle = { s: makeBattle(App.lastSetup), replay: true };
+    App.battle = { s: makeBattle(App.lastSetup), replay: true, encounter: App.lastSetup.encounter };
     App.view = 'battle';
     App.render();
   };
@@ -196,6 +220,15 @@
     App.save();
     App.render();
     try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+  };
+  // Leave a fight that has not been won: back down the tower to choose
+  // another, away from an event's fight, or back from the mega boss.
+  App.leaveFight = function () {
+    const run = App.run;
+    const tier = run.battle && run.battle.tier;
+    if (Run.DIFF[tier] || tier === 'boss') Run.backToTower(run);
+    else Run.leaveFight(run);
+    App.go(run.screen);
   };
   App.armyView = function () { UI.armyView(App.run); };
   App.help = function () { UI.help(); };

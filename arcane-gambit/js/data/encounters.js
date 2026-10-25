@@ -1,7 +1,8 @@
 /* Encounters. Maps are drawn top (enemy side) to bottom (your side):
      .  floor     p  floor you may deploy on     #  wall     ~  chasm
      (space) off-board     letters: enemies from the legend.
-   supply = points to spend on units + upgrades; slots = max units. */
+   supply = points to spend on units, talents and runes; the army is as
+   large as the supply and the deploy squares allow. */
 (function (AG) {
   'use strict';
 
@@ -12,7 +13,7 @@
   add({
     id: 'goblinSkirmish', act: 1, tier: 'early', name: 'Goblin Skirmish', theme: 'moss',
     flavor: 'A handful of goblins have set up an ambush on the old chessboard road.',
-    supply: 8, slots: 3,
+    supply: 8,
     map: [
       '...g..',
       '.g..g.',
@@ -26,7 +27,7 @@
   add({
     id: 'wolfFord', act: 1, tier: 'early', name: 'Wolves at the Ford', theme: 'moss',
     flavor: 'Three wolves pace the far bank. The river can only be crossed at two fords.',
-    supply: 8, slots: 3,
+    supply: 8,
     map: [
       '..w.w.w..',
       '....w....',
@@ -40,7 +41,7 @@
   add({
     id: 'slimeCellar', act: 1, tier: 'early', name: 'The Slime Cellar', theme: 'moss',
     flavor: 'A diamond-shaped cellar. Something wet is multiplying down here.',
-    supply: 8, slots: 3, boost: 0.15,
+    supply: 8, boost: 0.15,
     map: [
       '   s   ',
       '  .s.  ',
@@ -55,7 +56,7 @@
   add({
     id: 'banditBridge', act: 1, tier: 'normal', name: 'Bandit Bridge', theme: 'moss',
     flavor: 'A long rope bridge over a gorge. The toll collectors are not friendly.',
-    supply: 10, slots: 3, boost: 0.15,
+    supply: 10, boost: 0.15,
     map: [
       '.a.a.',
       '..b..',
@@ -72,7 +73,7 @@
   add({
     id: 'boarRun', act: 1, tier: 'normal', name: 'Boar Run', theme: 'moss',
     flavor: 'Hedgerows split the field into lanes. The boars like a long run-up.',
-    supply: 10, slots: 4,
+    supply: 10,
     map: [
       '.o..a.o.',
       '........',
@@ -88,7 +89,7 @@
   add({
     id: 'thornwood', act: 1, tier: 'normal', name: 'The Thornwood', theme: 'moss',
     flavor: 'An eight-sided glade ringed with thorn trees. Wolves and slingers wait in the shadows.',
-    supply: 10, slots: 4,
+    supply: 10,
     map: [
       '  ....  ',
       ' .w..w. ',
@@ -104,7 +105,7 @@
   add({
     id: 'watchtower', act: 1, tier: 'normal', name: 'Goblin Watchtower', theme: 'moss',
     flavor: 'A slinger perches in a stone tower while the rest of the patrol guards the approach.',
-    supply: 10, slots: 4, boost: 0.35,
+    supply: 10, boost: 0.35,
     map: [
       '.#s#.s.',
       '.#.#.m.',
@@ -120,7 +121,7 @@
   add({
     id: 'fairyRing', act: 1, tier: 'normal', name: 'The Fairy Ring', theme: 'moss',
     flavor: 'A sinkhole ringed by mushrooms. Slimes ooze around both sides.',
-    supply: 10, slots: 5, boost: 0.25,
+    supply: 10, boost: 0.25,
     map: [
       '.s.g.s.',
       '..gm.s.',
@@ -137,7 +138,7 @@
   add({
     id: 'trollBridge', act: 1, tier: 'elite', name: 'The Troll Bridge', theme: 'moss',
     flavor: 'Under the bridge lives a troll who regenerates faster than most things can hurt it. Fire helps.',
-    supply: 12, slots: 4, boost: 0.42,
+    supply: 12, boost: 0.42,
     map: [
       '..t..',
       '.g.g.',
@@ -154,7 +155,7 @@
   add({
     id: 'warboss', act: 1, tier: 'elite', name: 'The Warboss', theme: 'moss',
     flavor: 'A goblin warboss with a horn and a temper. More goblins arrive every few turns.',
-    supply: 12, slots: 4, boost: 0.4,
+    supply: 12, boost: 0.4,
     map: [
       '.s.W.s.',
       '..g.g..',
@@ -169,7 +170,7 @@
   add({
     id: 'alphaDen', act: 1, tier: 'elite', name: 'The Alpha’s Den', theme: 'moss',
     flavor: 'The pack leader howls and every wolf surges up the turn order.',
-    supply: 12, slots: 4,
+    supply: 12,
     map: [
       '...A....',
       '.w..w.w.',
@@ -184,7 +185,7 @@
   add({
     id: 'spiderNest', act: 1, tier: 'elite', name: 'The Spider Nest', theme: 'moss',
     flavor: 'The Brood Mother lays a new spiderling every round. End this quickly.',
-    supply: 12, slots: 4, boost: 0.4,
+    supply: 12, boost: 0.4,
     map: [
       '#..B..#',
       '.x...x.',
@@ -200,7 +201,7 @@
   add({
     id: 'goblinThrone', act: 1, tier: 'boss', name: 'Throne of King Grumblewart', theme: 'moss',
     flavor: 'The goblin king holds court on a ruined chessboard. While he lives, every goblin fights harder, and his guard never runs out.',
-    supply: 14, slots: 5, boost: 0.1,
+    supply: 14, boost: 0.1,
     map: [
       '.#.K..#.',
       '..m..s..',

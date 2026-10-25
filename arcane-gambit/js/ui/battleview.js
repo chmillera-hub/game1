@@ -7,12 +7,14 @@
   const h = UI.h;
   const B = AG.B;
 
-  const SPEEDS = [{ k: 1, label: '1×' }, { k: 0.5, label: '2×' }, { k: 0.25, label: '4×' }];
+  // k scales every pause and animation: 1 is the normal pace.
+  const SPEEDS = [{ k: 2, label: '½×' }, { k: 1, label: '1×' }, { k: 0.5, label: '2×' }, { k: 0.25, label: '4×' }];
 
   UI.BattleScreen = function (App) {
     const s = App.battle.s;
-    const enc = AG.Encounters[s.encounter];
+    const enc = App.battle.encounter || AG.Encounters[s.encounter];
     const isSandbox = App.mode === 'sandbox';
+    const duel = App.battle.duel || null;
     const root = h('div.battle');
     let alive = true;
     let paused = false, stepOnce = false, skipping = false;
@@ -21,7 +23,7 @@
     for (const u of s.units) disp[u.uid] = { hp: u.hp, shield: u.shield, st: Object.keys(u.st) };
 
     const view = new UI.BoardView({ board: s.board, theme: enc.theme, maxCell: 72, onToken: inspect, onCell: () => {} });
-    view.k = App.prefs.speed || 0.5;
+    view.k = App.prefs.speed || 1;
 
     // ------------------------------------------------------------ layout
     const roundEl = h('span.round-badge', 'Round 0');
@@ -34,7 +36,7 @@
     for (const sp of SPEEDS) {
       seg.appendChild(h('button', { type: 'button', class: sp.k === view.k ? 'on' : '', on: { click: () => setSpeed(sp.k) } }, sp.label));
     }
-    const skipBtn = h('button.btn.small', { type: 'button', title: 'Keys: Space pause, → step, 1–3 speed, S skip', on: { click: skip } }, 'Skip to result', UI.uiIcon('skip'));
+    const skipBtn = h('button.btn.small', { type: 'button', title: 'Keys: Space pause, → step, 1–4 speed, S skip', on: { click: skip } }, 'Skip to result', UI.uiIcon('skip'));
     const altsBtn = h('button.btn.small.ghost', {
       type: 'button', 'aria-pressed': App.prefs.showAlts ? 'true' : 'false',
       'data-tip': 'Also show the runner-up options each unit weighed, and how much worse it judged them.',
@@ -45,7 +47,7 @@
     const controls = h('div.controls', playBtn, stepBtn, seg, altsBtn, h('span.spacer'), skipBtn);
     root.appendChild(h('div.screen-head',
       h('div.stack', { style: { gap: '4px' } },
-        h('div.row', h('span.eyebrow', enc.name), roundEl, stormEl),
+        h('div.row', h('span.eyebrow', duel ? 'Hall of Fame · your run (white) against ' + duel.name + ' (black)' : enc.name), roundEl, stormEl),
       ),
     ));
     root.appendChild(h('div.battle-grid',
@@ -357,46 +359,59 @@
     // ------------------------------------------------------------ report
     function finish() {
       const won = s.winner === 0;
+      if (duel) {
+        log('sys', won ? 'Your run wins the duel' : duel.name + ' holds its place');
+        const m = UI.modal(h('div.end-card',
+          h('div.big.' + (won ? 'win' : 'lose'), won ? 'Victory' : 'Defeat'),
+          h('p.muted', won ? 'Your run beats ' + duel.name + ' in ' + AG.plural(s.round, 'round') + ' and climbs past it.' : duel.name + ' holds its place. Your run settles just below it.'),
+          report(),
+          h('div.row', { style: { justifyContent: 'center' } },
+            h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterDuel(won); } } }, 'Continue')),
+        ), { dismissable: false });
+        return;
+      }
       if (App.battle && App.battle.replay) {
         const m = UI.modal(h('div.end-card',
           h('div.big.' + (won ? 'win' : 'lose'), won ? 'Victory' : 'Defeat'),
           h('p.muted', 'That was a replay; nothing changed. Battles always play out the same way for the same setup, so change something before you retry.'),
           report(),
           h('div.row', { style: { justifyContent: 'center' } }, h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } },
-            !isSandbox && App.run.screen === 'reward' ? 'Collect rewards' : 'Back to the war room')),
+            isSandbox ? 'Back to the war room' : ({ reward: 'Collect rewards', victory: 'Back to the summit' })[App.run.screen] || 'Back to the war room')),
         ), { dismissable: false });
         return;
       }
-      let outcome;
-      if (!isSandbox) outcome = won ? AG.Run.battleWon(App.run, s) : { dmg: AG.Run.battleLost(App.run, s) };
+      const tier = !isSandbox && App.run.battle ? App.run.battle.tier : null;
+      if (!isSandbox) { if (won) AG.Run.battleWon(App.run, s); else AG.Run.battleLost(App.run, s); }
       else App.run.stats[won ? 'wins' : 'losses']++;
       App.save();
       log('sys', won ? 'Victory' : 'Defeat');
+      const mega = tier === 'mega';
       const card = h('div.end-card',
-        h('div.big.' + (won ? 'win' : 'lose'), won ? 'Victory' : 'Defeat'),
-        h('p.muted', won ? 'Won in ' + AG.plural(s.round, 'round') + '.' : lossText(outcome)),
+        h('div.big.' + (won ? 'win' : 'lose'), won ? (mega ? 'Zugzwang falls!' : 'Victory') : 'Defeat'),
+        h('p.muted', won ? 'Won in ' + AG.plural(s.round, 'round') + '.' : lossText(tier)),
         report(),
       );
       const buttons = h('div.row', { style: { justifyContent: 'center' } });
       card.appendChild(buttons);
       const m = UI.modal(card, { dismissable: false });
+      const btn = (cls, label, fn) => buttons.appendChild(h('button.btn' + cls, { type: 'button', on: { click: () => { m.close(); fn(); } } }, label));
       if (won) {
-        buttons.appendChild(h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(true); } } }, isSandbox ? 'Back to setup' : 'Collect rewards'));
-        buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.replay(); } } }, 'Watch again'));
-        if (isSandbox) buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.go('sandbox'); } } }, 'Other fights'));
-      } else if (!isSandbox && App.run.screen === 'gameover') {
-        buttons.appendChild(h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } }, 'Your Resolve breaks…'));
+        btn('.primary', isSandbox ? 'Back to setup' : mega ? 'Claim your triumph' : 'Collect rewards', () => App.afterBattle(true));
+        btn('', 'Watch again', () => App.replay());
+        if (isSandbox) btn('', 'Other fights', () => App.go('sandbox'));
       } else {
-        buttons.appendChild(h('button.btn.primary', { type: 'button', on: { click: () => { m.close(); App.afterBattle(false); } } }, 'Adjust & retry'));
-        buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.replay(); } } }, 'Watch again'));
-        if (isSandbox) buttons.appendChild(h('button.btn', { type: 'button', on: { click: () => { m.close(); App.go('sandbox'); } } }, 'Other fights'));
+        btn('.primary', 'Adjust & retry', () => App.afterBattle(false));
+        btn('', 'Watch again', () => App.replay());
+        if (isSandbox) btn('', 'Other fights', () => App.go('sandbox'));
+        else if (AG.Run.DIFF[tier]) btn('', 'Choose another fight', () => App.leaveFight());
+        else if (tier === 'event') btn('', 'Walk away', () => App.leaveFight());
+        else if (mega) btn('', 'Back', () => App.leaveFight());
       }
     }
-    function lossText(o) {
-      if (isSandbox || !o) return 'Your army was defeated. Adjust it and try again.';
-      const run = App.run;
-      if (run.mode === 'casual') return 'Your army was defeated. (Casual mode: no Resolve lost.)';
-      return 'Your Resolve drops by ' + o.dmg + ' (' + run.resolve + '/' + run.maxResolve + ' left). The enemy holds the board; rethink your army and try again.';
+    function lossText(tier) {
+      if (isSandbox) return 'Your army was defeated. Adjust it and try again.';
+      if (tier === 'mega') return 'Zugzwang was not meant to be beaten. You can try again as often as you like.';
+      return 'No harm done: battles play out the same way for the same setup, so change something and try again' + (AG.Run.DIFF[tier] ? ', or go back and choose another fight.' : '.');
     }
     function report() {
       const st = s.stats || {};
@@ -432,7 +447,7 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') || document.querySelector('.modal-back')) return;
       if (e.key === ' ') { e.preventDefault(); togglePause(); }
       else if (e.key === 'ArrowRight' || e.key === '.') step();
-      else if (e.key === '1' || e.key === '2' || e.key === '3') setSpeed(SPEEDS[+e.key - 1].k);
+      else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[+e.key - 1].k);
       else if (e.key === 's' || e.key === 'S') skip();
     }
     root.onMount = function () {

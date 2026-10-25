@@ -15,7 +15,7 @@ function ok(v, msg) { if (!v) throw new Error(msg || 'expected truthy'); }
 
 let n = 0;
 function battle(map, legend, army, opts, bopts) {
-  const enc = Object.assign({ id: 'rt' + n++, act: 1, tier: 'normal', name: 'test', map, legend, supply: 99, slots: 9 }, opts || {});
+  const enc = Object.assign({ id: 'rt' + n++, act: 1, tier: 'normal', name: 'test', map, legend, supply: 99 }, opts || {});
   AG.Encounters[enc.id] = enc;
   return B.create(enc, army.map((a) => Object.assign({ talents: [], rune: null, rank: 0 }, a)), Object.assign({ record: true }, bopts));
 }
@@ -311,5 +311,133 @@ test('when valuing Haste the AI only replays turns that are still legal', () => 
   eq(bad.length, 0, 'illegal replays: ' + bad.join(', '));
 });
 
+// ------------------------------------------------------------ the run
+global.localStorage = global.localStorage || { _d: {}, getItem(k) { return this._d[k] || null; }, setItem(k, v) { this._d[k] = String(v); }, removeItem(k) { delete this._d[k]; } };
+const Run = AG.Run;
+
+test('the draft offers two commons, two uncommons and a rare, then an opening', () => {
+  const run = Run.newRun({ seed: 42 });
+  const got = [];
+  for (const r of Run.DRAFT) {
+    eq(run.screen, 'draft', 'still drafting');
+    eq(run.draft.options.length, 3, 'three to choose from');
+    ok(run.draft.options.every((d) => AG.Units[d].rarity === r && run.units.indexOf(d) < 0), 'options of the right rarity, not owned');
+    const pick = run.draft.options[1];
+    Run.draftPick(run, pick);
+    got.push(AG.Units[pick].rarity);
+  }
+  eq(got.join(','), 'common,common,uncommon,uncommon,rare', 'picks');
+  eq(run.screen, 'boon', 'then the opening');
+  eq(run.units.length, 6, 'the Squire and five picks');
+  Run.takeBoon(run, 'ledger');
+  eq(run.screen, 'actIntro', 'then the act');
+  eq(run.tower.length, 8, 'eight floors');
+});
+
+test('each battle floor offers easy, medium and hard, or elite on the elite floors', () => {
+  const run = Run.newRun({ seed: 7 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  for (let f = 0; f < Run.FLOORS.length; f++) {
+    run.floor = f;
+    const fl = Run.currentFloor(run);
+    Run.prepareFloor(run);
+    if (fl.type !== 'battle') { ok(!fl.options, 'no fights on a ' + fl.type + ' floor'); continue; }
+    const diffs = fl.options.map((o) => o.diff).join(',');
+    eq(diffs, Run.ELITE_FLOORS.indexOf(f) >= 0 ? 'easy,medium,elite' : 'easy,medium,hard', 'floor ' + (f + 1));
+    ok(fl.options.every((o) => AG.Encounters[o.enc] && AG.Encounters[o.enc].act === 1), 'act I fights');
+    eq(new Set(fl.options.map((o) => o.enc)).size, 3, 'three different fights');
+  }
+});
+
+test('a lost battle costs nothing and can be retried or swapped for another fight', () => {
+  const run = Run.newRun({ seed: 9 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  run.screen = 'tower';
+  const gold = run.gold, units = run.units.length;
+  Run.chooseFight(run, 2);
+  eq(run.screen, 'setup', 'war room');
+  const s = B.create(AG.Encounters[run.battle.enc], [], { record: true });
+  Run.battleLost(run, s);
+  eq(run.screen, 'setup', 'straight back to the war room');
+  eq(run.gold, gold, 'no gold lost');
+  eq(run.units.length, units, 'no units lost');
+  eq(run.battle.attempts, 1, 'attempt counted');
+  Run.backToTower(run);
+  eq(run.screen, 'tower', 'back to the tower');
+  eq(run.floor, 0, 'same floor');
+  Run.chooseFight(run, 0);
+  eq(run.battle.tier, 'easy', 'took the easy one instead');
+});
+
+test('only supply and squares limit the army', () => {
+  const run = Run.sandbox();
+  const enc = AG.Encounters.zugzwang;
+  const lim = Run.limits(run, enc);
+  const army = Run.autoArmy(run, enc);
+  const cost = Run.formationCost(run, army);
+  ok(cost <= lim.supply, 'within supply: ' + cost + ' of ' + lim.supply);
+  ok(army.length <= lim.cells, 'within the squares');
+  const minCost = Math.min.apply(null, run.units.map((d) => AG.Units[d].cost));
+  eq(army.length, Math.min(lim.cells, Math.floor(lim.supply / minCost)), 'as many units as possible');
+  eq(new Set(army.map((e) => e.x + ',' + e.y)).size, army.length, 'one unit per square');
+  const { board } = AG.parseBoard(enc.map, enc.legend);
+  ok(army.every((e) => board.deploy[e.y * board.w + e.x]), 'all on deploy squares');
+  ok(Run.validate(run, enc, army).ok, 'a legal army');
+  const big = Run.autoArmy(Object.assign({}, run, { supplyBonus: 200 }), enc);
+  eq(big.length, lim.cells, 'with endless supply, every square is filled');
+});
+
+test('Invincible caps the damage taken each round', () => {
+  const s = battle(['..Z..', '.....', 'ppppp'], { Z: 'zugzwang' }, [{ def: 'archmage', x: 2, y: 2 }]);
+  const z = find(s, 'zugzwang');
+  s.round = 1;
+  const hp = z.hp;
+  B.hit(s, null, z, 15, { kind: 'true' });
+  B.hit(s, null, z, 15, { kind: 'true' });
+  eq(hp - z.hp, 20, 'capped at 20 in round 1');
+  eq(B.hit(s, null, z, 5, { kind: 'true' }), 0, 'nothing more this round');
+  s.round = 2;
+  B.hit(s, null, z, 7, { kind: 'true' });
+  eq(hp - z.hp, 27, 'a new round, a new cap');
+});
+
+test('Beat of Death hurts every piece that attacks', () => {
+  const s = battle(['..Z..', '..q..', '.....', 'ppppp'], { Z: 'zugzwang', q: 'goblin' }, [{ def: 'scout', x: 2, y: 3 }]);
+  const scout = find(s, 'scout');
+  const hp = scout.hp;
+  B.doAttack(s, scout, find(s, 'goblin'));
+  eq(hp - scout.hp, 1, 'the scout paid 1 health for its shot');
+});
+
+test('a duel puts the defending army on the far side, mirrored', () => {
+  const enc = Run.duelEncounter('grandmaster');
+  const mine = [{ def: 'knight', x: 1, y: 7, talents: [], rune: null, rank: 0 }];
+  const theirs = [{ def: 'cleric', x: 2, y: 6, talents: [], rune: null, rank: 1 }];
+  const s = B.create(enc, mine, Object.assign({ record: false }, Run.duelOpts({ relics: [] }, { army: theirs, relics: ['ironRations'] })));
+  const c = find(s, 'cleric');
+  eq(c.side, 1, 'the defender is the enemy');
+  eq(c.x + ',' + c.y, '2,1', 'mirrored to the far side');
+  eq(c.rank, 1, 'keeps its rank');
+  eq(c.shield, 3, 'and its relics');
+  eq(find(s, 'knight').side, 0, 'the challenger is the near side');
+  eq(s.units.length, 2, 'nobody else on the board');
+});
+
+test('a challenger climbs the Hall until its first loss', () => {
+  eq(Run.hallRank(0, []), 0, 'an empty Hall: first place');
+  eq(Run.hallRank(3, [false]), 3, 'lost the first duel: bottom');
+  eq(Run.hallRank(3, [true, false]), 2, 'won one, then lost');
+  eq(Run.hallRank(3, [true, true, true]), 0, 'beat them all: top');
+  localStorage._d = {};
+  const run = Run.newRun({ seed: 5 });
+  run.finalArmy = { army: [{ def: 'knight', x: 0, y: 7, talents: [], rune: null, rank: 0 }], relics: [], enc: 'grandmaster' };
+  run.stats.endedAt = 1;
+  Run.startClimb(run);
+  ok(run.climb.placed, 'nobody to duel');
+  eq(Run.loadHall().entries.length, 1, 'enshrined');
+  ok(run.done && !Run.load(false), 'the finished run is not kept');
+});
 console.log(passed + ' passed' + (failed.length ? ', ' + failed.length + ' failed:\n  ' + failed.join('\n  ') : ''));
 process.exit(failed.length ? 1 : 0);

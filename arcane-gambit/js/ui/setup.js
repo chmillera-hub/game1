@@ -1,5 +1,6 @@
-/* The war room: pick units within the supply and slot limits, give them
-   talents and runes, and place them on your side of the board. */
+/* The war room: pick units within the supply budget (as many as it and the
+   deploy squares allow), give them talents and runes, and place them on
+   your side of the board. */
 (function (AG) {
   'use strict';
   const UI = AG.UI;
@@ -36,6 +37,13 @@
     return out;
   }
   UI.adaptArmy = adaptArmy;
+
+  const TIER = {
+    easy: ['Easy', '.easy'], medium: ['Medium', '.medium'], hard: ['Hard', '.hard'], elite: ['Elite', '.elite'],
+    boss: ['Boss', '.boss'], mega: ['Mega boss', '.boss'], event: ['Challenge', ''], battle: ['Battle', ''],
+  };
+
+  const LEAVE = { easy: '← Choose another fight', medium: '← Choose another fight', hard: '← Choose another fight', elite: '← Choose another fight', event: 'Walk away', mega: '← Back' };
 
   UI.SetupScreen = function (App) {
     const run = App.run;
@@ -80,10 +88,9 @@
 
     // -------------------------------------------------------- actions
     function place(def, x, y) {
-      const v = Run.validate(run, enc, F.concat([{ def, x, y, talents: [], rune: null }]));
-      if (F.length >= v.lim.slots) { UI.toast('No unit slots left (' + v.lim.slots + ' max).'); return false; }
+      const lim = Run.limits(run, enc);
       const cost = Run.formationCost(run, F) + AG.Units[def].cost;
-      if (cost > v.lim.supply) { UI.toast('Not enough supply: ' + AG.Units[def].name + ' costs ' + AG.Units[def].cost + '.'); return false; }
+      if (cost > lim.supply) { UI.toast('Not enough supply: ' + AG.Units[def].name + ' costs ' + AG.Units[def].cost + '.'); return false; }
       F.push({ def, x, y, talents: [], rune: null });
       sel = { kind: 'placed', i: F.length - 1 };
       changed();
@@ -158,12 +165,15 @@
     }
 
     // -------------------------------------------------------- rendering
+    const tier = TIER[run.battle.tier] || TIER.battle;
+    const strength = h('span.row', { style: { gap: '8px' } });
     const head = h('div.screen-head',
       h('div.stack', { style: { gap: '4px' } },
         h('div.row', { style: { gap: '8px' } },
-          h('span.tier' + (run.battle.tier === 'elite' ? '.elite' : run.battle.tier === 'boss' ? '.boss' : ''), run.battle.tier === 'battle' ? 'Battle' : run.battle.tier === 'event' ? 'Challenge' : run.battle.tier),
+          h('span.tier' + tier[1], tier[0]),
           run.battle.attempts ? h('span.chip.garnet', 'Attempt ' + (run.battle.attempts + 1)) : null,
           h('span.chip', board.w + '×' + board.h + ' board'),
+          strength,
         ),
         h('h2', enc.name),
         h('p.flavor', enc.flavor),
@@ -195,7 +205,7 @@
     if (!App.prefs.seenWarRoom) {
       const coach = h('div.coach',
         h('div.coach-steps',
-          h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; the fight limits how many units you may bring.'),
+          h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; bring as many units as the supply and the blue squares allow, or press Auto-deploy.'),
           h('div', h('b', '2. Deploy'), ' Tap a blue square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
           h('div', h('b', '3. Watch'), ' Press Begin. Every unit acts once per round, fastest first, and thinks for itself. If you lose, rethink and retry.'),
         ),
@@ -211,8 +221,10 @@
       const sp = Math.min(100, (100 * v.cost) / Math.max(1, v.lim.supply));
       meters.appendChild(h('div.meter' + (v.cost > v.lim.supply ? '.over' : ''),
         h('span.lbl', 'Supply'), h('span.bar', h('i', { style: { width: sp + '%' } })), h('span.v', v.cost + '/' + v.lim.supply)));
-      meters.appendChild(h('div.meter' + (F.length > v.lim.slots ? '.over' : ''),
-        h('span.lbl', 'Units'), h('span.v', F.length + '/' + v.lim.slots)));
+      meters.appendChild(h('div.meter', { 'data-tip': 'No cap on units: only the supply and the blue squares limit your army.' },
+        h('span.lbl', 'Units'), h('span.v', F.length + ' of ' + v.lim.cells + ' squares')));
+      const mod = run.battle.supplyMod || 0;
+      if (mod) meters.appendChild(h('span.chip' + (mod > 0 ? '.arcane' : '.garnet'), (mod > 0 ? '+' : '−') + Math.abs(mod) + ' supply this battle'));
       if (App.mode === 'sandbox' && run.relics && run.relics.length) {
         const rr = h('div.relic-row');
         for (const id of run.relics) rr.appendChild(UI.relicIcon(id));
@@ -236,7 +248,7 @@
         const card = UI.rosterCard(def, {
           rank: run.ranks[def] || 0,
           sel: sel.kind === 'card' && sel.def === def,
-          cant: AG.Units[def].cost > left || F.length >= lim.slots,
+          cant: AG.Units[def].cost > left || F.length >= lim.cells,
         });
         card.addEventListener('click', function () {
           if (card.dataset.dragged) return;
@@ -342,7 +354,11 @@
       const v = Run.validate(run, enc, F);
       if (!v.ok && F.length) errorsEl.textContent = v.errors.join(' ');
       actions.appendChild(h('button.btn.fight', { type: 'button', disabled: !v.ok, on: { click: begin } }, UI.uiIcon('swords'), 'Begin battle'));
-      actions.appendChild(h('span.mini-meter.mono' + (v.cost > v.lim.supply ? '.over' : ''), v.cost + '/' + v.lim.supply + ' supply · ' + F.length + '/' + v.lim.slots + ' units'));
+      actions.appendChild(h('span.mini-meter.mono' + (v.cost > v.lim.supply ? '.over' : ''), v.cost + '/' + v.lim.supply + ' supply · ' + AG.plural(F.length, 'unit')));
+      tools.appendChild(h('button.btn.small', {
+        type: 'button', 'data-tip': 'Fills the board for you: as many units as the supply and the squares allow, then any supply left over turns cheap pieces into stronger ones.',
+        on: { click: autoDeploy },
+      }, 'Auto-deploy'));
       if (!F.length && run.lastArmy && run.lastArmy.length) {
         tools.appendChild(h('button.btn.small', { type: 'button', on: { click: useLast } }, 'Use last army'));
       }
@@ -353,6 +369,16 @@
       }, showDanger ? 'Hide enemy reach' : 'Show enemy reach'));
       if (F.length) tools.appendChild(h('button.btn.small', { type: 'button', on: { click: () => { F.length = 0; sel = { kind: null }; changed(); } } }, 'Clear board'));
       if (App.mode === 'sandbox') tools.appendChild(h('button.btn.small.ghost', { type: 'button', on: { click: () => App.go('sandbox') } }, '← Other fights'));
+      else tools.appendChild(h('button.btn.small.ghost', { type: 'button', on: { click: () => App.leaveFight() } }, LEAVE[run.battle.tier] || '← Back to the tower'));
+    }
+    function autoDeploy() {
+      const army = Run.autoArmy(run, enc);
+      if (!army.length) { UI.toast('Not enough supply for any unit.'); return; }
+      F.length = 0;
+      for (const e of army) F.push(e);
+      sel = { kind: null };
+      UI.toast('Deployed ' + AG.plural(F.length, 'unit') + ' for ' + Run.formationCost(run, F) + ' supply.');
+      changed();
     }
     function useLast() {
       const army = adaptArmy(run.lastArmy, board);
@@ -366,7 +392,6 @@
         F.push(e);
       }
       const lim = Run.limits(run, enc);
-      while (F.length > lim.slots) F.pop();
       while (Run.formationCost(run, F) > lim.supply && F.length) {
         const e = F[F.length - 1];
         if (e.rune) e.rune = null;
@@ -381,8 +406,15 @@
       if (!v.ok) { UI.toast(v.errors[0]); return; }
       App.startBattle();
     }
+    function renderStrength() {
+      UI.clear(strength);
+      const hp = Math.round((preview.hpBoost || 0) * 100);
+      if (hp) strength.appendChild(h('span.chip' + (hp > 0 ? '.garnet' : '.arcane'), { 'data-tip': 'Enemy health compared with the same fight on its own: the act, the floor and the difficulty all count.' }, 'Enemy HP ' + (hp > 0 ? '+' : '−') + Math.abs(hp) + '%'));
+      if (preview.atkBoost) strength.appendChild(h('span.chip.garnet', 'Enemy ATK +' + preview.atkBoost));
+    }
     function refresh() {
       rebuildPreview();
+      renderStrength();
       view.sync(preview.units);
       view.markDeploy();
       const selEnemy = sel.kind === 'enemy' ? enemyUnits()[sel.k] : null;

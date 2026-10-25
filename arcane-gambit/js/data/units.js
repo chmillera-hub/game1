@@ -18,8 +18,8 @@
   AG.Units = {
     // ================================================================ PLAYER
     squire: {
-      name: 'Squire', icon: '♟' + T, pool: 'player', rarity: 'starter', cost: 1, role: 'melee', tags: ['steel'],
-      hp: 7, atk: 2, spd: 3,
+      name: 'Squire', icon: '♟' + T, pool: 'player', rarity: 'common', cost: 2, role: 'melee', tags: ['steel'],
+      hp: 9, atk: 3, spd: 3,
       move: walk(1), attack: melee(),
       passives: {
         shieldWall: {},
@@ -29,7 +29,7 @@
       blurb: 'Cheap, stubborn, and secretly dreaming of the far rank.',
     },
     knight: {
-      name: 'Knight', icon: '♞' + T, pool: 'player', rarity: 'starter', cost: 3, role: 'melee', tags: ['steel'],
+      name: 'Knight', icon: '♞' + T, pool: 'player', rarity: 'common', cost: 3, role: 'melee', tags: ['steel'],
       hp: 11, atk: 4, spd: 2, armor: 1,
       move: { type: 'leap' }, attack: melee(),
       passives: { charge: { bonus: 2 } },
@@ -37,7 +37,7 @@
       blurb: 'Vaults over the line in an L and lands hooves-first.',
     },
     scout: {
-      name: 'Scout', icon: '🎯', pool: 'player', rarity: 'starter', cost: 2, role: 'ranged', tags: ['wild'],
+      name: 'Scout', icon: '🎯', pool: 'player', rarity: 'common', cost: 2, role: 'ranged', tags: ['wild'],
       hp: 6, atk: 3, spd: 8,
       move: slide(3, 'all'), attack: ranged(2, { vfx: 'dart', fx: { mark: 1 } }),
       passives: { spotter: {}, hitAndRun: { n: 2 } },
@@ -45,7 +45,7 @@
       blurb: 'First to move, first to strike, gone before the reply.',
     },
     cleric: {
-      name: 'Cleric', icon: '♝' + T, pool: 'player', rarity: 'starter', cost: 3, role: 'support', tags: ['holy'],
+      name: 'Cleric', icon: '♝' + T, pool: 'player', rarity: 'common', cost: 3, role: 'support', tags: ['holy'],
       hp: 8, atk: 2, spd: 4,
       move: slide(3, 'diag'), attack: line(4, 'diag', { vfx: 'smite', tag: 'holy' }),
       abilities: ['mend'],
@@ -54,7 +54,7 @@
       blurb: 'Moves on the diagonals, as bishops do, mending what breaks.',
     },
     apprentice: {
-      name: 'Apprentice', icon: '🔮', pool: 'player', rarity: 'starter', cost: 2, role: 'ranged', tags: ['arcane'],
+      name: 'Apprentice', icon: '🔮', pool: 'player', rarity: 'common', cost: 2, role: 'ranged', tags: ['arcane'],
       hp: 5, atk: 3, spd: 5,
       move: walk(2), attack: ranged(3, { vfx: 'arcane', tag: 'arcane' }),
       abilities: ['arcaneBolt'],
@@ -113,8 +113,8 @@
       blurb: 'Shoots down ranks, files and diagonals. Needs a clear lane.',
     },
     imp: {
-      name: 'Imp', icon: '👿', pool: 'player', rarity: 'common', cost: 1, role: 'melee', tags: ['fire'],
-      hp: 3, atk: 2, spd: 7, flying: true,
+      name: 'Imp', icon: '👿', pool: 'player', rarity: 'common', cost: 2, role: 'melee', tags: ['fire'],
+      hp: 5, atk: 3, spd: 7, flying: true,
       move: walk(3), attack: melee({ vfx: 'claw' }),
       passives: { volatile: { d: 2 } },
       talents: ['fireborn', 'toughHide', 'pest'],
@@ -501,6 +501,21 @@
       move: walk(1), attack: melee(), abilities: ['castling'],
       passives: { commanderAura: {}, oathbound: {} }, threat: 20, value: 60,
       blurb: 'Checkmate him and the whole army falls.',
+    },
+
+    // ============================================================ MEGA BOSS
+    zugzwang: {
+      name: 'Zugzwang', icon: '♚' + T, pool: 'enemy', hp: 240, atk: 4, spd: 2, armor: 1, boss: true, big: true, tags: ['chess', 'arcane'], role: 'ranged',
+      move: { type: 'none' }, attack: ranged(4, { vfx: 'arcane', los: false }),
+      abilities: ['endgame', 'matingNet'],
+      passives: { invincible: { cap: 20 }, beatOfDeath: { d: 1 }, inevitable: { atk: 1 }, echoes: { every: 3, n: 2, max: 6 }, doubleMove: {}, unstoppable: {} },
+      threat: 30, value: 120,
+      blurb: 'The position in which every move you make is the wrong one.',
+    },
+    echo: {
+      name: 'Echo', icon: '♟' + T, pool: 'summon', hp: 8, atk: 3, spd: 4, tags: ['chess', 'arcane'],
+      move: walk(2), attack: melee({ vfx: 'arcane', tag: 'arcane' }), threat: 3,
+      blurb: 'A piece from a game that ended long ago, still playing.',
     },
   };
 

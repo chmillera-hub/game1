@@ -1,6 +1,8 @@
 /* Active abilities. Each has a cooldown (in the user's own turns), a target
    kind, targets(s,u,p) listing legal targets (unit uids or square indices)
-   and exec(s,u,target,p). `kind` tells the AI and the UI what it is for. */
+   and exec(s,u,target,p). `kind` tells the AI and the UI what it is for;
+   estDmg(u,p), if present, is the damage the AI should expect when it is
+   not simply p.dmg. */
 (function (AG) {
   'use strict';
   const B = AG.B;
@@ -372,21 +374,7 @@
       p: { dmg: 5, range: 7 },
       desc: (p) => 'Fire a beam along a rank or file (up to ' + p.range + '): ' + p.dmg + ' damage to every enemy in the line.',
       targets(s, u, p) { return lineFoes(s, u, p.range, 'orth'); },
-      exec(s, u, t, p) {
-        const o = B.U(s, t);
-        const dx = AG.sign(o.x - u.x), dy = AG.sign(o.y - u.y);
-        let x = u.x, y = u.y, ex = x, ey = y;
-        const victims = [];
-        for (let k = 1; k <= p.range; k++) {
-          x += dx; y += dy;
-          if (!AG.inBounds(s.board, x, y) || s.board.terr[y * s.board.w + x] === AG.TER.WALL) break;
-          ex = x; ey = y;
-          const id = s.occ[y * s.board.w + x];
-          if (id && B.U(s, id).side !== u.side) victims.push(B.U(s, id));
-        }
-        B.emit(s, 'beam', { from: [u.x, u.y], to: [ex, ey] });
-        for (const v of victims) B.hit(s, u, v, p.dmg, { kind: 'ability', tag: 'arcane' });
-      },
+      exec(s, u, t, p) { beam(s, u, B.U(s, t), p.range, p.dmg); },
     },
     castling: {
       name: 'Castling', icon: '♖', cd: 4, target: 'ally', kind: 'swap', vfx: 'arcane',
@@ -430,6 +418,26 @@
         B.heal(s, u, u, d);
       },
     },
+    // The mega boss: both grow with its ATK.
+    endgame: {
+      name: 'Endgame', icon: '═', cd: 2, target: 'enemy', kind: 'damage', hostile: true, vfx: 'beam',
+      p: { range: 10, plus: 0 },
+      desc: (p) => 'A beam along any rank, file or diagonal (up to ' + p.range + '): damage equal to its ATK' + (p.plus ? ' +' + p.plus : '') + ' to every enemy in the line.',
+      estDmg: (u, p) => u.atk + p.plus,
+      targets(s, u, p) { return lineFoes(s, u, p.range, 'all'); },
+      exec(s, u, t, p) { beam(s, u, B.U(s, t), p.range, u.atk + p.plus); },
+    },
+    matingNet: {
+      name: 'Mating Net', icon: '♛', cd: 3, target: 'cell', kind: 'damage', hostile: true, vfx: 'arcane',
+      p: { range: 8, plus: -1 },
+      desc: (p) => 'Lightning strikes a 3×3 area within ' + p.range + ': damage equal to its ATK' + (p.plus ? ' ' + (p.plus > 0 ? '+' : '−') + Math.abs(p.plus) : '') + ' to every enemy there.',
+      estDmg: (u, p) => Math.max(1, u.atk + p.plus),
+      targets(s, u, p) { return areaCells(s, u, p.range, false, 1); },
+      exec(s, u, i, p) {
+        B.emit(s, 'aoe', { cells: [B.xy(s, i)], r: 1, vfx: 'arcane' });
+        for (const o of unitsInArea(s, i, 1)) if (o.side !== u.side) B.hit(s, u, o, Math.max(1, u.atk + p.plus), { kind: 'ability', tag: 'arcane' });
+      },
+    },
     queenStorm: {
       name: 'Checkmate Storm', icon: '♛', cd: 3, target: 'cell', kind: 'damage', hostile: true, vfx: 'arcane',
       p: { dmg: 4, range: 5 },
@@ -441,6 +449,22 @@
       },
     },
   };
+
+  // Every enemy along the line from u through o, up to range, takes dmg.
+  function beam(s, u, o, range, dmg) {
+    const dx = AG.sign(o.x - u.x), dy = AG.sign(o.y - u.y);
+    let x = u.x, y = u.y, ex = x, ey = y;
+    const victims = [];
+    for (let k = 1; k <= range; k++) {
+      x += dx; y += dy;
+      if (!AG.inBounds(s.board, x, y) || s.board.terr[y * s.board.w + x] === AG.TER.WALL) break;
+      ex = x; ey = y;
+      const id = s.occ[y * s.board.w + x];
+      if (id && B.U(s, id).side !== u.side) victims.push(B.U(s, id));
+    }
+    B.emit(s, 'beam', { from: [u.x, u.y], to: [ex, ey] });
+    for (const v of victims) B.hit(s, u, v, dmg, { kind: 'ability', tag: 'arcane' });
+  }
 
   function hasBad(o) {
     return !!(o.st.burn || o.st.poison || o.st.chill || o.st.frozen || o.st.stunned || o.st.rooted || o.st.marked || o.st.cursed);

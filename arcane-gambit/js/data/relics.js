@@ -1,6 +1,6 @@
 /* Relics: run-wide trinkets. Battle hooks receive (s, side, ...). Fields
-   such as supply, slots, gold, winHeal, discount and maxResolve are read by
-   the run layer. */
+   such as supply, gold, discount and talentDiscount are read by the run
+   layer. */
 (function (AG) {
   'use strict';
   const B = AG.B;
@@ -17,8 +17,8 @@
       desc: '+2 supply in every battle.',
     },
     recruitHorn: {
-      name: 'Recruiter’s Horn', icon: '♫', rarity: 'uncommon', slots: 1,
-      desc: '+1 unit slot in every battle.',
+      name: 'Recruiter’s Horn', icon: '♫', rarity: 'uncommon', supply: 3,
+      desc: '+3 supply in every battle.',
     },
     ironRations: {
       name: 'Iron Rations', icon: '▣', rarity: 'common',
@@ -45,8 +45,13 @@
       },
     },
     healingSpring: {
-      name: 'Healing Spring', icon: '❀', rarity: 'common', winHeal: 5,
-      desc: 'Recover 5 Resolve after every victory.',
+      name: 'Healing Spring', icon: '❀', rarity: 'common',
+      desc: 'At the start of every round, your most wounded unit heals 3.',
+      roundStart(s, side) {
+        let best = null;
+        for (const u of mine(s, side)) if (u.hp < u.maxHp && (!best || u.maxHp - u.hp > best.maxHp - best.hp)) best = u;
+        if (best) B.heal(s, best, best, 3, true);
+      },
     },
     goldTooth: {
       name: 'Gold Tooth', icon: '◉', rarity: 'common', gold: 12,
@@ -145,9 +150,10 @@
       name: 'Vanguard Standard', icon: '⚐', rarity: 'common',
       desc: 'Units deployed on your front line start with 5 shield.',
       battleStart(s, side) {
-        if (side !== 0) return;
         let front = 999;
         for (let i = 0; i < s.board.n; i++) if (s.board.deploy[i]) front = Math.min(front, (i / s.board.w) | 0);
+        // The far side's front line (a Hall of Fame duel) is the mirror of ours.
+        if (side === 1) front = s.board.h - 1 - front;
         for (const u of mine(s, side)) if (u.y === front) B.giveShield(s, u, 5, true);
       },
     },
@@ -166,12 +172,13 @@
       desc: 'Shop prices are 25% lower.',
     },
     aegis: {
-      name: 'Commander’s Aegis', icon: '⛉', rarity: 'uncommon', maxResolve: 10,
-      desc: '+10 maximum Resolve.',
+      name: 'Commander’s Aegis', icon: '⛉', rarity: 'uncommon',
+      desc: 'Your units have +2 max HP.',
+      battleStart(s, side) { for (const u of mine(s, side)) { u.maxHp += 2; u.hp += 2; } },
     },
     crownOfCommand: {
-      name: 'Crown of Command', icon: '♕', rarity: 'boss', supply: 3, slots: 1,
-      desc: '+3 supply and +1 unit slot in every battle.',
+      name: 'Crown of Command', icon: '♕', rarity: 'boss', supply: 5,
+      desc: '+5 supply in every battle.',
     },
     stormHeart: {
       name: 'Storm Heart', icon: 'ϟ', rarity: 'boss',

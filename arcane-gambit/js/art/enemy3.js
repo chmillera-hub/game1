@@ -1,6 +1,6 @@
-/* Figurines for the third act: clockwork, elementals, the void, and the
-   Mad Grandmaster's ebony chess army. See js/ui/pieces.js for the pen (P)
-   and path helpers (D). */
+/* Figurines for the third act: clockwork, elementals, the void, the Mad
+   Grandmaster's ebony chess army, and Zugzwang with its Echoes. See
+   js/ui/pieces.js for the pen (P) and path helpers (D). */
 (function (AG) {
   'use strict';
   const A = AG.Art.pieces;
@@ -337,5 +337,52 @@
     P.solid(tilt(D.lathe([[50, 12.5], [44, 13.5], [39.5, 16.5], [38, 20.5, 1], [50, 20.5]])), { light: 0.58 });
     P.acc(tilt(D.poly([[47.2, 13.5], [49.4, 13.5], [48.6, 17.5], [51.6, 21.5], [49, 25.5], [52, 31.5], [50.6, 31.8],
       [47.2, 25.6], [49.6, 21.6], [46.6, 17.6]])));
+  };
+
+  // ------------------------------------------------------------ the mega boss
+  // Zugzwang: a king carved out of the board itself, chequered from foot to
+  // collar, with a single open eye under a broken ring of spikes.
+  A.zugzwang = function (P, D) {
+    P.base('wide');
+    // The broken halo behind the head: eight spikes, two of them snapped off.
+    const spikes = [];
+    for (let i = 0; i < 8; i++) {
+      if (i === 2 || i === 5) continue;
+      const a = (-90 + i * 45) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const len = i % 2 ? 19 : 24;
+      spikes.push([[50 + c * 9 - sn * 3.2, 18 + sn * 9 + c * 3.2], [50 + c * len, 18 + sn * len], [50 + c * 9 + sn * 3.2, 18 + sn * 9 - c * 3.2]]);
+    }
+    for (const sp of spikes) P.solid(D.poly(sp), { shade: false, light: 0.5 });
+    P.solid(D.lathe([[50, 66], [39.5, 66, 1], [37.5, 70], [31.5, 75], [28.5, 79, 1], [50, 79]]));
+    const body = D.curve([[42, 33, 1], [58, 33, 1], [59.5, 50], [62.5, 67, 1], [37.5, 67, 1], [40.5, 50]], true, 0.8);
+    P.solid(body, { line: false });
+    // The chequer, clipped to the body.
+    const id = P.uid();
+    P.raw('<clipPath id="' + id + '"><path d="' + body + '"/></clipPath>');
+    let sq = '';
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 4; c++) if ((r + c) % 2) sq += D.rect(36 + c * 7, 33 + r * 7, 7, 7);
+    }
+    P.path(sq, 'd', ' clip-path="url(#' + id + ')"');
+    P.heavy(body);
+    P.collar(50, 67.5, 14.5, 3);
+    P.collar(50, 34, 16.5, 3.6);
+    P.collar(50, 30.5, 12, 2.6);
+    // The head: a smooth dome with one eye, the pupil lit.
+    P.solid(D.lathe([[50, 29.5], [43.5, 29.5, 1], [39.5, 25], [38, 19], [40, 13], [44.5, 9.5], [50, 8.5]]), { light: 0.58 });
+    P.eye(D.curve([[42, 19, 1], [46, 15.5], [50, 15], [54, 15.5], [58, 19, 1], [54, 22.5], [50, 23], [46, 22.5]], true));
+    P.acc(D.circle(50, 19, 2.6));
+    P.line('M45,27C48,28 52,28 55,27');
+  };
+
+  // An Echo: a pawn from an old game, fraying into wisps below the collar.
+  A.echo = function (P, D) {
+    P.base('low');
+    P.solid(D.curve([[41, 52, 1], [59, 52, 1], [60, 60], [63.5, 67], [66, 74], [61, 71.5], [57.5, 78.5], [52.5, 73.5],
+      [48, 80], [44.5, 73], [39, 77.5], [37.5, 70], [33.5, 72.5], [37, 64], [40, 58]], true), { light: 0.58 });
+    P.collar(50, 52.5, 12, 2.8);
+    P.ball(50, 40.5, 10.5);
+    P.eye(D.ellipse(46, 40, 1.6, 2.4)).eye(D.ellipse(54, 40, 1.6, 2.4));
+    P.line('M44,60C45,64 46,67 47,70M55.5,60C55.5,64 56,67 57.5,70');
   };
 })(globalThis.AG = globalThis.AG || {});

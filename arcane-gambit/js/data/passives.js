@@ -4,7 +4,9 @@
    armorBonus(s,u,p), auraOut / auraIn (from a nearby holder, pure),
    negate(s,u,p,src,o) -> true cancels a hit, preventDeath(s,u,p,src,o),
    afterHit(s,u,p,tgt,dmg,o), afterHurt(s,u,p,src,dmg,o),
-   onKill(s,u,p,victim,o), onDeath(s,u,p,killer,o), onAnyDeath(s,u,p,victim,killer).
+   onKill(s,u,p,victim,o), onDeath(s,u,p,killer,o), onAnyDeath(s,u,p,victim,killer),
+   capDamage(s,u,p,dmg,o) -> damage actually taken, onEnemyAct(s,u,p,actor)
+   (after an enemy attacks or uses an ability).
    Hooks marked pure are also called by the AI with o.est = true. */
 (function (AG) {
   'use strict';
@@ -525,6 +527,48 @@
       name: 'Royal Guard',
       desc: () => 'Adjacent allies take 1 less damage from hits.',
       auraIn(s, w, p, t) { return near(w, t, 1) ? -1 : 0; },
+    },
+
+    // ------------------------------------------------------- the mega boss
+    invincible: {
+      name: 'Invincible',
+      desc: (p) => 'Takes at most ' + p.cap + ' damage each round, however hard it is hit.',
+      capDamage(s, u, p, dmg) {
+        if (u.ctr.capRound !== s.round) { u.ctr.capRound = s.round; u.ctr.capTaken = 0; }
+        const d = Math.max(0, Math.min(dmg, p.cap - u.ctr.capTaken));
+        u.ctr.capTaken += d;
+        return d;
+      },
+    },
+    beatOfDeath: {
+      name: 'Beat of Death',
+      desc: (p) => 'Whenever an enemy attacks or uses an ability, that enemy takes ' + p.d + ' damage.',
+      onEnemyAct(s, u, p, actor) {
+        if (actor.alive && !actor.object) B.hit(s, u, actor, p.d, { kind: 'true', label: 'Beat of Death' });
+      },
+    },
+    inevitable: {
+      name: 'Inevitable',
+      desc: (p) => 'Gains +' + p.atk + ' ATK at the start of every round after the first.',
+      roundStart(s, u, p) { if (s.round > 1) buff(s, u, p.atk, 'Inevitable'); },
+    },
+    echoes: {
+      name: 'Echoes',
+      desc: (p) => 'Every ' + p.every + ' rounds, ' + p.n + ' Echoes of old games appear beside it (up to ' + p.max + ').',
+      roundStart(s, u, p) {
+        if (s.round % p.every !== 0) return;
+        const room = Math.min(p.n, p.max - countOwned(s, u, 'echo'));
+        const cells = emptyAround(s, u.x, u.y, false);
+        for (let k = 0; k < room && k < cells.length; k++) {
+          const e = B.summon(s, 'echo', u.side, cells[k], { owner: u.uid });
+          if (e) B.emit(s, 'note', { uid: e.uid, text: 'echoes' });
+        }
+      },
+    },
+    doubleMove: {
+      name: 'Double Move',
+      desc: () => 'Takes two turns every round: one before anything else moves, and one in its place in the queue.',
+      roundStart(s, u) { s.extra.push(u.uid); },
     },
   };
 

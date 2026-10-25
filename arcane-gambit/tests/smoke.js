@@ -1,5 +1,6 @@
-/* Browser smoke test: plays through the title, a new run, the map, the war
-   room, a battle and the reward screen, failing on any page error.
+/* Browser smoke test: plays through the title, the draft, the opening, the
+   tower, the war room (auto-deploy), a battle and its result, failing on any
+   page error.
    node tests/smoke.js [outDir] [--mobile] */
 'use strict';
 const path = require('path');
@@ -32,80 +33,65 @@ const { chromium } = require('playwright');
   await shot('01-title');
 
   await page.getByRole('button', { name: 'New run' }).click();
-  await page.getByRole('button', { name: /Standard/ }).click();
   await page.waitForTimeout(300);
-  await shot('02-boon');
+  await shot('02-draft');
+  // Draft five units: take the first offer each time.
+  for (let i = 0; i < 5; i++) {
+    await page.locator('.offers .offer').first().click();
+    await page.waitForTimeout(200);
+  }
+  await shotFull('03-boon');
   await page.locator('.offer').filter({ hasText: 'Quartermaster' }).click();
   await page.waitForTimeout(300);
-  await shot('03-act');
-  await page.getByRole('button', { name: 'To the map' }).click();
+  await shot('04-act');
+  await page.getByRole('button', { name: 'Enter the tower' }).click();
   await page.waitForTimeout(500);
-  await shotFull('04-map');
+  await shotFull('05-tower');
 
-  // Enter the first reachable battle.
-  await page.locator('.mnode.reach').first().click();
+  // Take the medium fight on the first floor.
+  await page.locator('.fight.medium .btn.primary').click();
   await page.waitForTimeout(600);
-  await shotFull('05-setup-empty');
+  await shotFull('06-setup-empty');
+  await page.getByRole('button', { name: 'Auto-deploy' }).click();
+  await page.waitForTimeout(300);
+  const placed = await page.evaluate(() => AG.App.run.battle.formation.length);
+  if (!placed) errors.push('auto-deploy placed nothing');
+  await shotFull('07-setup-placed');
 
-  // Place three units: tap a card then a deploy square.
-  const cards = ['Knight', 'Scout', 'Cleric'];
-  for (const name of cards) {
-    await page.locator('.rcard').filter({ hasText: name }).first().click();
-    const cell = page.locator('.cell.deploy').filter({ hasNot: page.locator('xxx') });
-    const n = await cell.count();
-    // Pick a free deploy square near the middle.
-    const free = await page.evaluate(() => {
-      const taken = new Set(Array.from(document.querySelectorAll('.token.p')).map((t) => t.style.transform));
-      const cells = Array.from(document.querySelectorAll('.cell.deploy'));
-      return cells.map((c, i) => ({ i, x: +c.dataset.x, y: +c.dataset.y })).filter((c) => true);
-    });
-    const w = await page.evaluate(() => document.querySelectorAll('.files span').length);
-    const order = free.sort((a, b) => a.y - b.y || Math.abs(a.x - (w - 1) / 2) - Math.abs(b.x - (w - 1) / 2));
-    let placed = false;
-    for (const c of order) {
-      // Ask the game which squares are taken (screen hit-tests miss squares that are scrolled out of view).
-      const occupied = await page.evaluate(([x, y]) => {
-        const run = AG.App.run;
-        if (run.battle.formation.some((e) => e.x === x && e.y === y)) return true;
-        const enc = AG.Encounters[run.battle.enc];
-        return AG.parseBoard(enc.map, enc.legend).spawns.some((sp) => sp.x === x && sp.y === y);
-      }, [c.x, c.y]);
-      if (occupied) continue;
-      await page.locator('.cell[data-x="' + c.x + '"][data-y="' + c.y + '"]').click();
-      placed = true;
-      break;
-    }
-    if (!placed) errors.push('could not place ' + name + ' (deploy squares ' + n + ')');
-    await page.waitForTimeout(150);
-  }
-  await shotFull('06-setup-placed');
-
-  // Give the Knight a talent through the inspector.
+  // Open a placed piece's loadout.
   await page.locator('.token.p').first().click();
   await page.waitForTimeout(200);
   if (mobile) {
     await page.getByRole('button', { name: /Upgrades/ }).click();
     await page.waitForTimeout(250);
-    await shot('07-loadout');
+    await shot('08-loadout');
     await page.locator('.modal .close').click();
   } else {
-    await shot('07-loadout');
+    await shot('08-loadout');
   }
 
   await page.getByRole('button', { name: /Begin battle/ }).click();
   await page.waitForTimeout(2500);
-  await shot('08-battle');
+  await shot('09-battle');
   await page.getByRole('button', { name: '4×' }).click();
   await page.waitForTimeout(3500);
-  await shot('09-battle-later');
+  await shot('10-battle-later');
   await page.getByRole('button', { name: /Skip to result/ }).click();
   await page.waitForSelector('.end-card', { timeout: 60000 });
   await page.waitForTimeout(400);
-  await shot('10-end');
+  await shot('11-end');
   const won = await page.locator('.end-card .big.win').count();
   await page.locator('.end-card .btn.primary').click();
   await page.waitForTimeout(500);
-  await shotFull(won ? '11-reward' : '11-retry');
+  await shotFull(won ? '12-reward' : '12-retry');
+  if (won) {
+    await page.locator('.offers .offer').first().click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForTimeout(400);
+    const floor = await page.evaluate(() => AG.App.run.floor);
+    if (floor !== 1) errors.push('expected floor 2 after the first win, got ' + (floor + 1));
+    await shotFull('13-tower-2');
+  }
 
   await browser.close();
   if (errors.length) {

@@ -144,7 +144,8 @@
 
   // ----------------------------------------------------------- battle setup
   /* enc: encounter definition; army: [{def, x, y, talents, rune, rank}] for the
-     player; opts: {relics:[ids], enemyRelics:[ids], record:true} */
+     player; opts: {relics:[ids], enemyRelics:[ids], record:true, ramp,
+     hpMod, atkMod (difficulty), enemyArmy: a saved army for the far side} */
   B.create = function (enc, army, opts) {
     opts = opts || {};
     const parsed = AG.parseBoard(enc.map, enc.legend);
@@ -167,21 +168,28 @@
       const u = B.makeUnit(a.def, 0, a.x, a.y, { talents: a.talents, rune: a.rune, rank: a.rank });
       B.addUnit(s, u);
     }
+    // A saved army (a Hall of Fame duel) takes the far side, mirrored.
+    for (const a of opts.enemyArmy || []) {
+      const x = a.x, y = b.h - 1 - a.y, i = y * b.w + x;
+      if (!AG.inBounds(b, x, y) || s.occ[i] || !AG.standable(b, i, !!(AG.Units[a.def] || {}).flying)) continue;
+      B.addUnit(s, B.makeUnit(a.def, 1, x, y, { talents: a.talents, rune: a.rune, rank: a.rank }));
+    }
     const sc = AG.ACT_SCALE[enc.act] || { hp: 0, atk: 0 };
-    const hpBoost = sc.hp + (opts.ramp || 0) + (AG.TIER_SCALE[enc.tier] || 0) + (enc.boost || 0);
+    const hpBoost = sc.hp + (opts.ramp || 0) + (AG.TIER_SCALE[enc.tier] || 0) + (enc.boost || 0) + (opts.hpMod || 0);
+    const atkBoost = sc.atk + (opts.atkMod || 0);
     for (const sp of parsed.spawns) {
       const u = B.makeUnit(sp.def, 1, sp.x, sp.y, { mods: sp.mods, talents: sp.talents });
       if (!u.boss && !u.object) {
-        u.maxHp += Math.round(u.maxHp * hpBoost);
+        u.maxHp = Math.max(1, u.maxHp + Math.round(u.maxHp * hpBoost));
         u.hp = u.maxHp;
-        if (u.at) u.atk += sc.atk;
+        if (u.at) u.atk = Math.max(1, u.atk + atkBoost);
         u.value = B.computeValue(u);
       }
       B.addUnit(s, u);
       if (sp.objective) { u.objective = true; s.objective.uid = u.uid; }
     }
     s.hpBoost = hpBoost;
-    s.atkBoost = sc.atk;
+    s.atkBoost = atkBoost;
     // Speed ties go to the player, then to whichever piece stands further forward.
     for (const u of s.units) {
       u.order = u.side === 0 ? u.y * 100 + u.x : (b.h - u.y) * 100 + u.x;
@@ -414,6 +422,16 @@
           emit(s, 'negate', { uid: tgt.uid, src: src ? src.uid : 0, label: P.name });
           return 0;
         }
+      }
+    }
+    // Damage caps (the mega boss's Invincible).
+    for (const k in tgt.pas) {
+      const P = AG.Passives[k];
+      if (!P || !P.capDamage) continue;
+      dmg = P.capDamage(s, tgt, tgt.pas[k], dmg, o);
+      if (dmg <= 0) {
+        emit(s, 'negate', { uid: tgt.uid, src: src ? src.uid : 0, label: P.name });
+        return 0;
       }
     }
     if (o.kind !== 'storm') s.lastHit = s.round;
@@ -1008,6 +1026,15 @@
     if (at.capture && !t.alive && u.alive && !s.occ[ti] && AG.standable(s.board, ti, u.flying)) {
       B.applyMove(s, u, ti, 'capture');
     }
+    B.afterAct(s, u);
+  };
+
+  // Some foes punish every action taken against them (the mega boss's Beat of Death).
+  B.afterAct = function (s, u) {
+    for (const w of s.units) {
+      if (s.over || !u.alive) return;
+      if (w.alive && w.side !== u.side) passiveHook(s, w, 'onEnemyAct', u);
+    }
   };
 
   // -------------------------------------------------------------- abilities
@@ -1026,6 +1053,7 @@
     emit(s, 'ability', { uid: u.uid, id: abId, name: A.name, from: [u.x, u.y], to, vfx: A.vfx || null });
     if (A.hostile) breakStealth(s, u);
     A.exec(s, u, target, ab.p);
+    B.afterAct(s, u);
   };
 
   // ------------------------------------------------------------- turn flow

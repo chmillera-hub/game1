@@ -46,7 +46,8 @@ function randomArmy(enc) {
   const ids = AG.playerUnitIds();
   const out = [];
   let budget = enc.supply + 6;
-  while (out.length < enc.slots + 1) {
+  const cells = AG.parseBoard(enc.map, enc.legend).board.deploy.reduce((n, v) => n + (v ? 1 : 0), 0);
+  while (out.length < cells) {
     const ok = ids.filter((d) => AG.Units[d].cost <= budget);
     if (!ok.length) break;
     const d = rng.pick(ok);

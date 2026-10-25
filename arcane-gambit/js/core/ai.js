@@ -154,17 +154,23 @@
     for (const ab of A.abil) {
       if ((A.cd[ab.id] || 0) > 1) continue;
       const Ad = AG.Abilities[ab.id];
-      if (Ad.kind !== 'damage' || !ab.p.dmg) continue;
+      const base = abilityDamage(A, ab, Ad);
+      if (Ad.kind !== 'damage' || !base) continue;
       const r = (ab.p.range || ab.p.r || 1) + (Ad.target === 'cell' ? 1 : 0);
       let ok = false;
       for (const i of reach.list) {
         if (AG.cheb(i % s.board.w, (i / s.board.w) | 0, T.x, T.y) <= r) { ok = true; break; }
       }
       if (!ok) continue;
-      const d = B.calcDamage(s, A, T, ab.p.dmg, { kind: 'ability', est: true });
+      const d = B.calcDamage(s, A, T, base, { kind: 'ability', est: true });
       if (d > best) best = d;
     }
     return best;
+  }
+
+  // A damage ability's base damage; some grow with the caster's ATK.
+  function abilityDamage(u, ab, Ad) {
+    return Ad.estDmg ? Ad.estDmg(u, ab.p) : ab.p.dmg;
   }
 
   /* How much worth `side` could strip from the other side on its next turns.
@@ -230,10 +236,11 @@
       for (const ab of E.abil) {
         if ((E.cd[ab.id] || 0) > 1) continue;
         const Ad = AG.Abilities[ab.id];
-        if (Ad.kind !== 'damage' || !ab.p.dmg) continue;
+        const base = abilityDamage(E, ab, Ad);
+        if (Ad.kind !== 'damage' || !base) continue;
         const r = (ab.p.range || ab.p.r || 1) + (Ad.target === 'cell' ? 1 : 0);
         for (const i of reach.list) markRadius(s, i, r, mask);
-        dmg = Math.max(dmg, B.calcDamage(s, E, probe, ab.p.dmg, { kind: 'ability', est: true }));
+        dmg = Math.max(dmg, B.calcDamage(s, E, probe, base, { kind: 'ability', est: true }));
       }
       if (dmg > 0) ctx.cover.push({ uid: id, mask, dmg });
     }
@@ -313,7 +320,7 @@
     if (u.at) coverMask(s, u, fromAnywhere ? reach : { list: [B.cellOf(s, u)] }, mask, -1);
     for (const ab of u.abil) {
       const Ad = AG.Abilities[ab.id];
-      if (Ad.kind !== 'damage' || !ab.p.dmg || !fromAnywhere) continue;
+      if (Ad.kind !== 'damage' || !abilityDamage(u, ab, Ad) || !fromAnywhere) continue;
       const r = (ab.p.range || ab.p.r || 1) + (Ad.target === 'cell' ? 1 : 0);
       for (const i of reach.list) markRadius(s, i, r, mask);
     }

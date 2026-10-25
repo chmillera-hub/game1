@@ -1,14 +1,33 @@
-/* The roguelike run: a branching map per act, battles with retries,
-   rewards, shops, camps and events. Pure data + functions; the UI reads and
-   mutates a run through these helpers and saves after each change. */
+/* The roguelike run. Draft a starting army, take an opening, then climb a
+   tower per act: battle floors where you pick an easy, medium or hard (or
+   elite) fight, an event and a shop halfway up, and a boss at the top.
+   Losing costs nothing: rearrange and retry, or pick another fight. After
+   the last boss comes an optional mega boss, and the army that won joins
+   the Hall of Fame by duelling the champions of earlier runs.
+   Pure data + functions; the UI reads and changes a run through these
+   helpers and saves after each change. */
 (function (AG) {
   'use strict';
   const Run = (AG.Run = {});
-  const SAVE_KEY = 'arcane-gambit/run/v1';
+  const SAVE_KEY = 'arcane-gambit/run/v2';
   const SANDBOX_KEY = 'arcane-gambit/sandbox/v1';
-  const STARTERS = ['squire', 'knight', 'scout', 'cleric', 'apprentice'];
-  const ROWS = 7, COLS = 5;
-  Run.STARTERS = STARTERS;
+  const HALL_KEY = 'arcane-gambit/hall/v1';
+  Run.HALL_SIZE = 10;
+  // Every army has pawns: the Squire comes with every run.
+  Run.BASE_UNITS = ['squire'];
+  // The starting draft: five picks, each one of three.
+  Run.DRAFT = ['common', 'common', 'uncommon', 'uncommon', 'rare'];
+  // One act's tower, bottom floor first.
+  Run.FLOORS = ['battle', 'battle', 'battle', 'event', 'shop', 'battle', 'battle', 'boss'];
+  // Battle floors whose third choice is an elite fight rather than a hard one.
+  Run.ELITE_FLOORS = [2, 6];
+  // What each choice of fight changes and pays.
+  Run.DIFF = {
+    easy: { name: 'Easy', hp: -0.2, atk: 0, gold: [10, 14], offers: 2, luck: 0 },
+    medium: { name: 'Medium', hp: 0, atk: 0, gold: [16, 22], offers: 3, luck: 0 },
+    hard: { name: 'Hard', hp: 0.3, atk: 1, gold: [28, 36], offers: 3, luck: 1 },
+    elite: { name: 'Elite', hp: 0, atk: 0, gold: [30, 40], offers: 3, luck: 1, relic: true },
+  };
   Run.ACTS = {
     1: { name: 'The Thornwood Board', blurb: 'Goblins, wolves and things that ooze.' },
     2: { name: 'The Gravemarch Board', blurb: 'The dead do not stay down here.' },
@@ -28,17 +47,18 @@
     opts = opts || {};
     const seed = (opts.seed || (Date.now() ^ Math.floor(Math.random() * 1e9))) >>> 0;
     const run = {
-      v: 1, seed, rng: seed, mode: opts.mode || 'standard',
-      act: 1, resolve: 40, maxResolve: 40, gold: 50,
-      units: STARTERS.slice(), ranks: {}, runes: ['vigor'], relics: [],
-      map: null, pos: null, floor: 0,
+      v: 2, seed, rng: seed,
+      act: 1, gold: 50, supplyBonus: 0, nextSupply: 0,
+      units: Run.BASE_UNITS.slice(), ranks: {}, runes: ['vigor'], relics: [],
+      tower: null, floor: 0,
       usedEnc: [], usedEvents: [],
-      screen: 'boon', battle: null, pending: null, event: null, shop: null,
-      formations: {}, lastArmy: null,
-      stats: { wins: 0, losses: 0, battles: 0, resolveLost: 0, startedAt: Date.now(), mvp: {} },
+      screen: 'draft', draft: { step: 0, picks: [], options: [] },
+      boons: ['recruit', 'ledger', 'armory', 'veteran'],
+      battle: null, pending: null, event: null, shop: null,
+      formations: {}, lastArmy: null, finalArmy: null, megaWon: false, climb: null,
+      stats: { wins: 0, losses: 0, battles: 0, startedAt: Date.now(), mvp: {} },
     };
-    run.map = Run.genMap(run, 1);
-    run.boons = ['recruit', 'ledger', 'armory', 'veteran'];
+    run.draft.options = Run.draftOptions(run);
     return run;
   };
 
@@ -47,14 +67,16 @@
     const runes = [];
     for (const k of Object.keys(AG.Runes)) runes.push(k, k);
     return {
-      v: 1, sandbox: true, seed: 1, rng: 1, mode: 'sandbox', act: 1, resolve: 1, maxResolve: 1, gold: 0,
+      v: 2, sandbox: true, seed: 1, rng: 1, act: 1, gold: 0,
       units: all, ranks: {}, runes, relics: [], formations: {}, lastArmy: null,
-      supplyBonus: 0, slotBonus: 0, screen: 'sandbox', stats: { wins: 0, losses: 0, battles: 0, mvp: {} },
+      supplyBonus: 0, screen: 'sandbox', stats: { wins: 0, losses: 0, battles: 0, mvp: {} },
     };
   };
 
   // ---------------------------------------------------------- persistence
+  // A finished run (placed in the Hall of Fame) is not kept.
   Run.save = function (run) {
+    if (run.done) { Run.clear(); return; }
     try {
       localStorage.setItem(run.sandbox ? SANDBOX_KEY : SAVE_KEY, JSON.stringify(run));
     } catch (e) { /* storage unavailable: the run lives in memory only */ }
@@ -64,161 +86,181 @@
       const raw = localStorage.getItem(sandbox ? SANDBOX_KEY : SAVE_KEY);
       if (!raw) return null;
       const run = JSON.parse(raw);
-      return run && run.v === 1 ? run : null;
+      return run && run.v === 2 && !run.done ? run : null;
     } catch (e) { return null; }
   };
   Run.clear = function () {
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
   };
 
-  // -------------------------------------------------------------- the map
-  Run.genMap = function (run, act) {
-    return withRng(run, (rng) => {
-      const nodes = {};
-      const edges = {};
-      const key = (r, c) => r + '-' + c;
-      const startCols = rng.shuffle([0, 1, 2, 3, 4]).slice(0, 3).concat([rng.int(0, 4), rng.int(0, 4)]);
-      for (const c0 of startCols) {
-        let c = c0;
-        for (let r = 0; r < ROWS; r++) {
-          const id = key(r, c);
-          if (!nodes[id]) nodes[id] = { id, r, c, next: [], type: null };
-          if (r === ROWS - 1) break;
-          let nc = c;
-          for (const o of rng.shuffle([c - 1, c, c + 1].filter((x) => x >= 0 && x < COLS))) {
-            if (o !== c && edges[key(r, o) + '>' + key(r + 1, c)]) continue; // no crossing paths
-            nc = o;
-            break;
-          }
-          const nid = key(r + 1, nc);
-          edges[id + '>' + nid] = true;
-          if (nodes[id].next.indexOf(nid) < 0) nodes[id].next.push(nid);
-          c = nc;
-        }
-      }
-      nodes.boss = { id: 'boss', r: ROWS, c: 2, next: [], type: 'boss' };
-      const list = Object.keys(nodes).map((k) => nodes[k]).filter((n) => n.id !== 'boss');
-      for (const n of list) if (n.r === ROWS - 1) n.next = ['boss'];
-      const parents = {};
-      for (const n of list) for (const m of n.next) (parents[m] = parents[m] || []).push(n.id);
-      list.sort((a, b) => a.r - b.r || a.c - b.c);
-      for (const n of list) {
-        if (n.r === 0) { n.type = 'battle'; continue; }
-        if (n.r === ROWS - 1) { n.type = 'rest'; continue; }
-        if (n.r === 3) { n.type = 'treasure'; continue; }
-        const par = (parents[n.id] || []).map((id) => nodes[id].type);
-        const opts = [
-          { t: 'battle', w: 44 },
-          { t: 'event', w: 24 },
-          { t: 'elite', w: n.r >= 2 ? 15 : 0 },
-          { t: 'shop', w: n.r >= 1 ? 10 : 0 },
-          { t: 'rest', w: n.r >= 2 && n.r <= 4 ? 7 : 0 },
-        ].filter((o) => !(o.t !== 'battle' && o.t !== 'event' && par.indexOf(o.t) >= 0));
-        n.type = rng.weighted(opts, (o) => o.w).t;
-      }
-      // Make sure each act has at least one shop and one elite.
-      const mids = list.filter((n) => n.r >= 2 && n.r <= 5 && n.r !== 3);
-      if (!list.some((n) => n.type === 'shop') && mids.length) {
-        const c = mids.filter((n) => n.type === 'battle' || n.type === 'event');
-        (c.length ? rng.pick(c) : rng.pick(mids)).type = 'shop';
-      }
-      if (!list.some((n) => n.type === 'elite') && mids.length) {
-        const c = mids.filter((n) => n.type === 'battle');
-        (c.length ? rng.pick(c) : rng.pick(mids)).type = 'elite';
-      }
-      return { act, nodes, rows: ROWS, cols: COLS };
+  // ---------------------------------------------------------------- draft
+  // Unit types of a rarity the run does not have yet.
+  Run.draftPool = function (run, rarity) {
+    return AG.playerUnitIds().filter((k) => AG.Units[k].rarity === rarity && run.units.indexOf(k) < 0);
+  };
+  Run.draftOptions = function (run) {
+    const rarity = Run.DRAFT[run.draft.step];
+    return withRng(run, (rng) => rng.shuffle(Run.draftPool(run, rarity)).slice(0, 3));
+  };
+  Run.draftPick = function (run, def) {
+    const d = run.draft;
+    if (!d || d.options.indexOf(def) < 0) return;
+    Run.addUnit(run, def);
+    d.picks.push(def);
+    d.step++;
+    if (d.step >= Run.DRAFT.length) {
+      run.draft = null;
+      run.screen = 'boon';
+      return;
+    }
+    d.options = Run.draftOptions(run);
+  };
+
+  // ---------------------------------------------------------------- boons
+  Run.BOONS = {
+    recruit: { name: 'Recruit', desc: 'Add a random common unit to your army.' },
+    ledger: { name: 'Quartermaster', desc: 'Start with the Quartermaster’s Ledger: +2 supply in every battle.' },
+    armory: { name: 'Armory', desc: 'Start with two random runes, one of them uncommon.' },
+    veteran: { name: 'Veteran', desc: 'Train one of your unit types to Veteran (+HP, +1 ATK).', pick: 'trainable' },
+  };
+  Run.takeBoon = function (run, id, picked) {
+    withRng(run, (rng) => {
+      if (id === 'recruit') { const pool = Run.draftPool(run, 'common'); if (pool.length) Run.addUnit(run, rng.pick(pool)); }
+      else if (id === 'ledger') Run.addRelic(run, 'ledger');
+      else if (id === 'armory') { Run.addRune(run, Run.randomRune(run, rng, 'common')); Run.addRune(run, Run.randomRune(run, rng, 'uncommon')); }
+      else if (id === 'veteran' && picked) Run.train(run, picked);
     });
+    run.boons = null;
+    Run.startAct(run, 1);
+    run.screen = 'actIntro';
   };
 
-  Run.reachable = function (run) {
-    const nodes = run.map.nodes;
-    if (!run.pos) return Object.keys(nodes).filter((k) => nodes[k].r === 0);
-    const cur = nodes[run.pos];
-    return cur ? cur.next.slice() : [];
+  // ---------------------------------------------------------------- tower
+  Run.startAct = function (run, act) {
+    run.act = act;
+    run.floor = 0;
+    run.tower = Run.FLOORS.map((type) => ({ type, options: null, choice: -1, done: false }));
+    Run.prepareFloor(run);
   };
-
-  Run.pickEncounter = function (run, tier, rowHint) {
+  Run.currentFloor = function (run) { return run.tower ? run.tower[run.floor] : null; };
+  Run.prepareFloor = function (run) {
+    const f = Run.currentFloor(run);
+    if (f && f.type === 'battle' && !f.options) f.options = Run.fightOptions(run);
+  };
+  // How many battle floors of this act lie below the current one.
+  Run.battlesBelow = function (run) {
+    let n = 0;
+    for (let i = 0; i < run.floor; i++) if (run.tower[i].type === 'battle') n++;
+    return n;
+  };
+  Run.fightOptions = function (run) {
     return withRng(run, (rng) => {
       const act = run.act;
-      let want = tier === 'battle' ? (rowHint <= 1 ? 'early' : 'normal') : tier;
-      let pool = AG.encounterList((e) => e.act === act && e.tier === want && run.usedEnc.indexOf(e.id) < 0);
-      if (!pool.length && want === 'early') pool = AG.encounterList((e) => e.act === act && e.tier === 'normal' && run.usedEnc.indexOf(e.id) < 0);
-      if (!pool.length) pool = AG.encounterList((e) => e.act === act && e.tier === want);
-      const e = rng.pick(pool);
-      run.usedEnc.push(e.id);
-      return e.id;
+      const taken = {};
+      const pick = (tiers) => {
+        for (const fresh of [true, false]) {
+          for (const tier of tiers) {
+            const pool = AG.encounterList((e) => e.act === act && e.tier === tier && !taken[e.id] && (!fresh || run.usedEnc.indexOf(e.id) < 0));
+            if (pool.length) { const id = rng.pick(pool).id; taken[id] = true; return id; }
+          }
+        }
+        return null;
+      };
+      const third = Run.ELITE_FLOORS.indexOf(run.floor) >= 0 ? 'elite' : 'hard';
+      return [
+        { diff: 'easy', enc: pick(['early', 'normal']) },
+        { diff: 'medium', enc: pick(['normal', 'early']) },
+        { diff: third, enc: third === 'elite' ? pick(['elite']) : pick(['normal', 'early']) },
+      ];
     });
   };
-
-  Run.enter = function (run, id) {
-    const node = run.map.nodes[id];
-    run.pos = id;
-    run.floor++;
-    node.visited = true;
+  // Step onto the current floor: pick a fight, or walk into the event,
+  // the shop or the boss's hall.
+  Run.chooseFight = function (run, i) {
+    const f = Run.currentFloor(run);
+    const o = f && f.options && f.options[i];
+    if (!o) return;
+    f.choice = i;
+    if (run.usedEnc.indexOf(o.enc) < 0) run.usedEnc.push(o.enc);
+    Run.startBattle(run, o.enc, o.diff);
+  };
+  Run.enterFloor = function (run) {
+    const f = Run.currentFloor(run);
     run.pending = null;
-    run.event = null;
-    run.shop = null;
-    switch (node.type) {
-      case 'battle':
-      case 'elite':
-      case 'boss': {
-        if (!node.enc) node.enc = node.type === 'boss' ? Run.bossFor(run) : Run.pickEncounter(run, node.type, node.r);
-        Run.startBattle(run, node.enc, node.type, null);
-        break;
-      }
-      case 'event':
-        run.event = { id: Run.pickEvent(run), result: null };
-        run.screen = 'event';
-        break;
-      case 'shop':
-        run.shop = Run.makeShop(run);
-        run.screen = 'shop';
-        break;
-      case 'rest':
-        run.rested = false;
-        run.screen = 'rest';
-        break;
-      case 'treasure':
-        run.pending = Run.treasure(run);
-        run.screen = 'reward';
-        break;
-      default:
-        run.screen = 'map';
+    if (f.type === 'event') {
+      if (!run.event) run.event = { id: Run.pickEvent(run), result: null };
+      run.screen = 'event';
+    } else if (f.type === 'shop') {
+      if (!run.shop) run.shop = Run.makeShop(run);
+      run.screen = 'shop';
+    } else if (f.type === 'boss') {
+      Run.startBattle(run, Run.bossFor(run), 'boss');
     }
   };
-
+  // Back out of a fight that has not been won, to choose another.
+  Run.backToTower = function (run) {
+    const f = Run.currentFloor(run);
+    if (f) f.choice = -1;
+    run.battle = null;
+    run.screen = 'tower';
+  };
+  // Walk away from an event's fight (its prize is lost) or from the mega boss.
+  Run.leaveFight = function (run) {
+    const tier = run.battle && run.battle.tier;
+    run.battle = null;
+    if (tier === 'mega') { run.screen = 'victory'; return; }
+    Run.advance(run);
+  };
+  Run.advance = function (run) {
+    const f = Run.currentFloor(run);
+    if (f) f.done = true;
+    run.event = null;
+    run.shop = null;
+    run.battle = null;
+    run.floor++;
+    Run.prepareFloor(run);
+    run.screen = 'tower';
+  };
   Run.bossFor = function (run) {
-    const b = AG.encounterList((e) => e.act === run.act && e.tier === 'boss');
-    return b[0].id;
+    return AG.encounterList((e) => e.act === run.act && e.tier === 'boss')[0].id;
   };
 
-  Run.startBattle = function (run, encId, tier, bonus) {
-    const node = run.pos && run.map ? run.map.nodes[run.pos] : null;
-    // Later floors of an act are a little tougher.
-    const ramp = tier === 'boss' ? 0 : node ? Math.min(6, node.r) * 0.03 : 0;
-    run.battle = { enc: encId, tier, attempts: 0, bonus: bonus || null, ramp };
+  Run.startBattle = function (run, encId, diff, bonus) {
+    const D = Run.DIFF[diff] || {};
+    // Each battle floor up the tower is a little tougher.
+    const ramp = run.tower && D.name ? Run.battlesBelow(run) * 0.04 : 0;
+    run.battle = {
+      enc: encId, tier: diff, attempts: 0, bonus: bonus || null, ramp,
+      hpMod: D.hp || 0, atkMod: D.atk || 0, supplyMod: run.nextSupply || 0,
+      formation: run.formations && run.formations[encId] ? AG.deepCopy(run.formations[encId]) : [],
+    };
+    run.nextSupply = 0;
     run.screen = 'setup';
   };
   Run.battleOpts = function (run) {
-    return { relics: run.relics || [], ramp: run.battle ? run.battle.ramp || 0 : 0 };
+    const b = run.battle || {};
+    return { relics: run.relics || [], ramp: b.ramp || 0, hpMod: b.hpMod || 0, atkMod: b.atkMod || 0 };
   };
 
   // --------------------------------------------------------- the army
+  // Only supply limits the army, and the squares there are to stand on.
   Run.limits = function (run, enc) {
-    let supply = enc.supply, slots = enc.slots;
+    let supply = enc.supply + (run.supplyBonus || 0);
     for (const id of run.relics || []) {
       const R = AG.Relics[id];
-      if (R.supply) supply += R.supply;
-      if (R.slots) slots += R.slots;
+      if (R && R.supply) supply += R.supply;
     }
-    if (run.sandbox) { supply += run.supplyBonus || 0; slots += run.slotBonus || 0; }
-    return { supply, slots };
+    if (run.battle && run.battle.enc === enc.id) supply += run.battle.supplyMod || 0;
+    const { board } = AG.parseBoard(enc.map, enc.legend);
+    let cells = 0;
+    for (let i = 0; i < board.n; i++) if (board.deploy[i]) cells++;
+    return { supply: Math.max(1, supply), cells };
   };
   Run.talentCost = function (run, tid) {
     const T = AG.Talents[tid];
     let c = T.cost;
-    if ((run.relics || []).indexOf('tacticsTome') >= 0) c = Math.max(1, c - 1);
-    return c;
+    for (const id of run.relics || []) if (AG.Relics[id] && AG.Relics[id].talentDiscount) c -= AG.Relics[id].talentDiscount;
+    return Math.max(1, c);
   };
   Run.entryCost = function (run, e) {
     let c = AG.Units[e.def].cost;
@@ -247,7 +289,6 @@
     const errors = [];
     const cost = Run.formationCost(run, formation);
     if (!formation.length) errors.push('Place at least one unit.');
-    if (formation.length > lim.slots) errors.push('Too many units: ' + formation.length + ' of ' + lim.slots + '.');
     if (cost > lim.supply) errors.push('Over supply: ' + cost + ' of ' + lim.supply + '.');
     const free = Run.runesFree(run, formation, -1);
     for (const k in free) if (free[k] < 0) errors.push('Not enough ' + AG.Runes[k].name + 's.');
@@ -257,19 +298,72 @@
     return formation.map((e) => ({ def: e.def, x: e.x, y: e.y, talents: (e.talents || []).slice(), rune: e.rune || null, rank: run.ranks[e.def] || 0 }));
   };
 
-  // ------------------------------------------------------------- outcomes
-  Run.lossDamage = function (run, s) {
-    if (run.mode === 'casual' || run.sandbox) return 0;
-    const tier = run.battle.tier;
-    let dmg = { battle: 2, event: 2, elite: 3, boss: 4 }[tier] || 2;
-    let extra = 0;
-    for (const u of s.units) {
-      if (!u.alive || u.side !== 1 || u.object) continue;
-      extra += u.summoned ? 1 : Math.ceil(u.threat / 2);
+  /* Auto-deploy: as many units as the supply and the deploy squares allow,
+     then the leftover supply spent turning the cheapest pieces into stronger
+     ones, a few of each kind. Fighters stand in front, shooters and healers
+     behind, the centre first. */
+  const RARITY_RANK = { common: 1, uncommon: 2, rare: 3 };
+  const BACK_ROLES = { ranged: 1, support: 1 };
+  Run.autoArmy = function (run, enc) {
+    return Run.placeArmy(enc, Run.autoUnits(run, enc).map((def) => ({ def, talents: [], rune: null })));
+  };
+  // The unit types Auto-deploy brings, most expensive first.
+  Run.autoUnits = function (run, enc) {
+    const cells = Run.limits(run, enc).cells;
+    const supply = Run.limits(run, enc).supply;
+    const types = run.units.filter((d) => AG.Units[d]).map((d) => ({ def: d, cost: AG.Units[d].cost, d: AG.Units[d] }));
+    if (!types.length || !cells) return [];
+    const minCost = Math.min.apply(null, types.map((t) => t.cost));
+    const n = Math.min(cells, Math.floor(supply / minCost));
+    if (n <= 0) return [];
+    const cheapest = types.filter((t) => t.cost === minCost);
+    const army = [];
+    for (let i = 0; i < n; i++) army.push(cheapest[i % cheapest.length]);
+    let left = supply - n * minCost;
+    const better = types.slice().sort((a, b) => b.cost - a.cost || (RARITY_RANK[b.d.rarity] || 0) - (RARITY_RANK[a.d.rarity] || 0));
+    for (let extraCopies = 0; extraCopies < 6 && left > 0; extraCopies++) {
+      let changed = true;
+      while (changed && left > 0) {
+        changed = false;
+        for (const t of better) {
+          const cap = (t.cost >= 5 ? 1 : t.cost >= 3 ? 2 : 3) + extraCopies;
+          if (army.filter((a) => a.def === t.def).length >= cap) continue;
+          let at = -1;
+          army.forEach((a, i) => { if (a.cost < t.cost && (at < 0 || a.cost < army[at].cost)) at = i; });
+          if (at < 0 || t.cost - army[at].cost > left) continue;
+          left -= t.cost - army[at].cost;
+          army[at] = t;
+          changed = true;
+          break;
+        }
+      }
     }
-    return Math.min(dmg + extra, tier === 'boss' ? 12 : tier === 'elite' ? 10 : 8);
+    return army.sort((a, b) => b.cost - a.cost).map((t) => t.def);
+  };
+  // Stand entries ({def, talents, rune}) on the deploy squares: fighters
+  // front and centre, shooters and healers at the back.
+  Run.placeArmy = function (enc, entries) {
+    const { board } = AG.parseBoard(enc.map, enc.legend);
+    const cells = [];
+    for (let i = 0; i < board.n; i++) if (board.deploy[i]) cells.push(i);
+    const w = board.w, mid = (w - 1) / 2;
+    const row = (i) => (i / w) | 0, central = (i) => Math.abs((i % w) - mid);
+    const front = cells.slice().sort((a, b) => row(a) - row(b) || central(a) - central(b));
+    const back = cells.slice().sort((a, b) => row(b) - row(a) || central(a) - central(b));
+    const used = new Set();
+    const out = [];
+    const place = (e, list) => {
+      const c = list.find((i) => !used.has(i));
+      if (c == null) return;
+      used.add(c);
+      out.push({ def: e.def, x: c % w, y: row(c), talents: (e.talents || []).slice(), rune: e.rune || null });
+    };
+    for (const e of entries) if (!BACK_ROLES[AG.Units[e.def].role]) place(e, front);
+    for (const e of entries) if (BACK_ROLES[AG.Units[e.def].role]) place(e, back);
+    return out;
   };
 
+  // ------------------------------------------------------------- outcomes
   Run.recordStats = function (run, s) {
     if (!s.stats) return;
     const mvp = run.stats.mvp || (run.stats.mvp = {});
@@ -280,17 +374,13 @@
       mvp[u.def] = (mvp[u.def] || 0) + st.dealt + st.healed;
     }
   };
-
+  // A lost fight costs nothing: the war room is waiting.
   Run.battleLost = function (run, s) {
-    const dmg = Run.lossDamage(run, s);
-    run.resolve = Math.max(0, run.resolve - dmg);
     run.stats.losses++;
     run.stats.battles++;
-    run.stats.resolveLost = (run.stats.resolveLost || 0) + dmg;
     run.battle.attempts++;
     Run.recordStats(run, s);
-    if (run.resolve <= 0) run.screen = 'gameover';
-    return dmg;
+    run.screen = 'setup';
   };
 
   Run.battleWon = function (run, s) {
@@ -298,29 +388,39 @@
     run.stats.wins++;
     run.stats.battles++;
     Run.recordStats(run, s);
+    if (b.tier === 'mega') {
+      run.megaWon = true;
+      run.battle = null;
+      run.screen = 'victory';
+      return null;
+    }
+    if (b.tier === 'boss' && run.act >= 3) {
+      run.finalArmy = { army: Run.armyFor(run, b.formation), relics: run.relics.slice(), enc: b.enc };
+    }
     const reward = withRng(run, (rng) => {
       const act = run.act;
-      const r = { title: 'Victory', gold: 0, offers: [], offerTaken: -1, relic: null, relicChoices: null, relicTaken: null, heal: 0, from: b.tier };
-      if (b.tier === 'boss') r.gold = rng.int(60, 75);
-      else if (b.tier === 'elite') r.gold = rng.int(30, 40) + act * 2;
-      else r.gold = rng.int(14, 22) + act * 2;
-      if (b.bonus && b.bonus.gold) r.gold += b.bonus.gold;
-      for (const id of run.relics) {
-        const R = AG.Relics[id];
-        if (R.gold) r.gold += R.gold;
-        if (R.winHeal) r.heal += R.winHeal;
-      }
-      r.offers = Run.offers(run, rng, b.tier);
-      if (b.tier === 'elite' || (b.bonus && b.bonus.relic)) r.relic = Run.randomRelic(run, rng, ['common', 'uncommon', 'rare']);
+      const D = Run.DIFF[b.tier];
+      const r = { title: 'Victory', gold: 0, offers: [], offerTaken: -1, relic: null, relicChoices: null, relicTaken: null, from: b.tier };
       if (b.tier === 'boss') {
         r.title = 'Boss defeated';
+        r.gold = rng.int(60, 75);
+        r.offers = Run.offers(run, rng, 2, 3);
         r.relicChoices = Run.relicChoices(run, rng, ['boss', 'rare'], 3);
-        r.heal += 15;
+      } else if (D) {
+        r.title = D.name + ' fight won';
+        r.gold = rng.int(D.gold[0], D.gold[1]) + act * 2;
+        r.offers = Run.offers(run, rng, D.luck, D.offers);
+        if (D.relic) r.relic = Run.randomRelic(run, rng, ['common', 'uncommon', 'rare']);
+      } else {
+        r.gold = rng.int(14, 22) + act * 2;
+        r.offers = Run.offers(run, rng, 0, 3);
       }
+      if (b.bonus && b.bonus.gold) r.gold += b.bonus.gold;
+      if (b.bonus && b.bonus.relic) r.relic = Run.randomRelic(run, rng, ['common', 'uncommon', 'rare']);
+      for (const id of run.relics) if (AG.Relics[id].gold) r.gold += AG.Relics[id].gold;
       return r;
     });
     run.gold += reward.gold;
-    if (reward.heal) reward.heal = Run.heal(run, reward.heal);
     if (reward.relic) Run.addRelic(run, reward.relic);
     run.pending = reward;
     run.battle = null;
@@ -328,17 +428,20 @@
     return reward;
   };
 
-  Run.offers = function (run, rng, tier) {
+  // Rewards to choose from: n of units and runes, luckier after hard fights.
+  Run.offers = function (run, rng, luck, n) {
     const act = run.act;
     const w = act === 1 ? { common: 70, uncommon: 27, rare: 3 } : act === 2 ? { common: 35, uncommon: 50, rare: 15 } : { common: 20, uncommon: 45, rare: 35 };
-    if (tier === 'elite' || tier === 'boss') { w.rare += 20; w.uncommon += 10; }
+    w.rare += 12 * (luck || 0);
+    w.uncommon += 8 * (luck || 0);
     const out = [];
     const used = {};
     const pickUnit = () => {
-      const pool = AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0 && !used[k] && AG.Units[k].rarity !== 'starter');
+      const pool = AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0 && !used[k]);
       if (!pool.length) return null;
-      const rar = rng.weighted(['common', 'uncommon', 'rare'].filter((r) => pool.some((k) => AG.Units[k].rarity === r)), (r) => w[r]);
-      const k = rng.pick(pool.filter((k2) => AG.Units[k2].rarity === rar));
+      const tier = (k) => AG.Units[k].rarity;
+      const rar = rng.weighted(['common', 'uncommon', 'rare'].filter((r) => pool.some((k) => tier(k) === r)), (r) => w[r]);
+      const k = rng.pick(pool.filter((k2) => tier(k2) === rar));
       used[k] = true;
       return { kind: 'unit', def: k };
     };
@@ -349,7 +452,7 @@
       used[k] = true;
       return { kind: 'rune', id: k };
     };
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < (n || 3); i++) {
       const o = (i < 2 || rng.chance(0.3)) ? pickUnit() || pickRune() : pickRune();
       out.push(o);
     }
@@ -376,24 +479,16 @@
     const p = run.pending;
     run.pending = null;
     if (p && p.from === 'boss') {
-      if (run.act >= 3) { run.screen = 'victory'; run.stats.endedAt = Date.now(); return; }
-      run.act++;
-      run.map = Run.genMap(run, run.act);
-      run.pos = null;
+      if (run.act >= 3) {
+        run.screen = 'victory';
+        run.stats.endedAt = Date.now();
+        return;
+      }
+      Run.startAct(run, run.act + 1);
       run.screen = 'actIntro';
       return;
     }
-    run.screen = 'map';
-  };
-
-  Run.treasure = function (run) {
-    return withRng(run, (rng) => {
-      const relic = Run.randomRelic(run, rng, ['common', 'uncommon', 'rare']);
-      const gold = rng.int(20, 30);
-      run.gold += gold;
-      if (relic) Run.addRelic(run, relic);
-      return { title: 'Treasure', gold, offers: [], offerTaken: -1, relic, from: 'treasure', heal: 0 };
-    });
+    Run.advance(run);
   };
 
   // ----------------------------------------------------------- collection
@@ -402,17 +497,6 @@
   Run.addRelic = function (run, id) {
     if (!id || run.relics.indexOf(id) >= 0) return;
     run.relics.push(id);
-    const R = AG.Relics[id];
-    if (R.maxResolve) { run.maxResolve += R.maxResolve; run.resolve += R.maxResolve; }
-  };
-  Run.heal = function (run, n) {
-    const before = run.resolve;
-    run.resolve = Math.min(run.maxResolve, run.resolve + n);
-    return run.resolve - before;
-  };
-  Run.hurt = function (run, n) {
-    if (run.mode === 'casual') n = Math.ceil(n / 2);
-    run.resolve = Math.max(1, run.resolve - n);
   };
   Run.trainable = function (run) { return run.units.filter((d) => (run.ranks[d] || 0) < 2); };
   Run.train = function (run, def) { run.ranks[def] = Math.min(2, (run.ranks[def] || 0) + 1); };
@@ -432,24 +516,8 @@
     const pool = rng.shuffle(AG.relicList((R, k) => rarities.indexOf(R.rarity) >= 0 && run.relics.indexOf(k) < 0));
     return pool.slice(0, n);
   };
-
-  // ---------------------------------------------------------------- boons
-  Run.BOONS = {
-    recruit: { name: 'Recruit', desc: 'Start with a random common unit.' },
-    ledger: { name: 'Quartermaster', desc: 'Start with the Quartermaster’s Ledger: +2 supply in every battle.' },
-    armory: { name: 'Armory', desc: 'Start with two random runes.' },
-    veteran: { name: 'Veteran', desc: 'Train one of your starting units to Veteran.', pick: 'trainable' },
-  };
-  Run.takeBoon = function (run, id, picked) {
-    withRng(run, (rng) => {
-      if (id === 'recruit') Run.addUnit(run, rng.pick(Run.unitPool(run, 'common')));
-      else if (id === 'ledger') Run.addRelic(run, 'ledger');
-      else if (id === 'armory') { Run.addRune(run, Run.randomRune(run, rng, 'common')); Run.addRune(run, Run.randomRune(run, rng, 'uncommon')); }
-      else if (id === 'veteran' && picked) Run.train(run, picked);
-    });
-    run.boons = null;
-    run.screen = 'actIntro';
-  };
+  // A one-battle change of supply from an event, good or bad.
+  Run.nextBattleSupply = function (run, n) { run.nextSupply = (run.nextSupply || 0) + n; };
 
   // ----------------------------------------------------------------- shop
   const PRICE = { unit: { common: 45, uncommon: 70, rare: 100 }, rune: { common: 30, uncommon: 50, rare: 80 }, relic: { common: 90, uncommon: 120, rare: 150, boss: 200 } };
@@ -461,8 +529,8 @@
   Run.price = function (run, base) { return Math.round(base * (1 - Run.discount(run))); };
   Run.makeShop = function (run) {
     return withRng(run, (rng) => {
-      const shop = { units: [], runes: [], relics: [], train: { price: 60, used: false }, heal: { price: 35, amt: 10, used: false } };
-      const upool = rng.shuffle(AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0 && AG.Units[k].rarity !== 'starter'));
+      const shop = { units: [], runes: [], relics: [], train: { price: 60, used: false } };
+      const upool = rng.shuffle(AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0));
       for (const k of upool.slice(0, 3)) shop.units.push({ def: k, price: PRICE.unit[AG.Units[k].rarity] + rng.int(-5, 5), sold: false });
       const rpool = rng.shuffle(Object.keys(AG.Runes));
       for (const k of rpool.slice(0, 3)) shop.runes.push({ id: k, price: PRICE.rune[AG.Runes[k].rarity] + rng.int(-4, 4), sold: false });
@@ -473,12 +541,11 @@
   Run.buy = function (run, kind, idx, picked) {
     const shop = run.shop;
     if (!shop) return false;
-    if (kind === 'train' || kind === 'heal') {
-      const svc = shop[kind];
+    if (kind === 'train') {
+      const svc = shop.train;
       const cost = Run.price(run, svc.price);
-      if (svc.used || run.gold < cost) return false;
-      if (kind === 'train') { if (!picked) return false; Run.train(run, picked); }
-      else Run.heal(run, svc.amt);
+      if (svc.used || run.gold < cost || !picked) return false;
+      Run.train(run, picked);
       run.gold -= cost;
       svc.used = true;
       return true;
@@ -493,23 +560,6 @@
     else if (kind === 'runes') Run.addRune(run, item.id);
     else if (kind === 'relics') Run.addRelic(run, item.id);
     return true;
-  };
-
-  // ----------------------------------------------------------------- camp
-  Run.REST_HEAL = 0.3;
-  Run.rest = function (run, choice, picked) {
-    if (run.rested) return null;
-    let text = '';
-    if (choice === 'recover') {
-      const n = Run.heal(run, Math.round(run.maxResolve * Run.REST_HEAL));
-      text = 'You rest by the fire. (+' + n + ' Resolve)';
-    } else if (choice === 'train' && picked) {
-      Run.train(run, picked);
-      text = 'Your ' + AG.Units[picked].name + 's drill until dawn. They are now ' + AG.RANKS[run.ranks[picked]] + 's.';
-    } else return null;
-    run.rested = true;
-    run.restText = text;
-    return text;
   };
 
   // --------------------------------------------------------------- events
@@ -541,5 +591,100 @@
     }
     run.event.result = out;
     return out;
+  };
+
+  // ------------------------------------------------------------ mega boss
+  Run.MEGA = 'zugzwang';
+  Run.startMega = function (run) {
+    run.battle = {
+      enc: Run.MEGA, tier: 'mega', attempts: 0, bonus: null, ramp: 0, hpMod: 0, atkMod: 0, supplyMod: 0,
+      formation: run.formations[Run.MEGA] ? AG.deepCopy(run.formations[Run.MEGA]) : run.lastArmy ? AG.deepCopy(run.lastArmy) : [],
+    };
+    run.screen = 'setup';
+  };
+
+  // ---------------------------------------------------------- Hall of Fame
+  // Entries run from the champion (index 0) down. A finished run starts
+  // below them all and duels its way up until it loses.
+  Run.loadHall = function () {
+    try {
+      const h = JSON.parse(localStorage.getItem(HALL_KEY) || 'null');
+      if (h && Array.isArray(h.entries)) return h;
+    } catch (e) { /* fall through */ }
+    return { entries: [], runs: 0 };
+  };
+  Run.saveHall = function (hall) {
+    try { localStorage.setItem(HALL_KEY, JSON.stringify(hall)); } catch (e) { /* ignore */ }
+  };
+  Run.hallEntry = function (run, number) {
+    const f = run.finalArmy;
+    return {
+      id: run.seed + '-' + (run.stats.endedAt || 0), name: 'Run ' + number, date: run.stats.endedAt || Date.now(),
+      army: f.army, relics: f.relics, enc: f.enc, heart: !!run.megaWon,
+      wins: run.stats.wins, losses: run.stats.losses,
+    };
+  };
+  // Where a challenger lands: below the first entry it lost to (climbing
+  // from the bottom), or at the top if it beat them all.
+  Run.hallRank = function (count, results) {
+    let rank = count;
+    for (const won of results) {
+      if (!won) break;
+      rank--;
+    }
+    return rank;
+  };
+  Run.startClimb = function (run) {
+    const hall = Run.loadHall();
+    const opponents = hall.entries.map((e) => e.id).reverse();
+    run.climb = { opponents, results: [], placed: false, rank: null, number: hall.runs + 1 };
+    run.screen = 'climb';
+    if (!opponents.length) Run.finishClimb(run);
+  };
+  Run.climbOpponent = function (run) {
+    const c = run.climb;
+    if (!c || c.placed) return null;
+    const hall = Run.loadHall();
+    return hall.entries.find((e) => e.id === c.opponents[c.results.length]) || null;
+  };
+  Run.climbResult = function (run, won) {
+    const c = run.climb;
+    c.results.push(!!won);
+    if (!won || c.results.length >= c.opponents.length) Run.finishClimb(run);
+  };
+  Run.finishClimb = function (run) {
+    const c = run.climb;
+    if (c.placed) return;
+    const hall = Run.loadHall();
+    const rank = Run.hallRank(c.opponents.length, c.results);
+    hall.runs = (hall.runs || 0) + 1;
+    const entry = Run.hallEntry(run, hall.runs);
+    hall.entries.splice(Math.min(rank, hall.entries.length), 0, entry);
+    hall.entries = hall.entries.slice(0, Run.HALL_SIZE);
+    Run.saveHall(hall);
+    c.placed = true;
+    c.rank = rank;
+    c.entryId = entry.id;
+    run.done = true;
+  };
+  /* The arena for duels: the final boss's board, emptied. The defender's
+     army stands mirrored on the far side (see B.create's enemyArmy). The
+     challenger moves first on speed ties; if time runs out, the defender
+     keeps its place. */
+  Run.duelEncounter = function (encId) {
+    const base = AG.Encounters[encId] || AG.Encounters.grandmaster;
+    const map = base.map.map((r) => r.replace(/[^p.#~ ]/g, '.'));
+    return { id: 'hallDuel', act: 0, tier: 'duel', name: 'Hall of Fame duel', theme: 'astral', map, legend: {}, supply: base.supply, flavor: '' };
+  };
+  // The battle options for a duel between two saved armies.
+  Run.duelOpts = function (challenger, defender) {
+    return { relics: challenger.relics || [], enemyRelics: defender.relics || [], enemyArmy: defender.army };
+  };
+  // Play a duel out at once: true if the challenger wins.
+  Run.duelWinner = function (challenger, defender) {
+    const enc = Run.duelEncounter(challenger.enc);
+    const s = AG.B.create(enc, challenger.army, Object.assign({ record: false }, Run.duelOpts(challenger, defender)));
+    AG.B.runToEnd(s);
+    return s.winner === 0;
   };
 })(globalThis.AG = globalThis.AG || {});
