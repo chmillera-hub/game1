@@ -137,7 +137,10 @@ on a phone turned sideways, but portrait works too.
   then Priority. Your army goes all out for it, whatever the cost: every unit attacks
   it, or heads for the chest and takes it. With the shrine, one unit makes for it and
   stays on it while the rest gather round to guard it, and any enemy standing on it
-  gets driven off; it stays the priority until the shrine is held. A marker shows the target. Once it falls or is
+  gets driven off; it stays the priority until the shrine is held. Or pick any empty
+  tile: your army moves there and huddles as close to it as it can (tap a corner to
+  turtle in it, or a choke point to hold it), still attacking whatever comes in reach,
+  until you clear it. A marker shows the target. Once it falls or is
   taken, the army goes back to normal orders; you can also clear it. You can pick one
   in the War Room too, before the battle: tap an enemy, a building or a chest, then
   Priority, and your army goes for it from the very first turn (a dash for the chest,

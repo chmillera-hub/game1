@@ -276,6 +276,8 @@
     }
     // The shrine to hold: it stays the priority until the battle is won.
     if (f.hold && s.hold) return { hold: true, x: s.hold.x, y: s.hold.y };
+    // A spot on open ground to gather at: it stays the priority until cleared.
+    if (f.tile && team === 'P') return { tile: true, x: f.x, y: f.y };
     return null;
   }
 
@@ -294,6 +296,8 @@
     if (f.loot) return walk * FOCUS_PULL;
     // The shrine: one unit stands on it and stays there; the rest gather around to guard it.
     if (f.hold) return flat === 0 ? -120 : Math.max(0, walk - 1) * FOCUS_PULL;
+    // A spot on open ground: everyone huddles as close to it as they can get.
+    if (f.tile) return walk * FOCUS_PULL;
     let best = null;
     for (const a of u.acts) if (a.dmg && a.kind !== 'none' && a.left > 0 && (!best || actSpan(a) > actSpan(best))) best = a;
     // Units that cannot hurt it tag along.

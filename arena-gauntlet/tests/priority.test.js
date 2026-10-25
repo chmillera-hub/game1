@@ -199,4 +199,28 @@ test('the shrine as priority: the army takes it, drives off squatters and holds 
   assert.ok(on && on.team === 'P', 'and it is still yours at the end');
 });
 
+test('a spot on open ground as priority: the army huddles there and stays', () => {
+  const make = () =>
+    battle([
+      { type: 'knight', team: 'P', x: 3, y: 8 },
+      { type: 'knight', team: 'P', x: 4, y: 8 },
+      { type: 'archer', team: 'P', x: 5, y: 8 },
+      { type: 'orc', team: 'E', x: 4, y: 1 },
+      { type: 'orc', team: 'E', x: 5, y: 1 },
+    ]);
+  const f = { tile: true, x: 8, y: 8, label: 'the marked spot' };
+  assert.deepStrictEqual(AI.focusOf(make(), 'P', f), { tile: true, x: 8, y: 8 });
+  assert.strictEqual(AI.focusOf(make(), 'E', f), null, 'only your army gathers there');
+  const spread = (focus) => {
+    const s = make();
+    play(s, 6, focus);
+    const mine = s.units.filter((u) => u.alive && u.team === 'P');
+    return mine.reduce((t, u) => t + Math.abs(u.x - 8) + Math.abs(u.y - 8), 0) / mine.length;
+  };
+  const huddled = spread(f);
+  const normal = spread(null);
+  assert.ok(huddled <= 2, `huddled in the corner (average ${huddled.toFixed(1)} tiles away)`);
+  assert.ok(huddled < normal, `closer than on normal orders (${huddled.toFixed(1)} vs ${normal.toFixed(1)})`);
+});
+
 console.log(`priority: ${passed} tests passed`);
