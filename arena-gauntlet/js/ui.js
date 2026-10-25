@@ -1977,6 +1977,8 @@
     wr.s = s;
     const b = UI.board;
     b.syncFromState(s);
+    // A picked-up unit wriggles in the hand until it is put down.
+    b.carry(wr.sel && wr.dep.has(wr.sel) ? wr.sel : null);
     const ov = { deploy: [] };
     for (const y of wr.rows) for (let x = 0; x < enc.w; x++) if (isDeployTile(x, y)) ov.deploy.push([x, y]);
     if (wr.sel && wr.dep.has(wr.sel)) {
@@ -2563,6 +2565,9 @@
       wrPick(u.rid);
       wr.drag = { rid: u.rid };
       sfx('select');
+      try {
+        if (navigator.vibrate) navigator.vibrate(15);
+      } catch (e) {}
       return 'drag';
     }
     battleUnitSheet(u);
@@ -4342,7 +4347,7 @@
         <h4>Controls</h4>
         <ul>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
-          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
+          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up (it pops up and wriggles in your hand) and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>

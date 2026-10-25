@@ -49,6 +49,8 @@
       this.terrain = new Array(81).fill(0);
       this.palette = PALETTES.grass;
       this.vis = new Map();
+      // The War Room unit in your hand: { rid, up, down } (when it was picked up, put down).
+      this.held = null;
       this.ov = {};
       this.fx = [];
       this.texts = [];
@@ -414,6 +416,7 @@
 
     clearUnits() {
       this.vis.clear();
+      this.held = null;
       this.fx = [];
       this.texts = [];
       this.tfx = [];
@@ -449,7 +452,7 @@
     }
 
     busy(t) {
-      if (this.fx.length || this.texts.length || this.shakeT > 0 || this.staticDirty || t - (this.touched || 0) < 400) return true;
+      if (this.fx.length || this.texts.length || this.shakeT > 0 || this.staticDirty || this.held || t - (this.touched || 0) < 400) return true;
       for (const v of this.vis.values()) if (v.moving || v.hop || v.ox || v.oy || v.shake || v.flash || v.alpha < 1) return true;
       return false;
     }
@@ -921,13 +924,55 @@
       g.restore();
     }
 
+    // ---------------------------------------------------------- held unit
+
+    // Pick a War Room unit up (its rid) or put it down (null). Held, it pops up off its tile
+    // and wriggles, so it shows from under the finger; put down, it drops back with a bump.
+    carry(rid) {
+      const h = this.held;
+      if (rid) {
+        if (!h || h.rid !== rid || h.down != null) this.held = { rid, up: this.time, down: null };
+      } else if (h && h.down == null) h.down = this.time;
+    }
+
+    // How a held unit is drawn this frame: raised, a little bigger, rocking side to side.
+    carryPose(v) {
+      const h = this.held;
+      if (!h || v.rid == null || v.rid !== h.rid) return null;
+      const t = this.time;
+      const tw = this.tw;
+      if (h.down != null) {
+        const d = (t - h.down) / 0.18;
+        if (d >= 1) {
+          this.held = null;
+          this.particles(v.x, v.y, 6, ['#c9b9a0', '#8a7a64', '#e8dcc8'], { lift: 2, rise: 0.4, speed: 0.5, max: 0.4 });
+          return null;
+        }
+        const e = (1 - d) * (1 - d);
+        return { lift: e * tw * 0.5, dx: 0, rot: 0, scale: 1 + 0.14 * e };
+      }
+      // Up with a little overshoot, then the wriggle.
+      const k = Math.min(1, (t - h.up) / 0.16);
+      const e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);
+      return {
+        lift: e * tw * (0.5 + 0.05 * Math.sin(t * 8.5)),
+        dx: e * tw * 0.035 * Math.sin(t * 23),
+        rot: e * 0.16 * Math.sin(t * 17),
+        scale: 1 + 0.14 * e,
+      };
+    }
+
     // ---------------------------------------------------------- objects (units + obstacles)
 
     drawObjects(g) {
       const items = [];
       for (let y = 0; y < this.h; y++)
         for (let x = 0; x < this.w; x++) if (this.terrain[y * this.w + x] === 1) items.push({ k: x + y, x, obstacle: true, y });
-      for (const v of this.vis.values()) items.push({ k: v.x + v.y + 0.01, x: v.x, v });
+      for (const v of this.vis.values()) {
+        v.pose = this.carryPose(v);
+        // In the hand, it is above the board: drawn last.
+        items.push({ k: v.pose ? 1e9 : v.x + v.y + 0.01, x: v.x, v });
+      }
       for (const l of this.loot) if (!l.taken) items.push({ k: l.x + l.y, x: l.x, loot: l });
       items.sort((a, b) => a.k - b.k || a.x - b.x);
       const bars = [];
@@ -1035,8 +1080,13 @@
       const f = v.facing;
       const view = f === 0 || f === 3 ? 'back' : 'front';
       const flip = f === 2 || f === 3 || (f < 0 && v.team === 'E');
-      const lift = v.hop + (v.type === 'wisp' ? 0 : 0);
-      g.translate(cx, cy - lift);
+      const p = v.pose;
+      const lift = v.hop + (p ? p.lift : 0);
+      g.translate(cx + (p ? p.dx : 0), cy - lift);
+      if (p) {
+        g.rotate(p.rot);
+        g.scale(p.scale, p.scale);
+      }
       if (flip) g.scale(-1, 1);
       this.drawSprite(g, v, view);
       g.restore();
@@ -1116,7 +1166,8 @@
       }
       const [cx0, cy0] = this.center(v.x, v.y);
       const cx = cx0 + v.ox;
-      const top = cy0 + v.oy - v.hop - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1);
+      const p = v.pose;
+      const top = cy0 + v.oy - v.hop - (p ? p.lift : 0) - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1) * (p ? p.scale : 1);
       const bw = Math.max(18, this.tw * (v.boss ? 0.8 : v.vip ? 0.62 : 0.52));
       const bh = Math.max(3, this.tw * 0.075);
       const x = cx - bw / 2;
