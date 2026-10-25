@@ -3531,3 +3531,27 @@ body:has(#battle:not([hidden])) {
 .hall-sup .icon {
   color: var(--brass);
 }
+
+/* A unit you have drafted: tap it for its details while choosing the relic, skill and gear. */
+.draft-unit {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 154, 76, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+
+.draft-unit canvas {
+  display: block;
+}
+
+.draft-unit:hover,
+.draft-unit:focus-visible,
+.army-row.tappable:hover {
+  border-color: var(--brass-hi);
+}
+
+.army-row.tappable {
+  cursor: pointer;
+}
