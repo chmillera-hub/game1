@@ -2030,6 +2030,13 @@
       if (tileF.zone) ov.range = tileF.zone;
     }
     b.ov = ov;
+    // A priority picked here: its marker on the board, and the battle starts with it.
+    const focusT = wrFocusTarget(s);
+    if (!focusT) run.pending.focus = null;
+    b.focus = focusT ? { x: focusT.x, y: focusT.y } : null;
+    const focusLine = focusT
+      ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(run.pending.focus.label)}</b>. From the first turn, your army goes all out for it.</span><button class="btn" id="wrUnfocus">Clear</button></div>`
+      : '';
 
     const used = wrUsed();
     const left = wr.supply - used;
@@ -2086,14 +2093,19 @@
       selBlock = quickLoadoutHTML(run, R.unitById(run, wr.sel), wr.dep.has(wr.sel));
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
+      const isFocus = focusT && focusT.unit === u;
+      const canFocus = !u.traits.has('scenery');
       selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
         ${actsHTML(u)}
-        <div class="actions"><button class="btn" id="wrEInfo">${ic('help')} Details</button></div>`;
+        <div class="actions">${canFocus ? (isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`) : ''}<button class="btn" id="wrEInfo">${ic('help')} Details</button></div>
+        ${canFocus && !isFocus ? '<p class="small muted">Priority: from the first turn, your whole army goes all out for it, whatever the cost.</p>' : ''}`;
     } else if (tileF) {
-      selBlock = tileInfoHTML(tileF);
+      const loot = E.lootAt(s, wr.tile.x, wr.tile.y);
+      const isFocus = loot && focusT && focusT.loot === loot;
+      selBlock = tileInfoHTML(tileF) + (loot ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : '<p class="small muted">Priority: from the first turn, your army heads for it and takes it.</p>'}` : '');
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card to change that unit's level, abilities, talents, skills and gear. Every point of Supply counts.</div>`;
-    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places).</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card to change that unit's level, abilities, talents, skills and gear. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
+    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places). Tap an enemy or a chest to make it your army's priority.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2123,6 +2135,7 @@
         <button class="btn ${wr.tab === 'intel' ? 'on' : ''}" id="wrTabI">${ic('eye')} Enemy (${s.units.filter((u) => u.team === 'E' && E.counts(u)).length})</button></div>
       ${body}
       ${selBlock}
+      ${focusLine}
       ${objectivesHTML(enc)}
       <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>${run.pending.fromEvent ? '' : `<button class="btn" id="wrBack">${ic('undo')} Other battles</button>`}</div>
       <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
@@ -2180,6 +2193,26 @@
         wrAdd(rid);
       };
     if ($('#wrEInfo')) $('#wrEInfo').onclick = () => battleUnitSheet(s.byId[wr.inspect]);
+    if ($('#wrFocus'))
+      $('#wrFocus').onclick = () => {
+        const u = wr.inspect && s.byId[wr.inspect];
+        const l = !u && wr.tile && E.lootAt(s, wr.tile.x, wr.tile.y);
+        if (u) run.pending.focus = { kind: 'unit', x: u.x, y: u.y, label: `the ${UNITS[u.type].name}` };
+        else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
+        else return;
+        toast(`Priority: ${run.pending.focus.label}. Your army goes all out for it from the first turn.`, 3200);
+        sfx('click');
+        wr.inspect = null;
+        wr.tile = null;
+        renderWarRoom();
+      };
+    for (const el of $$('#wrUnfocus'))
+      el.onclick = () => {
+        run.pending.focus = null;
+        toast('Priority cleared. Your army fights on normal orders.');
+        sfx('click');
+        renderWarRoom();
+      };
     $('#wrAuto').onclick = async () => {
       if (!wr.auto && run.roster.some((r) => r.load.lv > 1 || r.load.skills.length || r.load.gear.length)) {
         const ok = await confirmSheet('Auto-build an army?', 'Auto picks units, levels and items for this enemy. It resets the levels and items of your units first.', 'Build it', 'Cancel');
@@ -2242,6 +2275,19 @@
       return;
     }
     wrAdd(rid);
+  }
+
+  // The priority picked in the War Room, found on the field as it stands: an enemy unit or
+  // building at that spot, or loot there. Null when there is none (or it no longer fits).
+  function wrFocusTarget(s) {
+    const f = UI.run.pending && UI.run.pending.focus;
+    if (!f) return null;
+    if (f.kind === 'unit') {
+      const u = s.units.find((v) => v.alive && v.team === 'E' && v.x === f.x && v.y === f.y);
+      return u ? { unit: u, x: u.x, y: u.y } : null;
+    }
+    const l = E.lootAt(s, f.x, f.y);
+    return l ? { loot: l, x: l.x, y: l.y } : null;
   }
 
   // Take a unit off the field: back to the bench, bare. A quest's unit stays.
@@ -2561,6 +2607,9 @@
     E.drainEvents(s);
     UI.wr = null;
     UI.battle = { s, dep, enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: diff.temp, confirmEnd: false };
+    // A priority picked in the War Room holds from the first turn.
+    const pf = wrFocusTarget(s);
+    if (pf) UI.battle.focus = pf.unit ? { uid: pf.unit.uid, label: run.pending.focus.label } : { loot: pf.loot.id, label: run.pending.focus.label };
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
@@ -2569,6 +2618,7 @@
     b.syncFromState(s);
     b.setObjectives(s.loot, s.hold);
     b.activeSide = 'P';
+    b.focus = focusSpot(UI.battle);
     UI.boardTap = btTap;
     UI.boardLong = btLong;
     battleTools();
@@ -4124,7 +4174,7 @@
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
-          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

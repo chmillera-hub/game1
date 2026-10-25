@@ -129,6 +129,10 @@ test('a plan survives a defeat: back at the same battle, the army is where you l
   R.backToChoice(run);
   assert.ok(R.chooseChallenge(run, i));
   assert.deepStrictEqual(run.pending.lastDep, dep);
+  run.pending.focus = { kind: 'unit', x: 4, y: 1, label: 'the Knight' };
+  R.backToChoice(run);
+  assert.ok(R.chooseChallenge(run, i));
+  assert.strictEqual(run.pending.focus.label, 'the Knight', 'and so is a priority picked for it');
   R.backToChoice(run);
   const other = (i + 1) % run.offer.length;
   assert.ok(R.chooseChallenge(run, other));

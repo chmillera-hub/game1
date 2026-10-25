@@ -136,7 +136,11 @@ on a phone turned sideways, but portrait works too.
 - **Priority**: while watching, tap an enemy unit, a building or a chest, then
   Priority. Your army goes all out for it, whatever the cost: every unit attacks it,
   or heads for the chest and takes it. A marker shows the target. Once it falls or is
-  taken, the army goes back to normal orders; you can also clear it.
+  taken, the army goes back to normal orders; you can also clear it. You can pick one
+  in the War Room too, before the battle: tap an enemy, a building or a chest, then
+  Priority, and your army goes for it from the very first turn (a dash for the chest,
+  a rush at the Commander). It stays with your plan for that battle if you lose or
+  step away.
 - **Loot on its own**: without a priority, your army drifts toward chests (more so
   when it is winning) and takes one in reach rather than make an ordinary attack,
   though a kill still comes first. It does not walk up to loot whose guards are

@@ -481,7 +481,7 @@
     const o = run.offer && run.offer[index];
     if (!o || run.pending || run.over) return false;
     // Back at a battle you lost or stepped away from: your plan for it is still on the field.
-    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index, lastDep: o.lastDep || null };
+    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index, lastDep: o.lastDep || null, focus: o.focus || null };
     save(run);
     return true;
   }
@@ -490,7 +490,7 @@
   function backToChoice(run) {
     const p = run.pending;
     if (!p || p.type !== 'battle') return;
-    if (run.offer && run.offer[p.offerIndex]) Object.assign(run.offer[p.offerIndex], { attempts: p.attempt || 0, lastDep: p.lastDep || null });
+    if (run.offer && run.offer[p.offerIndex]) Object.assign(run.offer[p.offerIndex], { attempts: p.attempt || 0, lastDep: p.lastDep || null, focus: p.focus || null });
     run.pending = null;
     save(run);
   }
