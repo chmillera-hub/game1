@@ -273,7 +273,10 @@ on a phone turned sideways, but portrait works too.
   portals and barricades are buildings. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:
   the Trebuchet, the Siege Hammer, the Demolisher skill, a Blasting Charge, the
-  Golem's Boulder Toss and the Sapper's Kit relic.
+  Golem's Boulder Toss and the Sapper's Kit relic. A barricade your army breaks
+  spills a pouch of gold (12 in Act I, 16 in Act II, 20 in Act III) in a burst of
+  coins, paid with the battle's gold on a win. Your units go for it only when no
+  enemy fighter is within reach that turn.
 - **Reinforcements**: some battles send enemy waves on set turns, from the far
   edge or out of buildings. The War Room shows the schedule, and badges count
   down on each building. Waves land after the enemy's move; a turn ahead, red

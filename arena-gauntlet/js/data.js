@@ -546,8 +546,8 @@
       hp: 30, pow: 0, armor: 0.3, res: -0.25, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
       traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'], material: 'wood',
-      desc: 'Sharpened stakes. Blocks movement and lines until broken.',
-      tip: 'Break through with siege damage or fire, or go around.',
+      desc: 'Sharpened stakes. Blocks movement and lines until broken. Break it and a pouch of gold spills out.',
+      tip: 'Break through with siege damage or fire for the gold inside, or go around.',
     },
 
     // Totems: objectives that mend the enemies around them.

@@ -1455,6 +1455,40 @@ test('sands of haste: enemy casters sit out their first turn', () => {
   assert.ok(E.canActivate(s, wi), 'free on the next enemy turn');
 });
 
+test('a barricade broken by your army spills its gold; the AI breaks one when nothing better is in reach', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'barricade', team: 'E', x: 4, y: 4, bounty: 16 },
+    { type: 'barricade', team: 'E', x: 7, y: 2, bounty: 16 },
+    { type: 'knight', team: 'E', x: 0, y: 0 },
+  ]);
+  const [kn, b1, b2, foe] = s.units;
+  assert.strictEqual(b1.bounty, 16);
+  b1.hp = 1;
+  act(s, kn, { kind: 'unit', uid: b1.uid });
+  assert.ok(!b1.alive);
+  assert.strictEqual(s.stats.bounty, 16);
+  assert.ok(s.events.some((e) => e.t === 'gold' && e.coins && e.amount === 16));
+  // Only your army's blows pay: the other barricade still stands, its gold unclaimed.
+  assert.ok(b2.alive && foe.alive && s.stats.bounty === 16);
+
+  // The AI: a barricade in reach, the enemy far off. It breaks it.
+  const t = board([
+    { type: 'knight', team: 'P', x: 4, y: 7 },
+    { type: 'barricade', team: 'E', x: 4, y: 6, bounty: 16 },
+    { type: 'golem', team: 'E', x: 0, y: 0 },
+  ]);
+  const bar = t.units[1];
+  for (let i = 0; i < 4 && bar.alive; i++) {
+    t.side = 'P';
+    t.spent = false;
+    t.units[0].wait = 0;
+    t.units[0].activated = false;
+    AG.AI.playTurn(t, 'P', { stance: 'balanced', temp: 0 });
+  }
+  assert.ok(bar.hp < bar.maxHp, 'the knight went for the gold');
+});
+
 console.log(`engine: ${passed} tests passed`);
 if (failed.length) {
   console.log(failed.join('\n'));

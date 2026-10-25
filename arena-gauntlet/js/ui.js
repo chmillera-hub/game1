@@ -525,6 +525,7 @@
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
     const P = u.props;
     if (P.totemHeal) out.push(`At the start of their turn, its allies within 2 tiles heal ${P.totemHeal} HP.`);
+    if (u.bounty) out.push(`Break it and your army picks up ${u.bounty} gold, paid with the battle's gold when you win.`);
     if (s && u.traits.has('spawner')) {
       const waves = s.waves.filter((w) => w.src === u.uid && w.state === 'pending');
       if (waves.length) {
@@ -4211,6 +4212,7 @@
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
           ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold from Midas Touch</span>` : ''}
+          ${p.bounty ? `<span class="res gold">${ic('gold')} +${p.bounty} gold from broken barricades</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
         ${(p.objectives || []).some((o) => o.done) ? `<div class="panel objectives" data-got="✓ Collected">${p.objectives
@@ -4506,6 +4508,7 @@
         <ul>
           <li>Walls, gates, towers, totems, tents, crypts, dens, portals and barricades are <b>buildings</b>. Stone ones shrug off swords and spells alike; wooden ones burn, taking extra damage from fire and magic; dark portals unravel under magic but barely notice steel.</li>
           <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
+          <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
         </ul>
         <h4>Reinforcements</h4>
         <ul>
