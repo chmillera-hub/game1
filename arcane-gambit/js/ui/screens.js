@@ -721,7 +721,7 @@
       h('h4', 'Before each battle'),
       h('ul',
         h('li', 'Each fight gives you a supply budget. Units, talents and runes all cost supply. There is no limit on how many units you bring beyond the supply and the blue squares to stand on; Auto-deploy fills the board for you.'),
-        h('li', 'Tap a unit in your army, then a blue-bracketed square on your side of the board. To move a placed piece, tap it and then another blue square (with a mouse you can also drag it).'),
+        h('li', 'Tap a unit in your army, then a blue-bracketed square on your side of the board. To move a placed piece, hold it until it wiggles to pick it up, then drag it or tap another blue square (tap one of your pieces to swap them). With a mouse you can also just drag it.'),
         h('li', 'Tap a placed piece to give it a talent (one per unit, two once it is Elite) and a rune from your satchel.'),
         h('li', 'Tap any enemy to read exactly how it moves, attacks and what its traits do.'),
       ),

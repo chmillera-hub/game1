@@ -58,11 +58,61 @@ const { chromium } = require('playwright');
   if (!placed) errors.push('auto-deploy placed nothing');
   await shotFull('07-setup-placed');
 
+  // Hold a placed piece to pick it up (it wiggles), then tap a free square.
+  const pos = async (x, y) => page.evaluate(([x, y]) => {
+    const r = document.querySelector('.cell[data-x="' + x + '"][data-y="' + y + '"]').getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  }, [x, y]);
+  const free = await page.evaluate(() => {
+    const run = AG.App.run, enc = AG.Encounters[run.battle.enc];
+    const { board } = AG.parseBoard(enc.map, enc.legend);
+    for (let i = 0; i < board.n; i++) {
+      const x = i % board.w, y = (i / board.w) | 0;
+      if (board.deploy[i] && !run.battle.formation.some((e) => e.x === x && e.y === y)) return [x, y];
+    }
+    return null;
+  });
+  // Press, move and release with a finger on the phone run, a mouse otherwise.
+  const cdp = mobile ? await ctx.newCDPSession(page) : null;
+  const press = async (x, y) => (cdp ? cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }) : (await page.mouse.move(x, y), page.mouse.down()));
+  const drag = async (x, y) => (cdp ? cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] }) : page.mouse.move(x, y, { steps: 6 }));
+  const release = async () => (cdp ? cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }) : page.mouse.up());
+  const tap = async (x, y) => (cdp ? (await press(x, y), release()) : page.mouse.click(x, y));
+  if (free) {
+    const first = await page.evaluate(() => { const e = AG.App.run.battle.formation[0]; return [e.x, e.y]; });
+    await page.locator('.cell[data-x="' + first[0] + '"]').first().scrollIntoViewIfNeeded();
+    const [px, py] = await pos(first[0], first[1]);
+    await press(px, py);
+    await page.waitForTimeout(600);
+    await release();
+    await page.waitForTimeout(150);
+    if (!(await page.locator('.token.lifted').count())) errors.push('long press did not pick the piece up');
+    await shot('07b-lifted');
+    const [fx, fy] = await pos(free[0], free[1]);
+    await tap(fx, fy);
+    await page.waitForTimeout(200);
+    const moved = await page.evaluate(([x, y]) => AG.App.run.battle.formation[0].x === x && AG.App.run.battle.formation[0].y === y, free);
+    if (!moved) errors.push('the picked-up piece was not set down on the tapped square');
+    if (await page.locator('.token.lifted').count()) errors.push('the piece stayed lifted after being set down');
+    // Hold, then drag it back while still pressing.
+    const [qx, qy] = await pos(free[0], free[1]);
+    await press(qx, qy);
+    await page.waitForTimeout(600);
+    const [bx, by] = await pos(first[0], first[1]);
+    await drag((qx + bx) / 2, (qy + by) / 2);
+    await drag(bx, by);
+    await release();
+    await page.waitForTimeout(200);
+    const back = await page.evaluate(([x, y]) => AG.App.run.battle.formation[0].x === x && AG.App.run.battle.formation[0].y === y, first);
+    if (!back) errors.push('holding and dragging did not move the piece');
+  }
+
   // Open a placed piece's loadout.
   await page.locator('.token.p').first().click();
   await page.waitForTimeout(200);
   if (mobile) {
-    await page.getByRole('button', { name: /Upgrades/ }).click();
+    // Tapping an already selected piece opens its details straight away.
+    if (!(await page.locator('.modal').count())) await page.getByRole('button', { name: /Upgrades/ }).click();
     await page.waitForTimeout(250);
     await shot('08-loadout');
     await page.locator('.modal .close').click();

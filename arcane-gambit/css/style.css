@@ -230,6 +230,13 @@ p { margin: 0; }
 .token.summoned .piece { inset: 12% 14% 10%; }
 .token.object .piece { inset: 10% 10% 12%; }
 .token.dragging { z-index: 10; opacity: 0.85; }
+/* A piece picked up in the war room: lifted, shadowed, wiggling. */
+.token.lifted { z-index: 9; }
+.token.lifted .piece { animation: wiggle 0.42s ease-in-out infinite; transform-origin: 50% 88%; filter: drop-shadow(0 7px 4px rgba(0, 0, 0, 0.55)); }
+@keyframes wiggle { 0%, 100% { transform: translateY(-9%) rotate(-7deg); } 50% { transform: translateY(-9%) rotate(7deg); } }
+.token.p { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* In the war room a held piece follows the finger instead of scrolling the page. */
+.setup .token.p { touch-action: none; }
 .token .bars { position: absolute; left: 16%; right: 16%; bottom: 3%; height: max(5px, calc(var(--cell) * 0.085)); border-radius: 3px; background: #0c0c10; border: 1.5px solid var(--line); overflow: hidden; }
 .token .bars i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--green); transition: width 0.25s; }
 .token.e .bars i { background: var(--red); }
@@ -652,6 +659,7 @@ svg.ui { display: inline-block; vertical-align: -2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .offer:hover { transform: none; }
+  .token.lifted .piece { animation: none; transform: translateY(-9%); }
   * { scroll-behavior: auto !important; }
 }
 

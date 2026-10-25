@@ -33,7 +33,7 @@ const { chromium } = require('playwright');
     };
     // 1. Every effect, one second apart.
     window.dispatchEvent(new Event('pointerdown'));
-    const names = ['click', 'place', 'remove', 'deploy', 'walk', 'slide', 'leap', 'blink', 'slash', 'smash', 'arrow', 'bolt', 'fire', 'frost', 'lightning', 'beam', 'boom', 'holy', 'shadow', 'nature', 'goo', 'rally', 'hit', 'death', 'heal', 'shield', 'summon', 'promote', 'status', 'round', 'storm', 'negate', 'coin', 'relic', 'victory', 'defeat', 'error'];
+    const names = ['click', 'place', 'pickup', 'remove', 'deploy', 'walk', 'slide', 'leap', 'blink', 'slash', 'smash', 'arrow', 'bolt', 'fire', 'frost', 'lightning', 'beam', 'boom', 'holy', 'shadow', 'nature', 'goo', 'rally', 'hit', 'death', 'heal', 'shield', 'summon', 'promote', 'status', 'round', 'storm', 'negate', 'coin', 'relic', 'victory', 'defeat', 'error'];
     names.forEach((n, i) => S.fx(n, 6, i * 1.2));
     const fxBuf = await window.__offline.startRendering();
     const fx = names.map((n, i) => Object.assign({ name: n }, stats(fxBuf, i * 1.2, i * 1.2 + 1.15)));

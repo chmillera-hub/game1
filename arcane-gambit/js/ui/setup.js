@@ -65,6 +65,7 @@
     }
     const narrow = () => window.innerWidth < 980;
     let sel = { kind: null };
+    let lifted = false; // the selected piece was long-pressed and is in hand
     let preview = null;
     let showDanger = false;
 
@@ -75,6 +76,7 @@
       canDrag: (uid) => uid <= F.length,
       canDrop: (uid, x, y) => !!board.deploy[y * board.w + x],
       onDrop: onDrop,
+      onLift: onLift,
     });
 
     // -------------------------------------------------------- derived
@@ -102,11 +104,12 @@
       const at = entryAt(x, y);
       if (at >= 0) { onPlaced(at); return; }
       if (!board.deploy[i]) {
+        if (lifted) { putDown(); return; }
         if (sel.kind) { sel = { kind: null }; refresh(); }
         return;
       }
       if (sel.kind === 'card') place(sel.def, x, y);
-      else if (sel.kind === 'placed') { F[sel.i].x = x; F[sel.i].y = y; UI.Sound.fx('place'); changed(); }
+      else if (sel.kind === 'placed') { lifted = false; F[sel.i].x = x; F[sel.i].y = y; UI.Sound.fx('place'); changed(); }
       else UI.toast('Pick a unit from your army below, then tap a blue square.');
     }
     function onToken(uid) {
@@ -118,6 +121,12 @@
       if (narrow()) openInspector();
     }
     function onPlaced(i) {
+      // With a piece in hand, tapping another of yours swaps them; tapping it puts it down.
+      if (lifted && sel.kind === 'placed') {
+        if (sel.i === i) { putDown(); return; }
+        onDrop(sel.i + 1, F[i].x, F[i].y);
+        return;
+      }
       if (sel.kind === 'placed' && sel.i === i) { if (narrow()) openInspector(); return; }
       sel = { kind: 'placed', i };
       refresh();
@@ -129,10 +138,24 @@
       if (other >= 0 && other !== i) { F[other].x = F[i].x; F[other].y = F[i].y; }
       F[i].x = x; F[i].y = y;
       sel = { kind: 'placed', i };
+      lifted = false;
+      UI.Sound.fx('place');
       changed();
+    }
+    function onLift(uid) {
+      sel = { kind: 'placed', i: uid - 1 };
+      lifted = true;
+      UI.Sound.fx('pickup');
+      refresh();
+    }
+    function putDown() {
+      lifted = false;
+      UI.Sound.fx('place');
+      refresh();
     }
     function removeEntry(i) {
       F.splice(i, 1);
+      lifted = false;
       UI.Sound.fx('remove');
       sel = { kind: null };
       changed();
@@ -208,7 +231,7 @@
       const coach = h('div.coach',
         h('div.coach-steps',
           h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; bring as many units as the supply and the blue squares allow, or press Auto-deploy.'),
-          h('div', h('b', '2. Deploy'), ' Tap a blue square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
+          h('div', h('b', '2. Deploy'), ' Tap a blue square to place it. Tap a placed piece for talents and runes; hold it to pick it up and move it. Tap enemies to see exactly what they do.'),
           h('div', h('b', '3. Watch'), ' Press Begin. The two sides take turns, one piece at a time, fastest first, and every piece thinks for itself. If you lose, rethink and retry.'),
         ),
         h('button.btn.small', { type: 'button', on: { click: () => { App.prefs.seenWarRoom = true; App.savePrefs(); coach.remove(); } } }, 'Got it'),
@@ -271,7 +294,7 @@
         if (e.rune) selBar.appendChild(h('span.chip', UI.glyph(AG.Runes[e.rune].icon), AG.Runes[e.rune].name));
         selBar.appendChild(h('button.btn.small', { type: 'button', on: { click: openInspector } }, narrow() ? 'Upgrades & details' : 'Details'));
         selBar.appendChild(h('button.btn.small.danger', { type: 'button', on: { click: () => removeEntry(sel.i) } }, 'Remove'));
-        selBar.appendChild(h('span.hint', 'Tap a blue square to move it.'));
+        selBar.appendChild(h('span.hint', lifted ? 'Picked up: tap a blue square to set it down there (or one of your pieces to swap).' : 'Tap a blue square to move it, or hold the piece to pick it up.'));
       } else if (sel.kind === 'card') {
         const d = AG.Units[sel.def];
         selBar.appendChild(h('span.chip.brass', UI.icon(sel.def), d.name + ' · ' + d.cost + ' supply'));
@@ -421,7 +444,9 @@
       view.sync(preview.units);
       view.markDeploy();
       const selEnemy = sel.kind === 'enemy' ? enemyUnits()[sel.k] : null;
+      if (sel.kind !== 'placed') lifted = false;
       view.setFlag('selected', sel.kind === 'placed' ? sel.i + 1 : selEnemy ? selEnemy.uid : -1);
+      view.setFlag('lifted', lifted ? sel.i + 1 : -1);
       renderReach(sel.kind === 'placed' ? preview.units[sel.i] : selEnemy);
       renderMeters();
       renderQueue();

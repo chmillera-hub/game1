@@ -150,6 +150,7 @@
   const FX = {
     click: (t) => tone({ t, type: 'triangle', f: 900, f2: 700, dur: 0.05, peak: 0.035 }),
     place: (t) => { tone({ t, f: 220, f2: 110, dur: 0.14, peak: 0.22 }); noise({ t, dur: 0.05, peak: 0.04, filter: { f: 1400 } }); },
+    pickup: (t) => { tone({ t, type: 'triangle', f: 330, f2: 660, glide: 0.09, dur: 0.16, peak: 0.12 }); tone({ t: t + 0.07, f: 990, dur: 0.12, peak: 0.05 }); },
     remove: (t) => tone({ t, f: 150, f2: 230, dur: 0.12, peak: 0.14 }),
     deploy: (t) => { for (let i = 0; i < 4; i++) tone({ t: t + i * 0.05, f: 240 - i * 20, f2: 120, dur: 0.12, peak: 0.13 }); },
     walk: (t) => noise({ t, dur: 0.07, peak: 0.05, filter: { type: 'bandpass', f: 650, q: 1.4 } }),

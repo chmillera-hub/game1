@@ -127,6 +127,7 @@
     const t = { uid: u.uid, el, x: u.x, y: u.y, side: u.side };
     const self = this;
     el.addEventListener('pointerdown', function (e) { self.onTokenDown(t, e); });
+    el.addEventListener('contextmenu', function (e) { if (self.opts.canDrag && self.opts.canDrag(t.uid)) e.preventDefault(); });
     el.addEventListener('click', function (e) {
       if (self.suppressClick) return;
       e.stopPropagation();
@@ -200,15 +201,30 @@
   };
 
   // ------------------------------------------------------------ dragging
+  /* Pieces you may move (opts.canDrag) can be dragged with a mouse, or
+     long-pressed (any pointer) to pick them up: the piece lifts and
+     wiggles, opts.onLift is told, and it can then be dragged with the
+     finger still down, or set down by tapping a square. */
+  const LONG_PRESS = 420;
   BoardView.prototype.onTokenDown = function (t, e) {
-    if (e.pointerType === 'touch' || !this.opts.canDrag || !this.opts.canDrag(t.uid)) return;
+    if (!this.opts.canDrag || !this.opts.canDrag(t.uid) || (e.pointerType === 'mouse' && e.button !== 0)) return;
     const self = this;
+    const touch = e.pointerType !== 'mouse';
     const sx = e.clientX, sy = e.clientY;
-    let dragging = false;
+    let dragging = false, held = false;
     const r0 = this.boardEl.getBoundingClientRect();
+    const timer = setTimeout(function () {
+      if (dragging) return;
+      held = true;
+      self.suppressClick = true;
+      if (self.opts.onLift) self.opts.onLift(t.uid);
+    }, LONG_PRESS);
     function move(ev) {
       const dx = ev.clientX - sx, dy = ev.clientY - sy;
       if (!dragging && Math.abs(dx) + Math.abs(dy) > 8) {
+        // A finger that moves before the long press is a scroll, not a drag.
+        if (touch && !held) { clearTimeout(timer); stop(); return; }
+        clearTimeout(timer);
         dragging = true;
         t.el.classList.add('dragging');
         try { t.el.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
@@ -221,16 +237,22 @@
         ev.preventDefault();
       }
     }
-    function up(ev) {
+    function stop() {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+    }
+    function up(ev) {
+      clearTimeout(timer);
+      stop();
+      if (held || dragging) {
+        self.suppressClick = true;
+        setTimeout(function () { self.suppressClick = false; }, 60);
+      }
       if (!dragging) return;
       t.el.classList.remove('dragging');
       self.mark('drop-ok', null);
-      self.suppressClick = true;
-      setTimeout(function () { self.suppressClick = false; }, 60);
-      const c = self.cellAt(ev.clientX, ev.clientY);
+      const c = ev.type === 'pointercancel' ? null : self.cellAt(ev.clientX, ev.clientY);
       self.place(t, t.x, t.y);
       if (c && self.opts.onDrop) self.opts.onDrop(t.uid, c.x, c.y);
     }
