@@ -1271,6 +1271,11 @@ test('war totems whip nearby allies into a frenzy at the start of their turn, an
   assert.strictEqual(near.hp, 20, 'no healing');
   assert.ok(s.events.some((e) => e.t === 'totem'));
   assert.ok(!s.events.some((e) => e.t === 'heal'));
+  // Kept up turn after turn, it is announced only the once.
+  const said = () => s.events.filter((e) => e.t === 'status' && e.status === 'frenzy' && e.uid === near.uid).length;
+  for (let i = 0; i < 6; i++) E.endTurn(s);
+  assert.ok(near.frenzy > 0, 'still in a frenzy');
+  assert.strictEqual(said(), 1, 'FRENZY shown once, not every turn');
 });
 
 test('regular enemies never heal: Orc Shaman drums only rouse, a Specter weakens instead of draining, a Bog Troll does not regenerate', () => {
