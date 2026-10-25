@@ -131,7 +131,11 @@ on a phone turned sideways, but portrait works too.
   is a Cleric: every army starts with its own (see Your Cleric). The skills and gear
   offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. Every unit card shows all its numbers:
-  HP, damage, armor, magic resistance, block, cooldown, move, range and speed. You start with 60 gold.
+  HP, damage, armor, magic resistance, block, cooldown, move, range and speed, and
+  names the talent it brings (one its class has not brought from an earlier pick).
+  Your Cleric sits in the army strip from the first pick, with the talent it brings:
+  tap it for its details before you choose the rest. You start with 60 gold. How to
+  play never pops up on its own: it is in the menu and on the title screen.
 
 - **The road**: no map. Each act is four rounds; in each you choose one of three
   battles, shown as cards with a picture of the field, the mission and bonus goals,
@@ -174,7 +178,14 @@ on a phone turned sideways, but portrait works too.
   a purple skull-and-crossbones "Wyrm slayer" badge, and its row glows purple. Priority
   is banned in Hall matches, on purpose: whichever army you steered would almost always
   win, and the ranking would mean nothing. Tap a unit and the Priority button shows
-  crossed out with a red X; tap it and it says why. The first army takes #1; later ones wait in line ("Waiting
+  crossed out with a red X; tap it and it says why. The very first army to enter finds
+  four **house armies** holding the Hall, mobs of one kind spammed onto the field at
+  48 Supply, Level 1 and bare: The Scamper Pack (24 Scouts, #1), The Tin Can Brigade
+  (16 Knights), The Thousand Arrows (16 Archers) and The Witching Hour (12 Witches with
+  Abyssal Bolt, at the bottom). Can your carefully chosen army beat them? In the
+  simulations most winning armies do (83 to 93% of the time); at 30 Supply every one
+  walked over them, so the mobs field about one and a half winning armies' worth.
+  Later armies wait in line ("Waiting
   to climb") until you start their climb from the Hall, whenever you like, even several
   campaigns later. A climb starts at the bottom: it fights
   the army right above it, on a fresh field with mirrored obstacles, both sides on the
@@ -189,7 +200,11 @@ on a phone turned sideways, but portrait works too.
   that changes nothing. One army climbs at a time, and nothing is played out without
   you.
   The Hall is on the title screen (with how many armies wait to climb) and the end
-  screen, and kept in the browser apart from your campaign save.
+  screen, and kept in the browser apart from your campaign save. It survives every
+  update of the game: armies from older versions keep their places and fight by
+  today's rules (whatever was rebalanced since applies to them too); anything they
+  carry that no longer exists is left out, never the army. Only Reset Hall of Fame
+  (at the bottom of the Hall, or in the menu, with a confirmation) clears it.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Tap a unit on the board (or hold its
   card) for its full loadout: cost, level, every slot and pick spelled out, stats and
@@ -270,8 +285,8 @@ on a phone turned sideways, but portrait works too.
   another skill slot, a talent slot and a second ability pick. Level 3 (+5) adds a
   class mastery, a third talent slot and a second gear slot.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
-  and the like) are class talents. Every unit you get brings one random talent of its
-  class, which goes into your pack (the unit itself arrives bare, at its base price);
+  and the like) are class talents. Every unit you get brings one talent of its
+  class, named on its card wherever it is offered (draft, spoils, merchant), which goes into your pack (the unit itself arrives bare, at its base price);
   slot it into any unit of that class on the field. Every class has at least three
   talents, and a new unit brings one you do not own yet (bought and found ones count),
   so three Clerics bring three different talents; only once you own them all does one
@@ -284,6 +299,20 @@ on a phone turned sideways, but portrait works too.
   Talent cards are teal in shops and spoils, and the rare ones glow magenta. Every
   talent improves something its class always has (its attack, its defenses, its
   innate traits), never an ability the unit might not have picked; a test checks it.
+- **Free side-grades**: some skills and gear cost 0 Supply but still take a slot.
+  Immunities that rarely matter (Unshakable) are free, and so are trades
+  more than upgrades, marked "Free · side-grade": Bull Rush (your basic attack
+  shoves), the Grappling Hook (it drags, for ranged units),
+  War Paint (+15% damage, -10 HP), Reckless (+15% damage, -15% armor) and the
+  Featherweight Cloak (+1 Move, -10% armor). Auto leaves side-grades to you.
+- **The AI and positioning**: picks that only pay off from the right spot say how
+  the AI plays them. A Guardian (or Holy Aegis, Spellward Aura, Grounding Field, a
+  Golem's protection) escorts: it marches with your fragile units instead of ahead
+  of them and keeps one beside it, and the fragile ones stay beside it too. Pack
+  Hunter picks targets your other units already stand beside; Ambusher and Flanker
+  go round the side or back; Trample takes the long way in. Your army also loves a
+  good shove: when it can bump a foe into water, lava, a rock, the edge, another foe
+  or a building, it goes out of its way to.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
@@ -364,6 +393,18 @@ on a phone turned sideways, but portrait works too.
   too. A short "Fatigue triggered!" banner marks the start (no message to tap away),
   and the top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
+- **Cleanup**: when the enemy army falls while the field still holds something worth
+  having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
+  wagon, barricades, walls, towers, the buildings that send reinforcements), the
+  battle does not end on the spot. A banner says the army is beaten, the win is
+  yours already, and your army goes round collecting: it breaks the buildings, cuts
+  down any guards still at their posts (the specters by the Lost Tome) and takes the
+  loot, gold and quest rewards and all. Fatigue still bites, but it cannot cost you
+  the battle: it ends with your win when nothing is left, when your army is gone, when
+  six turns pass without progress, or when you tap Finish now (the menu's Retreat
+  becomes Finish the battle). The top bar counts what is left. A flawless or fast win
+  counts from the moment the enemy army fell, so a unit fatigue takes during the
+  cleanup does not spoil it.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
   on and the enemy must still bring every one down; if neither side can hurt the

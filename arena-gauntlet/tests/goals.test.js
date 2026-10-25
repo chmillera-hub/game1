@@ -73,4 +73,27 @@ test('keeping the win saves it straight away', () => {
   assert.strictEqual(R.load().pending.type, 'reward', 'leaving the app at the question keeps the win');
 });
 
+test('a flawless or fast win counts from the moment the enemy army fell: losses during the cleanup do not spoil it', () => {
+  const run = R.newRun({ seed: 3, warband: 'vanguard' });
+  R.chooseChallenge(run, 0);
+  run.pending.enc.bonus = [{ type: 'flawless' }, { type: 'swift', turns: 1 }];
+  const s = E.createBattle({ w: 9, h: 9, terrain: new Array(81).fill(0), relics: { P: [], E: [] }, seed: 7, units: [
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'totem', team: 'E', x: 0, y: 0 },
+  ] });
+  s.side = 'P';
+  const [kn, sc] = s.units;
+  sc.hp = 1;
+  E.beginActivation(s, kn.uid);
+  E.performAction(s, kn.uid, { kind: 'unit', uid: sc.uid, ai: 0 });
+  E.finishActivation(s, null);
+  assert.ok(s.cleanup && !s.over && s.cleanup.turn === 1);
+  kn.hp = 1;
+  s.overtime = 1;
+  for (let i = 0; i < 12 && !s.over; i++) E.endTurn(s);
+  assert.ok(s.over && s.winner === 'P' && !kn.alive && s.turn > 1, `turn ${s.turn}`);
+  assert.deepStrictEqual(R.goalResults(run, s, []).map((g) => g.done), [true, true]);
+});
+
 console.log(`goals: ${passed} tests passed`);

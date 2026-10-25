@@ -19,7 +19,10 @@ function test(name, fn) {
 }
 
 const HALL = 'arena-gauntlet-hall-v1';
-const clearHall = () => delete store[HALL];
+// An empty Hall that has already had its house armies (so the ladder tests below start
+// truly empty); freshHall() is a Hall nobody has ever entered.
+const clearHall = () => (store[HALL] = JSON.stringify({ legends: [], queue: [], house: true }));
+const freshHall = () => delete store[HALL];
 
 // Win the battle at hand without fighting it (the reward logic runs as after a real win).
 function win(run) {
@@ -282,6 +285,69 @@ test('the final challenge can be retried as often as you like; calling it a day,
   assert.strictEqual(h.legends[0].id, run.legendId);
   assert.deepStrictEqual(h.legends[0].units, run.megaArmy);
   assert.ok(!h.legends[0].superWon && run.over);
+});
+
+test('the first army ever to enter finds the house armies holding the Hall: mobs of one kind, at 48 Supply', () => {
+  freshHall();
+  const run = winCampaign(21);
+  const h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.type), ['scout', 'knight', 'archer', 'witch']);
+  for (const l of h.legends) {
+    assert.ok(l.house && l.climbed);
+    const T = AG.Data.UNITS[l.type];
+    const supply = l.units.reduce((t, it) => t + T.cost + AG.Data.LEVEL_COST[it.spec.level], 0);
+    assert.ok(supply <= R.HOUSE_SUPPLY && supply > R.HOUSE_SUPPLY - T.cost, `${l.name}: ${supply} Supply`);
+    assert.ok(l.units.every((it) => it.spec.type === l.type && it.y >= 6), 'all of a kind, on their own half');
+    assert.strictEqual(new Set(l.units.map((it) => it.x + ',' + it.y)).size, l.units.length);
+  }
+  assert.deepStrictEqual(R.hallPlace(h, run.legendId), { inLine: 1 }, 'it waits to climb past them');
+  R.hallStart();
+  const h2 = R.loadHall();
+  assert.strictEqual(R.hallNext(h2, run.legendId).type, 'witch', 'from the bottom up');
+  // Later armies do not bring more house armies.
+  winCampaign(22);
+  assert.strictEqual(R.loadHall().legends.concat(R.loadHall().queue).filter((l) => l.house).length, 4);
+});
+
+test('old Hall armies survive any update: what no longer exists is left out, never the army', () => {
+  freshHall();
+  const D = AG.Data;
+  const relic = Object.keys(D.RELICS)[0];
+  const skill = Object.keys(D.SKILLS).find((id) => D.eligible('knight', D.SKILLS[id]));
+  const gear = Object.keys(D.GEAR).find((id) => D.eligible('knight', D.GEAR[id]));
+  store[HALL] = JSON.stringify({
+    legends: [
+      { id: 'old1', name: 'The Old Guard', wins: 3, losses: 1, climbed: true, level: 7, relics: [relic, 'gone_relic'], units: [
+        { spec: { type: 'knight', level: 3, a1: 'k_bash', a2: 'no_such_pick', talents: ['gone_talent'], skills: [skill, 'old_skill'], gear: [gear, 'old_gear'], enchant: 'old_enchant' }, x: 4, y: 7, facing: 0 },
+        { spec: { type: 'retired_unit', level: 2 }, x: 3, y: 7, facing: 0 },
+        { spec: { type: 'archer', level: 9 }, x: 5, y: 8, facing: 0 },
+      ] },
+    ],
+    queue: [],
+  });
+  const h = R.loadHall();
+  assert.strictEqual(h.legends.length, 1, 'still there');
+  const L = h.legends[0];
+  assert.deepStrictEqual([L.name, L.wins, L.losses], ['The Old Guard', 3, 1]);
+  assert.deepStrictEqual(L.relics, [relic]);
+  assert.deepStrictEqual(L.units.map((it) => it.spec.type), ['knight', 'archer']);
+  const kn = L.units[0].spec;
+  assert.deepStrictEqual([kn.a1, kn.a2, kn.talents, kn.skills, kn.gear, kn.enchant], ['k_bash', undefined, [], [skill], [gear], undefined]);
+  assert.strictEqual(L.units[1].spec.level, AG.Data.MAX_LEVEL);
+  // It still fights, by today's rules.
+  const w = R.playHallMatch(L, fake('x', 'scout'), 5);
+  assert.ok(w === 'P' || w === 'E');
+  // Junk in storage does not take the Hall down either.
+  store[HALL] = '{not json';
+  assert.deepStrictEqual(R.loadHall(), { legends: [], queue: [] });
+});
+
+test('only Reset Hall of Fame clears it', () => {
+  clearHall();
+  winCampaign(23);
+  assert.strictEqual(R.loadHall().legends.length, 1);
+  R.resetHall();
+  assert.deepStrictEqual(R.loadHall(), { legends: [], queue: [] });
 });
 
 console.log(`hall: ${passed} tests passed`);

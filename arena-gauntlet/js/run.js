@@ -94,14 +94,17 @@
     return { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, talents: [], skills: [], gear: [] };
   }
 
+  // extra.talent: the talent an offer already named for it (else one is rolled now).
   function addRecruit(run, type, extra) {
     const u = { id: 'u' + run.nextId, type, name: '', enchant: null, kills: 0, battles: 0, load: defaultLoad(type) };
     u.name = pickName(run);
     run.nextId++;
+    const talent = extra && extra.talent;
     if (extra) Object.assign(u, extra);
+    delete u.talent;
     if (u.enchant && !D.eligible(type, ENCHANTS[u.enchant])) u.enchant = null;
     run.roster.push(u);
-    giveTalent(run, u);
+    giveTalent(run, u, talent);
     return u;
   }
 
@@ -112,7 +115,7 @@
     return run.roster.find((u) => u.core) || null;
   }
 
-  function ensureCore(run) {
+  function ensureCore(run, clericTalent) {
     const has = coreUnit(run);
     if (has) return has;
     const c = run.roster.find((u) => u.type === 'cleric');
@@ -120,7 +123,7 @@
       c.core = true;
       return c;
     }
-    const u = addRecruit(run, 'cleric', { core: true });
+    const u = addRecruit(run, 'cleric', { core: true, talent: clericTalent });
     run.roster.splice(run.roster.indexOf(u), 1);
     run.roster.unshift(u);
     return u;
@@ -130,14 +133,19 @@
   // the bench carry nothing, and you equip it in the War Room once the unit is on the field.
   // It is one you do not own yet while any is left (bought or found ones count), so units of
   // one class bring different talents; only once you own them all does one come twice.
-  function giveTalent(run, u) {
-    const all = Object.values(TALENTS).filter((t) => t.cls === u.type);
-    if (!all.length) return;
+  // Offers settle it up front (named on the card); `id` is that one, when there is one.
+  function giveTalent(run, u, id) {
+    if (!(id && TALENTS[id] && TALENTS[id].cls === u.type)) id = rollTalentFor(run, u.type, AG.derive(run.seed, 'talent:' + u.id));
+    if (id) u.brought = addItem(run, 'talent', id).id;
+  }
+
+  // The talent a new unit of this type would bring right now.
+  function rollTalentFor(run, type, rng) {
+    const all = Object.values(TALENTS).filter((t) => t.cls === type);
+    if (!all.length) return null;
     const owned = (t) => run.items.filter((i) => i.kind === 'talent' && i.id === t.id).length;
     const fewest = Math.min(...all.map(owned));
-    const opts = all.filter((t) => owned(t) === fewest).map((t) => [t.id, talentWeight(run, t)]);
-    const rng = AG.derive(run.seed, 'talent:' + u.id);
-    u.brought = addItem(run, 'talent', rng.weighted(opts)).id;
+    return rng.weighted(all.filter((t) => owned(t) === fewest).map((t) => [t.id, talentWeight(run, t)]));
   }
 
   // " Mira brings the Poison Arrows talent (in your pack)." for a unit that just joined.
@@ -367,7 +375,14 @@
       const weight = (t) => (UNITS[t].rarity === 'common' ? 3 : UNITS[t].rarity === 'uncommon' ? 2 : 1);
       const pool = DRAFT_POOL.filter((t) => t !== 'cleric');
       const options = three(pool, weight, (o) => o.filter(isAttacker).length >= 2 && o.filter(support).length <= 1);
-      return { kind, options };
+      // Each brings a talent named up front: one its class has not brought from an earlier pick.
+      const taken = draftBrought(seed, picks.slice(0, step)).concat(draftClericTalent(seed));
+      const talents = options.map((t, i) => {
+        const all = Object.keys(TALENTS).filter((id) => TALENTS[id].cls === t);
+        const fresh = all.filter((id) => !taken.includes(id));
+        return all.length ? AG.derive(seed, 'draftTalent:' + step + ':' + i).pick(fresh.length ? fresh : all) : null;
+      });
+      return { kind, options, talents };
     }
     if (kind === 'relic') {
       const options = three(Object.keys(RELICS).filter((id) => RELICS[id].tier === 'common'), () => 1);
@@ -377,6 +392,21 @@
     const table = kind === 'skill' ? SKILLS : GEAR;
     const fit = Object.keys(table).filter((id) => table[id].cost <= 2 && units.some((t) => D.eligible(t, table[id])));
     return { kind, options: three(fit, () => 1) };
+  }
+
+  // The talents the drafted units bring, pick by pick (null where a class has none).
+  function draftBrought(seed, units) {
+    return units.map((t, k) => {
+      const o = draftOffer(seed, k, units);
+      const i = o ? o.options.indexOf(t) : -1;
+      return i >= 0 ? o.talents[i] : null;
+    });
+  }
+
+  // The talent your Cleric brings, named from the first pick of the draft.
+  function draftClericTalent(seed) {
+    const all = Object.keys(TALENTS).filter((id) => TALENTS[id].cls === 'cleric');
+    return all.length ? AG.derive(seed, 'draftTalent:cleric').pick(all) : null;
   }
 
   function newRun(opts) {
@@ -417,8 +447,9 @@
       won: false,
       stats: { battles: 0, elites: 0, bosses: 0, gold: 0, xp: 0, kills: 0, losses: 0, firstTry: 0, lean: 0 },
     };
-    for (const t of wb.units) addRecruit(run, t);
-    ensureCore(run);
+    const brought = draft ? draftBrought(seed, wb.units) : [];
+    wb.units.forEach((t, i) => addRecruit(run, t, brought[i] ? { talent: brought[i] } : null));
+    ensureCore(run, draft ? draftClericTalent(seed) : null);
     for (const [kind, id] of wb.items || []) addItem(run, kind, id);
     startAct(run, 1);
     return run;
@@ -519,7 +550,7 @@
   function rollReward(run, node, T, kind) {
     // The same stream a first-try win used to roll from, so the pay is what it always was.
     const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id + ':0');
-    const out = { gold: rng.range(T.gold[0], T.gold[1]), spoils: T.spoils ? genSpoils(run, rng, kind).slice(0, T.spoils) : [], relic: null, lucky: false };
+    const out = { gold: rng.range(T.gold[0], T.gold[1]), spoils: T.spoils ? genSpoils(run, rng, kind, node.id).slice(0, T.spoils) : [], relic: null, lucky: false };
     const lucky = !T.relic && T.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(T.relicChance);
     if (T.relic || lucky) {
       out.relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
@@ -1398,10 +1429,11 @@
     if (id === 'kings_ransom') run.gold += 150;
   }
 
-  function genSpoils(run, rng, kind) {
+  function genSpoils(run, rng, kind, salt) {
     const out = [];
+    const talentOf = (unit) => rollTalentFor(run, unit, AG.derive(run.seed, 'rtalent:' + run.act + ':' + (salt || '') + ':' + out.length + ':' + unit));
     const r1 = rollRecruit(run, rng, kind);
-    out.push({ type: 'recruit', unit: r1.unit, enchant: r1.enchant });
+    out.push({ type: 'recruit', unit: r1.unit, enchant: r1.enchant, talent: talentOf(r1.unit) });
     const firstItem = rng.chance(0.5) ? 'skill' : 'gear';
     const id1 = firstItem === 'skill' ? rollSkill(run, rng) : rollGear(run, rng);
     if (id1) out.push({ type: firstItem, id: id1 });
@@ -1411,7 +1443,7 @@
       const k = rng.weighted([['recruit', 30], ['skill', 22], ['gear', 22], ['talent', talentW], ['scroll', scrollW]]);
       if (k === 'recruit') {
         const r = rollRecruit(run, rng, kind, [r1.unit]);
-        out.push({ type: 'recruit', unit: r.unit, enchant: r.enchant });
+        out.push({ type: 'recruit', unit: r.unit, enchant: r.enchant, talent: talentOf(r.unit) });
       } else if (k === 'skill' || k === 'gear' || k === 'talent') {
         const ex = out.map((o) => o.id);
         const id = k === 'skill' ? rollSkill(run, rng, ex) : k === 'gear' ? rollGear(run, rng, ex) : rollTalent(run, rng, ex);
@@ -1430,8 +1462,10 @@
   function bonusDone(s, deployment, b) {
     if (b.type === 'loot') return s.loot.some((l) => l.id === b.lootId && l.taken);
     // A fast win counts from the turn the mission was done (the rout), not the last kill.
-    if (b.type === 'swift') return (s.routed ? s.routed.turn : s.turn) <= b.turns;
-    if (b.type === 'flawless') return !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
+    // Counted from the turn the mission was done, or the enemy army fell, not the last of
+    // the cleanup; a unit fatigue takes during the cleanup does not spoil a flawless win.
+    if (b.type === 'swift') return (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) <= b.turns;
+    if (b.type === 'flawless') return s.cleanup ? s.cleanup.lost === 0 : !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
     if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
     if (b.type === 'ambush') return (s.stats.waveKills || 0) >= b.n;
     if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
@@ -1591,7 +1625,7 @@
     if (!p || p.type !== 'reward' || p.spoilTaken) return false;
     const sp = p.spoils[index];
     if (!sp) return false;
-    if (sp.type === 'recruit') addRecruit(run, sp.unit, { enchant: sp.enchant || null });
+    if (sp.type === 'recruit') addRecruit(run, sp.unit, { enchant: sp.enchant || null, talent: sp.talent || null });
     else if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') addItem(run, sp.type, sp.id);
     else if (sp.type === 'gold') run.gold += sp.amount;
     p.spoilTaken = true;
@@ -1650,7 +1684,8 @@
     const extra = rng.pick(['scroll', 'supply', 'manual']);
     const r = rollRecruit(run, rng, 'normal');
     const price = RECRUIT_PRICE[UNITS[r.unit].rarity] + (r.enchant ? 40 : 0);
-    items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, price: discount(run, price), sold: false });
+    const rt = rollTalentFor(run, r.unit, AG.derive(run.seed, 'rtalent:shop:' + run.act + ':' + node.id + ':' + r.unit));
+    items.push({ kind: 'recruit', unit: r.unit, enchant: r.enchant, talent: rt, price: discount(run, price), sold: false });
     const talent = rollTalent(run, rng);
     if (talent) items.push({ kind: 'talent', id: talent, price: discount(run, TALENT_PRICE(TALENTS[talent].cost)), sold: false });
     const skill = rollSkill(run, rng);
@@ -1696,7 +1731,7 @@
     if (!item || !canBuy(run, item)) return false;
     switch (item.kind) {
       case 'recruit':
-        addRecruit(run, item.unit, { enchant: item.enchant || null });
+        addRecruit(run, item.unit, { enchant: item.enchant || null, talent: item.talent || null });
         break;
       case 'skill':
       case 'gear':
@@ -2453,8 +2488,10 @@
       if (!did) {
         // Siege gear first when buildings must fall; left in the pack otherwise.
         const siegeNeeded = siegeTargets(enc) > 0;
-        const items = freeItems(run).filter((i) => i.kind !== 'scroll' && (siegeNeeded || !isSiegeItem(itemDef(i))));
-        items.sort((a, b) => (siegeNeeded ? isSiegeItem(itemDef(b)) - isSiegeItem(itemDef(a)) : 0));
+        // Side-grades (0 Supply, a trade more than an upgrade) are yours to choose; real
+        // upgrades go in before free ones.
+        const items = freeItems(run).filter((i) => i.kind !== 'scroll' && !itemDef(i).side && (siegeNeeded || !isSiegeItem(itemDef(i))));
+        items.sort((a, b) => (siegeNeeded ? isSiegeItem(itemDef(b)) - isSiegeItem(itemDef(a)) : 0) || itemDef(b).cost - itemDef(a).cost);
         for (const it of items) {
           const d = itemDef(it);
           if (d.cost > left) continue;
@@ -2600,14 +2637,79 @@
   const LEGEND_A = ['Iron', 'Ember', 'Silent', 'Golden', 'Crimson', 'Ashen', 'Storm', 'Wild', 'Grim', 'Bright', 'Hollow', 'Thorned', 'Gilded', 'Black'];
   const LEGEND_B = ['Company', 'Host', 'Band', 'Legion', 'Guard', 'Vanguard', 'Wardens', 'Brotherhood', 'Banner', 'Pact', 'Lances', 'Shields'];
 
+  // The Hall outlives every update of the game: its key never changes and nothing ever
+  // clears it but Reset Hall of Fame in the menu. Armies from older versions keep their
+  // places and fight by today's rules; anything they carry that no longer exists (a unit,
+  // an ability, a talent, an item, a relic) is simply left out, never the army.
   function loadHall() {
+    let h = null;
     try {
       const j = root.localStorage && root.localStorage.getItem(HALL_KEY);
-      const h = j ? JSON.parse(j) : null;
-      return h && Array.isArray(h.legends) ? Object.assign({ queue: [] }, h) : { legends: [], queue: [] };
+      h = j ? JSON.parse(j) : null;
     } catch (e) {
-      return { legends: [], queue: [] };
+      h = null;
     }
+    if (!h || typeof h !== 'object') return { legends: [], queue: [] };
+    h.legends = Array.isArray(h.legends) ? h.legends.filter((l) => l && typeof l === 'object') : [];
+    h.queue = Array.isArray(h.queue) ? h.queue.filter((l) => l && typeof l === 'object') : [];
+    for (const l of h.legends.concat(h.queue)) tidyLegend(l);
+    return h;
+  }
+
+  function tidyLegend(l) {
+    l.id = l.id || 'L-' + Math.random().toString(36).slice(2, 8);
+    l.name = l.name || 'An Old Company';
+    l.wins = l.wins | 0;
+    l.losses = l.losses | 0;
+    l.relics = (Array.isArray(l.relics) ? l.relics : []).filter((id) => RELICS[id]);
+    l.units = (Array.isArray(l.units) ? l.units : []).filter((it) => it && it.spec && UNITS[it.spec.type] && !UNITS[it.spec.type].traits.includes('summon'));
+    for (const it of l.units) {
+      const sp = it.spec;
+      sp.level = Math.max(1, Math.min(D.MAX_LEVEL, sp.level | 0 || 1));
+      for (const k of ['a1', 'a2']) if (sp[k] && !D.ABILITIES[sp[k]]) delete sp[k];
+      sp.talents = (sp.talents || []).filter((id) => TALENTS[id]);
+      sp.skills = (sp.skills || []).filter((id) => SKILLS[id]);
+      sp.gear = (sp.gear || []).filter((id) => GEAR[id]);
+      if (sp.enchant && !ENCHANTS[sp.enchant]) delete sp.enchant;
+      it.x = Math.max(0, Math.min(BOARD - 1, it.x | 0));
+      it.y = Math.max(0, Math.min(BOARD - 1, it.y | 0));
+    }
+    return l;
+  }
+
+  // Reset Hall of Fame (from the menu): every army goes, the house armies too.
+  function resetHall() {
+    saveHall({ legends: [], queue: [] });
+  }
+
+  // The house armies: a mob of one kind, Level 1 and bare, that hold the Hall for the first
+  // army ever to enter. Can your carefully chosen army beat a field full of Archers, just
+  // spammed out? At 48 Supply (a winning army fields 35 to 40) most do, not all: at 30 every
+  // winner in the simulations walked over them. Ranked toughest first.
+  const HOUSE = [
+    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', rows: [6, 7, 8] },
+    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', rows: [6, 7] },
+    { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', rows: [8, 7] },
+    { id: 'H-witches', type: 'witch', name: 'The Witching Hour', rows: [8, 7], a1: 'wi_abyss' },
+  ];
+  const HOUSE_SUPPLY = 48;
+  function houseArmies() {
+    const mid = (BOARD - 1) / 2;
+    const cols = [...Array(BOARD).keys()].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
+    return HOUSE.map((hz) => {
+      const T = UNITS[hz.type];
+      const n = Math.floor(HOUSE_SUPPLY / T.cost);
+      const units = [];
+      for (const y of hz.rows) for (const x of cols) if (units.length < n) units.push({ spec: { type: hz.type, level: 1, a1: hz.a1 || T.abilities[1][0] }, x, y, facing: 0 });
+      // Supply left over buys a level for the first few.
+      let left = HOUSE_SUPPLY - n * T.cost;
+      for (const it of units) if (left >= LEVEL_COST[2]) {
+        it.spec.level = 2;
+        it.spec.a2 = T.abilities[2][0];
+        left -= LEVEL_COST[2];
+      }
+      return { id: hz.id, name: hz.name, house: true, type: hz.type, date: '', wins: 0, losses: 0, climbed: true, level: 0, relics: [], units, superWon: false };
+    });
   }
 
   function saveHall(h) {
@@ -2626,6 +2728,12 @@
     const h = loadHall();
     let legend = h.legends.find((l) => l.id === run.legendId) || h.queue.find((l) => l.id === run.legendId);
     if (!legend) {
+      // The very first army to enter finds the house armies holding the Hall: it climbs past
+      // them, from the bottom, like everyone after it.
+      if (!h.legends.length && !h.queue.length && !h.house) {
+        h.legends = houseArmies();
+        h.house = true;
+      }
       const rng = AG.derive(run.seed, 'legend');
       legend = {
         id: 'L' + run.seed.toString(36) + '-' + (h.legends.length + h.queue.length + 1),
@@ -2874,12 +2982,12 @@
     FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
-    DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
+    DRAFT_STEPS, DRAFT_GOLD, draftOffer, draftClericTalent, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, houseArmies, HOUSE_SUPPLY, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -2895,6 +2895,7 @@
     if (side === 'E') {
       if (s.turn > s.turnLimit) {
         s.timeout = true;
+        if (s.cleanup) return endCleanup(s);
         return finish(s, strength(s, 'P') > strength(s, 'E') ? 'P' : 'E', { timeout: true });
       }
       if (s.surviveTurns && s.turn > s.surviveTurns) rout(s, { survived: true });
@@ -3065,6 +3066,37 @@
     return !u.nonCombat && !u.bound && !u.structure;
   }
 
+  // ------------------------------------------------------------ cleanup
+  // The enemy army is gone but the field still holds something worth having: loot, and
+  // enemy buildings with gold in them or a goal to break (a totem, the cage, a wagon, a
+  // barricade, a wall). The win is already yours. Your army goes round collecting until
+  // nothing is left, until it has nobody left standing (fatigue still bites, but it
+  // cannot cost you the battle), or until it stops getting anywhere (CLEANUP_STALL turns).
+  const CLEANUP_STALL = 6;
+  function cleanupTargets(s) {
+    return s.units.filter((u) => u.alive && u.team === 'E' && !u.escaped && (u.nonCombat || u.structure) && !u.traits.has('summon') && (u.goal || u.bounty > 0 || u.salvage > 0));
+  }
+  function cleanupLoot(s) {
+    return (s.loot || []).filter((l) => !l.taken);
+  }
+  function cleanupLeft(s) {
+    return cleanupTargets(s).length + cleanupLoot(s).length;
+  }
+  function cleanupScore(s) {
+    return cleanupTargets(s).reduce((t, u) => t + u.hp, 0) + cleanupLoot(s).length * 1000;
+  }
+  // Why the enemy broke, for the result screen (vipSlain, destroyed, held, survived).
+  function brokeWhy(s) {
+    const why = {};
+    if (s.routed) for (const k of ['vipSlain', 'destroyed', 'held', 'survived']) if (s.routed[k]) why[k] = true;
+    return why;
+  }
+  // Stop collecting and take the win now (the player's call, or a retreat mid-cleanup).
+  function endCleanup(s) {
+    if (s.over || !s.cleanup) return;
+    finish(s, 'P', Object.assign(brokeWhy(s), { cleaned: cleanupLeft(s) === 0 }));
+  }
+
   function checkOutcome(s) {
     if (s.over) return;
     const alive = { P: false, E: false };
@@ -3101,14 +3133,31 @@
     if (!alive.P && !alive.E) winner = s.side;
     else if (!alive.P) winner = 'E';
     else if (!alive.E) winner = 'P';
+    if (s.cleanup) {
+      // Mid-cleanup the win is yours whatever happens; only when it ends is in question.
+      const sc = cleanupScore(s);
+      if (sc < s.cleanup.score) {
+        s.cleanup.score = sc;
+        s.cleanup.at = s.turn;
+      }
+      if (alive.P && cleanupLeft(s) && s.turn - s.cleanup.at < CLEANUP_STALL) return;
+      winner = 'P';
+    } else if (winner === 'P' && cleanupLeft(s)) {
+      // The enemy army is down with gold, goals or loot still on the field: collect them.
+      const lost = s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length;
+      s.cleanup = { turn: s.turn, lost, score: cleanupScore(s), at: s.turn };
+      emit(s, { t: 'cleanup', turn: s.turn, left: cleanupLeft(s) });
+      return;
+    }
     if (!winner) return;
     // A win after a rout keeps why the enemy broke (vipSlain, destroyed, held, survived).
-    const why = {};
-    if (winner === 'P' && s.routed) for (const k of ['vipSlain', 'destroyed', 'held', 'survived']) if (s.routed[k]) why[k] = true;
+    const why = winner === 'P' ? brokeWhy(s) : {};
+    if (s.cleanup) why.cleaned = cleanupLeft(s) === 0;
     finish(s, winner, why);
   }
 
   function forfeit(s) {
+    if (s.cleanup) return endCleanup(s);
     if (!s.over) finish(s, 'E', { forfeit: true });
   }
 
@@ -3119,7 +3168,7 @@
   }
 
   AG.Engine = {
-    T_GRASS, T_ROCK, T_WATER, T_LAVA, IMPACT, shoveForecast, forcePath, clearLine,
+    T_GRASS, T_ROCK, T_WATER, T_LAVA, IMPACT, shoveForecast, forcePath, clearLine, cleanupTargets, cleanupLoot, cleanupLeft, endCleanup, CLEANUP_STALL,
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,

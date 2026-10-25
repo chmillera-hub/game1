@@ -925,24 +925,28 @@
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
     };
-    const option = (kind, id, i) => {
+    const option = (kind, id, i, offer) => {
       const attrs = `data-dpick="${i}" data-choose`;
       if (kind === 'unit') {
         // Every number up front: HP, damage, armor, magic resistance, block, cooldown,
-        // move, range and speed.
+        // move, range and speed, and the talent it brings.
         const T = UNITS[id];
         const u = recruitStats(id, null);
-        return recruitCard(id, null, attrs, `<div class="small"><b>${esc(cap1(T.role))} · ${u.maxHp} HP</b></div>${statsHTML(u)}`);
+        return recruitCard(id, null, attrs, `<div class="small"><b>${esc(cap1(T.role))} · ${u.maxHp} HP</b></div>${statsHTML(u)}`, offer.talents && offer.talents[i]);
       }
       if (kind === 'relic') return relicCard(id, attrs);
       return itemCard(kind, id, attrs);
     };
-    // The army so far, with the picks still to come as empty places.
+    // The army so far: your Cleric, already in place (tap it for the details), then the
+    // picks still to come as empty places.
     const armyHTML = () => {
-      const units = [0, 1, 2, 3, 4].map((i) => (picks[i] ? `<canvas data-p="${picks[i]}:P" title="${esc(UNITS[picks[i]].name)}"></canvas>` : '<span class="draft-empty"></span>')).join('');
+      const ct = R.draftClericTalent(seed);
+      const cleric = `<span class="draft-core" role="button" tabindex="0" data-rinfo="cleric:" title="Your Cleric: free, in every battle. Tap for the details."><canvas data-p="cleric:P"></canvas><small>Cleric</small></span>`;
+      const units = cleric + [0, 1, 2, 3, 4].map((i) => (picks[i] ? `<canvas data-p="${picks[i]}:P" title="${esc(UNITS[picks[i]].name)}"></canvas>` : '<span class="draft-empty"></span>')).join('');
+      const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It brings the <b>${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
       const thing = (i, icon, name) => (picks[i] ? `<span class="chip">${ic(icon)} ${esc(name(picks[i]))}</span>` : `<span class="chip draft-todo">${ic(icon)} …</span>`);
       return `<div class="draft-army"><div class="unit-strip">${units}</div>
-        <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>`;
+        <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>${picks.length < 5 ? clericLine : ''}`;
     };
     const render = () => {
       const step = picks.length;
@@ -952,7 +956,7 @@
         ? `<div><p class="eyebrow">New campaign · pick ${step + 1} of ${steps.length}</p><h2>${HEAD[offer.kind]}${offer.kind === 'unit' ? ` (${step + 1} of 5)` : ''}</h2></div>
           ${armyHTML()}
           <p class="muted">${WHY[offer.kind]}</p>
-          <div class="choice-grid">${offer.options.map((id, i) => option(offer.kind, id, i)).join('')}</div>`
+          <div class="choice-grid">${offer.options.map((id, i) => option(offer.kind, id, i, offer)).join('')}</div>`
         : `<div><p class="eyebrow">New campaign · your army</p><h2>Ready to march</h2></div>
           ${armyHTML()}
           <p class="muted">You start with ${R.DRAFT_GOLD} gold, ${COMMAND[1].supply} Supply per battle. Field as many units as your Supply pays for. There is no difficulty setting: each round you choose an easy, a medium or an elite battle.</p>
@@ -999,12 +1003,8 @@
           UI.run = R.newRun({ seed, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
           R.save(UI.run);
           sfx('turn');
+          // How to play is one tap away in the menu; it never pops up on its own.
           route();
-          if (!UI.prefs.seenHelp2) {
-            UI.prefs.seenHelp2 = true;
-            savePrefs();
-            helpSheet();
-          }
         };
     };
     render();
@@ -1161,9 +1161,10 @@
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
-        ${inBattle && !ex ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
+        ${inBattle && !ex ? (UI.battle && UI.battle.s.cleanup ? `<button class="btn wide" id="muFinish">${ic('check')} Finish the battle (the win is yours)</button>` : `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>`) : ''}
         ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
+        ${!inBattle && R.loadHall().legends.concat(R.loadHall().queue).length ? `<button class="btn wide danger" id="muHallReset">${ic('crown')} Reset Hall of Fame</button>` : ''}
       </div>`,
       (sh) => {
         $('#muHelp', sh).onclick = () => helpSheet();
@@ -1191,6 +1192,11 @@
           UI.wr = null;
           title();
         };
+        if ($('#muFinish', sh))
+          $('#muFinish', sh).onclick = () => {
+            closeSheet();
+            finishCleanup();
+          };
         if ($('#muRetreat', sh))
           $('#muRetreat', sh).onclick = async () => {
             closeSheet();
@@ -1204,6 +1210,13 @@
             E.forfeit(B.s);
             E.drainEvents(B.s);
             battleOver();
+          };
+        if ($('#muHallReset', sh))
+          $('#muHallReset', sh).onclick = async () => {
+            closeSheet();
+            if (!(await confirmSheet('Reset the Hall of Fame?', 'Every army in it goes, for good, the ones waiting to climb and the house armies too. Updates to the game never do this: only you can.', 'Reset', 'Keep them', true))) return;
+            R.resetHall();
+            toast('The Hall of Fame is empty.');
           };
         if ($('#muAbandon', sh))
           $('#muAbandon', sh).onclick = async () => {
@@ -1294,7 +1307,13 @@
 
   function itemCost(it) {
     const d = R.itemDef(it);
-    return it.kind === 'scroll' ? `+${d.surcharge} Supply on its unit` : `${d.cost} Supply`;
+    return it.kind === 'scroll' ? `+${d.surcharge} Supply on its unit` : costTag(d);
+  }
+
+  // What an item costs to field: free ones still take a slot, and a side-grade is a trade
+  // (Auto leaves those to you).
+  function costTag(d) {
+    return d.cost ? `${d.cost} Supply` : d.side ? 'Free · side-grade' : 'Free (0 Supply)';
   }
 
   function armySheet(after, tab) {
@@ -1902,8 +1921,8 @@
       if (s) {
         const b = o.b;
         if (b.type === 'loot' && s.loot.some((l) => l.id === b.lootId && l.taken)) state = 'done';
-        if (b.type === 'swift' && (s.routed ? s.routed.turn : s.turn) > b.turns) state = 'failed';
-        if (b.type === 'flawless' && s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive)) state = 'failed';
+        if (b.type === 'swift' && (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) > b.turns) state = 'failed';
+        if (b.type === 'flawless' && (s.cleanup ? s.cleanup.lost > 0 : s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive))) state = 'failed';
         if (b.type === 'muster') state = s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
         if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) state = 'failed';
         if (b.type === 'blockade' && s.stats.blocked >= b.n) state = 'done';
@@ -2996,6 +3015,7 @@
 
   // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
+    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span>${s.inOvertime ? ` · <span class="overtime">fatigue −${E.fatigueHit(s)}</span>` : ` · fatigue at ${s.overtime}`}`;
     if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · fatigue −${E.fatigueHit(s)}` : ` · fatigue at ${s.overtime}`}`;
     if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> to whoever acts`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
@@ -3102,6 +3122,9 @@
         finish();
         if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: enemy fatigue doubled!</b> No more reinforcements, and each enemy unit loses twice this round's fatigue as its turn comes. Your side keeps the normal amount.` });
         else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, 1, then 2, 3 and so on. Your side tires only on turn ${s.overtime || 30}.` });
+      } else if (e.t === 'cleanup') {
+        finish();
+        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}).` });
       } else if (e.t === 'overtime') {
         finish();
         add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Every unit loses HP as its turn comes, 1 more each round, both sides alike.` });
@@ -3223,6 +3246,7 @@
       <div class="eyebrow">Turn order</div>
       ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
+      ${s.cleanup && !s.over ? `<div class="hint">${ic('check')} <b>The enemy army is beaten: the win is yours.</b> Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot. Fatigue still bites, but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
@@ -3445,6 +3469,7 @@
     on('btDesel', () => deselect());
     // Watching an auto battle: pause, resume, or jump to the result.
     on('btPause', () => togglePause(B));
+    on('btFinish', () => finishCleanup());
     on('btPauseT', () => togglePause(B));
     on('btFast', toggleSpeed);
     on('btFocus', () => setFocus(B));
@@ -3507,8 +3532,9 @@
     const routedEv = ev.find((e) => e.t === 'routed');
     if (routedEv) showBanner(routedEv.late ? 'Enemy fatigue ×2!' : 'Enemy fatigued!', false);
     if (ev.some((e) => e.t === 'overtime')) showBanner('Fatigue triggered!', true);
+    if (ev.some((e) => e.t === 'cleanup')) showBanner('Army beaten!', false);
     // The top bar catches up with the banner at once, not after the moves play out.
-    const line = (routedEv || ev.some((e) => e.t === 'overtime')) && $('#topbar .title span');
+    const line = (routedEv || ev.some((e) => e.t === 'overtime' || e.t === 'cleanup')) && $('#topbar .title span');
     if (line) line.innerHTML = `${turnLine(B.s)} · ${esc(B.goalLine || '')}`;
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
@@ -3890,6 +3916,19 @@
   }
 
   // The enemy's turn: one unit. If none of yours can act, it goes again.
+  // Mid-cleanup: stop collecting and take the win now.
+  async function finishCleanup() {
+    const B = UI.battle;
+    if (!B || !B.s.cleanup || B.s.over) return;
+    // Let the unit in motion finish first.
+    B.paused = true;
+    for (let i = 0; i < 100 && B.busy && UI.battle === B; i++) await sleep(50);
+    if (UI.battle !== B || B.s.over) return;
+    E.endCleanup(B.s);
+    E.drainEvents(B.s);
+    battleOver();
+  }
+
   async function battleOver() {
     const B = UI.battle;
     if (!B || B.ending) return;
@@ -4107,7 +4146,7 @@
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
         <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
-          <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
+          <span class="small muted">${l.house ? `House army · ${R.HOUSE_SUPPLY} Supply of ${esc(UNITS[l.type] ? UNITS[l.type].name : 'units')}s, Level 1, bare · ${l.units.length} units` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
     };
@@ -4143,7 +4182,7 @@
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Every army that won a campaign</p><h2>Hall of Fame</h2></div>
-        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places.</p>
+        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places. Armies stay here through every update of the game, fighting by the rules of the day; only Reset Hall of Fame clears it.</p>
         ${climbPanel}
         ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
         <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
@@ -4151,12 +4190,19 @@
         ${all.length > 1 && !(pickA && pickB) ? `<p class="small muted">${pickA ? `${esc(pickA.name)} picked. Tap a second army to fight it.` : `Tap two armies for a skirmish: if the lower-ranked one wins, they swap places; if the higher one wins, nothing moves.${Q.length ? ' An army still waiting in line has no place yet, so a match with it is a friendly one.' : ''}`}</p>` : ''}
         ${goPanel}
         <div class="row end">
+          ${all.length ? `<button class="btn danger" id="hlReset">Reset Hall of Fame</button>` : ''}
           <button class="btn" id="hlBack">Back</button>
         </div>
       </div>`
     );
     const again = () => hallScreen(back, st);
     $('#hlBack', v).onclick = () => back();
+    if ($('#hlReset', v))
+      $('#hlReset', v).onclick = async () => {
+        if (!(await confirmSheet('Reset the Hall of Fame?', 'Every army in it goes, for good, the ones waiting to climb and the house armies too. Updates to the game never do this: only you can.', 'Reset', 'Keep them', true))) return;
+        R.resetHall();
+        hallScreen(back, { pick: [], log: [] });
+      };
     if ($('#hlStart', v))
       $('#hlStart', v).onclick = () => {
         const l = R.hallStart();
@@ -4277,7 +4323,7 @@
       return `<button class="card talent ${t.tier === 2 ? 'rare' : ''}" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
     }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
-    return `<button class="card${d.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply${d.cursed ? ' · <span class="cursed">Cursed</span>' : ''}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
+    return `<button class="card${d.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${costTag(d)}${d.cursed ? ' · <span class="cursed">Cursed</span>' : ''}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
   // A toast line for a unit that just joined, with the talent it came with.
@@ -4287,7 +4333,8 @@
 
   // A unit on offer. An enchanted one shows its enchantment in a box of its own, and the
   // Details button opens the unit's numbers, attacks and enchantment without taking it.
-  function recruitCard(unit, enchant, attrs, extra) {
+  // talent: the one it brings, named by the offer (older offers: a random one).
+  function recruitCard(unit, enchant, attrs, extra, talent) {
     const T = UNITS[unit];
     const E2 = enchant && ENCHANTS[enchant];
     return `<button class="card" ${attrs || ''}>
@@ -4296,7 +4343,7 @@
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
-      <div class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</div>${extra || ''}</button>`;
+      ${talent && TALENTS[talent] ? `<div class="small">${ic('star')} Brings the <b>${esc(TALENTS[talent].name)}</b> talent, for your pack: ${esc(TALENTS[talent].desc)}</div>` : `<div class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</div>`}${extra || ''}</button>`;
   }
 
   // A Level 1 unit of a type as it would join, enchantment included: its battle numbers.
@@ -4351,7 +4398,7 @@
 
   function spoilCard(sp, i, taken, chosen) {
     const attrs = `data-spoil="${i}" ${pickState(taken, chosen)}`;
-    if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs, ownedNote(UI.run, 'recruit', sp.unit));
+    if (sp.type === 'recruit') return recruitCard(sp.unit, sp.enchant, attrs, ownedNote(UI.run, 'recruit', sp.unit), sp.talent);
     if (sp.type === 'skill' || sp.type === 'gear' || sp.type === 'talent' || sp.type === 'scroll') return itemCard(sp.type, sp.id, attrs, ownedNote(UI.run, sp.type, sp.id));
     return `<button class="card" ${attrs}><div class="kind">${ic('gold')} Gold</div><div class="title">${sp.amount} gold</div></button>`;
   }
@@ -4471,7 +4518,7 @@
       const can = R.canBuy(run, it);
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
       const dis = `data-buy="${i}" ${can ? '' : 'disabled'}`;
-      if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price);
+      if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price, it.talent);
       if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
         return `<button class="card${RELICS[it.relic].cursed ? ' cursed' : ''}" ${dis}><div class="kind">${ic('gem')} Relic · ${relicTier(RELICS[it.relic])}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
@@ -4580,7 +4627,7 @@
     const hallText = !place
       ? ''
       : place.inLine
-        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. Start its climb now, or come back any time from the title screen.`
+        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. ${hall.legends.every((l) => l.house) ? `The house armies hold the Hall for now: mobs of ${R.HOUSE_SUPPLY} Supply of Scouts, Knights, Archers and Witches, just spammed onto the field. Can you climb past them all? ` : ''}Start its climb now, or come back any time from the title screen.`
         : `Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${place.rank} of ${hall.legends.length}. ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}`;
     const hallPanel = legend
       ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}${legend.superWon ? ` It wears the <span class="chip slayer">${ic('crossbones')} Wyrm slayer</span> badge there, for good.` : ''}</p>
@@ -4651,6 +4698,7 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
+          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Fatigue still bites but cannot cost you the battle. It ends when nothing is left, your army is gone, it stops getting anywhere, or you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>

@@ -98,7 +98,7 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0], coins: {}, shoves: {} };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0], coins: {}, shoves: {}, armies: [] };
 
 // The tier a player of this policy picks first in a round.
 function firstTier(rng) {
@@ -219,6 +219,7 @@ for (let i = 0; i < N; i++) {
   JSON.parse(JSON.stringify(run));
   if (run.won) results.done++;
   else results.stuck++;
+  if (run.won && run.finalArmy) results.armies.push({ name: `${run.warband} ${i}`, level: R.commanderLevel(run), relics: run.relics.slice(), units: run.finalArmy });
   results.lv.push(R.commanderLevel(run));
   console.log(
     `run ${i} ${run.warband.padEnd(8)} ${run.won ? 'WON  ' : 'STUCK'} act ${run.act} lv ${R.commanderLevel(run)} xp ${run.xp} supply ${R.supplyFor(run)} army ${R.armySize(run)} roster=${run.roster.length} items=${run.items.length} relics=${run.relics.length} gold=${run.gold} battles=${run.stats.battles} losses=${run.stats.losses}`
@@ -244,4 +245,6 @@ console.log(`pushes and pulls, per battle: ${Object.entries(results.shoves).map(
 console.log('gold from broken buildings, per win:', Object.entries(results.coins).filter(([, v]) => v[0]).map(([k, v]) => `${k} ${(v[0] / v[1]).toFixed(1)}`).join(' · ') || '-');
 console.log('loot taken in won battles:', Object.entries(results.loot).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ') || '-');
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
+// HALLDUMP=file: the winning armies, for Hall of Fame checks.
+if (process.env.HALLDUMP) require('fs').writeFileSync(process.env.HALLDUMP, JSON.stringify(results.armies));
 console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

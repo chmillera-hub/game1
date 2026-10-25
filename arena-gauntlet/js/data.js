@@ -881,13 +881,16 @@
     second_wind: { name: 'Second Wind', cost: 2, desc: 'Once per battle, survives a fatal blow with 1 HP.', mod: { traits: ['secondwind'] } },
     bloodlust: { name: 'Bloodlust', cost: 2, desc: 'Slaying an enemy resets its cooldown: it is ready again next turn.', req: 'damage', mod: { traits: ['bloodlust'] } },
     flanker: { name: 'Flanker', cost: 1, desc: '+30% damage from the side or from behind.', req: 'phys', mod: { props: { flankMult: 0.3 } } },
-    unshakable: { name: 'Unshakable', cost: 1, desc: 'Immune to poison, paralysis, roots, shoves and pulls.', mod: { traits: ['steadfast', 'poisonproof'] } },
+    // 0 Supply: rarely matters, or a trade more than an upgrade (side: Auto leaves these to
+    // you). They still take a slot.
+    unshakable: { name: 'Unshakable', cost: 0, desc: 'Immune to poison, paralysis, roots, shoves and pulls.', mod: { traits: ['steadfast', 'poisonproof'] } },
     guardian: { name: 'Guardian', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
     retaliate: { name: 'Retaliate', cost: 2, desc: 'When struck in melee and still standing, strikes back for half damage.', req: 'damage', mod: { traits: ['retaliate'] } },
     quickened: { name: 'Quickened', cost: 3, desc: 'Cooldown 1 turn shorter.', req: 'slow', mod: { stat: { rec: -1 } } },
     martyr: { name: 'Martyr', cost: 1, desc: 'When it falls, heals allies within 2 tiles for 20.', mod: { traits: ['martyr'] } },
     chaos_magic: { name: 'Chaos Magic', cost: 2, desc: 'Its magic hits also inflict a random curse: burning, rooted or weakened.', req: 'magic', mod: { traits: ['chaosmagic'] } },
-    bullrush: { name: 'Bull Rush', cost: 2, desc: 'Its basic attack shoves what it hits 1 tile away. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.', req: 'damage', mod: { act: { fx: { knock: 1 } } } },
+    bullrush: { name: 'Bull Rush', cost: 0, side: true, desc: 'Its basic attack shoves what it hits 1 tile away: it might break a line, or push a foe out of your reach. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.', req: 'damage', mod: { act: { fx: { knock: 1 } } } },
+    reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% armor.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
     demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
     lucky: { name: 'Lucky', cost: 2, desc: '15% chance to land a Critical hit: double damage.', req: 'damage', mod: { props: { crit: 0.15 } } },
     powder_belt: { name: 'Powder Belt', cost: 1, desc: 'When it falls, it explodes: 15 damage to every enemy beside it.', mod: { props: { deathBoom: 15 } } },
@@ -911,7 +914,7 @@
     spellsink_mantle: { name: 'Spellsink Mantle', cost: 1, desc: 'Magic damage it takes charges its next attack: +50% damage.', req: 'damage', mod: { traits: ['spellsink'] } },
     momentum_boots: { name: 'Momentum Boots', cost: 2, desc: '+10% damage for every tile it moved before attacking that turn.', req: 'mobile', mod: { props: { momentum: 0.1 } } },
     ogre_belt: { name: 'Ogre Belt', cost: 2, desc: 'Every enemy it slays adds 10 to its max HP, and heals it 10, for the rest of the battle.', req: 'damage', mod: { traits: ['ogre'] } },
-    grappling_hook: { name: 'Grappling Hook', cost: 1, desc: 'Its basic attack drags the target 1 tile toward it.', req: 'ranged', mod: { traits: ['grapple'] } },
+    grappling_hook: { name: 'Grappling Hook', cost: 0, side: true, desc: 'Its basic attack drags the target 1 tile toward it: into something for extra damage, or just closer to you.', req: 'ranged', mod: { traits: ['grapple'] } },
     gamblers_gauntlet: { name: "Gambler's Gauntlet", cost: 1, desc: 'Each hit deals anywhere from half to double damage.', req: 'damage', mod: { props: { gamble: 1 } } },
     hourglass_pendant: { name: 'Hourglass Pendant', cost: 2, desc: 'Once per battle, when it would fall, time rewinds: it is back to the HP it had at the start of its last turn.', mod: { traits: ['hourglass'] } },
     cursed_idol: { name: 'Cursed Idol', cost: 1, cursed: true, desc: '+50% damage, but it loses 4 HP at the start of each of its turns.', req: 'damage', mod: { props: { dmgMult: 0.5 }, traits: ['idol'] } },
@@ -922,6 +925,8 @@
       mod: { active: { name: 'Fire Flask', kind: 'blast', range: [2, 3], pattern: 'plus', dmg: 'magic', fixed: 14, arc: true, ff: true, fx: { burn: [2, 4] }, uses: 1 } } },
     healing_draught: { name: 'Healing Draught', cost: 1, desc: 'Active, 1 use: heal itself or an adjacent ally for 20 and cure poison and burns.',
       mod: { active: { name: 'Healing Draught', kind: 'heal', range: [0, 1], fixed: 20, cure: true, uses: 1 } } },
+    war_paint: { name: 'War Paint', cost: 0, side: true, desc: '+15% damage, but -10 max HP.', req: 'damage', mod: { stat: { hp: -10 }, props: { dmgMult: 0.15 } } },
+    feather_cloak: { name: 'Featherweight Cloak', cost: 0, side: true, desc: '+1 Move, but -10% armor.', req: 'mobile', mod: { stat: { move: 1, armor: -0.1 } } },
     chain_hook: { name: 'Chain Hook', cost: 1, desc: 'Active, 2 uses: hook an enemy 2 to 4 tiles away in a straight, open line and drag it 2 tiles closer, for 6 damage. Dragged into something, it takes extra damage.',
       mod: { active: { name: 'Chain Hook', kind: 'strike', range: [2, 4], straight: true, dmg: 'phys', fixed: 6, fx: { pull: 2 }, uses: 2 } } },
     gale_horn: { name: 'Gale Horn', cost: 1, desc: 'Active, 1 use: a gale shoves every enemy within 2 tiles 2 tiles away. Shoved into something, they take extra damage.',
@@ -945,6 +950,20 @@
     midas: { name: 'Midas Touch', surcharge: 1, desc: 'Every enemy it slays earns 6 gold.', req: 'damage', mod: { traits: ['midas'] } },
     thunderstep: { name: 'Thunderstep', surcharge: 2, desc: 'When it finishes a move, enemies next to it take 6 magic damage.', req: 'mobile', mod: { traits: ['thunderstep'] } },
   };
+
+  // Picks that only pay off from the right spot say how the AI plays them, so you know your
+  // units will keep in formation when you slot one.
+  const AI_NOTES = [
+    [(m) => m.props && (m.props.guard || m.props.magicGuard), 'The AI keeps your units beside it, the fragile ones first.'],
+    [(m) => m.props && m.props.packMult, 'The AI picks targets your other units already stand beside.'],
+    [(m) => m.props && (m.props.flankMult || m.props.backMult), 'The AI goes round the side or back when it can.'],
+    [(m) => m.props && m.props.chargeMult, 'The AI takes the long way in to charge.'],
+  ];
+  for (const table of [A, TALENTS, SKILLS, GEAR, ENCHANTS])
+    for (const d of Object.values(table)) {
+      const note = AI_NOTES.find(([test]) => d.mod && test(d.mod));
+      if (note && !d.desc.includes(note[1])) d.desc += ' ' + note[1];
+    }
 
   function itemDef(kind, id) {
     return kind === 'skill' ? SKILLS[id] : kind === 'gear' ? GEAR[id] : kind === 'talent' ? TALENTS[id] : null;
