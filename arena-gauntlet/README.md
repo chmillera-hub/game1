@@ -125,8 +125,8 @@ on a phone turned sideways, but portrait works too.
   its attacks and every damage preview show the damage-type icon.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
-  abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x) and
-  pause are beside the board, and tapping a unit pauses and inspects it; 1x plays at
+  abilities and talents. Lost? Change the army and try again. Speed (1x or 2x) and
+  pause sit in the top bar next to the menu, and tapping a unit pauses and inspects it; 1x plays at
   about half of the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).

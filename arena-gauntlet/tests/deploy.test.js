@@ -133,4 +133,58 @@ test('a plan survives a defeat: back at the same battle, the army is where you l
   assert.ok(!run.pending.lastDep, 'another battle has a plan of its own');
 });
 
+test('a new battle opens with your last army, kit and all; a quest unit joins on top', () => {
+  const run = atBattle(8, 'vanguard');
+  const dep = R.autoDeploy(run, 0);
+  // Fight it (won), as the War Room does: the plan is remembered.
+  run.lastPlan = dep;
+  run.pending.lastDep = dep;
+  const kits = dep.map((d) => JSON.stringify(R.unitById(run, d.rid).load));
+  const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+  s.over = true;
+  s.winner = 'P';
+  R.finishBattle(run, s, dep);
+  const p = run.pending;
+  if (p.bossRelics && !p.bossRelicTaken) R.takeBossRelic(run, p.bossRelics[0]);
+  if (p.tome && !p.tomeTaken) R.skipTome(run);
+  if (!p.spoilTaken) R.skipSpoils(run);
+  R.completeNode(run);
+  while (run.pending && run.pending.type !== 'battle') R.completeNode(run);
+  if (!run.pending) assert.ok(R.chooseChallenge(run, 1));
+  const enc = run.pending.enc;
+  enc.bonus = (enc.bonus || []).filter((b) => b.type !== 'muster');
+  let plan = R.startingPlan(run, enc);
+  assert.deepStrictEqual(plan.map((d) => d.rid).sort(), dep.map((d) => d.rid).sort(), 'the same units');
+  assert.deepStrictEqual(dep.map((d) => JSON.stringify(R.unitById(run, d.rid).load)), kits, 'with the same kit');
+  const rows = R.deployRows(run, enc);
+  assert.ok(plan.every((d) => rows.includes(d.y) && R.deployOpen(enc, d.x, d.y)), 'all on open blue tiles');
+  assert.strictEqual(new Set(plan.map((d) => d.x + ',' + d.y)).size, plan.length, 'one to a tile');
+  // A quest asks for a unit that is not in the plan: it joins, nobody leaves.
+  const extra = run.roster.find((r) => !dep.some((d) => d.rid === r.id));
+  if (extra) {
+    enc.bonus.push({ type: 'muster', rid: extra.id });
+    plan = R.startingPlan(run, enc);
+    assert.strictEqual(plan.length, dep.length + 1);
+    assert.ok(plan.some((d) => d.rid === extra.id));
+  }
+});
+
+test('a unit whose old tile is blocked on the new field moves to the nearest open tile', () => {
+  const run = atBattle(9, 'vanguard');
+  const enc = run.pending.enc;
+  enc.bonus = (enc.bonus || []).filter((b) => b.type !== 'muster');
+  const rows = R.deployRows(run, enc);
+  // Block a deploy tile with a rock and remember a unit standing there.
+  const y = rows[rows.length - 1];
+  const x = 4;
+  enc.terrain[y * enc.w + x] = 1;
+  run.lastPlan = [{ rid: run.roster[0].id, x, y, facing: 0 }, { rid: run.roster[1].id, x: 3, y, facing: 0 }];
+  run.pending.lastDep = null;
+  const plan = R.startingPlan(run, enc);
+  assert.strictEqual(plan.length, 2, 'nobody dropped');
+  const moved = plan.find((d) => d.rid === run.roster[0].id);
+  assert.ok(R.deployOpen(enc, moved.x, moved.y) && rows.includes(moved.y));
+  assert.ok(Math.abs(moved.x - x) + Math.abs(moved.y - y) <= 2, 'close to where it stood');
+});
+
 console.log(`deploy: ${passed} tests passed`);

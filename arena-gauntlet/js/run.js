@@ -2034,6 +2034,44 @@
     return out;
   }
 
+  // The army the War Room opens with: your plan for this battle if you have one (you lost
+  // it or stepped away); for a new battle, the army you last fought with, kit and all. A
+  // unit whose old tile is blocked on this field goes to the nearest open blue tile. A
+  // quest's unit joins on top of that, so you choose what to change.
+  function startingPlan(run, enc) {
+    const p = run.pending || {};
+    const rows = deployRows(run, enc);
+    const dep = [];
+    const taken = new Set();
+    const free = (x, y) => rows.includes(y) && deployOpen(enc, x, y) && !taken.has(x + ',' + y);
+    const put = (rid, x, y, facing) => {
+      dep.push({ rid, x, y, facing });
+      taken.add(x + ',' + y);
+    };
+    for (const d of p.lastDep || run.lastPlan || []) {
+      if (!unitById(run, d.rid) || dep.some((o) => o.rid === d.rid)) continue;
+      const facing = d.facing != null ? d.facing : 0;
+      if (free(d.x, d.y)) {
+        put(d.rid, d.x, d.y, facing);
+        continue;
+      }
+      let best = null;
+      for (const y of rows)
+        for (let x = 0; x < enc.w; x++) {
+          if (!free(x, y)) continue;
+          const dist = Math.abs(x - d.x) + Math.abs(y - d.y);
+          if (!best || dist < best.dist) best = { x, y, dist };
+        }
+      if (best) put(d.rid, best.x, best.y, facing);
+    }
+    const star = bonusUnit(run, enc);
+    if (star && !dep.some((d) => d.rid === star.id)) {
+      const slot = deploySlots(run, enc, isFront(star.type), taken)[0];
+      if (slot) put(star.id, slot.x, slot.y, 0);
+    }
+    return dep;
+  }
+
   // How well a unit type answers this enemy army: magic against armor, steel against wards.
   // Buildings in this battle worth bringing siege damage for: goals, spawners and gates.
   function siegeTargets(enc) {
@@ -2506,7 +2544,7 @@
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
-    objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
+    objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,

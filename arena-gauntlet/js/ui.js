@@ -22,9 +22,9 @@
   };
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  // Battle speed, 1x, 2x or 4x: the fast-forward button cycles it. At 1x a battle plays at
-  // about half the animations' full pace, easy to follow.
-  const speedOf = () => (UI.prefs.speed > 1 ? UI.prefs.speed : UI.prefs.fast ? 2 : 1);
+  // Battle speed, 1x or 2x: the fast-forward button switches it (an old 4x setting plays
+  // at 2x). At 1x a battle plays at about half the animations' full pace, easy to follow.
+  const speedOf = () => (UI.prefs.speed > 1 || UI.prefs.fast ? 2 : 1);
   const BASE_PACE = 0.512;
   const paceOf = () => speedOf() * BASE_PACE;
   const pause = (ms) => sleep(ms / paceOf());
@@ -1800,20 +1800,10 @@
     b.setBoard(enc.w, enc.h, enc.terrain, ACTS[run.act].palette);
     b.setObjectives(enc.loot, enc.hold);
     const rows = R.deployRows(run, enc);
-    const dep = new Map();
-    // Your plan for this battle if you had one; for a new battle, the army of your last one.
-    for (const d of p.lastDep || run.lastPlan || []) {
-      const r = R.unitById(run, d.rid);
-      if (!r || !rows.includes(d.y) || !R.deployOpen(enc, d.x, d.y)) continue;
-      if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
-      dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
-    }
-    // A quest's unit always fights: it starts on the field and cannot leave it.
+    // Your plan for this battle, or the army of your last one; a quest's unit joins it. That
+    // unit always fights: it cannot leave the field.
+    const dep = new Map(R.startingPlan(run, enc).map((d) => [d.rid, { x: d.x, y: d.y, facing: d.facing }]));
     const star = R.bonusUnit(run, enc);
-    if (star && !dep.has(star.id)) {
-      const slot = R.deploySlots(run, enc, R.isFront(star.type), new Set([...dep.values()].map((d) => d.x + ',' + d.y)))[0];
-      if (slot) dep.set(star.id, { x: slot.x, y: slot.y, facing: 0 });
-    }
     // Units on the bench are bare: their kit goes back to the pack until they take the field.
     for (const r of run.roster) if (!dep.has(r.id)) R.stripLoad(run, r);
     R.save(run);
@@ -2592,22 +2582,19 @@
     if (UI.battle && UI.battle.s === s) await runBattle();
   }
 
-  // The buttons beside the board: enemy reach, speed, and in an auto battle pause and skip.
+  // Nothing beside the board in battle: speed and pause sit in the top bar, by the menu.
   function battleTools() {
-    const b = UI.board;
-    boardTools(
-      `<button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed">${ic('fast')}<small>${speedOf()}×</small></button>
-       ${UI.prefs.autoBattle || (UI.battle && UI.battle.exhibition) ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button>` : ''}`
-    );
-    if ($('#btPauseT')) $('#btPauseT').onclick = () => togglePause(UI.battle);
-    $('#btFast').onclick = () => {
-      UI.prefs.speed = { 1: 2, 2: 4, 4: 1 }[speedOf()];
-      UI.prefs.fast = UI.prefs.speed > 1;
-      savePrefs();
-      b.speed = paceOf();
-      $('#btFast').classList.toggle('on', speedOf() > 1);
-      $('#btFast small').textContent = speedOf() + '×';
-    };
+    boardTools('');
+  }
+
+  // The top bar's speed button: 1x or 2x.
+  function toggleSpeed() {
+    UI.prefs.speed = speedOf() > 1 ? 1 : 2;
+    UI.prefs.fast = UI.prefs.speed > 1;
+    savePrefs();
+    UI.board.speed = paceOf();
+    sfx('click');
+    renderBattle();
   }
 
   // Play turns until the battle ends, or until it is your turn and you command by hand.
@@ -3036,16 +3023,12 @@
     $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : esc(sideName)}</b>
       <span>${turnLine(s)} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
+      <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed: ${speedOf()}x">${ic('fast')}<small>${speedOf()}×</small></button>
+      ${auto ? `<button class="btn icon-only ${B.paused ? 'on' : ''}" id="btPauseT" aria-label="${B.paused ? 'Resume' : 'Pause'}">${ic(B.paused ? 'play' : 'pause')}</button>` : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#cmd').innerHTML = panel;
     drawPortraits($('#cmd'));
     bindBattlePanel();
-    const pt = $('#btPauseT');
-    if (pt) {
-      pt.innerHTML = ic(B.paused ? 'play' : 'pause');
-      pt.classList.toggle('on', !!B.paused);
-      pt.setAttribute('aria-label', B.paused ? 'Resume' : 'Pause');
-    }
   }
 
   function previewHTML(u, act, pv) {
@@ -3098,6 +3081,8 @@
     on('btDesel', () => deselect());
     // Watching an auto battle: pause, resume, or jump to the result.
     on('btPause', () => togglePause(B));
+    on('btPauseT', () => togglePause(B));
+    on('btFast', toggleSpeed);
     on('btFocus', () => setFocus(B));
     on('btUnfocus', () => clearFocus(B));
     on('btUndo', async () => {
@@ -4097,7 +4082,7 @@
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
-          <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
+          <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
           <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
