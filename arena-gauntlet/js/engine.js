@@ -799,6 +799,19 @@
     return true;
   }
 
+  // A hook flies straight: same row or column, nothing but open ground, water or lava in
+  // between (no rock, no unit).
+  function clearLine(s, u, v) {
+    if (u.x !== v.x && u.y !== v.y) return false;
+    const d = dirFromDelta(v.x - u.x, v.y - u.y);
+    for (let x = u.x + DIRS[d][0], y = u.y + DIRS[d][1]; x !== v.x || y !== v.y; x += DIRS[d][0], y += DIRS[d][1]) {
+      if (s.terrain[idx(s, x, y)] === T_ROCK) return false;
+      const o = at(s, x, y);
+      if (o && o !== u) return false;
+    }
+    return true;
+  }
+
   // Legal targets for u's act `ai` (default 0) from its current tile. Each target carries `ai`.
   function targetsFrom(s, u, ai) {
     ai = ai || 0;
@@ -821,6 +834,7 @@
           const d = manhattan(u.x, u.y, v.x, v.y);
           if (d < r0 || d > r1) continue;
           if (concealed(s, v, u.x, u.y)) continue;
+          if (a.straight && !clearLine(s, u, v)) continue;
           if (a.kind === 'shadowstrike') {
             if (v.nonCombat || v.structure) continue;
             const [bx, by] = behindTile(s, u, v);
@@ -1081,7 +1095,8 @@
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
-            if (fx.knock) e.knock = statusImmune(s, v, 'knock') ? 'resist' : true;
+            if (fx.knock) e.knock = shoveForecast(s, u, v, fx.knock);
+            else if (fx.pull) e.knock = shoveForecast(s, u, v, fx.pull, true);
           }
         }
         effects.push(e);
@@ -1378,30 +1393,133 @@
       stamp(s, u, 'mark');
       emit(s, { t: 'status', uid: u.uid, status: 'mark', turns: u.mark });
     }
-    if (fx.knock && u.alive) knockback(s, src, u);
+    if (fx.knock && u.alive) shove(s, src, u, fx.knock);
+    if (fx.pull && u.alive) shove(s, src, u, fx.pull, true);
   }
 
-  // Shove a unit one tile away from `src`. If something is in the way it slams into it.
-  function knockback(s, src, u) {
-    if (statusImmune(s, u, 'knock')) {
+  // ------------------------------------------------------------ pushes and pulls
+  // A shove moves a unit straight away from whoever shoved it; a pull drags it straight
+  // toward them, stopping beside them. Tile by tile, up to the distance, until something
+  // is in the way, and that hurts (true damage, past armor and block):
+  //  - a rock or the edge of the field: it slams into it (8)
+  //  - another unit or a building: a crash, and both take 6
+  //  - water: it splashes in (6), climbs out onto the nearest dry tile, and is rooted
+  //    for 1 turn while it shakes itself off (the water also puts out burns)
+  //  - lava: it falls in (12), climbs out the same way, and burns (5 for 2 turns)
+  // Flyers sail over water and lava, but still slam into rocks, the edge and units. Bosses,
+  // huge units, the steadfast and anything rooted to the spot do not budge.
+  const IMPACT = { rock: 8, edge: 8, unit: 6, water: 6, lava: 12 };
+
+  // The direction a shove (or, with pull, a drag) sends u, from `src`'s tile.
+  function shoveDir(src, u, pull) {
+    let d = pull ? dirFromDelta(src.x - u.x, src.y - u.y) : dirFromDelta(u.x - src.x, u.y - src.y);
+    if (d < 0) d = src.facing >= 0 ? src.facing : 0;
+    return d;
+  }
+
+  // Where it would go: the tiles it passes, and what stops it at the end (null: nothing).
+  // A pull never drags it onto the puller's own tile.
+  function forcePath(s, src, u, dist, pull) {
+    const d = shoveDir(src, u, pull);
+    const flying = u.traits.has('flying');
+    const steps = [];
+    let x = u.x;
+    let y = u.y;
+    for (let i = 0; i < dist; i++) {
+      const nx = x + DIRS[d][0];
+      const ny = y + DIRS[d][1];
+      if (pull && nx === src.x && ny === src.y) break;
+      if (!inB(s, nx, ny)) return { d, steps, end: 'edge', x: nx, y: ny };
+      const t = s.terrain[idx(s, nx, ny)];
+      if (t === T_ROCK) return { d, steps, end: 'rock', x: nx, y: ny };
+      const o = at(s, nx, ny);
+      if (o && o !== u) return { d, steps, end: 'unit', other: o.uid, x: nx, y: ny };
+      steps.push([nx, ny]);
+      x = nx;
+      y = ny;
+      if (!flying && (t === T_WATER || t === T_LAVA)) return { d, steps, end: t === T_WATER ? 'water' : 'lava', x, y };
+    }
+    return { d, steps, end: null, x, y };
+  }
+
+  // How far a shove or pull goes, and how hard what stops it hits, with relics.
+  function shoveDist(s, src, u, dist) {
+    return dist + (src && src.team !== u.team && s.relics[src.team].has('tide_conch') ? 1 : 0);
+  }
+  function impactOf(s, src, v, end) {
+    return (IMPACT[end] || 0) + (src && src.team !== v.team && s.relics[src.team].has('iron_ram') ? 6 : 0);
+  }
+  function unmovable(s, src, u) {
+    return statusImmune(s, u, 'knock') || (src && src.team !== u.team && s.relics[u.team].has('anchor_stone'));
+  }
+
+  // What a shove or pull would do, for previews and the AI: 'resist', or where it ends up,
+  // what stops it and the damage dealt (dmg to it, otherDmg to a unit it crashes into).
+  function shoveForecast(s, src, u, dist, pull) {
+    if (unmovable(s, src, u)) return 'resist';
+    const p = forcePath(s, src, u, shoveDist(s, src, u, dist), pull);
+    const out = { pull: !!pull, n: p.steps.length, end: p.end, x: p.x, y: p.y, dmg: p.end ? impactOf(s, src, u, p.end) : 0 };
+    if (p.end === 'unit') {
+      out.other = p.other;
+      out.otherDmg = impactOf(s, src, s.byId[p.other], 'unit');
+    }
+    return out;
+  }
+
+  function shove(s, src, u, dist, pull) {
+    if (!u.alive) return;
+    if (unmovable(s, src, u)) {
       emit(s, { t: 'resist', uid: u.uid, why: 'steady' });
       return;
     }
-    let d = dirFromDelta(u.x - src.x, u.y - src.y);
-    if (d < 0) d = src.facing >= 0 ? src.facing : 0;
-    const nx = u.x + DIRS[d][0];
-    const ny = u.y + DIRS[d][1];
-    const flying = u.traits.has('flying');
-    const t = inB(s, nx, ny) ? s.terrain[idx(s, nx, ny)] : T_ROCK;
-    const ok = inB(s, nx, ny) && !at(s, nx, ny) && (t === T_GRASS || (flying && t !== T_ROCK));
-    if (!ok) {
-      emit(s, { t: 'slam', uid: u.uid, x: nx, y: ny });
-      applyDamage(s, src, u, 6, { cat: 'none', dmgType: 'true' });
-      return;
+    const p = forcePath(s, src, u, shoveDist(s, src, u, dist), pull);
+    let from = [u.x, u.y];
+    for (let i = 0; i < p.steps.length; i++) {
+      const [x, y] = p.steps[i];
+      from = [u.x, u.y];
+      relocate(s, u, x, y);
+      emit(s, { t: 'push', uid: u.uid, x, y, pull: !!pull, by: src ? src.uid : 0 });
+      // Fire underfoot burns it as it passes; caltrops stop it on the spot.
+      const wet = i === p.steps.length - 1 && (p.end === 'water' || p.end === 'lava');
+      if (!wet && (enterTile(s, u, x, y) || !u.alive)) return;
     }
-    relocate(s, u, nx, ny);
-    emit(s, { t: 'push', uid: u.uid, x: nx, y: ny });
-    enterTile(s, u, nx, ny);
+    const opts = { cat: 'none', dmgType: 'true' };
+    if (p.end === 'rock' || p.end === 'edge') {
+      emit(s, { t: 'slam', uid: u.uid, x: p.x, y: p.y, why: p.end });
+      applyDamage(s, src, u, impactOf(s, src, u, p.end), opts);
+    } else if (p.end === 'unit') {
+      const o = s.byId[p.other];
+      emit(s, { t: 'crash', uid: u.uid, other: o.uid, x: o.x, y: o.y });
+      applyDamage(s, src, u, impactOf(s, src, u, 'unit'), opts);
+      applyDamage(s, src, o, impactOf(s, src, o, 'unit'), opts);
+    } else if (p.end === 'water' || p.end === 'lava') dunk(s, src, u, p.end === 'lava', from);
+  }
+
+  // Shoved into water or lava: the hit, then it climbs out onto the nearest dry open tile
+  // (back the way it came, if it can) and pays for it.
+  function dunk(s, src, u, lava, from) {
+    emit(s, { t: 'splash', uid: u.uid, x: u.x, y: u.y, lava });
+    applyDamage(s, src, u, impactOf(s, src, u, lava ? 'lava' : 'water'), { cat: 'none', dmgType: 'true' });
+    if (!u.alive) return;
+    let best = null;
+    for (let y = 0; y < s.h; y++)
+      for (let x = 0; x < s.w; x++) {
+        if (s.terrain[idx(s, x, y)] !== T_GRASS || at(s, x, y)) continue;
+        const k = manhattan(u.x, u.y, x, y) * 10 + manhattan(from[0], from[1], x, y);
+        if (!best || k < best.k) best = { x, y, k };
+      }
+    if (best) {
+      relocate(s, u, best.x, best.y);
+      emit(s, { t: 'climb', uid: u.uid, x: best.x, y: best.y });
+    }
+    if (lava) applyStatus(s, src || u, u, { burn: [2, 5] });
+    else {
+      if (u.burn) {
+        u.burn = null;
+        emit(s, { t: 'cleanse', uid: u.uid });
+      }
+      applyStatus(s, src || u, u, { root: 1 });
+    }
   }
 
   // Hostile hazards trigger when a walking unit steps onto them. Returns true if it must stop.
@@ -1672,7 +1790,7 @@
         }
         if (a.kind === 'strike' && u.traits.has('ridedown') && opts.moved && opts.moveDist >= 3) {
           const v = s.byId[target.uid];
-          if (v && v.alive && u.alive) knockback(s, u, v);
+          if (v && v.alive && u.alive) shove(s, u, v, 1);
         }
         break;
       }
@@ -2453,7 +2571,7 @@
   }
 
   AG.Engine = {
-    T_GRASS, T_ROCK, T_WATER, T_LAVA,
+    T_GRASS, T_ROCK, T_WATER, T_LAVA, IMPACT, shoveForecast, forcePath, clearLine,
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,

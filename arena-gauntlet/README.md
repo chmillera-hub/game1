@@ -317,6 +317,21 @@ on a phone turned sideways, but portrait works too.
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
   winning with a unit that sat out the last battle) pay extra.
+- **Pushes and pulls**: some attacks shove a unit straight away (Shield Bash, Ground
+  Slam, Boulder Toss, Arcane Burst, Wing Buffet, the Bull Rush skill, a Gale Horn, an
+  Orc Brute's maul) and some drag it straight in (the Scout's Grappling Hook, a Chain
+  Hook, the Witch's Void Grasp, the Enchantress's Siren's Lure, a Giant Spider's web,
+  Grukk the Warlord's chain). It moves tile by tile, and whatever stops it hurts, past
+  armor and block: a rock or the edge of the field 8; another unit or a building 6,
+  and that one takes 6 too, friend or foe (a building can break, coins and all);
+  water 6, after which it climbs out onto the nearest dry tile, rooted for a turn and
+  with any burn put out; lava 12, and it climbs out burning. Flyers sail over water
+  and lava. Bosses, huge units and the steadfast never budge, and a blocked blow
+  shoves nobody. Hooks fly straight along a row or column, with no rock or unit in
+  the way. Relics: Iron Ram (+6 to every impact), Tidecaller's Conch (a tile
+  further), Anchor Stone (your units cannot be moved). Previews say where a shove
+  lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
+  water or lava to shove its enemies into.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
   portals and barricades are buildings. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:

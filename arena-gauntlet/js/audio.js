@@ -118,6 +118,14 @@
       noise(0.35, 0.4, 'lowpass', 250);
       tone('sine', 90, 35, 0.35, 0.3);
     },
+    splash: () => {
+      noise(0.45, 0.3, 'lowpass', 900);
+      tone('sine', 420, 160, 0.18, 0.08, 0.05);
+    },
+    sizzle: () => {
+      noise(0.6, 0.22, 'highpass', 2600);
+      tone('sawtooth', 120, 60, 0.3, 0.06);
+    },
     death: () => tone('triangle', 300, 70, 0.4, 0.12),
     horn: () => {
       tone('sawtooth', 147, 140, 0.55, 0.06);

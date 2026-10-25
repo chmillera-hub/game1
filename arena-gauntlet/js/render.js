@@ -1016,11 +1016,12 @@
     drawUnit(g, v) {
       const [cx0, cy0] = this.center(v.x, v.y);
       const cx = cx0 + v.ox + (v.shake ? Math.sin(this.time * 70) * v.shake * this.tw * 0.04 : 0);
-      const cy = cy0 + v.oy;
+      // Shoved into water or lava: sunk to the waist, bobbing, until it climbs out.
+      const cy = cy0 + v.oy + (v.dunk ? this.th * 0.35 + Math.sin(this.time * 12) * this.th * 0.04 : 0);
       const tc = S.TEAMS[v.team] || S.TEAMS.P;
       const u = this.unit;
       g.save();
-      g.globalAlpha = v.alpha * (v.ghost ? 0.55 : 1);
+      g.globalAlpha = v.alpha * (v.ghost ? 0.55 : 1) * (v.dunk ? 0.75 : 1);
       // shadow and base ring
       const rx = this.tw * 0.3;
       const ry = this.th * 0.3;
@@ -2165,6 +2166,25 @@
             if (v) {
               const x0 = v.x;
               const y0 = v.y;
+              // A pull: the hook's chain (or the web, or the dark hand) reels it in.
+              const by = e.pull && this.vis.get(e.by);
+              if (by) {
+                const [ax, ay] = this.pt(by.x, by.y, 18);
+                this.sfx('throw');
+                this.effect(this.reduced ? 0.06 : 0.22, (g, k) => {
+                  const [bx, bY] = this.pt(v.x, v.y, 18);
+                  g.save();
+                  g.globalAlpha = 1 - k * 0.7;
+                  g.strokeStyle = '#d6d9e2';
+                  g.lineWidth = Math.max(1.5, this.tw * 0.035);
+                  g.setLineDash([this.tw * 0.07, this.tw * 0.045]);
+                  g.beginPath();
+                  g.moveTo(ax, ay);
+                  g.lineTo(bx, bY);
+                  g.stroke();
+                  g.restore();
+                });
+              }
               v.moving = true;
               await this.tween(this.reduced ? 40 : 170, (k) => {
                 v.x = lerp(x0, e.x, k);
@@ -2178,8 +2198,53 @@
             break;
           case 'slam':
             if (v) {
+              this.sfx('slam');
               this.shakeT = Math.max(this.shakeT, 0.12);
               this.addText(v.x, v.y, 'SLAM', '#ffb0a0', { height: h, dy: -this.tw * 0.25, max: 0.8 });
+              this.particles(v.x, v.y, 8, ['#d9c7a0', '#8f7c5c'], { lift: 8, speed: 0.6, max: 0.45 });
+            }
+            break;
+          // Shoved into another unit: a thud, dust between them, and both reel.
+          case 'crash': {
+            const o = this.vis.get(e.other);
+            this.sfx('slam');
+            this.shakeT = Math.max(this.shakeT, 0.14);
+            if (v) this.addText(v.x, v.y, 'CRASH', '#ffb0a0', { height: h, dy: -this.tw * 0.25, max: 0.8 });
+            if (v && o) this.particles((v.x + o.x) / 2, (v.y + o.y) / 2, 10, ['#d9c7a0', '#a08c6a', '#ffffff'], { lift: 12, speed: 0.7, max: 0.5 });
+            if (o) {
+              o.shake = 1;
+              setTimeout(() => (o.shake = 0), 220);
+            }
+            any = true;
+            break;
+          }
+          // Shoved into water or lava: the splash, a moment under, then it climbs out.
+          case 'splash':
+            if (v) {
+              const cols = e.lava ? ['#ff9a3c', '#ffd36a', '#c4361b'] : ['#d8f0ff', '#7cc0ff', '#ffffff'];
+              this.sfx(e.lava ? 'sizzle' : 'splash');
+              this.particles(v.x, v.y, 16, cols, { lift: 2, rise: 0.9, speed: 0.9, max: 0.7, gravity: 1.4 });
+              this.ring(v.x, v.y, e.lava ? 'rgba(255,140,60,0.9)' : 'rgba(170,220,255,0.9)', 0.7, 420, 0);
+              this.addText(v.x, v.y, e.lava ? 'INTO THE LAVA' : 'SPLASH', e.lava ? '#ffb070' : '#a8dcff', { height: h, dy: -this.tw * 0.55, max: 0.9 });
+              v.dunk = true;
+              await this.tween(this.reduced ? 40 : 260, () => {});
+              any = true;
+            }
+            break;
+          case 'climb':
+            if (v) {
+              const x0 = v.x;
+              const y0 = v.y;
+              v.moving = true;
+              v.dunk = false;
+              await this.tween(this.reduced ? 40 : 240, (k) => {
+                v.x = lerp(x0, e.x, k);
+                v.y = lerp(y0, e.y, k);
+              });
+              v.x = e.x;
+              v.y = e.y;
+              v.moving = false;
+              any = true;
             }
             break;
           case 'leap':

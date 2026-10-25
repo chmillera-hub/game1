@@ -197,7 +197,7 @@
       case 'leap':
       case 'blink':
       case 'shadowstrike':
-        return a.range[0] === a.range[1] ? String(a.range[0]) : a.range[0] + '-' + a.range[1];
+        return (a.range[0] === a.range[1] ? String(a.range[0]) : a.range[0] + '-' + a.range[1]) + (a.straight ? ' straight' : '');
       case 'line':
         return 'Line ' + a.len;
       case 'cone':
@@ -234,6 +234,22 @@
     return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
   }
 
+  // A shove or pull in a preview: where it goes and what it hits.
+  function shoveText(k) {
+    if (k === 'resist') return 'stands firm';
+    const s = UI.battle && UI.battle.s;
+    const moved = k.n ? `${k.pull ? 'dragged' : 'shoved'} ${k.n} tile${k.n > 1 ? 's' : ''}` : k.pull ? 'not dragged' : 'not moved';
+    const other = k.other != null && s && s.byId[k.other];
+    const into = {
+      rock: `slams into the ${obstacleName().toLowerCase()}: <b>${k.dmg}</b>`,
+      edge: `slams into the edge: <b>${k.dmg}</b>`,
+      unit: `crashes into ${other ? esc(other.team === 'P' ? other.name : UNITS[other.type].name) : 'a unit'}: <b>${k.dmg}</b> each`,
+      water: `splashes into the water: <b>${k.dmg}</b>, then climbs out rooted`,
+      lava: `falls into the lava: <b>${k.dmg}</b>, then climbs out burning`,
+    }[k.end];
+    return into ? `${moved}, ${into}` : moved;
+  }
+
   function fxText(u, a) {
     const fx = E.hitFx(u, a);
     const bits = [];
@@ -243,7 +259,8 @@
     if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
     if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
     if (fx.mark) bits.push(`marks for ${fx.mark} turns (+25% damage taken)`);
-    if (fx.knock) bits.push('knocks back 1 tile');
+    if (fx.knock) bits.push(`shoves the target back ${fx.knock} tile${fx.knock > 1 ? 's' : ''}`);
+    if (fx.pull) bits.push(`drags the target ${fx.pull} tile${fx.pull > 1 ? 's' : ''} toward it`);
     return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
   }
 
@@ -277,9 +294,11 @@
     const ff = !area ? '' : E.hitsAllies(u, a) ? ' Hits allies in the area too.' : ' Spares allies.';
     let t;
     switch (a.kind) {
-      case 'strike':
-        t = a.dmg ? `${base} ${dt} damage to one enemy ${rangeText(a.range)}.` : `Targets one enemy ${rangeText(a.range)}.`;
+      case 'strike': {
+        const where = rangeText(a.range) + (a.straight ? ' in a straight, open line' : '');
+        t = a.dmg ? `${base} ${dt} damage to one enemy ${where}.` : `Targets one enemy ${where}.`;
         break;
+      }
       case 'cleave':
         t = `${base} ${dt} damage to every adjacent ${E.hitsAllies(u, a) ? 'unit, friend or foe' : 'enemy'}.`;
         break;
@@ -380,6 +399,7 @@
       case 'grow':
       case 'raise':
         reach = ring(r[0], r[1]);
+        if (a.straight) reach = reach.filter(([x, y]) => x === ux || y === uy);
         aim = ahead;
         hit = [aim];
         break;
@@ -488,7 +508,7 @@
     bloodlust: 'Slaying an enemy resets its cooldown: it is ready again next turn.',
     secondwind: 'Once per battle, survives a fatal blow with 1 HP.',
     phoenix: 'The first time it falls, it rises again with half HP.',
-    steadfast: 'Immune to paralysis, roots and knockback.',
+    steadfast: 'Immune to paralysis, roots, shoves and pulls.',
     poisonproof: 'Immune to poison.',
     paraproof: 'Immune to paralysis.',
     undead: 'Undead: immune to poison.',
@@ -499,14 +519,14 @@
     purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
     ironwood: 'Its shrubs have 40% armor and magic resistance.',
-    ridedown: 'After moving 3 or more tiles, its basic attack knocks the target back.',
+    ridedown: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.',
     stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
     thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
     volatile: 'Explodes when destroyed, hurting everything next to it.',
     trollblood: 'Regenerates unless magic or fire hurt it since its last turn.',
     cart: `Rolls ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} toward the left edge after every enemy turn, and escapes there.`,
-    big: 'Huge: cannot be knocked back.',
+    big: 'Huge: cannot be shoved or dragged.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
     structure: 'A structure: you can win without destroying it.',
     spawner: 'Sends reinforcements every few turns until it is destroyed.',
@@ -553,7 +573,7 @@
     if (P.dmgMult) out.push(`+${pct(P.dmgMult)} damage.`);
     if (P.vs) for (const k in P.vs) out.push(`+${pct(P.vs[k])} damage against ${vsName(k)}.`);
     if (P.vsArmored) out.push(`+${pct(P.vsArmored)} damage against armored targets.`);
-    if (u.boss) out.push('Boss: immune to paralysis and knockback.');
+    if (u.boss) out.push('Boss: immune to paralysis, shoves and pulls.');
     return [...new Set(out)];
   }
 
@@ -748,6 +768,7 @@
     sands_of_haste: 'hourglass', recruiters_bell: 'army', old_crown: 'crown', shadow_cloak: 'eye', aegis: 'shield', warlord_helm: 'crown',
     alchemist_stone: 'gem', dragon_scale: 'shield', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire',
     kings_ransom: 'gold', crown_command: 'crown', sacred_chalice: 'heart', cursed_blade: 'sword',
+    iron_ram: 'shield', tide_conch: 'star', anchor_stone: 'block',
   };
   function relicBar() {
     const bar = $('#relicBar');
@@ -1707,7 +1728,7 @@
       f.lines.push(
         'Blocks the way: nobody can stand here, and only flying units pass over it.',
         'Stops straight-line attacks such as a Witch\'s lightning; arcing shots and spells fly over it.',
-        'It cannot be destroyed. A unit knocked into it is slammed for 6 damage.',
+        `It cannot be destroyed. A unit shoved or dragged into it slams into it for ${E.IMPACT.rock} damage.`,
         'Make it the priority and your army gathers around it and holds there.'
       );
     } else if (t === E.T_WATER || t === E.T_LAVA) {
@@ -1715,7 +1736,9 @@
       name(water ? 'Deep Water' : 'Lava', null, water ? 'water' : 'lava');
       f.lines.push(
         `${water ? 'Too deep' : 'Too hot'} to walk through. Flying units cross it, but nobody can stop on it.`,
-        'Attacks pass over it. A unit on foot knocked toward it is slammed for 6 damage instead.'
+        water
+          ? `Attacks pass over it. A unit on foot shoved or dragged into it splashes in for ${E.IMPACT.water} damage, climbs out onto the nearest dry tile and is rooted for 1 turn (the water puts out burns).`
+          : `Attacks pass over it. A unit on foot shoved or dragged into it falls in for ${E.IMPACT.lava} damage, climbs out onto the nearest dry tile and burns.`
       );
     }
     const loot = (s.loot || []).find((l) => !l.taken && l.x === x && l.y === y);
@@ -3011,6 +3034,7 @@
       else if (line.moved) bits.push('moves');
       if (line.dmg) bits.push(`<b>${line.dmg}</b> damage`);
       if (line.heal) bits.push(`<b>+${line.heal}</b> HP`);
+      for (const n of line.notes) bits.push(esc(n));
       for (const k of line.kills) bits.push(`<span class="kill">${esc(k)} falls</span>`);
       if (bits.length) add({ team: v.team, html: `<b>${esc(logName(v))}</b>: ${bits.join(' · ')}` });
       line = null;
@@ -3020,13 +3044,19 @@
       if (e.t === 'move' || e.t === 'action') {
         if (!line || line.uid !== e.uid) {
           finish();
-          line = { uid: e.uid, moved: false, act: null, dmg: 0, heal: 0, kills: [] };
+          line = { uid: e.uid, moved: false, act: null, dmg: 0, heal: 0, kills: [], notes: [] };
         }
         if (e.t === 'move') line.moved = true;
         else line.act = e.ai ? e.name : e.dmg ? 'basic attack' : 'basic ability';
       } else if (e.t === 'heal' && e.why === 'regen' && v) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });
+      } else if ((e.t === 'splash' || e.t === 'crash' || e.t === 'slam') && line && v) {
+        // Where a shove or pull landed, on the line of the unit that did it.
+        const o = e.other && s.byId[e.other];
+        line.notes.push(
+          e.t === 'splash' ? `${logName(v)} ${e.lava ? 'into the lava' : 'into the water'}` : e.t === 'crash' ? `${logName(v)} crashes into ${o ? logName(o) : 'a unit'}` : `${logName(v)} slams into ${e.why === 'edge' ? 'the edge' : 'the rock'}`
+        );
       } else if (e.t === 'loot' && v) {
         finish();
         add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
@@ -3371,7 +3401,7 @@
       if (e.root) bits.push(e.root === 'resist' ? 'cannot be rooted' : `rooted ${e.root}`);
       if (e.weak) bits.push(`weakened ${e.weak}`);
       if (e.mark) bits.push(`marked ${e.mark}`);
-      if (e.knock) bits.push(e.knock === 'resist' ? 'stands firm' : 'knocked back');
+      if (e.knock) bits.push(shoveText(e.knock));
       const ff = e.friendly && !healish && !e.self;
       return `<div class="line ${ff ? 'ff' : ''}">${who}: ${bits.join(' · ') || 'no effect'}${ff ? ' (friendly fire)' : ''}</div>`;
     });
@@ -4623,6 +4653,13 @@
           <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, ambushing reinforcements (cutting down a few of the enemies that arrive in waves), or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
           <li>War totems whip the enemies within 2 tiles into a frenzy (25% more damage) until they fall.</li>
           <li><b>Enemies never heal</b>, bosses included, and never rise again once they fall. You have your Cleric; they have nothing that mends, so every hit you land stays landed.</li>
+        </ul>
+        <h4>Pushes and pulls</h4>
+        <ul>
+          <li>Some attacks <b>shove</b> a unit away (Shield Bash, Ground Slam, Boulder Toss, Arcane Burst, Wing Buffet, the Bull Rush skill, a Gale Horn, an Orc Brute's maul) or <b>drag</b> it in (a Grappling Hook or Chain Hook, Void Grasp, Siren's Lure, a spider's web, Grukk's chain). It moves in a straight line, tile by tile.</li>
+          <li><b>What stops it hurts</b>, past armor and block: a rock or the edge of the field ${E.IMPACT.rock}; another unit or a building ${E.IMPACT.unit}, and that one takes ${E.IMPACT.unit} too, friend or foe; water ${E.IMPACT.water}, and it climbs out onto the nearest dry tile, rooted for a turn (the water puts out burns); lava ${E.IMPACT.lava}, and it climbs out burning.</li>
+          <li>Flyers sail over water and lava. Bosses, huge units and the steadfast (Unstoppable, Unshakable, Iron Will) never budge. A hook flies straight: along a row or column, with no rock or unit in between. A blocked blow shoves nobody.</li>
+          <li>Relics: the Iron Ram adds 6 to every impact, the Tidecaller's Conch shoves and drags a tile further, and the Anchor Stone keeps your units from being moved at all.</li>
         </ul>
         <h4>Buildings and siege</h4>
         <ul>

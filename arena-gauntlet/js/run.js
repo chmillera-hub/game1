@@ -2555,7 +2555,8 @@
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
     if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');
     if (has('cart')) tips.push(`The wagons flee left ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} at the end of every enemy turn. Block their path with units and break them fast.`);
-    if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
+    if (has('spider')) tips.push('Spiders root from range and reel you in: rooted units can still fight but cannot move.');
+    if (has('brute', 'warlord')) tips.push('Brutes shove and Grukk drags: keep water, lava and rocks out from behind your front line.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
     if (has('shaman')) tips.push('Orc Shamans drive the warband into a frenzy (25% more damage): kill the drummer first.');
     if (has('golem', 'golem_king')) tips.push('Golems have 50% armor but take 25% extra from magic.');
