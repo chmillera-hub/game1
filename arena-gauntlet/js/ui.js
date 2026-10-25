@@ -865,7 +865,7 @@
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
-      unit: 'Five units make your starting army. Every unit brings a random talent of its class, for your pack. The first pick always offers a Cleric, your healer (the only one in the draft).',
+      unit: 'Five units make your starting army. Every unit brings a talent of its class for your pack, a different one for each unit of a class. The first pick always offers a Cleric, your healer (the only one in the draft).',
       relic: 'A relic works for the whole campaign.',
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
@@ -1434,7 +1434,7 @@
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
         <p class="small muted">Level 2: +20% HP, +15% damage, a second ability, a second talent slot and a second skill slot. Level 3: +40% HP, +30% damage, its Mastery, a third talent slot and a second gear slot.</p></div>
       <div class="lo-sec"><div class="eyebrow">${ic('star')} ${UNITS[r.type].name} talents · ${sl.talents} slot${sl.talents > 1 ? 's' : ''}</div>
-        <p class="small muted">Class passives. Every unit comes with one, and you find more in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
+        <p class="small muted">Class passives. Every new unit brings one you do not own yet, and you find more in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
         <div class="slots">${[...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slotButton(run, r, 'talent', i) : lockedSlot('talent', 'star', 'Talent slot', i + 1))).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Skills · ${sl.skills} slot${sl.skills > 1 ? 's' : ''}</div>
         <div class="slots">${[...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slotButton(run, r, 'skill', i) : `<div class="slot locked"><span class="itemico skill">${ic('scroll')}</span><span class="sl-body"><b class="muted">Skill slot</b><span class="small muted">Unlocks at Level 2</span></span></div>`)).join('')}</div></div>
@@ -4102,7 +4102,7 @@
         <ul>
           <li>Every unit picks 1 of 3 abilities at Level 1, and 1 of 3 more at Level 2. Stronger picks cost more Supply.</li>
           <li><b>Active abilities</b> have 1 to 3 uses a battle that never come back, and most a cooldown of their own: after a use they wait that many of the unit's turns. Using one is the unit's action for the turn, instead of its attack.</li>
-          <li>${ic('star')} <b>Talents</b> are class passives you find in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
+          <li>${ic('star')} <b>Talents</b> are class passives. Every class has at least three. Each new unit brings one you do not own yet (only once you own them all does one repeat), and you find more in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
           <li><b>Setup guide</b>: put a unit on the board and it asks about its kit, one question at a time (level, abilities, talents, skills, gear). Answer No to skip one, or Done to stop. Turn it off in the menu.</li>

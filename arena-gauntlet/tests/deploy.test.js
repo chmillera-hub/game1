@@ -58,6 +58,8 @@ test('no field limit: eight Archers take the field when Supply pays for them', (
     const u = R.addRecruit(run, 'archer');
     u.load.talents = [];
   }
+  // Just units here: no talents in the pack for Auto to spend the spare Supply on.
+  run.items = run.items.filter((i) => i.kind !== 'talent');
   run.supplyBonus = 24 - R.supplyFor(run);
   const enc = run.pending.enc;
   const rows = R.deployRows(run, enc);

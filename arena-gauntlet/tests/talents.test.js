@@ -177,4 +177,34 @@ test('every talent improves something its class always has, never an optional ab
   }
 });
 
+test('every class has at least three talents', () => {
+  for (const type of D.RECRUITABLE) {
+    const n = Object.values(D.TALENTS).filter((t) => t.cls === type).length;
+    assert.ok(n >= 3, `${type} has ${n}`);
+  }
+});
+
+test('recruits of one class bring different talents until you own them all', () => {
+  for (const type of D.RECRUITABLE) {
+    const all = Object.values(D.TALENTS).filter((t) => t.cls === type).map((t) => t.id);
+    for (let seed = 1; seed <= 20; seed++) {
+      const run = R.newRun({ seed, warband: 'vanguard' });
+      // Start from no talents of this class at all.
+      run.items = run.items.filter((i) => !(i.kind === 'talent' && D.TALENTS[i.id].cls === type));
+      const got = [];
+      for (let k = 0; k < all.length * 2; k++) got.push(R.addRecruit(run, type).brought);
+      assert.deepStrictEqual(got.slice(0, all.length).sort(), all.slice().sort(), `${type} seed ${seed}: the first ${all.length} are all different`);
+      assert.deepStrictEqual(got.slice(all.length).sort(), all.slice().sort(), 'then each comes a second time before any comes a third');
+    }
+  }
+});
+
+test('a talent you already own (bought or found) is not what the next recruit brings', () => {
+  const run = R.newRun({ seed: 5, warband: 'vanguard' });
+  run.items = run.items.filter((i) => !(i.kind === 'talent' && D.TALENTS[i.id].cls === 'cleric'));
+  R.addItem(run, 'talent', 'c_bless');
+  R.addItem(run, 'talent', 'c_fortitude');
+  assert.strictEqual(R.addRecruit(run, 'cleric').brought, 'c_radiance');
+});
+
 console.log(`talents: ${passed} tests passed`);

@@ -106,11 +106,14 @@
 
   // Every new unit brings one random talent of its class. It goes into your pack: units on
   // the bench carry nothing, and you equip it in the War Room once the unit is on the field.
+  // It is one you do not own yet while any is left (bought or found ones count), so units of
+  // one class bring different talents; only once you own them all does one come twice.
   function giveTalent(run, u) {
-    const opts = Object.values(TALENTS)
-      .filter((t) => t.cls === u.type)
-      .map((t) => [t.id, talentWeight(run, t)]);
-    if (!opts.length) return;
+    const all = Object.values(TALENTS).filter((t) => t.cls === u.type);
+    if (!all.length) return;
+    const owned = (t) => run.items.filter((i) => i.kind === 'talent' && i.id === t.id).length;
+    const fewest = Math.min(...all.map(owned));
+    const opts = all.filter((t) => owned(t) === fewest).map((t) => [t.id, talentWeight(run, t)]);
     const rng = AG.derive(run.seed, 'talent:' + u.id);
     u.brought = addItem(run, 'talent', rng.weighted(opts)).id;
   }

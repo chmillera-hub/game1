@@ -107,7 +107,10 @@ on a phone turned sideways, but portrait works too.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
   and the like) are class talents. Every unit you get brings one random talent of its
   class, which goes into your pack (the unit itself arrives bare, at its base price);
-  slot it into any unit of that class on the field. You find more in shops and battle spoils,
+  slot it into any unit of that class on the field. Every class has at least three
+  talents, and a new unit brings one you do not own yet (bought and found ones count),
+  so three Clerics bring three different talents; only once you own them all does one
+  come twice. You find more in shops and battle spoils,
   and only for classes in your army. A unit has one talent slot per level, three at
   Level 3, and can mix and match any of its class's talents you own (one copy of
   each per unit; each copy fits one unit at a time). The level picks keep the free
