@@ -2567,6 +2567,10 @@
   }
 
   // What happens to a team at the start of its turn.
+  const DRUM_EVERY = 10;
+  const DRUM_HEAL = 25;
+  const DRUM_FRENZY = 3;
+
   function startEffects(s, team) {
     // Hazards fade at the start of their owner's turns.
     const before = s.tfx.length;
@@ -2632,16 +2636,17 @@
         }
       }
     }
-    // War Drum: every fifth turn, the whole army heals 10 and flies into a frenzy.
-    if (s.relics[team].has('echo_drum') && s.turn % 5 === 0 && s.drummed[team] !== s.turn) {
+    // War Drum of Ages: every tenth turn, one big beat: the whole army heals 25 and flies
+    // into a frenzy for 3 turns. Shown once over the army, not on every unit.
+    if (s.relics[team].has('echo_drum') && s.turn % DRUM_EVERY === 0 && s.drummed[team] !== s.turn) {
       s.drummed[team] = s.turn;
-      emit(s, { t: 'echo', team });
-      for (const v of mine) {
-        if (!v.alive || v.nonCombat || v.structure) continue;
-        heal(s, v, 10, 'drum');
-        v.frenzy = Math.max(v.frenzy, 2);
+      const beat = mine.filter((v) => v.alive && !v.nonCombat && !v.structure);
+      emit(s, { t: 'wardrum', team, uids: beat.map((v) => v.uid) });
+      for (const v of beat) {
+        heal(s, v, DRUM_HEAL, 'wardrum');
+        v.frenzy = Math.max(v.frenzy, DRUM_FRENZY);
         stamp(s, v, 'frenzy');
-        emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
+        emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: DRUM_FRENZY, quiet: true });
       }
     }
     resolveBooms(s);

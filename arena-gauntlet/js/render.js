@@ -1769,10 +1769,8 @@
           this.sfx('zap');
           const pts = [from].concat(tiles);
           await this.wait(fast ? 20 : 80);
-          // A Witch's lightning is black-violet; a Lightning Ward's bolt is storm blue.
-          const storm = type === 'lightning';
-          this.bolt(pts, storm ? 'rgba(150,210,255,A)' : 'rgba(170,90,255,A)', 380, 1.2);
-          this.flashTiles(tiles, storm ? 'rgba(140,200,255,ALPHA)' : 'rgba(160,90,255,ALPHA)', 380);
+          this.bolt(pts, 'rgba(170,90,255,A)', 380, 1.2);
+          this.flashTiles(tiles, 'rgba(160,90,255,ALPHA)', 380);
           await this.wait(fast ? 40 : 120);
           await this.applyImpacts(group, state);
           break;
@@ -1791,6 +1789,15 @@
           break;
         }
         case 'cone': {
+          // A Lightning Ward's lash: forked bolts to every tile, storm blue.
+          if (type === 'lightning') {
+            this.sfx('zap');
+            for (const t of tiles) this.bolt([from, t], 'rgba(150,210,255,A)', 380, 1);
+            this.flashTiles(tiles, 'rgba(140,200,255,ALPHA)', 380);
+            await this.wait(fast ? 40 : 140);
+            await this.applyImpacts(group, state);
+            break;
+          }
           this.sfx('breath');
           const [x0, y0] = this.pt(ev.x, ev.y, 30);
           const parts = [];
@@ -2023,6 +2030,8 @@
             if (!v) break;
             any = true;
             v.hp = Math.min(v.maxHp, v.hp + e.amount);
+            // The War Drum heals the whole army at once: its one banner says so.
+            if (e.why === 'wardrum') break;
             this.addText(v.x, v.y, '+' + e.amount, '#8ef08e', { height: h, dy: e.why === 'drain' ? this.tw * 0.15 : 0 });
             if (e.why !== 'drain') this.particles(v.x, v.y, 6, ['#b7ffb0', '#6fdc6f', '#fff3b0'], { lift: 10, rise: 0.8, speed: 0.25, max: 0.8 });
             break;
@@ -2039,7 +2048,20 @@
             else if (e.status === 'poison') v.poison = true;
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
-            if (st) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
+            // A status the whole army gets at once (the War Drum) is announced once, not per unit.
+            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
+            break;
+          }
+          case 'wardrum': {
+            const vs = (e.uids || []).map((id) => this.vis.get(id)).filter(Boolean);
+            if (!vs.length) break;
+            any = true;
+            this.sfx('boom');
+            this.shakeT = Math.max(this.shakeT, 0.25);
+            const cx = vs.reduce((t, w) => t + w.x, 0) / vs.length;
+            const cy = vs.reduce((t, w) => t + w.y, 0) / vs.length;
+            this.addText(cx, cy, 'WAR DRUM! +25 HP · FRENZY', '#ffb060', { height: 60, big: true, max: 1.6 });
+            this.ring(cx, cy, 'rgba(255,150,70,0.9)', 3.2, 700, 10);
             break;
           }
           case 'resist':
