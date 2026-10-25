@@ -326,7 +326,7 @@
     // Hostile Lightning Wards (anything rooted to the spot that zaps what comes near), and
     // the living foes worth walking into one for. While any of those remain, nobody marches
     // on a ward: it is fought from outside its reach.
-    const wards = foes.filter((u) => u.traits.has('immobile') && ['nova', 'line'].includes(u.act.kind) && u.act.dmg);
+    const wards = foes.filter((u) => u.traits.has('immobile') && ['nova', 'line', 'cone'].includes(u.act.kind) && u.act.dmg);
     const flesh = foes.filter((u) => !u.nonCombat && !u.traits.has('immobile'));
     const chase = wards.length && flesh.length ? foes.filter((u) => !wards.includes(u)) : foes;
     const ctx = {
@@ -448,10 +448,12 @@
     return false;
   }
 
-  // A Lightning Ward fires down straight lines; anything else rooted pulses all around.
+  // A Lightning Ward lashes one side at a time (a drake's-breath cone); anything else rooted
+  // pulses all around.
   function inWardReach(s, w, x, y) {
-    if (w.act.kind === 'line') {
-      for (let d = 0; d < 4; d++) if (E.lineTiles(s, w.x, w.y, d, w.act.len).some(([tx, ty]) => tx === x && ty === y)) return true;
+    if (w.act.kind === 'line' || w.act.kind === 'cone') {
+      const tiles = w.act.kind === 'line' ? E.lineTiles : E.coneTiles;
+      for (let d = 0; d < 4; d++) if (tiles(s, w.x, w.y, d, w.act.len).some(([tx, ty]) => tx === x && ty === y)) return true;
       return false;
     }
     return Math.abs(w.x - x) + Math.abs(w.y - y) <= (w.act.radius || 2);

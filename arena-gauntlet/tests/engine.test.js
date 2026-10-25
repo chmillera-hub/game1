@@ -842,24 +842,25 @@ test('Rallying Cry speeds up recovering allies', () => {
   assert.ok(E.canActivate(s, ar), 'ready a turn sooner');
 });
 
-test('a Lightning Ward fires one straight bolt, 4 tiles, in the direction it picks', () => {
+test('a Lightning Ward lashes one side at a time: the tile in front and the row of three beyond', () => {
   const s = board([
     { type: 'lightning', team: 'P', x: 4, y: 5 },
-    { type: 'orc', team: 'E', x: 4, y: 1 },
-    { type: 'orc', team: 'E', x: 4, y: 0 },
+    { type: 'orc', team: 'E', x: 4, y: 4 },
+    { type: 'orc', team: 'E', x: 3, y: 3 },
+    { type: 'orc', team: 'E', x: 5, y: 3 },
+    { type: 'orc', team: 'E', x: 4, y: 2 },
     { type: 'orc', team: 'E', x: 7, y: 5 },
     { type: 'orc', team: 'E', x: 5, y: 6 },
   ]);
-  const [lw, near, far, east, diag] = s.units;
+  const [lw, front, left, right, far, east, diag] = s.units;
   const dirs = E.targetsFrom(s, lw, 0);
   assert.ok(dirs.every((t) => t.kind === 'dir'), 'it aims a direction, not a ring');
-  assert.ok(!dirs.some((t) => t.x === diag.x && t.y === diag.y), 'diagonals are safe');
   const north = dirs.find((t) => t.d === E.dirFromDelta(0, -1));
   act(s, lw, north);
-  assert.ok(near.hp < near.maxHp, '4 tiles north: hit');
-  assert.strictEqual(far.hp, far.maxHp, '5 tiles north: out of reach');
-  assert.strictEqual(east.hp, east.maxHp, 'the bolt went north, not east');
-  assert.strictEqual(diag.hp, diag.maxHp, 'diagonal: never');
+  for (const o of [front, left, right]) assert.ok(o.hp < o.maxHp, 'the 4-tile breath shape north: hit');
+  assert.strictEqual(far.hp, far.maxHp, '3 tiles straight north: out of reach');
+  assert.strictEqual(east.hp, east.maxHp, 'it lashed north, not east');
+  assert.strictEqual(diag.hp, diag.maxHp, 'the diagonal beside it: never');
 });
 
 test('war drums send allies into a frenzy, but heal no one', () => {

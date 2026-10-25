@@ -256,16 +256,17 @@ on a phone turned sideways, but portrait works too.
   healing: its numbers float up in magenta with a minus sign (every damage number has
   one; heals have a plus), with a magenta puff, and a poisoned unit's HP bar turns
   magenta.
-- **Wards**: a Lightning Ward cannot move. Each turn it fires one bolt of lightning
-  down a straight line, north, south, east or west, hitting everything on the first 4
-  tiles (5 with Overcharge); rocks stop it. It picks the line with the most foes and
-  the fewest of its own side, so it rarely singes an ally, and its diagonals are safe.
-  The AI (yours and the enemy's) does not step into its lines of fire unless that move
-  lets it hit a living unit the same turn; it goes around, and leaves the ward for last. A Barrier Ward gives allies within 4
+- **Wards**: a Lightning Ward cannot move. Each turn it lashes lightning at one side,
+  north, south, east or west, in a drake's-breath shape: the tile in front of it and
+  the row of three beyond, 4 tiles (7 with Overcharge, a row further). It picks the
+  side with the most foes and the fewest of its own, so friendly fire still happens,
+  but far less than when it zapped everything around it. The AI (yours and the
+  enemy's) does not step into its reach unless that move lets it hit a living unit the
+  same turn; it goes around, and leaves the ward for last. A Barrier Ward gives allies within 4
   tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and makes
   them immune to poison and paralysis.
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
-  too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's bolt,
+  too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's lash,
   a breath. Upgrades can make one spare allies: Controlled Burn (fireball), Tamed
   Fire (dragon breath), Abyssal Bolt (dark lightning), or the Disciplined skill (any
   unit with an area attack). Some monsters (the bosses' breaths) spare their own.

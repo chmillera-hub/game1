@@ -139,7 +139,7 @@ test('an ally or a taken chest is never a priority', () => {
 
 test('foes keep out of a Lightning Ward\'s reach unless they can hit a living unit from there', () => {
   // A ward sits between the orcs and a knight far behind it: the orcs do not walk into its
-  // lines of fire just to stand there, or to hack at the ward.
+  // reach just to stand there, or to hack at the ward.
   const s = battle([
     { type: 'lightning', team: 'P', x: 4, y: 4 },
     { type: 'knight', team: 'P', x: 0, y: 8 },
@@ -158,8 +158,10 @@ test('foes keep out of a Lightning Ward\'s reach unless they can hit a living un
     // Once the knight falls only the ward is left, and then it is fair game.
     if (!kn.alive) break;
     for (const o of s.units.filter((u) => u.team === 'E' && u.alive)) {
-      // The ward fires down straight lines, 4 tiles each way.
-      const inReach = (o.x === ward.x && Math.abs(o.y - ward.y) <= 4) || (o.y === ward.y && Math.abs(o.x - ward.x) <= 4);
+      // The ward lashes one side at a time: the tile in front and the row of three beyond.
+      const dx = Math.abs(o.x - ward.x);
+      const dy = Math.abs(o.y - ward.y);
+      const inReach = (dx === 0 && dy === 1) || (dy === 0 && dx === 1) || (dx === 2 && dy <= 1) || (dy === 2 && dx <= 1);
       const canHit = Math.abs(o.x - kn.x) + Math.abs(o.y - kn.y) <= 1;
       if (inReach && !canHit) entered++;
     }

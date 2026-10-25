@@ -195,7 +195,7 @@
     // Lightning Ward
     l_cap: { name: 'Capacitor', cost: 0, desc: '+15 max HP.', mod: { stat: { hp: 15 } } },
     l_shock: { name: 'Static Snare', cost: 1, desc: 'Its basic attack roots its targets for 1 turn.', mod: { act: { fx: { root: 1 } } } },
-    l_over: { name: 'Overcharge', cost: 2, desc: 'Its bolt reaches 5 tiles.', mod: { stat: { len: 1 } } },
+    l_over: { name: 'Overcharge', cost: 2, desc: 'Its lightning reaches one row further: 7 tiles.', mod: { stat: { len: 1 } } },
     l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against armored targets (30% armor or more).', mod: { props: { vsArmored: 0.3 } } },
     l_ground: { name: 'Grounding Field', cost: 1, desc: 'Adjacent allies take 20% less magic damage.', mod: { props: { magicGuard: 0.2 } } },
     l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
@@ -461,11 +461,11 @@
     lightning: {
       name: 'Lightning Ward', rarity: 'rare', cost: 4, role: 'ward',
       hp: 46, pow: 16, armor: 0.25, res: 0.25, block: 0, rec: 1, move: 0,
-      act: { name: 'Storm Bolt', kind: 'line', len: 4, dmg: 'magic' },
+      act: { name: 'Storm Lash', kind: 'cone', len: 2, dmg: 'magic' },
       traits: ['immobile', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['l_cap', 'l_shock', 'l_over'], 2: ['l_conduct', 'l_ground', 'l_rapid'] },
-      desc: 'Rooted totem. Each turn it fires a bolt of lightning down one straight line (north, south, east or west), hitting everything on the first 4 tiles. Rocks stop it.',
-      tip: 'It cannot move and only fires in straight lines: come at it from the diagonals, or hit it from range.',
+      desc: 'Rooted totem. Each turn it lashes lightning in one direction (north, south, east or west): the tile in front of it and the row of three beyond, 4 tiles, like a drake\'s breath.',
+      tip: 'It cannot move and only strikes one side at a time: come at it from another side, or hit it from range.',
     },
     dragon: {
       name: 'Dragon Tyrant', rarity: 'legendary', cost: 8, role: 'monster',

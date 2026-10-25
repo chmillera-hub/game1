@@ -1743,10 +1743,8 @@
           this.sfx('zap');
           const pts = [from].concat(tiles);
           await this.wait(fast ? 20 : 80);
-          // A Witch's lightning is black-violet; a Lightning Ward's bolt is storm blue.
-          const storm = type === 'lightning';
-          this.bolt(pts, storm ? 'rgba(150,210,255,A)' : 'rgba(170,90,255,A)', 380, 1.2);
-          this.flashTiles(tiles, storm ? 'rgba(140,200,255,ALPHA)' : 'rgba(160,90,255,ALPHA)', 380);
+          this.bolt(pts, 'rgba(170,90,255,A)', 380, 1.2);
+          this.flashTiles(tiles, 'rgba(160,90,255,ALPHA)', 380);
           await this.wait(fast ? 40 : 120);
           await this.applyImpacts(group, state);
           break;
@@ -1765,6 +1763,15 @@
           break;
         }
         case 'cone': {
+          // A Lightning Ward's lash: forked bolts to every tile, storm blue.
+          if (type === 'lightning') {
+            this.sfx('zap');
+            for (const t of tiles) this.bolt([from, t], 'rgba(150,210,255,A)', 380, 1);
+            this.flashTiles(tiles, 'rgba(140,200,255,ALPHA)', 380);
+            await this.wait(fast ? 40 : 140);
+            await this.applyImpacts(group, state);
+            break;
+          }
           this.sfx('breath');
           const [x0, y0] = this.pt(ev.x, ev.y, 30);
           const parts = [];
