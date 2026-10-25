@@ -3732,8 +3732,10 @@
 
   // A Hall of Fame match is over: say who won, then back to the Hall.
   async function exhibitionOver(B) {
-    const { a, b, onDone } = B.exhibition;
+    const { a, b, onDone, onResult } = B.exhibition;
     const winner = B.s.winner === 'P' ? a : b;
+    // Saved as soon as the match ends, so closing the app here keeps the result.
+    const note = onResult ? onResult(B.s.winner) : '';
     showBanner(`${winner.name} wins`, B.s.winner !== 'P');
     sfx('victory');
     renderBattle();
@@ -3742,14 +3744,16 @@
     openSheet(
       `${sheetHead('Match over')}
       <p><b>${esc(winner.name)}</b> ${B.s.timeout ? 'held the stronger army when time ran out' : 'is the last army standing'}.</p>
+      ${note ? `<div class="panel hall-log"><div>${note}</div></div>` : ''}
       <div class="actions"><button class="btn primary" id="exGo" data-close>Back to the Hall</button></div>`
     );
     UI.onSheetClose = () => onDone(B.s.winner);
   }
 
   // Watch two Hall of Fame armies fight it out, both on the AI. onDone gets 'P' (a won) or
-  // 'E' (b won); onLeave runs when you walk out before the end.
-  async function startExhibition(a, b, onDone, onLeave) {
+  // 'E' (b won); onLeave runs when you walk out before the end. onResult, if given, runs the
+  // moment the match ends and returns a line for the result sheet.
+  async function startExhibition(a, b, onDone, onLeave, onResult) {
     hideToast();
     music('battle');
     const cfg = R.hallBattleConfig(a, b, ((Math.random() * 2 ** 31) >>> 0) + 1);
@@ -3766,7 +3770,7 @@
     bd.readySet = null;
     bd.setBoard(cfg.w, cfg.h, cfg.terrain, 'grass');
     UI.wr = null;
-    UI.battle = { s, dep: [], enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: 0.3, confirmEnd: false, exhibition: { a, b, onDone, onLeave: onLeave || (() => onDone(null)) }, log: [] };
+    UI.battle = { s, dep: [], enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: 0.3, confirmEnd: false, exhibition: { a, b, onDone, onLeave: onLeave || (() => onDone(null)), onResult }, log: [] };
     bd.speed = paceOf();
     bd.focus = null;
     bd.syncFromState(s);
@@ -3787,6 +3791,8 @@
 
   // Every army that won a campaign, best first. The newest starts at the bottom and climbs:
   // it fights the army right above it, and each win swaps them, until it loses or tops the Hall.
+  // Any two ranked armies can also skirmish, whenever you like: if the lower one wins, they
+  // swap places.
   function hallScreen(back, state) {
     const st = state || { pick: [], log: [] };
     const h = R.loadHall();
@@ -3803,7 +3809,7 @@
         .map((sp) => `<canvas data-p="${sp.type}:P" title="${esc(UNITS[sp.type].name)}${sp.level > 1 ? ' · Level ' + sp.level : ''}"></canvas>`)
         .join('');
       const picked = st.pick.indexOf(l.id);
-      const tag = l === climber ? '<span class="chip warn">Climbing</span>' : picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '';
+      const tag = (l === climber ? '<span class="chip warn">Climbing</span>' : '') + (picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '');
       const waiting = i < 0;
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
@@ -3825,17 +3831,33 @@
         : '';
     const pickA = all.find((l) => l.id === st.pick[0]);
     const pickB = all.find((l) => l.id === st.pick[1]);
+    // Two ranked armies: a skirmish for their places. One still waiting in line has no place
+    // yet, so a match with it is a friendly one.
+    const ranked = pickA && pickB && L.includes(pickA) && L.includes(pickB);
+    const rankOf = (l) => L.indexOf(l) + 1;
+    const [hi, lo] = ranked ? (rankOf(pickA) < rankOf(pickB) ? [pickA, pickB] : [pickB, pickA]) : [];
+    const goPanel =
+      pickA && pickB
+        ? `<div class="panel hall-go">
+          <p>${
+            ranked
+              ? `<b>Skirmish:</b> #${rankOf(hi)} <b>${esc(hi.name)}</b> vs #${rankOf(lo)} <b>${esc(lo.name)}</b>. If ${esc(lo.name)} wins, they swap places; if ${esc(hi.name)} wins, nothing moves.`
+              : `<b>Friendly match:</b> ${esc(pickA.name)} vs ${esc(pickB.name)}. ${esc((L.includes(pickA) ? pickB : pickA).name)} is still waiting in line and has no place yet, so nobody moves.`
+          }</p>
+          <div class="row"><button class="btn primary grow" id="hlFriendly" ${st.busy ? 'disabled' : ''}>${ic('eye')} Watch it</button><button class="btn grow" id="hlSkSim" ${st.busy ? 'disabled' : ''}>${ic('skip')} ${st.busy ? 'Fighting…' : 'Simulate it'}</button></div>
+        </div>`
+        : '';
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Every army that won a campaign</p><h2>Hall of Fame</h2></div>
-        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top.</p>
+        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places.</p>
         ${climbPanel}
         ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
         <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
         ${Q.length ? `<div class="eyebrow">Waiting to climb</div><div class="hall-list">${Q.map((l) => row(l, -1)).join('')}</div>` : ''}
-        ${all.length > 1 ? `<p class="small muted">${pickA && pickB ? '' : 'Tap two armies for a friendly match: it changes nobody\'s place.'}</p>` : ''}
+        ${all.length > 1 && !(pickA && pickB) ? `<p class="small muted">${pickA ? `${esc(pickA.name)} picked. Tap a second army to fight it.` : `Tap two armies for a skirmish: if the lower-ranked one wins, they swap places; if the higher one wins, nothing moves.${Q.length ? ' An army still waiting in line has no place yet, so a match with it is a friendly one.' : ''}`}</p>` : ''}
+        ${goPanel}
         <div class="row end">
-          ${pickA && pickB ? `<button class="btn primary" id="hlFriendly">${ic('swords')} Watch ${esc(pickA.name)} vs ${esc(pickB.name)}</button>` : ''}
           <button class="btn" id="hlBack">Back</button>
         </div>
       </div>`
@@ -3894,13 +3916,34 @@
         st.busy = false;
         again();
       };
+    // A skirmish (or friendly match) is over: record it and say what moved.
+    const matchResult = (a, b, winner) => {
+      st.pick = [];
+      const r = ranked ? R.hallSkirmish(a.id, b.id, winner) : null;
+      const w = winner === 'P' ? a : b;
+      const l = w === a ? b : a;
+      st.log = [
+        r
+          ? r.swapped
+            ? `${ic('swords')} Skirmish: <b>${esc(w.name)}</b> beat ${esc(l.name)} and takes #${r.rank}. ${esc(l.name)} drops to #${r.loserRank}.`
+            : `${ic('shield')} Skirmish: <b>${esc(w.name)}</b> beat ${esc(l.name)} and holds #${r.rank}. Nothing moves.`
+          : `${ic('swords')} Friendly match: <b>${esc(w.name)}</b> beat ${esc(l.name)}. Places unchanged.`,
+      ];
+      return st.log[0];
+    };
     if ($('#hlFriendly', v))
-      $('#hlFriendly', v).onclick = () =>
-        startExhibition(pickA, pickB, (winner) => {
-          const w = winner === 'P' ? pickA : winner === 'E' ? pickB : null;
-          st.log = w ? [`${ic('swords')} Friendly match: <b>${esc(w.name)}</b> beat ${esc((w === pickA ? pickB : pickA).name)}. Places unchanged.`] : [];
-          again();
-        });
+      $('#hlFriendly', v).onclick = () => startExhibition(pickA, pickB, () => again(), again, (winner) => matchResult(pickA, pickB, winner));
+    if ($('#hlSkSim', v))
+      $('#hlSkSim', v).onclick = async () => {
+        st.busy = true;
+        again();
+        await sleep(60); // let the screen show it first
+        const winner = R.playHallMatch(pickA, pickB, ((Math.random() * 2 ** 31) >>> 0) + 1);
+        st.busy = false;
+        matchResult(pickA, pickB, winner);
+        sfx('click');
+        if (!UI.battle && $('#hlBack')) again();
+      };
   }
 
   // Victory with bonus goals missed: fight again for them, or keep the win. The rewards are

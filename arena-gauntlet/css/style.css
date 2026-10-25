@@ -2083,8 +2083,19 @@ button.card:active {
 }
 
 .hall-climb p,
+.hall-go p,
 .hall-log div {
   margin: 0 0 8px;
+}
+
+/* Two armies picked: their match stays in view while you scroll the ranking. */
+.hall-go {
+  position: sticky;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  border-color: var(--amber);
+  background: linear-gradient(180deg, var(--leather-2), var(--leather));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
 
 .hall-log div:last-child {

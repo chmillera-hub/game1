@@ -190,4 +190,64 @@ test('a Hall match plays out to a winner', () => {
   assert.strictEqual(wins.P + wins.E, 4);
 });
 
+test('skirmish: the lower-ranked army wins and they swap places; the ones between stay put', () => {
+  clearHall();
+  const h0 = { legends: ['A', 'B', 'C', 'D', 'E'].map((id, i) => fake(id, ['knight', 'archer', 'mage', 'cleric', 'scout'][i])), queue: [] };
+  h0.legends.forEach((l) => (l.climbed = true));
+  R.saveHall(h0);
+  // D (#4, blue) beats A (#1, red).
+  let r = R.hallSkirmish('D', 'A', 'P');
+  let h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['D', 'B', 'C', 'A', 'E']);
+  assert.ok(r.swapped && r.rank === 1 && r.loserRank === 4 && r.winner.id === 'D');
+  assert.strictEqual(h.legends[0].wins, 1);
+  assert.strictEqual(h.legends[3].losses, 1);
+  // Blue or red makes no difference: E (#5, red) beats C (#3, blue).
+  r = R.hallSkirmish('C', 'E', 'E');
+  h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['D', 'B', 'E', 'A', 'C']);
+  assert.ok(r.swapped && r.rank === 3);
+});
+
+test('skirmish: the higher-ranked army wins and nothing moves, but both records count it', () => {
+  clearHall();
+  const h0 = { legends: [fake('A', 'knight'), fake('B', 'archer'), fake('C', 'mage')], queue: [fake('Q', 'scout')] };
+  h0.legends.forEach((l) => (l.climbed = true));
+  R.saveHall(h0);
+  const r = R.hallSkirmish('C', 'A', 'E');
+  const h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['A', 'B', 'C']);
+  assert.ok(!r.swapped && r.rank === 1);
+  assert.strictEqual(h.legends[0].wins, 1);
+  assert.strictEqual(h.legends[2].losses, 1);
+  // An army still waiting in line has no place to win or lose: nothing is recorded.
+  assert.strictEqual(R.hallSkirmish('Q', 'A', 'P'), null);
+  assert.strictEqual(R.hallSkirmish('A', 'A', 'P'), null);
+  assert.deepStrictEqual(R.loadHall(), h);
+});
+
+test('skirmish: a climbing army keeps climbing from its new place; reaching #1 ends its climb', () => {
+  clearHall();
+  const h0 = { legends: [fake('A', 'knight'), fake('B', 'archer'), fake('C', 'mage'), fake('D', 'cleric')], queue: [] };
+  h0.legends.slice(0, 3).forEach((l) => (l.climbed = true));
+  R.saveHall(h0);
+  assert.strictEqual(R.hallClimber(R.loadHall()).id, 'D');
+  // D skirmishes past B: still climbing, now facing A.
+  R.hallSkirmish('D', 'B', 'P');
+  let h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['A', 'D', 'C', 'B']);
+  assert.strictEqual(R.hallClimber(h).id, 'D');
+  assert.strictEqual(R.hallNext(h, 'D').id, 'A');
+  // A skirmish loss is not a climb loss.
+  R.hallSkirmish('C', 'D', 'P');
+  h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['A', 'C', 'D', 'B']);
+  assert.strictEqual(R.hallClimber(h).id, 'D');
+  // Skirmishing to the top leaves nothing to climb.
+  R.hallSkirmish('D', 'A', 'P');
+  h = R.loadHall();
+  assert.strictEqual(h.legends[0].id, 'D');
+  assert.ok(h.legends[0].climbed && !R.hallClimber(h));
+});
+
 console.log(`hall: ${passed} tests passed`);

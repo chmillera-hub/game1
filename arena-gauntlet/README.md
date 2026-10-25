@@ -47,8 +47,14 @@ on a phone turned sideways, but portrait works too.
   the army right above it, on a fresh field with mirrored obstacles, both sides on the
   AI. A win swaps the two; a loss, or reaching #1, ends the climb. Watch each match
   (pause and speed work as in a battle), or simulate the rest of the climb in a
-  second. Tap any two armies (waiting ones too) for a friendly match that changes
-  nobody's place. One army climbs at a time, and nothing is played out without you.
+  second. Skirmishes: tap any two ranked armies, whenever you like, then watch or
+  simulate the match. If the lower-ranked army wins, the two swap places (#4 beating
+  #1 takes #1, and #1 drops to #4; the armies between stay put); if the higher one
+  wins, nothing moves. Both records count it either way. A skirmish is not part of a
+  climb: a climbing army keeps climbing from wherever it ends up, unless it reaches #1.
+  An army still waiting in line has no place yet, so a match with it is a friendly one
+  that changes nothing. One army climbs at a time, and nothing is played out without
+  you.
   The Hall is on the title screen (with how many armies wait to climb) and the end
   screen, and kept in the browser apart from your campaign save.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
@@ -301,7 +307,7 @@ node tests/objectives.test.js    # your army playing for the mission and bonus g
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
-node tests/hall.test.js          # the Hall of Fame: entering, climbing, mirrored matches
+node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves

@@ -2434,6 +2434,33 @@
     return h;
   }
 
+  // A skirmish between two ranked armies, picked whenever you like: if the lower-ranked
+  // one wins, they swap places; if the higher one wins, nothing moves. Both records grow.
+  // It is not part of a climb, though an army that skirmishes its way to #1 has nowhere
+  // left to climb. Returns what happened, or null if either army has no place.
+  function applySkirmish(h, aId, bId, winner) {
+    const L = h.legends;
+    const ia = L.findIndex((l) => l.id === aId);
+    const ib = L.findIndex((l) => l.id === bId);
+    if (ia < 0 || ib < 0 || ia === ib || (winner !== 'P' && winner !== 'E')) return null;
+    const [iw, il] = winner === 'P' ? [ia, ib] : [ib, ia];
+    const w = L[iw];
+    const l = L[il];
+    w.wins++;
+    l.losses++;
+    const swapped = iw > il;
+    if (swapped) [L[iw], L[il]] = [l, w];
+    if (L[0] === w) w.climbed = true;
+    return { winner: w, loser: l, swapped, rank: L.indexOf(w) + 1, loserRank: L.indexOf(l) + 1 };
+  }
+
+  function hallSkirmish(aId, bId, winner) {
+    const h = loadHall();
+    const r = applySkirmish(h, aId, bId, winner);
+    if (r) saveHall(h);
+    return r;
+  }
+
   // The army a climbing legend faces next: the one right above it (null when done).
   function hallNext(h, id) {
     const i = h.legends.findIndex((l) => l.id === id);
@@ -2571,6 +2598,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
