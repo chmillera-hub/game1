@@ -44,6 +44,19 @@ function until(s, side) {
   while (!s.over && s.side !== side);
 }
 
+// A mission done routs the enemy instead of ending the battle: the rest bleed every enemy
+// turn (2, 4, 6...) until the last falls, and the win is yours.
+function routedThenWon(s, why) {
+  assert.ok(s.routed && s.routed[why], 'routed: ' + why);
+  assert.ok(!s.over, 'the battle goes on');
+  const foe = s.units.find((u) => u.alive && u.team === 'E' && E.counts(u));
+  const hp = foe && foe.hp;
+  for (let i = 0; i < 80 && !s.over; i++) E.endTurn(s);
+  assert.ok(!foe || foe.hp < hp, 'the routed enemy bleeds');
+  assert.ok(s.over && s.winner === 'P', 'and the last of them falls');
+  assert.ok(s.end[why], 'the win remembers why');
+}
+
 function place(s, u, x, y) {
   s.occ[E.idx(s, u.x, u.y)] = 0;
   u.x = x;
@@ -700,7 +713,7 @@ test('loot wagons flee for the exit; breaking them all wins', () => {
   );
   s2.units[2].hp = 5;
   act(s2, s2.units[0], { kind: 'tile', x: 6, y: 4 });
-  assert.ok(s2.over && s2.winner === 'P');
+  routedThenWon(s2, 'destroyed');
 });
 
 test('Divine Shield absorbs damage; charges run out', () => {
@@ -945,7 +958,7 @@ test('victory when last enemy falls; boss objective', () => {
   const king = b.units[1];
   king.hp = 1;
   act(b, b.units[0], { kind: 'unit', uid: king.uid });
-  assert.ok(b.over && b.winner === 'P', 'boss slain wins');
+  routedThenWon(b, 'vipSlain');
 });
 
 test('nobody surrenders: a side with no attackers left fights on until it falls', () => {
@@ -1088,7 +1101,7 @@ test('burning the war banner wins; it rallies nearby enemies', () => {
   assert.strictEqual(E.calcHit(s, ar, py, {}).dmg, Math.round(16 * 1.15));
   wb.hp = 5;
   act(s, py, { kind: 'tile', x: 4, y: 3 });
-  assert.ok(s.over && s.winner === 'P', 'banner destroyed wins');
+  routedThenWon(s, 'destroyed');
 });
 
 test('slaying the commander wins', () => {
@@ -1103,7 +1116,7 @@ test('slaying the commander wins', () => {
   const [kn, cmd] = s.units;
   cmd.hp = 1;
   act(s, kn, { kind: 'unit', uid: cmd.uid });
-  assert.ok(s.over && s.winner === 'P');
+  routedThenWon(s, 'vipSlain');
 });
 
 test('holding the shrine for two turns wins', () => {
@@ -1120,7 +1133,7 @@ test('holding the shrine for two turns wins', () => {
   assert.ok(!s.over);
   E.endTurn(s);
   E.endTurn(s);
-  assert.ok(s.over && s.winner === 'P');
+  routedThenWon(s, 'held');
 });
 
 test('surviving the set number of turns wins', () => {
@@ -1131,8 +1144,9 @@ test('surviving the set number of turns wins', () => {
     ],
     { objective: 'survive', surviveTurns: 2 }
   );
-  for (let i = 0; i < 4 && !s.over; i++) E.endTurn(s);
-  assert.ok(s.over && s.winner === 'P' && s.turn === 3);
+  for (let i = 0; i < 4 && !s.routed; i++) E.endTurn(s);
+  assert.strictEqual(s.routed && s.routed.turn, 3);
+  routedThenWon(s, 'survived');
 });
 
 test('taking loot uses the action and needs the unit on the tile', () => {
@@ -1303,7 +1317,31 @@ test('raze: breaking every goal building wins; optional buildings do not need to
   assert.ok(tent.goal && !house.goal);
   tent.hp = 1;
   act(s, kn, { kind: 'unit', uid: tent.uid });
-  assert.ok(s.over && s.winner === 'P', 'the guardhouse and the orc did not matter');
+  assert.ok(s.waves.every((w) => w.state !== 'pending'), 'its reinforcements stop');
+  routedThenWon(s, 'destroyed');
+});
+
+test('the rout: 2 HP for every enemy in the first enemy turn after it, then 4, 6...; your side is spared', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'E', x: 4, y: 4, vip: true },
+      { type: 'golem', team: 'E', x: 0, y: 0 },
+      { type: 'golem', team: 'E', x: 8, y: 0 },
+    ],
+    { objective: 'vip' }
+  );
+  const [kn, cmd, g1, g2] = s.units;
+  cmd.hp = 1;
+  cmd.block = 0;
+  act(s, kn, { kind: 'unit', uid: cmd.uid });
+  assert.ok(s.routed && !s.over);
+  const hp = [g1.hp, g2.hp, kn.hp];
+  until(s, 'E');
+  assert.deepStrictEqual([hp[0] - g1.hp, hp[1] - g2.hp], [2, 2], 'every enemy bleeds 2');
+  until(s, 'E');
+  assert.deepStrictEqual([hp[0] - g1.hp, hp[1] - g2.hp], [6, 6], 'then 4 more');
+  assert.strictEqual(kn.hp, hp[2], 'your knight does not tire before turn 30');
 });
 
 test('edge waves appear along their edge', () => {

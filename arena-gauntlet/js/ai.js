@@ -275,7 +275,7 @@
       return l ? { loot: l, x: l.x, y: l.y } : null;
     }
     // The shrine to hold: it stays the priority until the battle is won.
-    if (f.hold && s.hold) return { hold: true, x: s.hold.x, y: s.hold.y };
+    if (f.hold && s.hold && !s.hold.done) return { hold: true, x: s.hold.x, y: s.hold.y };
     // A spot on open ground to gather at: it stays the priority until cleared.
     if (f.tile && team === 'P') return { tile: true, x: f.x, y: f.y };
     // One of your own units to rally on: the army gathers around it wherever it goes.
@@ -528,7 +528,7 @@
         break;
       }
     }
-    if (s.hold) {
+    if (s.hold && !s.hold.done) {
       const dh = Math.abs(x - s.hold.x) + Math.abs(y - s.hold.y);
       if (dh === 0) v += u.team === 'P' ? 8 : 6;
       else if (dh === 1) v += 1.5;

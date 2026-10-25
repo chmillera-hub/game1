@@ -183,7 +183,7 @@ on a phone turned sideways, but portrait works too.
   though a kill still comes first. It does not walk up to loot whose guards are
   asleep, but grabs it if a unit can reach it in one move.
 - **Playing for the mission**: your army also knows the mission and its bonus goals.
-  It goes for the Commander when killing it wins, hits the wagon nearest its way out
+  It goes for the Commander when killing it routs the enemy, hits the wagon nearest its way out
   first, presses harder toward the end of a "win within N turns" goal (but never off
   a shrine it must hold), and values stepping onto a red landing tile far more while
   a "block reinforcements" goal is open.
@@ -256,6 +256,14 @@ on a phone turned sideways, but portrait works too.
 - **Missions**: defeat every enemy, burn a War Banner, break a prison cage, kill a
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
+  Getting it done does not end the battle on the spot: the enemy is **routed**. Their
+  reinforcements stop, and from the next enemy turn every enemy fighter loses HP at
+  the start of each enemy turn, 2 in the first, then 4, 6 and so on, past armor and
+  shields. The battle ends when the last of them falls, so a mission done early all
+  but wins it, without the enemy simply giving up. Your own side tires only when
+  fatigue sets in for everyone on turn 30. A banner, a toast and the battle log say
+  when it happens, the top bar shows the rout's bite, and the mission line turns to
+  "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
   winning with a unit that sat out the last battle) pay extra.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
