@@ -49,9 +49,13 @@ on a phone turned sideways, but portrait works too.
   and kept in the browser apart from your campaign save.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
-  to open its loadout right under your army: what each part costs (Knight 3 + Level 2
-  2 + Guardian 1 ...), its level, and a button for each ability, talent, skill and
-  gear slot. To move a unit, tap it on the board, then a blue tile, or another unit to
+  for its full loadout: cost, level, every slot and pick spelled out, stats and attacks
+  (in battle, holding a unit shows everything about it, its loadout included). Equipped
+  items and chosen abilities are gold with a ✓ Equipped or ✓ Chosen tag: they already
+  work, and a tap only swaps them. Tapping a unit on the board picks it up and shows a
+  short loadout right under your army: what each part costs (Knight 3 + Level 2 2 +
+  Guardian 1 ...), its level, and a button for each ability, talent, skill and gear
+  slot. To move a unit, tap it on the board, then a blue tile, or another unit to
   swap places; a unit from the bench whose loadout is open goes onto the blue tile you
   tap, or takes the place of the unit you tap. A move lets go of the unit; a tap just
   off a blue tile still places it on the nearest one, and a tap on the empty space
@@ -67,7 +71,7 @@ on a phone turned sideways, but portrait works too.
   one question at a time: its level, its ability picks, then its talents, skills and
   gear (only what you have that fits, and what your Supply can pay for). Answer No to
   any question, or Done to stop; then pick your next unit. Questions with nothing to
-  choose are skipped. Auto never asks. The menu's Setup guide switch turns it off.
+  choose are skipped. Auto never asks.
 - **The bench is bare**: units on the bench are always plain base units. Levels,
   abilities, talents, skills and gear go on a unit only once it is on the board, and
   taking it off sends all of it back to your pack. Each card's cost badge shows the
@@ -130,9 +134,9 @@ on a phone turned sideways, but portrait works too.
   and watch it fight; the same AI that runs the enemy runs your units, using their
   abilities and talents. Lost? Change the army and try again. Speed (1x or 2x) and
   pause sit in the top bar next to the menu, and tapping a unit pauses and inspects it; 1x plays at
-  about half of the animations' full pace, to be easy to follow. The menu's
-  Battles setting switches to commanding each turn yourself (the classic version
-  lives on the `arena-gauntlet-tactics-classic` branch).
+  about half of the animations' full pace, to be easy to follow. Battles always play
+  out on their own (commanding each turn yourself lives on in the classic version, on
+  the `arena-gauntlet-tactics-classic` branch); units face the nearest enemy.
 - **Priority**: while watching, tap an enemy unit, a building, a chest or the shrine,
   then Priority. Your army goes all out for it, whatever the cost: every unit attacks
   it, or heads for the chest and takes it. With the shrine, one unit makes for it and
@@ -140,7 +144,8 @@ on a phone turned sideways, but portrait works too.
   gets driven off; it stays the priority until the shrine is held. Or pick any empty
   tile: your army moves there and huddles as close to it as it can (tap a corner to
   turtle in it, or a choke point to hold it), still attacking whatever comes in reach,
-  until you clear it. A marker shows the target. Once it falls or is
+  until you clear it. Or pick one of your own units: the rest of the army gathers around
+  it and follows wherever it goes, until you clear it or it falls. A marker shows the target. Once it falls or is
   taken, the army goes back to normal orders; you can also clear it. You can pick one
   in the War Room too, before the battle: tap an enemy, a building or a chest, then
   Priority, and your army goes for it from the very first turn (a dash for the chest,

@@ -44,6 +44,9 @@
   } catch (e) {
     /* storage unavailable */
   }
+  // These are no longer settings: your army always fights on its own, units face the
+  // nearest enemy, and placing a unit always asks about its kit.
+  Object.assign(UI.prefs, { autoBattle: true, manualFacing: false, guide: true });
   function savePrefs() {
     try {
       root.localStorage.setItem(PREFS_KEY, JSON.stringify(UI.prefs));
@@ -1078,9 +1081,6 @@
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
-        ${ex ? '' : `<button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
-        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
-        <button class="btn wide" id="muGuide">${ic('help')} Setup guide: ${UI.prefs.guide ? 'on, each unit you place asks about its kit' : 'off'}</button>`}
         ${inBattle && !ex ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
         ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
@@ -1104,29 +1104,6 @@
             UI.battle = null;
             back();
           };
-        if ($('#muAuto', sh)) $('#muAuto', sh).onclick = () => {
-          UI.prefs.autoBattle = !UI.prefs.autoBattle;
-          savePrefs();
-          menuSheet(inBattle);
-          // Switched on mid-battle, your army takes over at once.
-          const B = UI.battle;
-          if (B) battleTools();
-          if (B && UI.prefs.autoBattle && !B.busy && B.s.side === 'P') {
-            E.cancelActivation(B.s);
-            runBattle();
-          }
-        };
-        if ($('#muGuide', sh))
-          $('#muGuide', sh).onclick = () => {
-            UI.prefs.guide = !UI.prefs.guide;
-            savePrefs();
-            menuSheet(inBattle);
-          };
-        if ($('#muFacing', sh)) $('#muFacing', sh).onclick = () => {
-          UI.prefs.manualFacing = !UI.prefs.manualFacing;
-          savePrefs();
-          menuSheet(inBattle);
-        };
         if ($('#muTitle', sh)) $('#muTitle', sh).onclick = () => {
           closeSheet();
           if (UI.board) UI.board.stop();
@@ -1371,7 +1348,7 @@
     const m = ab.mod;
     const shape = m.active ? m.active : m.act && (m.act.kind || m.act.pattern) ? Object.assign({}, UNITS[r.type].act, m.act) : null;
     return `<button class="pick ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-ab="${tier}:${id}">
-      <span class="pk-head"><b>${esc(ab.name)}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
+      <span class="pk-head"><b>${esc(ab.name)}${on ? ` <span class="got-tag">✓ ${locked ? 'Picked' : 'Chosen'}</span>` : ''}</b><span class="cost">${ab.cost ? '+' + ab.cost : 'free'}</span></span>
       <span class="pk-body">${shape ? patternSVG(shape, 'P') : ''}<span class="pk-desc">${esc(ab.desc)}</span></span></button>`;
   }
 
@@ -1379,10 +1356,11 @@
     const uid = r.load[SLOT_KEY[kind]][i];
     const it = uid && R.itemByUid(run, uid);
     const d = it && R.itemDef(it);
+    // Equipped: gold, tagged, and already working; a tap only swaps or removes it.
     if (d)
       return `<button class="slot full" data-slot="${kind}:${i}">
       <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
-      <span class="sl-body"><b>${esc(d.name)}</b><span class="small muted">${esc(d.desc)}</span></span>
+      <span class="sl-body"><span class="sl-name"><b>${esc(d.name)}</b><span class="got-tag">✓ Equipped</span></span><span class="small muted">${esc(d.desc)}</span><span class="small sl-hint">Working already. Tap to swap or remove it.</span></span>
       <span class="cost">+${d.cost}</span></button>`;
     const n = slotOptions(run, r, kind);
     return `<button class="slot ${n.total ? '' : 'none'}" data-slot="${kind}:${i}" ${n.total ? '' : 'disabled'}>
@@ -1578,12 +1556,16 @@
   // Details for a unit on the battlefield (either side).
   function battleUnitSheet(u, live) {
     const T = UNITS[u.type];
+    // Everything it carries, spelled out: abilities, mastery, talents, skills, gear and
+    // enchantment, each with what it does.
     const picks = [];
-    if (u.a1) picks.push(ABILITIES[u.a1]);
-    if (u.a2) picks.push(ABILITIES[u.a2]);
-    if (u.level >= 3 && MASTERY[u.type]) picks.push(MASTERY[u.type]);
-    for (const id of u.skills || []) picks.push(SKILLS[id]);
-    for (const id of u.gear || []) picks.push(GEAR[id]);
+    if (u.a1 && ABILITIES[u.a1]) picks.push(['Ability', ABILITIES[u.a1]]);
+    if (u.a2 && u.level >= 2 && ABILITIES[u.a2]) picks.push(['Level 2 ability', ABILITIES[u.a2]]);
+    if (u.level >= 3 && MASTERY[u.type]) picks.push(['Mastery', MASTERY[u.type]]);
+    for (const id of u.talents || []) if (TALENTS[id]) picks.push(['Talent', TALENTS[id]]);
+    for (const id of u.skills || []) if (SKILLS[id]) picks.push(['Skill', SKILLS[id]]);
+    for (const id of u.gear || []) if (GEAR[id]) picks.push(['Gear', GEAR[id]]);
+    if (u.enchant && ENCHANTS[u.enchant]) picks.push(['Enchantment', ENCHANTS[u.enchant]]);
     const traits = traitLines(u, (UI.battle && UI.battle.s) || (UI.wr && UI.wr.s))
       .map((t) => `<li>${esc(t)}</li>`)
       .join('');
@@ -1592,7 +1574,7 @@
       ${unitInfoHTML(u, { status: !!live })}
       ${statsHTML(u)}
       ${actsHTML(u)}
-      ${picks.length ? `<div class="chips">${picks.map((p) => `<span class="chip magic" title="${esc(p.desc)}">${esc(p.name)}</span>`).join('')}</div>` : ''}
+      ${picks.length ? `<div class="eyebrow">Loadout</div><div class="picks">${picks.map(([kind, p]) => `<div class="pick static on"><span class="pk-head"><b>${esc(p.name)}</b><span class="small muted">${kind}</span></span><span class="pk-desc">${esc(p.desc)}</span></div>`).join('')}</div>` : ''}
       ${traits ? `<ul class="tips">${traits}</ul>` : ''}
       <p class="small muted">${esc(T.desc)}</p>
       ${u.team === 'E' ? `<p class="hint">${esc(T.tip)}</p>` : ''}
@@ -1905,7 +1887,7 @@
     const slot = (kind, i) => {
       const uid = L[SLOT_KEY[kind]][i];
       const d = uid && R.itemDef(R.itemByUid(run, uid));
-      if (d) return `<button class="qchip ${kind} full" data-qslot="${kind}:${i}" title="${esc(d.name)}: ${esc(d.desc)}">${ic(ITEM_ICON[kind])}<span>${esc(d.name)}</span><b>+${d.cost}</b></button>`;
+      if (d) return `<button class="qchip ${kind} full" data-qslot="${kind}:${i}" title="${esc(d.name)} (equipped): ${esc(d.desc)}">${ic('check')}<span>${esc(d.name)}</span><b>+${d.cost}</b></button>`;
       const n = opts[kind];
       return `<button class="qchip ${kind} ${n.total ? '' : 'none'}" data-qslot="${kind}:${i}" ${n.total ? '' : 'disabled'} title="${esc(slotOptionsText(kind, r, n))}">${ic(ITEM_ICON[kind])}<span>${n.total ? 'Empty' : 'None'}</span>${n.total ? `<i class="avail">${n.total}</i>` : ''}</button>`;
     };
@@ -1944,7 +1926,7 @@
       }
       <div class="actions">${
         deployed
-          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button>${r.id === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`}`
+          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button>${allyFocusButton(r)}${r.id === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`}`
           : `<button class="btn primary" id="wrAdd">${ic('plus')} Add to battle</button><button class="btn" id="wrLoad">${ic('help')} Details</button>`
       }</div>
     </div>`;
@@ -2117,8 +2099,8 @@
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card to change that unit's level, abilities, talents, skills and gear. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
-    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places). Tap an enemy or a chest to make it your army's priority.</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card (or a unit on the board) for its full loadout: level, abilities, talents, skills, gear and stats. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
+    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its full loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places). Tap an enemy or a chest to make it your army's priority.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2163,7 +2145,7 @@
       wr.tab = 'intel';
       renderWarRoom();
     };
-    for (const c of $$('.rcard[data-rid]', cmd)) tapHold(c, () => wrCard(c.dataset.rid), () => wrPick(c.dataset.rid));
+    for (const c of $$('.rcard[data-rid]', cmd)) tapHold(c, () => wrCard(c.dataset.rid), () => wrLoadout(c.dataset.rid));
     for (const c of $$('.rcard[data-uid]', cmd))
       c.onclick = () => {
         wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
@@ -2215,7 +2197,9 @@
         else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
         else if (shrine) run.pending.focus = { kind: 'hold', x: wr.tile.x, y: wr.tile.y, label: 'the shrine' };
         else if (wr.tile && isOpenGround(s, wr.tile.x, wr.tile.y)) run.pending.focus = { kind: 'tile', x: wr.tile.x, y: wr.tile.y, label: 'the marked spot' };
+        else if (wr.sel && wr.dep.has(wr.sel)) run.pending.focus = { kind: 'ally', rid: wr.sel, label: R.unitById(run, wr.sel).name };
         else return;
+        wr.sel = null;
         toast(`Priority: ${run.pending.focus.label}. From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3200);
         sfx('click');
         wr.inspect = null;
@@ -2293,6 +2277,12 @@
     wrAdd(rid);
   }
 
+  // In the War Room, a unit of yours on the field can be the priority: the army rallies on it.
+  function allyFocusButton(r) {
+    const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
+    return ft && ft.ally && ft.ally.rid === r.id ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn" id="wrFocus">${ic('target')} Priority</button>`;
+  }
+
   // The priority picked in the War Room, found on the field as it stands: an enemy unit or
   // building at that spot, or loot there. Null when there is none (or it no longer fits).
   function wrFocusTarget(s) {
@@ -2303,6 +2293,10 @@
       return u ? { unit: u, x: u.x, y: u.y } : null;
     }
     if (f.kind === 'hold') return isShrine(s, f.x, f.y) ? { hold: true, x: f.x, y: f.y } : null;
+    if (f.kind === 'ally') {
+      const u = s.units.find((v) => v.alive && v.team === 'P' && v.rid === f.rid);
+      return u ? { tile: true, ally: u, x: u.x, y: u.y } : null;
+    }
     if (f.kind === 'tile') return s.terrain[E.idx(s, f.x, f.y)] === E.T_GRASS ? { tile: true, x: f.x, y: f.y } : null;
     const l = E.lootAt(s, f.x, f.y);
     return l ? { loot: l, x: l.x, y: l.y } : null;
@@ -2450,7 +2444,7 @@
   // A unit just put on the field: walk through its kit one question at a time, its level,
   // its ability picks, then each talent, skill and gear slot. Each question can be answered
   // No; one with nothing to choose from is skipped; Done ends it there. Then on to the next
-  // unit. The menu's Setup guide switch turns this off.
+  // unit.
   function wrGuide(rid) {
     const run = UI.run;
     const wr = UI.wr;
@@ -2590,8 +2584,18 @@
     if (!t) return;
     const u = E.at(wr.s, t.x, t.y);
     if (!u) return;
-    if (u.team === 'P' && u.rid) wrPick(u.rid);
+    if (u.team === 'P' && u.rid) wrLoadout(u.rid);
     else battleUnitSheet(u);
+  }
+
+  // Hold a unit (its card, or itself on the board): its full loadout, stats and all.
+  function wrLoadout(rid) {
+    sfx('select');
+    loadoutSheet(rid, () => {
+      UI.onSheetClose = null;
+      closeSheet();
+      if (UI.wr) renderWarRoom();
+    });
   }
 
   async function wrFight() {
@@ -2627,7 +2631,8 @@
     UI.battle = { s, dep, enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: diff.temp, confirmEnd: false };
     // A priority picked in the War Room holds from the first turn.
     const pf = wrFocusTarget(s);
-    if (pf) UI.battle.focus = pf.unit ? { uid: pf.unit.uid, label: run.pending.focus.label } : pf.hold ? { hold: true, label: run.pending.focus.label } : pf.tile ? { tile: true, x: pf.x, y: pf.y, label: run.pending.focus.label } : { loot: pf.loot.id, label: run.pending.focus.label };
+    const lb = pf && run.pending.focus.label;
+    if (pf) UI.battle.focus = pf.unit ? { uid: pf.unit.uid, label: lb } : pf.ally ? { ally: pf.ally.uid, label: lb } : pf.hold ? { hold: true, label: lb } : pf.tile ? { tile: true, x: pf.x, y: pf.y, label: lb } : { loot: pf.loot.id, label: lb };
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
@@ -2715,7 +2720,8 @@
     const l = !u && B.mode === 'tile' && B.tile ? E.lootAt(s, B.tile.x, B.tile.y) : null;
     const shrine = !u && !l && B.mode === 'tile' && B.tile && isShrine(s, B.tile.x, B.tile.y);
     const open = !u && !l && !shrine && B.mode === 'tile' && B.tile && isOpenGround(s, B.tile.x, B.tile.y);
-    if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
+    if (u && u.team === 'P') B.focus = { ally: u.uid, label: u.name };
+    else if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
     else if (l) B.focus = { loot: l.id, label: `the ${R.LOOT_NAMES[l.kind]}` };
     else if (shrine) B.focus = { hold: true, label: 'the shrine' };
     else if (open) B.focus = { tile: true, x: B.tile.x, y: B.tile.y, label: 'the marked spot' };
@@ -2745,6 +2751,7 @@
     B.focus = null;
     UI.board.focus = null;
     if (B.s.over) return;
+    if (was.ally) return toast(`${was.label} is down, and the rally with them. Your army is back to normal orders.`, 3500);
     const how = was.loot != null ? 'is yours' : v && v.escaped ? 'got away' : 'is down';
     toast(`Priority ${how === 'got away' ? 'over' : 'done'}: ${was.label} ${how}. Your army is back to normal orders.`, 3500);
   }
@@ -2920,6 +2927,7 @@
   // An enemy unit or building your army could be told to go after.
   // What the army does about a priority, for the lines that name it.
   function focusVerb(f) {
+    if (f.ally || f.kind === 'ally') return 'gathers around them, wherever they go';
     if (f.tile || f.kind === 'tile') return 'gathers there and holds';
     if (f.hold || f.kind === 'hold') return 'takes the shrine and holds it';
     return 'goes all out for it';
@@ -2949,8 +2957,9 @@
     return !!(l && f.loot === l.id);
   }
 
+  // An enemy to go all out for, or one of your own units to rally on.
   function canFocusUnit(B, u) {
-    return !B.s.over && u.alive && u.team !== 'P' && !u.traits.has('scenery');
+    return !B.s.over && u.alive && !u.traits.has('scenery') && !(u.team === 'P' && u.nonCombat);
   }
 
   // Make this your army's priority, or stop, while watching an auto battle.
@@ -3072,7 +3081,7 @@
       ov.select = [u.x, u.y];
       // Watching, the buttons come first so Priority is in view without scrolling.
       const watchBtns = auto
-        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && B.focus.uid === u.uid)}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
         : '';
       panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${actsHTML(u)}
@@ -4223,7 +4232,7 @@
           <li>${ic('star')} <b>Talents</b> are class passives. Every class has at least three. Each new unit brings one you do not own yet (only once you own them all does one repeat), and you find more in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
-          <li><b>Setup guide</b>: put a unit on the board and it asks about its kit, one question at a time (level, abilities, talents, skills, gear). Answer No to skip one, or Done to stop. Turn it off in the menu.</li>
+          <li><b>Setup guide</b>: put a unit on the board and it asks about its kit, one question at a time (level, abilities, talents, skills, gear). Answer No to skip one, or Done to stop.</li>
           <li><b>The bench is bare</b>: units on the bench are plain base units. Levels, abilities, talents, skills and gear go on a unit once it is on the board; taking it off sends everything back to your pack. A card's cost badge shows the base price and a small +N for its loadout. Your plan for a battle stays put if you lose or step away, and a new battle opens with your last army.</li>
           <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
@@ -4241,14 +4250,14 @@
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
-          <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
-          <li><b>Priority</b>: tap an enemy unit, a building, a chest, the shrine or any empty tile while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
+          <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building, a chest, the shrine or any empty tile while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, pulses, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
-          <li>When a unit finishes its turn it turns to face the nearest enemy. Tap <b>Face</b> during its turn to pick the facing yourself, before or after it moves and acts. To always pick with arrows, switch <b>Facing</b> in the menu.</li>
+          <li>When a unit finishes its turn it turns to face the nearest enemy.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>
@@ -4272,7 +4281,7 @@
         <ul>
           <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
-          <li>In the war room, tap a deployed unit again to open its loadout. Long-press any unit for details.</li>
+          <li>In the war room, long-press a unit (or hold its card) for its full loadout and stats. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>

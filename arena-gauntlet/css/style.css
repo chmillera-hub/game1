@@ -3053,3 +3053,45 @@ body:has(#battle:not([hidden])) {
   white-space: nowrap;
   vertical-align: 1px;
 }
+
+/* Equipped and chosen: gold, so they read as already working, not as buttons to switch on. */
+.slot.full {
+  border: 1px solid var(--brass-hi);
+  background: linear-gradient(180deg, rgba(240, 207, 134, 0.16), rgba(240, 207, 134, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(240, 207, 134, 0.25);
+}
+
+.slot.full .sl-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.slot.full .sl-name b {
+  color: var(--brass-hi);
+}
+
+.slot .sl-hint {
+  color: var(--faint);
+}
+
+.pick.on {
+  border-color: var(--brass-hi);
+  background: linear-gradient(180deg, rgba(240, 207, 134, 0.2), rgba(240, 207, 134, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(240, 207, 134, 0.35);
+}
+
+.pick.on .pk-head b {
+  color: var(--brass-hi);
+}
+
+.qchip.full {
+  border-color: var(--brass-hi);
+  background: linear-gradient(180deg, rgba(240, 207, 134, 0.2), rgba(240, 207, 134, 0.06));
+  color: var(--parchment);
+}
+
+.qchip.full .icon {
+  color: var(--brass-hi);
+}

@@ -278,6 +278,11 @@
     if (f.hold && s.hold) return { hold: true, x: s.hold.x, y: s.hold.y };
     // A spot on open ground to gather at: it stays the priority until cleared.
     if (f.tile && team === 'P') return { tile: true, x: f.x, y: f.y };
+    // One of your own units to rally on: the army gathers around it wherever it goes.
+    if (f.ally) {
+      const v = s.byId[f.ally];
+      return v && v.alive && v.team === team ? { tile: true, ally: v, x: v.x, y: v.y } : null;
+    }
     return null;
   }
 

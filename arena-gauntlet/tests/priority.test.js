@@ -223,4 +223,35 @@ test('a spot on open ground as priority: the army huddles there and stays', () =
   assert.ok(huddled < normal, `closer than on normal orders (${huddled.toFixed(1)} vs ${normal.toFixed(1)})`);
 });
 
+test('one of your units as priority: the army gathers around it', () => {
+  const make = () =>
+    battle([
+      { type: 'knight', team: 'P', x: 0, y: 8 },
+      { type: 'knight', team: 'P', x: 4, y: 8 },
+      { type: 'archer', team: 'P', x: 8, y: 8 },
+      { type: 'cleric', team: 'P', x: 8, y: 7 },
+      { type: 'orc', team: 'E', x: 4, y: 0 },
+    ]);
+  const s0 = make();
+  const leader = s0.units[0];
+  const f = { ally: leader.uid, label: 'the knight' };
+  assert.deepStrictEqual(AI.focusOf(s0, 'P', f), { tile: true, ally: leader, x: 0, y: 8 });
+  assert.strictEqual(AI.focusOf(s0, 'E', f), null, 'the enemy does not rally on your unit');
+  const spread = (focus) => {
+    const s = make();
+    play(s, 6, focus);
+    const lead = s.units[0];
+    const rest = s.units.filter((u) => u.alive && u.team === 'P' && u !== lead);
+    return rest.reduce((t, u) => t + Math.abs(u.x - lead.x) + Math.abs(u.y - lead.y), 0) / rest.length;
+  };
+  const rallied = spread(f);
+  const normal = spread(null);
+  assert.ok(rallied <= 2.5, `gathered around it (average ${rallied.toFixed(1)} tiles away)`);
+  assert.ok(rallied < normal, `closer than on normal orders (${rallied.toFixed(1)} vs ${normal.toFixed(1)})`);
+  // It falls: the rally is over.
+  const s = make();
+  s.units[0].alive = false;
+  assert.strictEqual(AI.focusOf(s, 'P', f), null);
+});
+
 console.log(`priority: ${passed} tests passed`);

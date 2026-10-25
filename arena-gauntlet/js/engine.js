@@ -196,6 +196,7 @@
       a2: b.level >= 2 ? spec.a2 || null : null,
       skills: (spec.skills || []).slice(),
       gear: (spec.gear || []).slice(),
+      talents: (spec.talents || []).filter((id) => D.TALENTS[id] && D.TALENTS[id].cls === spec.type),
       enchant: spec.enchant || null,
       traits,
       tags: new Set(T.tags || []),
