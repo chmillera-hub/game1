@@ -2068,6 +2068,38 @@ button.card:active {
   flex-wrap: wrap;
 }
 
+/* Wins and losses, right by the army's name. */
+.hall-rec {
+  display: inline-flex;
+  gap: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(197, 154, 76, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.hall-rec .w {
+  color: var(--green);
+}
+
+.hall-rec .l {
+  color: var(--red);
+}
+
+/* The army in formation, as it stood on the field. */
+.hall-pic {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: 2px;
+  border-radius: 8px;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.25));
+}
+
 .hall-row .unit-strip canvas {
   width: 34px;
   height: 34px;

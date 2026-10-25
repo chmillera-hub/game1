@@ -3789,6 +3789,28 @@
 
   // ------------------------------------------------------------ hall of fame
 
+  // A Hall army as a small picture, facing you in its formation: drawn once per army and
+  // kept, so redrawing the Hall (every tap) costs nothing. Null if it cannot be drawn.
+  const hallPics = new Map();
+  function hallPic(l) {
+    const key = [l.id, l.level, l.superWon ? 1 : 0, l.units.length].join(':');
+    if (hallPics.has(key)) return hallPics.get(key);
+    let pic = null;
+    try {
+      const units = l.units.map((it) => ({ type: it.spec.type, x: it.x, y: it.y }));
+      const rows = new Set(units.map((u) => u.y)).size;
+      const w = 300;
+      const h = 70 + 22 * (rows - 1);
+      const cv = document.createElement('canvas');
+      AG.Render.formation(cv, units, { w, h });
+      pic = { url: cv.toDataURL('image/png'), w, h };
+    } catch (e) {
+      pic = null;
+    }
+    hallPics.set(key, pic);
+    return pic;
+  }
+
   // Every army that won a campaign, best first. The newest starts at the bottom and climbs:
   // it fights the army right above it, and each win swaps them, until it loses or tops the Hall.
   // Any two ranked armies can also skirmish, whenever you like: if the lower one wins, they
@@ -3804,18 +3826,21 @@
     st.pick = st.pick.filter((id) => all.some((l) => l.id === id));
     const relicNames = (l) => (l.relics || []).filter((id) => RELICS[id]).map((id) => RELICS[id].name).join(', ');
     const row = (l, i) => {
-      const units = l.units
-        .map((it) => it.spec)
-        .map((sp) => `<canvas data-p="${sp.type}:P" title="${esc(UNITS[sp.type].name)}${sp.level > 1 ? ' · Level ' + sp.level : ''}"></canvas>`)
-        .join('');
+      const specs = l.units.map((it) => it.spec);
+      const unitNames = specs.map((sp) => `${UNITS[sp.type].name}${sp.level > 1 ? ' (Level ' + sp.level + ')' : ''}`).join(', ');
+      const pic = hallPic(l);
+      // Its army in formation; a strip of portraits if the picture cannot be drawn.
+      const army = pic
+        ? `<img class="hall-pic" src="${pic.url}" width="${pic.w}" height="${pic.h}" alt="${esc(unitNames)}" title="${esc(unitNames)}">`
+        : `<span class="unit-strip">${specs.map((sp) => `<canvas data-p="${sp.type}:P" title="${esc(UNITS[sp.type].name)}${sp.level > 1 ? ' · Level ' + sp.level : ''}"></canvas>`).join('')}</span>`;
       const picked = st.pick.indexOf(l.id);
       const tag = (l === climber ? '<span class="chip warn">Climbing</span>' : '') + (picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '');
       const waiting = i < 0;
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
-        <span class="grow"><span class="nm">${l.superWon ? ic('crown') + ' ' : ''}<b>${esc(l.name)}</b> ${tag}</span>
-          <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.wins}–${l.losses}${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
-          <span class="unit-strip">${units}</span></span>
+        <span class="grow"><span class="nm">${l.superWon ? ic('crown') + ' ' : ''}<b>${esc(l.name)}</b> <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
+          <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
+          ${army}</span>
       </button>`;
     };
     const climbPanel = climber

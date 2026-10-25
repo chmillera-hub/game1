@@ -2274,5 +2274,59 @@
     g.restore();
   }
 
-  AG.Render = { Board, PALETTES, portrait };
+  // A whole army as one picture, facing you like a team photo: its front line nearest and
+  // largest, the rows behind it stepping back (every other one half a tile over, so a unit
+  // right behind another still shows), each unit where it stood from left to right.
+  // `units`: [{ type, x, y }], with smaller y nearer the front, as on the field.
+  function formation(canvas, units, opts) {
+    const o = opts || {};
+    const dpr = Math.min(root.devicePixelRatio || 1, 2);
+    const w = o.w || canvas.clientWidth || 300;
+    const h = o.h || canvas.clientHeight || 90;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    if (!units.length) return;
+    const xs = units.map((u) => u.x);
+    const x0 = Math.min(...xs);
+    const cols = Math.max(...xs) - x0 + 1;
+    const ys = [...new Set(units.map((u) => u.y))].sort((a, b) => a - b);
+    const depth = (u) => ys.indexOf(u.y);
+    const step = 22;
+    const front = h - 9;
+    const cell = Math.min(40, (w - 16) / (cols + (ys.length > 1 ? 0.5 : 0)));
+    const tallest = Math.max(...units.map((u) => S.HEIGHT[u.type] || 40));
+    const sc = Math.min(cell / 24, (h - 12 - (ys.length - 1) * step) / tallest);
+    const left = (w - cell * (cols + (ys.length > 1 ? 0.5 : 0))) / 2;
+    // The ground they stand on.
+    const gy = front - ((ys.length - 1) * step) / 2;
+    const ground = g.createRadialGradient(w / 2, gy, 4, w / 2, gy, w / 2);
+    ground.addColorStop(0, 'rgba(110, 165, 74, 0.5)');
+    ground.addColorStop(1, 'rgba(110, 165, 74, 0)');
+    g.fillStyle = ground;
+    g.beginPath();
+    g.ellipse(w / 2, gy, w / 2 - 2, ((ys.length - 1) * step) / 2 + 14, 0, 0, Math.PI * 2);
+    g.fill();
+    // Back rows first, so the front line stands in front of them.
+    const order = units.map((u, i) => ({ u, i })).sort((a, b) => depth(b.u) - depth(a.u) || a.u.x - b.u.x);
+    for (const { u, i } of order) {
+      const d = depth(u);
+      const k = 1 - 0.1 * d;
+      const cx = w / 2 + (left + (u.x - x0 + 0.5 + (d % 2) * 0.5) * cell - w / 2) * (1 - 0.05 * d);
+      const cy = front - d * step;
+      g.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      g.beginPath();
+      g.ellipse(cx, cy, 11 * sc * k, 4 * sc * k, 0, 0, Math.PI * 2);
+      g.fill();
+      g.save();
+      g.translate(cx, cy);
+      g.scale(sc * k, sc * k);
+      S.drawUnit(g, u.type, u.team || 'P', 'front', 1.1 + i * 0.37, null);
+      g.restore();
+    }
+  }
+
+  AG.Render = { Board, PALETTES, portrait, formation };
 })(typeof window !== 'undefined' ? window : globalThis);
