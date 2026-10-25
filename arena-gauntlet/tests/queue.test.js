@@ -398,4 +398,21 @@ test('regen comes only to the unit taking the turn, not to the ones that sit it 
   assert.strictEqual(a.hp, 20, 'a sat out: no regen');
 });
 
+test('healers act last on their side, so there is someone to heal by their turn', () => {
+  const speeds = Object.values(AG.Data.UNITS).map((T) => T.spd).filter((v) => v > 0);
+  for (const k of ['cleric', 'shaman']) assert.strictEqual(AG.Data.UNITS[k].spd, Math.min(...speeds), `${k} is among the slowest`);
+  for (const healer of ['cleric', 'shaman']) {
+    const s = battle([
+      { type: healer, team: 'P', x: 1, y: 8 },
+      { type: 'knight', team: 'P', x: 3, y: 8 },
+      { type: 'archer', team: 'P', x: 5, y: 8 },
+      { type: 'scout', team: 'P', x: 7, y: 8 },
+      { type: 'orc', team: 'E', x: 4, y: 0 },
+    ]);
+    toPlayer(s);
+    const order = E.upcoming(s, 'P', 4).map((x) => name(s, x.uid));
+    assert.deepStrictEqual(order, ['scout', 'archer', 'knight', healer]);
+  }
+});
+
 console.log(`queue: ${passed} tests passed`);

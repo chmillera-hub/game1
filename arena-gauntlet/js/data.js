@@ -805,7 +805,7 @@
   const SPEED = {
     knight: 2, archer: 5, scout: 8, cleric: 1, berserker: 4, skelarcher: 4, pyromancer: 3, assassin: 7,
     mageknight: 3, golem: 1, beastrider: 6, furgon: 3, wisp: 6, enchantress: 4, witch: 3, lightning: 3,
-    dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 4, warg: 8, wolf: 7,
+    dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 1, warg: 8, wolf: 7,
     cutthroat: 7, crossbow: 3, skeleton: 3, specter: 6, necromancer: 3, colossus: 1, spider: 6, troll: 2,
     drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4,
   };

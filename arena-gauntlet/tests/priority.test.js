@@ -239,7 +239,8 @@ test('one of your units as priority: the army gathers around it', () => {
   assert.strictEqual(AI.focusOf(s0, 'E', f), null, 'the enemy does not rally on your unit');
   const spread = (focus) => {
     const s = make();
-    play(s, 6, focus);
+    // Two full rounds, so every unit has moved twice whatever the turn order.
+    play(s, 8, focus);
     const lead = s.units[0];
     const rest = s.units.filter((u) => u.alive && u.team === 'P' && u !== lead);
     return rest.reduce((t, u) => t + Math.abs(u.x - lead.x) + Math.abs(u.y - lead.y), 0) / rest.length;
