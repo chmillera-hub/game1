@@ -2276,14 +2276,15 @@
     }
   }
 
-  // The start of one unit's own turn: poison and burns tick and fire underfoot hurts.
-  // Outside queue battles it then regenerates and loses fatigue here too; in queue battles
-  // pickDue does that, for every unit whose turn comes, acting or passing.
+  // The start of one unit's own turn, acting or passing, always in this order: its fatigue,
+  // then poison, then burns, then fire underfoot, then regen. (Then it acts, or passes and
+  // its cooldown ticks down.) The board plays each of these as a beat of its own.
   function unitTurnStart(s, u) {
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     // A troll hurt by magic or fire since its last turn does not regenerate this turn.
     u.burnt = u.scorched;
     u.scorched = false;
+    fatigue(s, u);
     tickDot(s, u, 'poison');
     tickDot(s, u, 'burn');
     if (u.alive && !u.traits.has('flying')) {
@@ -2293,9 +2294,7 @@
         magicDamage(s, s.byId[fire.src] || null, u, fire.dmg || FIRE_DMG, 'burn');
       }
     }
-    if (!u.alive || s.queue) return;
-    regenerate(s, u);
-    fatigue(s, u);
+    if (u.alive) regenerate(s, u);
   }
 
   // Fatigue, past armor and shields: one unit at a time, never a side at once. A unit whose
@@ -2457,10 +2456,6 @@
       if (!u || seen.has(u.uid)) break;
       seen.add(u.uid);
       unitTurnStart(s, u);
-      if (u.alive) {
-        regenerate(s, u);
-        fatigue(s, u);
-      }
       if (!u.alive) {
         checkOutcome(s);
         if (s.over) return;

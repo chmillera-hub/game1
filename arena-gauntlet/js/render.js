@@ -1321,11 +1321,63 @@
 
     // ---------------------------------------------------------- effects
 
+    // A floating number or word over a unit. It never lands on one still showing (over this
+    // unit or a neighbour): it starts just below the lowest one in its way, and every text
+    // rises at the same pace, so a run of hits reads as a list, top to bottom in the order
+    // they came, and stays that way until it fades. `tag`: a small word on the same line,
+    // after the number (-16 FATIGUE, -5 POISON, -12 FROM BEHIND).
     addText(x, y, text, color, opts) {
       const [cx, cy] = this.center(x, y);
       const o = opts || {};
       const top = cy - (o.height || 40) * this.unit - this.tw * 0.15;
-      this.texts.push({ x: cx + (o.dx || 0), y: top + (o.dy || 0), text, color, life: 0, max: o.max || 1.1, big: !!o.big });
+      const t = { x: cx + (o.dx || 0), y: top + (o.dy || 0), text, tag: o.tag || '', color, life: 0, max: o.max || 1.1, big: !!o.big };
+      t.w = this.textWidth(t);
+      // Kept whole on screen, for a unit by the board's edge.
+      if (this.cssW > t.w + 8) t.x = Math.min(Math.max(t.x, t.w / 2 + 4), this.cssW - t.w / 2 - 4);
+      for (let guard = 0; guard < 12; guard++) {
+        let y = t.y;
+        for (const u of this.texts) if (this.textsMeet(u, t)) y = Math.max(y, this.textY(u) + this.textGap(u, t));
+        if (y === t.y) break;
+        t.y = y;
+      }
+      this.texts.push(t);
+      return t;
+    }
+
+    textSize(big) {
+      return Math.max(11, this.tw * (big ? 0.36 : 0.27));
+    }
+
+    textFont(size) {
+      return '800 ' + size + 'px "Alegreya Sans", system-ui, sans-serif';
+    }
+
+    // How wide a floating text is at full size (number and tag).
+    textWidth(t) {
+      const size = this.textSize(t.big);
+      if (typeof document === 'undefined') return (t.text.length + t.tag.length * TAG_SIZE) * size * 0.55;
+      const m = this.measure || (this.measure = document.createElement('canvas').getContext('2d'));
+      m.font = this.textFont(size);
+      let w = m.measureText(t.text).width;
+      if (t.tag) {
+        m.font = this.textFont(Math.round(size * TAG_SIZE));
+        w += size * 0.25 + m.measureText(t.tag).width;
+      }
+      return w;
+    }
+
+    // The least distance between the middles of two texts, one under the other.
+    textGap(a, b) {
+      return ((this.textSize(a.big) + this.textSize(b.big)) / 2) * 1.08;
+    }
+
+    textsMeet(a, b) {
+      return Math.abs(a.x - b.x) < (a.w + b.w) / 2 + 4 && Math.abs(this.textY(a) - this.textY(b)) < this.textGap(a, b) - 0.5;
+    }
+
+    // Where a floating text is now: they all rise at one pace as they fade.
+    textY(t) {
+      return t.y - t.life * this.tw * 0.5;
     }
 
     drawTexts(g, dt) {
@@ -1335,20 +1387,32 @@
         if (t.life >= t.max) continue;
         keep.push(t);
         const k = t.life / t.max;
-        const y = t.y - k * this.tw * 0.55;
+        const y = this.textY(t);
         const a = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
         const pop = k < 0.12 ? 0.7 + k * 2.5 : 1;
-        const size = Math.round(Math.max(11, this.tw * (t.big ? 0.36 : 0.27)) * pop);
+        const full = this.textSize(t.big);
+        const size = Math.round(full * pop);
         g.save();
         g.globalAlpha = a;
-        g.font = '800 ' + size + 'px "Alegreya Sans", system-ui, sans-serif';
-        g.textAlign = 'center';
         g.textBaseline = 'middle';
-        g.lineWidth = Math.max(2.5, size * 0.2);
         g.strokeStyle = 'rgba(15,10,20,0.9)';
-        g.strokeText(t.text, t.x, y);
         g.fillStyle = t.color;
-        g.fillText(t.text, t.x, y);
+        const word = (s, x, sz, align) => {
+          g.font = this.textFont(sz);
+          g.textAlign = align;
+          g.lineWidth = Math.max(2.5, sz * 0.2);
+          g.strokeText(s, x, y);
+          g.fillText(s, x, y);
+        };
+        if (!t.tag) word(t.text, t.x, size, 'center');
+        else {
+          // The number, then its tag, centred together.
+          const left = t.x - (t.w * pop) / 2;
+          g.font = this.textFont(size);
+          const nw = g.measureText(t.text).width;
+          word(t.text, left, size, 'left');
+          word(t.tag, left + nw + full * 0.25 * pop, Math.round(size * TAG_SIZE), 'left');
+        }
         g.restore();
       }
       this.texts = keep;
@@ -1598,12 +1662,47 @@
           if (e.t === 'dmg' && e.dmgType === 'fatigue' && group.some((g) => g.t === 'dmg' && g.dmgType === 'fatigue' && g.uid !== e.uid)) break;
           i++;
           group.push(e);
-          // A unit passing its turn plays on its own, with whatever its turn brought (its
-          // fatigue hit, poison): a run of passes reads one unit at a time.
-          if (e.t === 'sitout') break;
+          // A unit passing its turn (cooling down, or holding its ground) plays on its own,
+          // with whatever its turn brought (its fatigue hit, poison): the next unit's turn
+          // starts only after it, so a run of passes reads one unit at a time.
+          if (e.t === 'sitout' || (e.t === 'pass' && e.uid && !e.auto)) break;
         }
-        await this.applyImpacts(group, state, true);
+        await this.playBeats(group, state);
       }
+    }
+
+    // What happens to a unit as its turn comes plays one beat at a time, in the engine's
+    // order: its fatigue, then poison, then burns, fire underfoot, regen, then its pass (the
+    // cooldown ticking down). A new beat starts whenever the unit already has something
+    // showing in this one, and each beat that shows something holds for BEAT_MIN of real
+    // time at least, however fast the battle runs, so every number can be read on its own.
+    // Things that happen to several units at once (a totem's pulse, say) still play together.
+    async playBeats(group, state) {
+      const beats = [];
+      let cur = [];
+      for (const e of group) {
+        const last = cur[cur.length - 1];
+        // Fire underfoot and the burn it deals are one beat; so are a poison tick and the
+        // poison it leaves (a stack running out).
+        const same = last && last.uid === e.uid && ((e.t === 'dmg' && last.t === 'scorch') || (e.t === 'status' && last.t === 'dmg' && last.dmgType === e.status));
+        if (beatShows(e) && !same && cur.some((c) => beatShows(c) && c.uid === e.uid)) {
+          beats.push(cur);
+          cur = [];
+        }
+        cur.push(e);
+      }
+      if (cur.length) beats.push(cur);
+      for (const beat of beats) {
+        if (!beat.some(beatShows)) await this.applyImpacts(beat, state, true);
+        else {
+          await this.applyImpacts(beat, state, false);
+          await this.beatWait();
+        }
+      }
+    }
+
+    beatWait() {
+      return new Promise((r) => setTimeout(r, Math.max(BEAT_MIN, 450 / this.speed)));
     }
 
     async animMove(ev) {
@@ -1980,13 +2079,9 @@
             setTimeout(() => (v.shake = 0), 220);
             const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? POISON : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'fatigue' ? '#ffd27a' : '#ffffff';
             // Damage counts down (-6), healing up (+6), so the two never look alike.
-            this.addText(v.x, v.y, '-' + e.amount, col, { height: h, big: e.amount >= 25 });
-            if (e.dmgType === 'fatigue') this.addText(v.x, v.y, 'FATIGUE', col, { height: h, dy: -this.tw * 0.28, max: 0.9 });
-            if (e.cat === 'back' && e.dmgType === 'phys') {
-              const src = state && state.byId[e.src];
-              const stab = src && src.props && src.props.backMult;
-              this.addText(v.x, v.y, stab ? 'BACKSTAB' : 'FROM BEHIND', '#ffcf6a', { height: h, dy: -this.tw * 0.28, max: 0.9 });
-            }
+            const stab = e.cat === 'back' && e.dmgType === 'phys' && state && state.byId[e.src] && state.byId[e.src].props && state.byId[e.src].props.backMult;
+            const tag = { fatigue: 'FATIGUE', poison: 'POISON', burn: 'BURN' }[e.dmgType] || (e.cat === 'back' && e.dmgType === 'phys' ? (stab ? 'BACKSTAB' : 'FROM BEHIND') : '');
+            this.addText(v.x, v.y, '-' + e.amount, col, { height: h, big: e.amount >= 25, tag });
             this.sfx(e.dmgType === 'poison' ? 'poison' : e.dmgType === 'magic' || e.dmgType === 'burn' ? 'magichit' : 'hit');
             if (e.dmgType === 'poison') this.particles(v.x, v.y, 7, POISON_FX, { lift: 14, rise: 0.4, speed: 0.3, max: 0.7 });
             if (e.dmgType === 'burn') this.particles(v.x, v.y, 5, ['#ffd27a', '#ff8a2a'], { lift: 14, rise: 0.6, speed: 0.3, max: 0.6 });
@@ -2016,14 +2111,22 @@
             if (!v) break;
             any = true;
             v.hp = Math.min(v.maxHp, v.hp + e.amount);
-            this.addText(v.x, v.y, '+' + e.amount, '#8ef08e', { height: h, dy: e.why === 'drain' ? this.tw * 0.15 : 0 });
+            this.addText(v.x, v.y, '+' + e.amount, '#8ef08e', { height: h, tag: e.why === 'regen' ? 'REGEN' : '' });
             if (e.why !== 'drain') this.particles(v.x, v.y, 6, ['#b7ffb0', '#6fdc6f', '#fff3b0'], { lift: 10, rise: 0.8, speed: 0.25, max: 0.8 });
             break;
           case 'sitout':
             // Its turn came and it passes (cooling down, paralyzed, or nothing to do).
             if (!v || e.why === 'passive') break;
             any = true;
-            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, dy: this.tw * 0.18, max: 0.85 });
+            // Passing ticks its cooldown down one: the badge by its health bar shows the new count.
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
+            if (e.wait > 0) v.wait = e.wait - 1;
+            break;
+          case 'pass':
+            // The unit whose turn it is could act, and holds its ground instead.
+            if (!v || e.auto) break;
+            any = true;
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: 'HOLDS GROUND' });
             break;
           case 'healblock':
             if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9 });
@@ -2385,6 +2488,14 @@
       if (standalone && any) await this.wait(450);
     }
   }
+
+  // Events that show something over a unit's head, and the least real time between two
+  // beats of them on one unit (see playBeats).
+  const BEAT_EVENTS = new Set(['dmg', 'heal', 'sitout', 'pass', 'noregen', 'healblock', 'scorch', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
+  const BEAT_MIN = 420;
+  // The word after a floating number (-16 FATIGUE), as a share of the number's size.
+  const TAG_SIZE = 0.72;
+  const beatShows = (e) => !!e.uid && BEAT_EVENTS.has(e.t) && !(e.t === 'sitout' && e.why === 'passive') && !(e.t === 'pass' && e.auto);
 
   // Small static portrait of a unit for cards and lists.
   function portrait(canvas, type, team, opts) {
