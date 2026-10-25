@@ -86,6 +86,42 @@ test('easy is smaller than medium; elite pays more and drops a relic', () => {
   assert.ok(easier >= 18, `easy battles are smaller (${easier}/20)`);
 });
 
+test('easy and medium wins now and then turn up a relic (6% and 10%); losing first does not reroll it', () => {
+  const winAt = (run, i) => {
+    R.chooseChallenge(run, i);
+    const dep = R.autoDeploy(run, 0);
+    const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+    s.over = true;
+    s.winner = 'P';
+    const had = run.relics.length;
+    R.finishBattle(run, s, dep);
+    const p = run.pending;
+    assert.ok(!p.relicGained || (p.relicLucky && run.relics.length === had + 1 && run.relics.includes(p.relicGained)));
+    return !!p.relicGained;
+  };
+  const N = 300;
+  const got = { 0: 0, 1: 0 };
+  let luckySeed = 0;
+  for (let seed = 1; seed <= N; seed++) {
+    for (const i of [0, 1]) {
+      const run = R.newRun({ seed, warband: 'vanguard' });
+      const rw = R.challengeReward(run, run.offer[i]);
+      assert.strictEqual(rw.relicChance, i ? 0.1 : 0.06);
+      if (winAt(run, i)) {
+        got[i]++;
+        if (i === 1 && !luckySeed) luckySeed = seed;
+      }
+    }
+  }
+  assert.ok(got[0] >= N * 0.02 && got[0] <= N * 0.11, `easy: ${got[0]}/${N}`);
+  assert.ok(got[1] >= N * 0.05 && got[1] <= N * 0.16, `medium: ${got[1]}/${N}`);
+  // The same battle, lost once and then won: still the lucky one.
+  const run = R.newRun({ seed: luckySeed, warband: 'vanguard' });
+  R.chooseChallenge(run, 1);
+  lose(run);
+  assert.ok(winAt(run, 1), 'no reroll by losing');
+});
+
 test('a defeat goes back to the same three challenges; the lost one counts its tries', () => {
   const run = R.newRun({ seed: 4, warband: 'vanguard' });
   const names = run.offer.map((o) => o.enc.name);

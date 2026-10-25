@@ -457,8 +457,9 @@
 
   // Challenge tiers: what each asks of you and pays.
   const TIERS = {
-    easy: { name: 'Easy', kind: 'battle', mult: 0.8, gold: [10, 14], xp: 0.75, spoils: 2 },
-    medium: { name: 'Medium', kind: 'battle', mult: 1, gold: [14, 20], xp: 1, spoils: 3 },
+    // relicChance: easy and medium wins now and then turn up a relic too, so a build has more to grow from.
+    easy: { name: 'Easy', kind: 'battle', mult: 0.8, gold: [10, 14], xp: 0.75, spoils: 2, relicChance: 0.06 },
+    medium: { name: 'Medium', kind: 'battle', mult: 1, gold: [14, 20], xp: 1, spoils: 3, relicChance: 0.1 },
     elite: { name: 'Elite', kind: 'elite', mult: 1.85, gold: [30, 38], xp: 1, spoils: 3, relic: true, extraUnits: 1 },
     boss: { name: 'Boss', kind: 'boss', mult: 1, gold: [75, 75], xp: 1, spoils: 3 },
     mega: { name: 'Final challenge', kind: 'boss', mult: 1, gold: [0, 0], xp: 1, spoils: 0 },
@@ -515,7 +516,7 @@
   // What a challenge pays if won on the first try (bonus goals and loot come on top).
   function challengeReward(run, o) {
     const T = TIERS[o.tier];
-    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
+    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic, relicChance: T.relicChance || 0 };
     if (o.tier === 'boss') out.bossRelic = run.act < 3;
     return out;
   }
@@ -1545,11 +1546,14 @@
     reward.lvFrom = lv.from;
     reward.lvTo = lv.to;
     if (p.enc.prisoner) reward.prisoner = addRecruit(run, p.enc.prisoner.type).id;
-    if (tier.relic) {
+    // The lucky roll is set per battle, not per try: losing and coming back does not reroll it.
+    const lucky = !tier.relic && tier.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(tier.relicChance);
+    if (tier.relic || lucky) {
       const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
       if (id) {
         gainRelic(run, id);
         reward.relicGained = id;
+        reward.relicLucky = !!lucky;
       }
     }
     if (kind === 'boss' && !node.mega && run.act < 3) {

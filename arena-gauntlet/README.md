@@ -136,7 +136,9 @@ on a phone turned sideways, but portrait works too.
 - **The road**: no map. Each act is four rounds; in each you choose one of three
   battles, shown as cards with a picture of the field, the mission and bonus goals,
   and what it pays: Easy (a smaller army, less gold and XP, two spoils to pick from),
-  Medium, and Elite (a much tougher army, more gold and XP, and a relic). One event
+  Medium, and Elite (a much tougher army, more gold and XP, and a relic). Easy and
+  Medium wins have a small chance of a relic too (6% and 10%, shown on the card; set
+  per battle, so losing and trying again does not reroll it). One event
   and one merchant sit somewhere in the middle of the act, and a boss ends it. Lose,
   and you come back to the round's choice (the same three, so you can try again or
   take an easier one); the War Room's Other battles button goes back too. Mostly
@@ -315,10 +317,10 @@ on a phone turned sideways, but portrait works too.
   though a kill still comes first. It does not walk up to loot whose guards are
   asleep, but grabs it if a unit can reach it in one move.
 - **Playing for the mission**: your army also knows the mission and its bonus goals.
-  It goes for the Commander when killing it routs the enemy, hits the wagon nearest its way out
+  It goes for the Commander when killing it completes the mission, hits the wagon nearest its way out
   first, presses harder toward the end of a "win within N turns" goal (but never off
-  a shrine it must hold), and values stepping onto a red landing tile far more while
-  a "block reinforcements" goal is open.
+  a shrine it must hold), and values hitting the enemies that arrive in waves more while
+  an "ambush the reinforcements" goal is open.
 - **Taking turns**: the sides alternate one unit at a time, and the enemy goes
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
@@ -352,7 +354,8 @@ on a phone turned sideways, but portrait works too.
   passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
   and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for
   both sides, like fatigue in Hearthstone. Poison and burns tick on passed turns
-  too. The top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
+  too. A short "Fatigue triggered!" banner marks the start (no message to tap away),
+  and the top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
@@ -406,7 +409,7 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three war totems (each whips
   the enemies within 2 tiles into a frenzy, 25% more damage, until it falls), raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
-  Getting it done does not end the battle on the spot: the enemy is **routed**. Their
+  Getting it done does not end the battle on the spot: the enemy is **fatigued**. Their
   reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
   enemy unit loses HP when its turn comes, acting or passing, 1 in the first, then 2, 3
   and so on, past armor and shields, just like fatigue. Done after fatigue has set in
@@ -414,8 +417,8 @@ on a phone turned sideways, but portrait works too.
   becomes 12, then 7 becomes 14), while your side keeps the normal amount. The battle
   ends when the last of them falls, so a mission done early tips it well in your favor, without the enemy
   simply giving up. Your own side tires only when
-  fatigue sets in for everyone on turn 30. A banner, a toast and the battle log say
-  when it happens, the top bar shows the rout's bite, and the mission line turns to
+  fatigue sets in for everyone on turn 30. A short banner ("Enemy fatigued!") and the
+  battle log say when it happens, the top bar shows the enemy's fatigue, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
   winning with a unit that sat out the last battle) pay extra.
@@ -426,7 +429,10 @@ on a phone turned sideways, but portrait works too.
   Golem's Boulder Toss and the Sapper's Kit relic. A barricade your army breaks
   spills a pouch of gold (12 in Act I, 16 in Act II, 20 in Act III) in a burst of
   coins, paid with the battle's gold on a win. Your units go for it only when no
-  enemy fighter is within reach that turn.
+  enemy fighter is within reach that turn. Every other enemy building your army
+  breaks drops a few coins too: 3 gold for a wall, tower, totem, banner or cage, 5
+  for the gate and for buildings that send reinforcements (tents, crypts, dens,
+  portals, guardhouses). Your units do not go out of their way for it.
 - **Reinforcements**: some battles send enemy waves on set turns, from the far
   edge or out of buildings. The War Room shows the schedule, and badges count
   down on each building. Waves land after the enemy's move; a turn ahead, red

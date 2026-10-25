@@ -75,6 +75,11 @@ function playBattle(run) {
     results.timeouts++;
     if (process.env.VERBOSE) console.log(`  TIMEOUT ${p.enc.name} (${p.enc.primary}) winner ${s.winner}: E left ${s.units.filter((u) => u.alive && u.team === 'E' && !u.nonCombat).map((u) => u.type).join(' ')} | P left ${s.units.filter((u) => u.alive && u.team === 'P').map((u) => u.type).join(' ')}`);
   }
+  if (s.winner === 'P') {
+    const k = (results.coins[p.enc.primary] = results.coins[p.enc.primary] || [0, 0]);
+    k[0] += s.stats.bounty || 0;
+    k[1]++;
+  }
   const swift = (p.enc.bonus || []).find((b) => b.type === 'swift');
   if (swift && s.winner === 'P') {
     results.swift[1]++;
@@ -88,7 +93,7 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0] };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0], coins: {} };
 
 // The tier a player of this policy picks first in a round.
 function firstTier(rng) {
@@ -230,6 +235,7 @@ const otLens = Object.values(results.lens).flat().filter((n) => n > OVERTIME);
 console.log(`fatigue: ${results.overtime.P + results.overtime.E} battles reached it (you won ${results.overtime.P}), lasting ${otLens.length ? `${q(otLens, 0.5) - OVERTIME} turns (median), ${Math.max(...otLens) - OVERTIME} at most` : '-'} · ${Object.entries(results.otKinds).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ')}`);
 console.log(`fast-win bonus met in ${pct(results.swift)} of ${results.swift[1]} wins that offered it`);
 console.log('bonus goals met in wins:', Object.entries(results.bonus).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
+console.log('gold from broken buildings, per win:', Object.entries(results.coins).filter(([, v]) => v[0]).map(([k, v]) => `${k} ${(v[0] / v[1]).toFixed(1)}`).join(' · ') || '-');
 console.log('loot taken in won battles:', Object.entries(results.loot).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ') || '-');
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
 console.log(`final commander levels: ${results.lv.join(',')} · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

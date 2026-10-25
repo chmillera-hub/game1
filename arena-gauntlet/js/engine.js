@@ -247,8 +247,9 @@
       // Arrived with a wave of reinforcements (for the Ambush bonus goal).
       reinforcement: !!spec.reinforcement,
       kills: 0,
-      // Gold your army earns for breaking it (a barricade's pouch).
+      // Gold your army earns for breaking it: a barricade's pouch, or a little from any other building.
       bounty: spec.bounty || 0,
+      salvage: T.salvage || 0,
       scorched: false,
       value: unitValue(spec.type, b.level),
     };
@@ -1185,10 +1186,12 @@
       stamp(s, u, 'wait');
     }
     emit(s, { t: 'death', uid: u.uid, src: src ? src.uid : 0 });
-    // A barricade broken by your army spills its gold, paid with the battle's other gold.
-    if (u.bounty && src && src.team === 'P' && u.team !== 'P') {
-      s.stats.bounty = (s.stats.bounty || 0) + u.bounty;
-      emit(s, { t: 'gold', uid: u.uid, amount: u.bounty, x: u.x, y: u.y, coins: true });
+    // A barricade broken by your army spills its gold, and any other enemy building a few
+    // coins, paid with the battle's other gold.
+    const coins = u.bounty || u.salvage;
+    if (coins && src && src.team === 'P' && u.team !== 'P') {
+      s.stats.bounty = (s.stats.bounty || 0) + coins;
+      emit(s, { t: 'gold', uid: u.uid, amount: coins, x: u.x, y: u.y, coins: true });
     }
     if (src && src.team !== u.team && !u.nonCombat && !u.structure) {
       s.stats.kills[src.team]++;
