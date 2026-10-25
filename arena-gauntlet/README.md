@@ -237,7 +237,9 @@ on a phone turned sideways, but portrait works too.
   choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
   the draft, the challenge cards) has a soft aura that fades in and out; once you
   pick, your pick gets the gold edge and a ✓ Chosen badge and the rest go grey.
-  Reward and shop cards say how many of that kind you already have. An enchanted
+  Reward and shop cards say how many of that kind you already have. Once your last
+  pick on the victory screen is made (spoils, the Lost Tome, a boss relic; picks are
+  final), it moves on by itself after a moment; opening the Army screen first holds it. An enchanted
   recruit shows its enchantment in a violet box of its own (what it does, and the
   Supply it adds), and every recruit card has a ? button that opens the unit's
   details (HP, numbers, attacks, traits, enchantment) without taking it.

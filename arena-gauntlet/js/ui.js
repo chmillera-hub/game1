@@ -3905,7 +3905,9 @@
     return `<div class="levelup" data-got="✓ Collected">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}</div></div></div>`;
   }
 
-  function rewardScreen() {
+  // `picked`: called right after a pick. Once nothing is left to choose (picks are final),
+  // the screen moves on by itself after a moment, so the pick can be seen lighting up.
+  function rewardScreen(picked) {
     const run = UI.run;
     const p = run.pending;
     const bossDone = !p.bossRelics || p.bossRelicTaken;
@@ -3945,7 +3947,7 @@
       b.onclick = () => {
         if (R.takeBossRelic(run, b.dataset.boss)) {
           sfx('coin');
-          rewardScreen();
+          rewardScreen(true);
         }
       };
     for (const b of $$('[data-spoil]', v))
@@ -3956,33 +3958,44 @@
           sfx('coin');
           if (sp.type === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));
           else if (sp.type !== 'gold') toast(`Added to your pack. Equip it from a unit's loadout.`);
-          rewardScreen();
+          rewardScreen(true);
         }
       };
     $('#rwArmy', v).onclick = () => armySheet(() => rewardScreen());
     if ($('#rwSkip', v))
       $('#rwSkip', v).onclick = () => {
         R.skipSpoils(run);
-        rewardScreen();
+        rewardScreen(true);
       };
     for (const b of $$('[data-tome]', v))
       b.onclick = () => {
         if (R.takeTome(run, +b.dataset.tome)) {
           sfx('coin');
-          rewardScreen();
+          rewardScreen(true);
         }
       };
     if ($('#rwTomeSkip', v))
       $('#rwTomeSkip', v).onclick = () => {
         R.skipTome(run);
-        rewardScreen();
+        rewardScreen(true);
       };
-    $('#rwGo', v).onclick = () => {
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
       const wasBoss = p.kind === 'boss';
       R.completeNode(run);
       if (wasBoss && !run.over) toast(`${ACTS[run.act].short}: ${ACTS[run.act].name}`);
       route();
     };
+    $('#rwGo', v).onclick = go;
+    if (picked && p.spoilTaken && bossDone && (!p.tome || p.tomeTaken)) {
+      $('#rwGo', v).innerHTML = `${p.kind === 'boss' && run.act >= 3 ? 'Claim victory' : 'Continue'} ${ic('fast')}`;
+      // Still on this screen (no sheet open over it, nothing else tapped): on to the next.
+      setTimeout(() => {
+        if (UI.run === run && run.pending === p && $('#rwGo') && $('#modal').hidden) go();
+      }, 1100);
+    }
   }
 
   // ------------------------------------------------------------ shop
