@@ -28,13 +28,36 @@ test('speed orders the queue, ties go to the player', () => {
   eq(B.U(s, s.queue[0]).def, 'apprentice', 'first in queue');
 });
 
-test('chill re-sorts the rest of the round', () => {
-  const s = battle(['w...', '....', 'p...'], { w: 'wolf' }, [{ def: 'squire', x: 0, y: 2 }]);
+test('the sides take turns, one piece at a time', () => {
+  const sides = (s) => s.queue.map((id) => B.U(s, id).side).join('');
+  // Goblins (SPD 5) are quicker than the squire, knight and cleric: they open.
+  const s = battle(['g.g.g', '.....', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'squire', x: 0, y: 3 }, { def: 'knight', x: 1, y: 3 }, { def: 'cleric', x: 2, y: 3 }]);
   B.startRound(s);
-  const wolf = find(s, 'wolf');
-  eq(s.queue[0], wolf.uid, 'wolf first');
+  eq(sides(s), '101010', 'strict alternation');
+  // Four against two: the bigger side's extra turns are spread out.
+  const s2 = battle(['g...g', '.....', '.....', 'ppppp'], { g: 'goblin' }, [0, 1, 2, 3].map((x) => ({ def: 'squire', x, y: 3 })));
+  B.startRound(s2);
+  eq(sides(s2), '100100', 'enemy, two of ours, enemy, two of ours');
+  // Within a side the fastest moves first, and a lone boss moves mid-round.
+  const s3 = battle(['..K..', '.....', '.....', 'ppppp'], { K: 'goblinKing' }, [{ def: 'scout', x: 0, y: 3 }, { def: 'squire', x: 1, y: 3 }, { def: 'cleric', x: 2, y: 3 }, { def: 'knight', x: 3, y: 3 }]);
+  B.startRound(s3);
+  eq(B.U(s3, s3.queue[0]).def, 'scout', 'the scout leads');
+  eq(sides(s3), '00100', 'the king moves in the middle');
+  // A piece that falls mid-round is dealt out of the order.
+  const s4 = battle(['g.g.g', '.....', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'squire', x: 0, y: 3 }, { def: 'knight', x: 1, y: 3 }, { def: 'cleric', x: 2, y: 3 }]);
+  B.step(s4);
+  B.step(s4);
+  const next = B.projectedQueue(s4).now.map((id) => B.U(s4, id).side).join('');
+  eq(next, '01010', 'after the first goblin moves, our side is next');
+});
+
+test('chill re-sorts the rest of the round', () => {
+  const s = battle(['w.g.', '....', 'p...'], { w: 'wolf', g: 'goblin' }, [{ def: 'squire', x: 0, y: 2 }]);
+  B.startRound(s);
+  const wolf = find(s, 'wolf'), gob = find(s, 'goblin'), sq = find(s, 'squire');
+  eq(s.queue.join(), [wolf.uid, sq.uid, gob.uid].join(), 'wolf, squire, goblin');
   B.addStatus(s, wolf, 'chill', { a: 5 });
-  eq(s.queue[0], find(s, 'squire').uid, 'chilled wolf drops behind the squire');
+  eq(s.queue.join(), [gob.uid, sq.uid, wolf.uid].join(), 'the chilled wolf drops behind the goblin');
 });
 
 test('frozen units skip their next turn and take +2 from hits', () => {
@@ -428,17 +451,41 @@ test('Beat of Death hurts every piece that attacks', () => {
 });
 
 test('a duel puts the defending army on the far side, mirrored', () => {
-  const enc = Run.duelEncounter('grandmaster');
-  const mine = [{ def: 'knight', x: 1, y: 7, talents: [], rune: null, rank: 0 }];
-  const theirs = [{ def: 'cleric', x: 2, y: 6, talents: [], rune: null, rank: 1 }];
-  const s = B.create(enc, mine, Object.assign({ record: false }, Run.duelOpts({ relics: [] }, { army: theirs, relics: ['ironRations'] })));
+  const enc = Run.duelEncounter();
+  const me = { army: [{ def: 'knight', x: 1, y: 7, talents: [], rune: null, rank: 0 }], relics: [], enc: 'grandmaster' };
+  const them = { army: [{ def: 'cleric', x: 2, y: 6, talents: [], rune: null, rank: 1 }], relics: ['ironRations'], enc: 'grandmaster' };
+  const mine = Run.arenaArmy(me);
+  eq(mine[0].x + ',' + mine[0].y, '2,9', 'moved onto the arena, centred');
+  const s = B.create(enc, mine, Object.assign({ record: false }, Run.duelOpts(me, them)));
   const c = find(s, 'cleric');
   eq(c.side, 1, 'the defender is the enemy');
-  eq(c.x + ',' + c.y, '2,1', 'mirrored to the far side');
+  eq(c.x + ',' + c.y, '3,3', 'mirrored to the far side');
   eq(c.rank, 1, 'keeps its rank');
   eq(c.shield, 2, 'and its relics (Iron Rations)');
   eq(find(s, 'knight').side, 0, 'the challenger is the near side');
   eq(s.units.length, 2, 'nobody else on the board');
+});
+
+test('an army that beat the Heart fits the arena square for square', () => {
+  const enc = AG.Encounters.zugzwang;
+  const { board } = AG.parseBoard(enc.map, enc.legend);
+  const army = [];
+  for (let i = 0; i < board.n; i++) if (board.deploy[i]) army.push({ def: 'squire', x: i % board.w, y: (i / board.w) | 0, talents: [], rune: null, rank: 0 });
+  const placed = Run.arenaArmy({ army, enc: 'zugzwang' });
+  eq(placed.length, army.length, 'every unit placed');
+  ok(placed.every((e, k) => e.x === army[k].x && e.y === army[k].y + 2), 'same squares, two rows down');
+});
+
+test('beating the Heart puts that army in the Hall, marked', () => {
+  const run = Run.newRun({ seed: 3 });
+  run.finalArmy = { army: [{ def: 'knight', x: 0, y: 7, talents: [], rune: null, rank: 0 }], relics: [], enc: 'grandmaster' };
+  Run.startMega(run);
+  run.battle.formation = [{ def: 'squire', x: 4, y: 8, talents: [], rune: null }];
+  Run.battleWon(run, B.create(AG.Encounters.zugzwang, [], { record: true }));
+  ok(run.megaWon, 'beaten');
+  eq(run.finalArmy.enc, 'zugzwang', 'the Heart army is kept');
+  eq(run.finalArmy.army[0].def, 'squire', 'the army that won');
+  ok(Run.hallEntry(run, 1).heart, 'marked with a heart');
 });
 
 test('a challenger climbs the Hall until its first loss', () => {

@@ -25,7 +25,7 @@
   Run.DIFF = {
     easy: { name: 'Easy', hp: [-0.2, -0.25, -0.3], atk: [0, 0, -1], gold: [10, 14], offers: 2, luck: 0 },
     medium: { name: 'Medium', hp: 0, atk: 0, gold: [16, 22], offers: 3, luck: 0 },
-    hard: { name: 'Hard', hp: [0.35, 0.5, 0.65], atk: [0, 1, 1], gold: [26, 34], offers: 3, luck: 1 },
+    hard: { name: 'Hard', hp: [0.45, 0.6, 0.8], atk: [0, 1, 1], gold: [26, 34], offers: 3, luck: 1 },
     elite: { name: 'Elite', hp: 0, atk: 0, gold: [30, 40], offers: 3, luck: 1, relic: true },
   };
   Run.ACTS = {
@@ -396,8 +396,10 @@
     run.stats.wins++;
     run.stats.battles++;
     Run.recordStats(run, s);
+    // The army that beats the Heart is the one the Hall of Fame keeps.
     if (b.tier === 'mega') {
       run.megaWon = true;
+      run.finalArmy = { army: Run.armyFor(run, b.formation), relics: run.relics.slice(), enc: b.enc };
       run.battle = null;
       run.screen = 'victory';
       return null;
@@ -675,23 +677,63 @@
     c.entryId = entry.id;
     run.done = true;
   };
-  /* The arena for duels: the final boss's board, emptied. The defender's
-     army stands mirrored on the far side (see B.create's enemyArmy). The
+  /* The arena for duels, wide enough for an army from the Grandmaster's
+     board or from the Heart's. A saved army keeps the squares it won on,
+     moved onto the arena's near side (top rows aligned, centred); the
+     defender's is mirrored onto the far side (B.create's enemyArmy). The
      challenger moves first on speed ties; if time runs out, the defender
      keeps its place. */
-  Run.duelEncounter = function (encId) {
-    const base = AG.Encounters[encId] || AG.Encounters.grandmaster;
-    const map = base.map.map((r) => r.replace(/[^p.#~ ]/g, '.'));
-    return { id: 'hallDuel', act: 0, tier: 'duel', name: 'Hall of Fame duel', theme: 'astral', map, legend: {}, supply: base.supply, flavor: '' };
+  Run.ARENA = {
+    id: 'hallArena', act: 0, tier: 'duel', name: 'The Hall of Fame', theme: 'astral', legend: {}, supply: 0, flavor: '',
+    map: [
+      '  ......  ',
+      ' ........ ',
+      '..........',
+      '..........',
+      '..........',
+      '..........',
+      '..........',
+      '..........',
+      'pppppppppp',
+      'pppppppppp',
+      ' pppppppp ',
+      '  pppppp  ',
+    ],
+  };
+  Run.duelEncounter = function () { return Run.ARENA; };
+  function deployTop(board) {
+    for (let i = 0; i < board.n; i++) if (board.deploy[i]) return (i / board.w) | 0;
+    return board.h;
+  }
+  Run.arenaArmy = function (saved) {
+    const src = AG.Encounters[saved.enc] || AG.Encounters.grandmaster;
+    const sb = AG.parseBoard(src.map, src.legend).board;
+    const ab = AG.parseBoard(Run.ARENA.map, {}).board;
+    const dx = Math.floor((ab.w - sb.w) / 2), dy = deployTop(ab) - deployTop(sb);
+    const out = [], strays = [];
+    const taken = new Set();
+    for (const e of saved.army || []) {
+      const x = e.x + dx, y = e.y + dy, i = y * ab.w + x;
+      if (AG.inBounds(ab, x, y) && ab.deploy[i] && !taken.has(i)) { taken.add(i); out.push(Object.assign({}, e, { x, y })); }
+      else strays.push(e);
+    }
+    // Anything that does not fit stands on the nearest free square in front.
+    for (const e of strays) {
+      let free = -1;
+      for (let i = 0; i < ab.n && free < 0; i++) if (ab.deploy[i] && !taken.has(i)) free = i;
+      if (free < 0) break;
+      taken.add(free);
+      out.push(Object.assign({}, e, { x: free % ab.w, y: (free / ab.w) | 0 }));
+    }
+    return out;
   };
   // The battle options for a duel between two saved armies.
   Run.duelOpts = function (challenger, defender) {
-    return { relics: challenger.relics || [], enemyRelics: defender.relics || [], enemyArmy: defender.army };
+    return { relics: challenger.relics || [], enemyRelics: defender.relics || [], enemyArmy: Run.arenaArmy(defender) };
   };
   // Play a duel out at once: true if the challenger wins.
   Run.duelWinner = function (challenger, defender) {
-    const enc = Run.duelEncounter(challenger.enc);
-    const s = AG.B.create(enc, challenger.army, Object.assign({ record: false }, Run.duelOpts(challenger, defender)));
+    const s = AG.B.create(Run.ARENA, Run.arenaArmy(challenger), Object.assign({ record: false }, Run.duelOpts(challenger, defender)));
     AG.B.runToEnd(s);
     return s.winner === 0;
   };

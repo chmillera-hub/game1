@@ -163,6 +163,7 @@ p { margin: 0; }
 .title-demo { width: min(100%, 520px); min-height: 200px; }
 .title-menu { display: grid; gap: 12px; width: min(100%, 320px); }
 .title-menu .btn { width: 100%; min-height: 48px; font-size: 17px; }
+.title-menu .row .btn { width: auto; flex: 1; }
 .title-foot { max-width: 60ch; color: var(--ink-2); font-size: 14px; font-family: var(--f-mono); }
 
 /* ---------------------------------------------------------------- board */
@@ -526,6 +527,13 @@ p { margin: 0; }
 .hall-row.me { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.3), 0 3px 0 var(--line); }
 .hall-row.opp { border-color: var(--red); }
 .hall-row.beaten { opacity: 0.55; }
+/* Sound settings */
+.vol { display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: center; gap: 12px; font-weight: 800; }
+.vol input[type=range] { width: 100%; accent-color: var(--gold); }
+.sound-btn svg.ui { width: 18px; height: 18px; vertical-align: -4px; }
+.heart { color: var(--red); font-family: var(--f-sym); font-size: 20px; line-height: 1; text-shadow: 0 0 10px rgba(255, 90, 97, 0.6); }
+.fc-ic .heart { font-size: 38px; }
+.summit-card.heart { border-color: var(--red); box-shadow: 0 0 0 3px rgba(255, 90, 97, 0.25), 0 3px 0 var(--line); }
 
 /* ---------------------------------------------------------- rewards */
 /* Cards like CEO's store: an ink-rimmed card, the figure on a tile whose

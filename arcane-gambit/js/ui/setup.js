@@ -93,6 +93,7 @@
       if (cost > lim.supply) { UI.toast('Not enough supply: ' + AG.Units[def].name + ' costs ' + AG.Units[def].cost + '.'); return false; }
       F.push({ def, x, y, talents: [], rune: null });
       sel = { kind: 'placed', i: F.length - 1 };
+      UI.Sound.fx('place');
       changed();
       return true;
     }
@@ -105,7 +106,7 @@
         return;
       }
       if (sel.kind === 'card') place(sel.def, x, y);
-      else if (sel.kind === 'placed') { F[sel.i].x = x; F[sel.i].y = y; changed(); }
+      else if (sel.kind === 'placed') { F[sel.i].x = x; F[sel.i].y = y; UI.Sound.fx('place'); changed(); }
       else UI.toast('Pick a unit from your army below, then tap a blue square.');
     }
     function onToken(uid) {
@@ -132,6 +133,7 @@
     }
     function removeEntry(i) {
       F.splice(i, 1);
+      UI.Sound.fx('remove');
       sel = { kind: null };
       changed();
     }
@@ -192,7 +194,7 @@
 
     const main = h('div.setup-main',
       meters,
-      h('div', h('div.eyebrow', 'Turn order · fastest first'), queueEl),
+      h('div', h('div.eyebrow', 'Turn order · the sides take turns'), queueEl),
       boardWrap,
       actions,
       errorsEl,
@@ -207,7 +209,7 @@
         h('div.coach-steps',
           h('div', h('b', '1. Draft'), ' Tap a unit in your army below. Units, talents and runes all cost supply; bring as many units as the supply and the blue squares allow, or press Auto-deploy.'),
           h('div', h('b', '2. Deploy'), ' Tap a blue square to place it. Tap a placed piece for talents and runes, or to move it. Tap enemies to see exactly what they do.'),
-          h('div', h('b', '3. Watch'), ' Press Begin. Every unit acts once per round, fastest first, and thinks for itself. If you lose, rethink and retry.'),
+          h('div', h('b', '3. Watch'), ' Press Begin. The two sides take turns, one piece at a time, fastest first, and every piece thinks for itself. If you lose, rethink and retry.'),
         ),
         h('button.btn.small', { type: 'button', on: { click: () => { App.prefs.seenWarRoom = true; App.savePrefs(); coach.remove(); } } }, 'Got it'),
       );
@@ -311,7 +313,7 @@
       return h('div.stack',
         h('div.sec-title', 'Enemy forces'),
         list,
-        h('p.hint', 'Speed decides the turn order: every unit acts once per round, fastest first. Ties go to your side.'),
+        h('p.hint', 'The sides take turns, one piece at a time; within a side the fastest moves first, and every piece moves once a round. The side with the quicker lead piece opens each round (yours on a tie).'),
         h('p.hint', 'Fatigue: from round ' + (enc.storm || 12) + ' (or after three rounds with no damage) an Arcane Storm hits every unit each round for 1, then 2, then 3…, so stalemates end.'),
       );
     }
@@ -377,6 +379,7 @@
       F.length = 0;
       for (const e of army) F.push(e);
       sel = { kind: null };
+      UI.Sound.fx('deploy');
       UI.toast('Deployed ' + AG.plural(F.length, 'unit') + ' for ' + Run.formationCost(run, F) + ' supply.');
       changed();
     }

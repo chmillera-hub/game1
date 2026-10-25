@@ -138,7 +138,7 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(300);
   await shot('victory', true);
   // The mega boss's war room.
-  await page.getByRole('button', { name: /Face Zugzwang/ }).click();
+  await page.getByRole('button', { name: /Face the Heart/ }).click();
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Auto-deploy' }).click();
   await page.waitForTimeout(300);
@@ -146,7 +146,7 @@ const { chromium } = require('playwright');
   await page.getByRole('button', { name: '← Back' }).click();
   await page.waitForTimeout(300);
   // The Hall of Fame climb: watch the first duel at 4×, then skip.
-  await page.getByRole('button', { name: 'Enter the Hall of Fame' }).click();
+  await page.getByRole('button', { name: /enter the Hall of Fame/i }).click();
   await page.waitForTimeout(300);
   await shot('climb', true);
   await page.locator('.screen-head ~ .row').getByRole('button', { name: /Watch the duel/ }).click();
@@ -181,7 +181,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => AG.App.openSandbox());
   await page.waitForTimeout(300);
   await shot('sandbox', true);
-  await page.locator('.enc-item').filter({ hasText: 'Zugzwang' }).click();
+  await page.locator('.enc-item').filter({ hasText: 'Heart of the Board' }).click();
   await page.waitForTimeout(400);
   await shot('sandbox-mega', true);
   await browser.close();

@@ -52,12 +52,14 @@
     svg.innerHTML = '<circle cx="50" cy="50" r="44" fill="' + (S ? S.tone : '#777') + '" stroke="#16161b" stroke-width="8"/>' + (SIGN[k] ? SIGN[k]() : '');
     return svg;
   };
-  // Small interface icons drawn in ink: play, pause, skip, shield, swords.
+  // Small interface icons drawn in ink: play, pause, skip, shield, speaker, mute, swords.
   const UIC = {
     play: '<path d="M30 18L82 50L30 82Z" fill="currentColor"/>',
     pause: '<rect x="24" y="18" width="18" height="64" rx="3" fill="currentColor"/><rect x="58" y="18" width="18" height="64" rx="3" fill="currentColor"/>',
     skip: '<path d="M14 20L50 50L14 80ZM50 20L86 50L50 80Z" fill="currentColor"/><rect x="84" y="20" width="10" height="60" fill="currentColor"/>',
     shield: '<path d="M50 8L86 20C86 54 72 78 50 92C28 78 14 54 14 20Z" fill="#5b8cff" stroke="#16161b" stroke-width="8" stroke-linejoin="round"/>',
+    speaker: '<path d="M14 38H32L56 18V82L32 62H14Z" fill="currentColor"/><path d="M68 34C76 42 76 58 68 66M78 24C92 38 92 62 78 76" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>',
+    mute: '<path d="M14 38H32L56 18V82L32 62H14Z" fill="currentColor"/><path d="M68 38L90 62M90 38L68 62" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>',
     swords: '<g fill="currentColor"><path d="M12 8L28 10L70 52L62 60L20 18Z"/><path d="M88 8L72 10L30 52L38 60L80 18Z"/><path d="M52 58L60 50L74 64L66 72Z"/><path d="M48 58L40 50L26 64L34 72Z"/><circle cx="76" cy="80" r="8"/><circle cx="24" cy="80" r="8"/><path d="M64 66L72 74L80 80L74 82Z"/><path d="M36 66L28 74L20 80L26 82Z"/></g>',
   };
   UI.uiIcon = function (name) {

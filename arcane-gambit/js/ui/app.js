@@ -9,13 +9,18 @@
 
   const App = (AG.App = {
     run: null, mode: 'title', view: null, battle: null, root: null, current: null,
-    prefs: { speed: 1 }, onResize: null,
+    prefs: { speed: 1, music: 0.5, sfx: 0.7, muted: false }, onResize: null,
   });
 
   App.start = function (hot) {
     App.root = document.getElementById('app');
     App.loadPrefs();
     UI.initTips();
+    UI.Sound.init(App.prefs);
+    // M mutes and unmutes everything.
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) App.toggleMute();
+    });
     let t = 0;
     window.addEventListener('resize', function () {
       clearTimeout(t);
@@ -64,6 +69,10 @@
   }
   App.render = function () {
     UI.hideTip();
+    renderScreen();
+    UI.Sound.music(App.musicFor());
+  };
+  function renderScreen() {
     if (App.mode === 'hall') return App.mount(UI.Screens.hall(App));
     if (App.mode === 'title' || !App.run) return App.mount(UI.Screens.title(App));
     if (App.view === 'battle' && App.battle) return App.mount(UI.BattleScreen(App));
@@ -73,6 +82,20 @@
     if (fn && sc !== 'title' && sc !== 'hall') return App.mount(fn(App));
     App.run.screen = App.mode === 'sandbox' ? 'sandbox' : App.run.tower ? 'tower' : App.run.draft ? 'draft' : 'boon';
     App.mount(UI.Screens[App.run.screen](App));
+  }
+  // The background music for what is on screen.
+  App.musicFor = function () {
+    const run = App.run;
+    if (App.view === 'battle' && App.battle) {
+      if (App.battle.duel) return 'battle';
+      const enc = App.battle.encounter || AG.Encounters[App.battle.s.encounter];
+      return enc.tier === 'mega' ? 'mega' : enc.tier === 'boss' ? 'boss' : 'battle';
+    }
+    if (App.mode !== 'run' || !run) return 'menu';
+    if (run.screen === 'victory' || run.screen === 'climb') return 'victory';
+    if (run.screen === 'setup' && run.battle && run.battle.tier === 'mega') return 'mega';
+    if (run.screen === 'draft' || run.screen === 'boon') return 'menu';
+    return 'tower' + Math.min(3, Math.max(1, run.act || 1));
   };
   App.go = function (screen) {
     App.view = null;
@@ -91,6 +114,7 @@
         h('span.chip.arcane', 'Skirmish'),
         h('span.spacer'),
         h('button.btn.small', { type: 'button', on: { click: () => App.go('sandbox') } }, '← All fights'),
+        App.soundButton(),
         h('button.btn.small.ghost', { type: 'button', on: { click: App.help } }, '?'),
       );
     }
@@ -107,8 +131,36 @@
       relics,
       h('span.spacer'),
       h('button.btn.small', { type: 'button', on: { click: App.armyView } }, 'Army'),
+      App.soundButton(),
       h('button.btn.small.ghost', { type: 'button', 'aria-label': 'How to play', on: { click: App.help } }, '?'),
     );
+  };
+
+  // ---------------------------------------------------------------- sound
+  App.soundButton = function () {
+    return h('button.btn.small.ghost.sound-btn', { type: 'button', 'aria-label': 'Sound settings', 'data-tip': 'Music and sound effects (M mutes)', on: { click: App.soundPanel } },
+      UI.uiIcon(App.prefs.muted ? 'mute' : 'speaker'));
+  };
+  App.toggleMute = function () {
+    App.prefs.muted = !App.prefs.muted;
+    UI.Sound.configure(App.prefs);
+    App.savePrefs();
+    for (const b of document.querySelectorAll('.sound-btn')) { UI.clear(b).appendChild(UI.uiIcon(App.prefs.muted ? 'mute' : 'speaker')); }
+    UI.toast(App.prefs.muted ? 'Sound off.' : 'Sound on.');
+  };
+  App.soundPanel = function () {
+    UI.modal(function () {
+      const slider = (label, key) => h('label.vol', h('span', label),
+        h('input', { type: 'range', min: '0', max: '100', value: String(Math.round(App.prefs[key] * 100)), 'aria-label': label,
+          on: { input: (e) => { App.prefs[key] = e.target.value / 100; UI.Sound.configure(App.prefs); }, change: () => { App.savePrefs(); if (key === 'sfx') UI.Sound.fx('coin'); } } }));
+      const mute = h('input', { type: 'checkbox', checked: !!App.prefs.muted, on: { change: (e) => { if (!!e.target.checked !== !!App.prefs.muted) App.toggleMute(); } } });
+      return h('div.stack',
+        slider('Music', 'music'),
+        slider('Effects', 'sfx'),
+        h('label.row', mute, 'Mute everything'),
+        h('p.hint', 'All of it is generated as you play: a different mood for each act’s tower, for battles, bosses and the Heart. Press M anywhere to mute or unmute.'),
+      );
+    }, { title: 'Sound' });
   };
 
   // ---------------------------------------------------------------- flows
@@ -192,8 +244,8 @@
     const run = App.run;
     const opp = Run.climbOpponent(run);
     if (!opp) return;
-    const encounter = Run.duelEncounter(run.finalArmy.enc);
-    App.lastSetup = { encounter, army: run.finalArmy.army, opts: Run.duelOpts(run.finalArmy, opp) };
+    const encounter = Run.duelEncounter();
+    App.lastSetup = { encounter, army: Run.arenaArmy(run.finalArmy), opts: Run.duelOpts(run.finalArmy, opp) };
     App.battle = { s: makeBattle(App.lastSetup), replay: false, duel: opp, encounter };
     App.view = 'battle';
     App.render();

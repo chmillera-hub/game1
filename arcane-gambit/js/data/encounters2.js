@@ -427,7 +427,7 @@
   add({
     id: 'grandmaster', act: 3, tier: 'boss', name: 'The Mad Grandmaster', theme: 'classic',
     flavor: 'The Grandmaster plays the oldest game with a living army. Checkmate him and his whole army falls.',
-    supply: 34, boost: 0.5,
+    supply: 32, boost: 0.5,
     objective: { type: 'assassinate' },
     map: [
       'rnbqkbnr',
@@ -446,8 +446,8 @@
   });
   // The mega boss, offered after the final boss. Not meant to be beaten.
   add({
-    id: 'zugzwang', act: 3, tier: 'mega', name: 'Zugzwang', theme: 'void',
-    flavor: 'Behind the Grandmaster’s board waits the position every game ends in. It has never lost. It takes at most 20 damage a round, every move you make costs you, and it grows stronger each round. Bring everything.',
+    id: 'zugzwang', act: 3, tier: 'mega', name: 'The Heart of the Board', theme: 'void',
+    flavor: 'Behind the Grandmaster’s board beats the Heart: Zugzwang, the position every game ends in. It has never lost. It takes at most 20 damage a round, every move you make costs you, and it grows stronger each round. Bring everything.',
     supply: 40, maxRounds: 20,
     objective: { type: 'assassinate' },
     map: [

@@ -10,8 +10,12 @@
   // k scales every pause and animation: 1 is the normal pace.
   const SPEEDS = [{ k: 2, label: '½×' }, { k: 1, label: '1×' }, { k: 0.5, label: '2×' }, { k: 0.25, label: '4×' }];
 
+  // The sound of a move, by how the piece travels.
+  const MOVE_SOUND = { walk: 'walk', slide: 'slide', leap: 'leap', blink: 'blink', push: 'smash' };
+
   UI.BattleScreen = function (App) {
     const s = App.battle.s;
+    const fx = UI.Sound.fx;
     const enc = App.battle.encounter || AG.Encounters[s.encounter];
     const isSandbox = App.mode === 'sandbox';
     const duel = App.battle.duel || null;
@@ -159,15 +163,18 @@
             roundEl.textContent = 'Round ' + e.round;
             stormText(e.round);
             log('sys', 'Round ' + e.round);
+            fx(e.storm ? 'storm' : 'round');
             await view.banner('Round ' + e.round, e.storm ? 'storm' : '');
             break;
           case 'stormEarly':
             stormText(e.round);
+            fx('storm');
             log('sys', 'Stalemate: the Arcane Storm gathers early');
             await view.banner('Stalemate!', 'storm');
             break;
           case 'storm':
             stormText(s.round);
+            fx(e.label ? 'lightning' : 'storm');
             if (!e.label) log('sys', 'Arcane Storm: ' + e.dmg + ' damage to everything');
             await view.banner(e.label || 'Arcane Storm ' + e.dmg, 'storm');
             break;
@@ -196,17 +203,21 @@
             break;
           }
           case 'move':
+            fx(MOVE_SOUND[e.kind] || 'walk');
             await view.animMove(e.uid, e.to, e.kind, e.path);
             break;
           case 'swap':
+            fx('blink');
             await view.animSwap(e.a, e.b, e.pa, e.pb);
             break;
           case 'attack':
+            fx(UI.Sound.forVfx(e.vfx));
             if (e.melee) await view.lunge(e.uid, e.to);
             else await view.projectile(e.from, e.to, e.vfx, e.vfx === 'shell');
             break;
           case 'ability': {
             const A = AG.Abilities[e.id];
+            fx(UI.Sound.forVfx(A.vfx));
             view.callout(e.uid, [UI.glyph(A.icon), ' ' + A.name]);
             await view.flash(e.uid, UI.VFX[A.vfx] || '#5b8cff');
             break;
@@ -215,6 +226,7 @@
             await view.aoe(e.cells, e.r, e.vfx);
             break;
           case 'chain':
+            fx('lightning');
             await view.zap(e.from, e.to, 'lightning');
             break;
           case 'beam':
@@ -222,6 +234,7 @@
             break;
           case 'dmg': {
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp, shield: e.shield });
+            if (e.kind !== 'storm') fx(e.absorbed && e.absorbed >= e.amt ? 'shield' : 'hit', e.kind === 'dot' ? 1 : e.amt);
             if (view.tokens.has(e.uid)) {
               view.floatOn(e.uid, ['−' + e.amt, e.absorbed ? UI.uiIcon('shield') : null], 'dmg' + (e.amt >= 6 ? ' big' : ''));
               // Make synergies visible: Charge +2, Shatter +2, Marked +1...
@@ -235,12 +248,14 @@
           }
           case 'heal':
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp });
+            if (!e.quiet) fx('heal');
             view.floatOn(e.uid, '+' + e.amt, 'heal');
             refreshToken(e.uid);
             if (!e.quiet) await wait(160);
             break;
           case 'shield':
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { shield: e.shield });
+            if (!e.quiet) fx('shield');
             view.floatOn(e.uid, ['+' + e.amt, UI.uiIcon('shield')], 'shield');
             refreshToken(e.uid);
             if (!e.quiet) await wait(160);
@@ -249,7 +264,7 @@
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { st: e.st });
             refreshToken(e.uid);
             const S = UI.STATUS[e.key];
-            if (S && !e.removed) view.floatOn(e.uid, [UI.statusIcon(e.key), S.name], 'note', 1.1);
+            if (S && !e.removed) { view.floatOn(e.uid, [UI.statusIcon(e.key), S.name], 'note', 1.1); fx(e.key === 'frozen' ? 'frost' : 'status'); }
             break;
           }
           case 'buff':
@@ -257,12 +272,14 @@
             break;
           case 'death': {
             const u = B.U(s, e.uid);
+            fx('death');
             log('death', [UI.icon(u), h('b', u.name), ' falls.']);
             await view.fadeOut(e.uid, false);
             break;
           }
           case 'fall': {
             const u = B.U(s, e.uid);
+            fx('death');
             view.floatOn(e.uid, 'into the abyss!', 'note');
             log('death', [UI.icon(u), h('b', u.name), ' is knocked into the chasm.']);
             await view.fadeOut(e.uid, true);
@@ -272,10 +289,12 @@
             view.removeToken(e.uid);
             break;
           case 'summon':
+            fx('summon');
             disp[e.uid] = { hp: e.unit.hp, shield: e.unit.shield, st: e.unit.st };
             await view.fadeIn(Object.assign({}, B.U(s, e.uid), { hp: e.unit.hp, x: e.unit.x, y: e.unit.y, st: e.unit.st }));
             break;
           case 'promote':
+            fx('promote');
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.unit.hp });
             refreshToken(e.uid);
             view.floatOn(e.uid, [UI.glyph('♛'), ' Promoted!'], 'note big', 1.2);
@@ -283,16 +302,19 @@
             await view.flash(e.uid, '#f5b400');
             break;
           case 'revive':
+            fx('heal');
             disp[e.uid] = Object.assign(disp[e.uid] || {}, { hp: e.hp });
             refreshToken(e.uid);
             view.floatOn(e.uid, e.label + '!', 'note big', 1.2);
             await view.flash(e.uid, '#45d062');
             break;
           case 'negate':
+            fx('negate');
             view.floatOn(e.uid, e.label === 'Zen' ? 'Dodged!' : e.label + '!', 'note');
             await wait(150);
             break;
           case 'resist':
+            fx('negate');
             view.floatOn(e.uid, 'Immune', 'note');
             break;
           case 'bump':
@@ -359,6 +381,7 @@
     // ------------------------------------------------------------ report
     function finish() {
       const won = s.winner === 0;
+      fx(won ? 'victory' : 'defeat');
       if (duel) {
         log('sys', won ? 'Your run wins the duel' : duel.name + ' holds its place');
         const m = UI.modal(h('div.end-card',
@@ -387,7 +410,7 @@
       log('sys', won ? 'Victory' : 'Defeat');
       const mega = tier === 'mega';
       const card = h('div.end-card',
-        h('div.big.' + (won ? 'win' : 'lose'), won ? (mega ? 'Zugzwang falls!' : 'Victory') : 'Defeat'),
+        h('div.big.' + (won ? 'win' : 'lose'), won ? (mega ? 'The Heart falls!' : 'Victory') : 'Defeat'),
         h('p.muted', won ? 'Won in ' + AG.plural(s.round, 'round') + '.' : lossText(tier)),
         report(),
       );
@@ -410,7 +433,7 @@
     }
     function lossText(tier) {
       if (isSandbox) return 'Your army was defeated. Adjust it and try again.';
-      if (tier === 'mega') return 'Zugzwang was not meant to be beaten. You can try again as often as you like.';
+      if (tier === 'mega') return 'The Heart is meant to be nearly unbeatable. Try again as often as you like, or skip it and enter the Hall of Fame.';
       return 'No harm done: battles play out the same way for the same setup, so change something and try again' + (AG.Run.DIFF[tier] ? ', or go back and choose another fight.' : '.');
     }
     function report() {

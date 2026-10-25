@@ -12,7 +12,7 @@
   // Enemies get tougher act by act; bosses are tuned by hand and skip this.
   AG.ACT_SCALE = { 1: { hp: 0, atk: 0 }, 2: { hp: 0.25, atk: 0 }, 3: { hp: 0.45, atk: 1 } };
   // Extra enemy health and attack by tier, one value per act.
-  AG.TIER_SCALE = { elite: [0.15, 0.3, 0.45] };
+  AG.TIER_SCALE = { elite: [0.3, 0.5, 0.55] };
   AG.TIER_ATK = { elite: [0, 1, 1] };
   const byAct = (v, act) => (Array.isArray(v) ? v[act - 1] : v) || 0;
   const SHATTER = 2; // bonus damage frozen units take from hits
@@ -155,7 +155,7 @@
     const b = parsed.board;
     const s = {
       board: b, units: [], occ: new Int32Array(b.n), nextUid: 1,
-      round: 0, queue: [], extra: [], active: 0, over: false, winner: -1,
+      round: 0, queue: [], extra: [], acts: [0, 0], lastSide: -1, opener: -1, active: 0, over: false, winner: -1,
       ev: opts.record === false ? null : [],
       stats: opts.record === false ? null : {},
       objective: Object.assign({ type: 'rout' }, enc.objective),
@@ -241,6 +241,7 @@
     return {
       board: s.board, units: s.units.map(cloneUnit), occ: s.occ.slice(), nextUid: s.nextUid,
       round: s.round, queue: s.queue.slice(), extra: s.extra.slice(), active: s.active,
+      acts: s.acts ? s.acts.slice() : [0, 0], lastSide: s.lastSide == null ? -1 : s.lastSide, opener: s.opener == null ? -1 : s.opener,
       over: s.over, winner: s.winner, ev: null, stats: null,
       objective: s.objective, rules: s.rules, relics: s.relics, encounter: s.encounter,
       turnCount: s.turnCount, sim: true, flags: Object.assign({}, s.flags), hpBoost: s.hpBoost, atkBoost: s.atkBoost,
@@ -263,22 +264,66 @@
       return a.order - b.order;
     };
   }
-  B.buildQueue = function (s) {
-    const list = s.units.filter((u) => u.alive && !u.noTurn);
-    list.sort(queueCmp(s));
-    s.queue = list.map((u) => u.uid);
-  };
-  B.resortQueue = function (s) {
+  /* Turn order. The two sides take turns, one piece at a time, as in
+     chess. Each side moves its pieces fastest first and every piece moves
+     once a round; a side with more pieces gets proportionally more of the
+     turns, spread evenly through the round. The side with the quicker lead
+     piece opens the round (yours on a tie): its turns fall at 0, 1/n, 2/n…
+     of the way through the round, the other side's halfway between, and a
+     tie goes to whichever side did not just move. acts counts the turns
+     each side has taken this round, last is the side that moved last. */
+  function interleave(s, units, acts, last, opener) {
+    const cmp = queueCmp(s);
+    const lists = [[], []];
+    for (const u of units) lists[u.side].push(u);
+    lists[0].sort(cmp);
+    lists[1].sort(cmp);
+    if (opener == null || opener < 0) {
+      opener = !lists[1].length ? 0 : !lists[0].length ? 1 : cmp(lists[0][0], lists[1][0]) <= 0 ? 0 : 1;
+    }
+    const total = [acts[0] + lists[0].length, acts[1] + lists[1].length];
+    const a = acts.slice(), k = [0, 0], out = [];
+    const time = (side) => (a[side] + (side === opener ? 0 : 0.5)) / total[side];
+    while (k[0] < lists[0].length || k[1] < lists[1].length) {
+      let side;
+      if (k[0] >= lists[0].length) side = 1;
+      else if (k[1] >= lists[1].length) side = 0;
+      else {
+        const t0 = time(0), t1 = time(1);
+        side = t0 < t1 - 1e-9 ? 0 : t1 < t0 - 1e-9 ? 1 : last < 0 ? opener : 1 - last;
+      }
+      out.push(lists[side][k[side]++].uid);
+      a[side]++;
+      last = side;
+    }
+    out.opener = opener;
+    return out;
+  }
+  // The rest of this round's queue, in turn order (dead pieces dropped).
+  // Until somebody has moved, a change of speed can change who opens.
+  function restOfRound(s) {
     const list = [];
     for (const id of s.queue) { const u = U(s, id); if (u && u.alive) list.push(u); }
-    list.sort(queueCmp(s));
-    s.queue = list.map((u) => u.uid);
+    const fresh = s.acts[0] + s.acts[1] === 0;
+    const order = interleave(s, list, s.acts, s.lastSide, fresh ? -1 : s.opener);
+    if (fresh) s.opener = order.opener;
+    return order;
+  }
+  B.buildQueue = function (s) {
+    s.acts = [0, 0];
+    s.lastSide = -1;
+    const order = interleave(s, s.units.filter((u) => u.alive && !u.noTurn), s.acts, -1, -1);
+    s.opener = order.opener;
+    s.queue = order.slice();
+  };
+  B.resortQueue = function (s) {
+    s.queue = restOfRound(s).slice();
     emit(s, 'queue', { queue: s.queue.slice() });
   };
   // Upcoming turn order: rest of this round, then a projected next round.
   B.projectedQueue = function (s) {
-    const now = s.extra.concat(s.queue).filter((id) => U(s, id).alive);
-    const next = s.units.filter((u) => u.alive && !u.noTurn).sort(queueCmp(s)).map((u) => u.uid);
+    const now = s.extra.filter((id) => U(s, id).alive).concat(restOfRound(s));
+    const next = interleave(s, s.units.filter((u) => u.alive && !u.noTurn), [0, 0], -1, -1).slice();
     return { now, next };
   };
 
@@ -1204,9 +1249,12 @@
       return { kind: 'round', round: s.round };
     }
     const extra = s.extra.length > 0;
+    // Pieces may have fallen since the order was set: re-deal the rest.
+    if (!extra) s.queue = restOfRound(s).slice();
     const uid = extra ? s.extra.shift() : s.queue.shift();
     const u = U(s, uid);
     if (!u || !u.alive) return B.step(s);
+    if (!extra) { s.acts[u.side]++; s.lastSide = u.side; }
     s.active = uid;
     s.turnCount++;
     emit(s, 'turn', { uid, extra, queue: s.queue.slice() });

@@ -505,7 +505,7 @@
 
     // ============================================================ MEGA BOSS
     zugzwang: {
-      name: 'Zugzwang', icon: '♚' + T, pool: 'enemy', hp: 230, atk: 4, spd: 2, armor: 1, boss: true, big: true, tags: ['chess', 'arcane'], role: 'ranged',
+      name: 'Zugzwang', icon: '♚' + T, pool: 'enemy', hp: 170, atk: 4, spd: 2, armor: 1, boss: true, big: true, tags: ['chess', 'arcane'], role: 'ranged',
       move: { type: 'none' }, attack: ranged(4, { vfx: 'arcane', los: false }),
       abilities: ['endgame', 'matingNet'],
       passives: { invincible: { cap: 20 }, beatOfDeath: { d: 1 }, inevitable: { atk: 1 }, echoes: { every: 3, n: 2, max: 6 }, doubleMove: {}, unstoppable: {} },

@@ -126,7 +126,9 @@
       h('button.btn' + (save ? '' : '.primary'), { type: 'button', on: { click: () => App.newRun(!!save) } }, 'New run'),
       h('button.btn', { type: 'button', on: { click: () => App.showHall() } }, 'Hall of Fame' + (hall.entries.length ? ' (' + hall.entries.length + ')' : '')),
       h('button.btn', { type: 'button', on: { click: () => App.openSandbox() } }, 'Skirmish (everything unlocked)'),
-      h('button.btn.ghost', { type: 'button', on: { click: () => App.help() } }, 'How to play'),
+      h('div.row', { style: { justifyContent: 'center' } },
+        h('button.btn.ghost', { type: 'button', on: { click: () => App.help() } }, 'How to play'),
+        h('button.btn.ghost', { type: 'button', on: { click: () => App.soundPanel() } }, UI.uiIcon('speaker'), 'Sound')),
     );
     // A row of pieces behind the name, as on Chess Evolved's title bar.
     const frieze = h('div.frieze', { 'aria-hidden': 'true' });
@@ -137,7 +139,7 @@
       h('div.frieze-band', frieze, h('h1.logo', 'Arcane Gambit', h('small', 'Wizard chess · auto-battler · roguelike'))),
       demoHost,
       menu,
-      h('p.title-foot', 'Draft wizard-chess pieces, place as many as your supply allows, and press Begin. Your pieces then think for themselves, one at a time, fastest first. Climb three towers of ever harder fights; lose as often as you like.'),
+      h('p.title-foot', 'Draft wizard-chess pieces, place as many as your supply allows, and press Begin. Your pieces then take turns with the enemy’s, one piece at a time as in chess, and think for themselves. Climb three towers of ever harder fights; lose as often as you like.'),
     );
     root.onMount = function () { root._demo = UI.demo(demoHost); };
     root.onUnmount = function () { if (root._demo) root._demo.stop(); };
@@ -211,7 +213,7 @@
     for (const def of d.options) {
       offers.appendChild(unitOffer(def, {
         kind: 'Pick 1 of 3',
-        onClick: () => { Run.draftPick(run, def); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } },
+        onClick: () => { Run.draftPick(run, def); UI.Sound.fx('place'); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } },
       }));
     }
     const army = h('div.row', { style: { gap: '6px' } }, h('span.eyebrow', 'Your army so far'),
@@ -240,6 +242,7 @@
         return;
       }
       Run.takeBoon(run, id);
+      UI.Sound.fx('relic');
       App.save();
       App.render();
     }
@@ -382,7 +385,7 @@
       for (const id of p.relicChoices) {
         g.appendChild(relicOffer(id, {
           cls: p.relicTaken === id ? 'taken' : p.relicTaken ? 'gone' : '',
-          onClick: () => { if (!p.relicTaken) { Run.claimRelic(run, id); App.save(); App.render(); } },
+          onClick: () => { if (!p.relicTaken) { Run.claimRelic(run, id); UI.Sound.fx('relic'); App.save(); App.render(); } },
         }));
       }
       body.appendChild(g);
@@ -392,7 +395,7 @@
       const g = h('div.offers');
       p.offers.forEach(function (o, i) {
         const cls = p.offerTaken === i ? 'taken' : p.offerTaken >= 0 ? 'gone' : '';
-        const click = () => { if (p.offerTaken < 0) { Run.claimOffer(run, i); App.save(); App.render(); } };
+        const click = () => { if (p.offerTaken < 0) { Run.claimOffer(run, i); UI.Sound.fx('coin'); App.save(); App.render(); } };
         g.appendChild(o.kind === 'unit' ? unitOffer(o.def, { cls, onClick: click }) : runeOffer(o.id, { cls, onClick: click }));
       });
       body.appendChild(g);
@@ -412,8 +415,8 @@
     if (!shop) { App.go('tower'); return h('div'); }
     const price = (n) => Run.price(run, n);
     const buy = (kind, i, picked) => {
-      if (Run.buy(run, kind, i, picked)) { App.save(); App.render(); UI.toast('Bought.'); }
-      else UI.toast('You cannot afford that.');
+      if (Run.buy(run, kind, i, picked)) { UI.Sound.fx('coin'); App.save(); App.render(); UI.toast('Bought.'); }
+      else { UI.Sound.fx('error'); UI.toast('You cannot afford that.'); }
     };
     const units = h('div.offers');
     shop.units.forEach((it, i) => units.appendChild(unitOffer(it.def, { cls: it.sold ? 'gone' : '', price: it.sold ? null : price(it.price), kind: it.sold ? 'Sold' : 'Recruit', onClick: () => !it.sold && buy('units', i) })));
@@ -497,24 +500,26 @@
       cards.appendChild(h('div.summit-card.mega',
         h('div.fc-boss', UI.piece(Run.MEGA, { side: 1 })),
         h('div.stack', { style: { gap: '8px' } },
-          h('span.eyebrow', 'Optional · not meant to be won'),
+          h('span.eyebrow', 'Optional · the Heart of the Board'),
           h('h3', mega.name),
-          h('p', 'Behind the Grandmaster’s board waits the position every game ends in. It takes at most 20 damage a round, every attack or spell you make costs that piece 1 health, it grows stronger every round, and you have 20 rounds. Only a maxed-out army stands a chance.'),
-          h('div.row', h('button.btn', { type: 'button', on: { click: () => { Run.startMega(run); App.save(); App.render(); } } }, UI.uiIcon('swords'), 'Face ' + mega.name)),
+          h('p', 'Behind the Grandmaster’s board beats the Heart: the position every game ends in. It takes at most 20 damage a round, every attack or spell you make costs that piece 1 health, it grows stronger every round, and you have 20 rounds. Armies built on hard fights and elites stand a chance; little else does.'),
+          h('div.row', h('button.btn', { type: 'button', on: { click: () => { Run.startMega(run); App.save(); App.render(); } } }, UI.uiIcon('swords'), 'Face the Heart')),
         )));
     }
-    cards.appendChild(h('div.summit-card',
-      h('div.fc-ic', UI.glyph('♔' + T)),
+    cards.appendChild(h('div.summit-card' + (run.megaWon ? '.heart' : ''),
+      h('div.fc-ic', run.megaWon ? h('span.heart', '♥') : UI.glyph('♔' + T)),
       h('div.stack', { style: { gap: '8px' } },
         h('span.eyebrow', 'Hall of Fame'),
         h('h3', 'Enshrine your army'),
-        h('p', 'The army that beat the Grandmaster is saved. It starts at the bottom of the Hall of Fame and duels each champion above it, one by one, until it loses' + (run.megaWon ? '' : '. Entering ends the run, so face ' + mega.name + ' first if you mean to') + '.'),
-        h('div.row', h('button.btn.primary', { type: 'button', on: { click: climb } }, 'Enter the Hall of Fame')),
+        h('p', run.megaWon
+          ? 'The army that beat the Heart is saved, marked with a ♥. It starts at the bottom of the Hall of Fame and duels each champion above it, one by one, until it loses.'
+          : 'The army that beat the Grandmaster is saved. It starts at the bottom of the Hall of Fame and duels each champion above it, one by one, until it loses. Entering ends the run; beat the Heart first and the army that beat it goes in instead, marked with a ♥.'),
+        h('div.row', h('button.btn.primary', { type: 'button', on: { click: climb } }, run.megaWon ? 'Enter the Hall of Fame' : 'Skip the Heart · enter the Hall of Fame')),
       )));
     return h('div.title-screen',
       h('div', { style: { width: '120px', height: '120px' } }, UI.piece(run.megaWon ? Run.MEGA : 'ebonKing', { side: 1, glow: 'g-gold' })),
-      h('div.logo.win', { style: { fontSize: 'clamp(44px, 9vw, 96px)' } }, run.megaWon ? 'Zugzwang falls' : 'Checkmate'),
-      h('p.flavor', run.megaWon ? 'You beat the position that cannot be beaten. Nobody is going to believe you.' : 'The Mad Grandmaster topples. All three towers are yours.'),
+      h('div.logo.win', { style: { fontSize: 'clamp(44px, 9vw, 96px)' } }, run.megaWon ? 'The Heart falls' : 'Checkmate'),
+      h('p.flavor', run.megaWon ? 'Zugzwang, the position that cannot be beaten, is beaten. Nobody is going to believe you.' : 'The Mad Grandmaster topples. All three towers are yours.'),
       summary(run),
       cards,
     );
@@ -535,8 +540,10 @@
     return h('li.hall-row' + (opts.cls ? '.' + opts.cls : ''),
       h('span.hr-rank', rank != null ? '#' + (rank + 1) : ''),
       h('div.hr-body',
-        h('div.row', { style: { gap: '8px' } }, h('b.hr-name', e.name), opts.tag ? h('span.chip' + (opts.tagCls ? '.' + opts.tagCls : ''), opts.tag) : null,
-          e.heart ? h('span.chip.brass', 'Beat Zugzwang') : null, h('span.faint.mono', date + ' · ' + e.army.length + ' units · ' + e.wins + 'W ' + e.losses + 'L')),
+        h('div.row', { style: { gap: '8px' } },
+          e.heart ? h('span.heart', { 'data-tip': 'This army beat the Heart of the Board.', 'data-tip-title': 'Beat the Heart', tabindex: '0', 'aria-label': 'Beat the Heart' }, '♥') : null,
+          h('b.hr-name', e.name), opts.tag ? h('span.chip' + (opts.tagCls ? '.' + opts.tagCls : ''), opts.tag) : null,
+          h('span.faint.mono', date + ' · ' + e.army.length + ' units · ' + e.wins + 'W ' + e.losses + 'L')),
         army,
         relics.childNodes.length ? relics : null,
       ),
@@ -544,9 +551,11 @@
     );
   }
   function showArmy(e) {
+    const enc = AG.Encounters[e.enc] || AG.Encounters.grandmaster;
+    const w = AG.parseBoard(enc.map, enc.legend).board.w;
     UI.modal(h('div.stack', { style: { alignItems: 'center' } },
-      UI.miniBoard(Run.duelEncounter(e.enc), { px: 40, army: e.army, noFoes: true }),
-      h('p.hint', 'As it stood against the Mad Grandmaster. In a duel the defender’s side is mirrored.')), { title: e.name });
+      UI.miniBoard(enc, { px: Math.min(40, Math.floor(340 / w)), army: e.army, noFoes: true }),
+      h('p.hint', 'As it stood against ' + (e.heart ? 'the Heart' : 'the Mad Grandmaster') + '. In a duel it takes the near side of the Hall’s arena; a defender’s side is mirrored.')), { title: (e.heart ? '♥ ' : '') + e.name });
   }
   S.hall = function (App) {
     const hall = Run.loadHall();
@@ -556,7 +565,7 @@
     return h('div',
       h('div.hud', h('button.brand', { type: 'button', on: { click: () => App.toTitle() } }, 'Arcane Gambit'), h('span.chip.brass', 'Hall of Fame'), h('span.spacer'),
         h('button.btn.small', { type: 'button', on: { click: back } }, '← Back')),
-      screenHead('Champions', 'Hall of Fame', 'Every run that beat the Mad Grandmaster keeps the army it won with. A new champion starts at the bottom and duels its way up until it loses. The top ' + Run.HALL_SIZE + ' stay.'),
+      screenHead('Champions', 'Hall of Fame', 'Every run that beat the Mad Grandmaster keeps the army it won with, or the army that beat the Heart (marked ♥). A new champion starts at the bottom and duels its way up until it loses. The top ' + Run.HALL_SIZE + ' stay.'),
       hall.entries.length ? list : h('p.result', 'No champions yet. Beat the Mad Grandmaster at the top of Act III and your army will be the first.'),
     );
   };
@@ -600,18 +609,25 @@
           button: h('button.btn.primary.small', { type: 'button', on: { click: () => App.startDuel() } }, UI.uiIcon('swords'), 'Watch the duel') }));
       }
     });
-    const resolveAll = () => {
-      while (!run.climb.placed) {
-        const o = Run.climbOpponent(run);
-        if (!o) { Run.finishClimb(run); break; }
-        Run.climbResult(run, Run.duelWinner(run.finalArmy, o));
-      }
-      App.save();
-      App.render();
+    // One duel at a time, so the page can show progress between them.
+    const resolveAll = (e) => {
+      if (e && e.currentTarget) e.currentTarget.disabled = true;
+      const next = () => {
+        const o = run.climb.placed ? null : Run.climbOpponent(run);
+        if (!o) {
+          if (!run.climb.placed) Run.finishClimb(run);
+          App.save();
+          App.render();
+          return;
+        }
+        UI.toast('Duel against ' + o.name + '…');
+        setTimeout(() => { Run.climbResult(run, Run.duelWinner(run.finalArmy, o)); next(); }, 60);
+      };
+      next();
     };
     return h('div', App.hud(),
       screenHead('Hall of Fame · duel ' + (c.results.length + 1) + ' of up to ' + c.opponents.length, 'Climb the Hall',
-        'Your army takes the near side of the Grandmaster’s board; the champion above it takes the far side, mirrored. Speed ties go to you; if time runs out, the champion keeps its place.'),
+        'Your army takes the near side of the Hall’s arena; the champion above it takes the far side, mirrored. Speed ties go to you; if time runs out, the champion keeps its place.'),
       h('div.row', { style: { marginBottom: '12px' } },
         h('button.btn.primary', { type: 'button', on: { click: () => App.startDuel() } }, UI.uiIcon('swords'), 'Watch the duel'),
         h('button.btn', { type: 'button', on: { click: resolveAll } }, 'Resolve the rest instantly')),
@@ -711,7 +727,7 @@
       ),
       h('h4', 'During battle'),
       h('ul',
-        h('li', 'Every round, every unit acts once in order of speed: fastest first, ties to your side. The strip at the top shows the queue.'),
+        h('li', 'The two sides take turns, one piece at a time, as in chess. Each side moves its pieces fastest first and every piece moves once a round; when one side has more pieces, its extra turns are spread through the round. The side with the quicker lead piece opens each round (yours on a tie). The strip at the top shows the order.'),
         h('li', 'On its turn a unit may move and then attack or use an ability. The AI tries every option, simulates the result and picks the best. Its reasoning shows above the board.'),
         h('li', 'Movement is chess-like: knights leap, bishops slide diagonally, rooks along ranks and files, and wizards teleport.'),
         h('li', 'Chasms swallow anything knocked into them that cannot fly. Walls block movement and line of sight.'),
@@ -722,7 +738,7 @@
         h('li', 'Start by drafting your army: two commons, two uncommons and a rare, each one of three. Every run also brings Squires. Then choose an opening advantage.'),
         h('li', 'Climb three towers of eight floors. On each battle floor choose an easy, medium or hard fight (on two floors per act, an elite instead of hard): harder fights pay more gold and rarer finds, and elites a relic. An event and a merchant wait halfway up, and a boss at the top.'),
         h('li', 'Losing costs nothing. Battles always play out the same way for the same setup, so read the report, change something and retry, as often as you like, or go back and choose another fight.'),
-        h('li', 'After the last boss you may face Zugzwang, a mega boss that is not meant to be beaten. Then your final army enters the Hall of Fame, duelling the champions of earlier runs from the bottom up.'),
+        h('li', 'After the last boss you may face the Heart of the Board, a mega boss built to crush all but the strongest armies (runs that take the hard fights and elites stand a chance). Skip it or beat it, your final army then enters the Hall of Fame, marked with a ♥ if it beat the Heart, and duels the champions of earlier runs from the bottom up.'),
       ),
       h('h4', 'Reading the board'),
       h('ul',
