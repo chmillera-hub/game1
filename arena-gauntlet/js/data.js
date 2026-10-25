@@ -24,18 +24,20 @@
 
   // Commander level: total Supply per battle, and the usual army size (cap): how big enemy
   // armies get and how many units Auto starts from. It does not limit your own army.
+  // Supply per commander level. Two more than enemy armies are sized for at every level
+  // (see ENEMY_SUPPLY_LAG in run.js), so there is room for abilities and kit from the start.
   const COMMAND = [
     null,
-    { xp: 0, supply: 14, cap: 4 },
-    { xp: 12, supply: 16, cap: 4 },
-    { xp: 30, supply: 18, cap: 5 },
-    { xp: 55, supply: 20, cap: 5 },
-    { xp: 85, supply: 22, cap: 6 },
-    { xp: 120, supply: 24, cap: 6 },
-    { xp: 160, supply: 26, cap: 7 },
-    { xp: 205, supply: 28, cap: 7 },
-    { xp: 255, supply: 30, cap: 8 },
-    { xp: 310, supply: 33, cap: 8 },
+    { xp: 0, supply: 16, cap: 4 },
+    { xp: 12, supply: 18, cap: 4 },
+    { xp: 30, supply: 20, cap: 5 },
+    { xp: 55, supply: 22, cap: 5 },
+    { xp: 85, supply: 24, cap: 6 },
+    { xp: 120, supply: 26, cap: 6 },
+    { xp: 160, supply: 28, cap: 7 },
+    { xp: 205, supply: 30, cap: 7 },
+    { xp: 255, supply: 32, cap: 8 },
+    { xp: 310, supply: 35, cap: 8 },
   ];
 
   // ---------------------------------------------------------------- abilities

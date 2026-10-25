@@ -785,6 +785,10 @@
   // The optional final challenge is meant to break most armies.
   const MEGA_BUDGET = 1.5;
 
+  // Your Supply runs 2 ahead of what enemy armies are sized for: the extra is yours, for
+  // abilities and kit, not a cue for bigger enemies.
+  const ENEMY_SUPPLY_LAG = 2;
+
   function enemyBudget(run, node, kind) {
     const diff = DIFFICULTIES.find((d) => d.id === run.difficulty) || DIFFICULTIES[1];
     const group = kind === 'boss' ? 'boss' : kind === 'elite' ? 'elite' : 'normal';
@@ -792,7 +796,7 @@
     if (group === 'elite') b *= 1.2;
     if (group === 'boss') b = 12 + (run.act - 1) * 7 + 8;
     const lean = group === 'boss' ? 0.03 : 0.08;
-    b = Math.min(b, supplyFor(run) * (BUDGET_CAP[group] + lean * (run.act - 1)));
+    b = Math.min(b, (supplyFor(run) - ENEMY_SUPPLY_LAG) * (BUDGET_CAP[group] + lean * (run.act - 1)));
     return b * diff.mult * BUDGET_SCALE[group];
   }
 

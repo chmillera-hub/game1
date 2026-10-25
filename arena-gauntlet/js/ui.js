@@ -2951,10 +2951,21 @@
   }
 
   const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', idle: 'nothing in reach' };
-  function sitOutText(e) {
-    if (e.why !== 'cooldown') return SIT_OUT[e.why];
-    const left = e.wait - 1;
-    return left > 0 ? `cooling down (${e.wait} → ${left})` : 'cooling down (ready next turn)';
+  // "Cass, Osric and Jarek pass (cooling down)." for units that passed in a row.
+  function passLine(passes) {
+    // "Enemy" once, and repeats counted: "Enemy Orc Warrior ×2 and Orc Shaman pass".
+    const foe = passes.every(([n]) => n.startsWith('Enemy '));
+    const counts = new Map();
+    for (const [n] of passes) {
+      const k = foe ? n.slice(6) : n;
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    const names = [...counts].map(([n, c]) => esc(n) + (c > 1 ? ` ×${c}` : ''));
+    const list = names.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+    const who = (foe ? 'Enemy ' : '') + list;
+    const whys = [...new Set(passes.map(([, w]) => w))];
+    const why = whys.length === 1 ? ` (${SIT_OUT[whys[0]]})` : '';
+    return `<span class="muted">${who} ${passes.length === 1 ? 'passes' : 'pass'}${why}.</span>`;
   }
 
   // Turn a batch of engine events into battle log lines, newest first.
@@ -2962,6 +2973,7 @@
     const B = UI.battle;
     if (!B || !B.log) return;
     const s = B.s;
+    const batch = (B.logBatch = (B.logBatch || 0) + 1);
     let line = null;
     const add = (l) => {
       B.log.unshift(l);
@@ -3004,7 +3016,15 @@
       else if (e.t === 'done') finish();
       else if (e.t === 'sitout' && v && v.team && SIT_OUT[e.why]) {
         finish();
-        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} passes its turn: ${sitOutText(e)}.</span>` });
+        // Several units passing in a row make one line, not one each.
+        const last = B.log[0];
+        if (last && last.passes && last.team === v.team && last.batch === batch) {
+          last.passes.push([logName(v), e.why]);
+          last.html = passLine(last.passes);
+        } else {
+          const passes = [[logName(v), e.why]];
+          add({ team: v.team, passes, batch, html: passLine(passes) });
+        }
       } else if (e.t === 'routed') {
         finish();
         if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and with fatigue already biting, theirs doubles from now on: each enemy unit loses twice this round's fatigue as its turn comes (your side keeps the normal amount). Finish them off.` });
