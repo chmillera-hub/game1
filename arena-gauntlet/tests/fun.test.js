@@ -479,7 +479,7 @@ test('Capacitor: each hit taken adds 25% to its next zap, then it is spent', () 
   hitOn(s, kn, lw);
   assert.strictEqual(lw.charge, 2);
   assert.ok(E.calcHit(s, lw, kn, {}).dmg > before);
-  act(s, lw, { kind: 'self' });
+  act(s, lw, { kind: 'dir', d: E.dirFromDelta(0, -1) }); // its bolt, north at the knight
   assert.strictEqual(lw.charge, 0);
 });
 

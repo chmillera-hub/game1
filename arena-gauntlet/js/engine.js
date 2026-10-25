@@ -69,9 +69,9 @@
     return into;
   }
 
-  // Campaign enemies barely heal: their masteries keep everything but the mending (a
-  // Champion's heal-on-kill, say).
-  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'];
+  // Campaign enemies (spec.foe) never heal: their masteries keep everything but the mending
+  // and the rising again (a Champion's heal-on-kill, a Skeleton Archer's Undying, say).
+  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'phoenix', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'];
   function calmMastery(m) {
     if (!m.traits || !m.traits.some((t) => HEAL_TRAITS.includes(t))) return m;
     return Object.assign({}, m, { traits: m.traits.filter((t) => !HEAL_TRAITS.includes(t)) });

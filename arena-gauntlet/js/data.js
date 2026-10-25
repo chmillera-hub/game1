@@ -193,7 +193,7 @@
     // Lightning Ward
     l_cap: { name: 'Capacitor', cost: 0, desc: 'Every hit it takes charges it: +25% damage on its next zap for each charge, up to +75%.', mod: { traits: ['capacitor'] } },
     l_shock: { name: 'Static Snare', cost: 1, desc: 'Its basic attack roots its targets for 1 turn.', mod: { act: { fx: { root: 1 } } } },
-    l_over: { name: 'Overcharge', cost: 2, desc: 'Its basic attack reaches 3 tiles.', mod: { stat: { radius: 1 } } },
+    l_over: { name: 'Overcharge', cost: 2, desc: 'Its bolt reaches 5 tiles.', mod: { stat: { len: 1 } } },
     l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against armored targets (30% armor or more).', mod: { props: { vsArmored: 0.3 } } },
     l_overload: { name: 'Overload', cost: 1, desc: 'When it is destroyed, it discharges: 20 magic damage to every enemy within 2 tiles.', mod: { traits: ['overload'] } },
     l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
@@ -459,11 +459,11 @@
     lightning: {
       name: 'Lightning Ward', rarity: 'rare', cost: 4, role: 'ward',
       hp: 46, pow: 16, armor: 0.25, res: 0.25, block: 0, rec: 1, move: 0,
-      act: { name: 'Storm Pulse', kind: 'nova', radius: 2, dmg: 'magic' },
+      act: { name: 'Storm Bolt', kind: 'line', len: 4, dmg: 'magic' },
       traits: ['immobile', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['l_cap', 'l_shock', 'l_over'], 2: ['l_conduct', 'l_overload', 'l_rapid'] },
-      desc: 'Rooted totem. Zaps every enemy within 2 tiles with magic.',
-      tip: 'It cannot move. Archers and fireballs can hit it from outside its reach.',
+      desc: 'Rooted totem. Each turn it fires a bolt of lightning down one straight line (north, south, east or west), hitting everything on the first 4 tiles. Rocks stop it.',
+      tip: 'It cannot move and only fires in straight lines: come at it from the diagonals, or hit it from range.',
     },
     dragon: {
       name: 'Dragon Tyrant', rarity: 'legendary', cost: 8, role: 'monster',

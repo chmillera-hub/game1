@@ -478,8 +478,6 @@
       run.offer = tiers.map((tier) => {
         const T = TIERS[tier];
         const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega' };
-        const hs = healerSpot(run);
-        if (st.kind === 'fight' && hs.act === run.act && hs.round === st.round && hs.tier === tier) node.healers = true;
         const enc = genEncounter(run, node, null, seen);
         seen.push(enc.name);
         return { tier, node, enc, attempts: 0 };
@@ -517,7 +515,7 @@
   // What a challenge pays if won on the first try (bonus goals and loot come on top).
   function challengeReward(run, o) {
     const T = TIERS[o.tier];
-    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10 + (o.enc && o.enc.healers ? HEALERS_GOLD : 0), xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
+    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
     if (o.tier === 'boss') out.bossRelic = run.act < 3;
     return out;
   }
@@ -706,10 +704,11 @@
     portal: { 1: ['wisp', 'specter'], 2: ['wisp', 'specter'], 3: ['specter', 'wisp'] },
   };
 
-  // Enemies are terrible at healing: no healing abilities, skills or gear for them, and no
-  // Clerics, except in the one Healers battle a campaign holds (see healerSpot).
-  // (The fun pass adds more ways to mend: kills that feed, harvested souls, parasites.)
-  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'];
+  // Enemies never heal, bosses included: no healing abilities, skills or gear for them, no
+  // Clerics, and nothing that brings them back from the dead (see also calmMastery in the
+  // engine). Wear an army down and it stays worn down. (The fun pass adds more ways to
+  // mend: kills that feed, harvested souls, parasites.)
+  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'phoenix', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'];
   function healingMod(m) {
     if (!m) return false;
     const p = m.props || {};
@@ -727,16 +726,6 @@
     const pick = rng.pick(from);
     if (!ok || ok(pick)) return pick;
     return from.slice().sort((a, b) => abilityCost(a) - abilityCost(b))[0];
-  }
-
-  // The one battle of a campaign where the enemy brings healers: an act, a round and a tier.
-  const HEALERS_GOLD = 25;
-  function healerSpot(run) {
-    if (!run.healers) {
-      const rng = AG.derive(run.seed, 'healers');
-      run.healers = { act: rng.pick([2, 3]), round: rng.range(0, FIGHTS - 1), tier: rng.pick(['medium', 'elite']) };
-    }
-    return run.healers;
   }
 
   function spawnPool(type, act, pool) {
@@ -874,8 +863,7 @@
     const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1) * (node.mult || 1) * (node.mega ? MEGA_BUDGET : 1);
     const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
-    // No healers in an enemy army, but for the campaign's one Healers battle, which brings
-    // a Cleric (two in an Elite) whatever the army.
+    // No healers in an enemy army: its Clerics are fighters instead.
     const fighters = tpl.pool.filter((t) => !ENEMY_HEALERS.includes(t));
     for (const u of units) if (ENEMY_HEALERS.includes(u.type)) u.type = rng.pick(fighters.length ? fighters : ['knight']);
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
@@ -893,14 +881,6 @@
       const addable = tpl.pool.filter((t) => enemyCost({ type: t, level: 1 }) <= budget - structures - cost() + 0.5);
       if (!addable.length || units.length >= maxUnits) break;
       units.push({ type: rng.pick(addable), level: 1 });
-    }
-    if (node.healers) {
-      const n = group === 'elite' ? 2 : 1;
-      for (let k = 0, i = units.length - 1; k < n && i >= 0; i--) {
-        if (UNITS[units[i].type].boss) continue;
-        units[i] = { type: 'cleric', level: units[i].level || 1 };
-        k++;
-      }
     }
     outfitEnemies(rng, run, units, budget - structures, group);
     if (primary === 'commander') {
@@ -998,7 +978,6 @@
       bonus: [],
       // Timings made for one unit a turn (see retime).
       tm: 2,
-      healers: !!node.healers,
     };
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
@@ -1298,7 +1277,7 @@
       goals: enc.bonus || [],
       cartExit: 0,
       turnLimit: TURN_LIMIT,
-      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w)),
+      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true }, u)) })),
       // Both sides take their turns in a speed-ordered unit rotation.
       queue: true,
       overtime: OVERTIME,
@@ -1465,8 +1444,6 @@
     let gold = rng.range(tier.gold[0], tier.gold[1]);
     if (hasRelic(run, 'coin_purse')) gold += 12;
     if (hasRelic(run, 'kings_ransom')) gold += 20;
-    // The campaign's one battle against enemy healers pays a bounty for the trouble.
-    if (p.enc.healers) gold += HEALERS_GOLD;
     const firstTry = !p.attempt;
     if (firstTry) {
       gold += 10;
@@ -2538,7 +2515,6 @@
     if (has('cart')) tips.push(`The wagons flee left ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} at the end of every enemy turn. Block their path with units and break them fast.`);
     if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
-    if (has('cleric')) tips.push('Enemy healers! The one battle this campaign where the enemy mends: kill the Clerics first, or poison the huddle so the healing fails.');
     if (has('shaman')) tips.push('Orc Shamans drive the warband into a frenzy (25% more damage): kill the drummer first.');
     if (has('golem', 'golem_king')) tips.push('Golems have 50% armor but take 25% extra from magic.');
     if (has('dragon', 'ashen_tyrant', 'drake', 'brute', 'colossus')) tips.push('Huge foes: Dragonslayer Spears deal 50% more to them.');
@@ -2853,7 +2829,7 @@
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
-    costBreakdown, coreUnit, ensureCore, healerSpot, HEALERS_GOLD, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
+    costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
