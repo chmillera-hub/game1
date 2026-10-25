@@ -1061,7 +1061,7 @@
           }
           if (!e.friendly) {
             if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
-            if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1] };
+            if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1], key: poisonKey(u, a) };
             if (fx.burn) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
@@ -1275,7 +1275,47 @@
     u.fresh[k] = s.ply;
   }
 
-  function applyStatus(s, src, u, fx) {
+  // Poison from each source (one unit's ability) runs on its own, with its own damage and
+  // its own turns. At the start of the poisoned unit's turn it takes them all added up,
+  // then each counts down by itself. The same source again refreshes its own poison rather
+  // than adding another. u.poison is null, or { stacks: [{ key, src, dmg, turns }], dmg,
+  // turns, src }: dmg the total a turn, turns the longest still to run.
+  function poisonKey(src, act) {
+    return (src ? src.uid : 0) + ':' + (act ? act.name || act.kind : '');
+  }
+
+  function poisonStacks(u) {
+    const P = u.poison;
+    if (!P) return [];
+    // One poison set by hand (or from before poisons stacked): a single source.
+    if (!P.stacks) P.stacks = [{ key: 'one', src: P.src || 0, dmg: P.dmg, turns: P.turns }];
+    return P.stacks;
+  }
+
+  function sumPoison(u) {
+    const st = poisonStacks(u).filter((p) => p.turns > 0);
+    if (!st.length) {
+      u.poison = null;
+      return;
+    }
+    u.poison.stacks = st;
+    u.poison.dmg = st.reduce((t, p) => t + p.dmg, 0);
+    u.poison.turns = Math.max(...st.map((p) => p.turns));
+    u.poison.src = st[st.length - 1].src;
+  }
+
+  function addPoison(u, src, key, turns, dmg) {
+    if (!u.poison) u.poison = { stacks: [], dmg: 0, turns: 0, src: 0 };
+    const st = poisonStacks(u);
+    const same = st.find((p) => p.key === key);
+    if (same) {
+      same.turns = Math.max(same.turns, turns);
+      same.dmg = Math.max(same.dmg, dmg);
+    } else st.push({ key, src: src ? src.uid : 0, dmg, turns });
+    sumPoison(u);
+  }
+
+  function applyStatus(s, src, u, fx, act) {
     if (!u.alive || u.nonCombat || u.structure) return;
     if (fx.para) {
       if (statusImmune(s, u, 'para')) emit(s, { t: 'resist', uid: u.uid });
@@ -1288,9 +1328,8 @@
     if (fx.poison) {
       if (statusImmune(s, u, 'poison')) emit(s, { t: 'resist', uid: u.uid });
       else {
-        const p = u.poison;
-        u.poison = { turns: Math.max(fx.poison[0], p ? p.turns : 0), dmg: Math.max(fx.poison[1], p ? p.dmg : 0), src: src.uid };
-        emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns });
+        addPoison(u, src, poisonKey(src, act), fx.poison[0], fx.poison[1]);
+        emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
       }
     }
     if (fx.burn) {
@@ -1594,7 +1633,7 @@
       if (!v.alive) return;
       let landed = true;
       if (a.dmg) landed = !hit(s, u, v, o || opts).blocked;
-      if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx);
+      if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx, a);
     };
     switch (a.kind) {
       case 'strike':
@@ -1986,9 +2025,21 @@
   function tickDot(s, u, kind) {
     const p = u[kind];
     if (!p || !u.alive) return;
+    if (kind === 'poison') {
+      // Every poison on it at once, added up; then each runs down on its own.
+      sumPoison(u);
+      if (!u.poison) return;
+      const n = u.poison.stacks.length;
+      applyDamage(s, s.byId[u.poison.src] || null, u, u.poison.dmg, { cat: 'none', dmgType: 'poison' });
+      if (!u.alive || !u.poison) return;
+      for (const st of u.poison.stacks) st.turns--;
+      sumPoison(u);
+      if (!u.poison) emit(s, { t: 'cure', uid: u.uid, status: 'poison' });
+      else if (u.poison.stacks.length < n) emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
+      return;
+    }
     const src = s.byId[p.src] || null;
-    if (kind === 'poison') applyDamage(s, src, u, p.dmg, { cat: 'none', dmgType: 'poison' });
-    else magicDamage(s, src, u, p.dmg, 'burn');
+    magicDamage(s, src, u, p.dmg, 'burn');
     if (!u.alive || !u[kind]) return;
     p.turns--;
     if (p.turns <= 0) {
@@ -2344,7 +2395,7 @@
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
     inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
-    poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
+    poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
     finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,

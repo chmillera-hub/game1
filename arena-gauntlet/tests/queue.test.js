@@ -415,4 +415,42 @@ test('healers act last on their side, so there is someone to heal by their turn'
   }
 });
 
+test('poisons from different sources stack: each keeps its own damage and turns, taken all at once', () => {
+  const s = battle([
+    { type: 'knight', team: 'P', x: 4, y: 8 },
+    { type: 'archer', team: 'E', x: 2, y: 0 },
+    { type: 'wisp', team: 'E', x: 6, y: 0 },
+  ]);
+  toPlayer(s);
+  E.pass(s); // now the enemy's turn
+  const [kn, ar, wi] = s.units;
+  E.applyStatus(s, ar, kn, { poison: [1, 4] }, ar.act);
+  E.applyStatus(s, wi, kn, { poison: [3, 8] }, wi.act);
+  assert.deepStrictEqual([kn.poison.dmg, kn.poison.turns, kn.poison.stacks.length], [12, 3, 2]);
+  const hits = [];
+  for (let round = 0; round < 4; round++) {
+    const hp = kn.hp;
+    E.pass(s); // the knight's turn starts: every poison on it ticks
+    hits.push(hp - kn.hp);
+    E.pass(s);
+  }
+  assert.deepStrictEqual(hits, [12, 8, 8, 0], '4 + 8 together, then the 4 runs out and the 8 goes on alone');
+  assert.ok(!kn.poison, 'all worn off');
+});
+
+test('the same source poisoning again refreshes its own poison instead of adding another', () => {
+  const s = battle([
+    { type: 'knight', team: 'P', x: 4, y: 8 },
+    { type: 'archer', team: 'E', x: 2, y: 0 },
+  ]);
+  const [kn, ar] = s.units;
+  E.applyStatus(s, ar, kn, { poison: [2, 5] }, ar.act);
+  E.applyStatus(s, ar, kn, { poison: [2, 5] }, ar.act);
+  assert.deepStrictEqual([kn.poison.dmg, kn.poison.turns, kn.poison.stacks.length], [5, 2, 1]);
+  // A poison set the old way (one source) still works, and others stack on top of it.
+  kn.poison = { turns: 2, dmg: 3, src: 0 };
+  E.applyStatus(s, ar, kn, { poison: [1, 5] }, ar.act);
+  assert.deepStrictEqual([kn.poison.dmg, kn.poison.turns], [8, 2]);
+});
+
 console.log(`queue: ${passed} tests passed`);

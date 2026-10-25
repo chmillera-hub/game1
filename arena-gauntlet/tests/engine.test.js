@@ -525,6 +525,28 @@ test('Poison Arrows poison on hit', () => {
   assert.deepStrictEqual([kn.poison.turns, kn.poison.dmg], [2, 5]);
 });
 
+test('two poisoners stack their poisons; hitting again only refreshes its own', () => {
+  const s = board([
+    { type: 'archer', team: 'P', x: 4, y: 6, a1: 'a_poison' },
+    { type: 'assassin', team: 'P', x: 5, y: 3, a1: 'as_poison' },
+    { type: 'knight', team: 'E', x: 4, y: 3, facing: 0 },
+  ]);
+  const [ar, as, kn] = s.units;
+  kn.hp = kn.maxHp = 500;
+  kn.block = 0; // no blocks: both hits land
+  act(s, ar, { kind: 'unit', uid: kn.uid });
+  act(s, as, { kind: 'unit', uid: kn.uid });
+  assert.strictEqual(kn.poison.stacks.length, 2);
+  assert.strictEqual(kn.poison.dmg, 5 + 6, 'Poison Arrows 5 + Poisoned Dagger 6');
+  for (const u of [ar, as]) {
+    u.activated = false;
+    for (const a of u.acts) a.cdLeft = 0;
+  }
+  act(s, ar, { kind: 'unit', uid: kn.uid });
+  assert.strictEqual(kn.poison.stacks.length, 2, 'the archer again: still two');
+  assert.strictEqual(kn.poison.dmg, 11);
+});
+
 test('smoke hides units from attacks more than 1 tile away', () => {
   const s = board([
     { type: 'archer', team: 'P', x: 4, y: 7, a1: 'a_smoke' },

@@ -560,7 +560,11 @@
   function statusChips(u) {
     const chips = [];
     if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
-    if (u.poison) chips.push(`<span class="chip poison">Poisoned ${u.poison.turns}</span>`);
+    if (u.poison) {
+      // Poisons from several sources add up: the total a turn, and how many are running.
+      const n = E.poisonStacks(u).length;
+      chips.push(`<span class="chip poison">Poisoned ${u.poison.turns} · ${u.poison.dmg} a turn${n > 1 ? ` (${n} sources)` : ''}</span>`);
+    }
     if (u.burn) chips.push(`<span class="chip warn">Burning ${u.burn.turns}</span>`);
     if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
     if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
@@ -1042,14 +1046,41 @@
           route();
         }
       };
-    if ($('#chClaim', v))
-      $('#chClaim', v).onclick = () => {
-        R.endRun(run);
-        route();
-      };
+    if ($('#chClaim', v)) $('#chClaim', v).onclick = () => claimSheet(run);
     $('#chArmy', v).onclick = () => armySheet(() => challengeScreen());
     $('#chMenu', v).onclick = () => menuSheet();
     $('#chRelics', v).onclick = () => relicSheet();
+  }
+
+  // Calling it a day at the final challenge. The campaign is won either way; if the army
+  // that last fought the final challenge differs from the one that won the campaign, pick
+  // which of the two the Hall of Fame keeps. onBack: where Back (or a tap outside) goes.
+  function claimSheet(run, onBack) {
+    if (!R.megaArmyDiffers(run)) {
+      R.claimVictory(run);
+      return route();
+    }
+    const choose = (which) => {
+      UI.onSheetClose = null;
+      closeSheet();
+      R.claimVictory(run, which);
+      sfx('click');
+      route();
+    };
+    openSheet(
+      `${sheetHead('Call it a day')}
+      <p>Your campaign is won whatever you choose. Which army should the Hall of Fame keep?</p>
+      <div class="cards">
+        <button class="card" id="clFinal"><div class="title">The army that beat the ${esc(UNITS[R.bossOf(run)].name)}</div>${armyPicHTML(run.finalArmy)}<div class="small muted">In the Hall now: it stays as it is.</div></button>
+        <button class="card" id="clMega"><div class="title">The army that last fought the final challenge</div>${armyPicHTML(run.megaArmy)}<div class="small muted">Takes its place in the Hall, with the same name and record.</div></button>
+      </div>
+      <div class="actions"><button class="btn" data-close>Back</button></div>`,
+      (sh) => {
+        $('#clFinal', sh).onclick = () => choose('final');
+        $('#clMega', sh).onclick = () => choose('mega');
+      }
+    );
+    UI.onSheetClose = onBack || null;
   }
 
   // The Act III boss is down: the campaign is won. Claim it, or take on the final challenge.
@@ -3699,6 +3730,8 @@
       : endEv && endEv.forfeit
         ? 'You sounded the retreat.'
         : 'Your army was broken.';
+    // The final challenge: try it again, as often as you like, or call it a day.
+    if (UI.run.pending && UI.run.pending.tier === 'mega') return megaDefeat(reason);
     // A battle an event started is fought again from the war room; a challenge sends you
     // back to the round's choice, where it is still on offer beside the others.
     const fromEvent = UI.run.pending && UI.run.pending.fromEvent;
@@ -3750,6 +3783,42 @@
     UI.onSheetClose = () => onDone(B.s.winner);
   }
 
+  // Lost to the final challenge. Try again goes straight back to the War Room with the same
+  // plan; calling it a day ends the (already won) campaign, with a choice of which army the
+  // Hall of Fame keeps.
+  function megaDefeat(reason) {
+    const run = UI.run;
+    const i = run.pending.offerIndex || 0;
+    const tries = run.pending.attempt || 1;
+    const toChoice = () => {
+      R.backToChoice(run);
+      route();
+    };
+    openSheet(
+      `${sheetHead('Defeat')}
+      <p>${reason} The final challenge still stands, after ${tries} ${tries === 1 ? 'try' : 'tries'}. It is not meant to be beaten: try again as often as you like, with any plan.</p>
+      <p class="muted">Your campaign is already won, and your army is in the Hall of Fame. ${R.megaArmyDiffers(run) ? 'Calling it a day? You choose which army the Hall keeps: the one that won the campaign, or the one that just fought here.' : 'Calling it a day keeps it there as it is.'}</p>
+      <div class="actions"><button class="btn" id="mdClaim">${ic('crown')} Call it a day</button><button class="btn primary" id="mdRetry">${ic('swords')} Try again</button></div>`,
+      (sh) => {
+        $('#mdRetry', sh).onclick = () => {
+          UI.onSheetClose = null;
+          closeSheet();
+          R.backToChoice(run);
+          R.chooseChallenge(run, i);
+          sfx('select');
+          route();
+        };
+        $('#mdClaim', sh).onclick = () => {
+          UI.onSheetClose = null;
+          closeSheet();
+          R.backToChoice(run);
+          claimSheet(run, () => route());
+        };
+      }
+    );
+    UI.onSheetClose = toChoice;
+  }
+
   // Watch two Hall of Fame armies fight it out, both on the AI. onDone gets 'P' (a won) or
   // 'E' (b won); onLeave runs when you walk out before the end. onResult, if given, runs the
   // moment the match ends and returns a line for the result sheet.
@@ -3793,22 +3862,30 @@
   // kept, so redrawing the Hall (every tap) costs nothing. Null if it cannot be drawn.
   const hallPics = new Map();
   function hallPic(l) {
-    const key = [l.id, l.level, l.superWon ? 1 : 0, l.units.length].join(':');
-    if (hallPics.has(key)) return hallPics.get(key);
-    let pic = null;
+    const key = [l.id, l.level, l.superWon ? 1 : 0, l.units.map((it) => it.spec.type + it.x + ',' + it.y).join(' ')].join(':');
+    if (!hallPics.has(key)) hallPics.set(key, armyPic(l.units));
+    return hallPics.get(key);
+  }
+
+  // An army as the Hall keeps it ({ spec, x, y }), drawn as a picture: { url, w, h }, or null.
+  function armyPic(army) {
     try {
-      const units = l.units.map((it) => ({ type: it.spec.type, x: it.x, y: it.y }));
+      const units = army.map((it) => ({ type: it.spec.type, x: it.x, y: it.y }));
       const rows = new Set(units.map((u) => u.y)).size;
       const w = 300;
       const h = 70 + 22 * (rows - 1);
       const cv = document.createElement('canvas');
       AG.Render.formation(cv, units, { w, h });
-      pic = { url: cv.toDataURL('image/png'), w, h };
+      return { url: cv.toDataURL('image/png'), w, h };
     } catch (e) {
-      pic = null;
+      return null;
     }
-    hallPics.set(key, pic);
-    return pic;
+  }
+
+  function armyPicHTML(army) {
+    const pic = armyPic(army);
+    const names = army.map((it) => UNITS[it.spec.type].name).join(', ');
+    return pic ? `<img class="hall-pic" src="${pic.url}" width="${pic.w}" height="${pic.h}" alt="${esc(names)}">` : `<p class="small muted">${esc(names)}</p>`;
   }
 
   // Every army that won a campaign, best first. The newest starts at the bottom and climbs:
@@ -4384,7 +4461,7 @@
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
-          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
+          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
           <li><b>Priority</b>: tap an enemy unit, a building, a chest, the shrine or any empty tile while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>

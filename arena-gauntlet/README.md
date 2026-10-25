@@ -35,8 +35,12 @@ on a phone turned sideways, but portrait works too.
 - **Victory and the final challenge**: beating the Act III boss wins the campaign.
   Then you may claim the victory, or face the Eclipse Wyrm for a super victory. It is
   not meant to be beaten (in the simulations it falls to about one strong army in
-  four, and never to a middling one); losing to it costs you nothing, and you can try
-  again or claim your win at any time.
+  four, and never to a middling one); losing to it costs you nothing. Lose, and Try
+  again takes you straight back to the War Room with the same plan, as many times as
+  you like. Or call it a day: if the army that last fought the Wyrm differs from the one
+  that won the campaign, you choose which of the two the Hall of Fame keeps (same name
+  and record either way). The challenge screen's "Claim your victory instead" offers the
+  same choice.
 - **Hall of Fame**: every campaign you win enters its final army in the Hall: the
   units that beat the Act III boss (or the Eclipse Wyrm), where they stood, their
   levels, abilities, talents, skills and gear, and your relics. It gets a name (The
@@ -208,7 +212,12 @@ on a phone turned sideways, but portrait works too.
   shrubs do not count: they take no turns and no fatigue, and once a side's real
   units are all down it has lost, shrubs or not.
 - **Poison**: poison and burns tick at the start of the poisoned unit's own turn,
-  for a set number of its turns. The Poison Wisp poisons every enemy within 2 tiles
+  for a set number of its turns. Poisons from different sources stack: each keeps its
+  own damage and its own turns, and the unit takes them all added up. Poisoned for 4
+  (1 turn left) and for 8 (3 turns left), it takes 12, then 8, then 8. The same unit's
+  same ability poisoning again only refreshes its own poison (the longer turns and the
+  bigger damage), so one archer cannot pile poison on by itself; its chip in the unit
+  card reads like "Poisoned 3 · 12 a turn (2 sources)". The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
   Buildings, wagons, cages and constructs (golems, wards, the trebuchet) are immune,
   and Pestilence's extra damage never hits buildings. Poison looks nothing like

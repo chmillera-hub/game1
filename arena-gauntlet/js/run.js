@@ -1136,6 +1136,31 @@
     return !(enc.hold && enc.hold.x === x && enc.hold.y === y);
   }
 
+  // An army as the Hall of Fame keeps it: who fought, kitted out how, and where they stood.
+  function hallArmyOf(run, deployment) {
+    return deployment
+      .filter((d) => unitById(run, d.rid))
+      .map((d) => {
+        const spec = specFor(run, unitById(run, d.rid));
+        delete spec.rid;
+        return { spec, x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 };
+      });
+  }
+
+  // Calling it a day at the final challenge: the Hall keeps the army that won the campaign,
+  // or (which: 'mega') the one that last fought the final challenge, if it differs.
+  function megaArmyDiffers(run) {
+    return !!(run.megaArmy && run.megaArmy.length && JSON.stringify(run.megaArmy) !== JSON.stringify(run.finalArmy));
+  }
+
+  function claimVictory(run, which) {
+    if (which === 'mega' && megaArmyDiffers(run)) {
+      run.finalArmy = run.megaArmy;
+      recordLegend(run);
+    }
+    endRun(run);
+  }
+
   // ------------------------------------------------------------ moving on
 
   // Done with the current step (rewards taken, shop left, event resolved): on to the next.
@@ -1364,6 +1389,9 @@
     if (s.winner !== 'P') {
       p.attempt = (p.attempt || 0) + 1;
       run.stats.losses++;
+      // The final challenge: remember the army that last tried it, so you can send that one
+      // to the Hall of Fame if you call it a day.
+      if (p.tier === 'mega') run.megaArmy = hallArmyOf(run, deployment);
       save(run);
       return { won: false, attempt: p.attempt };
     }
@@ -1405,13 +1433,7 @@
     run.lastDeployed = deployment.map((d) => d.rid);
     // The army that beats the Act III boss (or the final challenge) is the one the Hall of
     // Fame remembers: who fought, kitted out how, and where they stood.
-    if (kind === 'boss' && run.act >= 3) {
-      run.finalArmy = deployment.map((d) => {
-        const spec = specFor(run, unitById(run, d.rid));
-        delete spec.rid;
-        return { spec, x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 };
-      });
-    }
+    if (kind === 'boss' && run.act >= 3) run.finalArmy = hallArmyOf(run, deployment);
     // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
     const spoils = tier.spoils ? genSpoils(run, rng, kind).slice(0, tier.spoils) : [];
     const reward = {
@@ -2590,7 +2612,7 @@
 
   AG.Run = {
     FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
-    newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, bossOf, battleXp,
+    newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,

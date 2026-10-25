@@ -250,4 +250,38 @@ test('skirmish: a climbing army keeps climbing from its new place; reaching #1 e
   assert.ok(h.legends[0].climbed && !R.hallClimber(h));
 });
 
+test('the final challenge can be retried as often as you like; calling it a day, you pick the army the Hall keeps', () => {
+  clearHall();
+  const run = winCampaign(29);
+  const before = JSON.stringify(R.loadHall().legends[0].units);
+  assert.ok(R.faceFinal(run));
+  // Lose it three times, with a smaller army than the one that won the campaign.
+  for (let t = 1; t <= 3; t++) {
+    assert.ok(R.chooseChallenge(run, 0), 'the final challenge is still on offer');
+    assert.strictEqual(run.pending.tier, 'mega');
+    const dep = R.autoDeploy(run, 0).slice(0, 3);
+    const s = E.createBattle(R.battleConfig(run, dep));
+    s.over = true;
+    s.winner = 'E';
+    assert.ok(!R.finishBattle(run, s, dep).won);
+    assert.ok(!run.over, 'a loss never ends the campaign');
+    R.backToChoice(run);
+    assert.strictEqual(run.offer[0].attempts, t);
+  }
+  assert.strictEqual(run.megaArmy.length, 3, 'the army that last tried it is remembered');
+  assert.ok(R.megaArmyDiffers(run));
+  // Keep the campaign's army: nothing changes in the Hall.
+  const keep = JSON.parse(JSON.stringify(run));
+  R.claimVictory(keep, 'final');
+  assert.ok(keep.over && keep.won && !keep.superWon);
+  assert.strictEqual(JSON.stringify(R.loadHall().legends[0].units), before);
+  // Or send the army that fought the final challenge: same entry, its units replaced.
+  R.claimVictory(run, 'mega');
+  const h = R.loadHall();
+  assert.strictEqual(h.legends.length + h.queue.length, 1, 'still one entry');
+  assert.strictEqual(h.legends[0].id, run.legendId);
+  assert.deepStrictEqual(h.legends[0].units, run.megaArmy);
+  assert.ok(!h.legends[0].superWon && run.over);
+});
+
 console.log(`hall: ${passed} tests passed`);

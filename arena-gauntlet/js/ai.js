@@ -705,7 +705,9 @@
       const p = e.block != null ? 1 - e.block : 1;
       if (e.para && e.para !== 'resist') v += p * e.para * paraValue(ctx.s, t);
       if (e.poison && e.poison !== 'resist') {
-        const fresh = t.poison ? Math.max(0, e.poison.turns - t.poison.turns) : e.poison.turns;
+        // Poisons from different sources add up; the same source only tops up its own.
+        const own = t.poison && E.poisonStacks(t).find((st) => st.key === e.poison.key);
+        const fresh = own ? Math.max(0, e.poison.turns - own.turns) : e.poison.turns;
         v += p * (Math.min(fresh * e.poison.dmg, t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
       }
       if (e.burn) {
