@@ -231,7 +231,7 @@
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
     const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
-    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it sits out this many turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
+    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
   }
 
   function fxText(u, a) {
@@ -1830,7 +1830,7 @@
       status = ` <span class="reward">${goals.filter((u) => !u.alive).length}/${goals.length} down</span>`;
     }
     // A mission done routs the enemy: they bleed every enemy turn until the last one falls.
-    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is routed: ${s.routed.late ? 'their fatigue is doubled' : 'their fatigue has set in'}, and the enemy unit taking each turn loses ${E.routHit(s)} HP, more each turn. Finish them.</span>`;
+    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is routed: ${s.routed.late ? 'their fatigue is doubled' : 'their fatigue has set in'}, and each enemy unit loses ${E.routHit(s)} HP as its turn comes, more each turn. Finish them.</span>`;
     else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the enemy is routed: their fatigue sets in at once.</span>`;
     const lines = [`<div class="obj primary ${s && s.routed ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     const wl = wavesLine(enc, s);
@@ -2936,6 +2936,11 @@
   }
 
   const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', idle: 'nothing in reach' };
+  function sitOutText(e) {
+    if (e.why !== 'cooldown') return SIT_OUT[e.why];
+    const left = e.wait - 1;
+    return left > 0 ? `cooling down (${e.wait} → ${left})` : 'cooling down (ready next turn)';
+  }
 
   // Turn a batch of engine events into battle log lines, newest first.
   function logEvents(ev) {
@@ -2984,11 +2989,11 @@
       else if (e.t === 'done') finish();
       else if (e.t === 'sitout' && v && v.team && SIT_OUT[e.why]) {
         finish();
-        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
+        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} passes its turn: ${sitOutText(e)}.</span>` });
       } else if (e.t === 'routed') {
         finish();
-        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and with fatigue already biting, theirs doubles from now on: the enemy unit taking each turn loses twice this round's fatigue (your side keeps the normal amount). Finish them off.` });
-        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and their fatigue sets in now: from the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1, then 2, 3 and so on. Your side tires only when fatigue sets in for everyone, on turn ${s.overtime || 30}. Finish them off.` });
+        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and with fatigue already biting, theirs doubles from now on: each enemy unit loses twice this round's fatigue as its turn comes (your side keeps the normal amount). Finish them off.` });
+        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and their fatigue sets in now: from the next enemy turn, each enemy unit loses HP as its turn starts, 1, then 2, 3 and so on. Your side tires only when fatigue sets in for everyone, on turn ${s.overtime || 30}. Finish them off.` });
       } else if (e.t === 'overtime') {
         finish();
         add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: 1 this round, 2 the next, then 3 and so on, the same for both sides. The last side standing wins.` });
@@ -3000,17 +3005,30 @@
     finish();
   }
 
-  // Who acts next, both sides interleaved as their turns alternate. A turn nobody can take
-  // (every unit cooling down) just passes, so it is left out.
+  // Whose turns come next, both sides interleaved as their turns alternate. Every unit
+  // shows: one cooling down (the number is its cooldown) or paralyzed passes its turn when
+  // it comes, and the next in line acts.
   function queueHTML(s, n) {
     const a = E.upcoming(s, s.side, n);
     const b = E.upcoming(s, E.other(s.side), n);
     const items = [];
-    for (let i = 0; i < n; i++) for (const x of [a[i], b[i]]) if (x && x.uid && s.byId[x.uid] && items.length < n) items.push(x);
+    for (let i = 0; i < n; i++) {
+      for (const x of [a[i], b[i]]) {
+        if (!x) continue;
+        for (const p of x.passes) if (s.byId[p.uid] && items.length < n) items.push(p);
+        if (x.uid && s.byId[x.uid] && items.length < n) items.push(x);
+      }
+    }
+    let now = false;
     return `<div class="queue">${items
-      .map((x, i) => {
+      .map((x) => {
         const v = s.byId[x.uid];
-        return `<div class="q-item team-${v.team} ${i === 0 ? 'now' : ''}" title="${esc(logName(v))} · Speed ${v.spd}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas><span>${esc(v.team === 'P' ? v.name : UNITS[v.type].name)}</span></div>`;
+        const name = esc(v.team === 'P' ? v.name : UNITS[v.type].name);
+        const tag = !x.why ? '' : x.why === 'cooldown' ? `<b class="q-cd" title="Cooling down: passes this turn">${x.wait}</b>` : x.why === 'para' ? `<b class="q-cd para" title="Paralyzed: passes this turn">${x.para}</b>` : '';
+        const tip = x.why === 'cooldown' ? ` · cooling down (${x.wait}): passes this turn` : x.why === 'para' ? ' · paralyzed: passes this turn' : x.why ? ' · never acts: passes every turn' : '';
+        const cls = x.why ? 'pass' : now ? '' : 'now';
+        if (!x.why) now = true;
+        return `<div class="q-item team-${v.team} ${cls}" title="${esc(logName(v))} · Speed ${v.spd}${tip}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas>${tag}<span>${name}</span></div>`;
       })
       .join('')}</div>`;
   }
@@ -3071,7 +3089,7 @@
     const actor = B.acting && s.byId[B.acting];
     return `${actor && actor.alive ? unitInfoHTML(actor, { status: true }) : ''}
       <div class="eyebrow">Turn order</div>
-      ${queueHTML(s, 8)}
+      ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
@@ -3183,13 +3201,13 @@
         ${actsHTML(u)}
         <div class="hint">${
           u.team === 'E'
-            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it sits out its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
+            ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
             : inProgress && s.act.uid !== u.uid
               ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first: one unit a turn.`
               : u.wait > 0
-                ? `Cooling down: it sits out ${s.side === u.team ? 'this turn' : 'your next turn'}${u.wait > 1 ? ` and ${u.wait - 1} more` : ''}.`
+                ? `Cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'}, losing 1 off its cooldown each time.`
                 : u.para > 0
-                  ? `Paralyzed: it sits out ${u.para === 1 ? 'this turn' : 'this turn and ' + (u.para - 1) + ' more'}.`
+                  ? `Paralyzed: it passes its next ${u.para === 1 ? 'turn' : u.para + ' turns'}.`
                   : 'Cannot act right now.'
         }</div>
         ${auto
@@ -3354,13 +3372,13 @@
       toast(
         routedEv.late
           ? 'Mission done! The enemy is routed: no more reinforcements, and their fatigue doubles from now on. Your side keeps the normal amount. Finish them off.'
-          : 'Mission done! The enemy is routed: no more reinforcements, and their fatigue sets in now. Each enemy turn, the unit taking it loses HP, 1 more each turn. Finish them off.',
+          : 'Mission done! The enemy is routed: no more reinforcements, and their fatigue sets in now. Each enemy unit loses HP when its turn comes, 1 more each turn. Finish them off.',
         4500
       );
     }
     if (ev.some((e) => e.t === 'overtime')) {
       showBanner('Fatigue', true);
-      toast('Fatigue: the unit taking each turn loses HP, 1 more each round, the same for both sides. The last side standing wins.', 4000);
+      toast('Fatigue: every unit loses HP when its turn comes, acting or passing, 1 more each round, the same for both sides. The last side standing wins.', 4000);
     }
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
@@ -4499,11 +4517,11 @@
           <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>
           <li>The sides take turns, and the enemy goes first. Each turn, one unit acts: it moves, attacks or uses an ability, and faces.</li>
           <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
-          <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
+          <li>Acting starts a unit's <b>cooldown</b> (CD on its card). Its turns still come, but it passes that many of them: it passes at once, its cooldown drops by one, and the next unit in line goes. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, pass too. The turn order shows every unit's turn: a unit about to pass is greyed out with its cooldown on its portrait. Poison, burns, regen and fatigue come on passed turns too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Missions rout the enemy</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is routed: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
-          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared, except wards: Barrier and Lightning Wards lose HP whenever their turn comes, even with nothing to do. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Missions rout the enemy</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is routed: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
+          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Triggers</b>: many talents and relics fire on an event rather than giving a flat bonus, and the board calls them out as they happen. <b>Critical!</b> hits deal double damage (Lucky Coin, the Lucky skill, every third shot of a Level 3 Archer). <b>Executed</b>: a foe left very low falls outright (never a boss). <b>Trophies</b> from kills add 10% damage each, up to five, and the killer grows a little bigger. Some things go out with a bang when they fall (Powder Keg, Powder Belt, Overload, Bramble Burst, Combustion), poison and fire can leap from the dead to their neighbours (Contagion, Plague Doctor's Mask, Wildfire Oil), and slain enemies can rise as skeletons on your side (Necromancer's Bell, Shadow Pact). Cursed relics give a big edge at a real cost.</li>

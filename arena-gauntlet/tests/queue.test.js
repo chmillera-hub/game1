@@ -196,6 +196,35 @@ test('the preview matches the rotation', () => {
   assert.strictEqual(E.queueDelay(s, s.units[0]), 2);
 });
 
+test('the turn order shows units cooling down, with their cooldown, passing in their place', () => {
+  const s = battle([
+    { type: 'knight', team: 'P', x: 2, y: 8 },
+    { type: 'scout', team: 'P', x: 4, y: 8 },
+    { type: 'archer', team: 'P', x: 6, y: 8 },
+    { type: 'golem', team: 'E', x: 4, y: 0 },
+  ]);
+  toPlayer(s);
+  const [kn, sc, ar] = s.units;
+  E.pass(s); // the enemy's turn: yours is next
+  // The archer is up next, but cooling down for 2 more of its turns.
+  ar.wait = 2;
+  ar.cycles = Math.min(kn.cycles, sc.cycles);
+  ar.spd = 99;
+  const order = E.upcoming(s, 'P', 6);
+  const flat = order.flatMap((x) => [...x.passes.map((p) => `${name(s, p.uid)}(${p.wait})`), x.uid ? name(s, x.uid) : 'none']);
+  assert.strictEqual(flat.filter((t) => t === 'archer(2)').length, 1, flat.join(' '));
+  assert.ok(flat.indexOf('archer(2)') < flat.indexOf('archer(1)') && flat.indexOf('archer(1)') < flat.indexOf('archer'), flat.join(' '));
+  // And the battle plays out as shown: the archer's turns come, it passes them, and its cooldown counts down.
+  const seen = [];
+  for (let i = 0; i < 12 && !(s.side === 'P' && s.due === ar.uid); i++) {
+    const ev = s.events.length;
+    E.pass(s);
+    for (const e of s.events.slice(ev)) if (e.t === 'sitout' && e.uid === ar.uid) seen.push(e.wait);
+  }
+  assert.deepStrictEqual(seen, [2, 1]);
+  assert.strictEqual(s.due, ar.uid, 'then it acts');
+});
+
 test('reinforcements join the current cycle in speed order', () => {
   const s = battle(
     [
@@ -237,7 +266,7 @@ test('fatigue: the enemy loses 1, then you 1, then the enemy 2, you 2, and so on
   assert.ok(s.units.every((u) => u.shield === 50), 'shields do not stop it');
 });
 
-test('fatigue: only the unit taking the turn loses HP, not the ones that sit it out', () => {
+test('fatigue: a unit passing its turn (cooling down) loses HP too, then the next one goes', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -254,11 +283,13 @@ test('fatigue: only the unit taking the turn loses HP, not the ones that sit it 
   const ev = s.events.length;
   E.pass(s); // your turn 2 starts
   const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue');
-  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[b.uid, 1]], 'only b, which takes the turn, loses 1');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]], 'a passes and loses 1, then b takes the turn and loses 1');
   assert.strictEqual(s.due, b.uid);
+  assert.ok(s.events.slice(ev).some((e) => e.t === 'sitout' && e.uid === a.uid && e.why === 'cooldown' && e.wait === 1));
+  assert.strictEqual(a.wait, 0, 'its cooldown ticks down');
 });
 
-test('fatigue: when every unit sits the turn out, the first in line still takes it', () => {
+test('fatigue: when every unit passes, each loses HP as its turn comes, and the side passes', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -276,7 +307,8 @@ test('fatigue: when every unit sits the turn out, the first in line still takes 
   const ev = s.events.length;
   E.pass(s);
   const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid].team === 'P');
-  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1]], 'one unit a turn, even when nobody acts');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]]);
+  assert.ok(s.events.slice(ev).some((e) => e.t === 'pass' && e.side === 'P' && e.auto), 'nobody acts: the side passes');
 });
 
 test('fatigue reaches wards: Barrier and Lightning Wards tire when their turn comes, acting or not', () => {
@@ -291,8 +323,10 @@ test('fatigue reaches wards: Barrier and Lightning Wards tire when their turn co
   );
   const [g, bw, lw, eg] = s.units;
   for (const u of s.units) u.hp = u.maxHp = 999;
-  // The Barrier Ward never acts, so it never shows in the turn order.
-  assert.ok(!E.upcoming(s, 'P', 6).some((x) => x.uid === bw.uid));
+  // The Barrier Ward never acts: in the turn order it only ever passes.
+  const order = E.upcoming(s, 'P', 6);
+  assert.ok(!order.some((x) => x.uid === bw.uid));
+  assert.ok(order.some((x) => x.passes.some((p) => p.uid === bw.uid && p.why === 'passive')));
   const ev = s.events.length;
   while (s.turn < 11) E.pass(s);
   const hits = {};
@@ -414,7 +448,7 @@ test('the Healing Salve only adds to regen a unit already has', () => {
   assert.strictEqual(kn.regen, 0, 'no regen of its own, none from the Salve');
 });
 
-test('regen comes only to the unit taking the turn, not to the ones that sit it out', () => {
+test('regen comes on every unit\'s own turn, acting or passing', () => {
   const s = battle(
     [
       { type: 'knight', team: 'P', x: 2, y: 8 },
@@ -428,12 +462,12 @@ test('regen comes only to the unit taking the turn, not to the ones that sit it 
   E.pass(s);
   a.hp = 20;
   b.hp = 20;
-  a.wait = 1; // a sits its next turn out, so b takes it
+  a.wait = 1; // a passes its next turn, so b takes the side's turn
   b.cycles = a.cycles;
   E.pass(s);
   assert.strictEqual(s.due, b.uid);
   assert.strictEqual(b.hp, 22, 'b takes the turn: +2');
-  assert.strictEqual(a.hp, 20, 'a sat out: no regen');
+  assert.strictEqual(a.hp, 22, 'a passed its turn: +2 all the same');
 });
 
 test('healers act last on their side, so there is someone to heal by their turn', () => {
