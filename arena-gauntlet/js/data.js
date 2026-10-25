@@ -434,12 +434,12 @@
     },
     wisp: {
       name: 'Poison Wisp', rarity: 'uncommon', cost: 3, role: 'caster',
-      hp: 24, pow: 8, armor: 0.4, res: -0.3, block: 0.2, rec: 1, move: 4,
+      hp: 24, pow: 8, armor: 0, res: 0.4, block: 0.4, rec: 1, move: 4,
       act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 2 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_parasite', 'w_wither'], 2: ['w_ethereal', 'w_contagion', 'w_plague'] },
-      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages and constructs are immune. A spirit: blades and arrows mostly pass through it (40% armor), but magic hurts it 30% more.',
-      tip: 'Steel barely touches it, but magic tears through its 24 HP.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages and constructs are immune.',
+      tip: 'Only 24 HP and no armor. One arrow volley can drop it.',
     },
     barrier: {
       name: 'Barrier Ward', rarity: 'uncommon', cost: 3, role: 'ward',

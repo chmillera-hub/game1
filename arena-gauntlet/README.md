@@ -288,9 +288,9 @@ on a phone turned sideways, but portrait works too.
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
   magic (a violet sparkle) is reduced by magic resistance. Armor and magic
-  resistance both cap at 50%, and some units go as low as -50%. Spirits are wispy:
-  steel mostly passes through them and magic tears them apart (Specters: 50% armor,
-  -50% magic resistance; Poison Wisps: 40% armor, -30%). Mage Knights do the reverse. A unit's DMG stat,
+  resistance both cap at 50%, and some units go as low as -50%. Specters are ghosts:
+  steel mostly passes through them (50% armor, the cap) and magic tears them apart
+  (-50% magic resistance, the floor). Mage Knights do the reverse. A unit's DMG stat,
   its attacks and every damage preview show the damage-type icon.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
