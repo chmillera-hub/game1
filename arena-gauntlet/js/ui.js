@@ -527,7 +527,8 @@
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
     const P = u.props;
     if (P.totemRage) out.push('At the start of their turn, its allies within 2 tiles fly into a frenzy: 25% more damage. Topple it and the frenzy fades.');
-    if (u.bounty) out.push(`Break it and your army picks up ${u.bounty} gold, paid with the battle's gold when you win.`);
+    const coins = u.bounty || (u.team !== 'P' && u.salvage);
+    if (coins) out.push(`Break it and your army picks up ${coins} gold, paid with the battle's gold when you win.`);
     if (s && u.traits.has('spawner')) {
       const waves = s.waves.filter((w) => w.src === u.uid && w.state === 'pending');
       if (waves.length) {
@@ -1012,12 +1013,12 @@
       ? 'The campaign is already won. This fight is not meant to be won: it is for a super victory.'
       : st.kind === 'boss'
         ? `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}.`
-        : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic. Lose, and you come back here to choose again.`;
+        : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic (easy and medium might too). Lose, and you come back here to choose again.`;
     const card = (o, i) => {
       const rw = R.challengeReward(run, o);
       const pays = mega
         ? 'A super victory, and a place in legend.'
-        : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} a relic` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
+        : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} a relic` : rw.relicChance ? `${ic('gem')} ${Math.round(rw.relicChance * 100)}% relic chance` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
             .filter(Boolean)
             .join(' · ');
       return `<button class="card challenge tier-${o.tier}" data-ch="${i}" data-choose>
@@ -1735,7 +1736,7 @@
     const h = s.hold;
     if (h && h.x === x && h.y === y) {
       name('Shrine', 'flag');
-      f.lines.push(`Start ${h.need} of your turns in a row with one of your units standing on it to rout the enemy.${h.count ? ` Held for ${h.count} so far.` : ''}`);
+      f.lines.push(`Start ${h.need} of your turns in a row with one of your units standing on it to complete the mission.${h.count ? ` Held for ${h.count} so far.` : ''}`);
     }
     for (const fx of s.tfx || []) {
       if (fx.x !== x || fx.y !== y) continue;
@@ -1848,9 +1849,9 @@
       const goals = s.units.filter((u) => u.team === 'E' && u.goal);
       status = ` <span class="reward">${goals.filter((u) => !u.alive).length}/${goals.length} down</span>`;
     }
-    // A mission done routs the enemy: they bleed every enemy turn until the last one falls.
-    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is routed: ${s.routed.late ? 'their fatigue is doubled' : 'their fatigue has set in'}, and each enemy unit loses ${E.routHit(s)} HP as its turn comes, more each turn. Finish them.</span>`;
-    else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the enemy is routed: their fatigue sets in at once.</span>`;
+    // A mission done leaves the enemy fatigued: they bleed every enemy turn until the last one falls.
+    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is fatigued${s.routed.late ? ' (doubled)' : ''}: each enemy unit loses ${E.routHit(s)} HP as its turn comes, more each turn. Finish them.</span>`;
+    else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the enemy is fatigued at once.</span>`;
     const lines = [`<div class="obj primary ${s && s.routed ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     const wl = wavesLine(enc, s);
     if (wl) lines.push(wl);
@@ -2874,9 +2875,9 @@
     B.focus = null;
     UI.board.focus = null;
     if (B.s.over) return;
-    if (was.ally) return toast(`${was.label} is down, and the rally with them. Your army is back to normal orders.`, 3500);
+    if (was.ally) return toast(`${was.label} is down: rally over.`);
     const how = was.loot != null ? 'is yours' : v && v.escaped ? 'got away' : 'is down';
-    toast(`Priority ${how === 'got away' ? 'over' : 'done'}: ${was.label} ${how}. Your army is back to normal orders.`, 3500);
+    toast(`Priority ${how === 'got away' ? 'over' : 'done'}: ${was.label} ${how}.`);
   }
 
   // One side turn played by the AI: the side's due unit moves, acts and faces.
@@ -2951,7 +2952,7 @@
 
   // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
-    if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy routed −${E.routHit(s)}</span>${s.inOvertime ? ` · fatigue −${E.fatigueHit(s)}` : ` · fatigue at ${s.overtime}`}`;
+    if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · fatigue −${E.fatigueHit(s)}` : ` · fatigue at ${s.overtime}`}`;
     if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> to whoever acts`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
@@ -3030,7 +3031,7 @@
       } else if (e.t === 'dmg' && e.dmgType === 'fatigue' && v) {
         finish();
         const dead = !v.alive && ev.some((d) => d.t === 'death' && d.uid === v.uid);
-        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} loses ${e.amount} HP ${e.rout ? 'in the rout' : 'to fatigue'}.</span>${dead ? ` <span class="kill">${esc(logName(v))} falls</span>` : ''}` });
+        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} loses ${e.amount} HP to fatigue.</span>${dead ? ` <span class="kill">${esc(logName(v))} falls</span>` : ''}` });
       } else if (e.t === 'dmg' && line && e.src === line.uid) line.dmg += e.amount || 0;
       else if (e.t === 'heal' && line && e.amount > 0) line.heal += e.amount;
       else if (e.t === 'death' && line && e.src === line.uid && v) line.kills.push(v.team === 'P' ? v.name : UNITS[v.type].name);
@@ -3048,11 +3049,11 @@
         }
       } else if (e.t === 'routed') {
         finish();
-        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and with fatigue already biting, theirs doubles from now on: each enemy unit loses twice this round's fatigue as its turn comes (your side keeps the normal amount). Finish them off.` });
-        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and their fatigue sets in now: from the next enemy turn, each enemy unit loses HP as its turn starts, 1, then 2, 3 and so on. Your side tires only when fatigue sets in for everyone, on turn ${s.overtime || 30}. Finish them off.` });
+        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: enemy fatigue doubled!</b> No more reinforcements, and each enemy unit loses twice this round's fatigue as its turn comes. Your side keeps the normal amount.` });
+        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, 1, then 2, 3 and so on. Your side tires only on turn ${s.overtime || 30}.` });
       } else if (e.t === 'overtime') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: 1 this round, 2 the next, then 3 and so on, the same for both sides. The last side standing wins.` });
+        add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Every unit loses HP as its turn comes, 1 more each round, both sides alike.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -3330,6 +3331,7 @@
         : goals.length
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
+    B.goalLine = goal;
     const sideName = B.exhibition ? (s.side === 'P' ? B.exhibition.a.name : B.exhibition.b.name) : s.side === 'P' ? 'Your turn' : 'Enemy turn';
     $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : esc(sideName)}</b>
       <span>${turnLine(s)} · ${esc(goal)}</span></div>
@@ -3450,20 +3452,13 @@
     UI.board.activeSide = null;
     const ev = E.drainEvents(B.s);
     logEvents(ev);
+    // Just a banner, nothing to tap away: the battle log has the details.
     const routedEv = ev.find((e) => e.t === 'routed');
-    if (routedEv) {
-      showBanner('Enemy routed!', false);
-      toast(
-        routedEv.late
-          ? 'Mission done! The enemy is routed: no more reinforcements, and their fatigue doubles from now on. Your side keeps the normal amount. Finish them off.'
-          : 'Mission done! The enemy is routed: no more reinforcements, and their fatigue sets in now. Each enemy unit loses HP when its turn comes, 1 more each turn. Finish them off.',
-        4500
-      );
-    }
-    if (ev.some((e) => e.t === 'overtime')) {
-      showBanner('Fatigue', true);
-      toast('Fatigue: every unit loses HP when its turn comes, acting or passing, 1 more each round, the same for both sides. The last side standing wins.', 4000);
-    }
+    if (routedEv) showBanner(routedEv.late ? 'Enemy fatigue ×2!' : 'Enemy fatigued!', false);
+    if (ev.some((e) => e.t === 'overtime')) showBanner('Fatigue triggered!', true);
+    // The top bar catches up with the banner at once, not after the moves play out.
+    const line = (routedEv || ev.some((e) => e.t === 'overtime')) && $('#topbar .title span');
+    if (line) line.innerHTML = `${turnLine(B.s)} · ${esc(B.goalLine || '')}`;
     await UI.board.playEvents(ev, B.s);
     UI.board.syncFromState(B.s);
     // Your own passes need no news; the enemy's, and turns you had to skip, do.
@@ -4333,7 +4328,7 @@
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
           ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold from Midas Touch</span>` : ''}
-          ${p.bounty ? `<span class="res gold">${ic('gold')} +${p.bounty} gold from broken barricades</span>` : ''}
+          ${p.bounty ? `<span class="res gold">${ic('gold')} +${p.bounty} gold from broken buildings</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
         ${(p.objectives || []).some((o) => o.done) ? `<div class="panel objectives" data-got="✓ Collected">${p.objectives
@@ -4345,7 +4340,7 @@
           .map((o) => `<div class="obj bonus failed">${ic('close')}<span>${esc(o.text)}</span></div>`)
           .join('')}</div>` : ''}
         ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline" data-got="✓ Collected">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
-        ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
+        ${p.relicGained ? `<div><div class="eyebrow">${p.relicLucky ? 'A lucky find: a relic' : 'Relic claimed'}</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}
         ${p.lootRelic ? `<div><div class="eyebrow">From the relic cache</div><div class="cards">${relicCard(p.lootRelic, GOT)}</div></div>` : ''}
         ${p.tome && p.tome.length ? `<div><div class="eyebrow">${p.tomeTaken ? 'The tome is read' : 'The Lost Tome: choose a skill'}</div>
           <div class="cards">${p.tome.map((id, i) => itemCard('skill', id, `data-tome="${i}" ${pickState(p.tomeTaken, p.tomePick === i)}`, ownedNote(run, 'skill', id))).join('')}</div></div>` : ''}
@@ -4604,7 +4599,7 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card). Its turns still come, but it passes that many of them: it passes at once, its cooldown drops by one, and the next unit in line goes. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, pass too. The turn order shows every unit's turn: a unit about to pass is greyed out with its cooldown on its portrait. Poison, burns, regen and fatigue come on passed turns too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Missions rout the enemy</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is routed: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
+          <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
@@ -4632,6 +4627,7 @@
           <li>Walls, gates, towers, totems, tents, crypts, dens, portals and barricades are <b>buildings</b>. Stone ones shrug off swords and spells alike; wooden ones burn, taking extra damage from fire and magic; dark portals unravel under magic but barely notice steel.</li>
           <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
           <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
+          <li><b>Every enemy building pays a little.</b> Break a wall, tower, totem, banner, cage or gate and your army picks up 3 gold (5 for the gate and for tents, crypts, dens, portals and guardhouses). Not worth a detour, but never wasted.</li>
         </ul>
         <h4>Reinforcements</h4>
         <ul>

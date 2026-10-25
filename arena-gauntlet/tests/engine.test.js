@@ -1556,6 +1556,29 @@ test('a barricade broken by your army spills its gold; the AI breaks one when no
   assert.ok(bar.hp < bar.maxHp, 'the knight went for the gold');
 });
 
+test('every enemy building your army breaks drops a few coins: 3 for a wall or tower, 5 for a gate or a guardhouse', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'wall', team: 'E', x: 4, y: 4 },
+    { type: 'guardhouse', team: 'E', x: 5, y: 5 },
+    { type: 'tower', team: 'E', x: 3, y: 5 },
+    { type: 'knight', team: 'E', x: 0, y: 0 },
+  ]);
+  const [kn, wall, house, tower, foe] = s.units;
+  assert.deepStrictEqual([wall.salvage, house.salvage, tower.salvage, foe.salvage, kn.salvage], [3, 5, 3, 0, 0]);
+  for (const [b, gold] of [[wall, 3], [house, 8]]) {
+    b.hp = 1;
+    act(s, kn, { kind: 'unit', uid: b.uid });
+    assert.ok(!b.alive);
+    assert.strictEqual(s.stats.bounty, gold);
+  }
+  assert.ok(s.events.some((e) => e.t === 'gold' && e.coins && e.amount === 5));
+  assert.ok(tower.alive && s.stats.bounty === 8, 'the tower still stands, its coins unclaimed');
+  // Your own wards hold no coins.
+  assert.strictEqual(AG.Data.UNITS.lightning.salvage, undefined);
+  assert.strictEqual(AG.Data.UNITS.gate.salvage, 5);
+});
+
 console.log(`engine: ${passed} tests passed`);
 if (failed.length) {
   console.log(failed.join('\n'));

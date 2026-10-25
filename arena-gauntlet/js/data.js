@@ -303,6 +303,8 @@
     pow: 0, armor: 0.5, res: 0.3, block: 0, rec: 0, move: 0,
     act: { name: 'War Ward', kind: 'none' },
     traits: ['immobile', 'nofacing', 'object', 'totem'], tags: ['structure'], material: 'stone',
+    // Gold your army picks up for breaking an enemy building, paid with the battle's gold.
+    salvage: 3,
     tip: 'Stone shrugs off swords and spells alike. Siege damage cracks it fast.',
   };
 
@@ -311,6 +313,7 @@
     pow: 0, block: 0, rec: 0, move: 0,
     act: { name: 'Reinforce', kind: 'none' },
     traits: ['immobile', 'nofacing', 'object', 'spawner'], tags: ['structure'],
+    salvage: 5,
   };
 
   const UNITS = {
@@ -499,7 +502,7 @@
       name: 'War Banner', rarity: 'none', cost: 0, role: 'object',
       hp: 70, pow: 0, armor: 0.1, res: -0.2, block: 0, rec: 0, move: 0,
       act: { name: 'Rally', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood',
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood', salvage: 3,
       desc: 'The enemy standard. Enemies within 2 tiles of it deal 15% more damage.',
       tip: 'Burn it to break their will and win the battle.',
     },
@@ -507,7 +510,7 @@
       name: 'Prison Cage', rarity: 'none', cost: 0, role: 'object',
       hp: 78, pow: 0, armor: 0.3, res: 0.2, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'iron',
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'iron', salvage: 3,
       desc: 'Captives rattle the bars. Break the cage to free them.',
       tip: 'Breaking the cage wins the battle. The freed prisoner joins your army.',
     },
@@ -523,7 +526,7 @@
       name: 'Castle Wall', rarity: 'none', cost: 0, role: 'object',
       hp: 70, pow: 0, armor: 0.45, res: 0.3, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'], material: 'stone',
+      traits: ['immobile', 'nofacing', 'object', 'scenery'], tags: ['structure'], material: 'stone', salvage: 3,
       desc: 'Thick castle stone. Blocks movement and lines. Flyers and arcing shots pass over it.',
       tip: 'Go through the gate or around the ends. Siege damage breaks stone fast.',
     },
@@ -531,7 +534,7 @@
       name: 'Castle Gate', rarity: 'none', cost: 0, role: 'object',
       hp: 130, pow: 0, armor: 0.4, res: -0.2, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood',
+      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood', salvage: 5,
       desc: 'An oak-and-iron gate. Breaking it opens the castle.',
       tip: 'Breaking the gate wins a siege. Siege damage and fire bring it down fastest.',
     },
@@ -728,7 +731,7 @@
       name: 'Arrow Tower', rarity: 'enemy', cost: 0, role: 'ranged',
       hp: 60, pow: 14, armor: 0.4, res: 0.2, block: 0, rec: 1, move: 0,
       act: { name: 'Arrow Slits', kind: 'strike', range: [2, 5], dmg: 'phys', arc: true },
-      traits: ['immobile', 'nofacing', 'structure'], tags: ['structure'], material: 'stone',
+      traits: ['immobile', 'nofacing', 'structure'], tags: ['structure'], material: 'stone', salvage: 3,
       desc: 'A stone tower full of archers. You do not need to destroy it to win.',
       tip: 'Stay out of its reach, or bring siege damage.',
     },
