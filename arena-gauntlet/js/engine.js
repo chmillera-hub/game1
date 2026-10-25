@@ -2840,10 +2840,18 @@
 
   // This round's fatigue, past armor and shields.
   function fatigue(s, u) {
+    if (!u.alive || !counts(u)) return;
+    // Mid-cleanup your army tires by its own rule (cleanupHit), each turn harder.
+    if (s.cleanup && u.team === 'P') {
+      const n = cleanupHit(s);
+      s.cleanup.hits = (s.cleanup.hits || 0) + 1;
+      applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue' });
+      return;
+    }
     // A routed enemy tires by the rout's rule (routHit); everyone else by the clock.
     const rout = !!s.routed && u.team === 'E';
     const n = rout ? routHit(s) : fatigueHit(s);
-    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout || undefined });
+    if (n) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout || undefined });
   }
 
   // HP a unit loses to fatigue at the start of its turn this round: 1 in the round it sets
@@ -2877,6 +2885,15 @@
     if (!s.routed) return 0;
     if (s.routed.late) return 2 * fatigueHit(s);
     return Math.max(Math.max(1, s.turn - s.routed.turn), fatigueHit(s));
+  }
+
+  // What your next unit loses as its turn comes mid-cleanup: fatigue sets in for your army
+  // the moment the enemy army falls, 1 for the first of your units to take a turn, then 2,
+  // 3 and so on, one more for every turn one of your units takes (or the clock's fatigue,
+  // once that is bigger). Collect fast: it cannot cost you the battle, but it adds up.
+  function cleanupHit(s) {
+    if (!s.cleanup) return 0;
+    return Math.max((s.cleanup.hits || 0) + 1, fatigueHit(s));
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -3070,9 +3087,10 @@
   // The enemy army is gone but the field still holds something worth having: loot, and
   // enemy buildings with gold in them or a goal to break (a totem, the cage, a wagon, a
   // barricade, a wall). The win is already yours. Your army goes round collecting until
-  // nothing is left, until it has nobody left standing (fatigue still bites, but it
-  // cannot cost you the battle), or until it stops getting anywhere (CLEANUP_STALL turns).
-  const CLEANUP_STALL = 6;
+  // nothing is left, until it has nobody left standing (its fatigue sets in at once and
+  // grows with every turn it takes, see cleanupHit, but it cannot cost you the battle), or
+  // until it stops getting anywhere (CLEANUP_STALL turns).
+  const CLEANUP_STALL = 10;
   function cleanupTargets(s) {
     return s.units.filter((u) => u.alive && u.team === 'E' && !u.escaped && (u.nonCombat || u.structure) && !u.traits.has('summon') && (u.goal || u.bounty > 0 || u.salvage > 0));
   }
@@ -3145,7 +3163,7 @@
     } else if (winner === 'P' && cleanupLeft(s)) {
       // The enemy army is down with gold, goals or loot still on the field: collect them.
       const lost = s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length;
-      s.cleanup = { turn: s.turn, lost, score: cleanupScore(s), at: s.turn };
+      s.cleanup = { turn: s.turn, lost, score: cleanupScore(s), at: s.turn, hits: 0 };
       emit(s, { t: 'cleanup', turn: s.turn, left: cleanupLeft(s) });
       return;
     }
@@ -3176,7 +3194,7 @@
     poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, routHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

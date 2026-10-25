@@ -1843,6 +1843,30 @@
     poly(ctx, [3.4, -18.6, 8.6, -17.6 + w * 0.8, 8, -14.6 + w, 5.6, -15.8 + w * 0.5, 3.8, -15.4], T.main, 0.9);
   };
 
+  // Wreckage from a boss's camp: a supply cart tipped on its side, a wheel off, a crate
+  // split open and its coins spilled in the dirt.
+  D.wreckage = (ctx, o) => {
+    const wood = '#8a5a30';
+    const sp = Math.sin(o.t * 3);
+    glow(ctx, 4, -4, 13, 'rgba(255,215,110,', 0.16 + 0.06 * sp);
+    // the cart bed, on its side
+    poly(ctx, [-15, -2, 5, 0, 7, -13, -13, -16], shade(wood, -0.12));
+    for (const y of [-6, -10]) line(ctx, -13.5, y - 1.5, 5.8, y + 1, 0.6, 'rgba(0,0,0,0.3)', false);
+    // a broken wheel leant against it
+    wheel(ctx, -8, -14, 6, '#5a3d22');
+    // snapped planks
+    line(ctx, 4, -1, 14.5, -8.5, 2.2, shade(wood, 0.08));
+    poly(ctx, [13.6, -10, 16, -7.8, 14.6, -7.2], '#d9bb8c', 0);
+    line(ctx, 8.5, 1, 15.5, 1.8, 1.8, shade(wood, -0.2));
+    // a split crate
+    rect(ctx, 0, -14.5, 9, 8, 1.2, '#b98a52');
+    line(ctx, 3.6, -14.5, 5.4, -6.5, 0.8, OUT, false);
+    // spilled coins, one catching the light
+    for (const [x, y] of [[1.5, -1.8], [4.6, 0.4], [7.8, -2.6], [10.6, 0], [6.4, -4.8]]) ellipse(ctx, x, y, 1.6, 0.9, '#e2b84c', 0.6);
+    ctx.fillStyle = 'rgba(255,250,220,' + (0.55 + 0.45 * sp).toFixed(3) + ')';
+    ctx.fillRect(7.3, -3.2, 1, 1);
+  };
+
   // Pick-ups that lie on a tile: a war chest, a tome on a lectern, or a relic on a plinth.
   function drawLoot(ctx, kind, t) {
     const sp = Math.sin(t * 3);
@@ -1879,7 +1903,7 @@
     spider: 25, troll: 54, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
-    barricade: 22, void_wyrm: 96,
+    barricade: 22, wreckage: 22, void_wyrm: 96,
   };
 
   const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };

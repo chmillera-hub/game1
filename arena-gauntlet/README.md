@@ -306,8 +306,8 @@ on a phone turned sideways, but portrait works too.
   War Paint (+15% damage, -10 HP), Reckless (+15% damage, -15% armor) and the
   Featherweight Cloak (+1 Move, -10% armor). Auto leaves side-grades to you.
 - **The AI and positioning**: picks that only pay off from the right spot say how
-  the AI plays them. A Guardian (or Holy Aegis, Spellward Aura, Grounding Field, a
-  Golem's protection) escorts: it marches with your fragile units instead of ahead
+  the AI plays them. A Guardian (or a Knight's Bodyguard, Holy Aegis, Spellward Aura,
+  Grounding Field, a Golem's protection) escorts: it marches with your fragile units instead of ahead
   of them and keeps one beside it, and the fragile ones stay beside it too. Pack
   Hunter picks targets your other units already stand beside; Ambusher and Flanker
   go round the side or back; Trample takes the long way in. Your army also loves a
@@ -329,6 +329,13 @@ on a phone turned sideways, but portrait works too.
   about half of the animations' full pace, to be easy to follow. Battles always play
   out on their own (commanding each turn yourself lives on in the classic version, on
   the `arena-gauntlet-tactics-classic` branch); units face the nearest enemy.
+- **Goals in view**: the battle's goals sit pinned at the top of the panel below the
+  board, above the unit card, turn order and battle log, and stay there however far the
+  panel scrolls: the mission with its live count (the boss's HP, buildings down, turns
+  to go, enemies left, or the cleanup's progress and your army's next fatigue hit), the
+  gold still waiting in wreckage or barricades, each bonus goal with its reward (struck
+  through once it is out of reach), and the next reinforcements. The full wording of
+  every goal is further down, under Mission details.
 - **Tapping what is behind**: when one unit stands in front of another (a Lightning
   Ward before a barricade, say), tap the same spot again to pick the one behind; its
   panel says when something is hidden there.
@@ -399,10 +406,15 @@ on a phone turned sideways, but portrait works too.
   battle does not end on the spot. A banner says the army is beaten, the win is
   yours already, and your army goes round collecting: it breaks the buildings, cuts
   down any guards still at their posts (the specters by the Lost Tome) and takes the
-  loot, gold and quest rewards and all. Fatigue still bites, but it cannot cost you
-  the battle: it ends with your win when nothing is left, when your army is gone, when
-  six turns pass without progress, or when you tap Finish now (the menu's Retreat
-  becomes Finish the battle). The top bar counts what is left. A flawless or fast win
+  loot, gold and quest rewards and all. This is the victory lap, and it is not free:
+  your army's fatigue sets in the moment the enemy army falls, whatever the turn. Each
+  of your units loses HP as its turn comes (acting or passing), 1 for the first, then
+  2, 3 and so on, one more for every turn one of your units takes (or the clock's
+  fatigue, once that is bigger). So collect fast: you may get some of it and not all.
+  It cannot cost you the battle: it ends with your win when nothing is left, when your
+  army is gone, when ten turns pass without progress, or when you tap Finish now (the
+  menu's Retreat becomes Finish the battle). The top bar counts what is left and your
+  army's next fatigue hit. A flawless or fast win
   counts from the moment the enemy army fell, so a unit fatigue takes during the
   cleanup does not spoil it.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
@@ -496,6 +508,15 @@ on a phone turned sideways, but portrait works too.
   breaks drops a few coins too: 3 gold for a wall, tower, totem, banner or cage, 5
   for the gate and for buildings that send reinforcements (tents, crypts, dens,
   portals, guardhouses). Your units do not go out of their way for it.
+- **Wreckage**: the Act I boss's camp (the Golem King's or Grukk's) is strewn with
+  four wrecked supply carts, 8 gold in each. They are spoils, not targets: your army
+  leaves them be while the fight is on (the AI gives them no value at all until then).
+  Once the boss and its retinue fall, the cleanup begins, your army's fatigue sets in
+  and it breaks what wreckage it can before that fatigue tells. A cart takes a hit or
+  two (22 HP, light armor, and wood burns). In simulated campaigns a winning army
+  salvages about half of it, anywhere from none to all four, and loses about three
+  units to fatigue doing so (still a win, and nobody is lost for good). Their HP bars
+  show from the start, and the boss line in the goals says how much gold waits there.
 - **Reinforcements**: some battles send enemy waves on set turns, from the far
   edge or out of buildings. The War Room shows the schedule, and badges count
   down on each building. Waves land after the enemy's move; a turn ahead, red

@@ -517,9 +517,10 @@
     const a = u.act;
     // Guardians and spellwards (Guardian, Holy Aegis, Spellward Aura, Grounding Field) keep
     // their friends beside them, the fragile ones first, and the fragile ones stay beside a
-    // guardian: the stronger the protection, the more it is worth.
+    // guardian: the stronger the protection, the more it is worth. A Bodyguard, who takes a
+    // blow meant for an ally beside it, counts like a Guardian.
     const fragile = (t) => ['ranged', 'caster', 'support'].includes(UNITS[t.type].role);
-    const cover = (t) => ((t.props.guard || 0) + (t.props.magicGuard || 0) * (ctx.foeMagic ? 1 : 0.5)) / 0.15;
+    const cover = (t) => ((t.props.guard || 0) + (t.props.magicGuard || 0) * (ctx.foeMagic ? 1 : 0.5)) / 0.15 + (t.traits.has('bodyguard') ? 1 : 0);
     const mine = cover(u);
     const charges = mine && !ctx.cleanup ? ctx.allies.filter((al) => al !== u && fragile(al)) : [];
     switch (role) {
@@ -700,6 +701,8 @@
     let v = 0;
     for (const e of pv.effects) {
       const t = s.byId[e.uid];
+      // Wreckage (spoils) is worth nothing to either side until the enemy army falls.
+      if (t.traits.has('spoils') && !ctx.cleanup) continue;
       const hpv = t.value / t.maxHp;
       if (e.self) {
         v -= u.value;

@@ -416,7 +416,7 @@
       const v = {
         uid: u.uid, type: u.type, team: u.team, x: u.x, y: u.y, facing: u.facing, hp: u.hp, maxHp: u.maxHp,
         wait: u.wait || 0, boss: !!u.boss, vip: !!u.vip,
-        nonCombat: !!u.nonCombat, scenery: !!(u.traits && u.traits.has && u.traits.has('scenery')),
+        nonCombat: !!u.nonCombat, scenery: !!(u.traits && u.traits.has && u.traits.has('scenery')), gold: !!u.bounty,
         alpha: 1, ox: 0, oy: 0, hop: 0, scale: 1, shake: 0, flash: 0,
         phase: (u.uid * 1.7) % 6.28, activated: !!u.activated, ghost: !!u.ghost, rid: u.rid,
         aura: auraOf(u),
@@ -992,7 +992,7 @@
         else if (it.loot) this.drawLootItem(g, it.loot);
         else {
           this.drawUnit(g, it.v);
-          if (!it.v.ghost && (!it.v.scenery || it.v.hp < it.v.maxHp)) bars.push(it.v);
+          if (!it.v.ghost && (!it.v.scenery || it.v.gold || it.v.hp < it.v.maxHp)) bars.push(it.v);
         }
       }
       for (const v of bars) this.drawBar(g, v);

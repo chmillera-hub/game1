@@ -253,4 +253,26 @@ test('the merchant: six things, relics dearer than anything else, and a resupply
   }
 });
 
+test('the Act I boss camp holds four wrecked carts of gold; other battles and later bosses none', () => {
+  for (const seed of [3, 11, 29, 47]) {
+    const run = R.newRun({ seed, warband: 'ember' });
+    for (const boss of AG.Data.ACTS[1].bosses) {
+      run.boss = boss;
+      const enc = R.genEncounter(run, { id: 'b', row: 9, kind: 'boss' });
+      const wrecks = enc.units.filter((u) => u.type === 'wreckage');
+      assert.strictEqual(wrecks.length, 4, `seed ${seed} ${boss}`);
+      for (const w of wrecks) {
+        assert.strictEqual(w.bounty, 8);
+        assert.ok(w.y >= 1 && w.y <= 3, 'in the boss camp, short of your deployment rows');
+      }
+      assert.strictEqual(new Set(wrecks.map((w) => w.x + ',' + w.y)).size, 4);
+      assert.ok(R.objectiveInfo(run, enc).primary.includes('32 in 4 carts'));
+    }
+    assert.ok(!R.genEncounter(run, { id: 'n', row: 2, kind: 'battle' }).units.some((u) => u.type === 'wreckage'));
+    run.act = 2;
+    run.boss = AG.Data.ACTS[2].bosses[0];
+    assert.ok(!R.genEncounter(run, { id: 'b', row: 9, kind: 'boss' }).units.some((u) => u.type === 'wreckage'));
+  }
+});
+
 console.log(`campaign: ${passed} tests passed`);
