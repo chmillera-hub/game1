@@ -21,8 +21,8 @@ async function test(name, fn) {
 }
 
 // What shows over a unit's head, in the order a turn brings it.
-const RANK = { fatigue: 0, poison: 1, burn: 2, regen: 3, noregen: 3, sitout: 4, pass: 4 };
-const SHOWS = new Set(['dmg', 'heal', 'sitout', 'pass', 'noregen', 'healblock', 'scorch', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
+const RANK = { fatigue: 0, poison: 1, burn: 2, fire: 2.5, regen: 3, noregen: 3, sitout: 4, pass: 4 };
+const SHOWS = new Set(['dmg', 'heal', 'sitout', 'pass', 'noregen', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
 const shows = (e) => !!e.uid && SHOWS.has(e.t) && !(e.t === 'sitout' && e.why === 'passive') && !(e.t === 'pass' && e.auto);
 const kind = (e) => (e.t === 'dmg' ? e.dmgType : e.t === 'heal' && e.why === 'regen' ? 'regen' : e.t);
 
@@ -89,12 +89,15 @@ const seen = { battles: 0, beats: 0, steps: 0, ordered: 0 };
         const per = new Map();
         for (const e of shown) per.set(e.uid, (per.get(e.uid) || []).concat(kind(e)));
         for (const [uid, ks] of per) {
-          const real = ks.filter((k) => k !== 'scorch' && k !== 'status');
+          const real = ks.filter((k) => k !== 'scorch' && k !== 'curse' && k !== 'status');
           assert.ok(real.length <= 1, `battle ${i}: unit ${uid} shows ${ks.join(' + ')} at once`);
         }
-        for (const e of evs) {
+        for (let j = 0; j < evs.length; j++) {
+          const e = evs[j];
           if (['move', 'action', 'done'].includes(e.t)) open.delete(e.uid);
-          const r = RANK[kind(e)];
+          // Fire underfoot: the burn that comes with a scorch, after any burn the unit carries.
+          const fire = e.t === 'dmg' && j > 0 && evs[j - 1].t === 'scorch' && evs[j - 1].uid === e.uid;
+          const r = fire ? RANK.fire : RANK[kind(e)];
           if (r == null || !e.uid || (e.t === 'pass' && e.auto)) continue;
           seen.steps++;
           const prev = open.get(e.uid);
