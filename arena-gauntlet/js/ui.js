@@ -2081,12 +2081,12 @@
       const tips = R.scoutTips(enc);
       body = `<div class="intel">
         <div class="intel-list">${s.units
-          .filter((u) => u.team === 'E' && !u.traits.has('scenery'))
+          .filter((u) => u.team === 'E' && focusable(u))
           .map(
             (u) => `<button class="rcard ${wr.inspect === u.uid ? 'sel' : ''}" data-uid="${u.uid}">
               <canvas data-p="${u.type}:E"></canvas>
               <span class="nm">${esc(UNITS[u.type].name)} ${u.level > 1 ? levelBadge(u.level) : ''}</span>
-              <span class="ty">${esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
+              <span class="ty">${u.bounty ? `${ic('gold')} ${u.bounty} gold inside` : esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
           )
           .join('')}</div>
         ${reinforcementsHTML(s)}
@@ -2104,11 +2104,15 @@
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
       const isFocus = focusT && focusT.unit === u;
-      const canFocus = !u.traits.has('scenery');
-      selBlock = `<div class="hint">Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.</div>
-        ${actsHTML(u)}
+      const canFocus = focusable(u);
+      selBlock = `<div class="hint">${
+        u.bounty
+          ? `${ic('gold')} ${esc(UNITS[u.type].name)}: ${u.hp} HP, ${pct(u.armor)} armor. It cannot fight back. Break it and your army picks up <b>${u.bounty} gold</b>, paid with the battle's gold when you win.`
+          : `Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
+      }</div>
+        ${u.bounty ? '' : actsHTML(u)}
         <div class="actions">${canFocus ? (isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`) : ''}<button class="btn" id="wrEInfo">${ic('help')} Details</button></div>
-        ${canFocus && !isFocus ? '<p class="small muted">Priority: from the first turn, your whole army goes all out for it, whatever the cost.</p>' : ''}`;
+        ${canFocus && !isFocus ? `<p class="small muted">${u.bounty ? 'Priority: from the first turn, your whole army goes for the barricade and breaks it for the gold.' : 'Priority: from the first turn, your whole army goes all out for it, whatever the cost.'}</p>` : ''}`;
     } else if (tileF) {
       const loot = E.lootAt(s, wr.tile.x, wr.tile.y);
       const shrine = !loot && isShrine(s, wr.tile.x, wr.tile.y);
@@ -3050,7 +3054,12 @@
 
   // An enemy to go all out for, or one of your own units to rally on.
   function canFocusUnit(B, u) {
-    return !B.s.over && u.alive && !u.traits.has('scenery') && !(u.team === 'P' && u.nonCombat);
+    return !B.s.over && u.alive && focusable(u) && !(u.team === 'P' && u.nonCombat);
+  }
+
+  // Walls, rocks and kegs are never a priority; a barricade with gold inside is.
+  function focusable(u) {
+    return !u.traits.has('scenery') || u.bounty > 0;
   }
 
   const NO_HALL_FOCUS = 'Priority is off in Hall of Fame matches. Whichever army you steered would almost always win, and the ranking would mean nothing. Both armies fight on their own.';
@@ -3179,9 +3188,11 @@
         ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
         : '';
       panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
-        ${actsHTML(u)}
+        ${u.bounty ? '' : actsHTML(u)}
         <div class="hint">${
-          u.team === 'E'
+          u.bounty
+            ? `${ic('gold')} ${esc(UNITS[u.type].desc)} It holds <b>${u.bounty} gold</b> for your army, paid with the battle's gold when you win.${canFocusUnit(B, u) ? ' Make it the Priority and your whole army goes to break it.' : ''}`
+            : u.team === 'E'
             ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
             : inProgress && s.act.uid !== u.uid
               ? `${esc(s.byId[s.act.uid].name)} is mid-turn. Finish it first: one unit a turn.`

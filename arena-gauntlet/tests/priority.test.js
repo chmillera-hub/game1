@@ -255,4 +255,20 @@ test('one of your units as priority: the army gathers around it', () => {
   assert.strictEqual(AI.focusOf(s, 'P', f), null);
 });
 
+test('a barricade made the priority: the army breaks it for its gold, even with orcs about', () => {
+  const s = battle([...army(), { type: 'barricade', team: 'E', x: 0, y: 4, bounty: 12 }]);
+  const b = s.units[4];
+  const ev = [];
+  for (let turns = 0, g = 0; turns < 10 && !s.over && b.alive && g < 500; g++) {
+    const team = s.side;
+    AI.playTurn(s, team, { stance: 'balanced', temp: 0, focus: team === 'P' ? { uid: b.uid } : null });
+    if (team === 'P') turns++;
+    ev.push(...s.events.filter((e) => e.t === 'gold' && e.coins));
+    s.events.length = 0;
+  }
+  assert.ok(!b.alive, 'the barricade is broken');
+  assert.strictEqual(s.stats.bounty, 12);
+  assert.strictEqual(ev.length, 1);
+});
+
 console.log(`priority: ${passed} tests passed`);
