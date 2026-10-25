@@ -2219,7 +2219,7 @@
             break;
           }
           // Shoved into water or lava: the splash, a moment under, then it climbs out.
-          case 'splash':
+          case 'dunk':
             if (v) {
               const cols = e.lava ? ['#ff9a3c', '#ffd36a', '#c4361b'] : ['#d8f0ff', '#7cc0ff', '#ffffff'];
               this.sfx(e.lava ? 'sizzle' : 'splash');

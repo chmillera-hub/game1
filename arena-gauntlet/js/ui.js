@@ -3051,11 +3051,11 @@
       } else if (e.t === 'heal' && e.why === 'regen' && v) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });
-      } else if ((e.t === 'splash' || e.t === 'crash' || e.t === 'slam') && line && v) {
+      } else if ((e.t === 'dunk' || e.t === 'crash' || e.t === 'slam') && line && v) {
         // Where a shove or pull landed, on the line of the unit that did it.
         const o = e.other && s.byId[e.other];
         line.notes.push(
-          e.t === 'splash' ? `${logName(v)} ${e.lava ? 'into the lava' : 'into the water'}` : e.t === 'crash' ? `${logName(v)} crashes into ${o ? logName(o) : 'a unit'}` : `${logName(v)} slams into ${e.why === 'edge' ? 'the edge' : 'the rock'}`
+          e.t === 'dunk' ? `${logName(v)} ${e.lava ? 'into the lava' : 'into the water'}` : e.t === 'crash' ? `${logName(v)} crashes into ${o ? logName(o) : 'a unit'}` : `${logName(v)} slams into ${e.why === 'edge' ? 'the edge' : 'the rock'}`
         );
       } else if (e.t === 'loot' && v) {
         finish();
