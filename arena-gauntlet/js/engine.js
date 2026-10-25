@@ -2853,7 +2853,8 @@
   // row at 15 lose 15, 16, 17, 18 and 19, one after another. No two hits in a battle are
   // the same number. It sets in for both sides on turn s.overtime, for the enemy the moment
   // the mission is done (see rout), and for your army the moment the enemy army falls (see
-  // the cleanup).
+  // the cleanup). Once it has set in, it only ever goes on the same way: nothing doubles it,
+  // and turn s.overtime adds nothing (see startFatigue).
   function fatigue(s, u) {
     if (!u.alive || !counts(u)) return;
     const n = fatigueHit(s, u.team);
@@ -2867,27 +2868,25 @@
   }
 
   // What `team`'s next unit to take its turn loses to fatigue (0 before its side tires): the
-  // count's next number. A rout after fatigue set in for everyone doubles the enemy's.
+  // count's next number, never more.
   function fatigueHit(s, team) {
-    if (!tiring(s, team)) return 0;
-    const n = (s.fatigueN || 0) + 1;
-    return team === 'E' && s.routed && s.routed.late ? 2 * n : n;
+    return tiring(s, team) ? (s.fatigueN || 0) + 1 : 0;
   }
 
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
   // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
   // not stop there: the enemy is routed. Their reinforcements stop coming, and their
   // fatigue sets in at once: each enemy unit loses HP as its turn comes, 1, then 2, 3 and
-  // so on (see fatigue). You win when the last of them falls. Your own side tires only
-  // when fatigue sets in for everyone (s.overtime).
+  // so on (see fatigue). You win when the last of them falls. Done before turn s.overtime,
+  // your own side never tires (that turn adds nothing once fatigue is on); done after it,
+  // both sides already tire, and the count simply goes on, nothing doubled.
   function rout(s, why) {
     if (s.routed || s.over) return;
-    // Done after fatigue set in for everyone: from now on the enemy's fatigue doubles.
-    s.routed = Object.assign({ turn: s.turn, late: !!s.inOvertime }, why);
+    s.routed = Object.assign({ turn: s.turn, already: !!s.inOvertime }, why);
     if (s.surviveTurns) s.surviveTurns = 0;
     if (s.hold) s.hold.done = true;
     for (const w of s.waves) if (w.team === 'E' && w.state === 'pending') w.state = 'cancelled';
-    emit(s, Object.assign({ t: 'routed', turn: s.turn, late: s.routed.late }, why));
+    emit(s, Object.assign({ t: 'routed', turn: s.turn, already: s.routed.already }, why));
   }
 
   // The enemy's next fatigue hit once routed, and your army's mid-cleanup (0 otherwise).
@@ -2939,8 +2938,10 @@
   // Fatigue: from turn `s.overtime` on, each fighter loses HP as its turn comes, the
   // battle's next fatigue number, one unit at a time (see fatigue), and no more
   // reinforcements come. Big units and regen last longest; the last side standing wins.
+  // Fatigue already on (the enemy fatigued by a mission done, or your army's cleanup):
+  // this turn adds nothing, no side starts tiring and nothing doubles; the count goes on.
   function startFatigue(s) {
-    if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
+    if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over || s.routed || s.cleanup) return;
     s.inOvertime = true;
     for (const w of s.waves) if (w.state === 'pending') w.state = 'cancelled';
     emit(s, { t: 'overtime', turn: s.turn });
