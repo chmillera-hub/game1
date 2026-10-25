@@ -111,9 +111,11 @@
     }
   }
 
-  function sheetHead(title, sub) {
+  // `back`: the sheet has its own Back (or Done) button, so no X: an X there would close
+  // everything at once. A tap outside the sheet still closes it all.
+  function sheetHead(title, sub, back) {
     return `<div class="sheet-head"><div class="grow"><h3>${title}</h3>${sub ? `<div class="small muted">${sub}</div>` : ''}</div>
-      <button class="btn icon-only ghost" data-close aria-label="Close">${ic('close')}</button></div>`;
+      ${back ? '' : `<button class="btn icon-only ghost" data-close aria-label="Close">${ic('close')}</button>`}</div>`;
   }
 
   function confirmSheet(title, text, okLabel, cancelLabel, danger) {
@@ -128,7 +130,7 @@
       };
       UI.onSheetClose = null;
       openSheet(
-        `${sheetHead(esc(title))}<p class="muted">${text}</p>
+        `${sheetHead(esc(title), null, true)}<p class="muted">${text}</p>
         <div class="actions"><button class="btn" id="cfNo">${esc(cancelLabel || 'Cancel')}</button>
         <button class="btn ${danger ? 'danger' : 'primary'}" id="cfYes">${esc(okLabel || 'Confirm')}</button></div>`,
         (sh) => {
@@ -1282,7 +1284,7 @@
     const holder = R.itemHolder(run, uid);
     const after = UI.onSheetClose;
     openSheet(
-      `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`)}
+      `${sheetHead(esc(d.name), `${itemKindLabel(it)} · ${esc(itemCost(it))}`, true)}
       <p>${esc(d.desc)}</p>
       ${it.kind === 'talent' ? `<p class="small muted">${esc(talentWhere(d))}</p>` : ''}
       ${d.req ? `<p class="small muted">Only for units that ${{ damage: 'deal damage', phys: 'deal physical damage', magic: 'use magic', ranged: 'attack at range', mobile: 'can move', facing: 'have a facing', slow: 'have a cooldown of 2 or more', recovers: 'have a cooldown' }[d.req] || 'qualify'}.</p>` : ''}
@@ -1401,7 +1403,7 @@
     const scrolls = run.items.filter((i) => i.kind === 'scroll' && D.eligible(r.type, ENCHANTS[i.id]));
     // What you change most comes first: the cost, the level, the slots, the picks. The
     // unit's numbers and attacks follow.
-    const html = `${sheetHead(esc(r.name), `${esc(T.name)} · fielding costs <b class="cost-big">${cost}</b> Supply`)}
+    const html = `${sheetHead(esc(r.name), `${esc(T.name)} · fielding costs <b class="cost-big">${cost}</b> Supply`, true)}
       ${budget}
       ${editable ? '' : `<p class="hint">${ic('help')} Not on the field: units on the bench carry nothing. Place it on the board in the War Room to give it levels, talents, skills and gear.</p>`}
       <div class="costline">${R.costBreakdown(run, r)
@@ -1435,6 +1437,7 @@
         ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
       <p class="small muted">Battles: ${r.battles} · Enemies slain: ${r.kills}</p>
       <div class="actions">
+        ${editable ? loadoutFieldButtons(rid) : ''}
         <button class="btn primary" id="loDone">${ic('check')} Done</button>
       </div>`;
     const changed = () => {
@@ -1476,7 +1479,7 @@
           const ret = here();
           if (pick) return bindFlow(pick.uid, rid, ret);
           openSheet(
-            `${sheetHead('Choose a scroll')}<div class="army-list">${scrolls
+            `${sheetHead('Choose a scroll', null, true)}<div class="army-list">${scrolls
               .map((s) => `<button class="army-row" data-sc="${s.uid}"><div class="itemico scroll">${ic('gem')}</div><div class="nm"><b>${esc(ENCHANTS[s.id].name)}</b><div class="small muted">${esc(ENCHANTS[s.id].desc)}</div></div><span class="chip warn">+${ENCHANTS[s.id].surcharge}</span></button>`)
               .join('')}</div><div class="actions"><button class="btn" id="scBack">Back</button></div>`,
             (s2) => {
@@ -1486,6 +1489,18 @@
           );
         };
       $('#loDone', sh).onclick = () => (back ? back() : closeSheet());
+      if ($('#loFocus', sh))
+        $('#loFocus', sh).onclick = () => {
+          const ft = wrFocusTarget(UI.wr.s);
+          const mine = ft && ft.ally && ft.ally.rid === rid;
+          run.pending.focus = mine ? null : { kind: 'ally', rid, label: r.name };
+          toast(mine ? 'Priority cleared. Your army fights on normal orders.' : `Priority: ${r.name}. From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3200);
+          changed();
+        };
+      if ($('#loRemove', sh))
+        $('#loRemove', sh).onclick = () => {
+          if (wrBench(rid) && back) back();
+        };
     });
     UI.onSheetClose = after;
   }
@@ -1528,7 +1543,7 @@
       })
       .join('');
     openSheet(
-      `${sheetHead(`Equip ${kind}`, `${esc(r.name)} the ${esc(UNITS[r.type].name)}. Taking an item from another unit moves it here.`)}
+      `${sheetHead(`Equip ${kind}`, `${esc(r.name)} the ${esc(UNITS[r.type].name)}. Taking an item from another unit moves it here.`, true)}
       ${list.length ? `<div class="army-list">${rows}</div>` : `<p class="muted">${kind === 'talent' ? `You own no ${esc(UNITS[r.type].name)} talents yet. Find them in battle spoils and shops.` : `You own no ${kind === 'skill' ? 'skills' : 'gear'} yet. Find them in battle spoils, shops and events.`}</p>`}
       <div class="actions">${cur ? `<button class="btn" id="ipClear">Empty this slot</button>` : ''}<button class="btn" id="ipBack">Back</button></div>`,
       (sh) => {
@@ -1571,7 +1586,7 @@
       .map((t) => `<li>${esc(t)}</li>`)
       .join('');
     openSheet(
-      `${sheetHead(esc(u.name), `${sideLabel(u.team)} ${T.name} · Level ${u.level}`)}
+      `${sheetHead(esc(u.name), `${sideLabel(u.team)} ${T.name} · Level ${u.level}`, true)}
       ${unitInfoHTML(u, { status: !!live })}
       ${statsHTML(u)}
       ${actsHTML(u)}
@@ -1968,7 +1983,7 @@
     const r = R.unitById(run, rid);
     const picks = UNITS[r.type].abilities[tier].filter((id) => !TALENTS[id]);
     openSheet(
-      `${sheetHead(tier === 1 ? 'Ability' : 'Level 2 ability', `${esc(r.name)} the ${esc(UNITS[r.type].name)}: pick one.`)}
+      `${sheetHead(tier === 1 ? 'Ability' : 'Level 2 ability', `${esc(r.name)} the ${esc(UNITS[r.type].name)}: pick one.`, true)}
       <div class="picks">${picks.map((id) => abilityCard(r, tier, id, false)).join('')}</div>
       <div class="actions"><button class="btn" id="apBack">Back</button></div>`,
       (sh) => {
@@ -2100,8 +2115,8 @@
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card (or a unit on the board) for its full loadout: level, abilities, talents, skills, gear and stats. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
-    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its full loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places). Tap an enemy or a chest to make it your army's priority.</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board to pick it up and move it. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
+    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it on the board, then tap an open blue tile. Tap an enemy or a chest to make it your army's priority.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2278,6 +2293,13 @@
     wrAdd(rid);
   }
 
+  // A unit's loadout in the War Room: make it the rally point, or take it off the field.
+  function loadoutFieldButtons(rid) {
+    const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
+    const mine = ft && ft.ally && ft.ally.rid === rid;
+    return `<button class="btn" id="loFocus">${ic(mine ? 'close' : 'target')} ${mine ? 'Clear priority' : 'Priority'}</button>${rid === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="loRemove">${ic('close')} Take off the field</button>`}`;
+  }
+
   // In the War Room, a unit of yours on the field can be the priority: the army rallies on it.
   function allyFocusButton(r) {
     const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
@@ -2377,41 +2399,24 @@
     }
     const rid = wrRidAt(t.x, t.y);
     if (rid) {
-      if (wr.sel && wr.sel !== rid && !wr.dep.has(wr.sel)) {
-        // A unit from the bench takes this one's place, which goes to the bench, bare (but a
-        // quest's unit stays where it is).
-        if (rid === wr.star) {
-          toast(`${R.unitById(UI.run, rid).name} insists on fighting this battle (the quest).`);
-          return;
-        }
-        const placed = wr.sel;
-        wr.dep.set(placed, Object.assign({}, wr.dep.get(rid)));
-        wr.dep.delete(rid);
-        R.stripLoad(UI.run, R.unitById(UI.run, rid));
-        R.save(UI.run);
-        wr.sel = null;
-        sfx('step');
-        wr.inspect = null;
-        renderWarRoom();
-        return wrGuide(placed);
-      } else if (wr.sel && wr.sel !== rid && wr.dep.has(wr.sel)) {
-        const a = wr.dep.get(wr.sel);
-        const bpos = wr.dep.get(rid);
-        const ax = a.x;
-        const ay = a.y;
-        a.x = bpos.x;
-        a.y = bpos.y;
-        bpos.x = ax;
-        bpos.y = ay;
-        wr.sel = null;
-        sfx('step');
-      } else {
-        wr.sel = wr.sel === rid ? null : rid;
-        sfx('click');
-      }
       wr.inspect = null;
-      renderWarRoom();
-      return;
+      // Holding a unit: an occupied tile is no place to drop it. Units never swap.
+      if (wr.sel && wr.sel !== rid) {
+        toast('That tile is taken. Drop it on an open blue tile.');
+        wr.sel = null;
+        sfx('click');
+        renderWarRoom();
+        return;
+      }
+      // The held unit itself: put it back down where it was.
+      if (wr.sel === rid) {
+        wr.sel = null;
+        sfx('click');
+        renderWarRoom();
+        return;
+      }
+      // A quick tap: its full loadout. (Long-press picks it up to move it.)
+      return wrLoadout(rid);
     }
     if (isDeployTile(t.x, t.y)) {
       if (wr.sel) return wrPlace(t.x, t.y);
@@ -2513,7 +2518,7 @@
       const room = left();
       const kindIcon = q.kind ? `<span class="itemico ${q.kind}">${ic(ITEM_ICON[q.kind])}</span>` : '';
       openSheet(
-        `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, `Kit it out · Supply left: <b>${room}</b>`)}
+        `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, `Kit it out · Supply left: <b>${room}</b>`, true)}
         <div class="guide-q">${kindIcon}<b>${esc(q.title)}</b><span class="small muted">Pick one, or No.</span></div>
         <div class="picks">${q.opts
           .map((o, i) => {
@@ -2585,8 +2590,11 @@
     if (!t) return;
     const u = E.at(wr.s, t.x, t.y);
     if (!u) return;
-    if (u.team === 'P' && u.rid) wrLoadout(u.rid);
-    else battleUnitSheet(u);
+    // Your unit: pick it up, then tap an open blue tile to put it down there.
+    if (u.team === 'P' && u.rid) {
+      wrPick(u.rid);
+      toast(`${R.unitById(UI.run, u.rid).name} picked up: tap an open blue tile to put it down there.`, 2600);
+    } else battleUnitSheet(u);
   }
 
   // Hold a unit (its card, or itself on the board): its full loadout, stats and all.
@@ -3945,7 +3953,7 @@
     const after = UI.onSheetClose;
     UI.onSheetClose = null;
     openSheet(
-      `${sheetHead(esc(T.name), `Recruit · ${T.rarity} · ${T.cost} Supply${E2 ? ` (+${E2.surcharge} enchanted)` : ''} · <b>${u.maxHp} HP</b>`)}
+      `${sheetHead(esc(T.name), `Recruit · ${T.rarity} · ${T.cost} Supply${E2 ? ` (+${E2.surcharge} enchanted)` : ''} · <b>${u.maxHp} HP</b>`, true)}
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply. The numbers below include it.</span></div>` : ''}
       <p class="muted">${esc(T.desc)}</p>
       ${statsHTML(u)}
@@ -4313,9 +4321,8 @@
         </ul>
         <h4>Controls</h4>
         <ul>
-          <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
-          <li>In the war room, long-press a unit (or hold its card) for its full loadout and stats. In battle, long-press any unit for everything about it.</li>
+          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up, then tap an open blue tile to move it. Units never swap places. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>

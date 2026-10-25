@@ -52,16 +52,16 @@ on a phone turned sideways, but portrait works too.
   The Hall is on the title screen (with how many armies wait to climb) and the end
   screen, and kept in the browser apart from your campaign save.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
-  take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
-  for its full loadout: cost, level, every slot and pick spelled out, stats and attacks
-  (in battle, holding a unit shows everything about it, its loadout included). Equipped
-  items and chosen abilities are gold with a ✓ Equipped or ✓ Chosen tag: they already
-  work, and a tap only swaps them. Tapping a unit on the board picks it up and shows a
-  short loadout right under your army: what each part costs (Knight 3 + Level 2 2 +
-  Guardian 1 ...), its level, and a button for each ability, talent, skill and gear
-  slot. To move a unit, tap it on the board, then a blue tile, or another unit to
-  swap places; a unit from the bench whose loadout is open goes onto the blue tile you
-  tap, or takes the place of the unit you tap. A move lets go of the unit; a tap just
+  take it out, so you can try armies out quickly. Tap a unit on the board (or hold its
+  card) for its full loadout: cost, level, every slot and pick spelled out, stats and
+  attacks, plus Priority (rally on it) and Take off the field. In battle, holding a
+  unit shows everything about it, its loadout included. Equipped items and chosen
+  abilities are gold with a ✓ Equipped or ✓ Chosen tag: they already work, and a tap
+  only swaps them. Sheets opened from another sheet (equip a talent, pick an ability)
+  have a Back button and no X, so you never close everything by accident; a tap
+  outside the sheet, on the board above it, closes it all. To move a unit, long-press
+  it on the board to pick it up, then tap an open blue tile; units never swap places
+  (tapping an occupied tile, or the held unit again, puts it back). A tap just
   off a blue tile still places it on the nearest one, and a tap on the empty space
   around the board lets it go. Your deployment zone is the three rows nearest you
   (rocks and water may block a few tiles); Auto keeps to the back two unless it needs
