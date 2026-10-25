@@ -730,9 +730,7 @@
   const TURN_LIMIT = 250;
   // Fatigue sets in for everyone on this turn: each unit loses HP as its turn comes, one
   // more for every turn its side takes (see the engine's fatigue), until one side is left.
-  // Turn 36, not 30: counting passes makes it bite faster, and your armies (bigger, with
-  // more cooldowns) take more turns than the enemy's.
-  const OVERTIME = 36;
+  const OVERTIME = 30;
   const HOLD_NEED = 4;
 
   // When buildings send their reinforcements: the first, then one every few turns.
