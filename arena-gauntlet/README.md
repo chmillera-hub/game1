@@ -317,7 +317,9 @@ on a phone turned sideways, but portrait works too.
   a time. Each hit is the battle's next number, 1, then 2, 3 and so on, one count for
   both sides, like fatigue in Hearthstone: as the turns alternate, the hits go back and
   forth (the enemy 15, you 16, the enemy 17), five units passing in a row at 15 lose
-  15, 16, 17, 18 and 19, one after another, and no number comes twice. Each hit plays on
+  15, 16, 17, 18 and 19, one after another, and no number comes twice. Nothing ever
+  doubles it, and if fatigue is already on by turn 30 (the enemy fatigued by a mission
+  done, or your army's cleanup), turn 30 adds nothing: the count just goes on. Each hit plays on
   its own moment on the board (a unit that falls to it included) and gets its own line
   in the battle log. tests/fatigue.test.js plays hundreds of battles of every kind and
   checks every hit for exactly this. Fatigue comes first in a unit's turn, before its
@@ -397,13 +399,13 @@ on a phone turned sideways, but portrait works too.
   Getting it done does not end the battle on the spot: the enemy is **fatigued**. Their
   reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
   enemy unit loses HP when its turn comes, acting or passing, 1 for the first, then 2, 3
-  and so on, one more every enemy turn, past armor and shields, just like fatigue. Done
-  after fatigue has set in for everyone (turn 30), and the enemy's fatigue doubles from
-  then on instead (6 becomes 12, then 7 becomes 14), while your side keeps the normal
-  amount. The battle
-  ends when the last of them falls, so a mission done early tips it well in your favor, without the enemy
-  simply giving up. Your own side tires only when
-  fatigue sets in for everyone on turn 30. A short banner ("Enemy fatigued!") and the
+  and so on, one more every enemy turn, past armor and shields, just like fatigue. The
+  battle ends when the last of them falls, so a mission done early tips it well in your
+  favor, without the enemy simply giving up. Your own side does not tire: once fatigue
+  is on, turn 30 adds nothing (no side starts tiring then, nothing doubles, the count
+  just goes on). Done after turn 30, when both sides already tire, the mission changes
+  nothing about fatigue: it goes on as it was, one number at a time, never doubled.
+  A short banner ("Enemy fatigued!", or "Mission done!" after turn 30) and the
   battle log say when it happens, the top bar shows the enemy's fatigue, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,

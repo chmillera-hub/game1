@@ -617,10 +617,10 @@ test('the rout: the enemy tires at once, 1 HP for the unit taking the first enem
     E.pass(s);
   }
   assert.deepStrictEqual(lost, [1, 2, 3]);
-  assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire before fatigue sets in for everyone');
+  assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire');
 });
 
-test('the rout after fatigue set in: the enemy takes double fatigue from then on, your side the normal amount', () => {
+test('the rout after fatigue set in: nothing doubles, the count just goes on for both sides', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 4, y: 8 },
@@ -632,23 +632,82 @@ test('the rout after fatigue set in: the enemy takes double fatigue from then on
   const [pg, cmd, eg] = s.units;
   pg.hp = pg.maxHp = eg.hp = eg.maxHp = 999;
   while (!(s.inOvertime && s.turn >= 4 && s.side === 'P')) E.pass(s);
-  const plain = E.fatigueHit(s, 'E');
-  assert.strictEqual(plain, E.fatigueHit(s, 'P'), 'one count for both sides');
+  const next = E.fatigueHit(s, 'E');
+  assert.strictEqual(next, E.fatigueHit(s, 'P'), 'one count for both sides');
   cmd.hp = 0;
   cmd.alive = false;
   s.occ[cmd.y * s.w + cmd.x] = 0;
   E.checkOutcome(s);
-  assert.ok(s.routed && s.routed.late);
-  assert.strictEqual(E.fatigueHit(s, 'E'), 2 * plain, 'doubled from now on');
+  assert.ok(s.routed && s.routed.already);
+  assert.strictEqual(E.fatigueHit(s, 'E'), next, 'the same next number, not doubled');
   const e0 = eg.hp;
-  E.pass(s); // the enemy's turn: its golem takes double
-  assert.strictEqual(e0 - eg.hp, 2 * plain);
-  assert.strictEqual(E.fatigueHit(s, 'E'), 2 * (plain + 1));
+  E.pass(s); // the enemy's turn: its golem takes the next number
+  assert.strictEqual(e0 - eg.hp, next);
   const p0 = pg.hp;
-  const mine = E.fatigueHit(s, 'P');
-  assert.strictEqual(mine, plain + 1, 'yours: the next number, not doubled');
-  E.pass(s);
-  assert.strictEqual(p0 - pg.hp, mine);
+  assert.strictEqual(E.fatigueHit(s, 'P'), next + 1);
+  E.pass(s); // yours: the one after
+  assert.strictEqual(p0 - pg.hp, next + 1);
+  assert.strictEqual(E.fatigueHit(s, 'E'), next + 2);
+});
+
+test('fatigue already on by turn 30 (a mission done early): that turn adds nothing, your side never tires, the enemy\'s count goes on', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'archer', team: 'E', x: 4, y: 0, vip: true },
+      { type: 'golem', team: 'E', x: 0, y: 0 },
+    ],
+    { objective: 'vip', overtime: 4 }
+  );
+  const [pg, cmd, eg] = s.units;
+  pg.hp = pg.maxHp = eg.hp = eg.maxHp = 999;
+  toPlayer(s);
+  cmd.hp = 0;
+  cmd.alive = false;
+  s.occ[cmd.y * s.w + cmd.x] = 0;
+  E.checkOutcome(s);
+  assert.ok(s.routed && !s.routed.already && s.turn < 4);
+  const seen = [];
+  const ev = s.events.length;
+  while (s.turn < 9 && !s.over) {
+    const e0 = eg.hp;
+    E.pass(s);
+    if (eg.hp < e0) seen.push(e0 - eg.hp);
+  }
+  assert.ok(s.turn >= 9 && !s.over, 'well past turn 4');
+  assert.ok(!s.inOvertime, 'turn 4 came and went without starting anything');
+  assert.ok(!s.events.slice(ev).some((e) => e.t === 'overtime'), 'no second fatigue trigger');
+  assert.strictEqual(pg.hp, pg.maxHp, 'your side never tires');
+  assert.ok(seen.length >= 5);
+  assert.deepStrictEqual(seen, seen.map((_, i) => i + 1), 'the enemy: 1, 2, 3 and so on, straight through turn 4, never doubled');
+});
+
+test('fatigue already on by turn 30 (your cleanup): that turn adds nothing either', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'scout', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 4, loot: [{ id: 'c', kind: 'chest', x: 0, y: 0 }] }
+  );
+  const [pg, sc] = s.units;
+  pg.hp = pg.maxHp = 999;
+  sc.hp = 0;
+  sc.alive = false;
+  s.occ[sc.y * s.w + sc.x] = 0;
+  E.checkOutcome(s);
+  assert.ok(s.cleanup && !s.over && s.turn < 4, 'the army fell with a chest left: the cleanup is on');
+  const ev = s.events.length;
+  const seen = [];
+  while (s.turn < 8 && !s.over) {
+    const p0 = pg.hp;
+    E.pass(s);
+    if (pg.hp < p0) seen.push(p0 - pg.hp);
+  }
+  assert.ok(s.turn >= 8 && !s.over, 'well past turn 4');
+  assert.ok(!s.inOvertime && !s.events.slice(ev).some((e) => e.t === 'overtime'), 'no second fatigue trigger');
+  assert.ok(seen.length >= 4);
+  assert.deepStrictEqual(seen, seen.map((_, i) => i + 1), 'yours: 1, 2, 3 and so on, straight through turn 4, never doubled');
 });
 
 console.log(`queue: ${passed} tests passed`);

@@ -27,7 +27,11 @@ function checkStream(s, events, label) {
   let last = 0;
   let hits = 0;
   const sides = new Set();
+  let on = null; // what turned fatigue on early: a mission done, or the cleanup
   for (const e of events) {
+    if ((e.t === 'routed' && !e.already) || e.t === 'cleanup') on = on || e.t;
+    // Once fatigue is on, the turn it would set in for everyone adds nothing.
+    assert.ok(!(e.t === 'overtime' && on), `${label}: fatigue triggered again on turn ${e.turn} after the ${on}`);
     if (e.t === 'turn') {
       side = e.side;
       open = null;
@@ -40,8 +44,8 @@ function checkStream(s, events, label) {
     // One count for the battle: 1, 2, 3 ... no number twice, none skipped.
     assert.strictEqual(e.fatigueNo, last + 1, `${label}: hit #${last + 1} came as #${e.fatigueNo}`);
     last = e.fatigueNo;
-    const doubled = u.team === 'E' && s.routed && s.routed.late && e.rout;
-    assert.ok(e.amount === e.fatigueNo || (doubled && e.amount === 2 * e.fatigueNo), `${label}: hit #${e.fatigueNo} dealt ${e.amount}`);
+    // Never more than the number: nothing doubles it.
+    assert.strictEqual(e.amount, e.fatigueNo, `${label}: hit #${e.fatigueNo} dealt ${e.amount}`);
     // Only the side whose turn it is, and only once the last unit to tire has had its turn.
     assert.strictEqual(u.team, side, `${label}: ${u.team} unit tired on ${side}'s turn`);
     assert.ok(!open, `${label}: unit ${e.uid} tired while unit ${open} was still taking its turn`);
