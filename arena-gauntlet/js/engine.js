@@ -520,8 +520,9 @@
 
   // ---------------------------------------------------------- modifiers
 
+  // A Barrier Ward's aura reaches 4 tiles (Wide Field, 5).
   function auraRadius(v) {
-    return 2 + (v.props.auraR || 0);
+    return 4 + ((v.props && v.props.auraR) || 0);
   }
 
   function inBarrier(s, u) {
@@ -2317,30 +2318,20 @@
         if (u.alive) objAlive = true;
         if (u.escaped) objEscaped = true;
       }
-      if (u.alive && counts(u)) {
-        alive[u.team] = true;
-        if (canDealDamage(u)) armed[u.team] = true;
-      }
+      if (u.alive && counts(u)) alive[u.team] = true;
     }
     // Reinforcements still on the way keep a side in the fight.
-    for (const team of ['P', 'E']) {
-      if (!pendingWaves(s, team)) continue;
-      alive[team] = true;
-      armed[team] = true;
-    }
+    for (const team of ['P', 'E']) if (pendingWaves(s, team)) alive[team] = true;
     const vipDown = (s.objective === 'boss' || s.objective === 'vip') && hasVip && !vipAlive;
     const objDown = s.objective === 'destroy' && hasObj && !objAlive && !objEscaped;
+    // Nobody yields: a side that has only units that cannot hurt anyone (a Furgon, a
+    // Barrier Ward) fights on, and the enemy must still bring every one down. Fatigue
+    // settles it if neither side can.
     let winner = null;
-    let surrender = false;
     if (!alive.P && !alive.E) winner = s.side;
     else if (!alive.P) winner = 'E';
     else if (!alive.E || vipDown || objDown) winner = 'P';
-    else if (!armed.P || !armed.E) {
-      // A side with nobody left who can hurt the enemy yields.
-      winner = armed.P ? 'P' : 'E';
-      surrender = true;
-    }
-    if (winner) finish(s, winner, { surrender, vipSlain: vipDown, destroyed: objDown });
+    if (winner) finish(s, winner, { vipSlain: vipDown, destroyed: objDown });
   }
 
   function forfeit(s) {
@@ -2358,7 +2349,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
     poisonDamage, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

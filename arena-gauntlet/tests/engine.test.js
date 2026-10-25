@@ -1,6 +1,6 @@
 // Rule checks for the battle engine. Run: node tests/engine.test.js
 const assert = require('assert');
-const AG = require('./load')(['rng.js', 'data.js', 'engine.js']);
+const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js']);
 const E = AG.Engine;
 
 let passed = 0;
@@ -330,13 +330,12 @@ test('Miasma poisons for 2 turns, blocks healing; buildings, constructs and the 
     { type: 'skeleton', team: 'E', x: 3, y: 5 },
     { type: 'cleric', team: 'E', x: 3, y: 1 },
     { type: 'lightning', team: 'E', x: 2, y: 6 },
-    { type: 'barrier', team: 'E', x: 6, y: 6 },
     { type: 'cage', team: 'E', x: 4, y: 8 },
   ]);
-  const [wi, kn, go, sk, cl, lw, bw, cage] = s.units;
+  const [wi, kn, go, sk, cl, lw, cage] = s.units;
   act(s, wi, { kind: 'self' });
   assert.ok(kn.poison && kn.poison.turns === 2);
-  for (const u of [go, sk, lw, bw, cage]) assert.ok(!u.poison, u.type + ' is immune');
+  for (const u of [go, sk, lw, cage]) assert.ok(!u.poison, u.type + ' is immune');
   E.endTurn(s);
   assert.strictEqual(s.side, 'E');
   assert.strictEqual(kn.hp, kn.maxHp - 8, 'ticks at the start of its turn');
@@ -927,17 +926,37 @@ test('victory when last enemy falls; boss objective', () => {
   assert.ok(b.over && b.winner === 'P', 'boss slain wins');
 });
 
-test('a side with no attackers left surrenders', () => {
+test('nobody surrenders: a side with no attackers left fights on until it falls', () => {
   const s = board([
     { type: 'cleric', team: 'P', x: 4, y: 7 },
     { type: 'archer', team: 'P', x: 4, y: 5, facing: 2 },
     { type: 'knight', team: 'E', x: 4, y: 4, facing: 2 },
   ]);
-  const [, ar, kn] = s.units;
+  const [cl, ar, kn] = s.units;
   ar.hp = 1;
   ar.block = 0;
   act(s, kn, { kind: 'unit', uid: ar.uid });
-  assert.ok(s.over && s.winner === 'E' && s.events.some((e) => e.t === 'end' && e.surrender));
+  assert.ok(!ar.alive && cl.alive);
+  assert.ok(!s.over, 'the Cleric is still standing, so the battle goes on');
+});
+
+test('with nobody able to hurt anyone, fatigue decides it', () => {
+  const s = E.createBattle({
+    w: 9, h: 9, terrain: new Array(81).fill(0), seed: 3, queue: true, overtime: 4, turnLimit: 250,
+    units: [
+      { type: 'furgon', team: 'P', x: 1, y: 8 },
+      { type: 'barrier', team: 'P', x: 0, y: 8 },
+      { type: 'cleric', team: 'E', x: 7, y: 0 },
+    ],
+    relics: { P: [], E: [] },
+  });
+  for (let i = 0; i < 4000 && !s.over; i++) {
+    AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+    s.events.length = 0;
+  }
+  assert.ok(s.over && !s.timeout, 'fatigue wears one side down before the turn limit');
+  assert.ok(s.turn < 60, 'and soon: turn ' + s.turn);
+  assert.ok(s.units.filter((u) => u.team !== s.winner).every((u) => !u.alive), 'the loser has nobody left');
 });
 
 test('turn limit goes to the stronger side', () => {

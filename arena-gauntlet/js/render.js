@@ -30,6 +30,8 @@
   // Poison is magenta everywhere (numbers, bubbles, the health bar), so it never reads as the
   // green of healing.
   const POISON = '#ff6fdc';
+  // How far a unit's Barrier aura reaches (0: it has none).
+  const auraOf = (u) => (u.traits && u.traits.has && u.traits.has('aura_barrier') ? AG.Engine.auraRadius(u) : 0);
   const POISON_FX = ['#ff6fdc', '#b23fd6', '#5e1f80'];
   const IDLE_FRAME_MS = 100;
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -363,6 +365,7 @@
         v.maxHp = u.maxHp;
         v.wait = u.wait;
         v.activated = u.activated;
+        v.aura = auraOf(u);
         v.alpha = v.dying ? v.alpha : 1;
         this.copyStatus(v, u);
       }
@@ -391,6 +394,7 @@
         nonCombat: !!u.nonCombat, scenery: !!(u.traits && u.traits.has && u.traits.has('scenery')),
         alpha: 1, ox: 0, oy: 0, hop: 0, scale: 1, shake: 0, flash: 0,
         phase: (u.uid * 1.7) % 6.28, activated: !!u.activated, ghost: !!u.ghost, rid: u.rid,
+        aura: auraOf(u),
       };
       this.copyStatus(v, u);
       return v;
@@ -622,6 +626,7 @@
     drawOverlays(g) {
       const o = this.ov;
       const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
+      this.drawAuras(g);
       if (this.hold) this.drawHold(g);
       if (this.exitX != null) this.drawExit(g);
       this.drawHazards(g);
@@ -650,6 +655,50 @@
       if (o.ghost) this.tileFill(g, o.ghost[0], o.ghost[1], 'rgba(255,255,255,0.18)', 'rgba(255,255,255,0.7)', 2, 1.2);
       if (o.press && o.press.tile) this.tileFill(g, o.press.tile.x, o.press.tile.y, 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.75)', 2, 1.2);
       if (this.focus) this.drawFocus(g);
+    }
+
+    // Barrier Ward auras: the ground they cover, tinted (cyan for yours, rose for the
+    // enemy's) with a thin rim. Still, so it costs next to nothing to draw. Overlapping
+    // auras of one side merge into one area.
+    drawAuras(g) {
+      const by = { P: [], E: [] };
+      for (const v of this.vis.values()) if (v.aura && !v.dying && by[v.team]) by[v.team].push(v);
+      if (!by.P.length && !by.E.length) return;
+      const hw = this.tw / 2;
+      const hh = this.th / 2;
+      for (const team of ['P', 'E']) {
+        const wards = by[team];
+        if (!wards.length) continue;
+        const inside = (x, y) => x >= 0 && y >= 0 && x < this.w && y < this.h && wards.some((v) => Math.abs(v.x - x) + Math.abs(v.y - y) <= v.aura);
+        const tiles = [];
+        for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) if (inside(x, y)) tiles.push([x, y]);
+        g.beginPath();
+        for (const [x, y] of tiles) {
+          const [cx, cy] = this.center(x, y);
+          g.moveTo(cx, cy - hh);
+          g.lineTo(cx + hw, cy);
+          g.lineTo(cx, cy + hh);
+          g.lineTo(cx - hw, cy);
+          g.closePath();
+        }
+        g.fillStyle = team === 'P' ? 'rgba(120,235,255,0.17)' : 'rgba(255,110,170,0.15)';
+        g.fill();
+        // The rim: tile edges with no aura tile on the other side.
+        g.beginPath();
+        for (const [x, y] of tiles) {
+          const [cx, cy] = this.center(x, y);
+          if (!inside(x + 1, y)) (g.moveTo(cx + hw, cy), g.lineTo(cx, cy + hh));
+          if (!inside(x - 1, y)) (g.moveTo(cx, cy - hh), g.lineTo(cx - hw, cy));
+          if (!inside(x, y + 1)) (g.moveTo(cx, cy + hh), g.lineTo(cx - hw, cy));
+          if (!inside(x, y - 1)) (g.moveTo(cx, cy - hh), g.lineTo(cx + hw, cy));
+        }
+        // Dashed, so it never reads as the deployment zone's tile outlines.
+        g.strokeStyle = team === 'P' ? 'rgba(175,245,255,0.95)' : 'rgba(255,160,205,0.9)';
+        g.lineWidth = 2.2;
+        g.setLineDash([this.tw * 0.12, this.tw * 0.08]);
+        g.stroke();
+        g.setLineDash([]);
+      }
     }
 
     // The player's priority target: a pulsing amber crosshair.

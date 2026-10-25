@@ -477,7 +477,7 @@
     immobile: 'Rooted in place: cannot move.',
     shieldwall: 'Full block from the sides.',
     retaliate: 'Strikes back for half its damage when hit in melee.',
-    bloodrage: 'Cleave heals 5 HP per enemy struck.',
+    bloodrage: 'Its basic attack heals it 5 HP per enemy struck.',
     bloodlust: 'Slaying an enemy resets its cooldown: it is ready again next turn.',
     secondwind: 'Once per battle, survives a fatal blow with 1 HP.',
     phoenix: 'The first time it falls, it rises again with half HP.',
@@ -492,7 +492,7 @@
     purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
     ironwood: 'Its shrubs have 40% armor and magic resistance.',
-    ridedown: 'After moving 3 or more tiles, its Lance knocks the target back.',
+    ridedown: 'After moving 3 or more tiles, its basic attack knocks the target back.',
     stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
     thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
@@ -599,7 +599,14 @@
   }
 
   function actRow(u, a, ability) {
-    return `<div class="act-row">${patternSVG(a, u.team)}<p class="ability"><b>${a.dmg ? dmgIcon(a.dmg) : ''}${esc(a.name)}${ability ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p></div>`;
+    return `<div class="act-row">${patternSVG(a, u.team)}<p class="ability"><b>${a.dmg ? dmgIcon(a.dmg) : ''}${esc(ability ? a.name : actLabel(a, 0))}${ability ? ' <span class="tag">ability</span>' : ''}.</b> ${esc(actText(u, a))}</p></div>`;
+  }
+
+  // What an act is called on screen: a unit's own main act is its basic attack (or basic
+  // ability, when it heals or helps instead); only the abilities it picks go by name.
+  function actLabel(a, i) {
+    if (i || a.kind === 'none') return a.name;
+    return a.dmg ? 'Basic attack' : 'Basic ability';
   }
 
   function levelBadge(lv) {
@@ -712,11 +719,8 @@
 
   function boardTools(extra) {
     const t = $('#boardTools');
-    t.innerHTML = `${extra || ''}
-      <button class="btn icon-only" id="zIn" aria-label="Zoom in">${ic('plus')}</button>
-      <button class="btn icon-only" id="zOut" aria-label="Zoom out">${ic('minus')}</button>`;
-    $('#zIn').onclick = () => UI.board.setZoom(UI.board.zoom * 1.35);
-    $('#zOut').onclick = () => UI.board.setZoom(UI.board.zoom / 1.35);
+    // No zoom buttons: pinch (or the mouse wheel) zooms, a drag pans.
+    t.innerHTML = extra || '';
     relicBar();
   }
 
@@ -1609,7 +1613,7 @@
       name(OBSTACLE_NAME[kind] || 'Boulder', null, kind);
       f.lines.push(
         'Blocks the way: nobody can stand here, and only flying units pass over it.',
-        'Stops straight-line attacks such as Dark Lightning; arcing shots and spells fly over it.',
+        'Stops straight-line attacks such as a Witch\'s lightning; arcing shots and spells fly over it.',
         'It cannot be destroyed. A unit knocked into it is slammed for 6 damage.'
       );
     } else if (t === E.T_WATER || t === E.T_LAVA) {
@@ -2471,19 +2475,10 @@
   function battleTools() {
     const b = UI.board;
     boardTools(
-      `<button class="btn icon-only ${UI.prefs.threat ? 'on' : ''}" id="btThreat" aria-label="Show enemy reach">${ic('eye')}</button>
-       <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed">${ic('fast')}<small>${speedOf()}×</small></button>
-       ${UI.prefs.autoBattle || (UI.battle && UI.battle.exhibition) ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button><button class="btn icon-only" id="btSkipT" aria-label="Skip to the end">${ic('skip')}</button>` : ''}`
+      `<button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed">${ic('fast')}<small>${speedOf()}×</small></button>
+       ${UI.prefs.autoBattle || (UI.battle && UI.battle.exhibition) ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button>` : ''}`
     );
     if ($('#btPauseT')) $('#btPauseT').onclick = () => togglePause(UI.battle);
-    if ($('#btSkipT')) $('#btSkipT').onclick = () => skipBattle(UI.battle);
-    $('#btThreat').onclick = () => {
-      UI.prefs.threat = !UI.prefs.threat;
-      savePrefs();
-      $('#btThreat').classList.toggle('on', UI.prefs.threat);
-      toast(UI.prefs.threat ? 'Showing every tile an enemy unit could strike on its next turn.' : 'Enemy reach hidden.');
-      renderBattle();
-    };
     $('#btFast').onclick = () => {
       UI.prefs.speed = { 1: 2, 2: 4, 4: 1 }[speedOf()];
       UI.prefs.fast = UI.prefs.speed > 1;
@@ -2501,11 +2496,10 @@
     B.running = true;
     try {
       while (UI.battle === B && !B.s.over) {
-        if (B.skip) return skipToEnd(B);
         if (B.paused) {
           B.busy = false;
           renderBattle();
-          while (B.paused && UI.battle === B && !B.skip) await sleep(120);
+          while (B.paused && UI.battle === B) await sleep(120);
           continue;
         }
         if (B.s.side === 'P' && !UI.prefs.autoBattle && !B.exhibition) {
@@ -2602,19 +2596,6 @@
     b.focus = focusSpot(B);
   }
 
-  // Finish the battle at once: both sides play on with no animation.
-  function skipToEnd(B) {
-    const s = B.s;
-    for (let guard = 0; guard < 2000 && !s.over; guard++) {
-      const team = s.side;
-      AI.playTurn(s, team, aiOpts(B, team));
-    }
-    logEvents(E.drainEvents(s));
-    UI.board.syncFromState(s);
-    B.busy = false;
-    battleOver();
-  }
-
   // Ready units that can actually do something this turn.
   function usefulReady(s) {
     return E.readyUnits(s, 'P').filter((u) => E.usefulUnit(s, u));
@@ -2652,7 +2633,7 @@
       else if (!usable) why = a.asMove ? 'already moved' : 'already acted';
       else if (!n) why = 'no targets';
       const icon = a.dmg ? dmgIcon(a.dmg) : ic(i === 0 ? 'target' : 'star');
-      out.push(`<button class="btn act ${i === 0 ? 'primary' : ''}" data-act="${i}" ${n ? '' : 'disabled'} title="${esc(why)}">${icon} ${esc(a.name)}${uses}</button>`);
+      out.push(`<button class="btn act ${i === 0 ? 'primary' : ''}" data-act="${i}" ${n ? '' : 'disabled'} title="${esc(why)}">${icon} ${esc(actLabel(a, i))}${uses}</button>`);
     });
     return out.join('');
   }
@@ -2710,7 +2691,7 @@
           line = { uid: e.uid, moved: false, act: null, dmg: 0, heal: 0, kills: [] };
         }
         if (e.t === 'move') line.moved = true;
-        else line.act = e.name;
+        else line.act = e.ai ? e.name : e.dmg ? 'basic attack' : 'basic ability';
       } else if (e.t === 'heal' && e.why === 'regen' && v) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });
@@ -2778,7 +2759,7 @@
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army goes all out for it.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">${B.exhibition ? 'Tap a unit to pause and look at it.' : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
+      <p class="small muted">${B.exhibition ? 'Tap a unit to pause and look at it.' : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
   }
 
   function renderBattle() {
@@ -2790,11 +2771,6 @@
     b.activeSide = s.side === 'P' && !B.busy ? 'P' : null;
     b.readySet = new Set(usefulReady(s).map((x) => x.uid));
     b.focus = focusSpot(B);
-    if (UI.prefs.threat && s.side === 'P' && !s.over) {
-      const m = AI.threatMap(s, 'P');
-      ov.danger = [];
-      for (let i = 0; i < m.length; i++) if (m[i]) ov.danger.push([i % s.w, Math.floor(i / s.w), m[i]]);
-    }
     const u = B.sel ? s.byId[B.sel] : null;
     const A = u ? activationOf(u) : null;
     let panel = '';
@@ -2867,7 +2843,7 @@
         ${actRow(u, act, false)}
         ${B.mode === 'confirm' ? prev : `<div class="hint">Choose a target: tap a red tile${act.kind === 'line' || act.kind === 'cone' ? ' or a unit in that direction' : ''}.</div>`}
         <div class="actions">
-          ${B.mode === 'confirm' ? `<button class="btn primary" id="btConfirm">${ic('check')} ${esc(act.name)}</button>` : ''}
+          ${B.mode === 'confirm' ? `<button class="btn primary" id="btConfirm">${ic('check')} ${esc(actLabel(act, B.ai))}</button>` : ''}
           <button class="btn" id="btCancel">Cancel</button>
         </div>
         ${B.mode === 'confirm' ? '<p class="small muted">Tap the target again, or the button, to confirm.</p>' : ''}`;
@@ -3001,7 +2977,6 @@
     on('btDesel', () => deselect());
     // Watching an auto battle: pause, resume, or jump to the result.
     on('btPause', () => togglePause(B));
-    on('btSkip', () => skipBattle(B));
     on('btFocus', () => setFocus(B));
     on('btUnfocus', () => clearFocus(B));
     on('btUndo', async () => {
@@ -3268,14 +3243,6 @@
     if (!B.paused && !B.running) runBattle();
   }
 
-  function skipBattle(B) {
-    if (!B || B.s.over) return;
-    B.skip = true;
-    B.paused = false;
-    sfx('click');
-    if (!B.running) runBattle();
-  }
-
   // While your army fights on its own, a tap pauses the battle and shows what is there.
   function watchTap(B, hit) {
     const s = B.s;
@@ -3477,9 +3444,7 @@
       ? 'The turn limit ran out and the enemy held stronger.'
       : endEv && endEv.forfeit
         ? 'You sounded the retreat.'
-        : endEv && endEv.surrender
-          ? 'None of your remaining units could fight.'
-          : 'Your army was broken.';
+        : 'Your army was broken.';
     // A battle an event started is fought again from the war room; a challenge sends you
     // back to the round's choice, where it is still on offer beside the others.
     const fromEvent = UI.run.pending && UI.run.pending.fromEvent;
@@ -4007,8 +3972,10 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it.</li>
+          <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
-          <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
+          <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
           <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
@@ -4040,7 +4007,7 @@
           <li>Tap a unit, tap a blue tile to move, tap a red enemy to attack, then tap again to confirm. Use the buttons for abilities.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
           <li>In the war room, tap a deployed unit again to open its loadout. Long-press any unit for details.</li>
-          <li>Pinch, drag, or use + and − to zoom. The eye button shows every tile an enemy unit could strike on its next turn.</li>
+          <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>
       </div>

@@ -41,7 +41,7 @@ on a phone turned sideways, but portrait works too.
   Iron Company, The Gilded Host ...) and starts at the bottom, then climbs: it fights
   the army right above it, on a fresh field with mirrored obstacles, both sides on the
   AI. A win swaps the two; a loss, or reaching #1, ends the climb. Watch each match
-  (pause, speed and skip work as in a battle), or simulate the rest of the climb in a
+  (pause and speed work as in a battle), or simulate the rest of the climb in a
   second. Tap any two armies for a friendly match that changes nobody's place. Only
   one army climbs at a time: one you never watched finishes its climb, played out at
   once, before the next one joins. The Hall is on the title screen and the end screen,
@@ -56,8 +56,8 @@ on a phone turned sideways, but portrait works too.
   off a blue tile still places it on the nearest one, and a tap on the empty space
   around the board lets it go. Your deployment zone is the three rows nearest you
   (rocks and water may block a few tiles); Auto keeps to the back two unless it needs
-  more room. Drag the board to move it, even partly off screen, and pinch or use the
-  buttons to zoom. Your relics show as small round badges in the board's corner, in
+  more room. Drag the board to move it, even partly off screen, and pinch to zoom
+  (there are no zoom buttons). Your relics show as small round badges in the board's corner, in
   the War Room and in battle: tap one to see what it does. Tap the Supply bar to see what every deployed unit
   costs. Begin battle stays in view at the bottom. The loadout says what each chosen
   ability does, and each empty slot shows how many of your items could go in it
@@ -118,8 +118,8 @@ on a phone turned sideways, but portrait works too.
   its attacks and every damage preview show the damage-type icon.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
-  abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x),
-  pause, skip-to-result and tap-a-unit-to-inspect are beside the board; 1x plays at
+  abilities and talents. Lost? Change the army and try again. Speed (1x, 2x, 4x) and
+  pause are beside the board, and tapping a unit pauses and inspects it; 1x plays at
   about half of the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).
@@ -158,6 +158,10 @@ on a phone turned sideways, but portrait works too.
   whole side sits out, the first in line takes it. The top bar shows this round's
   hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
+- **Nobody surrenders**: a battle ends only when one side has no units left. If all
+  you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
+  on and the enemy must still bring every one down; if neither side can hurt the
+  other, fatigue settles it. A Furgon's regen can outlast a fading enemy.
 - **Poison**: poison and burns tick at the start of the poisoned unit's own turn,
   for a set number of its turns. The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
@@ -168,7 +172,7 @@ on a phone turned sideways, but portrait works too.
   magenta.
 - **Wards**: a Lightning Ward cannot move, so the AI (yours and the enemy's) does
   not walk into its pulse unless that move lets it hit a living unit the same turn;
-  it goes around, and leaves the ward for last. A Barrier Ward gives allies within 2
+  it goes around, and leaves the ward for last. A Barrier Ward gives allies within 4
   tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and makes
   them immune to poison and paralysis.
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
@@ -184,8 +188,11 @@ on a phone turned sideways, but portrait works too.
   fire, smoke, caltrops or a red landing tile to see what it does: whether it blocks
   movement or attacks, what loot pays and which tiles wake its guards, and how long
   a hazard lasts. A unit's panel also says what it is standing on.
-- **Reading the enemy**: tap any unit, yours or theirs, to see a small diagram of
-  every attack: where it can aim and exactly which tiles one use hits (a Brute's
+- **Reading the enemy**: a unit's own attack is called its **basic attack** (its
+  **basic ability** for healers and helpers) everywhere: on its card, in talents and
+  masteries ("its basic attack also hits every enemy beside the target") and in the
+  battle log. Only abilities it picks go by name (Shield Bash, Boulder Toss). Tap any
+  unit, yours or theirs, to see a small diagram of every attack: where it can aim and exactly which tiles one use hits (a Brute's
   maul strikes its target and the three tiles around it; a Witch's lightning runs
   five tiles straight). The board shows everywhere it could hit on its next move.
 - **Missions**: defeat every enemy, burn a War Banner, break a prison cage, kill a
