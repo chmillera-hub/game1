@@ -2984,3 +2984,49 @@ body:has(#battle:not([hidden])) {
   flex-wrap: wrap;
   margin: 4px 0 10px;
 }
+
+/* Recruit cards: the Details button, and an enchanted unit's enchantment in its own box. */
+.card-head .grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.card-info {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(197, 154, 76, 0.4);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--brass-hi);
+  cursor: pointer;
+}
+
+.card-info:active {
+  transform: scale(0.94);
+}
+
+.ench-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(190, 140, 255, 0.55);
+  background: rgba(120, 70, 200, 0.16);
+  color: #e6d4ff;
+  font-size: 0.92rem;
+}
+
+.ench-box b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #d9b8ff;
+}
+
+.ench-box .small {
+  color: #bfa6e6;
+}

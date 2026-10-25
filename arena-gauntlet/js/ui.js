@@ -680,6 +680,7 @@
     drawPortraits(v);
     bindRelics(v);
     bindResbar(v);
+    bindRecruitInfo(v);
     return v;
   }
 
@@ -3782,14 +3783,54 @@
     return `${u.name} the ${UNITS[u.type].name} joins your army.${R.talentNote(UI.run, u)}`;
   }
 
+  // A unit on offer. An enchanted one shows its enchantment in a box of its own, and the
+  // Details button opens the unit's numbers, attacks and enchantment without taking it.
   function recruitCard(unit, enchant, attrs, extra) {
     const T = UNITS[unit];
+    const E2 = enchant && ENCHANTS[enchant];
     return `<button class="card" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
-      <div><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}</div></div></div>
-      ${enchant ? `<div class="chips"><span class="chip magic">${ic('gem')} ${esc(ENCHANTS[enchant].name)} +${ENCHANTS[enchant].surcharge}</span></div>` : ''}
-      <div class="desc">${esc(T.desc)}${enchant ? ' ' + esc(ENCHANTS[enchant].desc) : ''}</div>
-      <div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>${extra || ''}</button>`;
+      <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}</div></div>
+      <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}" aria-label="Details">${ic('help')}</span></div>
+      <div class="desc">${esc(T.desc)}</div>
+      ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
+      <div class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</div>${extra || ''}</button>`;
+  }
+
+  // A recruit's details before you take it: numbers, attacks, traits and its enchantment.
+  function recruitInfoSheet(unit, enchant) {
+    const T = UNITS[unit];
+    const E2 = enchant && ENCHANTS[enchant];
+    const load = { lv: 1, a1: T.abilities ? T.abilities[1][0] : null, a2: T.abilities ? T.abilities[2][0] : null, talents: [], skills: [], gear: [] };
+    const u = R.unitStats(UI.run, { type: unit, name: T.name, enchant: enchant || null, load }, 'P');
+    const after = UI.onSheetClose;
+    UI.onSheetClose = null;
+    openSheet(
+      `${sheetHead(esc(T.name), `Recruit · ${T.rarity} · ${T.cost} Supply${E2 ? ` (+${E2.surcharge} enchanted)` : ''} · <b>${u.maxHp} HP</b>`)}
+      ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply. The numbers below include it.</span></div>` : ''}
+      <p class="muted">${esc(T.desc)}</p>
+      ${statsHTML(u)}
+      ${actsHTML(u)}
+      ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+      <p class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</p>
+      <div class="actions"><button class="btn" data-close>Back</button></div>`
+    );
+    UI.onSheetClose = after;
+  }
+
+  // The Details buttons on recruit cards: they open the details and do not pick the card.
+  function bindRecruitInfo(el) {
+    for (const b of $$('[data-rinfo]', el)) {
+      const open = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const [unit, enchant] = b.dataset.rinfo.split(':');
+        sfx('click');
+        recruitInfoSheet(unit, enchant || null);
+      };
+      b.addEventListener('click', open);
+      b.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && open(e));
+    }
   }
 
   // Reward cards: what you got anyway is lit up as collected; a choice waiting for you has a

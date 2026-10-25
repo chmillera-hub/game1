@@ -230,7 +230,10 @@ on a phone turned sideways, but portrait works too.
   choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
   the draft, the challenge cards) has a soft aura that fades in and out; once you
   pick, your pick gets the gold edge and a ✓ Chosen badge and the rest go grey.
-  Reward and shop cards say how many of that kind you already have.
+  Reward and shop cards say how many of that kind you already have. An enchanted
+  recruit shows its enchantment in a violet box of its own (what it does, and the
+  Supply it adds), and every recruit card has a ? button that opens the unit's
+  details (HP, numbers, attacks, traits, enchantment) without taking it.
 - **The merchant**: six things: a recruit, a talent, a skill, gear and a relic, plus
   one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about
   twice as much as anything else. Resupply brings out a whole new stock for 20 gold,
