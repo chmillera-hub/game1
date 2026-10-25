@@ -19,7 +19,7 @@
     // ================================================================ PLAYER
     squire: {
       name: 'Squire', icon: '♟' + T, pool: 'player', rarity: 'common', cost: 2, role: 'melee', tags: ['steel'],
-      hp: 9, atk: 3, spd: 3,
+      hp: 9, atk: 2, spd: 3,
       move: walk(1), attack: melee(),
       passives: {
         shieldWall: {},
@@ -505,7 +505,7 @@
 
     // ============================================================ MEGA BOSS
     zugzwang: {
-      name: 'Zugzwang', icon: '♚' + T, pool: 'enemy', hp: 240, atk: 4, spd: 2, armor: 1, boss: true, big: true, tags: ['chess', 'arcane'], role: 'ranged',
+      name: 'Zugzwang', icon: '♚' + T, pool: 'enemy', hp: 230, atk: 4, spd: 2, armor: 1, boss: true, big: true, tags: ['chess', 'arcane'], role: 'ranged',
       move: { type: 'none' }, attack: ranged(4, { vfx: 'arcane', los: false }),
       abilities: ['endgame', 'matingNet'],
       passives: { invincible: { cap: 20 }, beatOfDeath: { d: 1 }, inevitable: { atk: 1 }, echoes: { every: 3, n: 2, max: 6 }, doubleMove: {}, unstoppable: {} },

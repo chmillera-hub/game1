@@ -371,6 +371,22 @@ test('a lost battle costs nothing and can be retried or swapped for another figh
   eq(run.battle.tier, 'easy', 'took the easy one instead');
 });
 
+test('an event’s supply for the next battle survives backing out of a fight', () => {
+  const run = Run.newRun({ seed: 11 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  run.screen = 'tower';
+  Run.nextBattleSupply(run, 4);
+  Run.chooseFight(run, 1);
+  const enc = AG.Encounters[run.battle.enc];
+  eq(Run.limits(run, enc).supply, enc.supply + 2 + 4, 'ledger and the event both count');
+  Run.backToTower(run);
+  eq(run.nextSupply, 4, 'still owed');
+  Run.chooseFight(run, 0);
+  eq(run.battle.supplyMod, 4, 'applied to the fight actually taken');
+  eq(run.nextSupply, 0, 'and only once');
+});
+
 test('only supply and squares limit the army', () => {
   const run = Run.sandbox();
   const enc = AG.Encounters.zugzwang;
@@ -420,7 +436,7 @@ test('a duel puts the defending army on the far side, mirrored', () => {
   eq(c.side, 1, 'the defender is the enemy');
   eq(c.x + ',' + c.y, '2,1', 'mirrored to the far side');
   eq(c.rank, 1, 'keeps its rank');
-  eq(c.shield, 3, 'and its relics');
+  eq(c.shield, 2, 'and its relics (Iron Rations)');
   eq(find(s, 'knight').side, 0, 'the challenger is the near side');
   eq(s.units.length, 2, 'nobody else on the board');
 });

@@ -44,12 +44,15 @@ const { chromium } = require('playwright');
       log.push('  ' + (won ? 'won' : 'lost') + ' ' + (await page.evaluate(() => AG.App.battle && AG.App.battle.s.encounter)));
       if (won) { losses = 0; cleared++; await page.locator('.end-card .btn.primary').click(); continue; }
       losses++;
+      // Auto-deploy always fields the same army, so a stubborn fight gets a
+      // test-only nudge of extra supply to keep the climb going.
+      if (losses >= 4) await page.evaluate(() => { AG.App.run.supplyBonus += 3; });
       const another = page.locator('.end-card').getByRole('button', { name: 'Choose another fight' });
       if (losses === 2 && await another.count()) await another.click();
       else if (losses > 3 && await page.locator('.end-card').getByRole('button', { name: /Walk away|Choose another fight/ }).count()) {
         await page.locator('.end-card').getByRole('button', { name: /Walk away|Choose another fight/ }).click();
       } else await page.locator('.end-card .btn.primary').click();
-      if (losses > 6) { log.push('  stuck'); break; }
+      if (losses > 12) { log.push('  stuck'); break; }
     } else if (screen === 'reward') {
       const offers = page.locator('.offer:not(.taken):not(.gone)');
       if (await offers.count()) await offers.first().click();

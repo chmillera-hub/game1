@@ -22,8 +22,8 @@
     },
     ironRations: {
       name: 'Iron Rations', icon: '▣', rarity: 'common',
-      desc: 'Your units start each battle with 3 shield.',
-      battleStart(s, side) { for (const u of mine(s, side)) B.giveShield(s, u, 3, true); },
+      desc: 'Your units start each battle with 2 shield.',
+      battleStart(s, side) { for (const u of mine(s, side)) B.giveShield(s, u, 2, true); },
     },
     wingedBoots: {
       name: 'Winged Boots', icon: '⟰', rarity: 'common',
@@ -148,22 +148,22 @@
     },
     vanguardStandard: {
       name: 'Vanguard Standard', icon: '⚐', rarity: 'common',
-      desc: 'Units deployed on your front line start with 5 shield.',
+      desc: 'Units deployed on your front line start with 4 shield.',
       battleStart(s, side) {
         let front = 999;
         for (let i = 0; i < s.board.n; i++) if (s.board.deploy[i]) front = Math.min(front, (i / s.board.w) | 0);
         // The far side's front line (a Hall of Fame duel) is the mirror of ours.
         if (side === 1) front = s.board.h - 1 - front;
-        for (const u of mine(s, side)) if (u.y === front) B.giveShield(s, u, 5, true);
+        for (const u of mine(s, side)) if (u.y === front) B.giveShield(s, u, 4, true);
       },
     },
     pawnBadge: {
       name: 'Pawnmaster’s Badge', icon: '♙', rarity: 'common',
-      desc: 'Units that cost 2 or less get +2 HP and +1 ATK.',
+      desc: 'Units that cost 2 or less get +1 HP and +1 ATK.',
       battleStart(s, side) {
         for (const u of mine(s, side)) {
           const d = AG.Units[u.def];
-          if (d.cost != null && d.cost <= 2) { u.maxHp += 2; u.hp += 2; u.atk += 1; }
+          if (d.cost != null && d.cost <= 2) { u.maxHp += 1; u.hp += 1; u.atk += 1; }
         }
       },
     },

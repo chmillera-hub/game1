@@ -11,7 +11,10 @@
   const MAX_ROUNDS = 24;
   // Enemies get tougher act by act; bosses are tuned by hand and skip this.
   AG.ACT_SCALE = { 1: { hp: 0, atk: 0 }, 2: { hp: 0.25, atk: 0 }, 3: { hp: 0.45, atk: 1 } };
-  AG.TIER_SCALE = { elite: 0.15 };
+  // Extra enemy health and attack by tier, one value per act.
+  AG.TIER_SCALE = { elite: [0.15, 0.3, 0.45] };
+  AG.TIER_ATK = { elite: [0, 1, 1] };
+  const byAct = (v, act) => (Array.isArray(v) ? v[act - 1] : v) || 0;
   const SHATTER = 2; // bonus damage frozen units take from hits
   const SHIELD_CAP = 12;
 
@@ -175,8 +178,8 @@
       B.addUnit(s, B.makeUnit(a.def, 1, x, y, { talents: a.talents, rune: a.rune, rank: a.rank }));
     }
     const sc = AG.ACT_SCALE[enc.act] || { hp: 0, atk: 0 };
-    const hpBoost = sc.hp + (opts.ramp || 0) + (AG.TIER_SCALE[enc.tier] || 0) + (enc.boost || 0) + (opts.hpMod || 0);
-    const atkBoost = sc.atk + (opts.atkMod || 0);
+    const hpBoost = sc.hp + (opts.ramp || 0) + byAct(AG.TIER_SCALE[enc.tier], enc.act) + (enc.boost || 0) + (opts.hpMod || 0);
+    const atkBoost = sc.atk + byAct(AG.TIER_ATK[enc.tier], enc.act) + (opts.atkMod || 0);
     for (const sp of parsed.spawns) {
       const u = B.makeUnit(sp.def, 1, sp.x, sp.y, { mods: sp.mods, talents: sp.talents });
       if (!u.boss && !u.object) {

@@ -210,7 +210,7 @@
     const offers = h('div.offers');
     for (const def of d.options) {
       offers.appendChild(unitOffer(def, {
-        kind: RARITY_NAME[rarity] + ' · pick 1 of 3',
+        kind: 'Pick 1 of 3',
         onClick: () => { Run.draftPick(run, def); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } },
       }));
     }
@@ -219,7 +219,7 @@
     return h('div', App.hud(),
       screenHead('A new run · pick ' + (d.step + 1) + ' of ' + Run.DRAFT.length, 'Draft your army',
         'Choose the unit types you start with: two commons, two uncommons and one rare, each from a choice of three. Every run also brings Squires.'),
-      h('div.stack', { style: { gap: '16px' } }, steps, army, h('div.sec-title', 'Choose a ' + RARITY_NAME[rarity].toLowerCase() + ' unit'), offers),
+      h('div.stack', { style: { gap: '16px' } }, steps, army, h('div.sec-title', 'Choose ' + (rarity === 'uncommon' ? 'an ' : 'a ') + rarity + ' unit'), offers),
     );
   };
 
@@ -280,7 +280,10 @@
     const supply = Run.limits(run, enc).supply + (run.nextSupply || 0);
     const gold = (D.gold[0] + run.act * 2) + '–' + (D.gold[1] + run.act * 2) + ' gold';
     const prize = gold + ' · choose 1 of ' + D.offers + (D.luck ? ' (rarer finds)' : '') + (D.relic ? ' · a relic' : '');
-    const mods = o.diff === 'easy' ? 'Enemies have 20% less health.' : o.diff === 'hard' ? 'Enemies have 30% more health and +1 ATK.' : o.diff === 'elite' ? 'An elite: a tougher band led by a heavy.' : 'A fair fight.';
+    const hp = Run.byAct(run, D.hp), atk = Run.byAct(run, D.atk);
+    const mods = o.diff === 'easy' ? 'Enemies have ' + Math.round(-hp * 100) + '% less health' + (atk ? ' and ' + atk + ' ATK.' : '.')
+      : o.diff === 'hard' ? 'Enemies have ' + Math.round(hp * 100) + '% more health' + (atk ? ' and +' + atk + ' ATK.' : '.')
+        : o.diff === 'elite' ? 'An elite: a tougher band led by a heavy.' : 'A fair fight.';
     const px = Math.max(14, Math.min(26, Math.floor(232 / Math.max(board.w, board.h))));
     return h('div.fight.' + o.diff,
       h('div.row', { style: { justifyContent: 'space-between' } }, h('span.tier.' + o.diff, D.name), h('span.mono.muted', board.w + '×' + board.h + ' · ' + supply + ' supply')),

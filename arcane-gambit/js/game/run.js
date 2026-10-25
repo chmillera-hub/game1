@@ -21,11 +21,11 @@
   Run.FLOORS = ['battle', 'battle', 'battle', 'event', 'shop', 'battle', 'battle', 'boss'];
   // Battle floors whose third choice is an elite fight rather than a hard one.
   Run.ELITE_FLOORS = [2, 6];
-  // What each choice of fight changes and pays.
+  // What each choice of fight changes and pays (hp and atk may differ by act).
   Run.DIFF = {
-    easy: { name: 'Easy', hp: -0.2, atk: 0, gold: [10, 14], offers: 2, luck: 0 },
+    easy: { name: 'Easy', hp: [-0.2, -0.25, -0.3], atk: [0, 0, -1], gold: [10, 14], offers: 2, luck: 0 },
     medium: { name: 'Medium', hp: 0, atk: 0, gold: [16, 22], offers: 3, luck: 0 },
-    hard: { name: 'Hard', hp: 0.3, atk: 1, gold: [28, 36], offers: 3, luck: 1 },
+    hard: { name: 'Hard', hp: [0.35, 0.5, 0.65], atk: [0, 1, 1], gold: [26, 34], offers: 3, luck: 1 },
     elite: { name: 'Elite', hp: 0, atk: 0, gold: [30, 40], offers: 3, luck: 1, relic: true },
   };
   Run.ACTS = {
@@ -33,6 +33,9 @@
     2: { name: 'The Gravemarch Board', blurb: 'The dead do not stay down here.' },
     3: { name: 'The Astral Spire', blurb: 'Clockwork, fire and a very old opponent.' },
   };
+
+  // A number, or one per act.
+  Run.byAct = function (run, v) { return (Array.isArray(v) ? v[run.act - 1] : v) || 0; };
 
   function withRng(run, fn) {
     const r = new AG.RNG(run.rng);
@@ -197,17 +200,22 @@
       Run.startBattle(run, Run.bossFor(run), 'boss');
     }
   };
+  // A fight left unwon gives back the supply an event lent (or took) for it.
+  function unspend(run) {
+    if (run.battle && run.battle.supplyMod) run.nextSupply = (run.nextSupply || 0) + run.battle.supplyMod;
+    run.battle = null;
+  }
   // Back out of a fight that has not been won, to choose another.
   Run.backToTower = function (run) {
     const f = Run.currentFloor(run);
     if (f) f.choice = -1;
-    run.battle = null;
+    unspend(run);
     run.screen = 'tower';
   };
   // Walk away from an event's fight (its prize is lost) or from the mega boss.
   Run.leaveFight = function (run) {
     const tier = run.battle && run.battle.tier;
-    run.battle = null;
+    unspend(run);
     if (tier === 'mega') { run.screen = 'victory'; return; }
     Run.advance(run);
   };
@@ -231,7 +239,7 @@
     const ramp = run.tower && D.name ? Run.battlesBelow(run) * 0.04 : 0;
     run.battle = {
       enc: encId, tier: diff, attempts: 0, bonus: bonus || null, ramp,
-      hpMod: D.hp || 0, atkMod: D.atk || 0, supplyMod: run.nextSupply || 0,
+      hpMod: Run.byAct(run, D.hp), atkMod: Run.byAct(run, D.atk), supplyMod: run.nextSupply || 0,
       formation: run.formations && run.formations[encId] ? AG.deepCopy(run.formations[encId]) : [],
     };
     run.nextSupply = 0;

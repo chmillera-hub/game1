@@ -104,6 +104,8 @@ function botRun(seed, opts) {
       Run.advance(run);
     } else if (sc === 'victory') {
       if (!mega) {
+        // The collection that faces the mega boss (act 4 in the dump).
+        snaps.push({ act: 4, floor: 0, below: 0, units: run.units.slice(), ranks: Object.assign({}, run.ranks), runes: run.runes.slice(), relics: run.relics.slice(), supplyBonus: run.supplyBonus });
         Run.startMega(run);
         mega = { win: fight(Bot.KINDS.length, 'MEGA') };
         if (!mega.win) Run.leaveFight(run);
