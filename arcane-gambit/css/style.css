@@ -316,6 +316,12 @@ p { margin: 0; }
 .setup-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .side { position: sticky; top: 10px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .meters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* The war room's supply stays on screen while you scroll the roster. */
+.setup-main > .meters { position: sticky; top: 0; z-index: 20; padding: 8px 0; margin: -8px 0; background: linear-gradient(var(--bg) 80%, transparent); }
+.meter .left { font-weight: 900; font-size: 13px; padding: 2px 9px; border-radius: 999px; background: var(--gold-2); color: var(--gold-ink); border: 1.5px solid var(--gold); white-space: nowrap; }
+.meter .left.none { background: var(--surface-2); color: var(--ink-3); border-color: var(--rule); }
+.opt.cant { opacity: 0.5; }
+.opt .need { grid-column: 1 / -1; font-size: 12px; font-weight: 800; color: var(--red); }
 .meter { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 9px; background: var(--surface); border: 2px solid var(--line); min-width: 0; box-shadow: var(--lift); }
 .meter .lbl { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); font-weight: 800; }
 .meter .v { font-weight: 900; font-size: 18px; font-variant-numeric: tabular-nums; }
@@ -412,7 +418,8 @@ p { margin: 0; }
 .thought .what { font-size: 15.5px; color: var(--ink); font-family: var(--f-mono); line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .thought .alts { grid-column: 2; font-size: 13px; color: var(--ink-2); font-family: var(--f-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .thought .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.battle-head { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; white-space: nowrap; overflow: hidden; }
+.battle > .screen-head > .stack { min-width: 0; width: 100%; }
+.battle-head { max-width: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; white-space: nowrap; overflow: hidden; }
 .battle-head .eyebrow { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
 .battle-head .round-badge { flex: 0 0 auto; }
 .battle-head .storm-warn, .battle-head .faint { overflow: hidden; text-overflow: ellipsis; min-width: 0; }

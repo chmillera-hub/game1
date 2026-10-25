@@ -25,7 +25,7 @@
   Run.DIFF = {
     easy: { name: 'Easy', hp: [-0.2, -0.25, -0.3], atk: [0, 0, -1], gold: [10, 14], offers: 2, luck: 0 },
     medium: { name: 'Medium', hp: 0, atk: 0, gold: [16, 22], offers: 3, luck: 0 },
-    hard: { name: 'Hard', hp: [0.45, 0.6, 0.8], atk: [0, 1, 1], gold: [26, 34], offers: 3, luck: 1 },
+    hard: { name: 'Hard', hp: [0.35, 0.45, 0.6], atk: [0, 1, 1], gold: [26, 34], offers: 3, luck: 1 },
     elite: { name: 'Elite', hp: 0, atk: 0, gold: [30, 40], offers: 3, luck: 1, relic: true },
   };
   Run.ACTS = {

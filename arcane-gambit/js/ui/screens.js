@@ -635,7 +635,7 @@
     };
     return h('div', App.hud(),
       screenHead('Hall of Fame · duel ' + (c.results.length + 1) + ' of up to ' + c.opponents.length, 'Climb the Hall',
-        'Your army takes the near side of the Hall’s arena; the champion above it takes the far side, mirrored. Speed ties go to you; if time runs out, the champion keeps its place.'),
+        'Your army takes the near side of the Hall’s arena; the champion above it takes the far side, mirrored. The champion moves first each round and keeps its place if time runs out.'),
       h('div.row', { style: { marginBottom: '12px' } },
         h('button.btn.primary', { type: 'button', on: { click: () => App.startDuel() } }, UI.uiIcon('swords'), 'Watch the duel'),
         h('button.btn', { type: 'button', on: { click: resolveAll } }, 'Resolve the rest instantly')),
@@ -736,7 +736,7 @@
       ),
       h('h4', 'During battle'),
       h('ul',
-        h('li', 'The two sides take turns, one piece at a time, as in chess. Each side moves its pieces fastest first and every piece moves once a round; when one side has more pieces, its extra turns are spread through the round. The side with the quicker lead piece opens each round (yours on a tie). The strip at the top shows the order.'),
+        h('li', 'The two sides take turns, one piece at a time, as in chess. Each side moves its pieces fastest first and every piece moves once a round; when one side has more pieces, its extra turns are spread through the round. The enemy always opens the round with its fastest piece, since you set up knowing where it stands; then your fastest moves. The strip at the top shows the order.'),
         h('li', 'On its turn a unit may move and then attack or use an ability. The AI tries every option, simulates the result and picks the best. Its reasoning shows above the board.'),
         h('li', 'Movement is chess-like: knights leap, bishops slide diagonally, rooks along ranks and files, and wizards teleport.'),
         h('li', 'Chasms swallow anything knocked into them that cannot fly. Walls block movement and line of sight.'),

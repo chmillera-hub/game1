@@ -287,14 +287,23 @@
   UI.loadoutPanel = function (u, L) {
     const d = AG.Units[u.def];
     const wrap = h('div.stack', { style: { gap: '8px' } });
+    // What is left to spend, so every talent and rune shows whether it fits.
+    const left = L.supply ? L.supply.total - L.supply.used : Infinity;
+    if (L.supply) {
+      const pct = Math.min(100, (100 * L.supply.used) / Math.max(1, L.supply.total));
+      wrap.appendChild(h('div.meter.supply' + (left < 0 ? '.over' : ''), h('span.lbl', 'Supply'), h('span.bar', h('i', { style: { width: pct + '%' } })),
+        h('span.v', L.supply.used + '/' + L.supply.total), h('span.left' + (left <= 0 ? '.none' : ''), left >= 0 ? left + ' left' : -left + ' over')));
+    }
+    const short = (add) => (add > left ? h('span.need', 'needs ' + (add - left) + ' more') : null);
     wrap.appendChild(h('div.sec-title', 'Talents · ' + (L.slots > 1 ? 'pick up to 2 (Elite)' : 'pick 1')));
     const tl = h('div.opts');
     for (const tid of d.talents) {
       const T = AG.Talents[tid];
       const on = L.entry.talents.indexOf(tid) >= 0;
       const cost = L.talentCost(tid);
-      tl.appendChild(h('button.opt' + (on ? '.on' : ''), { type: 'button', 'aria-pressed': on ? 'true' : 'false', on: { click: () => L.onTalent(tid) } },
-        h('span.t', T.name), h('span.c', '+' + cost), h('span.d', T.desc)));
+      const add = on ? 0 : cost - (L.entry.talents.length >= L.slots ? L.talentCost(L.entry.talents[0]) : 0);
+      tl.appendChild(h('button.opt' + (on ? '.on' : '') + (add > left ? '.cant' : ''), { type: 'button', 'aria-pressed': on ? 'true' : 'false', on: { click: () => L.onTalent(tid) } },
+        h('span.t', T.name), h('span.c', '+' + cost), short(add), h('span.d', T.desc)));
     }
     wrap.appendChild(tl);
     wrap.appendChild(h('div.sec-title', 'Rune'));
@@ -307,8 +316,9 @@
       const R = AG.Runes[k];
       const on = L.entry.rune === k;
       const useless = !on && !AG.runeHasEffect(L.entry.def, k, L.entry.talents);
-      rl.appendChild(h('button.opt' + (on ? '.on' : '') + (useless ? '.off' : ''), { type: 'button', disabled: useless, on: { click: () => { if (!useless) L.onRune(k); } } },
-        h('span.t', UI.glyph(R.icon), R.name + (free[k] > 1 || (on && free[k] > 0) ? ' ×' + (free[k] + (on ? 1 : 0)) : '')), h('span.c', '+' + R.cost),
+      const add = on ? 0 : R.cost - (L.entry.rune ? AG.Runes[L.entry.rune].cost : 0);
+      rl.appendChild(h('button.opt' + (on ? '.on' : '') + (useless ? '.off' : '') + (!useless && add > left ? '.cant' : ''), { type: 'button', disabled: useless, on: { click: () => { if (!useless) L.onRune(k); } } },
+        h('span.t', UI.glyph(R.icon), R.name + (free[k] > 1 || (on && free[k] > 0) ? ' ×' + (free[k] + (on ? 1 : 0)) : '')), h('span.c', '+' + R.cost), useless ? null : short(add),
         h('span.d', useless ? 'This unit already has this effect.' : R.desc)));
     }
     wrap.appendChild(rl);

@@ -189,21 +189,26 @@
       else {
         const lim = Run.limits(run, enc);
         const add = Run.talentCost(run, tid) - (e.talents.length >= slots ? Run.talentCost(run, e.talents[0]) : 0);
-        if (Run.formationCost(run, F) + add > lim.supply) { UI.toast('Not enough supply for ' + AG.Talents[tid].name + '.'); return; }
+        if (Run.formationCost(run, F) + add > lim.supply) { UI.toast(AG.Talents[tid].name + ' needs ' + add + ' supply; you have ' + supplyLeft() + ' left.'); UI.Sound.fx('error'); return; }
         if (e.talents.length >= slots) e.talents.shift();
         e.talents.push(tid);
       }
+      UI.Sound.fx(k >= 0 ? 'remove' : 'place');
       changed();
+      UI.toast(supplyLeft() + ' supply left.');
     }
+    function supplyLeft() { return Run.limits(run, enc).supply - Run.formationCost(run, F); }
     function setRune(i, rid) {
       const e = F[i];
       if (rid) {
         const lim = Run.limits(run, enc);
         const add = AG.Runes[rid].cost - (e.rune ? AG.Runes[e.rune].cost : 0);
-        if (Run.formationCost(run, F) + add > lim.supply) { UI.toast('Not enough supply for ' + AG.Runes[rid].name + '.'); return; }
+        if (Run.formationCost(run, F) + add > lim.supply) { UI.toast(AG.Runes[rid].name + ' needs ' + add + ' supply; you have ' + supplyLeft() + ' left.'); UI.Sound.fx('error'); return; }
       }
       e.rune = rid;
+      UI.Sound.fx(rid ? 'place' : 'remove');
       changed();
+      UI.toast(supplyLeft() + ' supply left.');
     }
     function changed() {
       App.saveSoon();
@@ -265,8 +270,10 @@
       const v = Run.validate(run, enc, F);
       UI.clear(meters);
       const sp = Math.min(100, (100 * v.cost) / Math.max(1, v.lim.supply));
-      meters.appendChild(h('div.meter' + (v.cost > v.lim.supply ? '.over' : ''),
-        h('span.lbl', 'Supply'), h('span.bar', h('i', { style: { width: sp + '%' } })), h('span.v', v.cost + '/' + v.lim.supply)));
+      const left = v.lim.supply - v.cost;
+      meters.appendChild(h('div.meter.supply' + (v.cost > v.lim.supply ? '.over' : ''), { 'data-tip': 'Units, talents and runes all spend supply.' },
+        h('span.lbl', 'Supply'), h('span.bar', h('i', { style: { width: sp + '%' } })), h('span.v', v.cost + '/' + v.lim.supply),
+        h('span.left' + (left <= 0 ? '.none' : ''), left >= 0 ? left + ' left' : -left + ' over')));
       meters.appendChild(h('div.meter', { 'data-tip': 'No cap on units: only the supply and the blue squares limit your army.' },
         h('span.lbl', 'Units'), h('span.v', F.length + ' of ' + v.lim.cells + ' squares')));
       const mod = run.battle.supplyMod || 0;
@@ -331,6 +338,7 @@
         return UI.inspector(u, {
           loadout: {
             entry: e,
+            supply: { used: Run.formationCost(run, F), total: Run.limits(run, enc).supply },
             slots: Run.talentSlots(run, e.def),
             talentCost: (t) => Run.talentCost(run, t),
             runesFree: Run.runesFree(run, F, i),
@@ -357,7 +365,7 @@
       return h('div.stack',
         h('div.sec-title', 'Enemy forces'),
         list,
-        h('p.hint', 'The sides take turns, one piece at a time; within a side the fastest moves first, and every piece moves once a round. The side with the quicker lead piece opens each round (yours on a tie).'),
+        h('p.hint', 'The sides take turns, one piece at a time; within a side the fastest moves first, and every piece moves once a round. The enemy always opens the round, then your fastest piece moves.'),
         h('p.hint', 'Fatigue: from round ' + (enc.storm || 12) + ' (or after three rounds with no damage) an Arcane Storm hits every unit each round for 1, then 2, then 3…, so stalemates end.'),
       );
     }

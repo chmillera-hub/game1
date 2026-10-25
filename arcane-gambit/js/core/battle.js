@@ -12,7 +12,7 @@
   // Enemies get tougher act by act; bosses are tuned by hand and skip this.
   AG.ACT_SCALE = { 1: { hp: 0, atk: 0 }, 2: { hp: 0.25, atk: 0 }, 3: { hp: 0.45, atk: 1 } };
   // Extra enemy health and attack by tier, one value per act.
-  AG.TIER_SCALE = { elite: [0.3, 0.5, 0.55] };
+  AG.TIER_SCALE = { elite: [0.2, 0.35, 0.4] };
   AG.TIER_ATK = { elite: [0, 1, 1] };
   const byAct = (v, act) => (Array.isArray(v) ? v[act - 1] : v) || 0;
   const SHATTER = 2; // bonus damage frozen units take from hits
@@ -193,7 +193,7 @@
     }
     s.hpBoost = hpBoost;
     s.atkBoost = atkBoost;
-    // Speed ties go to the player, then to whichever piece stands further forward.
+    // Within a side, speed ties go to whichever piece stands further forward.
     for (const u of s.units) {
       u.order = u.side === 0 ? u.y * 100 + u.x : (b.h - u.y) * 100 + u.x;
     }
@@ -275,9 +275,10 @@
   /* Turn order. The two sides take turns, one piece at a time, as in
      chess. Each side moves its pieces fastest first and every piece moves
      once a round; a side with more pieces gets proportionally more of the
-     turns, spread evenly through the round. The side with the quicker lead
-     piece opens the round (yours on a tie): its turns fall at 0, 1/n, 2/n…
-     of the way through the round, the other side's halfway between, and a
+     turns, spread evenly through the round. The enemy always opens the round
+     (you set up knowing where it stands, so it gets the first move): its
+     fastest piece goes, then your fastest. The opener's turns fall at 0,
+     1/n, 2/n… of the way through the round, the other side's halfway between, and a
      tie goes to whichever side did not just move. acts counts the turns
      each side has taken this round, last is the side that moved last. */
   function interleave(s, units, acts, last, opener) {
@@ -286,9 +287,7 @@
     for (const u of units) lists[u.side].push(u);
     lists[0].sort(cmp);
     lists[1].sort(cmp);
-    if (opener == null || opener < 0) {
-      opener = !lists[1].length ? 0 : !lists[0].length ? 1 : cmp(lists[0][0], lists[1][0]) <= 0 ? 0 : 1;
-    }
+    if (opener == null || opener < 0) opener = lists[1].length ? 1 : 0;
     const total = [acts[0] + lists[0].length, acts[1] + lists[1].length];
     const a = acts.slice(), k = [0, 0], out = [];
     const time = (side) => (a[side] + (side === opener ? 0 : 0.5)) / total[side];
@@ -308,7 +307,7 @@
     return out;
   }
   // The rest of this round's queue, in turn order (dead pieces dropped).
-  // Until somebody has moved, a change of speed can change who opens.
+  // Until somebody has moved, who opens is worked out again.
   function restOfRound(s) {
     const list = [];
     for (const id of s.queue) { const u = U(s, id); if (u && u.alive) list.push(u); }

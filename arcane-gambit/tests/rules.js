@@ -21,11 +21,15 @@ function battle(map, legend, army, opts, bopts) {
 }
 const find = (s, def, side) => s.units.find((u) => u.def === def && (side == null || u.side === side));
 
-test('speed orders the queue, ties go to the player', () => {
+test('the enemy always opens the round', () => {
+  // Apprentice and Goblin both have SPD 5: the enemy goes first.
   const s = battle(['g....', '.....', 'p....'], { g: 'goblin' }, [{ def: 'apprentice', x: 0, y: 2 }]);
   B.startRound(s);
-  // Apprentice and Goblin both have SPD 5: the player's piece goes first.
-  eq(B.U(s, s.queue[0]).def, 'apprentice', 'first in queue');
+  eq(B.U(s, s.queue[0]).def, 'goblin', 'tie: the goblin first');
+  // Even a much faster piece of ours moves second, right after the enemy's fastest.
+  const s2 = battle(['g....', '.....', 'p....'], { g: 'goblin' }, [{ def: 'scout', x: 0, y: 2 }]);
+  B.startRound(s2);
+  eq(s2.queue.map((id) => B.U(s2, id).def).join(), 'goblin,scout', 'the scout (SPD 8) still moves second');
 });
 
 test('the sides take turns, one piece at a time', () => {
@@ -38,11 +42,11 @@ test('the sides take turns, one piece at a time', () => {
   const s2 = battle(['g...g', '.....', '.....', 'ppppp'], { g: 'goblin' }, [0, 1, 2, 3].map((x) => ({ def: 'squire', x, y: 3 })));
   B.startRound(s2);
   eq(sides(s2), '100100', 'enemy, two of ours, enemy, two of ours');
-  // Within a side the fastest moves first, and a lone boss moves mid-round.
+  // Within a side the fastest moves first; a lone boss opens, then all of ours.
   const s3 = battle(['..K..', '.....', '.....', 'ppppp'], { K: 'goblinKing' }, [{ def: 'scout', x: 0, y: 3 }, { def: 'squire', x: 1, y: 3 }, { def: 'cleric', x: 2, y: 3 }, { def: 'knight', x: 3, y: 3 }]);
   B.startRound(s3);
-  eq(B.U(s3, s3.queue[0]).def, 'scout', 'the scout leads');
-  eq(sides(s3), '00100', 'the king moves in the middle');
+  eq(sides(s3), '10000', 'the king opens');
+  eq(B.U(s3, s3.queue[1]).def, 'scout', 'then our fastest, the scout');
   // A piece that falls mid-round is dealt out of the order.
   const s4 = battle(['g.g.g', '.....', '.....', 'ppppp'], { g: 'goblin' }, [{ def: 'squire', x: 0, y: 3 }, { def: 'knight', x: 1, y: 3 }, { def: 'cleric', x: 2, y: 3 }]);
   B.step(s4);
@@ -298,13 +302,13 @@ test('a troll does not regenerate on the turn its burn runs out', () => {
 });
 
 test('Accelerate moves a hasted ally up the rest of the round', () => {
-  const s = battle(['...s', '....', 'pp..'], { s: 'slimeling' }, [{ def: 'chronomancer', x: 0, y: 2, talents: ['accelerate'] }, { def: 'knight', x: 1, y: 2 }]);
+  const s = battle(['...s', '....', 'ppp.'], { s: 'slimeling' }, [{ def: 'chronomancer', x: 0, y: 2, talents: ['accelerate'] }, { def: 'knight', x: 1, y: 2 }, { def: 'squire', x: 2, y: 2 }]);
   B.startRound(s);
-  const c = find(s, 'chronomancer'), k = find(s, 'knight'), sl = find(s, 'slimeling');
-  eq(s.queue.indexOf(sl.uid) < s.queue.indexOf(k.uid), true, 'slimeling (SPD 3) starts ahead of the knight (SPD 2)');
+  const c = find(s, 'chronomancer'), k = find(s, 'knight'), sq = find(s, 'squire');
+  ok(s.queue.indexOf(sq.uid) < s.queue.indexOf(k.uid), 'the squire (SPD 3) starts ahead of the knight (SPD 2)');
   s.queue.splice(s.queue.indexOf(c.uid), 1);
   B.useAbility(s, c, 'haste', k.uid);
-  eq(s.queue[0], k.uid, 'the knight (now SPD 4) goes next');
+  ok(s.queue.indexOf(k.uid) < s.queue.indexOf(sq.uid), 'the knight (now SPD 4) moves ahead of the squire');
 });
 
 test('when valuing Haste the AI only replays turns that are still legal', () => {

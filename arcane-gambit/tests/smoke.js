@@ -125,10 +125,13 @@ const { chromium } = require('playwright');
     if (!(await page.locator('.modal').count())) await page.getByRole('button', { name: /Upgrades/ }).click();
     await page.waitForTimeout(250);
     await shot('08-loadout');
+    if (!(await page.locator('.modal .meter.supply .left').count())) errors.push('the loadout shows no supply left');
     await page.locator('.modal .close').click();
   } else {
     await shot('08-loadout');
+    if (!(await page.locator('.side .meter.supply .left').count())) errors.push('the loadout shows no supply left');
   }
+  if (!(await page.locator('.setup-main > .meters .left').count())) errors.push('the war room shows no supply left');
 
   await page.getByRole('button', { name: /Begin battle/ }).click();
   await page.waitForTimeout(2500);

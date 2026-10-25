@@ -427,7 +427,7 @@
   add({
     id: 'grandmaster', act: 3, tier: 'boss', name: 'The Mad Grandmaster', theme: 'classic',
     flavor: 'The Grandmaster plays the oldest game with a living army. Checkmate him and his whole army falls.',
-    supply: 32, boost: 0.5,
+    supply: 34, boost: 0.5,
     objective: { type: 'assassinate' },
     map: [
       'rnbqkbnr',
