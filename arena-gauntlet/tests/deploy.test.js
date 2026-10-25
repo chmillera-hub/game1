@@ -233,4 +233,31 @@ test('Auto puts the Cleric in the middle of the back row, fighters just ahead of
   assert.ok(ahead >= n * 0.8, `someone stands in front of the Cleric (${ahead}/${n})`);
 });
 
+test('free side-grades: 0 Supply but a slot, and Auto leaves them for you to choose', () => {
+  const D = AG.Data;
+  const side = Object.entries(Object.assign({}, D.SKILLS, D.GEAR)).filter(([, d]) => d.side).map(([id]) => id);
+  assert.ok(side.length >= 5, side.join(' '));
+  for (const id of side) assert.strictEqual((D.SKILLS[id] || D.GEAR[id]).cost, 0);
+  assert.strictEqual(D.GEAR.iron_will.cost, 0);
+  assert.strictEqual(D.SKILLS.unshakable.cost, 0);
+  for (let seed = 1; seed <= 6; seed++) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    for (const id of side) R.addItem(run, D.SKILLS[id] ? 'skill' : 'gear', id);
+    R.addItem(run, 'gear', 'iron_will');
+    run.supplyBonus = 12;
+    R.chooseChallenge(run, 1);
+    const dep = R.autoDeploy(run, 0);
+    const worn = dep.flatMap((d) => {
+      const r = R.unitById(run, d.rid);
+      return r.load.skills.concat(r.load.gear).map((uid) => R.itemByUid(run, uid).id);
+    });
+    assert.ok(!worn.some((id) => side.includes(id)), `seed ${seed}: ${worn.join(' ')}`);
+    // A free item adds nothing to a unit's Supply.
+    const r = R.unitById(run, dep[0].rid);
+    const before = R.unitCost(run, r);
+    const iw = run.items.find((it) => it.id === 'iron_will' && !R.itemHolder(run, it.uid));
+    if (iw && R.assignItem(run, r.id, iw.uid)) assert.strictEqual(R.unitCost(run, r), before);
+  }
+});
+
 console.log(`deploy: ${passed} tests passed`);

@@ -485,6 +485,110 @@ test('Shield Bash knocks back, and slams into obstacles', () => {
   assert.strictEqual(sc2.hp, sc2.maxHp - 9 - E.IMPACT.rock, 'slam damage');
 });
 
+test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile ally', () => {
+  const near = { k_guard: 0, k_bash: 0 };
+  for (let seed = 1; seed <= 10; seed++)
+    for (const a1 of ['k_guard', 'k_bash']) {
+      const s = board([
+        { type: 'knight', team: 'P', x: 4, y: 7, a1, facing: 0 },
+        { type: 'archer', team: 'P', x: 6, y: 8, facing: 0 },
+        { type: 'orc', team: 'E', x: 4, y: 1, facing: 2 },
+        { type: 'goblin_archer', team: 'E', x: 6, y: 0, facing: 2 },
+      ]);
+      s.seed = seed;
+      const [kn, ar] = s.units;
+      ar.wait = 2;
+      const plan = AG.AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0.4 });
+      const to = plan.to || kn;
+      if (Math.abs(to.x - ar.x) + Math.abs(to.y - ar.y) === 1) near[a1]++;
+    }
+  assert.ok(near.k_guard >= 9, `with Guardian: beside the archer ${near.k_guard}/10`);
+  assert.ok(near.k_bash <= 3, `without: it marches on (${near.k_bash}/10)`);
+  assert.ok(AG.Data.ABILITIES.k_guard.desc.includes('The AI keeps your units beside it'));
+});
+
+// ------------------------------------------------------------ cleanup
+
+test('the enemy army down with gold, goals or loot still on the field: the battle goes on, the win already yours', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'P', x: 5, y: 8 },
+      { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'totem', team: 'E', x: 2, y: 2 },
+      { type: 'barricade', team: 'E', x: 6, y: 3, bounty: 12 },
+    ],
+    { loot: [{ id: 'c', kind: 'chest', x: 1, y: 7 }] }
+  );
+  const [kn, ar, sc, totem, bar] = s.units;
+  sc.hp = 1;
+  act(s, kn, { kind: 'unit', uid: sc.uid });
+  assert.ok(!sc.alive);
+  assert.ok(!s.over, 'not over yet');
+  assert.ok(s.cleanup && s.cleanup.turn === s.turn && s.cleanup.lost === 0);
+  assert.strictEqual(E.cleanupLeft(s), 3, 'a totem, a barricade and a chest');
+  assert.ok(s.events.some((e) => e.t === 'cleanup' && e.left === 3));
+  // Your army goes round collecting.
+  let guard = 0;
+  while (!s.over && guard++ < 400) {
+    AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+    s.events.length = 0;
+  }
+  assert.ok(s.over && s.winner === 'P');
+  assert.ok(!totem.alive && !bar.alive && s.loot[0].taken, 'everything collected');
+  assert.ok(s.end.cleaned);
+  assert.strictEqual(s.stats.bounty, 12 + totem.salvage);
+});
+
+test('mid-cleanup nothing can cost you the win: not fatigue taking the whole army, not a stall, not a retreat', () => {
+  const field = () => {
+    const s = board([
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'totem', team: 'E', x: 0, y: 0 },
+    ]);
+    const [kn, sc] = s.units;
+    sc.hp = 1;
+    act(s, kn, { kind: 'unit', uid: sc.uid });
+    assert.ok(s.cleanup && !s.over);
+    return s;
+  };
+  // The last of the army falls (to fatigue, say): still a win.
+  let s = field();
+  s.units[0].hp = 1;
+  s.overtime = 1;
+  for (let i = 0; i < 8 && !s.over; i++) E.endTurn(s);
+  assert.ok(s.over && s.winner === 'P' && !s.units[0].alive);
+  // An army that gets nowhere: the win comes after a few turns without progress.
+  s = field();
+  s.units[0].root = 99;
+  for (let i = 0; i < 40 && !s.over; i++) E.endTurn(s);
+  assert.ok(s.over && s.winner === 'P', 'a stall ends it');
+  assert.ok(s.turn - s.cleanup.at >= E.CLEANUP_STALL);
+  // Retreating or finishing now: a win.
+  s = field();
+  E.forfeit(s);
+  assert.ok(s.over && s.winner === 'P' && !s.end.cleaned);
+});
+
+test('a flawless or fast win counts from the moment the enemy army fell, not the end of the cleanup', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'totem', team: 'E', x: 0, y: 0 },
+  ]);
+  const [kn, sc] = s.units;
+  sc.hp = 1;
+  act(s, kn, { kind: 'unit', uid: sc.uid });
+  const at = s.turn;
+  kn.hp = 1;
+  s.overtime = 1;
+  for (let i = 0; i < 12 && !s.over; i++) E.endTurn(s);
+  assert.ok(s.over && !kn.alive);
+  assert.strictEqual(s.cleanup.lost, 0);
+  assert.strictEqual(s.cleanup.turn, at);
+});
+
 // ------------------------------------------------------------ pushes and pulls
 
 const wet = (cells, kind) => {
@@ -1102,7 +1206,7 @@ test('gear bonuses: blessed blades, runic mastery and spellward', () => {
   assert.strictEqual(E.calcHit(s, py, guarded, {}).dmg, 13, 'spellward softens magic by 20%');
 });
 
-test('towers and walls do not need to fall for a rout', () => {
+test('towers and walls do not need to fall: the win is yours, and your army stays to collect their coins', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
     { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
@@ -1112,7 +1216,18 @@ test('towers and walls do not need to fall for a rout', () => {
   const [kn, sc] = s.units;
   sc.hp = 1;
   act(s, kn, { kind: 'unit', uid: sc.uid });
+  assert.ok(s.cleanup && !s.over, 'cleaning up');
+  E.endCleanup(s);
   assert.ok(s.over && s.winner === 'P');
+  // Nothing left worth having: over on the spot.
+  const t = board([
+    { type: 'knight', team: 'P', x: 4, y: 5 },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'barrel', team: 'E', x: 0, y: 0 },
+  ]);
+  t.units[1].hp = 1;
+  act(t, t.units[0], { kind: 'unit', uid: t.units[1].uid });
+  assert.ok(t.over && t.winner === 'P' && !t.cleanup, 'a powder keg holds no gold');
 });
 
 test('second wind, the phoenix feather and phoenix soul', () => {

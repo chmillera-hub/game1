@@ -94,4 +94,55 @@ test('a drafted army starts the campaign', () => {
   assert.ok(run.offer && run.offer.length === 3, 'the first round of challenges is on offer');
 });
 
+test('every unit on offer names the talent it brings, one its class has not brought yet; so does the Cleric', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const picks = [];
+    for (let k = 0; k < R.DRAFT_STEPS.length; k++) {
+      const opts = R.draftOffer(seed, k, picks).options;
+      // A class already picked whenever it comes up again, to test the no-repeat rule.
+      picks.push(k < 5 ? opts.find((t) => picks.includes(t)) || opts[seed % 3] : opts[0]);
+    }
+    const units = picks.slice(0, 5);
+    const brought = [];
+    for (let k = 0; k < 5; k++) {
+      const o = R.draftOffer(seed, k, picks);
+      assert.strictEqual(o.talents.length, 3);
+      o.options.forEach((t, i) => assert.ok(!o.talents[i] || D.TALENTS[o.talents[i]].cls === t, 'a talent of its own class'));
+      brought.push(o.talents[o.options.indexOf(units[k])]);
+    }
+    const ct = R.draftClericTalent(seed);
+    assert.ok(ct && D.TALENTS[ct].cls === 'cleric');
+    const run = R.newRun({ seed, draft: { units, relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+    const got = run.roster.filter((r) => !r.core).map((r) => r.brought || null);
+    assert.deepStrictEqual(got, brought, 'each unit brings the talent its card named');
+    const core = run.roster.find((r) => r.core);
+    assert.strictEqual(core.brought, ct, 'and the Cleric brings its own');
+    // No two units of a class bring the same talent while their class has others left.
+    for (const t of new Set(units)) {
+      const mine = brought.filter((id, k) => units[k] === t && id);
+      const pool = Object.keys(D.TALENTS).filter((id) => D.TALENTS[id].cls === t).length;
+      if (mine.length <= pool) assert.strictEqual(new Set(mine).size, mine.length, `seed ${seed}: two ${t}s, two talents`);
+    }
+  }
+});
+
+test('battle spoils and the merchant name the talent a recruit brings, and that is the one it brings', () => {
+  for (let seed = 1; seed <= 12; seed++) {
+    const run = R.newRun({ seed, warband: 'vanguard' });
+    const o = run.offer[1];
+    const sp = o.reward.spoils.find((x) => x.type === 'recruit');
+    assert.ok(sp && sp.talent && D.TALENTS[sp.talent].cls === sp.unit);
+    R.chooseChallenge(run, 1);
+    const dep = R.autoDeploy(run, 0);
+    const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+    s.over = true;
+    s.winner = 'P';
+    R.finishBattle(run, s, dep);
+    R.takeSpoil(run, run.pending.spoils.indexOf(run.pending.spoils.find((x) => x.type === 'recruit')));
+    const u = run.roster[run.roster.length - 1];
+    assert.strictEqual(u.brought, sp.talent);
+    assert.ok(run.items.some((it) => it.kind === 'talent' && it.id === sp.talent), 'in the pack');
+  }
+});
+
 console.log(`draft: ${passed} tests passed`);

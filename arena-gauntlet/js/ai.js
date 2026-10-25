@@ -320,9 +320,13 @@
     const st = STANCES[stanceName] || STANCES.balanced;
     // Objective objects count as targets to march on when breaking them wins the battle.
     // Treasure guardians and towers are left alone unless they get in the way.
-    const foes = s.units.filter(
-      (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u))
-    );
+    // The enemy army beaten, the player's army cleans up: buildings with gold or a goal in
+    // them, and any guards still standing at loot nobody has taken.
+    const cleanup = team === 'P' && !!s.cleanup;
+    const left = cleanup ? E.cleanupLoot(s) : [];
+    const foes = cleanup
+      ? E.cleanupTargets(s).concat(s.units.filter((u) => u.alive && u.team === foe && u.bound && u.post && left.some((l) => l.x === u.post.x && l.y === u.post.y)))
+      : s.units.filter((u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u)));
     // Hostile Lightning Wards (anything rooted to the spot that zaps what comes near), and
     // the living foes worth walking into one for. While any of those remain, nobody marches
     // on a ward: it is fought from outside its reach.
@@ -344,7 +348,10 @@
       objects: s.units.filter((u) => u.alive && u.team === team && u.goal),
       // Enemies to march on: buildings that must fall, anything still spawning, and the
       // Commander whose death wins the battle.
-      siege: s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u) || (s.objective === 'vip' && u.vip))),
+      siege: cleanup
+        ? foes.filter((u) => u.nonCombat || u.structure)
+        : s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u) || (s.objective === 'vip' && u.vip))),
+      cleanup,
       // Tiles where enemy reinforcements land at the end of the enemy's next turn.
       marks: new Set(
         s.waves
@@ -352,6 +359,7 @@
           .flatMap((w) => w.marks.map(([mx, my]) => E.idx(s, mx, my)))
       ),
       foeRanged: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.range && a.range[1] >= 2 && a.dmg)),
+      foeMagic: s.units.some((u) => u.alive && u.team === foe && !u.nonCombat && u.acts.some((a) => a.dmg === 'magic')),
       approach: st.approach,
       risk: st.risk,
       focus: focusOf(s, team, opts.focus),
@@ -507,11 +515,22 @@
     const nf = nearestFoe(ctx, x, y);
     const walk = flying ? nf.d : Math.min(ctx.distField[E.idx(s, x, y)], nf.d + 6);
     const a = u.act;
+    // Guardians and spellwards (Guardian, Holy Aegis, Spellward Aura, Grounding Field) keep
+    // their friends beside them, the fragile ones first, and the fragile ones stay beside a
+    // guardian: the stronger the protection, the more it is worth.
+    const fragile = (t) => ['ranged', 'caster', 'support'].includes(UNITS[t.type].role);
+    const cover = (t) => ((t.props.guard || 0) + (t.props.magicGuard || 0) * (ctx.foeMagic ? 1 : 0.5)) / 0.15;
+    const mine = cover(u);
+    const charges = mine && !ctx.cleanup ? ctx.allies.filter((al) => al !== u && fragile(al)) : [];
     switch (role) {
       case 'tank':
       case 'melee':
       case 'skirmisher':
-        v -= walk * ctx.approach;
+        // A guardian escorts: it marches with the fragile, not ahead of them.
+        if (charges.length) {
+          const dc = Math.min(...charges.map((al) => Math.abs(al.x - x) + Math.abs(al.y - y)));
+          v -= walk * ctx.approach * 0.35 + Math.max(0, dc - 1) * 1.6 * Math.min(2, mine);
+        } else v -= walk * ctx.approach;
         break;
       case 'monster': {
         const ideal = a.kind === 'cone' ? 2 : 1;
@@ -572,12 +591,10 @@
         }
       }
     }
-    if (u.props.guard) {
-      for (const al of ctx.allies) {
-        if (al === u || Math.abs(al.x - x) + Math.abs(al.y - y) !== 1) continue;
-        const r = UNITS[al.type].role;
-        v += r === 'ranged' || r === 'caster' || r === 'support' ? 2.5 : 1;
-      }
+    for (const al of ctx.allies) {
+      if (al === u || Math.abs(al.x - x) + Math.abs(al.y - y) !== 1) continue;
+      if (mine) v += (fragile(al) ? 2.5 : 1) * mine;
+      if (fragile(u)) v += 1.2 * cover(al);
     }
     // Hazards underfoot, and powder kegs that the enemy could set off.
     if (!flying) {
@@ -702,6 +719,8 @@
         if (ctx.ambush && t.reinforcement && t.team !== u.team) val *= e.kill ? 1.6 : 1.25;
         // A barricade's gold is worth breaking it for when nothing better is in reach.
         if (t.bounty && t.team !== u.team && ctx.idle) val += e.kill ? t.bounty * 0.4 : (dealt / t.maxHp) * t.bounty * 0.15;
+        // Cleaning up after the enemy army fell: every blow at what is left is progress.
+        if (ctx.cleanup && t.team !== u.team && !e.friendly) val += dealt * 0.6 + (e.kill ? 25 : 0);
         // A hit on the priority target outweighs anything else this unit could do.
         if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
         // With the shrine the priority, an enemy standing on it must be driven off.
@@ -761,8 +780,12 @@
       const val = Math.min(k.otherDmg, o.hp) * (o.value / o.maxHp) + (k.otherDmg >= o.hp ? o.value * 0.6 : 0);
       v += o.team === u.team ? -val * 1.4 : val;
     }
+    // Your army loves a good shove: when it can bump a foe into something (water, lava, a
+    // rock, the edge, another foe or a building), it goes out of its way to, chaos and all.
+    if (u.team === 'P' && k.end && !(o && o.team === u.team)) v += k.end === 'water' || k.end === 'lava' ? CHAOS + 5 : CHAOS;
     return v;
   }
+  const CHAOS = 8;
 
   // What a dying powder keg or sapper would do to everyone beside it.
   function boomValue(ctx, u, t) {
