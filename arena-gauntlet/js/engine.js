@@ -69,6 +69,14 @@
     return into;
   }
 
+  // Campaign enemies (spec.foe) never heal: their masteries keep everything but the mending
+  // and the rising again (a Skeleton Archer's Undying, say).
+  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'phoenix'];
+  function calmMastery(m) {
+    if (!m.traits || !m.traits.some((t) => HEAL_TRAITS.includes(t))) return m;
+    return Object.assign({}, m, { traits: m.traits.filter((t) => !HEAL_TRAITS.includes(t)) });
+  }
+
   // Every mod that applies to a unit spec: class abilities, mastery, skills, gear, enchantment.
   function specMods(spec) {
     const T = UNITS[spec.type];
@@ -78,7 +86,7 @@
     if (ab) {
       if (spec.a1 && ab[1].includes(spec.a1)) out.push(D.ABILITIES[spec.a1].mod);
       if (lv >= 2 && spec.a2 && ab[2].includes(spec.a2)) out.push(D.ABILITIES[spec.a2].mod);
-      if (lv >= 3 && D.MASTERY[spec.type]) out.push(D.MASTERY[spec.type].mod);
+      if (lv >= 3 && D.MASTERY[spec.type]) out.push(spec.foe ? calmMastery(D.MASTERY[spec.type].mod) : D.MASTERY[spec.type].mod);
     }
     for (const id of new Set(spec.talents || [])) if (D.TALENTS[id] && D.TALENTS[id].cls === spec.type) out.push(D.TALENTS[id].mod);
     for (const id of spec.skills || []) if (D.SKILLS[id]) out.push(D.SKILLS[id].mod);

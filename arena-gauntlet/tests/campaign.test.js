@@ -122,7 +122,7 @@ test('the whole road: three acts, then the campaign is won and the final challen
 // Anything in an enemy army that heals: a Cleric or Furgon, or a healing ability, skill or gear.
 function healing(enc) {
   const D = AG.Data;
-  const heals = (m) => !!m && ((m.props && (m.props.regen || m.props.lifesteal || m.props.healMult)) || (m.active && ['heal', 'revive'].includes(m.active.kind)) || (m.traits || []).some((t) => ['bloodrage', 'auramend', 'martyr'].includes(t)));
+  const heals = (m) => !!m && ((m.props && (m.props.regen || m.props.lifesteal || m.props.healMult)) || (m.active && ['heal', 'revive'].includes(m.active.kind)) || (m.traits || []).some((t) => ['bloodrage', 'auramend', 'martyr', 'phoenix'].includes(t)));
   const out = [];
   const specs = enc.units.concat(...(enc.waves || []).map((w) => w.units));
   for (const u of specs) {
@@ -135,23 +135,18 @@ function healing(enc) {
   return out;
 }
 
-test('enemies barely heal: no healers anywhere, but for one Healers battle a campaign, on offer once', () => {
+test('enemies never heal: no healers anywhere in a campaign, bosses and the final challenge included', () => {
   for (const seed of [3, 11, 29, 47]) {
     const run = R.newRun({ seed, warband: 'ember' });
-    const spot = R.healerSpot(run);
-    assert.ok([2, 3].includes(spot.act) && ['medium', 'elite'].includes(spot.tier));
     const seen = new Set();
-    const special = [];
+    let bosses = 0;
     const look = () => {
       const encs = (run.offer || []).map((o) => o.enc).concat(run.pending && run.pending.enc ? [run.pending.enc] : []);
       for (const enc of encs) {
         if (seen.has(enc)) continue;
         seen.add(enc);
-        const h = healing(enc);
-        if (enc.healers) {
-          special.push(enc);
-          assert.ok(enc.units.filter((u) => u.type === 'cleric').length >= 1, 'the Healers battle brings Clerics');
-        } else assert.deepStrictEqual(h, [], `seed ${seed} ${enc.name}: ${h}`);
+        if (enc.kind === 'boss') bosses++;
+        assert.deepStrictEqual(healing(enc), [], `seed ${seed} ${enc.name}`);
       }
     };
     let guard = 0;
@@ -161,9 +156,19 @@ test('enemies barely heal: no healers anywhere, but for one Healers battle a cam
     }
     R.faceFinal(run);
     look();
-    assert.strictEqual(special.length, 1, `seed ${seed}: exactly one Healers battle on offer`);
-    assert.strictEqual(special[0].kind === 'elite' ? 'elite' : 'medium', spot.tier);
+    assert.ok(bosses >= 4, 'three bosses and the final challenge checked');
   }
+});
+
+test('a campaign enemy never rises again: a Level 3 Skeleton Archer keeps its mastery but not its Undying', () => {
+  const E = AG.Engine;
+  const s = E.createBattle({ w: 9, h: 9, terrain: new Array(81).fill(0), relics: { P: [], E: [] }, seed: 3, queue: true, units: [
+    { type: 'skelarcher', team: 'P', x: 4, y: 8, level: 3 },
+    { type: 'skelarcher', team: 'E', x: 4, y: 0, level: 3, foe: true },
+  ] });
+  const [mine, foe] = s.units;
+  assert.ok(mine.phoenix, 'yours still rises again');
+  assert.ok(!foe.phoenix, 'a campaign enemy does not');
 });
 
 test('claiming the victory instead ends the campaign as won', () => {

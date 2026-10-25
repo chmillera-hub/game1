@@ -1022,7 +1022,6 @@
         <div class="ch-top"><span class="tier-chip tier-${o.tier}">${R.TIERS[o.tier].name}</span>${o.attempts ? `<span class="small muted">${o.attempts} ${o.attempts === 1 ? 'try' : 'tries'} so far</span>` : ''}</div>
         <canvas class="ch-thumb" data-thumb="${i}"></canvas>
         <div class="title">${esc(o.enc.name)}</div>
-        ${o.enc.healers ? `<div class="ch-healers">${ic('heart')} <b>Enemy healers</b>: the one battle this campaign where the enemy brings Clerics that mend their wounded. +${R.HEALERS_GOLD} gold if you win.</div>` : ''}
         <div class="ch-goals">${objectivesHTML(o.enc)}</div>
         <div class="ch-pay">${pays}</div>
       </button>`;
@@ -4556,7 +4555,7 @@
         <h4>Damage, facing and defense</h4>
         <ul>
           <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
-          <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, pulses, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
+          <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, lightning bolts, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
           <li>When a unit finishes its turn it turns to face the nearest enemy.</li>
           <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
@@ -4566,7 +4565,7 @@
           <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
           <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
           <li>War totems whip the enemies within 2 tiles into a frenzy (25% more damage) until they fall.</li>
-          <li><b>Enemies barely heal.</b> You have your Cleric; they have nothing that mends, so every hit you land stays landed. The one exception is a single <b>Healers battle</b> a campaign, marked on its card: that army brings Clerics, and pays 25 gold extra.</li>
+          <li><b>Enemies never heal</b>, bosses included, and never rise again once they fall. You have your Cleric; they have nothing that mends, so every hit you land stays landed.</li>
         </ul>
         <h4>Buildings and siege</h4>
         <ul>

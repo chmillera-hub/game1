@@ -323,10 +323,10 @@
     const foes = s.units.filter(
       (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u))
     );
-    // Hostile Lightning Wards (anything rooted to the spot that pulses damage around it), and
+    // Hostile Lightning Wards (anything rooted to the spot that zaps what comes near), and
     // the living foes worth walking into one for. While any of those remain, nobody marches
     // on a ward: it is fought from outside its reach.
-    const wards = foes.filter((u) => u.traits.has('immobile') && u.act.kind === 'nova' && u.act.dmg);
+    const wards = foes.filter((u) => u.traits.has('immobile') && ['nova', 'line'].includes(u.act.kind) && u.act.dmg);
     const flesh = foes.filter((u) => !u.nonCombat && !u.traits.has('immobile'));
     const chase = wards.length && flesh.length ? foes.filter((u) => !wards.includes(u)) : foes;
     const ctx = {
@@ -448,12 +448,21 @@
     return false;
   }
 
+  // A Lightning Ward fires down straight lines; anything else rooted pulses all around.
+  function inWardReach(s, w, x, y) {
+    if (w.act.kind === 'line') {
+      for (let d = 0; d < 4; d++) if (E.lineTiles(s, w.x, w.y, d, w.act.len).some(([tx, ty]) => tx === x && ty === y)) return true;
+      return false;
+    }
+    return Math.abs(w.x - x) + Math.abs(w.y - y) <= (w.act.radius || 2);
+  }
+
   // Standing in a hostile ward's reach without a living foe to hit from there: the ward
   // zaps you for nothing. Worth a lot to avoid.
   function wardPenalty(ctx, u, x, y) {
     if (ctx.focus) return 0; // a priority target overrides this caution
     for (const w of ctx.wards) {
-      if (Math.abs(w.x - x) + Math.abs(w.y - y) > (w.act.radius || 2)) continue;
+      if (!inWardReach(ctx.s, w, x, y)) continue;
       if (canHitFlesh(ctx, u, x, y)) return 0;
       const zap = w.pow * (1 - Math.max(0, u.res));
       return 20 + zap * (u.value / u.maxHp) * 3;
