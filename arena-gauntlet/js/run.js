@@ -148,9 +148,9 @@
     return rng.weighted(all.filter((t) => owned(t) === fewest).map((t) => [t.id, talentWeight(run, t)]));
   }
 
-  // " Mira brings the Poison Arrows talent (in your pack)." for a unit that just joined.
+  // " Mira comes with the Poison Arrows talent." for a unit that just joined.
   function talentNote(run, u) {
-    return u && u.brought && TALENTS[u.brought] ? ` ${u.name} brings the ${TALENTS[u.brought].name} talent (in your pack).` : '';
+    return u && u.brought && TALENTS[u.brought] ? ` ${u.name} comes with the ${TALENTS[u.brought].name} talent.` : '';
   }
 
   // Back to the bare unit, as it sits on the bench: Level 1, the free picks, nothing slotted
