@@ -114,7 +114,25 @@
     if (m.name) u.name = m.name;
     if (m.passives) u.pas = Object.assign({}, u.pas, AG.deepCopy(m.passives));
     if (m.shield) u.shield += m.shield;
+    u.maxHp = Math.max(1, u.maxHp);
+    u.atk = Math.max(1, u.atk);
+    u.spd = Math.max(0, u.spd);
+    u.armor = Math.max(0, u.armor);
   }
+
+  /* The player's priority: the enemy on the marked square, or the square.
+     It can be set before the battle or changed while it is paused; null
+     (or a square nobody can stand on) clears it. */
+  B.setPriority = function (s, pr) {
+    const b = s.board;
+    s.priority = null;
+    if (!pr || !AG.inBounds(b, pr.x, pr.y)) return null;
+    const i = pr.y * b.w + pr.x;
+    const o = s.occ[i] ? U(s, s.occ[i]) : null;
+    if (o && o.alive && o.side === 1) s.priority = { side: 0, uid: o.uid };
+    else if (AG.standable(b, i, false)) s.priority = { side: 0, cell: i };
+    return s.priority;
+  };
 
   B.addUnit = function (s, u) {
     u.uid = s.nextUid++;
@@ -168,14 +186,14 @@
       holdEnd: 0,
     };
     for (const a of army) {
-      const u = B.makeUnit(a.def, 0, a.x, a.y, { talents: a.talents, rune: a.rune, rank: a.rank });
+      const u = B.makeUnit(a.def, 0, a.x, a.y, { talents: a.talents, rune: a.rune, rank: a.rank, mods: a.mods });
       B.addUnit(s, u);
     }
     // A saved army (a Hall of Fame duel) takes the far side, mirrored.
     for (const a of opts.enemyArmy || []) {
       const x = a.x, y = b.h - 1 - a.y, i = y * b.w + x;
       if (!AG.inBounds(b, x, y) || s.occ[i] || !AG.standable(b, i, !!(AG.Units[a.def] || {}).flying)) continue;
-      B.addUnit(s, B.makeUnit(a.def, 1, x, y, { talents: a.talents, rune: a.rune, rank: a.rank }));
+      B.addUnit(s, B.makeUnit(a.def, 1, x, y, { talents: a.talents, rune: a.rune, rank: a.rank, mods: a.mods }));
     }
     const sc = AG.ACT_SCALE[enc.act] || { hp: 0, atk: 0 };
     const hpBoost = sc.hp + (opts.ramp || 0) + byAct(AG.TIER_SCALE[enc.tier], enc.act) + (enc.boost || 0) + (opts.hpMod || 0);
@@ -197,14 +215,7 @@
     for (const u of s.units) {
       u.order = u.side === 0 ? u.y * 100 + u.x : (b.h - u.y) * 100 + u.x;
     }
-    // The player's priority: the enemy on the marked square, or the square.
-    const pr = opts.priority;
-    if (pr && AG.inBounds(b, pr.x, pr.y)) {
-      const i = pr.y * b.w + pr.x;
-      const o = s.occ[i] ? U(s, s.occ[i]) : null;
-      if (o && o.side === 1) s.priority = { side: 0, uid: o.uid };
-      else if (AG.standable(b, i, false)) s.priority = { side: 0, cell: i };
-    }
+    B.setPriority(s, opts.priority);
     for (let side = 0; side < 2; side++) relicHook(s, side, 'battleStart');
     for (const u of s.units.slice()) passiveHook(s, u, 'battleStart');
     for (const u of s.units) { AG.refreshFlags(u); u.value = B.computeValue(u); u.hp = Math.min(u.hp, u.maxHp); }

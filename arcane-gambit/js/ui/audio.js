@@ -224,54 +224,76 @@
   const SCALES = {
     dorian: [0, 2, 3, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], phrygian: [0, 1, 3, 5, 7, 8, 10],
     ionian: [0, 2, 4, 5, 7, 9, 11], lydian: [0, 2, 4, 6, 7, 9, 11], harmonic: [0, 2, 3, 5, 7, 8, 11],
+    mixolydian: [0, 2, 4, 5, 7, 9, 10], minpent: [0, 3, 5, 7, 10],
   };
   // bars: bars per chord; arp, bass and perc name the patterns below; cut is the pad's brightness.
   const TRACKS = {
-    menu: { bpm: 68, root: 50, scale: 'dorian', prog: [0, 3, 5, 4], bars: 2, arp: 'slow', bass: 'roots', perc: null, cut: 1300, lead: 0.45 },
-    tower1: { bpm: 76, root: 50, scale: 'dorian', prog: [0, 6, 3, 4], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1600, lead: 0.35 },
-    tower2: { bpm: 70, root: 45, scale: 'aeolian', prog: [0, 5, 3, 6], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1200, lead: 0.35 },
-    tower3: { bpm: 72, root: 52, scale: 'lydian', prog: [0, 1, 5, 4], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1900, lead: 0.35 },
-    battle: { bpm: 102, root: 45, scale: 'aeolian', prog: [0, 5, 6, 4], bars: 1, arp: 'run', bass: 'pulse', perc: 'drive', cut: 2100, lead: 0.2 },
+    calm1: { bpm: 68, root: 50, scale: 'dorian', prog: [0, 3, 5, 4], bars: 2, arp: 'slow', bass: 'roots', perc: null, cut: 1300, lead: 0.45 },
+    calm2: { bpm: 76, root: 50, scale: 'dorian', prog: [0, 6, 3, 4], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1600, lead: 0.35 },
+    calm3: { bpm: 70, root: 45, scale: 'aeolian', prog: [0, 5, 3, 6], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1200, lead: 0.35 },
+    calm4: { bpm: 72, root: 52, scale: 'lydian', prog: [0, 1, 5, 4], bars: 2, arp: 'flow', bass: 'roots', perc: 'soft', cut: 1900, lead: 0.35 },
+    calm5: { bpm: 80, root: 55, scale: 'mixolydian', prog: [0, 6, 3, 0], bars: 2, arp: 'lilt', bass: 'roots', perc: 'soft', cut: 1500, lead: 0.4 },
+    battle1: { bpm: 102, root: 45, scale: 'aeolian', prog: [0, 5, 6, 4], bars: 1, arp: 'run', bass: 'pulse', perc: 'drive', cut: 2100, lead: 0.2 },
+    battle2: { bpm: 108, root: 50, scale: 'dorian', prog: [0, 3, 6, 4], bars: 1, arp: 'flow', bass: 'gallop', perc: 'drive', cut: 2300, lead: 0.2 },
+    battle3: { bpm: 96, root: 52, scale: 'harmonic', prog: [0, 5, 1, 4], bars: 1, arp: 'run', bass: 'pulse', perc: 'march', cut: 1800, lead: 0.25 },
+    battle4: { bpm: 116, root: 48, scale: 'minpent', prog: [0, 3, 1, 2], bars: 1, arp: 'arc', bass: 'pulse', perc: 'drive', cut: 2400, lead: 0.3 },
+    battle5: { bpm: 100, root: 43, scale: 'mixolydian', prog: [0, 6, 3, 0], bars: 2, arp: 'arc', bass: 'gallop', perc: 'march', cut: 2000, lead: 0.2 },
     boss: { bpm: 110, root: 40, scale: 'phrygian', prog: [0, 1, 0, 6], bars: 1, arp: 'run', bass: 'pulse', perc: 'heavy', cut: 1700, lead: 0.15 },
     mega: { bpm: 64, root: 36, scale: 'harmonic', prog: [0, 1, 5, 4], bars: 2, arp: 'sparse', bass: 'beat', perc: 'heartbeat', cut: 1000, lead: 0.12 },
     victory: { bpm: 90, root: 48, scale: 'ionian', prog: [0, 4, 5, 3], bars: 1, arp: 'run', bass: 'roots', perc: 'light', cut: 2500, lead: 0.45 },
   };
-  const ARP = { slow: [0, 4, 8, 12], flow: [0, 3, 6, 8, 11, 14], run: [0, 2, 4, 6, 8, 10, 12, 14], sparse: [0, 10] };
-  const BASS = { roots: [0, 8], pulse: [0, 3, 6, 8, 11, 14], beat: [0, 3] };
+  /* Families: asking for 'calm' or 'battle' plays one of its variations and
+     moves on to the next one every `every` bars, so long sessions don't loop
+     the same tune. Each new start also begins on a fresh variation. */
+  const FAMILIES = {
+    calm: { tracks: ['calm1', 'calm2', 'calm3', 'calm4', 'calm5'], every: 40 },
+    battle: { tracks: ['battle1', 'battle2', 'battle3', 'battle4', 'battle5'], every: 48 },
+  };
+  const rot = { calm: Math.floor(Math.random() * 5), battle: Math.floor(Math.random() * 5) };
+  const ARP = { slow: [0, 4, 8, 12], flow: [0, 3, 6, 8, 11, 14], run: [0, 2, 4, 6, 8, 10, 12, 14], sparse: [0, 10], lilt: [0, 3, 8, 11], arc: [0, 2, 4, 8, 10, 12] };
+  const BASS = { roots: [0, 8], pulse: [0, 3, 6, 8, 11, 14], beat: [0, 3], gallop: [0, 2, 3, 8, 10, 11] };
   const PERC = {
     soft: { hat: [4, 12] },
     light: { kick: [0, 8], hat: [4, 12] },
     drive: { kick: [0, 8, 10], snare: [4, 12], hat: [2, 6, 10, 14] },
     heavy: { kick: [0, 3, 8, 11], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
+    march: { kick: [0, 8], snare: [4, 12, 14], hat: [0, 4, 8, 12] },
     heartbeat: { heart: [0, 3] },
   };
   // The chord on a scale degree: root, third, fifth and seventh, as MIDI notes.
   function chordOf(sp, deg) {
     const sc = SCALES[sp.scale];
+    const n = sc.length;
     return [0, 2, 4, 6].map((k) => {
       const d = deg + k;
-      return sp.root + sc[d % 7] + 12 * Math.floor(d / 7);
+      return sp.root + sc[d % n] + 12 * Math.floor(d / n);
     });
   }
   function scaleNote(sp, d) {
     const sc = SCALES[sp.scale];
-    const oct = Math.floor(d / 7);
-    return sp.root + sc[((d % 7) + 7) % 7] + 12 * oct;
+    const n = sc.length;
+    return sp.root + sc[((d % n) + n) % n] + 12 * Math.floor(d / n);
   }
 
   Snd.TRACKS = Object.keys(TRACKS);
-  // Change the background music (crossfading); null for silence.
+  Snd.FAMILIES = FAMILIES;
+  // Change the background music (crossfading); null for silence. A family
+  // name ('calm', 'battle') keeps playing if one of its tunes already is.
   Snd.music = function (name) {
     wanted = name;
     if (!ctx) return;
-    if (track && track.name === name) return;
+    if (track && (track.name === name || track.family === name)) return;
+    const fam = FAMILIES[name];
+    start(fam ? fam.tracks[rot[name]++ % fam.tracks.length] : name, fam ? name : null);
+  };
+  function start(name, family) {
     const t = ctx.currentTime;
     if (track) {
       const old = track;
       old.dead = true;
       old.gain.gain.cancelScheduledValues(t);
-      old.gain.gain.setTargetAtTime(0.0001, t, 0.5);
-      setTimeout(function () { try { old.gain.disconnect(); } catch (e) { /* gone */ } }, 4000);
+      old.gain.gain.setTargetAtTime(0.0001, t, family && old.family === family ? 1.2 : 0.5);
+      setTimeout(function () { try { old.gain.disconnect(); } catch (e) { /* gone */ } }, 6000);
     }
     track = null;
     if (!name || !TRACKS[name]) return;
@@ -279,11 +301,18 @@
     g.gain.setValueAtTime(0.0001, t);
     g.gain.setTargetAtTime(1, t + 0.2, 0.7);
     g.connect(musicBus);
-    track = { name, sp: TRACKS[name], gain: g, step: 0, next: t + 0.25, arp: 0, mel: 14 };
-  };
+    track = { name, family, sp: TRACKS[name], gain: g, step: 0, next: t + 0.25, arp: 0, mel: 14 };
+  }
+  // Within a family, the next variation after `every` bars.
+  function rotate() {
+    const T = track;
+    if (!T || !T.family || T.step < FAMILIES[T.family].every * 16) return;
+    const fam = FAMILIES[T.family];
+    start(fam.tracks[rot[T.family]++ % fam.tracks.length], T.family);
+  }
   Snd.current = function () { return track ? track.name : null; };
 
-  function tick() { fill(LOOKAHEAD); }
+  function tick() { rotate(); fill(LOOKAHEAD); }
   // Schedule the music up to `ahead` seconds from now.
   function fill(ahead) {
     if (!ctx || !track) return;

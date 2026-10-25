@@ -18,7 +18,7 @@
   // --------------------------------------------------------------- shared
   function unitOffer(def, opts) {
     const d = AG.Units[def];
-    const u = AG.B.makeUnit(def, 0, 0, 0, { rank: opts.rank || 0 });
+    const u = opts.run ? Run.unitFor(opts.run, def) : AG.B.makeUnit(def, 0, 0, 0, { rank: opts.rank || 0 });
     return h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
       h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', opts.kind || 'New unit'), h('span.rarity.' + d.rarity, d.rarity)),
       h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), d.name),
@@ -26,9 +26,12 @@
       h('div.d', d.blurb),
       h('div.offer-pattern', UI.patternDiagram(u, 10), h('div.d', UI.moveText(u))),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
-      h('span.btn.small.ghost', { role: 'presentation', on: { click: (e) => { e.stopPropagation(); UI.modal(UI.inspector(u, { showTalents: true }), {}); } } }, 'Details'),
+      collected(opts),
+      h('span.btn.small.ghost', { role: 'presentation', on: { click: (e) => { e.stopPropagation(); UI.modal(UI.inspector(u, { showTalents: true, run: opts.run }), {}); } } }, 'Details'),
     );
   }
+  // The ✓ Collected label on anything already yours.
+  function collected(opts) { return opts.collected ? h('div.collected', h('span.tick', '✓'), 'Collected') : null; }
   function runeOffer(id, opts) {
     const R = AG.Runes[id];
     return h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
@@ -37,6 +40,7 @@
       h('div.d', R.desc),
       h('div.mono.muted', { style: { fontSize: '13px' } }, '+' + R.cost + ' supply when socketed'),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
+      collected(opts),
     );
   }
   function relicOffer(id, opts) {
@@ -46,6 +50,7 @@
       h('div.nm', h('span.ic.relic', UI.glyph(R.icon)), R.name),
       h('div.d', R.desc),
       opts.price != null ? h('div.price', opts.price + ' gold') : null,
+      collected(opts),
     );
   }
   UI.unitOffer = unitOffer;
@@ -64,6 +69,57 @@
       }
       return h('div.stack', list);
     }, { title, wide: true });
+  };
+
+  // Pick one of your unit types, shown as the run fields them.
+  UI.chooseUnit = function (title, defs, run, onPick, note) {
+    return UI.modal(function (close) {
+      const list = h('div.army-grid');
+      for (const def of defs) {
+        const u = Run.unitFor(run, def);
+        list.appendChild(h('button.offer.pick', { type: 'button', on: { click: () => { close(); onPick(def); } } },
+          h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), AG.Units[def].name),
+          h('div.mono.muted', { style: { fontSize: '13px' } }, 'HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd + (u.armor ? ' · Armor ' + u.armor : '')),
+          note ? h('div.d', note(def)) : null,
+        ));
+      }
+      return h('div.stack', list);
+    }, { title, wide: true });
+  };
+  // Pick a unit type, then one of its talents for it to learn by heart.
+  UI.pickTalent = function (run, onPick) {
+    const defs = run.units.filter((d) => Run.learnable(run, d).length);
+    UI.chooseUnit('Which unit type learns?', defs, run, function (def) {
+      UI.modal(function (close) {
+        const list = h('div.opts');
+        for (const t of Run.learnable(run, def)) {
+          const T = AG.Talents[t];
+          list.appendChild(h('button.opt', { type: 'button', on: { click: () => { close(); onPick({ def, talent: t }); } } },
+            h('span.t', T.name), h('span.c', 'free'), h('span.d', T.desc)));
+        }
+        return h('div.stack', h('p.hint', 'Learned by heart: always on, costs no supply, takes no talent slot.'), list);
+      }, { title: AG.Units[def].name + ': which talent?', wide: true });
+    }, (def) => 'Can learn: ' + Run.learnable(run, def).map((t) => AG.Talents[t].name).join(', '));
+  };
+  // Pick a unit type to give up, then one to receive it.
+  UI.pickFuse = function (run, onPick) {
+    UI.chooseUnit('Give up which unit type?', run.units.slice(), run, function (from) {
+      UI.chooseUnit('Pour the ' + AG.Units[from].name + ' into which unit type?', run.units.filter((d) => d !== from), run, (into) => onPick({ from, into }));
+    });
+  };
+  // Run the pick an event choice (or a shop service) needs, then onPick.
+  UI.eventPick = function (run, c, onPick) {
+    if (c.pick === 'trainable') UI.pickUnit('Train which unit?', Run.trainable(run), run, onPick);
+    else if (c.pick === 'talent') UI.pickTalent(run, onPick);
+    else if (c.pick === 'fuse') UI.pickFuse(run, onPick);
+    else if (c.pick === 'unit') UI.chooseUnit('Which unit type?', run.units.filter((d) => !c.filter || c.filter(run, d)), run, onPick);
+    else if (c.pick === 'rune') {
+      UI.modal(function (close) {
+        const g = h('div.offers');
+        for (const id of Array.from(new Set(run.runes))) g.appendChild(runeOffer(id, { cls: 'pick', onClick: () => { close(); onPick(id); } }));
+        return g;
+      }, { title: 'Which rune?', wide: true });
+    } else onPick(null);
   };
 
   // Where a saved run stands, for the Continue button.
@@ -212,7 +268,7 @@
     const offers = h('div.offers');
     for (const def of d.options) {
       offers.appendChild(unitOffer(def, {
-        kind: 'Pick 1 of 3',
+        kind: 'Pick 1 of 3', cls: 'pick',
         onClick: () => { Run.draftPick(run, def); UI.Sound.fx('place'); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } },
       }));
     }
@@ -232,13 +288,13 @@
     const grid = h('div.offers');
     for (const id of run.boons || []) {
       const b = Run.BOONS[id];
-      grid.appendChild(h('button.offer.boon', { type: 'button', on: { click: () => take(id) } },
+      grid.appendChild(h('button.offer.boon.pick', { type: 'button', on: { click: () => take(id) } },
         h('span.kind', 'Opening'), h('div.nm', b.name), h('div.d', b.desc)));
     }
     function take(id) {
       const b = Run.BOONS[id];
       if (b.pick === 'trainable') {
-        UI.pickUnit('Train which unit?', Run.trainable(run), run, (def) => { Run.takeBoon(run, id, def); App.save(); App.render(); });
+        UI.pickUnit('Train which unit?', Run.trainable(run), run, (def) => { Run.takeBoon(run, id, def); UI.Sound.fx('relic'); App.save(); App.render(); });
         return;
       }
       Run.takeBoon(run, id);
@@ -311,7 +367,7 @@
         const o = fl.done && fl.options && fl.choice >= 0 ? fl.options[fl.choice] : null;
         sub = o ? Run.DIFF[o.diff].name + ' · ' + AG.Encounters[o.enc].name : Run.ELITE_FLOORS.indexOf(i) >= 0 ? 'Easy, medium or elite' : 'Easy, medium or hard';
       } else if (fl.type === 'event') sub = 'Something happens';
-      else if (fl.type === 'shop') sub = 'Units, runes, relics, training';
+      else if (fl.type === 'shop') sub = 'Six wares from different stalls';
       else sub = bossDef ? AG.Units[bossDef].name : boss.name;
       list.appendChild(h('li.floor.' + fl.type + (fl.done ? '.done' : '') + (i === run.floor ? '.cur' : ''),
         h('span.fn', String(i + 1)),
@@ -345,7 +401,7 @@
       main.appendChild(cards);
     } else if (f.type === 'event') {
       main.appendChild(screenHead(where, 'An event', 'Halfway up the tower something is waiting: a stranger, a shrine, a choice.'));
-      main.appendChild(h('div.floor-card', h('div.fc-ic', UI.glyph('?')), h('div.stack', { style: { gap: '8px' } }, h('p', 'Events offer units, runes, gold or a fight, sometimes at a price.'), h('div.row', h('button.btn.primary', { type: 'button', on: { click: enter } }, 'Step inside')))));
+      main.appendChild(h('div.floor-card', h('div.fc-ic', UI.glyph('?')), h('div.stack', { style: { gap: '8px' } }, h('p', 'Events can teach a unit type a talent by heart, reshape its stats, give it a new trait or fuse two types together, usually at a price.'), h('div.row', h('button.btn.primary', { type: 'button', on: { click: enter } }, 'Step inside')))));
     } else if (f.type === 'shop') {
       main.appendChild(screenHead(where, 'The merchant', 'A travelling armoury has set up on the stairs.'));
       main.appendChild(h('div.floor-card', h('div.fc-ic', UI.glyph('¤')), h('div.stack', { style: { gap: '8px' } }, h('p', 'You have ' + run.gold + ' gold. Units, runes, relics, and a drill instructor who can train one unit type.'), h('div.row', h('button.btn.primary', { type: 'button', on: { click: enter } }, 'Browse the wares')))));
@@ -374,17 +430,18 @@
     const p = run.pending;
     if (!p) { App.go('tower'); return h('div'); }
     const body = h('div.stack', { style: { gap: '16px' } });
-    const gains = h('div.row');
-    if (p.gold) gains.appendChild(h('span.chip.brass', '+' + p.gold + ' gold'));
-    if (p.relic) gains.appendChild(h('span.chip.brass', UI.glyph(AG.Relics[p.relic].icon), AG.Relics[p.relic].name));
-    body.appendChild(gains);
-    if (p.relic) body.appendChild(h('div.offers', relicOffer(p.relic, { kind: 'Relic', cls: 'taken', onClick: () => {} })));
+    // What came automatically: marked collected.
+    const got = h('div.row');
+    if (p.gold) got.appendChild(h('span.chip.brass.got', '+' + p.gold + ' gold', h('span.tick', '✓'), 'Collected'));
+    if (got.childNodes.length) body.appendChild(got);
+    if (p.relic) body.appendChild(h('div.offers', relicOffer(p.relic, { cls: 'taken', collected: true, onClick: () => {} })));
+    // What needs choosing: it glows until chosen.
     if (p.relicChoices && p.relicChoices.length) {
-      body.appendChild(h('div.sec-title', 'Choose a relic'));
+      body.appendChild(h('div.sec-title', p.relicTaken ? 'Relic' : 'Choose a relic'));
       const g = h('div.offers');
       for (const id of p.relicChoices) {
         g.appendChild(relicOffer(id, {
-          cls: p.relicTaken === id ? 'taken' : p.relicTaken ? 'gone' : '',
+          cls: p.relicTaken === id ? 'taken' : p.relicTaken ? 'gone' : 'pick', collected: p.relicTaken === id,
           onClick: () => { if (!p.relicTaken) { Run.claimRelic(run, id); UI.Sound.fx('relic'); App.save(); App.render(); } },
         }));
       }
@@ -394,9 +451,10 @@
       body.appendChild(h('div.sec-title', p.offerTaken >= 0 ? 'Added to your army' : 'Choose one to add to your army'));
       const g = h('div.offers');
       p.offers.forEach(function (o, i) {
-        const cls = p.offerTaken === i ? 'taken' : p.offerTaken >= 0 ? 'gone' : '';
+        const cls = p.offerTaken === i ? 'taken' : p.offerTaken >= 0 ? 'gone' : 'pick';
         const click = () => { if (p.offerTaken < 0) { Run.claimOffer(run, i); UI.Sound.fx('coin'); App.save(); App.render(); } };
-        g.appendChild(o.kind === 'unit' ? unitOffer(o.def, { cls, onClick: click }) : runeOffer(o.id, { cls, onClick: click }));
+        const opts = { cls, collected: p.offerTaken === i, onClick: click };
+        g.appendChild(o.kind === 'unit' ? unitOffer(o.def, opts) : runeOffer(o.id, opts));
       });
       body.appendChild(g);
     }
@@ -406,7 +464,7 @@
     if (chosen && hadChoice) {
       setTimeout(function () {
         if (App.run === run && run.pending === p && run.screen === 'reward') { Run.finishReward(run); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } }
-      }, 750);
+      }, 900);
     }
     const doneLabel = p.offers && p.offers.length && p.offerTaken < 0 ? 'Skip' : 'Continue';
     body.appendChild(h('div.row', h('button.btn.primary', {
@@ -419,35 +477,55 @@
   // ----------------------------------------------------------------- shop
   S.shop = function (App) {
     const run = App.run;
+    // A shop saved by an older version is restocked in the new style.
+    if (run.shop && !run.shop.items) run.shop = Run.makeShop(run);
     const shop = run.shop;
     if (!shop) { App.go('tower'); return h('div'); }
     const price = (n) => Run.price(run, n);
-    const buy = (kind, i, picked) => {
-      if (Run.buy(run, kind, i, picked)) { UI.Sound.fx('coin'); App.save(); App.render(); UI.toast('Bought.'); }
+    const buy = (i, picked) => {
+      if (Run.buy(run, i, picked)) { UI.Sound.fx('coin'); App.save(); App.render(); UI.toast('Bought.'); }
       else { UI.Sound.fx('error'); UI.toast('You cannot afford that.'); }
     };
-    const units = h('div.offers');
-    shop.units.forEach((it, i) => units.appendChild(unitOffer(it.def, { cls: it.sold ? 'gone' : '', price: it.sold ? null : price(it.price), kind: it.sold ? 'Sold' : 'Recruit', onClick: () => !it.sold && buy('units', i) })));
-    const runes = h('div.offers');
-    shop.runes.forEach((it, i) => runes.appendChild(runeOffer(it.id, { cls: it.sold ? 'gone' : '', price: it.sold ? null : price(it.price), onClick: () => !it.sold && buy('runes', i) })));
-    const relics = h('div.offers');
-    shop.relics.forEach((it, i) => relics.appendChild(relicOffer(it.id, { cls: it.sold ? 'gone' : '', price: it.sold ? null : price(it.price), onClick: () => !it.sold && buy('relics', i) })));
-    const svc = h('div.offers',
-      h('button.offer' + (shop.train.used ? '.gone' : ''), { type: 'button', on: { click: () => {
-        if (shop.train.used) return;
-        const t = Run.trainable(run);
-        if (!t.length) { UI.toast('Every unit is fully trained.'); return; }
-        if (run.gold < price(shop.train.price)) { UI.toast('You cannot afford that.'); return; }
-        UI.pickUnit('Train which unit?', t, run, (def) => buy('train', 0, def));
-      } } }, h('span.kind', 'Service'), h('div.nm', h('span.ic', UI.glyph('★')), 'Drill instructor'), h('div.d', 'Train one unit type a rank: Veteran (+HP, +1 ATK), then Elite (+HP, +1 SPD, a second talent slot).'), shop.train.used ? null : h('div.price', price(shop.train.price) + ' gold')),
-    );
+    const grid = h('div.offers');
+    shop.items.forEach(function (it, i) {
+      const cost = price(it.price);
+      const opts = { cls: it.sold ? 'gone' : run.gold < cost ? 'poor' : '', price: it.sold ? null : cost, kind: it.sold ? 'Sold' : 'Recruit', run,
+        onClick: () => {
+          if (it.sold) return;
+          if (run.gold < cost) { UI.Sound.fx('error'); UI.toast('You cannot afford that.'); return; }
+          if (it.kind === 'train' || it.kind === 'lesson') {
+            const c = { pick: it.kind === 'train' ? 'trainable' : 'talent' };
+            if (c.pick === 'trainable' && !Run.trainable(run).length) { UI.toast('Every unit is fully trained.'); return; }
+            UI.eventPick(run, c, (picked) => buy(i, picked));
+            return;
+          }
+          buy(i);
+        } };
+      if (it.kind === 'unit') grid.appendChild(unitOffer(it.def, opts));
+      else if (it.kind === 'rune') grid.appendChild(runeOffer(it.id, opts));
+      else if (it.kind === 'relic') grid.appendChild(relicOffer(it.id, opts));
+      else {
+        const S2 = Run.SERVICE[it.kind];
+        grid.appendChild(h('button.offer' + (opts.cls ? '.' + opts.cls : ''), { type: 'button', on: { click: opts.onClick } },
+          h('span.kind', it.sold ? 'Sold' : 'Service'), h('div.nm', h('span.ic', UI.glyph(it.kind === 'train' ? '★' : '✎')), S2.name), h('div.d', S2.desc),
+          it.sold ? null : h('div.price', cost + ' gold')));
+      }
+    });
+    const rc = Run.refreshCost(run);
+    const refresh = () => {
+      if (!Run.refreshShop(run)) { UI.Sound.fx('error'); UI.toast('A refresh costs ' + rc + ' gold.'); return; }
+      UI.Sound.fx('deploy');
+      App.save();
+      App.render();
+    };
     return h('div', App.hud(),
-      screenHead('Merchant', 'The Travelling Armoury', 'You have ' + run.gold + ' gold.'),
+      screenHead('Merchant', 'The Travelling Armoury', 'You have ' + run.gold + ' gold. Six wares at a time; for a fee the merchant digs out six different ones.'),
       h('div.stack', { style: { gap: '14px' } },
-        h('div.sec-title', 'Units'), units, h('div.sec-title', 'Runes'), runes,
-        shop.relics.length ? h('div.sec-title', 'Relics') : null, shop.relics.length ? relics : null,
-        h('div.sec-title', 'Services'), svc,
-        h('div.row', h('button.btn.primary', { type: 'button', on: { click: () => { Run.advance(run); App.save(); App.render(); } } }, 'Leave and climb on')),
+        grid,
+        h('div.row',
+          h('button.btn', { type: 'button', disabled: run.gold < rc, on: { click: refresh } }, '↻ Refresh the wares · ' + rc + ' gold'),
+          h('button.btn.primary', { type: 'button', on: { click: () => { Run.advance(run); App.save(); App.render(); } } }, 'Leave and climb on')),
+        h('p.hint', 'Each refresh costs 10 gold more than the last.'),
       ),
     );
   };
@@ -456,6 +534,8 @@
   S.event = function (App) {
     const run = App.run;
     if (!run.event) { App.go('tower'); return h('div'); }
+    // An event saved by an older version that no longer exists: draw another.
+    if (!AG.eventById(run.event.id)) run.event = { id: Run.pickEvent(run), result: null };
     const ev = AG.eventById(run.event.id);
     const body = h('div.event-card');
     body.appendChild(h('p.story', ev.text));
@@ -477,14 +557,7 @@
         App.save();
         App.render();
       };
-      if (c.pick === 'trainable') UI.pickUnit('Train which unit?', Run.trainable(run), run, go);
-      else if (c.pick === 'rune') {
-        UI.modal(function (close) {
-          const g = h('div.offers');
-          for (const id of Array.from(new Set(run.runes))) g.appendChild(runeOffer(id, { onClick: () => { close(); go(id); } }));
-          return g;
-        }, { title: 'Which rune?', wide: true });
-      } else go(null);
+      UI.eventPick(run, c, go);
     }
     return h('div', App.hud(), screenHead('Event', ev.name), body);
   };
@@ -696,11 +769,12 @@
     const grid = h('div.army-grid');
     for (const def of run.units) {
       const d = AG.Units[def];
-      const u = AG.B.makeUnit(def, 0, 0, 0, { rank: run.ranks[def] || 0 });
-      grid.appendChild(h('button.offer', { type: 'button', on: { click: () => UI.modal(UI.inspector(u, { showTalents: true }), {}) } },
+      const u = Run.unitFor(run, def);
+      grid.appendChild(h('button.offer', { type: 'button', on: { click: () => UI.modal(UI.inspector(u, { showTalents: true, run }), {}) } },
         h('div.row', { style: { justifyContent: 'space-between' } }, h('span.kind', AG.RANKS[run.ranks[def] || 0]), h('span.rarity.' + d.rarity, d.rarity)),
         h('div.nm', h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'lg')), d.name, run.ranks[def] ? h('span.faint', ' ' + '★'.repeat(run.ranks[def])) : null),
         h('div.mono.muted', { style: { fontSize: '13px' } }, d.cost + ' supply · HP ' + u.maxHp + ' · ATK ' + u.atk + ' · SPD ' + u.spd + (u.armor ? ' · Armor ' + u.armor : '')),
+        UI.changesLine(run, def),
         h('div.d', d.blurb),
         h('div.offer-pattern', UI.patternDiagram(u, 10), h('div.d', UI.moveText(u))),
       ));
@@ -737,6 +811,7 @@
       h('h4', 'During battle'),
       h('ul',
         h('li', 'The two sides take turns, one piece at a time, as in chess. Each side moves its pieces fastest first and every piece moves once a round; when one side has more pieces, its extra turns are spread through the round. The enemy always opens the round with its fastest piece, since you set up knowing where it stands; then your fastest moves. The strip at the top shows the order.'),
+        h('li', 'To change the priority mid-battle, pause, tap an enemy or an open square, and press Priority. To clear it, pause, tap the marked square and press it again. Watch again replays your marks as you made them.'),
         h('li', 'On its turn a unit may move and then attack or use an ability. The AI tries every option, simulates the result and picks the best. Its reasoning shows above the board.'),
         h('li', 'Movement is chess-like: knights leap, bishops slide diagonally, rooks along ranks and files, and wizards teleport.'),
         h('li', 'Chasms swallow anything knocked into them that cannot fly. Walls block movement and line of sight.'),
@@ -746,6 +821,9 @@
       h('ul',
         h('li', 'Start by drafting your army: two commons, two uncommons and a rare, each one of three. Every run also brings Squires. Then choose an opening advantage.'),
         h('li', 'Climb three towers of eight floors. On each battle floor choose an easy, medium or hard fight (on two floors per act, an elite instead of hard): harder fights pay more gold and rarer finds, and elites a relic. An event and a merchant wait halfway up, and a boss at the top.'),
+        h('li', 'Events change your army for good: a unit type learns a talent by heart (always on, free), trades one stat for another, gains a new trait, or two types are fused into one. The merchant sets out six wares from different stalls (units, runes, relics, training, lessons); refreshing them costs 20 gold, then 10 more each time.'),
+        h('li', 'On reward screens, what you got automatically is marked ✓ Collected; cards that glow are waiting for you to choose.'),
+        h('li', 'After a battle, tap a unit’s icon in the report to read its full card.'),
         h('li', 'Losing costs nothing. Battles always play out the same way for the same setup, so read the report, change something and retry, as often as you like, or go back and choose another fight.'),
         h('li', 'After the last boss you may face the Heart of the Board, a mega boss built to crush all but the strongest armies (runs that take the hard fights and elites stand a chance). Skip it or beat it, your final army then enters the Hall of Fame, marked with a ♥ if it beat the Heart, and duels the champions of earlier runs from the bottom up.'),
       ),

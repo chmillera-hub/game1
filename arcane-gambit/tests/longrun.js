@@ -25,6 +25,15 @@ const { chromium } = require('playwright');
   await page.locator('.offer').filter({ hasText: 'Quartermaster' }).click();
   await page.getByRole('button', { name: 'Enter the tower' }).click();
   const log = [];
+  // Answer the pickers an event choice or a shop service opens.
+  async function resolvePicks() {
+    for (let k = 0; k < 3; k++) {
+      if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
+      else if (await page.locator('.modal .opt').count()) await page.locator('.modal .opt').first().click();
+      else break;
+      await page.waitForTimeout(200);
+    }
+  }
   let losses = 0, cleared = 0;
   for (let step = 0; step < floors * 12 && cleared < floors; step++) {
     const screen = await page.evaluate(() => (AG.App.view === 'battle' ? 'battle' : AG.App.run ? AG.App.run.screen : 'title'));
@@ -63,12 +72,13 @@ const { chromium } = require('playwright');
       if (await cont.count()) { await cont.click(); cleared++; continue; }
       await page.locator('.choice:not([disabled])').first().click();
       await page.waitForTimeout(150);
-      if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
+      await resolvePicks();
       log.push('  event');
     } else if (screen === 'shop') {
-      const buyable = page.locator('.offers .offer:not(.gone)').first();
+      const buyable = page.locator('.offers .offer:not(.gone):not(.poor)').first();
       if (await buyable.count()) await buyable.click();
-      if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
+      await page.waitForTimeout(150);
+      await resolvePicks();
       await page.getByRole('button', { name: 'Leave and climb on' }).click();
       cleared++;
     } else if (screen === 'actIntro') {

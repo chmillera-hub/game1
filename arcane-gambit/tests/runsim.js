@@ -54,6 +54,15 @@ function botRun(seed, opts) {
 
   for (let guard = 0; guard < 400 && !stuck; guard++) {
     const sc = run.screen;
+    // A random answer to whatever an event choice (or service) asks for.
+    const pickFor = (c) => {
+      if (c.pick === 'trainable') return rng.pick(Run.trainable(run));
+      if (c.pick === 'rune') return run.runes[0];
+      if (c.pick === 'unit') return rng.pick(run.units.filter((d) => !c.filter || c.filter(run, d)));
+      if (c.pick === 'talent') { const def = rng.pick(run.units.filter((d) => Run.learnable(run, d).length)); return def ? { def, talent: rng.pick(Run.learnable(run, def)) } : null; }
+      if (c.pick === 'fuse') { const from = rng.pick(run.units); return { from, into: rng.pick(run.units.filter((d) => d !== from)) }; }
+      return null;
+    };
     if (sc === 'draft') {
       // Mostly the priciest of the three, as a player chasing power would.
       const o = run.draft.options;
@@ -91,16 +100,14 @@ function botRun(seed, opts) {
       const ev = AG.eventById(run.event.id);
       const choices = ev.choices.map((c, i) => [c, i]).filter(([c]) => Run.choiceAvailable(run, c) === true);
       const [c, i] = rng.pick(choices);
-      let picked = null;
-      if (c.pick === 'trainable') picked = rng.pick(Run.trainable(run));
-      if (c.pick === 'rune') picked = run.runes[0];
-      Run.resolveEvent(run, i, picked);
+      Run.resolveEvent(run, i, pickFor(c));
     } else if (sc === 'shop') {
       const s = run.shop;
-      if (rng.chance(0.5) && Run.trainable(run).length) Run.buy(run, 'train', 0, rng.pick(Run.trainable(run)));
-      s.units.forEach((u, i) => { if (rng.chance(0.5)) Run.buy(run, 'units', i); });
-      s.relics.forEach((u, i) => { if (rng.chance(0.5)) Run.buy(run, 'relics', i); });
-      s.runes.forEach((u, i) => { if (rng.chance(0.4)) Run.buy(run, 'runes', i); });
+      if (rng.chance(0.3)) Run.refreshShop(run);
+      s.items.forEach((it, i) => {
+        if (!rng.chance(it.kind === 'rune' ? 0.4 : 0.5)) return;
+        Run.buy(run, i, it.kind === 'train' ? rng.pick(Run.trainable(run)) : it.kind === 'lesson' ? pickFor({ pick: 'talent' }) : null);
+      });
       Run.advance(run);
     } else if (sc === 'victory') {
       if (!mega) {

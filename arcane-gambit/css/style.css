@@ -236,6 +236,8 @@ p { margin: 0; }
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='34' stroke='%23060608' stroke-width='11'/%3E%3Cpath d='M50 4V24M50 76V96M4 50H24M76 50H96' stroke='%23060608' stroke-width='11'/%3E%3Ccircle cx='50' cy='50' r='34' stroke='%23f5b400' stroke-width='5'/%3E%3Cpath d='M50 4V24M50 76V96M4 50H24M76 50H96' stroke='%23f5b400' stroke-width='5'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .cell.prio::before { inset: 4%; }
+/* A square picked while paused, waiting for the Priority button. */
+.cell.picked { box-shadow: inset 0 0 0 3px #f0f0f6, inset 0 0 0 6px rgba(6, 6, 8, 0.7) !important; }
 @keyframes prio-pulse { 50% { opacity: 0.55; transform: scale(0.92); } }
 .board-wrap.marking .cell, .board-wrap.marking .token { cursor: crosshair; }
 /* A piece picked up in the war room: lifted, shadowed, wiggling. */
@@ -574,6 +576,24 @@ p { margin: 0; }
 .offer:hover { transform: translateY(-2px); }
 .offer.taken { background: var(--gold-2); box-shadow: 0 0 0 3px rgba(245, 180, 0, 0.6), 0 3px 0 var(--line); }
 .offer.gone { opacity: 0.4; cursor: default; transform: none; }
+/* Things waiting on a choice breathe a faint gold glow; collected things say so. */
+.offer.pick { animation: pick-glow 2.4s ease-in-out infinite; }
+@keyframes pick-glow {
+  0%, 100% { box-shadow: var(--lift), 0 0 0 0 rgba(245, 180, 0, 0); }
+  50% { box-shadow: var(--lift), 0 0 0 3px rgba(245, 180, 0, 0.32), 0 0 18px 2px rgba(245, 180, 0, 0.28); }
+}
+.offer.poor .price { color: var(--red); }
+.offer.poor { opacity: 0.72; }
+.collected {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 11px; font-weight: 900; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-2);
+}
+.tick {
+  display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line);
+  background: var(--green); color: #0f2416; font-size: 11px; line-height: 1; letter-spacing: 0;
+}
+.chip.got { gap: 8px; }
+.chip.got .tick { margin-left: 4px; }
 .offer .kind { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); font-weight: 900; }
 .offer .nm { font-size: 18px; font-weight: 900; display: flex; align-items: center; gap: 12px; }
 .offer .nm .ic {
@@ -680,6 +700,7 @@ svg.ui { display: inline-block; vertical-align: -2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .offer:hover { transform: none; }
+  .offer.pick { animation: none; box-shadow: var(--lift), 0 0 0 3px rgba(245, 180, 0, 0.3); }
   .token.lifted .piece { animation: none; transform: translateY(-9%); }
   .token.prio::after, .cell.prio::before { animation: none; }
   * { scroll-behavior: auto !important; }

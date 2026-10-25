@@ -59,6 +59,15 @@ const { chromium } = require('playwright');
   await page.getByRole('button', { name: 'Enter the tower' }).click();
   await page.waitForTimeout(300);
   await shot('tower', true);
+  // Answer the pickers an event choice or a shop service opens.
+  async function resolvePicks() {
+    for (let k = 0; k < 3; k++) {
+      if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
+      else if (await page.locator('.modal .opt').count()) await page.locator('.modal .opt').first().click();
+      else break;
+      await page.waitForTimeout(200);
+    }
+  }
   // The event and the shop floors.
   for (const floor of [3, 4]) {
     await page.evaluate((floor) => {
@@ -75,18 +84,24 @@ const { chromium } = require('playwright');
     const type = floor === 3 ? 'event' : 'shop';
     await shot(type, true);
     if (type === 'shop') {
-      await page.locator('.offer').filter({ hasText: 'Drill instructor' }).click();
+      // Refresh once (20 gold), then buy the first thing that is affordable.
+      const before = await page.evaluate(() => AG.App.run.gold);
+      await page.getByRole('button', { name: /Refresh the wares · 20 gold/ }).click();
       await page.waitForTimeout(200);
-      await shot('shop-train-picker');
-      await page.locator('.modal .offer').first().click();
+      const after = await page.evaluate(() => ({ gold: AG.App.run.gold, n: AG.App.run.shop.items.length }));
+      if (after.gold !== before - 20 || after.n !== 6) throw new Error('refresh: ' + JSON.stringify({ before, after }));
+      await page.getByRole('button', { name: /Refresh the wares · 30 gold/ }).waitFor();
+      await page.locator('.offers .offer:not(.gone):not(.poor)').first().click();
       await page.waitForTimeout(200);
+      if (await page.locator('.modal').count()) await shot('shop-picker');
+      await resolvePicks();
       await shot('shop-after', true);
       await page.getByRole('button', { name: 'Leave and climb on' }).click();
     } else {
       const btn = page.locator('.choice:not([disabled])').last();
       await btn.click();
       await page.waitForTimeout(300);
-      if (await page.locator('.modal .offer').count()) await page.locator('.modal .offer').first().click();
+      await resolvePicks();
       await page.waitForTimeout(300);
       await shot('event-result', true);
     }

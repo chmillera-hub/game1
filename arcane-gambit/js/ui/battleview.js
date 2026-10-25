@@ -26,7 +26,7 @@
     const disp = {}; // what each token currently shows, as of the last played event
     for (const u of s.units) disp[u.uid] = { hp: u.hp, shield: u.shield, st: Object.keys(u.st) };
 
-    const view = new UI.BoardView({ board: s.board, theme: enc.theme, maxCell: 72, onToken: inspect, onCell: () => {} });
+    const view = new UI.BoardView({ board: s.board, theme: enc.theme, maxCell: 72, onToken: tapToken, onCell: (x, y) => { if (paused) pickSquare(y * s.board.w + x); } });
     view.k = App.prefs.speed || 1;
 
     // ------------------------------------------------------------ layout
@@ -46,9 +46,15 @@
       'data-tip': 'Also show the runner-up options each unit weighed, and how much worse it judged them.',
       on: { click: () => { App.prefs.showAlts = !App.prefs.showAlts; App.savePrefs(); altsBtn.setAttribute('aria-pressed', App.prefs.showAlts ? 'true' : 'false'); altsBtn.textContent = App.prefs.showAlts ? 'Hide alternatives' : 'Show alternatives'; } },
     }, App.prefs.showAlts ? 'Hide alternatives' : 'Show alternatives');
+    const replaying = !!(App.battle && App.battle.replay);
+    const prioBtn = h('button.btn.small.prio-btn', {
+      type: 'button', disabled: replaying,
+      'data-tip': replaying ? 'A replay repeats the priorities you marked during the battle.' : 'Pause, tap an enemy (or an open square), then press this to make it your pieces\' priority. Select the marked square and press it again to clear it.',
+      on: { click: priorityClick },
+    });
     const logEl = h('div.log', { 'aria-live': 'off' });
     const boardWrap = h('div.board-wrap', view.el);
-    const controls = h('div.controls', playBtn, stepBtn, seg, altsBtn, h('span.spacer'), skipBtn);
+    const controls = h('div.controls', playBtn, stepBtn, seg, prioBtn, altsBtn, h('span.spacer'), skipBtn);
     root.appendChild(h('div.screen-head',
       h('div.stack', { style: { gap: '4px' } },
         h('div.battle-head', h('span.eyebrow', duel ? 'Hall of Fame · your run (white) against ' + duel.name + ' (black)' : enc.name), roundEl, stormEl),
@@ -123,9 +129,75 @@
       UI.modal(() => UI.inspector(u, { live: true, state: s }), {});
     }
 
+    // ------------------------------------------------------- priority
+    /* While paused, tap a square (an enemy or open floor) and press Priority
+       to make it your pieces' priority; select the marked square and press
+       it again to clear it. Each change is kept with the turn it was made
+       on, so "Watch again" plays the battle out the same way. */
+    let picked = -1;
+    const changes = (App.lastSetup && App.lastSetup.changes) || [];
+    function tapToken(uid) {
+      const u = B.U(s, uid);
+      if (!paused || !u) { inspect(uid); return; }
+      const i = u.y * s.board.w + u.x;
+      if (picked === i) inspect(uid);
+      else pickSquare(i);
+    }
+    function pickSquare(i) {
+      if (replaying) return;
+      picked = picked === i ? -1 : i;
+      view.mark('picked', picked >= 0 ? [picked] : null);
+      if (picked >= 0) {
+        const o = s.occ[picked] ? B.U(s, s.occ[picked]) : null;
+        const what = (o ? (o.side === 0 ? 'Your ' : '') + o.name + ' on ' : 'Square ') + sq(picked % s.board.w, (picked / s.board.w) | 0);
+        UI.toast(what + (isMarked(picked) ? ' is your priority. Press Priority to clear it.' : o && o.side === 0 ? '. Your own pieces cannot be the priority.' : '. Press Priority to mark it.'));
+        UI.Sound.fx('click');
+      }
+      syncPrio();
+    }
+    function isMarked(i) {
+      const p = s.priority;
+      return !!p && (p.cell != null ? p.cell === i : s.occ[i] === p.uid);
+    }
+    function syncPrio() {
+      const label = picked >= 0 && isMarked(picked) ? 'Clear priority' : picked >= 0 ? 'Set priority' : 'Priority';
+      UI.clear(prioBtn).append(UI.glyph('⌖'), label);
+      prioBtn.classList.toggle('on-toggle', paused && picked >= 0);
+    }
+    function priorityClick() {
+      if (replaying || s.over) return;
+      if (!paused) { togglePause(); UI.toast('Paused. Tap an enemy or an open square, then press Priority.'); return; }
+      if (picked < 0) { UI.toast('Tap an enemy or an open square first.'); return; }
+      const o = s.occ[picked] ? B.U(s, s.occ[picked]) : null;
+      if (isMarked(picked)) {
+        B.setPriority(s, null);
+        UI.Sound.fx('remove');
+        log('sys', 'Priority cleared');
+      } else if (o && o.side === 0) {
+        UI.toast('Pick an enemy or an open square, not one of your pieces.'); UI.Sound.fx('error'); return;
+      } else if (!B.setPriority(s, { x: picked % s.board.w, y: (picked / s.board.w) | 0 })) {
+        UI.toast('Nobody can stand there. Pick an enemy or an open square.'); UI.Sound.fx('error'); return;
+      } else {
+        UI.Sound.fx('mark');
+        log('sys', 'Priority: ' + (s.priority.uid ? B.U(s, s.priority.uid).name : 'square ' + sq(picked % s.board.w, (picked / s.board.w) | 0)));
+      }
+      changes.push({ at: s.turnCount, p: s.priority ? Object.assign({}, s.priority) : null });
+      picked = -1;
+      view.mark('picked', null);
+      UI.markPriority(view, s);
+      syncPrio();
+    }
+    // In a replay, the marks made during the battle, each before its turn.
+    function replayChanges() {
+      if (!replaying) return;
+      for (const c of changes) if (c.at === s.turnCount) s.priority = c.p ? Object.assign({}, c.p) : null;
+    }
+
     // ------------------------------------------------------- controls
     function togglePause() {
       paused = !paused;
+      if (!paused && picked >= 0) { picked = -1; view.mark('picked', null); }
+      syncPrio();
       UI.clear(playBtn).appendChild(UI.uiIcon(paused ? 'play' : 'pause'));
       playBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
       if (!paused && resume) { const r = resume; resume = null; r(); }
@@ -354,8 +426,11 @@
           await new Promise((r) => { resume = r; });
           if (!alive) return;
         }
+        replayChanges();
+        const prio = s.priority;
         const r = B.step(s);
         const evs = s.ev.splice(0, s.ev.length);
+        if (prio !== s.priority && !skipping) UI.markPriority(view, s);
         if (skipping) {
           for (const e of evs) applyQuiet(e);
           if (s.turnCount % 6 === 0) await UI.wait(0);
@@ -447,7 +522,10 @@
         const r = st[u.uid];
         const bar = (cls, label, n) => h('div.rep-bar.' + cls, h('span', label), h('span.track', h('i', { style: { width: (100 * n) / max + '%' } })), h('span.n', n));
         return h('div.rep-row',
-          h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), { style: { width: '36px', height: '36px' } }, UI.icon(u)),
+          h('button.ic.qchip.rep-ic.' + (u.side === 0 ? 'p' : 'e'), {
+            type: 'button', style: { width: '36px', height: '36px' }, 'aria-label': 'Details: ' + u.name, 'data-tip': 'Tap for details',
+            on: { click: () => UI.modal(UI.inspector(u, { live: true, state: s, run: u.side === 0 && !isSandbox && !duel ? App.run : null }), {}) },
+          }, UI.icon(u)),
           h('div.nm', u.name, r.kills ? h('span.faint', AG.plural(r.kills, 'kill')) : null, !u.alive ? h('span.dead', 'fell') : null),
           h('div.rep-bars', { style: { gridColumn: '2' } },
             bar('dealt', 'dealt', r.dealt), bar('taken', 'taken', r.taken), r.healed ? bar('healed', 'healed', r.healed) : null),
@@ -478,6 +556,7 @@
       fit();
       App.onResize = fit;
       stormText(0);
+      syncPrio();
       syncAll();
       renderQueue(0);
       log('sys', enc.name);

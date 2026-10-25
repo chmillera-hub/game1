@@ -91,11 +91,10 @@
       const enc = App.battle.encounter || AG.Encounters[App.battle.s.encounter];
       return enc.tier === 'mega' ? 'mega' : enc.tier === 'boss' ? 'boss' : 'battle';
     }
-    if (App.mode !== 'run' || !run) return 'menu';
+    if (App.mode !== 'run' || !run) return 'calm';
     if (run.screen === 'victory' || run.screen === 'climb') return 'victory';
     if (run.screen === 'setup' && run.battle && run.battle.tier === 'mega') return 'mega';
-    if (run.screen === 'draft' || run.screen === 'boon') return 'menu';
-    return 'tower' + Math.min(3, Math.max(1, run.act || 1));
+    return 'calm';
   };
   App.go = function (screen) {
     App.view = null;
@@ -233,7 +232,7 @@
     run.lastArmy = AG.deepCopy(F);
     run.formations[run.battle.enc] = AG.deepCopy(F);
     App.save();
-    App.lastSetup = { enc: run.battle.enc, army: Run.armyFor(run, F), opts: AG.deepCopy(Run.battleOpts(run)) };
+    App.lastSetup = { enc: run.battle.enc, army: Run.armyFor(run, F), opts: AG.deepCopy(Run.battleOpts(run)), changes: [] };
     App.battle = { s: makeBattle(App.lastSetup), replay: false };
     App.view = 'battle';
     App.render();
@@ -245,7 +244,7 @@
     const opp = Run.climbOpponent(run);
     if (!opp) return;
     const encounter = Run.duelEncounter();
-    App.lastSetup = { encounter, army: Run.arenaArmy(run.finalArmy), opts: Run.duelOpts(run.finalArmy, opp) };
+    App.lastSetup = { encounter, army: Run.arenaArmy(run.finalArmy), opts: Run.duelOpts(run.finalArmy, opp), changes: [] };
     App.battle = { s: makeBattle(App.lastSetup), replay: false, duel: opp, encounter };
     App.view = 'battle';
     App.render();

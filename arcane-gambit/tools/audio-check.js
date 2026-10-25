@@ -62,7 +62,23 @@ const { chromium } = require('playwright');
     }, t));
     await p2.close();
   }
+  // Families: 'calm' and 'battle' pick a variation and keep it across screens.
+  const p3 = await browser.newPage();
+  await p3.goto('file://' + path.join(__dirname, '..', 'index.html'));
+  const fam = await p3.evaluate(() => {
+    window.dispatchEvent(new Event('pointerdown'));
+    const S = AG.UI.Sound;
+    const out = {};
+    S.music('calm'); out.calm = S.current(); S.music('calm'); out.calmAgain = S.current();
+    S.music('battle'); out.battle = S.current();
+    S.music('calm'); out.calmNext = S.current();
+    out.sizes = Object.keys(S.FAMILIES).map((k) => S.FAMILIES[k].tracks.length);
+    return out;
+  });
+  await p3.close();
   await browser.close();
+  console.log('families:', JSON.stringify(fam));
+  if (!/^calm/.test(fam.calm) || fam.calm !== fam.calmAgain || !/^battle/.test(fam.battle) || fam.calmNext === fam.calm || fam.sizes.some((n) => n < 5)) errors.push('music families misbehave');
   console.log('effects (peak / rms):');
   for (const f of res.fx) console.log('  ' + f.name.padEnd(10) + String(f.peak).padStart(7) + String(f.rms).padStart(9) + (f.rms < 0.002 ? '  QUIET' : '') + (f.peak > 0.95 ? '  CLIPS' : ''));
   console.log('music (peak / rms):');

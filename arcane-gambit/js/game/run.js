@@ -272,7 +272,8 @@
   };
   Run.entryCost = function (run, e) {
     let c = AG.Units[e.def].cost;
-    for (const t of e.talents || []) c += Run.talentCost(run, t);
+    const innate = Run.innate(run, e.def);
+    for (const t of e.talents || []) if (innate.indexOf(t) < 0) c += Run.talentCost(run, t);
     if (e.rune) c += AG.Runes[e.rune].cost;
     return c;
   };
@@ -302,8 +303,48 @@
     for (const k in free) if (free[k] < 0) errors.push('Not enough ' + AG.Runes[k].name + 's.');
     return { ok: errors.length === 0, errors, cost, lim };
   };
+  // The army as it goes into battle: ranks, learned talents and other
+  // changes to each unit type included.
   Run.armyFor = function (run, formation) {
-    return formation.map((e) => ({ def: e.def, x: e.x, y: e.y, talents: (e.talents || []).slice(), rune: e.rune || null, rank: run.ranks[e.def] || 0 }));
+    return formation.map((e) => {
+      const innate = Run.innate(run, e.def);
+      const talents = innate.concat((e.talents || []).filter((t) => innate.indexOf(t) < 0));
+      return { def: e.def, x: e.x, y: e.y, talents, rune: e.rune || null, rank: run.ranks[e.def] || 0, mods: statMods(Run.modOf(run, e.def)) };
+    });
+  };
+
+  // ---------------------------------------------------- unit-type changes
+  /* Events and the merchant change unit types for the rest of the run:
+     run.mods[def] = { hp, atk, spd, armor, passives, innate: [talent ids] }.
+     A learned (innate) talent is always on, costs no supply and takes no
+     talent slot. */
+  Run.modOf = function (run, def) { return (run.mods && run.mods[def]) || null; };
+  Run.innate = function (run, def) { const m = Run.modOf(run, def); return (m && m.innate) || []; };
+  function statMods(m) {
+    if (!m) return null;
+    return { hp: m.hp || 0, atk: m.atk || 0, spd: m.spd || 0, armor: m.armor || 0, passives: m.passives || null };
+  }
+  Run.modify = function (run, def, change) {
+    run.mods = run.mods || {};
+    const m = run.mods[def] || (run.mods[def] = {});
+    for (const k of ['hp', 'atk', 'spd', 'armor']) if (change[k]) m[k] = (m[k] || 0) + change[k];
+    if (change.passives) m.passives = Object.assign({}, m.passives, change.passives);
+    if (change.innate && (m.innate || []).indexOf(change.innate) < 0) m.innate = (m.innate || []).concat([change.innate]);
+  };
+  // A unit of this type as the run fields it, for display.
+  Run.unitFor = function (run, def) {
+    return AG.B.makeUnit(def, 0, 0, 0, { rank: run.ranks[def] || 0, talents: Run.innate(run, def), mods: statMods(Run.modOf(run, def)) });
+  };
+  // Talents a unit type could still learn by heart.
+  Run.learnable = function (run, def) {
+    const innate = Run.innate(run, def);
+    return AG.talentsFor(def).filter((t) => innate.indexOf(t) < 0);
+  };
+  Run.removeUnit = function (run, def) {
+    const k = run.units.indexOf(def);
+    if (k >= 0) run.units.splice(k, 1);
+    if (run.lastArmy) run.lastArmy = run.lastArmy.filter((e) => e.def !== def);
+    for (const k in run.formations || {}) run.formations[k] = run.formations[k].filter((e) => e.def !== def);
   };
 
   /* Auto-deploy: as many units as the supply and the deploy squares allow,
@@ -537,38 +578,70 @@
     return d;
   };
   Run.price = function (run, base) { return Math.round(base * (1 - Run.discount(run))); };
-  Run.makeShop = function (run) {
-    return withRng(run, (rng) => {
-      const shop = { units: [], runes: [], relics: [], train: { price: 60, used: false } };
-      const upool = rng.shuffle(AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0));
-      for (const k of upool.slice(0, 3)) shop.units.push({ def: k, price: PRICE.unit[AG.Units[k].rarity] + rng.int(-5, 5), sold: false });
-      const rpool = rng.shuffle(Object.keys(AG.Runes));
-      for (const k of rpool.slice(0, 3)) shop.runes.push({ id: k, price: PRICE.rune[AG.Runes[k].rarity] + rng.int(-4, 4), sold: false });
-      for (const k of Run.relicChoices(run, rng, ['common', 'uncommon', 'rare'], 2)) shop.relics.push({ id: k, price: PRICE.relic[AG.Relics[k].rarity] + rng.int(-8, 8), sold: false });
-      return shop;
-    });
+  /* Six items drawn from mixed categories: units, runes, relics, a drill
+     instructor (train a unit type a rank) and a tutor (a unit type learns
+     one of its talents by heart). Refreshing deals six new ones; it costs
+     20 gold, then 10 more each time. */
+  Run.SHOP_SIZE = 6;
+  const SHOP_KINDS = { unit: { w: 3, max: 3 }, rune: { w: 2, max: 2 }, relic: { w: 1.5, max: 2 }, train: { w: 1, max: 1 }, lesson: { w: 1, max: 1 } };
+  Run.SERVICE = {
+    train: { name: 'Drill instructor', price: 60, desc: 'Train one unit type a rank: Veteran (+HP, +1 ATK), then Elite (+HP, +1 SPD, a second talent slot).' },
+    lesson: { name: 'Battle tutor', price: 55, desc: 'One unit type learns one of its talents by heart: always on, free, no talent slot.' },
   };
-  Run.buy = function (run, kind, idx, picked) {
-    const shop = run.shop;
-    if (!shop) return false;
-    if (kind === 'train') {
-      const svc = shop.train;
-      const cost = Run.price(run, svc.price);
-      if (svc.used || run.gold < cost || !picked) return false;
-      Run.train(run, picked);
-      run.gold -= cost;
-      svc.used = true;
-      return true;
+  function shopItems(run, rng) {
+    const units = rng.shuffle(AG.playerUnitIds().filter((k) => run.units.indexOf(k) < 0));
+    const runes = rng.shuffle(Object.keys(AG.Runes));
+    const relics = Run.relicChoices(run, rng, ['common', 'uncommon', 'rare'], 4);
+    const avail = {
+      unit: () => units.length > 0, rune: () => runes.length > 0, relic: () => relics.length > 0,
+      train: () => Run.trainable(run).length > 0, lesson: () => run.units.some((d) => Run.learnable(run, d).length),
+    };
+    const count = {};
+    const items = [];
+    const take = (kind) => {
+      count[kind] = (count[kind] || 0) + 1;
+      if (kind === 'unit') { const k = units.shift(); items.push({ kind, def: k, price: PRICE.unit[AG.Units[k].rarity] + rng.int(-5, 5) }); }
+      else if (kind === 'rune') { const k = runes.shift(); items.push({ kind, id: k, price: PRICE.rune[AG.Runes[k].rarity] + rng.int(-4, 4) }); }
+      else if (kind === 'relic') { const k = relics.shift(); items.push({ kind, id: k, price: PRICE.relic[AG.Relics[k].rarity] + rng.int(-8, 8) }); }
+      else items.push({ kind, price: Run.SERVICE[kind].price });
+    };
+    // At least one unit and one rune, then a mix.
+    if (avail.unit()) take('unit');
+    if (avail.rune()) take('rune');
+    while (items.length < Run.SHOP_SIZE) {
+      const kinds = Object.keys(SHOP_KINDS).filter((k) => avail[k]() && (count[k] || 0) < SHOP_KINDS[k].max);
+      if (!kinds.length) break;
+      take(rng.weighted(kinds, (k) => SHOP_KINDS[k].w));
     }
-    const item = shop[kind][idx];
-    if (!item || item.sold) return false;
-    const cost = Run.price(run, item.price);
-    if (run.gold < cost) return false;
+    for (const it of items) it.sold = false;
+    return rng.shuffle(items);
+  }
+  Run.makeShop = function (run) {
+    return withRng(run, (rng) => ({ items: shopItems(run, rng), refreshes: 0 }));
+  };
+  Run.refreshCost = function (run) { return 20 + 10 * ((run.shop && run.shop.refreshes) || 0); };
+  Run.refreshShop = function (run) {
+    const cost = Run.refreshCost(run);
+    if (!run.shop || run.gold < cost) return false;
     run.gold -= cost;
-    item.sold = true;
-    if (kind === 'units') Run.addUnit(run, item.def);
-    else if (kind === 'runes') Run.addRune(run, item.id);
-    else if (kind === 'relics') Run.addRelic(run, item.id);
+    run.shop.refreshes++;
+    run.shop.items = withRng(run, (rng) => shopItems(run, rng));
+    return true;
+  };
+  // Buy item idx; services need a pick (a unit type, or {def, talent}).
+  Run.buy = function (run, idx, picked) {
+    const it = run.shop && run.shop.items[idx];
+    if (!it || it.sold) return false;
+    const cost = Run.price(run, it.price);
+    if (run.gold < cost) return false;
+    if ((it.kind === 'train' || it.kind === 'lesson') && !picked) return false;
+    run.gold -= cost;
+    it.sold = true;
+    if (it.kind === 'unit') Run.addUnit(run, it.def);
+    else if (it.kind === 'rune') Run.addRune(run, it.id);
+    else if (it.kind === 'relic') Run.addRelic(run, it.id);
+    else if (it.kind === 'train') Run.train(run, picked);
+    else if (it.kind === 'lesson') Run.modify(run, picked.def, { innate: picked.talent });
     return true;
   };
 

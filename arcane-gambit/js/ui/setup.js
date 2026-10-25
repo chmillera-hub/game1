@@ -183,6 +183,7 @@
     }
     function toggleTalent(i, tid) {
       const e = F[i];
+      if (Run.innate(run, e.def).indexOf(tid) >= 0) return;
       const k = e.talents.indexOf(tid);
       const slots = Run.talentSlots(run, e.def);
       if (k >= 0) e.talents.splice(k, 1);
@@ -299,7 +300,7 @@
       const units = run.units.slice().sort((a, b) => AG.Units[a].cost - AG.Units[b].cost || AG.Units[a].name.localeCompare(AG.Units[b].name));
       for (const def of units) {
         const card = UI.rosterCard(def, {
-          rank: run.ranks[def] || 0,
+          rank: run.ranks[def] || 0, run,
           sel: sel.kind === 'card' && sel.def === def,
           cant: AG.Units[def].cost > left || F.length >= lim.cells,
         });
@@ -336,8 +337,10 @@
         const e = F[i];
         const u = previewUnitForEntry(i);
         return UI.inspector(u, {
+          run,
           loadout: {
             entry: e,
+            innate: Run.innate(run, e.def),
             supply: { used: Run.formationCost(run, F), total: Run.limits(run, enc).supply },
             slots: Run.talentSlots(run, e.def),
             talentCost: (t) => Run.talentCost(run, t),
@@ -353,8 +356,8 @@
         return u ? UI.inspector(u, {}) : h('p', '');
       }
       if (sel.kind === 'card') {
-        const u = B.makeUnit(sel.def, 0, 0, 0, { rank: run.ranks[sel.def] || 0 });
-        return h('div.stack', UI.inspector(u, { showTalents: true }), h('p.hint', 'Talents and runes are chosen after you place the unit.'));
+        const u = Run.unitFor(run, sel.def);
+        return h('div.stack', UI.inspector(u, { showTalents: true, run }), h('p.hint', 'Talents and runes are chosen after you place the unit.'));
       }
       // Nothing selected: a briefing on the enemy.
       const list = h('div.stack', { style: { gap: '6px' } });

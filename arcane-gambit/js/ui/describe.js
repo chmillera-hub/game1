@@ -272,15 +272,44 @@
     if (u.immune && u.immune.length) {
       parts.push(h('p.faint', { style: { fontSize: '13px' } }, 'Immune to ' + (u.immune.indexOf('all') >= 0 ? 'all afflictions' : u.immune.map((k) => (UI.STATUS[k] ? UI.STATUS[k].name : k).toLowerCase().replace('burning', 'burn').replace('poisoned', 'poison').replace('frozen', 'freeze').replace('chilled', 'chill')).join(', ')) + '.'));
     }
+    if (opts.run && u.side === 0) {
+      const ch = UI.changesLine(opts.run, u.def);
+      if (ch) parts.push(h('div.sec-title', 'Changed this run'), ch);
+    }
     if (opts.loadout) parts.push(UI.loadoutPanel(u, opts.loadout));
     else if (d.talents && opts.showTalents) {
+      const innate = opts.run ? AG.Run.innate(opts.run, u.def) : [];
       parts.push(h('div.sec-title', 'Talents'));
       for (const tid of d.talents) {
         const T = AG.Talents[tid];
-        parts.push(h('div.ab', h('div.t', T.name, h('span.cd', '+' + T.cost + ' supply')), h('div.d', T.desc)));
+        parts.push(h('div.ab', h('div.t', T.name, h('span.cd', innate.indexOf(tid) >= 0 ? 'learned · free' : '+' + T.cost + ' supply')), h('div.d', T.desc)));
       }
+    } else if ((u.talents && u.talents.length) || u.rune) {
+      // A fielded unit: what it actually carries.
+      parts.push(h('div.sec-title', 'Carrying'));
+      for (const tid of u.talents || []) {
+        const T = AG.Talents[tid];
+        if (T) parts.push(h('div.ab', h('div.t', T.name, h('span.cd', 'talent')), h('div.d', T.desc)));
+      }
+      const R = u.rune && AG.Runes[u.rune];
+      if (R) parts.push(h('div.ab', h('div.t', UI.glyph(R.icon), R.name, h('span.cd', 'rune')), h('div.d', R.desc)));
     }
     return h('div.insp', parts);
+  };
+
+  // What events and the merchant changed about a unit type this run, as chips.
+  UI.changesLine = function (run, def) {
+    const m = AG.Run.modOf(run, def);
+    if (!m) return null;
+    const row = h('div.row.changes', { style: { gap: '6px' } });
+    for (const t of m.innate || []) row.appendChild(h('span.chip.brass', { 'data-tip': AG.Talents[t].desc, 'data-tip-title': AG.Talents[t].name }, 'Learned: ' + AG.Talents[t].name));
+    const stat = { hp: 'HP', atk: 'ATK', spd: 'SPD', armor: 'Armor' };
+    for (const k in stat) if (m[k]) row.appendChild(h('span.chip' + (m[k] < 0 ? '.garnet' : '.arcane'), (m[k] > 0 ? '+' : '') + m[k] + ' ' + stat[k]));
+    for (const k in m.passives || {}) {
+      const P = AG.Passives[k];
+      if (P) row.appendChild(h('span.chip.arcane', { 'data-tip': P.desc(m.passives[k] || {}), 'data-tip-title': P.name }, P.name));
+    }
+    return row.childNodes.length ? row : null;
   };
 
   // Talent & rune pickers for a placed unit during setup.
@@ -297,7 +326,14 @@
     const short = (add) => (add > left ? h('span.need', 'needs ' + (add - left) + ' more') : null);
     wrap.appendChild(h('div.sec-title', 'Talents · ' + (L.slots > 1 ? 'pick up to 2 (Elite)' : 'pick 1')));
     const tl = h('div.opts');
+    const innate = L.innate || [];
+    for (const tid of innate) {
+      const T = AG.Talents[tid];
+      tl.appendChild(h('button.opt.on.learned', { type: 'button', disabled: true, 'aria-pressed': 'true' },
+        h('span.t', T.name), h('span.c', 'Learned'), h('span.d', T.desc + ' Always on; costs no supply or slot.')));
+    }
     for (const tid of d.talents) {
+      if (innate.indexOf(tid) >= 0) continue;
       const T = AG.Talents[tid];
       const on = L.entry.talents.indexOf(tid) >= 0;
       const cost = L.talentCost(tid);
@@ -333,7 +369,7 @@
 
   UI.rosterCard = function (def, opts) {
     const d = AG.Units[def];
-    const u = opts.unit || AG.B.makeUnit(def, 0, 0, 0, { rank: opts.rank || 0 });
+    const u = opts.unit || (opts.run ? AG.Run.unitFor(opts.run, def) : AG.B.makeUnit(def, 0, 0, 0, { rank: opts.rank || 0 }));
     const card = h('button.rcard' + (opts.sel ? '.sel' : '') + (opts.cant ? '.cant' : ''), { type: 'button', 'aria-label': d.name + ', ' + d.cost + ' supply' },
       h('span.ic' + (UI.rarityClass(def) ? '.' + UI.rarityClass(def) : ''), UI.icon(def, 'md')),
       h('span.nm', d.name, opts.rank ? h('span.stars', ' ' + '★'.repeat(opts.rank)) : null),

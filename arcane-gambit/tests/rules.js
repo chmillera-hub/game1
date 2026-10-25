@@ -543,5 +543,78 @@ test('a challenger climbs the Hall until its first loss', () => {
   eq(Run.loadHall().entries.length, 1, 'enshrined');
   ok(run.done && !Run.load(false), 'the finished run is not kept');
 });
+test('a learned talent is always on, free, and stat changes reach the battle', () => {
+  const run = Run.newRun({ seed: 21 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  const def = run.units.find((d) => AG.talentsFor(d).length);
+  const t = AG.talentsFor(def)[0];
+  const base = Run.unitFor(run, def);
+  Run.modify(run, def, { innate: t, hp: 3, atk: -1 });
+  Run.modify(run, def, { innate: t, hp: 1 });
+  eq(Run.innate(run, def).join(), t, 'learned once');
+  eq(Run.learnable(run, def).indexOf(t), -1, 'no longer learnable');
+  const e = { def, x: 0, y: 7, talents: [t], rune: null };
+  eq(Run.entryCost(run, e), AG.Units[def].cost, 'costs no supply even if also picked');
+  const a = Run.armyFor(run, [e])[0];
+  eq(a.talents.filter((x) => x === t).length, 1, 'on once');
+  eq(a.mods.hp, 4, 'hp changes add up');
+  const s = battle(['g....', '.....', '.....'], { g: 'goblin' }, [Object.assign({}, a, { x: 0, y: 2 })]);
+  const u = s.units.find((x) => x.side === 0 && x.def === def);
+  ok(u.talents.indexOf(t) >= 0, 'the unit has the talent');
+  eq(Run.unitFor(run, def).maxHp, base.maxHp + 4, 'shown with the change');
+  ok(u.maxHp >= base.maxHp + 4, 'and fights with it');
+});
+
+test('the merchant: six wares, a refresh that costs 10 more each time', () => {
+  const run = Run.newRun({ seed: 33 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  run.shop = Run.makeShop(run);
+  eq(run.shop.items.length, 6, 'six items');
+  const kinds = run.shop.items.map((it) => it.kind);
+  ok(kinds.indexOf('unit') >= 0 && kinds.indexOf('rune') >= 0, 'at least a unit and a rune: ' + kinds);
+  ok(new Set(kinds).size >= 3, 'several categories: ' + kinds);
+  run.gold = 100;
+  eq(Run.refreshCost(run), 20, 'first refresh 20');
+  const first = JSON.stringify(run.shop.items);
+  ok(Run.refreshShop(run), 'refreshed');
+  eq(run.gold, 80, 'paid 20');
+  eq(Run.refreshCost(run), 30, 'then 30');
+  ok(JSON.stringify(run.shop.items) !== first && run.shop.items.length === 6, 'six new wares');
+  ok(Run.refreshShop(run) && Run.refreshShop(run), 'two more');
+  eq(run.gold, 10, '30 + 40 spent');
+  ok(!Run.refreshShop(run), 'cannot afford 50');
+  const i = run.shop.items.findIndex((it) => it.kind === 'unit');
+  run.gold = 999;
+  ok(Run.buy(run, i), 'bought a unit');
+  ok(run.units.indexOf(run.shop.items[i].def) >= 0 && !Run.buy(run, i), 'owned, and sold out');
+});
+
+test('the soul forge fuses one unit type into another', () => {
+  const run = Run.newRun({ seed: 44 });
+  while (run.draft) Run.draftPick(run, run.draft.options[0]);
+  Run.takeBoon(run, 'ledger');
+  const [from, into] = [run.units[1], run.units[2]];
+  run.lastArmy = [{ def: from, x: 0, y: 7, talents: [], rune: null }];
+  const hp = Math.ceil(Run.unitFor(run, from).maxHp / 2);
+  const before = Run.unitFor(run, into);
+  run.event = { id: 'soulForge', result: null };
+  const out = Run.resolveEvent(run, 0, { from, into });
+  ok(typeof out === 'string' && /poured/.test(out), 'outcome text: ' + out);
+  eq(run.units.indexOf(from), -1, 'given up');
+  eq(run.lastArmy.length, 0, 'and out of the last army');
+  eq(Run.unitFor(run, into).maxHp, before.maxHp + hp, 'half its HP');
+  eq(Run.unitFor(run, into).atk, before.atk + 1, '+1 ATK');
+});
+
+test('a priority can be set, moved and cleared mid-battle', () => {
+  const s = battle(['g...g', '.....', '..p..'], { g: 'goblin' }, [{ def: 'knight', x: 2, y: 2 }]);
+  const g2 = s.units.filter((u) => u.side === 1)[1];
+  eq(B.setPriority(s, { x: 4, y: 0 }).uid, g2.uid, 'the enemy on the square');
+  eq(B.setPriority(s, { x: 1, y: 1 }).cell, 1 * s.board.w + 1, 'an open square');
+  eq(B.setPriority(s, null), null, 'cleared');
+  eq(s.priority, null, 'gone');
+});
 console.log(passed + ' passed' + (failed.length ? ', ' + failed.length + ' failed:\n  ' + failed.join('\n  ') : ''));
 process.exit(failed.length ? 1 : 0);
