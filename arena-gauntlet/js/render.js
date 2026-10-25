@@ -1591,7 +1591,13 @@
           continue;
         }
         const group = [];
-        while (i < events.length && !['action', 'move', 'teleport'].includes(events[i].t)) group.push(events[i++]);
+        while (i < events.length && !['action', 'move', 'teleport'].includes(events[i].t)) {
+          const e = events[i++];
+          group.push(e);
+          // A unit passing its turn plays on its own, with whatever its turn brought (its
+          // fatigue hit, poison): a run of passes reads one unit at a time.
+          if (e.t === 'sitout') break;
+        }
         await this.applyImpacts(group, state, true);
       }
     }
@@ -1971,6 +1977,7 @@
             const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? POISON : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'fatigue' ? '#ffd27a' : '#ffffff';
             // Damage counts down (-6), healing up (+6), so the two never look alike.
             this.addText(v.x, v.y, '-' + e.amount, col, { height: h, big: e.amount >= 25 });
+            if (e.dmgType === 'fatigue') this.addText(v.x, v.y, 'FATIGUE', col, { height: h, dy: -this.tw * 0.28, max: 0.9 });
             if (e.cat === 'back' && e.dmgType === 'phys') {
               const src = state && state.byId[e.src];
               const stab = src && src.props && src.props.backMult;
@@ -2007,6 +2014,12 @@
             v.hp = Math.min(v.maxHp, v.hp + e.amount);
             this.addText(v.x, v.y, '+' + e.amount, '#8ef08e', { height: h, dy: e.why === 'drain' ? this.tw * 0.15 : 0 });
             if (e.why !== 'drain') this.particles(v.x, v.y, 6, ['#b7ffb0', '#6fdc6f', '#fff3b0'], { lift: 10, rise: 0.8, speed: 0.25, max: 0.8 });
+            break;
+          case 'sitout':
+            // Its turn came and it passes (cooling down, paralyzed, or nothing to do).
+            if (!v || e.why === 'passive') break;
+            any = true;
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, dy: this.tw * 0.18, max: 0.85 });
             break;
           case 'healblock':
             if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9 });

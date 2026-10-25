@@ -559,13 +559,14 @@ test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more
   totem.hp = totem.maxHp = 999;
   sc.hp = 1;
   E.endTurn(s);
-  // Your first unit to act takes the scout down; fatigue is still far off (turn 30).
+  // Your first unit to act takes the scout down; fatigue is still far off (turn 36).
   while (!s.over && !s.cleanup) {
     if (s.side === 'P' && s.due) act(s, s.byId[s.due], { kind: 'unit', uid: sc.uid });
     else E.endTurn(s);
   }
-  assert.ok(s.cleanup && !s.inOvertime && E.fatigueHit(s) === 0, 'the clock has no fatigue yet');
+  assert.ok(s.cleanup && !s.inOvertime && E.fatigueHit(s, 'E') === 0, 'the clock has no fatigue yet');
   assert.strictEqual(E.cleanupHit(s), 1);
+  assert.strictEqual(E.fatigueHit(s, 'P'), 1);
   const hits = [];
   let guard = 0;
   while (!s.over && hits.length < 7 && guard++ < 200) {
@@ -578,10 +579,7 @@ test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more
     }
   }
   assert.deepStrictEqual(hits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
-  // Once the clock's fatigue is bigger, that is what you lose.
-  s.overtime = 1;
-  s.inOvertime = true;
-  assert.strictEqual(E.cleanupHit(s), Math.max(s.cleanup.hits + 1, E.fatigueHit(s)));
+  assert.strictEqual(E.cleanupHit(s), s.tired.P + 1);
 });
 
 test('wreckage: left be while the fight is on, broken for its gold once the enemy army falls', () => {
@@ -609,7 +607,7 @@ test('wreckage: left be while the fight is on, broken for its gold once the enem
   assert.strictEqual(s.stats.bounty, 8);
 });
 
-test('mid-cleanup nothing can cost you the win: not fatigue taking the whole army, not a stall, not a retreat', () => {
+test('mid-cleanup nothing can cost you the win, and nothing but fatigue ends it: no stall, no cutoff', () => {
   const field = () => {
     const s = board([
       { type: 'knight', team: 'P', x: 4, y: 5 },
@@ -628,12 +626,14 @@ test('mid-cleanup nothing can cost you the win: not fatigue taking the whole arm
   s.overtime = 1;
   for (let i = 0; i < 8 && !s.over; i++) E.endTurn(s);
   assert.ok(s.over && s.winner === 'P' && !s.units[0].alive);
-  // An army that gets nowhere: the win comes after a few turns without progress.
+  // An army that gets nowhere is not stopped early: it collects on until fatigue takes it.
   s = field();
-  s.units[0].root = 99;
-  for (let i = 0; i < 40 && !s.over; i++) E.endTurn(s);
-  assert.ok(s.over && s.winner === 'P', 'a stall ends it');
-  assert.ok(s.turn - s.cleanup.at >= E.CLEANUP_STALL);
+  const kn = s.units[0];
+  kn.root = 99;
+  kn.hp = kn.maxHp = 200;
+  for (let i = 0; i < 200 && !s.over; i++) E.endTurn(s);
+  assert.ok(s.over && s.winner === 'P' && !kn.alive, 'its fatigue ends it, and the win stands');
+  assert.ok(s.tired.P >= 20, `it tired ${s.tired.P} times first (1 + 2 + ... + 20 > 200 HP): no cutoff before that`);
   // Retreating or finishing now: a win.
   s = field();
   E.forfeit(s);

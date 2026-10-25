@@ -541,8 +541,9 @@
       name: 'Castle Gate', rarity: 'none', cost: 0, role: 'object',
       hp: 130, pow: 0, armor: 0.4, res: -0.2, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'object'], tags: ['structure'], material: 'wood', salvage: 5,
-      desc: 'An oak-and-iron gate. Breaking it opens the castle.',
+      // 'opens': its own side walks through it (nobody can stop on it); the other side must break it.
+      traits: ['immobile', 'nofacing', 'object', 'opens'], tags: ['structure'], material: 'wood', salvage: 5,
+      desc: 'An oak-and-iron gate. It opens for its own garrison; breaking it opens the castle to you.',
       tip: 'Breaking the gate wins a siege. Siege damage and fire bring it down fastest.',
     },
     barrel: {

@@ -784,6 +784,36 @@
       };
   }
 
+  // Each army's Supply in small badges by its own back row: the enemy's at the top right,
+  // yours at the bottom left. In battle, what is still standing of what has taken the
+  // field (25/40), and any reinforcements still to come; in the War Room, what you are
+  // fielding against what the enemy brings. Pass null to hide them.
+  function supplyBadges(sides) {
+    for (const team of ['P', 'E']) {
+      const el = $(team === 'P' ? '#supP' : '#supE');
+      if (!el) continue;
+      const x = sides && sides[team];
+      el.hidden = !x;
+      if (!x) continue;
+      el.innerHTML = `<span class="sup-who">${esc(x.label)}</span><b>${x.left != null ? `${x.left}<small>/${x.total}</small>` : x.total}</b><span class="sup-unit">Supply</span>${x.coming ? `<span class="sup-more">+${x.coming} coming</span>` : ''}`;
+      el.title = x.tip || (x.left != null ? `${x.label}: ${x.left} of ${x.total} Supply still standing${x.coming ? `, ${x.coming} more on the way` : ''}` : `${x.label}: ${x.total} Supply${x.coming ? `, ${x.coming} more in reinforcements` : ''}`);
+    }
+  }
+
+  // A side's Supply in battle: still standing, all that has taken the field, still to come.
+  function battleSupply(s, team) {
+    let left = 0;
+    let total = 0;
+    for (const u of s.units) {
+      if (u.team !== team || !u.supply) continue;
+      total += u.supply;
+      if (u.alive && !u.escaped) left += u.supply;
+    }
+    let coming = 0;
+    for (const w of s.waves || []) if ((w.team || 'E') === team && w.state === 'pending') for (const sp of w.units) coming += sp.supply || 0;
+    return { left, total, coming };
+  }
+
   function showBanner(text, enemy) {
     const b = $('#banner');
     b.textContent = text;
@@ -1047,6 +1077,7 @@
         <canvas class="ch-thumb" data-thumb="${i}"></canvas>
         <div class="title">${esc(o.enc.name)}</div>
         <div class="ch-goals">${objectivesHTML(o.enc)}</div>
+        <div class="ch-sup">${ic('army')} Enemy army <b>${R.encSupply(o.enc).army}</b> Supply${R.encSupply(o.enc).waves ? ` <span class="muted">(+${R.encSupply(o.enc).waves} in reinforcements)</span>` : ''} · yours <b>${R.supplyFor(run)}</b></div>
         <div class="ch-pay">${pays}</div>
       </button>`;
     };
@@ -1077,35 +1108,11 @@
     $('#chRelics', v).onclick = () => relicSheet();
   }
 
-  // Calling it a day at the final challenge. The campaign is won either way; if the army
-  // that last fought the final challenge differs from the one that won the campaign, pick
-  // which of the two the Hall of Fame keeps. onBack: where Back (or a tap outside) goes.
-  function claimSheet(run, onBack) {
-    if (!R.megaArmyDiffers(run)) {
-      R.claimVictory(run);
-      return route();
-    }
-    const choose = (which) => {
-      UI.onSheetClose = null;
-      closeSheet();
-      R.claimVictory(run, which);
-      sfx('click');
-      route();
-    };
-    openSheet(
-      `${sheetHead('Call it a day')}
-      <p>Your campaign is won whatever you choose. Which army should the Hall of Fame keep?</p>
-      <div class="cards">
-        <button class="card" id="clFinal"><div class="title">The army that beat the ${esc(UNITS[R.bossOf(run)].name)}</div>${armyPicHTML(run.finalArmy)}<div class="small muted">In the Hall now: it stays as it is.</div></button>
-        <button class="card" id="clMega"><div class="title">The army that last fought the final challenge</div>${armyPicHTML(run.megaArmy)}<div class="small muted">Takes its place in the Hall, with the same name and record.</div></button>
-      </div>
-      <div class="actions"><button class="btn" data-close>Back</button></div>`,
-      (sh) => {
-        $('#clFinal', sh).onclick = () => choose('final');
-        $('#clMega', sh).onclick = () => choose('mega');
-      }
-    );
-    UI.onSheetClose = onBack || null;
+  // Calling it a day at the final challenge: the campaign is won, and the Hall of Fame
+  // already keeps the army that last fought the final challenge.
+  function claimSheet(run) {
+    R.claimVictory(run);
+    route();
   }
 
   // The Act III boss is down: the campaign is won. Claim it, or take on the final challenge.
@@ -2182,6 +2189,8 @@
     for (let i = 0; i < Math.max(wr.supply, used); i++) pips.push(`<span class="pip ${i < used ? (i >= wr.supply ? 'over' : 'used') : ''}"></span>`);
     const attempt = run.pending.attempt || 0;
 
+    const foeSup = R.encSupply(enc);
+    supplyBadges({ P: { label: 'Your army', left: wrUsed(), total: wr.supply, tip: `Your army: ${wrUsed()} of your ${wr.supply} Supply fielded` }, E: { label: 'Enemy', total: foeSup.army, coming: foeSup.waves } });
     $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${encKindLabel(enc)}${attempt ? ' · attempt ' + (attempt + 1) : ''}</span></div>
       <button class="btn icon-only" id="wrArmy" aria-label="Army">${ic('army')}</button>
       <button class="btn icon-only" id="wrMenu" aria-label="Menu">${ic('menu')}</button>`;
@@ -2597,9 +2606,9 @@
   }
 
   // A unit just put on the field: walk through its kit one question at a time, its level,
-  // its ability picks, then each talent, skill and gear slot. Each question can be answered
-  // No; one with nothing to choose from is skipped; Done ends it there. Then on to the next
-  // unit.
+  // its ability picks, then each talent, skill and gear slot. Each question can be passed
+  // over with Continue (keeping what it has, or leaving the slot empty); one with nothing to
+  // choose from is skipped; Exit leaves the whole setup there.
   function wrGuide(rid) {
     const run = UI.run;
     const wr = UI.wr;
@@ -2626,18 +2635,18 @@
           val: lv, name: `Level ${lv}`,
           desc: lv === 2 ? '+20% HP, +15% damage, a second ability, a second talent slot and a skill slot.' : '+40% HP, +30% damage, its Mastery, a third talent slot and a second gear slot.',
           cost: costOf(() => R.setLevel(run, rid, lv), () => R.setLevel(run, rid, lv0)),
-        })), no: `No, keep Level ${lv0}` });
+        })), skip: `keep Level ${lv0}` });
       for (const tier of [1, 2]) {
         if (r.load.lv < tier) continue;
         const cur = r.load['a' + tier];
         const ids = T.abilities[tier].filter((id) => !TALENTS[id] && id !== cur);
-        out.push({ key: 'a' + tier, title: tier === 1 ? 'Ability' : 'Level 2 ability', opts: ids.map((id) => ({ val: id, name: ABILITIES[id].name, desc: ABILITIES[id].desc, cost: ABILITIES[id].cost - (ABILITIES[cur] ? ABILITIES[cur].cost : 0) })), no: `No, keep ${ABILITIES[cur] ? ABILITIES[cur].name : 'the free one'}` });
+        out.push({ key: 'a' + tier, title: tier === 1 ? 'Ability' : 'Level 2 ability', opts: ids.map((id) => ({ val: id, name: ABILITIES[id].name, desc: ABILITIES[id].desc, cost: ABILITIES[id].cost - (ABILITIES[cur] ? ABILITIES[cur].cost : 0) })), skip: `keep ${ABILITIES[cur] ? ABILITIES[cur].name : 'the free one'}` });
       }
       const sl = R.slotsFor(r.load.lv);
       for (const kind of ['talent', 'skill', 'gear']) {
         const n = kind === 'talent' ? sl.talents : kind === 'skill' ? sl.skills : sl.gear;
         const held = r.load[SLOT_KEY[kind]];
-        // One question per kind: a pick asks about the next open slot, a No skips them all.
+        // One question per kind: a pick asks about the next open slot, Continue skips them all.
         if (held.length >= n) continue;
         const heldIds = held.map((x) => R.itemByUid(run, x).id);
         // One option per kind of item you have free that fits, however many copies.
@@ -2649,7 +2658,7 @@
           seen.add(it.id);
           opts.push({ val: it.uid, name: d2.name, desc: d2.desc, cost: d2.cost });
         }
-        out.push({ key: kind, slot: true, title: `${cap1(kind)}${n > 1 ? ` (slot ${held.length + 1} of ${n})` : ''}`, kind, opts, no: n - held.length > 1 ? `No more ${kind === 'gear' ? 'gear' : kind + 's'}` : 'No, leave it empty' });
+        out.push({ key: kind, slot: true, title: `${cap1(kind)}${n > 1 ? ` (slot ${held.length + 1} of ${n})` : ''}`, kind, opts, skip: n - held.length > 1 ? `leave its ${kind} slots empty` : 'leave it empty' });
       }
       return out;
     };
@@ -2668,7 +2677,7 @@
       const kindIcon = q.kind ? `<span class="itemico ${q.kind}">${ic(ITEM_ICON[q.kind])}</span>` : '';
       openSheet(
         `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, `Kit it out · Supply left: <b>${room}</b>`, true)}
-        <div class="guide-q">${kindIcon}<b>${esc(q.title)}</b><span class="small muted">Pick one, or No.</span></div>
+        <div class="guide-q">${kindIcon}<b>${esc(q.title)}</b><span class="small muted">Pick one, or Continue to ${esc(q.skip)} and move on.</span></div>
         <div class="picks">${q.opts
           .map((o, i) => {
             const over = o.cost > room;
@@ -2677,7 +2686,7 @@
               <span class="pk-desc">${esc(o.desc)}${over ? ' <b class="bad-text">Not enough Supply.</b>' : ''}</span></button>`;
           })
           .join('')}</div>
-        <div class="actions"><button class="btn" id="gDone">${ic('check')} Done with ${esc(r.name)}</button><button class="btn primary" id="gNo">${esc(q.no)}</button></div>`,
+        <div class="actions"><button class="btn" id="gDone">${ic('close')} Exit</button><button class="btn primary" id="gNo">Continue ${ic('play')}</button></div>`,
         (sh) => {
           for (const b of $$('[data-gopt]', sh))
             b.onclick = () => {
@@ -3045,8 +3054,8 @@
   // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
     if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · <span class="overtime">Your fatigue −${E.cleanupHit(s)}</span>`;
-    if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · fatigue −${E.fatigueHit(s)}` : ` · fatigue at ${s.overtime}`}`;
-    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> to whoever acts`;
+    if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · yours −${E.fatigueHit(s, 'P')}` : ` · fatigue at ${s.overtime}`}`;
+    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue: you −${E.fatigueHit(s, 'P')} · enemy −${E.fatigueHit(s, 'E')}</span>`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
@@ -3131,15 +3140,22 @@
       } else if (e.t === 'dmg' && e.dmgType === 'fatigue' && v) {
         finish();
         const dead = !v.alive && ev.some((d) => d.t === 'death' && d.uid === v.uid);
-        add({ team: v.team, html: `<span class="muted">${esc(logName(v))} loses ${e.amount} HP to fatigue.</span>${dead ? ` <span class="kill">${esc(logName(v))} falls</span>` : ''}` });
+        add({ team: v.team, fatigue: { uid: v.uid, amount: e.amount, dead }, html: `<span class="muted">${esc(logName(v))} loses ${e.amount} HP to fatigue.</span>${dead ? ` <span class="kill">${esc(logName(v))} falls</span>` : ''}` });
       } else if (e.t === 'dmg' && line && e.src === line.uid) line.dmg += e.amount || 0;
       else if (e.t === 'heal' && line && e.amount > 0) line.heal += e.amount;
       else if (e.t === 'death' && line && e.src === line.uid && v) line.kills.push(v.team === 'P' ? v.name : UNITS[v.type].name);
       else if (e.t === 'done') finish();
       else if (e.t === 'sitout' && v && v.team && SIT_OUT[e.why]) {
         finish();
-        // Several units passing in a row make one line, not one each.
         const last = B.log[0];
+        // A unit that tired as its turn came and then passes: one line for both, so a run of
+        // passes reads one unit at a time with each fatigue hit (15, 16, 17...).
+        if (last && last.fatigue && last.fatigue.uid === v.uid) {
+          last.html = `<span class="muted">${esc(logName(v))} passes (${SIT_OUT[e.why]}) and loses ${last.fatigue.amount} HP to fatigue.</span>`;
+          last.fatigue = null;
+          continue;
+        }
+        // Several units passing in a row make one line, not one each.
         if (last && last.passes && last.team === v.team && last.batch === batch) {
           last.passes.push([logName(v), e.why]);
           last.html = passLine(last.passes);
@@ -3149,14 +3165,14 @@
         }
       } else if (e.t === 'routed') {
         finish();
-        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: enemy fatigue doubled!</b> No more reinforcements, and each enemy unit loses twice this round's fatigue as its turn comes. Your side keeps the normal amount.` });
-        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, 1, then 2, 3 and so on. Your side tires only on turn ${s.overtime || 30}.` });
+        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: enemy fatigue doubled!</b> No more reinforcements, and each enemy unit now loses twice its fatigue as its turn comes. Your side keeps the normal amount.` });
+        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, passing or not: 1, then 2, 3 and so on, one more every enemy turn. Your side tires only on turn ${s.overtime || R.OVERTIME}.` });
       } else if (e.t === 'cleanup') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), but its fatigue sets in now: each of your units loses HP as its turn comes, 1, then 2, 3 and so on, one more every turn.` });
+        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), but its fatigue sets in now: each of your units loses HP as its turn comes, passing or not, 1, then 2, 3 and so on, one more every turn. It goes on until everything is collected or your army has fallen.` });
       } else if (e.t === 'overtime') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Every unit loses HP as its turn comes, 1 more each round, both sides alike.` });
+        add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Every unit loses HP as its turn comes, passing or not: 1, then 2, 3 and so on, one more for every turn its side takes. Both sides alike.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -3444,6 +3460,11 @@
       <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed: ${speedOf()}x">${ic('fast')}<small>${speedOf()}×</small></button>
       ${auto ? `<button class="btn icon-only ${B.paused ? 'on' : ''}" id="btPauseT" aria-label="${B.paused ? 'Resume' : 'Pause'}">${ic(B.paused ? 'play' : 'pause')}</button>` : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
+    const ex = B.exhibition;
+    supplyBadges({
+      P: Object.assign({ label: ex ? ex.a.name || ex.a : 'Your army' }, battleSupply(s, 'P')),
+      E: Object.assign({ label: ex ? ex.b.name || ex.b : 'Enemy' }, battleSupply(s, 'E')),
+    });
     $('#cmd').innerHTML = goalBarHTML(B) + panel;
     // A new view (a unit or tile tapped, or back to the fight) starts at the top, under the
     // goals, not wherever the last one was scrolled to.
@@ -4062,7 +4083,7 @@
     openSheet(
       `${sheetHead('Defeat')}
       <p>${reason} The final challenge still stands, after ${tries} ${tries === 1 ? 'try' : 'tries'}. It is not meant to be beaten: try again as often as you like, with any plan.</p>
-      <p class="muted">Your campaign is already won, and your army is in the Hall of Fame. ${R.megaArmyDiffers(run) ? 'Calling it a day? You choose which army the Hall keeps: the one that won the campaign, or the one that just fought here.' : 'Calling it a day keeps it there as it is.'}</p>
+      <p class="muted">Your campaign is already won, and the army that just fought here has taken its place in the Hall of Fame. Whatever you try last is the one it keeps.</p>
       <div class="actions"><button class="btn" id="mdClaim">${ic('crown')} Call it a day</button><button class="btn primary" id="mdRetry">${ic('swords')} Try again</button></div>`,
       (sh) => {
         $('#mdRetry', sh).onclick = () => {
@@ -4077,7 +4098,7 @@
           UI.onSheetClose = null;
           closeSheet();
           R.backToChoice(run);
-          claimSheet(run, () => route());
+          claimSheet(run);
         };
       }
     );
@@ -4181,7 +4202,7 @@
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
         <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
-          <span class="small muted">${l.house ? `House army · ${R.HOUSE_SUPPLY} Supply of ${esc(UNITS[l.type] ? UNITS[l.type].name : 'units')}s, Level 1, bare · ${l.units.length} units` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
+          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${esc(UNITS[l.type] ? UNITS[l.type].name : 'unit')}s, Level 1, bare · ${l.units.length} units` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
     };
@@ -4662,7 +4683,7 @@
     const hallText = !place
       ? ''
       : place.inLine
-        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. ${hall.legends.every((l) => l.house) ? `The house armies hold the Hall for now: mobs of ${R.HOUSE_SUPPLY} Supply of Scouts, Knights, Archers and Witches, just spammed onto the field. Can you climb past them all? ` : ''}Start its climb now, or come back any time from the title screen.`
+        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. ${hall.legends.every((l) => l.house) ? `The house armies hold the Hall for now: mobs of Scouts, Knights, Archers and Witches (${R.loadHall().legends.filter((l) => l.house).map((l) => R.armySupply(l)).join(', ')} Supply), just spammed onto the field. Can you climb past them all? ` : ''}Start its climb now, or come back any time from the title screen.`
         : `Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${place.rank} of ${hall.legends.length}. ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}`;
     const hallPanel = legend
       ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}${legend.superWon ? ` It wears the <span class="chip slayer">${ic('crossbones')} Wyrm slayer</span> badge there, for good.` : ''}</p>
@@ -4732,9 +4753,9 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card). Its turns still come, but it passes that many of them: it passes at once, its cooldown drops by one, and the next unit in line goes. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, pass too. The turn order shows every unit's turn: a unit about to pass is greyed out with its cooldown on its portrait. Poison, burns, regen and fatigue come on passed turns too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
-          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your army's fatigue sets in that moment: each of your units loses HP as its turn comes, 1, then 2, 3 and so on, one more every turn. It cannot cost you the battle. It ends when nothing is left, your army is gone, it stops getting anywhere, or you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
-          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn comes, passing or not: 1 for the first, then 2, 3 and so on, one more every enemy turn, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
+          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your army's fatigue sets in that moment: each of your units loses HP as its turn comes, passing or not, 1, then 2, 3 and so on, one more every turn. It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
+          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 for its side's first, then 2, 3 and so on, one more for every turn that side's units take, passes included (five units passing in a row at 15 lose 15, 16, 17, 18 and 19, one by one). Each side counts its own by the same rule; the top bar shows both sides' next hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
@@ -4779,6 +4800,7 @@
         </ul>
         <h4>Controls</h4>
         <ul>
+          <li>Each army's <b>Supply</b> shows in a small badge by its back row (the enemy's top right, yours bottom left): in battle what is still standing of what took the field, in the War Room what you field against what the enemy brings. Challenge cards and the Hall of Fame show it too.</li>
           <li>The battle's goals stay pinned at the top of the panel under the board: the mission and how it stands, gold still in the field, bonus goals and their rewards, and the next reinforcements. Their full wording is further down, under Mission details.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
           <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up (it pops up and wriggles in your hand) and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
