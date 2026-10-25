@@ -971,12 +971,25 @@
     // picks still to come as empty places.
     const armyHTML = () => {
       const ct = R.draftClericTalent(seed);
-      const cleric = `<span class="draft-core" role="button" tabindex="0" data-rinfo="cleric:" title="Your Cleric: free, in every battle. Tap for the details."><canvas data-p="cleric:P"></canvas><small>Cleric</small></span>`;
-      const units = cleric + [0, 1, 2, 3, 4].map((i) => (picks[i] ? `<canvas data-p="${picks[i]}:P" title="${esc(UNITS[picks[i]].name)}"></canvas>` : '<span class="draft-empty"></span>')).join('');
+      const cleric = `<span class="draft-core" role="button" tabindex="0" data-rinfo="cleric::${ct || ''}" title="Your Cleric: free, in every battle. Tap for the details."><canvas data-p="cleric:P"></canvas><small>Cleric</small></span>`;
+      // Each unit you have drafted opens its details too: attacks, abilities and talent,
+      // to choose the relic, skill and gear by.
+      const brought = R.draftBrought(seed, picks.slice(0, 5));
+      const units =
+        cleric +
+        [0, 1, 2, 3, 4]
+          .map((i) =>
+            picks[i]
+              ? `<span class="draft-unit" role="button" tabindex="0" data-rinfo="${picks[i]}::${brought[i] || ''}" title="${esc(UNITS[picks[i]].name)}: tap for the details" aria-label="${esc(UNITS[picks[i]].name)} details"><canvas data-p="${picks[i]}:P"></canvas></span>`
+              : '<span class="draft-empty"></span>'
+          )
+          .join('');
       const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It comes with the <b>${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
       const thing = (i, icon, name) => (picks[i] ? `<span class="chip">${ic(icon)} ${esc(name(picks[i]))}</span>` : `<span class="chip draft-todo">${ic(icon)} …</span>`);
       return `<div class="draft-army"><div class="unit-strip">${units}</div>
-        <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>${picks.length < 5 ? clericLine : ''}`;
+        <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>${
+          picks.length < 5 ? clericLine : `<p class="small muted draft-core-note">${ic('help')} Tap any unit above for its details: attacks, abilities and the talent it comes with.</p>`
+        }`;
     };
     const render = () => {
       const step = picks.length;
@@ -994,7 +1007,7 @@
           <h3>Your army</h3>
           <div class="army-list">${picks
             .slice(0, 5)
-            .map((t) => `<div class="army-row"><canvas class="portrait" data-p="${t}:P"></canvas><div class="nm"><b>${esc(UNITS[t].name)}</b><div class="small muted">${esc(UNITS[t].desc)}</div></div><span class="chip warn">${UNITS[t].cost}</span></div>`)
+            .map((t, i) => `<div class="army-row tappable" role="button" tabindex="0" data-rinfo="${t}::${R.draftBrought(seed, picks.slice(0, 5))[i] || ''}"><canvas class="portrait" data-p="${t}:P"></canvas><div class="nm"><b>${esc(UNITS[t].name)}</b><div class="small muted">${esc(UNITS[t].desc)}</div></div><span class="chip warn">${UNITS[t].cost}</span></div>`)
             .join('')}</div>
           <div class="army-list">${[
             ['scroll', 'gem', RELICS[picks[5]], 'Relic'],
@@ -4415,7 +4428,7 @@
     return `<button class="card" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
       <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
-      <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}" aria-label="Details">${ic('help')}</span></div>
+      <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}:${talent || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
       ${talent && TALENTS[talent] ? `<div class="small">${ic('star')} Comes with the <b>${esc(TALENTS[talent].name)}</b> talent: ${esc(TALENTS[talent].desc)}</div>` : `<div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>`}${extra || ''}</button>`;
@@ -4428,8 +4441,9 @@
     return R.unitStats(UI.run, spec, 'P');
   }
 
-  // A recruit's details before you take it: numbers, attacks, traits and its enchantment.
-  function recruitInfoSheet(unit, enchant) {
+  // A recruit's details before you take it (or a unit you just drafted): numbers, attacks,
+  // traits, its enchantment and the talent it comes with, when that is settled.
+  function recruitInfoSheet(unit, enchant, talent) {
     const T = UNITS[unit];
     const E2 = enchant && ENCHANTS[enchant];
     const u = recruitStats(unit, enchant);
@@ -4442,7 +4456,7 @@
       ${statsHTML(u)}
       ${actsHTML(u)}
       ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
-      <p class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</p>
+      ${talent && TALENTS[talent] ? `<p class="small">${ic('star')} Comes with the <b>${esc(TALENTS[talent].name)}</b> talent: ${esc(TALENTS[talent].desc)}</p>` : `<p class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</p>`}
       <div class="actions"><button class="btn" data-close>Back</button></div>`
     );
     UI.onSheetClose = after;
@@ -4454,9 +4468,9 @@
       const open = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const [unit, enchant] = b.dataset.rinfo.split(':');
+        const [unit, enchant, talent] = b.dataset.rinfo.split(':');
         sfx('click');
-        recruitInfoSheet(unit, enchant || null);
+        recruitInfoSheet(unit, enchant || null, talent || null);
       };
       b.addEventListener('click', open);
       b.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && open(e));

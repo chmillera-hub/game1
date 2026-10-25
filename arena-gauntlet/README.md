@@ -134,7 +134,10 @@ on a phone turned sideways, but portrait works too.
   HP, damage, armor, magic resistance, block, cooldown, move, range and speed, and
   names the talent it brings (one its class has not brought from an earlier pick).
   Your Cleric sits in the army strip from the first pick, with the talent it brings:
-  tap it for its details before you choose the rest. You start with 60 gold. How to
+  tap it for its details before you choose the rest. Every unit you draft joins the
+  strip and opens the same way (its numbers, attacks, abilities and the talent it comes
+  with), so you can pick the relic, skill and gear to suit them; so do the rows of the
+  final "Ready to march" summary. You start with 60 gold. How to
   play never pops up on its own: it is in the menu and on the title screen.
 
 - **The road**: no map. Each act is four rounds; in each you choose one of three
