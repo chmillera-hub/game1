@@ -35,9 +35,18 @@
   AI.profileFor = profileFor;
 
   // ------------------------------------------------------------- valuation
+  /* A priority (marked by the player in the war room) is either an enemy,
+     which is then worth PRIORITY_MUL times as much to the side that marked
+     it, or a square that side's pieces are drawn toward. It only shapes how
+     that side thinks; the other side does not know about it. */
+  const PRIORITY_MUL = 3;
+  const PRIORITY_W = 0.6;
+  let persp = -1; // the side the AI is thinking for
   function objMul(s, u) {
-    if (s.objective && s.objective.uid === u.uid) return 3;
-    return 1;
+    let m = s.objective && s.objective.uid === u.uid ? 3 : 1;
+    const p = s.priority;
+    if (p && p.uid === u.uid && persp === p.side) m *= PRIORITY_MUL;
+    return m;
   }
   function baseWorth(s, u) { return u.value * objMul(s, u); }
 
@@ -218,6 +227,7 @@
   // ------------------------------------------------------------ positioning
   function makeCtx(s, actor) {
     const side = actor.side;
+    persp = side;
     const ctx = { side, fields: {}, cover: [], foes: [] };
     for (const u of s.units) if (u.alive && u.side !== side) ctx.foes.push(u.uid);
     // Where could each enemy hit the actor next turn, and for how much?
@@ -359,6 +369,30 @@
   }
   AI.engagement = engagement;
 
+  // Turns this unit needs to reach its side's priority: in reach of the
+  // marked enemy, or beside the marked square.
+  function priorityPull(s, u, ctx) {
+    const p = s.priority;
+    if (!p || p.side !== u.side || u.noTurn || u.object) return 0;
+    const here = u.y * s.board.w + u.x;
+    let d, reach;
+    if (p.uid) {
+      const T = B.U(s, p.uid);
+      if (!T || !T.alive || T.st.stealth || !u.at) return 0;
+      d = field(s, ctx, T, u.flying)[here];
+      if (d >= 999) d = AG.cheb(u.x, u.y, T.x, T.y) + 4;
+      reach = attackRange(u.at);
+    } else {
+      const key = 'prio' + (u.flying ? 'f' : 'w');
+      const f = ctx.fields[key] || (ctx.fields[key] = AG.distField(s.board, p.cell, u.flying));
+      d = f[here];
+      if (d >= 999) d = AG.cheb(u.x, u.y, p.cell % s.board.w, (p.cell / s.board.w) | 0) + 4;
+      reach = 1;
+    }
+    const need = Math.max(0, d - reach), mr = moveRange(u);
+    return need === 0 ? 0 : Math.min(8, mr > 0 ? need / mr : 8);
+  }
+
   function supportSpread(s, u) {
     // Healers and buffers want an ally within reach of their spells.
     let range = 0;
@@ -381,6 +415,7 @@
       if (!u.alive || u.side !== side || u.noTurn) continue;
       const prof = profileFor(u);
       p -= prof.app * APP_W * engagement(s, u, ctx);
+      p -= PRIORITY_W * priorityPull(s, u, ctx);
       if (prof.supp) p -= 0.25 * supportSpread(s, u);
       if (u.pas.promotion) {
         // Pawns like to march: a little credit for each rank gained.
@@ -420,6 +455,7 @@
         sc -= prof.def * 1.6 * (v * 0.7 * Math.min(danger, eff) / u.maxHp + (danger >= eff ? v * 0.3 : 0));
       }
       sc -= prof.app * APP_W * engagement(s2, u, ctx);
+      sc -= PRIORITY_W * priorityPull(s2, u, ctx);
     }
     return sc;
   }

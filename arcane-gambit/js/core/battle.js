@@ -197,6 +197,14 @@
     for (const u of s.units) {
       u.order = u.side === 0 ? u.y * 100 + u.x : (b.h - u.y) * 100 + u.x;
     }
+    // The player's priority: the enemy on the marked square, or the square.
+    const pr = opts.priority;
+    if (pr && AG.inBounds(b, pr.x, pr.y)) {
+      const i = pr.y * b.w + pr.x;
+      const o = s.occ[i] ? U(s, s.occ[i]) : null;
+      if (o && o.side === 1) s.priority = { side: 0, uid: o.uid };
+      else if (AG.standable(b, i, false)) s.priority = { side: 0, cell: i };
+    }
     for (let side = 0; side < 2; side++) relicHook(s, side, 'battleStart');
     for (const u of s.units.slice()) passiveHook(s, u, 'battleStart');
     for (const u of s.units) { AG.refreshFlags(u); u.value = B.computeValue(u); u.hp = Math.min(u.hp, u.maxHp); }
@@ -245,7 +253,7 @@
       over: s.over, winner: s.winner, ev: null, stats: null,
       objective: s.objective, rules: s.rules, relics: s.relics, encounter: s.encounter,
       turnCount: s.turnCount, sim: true, flags: Object.assign({}, s.flags), hpBoost: s.hpBoost, atkBoost: s.atkBoost,
-      lastHit: s.lastHit, holdEnd: 0,
+      lastHit: s.lastHit, holdEnd: 0, priority: s.priority,
     };
   };
 

@@ -200,6 +200,14 @@
     for (const [id, t] of this.tokens) t.el.classList.toggle(cls, id === uid);
   };
 
+  // The player's priority on a board: a reticle on the marked enemy or square.
+  UI.markPriority = function (view, s) {
+    const p = s.priority;
+    const T = p && p.uid ? AG.B.U(s, p.uid) : null;
+    view.setFlag('prio', T && T.alive ? T.uid : -1);
+    view.mark('prio', p && p.cell != null ? [p.cell] : null);
+  };
+
   // ------------------------------------------------------------ dragging
   /* Pieces you may move (opts.canDrag) can be dragged with a mouse, or
      long-pressed (any pointer) to pick them up: the piece lifts and

@@ -66,6 +66,7 @@
     const narrow = () => window.innerWidth < 980;
     let sel = { kind: null };
     let lifted = false; // the selected piece was long-pressed and is in hand
+    let marking = false; // the next tap on the board sets the priority
     let preview = null;
     let showDanger = false;
 
@@ -100,6 +101,7 @@
       return true;
     }
     function onCell(x, y) {
+      if (marking) { setPriority(x, y); return; }
       const i = y * board.w + x;
       const at = entryAt(x, y);
       if (at >= 0) { onPlaced(at); return; }
@@ -113,6 +115,7 @@
       else UI.toast('Pick a unit from your army below, then tap a blue square.');
     }
     function onToken(uid) {
+      if (marking) { const u = B.U(preview, uid); if (u) setPriority(u.x, u.y); return; }
       if (uid <= F.length) { onPlaced(uid - 1); return; }
       const k = enemyUnits().indexOf(B.U(preview, uid));
       if (k < 0) return;
@@ -141,6 +144,24 @@
       lifted = false;
       UI.Sound.fx('place');
       changed();
+    }
+    /* The priority: an enemy your pieces should go for, or a square they
+       should gather at. Tapping the marked square again clears it. */
+    function setPriority(x, y) {
+      marking = false;
+      const p = run.battle.priority;
+      if (p && p.x === x && p.y === y) { run.battle.priority = null; UI.Sound.fx('remove'); changed(); return; }
+      const i = y * board.w + x;
+      if (!AG.standable(board, i, false)) { UI.toast('Mark an enemy or an open square.'); refresh(); return; }
+      run.battle.priority = { x, y };
+      UI.Sound.fx('mark');
+      changed();
+    }
+    function priorityLabel() {
+      const p = preview && preview.priority;
+      if (!p) return null;
+      if (p.uid) return B.U(preview, p.uid).name;
+      return 'square ' + AG.squareName(board, p.cell % board.w, (p.cell / board.w) | 0);
     }
     function onLift(uid) {
       sel = { kind: 'placed', i: uid - 1 };
@@ -387,6 +408,13 @@
       if (!F.length && run.lastArmy && run.lastArmy.length) {
         tools.appendChild(h('button.btn.small', { type: 'button', on: { click: useLast } }, 'Use last army'));
       }
+      const prio = priorityLabel();
+      tools.appendChild(h('button.btn.small.prio-btn' + (marking ? '.on-toggle' : ''), {
+        type: 'button', 'aria-pressed': marking ? 'true' : 'false',
+        'data-tip': 'Then tap an enemy for your pieces to focus on, or an empty square for them to gather at. They still weigh the danger, so nobody throws itself away for it. Tap the mark again to clear it.',
+        on: { click: () => { marking = !marking; refresh(); } },
+      }, UI.glyph('⌖'), marking ? 'Tap a square…' : prio ? 'Priority: ' + prio : 'Set priority'));
+      if (prio && !marking) tools.appendChild(h('button.btn.small.ghost', { type: 'button', 'aria-label': 'Clear priority', on: { click: () => { run.battle.priority = null; changed(); } } }, '✕'));
       tools.appendChild(h('button.btn.small' + (showDanger ? '.on-toggle' : ''), {
         type: 'button', 'aria-pressed': showDanger ? 'true' : 'false',
         'data-tip': 'Shades every square the enemy could strike on its first turn. Darker means more enemies can reach it.',
@@ -447,6 +475,8 @@
       if (sel.kind !== 'placed') lifted = false;
       view.setFlag('selected', sel.kind === 'placed' ? sel.i + 1 : selEnemy ? selEnemy.uid : -1);
       view.setFlag('lifted', lifted ? sel.i + 1 : -1);
+      UI.markPriority(view, preview);
+      boardWrap.classList.toggle('marking', marking);
       renderReach(sel.kind === 'placed' ? preview.units[sel.i] : selEnemy);
       renderMeters();
       renderQueue();

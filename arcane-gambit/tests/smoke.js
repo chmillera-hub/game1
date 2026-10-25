@@ -107,6 +107,16 @@ const { chromium } = require('playwright');
     if (!back) errors.push('holding and dragging did not move the piece');
   }
 
+  // Mark an enemy as the priority.
+  await page.getByRole('button', { name: /Set priority/ }).click();
+  await page.locator('.token.e').first().click();
+  await page.waitForTimeout(250);
+  if (!(await page.locator('.token.prio').count())) errors.push('the marked enemy shows no priority reticle');
+  if (!(await page.getByRole('button', { name: /Priority: / }).count())) errors.push('the priority button does not name the target');
+  const pr = await page.evaluate(() => AG.App.run.battle.priority);
+  if (!pr) errors.push('no priority stored for the battle');
+  await shotFull('07c-priority');
+
   // Open a placed piece's loadout.
   await page.locator('.token.p').first().click();
   await page.waitForTimeout(200);
@@ -135,9 +145,9 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(500);
   await shotFull(won ? '12-reward' : '12-retry');
   if (won) {
+    // Taking the only choice moves on by itself.
     await page.locator('.offers .offer').first().click();
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(1300);
     const floor = await page.evaluate(() => AG.App.run.floor);
     if (floor !== 1) errors.push('expected floor 2 after the first win, got ' + (floor + 1));
     await shotFull('13-tower-2');

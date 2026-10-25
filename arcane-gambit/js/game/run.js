@@ -247,7 +247,7 @@
   };
   Run.battleOpts = function (run) {
     const b = run.battle || {};
-    return { relics: run.relics || [], ramp: b.ramp || 0, hpMod: b.hpMod || 0, atkMod: b.atkMod || 0 };
+    return { relics: run.relics || [], ramp: b.ramp || 0, hpMod: b.hpMod || 0, atkMod: b.atkMod || 0, priority: b.priority || null };
   };
 
   // --------------------------------------------------------- the army

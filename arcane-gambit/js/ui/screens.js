@@ -400,6 +400,14 @@
       });
       body.appendChild(g);
     }
+    // Once everything there is to take has been taken, move on by itself.
+    const chosen = (!p.offers || !p.offers.length || p.offerTaken >= 0) && (!p.relicChoices || !p.relicChoices.length || p.relicTaken);
+    const hadChoice = (p.offers && p.offers.length) || (p.relicChoices && p.relicChoices.length);
+    if (chosen && hadChoice) {
+      setTimeout(function () {
+        if (App.run === run && run.pending === p && run.screen === 'reward') { Run.finishReward(run); App.save(); App.render(); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } }
+      }, 750);
+    }
     const doneLabel = p.offers && p.offers.length && p.offerTaken < 0 ? 'Skip' : 'Continue';
     body.appendChild(h('div.row', h('button.btn.primary', {
       type: 'button', disabled: !!(p.relicChoices && p.relicChoices.length && !p.relicTaken),
@@ -723,6 +731,7 @@
         h('li', 'Each fight gives you a supply budget. Units, talents and runes all cost supply. There is no limit on how many units you bring beyond the supply and the blue squares to stand on; Auto-deploy fills the board for you.'),
         h('li', 'Tap a unit in your army, then a blue-bracketed square on your side of the board. To move a placed piece, hold it until it wiggles to pick it up, then drag it or tap another blue square (tap one of your pieces to swap them). With a mouse you can also just drag it.'),
         h('li', 'Tap a placed piece to give it a talent (one per unit, two once it is Elite) and a rune from your satchel.'),
+        h('li', 'Set priority, then tap an enemy (or an objective like the Grandmaster) and your pieces will go for it above all else, as long as it does not throw them away. Tap an empty square instead and they will gather there.'),
         h('li', 'Tap any enemy to read exactly how it moves, attacks and what its traits do.'),
       ),
       h('h4', 'During battle'),

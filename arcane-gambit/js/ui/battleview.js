@@ -51,7 +51,7 @@
     const controls = h('div.controls', playBtn, stepBtn, seg, altsBtn, h('span.spacer'), skipBtn);
     root.appendChild(h('div.screen-head',
       h('div.stack', { style: { gap: '4px' } },
-        h('div.row', h('span.eyebrow', duel ? 'Hall of Fame · your run (white) against ' + duel.name + ' (black)' : enc.name), roundEl, stormEl),
+        h('div.battle-head', h('span.eyebrow', duel ? 'Hall of Fame · your run (white) against ' + duel.name + ' (black)' : enc.name), roundEl, stormEl),
       ),
     ));
     root.appendChild(h('div.battle-grid',
@@ -112,7 +112,7 @@
       UI.clear(thought);
       thought.appendChild(h('div.ic.qchip.' + (u.side === 0 ? 'p' : 'e'), UI.icon(u, 'md')));
       thought.appendChild(h('div.who', (u.side === 0 ? 'Your ' : 'Enemy ') + u.name + ' · ', h('span.sq', sq(where[0], where[1]))));
-      thought.appendChild(h('div.what', reason));
+      thought.appendChild(h('div.what', { title: reason }, reason));
       if (App.prefs.showAlts && alts && alts.length) {
         thought.appendChild(h('div.alts', h('span.faint', 'Also weighed: '), alts.map((a, i) => h('span', (i ? ' · ' : '') + a.label + ' ', h('span.mono.faint', '(' + (a.delta <= -99 ? 'far worse' : a.delta.toFixed(1)) + ')')))));
       }
@@ -344,6 +344,7 @@
     function syncAll() {
       for (const u of s.units) if (u.alive) disp[u.uid] = { hp: u.hp, shield: u.shield, st: Object.keys(u.st) };
       view.sync(s.units.filter((u) => u.alive).map((u) => unitView(u.uid)));
+      UI.markPriority(view, s);
     }
 
     async function loop() {

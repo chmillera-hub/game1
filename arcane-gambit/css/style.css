@@ -230,6 +230,14 @@ p { margin: 0; }
 .token.summoned .piece { inset: 12% 14% 10%; }
 .token.object .piece { inset: 10% 10% 12%; }
 .token.dragging { z-index: 10; opacity: 0.85; }
+/* The player's priority: a gold reticle on the marked enemy or square. */
+.token.prio::after, .cell.prio::before {
+  content: ''; position: absolute; inset: -6%; pointer-events: none; z-index: 2; animation: prio-pulse 1.6s ease-in-out infinite;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='34' stroke='%23060608' stroke-width='11'/%3E%3Cpath d='M50 4V24M50 76V96M4 50H24M76 50H96' stroke='%23060608' stroke-width='11'/%3E%3Ccircle cx='50' cy='50' r='34' stroke='%23f5b400' stroke-width='5'/%3E%3Cpath d='M50 4V24M50 76V96M4 50H24M76 50H96' stroke='%23f5b400' stroke-width='5'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.cell.prio::before { inset: 4%; }
+@keyframes prio-pulse { 50% { opacity: 0.55; transform: scale(0.92); } }
+.board-wrap.marking .cell, .board-wrap.marking .token { cursor: crosshair; }
 /* A piece picked up in the war room: lifted, shadowed, wiggling. */
 .token.lifted { z-index: 9; }
 .token.lifted .piece { animation: wiggle 0.42s ease-in-out infinite; transform-origin: 50% 88%; filter: drop-shadow(0 7px 4px rgba(0, 0, 0, 0.55)); }
@@ -394,14 +402,20 @@ p { margin: 0; }
 .battle-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
 .battle-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; align-items: stretch; }
 .thought {
-  display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 2px 12px; align-items: center; min-height: 66px;
+  /* A fixed height, so long reasons never push the board up and down. */
+  display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 2px 12px; align-items: center; align-content: center; height: 100px; overflow: hidden;
   padding: 9px 14px 9px 10px; border-radius: 10px; background: var(--surface); border: var(--bw) solid var(--line); box-shadow: var(--lift);
 }
 .thought .ic { grid-row: span 2; width: 46px; height: 46px; }
 .thought .who { font-size: 12px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .thought .who .sq { text-transform: none; font-family: var(--f-mono); letter-spacing: 0; color: var(--ink-2); }
-.thought .what { font-size: 15.5px; color: var(--ink); font-family: var(--f-mono); line-height: 1.35; }
-.thought .alts { grid-column: 2; font-size: 13px; color: var(--ink-2); font-family: var(--f-mono); }
+.thought .what { font-size: 15.5px; color: var(--ink); font-family: var(--f-mono); line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.thought .alts { grid-column: 2; font-size: 13px; color: var(--ink-2); font-family: var(--f-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thought .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.battle-head { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; white-space: nowrap; overflow: hidden; }
+.battle-head .eyebrow { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.battle-head .round-badge { flex: 0 0 auto; }
+.battle-head .storm-warn, .battle-head .faint { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 2px solid var(--line); border-radius: 9px; overflow: hidden; box-shadow: 0 2px 0 var(--line); }
 .seg button { background: linear-gradient(#3d3f4b, #2a2b35); border: 0; border-left: 1.5px solid var(--line); padding: 6px 12px; cursor: pointer; font-weight: 900; font-size: 13px; color: var(--ink); min-height: 34px; }
@@ -660,6 +674,7 @@ svg.ui { display: inline-block; vertical-align: -2px; }
 @media (prefers-reduced-motion: reduce) {
   .offer:hover { transform: none; }
   .token.lifted .piece { animation: none; transform: translateY(-9%); }
+  .token.prio::after, .cell.prio::before { animation: none; }
   * { scroll-behavior: auto !important; }
 }
 

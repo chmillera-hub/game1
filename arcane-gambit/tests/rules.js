@@ -334,6 +334,43 @@ test('when valuing Haste the AI only replays turns that are still legal', () => 
   eq(bad.length, 0, 'illegal replays: ' + bad.join(', '));
 });
 
+test('a marked enemy becomes the target of choice', () => {
+  // Two goblins in the apprentice's reach, one of them wounded.
+  const map = ['.......', '.g...g.', '.......', '.......', '...p...'];
+  const mk = (prio) => {
+    const s = battle(map, { g: 'goblin' }, [{ def: 'apprentice', x: 3, y: 4 }], {}, prio ? { priority: prio } : {});
+    s.units.filter((u) => u.def === 'goblin')[0].hp = 3;
+    B.startRound(s);
+    return s;
+  };
+  const target = (s, plan) => {
+    const t = plan.act && plan.act.t;
+    const u = s.units.find((o) => o.uid === t || B.cellOf(s, o) === t);
+    return u ? u.x + ',' + u.y : null;
+  };
+  const s0 = mk(null);
+  const first = target(s0, AG.AI.choose(s0, find(s0, 'apprentice')));
+  ok(first, 'it attacks somebody');
+  // Mark the goblin it passed over: now that one is the target.
+  const other = first === '1,1' ? { x: 5, y: 1 } : { x: 1, y: 1 };
+  const s1 = mk(other);
+  ok(s1.priority && s1.priority.uid, 'the marked goblin is the priority');
+  eq(target(s1, AG.AI.choose(s1, find(s1, 'apprentice'))), other.x + ',' + other.y, 'it goes for the marked goblin');
+});
+
+test('a marked square draws your pieces toward it', () => {
+  const map = ['g......', '.......', '.......', '.......', '.......', '.......', '.......'];
+  const dist = (u, x, y) => Math.max(Math.abs(u.x - x), Math.abs(u.y - y));
+  const run = (prio) => {
+    const s = battle(map, { g: 'goblin' }, [{ def: 'knight', x: 3, y: 3 }], {}, prio ? { priority: { x: 6, y: 6 } } : {});
+    B.startRound(s);
+    const k = find(s, 'knight');
+    B.execPlan(s, k, AG.AI.choose(s, k));
+    return dist(k, 6, 6);
+  };
+  ok(run(true) < run(false), 'the knight heads for the marked square instead of the goblin');
+});
+
 // ------------------------------------------------------------ the run
 global.localStorage = global.localStorage || { _d: {}, getItem(k) { return this._d[k] || null; }, setItem(k, v) { this._d[k] = String(v); }, removeItem(k) { delete this._d[k]; } };
 const Run = AG.Run;
