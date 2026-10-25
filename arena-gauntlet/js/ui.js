@@ -37,7 +37,7 @@
     board: null,
     battle: null,
     wr: null,
-    prefs: { fast: false, speed: 1, threat: false, manualFacing: false, autoBattle: true },
+    prefs: { fast: false, speed: 1, threat: false, manualFacing: false, autoBattle: true, guide: true },
   };
   try {
     Object.assign(UI.prefs, JSON.parse(root.localStorage.getItem(PREFS_KEY) || '{}'));
@@ -556,7 +556,6 @@
     const chips = [];
     if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
     if (u.poison) chips.push(`<span class="chip poison">Poisoned ${u.poison.turns}</span>`);
-    if (u.injured) chips.push('<span class="chip bad" title="A quest: it fights at half health and half damage this battle">Injured</span>');
     if (u.burn) chips.push(`<span class="chip warn">Burning ${u.burn.turns}</span>`);
     if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
     if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
@@ -865,7 +864,7 @@
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
-      unit: 'Five units make your starting army. Every unit brings a random talent of its class, for your pack.',
+      unit: 'Five units make your starting army. Every unit brings a random talent of its class, for your pack. The first pick always offers a Cleric, your healer (the only one in the draft).',
       relic: 'A relic works for the whole campaign.',
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
@@ -1079,7 +1078,8 @@
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
         ${ex ? '' : `<button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
-        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>`}
+        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
+        <button class="btn wide" id="muGuide">${ic('help')} Setup guide: ${UI.prefs.guide ? 'on, each unit you place asks about its kit' : 'off'}</button>`}
         ${inBattle && !ex ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
         ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
@@ -1115,6 +1115,12 @@
             runBattle();
           }
         };
+        if ($('#muGuide', sh))
+          $('#muGuide', sh).onclick = () => {
+            UI.prefs.guide = !UI.prefs.guide;
+            savePrefs();
+            menuSheet(inBattle);
+          };
         if ($('#muFacing', sh)) $('#muFacing', sh).onclick = () => {
           UI.prefs.manualFacing = !UI.prefs.manualFacing;
           savePrefs();
@@ -1802,7 +1808,7 @@
       if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
-    // A quest's injured unit always fights: it starts on the field and cannot leave it.
+    // A quest's unit always fights: it starts on the field and cannot leave it.
     const star = R.bonusUnit(run, enc);
     if (star && !dep.has(star.id)) {
       const slot = R.deploySlots(run, enc, R.isFront(star.type), new Set([...dep.values()].map((d) => d.x + ',' + d.y)))[0];
@@ -2061,7 +2067,7 @@
           // carry anything).
           const bare = R.bareCost(run, u);
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
-            <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Injured</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
+            <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Quest</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
             <span class="nm">${esc(u.name)} ${levelBadge(u.load.lv)}</span>
             <span class="ty">${UNITS[u.type].name}</span></button>`;
@@ -2247,7 +2253,7 @@
     wrAdd(rid);
   }
 
-  // Take a unit off the field: back to the bench, bare. A quest's injured unit stays.
+  // Take a unit off the field: back to the bench, bare. A quest's unit stays.
   function wrBench(rid) {
     const wr = UI.wr;
     const r = R.unitById(UI.run, rid);
@@ -2291,6 +2297,7 @@
     const over = wrUsed() - wr.supply;
     if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
     renderWarRoom();
+    wrGuide(rid);
   }
 
   function wrTap(hit) {
@@ -2322,17 +2329,21 @@
     if (rid) {
       if (wr.sel && wr.sel !== rid && !wr.dep.has(wr.sel)) {
         // A unit from the bench takes this one's place, which goes to the bench, bare (but a
-        // quest's injured unit stays where it is).
+        // quest's unit stays where it is).
         if (rid === wr.star) {
           toast(`${R.unitById(UI.run, rid).name} insists on fighting this battle (the quest).`);
           return;
         }
-        wr.dep.set(wr.sel, Object.assign({}, wr.dep.get(rid)));
+        const placed = wr.sel;
+        wr.dep.set(placed, Object.assign({}, wr.dep.get(rid)));
         wr.dep.delete(rid);
         R.stripLoad(UI.run, R.unitById(UI.run, rid));
         R.save(UI.run);
         wr.sel = null;
         sfx('step');
+        wr.inspect = null;
+        renderWarRoom();
+        return wrGuide(placed);
       } else if (wr.sel && wr.sel !== rid && wr.dep.has(wr.sel)) {
         const a = wr.dep.get(wr.sel);
         const bpos = wr.dep.get(rid);
@@ -2365,18 +2376,128 @@
   // let it go so the next tap does not move it again.
   function wrPlace(x, y) {
     const wr = UI.wr;
-    const d = wr.dep.get(wr.sel);
+    const rid = wr.sel;
+    const d = wr.dep.get(rid);
     if (d) {
       d.x = x;
       d.y = y;
     } else {
-      wr.dep.set(wr.sel, { x, y, facing: 0 });
+      wr.dep.set(rid, { x, y, facing: 0 });
       const over = wrUsed() - wr.supply;
       if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
     }
     wr.sel = null;
     sfx('step');
     renderWarRoom();
+    if (!d) wrGuide(rid);
+  }
+
+  // A unit just put on the field: walk through its kit one question at a time, its level,
+  // its ability picks, then each talent, skill and gear slot. Each question can be answered
+  // No; one with nothing to choose from is skipped; Done ends it there. Then on to the next
+  // unit. The menu's Setup guide switch turns this off.
+  function wrGuide(rid) {
+    const run = UI.run;
+    const wr = UI.wr;
+    if (!UI.prefs.guide || !wr || !wr.dep.has(rid)) return;
+    const r = R.unitById(run, rid);
+    const T = UNITS[r.type];
+    const done = new Set();
+    const left = () => wr.supply - wrUsed();
+    // What a change would cost, found by trying it.
+    const costOf = (apply, undo) => {
+      const before = R.unitCost(run, r);
+      apply();
+      const c = R.unitCost(run, r) - before;
+      undo();
+      return c;
+    };
+    // The questions as the unit stands now (a higher level opens more of them).
+    const questions = () => {
+      const L = r.load;
+      const out = [];
+      const lv0 = L.lv;
+      if (!done.has('lv'))
+        out.push({ key: 'lv', title: 'Level', opts: [2, 3].filter((lv) => lv > lv0).map((lv) => ({
+          val: lv, name: `Level ${lv}`,
+          desc: lv === 2 ? '+20% HP, +15% damage, a second ability, a second talent slot and a skill slot.' : '+40% HP, +30% damage, its Mastery, a third talent slot and a second gear slot.',
+          cost: costOf(() => R.setLevel(run, rid, lv), () => R.setLevel(run, rid, lv0)),
+        })), no: `No, keep Level ${lv0}` });
+      for (const tier of [1, 2]) {
+        if (r.load.lv < tier) continue;
+        const cur = r.load['a' + tier];
+        const ids = T.abilities[tier].filter((id) => !TALENTS[id] && id !== cur);
+        out.push({ key: 'a' + tier, title: tier === 1 ? 'Ability' : 'Level 2 ability', opts: ids.map((id) => ({ val: id, name: ABILITIES[id].name, desc: ABILITIES[id].desc, cost: ABILITIES[id].cost - (ABILITIES[cur] ? ABILITIES[cur].cost : 0) })), no: `No, keep ${ABILITIES[cur] ? ABILITIES[cur].name : 'the free one'}` });
+      }
+      const sl = R.slotsFor(r.load.lv);
+      for (const kind of ['talent', 'skill', 'gear']) {
+        const n = kind === 'talent' ? sl.talents : kind === 'skill' ? sl.skills : sl.gear;
+        const held = r.load[SLOT_KEY[kind]];
+        // One question per kind: a pick asks about the next open slot, a No skips them all.
+        if (held.length >= n) continue;
+        const heldIds = held.map((x) => R.itemByUid(run, x).id);
+        // One option per kind of item you have free that fits, however many copies.
+        const seen = new Set();
+        const opts = [];
+        for (const it of R.freeItems(run, kind)) {
+          const d2 = R.itemDef(it);
+          if (seen.has(it.id) || !D.eligible(r.type, d2) || (kind === 'talent' && (TALENTS[it.id].cls !== r.type || heldIds.includes(it.id)))) continue;
+          seen.add(it.id);
+          opts.push({ val: it.uid, name: d2.name, desc: d2.desc, cost: d2.cost });
+        }
+        out.push({ key: kind, slot: true, title: `${cap1(kind)}${n > 1 ? ` (slot ${held.length + 1} of ${n})` : ''}`, kind, opts, no: n - held.length > 1 ? `No more ${kind === 'gear' ? 'gear' : kind + 's'}` : 'No, leave it empty' });
+      }
+      return out;
+    };
+    const finish = () => {
+      UI.onSheetClose = null;
+      closeSheet();
+      if (UI.wr !== wr) return;
+      wr.sel = null;
+      R.save(run);
+      renderWarRoom();
+    };
+    const step = () => {
+      const q = questions().find((x) => !done.has(x.key) && x.opts.length);
+      if (!q) return finish();
+      const room = left();
+      const kindIcon = q.kind ? `<span class="itemico ${q.kind}">${ic(ITEM_ICON[q.kind])}</span>` : '';
+      openSheet(
+        `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, `Kit it out · Supply left: <b>${room}</b>`)}
+        <div class="guide-q">${kindIcon}<b>${esc(q.title)}</b><span class="small muted">Pick one, or No.</span></div>
+        <div class="picks">${q.opts
+          .map((o, i) => {
+            const over = o.cost > room;
+            return `<button class="pick ${over ? 'locked' : ''}" data-gopt="${i}" ${over ? 'disabled' : ''}>
+              <span class="pk-head"><b>${esc(o.name)}</b><span class="cost">${o.cost > 0 ? '+' + o.cost : o.cost < 0 ? String(o.cost) : 'free'}</span></span>
+              <span class="pk-desc">${esc(o.desc)}${over ? ' <b class="bad-text">Not enough Supply.</b>' : ''}</span></button>`;
+          })
+          .join('')}</div>
+        <div class="actions"><button class="btn" id="gDone">${ic('check')} Done with ${esc(r.name)}</button><button class="btn primary" id="gNo">${esc(q.no)}</button></div>`,
+        (sh) => {
+          for (const b of $$('[data-gopt]', sh))
+            b.onclick = () => {
+              const o = q.opts[+b.dataset.gopt];
+              if (q.key === 'lv') R.setLevel(run, rid, o.val);
+              else if (q.key === 'a1' || q.key === 'a2') R.setAbility(run, rid, +q.key[1], o.val);
+              else R.assignItem(run, rid, o.val);
+              if (!q.slot) done.add(q.key);
+              R.save(run);
+              sfx('select');
+              renderWarRoom();
+              step();
+            };
+          $('#gNo', sh).onclick = () => {
+            done.add(q.key);
+            sfx('click');
+            step();
+          };
+          $('#gDone', sh).onclick = finish;
+        }
+      );
+      UI.onSheetClose = finish;
+    };
+    step();
   }
 
   // A tap that found no blue tile. With a unit picked up, the nearest free blue tile within
@@ -3958,6 +4079,7 @@
           <li>${ic('star')} <b>Talents</b> are class passives you find in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
+          <li><b>Setup guide</b>: put a unit on the board and it asks about its kit, one question at a time (level, abilities, talents, skills, gear). Answer No to skip one, or Done to stop. Turn it off in the menu.</li>
           <li><b>The bench is bare</b>: units on the bench are plain base units. Levels, abilities, talents, skills and gear go on a unit once it is on the board; taking it off sends everything back to your pack. A card's cost badge shows the base price and a small +N for its loadout. Your plan for a battle stays put if you lose or step away, and a new battle opens with your last army.</li>
           <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
@@ -3972,7 +4094,7 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
-          <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it.</li>
+          <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
@@ -3989,7 +4111,7 @@
         <h4>Missions</h4>
         <ul>
           <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
-          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit is injured but insists on fighting: it starts on the field, cannot be taken off, and fights at half health and half damage.</li>
+          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
         </ul>
         <h4>Buildings and siege</h4>
         <ul>

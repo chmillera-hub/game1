@@ -2975,3 +2975,12 @@ body:has(#battle:not([hidden])) {
   margin-left: 1px;
   color: #ffe9a8;
 }
+
+/* The War Room's setup guide: one question about a unit's kit at a time. */
+.guide-q {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}

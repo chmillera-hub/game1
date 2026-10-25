@@ -959,6 +959,32 @@ test('with nobody able to hurt anyone, fatigue decides it', () => {
   assert.ok(s.units.filter((u) => u.team !== s.winner).every((u) => !u.alive), 'the loser has nobody left');
 });
 
+test('shrubs are summons: no fatigue, and they do not keep a side in the fight', () => {
+  for (const [foe, overtime] of [['knight', 30], ['cleric', 3]]) {
+    const s = E.createBattle({
+      w: 9, h: 9, terrain: new Array(81).fill(0), seed: 1, queue: true, overtime, turnLimit: 250,
+      units: [
+        { type: 'furgon', team: 'P', x: 4, y: 8 },
+        { type: 'shrub', team: 'P', x: 3, y: 7 },
+        { type: 'shrub', team: 'P', x: 5, y: 7 },
+        { type: 'shrub', team: 'P', x: 4, y: 6 },
+        { type: foe, team: 'E', x: 4, y: 0 },
+      ],
+      relics: { P: [], E: [] },
+    });
+    let tired = 0;
+    for (let i = 0; i < 4000 && !s.over; i++) {
+      AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+      for (const e of s.events) if (e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid].type === 'shrub') tired++;
+      s.events.length = 0;
+    }
+    assert.ok(s.over && !s.timeout, foe);
+    assert.strictEqual(tired, 0, 'fatigue never hits a shrub');
+    const furgon = s.units.find((u) => u.type === 'furgon');
+    if (!furgon.alive) assert.strictEqual(s.winner, 'E', 'the Furgon down: the battle is over, shrubs or not');
+  }
+});
+
 test('turn limit goes to the stronger side', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 0, y: 8 },

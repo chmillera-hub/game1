@@ -34,16 +34,37 @@ test('eight picks: five units, a relic, a skill and gear, each one of three diff
   assert.strictEqual(R.draftOffer(1, 8, []), null, 'nothing after the last pick');
 });
 
-test('every army can fight: the first pick is all attackers, later ones at least two', () => {
+test('every army can fight: each unit pick offers at least two attackers', () => {
   for (let seed = 1; seed <= 300; seed++) {
     const picks = [];
     for (let s = 0; s < 5; s++) {
       const o = R.draftOffer(seed, s, picks).options;
-      assert.ok(o.filter(attacker).length >= (s === 0 ? 3 : 2), `seed ${seed} step ${s}: ${o}`);
+      assert.ok(o.filter(attacker).length >= 2, `seed ${seed} step ${s}: ${o}`);
       assert.ok(o.filter((t) => ['support', 'ward'].includes(D.UNITS[t].role)).length <= 1);
       picks.push(o[(seed + s) % 3]);
     }
   }
+});
+
+test('exactly one Cleric is offered, in the first pick, beside two attackers', () => {
+  const where = [0, 0, 0];
+  for (let seed = 1; seed <= 300; seed++) {
+    const picks = [];
+    let clerics = 0;
+    for (let s = 0; s < 5; s++) {
+      const o = R.draftOffer(seed, s, picks).options;
+      const n = o.filter((t) => t === 'cleric').length;
+      clerics += n;
+      if (s === 0) {
+        assert.strictEqual(n, 1, `seed ${seed}: the first pick offers a Cleric`);
+        assert.strictEqual(o.filter(attacker).length, 2, 'and two attackers');
+        where[o.indexOf('cleric')]++;
+      } else assert.strictEqual(n, 0, `seed ${seed} step ${s}: no Cleric after the first pick`);
+      picks.push(o[(seed + s) % 3]);
+    }
+    assert.strictEqual(clerics, 1);
+  }
+  assert.ok(where.every((n) => n > 50), 'in any of the three places: ' + where);
 });
 
 test('offered items fit the units chosen; the same picks give the same offers', () => {

@@ -15,8 +15,9 @@ on a phone turned sideways, but portrait works too.
 - **The draft**: a new campaign drafts its army instead of taking a ready-made
   warband. Eight picks, each one of three: five units, a relic, a skill and a piece of
   gear. There is no difficulty setting: each round you pick how hard a battle to
-  take (see The road). Every unit offer has at least two that deal damage (the
-  first, all three), and the skills and gear offered are ones your units can use. Back
+  take (see The road). Every unit offer has at least two that deal damage, and the
+  first one always offers a Cleric, your only healer (exactly once: no later pick
+  offers another). The skills and gear offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. You start with 60 gold.
 
 - **The road**: no map. Each act is four rounds; in each you choose one of three
@@ -62,15 +63,21 @@ on a phone turned sideways, but portrait works too.
   costs. Begin battle stays in view at the bottom. The loadout says what each chosen
   ability does, and each empty slot shows how many of your items could go in it
   (greyed out when none could). The unit strip stays where you scrolled it.
+- **Setup guide**: put a unit on the board and a short sheet walks through its kit,
+  one question at a time: its level, its ability picks, then its talents, skills and
+  gear (only what you have that fits, and what your Supply can pay for). Answer No to
+  any question, or Done to stop; then pick your next unit. Questions with nothing to
+  choose are skipped. Auto never asks. The menu's Setup guide switch turns it off.
 - **The bench is bare**: units on the bench are always plain base units. Levels,
   abilities, talents, skills and gear go on a unit only once it is on the board, and
   taking it off sends all of it back to your pack. Each card's cost badge shows the
   base price, plus a small "+N" for whatever its loadout adds. Your plan for a battle
   is kept: lose, or step back to the other battles, and the army is still on the field
   when you return; a new battle opens with the army of your last one, kit and all.
-- **Quest units**: when a bonus goal asks for a unit, that unit is injured but insists
-  on fighting: it starts on the field, cannot be taken off, and fights at half health
-  and half damage that battle (its card says Injured). Everyone else is unaffected.
+- **Quest units**: when a bonus goal asks for a unit that sat out your last battle,
+  that unit insists on fighting: it starts on the field and cannot be taken off (its
+  card says Quest). It fights at full strength; the challenge is fitting a unit you
+  might not have picked into your plan.
 - **Army size**: there is no limit on how many units you recruit, or on how many
   take the field. Supply is the only limit: eight cheap Archers or four
   veterans, your call. Your commander level sets how big enemy armies get and
@@ -161,7 +168,9 @@ on a phone turned sideways, but portrait works too.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
   on and the enemy must still bring every one down; if neither side can hurt the
-  other, fatigue settles it. A Furgon's regen can outlast a fading enemy.
+  other, fatigue settles it. A Furgon's regen can outlast a fading enemy. Summoned
+  shrubs do not count: they take no turns and no fatigue, and once a side's real
+  units are all down it has lost, shrubs or not.
 - **Poison**: poison and burns tick at the start of the poisoned unit's own turn,
   for a set number of its turns. The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
@@ -199,7 +208,7 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
-  winning with an injured unit that sat out the last battle) pay extra.
+  winning with a unit that sat out the last battle) pay extra.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
   portals and barricades are buildings. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:

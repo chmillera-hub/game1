@@ -92,23 +92,19 @@ test("Recruiter's Bell makes Level 1 units 1 Supply cheaper, never below 2", () 
   assert.strictEqual(R.unitCost(run, archer), lv2, 'no discount at Level 2');
 });
 
-test("a quest's featured unit fights injured: half health and half damage", () => {
+test("a quest's unit is fielded by Auto and fights at full strength", () => {
   const run = atBattle(5, 'vanguard');
   const enc = run.pending.enc;
   enc.bonus = (enc.bonus || []).filter((b) => b.type !== 'muster');
   const u = run.roster[0];
   enc.bonus.push({ type: 'muster', rid: u.id });
+  assert.strictEqual(R.bonusUnit(run, enc), u);
   const dep = R.autoDeploy(run, 0);
   assert.ok(dep.some((d) => d.rid === u.id), 'Auto fields it');
   const s = AG.Engine.createBattle(R.battleConfig(run, dep));
-  const hurt = s.units.find((x) => x.rid === u.id);
-  const other = s.units.find((x) => x.team === 'P' && x.rid !== u.id);
-  const fresh = R.unitStats(run, u);
-  assert.ok(hurt.injured && !other.injured);
-  assert.strictEqual(hurt.maxHp, Math.round(fresh.maxHp / 2));
-  const foe = s.units.find((x) => x.team === 'E' && !x.nonCombat);
-  const healthy = AG.Engine.calcHit(s, Object.assign({}, hurt, { injured: false }), foe, {}).dmg;
-  assert.ok(AG.Engine.calcHit(s, hurt, foe, {}).dmg <= Math.ceil(healthy / 2) + 1, 'half damage');
+  const it = s.units.find((x) => x.rid === u.id);
+  assert.strictEqual(it.maxHp, R.unitStats(run, u).maxHp, 'full health');
+  assert.ok(!it.injured);
 });
 
 test('bare: stripping a unit sends its kit back to the pack', () => {

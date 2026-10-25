@@ -336,11 +336,18 @@
       return null;
     };
     if (kind === 'unit') {
-      // Commons come up most; every offer has at least two units that deal damage (the
-      // first, three) and at most one healer or ward.
+      // Commons come up most; every offer has at least two units that deal damage and at
+      // most one healer or ward. A Cleric, the one unit that heals your army, is offered
+      // exactly once: in the first pick, beside two units that deal damage.
       const support = (t) => ['support', 'ward'].includes(UNITS[t].role);
       const weight = (t) => (UNITS[t].rarity === 'common' ? 3 : UNITS[t].rarity === 'uncommon' ? 2 : 1);
-      const options = three(DRAFT_POOL, weight, (o) => o.filter(isAttacker).length >= (step === 0 ? 3 : 2) && o.filter(support).length <= 1);
+      const pool = DRAFT_POOL.filter((t) => t !== 'cleric');
+      if (step === 0) {
+        const options = three(pool, weight, (o) => o.filter(isAttacker).length === 3 && !o.some(support)).slice(0, 2);
+        options.splice(rng.int(3), 0, 'cleric');
+        return { kind, options };
+      }
+      const options = three(pool, weight, (o) => o.filter(isAttacker).length >= 2 && o.filter(support).length <= 1);
       return { kind, options };
     }
     if (kind === 'relic') {
@@ -711,8 +718,8 @@
     return out.length ? out : [waveSpec(rng, run, pool, group)];
   }
 
-  // The unit a bonus goal asks you to field, if there is one. It always fights (the War
-  // Room will not let it sit out), injured: half health and half damage.
+  // The unit a bonus goal asks you to field, if there is one. It always fights: the War
+  // Room will not let it sit out.
   function bonusUnit(run, enc) {
     const b = (enc.bonus || []).find((x) => x.type === 'muster');
     return b ? unitById(run, b.rid) || null : null;
@@ -1099,7 +1106,7 @@
           return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'muster': {
           const u = unitById(run, b.rid);
-          return { b, text: u ? `${u.name} the ${UNITS[u.type].name} is injured but insists on fighting: half health and half damage this battle. Win with them in the fight.` : 'An injured unit insists on fighting.', reward: '+6 XP, +20 gold' };
+          return { b, text: u ? `${u.name} the ${UNITS[u.type].name}, who sat out the last battle, insists on fighting this one. Win with them in the fight.` : 'A unit that sat out the last battle insists on fighting.', reward: '+6 XP, +20 gold' };
         }
       }
       return { b, text: '', reward: '' };
@@ -1180,8 +1187,7 @@
     for (const d of deployment) {
       const r = unitById(run, d.rid);
       if (!r) continue;
-      const injured = (enc.bonus || []).some((b) => b.type === 'muster' && b.rid === r.id);
-      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, injured }));
+      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
     }
     for (const e of enc.units)
       units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp });
