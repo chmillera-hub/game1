@@ -2249,6 +2249,8 @@
     }
 
     let selBlock = '';
+    // How to set up the board: below Begin battle, so the goals come first.
+    let helpBlock = '';
     if (wr.spot && !wr.sel && !wr.inspect && !wr.tile && !wrRidAt(wr.spot.x, wr.spot.y)) {
       selBlock = `<div class="hint">${ic('target')} Tile picked. Tap a unit card to put that unit here (one already on the field moves here). Tap the tile again to cancel.</div>`;
     } else if (wr.sel && R.unitById(run, wr.sel)) {
@@ -2282,8 +2284,8 @@
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board and drag it to move it. Tap an empty blue tile, then a unit card, to put that unit there. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
-    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it and drag it to an open blue tile; or tap an empty blue tile, then a card. Tap an enemy or a chest to make it your army's priority.</div>`;
+      helpBlock = `<div class="hint wr-help">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board and drag it to move it. Tap an empty blue tile, then a unit card, to put that unit there. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
+    } else helpBlock = `<div class="small muted wr-help">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it and drag it to an open blue tile; or tap an empty blue tile, then a card. Tap an enemy or a chest to make it your army's priority.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2316,7 +2318,8 @@
       ${focusLine}
       ${objectivesHTML(enc)}
       <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>${run.pending.fromEvent ? '' : `<button class="btn" id="wrBack">${ic('undo')} Other battles</button>`}</div>
-      <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>`;
+      <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>
+      ${helpBlock}`;
     const cmd = $('#cmd');
     drawPortraits(cmd);
     for (const el of $$('.roster, .intel-list', cmd)) el.scrollLeft = wr.stripX[el.className] || 0;
