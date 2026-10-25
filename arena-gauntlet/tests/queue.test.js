@@ -279,6 +279,44 @@ test('fatigue: when every unit sits the turn out, the first in line still takes 
   assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1]], 'one unit a turn, even when nobody acts');
 });
 
+test('fatigue reaches wards: Barrier and Lightning Wards tire when their turn comes, acting or not', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 2, y: 8 },
+      { type: 'barrier', team: 'P', x: 4, y: 8 },
+      { type: 'lightning', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  const [g, bw, lw, eg] = s.units;
+  for (const u of s.units) u.hp = u.maxHp = 999;
+  // The Barrier Ward never acts, so it never shows in the turn order.
+  assert.ok(!E.upcoming(s, 'P', 6).some((x) => x.uid === bw.uid));
+  const ev = s.events.length;
+  while (s.turn < 11) E.pass(s);
+  const hits = {};
+  for (const e of s.events.slice(ev)) if (e.t === 'dmg' && e.dmgType === 'fatigue') hits[e.uid] = (hits[e.uid] || 0) + 1;
+  // Neither ward has anything in reach: both sit every turn out, and both still tire, once a cycle like the golem.
+  assert.ok(hits[bw.uid] >= 2 && hits[lw.uid] >= 2, JSON.stringify(hits));
+  assert.ok(Math.abs(hits[bw.uid] - hits[g.uid]) <= 1 && Math.abs(hits[lw.uid] - hits[g.uid]) <= 1, JSON.stringify(hits));
+  assert.ok(hits[eg.uid] > 0);
+  // The Barrier Ward passes quietly; only real sit-outs make the log.
+  assert.ok(!s.events.some((e) => e.t === 'sitout' && e.uid === bw.uid && e.why !== 'passive'));
+});
+
+test('two lone Barrier Wards: fatigue settles it', () => {
+  const s = battle(
+    [
+      { type: 'barrier', team: 'P', x: 4, y: 8 },
+      { type: 'barrier', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  for (let i = 0; i < 400 && !s.over; i++) E.pass(s);
+  assert.ok(s.over && !s.timeout, 'fatigue ends it');
+});
+
 test('poison ticks on the poisoned unit\'s own turn, not for the whole side at once', () => {
   const s = battle([
     { type: 'knight', team: 'P', x: 2, y: 8 },
