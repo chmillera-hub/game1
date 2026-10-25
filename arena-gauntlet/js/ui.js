@@ -965,7 +965,7 @@
               : '<span class="draft-empty"></span>'
           )
           .join('');
-      const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It comes with the <b>${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
+      const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It comes with the <b class="talent-name">${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
       const thing = (i, icon, name) => (picks[i] ? `<span class="chip">${ic(icon)} ${esc(name(picks[i]))}</span>` : `<span class="chip draft-todo">${ic(icon)} …</span>`);
       return `<div class="draft-army"><div class="unit-strip">${units}</div>
         <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>${
@@ -4412,7 +4412,14 @@
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}:${talent || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
-      ${talent && TALENTS[talent] ? `<div class="small">${ic('star')} Comes with the <b>${esc(TALENTS[talent].name)}</b> talent: ${esc(TALENTS[talent].desc)}</div>` : `<div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>`}${extra || ''}</button>`;
+      ${talentLine(T, talent, 'div')}${extra || ''}</button>`;
+  }
+
+  // The talent a unit comes with, in the talents' own teal (a star, the name, a tinted box),
+  // so it reads as a talent and not as more about the unit's own attacks.
+  function talentLine(T, talent, tag) {
+    const d = talent && TALENTS[talent];
+    return `<${tag} class="talent-line small">${ic('star')}<span>${d ? `Comes with the <b class="talent-name">${esc(d.name)}</b> talent: ${esc(d.desc)}` : `Comes with a random ${esc(T.name)} <b class="talent-name">talent</b>.`}</span></${tag}>`;
   }
 
   // A Level 1 unit of a type as it would join, enchantment included: its battle numbers.
@@ -4437,7 +4444,7 @@
       ${statsHTML(u)}
       ${actsHTML(u)}
       ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
-      ${talent && TALENTS[talent] ? `<p class="small">${ic('star')} Comes with the <b>${esc(TALENTS[talent].name)}</b> talent: ${esc(TALENTS[talent].desc)}</p>` : `<p class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</p>`}
+      ${talentLine(T, talent, 'p')}
       <div class="actions"><button class="btn" data-close>Back</button></div>`
     );
     UI.onSheetClose = after;

@@ -3555,3 +3555,29 @@ body:has(#battle:not([hidden])) {
 .army-row.tappable {
   cursor: pointer;
 }
+
+/* The talent a unit comes with, in the talents' teal: a star, the name, a tinted box. */
+.talent-line {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(86, 214, 196, 0.45);
+  border-left: 3px solid #56d6c4;
+  background: rgba(86, 214, 196, 0.09);
+  color: var(--parchment-2);
+  text-align: left;
+}
+
+.talent-line .icon {
+  flex: none;
+  color: #56d6c4;
+  position: relative;
+  top: 0.12em;
+}
+
+.talent-name {
+  color: #7fe8d8;
+}
