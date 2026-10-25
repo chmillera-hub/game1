@@ -2164,7 +2164,7 @@
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
   // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
   // not stop there: the enemy is routed. Their reinforcements stop coming, and from the
-  // next enemy turn every enemy fighter bleeds at the start of each enemy turn, 2 HP more
+  // next enemy turn every enemy fighter bleeds at the start of each enemy turn, 1 HP more
   // each turn (routTick). You win when the last of them falls. Your own side tires only
   // when fatigue sets in for everyone (turn 30).
   function rout(s, why) {
@@ -2176,10 +2176,10 @@
     emit(s, Object.assign({ t: 'routed', turn: s.turn }, why));
   }
 
-  // What each routed enemy loses at the start of an enemy turn: 2 in the first enemy turn
-  // after the rout, then 4, 6 and so on (0 before the rout).
+  // What each routed enemy loses at the start of an enemy turn: 1 in the first enemy turn
+  // after the rout, then 2, 3 and so on (0 before the rout).
   function routHit(s) {
-    return s.routed ? 2 * Math.max(1, s.turn - s.routed.turn) : 0;
+    return s.routed ? Math.max(1, s.turn - s.routed.turn) : 0;
   }
 
   function routTick(s) {

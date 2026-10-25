@@ -258,7 +258,7 @@ on a phone turned sideways, but portrait works too.
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Getting it done does not end the battle on the spot: the enemy is **routed**. Their
   reinforcements stop, and from the next enemy turn every enemy fighter loses HP at
-  the start of each enemy turn, 2 in the first, then 4, 6 and so on, past armor and
+  the start of each enemy turn, 1 in the first, then 2, 3 and so on, past armor and
   shields. The battle ends when the last of them falls, so a mission done early all
   but wins it, without the enemy simply giving up. Your own side tires only when
   fatigue sets in for everyone on turn 30. A banner, a toast and the battle log say
