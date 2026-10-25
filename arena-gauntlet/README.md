@@ -65,7 +65,7 @@ Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
   crown), **Mirror Aegis** (each unit's first hit bounces back), **Necromancer's Bell**
   (a 1 in 3 chance slain enemies rise as your skeletons), **Glass Crown** (cursed: +40%
   damage, -25% max HP).
-- Boss: **War Drum of Ages** (every fifth turn the army heals 10 and frenzies).
+- Boss: **War Drum of Ages** (every tenth turn, one great beat: the army heals 25 and frenzies for 3 turns, announced once over the army).
 
 Second pass: the remaining plain "+X armor / +X HP / +X% damage" picks, talents, skills,
 gear and enchantments each got a mechanic of their own. Kept as they were, on purpose:
