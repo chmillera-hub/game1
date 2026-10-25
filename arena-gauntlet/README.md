@@ -392,9 +392,22 @@ on a phone turned sideways, but portrait works too.
   reach, pass too; when every unit of a side passes, the side passes. Bosses pass
   their first turn. The turn order strip shows every unit's turn, passes included:
   a unit about to pass is greyed out with its cooldown on its portrait (a yellow
-  number for paralysis), and the number counts down as its turns pass. Passing is
-  quiet on the board (no text over heads); the battle log gathers a row of passes
-  into one line ("Cass, Osric and Jarek pass (cooling down).").
+  number for paralysis), and the number counts down as its turns pass. Over its head
+  the board says so: "PASS COOLDOWN 2→1" (the badge by its health bar drops to 1 at
+  the same moment), "PASS PARALYZED", "PASS HOLDS GROUND" (it could act and stays put),
+  or plain "PASS"; the battle log gathers a row of passes into one line ("Cass, Osric
+  and Jarek pass (cooling down).").
+- **A unit's turn, step by step**: whatever comes with a unit's turn comes in one
+  fixed order, acting or passing: its fatigue hit, then a Cursed Idol's 4, then poison,
+  then burns, then fire underfoot, then regen, and only then does it act, or pass with
+  its cooldown ticking down. The board plays each step as a beat of its own over the unit's head ("-16
+  FATIGUE", then "-5 POISON", then "-4 BURN", then "+3 REGEN", then "PASS COOLDOWN
+  2→1"), never two at once on one unit and never closer together than about 0.4
+  seconds, at 2× speed too. Floating numbers never land on each other: a new one starts
+  just below the ones still showing, and they all rise at one pace, so a run of them
+  reads as a list, top to bottom in the order it happened. The next unit's turn starts
+  only once the last one's steps have played. tests/beats.test.js plays real battles
+  through the board's own playback and checks every beat for exactly this.
 - **Events**: one an act, each a short scene with two or three choices, and every
   choice gives you something to play with rather than a pile of gold: a talent (often
   from the stronger list), a skill or two, gear, an enchantment bound straight onto a
@@ -419,7 +432,8 @@ on a phone turned sideways, but portrait works too.
   15, 16, 17, 18 and 19, one after another, and no number comes twice. Each hit plays on
   its own moment on the board (a unit that falls to it included) and gets its own line
   in the battle log. tests/fatigue.test.js plays hundreds of battles of every kind and
-  checks every hit for exactly this. Poison and burns tick on passed turns too. A short
+  checks every hit for exactly this. Fatigue comes first in a unit's turn, before its
+  poison, burns and regen. Poison and burns tick on passed turns too. A short
   "Fatigue triggered!" banner marks the start (no message to tap away), and the top
   bar shows the next number. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
@@ -605,6 +619,7 @@ node tests/music.test.js         # the music's notation: every bar the right len
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
 node tests/fatigue.test.js       # fatigue on hundreds of real battles: one unit at a time, the next number each hit
+node tests/beats.test.js         # what the board shows as a unit's turn comes: one step a beat, in order, numbers never on each other
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising
 node tests/talents.test.js       # class talents: slots, the pack, always usable

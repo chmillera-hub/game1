@@ -293,6 +293,38 @@ test('fatigue: a unit passing its turn (cooling down) loses HP too, then the nex
   assert.strictEqual(a.wait, 0, 'its cooldown ticks down');
 });
 
+test('a unit\'s turn start comes in one order: fatigue, poison, burn, regen, then its pass with the cooldown ticking down', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 2, y: 8 },
+      { type: 'golem', team: 'P', x: 6, y: 8 },
+      { type: 'golem', team: 'E', x: 4, y: 0 },
+    ],
+    { overtime: 2 }
+  );
+  E.pass(s);
+  E.pass(s);
+  const [a, b] = s.units;
+  a.wait = 2; // a passes, then b takes the side's turn
+  b.cycles = a.cycles;
+  a.poison = { turns: 2, dmg: 5, src: 0 };
+  a.burn = { turns: 2, dmg: 4, src: 0 };
+  // Poison stops healing, so b shows regen: burnt, but not poisoned.
+  b.hp = b.maxHp - 60;
+  b.regen = 3;
+  b.burn = { turns: 2, dmg: 4, src: 0 };
+  const ev = s.events.length;
+  E.pass(s); // your turn starts
+  const seen = s.events.slice(ev).filter((e) => e.uid && ['dmg', 'heal', 'sitout'].includes(e.t));
+  const show = (e) => (e.uid === a.uid ? 'a ' : 'b ') + (e.t === 'dmg' ? e.dmgType : e.t);
+  assert.deepStrictEqual(seen.map(show), ['a fatigue', 'a poison', 'a burn', 'a sitout', 'b fatigue', 'b burn', 'b heal']);
+  const pass = seen[3];
+  assert.deepStrictEqual([pass.why, pass.wait], ['cooldown', 2], 'the pass shows the cooldown before it ticks');
+  assert.strictEqual(a.wait, 1, 'then it ticks down one');
+  assert.strictEqual(seen[4].amount, seen[0].amount + 1, 'b tires one more than a');
+  assert.strictEqual(s.due, b.uid);
+});
+
 test('fatigue at 15 with five units cooling down: they pass one by one and lose 15, 16, 17, 18, 19, then the sixth acts at 20', () => {
   const units = [];
   for (let x = 1; x <= 6; x++) units.push({ type: 'golem', team: 'P', x, y: 8 });
