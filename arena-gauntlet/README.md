@@ -137,7 +137,8 @@ on a phone turned sideways, but portrait works too.
   scout report shows the same comparison. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
-  your commander level, from 14 Supply at Level 1 to 33 Supply at Level 10.
+  your commander level, from 16 Supply at Level 1 to 35 Supply at Level 10 (two more
+  than enemy armies are sized for, so there is room for abilities and kit early on).
 - **Unit levels**: Level 1 picks an ability: the free one, or an active ability
   that costs extra Supply. Every active ability has 1 to 3 uses a battle, which never
   come back, and most have a cooldown of their own (shown as "Active, 3 uses, cooldown
@@ -212,8 +213,9 @@ on a phone turned sideways, but portrait works too.
   reach, pass too; when every unit of a side passes, the side passes. Bosses pass
   their first turn. The turn order strip shows every unit's turn, passes included:
   a unit about to pass is greyed out with its cooldown on its portrait (a yellow
-  number for paralysis), and the board shows "PASS" and the cooldown ticking down
-  (2 → 1) when it happens.
+  number for paralysis), and the number counts down as its turns pass. Passing is
+  quiet on the board (no text over heads); the battle log gathers a row of passes
+  into one line ("Cass, Osric and Jarek pass (cooling down).").
 - **Events**: one an act, each a short scene with two or three choices, and every
   choice gives you something to play with rather than a pile of gold: a talent (often
   from the stronger list), a skill or two, gear, an enchantment bound straight onto a
