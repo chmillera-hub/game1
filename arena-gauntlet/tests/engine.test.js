@@ -481,7 +481,212 @@ test('Shield Bash knocks back, and slams into obstacles', () => {
   assert.strictEqual(sc1.hp, sc1.maxHp - 9);
   act(s, k2, { kind: 'unit', uid: sc2.uid }, 1);
   assert.deepStrictEqual([sc2.x, sc2.y], [6, 3], 'rock in the way');
-  assert.strictEqual(sc2.hp, sc2.maxHp - 9 - 6, 'slam damage');
+  assert.strictEqual(sc2.hp, sc2.maxHp - 9 - E.IMPACT.rock, 'slam damage');
+});
+
+// ------------------------------------------------------------ pushes and pulls
+
+const wet = (cells, kind) => {
+  const t = new Array(81).fill(0);
+  for (const [x, y] of cells) t[y * 9 + x] = kind;
+  return t;
+};
+
+test('a unit shoved into another crashes: both take the hit, nobody moves', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash' },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'orc', team: 'E', x: 4, y: 3, facing: 0 },
+  ]);
+  const [kn, sc, orc] = s.units;
+  const pv = E.previewAction(s, kn, { kind: 'unit', uid: sc.uid, ai: 1 });
+  const k = pv.effects.find((e) => e.uid === sc.uid).knock;
+  assert.deepStrictEqual([k.end, k.n, k.other, k.dmg, k.otherDmg], ['unit', 0, orc.uid, 6, 6], 'the preview sees the crash coming');
+  const orcHp = orc.hp;
+  act(s, kn, { kind: 'unit', uid: sc.uid }, 1);
+  assert.deepStrictEqual([sc.x, sc.y, orc.x, orc.y], [4, 4, 4, 3]);
+  assert.strictEqual(sc.hp, sc.maxHp - 9 - E.IMPACT.unit);
+  assert.strictEqual(orc.hp, orcHp - E.IMPACT.unit);
+  assert.ok(s.events.some((e) => e.t === 'crash' && e.uid === sc.uid && e.other === orc.uid));
+});
+
+test('shoved into water: a splash, then it climbs out onto the nearest dry tile, rooted, its burn put out', () => {
+  const s = board(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 6, level: 2, a2: 'g_slam' },
+      { type: 'orc', team: 'E', x: 4, y: 5, facing: 0 },
+      { type: 'scout', team: 'E', x: 0, y: 0 },
+    ],
+    { terrain: wet([[4, 4], [3, 4], [5, 4], [4, 3]], E.T_WATER) }
+  );
+  const [go, orc] = s.units;
+  const slam = go.acts.findIndex((a) => a.name === 'Ground Slam');
+  orc.burn = { turns: 2, dmg: 5, src: go.uid };
+  const hp = orc.hp;
+  const hit = E.calcHit(s, go, orc, { act: go.acts[slam] }).dmg;
+  act(s, go, { kind: 'self', x: go.x, y: go.y }, slam);
+  assert.strictEqual(orc.hp, hp - hit - E.IMPACT.water);
+  assert.strictEqual(s.terrain[orc.y * 9 + orc.x], E.T_GRASS, 'back on dry land');
+  assert.ok(Math.abs(orc.x - 4) + Math.abs(orc.y - 4) === 1, 'right beside the water it fell in');
+  assert.ok(orc.root > 0, 'rooted while it shakes itself off');
+  assert.strictEqual(orc.burn, null, 'the water put the fire out');
+  assert.ok(s.events.some((e) => e.t === 'splash' && !e.lava) && s.events.some((e) => e.t === 'climb'));
+});
+
+test('shoved into lava: a hard fall, then it climbs out burning; flyers just sail over', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash' },
+      { type: 'orc', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'knight', team: 'P', x: 6, y: 5, a1: 'k_bash' },
+      { type: 'specter', team: 'E', x: 6, y: 4 },
+    ],
+    { terrain: wet([[4, 3], [6, 3]], E.T_LAVA) }
+  );
+  const [k1, orc, k2, sp] = s.units;
+  const hp = orc.hp;
+  const hit = E.calcHit(s, k1, orc, { act: k1.acts[1], mult: 0.5 }).dmg;
+  act(s, k1, { kind: 'unit', uid: orc.uid }, 1);
+  assert.strictEqual(orc.hp, hp - hit - E.IMPACT.lava);
+  assert.ok(orc.burn && orc.burn.turns === 2, 'burning');
+  assert.notStrictEqual(s.terrain[orc.y * 9 + orc.x], E.T_LAVA);
+  act(s, k2, { kind: 'unit', uid: sp.uid }, 1);
+  assert.deepStrictEqual([sp.x, sp.y], [6, 3], 'the specter floats over the lava');
+});
+
+test('shoved off the edge of the field: it slams into it', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 1, a1: 'k_bash' },
+    { type: 'scout', team: 'E', x: 4, y: 0, facing: 0 },
+  ]);
+  const [kn, sc] = s.units;
+  const hit = E.calcHit(s, kn, sc, { act: kn.acts[1], mult: 0.5 }).dmg;
+  act(s, kn, { kind: 'unit', uid: sc.uid }, 1);
+  assert.deepStrictEqual([sc.x, sc.y], [4, 0]);
+  assert.strictEqual(sc.hp, sc.maxHp - hit - E.IMPACT.edge);
+  assert.ok(s.events.some((e) => e.t === 'slam' && e.why === 'edge'));
+});
+
+test('a Grapnel flies straight and drags its catch 2 tiles in, stopping beside the scout', () => {
+  const s = board(
+    [
+      { type: 'scout', team: 'P', x: 4, y: 7, a1: 's_hook' },
+      { type: 'archer', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'archer', team: 'E', x: 6, y: 5, facing: 0 },
+      { type: 'orc', team: 'E', x: 1, y: 7, facing: 1 },
+    ],
+    { terrain: wet([[2, 7]], E.T_ROCK) }
+  );
+  const [sc, a1, a2, orc] = s.units;
+  const ts = E.targetsFrom(s, sc, 1).map((t) => t.uid);
+  assert.ok(ts.includes(a1.uid), 'straight up the column');
+  assert.ok(!ts.includes(a2.uid), 'not off the line');
+  assert.ok(!ts.includes(orc.uid), 'not past the rock');
+  act(s, sc, { kind: 'unit', uid: a1.uid }, 1);
+  assert.deepStrictEqual([a1.x, a1.y], [4, 6], 'dragged 2 tiles, right up to the scout');
+  assert.ok(s.events.some((e) => e.t === 'push' && e.pull));
+  // Two tiles off: one tile of drag and it is beside the scout; no crash into the puller.
+  const t = board([
+    { type: 'scout', team: 'P', x: 4, y: 7, a1: 's_hook' },
+    { type: 'orc', team: 'E', x: 4, y: 5, facing: 0 },
+  ]);
+  const hp = t.units[1].hp;
+  const hit = E.calcHit(t, t.units[0], t.units[1], { act: t.units[0].acts[1], mult: 0.5 }).dmg;
+  act(t, t.units[0], { kind: 'unit', uid: t.units[1].uid }, 1);
+  assert.deepStrictEqual([t.units[1].x, t.units[1].y], [4, 6]);
+  assert.strictEqual(t.units[1].hp, hp - hit);
+});
+
+test("Siren's Lure draws every enemy within 3 tiles a tile closer, and they crash into what is in the way", () => {
+  const s = board([
+    { type: 'enchantress', team: 'P', x: 4, y: 6, level: 2, a2: 'e_lure' },
+    { type: 'orc', team: 'E', x: 4, y: 3, facing: 2 },
+    { type: 'orc', team: 'E', x: 7, y: 6, facing: 3 },
+    { type: 'knight', team: 'P', x: 1, y: 5 },
+    { type: 'scout', team: 'E', x: 1, y: 4 },
+  ]);
+  const [en, o1, o2, kn, sc] = s.units;
+  const lure = en.acts.findIndex((a) => a.name === "Siren's Lure");
+  act(s, en, { kind: 'self', x: en.x, y: en.y }, lure);
+  assert.deepStrictEqual([o1.x, o1.y, o2.x, o2.y], [4, 4, 6, 6]);
+  assert.deepStrictEqual([kn.x, kn.y], [1, 5], 'allies stay put');
+});
+
+test('who stands firm: bosses, huge units, the steadfast and an Anchor Stone; caltrops stop a shove', () => {
+  const s = board(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 6, level: 2, a2: 'g_slam' },
+      { type: 'colossus', team: 'E', x: 4, y: 5, facing: 0 },
+      { type: 'orc', team: 'E', x: 3, y: 6, facing: 1, skills: ['unshakable'] },
+      { type: 'orc', team: 'E', x: 5, y: 6, facing: 1 },
+    ],
+    { relics: { P: [], E: [] } }
+  );
+  const [go, br, o1, o2] = s.units;
+  const slam = go.acts.findIndex((a) => a.name === 'Ground Slam');
+  const pv = E.previewAction(s, go, { kind: 'self', x: go.x, y: go.y, ai: slam });
+  assert.strictEqual(pv.effects.find((e) => e.uid === br.uid).knock, 'resist');
+  assert.strictEqual(pv.effects.find((e) => e.uid === o1.uid).knock, 'resist');
+  s.tfx.push({ kind: 'caltrops', x: 6, y: 6, team: 'P', src: go.uid, turns: 5 });
+  act(s, go, { kind: 'self', x: go.x, y: go.y }, slam);
+  assert.deepStrictEqual([br.x, br.y, o1.x, o1.y], [4, 5, 3, 6]);
+  assert.deepStrictEqual([o2.x, o2.y], [6, 6], 'shoved onto the caltrops, it stops there');
+  assert.ok(o2.root > 0);
+  // An Anchor Stone keeps your units in place.
+  const t = board([
+    { type: 'brute', team: 'E', x: 4, y: 4, facing: 2 },
+    { type: 'scout', team: 'P', x: 4, y: 5, facing: 0 },
+  ], { relics: { P: ['anchor_stone'], E: [] } });
+  act(t, t.units[0], { kind: 'unit', uid: t.units[1].uid });
+  assert.deepStrictEqual([t.units[1].x, t.units[1].y], [4, 5]);
+});
+
+test("relics: an Iron Ram adds 6 to every impact, a Tidecaller's Conch shoves a tile further", () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash' },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'orc', team: 'E', x: 4, y: 2, facing: 0 },
+  ], { relics: { P: ['iron_ram', 'tide_conch'], E: [] } });
+  const [kn, sc, orc] = s.units;
+  const pv = E.previewAction(s, kn, { kind: 'unit', uid: sc.uid, ai: 1 }).effects[0].knock;
+  assert.deepStrictEqual([pv.n, pv.end, pv.dmg], [1, 'unit', E.IMPACT.unit + 6], 'shoved 2: one tile, then into the orc');
+  const orcHp = orc.hp;
+  act(s, kn, { kind: 'unit', uid: sc.uid }, 1);
+  assert.deepStrictEqual([sc.x, sc.y], [4, 3]);
+  assert.strictEqual(orc.hp, orcHp - E.IMPACT.unit - 6);
+});
+
+test('a unit crashing into an enemy building cracks it, and a broken one pays its coins', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash' },
+    { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+    { type: 'wall', team: 'E', x: 4, y: 3 },
+  ]);
+  const [kn, sc, wall] = s.units;
+  wall.hp = 3;
+  act(s, kn, { kind: 'unit', uid: sc.uid }, 1);
+  assert.ok(!wall.alive, 'the wall gives way');
+  assert.strictEqual(s.stats.bounty, wall.salvage);
+});
+
+test('the AI shoves enemies into water when it can, and not when nothing is behind them', () => {
+  const field = (terrain) =>
+    board(
+      [
+        { type: 'knight', team: 'P', x: 4, y: 5, a1: 'k_bash', facing: 0 },
+        { type: 'archer', team: 'E', x: 4, y: 4, facing: 0 },
+        { type: 'scout', team: 'E', x: 8, y: 0 },
+      ],
+      { terrain }
+    );
+  const s = field(wet([[4, 3], [3, 3], [5, 3], [4, 2]], E.T_WATER));
+  const plan = AG.AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0 });
+  assert.strictEqual(s.units[0].acts[plan.target.ai].name, 'Shield Bash', 'into the water with it');
+  AG.AI.playTurn(s, 'P', { stance: 'balanced', temp: 0 });
+  assert.ok(s.events.some((e) => e.t === 'splash'));
+  const t = field(new Array(81).fill(0));
+  const dry = AG.AI.chooseActivation(t, 'P', { stance: 'balanced', temp: 0 });
+  assert.strictEqual(dry.target.ai, 0, 'open ground behind it: a full-strength sword strike');
 });
 
 test("Snare Shot roots; roots wear off on the victim's turns", () => {
@@ -1200,12 +1405,29 @@ test('specters: steel barely scratches them, magic hurts them more, and their to
   ]);
   const [kn, py, sp] = s.units;
   assert.strictEqual(E.calcHit(s, kn, sp, {}).dmg, 9);
-  assert.strictEqual(E.calcHit(s, py, sp, {}).dmg, 20);
+  assert.strictEqual(E.calcHit(s, py, sp, {}).dmg, 24, 'magic deals 50% more');
   sp.hp = 10;
   kn.block = 0;
   act(s, sp, { kind: 'unit', uid: kn.uid });
   assert.strictEqual(sp.hp, 10, 'no life drained');
   assert.ok(kn.weak > 0, 'the knight is weakened');
+});
+
+test('Poison Wisps are wispy too: arrows mostly pass through them, magic hurts them more', () => {
+  const s = board([
+    { type: 'archer', team: 'E', x: 4, y: 2 },
+    { type: 'pyromancer', team: 'E', x: 4, y: 7 },
+    { type: 'wisp', team: 'P', x: 4, y: 5 },
+    { type: 'knight', team: 'P', x: 0, y: 0 },
+  ]);
+  const [ar, py, wi, kn] = s.units;
+  const vsWisp = E.calcHit(s, ar, wi, { cat: 'back' }).dmg;
+  const vsKnight = E.calcHit(s, ar, kn, { cat: 'back' }).dmg;
+  assert.strictEqual(wi.armor, 0.4);
+  assert.strictEqual(wi.res, -0.3);
+  assert.ok(vsWisp < ar.pow * 0.65, `an arrow does ${vsWisp} of ${ar.pow}`);
+  assert.ok(E.calcHit(s, py, wi, {}).dmg > py.pow * 1.25, 'magic bites deeper than on an ordinary unit');
+  assert.ok(vsKnight > 0);
 });
 
 // ------------------------------------------------------------ buildings and reinforcements

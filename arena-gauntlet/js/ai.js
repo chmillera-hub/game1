@@ -735,12 +735,32 @@
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
       if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (delayOf(ctx.s, t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
-      if (e.knock === true) v += p * 2;
+      if (e.knock && e.knock !== 'resist' && !e.kill) v += p * shoveValue(ctx, u, t, e.knock, t.hp - (e.dmg || 0) * p);
     }
     if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
     // Acting starts recovery; small cost so weak pokes don't lock down slow casters.
     v -= u.rec * u.pow * 0.08;
     if (a.uses) v -= 1.5;
+    return v;
+  }
+
+  // A shove or pull: a little for knocking the enemy out of place, and what it hurts where
+  // it lands (a rock, the edge, water, lava, or a unit it crashes into, friend or foe).
+  function shoveValue(ctx, u, t, k, left) {
+    const s = ctx.s;
+    let v = k.n ? 1 : 0;
+    left = Math.max(1, left);
+    if (k.dmg) {
+      const hpv = t.value / t.maxHp;
+      v += Math.min(k.dmg, left) * hpv + (k.dmg >= left ? t.value * 0.6 : 0);
+      if (k.end === 'water' && t.move > 0 && t.root === 0) v += 2 + 0.3 * t.pow;
+      if (k.end === 'lava') v += Math.min(10, Math.max(0, left - k.dmg)) * hpv * 0.6;
+    }
+    const o = k.other != null && s.byId[k.other];
+    if (o && o.alive) {
+      const val = Math.min(k.otherDmg, o.hp) * (o.value / o.maxHp) + (k.otherDmg >= o.hp ? o.value * 0.6 : 0);
+      v += o.team === u.team ? -val * 1.4 : val;
+    }
     return v;
   }
 

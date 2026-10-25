@@ -136,9 +136,11 @@ on a phone turned sideways, but portrait works too.
 - **The road**: no map. Each act is four rounds; in each you choose one of three
   battles, shown as cards with a picture of the field, the mission and bonus goals,
   and what it pays: Easy (a smaller army, less gold and XP, two spoils to pick from),
-  Medium, and Elite (a much tougher army, more gold and XP, and a relic). Easy and
-  Medium wins have a small chance of a relic too (6% and 10%, shown on the card; set
-  per battle, so losing and trying again does not reroll it). One event
+  Medium, and Elite (a much tougher army, more gold and XP, and a relic). Now and
+  then an Easy or Medium battle carries a relic too (6% and 10% of them). What each
+  battle pays (its gold, its spoils, its relic) is settled when the three cards are
+  dealt and saved with them: the card names the relic, and losing, retrying or
+  closing and reopening the game never changes any of it. One event
   and one merchant sit somewhere in the middle of the act, and a boss ends it. Lose,
   and you come back to the round's choice (the same three, so you can try again or
   take an easier one); the War Room's Other battles button goes back too. Mostly
@@ -171,7 +173,7 @@ on a phone turned sideways, but portrait works too.
   line nearest, the rows behind stepping back. An army that beat the Eclipse Wyrm wears
   a purple skull-and-crossbones "Wyrm slayer" badge, and its row glows purple. Priority
   is banned in Hall matches, on purpose: whichever army you steered would almost always
-  win, and the ranking would mean nothing. Pause on a unit and the Priority button shows
+  win, and the ranking would mean nothing. Tap a unit and the Priority button shows
   crossed out with a red X; tap it and it says why. The first army takes #1; later ones wait in line ("Waiting
   to climb") until you start their climb from the Hall, whenever you like, even several
   campaigns later. A climb starts at the bottom: it fights
@@ -251,7 +253,10 @@ on a phone turned sideways, but portrait works too.
   scout report shows the same comparison. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
   Auto never fields a Lightning or Barrier Ward: a ward is only as good as the exact
-  tile it stands on, so place yours by hand (a quest's ward still goes in).
+  tile it stands on, so place yours by hand (a quest's ward still goes in). The
+  Cleric always goes in the middle of the back row (the open tile nearest it if
+  something stands there), with the fighters placed just ahead of it; move it
+  afterwards if you like.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 16 Supply at Level 1 to 35 Supply at Level 10 (two more
   than enemy armies are sized for, so there is room for abilities and kit early on).
@@ -283,13 +288,15 @@ on a phone turned sideways, but portrait works too.
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
   magic (a violet sparkle) is reduced by magic resistance. Armor and magic
-  resistance both cap at 50%, and some units go as low as -50%: Specters shrug
-  off steel but melt to spells, and Mage Knights do the reverse. A unit's DMG stat,
+  resistance both cap at 50%, and some units go as low as -50%. Spirits are wispy:
+  steel mostly passes through them and magic tears them apart (Specters: 50% armor,
+  -50% magic resistance; Poison Wisps: 40% armor, -30%). Mage Knights do the reverse. A unit's DMG stat,
   its attacks and every damage preview show the damage-type icon.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
   and watch it fight; the same AI that runs the enemy runs your units, using their
   abilities and talents. Lost? Change the army and try again. Speed (1x or 2x) and
-  pause sit in the top bar next to the menu, and tapping a unit pauses and inspects it; 1x plays at
+  pause sit in the top bar next to the menu. Tapping a unit or a tile shows it without
+  pausing: the battle plays on, and its Priority button works on the move; 1x plays at
   about half of the animations' full pace, to be easy to follow. Battles always play
   out on their own (commanding each turn yourself lives on in the classic version, on
   the `arena-gauntlet-tactics-classic` branch); units face the nearest enemy.
@@ -422,6 +429,21 @@ on a phone turned sideways, but portrait works too.
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
   winning with a unit that sat out the last battle) pay extra.
+- **Pushes and pulls**: some attacks shove a unit straight away (Shield Bash, Ground
+  Slam, Boulder Toss, Arcane Burst, Wing Buffet, the Bull Rush skill, a Gale Horn, an
+  Orc Brute's maul) and some drag it straight in (the Scout's Grapnel, a Grappling Hook, a Chain
+  Hook, the Witch's Void Grasp, the Enchantress's Siren's Lure, a Giant Spider's web,
+  Grukk the Warlord's chain). It moves tile by tile, and whatever stops it hurts, past
+  armor and block: a rock or the edge of the field 8; another unit or a building 6,
+  and that one takes 6 too, friend or foe (a building can break, coins and all);
+  water 6, after which it climbs out onto the nearest dry tile, rooted for a turn and
+  with any burn put out; lava 12, and it climbs out burning. Flyers sail over water
+  and lava. Bosses, huge units and the steadfast never budge, and a blocked blow
+  shoves nobody. Hooks fly straight along a row or column, with no rock or unit in
+  the way. Relics: Iron Ram (+6 to every impact), Tidecaller's Conch (a tile
+  further), Anchor Stone (your units cannot be moved). Previews say where a shove
+  lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
+  water or lava to shove its enemies into.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
   portals and barricades are buildings. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:
