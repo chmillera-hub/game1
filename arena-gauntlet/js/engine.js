@@ -1604,7 +1604,7 @@
       hp = 1;
       ev = { t: 'angel', uid: u.uid, by: angel.uid, hp };
     }
-    emit(s, { t: 'dmg', uid: u.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0 });
+    emit(s, { t: 'dmg', uid: u.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0, rout: info.rout || undefined, fatigueNo: info.fatigueNo });
     u.hp = hp;
     emit(s, ev);
     return true;
