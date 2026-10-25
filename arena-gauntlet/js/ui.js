@@ -2101,8 +2101,9 @@
         ${canFocus && !isFocus ? '<p class="small muted">Priority: from the first turn, your whole army goes all out for it, whatever the cost.</p>' : ''}`;
     } else if (tileF) {
       const loot = E.lootAt(s, wr.tile.x, wr.tile.y);
-      const isFocus = loot && focusT && focusT.loot === loot;
-      selBlock = tileInfoHTML(tileF) + (loot ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : '<p class="small muted">Priority: from the first turn, your army heads for it and takes it.</p>'}` : '');
+      const shrine = !loot && isShrine(s, wr.tile.x, wr.tile.y);
+      const isFocus = focusT && ((loot && focusT.loot === loot) || (shrine && focusT.hold));
+      selBlock = tileInfoHTML(tileF) + (loot || shrine ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${shrine ? 'Priority: from the first turn, your army makes for the shrine: one unit stands on it and stays, the rest guard it.' : 'Priority: from the first turn, your army heads for it and takes it.'}</p>`}` : '');
     } else if (wr.dep.size === 0) {
       selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Hold a card to change that unit's level, abilities, talents, skills and gear. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
     } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card for its loadout. To move a unit, tap it on the board, then a blue tile (or another unit to swap places). Tap an enemy or a chest to make it your army's priority.</div>`;
@@ -2197,8 +2198,10 @@
       $('#wrFocus').onclick = () => {
         const u = wr.inspect && s.byId[wr.inspect];
         const l = !u && wr.tile && E.lootAt(s, wr.tile.x, wr.tile.y);
+        const shrine = !u && !l && wr.tile && isShrine(s, wr.tile.x, wr.tile.y);
         if (u) run.pending.focus = { kind: 'unit', x: u.x, y: u.y, label: `the ${UNITS[u.type].name}` };
         else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
+        else if (shrine) run.pending.focus = { kind: 'hold', x: wr.tile.x, y: wr.tile.y, label: 'the shrine' };
         else return;
         toast(`Priority: ${run.pending.focus.label}. Your army goes all out for it from the first turn.`, 3200);
         sfx('click');
@@ -2286,6 +2289,7 @@
       const u = s.units.find((v) => v.alive && v.team === 'E' && v.x === f.x && v.y === f.y);
       return u ? { unit: u, x: u.x, y: u.y } : null;
     }
+    if (f.kind === 'hold') return isShrine(s, f.x, f.y) ? { hold: true, x: f.x, y: f.y } : null;
     const l = E.lootAt(s, f.x, f.y);
     return l ? { loot: l, x: l.x, y: l.y } : null;
   }
@@ -2609,7 +2613,7 @@
     UI.battle = { s, dep, enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: diff.temp, confirmEnd: false };
     // A priority picked in the War Room holds from the first turn.
     const pf = wrFocusTarget(s);
-    if (pf) UI.battle.focus = pf.unit ? { uid: pf.unit.uid, label: run.pending.focus.label } : { loot: pf.loot.id, label: run.pending.focus.label };
+    if (pf) UI.battle.focus = pf.unit ? { uid: pf.unit.uid, label: run.pending.focus.label } : pf.hold ? { hold: true, label: run.pending.focus.label } : { loot: pf.loot.id, label: run.pending.focus.label };
     const b = UI.board;
     b.clearUnits();
     b.ov = {};
@@ -2695,8 +2699,10 @@
     const s = B.s;
     const u = B.mode === 'inspect' && B.sel ? s.byId[B.sel] : null;
     const l = !u && B.mode === 'tile' && B.tile ? E.lootAt(s, B.tile.x, B.tile.y) : null;
+    const shrine = !u && !l && B.mode === 'tile' && B.tile && isShrine(s, B.tile.x, B.tile.y);
     if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
     else if (l) B.focus = { loot: l.id, label: `the ${R.LOOT_NAMES[l.kind]}` };
+    else if (shrine) B.focus = { hold: true, label: 'the shrine' };
     else return;
     toast(`Priority: ${B.focus.label}. Your army goes all out for it, whatever the cost.`, 3500);
     sfx('click');
@@ -2896,6 +2902,24 @@
 
   // While your army fights on its own: who is acting, who is next, what just happened.
   // An enemy unit or building your army could be told to go after.
+  // The shrine a battle asks you to hold.
+  function isShrine(s, x, y) {
+    return !!(s.hold && s.hold.x === x && s.hold.y === y);
+  }
+
+  // A tile that can be a priority: loot lying there, or the shrine.
+  function tileFocusable(s, t) {
+    return !!(t && (E.lootAt(s, t.x, t.y) || isShrine(s, t.x, t.y)));
+  }
+
+  function tileIsFocus(B, t) {
+    const f = B.focus;
+    if (!f || !t) return false;
+    if (f.hold) return isShrine(B.s, t.x, t.y);
+    const l = E.lootAt(B.s, t.x, t.y);
+    return !!(l && f.loot === l.id);
+  }
+
   function canFocusUnit(B, u) {
     return !B.s.over && u.alive && u.team !== 'P' && !u.traits.has('scenery');
   }
@@ -3041,7 +3065,7 @@
       ov.select = [B.tile.x, B.tile.y];
       if (tileF.zone) ov.range = tileF.zone;
       panel = `${tileInfoHTML(tileF)}
-        <div class="actions">${auto ? `${focusButton(B, !!E.lootAt(s, B.tile.x, B.tile.y), B.focus && B.focus.loot != null && E.lootAt(s, B.tile.x, B.tile.y) && B.focus.loot === E.lootAt(s, B.tile.x, B.tile.y).id)}<button class="btn ${E.lootAt(s, B.tile.x, B.tile.y) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
+        <div class="actions">${auto ? `${focusButton(B, tileFocusable(s, B.tile), tileIsFocus(B, B.tile))}<button class="btn ${tileFocusable(s, B.tile) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
@@ -4187,7 +4211,7 @@
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
-          <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building, a chest or the shrine while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

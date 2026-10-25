@@ -274,6 +274,8 @@
       const l = (s.loot || []).find((x) => x.id === f.loot && !x.taken);
       return l ? { loot: l, x: l.x, y: l.y } : null;
     }
+    // The shrine to hold: it stays the priority until the battle is won.
+    if (f.hold && s.hold) return { hold: true, x: s.hold.x, y: s.hold.y };
     return null;
   }
 
@@ -290,6 +292,8 @@
     const flat = Math.abs(x - f.x) + Math.abs(y - f.y);
     const walk = u.traits.has('flying') ? flat : Math.min(ctx.focusField[E.idx(ctx.s, x, y)], flat + 6);
     if (f.loot) return walk * FOCUS_PULL;
+    // The shrine: one unit stands on it and stays there; the rest gather around to guard it.
+    if (f.hold) return flat === 0 ? -120 : Math.max(0, walk - 1) * FOCUS_PULL;
     let best = null;
     for (const a of u.acts) if (a.dmg && a.kind !== 'none' && a.left > 0 && (!best || actSpan(a) > actSpan(best))) best = a;
     // Units that cannot hurt it tag along.
@@ -673,6 +677,8 @@
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
         // A hit on the priority target outweighs anything else this unit could do.
         if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
+        // With the shrine the priority, an enemy standing on it must be driven off.
+        else if (ctx.focus && ctx.focus.hold && t.team !== u.team && t.x === ctx.focus.x && t.y === ctx.focus.y && !e.friendly) val += 40 + dealt * 2 + (e.kill ? 100 : 0);
         if (e.friendly) v -= p * val * 1.4;
         else v += p * val;
       }

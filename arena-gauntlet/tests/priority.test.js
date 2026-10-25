@@ -167,4 +167,36 @@ test('foes keep out of a Lightning Ward\'s reach unless they can hit a living un
   assert.ok(kn.hp < kn.maxHp, 'they went around it for the knight');
 });
 
+test('the shrine as priority: the army takes it, drives off squatters and holds it', () => {
+  // A shrine off to the side, enemies in the middle that would draw the army to them.
+  const make = () =>
+    battle(
+      [
+        { type: 'knight', team: 'P', x: 3, y: 8 },
+        { type: 'knight', team: 'P', x: 4, y: 8 },
+        { type: 'archer', team: 'P', x: 5, y: 8 },
+        { type: 'orc', team: 'E', x: 5, y: 2 },
+        { type: 'orc', team: 'E', x: 6, y: 2 },
+      ],
+      { objective: 'hold', hold: { x: 0, y: 4, need: 6, count: 0 } }
+    );
+  const f = { hold: true, label: 'the shrine' };
+  assert.deepStrictEqual(AI.focusOf(make(), 'P', f), { hold: true, x: 0, y: 4 });
+  const run = (focus) => {
+    const s = make();
+    let best = 0;
+    for (let t = 0; t < 16 && !s.over; t++) {
+      play(s, 1, focus);
+      best = Math.max(best, s.hold.count);
+    }
+    return { s, best };
+  };
+  const a = run(f);
+  const b = run(null);
+  assert.ok(a.best >= 2, `with the priority a unit of yours holds it turn after turn (${a.best})`);
+  assert.ok(a.best > b.best, `more than on normal orders (${a.best} vs ${b.best})`);
+  const on = E.at(a.s, 0, 4);
+  assert.ok(on && on.team === 'P', 'and it is still yours at the end');
+});
+
 console.log(`priority: ${passed} tests passed`);

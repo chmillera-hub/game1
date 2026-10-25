@@ -133,9 +133,11 @@ on a phone turned sideways, but portrait works too.
   about half of the animations' full pace, to be easy to follow. The menu's
   Battles setting switches to commanding each turn yourself (the classic version
   lives on the `arena-gauntlet-tactics-classic` branch).
-- **Priority**: while watching, tap an enemy unit, a building or a chest, then
-  Priority. Your army goes all out for it, whatever the cost: every unit attacks it,
-  or heads for the chest and takes it. A marker shows the target. Once it falls or is
+- **Priority**: while watching, tap an enemy unit, a building, a chest or the shrine,
+  then Priority. Your army goes all out for it, whatever the cost: every unit attacks
+  it, or heads for the chest and takes it. With the shrine, one unit makes for it and
+  stays on it while the rest gather round to guard it, and any enemy standing on it
+  gets driven off; it stays the priority until the shrine is held. A marker shows the target. Once it falls or is
   taken, the army goes back to normal orders; you can also clear it. You can pick one
   in the War Room too, before the battle: tap an enemy, a building or a chest, then
   Priority, and your army goes for it from the very first turn (a dash for the chest,
