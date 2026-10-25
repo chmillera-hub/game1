@@ -47,7 +47,11 @@ on a phone turned sideways, but portrait works too.
   Iron Company, The Gilded Host ...) and is saved the moment you win, so starting a new
   campaign never loses it. Each army in the Hall shows its win-loss record right by its
   name and a small picture of it in formation, facing you like a team photo: its front
-  line nearest, the rows behind stepping back. The first army takes #1; later ones wait in line ("Waiting
+  line nearest, the rows behind stepping back. An army that beat the Eclipse Wyrm wears
+  a purple skull-and-crossbones "Wyrm slayer" badge, and its row glows purple. Priority
+  is banned in Hall matches, on purpose: whichever army you steered would almost always
+  win, and the ranking would mean nothing. Pause on a unit and the Priority button shows
+  crossed out with a red X; tap it and it says why. The first army takes #1; later ones wait in line ("Waiting
   to climb") until you start their climb from the Hall, whenever you like, even several
   campaigns later. A climb starts at the bottom: it fights
   the army right above it, on a fresh field with mirrored obstacles, both sides on the

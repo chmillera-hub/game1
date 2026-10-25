@@ -2068,6 +2068,31 @@ button.card:active {
   flex-wrap: wrap;
 }
 
+/* An army that beat the final challenge: a purple skull and crossbones. */
+.chip.slayer {
+  color: #e6d4ff;
+  border-color: rgba(195, 155, 255, 0.7);
+  background: linear-gradient(180deg, rgba(150, 90, 230, 0.45), rgba(90, 40, 160, 0.45));
+  box-shadow: 0 0 10px rgba(170, 110, 255, 0.35);
+  font-weight: 800;
+}
+
+.chip.slayer .icon {
+  width: 1.4em;
+  height: 1.4em;
+  color: var(--violet);
+  stroke-width: 2.2;
+}
+
+.hall-row.slayer {
+  border-color: rgba(195, 155, 255, 0.6);
+  background: linear-gradient(180deg, rgba(110, 60, 170, 0.22), rgba(0, 0, 0, 0) 60%), linear-gradient(180deg, var(--leather-2), var(--leather));
+}
+
+.hall-row.slayer.picked {
+  border-color: var(--amber);
+}
+
 /* Wins and losses, right by the army's name. */
 .hall-rec {
   display: inline-flex;
@@ -3194,4 +3219,49 @@ body:has(#battle:not([hidden])) {
 .slot.kit .chip {
   font-size: 0.72rem;
   padding: 1px 7px;
+}
+
+/* Priority is banned in Hall of Fame matches: the button shows, crossed out, with a red X. */
+.btn.banned {
+  position: relative;
+  overflow: visible;
+}
+
+.btn.banned .ban-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.ban-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.ban-badge .icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3.2;
+}
+
+.ban-badge.inline {
+  position: static;
+  flex: none;
+  box-shadow: none;
+}
+
+.obj .ban-badge .icon {
+  color: #fff;
+  top: 0;
 }

@@ -1796,7 +1796,7 @@
 
   function objectivesHTML(enc, s) {
     if (enc.exhibition)
-      return `<div class="objectives"><div class="obj primary">${ic('crown')}<span><b>Hall of Fame match.</b> <b style="color:var(--blue)">${esc(enc.exhibition.a)}</b> (blue, from the south) against <b style="color:var(--red)">${esc(enc.exhibition.b)}</b> (red). The last army standing wins.</span></div></div>`;
+      return `<div class="objectives"><div class="obj primary">${ic('crown')}<span><b>Hall of Fame match.</b> <b style="color:var(--blue)">${esc(enc.exhibition.a)}</b> (blue, from the south) against <b style="color:var(--red)">${esc(enc.exhibition.b)}</b> (red). The last army standing wins.</span></div><div class="obj"><span class="ban-badge inline">${ic('close')}</span><span><b>No priority.</b> Both armies fight on their own, so the result is theirs alone.</span></div></div>`;
     const info = R.objectiveInfo(UI.run, enc);
     let status = '';
     if (s && s.hold) status = ` <span class="reward">${s.hold.count}/${s.hold.need}</span>`;
@@ -3026,9 +3026,13 @@
     return !B.s.over && u.alive && !u.traits.has('scenery') && !(u.team === 'P' && u.nonCombat);
   }
 
-  // Make this your army's priority, or stop, while watching an auto battle.
+  const NO_HALL_FOCUS = 'Priority is off in Hall of Fame matches. Whichever army you steered would almost always win, and the ranking would mean nothing. Both armies fight on their own.';
+
+  // Make this your army's priority, or stop, while watching an auto battle. In a Hall of
+  // Fame match it shows, crossed out: priority is banned there, on purpose.
   function focusButton(B, can, is) {
-    if (!can || B.s.over || B.exhibition) return '';
+    if (!can || B.s.over) return '';
+    if (B.exhibition) return `<button class="btn banned" id="btNoFocus" aria-label="Priority is off in Hall of Fame matches"><span class="ban-label">${ic('target')} Priority</span><span class="ban-badge">${ic('close')}</span></button>`;
     return is
       ? `<button class="btn" id="btUnfocus">${ic('close')} Clear priority</button>`
       : `<button class="btn primary" id="btFocus">${ic('target')} Priority</button>`;
@@ -3044,7 +3048,7 @@
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">${B.exhibition ? 'Tap a unit to pause and look at it.' : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
+      <p class="small muted">${B.exhibition ? `Tap a unit to pause and look at it. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
   }
 
   function renderBattle() {
@@ -3261,6 +3265,7 @@
     on('btPauseT', () => togglePause(B));
     on('btFast', toggleSpeed);
     on('btFocus', () => setFocus(B));
+    on('btNoFocus', () => toast(NO_HALL_FOCUS, 4500));
     on('btUnfocus', () => clearFocus(B));
     on('btUndo', async () => {
       if (B.busy) return;
@@ -3913,9 +3918,9 @@
       const picked = st.pick.indexOf(l.id);
       const tag = (l === climber ? '<span class="chip warn">Climbing</span>' : '') + (picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '');
       const waiting = i < 0;
-      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''}" data-legend="${l.id}">
+      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
-        <span class="grow"><span class="nm">${l.superWon ? ic('crown') + ' ' : ''}<b>${esc(l.name)}</b> <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
+        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
           <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
           ${army}</span>
       </button>`;
@@ -4391,7 +4396,7 @@
         ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. Start its climb now, or come back any time from the title screen.`
         : `Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${place.rank} of ${hall.legends.length}. ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}`;
     const hallPanel = legend
-      ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}</p>
+      ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}${legend.superWon ? ` It wears the <span class="chip slayer">${ic('crossbones')} Wyrm slayer</span> badge there, for good.` : ''}</p>
           <div class="row"><button class="btn primary grow" id="enHall">${ic('crown')} ${place.inLine || R.hallNext(hall, legend.id) ? 'Climb the Hall of Fame' : 'Hall of Fame'}</button></div></div>`
       : '';
     const v = showView(
