@@ -72,7 +72,6 @@
             'F5:3 E5:1 D5:2 C5:2 | E5:4 G5:4 | A5:2 G5:2 E5:2 C5:2 | D5:8',
         },
         { drum: 'frame', pat: 'x.......', vol: 0.077 },
-        { drum: 'shaker', pat: '..x...x.', vol: 0.011 },
       ],
     },
     tavern: {
@@ -95,7 +94,6 @@
             'B4:1 D5:1 G5:1 B5:2 A5:1 | G5:1 E5:1 C5:1 E5:2 G5:1 | F#5:1 A5:1 D6:1 A5:2 F#5:1 | G5:3 -:3',
         },
         { drum: 'frame', pat: 'x..o..', vol: 0.084 },
-        { drum: 'tamb', pat: '.o.x.o', vol: 0.012 },
       ],
     },
     march: {
@@ -294,7 +292,7 @@
       const a = osc('sine', f, t, end, g);
       const b = osc('triangle', f * 2, t, end, g, 0, 0.1);
       vibrato([a, b], f, t + 0.2, end, 5.2, 0.006);
-      noise(out, t, 0.09, v * 0.25, 'bandpass', f * 2, 2);
+      noise(out, t, 0.09, v * 0.25, 'bandpass', f * 2, 2, 0.02);
     },
     // A fiddle: a bowed sawtooth, quick to speak, with a lively vibrato.
     fiddle(out, f, t, d, v) {
@@ -360,7 +358,7 @@
     // A frame drum: a soft low thump.
     frame(out, t, v) {
       thump(out, t, 140, 55, 0.32, v);
-      noise(out, t, 0.05, v * 0.3, 'lowpass', 900);
+      noise(out, t, 0.05, v * 0.3, 'lowpass', 900, 0.8, 0.006);
     },
     // A great war drum.
     taiko(out, t, v) {
@@ -370,18 +368,12 @@
     tom(out, t, v) {
       thump(out, t, 175, 95, 0.3, v);
     },
-    // Battle tracks keep no shaker: a rattle on every beat ticks like a stove's igniter.
-    // The snare eases in a touch too, so it cracks rather than clicks.
+    // No shaker or tambourine anywhere: a highpassed rattle on the beat ticks like a
+    // stove's igniter. The snare is a dark, eased-in hit for the same reason: a field drum's
+    // thud and hiss, never a click.
     snare(out, t, v) {
-      noise(out, t, 0.16, v, 'bandpass', 1700, 0.8, 0.005);
-      thump(out, t, 230, 160, 0.07, v * 0.4);
-    },
-    // A soft rattle, not a tick: it eases in and stays below the sharpest highs.
-    shaker(out, t, v) {
-      noise(out, t, 0.07, v, 'highpass', 5200, 0.7, 0.015);
-    },
-    tamb(out, t, v) {
-      noise(out, t, 0.12, v, 'highpass', 5800, 0.7, 0.015);
+      noise(out, t, 0.18, v * 0.9, 'bandpass', 1150, 0.7, 0.009);
+      thump(out, t, 210, 150, 0.09, v * 0.5);
     },
   };
 
