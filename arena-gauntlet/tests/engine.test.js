@@ -20,7 +20,7 @@ function board(units, opts = {}) {
   const w = opts.w || 9;
   const h = opts.h || 9;
   const terrain = opts.terrain || new Array(w * h).fill(0);
-  const s = E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot, waves: opts.waves });
+  const s = E.createBattle({ w, h, terrain, units, relics: opts.relics || { P: [], E: [] }, seed: 7, objective: opts.objective, hold: opts.hold, surviveTurns: opts.surviveTurns, loot: opts.loot, waves: opts.waves, queue: opts.queue });
   // Most rule checks start with the player to move; turn order has its own tests.
   if (!opts.enemyFirst) s.side = 'P';
   return s;
@@ -522,6 +522,8 @@ test('the enemy army down with gold, goals or loot still on the field: the battl
   );
   const [kn, ar, sc, totem, bar] = s.units;
   sc.hp = 1;
+  // Tough enough to outlast their fatigue here (see the next test).
+  for (const u of [kn, ar]) u.hp = u.maxHp = 400;
   act(s, kn, { kind: 'unit', uid: sc.uid });
   assert.ok(!sc.alive);
   assert.ok(!s.over, 'not over yet');
@@ -538,6 +540,71 @@ test('the enemy army down with gold, goals or loot still on the field: the battl
   assert.ok(!totem.alive && !bar.alive && s.loot[0].taken, 'everything collected');
   assert.ok(s.end.cleaned);
   assert.strictEqual(s.stats.bounty, 12 + totem.salvage);
+});
+
+test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more for every turn one of your units takes', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'P', x: 4, y: 8 },
+      { type: 'cleric', team: 'P', x: 5, y: 8 },
+      { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'totem', team: 'E', x: 0, y: 0 },
+    ],
+    { queue: true }
+  );
+  const [kn, ar, cl, sc, totem] = s.units;
+  totem.hp = totem.maxHp = 999;
+  sc.hp = 1;
+  E.endTurn(s);
+  // Your first unit to act takes the scout down; fatigue is still far off (turn 30).
+  while (!s.over && !s.cleanup) {
+    if (s.side === 'P' && s.due) act(s, s.byId[s.due], { kind: 'unit', uid: sc.uid });
+    else E.endTurn(s);
+  }
+  assert.ok(s.cleanup && !s.inOvertime && E.fatigueHit(s) === 0, 'the clock has no fatigue yet');
+  assert.strictEqual(E.cleanupHit(s), 1);
+  const hits = [];
+  let guard = 0;
+  while (!s.over && hits.length < 7 && guard++ < 200) {
+    const n = s.events.length;
+    if (s.side === 'P') AG.AI.playTurn(s, 'P', { stance: 'balanced', temp: 0 });
+    else E.endTurn(s);
+    for (const e of s.events.slice(n)) if (e.t === 'dmg' && e.dmgType === 'fatigue') {
+      assert.strictEqual(s.byId[e.uid].team, 'P', 'only your side tires');
+      hits.push(e.amount);
+    }
+  }
+  assert.deepStrictEqual(hits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+  // Once the clock's fatigue is bigger, that is what you lose.
+  s.overtime = 1;
+  s.inOvertime = true;
+  assert.strictEqual(E.cleanupHit(s), Math.max(s.cleanup.hits + 1, E.fatigueHit(s)));
+});
+
+test('wreckage: left be while the fight is on, broken for its gold once the enemy army falls', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 6 },
+      { type: 'wreckage', team: 'E', x: 4, y: 5, bounty: 8 },
+      { type: 'scout', team: 'E', x: 6, y: 5, facing: 2 },
+    ],
+    { queue: true }
+  );
+  const [kn, wreck, sc] = s.units;
+  sc.hp = 20;
+  // Rooted, so it stays to fight rather than running rings round the knight.
+  sc.root = 99;
+  E.endTurn(s);
+  let guard = 0;
+  while (!s.over && sc.alive && guard++ < 60) {
+    AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+    if (sc.alive) assert.ok(wreck.alive && wreck.hp === wreck.maxHp, 'nobody wastes a blow on the wreckage mid-fight');
+  }
+  assert.ok(!sc.alive && s.cleanup && !s.over, 'the scout down: the cleanup');
+  while (!s.over && guard++ < 200) AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+  assert.ok(s.over && s.winner === 'P' && !wreck.alive && s.end.cleaned);
+  assert.strictEqual(s.stats.bounty, 8);
 });
 
 test('mid-cleanup nothing can cost you the win: not fatigue taking the whole army, not a stall, not a retreat', () => {

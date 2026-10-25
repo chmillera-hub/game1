@@ -1898,20 +1898,68 @@
     const wl = wavesLine(enc, s);
     if (wl) lines.push(wl);
     for (const o of info.bonus) {
-      let state = '';
-      if (s) {
-        const b = o.b;
-        if (b.type === 'loot' && s.loot.some((l) => l.id === b.lootId && l.taken)) state = 'done';
-        if (b.type === 'swift' && (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) > b.turns) state = 'failed';
-        if (b.type === 'flawless' && (s.cleanup ? s.cleanup.lost > 0 : s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive))) state = 'failed';
-        if (b.type === 'muster') state = s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
-        if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) state = 'failed';
-        if (b.type === 'blockade' && s.stats.blocked >= b.n) state = 'done';
-        if (b.type === 'ambush' && (s.stats.waveKills || 0) >= b.n) state = 'done';
-      }
+      const state = s ? bonusState(s, o.b) : '';
       lines.push(`<div class="obj bonus ${state}">${ic(state === 'done' ? 'check' : 'star')}<span>${esc(o.text)} <span class="reward">Reward: ${esc(o.reward)}.</span></span></div>`);
     }
     return `<div class="objectives">${lines.join('')}</div>`;
+  }
+
+  // Mid-battle: a bonus goal already met ('done'), out of reach ('failed'), or still open ('').
+  function bonusState(s, b) {
+    if (b.type === 'loot' && s.loot.some((l) => l.id === b.lootId && l.taken)) return 'done';
+    if (b.type === 'swift' && (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) > b.turns) return 'failed';
+    if (b.type === 'flawless' && (s.cleanup ? s.cleanup.lost > 0 : s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive))) return 'failed';
+    if (b.type === 'muster') return s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
+    if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) return 'failed';
+    if (b.type === 'blockade' && s.stats.blocked >= b.n) return 'done';
+    if (b.type === 'ambush' && (s.stats.waveKills || 0) >= b.n) return 'done';
+    return '';
+  }
+
+  // The battle's goals in a few short lines, pinned to the top of the battle panel so they
+  // stay in view whatever the panel shows below and however far it scrolls.
+  function goalBarHTML(B) {
+    const s = B.s;
+    const enc = B.enc;
+    if (B.exhibition) return `<div class="goalbar"><div class="gl primary">${ic('crown')}<span><b>Hall of Fame match.</b> Last army standing wins.</span></div></div>`;
+    const info = R.objectiveInfo(UI.run, enc);
+    const tag = (t, cls) => ` <span class="${cls || 'gl-tag'}">${t}</span>`;
+    let status = '';
+    if (s.cleanup) status = tag(`${ic('check')} Won. Cleanup: ${E.cleanupLeft(s)} left · your fatigue −${E.cleanupHit(s)}`, 'gl-tag done');
+    else if (s.routed) status = tag(`${ic('check')} Done. Enemy fatigued −${E.routHit(s)}`, 'gl-tag done');
+    else if (s.hold) status = tag(`${s.hold.count}/${s.hold.need}`);
+    else if (s.surviveTurns) status = tag(`${Math.max(0, s.surviveTurns - s.turn + 1)} to go`);
+    else if (enc.layout === 'convoy') {
+      const carts = s.units.filter((u) => u.type === 'cart');
+      status = tag(`${carts.filter((u) => !u.alive && !u.escaped).length}/${carts.length} broken${carts.some((u) => u.escaped) ? ` · ${carts.filter((u) => u.escaped).length} escaped` : ''}`);
+    } else if (info.key === 'totems' || info.key === 'raze') {
+      const goals = s.units.filter((u) => u.team === 'E' && u.goal);
+      status = tag(`${goals.filter((u) => !u.alive).length}/${goals.length} down`);
+    } else {
+      const vip = (info.key === 'boss' || info.key === 'commander') && s.units.find((u) => u.team === 'E' && u.vip && u.alive);
+      if (vip) status = tag(`${esc(UNITS[vip.type].name)} ${vip.hp}/${vip.maxHp} HP`);
+      else status = tag(`${s.units.filter((u) => u.alive && u.team === 'E' && E.counts(u)).length} enemies left`);
+    }
+    const lines = [`<div class="gl primary ${s.routed || s.cleanup ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}</b>${status}</span></div>`];
+    // Gold waiting in the field: wreckage and barricades, broken for their pouches.
+    const pouches = s.units.filter((u) => u.team === 'E' && u.bounty > 0 && u.structure);
+    if (pouches.length) {
+      const left = pouches.filter((u) => u.alive);
+      const name = pouches.every((u) => u.type === 'wreckage') ? 'Wreckage' : pouches.every((u) => u.type === 'barricade') ? 'Barricades' : 'Gold';
+      lines.push(`<div class="gl gold ${left.length ? '' : 'done'}">${ic('gold')}<span>${name}: ${pouches.length - left.length}/${pouches.length} broken${tag(left.length ? `${left.reduce((t, u) => t + u.bounty, 0)} gold left` : 'all taken', 'reward')}</span></div>`);
+    }
+    for (const o of info.bonus) {
+      const state = bonusState(s, o.b);
+      const prog = o.b.type === 'ambush' && state !== 'done' ? ` (${s.stats.waveKills || 0}/${o.b.n})` : o.b.type === 'swift' && !state && !s.routed && !s.cleanup ? ` (turn ${s.turn})` : '';
+      lines.push(`<div class="gl bonus ${state}">${ic(state === 'done' ? 'check' : state === 'failed' ? 'close' : 'star')}<span>${esc(o.short || o.text)}${prog}${state === 'failed' ? '' : tag(esc(o.reward), 'reward')}</span></div>`);
+    }
+    const waves = E.waveSummary(s).filter((w) => w.team === 'E');
+    if (waves.length) {
+      const next = Math.min(...waves.map((w) => w.turn));
+      const n = waves.filter((w) => w.turn === next).reduce((t, w) => t + w.types.length, 0);
+      lines.push(`<div class="gl waves">${ic('hourglass')}<span>Reinforcements: ${n} on turn ${next}${waves.length > 1 ? `, ${waves.reduce((t, w) => t + w.types.length, 0) - n} more later` : ''}</span></div>`);
+    }
+    return `<div class="goalbar" aria-label="Battle goals">${lines.join('')}</div>`;
   }
 
   // When the next enemy reinforcements arrive, and how many are still to come.
@@ -2996,7 +3044,7 @@
 
   // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
   function turnLine(s) {
-    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span>${s.inOvertime ? ` · <span class="overtime">fatigue −${E.fatigueHit(s)}</span>` : ` · fatigue at ${s.overtime}`}`;
+    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · <span class="overtime">Your fatigue −${E.cleanupHit(s)}</span>`;
     if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · fatigue −${E.fatigueHit(s)}` : ` · fatigue at ${s.overtime}`}`;
     if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue −${E.fatigueHit(s)}</span> to whoever acts`;
     if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
@@ -3105,7 +3153,7 @@
         else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, 1, then 2, 3 and so on. Your side tires only on turn ${s.overtime || 30}.` });
       } else if (e.t === 'cleanup') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}).` });
+        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), but its fatigue sets in now: each of your units loses HP as its turn comes, 1, then 2, 3 and so on, one more every turn.` });
       } else if (e.t === 'overtime') {
         finish();
         add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Every unit loses HP as its turn comes, 1 more each round, both sides alike.` });
@@ -3227,8 +3275,9 @@
       <div class="eyebrow">Turn order</div>
       ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
-      ${s.cleanup && !s.over ? `<div class="hint">${ic('check')} <b>The enemy army is beaten: the win is yours.</b> Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot. Fatigue still bites, but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
+      ${s.cleanup && !s.over ? `<div class="hint">${ic('check')} <b>The enemy army is beaten: the win is yours.</b> Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot. Its fatigue has set in (next −${E.cleanupHit(s)}, one more every turn), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
+      <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
       <p class="small muted">${B.exhibition ? `Tap a unit to look at it while the battle plays on. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to look at it while the battle plays on, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
@@ -3395,7 +3444,12 @@
       <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed: ${speedOf()}x">${ic('fast')}<small>${speedOf()}×</small></button>
       ${auto ? `<button class="btn icon-only ${B.paused ? 'on' : ''}" id="btPauseT" aria-label="${B.paused ? 'Resume' : 'Pause'}">${ic(B.paused ? 'play' : 'pause')}</button>` : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
-    $('#cmd').innerHTML = panel;
+    $('#cmd').innerHTML = goalBarHTML(B) + panel;
+    // A new view (a unit or tile tapped, or back to the fight) starts at the top, under the
+    // goals, not wherever the last one was scrolled to.
+    const view = `${B.mode}:${B.sel || ''}:${B.tile ? B.tile.x + ',' + B.tile.y : ''}`;
+    if (view !== B.view) $('#cmd').scrollTop = 0;
+    B.view = view;
     drawPortraits($('#cmd'));
     bindBattlePanel();
   }
@@ -4679,7 +4733,7 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
-          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Fatigue still bites but cannot cost you the battle. It ends when nothing is left, your army is gone, it stops getting anywhere, or you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
+          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your army's fatigue sets in that moment: each of your units loses HP as its turn comes, 1, then 2, 3 and so on, one more every turn. It cannot cost you the battle. It ends when nothing is left, your army is gone, it stops getting anywhere, or you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for both sides. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
@@ -4714,6 +4768,7 @@
           <li>Walls, gates, towers, totems, tents, crypts, dens, portals and barricades are <b>buildings</b>. Stone ones shrug off swords and spells alike; wooden ones burn, taking extra damage from fire and magic; dark portals unravel under magic but barely notice steel.</li>
           <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
           <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
+          <li><b>Wreckage</b> litters the Act I boss's camp: four wrecked carts with 8 gold in each. Your army leaves them be until the boss and its retinue fall, then breaks what it can before its fatigue tells.</li>
           <li><b>Every enemy building pays a little.</b> Break a wall, tower, totem, banner, cage or gate and your army picks up 3 gold (5 for the gate and for tents, crypts, dens, portals and guardhouses). Not worth a detour, but never wasted.</li>
         </ul>
         <h4>Reinforcements</h4>
@@ -4724,6 +4779,7 @@
         </ul>
         <h4>Controls</h4>
         <ul>
+          <li>The battle's goals stay pinned at the top of the panel under the board: the mission and how it stands, gold still in the field, bonus goals and their rewards, and the next reinforcements. Their full wording is further down, under Mission details.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
           <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up (it pops up and wriggles in your hand) and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>

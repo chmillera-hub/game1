@@ -700,6 +700,8 @@
     let v = 0;
     for (const e of pv.effects) {
       const t = s.byId[e.uid];
+      // Wreckage (spoils) is worth nothing to either side until the enemy army falls.
+      if (t.traits.has('spoils') && !ctx.cleanup) continue;
       const hpv = t.value / t.maxHp;
       if (e.self) {
         v -= u.value;

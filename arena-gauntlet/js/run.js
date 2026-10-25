@@ -720,6 +720,8 @@
   const BUDGET_SHARE = { survive: 0.8, raze: 0.6, totems: 0.85 };
   // Totems and spawners grow sturdier act by act.
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
+  // Gold in each wrecked cart at the Act I boss's camp.
+  const WRECK_GOLD = 8;
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   // A backstop only: fatigue ends battles long before it.
   const TURN_LIMIT = 250;
@@ -1124,6 +1126,22 @@
       }
     }
 
+    // The Act I boss's camp: wrecked supply carts with gold in them. Your army leaves them
+    // be while the fight is on; once the boss and its retinue fall, it breaks what it can
+    // for the gold before its fatigue tells (the cleanup). Placed by a roll of their own,
+    // so the rest of the battle comes out as it did before.
+    if (group === 'boss' && act === 1 && !node.mega) {
+      const wr = AG.derive(run.seed, 'wreck:' + act + ':' + node.id);
+      for (const xs of [[0, 1], [2, 3], [5, 6], [7, 8]]) {
+        const spots = [];
+        for (const y of [1, 2, 3]) for (const x of xs) if (open(x, y)) spots.push([x, y]);
+        if (!spots.length) continue;
+        const [x, y] = wr.pick(spots);
+        units.push({ type: 'wreckage', level: 1, x, y, facing: 2, bounty: WRECK_GOLD });
+        used.add(x + ',' + y);
+      }
+    }
+
     // Bonus: loot on the field, sometimes guarded by specters.
     if (layout !== 'siege' && rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
       const lk = group === 'normal' ? rng.weighted([['chest', 50], ['tome', 35], ['relic', 15]]) : rng.weighted([['chest', 20], ['tome', 40], ['relic', 40]]);
@@ -1192,6 +1210,8 @@
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or defeat the whole escort.',
     };
     const short = { rout: 'Defeat them all', boss: 'Slay the boss', banner: 'Burn the banner', prison: 'Break the cage', commander: 'Kill the Commander', hold: 'Hold the shrine', survive: `Survive ${enc.surviveTurns || 12} turns`, gate: 'Break the gate', convoy: 'Stop the convoy', totems: `Topple the ${tName}s`, raze: `Raze the ${sName}${spawners.length > 1 ? 's' : ''}` };
+    const wrecks = enc.units.filter((u) => u.type === 'wreckage');
+    if (wrecks.length) P.boss += ` Then break the wreckage for its gold (${wrecks.reduce((t, u) => t + (u.bounty || 0), 0)} in ${wrecks.length} carts) before your army's fatigue tells.`;
     const key = enc.primary || (enc.objective === 'boss' ? 'boss' : 'rout');
     const bonus = (enc.bonus || []).map((b) => {
       switch (b.type) {
@@ -1199,22 +1219,23 @@
           return {
             b,
             text: `Take the ${LOOT_NAMES[b.kind]}${b.kind === 'chest' ? '' : ' (guarded by specters)'}: stand a unit on it and spend its action.`,
+            short: `Take the ${LOOT_NAMES[b.kind]}`,
             reward: b.kind === 'chest' ? `+${25 + 10 * run.act} gold` : b.kind === 'tome' ? 'Choose a skill' : 'A relic',
           };
         case 'swift':
-          return { b, text: `Win within ${b.turns} turns.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Win within ${b.turns} turns.`, short: `Win within ${b.turns} turns`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'flawless':
-          return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: 'Win without losing a unit.', short: 'Lose no unit', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
-          return { b, text: 'Break every wagon (none may escape).', reward: '+20 gold per wagon' };
+          return { b, text: 'Break every wagon (none may escape).', short: 'No wagon escapes', reward: '+20 gold per wagon' };
         case 'ambush':
-          return { b, text: `Ambush the reinforcements: defeat ${b.n} of the enemies that arrive in waves.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Ambush the reinforcements: defeat ${b.n} of the enemies that arrive in waves.`, short: `Defeat ${b.n} reinforcements`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         // Saves from before the Ambush: the old blocking goal.
         case 'blockade':
-          return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+          return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, short: `Block ${b.n} arrivals`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'muster': {
           const u = unitById(run, b.rid);
-          return { b, text: u ? `${u.name} the ${UNITS[u.type].name}, who sat out the last battle, insists on fighting this one. Win with them in the fight.` : 'A unit that sat out the last battle insists on fighting.', reward: '+6 XP, +20 gold' };
+          return { b, text: u ? `${u.name} the ${UNITS[u.type].name}, who sat out the last battle, insists on fighting this one. Win with them in the fight.` : 'A unit that sat out the last battle insists on fighting.', short: u ? `Win with ${u.name} fighting` : 'Win with the eager unit fighting', reward: '+6 XP, +20 gold' };
         }
       }
       return { b, text: '', reward: '' };
@@ -2360,7 +2381,7 @@
   // How well a unit type answers this enemy army: magic against armor, steel against wards.
   // Buildings in this battle worth bringing siege damage for: goals, spawners and gates.
   function siegeTargets(enc) {
-    return enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall'].includes(u.type)).length;
+    return enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall', 'wreckage'].includes(u.type)).length;
   }
 
   function isSiegeItem(def) {
@@ -2577,7 +2598,7 @@
       );
     }
     // Only buildings that matter: goals, spawners and the castle.
-    const buildings = enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall', 'tower'].includes(u.type));
+    const buildings = enc.units.filter((u) => UNITS[u.type].material && (u.goal !== false || u.key) && !['barrel', 'cart', 'barricade', 'wall', 'wreckage', 'tower'].includes(u.type));
     if (buildings.some((u) => UNITS[u.type].material === 'stone'))
       tips.push('Stone buildings shrug off swords and spells. Siege damage breaks them fast: a Trebuchet, Siege Hammer, Demolisher or Boulder Toss.');
     if (buildings.some((u) => UNITS[u.type].material === 'wood')) tips.push('Wooden buildings burn: fire and magic deal extra damage to them.');
@@ -2588,6 +2609,7 @@
     if (has('specter')) tips.push('Specters are ghosts: steel mostly passes through them (50% armor), but magic tears them apart.');
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
+    if (has('wreckage')) tips.push('Wreckage holds gold, but your army leaves it be until the boss and its retinue fall. Then its fatigue sets in: the faster you win, the more you salvage.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
     if (has('troll')) tips.push(`Trolls regenerate ${UNITS.troll.props.regen} on each of their turns unless magic or fire hurt them since their last one.`);
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');

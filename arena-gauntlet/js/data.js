@@ -561,6 +561,15 @@
       desc: 'Sharpened stakes. Blocks movement and lines until broken. Break it and a pouch of gold spills out.',
       tip: 'Break through with siege damage or fire for the gold inside, or go around.',
     },
+    wreckage: {
+      name: 'Wreckage', rarity: 'none', cost: 0, role: 'object',
+      hp: 22, pow: 0, armor: 0.1, res: -0.2, block: 0, rec: 0, move: 0,
+      act: { name: 'None', kind: 'none' },
+      // 'spoils': gold for after the win; nobody spends a turn on it while the fight is on.
+      traits: ['immobile', 'nofacing', 'object', 'scenery', 'spoils'], tags: ['structure'], material: 'wood',
+      desc: "A wrecked supply cart from the boss's camp, gold still glinting in the splinters. Blocks movement and lines until broken.",
+      tip: 'Slay the boss and its retinue first: then your army breaks what wreckage it can for the gold, before its fatigue tells.',
+    },
 
     // Totems: objectives that whip the enemies around them into a frenzy.
     totem: Object.assign({}, TOTEM, {

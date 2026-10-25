@@ -85,6 +85,15 @@ function playBattle(run) {
     k[0] += s.stats.bounty || 0;
     k[1]++;
   }
+  // The Act I boss's wreckage: how much of it a winning army salvages before it tires.
+  const wrecks = s.units.filter((u) => u.type === 'wreckage');
+  if (wrecks.length && s.winner === 'P') {
+    results.wreck[0] += wrecks.filter((u) => !u.alive).length;
+    results.wreck[1] += wrecks.length;
+    results.wreck[2]++;
+    results.wreck[3] += s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length - (s.cleanup ? s.cleanup.lost : 0);
+  }
+  if (s.cleanup && s.winner === 'P') results.cleanups.push(s.turn - s.cleanup.turn);
   const swift = (p.enc.bonus || []).find((b) => b.type === 'swift');
   if (swift && s.winner === 'P') {
     results.swift[1]++;
@@ -98,7 +107,7 @@ function pickUnit(run, pick) {
   return ok.length ? ok[0].id : null;
 }
 
-const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0], coins: {}, shoves: {}, armies: [] };
+const results = { done: 0, stuck: 0, battles: 0, tries: 0, first: { 1: [0, 0], 2: [0, 0], 3: [0, 0] }, kinds: {}, missions: {}, lv: [], walls: [], lens: {}, timeouts: 0, swift: [0, 0], overtime: { P: 0, E: 0 }, otKinds: {}, loot: {}, bonus: {}, tiers: {}, mega: [0, 0], coins: {}, shoves: {}, armies: [], wreck: [0, 0, 0, 0], cleanups: [] };
 
 // The tier a player of this policy picks first in a round.
 function firstTier(rng) {
@@ -243,6 +252,8 @@ console.log(`fast-win bonus met in ${pct(results.swift)} of ${results.swift[1]} 
 console.log('bonus goals met in wins:', Object.entries(results.bonus).map(([k, v]) => `${k} ${pct(v)} (${v[1]})`).join(' · '));
 console.log(`pushes and pulls, per battle: ${Object.entries(results.shoves).map(([k, v]) => `${k} ${(v / Math.max(1, results.battles)).toFixed(2)}`).join(' · ') || '-'}`);
 console.log('gold from broken buildings, per win:', Object.entries(results.coins).filter(([, v]) => v[0]).map(([k, v]) => `${k} ${(v[0] / v[1]).toFixed(1)}`).join(' · ') || '-');
+if (results.wreck[2]) console.log(`Act I boss wreckage broken: ${results.wreck[0]}/${results.wreck[1]} carts in ${results.wreck[2]} wins (${(results.wreck[3] / results.wreck[2]).toFixed(1)} units lost to the cleanup per win)`);
+if (results.cleanups.length) console.log(`cleanups: ${results.cleanups.length}, lasting ${q(results.cleanups, 0.25)}/${q(results.cleanups, 0.5)}/${q(results.cleanups, 0.75)} turns (p25/median/p75)`);
 console.log('loot taken in won battles:', Object.entries(results.loot).map(([k, v]) => `${k} ${v[0]}/${v[1]}`).join(' · ') || '-');
 if (results.walls.length) console.log('walls:', results.walls.join(' | '));
 // HALLDUMP=file: the winning armies, for Hall of Fame checks.
