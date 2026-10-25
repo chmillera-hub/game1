@@ -1829,7 +1829,7 @@
       status = ` <span class="reward">${goals.filter((u) => !u.alive).length}/${goals.length} down</span>`;
     }
     // A mission done routs the enemy: they bleed every enemy turn until the last one falls.
-    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is routed: their fatigue has set in, and the enemy unit taking each turn loses ${E.routHit(s)} HP, more each turn. Finish them.</span>`;
+    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is routed: ${s.routed.late ? 'their fatigue is doubled' : 'their fatigue has set in'}, and the enemy unit taking each turn loses ${E.routHit(s)} HP, more each turn. Finish them.</span>`;
     else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the enemy is routed: their fatigue sets in at once.</span>`;
     const lines = [`<div class="obj primary ${s && s.routed ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     const wl = wavesLine(enc, s);
@@ -2986,7 +2986,8 @@
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} sits out: ${SIT_OUT[e.why]}.</span>` });
       } else if (e.t === 'routed') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and their fatigue sets in now: from the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1, then 2, 3 and so on. Your side tires only when fatigue sets in for everyone, on turn ${s.overtime || 30}. Finish them off.` });
+        if (e.late) add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and with fatigue already biting, theirs doubles from now on: the enemy unit taking each turn loses twice this round's fatigue (your side keeps the normal amount). Finish them off.` });
+        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is routed!</b> No more reinforcements, and their fatigue sets in now: from the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1, then 2, 3 and so on. Your side tires only when fatigue sets in for everyone, on turn ${s.overtime || 30}. Finish them off.` });
       } else if (e.t === 'overtime') {
         finish();
         add({ team: 'O', html: `<b class="overtime">Fatigue sets in!</b> Each unit now loses HP at the start of its turn: 1 this round, 2 the next, then 3 and so on, the same for both sides. The last side standing wins.` });
@@ -3346,9 +3347,15 @@
     UI.board.activeSide = null;
     const ev = E.drainEvents(B.s);
     logEvents(ev);
-    if (ev.some((e) => e.t === 'routed')) {
+    const routedEv = ev.find((e) => e.t === 'routed');
+    if (routedEv) {
       showBanner('Enemy routed!', false);
-      toast('Mission done! The enemy is routed: no more reinforcements, and their fatigue sets in now. Each enemy turn, the unit taking it loses HP, 1 more each turn. Finish them off.', 4500);
+      toast(
+        routedEv.late
+          ? 'Mission done! The enemy is routed: no more reinforcements, and their fatigue doubles from now on. Your side keeps the normal amount. Finish them off.'
+          : 'Mission done! The enemy is routed: no more reinforcements, and their fatigue sets in now. Each enemy turn, the unit taking it loses HP, 1 more each turn. Finish them off.',
+        4500
+      );
     }
     if (ev.some((e) => e.t === 'overtime')) {
       showBanner('Fatigue', true);
@@ -4493,7 +4500,7 @@
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card): it sits out that many of its turns, and the next unit in line goes instead. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Missions rout the enemy</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is routed: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
+          <li><b>Missions rout the enemy</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is routed: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, the enemy unit taking each turn loses HP as its turn starts, 1 in the first, then 2, 3 and so on, past armor and shields, just like fatigue. Done after fatigue has set in for everyone (turn ${R.OVERTIME}), and the enemy's fatigue doubles from then on instead: 6 becomes 12, then 7 becomes 14, while your side keeps the normal amount. You win when the last of them falls; it is all but certain, but not automatic. Your own side only tires when fatigue sets in for everyone. A "win within N turns" goal counts from the turn the mission was done.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>

@@ -485,4 +485,31 @@ test('the rout: the enemy tires at once, 1 HP for the unit taking the first enem
   assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire before turn 30');
 });
 
+test('the rout after fatigue set in: the enemy takes double fatigue from then on, your side the normal amount', () => {
+  const s = battle(
+    [
+      { type: 'golem', team: 'P', x: 4, y: 8 },
+      { type: 'archer', team: 'E', x: 4, y: 0, vip: true },
+      { type: 'golem', team: 'E', x: 0, y: 0 },
+    ],
+    { objective: 'vip', overtime: 2 }
+  );
+  const [pg, cmd, eg] = s.units;
+  pg.hp = pg.maxHp = eg.hp = eg.maxHp = 999;
+  while (!(s.inOvertime && s.turn >= 4 && s.side === 'P')) E.pass(s);
+  const clock = E.fatigueHit(s);
+  cmd.hp = 0;
+  cmd.alive = false;
+  s.occ[cmd.y * s.w + cmd.x] = 0;
+  E.checkOutcome(s);
+  assert.ok(s.routed && s.routed.late);
+  const e0 = eg.hp;
+  E.pass(s); // the enemy's turn: its golem takes double this round's fatigue
+  assert.strictEqual(e0 - eg.hp, 2 * E.fatigueHit(s));
+  assert.strictEqual(E.fatigueHit(s), clock + 1);
+  const p0 = pg.hp;
+  E.pass(s); // yours: the normal amount
+  assert.strictEqual(p0 - pg.hp, E.fatigueHit(s));
+});
+
 console.log(`queue: ${passed} tests passed`);
