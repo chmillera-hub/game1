@@ -2248,6 +2248,16 @@
             }
             break;
           }
+          // A unit whose turn came but who passes it: cooling down (its cooldown ticks down),
+          // paralyzed, or with nothing in reach. The Barrier Ward, which never acts, passes quietly.
+          case 'sitout': {
+            if (!v || e.why === 'passive') break;
+            any = true;
+            this.addText(v.x, v.y, 'PASS', '#c9d4ea', { height: h });
+            const sub = e.why === 'cooldown' ? `COOLDOWN ${e.wait} → ${e.wait - 1}` : e.why === 'para' ? 'PARALYZED' : 'NOTHING IN REACH';
+            this.addText(v.x, v.y, sub, e.why === 'para' ? '#ffd84a' : '#9fb8e8', { height: h, dy: -this.tw * 0.25 });
+            break;
+          }
           case 'gold': {
             const gx = v ? v.x : e.x;
             const gy = v ? v.y : e.y;

@@ -191,25 +191,26 @@ on a phone turned sideways, but portrait works too.
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
   shows who is next, units only.
-- **Cooldowns**: acting starts a unit's cooldown (CD on its card): it sits out that
-  many of its own turns, and the next unit in line goes instead. Moving alone never
-  starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
-  when every unit of a side must sit out, the side passes. Bosses sit out their
-  first turn.
-- **Regen**: some talents, gear, relics and units heal as the unit takes its turn,
-  one unit a turn: units that sit a turn out do not regenerate (Living Moss 4,
+- **Cooldowns**: acting starts a unit's cooldown (CD on its card). Its turns still
+  come in the rotation, but it passes that many of them: when its turn comes it
+  passes at once, its cooldown ticks down by one, and the next unit in line goes.
+  Moving alone never starts a cooldown. Paralyzed units, and units with nothing in
+  reach, pass too; when every unit of a side passes, the side passes. Bosses pass
+  their first turn. The turn order strip shows every unit's turn, passes included:
+  a unit about to pass is greyed out with its cooldown on its portrait (a yellow
+  number for paralysis), and the board shows "PASS" and the cooldown ticking down
+  (2 → 1) when it happens.
+- **Regen**: some talents, gear, relics and units heal whenever the unit's turn
+  comes, whether it acts or passes (Living Moss 4,
   Healing Charm 3, the Furgon 3, a Mending Light aura 2). The only army-wide source
   is the boss relic Sacred Chalice (+2); the common Healing Salve adds 2 only to
   units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 30, the unit taking each turn loses HP as its turn starts,
-  past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in
-  the next, then 3 and so on, the same for both sides, like fatigue in Hearthstone.
-  One unit a turn: units that sit the turn out (cooling down) are spared, and if a
-  whole side sits out, the first in line takes it. Wards are the exception: the
-  Barrier and Lightning Wards keep their place in the rotation and lose HP whenever
-  their turn comes, even with nothing to do (the Barrier Ward never acts, so it is
-  left out of the turn order strip). The top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
+- **Fatigue**: from turn 30, every unit loses HP whenever its turn comes, acting or
+  passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
+  and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for
+  both sides, like fatigue in Hearthstone. Poison and burns tick on passed turns
+  too. The top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
@@ -259,8 +260,8 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Getting it done does not end the battle on the spot: the enemy is **routed**. Their
-  reinforcements stop and their fatigue sets in at once: from the next enemy turn, the
-  enemy unit taking each turn loses HP as its turn starts, 1 in the first, then 2, 3
+  reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
+  enemy unit loses HP when its turn comes, acting or passing, 1 in the first, then 2, 3
   and so on, past armor and shields, just like fatigue. Done after fatigue has set in
   for everyone (turn 30), and the enemy's fatigue doubles from then on instead (6
   becomes 12, then 7 becomes 14), while your side keeps the normal amount. The battle

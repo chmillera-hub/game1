@@ -2827,6 +2827,45 @@ body:has(#battle:not([hidden])) {
   font-weight: 700;
 }
 
+.q-item {
+  position: relative;
+}
+
+/* A unit whose turn comes but who passes it: cooling down (the number), paralyzed, or never acting. */
+.q-item.pass .portrait {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+  border-style: dashed;
+}
+
+.q-item.pass span {
+  color: var(--muted, #9a94a8);
+  font-style: italic;
+}
+
+.q-cd {
+  position: absolute;
+  top: -3px;
+  right: 2px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: #3a5f9e;
+  border: 1.5px solid #cfe0ff;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.q-cd.para {
+  background: #9e7a1e;
+  border-color: #ffe9a0;
+}
+
 .blog {
   list-style: none;
   margin: 6px 0;

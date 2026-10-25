@@ -2132,9 +2132,8 @@
   }
 
   // The start of one unit's own turn: poison and burns tick and fire underfoot hurts.
-  // Outside queue battles it then regenerates and
-  // loses fatigue here too; in queue battles those come only to the unit that takes the
-  // turn, not to the ones that sit it out (pickDue).
+  // Outside queue battles it then regenerates and loses fatigue here too; in queue battles
+  // pickDue does that, for every unit whose turn comes, acting or passing.
   function unitTurnStart(s, u) {
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     // A troll hurt by magic or fire since its last turn does not regenerate this turn.
@@ -2246,12 +2245,12 @@
   //
   // In queue battles each side's units take that side's turns in a set rotation: every
   // unit gets one turn per cycle, faster units first (ties: the earlier unit). A unit that
-  // is cooling down, paralyzed or has nothing it could do sits its turn out, and the next
-  // in line goes instead. Cooldowns, paralysis, roots, weakness and frenzy count the
-  // unit's own turns, taken or sat out.
+  // is cooling down, paralyzed or has nothing it could do still has its turn, but passes
+  // it at once, and the next in line goes. Cooldowns, paralysis, roots, weakness and
+  // frenzy count the unit's own turns, taken or passed.
 
   // Wards (Barrier and Lightning Wards) keep their place in the rotation even with nothing
-  // to do, so fatigue reaches them like everyone else.
+  // to do: their turns come like everyone's.
   function inQueue(u) {
     return u.alive && !u.nonCombat && (hasAction(u) || isWard(u));
   }
@@ -2287,62 +2286,50 @@
     return u.para > 0 ? 'para' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
   }
 
-  // The side's unit for this turn. Those who must sit out are passed over, each at most
-  // once a turn; if everyone does, the side passes. Regen and fatigue come to one unit a
-  // turn, the one that takes it: units that sit the turn out neither regenerate nor lose
-  // HP to fatigue, except that when every unit sits out, the first in line still takes the
-  // turn's fatigue. Wards are the exception: rooted to the spot, they tire whenever their
-  // turn comes, acting or not.
+  // The side's unit for this turn. Units take their turns in rotation order; one that is
+  // cooling down, paralyzed or has nothing it could do passes its turn (its cooldown ticks
+  // down) and the next in line goes, each unit at most once a side's turn. If everyone
+  // passes, the side passes. Whatever comes with a unit's turn comes whether it acts or
+  // passes: poison, burns, regen and fatigue.
   function pickDue(s, side) {
     s.due = 0;
     const seen = new Set();
-    const worn = new Set();
-    let tired = !s.inOvertime && !(s.routed && side === 'E');
-    let first = null;
     for (;;) {
       const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];
       if (!u || seen.has(u.uid)) break;
       seen.add(u.uid);
       unitTurnStart(s, u);
-      const why = u.alive ? sitOutReason(s, u) : null;
-      if (u.alive && !why) {
+      if (u.alive) {
         regenerate(s, u);
-        if (!tired) {
-          tired = true;
-          fatigue(s, u);
-        }
-      } else if (u.alive && isWard(u)) {
         fatigue(s, u);
-        worn.add(u.uid);
       }
       if (!u.alive) {
         checkOutcome(s);
         if (s.over) return;
         continue;
       }
+      const why = sitOutReason(s, u);
       if (!why) {
         s.due = u.uid;
         return;
       }
-      if (!first) first = u;
-      // A ward with no action at all (the Barrier Ward) passes quietly.
-      emit(s, { t: 'sitout', uid: u.uid, why: hasAction(u) ? why : 'passive', wait: u.wait });
+      // A ward with no action at all (the Barrier Ward) passes every turn.
+      emit(s, { t: 'sitout', uid: u.uid, why: hasAction(u) ? why : 'passive', wait: u.wait, para: u.para });
       ownTurnDone(s, u);
-    }
-    if (!tired && first && first.alive && !worn.has(first.uid)) {
-      fatigue(s, first);
-      checkOutcome(s);
     }
   }
 
   // Who takes each of `team`'s next `n` turns, predicted from the rotation as it stands
-  // (each assumed to act and start its cooldown). Entries: { uid } or { uid: 0 } for a
-  // turn nobody can take.
+  // (each assumed to act and start its cooldown). Entries: { uid, passes } or { uid: 0,
+  // passes } for a turn nobody can take; `passes` lists the units whose turns come first
+  // that turn and are passed ({ uid, wait, para, why }), cooling down, paralyzed or never
+  // acting (the Barrier Ward).
   function upcoming(s, team, n) {
-    const vs = s.units.filter((v) => v.team === team && inQueue(v) && hasAction(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid }));
+    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid, idle: !hasAction(v) }));
     const out = [];
     for (let turn = 0; turn < n && vs.length; turn++) {
       let picked = null;
+      const passes = [];
       if (turn === 0 && s.side === team && s.due) picked = vs.find((x) => x.uid === s.due) || null;
       const seen = new Set();
       while (!picked) {
@@ -2350,7 +2337,8 @@
         const x = vs[0];
         if (seen.has(x)) break;
         seen.add(x);
-        const resting = x.para > 0 || x.wait > 0;
+        const resting = x.para > 0 || x.wait > 0 || x.idle;
+        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.wait > 0 ? 'cooldown' : 'para' });
         x.cycles++;
         if (x.wait > 0) x.wait--;
         else if (x.para > 0) x.para--;
@@ -2359,12 +2347,12 @@
         break;
       }
       if (!picked) {
-        out.push({ uid: 0 });
+        out.push({ uid: 0, passes });
         continue;
       }
       if (turn === 0 && s.side === team && s.due) picked.cycles++;
       picked.wait = picked.v.rec;
-      out.push({ uid: picked.uid });
+      out.push({ uid: picked.uid, passes });
     }
     return out;
   }
