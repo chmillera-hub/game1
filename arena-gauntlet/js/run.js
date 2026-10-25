@@ -59,6 +59,7 @@
     if (hasRelic(run, 'war_horn')) s += 1;
     if (hasRelic(run, 'legion_banner')) s += 2;
     if (hasRelic(run, 'tyrant_heart')) s += 3;
+    if (hasRelic(run, 'blood_pact')) s += 3;
     if (hasRelic(run, 'crown_command')) s += 2;
     if (hasRelic(run, 'titan_gauntlet')) s -= 1;
     return s;

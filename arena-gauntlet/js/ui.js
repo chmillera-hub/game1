@@ -571,6 +571,11 @@
     if (u.mark > 0) chips.push(`<span class="chip bad">Marked ${u.mark}</span>`);
     if (u.frenzy > 0) chips.push(`<span class="chip bad">Frenzy ${u.frenzy}</span>`);
     if (u.shield > 0) chips.push(`<span class="chip">${ic('shield')} Shield ${u.shield}</span>`);
+    // Grown in this battle.
+    if (u.champion) chips.push(`<span class="chip warn">${ic('crown')} Champion</span>`);
+    if (u.trophies) chips.push(`<span class="chip warn">${ic('star')} Trophies ${u.trophies} · +${u.trophies * 10}%</span>`);
+    if (u.fury) chips.push(`<span class="chip bad">Fury +${u.fury * 5}%</span>`);
+    if (u.harvest) chips.push(`<span class="chip magic">Souls ${u.harvest} · +${u.harvest * 10}%</span>`);
     return chips;
   }
 
@@ -738,13 +743,20 @@
   // Your relics as small round badges over the board, in the War Room and in battle: tap
   // one to see what it does.
   const RELIC_ICON = {
-    war_horn: 'banner', whetstone: 'sword', steel_bucklers: 'shield', iron_plating: 'block', coin_purse: 'gold', healing_salve: 'heart',
-    scout_map: 'eye', drill_manual: 'book', pathfinder: 'boot', oak_charm: 'heart', sappers_kit: 'fire', mana_crystal: 'magic',
-    bloodstone: 'heart', thorned_mail: 'block', headsman_axe: 'skull', phoenix_feather: 'fire', guild_seal: 'bag', legion_banner: 'banner',
-    sands_of_haste: 'hourglass', recruiters_bell: 'army', old_crown: 'crown', shadow_cloak: 'eye', aegis: 'shield', warlord_helm: 'crown',
-    alchemist_stone: 'gem', dragon_scale: 'shield', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire',
-    kings_ransom: 'gold', crown_command: 'crown', sacred_chalice: 'heart', cursed_blade: 'sword',
+    war_horn: 'banner', lucky_coin: 'gold', phalanx_standard: 'shield', lone_wolf: 'target', powder_keg: 'fire', firecrackers: 'star',
+    coin_purse: 'gold', healing_salve: 'heart', scout_map: 'eye', drill_manual: 'book', pathfinder: 'boot', vampire_fang: 'heart',
+    sappers_kit: 'fire', mana_crystal: 'magic', bloodstone: 'heart', thorned_mail: 'block', executioner_hood: 'skull',
+    plague_mask: 'skull', wildfire_oil: 'fire', trophy_rack: 'crown', storm_jar: 'magic', blood_pact: 'heart', phoenix_feather: 'fire',
+    guild_seal: 'bag', legion_banner: 'banner', sands_of_haste: 'hourglass', recruiters_bell: 'army', gamblers_dice: 'star',
+    shadow_cloak: 'eye', mirror_aegis: 'shield', warlord_helm: 'crown', alchemist_stone: 'gem', necro_bell: 'crossbones',
+    glass_crown: 'crown', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire', kings_ransom: 'gold',
+    crown_command: 'crown', sacred_chalice: 'heart', echo_drum: 'banner', cursed_blade: 'sword',
   };
+
+  // A relic's tier for its card, flagged when it is cursed (a big upside with a real cost).
+  function relicTier(r) {
+    return `${r.tier}${r.cursed ? ' · <span class="cursed">Cursed</span>' : ''}`;
+  }
   function relicBar() {
     const bar = $('#relicBar');
     const run = UI.run;
@@ -840,6 +852,7 @@
           <div class="wrap" style="margin:0;gap:14px">
             <p class="eyebrow">A tactics roguelike</p>
             <h1 class="wordmark">Arena<br>Gauntlet</h1>
+            <p class="lab-tag">${ic('star')} Experiment: the fun pass</p>
             <p class="tagline">Scout the enemy, spend your Supply on the perfect counter, and fight through three acts of isometric battles. Lose, re-plan, and try again.</p>
             <div class="title-actions">
               ${run ? `<button class="btn primary" id="tCont">${ic('flag')} Continue · ${ACTS[run.act].short}${pendingBattle ? ' · ' + esc(run.pending.enc.name) : ''}</button>` : ''}
@@ -1178,7 +1191,7 @@
 
   function relicCard(id, attrs) {
     const r = RELICS[id];
-    return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${r.tier}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
+    return `<button class="card${r.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${relicTier(r)}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
   }
 
   function relicSheet() {
@@ -1186,7 +1199,7 @@
     openSheet(
       `${sheetHead('Relics', 'Passive bonuses that last the whole campaign.')}
       <div class="army-list">${run.relics
-        .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`
     );
   }
@@ -1290,7 +1303,7 @@
         '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants and explore events to find them.</p>';
     } else {
       body = `<div class="army-list">${run.relics
-        .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`;
     }
     openSheet(
@@ -4287,7 +4300,7 @@
       if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price);
       if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
-        return `<button class="card" ${dis}><div class="kind">${ic('gem')} Relic · ${RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
+        return `<button class="card${RELICS[it.relic].cursed ? ' cursed' : ''}" ${dis}><div class="kind">${ic('gem')} Relic · ${relicTier(RELICS[it.relic])}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
       if (it.kind === 'supply')
         return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
@@ -4466,6 +4479,7 @@
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
+          <li><b>Triggers</b>: many talents and relics fire on an event rather than giving a flat bonus, and the board calls them out as they happen. <b>Critical!</b> hits deal double damage (Lucky Coin, the Lucky skill, every third shot of a Level 3 Archer). <b>Executed</b>: a foe left very low falls outright (never a boss). <b>Trophies</b> from kills add 10% damage each, up to five, and the killer grows a little bigger. Some things go out with a bang when they fall (Powder Keg, Powder Belt, Overload, Bramble Burst, Combustion), poison and fire can leap from the dead to their neighbours (Contagion, Plague Doctor's Mask, Wildfire Oil), and slain enemies can rise as skeletons on your side (Necromancer's Bell, Shadow Pact). Cursed relics give a big edge at a real cost.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
           <li><b>Priority</b>: tap an enemy unit, a building, a chest, the shrine or any empty tile while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>

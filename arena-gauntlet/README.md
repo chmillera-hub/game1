@@ -5,6 +5,74 @@ battles (think Tactics Arena Online meets Slay the Spire). Scout the enemy army,
 spend Supply on a counter-army, set it up, and watch it fight across three acts to
 the Ashen Tyrant, and, if your army is up to it, the Eclipse Wyrm beyond.
 
+## Experiment: the fun pass (branch `arena-gauntlet-fun-experiment`)
+
+This branch is an experiment on top of the main game (kept as it was on
+`ccr-64c96724-quo604`). It reworks passive talents, Level 3 masteries, a few skills and
+the relics to be more fun. The idea: a passive should make something happen that you
+can see on the board, not add an invisible +6%. So the flat stat bumps became
+triggers ("when it kills...", "when it falls...", "when it is hit..."), with combos
+between them, a few positional and cursed choices, and a callout on the board each
+time one fires (CRITICAL!, EXECUTED, REFLECTED, BODYGUARD, TROPHY, BANG!...).
+
+Talents (each replaces the flattest talent of its class):
+
+| Class | Was | Now |
+| --- | --- | --- |
+| Knight | Guardian (allies beside take 15% less) | **Bodyguard**: once between its turns, takes a single-target blow meant for an ally beside it |
+| Archer | Bodkin Arrows (ignore half armor) | **Ricochet**: arrows bounce to a second enemy within 2 tiles for 50%, poison and marks included |
+| Scout | Ambusher (+50% from behind) | **Cutpurse**: every hit steals 2 gold, up to 12 a battle |
+| Cleric | Fortitude (+12 HP, +15% res) | **Halo**: healing past full HP becomes a shield (up to 15) |
+| Berserker | Battle Scars (+15% armor, +10 HP) | **Blood Frenzy**: +5% damage every time it is hurt, up to +50% (the ground under it reddens) |
+| Pyromancer | Flame Cloak (8 thorns) | **Combustion**: burning enemies it slays explode, 10 damage to their neighbours, setting them alight |
+| Assassin | Executioner (+40% below half HP) | **Execute**: finishes off enemies left below 20% (never bosses) |
+| Golem | Bulwark (35% guard) | **Magnetic Core**: each turn yanks the nearest enemy 2-3 tiles away a step closer |
+| Beast Rider | Swift Mount (+1 Move) | **Loyal Wolf**: when it falls, its wolf leaps free and fights on |
+| Furgon | Deep Roots (+2 regen, +10 HP) | **Bramble Burst**: its shrubs burst when destroyed, 8 damage and a root to enemies beside |
+| Poison Wisp | Lingering Spores (+1 poison turn) | **Contagion**: when an enemy carrying its poison falls, the poison leaps to its neighbours |
+| Barrier Ward | Steel Field (+10% aura armor) | **Shatter Shield**: when destroyed, every ally in its aura gets a 20 shield |
+| Enchantress | Mind Spike (+50% damage) | **Discord**: enemies it paralyzes lash out at an ally beside them |
+| Witch | Warding Sigils (+20% res, +10 HP) | **Soul Harvest**: every enemy that falls within 3 tiles heals it 8 and adds +10% damage (up to +50%) |
+| Lightning Ward | Grounding Field (magic guard) | **Overload**: when destroyed, 20 magic damage to every enemy within 2 tiles |
+| Dragon | Ancient Hide (+30 HP) | **Hoarder**: every kill drops 8 gold, +15 HP |
+| Mage Knight | Runic Bulwark (+15% armor, +15% block) | **Runic Ward**: starts every battle behind a 20 shield |
+| Trebuchet | Wrecking Shot (ignore half armor) | **Shrapnel**: boulders spray 40% damage on enemies beside the target |
+
+Level 3 masteries that were plain "+X% damage" now do something: Knight **Champion**
+(a kill heals allies beside it 10), Archer **Deadeye** (every third shot is a sure
+critical, instead of +20% damage), Berserker **Juggernaut** (kills earn trophies:
++10% damage each and it grows, instead of +15% damage), Pyromancer **Pyroclasm**
+(kills leave fire behind), Witch **Shadow Pact** (its first 2 kills rise as your
+skeletons), Lightning Ward **Thunderhead** (lightning strikes the nearest enemy each
+turn), Golem **Colossus** (the ground shakes where it stops).
+
+New skills: **Lucky** (15% crit), **Powder Belt** (explodes for 15 when it falls),
+**Headhunter** (kill trophies and a 6 HP bite).
+
+Relics. Out: Whetstone, Steel Bucklers, Iron Plating, Oaken Charm, Headsman's Axe,
+Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
+
+- Common: **Lucky Coin** (12% crits), **Phalanx Standard** (20% less damage with two
+  allies beside), **Lone Wolf Pelt** (+30% damage with no ally beside), **Powder Keg**
+  (your fallen explode for 12, sparing your side), **Goblin Firecrackers** (three
+  random enemies take 8 on your first turn), **Vampire Fang** (heal 8 per kill).
+- Uncommon: **Executioner's Hood** (finish off foes below 15%), **Plague Doctor's
+  Mask** (poison leaps from the dead), **Wildfire Oil** (the burning dead set their
+  neighbours alight), **Trophy Rack** (every kill a trophy), **Storm in a Jar** (magic
+  attacks arc to one more enemy), **Blood Pact** (cursed: +3 Supply, but start every
+  battle at 75% HP).
+- Rare: **Gambler's Dice** (a random Champion each battle: +50% damage and HP, a gold
+  crown), **Mirror Aegis** (each unit's first hit bounces back), **Necromancer's Bell**
+  (a 1 in 3 chance slain enemies rise as your skeletons), **Glass Crown** (cursed: +40%
+  damage, -25% max HP).
+- Boss: **War Drum of Ages** (every fifth turn the army heals 10 and frenzies).
+
+Starting relics: Iron Vanguard gets the Phalanx Standard, Ember Circle the Powder
+Keg, Shadow Syndicate the Lucky Coin, Gravewatch Order the Vampire Fang (the Wildgrove Pact keeps its
+Healing Salve). In the balance sims (24 medium campaigns) the experiment wins about
+22, against 19-22 before: a little stronger, as you might expect when the passives
+start doing things.
+
 ## Play
 
 Open `index.html` in a browser. No build step or server needed. Battles play best
@@ -222,7 +290,7 @@ on a phone turned sideways, but portrait works too.
   same ability poisoning again only refreshes its own poison (the longer turns and the
   bigger damage), so one archer cannot pile poison on by itself; its chip in the unit
   card reads like "Poisoned 3 · 12 a turn (2 sources)". The Poison Wisp poisons every enemy within 2 tiles
-  for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
+  for 2 of their turns; poisoned units cannot heal.
   Buildings, wagons, cages and constructs (golems, wards, the trebuchet) are immune,
   and Pestilence's extra damage never hits buildings. Poison looks nothing like
   healing: its numbers float up in magenta with a minus sign (every damage number has
@@ -323,6 +391,7 @@ node tests/music.test.js         # the music's notation: every bar the right len
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
+node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising
 node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves

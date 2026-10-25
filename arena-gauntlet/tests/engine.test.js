@@ -120,7 +120,7 @@ test('levels scale stats; abilities need the right class and level', () => {
   assert.ok(Math.abs(kp.armor - 0.45) < 1e-9);
   assert.ok(!kp.props.onHit, 'archer ability ignored on a knight');
   assert.strictEqual(ar.act.range[1], 6, 'Deadeye mastery adds range');
-  assert.ok(Math.abs(ar.props.dmgMult - 0.2) < 1e-9);
+  assert.ok(ar.traits.has('deadeye'), 'and every third shot is a sure critical');
 });
 
 test('no Level 3 mastery shortens a cooldown', () => {
@@ -346,15 +346,15 @@ test('Miasma poisons for 2 turns, blocks healing; buildings, constructs and the 
   assert.strictEqual(kn.hp, before, 'poisoned unit not healed');
 });
 
-test('Lingering Spores: 3 turns; Pestilence never hits buildings', () => {
+test('Pestilence never hits buildings', () => {
   const s = board([
-    { type: 'wisp', team: 'P', x: 4, y: 6, level: 3, a2: 'w_linger' },
+    { type: 'wisp', team: 'P', x: 4, y: 6, level: 3 },
     { type: 'knight', team: 'E', x: 4, y: 4 },
     { type: 'cage', team: 'E', x: 4, y: 8 },
   ]);
   const [wi, kn, cage] = s.units;
   act(s, wi, { kind: 'self' });
-  assert.strictEqual(kn.poison.turns, 3);
+  assert.strictEqual(kn.poison.turns, 2);
   assert.ok(kn.hp < kn.maxHp, 'Pestilence hits the knight');
   assert.strictEqual(cage.hp, cage.maxHp, 'but not the cage');
 });

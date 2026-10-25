@@ -146,12 +146,9 @@
     const isObj = traits.has('summon') || traits.has('object');
     const rel = relics || new Set();
     if (!isObj && !traits.has('structure')) {
-      if (rel.has('oak_charm')) hpAdd += 8;
-      if (rel.has('iron_plating')) armor += 0.06;
-      if (rel.has('steel_bucklers') && !traits.has('nofacing')) block += 0.08;
       if (rel.has('pathfinder') && move > 0 && move <= 3) move += 1;
       if (rel.has('mana_crystal') && T.rec >= 2) rec -= 1;
-      if (rel.has('dragon_scale')) res += 0.15;
+      if (rel.has('glass_crown')) hpPct -= 0.25;
     }
     const baseHp = spec.baseHp || T.hp;
     const maxHp = Math.round((Math.round(baseHp * D.LEVEL_HP[lv]) + hpAdd) * (1 + hpPct));
@@ -257,6 +254,8 @@
     if (spec.vip && !T.boss) u.value *= 1.8;
     if (u.bound) u.value *= 0.5;
     if (spec.hpFrac) u.hp = Math.max(1, Math.round(u.maxHp * spec.hpFrac));
+    if (u.props.startShield) u.shield = u.props.startShield;
+    u.guardReady = true;
     s.units.push(u);
     s.byId[u.uid] = u;
     s.occ[idx(s, u.x, u.y)] = u.uid;
@@ -294,6 +293,9 @@
       turnLimit: cfg.turnLimit || 90,
       events: [],
       phoenixUsed: { P: false, E: false },
+      // Relics that fire once at the start of a side's first turn, and the War Drum's beat.
+      opened: { P: false, E: false },
+      drummed: { P: 0, E: 0 },
       stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0 },
       summonCount: 0,
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
@@ -312,6 +314,7 @@
       overtime: cfg.overtime || 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
+    armRelics(s);
     (cfg.waves || []).forEach((w, i) => {
       const team = w.team || 'E';
       const src = w.from ? s.units.find((u) => u.key === w.from) : null;
@@ -601,10 +604,17 @@
     return 'side';
   }
 
+  // Fighters on its own side standing right next to it (summons and buildings aside).
+  function alliesNext(s, u) {
+    let n = 0;
+    for (const v of s.units) if (v !== u && v.alive && v.team === u.team && !v.nonCombat && !v.structure && manhattan(u.x, u.y, v.x, v.y) === 1) n++;
+    return n;
+  }
+
   function blockChance(s, tgt, cat) {
     if (tgt.facing < 0 || tgt.para > 0) return 0;
     let b = tgt.block;
-    if (cat === 'side') b = tgt.traits.has('shieldwall') || s.relics[tgt.team].has('aegis') ? b : b / 2;
+    if (cat === 'side') b = tgt.traits.has('shieldwall') ? b : b / 2;
     else if (cat === 'back') b = 0;
     return Math.min(0.85, b);
   }
@@ -630,8 +640,14 @@
     let mult = opts.mult != null ? opts.mult : act.mult || 1;
     if (P.rageMult && atk.hp < atk.maxHp / 2) mult *= 1 + P.rageMult;
     if (P.dmgMult) mult *= 1 + P.dmgMult;
-    if (relA.has('old_crown')) mult *= 1.15;
+    if (relA.has('glass_crown') && !atk.nonCombat) mult *= 1.4;
     if (relA.has('titan_gauntlet')) mult *= 1.25;
+    // Grown in this battle: trophies from kills, fury from wounds, souls harvested.
+    if (atk.trophies) mult *= 1 + 0.1 * atk.trophies;
+    if (atk.fury) mult *= 1 + 0.05 * atk.fury;
+    if (atk.harvest) mult *= 1 + 0.1 * atk.harvest;
+    if (atk.champion) mult *= 1.5;
+    if (relA.has('lone_wolf') && !atk.nonCombat && !alliesNext(s, atk)) mult *= 1.3;
     if (relA.has('cursed_blade')) mult *= 1.2;
     if (s.relics[tgt.team].has('cursed_blade') && !tgt.nonCombat) mult *= 1.1;
     if (nearBanner(s, atk)) mult *= 1.15;
@@ -644,10 +660,7 @@
     }
     if (cat !== 'front' && dmgType === 'phys' && P.flankMult) mult *= 1 + P.flankMult;
     if (P.chargeMult && opts.moved && (opts.moveDist || 0) >= 3) mult *= 1 + P.chargeMult;
-    if (tgt.hp < tgt.maxHp / 2) {
-      if (P.execMult) mult *= 1 + P.execMult;
-      if (relA.has('headsman_axe')) mult *= 1.3;
-    }
+    if (tgt.hp < tgt.maxHp / 2 && P.execMult) mult *= 1 + P.execMult;
     let vs = 0;
     for (const t of tgt.tags) vs += ((P.vs && P.vs[t]) || 0) + ((act.vs && act.vs[t]) || 0);
     if (vs) mult *= 1 + vs;
@@ -658,7 +671,6 @@
     const base = act.fixed != null ? act.fixed : atk.pow;
     let dmg = base * mult;
     if (dmgType === 'phys') {
-      if (relA.has('whetstone')) dmg += 2;
       const armor = effArmor(s, tgt);
       const pierce = Math.max(P.pierce || 0, act.pierce || 0);
       dmg *= 1 - (armor > 0 ? armor * (1 - pierce) : armor);
@@ -670,6 +682,8 @@
     }
     if (tgt.mark > 0) dmg *= 1.25;
     dmg *= 1 - guardianReduction(s, tgt);
+    // Phalanx Standard: shoulder to shoulder with two allies or more.
+    if (s.relics[tgt.team].has('phalanx_standard') && !tgt.nonCombat && !tgt.structure && alliesNext(s, tgt) >= 2) dmg *= 0.8;
     dmg = Math.max(1, Math.round(dmg));
     const block = dmgType === 'phys' ? blockChance(s, tgt, cat) : 0;
     return { dmg, block, cat };
@@ -1153,6 +1167,7 @@
         s.stats.gold += 6;
         emit(s, { t: 'gold', uid: src.uid, amount: 6 });
       }
+      onKill(s, src, u);
     }
     if (u.traits.has('volatile') && !u.exploded) {
       u.exploded = true;
@@ -1180,6 +1195,7 @@
         emit(s, { t: 'wither', uid: v.uid, crumble: true });
       }
     }
+    deathTriggers(s, u, src);
     if (u.nonCombat || u.structure) return;
     if (u.phoenix && !u.phoenixUsed && !at(s, u.x, u.y)) {
       u.phoenixUsed = true;
@@ -1189,6 +1205,206 @@
     if (s.relics[u.team].has('phoenix_feather') && !s.phoenixUsed[u.team] && !at(s, u.x, u.y)) {
       s.phoenixUsed[u.team] = true;
       revive(s, u, 0.5, 'phoenix');
+      return;
+    }
+    afterlife(s, u, src);
+  }
+
+  // What a kill earns the killer: trophies, a bite of health, gold, a cheer for its friends.
+  function onKill(s, src, u) {
+    const rel = s.relics[src.team];
+    if (!src.nonCombat && (src.traits.has('trophy') || rel.has('trophy_rack')) && (src.trophies || 0) < 5) {
+      src.trophies = (src.trophies || 0) + 1;
+      emit(s, { t: 'trophy', uid: src.uid, n: src.trophies });
+    }
+    const feed = (src.props.killHeal || 0) + (rel.has('vampire_fang') && !src.nonCombat ? 8 : 0);
+    if (feed) heal(s, src, feed, 'drain');
+    if (src.team === 'P' && src.traits.has('hoarder')) {
+      s.stats.gold += 8;
+      emit(s, { t: 'gold', uid: src.uid, amount: 8 });
+    }
+    if (src.traits.has('pyroclasm') && s.terrain[idx(s, u.x, u.y)] === T_GRASS) {
+      const old = tileFx(s, u.x, u.y, 'fire');
+      if (old) s.tfx.splice(s.tfx.indexOf(old), 1);
+      s.tfx.push({ kind: 'fire', x: u.x, y: u.y, team: src.team, turns: 2, dmg: 6, src: src.uid });
+      emit(s, { t: 'hazard', kind: 'fire', tiles: [[u.x, u.y]], team: src.team });
+    }
+    if (src.alive && src.traits.has('rallykill')) {
+      for (const v of s.units) if (v !== src && v.alive && v.team === src.team && manhattan(v.x, v.y, src.x, src.y) === 1) heal(s, v, 10, 'rally');
+    }
+  }
+
+  // When something falls: explosions that spare its own side, poison and fire that spread,
+  // shields for the friends it leaves, souls for those who reap.
+  function deathTriggers(s, u, src) {
+    const fighter = !u.nonCombat && !u.structure;
+    const foes = other(u.team);
+    if (fighter && s.relics[u.team].has('powder_keg')) s.booms.push({ x: u.x, y: u.y, dmg: 12, src: u, spare: u.team, kind: 'keg' });
+    if (fighter && u.props.deathBoom) s.booms.push({ x: u.x, y: u.y, dmg: u.props.deathBoom, src: u, spare: u.team, kind: 'keg' });
+    if (u.traits.has('overload')) s.booms.push({ x: u.x, y: u.y, r: 2, dmg: 20, src: u, spare: u.team, kind: 'storm' });
+    if (u.type === 'shrub') {
+      const f = s.byId[u.summoner];
+      if (f && f.traits.has('bramble')) s.booms.push({ x: u.x, y: u.y, dmg: 8, src: f, spare: u.team, fx: { root: 1 }, kind: 'thorn' });
+    }
+    if (fighter && u.burn && src && src.team !== u.team && src.traits.has('combustion')) s.booms.push({ x: u.x, y: u.y, dmg: 10, src, spare: src.team, fx: { burn: [2, 5] }, kind: 'fire' });
+    if (fighter && u.burn && s.relics[foes].has('wildfire_oil')) {
+      const bsrc = s.byId[u.burn.src] || u;
+      for (const v of s.units) {
+        if (v.alive && v.team === u.team && !v.nonCombat && !v.structure && manhattan(v.x, v.y, u.x, u.y) === 1) applyStatus(s, bsrc, v, { burn: [Math.max(2, u.burn.turns), u.burn.dmg] }, null);
+      }
+    }
+    if (fighter && u.poison) {
+      const all = s.relics[foes].has('plague_mask');
+      const jump = poisonStacks(u).filter((p) => all || (s.byId[p.src] && s.byId[p.src].traits.has('contagion')));
+      const near = jump.length ? s.units.filter((v) => v.alive && v.team === u.team && !v.nonCombat && !v.structure && manhattan(v.x, v.y, u.x, u.y) === 1 && !statusImmune(s, v, 'poison')) : [];
+      if (near.length) emit(s, { t: 'contagion', uid: u.uid, targets: near.map((v) => v.uid) });
+      for (const v of near) {
+        for (const p of jump) addPoison(v, s.byId[p.src] || null, p.key, Math.max(1, p.turns), p.dmg);
+        emit(s, { t: 'status', uid: v.uid, status: 'poison', turns: v.poison.turns, dmg: v.poison.dmg, stacks: v.poison.stacks.length });
+      }
+    }
+    if (u.traits.has('shatter')) {
+      for (const v of s.units) {
+        if (!v.alive || v.team !== u.team || v.nonCombat || v.structure || manhattan(v.x, v.y, u.x, u.y) > auraRadius(u)) continue;
+        v.shield = Math.max(v.shield, 20);
+        emit(s, { t: 'shield', uid: v.uid, amount: v.shield });
+      }
+    }
+    if (!fighter) return;
+    for (const w of s.units) {
+      if (!w.alive || w.team === u.team || !w.traits.has('harvest') || manhattan(w.x, w.y, u.x, u.y) > 3) continue;
+      if ((w.harvest || 0) < 5) w.harvest = (w.harvest || 0) + 1;
+      emit(s, { t: 'harvest', uid: w.uid, from: u.uid, n: w.harvest });
+      heal(s, w, 8, 'drain');
+    }
+  }
+
+  // It stays down: its wolf may leap free, or it may rise again for the side that slew it.
+  function afterlife(s, u, src) {
+    if (u.traits.has('loyalwolf') && emptyGrass(s, u.x, u.y)) {
+      const w = addUnit(s, { type: 'wolf', team: u.team, x: u.x, y: u.y, born: ++s.summonCount, facing: u.facing });
+      w.activated = true;
+      emit(s, { t: 'summon', uid: w.uid, x: u.x, y: u.y, by: u.uid, wolf: true });
+      return;
+    }
+    if (!src || src.team === u.team || u.type === 'skeleton') return;
+    const pact = src.traits.has('pact') && (src.raised || 0) < 2;
+    const bell = s.relics[src.team].has('necro_bell') && s.rng.next() < 1 / 3;
+    if (!(pact || bell) || !emptyGrass(s, u.x, u.y)) return;
+    if (!bell) src.raised = (src.raised || 0) + 1;
+    const sk = addUnit(s, { type: 'skeleton', team: src.team, x: u.x, y: u.y, born: ++s.summonCount, facing: src.team === 'P' ? 0 : 2 });
+    sk.activated = true;
+    sk.value *= 0.6;
+    emit(s, { t: 'summon', uid: sk.uid, x: u.x, y: u.y, by: src.uid, raise: true });
+  }
+
+  // Relics that act as the armies take the field: Gambler's Dice crowns a Champion, the
+  // Blood Pact costs every fighter a quarter of its health.
+  function armRelics(s) {
+    for (const team of ['P', 'E']) {
+      const rel = s.relics[team];
+      const army = s.units.filter((u) => u.team === team && !u.nonCombat && !u.structure);
+      if (rel.has('gamblers_dice') && army.length) {
+        const c = army[s.rng.int(army.length)];
+        c.champion = true;
+        c.maxHp = Math.round(c.maxHp * 1.5);
+        c.hp = c.maxHp;
+      }
+      if (rel.has('blood_pact')) for (const u of army) u.hp = Math.max(1, Math.round(u.hp * 0.75));
+    }
+  }
+
+  // Bodyguard: a knight beside the target that has not stepped in since its own last turn.
+  function bodyguardFor(s, v) {
+    for (const g of s.units) {
+      if (g === v || !g.alive || g.team !== v.team || !g.guardReady || g.para > 0 || !g.traits.has('bodyguard')) continue;
+      if (manhattan(g.x, g.y, v.x, v.y) !== 1) continue;
+      g.guardReady = false;
+      emit(s, { t: 'intercept', uid: g.uid, for: v.uid });
+      return g;
+    }
+    return null;
+  }
+
+  // Ricochet, Storm Jar and Shrapnel: an attack that lands carries on to more foes.
+  function afterStrikes(s, u, a, struck, fx, opts) {
+    if (!u.alive || !struck.length) return;
+    const basic = a === u.acts[0];
+    const done = new Set(struck.map((v) => v.uid));
+    const more = (v, from, mult) => {
+      const o = Object.assign({}, opts, { mult: (a.mult || 1) * mult, fromX: from.x, fromY: from.y, cat: null, noReact: true, noBonus: true, noCrit: true, deadeye: false });
+      const landed = !hit(s, u, v, o).blocked;
+      if (landed && v.alive && hasFx(fx)) applyStatus(s, u, v, fx, a);
+      done.add(v.uid);
+    };
+    const jump = Math.max(basic ? u.props.bounce || 0 : 0, a.dmg === 'magic' && !u.nonCombat && s.relics[u.team].has('storm_jar') ? 0.5 : 0);
+    if (jump) {
+      const from = struck[struck.length - 1];
+      let best = null;
+      for (const v of s.units) {
+        if (!isFoe(u, v) || done.has(v.uid) || v.nonCombat) continue;
+        const d = manhattan(from.x, from.y, v.x, v.y);
+        if (d <= 2 && (!best || d < best.d || (d === best.d && v.hp < best.v.hp))) best = { v, d };
+      }
+      if (best) {
+        emit(s, { t: 'bounce', uid: u.uid, from: from.uid, to: best.v.uid, magic: a.dmg === 'magic' });
+        more(best.v, from, jump);
+      }
+    }
+    if (basic && u.props.splash && u.alive) {
+      const tgt = struck[0];
+      const near = s.units.filter((v) => isFoe(u, v) && !done.has(v.uid) && !v.nonCombat && manhattan(tgt.x, tgt.y, v.x, v.y) === 1);
+      if (near.length) emit(s, { t: 'splash', uid: u.uid, at: tgt.uid, targets: near.map((v) => v.uid) });
+      for (const v of near) if (u.alive) more(v, tgt, u.props.splash);
+    }
+  }
+
+  // A heal from a healer. With Halo, what spills past full HP becomes a shield (up to 15).
+  function mend(s, u, v, amount) {
+    const h = heal(s, v, amount, 'prayer');
+    if (!u.traits.has('overshield') || !v.alive || v.nonCombat || v.structure || healBlocked(s, v)) return;
+    const spill = Math.round(amount) - h;
+    if (spill > 0 && v.shield < 15) {
+      v.shield = Math.min(15, v.shield + spill);
+      emit(s, { t: 'shield', uid: v.uid, amount: v.shield });
+    }
+  }
+
+  // Discord: the paralyzed foe lashes out at one of its own beside it.
+  function discord(s, u) {
+    const w = s.units.find((v) => v.alive && v !== u && v.team === u.team && !v.nonCombat && !v.structure && manhattan(v.x, v.y, u.x, u.y) === 1);
+    if (!w) return;
+    emit(s, { t: 'discord', uid: u.uid, target: w.uid });
+    applyDamage(s, u, w, Math.max(1, Math.round(u.pow * 0.5)), { cat: 'none', dmgType: 'true' });
+  }
+
+  // Magnetic Core: yank the nearest foe 2 or 3 tiles away one step closer.
+  function magnetize(s, u) {
+    let best = null;
+    for (const v of s.units) {
+      if (!isFoe(u, v) || v.nonCombat || v.structure || v.boss) continue;
+      const d = manhattan(u.x, u.y, v.x, v.y);
+      if (d < 2 || d > 3) continue;
+      if (!best || d < best.d || (d === best.d && v.hp < best.v.hp)) best = { v, d };
+    }
+    if (!best) return;
+    const v = best.v;
+    if (statusImmune(s, v, 'knock')) {
+      emit(s, { t: 'resist', uid: v.uid, why: 'steady' });
+      return;
+    }
+    const dx = u.x - v.x;
+    const dy = u.y - v.y;
+    const steps = Math.abs(dx) >= Math.abs(dy) ? [[Math.sign(dx), 0], [0, Math.sign(dy)]] : [[0, Math.sign(dy)], [Math.sign(dx), 0]];
+    for (const [sx, sy] of steps) {
+      if ((!sx && !sy) || !emptyGrass(s, v.x + sx, v.y + sy)) continue;
+      const nx = v.x + sx;
+      const ny = v.y + sy;
+      emit(s, { t: 'pull', uid: v.uid, by: u.uid });
+      relocate(s, v, nx, ny);
+      emit(s, { t: 'push', uid: v.uid, x: nx, y: ny });
+      enterTile(s, v, nx, ny);
+      return;
     }
   }
 
@@ -1216,6 +1432,11 @@
       if (tgt.hp <= 0) kill(s, tgt, src);
     }
     if (src && src.team !== tgt.team) s.stats.dmg[src.team] += dealt;
+    // Blood Frenzy: every wound makes it hit harder, up to +50%.
+    if (dealt > 0 && tgt.alive && tgt.props.furyPerHit && (tgt.fury || 0) < 10) {
+      tgt.fury = (tgt.fury || 0) + 1;
+      emit(s, { t: 'fury', uid: tgt.uid, n: tgt.fury });
+    }
     return dealt;
   }
 
@@ -1238,7 +1459,33 @@
       reactToMelee(s, atk, tgt, opts);
       return { blocked: true, dmg: 0 };
     }
-    const dealt = applyDamage(s, atk, tgt, r.dmg, { cat: r.cat, dmgType });
+    // Mirror Aegis: the first hit each of your units takes in a battle bounces back.
+    if (s.relics[tgt.team].has('mirror_aegis') && !tgt.mirrored && !tgt.nonCombat && !tgt.structure && !opts.noReact) {
+      tgt.mirrored = true;
+      emit(s, { t: 'reflect', uid: tgt.uid, src: atk.uid });
+      applyDamage(s, tgt, atk, r.dmg, { cat: 'none', dmgType: 'true' });
+      return { blocked: true, dmg: 0 };
+    }
+    // Critical hits: double damage. A Deadeye shot always is one.
+    let dmg = r.dmg;
+    const critChance = (atk.props.crit || 0) + (s.relics[atk.team].has('lucky_coin') && !atk.nonCombat ? 0.12 : 0);
+    if (!opts.noCrit && (opts.deadeye || (critChance > 0 && s.rng.next() < critChance))) {
+      dmg *= 2;
+      emit(s, { t: 'crit', uid: tgt.uid, src: atk.uid, deadeye: !!opts.deadeye });
+    }
+    const dealt = applyDamage(s, atk, tgt, dmg, { cat: r.cat, dmgType });
+    // Execute: a foe left this low falls outright (never a boss or a building).
+    const exec = Math.max(atk.props.execute || 0, s.relics[atk.team].has('executioner_hood') && !atk.nonCombat ? 0.15 : 0);
+    if (exec && dealt > 0 && tgt.alive && !tgt.boss && !tgt.structure && !tgt.nonCombat && tgt.hp <= tgt.maxHp * exec) {
+      emit(s, { t: 'execute', uid: tgt.uid, src: atk.uid });
+      applyDamage(s, atk, tgt, tgt.hp + tgt.shield, { cat: 'none', dmgType: 'true' });
+    }
+    // Cutpurse: every hit lifts 2 gold, up to 12 a battle.
+    if (dealt > 0 && atk.team === 'P' && atk.traits.has('cutpurse') && (atk.stolen || 0) < 12) {
+      atk.stolen = (atk.stolen || 0) + 2;
+      s.stats.gold += 2;
+      emit(s, { t: 'gold', uid: atk.uid, amount: 2 });
+    }
     if (atk.alive && !opts.noBonus && atk.props.bonusMagic && tgt.alive) magicDamage(s, atk, tgt, atk.props.bonusMagic, 'bonus');
     if (dealt > 0 && atk.alive && !opts.noDrain) {
       let ls = atk.props.lifesteal || 0;
@@ -1323,6 +1570,7 @@
         u.para = Math.max(u.para, fx.para);
         stamp(s, u, 'para');
         emit(s, { t: 'status', uid: u.uid, status: 'para', turns: u.para });
+        if (src && src.traits.has('discord') && u.alive) discord(s, u);
       }
     }
     if (fx.poison) {
@@ -1451,11 +1699,12 @@
     let guard = 0;
     while (s.booms.length && guard++ < 50) {
       const b = s.booms.shift();
-      const tiles = radiusTiles(s, b.x, b.y, 1, true);
-      emit(s, { t: 'boom', x: b.x, y: b.y, tiles });
+      const tiles = radiusTiles(s, b.x, b.y, b.r || 1, true);
+      emit(s, { t: 'boom', x: b.x, y: b.y, tiles, kind: b.kind || null });
       for (const v of unitsOnTiles(s, tiles)) {
-        if (!v.alive || v === b.src) continue;
+        if (!v.alive || v === b.src || (b.spare && v.team === b.spare)) continue;
         magicDamage(s, b.src, v, b.dmg, 'boom');
+        if (b.fx && v.alive && !v.structure && !v.nonCombat) applyStatus(s, b.src, v, b.fx, null);
       }
     }
   }
@@ -1629,11 +1878,20 @@
     }
     emit(s, { t: 'action', uid, kind: a.kind, name: a.name, target, tiles, x: u.x, y: u.y, dmg: a.dmg || null, ai, hz: a.hz || null, fixed: a.fixed != null });
     const fx = hitFx(u, a);
+    // Deadeye: every third basic shot is a sure critical hit.
+    if (a === u.acts[0] && a.dmg && u.traits.has('deadeye')) {
+      u.shots = (u.shots || 0) + 1;
+      if (u.shots % 3 === 0) opts.deadeye = true;
+    }
+    const struck = [];
     const strike = (v, o) => {
       if (!v.alive) return;
+      // Bodyguard: a knight beside the target steps in front of a single-target blow.
+      if (a.kind === 'strike' && a.dmg && v.team !== u.team) v = bodyguardFor(s, v) || v;
       let landed = true;
       if (a.dmg) landed = !hit(s, u, v, o || opts).blocked;
       if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx, a);
+      if (a.dmg && v.team !== u.team) struck.push(v);
     };
     switch (a.kind) {
       case 'strike':
@@ -1704,13 +1962,13 @@
       case 'pray':
         for (const v of affectedUnits(s, u, target)) {
           if (a.cleanse) cleanse(s, v, true);
-          heal(s, v, healAmount(u, a), 'prayer');
+          mend(s, u, v, healAmount(u, a));
         }
         break;
       case 'heal': {
         const v = s.byId[target.uid];
         if (a.cure) cleanse(s, v, false);
-        heal(s, v, healAmount(u, a), 'prayer');
+        mend(s, u, v, healAmount(u, a));
         break;
       }
       case 'drum':
@@ -1768,6 +2026,7 @@
         break;
       }
     }
+    afterStrikes(s, u, a, struck, fx, opts);
     resolveBooms(s);
     checkOutcome(s);
     return true;
@@ -2100,6 +2359,30 @@
         magicDamage(s, u, best.v, 5, 'zap');
       }
     }
+    // Goblin Firecrackers: the side's first turn opens with a bang on three random foes.
+    if (!s.opened[team]) {
+      s.opened[team] = true;
+      if (s.relics[team].has('firecrackers')) {
+        const foes = s.units.filter((v) => v.alive && v.team !== team && !v.nonCombat && !v.structure);
+        for (let i = 0; i < 3 && foes.length; i++) {
+          const v = foes.splice(s.rng.int(foes.length), 1)[0];
+          emit(s, { t: 'boom', x: v.x, y: v.y, tiles: [[v.x, v.y]], kind: 'firecracker' });
+          magicDamage(s, null, v, 8, 'boom');
+        }
+      }
+    }
+    // War Drum: every fifth turn, the whole army heals 10 and flies into a frenzy.
+    if (s.relics[team].has('echo_drum') && s.turn % 5 === 0 && s.drummed[team] !== s.turn) {
+      s.drummed[team] = s.turn;
+      emit(s, { t: 'echo', team });
+      for (const v of mine) {
+        if (!v.alive || v.nonCombat || v.structure) continue;
+        heal(s, v, 10, 'drum');
+        v.frenzy = Math.max(v.frenzy, 2);
+        stamp(s, v, 'frenzy');
+        emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
+      }
+    }
     resolveBooms(s);
   }
 
@@ -2135,6 +2418,9 @@
     u.scorched = false;
     tickDot(s, u, 'poison');
     tickDot(s, u, 'burn');
+    resolveBooms(s);
+    u.guardReady = true;
+    if (u.alive && u.traits.has('magnet')) magnetize(s, u);
     if (u.alive && !u.traits.has('flying')) {
       const fire = tileFx(s, u.x, u.y, 'fire');
       if (fire && fire.team !== u.team) {

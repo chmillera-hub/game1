@@ -38,8 +38,8 @@ test('every new unit brings one random talent of its class, into the pack: it ar
     seen[id] = (seen[id] || 0) + 1;
     assert.ok(R.talentNote(r, ar).includes(D.TALENTS[id].name));
   }
-  assert.ok(seen.a_poison && seen.a_bodkin, 'either archer talent can come');
-  assert.ok(seen.a_poison > seen.a_bodkin, 'the stronger one less often');
+  assert.ok(seen.a_poison && seen.a_ricochet, 'either archer talent can come');
+  assert.ok(seen.a_poison > seen.a_ricochet, 'the stronger one less often');
 });
 
 test('the talent a unit brought can move to another unit of its class', () => {
@@ -89,7 +89,7 @@ test('talents are not level picks; they go in their own slots', () => {
 test('one slot per level, any talent of the class in any slot', () => {
   const run = fresh();
   const k = bare(run, 'knight');
-  const [wall, rip, guard] = ['k_wall', 'k_riposte', 'k_guard'].map((id) => R.addItem(run, 'talent', id));
+  const [wall, rip, guard] = ['k_wall', 'k_riposte', 'k_bodyguard'].map((id) => R.addItem(run, 'talent', id));
   assert.ok(R.assignItem(run, k.id, rip.uid), 'a stronger talent fits a Level 1 unit too');
   assert.ok(!R.assignItem(run, k.id, wall.uid), 'Level 1: one slot');
   R.setLevel(run, k.id, 2);
@@ -203,7 +203,7 @@ test('a talent you already own (bought or found) is not what the next recruit br
   const run = R.newRun({ seed: 5, warband: 'vanguard' });
   run.items = run.items.filter((i) => !(i.kind === 'talent' && D.TALENTS[i.id].cls === 'cleric'));
   R.addItem(run, 'talent', 'c_bless');
-  R.addItem(run, 'talent', 'c_fortitude');
+  R.addItem(run, 'talent', 'c_halo');
   assert.strictEqual(R.addRecruit(run, 'cleric').brought, 'c_radiance');
 });
 

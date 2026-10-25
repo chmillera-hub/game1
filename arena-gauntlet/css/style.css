@@ -3265,3 +3265,28 @@ body:has(#battle:not([hidden])) {
   color: #fff;
   top: 0;
 }
+
+/* Cursed relics: a big upside with a real cost. */
+.card.cursed {
+  border-color: rgba(226, 87, 76, 0.55);
+}
+
+.kind .cursed {
+  color: var(--red);
+  font-weight: 800;
+}
+
+/* This build is the fun-pass experiment: say so on the title screen. */
+.lab-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(195, 155, 255, 0.6);
+  background: rgba(120, 70, 190, 0.3);
+  color: #e6d4ff;
+  font-size: 0.85rem;
+  font-weight: 800;
+}

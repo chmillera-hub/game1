@@ -399,6 +399,16 @@
       v.frenzy = u.frenzy || 0;
       v.shield = u.shield || 0;
       v.level = u.level || 1;
+      // Grown in this battle: trophies, fury, souls; and the Gambler's Dice champion.
+      v.trophies = u.trophies || 0;
+      v.fury = u.fury || 0;
+      v.harvest = u.harvest || 0;
+      v.champion = !!u.champion;
+    }
+
+    // How much bigger a unit stands for what it has done this battle.
+    growOf(v) {
+      return (v.champion ? 1.15 : 1) * (1 + 0.05 * (v.trophies || 0));
     }
 
     makeVis(u) {
@@ -1045,6 +1055,21 @@
           g.ellipse(cx, cy, rx + 2.5, ry + 1.5, 0, 0, Math.PI * 2);
           g.stroke();
         }
+        // Blood Frenzy: the angrier it gets, the redder the ground under it.
+        if (v.fury > 0) {
+          g.fillStyle = 'rgba(200,20,10,' + Math.min(0.45, 0.05 * v.fury + 0.04 * Math.sin(this.time * 6)) + ')';
+          g.beginPath();
+          g.ellipse(cx, cy, rx * 1.35, ry * 1.35, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+        // The Champion stands on gold.
+        if (v.champion) {
+          g.strokeStyle = 'rgba(255,215,90,' + (0.7 + 0.25 * Math.sin(this.time * 3)) + ')';
+          g.lineWidth = Math.max(1.5, this.tw * 0.05);
+          g.beginPath();
+          g.ellipse(cx, cy, rx * 1.25, ry * 1.25, 0, 0, Math.PI * 2);
+          g.stroke();
+        }
         if (v.frenzy > 0) {
           g.fillStyle = 'rgba(255,70,30,' + (0.18 + 0.12 * Math.sin(this.time * 9)) + ')';
           g.beginPath();
@@ -1095,7 +1120,7 @@
 
     // A unit's painted sprite, feet at the origin, facing right.
     drawSprite(g, v, view) {
-      const sc = this.unit * (v.scale || 1);
+      const sc = this.unit * (v.scale || 1) * this.growOf(v);
       g.scale(sc, sc);
       if (v.para > 0) g.filter = 'saturate(0.4) brightness(1.15)';
       S.drawUnit(g, v.type, v.team, view, this.time + v.phase, null);
@@ -1167,7 +1192,7 @@
       const [cx0, cy0] = this.center(v.x, v.y);
       const cx = cx0 + v.ox;
       const p = v.pose;
-      const top = cy0 + v.oy - v.hop - (p ? p.lift : 0) - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1) * (p ? p.scale : 1);
+      const top = cy0 + v.oy - v.hop - (p ? p.lift : 0) - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1) * this.growOf(v) * (p ? p.scale : 1);
       const bw = Math.max(18, this.tw * (v.boss ? 0.8 : v.vip ? 0.62 : 0.52));
       const bh = Math.max(3, this.tw * 0.075);
       const x = cx - bw / 2;
@@ -1237,7 +1262,7 @@
         const s = Math.max(3, this.tw * 0.07);
         for (let i = 0; i < v.level; i++) this.star(g, x + bw + s * 1.4 + i * s * 1.9, iy, s);
       }
-      if (v.boss || v.vip) {
+      if (v.boss || v.vip || v.champion) {
         g.fillStyle = '#e6b83c';
         g.strokeStyle = S.OUT;
         const s = icon * 0.6;
@@ -2087,6 +2112,96 @@
           case 'secondwind':
             if (v) this.addText(v.x, v.y, 'SECOND WIND', '#ffcf6a', { height: h, dy: -this.tw * 0.25 });
             break;
+          case 'crit':
+            if (v) {
+              this.addText(v.x, v.y, e.deadeye ? 'DEADEYE!' : 'CRITICAL!', '#ffd84a', { height: h, dy: -this.tw * 0.55, big: true });
+              this.shakeT = Math.max(this.shakeT, 0.14);
+              this.particles(v.x, v.y, 10, ['#fff3b0', '#ffd84a', '#ffffff'], { lift: 16, speed: 0.9, max: 0.45 });
+            }
+            break;
+          case 'execute':
+            if (v) {
+              any = true;
+              this.addText(v.x, v.y, 'EXECUTED', '#ff5a4a', { height: h, dy: -this.tw * 0.3, big: true });
+              this.slash(v.x, v.y);
+              this.shakeT = Math.max(this.shakeT, 0.2);
+            }
+            break;
+          case 'reflect': {
+            const t = state && state.byId[e.src];
+            if (v) {
+              this.addText(v.x, v.y, 'REFLECTED', '#bfe6ff', { height: h, dy: -this.tw * 0.28, big: true });
+              this.ring(v.x, v.y, 'rgba(190,230,255,0.95)', 0.8, 320, 14);
+              if (t) this.bolt([[v.x, v.y], [t.x, t.y]], 'rgba(200,235,255,A)', 260, 0.7);
+            }
+            break;
+          }
+          case 'intercept': {
+            const f = state && state.byId[e.for];
+            if (v) {
+              this.addText(v.x, v.y, 'BODYGUARD', '#a9d1ff', { height: h, dy: -this.tw * 0.28 });
+              if (f) this.bolt([[f.x, f.y], [v.x, v.y]], 'rgba(170,210,255,A)', 200, 0.5);
+            }
+            break;
+          }
+          case 'trophy':
+            if (v) {
+              v.trophies = e.n;
+              this.addText(v.x, v.y, 'TROPHY ' + '★'.repeat(e.n), '#ffd86a', { height: h, dy: -this.tw * 0.32 });
+              this.particles(v.x, v.y, 8, ['#ffe08a', '#ffcf4a'], { lift: 16, rise: 0.8, max: 0.5 });
+            }
+            break;
+          case 'fury':
+            if (v) v.fury = e.n;
+            break;
+          case 'harvest': {
+            const from = state && state.byId[e.from];
+            if (v) {
+              v.harvest = e.n;
+              this.addText(v.x, v.y, 'SOUL HARVEST', '#c9a0ff', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+              if (from) this.bolt([[from.x, from.y], [v.x, v.y]], 'rgba(200,150,255,A)', 280, 0.5);
+            }
+            break;
+          }
+          case 'bounce': {
+            const a = state && state.byId[e.from];
+            const b = state && state.byId[e.to];
+            if (a && b) {
+              this.bolt([[a.x, a.y], [b.x, b.y]], e.magic ? 'rgba(200,160,255,A)' : 'rgba(255,245,210,A)', 220, 0.6);
+              this.addText(b.x, b.y, e.magic ? 'ARC' : 'RICOCHET', e.magic ? '#d7b4ff' : '#fff3c4', { height: 40, dy: -this.tw * 0.28, max: 0.8 });
+            }
+            break;
+          }
+          case 'splash': {
+            const at = state && state.byId[e.at];
+            if (at) {
+              this.addText(at.x, at.y, 'SHRAPNEL', '#ffcf9a', { height: 40, dy: -this.tw * 0.3, max: 0.8 });
+              this.particles(at.x, at.y, 14, ['#a08a6a', '#6f5f48', '#d8c8a8'], { lift: 6, speed: 1.2, max: 0.5 });
+            }
+            break;
+          }
+          case 'contagion':
+            if (v) this.addText(v.x, v.y, 'CONTAGION', POISON, { height: h, dy: -this.tw * 0.3 });
+            for (const id of e.targets || []) {
+              const t = state && state.byId[id];
+              if (t) this.particles(t.x, t.y, 8, POISON_FX, { lift: 10, rise: 0.5, speed: 0.5, max: 0.7 });
+            }
+            break;
+          case 'discord': {
+            const t = state && state.byId[e.target];
+            if (v) {
+              this.addText(v.x, v.y, 'DISCORD', '#ff9ad8', { height: h, dy: -this.tw * 0.28 });
+              if (t) this.bolt([[v.x, v.y], [t.x, t.y]], 'rgba(255,150,220,A)', 220, 0.6);
+            }
+            break;
+          }
+          case 'pull':
+            if (v) this.addText(v.x, v.y, 'PULLED', '#a9d1ff', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+            break;
+          case 'echo':
+            this.sfx('boom');
+            this.shakeT = Math.max(this.shakeT, 0.2);
+            break;
           case 'thorns':
             if (v) this.addText(v.x, v.y, 'THORNS', '#ffb0a0', { height: h, dy: -this.tw * 0.25, max: 0.8 });
             break;
@@ -2171,15 +2286,25 @@
           case 'scorch':
             if (v) this.particles(v.x, v.y, 6, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 6, rise: 0.8, max: 0.5 });
             break;
-          case 'boom':
+          case 'boom': {
             any = true;
+            // Each kind of blast has its own colours: a powder keg, a ward's storm, bursting
+            // brambles, firecrackers.
+            const B = {
+              storm: ['rgba(170,120,255,ALPHA)', 'rgba(210,180,255,0.95)', ['#e2d0ff', '#a070ff', '#ffffff']],
+              thorn: ['rgba(90,170,70,ALPHA)', 'rgba(160,230,120,0.95)', ['#8fd06a', '#3d7f33', '#d8f0b0']],
+              firecracker: ['rgba(255,120,200,ALPHA)', 'rgba(255,230,120,0.95)', ['#ff7ad0', '#ffd84a', '#7ad0ff', '#ffffff']],
+            }[e.kind] || ['rgba(255,150,40,ALPHA)', 'rgba(255,200,120,0.95)', ['#ffd27a', '#ff8a2a', '#5a4a3a', '#2a2420']];
+            const small = e.kind === 'firecracker';
             this.sfx('boom');
-            this.shakeT = 0.32;
-            this.flashTiles(e.tiles || [[e.x, e.y]], 'rgba(255,150,40,ALPHA)', 480);
-            this.ring(e.x, e.y, 'rgba(255,200,120,0.95)', 1.5, 420);
-            this.particles(e.x, e.y, 24, ['#ffd27a', '#ff8a2a', '#5a4a3a', '#2a2420'], { lift: 8, rise: 0.9, speed: 1.3, max: 0.8 });
-            await this.wait(this.reduced ? 40 : 160);
+            this.shakeT = small ? Math.max(this.shakeT, 0.12) : 0.32;
+            this.flashTiles(e.tiles || [[e.x, e.y]], B[0], 480);
+            this.ring(e.x, e.y, B[1], small ? 0.7 : 1.5, 420);
+            this.particles(e.x, e.y, small ? 14 : 24, B[2], { lift: 8, rise: 0.9, speed: 1.3, max: 0.8 });
+            if (small) this.addText(e.x, e.y, 'BANG!', '#ffd84a', { height: 40, dy: -this.tw * 0.35, max: 0.8 });
+            await this.wait(this.reduced ? 40 : small ? 90 : 160);
             break;
+          }
           case 'escape':
             if (v) {
               any = true;
