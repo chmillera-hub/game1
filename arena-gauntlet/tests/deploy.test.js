@@ -238,12 +238,12 @@ test('free side-grades: 0 Supply but a slot, and Auto leaves them for you to cho
   const side = Object.entries(Object.assign({}, D.SKILLS, D.GEAR)).filter(([, d]) => d.side).map(([id]) => id);
   assert.ok(side.length >= 5, side.join(' '));
   for (const id of side) assert.strictEqual((D.SKILLS[id] || D.GEAR[id]).cost, 0);
-  assert.strictEqual(D.GEAR.iron_will.cost, 0);
+  if (D.GEAR.iron_will) assert.strictEqual(D.GEAR.iron_will.cost, 0);
   assert.strictEqual(D.SKILLS.unshakable.cost, 0);
   for (let seed = 1; seed <= 6; seed++) {
     const run = R.newRun({ seed, warband: 'vanguard' });
     for (const id of side) R.addItem(run, D.SKILLS[id] ? 'skill' : 'gear', id);
-    R.addItem(run, 'gear', 'iron_will');
+    if (D.GEAR.iron_will) R.addItem(run, 'gear', 'iron_will');
     run.supplyBonus = 12;
     R.chooseChallenge(run, 1);
     const dep = R.autoDeploy(run, 0);

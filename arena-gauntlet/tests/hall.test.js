@@ -311,10 +311,14 @@ test('the first army ever to enter finds the house armies holding the Hall: mobs
 
 test('old Hall armies survive any update: what no longer exists is left out, never the army', () => {
   freshHall();
+  const D = AG.Data;
+  const relic = Object.keys(D.RELICS)[0];
+  const skill = Object.keys(D.SKILLS).find((id) => D.eligible('knight', D.SKILLS[id]));
+  const gear = Object.keys(D.GEAR).find((id) => D.eligible('knight', D.GEAR[id]));
   store[HALL] = JSON.stringify({
     legends: [
-      { id: 'old1', name: 'The Old Guard', wins: 3, losses: 1, climbed: true, level: 7, relics: ['whetstone', 'gone_relic'], units: [
-        { spec: { type: 'knight', level: 3, a1: 'k_bash', a2: 'no_such_pick', talents: ['gone_talent'], skills: ['brutal', 'old_skill'], gear: ['plate_armor', 'old_gear'], enchant: 'old_enchant' }, x: 4, y: 7, facing: 0 },
+      { id: 'old1', name: 'The Old Guard', wins: 3, losses: 1, climbed: true, level: 7, relics: [relic, 'gone_relic'], units: [
+        { spec: { type: 'knight', level: 3, a1: 'k_bash', a2: 'no_such_pick', talents: ['gone_talent'], skills: [skill, 'old_skill'], gear: [gear, 'old_gear'], enchant: 'old_enchant' }, x: 4, y: 7, facing: 0 },
         { spec: { type: 'retired_unit', level: 2 }, x: 3, y: 7, facing: 0 },
         { spec: { type: 'archer', level: 9 }, x: 5, y: 8, facing: 0 },
       ] },
@@ -325,10 +329,10 @@ test('old Hall armies survive any update: what no longer exists is left out, nev
   assert.strictEqual(h.legends.length, 1, 'still there');
   const L = h.legends[0];
   assert.deepStrictEqual([L.name, L.wins, L.losses], ['The Old Guard', 3, 1]);
-  assert.deepStrictEqual(L.relics, ['whetstone']);
+  assert.deepStrictEqual(L.relics, [relic]);
   assert.deepStrictEqual(L.units.map((it) => it.spec.type), ['knight', 'archer']);
   const kn = L.units[0].spec;
-  assert.deepStrictEqual([kn.a1, kn.a2, kn.talents, kn.skills, kn.gear, kn.enchant], ['k_bash', undefined, [], ['brutal'], ['plate_armor'], undefined]);
+  assert.deepStrictEqual([kn.a1, kn.a2, kn.talents, kn.skills, kn.gear, kn.enchant], ['k_bash', undefined, [], [skill], [gear], undefined]);
   assert.strictEqual(L.units[1].spec.level, AG.Data.MAX_LEVEL);
   // It still fights, by today's rules.
   const w = R.playHallMatch(L, fake('x', 'scout'), 5);
