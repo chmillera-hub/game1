@@ -3137,3 +3137,18 @@ body:has(#battle:not([hidden])) {
   width: 22px;
   height: 22px;
 }
+
+/* Owned kit listed in the loadout: solid rows; when every slot is in use the rest dim a
+   little, still tappable to explain why. */
+.slot.kit {
+  border-style: solid;
+}
+
+.slot.kit.capped {
+  opacity: 0.6;
+}
+
+.slot.kit .chip {
+  font-size: 0.72rem;
+  padding: 1px 7px;
+}

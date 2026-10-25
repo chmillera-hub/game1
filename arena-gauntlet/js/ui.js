@@ -1355,6 +1355,49 @@
       <span class="pk-body">${shape ? patternSVG(shape, 'P') : ''}<span class="pk-desc">${esc(ab.desc)}</span></span></button>`;
   }
 
+  // A loadout section listing every talent, skill or piece of gear you own that fits this
+  // unit: equipped first (gold), then free ones (one row per kind, with how many copies),
+  // then ones another unit holds (a tap moves it here). Up to the slots its level gives.
+  function kitSection(run, r, kind) {
+    const key = SLOT_KEY[kind];
+    const n = R.slotsFor(r.load.lv)[key];
+    const most = (kind === 'talent' ? TALENT_SLOTS : kind === 'skill' ? SKILL_SLOTS : GEAR_SLOTS)[3];
+    const held = r.load[key];
+    const heldIds = held.map((uid) => R.itemByUid(run, uid).id);
+    const fits = (it) => D.eligible(r.type, R.itemDef(it)) && (kind !== 'talent' || TALENTS[it.id].cls === r.type);
+    const rowHTML = (it, state, extra) => {
+      const d = R.itemDef(it);
+      const on = state === 'on';
+      const tag = on ? '<span class="got-tag">✓ Equipped</span>' : extra || '';
+      return `<button class="slot kit ${on ? 'full' : ''} ${!on && held.length >= n ? 'capped' : ''}" data-kit="${on ? 'off' : 'on'}:${kind}:${it.uid}">
+        <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
+        <span class="sl-body"><span class="sl-name"><b>${esc(d.name)}</b>${tag}</span><span class="small muted">${esc(d.desc)}</span>${on ? '<span class="small sl-hint">Tap to take it off.</span>' : ''}</span>
+        <span class="cost">+${d.cost}</span></button>`;
+    };
+    const rows = held.map((uid) => rowHTML(R.itemByUid(run, uid), 'on'));
+    const listed = new Set(kind === 'talent' ? heldIds : []);
+    const free = R.freeItems(run, kind).filter(fits);
+    for (const it of free) {
+      if (listed.has(it.id)) continue;
+      listed.add(it.id);
+      const copies = free.filter((x) => x.id === it.id).length;
+      rows.push(rowHTML(it, 'free', copies > 1 ? `<span class="chip">×${copies}</span>` : ''));
+    }
+    for (const it of run.items) {
+      if (it.kind !== kind || listed.has(it.id) || !fits(it)) continue;
+      const holder = R.itemHolder(run, it.uid);
+      if (!holder || holder.id === r.id) continue;
+      listed.add(it.id);
+      rows.push(rowHTML(it, 'elsewhere', `<span class="chip">on ${esc(holder.name)}</span>`));
+    }
+    const title = kind === 'talent' ? `${ic('star')} ${UNITS[r.type].name} talents` : kind === 'skill' ? 'Skills' : 'Gear';
+    const more = n < most ? ` · ${kind === 'gear' ? 'Level 3 adds a second slot' : kind === 'skill' ? 'Level 2 adds a second slot' : `Level ${r.load.lv + 1} adds a slot`}` : '';
+    const none = kind === 'talent' ? `You own no ${esc(UNITS[r.type].name)} talents yet. Every new unit brings one, and you find more in shops and battle spoils.` : `You own no ${kind === 'skill' ? 'skills' : 'gear'} this unit can use yet. Find them in battle spoils, shops and events.`;
+    return `<div class="lo-sec"><div class="eyebrow">${title} · ${held.length} of ${n} slot${n > 1 ? 's' : ''} used</div>
+      <p class="small muted">Everything you own that fits it. Tap to equip, up to ${n} at Level ${r.load.lv}${more}.</p>
+      <div class="slots">${rows.length ? rows.join('') : `<p class="small muted">${none}</p>`}</div></div>`;
+  }
+
   function slotButton(run, r, kind, i) {
     const uid = r.load[SLOT_KEY[kind]][i];
     const it = uid && R.itemByUid(run, uid);
@@ -1394,12 +1437,9 @@
       budget = `<div class="budget ${total > wr.supply ? 'over' : ''}">${ic('command')} ${deployed ? 'Army' : 'Army with this unit'}: <b>${total}/${wr.supply}</b> Supply${total > wr.supply ? ' · over budget' : ''}</div>`;
     }
     const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-lv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
-    const sl = R.slotsFor(L.lv);
     // The level picks: the free option and the actives. Talents have their own slots.
     const picks = (tier) => T.abilities[tier].filter((id) => !TALENTS[id]);
     const pickHead = (tier) => (picks(tier).length > 1 ? ` · pick 1 of ${picks(tier).length}` : '');
-    const owned = run.items.filter((i) => i.kind === 'talent' && TALENTS[i.id].cls === r.type).length;
-    const lockedSlot = (kind, icon, title, lv) => `<div class="slot locked"><span class="itemico ${kind}">${ic(icon)}</span><span class="sl-body"><b class="muted">${title}</b><span class="small muted">Unlocks at Level ${lv}</span></span></div>`;
     const scrolls = run.items.filter((i) => i.kind === 'scroll' && D.eligible(r.type, ENCHANTS[i.id]));
     // What you change most comes first: the cost, the level, the slots, the picks. The
     // unit's numbers and attacks follow.
@@ -1414,13 +1454,9 @@
       <div class="lo-sec"><div class="eyebrow">Level</div>
         <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
         <p class="small muted">Level 2: +20% HP, +15% damage, a second ability, a second talent slot and a second skill slot. Level 3: +40% HP, +30% damage, its Mastery, a third talent slot and a second gear slot.</p></div>
-      <div class="lo-sec"><div class="eyebrow">${ic('star')} ${UNITS[r.type].name} talents · ${sl.talents} slot${sl.talents > 1 ? 's' : ''}</div>
-        <p class="small muted">Class passives. Every new unit brings one you do not own yet, and you find more in shops and battle spoils. Mix and match any you own; each copy fits one unit at a time. You own ${owned || 'none'}${owned ? ' for this class' : ' for this class yet'}.</p>
-        <div class="slots">${[...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slotButton(run, r, 'talent', i) : lockedSlot('talent', 'star', 'Talent slot', i + 1))).join('')}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Skills · ${sl.skills} slot${sl.skills > 1 ? 's' : ''}</div>
-        <div class="slots">${[...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slotButton(run, r, 'skill', i) : `<div class="slot locked"><span class="itemico skill">${ic('scroll')}</span><span class="sl-body"><b class="muted">Skill slot</b><span class="small muted">Unlocks at Level 2</span></span></div>`)).join('')}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Gear · ${sl.gear} slot${sl.gear > 1 ? 's' : ''}</div>
-        <div class="slots">${[...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slotButton(run, r, 'gear', i) : `<div class="slot locked"><span class="itemico gear">${ic('sword')}</span><span class="sl-body"><b class="muted">Gear slot</b><span class="small muted">Unlocks at Level 3</span></span></div>`)).join('')}</div></div>
+      ${kitSection(run, r, 'talent')}
+      ${kitSection(run, r, 'skill')}
+      ${kitSection(run, r, 'gear')}
       <div class="lo-sec"><div class="eyebrow">Ability${pickHead(1)}</div>
         <div class="picks">${picks(1).map((id) => abilityCard(r, 1, id, false)).join('')}</div></div>
       <div class="lo-sec"><div class="eyebrow">Level 2 ability${pickHead(2)}${L.lv < 2 ? ' <span class="lockline">unlocks at Level 2</span>' : ''}</div>
@@ -1447,7 +1483,7 @@
       loadoutSheet(rid, back);
     };
     refreshSheet(html, (sh) => {
-      if (!editable) for (const b of $$('[data-lv], [data-ab], [data-slot]', sh)) b.disabled = true;
+      if (!editable) for (const b of $$('[data-lv], [data-ab], [data-slot], [data-kit]', sh)) b.disabled = true;
       for (const b of $$('[data-lv]', sh))
         b.onclick = () => {
           R.setLevel(run, rid, +b.dataset.lv);
@@ -1472,6 +1508,21 @@
         b.onclick = () => {
           const [kind, i] = b.dataset.slot.split(':');
           itemPicker(rid, kind, +i, here());
+        };
+      // Everything you own that fits, listed in place: a tap equips or unequips it.
+      for (const b of $$('[data-kit]', sh))
+        b.onclick = () => {
+          const [op, kind, uid] = b.dataset.kit.split(':');
+          if (op === 'off') R.unassignItem(run, uid);
+          else {
+            const n = R.slotsFor(L.lv)[SLOT_KEY[kind]];
+            if (L[SLOT_KEY[kind]].length >= n) {
+              toast(`${n > 1 ? `All ${n} ${kind} slots are` : `Its one ${kind} slot is`} in use at Level ${L.lv}. Tap the equipped one${n > 1 ? 's' : ''} to take ${n > 1 ? 'one' : 'it'} off first, or raise its level for more slots.`, 3600);
+              return;
+            }
+            if (!R.assignItem(run, rid, uid)) return toast('That does not fit this unit.');
+          }
+          changed();
         };
       if ($('#loBind', sh))
         $('#loBind', sh).onclick = async () => {

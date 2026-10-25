@@ -69,8 +69,11 @@ on a phone turned sideways, but portrait works too.
   (there are no zoom buttons). Your relics show as small round badges in the board's corner, in
   the War Room and in battle: tap one to see what it does. Tap the Supply bar to see what every deployed unit
   costs. Begin battle stays in view at the bottom. The loadout says what each chosen
-  ability does, and each empty slot shows how many of your items could go in it
-  (greyed out when none could). The unit strip stays where you scrolled it.
+  ability does, and its talent, skill and gear sections list everything you own that
+  fits the unit, right there: equipped ones first (gold, ✓ Equipped), then the rest
+  (with ×2 for copies, or "on Kael" for one another unit holds; taking it moves it).
+  Tap to equip or unequip, up to the slots its level gives ("1 of 2 slots used"); once
+  they are full, the rest dim and a tap says why. The unit strip stays where you scrolled it.
 - **Setup guide**: put a unit on the board and a short sheet walks through its kit,
   one question at a time: its level, its ability picks, then its talents, skills and
   gear (only what you have that fits, and what your Supply can pay for). Answer No to
