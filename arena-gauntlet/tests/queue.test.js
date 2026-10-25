@@ -240,7 +240,7 @@ test('reinforcements join the current cycle in speed order', () => {
   assert.strictEqual(warg.cycles, orc.cycles, 'it joins the cycle the orc is on');
 });
 
-test('fatigue: the enemy loses 1, then you 1, then the enemy 2, you 2, and so on, past shields', () => {
+test('fatigue: each side counts its own, one more for every turn it takes: enemy 1, you 1, enemy 2, you 2, past shields', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -259,14 +259,15 @@ test('fatigue: the enemy loses 1, then you 1, then the enemy 2, you 2, and so on
   assert.deepStrictEqual(
     hits.map((e) => `${s.byId[e.uid].team}${e.amount}`),
     ['E1', 'P1', 'E2', 'P2', 'E3', 'P3', 'E4'],
-    'the same each round for both sides, enemy first'
+    'one unit a side each turn: both count up alike, enemy first'
   );
   assert.notStrictEqual(hits[1].uid, hits[3].uid, 'the two player golems take turns');
-  assert.strictEqual(E.fatigueHit(s), 4);
+  assert.strictEqual(E.fatigueHit(s, 'P'), 4);
+  assert.strictEqual(E.fatigueHit(s, 'E'), 5);
   assert.ok(s.units.every((u) => u.shield === 50), 'shields do not stop it');
 });
 
-test('fatigue: a unit passing its turn (cooling down) loses HP too, then the next one goes', () => {
+test('fatigue: a unit passing its turn (cooling down) loses HP too, then the next one goes and loses one more', () => {
   const s = battle(
     [
       { type: 'golem', team: 'P', x: 2, y: 8 },
@@ -283,10 +284,36 @@ test('fatigue: a unit passing its turn (cooling down) loses HP too, then the nex
   const ev = s.events.length;
   E.pass(s); // your turn 2 starts
   const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue');
-  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]], 'a passes and loses 1, then b takes the turn and loses 1');
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 2]], 'a passes and loses 1, then b takes the turn and loses 2');
   assert.strictEqual(s.due, b.uid);
   assert.ok(s.events.slice(ev).some((e) => e.t === 'sitout' && e.uid === a.uid && e.why === 'cooldown' && e.wait === 1));
   assert.strictEqual(a.wait, 0, 'its cooldown ticks down');
+});
+
+test('fatigue at 15 with five units cooling down: they pass one by one and lose 15, 16, 17, 18, 19, then the sixth acts at 20', () => {
+  const units = [];
+  for (let x = 1; x <= 6; x++) units.push({ type: 'golem', team: 'P', x, y: 8 });
+  units.push({ type: 'golem', team: 'E', x: 4, y: 0 });
+  const s = battle(units, { overtime: 2 });
+  E.pass(s);
+  E.pass(s);
+  const mine = s.units.filter((u) => u.team === 'P');
+  for (const u of mine) {
+    u.hp = u.maxHp = 999;
+    u.cycles = mine[0].cycles;
+  }
+  for (const u of mine.slice(0, 5)) u.wait = 1;
+  s.tired.P = 14;
+  assert.strictEqual(E.fatigueHit(s, 'P'), 15);
+  const ev = s.events.length;
+  E.pass(s);
+  const seq = s.events.slice(ev).filter((e) => (e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid].team === 'P') || (e.t === 'sitout' && s.byId[e.uid].team === 'P'));
+  assert.deepStrictEqual(
+    seq.map((e) => (e.t === 'sitout' ? 'pass' : e.amount)),
+    [15, 'pass', 16, 'pass', 17, 'pass', 18, 'pass', 19, 'pass', 20],
+    'each unit tires as its own turn comes, then passes, and the next one goes'
+  );
+  assert.strictEqual(s.due, mine[5].uid);
 });
 
 test('fatigue: when every unit passes, each loses HP as its turn comes, and the side passes', () => {
@@ -307,7 +334,7 @@ test('fatigue: when every unit passes, each loses HP as its turn comes, and the 
   const ev = s.events.length;
   E.pass(s);
   const hits = s.events.slice(ev).filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid].team === 'P');
-  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 1]]);
+  assert.deepStrictEqual(hits.map((e) => [e.uid, e.amount]), [[a.uid, 1], [b.uid, 2]], 'each pass counts: 1, then 2');
   assert.ok(s.events.slice(ev).some((e) => e.t === 'pass' && e.side === 'P' && e.auto), 'nobody acts: the side passes');
 });
 
@@ -554,7 +581,7 @@ test('the rout: the enemy tires at once, 1 HP for the unit taking the first enem
     E.pass(s);
   }
   assert.deepStrictEqual(lost, [1, 2, 3]);
-  assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire before turn 30');
+  assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire before fatigue sets in for everyone');
 });
 
 test('the rout after fatigue set in: the enemy takes double fatigue from then on, your side the normal amount', () => {
@@ -569,19 +596,22 @@ test('the rout after fatigue set in: the enemy takes double fatigue from then on
   const [pg, cmd, eg] = s.units;
   pg.hp = pg.maxHp = eg.hp = eg.maxHp = 999;
   while (!(s.inOvertime && s.turn >= 4 && s.side === 'P')) E.pass(s);
-  const clock = E.fatigueHit(s);
+  const plain = E.fatigueHit(s, 'E');
   cmd.hp = 0;
   cmd.alive = false;
   s.occ[cmd.y * s.w + cmd.x] = 0;
   E.checkOutcome(s);
   assert.ok(s.routed && s.routed.late);
+  assert.strictEqual(E.fatigueHit(s, 'E'), 2 * plain, 'doubled from now on');
   const e0 = eg.hp;
-  E.pass(s); // the enemy's turn: its golem takes double this round's fatigue
-  assert.strictEqual(e0 - eg.hp, 2 * E.fatigueHit(s));
-  assert.strictEqual(E.fatigueHit(s), clock + 1);
+  E.pass(s); // the enemy's turn: its golem takes double
+  assert.strictEqual(e0 - eg.hp, 2 * plain);
+  assert.strictEqual(E.fatigueHit(s, 'E'), 2 * (plain + 1));
   const p0 = pg.hp;
+  const mine = E.fatigueHit(s, 'P');
   E.pass(s); // yours: the normal amount
-  assert.strictEqual(p0 - pg.hp, E.fatigueHit(s));
+  assert.strictEqual(p0 - pg.hp, mine);
+  assert.ok(mine < 2 * plain);
 });
 
 console.log(`queue: ${passed} tests passed`);

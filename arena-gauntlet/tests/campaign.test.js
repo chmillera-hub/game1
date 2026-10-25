@@ -275,4 +275,86 @@ test('the Act I boss camp holds four wrecked carts of gold; other battles and la
   }
 });
 
+test('no battle walls anyone in: every enemy on foot has a way to your side, past rocks, water, lava and buildings', () => {
+  const D = AG.Data;
+  let checked = 0;
+  for (let seed = 1; seed <= 12; seed++)
+    for (const act of [1, 2, 3])
+      for (const kind of ['battle', 'elite', 'boss']) {
+        const run = R.newRun({ seed, warband: D.WARBANDS[seed % D.WARBANDS.length].id });
+        run.act = act;
+        run.boss = D.ACTS[act].bosses[seed % D.ACTS[act].bosses.length];
+        for (let k = 0; k < 4; k++) {
+          const enc = R.genEncounter(run, { id: `r${k}`, row: 2 + k, kind });
+          const w = enc.w;
+          const h = enc.h;
+          const T = (u) => D.UNITS[u.type];
+          const wall = (u) => (T(u).traits.includes('object') || T(u).traits.includes('structure') || T(u).traits.includes('summon')) && !T(u).traits.includes('opens');
+          const blocked = new Set(enc.units.filter(wall).map((u) => u.y * w + u.x));
+          for (const u of enc.units) {
+            if (wall(u) || u.post || T(u).traits.includes('flying') || T(u).traits.includes('immobile')) continue;
+            const seen = new Set([u.y * w + u.x]);
+            const q = [u.y * w + u.x];
+            let out = false;
+            while (q.length && !out) {
+              const i = q.pop();
+              const x = i % w;
+              const y = (i - x) / w;
+              if (y >= h - 3) out = true;
+              for (const [dx, dy] of D.DIRS) {
+                const nx = x + dx;
+                const ny = y + dy;
+                const ni = ny * w + nx;
+                if (nx < 0 || ny < 0 || nx >= w || ny >= h || seen.has(ni) || blocked.has(ni) || enc.terrain[ni] !== 0) continue;
+                seen.add(ni);
+                q.push(ni);
+              }
+            }
+            assert.ok(out, `seed ${seed} act ${act} ${enc.name}: ${u.type} at ${u.x},${u.y} is walled in`);
+            checked++;
+          }
+        }
+      }
+  assert.ok(checked > 1000);
+});
+
+test('a castle gate opens for its own garrison, never for the attackers', () => {
+  const E = AG.Engine;
+  const t = new Array(81).fill(0);
+  const units = [{ type: 'knight', team: 'E', x: 4, y: 1 }, { type: 'gate', team: 'E', x: 4, y: 2 }, { type: 'knight', team: 'P', x: 4, y: 4 }];
+  for (const x of [3, 5]) units.push({ type: 'wall', team: 'E', x, y: 2 });
+  const s = E.createBattle({ w: 9, h: 9, terrain: t, units, relics: { P: [], E: [] }, seed: 1, queue: true });
+  const [ek, gate, pk] = s.units;
+  const mine = E.reachable(s, ek);
+  assert.ok(mine.has(E.idx(s, 4, 3)), 'the garrison walks out through its gate');
+  assert.ok(!mine.has(E.idx(s, 4, 2)), 'but never stops in the gateway');
+  assert.ok(!E.reachable(s, pk).has(E.idx(s, 4, 1)), 'the attackers must break it');
+  assert.ok(gate.alive);
+});
+
+test('the final challenge: no chests or bonus goals (nothing to spend them on after it), powder kegs instead', () => {
+  for (const seed of [3, 11, 29, 47, 58]) {
+    const run = R.newRun({ seed, warband: 'ember' });
+    run.act = 3;
+    const enc = R.genEncounter(run, { id: 'mega', row: 9, kind: 'boss', mega: true });
+    assert.deepStrictEqual(enc.loot, []);
+    assert.deepStrictEqual(enc.bonus, []);
+    const kegs = enc.units.filter((u) => u.type === 'barrel');
+    assert.strictEqual(kegs.length, 6, `seed ${seed}`);
+    assert.ok(kegs.every((k) => k.y >= 2 && k.y <= 5), 'between the armies');
+  }
+});
+
+test('every unit in a battle carries its Supply: yours as the War Room prices it, the enemy\'s as its army was bought', () => {
+  const run = R.newRun({ seed: 12, warband: 'ember' });
+  const enc = R.genEncounter(run, { id: 'sup', row: 3, kind: 'elite' });
+  run.pending = { type: 'battle', nodeId: 'sup', enc, attempt: 0, tier: 'elite' };
+  const dep = R.autoDeploy(run, 0);
+  const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+  const sum = (team) => s.units.filter((u) => u.team === team).reduce((t, u) => t + u.supply, 0);
+  assert.strictEqual(sum('P'), R.supplyUsed(run, dep));
+  assert.strictEqual(sum('E'), R.encSupply(enc).army);
+  assert.ok(sum('E') > 0 && sum('P') > 0);
+});
+
 console.log(`campaign: ${passed} tests passed`);

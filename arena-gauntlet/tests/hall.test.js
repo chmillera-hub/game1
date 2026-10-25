@@ -177,7 +177,8 @@ test('a Hall match: the armies face each other on a mirrored field, kit and reli
     assert.deepStrictEqual(cfg.relics.P, b.relics);
     assert.deepStrictEqual(cfg.relics.E, a.relics);
     P.forEach((u, i) => {
-      const { team, x, y, facing, ...spec } = u;
+      const { team, x, y, facing, supply, ...spec } = u;
+      assert.strictEqual(supply, R.specCost(spec));
       assert.deepStrictEqual(spec, b.units[i].spec, 'the unit as it fought: level, abilities, talents, skills, gear');
     });
     const s = E.createBattle(cfg);
@@ -253,41 +254,49 @@ test('skirmish: a climbing army keeps climbing from its new place; reaching #1 e
   assert.ok(h.legends[0].climbed && !R.hallClimber(h));
 });
 
-test('the final challenge can be retried as often as you like; calling it a day, you pick the army the Hall keeps', () => {
+test('the final challenge can be retried as often as you like; whatever army last tried it goes to the Hall, no asking', () => {
   clearHall();
   const run = winCampaign(29);
   const before = JSON.stringify(R.loadHall().legends[0].units);
   assert.ok(R.faceFinal(run));
   // Lose it three times, with a smaller army than the one that won the campaign.
+  let last = null;
   for (let t = 1; t <= 3; t++) {
     assert.ok(R.chooseChallenge(run, 0), 'the final challenge is still on offer');
     assert.strictEqual(run.pending.tier, 'mega');
-    const dep = R.autoDeploy(run, 0).slice(0, 3);
+    const dep = R.autoDeploy(run, 0).slice(0, 4 - (t % 2));
     const s = E.createBattle(R.battleConfig(run, dep));
     s.over = true;
     s.winner = 'E';
     assert.ok(!R.finishBattle(run, s, dep).won);
     assert.ok(!run.over, 'a loss never ends the campaign');
+    // At once, after each try: the Hall's entry is this army now.
+    last = R.loadHall().legends[0].units;
+    assert.strictEqual(last.length, dep.length);
     R.backToChoice(run);
     assert.strictEqual(run.offer[0].attempts, t);
   }
-  assert.strictEqual(run.megaArmy.length, 3, 'the army that last tried it is remembered');
-  assert.ok(R.megaArmyDiffers(run));
-  // Keep the campaign's army: nothing changes in the Hall.
-  const keep = JSON.parse(JSON.stringify(run));
-  R.claimVictory(keep, 'final');
-  assert.ok(keep.over && keep.won && !keep.superWon);
-  assert.strictEqual(JSON.stringify(R.loadHall().legends[0].units), before);
-  // Or send the army that fought the final challenge: same entry, its units replaced.
-  R.claimVictory(run, 'mega');
+  assert.notStrictEqual(JSON.stringify(last), before);
+  assert.strictEqual(last.length, 3, 'the last try (three units) is the one kept');
+  // Calling it a day changes nothing more: same entry, the last army in it.
+  R.claimVictory(run);
   const h = R.loadHall();
   assert.strictEqual(h.legends.length + h.queue.length, 1, 'still one entry');
   assert.strictEqual(h.legends[0].id, run.legendId);
-  assert.deepStrictEqual(h.legends[0].units, run.megaArmy);
-  assert.ok(!h.legends[0].superWon && run.over);
+  assert.deepStrictEqual(h.legends[0].units, last);
+  assert.ok(!h.legends[0].superWon && run.over && run.won);
 });
 
-test('the first army ever to enter finds the house armies holding the Hall: mobs of one kind, at 48 Supply', () => {
+test('a save from before: an army set aside after the final challenge goes to the Hall when you call it a day', () => {
+  clearHall();
+  const run = winCampaign(31);
+  const other = JSON.parse(JSON.stringify(run.finalArmy)).slice(0, 2);
+  run.megaArmy = other;
+  R.claimVictory(run);
+  assert.deepStrictEqual(R.loadHall().legends[0].units, other);
+});
+
+test('the first army ever to enter finds the house armies holding the Hall: mobs of one kind, 48 Supply of bodies each', () => {
   freshHall();
   const run = winCampaign(21);
   const h = R.loadHall();
@@ -297,6 +306,8 @@ test('the first army ever to enter finds the house armies holding the Hall: mobs
     const T = AG.Data.UNITS[l.type];
     const supply = l.units.reduce((t, it) => t + T.cost + AG.Data.LEVEL_COST[it.spec.level], 0);
     assert.ok(supply <= R.HOUSE_SUPPLY && supply > R.HOUSE_SUPPLY - T.cost, `${l.name}: ${supply} Supply`);
+    // The Hall shows the full price, abilities included: 48, and 72 for the Abyssal witches.
+    assert.strictEqual(R.armySupply(l), l.type === 'witch' ? 72 : 48);
     assert.ok(l.units.every((it) => it.spec.type === l.type && it.y >= 6), 'all of a kind, on their own half');
     assert.strictEqual(new Set(l.units.map((it) => it.x + ',' + it.y)).size, l.units.length);
   }

@@ -164,10 +164,11 @@ on a phone turned sideways, but portrait works too.
   not meant to be beaten (in the simulations it falls to about one strong army in
   four, and never to a middling one); losing to it costs you nothing. Lose, and Try
   again takes you straight back to the War Room with the same plan, as many times as
-  you like. Or call it a day: if the army that last fought the Wyrm differs from the one
-  that won the campaign, you choose which of the two the Hall of Fame keeps (same name
-  and record either way). The challenge screen's "Claim your victory instead" offers the
-  same choice.
+  you like. Whatever army last fought the Wyrm, won or lost, takes your campaign's
+  place in the Hall of Fame the moment the battle ends (same name and record), with no
+  question asked; call it a day whenever you like. The Wyrm's field has no chests and no
+  bonus goals (nothing they pay could be spent after it): six powder kegs lie strewn
+  between the armies instead, to blow up under whoever stands next to them.
 - **Hall of Fame**: every campaign you win enters its final army in the Hall: the
   units that beat the Act III boss (or the Eclipse Wyrm), where they stood, their
   levels, abilities, talents, skills and gear, and your relics. It gets a name (The
@@ -179,10 +180,11 @@ on a phone turned sideways, but portrait works too.
   is banned in Hall matches, on purpose: whichever army you steered would almost always
   win, and the ranking would mean nothing. Tap a unit and the Priority button shows
   crossed out with a red X; tap it and it says why. The very first army to enter finds
-  four **house armies** holding the Hall, mobs of one kind spammed onto the field at
-  48 Supply, Level 1 and bare: The Scamper Pack (24 Scouts, #1), The Tin Can Brigade
-  (16 Knights), The Thousand Arrows (16 Archers) and The Witching Hour (12 Witches with
-  Abyssal Bolt, at the bottom). Can your carefully chosen army beat them? In the
+  four **house armies** holding the Hall, mobs of one kind spammed onto the field,
+  Level 1 and bare: The Scamper Pack (24 Scouts, #1), The Tin Can Brigade (16
+  Knights) and The Thousand Arrows (16 Archers), 48 Supply each, and The Witching Hour
+  (12 Witches with Abyssal Bolt, at the bottom), 72 Supply once their Abyssal Bolts
+  (2 each) are priced in. Can your carefully chosen army beat them? In the
   simulations most winning armies do (83 to 93% of the time); at 30 Supply every one
   walked over them, so the mobs field about one and a half winning armies' worth.
   Later armies wait in line ("Waiting
@@ -234,9 +236,10 @@ on a phone turned sideways, but portrait works too.
   they are full, the rest dim and a tap says why. The unit strip stays where you scrolled it.
 - **Setup guide**: put a unit on the board and a short sheet walks through its kit,
   one question at a time: its level, its ability picks, then its talents, skills and
-  gear (only what you have that fits, and what your Supply can pay for). Answer No to
-  any question, or Done to stop; then pick your next unit. Questions with nothing to
-  choose are skipped. Auto never asks.
+  gear (only what you have that fits, and what your Supply can pay for). Pick one, or
+  tap Continue to pass on that question (keeping its level or ability, or leaving the
+  slot empty) and go on to the next; Exit leaves the setup there. Then pick your next
+  unit. Questions with nothing to choose are skipped. Auto never asks.
 - **The bench is bare**: units on the bench are always plain base units. Levels,
   abilities, talents, skills and gear go on a unit only once it is on the board, and
   taking it off sends all of it back to your pack. Each card's cost badge shows the
@@ -336,6 +339,16 @@ on a phone turned sideways, but portrait works too.
   gold still waiting in wreckage or barricades, each bonus goal with its reward (struck
   through once it is out of reach), and the next reinforcements. The full wording of
   every goal is further down, under Mission details.
+- **Supply on the board**: each army's Supply sits in a small badge by its own back
+  row, the enemy's at the top right and yours at the bottom left. In battle it reads
+  what is still standing of what has taken the field (25/40: the units still alive,
+  priced as in the War Room) and any reinforcements still to come; Hall of Fame matches
+  show both armies' names and Supply the same way. In the War Room it reads what you
+  field of your Supply, and what the enemy brings. The challenge cards show each enemy
+  army's Supply (and its reinforcements) next to yours, and every army in the Hall of
+  Fame shows its total. It is a rough guide to strength, not a promise: levels,
+  relics, the field and the mission all count too. Enemy towers count 3; walls, gates,
+  kegs and the like count nothing.
 - **Tapping what is behind**: when one unit stands in front of another (a Lightning
   Ward before a barricade, say), tap the same spot again to pick the one behind; its
   panel says when something is hidden there.
@@ -393,12 +406,16 @@ on a phone turned sideways, but portrait works too.
   is the boss relic Sacred Chalice (+2); the common Healing Salve adds 2 only to
   units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 30, every unit loses HP whenever its turn comes, acting or
+- **Fatigue**: from turn 36, every unit loses HP whenever its turn comes, acting or
   passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
-  and shields: 1 in the first round, 2 in the next, then 3 and so on, the same for
-  both sides, like fatigue in Hearthstone. Poison and burns tick on passed turns
-  too. A short "Fatigue triggered!" banner marks the start (no message to tap away),
-  and the top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
+  and shields: 1 for its side's first, then 2, 3 and so on, one more for every turn
+  that side's units take, passes included, like fatigue in Hearthstone. Each side
+  counts its own, by the same rule. So five units passing in a row at 15 lose 15, 16,
+  17, 18 and 19, one after another, and the next unit to act loses 20: each pass plays
+  on its own on the board ("PASS" and its fatigue hit) and gets its own line in the
+  battle log. Poison and burns tick on passed turns too. A short "Fatigue
+  triggered!" banner marks the start (no message to tap away), and the top bar shows
+  each side's next hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
   having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
@@ -409,11 +426,11 @@ on a phone turned sideways, but portrait works too.
   loot, gold and quest rewards and all. This is the victory lap, and it is not free:
   your army's fatigue sets in the moment the enemy army falls, whatever the turn. Each
   of your units loses HP as its turn comes (acting or passing), 1 for the first, then
-  2, 3 and so on, one more for every turn one of your units takes (or the clock's
-  fatigue, once that is bigger). So collect fast: you may get some of it and not all.
-  It cannot cost you the battle: it ends with your win when nothing is left, when your
-  army is gone, when ten turns pass without progress, or when you tap Finish now (the
-  menu's Retreat becomes Finish the battle). The top bar counts what is left and your
+  2, 3 and so on, one more for every turn one of your units takes (carrying on from
+  where it was if fatigue had already set in). So collect fast: you may get some of it
+  and not all. There is no time limit: the cleanup ends, with your win, only when
+  everything worth having is taken or broken, or when your army has fallen to its
+  fatigue, or when you tap Finish now (the menu's Retreat becomes Finish the battle). The top bar counts what is left and your
   army's next fatigue hit. A flawless or fast win
   counts from the moment the enemy army fell, so a unit fatigue takes during the
   cleanup does not spoil it.
@@ -471,13 +488,14 @@ on a phone turned sideways, but portrait works too.
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Getting it done does not end the battle on the spot: the enemy is **fatigued**. Their
   reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
-  enemy unit loses HP when its turn comes, acting or passing, 1 in the first, then 2, 3
-  and so on, past armor and shields, just like fatigue. Done after fatigue has set in
-  for everyone (turn 30), and the enemy's fatigue doubles from then on instead (6
-  becomes 12, then 7 becomes 14), while your side keeps the normal amount. The battle
+  enemy unit loses HP when its turn comes, acting or passing, 1 for the first, then 2, 3
+  and so on, one more every enemy turn, past armor and shields, just like fatigue. Done
+  after fatigue has set in for everyone (turn 36), and the enemy's fatigue doubles from
+  then on instead (6 becomes 12, then 7 becomes 14), while your side keeps the normal
+  amount. The battle
   ends when the last of them falls, so a mission done early tips it well in your favor, without the enemy
   simply giving up. Your own side tires only when
-  fatigue sets in for everyone on turn 30. A short banner ("Enemy fatigued!") and the
+  fatigue sets in for everyone on turn 36. A short banner ("Enemy fatigued!") and the
   battle log say when it happens, the top bar shows the enemy's fatigue, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
@@ -498,7 +516,11 @@ on a phone turned sideways, but portrait works too.
   lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
   water or lava to shove its enemies into.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
-  portals and barricades are buildings. Stone resists swords and spells alike,
+  portals and barricades are buildings. A castle gate opens for its own garrison (they
+  walk through it, never stopping in the gateway); you have to break it. No battle
+  walls anyone in: every map is checked so each enemy on foot, and each building's
+  doorway, has a way across to your side, and a rock, pool or lava tile that would
+  seal one in is cleared. Units of one side always walk through each other. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:
   the Trebuchet, the Siege Hammer, the Demolisher skill, a Blasting Charge, the
   Golem's Boulder Toss and the Sapper's Kit relic. A barricade your army breaks

@@ -249,6 +249,8 @@
       kills: 0,
       // Gold your army earns for breaking it: a barricade's pouch, or a little from any other building.
       bounty: spec.bounty || 0,
+      // What it costs its side in Supply (for the readout of both armies' strength).
+      supply: spec.supply || 0,
       salvage: T.salvage || 0,
       scorched: false,
       value: unitValue(spec.type, b.level),
@@ -327,6 +329,8 @@
       due: 0,
       // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
+      // Fatigue hits each side has taken (see fatigue).
+      tired: { P: 0, E: 0 },
     };
     for (const spec of cfg.units) addUnit(s, spec);
     armRelics(s);
@@ -396,7 +400,11 @@
     return f && f.team !== u.team ? f : null;
   }
 
+  // Allies walk through each other (never stopping on one), and a castle gate opens for its
+  // own garrison; anything else in the way blocks, unless the mover flies or shadowsteps
+  // past enemies.
   function passable(u, o, flying, shadow) {
+    if (o.team === u.team && o.traits.has('opens')) return true;
     return flying || (!o.nonCombat && !o.structure && (o.team === u.team || shadow));
   }
 
@@ -2838,35 +2846,39 @@
     fatigue(s, u);
   }
 
-  // This round's fatigue, past armor and shields.
+  // Fatigue, past armor and shields. Once it has set in for a side, each of that side's
+  // units loses HP as its turn comes, acting or passing: 1 for the first, then 2, 3 and so
+  // on, one more for every turn one of that side's units takes. Five units passing in a row
+  // at 15 lose 15, 16, 17, 18 and 19, one after another. It sets in for both sides on turn
+  // s.overtime, for the enemy the moment the mission is done (see rout), and for your army
+  // the moment the enemy army falls (see the cleanup). Each side counts its own.
   function fatigue(s, u) {
     if (!u.alive || !counts(u)) return;
-    // Mid-cleanup your army tires by its own rule (cleanupHit), each turn harder.
-    if (s.cleanup && u.team === 'P') {
-      const n = cleanupHit(s);
-      s.cleanup.hits = (s.cleanup.hits || 0) + 1;
-      applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue' });
-      return;
-    }
-    // A routed enemy tires by the rout's rule (routHit); everyone else by the clock.
-    const rout = !!s.routed && u.team === 'E';
-    const n = rout ? routHit(s) : fatigueHit(s);
-    if (n) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout || undefined });
+    const n = fatigueHit(s, u.team);
+    if (!n) return;
+    s.tired = s.tired || { P: 0, E: 0 };
+    s.tired[u.team]++;
+    applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: (u.team === 'E' && !!s.routed) || undefined });
   }
 
-  // HP a unit loses to fatigue at the start of its turn this round: 1 in the round it sets
-  // in, 2 the next, and so on, the same for both sides (0 before it sets in).
-  function fatigueHit(s) {
-    return s.inOvertime ? Math.max(1, s.turn - s.overtime + 1) : 0;
+  function tiring(s, team) {
+    return !!s.inOvertime || (team === 'E' && !!s.routed) || (team === 'P' && !!s.cleanup);
+  }
+
+  // What `team`'s next unit loses to fatigue as its turn comes (0 before it sets in). A rout
+  // after fatigue set in for everyone doubles the enemy's from then on.
+  function fatigueHit(s, team) {
+    if (!tiring(s, team)) return 0;
+    const n = ((s.tired && s.tired[team]) || 0) + 1;
+    return team === 'E' && s.routed && s.routed.late ? 2 * n : n;
   }
 
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
   // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
   // not stop there: the enemy is routed. Their reinforcements stop coming, and their
-  // fatigue sets in at once: from the next enemy turn, the enemy unit taking each turn
-  // loses HP as its turn starts, 1, then 2, 3 and so on (see fatigue). You win when the
-  // last of them falls. Your own side tires only when fatigue sets in for everyone
-  // (turn 30).
+  // fatigue sets in at once: each enemy unit loses HP as its turn comes, 1, then 2, 3 and
+  // so on (see fatigue). You win when the last of them falls. Your own side tires only
+  // when fatigue sets in for everyone (s.overtime).
   function rout(s, why) {
     if (s.routed || s.over) return;
     // Done after fatigue set in for everyone: from now on the enemy's fatigue doubles.
@@ -2877,23 +2889,12 @@
     emit(s, Object.assign({ t: 'routed', turn: s.turn, late: s.routed.late }, why));
   }
 
-  // What the routed enemy's unit loses as its turn starts (0 before the rout). Routed
-  // before fatigue set in for everyone: 1 in the first enemy turn after the rout, then 2,
-  // 3 and so on (or the clock's fatigue, once that is bigger). Routed after it: double the
-  // clock's fatigue, from then on.
+  // The enemy's next fatigue hit once routed, and your army's mid-cleanup (0 otherwise).
   function routHit(s) {
-    if (!s.routed) return 0;
-    if (s.routed.late) return 2 * fatigueHit(s);
-    return Math.max(Math.max(1, s.turn - s.routed.turn), fatigueHit(s));
+    return s.routed ? fatigueHit(s, 'E') : 0;
   }
-
-  // What your next unit loses as its turn comes mid-cleanup: fatigue sets in for your army
-  // the moment the enemy army falls, 1 for the first of your units to take a turn, then 2,
-  // 3 and so on, one more for every turn one of your units takes (or the clock's fatigue,
-  // once that is bigger). Collect fast: it cannot cost you the battle, but it adds up.
   function cleanupHit(s) {
-    if (!s.cleanup) return 0;
-    return Math.max((s.cleanup.hits || 0) + 1, fatigueHit(s));
+    return s.cleanup ? fatigueHit(s, 'P') : 0;
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2934,9 +2935,9 @@
     if (s.queue) pickDue(s, side);
   }
 
-  // Fatigue: from turn `s.overtime` on, each fighter loses HP at the start of its turn, 1
-  // more each round and the same for both sides (see fatigueHit), and no more
-  // reinforcements come. Big units and regen last longest; the last side standing wins.
+  // Fatigue: from turn `s.overtime` on, each fighter loses HP as its turn comes, one more
+  // for every turn its side takes, by the same rule for both sides (see fatigue), and no
+  // more reinforcements come. Big units and regen last longest; the last side standing wins.
   function startFatigue(s) {
     if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
     s.inOvertime = true;
@@ -3087,10 +3088,9 @@
   // The enemy army is gone but the field still holds something worth having: loot, and
   // enemy buildings with gold in them or a goal to break (a totem, the cage, a wagon, a
   // barricade, a wall). The win is already yours. Your army goes round collecting until
-  // nothing is left, until it has nobody left standing (its fatigue sets in at once and
-  // grows with every turn it takes, see cleanupHit, but it cannot cost you the battle), or
-  // until it stops getting anywhere (CLEANUP_STALL turns).
-  const CLEANUP_STALL = 10;
+  // nothing is left or until it has nobody left standing: there is no other limit, as its
+  // fatigue sets in at once and grows with every turn it takes (see fatigue). It cannot
+  // cost you the battle. Finish now (or a retreat) ends it early.
   function cleanupTargets(s) {
     return s.units.filter((u) => u.alive && u.team === 'E' && !u.escaped && (u.nonCombat || u.structure) && !u.traits.has('summon') && (u.goal || u.bounty > 0 || u.salvage > 0));
   }
@@ -3099,9 +3099,6 @@
   }
   function cleanupLeft(s) {
     return cleanupTargets(s).length + cleanupLoot(s).length;
-  }
-  function cleanupScore(s) {
-    return cleanupTargets(s).reduce((t, u) => t + u.hp, 0) + cleanupLoot(s).length * 1000;
   }
   // Why the enemy broke, for the result screen (vipSlain, destroyed, held, survived).
   function brokeWhy(s) {
@@ -3152,18 +3149,14 @@
     else if (!alive.P) winner = 'E';
     else if (!alive.E) winner = 'P';
     if (s.cleanup) {
-      // Mid-cleanup the win is yours whatever happens; only when it ends is in question.
-      const sc = cleanupScore(s);
-      if (sc < s.cleanup.score) {
-        s.cleanup.score = sc;
-        s.cleanup.at = s.turn;
-      }
-      if (alive.P && cleanupLeft(s) && s.turn - s.cleanup.at < CLEANUP_STALL) return;
+      // Mid-cleanup the win is yours whatever happens; it goes on while there is something
+      // left to collect and someone left to collect it.
+      if (alive.P && cleanupLeft(s)) return;
       winner = 'P';
     } else if (winner === 'P' && cleanupLeft(s)) {
       // The enemy army is down with gold, goals or loot still on the field: collect them.
       const lost = s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length;
-      s.cleanup = { turn: s.turn, lost, score: cleanupScore(s), at: s.turn, hits: 0 };
+      s.cleanup = { turn: s.turn, lost };
       emit(s, { t: 'cleanup', turn: s.turn, left: cleanupLeft(s) });
       return;
     }
@@ -3186,7 +3179,7 @@
   }
 
   AG.Engine = {
-    T_GRASS, T_ROCK, T_WATER, T_LAVA, IMPACT, shoveForecast, forcePath, clearLine, cleanupTargets, cleanupLoot, cleanupLeft, endCleanup, CLEANUP_STALL,
+    T_GRASS, T_ROCK, T_WATER, T_LAVA, IMPACT, shoveForecast, forcePath, clearLine, cleanupTargets, cleanupLoot, cleanupLeft, endCleanup,
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,

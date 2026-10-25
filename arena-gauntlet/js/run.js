@@ -723,12 +723,16 @@
   const BUILDING_HP = { 1: 0.8, 2: 1, 3: 1.15 };
   // Gold in each wrecked cart at the Act I boss's camp.
   const WRECK_GOLD = 8;
+  // Powder kegs strewn across the final challenge's field.
+  const MEGA_KEGS = 6;
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   // A backstop only: fatigue ends battles long before it.
   const TURN_LIMIT = 250;
-  // Fatigue sets in on this turn: each round every fighter loses 1 HP more at the start of
-  // its turn, until one side is left.
-  const OVERTIME = 30;
+  // Fatigue sets in for everyone on this turn: each unit loses HP as its turn comes, one
+  // more for every turn its side takes (see the engine's fatigue), until one side is left.
+  // Turn 36, not 30: counting passes makes it bite faster, and your armies (bigger, with
+  // more cooldowns) take more turns than the enemy's.
+  const OVERTIME = 36;
   const HOLD_NEED = 4;
 
   // When buildings send their reinforcements: the first, then one every few turns.
@@ -1144,8 +1148,21 @@
       }
     }
 
+    // The final challenge: nothing it pays could be used after it, so no chests and no
+    // bonus goals; powder kegs instead, strewn between the armies, to blow up under
+    // whoever stands beside them (22 to everything next to one, and they set each other off).
+    if (node.mega) {
+      const kr = AG.derive(run.seed, 'kegs:' + node.id);
+      const spots = [];
+      for (let y = 2; y <= 5; y++) for (let x = 0; x < BOARD; x++) if (open(x, y)) spots.push([x, y]);
+      for (const [x, y] of kr.shuffle(spots).slice(0, MEGA_KEGS)) {
+        units.push({ type: 'barrel', level: 1, x, y, facing: 2 });
+        used.add(x + ',' + y);
+      }
+    }
+
     // Bonus: loot on the field, sometimes guarded by specters.
-    if (layout !== 'siege' && rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
+    if (!node.mega && layout !== 'siege' && rng.chance(group === 'boss' ? 0.35 : group === 'elite' ? 0.8 : 0.6)) {
       const lk = group === 'normal' ? rng.weighted([['chest', 50], ['tome', 35], ['relic', 15]]) : rng.weighted([['chest', 20], ['tome', 40], ['relic', 40]]);
       // Guarded treasure sits off to a flank so the main fight can happen elsewhere.
       const xs = lk === 'chest' ? rng.shuffle([0, 1, 2, 6, 7, 8, 3, 5, 4]) : rng.chance(0.5) ? [0, 1, 8, 7] : [8, 7, 0, 1];
@@ -1167,7 +1184,7 @@
       }
     }
     // Bonus: a challenge.
-    if (rng.chance(group === 'boss' ? 0.4 : 0.65)) {
+    if (!node.mega && rng.chance(group === 'boss' ? 0.4 : 0.65)) {
       const opts = [['flawless', 30]];
       if (primary !== 'survive') opts.push(['swift', 35]);
       const arriving = enc.waves.reduce((t, w) => t + w.units.length, 0);
@@ -1183,7 +1200,65 @@
       else enc.bonus.push({ type: 'flawless' });
     }
     if (layout === 'convoy') enc.bonus.push({ type: 'plunder' });
+    openRoutes(units, terrain, BOARD, BOARD);
     return enc;
+  }
+
+  // Every enemy on foot, and every building's doorway, must have a way across the field to
+  // your deployment rows past rocks, water, lava and buildings: a keep whose side gates
+  // lava has sealed would wall its garrison in for good. (Units never wall anyone in for
+  // long: allies walk through each other.) Where a map seals someone in, the fewest rocks,
+  // pools and lava tiles that open a way are cleared. Returns how many tiles it cleared.
+  function openRoutes(units, terrain, w, h) {
+    const solid = (T) => (T.traits.includes('object') || T.traits.includes('structure') || T.traits.includes('summon')) && !T.traits.includes('opens');
+    const blocked = new Set(units.filter((u) => solid(UNITS[u.type])).map((u) => u.y * w + u.x));
+    const starts = [];
+    for (const u of units) {
+      const T = UNITS[u.type];
+      if (T.traits.includes('spawner')) {
+        if (u.y + 1 < h) starts.push((u.y + 1) * w + u.x);
+      } else if (!solid(T) && !u.post && !T.traits.includes('flying') && !T.traits.includes('immobile')) starts.push(u.y * w + u.x);
+    }
+    let cleared = 0;
+    for (const st of starts) {
+      // Cheapest way out: open ground costs nothing, a rock, pool or lava tile 1 (to clear).
+      const cost = new Map([[st, 0]]);
+      const prev = new Map();
+      const dq = [st];
+      let best = -1;
+      while (dq.length) {
+        const i = dq.shift();
+        const c = cost.get(i);
+        const x = i % w;
+        const y = (i - x) / w;
+        if (y >= h - DEPLOY_ROWS && terrain[i] === 0) {
+          if (best < 0 || c < cost.get(best)) best = i;
+          if (c === 0) break;
+          continue;
+        }
+        for (const [dx, dy] of D.DIRS) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const ni = ny * w + nx;
+          if (blocked.has(ni)) continue;
+          const nc = c + (terrain[ni] === 0 ? 0 : 1);
+          if (cost.has(ni) && cost.get(ni) <= nc) continue;
+          cost.set(ni, nc);
+          prev.set(ni, i);
+          if (nc === c) dq.unshift(ni);
+          else dq.push(ni);
+        }
+      }
+      if (best < 0 || cost.get(best) === 0) continue;
+      for (let i = best; i !== st; i = prev.get(i)) {
+        if (terrain[i] !== 0) {
+          terrain[i] = 0;
+          cleared++;
+        }
+      }
+    }
+    return cleared;
   }
 
   const LOOT_NAMES = { chest: 'War Chest', tome: 'Lost Tome', relic: 'Relic Cache' };
@@ -1269,21 +1344,52 @@
     return deployment
       .filter((d) => unitById(run, d.rid))
       .map((d) => {
-        const spec = specFor(run, unitById(run, d.rid));
+        const r = unitById(run, d.rid);
+        const spec = specFor(run, r);
         delete spec.rid;
+        // The campaign's Cleric, who always fights, costs no Supply in the Hall either.
+        if (r.core) spec.core = true;
         return { spec, x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 };
       });
   }
 
-  // Calling it a day at the final challenge: the Hall keeps the army that won the campaign,
-  // or (which: 'mega') the one that last fought the final challenge, if it differs.
+  // What a unit spec fields for in Supply, priced like your own units (a campaign's Cleric
+  // free). Relics that bend prices are left out: this is for comparing armies.
+  function specCost(sp) {
+    const T = UNITS[sp.type];
+    if (!T) return 0;
+    const lv = sp.level || 1;
+    let c = (sp.core ? 0 : T.cost) + LEVEL_COST[lv] + abilityCost(sp.a1) + (lv >= 2 ? abilityCost(sp.a2) : 0);
+    for (const id of sp.talents || []) c += TALENTS[id] ? TALENTS[id].cost : 0;
+    for (const id of sp.skills || []) c += SKILLS[id] ? SKILLS[id].cost : 0;
+    for (const id of sp.gear || []) c += GEAR[id] ? GEAR[id].cost : 0;
+    if (sp.enchant && ENCHANTS[sp.enchant]) c += ENCHANTS[sp.enchant].surcharge;
+    return c;
+  }
+
+  // A Hall of Fame army's total Supply.
+  function armySupply(L) {
+    return (L.units || []).reduce((t, it) => t + specCost(it.spec), 0);
+  }
+
+  // An enemy army's Supply as the battle opens, and what its reinforcements add.
+  function encSupply(enc) {
+    const army = enc.units.reduce((t, u) => t + enemyCost(u), 0);
+    const waves = (enc.waves || []).reduce((t, w) => t + w.units.reduce((a, u) => a + enemyCost(u), 0), 0);
+    return { army, waves };
+  }
+
+  // Calling it a day at the final challenge. The Hall already keeps the army that last
+  // fought it (see finishBattle); a save from before that rule may still hold that army
+  // aside in megaArmy, and it goes in now.
   function megaArmyDiffers(run) {
     return !!(run.megaArmy && run.megaArmy.length && JSON.stringify(run.megaArmy) !== JSON.stringify(run.finalArmy));
   }
 
-  function claimVictory(run, which) {
-    if (which === 'mega' && megaArmyDiffers(run)) {
+  function claimVictory(run) {
+    if (megaArmyDiffers(run)) {
       run.finalArmy = run.megaArmy;
+      run.megaArmy = null;
       recordLegend(run);
     }
     endRun(run);
@@ -1343,10 +1449,10 @@
     for (const d of deployment) {
       const r = unitById(run, d.rid);
       if (!r) continue;
-      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
+      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, supply: unitCost(run, r) }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty, supply: enemyCost(e) });
     return {
       w: enc.w,
       h: enc.h,
@@ -1361,7 +1467,7 @@
       goals: enc.bonus || [],
       cartExit: 0,
       turnLimit: TURN_LIMIT,
-      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true }, u)) })),
+      waves: (enc.waves || []).map((w) => Object.assign({ team: 'E' }, w, { units: w.units.map((u) => Object.assign({ foe: true, supply: enemyCost(u) }, u)) })),
       // Both sides take their turns in a speed-ordered unit rotation.
       queue: true,
       overtime: OVERTIME,
@@ -1522,9 +1628,13 @@
     if (s.winner !== 'P') {
       p.attempt = (p.attempt || 0) + 1;
       run.stats.losses++;
-      // The final challenge: remember the army that last tried it, so you can send that one
-      // to the Hall of Fame if you call it a day.
-      if (p.tier === 'mega') run.megaArmy = hallArmyOf(run, deployment);
+      // The final challenge: the army that last tried it, won or not, is the one the Hall of
+      // Fame keeps, from this moment (no asking).
+      if (p.tier === 'mega') {
+        run.finalArmy = hallArmyOf(run, deployment);
+        run.megaArmy = null;
+        recordLegend(run);
+      }
       save(run);
       return { won: false, attempt: p.attempt };
     }
@@ -2799,7 +2909,7 @@
           x = best.x;
           y = best.y;
         }
-        units.push(Object.assign({}, it.spec, { team, x, y, facing: team === 'P' ? 0 : 2 }));
+        units.push(Object.assign({}, it.spec, { team, x, y, facing: team === 'P' ? 0 : 2, supply: specCost(it.spec) }));
       }
     };
     place(a, 'P');
@@ -3010,6 +3120,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, houseArmies, HOUSE_SUPPLY, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, houseArmies, HOUSE_SUPPLY, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

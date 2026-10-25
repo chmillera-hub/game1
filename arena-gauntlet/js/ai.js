@@ -208,7 +208,7 @@
   }
 
   // Walking distance from every tile to the nearest foe (units ignored).
-  function buildDistField(s, foes) {
+  function buildDistField(s, foes, team) {
     const n = s.w * s.h;
     const dist = new Int16Array(n).fill(99);
     const q = [];
@@ -228,8 +228,10 @@
         if (!E.inB(s, nx, ny)) continue;
         const ni = E.idx(s, nx, ny);
         if (dist[ni] <= dist[i] + 1 || s.terrain[ni] !== E.T_GRASS) continue;
+        // Nobody walks through a building, a keg or a thicket, its own side's included: a
+        // garrison goes round its gate, not up against it.
         const o = E.at(s, nx, ny);
-        if (o && o.type === 'wall') continue;
+        if (o && (o.structure || o.traits.has('object') || (o.nonCombat && o.traits.has('immobile'))) && !(o.team === team && o.traits.has('opens'))) continue;
         dist[ni] = dist[i] + 1;
         q.push(ni);
       }
@@ -339,7 +341,7 @@
       foe,
       opts,
       sources: buildSources(s, foe),
-      distField: buildDistField(s, chase),
+      distField: buildDistField(s, chase, team),
       wards: flesh.length ? wards : [],
       flesh,
       chase,
@@ -367,14 +369,14 @@
       loot: team === 'P' ? (s.loot || []).filter((l) => !l.taken) : [],
     };
     if (ctx.focus) {
-      ctx.focusField = buildDistField(s, [ctx.focus]);
+      ctx.focusField = buildDistField(s, [ctx.focus], team);
       // Everything else gives way to the priority target: danger barely counts.
       ctx.risk *= 0.15;
     }
     // Loot to drift toward, unless sleeping guards lie around it (walking up would wake
     // them) or an enemy is the priority.
     const lure = ctx.loot.filter((l) => !s.units.some((g) => g.alive && g.post && g.post.x === l.x && g.post.y === l.y && dormant(s, g)));
-    ctx.lootField = lure.length && !(ctx.focus && ctx.focus.unit) ? buildDistField(s, lure) : null;
+    ctx.lootField = lure.length && !(ctx.focus && ctx.focus.unit) ? buildDistField(s, lure, team) : null;
     if (stanceName === 'defensive') {
       // Defenders hold their line until the enemy closes in or time passes.
       let closest = 99;

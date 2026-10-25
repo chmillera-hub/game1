@@ -3470,3 +3470,89 @@ body:has(#battle:not([hidden])) {
     font-size: 0.8rem;
   }
 }
+
+/* Each army's Supply by its own back row: the enemy's top right, yours bottom left. */
+.sup {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(20, 17, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--parchment-2);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.sup[hidden] {
+  display: none;
+}
+
+.sup b {
+  font-size: 1rem;
+  color: var(--parchment);
+}
+
+.sup b small {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.sup .sup-who {
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.sup .sup-unit,
+.sup .sup-more {
+  color: var(--muted);
+}
+
+.sup-e {
+  top: 52px;
+  right: 8px;
+  border-color: rgba(255, 110, 100, 0.55);
+}
+
+.sup-e .sup-who {
+  color: #ff9a8a;
+}
+
+.sup-p {
+  bottom: 8px;
+  left: 8px;
+  border-color: rgba(110, 160, 255, 0.55);
+}
+
+.sup-p .sup-who {
+  color: #9cc2ff;
+}
+
+/* Clear of the rotate hint along the bottom on a phone held upright. */
+.rotate-hint:not([hidden]) ~ .sup-p {
+  bottom: 48px;
+}
+
+.ch-sup {
+  font-size: 0.85rem;
+  color: var(--parchment-2);
+}
+
+.ch-sup b,
+.hall-sup {
+  color: var(--parchment);
+}
+
+.ch-sup .icon,
+.hall-sup .icon {
+  color: var(--brass);
+}
