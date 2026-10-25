@@ -4230,7 +4230,7 @@
           <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? 'max level' : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
-          ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold from Midas Touch</span>` : ''}
+          ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold picked up in battle</span>` : ''}
           ${p.bounty ? `<span class="res gold">${ic('gold')} +${p.bounty} gold from broken barricades</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
