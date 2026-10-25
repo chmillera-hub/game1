@@ -46,25 +46,28 @@ test('every army can fight: each unit pick offers at least two attackers', () =>
   }
 });
 
-test('exactly one Cleric is offered, in the first pick, beside two attackers', () => {
-  const where = [0, 0, 0];
+test('the draft never offers a Cleric: every army starts with its own, free and always on the field', () => {
   for (let seed = 1; seed <= 300; seed++) {
     const picks = [];
-    let clerics = 0;
     for (let s = 0; s < 5; s++) {
       const o = R.draftOffer(seed, s, picks).options;
-      const n = o.filter((t) => t === 'cleric').length;
-      clerics += n;
-      if (s === 0) {
-        assert.strictEqual(n, 1, `seed ${seed}: the first pick offers a Cleric`);
-        assert.strictEqual(o.filter(attacker).length, 2, 'and two attackers');
-        where[o.indexOf('cleric')]++;
-      } else assert.strictEqual(n, 0, `seed ${seed} step ${s}: no Cleric after the first pick`);
+      assert.ok(!o.includes('cleric'), `seed ${seed} step ${s}: ${o}`);
       picks.push(o[(seed + s) % 3]);
     }
-    assert.strictEqual(clerics, 1);
   }
-  assert.ok(where.every((n) => n > 50), 'in any of the three places: ' + where);
+  const picks = draftAll(5, (o) => o[0]);
+  const run = R.newRun({ seed: 5, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
+  assert.strictEqual(run.roster.length, 6, 'five drafted units and the Cleric');
+  const core = R.coreUnit(run);
+  assert.ok(core && core.type === 'cleric' && run.roster[0] === core);
+  assert.strictEqual(R.unitCost(run, core), 0, 'its base cost is free');
+  core.load.lv = 2;
+  assert.ok(R.unitCost(run, core) > 0, 'levels still cost Supply');
+  core.load.lv = 1;
+  // A ready-made warband's own Cleric becomes it: no second one.
+  const wb = R.newRun({ seed: 5, warband: 'vanguard' });
+  assert.strictEqual(wb.roster.filter((u) => u.type === 'cleric').length, 1);
+  assert.ok(R.coreUnit(wb));
 });
 
 test('offered items fit the units chosen; the same picks give the same offers', () => {
@@ -81,13 +84,13 @@ test('offered items fit the units chosen; the same picks give the same offers', 
 test('a drafted army starts the campaign', () => {
   const picks = draftAll(77, (o) => o[0]);
   const run = R.newRun({ seed: 77, draft: { units: picks.slice(0, 5), relic: picks[5], items: [['skill', picks[6]], ['gear', picks[7]]] } });
-  assert.deepStrictEqual(run.roster.map((r) => r.type), picks.slice(0, 5));
+  assert.deepStrictEqual(run.roster.map((r) => r.type), ['cleric', ...picks.slice(0, 5)], 'your Cleric, then the five you drafted');
   assert.deepStrictEqual(run.relics, [picks[5]]);
   assert.ok(run.items.some((i) => i.kind === 'skill' && i.id === picks[6]));
   assert.ok(run.items.some((i) => i.kind === 'gear' && i.id === picks[7]));
   assert.strictEqual(run.gold, R.DRAFT_GOLD);
   assert.ok(run.roster.every((r) => r.brought && r.load.talents.length === 0), 'each brought its random talent, into the pack');
-  assert.strictEqual(run.items.filter((i) => i.kind === 'talent').length, 5);
+  assert.strictEqual(run.items.filter((i) => i.kind === 'talent').length, 6);
   assert.ok(run.offer && run.offer.length === 3, 'the first round of challenges is on offer');
 });
 

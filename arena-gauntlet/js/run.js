@@ -104,6 +104,27 @@
     return u;
   }
 
+  // The Cleric every army has: it fights in every battle and its base cost is free (levels
+  // and kit still cost Supply). It cannot leave the field; where it stands is up to you.
+  // A ready-made warband's own Cleric becomes it; older saves get theirs on loading.
+  function coreUnit(run) {
+    return run.roster.find((u) => u.core) || null;
+  }
+
+  function ensureCore(run) {
+    const has = coreUnit(run);
+    if (has) return has;
+    const c = run.roster.find((u) => u.type === 'cleric');
+    if (c) {
+      c.core = true;
+      return c;
+    }
+    const u = addRecruit(run, 'cleric', { core: true });
+    run.roster.splice(run.roster.indexOf(u), 1);
+    run.roster.unshift(u);
+    return u;
+  }
+
   // Every new unit brings one random talent of its class. It goes into your pack: units on
   // the bench carry nothing, and you equip it in the War Room once the unit is on the field.
   // It is one you do not own yet while any is left (bought or found ones count), so units of
@@ -236,7 +257,7 @@
     normalizeLoad(run, r);
     const T = UNITS[r.type];
     const L = r.load;
-    const out = [{ label: T.name + ' (Level 1)', cost: T.cost }];
+    const out = [r.core ? { label: T.name + ' (always fights: free)', cost: 0 } : { label: T.name + ' (Level 1)', cost: T.cost }];
     if (L.lv > 1) out.push({ label: 'Level ' + L.lv, cost: LEVEL_COST[L.lv] });
     if (L.a1) out.push({ label: ABILITIES[L.a1].name, cost: abilityCost(L.a1) });
     if (L.lv >= 2 && L.a2) out.push({ label: ABILITIES[L.a2].name, cost: abilityCost(L.a2) });
@@ -245,7 +266,7 @@
       if (d) out.push({ label: d.name, cost: d.cost });
     }
     if (r.enchant) out.push({ label: ENCHANTS[r.enchant].name + ' (enchantment)', cost: ENCHANTS[r.enchant].surcharge });
-    if (L.lv === 1 && hasRelic(run, 'recruiters_bell') && out.reduce((t, x) => t + x.cost, 0) > 2) out.push({ label: RELICS.recruiters_bell.name, cost: -1 });
+    if (L.lv === 1 && !r.core && hasRelic(run, 'recruiters_bell') && out.reduce((t, x) => t + x.cost, 0) > 2) out.push({ label: RELICS.recruiters_bell.name, cost: -1 });
     return out;
   }
 
@@ -340,16 +361,10 @@
     };
     if (kind === 'unit') {
       // Commons come up most; every offer has at least two units that deal damage and at
-      // most one healer or ward. A Cleric, the one unit that heals your army, is offered
-      // exactly once: in the first pick, beside two units that deal damage.
+      // most one ward. No Cleric: every army already has its own (coreUnit).
       const support = (t) => ['support', 'ward'].includes(UNITS[t].role);
       const weight = (t) => (UNITS[t].rarity === 'common' ? 3 : UNITS[t].rarity === 'uncommon' ? 2 : 1);
       const pool = DRAFT_POOL.filter((t) => t !== 'cleric');
-      if (step === 0) {
-        const options = three(pool, weight, (o) => o.filter(isAttacker).length === 3 && !o.some(support)).slice(0, 2);
-        options.splice(rng.int(3), 0, 'cleric');
-        return { kind, options };
-      }
       const options = three(pool, weight, (o) => o.filter(isAttacker).length >= 2 && o.filter(support).length <= 1);
       return { kind, options };
     }
@@ -402,6 +417,7 @@
       stats: { battles: 0, elites: 0, bosses: 0, gold: 0, xp: 0, kills: 0, losses: 0, firstTry: 0, lean: 0 },
     };
     for (const t of wb.units) addRecruit(run, t);
+    ensureCore(run);
     for (const [kind, id] of wb.items || []) addItem(run, kind, id);
     startAct(run, 1);
     return run;
@@ -2097,6 +2113,12 @@
       const slot = deploySlots(run, enc, isFront(star.type), taken)[0];
       if (slot) put(star.id, slot.x, slot.y, 0);
     }
+    // The Cleric always fights: in the back row unless you placed it before.
+    const core = coreUnit(run);
+    if (core && !dep.some((d) => d.rid === core.id)) {
+      const slot = deploySlots(run, enc, false, taken)[0];
+      if (slot) put(core.id, slot.x, slot.y, 0);
+    }
     return dep;
   }
 
@@ -2174,18 +2196,25 @@
     const pool = run.roster.slice().sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
     const pick = [];
     let spent = 0;
+    // The Cleric always goes in, free, on top of the usual army size.
+    const core = coreUnit(run);
+    if (core) {
+      pick.push(core);
+      spent += unitCost(run, core); // an enchantment's surcharge, if it has one
+    }
+    const others = () => pick.filter((r) => !r.core).length;
     // A unit a bonus goal asks for always goes in, so you can see the goal is in reach.
     const wanted = bonusUnit(run, enc);
-    if (wanted && unitCost(run, wanted) <= supply) {
+    if (wanted && !pick.includes(wanted) && unitCost(run, wanted) <= supply) {
       pick.push(wanted);
       spent += unitCost(run, wanted);
     }
-    while (pick.length < cap) {
+    while (others() < cap) {
       const open = pool.filter((r) => !pick.includes(r) && spent + unitCost(run, r) <= supply);
       if (!open.length) break;
       const attackers = pick.filter((p) => isAttacker(p.type));
       // Supporting units wait until two attackers are in, and fill at most a third of the army.
-      const supportFull = attackers.length < 2 || pick.length - attackers.length >= Math.max(1, Math.floor(cap / 3));
+      const supportFull = attackers.length < 2 || others() - attackers.length >= Math.max(1, Math.floor(cap / 3));
       const options = supportFull && open.some((o) => isAttacker(o.type)) ? open.filter((o) => isAttacker(o.type)) : open;
       // Steer the attackers toward the mix of damage types this enemy is weakest to.
       const magicIn = attackers.filter((p) => kind(p) === 'magic').length;
@@ -2198,7 +2227,9 @@
       pick.push(r);
       spent += unitCost(run, r);
     }
-    if (!pick.some((r) => isAttacker(r.type))) return [];
+    if (!pick.some((r) => isAttacker(r.type))) return core ? autoPlace(run, enc, [core]) : [];
+    // The Cleric is upgraded last, after the units picked for this fight.
+    if (core) pick.push(pick.splice(pick.indexOf(core), 1)[0]);
     // Spend what is left: levels on the best units, then owned items in open slots.
     for (let guard = 0; guard < 30; guard++) {
       const left = supply - pick.reduce((t, r) => t + unitCost(run, r), 0);
@@ -2250,6 +2281,11 @@
       }
       if (!did) break;
     }
+    return autoPlace(run, enc, pick);
+  }
+
+  // Tiles for Auto's picks: fighters up front, the rest behind.
+  function autoPlace(run, enc, pick) {
     const taken = new Set();
     const out = [];
     for (const r of pick) {
@@ -2566,6 +2602,8 @@
       if (!r || r.v !== 2 || r.over || !r.plan) return null;
       if (r.pending && r.pending.type === 'battle') retime(r, r.pending.enc);
       grantPickedTalents(r);
+      // Saves from before every army had its Cleric.
+      if (r.roster) ensureCore(r);
       // Saves from before the field limit went: a paid-for wider line becomes Supply.
       if (r.capBonus) {
         r.supplyBonus = (r.supplyBonus || 0) + r.capBonus;
@@ -2618,7 +2656,7 @@
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
-    costBreakdown, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
+    costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,

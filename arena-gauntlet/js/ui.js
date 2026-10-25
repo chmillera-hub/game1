@@ -877,7 +877,7 @@
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
-      unit: 'Five units make your starting army. Every unit brings a talent of its class for your pack, a different one for each unit of a class. The first pick always offers a Cleric, your healer (the only one in the draft).',
+      unit: 'Five units make your starting army, on top of your Cleric: every army has one, the only unit that heals. It fights in every battle, free of Supply, and you choose where it stands. Every unit brings a talent of its class for your pack, a different one for each unit of a class.',
       relic: 'A relic works for the whole campaign.',
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
@@ -1267,7 +1267,7 @@
             <canvas class="portrait" data-p="${r.type}:P"></canvas>
             <div class="nm" style="min-width:0"><b>${esc(r.name)}</b> ${levelBadge(r.load.lv)}
               <div class="small muted">${esc(UNITS[r.type].name)} · ${esc(ABILITIES[r.load.a1].name)}${r.load.lv >= 2 ? ' · ' + esc(ABILITIES[r.load.a2].name) : ''}</div></div>
-            <div class="chips" style="justify-content:flex-end">${r.enchant ? `<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</span>` : ''}${deployed ? '<span class="chip good">Deployed</span>' : ''}
+            <div class="chips" style="justify-content:flex-end">${r.core ? '<span class="chip good" title="Fights in every battle, free of Supply">Always fights</span>' : ''}${r.enchant ? `<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</span>` : ''}${deployed && !r.core ? '<span class="chip good">Deployed</span>' : ''}
               <span class="chip warn">${ic('command')} ${R.unitCost(run, r)}</span></div></button>`;
         })
         .join('')}</div>`;
@@ -1704,7 +1704,8 @@
       f.lines.push(
         'Blocks the way: nobody can stand here, and only flying units pass over it.',
         'Stops straight-line attacks such as a Witch\'s lightning; arcing shots and spells fly over it.',
-        'It cannot be destroyed. A unit knocked into it is slammed for 6 damage.'
+        'It cannot be destroyed. A unit knocked into it is slammed for 6 damage.',
+        'Make it the priority and your army gathers around it and holds there.'
       );
     } else if (t === E.T_WATER || t === E.T_LAVA) {
       const water = t === E.T_WATER;
@@ -1900,7 +1901,8 @@
     // Units on the bench are bare: their kit goes back to the pack until they take the field.
     for (const r of run.roster) if (!dep.has(r.id)) R.stripLoad(run, r);
     R.save(run);
-    UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0, star: star ? star.id : null };
+    const core = R.coreUnit(run);
+    UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0, star: star ? star.id : null, core: core ? core.id : null };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
     UI.boardDragMove = wrDragMove;
@@ -2061,7 +2063,8 @@
     if (wr.tab === 'army') {
       // The unit a bonus goal asks for comes first, where you cannot miss it.
       const star = R.bonusUnit(run, enc);
-      body = `<div class="roster">${(star ? [star, ...run.roster.filter((u) => u !== star)] : run.roster)
+      const first = [star, R.coreUnit(run)].filter((u, i, a) => u && a.indexOf(u) === i);
+      body = `<div class="roster">${[...first, ...run.roster.filter((u) => !first.includes(u))]
         .map((u) => {
           const deployed = wr.dep.has(u.id);
           const cost = R.unitCost(run, u);
@@ -2071,7 +2074,7 @@
           // carry anything).
           const bare = R.bareCost(run, u);
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
-            <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Quest</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
+            <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Quest</span>' : u.core ? '<span class="flag core" title="Always fights, free of Supply">Always</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
             <span class="nm">${esc(u.name)} ${levelBadge(u.load.lv)}</span>
             <span class="ty">${UNITS[u.type].name}</span></button>`;
@@ -2116,12 +2119,14 @@
     } else if (tileF) {
       const loot = E.lootAt(s, wr.tile.x, wr.tile.y);
       const shrine = !loot && isShrine(s, wr.tile.x, wr.tile.y);
-      const open = !loot && !shrine && tileF.open;
+      const open = !loot && !shrine && (tileF.open || isObstacle(s, wr.tile.x, wr.tile.y));
       const isFocus = focusT && ((loot && focusT.loot === loot) || (shrine && focusT.hold) || (open && focusT.tile && focusT.x === wr.tile.x && focusT.y === wr.tile.y));
       const why = shrine
         ? 'Priority: from the first turn, your army makes for the shrine: one unit stands on it and stays, the rest guard it.'
         : open
-          ? 'Priority: from the first turn, your army moves here and huddles as close as it can, attacking whatever comes in reach.'
+          ? isObstacle(s, wr.tile.x, wr.tile.y)
+            ? `Priority: from the first turn, your army gathers around the ${obstacleName().toLowerCase()} and holds there, attacking whatever comes in reach.`
+            : 'Priority: from the first turn, your army moves here and huddles as close as it can, attacking whatever comes in reach.'
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
@@ -2200,7 +2205,8 @@
         if (u) run.pending.focus = { kind: 'unit', x: u.x, y: u.y, label: `the ${UNITS[u.type].name}` };
         else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
         else if (shrine) run.pending.focus = { kind: 'hold', x: wr.tile.x, y: wr.tile.y, label: 'the shrine' };
-        else if (wr.tile && isOpenGround(s, wr.tile.x, wr.tile.y)) run.pending.focus = { kind: 'tile', x: wr.tile.x, y: wr.tile.y, label: 'the marked spot' };
+        else if (wr.tile && isRallySpot(s, wr.tile.x, wr.tile.y))
+          run.pending.focus = { kind: 'tile', x: wr.tile.x, y: wr.tile.y, label: isObstacle(s, wr.tile.x, wr.tile.y) ? `the ${obstacleName().toLowerCase()}` : 'the marked spot' };
         else return;
         wr.sel = null;
         toast(`Priority: ${run.pending.focus.label}. From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3200);
@@ -2251,7 +2257,7 @@
     };
     $('#wrClear').onclick = () => {
       for (const rid of [...wr.dep.keys()]) {
-        if (rid === wr.star) continue;
+        if (rid === wr.star || rid === wr.core) continue;
         wr.dep.delete(rid);
         R.stripLoad(run, R.unitById(run, rid));
       }
@@ -2305,7 +2311,7 @@
   function loadoutFieldButtons(rid) {
     const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
     const mine = ft && ft.ally && ft.ally.rid === rid;
-    return `<button class="btn" id="loFocus">${ic(mine ? 'close' : 'target')} ${mine ? 'Clear priority' : 'Priority'}</button>${rid === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="loRemove">${ic('close')} Take off the field</button>`}`;
+    return `<button class="btn" id="loFocus">${ic(mine ? 'close' : 'target')} ${mine ? 'Clear priority' : 'Priority'}</button>${UI.wr && (rid === UI.wr.star || rid === UI.wr.core) ? '' : `<button class="btn danger" id="loRemove">${ic('close')} Take off the field</button>`}`;
   }
 
   // The priority picked in the War Room, found on the field as it stands: an enemy unit or
@@ -2322,7 +2328,7 @@
       const u = s.units.find((v) => v.alive && v.team === 'P' && v.rid === f.rid);
       return u ? { tile: true, ally: u, x: u.x, y: u.y } : null;
     }
-    if (f.kind === 'tile') return s.terrain[E.idx(s, f.x, f.y)] === E.T_GRASS ? { tile: true, x: f.x, y: f.y } : null;
+    if (f.kind === 'tile') return [E.T_GRASS, E.T_ROCK].includes(s.terrain[E.idx(s, f.x, f.y)]) ? { tile: true, x: f.x, y: f.y } : null;
     const l = E.lootAt(s, f.x, f.y);
     return l ? { loot: l, x: l.x, y: l.y } : null;
   }
@@ -2333,6 +2339,10 @@
     const r = R.unitById(UI.run, rid);
     if (rid === wr.star) {
       toast(`${r.name} insists on fighting this battle (the quest). They stay on the field.`);
+      return false;
+    }
+    if (rid === wr.core) {
+      toast(`${r.name} the Cleric fights in every battle, free of Supply, and stays on the field. Long-press and drag them to choose where they stand.`, 4000);
       return false;
     }
     wr.dep.delete(rid);
@@ -2791,12 +2801,13 @@
     const u = B.mode === 'inspect' && B.sel ? s.byId[B.sel] : null;
     const l = !u && B.mode === 'tile' && B.tile ? E.lootAt(s, B.tile.x, B.tile.y) : null;
     const shrine = !u && !l && B.mode === 'tile' && B.tile && isShrine(s, B.tile.x, B.tile.y);
-    const open = !u && !l && !shrine && B.mode === 'tile' && B.tile && isOpenGround(s, B.tile.x, B.tile.y);
-    if (u && u.team === 'P') B.focus = { ally: u.uid, label: u.name };
+    const open = !u && !l && !shrine && B.mode === 'tile' && B.tile && isRallySpot(s, B.tile.x, B.tile.y);
+    if (isShrub(u)) B.focus = { tile: true, x: u.x, y: u.y, label: 'the shrub' };
+    else if (u && u.team === 'P') B.focus = { ally: u.uid, label: u.name };
     else if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
     else if (l) B.focus = { loot: l.id, label: `the ${R.LOOT_NAMES[l.kind]}` };
     else if (shrine) B.focus = { hold: true, label: 'the shrine' };
-    else if (open) B.focus = { tile: true, x: B.tile.x, y: B.tile.y, label: 'the marked spot' };
+    else if (open) B.focus = { tile: true, x: B.tile.x, y: B.tile.y, label: isObstacle(s, B.tile.x, B.tile.y) ? `the ${obstacleName().toLowerCase()}` : 'the marked spot' };
     else return;
     toast(`Priority: ${B.focus.label}. Your army ${focusVerb(B.focus)}, whatever the cost.`, 3500);
     sfx('click');
@@ -3038,9 +3049,28 @@
     return s.terrain[E.idx(s, x, y)] === E.T_GRASS && !E.at(s, x, y);
   }
 
-  // A tile that can be a priority: loot lying there, the shrine, or open ground.
+  // A boulder (a tree, a basalt spire): nobody stands on it, but the army can gather round it.
+  function isObstacle(s, x, y) {
+    return s.terrain[E.idx(s, x, y)] === E.T_ROCK;
+  }
+
+  function obstacleName() {
+    return OBSTACLE_NAME[(UI.board && UI.board.palette.obstacle) || 'rock'] || 'Boulder';
+  }
+
+  // A summoned shrub: a priority on it is a spot to gather at, not something to cut down.
+  function isShrub(u) {
+    return !!u && u.type === 'shrub';
+  }
+
+  // A spot the army can gather at: open ground or a boulder.
+  function isRallySpot(s, x, y) {
+    return isOpenGround(s, x, y) || isObstacle(s, x, y);
+  }
+
+  // A tile that can be a priority: loot lying there, the shrine, open ground or a boulder.
   function tileFocusable(s, t) {
-    return !!(t && (E.lootAt(s, t.x, t.y) || isShrine(s, t.x, t.y) || isOpenGround(s, t.x, t.y)));
+    return !!(t && (E.lootAt(s, t.x, t.y) || isShrine(s, t.x, t.y) || isRallySpot(s, t.x, t.y)));
   }
 
   function tileIsFocus(B, t) {
@@ -3054,7 +3084,7 @@
 
   // An enemy to go all out for, or one of your own units to rally on.
   function canFocusUnit(B, u) {
-    return !B.s.over && u.alive && focusable(u) && !(u.team === 'P' && u.nonCombat);
+    return !B.s.over && u.alive && (isShrub(u) || (focusable(u) && !(u.team === 'P' && u.nonCombat)));
   }
 
   // Walls, rocks and kegs are never a priority; a barricade with gold inside is.
@@ -3185,13 +3215,15 @@
       ov.select = [u.x, u.y];
       // Watching, the buttons come first so Priority is in view without scrolling.
       const watchBtns = auto
-        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
         : '';
       panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${u.bounty ? '' : actsHTML(u)}
         <div class="hint">${
           u.bounty
             ? `${ic('gold')} ${esc(UNITS[u.type].desc)} It holds <b>${u.bounty} gold</b> for your army, paid with the battle's gold when you win.${canFocusUnit(B, u) ? ' Make it the Priority and your whole army goes to break it.' : ''}`
+            : isShrub(u)
+            ? `${esc(UNITS[u.type].desc)} Make it the Priority and your army gathers around it and holds there.`
             : u.team === 'E'
             ? `Blue: where it can move. Red: everywhere it could hit when it next acts${u.wait > 0 ? ` (cooling down: it passes its next ${u.wait === 1 ? 'turn' : u.wait + ' turns'})` : ''}.`
             : inProgress && s.act.uid !== u.uid
@@ -4518,7 +4550,7 @@
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
-          <li><b>Priority</b>: tap an enemy unit, a building, a chest, the shrine or any empty tile while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
+          <li><b>Priority</b>: tap an enemy unit, a building, a barricade with gold, a chest, the shrine, any empty tile, a boulder, tree or shrub while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. A boulder, tree or shrub works the same way: your army gathers around it without trying to cut it down. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>

@@ -223,6 +223,35 @@ test('a spot on open ground as priority: the army huddles there and stays', () =
   assert.ok(huddled < normal, `closer than on normal orders (${huddled.toFixed(1)} vs ${normal.toFixed(1)})`);
 });
 
+test('a boulder as priority: the army gathers around it without trying to break it', () => {
+  const make = () => {
+    const terrain = new Array(81).fill(0);
+    terrain[8 * 9 + 8] = E.T_ROCK;
+    return battle(
+      [
+        { type: 'knight', team: 'P', x: 0, y: 8 },
+        { type: 'archer', team: 'P', x: 1, y: 8 },
+        { type: 'knight', team: 'P', x: 2, y: 8 },
+        { type: 'orc', team: 'E', x: 4, y: 1 },
+        { type: 'orc', team: 'E', x: 5, y: 1 },
+      ],
+      { terrain }
+    );
+  };
+  const f = { tile: true, x: 8, y: 8, label: 'the boulder' };
+  assert.deepStrictEqual(AI.focusOf(make(), 'P', f), { tile: true, x: 8, y: 8 });
+  const spread = (focus) => {
+    const s = make();
+    play(s, 6, focus);
+    const mine = s.units.filter((u) => u.alive && u.team === 'P');
+    return mine.reduce((t, u) => t + Math.abs(u.x - 8) + Math.abs(u.y - 8), 0) / mine.length;
+  };
+  const huddled = spread(f);
+  const normal = spread(null);
+  assert.ok(huddled <= 2.5, `gathered around the boulder (average ${huddled.toFixed(1)} tiles away)`);
+  assert.ok(huddled < normal, `closer than on normal orders (${huddled.toFixed(1)} vs ${normal.toFixed(1)})`);
+});
+
 test('one of your units as priority: the army gathers around it', () => {
   const make = () =>
     battle([
