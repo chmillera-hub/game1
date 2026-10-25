@@ -1439,6 +1439,50 @@
       });
     }
 
+    // Gold coins that fountain out of a tile, spin in the air and land on the ground around it.
+    coins(x, y, n) {
+      const [cx, cy] = this.pt(x, y, 14);
+      const ground = this.center(x, y)[1];
+      const grav = this.tw * 7;
+      const cs = [];
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2;
+        const sp = this.tw * (2.4 + Math.random() * 1.2);
+        const c = { vx: Math.cos(a) * sp * 0.85, vy: Math.sin(a) * sp, spin: Math.random() * 6, rate: 12 + Math.random() * 8, r: this.tw * (0.09 + Math.random() * 0.03), d: Math.random() * 0.15 };
+        const drop = ground + (Math.random() - 0.4) * this.th * 0.6 - cy;
+        c.land = (-c.vy + Math.sqrt(c.vy * c.vy + 2 * grav * drop)) / grav;
+        cs.push(c);
+      }
+      const max = 1.4;
+      this.effect(max, (g, k) => {
+        const T = k * max;
+        g.globalAlpha = k > 0.75 ? (1 - k) / 0.25 : 1;
+        for (const c of cs) {
+          if (T < c.d) continue;
+          const t = Math.min(T - c.d, c.land);
+          const px = cx + c.vx * t;
+          const py = cy + c.vy * t + (grav * t * t) / 2;
+          // Spinning in the air: the coin turns edge-on and back. On the ground it lies flat.
+          const down = t >= c.land;
+          const rx = down ? c.r : c.r * Math.max(0.18, Math.abs(Math.cos(c.spin + c.rate * t)));
+          const ry = down ? c.r * 0.55 : c.r;
+          g.fillStyle = '#9a6a1c';
+          g.beginPath();
+          g.ellipse(px, py + c.r * 0.18, rx, ry, 0, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = '#ffcf4a';
+          g.beginPath();
+          g.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = '#fff3b0';
+          g.beginPath();
+          g.ellipse(px - rx * 0.3, py - ry * 0.3, rx * 0.35, ry * 0.3, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.globalAlpha = 1;
+      });
+    }
+
     ring(x, y, color, radiusTiles, ms, lift) {
       const [cx, cy] = this.center(x, y);
       return this.effect(ms / 1000, (g, k) => {
@@ -2396,12 +2440,21 @@
             }
             break;
           }
-          case 'gold':
-            if (v) {
-              this.sfx('coin');
-              this.addText(v.x, v.y, '+' + e.amount + ' GOLD', '#ffd86a', { height: h, dy: -this.tw * 0.3 });
+          case 'gold': {
+            const gx = v ? v.x : e.x;
+            const gy = v ? v.y : e.y;
+            if (gx == null) break;
+            this.sfx('coin');
+            this.addText(gx, gy, '+' + e.amount + ' GOLD', '#ffd86a', { height: h, dy: -this.tw * 0.3, big: !!e.coins });
+            // A broken barricade spills its coins.
+            if (e.coins) {
+              any = true;
+              this.coins(gx, gy, Math.min(14, 4 + Math.round(e.amount / 2)));
+              this.particles(gx, gy, 10, ['#fff3b0', '#ffd86a'], { lift: 14, rise: 0.6, speed: 0.9, max: 0.6 });
+              this.ring(gx, gy, 'rgba(255,215,100,0.9)', 0.9, 380, 6);
             }
             break;
+          }
           case 'done':
             if (v) {
               v.wait = e.wait;

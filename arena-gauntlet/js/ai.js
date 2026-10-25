@@ -684,6 +684,8 @@
         if (t.team !== u.team && t.traits.has('cart')) val *= 1 + 4 / (1 + Math.abs(t.x - s.cartExit));
         else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
+        // A barricade's gold is worth breaking it for when nothing better is in reach.
+        if (t.bounty && t.team !== u.team && ctx.idle) val += e.kill ? t.bounty * 0.4 : (dealt / t.maxHp) * t.bounty * 0.15;
         // A hit on the priority target outweighs anything else this unit could do.
         if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
         // With the shrine the priority, an enemy standing on it must be driven off.
@@ -749,8 +751,17 @@
     return null;
   }
 
+  // No enemy fighter this unit could reach this turn: time enough to go after loose gold.
+  function idleHands(ctx, u) {
+    let span = 1;
+    for (const a of u.acts) if (a.dmg && a.kind !== 'none') span = Math.max(span, actSpan(a));
+    const r = u.move + span + 1;
+    return !ctx.foes.some((f) => !f.nonCombat && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= r);
+  }
+
   function planFor(ctx, u) {
     const s = ctx.s;
+    ctx.idle = u.team === 'P' && idleHands(ctx, u);
     const reach = E.reachable(s, u);
     const pos = new Map();
     const posAt = (r) => {

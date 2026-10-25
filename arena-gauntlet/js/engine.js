@@ -237,6 +237,8 @@
       summoner: spec.summoner || 0,
       born: spec.born || 0,
       kills: 0,
+      // Gold your army earns for breaking it (a barricade's pouch).
+      bounty: spec.bounty || 0,
       scorched: false,
       value: unitValue(spec.type, b.level),
     };
@@ -1170,6 +1172,11 @@
       stamp(s, u, 'wait');
     }
     emit(s, { t: 'death', uid: u.uid, src: src ? src.uid : 0 });
+    // A barricade broken by your army spills its gold, paid with the battle's other gold.
+    if (u.bounty && src && src.team === 'P' && u.team !== 'P') {
+      s.stats.bounty = (s.stats.bounty || 0) + u.bounty;
+      emit(s, { t: 'gold', uid: u.uid, amount: u.bounty, x: u.x, y: u.y, coins: true });
+    }
     if (src && src.team !== u.team && !u.nonCombat && !u.structure) {
       s.stats.kills[src.team]++;
       src.kills++;

@@ -1018,7 +1018,8 @@
         const x = rng.int(BOARD);
         const y = rng.range(3, 5);
         if (!open(x, y) || (enc.hold && enc.hold.x === x && enc.hold.y === y)) continue;
-        units.push({ type: 'barricade', level: 1, x, y, facing: 2 });
+        // Breaking it pays: a pouch of gold that grows with the act.
+        units.push({ type: 'barricade', level: 1, x, y, facing: 2, bounty: 8 + 4 * act });
         used.add(x + ',' + y);
         k++;
       }
@@ -1219,7 +1220,7 @@
       units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty });
     return {
       w: enc.w,
       h: enc.h,
@@ -1411,9 +1412,10 @@
     const unspent = Math.max(0, supply - used);
     const lean = unspent * LEAN_GOLD * (hasRelic(run, 'alchemist_stone') ? 3 : 1);
     const midas = s.stats.gold || 0;
+    const bounty = s.stats.bounty || 0;
     let xp = Math.round(battleXp(run, kind) * tier.xp) + (firstTry ? 2 : 0);
-    run.gold += gold + lean + midas;
-    run.stats.gold += gold + lean + midas;
+    run.gold += gold + lean + midas + bounty;
+    run.stats.gold += gold + lean + midas + bounty;
     run.stats.lean += lean;
     run.stats.battles++;
     if (kind === 'elite') run.stats.elites++;
@@ -1439,7 +1441,7 @@
     // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
     const spoils = tier.spoils ? genSpoils(run, rng, kind).slice(0, tier.spoils) : [];
     const reward = {
-      type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, firstTry, fallen,
+      type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, bounty, firstTry, fallen,
       spoils, spoilTaken: !spoils.length, objectives: [], mega: !!node.mega,
     };
     const info = objectiveInfo(run, p.enc);
