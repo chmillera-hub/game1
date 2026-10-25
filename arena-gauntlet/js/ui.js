@@ -3852,7 +3852,7 @@
     if (!to || to <= from) return '';
     const a = COMMAND[from];
     const b = COMMAND[to];
-    return `<div class="levelup">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}</div></div></div>`;
+    return `<div class="levelup" data-got="✓ Collected">${ic('crown')}<div><b>Commander level ${to}!</b><div class="small">Supply ${a.supply} → ${b.supply}</div></div></div>`;
   }
 
   function rewardScreen() {
@@ -3872,7 +3872,7 @@
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
         ${p.objectives && p.objectives.length ? `<div class="panel objectives">${p.objectives
-          .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span>` : ''}</span></div>`)
+          .map((o) => `<div class="obj bonus ${o.done ? 'done' : 'failed'}">${ic(o.done ? 'check' : 'close')}<span>${esc(o.text)}${o.done ? ` <span class="reward">${esc(o.got)}</span> <span class="got-tag">✓ Collected</span>` : ''}</span></div>`)
           .join('')}</div>` : ''}
         ${p.prisoner && R.unitById(run, p.prisoner) ? `<div class="gotline" data-got="✓ Collected">${ic('check')}<span>The prisoner ${esc(R.unitById(run, p.prisoner).name)} the ${UNITS[R.unitById(run, p.prisoner).type].name} is free and joins your army.${esc(R.talentNote(run, R.unitById(run, p.prisoner)))}</span></div>` : ''}
         ${p.relicGained ? `<div><div class="eyebrow">Relic claimed</div><div class="cards">${relicCard(p.relicGained, GOT)}</div></div>` : ''}

@@ -311,6 +311,13 @@ button.card:active {
   box-shadow: inset 0 0 0 1px var(--brass-hi) !important;
 }
 
+/* Collected and chosen cards are disabled (nothing to tap) but must not look passed over:
+   full strength, normal text. */
+.card[data-got] {
+  opacity: 1;
+  color: var(--text);
+}
+
 .card[data-got],
 .panel[data-got] {
   background:
@@ -3029,4 +3036,20 @@ body:has(#battle:not([hidden])) {
 
 .ench-box .small {
   color: #bfa6e6;
+}
+
+/* "Collected" inline, after a bonus goal's reward: nothing to tap, it is yours already. */
+.got-tag {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass));
+  color: var(--ink);
+  font-family: var(--font-caps);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  vertical-align: 1px;
 }

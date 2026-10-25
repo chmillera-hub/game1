@@ -229,7 +229,7 @@ on a phone turned sideways, but portrait works too.
   with a new setup (the win and its rewards are set aside, and it does not count as
   a loss), or keep the win and continue. You can retry as often as you like.
 - **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
-  prisoner, a relic) has a plain gold edge and a ✓ Collected badge, and no glow. A
+  prisoner, a relic, a commander level-up) has a plain gold edge and a ✓ Collected badge, and no glow; each bonus goal you met has a ✓ Collected tag right after its reward. A
   choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
   the draft, the challenge cards) has a soft aura that fades in and out; once you
   pick, your pick gets the gold edge and a ✓ Chosen badge and the rest go grey.
