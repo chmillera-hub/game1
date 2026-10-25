@@ -1530,7 +1530,7 @@
     } else {
       dealt = Math.min(amount, tgt.hp);
       tgt.hp -= dealt;
-      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0 });
+      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0, rout: info.rout || undefined });
       if (tgt.hp <= 0) kill(s, tgt, src);
     }
     if (src && src.team !== tgt.team) s.stats.dmg[src.team] += dealt;
@@ -2686,6 +2686,8 @@
 
   // This round's fatigue, past armor and shields.
   function fatigue(s, u) {
+    // A routed enemy bleeds every turn already (routTick); fatigue is for the other side.
+    if (s.routed && u.team === 'E') return;
     const n = fatigueHit(s);
     if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue' });
   }
@@ -2694,6 +2696,36 @@
   // in, 2 the next, and so on, the same for both sides (0 before it sets in).
   function fatigueHit(s) {
     return s.inOvertime ? Math.max(1, s.turn - s.overtime + 1) : 0;
+  }
+
+  // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
+  // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
+  // not stop there: the enemy is routed. Their reinforcements stop coming, and from the
+  // next enemy turn every enemy fighter bleeds at the start of each enemy turn, 2 HP more
+  // each turn (routTick). You win when the last of them falls. Your own side tires only
+  // when fatigue sets in for everyone (turn 30).
+  function rout(s, why) {
+    if (s.routed || s.over) return;
+    s.routed = Object.assign({ turn: s.turn }, why);
+    if (s.surviveTurns) s.surviveTurns = 0;
+    if (s.hold) s.hold.done = true;
+    for (const w of s.waves) if (w.team === 'E' && w.state === 'pending') w.state = 'cancelled';
+    emit(s, Object.assign({ t: 'routed', turn: s.turn }, why));
+  }
+
+  // What each routed enemy loses at the start of an enemy turn: 2 in the first enemy turn
+  // after the rout, then 4, 6 and so on (0 before the rout).
+  function routHit(s) {
+    return s.routed ? 2 * Math.max(1, s.turn - s.routed.turn) : 0;
+  }
+
+  function routTick(s) {
+    if (!s.routed || s.routed.ticked === s.turn || s.over) return;
+    s.routed.ticked = s.turn;
+    const n = routHit(s);
+    emit(s, { t: 'routTick', dmg: n });
+    for (const u of s.units.slice()) if (u.alive && u.team === 'E' && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: true });
+    resolveBooms(s);
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2714,19 +2746,20 @@
         s.timeout = true;
         return finish(s, strength(s, 'P') > strength(s, 'E') ? 'P' : 'E', { timeout: true });
       }
-      if (s.surviveTurns && s.turn > s.surviveTurns) return finish(s, 'P', { survived: true });
+      if (s.surviveTurns && s.turn > s.surviveTurns) rout(s, { survived: true });
     }
     startFatigue(s);
     startEffects(s, side);
+    if (side === 'E') routTick(s);
     checkOutcome(s);
     if (s.over) return;
-    if (side === 'P' && s.hold) {
+    if (side === 'P' && s.hold && !s.routed) {
       const h = s.hold;
       const on = at(s, h.x, h.y);
       if (on && on.team === 'P' && !on.nonCombat) h.count++;
       else h.count = 0;
       emit(s, { t: 'hold', count: h.count, need: h.need, uid: on && on.team === 'P' ? on.uid : 0 });
-      if (h.count >= h.need) return finish(s, 'P', { held: true });
+      if (h.count >= h.need) rout(s, { held: true });
     }
     // The other side's next waves mark where they land, a turn before they arrive.
     planWaves(s, other(side), side === 'P' ? s.turn + 1 : s.turn);
@@ -2909,11 +2942,19 @@
     // Nobody yields: a side that has only units that cannot hurt anyone (a Furgon, a
     // Barrier Ward) fights on, and the enemy must still bring every one down. Fatigue
     // settles it if neither side can.
+    // The mission done (the boss or commander slain, every goal object broken), the enemy is
+    // routed rather than beaten on the spot: you still have to finish them.
+    if (vipDown) rout(s, { vipSlain: true });
+    if (objDown) rout(s, { destroyed: true });
     let winner = null;
     if (!alive.P && !alive.E) winner = s.side;
     else if (!alive.P) winner = 'E';
-    else if (!alive.E || vipDown || objDown) winner = 'P';
-    if (winner) finish(s, winner, { vipSlain: vipDown, destroyed: objDown });
+    else if (!alive.E) winner = 'P';
+    if (!winner) return;
+    // A win after a rout keeps why the enemy broke (vipSlain, destroyed, held, survived).
+    const why = {};
+    if (winner === 'P' && s.routed) for (const k of ['vipSlain', 'destroyed', 'held', 'survived']) if (s.routed[k]) why[k] = true;
+    finish(s, winner, why);
   }
 
   function forfeit(s) {
@@ -2935,7 +2976,7 @@
     poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, routHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

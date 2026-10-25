@@ -1354,7 +1354,8 @@
   // Whether a won battle met one bonus goal.
   function bonusDone(s, deployment, b) {
     if (b.type === 'loot') return s.loot.some((l) => l.id === b.lootId && l.taken);
-    if (b.type === 'swift') return s.turn <= b.turns;
+    // A fast win counts from the turn the mission was done (the rout), not the last kill.
+    if (b.type === 'swift') return (s.routed ? s.routed.turn : s.turn) <= b.turns;
     if (b.type === 'flawless') return !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
     if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
     if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
