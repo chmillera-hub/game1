@@ -1162,7 +1162,7 @@
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
-        ${inBattle && !ex ? (UI.battle && UI.battle.s.cleanup ? `<button class="btn wide" id="muFinish">${ic('check')} Finish the battle (the win is yours)</button>` : `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>`) : ''}
+        ${inBattle && !ex ? (UI.battle && UI.battle.s.won ? `<button class="btn wide" id="muFinish">${ic('check')} Finish the battle (the win is yours)</button>` : `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>`) : ''}
         ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
         ${!inBattle && R.loadHall().legends.concat(R.loadHall().queue).length ? `<button class="btn wide danger" id="muHallReset">${ic('crown')} Reset Hall of Fame</button>` : ''}
@@ -1911,9 +1911,10 @@
       const goals = s.units.filter((u) => u.team === 'E' && u.goal);
       status = ` <span class="reward">${goals.filter((u) => !u.alive).length}/${goals.length} down</span>`;
     }
-    // A mission done leaves the enemy fatigued: they bleed every enemy turn until the last one falls.
-    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done! The enemy is fatigued: each enemy unit loses ${E.routHit(s)} HP as its turn comes, more each turn. Finish them.</span>`;
-    else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the enemy is fatigued at once.</span>`;
+    // A mission done is the win: both sides' fatigue timers switch on, and the battle goes on
+    // while your army grabs what else it can.
+    if (s && s.routed) status = ` <span class="reward">${ic('check')} Done: the win is yours! Both sides tire now (enemy −${E.fatigueHit(s, 'E')}, yours −${E.fatigueHit(s, 'P')}, one more each unit turn). Grab what else you can, or Finish now.</span>`;
+    else if (info.key !== 'rout') status += ` <span class="small muted">Do it and the win is yours: both sides start to tire.</span>`;
     const lines = [`<div class="obj primary ${s && s.routed ? 'done' : ''}">${ic('flag')}<span><b>${esc(info.short)}.</b> ${esc(info.primary)}${status}</span></div>`];
     const wl = wavesLine(enc, s);
     if (wl) lines.push(wl);
@@ -1927,8 +1928,10 @@
   // Mid-battle: a bonus goal already met ('done'), out of reach ('failed'), or still open ('').
   function bonusState(s, b) {
     if (b.type === 'loot' && s.loot.some((l) => l.id === b.lootId && l.taken)) return 'done';
-    if (b.type === 'swift' && (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) > b.turns) return 'failed';
-    if (b.type === 'flawless' && (s.cleanup ? s.cleanup.lost > 0 : s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive))) return 'failed';
+    if (b.type === 'swift' && (s.won ? s.won.turn : s.turn) > b.turns) return 'failed';
+    if (b.type === 'flawless' && (s.won ? s.won.lost > 0 : s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive))) return 'failed';
+    // Once the win is yours, speed and losses are settled.
+    if (s.won && (b.type === 'swift' || b.type === 'flawless')) return 'done';
     if (b.type === 'muster') return s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
     if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) return 'failed';
     if (b.type === 'blockade' && s.stats.blocked >= b.n) return 'done';
@@ -1945,8 +1948,8 @@
     const info = R.objectiveInfo(UI.run, enc);
     const tag = (t, cls) => ` <span class="${cls || 'gl-tag'}">${t}</span>`;
     let status = '';
-    if (s.cleanup) status = tag(`${ic('check')} Won. Cleanup: ${E.cleanupLeft(s)} left · your fatigue −${E.cleanupHit(s)}`, 'gl-tag done');
-    else if (s.routed) status = tag(`${ic('check')} Done. Enemy fatigued −${E.routHit(s)}`, 'gl-tag done');
+    if (s.cleanup) status = tag(`${ic('check')} Won. Cleanup: ${E.cleanupLeft(s)} left · your fatigue −${E.fatigueHit(s, 'P')}`, 'gl-tag done');
+    else if (s.routed) status = tag(`${ic('check')} Won. Fatigue: enemy −${E.fatigueHit(s, 'E')} · yours −${E.fatigueHit(s, 'P')}`, 'gl-tag done');
     else if (s.hold) status = tag(`${s.hold.count}/${s.hold.need}`);
     else if (s.surviveTurns) status = tag(`${Math.max(0, s.surviveTurns - s.turn + 1)} to go`);
     else if (enc.layout === 'convoy') {
@@ -1970,7 +1973,7 @@
     }
     for (const o of info.bonus) {
       const state = bonusState(s, o.b);
-      const prog = o.b.type === 'ambush' && state !== 'done' ? ` (${s.stats.waveKills || 0}/${o.b.n})` : o.b.type === 'swift' && !state && !s.routed && !s.cleanup ? ` (turn ${s.turn})` : '';
+      const prog = o.b.type === 'ambush' && state !== 'done' ? ` (${s.stats.waveKills || 0}/${o.b.n})` : o.b.type === 'swift' && !state && !s.won ? ` (turn ${s.turn})` : '';
       lines.push(`<div class="gl bonus ${state}">${ic(state === 'done' ? 'check' : state === 'failed' ? 'close' : 'star')}<span>${esc(o.short || o.text)}${prog}${state === 'failed' ? '' : tag(esc(o.reward), 'reward')}</span></div>`);
     }
     const waves = E.waveSummary(s).filter((w) => w.team === 'E');
@@ -3067,12 +3070,14 @@
     return out.join('');
   }
 
-  // The top bar's clock: turns to go before fatigue sets in, then this round's fatigue.
+  // The top bar's clock: turns to go before fatigue sets in, then each side's next fatigue
+  // hit (the two sides count apart).
   function turnLine(s) {
-    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · <span class="overtime">Your fatigue −${E.cleanupHit(s)}</span>`;
-    if (s.routed) return `Turn ${s.turn} · <span class="overtime">Enemy fatigued −${E.routHit(s)}</span>${s.inOvertime ? ` · yours −${E.fatigueHit(s, 'P')}` : ''}`;
-    if (s.inOvertime) return `Turn ${s.turn} · <span class="overtime">Fatigue: next −${E.fatigueHit(s, 'P')}</span>, one unit at a time`;
-    if (s.overtime) return `Turn ${s.turn} · fatigue at ${s.overtime}`;
+    const tired = ['E', 'P'].filter((t) => E.tiring(s, t)).map((t) => `${t === 'E' ? 'enemy' : 'yours'} −${E.fatigueHit(s, t)}`);
+    const clock = tired.length ? `<span class="overtime">Fatigue: ${tired.join(' · ')}</span>${tired.length < 2 && s.overtime && !s.inOvertime ? ` · all at ${s.overtime}` : ''}` : s.overtime ? `fatigue at ${s.overtime}` : '';
+    if (s.cleanup) return `Turn ${s.turn} · <span class="reward">Cleanup: ${E.cleanupLeft(s)} left</span> · ${clock}`;
+    if (s.won) return `Turn ${s.turn} · <span class="reward">Won</span> · ${clock}`;
+    if (clock) return `Turn ${s.turn} · ${clock}`;
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
 
@@ -3181,14 +3186,18 @@
         }
       } else if (e.t === 'routed') {
         finish();
-        if (e.already) add({ team: 'O', html: `<b class="overtime">Mission done!</b> Fatigue was already on, and it simply goes on as it was, one number at a time; nothing doubles.` });
-        else add({ team: 'O', html: `<b class="overtime">Mission done: the enemy is fatigued!</b> No more reinforcements, and each enemy unit loses HP as its turn comes, passing or not: the battle's next fatigue number, one more each time. Your side does not tire: with fatigue already on, turn ${s.overtime || R.OVERTIME} adds nothing.` });
+        const was = e.was || {};
+        const on = [!was.E && 'the enemy', !was.P && 'your army'].filter(Boolean);
+        add({ team: 'O', html: `<b class="overtime">Mission done: the win is yours!</b> No more reinforcements. ${on.length ? `${on.length > 1 ? 'Both sides\' fatigue switches on, each' : `Fatigue switches on for ${on[0]}`} from 1: each unit loses HP as its turn comes, passing or not, one more every time its side takes a turn.` : ''}${was.E || was.P ? ` ${was.E && was.P ? 'Both sides were' : was.E ? 'The enemy was' : 'Your army was'} already tiring and carr${was.E && was.P ? 'y' : 'ies'} on as before.` : ''} The battle goes on: grab what else you can before fatigue wears your army down (it cannot cost you the win), or tap Finish now.` });
       } else if (e.t === 'cleanup') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), but its fatigue sets in now: each of your units loses HP as its turn comes, passing or not, 1, then 2, 3 and so on, one more every turn. It goes on until everything is collected or your army has fallen.` });
+        add({ team: 'O', html: `<b class="overtime">The enemy army is beaten: the win is yours.</b> Your army collects what is left (${e.left}), ${e.was ? `its fatigue still counting on (next −${e.next})` : 'but its fatigue sets in now: each of your units loses HP as its turn comes, passing or not, 1, then 2, 3 and so on'}, one more every time one of your units takes its turn. It goes on until everything is collected or your army has fallen.` });
       } else if (e.t === 'overtime') {
         finish();
-        add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> One unit at a time, as its turn comes (passing or not), loses the battle's next fatigue number: 1, then 2, 3 and so on, back and forth between the sides.` });
+        const was = e.was || {};
+        if (!was.E && !was.P) add({ team: 'O', html: `<b class="overtime">Fatigue triggered!</b> Each side's fatigue starts at 1: one unit at a time, as its turn comes (passing or not), a unit loses its side's next number, one more every time that side takes a turn.` });
+        else if (was.E && was.P) add({ team: 'O', html: `<b class="overtime">Turn ${e.turn}: fatigue for everyone.</b> Both sides already tire, so nothing changes.` });
+        else add({ team: 'O', html: `<b class="overtime">Turn ${e.turn}: fatigue for everyone.</b> ${was.E ? 'Your army' : 'The enemy'} now tires too, from 1. ${was.E ? 'The enemy\'s' : 'Yours'} carries on as before.` });
       } else if (e.t === 'pass' && !e.auto && e.uid && s.byId[e.uid]) {
         finish();
         add({ team: e.side, html: `<span class="muted">${esc(logName(s.byId[e.uid]))} holds its ground.</span>` });
@@ -3307,7 +3316,7 @@
       <div class="eyebrow">Turn order</div>
       ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
-      ${s.cleanup && !s.over ? `<div class="hint">${ic('check')} <b>The enemy army is beaten: the win is yours.</b> Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot. Its fatigue has set in (next −${E.cleanupHit(s)}, one more every turn), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
+      ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot.` : 'The battle goes on while your army grabs what else it can.'} Its fatigue is on (next −${E.fatigueHit(s, 'P')}, one more every turn it takes), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
@@ -3602,8 +3611,11 @@
     logEvents(ev);
     // Just a banner, nothing to tap away: the battle log has the details.
     const routedEv = ev.find((e) => e.t === 'routed');
-    if (routedEv) showBanner(routedEv.already ? 'Mission done!' : 'Enemy fatigued!', false);
-    if (ev.some((e) => e.t === 'overtime')) showBanner('Fatigue triggered!', true);
+    if (routedEv) showBanner('Mission done: you win!', false);
+    const ot = ev.find((e) => e.t === 'overtime');
+    const otWas = (ot && ot.was) || {};
+    if (ot && !otWas.E && !otWas.P) showBanner('Fatigue triggered!', true);
+    else if (ot && (!otWas.E || !otWas.P)) showBanner(otWas.E ? 'Your army tires too!' : 'Enemy tires too!', true);
     if (ev.some((e) => e.t === 'cleanup')) showBanner('Army beaten!', false);
     // The top bar catches up with the banner at once, not after the moves play out.
     const line = (routedEv || ev.some((e) => e.t === 'overtime' || e.t === 'cleanup')) && $('#topbar .title span');
@@ -3991,7 +4003,7 @@
   // Mid-cleanup: stop collecting and take the win now.
   async function finishCleanup() {
     const B = UI.battle;
-    if (!B || !B.s.cleanup || B.s.over) return;
+    if (!B || !B.s.won || B.s.over) return;
     // Let the unit in motion finish first.
     B.paused = true;
     for (let i = 0; i < 100 && B.busy && UI.battle === B; i++) await sleep(50);
@@ -4778,9 +4790,9 @@
           <li><b>A unit's turn, step by step</b>: what comes with a unit's turn always comes in this order: its fatigue hit, then poison, then burns, then fire underfoot, then regen; only then does it act, or pass with its cooldown dropping by one ("PASS COOLDOWN 2→1" over its head). Each step shows over the unit's head on its own beat ("-16 FATIGUE", then "-5 POISON", then "+3 REGEN"), never two at once, even at 2× speed, and the numbers stack top to bottom in the order they happened instead of landing on each other.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit whenever its turn comes, acting or passing. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>Missions leave the enemy fatigued</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves does not end the battle on the spot. The enemy is fatigued: their reinforcements stop, and their fatigue sets in at once. From the next enemy turn, each enemy unit loses HP as its turn comes, passing or not: 1 for the first, then 2, 3 and so on, one more every enemy turn, past armor and shields, just like fatigue. You win when the last of them falls; it is all but certain, but not automatic. Your own side does not tire: once fatigue is on, turn ${R.OVERTIME} adds nothing. Done after turn ${R.OVERTIME}, when both sides already tire, fatigue simply goes on as it was: nothing doubles. A "win within N turns" goal counts from the turn the mission was done.</li>
-          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your army's fatigue sets in that moment: each of your units loses HP as its turn comes, passing or not, 1, then 2, 3 and so on, one more every turn. It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
-          <li><b>Fatigue</b>: from turn ${R.OVERTIME}, every unit loses HP whenever its turn comes, acting or passing, past armor and shields: never a whole side at once, always one unit at a time, as its own turn comes and before it moves, acts or passes. Each hit is the battle's next number, 1, then 2, 3 and so on, one count for both sides: as the turns alternate the hits go back and forth (the enemy 15, you 16, the enemy 17), and five units passing in a row at 15 lose 15, 16, 17, 18 and 19, one by one. No number comes twice, and nothing ever doubles it. If fatigue is already on by turn ${R.OVERTIME} (the enemy fatigued by a mission done, or your army's cleanup), that turn adds nothing: the count just goes on. The top bar shows the next one. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: the enemy's reinforcements stop, and both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades or a bonus goal, before fatigue wears it down too. Tap <b>Finish now</b> whenever you like. "Lose no unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
+          <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your fatigue switches on that moment, from 1 (or carries on, if it was on already). It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
+          <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past armor and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. No more reinforcements come once a side tires. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>

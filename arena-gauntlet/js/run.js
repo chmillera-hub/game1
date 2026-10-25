@@ -727,8 +727,8 @@
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   // A backstop only: fatigue ends battles long before it.
   const TURN_LIMIT = 250;
-  // Fatigue sets in for everyone on this turn: one unit at a time, as its turn comes, loses
-  // the battle's next fatigue number (see the engine's fatigue), until one side is left.
+  // Fatigue sets in for everyone on this turn, if it has not already: each side's own count,
+  // one unit at a time as its turn comes (see the engine's fatigue), until one side is left.
   const OVERTIME = 30;
   const HOLD_NEED = 4;
 
@@ -1587,8 +1587,10 @@
     // A fast win counts from the turn the mission was done (the rout), not the last kill.
     // Counted from the turn the mission was done, or the enemy army fell, not the last of
     // the cleanup; a unit fatigue takes during the cleanup does not spoil a flawless win.
-    if (b.type === 'swift') return (s.routed ? s.routed.turn : s.cleanup ? s.cleanup.turn : s.turn) <= b.turns;
-    if (b.type === 'flawless') return s.cleanup ? s.cleanup.lost === 0 : !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
+    // Speed and losses are judged as of the moment the win was yours (the mission done, or
+    // the enemy army down): what fatigue takes after that does not count.
+    if (b.type === 'swift') return (s.won ? s.won.turn : s.turn) <= b.turns;
+    if (b.type === 'flawless') return s.won ? s.won.lost === 0 : !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
     if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
     if (b.type === 'ambush') return (s.stats.waveKills || 0) >= b.n;
     if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
