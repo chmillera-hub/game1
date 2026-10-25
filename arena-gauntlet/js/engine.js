@@ -2787,8 +2787,14 @@
   // in line goes instead. Cooldowns, paralysis, roots, weakness and frenzy count the
   // unit's own turns, taken or sat out.
 
+  // Wards (Barrier and Lightning Wards) keep their place in the rotation even with nothing
+  // to do, so fatigue reaches them like everyone else.
   function inQueue(u) {
-    return u.alive && !u.nonCombat && hasAction(u);
+    return u.alive && !u.nonCombat && (hasAction(u) || isWard(u));
+  }
+
+  function isWard(u) {
+    return u.traits.has('immobile') && counts(u);
   }
 
   function byQueue(a, b) {
@@ -2822,10 +2828,12 @@
   // once a turn; if everyone does, the side passes. Regen and fatigue come to one unit a
   // turn, the one that takes it: units that sit the turn out neither regenerate nor lose
   // HP to fatigue, except that when every unit sits out, the first in line still takes the
-  // turn's fatigue.
+  // turn's fatigue. Wards are the exception: rooted to the spot, they tire whenever their
+  // turn comes, acting or not.
   function pickDue(s, side) {
     s.due = 0;
     const seen = new Set();
+    const worn = new Set();
     let tired = !s.inOvertime && !(s.routed && side === 'E');
     let first = null;
     for (;;) {
@@ -2840,6 +2848,9 @@
           tired = true;
           fatigue(s, u);
         }
+      } else if (u.alive && isWard(u)) {
+        fatigue(s, u);
+        worn.add(u.uid);
       }
       if (!u.alive) {
         checkOutcome(s);
@@ -2851,10 +2862,11 @@
         return;
       }
       if (!first) first = u;
-      emit(s, { t: 'sitout', uid: u.uid, why, wait: u.wait });
+      // A ward with no action at all (the Barrier Ward) passes quietly.
+      emit(s, { t: 'sitout', uid: u.uid, why: hasAction(u) ? why : 'passive', wait: u.wait });
       ownTurnDone(s, u);
     }
-    if (!tired && first && first.alive) {
+    if (!tired && first && first.alive && !worn.has(first.uid)) {
       fatigue(s, first);
       checkOutcome(s);
     }
@@ -2864,7 +2876,7 @@
   // (each assumed to act and start its cooldown). Entries: { uid } or { uid: 0 } for a
   // turn nobody can take.
   function upcoming(s, team, n) {
-    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid }));
+    const vs = s.units.filter((v) => v.team === team && inQueue(v) && hasAction(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid }));
     const out = [];
     for (let turn = 0; turn < n && vs.length; turn++) {
       let picked = null;

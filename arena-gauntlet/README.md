@@ -318,8 +318,10 @@ on a phone turned sideways, but portrait works too.
   past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in
   the next, then 3 and so on, the same for both sides, like fatigue in Hearthstone.
   One unit a turn: units that sit the turn out (cooling down) are spared, and if a
-  whole side sits out, the first in line takes it. The top bar shows this round's
-  hit. Reinforcements stop. Big units and regen last longest; the last side
+  whole side sits out, the first in line takes it. Wards are the exception: the
+  Barrier and Lightning Wards keep their place in the rotation and lose HP whenever
+  their turn comes, even with nothing to do (the Barrier Ward never acts, so it is
+  left out of the turn order strip). The top bar shows this round's hit. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Nobody surrenders**: a battle ends only when one side has no units left. If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
