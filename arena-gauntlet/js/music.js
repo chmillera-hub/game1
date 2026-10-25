@@ -119,7 +119,6 @@
         },
         { drum: 'taiko', pat: 'x..x..x.', vol: 0.14 },
         { drum: 'snare', pat: '....x..o', fill: '....xoxx', vol: 0.06 },
-        { drum: 'shaker', pat: '.x.x.x.x', vol: 0.015 },
       ],
     },
     clash: {
@@ -143,7 +142,6 @@
         { drum: 'frame', pat: 'x...x.x.', vol: 0.112 },
         { drum: 'snare', pat: '..x...x.', fill: 'x.x.xxxx', vol: 0.06 },
         { drum: 'tom', pat: '.......o', fill: '....x.xx', vol: 0.08 },
-        { drum: 'shaker', pat: 'oxoxoxox', vol: 0.012 },
       ],
     },
     tyrant: {
@@ -372,8 +370,10 @@
     tom(out, t, v) {
       thump(out, t, 175, 95, 0.3, v);
     },
+    // Battle tracks keep no shaker: a rattle on every beat ticks like a stove's igniter.
+    // The snare eases in a touch too, so it cracks rather than clicks.
     snare(out, t, v) {
-      noise(out, t, 0.16, v, 'bandpass', 1900, 0.8);
+      noise(out, t, 0.16, v, 'bandpass', 1700, 0.8, 0.005);
       thump(out, t, 230, 160, 0.07, v * 0.4);
     },
     // A soft rattle, not a tick: it eases in and stays below the sharpest highs.
