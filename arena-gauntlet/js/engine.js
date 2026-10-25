@@ -2087,7 +2087,8 @@
           pulsed.add(w.uid);
           emit(s, { t: 'totem', uid: w.uid });
         }
-        if (v.frenzy < 2) emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
+        // Announced when it starts, not every turn the totem keeps it going.
+        if (v.frenzy === 0) emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
         v.frenzy = Math.max(v.frenzy, 2);
         stamp(s, v, 'frenzy');
       }
