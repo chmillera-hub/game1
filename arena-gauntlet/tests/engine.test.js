@@ -667,12 +667,15 @@ test('the necromancer raises skeletons that crumble when it dies', () => {
   assert.ok(!ne.alive && !sk.alive, 'its skeletons crumble');
 });
 
-test('troll regeneration stops after magic damage', () => {
+test('trollblood regeneration stops after magic damage', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 7 },
     { type: 'troll', team: 'E', x: 4, y: 4 },
   ]);
   const [py, tr] = s.units;
+  // Bog Trolls no longer regenerate (enemies barely heal); the mechanic stays for anything that does.
+  tr.traits.add('trollblood');
+  tr.regen = 5;
   tr.hp = 40;
   E.endTurn(s);
   assert.strictEqual(tr.hp, 45, 'regenerates 5 at the start of its turn');
@@ -838,7 +841,7 @@ test('Rallying Cry speeds up recovering allies', () => {
   assert.ok(E.canActivate(s, ar), 'ready a turn sooner');
 });
 
-test('war drums heal and send allies into a frenzy', () => {
+test('war drums send allies into a frenzy, but heal no one', () => {
   const s = board([
     { type: 'shaman', team: 'E', x: 4, y: 2 },
     { type: 'orc', team: 'E', x: 4, y: 3 },
@@ -848,7 +851,7 @@ test('war drums heal and send allies into a frenzy', () => {
   orc.hp = 20;
   const base = E.calcHit(s, orc, kn, {}).dmg;
   act(s, sh, { kind: 'self' });
-  assert.strictEqual(orc.hp, 30);
+  assert.strictEqual(orc.hp, 20, 'enemies barely ever heal');
   assert.strictEqual(orc.frenzy, 2);
   assert.ok(E.calcHit(s, orc, kn, {}).dmg > base);
 });
@@ -1168,7 +1171,7 @@ test('taking loot uses the action and needs the unit on the tile', () => {
   assert.strictEqual(ar.wait, E.cooldown(ar), 'looting counts as an action');
 });
 
-test('specters: steel barely scratches them, magic hurts them more, and they drain life', () => {
+test('specters: steel barely scratches them, magic hurts them more, and their touch weakens instead of healing them', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },
     { type: 'pyromancer', team: 'P', x: 4, y: 8 },
@@ -1180,7 +1183,8 @@ test('specters: steel barely scratches them, magic hurts them more, and they dra
   sp.hp = 10;
   kn.block = 0;
   act(s, sp, { kind: 'unit', uid: kn.uid });
-  assert.ok(sp.hp > 10, 'drained life');
+  assert.strictEqual(sp.hp, 10, 'no life drained');
+  assert.ok(kn.weak > 0, 'the knight is weakened');
 });
 
 // ------------------------------------------------------------ buildings and reinforcements
@@ -1231,22 +1235,38 @@ test('materials: wood burns, stone resists, portals unravel under magic', () => 
   assert.strictEqual(E.calcHit(s, kn, portal, {}).dmg, 9);
 });
 
-test('totems heal nearby allies at the start of their turn, but not poisoned ones', () => {
+test('war totems whip nearby allies into a frenzy at the start of their turn, and heal nobody', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 8 },
     { type: 'totem', team: 'E', x: 4, y: 2 },
     { type: 'orc', team: 'E', x: 4, y: 4 },
     { type: 'orc', team: 'E', x: 4, y: 5 },
-    { type: 'orc', team: 'E', x: 3, y: 2 },
   ]);
-  const [, , near, far, sick] = s.units;
-  for (const o of [near, far, sick]) o.hp = 20;
-  sick.poison = { turns: 3, dmg: 2, src: 0 };
+  const [, , near, far] = s.units;
+  for (const o of [near, far]) o.hp = 20;
   E.endTurn(s);
-  assert.strictEqual(near.hp, 24, 'within 2 tiles: +4');
-  assert.strictEqual(far.hp, 20, '3 tiles away: nothing');
-  assert.strictEqual(sick.hp, 18, 'poison blocks healing');
+  assert.ok(near.frenzy > 0, 'within 2 tiles: in a frenzy');
+  assert.strictEqual(far.frenzy, 0, '3 tiles away: nothing');
+  assert.strictEqual(near.hp, 20, 'no healing');
   assert.ok(s.events.some((e) => e.t === 'totem'));
+  assert.ok(!s.events.some((e) => e.t === 'heal'));
+});
+
+test('regular enemies never heal: Orc Shaman drums only rouse, a Specter weakens instead of draining, a Bog Troll does not regenerate', () => {
+  const D = AG.Data;
+  assert.ok(D.UNITS.shaman.act.noHeal);
+  assert.ok(!D.UNITS.specter.props || !D.UNITS.specter.props.lifesteal);
+  assert.ok(!D.UNITS.troll.props || !D.UNITS.troll.props.regen);
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 6 },
+    { type: 'shaman', team: 'E', x: 4, y: 3 },
+    { type: 'orc', team: 'E', x: 4, y: 4 },
+  ]);
+  const [kn, sh, orc] = s.units;
+  orc.hp = 20;
+  const pv = E.previewAction(s, sh, { kind: 'self', x: sh.x, y: sh.y }, {});
+  assert.ok(pv.effects.every((e) => !e.heal), 'the drums heal no one');
+  assert.ok(kn);
 });
 
 function tentBattle(extra, opts) {

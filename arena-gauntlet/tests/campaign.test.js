@@ -119,6 +119,53 @@ test('the whole road: three acts, then the campaign is won and the final challen
   assert.ok(run.over && run.superWon, 'a super victory');
 });
 
+// Anything in an enemy army that heals: a Cleric or Furgon, or a healing ability, skill or gear.
+function healing(enc) {
+  const D = AG.Data;
+  const heals = (m) => !!m && ((m.props && (m.props.regen || m.props.lifesteal || m.props.healMult || m.props.killHeal)) || (m.active && ['heal', 'revive'].includes(m.active.kind)) || (m.traits || []).some((t) => ['bloodrage', 'auramend', 'martyr', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'].includes(t)));
+  const out = [];
+  const specs = enc.units.concat(...(enc.waves || []).map((w) => w.units));
+  for (const u of specs) {
+    const T = D.UNITS[u.type];
+    if (['cleric', 'furgon'].includes(u.type)) out.push(u.type);
+    if ((T.props && (T.props.regen || T.props.lifesteal || T.props.totemHeal)) || (T.act.kind === 'drum' && !T.act.noHeal)) out.push(u.type + ' itself');
+    for (const id of [u.a1, (u.level || 1) >= 2 ? u.a2 : null]) if (id && heals(D.ABILITIES[id].mod)) out.push(id);
+    for (const id of (u.skills || []).concat(u.gear || [])) if (heals(D.itemDef(D.SKILLS[id] ? 'skill' : 'gear', id).mod)) out.push(id);
+  }
+  return out;
+}
+
+test('enemies barely heal: no healers anywhere, but for one Healers battle a campaign, on offer once', () => {
+  for (const seed of [3, 11, 29, 47]) {
+    const run = R.newRun({ seed, warband: 'ember' });
+    const spot = R.healerSpot(run);
+    assert.ok([2, 3].includes(spot.act) && ['medium', 'elite'].includes(spot.tier));
+    const seen = new Set();
+    const special = [];
+    const look = () => {
+      const encs = (run.offer || []).map((o) => o.enc).concat(run.pending && run.pending.enc ? [run.pending.enc] : []);
+      for (const enc of encs) {
+        if (seen.has(enc)) continue;
+        seen.add(enc);
+        const h = healing(enc);
+        if (enc.healers) {
+          special.push(enc);
+          assert.ok(enc.units.filter((u) => u.type === 'cleric').length >= 1, 'the Healers battle brings Clerics');
+        } else assert.deepStrictEqual(h, [], `seed ${seed} ${enc.name}: ${h}`);
+      }
+    };
+    let guard = 0;
+    while (!run.won && guard++ < 60) {
+      look();
+      advance(run, guard % 3 === 0 ? 'elite' : 'medium');
+    }
+    R.faceFinal(run);
+    look();
+    assert.strictEqual(special.length, 1, `seed ${seed}: exactly one Healers battle on offer`);
+    assert.strictEqual(special[0].kind === 'elite' ? 'elite' : 'medium', spot.tier);
+  }
+});
+
 test('claiming the victory instead ends the campaign as won', () => {
   const run = R.newRun({ seed: 12, warband: 'vanguard' });
   let guard = 0;

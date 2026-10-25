@@ -478,6 +478,8 @@
       run.offer = tiers.map((tier) => {
         const T = TIERS[tier];
         const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega' };
+        const hs = healerSpot(run);
+        if (st.kind === 'fight' && hs.act === run.act && hs.round === st.round && hs.tier === tier) node.healers = true;
         const enc = genEncounter(run, node, null, seen);
         seen.push(enc.name);
         return { tier, node, enc, attempts: 0 };
@@ -489,7 +491,7 @@
       const pool = EVENTS.filter((ev) => !run.seenEvents.includes(ev.id));
       const ev = rng.pick(pool.length ? pool : EVENTS);
       run.seenEvents = run.seenEvents.concat(ev.id);
-      run.pending = { type: 'event', nodeId: tag, eventId: ev.id, ctx: ev.prepare ? ev.prepare(run, rng) : {}, result: null };
+      run.pending = { type: 'event', nodeId: tag, eventId: ev.id, ctx: prepareEvent(run, ev, tag), result: null };
     }
   }
 
@@ -515,7 +517,7 @@
   // What a challenge pays if won on the first try (bonus goals and loot come on top).
   function challengeReward(run, o) {
     const T = TIERS[o.tier];
-    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
+    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10 + (o.enc && o.enc.healers ? HEALERS_GOLD : 0), xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic };
     if (o.tier === 'boss') out.bossRelic = run.act < 3;
     return out;
   }
@@ -704,6 +706,39 @@
     portal: { 1: ['wisp', 'specter'], 2: ['wisp', 'specter'], 3: ['specter', 'wisp'] },
   };
 
+  // Enemies are terrible at healing: no healing abilities, skills or gear for them, and no
+  // Clerics, except in the one Healers battle a campaign holds (see healerSpot).
+  // (The fun pass adds more ways to mend: kills that feed, harvested souls, parasites.)
+  const HEAL_TRAITS = ['bloodrage', 'auramend', 'martyr', 'ogre', 'rallykill', 'harvest', 'undying', 'parasite', 'mossy'];
+  function healingMod(m) {
+    if (!m) return false;
+    const p = m.props || {};
+    if (p.regen || p.lifesteal || p.healMult || p.killHeal) return true;
+    if (m.active && (m.active.kind === 'heal' || m.active.kind === 'revive')) return true;
+    return (m.traits || []).some((t) => HEAL_TRAITS.includes(t));
+  }
+  const healingId = (table, id) => !!(id && table[id] && healingMod(table[id].mod));
+  const ENEMY_HEALERS = ['cleric', 'furgon'];
+
+  // An ability from `list` for an enemy: a random one that does not heal, within `ok`.
+  function enemyAbility(rng, list, ok) {
+    const clean = list.filter((id) => !healingId(ABILITIES, id));
+    const from = clean.length ? clean : list;
+    const pick = rng.pick(from);
+    if (!ok || ok(pick)) return pick;
+    return from.slice().sort((a, b) => abilityCost(a) - abilityCost(b))[0];
+  }
+
+  // The one battle of a campaign where the enemy brings healers: an act, a round and a tier.
+  const HEALERS_GOLD = 25;
+  function healerSpot(run) {
+    if (!run.healers) {
+      const rng = AG.derive(run.seed, 'healers');
+      run.healers = { act: rng.pick([2, 3]), round: rng.range(0, FIGHTS - 1), tier: rng.pick(['medium', 'elite']) };
+    }
+    return run.healers;
+  }
+
   function spawnPool(type, act, pool) {
     const fit = pool.filter((t) => SPAWN_FIT[type](UNITS[t]));
     return fit.length ? fit : SPAWN_DEFAULT[type][act];
@@ -715,8 +750,8 @@
     const T = UNITS[type];
     const u = { type, level: run.act >= 2 && group !== 'normal' ? 2 : 1 };
     if (T.abilities) {
-      u.a1 = rng.pick(T.abilities[1]);
-      u.a2 = T.abilities[2][0];
+      u.a1 = enemyAbility(rng, T.abilities[1]);
+      u.a2 = T.abilities[2].find((id) => !healingId(ABILITIES, id)) || T.abilities[2][0];
     }
     return u;
   }
@@ -757,7 +792,7 @@
   const BUDGET_CAP = { normal: 1.0, elite: 1.2, boss: 1.15 };
   // With one unit acting a turn, a bigger army counts for less, so ordinary foes get a
   // little more to spend.
-  const BUDGET_SCALE = { normal: 1.2, elite: 1.05, boss: 0.8 };
+  const BUDGET_SCALE = { normal: 1.27, elite: 1.1, boss: 0.84 };
   // The optional final challenge is meant to break most armies.
   const MEGA_BUDGET = 1.5;
 
@@ -778,9 +813,8 @@
     const classUnits = units.filter((u) => UNITS[u.type].abilities);
     for (const u of classUnits) {
       const ab = UNITS[u.type].abilities;
-      const pick = rng.pick(ab[1]);
-      u.a1 = cost() + abilityCost(pick) <= budget ? pick : ab[1][0];
-      u.a2 = ab[2][0];
+      u.a1 = enemyAbility(rng, ab[1], (id) => cost() + abilityCost(id) <= budget);
+      u.a2 = ab[2].find((id) => !healingId(ABILITIES, id)) || ab[2][0];
     }
     const maxLv = run.act === 1 ? (group === 'normal' ? 2 : 3) : 3;
     for (let guard = 0; guard < 24; guard++) {
@@ -796,8 +830,8 @@
       u.level = (u.level || 1) + 1;
       if (u.level === 2 && UNITS[u.type].abilities) {
         const ab = UNITS[u.type].abilities[2];
-        const pick = rng.pick(ab);
-        u.a2 = cost() + abilityCost(pick) - abilityCost(u.a2) <= budget ? pick : ab[0];
+        const was = u.a2;
+        u.a2 = enemyAbility(rng, ab, (id) => cost() + abilityCost(id) - abilityCost(was) <= budget);
       }
     }
     // Later acts: leftover budget buys skills and gear.
@@ -808,7 +842,7 @@
         const u = rng.pick(units.filter((x) => !isObjectType(x.type) && !UNITS[x.type].traits.includes('structure')));
         if (!u) break;
         const pool = rng.chance(0.5) ? ['skill', SKILLS] : ['gear', GEAR];
-        const ids = Object.keys(pool[1]).filter((id) => pool[1][id].cost <= left && D.eligible(u.type, pool[1][id]) && !pool[1][id].mod.active);
+        const ids = Object.keys(pool[1]).filter((id) => pool[1][id].cost <= left && D.eligible(u.type, pool[1][id]) && !pool[1][id].mod.active && !healingMod(pool[1][id].mod));
         if (!ids.length) continue;
         const key = pool[0] === 'skill' ? 'skills' : 'gear';
         u[key] = u[key] || [];
@@ -840,6 +874,10 @@
     const fullBudget = enemyBudget(run, node, kind) * (intro ? (node.row === 0 ? 0.85 : 0.92) : 1) * (node.mult || 1) * (node.mega ? MEGA_BUDGET : 1);
     const budget = fullBudget * (BUDGET_SHARE[primary] || 1);
     const units = tpl.units.map((t, i) => ({ type: t, level: tpl.lv ? tpl.lv[i] : 1 }));
+    // No healers in an enemy army, but for the campaign's one Healers battle, which brings
+    // a Cleric (two in an Elite) whatever the army.
+    const fighters = tpl.pool.filter((t) => !ENEMY_HEALERS.includes(t));
+    for (const u of units) if (ENEMY_HEALERS.includes(u.type)) u.type = rng.pick(fighters.length ? fighters : ['knight']);
     const cost = () => units.reduce((t, u) => t + enemyCost(u), 0);
     const structures = layout === 'siege' ? (act >= 3 || group === 'elite' ? 2 : 1) * 3 : 0;
     // Enemy armies stay a little above your usual army size; spare Supply buys levels instead.
@@ -855,6 +893,14 @@
       const addable = tpl.pool.filter((t) => enemyCost({ type: t, level: 1 }) <= budget - structures - cost() + 0.5);
       if (!addable.length || units.length >= maxUnits) break;
       units.push({ type: rng.pick(addable), level: 1 });
+    }
+    if (node.healers) {
+      const n = group === 'elite' ? 2 : 1;
+      for (let k = 0, i = units.length - 1; k < n && i >= 0; i--) {
+        if (UNITS[units[i].type].boss) continue;
+        units[i] = { type: 'cleric', level: units[i].level || 1 };
+        k++;
+      }
     }
     outfitEnemies(rng, run, units, budget - structures, group);
     if (primary === 'commander') {
@@ -952,6 +998,7 @@
       bonus: [],
       // Timings made for one unit a turn (see retime).
       tm: 2,
+      healers: !!node.healers,
     };
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
@@ -1103,7 +1150,7 @@
       hold: `Hold the shrine: start ${enc.hold ? enc.hold.need : HOLD_NEED} of your turns in a row with a unit on it. Or defeat every enemy.`,
       survive: `Survive ${enc.surviveTurns || 12} turns while waves of reinforcements march in from the far edge. Or defeat them all.`,
       gate: `Break the Castle Gate, or defeat the whole garrison.${spawners.length ? ` ${spawners.length > 1 ? 'Guardhouses send' : 'A Guardhouse sends'} a soldier every ${every} turns until destroyed.` : ''} Towers and walls do not need to fall.`,
-      totems: `Topple all ${totems.length} ${tName}s, or defeat every enemy. Each heals enemies within 2 tiles every turn.`,
+      totems: `Topple all ${totems.length} ${tName}s, or defeat every enemy. Each whips enemies within 2 tiles into a frenzy (25% more damage).`,
       raze: `Destroy ${spawners.length > 1 ? 'every' : 'the'} ${sName}. ${spawners.length > 1 ? 'Each' : 'It'} sends a fresh unit every ${every} turns until it falls.`,
       convoy: 'Break every Loot Wagon before it escapes off the left edge, or defeat the whole escort.',
     };
@@ -1236,7 +1283,7 @@
       units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
     }
     for (const e of enc.units)
-      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty });
+      units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty });
     return {
       w: enc.w,
       h: enc.h,
@@ -1418,6 +1465,8 @@
     let gold = rng.range(tier.gold[0], tier.gold[1]);
     if (hasRelic(run, 'coin_purse')) gold += 12;
     if (hasRelic(run, 'kings_ransom')) gold += 20;
+    // The campaign's one battle against enemy healers pays a bounty for the trouble.
+    if (p.enc.healers) gold += HEALERS_GOLD;
     const firstTry = !p.attempt;
     if (firstTry) {
       gold += 10;
@@ -1669,19 +1718,67 @@
 
   const uname = (t) => UNITS[t].name;
 
+  // ---- What events hand out: talents, skills, gear, enchantments bound straight onto a
+  // unit, relics, recruits, transformations. Gold is mostly something you pay, not win.
+
+  // A talent from the stronger (Level 2) list for a class in your army, or for `type`.
+  function rollRareTalent(run, rng, type, exclude) {
+    const types = type ? [type] : [...new Set(run.roster.map((r) => r.type))];
+    const opts = Object.values(TALENTS)
+      .filter((t) => t.tier === 2 && types.includes(t.cls) && !(exclude || []).includes(t.id))
+      .map((t) => [t.id, talentWeight(run, t)]);
+    return opts.length ? rng.weighted(opts) : null;
+  }
+
+  // Bind an enchantment straight onto a unit (one it can take), replacing any it had.
+  function bindEnchant(run, rng, u, prefer) {
+    const id = prefer && D.eligible(u.type, ENCHANTS[prefer]) ? prefer : rollEnchant(run, rng, u.type);
+    if (id) u.enchant = id;
+    return id;
+  }
+
+  // Turn a unit into another type, keeping its name, record and enchantment (if it fits).
+  function reshape(u, type) {
+    u.type = type;
+    u.load = defaultLoad(type);
+    if (u.enchant && !D.eligible(type, ENCHANTS[u.enchant])) u.enchant = null;
+  }
+
+  // A unit leaves the army for good; its kit goes back to the pack.
+  function dismiss(run, u) {
+    stripLoad(run, u);
+    run.roster = run.roster.filter((r) => r !== u);
+    run.lastPlan = (run.lastPlan || []).filter((d) => d.rid !== u.id);
+  }
+
+  // Units an event's choice may be used on.
+  const PICKS = {
+    any: () => true,
+    notcore: (run, u) => !u.core,
+    transmute: (run, u) => !u.core && ['common', 'uncommon'].includes(UNITS[u.type].rarity),
+    mirror: (run, u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity),
+    bare: (run, u) => !u.enchant && Object.keys(ENCHANTS).some((id) => D.eligible(u.type, ENCHANTS[id])),
+    trained: (run, u) => Object.values(TALENTS).some((t) => t.tier === 2 && t.cls === u.type),
+  };
+  function eventPickOk(run, pick, u) {
+    return !!(pick && u && PICKS[pick.filter] && PICKS[pick.filter](run, u));
+  }
+  const anyPick = (run, filter) => run.roster.some((u) => PICKS[filter](run, u));
+  const talentLine = (id) => `${TALENTS[id].name} (${uname(TALENTS[id].cls)} talent): ${TALENTS[id].desc}`;
+
   const EVENTS = [
     {
       id: 'sellsword',
       title: "The Sellsword's Offer",
-      text: 'A scarred mercenary sits by the road, honing a blade that hums with old magic. "Coin first, loyalty after."',
+      text: 'A scarred mercenary sits by the road, honing a blade that hums with old magic. "Coin first, loyalty after. Or cross steel with me, if you think one of yours is better."',
       prepare: (run, rng) => {
         const unit = rollUnitType(run, rng, 'elite');
         return { unit, enchant: rollEnchant(run, rng, unit) };
       },
       choices: (run, c) => [
         { id: 'hire', label: 'Hire (65 gold)', detail: `An enchanted ${uname(c.unit)} joins, bound with ${ENCHANTS[c.enchant].name}: ${ENCHANTS[c.enchant].desc}`, enabled: run.gold >= 65 },
-        { id: 'haggle', label: 'Haggle (30 gold)', detail: `Even odds: a plain ${uname(c.unit)} joins, or the coin is simply gone.`, enabled: run.gold >= 30 },
-        { id: 'leave', label: 'Move on', detail: 'Keep your gold.' },
+        { id: 'duel', label: 'Duel for the blade', detail: `Pick a fighter. Even odds: it wins, and the blade's magic binds to it (${ENCHANTS[c.enchant].name} if it can take it, another enchantment if not, replacing any it has). Or it loses, and the surgeon costs you 25 gold.`, enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
+        { id: 'leave', label: 'Move on', detail: 'Leave the mercenary to the whetstone.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
         if (choice === 'hire') {
@@ -1689,13 +1786,15 @@
           const u = addRecruit(run, c.unit, { enchant: c.enchant });
           return `${u.name} the ${uname(u.type)} counts the coin twice, then falls in line.${talentNote(run, u)}`;
         }
-        if (choice === 'haggle') {
-          run.gold -= 30;
+        if (choice === 'duel') {
+          const u = unitById(run, rid);
           if (rng.chance(0.5)) {
-            const u = addRecruit(run, c.unit);
-            return `${u.name} the ${uname(u.type)} shrugs, takes the coin and joins you.${talentNote(run, u)}`;
+            const id = bindEnchant(run, rng, u, c.enchant);
+            return `${u.name} disarms the sellsword in three passes. The blade's magic flows into them: ${ENCHANTS[id].name}. ${ENCHANTS[id].desc}`;
           }
-          return 'The mercenary bites the coin, grins, and is gone before you can blink.';
+          const lost = Math.min(run.gold, 25);
+          run.gold -= lost;
+          return `The sellsword is faster. ${u.name} limps away with a lesson and a stitched arm (${lost} gold to the surgeon).`;
         }
         return 'You leave the mercenary to the whetstone.';
       },
@@ -1703,23 +1802,21 @@
     {
       id: 'shrine',
       title: 'Shrine of the Forgotten Saint',
-      text: 'Candles still burn before a weathered statue, though no keeper is in sight. The air hums with old blessings.',
-      prepare: (run, rng) => ({ skills: rollMany(rng, 2, () => rollSkill(run, rng)), free: rollSkill(run, rng) }),
+      text: 'Candles still burn before a weathered statue, though no keeper is in sight. Two offerings lie at its feet: a book of drills, and a reliquary humming with an old warrior\'s gift.',
+      prepare: (run, rng) => ({ skill: rollSkill(run, rng), talent: rollRareTalent(run, rng) || rollTalent(run, rng) }),
       choices: (run, c) => [
-        { id: 'pray', label: 'Pray', detail: c.free ? `Receive a random skill.` : 'The saint is silent.', enabled: !!c.free },
-        ...c.skills.map((id) => ({ id: 'offer:' + id, label: `Offer 35 gold: ${SKILLS[id].name}`, detail: `${SKILLS[id].desc} (Skill, ${SKILLS[id].cost} Supply)`, enabled: run.gold >= 35 })),
-        { id: 'leave', label: 'Leave', detail: 'Let the candles burn.' },
-      ],
+        c.skill ? { id: 'book', label: `Take the book: ${SKILLS[c.skill].name}`, detail: `${SKILLS[c.skill].desc} (Skill, ${SKILLS[c.skill].cost} Supply)` } : null,
+        c.talent ? { id: 'relic', label: `Open the reliquary: ${TALENTS[c.talent].name}`, detail: talentLine(c.talent) } : null,
+        { id: 'leave', label: 'Leave both', detail: 'Let the candles burn.' },
+      ].filter(Boolean),
       resolve: (run, c, choice) => {
-        if (choice === 'pray') {
-          addItem(run, 'skill', c.free);
-          return `A warm light settles on your camp. You learn ${SKILLS[c.free].name}.`;
+        if (choice === 'book') {
+          addItem(run, 'skill', c.skill);
+          return `You learn ${SKILLS[c.skill].name}. The candles flicker approvingly.`;
         }
-        if (choice.startsWith('offer:')) {
-          const id = choice.slice(6);
-          run.gold -= 35;
-          addItem(run, 'skill', id);
-          return `You kneel and rise with ${SKILLS[id].name}.`;
+        if (choice === 'relic') {
+          addItem(run, 'talent', c.talent);
+          return `A warm light settles on your camp. ${TALENTS[c.talent].name} is yours, for any ${uname(TALENTS[c.talent].cls)}.`;
         }
         return 'You bow your head and walk on.';
       },
@@ -1727,28 +1824,30 @@
     {
       id: 'gamble',
       title: "The Gambler's Tent",
-      text: 'Dice clatter under a striped awning. A one-eyed bookmaker waves you closer. "Fortune favors the bold, captain."',
-      choices: (run) => [
-        { id: 'small', label: 'Bet 25 gold', detail: 'Half the time you win 60.', enabled: run.gold >= 25 },
-        { id: 'big', label: 'Bet 50 gold', detail: 'Win 130 with odds a little under half.', enabled: run.gold >= 50 },
-        { id: 'leave', label: 'Walk away', detail: 'Your purse thanks you.' },
-      ],
+      text: 'Dice clatter under a striped awning. A one-eyed bookmaker waves you closer. "No coin on my table, captain. We play for treasures. Or for souls."',
+      prepare: (run, rng) => ({ relic: pickRelic(run, rng, ['common', 'uncommon']) }),
+      choices: (run, c) => [
+        c.relic ? { id: 'dice', label: `Dice for the ${RELICS[c.relic].name} (30 gold stake)`, detail: `${RELICS[c.relic].desc} Even odds.`, enabled: run.gold >= 30 } : null,
+        { id: 'wager', label: "Stake a soldier's service", detail: 'Pick a unit. Even odds: it wins big and comes back bound with a random enchantment, or it gambles itself into the bookmaker\'s employ and leaves your army for good.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
+        { id: 'leave', label: 'Walk away', detail: 'Some games are rigged.' },
+      ].filter(Boolean),
       resolve: (run, c, choice, rid, rng) => {
-        if (choice === 'small') {
-          run.gold -= 25;
+        if (choice === 'dice') {
+          run.gold -= 30;
           if (rng.chance(0.5)) {
-            run.gold += 60;
-            return 'Double sixes! You scoop up 60 gold.';
+            gainRelic(run, c.relic);
+            return `Double sixes! The ${RELICS[c.relic].name} is yours.`;
           }
-          return 'Snake eyes. The bookmaker sweeps your coins away.';
+          return 'Snake eyes. The bookmaker sweeps your stake away.';
         }
-        if (choice === 'big') {
-          run.gold -= 50;
-          if (rng.chance(0.45)) {
-            run.gold += 130;
-            return 'The tent erupts as your dice land. You walk off with 130 gold.';
+        if (choice === 'wager') {
+          const u = unitById(run, rid);
+          if (rng.chance(0.5)) {
+            const id = bindEnchant(run, rng, u);
+            return `${u.name} rolls three sixes and walks out glowing: ${ENCHANTS[id].name}. ${ENCHANTS[id].desc}`;
           }
-          return 'The dice betray you. Fifty gold, gone.';
+          dismiss(run, u);
+          return `${u.name} loses the roll, shrugs, and starts dealing cards for the bookmaker. They are gone.`;
         }
         return 'You leave the dice to braver fools.';
       },
@@ -1756,79 +1855,83 @@
     {
       id: 'deserter',
       title: 'A Deserter in the Brush',
-      text: 'A soldier in a torn tabard limps out of the brush, hands raised. "I am done with my old lord. Take me in, or take my purse. Just let me live."',
-      prepare: (run, rng) => ({ unit: rng.pick(RECRUITABLE.filter((t) => UNITS[t].rarity === 'common')) }),
+      text: 'A soldier in a torn tabard limps out of the brush, hands raised. "I am done with my old lord. Take me in, or take my kit. Just let me live."',
+      prepare: (run, rng) => ({ unit: rng.pick(RECRUITABLE.filter((t) => UNITS[t].rarity === 'common' && t !== 'cleric')), gear: rollGear(run, rng), skill: rollSkill(run, rng) }),
       choices: (run, c) => [
-        { id: 'take', label: 'Take them in', detail: `A ${uname(c.unit)} joins your army.` },
-        { id: 'rob', label: 'Take the purse', detail: 'Gain 35 gold.' },
-        { id: 'leave', label: 'Let them go', detail: 'Nothing gained, nothing lost.' },
-      ],
+        { id: 'take', label: 'Take them in', detail: `A ${uname(c.unit)} joins your army (and brings a talent of its class).` },
+        c.gear && c.skill ? { id: 'kit', label: 'Take their kit', detail: `A ${GEAR[c.gear].name} (${GEAR[c.gear].desc}) and a manual of ${SKILLS[c.skill].name} (${SKILLS[c.skill].desc})` } : null,
+        { id: 'secrets', label: "Hear their lord's battle plans", detail: '+12 Commander XP.' },
+      ].filter(Boolean),
       resolve: (run, c, choice) => {
         if (choice === 'take') {
           const u = addRecruit(run, c.unit);
           return `${u.name} the ${uname(u.type)} swears a new oath.${talentNote(run, u)}`;
         }
-        if (choice === 'rob') {
-          run.gold += 35;
-          return 'You take the purse. The deserter vanishes into the trees.';
+        if (choice === 'kit') {
+          addItem(run, 'gear', c.gear);
+          addItem(run, 'skill', c.skill);
+          return `You take the ${GEAR[c.gear].name} and the manual of ${SKILLS[c.skill].name}. The deserter vanishes into the trees, lighter.`;
         }
-        return 'The deserter stumbles away, muttering thanks.';
+        gainXp(run, 12);
+        return 'Feints, flanks, the order of march. Your officers take careful notes.';
       },
     },
     {
       id: 'armory',
       title: 'The Sealed Armory',
-      text: 'Behind a rusted gate lies a single blade, still wet with something dark. It whispers promises of victory. The racks around it hold older steel.',
-      prepare: (run, rng) => ({ gear: rollGear(run, rng) }),
+      text: 'Behind a rusted gate lies a single blade, still wet with something dark. It whispers promises of victory. Two racks of older steel stand beside it.',
+      prepare: (run, rng) => {
+        const a = rollGear(run, rng);
+        return { gear: [a, rollGear(run, rng, [a])].filter(Boolean) };
+      },
       choices: (run, c) => [
-        { id: 'take', label: 'Take the blade', detail: RELICS.cursed_blade.desc, enabled: !hasRelic(run, 'cursed_blade') },
-        { id: 'loot', label: 'Search the racks', detail: c.gear ? `Find a ${GEAR[c.gear].name}: ${GEAR[c.gear].desc}` : 'Gain 30 gold of old iron.' },
+        { id: 'take', label: 'Take the whispering blade', detail: `A relic: ${RELICS.cursed_blade.desc}`, enabled: !hasRelic(run, 'cursed_blade') },
+        ...c.gear.map((id) => ({ id: 'rack:' + id, label: `Search a rack: ${GEAR[id].name}`, detail: `${GEAR[id].desc} (Gear, ${GEAR[id].cost} Supply)` })),
       ],
       resolve: (run, c, choice) => {
         if (choice === 'take') {
           gainRelic(run, 'cursed_blade');
           return 'The Bloodthirst Blade is yours. Your soldiers fight with a terrible hunger.';
         }
-        if (c.gear) {
-          addItem(run, 'gear', c.gear);
-          return `You pull a ${GEAR[c.gear].name} from the racks.`;
-        }
-        run.gold += 30;
-        return 'You haul away the old iron and sell it for 30 gold.';
+        const id = choice.slice(5);
+        addItem(run, 'gear', id);
+        return `You pull a ${GEAR[id].name} from the racks.`;
       },
     },
     {
       id: 'fountain',
       title: 'Fountain of Renewal',
-      text: 'Clear water bubbles from a marble basin carved with sleeping lions. Your soldiers gather around it in silence.',
-      choices: () => [
-        { id: 'drink', label: 'Drink and reflect', detail: 'Gain 10 XP.' },
-        { id: 'fill', label: 'Fill flasks to sell', detail: 'Gain 40 gold.' },
+      text: 'Clear water bubbles from a marble basin carved with sleeping lions. Whoever steps in comes out changed.',
+      choices: (run) => [
+        { id: 'bathe', label: 'Bathe a soldier', detail: 'Pick a unit without an enchantment: it rises from the water bound with a random enchantment it can take. No scroll needed.', enabled: anyPick(run, 'bare'), pick: { filter: 'bare' } },
+        { id: 'drink', label: 'Drink and reflect', detail: '+15 Commander XP.' },
       ],
-      resolve: (run, c, choice) => {
-        if (choice === 'drink') {
-          gainXp(run, 10);
-          return 'Clear water, clear minds. Your command grows sharper.';
+      resolve: (run, c, choice, rid, rng) => {
+        if (choice === 'bathe') {
+          const u = unitById(run, rid);
+          const id = bindEnchant(run, rng, u);
+          return `${u.name} steps out of the water, eyes bright: ${ENCHANTS[id].name}. ${ENCHANTS[id].desc} (+${ENCHANTS[id].surcharge} Supply to field them.)`;
         }
-        run.gold += 40;
-        return 'Pilgrims pay well for the water. You gain 40 gold.';
+        gainXp(run, 15);
+        return 'Clear water, clear minds. Your command grows sharper.';
       },
     },
     {
       id: 'library',
       title: "The Quartermaster's Ledgers",
-      text: 'A ruined keep still holds the ledgers of a long-dead quartermaster: depots, wagon routes, hidden caches.',
-      choices: () => [
+      text: 'A ruined keep still holds the ledgers of a long-dead quartermaster: depots and hidden caches, and a shelf of drill manuals beside them.',
+      prepare: (run, rng) => ({ skills: rollMany(rng, 2, () => rollSkill(run, rng)) }),
+      choices: (run, c) => [
         { id: 'study', label: 'Study the ledgers', detail: '+1 Supply in every battle for the rest of the run.' },
-        { id: 'sell', label: 'Sell the books', detail: 'Gain 60 gold.' },
-      ],
+        c.skills.length ? { id: 'copy', label: 'Copy the drill manuals', detail: c.skills.map((id) => `${SKILLS[id].name}: ${SKILLS[id].desc}`).join(' · ') } : null,
+      ].filter(Boolean),
       resolve: (run, c, choice) => {
         if (choice === 'study') {
           run.supplyBonus = (run.supplyBonus || 0) + 1;
           return 'You find caches no one else remembers. +1 Supply.';
         }
-        run.gold += 60;
-        return 'A collector pays 60 gold for the lot.';
+        for (const id of c.skills) addItem(run, 'skill', id);
+        return `Two manuals copied: ${c.skills.map((id) => SKILLS[id].name).join(' and ')}.`;
       },
     },
     {
@@ -1847,36 +1950,29 @@
     {
       id: 'alchemist',
       title: 'The Wandering Alchemist',
-      text: 'A cart rattles with bubbling flasks. "Transformation, my friend! Or perhaps something for the road?"',
+      text: 'A cart rattles with bubbling flasks. "Transformation, my friend! Pay for the sure thing, or drink the green one and see what you become."',
       choices: (run) => [
-        {
-          id: 'transmute',
-          label: 'Transmute (50 gold)',
-          detail: 'Choose a common or uncommon unit. It becomes a random unit of a higher rarity.',
-          enabled: run.gold >= 50 && run.roster.some((u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity)),
-          pick: { filter: 'transmute' },
-        },
-        { id: 'flasks', label: 'Buy flasks (30 gold)', detail: 'Gain a Fire Flask and a Healing Draught.', enabled: run.gold >= 30 },
+        { id: 'transmute', label: 'Transmute (50 gold)', detail: 'Pick a common or uncommon unit. It becomes a random unit of a higher rarity, keeping its name.', enabled: run.gold >= 50 && anyPick(run, 'transmute'), pick: { filter: 'transmute' } },
+        { id: 'mutagen', label: 'The green vial (free)', detail: 'Pick a unit. It becomes a random unit of the same rarity, keeping its name and enchantment if it fits. A sidestep, not a step up.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
         { id: 'leave', label: 'Decline', detail: 'Leave the alchemist to the fumes.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
         const u = unitById(run, rid);
-        if (choice === 'transmute' && u) {
+        if (choice === 'transmute') {
           const order = ['common', 'uncommon', 'rare'];
           const next = order[order.indexOf(UNITS[u.type].rarity) + 1];
           const t = rng.pick(RECRUITABLE.filter((x) => UNITS[x].rarity === next));
           const old = uname(u.type);
-          u.type = t;
-          u.load = defaultLoad(t);
-          if (u.enchant && !D.eligible(t, ENCHANTS[u.enchant])) u.enchant = null;
+          reshape(u, t);
           run.gold -= 50;
           return `Smoke billows. ${u.name} the ${old} steps out as a ${uname(t)}.`;
         }
-        if (choice === 'flasks') {
-          run.gold -= 30;
-          addItem(run, 'gear', 'fire_flask');
-          addItem(run, 'gear', 'healing_draught');
-          return 'Two flasks, one red and one gold. Handle with care.';
+        if (choice === 'mutagen') {
+          const pool = RECRUITABLE.filter((x) => UNITS[x].rarity === UNITS[u.type].rarity && x !== u.type && x !== 'cleric');
+          const t = pool.length ? rng.pick(pool) : u.type;
+          const old = uname(u.type);
+          reshape(u, t);
+          return `${u.name} the ${old} gulps it down, shudders, and stands up a ${uname(t)}.`;
         }
         return 'The alchemist shrugs and rattles away.';
       },
@@ -1884,18 +1980,25 @@
     {
       id: 'forge',
       title: 'The Old Forge',
-      text: 'A smith with arms like oak branches looks up from the anvil. "Bring me coin, and I will make you something worth carrying."',
-      prepare: (run, rng) => ({ gear: rollMany(rng, 3, () => rollGear(run, rng)) }),
+      text: 'A smith with arms like oak branches looks up from the anvil. "Bring me coin and I make you steel. Bring me a soldier and I make their weapon sing."',
+      prepare: (run, rng) => ({ gear: rollMany(rng, 2, () => rollGear(run, rng)), temper: rng.pick(['frostbound', 'spellblade', 'giantblood', 'thunderstep'].filter((id) => ENCHANTS[id])) }),
       choices: (run, c) => [
-        ...c.gear.map((id) => ({ id: 'forge:' + id, label: `Commission (40 gold): ${GEAR[id].name}`, detail: `${GEAR[id].desc} (Gear, ${GEAR[id].cost} Supply)`, enabled: run.gold >= 40 })),
+        ...c.gear.map((id) => ({ id: 'forge:' + id, label: `Commission (35 gold): ${GEAR[id].name}`, detail: `${GEAR[id].desc} (Gear, ${GEAR[id].cost} Supply)`, enabled: run.gold >= 35 })),
+        c.temper ? { id: 'temper', label: `Temper a weapon (45 gold): ${ENCHANTS[c.temper].name}`, detail: `Pick a unit without an enchantment: the smith binds ${ENCHANTS[c.temper].name} to it (another enchantment if it cannot take that one). ${ENCHANTS[c.temper].desc}`, enabled: run.gold >= 45 && anyPick(run, 'bare'), pick: { filter: 'bare' } } : null,
         { id: 'leave', label: 'Move on', detail: 'The forge fire dims behind you.' },
-      ],
-      resolve: (run, c, choice) => {
+      ].filter(Boolean),
+      resolve: (run, c, choice, rid, rng) => {
         if (choice.startsWith('forge:')) {
           const id = choice.slice(6);
-          run.gold -= 40;
+          run.gold -= 35;
           addItem(run, 'gear', id);
           return `The smith hands you a ${GEAR[id].name}, still warm.`;
+        }
+        if (choice === 'temper') {
+          const u = unitById(run, rid);
+          run.gold -= 45;
+          const id = bindEnchant(run, rng, u, c.temper);
+          return `Sparks fly. ${u.name}'s weapon rings with ${ENCHANTS[id].name}.`;
         }
         return 'You leave the smith to the anvil.';
       },
@@ -1904,25 +2007,31 @@
       id: 'battlefield',
       title: 'The Haunted Battlefield',
       text: 'Broken spears and rusted helms cover a silent field. Something glints among the bones, and something else watches.',
-      prepare: (run, rng) => ({ roll: rng.next(), relic: pickRelic(run, rng, ['common', 'uncommon']) }),
-      choices: () => [
-        { id: 'search', label: 'Search the fallen', detail: 'Maybe a relic. Maybe a curse.' },
-        { id: 'raise', label: 'Raise a fallen archer', detail: 'A Skeleton Archer rises to serve you.' },
-        { id: 'leave', label: 'Leave the dead in peace', detail: 'Walk on quietly.' },
-      ],
-      resolve: (run, c, choice) => {
+      prepare: (run, rng) => ({ roll: rng.next(), relic: pickRelic(run, rng, ['common', 'uncommon']), talent: rollTalent(run, rng) }),
+      choices: (run, c) => [
+        { id: 'search', label: 'Search the fallen', detail: 'Likely a relic. But the dead do not like thieves: if they catch you, they take something from your pack.' },
+        { id: 'raise', label: 'Raise a fallen archer', detail: 'A Skeleton Archer rises to serve you (and brings a talent of its class).' },
+        c.talent ? { id: 'honor', label: 'Bury them with honor', detail: `Their last lesson: ${talentLine(c.talent)}` } : null,
+      ].filter(Boolean),
+      resolve: (run, c, choice, rid, rng) => {
         if (choice === 'raise') {
           const u = addRecruit(run, 'skelarcher');
           return `${u.name}, long dead, takes up a bow for you.${talentNote(run, u)}`;
         }
-        if (choice !== 'search') return 'You leave the field to its ghosts.';
-        if (c.roll < 0.6 && c.relic && !run.relics.includes(c.relic)) {
+        if (choice === 'honor') {
+          addItem(run, 'talent', c.talent);
+          return `You raise a cairn. In the quiet after, ${TALENTS[c.talent].name} comes to you like a remembered drill.`;
+        }
+        if (c.roll < 0.65 && c.relic && !run.relics.includes(c.relic)) {
           gainRelic(run, c.relic);
           return `Under a shattered shield you find the ${RELICS[c.relic].name}.`;
         }
-        const lost = Math.min(run.gold, 25);
-        run.gold -= lost;
-        return `A cold wind tears through your camp and scatters your purse. You lose ${lost} gold.`;
+        const spare = freeItems(run).filter((i) => i.kind !== 'scroll');
+        if (!spare.length) return 'A cold wind tears through your camp, finds nothing to take, and moves on.';
+        const it = rng.pick(spare);
+        const d = itemDef(it);
+        run.items = run.items.filter((i) => i !== it);
+        return `A cold wind tears through your camp. When it passes, your ${d.name} is gone.`;
       },
     },
     {
@@ -1930,19 +2039,20 @@
       title: 'Village Militia',
       text: 'Farmers with pitchforks and old bows stand at the village gate. "Bandits took our harvest. Some of us would rather fight than starve."',
       prepare: (run, rng) => {
-        const a = rollUnitType(run, rng, 'normal');
-        return { units: [a, rollUnitType(run, rng, 'normal', [a])] };
+        const a = rollUnitType(run, rng, 'normal', ['cleric']);
+        return { units: [a, rollUnitType(run, rng, 'normal', ['cleric', a])], talent: rollTalent(run, rng) };
       },
       choices: (run, c) => [
-        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A ${uname(t)} joins for free.` })),
-        { id: 'leave', label: 'Wish them luck', detail: 'Ride on.' },
-      ],
+        ...c.units.map((t) => ({ id: 'take:' + t, label: 'Recruit the ' + uname(t), detail: `A ${uname(t)} joins for free (and brings a talent of its class).` })),
+        c.talent ? { id: 'teach', label: 'Drill them, and learn from it', detail: `Teaching sharpens your own: ${talentLine(c.talent)}` } : null,
+      ].filter(Boolean),
       resolve: (run, c, choice) => {
         if (choice.startsWith('take:')) {
           const u = addRecruit(run, choice.slice(5));
           return `${u.name} picks up a weapon and joins your column.${talentNote(run, u)}`;
         }
-        return 'The villagers watch you go.';
+        addItem(run, 'talent', c.talent);
+        return `The villagers learn to hold a line. You learn ${TALENTS[c.talent].name}.`;
       },
     },
     {
@@ -1952,7 +2062,7 @@
       prepare: (run, rng) => ({ scrolls: rollMany(rng, 2, () => rollEnchant(run, rng)) }),
       choices: (run, c) => [
         ...c.scrolls.map((id) => ({ id: 'buy:' + id, label: `Buy a scroll (55 gold): ${ENCHANTS[id].name}`, detail: `${ENCHANTS[id].desc} Bind it to a unit from the Army screen. +${ENCHANTS[id].surcharge} Supply to field that unit.`, enabled: run.gold >= 55 })),
-        { id: 'steal', label: 'Steal a scroll', detail: 'Even odds: a free scroll, or the enchanter catches you and fines you 40 gold.' },
+        { id: 'steal', label: 'Steal a scroll', detail: 'Even odds: a free scroll, or the enchanter turns one of your pack items to dust.' },
         { id: 'leave', label: 'Leave', detail: 'Some magic is best left alone.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
@@ -1968,9 +2078,12 @@
             addItem(run, 'scroll', id);
             return `You slip away with the scroll of ${ENCHANTS[id].name}.`;
           }
-          const lost = Math.min(run.gold, 40);
-          run.gold -= lost;
-          return `A glowing hand seizes your collar. You pay ${lost} gold to be let go.`;
+          const spare = freeItems(run).filter((i) => i.kind !== 'scroll');
+          if (!spare.length) return 'A glowing hand seizes your collar, finds your pack empty, and lets you go with a laugh.';
+          const it = rng.pick(spare);
+          const d = itemDef(it);
+          run.items = run.items.filter((i) => i !== it);
+          return `A glowing hand seizes your collar. Your ${d.name} crumbles to dust.`;
         }
         return 'The tower lights wink out behind you.';
       },
@@ -1978,11 +2091,14 @@
     {
       id: 'lodge',
       title: "Veterans' Lodge",
-      text: 'Old soldiers drink by a long fire. "We drilled the king\'s own guard once," says one. "Pay us and we will teach your sergeants to run a bigger line."',
-      choices: (run) => [
+      text: 'Old soldiers drink by a long fire. "We drilled the king\'s own guard once," says one. "Pay us for drills, or sit and learn a trick or two."',
+      prepare: (run, rng) => {
+        const a = rollTalent(run, rng);
+        return { talents: [a, a && rollTalent(run, rng, [a])].filter(Boolean) };
+      },
+      choices: (run, c) => [
         { id: 'train', label: 'Pay for drills (90 gold)', detail: '+1 Supply in every battle for the rest of the run.', enabled: run.gold >= 90 },
-        { id: 'stories', label: 'Listen to their stories', detail: 'Gain 8 XP.' },
-        { id: 'leave', label: 'Leave', detail: 'March on.' },
+        ...c.talents.map((id) => ({ id: 'learn:' + id, label: `Learn a trick: ${TALENTS[id].name}`, detail: talentLine(id) })),
       ],
       resolve: (run, c, choice) => {
         if (choice === 'train') {
@@ -1990,24 +2106,25 @@
           run.supplyBonus = (run.supplyBonus || 0) + 1;
           return 'Your sergeants learn to hold a wider line. +1 Supply in every battle.';
         }
-        if (choice === 'stories') {
-          gainXp(run, 8);
-          return 'Old wars, hard lessons. You take notes.';
-        }
-        return 'The veterans raise their cups as you go.';
+        const id = choice.slice(6);
+        addItem(run, 'talent', id);
+        return `Over the third cup, the old soldier shows you ${TALENTS[id].name}.`;
       },
     },
     {
       id: 'caravan',
       title: 'Merchant Caravan',
-      text: 'Wagons circle around a campfire. A merchant in a fur hat sizes up your army and your purse.',
-      prepare: (run, rng) => ({ gear: rollGear(run, rng), skill: rollSkill(run, rng) }),
-      choices: (run, c) => [
-        c.gear ? { id: 'gear', label: `Buy ${GEAR[c.gear].name} (35 gold)`, detail: GEAR[c.gear].desc, enabled: run.gold >= 35 } : null,
-        c.skill ? { id: 'skill', label: `Buy a manual of ${SKILLS[c.skill].name} (35 gold)`, detail: SKILLS[c.skill].desc, enabled: run.gold >= 35 } : null,
-        { id: 'sell', label: 'Sell spare gear', detail: 'Gain 25 gold.' },
-      ].filter(Boolean),
-      resolve: (run, c, choice) => {
+      text: 'Wagons circle around a campfire. A merchant in a fur hat sizes up your army, your purse and your relics.',
+      prepare: (run, rng) => ({ gear: rollGear(run, rng), skill: rollSkill(run, rng), relic: pickRelic(run, rng, ['uncommon', 'rare']) }),
+      choices: (run, c) => {
+        const common = run.relics.filter((id) => RELICS[id].tier === 'common');
+        return [
+          c.gear ? { id: 'gear', label: `Buy ${GEAR[c.gear].name} (35 gold)`, detail: GEAR[c.gear].desc, enabled: run.gold >= 35 } : null,
+          c.skill ? { id: 'skill', label: `Buy a manual of ${SKILLS[c.skill].name} (35 gold)`, detail: SKILLS[c.skill].desc, enabled: run.gold >= 35 } : null,
+          c.relic ? { id: 'swap', label: `Trade a relic for the ${RELICS[c.relic].name}`, detail: `Give up one of your common relics (at random) for this ${RELICS[c.relic].tier} one: ${RELICS[c.relic].desc}`, enabled: common.length > 0 } : null,
+        ].filter(Boolean);
+      },
+      resolve: (run, c, choice, rid, rng) => {
         if (choice === 'gear') {
           run.gold -= 35;
           addItem(run, 'gear', c.gear);
@@ -2018,8 +2135,77 @@
           addItem(run, 'skill', c.skill);
           return `You learn ${SKILLS[c.skill].name} from a dog-eared manual.`;
         }
-        run.gold += 25;
-        return 'The merchant pays 25 gold for your spare gear.';
+        const old = rng.pick(run.relics.filter((id) => RELICS[id].tier === 'common'));
+        run.relics = run.relics.filter((id) => id !== old);
+        gainRelic(run, c.relic);
+        return `The ${RELICS[old].name} for the ${RELICS[c.relic].name}. The merchant thinks it a fine trade. So do you.`;
+      },
+    },
+    {
+      id: 'mentor',
+      title: 'The Wandering Mentor',
+      text: 'An old master in a patched cloak watches your soldiers drill, then points at one of them. "That one. Give me a night with them."',
+      choices: (run) => [
+        { id: 'train', label: 'Give the mentor a night', detail: 'Pick a unit: you gain a talent from the stronger list for its class (one you do not own, where there is one).', enabled: anyPick(run, 'trained'), pick: { filter: 'trained' } },
+        { id: 'officers', label: 'Ask for your officers instead', detail: '+15 Commander XP.' },
+      ],
+      resolve: (run, c, choice, rid, rng) => {
+        if (choice === 'train') {
+          const u = unitById(run, rid);
+          const owned = run.items.filter((i) => i.kind === 'talent').map((i) => i.id);
+          const id = rollRareTalent(run, rng, u.type, owned) || rollRareTalent(run, rng, u.type);
+          addItem(run, 'talent', id);
+          return `At dawn ${u.name} comes back moving differently. You gain ${TALENTS[id].name}: ${TALENTS[id].desc}`;
+        }
+        gainXp(run, 15);
+        return 'The mentor talks tactics with your officers until the fire dies.';
+      },
+    },
+    {
+      id: 'mirror',
+      title: 'The Mirror Pool',
+      text: 'A still pool in a ring of standing stones shows not your face but your soldiers, as they could be. One of the reflections is reaching out of the water.',
+      prepare: (run, rng) => ({ scroll: rollEnchant(run, rng) }),
+      choices: (run, c) => [
+        { id: 'reflect', label: 'Take the reflection\'s hand', detail: 'Pick a common or uncommon unit: its mirror image steps out and joins your army, enchantment and all.', enabled: anyPick(run, 'mirror'), pick: { filter: 'mirror' } },
+        c.scroll ? { id: 'wish', label: 'Drop a coin and wish (20 gold)', detail: `A scroll floats up: ${ENCHANTS[c.scroll].name}. ${ENCHANTS[c.scroll].desc}`, enabled: run.gold >= 20 } : null,
+        { id: 'leave', label: 'Look away', detail: 'Some reflections are better left in the water.' },
+      ].filter(Boolean),
+      resolve: (run, c, choice, rid) => {
+        if (choice === 'reflect') {
+          const u = unitById(run, rid);
+          const twin = addRecruit(run, u.type, { enchant: u.enchant });
+          return `${twin.name} steps out of the water, the image of ${u.name}, and falls in beside them.${talentNote(run, twin)}`;
+        }
+        if (choice === 'wish') {
+          run.gold -= 20;
+          addItem(run, 'scroll', c.scroll);
+          return `The scroll of ${ENCHANTS[c.scroll].name} drifts into your hands, dry as bone.`;
+        }
+        return 'You turn away. Behind you, something sighs.';
+      },
+    },
+    {
+      id: 'bargain',
+      title: "The Witch's Bargain",
+      text: 'A woman with ash-gray eyes blocks the path, a black box in her hands. "Power, captain. It only costs a little of yourself."',
+      prepare: (run, rng) => ({ relic: pickRelic(run, rng, ['rare']) || pickRelic(run, rng, ['uncommon']), scroll: rollEnchant(run, rng) }),
+      choices: (run, c) => [
+        c.relic ? { id: 'accept', label: `Open the box: ${RELICS[c.relic].name}`, detail: `${RELICS[c.relic].desc} The price: 1 less Supply in every battle for the rest of the run.`, enabled: supplyFor(run) > 8 } : null,
+        c.scroll ? { id: 'charm', label: 'Ask for a small charm', detail: `A scroll of ${ENCHANTS[c.scroll].name}, and she remembers your face. ${ENCHANTS[c.scroll].desc}` } : null,
+        { id: 'refuse', label: 'Refuse', detail: 'Keep yourself whole.' },
+      ].filter(Boolean),
+      resolve: (run, c, choice) => {
+        if (choice === 'accept') {
+          gainRelic(run, c.relic);
+          run.supplyBonus = (run.supplyBonus || 0) - 1;
+          return `The box clicks open. The ${RELICS[c.relic].name} is yours, and something small and warm leaves you. -1 Supply.`;
+        }
+        if (choice === 'charm') {
+          addItem(run, 'scroll', c.scroll);
+          return `She presses the scroll of ${ENCHANTS[c.scroll].name} into your palm. Her fingers are cold.`;
+        }
+        return 'She shrugs, and is not there anymore.';
       },
     },
   ];
@@ -2028,10 +2214,18 @@
     return EVENTS.find((e) => e.id === id);
   }
 
+  // Events were rewritten: a save caught mid-event from before gets a fresh deal.
+  const EVENTS_V = 2;
   function eventChoices(run) {
     const p = run.pending;
     const ev = eventDef(p.eventId);
+    if (!p.result && (p.ctx || {}).v !== EVENTS_V) p.ctx = prepareEvent(run, ev, p.nodeId);
     return ev.choices(run, p.ctx).map((c) => Object.assign({ enabled: true }, c));
+  }
+
+  function prepareEvent(run, ev, tag) {
+    const rng = AG.derive(run.seed, 'event:' + tag);
+    return Object.assign({ v: EVENTS_V }, ev.prepare ? ev.prepare(run, rng) : {});
   }
 
   // Resolve an event choice. Returns the result text, or null if it was not allowed.
@@ -2041,6 +2235,7 @@
     const ev = eventDef(p.eventId);
     const choice = eventChoices(run).find((c) => c.id === choiceId);
     if (!choice || !choice.enabled) return null;
+    if (choice.pick && !eventPickOk(run, choice.pick, unitById(run, rid))) return null;
     const rng = AG.derive(run.seed, 'eventroll:' + run.act + ':' + p.nodeId + ':' + choiceId);
     const out = ev.resolve(run, p.ctx, choiceId, rid, rng);
     if (out == null) return null;
@@ -2343,7 +2538,8 @@
     if (has('cart')) tips.push(`The wagons flee left ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} at the end of every enemy turn. Block their path with units and break them fast.`);
     if (has('spider')) tips.push('Spiders root from range: rooted units can still fight but cannot move.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
-    if (has('cleric', 'shaman')) tips.push('Enemy healers: kill them early, or poison the huddle so the healing fails.');
+    if (has('cleric')) tips.push('Enemy healers! The one battle this campaign where the enemy mends: kill the Clerics first, or poison the huddle so the healing fails.');
+    if (has('shaman')) tips.push('Orc Shamans drive the warband into a frenzy (25% more damage): kill the drummer first.');
     if (has('golem', 'golem_king')) tips.push('Golems have 50% armor but take 25% extra from magic.');
     if (has('dragon', 'ashen_tyrant', 'drake', 'brute', 'colossus')) tips.push('Huge foes: Dragonslayer Spears deal 50% more to them.');
     return tips.slice(0, 4);
@@ -2657,10 +2853,10 @@
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
-    costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
+    costBreakdown, coreUnit, ensureCore, healerSpot, HEALERS_GOLD, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
-    genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
+    genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
     loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };

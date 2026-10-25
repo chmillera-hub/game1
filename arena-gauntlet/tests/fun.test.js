@@ -748,4 +748,15 @@ test('Resonant Crystal, Glamour, Echo Amulet, Slippery, Living Moss, Spellsink M
   assert.ok(sink.hp > hp, 'the moss spread to its neighbour');
 });
 
+test('campaign enemies barely heal: an enemy Champion keeps its punch but not its heal-on-kill', () => {
+  const s = board([
+    { type: 'knight', team: 'P', x: 4, y: 7, level: 3 },
+    { type: 'knight', team: 'E', x: 4, y: 1, level: 3, foe: true },
+  ]);
+  const [mine, foe] = s.units;
+  assert.ok(mine.traits.has('rallykill'), 'yours heals its neighbours on a kill');
+  assert.ok(!foe.traits.has('rallykill'), 'a campaign enemy does not');
+  assert.ok(foe.props.dmgMult >= 0.2, 'but still hits like a Champion');
+});
+
 console.log(`fun: ${passed} tests passed`);
