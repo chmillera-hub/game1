@@ -1592,7 +1592,11 @@
         }
         const group = [];
         while (i < events.length && !['action', 'move', 'teleport'].includes(events[i].t)) {
-          const e = events[i++];
+          const e = events[i];
+          // Fatigue plays one unit at a time, as the engine deals it: a hit on another unit
+          // waits for its own moment (after a unit that tired fell, say).
+          if (e.t === 'dmg' && e.dmgType === 'fatigue' && group.some((g) => g.t === 'dmg' && g.dmgType === 'fatigue' && g.uid !== e.uid)) break;
+          i++;
           group.push(e);
           // A unit passing its turn plays on its own, with whatever its turn brought (its
           // fatigue hit, poison): a run of passes reads one unit at a time.

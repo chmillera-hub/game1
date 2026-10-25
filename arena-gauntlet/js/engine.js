@@ -325,8 +325,8 @@
       due: 0,
       // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
-      // Fatigue hits each side has taken (see fatigue).
-      tired: { P: 0, E: 0 },
+      // Fatigue hits taken so far in the battle, by anyone (see fatigue).
+      fatigueN: 0,
     };
     for (const spec of cfg.units) addUnit(s, spec);
     (cfg.waves || []).forEach((w, i) => {
@@ -1253,12 +1253,12 @@
       tgt.secondWind = false;
       dealt = tgt.hp - 1;
       tgt.hp = 1;
-      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0 });
+      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0, fatigueNo: info.fatigueNo });
       emit(s, { t: 'secondwind', uid: tgt.uid });
     } else {
       dealt = Math.min(amount, tgt.hp);
       tgt.hp -= dealt;
-      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0, rout: info.rout || undefined });
+      emit(s, { t: 'dmg', uid: tgt.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0, rout: info.rout || undefined, fatigueNo: info.fatigueNo });
       if (tgt.hp <= 0) kill(s, tgt, src);
     }
     if (src && src.team !== tgt.team) s.stats.dmg[src.team] += dealt;
@@ -2298,30 +2298,32 @@
     fatigue(s, u);
   }
 
-  // Fatigue, past armor and shields. Once it has set in for a side, each of that side's
-  // units loses HP as its turn comes, acting or passing: 1 for the first, then 2, 3 and so
-  // on, one more for every turn one of that side's units takes. Five units passing in a row
-  // at 15 lose 15, 16, 17, 18 and 19, one after another. It sets in for both sides on turn
-  // s.overtime, for the enemy the moment the mission is done (see rout), and for your army
-  // the moment the enemy army falls (see the cleanup). Each side counts its own.
+  // Fatigue, past armor and shields: one unit at a time, never a side at once. A unit whose
+  // side has tired loses HP as its own turn comes, before it moves, acts or passes (see
+  // pickDue): the next number of the battle's one count, 1, then 2, 3 and so on, one more
+  // for every fatigue hit anyone takes. Turns alternate, so with both sides tired the hits
+  // go back and forth (the enemy 15, you 16, the enemy 17...), and five units passing in a
+  // row at 15 lose 15, 16, 17, 18 and 19, one after another. No two hits in a battle are
+  // the same number. It sets in for both sides on turn s.overtime, for the enemy the moment
+  // the mission is done (see rout), and for your army the moment the enemy army falls (see
+  // the cleanup).
   function fatigue(s, u) {
     if (!u.alive || !counts(u)) return;
     const n = fatigueHit(s, u.team);
     if (!n) return;
-    s.tired = s.tired || { P: 0, E: 0 };
-    s.tired[u.team]++;
-    applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: (u.team === 'E' && !!s.routed) || undefined });
+    s.fatigueN = (s.fatigueN || 0) + 1;
+    applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: (u.team === 'E' && !!s.routed) || undefined, fatigueNo: s.fatigueN });
   }
 
   function tiring(s, team) {
     return !!s.inOvertime || (team === 'E' && !!s.routed) || (team === 'P' && !!s.cleanup);
   }
 
-  // What `team`'s next unit loses to fatigue as its turn comes (0 before it sets in). A rout
-  // after fatigue set in for everyone doubles the enemy's from then on.
+  // What `team`'s next unit to take its turn loses to fatigue (0 before its side tires): the
+  // count's next number. A rout after fatigue set in for everyone doubles the enemy's.
   function fatigueHit(s, team) {
     if (!tiring(s, team)) return 0;
-    const n = ((s.tired && s.tired[team]) || 0) + 1;
+    const n = (s.fatigueN || 0) + 1;
     return team === 'E' && s.routed && s.routed.late ? 2 * n : n;
   }
 
@@ -2387,9 +2389,9 @@
     if (s.queue) pickDue(s, side);
   }
 
-  // Fatigue: from turn `s.overtime` on, each fighter loses HP as its turn comes, one more
-  // for every turn its side takes, by the same rule for both sides (see fatigue), and no
-  // more reinforcements come. Big units and regen last longest; the last side standing wins.
+  // Fatigue: from turn `s.overtime` on, each fighter loses HP as its turn comes, the
+  // battle's next fatigue number, one unit at a time (see fatigue), and no more
+  // reinforcements come. Big units and regen last longest; the last side standing wins.
   function startFatigue(s) {
     if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
     s.inOvertime = true;
