@@ -486,9 +486,11 @@ test('Shield Bash knocks back, and slams into obstacles', () => {
 });
 
 test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile ally', () => {
-  const near = { k_guard: 0, k_bash: 0 };
+  // The Knight's adjacency pick: Guardian, or Bodyguard where that replaced it.
+  const guard = AG.Data.ABILITIES.k_guard ? 'k_guard' : 'k_bodyguard';
+  const near = { [guard]: 0, k_bash: 0 };
   for (let seed = 1; seed <= 10; seed++)
-    for (const a1 of ['k_guard', 'k_bash']) {
+    for (const a1 of [guard, 'k_bash']) {
       const s = board([
         { type: 'knight', team: 'P', x: 4, y: 7, a1, facing: 0 },
         { type: 'archer', team: 'P', x: 6, y: 8, facing: 0 },
@@ -502,9 +504,9 @@ test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile 
       const to = plan.to || kn;
       if (Math.abs(to.x - ar.x) + Math.abs(to.y - ar.y) === 1) near[a1]++;
     }
-  assert.ok(near.k_guard >= 9, `with Guardian: beside the archer ${near.k_guard}/10`);
+  assert.ok(near[guard] >= 9, `with ${guard}: beside the archer ${near[guard]}/10`);
   assert.ok(near.k_bash <= 3, `without: it marches on (${near.k_bash}/10)`);
-  assert.ok(AG.Data.ABILITIES.k_guard.desc.includes('The AI keeps your units beside it'));
+  assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units beside it'));
 });
 
 // ------------------------------------------------------------ cleanup
