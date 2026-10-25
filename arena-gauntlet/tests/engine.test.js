@@ -1414,25 +1414,6 @@ test('specters: steel barely scratches them, magic hurts them more, and their to
   assert.ok(kn.weak > 0, 'the knight is weakened');
 });
 
-test('Poison Wisps are wispy too: arrows mostly pass through them, magic hurts them more', () => {
-  const s = board([
-    { type: 'archer', team: 'E', x: 4, y: 2 },
-    { type: 'pyromancer', team: 'E', x: 4, y: 7 },
-    { type: 'wisp', team: 'P', x: 4, y: 5 },
-    { type: 'knight', team: 'P', x: 0, y: 0 },
-  ]);
-  const [ar, py, wi, kn] = s.units;
-  const vsWisp = E.calcHit(s, ar, wi, { cat: 'back' }).dmg;
-  const vsKnight = E.calcHit(s, ar, kn, { cat: 'back' }).dmg;
-  assert.strictEqual(wi.armor, 0.4);
-  assert.strictEqual(wi.res, -0.3);
-  assert.ok(vsWisp < ar.pow * 0.65, `an arrow does ${vsWisp} of ${ar.pow}`);
-  assert.ok(E.calcHit(s, py, wi, {}).dmg > py.pow * 1.25, 'magic bites deeper than on an ordinary unit');
-  assert.ok(vsKnight > 0);
-});
-
-// ------------------------------------------------------------ buildings and reinforcements
-
 test('siege damage: hammers, Demolisher, the Trebuchet and the Sapper Kit hit buildings harder', () => {
   const s = board([
     { type: 'knight', team: 'P', x: 4, y: 5 },

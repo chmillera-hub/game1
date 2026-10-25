@@ -516,7 +516,8 @@
   // spoils, and the relic if it carries one (always for an elite, now and then for an easy
   // or medium battle). Losing, retrying or reloading the game never rerolls any of it.
   function rollReward(run, node, T, kind) {
-    const rng = AG.derive(run.seed, 'reward:' + run.act + ':' + node.id);
+    // The same stream a first-try win used to roll from, so the pay is what it always was.
+    const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id + ':0');
     const out = { gold: rng.range(T.gold[0], T.gold[1]), spoils: T.spoils ? genSpoils(run, rng, kind).slice(0, T.spoils) : [], relic: null, lucky: false };
     const lucky = !T.relic && T.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(T.relicChance);
     if (T.relic || lucky) {
@@ -2547,7 +2548,7 @@
     if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
     if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
     if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them.');
-    if (has('specter', 'wisp')) tips.push('Spirits (specters, wisps): steel mostly passes through them, but magic tears them apart.');
+    if (has('specter')) tips.push('Specters are ghosts: steel mostly passes through them (50% armor), but magic tears them apart.');
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
