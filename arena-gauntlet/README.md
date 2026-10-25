@@ -423,22 +423,26 @@ on a phone turned sideways, but portrait works too.
   is the boss relic Sacred Chalice (+2); the common Healing Salve adds 2 only to
   units that have regen of their own. Sources add up with no cap;
   unit cards and the battle log show it.
-- **Fatigue**: from turn 30, every unit loses HP whenever its turn comes, acting or
-  passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
-  and shields, before it moves or acts: never a whole side at once, always one unit at
-  a time. Each hit is the battle's next number, 1, then 2, 3 and so on, one count for
-  both sides, like fatigue in Hearthstone: as the turns alternate, the hits go back and
-  forth (the enemy 15, you 16, the enemy 17), five units passing in a row at 15 lose
-  15, 16, 17, 18 and 19, one after another, and no number comes twice. Nothing ever
-  doubles it, and if fatigue is already on by turn 30 (the enemy fatigued by a mission
-  done, or your army's cleanup), turn 30 adds nothing: the count just goes on. Each hit plays on
-  its own moment on the board (a unit that falls to it included) and gets its own line
-  in the battle log. tests/fatigue.test.js plays hundreds of battles of every kind and
-  checks every hit for exactly this. Fatigue comes first in a unit's turn, before its
-  poison, burns and regen. Poison and burns tick on passed turns too. A short
-  "Fatigue triggered!" banner marks the start (no message to tap away), and the top
-  bar shows the next number. Reinforcements stop. Big units and regen last longest; the last side
-  standing wins. A tough tank can win a long battle on its own.
+- **Fatigue**: each side has a fatigue timer of its own, off at first. Once a side's
+  timer is on, each of its units loses HP whenever its turn comes, acting or passing
+  (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor and
+  shields, before it moves or acts: never a whole side at once, always one unit at a
+  time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its
+  units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18
+  and 19, one after another. The two sides count apart (the enemy can be at 9 while
+  you are at 2), and nothing ever resets or doubles a count.
+  - **Your timer** switches on when you do the mission (see Missions), when the enemy
+    army falls with something left to collect (see Cleanup), or on turn 30.
+  - **The enemy's timer** switches on when you do the mission, or on turn 30.
+  - **Turn 30** switches on every timer still off, each at 1; a timer already on
+    carries on untouched.
+  Each hit plays on its own moment on the board (a unit that falls to it included) and
+  gets its own line in the battle log. tests/fatigue.test.js plays hundreds of battles
+  of every kind and checks every hit for exactly this. Fatigue comes first in a unit's
+  turn, before its poison, burns and regen. Poison and burns tick on passed turns too.
+  A short banner marks each switch ("Fatigue triggered!", "Your army tires too!"), and
+  the top bar shows each side's next hit. Reinforcements stop. Big units and regen last
+  longest; the last side standing wins. A tough tank can win a long battle on its own.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
   having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
   wagon, barricades, walls, towers, the buildings that send reinforcements), the
@@ -446,17 +450,18 @@ on a phone turned sideways, but portrait works too.
   yours already, and your army goes round collecting: it breaks the buildings, cuts
   down any guards still at their posts (the specters by the Lost Tome) and takes the
   loot, gold and quest rewards and all. This is the victory lap, and it is not free:
-  your army's fatigue sets in the moment the enemy army falls, whatever the turn. Each
-  of your units loses HP as its turn comes (acting or passing), 1 for the first, then
-  2, 3 and so on, one more for every turn one of your units takes (carrying on from
-  where it was if fatigue had already set in). So collect fast: you may get some of it
+  your fatigue timer switches on the moment the enemy army falls, whatever the turn,
+  at 1 (if it is on already, after the mission or turn 30, it just carries on). Each
+  of your units loses HP as its turn comes (acting or passing), one more for every turn
+  one of your units takes. So collect fast: you may get some of it
   and not all. There is no time limit: the cleanup ends, with your win, only when
   everything worth having is taken or broken, or when your army has fallen to its
   fatigue, or when you tap Finish now (the menu's Retreat becomes Finish the battle). The top bar counts what is left and your
   army's next fatigue hit. A flawless or fast win
   counts from the moment the enemy army fell, so a unit fatigue takes during the
   cleanup does not spoil it.
-- **Nobody surrenders**: a battle ends only when one side has no units left. If all
+- **Nobody surrenders**: a battle ends only when one side has no units left (or, once
+  the win is yours, when you tap Finish now). If all
   you have left are units that cannot attack (a Furgon, a Barrier Ward), they fight
   on and the enemy must still bring every one down; if neither side can hurt the
   other, fatigue settles it. A Furgon's regen can outlast a fading enemy. Summoned
@@ -508,18 +513,16 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three war totems (each whips
   the enemies within 2 tiles into a frenzy, 25% more damage, until it falls), raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
-  Getting it done does not end the battle on the spot: the enemy is **fatigued**. Their
-  reinforcements stop and their fatigue sets in at once: from the next enemy turn, each
-  enemy unit loses HP when its turn comes, acting or passing, 1 for the first, then 2, 3
-  and so on, one more every enemy turn, past armor and shields, just like fatigue. The
-  battle ends when the last of them falls, so a mission done early tips it well in your
-  favor, without the enemy simply giving up. Your own side does not tire: once fatigue
-  is on, turn 30 adds nothing (no side starts tiring then, nothing doubles, the count
-  just goes on). Done after turn 30, when both sides already tire, the mission changes
-  nothing about fatigue: it goes on as it was, one number at a time, never doubled.
-  A short banner ("Enemy fatigued!", or "Mission done!" after turn 30) and the
-  battle log say when it happens, the top bar shows the enemy's fatigue, and the mission line turns to
-  "Done!". A "win within N turns" goal counts from the turn the mission was done.
+  **Getting it done is the win**: nothing after it can take the win away. The battle
+  goes on, though. The enemy's reinforcements stop and both fatigue timers switch on,
+  each at 1 (one already on carries on), so the enemy wears down while your army grabs
+  what else it can, a few more barricades or a bonus goal, before fatigue wears it
+  down too. If your army falls after that, the win still stands; tap Finish now (or
+  Finish the battle in the menu) to take it whenever you like. So rushing the mission
+  is a way past an army too tough to grind down. "Lose no unit" and "win within N
+  turns" goals are judged at the moment the mission was done. A banner ("Mission done:
+  you win!") and the battle log say when it happens, the top bar shows both sides'
+  fatigue, and the mission line turns to "Won".
   Bonus goals (ghost-guarded loot, fast wins, no losses, ambushing reinforcements,
   winning with a unit that sat out the last battle) pay extra.
 - **Pushes and pulls**: some attacks shove a unit straight away (Shield Bash, Ground
@@ -620,7 +623,7 @@ node tests/objectives.test.js    # your army playing for the mission and bonus g
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
-node tests/fatigue.test.js       # fatigue on hundreds of real battles: one unit at a time, the next number each hit
+node tests/fatigue.test.js       # fatigue on hundreds of real battles: each side its own timer, one unit at a time, 1, 2, 3
 node tests/beats.test.js         # what the board shows as a unit's turn comes: one step a beat, in order, numbers never on each other
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising

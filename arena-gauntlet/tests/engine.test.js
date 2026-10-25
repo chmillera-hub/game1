@@ -578,7 +578,7 @@ test('mid-cleanup your fatigue sets in at once: 1, then 2, 3 and so on, one more
     }
   }
   assert.deepStrictEqual(hits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
-  assert.strictEqual(E.cleanupHit(s), s.fatigueN + 1);
+  assert.strictEqual(E.cleanupHit(s), s.tire.P.n + 1, 'your own count');
 });
 
 test('wreckage: left be while the fight is on, broken for its gold once the enemy army falls', () => {
@@ -632,7 +632,7 @@ test('mid-cleanup nothing can cost you the win, and nothing but fatigue ends it:
   kn.hp = kn.maxHp = 200;
   for (let i = 0; i < 200 && !s.over; i++) E.endTurn(s);
   assert.ok(s.over && s.winner === 'P' && !kn.alive, 'its fatigue ends it, and the win stands');
-  assert.ok(s.fatigueN >= 20, `it tired ${s.fatigueN} times first (1 + 2 + ... + 20 > 200 HP): no cutoff before that`);
+  assert.ok(s.tire.P.n >= 20, `it tired ${s.tire.P.n} times first (1 + 2 + ... + 20 > 200 HP): no cutoff before that`);
   // Retreating or finishing now: a win.
   s = field();
   E.forfeit(s);

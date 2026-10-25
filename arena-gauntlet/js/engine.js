@@ -330,7 +330,7 @@
       // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
       // Fatigue hits taken so far in the battle, by anyone (see fatigue).
-      fatigueN: 0,
+      tire: { P: { on: false, n: 0, since: 0 }, E: { on: false, n: 0, since: 0 } },
     };
     for (const spec of cfg.units) addUnit(s, spec);
     armRelics(s);
@@ -2845,56 +2845,72 @@
     if (u.alive) regenerate(s, u);
   }
 
-  // Fatigue, past armor and shields: one unit at a time, never a side at once. A unit whose
-  // side has tired loses HP as its own turn comes, before it moves, acts or passes (see
-  // pickDue): the next number of the battle's one count, 1, then 2, 3 and so on, one more
-  // for every fatigue hit anyone takes. Turns alternate, so with both sides tired the hits
-  // go back and forth (the enemy 15, you 16, the enemy 17...), and five units passing in a
-  // row at 15 lose 15, 16, 17, 18 and 19, one after another. No two hits in a battle are
-  // the same number. It sets in for both sides on turn s.overtime, for the enemy the moment
-  // the mission is done (see rout), and for your army the moment the enemy army falls (see
-  // the cleanup). Once it has set in, it only ever goes on the same way: nothing doubles it,
-  // and turn s.overtime adds nothing (see startFatigue).
+  // Fatigue, past armor and shields: one unit at a time, never a side at once. Each side has
+  // a fatigue timer of its own, off at first. Once a side's timer is on, each of its units
+  // loses HP as its own turn comes, before it moves, acts or passes (see pickDue): that
+  // side's next number, 1 for its first hit, then 2, 3 and so on, one more every time one
+  // of its units takes its turn. Five of your units passing in a row at 15 lose 15, 16, 17,
+  // 18 and 19. The two sides count apart, and neither count ever resets or doubles.
+  // Your timer switches on when the mission is done or the enemy army falls (the win is
+  // yours, see lockWin), the enemy's when the mission is done; turn s.overtime switches on
+  // any timer still off and does nothing to one already on (see startFatigue).
   function fatigue(s, u) {
-    if (!u.alive || !counts(u)) return;
-    const n = fatigueHit(s, u.team);
-    if (!n) return;
-    s.fatigueN = (s.fatigueN || 0) + 1;
-    applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: (u.team === 'E' && !!s.routed) || undefined, fatigueNo: s.fatigueN });
+    if (!u.alive || !counts(u) || !s.tire[u.team].on) return;
+    const n = ++s.tire[u.team].n;
+    applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', fatigueNo: n });
+  }
+
+  // Switch `team`'s fatigue timer on, at 1. Already on: nothing happens.
+  function startTiring(s, team) {
+    if (s.tire[team].on) return false;
+    s.tire[team].on = true;
+    s.tire[team].since = s.turn;
+    return true;
   }
 
   function tiring(s, team) {
-    return !!s.inOvertime || (team === 'E' && !!s.routed) || (team === 'P' && !!s.cleanup);
+    return s.tire[team].on;
   }
 
-  // What `team`'s next unit to take its turn loses to fatigue (0 before its side tires): the
-  // count's next number, never more.
+  // What `team`'s next unit to take its turn loses to fatigue (0 while its timer is off).
   function fatigueHit(s, team) {
-    return tiring(s, team) ? (s.fatigueN || 0) + 1 : 0;
+    return s.tire[team].on ? s.tire[team].n + 1 : 0;
+  }
+
+  // The win is yours from here on, whatever happens: the mission is done, or the enemy army
+  // has fallen with something left to collect. The battle goes on while there is anything
+  // left to fight or collect and anyone left to do it, with your fatigue timer on, so you
+  // can grab a few more barricades or bonus goals before fatigue wears your army down.
+  // Bonus goals about losses and speed are judged as of now. Finish now ends it.
+  function lockWin(s) {
+    if (s.won) return;
+    s.won = { turn: s.turn, lost: s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length };
   }
 
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
-  // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
-  // not stop there: the enemy is routed. Their reinforcements stop coming, and their
-  // fatigue sets in at once: each enemy unit loses HP as its turn comes, 1, then 2, 3 and
-  // so on (see fatigue). You win when the last of them falls. Done before turn s.overtime,
-  // your own side never tires (that turn adds nothing once fatigue is on); done after it,
-  // both sides already tire, and the count simply goes on, nothing doubled.
+  // the shrine held, the commander or the boss slain, the waves outlasted. The win is yours
+  // (see lockWin). The battle goes on: the enemy's reinforcements stop, and both fatigue
+  // timers switch on, each at 1 (a timer already on carries on), so the enemy wears down
+  // while your army goes for whatever else it can get.
   function rout(s, why) {
     if (s.routed || s.over) return;
-    s.routed = Object.assign({ turn: s.turn, already: !!s.inOvertime }, why);
+    const was = { E: tiring(s, 'E'), P: tiring(s, 'P') };
+    s.routed = Object.assign({ turn: s.turn }, why);
+    lockWin(s);
+    startTiring(s, 'E');
+    startTiring(s, 'P');
     if (s.surviveTurns) s.surviveTurns = 0;
     if (s.hold) s.hold.done = true;
     for (const w of s.waves) if (w.team === 'E' && w.state === 'pending') w.state = 'cancelled';
-    emit(s, Object.assign({ t: 'routed', turn: s.turn, already: s.routed.already }, why));
+    emit(s, Object.assign({ t: 'routed', turn: s.turn, was }, why));
   }
 
-  // The enemy's next fatigue hit once routed, and your army's mid-cleanup (0 otherwise).
+  // The enemy's next fatigue hit once routed, and your army's once the win is yours.
   function routHit(s) {
     return s.routed ? fatigueHit(s, 'E') : 0;
   }
   function cleanupHit(s) {
-    return s.cleanup ? fatigueHit(s, 'P') : 0;
+    return s.won ? fatigueHit(s, 'P') : 0;
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2913,7 +2929,7 @@
     if (side === 'E') {
       if (s.turn > s.turnLimit) {
         s.timeout = true;
-        if (s.cleanup) return endCleanup(s);
+        if (s.won) return endCleanup(s);
         return finish(s, strength(s, 'P') > strength(s, 'E') ? 'P' : 'E', { timeout: true });
       }
       if (s.surviveTurns && s.turn > s.surviveTurns) rout(s, { survived: true });
@@ -2935,16 +2951,18 @@
     if (s.queue) pickDue(s, side);
   }
 
-  // Fatigue: from turn `s.overtime` on, each fighter loses HP as its turn comes, the
-  // battle's next fatigue number, one unit at a time (see fatigue), and no more
-  // reinforcements come. Big units and regen last longest; the last side standing wins.
-  // Fatigue already on (the enemy fatigued by a mission done, or your army's cleanup):
-  // this turn adds nothing, no side starts tiring and nothing doubles; the count goes on.
+  // Fatigue for everyone: on turn `s.overtime` each side's timer still off switches on, at
+  // 1; a timer already on (yours after the win, the enemy's after the mission) carries on
+  // untouched. No more reinforcements come. Big units and regen last longest; the last
+  // side standing wins. `was` says which timers were already on.
   function startFatigue(s) {
-    if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over || s.routed || s.cleanup) return;
+    if (!s.overtime || s.turn < s.overtime || s.inOvertime || s.over) return;
+    const was = { E: tiring(s, 'E'), P: tiring(s, 'P') };
     s.inOvertime = true;
+    startTiring(s, 'E');
+    startTiring(s, 'P');
     for (const w of s.waves) if (w.state === 'pending') w.state = 'cancelled';
-    emit(s, { t: 'overtime', turn: s.turn });
+    emit(s, { t: 'overtime', turn: s.turn, was });
   }
 
   // ---------------------------------------------------------------- unit queue
@@ -3104,10 +3122,10 @@
     if (s.routed) for (const k of ['vipSlain', 'destroyed', 'held', 'survived']) if (s.routed[k]) why[k] = true;
     return why;
   }
-  // Stop collecting and take the win now (the player's call, or a retreat mid-cleanup).
+  // Take the win now, once it is yours (the player's Finish now, or a retreat after it).
   function endCleanup(s) {
-    if (s.over || !s.cleanup) return;
-    finish(s, 'P', Object.assign(brokeWhy(s), { cleaned: cleanupLeft(s) === 0 }));
+    if (s.over || !s.won) return;
+    finish(s, 'P', Object.assign(brokeWhy(s), s.cleanup ? { cleaned: cleanupLeft(s) === 0 } : {}));
   }
 
   function checkOutcome(s) {
@@ -3146,27 +3164,30 @@
     if (!alive.P && !alive.E) winner = s.side;
     else if (!alive.P) winner = 'E';
     else if (!alive.E) winner = 'P';
-    if (s.cleanup) {
-      // Mid-cleanup the win is yours whatever happens; it goes on while there is something
-      // left to collect and someone left to collect it.
-      if (alive.P && cleanupLeft(s)) return;
+    if (s.won || winner === 'P') {
+      // The win is yours (the mission done, or the enemy army down). It goes on while there
+      // is someone left to fight or something left to collect, and someone to do it.
+      if (alive.P && !alive.E && cleanupLeft(s) && !s.cleanup) {
+        // The enemy army is down with gold, goals or loot still on the field: collect them.
+        const was = tiring(s, 'P');
+        lockWin(s);
+        s.cleanup = { turn: s.turn, lost: s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length };
+        startTiring(s, 'P');
+        emit(s, { t: 'cleanup', turn: s.turn, left: cleanupLeft(s), was, next: fatigueHit(s, 'P') });
+      }
+      if (alive.P && (alive.E || cleanupLeft(s))) return;
       winner = 'P';
-    } else if (winner === 'P' && cleanupLeft(s)) {
-      // The enemy army is down with gold, goals or loot still on the field: collect them.
-      const lost = s.units.filter((u) => u.team === 'P' && !u.nonCombat && !u.alive).length;
-      s.cleanup = { turn: s.turn, lost };
-      emit(s, { t: 'cleanup', turn: s.turn, left: cleanupLeft(s) });
-      return;
     }
     if (!winner) return;
     // A win after a rout keeps why the enemy broke (vipSlain, destroyed, held, survived).
     const why = winner === 'P' ? brokeWhy(s) : {};
     if (s.cleanup) why.cleaned = cleanupLeft(s) === 0;
+    if (s.won) why.locked = true;
     finish(s, winner, why);
   }
 
   function forfeit(s) {
-    if (s.cleanup) return endCleanup(s);
+    if (s.won) return endCleanup(s);
     if (!s.over) finish(s, 'E', { forfeit: true });
   }
 
@@ -3185,7 +3206,7 @@
     poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

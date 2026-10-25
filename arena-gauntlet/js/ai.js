@@ -354,6 +354,8 @@
         ? foes.filter((u) => u.nonCombat || u.structure)
         : s.units.filter((u) => u.alive && u.team === foe && ((s.objective === 'destroy' && u.goal && u.nonCombat) || isSpawning(s, u) || (s.objective === 'vip' && u.vip))),
       cleanup,
+      // The win is yours already (the mission done): spoils are worth going for.
+      won: team === 'P' && !!s.won,
       // Tiles where enemy reinforcements land at the end of the enemy's next turn.
       marks: new Set(
         s.waves
@@ -704,7 +706,7 @@
     for (const e of pv.effects) {
       const t = s.byId[e.uid];
       // Wreckage (spoils) is worth nothing to either side until the enemy army falls.
-      if (t.traits.has('spoils') && !ctx.cleanup) continue;
+      if (t.traits.has('spoils') && !ctx.won) continue;
       const hpv = t.value / t.maxHp;
       if (e.self) {
         v -= u.value;
