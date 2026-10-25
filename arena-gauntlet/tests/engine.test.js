@@ -139,7 +139,7 @@ test('no Level 3 mastery shortens a cooldown', () => {
   assert.ok(Math.abs(d3.props.dmgMult - 0.25) < 1e-9, 'Wyrmlord: +25% damage');
 });
 
-test('barrier aura grants magic resistance and immunity', () => {
+test('barrier aura grants armor, magic resistance and immunity', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 8 },
     { type: 'knight', team: 'E', x: 4, y: 4, facing: 2 },
@@ -147,6 +147,7 @@ test('barrier aura grants magic resistance and immunity', () => {
   ]);
   const [py, kn] = s.units;
   assert.strictEqual(E.calcHit(s, py, kn, {}).dmg, 12);
+  assert.strictEqual(+E.effArmor(s, kn).toFixed(2), +Math.min(AG.Data.RES_CAP, kn.armor + 0.25).toFixed(2), '+25% armor');
   assert.ok(E.statusImmune(s, kn, 'para'));
   assert.ok(E.statusImmune(s, kn, 'poison'));
 });

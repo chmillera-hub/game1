@@ -27,6 +27,10 @@
   // Frame pacing: 30 frames a second while something moves, 10 when nothing does. A
   // tactics board needs no more, and phones stay cool.
   const BUSY_FRAME_MS = 33;
+  // Poison is magenta everywhere (numbers, bubbles, the health bar), so it never reads as the
+  // green of healing.
+  const POISON = '#ff6fdc';
+  const POISON_FX = ['#ff6fdc', '#b23fd6', '#5e1f80'];
   const IDLE_FRAME_MS = 100;
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -1061,7 +1065,7 @@
       g.globalAlpha = v.alpha;
       g.fillStyle = 'rgba(12,10,16,0.85)';
       g.fillRect(x - 1, y - 1, bw + 2, bh + 2);
-      g.fillStyle = v.poison ? '#9bd94a' : frac > 0.5 ? '#5fcf68' : frac > 0.25 ? '#e3b23c' : '#e0533d';
+      g.fillStyle = v.poison ? '#c64fd0' : frac > 0.5 ? '#5fcf68' : frac > 0.25 ? '#e3b23c' : '#e0533d';
       g.fillRect(x, y, bw * frac, bh);
       g.fillStyle = 'rgba(255,255,255,0.25)';
       g.fillRect(x, y, bw * frac, Math.max(1, bh * 0.35));
@@ -1646,8 +1650,8 @@
             this.wait(120).then(() => this.ring(ev.x, ev.y, 'rgba(255,150,120,0.7)', r * 0.6 + 0.3, 420));
           } else if (type === 'wisp') {
             this.sfx('poison');
-            this.ring(ev.x, ev.y, 'rgba(150,230,80,0.9)', r + 0.3, 420);
-            for (const [x, y] of tiles) if (Math.random() < 0.6) this.particles(x, y, 3, ['#9bd94a', '#5fa82a'], { lift: 4, rise: 0.4, speed: 0.3, max: 0.8 });
+            this.ring(ev.x, ev.y, 'rgba(255,111,220,0.9)', r + 0.3, 420);
+            for (const [x, y] of tiles) if (Math.random() < 0.6) this.particles(x, y, 3, POISON_FX, { lift: 4, rise: 0.4, speed: 0.3, max: 0.8 });
           } else {
             this.sfx('zap');
             this.ring(ev.x, ev.y, 'rgba(255,225,90,0.95)', r + 0.3, 420);
@@ -1782,7 +1786,7 @@
     async applyImpacts(group, state, standalone) {
       let any = false;
       const STATUS_TEXT = {
-        para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', '#b6f070'], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
+        para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', POISON], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
         weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'],
       };
       for (const e of group) {
@@ -1798,15 +1802,16 @@
             v.hp = Math.max(0, v.hp - e.amount);
             v.shake = 1;
             setTimeout(() => (v.shake = 0), 220);
-            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? '#b6f070' : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'fatigue' ? '#ffd27a' : '#ffffff';
-            this.addText(v.x, v.y, String(e.amount), col, { height: h, big: e.amount >= 25 });
+            const col = e.dmgType === 'magic' ? '#d7b4ff' : e.dmgType === 'poison' ? POISON : e.dmgType === 'burn' ? '#ffb060' : e.dmgType === 'true' ? '#ffb0a0' : e.dmgType === 'fatigue' ? '#ffd27a' : '#ffffff';
+            // Damage counts down (-6), healing up (+6), so the two never look alike.
+            this.addText(v.x, v.y, '-' + e.amount, col, { height: h, big: e.amount >= 25 });
             if (e.cat === 'back' && e.dmgType === 'phys') {
               const src = state && state.byId[e.src];
               const stab = src && src.props && src.props.backMult;
               this.addText(v.x, v.y, stab ? 'BACKSTAB' : 'FROM BEHIND', '#ffcf6a', { height: h, dy: -this.tw * 0.28, max: 0.9 });
             }
             this.sfx(e.dmgType === 'poison' ? 'poison' : e.dmgType === 'magic' || e.dmgType === 'burn' ? 'magichit' : 'hit');
-            if (e.dmgType === 'poison') this.particles(v.x, v.y, 5, ['#9bd94a', '#5fa82a'], { lift: 14, rise: 0.4, speed: 0.3, max: 0.6 });
+            if (e.dmgType === 'poison') this.particles(v.x, v.y, 7, POISON_FX, { lift: 14, rise: 0.4, speed: 0.3, max: 0.7 });
             if (e.dmgType === 'burn') this.particles(v.x, v.y, 5, ['#ffd27a', '#ff8a2a'], { lift: 14, rise: 0.6, speed: 0.3, max: 0.6 });
             break;
           }
@@ -1838,7 +1843,7 @@
             if (e.why !== 'drain') this.particles(v.x, v.y, 6, ['#b7ffb0', '#6fdc6f', '#fff3b0'], { lift: 10, rise: 0.8, speed: 0.25, max: 0.8 });
             break;
           case 'healblock':
-            if (v) this.addText(v.x, v.y, 'NO HEAL', '#b6f070', { height: h, max: 0.9 });
+            if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9 });
             break;
           case 'noregen':
             if (v) this.addText(v.x, v.y, 'NO REGEN', '#ffb060', { height: h, max: 0.9 });

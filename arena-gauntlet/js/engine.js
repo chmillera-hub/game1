@@ -256,6 +256,12 @@
     if (spec.vip && !T.boss) u.value *= 1.8;
     if (u.bound) u.value *= 0.5;
     if (spec.hpFrac) u.hp = Math.max(1, Math.round(u.maxHp * spec.hpFrac));
+    // Injured (a quest's featured unit): half its health and half its damage this battle.
+    if (spec.injured) {
+      u.injured = true;
+      u.maxHp = Math.max(1, Math.round(u.maxHp / 2));
+      u.hp = Math.min(u.hp, u.maxHp);
+    }
     s.units.push(u);
     s.byId[u.uid] = u;
     s.occ[idx(s, u.x, u.y)] = u.uid;
@@ -533,11 +539,13 @@
     return false;
   }
 
+  // A Barrier Ward's aura: +25% armor and +25% magic resistance (Steel Field adds 10% more
+  // armor).
   function effArmor(s, u) {
     let a = u.armor;
     if (!u.nonCombat && !u.structure) {
       const b = inBarrier(s, u);
-      if (b && b.traits.has('steelfield')) a += 0.1;
+      if (b) a += 0.25 + (b.traits.has('steelfield') ? 0.1 : 0);
     }
     return clampRes(a);
   }
@@ -626,6 +634,7 @@
     let mult = opts.mult != null ? opts.mult : act.mult || 1;
     if (P.rageMult && atk.hp < atk.maxHp / 2) mult *= 1 + P.rageMult;
     if (P.dmgMult) mult *= 1 + P.dmgMult;
+    if (atk.injured) mult *= 0.5;
     if (relA.has('old_crown')) mult *= 1.15;
     if (relA.has('titan_gauntlet')) mult *= 1.25;
     if (relA.has('cursed_blade')) mult *= 1.2;

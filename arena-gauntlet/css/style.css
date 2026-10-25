@@ -512,6 +512,11 @@ button.card:active {
   border-color: rgba(255, 97, 87, 0.45);
 }
 
+.chip.poison {
+  color: #ff8fe4;
+  border-color: rgba(255, 111, 220, 0.5);
+}
+
 .chip.magic {
   color: var(--violet);
   border-color: rgba(195, 155, 255, 0.4);
@@ -2009,6 +2014,80 @@ button.card:active {
   font-size: 1.4rem;
 }
 
+/* The Hall of Fame: ranked armies, the climbing one marked, the two picked for a match outlined. */
+.hall-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hall-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(197, 154, 76, 0.3);
+  background: linear-gradient(180deg, var(--leather-2), var(--leather));
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hall-row > .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hall-row .rank {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--amber);
+  min-width: 2.2em;
+}
+
+.hall-row .nm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hall-row .unit-strip {
+  flex-wrap: wrap;
+}
+
+.hall-row .unit-strip canvas {
+  width: 34px;
+  height: 34px;
+}
+
+.hall-row.climbing {
+  border-color: rgba(233, 180, 64, 0.7);
+}
+
+.hall-row.picked {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(233, 180, 64, 0.35);
+}
+
+.hall-climb p,
+.hall-log div {
+  margin: 0 0 8px;
+}
+
+.hall-log div:last-child {
+  margin: 0;
+}
+
+.hall-log .icon {
+  vertical-align: -3px;
+}
+
 /* ------------------------------------------------------------------ modal and toast */
 
 .modal {
@@ -2673,15 +2752,6 @@ body:has(#battle:not([hidden])) {
   font-weight: 700;
 }
 
-.q-pass {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  border: 1px dashed rgba(197, 154, 76, 0.4);
-}
-
 .blog {
   list-style: none;
   margin: 6px 0;
@@ -2888,4 +2958,20 @@ body:has(#battle:not([hidden])) {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* A unit on the bench: its loadout can be read, not changed. */
+.sheet [data-lv]:disabled,
+.sheet .pick:disabled,
+.sheet .slot:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* A roster card's cost badge: base price, plus what the loadout adds. */
+.rcard .cost i {
+  font-style: normal;
+  font-size: 0.72em;
+  margin-left: 1px;
+  color: #ffe9a8;
 }

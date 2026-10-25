@@ -137,4 +137,34 @@ test('an ally or a taken chest is never a priority', () => {
   assert.strictEqual(AI.focusOf(s, 'P', { loot: 'c1' }), null);
 });
 
+test('foes keep out of a Lightning Ward\'s reach unless they can hit a living unit from there', () => {
+  // A ward sits between the orcs and a knight far behind it: the orcs do not walk into the
+  // pulse just to stand there, or to hack at the ward.
+  const s = battle([
+    { type: 'lightning', team: 'P', x: 4, y: 4 },
+    { type: 'knight', team: 'P', x: 0, y: 8 },
+    { type: 'orc', team: 'E', x: 4, y: 0 },
+    { type: 'orc', team: 'E', x: 5, y: 0 },
+  ]);
+  const [ward, kn] = s.units;
+  let entered = 0;
+  for (let g = 0; g < 60 && !s.over; g++) {
+    const team = s.side;
+    if (team === 'P') {
+      E.pass(s);
+      continue;
+    }
+    AI.playTurn(s, 'E', { stance: 'aggressive', temp: 0 });
+    // Once the knight falls only the ward is left, and then it is fair game.
+    if (!kn.alive) break;
+    for (const o of s.units.filter((u) => u.team === 'E' && u.alive)) {
+      const inReach = Math.abs(o.x - ward.x) + Math.abs(o.y - ward.y) <= 2;
+      const canHit = Math.abs(o.x - kn.x) + Math.abs(o.y - kn.y) <= 1;
+      if (inReach && !canHit) entered++;
+    }
+  }
+  assert.strictEqual(entered, 0, 'never parked inside the pulse with nothing living to hit');
+  assert.ok(kn.hp < kn.maxHp, 'they went around it for the knight');
+});
+
 console.log(`priority: ${passed} tests passed`);

@@ -35,6 +35,17 @@ on a phone turned sideways, but portrait works too.
   not meant to be beaten (in the simulations it falls to about one strong army in
   four, and never to a middling one); losing to it costs you nothing, and you can try
   again or claim your win at any time.
+- **Hall of Fame**: every campaign you win enters its final army in the Hall: the
+  units that beat the Act III boss (or the Eclipse Wyrm), where they stood, their
+  levels, abilities, talents, skills and gear, and your relics. It gets a name (The
+  Iron Company, The Gilded Host ...) and starts at the bottom, then climbs: it fights
+  the army right above it, on a fresh field with mirrored obstacles, both sides on the
+  AI. A win swaps the two; a loss, or reaching #1, ends the climb. Watch each match
+  (pause, speed and skip work as in a battle), or simulate the rest of the climb in a
+  second. Tap any two armies for a friendly match that changes nobody's place. Only
+  one army climbs at a time: one you never watched finishes its climb, played out at
+  once, before the next one joins. The Hall is on the title screen and the end screen,
+  and kept in the browser apart from your campaign save.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Hold a card (or a unit on the board)
   to open its loadout right under your army: what each part costs (Knight 3 + Level 2
@@ -51,6 +62,15 @@ on a phone turned sideways, but portrait works too.
   costs. Begin battle stays in view at the bottom. The loadout says what each chosen
   ability does, and each empty slot shows how many of your items could go in it
   (greyed out when none could). The unit strip stays where you scrolled it.
+- **The bench is bare**: units on the bench are always plain base units. Levels,
+  abilities, talents, skills and gear go on a unit only once it is on the board, and
+  taking it off sends all of it back to your pack. Each card's cost badge shows the
+  base price, plus a small "+N" for whatever its loadout adds. Your plan for a battle
+  is kept: lose, or step back to the other battles, and the army is still on the field
+  when you return; a new battle opens with the army of your last one, kit and all.
+- **Quest units**: when a bonus goal asks for a unit, that unit is injured but insists
+  on fighting: it starts on the field, cannot be taken off, and fights at half health
+  and half damage that battle (its card says Injured). Everyone else is unaffected.
 - **Army size**: there is no limit on how many units you recruit, or on how many
   take the field. Supply is the only limit: eight cheap Archers or four
   veterans, your call. Your commander level sets how big enemy armies get and
@@ -59,7 +79,8 @@ on a phone turned sideways, but portrait works too.
 - **Supply**: each battle gives you Supply to spend. A unit costs its base price,
   plus its level, plus any ability, skill, gear or enchantment it carries.
   Spend it however you like: two Level 1 Knights (3 + 3), or one Level 2 Knight
-  (3 + 2) with an extra ability. Loadouts are free to change between battles.
+  (3 + 2) with an extra ability. Loadouts are free to change between battles, for
+  units on the field.
 - **Auto**: the War Room's Auto button builds an army for you. It weighs the
   enemy's armor against its magic resistance: magic attackers against armored
   armies, physical ones against magic-resistant armies, a mix otherwise. The
@@ -77,15 +98,17 @@ on a phone turned sideways, but portrait works too.
   another skill slot, a talent slot and a second ability pick. Level 3 (+5) adds a
   class mastery, a third talent slot and a second gear slot.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
-  and the like) are class talents. Every unit you get comes with one random talent
-  of its class, equipped (it costs Supply like any talent, and you can unequip it or
-  move it to another unit of the class). You find more in shops and battle spoils,
+  and the like) are class talents. Every unit you get brings one random talent of its
+  class, which goes into your pack (the unit itself arrives bare, at its base price);
+  slot it into any unit of that class on the field. You find more in shops and battle spoils,
   and only for classes in your army. A unit has one talent slot per level, three at
   Level 3, and can mix and match any of its class's talents you own (one copy of
   each per unit; each copy fits one unit at a time). The level picks keep the free
   option and the active abilities. The stronger talents turn up half as often, and
   copies you already own less often still, so a great combination takes hunting.
-  Talent cards are teal in shops and spoils, and the rare ones glow magenta.
+  Talent cards are teal in shops and spoils, and the rare ones glow magenta. Every
+  talent improves something its class always has (its attack, its defenses, its
+  innate traits), never an ability the unit might not have picked; a test checks it.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
@@ -116,7 +139,7 @@ on a phone turned sideways, but portrait works too.
 - **Taking turns**: the sides alternate one unit at a time, and the enemy goes
   first. Each side's units take its turns in a rotation, faster units first (Speed,
   SPD on the card: a Scout at 8 goes before a Knight at 2). A strip under the board
-  shows who is next.
+  shows who is next, units only.
 - **Cooldowns**: acting starts a unit's cooldown (CD on its card): it sits out that
   many of its own turns, and the next unit in line goes instead. Moving alone never
   starts a cooldown. Paralyzed units, and units with nothing in reach, sit out too;
@@ -139,7 +162,15 @@ on a phone turned sideways, but portrait works too.
   for a set number of its turns. The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns (3 with Lingering Spores); poisoned units cannot heal.
   Buildings, wagons, cages and constructs (golems, wards, the trebuchet) are immune,
-  and Pestilence's extra damage never hits buildings.
+  and Pestilence's extra damage never hits buildings. Poison looks nothing like
+  healing: its numbers float up in magenta with a minus sign (every damage number has
+  one; heals have a plus), with a magenta puff, and a poisoned unit's HP bar turns
+  magenta.
+- **Wards**: a Lightning Ward cannot move, so the AI (yours and the enemy's) does
+  not walk into its pulse unless that move lets it hit a living unit the same turn;
+  it goes around, and leaves the ward for last. A Barrier Ward gives allies within 2
+  tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and makes
+  them immune to poison and paralysis.
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
   too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's pulse,
   a breath. Upgrades can make one spare allies: Controlled Burn (fireball), Tamed
@@ -161,7 +192,7 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Bonus goals (ghost-guarded loot, fast wins, no losses, blocking reinforcements,
-  fielding a unit that sat out the last battle) pay extra.
+  winning with an injured unit that sat out the last battle) pay extra.
 - **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
   portals and barricades are buildings. Stone resists swords and spells alike,
   wood burns, and portals unravel under magic. Siege damage breaks them fast:
@@ -221,6 +252,8 @@ node tests/objectives.test.js    # your army playing for the mission and bonus g
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
+node tests/hall.test.js          # the Hall of Fame: entering, climbing, mirrored matches
+node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/sim.js 200            # AI-vs-AI balance by unit type
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries

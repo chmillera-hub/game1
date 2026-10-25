@@ -240,7 +240,7 @@
   function nearestFoe(ctx, x, y) {
     let best = null;
     let bd = 99;
-    for (const v of ctx.foes) {
+    for (const v of ctx.chase || ctx.foes) {
       const d = Math.abs(v.x - x) + Math.abs(v.y - y);
       if (d < bd) {
         bd = d;
@@ -310,13 +310,22 @@
     const foes = s.units.filter(
       (u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u))
     );
+    // Hostile Lightning Wards (anything rooted to the spot that pulses damage around it), and
+    // the living foes worth walking into one for. While any of those remain, nobody marches
+    // on a ward: it is fought from outside its reach.
+    const wards = foes.filter((u) => u.traits.has('immobile') && u.act.kind === 'nova' && u.act.dmg);
+    const flesh = foes.filter((u) => !u.nonCombat && !u.traits.has('immobile'));
+    const chase = wards.length && flesh.length ? foes.filter((u) => !wards.includes(u)) : foes;
     const ctx = {
       s,
       team,
       foe,
       opts,
       sources: buildSources(s, foe),
-      distField: buildDistField(s, foes),
+      distField: buildDistField(s, chase),
+      wards: flesh.length ? wards : [],
+      flesh,
+      chase,
       allies: s.units.filter((u) => u.alive && u.team === team && !u.nonCombat && !u.structure),
       foes,
       objects: s.units.filter((u) => u.alive && u.team === team && u.goal),
@@ -411,6 +420,34 @@
     return best * 0.35;
   }
 
+  // Whether u could strike a living foe (not a ward or a building) from (x, y) this turn.
+  function canHitFlesh(ctx, u, x, y) {
+    for (const a of u.acts) {
+      if (!a.dmg || a.kind === 'none' || a.left <= 0 || a.cdLeft > 0) continue;
+      let [r0, r1] = a.range || [1, a.radius || a.len || 1];
+      if (a.kind === 'blast') r1 += a.pattern === 'square' ? 2 : 1;
+      if (a.kind === 'nova' || a.kind === 'cleave') r0 = 1;
+      for (const f of ctx.flesh) {
+        const d = Math.abs(f.x - x) + Math.abs(f.y - y);
+        if (d >= r0 && d <= r1) return true;
+      }
+    }
+    return false;
+  }
+
+  // Standing in a hostile ward's reach without a living foe to hit from there: the ward
+  // zaps you for nothing. Worth a lot to avoid.
+  function wardPenalty(ctx, u, x, y) {
+    if (ctx.focus) return 0; // a priority target overrides this caution
+    for (const w of ctx.wards) {
+      if (Math.abs(w.x - x) + Math.abs(w.y - y) > (w.act.radius || 2)) continue;
+      if (canHitFlesh(ctx, u, x, y)) return 0;
+      const zap = w.pow * (1 - Math.max(0, u.res));
+      return 20 + zap * (u.value / u.maxHp) * 3;
+    }
+    return 0;
+  }
+
   function primaryRange(u) {
     const a = u.act;
     return a.range ? a.range : null;
@@ -432,7 +469,7 @@
     }
     const hpv = u.value / u.maxHp;
     const expTaken = Math.max(0, danger * 0.85 - u.shield * 0.8);
-    let v = -expTaken * hpv * ctx.risk + offense(ctx, u, x, y);
+    let v = -expTaken * hpv * ctx.risk + offense(ctx, u, x, y) - wardPenalty(ctx, u, x, y);
     if (expTaken >= u.hp) v -= u.value * 0.6 * ctx.risk;
     else if (expTaken >= u.hp * 0.6) v -= u.value * 0.15 * ctx.risk;
     if (u.boss) v *= 1.5;

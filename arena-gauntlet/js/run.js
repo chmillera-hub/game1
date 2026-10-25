@@ -104,21 +104,26 @@
     return u;
   }
 
-  // Every new unit comes with one random talent of its class, equipped. It is an ordinary
-  // talent: it costs Supply while slotted and can move to another unit of the class.
+  // Every new unit brings one random talent of its class. It goes into your pack: units on
+  // the bench carry nothing, and you equip it in the War Room once the unit is on the field.
   function giveTalent(run, u) {
     const opts = Object.values(TALENTS)
       .filter((t) => t.cls === u.type)
       .map((t) => [t.id, talentWeight(run, t)]);
     if (!opts.length) return;
     const rng = AG.derive(run.seed, 'talent:' + u.id);
-    u.load.talents.push(addItem(run, 'talent', rng.weighted(opts)).uid);
+    u.brought = addItem(run, 'talent', rng.weighted(opts)).id;
   }
 
-  // " Mira comes with the Poison Arrows talent." for a unit that just joined.
+  // " Mira brings the Poison Arrows talent (in your pack)." for a unit that just joined.
   function talentNote(run, u) {
-    const it = u && u.load.talents.length ? itemByUid(run, u.load.talents[0]) : null;
-    return it ? ` ${u.name} comes with the ${TALENTS[it.id].name} talent.` : '';
+    return u && u.brought && TALENTS[u.brought] ? ` ${u.name} brings the ${TALENTS[u.brought].name} talent (in your pack).` : '';
+  }
+
+  // Back to the bare unit, as it sits on the bench: Level 1, the free picks, nothing slotted
+  // (its talents, skills and gear go back to the pack). An enchantment is bound for good.
+  function stripLoad(run, r) {
+    if (r) r.load = defaultLoad(r.type);
   }
 
   function addItem(run, kind, id) {
@@ -243,6 +248,15 @@
 
   function unitCost(run, r) {
     return costBreakdown(run, r).reduce((t, x) => t + x.cost, 0);
+  }
+
+  // What a unit costs bare, as it sits on the bench (its enchantment included).
+  function bareCost(run, r) {
+    const keep = r.load;
+    r.load = defaultLoad(r.type);
+    const c = unitCost(run, r);
+    r.load = keep;
+    return c;
   }
 
   function deployCost(run, rid) {
@@ -456,7 +470,8 @@
   function chooseChallenge(run, index) {
     const o = run.offer && run.offer[index];
     if (!o || run.pending || run.over) return false;
-    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index };
+    // Back at a battle you lost or stepped away from: your plan for it is still on the field.
+    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index, lastDep: o.lastDep || null };
     save(run);
     return true;
   }
@@ -465,7 +480,7 @@
   function backToChoice(run) {
     const p = run.pending;
     if (!p || p.type !== 'battle') return;
-    if (run.offer && run.offer[p.offerIndex]) run.offer[p.offerIndex].attempts = p.attempt || 0;
+    if (run.offer && run.offer[p.offerIndex]) Object.assign(run.offer[p.offerIndex], { attempts: p.attempt || 0, lastDep: p.lastDep || null });
     run.pending = null;
     save(run);
   }
@@ -696,7 +711,8 @@
     return out.length ? out : [waveSpec(rng, run, pool, group)];
   }
 
-  // The unit a bonus goal asks you to field, if there is one.
+  // The unit a bonus goal asks you to field, if there is one. It always fights (the War
+  // Room will not let it sit out), injured: half health and half damage.
   function bonusUnit(run, enc) {
     const b = (enc.bonus || []).find((x) => x.type === 'muster');
     return b ? unitById(run, b.rid) || null : null;
@@ -1083,7 +1099,7 @@
           return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'muster': {
           const u = unitById(run, b.rid);
-          return { b, text: u ? `Field ${u.name} the ${UNITS[u.type].name}, who sat out the last battle.` : 'Field a unit that sat out the last battle.', reward: '+6 XP, +20 gold' };
+          return { b, text: u ? `${u.name} the ${UNITS[u.type].name} is injured but insists on fighting: half health and half damage this battle. Win with them in the fight.` : 'An injured unit insists on fighting.', reward: '+6 XP, +20 gold' };
         }
       }
       return { b, text: '', reward: '' };
@@ -1121,11 +1137,13 @@
     run.pending = null;
     if (p.mega) {
       run.superWon = true;
+      recordLegend(run);
       endRun(run);
     } else if (st && st.kind === 'boss') {
       if (run.act >= 3) {
         run.won = true;
         recordMeta(run);
+        recordLegend(run);
         run.summit = true;
         run.pending = { type: 'summit' };
       } else startAct(run, run.act + 1);
@@ -1162,7 +1180,8 @@
     for (const d of deployment) {
       const r = unitById(run, d.rid);
       if (!r) continue;
-      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 }));
+      const injured = (enc.bonus || []).some((b) => b.type === 'muster' && b.rid === r.id);
+      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, injured }));
     }
     for (const e of enc.units)
       units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp });
@@ -1375,6 +1394,15 @@
     }
     run.recentEnc = run.recentEnc.concat(p.enc.name).slice(-3);
     run.lastDeployed = deployment.map((d) => d.rid);
+    // The army that beats the Act III boss (or the final challenge) is the one the Hall of
+    // Fame remembers: who fought, kitted out how, and where they stood.
+    if (kind === 'boss' && run.act >= 3) {
+      run.finalArmy = deployment.map((d) => {
+        const spec = specFor(run, unitById(run, d.rid));
+        delete spec.rid;
+        return { spec, x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 };
+      });
+    }
     // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
     const spoils = tier.spoils ? genSpoils(run, rng, kind).slice(0, tier.spoils) : [];
     const reward = {
@@ -2237,6 +2265,151 @@
     for (const b of enc.bonus || []) if (b.type === 'swift') b.turns = Math.round(b.turns * 2.5);
   }
 
+  // ------------------------------------------------------------ hall of fame
+
+  // Every campaign won leaves its army in the Hall of Fame, ranked best first. A newcomer
+  // starts at the bottom and climbs by beating the army above it, one match at a time.
+  const HALL_KEY = 'arena-gauntlet-hall-v1';
+  const LEGEND_A = ['Iron', 'Ember', 'Silent', 'Golden', 'Crimson', 'Ashen', 'Storm', 'Wild', 'Grim', 'Bright', 'Hollow', 'Thorned', 'Gilded', 'Black'];
+  const LEGEND_B = ['Company', 'Host', 'Band', 'Legion', 'Guard', 'Vanguard', 'Wardens', 'Brotherhood', 'Banner', 'Pact', 'Lances', 'Shields'];
+
+  function loadHall() {
+    try {
+      const j = root.localStorage && root.localStorage.getItem(HALL_KEY);
+      const h = j ? JSON.parse(j) : null;
+      return h && Array.isArray(h.legends) ? h : { legends: [] };
+    } catch (e) {
+      return { legends: [] };
+    }
+  }
+
+  function saveHall(h) {
+    try {
+      root.localStorage && root.localStorage.setItem(HALL_KEY, JSON.stringify(h));
+    } catch (e) {
+      /* storage unavailable */
+    }
+  }
+
+  // Enter (or update, after the final challenge) this campaign's army in the Hall.
+  function recordLegend(run) {
+    if (!run.finalArmy || !run.finalArmy.length) return null;
+    const h = loadHall();
+    let legend = h.legends.find((l) => l.id === run.legendId);
+    if (!legend) {
+      // One army climbs at a time: one still climbing (you never watched) finishes its climb
+      // first, played out at once, then the new one takes the bottom place.
+      for (const l of h.legends.slice()) if (!l.climbed) finishClimb(h, l.id, run.seed);
+      const rng = AG.derive(run.seed, 'legend');
+      legend = {
+        id: 'L' + run.seed.toString(36) + '-' + (h.legends.length + 1),
+        name: `The ${rng.pick(LEGEND_A)} ${rng.pick(LEGEND_B)}`,
+        date: new Date().toISOString().slice(0, 10),
+        wins: 0,
+        losses: 0,
+        // The first army in an empty Hall has no one to climb past.
+        climbed: !h.legends.length,
+      };
+      h.legends.push(legend);
+      run.legendId = legend.id;
+    }
+    Object.assign(legend, { level: commanderLevel(run), relics: run.relics.slice(), units: run.finalArmy, superWon: !!run.superWon });
+    saveHall(h);
+    return legend;
+  }
+
+  // A Hall of Fame match: `a` from the south (blue), `b` from the north (red, mirrored), on
+  // a fresh field with obstacles mirrored so neither side is favored.
+  function hallBattleConfig(a, b, seed) {
+    const rng = AG.derive(seed, 'hall');
+    const terrain = genTerrain(rng, 1 + rng.int(3), BOARD, BOARD, null);
+    const units = [];
+    const free = (x, y) => terrain[y * BOARD + x] === 0 && !units.some((u) => u.x === x && u.y === y);
+    const place = (L, team) => {
+      for (const it of L.units) {
+        let x = team === 'P' ? it.x : BOARD - 1 - it.x;
+        let y = team === 'P' ? it.y : BOARD - 1 - it.y;
+        // A rock where it once stood: the nearest open tile on its own half.
+        if (!free(x, y)) {
+          let best = null;
+          for (let ty = 0; ty < BOARD; ty++)
+            for (let tx = 0; tx < BOARD; tx++) {
+              if ((team === 'P' ? ty < 5 : ty > 3) || !free(tx, ty)) continue;
+              const d = Math.abs(tx - x) + Math.abs(ty - y);
+              if (!best || d < best.d) best = { x: tx, y: ty, d };
+            }
+          if (!best) continue;
+          x = best.x;
+          y = best.y;
+        }
+        units.push(Object.assign({}, it.spec, { team, x, y, facing: team === 'P' ? 0 : 2 }));
+      }
+    };
+    place(a, 'P');
+    place(b, 'E');
+    return { w: BOARD, h: BOARD, terrain, units, relics: { P: (a.relics || []).slice(), E: (b.relics || []).slice() }, seed, objective: 'all', loot: [], goals: [], cartExit: 0, turnLimit: TURN_LIMIT, waves: [], queue: true, overtime: OVERTIME };
+  }
+
+  // Play a Hall match out at once, both sides on the AI. Returns 'P' (a) or 'E' (b).
+  function playHallMatch(a, b, seed) {
+    const s = E.createBattle(hallBattleConfig(a, b, seed));
+    for (let guard = 0; guard < 6000 && !s.over; guard++) {
+      AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0.3 });
+      s.events.length = 0;
+    }
+    return s.winner || 'E';
+  }
+
+  // Record a climb match: the challenger (a) beat the army right above it? They swap places.
+  // Either way the record grows; a loss (or reaching the top) ends the climb.
+  function applyHallResult(h, aId, bId, winner) {
+    const L = h.legends;
+    const ia = L.findIndex((l) => l.id === aId);
+    const ib = L.findIndex((l) => l.id === bId);
+    if (ia < 0 || ib < 0) return;
+    const a = L[ia];
+    const b = L[ib];
+    if (winner === 'P') {
+      a.wins++;
+      b.losses++;
+      if (ib === ia - 1) [L[ia], L[ib]] = [b, a];
+    } else {
+      a.losses++;
+      b.wins++;
+    }
+    if (winner !== 'P' || L.indexOf(a) === 0) a.climbed = true;
+  }
+
+  function hallResult(aId, bId, winner) {
+    const h = loadHall();
+    applyHallResult(h, aId, bId, winner);
+    saveHall(h);
+    return h;
+  }
+
+  // The army a climbing legend faces next: the one right above it (null when done).
+  function hallNext(h, id) {
+    const i = h.legends.findIndex((l) => l.id === id);
+    if (i <= 0 || h.legends[i].climbed) return null;
+    return h.legends[i - 1];
+  }
+
+  // The army climbing now, if any (the lowest one that has not finished its climb).
+  function hallClimber(h) {
+    return h.legends.slice().reverse().find((l) => hallNext(h, l.id)) || null;
+  }
+
+  // Play a whole climb out at once.
+  function finishClimb(h, id, seed) {
+    const me = h.legends.find((l) => l.id === id);
+    for (let i = 0; i < 200 && me; i++) {
+      const foe = hallNext(h, id);
+      if (!foe) break;
+      applyHallResult(h, id, foe.id, playHallMatch(me, foe, (seed || 1) + i));
+    }
+    if (me) me.climbed = true;
+  }
+
   function save(run) {
     try {
       root.localStorage && root.localStorage.setItem(SAVE_KEY, JSON.stringify(run));
@@ -2325,11 +2498,12 @@
     FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
-    DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
-    costBreakdown, unitCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
+    DRAFT_STEPS, DRAFT_GOLD, draftOffer, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
+    costBreakdown, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
+    loadHall, saveHall, recordLegend, hallBattleConfig, playHallMatch, hallResult, hallNext, hallClimber, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

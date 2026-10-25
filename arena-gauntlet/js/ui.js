@@ -485,7 +485,7 @@
     poisonproof: 'Immune to poison.',
     paraproof: 'Immune to paralysis.',
     undead: 'Undead: immune to poison.',
-    aura_barrier: 'Barrier Aura: allies within reach gain +25% magic resistance and are immune to poison and paralysis.',
+    aura_barrier: 'Barrier Aura: allies within reach gain +25% armor and +25% magic resistance, and are immune to poison and paralysis.',
     aegisfield: 'Its aura also softens physical blows by 15%.',
     steelfield: 'Its aura also grants +10% armor.',
     auramend: 'Allies in its aura have +2 Regen.',
@@ -555,7 +555,8 @@
   function statusChips(u) {
     const chips = [];
     if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
-    if (u.poison) chips.push(`<span class="chip good">Poisoned ${u.poison.turns}</span>`);
+    if (u.poison) chips.push(`<span class="chip poison">Poisoned ${u.poison.turns}</span>`);
+    if (u.injured) chips.push('<span class="chip bad" title="A quest: it fights at half health and half damage this battle">Injured</span>');
     if (u.burn) chips.push(`<span class="chip warn">Burning ${u.burn.turns}</span>`);
     if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
     if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
@@ -732,7 +733,7 @@
   function relicBar() {
     const bar = $('#relicBar');
     const run = UI.run;
-    const ids = run ? run.relics.filter((id) => RELICS[id]) : [];
+    const ids = run && !(UI.battle && UI.battle.exhibition) ? run.relics.filter((id) => RELICS[id]) : [];
     bar.innerHTML = ids
       .map((id) => `<button class="relic-dot tier-${RELICS[id].tier}" data-relic="${id}" aria-label="${esc(RELICS[id].name)}">${ic(RELIC_ICON[id] || 'gem')}</button>`)
       .join('');
@@ -815,6 +816,7 @@
     UI.battle = null;
     if (!UI.run) UI.run = R.load();
     const meta = R.loadMeta();
+    const hall = R.loadHall();
     const run = UI.run;
     const pendingBattle = run && run.pending && run.pending.type === 'battle';
     const v = showView(
@@ -829,6 +831,7 @@
               <button class="btn ${run ? '' : 'primary'}" id="tNew">${ic('swords')} New campaign</button>
               <div class="row"><button class="btn grow" id="tHelp">${ic('help')} How to play</button>
               <button class="btn grow" id="tCodex">${ic('book')} Codex</button></div>
+              ${hall.legends.length ? `<button class="btn" id="tHall">${ic('crown')} Hall of Fame · ${hall.legends.length}</button>` : ''}
             </div>
             <p class="meta-line">${meta.runs ? `Campaigns fought: ${meta.runs} · Victories: ${meta.wins}` : 'Inspired by the classic isometric arena tactics games.'}</p>
           </div>
@@ -844,6 +847,7 @@
     };
     $('#tHelp', v).onclick = () => helpSheet();
     $('#tCodex', v).onclick = () => codexSheet();
+    if ($('#tHall', v)) $('#tHall', v).onclick = () => hallScreen(title);
     requestAnimationFrame(() => startDiorama($('#diorama')));
   }
 
@@ -857,7 +861,7 @@
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
-      unit: 'Five units make your starting army. Every unit comes with a random talent of its class.',
+      unit: 'Five units make your starting army. Every unit brings a random talent of its class, for your pack.',
       relic: 'A relic works for the whole campaign.',
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
@@ -1061,6 +1065,8 @@
   }
 
   function menuSheet(inBattle) {
+    // A Hall of Fame match has no campaign to save or retreat from: just leave it.
+    const ex = inBattle && UI.battle && UI.battle.exhibition;
     openSheet(
       `${sheetHead('Menu')}
       <div class="army-list">
@@ -1068,10 +1074,10 @@
         <button class="btn wide" id="muCodex">${ic('book')} Codex</button>
         <button class="btn wide" id="muSound">${ic(AG.Audio.enabled ? 'sound' : 'mute')} Sound: ${AG.Audio.enabled ? 'on' : 'off'}</button>
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
-        <button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
-        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>
-        ${inBattle ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
-        <button class="btn wide" id="muTitle">Save and quit to title</button>
+        ${ex ? '' : `<button class="btn wide" id="muAuto">${ic('swords')} Battles: ${UI.prefs.autoBattle ? 'your army fights on its own' : 'you command each turn'}</button>
+        <button class="btn wide" id="muFacing">${ic('rotate')} Facing: ${UI.prefs.manualFacing ? 'you pick it with arrows' : 'toward the nearest enemy'}</button>`}
+        ${inBattle && !ex ? `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>` : ''}
+        ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
       </div>`,
       (sh) => {
@@ -1086,7 +1092,14 @@
             AG.Music.toggle();
             menuSheet(inBattle);
           };
-        $('#muAuto', sh).onclick = () => {
+        if ($('#muLeave', sh))
+          $('#muLeave', sh).onclick = () => {
+            closeSheet();
+            const back = ex.onLeave;
+            UI.battle = null;
+            back();
+          };
+        if ($('#muAuto', sh)) $('#muAuto', sh).onclick = () => {
           UI.prefs.autoBattle = !UI.prefs.autoBattle;
           savePrefs();
           menuSheet(inBattle);
@@ -1098,12 +1111,12 @@
             runBattle();
           }
         };
-        $('#muFacing', sh).onclick = () => {
+        if ($('#muFacing', sh)) $('#muFacing', sh).onclick = () => {
           UI.prefs.manualFacing = !UI.prefs.manualFacing;
           savePrefs();
           menuSheet(inBattle);
         };
-        $('#muTitle', sh).onclick = () => {
+        if ($('#muTitle', sh)) $('#muTitle', sh).onclick = () => {
           closeSheet();
           if (UI.board) UI.board.stop();
           UI.battle = null;
@@ -1378,6 +1391,8 @@
     const u = R.unitStats(run, r, 'P');
     const cost = R.unitCost(run, r);
     const wr = UI.wr && UI.run.pending && UI.run.pending.type === 'battle' ? UI.wr : null;
+    // Only a unit on the field can be kitted out; on the bench it is the bare unit.
+    const editable = !!(wr && wr.dep.has(rid));
     const after = UI.onSheetClose;
     let budget = '';
     if (wr) {
@@ -1398,6 +1413,7 @@
     // unit's numbers and attacks follow.
     const html = `${sheetHead(esc(r.name), `${esc(T.name)} · fielding costs <b class="cost-big">${cost}</b> Supply`)}
       ${budget}
+      ${editable ? '' : `<p class="hint">${ic('help')} Not on the field: units on the bench carry nothing. Place it on the board in the War Room to give it levels, talents, skills and gear.</p>`}
       <div class="costline">${R.costBreakdown(run, r)
         .filter((x) => x.cost)
         .map((x) => `<span class="cb">${esc(costLabel(x.label))} <b>${x.cost}</b></span>`)
@@ -1438,6 +1454,7 @@
       loadoutSheet(rid, back);
     };
     refreshSheet(html, (sh) => {
+      if (!editable) for (const b of $$('[data-lv], [data-ab], [data-slot]', sh)) b.disabled = true;
       for (const b of $$('[data-lv]', sh))
         b.onclick = () => {
           R.setLevel(run, rid, +b.dataset.lv);
@@ -1560,7 +1577,7 @@
       .map((t) => `<li>${esc(t)}</li>`)
       .join('');
     openSheet(
-      `${sheetHead(esc(u.name), `${u.team === 'P' ? 'Your' : 'Enemy'} ${T.name} · Level ${u.level}`)}
+      `${sheetHead(esc(u.name), `${sideLabel(u.team)} ${T.name} · Level ${u.level}`)}
       ${unitInfoHTML(u, { status: !!live })}
       ${statsHTML(u)}
       ${actsHTML(u)}
@@ -1679,6 +1696,8 @@
   // ------------------------------------------------------------ objectives
 
   function objectivesHTML(enc, s) {
+    if (enc.exhibition)
+      return `<div class="objectives"><div class="obj primary">${ic('crown')}<span><b>Hall of Fame match.</b> <b style="color:var(--blue)">${esc(enc.exhibition.a)}</b> (blue, from the south) against <b style="color:var(--red)">${esc(enc.exhibition.b)}</b> (red). The last army standing wins.</span></div></div>`;
     const info = R.objectiveInfo(UI.run, enc);
     let status = '';
     if (s && s.hold) status = ` <span class="reward">${s.hold.count}/${s.hold.need}</span>`;
@@ -1772,13 +1791,23 @@
     b.setObjectives(enc.loot, enc.hold);
     const rows = R.deployRows(run, enc);
     const dep = new Map();
-    for (const d of p.lastDep || []) {
+    // Your plan for this battle if you had one; for a new battle, the army of your last one.
+    for (const d of p.lastDep || run.lastPlan || []) {
       const r = R.unitById(run, d.rid);
       if (!r || !rows.includes(d.y) || !R.deployOpen(enc, d.x, d.y)) continue;
       if ([...dep.values()].some((o) => o.x === d.x && o.y === d.y)) continue;
       dep.set(d.rid, { x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0 });
     }
-    UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0 };
+    // A quest's injured unit always fights: it starts on the field and cannot leave it.
+    const star = R.bonusUnit(run, enc);
+    if (star && !dep.has(star.id)) {
+      const slot = R.deploySlots(run, enc, R.isFront(star.type), new Set([...dep.values()].map((d) => d.x + ',' + d.y)))[0];
+      if (slot) dep.set(star.id, { x: slot.x, y: slot.y, facing: 0 });
+    }
+    // Units on the bench are bare: their kit goes back to the pack until they take the field.
+    for (const r of run.roster) if (!dep.has(r.id)) R.stripLoad(run, r);
+    R.save(run);
+    UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0, star: star ? star.id : null };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
     boardTools();
@@ -1878,9 +1907,9 @@
       if (tier === 2 && L.lv < 2) return locked('up', 2);
       const ab = ABILITIES[L['a' + tier]];
       const inner = `${ic('up')}<span>${esc(ab.name)}</span>${ab.cost ? `<b>+${ab.cost}</b>` : ''}`;
-      // With only one to choose from, there is nothing to pick.
+      // With only one to choose from (or on the bench), there is nothing to pick.
       const choices = T.abilities[tier].filter((id) => !TALENTS[id]).length;
-      return choices > 1 ? `<button class="qchip ability full" data-qab="${tier}" title="${esc(ab.desc)}">${inner}</button>` : `<span class="qchip ability full fixed" title="${esc(ab.desc)}">${inner}</span>`;
+      return choices > 1 && deployed ? `<button class="qchip ability full" data-qab="${tier}" title="${esc(ab.desc)}">${inner}</button>` : `<span class="qchip ability full fixed" title="${esc(ab.desc)}">${inner}</span>`;
     };
     // What the chosen abilities do, right under them.
     const abDesc = [1, 2]
@@ -1896,15 +1925,19 @@
         <span class="qcost"><b>${R.unitCost(run, r)}</b><span>Supply</span></span>
         <button class="btn ghost icon-only" id="wrDesel" aria-label="Done">${ic('close')}</button></div>
       <div class="costline">${parts}</div>
-      <div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>
+      ${deployed ? `<div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>` : ''}
       ${row('Abilities', ability(1) + ability(2))}
       <div class="qdesc">${abDesc}</div>
-      ${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
+      ${
+        deployed
+          ? `${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
       ${row('Skills', [...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slot('skill', i) : locked('scroll', 2))).join(''))}
-      ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}
+      ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}`
+          : '<p class="small muted">On the bench, units carry nothing: they cost their base price. Add it to the battle to give it levels, talents, skills and gear.</p>'
+      }
       <div class="actions">${
         deployed
-          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button><button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`
+          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button>${r.id === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`}`
           : `<button class="btn primary" id="wrAdd">${ic('plus')} Add to battle</button><button class="btn" id="wrLoad">${ic('help')} Details</button>`
       }</div>
     </div>`;
@@ -1966,6 +1999,9 @@
     const wr = UI.wr;
     if (!wr || !run.pending || run.pending.type !== 'battle') return;
     for (const rid of [...wr.dep.keys()]) if (!R.unitById(run, rid)) wr.dep.delete(rid);
+    // The plan as it stands is kept, so stepping away (or losing) does not undo it.
+    run.pending.lastDep = wrDepArray();
+    R.save(run);
     wr.supply = R.supplyFor(run);
     const enc = wr.enc;
     const s = E.createBattle(R.battleConfig(run, wrDepArray()));
@@ -2017,8 +2053,11 @@
           const cost = R.unitCost(run, u);
           const cant = !deployed && cost > left;
           const featured = u === star;
+          // The badge reads base cost, plus what its loadout adds (only units on the field
+          // carry anything).
+          const bare = R.bareCost(run, u);
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
-            <span class="cost">${cost}</span>${featured ? '<span class="flag feat">Bonus</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
+            <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Injured</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
             <span class="nm">${esc(u.name)} ${levelBadge(u.load.lv)}</span>
             <span class="ty">${UNITS[u.type].name}</span></button>`;
@@ -2132,11 +2171,7 @@
         renderWarRoom();
       };
     if ($('#wrRemove'))
-      $('#wrRemove').onclick = () => {
-        wr.dep.delete(wr.sel);
-        wr.sel = null;
-        renderWarRoom();
-      };
+      $('#wrRemove').onclick = () => wrBench(wr.sel);
     if ($('#wrAdd'))
       $('#wrAdd').onclick = () => {
         const rid = wr.sel;
@@ -2178,7 +2213,12 @@
       if (n('magic') + n('phys')) toast(`Auto: ${got}. ${why}`, 5000);
     };
     $('#wrClear').onclick = () => {
-      wr.dep.clear();
+      for (const rid of [...wr.dep.keys()]) {
+        if (rid === wr.star) continue;
+        wr.dep.delete(rid);
+        R.stripLoad(run, R.unitById(run, rid));
+      }
+      R.save(run);
       wr.sel = null;
       renderWarRoom();
     };
@@ -2197,13 +2237,27 @@
     const wr = UI.wr;
     wr.tile = null;
     if (wr.dep.has(rid)) {
-      wr.dep.delete(rid);
-      if (wr.sel === rid) wr.sel = null;
-      sfx('click');
-      renderWarRoom();
+      wrBench(rid);
       return;
     }
     wrAdd(rid);
+  }
+
+  // Take a unit off the field: back to the bench, bare. A quest's injured unit stays.
+  function wrBench(rid) {
+    const wr = UI.wr;
+    const r = R.unitById(UI.run, rid);
+    if (rid === wr.star) {
+      toast(`${r.name} insists on fighting this battle (the quest). They stay on the field.`);
+      return false;
+    }
+    wr.dep.delete(rid);
+    R.stripLoad(UI.run, r);
+    R.save(UI.run);
+    if (wr.sel === rid) wr.sel = null;
+    sfx('click');
+    renderWarRoom();
+    return true;
   }
 
   // Pick a unit up: its loadout opens below the army, and a blue tile puts it there.
@@ -2263,9 +2317,16 @@
     const rid = wrRidAt(t.x, t.y);
     if (rid) {
       if (wr.sel && wr.sel !== rid && !wr.dep.has(wr.sel)) {
-        // A unit from the bench takes this one's place, which goes to the bench.
+        // A unit from the bench takes this one's place, which goes to the bench, bare (but a
+        // quest's injured unit stays where it is).
+        if (rid === wr.star) {
+          toast(`${R.unitById(UI.run, rid).name} insists on fighting this battle (the quest).`);
+          return;
+        }
         wr.dep.set(wr.sel, Object.assign({}, wr.dep.get(rid)));
         wr.dep.delete(rid);
+        R.stripLoad(UI.run, R.unitById(UI.run, rid));
+        R.save(UI.run);
         wr.sel = null;
         sfx('step');
       } else if (wr.sel && wr.sel !== rid && wr.dep.has(wr.sel)) {
@@ -2367,6 +2428,7 @@
       return;
     }
     run.pending.lastDep = dep;
+    run.lastPlan = dep;
     R.save(run);
     startBattle(dep);
   }
@@ -2411,7 +2473,7 @@
     boardTools(
       `<button class="btn icon-only ${UI.prefs.threat ? 'on' : ''}" id="btThreat" aria-label="Show enemy reach">${ic('eye')}</button>
        <button class="btn icon-only speedbtn ${speedOf() > 1 ? 'on' : ''}" id="btFast" aria-label="Battle speed">${ic('fast')}<small>${speedOf()}×</small></button>
-       ${UI.prefs.autoBattle ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button><button class="btn icon-only" id="btSkipT" aria-label="Skip to the end">${ic('skip')}</button>` : ''}`
+       ${UI.prefs.autoBattle || (UI.battle && UI.battle.exhibition) ? `<button class="btn icon-only" id="btPauseT" aria-label="Pause">${ic('pause')}</button><button class="btn icon-only" id="btSkipT" aria-label="Skip to the end">${ic('skip')}</button>` : ''}`
     );
     if ($('#btPauseT')) $('#btPauseT').onclick = () => togglePause(UI.battle);
     if ($('#btSkipT')) $('#btSkipT').onclick = () => skipBattle(UI.battle);
@@ -2446,7 +2508,7 @@
           while (B.paused && UI.battle === B && !B.skip) await sleep(120);
           continue;
         }
-        if (B.s.side === 'P' && !UI.prefs.autoBattle) {
+        if (B.s.side === 'P' && !UI.prefs.autoBattle && !B.exhibition) {
           B.busy = false;
           B.mode = 'idle';
           B.sel = null;
@@ -2464,6 +2526,7 @@
 
   // The AI's orders for a side: yours chase your priority target, if you set one.
   function aiOpts(B, team) {
+    if (B.exhibition) return { stance: 'balanced', temp: 0.3 };
     return team === 'E' ? { stance: B.enc.stance, temp: B.temp } : { stance: 'balanced', temp: 0.3, focus: B.focus };
   }
 
@@ -2475,6 +2538,7 @@
 
   // Your army goes all out for what you picked: an enemy unit or building, or loot.
   function setFocus(B) {
+    if (B.exhibition) return;
     const s = B.s;
     const u = B.mode === 'inspect' && B.sel ? s.byId[B.sel] : null;
     const l = !u && B.mode === 'tile' && B.tile ? E.lootAt(s, B.tile.x, B.tile.y) : null;
@@ -2528,6 +2592,7 @@
       renderBattle();
       b.ov = Object.assign({}, b.ov, { select: [u.x, u.y] });
       await pause(380);
+      if (UI.battle !== B) return; // you left the battle meanwhile
     }
     AI.runPlan(s, plan, opts);
     b.ov = {};
@@ -2599,9 +2664,18 @@
     return `Turn ${Math.min(s.turn, s.turnLimit)} of ${s.turnLimit}`;
   }
 
+  // Whose a unit is: yours or the enemy's, or in a Hall of Fame match, which army's.
+  function sideLabel(team) {
+    const ex = UI.battle && UI.battle.exhibition;
+    if (ex) return esc((team === 'P' ? ex.a : ex.b).name) + ':';
+    return team === 'P' ? 'Your' : 'Enemy';
+  }
+
   // A unit as the battle log names it.
   function logName(v) {
-    return v.team === 'P' ? `${v.name} (${UNITS[v.type].name})` : `Enemy ${UNITS[v.type].name}`;
+    // In a Hall of Fame match both armies are somebody's heroes: everyone goes by name.
+    if (v.name && (v.team === 'P' || (UI.battle && UI.battle.exhibition))) return `${v.name} (${UNITS[v.type].name})`;
+    return v.team === 'P' ? UNITS[v.type].name : `Enemy ${UNITS[v.type].name}`;
   }
 
   const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', idle: 'nothing in reach' };
@@ -2665,16 +2739,16 @@
     finish();
   }
 
-  // Who acts next, both sides interleaved as their turns alternate.
+  // Who acts next, both sides interleaved as their turns alternate. A turn nobody can take
+  // (every unit cooling down) just passes, so it is left out.
   function queueHTML(s, n) {
     const a = E.upcoming(s, s.side, n);
     const b = E.upcoming(s, E.other(s.side), n);
     const items = [];
-    for (let i = 0; i < n; i++) for (const x of [a[i], b[i]]) if (x && items.length < n) items.push(x);
+    for (let i = 0; i < n; i++) for (const x of [a[i], b[i]]) if (x && x.uid && s.byId[x.uid] && items.length < n) items.push(x);
     return `<div class="queue">${items
       .map((x, i) => {
-        const v = x.uid && s.byId[x.uid];
-        if (!v) return `<div class="q-item pass"><span class="q-pass">Pass</span></div>`;
+        const v = s.byId[x.uid];
         return `<div class="q-item team-${v.team} ${i === 0 ? 'now' : ''}" title="${esc(logName(v))} · Speed ${v.spd}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas><span>${esc(v.team === 'P' ? v.name : UNITS[v.type].name)}</span></div>`;
       })
       .join('')}</div>`;
@@ -2688,7 +2762,7 @@
 
   // Make this your army's priority, or stop, while watching an auto battle.
   function focusButton(B, can, is) {
-    if (!can || B.s.over) return '';
+    if (!can || B.s.over || B.exhibition) return '';
     return is
       ? `<button class="btn" id="btUnfocus">${ic('close')} Clear priority</button>`
       : `<button class="btn primary" id="btFocus">${ic('target')} Priority</button>`;
@@ -2704,7 +2778,7 @@
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army goes all out for it.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">Tap a unit or a chest to pause and look at it, and make it your army's <b>Priority</b>. ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
+      <p class="small muted">${B.exhibition ? 'Tap a unit to pause and look at it.' : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('skip')} skips to the result.</p>`;
   }
 
   function renderBattle() {
@@ -2724,7 +2798,7 @@
     const u = B.sel ? s.byId[B.sel] : null;
     const A = u ? activationOf(u) : null;
     let panel = '';
-    const auto = UI.prefs.autoBattle;
+    const auto = UI.prefs.autoBattle || !!B.exhibition;
     const endBtn = (primary) =>
       auto ? '' : `<button class="btn ${primary ? 'primary' : ''}" id="btEnd" ${s.side !== 'P' || B.busy ? 'disabled' : ''}>${B.confirmEnd ? 'Confirm pass' : 'Pass'}</button>`;
     const inProgress = !!(s.act && (s.act.moved || s.act.acted));
@@ -2861,7 +2935,8 @@
         : goals.length
           ? `${info.short} ${goals.filter((x) => !x.alive).length}/${goals.length}`
           : info.short;
-    $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : s.side === 'P' ? 'Your turn' : 'Enemy turn'}</b>
+    const sideName = B.exhibition ? (s.side === 'P' ? B.exhibition.a.name : B.exhibition.b.name) : s.side === 'P' ? 'Your turn' : 'Enemy turn';
+    $('#topbar').innerHTML = `<div class="title"><b>${B.paused && auto ? 'Paused' : esc(sideName)}</b>
       <span>${turnLine(s)} · ${esc(goal)}</span></div>
       ${s.side === 'P' && !B.busy && B.mode !== 'idle' && !inProgress ? endBtn(false) : ''}
       <button class="btn icon-only" id="btMenu" aria-label="Menu">${ic('menu')}</button>`;
@@ -2977,6 +3052,7 @@
 
   async function play(keepBusy) {
     const B = UI.battle;
+    if (!B) return;
     B.busy = true;
     UI.board.activeSide = null;
     const ev = E.drainEvents(B.s);
@@ -3379,6 +3455,7 @@
     UI.board.focus = null;
     music(null); // quiet for the victory or defeat fanfare
     const s = B.s;
+    if (B.exhibition) return exhibitionOver(B);
     const won = s.winner === 'P';
     const endEv = s.end;
     showBanner(won ? 'Victory' : 'Defeat', !won);
@@ -3432,6 +3509,160 @@
     );
     UI.onSheetClose = again;
     void res;
+  }
+
+  // A Hall of Fame match is over: say who won, then back to the Hall.
+  async function exhibitionOver(B) {
+    const { a, b, onDone } = B.exhibition;
+    const winner = B.s.winner === 'P' ? a : b;
+    showBanner(`${winner.name} wins`, B.s.winner !== 'P');
+    sfx('victory');
+    renderBattle();
+    await sleep(1500);
+    UI.battle = null;
+    openSheet(
+      `${sheetHead('Match over')}
+      <p><b>${esc(winner.name)}</b> ${B.s.timeout ? 'held the stronger army when time ran out' : 'is the last army standing'}.</p>
+      <div class="actions"><button class="btn primary" id="exGo" data-close>Back to the Hall</button></div>`
+    );
+    UI.onSheetClose = () => onDone(B.s.winner);
+  }
+
+  // Watch two Hall of Fame armies fight it out, both on the AI. onDone gets 'P' (a won) or
+  // 'E' (b won); onLeave runs when you walk out before the end.
+  async function startExhibition(a, b, onDone, onLeave) {
+    hideToast();
+    music('battle');
+    const cfg = R.hallBattleConfig(a, b, ((Math.random() * 2 ** 31) >>> 0) + 1);
+    const s = E.createBattle(cfg);
+    E.drainEvents(s);
+    const enc = { name: `${a.name} vs ${b.name}`, w: cfg.w, h: cfg.h, terrain: cfg.terrain, units: [], bonus: [], loot: [], kind: 'battle', primary: 'rout', stance: 'balanced', exhibition: { a: a.name, b: b.name } };
+    const bd = showBattleLayout();
+    clearBanner();
+    bd.clearUnits();
+    bd.ov = {};
+    bd.zoom = 1;
+    bd.panX = 0;
+    bd.panY = 0;
+    bd.readySet = null;
+    bd.setBoard(cfg.w, cfg.h, cfg.terrain, 'grass');
+    UI.wr = null;
+    UI.battle = { s, dep: [], enc, mode: 'idle', sel: null, target: null, ai: 0, busy: false, temp: 0.3, confirmEnd: false, exhibition: { a, b, onDone, onLeave: onLeave || (() => onDone(null)) }, log: [] };
+    bd.speed = paceOf();
+    bd.focus = null;
+    bd.syncFromState(s);
+    bd.setObjectives([], null);
+    bd.activeSide = 'P';
+    UI.boardTap = btTap;
+    UI.boardLong = btLong;
+    battleTools();
+    showBanner(`${a.name} vs ${b.name}`, false);
+    renderBattle();
+    UI.battle.busy = true;
+    await pause(900);
+    if (UI.battle && UI.battle.s === s) await runBattle();
+  }
+
+  // ------------------------------------------------------------ hall of fame
+
+  // Every army that won a campaign, best first. The newest starts at the bottom and climbs:
+  // it fights the army right above it, and each win swaps them, until it loses or tops the Hall.
+  function hallScreen(back, state) {
+    const st = state || { pick: [], log: [] };
+    const h = R.loadHall();
+    const L = h.legends;
+    const climber = R.hallClimber(h);
+    const next = climber && R.hallNext(h, climber.id);
+    st.pick = st.pick.filter((id) => L.some((l) => l.id === id));
+    const relicNames = (l) => (l.relics || []).filter((id) => RELICS[id]).map((id) => RELICS[id].name).join(', ');
+    const row = (l, i) => {
+      const units = l.units
+        .map((it) => it.spec)
+        .map((sp) => `<canvas data-p="${sp.type}:P" title="${esc(UNITS[sp.type].name)}${sp.level > 1 ? ' · Level ' + sp.level : ''}"></canvas>`)
+        .join('');
+      const picked = st.pick.indexOf(l.id);
+      const tag = l === climber ? '<span class="chip warn">Climbing</span>' : picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '';
+      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''}" data-legend="${l.id}">
+        <span class="rank">#${i + 1}</span>
+        <span class="grow"><span class="nm">${l.superWon ? ic('crown') + ' ' : ''}<b>${esc(l.name)}</b> ${tag}</span>
+          <span class="small muted">${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.wins}–${l.losses}${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}</span>
+          <span class="unit-strip">${units}</span></span>
+      </button>`;
+    };
+    const climbPanel = climber
+      ? `<div class="panel hall-climb">
+          <p><b>${esc(climber.name)}</b> is climbing from #${L.indexOf(climber) + 1}. Next up: <b>${esc(next.name)}</b>, #${L.indexOf(next) + 1}. Win, and they swap places; lose, and the climb ends there.</p>
+          <div class="row"><button class="btn primary grow" id="hlWatch" ${st.busy ? 'disabled' : ''}>${ic('eye')} Watch the match</button><button class="btn grow" id="hlSim" ${st.busy ? 'disabled' : ''}>${ic('skip')} ${st.busy ? 'Climbing…' : 'Simulate the climb'}</button></div>
+        </div>`
+      : '';
+    const pickA = L.find((l) => l.id === st.pick[0]);
+    const pickB = L.find((l) => l.id === st.pick[1]);
+    const v = showView(
+      `<div class="wrap">
+        <div><p class="eyebrow">Every army that won a campaign</p><h2>Hall of Fame</h2></div>
+        <p class="muted">Each campaign you win enters its final army here, with its gear, talents and relics, at the bottom. It climbs by beating the army right above it, one match at a time, until it loses or reaches the top.</p>
+        ${climbPanel}
+        ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
+        <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
+        ${L.length > 1 ? `<p class="small muted">${pickA && pickB ? '' : 'Tap two armies for a friendly match: it changes nobody\'s place.'}</p>` : ''}
+        <div class="row end">
+          ${pickA && pickB ? `<button class="btn primary" id="hlFriendly">${ic('swords')} Watch ${esc(pickA.name)} vs ${esc(pickB.name)}</button>` : ''}
+          <button class="btn" id="hlBack">Back</button>
+        </div>
+      </div>`
+    );
+    const again = () => hallScreen(back, st);
+    $('#hlBack', v).onclick = () => back();
+    for (const el of $$('[data-legend]', v))
+      el.onclick = () => {
+        const id = el.dataset.legend;
+        const at = st.pick.indexOf(id);
+        if (at >= 0) st.pick.splice(at, 1);
+        else st.pick = [...st.pick, id].slice(-2);
+        sfx('click');
+        again();
+      };
+    const climbMsg = (a, b, winner) => (winner === 'P' ? `${ic('check')} <b>${esc(a.name)}</b> beat ${esc(b.name)} and takes #${R.loadHall().legends.findIndex((l) => l.id === a.id) + 1}.` : `${ic('close')} <b>${esc(a.name)}</b> fell to ${esc(b.name)}. The climb ends at #${R.loadHall().legends.findIndex((l) => l.id === a.id) + 1}.`);
+    if ($('#hlWatch', v))
+      $('#hlWatch', v).onclick = () =>
+        startExhibition(
+          climber,
+          next,
+          (winner) => {
+            R.hallResult(climber.id, next.id, winner);
+            st.log = [climbMsg(climber, next, winner)];
+            again();
+          },
+          again
+        );
+    if ($('#hlSim', v))
+      $('#hlSim', v).onclick = async () => {
+        st.busy = true;
+        st.log = [];
+        again();
+        const id = climber.id;
+        for (let guard = 0; guard < 200; guard++) {
+          const hall = R.loadHall();
+          const me = hall.legends.find((l) => l.id === id);
+          const foe = R.hallNext(hall, id);
+          if (!me || !foe) break;
+          await sleep(60); // let the screen show the last result first
+          const winner = R.playHallMatch(me, foe, ((Math.random() * 2 ** 31) >>> 0) + 1);
+          R.hallResult(id, foe.id, winner);
+          st.log.push(climbMsg(me, foe, winner));
+          if (UI.battle || !$('#hlBack')) return void (st.busy = false); // you left the screen
+          again();
+        }
+        st.busy = false;
+        again();
+      };
+    if ($('#hlFriendly', v))
+      $('#hlFriendly', v).onclick = () =>
+        startExhibition(pickA, pickB, (winner) => {
+          const w = winner === 'P' ? pickA : winner === 'E' ? pickB : null;
+          st.log = w ? [`${ic('swords')} Friendly match: <b>${esc(w.name)}</b> beat ${esc((w === pickA ? pickB : pickA).name)}. Places unchanged.`] : [];
+          again();
+        });
   }
 
   // Victory with bonus goals missed: fight again for them, or keep the win. The rewards are
@@ -3703,6 +3934,15 @@
     const run = UI.run;
     const st = run.stats;
     R.clearSave();
+    // A won campaign enters its final army in the Hall of Fame, at the bottom.
+    const hall = R.loadHall();
+    const rank = run.legendId ? hall.legends.findIndex((l) => l.id === run.legendId) : -1;
+    const legend = rank >= 0 ? hall.legends[rank] : null;
+    const hallPanel = legend
+      ? `<div class="panel hall-climb"><p>${ic('crown')} Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${rank + 1} of ${hall.legends.length}.
+          ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}</p>
+          <div class="row"><button class="btn primary grow" id="enHall">${ic('crown')} ${R.hallNext(hall, legend.id) ? 'Climb the Hall of Fame' : 'Hall of Fame'}</button></div></div>`
+      : '';
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">${run.superWon ? 'Beyond the Spire' : run.won ? 'The Spire is silent' : 'The campaign is over'}</p>
@@ -3716,6 +3956,7 @@
           <div class="stat"><b>${st.kills}</b><span>Enemies slain</span></div>
           <div class="stat"><b>${st.gold}</b><span>Gold earned</span></div>
         </div>
+        ${hallPanel}
         <div class="roster">${run.roster
           .map((u) => `<div class="rcard"><canvas data-p="${u.type}:P"></canvas><span class="nm">${esc(u.name)}</span><span class="ty">${UNITS[u.type].name}${u.enchant ? ' · ' + esc(ENCHANTS[u.enchant].name) : ''}</span></div>`)
           .join('')}</div>
@@ -3730,6 +3971,7 @@
       UI.run = null;
       title();
     };
+    if ($('#enHall', v)) $('#enHall', v).onclick = () => hallScreen(endScreen);
   }
 
   // ------------------------------------------------------------ help and codex
@@ -3740,6 +3982,8 @@
       <div class="help">
         <h4>The campaign</h4>
         <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
+        <h4>Hall of Fame</h4>
+        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>
@@ -3749,6 +3993,7 @@
           <li>${ic('star')} <b>Talents</b> are class passives you find in shops and battle spoils, only for classes in your army. A unit has one talent slot per level (three at Level 3); mix and match any you own. Each copy fits one unit at a time.</li>
           <li>Level 2 (+2 Supply): +20% HP, +15% damage, the second ability and a second skill slot. Level 3 (+5): +40% HP, +30% damage, a Mastery and a second gear slot.</li>
           <li>Skills and gear are items you own. Slot each one into a single unit. They cost Supply only when that unit fights.</li>
+          <li><b>The bench is bare</b>: units on the bench are plain base units. Levels, abilities, talents, skills and gear go on a unit once it is on the board; taking it off sends everything back to your pack. A card's cost badge shows the base price and a small +N for its loadout. Your plan for a battle stays put if you lose or step away, and a new battle opens with your last army.</li>
           <li>Enchantment scrolls bind a permanent bonus to one unit, forever. That unit costs a little more Supply to field.</li>
         </ul>
         <h4>Commander level</h4>
@@ -3762,7 +4007,7 @@
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit as it takes its turn, not when it sits a turn out. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>Fatigue</b>: from turn ${R.OVERTIME}, the unit taking each turn loses HP as its turn starts, past armor and shields: 1 in the first round (the enemy's unit, then yours), 2 in the next, then 3 and so on, the same for both sides. Units that sit the turn out are spared. The top bar shows this round's hit. No more reinforcements come. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
-          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison.</li>
+          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
           <li>While watching: ${ic('fast')} changes the speed (1×, 2×, 4×), ${ic('pause')} pauses, ${ic('skip')} skips to the result, and tapping a unit pauses and shows its details. To command each turn yourself, switch <b>Battles</b> in the menu.</li>
           <li><b>Priority</b>: tap an enemy unit, a building or a chest while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
@@ -3777,7 +4022,7 @@
         <h4>Missions</h4>
         <ul>
           <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
-          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or fielding a unit that sat out your last battle.</li>
+          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit is injured but insists on fighting: it starts on the field, cannot be taken off, and fights at half health and half damage.</li>
         </ul>
         <h4>Buildings and siege</h4>
         <ul>

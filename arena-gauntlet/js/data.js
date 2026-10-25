@@ -163,7 +163,7 @@
     bw_mend: { name: 'Mending Light', cost: 1, desc: 'Allies in its aura have +2 Regen.', mod: { traits: ['auramend'] } },
     bw_reach: { name: 'Wide Field', cost: 2, desc: 'Its aura reaches 3 tiles.', mod: { props: { auraR: 1 } } },
     bw_reflect: { name: 'Reflection', cost: 0, desc: 'Enemies that strike it in melee take 6 damage.', mod: { props: { thorns: 6 } } },
-    bw_steel: { name: 'Steel Field', cost: 1, desc: 'Its aura also grants +10% armor.', mod: { traits: ['steelfield'] } },
+    bw_steel: { name: 'Steel Field', cost: 1, desc: 'Its aura grants 10% more armor: +35% in all.', mod: { traits: ['steelfield'] } },
     bw_purge: { name: 'Purging Pulse', cost: 1, desc: 'At the start of your turn, allies in its aura are cured of roots and burns.', mod: { traits: ['purge'] } },
 
     // Enchantress
@@ -427,7 +427,7 @@
       act: { name: 'Barrier Aura', kind: 'none' },
       traits: ['immobile', 'aura_barrier', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['bw_crystal', 'bw_mend', 'bw_reach'], 2: ['bw_reflect', 'bw_steel', 'bw_purge'] },
-      desc: 'Rooted crystal. Allies within 2 tiles gain +25% magic resistance and are immune to poison and paralysis.',
+      desc: 'Rooted crystal. Allies within 2 tiles gain +25% armor and +25% magic resistance, and are immune to poison and paralysis.',
       tip: 'It cannot move or fight. Bring physical attackers, or draw foes out of its reach.',
     },
     enchantress: {

@@ -92,4 +92,49 @@ test("Recruiter's Bell makes Level 1 units 1 Supply cheaper, never below 2", () 
   assert.strictEqual(R.unitCost(run, archer), lv2, 'no discount at Level 2');
 });
 
+test("a quest's featured unit fights injured: half health and half damage", () => {
+  const run = atBattle(5, 'vanguard');
+  const enc = run.pending.enc;
+  enc.bonus = (enc.bonus || []).filter((b) => b.type !== 'muster');
+  const u = run.roster[0];
+  enc.bonus.push({ type: 'muster', rid: u.id });
+  const dep = R.autoDeploy(run, 0);
+  assert.ok(dep.some((d) => d.rid === u.id), 'Auto fields it');
+  const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+  const hurt = s.units.find((x) => x.rid === u.id);
+  const other = s.units.find((x) => x.team === 'P' && x.rid !== u.id);
+  const fresh = R.unitStats(run, u);
+  assert.ok(hurt.injured && !other.injured);
+  assert.strictEqual(hurt.maxHp, Math.round(fresh.maxHp / 2));
+  const foe = s.units.find((x) => x.team === 'E' && !x.nonCombat);
+  const healthy = AG.Engine.calcHit(s, Object.assign({}, hurt, { injured: false }), foe, {}).dmg;
+  assert.ok(AG.Engine.calcHit(s, hurt, foe, {}).dmg <= Math.ceil(healthy / 2) + 1, 'half damage');
+});
+
+test('bare: stripping a unit sends its kit back to the pack', () => {
+  const run = atBattle(6, 'vanguard');
+  const u = run.roster[0];
+  R.setLevel(run, u.id, 2);
+  const item = R.freeItems(run).find((i) => i.kind !== 'scroll' && R.assignItem(run, u.id, i.uid));
+  assert.ok(R.unitCost(run, u) > R.bareCost(run, u));
+  R.stripLoad(run, u);
+  assert.strictEqual(u.load.lv, 1);
+  assert.strictEqual(R.unitCost(run, u), R.bareCost(run, u));
+  if (item) assert.ok(!R.itemHolder(run, item.uid), 'the item is free again');
+});
+
+test('a plan survives a defeat: back at the same battle, the army is where you left it', () => {
+  const run = atBattle(7, 'vanguard');
+  const dep = R.autoDeploy(run, 0);
+  run.pending.lastDep = dep;
+  const i = run.pending.offerIndex;
+  R.backToChoice(run);
+  assert.ok(R.chooseChallenge(run, i));
+  assert.deepStrictEqual(run.pending.lastDep, dep);
+  R.backToChoice(run);
+  const other = (i + 1) % run.offer.length;
+  assert.ok(R.chooseChallenge(run, other));
+  assert.ok(!run.pending.lastDep, 'another battle has a plan of its own');
+});
+
 console.log(`deploy: ${passed} tests passed`);

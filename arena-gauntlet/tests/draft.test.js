@@ -65,7 +65,8 @@ test('a drafted army starts the campaign', () => {
   assert.ok(run.items.some((i) => i.kind === 'skill' && i.id === picks[6]));
   assert.ok(run.items.some((i) => i.kind === 'gear' && i.id === picks[7]));
   assert.strictEqual(run.gold, R.DRAFT_GOLD);
-  assert.ok(run.roster.every((r) => r.load.talents.length === 1), 'each with its random talent');
+  assert.ok(run.roster.every((r) => r.brought && r.load.talents.length === 0), 'each brought its random talent, into the pack');
+  assert.strictEqual(run.items.filter((i) => i.kind === 'talent').length, 5);
   assert.ok(run.offer && run.offer.length === 3, 'the first round of challenges is on offer');
 });
 
