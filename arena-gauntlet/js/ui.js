@@ -576,6 +576,12 @@
     if (u.trophies) chips.push(`<span class="chip warn">${ic('star')} Trophies ${u.trophies} · +${u.trophies * 10}%</span>`);
     if (u.fury) chips.push(`<span class="chip bad">Fury +${u.fury * 5}%</span>`);
     if (u.harvest) chips.push(`<span class="chip magic">Souls ${u.harvest} · +${u.harvest * 10}%</span>`);
+    if (u.braced) chips.push(`<span class="chip">${ic('shield')} Holding the line</span>`);
+    if (u.charge) chips.push(`<span class="chip magic">Charge ${u.charge} · +${u.charge * 25}%</span>`);
+    if (u.runes) chips.push(`<span class="chip magic">Runes ${u.runes}</span>`);
+    if (u.sink) chips.push(`<span class="chip magic">Spell sunk · +50%</span>`);
+    if (u.spree) chips.push(`<span class="chip warn">On a spree · x2</span>`);
+    if (u.illusion) chips.push(`<span class="chip">Mirror image</span>`);
     return chips;
   }
 
@@ -4104,7 +4110,7 @@
       return `<button class="card talent ${t.tier === 2 ? 'rare' : ''}" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
     }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
-    return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
+    return `<button class="card${d.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${d.cost} Supply${d.cursed ? ' · <span class="cursed">Cursed</span>' : ''}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
   // A toast line for a unit that just joined, with the talent it came with.

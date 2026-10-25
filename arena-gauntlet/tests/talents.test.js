@@ -204,7 +204,7 @@ test('a talent you already own (bought or found) is not what the next recruit br
   run.items = run.items.filter((i) => !(i.kind === 'talent' && D.TALENTS[i.id].cls === 'cleric'));
   R.addItem(run, 'talent', 'c_bless');
   R.addItem(run, 'talent', 'c_halo');
-  assert.strictEqual(R.addRecruit(run, 'cleric').brought, 'c_radiance');
+  assert.strictEqual(R.addRecruit(run, 'cleric').brought, 'c_angel');
 });
 
 console.log(`talents: ${passed} tests passed`);

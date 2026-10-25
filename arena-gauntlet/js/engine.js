@@ -256,6 +256,8 @@
     if (spec.hpFrac) u.hp = Math.max(1, Math.round(u.maxHp * spec.hpFrac));
     if (u.props.startShield) u.shield = u.props.startShield;
     u.guardReady = true;
+    u.watchReady = true;
+    u.braced = traits.has('brace');
     s.units.push(u);
     s.byId[u.uid] = u;
     s.occ[idx(s, u.x, u.y)] = u.uid;
@@ -647,6 +649,11 @@
     if (atk.fury) mult *= 1 + 0.05 * atk.fury;
     if (atk.harvest) mult *= 1 + 0.1 * atk.harvest;
     if (atk.champion) mult *= 1.5;
+    if (P.momentum && opts.moved) mult *= 1 + P.momentum * (opts.moveDist || 0);
+    if (atk.charge) mult *= 1 + 0.25 * atk.charge;
+    if (atk.sink) mult *= 1.5;
+    if (atk.traits.has('opportunist') && (tgt.para > 0 || tgt.root > 0 || tgt.weak > 0)) mult *= 1.4;
+    if (atk.traits.has('cruelsong') && tgt.para > 0) mult *= 1.5;
     if (relA.has('lone_wolf') && !atk.nonCombat && !alliesNext(s, atk)) mult *= 1.3;
     if (relA.has('cursed_blade')) mult *= 1.2;
     if (s.relics[tgt.team].has('cursed_blade') && !tgt.nonCombat) mult *= 1.1;
@@ -684,6 +691,9 @@
     dmg *= 1 - guardianReduction(s, tgt);
     // Phalanx Standard: shoulder to shoulder with two allies or more.
     if (s.relics[tgt.team].has('phalanx_standard') && !tgt.nonCombat && !tgt.structure && alliesNext(s, tgt) >= 2) dmg *= 0.8;
+    // Hold the Line: it has not moved since its last turn. Last Stand: nearly down.
+    if (tgt.braced) dmg *= 0.7;
+    if (tgt.traits.has('laststand') && tgt.hp < tgt.maxHp * 0.25) dmg *= 0.5;
     dmg = Math.max(1, Math.round(dmg));
     const block = dmgType === 'phys' ? blockChance(s, tgt, cat) : 0;
     return { dmg, block, cat };
@@ -756,7 +766,8 @@
 
   // A unit in smoke cannot be singled out from more than 1 tile away.
   function concealed(s, v, fx, fy) {
-    return !!tileFx(s, v.x, v.y, 'smoke') && manhattan(fx, fy, v.x, v.y) > 1;
+    if (manhattan(fx, fy, v.x, v.y) <= 1) return false;
+    return !!tileFx(s, v.x, v.y, 'smoke') || (v.traits.has('unseen') && !v.revealed);
   }
 
   function unitsOnTiles(s, tiles) {
@@ -1223,11 +1234,15 @@
       s.stats.gold += 8;
       emit(s, { t: 'gold', uid: src.uid, amount: 8 });
     }
-    if (src.traits.has('pyroclasm') && s.terrain[idx(s, u.x, u.y)] === T_GRASS) {
-      const old = tileFx(s, u.x, u.y, 'fire');
-      if (old) s.tfx.splice(s.tfx.indexOf(old), 1);
-      s.tfx.push({ kind: 'fire', x: u.x, y: u.y, team: src.team, turns: 2, dmg: 6, src: src.uid });
-      emit(s, { t: 'hazard', kind: 'fire', tiles: [[u.x, u.y]], team: src.team });
+    if (src.traits.has('pyroclasm')) placeFire(s, src, [[u.x, u.y]], 2, 6);
+    if (src.traits.has('spree') && !src.spree) {
+      src.spree = true;
+      emit(s, { t: 'spreeReady', uid: src.uid });
+    }
+    if (src.alive && src.traits.has('ogre')) {
+      src.maxHp += 10;
+      emit(s, { t: 'grow', uid: src.uid, maxHp: src.maxHp });
+      heal(s, src, 10, 'drain');
     }
     if (src.alive && src.traits.has('rallykill')) {
       for (const v of s.units) if (v !== src && v.alive && v.team === src.team && manhattan(v.x, v.y, src.x, src.y) === 1) heal(s, v, 10, 'rally');
@@ -1263,6 +1278,7 @@
         emit(s, { t: 'status', uid: v.uid, status: 'poison', turns: v.poison.turns, dmg: v.poison.dmg, stacks: v.poison.stacks.length });
       }
     }
+    if (u.traits.has('emberheart')) placeFire(s, u, radiusTiles(s, u.x, u.y, 1, true), 2, 6);
     if (u.traits.has('shatter')) {
       for (const v of s.units) {
         if (!v.alive || v.team !== u.team || v.nonCombat || v.structure || manhattan(v.x, v.y, u.x, u.y) > auraRadius(u)) continue;
@@ -1311,6 +1327,17 @@
         c.hp = c.maxHp;
       }
       if (rel.has('blood_pact')) for (const u of army) u.hp = Math.max(1, Math.round(u.hp * 0.75));
+      // Mirror Image: a shadow copy of it stands beside it, 1 HP, half the bite.
+      for (const u of army) {
+        if (!u.traits.has('mirrorimage')) continue;
+        const spot = [[0, -1], [1, 0], [-1, 0], [0, 1]].map(([dx, dy]) => [u.x + dx, u.y + dy]).find(([x, y]) => emptyGrass(s, x, y));
+        if (!spot) continue;
+        const c = addUnit(s, { type: u.type, team, level: u.level, a1: u.a1, a2: u.a2, x: spot[0], y: spot[1], facing: u.facing, name: u.name + "'s image" });
+        c.hp = 1;
+        c.illusion = true;
+        c.props.dmgMult = (c.props.dmgMult || 0) - 0.5;
+        c.value *= 0.3;
+      }
     }
   }
 
@@ -1351,6 +1378,15 @@
         more(best.v, from, jump);
       }
     }
+    if (basic && a.kind === 'strike' && u.traits.has('grapple') && u.alive && struck[0].alive) pullToward(s, u, struck[0]);
+    // Echo Amulet: a spell may strike the same foe again at half power.
+    if (a.dmg === 'magic' && u.traits.has('echo')) {
+      for (const v of struck) {
+        if (!u.alive || !v.alive || s.rng.next() >= 0.25) continue;
+        emit(s, { t: 'echo', uid: u.uid, target: v.uid });
+        more(v, u, 0.5);
+      }
+    }
     if (basic && u.props.splash && u.alive) {
       const tgt = struck[0];
       const near = s.units.filter((v) => isFoe(u, v) && !done.has(v.uid) && !v.nonCombat && manhattan(tgt.x, tgt.y, v.x, v.y) === 1);
@@ -1378,6 +1414,88 @@
     applyDamage(s, u, w, Math.max(1, Math.round(u.pow * 0.5)), { cat: 'none', dmgType: 'true' });
   }
 
+  // Pull a unit one step toward `src`, along the longer axis first. Returns true if it moved.
+  function pullToward(s, src, v) {
+    if (statusImmune(s, v, 'knock')) {
+      shrug(s, v, 'steady');
+      return false;
+    }
+    const dx = src.x - v.x;
+    const dy = src.y - v.y;
+    if (Math.abs(dx) + Math.abs(dy) <= 1) return false;
+    const steps = Math.abs(dx) >= Math.abs(dy) ? [[Math.sign(dx), 0], [0, Math.sign(dy)]] : [[0, Math.sign(dy)], [Math.sign(dx), 0]];
+    for (const [sx, sy] of steps) {
+      if ((!sx && !sy) || !emptyGrass(s, v.x + sx, v.y + sy)) continue;
+      const nx = v.x + sx;
+      const ny = v.y + sy;
+      emit(s, { t: 'pull', uid: v.uid, by: src.uid });
+      relocate(s, v, nx, ny);
+      emit(s, { t: 'push', uid: v.uid, x: nx, y: ny });
+      enterTile(s, v, nx, ny);
+      return true;
+    }
+    return false;
+  }
+
+  // Slippery: after a block it slips one tile away from the attacker.
+  function slip(s, atk, u) {
+    if (!u.alive) return;
+    const d = dirFromDelta(u.x - atk.x, u.y - atk.y);
+    if (d < 0) return;
+    const nx = u.x + DIRS[d][0];
+    const ny = u.y + DIRS[d][1];
+    if (!emptyGrass(s, nx, ny)) return;
+    emit(s, { t: 'slip', uid: u.uid });
+    relocate(s, u, nx, ny);
+    emit(s, { t: 'push', uid: u.uid, x: nx, y: ny });
+    enterTile(s, u, nx, ny);
+  }
+
+  // Set grass tiles ablaze for `turns` of the owner's turns, hurting its enemies.
+  function placeFire(s, owner, tiles, turns, dmg) {
+    const placed = [];
+    for (const [x, y] of tiles) {
+      if (!inB(s, x, y) || s.terrain[idx(s, x, y)] !== T_GRASS) continue;
+      const old = tileFx(s, x, y, 'fire');
+      if (old) s.tfx.splice(s.tfx.indexOf(old), 1);
+      s.tfx.push({ kind: 'fire', x, y, team: owner.team, turns, dmg, src: owner.uid });
+      placed.push([x, y]);
+    }
+    if (placed.length) emit(s, { t: 'hazard', kind: 'fire', tiles: placed, team: owner.team });
+  }
+
+  // Trample: a charge carries through to the enemy behind its target.
+  function trample(s, u, v, opts) {
+    if (!v || !u.alive) return;
+    const d = dirFromDelta(v.x - u.x, v.y - u.y);
+    if (d < 0) return;
+    const w = at(s, v.x + DIRS[d][0], v.y + DIRS[d][1]);
+    if (!w || !isFoe(u, w) || w.nonCombat) return;
+    emit(s, { t: 'trample', uid: u.uid, target: w.uid });
+    hit(s, u, w, Object.assign({}, opts, { mult: 0.6, fromX: v.x, fromY: v.y, cat: null, noReact: true, noCrit: true, deadeye: false, spree: false }));
+  }
+
+  // Once a unit has walked: it is no longer holding the line, it may puff spores, and
+  // enemies on overwatch may take a shot.
+  function afterMove(s, u) {
+    if (!u.alive) return;
+    u.braced = false;
+    if (u.traits.has('sporepuff')) {
+      const near = s.units.filter((v) => isFoe(u, v) && !v.nonCombat && !v.structure && manhattan(u.x, u.y, v.x, v.y) === 1);
+      if (near.length) emit(s, { t: 'puff', uid: u.uid });
+      for (const v of near) applyStatus(s, u, v, { poison: [1, 4] }, { name: 'Spore Puff' });
+    }
+    for (const w of s.units) {
+      if (!u.alive) return;
+      if (!w.alive || w.team === u.team || !w.watchReady || w.para > 0 || !w.traits.has('overwatch') || !w.act.range) continue;
+      const d = manhattan(w.x, w.y, u.x, u.y);
+      if (d < w.act.range[0] || d > w.act.range[1] || u.nonCombat) continue;
+      w.watchReady = false;
+      emit(s, { t: 'overwatch', uid: w.uid, target: u.uid });
+      hit(s, w, u, { act: w.act, mult: 0.5, fromX: w.x, fromY: w.y, noReact: true, noCrit: true });
+    }
+  }
+
   // Magnetic Core: yank the nearest foe 2 or 3 tiles away one step closer.
   function magnetize(s, u) {
     let best = null;
@@ -1387,25 +1505,7 @@
       if (d < 2 || d > 3) continue;
       if (!best || d < best.d || (d === best.d && v.hp < best.v.hp)) best = { v, d };
     }
-    if (!best) return;
-    const v = best.v;
-    if (statusImmune(s, v, 'knock')) {
-      emit(s, { t: 'resist', uid: v.uid, why: 'steady' });
-      return;
-    }
-    const dx = u.x - v.x;
-    const dy = u.y - v.y;
-    const steps = Math.abs(dx) >= Math.abs(dy) ? [[Math.sign(dx), 0], [0, Math.sign(dy)]] : [[0, Math.sign(dy)], [Math.sign(dx), 0]];
-    for (const [sx, sy] of steps) {
-      if ((!sx && !sy) || !emptyGrass(s, v.x + sx, v.y + sy)) continue;
-      const nx = v.x + sx;
-      const ny = v.y + sy;
-      emit(s, { t: 'pull', uid: v.uid, by: u.uid });
-      relocate(s, v, nx, ny);
-      emit(s, { t: 'push', uid: v.uid, x: nx, y: ny });
-      enterTile(s, v, nx, ny);
-      return;
-    }
+    if (best) pullToward(s, u, best.v);
   }
 
   function applyDamage(s, src, tgt, amount, info) {
@@ -1418,6 +1518,8 @@
       if (amount <= 0) return 0;
     }
     if (info.dmgType === 'magic' || info.dmgType === 'burn') tgt.scorched = true;
+    // An Hourglass Pendant or a Guardian Angel may undo a killing blow.
+    if (amount >= tgt.hp && !tgt.secondWind && !tgt.nonCombat && !tgt.structure && cheatDeath(s, tgt, amount, info, src)) return 0;
     let dealt;
     if (amount >= tgt.hp && tgt.secondWind) {
       tgt.secondWind = false;
@@ -1432,12 +1534,82 @@
       if (tgt.hp <= 0) kill(s, tgt, src);
     }
     if (src && src.team !== tgt.team) s.stats.dmg[src.team] += dealt;
-    // Blood Frenzy: every wound makes it hit harder, up to +50%.
-    if (dealt > 0 && tgt.alive && tgt.props.furyPerHit && (tgt.fury || 0) < 10) {
-      tgt.fury = (tgt.fury || 0) + 1;
-      emit(s, { t: 'fury', uid: tgt.uid, n: tgt.fury });
-    }
+    if (dealt > 0 && tgt.alive) woundTriggers(s, tgt, dealt, info);
     return dealt;
+  }
+
+  function cheatDeath(s, u, amount, info, src) {
+    let hp = 0;
+    let ev = null;
+    if (u.traits.has('hourglass') && !u.rewound) {
+      u.rewound = true;
+      hp = Math.max(1, Math.min(u.maxHp, u.lastTurnHp || Math.ceil(u.maxHp / 2)));
+      ev = { t: 'rewind', uid: u.uid, hp };
+    } else {
+      const angel = s.units.find((w) => w !== u && w.alive && w.team === u.team && !w.angelUsed && w.traits.has('angel') && manhattan(w.x, w.y, u.x, u.y) <= 3);
+      if (!angel) return false;
+      angel.angelUsed = true;
+      hp = 1;
+      ev = { t: 'angel', uid: u.uid, by: angel.uid, hp };
+    }
+    emit(s, { t: 'dmg', uid: u.uid, amount, cat: info.cat, dmgType: info.dmgType, src: src ? src.uid : 0 });
+    u.hp = hp;
+    emit(s, ev);
+    return true;
+  }
+
+  // What a wound sets off in the one who took it.
+  function woundTriggers(s, u, dealt, info) {
+    // Blood Frenzy: every wound makes it hit harder, up to +50%.
+    if (u.props.furyPerHit && (u.fury || 0) < 10) {
+      u.fury = (u.fury || 0) + 1;
+      emit(s, { t: 'fury', uid: u.uid, n: u.fury });
+    }
+    const magic = info.dmgType === 'magic';
+    if (magic && u.traits.has('runecore') && (u.runes || 0) < 20) {
+      u.runes = Math.min(20, (u.runes || 0) + dealt);
+      emit(s, { t: 'charged', uid: u.uid, kind: 'runes' });
+    }
+    if (magic && u.traits.has('spellsink') && !u.sink) {
+      u.sink = true;
+      emit(s, { t: 'charged', uid: u.uid, kind: 'sink' });
+    }
+    if (u.traits.has('capacitor') && (u.charge || 0) < 3) {
+      u.charge = (u.charge || 0) + 1;
+      emit(s, { t: 'charged', uid: u.uid, kind: 'charge', n: u.charge });
+    }
+    if (u.traits.has('resonance') && u.resoPly !== s.ply) {
+      u.resoPly = s.ply;
+      emit(s, { t: 'resonance', uid: u.uid });
+      for (const v of s.units) {
+        if (!v.alive || v.team !== u.team || v.nonCombat || v.structure || manhattan(v.x, v.y, u.x, u.y) > 2 || v.shield >= 15) continue;
+        v.shield = Math.min(15, v.shield + 5);
+        emit(s, { t: 'shield', uid: v.uid, amount: v.shield });
+      }
+    }
+    if (u.hp >= u.maxHp / 2) return;
+    // Below half HP for the first time.
+    if (u.traits.has('reactive') && !u.reacted) {
+      u.reacted = true;
+      u.shield = Math.max(u.shield, 25);
+      emit(s, { t: 'shield', uid: u.uid, amount: u.shield });
+    }
+    if (u.traits.has('undying') && !u.raged) {
+      u.raged = true;
+      emit(s, { t: 'rage', uid: u.uid });
+      heal(s, u, 15, 'rage');
+      u.frenzy = Math.max(u.frenzy, 2);
+      stamp(s, u, 'frenzy');
+      emit(s, { t: 'status', uid: u.uid, status: 'frenzy', turns: 2 });
+    }
+    if (u.traits.has('sprout') && !u.sprouted) {
+      u.sprouted = true;
+      let n = 0;
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) if (n < 3 && emptyGrass(s, u.x + dx, u.y + dy)) {
+        summonShrub(s, u, u.x + dx, u.y + dy);
+        n++;
+      }
+    }
   }
 
   // Magic damage that is not an attack: bonus magic, zaps, burns, fire and explosions.
@@ -1454,26 +1626,63 @@
     const act = opts.act || atk.act;
     const r = calcHit(s, atk, tgt, opts);
     const dmgType = opts.dmgType || act.dmg;
+    // Ethereal: a blow of steel may pass right through it.
+    if (dmgType === 'phys' && tgt.traits.has('ethereal') && s.rng.next() < 0.3) {
+      emit(s, { t: 'phase', uid: tgt.uid, src: atk.uid });
+      return { blocked: true, dmg: 0 };
+    }
     if (r.block > 0 && s.rng.next() < r.block) {
       emit(s, { t: 'block', uid: tgt.uid, src: atk.uid, cat: r.cat });
+      if (tgt.traits.has('stunshield') && atk.alive && manhattan(atk.x, atk.y, tgt.x, tgt.y) === 1) applyStatus(s, tgt, atk, { para: 1 }, null);
       reactToMelee(s, atk, tgt, opts);
+      if (tgt.traits.has('slippery')) slip(s, atk, tgt);
       return { blocked: true, dmg: 0 };
     }
     // Mirror Aegis: the first hit each of your units takes in a battle bounces back.
-    if (s.relics[tgt.team].has('mirror_aegis') && !tgt.mirrored && !tgt.nonCombat && !tgt.structure && !opts.noReact) {
-      tgt.mirrored = true;
+    // Spell Mirror: so does the first spell.
+    const mirror = opts.noReact || tgt.nonCombat || tgt.structure ? null
+      : s.relics[tgt.team].has('mirror_aegis') && !tgt.mirrored ? 'mirrored'
+      : dmgType === 'magic' && tgt.traits.has('spellmirror') && !tgt.spellMirrored ? 'spellMirrored' : null;
+    if (mirror) {
+      tgt[mirror] = true;
       emit(s, { t: 'reflect', uid: tgt.uid, src: atk.uid });
       applyDamage(s, tgt, atk, r.dmg, { cat: 'none', dmgType: 'true' });
       return { blocked: true, dmg: 0 };
     }
-    // Critical hits: double damage. A Deadeye shot always is one.
+    // Critical hits: double damage. A Deadeye shot, and an Eagle Eye's first, always is one.
     let dmg = r.dmg;
     const critChance = (atk.props.crit || 0) + (s.relics[atk.team].has('lucky_coin') && !atk.nonCombat ? 0.12 : 0);
-    if (!opts.noCrit && (opts.deadeye || (critChance > 0 && s.rng.next() < critChance))) {
+    const opener = atk.traits.has('opener') && !atk.openerUsed && !opts.noCrit;
+    if (!opts.noCrit && (opts.deadeye || opener || (critChance > 0 && s.rng.next() < critChance))) {
       dmg *= 2;
+      if (opener) atk.openerUsed = true;
       emit(s, { t: 'crit', uid: tgt.uid, src: atk.uid, deadeye: !!opts.deadeye });
     }
+    // Killing Spree: the blow after a kill lands double. Gambler's Gauntlet: anything goes.
+    if (opts.spree) {
+      dmg *= 2;
+      emit(s, { t: 'spree', uid: tgt.uid, src: atk.uid });
+    }
+    if (atk.props.gamble) {
+      const f = 0.5 + 1.5 * s.rng.next();
+      dmg = Math.max(1, Math.round(dmg * f));
+      emit(s, { t: 'gamble', uid: tgt.uid, f: Math.round(f * 10) / 10 });
+    }
     const dealt = applyDamage(s, atk, tgt, dmg, { cat: r.cat, dmgType });
+    // Armor Breaker: each blow strips a tenth of the target's armor for good.
+    if (dealt > 0 && tgt.alive && dmgType === 'phys' && atk.traits.has('sunder') && tgt.armor > 0) {
+      tgt.armor = Math.max(0, Math.round((tgt.armor - 0.1) * 100) / 100);
+      emit(s, { t: 'sunder', uid: tgt.uid, armor: tgt.armor });
+    }
+    // Runic Core: the magic it soaked up comes out with its next blow.
+    if (atk.runes && atk.alive && tgt.alive && !opts.noBonus) {
+      const rn = atk.runes;
+      atk.runes = 0;
+      emit(s, { t: 'runes', uid: atk.uid, amount: rn });
+      magicDamage(s, atk, tgt, rn, 'bonus');
+    }
+    // Glamour: an attacker may be left spellbound.
+    if (tgt.alive && atk.alive && !opts.noReact && tgt.traits.has('glamour') && s.rng.next() < 0.25) applyStatus(s, tgt, atk, { para: 1 }, null);
     // Execute: a foe left this low falls outright (never a boss or a building).
     const exec = Math.max(atk.props.execute || 0, s.relics[atk.team].has('executioner_hood') && !atk.nonCombat ? 0.15 : 0);
     if (exec && dealt > 0 && tgt.alive && !tgt.boss && !tgt.structure && !tgt.nonCombat && tgt.hp <= tgt.maxHp * exec) {
@@ -1508,6 +1717,12 @@
     if (thorns > 0) {
       emit(s, { t: 'thorns', uid: atk.uid, src: tgt.uid });
       applyDamage(s, tgt, atk, thorns, { cat: 'none', dmgType: 'true' });
+    }
+    if (atk.alive && !tgt.nonCombat) {
+      if (tgt.traits.has('porcupine')) applyStatus(s, tgt, atk, { mark: 2 }, null);
+      if (tgt.traits.has('rattle')) applyStatus(s, tgt, atk, { weak: 1 }, null);
+      if (tgt.traits.has('burnscales')) applyStatus(s, tgt, atk, { burn: [2, 4] }, null);
+      if (tgt.traits.has('shove') && tgt.alive && atk.alive) knockback(s, tgt, atk);
     }
     if (atk.alive && tgt.alive && tgt.traits.has('retaliate') && tgt.para === 0) {
       emit(s, { t: 'retaliate', uid: tgt.uid, target: atk.uid });
@@ -1562,10 +1777,19 @@
     sumPoison(u);
   }
 
+  // A status that does not take. Berserker's Torc turns the attempt into a frenzy.
+  function shrug(s, u, why) {
+    emit(s, { t: 'resist', uid: u.uid, why });
+    if (!u.traits.has('torc') || !u.alive) return;
+    u.frenzy = Math.max(u.frenzy, 1);
+    stamp(s, u, 'frenzy');
+    emit(s, { t: 'status', uid: u.uid, status: 'frenzy', turns: 1 });
+  }
+
   function applyStatus(s, src, u, fx, act) {
     if (!u.alive || u.nonCombat || u.structure) return;
     if (fx.para) {
-      if (statusImmune(s, u, 'para')) emit(s, { t: 'resist', uid: u.uid });
+      if (statusImmune(s, u, 'para')) shrug(s, u);
       else {
         u.para = Math.max(u.para, fx.para);
         stamp(s, u, 'para');
@@ -1586,7 +1810,7 @@
       emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
     }
     if (fx.root) {
-      if (statusImmune(s, u, 'root')) emit(s, { t: 'resist', uid: u.uid });
+      if (statusImmune(s, u, 'root')) shrug(s, u);
       else {
         u.root = Math.max(u.root, fx.root);
         stamp(s, u, 'root');
@@ -1609,7 +1833,7 @@
   // Shove a unit one tile away from `src`. If something is in the way it slams into it.
   function knockback(s, src, u) {
     if (statusImmune(s, u, 'knock')) {
-      emit(s, { t: 'resist', uid: u.uid, why: 'steady' });
+      shrug(s, u, 'steady');
       return;
     }
     let d = dirFromDelta(u.x - src.x, u.y - src.y);
@@ -1824,6 +2048,7 @@
     // Fire along the way burns; a trap can only be the last tile (reachable stops there).
     for (let i = 1; i < path.length && u.alive; i++) enterTile(s, u, path[i].x, path[i].y);
     thunderstep(s, u);
+    afterMove(s, u);
     resolveBooms(s);
     if (s.events.length > mark) A.noUndo = true;
     checkOutcome(s);
@@ -1883,6 +2108,11 @@
       u.shots = (u.shots || 0) + 1;
       if (u.shots % 3 === 0) opts.deadeye = true;
     }
+    if (a.dmg) u.revealed = true;
+    if (a.dmg && u.spree) {
+      opts.spree = true;
+      u.spree = false;
+    }
     const struck = [];
     const strike = (v, o) => {
       if (!v.alive) return;
@@ -1891,6 +2121,8 @@
       let landed = true;
       if (a.dmg) landed = !hit(s, u, v, o || opts).blocked;
       if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx, a);
+      // Chaos Magic: a random curse on top.
+      if (landed && v.alive && v.team !== u.team && a.dmg === 'magic' && u.traits.has('chaosmagic')) applyStatus(s, u, v, [{ burn: [2, 4] }, { root: 1 }, { weak: 2 }][s.rng.int(3)], a);
       if (a.dmg && v.team !== u.team) struck.push(v);
     };
     switch (a.kind) {
@@ -1909,6 +2141,7 @@
           const v = s.byId[target.uid];
           if (v && v.alive && u.alive) knockback(s, u, v);
         }
+        if (a.kind === 'strike' && a === u.acts[0] && u.traits.has('trample') && opts.moved && opts.moveDist >= 3) trample(s, u, s.byId[target.uid], opts);
         break;
       }
       case 'cleave': {
@@ -2027,6 +2260,13 @@
       }
     }
     afterStrikes(s, u, a, struck, fx, opts);
+    // Far Cast: the fireball leaves its centre burning.
+    if (a === u.acts[0] && a.dmg && u.alive && u.traits.has('scorch') && target.x != null) placeFire(s, u, [[target.x, target.y]], 2, 6);
+    // Stored charge is spent on the attack.
+    if (a.dmg) {
+      u.charge = 0;
+      u.sink = false;
+    }
     resolveBooms(s);
     checkOutcome(s);
     return true;
@@ -2056,6 +2296,7 @@
     }
     u.wait = w;
     stamp(s, u, 'wait');
+    if (u.traits.has('brace')) u.braced = !A.moved;
     u.activated = true;
     s.spent = true;
     emit(s, { t: 'done', uid: u.uid, wait: w });
@@ -2289,7 +2530,10 @@
       sumPoison(u);
       if (!u.poison) return;
       const n = u.poison.stacks.length;
+      const feeders = u.poison.stacks.map((p) => [s.byId[p.src], p.dmg]).filter(([w]) => w && w.alive && w.traits.has('parasite'));
       applyDamage(s, s.byId[u.poison.src] || null, u, u.poison.dmg, { cat: 'none', dmgType: 'poison' });
+      // Parasite: the poisoner drinks what its poison takes.
+      for (const [w, d] of feeders) heal(s, w, d, 'drain');
       if (!u.alive || !u.poison) return;
       for (const st of u.poison.stacks) st.turns--;
       sumPoison(u);
@@ -2405,6 +2649,7 @@
       if (u.traits.has('trollblood') && u.burnt) emit(s, { t: 'noregen', uid: u.uid });
       else heal(s, u, r, 'regen');
     }
+    if (u.traits.has('mossy')) for (const v of s.units) if (v !== u && v.alive && v.team === u.team && manhattan(u.x, u.y, v.x, v.y) === 1) heal(s, v, 2, 'regen');
   }
 
   // The start of one unit's own turn: poison and burns tick and fire underfoot hurts.
@@ -2413,6 +2658,12 @@
   // turn, not to the ones that sit it out (pickDue).
   function unitTurnStart(s, u) {
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
+    u.lastTurnHp = u.hp;
+    u.watchReady = true;
+    if (u.traits.has('idol') && u.alive) {
+      emit(s, { t: 'curse', uid: u.uid });
+      applyDamage(s, null, u, 4, { cat: 'none', dmgType: 'true' });
+    }
     // A troll hurt by magic or fire since its last turn does not regenerate this turn.
     u.burnt = u.scorched;
     u.scorched = false;

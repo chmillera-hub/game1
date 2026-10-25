@@ -67,11 +67,55 @@ Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
   damage, -25% max HP).
 - Boss: **War Drum of Ages** (every fifth turn the army heals 10 and frenzies).
 
+Second pass: the remaining plain "+X armor / +X HP / +X% damage" picks, talents, skills,
+gear and enchantments each got a mechanic of their own. Kept as they were, on purpose:
+upgrades that change range, area or cooldown (they change how a unit plays), the
+anti-type weapons (Blessed Blade, Orcbane Axe and the like, which are counters), and
+the economy relics (Supply, gold, XP).
+
+- Free level picks: **Hold the Line** (Knight: hasn't moved since its last turn, 30%
+  less damage), **Eagle Eye** (Archer: +1 range, first hit of the battle is a sure
+  crit), **Slippery** (Scout: slips a tile away when it blocks), **Unseen** (Assassin:
+  can't be targeted from afar until it first attacks), **Rattling Bones** (Skeleton
+  Archer: melee attackers are weakened), **Hollow Gaze** (+1 range, arrows mark),
+  **Runic Core** (Golem: stores magic it takes and adds it to its next hit),
+  **Barkskin** (Furgon: below half HP, shrubs spring up around it), **Drift** (Wisp:
+  puffs spores where it stops), **Ethereal** (Wisp: 30% of physical blows pass
+  through), **Resonant Crystal** (Barrier Ward: when struck, nearby allies get a
+  shield), **Far Song** (Enchantress: +50% on paralyzed foes), **Glamour** (attackers
+  may be left spellbound), **Capacitor** (Lightning Ward: each hit taken charges its
+  next zap), **Smouldering Scales** (Dragon: melee attackers catch fire),
+  **Counterweight** (Trebuchet: boulders knock back), **Reinforced Frame** (shoves
+  melee attackers away), **Far Cast** (Pyromancer: the fireball leaves fire behind).
+- Talents: **Guardian Angel** (Cleric: once a battle, saves an ally from a killing
+  blow), **Living Moss** (Golem: its regen spreads to neighbours), **Trample** (Beast
+  Rider: a charge carries into the enemy behind), **Parasite** (Wisp: heals for what
+  its poison takes).
+- Skills: **Opportunist** (+40% on paralyzed, rooted or weakened foes), **Last
+  Stand** (half damage below 25% HP), **Spell Mirror** (the first spell bounces back),
+  **Overwatch** (a free shot at an enemy that walks into range), **Killing Spree**
+  (double damage after a kill), **Undying Rage** (below half HP: heal and frenzy),
+  **Chaos Magic** (spells add a random curse).
+- Gear: **Reactive Plate** (a 25 shield below half HP), **Spellsink Mantle** (a spell
+  taken charges +50%), **Ogre Belt** (+10 max HP per kill), **Momentum Boots** (+10%
+  per tile moved before attacking), **Stunning Shield** (blocking a melee blow stuns
+  the attacker), **Echo Amulet** (spells may strike twice), **Armor Breaker** (each hit
+  strips 10% armor), **Porcupine Ring** (melee attackers are pricked and marked),
+  **Berserker's Torc** (immune to stuns, roots and knockback, and each attempt
+  enrages it), plus new **Grappling Hook** (drags targets closer), **Gambler's
+  Gauntlet** (half to double damage), **Hourglass Pendant** (once, a killing blow
+  rewinds it to its last turn's HP), **Cursed Idol** (+50% damage, -4 HP a turn) and
+  **Ember Heart** (bursts into flames when it falls).
+- Enchantment: **Mirror Image** (a 1-HP shadow copy of the unit joins each battle).
+
+The warbands' starting kits use the new items (Undying Rage and a Stunning Shield
+for the Iron Vanguard, Chaos Magic and a Spellsink Mantle for the Ember Circle,
+Overwatch for the Gravewatch Order). With both passes in, the balance sims win 19 of
+24 medium campaigns, back in the 19-22 range of the main game.
+
 Starting relics: Iron Vanguard gets the Phalanx Standard, Ember Circle the Powder
 Keg, Shadow Syndicate the Lucky Coin, Gravewatch Order the Vampire Fang (the Wildgrove Pact keeps its
-Healing Salve). In the balance sims (24 medium campaigns) the experiment wins about
-22, against 19-22 before: a little stronger, as you might expect when the passives
-start doing things.
+Healing Salve).
 
 ## Play
 

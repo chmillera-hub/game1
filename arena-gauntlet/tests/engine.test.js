@@ -94,11 +94,10 @@ test('armor stops physical, magic resistance stops magic', () => {
 
 test('resistances never pass 50%', () => {
   const s = board([
-    { type: 'knight', team: 'P', x: 4, y: 8, level: 2, a2: 'k_plate', skills: ['warded'], gear: ['silk_mantle'], enchant: 'runeward' },
-    { type: 'golem', team: 'P', x: 5, y: 8, gear: ['plate_armor'] },
+    { type: 'mageknight', team: 'P', x: 4, y: 8, enchant: 'runeward' },
+    { type: 'golem', team: 'P', x: 5, y: 8, enchant: 'frostbound' },
   ]);
   assert.strictEqual(s.units[0].res, 0.5);
-  assert.ok(Math.abs(s.units[0].armor - 0.45) < 1e-9);
   assert.strictEqual(s.units[1].armor, 0.5);
 });
 
@@ -116,8 +115,8 @@ test('levels scale stats; abilities need the right class and level', () => {
   assert.deepStrictEqual([k2.maxHp, k2.pow], [62, 21]);
   assert.deepStrictEqual([k3.maxHp, k3.pow], [73, 23]);
   assert.ok(kw.traits.has('shieldwall'));
-  assert.strictEqual(kw.armor, 0.35, 'level 2 ability ignored at level 1');
-  assert.ok(Math.abs(kp.armor - 0.45) < 1e-9);
+  assert.ok(!kw.traits.has('brace'), 'level 2 ability ignored at level 1');
+  assert.ok(kp.traits.has('brace'));
   assert.ok(!kp.props.onHit, 'archer ability ignored on a knight');
   assert.strictEqual(ar.act.range[1], 6, 'Deadeye mastery adds range');
   assert.ok(ar.traits.has('deadeye'), 'and every third shot is a sure critical');

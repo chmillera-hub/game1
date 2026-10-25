@@ -404,6 +404,7 @@
       v.fury = u.fury || 0;
       v.harvest = u.harvest || 0;
       v.champion = !!u.champion;
+      v.illusion = !!u.illusion;
     }
 
     // How much bigger a unit stands for what it has done this battle.
@@ -1030,7 +1031,7 @@
       const tc = S.TEAMS[v.team] || S.TEAMS.P;
       const u = this.unit;
       g.save();
-      g.globalAlpha = v.alpha * (v.ghost ? 0.55 : 1);
+      g.globalAlpha = v.alpha * (v.ghost ? 0.55 : 1) * (v.illusion ? 0.6 : 1);
       // shadow and base ring
       const rx = this.tw * 0.3;
       const ry = this.th * 0.3;
@@ -2197,6 +2198,72 @@
           }
           case 'pull':
             if (v) this.addText(v.x, v.y, 'PULLED', '#a9d1ff', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+            break;
+          case 'phase':
+            if (v) {
+              this.addText(v.x, v.y, 'PHASED', '#d8e8ff', { height: h, dy: -this.tw * 0.28 });
+              v.flash = 1;
+              setTimeout(() => (v.flash = 0), 200);
+            }
+            break;
+          case 'slip':
+            if (v) this.addText(v.x, v.y, 'SLIPPED', '#bfe6ff', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+            break;
+          case 'rewind':
+          case 'angel':
+            if (v) {
+              any = true;
+              v.hp = e.hp;
+              this.addText(v.x, v.y, e.t === 'rewind' ? 'TIME REWINDS' : 'GUARDIAN ANGEL', e.t === 'rewind' ? '#9fe0ff' : '#fff3c4', { height: h, dy: -this.tw * 0.3, big: true });
+              this.ring(v.x, v.y, e.t === 'rewind' ? 'rgba(150,220,255,0.95)' : 'rgba(255,240,190,0.95)', 1, 520, 14);
+              this.particles(v.x, v.y, 14, e.t === 'rewind' ? ['#9fe0ff', '#ffffff'] : ['#fff3c4', '#ffe08a', '#ffffff'], { lift: 18, rise: 0.9, max: 0.8 });
+            }
+            break;
+          case 'sunder':
+            if (v) this.addText(v.x, v.y, 'ARMOR -10%', '#ffcf9a', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+            break;
+          case 'runes':
+            if (v) this.addText(v.x, v.y, 'RUNES +' + e.amount, '#d7b4ff', { height: h, dy: -this.tw * 0.28 });
+            break;
+          case 'charged':
+            if (v) this.addText(v.x, v.y, e.kind === 'charge' ? 'CHARGE ' + e.n : e.kind === 'runes' ? 'RUNES GLOW' : 'SPELL SUNK', '#9fd8ff', { height: h, dy: -this.tw * 0.36, max: 0.7 });
+            break;
+          case 'resonance':
+            if (v) this.ring(v.x, v.y, 'rgba(160,220,255,0.9)', 2, 420, 8);
+            break;
+          case 'rage':
+            if (v) this.addText(v.x, v.y, 'UNDYING RAGE', '#ff7a5a', { height: h, dy: -this.tw * 0.3, big: true });
+            break;
+          case 'spree':
+            if (v) this.addText(v.x, v.y, 'SPREE x2', '#ffb84a', { height: h, dy: -this.tw * 0.45 });
+            break;
+          case 'spreeReady':
+            if (v) this.addText(v.x, v.y, 'ON A SPREE', '#ffb84a', { height: h, dy: -this.tw * 0.36, max: 0.8 });
+            break;
+          case 'gamble':
+            if (v) this.addText(v.x, v.y, '×' + e.f, e.f >= 1.5 ? '#ffd84a' : e.f < 0.8 ? '#a0a0a0' : '#ffe6b0', { height: h, dy: -this.tw * 0.45, max: 0.8 });
+            break;
+          case 'grow':
+            if (v) {
+              v.maxHp = e.maxHp;
+              this.addText(v.x, v.y, 'GROWS +10', '#b7ffb0', { height: h, dy: -this.tw * 0.36 });
+            }
+            break;
+          case 'trample':
+          case 'overwatch':
+          case 'echo': {
+            const t = state && state.byId[e.target];
+            if (v && t) {
+              this.bolt([[v.x, v.y], [t.x, t.y]], e.t === 'echo' ? 'rgba(200,160,255,A)' : 'rgba(255,240,200,A)', 220, 0.6);
+              this.addText(t.x, t.y, { trample: 'TRAMPLED', overwatch: 'OVERWATCH', echo: 'ECHO' }[e.t], '#fff3c4', { height: 40, dy: -this.tw * 0.36, max: 0.8 });
+            }
+            break;
+          }
+          case 'puff':
+            if (v) this.particles(v.x, v.y, 14, POISON_FX, { lift: 6, rise: 0.4, speed: 0.8, max: 0.7 });
+            break;
+          case 'curse':
+            if (v) this.addText(v.x, v.y, 'CURSED', '#c06aff', { height: h, dy: -this.tw * 0.36, max: 0.8 });
             break;
           case 'echo':
             this.sfx('boom');
