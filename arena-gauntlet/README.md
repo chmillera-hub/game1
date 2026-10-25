@@ -177,8 +177,9 @@ on a phone turned sideways, but portrait works too.
   class mastery, a third talent slot and a second gear slot.
 - **Talents**: the passives that cost Supply (Shield Wall, Riposte, Poison Arrows
   and the like) are class talents. Every unit you get brings one talent of its
-  class, named on its card wherever it is offered (draft, spoils, merchant), which goes into your pack (the unit itself arrives bare, at its base price);
-  slot it into any unit of that class on the field. Every class has at least three
+  class, named on its card wherever it is offered (draft, spoils, merchant) as "Comes
+  with the ... talent" (the unit itself arrives bare, at its base price); slot it into
+  that unit, or any other unit of its class, on the field. Every class has at least three
   talents, and a new unit brings one you do not own yet (bought and found ones count),
   so three Clerics bring three different talents; only once you own them all does one
   come twice. You find more in shops and battle spoils,

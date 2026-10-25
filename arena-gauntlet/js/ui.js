@@ -931,7 +931,7 @@
     const steps = R.DRAFT_STEPS;
     const HEAD = { unit: 'Choose a unit', relic: 'Choose a relic', skill: 'Choose a skill', gear: 'Choose gear' };
     const WHY = {
-      unit: 'Five units make your starting army, on top of your Cleric: every army has one, the only unit that heals. It fights in every battle, free of Supply, and you choose where it stands. Every unit brings a talent of its class for your pack, a different one for each unit of a class.',
+      unit: 'Five units make your starting army, on top of your Cleric: every army has one, the only unit that heals. It fights in every battle, free of Supply, and you choose where it stands. Every unit comes with a talent of its class, a different one for each unit of a class.',
       relic: 'A relic works for the whole campaign.',
       skill: 'A skill goes in a unit\'s skill slot. Only skills one of your units can use are offered.',
       gear: 'Gear goes in a unit\'s gear slot. Only gear one of your units can use is offered.',
@@ -954,7 +954,7 @@
       const ct = R.draftClericTalent(seed);
       const cleric = `<span class="draft-core" role="button" tabindex="0" data-rinfo="cleric:" title="Your Cleric: free, in every battle. Tap for the details."><canvas data-p="cleric:P"></canvas><small>Cleric</small></span>`;
       const units = cleric + [0, 1, 2, 3, 4].map((i) => (picks[i] ? `<canvas data-p="${picks[i]}:P" title="${esc(UNITS[picks[i]].name)}"></canvas>` : '<span class="draft-empty"></span>')).join('');
-      const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It brings the <b>${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
+      const clericLine = `<p class="small muted draft-core-note">${ic('heart')} <b>Your Cleric</b> is already in: the only unit that heals, free of Supply, and in every battle${ct && TALENTS[ct] ? `. It comes with the <b>${esc(TALENTS[ct].name)}</b> talent` : ''}. Tap it for the details.</p>`;
       const thing = (i, icon, name) => (picks[i] ? `<span class="chip">${ic(icon)} ${esc(name(picks[i]))}</span>` : `<span class="chip draft-todo">${ic(icon)} …</span>`);
       return `<div class="draft-army"><div class="unit-strip">${units}</div>
         <div class="chips">${thing(5, 'gem', (id) => RELICS[id].name)}${thing(6, 'scroll', (id) => SKILLS[id].name)}${thing(7, 'sword', (id) => GEAR[id].name)}<span class="chip warn">${ic('gold')} ${R.DRAFT_GOLD}</span></div></div>${picks.length < 5 ? clericLine : ''}`;
@@ -4399,7 +4399,7 @@
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
-      ${talent && TALENTS[talent] ? `<div class="small">${ic('star')} Brings the <b>${esc(TALENTS[talent].name)}</b> talent, for your pack: ${esc(TALENTS[talent].desc)}</div>` : `<div class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</div>`}${extra || ''}</button>`;
+      ${talent && TALENTS[talent] ? `<div class="small">${ic('star')} Comes with the <b>${esc(TALENTS[talent].name)}</b> talent: ${esc(TALENTS[talent].desc)}</div>` : `<div class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</div>`}${extra || ''}</button>`;
   }
 
   // A Level 1 unit of a type as it would join, enchantment included: its battle numbers.
@@ -4423,7 +4423,7 @@
       ${statsHTML(u)}
       ${actsHTML(u)}
       ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
-      <p class="small muted">${ic('star')} Brings a random ${esc(T.name)} talent, for your pack.</p>
+      <p class="small muted">${ic('star')} Comes with a random ${esc(T.name)} talent.</p>
       <div class="actions"><button class="btn" data-close>Back</button></div>`
     );
     UI.onSheetClose = after;
