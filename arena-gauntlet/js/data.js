@@ -161,7 +161,7 @@
     w_drift: { name: 'Drift', cost: 0, desc: '+1 Move.', mod: { stat: { move: 1 } } },
     w_virulent: { name: 'Virulence', cost: 1, desc: 'Its poison deals 2 more damage a turn.', mod: { props: { poisonDmg: 2 } } },
     w_wither: { name: 'Withering Mist', cost: 1, desc: 'Its basic attack also weakens the enemies in reach for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
-    w_ethereal: { name: 'Ethereal', cost: 0, desc: '+20% armor.', mod: { stat: { armor: 0.2 } } },
+    w_ethereal: { name: 'Spirit Veil', cost: 0, desc: '+25% magic resistance, covering its weakness to magic.', mod: { stat: { res: 0.25 } } },
     w_linger: { name: 'Lingering Spores', cost: 1, desc: 'Its poison lasts 1 turn longer: 3 turns.', mod: { props: { poisonTurns: 1 } } },
     w_plague: { name: 'Plague', cost: 2, desc: 'Its basic attack reaches 3 tiles.', mod: { stat: { radius: 1 } } },
 
@@ -427,12 +427,12 @@
     },
     wisp: {
       name: 'Poison Wisp', rarity: 'uncommon', cost: 3, role: 'caster',
-      hp: 24, pow: 8, armor: 0, res: 0.4, block: 0.4, rec: 1, move: 4,
+      hp: 24, pow: 8, armor: 0.4, res: -0.3, block: 0.2, rec: 1, move: 4,
       act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 2 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_virulent', 'w_wither'], 2: ['w_ethereal', 'w_linger', 'w_plague'] },
-      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages and constructs are immune.',
-      tip: 'Only 24 HP and no armor. One arrow volley can drop it.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages and constructs are immune. A spirit: blades and arrows mostly pass through it (40% armor), but magic hurts it 30% more.',
+      tip: 'Steel barely touches it, but magic tears through its 24 HP.',
     },
     barrier: {
       name: 'Barrier Ward', rarity: 'uncommon', cost: 3, role: 'ward',
@@ -679,10 +679,10 @@
     },
     specter: {
       name: 'Specter', rarity: 'enemy', cost: 3, role: 'skirmisher',
-      hp: 26, pow: 11, armor: 0.5, res: -0.25, block: 0, rec: 1, move: 3,
+      hp: 26, pow: 11, armor: 0.5, res: -0.5, block: 0, rec: 1, move: 3,
       act: { name: 'Soul Drain', kind: 'strike', range: [1, 2], dmg: 'magic', fx: { weak: 1 } },
       traits: ['flying', 'undead'], tags: ['spirit', 'undead'],
-      desc: 'A restless spirit. 50% armor, but magic hurts it 25% more. Its touch drains the strength out of you: the unit it hits deals 30% less damage on its next turn.',
+      desc: 'A restless spirit. Blades and arrows mostly pass through it (50% armor), but magic hurts it 50% more. Its touch drains the strength out of you: the unit it hits deals 30% less damage on its next turn.',
       tip: 'Bring magic or Blessed weapons. Steel barely touches it.',
     },
     necromancer: {

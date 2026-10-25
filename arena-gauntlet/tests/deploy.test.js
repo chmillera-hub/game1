@@ -212,4 +212,25 @@ test('Auto never fields a ward: Lightning and Barrier Wards are yours to place',
   }
 });
 
+test('Auto puts the Cleric in the middle of the back row, fighters just ahead of it', () => {
+  let ahead = 0;
+  let n = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const run = atBattle(seed, ['vanguard', 'ember', 'shadow', 'grove', 'grave'][seed % 5]);
+    const enc = run.pending.enc;
+    for (let v = 0; v < 3; v++) {
+      const dep = R.autoDeploy(run, v);
+      const cl = dep.find((d) => R.unitById(run, d.rid).core);
+      assert.ok(cl, 'the Cleric is on the field');
+      assert.strictEqual(cl.y, enc.h - 1, 'back row');
+      // The middle tile, or the open one nearest it when something stands there.
+      const mid = (enc.w - 1) / 2;
+      for (let x = 0; x < enc.w; x++) if (Math.abs(x - mid) < Math.abs(cl.x - mid)) assert.ok(!R.deployOpen(enc, x, enc.h - 1), `seed ${seed}: x ${x} was open`);
+      n++;
+      if (dep.some((d) => d.x === cl.x && d.y === cl.y - 1)) ahead++;
+    }
+  }
+  assert.ok(ahead >= n * 0.8, `someone stands in front of the Cleric (${ahead}/${n})`);
+});
+
 console.log(`deploy: ${passed} tests passed`);

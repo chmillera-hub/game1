@@ -480,7 +480,7 @@
         const node = { id: 's' + run.step + tier, row: st.kind === 'fight' ? ROUND_ROW[st.round] : 6, kind: T.kind, tier, mult: T.mult, mega: tier === 'mega' };
         const enc = genEncounter(run, node, null, seen);
         seen.push(enc.name);
-        return { tier, node, enc, attempts: 0 };
+        return { tier, node, enc, attempts: 0, reward: rollReward(run, node, T, enc.kind) };
       });
     } else if (st.kind === 'shop') {
       run.pending = { type: 'shop', nodeId: tag, stock: genShop(run, { id: tag }), rerolls: 0 };
@@ -498,7 +498,7 @@
     const o = run.offer && run.offer[index];
     if (!o || run.pending || run.over) return false;
     // Back at a battle you lost or stepped away from: your plan for it is still on the field.
-    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index, lastDep: o.lastDep || null, focus: o.focus || null };
+    run.pending = { type: 'battle', nodeId: o.node.id, node: o.node, tier: o.tier, enc: o.enc, attempt: o.attempts, offerIndex: index, lastDep: o.lastDep || null, focus: o.focus || null, reward: o.reward || null };
     save(run);
     return true;
   }
@@ -512,10 +512,32 @@
     save(run);
   }
 
+  // What a challenge pays, settled when its card is dealt and saved with it: the gold, the
+  // spoils, and the relic if it carries one (always for an elite, now and then for an easy
+  // or medium battle). Losing, retrying or reloading the game never rerolls any of it.
+  function rollReward(run, node, T, kind) {
+    const rng = AG.derive(run.seed, 'reward:' + run.act + ':' + node.id);
+    const out = { gold: rng.range(T.gold[0], T.gold[1]), spoils: T.spoils ? genSpoils(run, rng, kind).slice(0, T.spoils) : [], relic: null, lucky: false };
+    const lucky = !T.relic && T.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(T.relicChance);
+    if (T.relic || lucky) {
+      out.relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+      out.lucky = !!(lucky && out.relic);
+    }
+    if (kind === 'boss' && !node.mega && run.act < 3) {
+      out.bossRelics = [];
+      for (let i = 0; i < 3; i++) {
+        const id = pickRelic(run, rng, ['boss'], out.bossRelics);
+        if (id) out.bossRelics.push(id);
+      }
+    }
+    return out;
+  }
+
   // What a challenge pays if won on the first try (bonus goals and loot come on top).
   function challengeReward(run, o) {
     const T = TIERS[o.tier];
-    const out = { gold: Math.round((T.gold[0] + T.gold[1]) / 2) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: !!T.relic, relicChance: T.relicChance || 0 };
+    const pre = o.reward;
+    const out = { gold: (pre ? pre.gold : Math.round((T.gold[0] + T.gold[1]) / 2)) + 10, xp: Math.round(battleXp(run, T.kind) * T.xp), spoils: T.spoils, relic: pre ? pre.relic : T.relic ? true : null, lucky: !!(pre && pre.lucky) };
     if (o.tier === 'boss') out.bossRelic = run.act < 3;
     return out;
   }
@@ -1448,8 +1470,10 @@
       save(run);
       return { won: false, attempt: p.attempt };
     }
-    const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id + ':' + (p.attempt || 0));
-    let gold = rng.range(tier.gold[0], tier.gold[1]);
+    // The pay was settled when the card was dealt; bonus loot rolls the same way every time.
+    const pre = p.reward || rollReward(run, node, tier, kind);
+    const rng = AG.derive(run.seed, 'loot:' + run.act + ':' + node.id);
+    let gold = pre.gold;
     if (hasRelic(run, 'coin_purse')) gold += 12;
     if (hasRelic(run, 'kings_ransom')) gold += 20;
     const firstTry = !p.attempt;
@@ -1489,7 +1513,7 @@
     // Fame remembers: who fought, kitted out how, and where they stood.
     if (kind === 'boss' && run.act >= 3) run.finalArmy = hallArmyOf(run, deployment);
     // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
-    const spoils = tier.spoils ? genSpoils(run, rng, kind).slice(0, tier.spoils) : [];
+    const spoils = JSON.parse(JSON.stringify(pre.spoils || []));
     const reward = {
       type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, bounty, firstTry, fallen,
       spoils, spoilTaken: !spoils.length, objectives: [], mega: !!node.mega,
@@ -1510,7 +1534,8 @@
           reward.tomeTaken = reward.tome.length === 0;
           got = 'choose a skill below';
         } else if (b.type === 'loot' && b.kind === 'relic') {
-          const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+          const ex = pre.relic ? [pre.relic] : [];
+          const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)], ex) || pickRelic(run, rng, ['common', 'uncommon', 'rare'], ex);
           if (id) {
             gainRelic(run, id);
             reward.lootRelic = id;
@@ -1544,24 +1569,14 @@
     reward.lvFrom = lv.from;
     reward.lvTo = lv.to;
     if (p.enc.prisoner) reward.prisoner = addRecruit(run, p.enc.prisoner.type).id;
-    // The lucky roll is set per battle, not per try: losing and coming back does not reroll it.
-    const lucky = !tier.relic && tier.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(tier.relicChance);
-    if (tier.relic || lucky) {
-      const id = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
-      if (id) {
-        gainRelic(run, id);
-        reward.relicGained = id;
-        reward.relicLucky = !!lucky;
-      }
+    if (pre.relic && !run.relics.includes(pre.relic)) {
+      gainRelic(run, pre.relic);
+      reward.relicGained = pre.relic;
+      reward.relicLucky = !!pre.lucky;
     }
-    if (kind === 'boss' && !node.mega && run.act < 3) {
-      const picks = [];
-      for (let i = 0; i < 3; i++) {
-        const id = pickRelic(run, rng, ['boss'], picks);
-        if (id) picks.push(id);
-      }
-      reward.bossRelics = picks;
-      reward.bossRelicTaken = picks.length === 0;
+    if (pre.bossRelics) {
+      reward.bossRelics = pre.bossRelics.filter((id) => !run.relics.includes(id));
+      reward.bossRelicTaken = reward.bossRelics.length === 0;
     }
     run.pending = reward;
     save(run);
@@ -2470,15 +2485,28 @@
     return autoPlace(run, enc, pick);
   }
 
-  // Tiles for Auto's picks: fighters up front, the rest behind.
+  // Tiles for Auto's picks: the Cleric first, in the middle of the back row (or the open
+  // tile nearest it there), then fighters up front, just ahead of it, and the rest behind.
   function autoPlace(run, enc, pick) {
     const taken = new Set();
     const out = [];
-    for (const r of pick) {
-      const slot = deploySlots(run, enc, isFront(r.type), taken)[0];
-      if (!slot) break;
+    const put = (r, slot) => {
       taken.add(slot.x + ',' + slot.y);
       out.push({ rid: r.id, x: slot.x, y: slot.y, facing: 0 });
+    };
+    const cleric = pick.find((r) => r.core) || pick.find((r) => r.type === 'cleric');
+    if (cleric) {
+      const y = enc.h - 1;
+      const mid = (enc.w - 1) / 2;
+      const xs = [...Array(enc.w).keys()].filter((x) => deployOpen(enc, x, y)).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
+      const slot = xs.length ? { x: xs[0], y } : deploySlots(run, enc, false, taken)[0];
+      if (slot) put(cleric, slot);
+    }
+    for (const r of pick) {
+      if (r === cleric) continue;
+      const slot = deploySlots(run, enc, isFront(r.type), taken)[0];
+      if (!slot) break;
+      put(r, slot);
     }
     return out;
   }
@@ -2518,7 +2546,8 @@
     if (has('portal')) tips.push('Dark Portals: steel barely scratches them, but magic unravels them.');
     if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
     if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
-    if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them. Specters have 50% armor.');
+    if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them.');
+    if (has('specter', 'wisp')) tips.push('Spirits (specters, wisps): steel mostly passes through them, but magic tears them apart.');
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');

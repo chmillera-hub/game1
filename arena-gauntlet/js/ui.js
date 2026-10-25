@@ -1013,12 +1013,12 @@
       ? 'The campaign is already won. This fight is not meant to be won: it is for a super victory.'
       : st.kind === 'boss'
         ? `Defeat ${esc(UNITS[R.bossOf(run)].name)} to ${run.act >= 3 ? 'win the campaign' : 'end the act'}.`
-        : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic (easy and medium might too). Lose, and you come back here to choose again.`;
+        : `Round ${st.round + 1} of ${R.FIGHTS}. Easy pays less, elite pays more and drops a relic (now and then an easy or medium one does too). What each pays is set now: losing or reloading never changes it. Lose, and you come back here to choose again.`;
     const card = (o, i) => {
       const rw = R.challengeReward(run, o);
       const pays = mega
         ? 'A super victory, and a place in legend.'
-        : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} a relic` : rw.relicChance ? `${ic('gem')} ${Math.round(rw.relicChance * 100)}% relic chance` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
+        : [`${ic('gold')} ~${rw.gold} gold`, `${ic('crown')} ${rw.xp} XP`, rw.spoils ? `pick 1 of ${rw.spoils} spoils` : '', rw.relic ? `${ic('gem')} ${rw.lucky ? 'a lucky relic: ' : 'relic: '}${RELICS[rw.relic] ? esc(RELICS[rw.relic].name) : 'yes'}` : '', rw.bossRelic ? `${ic('gem')} a boss relic` : '']
             .filter(Boolean)
             .join(' · ');
       return `<button class="card challenge tier-${o.tier}" data-ch="${i}" data-choose>
@@ -2886,7 +2886,9 @@
     const s = B.s;
     const b = UI.board;
     B.busy = true;
-    if (!B.paused) {
+    // Watching, a unit or tile you tapped to look at stays open while the battle plays on.
+    const looking = (UI.prefs.autoBattle || B.exhibition) && (B.mode === 'inspect' || B.mode === 'tile');
+    if (!B.paused && !looking) {
       B.mode = 'idle';
       B.sel = null;
     }
@@ -3175,7 +3177,7 @@
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">${B.exhibition ? `Tap a unit to pause and look at it. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to pause and look at it, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
+      <p class="small muted">${B.exhibition ? `Tap a unit to look at it while the battle plays on. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to look at it while the battle plays on, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
   }
 
   function renderBattle() {
@@ -3197,9 +3199,9 @@
     const tileF = B.mode === 'tile' && B.tile ? tileFacts(s, B.tile.x, B.tile.y, B.enc) : null;
     if (B.mode === 'tile' && !tileF) B.mode = 'idle';
 
-    // Watching an auto battle, the panel follows the fight unless you paused to look at
-    // a unit or a tile.
-    if (auto && !(B.paused && ((B.mode === 'inspect' && u && u.alive) || (B.mode === 'tile' && tileF)))) {
+    // Watching an auto battle, the panel follows the fight unless you tapped a unit or a
+    // tile to look at (the battle plays on meanwhile).
+    if (auto && !((B.mode === 'inspect' && u && u.alive) || (B.mode === 'tile' && tileF))) {
       panel = autoPanelHTML(B);
       if (B.acting && s.byId[B.acting]) ov.select = [s.byId[B.acting].x, s.byId[B.acting].y];
     } else if (!auto && (s.side !== 'P' || B.busy)) {
@@ -3276,7 +3278,7 @@
       ov.select = [u.x, u.y];
       // Watching, the buttons come first so Priority is in view without scrolling.
       const watchBtns = auto
-        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)))}${B.paused ? `<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
         : '';
       panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${behindHint(s, u.uid)}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${u.bounty ? '' : actsHTML(u)}
@@ -3302,7 +3304,7 @@
       ov.select = [B.tile.x, B.tile.y];
       if (tileF.zone) ov.range = tileF.zone;
       panel = `${tileInfoHTML(tileF)}
-        <div class="actions">${auto ? `${focusButton(B, tileFocusable(s, B.tile), tileIsFocus(B, B.tile))}<button class="btn ${tileFocusable(s, B.tile) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
+        <div class="actions">${auto ? `${focusButton(B, tileFocusable(s, B.tile), tileIsFocus(B, B.tile))}${B.paused ? `<button class="btn ${tileFocusable(s, B.tile) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}` : ''}<button class="btn ghost" id="btDesel">${ic('close')}</button>${endBtn(false)}</div>`;
     } else {
       B.mode = 'idle';
       const ready = usefulReady(s);
@@ -3666,7 +3668,8 @@
     if (!B.paused && !B.running) runBattle();
   }
 
-  // While your army fights on its own, a tap pauses the battle and shows what is there.
+  // While your army fights on its own, a tap shows what is there without stopping the
+  // battle: Priority works on the move. The pause button stops it.
   function watchTap(B, hit) {
     const s = B.s;
     const v = pickAt(hit, s);
@@ -3674,12 +3677,11 @@
     // The same tile again: close it, like a tap beside the board.
     if (spot && B.mode === 'tile' && B.tile && B.tile.x === spot.x && B.tile.y === spot.y) spot = null;
     if (v || spot) {
-      B.paused = true;
       B.sel = v ? v.uid : null;
       B.mode = v ? 'inspect' : 'tile';
       B.tile = spot;
       sfx('select');
-    } else if (B.paused && B.mode !== 'idle') {
+    } else if (B.mode !== 'idle') {
       B.mode = 'idle';
       B.sel = null;
       B.tile = null;

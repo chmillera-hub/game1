@@ -28,6 +28,17 @@ function win(run) {
   R.completeNode(run);
 }
 
+// Win one of the challenges on offer; the reward screen it leads to.
+function winAt(run, i) {
+  R.chooseChallenge(run, i);
+  const dep = R.autoDeploy(run, 0);
+  const s = AG.Engine.createBattle(R.battleConfig(run, dep));
+  s.over = true;
+  s.winner = 'P';
+  R.finishBattle(run, s, dep);
+  return run.pending;
+}
+
 function lose(run) {
   const s = AG.Engine.createBattle(R.battleConfig(run, R.autoDeploy(run, 0)));
   s.over = true;
@@ -79,47 +90,52 @@ test('easy is smaller than medium; elite pays more and drops a relic', () => {
     const re = R.challengeReward(run, e);
     const rm = R.challengeReward(run, m);
     const rel = R.challengeReward(run, el);
-    assert.ok(re.gold < rm.gold && rm.gold < rel.gold && re.xp < rm.xp && rm.xp < rel.xp);
-    assert.ok(rel.relic && !rm.relic && !re.relic);
+    assert.ok(re.gold <= rm.gold && rm.gold < rel.gold && re.xp < rm.xp && rm.xp < rel.xp);
+    assert.ok(rel.relic && !rel.lucky && (!rm.relic || rm.lucky) && (!re.relic || re.lucky));
     assert.ok(re.spoils < rm.spoils);
   }
   assert.ok(easier >= 18, `easy battles are smaller (${easier}/20)`);
 });
 
-test('easy and medium wins now and then turn up a relic (6% and 10%); losing first does not reroll it', () => {
-  const winAt = (run, i) => {
-    R.chooseChallenge(run, i);
-    const dep = R.autoDeploy(run, 0);
-    const s = AG.Engine.createBattle(R.battleConfig(run, dep));
-    s.over = true;
-    s.winner = 'P';
-    const had = run.relics.length;
-    R.finishBattle(run, s, dep);
-    const p = run.pending;
-    assert.ok(!p.relicGained || (p.relicLucky && run.relics.length === had + 1 && run.relics.includes(p.relicGained)));
-    return !!p.relicGained;
-  };
+test('easy and medium wins now and then carry a relic (6% and 10%), shown on the card', () => {
   const N = 300;
   const got = { 0: 0, 1: 0 };
-  let luckySeed = 0;
   for (let seed = 1; seed <= N; seed++) {
     for (const i of [0, 1]) {
       const run = R.newRun({ seed, warband: 'vanguard' });
       const rw = R.challengeReward(run, run.offer[i]);
-      assert.strictEqual(rw.relicChance, i ? 0.1 : 0.06);
-      if (winAt(run, i)) {
+      const had = run.relics.length;
+      const p = winAt(run, i);
+      assert.strictEqual(p.relicGained || null, rw.relic || null, 'the relic on the card is the one you get');
+      if (rw.relic) {
+        assert.ok(rw.lucky && p.relicLucky && run.relics.length === had + 1);
         got[i]++;
-        if (i === 1 && !luckySeed) luckySeed = seed;
       }
     }
   }
   assert.ok(got[0] >= N * 0.02 && got[0] <= N * 0.11, `easy: ${got[0]}/${N}`);
   assert.ok(got[1] >= N * 0.05 && got[1] <= N * 0.16, `medium: ${got[1]}/${N}`);
-  // The same battle, lost once and then won: still the lucky one.
-  const run = R.newRun({ seed: luckySeed, warband: 'vanguard' });
-  R.chooseChallenge(run, 1);
-  lose(run);
-  assert.ok(winAt(run, 1), 'no reroll by losing');
+});
+
+test('what a battle pays is set when the cards are dealt: losing, retrying or reloading never changes it', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    for (const i of [0, 1, 2]) {
+      const direct = R.newRun({ seed, warband: 'vanguard' });
+      const card = JSON.stringify(direct.offer[i].reward);
+      const a = winAt(direct, i);
+      // The same run, reloaded from its save, lost twice, then won.
+      const other = JSON.parse(JSON.stringify(R.newRun({ seed, warband: 'vanguard' })));
+      assert.strictEqual(JSON.stringify(other.offer[i].reward), card, 'a reload deals the same card');
+      for (let k = 0; k < 2; k++) {
+        R.chooseChallenge(other, i);
+        lose(other);
+      }
+      const b = winAt(other, i);
+      assert.deepStrictEqual(b.spoils, a.spoils, `seed ${seed} card ${i}: same spoils`);
+      assert.strictEqual(b.relicGained, a.relicGained, 'same relic');
+      assert.strictEqual(b.gold + 10, a.gold, 'same gold, less the first-try bonus');
+    }
+  }
 });
 
 test('a defeat goes back to the same three challenges; the lost one counts its tries', () => {
