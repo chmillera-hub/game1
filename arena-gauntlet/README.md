@@ -60,8 +60,10 @@ on a phone turned sideways, but portrait works too.
   only swaps them. Sheets opened from another sheet (equip a talent, pick an ability)
   have a Back button and no X, so you never close everything by accident; a tap
   outside the sheet, on the board above it, closes it all. To move a unit, long-press
-  it on the board to pick it up, then tap an open blue tile; units never swap places
-  (tapping an occupied tile, or the held unit again, puts it back). A tap just
+  it on the board and drag it to an open blue tile, then let go; the board holds still
+  while you drag. Units never swap places: dropped on another unit, it goes back. Or
+  tap an empty blue tile first, then a unit card: that unit goes there (one already on
+  the field moves there). A tap just
   off a blue tile still places it on the nearest one, and a tap on the empty space
   around the board lets it go. Your deployment zone is the three rows nearest you
   (rocks and water may block a few tiles); Auto keeps to the back two unless it needs

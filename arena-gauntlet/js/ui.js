@@ -700,6 +700,8 @@
     fit();
     b.onTap = (h) => UI.boardTap && UI.boardTap(h);
     b.onLongPress = (h) => UI.boardLong && UI.boardLong(h);
+    b.onDragMove = (h) => UI.boardDragMove && UI.boardDragMove(h);
+    b.onDragEnd = (h, moved) => UI.boardDragEnd && UI.boardDragEnd(h, moved);
     return b;
   }
 
@@ -1866,6 +1868,8 @@
     UI.wr = { supply: R.supplyFor(run), dep, sel: null, tab: 'army', inspect: null, rows, enc, auto: 0, star: star ? star.id : null };
     UI.boardTap = wrTap;
     UI.boardLong = wrLong;
+    UI.boardDragMove = wrDragMove;
+    UI.boardDragEnd = wrDragEnd;
     boardTools();
     renderWarRoom();
   }
@@ -1937,97 +1941,6 @@
     return label.replace(' (Level 1)', '').replace(' (enchantment)', '');
   }
 
-  // The picked unit's loadout, right in the War Room: what each part costs, its level, and
-  // a button for every ability pick and slot. A tap on one opens its picker, and you come
-  // straight back here.
-  function quickLoadoutHTML(run, r, deployed) {
-    R.normalizeLoad(run, r);
-    const T = UNITS[r.type];
-    const L = r.load;
-    const sl = R.slotsFor(L.lv);
-    const parts = R.costBreakdown(run, r)
-      .filter((x) => x.cost)
-      .map((x) => `<span class="cb">${esc(costLabel(x.label))} <b>${x.cost}</b></span>`)
-      .join('<span class="cb-op">+</span>');
-    // An empty slot shows how many owned items could go in it, and greys out at none.
-    const opts = { talent: slotOptions(run, r, 'talent'), skill: slotOptions(run, r, 'skill'), gear: slotOptions(run, r, 'gear') };
-    const slot = (kind, i) => {
-      const uid = L[SLOT_KEY[kind]][i];
-      const d = uid && R.itemDef(R.itemByUid(run, uid));
-      if (d) return `<button class="qchip ${kind} full" data-qslot="${kind}:${i}" title="${esc(d.name)} (equipped): ${esc(d.desc)}">${ic('check')}<span>${esc(d.name)}</span><b>+${d.cost}</b></button>`;
-      const n = opts[kind];
-      return `<button class="qchip ${kind} ${n.total ? '' : 'none'}" data-qslot="${kind}:${i}" ${n.total ? '' : 'disabled'} title="${esc(slotOptionsText(kind, r, n))}">${ic(ITEM_ICON[kind])}<span>${n.total ? 'Empty' : 'None'}</span>${n.total ? `<i class="avail">${n.total}</i>` : ''}</button>`;
-    };
-    const locked = (icon, lv) => `<span class="qchip locked">${ic(icon)}<span>Lv ${lv}</span></span>`;
-    const ability = (tier) => {
-      if (tier === 2 && L.lv < 2) return locked('up', 2);
-      const ab = ABILITIES[L['a' + tier]];
-      const inner = `${ic('up')}<span>${esc(ab.name)}</span>${ab.cost ? `<b>+${ab.cost}</b>` : ''}`;
-      // With only one to choose from (or on the bench), there is nothing to pick.
-      const choices = T.abilities[tier].filter((id) => !TALENTS[id]).length;
-      return choices > 1 && deployed ? `<button class="qchip ability full" data-qab="${tier}" title="${esc(ab.desc)}">${inner}</button>` : `<span class="qchip ability full fixed" title="${esc(ab.desc)}">${inner}</span>`;
-    };
-    // What the chosen abilities do, right under them.
-    const abDesc = [1, 2]
-      .filter((tier) => tier === 1 || L.lv >= 2)
-      .map((tier) => ABILITIES[L['a' + tier]])
-      .map((ab) => `<div><b>${esc(ab.name)}:</b> ${esc(ab.desc)}</div>`)
-      .join('');
-    const row = (label, chips) => `<div class="qrow"><span class="qlabel">${label}</span><div class="qchips">${chips}</div></div>`;
-    const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-qlv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
-    return `<div class="qload">
-      <div class="qhead"><canvas class="portrait" data-p="${r.type}:P"></canvas>
-        <div class="qname"><b>${esc(r.name)}</b> ${levelBadge(L.lv)}<span class="small muted">${esc(T.name)}${r.enchant ? ` · ${esc(ENCHANTS[r.enchant].name)}` : ''} · ${deployed ? 'tap a blue tile to move it' : 'on the bench: tap a blue tile to place it'}</span></div>
-        <span class="qcost"><b>${R.unitCost(run, r)}</b><span>Supply</span></span>
-        <button class="btn ghost icon-only" id="wrDesel" aria-label="Done">${ic('close')}</button></div>
-      <div class="costline">${parts}</div>
-      ${deployed ? `<div class="lv-seg">${lvBtn(1)}${lvBtn(2)}${lvBtn(3)}</div>` : ''}
-      ${row('Abilities', ability(1) + ability(2))}
-      <div class="qdesc">${abDesc}</div>
-      ${
-        deployed
-          ? `${row('Talents', [...Array(TALENT_SLOTS[3]).keys()].map((i) => (i < sl.talents ? slot('talent', i) : locked('star', i + 1))).join(''))}
-      ${row('Skills', [...Array(SKILL_SLOTS[3]).keys()].map((i) => (i < sl.skills ? slot('skill', i) : locked('scroll', 2))).join(''))}
-      ${row('Gear', [...Array(GEAR_SLOTS[3]).keys()].map((i) => (i < sl.gear ? slot('gear', i) : locked('sword', 3))).join(''))}`
-          : '<p class="small muted">On the bench, units carry nothing: they cost their base price. Add it to the battle to give it levels, talents, skills and gear.</p>'
-      }
-      <div class="actions">${
-        deployed
-          ? `<button class="btn" id="wrTurn">${ic('rotate')} Turn</button><button class="btn" id="wrLoad">${ic('help')} Details</button>${allyFocusButton(r)}${r.id === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="wrRemove">${ic('close')} Remove</button>`}`
-          : `<button class="btn primary" id="wrAdd">${ic('plus')} Add to battle</button><button class="btn" id="wrLoad">${ic('help')} Details</button>`
-      }</div>
-    </div>`;
-  }
-
-  function bindQuickLoadout(el) {
-    const run = UI.run;
-    const wr = UI.wr;
-    const rid = wr.sel;
-    if (!rid) return;
-    const back = () => {
-      closeSheet();
-      renderWarRoom();
-    };
-    for (const b of $$('[data-qlv]', el))
-      b.onclick = () => {
-        R.setLevel(run, rid, +b.dataset.qlv);
-        R.save(run);
-        sfx('click');
-        renderWarRoom();
-      };
-    for (const b of $$('[data-qslot]', el))
-      b.onclick = () => {
-        const [kind, i] = b.dataset.qslot.split(':');
-        itemPicker(rid, kind, +i, back);
-      };
-    for (const b of $$('[data-qab]', el)) b.onclick = () => abilityPicker(rid, +b.dataset.qab, back);
-    if ($('#wrDesel', el))
-      $('#wrDesel', el).onclick = () => {
-        wr.sel = null;
-        renderWarRoom();
-      };
-  }
-
   // Choose a unit's ability for one level.
   function abilityPicker(rid, tier, back) {
     const run = UI.run;
@@ -2084,6 +1997,7 @@
       ov.select = [wr.tile.x, wr.tile.y];
       if (tileF.zone) ov.range = tileF.zone;
     }
+    if (wr.spot && !wr.sel && !wr.inspect && !wr.tile) ov.select = [wr.spot.x, wr.spot.y];
     b.ov = ov;
     // A priority picked here: its marker on the board, and the battle starts with it.
     const focusT = wrFocusTarget(s);
@@ -2144,8 +2058,12 @@
     }
 
     let selBlock = '';
-    if (wr.sel && R.unitById(run, wr.sel)) {
-      selBlock = quickLoadoutHTML(run, R.unitById(run, wr.sel), wr.dep.has(wr.sel));
+    if (wr.spot && !wr.sel && !wr.inspect && !wr.tile && !wrRidAt(wr.spot.x, wr.spot.y)) {
+      selBlock = `<div class="hint">${ic('target')} Tile picked. Tap a unit card to put that unit here (one already on the field moves here). Tap the tile again to cancel.</div>`;
+    } else if (wr.sel && R.unitById(run, wr.sel)) {
+      const held = R.unitById(run, wr.sel);
+      selBlock = `<div class="hint">${ic('army')} <b>${esc(held.name)}</b> the ${esc(UNITS[held.type].name)} is picked up. Drag it to an open blue tile and let go, or tap one.</div>
+        <div class="actions"><button class="btn" id="wrPutBack">${ic('undo')} Put it back</button></div>`;
     } else if (wr.inspect && s.byId[wr.inspect]) {
       const u = s.byId[wr.inspect];
       const isFocus = focusT && focusT.unit === u;
@@ -2166,8 +2084,8 @@
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
-      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board to pick it up and move it. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
-    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it on the board, then tap an open blue tile. Tap an enemy or a chest to make it your army's priority.</div>`;
+      selBlock = `<div class="hint">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board and drag it to move it. Tap an empty blue tile, then a unit card, to put that unit there. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
+    } else selBlock = `<div class="small muted">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it and drag it to an open blue tile; or tap an empty blue tile, then a card. Tap an enemy or a chest to make it your army's priority.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2225,34 +2143,12 @@
       sfx('click');
       renderWarRoom();
     };
-    for (const b of $$('[data-acrid]', cmd))
-      b.onclick = () => {
-        wr.sel = b.dataset.acrid;
-        wr.inspect = null;
-        renderWarRoom();
-      };
-    bindQuickLoadout(cmd);
-    // A newly picked unit's editor scrolls up to just under the Supply bar.
-    const q = $('.qload', cmd);
-    if (q && wr.sel !== wr.shownSel) {
-      const meter = $('#wrMeter', cmd);
-      cmd.scrollTop += q.getBoundingClientRect().top - cmd.getBoundingClientRect().top - (meter ? meter.offsetHeight : 0) - 6;
-    }
-    wr.shownSel = wr.sel;
-    if ($('#wrLoad')) $('#wrLoad').onclick = () => loadoutSheet(wr.sel, () => closeSheet());
-    if ($('#wrTurn'))
-      $('#wrTurn').onclick = () => {
-        const d = wr.dep.get(wr.sel);
-        d.facing = (d.facing + 1) % 4;
-        renderWarRoom();
-      };
-    if ($('#wrRemove'))
-      $('#wrRemove').onclick = () => wrBench(wr.sel);
-    if ($('#wrAdd'))
-      $('#wrAdd').onclick = () => {
-        const rid = wr.sel;
+    for (const b of $$('[data-acrid]', cmd)) b.onclick = () => wrLoadout(b.dataset.acrid);
+    if ($('#wrPutBack'))
+      $('#wrPutBack').onclick = () => {
         wr.sel = null;
-        wrAdd(rid);
+        sfx('click');
+        renderWarRoom();
       };
     if ($('#wrEInfo')) $('#wrEInfo').onclick = () => battleUnitSheet(s.byId[wr.inspect]);
     if ($('#wrFocus'))
@@ -2264,7 +2160,6 @@
         else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
         else if (shrine) run.pending.focus = { kind: 'hold', x: wr.tile.x, y: wr.tile.y, label: 'the shrine' };
         else if (wr.tile && isOpenGround(s, wr.tile.x, wr.tile.y)) run.pending.focus = { kind: 'tile', x: wr.tile.x, y: wr.tile.y, label: 'the marked spot' };
-        else if (wr.sel && wr.dep.has(wr.sel)) run.pending.focus = { kind: 'ally', rid: wr.sel, label: R.unitById(run, wr.sel).name };
         else return;
         wr.sel = null;
         toast(`Priority: ${run.pending.focus.label}. From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3200);
@@ -2337,6 +2232,27 @@
   function wrCard(rid) {
     const wr = UI.wr;
     wr.tile = null;
+    // A blue tile picked first: this unit goes there (one already on the field moves there).
+    const spot = wr.spot && !wrRidAt(wr.spot.x, wr.spot.y) && isDeployTile(wr.spot.x, wr.spot.y) ? wr.spot : null;
+    wr.spot = null;
+    if (spot) {
+      const d = wr.dep.get(rid);
+      if (d) {
+        d.x = spot.x;
+        d.y = spot.y;
+        sfx('step');
+        renderWarRoom();
+        return;
+      }
+      wr.dep.set(rid, { x: spot.x, y: spot.y, facing: 0 });
+      wr.inspect = null;
+      sfx('select');
+      const over = wrUsed() - wr.supply;
+      if (over > 0) toast(`Over budget by ${over} Supply. Lower a level or drop an item to fight.`);
+      renderWarRoom();
+      wrGuide(rid);
+      return;
+    }
     if (wr.dep.has(rid)) {
       wrBench(rid);
       return;
@@ -2349,12 +2265,6 @@
     const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
     const mine = ft && ft.ally && ft.ally.rid === rid;
     return `<button class="btn" id="loFocus">${ic(mine ? 'close' : 'target')} ${mine ? 'Clear priority' : 'Priority'}</button>${rid === (UI.wr && UI.wr.star) ? '' : `<button class="btn danger" id="loRemove">${ic('close')} Take off the field</button>`}`;
-  }
-
-  // In the War Room, a unit of yours on the field can be the priority: the army rallies on it.
-  function allyFocusButton(r) {
-    const ft = UI.wr && UI.wr.s ? wrFocusTarget(UI.wr.s) : null;
-    return ft && ft.ally && ft.ally.rid === r.id ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn" id="wrFocus">${ic('target')} Priority</button>`;
   }
 
   // The priority picked in the War Room, found on the field as it stands: an enemy unit or
@@ -2427,6 +2337,9 @@
     const wr = UI.wr;
     if (!wr) return;
     const s = wr.s;
+    // A picked blue tile lasts until the next tap (a card tap uses it).
+    const hadSpot = wr.spot;
+    wr.spot = null;
     // Any tap closes the feature panel; tapping the same feature again keeps it closed.
     const shown = wr.tile;
     wr.tile = null;
@@ -2471,7 +2384,10 @@
     }
     if (isDeployTile(t.x, t.y)) {
       if (wr.sel) return wrPlace(t.x, t.y);
-      toast('Pick a unit from your army first, then tap a blue tile.');
+      // An empty blue tile first: the next unit card you tap goes there. Again: never mind.
+      wr.spot = hadSpot && hadSpot.x === t.x && hadSpot.y === t.y ? null : { x: t.x, y: t.y };
+      wr.inspect = null;
+      sfx('click');
       renderWarRoom();
       return;
     }
@@ -2641,11 +2557,62 @@
     if (!t) return;
     const u = E.at(wr.s, t.x, t.y);
     if (!u) return;
-    // Your unit: pick it up, then tap an open blue tile to put it down there.
+    // Your unit: pick it up. Drag it to an open blue tile and let go (or let go where it
+    // is, then tap an open blue tile). The board holds still meanwhile.
     if (u.team === 'P' && u.rid) {
       wrPick(u.rid);
-      toast(`${R.unitById(UI.run, u.rid).name} picked up: tap an open blue tile to put it down there.`, 2600);
-    } else battleUnitSheet(u);
+      wr.drag = { rid: u.rid };
+      sfx('select');
+      return 'drag';
+    }
+    battleUnitSheet(u);
+  }
+
+  // A blue tile a dragged unit may land on: open, or the one it stands on.
+  function wrDropOK(rid, t) {
+    if (!t || !isDeployTile(t.x, t.y)) return false;
+    const there = wrRidAt(t.x, t.y);
+    return !there || there === rid;
+  }
+
+  // Dragging: the unit follows the finger tile by tile over open blue tiles.
+  function wrDragMove(hit) {
+    const wr = UI.wr;
+    if (!wr || !wr.drag) return;
+    const b = UI.board;
+    const t = hit && hit.tile;
+    const v = [...b.vis.values()].find((x) => x.rid === wr.drag.rid);
+    if (wrDropOK(wr.drag.rid, t)) {
+      b.ov = Object.assign({}, b.ov, { ghost: [t.x, t.y], select: [t.x, t.y] });
+      if (v) {
+        v.x = t.x;
+        v.y = t.y;
+      }
+      wr.drag.to = { x: t.x, y: t.y };
+    } else if (t) b.ov = Object.assign({}, b.ov, { ghost: [t.x, t.y] });
+  }
+
+  // Let go: it lands on the last open blue tile it crossed. Let go without moving and it
+  // stays picked up, so a tap on an open blue tile can put it down too.
+  function wrDragEnd(hit, moved) {
+    const wr = UI.wr;
+    if (!wr || !wr.drag) return;
+    const d = wr.drag;
+    wr.drag = null;
+    if (!moved) {
+      toast(`${R.unitById(UI.run, d.rid).name} picked up: drag it to an open blue tile, or tap one.`, 2600);
+      renderWarRoom();
+      return;
+    }
+    const tile = hit && hit.tile;
+    const onUnit = tile && wrRidAt(tile.x, tile.y) && wrRidAt(tile.x, tile.y) !== d.rid;
+    // On another unit: back where it was (units never swap). Just past the blue tiles: the
+    // last open blue tile it crossed.
+    const t = wrDropOK(d.rid, tile) ? tile : onUnit ? null : d.to;
+    if (t && wr.dep.has(d.rid)) return wrPlace(t.x, t.y);
+    wr.sel = null;
+    if (onUnit) toast('That tile is taken: it goes back. Units never swap places.');
+    renderWarRoom();
   }
 
   // Hold a unit (its card, or itself on the board): its full loadout, stats and all.
@@ -2704,6 +2671,7 @@
     b.focus = focusSpot(UI.battle);
     UI.boardTap = btTap;
     UI.boardLong = btLong;
+    UI.boardDragMove = UI.boardDragEnd = null;
     battleTools();
     UI.battle.log = [];
     showBanner(s.side === 'E' ? 'Enemy moves first' : 'Your turn', s.side === 'E');
@@ -3801,6 +3769,7 @@
     bd.activeSide = 'P';
     UI.boardTap = btTap;
     UI.boardLong = btLong;
+    UI.boardDragMove = UI.boardDragEnd = null;
     battleTools();
     showBanner(`${a.name} vs ${b.name}`, false);
     renderBattle();
@@ -4373,7 +4342,7 @@
         <h4>Controls</h4>
         <ul>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
-          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up, then tap an open blue tile to move it. Units never swap places. In battle, long-press any unit for everything about it.</li>
+          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>

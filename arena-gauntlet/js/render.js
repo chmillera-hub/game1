@@ -252,7 +252,9 @@
           if (!tap || tap.panning) return;
           tap.long = true;
           this.ov.press = null;
-          if (this.onLongPress) this.onLongPress(this.hit(tap.x, tap.y));
+          // A long press that picks something up starts a drag: the board stays put and
+          // the finger carries it.
+          if (this.onLongPress && this.onLongPress(this.hit(tap.x, tap.y)) === 'drag') tap.drag = true;
         }, 480);
       });
       this.cv.addEventListener('pointermove', (e) => {
@@ -267,6 +269,12 @@
           return;
         }
         if (!tap) return;
+        if (tap.drag) {
+          tap.lx = x;
+          tap.ly = y;
+          if (this.onDragMove) this.onDragMove(this.hit(x, y));
+          return;
+        }
         if (!tap.panning && Math.hypot(x - tap.x, y - tap.y) > 10) {
           clearTimeout(timer);
           this.ov.press = null;
@@ -289,6 +297,10 @@
         const t = tap;
         tap = null;
         this.ov.press = null;
+        if (t && t.drag) {
+          if (this.onDragEnd) this.onDragEnd(e.type === 'pointercancel' ? null : this.hit(t.lx, t.ly), Math.hypot(t.lx - t.x, t.ly - t.y) > 10);
+          return;
+        }
         if (!t || t.long || t.panning || e.type === 'pointercancel') return;
         if (this.onTap) this.onTap(this.hit(t.x, t.y));
       };
