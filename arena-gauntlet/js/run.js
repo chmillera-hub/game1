@@ -1097,7 +1097,8 @@
     if (rng.chance(group === 'boss' ? 0.4 : 0.65)) {
       const opts = [['flawless', 30]];
       if (primary !== 'survive') opts.push(['swift', 35]);
-      if (enc.waves.length) opts.push(['blockade', 40]);
+      const arriving = enc.waves.reduce((t, w) => t + w.units.length, 0);
+      if (arriving >= 2) opts.push(['ambush', 40]);
       const muster = musterCandidates(run);
       if (muster.length) opts.push(['muster', 50]);
       const c = rng.weighted(opts);
@@ -1105,7 +1106,7 @@
         const foes = units.filter((u) => !isObjectType(u.type) && !UNITS[u.type].traits.includes('structure')).length;
         enc.bonus.push({ type: 'swift', turns: Math.round(3.75 * (4 + Math.ceil(foes / 2) + (enc.objective === 'hold' ? 1 : 0) + (layout === 'siege' ? 2 : 0) + (primary === 'raze' || primary === 'totems' ? 1 : 0))) });
       } else if (c === 'muster') enc.bonus.push({ type: 'muster', rid: rng.pick(muster).id });
-      else if (c === 'blockade') enc.bonus.push({ type: 'blockade', n: 2 });
+      else if (c === 'ambush') enc.bonus.push({ type: 'ambush', n: Math.min(3, arriving) });
       else enc.bonus.push({ type: 'flawless' });
     }
     if (layout === 'convoy') enc.bonus.push({ type: 'plunder' });
@@ -1153,6 +1154,9 @@
           return { b, text: 'Win without losing a unit.', reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'plunder':
           return { b, text: 'Break every wagon (none may escape).', reward: '+20 gold per wagon' };
+        case 'ambush':
+          return { b, text: `Ambush the reinforcements: defeat ${b.n} of the enemies that arrive in waves.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
+        // Saves from before the Ambush: the old blocking goal.
         case 'blockade':
           return { b, text: `Block ${b.n} reinforcements: stand on their marked tiles as they arrive.`, reward: `+${15 + 5 * run.act} gold, +3 XP` };
         case 'muster': {
@@ -1405,6 +1409,7 @@
     if (b.type === 'swift') return (s.routed ? s.routed.turn : s.turn) <= b.turns;
     if (b.type === 'flawless') return !s.units.some((u) => u.team === 'P' && !u.nonCombat && !u.alive);
     if (b.type === 'muster') return deployment.some((d) => d.rid === b.rid);
+    if (b.type === 'ambush') return (s.stats.waveKills || 0) >= b.n;
     if (b.type === 'blockade') return (s.stats.blocked || 0) >= b.n;
     if (b.type === 'plunder') {
       const carts = s.units.filter((u) => u.type === 'cart');
@@ -1515,7 +1520,7 @@
             run.gold += 40;
             got = '+40 gold';
           }
-        } else if (b.type === 'swift' || b.type === 'flawless' || b.type === 'blockade') {
+        } else if (b.type === 'swift' || b.type === 'flawless' || b.type === 'blockade' || b.type === 'ambush') {
           const g = 15 + 5 * run.act;
           run.gold += g;
           run.stats.gold += g;
@@ -2370,7 +2375,9 @@
     const prof = damageProfile(enc);
     const kind = (r) => UNITS[r.type].act.dmg;
     const worth = (r) => ((UNITS[r.type].cost + (r.enchant ? 1.5 : 0)) * counterScore(r.type, enc, prof) * jitter[r.id]) / Math.max(1, unitCost(run, r));
-    const pool = run.roster.slice().sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
+    // Never a ward: a Lightning or Barrier Ward is only as good as the exact tile it stands
+    // on, so Auto leaves them for you to place by hand (a quest's ward still goes in).
+    const pool = run.roster.filter((r) => UNITS[r.type].role !== 'ward').sort((a, b) => worth(b) - worth(a) || UNITS[b.type].cost - UNITS[a.type].cost);
     const pick = [];
     let spent = 0;
     // The Cleric always goes in, free, on top of the usual army size.

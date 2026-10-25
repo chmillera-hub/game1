@@ -201,7 +201,7 @@
       case 'line':
         return 'Line ' + a.len;
       case 'cone':
-        return 'Cone ' + a.len;
+        return (a.fan ? 'Spray ' : 'Cone ') + a.len;
       case 'cross':
         return 'Cross ' + a.len;
       case 'nova':
@@ -293,7 +293,9 @@
         t = `${base} ${dt} damage to every unit in a straight line up to ${a.len} tiles.${E.hitsAllies(u, a) ? ' Hits allies too.' : ' Passes through allies.'}`;
         break;
       case 'cone':
-        t = `${base} ${dt} damage across a cone ${a.len} tiles deep.${ff}`;
+        t = a.fan
+          ? `${base} ${dt} damage in a spray: the row of three right in front of it${a.len > 2 ? ` (${a.len - 1} rows deep)` : ''}, and one tile beyond the middle.${ff}`
+          : `${base} ${dt} damage across a cone ${a.len} tiles deep.${ff}`;
         break;
       case 'cross':
         t = `${base} ${dt} damage in all four directions, up to ${a.len} tiles.${ff}`;
@@ -399,7 +401,7 @@
         hit = E.lineTiles(ms, ux, uy, 0, a.len);
         break;
       case 'cone':
-        hit = E.coneTiles(ms, ux, uy, 0, a.len);
+        hit = E.coneTiles(ms, ux, uy, 0, a.len, a.fan);
         break;
       case 'cross':
         for (let d = 0; d < 4; d++) hit.push(...E.lineTiles(ms, ux, uy, d, a.len));
@@ -1813,6 +1815,41 @@
     return u && !(prop && prop.x + prop.y > u.x + u.y) ? u : null;
   }
 
+  // Everyone under the finger, front to back: the sprites, then whoever stands on the tile.
+  function unitsUnderFinger(hit, s) {
+    const out = (hit.stack || []).map((st) => s.byId[st.uid]).filter((v) => v && v.alive);
+    const ground = hit.tile ? E.at(s, hit.tile.x, hit.tile.y) : null;
+    if (ground && ground.alive && !out.includes(ground)) out.push(ground);
+    return out;
+  }
+
+  // The unit a tap picks: the one in front, or, tapping the same spot again, the one behind
+  // it (a barricade hidden by a Lightning Ward, say). Call once per tap.
+  function pickAt(hit, s) {
+    const front = unitInFront(hit, s);
+    if (!front) return (UI.lastPick = null);
+    const list = unitsUnderFinger(hit, s);
+    if (!list.includes(front)) list.unshift(front);
+    const last = UI.lastPick;
+    let pick = front;
+    if (last && list.length > 1 && Math.hypot(hit.px - last.px, hit.py - last.py) < 30 && Date.now() - last.t < 6000) {
+      const i = list.findIndex((v) => v.uid === last.uid);
+      if (i >= 0) pick = list[(i + 1) % list.length];
+    }
+    const next = list.length > 1 ? list[(list.indexOf(pick) + 1) % list.length] : null;
+    UI.lastPick = { px: hit.px, py: hit.py, uid: pick.uid, t: Date.now(), behind: next ? next.uid : null };
+    return pick;
+  }
+
+  // "Tap again for the Barricade behind it.", when the unit just tapped hides another.
+  function behindHint(s, uid) {
+    const lp = UI.lastPick;
+    if (!lp || lp.uid !== uid || !lp.behind || Date.now() - lp.t > 6000) return '';
+    const b = s.byId[lp.behind];
+    if (!b || !b.alive) return '';
+    return `<p class="small muted">${ic('eye')} Something behind: tap the same spot again for ${esc(b.team === 'P' ? b.name : 'the ' + UNITS[b.type].name)}.</p>`;
+  }
+
   // ------------------------------------------------------------ objectives
 
   function objectivesHTML(enc, s) {
@@ -1846,6 +1883,7 @@
         if (b.type === 'muster') state = s.units.some((u) => u.rid === b.rid) ? 'done' : 'failed';
         if (b.type === 'plunder' && s.units.some((u) => u.type === 'cart' && u.escaped)) state = 'failed';
         if (b.type === 'blockade' && s.stats.blocked >= b.n) state = 'done';
+        if (b.type === 'ambush' && (s.stats.waveKills || 0) >= b.n) state = 'done';
       }
       lines.push(`<div class="obj bonus ${state}">${ic(state === 'done' ? 'check' : 'star')}<span>${esc(o.text)} <span class="reward">Reward: ${esc(o.reward)}.</span></span></div>`);
     }
@@ -2132,6 +2170,7 @@
           ? `${ic('gold')} ${esc(UNITS[u.type].name)}: ${u.hp} HP, ${pct(u.armor)} armor. It cannot fight back. Break it and your army picks up <b>${u.bounty} gold</b>, paid with the battle's gold when you win.`
           : `Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
       }</div>
+        ${behindHint(s, u.uid)}
         ${u.bounty ? '' : actsHTML(u)}
         <div class="actions">${canFocus ? (isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`) : ''}<button class="btn" id="wrEInfo">${ic('help')} Details</button></div>
         ${canFocus && !isFocus ? `<p class="small muted">${u.bounty ? 'Priority: from the first turn, your whole army goes for the barricade and breaks it for the gold.' : 'Priority: from the first turn, your whole army goes all out for it, whatever the cost.'}</p>` : ''}`;
@@ -2415,11 +2454,12 @@
     wr.tile = null;
     const raw = hit.tile;
     const tileUnit = raw ? E.at(s, raw.x, raw.y) : null;
-    const spriteUnit = hit.unitTile ? s.byId[hit.unitTile.uid] : null;
     let t = raw;
     // With a unit picked up, an open blue tile under the finger is where it goes.
     const placing = wr.sel && raw && !tileUnit && isDeployTile(raw.x, raw.y);
-    if (!placing && spriteUnit) t = { x: spriteUnit.x, y: spriteUnit.y };
+    // Otherwise the unit in front, or tapping again, the one behind it.
+    const spriteUnit = placing ? null : pickAt(hit, s);
+    if (spriteUnit) t = { x: spriteUnit.x, y: spriteUnit.y };
     // A rock or chest in front of everything else: say what it is.
     if (!placing && !unitInFront(hit, s) && (hit.props || []).length) t = null;
     if (!t) return wrMiss(hit, shown);
@@ -3256,7 +3296,7 @@
       const watchBtns = auto
         ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)))}<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button><button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
         : '';
-      panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
+      panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${behindHint(s, u.uid)}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${u.bounty ? '' : actsHTML(u)}
         <div class="hint">${
           u.bounty
@@ -3623,7 +3663,7 @@
       if (m) return doMove(m.x, m.y);
       return;
     }
-    const other = unitInFront(hit, s);
+    const other = pickAt(hit, s);
     if (other) return selectUnit(other);
     if (s.act && (s.act.moved || s.act.acted)) return selectUnit(s.byId[s.act.uid]);
     // Rocks, loot, the shrine, hazards and landing points explain themselves.
@@ -3653,7 +3693,7 @@
   // While your army fights on its own, a tap pauses the battle and shows what is there.
   function watchTap(B, hit) {
     const s = B.s;
-    const v = unitInFront(hit, s);
+    const v = pickAt(hit, s);
     let spot = v ? null : featureAt(hit, s, B.enc);
     // The same tile again: close it, like a tap beside the board.
     if (spot && B.mode === 'tile' && B.tile && B.tile.x === spot.x && B.tile.y === spot.y) spot = null;
@@ -4603,7 +4643,7 @@
         <h4>Missions</h4>
         <ul>
           <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
-          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
+          <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, ambushing reinforcements (cutting down a few of the enemies that arrive in waves), or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
           <li>War totems whip the enemies within 2 tiles into a frenzy (25% more damage) until they fall.</li>
           <li><b>Enemies never heal</b>, bosses included, and never rise again once they fall. You have your Cleric; they have nothing that mends, so every hit you land stays landed.</li>
         </ul>

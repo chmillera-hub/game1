@@ -195,7 +195,7 @@
     // Lightning Ward
     l_cap: { name: 'Capacitor', cost: 0, desc: 'Every hit it takes charges it: +25% damage on its next zap for each charge, up to +75%.', mod: { traits: ['capacitor'] } },
     l_shock: { name: 'Static Snare', cost: 1, desc: 'Its basic attack roots its targets for 1 turn.', mod: { act: { fx: { root: 1 } } } },
-    l_over: { name: 'Overcharge', cost: 2, desc: 'Its lightning reaches one row further: 7 tiles.', mod: { stat: { len: 1 } } },
+    l_over: { name: 'Overcharge', cost: 2, desc: 'Its spray is a row deeper: two rows of three, then the tip. 7 tiles.', mod: { stat: { len: 1 } } },
     l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against armored targets (30% armor or more).', mod: { props: { vsArmored: 0.3 } } },
     l_overload: { name: 'Overload', cost: 1, desc: 'When it is destroyed, it discharges: 20 magic damage to every enemy within 2 tiles.', mod: { traits: ['overload'] } },
     l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
@@ -461,10 +461,10 @@
     lightning: {
       name: 'Lightning Ward', rarity: 'rare', cost: 4, role: 'ward',
       hp: 46, pow: 16, armor: 0.25, res: 0.25, block: 0, rec: 1, move: 0,
-      act: { name: 'Storm Lash', kind: 'cone', len: 2, dmg: 'magic' },
+      act: { name: 'Storm Spray', kind: 'cone', len: 2, fan: true, dmg: 'magic' },
       traits: ['immobile', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['l_cap', 'l_shock', 'l_over'], 2: ['l_conduct', 'l_overload', 'l_rapid'] },
-      desc: 'Rooted totem. Each turn it lashes lightning in one direction (north, south, east or west): the tile in front of it and the row of three beyond, 4 tiles, like a drake\'s breath.',
+      desc: 'Rooted totem. Each turn it sprays lightning at one side (north, south, east or west) like a shotgun: the row of three right in front of it, and one tile beyond the middle. 4 tiles.',
       tip: 'It cannot move and only strikes one side at a time: come at it from another side, or hit it from range.',
     },
     dragon: {
