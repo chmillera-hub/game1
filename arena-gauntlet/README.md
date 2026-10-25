@@ -412,14 +412,16 @@ on a phone turned sideways, but portrait works too.
   unit cards and the battle log show it.
 - **Fatigue**: from turn 30, every unit loses HP whenever its turn comes, acting or
   passing (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor
-  and shields: 1 for its side's first, then 2, 3 and so on, one more for every turn
-  that side's units take, passes included, like fatigue in Hearthstone. Each side
-  counts its own, by the same rule. So five units passing in a row at 15 lose 15, 16,
-  17, 18 and 19, one after another, and the next unit to act loses 20: each pass plays
-  on its own on the board ("PASS" and its fatigue hit) and gets its own line in the
-  battle log. Poison and burns tick on passed turns too. A short "Fatigue
-  triggered!" banner marks the start (no message to tap away), and the top bar shows
-  each side's next hit. Reinforcements stop. Big units and regen last longest; the last side
+  and shields, before it moves or acts: never a whole side at once, always one unit at
+  a time. Each hit is the battle's next number, 1, then 2, 3 and so on, one count for
+  both sides, like fatigue in Hearthstone: as the turns alternate, the hits go back and
+  forth (the enemy 15, you 16, the enemy 17), five units passing in a row at 15 lose
+  15, 16, 17, 18 and 19, one after another, and no number comes twice. Each hit plays on
+  its own moment on the board (a unit that falls to it included) and gets its own line
+  in the battle log. tests/fatigue.test.js plays hundreds of battles of every kind and
+  checks every hit for exactly this. Poison and burns tick on passed turns too. A short
+  "Fatigue triggered!" banner marks the start (no message to tap away), and the top
+  bar shows the next number. Reinforcements stop. Big units and regen last longest; the last side
   standing wins. A tough tank can win a long battle on its own.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
   having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
@@ -602,6 +604,7 @@ node tests/objectives.test.js    # your army playing for the mission and bonus g
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
+node tests/fatigue.test.js       # fatigue on hundreds of real battles: one unit at a time, the next number each hit
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising
 node tests/talents.test.js       # class talents: slots, the pack, always usable

@@ -728,8 +728,8 @@
   // Turns count rounds: an enemy move, then yours. Each side moves one unit a turn.
   // A backstop only: fatigue ends battles long before it.
   const TURN_LIMIT = 250;
-  // Fatigue sets in for everyone on this turn: each unit loses HP as its turn comes, one
-  // more for every turn its side takes (see the engine's fatigue), until one side is left.
+  // Fatigue sets in for everyone on this turn: one unit at a time, as its turn comes, loses
+  // the battle's next fatigue number (see the engine's fatigue), until one side is left.
   const OVERTIME = 30;
   const HOLD_NEED = 4;
 
