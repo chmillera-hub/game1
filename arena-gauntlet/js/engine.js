@@ -2066,20 +2066,22 @@
     // each unit's own turn (see unitTurnStart). In queue battles that is when its turn in the
     // rotation comes up (see pickDue), not at the start of its side's turn.
     if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) unitTurnStart(s, u);
-    // Totems mend allies within 2 tiles. Several totems in reach do not stack.
-    const totems = mine.filter((w) => w.alive && w.props.totemHeal);
+    // War totems whip allies within 2 tiles into a frenzy (25% more damage) while they stand.
+    // Enemies barely ever heal: a totem never mends anyone.
+    const totems = mine.filter((w) => w.alive && w.props.totemRage);
     if (totems.length) {
       const pulsed = new Set();
       for (const v of mine) {
-        if (!v.alive || v.nonCombat || v.structure || v.hp >= v.maxHp) continue;
-        let best = null;
-        for (const w of totems) if (manhattan(v.x, v.y, w.x, w.y) <= 2 && (!best || w.props.totemHeal > best.props.totemHeal)) best = w;
-        if (!best) continue;
-        if (!pulsed.has(best.uid)) {
-          pulsed.add(best.uid);
-          emit(s, { t: 'totem', uid: best.uid });
+        if (!v.alive || v.nonCombat || v.structure) continue;
+        const w = totems.find((t) => manhattan(v.x, v.y, t.x, t.y) <= 2);
+        if (!w) continue;
+        if (!pulsed.has(w.uid)) {
+          pulsed.add(w.uid);
+          emit(s, { t: 'totem', uid: w.uid });
         }
-        heal(s, v, best.props.totemHeal, 'totem');
+        if (v.frenzy < 2) emit(s, { t: 'status', uid: v.uid, status: 'frenzy', turns: 2 });
+        v.frenzy = Math.max(v.frenzy, 2);
+        stamp(s, v, 'frenzy');
       }
     }
     for (const w of mine) {

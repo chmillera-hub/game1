@@ -29,9 +29,17 @@ on a phone turned sideways, but portrait works too.
   and you come back to the round's choice (the same three, so you can try again or
   take an easier one); the War Room's Other battles button goes back too. Mostly
   medium battles with an easy one now and then should see most armies through; the
-  bosses are the hard part. In the simulations, picking medium first wins about 80%
+  bosses are the hard part. In the simulations, picking medium first wins about 90%
   of campaigns, and trying elite first (dropping to medium after a loss) does better
   still, thanks to the relics.
+- **Enemies barely heal**: your army has its Cleric; the enemy, almost never anything
+  that mends. Chip away at a horde and it stays chipped. Orc Shamans' war drums only
+  whip the warband into a frenzy, a Specter's touch weakens you instead of draining
+  life, Bog Trolls are huge but never regenerate, totems enrage instead of mend, and
+  enemy armies never carry healing abilities, skills or gear. The exception is one
+  **Healers battle** a campaign: in one round of Act II or III, one card (Medium or
+  Elite) is marked Enemy healers. That army brings a Cleric (two in an Elite) that
+  mends its wounded, and pays 25 gold extra if you win. Take it or leave it.
 - **Victory and the final challenge**: beating the Act III boss wins the campaign.
   Then you may claim the victory, or face the Eclipse Wyrm for a super victory. It is
   not meant to be beaten (in the simulations it falls to about one strong army in
@@ -207,6 +215,15 @@ on a phone turned sideways, but portrait works too.
   a unit about to pass is greyed out with its cooldown on its portrait (a yellow
   number for paralysis), and the board shows "PASS" and the cooldown ticking down
   (2 → 1) when it happens.
+- **Events**: one an act, each a short scene with two or three choices, and every
+  choice gives you something to play with rather than a pile of gold: a talent (often
+  from the stronger list), a skill or two, gear, an enchantment bound straight onto a
+  unit you pick (the Fountain of Renewal, the Old Forge, a duel with the Sellsword),
+  a relic, a recruit, a mirror copy of one of your units, a unit transformed (the
+  Alchemist's sure transmutation or free green vial), +1 Supply, Commander XP, or an
+  elite battle for a relic. Some cost gold; a few are gambles (stake a soldier at the
+  Gambler's Tent: an enchantment, or they leave your army). Your Cleric can be
+  blessed, never transformed or lost.
 - **Regen**: some talents, gear, relics and units heal whenever the unit's turn
   comes, whether it acts or passes (Living Moss 4,
   Healing Charm 3, the Furgon 3, a Mending Light aura 2). The only army-wide source
@@ -264,7 +281,8 @@ on a phone turned sideways, but portrait works too.
   maul strikes its target and the three tiles around it; a Witch's lightning runs
   five tiles straight). The board shows everywhere it could hit on its next move.
 - **Missions**: defeat every enemy, burn a War Banner, break a prison cage, kill a
-  Commander, hold a shrine, survive the waves, topple three totems, raze the
+  Commander, hold a shrine, survive the waves, topple three war totems (each whips
+  the enemies within 2 tiles into a frenzy, 25% more damage, until it falls), raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Getting it done does not end the battle on the spot: the enemy is **routed**. Their
   reinforcements stop and their fatigue sets in at once: from the next enemy turn, each

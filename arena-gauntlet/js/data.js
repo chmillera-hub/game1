@@ -299,7 +299,7 @@
   const TOTEM = {
     rarity: 'none', cost: 0, role: 'object',
     pow: 0, armor: 0.5, res: 0.3, block: 0, rec: 0, move: 0,
-    act: { name: 'Mending Ward', kind: 'none' },
+    act: { name: 'War Ward', kind: 'none' },
     traits: ['immobile', 'nofacing', 'object', 'totem'], tags: ['structure'], material: 'stone',
     tip: 'Stone shrugs off swords and spells alike. Siege damage cracks it fast.',
   };
@@ -550,18 +550,18 @@
       tip: 'Break through with siege damage or fire for the gold inside, or go around.',
     },
 
-    // Totems: objectives that mend the enemies around them.
+    // Totems: objectives that whip the enemies around them into a frenzy.
     totem: Object.assign({}, TOTEM, {
-      name: 'Stone Totem', hp: 40, props: { totemHeal: 4 },
-      desc: 'A carved war-stone. At the start of their turn, enemies within 2 tiles heal 4 HP.',
+      name: 'Stone Totem', hp: 40, props: { totemRage: true },
+      desc: 'A carved war-stone. At the start of their turn, enemies within 2 tiles fly into a frenzy: 25% more damage.',
     }),
     hexstone: Object.assign({}, TOTEM, {
-      name: 'Hex Stone', hp: 46, props: { totemHeal: 5 },
-      desc: 'A rune-cut standing stone. At the start of their turn, enemies within 2 tiles heal 5 HP.',
+      name: 'Hex Stone', hp: 46, props: { totemRage: true },
+      desc: 'A rune-cut standing stone. At the start of their turn, enemies within 2 tiles fly into a frenzy: 25% more damage.',
     }),
     obelisk: Object.assign({}, TOTEM, {
-      name: 'Ember Obelisk', hp: 52, props: { totemHeal: 6 },
-      desc: 'A shard of black glass, warm to the touch. At the start of their turn, enemies within 2 tiles heal 6 HP.',
+      name: 'Ember Obelisk', hp: 52, props: { totemRage: true },
+      desc: 'A shard of black glass, warm to the touch. At the start of their turn, enemies within 2 tiles fly into a frenzy: 25% more damage.',
     }),
 
     // Spawners: reinforcements march out of them until they fall.
@@ -627,9 +627,9 @@
     shaman: {
       name: 'Orc Shaman', rarity: 'enemy', cost: 3, role: 'support',
       hp: 30, pow: 10, armor: 0.1, res: 0.3, block: 0.2, rec: 2, move: 3,
-      act: { name: 'War Drums', kind: 'drum', radius: 2 },
+      act: { name: 'War Drums', kind: 'drum', radius: 2, noHeal: true },
       traits: [], tags: ['greenskin', 'caster'],
-      desc: 'Beats the war drums: allies within 2 tiles heal 10 and fly into a frenzy, dealing 25% more damage for 2 turns.',
+      desc: 'Beats the war drums: allies within 2 tiles fly into a frenzy, dealing 25% more damage for 2 turns. It cannot heal them.',
       tip: 'Kill the drummer first and the warband loses its fury.',
     },
     warg: {
@@ -675,9 +675,9 @@
     specter: {
       name: 'Specter', rarity: 'enemy', cost: 3, role: 'skirmisher',
       hp: 26, pow: 11, armor: 0.5, res: -0.25, block: 0, rec: 1, move: 3,
-      act: { name: 'Soul Drain', kind: 'strike', range: [1, 2], dmg: 'magic' },
-      traits: ['flying', 'undead'], tags: ['spirit', 'undead'], props: { lifesteal: 0.4 },
-      desc: 'A restless spirit. 50% armor, but magic hurts it 25% more. Drains life with every touch.',
+      act: { name: 'Soul Drain', kind: 'strike', range: [1, 2], dmg: 'magic', fx: { weak: 1 } },
+      traits: ['flying', 'undead'], tags: ['spirit', 'undead'],
+      desc: 'A restless spirit. 50% armor, but magic hurts it 25% more. Its touch drains the strength out of you: the unit it hits deals 30% less damage on its next turn.',
       tip: 'Bring magic or Blessed weapons. Steel barely touches it.',
     },
     necromancer: {
@@ -708,11 +708,11 @@
     },
     troll: {
       name: 'Bog Troll', rarity: 'enemy', cost: 5, role: 'tank',
-      hp: 80, pow: 20, armor: 0.15, res: -0.1, block: 0.1, rec: 1, move: 3,
+      hp: 96, pow: 20, armor: 0.15, res: -0.1, block: 0.1, rec: 1, move: 3,
       act: { name: 'Club', kind: 'strike', range: [1, 1], dmg: 'phys' },
-      traits: ['trollblood', 'big'], tags: ['beast', 'big'], props: { regen: 5 },
-      desc: 'Regen 5, unless magic or fire hurt it since its last turn.',
-      tip: 'Burn it. Any magic damage stops its regeneration for a turn.',
+      traits: ['big'], tags: ['beast', 'big'],
+      desc: 'A mountain of muscle with 96 HP and a club to match. It never mends: every hit you land stays landed.',
+      tip: 'Chip away at it from range, and keep it off your Cleric. It hates magic (10% weak to it).',
     },
     drake: {
       name: 'Fire Drake', rarity: 'enemy', cost: 5, role: 'monster',

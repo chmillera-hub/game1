@@ -84,7 +84,7 @@ function playBattle(run) {
 }
 
 function pickUnit(run, pick) {
-  const ok = run.roster.filter((u) => (pick.filter === 'transmute' ? ['common', 'uncommon'].includes(D.UNITS[u.type].rarity) : true));
+  const ok = run.roster.filter((u) => R.eventPickOk(run, pick, u));
   return ok.length ? ok[0].id : null;
 }
 

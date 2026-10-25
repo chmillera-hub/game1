@@ -2108,7 +2108,7 @@
             break;
           }
           case 'totem':
-            if (v) this.ring(v.x, v.y, 'rgba(150,255,170,0.85)', 2.4, 520);
+            if (v) this.ring(v.x, v.y, 'rgba(255,130,90,0.85)', 2.4, 520);
             break;
           case 'revive': {
             const u = state && state.byId[e.uid];

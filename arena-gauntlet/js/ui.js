@@ -524,7 +524,7 @@
     if (mat && MATERIAL_TEXT[mat]) out.push(MATERIAL_TEXT[mat]);
     for (const t of u.traits) if (TRAIT_TEXT[t]) out.push(TRAIT_TEXT[t]);
     const P = u.props;
-    if (P.totemHeal) out.push(`At the start of their turn, its allies within 2 tiles heal ${P.totemHeal} HP.`);
+    if (P.totemRage) out.push('At the start of their turn, its allies within 2 tiles fly into a frenzy: 25% more damage. Topple it and the frenzy fades.');
     if (u.bounty) out.push(`Break it and your army picks up ${u.bounty} gold, paid with the battle's gold when you win.`);
     if (s && u.traits.has('spawner')) {
       const waves = s.waves.filter((w) => w.src === u.uid && w.state === 'pending');
@@ -1022,6 +1022,7 @@
         <div class="ch-top"><span class="tier-chip tier-${o.tier}">${R.TIERS[o.tier].name}</span>${o.attempts ? `<span class="small muted">${o.attempts} ${o.attempts === 1 ? 'try' : 'tries'} so far</span>` : ''}</div>
         <canvas class="ch-thumb" data-thumb="${i}"></canvas>
         <div class="title">${esc(o.enc.name)}</div>
+        ${o.enc.healers ? `<div class="ch-healers">${ic('heart')} <b>Enemy healers</b>: the one battle this campaign where the enemy brings Clerics that mend their wounded. +${R.HEALERS_GOLD} gold if you win.</div>` : ''}
         <div class="ch-goals">${objectivesHTML(o.enc)}</div>
         <div class="ch-pay">${pays}</div>
       </button>`;
@@ -4435,7 +4436,7 @@
         const c = choices.find((x) => x.id === b.dataset.choice);
         let rid = null;
         if (c.pick) {
-          rid = await pickUnit(c.label, esc(c.detail), (u) => ['common', 'uncommon'].includes(UNITS[u.type].rarity));
+          rid = await pickUnit(c.label, esc(c.detail), (u) => R.eventPickOk(run, c.pick, u));
           if (!rid) return;
         }
         const before = R.commanderLevel(run);
@@ -4564,6 +4565,8 @@
         <ul>
           <li>Defeat every enemy, burn their banner, break a prison, kill a commander, hold a shrine, survive the waves, topple their totems, raze the buildings that send reinforcements, storm a castle gate, or stop a convoy of loot wagons. Defeating every enemy always wins too, once no more reinforcements are coming.</li>
           <li>Bonus goals pay extra: loot on the field, fast wins, flawless wins, blocking reinforcements, or winning with a unit that sat out your last battle. That unit insists on fighting: it starts on the field and cannot be taken off.</li>
+          <li>War totems whip the enemies within 2 tiles into a frenzy (25% more damage) until they fall.</li>
+          <li><b>Enemies barely heal.</b> You have your Cleric; they have nothing that mends, so every hit you land stays landed. The one exception is a single <b>Healers battle</b> a campaign, marked on its card: that army brings Clerics, and pays 25 gold extra.</li>
         </ul>
         <h4>Buildings and siege</h4>
         <ul>
