@@ -257,10 +257,11 @@ on a phone turned sideways, but portrait works too.
   Commander, hold a shrine, survive the waves, topple three totems, raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   Getting it done does not end the battle on the spot: the enemy is **routed**. Their
-  reinforcements stop, and from the next enemy turn every enemy fighter loses HP at
-  the start of each enemy turn, 1 in the first, then 2, 3 and so on, past armor and
-  shields. The battle ends when the last of them falls, so a mission done early all
-  but wins it, without the enemy simply giving up. Your own side tires only when
+  reinforcements stop and their fatigue sets in at once: from the next enemy turn, the
+  enemy unit taking each turn loses HP as its turn starts, 1 in the first, then 2, 3
+  and so on, past armor and shields, just like fatigue. The battle ends when the last
+  of them falls, so a mission done early tips it well in your favor, without the enemy
+  simply giving up. Your own side tires only when
   fatigue sets in for everyone on turn 30. A banner, a toast and the battle log say
   when it happens, the top bar shows the rout's bite, and the mission line turns to
   "Done!". A "win within N turns" goal counts from the turn the mission was done.

@@ -2149,10 +2149,11 @@
 
   // This round's fatigue, past armor and shields.
   function fatigue(s, u) {
-    // A routed enemy bleeds every turn already (routTick); fatigue is for the other side.
-    if (s.routed && u.team === 'E') return;
-    const n = fatigueHit(s);
-    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue' });
+    // A routed enemy tires early: from the rout on, its unit taking each turn loses the
+    // rout's hit (or this round's fatigue, once that is bigger).
+    const rout = s.routed && u.team === 'E' ? routHit(s) : 0;
+    const n = Math.max(rout, fatigueHit(s));
+    if (n && u.alive && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: rout >= n || undefined });
   }
 
   // HP a unit loses to fatigue at the start of its turn this round: 1 in the round it sets
@@ -2163,10 +2164,11 @@
 
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
   // the shrine held, the commander or the boss slain, the waves outlasted. The battle does
-  // not stop there: the enemy is routed. Their reinforcements stop coming, and from the
-  // next enemy turn every enemy fighter bleeds at the start of each enemy turn, 1 HP more
-  // each turn (routTick). You win when the last of them falls. Your own side tires only
-  // when fatigue sets in for everyone (turn 30).
+  // not stop there: the enemy is routed. Their reinforcements stop coming, and their
+  // fatigue sets in at once: from the next enemy turn, the enemy unit taking each turn
+  // loses HP as its turn starts, 1, then 2, 3 and so on (see fatigue). You win when the
+  // last of them falls. Your own side tires only when fatigue sets in for everyone
+  // (turn 30).
   function rout(s, why) {
     if (s.routed || s.over) return;
     s.routed = Object.assign({ turn: s.turn }, why);
@@ -2176,19 +2178,10 @@
     emit(s, Object.assign({ t: 'routed', turn: s.turn }, why));
   }
 
-  // What each routed enemy loses at the start of an enemy turn: 1 in the first enemy turn
-  // after the rout, then 2, 3 and so on (0 before the rout).
+  // What the routed enemy's unit loses as its turn starts: 1 in the first enemy turn after
+  // the rout, then 2, 3 and so on (0 before the rout).
   function routHit(s) {
     return s.routed ? Math.max(1, s.turn - s.routed.turn) : 0;
-  }
-
-  function routTick(s) {
-    if (!s.routed || s.routed.ticked === s.turn || s.over) return;
-    s.routed.ticked = s.turn;
-    const n = routHit(s);
-    emit(s, { t: 'routTick', dmg: n });
-    for (const u of s.units.slice()) if (u.alive && u.team === 'E' && counts(u)) applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', rout: true });
-    resolveBooms(s);
   }
 
   // The battle is decided. `s.end` keeps why, after the events have been played.
@@ -2213,7 +2206,6 @@
     }
     startFatigue(s);
     startEffects(s, side);
-    if (side === 'E') routTick(s);
     checkOutcome(s);
     if (s.over) return;
     if (side === 'P' && s.hold && !s.routed) {
@@ -2286,7 +2278,7 @@
   function pickDue(s, side) {
     s.due = 0;
     const seen = new Set();
-    let tired = !s.inOvertime;
+    let tired = !s.inOvertime && !(s.routed && side === 'E');
     let first = null;
     for (;;) {
       const u = s.units.filter((v) => v.team === side && inQueue(v)).sort(byQueue)[0];

@@ -44,8 +44,8 @@ function until(s, side) {
   while (!s.over && s.side !== side);
 }
 
-// A mission done routs the enemy instead of ending the battle: the rest bleed every enemy
-// turn (1, 2, 3...) until the last falls, and the win is yours.
+// A mission done routs the enemy instead of ending the battle: their fatigue sets in at
+// once (1, 2, 3...) until the last falls, and the win is yours.
 function routedThenWon(s, why) {
   assert.ok(s.routed && s.routed[why], 'routed: ' + why);
   assert.ok(!s.over, 'the battle goes on');
@@ -1319,29 +1319,6 @@ test('raze: breaking every goal building wins; optional buildings do not need to
   act(s, kn, { kind: 'unit', uid: tent.uid });
   assert.ok(s.waves.every((w) => w.state !== 'pending'), 'its reinforcements stop');
   routedThenWon(s, 'destroyed');
-});
-
-test('the rout: 1 HP for every enemy in the first enemy turn after it, then 2, 3...; your side is spared', () => {
-  const s = board(
-    [
-      { type: 'knight', team: 'P', x: 4, y: 5 },
-      { type: 'archer', team: 'E', x: 4, y: 4, vip: true },
-      { type: 'golem', team: 'E', x: 0, y: 0 },
-      { type: 'golem', team: 'E', x: 8, y: 0 },
-    ],
-    { objective: 'vip' }
-  );
-  const [kn, cmd, g1, g2] = s.units;
-  cmd.hp = 1;
-  cmd.block = 0;
-  act(s, kn, { kind: 'unit', uid: cmd.uid });
-  assert.ok(s.routed && !s.over);
-  const hp = [g1.hp, g2.hp, kn.hp];
-  until(s, 'E');
-  assert.deepStrictEqual([hp[0] - g1.hp, hp[1] - g2.hp], [1, 1], 'every enemy bleeds 1');
-  until(s, 'E');
-  assert.deepStrictEqual([hp[0] - g1.hp, hp[1] - g2.hp], [3, 3], 'then 2 more');
-  assert.strictEqual(kn.hp, hp[2], 'your knight does not tire before turn 30');
 });
 
 test('edge waves appear along their edge', () => {

@@ -453,4 +453,36 @@ test('the same source poisoning again refreshes its own poison instead of adding
   assert.deepStrictEqual([kn.poison.dmg, kn.poison.turns], [8, 2]);
 });
 
+test('the rout: the enemy tires at once, 1 HP for the unit taking the first enemy turn after it, then 2, 3...', () => {
+  const s = battle(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'E', x: 4, y: 4, vip: true },
+      { type: 'golem', team: 'E', x: 0, y: 0 },
+      { type: 'golem', team: 'E', x: 8, y: 0 },
+    ],
+    { objective: 'vip' }
+  );
+  const [kn, cmd, g1, g2] = s.units;
+  toPlayer(s);
+  cmd.hp = 0;
+  cmd.alive = false;
+  s.occ[cmd.y * s.w + cmd.x] = 0;
+  E.checkOutcome(s);
+  assert.ok(s.routed && !s.over, 'routed, and the battle goes on');
+  const before = () => [g1.hp, g2.hp];
+  const lost = [];
+  let hp = before();
+  for (let round = 0; round < 3; round++) {
+    E.pass(s); // the enemy's turn starts: its unit up takes the rout's hit
+    const now = before();
+    lost.push(hp[0] - now[0] + hp[1] - now[1]);
+    assert.ok((hp[0] - now[0] === 0) !== (hp[1] - now[1] === 0), 'only the unit taking the turn tires');
+    hp = now;
+    E.pass(s);
+  }
+  assert.deepStrictEqual(lost, [1, 2, 3]);
+  assert.strictEqual(kn.hp, kn.maxHp, 'your side does not tire before turn 30');
+});
+
 console.log(`queue: ${passed} tests passed`);
