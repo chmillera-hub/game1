@@ -2415,7 +2415,7 @@
     if (typeof out === 'object' && out.battle) {
       const node = { id: p.nodeId, row: 3, kind: out.battle };
       p.result = out.text;
-      run.pending = { type: 'battle', nodeId: p.nodeId, node, enc: genEncounter(run, node, out.battle), attempt: 0, fromEvent: true };
+      run.pending = { type: 'battle', nodeId: p.nodeId, node, enc: genEncounter(run, node, out.battle), attempt: 0, fromEvent: true, eventTitle: ev.title };
       save(run);
       return out.text;
     }

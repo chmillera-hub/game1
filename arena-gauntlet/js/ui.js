@@ -1156,8 +1156,12 @@
       </div>`
     );
     for (const cv of $$('[data-thumb]', v)) drawThumb(cv, offer[+cv.dataset.thumb].enc, act.palette);
+    // A tap that lands in the first moments (a second tap on the Continue that brought you
+    // here) never picks a battle for you.
+    const shownAt = performance.now();
     for (const b of $$('[data-ch]', v))
       b.onclick = () => {
+        if (performance.now() - shownAt < 700) return;
         if (R.chooseChallenge(run, +b.dataset.ch)) {
           sfx('select');
           route();
@@ -1200,6 +1204,16 @@
     };
   }
 
+  // In the War Room, the menu says where the battle came from, and lets you go back to the
+  // other battles on offer (not for an event's battle, which has no others).
+  function wrMenuLine(inBattle) {
+    const p = UI.run && UI.run.pending;
+    if (inBattle || !UI.wr || !p || p.type !== 'battle') return '';
+    if (p.fromEvent) return `<div class="origin event">${battleOrigin(UI.run).html}</div>`;
+    if (p.tier === 'boss') return '';
+    return `<button class="btn wide" id="muOther">${ic('undo')} ${p.tier === 'mega' ? 'Back to the final choice' : 'Choose another battle'}</button>`;
+  }
+
   function menuSheet(inBattle) {
     // A Hall of Fame match has no campaign to save or retreat from: just leave it.
     const ex = inBattle && UI.battle && UI.battle.exhibition;
@@ -1212,11 +1226,19 @@
         ${AG.Music ? `<button class="btn wide" id="muMusic">${ic(AG.Music.enabled ? 'sound' : 'mute')} Music: ${AG.Music.enabled ? 'on' : 'off'}</button>` : ''}
         ${inBattle && !ex ? (UI.battle && UI.battle.s.won ? `<button class="btn wide" id="muFinish">${ic('check')} Finish the battle (the win is yours)</button>` : `<button class="btn wide danger" id="muRetreat">${ic('flag')} Retreat and re-plan</button>`) : ''}
         ${ex ? `<button class="btn wide" id="muLeave">${ic('undo')} Leave the match (no result)</button>` : `<button class="btn wide" id="muTitle">Save and quit to title</button>`}
+        ${wrMenuLine(inBattle)}
         ${!inBattle ? `<button class="btn wide danger" id="muAbandon">Abandon campaign</button>` : ''}
         ${!inBattle && R.loadHall().legends.concat(R.loadHall().queue).length ? `<button class="btn wide danger" id="muHallReset">${ic('crown')} Reset Hall of Fame</button>` : ''}
       </div>`,
       (sh) => {
         $('#muHelp', sh).onclick = () => helpSheet();
+        if ($('#muOther', sh))
+          $('#muOther', sh).onclick = () => {
+            closeSheet();
+            R.backToChoice(UI.run);
+            if (UI.board) UI.board.stop();
+            route();
+          };
         $('#muCodex', sh).onclick = () => codexSheet();
         $('#muSound', sh).onclick = () => {
           AG.Audio.toggle();
@@ -2063,6 +2085,23 @@
     return enc.kind === 'boss' ? 'Boss battle' : enc.kind === 'elite' ? 'Elite battle' : 'Battle';
   }
 
+  // Where the battle in the War Room came from, so none seems to come out of nowhere: the
+  // challenge you picked this round (and that Other battles takes you back to the choice),
+  // the act's boss, or an event (which cannot be swapped for another).
+  function battleOrigin(run) {
+    const p = run.pending;
+    if (!p || p.type !== 'battle') return { short: '', html: '' };
+    if (p.fromEvent) {
+      const ev = p.eventTitle || 'an event';
+      return { short: 'Event battle', html: `${ic('book')}<span><b>Event battle</b>, from ${p.eventTitle ? `<b>${esc(ev)}</b>` : 'an event'}: your choice there led here. It cannot be swapped for another battle: win it, or retreat and re-plan as often as you like.</span>` };
+    }
+    const st = R.curStep(run);
+    if (p.tier === 'mega') return { short: 'Final challenge', html: `${ic('skull')}<span><b>The final challenge</b>, which you chose to face. Back takes you to the choice to call it a day.</span>` };
+    if (p.tier === 'boss') return { short: 'Boss battle', html: `${ic('crown')}<span><b>The act's boss</b>: the one battle this round, no choice to make.</span>` };
+    const round = st && st.kind === 'fight' ? `Round ${st.round + 1} of ${R.FIGHTS}` : 'This round';
+    return { short: `${R.TIERS[p.tier] ? R.TIERS[p.tier].name : ''} battle`, html: `${ic('flag')}<span><b>${round}: you picked the ${R.TIERS[p.tier] ? R.TIERS[p.tier].name.toLowerCase() : ''} battle.</b> Other battles (below, or in the menu) takes you back to the three on offer.</span>` };
+  }
+
   // The enemy's reinforcement schedule, for the scout report.
   function reinforcementsHTML(s) {
     const waves = s.waves.filter((w) => w.team === 'E' && w.state === 'pending');
@@ -2263,7 +2302,7 @@
 
     const foeSup = R.encSupply(enc);
     supplyBadges({ P: { label: 'Your army', left: wrUsed(), total: wr.supply, tip: `Your army: ${wrUsed()} of your ${wr.supply} Supply fielded` }, E: { label: 'Enemy', total: foeSup.army, coming: foeSup.waves } });
-    $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${encKindLabel(enc)}${attempt ? ' · attempt ' + (attempt + 1) : ''}</span></div>
+    $('#topbar').innerHTML = `<div class="title"><b>War Room</b><span>${esc(enc.name)} · ${battleOrigin(run).short || encKindLabel(enc)}${attempt ? ' · attempt ' + (attempt + 1) : ''}</span></div>
       <button class="btn icon-only" id="wrArmy" aria-label="Army">${ic('army')}</button>
       <button class="btn icon-only" id="wrMenu" aria-label="Menu">${ic('menu')}</button>`;
     $('#wrArmy').onclick = () => armySheet(() => renderWarRoom());
@@ -2365,6 +2404,7 @@
     wr.stripX = wr.stripX || {};
     for (const el of $$('#cmd .roster, #cmd .intel-list')) wr.stripX[el.className] = el.scrollLeft;
     $('#cmd').innerHTML = `
+      <div class="origin ${run.pending.fromEvent ? 'event' : ''}">${battleOrigin(run).html}</div>
       <button class="cp-meter tap" id="wrMeter" aria-label="What each unit costs"><span class="res">${ic('command')}<span class="num">${used}/${wr.supply}</span></span><div class="pips">${pips.join('')}</div>
         <span class="res" title="Units on the field">${ic('army')}<span class="num">${wr.dep.size}</span></span></button>
       <div class="small ${over ? 'bad-text' : 'muted'}">${
@@ -3407,7 +3447,7 @@
       <div class="eyebrow">Turn order</div>
       ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
-      ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot.` : 'The battle goes on while your army grabs what else it can, and every enemy it cuts down now earns a gold or two.'} Its fatigue is on (next −${E.fatigueHit(s, 'P')}, one more every turn it takes), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
+      ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot.` : 'The battle goes on while your army grabs what else it can, and every enemy it cuts down still earns a gold or two.'} Its fatigue is on (next −${E.fatigueHit(s, 'P')}, one more every turn it takes), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>${B.focus.uid && missionTarget(s.byId[B.focus.uid]) ? ' ' + vipCheck : ''}. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
@@ -4484,7 +4524,7 @@
     const missed = goals.filter((g) => !g.done).length;
     const rows = [];
     if (haul.total) rows.push(`<div class="obj bonus ${haul.gold >= haul.total ? 'done' : ''}">${ic('gold')}<span>Gold from buildings: <b>${haul.gold}</b> of ${haul.total}</span></div>`);
-    if (haul.lap) rows.push(`<div class="obj bonus done">${ic('gold')}<span>Gold from foes cut down after the win: <b>${haul.lap}</b></span></div>`);
+    if (haul.lap) rows.push(`<div class="obj bonus done">${ic('gold')}<span>Gold from foes your army cut down: <b>${haul.lap}</b></span></div>`);
     for (const l of haul.loot) rows.push(`<div class="obj bonus ${l.taken ? 'done' : 'failed'}">${ic(l.taken ? 'check' : 'close')}<span>${esc(R.LOOT_NAMES[l.kind] || 'Loot')} ${l.taken ? 'taken' : 'left behind'}</span></div>`);
     for (const g of goals) rows.push(`<div class="obj bonus ${g.done ? 'done' : 'failed'}">${ic(g.done ? 'check' : 'close')}<span>${esc(g.text)} <span class="reward">${esc(g.reward)}</span></span></div>`);
     openSheet(
@@ -4631,7 +4671,7 @@
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
           ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold picked up in battle</span>` : ''}
           ${p.bounty ? `<span class="res gold">${ic('gold')} +${p.bounty} gold from broken buildings</span>` : ''}
-          ${p.lap ? `<span class="res gold">${ic('gold')} +${p.lap} gold from foes cut down after the win</span>` : ''}
+          ${p.lap ? `<span class="res gold">${ic('gold')} +${p.lap} gold from foes your army cut down</span>` : ''}
           <span class="res">${ic('gold')} ${run.gold} total</span>
         </div>
         ${(p.objectives || []).some((o) => o.done) ? `<div class="panel objectives" data-got="✓ Collected">${p.objectives
@@ -4903,7 +4943,7 @@
           <li><b>A unit's turn, step by step</b>: what comes with a unit's turn always comes in this order: its fatigue hit, then poison, then burns, then fire underfoot, then regen; only then does it act, or pass with its cooldown dropping by one ("PASS COOLDOWN 2→1" over its head). Each step shows over the unit's head on its own beat ("-16 FATIGUE", then "-5 POISON", then "+3 REGEN"), never two at once, even at 2× speed, and the numbers stack top to bottom in the order they happened instead of landing on each other.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
           <li><b>Regen</b> heals a unit whenever its turn comes, acting or passing. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
-          <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until turn ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down from then on is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose no unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
+          <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until turn ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down, before the win or after, is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose no unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
           <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your fatigue switches on that moment, from 1 (or carries on, if it was on already). It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
           <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past armor and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>

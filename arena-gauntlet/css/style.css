@@ -2459,6 +2459,42 @@ body:has(#battle:not([hidden])) {
   color: var(--faint);
 }
 
+/* Where the War Room's battle came from: the challenge you picked, the boss, or an event. */
+.origin {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.origin:empty {
+  display: none;
+}
+
+.origin .icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--brass-hi);
+}
+
+.origin b {
+  color: var(--text);
+}
+
+.origin.event {
+  border-color: rgba(195, 155, 255, 0.6);
+  background: rgba(195, 155, 255, 0.12);
+}
+
+.origin.event .icon {
+  color: var(--violet);
+}
+
 .budget {
   display: flex;
   align-items: center;
