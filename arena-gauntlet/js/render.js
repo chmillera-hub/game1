@@ -2701,7 +2701,11 @@
               nv.scale = 0.2;
               this.vis.set(u.uid, nv);
               this.tween(260, (k) => (nv.scale = 0.2 + 0.8 * ease(k)));
-              if (e.raise) this.particles(u.x, u.y, 10, ['#9dffad', '#e6dfc9'], { lift: 2, rise: 0.8, max: 0.7 });
+              if (e.raise) {
+                this.particles(u.x, u.y, 10, ['#9dffad', '#e6dfc9'], { lift: 2, rise: 0.8, max: 0.7 });
+                // Say who raised it: a Witch's Shadow Pact, or the Necromancer's Bell.
+                this.addText(u.x, u.y, 'RISES', '#9dffad', { tag: e.why === 'pact' ? 'SHADOW PACT' : "NECROMANCER'S BELL" });
+              }
             }
             break;
           }

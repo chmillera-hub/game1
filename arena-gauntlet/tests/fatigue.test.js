@@ -147,6 +147,45 @@ test('Hall of Fame matches, fatigue forced in early: the same rules', () => {
   assert.ok(hits > 50);
 });
 
+test('a unit that falls to fatigue as its turn comes ends its side\'s turn: the other side moves next, never a chain', () => {
+  let kills = 0;
+  let handedOver = 0;
+  for (let i = 0; i < 24; i++) {
+    const run = R.newRun({ seed: 1700 + i * 7, warband: D.WARBANDS[i % D.WARBANDS.length].id });
+    run.act = 1 + (i % 3);
+    run.xp = [0, 0, 60, 220][run.act];
+    const enc = R.genEncounter(run, { id: 'k' + i, row: 2, kind: 'battle' });
+    run.pending = { type: 'battle', nodeId: 'x', enc, attempt: 0, tier: 'medium' };
+    const cfg = R.battleConfig(run, R.autoDeploy(run, 0));
+    cfg.overtime = 3; // fatigue from turn 3: plenty of units fall to it
+    const s = E.createBattle(cfg);
+    const events = [];
+    play(s, enc.stance, events);
+    let fell = null; // the side whose unit just fell to fatigue, until the next side's turn
+    let lastFat = null;
+    for (const e of events) {
+      if (e.t === 'turn') {
+        if (fell && e.side !== fell) handedOver++;
+        fell = null;
+        continue;
+      }
+      if (e.t === 'dmg' && e.dmgType === 'fatigue') {
+        const u = s.byId[e.uid];
+        assert.ok(!(fell && u.team === fell), `battle ${i}: after a unit fell to fatigue, another of its side tired before the other side moved`);
+        lastFat = e.uid;
+        continue;
+      }
+      if (e.t === 'death' && e.uid === lastFat) {
+        kills++;
+        fell = s.byId[e.uid].team;
+      }
+      if (e.t !== 'death') lastFat = null;
+    }
+  }
+  assert.ok(kills > 10, `${kills} units fell to fatigue`);
+  assert.ok(handedOver > 5, `${handedOver} times the other side moved next`);
+});
+
 test('the checker catches the old way: a whole side tiring at once', () => {
   // Outside the unit rotation (only ever used by engine tests) a side tires all at once,
   // which is exactly what the checks above rule out for real battles.

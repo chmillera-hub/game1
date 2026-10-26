@@ -154,6 +154,7 @@
     const isObj = traits.has('summon') || traits.has('object');
     const rel = relics || new Set();
     if (!isObj && !traits.has('structure')) {
+      if (rel.has('mountain_heart')) hpPct += 0.4;
       if (rel.has('pathfinder') && move > 0 && move <= 3) move += 1;
       if (rel.has('mana_crystal') && T.rec >= 2) rec -= 1;
       if (rel.has('glass_crown')) hpPct -= 0.25;
@@ -680,6 +681,8 @@
     if (relA.has('lone_wolf') && !atk.nonCombat && !alliesNext(s, atk)) mult *= 1.3;
     if (relA.has('cursed_blade')) mult *= 1.2;
     if (s.relics[tgt.team].has('cursed_blade') && !tgt.nonCombat) mult *= 1.1;
+    if (relA.has('worldbreaker')) mult *= 1.4;
+    if (s.relics[tgt.team].has('blood_moon') && !tgt.nonCombat) mult *= 1.15;
     if (nearBanner(s, atk)) mult *= 1.15;
     if (atk.frenzy > 0) mult *= 1.25;
     if (atk.weak > 0) mult *= 0.7;
@@ -1365,7 +1368,9 @@
     const sk = addUnit(s, { type: 'skeleton', team: src.team, x: u.x, y: u.y, born: ++s.summonCount, facing: src.team === 'P' ? 0 : 2 });
     sk.activated = true;
     sk.value *= 0.6;
-    emit(s, { t: 'summon', uid: sk.uid, x: u.x, y: u.y, by: src.uid, raise: true });
+    // Why it rose, for the board's label and the battle log: a Witch's Shadow Pact (the
+    // first two she slays) or the Necromancer's Bell.
+    emit(s, { t: 'summon', uid: sk.uid, x: u.x, y: u.y, by: src.uid, raise: true, why: pact ? 'pact' : 'bell' });
   }
 
   // Relics that act as the armies take the field: Gambler's Dice crowns a Champion, the
@@ -1762,6 +1767,7 @@
     if (dealt > 0 && atk.alive && !opts.noDrain) {
       let ls = atk.props.lifesteal || 0;
       if (s.relics[atk.team].has('bloodstone') && !atk.nonCombat) ls += 0.2;
+      if (s.relics[atk.team].has('blood_moon') && !atk.nonCombat) ls += 0.25;
       if (ls > 0) heal(s, atk, Math.max(1, Math.round(dealt * ls)), 'drain');
     }
     reactToMelee(s, atk, tgt, opts);
@@ -2782,7 +2788,7 @@
       }
     }
     for (const u of mine) {
-      if (!u.alive || !u.traits.has('stormcaller')) continue;
+      if (!u.alive || !(u.traits.has('stormcaller') || (s.relics[team].has('storm_banner') && !u.nonCombat && !u.structure))) continue;
       let best = null;
       for (const v of s.units) {
         if (!isFoe(u, v) || v.nonCombat || v.structure) continue;
@@ -3052,10 +3058,12 @@
       if (!u || seen.has(u.uid)) break;
       seen.add(u.uid);
       unitTurnStart(s, u);
+      // Fatigue (or poison, or fire underfoot) took the unit whose turn it was: that was
+      // its side's turn, and the other side moves next. A side never loses one unit after
+      // another to fatigue while the other waits.
       if (!u.alive) {
         checkOutcome(s);
-        if (s.over) return;
-        continue;
+        return;
       }
       const why = sitOutReason(s, u);
       if (!why) {

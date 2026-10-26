@@ -526,6 +526,7 @@
   const PATTERN_LEGEND = '<p class="small muted pattern-legend">Diagrams: the dot is the unit, facing up. Pale tiles: where it can aim. Bright tiles: what one use hits.</p>';
 
   const TRAIT_TEXT = {
+    pact: 'Shadow Pact (its Level 3 mastery): the first 2 enemies it slays each battle rise as skeletons on your side.',
     shadowstep: 'Slips through enemy units.',
     stoneskin: 'Immune to poison and paralysis.',
     flying: 'Flies over units, water, lava and rocks.',
@@ -652,6 +653,8 @@
     }
     // The enchantment: tap it to read what it does.
     if (u.enchant && ENCHANTS[u.enchant]) chips.push(`<button type="button" class="chip magic tap" data-ench="${u.enchant}" title="${esc(ENCHANTS[u.enchant].desc)}">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</button>`);
+    // A Level 3 unit's mastery (a Witch's Shadow Pact, which raises skeletons): tap it too.
+    if (u.level >= 3 && MASTERY[u.type]) chips.push(`<button type="button" class="chip mastery tap" data-mastery="${u.type}" title="${esc(MASTERY[u.type].desc)}">${ic('star')} ${esc(MASTERY[u.type].name)}</button>`);
     // Regen counts a Mending Light aura it stands in during a battle.
     const regen = o.status && UI.battle && u.alive ? E.regenOf(UI.battle.s, u) : u.regen;
     if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP each time it takes a turn">${ic('heart')} Regen ${regen}</span>`);
@@ -811,6 +814,7 @@
     glass_crown: 'crown', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire', kings_ransom: 'gold',
     crown_command: 'crown', sacred_chalice: 'heart', echo_drum: 'banner', cursed_blade: 'sword',
     iron_ram: 'shield', tide_conch: 'star', anchor_stone: 'block',
+    worldbreaker: 'swords', mountain_heart: 'heart', storm_banner: 'banner', blood_moon: 'heart',
   };
 
   // A relic's tier for its card, flagged when it is cursed (a big upside with a real cost).
@@ -1306,7 +1310,8 @@
 
   function relicCard(id, attrs) {
     const r = RELICS[id];
-    return `<button class="card${r.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${relicTier(r)}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
+    const legend = r.tier === 'legendary';
+    return `<button class="card${r.cursed ? ' cursed' : ''}${legend ? ' legendary' : ''}" ${attrs || ''}><div class="kind">${ic(legend ? 'crown' : 'gem')} ${legend ? 'Legendary relic' : 'Relic · ' + relicTier(r)}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
   }
 
   function relicSheet() {
@@ -1314,7 +1319,7 @@
     openSheet(
       `${sheetHead('Relics', 'Passive bonuses that last the whole campaign.')}
       <div class="army-list">${run.relics
-        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}${RELICS[id].tier === 'legendary' ? ' legendary' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`
     );
   }
@@ -1424,7 +1429,7 @@
         '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants and explore events to find them.</p>';
     } else {
       body = `<div class="army-list">${run.relics
-        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card${RELICS[id].cursed ? ' cursed' : ''}${RELICS[id].tier === 'legendary' ? ' legendary' : ''}"><div class="kind">${ic('gem')} ${relicTier(RELICS[id])}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`;
     }
     openSheet(
@@ -3260,6 +3265,11 @@
         // A status shrugged off, on the line of the unit that tried it: why the poison did nothing.
         const note = `${logName(v)} immune to ${{ poison: 'poison', para: 'paralysis', root: 'roots' }[e.status]}${e.why ? ` (${e.why})` : ''}`;
         if (!line.notes.includes(note)) line.notes.push(note);
+      } else if (e.t === 'summon' && e.raise && v) {
+        // A slain foe rises as a skeleton for the side that slew it: say who did it, and why.
+        const by = s.byId[e.by];
+        finish();
+        add({ team: v.team, html: `A <b>Skeleton</b> rises for ${v.team === 'P' ? 'your army' : 'the enemy'}: ${e.why === 'pact' ? `${by ? `<b>${esc(logName(by))}</b>'s ` : ''}Shadow Pact (a Level 3 Witch raises the first 2 foes she slays)` : "the Necromancer's Bell (1 in 3 slain foes rise)"}.` });
       } else if (e.t === 'loot' && v) {
         finish();
         add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
@@ -4768,7 +4778,7 @@
       if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price, it.talent);
       if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
-        return `<button class="card${RELICS[it.relic].cursed ? ' cursed' : ''}" ${dis}><div class="kind">${ic('gem')} Relic · ${relicTier(RELICS[it.relic])}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
+        return `<button class="card${RELICS[it.relic].cursed ? ' cursed' : ''}${RELICS[it.relic].tier === 'legendary' ? ' legendary' : ''}" ${dis}><div class="kind">${ic(RELICS[it.relic].tier === 'legendary' ? 'crown' : 'gem')} ${RELICS[it.relic].tier === 'legendary' ? 'Legendary relic' : 'Relic · ' + relicTier(RELICS[it.relic])}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
       if (it.kind === 'supply')
         return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
@@ -4811,6 +4821,16 @@
 
   // ------------------------------------------------------------ rest, treasure, event
 
+  // The relics you hold, at the top of every event, so a choice that asks for one (the
+  // Merchant Caravan's trade) can be weighed: tap one for what it does.
+  function eventRelics(run) {
+    const ids = run.relics.filter((id) => RELICS[id]);
+    if (!ids.length) return '';
+    return `<div class="ev-relics"><span class="eyebrow">${ic('gem')} Your relics</span><div class="chips">${ids
+      .map((id) => `<button class="chip relic-chip tier-${RELICS[id].tier}" data-evrelic="${id}">${ic(RELIC_ICON[id] || 'gem')} ${esc(RELICS[id].name)} <span class="muted">· ${RELICS[id].tier}</span></button>`)
+      .join('')}</div></div>`;
+  }
+
   function eventScreen() {
     const run = UI.run;
     const p = run.pending;
@@ -4819,6 +4839,7 @@
     const v = showView(
       `<div class="wrap">
         <div class="row">${resbar(run)}</div>
+        ${eventRelics(run)}
         <div class="parch-card">
           <p class="eyebrow" style="color:#7a5a2c">On the road</p>
           <h2>${esc(ev.title)}</h2>
@@ -4852,6 +4873,11 @@
           return;
         }
         eventScreen();
+      };
+    for (const b of $$('[data-evrelic]', v))
+      b.onclick = () => {
+        const r = RELICS[b.dataset.evrelic];
+        toast(`${r.name} (${r.tier}): ${r.desc}`, 4000);
       };
     if ($('#evArmy', v)) $('#evArmy', v).onclick = () => armySheet(() => eventScreen());
     if ($('#evGo', v))
@@ -5083,12 +5109,14 @@
     root.addEventListener('pointerdown', (e) => !toastEl.hidden && !toastEl.contains(e.target) && hideToast(), true);
     // An enchantment chip, wherever a unit card shows one: tap it for what it does.
     root.document.addEventListener('click', (e) => {
-      const chip = e.target.closest && e.target.closest('[data-ench]');
-      const d = chip && ENCHANTS[chip.dataset.ench];
-      if (!d) return;
+      const chip = e.target.closest && e.target.closest('[data-ench], [data-mastery]');
+      const ench = chip && chip.dataset.ench && ENCHANTS[chip.dataset.ench];
+      const mast = chip && chip.dataset.mastery && MASTERY[chip.dataset.mastery];
+      if (!ench && !mast) return;
       e.stopPropagation();
       e.preventDefault();
-      toast(`${d.name} (enchantment): ${d.desc}`, 4500);
+      if (ench) toast(`${ench.name} (enchantment): ${ench.desc}`, 4500);
+      else toast(`${mast.name} (Level 3 mastery): ${mast.desc}`, 4500);
     }, true);
     const unlock = () => {
       if (AG.Audio) AG.Audio.unlock();

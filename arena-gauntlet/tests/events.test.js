@@ -103,6 +103,20 @@ test('the mentor teaches a stronger talent of the picked unit\'s class', () => {
   assert.strictEqual(D.TALENTS[t.id].tier, 2);
 });
 
+test('the Merchant Caravan lets you pick which common relic to trade, one choice for each', () => {
+  const run = atEvent(3, 'caravan', 200);
+  const tierOf = (t) => Object.keys(D.RELICS).filter((id) => D.RELICS[id].tier === t);
+  run.relics = [...tierOf('common').slice(0, 2), tierOf('uncommon')[0]];
+  const commons = run.relics.filter((id) => D.RELICS[id].tier === 'common');
+  run.pending.ctx = { v: 2, relic: Object.keys(D.RELICS).find((id) => D.RELICS[id].tier === 'rare' && !run.relics.includes(id)) };
+  const swaps = R.eventChoices(run).filter((c) => c.id.startsWith('swap'));
+  assert.deepStrictEqual(swaps.map((c) => c.id), commons.map((id) => 'swap:' + id), 'one trade per common relic, named');
+  const keep = commons[0];
+  const give = commons[commons.length - 1];
+  assert.ok(R.chooseEvent(run, 'swap:' + give, null));
+  assert.ok(!run.relics.includes(give) && run.relics.includes(keep) && run.relics.includes(run.pending.ctx.relic), 'the one you picked goes, the rest stay');
+});
+
 test("a save caught mid-event from before the rewrite gets a fresh deal", () => {
   const run = atEvent(2, 'forge', 100);
   run.pending.ctx = { gear: ['x'] };
