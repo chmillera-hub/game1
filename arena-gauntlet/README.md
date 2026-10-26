@@ -252,7 +252,13 @@ on a phone turned sideways, but portrait works too.
   Ward before a barricade, say), tap the same spot again to pick the one behind; its
   panel says when something is hidden there.
 - **Priority**: while watching, tap an enemy unit, a building, a barricade with gold
-  inside, a chest or the shrine, then Priority. Your army goes all out for it, whatever
+  inside, a chest or the shrine, then Priority. On a Commander mission you can be sure
+  you picked the right one: the Commander's card in the enemy list wears a gold
+  "Commander" crown flag, its Priority button carries a crowned "Commander" tag with a
+  note that this is the one to kill, and once it is the priority the note turns to
+  "Confirmed", the message says so and the priority line shows a "Mission target"
+  check (a boss gets the same, as "Boss"). Look at any other enemy and a note says it
+  is not the Commander, and which one is. Your army goes all out for it, whatever
   the cost: every unit attacks it (a barricade is broken for its gold), or heads for
   the chest and takes it. With the shrine, one unit makes for it and
   stays on it while the rest gather round to guard it, and any enemy standing on it

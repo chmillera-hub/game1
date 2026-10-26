@@ -2232,7 +2232,7 @@
     if (!focusT) run.pending.focus = null;
     b.focus = focusT ? { x: focusT.x, y: focusT.y } : null;
     const focusLine = focusT
-      ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(run.pending.focus.label)}</b>. From the first turn, your army ${focusVerb(run.pending.focus)}.</span><button class="btn" id="wrUnfocus">Clear</button></div>`
+      ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(run.pending.focus.label)}</b>${missionTarget(focusT.unit) ? ' ' + vipCheck : ''}. From the first turn, your army ${focusVerb(run.pending.focus)}.</span><button class="btn" id="wrUnfocus">Clear</button></div>`
       : '';
 
     const used = wrUsed();
@@ -2277,7 +2277,7 @@
         <div class="intel-list">${s.units
           .filter((u) => u.team === 'E' && focusable(u))
           .map(
-            (u) => `<button class="rcard ${wr.inspect === u.uid ? 'sel' : ''}" data-uid="${u.uid}">
+            (u) => `<button class="rcard ${wr.inspect === u.uid ? 'sel' : ''} ${missionTarget(u) ? 'vip' : ''}" data-uid="${u.uid}">${missionTarget(u) ? `<span class="flag vip">${ic('crown')} ${missionTarget(u) === 'boss' ? 'Boss' : 'Commander'}</span>` : ''}
               <canvas data-p="${u.type}:E"></canvas>
               <span class="nm">${esc(UNITS[u.type].name)} ${u.level > 1 ? levelBadge(u.level) : ''}</span>
               <span class="ty">${u.bounty ? `${ic('gold')} ${u.bounty} gold inside` : esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
@@ -2304,11 +2304,12 @@
       selBlock = `<div class="hint">${
         u.bounty
           ? `${ic('gold')} ${esc(UNITS[u.type].name)}: ${u.hp} HP, ${pct(u.armor)} armor. It cannot fight back. Break it and your army picks up <b>${u.bounty} gold</b>, paid with the battle's gold when you win.`
-          : `Enemy ${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
+          : `${missionTarget(u) === 'Commander' ? `${ic('crown')} <b>Enemy Commander</b>, ${/^[AEIOU]/.test(UNITS[u.type].name) ? 'an' : 'a'} ` : 'Enemy '}${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
       }</div>
         ${behindHint(s, u.uid)}
         ${u.bounty ? '' : actsHTML(u)}
-        <div class="actions">${canFocus ? (isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`) : ''}<button class="btn" id="wrEInfo">${ic('help')} Details</button></div>
+        <div class="actions">${canFocus ? (isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority${missionTarget(u) ? ' ' + vipBadge(missionTarget(u)) : ''}</button>`) : ''}<button class="btn" id="wrEInfo">${ic('help')} Details</button></div>
+        ${canFocus ? vipNote(s, u, isFocus) : ''}
         ${canFocus && !isFocus ? `<p class="small muted">${u.bounty ? 'Priority: from the first turn, your whole army goes for the barricade and breaks it for the gold.' : 'Priority: from the first turn, your whole army goes all out for it, whatever the cost.'}</p>` : ''}`;
     } else if (tileF) {
       const loot = E.lootAt(s, wr.tile.x, wr.tile.y);
@@ -2397,14 +2398,14 @@
         const u = wr.inspect && s.byId[wr.inspect];
         const l = !u && wr.tile && E.lootAt(s, wr.tile.x, wr.tile.y);
         const shrine = !u && !l && wr.tile && isShrine(s, wr.tile.x, wr.tile.y);
-        if (u) run.pending.focus = { kind: 'unit', x: u.x, y: u.y, label: `the ${UNITS[u.type].name}` };
+        if (u) run.pending.focus = { kind: 'unit', x: u.x, y: u.y, label: focusName(u), vip: missionTarget(u) };
         else if (l) run.pending.focus = { kind: 'loot', x: l.x, y: l.y, label: `the ${R.LOOT_NAMES[l.kind]}` };
         else if (shrine) run.pending.focus = { kind: 'hold', x: wr.tile.x, y: wr.tile.y, label: 'the shrine' };
         else if (wr.tile && isRallySpot(s, wr.tile.x, wr.tile.y))
           run.pending.focus = { kind: 'tile', x: wr.tile.x, y: wr.tile.y, label: isObstacle(s, wr.tile.x, wr.tile.y) ? `the ${obstacleName().toLowerCase()}` : 'the marked spot' };
         else return;
         wr.sel = null;
-        toast(`Priority: ${run.pending.focus.label}. From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3200);
+        toast(`Priority: ${run.pending.focus.label}. ${u && missionTarget(u) ? `Confirmed: that is the ${missionTarget(u)}, the mission's target. ` : ''}From the first turn, your army ${focusVerb(run.pending.focus)}.`, 3600);
         sfx('click');
         wr.inspect = null;
         wr.tile = null;
@@ -3004,12 +3005,12 @@
     const open = !u && !l && !shrine && B.mode === 'tile' && B.tile && isRallySpot(s, B.tile.x, B.tile.y);
     if (isShrub(u)) B.focus = { tile: true, x: u.x, y: u.y, label: 'the shrub' };
     else if (u && u.team === 'P') B.focus = { ally: u.uid, label: u.name };
-    else if (u) B.focus = { uid: u.uid, label: `the ${UNITS[u.type].name}` };
+    else if (u) B.focus = { uid: u.uid, label: focusName(u) };
     else if (l) B.focus = { loot: l.id, label: `the ${R.LOOT_NAMES[l.kind]}` };
     else if (shrine) B.focus = { hold: true, label: 'the shrine' };
     else if (open) B.focus = { tile: true, x: B.tile.x, y: B.tile.y, label: isObstacle(s, B.tile.x, B.tile.y) ? `the ${obstacleName().toLowerCase()}` : 'the marked spot' };
     else return;
-    toast(`Priority: ${B.focus.label}. Your army ${focusVerb(B.focus)}, whatever the cost.`, 3500);
+    toast(`Priority: ${B.focus.label}. ${missionTarget(u) ? `Confirmed: that is the ${missionTarget(u)}, the mission's target. ` : ''}Your army ${focusVerb(B.focus)}, whatever the cost.`, 3800);
     sfx('click');
     B.paused = false;
     B.mode = 'idle';
@@ -3281,6 +3282,32 @@
 
   // While your army fights on its own: who is acting, who is next, what just happened.
   // An enemy unit or building your army could be told to go after.
+  // The enemy a mission asks you to kill, if `u` is it: 'Commander' (the crowned one) or
+  // 'boss'. Null for anyone else.
+  function missionTarget(u) {
+    return u && u.team === 'E' && u.vip && u.alive !== false ? (UNITS[u.type].boss ? 'boss' : 'Commander') : null;
+  }
+
+  // What the priority is called: the Commander says so, so you know you picked the right one.
+  function focusName(u) {
+    return missionTarget(u) === 'Commander' ? `the Commander (${UNITS[u.type].name})` : `the ${UNITS[u.type].name}`;
+  }
+
+  const vipBadge = (t) => `<span class="vip-badge">${ic('crown')} ${t === 'boss' ? 'Boss' : 'Commander'}</span>`;
+  // On the priority line, which already names it: a check that it is the right one.
+  const vipCheck = `<span class="vip-badge">${ic('check')} Mission target</span>`;
+
+  // Under Priority, for an enemy you are looking at: it is the mission's target (crowned
+  // badge, and a check once it is the priority), or it is not and the target is elsewhere.
+  function vipNote(s, u, isFocus) {
+    const t = missionTarget(u);
+    if (t)
+      return `<p class="vip-note">${ic(isFocus ? 'check' : 'crown')}<span>${isFocus ? `<b>Confirmed:</b> your army's priority is the ${t === 'boss' ? 'boss' : '<b>Commander</b>'}, the mission's target.` : `This is the ${t === 'boss' ? 'boss' : '<b>Commander</b>, the crowned one'}: ${t === 'boss' ? 'slay it' : 'kill it'} and the mission is won.`}</span></p>`;
+    if (u.bounty || u.team !== 'E') return '';
+    const vip = s.units.find((v) => missionTarget(v) === 'Commander');
+    return vip ? `<p class="vip-note not">${ic('help')}<span>Not the Commander. The Commander is the crowned ${esc(UNITS[vip.type].name)}${vip.type === u.type ? ' (another one)' : ''}.</span></p>` : '';
+  }
+
   // What the army does about a priority, for the lines that name it.
   function focusVerb(f) {
     if (f.ally || f.kind === 'ally') return 'gathers around them, wherever they go';
@@ -3346,12 +3373,12 @@
 
   // Make this your army's priority, or stop, while watching an auto battle. In a Hall of
   // Fame match it shows, crossed out: priority is banned there, on purpose.
-  function focusButton(B, can, is) {
+  function focusButton(B, can, is, u) {
     if (!can || B.s.over) return '';
     if (B.exhibition) return `<button class="btn banned" id="btNoFocus" aria-label="Priority is off in Hall of Fame matches"><span class="ban-label">${ic('target')} Priority</span><span class="ban-badge">${ic('close')}</span></button>`;
     return is
       ? `<button class="btn" id="btUnfocus">${ic('close')} Clear priority</button>`
-      : `<button class="btn primary" id="btFocus">${ic('target')} Priority</button>`;
+      : `<button class="btn primary" id="btFocus">${ic('target')} Priority${missionTarget(u) ? ' ' + vipBadge(missionTarget(u)) : ''}</button>`;
   }
 
   function autoPanelHTML(B) {
@@ -3362,7 +3389,7 @@
       ${queueHTML(s, 10)}
       ${B.log.length ? `<ul class="blog">${B.log.slice(0, 4).map((l) => `<li class="team-${l.team}">${l.html}</li>`).join('')}</ul>` : ''}
       ${s.won && !s.over ? `<div class="hint">${ic('check')} <b>${s.cleanup ? 'The enemy army is beaten' : 'Mission done'}: the win is yours.</b> ${s.cleanup ? `Your army is collecting what is left (${E.cleanupLeft(s)}): buildings with gold or a goal in them, and loot.` : 'The battle goes on while your army grabs what else it can, and every enemy it cuts down now earns a gold or two.'} Its fatigue is on (next −${E.fatigueHit(s, 'P')}, one more every turn it takes), but it cannot cost you the battle.</div><div class="actions"><button class="btn" id="btFinish">${ic('check')} Finish now</button></div>` : ''}
-      ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
+      ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>${B.focus.uid && missionTarget(s.byId[B.focus.uid]) ? ' ' + vipCheck : ''}. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
@@ -3467,7 +3494,7 @@
       ov.select = [u.x, u.y];
       // Watching, the buttons come first so Priority is in view without scrolling.
       const watchBtns = auto
-        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)))}${B.paused ? `<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>`
+        ? `<div class="actions">${focusButton(B, canFocusUnit(B, u), B.focus && (B.focus.uid === u.uid || B.focus.ally === u.uid || (isShrub(u) && B.focus.tile && B.focus.x === u.x && B.focus.y === u.y)), u)}${B.paused ? `<button class="btn ${canFocusUnit(B, u) ? '' : 'primary'}" id="btPause">${ic('play')} Resume</button>` : ''}<button class="btn" id="btInfo">${ic('help')} Details</button><button class="btn ghost icon-only" id="btDesel" aria-label="Close">${ic('close')}</button></div>${canFocusUnit(B, u) && !B.exhibition ? vipNote(s, u, !!(B.focus && B.focus.uid === u.uid)) : ''}`
         : '';
       panel = `${unitInfoHTML(u, { status: true })}${watchBtns}${behindHint(s, u.uid)}${statsHTML(u)}${underfootHTML(s, u, B.enc)}
         ${u.bounty ? '' : actsHTML(u)}

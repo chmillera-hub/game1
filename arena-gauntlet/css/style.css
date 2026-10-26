@@ -1875,6 +1875,25 @@ button.chip.tap {
   color: #2a1d0e;
 }
 
+/* The mission's target among the enemy cards: crowned, gold-edged. */
+.rcard .flag.vip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f0cf86;
+  color: #2a1d08;
+  font-weight: 700;
+}
+
+.rcard .flag.vip .icon {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.rcard.vip {
+  border-color: #f0cf86;
+}
+
 .tips {
   margin: 0;
   padding-left: 18px;
@@ -3051,6 +3070,53 @@ body:has(#battle:not([hidden])) {
   flex: none;
   padding: 6px 12px;
   min-height: 0;
+}
+
+/* The mission's target (the Commander, or a boss): a crowned tag on Priority and on the
+   priority line, so you know you picked the right one. */
+.vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f0cf86;
+  color: #2a1d08;
+  font-family: var(--font-caps);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.vip-badge .icon {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+.vip-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 207, 134, 0.6);
+  background: rgba(240, 207, 134, 0.12);
+  color: var(--brass-hi);
+  font-size: 0.9rem;
+}
+
+.vip-note .icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+.vip-note.not {
+  border-color: rgba(178, 164, 140, 0.4);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--muted);
 }
 
 .speedbtn {
