@@ -1742,6 +1742,32 @@ test('standing on a mark blocks the arrival and costs the blocker HP', () => {
   assert.ok(s.events.some((e) => e.t === 'spawnBlock' && e.uid === kn.uid));
 });
 
+test('the mission done, reinforcements still march in: the Ambush goal is still there to chase', () => {
+  const s = tentBattle([{ type: 'goblin_archer', team: 'E', x: 0, y: 0, vip: true }], { objective: 'vip' });
+  const [kn, , cmd] = s.units;
+  kn.hp = kn.maxHp = 999;
+  cmd.hp = 0;
+  cmd.alive = false;
+  s.occ[E.idx(s, cmd.x, cmd.y)] = 0;
+  E.checkOutcome(s);
+  assert.ok(s.won && !s.over, 'the win is yours, and the battle goes on');
+  assert.ok(s.waves.every((w) => w.state === 'pending'), 'the waves are still coming');
+  for (let g = 0; g < 12 && !s.units.some((u) => u.reinforcement); g++) E.endTurn(s);
+  const arrived = s.units.find((u) => u.reinforcement);
+  assert.ok(arrived && arrived.alive, 'and one lands after the win');
+  s.occ[E.idx(s, kn.x, kn.y)] = 0;
+  kn.x = arrived.x;
+  kn.y = arrived.y + 1;
+  s.occ[E.idx(s, kn.x, kn.y)] = kn.uid;
+  kn.facing = 2;
+  arrived.hp = 1;
+  arrived.block = 0;
+  s.side = 'P';
+  act(s, kn, { kind: 'unit', uid: arrived.uid });
+  assert.strictEqual(s.stats.waveKills, 1, 'cutting it down counts for the Ambush goal');
+  assert.ok(!s.over || s.winner === 'P');
+});
+
 test('breaking the building cancels its waves; a rout needs no waves left', () => {
   const s = tentBattle([{ type: 'goblin_archer', team: 'E', x: 0, y: 0 }], { objective: 'all' });
   const [kn, tent, gob] = s.units;
@@ -1771,7 +1797,8 @@ test('raze: breaking every goal building wins; optional buildings do not need to
   assert.ok(tent.goal && !house.goal);
   tent.hp = 1;
   act(s, kn, { kind: 'unit', uid: tent.uid });
-  assert.ok(s.waves.every((w) => w.state !== 'pending'), 'its reinforcements stop');
+  assert.ok(s.won, 'the win is yours');
+  assert.ok(s.waves.some((w) => w.state === 'pending'), 'the guardhouse still standing keeps sending its waves');
   routedThenWon(s, 'destroyed');
 });
 

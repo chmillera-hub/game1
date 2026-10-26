@@ -329,7 +329,8 @@ on a phone turned sideways, but portrait works too.
   of every kind and checks every hit for exactly this. Fatigue comes first in a unit's
   turn, before its poison, burns and regen. Poison and burns tick on passed turns too.
   A short banner marks each switch ("Fatigue triggered!", "Your army tires too!"), and
-  the top bar shows each side's next hit. Reinforcements stop. Big units and regen last
+  the top bar shows each side's next hit. From turn 30 no more reinforcements come
+  (completing the mission does not stop them). Big units and regen last
   longest; the last side standing wins. A tough tank can win a long battle on its own.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
   having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
@@ -402,10 +403,11 @@ on a phone turned sideways, but portrait works too.
   the enemies within 2 tiles into a frenzy, 25% more damage, until it falls), raze the
   buildings that send reinforcements, storm a castle gate, or stop a wagon convoy.
   **Getting it done is the win**: nothing after it can take the win away. The battle
-  goes on, though. The enemy's reinforcements stop and both fatigue timers switch on,
-  each at 1 (one already on carries on), so the enemy wears down while your army grabs
-  what else it can, a few more barricades or a bonus goal, before fatigue wears it
-  down too. If your army falls after that, the win still stands; tap Finish now (or
+  goes on, though. Both fatigue timers switch on, each at 1 (one already on carries
+  on), so the enemy wears down while your army grabs what else it can, a few more
+  barricades, the loot or a bonus goal, before fatigue wears it down too.
+  Reinforcements keep marching in (until turn 30), so an ambush bonus is still there to
+  chase, or you can leave them be and go for the gold. If your army falls after that, the win still stands; tap Finish now (or
   Finish the battle in the menu) to take it whenever you like. So rushing the mission
   is a way past an army too tough to grind down. "Lose no unit" and "win within N
   turns" goals are judged at the moment the mission was done. A banner ("Mission done:
