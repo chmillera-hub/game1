@@ -908,6 +908,16 @@
       desc: 'A dragon of the dark between the stars. Its breath and its wings spare its own.',
       tip: 'Nobody expects you to win this. Bring everything: magic and steel, healers, and units that can take a breath.',
     },
+    // The Wyrm's reaper: the steel to go with its fire and the Lich's frost.
+    death_knight: {
+      name: 'Death Knight', rarity: 'boss', cost: 14, role: 'melee', boss: true,
+      hp: 175, pow: 22, armor: 0.4, res: 0.3, block: 0.1, rec: 1, move: 4,
+      act: { name: 'Reaping Sweep', kind: 'cleave', range: [1, 1], dmg: 'phys', ff: false },
+      extra: [{ name: "Reaper's Charge", kind: 'charge', len: 4, dmg: 'phys', mult: 1.1, ff: false, fx: { weak: 1 }, uses: 3, cd: 2 }],
+      traits: ['undead'], tags: ['undead'],
+      desc: 'A reaper in black robes with a runed greatsword. Its basic attack sweeps every adjacent enemy; its charge runs up to 4 tiles straight through a line of enemies, cutting each one it passes, and leaves it standing past them.',
+      tip: 'Do not line up in front of it. Blessed weapons and Smite hurt it badly.',
+    },
   };
 
   // Speed sets a unit's place in its side's turn order: each cycle, faster units go first.
@@ -917,7 +927,7 @@
     mageknight: 3, golem: 1, beastrider: 6, furgon: 3, wisp: 6, enchantress: 4, witch: 3, lightning: 3,
     dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 1, warg: 8, wolf: 7,
     cutthroat: 7, crossbow: 3, skeleton: 3, specter: 6, necromancer: 3, colossus: 1, spider: 6, troll: 2,
-    drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4,
+    drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4, death_knight: 4,
   };
   for (const [k, T] of Object.entries(UNITS)) T.spd = SPEED[k] || 0;
 
@@ -1260,7 +1270,7 @@
       },
     },
     // The optional final challenge: the Eclipse Wyrm and the best of the Spire.
-    mega: { name: 'The Eclipse Wyrm', units: ['void_wyrm', 'drake', 'drake', 'lich', 'mageknight', 'knight', 'cleric', 'witch'], lv: [3, 2, 2, 2, 3, 3, 3, 2], stance: 'aggressive', pool: ['knight', 'crossbow', 'drake'] },
+    mega: { name: 'The Eclipse Wyrm', units: ['void_wyrm', 'death_knight', 'lich', 'drake', 'drake', 'mageknight', 'knight', 'cleric', 'witch'], lv: [3, 2, 2, 2, 2, 3, 3, 3, 2], stance: 'aggressive', pool: ['knight', 'crossbow', 'drake'] },
   };
 
   const NAMES = [

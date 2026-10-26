@@ -2180,6 +2180,37 @@
           await this.applyImpacts(group, state);
           break;
         }
+        case 'charge': {
+          // A run straight through the line: a cold streak behind it, a cut on each one it passes.
+          const ce = group.find((e) => e.t === 'charge');
+          if (v && ce) {
+            this.sfx('swing');
+            v.moving = true;
+            const passed = tiles.slice(0, -1);
+            let cut = 0;
+            let last = 0;
+            await this.tween(fast ? 120 : 420, (k) => {
+              v.x = lerp(ce.fx, ce.x, k);
+              v.y = lerp(ce.fy, ce.y, k);
+              if (!fast && k - last > 0.08) {
+                last = k;
+                this.particles(v.x, v.y, 2, ['#9fe8c4', '#5fbf94', '#e8fff4'], { lift: 10, rise: 0.3, speed: 0.3, max: 0.45 });
+              }
+              const went = Math.abs(v.x - ce.fx) + Math.abs(v.y - ce.fy);
+              while (cut < passed.length && went >= cut + 0.6) {
+                const [x, y] = passed[cut++];
+                if (state && state.units.some((o) => o.x === x && o.y === y && o.team !== (u && u.team))) this.slash(x, y);
+              }
+            });
+            v.x = ce.x;
+            v.y = ce.y;
+            v.moving = false;
+            this.flashTiles(passed, 'rgba(120,255,190,ALPHA)', 380);
+            this.shakeT = 0.14;
+          }
+          await this.applyImpacts(group, state);
+          break;
+        }
         case 'blink':
         case 'shadowstrike': {
           const be = group.find((e) => e.t === 'blink');
@@ -2710,6 +2741,7 @@
             break;
           case 'leap':
           case 'blink':
+          case 'charge':
             if (v && !v.moving) {
               v.x = e.x;
               v.y = e.y;

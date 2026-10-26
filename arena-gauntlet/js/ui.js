@@ -228,6 +228,8 @@
         return (a.range[0] === a.range[1] ? String(a.range[0]) : a.range[0] + '-' + a.range[1]) + (a.straight ? ' straight' : '');
       case 'line':
         return 'Line ' + a.len;
+      case 'charge':
+        return 'Charge ' + a.len;
       case 'cone':
         return (a.fan ? 'Spray ' : 'Cone ') + a.len;
       case 'cross':
@@ -380,6 +382,9 @@
       case 'leap':
         t = `Leaps ${a.range[0]}-${a.range[1]} tiles over anything and strikes every adjacent enemy for ${base}.`;
         break;
+      case 'charge':
+        t = `Charges up to ${a.len} tiles in a straight line, through every unit in the way, and strikes each enemy it passes for ${base} ${dt} damage. It stops on the farthest open tile.`;
+        break;
       case 'blink':
         t = `Instead of walking, teleports up to ${a.range[1]} tiles. It can still attack afterward.`;
         break;
@@ -447,6 +452,10 @@
         break;
       case 'line':
         hit = E.lineTiles(ms, ux, uy, 0, a.len);
+        break;
+      case 'charge':
+        hit = E.lineTiles(ms, ux, uy, 0, a.len - 1);
+        land = [ux, uy - a.len];
         break;
       case 'cone':
         hit = E.coneTiles(ms, ux, uy, 0, a.len, a.fan);
@@ -1198,7 +1207,7 @@
         <div><p class="eyebrow">The Spire is silent</p><h2>Campaign won</h2></div>
         <p>${esc(UNITS[R.bossOf(run)].name)} is slain, and the arena bows to your warband. The victory is yours whatever you choose now.</p>
         <div class="panel summit">
-          <p><b>Something stirs beyond the Spire: the Eclipse Wyrm.</b> It is not meant to be beaten. Throw everything this army has at it for a super victory, as often as you like, or call it a day.</p>
+          <p><b>Something stirs beyond the Spire: the Eclipse Wyrm,</b> with the Lich at its side and the Death Knight, its reaper, at the front. It is not meant to be beaten. Throw everything this army has at it for a super victory, as often as you like, or call it a day.</p>
           <div class="actions"><button class="btn" id="smClaim">${ic('crown')} Claim victory</button><button class="btn primary" id="smFace" data-choose>${ic('skull')} Face the Eclipse Wyrm</button></div>
         </div>
       </div>`

@@ -165,9 +165,14 @@ on a phone turned sideways, but portrait works too.
   enemy armies never carry healing abilities, skills or gear, and an enemy's Level 3
   mastery drops any healing or rising again (a Skeleton Archer's Undying).
 - **Victory and the final challenge**: beating the Act III boss wins the campaign.
-  Then you may claim the victory, or face the Eclipse Wyrm for a super victory. It is
-  not meant to be beaten (in the simulations it falls to about one strong army in
-  four, and never to a middling one); losing to it costs you nothing. Lose, and Try
+  Then you may claim the victory, or face the Eclipse Wyrm for a super victory, with
+  the Lich at its side and the **Death Knight** at the front: a reaper in black robes
+  whose greatsword sweeps every adjacent enemy, and whose Reaper's Charge (3 uses,
+  cooldown 2) runs up to 4 tiles straight through a line of enemies, cutting and
+  weakening each one it passes, and leaves it standing past them. It is not meant to
+  be beaten: in the simulations an army that took elite battles and carries 16 or more
+  relics wins about one try in five, and anything less almost never. Losing to it
+  costs you nothing. Lose, and Try
   again takes you straight back to the War Room with the same plan, as many times as
   you like. Whatever army last fought the Wyrm, won or lost, takes your campaign's
   place in the Hall of Fame the moment the battle ends (same name and record), with no
@@ -697,6 +702,7 @@ node tests/objectives.test.js    # your army playing for the mission and bonus g
 node tests/music.test.js         # the music's notation: every bar the right length
 node tests/draft.test.js         # drafting a starting army
 node tests/campaign.test.js      # the road: challenge rounds, merchant, bosses, final challenge
+node tests/deathknight.test.js   # the Eclipse Wyrm's Death Knight and its charge
 node tests/fatigue.test.js       # fatigue on hundreds of real battles: each side its own timer, one unit at a time, 1, 2, 3
 node tests/beats.test.js         # what the board shows as a unit's turn comes: one step a beat, in order, numbers never on each other
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
