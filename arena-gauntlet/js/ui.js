@@ -3157,7 +3157,8 @@
         );
       } else if (e.t === 'resist' && e.status && line && v) {
         // A status shrugged off, on the line of the unit that tried it: why the poison did nothing.
-        line.notes.push(`${logName(v)} immune to ${{ poison: 'poison', para: 'paralysis', root: 'roots' }[e.status]}${e.why ? ` (${e.why})` : ''}`);
+        const note = `${logName(v)} immune to ${{ poison: 'poison', para: 'paralysis', root: 'roots' }[e.status]}${e.why ? ` (${e.why})` : ''}`;
+        if (!line.notes.includes(note)) line.notes.push(note);
       } else if (e.t === 'loot' && v) {
         finish();
         add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
