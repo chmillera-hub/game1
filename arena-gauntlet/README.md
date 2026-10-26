@@ -410,7 +410,10 @@ on a phone turned sideways, but portrait works too.
   on), so the enemy wears down while your army grabs what else it can, a few more
   barricades, the loot or a bonus goal, before fatigue wears it down too.
   Reinforcements keep marching in (until turn 30), so an ambush bonus is still there to
-  chase, or you can leave them be and go for the gold. If your army falls after that, the win still stands; tap Finish now (or
+  chase, or you can leave them be and go for the gold. Every enemy unit your army cuts
+  down after the win (not a building, not a summoned shrub; ones that fall to their own
+  fatigue do not count) is worth a coin or two: 1 gold, 2 for a big one (3 Supply or
+  more), shown as it falls and paid with the battle's gold. If your army falls after that, the win still stands; tap Finish now (or
   Finish the battle in the menu) to take it whenever you like. So rushing the mission
   is a way past an army too tough to grind down. "Lose no unit" and "win within N
   turns" goals are judged at the moment the mission was done. A banner ("Mission done:

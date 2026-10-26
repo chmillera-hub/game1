@@ -1653,9 +1653,10 @@
     const lean = unspent * LEAN_GOLD * (hasRelic(run, 'alchemist_stone') ? 3 : 1);
     const midas = s.stats.gold || 0;
     const bounty = s.stats.bounty || 0;
+    const lap = s.stats.lapGold || 0;
     let xp = Math.round(battleXp(run, kind) * tier.xp) + (firstTry ? 2 : 0);
-    run.gold += gold + lean + midas + bounty;
-    run.stats.gold += gold + lean + midas + bounty;
+    run.gold += gold + lean + midas + bounty + lap;
+    run.stats.gold += gold + lean + midas + bounty + lap;
     run.stats.lean += lean;
     run.stats.battles++;
     if (kind === 'elite') run.stats.elites++;
@@ -1681,7 +1682,7 @@
     // Easy challenges offer two spoils, the rest three; the final challenge pays in glory.
     const spoils = JSON.parse(JSON.stringify(pre.spoils || []));
     const reward = {
-      type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, bounty, firstTry, fallen,
+      type: 'reward', nodeId: p.nodeId, kind, tier: p.tier, gold, lean, unspent, midas, bounty, lap, firstTry, fallen,
       spoils, spoilTaken: !spoils.length, objectives: [], mega: !!node.mega,
     };
     const info = objectiveInfo(run, p.enc);

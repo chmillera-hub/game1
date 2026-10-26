@@ -309,7 +309,7 @@
       turnLimit: cfg.turnLimit || 90,
       events: [],
       phoenixUsed: { P: false, E: false },
-      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0, waveKills: 0 },
+      stats: { dmg: { P: 0, E: 0 }, kills: { P: 0, E: 0 }, gold: 0, escaped: 0, blocked: 0, waveKills: 0, lapGold: 0 },
       summonCount: 0,
       hold: cfg.hold ? { x: cfg.hold.x, y: cfg.hold.y, need: cfg.hold.need || 2, count: 0 } : null,
       surviveTurns: cfg.surviveTurns || 0,
@@ -1191,6 +1191,14 @@
       s.stats.bounty = (s.stats.bounty || 0) + coins;
       emit(s, { t: 'gold', uid: u.uid, amount: coins, x: u.x, y: u.y, coins: true });
     }
+    // Once the win is yours, every enemy unit (not a building, not a shrub) your army cuts
+    // down is worth a coin or two while fatigue builds: 2 for a big one (3 Supply or more),
+    // 1 for the rest. Ones that fall to their own fatigue pay nothing.
+    if (s.won && src && src.team === 'P' && u.team === 'E' && !u.nonCombat && !u.structure && !u.traits.has('summon')) {
+      const n = (u.supply || 0) >= LAP_BIG ? 2 : 1;
+      s.stats.lapGold = (s.stats.lapGold || 0) + n;
+      emit(s, { t: 'gold', uid: u.uid, amount: n, x: u.x, y: u.y, lap: true });
+    }
     if (src && src.team !== u.team && !u.nonCombat && !u.structure) {
       s.stats.kills[src.team]++;
       src.kills++;
@@ -1237,6 +1245,9 @@
       revive(s, u, 0.5, 'phoenix');
     }
   }
+
+  // A unit worth 2 gold rather than 1 when cut down after the win (see kill).
+  const LAP_BIG = 3;
 
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
