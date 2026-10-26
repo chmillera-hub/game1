@@ -508,6 +508,25 @@ test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile 
   assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units beside it'));
 });
 
+test('poison that does not take says so, and why: undead, constructs, a Barrier Ward', () => {
+  const s = board([
+    { type: 'wisp', team: 'P', x: 4, y: 6 },
+    { type: 'skeleton', team: 'E', x: 3, y: 5 },
+    { type: 'golem', team: 'E', x: 5, y: 5 },
+    { type: 'knight', team: 'E', x: 4, y: 4 },
+    { type: 'knight', team: 'E', x: 8, y: 1 },
+    { type: 'barrier', team: 'E', x: 8, y: 0 },
+  ]);
+  const [wisp, skel, golem, kn, warded] = s.units;
+  for (const u of [skel, golem, kn, warded]) E.applyStatus(s, wisp, u, { poison: [2, 5] }, wisp.act);
+  const res = s.events.filter((e) => e.t === 'resist');
+  assert.deepStrictEqual(
+    res.map((e) => [s.byId[e.uid].type + (e.uid === warded.uid ? '*' : ''), e.status, e.why]),
+    [['skeleton', 'poison', 'undead'], ['golem', 'poison', 'construct'], ['knight*', 'poison', 'Barrier Ward']]
+  );
+  assert.ok(kn.poison && !skel.poison && !golem.poison && !warded.poison, 'only the plain knight is poisoned');
+});
+
 // ------------------------------------------------------------ cleanup
 
 test('the enemy army down with gold, goals or loot still on the field: the battle goes on, the win already yours', () => {
