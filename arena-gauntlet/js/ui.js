@@ -807,6 +807,8 @@
     bar.innerHTML = ids
       .map((id) => `<button class="relic-dot tier-${RELICS[id].tier}" data-relic="${id}" aria-label="${esc(RELICS[id].name)}">${ic(RELIC_ICON[id] || 'gem')}</button>`)
       .join('');
+    bar.classList.toggle('dense', ids.length > 14);
+    bar.classList.toggle('packed', ids.length > 22);
     for (const b of $$('[data-relic]', bar))
       b.onclick = () => {
         const r = RELICS[b.dataset.relic];
@@ -828,6 +830,10 @@
       el.innerHTML = `<span class="sup-who">${esc(x.label)}</span><b>${x.left != null ? `${x.left}<small>/${x.total}</small>` : x.total}</b><span class="sup-unit">Supply</span>${x.coming ? `<span class="sup-more">+${x.coming} coming</span>` : ''}`;
       el.title = x.tip || (x.left != null ? `${x.label}: ${x.left} of ${x.total} Supply still standing${x.coming ? `, ${x.coming} more on the way` : ''}` : `${x.label}: ${x.total} Supply${x.coming ? `, ${x.coming} more in reinforcements` : ''}`);
     }
+    // The relic row wraps before the enemy's badge in the top-right corner instead of running under it.
+    const e = $('#supE');
+    const bar = $('#relicBar');
+    if (bar) bar.style.right = `${Math.max(56, e && !e.hidden ? e.offsetWidth + 8 : 0)}px`;
   }
 
   // A side's Supply in battle: still standing, all that has taken the field, still to come.
