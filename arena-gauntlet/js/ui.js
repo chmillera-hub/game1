@@ -58,6 +58,11 @@
   const sfx = (n) => AG.Audio && AG.Audio.play(n);
   // The background music's mood: 'camp' between battles, 'battle' or 'boss' in one.
   const music = (mood) => AG.Music && AG.Music.set(mood);
+  // Wake the sound and the music; only works from inside a tap or a key press.
+  function startSound() {
+    if (AG.Audio) AG.Audio.unlock();
+    if (AG.Music) AG.Music.kick();
+  }
 
   // ------------------------------------------------------------ shared bits
 
@@ -993,6 +998,8 @@
   // A new campaign drafts its army: five units, a relic, a skill and a piece of gear, each
   // one of three. Back undoes a pick; Start over deals a fresh draft.
   function newCampaign() {
+    // The music starts with the campaign (the title screen may stay quiet).
+    startSound();
     let seed = ((Math.random() * 2 ** 31) >>> 0) + 1;
     const picks = [];
     const steps = R.DRAFT_STEPS;
@@ -5170,12 +5177,15 @@
       if (ench) toast(`${ench.name} (enchantment): ${ench.desc}`, 4500);
       else toast(`${mast.name} (Level 3 mastery): ${mast.desc}`, 4500);
     }, true);
+    // Phones let sound start only on a tap that counts as a gesture (the touch ending or the
+    // click, not the touch starting), so every kind is tried until the sound is running.
+    const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
     const unlock = () => {
-      if (AG.Audio) AG.Audio.unlock();
-      if (AG.Music) AG.Music.kick();
+      startSound();
+      const c = AG.Audio && AG.Audio.context && AG.Audio.context(false);
+      if (c && c.state === 'running') for (const g of GESTURES) root.removeEventListener(g, unlock, true);
     };
-    root.addEventListener('pointerdown', unlock, { once: true });
-    root.addEventListener('keydown', unlock, { once: true });
+    for (const g of GESTURES) root.addEventListener(g, unlock, true);
     $('#rotateHint').addEventListener('click', () => {
       UI.prefs.hideRotate = true;
       savePrefs();
