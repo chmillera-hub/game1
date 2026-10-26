@@ -102,7 +102,13 @@ on a phone turned sideways, but portrait works too.
   today's rules (whatever was rebalanced since applies to them too); anything they
   carry that no longer exists is left out, never the army. Only Reset Hall of Fame
   (at the bottom of the Hall, or in the menu, with a confirmation) clears it.
-- **War Room**: tap a unit card to put that unit in the battle, and tap it again to
+- **War Room**: a line at the top says where the battle came from: the challenge you
+  picked this round (Other battles, or Choose another battle in the menu, takes you back
+  to the three on offer), the act's boss, or an **event battle**, naming the event your
+  choice came from (it cannot be swapped for another; win it, or retreat and re-plan).
+  A battle card never picks itself: a tap that lands in the first moment after the
+  choice appears (a second tap on the Continue that brought you there) does nothing.
+  Tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Tap a unit on the board (or hold its
   card) for its full loadout: cost, level, every slot and pick spelled out, stats and
   attacks, plus Priority (rally on it) and Take off the field. The Supply you have left
@@ -424,9 +430,10 @@ on a phone turned sideways, but portrait works too.
   barricades, the loot or a bonus goal, before fatigue wears it down too.
   Reinforcements keep marching in (until turn 30), so an ambush bonus is still there to
   chase, or you can leave them be and go for the gold. Every enemy unit your army cuts
-  down after the win (not a building, not a summoned shrub; ones that fall to their own
-  fatigue do not count) is worth a coin or two: 1 gold, 2 for a big one (3 Supply or
-  more), shown as it falls and paid with the battle's gold. If your army falls after that, the win still stands; tap Finish now (or
+  down, at any point in the battle, before the win or after (not a building, not a
+  summoned shrub; ones that fall to their own fatigue do not count), is worth a coin or
+  two: 1 gold, 2 for a big one (3 Supply or more), shown as it falls and paid with the
+  battle's gold. Enemy buildings pay their own salvage whenever they break. If your army falls after that, the win still stands; tap Finish now (or
   Finish the battle in the menu) to take it whenever you like. So rushing the mission
   is a way past an army too tough to grind down. "Lose no unit" and "win within N
   turns" goals are judged at the moment the mission was done. A banner ("Mission done:
