@@ -296,21 +296,33 @@ test('a save from before: an army set aside after the final challenge goes to th
   assert.deepStrictEqual(R.loadHall().legends[0].units, other);
 });
 
-test('the first army ever to enter finds the house armies holding the Hall: mobs of one kind, 48 Supply of bodies each', () => {
+test('the first army ever to enter finds the house armies holding the Hall: a few Level 3 veterans of one kind each', () => {
   freshHall();
   const run = winCampaign(21);
   const h = R.loadHall();
+  const D = AG.Data;
   assert.deepStrictEqual(h.legends.map((l) => l.type), ['scout', 'knight', 'archer', 'witch']);
+  assert.deepStrictEqual(h.legends.map((l) => l.units.length), [7, 6, 5, 5], 'small squads, not mobs');
   for (const l of h.legends) {
     assert.ok(l.house && l.climbed);
-    const T = AG.Data.UNITS[l.type];
-    const supply = l.units.reduce((t, it) => t + T.cost + AG.Data.LEVEL_COST[it.spec.level], 0);
-    assert.ok(supply <= R.HOUSE_SUPPLY && supply > R.HOUSE_SUPPLY - T.cost, `${l.name}: ${supply} Supply`);
-    // The Hall shows the full price, abilities included: 48, and 72 for the Abyssal witches.
-    assert.strictEqual(R.armySupply(l), l.type === 'witch' ? 72 : 48);
-    assert.ok(l.units.every((it) => it.spec.type === l.type && it.y >= 6), 'all of a kind, on their own half');
+    const T = D.UNITS[l.type];
+    for (const it of l.units) {
+      const sp = it.spec;
+      assert.strictEqual(sp.type, l.type, 'all of a kind');
+      assert.strictEqual(sp.level, D.MAX_LEVEL, 'every one Level 3, mastery and all');
+      assert.ok(T.abilities[1].includes(sp.a1) && T.abilities[2].includes(sp.a2), `${l.name}: both picks are its own`);
+      assert.ok(it.y >= 6, 'on their own half');
+    }
     assert.strictEqual(new Set(l.units.map((it) => it.x + ',' + it.y)).size, l.units.length);
+    // The Hall shows the full price: unit, Level 3 and both picks.
+    const sp = l.units[0].spec;
+    assert.strictEqual(R.armySupply(l), l.units.length * (T.cost + D.LEVEL_COST[3] + D.ABILITIES[sp.a1].cost + D.ABILITIES[sp.a2].cost));
   }
+  // It fights as Level 3: masteries in, stats up.
+  const s = E.createBattle(R.hallBattleConfig(h.legends[1], h.legends[0], 9));
+  const kn = s.units.find((u) => u.team === 'P');
+  assert.strictEqual(kn.level, 3);
+  assert.ok(kn.maxHp > D.UNITS.knight.hp * 1.3, 'Level 3 hit points');
   assert.deepStrictEqual(R.hallPlace(h, run.legendId), { inLine: 1 }, 'it waits to climb past them');
   R.hallStart();
   const h2 = R.loadHall();
@@ -318,6 +330,23 @@ test('the first army ever to enter finds the house armies holding the Hall: mobs
   // Later armies do not bring more house armies.
   winCampaign(22);
   assert.strictEqual(R.loadHall().legends.concat(R.loadHall().queue).filter((l) => l.house).length, 4);
+});
+
+test('a Hall saved with the old house mobs fields today\'s house armies, in the same places, records kept', () => {
+  freshHall();
+  const old = R.houseArmies().map((l, i) => Object.assign(l, { wins: i, losses: 2, units: Array.from({ length: 16 }, (_, k) => ({ spec: { type: l.type, level: 1, a1: AG.Data.UNITS[l.type].abilities[1][0] }, x: k % 9, y: 6 + Math.floor(k / 9), facing: 0 })) }));
+  const mine = { id: 'mine', name: 'The Mine', wins: 5, losses: 0, climbed: true, level: 8, relics: [], units: [{ spec: { type: 'knight', level: 2, talents: [], skills: [], gear: [] }, x: 4, y: 7, facing: 0 }] };
+  // Ours beat the Archers: it stands above them.
+  store[HALL] = JSON.stringify({ legends: [old[0], old[1], mine, old[2], old[3]], queue: [], house: true });
+  const h = R.loadHall();
+  assert.deepStrictEqual(h.legends.map((l) => l.id), ['H-scouts', 'H-knights', 'mine', 'H-archers', 'H-witches']);
+  const now = R.houseArmies();
+  for (const l of h.legends.filter((x) => x.house)) {
+    const i = now.findIndex((x) => x.id === l.id);
+    assert.deepStrictEqual(l.units, now[i].units, `${l.name} fields today's line-up`);
+    assert.deepStrictEqual([l.wins, l.losses], [i, 2], 'its record stays');
+  }
+  assert.deepStrictEqual(h.legends[2].units, mine.units, 'a real army is never touched');
 });
 
 test('old Hall armies survive any update: what no longer exists is left out, never the army', () => {
