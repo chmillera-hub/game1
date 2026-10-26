@@ -3446,18 +3446,19 @@ body:has(#battle:not([hidden])) {
   }
 }
 
-/* Each army's Supply by its own back row: the enemy's top right, yours bottom left. */
+/* Each army's Supply by its own back row, small and tucked into the board's corners (the
+   enemy's top right, yours bottom left) so a zoomed-in board keeps its units in view. */
 .sup {
   position: absolute;
   z-index: 2;
   display: flex;
   align-items: baseline;
-  gap: 5px;
-  padding: 3px 9px;
+  gap: 4px;
+  padding: 1px 7px;
   border-radius: 999px;
-  background: rgba(20, 17, 24, 0.82);
+  background: rgba(20, 17, 24, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   line-height: 1.2;
   color: var(--parchment-2);
   pointer-events: none;
@@ -3469,18 +3470,18 @@ body:has(#battle:not([hidden])) {
 }
 
 .sup b {
-  font-size: 1rem;
+  font-size: 0.82rem;
   color: var(--parchment);
 }
 
 .sup b small {
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   color: var(--muted);
   font-weight: 600;
 }
 
 .sup .sup-who {
-  max-width: 9em;
+  max-width: 7em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3493,8 +3494,8 @@ body:has(#battle:not([hidden])) {
 }
 
 .sup-e {
-  top: 52px;
-  right: 8px;
+  top: 3px;
+  right: 3px;
   border-color: rgba(255, 110, 100, 0.55);
 }
 
@@ -3503,8 +3504,8 @@ body:has(#battle:not([hidden])) {
 }
 
 .sup-p {
-  bottom: 8px;
-  left: 8px;
+  bottom: 3px;
+  left: 3px;
   border-color: rgba(110, 160, 255, 0.55);
 }
 
@@ -3514,7 +3515,7 @@ body:has(#battle:not([hidden])) {
 
 /* Clear of the rotate hint along the bottom on a phone held upright. */
 .rotate-hint:not([hidden]) ~ .sup-p {
-  bottom: 48px;
+  bottom: 44px;
 }
 
 .ch-sup {
