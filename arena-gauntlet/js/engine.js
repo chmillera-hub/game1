@@ -793,6 +793,16 @@
     return inB(s, x, y) && s.terrain[idx(s, x, y)] === T_GRASS && !at(s, x, y);
   }
 
+  // A charge runs straight up to `len` tiles, through everyone in the way, and stops on the
+  // farthest open grass short of a rock, a wall or the edge. Whoever it passes is struck.
+  function chargePath(s, u, d, len) {
+    const line = lineTiles(s, u.x, u.y, d, len);
+    let land = -1;
+    for (let i = line.length - 1; i >= 0 && land < 0; i--) if (emptyGrass(s, line[i][0], line[i][1])) land = i;
+    if (land < 1) return null;
+    return { tiles: line.slice(0, land + 1), passed: line.slice(0, land), land: line[land] };
+  }
+
   // The tile behind a target, from the attacker's point of view.
   function behindTile(s, u, v) {
     let d = v.facing;
@@ -809,7 +819,7 @@
     if (a.asMove) {
       if (A && A.moved) return false;
     } else if (A && A.acted) return false;
-    if ((a.kind === 'blink' || a.kind === 'leap' || a.kind === 'shadowstrike') && (u.root > 0 || u.traits.has('immobile'))) return false;
+    if ((a.kind === 'blink' || a.kind === 'leap' || a.kind === 'shadowstrike' || a.kind === 'charge') && (u.root > 0 || u.traits.has('immobile'))) return false;
     return true;
   }
 
@@ -885,6 +895,13 @@
         const tiles = [];
         for (let d = 0; d < 4; d++) tiles.push(...lineTiles(s, u.x, u.y, d, a.len));
         if (unitsOnTiles(s, tiles).some((v) => isFoe(u, v))) push({ kind: 'self', x: u.x, y: u.y });
+        break;
+      }
+      case 'charge': {
+        for (let d = 0; d < 4; d++) {
+          const p = chargePath(s, u, d, a.len);
+          if (p && unitsOnTiles(s, p.passed).some((v) => isFoe(u, v) && worthy(v))) push({ kind: 'dir', d, x: p.land[0], y: p.land[1] });
+        }
         break;
       }
       case 'nova':
@@ -1007,6 +1024,10 @@
         return patternTiles(s, a.pattern || 'single', target.x, target.y);
       case 'line':
         return lineTiles(s, u.x, u.y, target.d, a.len);
+      case 'charge': {
+        const p = chargePath(s, u, target.d, a.len);
+        return p ? p.tiles : [];
+      }
       case 'cone':
         return coneTiles(s, u.x, u.y, target.d, a.len, a.fan);
       case 'cross': {
@@ -1047,6 +1068,7 @@
       case 'cleave':
       case 'quake':
       case 'cross':
+      case 'charge':
         return units.filter((v) => inArea(u, a, v));
       case 'nova':
         return units.filter((v) => inArea(u, a, v) && novaHits(a, v));
@@ -1882,6 +1904,18 @@
           struck++;
         }
         if (u.traits.has('bloodrage') && u.alive) heal(s, u, 5 * struck, 'drain');
+        if (u.alive) enterTile(s, u, u.x, u.y);
+        break;
+      }
+      case 'charge': {
+        // Everyone in the way is struck as it runs past, then it stands where the run ends.
+        const victims = affectedUnits(s, u, target);
+        emit(s, { t: 'charge', uid, fx: u.x, fy: u.y, x: target.x, y: target.y, d: target.d });
+        relocate(s, u, target.x, target.y);
+        for (const v of victims) {
+          if (!u.alive) break;
+          strike(v);
+        }
         if (u.alive) enterTile(s, u, u.x, u.y);
         break;
       }

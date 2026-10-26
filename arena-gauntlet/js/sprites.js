@@ -1341,6 +1341,60 @@
     poly(ctx, [12.8, y - 45, 15.5, y - 40, 12.8, y - 35, 10.1, y - 40], '#bfefff', 0.8);
   };
 
+  // The Death Knight: a reaper in tattered black robes under a deep hood, cold eyes in the
+  // dark, bony hands on a long runed greatsword. The hem drifts like smoke.
+  D.death_knight = (ctx, o) => {
+    const T = o.tc;
+    const y = -2 + o.bob * 0.8;
+    const t = o.t;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.6);
+    const robe = '#1d1a24';
+    const fold = '#2c2836';
+    glow(ctx, 0, -2, 16, 'rgba(120,255,190,', 0.12 + 0.08 * pulse);
+    // the robe, its hem ragged points that drift, drawn right to left
+    const pts = [-7, y - 30, 7, y - 30];
+    for (let i = 8; i >= 0; i--) {
+      const drift = Math.sin(t * 3 + i * 1.3) * 1.2;
+      pts.push(-13 + i * 3.25 + drift * 0.4, y + (i % 2 ? -3 : 1) + drift);
+    }
+    poly(ctx, pts, robe);
+    poly(ctx, [-2, y - 28, 2, y - 28, 5, y - 2, -4, y - 1], fold, 0);
+    if (!o.back) {
+      // a sash in the army's colours, frayed at the end
+      poly(ctx, [-7, y - 20, 7, y - 22, 7, y - 19, -7, y - 17], shade(T.main, -0.2), 0.8);
+      poly(ctx, [4, y - 19, 7, y - 19, 6 + Math.sin(t * 3) * 0.8, y - 9, 4.5, y - 11], shade(T.main, -0.3), 0.6);
+    }
+    // sleeves and bony hands on the sword
+    arm(ctx, -6, y - 27, -9, y - 17, robe, '#e6dfc9');
+    arm(ctx, 6, y - 27, 9, y - 19, robe, '#e6dfc9');
+    // the greatsword, point down beside it, runes glowing
+    const sx = 12;
+    line(ctx, sx - 3, y - 20, sx + 3, y - 20, 1.6, '#4a4452');
+    line(ctx, sx, y - 20, sx, y - 26, 1.8, '#3a2a1c');
+    circle(ctx, sx, y - 27, 1.4, '#6a6274', 0.6);
+    poly(ctx, [sx - 1.8, y - 19, sx + 1.8, y - 19, sx + 1.4, y + 1, sx, y + 4, sx - 1.4, y + 1], '#8c93a3', 0.9);
+    line(ctx, sx, y - 18, sx, y + 1, 0.6, 'rgba(255,255,255,0.35)', false);
+    for (let i = 0; i < 4; i++) glow(ctx, sx, y - 15 + i * 4.2, 1.6 + pulse, 'rgba(120,255,190,', 0.55 + 0.3 * Math.sin(t * 4 + i));
+    // the hood: deep, pointed, with nothing inside but two eyes
+    poly(ctx, [-8, y - 28, -7, y - 38, -2, y - 45, 3, y - 46, 8, y - 39, 8.5, y - 28], robe);
+    poly(ctx, [2, y - 46, 6, y - 49 + Math.sin(t * 2) * 0.6, 7.5, y - 43], robe, 0.8);
+    if (!o.back) {
+      poly(ctx, [-5, y - 29, -4.5, y - 37, -1, y - 41, 3, y - 41, 5.5, y - 36, 5.5, y - 29], '#07060a', 0);
+      glow(ctx, -1.6, y - 34.5, 2.6 + pulse, 'rgba(120,255,190,', 0.8);
+      glow(ctx, 2.6, y - 34.5, 2.6 + pulse, 'rgba(120,255,190,', 0.8);
+      circle(ctx, -1.6, y - 34.5, 0.9, '#d8ffe8', 0);
+      circle(ctx, 2.6, y - 34.5, 0.9, '#d8ffe8', 0);
+    } else poly(ctx, [-1, y - 44, 1, y - 44, 2, y - 29, -2, y - 29], fold, 0);
+    // a few wisps of mist at its feet
+    for (let i = 0; i < 3; i++) {
+      const k = (t * 0.6 + i / 3) % 1;
+      ctx.save();
+      ctx.globalAlpha = 0.25 * (1 - k);
+      ellipse(ctx, -8 + i * 8, -1 - k * 6, 3 + k * 3, 1.4 + k, '#9fe8c4', 0);
+      ctx.restore();
+    }
+  };
+
   // ------------------------------------------------------------ the keep, the camp and the road
 
   D.tower = (ctx, o) => {
@@ -2088,10 +2142,10 @@
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
     barricade: 22, wreckage: 22, void_wyrm: 96,
-    archmage: 52, phoenix: 48, frostgiant: 60, paladin: 46,
+    archmage: 52, phoenix: 48, frostgiant: 60, paladin: 46, death_knight: 62,
   };
 
-  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05, frostgiant: 1.22 };
+  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05, frostgiant: 1.22, death_knight: 1.3 };
 
   // Draw a unit with feet at the current origin. view: 'front' or 'back'.
   function drawUnit(ctx, type, team, view, t, extra) {

@@ -99,6 +99,7 @@
           break;
         case 'line':
         case 'cross':
+        case 'charge':
           for (let d = 0; d < 4; d++) mark(E.lineTiles(s, r.x, r.y, d, a.len));
           break;
         case 'cone':
@@ -820,7 +821,7 @@
 
   // The tile a unit ends up on after an act that moves it.
   function landing(a, t) {
-    if (a.kind === 'leap' || a.kind === 'blink') return { x: t.x, y: t.y };
+    if (a.kind === 'leap' || a.kind === 'blink' || a.kind === 'charge') return { x: t.x, y: t.y };
     if (a.kind === 'shadowstrike') return { x: t.bx, y: t.by };
     return null;
   }
