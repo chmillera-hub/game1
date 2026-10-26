@@ -2336,7 +2336,7 @@
       text: 'Wagons circle around a campfire. A merchant in a fur hat sizes up your army, your purse and your relics.',
       prepare: (run, rng) => ({ gear: rollGear(run, rng), skill: rollSkill(run, rng), relic: pickRelic(run, rng, ['uncommon', 'rare']) }),
       choices: (run, c) => {
-        const common = run.relics.filter((id) => RELICS[id].tier === 'common');
+        const common = run.relics.filter((id) => RELICS[id] && RELICS[id].tier === 'common');
         return [
           c.gear ? { id: 'gear', label: `Buy ${GEAR[c.gear].name} (35 gold)`, detail: GEAR[c.gear].desc, enabled: run.gold >= 35 } : null,
           c.skill ? { id: 'skill', label: `Buy a manual of ${SKILLS[c.skill].name} (35 gold)`, detail: SKILLS[c.skill].desc, enabled: run.gold >= 35 } : null,
@@ -2359,8 +2359,8 @@
           addItem(run, 'skill', c.skill);
           return `You learn ${SKILLS[c.skill].name} from a dog-eared manual.`;
         }
-        const old = choice.startsWith('swap:') ? choice.slice(5) : rng.pick(run.relics.filter((id) => RELICS[id].tier === 'common'));
-        if (!run.relics.includes(old) || RELICS[old].tier !== 'common') return null;
+        const old = choice.startsWith('swap:') ? choice.slice(5) : rng.pick(run.relics.filter((id) => RELICS[id] && RELICS[id].tier === 'common'));
+        if (!run.relics.includes(old) || !RELICS[old] || RELICS[old].tier !== 'common') return null;
         run.relics = run.relics.filter((id) => id !== old);
         gainRelic(run, c.relic);
         return `The ${RELICS[old].name} for the ${RELICS[c.relic].name}. The merchant thinks it a fine trade. So do you.`;
