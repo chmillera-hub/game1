@@ -1786,6 +1786,47 @@ test('the mission done, reinforcements still march in: the Ambush goal is still 
   assert.ok(!s.over || s.winner === 'P');
 });
 
+test('after the win, every enemy unit your army cuts down is worth a gold or two; before it, and to fatigue, nothing', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'E', x: 4, y: 4, facing: 0, vip: true },
+      { type: 'scout', team: 'E', x: 0, y: 0 },
+      { type: 'knight', team: 'E', x: 8, y: 0 },
+      { type: 'golem', team: 'E', x: 8, y: 8 },
+    ],
+    { objective: 'vip' }
+  );
+  const [kn, cmd, sc, ek, golem] = s.units;
+  kn.hp = kn.maxHp = 999;
+  sc.supply = 2;
+  ek.supply = 3;
+  const cut = (u) => {
+    place(s, u, 4, 4);
+    u.facing = 0;
+    u.hp = 1;
+    u.block = 0;
+    u.shield = 0;
+    act(s, kn, { kind: 'unit', uid: u.uid });
+    assert.ok(!u.alive, u.type + ' cut down');
+  };
+  // The commander's fall is the win itself: it pays nothing extra.
+  cut(cmd);
+  assert.ok(s.won && !s.over);
+  assert.strictEqual(s.stats.lapGold, 0);
+  cut(sc);
+  assert.strictEqual(s.stats.lapGold, 1, 'a small one: 1 gold');
+  assert.ok(s.events.some((e) => e.t === 'gold' && e.uid === sc.uid && e.amount === 1 && e.lap));
+  cut(ek);
+  assert.strictEqual(s.stats.lapGold, 3, 'a big one (3 Supply): 2 gold');
+  // The golem falls to its own fatigue: nothing.
+  golem.hp = 1;
+  s.side = 'P';
+  for (let i = 0; i < 6 && golem.alive; i++) E.endTurn(s);
+  assert.ok(!golem.alive, 'fatigue took it');
+  assert.strictEqual(s.stats.lapGold, 3, 'one that falls to fatigue pays nothing');
+});
+
 test('breaking the building cancels its waves; a rout needs no waves left', () => {
   const s = tentBattle([{ type: 'goblin_archer', team: 'E', x: 0, y: 0 }], { objective: 'all' });
   const [kn, tent, gob] = s.units;
