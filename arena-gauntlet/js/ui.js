@@ -3372,7 +3372,7 @@
         const tip = x.why === 'cooldown' ? ` · cooling down (${x.wait}): passes this turn` : x.why === 'para' ? ' · paralyzed: passes this turn' : x.why ? ' · never acts: passes every turn' : '';
         const cls = x.why ? 'pass' : now ? '' : 'now';
         if (!x.why) now = true;
-        return `<div class="q-item team-${v.team} ${cls}" title="${esc(logName(v))} · Speed ${v.spd}${tip}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas>${tag}<span>${name}</span></div>`;
+        return `<div class="q-item team-${v.team} ${cls}" data-quid="${v.uid}" role="button" title="${esc(logName(v))} · Speed ${v.spd}${tip}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas>${tag}<span>${name}</span></div>`;
       })
       .join('')}</div>`;
   }
@@ -3490,7 +3490,7 @@
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
-      <p class="small muted">${B.exhibition ? `Tap a unit to look at it while the battle plays on. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to look at it while the battle plays on, and make it your army\'s <b>Priority</b>.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
+      <p class="small muted">${B.exhibition ? `Tap a unit, or a face in the turn order for its full details, to look at it while the battle plays on. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to look at it while the battle plays on, and make it your army\'s <b>Priority</b>. Tap a face in the turn order for that unit\'s full details.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
   }
 
   function renderBattle() {
@@ -5025,7 +5025,7 @@
         <ul>
           <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>
           <li>The sides take turns, and the enemy goes first. Each turn, one unit acts: it moves, attacks or uses an ability, and faces.</li>
-          <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next.</li>
+          <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next; tap a face in it for that unit's full details.</li>
           <li>Acting starts a unit's <b>cooldown</b> (CD on its card). Its turns still come, but it passes that many of them: it passes at once, its cooldown drops by one, and the next unit in line goes. Moving alone never starts a cooldown. Paralyzed units, and units with nothing in reach, pass too. The turn order shows every unit's turn: a unit about to pass is greyed out with its cooldown on its portrait. Poison, burns, regen and fatigue come on passed turns too.</li>
           <li><b>A unit's turn, step by step</b>: what comes with a unit's turn always comes in this order: its fatigue hit, then poison, then burns, then fire underfoot, then regen; only then does it act, or pass with its cooldown dropping by one ("PASS COOLDOWN 2→1" over its head). Each step shows over the unit's head on its own beat ("-16 FATIGUE", then "-5 POISON", then "+3 REGEN"), never two at once, even at 2× speed, and the numbers stack top to bottom in the order they happened instead of landing on each other.</li>
           <li>Durations such as "roots for 2 turns" count the affected unit's own turns. The turn counter counts rounds: the enemy's move, then yours.</li>
@@ -5187,6 +5187,27 @@
       if (c && c.state === 'running') for (const g of GESTURES) root.removeEventListener(g, unlock, true);
     };
     for (const g of GESTURES) root.addEventListener(g, unlock, true);
+    // A quick tap on a face in the turn order opens that unit's full details. The strip is
+    // redrawn many times a second while the battle plays, so the tap is read off the panel
+    // itself: the unit under the finger as it lands, opened on the click that follows
+    // (which still reaches the panel when the face under it was redrawn), unless it scrolled.
+    let qTap = null;
+    const cmdEl = $('#cmd');
+    cmdEl.addEventListener('pointerdown', (e) => {
+      const q = e.target.closest && e.target.closest('[data-quid]');
+      qTap = q ? { uid: +q.dataset.quid, x: e.clientX, y: e.clientY, t: Date.now() } : null;
+    });
+    cmdEl.addEventListener('pointerup', (e) => {
+      if (qTap && (Date.now() - qTap.t > 600 || Math.hypot(e.clientX - qTap.x, e.clientY - qTap.y) > 12)) qTap = null;
+    });
+    cmdEl.addEventListener('pointercancel', () => (qTap = null));
+    cmdEl.addEventListener('click', () => {
+      const t = qTap;
+      qTap = null;
+      const B = UI.battle;
+      const u = t && B && B.s.byId[t.uid];
+      if (u) battleUnitSheet(u, true);
+    });
     $('#rotateHint').addEventListener('click', () => {
       UI.prefs.hideRotate = true;
       savePrefs();
