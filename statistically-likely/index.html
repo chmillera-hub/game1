@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistically Likely</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #d8d4cc; font-family: Inter, "Helvetica Neue", Arial, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center;
+    padding: 10px 16px; background: linear-gradient(transparent, rgba(0,0,0,.65)); opacity: 0; transition: opacity .3s; }
+  #stage:hover #controls, #controls.show { opacity: 1; }
+  #controls button { background: none; border: 1px solid rgba(255,255,255,.35); color: #eee; border-radius: 6px;
+    font: 500 13px Inter, Arial, sans-serif; padding: 6px 12px; cursor: pointer; }
+  #controls input { flex: 1; accent-color: #ffcf8a; }
+  #controls span { font: 12px "JetBrains Mono", Menlo, monospace; color: #bbb; min-width: 84px; text-align: right; }
+  body.render #controls { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="film" width="1920" height="1080"></canvas>
+  <div id="controls" class="show"><button id="play">Play</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="clock">0:00 / 2:28</span></div>
+</div>
+<audio id="score" src="soundtrack.m4a" preload="auto"></audio>
+<script>
+(() => {
+'use strict';
+/* =====================================================================
+   STATISTICALLY LIKELY — a short film about fear, love & arithmetic.
+   Everything is a pure function of time t (seconds), except the web of
+   threads, which is simulated once up front. Any frame can be drawn in
+   any order, so the renderer can split the film across workers.
+   ===================================================================== */
+
+const W = 1920, H = 1080, FPS = 30;
+const canvas = document.getElementById('film');
+const ctx = canvas.getContext('2d');
+
+// ---------- utilities ----------
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+const smooth = k => k * k * (3 - 2 * k);
+const win = (t, a, b, fi = .6, fo = .6) => {
+  if (t <= a || t >= b) return 0;
+  return Math.min(fi > 0 ? smooth(clamp((t - a) / fi)) : 1, fo > 0 ? smooth(clamp((b - t) / fo)) : 1);
+};
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20261026);
+const R = (a, b) => a + (b - a) * rand();
+function hash01(a, b = 0, c = 0) {
+  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35) ^ Math.imul(c + 0x27d4eb2f, 0x165667b1);
+  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12; h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+const mix = (c1, c2, k) => [lerp(c1[0], c2[0], k), lerp(c1[1], c2[1], k), lerp(c1[2], c2[2], k)];
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a < 0 ? 0 : a > 1 ? 1 : a.toFixed(3)})`;
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+
+// ---------- look ----------
+const SERIF = "'Bitstream Charter', Charter, 'Iowan Old Style', Georgia, serif";
+const SANS = "Inter, 'Helvetica Neue', Arial, sans-serif";
+const MONO = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace";
+const AMBER = [255, 178, 86], CYAN = [96, 206, 255], GOLD = [255, 240, 208], GOLD2 = [255, 210, 140];
+const GRAY = [118, 128, 148], RED = [255, 62, 74], VIOLET = [196, 148, 255], TEXT = [238, 233, 224];
+const ROSE = [255, 178, 160], DATA = [150, 162, 184];
+
+// ---------- timeline (seconds) ----------
+const T = {
+  END: 148,
+  fieldIn: 7.4, pEnter: 9.4, pArrive: 13.6,
+  cardIn: 22.2, ringDur: 2.2,
+  ghost1: 37.6, ghost2: 41.2,
+  sortStart: 43.6, zoomStart: 44.0, zoomEnd: 50.6,
+  fieldOut: 54.0, s2End: 55.0,
+  mirrorIn: 55.2, mirrorOut: 85.4,
+  famIn: 86.0, mobStart: 91.0, freeze: 98.0, fallStart: 98.4,
+  flameIn: 100.4, flameOut: 110.6, famBack: 110.2, s4End: 119.2,
+  cityIn: 119.0, doors: 124.4, zoomInStart: 128.0, zoomInEnd: 140.0,
+  labelsIn: 131.6, endFade: 141.6, titleIn: 142.6, blackOut: 147.0,
+};
+
+// The comment, typed out. Its rhythm sets the timing of the second act.
+const CPS = 32;
+const CARD = [
+  { text: 'If I could give young women one piece of advice when heading off to school, it’s to avoid men at all costs.', hi: 'avoid men at all costs.' },
+  { text: 'Stick with your girlfriends. Party with your girlfriends. Study with your girlfriends.', hi: '' },
+  { text: 'Reject any and all advances or offers from people statistically likely to do you harm.', hi: 'statistically likely' },
+];
+CARD[0].t0 = 22.6; CARD[0].t1 = CARD[0].t0 + CARD[0].text.length / CPS;
+T.snap = CARD[0].t1 + 0.2;
+CARD[1].t0 = T.snap + 0.9; CARD[1].t1 = CARD[1].t0 + CARD[1].text.length / CPS;
+T.ringStart = CARD[1].t0 + 0.2;
+CARD[2].t0 = CARD[1].t1 + 0.6; CARD[2].t1 = CARD[2].t0 + CARD[2].text.length / CPS;
+T.grayStart = CARD[2].t0 + CARD[2].text.indexOf('statistically') / CPS;
+T.cardOut = CARD[2].t1 + 1.6;
+
+const CAPTIONS = [
+  { t0: 10.2, t1: 14.2, lines: ['First week. New city. Everyone is a stranger.'] },
+  { t0: 14.8, t1: 21.2, lines: ['Connection happens the way it always has —', 'by proximity, by accident, by courage.'], l2: 1.2 },
+  { t0: 35.6, t1: 39.3, lines: ['The fear is real. The harm is real.'] },
+  { t0: 39.6, t1: 43.5, lines: ['But a wall can’t tell a threat from a friend.'] },
+  { t0: 43.9, t1: 46.8, lines: ['Now multiply it.'] },
+  { t0: 47.1, t1: 50.3, lines: ['A campus of safe little circles.'] },
+  { t0: 50.6, t1: 54.4, lines: ['…and a generation wondering why it feels so alone.'] },
+  { t0: 87.2, t1: 91.4, lines: ['Somewhere, a man loves his wife, his kids —', 'and someone else.'], l2: 1.4 },
+  { t0: 101.2, t1: 105.6, lines: ['A flame that lights another flame loses nothing.'] },
+  { t0: 106.0, t1: 109.9, lines: ['Love isn’t a pie. It’s a fire.'] },
+  { t0: 111.2, t1: 115.3, lines: ['The hurt is real.', 'So was the love.'], l2: 1.5 },
+  { t0: 115.7, t1: 118.8, lines: ['Both can be true.'], size: 46 },
+  { t0: 121.2, t1: 124.2, lines: ['Keep the boundaries.'] },
+  { t0: 124.5, t1: 128.2, lines: ['Make them doors.'] },
+  { t0: 128.6, t1: 132.8, lines: ['A person is not a probability.'] },
+  { t0: 134.0, t1: 141.6, lines: ['Every one of us is statistically likely', 'to need each other.'], l2: 2.2, final: true },
+];
+
+const PAIRS = [
+  ['We say we want deep connection', 'and flinch when it’s offered.'],
+  ['We say we want non-violence', 'and lean on violent institutions.'],
+  ['We say we want love', 'and punish lovability.'],
+  ['We say we want honesty', 'and fear the truth.'],
+  ['“Respect my privacy.”', '“What are you hiding?”'],
+];
+PAIRS.forEach((p, k) => { p.s = k < 4 ? 56.4 + k * 5.6 : 78.8; p.dur = k < 4 ? 5.6 : 6.8; p.flip = 2.0; });
+
+const MOB_CAPTION = 'the internet, having met him zero times:';
+const MOB_CAP_T0 = 91.6, MOB_CPS = 34;
+const SHOUT_TEXT = ['IT WAS ALL A LIE', 'HE NEVER LOVED THEM', 'FRAUD', 'I BET HE NEVER LOVED HIS KIDS', 'DISGUSTING',
+  'TOTAL SCAM', 'NEVER REAL', 'LIAR', 'NOBODY CAN LOVE TWO PEOPLE', 'WAKE UP', 'SHE DESERVES BETTER', 'SO FAKE',
+  'WHAT ELSE IS HE HIDING', 'ALL OF IT WAS FAKE', 'THOSE KIDS MEANT NOTHING', 'PATHETIC', 'LOVE IS FINITE',
+  'CANCEL HIM', 'IT WAS NEVER LOVE', 'TRASH', 'EVERY MEMORY = A LIE', 'BURN IT DOWN', 'I KNEW IT', 'COWARD', 'FAKE FAMILY', 'LIAR'];
+const WORDS = ['friend', 'brother', 'lab partner', 'teammate', 'mentor', 'neighbor', 'best friend', 'study buddy',
+  'roommate’s brother', 'a kind stranger', 'bandmate', 'dad', 'tutor', 'the one who listened'];
+
+// =====================================================================
+// WORLD: people as lights, sites as the circles they end up inside
+// =====================================================================
+const P_REST = [820, 560], R0 = 235, FINAL_Z = 0.8;
+const people = [];
+const sites = [];
+let friends = [];
+
+function jitterColor(c) { return [clamp(c[0] + R(-14, 10), 0, 255), clamp(c[1] + R(-14, 14), 0, 255), clamp(c[2] + R(-14, 10), 0, 255)]; }
+function wobble(p, amp) {
+  p.a1 = R(18, 44) * amp; p.w1 = R(0.10, 0.26); p.p1 = R(0, 6.28);
+  p.a2 = R(6, 16) * amp; p.w2 = R(0.33, 0.7); p.p2 = R(0, 6.28);
+  p.b1 = R(16, 40) * amp; p.v1 = R(0.09, 0.24); p.q1 = R(0, 6.28);
+  p.b2 = R(6, 15) * amp; p.v2 = R(0.3, 0.66); p.q2 = R(0, 6.28);
+  p.dA = R(30, 85); p.dw = R(0.018, 0.05); p.dp = R(0, 6.28);
+}
+function newPerson(hue, x, y, far) {
+  const p = {
+    id: people.length, hue, isP: false, far: !!far, hx: x, hy: y, r: R(2.6, 4.1),
+    cluster: -1, assignT: Infinity, joinT: Infinity, joinDur: 1, slotX: x, slotY: y,
+    rel: false, relT: Infinity, relDur: 1, appear: far ? -Infinity : T.fieldIn + R(0, 1.8),
+    friend: false, grayT: Infinity, colorT: Infinity,
+  };
+  p.col = jitterColor(hue === 'A' ? AMBER : CYAN);
+  wobble(p, 1);
+  people.push(p);
+  return p;
+}
+
+function pPos(t, out) {
+  if (t < T.pEnter) { out[0] = -120; out[1] = 660; return out; }
+  const k = ease(clamp((t - T.pEnter) / (T.pArrive - T.pEnter)));
+  const u = 1 - k;
+  const bx = u * u * -60 + 2 * u * k * 360 + k * k * P_REST[0];
+  const by = u * u * 660 + 2 * u * k * 430 + k * k * P_REST[1];
+  const w = smooth(clamp((t - T.pArrive + 1) / 2));
+  out[0] = bx + w * (7 * Math.sin(0.5 * t) + 3 * Math.sin(1.3 * t + 1));
+  out[1] = by + w * (6 * Math.sin(0.43 * t + 2) + 3 * Math.sin(1.1 * t));
+  return out;
+}
+
+function ringProg(s, t) { return s.formT === -Infinity ? 1 : clamp((t - s.formT) / (s.id === 0 ? T.ringDur : 2.0)); }
+function doorGap(s, t) { return easeOut(clamp((t - s.doorT) / 1.3)) * 0.46; }
+
+function posAt(p, t, out) {
+  if (p.isP) return pPos(t, out);
+  let ax = p.hx + p.dA * Math.sin(t * p.dw + p.dp);
+  let ay = p.hy + p.dA * Math.cos(t * p.dw * 0.8 + p.dp * 1.3);
+  let amp = 1, joined = 0, relS = 0;
+  if (p.friend && p.hue === 'B' && t > T.snap) {
+    // after the advice, her friends of the other kind drift away
+    const k = ease(clamp((t - T.snap - 0.4) / 4.5)), dx = p.hx - P_REST[0], dy = p.hy - P_REST[1], d = Math.hypot(dx, dy) || 1;
+    ax = lerp(ax, P_REST[0] + dx / d * 450, k); ay = lerp(ay, P_REST[1] + dy / d * 450, k);
+  }
+  if (t > p.joinT) {
+    joined = p.joinT === -Infinity ? 1 : ease(clamp((t - p.joinT) / p.joinDur));
+    ax = lerp(ax, p.slotX, joined); ay = lerp(ay, p.slotY, joined); amp = lerp(1, 0.28, joined);
+  }
+  if (p.rel && t > p.relT) {
+    relS = ease(clamp((t - p.relT) / p.relDur));
+    const u = 1 - relS;
+    ax = u * u * p.slotX + 2 * u * relS * p.ctrlX + relS * relS * p.tgtX;
+    ay = u * u * p.slotY + 2 * u * relS * p.ctrlY + relS * relS * p.tgtY;
+    amp = lerp(0.28, 0.65, relS);
+  }
+  let x = ax + amp * (p.a1 * Math.sin(p.w1 * t + p.p1) + p.a2 * Math.sin(p.w2 * t + p.p2));
+  let y = ay + amp * (p.b1 * Math.sin(p.v1 * t + p.q1) + p.b2 * Math.sin(p.v2 * t + p.q2));
+  // members stay inside their circle until a door opens
+  if (p.cluster >= 0 && joined > 0.5 && relS < 0.02 && t < T.doors + 1.5) {
+    const s = sites[p.cluster], dx = x - s.x, dy = y - s.y, d = Math.hypot(dx, dy), lim = s.R - 24;
+    if (d > lim) { x = s.x + dx / d * lim; y = s.y + dy / d * lim; }
+  }
+  // everyone else is kept out of her circle
+  if (p.cluster !== 0 && t > T.ringStart && t < T.doors) {
+    const rex = (R0 + 46) * smooth(ringProg(sites[0], t));
+    const dx = x - P_REST[0], dy = y - P_REST[1], d = Math.hypot(dx, dy) || 1;
+    if (d < rex) { x = P_REST[0] + dx / d * rex; y = P_REST[1] + dy / d * rex; }
+  }
+  out[0] = x; out[1] = y;
+  return out;
+}
+
+function clusterAt(p, t) { return p.cluster >= 0 && t >= p.assignT ? p.cluster : -1; }
+function grayness(p, t) {
+  if (p.hue !== 'B') return 0;
+  let g = p.far ? 1 : smooth(clamp((t - p.grayT) / 1.6));
+  if (t > p.colorT) g *= 1 - smooth(clamp((t - p.colorT) / 2.5));
+  return g;
+}
+function presence(p, t) {
+  if (p.far) return 1;
+  if (p.isP) return smooth(clamp((t - T.pEnter) / 0.8));
+  return smooth(clamp((t - p.appear) / 1.2));
+}
+function fieldAlpha(t) {
+  if (t < 100) return win(t, T.fieldIn, T.s2End, 2.0, 1.0);
+  let a = smooth(clamp((t - T.cityIn) / 2.0));
+  if (t > T.endFade) a *= lerp(1, 0.2, smooth(clamp((t - T.endFade) / 2.0)));
+  return a * (1 - smooth(clamp((t - 146.2) / 1.2)));
+}
+function camera(t) {
+  if (t < T.zoomStart) return { z: 1, fx: 960, fy: 540 };
+  if (t < 100) {
+    const k = ease(clamp((t - T.zoomStart) / (T.zoomEnd - T.zoomStart)));
+    return { z: Math.exp(lerp(0, Math.log(0.32), k)), fx: lerp(960, P_REST[0], k), fy: lerp(540, P_REST[1], k) };
+  }
+  const k = ease(clamp((t - T.zoomInStart) / (T.zoomInEnd - T.zoomInStart)));
+  return { z: Math.exp(lerp(Math.log(0.32), Math.log(FINAL_Z), k)), fx: P_REST[0], fy: P_REST[1] + 70 * k };
+}
+
+function buildWorld() {
+  // the protagonist
+  people.push({ id: 0, hue: 'P', isP: true, far: false, col: GOLD, r: 5.6, cluster: 0, assignT: Infinity,
+    joinT: Infinity, rel: false, relT: Infinity, appear: T.pEnter, friend: false, grayT: Infinity, colorT: Infinity });
+
+  // a campus full of strangers
+  const pts = [];
+  let guard = 0;
+  while (pts.length < 118 && guard++ < 50000) {
+    const x = R(70, 1850), y = R(80, 1000);
+    if (dist(x, y, P_REST[0], P_REST[1]) < 150) continue;
+    if (pts.some(q => dist(q[0], q[1], x, y) < 72)) continue;
+    pts.push([x, y]);
+  }
+  pts.forEach((q, i) => newPerson(i % 2 ? 'B' : 'A', q[0], q[1], false));
+
+  // her first friends, of both kinds
+  const byDist = people.slice(1).sort((a, b) => dist(a.hx, a.hy, ...P_REST) - dist(b.hx, b.hy, ...P_REST));
+  const fa = byDist.filter(p => p.hue === 'A').slice(0, 3), fb = byDist.filter(p => p.hue === 'B').slice(0, 3);
+  friends = [fa[0], fb[0], fa[1], fb[1], fa[2], fb[2]];
+  friends.forEach((p, k) => {
+    const ang = 0.35 + k * (Math.PI / 3) + R(-0.18, 0.18), d = R(185, 250);
+    p.hx = P_REST[0] + Math.cos(ang) * d; p.hy = P_REST[1] + Math.sin(ang) * d;
+    p.dA = R(8, 20); p.friend = true;
+  });
+
+  // sites: a hex grid of future circles around her
+  const SP = 640;
+  for (let gy = -3; gy <= 3; gy++) for (let gx = -5; gx <= 5; gx++) {
+    let x = P_REST[0] + gx * SP + (gy & 1) * SP / 2, y = P_REST[1] + gy * SP * 0.9;
+    const isZero = gx === 0 && gy === 0;
+    if (!isZero) { x += R(-80, 80); y += R(-70, 70); }
+    if (Math.abs(x - P_REST[0]) > 3350 || Math.abs(y - P_REST[1]) > 1950) continue;
+    const local = x > -200 && x < W + 200 && y > -200 && y < H + 200;
+    const s = { id: sites.length, x, y, R: isZero ? R0 : R(160, 198), hue: isZero ? 'A' : (rand() < 0.5 ? 'A' : 'B'),
+      local, cap: isZero ? 99 : local ? 8 : Math.floor(R(5, 9)), members: [], formT: Infinity, doorT: Infinity, rot: R(0, 6.28) };
+    if (isZero) sites.unshift(s); else sites.push(s);
+  }
+  sites.forEach((s, i) => s.id = i);
+
+  // her circle, drawn when the advice lands
+  const tmp = [0, 0];
+  const ambers = people.filter(p => p.hue === 'A').map(p => {
+    posAt(p, T.ringStart, tmp);
+    return { p, d: dist(tmp[0], tmp[1], ...P_REST) - (p.friend ? 300 : 0) };
+  }).sort((a, b) => a.d - b.d).slice(0, 6);
+  people[0].assignT = T.ringStart;
+  sites[0].formT = T.ringStart;
+  ambers.forEach(({ p }, k) => {
+    const ang = k * (Math.PI * 2 / 6) + R(-0.3, 0.3), d = R(85, 140);
+    p.cluster = 0; p.assignT = T.ringStart; p.joinT = T.ringStart + R(0, 0.5); p.joinDur = R(2.2, 3.0);
+    p.slotX = P_REST[0] + Math.cos(ang) * d; p.slotY = P_REST[1] + Math.sin(ang) * d;
+    sites[0].members.push(p.id);
+  });
+
+  // everyone else sorts into circles of their own kind
+  const free = people.filter(p => !p.isP && p.cluster < 0);
+  const pairs = [];
+  free.forEach(p => {
+    posAt(p, T.sortStart, tmp);
+    const px = tmp[0], py = tmp[1];
+    sites.forEach(s => { if (s.id && s.hue === p.hue) pairs.push({ p, s, d: dist(px, py, s.x, s.y) }); });
+  });
+  pairs.sort((a, b) => a.d - b.d);
+  pairs.forEach(({ p, s }) => {
+    if (p.cluster >= 0 || s.members.length >= s.cap) return;
+    p.cluster = s.id; p.assignT = T.sortStart; p.joinT = T.sortStart + R(0, 1.4); p.joinDur = R(4.0, 5.8);
+    s.members.push(p.id);
+  });
+  sites.forEach(s => {
+    if (!s.id) return;
+    if (s.local) s.formT = T.sortStart + 1.6 + R(0, 1.0);
+    else {
+      s.formT = -Infinity;
+      while (s.members.length < s.cap) {
+        const fp = newPerson(s.hue, s.x, s.y, true);
+        fp.cluster = s.id; fp.assignT = -Infinity; fp.joinT = -Infinity;
+        s.members.push(fp.id);
+      }
+    }
+    const n = s.members.length;
+    s.members.forEach((id, k) => {
+      const p = people[id], rr = s.R * 0.62 * Math.sqrt((k + 0.5) / n), a = k * 2.39996 + s.rot;
+      p.slotX = s.x + Math.cos(a) * rr; p.slotY = s.y + Math.sin(a) * rr;
+      if (p.far) { p.hx = p.slotX; p.hy = p.slotY; }
+    });
+  });
+
+  // neighbours and doors
+  sites.forEach(s => {
+    s.nbrs = sites.filter(o => o !== s).sort((a, b) => dist(s.x, s.y, a.x, a.y) - dist(s.x, s.y, b.x, b.y)).slice(0, 3);
+    s.dir = Math.atan2(s.nbrs[0].y - s.y, s.nbrs[0].x - s.x) + R(-0.25, 0.25);
+    s.doorT = T.doors + dist(s.x, s.y, ...P_REST) / 2600;
+  });
+
+  // the fear arrives as a ripple; colour returns the same way
+  people.forEach(p => {
+    if (p.isP) return;
+    if (p.hue === 'B' && !p.far) { posAt(p, T.grayStart, tmp); p.grayT = T.grayStart + dist(tmp[0], tmp[1], ...P_REST) / 3000; }
+    const s = sites[p.cluster];
+    if (!s) return;
+    if (p.hue === 'B') p.colorT = T.doors + 1.0 + dist(s.x, s.y, ...P_REST) / 2600 + R(0, 0.8);
+    const dP = dist(s.x, s.y, ...P_REST), roll = rand();
+    let go = false;
+    if (s.id === 0 ? roll < 0.5 : dP < 1500 && roll < 0.5) {
+      // people come to meet her at her open circle (and her circle walks out to meet them)
+      const ang = s.id === 0 ? Math.atan2(p.slotY - P_REST[1], p.slotX - P_REST[0]) + R(-0.4, 0.4)
+        : Math.atan2(s.y - P_REST[1], s.x - P_REST[0]) + R(-0.55, 0.55);
+      const rr = s.id === 0 ? R(R0 + 40, R0 + 190) : R(R0 + 60, R0 + 390);
+      p.tgtX = P_REST[0] + Math.cos(ang) * rr; p.tgtY = P_REST[1] + Math.sin(ang) * rr * (Math.sin(ang) > 0 ? 0.72 : 0.9);
+      go = true;
+    } else if (rand() < 0.55) {
+      const nb = s.nbrs[Math.floor(rand() * 3)];
+      const mx = (s.x + nb.x) / 2, my = (s.y + nb.y) / 2, ang = Math.atan2(nb.y - s.y, nb.x - s.x);
+      const jp = R(-0.55, 0.55) * s.R, ja = R(-0.12, 0.12) * dist(s.x, s.y, nb.x, nb.y);
+      p.tgtX = mx + Math.cos(ang) * ja - Math.sin(ang) * jp; p.tgtY = my + Math.sin(ang) * ja + Math.cos(ang) * jp;
+      go = true;
+    }
+    if (go) {
+      const toT = Math.atan2(p.tgtY - s.y, p.tgtX - s.x);
+      const d1 = Math.abs(Math.atan2(Math.sin(toT - s.dir), Math.cos(toT - s.dir)));
+      const door = d1 < Math.PI / 2 ? s.dir : s.dir + Math.PI;
+      const dx = s.x + Math.cos(door) * s.R, dy = s.y + Math.sin(door) * s.R;
+      p.ctrlX = 2 * dx - (p.slotX + p.tgtX) / 2; p.ctrlY = 2 * dy - (p.slotY + p.tgtY) / 2;
+      p.rel = true; p.relT = s.doorT + 0.5 + R(0, 1.8); p.relDur = R(3.2, 5.0);
+    }
+  });
+}
+
+// =====================================================================
+// THREADS: simulated once, then replayed as intervals
+// =====================================================================
+const threads = [];
+const events = [];
+const snapPos = new Map();
+
+function hueGroup(p) { return p.hue === 'B' ? 'B' : 'A'; }
+function snapTime(a, b) {
+  const pa = snapPos.get(a.id), pb = snapPos.get(b.id);
+  return T.snap + dist((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, ...P_REST) / 1500;
+}
+function allowed(a, b, t) {
+  if (t >= T.doors + 0.6) return true;
+  if (a.far || b.far) return a.cluster === b.cluster;
+  const ca = clusterAt(a, t), cb = clusterAt(b, t);
+  if (t >= T.snap && hueGroup(a) !== hueGroup(b) && t >= snapTime(a, b)) return false;
+  if (t >= T.ringStart + 0.8 && ((ca === 0) !== (cb === 0))) return false;
+  if (t >= T.sortStart && ca !== cb) return false;
+  return true;
+}
+function threshold(a, b, t) {
+  const isP = a.isP || b.isP;
+  if (t >= T.doors + 0.6) return isP ? 440 : 300;
+  const ca = clusterAt(a, t);
+  if (ca >= 0 && ca === clusterAt(b, t)) return 2.4 * sites[ca].R;
+  if (isP) return a.friend || b.friend ? 270 : 150;
+  return 170;
+}
+function affinity(a, b, t) {
+  if ((a.isP && b.friend) || (b.isP && a.friend)) return 1;
+  const h = hash01(Math.min(a.id, b.id), Math.max(a.id, b.id), 7);
+  // once the doors open, difference is what pulls people together
+  if (t >= T.doors && hueGroup(a) !== hueGroup(b)) return 0.75 + 0.25 * h;
+  return h < 0.22 ? 0 : 0.4 + 0.6 * (h - 0.22) / 0.78;
+}
+function maxDeg(p, t) { return t >= T.doors ? (p.isP ? 14 : 8) : (p.isP ? 8 : 4); }
+function present(p, t) { return p.far || t >= (p.isP ? T.pEnter + 0.4 : p.appear); }
+function onScreen(cam, x, y, m = 0) {
+  const sx = (x - cam.fx) * cam.z + W / 2, sy = (y - cam.fy) * cam.z + H / 2;
+  return sx > -m && sx < W + m && sy > -m && sy < H + m;
+}
+
+// while her circle is closed, no thread between outsiders may pass through it
+function crossesWall(a, b, t, ax, ay, bx, by) {
+  if (t < T.ringStart + 0.8 || t >= T.doors || a.far || b.far || clusterAt(a, t) === 0) return false;
+  const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+  const k = clamp(((P_REST[0] - ax) * dx + (P_REST[1] - ay) * dy) / L2);
+  return dist(ax + dx * k, ay + dy * k, P_REST[0], P_REST[1]) < R0 + 12;
+}
+
+function simulate() {
+  const N = people.length, tmp = [0, 0];
+  people.forEach(p => { if (!p.far) { posAt(p, T.snap, tmp); snapPos.set(p.id, [tmp[0], tmp[1]]); } });
+  const xs = new Float64Array(N), ys = new Float64Array(N), deg = new Int16Array(N);
+  const active = new Map(), lastEnd = new Map();
+  const STEP = 1 / 15, CELL = 320;
+  for (let s = 0; s * STEP <= T.END; s++) {
+    const t = s * STEP, cam = camera(t), fa = fieldAlpha(t);
+    for (let i = 0; i < N; i++) { posAt(people[i], t, tmp); xs[i] = tmp[0]; ys[i] = tmp[1]; }
+    for (const [key, th] of active) {
+      const a = people[th.a], b = people[th.b];
+      const d = dist(xs[th.a], ys[th.a], xs[th.b], ys[th.b]);
+      let end = null;
+      if (!allowed(a, b, t)) end = t < T.sortStart ? 'snap' : 'fade';
+      else if (d > threshold(a, b, t) * th.aff * 1.3) end = 'fade';
+      else if (crossesWall(a, b, t, xs[th.a], ys[th.a], xs[th.b], ys[th.b])) end = 'fade';
+      if (end) {
+        th.t1 = t; th.end = end; active.delete(key); lastEnd.set(key, t); deg[th.a]--; deg[th.b]--;
+        const mx = (xs[th.a] + xs[th.b]) / 2, my = (ys[th.a] + ys[th.b]) / 2;
+        if (end === 'snap' && fa > 0.3 && onScreen(cam, mx, my)) events.push({ t, type: 'snap', pan: ((mx - cam.fx) * cam.z + W / 2) / W });
+      }
+    }
+    const tryLink = (i, j) => {
+      if (i > j) { const k = i; i = j; j = k; }
+      const key = i * 4096 + j;
+      if (active.has(key)) return;
+      const a = people[i], b = people[j];
+      if (deg[i] >= maxDeg(a, t) || deg[j] >= maxDeg(b, t)) return;
+      const aff = affinity(a, b, t);
+      if (aff <= 0) return;
+      const le = lastEnd.get(key);
+      if (le !== undefined && t - le < 2.0) return;
+      if (!allowed(a, b, t)) return;
+      if (dist(xs[i], ys[i], xs[j], ys[j]) > threshold(a, b, t) * aff) return;
+      if (crossesWall(a, b, t, xs[i], ys[i], xs[j], ys[j])) return;
+      const th = { a: i, b: j, t0: t, t1: Infinity, end: null, aff, from: hash01(i, j, 3) < 0.5 ? i : j, k: threads.length };
+      threads.push(th); active.set(key, th); deg[i]++; deg[j]++;
+      const mx = (xs[i] + xs[j]) / 2, my = (ys[i] + ys[j]) / 2;
+      if (fa > 0.3 && onScreen(cam, xs[i], ys[i], 20) && onScreen(cam, xs[j], ys[j], 20))
+        events.push({ t, type: 'chime', p: a.isP || b.isP ? 1 : 0, pan: ((mx - cam.fx) * cam.z + W / 2) / W, z: cam.z });
+    };
+    const grid = new Map();
+    for (let i = 1; i < N; i++) {
+      if (!present(people[i], t)) continue;
+      const k = Math.floor(xs[i] / CELL) * 100003 + Math.floor(ys[i] / CELL);
+      let c = grid.get(k); if (!c) grid.set(k, c = []); c.push(i);
+    }
+    for (const [k, cell] of grid) {
+      const cx = Math.floor(cell.length && xs[cell[0]] / CELL), cy = Math.floor(ys[cell[0]] / CELL);
+      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+        const other = grid.get((cx + ox) * 100003 + cy + oy);
+        if (!other) continue;
+        for (const i of cell) for (const j of other) if (i < j) tryLink(i, j);
+      }
+    }
+    if (present(people[0], t)) for (let j = 1; j < N; j++) if (present(people[j], t)) tryLink(0, j);
+  }
+}
+
+// scripted sound cues for the score
+function scriptedEvents() {
+  const add = (t, type, extra = {}) => events.push(Object.assign({ t, type }, extra));
+  add(1.5, 'title');
+  CARD.forEach(c => { for (let i = 0; i < c.text.length; i++) if (c.text[i] !== ' ') add(c.t0 + i / CPS, 'key'); });
+  for (let i = 0; i < MOB_CAPTION.length; i++) if (MOB_CAPTION[i] !== ' ') add(MOB_CAP_T0 + i / MOB_CPS, 'key');
+  add(T.snap, 'bigsnap'); add(T.ringStart, 'ring'); add(T.ghost1 + 0.8, 'ghost'); add(T.ghost2 + 0.8, 'ghost');
+  add(T.zoomStart, 'zoom'); add(T.mirrorIn + 0.1, 'mirror');
+  PAIRS.forEach((p, k) => { add(p.s, 'pair', { k }); add(p.s + p.flip + 0.3, 'flip', { k }); });
+  add(PAIRS[4].s + 4.7, 'glitch'); add(PAIRS[4].s + 5.6, 'collapse');
+  add(T.mobStart, 'mob');
+  SHOUTS.forEach(s => add(s.t, 'shout', { pan: clamp(s.x / W) }));
+  add(T.freeze, 'freeze');
+  add(100.6, 'flame');
+  IGN.forEach((t, i) => { add(t - 0.55, 'spark', { i }); add(t, 'ignite', { i, pan: CANDLES[i].x / W }); });
+  TINY.forEach(f => add(f.t, 'tiny', { pan: f.x / W }));
+  add(T.doors, 'doors'); add(134.0 + 2.2, 'final'); add(T.titleIn, 'endtitle');
+  events.sort((a, b) => a.t - b.t);
+}
+
+// =====================================================================
+// DRAWING
+// =====================================================================
+const spriteCache = new Map();
+function sprite(c) {
+  const key = ((c[0] >> 3) << 10) | ((c[1] >> 3) << 5) | (c[2] >> 3);
+  let s = spriteCache.get(key);
+  if (!s) {
+    s = document.createElement('canvas'); s.width = s.height = 128;
+    const g = s.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, rgba(c, 1)); gr.addColorStop(0.1, rgba(c, 0.6)); gr.addColorStop(0.3, rgba(c, 0.18));
+    gr.addColorStop(0.62, rgba(c, 0.05)); gr.addColorStop(1, rgba(c, 0));
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    spriteCache.set(key, s);
+  }
+  return s;
+}
+function glow(c, x, y, rad, a) {
+  if (a <= 0.004 || rad <= 0.5) return;
+  ctx.globalAlpha = a > 1 ? 1 : a;
+  ctx.drawImage(sprite(c), x - rad, y - rad, rad * 2, rad * 2);
+  ctx.globalAlpha = 1;
+}
+function dot(c, x, y, r, a) {
+  ctx.fillStyle = rgba(c, a); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+let bgCanvas, vignette, dither;
+function buildPlates() {
+  bgCanvas = document.createElement('canvas'); bgCanvas.width = W; bgCanvas.height = H;
+  let g = bgCanvas.getContext('2d');
+  g.fillStyle = '#03050a'; g.fillRect(0, 0, W, H);
+  let gr = g.createRadialGradient(960, 500, 0, 960, 500, 1150);
+  gr.addColorStop(0, 'rgba(18,26,48,1)'); gr.addColorStop(0.55, 'rgba(9,13,26,1)'); gr.addColorStop(1, 'rgba(3,5,10,1)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+
+  vignette = document.createElement('canvas'); vignette.width = W; vignette.height = H;
+  g = vignette.getContext('2d');
+  gr = g.createRadialGradient(960, 540, 420, 960, 540, 1250);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,0.62)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  gr = g.createLinearGradient(0, H - 300, 0, H);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,0.42)');
+  g.fillStyle = gr; g.fillRect(0, H - 300, W, 300);
+
+  const gr2 = mulberry32(99), c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const x = c.getContext('2d'), img = x.createImageData(256, 256);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = gr2() < 0.5 ? 0 : 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.floor(gr2() * 255);
+  }
+  x.putImageData(img, 0, 0);
+  dither = ctx.createPattern(c, 'repeat');
+}
+
+// ---------- text helpers ----------
+function spacedText(str, cx, y, font, spacing, color, alphaFn) {
+  ctx.font = font;
+  const ws = [...str].map(ch => ctx.measureText(ch).width);
+  const total = ws.reduce((a, b) => a + b, 0) + spacing * (ws.length - 1);
+  let x = cx - total / 2;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  [...str].forEach((ch, i) => {
+    const [a, dy] = alphaFn(i);
+    if (a > 0.003) { ctx.fillStyle = rgba(color, a); ctx.fillText(ch, x, y + dy); }
+    x += ws[i] + spacing;
+  });
+}
+function glowText(str, x, y, color, a, blur = 16) {
+  ctx.shadowColor = rgba(color, a * 0.45); ctx.shadowBlur = blur;
+  ctx.fillStyle = rgba(color, a); ctx.fillText(str, x, y);
+  ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+}
+
+// ---------- title ----------
+function drawTitle(t) {
+  if (t > 8) return;
+  const pa = win(t, 0.2, 7.8, 1.2, 1.4);
+  ctx.globalCompositeOperation = 'lighter';
+  glow(GOLD, 960, 430, 110 * (1 + 0.08 * Math.sin(t * 2.1)), pa * 0.75);
+  dot(GOLD, 960, 430, 4.5, pa);
+  ctx.globalCompositeOperation = 'source-over';
+  const out = smooth(clamp((7.4 - t) / 1.1));
+  spacedText('STATISTICALLY LIKELY', 960, 575, `200 84px ${SANS}`, 26, TEXT, i => {
+    const a = smooth(clamp((t - (1.5 + i * 0.075)) / 0.9));
+    return [a * out, (1 - a) * 16];
+  });
+  ctx.font = `italic 30px ${SERIF}`; ctx.textAlign = 'center';
+  ctx.fillStyle = rgba([200, 196, 188], win(t, 3.4, 7.3, 1.0, 1.0));
+  ctx.fillText('a short film about fear, love & arithmetic', 960, 640);
+}
+
+// ---------- the field ----------
+const NP = () => people.length;
+let SX, SY, AL;
+function drawField(t) {
+  const fa = fieldAlpha(t);
+  if (fa <= 0.002) return;
+  const cam = camera(t), z = cam.z, zs = Math.pow(z, 0.55), tmp = [0, 0];
+  const N = NP();
+  if (!SX) { SX = new Float32Array(N); SY = new Float32Array(N); AL = new Float32Array(N); }
+  const cols = new Array(N), grays = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const p = people[i];
+    posAt(p, t, tmp);
+    SX[i] = (tmp[0] - cam.fx) * z + W / 2; SY[i] = (tmp[1] - cam.fy) * z + H / 2;
+    AL[i] = presence(p, t) * fa;
+    grays[i] = grayness(p, t);
+    cols[i] = grays[i] > 0 ? mix(p.col, GRAY, grays[i]) : p.col;
+  }
+  const vis = i => SX[i] > -60 && SX[i] < W + 60 && SY[i] > -60 && SY[i] < H + 60;
+
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+
+  // circles
+  sites.forEach(s => {
+    if (!s.members.length && s.id) return;
+    const prog = ringProg(s, t);
+    if (prog <= 0) return;
+    const cx = (s.x - cam.fx) * z + W / 2, cy = (s.y - cam.fy) * z + H / 2, rr = s.R * z;
+    if (cx + rr < -20 || cx - rr > W + 20 || cy + rr < -20 || cy - rr > H + 20) return;
+    const restore = s.hue === 'B' ? smooth(clamp((t - s.doorT - 1.0) / 2.5)) : 0;
+    let c, a, lw;
+    if (s.id === 0) {
+      c = [255, 222, 175]; a = 0.8; lw = 2.2 + 1.3 * smooth(clamp((t - 36) / 6)) * (t < 100 ? 1 : 0.4);
+      const hit = Math.max(win(t, T.ghost1 + 0.8, T.ghost1 + 1.5, 0.05, 0.6), win(t, T.ghost2 + 0.8, T.ghost2 + 1.5, 0.05, 0.6));
+      a += hit * 0.4;
+    } else {
+      c = s.hue === 'A' ? [255, 196, 130] : mix([150, 164, 190], CYAN, restore); a = 0.45; lw = 1.5;
+    }
+    const gap = doorGap(s, t);
+    if (gap > 0) a *= lerp(1, 0.6, gap / 0.46);
+    lw *= clamp(zs, 0.6, 1.1);
+    const arcs = gap > 0
+      ? [[s.dir + gap, s.dir + Math.PI - gap], [s.dir + Math.PI + gap, s.dir + 2 * Math.PI - gap]]
+      : [[-Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ease(prog)]];
+    for (const [a0, a1] of arcs) {
+      ctx.strokeStyle = rgba(c, a * fa * 0.14); ctx.lineWidth = lw * 6;
+      ctx.beginPath(); ctx.arc(cx, cy, rr, a0, a1); ctx.stroke();
+      ctx.strokeStyle = rgba(c, a * fa); ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.arc(cx, cy, rr, a0, a1); ctx.stroke();
+    }
+    if (prog < 1 && prog > 0) {
+      const ea = -Math.PI / 2 + Math.PI * 2 * ease(prog);
+      glow([255, 240, 215], cx + Math.cos(ea) * rr, cy + Math.sin(ea) * rr, 26 * zs, fa * 0.9);
+    }
+  });
+
+  // threads
+  const lw = 1.35 * clamp(Math.pow(z, 0.35), 0.7, 1.1);
+  for (let n = 0; n < threads.length; n++) {
+    const th = threads[n];
+    if (t < th.t0 || t > th.t1 + 0.8) continue;
+    let i = th.from, j = th.from === th.a ? th.b : th.a;
+    if (!vis(i) && !vis(j)) continue;
+    const base = (0.2 + 0.4 * th.aff) * Math.min(AL[i], AL[j]);
+    if (base <= 0.01) continue;
+    const x1 = SX[i], y1 = SY[i], x2 = SX[j], y2 = SY[j], c1 = cols[i], c2 = cols[j];
+    if (t < th.t1) {
+      const g = easeOut(clamp((t - th.t0) / 0.9));
+      const ex = x1 + (x2 - x1) * g, ey = y1 + (y2 - y1) * g;
+      const gr = ctx.createLinearGradient(x1, y1, ex, ey);
+      gr.addColorStop(0, rgba(c1, base)); gr.addColorStop(1, rgba(mix(c1, c2, g), base));
+      ctx.strokeStyle = gr; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+      if (g < 1) glow([255, 248, 230], ex, ey, 12 * zs, base * 1.6 * (1 - g));
+      else {
+        const per = 5 + 7 * hash01(n, 11), u = ((t + per * hash01(n, 5)) % per) / 1.7;
+        if (u < 1) glow(mix(c1, c2, u), x1 + (x2 - x1) * u, y1 + (y2 - y1) * u, 9 * zs, base * 1.3 * Math.sin(Math.PI * u));
+      }
+    } else {
+      const k = (t - th.t1) / 0.8;
+      if (th.end === 'snap') {
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, r = 1 - easeOut(k), a = base * 1.3 * (1 - k);
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = rgba(c1, a); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(lerp(x1, mx, r), lerp(y1, my, r)); ctx.stroke();
+        ctx.strokeStyle = rgba(c2, a); ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(lerp(x2, mx, r), lerp(y2, my, r)); ctx.stroke();
+        if (k < 0.3) glow([255, 255, 255], mx, my, 30 * zs, (1 - k / 0.3) * 0.9 * Math.min(AL[i], AL[j]));
+        for (let s = 0; s < 5; s++) {
+          const ang = hash01(n, s, 1) * Math.PI * 2, dd = (20 + 50 * hash01(n, s, 2)) * easeOut(k) * zs;
+          glow([255, 236, 210], mx + Math.cos(ang) * dd, my + Math.sin(ang) * dd + 30 * k * k, 6 * zs, (1 - k) * 0.9 * Math.min(AL[i], AL[j]));
+        }
+      } else {
+        ctx.strokeStyle = rgba(mix(c1, c2, 0.5), base * (1 - k)); ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+    }
+  }
+
+  // reaching for her, and hitting the wall
+  [[T.ghost1, friends[1]], [T.ghost2, friends[3]]].forEach(([tg, f]) => {
+    const lt = t - tg;
+    if (lt < 0 || lt > 1.9) return;
+    const fx = SX[f.id], fy = SY[f.id];
+    const cx = (P_REST[0] - cam.fx) * z + W / 2, cy = (P_REST[1] - cam.fy) * z + H / 2;
+    const d = dist(fx, fy, cx, cy) || 1, hx = cx + (fx - cx) / d * R0 * z, hy = cy + (fy - cy) / d * R0 * z;
+    const ext = easeOut(clamp(lt / 0.8)), a = (lt < 1.0 ? 0.85 : 0.85 * (1 - (lt - 1) / 0.9)) * fa;
+    const ex = lerp(fx, hx, ext), ey = lerp(fy, hy, ext);
+    ctx.setLineDash([6, 8]); ctx.strokeStyle = rgba([180, 196, 222], a); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.setLineDash([]);
+    if (lt < 0.8) glow([220, 232, 255], ex, ey, 16, a);
+    if (lt > 0.8 && lt < 1.6) glow([215, 228, 255], hx, hy, 24 + (lt - 0.8) * 70, (1 - (lt - 0.8) / 0.8) * fa);
+  });
+
+  // people
+  for (let i = 0; i < N; i++) {
+    const a = AL[i];
+    if (a <= 0.003 || !vis(i)) continue;
+    const p = people[i], g = grays[i], c = cols[i];
+    const breathe = p.isP ? 1 + 0.07 * Math.sin(t * 1.9) : 1 + 0.07 * Math.sin(t * 1.4 + (p.p1 || 0));
+    const rad = p.r * (p.isP ? 12 : 7.5) * zs * breathe;
+    glow(c, SX[i], SY[i], rad, a * lerp(0.95, 0.3, g));
+    const cr = Math.max(p.r * zs, 1.3);
+    ctx.fillStyle = rgba(mix(c, [255, 255, 255], lerp(0.55, 0.15, g)), a * lerp(1, 0.75, g));
+    ctx.beginPath();
+    if (g > 0.02) ctx.roundRect(SX[i] - cr, SY[i] - cr, cr * 2, cr * 2, cr * (1 - g));
+    else ctx.arc(SX[i], SY[i], cr, 0, Math.PI * 2);
+    ctx.fill();
+    if (p.isP) {
+      ctx.strokeStyle = rgba(GOLD, a * (0.22 + 0.12 * Math.sin(t * 2.2))); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(SX[i], SY[i], 17 * zs, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // numbers where people used to be
+  const lv = win(t, T.grayStart, T.zoomStart + 3, 0.8, 2.2) * clamp((z - 0.55) / 0.3);
+  if (lv > 0.01) {
+    ctx.font = `13px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    for (let i = 1; i < N; i++) {
+      const p = people[i];
+      if (p.far || p.hue !== 'B' || !vis(i)) continue;
+      const a = grays[i] * lv * AL[i] * 0.7;
+      if (a < 0.01) continue;
+      ctx.fillStyle = rgba(DATA, a);
+      ctx.fillText(numLabel(p, t), SX[i] + 9, SY[i] - 9);
+    }
+  }
+
+  // ...and the words that come back
+  const wv = win(t, T.labelsIn, T.endFade + 0.8, 1.0, 1.0) * fa;
+  if (wv > 0.01) {
+    LABELED.forEach((p, k) => {
+      const i = p.id;
+      if (!vis(i)) return;
+      const word = WORDS[k], m0 = T.labelsIn + 0.5 + k * 0.2;
+      let shown = '', res = 0;
+      for (let c = 0; c < word.length; c++) {
+        const tc = m0 + (c / word.length) * 1.1;
+        if (t >= tc || word[c] === ' ') { shown += word[c]; res++; }
+        else shown += '0123456789.%'[Math.floor(hash01(i, c, Math.floor(t * 14)) * 12)];
+      }
+      const done = smooth(clamp((t - m0 - 1.2) / 0.5));
+      const x = SX[i] + 11, y = SY[i] - 11;
+      ctx.textAlign = 'left';
+      if (done < 1) {
+        ctx.font = `14px ${MONO}`;
+        ctx.fillStyle = rgba(mix(DATA, [255, 236, 214], res / word.length), wv * (1 - done) * 0.85);
+        ctx.fillText(t < m0 ? numLabel(p, t) : shown, x, y);
+      }
+      if (done > 0) {
+        ctx.font = `italic 19px ${SERIF}`;
+        ctx.fillStyle = rgba([255, 236, 214], wv * done * 0.92);
+        ctx.fillText(word, x, y);
+      }
+    });
+  }
+}
+function numLabel(p, t) {
+  const v = Math.floor(hash01(p.id, Math.floor(t * 2.4), 9) * 99);
+  const dd = v < 10 ? '0' + v : '' + v;
+  return p.id % 3 === 0 ? '0.' + dd : p.id % 3 === 1 ? dd + '%' : 'p=.' + dd;
+}
+let LABELED = [];
+function pickLabeled() {
+  const tmp = [0, 0], z = FINAL_Z, chosen = [];
+  const cands = people.filter(p => !p.isP).map(p => {
+    posAt(p, 139, tmp);
+    return { p, x: (tmp[0] - P_REST[0]) * z + W / 2, y: (tmp[1] - P_REST[1]) * z + H / 2 };
+  }).filter(c => c.x > 140 && c.x < 1720 && c.y > 120 && c.y < 800 && dist(c.x, c.y, 960, 540) > 60)
+    .sort((a, b) => (a.p.hue === 'B' ? 0 : 1) - (b.p.hue === 'B' ? 0 : 1) || dist(a.x, a.y, 960, 540) - dist(b.x, b.y, 960, 540));
+  for (const c of cands) {
+    if (chosen.length >= WORDS.length) break;
+    if (chosen.every(o => dist(o.x, o.y, c.x, c.y) > 170)) chosen.push(c);
+  }
+  LABELED = chosen.map(c => c.p);
+}
+
+// ---------- the comment ----------
+function wrapLines(text, font, maxW) {
+  ctx.font = font;
+  const words = text.split(' '), lines = [];
+  let line = '', start = 0, idx = 0;
+  words.forEach((w, k) => {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push({ s: start, text: line }); start = idx; line = w; }
+    else line = test;
+    idx += w.length + 1;
+    if (k === words.length - 1) lines.push({ s: start, text: line });
+  });
+  return lines;
+}
+function drawCard(t) {
+  const ca = win(t, T.cardIn, T.cardOut + 0.6, 0.5, 0.6);
+  if (ca <= 0) return;
+  const font = `300 31px ${SANS}`, bx = (W - 1280) / 2, by = 62, bw = 1280, bh = 184;
+  ctx.fillStyle = rgba([12, 16, 28], 0.84 * ca);
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 14); ctx.fill();
+  ctx.strokeStyle = rgba([255, 255, 255], 0.09 * ca); ctx.lineWidth = 1; ctx.stroke();
+  ctx.font = `15px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = rgba(DATA, 0.8 * ca);
+  ctx.fillText('a comment, somewhere', bx + 34, by + 38);
+  CARD.forEach((c, k) => {
+    const next = CARD[k + 1] ? CARD[k + 1].t0 - 0.1 : T.cardOut + 0.6;
+    const a = ca * win(t, c.t0 - 0.2, next, 0.25, 0.3);
+    if (a <= 0) return;
+    if (!c.lines) c.lines = wrapLines(c.text, font, bw - 68);
+    const n = Math.floor(clamp((t - c.t0) * CPS, 0, c.text.length));
+    const hs = c.hi ? c.text.indexOf(c.hi) : -1, he = hs + (c.hi ? c.hi.length : 0);
+    let cursorX = bx + 34, cursorY = by + 92;
+    c.lines.forEach((ln, li) => {
+      const y = by + 92 + li * 46;
+      let x = bx + 34;
+      ctx.font = font;
+      for (let ci = 0; ci < ln.text.length; ci++) {
+        const gi = ln.s + ci;
+        if (gi >= n) break;
+        const ch = ln.text[ci], hot = gi >= hs && gi < he && hs >= 0;
+        const col = hot ? (k === 2 ? [255, 132, 128] : [255, 214, 168]) : [222, 220, 214];
+        if (hot) glowText(ch, x, y, col, a, 10); else { ctx.fillStyle = rgba(col, a); ctx.fillText(ch, x, y); }
+        x += ctx.measureText(ch).width;
+        cursorX = x; cursorY = y;
+      }
+    });
+    if (n < c.text.length || Math.floor(t * 2.2) % 2 === 0) {
+      ctx.fillStyle = rgba([255, 230, 200], a * 0.8); ctx.fillRect(cursorX + 3, cursorY - 26, 2, 32);
+    }
+  });
+}
+
+// ---------- the mirror ----------
+const MOTES = Array.from({ length: 56 }, () => ({ u: rand(), v: rand(), sp: R(0.4, 1.6), ph: R(0, 10), s: R(0.7, 1.6) }));
+function drawMirror(t) {
+  const ma = win(t, T.mirrorIn, T.mirrorOut + 0.6, 0.6, 0.8);
+  if (ma <= 0) return;
+  const lt = t - T.mirrorIn, grow = ease(clamp((lt - 0.1) / 1.3));
+  let flash = 0, flips = 0;
+  PAIRS.forEach(p => {
+    const f = t - (p.s + p.flip + 0.3);
+    if (f > -0.1 && f < 0.7) flash = Math.max(flash, 1 - Math.abs(f) / 0.7);
+    flips += smooth(clamp(f / 0.8));
+  });
+  ctx.globalCompositeOperation = 'lighter';
+  const half = 340 * grow;
+  const gr = ctx.createLinearGradient(0, 540 - half, 0, 540 + half);
+  gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, `rgba(235,240,255,${(0.6 + 0.4 * flash) * ma})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gr; ctx.fillRect(959, 540 - half, 2, half * 2);
+  const gr2 = ctx.createLinearGradient(0, 540 - half, 0, 540 + half);
+  gr2.addColorStop(0, 'rgba(160,190,255,0)'); gr2.addColorStop(0.5, `rgba(160,190,255,${(0.08 + 0.12 * flash) * ma})`); gr2.addColorStop(1, 'rgba(160,190,255,0)');
+  ctx.fillStyle = gr2; ctx.fillRect(946, 540 - half, 28, half * 2);
+  const desync = 5 * flips;
+  MOTES.forEach(m => {
+    const x = 960 - 50 - ((m.u * 860 + t * m.sp * 18) % 860), y = 540 + (m.v - 0.5) * 640 + 14 * Math.sin(t * 0.3 + m.ph);
+    const a = ma * 0.5 * (0.6 + 0.4 * Math.sin(t * 1.3 + m.ph)) * smooth(clamp((x - 100) / 200));
+    glow([200, 210, 240], x, y, 7 * m.s, a); dot([230, 235, 255], x, y, 0.9 * m.s, a);
+    const mx = W - x + desync * Math.sin(t * 1.3 + m.ph * 3), my = y + desync * Math.cos(t * 1.1 + m.ph);
+    glow([200, 210, 240], mx, my, 7 * m.s, a); dot([230, 235, 255], mx, my, 0.9 * m.s, a);
+  });
+  ctx.globalCompositeOperation = 'source-over';
+  PAIRS.forEach((p, k) => { const l = t - p.s; if (l >= 0 && l <= p.dur) drawPair(p, k, l, ma, t); });
+}
+function drawPair(p, k, lt, ma, t) {
+  const [L, Rt] = p;
+  const a = smooth(clamp(lt / 0.7)) * smooth(clamp((p.dur - lt) / 0.8)) * ma;
+  ctx.font = `italic 50px ${SERIF}`; ctx.textBaseline = 'middle';
+  const wL = ctx.measureText(L).width, wR = ctx.measureText(Rt).width, y = 540;
+  let dxL = -(1 - easeOut(clamp(lt / 0.9))) * 26, dxR = 0, glitch = 0, squash = 1;
+  if (k === 4) {
+    const c = ease(clamp((lt - 4.4) / 1.0));
+    dxL += c * (wL / 2 + 48); dxR -= c * (wR / 2 + 48);
+    glitch = clamp((lt - 4.6) / 0.6) * (1 - clamp((lt - 5.9) / 0.3));
+    squash = 1 - ease(clamp((lt - 5.6) / 0.45));
+  }
+  const fp = clamp((lt - p.flip) / 0.6), sx = -Math.cos(Math.PI * ease(fp));
+  ctx.save();
+  ctx.translate(0, y); ctx.scale(1, Math.max(squash, 0.001)); ctx.translate(0, -y);
+  const drawBoth = (ox, colL, colR, alphaMul) => {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = rgba(colL || TEXT, a * alphaMul);
+    ctx.fillText(L, 960 - 48 + dxL + ox, y);
+    ctx.save();
+    if (sx < 0) {
+      ctx.translate(960 + 48 + wL / 2 + ox, y); ctx.scale(Math.min(sx, -0.001), 1);
+      ctx.textAlign = 'center'; ctx.fillStyle = rgba(colR || TEXT, a * alphaMul * 0.3 * smooth(clamp((lt - 0.5) / 0.7)));
+      ctx.fillText(L, 0, 0);
+    } else {
+      ctx.translate(960 + 48 + wR / 2 + dxR + ox, y); ctx.scale(Math.max(sx, 0.001), 1);
+      ctx.textAlign = 'center'; ctx.fillStyle = rgba(colR || ROSE, a * alphaMul * lerp(0.3, 1, sx));
+      ctx.fillText(Rt, 0, 0);
+    }
+    ctx.restore();
+  };
+  if (glitch > 0) {
+    const f = Math.floor(t * 30), off = (hash01(f, 1) * 2 - 1) * 22 * glitch;
+    ctx.globalCompositeOperation = 'lighter';
+    drawBoth(off, [255, 60, 60], [255, 60, 60], 0.8);
+    drawBoth(-off, [60, 220, 255], [60, 220, 255], 0.8);
+    ctx.globalCompositeOperation = 'source-over';
+    for (let b = 0; b < 4; b++) {
+      const by = y - 40 + hash01(f, b, 2) * 80, bh = 6 + hash01(f, b, 3) * 14, bo = (hash01(f, b, 4) * 2 - 1) * 70 * glitch;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, by, W, bh); ctx.clip();
+      ctx.fillStyle = '#05070d'; ctx.fillRect(0, by, W, bh);
+      drawBoth(bo, null, null, 1); ctx.restore();
+    }
+  } else drawBoth(0, null, null, 1);
+  ctx.restore();
+  if (k === 4 && lt > 5.5 && lt < 6.3) {
+    const q = (lt - 5.5) / 0.8;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = rgba([255, 240, 230], (1 - q) * ma);
+    const wl = (wL + wR) / 2 * (1 - easeOut(q));
+    ctx.fillRect(960 - wl / 2, y - 1, wl, 2);
+    glow([255, 220, 210], 960, y, 60 * (1 - q) + 10, (1 - q) * ma);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  if (k === 4) {
+    ctx.font = `20px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = rgba(DATA, win(lt, 2.9, 5.2, 0.5, 0.5) * ma);
+    ctx.fillText('— same person. same breath.', 960, 640);
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
+// ---------- the family and the mob ----------
+const FAM = {
+  H: { x: 960, y: 470, c: GOLD, r: 6 },
+  A: { x: 1235, y: 430, c: AMBER, r: 4.6 },
+  K1: { x: 1088, y: 676, c: [255, 208, 150], r: 3.2 },
+  K2: { x: 846, y: 690, c: [150, 218, 255], r: 3.2 },
+  S: { x: 655, y: 362, c: VIOLET, r: 4.2 },
+};
+Object.values(FAM).forEach(f => { f.ph = R(0, 6.28); f.w = R(0.3, 0.6); });
+const FAM_LINKS = [['H', 'A'], ['H', 'K1'], ['H', 'K2'], ['A', 'K1'], ['A', 'K2'], ['K1', 'K2'], ['H', 'S']];
+const famPos = (f, t) => [f.x + 7 * Math.sin(t * f.w + f.ph), f.y + 6 * Math.cos(t * f.w * 0.8 + f.ph * 1.7)];
+
+function drawFamily(t) {
+  const a1 = win(t, T.famIn, T.flameIn + 0.4, 1.4, 0.8), a2 = win(t, T.famBack, T.s4End, 1.0, 0.8);
+  const a = Math.max(a1, a2);
+  if (a <= 0) return;
+  const pos = {};
+  for (const k in FAM) pos[k] = famPos(FAM[k], t);
+  const agitated = t > T.mobStart + 1 && t < T.freeze;
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  FAM_LINKS.forEach(([u, v], idx) => {
+    const p = pos[u], q = pos[v];
+    let fl = 1;
+    if (agitated) fl = 0.5 + 0.5 * Math.abs(Math.sin(t * 19 + idx * 1.7) * Math.sin(t * 6.3 + idx));
+    const la = 0.55 * a * fl, cu = FAM[u].c, cv = FAM[v].c;
+    const cracked = a2 > 0 && t > T.famBack && u === 'H' && v === 'A';
+    const gr = ctx.createLinearGradient(p[0], p[1], q[0], q[1]);
+    gr.addColorStop(0, rgba(cu, la)); gr.addColorStop(1, rgba(cv, la));
+    ctx.strokeStyle = gr; ctx.lineWidth = 1.7;
+    if (!cracked) { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    else {
+      const at = s => [lerp(p[0], q[0], s), lerp(p[1], q[1], s)];
+      const nx = -(q[1] - p[1]) / dist(...p, ...q), ny = (q[0] - p[0]) / dist(...p, ...q);
+      const s1 = at(0.45), s2 = at(0.55);
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(s1[0], s1[1]); ctx.moveTo(s2[0], s2[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+      const jag = [0.45, 0.475, 0.5, 0.525, 0.55].map((s, k) => { const b = at(s), o = [0, 6, -6, 5, 0][k]; return [b[0] + nx * o, b[1] + ny * o]; });
+      ctx.strokeStyle = rgba(mix(cu, cv, 0.5), la * (0.35 + 0.25 * Math.sin(t * 9)));
+      ctx.lineWidth = 1.1; ctx.beginPath(); jag.forEach((b, k) => k ? ctx.lineTo(b[0], b[1]) : ctx.moveTo(b[0], b[1])); ctx.stroke();
+    }
+  });
+  for (const k in FAM) {
+    const f = FAM[k], p = pos[k];
+    const dim = agitated && k === 'H' ? 0.65 + 0.2 * Math.sin(t * 11) : 1;
+    glow(f.c, p[0], p[1], f.r * (k === 'H' ? 12 : 8), a * 0.95 * dim);
+    dot(mix(f.c, [255, 255, 255], 0.5), p[0], p[1], f.r, a * dim);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  const la = win(t, 87.6, 92.0, 0.8, 0.6) * a;
+  if (la > 0) {
+    ctx.font = `15px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = rgba(DATA, la * 0.75);
+    ctx.fillText('his wife', pos.A[0], pos.A[1] + 34);
+    ctx.fillText('their kids', (pos.K1[0] + pos.K2[0]) / 2, (pos.K1[1] + pos.K2[1]) / 2 + 42);
+    ctx.fillText('someone else', pos.S[0], pos.S[1] - 26);
+  }
+}
+
+const MOB = Array.from({ length: 290 }, () => ({
+  th0: R(0, Math.PI * 2), r0: R(1150, 1550), rEnd: R(190, 470), ts: T.mobStart + Math.pow(rand(), 0.8) * 3.8,
+  w: (rand() < 0.5 ? -1 : 1) * R(0.18, 0.7), j: R(6, 20), jf: R(2, 6), ph: R(0, 10), g: R(0.6, 1.4), size: R(1.4, 3.0),
+}));
+function mobPos(m, t, out) {
+  const tt = Math.min(t, T.freeze);
+  const k = easeOut(clamp((tt - m.ts) / 3.4));
+  const r = lerp(m.r0, m.rEnd, k) - 70 * smooth(clamp((tt - m.ts - 2.5) / 4));
+  const th = m.th0 + m.w * (tt - m.ts);
+  let x = 960 + r * Math.cos(th) + m.j * Math.sin(tt * m.jf + m.ph);
+  let y = 470 + r * Math.sin(th) * 0.72 + m.j * Math.cos(tt * m.jf * 1.3 + m.ph);
+  if (t > T.fallStart) { const f = t - T.fallStart; y += 450 * m.g * f * f; x += 24 * m.g * f * Math.sin(m.ph); }
+  out[0] = x; out[1] = y; return out;
+}
+const SHOUTS = SHOUT_TEXT.map((text, k) => {
+  const t = 91.7 + 6.1 * Math.pow(k / SHOUT_TEXT.length, 0.72);
+  const m = MOB[(k * 37) % MOB.length], tmp = [0, 0];
+  mobPos(m, t, tmp);
+  return { text, t, m, k, size: R(20, 38), rot: R(-0.07, 0.07), dur: R(1.2, 1.9), x: clamp(tmp[0], 260, 1660) };
+});
+function drawMob(t) {
+  if (t < T.mobStart || t > T.fallStart + 2.4) return;
+  const frozen = t >= T.freeze, grayK = clamp((t - T.freeze) / 0.6), fallA = 1 - clamp((t - T.fallStart) / 2.0);
+  const tmp = [0, 0], tmp2 = [0, 0];
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  MOB.forEach(m => {
+    if (t < m.ts) return;
+    mobPos(m, t, tmp);
+    const a = smooth(clamp((t - m.ts) / 0.5)) * fallA, c = mix(RED, GRAY, grayK);
+    if (!frozen) {
+      mobPos(m, t - 0.16, tmp2);
+      ctx.strokeStyle = rgba(c, 0.32 * a); ctx.lineWidth = m.size * 0.8;
+      ctx.beginPath(); ctx.moveTo(tmp2[0], tmp2[1]); ctx.lineTo(tmp[0], tmp[1]); ctx.stroke();
+    }
+    glow(c, tmp[0], tmp[1], 9 * m.size, a * 0.75);
+    dot(mix(c, [255, 255, 255], 0.3), tmp[0], tmp[1], m.size * 0.7, a);
+  });
+  ctx.globalCompositeOperation = 'source-over';
+  if (!frozen) {
+    SHOUTS.forEach(s => {
+      const lt = t - s.t;
+      if (lt < 0 || lt > s.dur) return;
+      mobPos(s.m, t, tmp);
+      const x = clamp(tmp[0], 260, 1660), y = clamp(tmp[1] - 26, 170, 960);
+      const pop = 1 + 0.28 * (1 - easeOut(clamp(lt / 0.25)));
+      const a = smooth(clamp(lt / 0.12)) * smooth(clamp((s.dur - lt) / 0.3)) * (0.78 + 0.22 * Math.sin(t * 31 + s.k));
+      ctx.save(); ctx.translate(x, y); ctx.rotate(s.rot); ctx.scale(pop, pop);
+      ctx.font = `700 ${s.size | 0}px ${SANS}`; ctx.textAlign = 'center';
+      glowText(s.text, 0, 0, [255, 112, 112], a, 18);
+      ctx.restore();
+    });
+    const n = Math.floor(clamp((t - MOB_CAP_T0) * MOB_CPS, 0, MOB_CAPTION.length));
+    if (n > 0) {
+      ctx.font = `24px ${MONO}`; ctx.textAlign = 'center';
+      const full = ctx.measureText(MOB_CAPTION).width, x0 = 960 - full / 2;
+      ctx.textAlign = 'left'; ctx.fillStyle = rgba([212, 216, 226], 0.9);
+      const s = MOB_CAPTION.slice(0, n);
+      ctx.fillText(s, x0, 112);
+      if (Math.floor(t * 2.5) % 2 === 0 || n < MOB_CAPTION.length) ctx.fillRect(x0 + ctx.measureText(s).width + 4, 92, 11, 24);
+    }
+  }
+  if (t >= T.freeze && t < T.freeze + 0.4) {
+    ctx.fillStyle = rgba([255, 255, 255], 0.1 * (1 - (t - T.freeze) / 0.4)); ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// ---------- flames ----------
+const CANDLES = [
+  { x: 690, top: 600, h: 96 }, { x: 1230, top: 600, h: 96 }, { x: 470, top: 655, h: 88 },
+  { x: 1450, top: 655, h: 88 }, { x: 255, top: 715, h: 80 }, { x: 1665, top: 715, h: 80 },
+];
+const IGN = [102.0, 103.0, 103.8, 104.45, 105.0, 105.45];
+const MAINC = { x: 960, top: 520, h: 150, w: 22 };
+const TINY = (() => {
+  const out = [], r2 = mulberry32(5);
+  let guard = 0;
+  while (out.length < 84 && guard++ < 20000) {
+    const x = 90 + r2() * 1740, y = 110 + r2() * 700;
+    if (Math.abs(x - 960) < 190 && y > 360) continue;
+    if (Math.abs(x - 960) < 300 && y > 700) continue;
+    if (CANDLES.some(c => Math.abs(x - c.x) < 60 && y > c.top - 90)) continue;
+    if (out.some(o => dist(o.x, o.y, x, y) < 72)) continue;
+    const near = Math.min(...CANDLES.map(c => dist(c.x, c.top, x, y)));
+    out.push({ x, y, t: 105.8 + near / 850 + r2() * 0.45, s: 0.55 + r2() * 0.5, ph: r2() * 10 });
+  }
+  return out;
+})();
+function flame(x, y, h, w, t, seed, alpha) {
+  if (alpha <= 0.004 || h <= 0.5) return;
+  const sway = Math.sin(t * 7.3 + seed) * 0.1 + Math.sin(t * 13.1 + seed * 2) * 0.05;
+  const hh = h * (1 + 0.08 * Math.sin(t * 9 + seed * 3) + 0.05 * Math.sin(t * 17 + seed));
+  const tipX = x + sway * hh * 0.6, tipY = y - hh;
+  glow([255, 168, 80], x, y - hh * 0.45, hh * 3.2, alpha * 0.5);
+  ctx.beginPath();
+  ctx.moveTo(x, y + w * 0.25);
+  ctx.bezierCurveTo(x - w, y, x - w * 0.75, y - hh * 0.55, tipX, tipY);
+  ctx.bezierCurveTo(x + w * 0.75, y - hh * 0.55, x + w, y, x, y + w * 0.25);
+  const g = ctx.createRadialGradient(x, y - hh * 0.22, 0, x, y - hh * 0.3, hh * 0.95);
+  g.addColorStop(0, rgba([255, 255, 244], alpha)); g.addColorStop(0.32, rgba([255, 218, 128], alpha * 0.95));
+  g.addColorStop(0.72, rgba([255, 132, 52], alpha * 0.65)); g.addColorStop(1, rgba([255, 80, 30], 0));
+  ctx.fillStyle = g; ctx.fill();
+}
+function candleBody(x, top, h, w, alpha, lit) {
+  const g = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+  g.addColorStop(0, rgba([92, 84, 78], alpha)); g.addColorStop(0.42, rgba([226, 216, 200], alpha)); g.addColorStop(1, rgba([86, 78, 74], alpha));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x - w / 2, top, w, h, [w * 0.3, w * 0.3, 3, 3]); ctx.fill();
+  if (lit > 0) {
+    const lg = ctx.createLinearGradient(0, top, 0, top + h * 0.6);
+    lg.addColorStop(0, rgba([255, 190, 110], alpha * 0.45 * lit)); lg.addColorStop(1, rgba([255, 190, 110], 0));
+    ctx.fillStyle = lg; ctx.beginPath(); ctx.roundRect(x - w / 2, top, w, h, [w * 0.3, w * 0.3, 3, 3]); ctx.fill();
+  }
+  ctx.strokeStyle = rgba([30, 24, 20], alpha); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top - 9); ctx.stroke();
+}
+function drawFlames(t) {
+  const a = win(t, T.flameIn, T.flameOut, 0.9, 0.9);
+  if (a <= 0) return;
+  const grow = smooth(clamp((t - 100.5) / 0.9));
+  candleBody(MAINC.x, MAINC.top, MAINC.h, MAINC.w, a * grow, 1);
+  CANDLES.forEach((c, i) => candleBody(c.x, c.top, c.h, 16, a * 0.9 * smooth(clamp((t - 100.8 - i * 0.12) / 0.8)), smooth(clamp((t - IGN[i]) / 0.4))));
+  ctx.globalCompositeOperation = 'lighter';
+  flame(MAINC.x, MAINC.top - 8, 56 * grow, 13, t, 1.3, a);
+  let lit = 1;
+  CANDLES.forEach((c, i) => {
+    const lt = t - IGN[i];
+    if (lt > -0.55 && lt < 0) {
+      const s = easeOut((lt + 0.55) / 0.55), sx = MAINC.x, sy = MAINC.top - 40, ex = c.x, ey = c.top - 12;
+      const cx = (sx + ex) / 2, cy = Math.min(sy, ey) - 150;
+      for (let q = 0; q < 6; q++) {
+        const ss = clamp(s - q * 0.035), u = 1 - ss;
+        glow([255, 230, 170], u * u * sx + 2 * u * ss * cx + ss * ss * ex, u * u * sy + 2 * u * ss * cy + ss * ss * ey, 14 - q * 1.6, a * (1 - q / 6));
+      }
+    }
+    if (lt >= 0) {
+      lit++;
+      const pop = easeOut(clamp(lt / 0.35)) * (1 + 0.25 * Math.exp(-lt * 6) * Math.sin(lt * 30));
+      flame(c.x, c.top - 8, 42 * pop, 10, t, 2 + i, a);
+      if (lt < 0.6) glow([255, 240, 200], c.x, c.top - 20, 90, a * (1 - lt / 0.6));
+    }
+  });
+  TINY.forEach(f => {
+    const lt = t - f.t;
+    if (lt < 0) return;
+    lit++;
+    flame(f.x, f.y, 16 * f.s * easeOut(clamp(lt / 0.3)), 4.5 * f.s, t, f.ph, a * 0.9);
+    if (lt < 0.4) glow([255, 236, 190], f.x, f.y - 6, 34, a * (1 - lt / 0.4) * 0.7);
+  });
+  ctx.globalCompositeOperation = 'source-over';
+  const ra = a * smooth(clamp((t - 101.3) / 0.6));
+  if (ra > 0) {
+    ctx.font = `20px ${MONO}`; ctx.textAlign = 'right'; ctx.fillStyle = rgba(DATA, ra * 0.85);
+    ctx.fillText('original flame', 988, 748); ctx.fillText('total flames', 988, 780);
+    ctx.textAlign = 'left'; ctx.fillStyle = rgba([255, 238, 214], ra);
+    ctx.fillText('100%', 1010, 748); ctx.fillText(String(lit), 1010, 780);
+    IGN.forEach(ti => {
+      const lt = t - ti;
+      if (lt < 0 || lt > 1.2) return;
+      ctx.font = `16px ${MONO}`; ctx.fillStyle = rgba([255, 196, 150], ra * (1 - lt / 1.2));
+      ctx.fillText('−0%', 1072, 746 - 34 * lt);
+    });
+  }
+}
+
+// ---------- captions & end ----------
+function drawCaptions(t) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  CAPTIONS.forEach(c => {
+    if (t < c.t0 || t > c.t1) return;
+    const a = win(t, c.t0, c.t1, 0.7, 0.6), n = c.lines.length, size = c.size || 38, lh = size * 1.4;
+    const lastY = 950, y0 = lastY - (n - 1) * lh;
+    // a soft pool of darkness so the words sit above the web
+    ctx.font = `italic ${size}px ${SERIF}`;
+    const tw = Math.max(...c.lines.map(l => ctx.measureText(l).width));
+    ctx.save();
+    ctx.translate(960, (y0 + lastY) / 2 - size * 0.35); ctx.scale(tw / 2 + 160, n * 34 + 46);
+    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    pool.addColorStop(0, `rgba(3,5,10,${0.62 * a})`); pool.addColorStop(0.6, `rgba(3,5,10,${0.38 * a})`); pool.addColorStop(1, 'rgba(3,5,10,0)');
+    ctx.fillStyle = pool; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    c.lines.forEach((line, i) => {
+      const d = i > 0 && c.l2 ? c.l2 : 0;
+      const la = a * smooth(clamp((t - c.t0 - d) / 0.8));
+      if (la <= 0) return;
+      const dy = (1 - easeOut(clamp((t - c.t0 - d) / 0.9))) * 10;
+      const fin = c.final && i === 1;
+      ctx.font = `italic ${fin ? 50 : size}px ${SERIF}`;
+      glowText(line, 960, y0 + i * lh + dy + (fin ? 6 : 0), fin ? GOLD2 : TEXT, la, fin ? 26 : 16);
+    });
+  });
+}
+function drawEnd(t) {
+  if (t < T.titleIn) return;
+  const out = smooth(clamp((147.6 - t) / 1.2));
+  spacedText('STATISTICALLY LIKELY', 960, 548, `200 58px ${SANS}`, 18, TEXT, i => {
+    const a = smooth(clamp((t - (T.titleIn + i * 0.05)) / 1.2));
+    return [a * out, (1 - a) * 10];
+  });
+  ctx.font = `italic 27px ${SERIF}`; ctx.textAlign = 'center';
+  ctx.fillStyle = rgba(GOLD2, win(t, T.titleIn + 1.3, 147.6, 1.2, 1.2) * 0.9);
+  ctx.fillText('love is not a scarce resource', 960, 606);
+}
+
+function post(t) {
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(vignette, 0, 0);
+  // a fixed dither, not moving grain: it stops banding in the dark gradients
+  // without costing the encoder a new texture every frame
+  ctx.save();
+  ctx.globalAlpha = 0.03;
+  ctx.fillStyle = dither; ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  const black = Math.max(1 - smooth(clamp(t / 0.9)), smooth(clamp((t - T.blackOut) / 1.0)));
+  if (black > 0) { ctx.fillStyle = `rgba(0,0,0,${black})`; ctx.fillRect(0, 0, W, H); }
+}
+
+function draw(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(bgCanvas, 0, 0);
+  drawTitle(t);
+  drawField(t);
+  drawCard(t);
+  drawMirror(t);
+  drawFamily(t);
+  drawMob(t);
+  drawFlames(t);
+  drawCaptions(t);
+  drawEnd(t);
+  post(t);
+}
+
+// =====================================================================
+// API + player
+// =====================================================================
+const ready = (async () => {
+  try { await Promise.all([`200 84px ${SANS}`, `300 31px ${SANS}`, `italic 38px ${SERIF}`, `24px ${MONO}`].map(f => document.fonts.load(f))); } catch (e) {}
+  buildWorld();
+  buildPlates();
+  simulate();
+  scriptedEvents();
+  pickLabeled();
+  draw(0);
+  return true;
+})();
+
+window.FILM = {
+  ready, W, H, FPS, T, events, threads, people,
+  frames: Math.round(T.END * FPS),
+  draw,
+  frame(i) { draw(i / FPS); },
+  frameDataURL(i, type = 'image/png', q) { draw(i / FPS); return canvas.toDataURL(type, q); },
+};
+
+const params = new URLSearchParams(location.search);
+if (params.has('render')) { document.body.classList.add('render'); return; }
+
+const audio = document.getElementById('score'), playBtn = document.getElementById('play');
+const scrub = document.getElementById('scrub'), clock = document.getElementById('clock');
+let audioOK = false, playing = false, cur = 0, wall0 = 0, t0 = 0;
+audio.addEventListener('canplaythrough', () => { audioOK = true; });
+audio.addEventListener('error', () => { audioOK = false; });
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setPlaying(on) {
+  playing = on; playBtn.textContent = on ? 'Pause' : 'Play';
+  document.getElementById('controls').classList.toggle('show', !on);
+  if (on) {
+    if (cur >= T.END - 0.05) cur = 0;
+    wall0 = performance.now(); t0 = cur;
+    if (audioOK) { audio.currentTime = cur; audio.play().catch(() => { audioOK = false; }); }
+  } else audio.pause();
+}
+playBtn.onclick = () => setPlaying(!playing);
+canvas.onclick = () => setPlaying(!playing);
+scrub.oninput = () => {
+  cur = scrub.value / 1000 * T.END; t0 = cur; wall0 = performance.now();
+  if (audioOK) audio.currentTime = cur;
+  draw(cur);
+};
+function tick() {
+  if (playing) {
+    cur = audioOK && !audio.paused ? audio.currentTime : t0 + (performance.now() - wall0) / 1000;
+    if (cur >= T.END) { cur = T.END; setPlaying(false); }
+    draw(cur);
+    scrub.value = Math.round(cur / T.END * 1000);
+  }
+  clock.textContent = `${fmt(cur)} / ${fmt(T.END)}`;
+  requestAnimationFrame(tick);
+}
+ready.then(() => requestAnimationFrame(tick));
+})();
+</script>
+</body>
+</html>
