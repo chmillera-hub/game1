@@ -105,7 +105,8 @@ test('the mentor teaches a stronger talent of the picked unit\'s class', () => {
 
 test('the Merchant Caravan lets you pick which common relic to trade, one choice for each', () => {
   const run = atEvent(3, 'caravan', 200);
-  run.relics = ['war_horn', 'whetstone', 'mana_crystal'].filter((id) => D.RELICS[id]);
+  const tierOf = (t) => Object.keys(D.RELICS).filter((id) => D.RELICS[id].tier === t);
+  run.relics = [...tierOf('common').slice(0, 2), tierOf('uncommon')[0]];
   const commons = run.relics.filter((id) => D.RELICS[id].tier === 'common');
   run.pending.ctx = { v: 2, relic: Object.keys(D.RELICS).find((id) => D.RELICS[id].tier === 'rare' && !run.relics.includes(id)) };
   const swaps = R.eventChoices(run).filter((c) => c.id.startsWith('swap'));
