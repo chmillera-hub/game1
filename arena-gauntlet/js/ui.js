@@ -4774,7 +4774,9 @@
     const card = (it, i) => {
       const can = R.canBuy(run, it);
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
-      const dis = `data-buy="${i}" ${can ? '' : 'disabled'}`;
+      // What you can still buy has the soft aura of a choice waiting for you; sold items
+      // and what you cannot afford stay plain.
+      const dis = `data-buy="${i}" ${can ? 'data-choose' : 'disabled'}`;
       if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price, it.talent);
       if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
