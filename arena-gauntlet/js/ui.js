@@ -4028,17 +4028,14 @@
     sfx(won ? 'victory' : 'defeat');
     renderBattle();
     await sleep(1500);
-    // A win that missed a bonus goal pauses here, with the run as it was before the
-    // rewards, so it can be fought again.
+    // Every win pauses here, with the run as it was before the rewards, so it can be fought
+    // again (for a bonus goal missed, more gold, the loot left behind).
     const goals = won ? R.goalResults(UI.run, s, B.dep) : [];
-    const before = goals.some((g) => !g.done) ? R.snapshot(UI.run) : null;
+    const before = won ? R.snapshot(UI.run) : null;
+    const haul = won ? haulOf(s, B.enc) : null;
     const res = R.finishBattle(UI.run, s, B.dep);
     UI.battle = null;
-    if (won) {
-      if (before) missedGoals(goals, before);
-      else route();
-      return;
-    }
+    if (won) return victorySheet(goals, before, haul);
     const reason = s.timeout
       ? 'The turn limit ran out and the enemy held stronger.'
       : endEv && endEv.forfeit
@@ -4369,17 +4366,32 @@
       };
   }
 
-  // Victory with bonus goals missed: fight again for them, or keep the win. The rewards are
-  // already saved, so leaving the app here keeps the win.
-  function missedGoals(goals, before) {
+  // What a won battle gathered: gold from enemy buildings (of all there was), and the loot
+  // (but for loot a bonus goal already names).
+  function haulOf(s, enc) {
+    const pouches = s.units.filter((u) => u.team === 'E' && (u.structure || u.nonCombat) && !u.traits.has('summon') && (u.bounty || u.salvage));
+    const goalLoot = new Set(((enc && enc.bonus) || []).filter((b) => b.type === 'loot').map((b) => b.lootId));
+    return {
+      gold: s.stats.bounty || 0,
+      total: pouches.reduce((t, u) => t + (u.bounty || u.salvage), 0),
+      loot: (s.loot || []).filter((l) => !goalLoot.has(l.id)).map((l) => ({ kind: l.kind, taken: !!l.taken })),
+    };
+  }
+
+  // Victory: keep the win and go on to the rewards, or fight the battle again for a better
+  // haul (more gold, the loot left behind, a bonus goal missed). The rewards are already
+  // saved, so leaving the app here keeps the win.
+  function victorySheet(goals, before, haul) {
     const missed = goals.filter((g) => !g.done).length;
+    const rows = [];
+    if (haul.total) rows.push(`<div class="obj bonus ${haul.gold >= haul.total ? 'done' : ''}">${ic('gold')}<span>Gold from buildings: <b>${haul.gold}</b> of ${haul.total}</span></div>`);
+    for (const l of haul.loot) rows.push(`<div class="obj bonus ${l.taken ? 'done' : 'failed'}">${ic(l.taken ? 'check' : 'close')}<span>${esc(R.LOOT_NAMES[l.kind] || 'Loot')} ${l.taken ? 'taken' : 'left behind'}</span></div>`);
+    for (const g of goals) rows.push(`<div class="obj bonus ${g.done ? 'done' : 'failed'}">${ic(g.done ? 'check' : 'close')}<span>${esc(g.text)} <span class="reward">${esc(g.reward)}</span></span></div>`);
     openSheet(
       `${sheetHead('Victory')}
-      <p>You won, but missed ${missed === 1 ? 'a bonus goal' : missed + ' bonus goals'}.</p>
-      <div class="panel objectives">${goals
-        .map((g) => `<div class="obj bonus ${g.done ? 'done' : 'failed'}">${ic(g.done ? 'check' : 'close')}<span>${esc(g.text)} <span class="reward">${esc(g.reward)}</span></span></div>`)
-        .join('')}</div>
-      <p class="muted">Retry to change your army and go for every goal. This victory and its rewards are set aside, and the battle starts over. Or keep the win and continue.</p>
+      <p>${missed ? `You won, but missed ${missed === 1 ? 'a bonus goal' : missed + ' bonus goals'}.` : 'You won!'}</p>
+      ${rows.length ? `<div class="panel objectives">${rows.join('')}</div>` : ''}
+      <p class="muted">Want a better haul? Retry to change your army and fight it again for more gold, the loot or a bonus goal: this victory and its rewards are set aside, and the battle starts over. Or keep the win and continue to your rewards.</p>
       <div class="actions"><button class="btn" id="mgRetry">${ic('swords')} Retry battle</button><button class="btn primary" id="mgGo">Continue</button></div>`,
       (sh) => {
         $('#mgRetry', sh).onclick = () => {
