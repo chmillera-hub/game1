@@ -573,10 +573,13 @@ on a phone turned sideways, but portrait works too.
   Destroy a building and its remaining waves are cut off.
 - **Defeat**: lose as often as you need. You go back to the round's choice of
   battles; a battle an event started is fought again from the War Room.
-- **Missed bonus goals**: a win that misses a bonus goal (say, winning within 30
-  turns) pauses before the rewards and shows which goals you met. Retry the battle
-  with a new setup (the win and its rewards are set aside, and it does not count as
-  a loss), or keep the win and continue. You can retry as often as you like.
+- **Retry a win**: every win pauses on a Victory screen before the rewards, showing
+  the haul: the gold you broke out of enemy buildings against all there was, each
+  piece of loot taken or left behind, and the bonus goals met and missed. Not happy
+  with it (say you beat the boss but left the War Chest and half the gold behind)?
+  Retry the battle with a new setup: the win and its rewards are set aside, and it
+  does not count as a loss. Or keep the win and continue to your rewards. You can
+  retry as often as you like.
 - **Rewards**: what a win gives you anyway (XP, gold, bonus-goal rewards, a freed
   prisoner, a relic, a commander level-up, the bonus goals you met) has a plain gold edge and a ✓ Collected badge, and no glow; goals you missed are listed apart, plainly. A
   choice still waiting for you (spoils, the Lost Tome, a boss relic, event choices,
@@ -619,7 +622,7 @@ on a phone turned sideways, but portrait works too.
 ```
 node tests/engine.test.js        # rule checks
 node tests/deploy.test.js        # the War Room's Auto button
-node tests/goals.test.js         # bonus goals, and retrying a won battle for them
+node tests/goals.test.js         # bonus goals, and retrying a won battle for a better haul
 node tests/priority.test.js      # the priority target your army goes all out for
 node tests/objectives.test.js    # your army playing for the mission and bonus goals
 node tests/music.test.js         # the music's notation: every bar the right length
