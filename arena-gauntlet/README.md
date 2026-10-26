@@ -200,8 +200,8 @@ on a phone turned sideways, but portrait works too.
   Witching Hour (at the bottom, 4 Witches with Abyssal Bolt and Withering Curse, 59;
   their Shadow Pact raises the first enemies they slay). They sit between a medium and
   a hard fight: against 240 winning armies from the Fun Lab's campaign simulations, the
-  challenger won 59% of the time against the Witches, 66% against the Archers, 70%
-  against the Knights and 51% against the Scouts. A Hall
+  challenger won 63% of the time against the Witches, 68% against the Archers, 69%
+  against the Knights and 49% against the Scouts. A Hall
   saved with the old house mobs (24 Level 1 Scouts and the like) fields these instead,
   in the same places and with the same records.
   Later armies wait in line ("Waiting
@@ -512,7 +512,7 @@ on a phone turned sideways, but portrait works too.
   card reads like "Poisoned 3 · 12 a turn (2 sources)". The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns; poisoned units cannot heal.
   Buildings, wagons, cages, constructs (golems, wards, the trebuchet) and the undead
-  are immune, as is anyone inside a Barrier Ward's aura; a poison that does not take
+  are immune (a Barrier Ward's aura does not stop poison or paralysis); a poison that does not take
   shows "IMMUNE TO POISON" over the unit, in poison's colour, and the battle log says
   why ("Skeleton immune to poison (undead)"). Paralysis and roots do the same in their
   own colours. Pestilence's extra damage never hits buildings. Poison looks nothing like
@@ -526,8 +526,9 @@ on a phone turned sideways, but portrait works too.
   but far less than when it zapped everything around it. The AI (yours and the
   enemy's) does not step into its reach unless that move lets it hit a living unit the
   same turn; it goes around, and leaves the ward for last. A Barrier Ward gives allies within 4
-  tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and makes
-  them immune to poison and paralysis.
+  tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and nothing
+  else: poison and paralysis still take inside it. It has 52 HP (it had 40 when its aura
+  also stopped poison and paralysis).
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
   too: a Berserker's cleave, a fireball, an arrow volley, a Lightning Ward's spray,
   a breath. Upgrades can make one spare allies: Controlled Burn (fireball), Tamed

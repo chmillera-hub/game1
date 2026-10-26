@@ -151,7 +151,7 @@ test('no Level 3 mastery shortens a cooldown', () => {
   assert.ok(Math.abs(d3.props.dmgMult - 0.25) < 1e-9, 'Wyrmlord: +25% damage');
 });
 
-test('barrier aura grants armor, magic resistance and immunity', () => {
+test('barrier aura grants armor and magic resistance, but no immunity to poison or paralysis', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 8 },
     { type: 'knight', team: 'E', x: 4, y: 4, facing: 2 },
@@ -160,8 +160,9 @@ test('barrier aura grants armor, magic resistance and immunity', () => {
   const [py, kn] = s.units;
   assert.strictEqual(E.calcHit(s, py, kn, {}).dmg, 12);
   assert.strictEqual(+E.effArmor(s, kn).toFixed(2), +Math.min(AG.Data.RES_CAP, kn.armor + 0.25).toFixed(2), '+25% armor');
-  assert.ok(E.statusImmune(s, kn, 'para'));
-  assert.ok(E.statusImmune(s, kn, 'poison'));
+  assert.ok(!E.statusImmune(s, kn, 'para'), 'paralysis still takes');
+  assert.ok(!E.statusImmune(s, kn, 'poison'), 'poison still takes');
+  assert.strictEqual(AG.Data.UNITS.barrier.hp, 52);
 });
 
 test('reachable counts and blocking', () => {
@@ -508,7 +509,7 @@ test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile 
   assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units beside it'));
 });
 
-test('poison that does not take says so, and why: undead, constructs, a Barrier Ward', () => {
+test('poison that does not take says so, and why: undead, constructs; a Barrier Ward does not stop it', () => {
   const s = board([
     { type: 'wisp', team: 'P', x: 4, y: 6 },
     { type: 'skeleton', team: 'E', x: 3, y: 5 },
@@ -522,9 +523,9 @@ test('poison that does not take says so, and why: undead, constructs, a Barrier 
   const res = s.events.filter((e) => e.t === 'resist');
   assert.deepStrictEqual(
     res.map((e) => [s.byId[e.uid].type + (e.uid === warded.uid ? '*' : ''), e.status, e.why]),
-    [['skeleton', 'poison', 'undead'], ['golem', 'poison', 'construct'], ['knight*', 'poison', 'Barrier Ward']]
+    [['skeleton', 'poison', 'undead'], ['golem', 'poison', 'construct']]
   );
-  assert.ok(kn.poison && !skel.poison && !golem.poison && !warded.poison, 'only the plain knight is poisoned');
+  assert.ok(kn.poison && warded.poison && !skel.poison && !golem.poison, 'both knights are poisoned, the warded one too');
 });
 
 // ------------------------------------------------------------ cleanup

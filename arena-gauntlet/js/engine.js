@@ -608,11 +608,9 @@
     const tr = u.traits;
     switch (kind) {
       case 'para':
-        if (u.boss || tr.has('stoneskin') || tr.has('steadfast') || tr.has('paraproof')) return true;
-        return !!inBarrier(s, u);
+        return u.boss || tr.has('stoneskin') || tr.has('steadfast') || tr.has('paraproof');
       case 'poison':
-        if (tr.has('stoneskin') || tr.has('undead') || tr.has('poisonproof') || u.tags.has('construct')) return true;
-        return !!inBarrier(s, u);
+        return tr.has('stoneskin') || tr.has('undead') || tr.has('poisonproof') || u.tags.has('construct');
       case 'root':
         return tr.has('steadfast') || tr.has('immobile');
       case 'knock':
@@ -1885,7 +1883,6 @@
     if (tr.has('stoneskin')) return 'stone skin';
     if (kind === 'root' && tr.has('immobile')) return 'rooted in place';
     if (tr.has('steadfast') || tr.has('paraproof') || tr.has('poisonproof')) return 'its loadout';
-    if (inBarrier(s, u)) return 'Barrier Ward';
     return '';
   }
 

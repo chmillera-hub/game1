@@ -490,11 +490,11 @@
     },
     barrier: {
       name: 'Barrier Ward', rarity: 'uncommon', cost: 3, role: 'ward',
-      hp: 40, pow: 0, armor: 0.2, res: 0.5, block: 0, rec: 0, move: 0,
+      hp: 52, pow: 0, armor: 0.2, res: 0.5, block: 0, rec: 0, move: 0,
       act: { name: 'Barrier Aura', kind: 'none' },
       traits: ['immobile', 'aura_barrier', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['bw_crystal', 'bw_mend', 'bw_reach'], 2: ['bw_reflect', 'bw_shatter', 'bw_purge'] },
-      desc: 'Rooted crystal. Allies within 4 tiles gain +25% armor and +25% magic resistance, and are immune to poison and paralysis.',
+      desc: 'Rooted crystal. Allies within 4 tiles gain +25% armor and +25% magic resistance.',
       tip: 'It cannot move or fight. Bring physical attackers, or draw foes out of its reach.',
     },
     enchantress: {
@@ -504,7 +504,7 @@
       traits: [], tags: ['human', 'caster'],
       abilities: { 1: ['e_far', 'e_discord', 'e_chain'], 2: ['e_glamour', 'e_frailty', 'e_trance', 'e_lure'] },
       desc: 'Paralyzes enemies in a 5-tile burst. They lose a turn and cannot block until it wears off.',
-      tip: 'Golems, and units near a Barrier Ward, shrug off paralysis.',
+      tip: 'Bosses, golems and steadfast units shrug off paralysis.',
     },
     witch: {
       name: 'Dark Magic Witch', rarity: 'rare', cost: 4, role: 'caster',
