@@ -1807,6 +1807,68 @@
           g.restore();
         });
       };
+      // The legendaries' big moments. A meteor: a burning rock falls out of the sky onto the
+      // target, then the blast, rings of fire, a shake and debris across all nine tiles.
+      const meteor = async () => {
+        this.sfx('fireball');
+        const [ex, ey] = this.center(tgt.x, tgt.y);
+        const sx = ex + this.tw * 1.7;
+        const sy = ey - this.tw * 4.4;
+        await this.effect(fast ? 0.2 : 0.6, (g, k) => {
+          const t = k * k;
+          const x = lerp(sx, ex, t);
+          const y = lerp(sy, ey, t);
+          const t0 = Math.max(0, t - 0.4);
+          g.save();
+          const tr = g.createLinearGradient(lerp(sx, ex, t0), lerp(sy, ey, t0), x, y);
+          tr.addColorStop(0, 'rgba(255,120,40,0)');
+          tr.addColorStop(1, 'rgba(255,210,110,0.9)');
+          g.strokeStyle = tr;
+          g.lineCap = 'round';
+          g.lineWidth = this.tw * 0.24;
+          g.beginPath();
+          g.moveTo(lerp(sx, ex, t0), lerp(sy, ey, t0));
+          g.lineTo(x, y);
+          g.stroke();
+          const rg = g.createRadialGradient(x, y, 0, x, y, this.tw * 0.4);
+          rg.addColorStop(0, 'rgba(255,245,200,1)');
+          rg.addColorStop(0.4, 'rgba(255,150,50,0.9)');
+          rg.addColorStop(1, 'rgba(255,90,20,0)');
+          g.fillStyle = rg;
+          g.beginPath();
+          g.arc(x, y, this.tw * 0.4, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = '#5a2a14';
+          g.beginPath();
+          g.arc(x, y, this.tw * 0.12, 0, Math.PI * 2);
+          g.fill();
+          g.restore();
+        });
+        this.sfx('boom');
+        this.shakeT = 0.45;
+        this.flashTiles(tiles, 'rgba(255,130,30,ALPHA)', 620);
+        this.ring(tgt.x, tgt.y, 'rgba(255,220,120,0.95)', 1.6, 460);
+        this.wait(fast ? 30 : 110).then(() => this.ring(tgt.x, tgt.y, 'rgba(255,110,40,0.85)', 2.5, 560));
+        for (const [x, y] of tiles) this.particles(x, y, 9, ['#ffd27a', '#ff8a2a', '#c4401c', '#3a2a20'], { lift: 8, rise: 0.9, speed: 1.1, max: 0.85 });
+      };
+      // Holy light (the Sun Paladin) or a storm (the Crown of Storms) down the four lines.
+      const crossLight = (holy) => {
+        const col = holy ? 'rgba(255,225,120,A)' : 'rgba(150,210,255,A)';
+        this.sfx(holy ? 'heal' : 'zap');
+        if (holy && v) beam(v.x, v.y, 'rgba(255,230,140,');
+        this.ring(ev.x, ev.y, holy ? 'rgba(255,230,140,0.95)' : 'rgba(150,210,255,0.95)', 1.2, 420);
+        for (let d = 0; d < 4; d++) {
+          const [dx, dy] = DIRS[d];
+          const pts = [from];
+          for (const t of tiles) if ((t[0] - ev.x) * dy === (t[1] - ev.y) * dx && Math.sign(t[0] - ev.x) === dx && Math.sign(t[1] - ev.y) === dy) pts.push(t);
+          if (pts.length > 1) {
+            this.bolt(pts, col, 520, holy ? 2.2 : 1.3);
+            if (holy) this.bolt(pts, 'rgba(255,255,235,A)', 380, 0.8);
+          }
+        }
+        this.flashTiles(tiles, holy ? 'rgba(255,220,110,ALPHA)' : 'rgba(140,200,255,ALPHA)', 520);
+        if (holy) for (const [x, y] of tiles) this.particles(x, y, 4, ['#fff3b0', '#ffe08a', '#ffffff'], { lift: 10, rise: 0.8, speed: 0.4, max: 0.7 });
+      };
       switch (ev.kind) {
         case 'strike': {
           if (dist > 1) {
@@ -1835,7 +1897,15 @@
         case 'quake': {
           this.sfx(ev.kind === 'quake' ? 'slam' : 'swing');
           const back = await lunge(tgt.x, tgt.y);
-          if (ev.kind === 'quake') {
+          if (ev.kind === 'quake' && type === 'frostgiant') {
+            // A glacier comes down: ice shards burst up, a frost ring, the ground freezes.
+            this.sfx('boom');
+            this.shakeT = 0.4;
+            this.flashTiles(tiles, 'rgba(170,225,255,ALPHA)', 620);
+            this.ring(tgt.x, tgt.y, 'rgba(220,245,255,0.95)', 1.5, 460);
+            this.wait(fast ? 30 : 100).then(() => this.ring(tgt.x, tgt.y, 'rgba(140,200,255,0.8)', 2.2, 520));
+            for (const [x, y] of tiles) this.particles(x, y, 9, ['#eef8ff', '#bfe3ff', '#8fc8f0', '#ffffff'], { lift: 4, rise: 1.1, speed: 0.9, gravity: 2, max: 0.8, size: 2.2 });
+          } else if (ev.kind === 'quake') {
             this.shakeT = 0.25;
             this.ring(tgt.x, tgt.y, 'rgba(200,170,120,0.9)', 1.4, 380);
             this.particles(tgt.x, tgt.y, 14, ['#a08a6a', '#6f5f48'], { lift: 2, gravity: 2.5, rise: 0.6 });
@@ -1847,7 +1917,15 @@
           break;
         }
         case 'blast': {
-          if (ev.dmg === 'phys') {
+          if (type === 'archmage' && (ev.ai || 0) === 0 || ev.name === 'Meteor Hammer') {
+            await meteor();
+          } else if (ev.name === 'Avalanche') {
+            this.sfx('slam');
+            await Promise.all(tiles.map((t, i) => this.wait(i * 35).then(() => this.projectile(from, t, 'frost', fast ? 120 : 320))));
+            this.shakeT = 0.3;
+            this.flashTiles(tiles, 'rgba(190,230,255,ALPHA)', 520);
+            for (const [x, y] of tiles) this.particles(x, y, 6, ['#eef8ff', '#bfe3ff', '#ffffff'], { lift: 6, rise: 0.6, gravity: 2, max: 0.7 });
+          } else if (ev.dmg === 'phys') {
             const stones = type === 'trebuchet';
             this.sfx(stones ? 'slam' : 'bow');
             await Promise.all(tiles.map((t, i) => this.wait(i * 45).then(() => this.projectile(from, t, stones ? 'rock' : 'arrow', fast ? 120 : 330))));
@@ -1886,6 +1964,18 @@
           break;
         }
         case 'cross': {
+          if (type === 'paladin' && (ev.ai || 0) === 0) {
+            crossLight(true);
+            await this.wait(fast ? 40 : 220);
+            await this.applyImpacts(group, state);
+            break;
+          }
+          if (ev.name === 'Crown of Storms') {
+            crossLight(false);
+            await this.wait(fast ? 40 : 180);
+            await this.applyImpacts(group, state);
+            break;
+          }
           this.sfx('zap');
           for (let d = 0; d < 4; d++) {
             const [dx, dy] = DIRS[d];
@@ -2021,6 +2111,34 @@
         }
         case 'leap': {
           const le = group.find((e) => e.t === 'leap');
+          if (v && le && type === 'phoenix') {
+            // The Phoenix: up in a burst of sparks, a trail of fire across the sky, then
+            // down in a blaze that sets every tile around it alight.
+            this.sfx('fireball');
+            v.moving = true;
+            let last = 0;
+            await this.tween(fast ? 140 : 520, (k) => {
+              v.x = lerp(le.fx, le.x, k);
+              v.y = lerp(le.fy, le.y, k);
+              v.hop = Math.sin(k * Math.PI) * this.tw * 1.3;
+              if (!fast && k - last > 0.1) {
+                last = k;
+                this.particles(v.x, v.y, 3, ['#ffd27a', '#ff8a2a', '#e0531f'], { lift: 18 + Math.sin(k * Math.PI) * 50, rise: 0.2, speed: 0.4, max: 0.5 });
+              }
+            });
+            v.x = le.x;
+            v.y = le.y;
+            v.hop = 0;
+            v.moving = false;
+            this.sfx('boom');
+            this.shakeT = 0.3;
+            this.flashTiles(tiles, 'rgba(255,140,40,ALPHA)', 560);
+            this.ring(le.x, le.y, 'rgba(255,210,110,0.95)', 1.5, 460);
+            this.wait(fast ? 30 : 90).then(() => this.ring(le.x, le.y, 'rgba(255,110,40,0.85)', 2.1, 520));
+            for (const [x, y] of tiles) this.particles(x, y, 8, ['#ffd27a', '#ff8a2a', '#c4401c'], { lift: 6, rise: 1, speed: 0.9, max: 0.8 });
+            await this.applyImpacts(group, state);
+            break;
+          }
           if (v && le) {
             this.sfx('step');
             v.moving = true;

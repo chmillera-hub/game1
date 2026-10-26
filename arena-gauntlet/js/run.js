@@ -21,6 +21,8 @@
   const RECRUIT_PRICE = { common: 60, uncommon: 90, rare: 128, legendary: 210 };
   const RELIC_PRICE = { common: 160, uncommon: 200, rare: 250, boss: 320, event: 200 };
   const ITEM_PRICE = (cost) => 42 + 21 * cost;
+  // A legendary skill or piece of gear goes for half as much again.
+  const itemPrice = (d) => Math.round(ITEM_PRICE(d.cost) * (d.rarity === 'legendary' ? 1.5 : 1));
   const SCROLL_PRICE = 120;
   // Resupplying a merchant (a fresh stock): 20 gold, then 10 more each time.
   const REROLL_PRICE = (n) => 20 + 10 * n;
@@ -1472,17 +1474,41 @@
     };
   }
 
+  // The common, uncommon and rare odds by act. Legendaries come on top (see legendChance).
   function rarityWeights(act, kind) {
-    const base = { 1: [55, 38, 7, 0], 2: [30, 45, 25, 0], 3: [18, 42, 33, 7] }[act];
-    if (kind === 'elite' || kind === 'boss') return [base[0] * 0.5, base[1], base[2] * 1.6, base[3] * 2 + (act >= 2 ? 3 : 0)];
+    const base = { 1: [55, 38, 7], 2: [30, 45, 25], 3: [18, 42, 33] }[act];
+    if (kind === 'elite' || kind === 'boss') return [base[0] * 0.5, base[1], base[2] * 1.6];
     return base;
   }
 
+  // How likely one roll (a recruit, a skill or a piece of gear) is a legendary: never in
+  // Act 1 or the first half of Act 2, then 3% rising to 8% by the Act 2 boss, and 10%
+  // rising to 25% through Act 3. Elite and boss rewards make it half as likely again.
+  function legendChance(run, kind) {
+    const late = run.plan && run.plan.length > 1 ? Math.min(1, run.step / (run.plan.length - 1)) : 0;
+    let p = 0;
+    if (run.act === 2 && late >= 0.5) p = 0.03 + 0.1 * (late - 0.5);
+    else if (run.act >= 3) p = 0.1 + 0.15 * late;
+    return kind === 'elite' || kind === 'boss' ? p * 1.5 : p;
+  }
+
+  // A legendary this time? Never spends a roll (so never changes what else turns up) while
+  // there is no chance of one.
+  function legendRoll(run, rng, kind) {
+    const p = legendChance(run, kind);
+    return p > 0 && rng.chance(p);
+  }
+
   function rollUnitType(run, rng, kind, exclude) {
+    const free = (t) => !(exclude || []).includes(t);
+    if (legendRoll(run, rng, kind)) {
+      const legends = RECRUITABLE.filter((t) => UNITS[t].rarity === 'legendary' && free(t));
+      if (legends.length) return rng.pick(legends);
+    }
     const w = rarityWeights(run.act, kind);
-    const rarity = rng.weighted([['common', w[0]], ['uncommon', w[1]], ['rare', w[2]], ['legendary', w[3]]]);
-    let pool = RECRUITABLE.filter((t) => UNITS[t].rarity === rarity && !(exclude || []).includes(t));
-    if (!pool.length) pool = RECRUITABLE.filter((t) => UNITS[t].rarity !== 'legendary' && !(exclude || []).includes(t));
+    const rarity = rng.weighted([['common', w[0]], ['uncommon', w[1]], ['rare', w[2]]]);
+    let pool = RECRUITABLE.filter((t) => UNITS[t].rarity === rarity && free(t));
+    if (!pool.length) pool = RECRUITABLE.filter((t) => UNITS[t].rarity !== 'legendary' && free(t));
     return rng.pick(pool);
   }
 
@@ -1509,14 +1535,24 @@
     return run.roster.some((r) => D.eligible(r.type, def));
   }
 
-  function rollSkill(run, rng, exclude) {
-    const ids = Object.keys(SKILLS).filter((id) => !(exclude || []).includes(id) && usable(run, SKILLS[id]));
+  // A skill or piece of gear one of your units could use. Legendary ones only come up as
+  // legendChance allows (and only ones your army could use).
+  function rollItemOf(run, rng, table, exclude, kind) {
+    const ok = (id) => !(exclude || []).includes(id) && usable(run, table[id]);
+    if (legendRoll(run, rng, kind)) {
+      const legends = Object.keys(table).filter((id) => table[id].rarity === 'legendary' && ok(id));
+      if (legends.length) return rng.pick(legends);
+    }
+    const ids = Object.keys(table).filter((id) => table[id].rarity !== 'legendary' && ok(id));
     return ids.length ? rng.pick(ids) : null;
   }
 
-  function rollGear(run, rng, exclude) {
-    const ids = Object.keys(GEAR).filter((id) => !(exclude || []).includes(id) && usable(run, GEAR[id]));
-    return ids.length ? rng.pick(ids) : null;
+  function rollSkill(run, rng, exclude, kind) {
+    return rollItemOf(run, rng, SKILLS, exclude, kind);
+  }
+
+  function rollGear(run, rng, exclude, kind) {
+    return rollItemOf(run, rng, GEAR, exclude, kind);
   }
 
   // How often a talent turns up: the stronger ones (from the Level 2 list) half as often,
@@ -1560,7 +1596,7 @@
     const r1 = rollRecruit(run, rng, kind);
     out.push({ type: 'recruit', unit: r1.unit, enchant: r1.enchant, talent: talentOf(r1.unit) });
     const firstItem = rng.chance(0.5) ? 'skill' : 'gear';
-    const id1 = firstItem === 'skill' ? rollSkill(run, rng) : rollGear(run, rng);
+    const id1 = firstItem === 'skill' ? rollSkill(run, rng, null, kind) : rollGear(run, rng, null, kind);
     if (id1) out.push({ type: firstItem, id: id1 });
     const scrollW = kind === 'normal' || kind === 'battle' ? 10 : 30;
     for (let guard = 0; guard < 8 && out.length < 3; guard++) {
@@ -1571,7 +1607,7 @@
         out.push({ type: 'recruit', unit: r.unit, enchant: r.enchant, talent: talentOf(r.unit) });
       } else if (k === 'skill' || k === 'gear' || k === 'talent') {
         const ex = out.map((o) => o.id);
-        const id = k === 'skill' ? rollSkill(run, rng, ex) : k === 'gear' ? rollGear(run, rng, ex) : rollTalent(run, rng, ex);
+        const id = k === 'skill' ? rollSkill(run, rng, ex, kind) : k === 'gear' ? rollGear(run, rng, ex, kind) : rollTalent(run, rng, ex);
         if (id) out.push({ type: k, id });
       } else {
         const id = rollEnchant(run, rng);
@@ -1821,9 +1857,9 @@
     const talent = rollTalent(run, rng);
     if (talent) items.push({ kind: 'talent', id: talent, price: discount(run, TALENT_PRICE(TALENTS[talent].cost)), sold: false });
     const skill = rollSkill(run, rng);
-    if (skill) items.push({ kind: 'skill', id: skill, price: discount(run, ITEM_PRICE(SKILLS[skill].cost)), sold: false });
+    if (skill) items.push({ kind: 'skill', id: skill, price: discount(run, itemPrice(SKILLS[skill])), sold: false });
     const gear = rollGear(run, rng);
-    if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, ITEM_PRICE(GEAR[gear].cost)), sold: false });
+    if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, itemPrice(GEAR[gear])), sold: false });
     const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
     if (relic) items.push({ kind: 'relic', relic, price: discount(run, RELIC_PRICE[RELICS[relic].tier]), sold: false });
     const sc = extra === 'scroll' && rollEnchant(run, rng);
@@ -3118,7 +3154,7 @@
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
-    genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
+    legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
     loadHall, saveHall, resetHall, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };

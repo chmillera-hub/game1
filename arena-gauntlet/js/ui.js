@@ -1367,7 +1367,7 @@
     const cls = kind === 'talent' ? TALENTS[id].cls : null;
     const mine = run.items.filter((i) => i.kind === kind && (!cls || TALENTS[i.id].cls === cls));
     const same = mine.filter((i) => i.id === id).length;
-    const what = kindPlural(kind, { type: cls });
+    const what = mine.length === 1 && kind !== 'gear' ? kindPlural(kind, { type: cls }).replace(/s$/, '') : kindPlural(kind, { type: cls });
     return `<div class="owned">${ic(ITEM_ICON[kind])}<span>${mine.length ? `You have ${mine.length} ${what}${same ? ` (${same} of this one)` : ''}` : `You have no ${what} yet`}</span></div>`;
   }
 
@@ -1535,7 +1535,7 @@
     const rowHTML = (it, state, extra) => {
       const d = R.itemDef(it);
       const on = state === 'on';
-      const tag = on ? '<span class="got-tag">✓ Equipped</span>' : extra || '';
+      const tag = (d.rarity === 'legendary' ? `<span class="legend-tag">${ic('crown')} Legendary</span>` : '') + (on ? '<span class="got-tag">✓ Equipped</span>' : extra || '');
       return `<button class="slot kit ${on ? 'full' : ''} ${!on && held.length >= n ? 'capped' : ''}" data-kit="${on ? 'off' : 'on'}:${kind}:${it.uid}">
         <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
         <span class="sl-body"><span class="sl-name"><b>${esc(d.name)}</b>${tag}</span><span class="small muted">${esc(d.desc)}</span>${on ? '<span class="small sl-hint">Tap to take it off.</span>' : ''}</span>
@@ -4559,7 +4559,8 @@
       return `<button class="card talent ${t.tier === 2 ? 'rare' : ''}" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
     }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
-    return `<button class="card${d.cursed ? ' cursed' : ''}" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${costTag(d)}${d.cursed ? ' · <span class="cursed">Cursed</span>' : ''}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
+    const legend = d.rarity === 'legendary';
+    return `<button class="card${d.cursed ? ' cursed' : ''}${legend ? ' legendary' : ''}" ${attrs || ''}><div class="kind">${ic(legend ? 'crown' : kind === 'skill' ? 'scroll' : 'sword')} ${legend ? 'Legendary ' + kind : kind === 'skill' ? 'Skill' : 'Gear'} · ${costTag(d)}${d.cursed ? ' · <span class="cursed">Cursed</span>' : ''}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
   // A toast line for a unit that just joined, with the talent it came with.
@@ -4573,9 +4574,10 @@
   function recruitCard(unit, enchant, attrs, extra, talent) {
     const T = UNITS[unit];
     const E2 = enchant && ENCHANTS[enchant];
-    return `<button class="card" ${attrs || ''}>
+    const legend = T.rarity === 'legendary';
+    return `<button class="card ${legend ? 'legendary' : ''}" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
-      <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
+      <div class="grow"><div class="kind">${legend ? `${ic('crown')} Legendary recruit` : `Recruit · ${T.rarity}`} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}:${talent || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
@@ -4948,12 +4950,8 @@
           <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past armor and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
-<<<<<<< HEAD
           <li><b>Triggers</b>: many talents and relics fire on an event rather than giving a flat bonus, and the board calls them out as they happen. <b>Critical!</b> hits deal double damage (Lucky Coin, the Lucky skill, every third shot of a Level 3 Archer). <b>Executed</b>: a foe left very low falls outright (never a boss). <b>Trophies</b> from kills add 10% damage each, up to five, and the killer grows a little bigger. Some things go out with a bang when they fall (Powder Keg, Powder Belt, Overload, Bramble Burst, Combustion), poison and fire can leap from the dead to their neighbours (Contagion, Plague Doctor's Mask, Wildfire Oil), and slain enemies can rise as skeletons on your side (Necromancer's Bell, Shadow Pact). Cursed relics give a big edge at a real cost.</li>
-          <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages and constructs are immune to poison. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
-=======
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source poisoning again only refreshes its own poison. Poisoned units cannot heal. Buildings, wagons, cages, constructs (golems, wards) and the undead are immune to poison, and so is anyone inside a Barrier Ward's aura: "IMMUNE TO POISON" floats over a unit the poison did not take on. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
->>>>>>> ccr-64c96724-quo604
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
           <li><b>Priority</b>: tap an enemy unit, a building, a barricade with gold, a chest, the shrine, any empty tile, a boulder, tree or shrub while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. A boulder, tree or shrub works the same way: your army gathers around it without trying to cut it down. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
@@ -4985,6 +4983,7 @@
           <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
           <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
           <li><b>Wreckage</b> litters the Act I boss's camp: four wrecked carts with 8 gold in each. Your army leaves them be until the boss and its retinue fall, then breaks what it can before its fatigue tells.</li>
+          <li><b>Legendaries</b> (molten-gold cards): the Archmage's meteor, the Phoenix's fiery dive, the Frost Giant's glacier, the Sun Paladin's judgment and the Dragon Tyrant's breath, each a huge act and then a long cooldown, plus legendary skills and gear. None turn up before the second half of Act 2; from there they come more and more often, most of all late in Act 3 and from elites and bosses.</li>
           <li><b>Every enemy building pays a little.</b> Break a wall, tower, totem, banner, cage or gate and your army picks up 3 gold (5 for the gate and for tents, crypts, dens, portals and guardhouses). Not worth a detour, but never wasted.</li>
         </ul>
         <h4>Reinforcements</h4>

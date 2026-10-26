@@ -81,7 +81,7 @@ function runBattle(seed, pPool, ePool, budget, opts = {}) {
   return { winner: s.winner, turns: s.turn, timeout: !!s.timeout, ms: Date.now() - t0, comp: units.map((u) => u.team + ':' + u.type) };
 }
 
-const pool = RECRUITABLE.filter((t) => t !== 'dragon');
+const pool = process.env.WITH_LEGENDS ? RECRUITABLE.slice() : RECRUITABLE.filter((t) => UNITS[t].rarity !== 'legendary');
 let wins = { P: 0, E: 0 };
 let turns = 0;
 let timeouts = 0;

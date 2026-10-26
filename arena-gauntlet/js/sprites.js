@@ -702,6 +702,182 @@
     poly(ctx, [5, -34, 9, -41, 3.5, -36], '#c9a94a', 0.8);
   };
 
+  // ------------------------------------------------------------ the legendaries
+
+  // Archmage: a star-sewn robe, a tall hat and a staff crowned with a smouldering meteor.
+  D.archmage = (ctx, o) => {
+    const T = o.tc;
+    const robe = '#2f2a6e';
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 3.4);
+    poly(ctx, [-7.5, -26, 7.5, -26, 11.5, 0, -11.5, 0], robe);
+    poly(ctx, [-11.5, 0, 11.5, 0, 10.8, -3, -10.8, -3], '#d8b04a', 0);
+    if (o.back) {
+      poly(ctx, [-7.5, -26, 7.5, -26, 10, -5, -10, -5], shade(robe, -0.12));
+      for (const [x, y] of [[-4, -18], [3, -11], [-1, -8], [5, -21]]) circle(ctx, x, y, 0.8, '#f3e7a8', 0);
+      poly(ctx, [-8, -31, 8, -31, 1, -52, -1, -52], '#262158');
+      poly(ctx, [-10, -31, 10, -31, 8, -29, -8, -29], '#3a347e', 0.8);
+      arm(ctx, 6, -22, 10, -15, robe, SKIN);
+      line(ctx, 10.5, -3, 12.5, -40, 2, '#5a3d24');
+      glow(ctx, 13, -43, 10, 'rgba(255,120,40,', 0.45 + 0.2 * pulse);
+      circle(ctx, 13, -43, 3.4, '#7a3a1c', 1);
+      return;
+    }
+    // sash in the army's colours, and stars on the robe
+    poly(ctx, [-7, -22, 7, -16, 7, -13, -7, -19], T.main, 0.8);
+    for (const [x, y] of [[-5, -11], [4, -8], [-2, -5], [6, -3], [-7, -4]]) circle(ctx, x, y, 0.8, '#f3e7a8', 0);
+    // beard and face
+    face(ctx, 1.2, -29, 4.2, SKIN);
+    poly(ctx, [-2.5, -27.5, 5, -27.5, 3.5, -19, 1, -16.5, -1.2, -20], '#e9e6ee', 0.8);
+    // hat: tall and starry, the tip bent back
+    poly(ctx, [-9.5, -31.5, 10.5, -31.5, 8.5, -29.5, -7.5, -29.5], '#3a347e', 0.9);
+    poly(ctx, [-6.5, -31.5, 7.5, -31.5, 2, -48, -3, -53, -1, -46], '#2b2566');
+    circle(ctx, 1.5, -38, 1, '#f3e7a8', 0);
+    circle(ctx, -0.5, -44, 0.8, '#f3e7a8', 0);
+    arm(ctx, -6, -21, -9.5, -13, robe, SKIN);
+    arm(ctx, 6, -22, 10.5, -17, robe, SKIN);
+    // staff and the meteor it holds, smouldering
+    line(ctx, 11.5, -2, 13, -40, 2, '#5a3d24');
+    poly(ctx, [10.5, -40, 15.5, -40, 16.5, -45, 9.5, -45], '#c9a94a', 0.7);
+    glow(ctx, 13, -47, 11 + pulse * 2, 'rgba(255,120,40,', 0.55);
+    circle(ctx, 13, -47, 3.8, '#6e3418', 1);
+    circle(ctx, 12, -48, 1.6, '#ffb347', 0);
+    circle(ctx, 14.2, -46, 0.9, '#ffe08a', 0);
+  };
+
+  // Phoenix: a firebird, wings of flame that flicker and beat, a long burning tail.
+  D.phoenix = (ctx, o) => {
+    const T = o.tc;
+    const flap = Math.sin(o.t * 5) * 4;
+    const hover = -10 + Math.sin(o.t * 2.4) * 1.5;
+    const flick = Math.sin(o.t * 11) * 0.8;
+    ctx.save();
+    ctx.translate(0, hover);
+    glow(ctx, 0, -14, 22, 'rgba(255,150,40,', 0.28);
+    // far wing
+    poly(ctx, [-2, -18, -14, -34 - flap, -24, -30 - flap, -20, -22, -10, -14], '#c4401c');
+    poly(ctx, [-3, -18, -14, -31 - flap, -20, -27 - flap, -17, -21], '#ff8a2a', 0);
+    // tail: three long plumes
+    for (const [dx, dy, c] of [[-20, 6, '#c4401c'], [-22, 1, '#ff8a2a'], [-18, 10, '#ffd27a']]) poly(ctx, [-6, -10, dx, -10 + dy + flick, dx + 3, -7 + dy, -5, -7], c, 0.8);
+    // body and breast
+    ellipse(ctx, 0, -14, 8, 6, '#e0531f');
+    ellipse(ctx, 2.5, -12.5, 5, 3.6, '#ffc24a', 0);
+    // a band in the army's colours round the neck
+    line(ctx, 3, -19, 7, -17, 2, T.main, false);
+    if (!o.back) {
+      // head, crest and beak
+      circle(ctx, 7.5, -21, 3.6, '#e0531f');
+      poly(ctx, [10.5, -22, 14.5, -20.5, 10.5, -19.5], '#ffd27a', 0.8);
+      ctx.fillStyle = '#fff4c0';
+      ctx.fillRect(8.2, -22.4, 1.6, 1.4);
+      poly(ctx, [6, -24, 4, -30 - flick, 7.5, -25.5, 8.5, -31 + flick, 9.5, -24.5], '#ffd27a', 0.8);
+    } else {
+      circle(ctx, 6.5, -21, 3.6, '#c4401c');
+      poly(ctx, [5, -24, 3, -30 - flick, 6.5, -25.5, 7.5, -31 + flick, 8.5, -24.5], '#ffb347', 0.8);
+    }
+    // near wing
+    poly(ctx, [1, -16, 6, -38 + flap, -2, -34 + flap, -10, -36 + flap, -9, -18], '#ff6a1f');
+    poly(ctx, [0, -17, 4.5, -35 + flap, -2, -31.5 + flap, -8, -32 + flap, -7.5, -19], '#ffb347', 0);
+    poly(ctx, [-1, -19, 2.5, -31 + flap, -3, -28 + flap, -6, -21], '#fff0a8', 0);
+    ctx.restore();
+    // a scorch on the ground under it
+    ellipse(ctx, 0, -1, 8, 2.4, 'rgba(255,120,40,0.25)', 0);
+  };
+
+  // Frost Giant: blue hide, a frozen beard, furs, and a club of glacier ice.
+  D.frostgiant = (ctx, o) => {
+    const T = o.tc;
+    const skin = '#8fb4d6';
+    const fur = '#d8d2c4';
+    const shimmer = 0.5 + 0.5 * Math.sin(o.t * 2.6);
+    rect(ctx, -7, -13, 6, 13, 2, shade(skin, -0.15));
+    rect(ctx, 1.5, -13, 6, 13, 2, shade(skin, -0.25));
+    rect(ctx, -8, -3.5, 7.5, 3.5, 1.2, '#6d5b45');
+    rect(ctx, 1, -3.5, 8, 3.5, 1.2, '#5e4e3b');
+    poly(ctx, [-9.5, -15, 9.5, -15, 8, -9, -8, -9], fur);
+    rect(ctx, -9.5, -31, 19, 18, 5, skin);
+    if (o.back) {
+      poly(ctx, [-10, -31, 10, -31, 8, -20, -8, -20], fur);
+      circle(ctx, 0, -35, 6.5, '#b9d3ea');
+      poly(ctx, [-6, -38, -3, -44, 0, -39, 3, -45, 6, -38], '#e8f4ff', 0.8);
+      arm(ctx, 9, -27, 13, -17, skin, skin);
+      line(ctx, 13, -15, 17, -38, 4, '#bfe3ff');
+      return;
+    }
+    // a fur mantle, a strap across the chest and a belt in the army's colours
+    poly(ctx, [-10.5, -31, 10.5, -31, 9, -26, -9, -26], fur);
+    line(ctx, -8, -26, 7, -15, 1.8, '#6d5b45', false);
+    rect(ctx, -9.5, -16.5, 19, 3.2, 1, T.main, 0.8);
+    rect(ctx, -1.5, -16.8, 3, 3.8, 0.6, '#cfeaff', 0.6);
+    // head: frost-white beard and brows, eyes of ice
+    circle(ctx, 1, -35, 6.2, skin);
+    poly(ctx, [-4, -33, 6.5, -33, 5, -24, 1.5, -21, -2, -25], '#eef8ff', 0.8);
+    line(ctx, -1, -38, 5, -38.5, 1.4, '#eef8ff', false);
+    ctx.fillStyle = '#e8fbff';
+    ctx.fillRect(3, -37.2, 2, 1.4);
+    // ice crown of shards
+    poly(ctx, [-4.5, -40, -3, -46, -1, -41, 1.5, -48, 3.5, -41, 5.5, -46, 6.5, -40], '#cfeaff', 0.8);
+    arm(ctx, -9, -27, -12, -16, skin, skin);
+    arm(ctx, 9, -27, 13, -18, skin, skin);
+    // glacier club
+    glow(ctx, 16, -32, 10, 'rgba(160,220,255,', 0.25 + 0.2 * shimmer);
+    line(ctx, 13, -16, 16, -30, 3, '#6d5b45');
+    poly(ctx, [12, -29, 20, -31, 22, -40, 16, -46, 11, -40], '#bfe3ff');
+    poly(ctx, [14, -31, 18, -32, 19, -39, 16, -43, 13, -39], '#eef8ff', 0);
+  };
+
+  // Sun Paladin: gilded plate, a sun on the breast, a halo, and a great sun-headed mace.
+  D.paladin = (ctx, o) => {
+    const T = o.tc;
+    const plate = '#e8dcb2';
+    const gold = '#e6b83c';
+    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2.8);
+    legs(ctx, '#cbbf98');
+    if (o.back) {
+      torso(ctx, plate, -25);
+      cape(ctx, T.main, -24, 21);
+      glow(ctx, 0, -38, 10, 'rgba(255,220,120,', 0.3 + 0.15 * pulse);
+      rect(ctx, -5.5, -36, 11, 12, 3, plate);
+      arm(ctx, 6, -22, 10, -14, plate, '#d8cca6');
+      line(ctx, 10, -14, 14, -34, 2.6, '#8a6a3a');
+      circle(ctx, 14.5, -36, 4, gold, 1);
+      return;
+    }
+    torso(ctx, plate, -25);
+    // a tabard in the army's colours under the sun on the breastplate
+    rect(ctx, -4.5, -15, 9, 6, 1.2, T.main);
+    circle(ctx, 0, -18.5, 3.2, gold, 0.8);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      line(ctx, Math.cos(a) * 3.6, -18.5 + Math.sin(a) * 3.6, Math.cos(a) * 5.4, -18.5 + Math.sin(a) * 5.4, 0.9, gold, false);
+    }
+    circle(ctx, -6.5, -23, 3.4, gold);
+    circle(ctx, 6.5, -23, 3.4, gold);
+    arm(ctx, -6, -21, -9, -14, plate, '#d8cca6');
+    arm(ctx, 6.5, -22, 10, -14, plate, '#d8cca6');
+    // halo
+    ctx.save();
+    ctx.globalAlpha = 0.55 + 0.3 * pulse;
+    ellipse(ctx, 0, -41, 7, 2, 'rgba(0,0,0,0)', 0);
+    ctx.strokeStyle = '#ffe28a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.ellipse(0, -41.5, 7, 2.2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    // helm with a gold crest
+    rect(ctx, -5.5, -36, 11, 12, 3, plate);
+    rect(ctx, 0.5, -31.5, 5, 1.6, 0.6, OUT, 0);
+    poly(ctx, [-1, -36, 0.5, -40, 2, -36], gold, 0.8);
+    // sun mace
+    line(ctx, 10, -14, 14.5, -35, 2.6, '#8a6a3a');
+    glow(ctx, 15, -37.5, 9, 'rgba(255,210,100,', 0.35 + 0.25 * pulse);
+    circle(ctx, 15, -37.5, 4, gold, 1);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + o.t * 0.6;
+      line(ctx, 15 + Math.cos(a) * 4, -37.5 + Math.sin(a) * 4, 15 + Math.cos(a) * 6, -37.5 + Math.sin(a) * 6, 1, '#fff0b0', false);
+    }
+  };
+
   // Bare bones: legs, pelvis, spine and ribs.
   function skeletonBody(ctx, o) {
     const bone = '#e6dfc9';
@@ -1912,9 +2088,10 @@
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
     barricade: 22, wreckage: 22, void_wyrm: 96,
+    archmage: 52, phoenix: 48, frostgiant: 60, paladin: 46,
   };
 
-  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05 };
+  const SCALE = { golem_king: 1.35, witch_queen: 1.25, ashen_tyrant: 1.6, void_wyrm: 1.85, dragon: 1.05, drake: 0.85, spider: 1.25, troll: 1.15, colossus: 1.2, lich: 1.3, warlord: 1.4, castellan: 1.05, frostgiant: 1.22 };
 
   // Draw a unit with feet at the current origin. view: 'front' or 'back'.
   function drawUnit(ctx, type, team, view, t, extra) {
