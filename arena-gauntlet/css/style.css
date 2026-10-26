@@ -529,6 +529,15 @@ button.card:active {
   border-color: rgba(195, 155, 255, 0.4);
 }
 
+/* A chip you can tap for what it means (an enchantment). */
+button.chip.tap {
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline dotted rgba(195, 155, 255, 0.6);
+  text-underline-offset: 3px;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

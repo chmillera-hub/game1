@@ -593,7 +593,7 @@
     if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
     if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
     if (u.mark > 0) chips.push(`<span class="chip bad">Marked ${u.mark}</span>`);
-    if (u.frenzy > 0) chips.push(`<span class="chip bad">Frenzy ${u.frenzy}</span>`);
+    if (u.frenzy > 0) chips.push(`<span class="chip bad" title="Frenzy: +25% damage for ${u.frenzy} more of its turns">Frenzy ${u.frenzy} (+25% damage)</span>`);
     if (u.shield > 0) chips.push(`<span class="chip">${ic('shield')} Shield ${u.shield}</span>`);
     // Grown in this battle.
     if (u.champion) chips.push(`<span class="chip warn">${ic('crown')} Champion</span>`);
@@ -622,7 +622,8 @@
       else if (u.wait > 0) chips.push(`<span class="chip">${ic('hourglass')} Cooldown ${u.wait}</span>`);
       else if (!u.nonCombat && u.para === 0 && u.team === (B && B.s.side)) chips.push('<span class="chip good">Ready</span>');
     }
-    if (u.enchant) chips.push(`<span class="chip magic">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</span>`);
+    // The enchantment: tap it to read what it does.
+    if (u.enchant && ENCHANTS[u.enchant]) chips.push(`<button type="button" class="chip magic tap" data-ench="${u.enchant}" title="${esc(ENCHANTS[u.enchant].desc)}">${ic('gem')} ${esc(ENCHANTS[u.enchant].name)}</button>`);
     // Regen counts a Mending Light aura it stands in during a battle.
     const regen = o.status && UI.battle && u.alive ? E.regenOf(UI.battle.s, u) : u.regen;
     if (regen) chips.push(`<span class="chip good" title="Heals ${regen} HP each time it takes a turn">${ic('heart')} Regen ${regen}</span>`);
@@ -3540,7 +3541,7 @@
       if (e.heal != null) bits.push(e.heal > 0 ? `<b>+${e.heal}</b> HP` : v.poison ? 'poisoned: no healing' : 'full HP');
       if (e.cleanse) bits.push('cures');
       if (e.shield) bits.push(`shield ${e.shield}`);
-      if (e.frenzy) bits.push('frenzy');
+      if (e.frenzy) bits.push('frenzy (+25% damage)');
       if (e.rally) bits.push(v.wait > 0 ? `cooldown ${v.wait} → ${v.wait - 1}` : 'rallied');
       if (e.para) bits.push(e.para === 'resist' ? 'immune to paralysis' : `paralyzed ${e.para}`);
       if (e.poison) bits.push(e.poison === 'resist' ? 'immune to poison' : `poison ${e.poison.dmg}×${e.poison.turns}`);
@@ -4967,6 +4968,15 @@
       hideToast();
     });
     root.addEventListener('pointerdown', (e) => !toastEl.hidden && !toastEl.contains(e.target) && hideToast(), true);
+    // An enchantment chip, wherever a unit card shows one: tap it for what it does.
+    root.document.addEventListener('click', (e) => {
+      const chip = e.target.closest && e.target.closest('[data-ench]');
+      const d = chip && ENCHANTS[chip.dataset.ench];
+      if (!d) return;
+      e.stopPropagation();
+      e.preventDefault();
+      toast(`${d.name} (enchantment): ${d.desc}`, 4500);
+    }, true);
     const unlock = () => {
       if (AG.Audio) AG.Audio.unlock();
       if (AG.Music) AG.Music.kick();

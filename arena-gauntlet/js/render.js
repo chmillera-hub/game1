@@ -2170,7 +2170,7 @@
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
             // A status the whole army gets at once (the War Drum) is announced once, not per unit.
-            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
+            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : '' });
             break;
           }
           case 'wardrum': {
@@ -2181,7 +2181,7 @@
             this.shakeT = Math.max(this.shakeT, 0.25);
             const cx = vs.reduce((t, w) => t + w.x, 0) / vs.length;
             const cy = vs.reduce((t, w) => t + w.y, 0) / vs.length;
-            this.addText(cx, cy, 'WAR DRUM! +25 HP · FRENZY', '#ffb060', { height: 60, big: true, max: 1.6 });
+            this.addText(cx, cy, 'WAR DRUM! +25 HP · FRENZY +25% DMG', '#ffb060', { height: 60, big: true, max: 1.6 });
             this.ring(cx, cy, 'rgba(255,150,70,0.9)', 3.2, 700, 10);
             break;
           }
