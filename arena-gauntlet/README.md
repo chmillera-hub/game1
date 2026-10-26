@@ -71,13 +71,17 @@ on a phone turned sideways, but portrait works too.
   is banned in Hall matches, on purpose: whichever army you steered would almost always
   win, and the ranking would mean nothing. Tap a unit and the Priority button shows
   crossed out with a red X; tap it and it says why. The very first army to enter finds
-  four **house armies** holding the Hall, mobs of one kind spammed onto the field,
-  Level 1 and bare: The Scamper Pack (24 Scouts, #1), The Tin Can Brigade (16
-  Knights) and The Thousand Arrows (16 Archers), 48 Supply each, and The Witching Hour
-  (12 Witches with Abyssal Bolt, at the bottom), 72 Supply once their Abyssal Bolts
-  (2 each) are priced in. Can your carefully chosen army beat them? In the
-  simulations most winning armies do (83 to 93% of the time); at 30 Supply every one
-  walked over them, so the mobs field about one and a half winning armies' worth.
+  four **house armies** holding the Hall, a few veterans of one kind each, every one
+  Level 3 with its mastery and both picks: The Scamper Pack (#1, 7 Scouts with
+  Grappling Hook and Venom Blades, 70 Supply), The Tin Can Brigade (6 Knights with
+  Guardian and Riposte, 60), The Thousand Arrows (5 Archers with Snare Shot and
+  Hunter's Mark, 45) and The Witching Hour (at the bottom, 5 Witches with Abyssal Bolt
+  and Withering Curse, 60). They sit between a medium and a hard fight: against 245
+  winning armies from the campaign simulations, the challenger won 80% of the time
+  against the Witches, 75% against the Archers, 66% against the Knights and 61%
+  against the Scouts, and about 1 in 3 climbed past all four at the first go. A Hall
+  saved with the old house mobs (24 Level 1 Scouts and the like) fields these instead,
+  in the same places and with the same records.
   Later armies wait in line ("Waiting
   to climb") until you start their climb from the Hall, whenever you like, even several
   campaigns later. A climb starts at the bottom: it fights

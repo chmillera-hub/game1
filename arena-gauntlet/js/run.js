@@ -2784,6 +2784,7 @@
     h.legends = Array.isArray(h.legends) ? h.legends.filter((l) => l && typeof l === 'object') : [];
     h.queue = Array.isArray(h.queue) ? h.queue.filter((l) => l && typeof l === 'object') : [];
     for (const l of h.legends.concat(h.queue)) tidyLegend(l);
+    for (const l of h.legends) refreshHouse(l);
     return h;
   }
 
@@ -2813,34 +2814,31 @@
     saveHall({ legends: [], queue: [] });
   }
 
-  // The house armies: a mob of one kind, Level 1 and bare, that hold the Hall for the first
-  // army ever to enter. Can your carefully chosen army beat a field full of Archers, just
-  // spammed out? At 48 Supply (a winning army fields 35 to 40) most do, not all: at 30 every
-  // winner in the simulations walked over them. Ranked toughest first.
+  // The house armies: a few veterans of one kind, every one Level 3 with its mastery and
+  // both picks, that hold the Hall for the first army ever to enter. Tuned against the
+  // winning armies of the campaign simulations to sit between a medium and a hard fight:
+  // about 4 winners in 5 get past the Witches at the bottom, 3 in 5 past the Scouts at the
+  // top. Ranked toughest first.
   const HOUSE = [
-    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', rows: [6, 7, 8] },
-    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', rows: [6, 7] },
-    { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', rows: [8, 7] },
-    { id: 'H-witches', type: 'witch', name: 'The Witching Hour', rows: [8, 7], a1: 'wi_abyss' },
+    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', n: 7, a1: 's_hook', a2: 's_venom', rows: [6, 7] },
+    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', n: 6, a1: 'k_guard', a2: 'k_riposte', rows: [6, 7] },
+    { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', n: 5, a1: 'a_snare', a2: 'a_hunter', rows: [8, 7] },
+    { id: 'H-witches', type: 'witch', name: 'The Witching Hour', n: 5, a1: 'wi_abyss', a2: 'wi_curse', rows: [8, 7] },
   ];
-  const HOUSE_SUPPLY = 48;
   function houseArmies() {
     const mid = (BOARD - 1) / 2;
     const cols = [...Array(BOARD).keys()].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
     return HOUSE.map((hz) => {
-      const T = UNITS[hz.type];
-      const n = Math.floor(HOUSE_SUPPLY / T.cost);
       const units = [];
-      for (const y of hz.rows) for (const x of cols) if (units.length < n) units.push({ spec: { type: hz.type, level: 1, a1: hz.a1 || T.abilities[1][0] }, x, y, facing: 0 });
-      // Supply left over buys a level for the first few.
-      let left = HOUSE_SUPPLY - n * T.cost;
-      for (const it of units) if (left >= LEVEL_COST[2]) {
-        it.spec.level = 2;
-        it.spec.a2 = T.abilities[2][0];
-        left -= LEVEL_COST[2];
-      }
+      for (const y of hz.rows) for (const x of cols) if (units.length < hz.n) units.push({ spec: { type: hz.type, level: D.MAX_LEVEL, a1: hz.a1, a2: hz.a2 }, x, y, facing: 0 });
       return { id: hz.id, name: hz.name, house: true, type: hz.type, date: '', wins: 0, losses: 0, climbed: true, level: 0, relics: [], units, superWon: false };
     });
+  }
+
+  // A house army saved before its line-up changed fields today's, keeping its place and record.
+  function refreshHouse(l) {
+    const fresh = l.house && houseArmies().find((x) => x.id === l.id);
+    if (fresh) Object.assign(l, { name: fresh.name, type: fresh.type, units: fresh.units, relics: [] });
   }
 
   function saveHall(h) {
@@ -3119,6 +3117,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, houseArmies, HOUSE_SUPPLY, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
