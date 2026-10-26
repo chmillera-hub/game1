@@ -587,11 +587,19 @@
       for (const [a, b, c, d] of [[-8, -20, -3, -14], [2, -22, 6, -15], [8, -28, 12, -24]]) line(ctx, a, b, c, d, 1, '#ff7a2a', false);
       glow(ctx, 0, -16, 16, 'rgba(255,120,40,', 0.2);
     }
+    // War harness in the army's colours: a saddle cloth over the back with a gold hem, a
+    // leather seat, a girth strap and buckle round the belly, and a collar on the neck.
+    poly(ctx, [-9.5, -23.5, 4.5, -25, 6, -17.4, -8.5, -16.4], T.main);
+    poly(ctx, [-8.6, -17.9, 5.9, -18.9, 6, -17.4, -8.5, -16.4], T.dark, 0);
+    line(ctx, -8.2, -17.6, 5.6, -18.6, 0.9, '#e6b83c', false);
+    rect(ctx, -6.5, -27.5, 9, 3.6, 1.6, '#6a4a2a', 0.8);
+    line(ctx, -1, -16.8, -1, -8.6, 1.8, '#4a3424', false);
+    rect(ctx, -2.5, -13.4, 3, 3, 0.6, '#e6b83c', 0.6);
+    poly(ctx, [7.2, -23.2, 13.6, -24.8, 14.6, -21.4, 8.4, -19.8], T.main, 0.8);
+    circle(ctx, 11, -22.4, 1, '#e6b83c', 0);
     // near wing
     poly(ctx, [0, -24, 8, -50 + flap, 0, -44 + flap, -8, -46 + flap, -10, -28], wing);
     poly(ctx, [-1, -26, 6, -47 + flap, 0, -42 + flap, -7, -43 + flap, -8, -29], memb, 0);
-    line(ctx, -4, -18, -4, -12, 2.2, T.main, false);
-    rect(ctx, -6, -21, 7, 3, 1, T.main, 0.8);
   };
 
   D.shrub = (ctx, o) => {
