@@ -167,4 +167,71 @@ test('legendary relics: a big edge, a real price, and only from the second half 
   assert.ok(seen.late > 20, `late Act 3 merchants sell them (${seen.late} of 300)`);
 });
 
+test('the Meteor Hammer: 7 Supply, two casts, each called down a turn ahead so foes can get out of the way', () => {
+  const G = D.GEAR.meteor_hammer;
+  assert.strictEqual(G.cost, 7);
+  assert.strictEqual(G.mod.active.uses, 2);
+  assert.ok(G.mod.active.channel);
+  const s = E.createBattle({ w: 9, h: 9, terrain: new Array(81).fill(0), seed: 4, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, units: [
+    { type: 'knight', team: 'P', x: 4, y: 8, gear: ['meteor_hammer'] },
+    { type: 'orc', team: 'E', x: 4, y: 4 },
+    { type: 'orc', team: 'E', x: 5, y: 4 },
+    { type: 'brute', team: 'E', x: 0, y: 0 },
+  ] });
+  const [kn, stay, flee] = s.units;
+  kn.hp = kn.maxHp = 999;
+  const ai = kn.acts.findIndex((a) => a.name === 'Meteor Hammer');
+  assert.ok(ai > 0, 'the knight carries it');
+  const cast = () => {
+    s.side = 'P';
+    s.spent = false;
+    kn.activated = false;
+    kn.wait = 0;
+    s.events.length = 0;
+    assert.ok(E.beginActivation(s, kn.uid));
+    assert.ok(E.performAction(s, kn.uid, { kind: 'tile', x: 4, y: 4, ai }), 'cast');
+    if (s.act) E.finishActivation(s, null);
+  };
+  const hp = [stay.hp, flee.hp];
+  cast();
+  assert.deepStrictEqual([stay.hp, flee.hp], hp, 'nothing lands the turn it is called');
+  assert.ok(s.events.some((e) => e.t === 'channel' && e.tiles.length === 9), 'the 3x3 area is marked');
+  assert.strictEqual(s.channels.length, 1);
+  // One of them steps out before it lands.
+  s.occ[E.idx(s, flee.x, flee.y)] = 0;
+  flee.x = 8;
+  flee.y = 0;
+  s.occ[E.idx(s, 8, 0)] = flee.uid;
+  // Round the turns until the knight's side is up again: it lands as its turn starts.
+  s.side = 'P';
+  E.endTurn(s);
+  for (let i = 0; i < 4 && s.side !== 'P'; i++) E.endTurn(s);
+  assert.ok(stay.hp < hp[0] || !stay.alive, 'the one that stayed is hit');
+  assert.strictEqual(flee.hp, hp[1], 'the one that left is not');
+  assert.strictEqual(s.channels.length, 0);
+  assert.strictEqual(kn.acts[ai].left, 1, 'one cast left');
+  // The second cast fizzles if the caster falls first.
+  kn.acts[ai].cdLeft = 0;
+  cast();
+  assert.strictEqual(s.channels.length, 1);
+  const brute = s.units[3];
+  s.occ[E.idx(s, brute.x, brute.y)] = 0;
+  brute.x = 4;
+  brute.y = 7;
+  s.occ[E.idx(s, 4, 7)] = brute.uid;
+  kn.hp = 1;
+  kn.block = 0;
+  kn.shield = 0;
+  s.side = 'E';
+  s.spent = false;
+  brute.activated = false;
+  brute.wait = 0;
+  s.events.length = 0;
+  assert.ok(E.beginActivation(s, brute.uid));
+  assert.ok(E.performAction(s, brute.uid, { kind: 'unit', uid: kn.uid, ai: 0 }));
+  assert.ok(!kn.alive, 'the caster falls');
+  assert.ok(s.events.some((e) => e.t === 'fizzle' && e.uid === kn.uid), 'its meteor fizzles');
+  assert.strictEqual(s.channels.length, 0, 'and never lands');
+});
+
 console.log(`legendary: ${passed} tests passed`);

@@ -385,6 +385,7 @@
       }
       for (const uid of [...this.vis.keys()]) if (!seen.has(uid) && !(opts && opts.keep)) this.vis.delete(uid);
       this.tfx = (s.tfx || []).map((f) => Object.assign({}, f));
+      this.channels = (s.channels || []).map((c) => ({ uid: c.uid, tiles: c.tiles, team: c.team }));
       this.exitX = s.units.some((u) => u.alive && u.traits && u.traits.has('cart')) ? s.cartExit : null;
       this.waves = s.waves ? AG.Engine.waveSummary(s) : [];
     }
@@ -801,8 +802,27 @@
       }
     }
 
-    // Fire and caltrops lie on the ground; smoke is drawn over the units.
+    // Fire and caltrops lie on the ground; smoke is drawn over the units. A meteor being
+    // called down marks its 3x3 in pulsing red, with a target ring in the middle, until it
+    // lands (or its caster falls).
     drawHazards(g) {
+      for (const c of this.channels || []) {
+        const pulse = 0.5 + 0.5 * Math.sin(this.time * 6);
+        for (const [x, y] of c.tiles) this.tileFill(g, x, y, 'rgba(255,70,30,' + (0.16 + 0.14 * pulse) + ')', 'rgba(255,140,60,' + (0.55 + 0.35 * pulse) + ')', 2, 1);
+        const mid = c.tiles[Math.floor(c.tiles.length / 2)] || c.tiles[0];
+        if (mid) {
+          const [cx, cy] = this.center(mid[0], mid[1]);
+          g.save();
+          g.strokeStyle = 'rgba(255,220,140,' + (0.6 + 0.4 * pulse) + ')';
+          g.lineWidth = Math.max(1.5, this.tw * 0.04);
+          for (const r of [0.55, 1.1]) {
+            g.beginPath();
+            g.ellipse(cx, cy, this.tw * 0.5 * r, this.th * 0.5 * r, 0, 0, Math.PI * 2);
+            g.stroke();
+          }
+          g.restore();
+        }
+      }
       for (const f of this.tfx) {
         const [cx, cy] = this.center(f.x, f.y);
         if (f.kind === 'fire') {
@@ -1918,6 +1938,7 @@
         }
         case 'blast': {
           if (type === 'archmage' && (ev.ai || 0) === 0 || ev.name === 'Meteor Hammer') {
+            if (ev.landing) this.channels = (this.channels || []).filter((c) => c.uid !== ev.uid);
             await meteor();
           } else if (ev.name === 'Avalanche') {
             this.sfx('slam');
@@ -2715,6 +2736,21 @@
               if (e.crumble) this.particles(v.x, v.y, 10, ['#e6dfc9', '#b9b19a'], { lift: 10, gravity: 2.5, speed: 0.6, max: 0.6 });
               this.tween(300, (k) => (v.alpha = 1 - k)).then(() => this.vis.delete(e.uid));
             }
+            break;
+          case 'channel':
+            // The Meteor Hammer is called: the area is marked until it lands.
+            this.channels = (this.channels || []).filter((c) => c.uid !== e.uid).concat([{ uid: e.uid, tiles: e.tiles, team: v ? v.team : 'P' }]);
+            this.sfx('charm');
+            if (v) {
+              any = true;
+              this.addText(v.x, v.y, 'CALLING', '#ffb070', { height: h, tag: e.name.toUpperCase() });
+              this.particles(v.x, v.y, 12, ['#ffd27a', '#ff8a2a', '#fff3c0'], { lift: 30, rise: 1, speed: 0.4, max: 0.8 });
+            }
+            for (const [x, y] of e.tiles || []) this.particles(x, y, 2, ['#ff8a2a', '#ffd27a'], { lift: 4, rise: 0.5, speed: 0.2, max: 0.6 });
+            break;
+          case 'fizzle':
+            this.channels = (this.channels || []).filter((c) => c.uid !== e.uid);
+            if (v) this.addText(v.x, v.y, 'FIZZLES', '#c9b6a0', { height: h, tag: 'METEOR' });
             break;
           case 'hazard':
             for (const [x, y] of e.tiles || []) {

@@ -637,9 +637,14 @@ on a phone turned sideways, but portrait works too.
   every enemy in the lines (+50% against the undead and spirits); and the **Dragon
   Tyrant** (8). Each has its own picks, talents and mastery, and its own animation (a
   falling meteor, a fiery dive, an ice burst, beams of light). There are legendary
-  skills and gear too, 3 or 4 Supply each: Avatar of War, Time Warp (cooldown 2
+  skills and gear too, 3 to 7 Supply each: Avatar of War, Time Warp (cooldown 2
   shorter), Undying (rises once with half HP), Reaper's Mark, the Meteor Hammer, the
-  Crown of Storms, the Aegis of Dawn and the Vorpal Blade. And legendary relics, a
+  Crown of Storms, the Aegis of Dawn and the Vorpal Blade. The **Meteor Hammer** (7
+  Supply) holds two meteors, and each takes a turn to call down: its 3x3 is marked in
+  pulsing red ("CALLING · METEOR HAMMER") and lands as the unit's next turn starts, on
+  whoever is still standing there (26 magic damage and burning), so foes have a turn
+  to get out of the way, and the AI does. If the caller falls first, it never comes.
+  And legendary relics, a
   huge edge with a real price: Worldbreaker (+40% damage, 4 less Supply), Heart of
   the Mountain (+40% max HP, 4 less Supply), the Storm Banner (every unit zaps the
   nearest enemy each turn, 3 less Supply) and the Blood Moon (heal for 25% of the

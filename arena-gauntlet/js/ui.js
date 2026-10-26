@@ -3270,6 +3270,12 @@
         const by = s.byId[e.by];
         finish();
         add({ team: v.team, html: `A <b>Skeleton</b> rises for ${v.team === 'P' ? 'your army' : 'the enemy'}: ${e.why === 'pact' ? `${by ? `<b>${esc(logName(by))}</b>'s ` : ''}Shadow Pact (a Level 3 Witch raises the first 2 foes she slays)` : "the Necromancer's Bell (1 in 3 slain foes rise)"}.` });
+      } else if (e.t === 'channel' && v) {
+        finish();
+        add({ team: v.team, html: `<b>${esc(logName(v))}</b> calls down the <b>${esc(e.name)}</b>: the marked 3x3 is hit as its next turn starts. Get out of the way!` });
+      } else if (e.t === 'fizzle' && v) {
+        finish();
+        add({ team: v.team, html: `<b>${esc(logName(v))}</b> falls: its meteor never comes.` });
       } else if (e.t === 'loot' && v) {
         finish();
         add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
