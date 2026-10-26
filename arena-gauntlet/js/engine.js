@@ -319,6 +319,9 @@
       goals: (cfg.goals || []).map((g) => Object.assign({}, g)),
       tfx: [],
       booms: [],
+      // Acts being channelled (the Meteor Hammer): marked now, they land as the caster's
+      // next turn starts (see landChannels).
+      channels: [],
       cartExit: cfg.cartExit != null ? cfg.cartExit : 0,
       waves: [],
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
@@ -1176,6 +1179,11 @@
   function kill(s, u, src) {
     u.alive = false;
     u.hp = 0;
+    // A meteor it was calling down never comes.
+    if (s.channels && s.channels.some((c) => c.uid === u.uid)) {
+      s.channels = s.channels.filter((c) => c.uid !== u.uid);
+      emit(s, { t: 'fizzle', uid: u.uid });
+    }
     if (u.reinforcement && u.team === 'E') s.stats.waveKills = (s.stats.waveKills || 0) + 1;
     s.occ[idx(s, u.x, u.y)] = 0;
     if (s.act && s.act.uid === u.uid) {
@@ -1809,6 +1817,13 @@
       u.facing = fd;
       emit(s, { t: 'face', uid, facing: fd });
     }
+    // A channelled act takes this turn to call down: its tiles are marked, and it lands as
+    // the caster's next turn starts, on whoever is still there. Foes have a turn to get out.
+    if (a.channel) {
+      s.channels.push({ uid, ai, target, tiles, team: u.team });
+      emit(s, { t: 'channel', uid, name: a.name, target, tiles, x: u.x, y: u.y, ai });
+      return true;
+    }
     emit(s, { t: 'action', uid, kind: a.kind, name: a.name, target, tiles, x: u.x, y: u.y, dmg: a.dmg || null, ai, hz: a.hz || null, fixed: a.fixed != null });
     const fx = hitFx(u, a);
     const strike = (v, o) => {
@@ -2312,7 +2327,30 @@
   // The start of one unit's own turn, acting or passing, always in this order: its fatigue,
   // then poison, then burns, then fire underfoot, then regen. (Then it acts, or passes and
   // its cooldown ticks down.) The board plays each of these as a beat of its own.
+  // What a unit channelled on its last turn lands now, before anything else in its turn.
+  function landChannels(s, u) {
+    const mine = s.channels.filter((c) => c.uid === u.uid);
+    if (!mine.length) return;
+    s.channels = s.channels.filter((c) => c.uid !== u.uid);
+    for (const c of mine) {
+      const a = u.acts[c.ai];
+      if (!a || !u.alive) continue;
+      emit(s, { t: 'action', uid: u.uid, kind: a.kind, name: a.name, target: c.target, tiles: c.tiles, x: u.x, y: u.y, dmg: a.dmg || null, ai: c.ai, landing: true, fixed: a.fixed != null });
+      const fx = hitFx(u, a);
+      const opts = { fromX: u.x, fromY: u.y, act: a };
+      for (const v of affectedUnits(s, u, c.target)) {
+        if (!v.alive || !u.alive) continue;
+        const landed = a.dmg ? !hit(s, u, v, opts).blocked : true;
+        if (landed && v.alive && v.team !== u.team && hasFx(fx)) applyStatus(s, u, v, fx, a);
+      }
+      resolveBooms(s);
+      checkOutcome(s);
+    }
+  }
+
   function unitTurnStart(s, u) {
+    landChannels(s, u);
+    if (s.over || !u.alive) return;
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     // A troll hurt by magic or fire since its last turn does not regenerate this turn.
     u.burnt = u.scorched;

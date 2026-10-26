@@ -608,6 +608,13 @@
         if (f.kind === 'caltrops') v -= 6 * hpv + 3;
       }
     }
+    // A meteor the other side is calling down: get out from under it.
+    for (const c of s.channels || []) {
+      if (c.team === u.team || !c.tiles.some(([tx, ty]) => tx === x && ty === y)) continue;
+      const caster = s.byId[c.uid];
+      const a = caster && caster.acts[c.ai];
+      v -= ((a && a.fixed) || 20) * hpv * 1.6 + 4;
+    }
     if (ctx.foeRanged) {
       for (const [bx, by] of E.radiusTiles(s, x, y, 1)) {
         const b = E.at(s, bx, by);
@@ -702,6 +709,8 @@
     }
     const pv = E.previewAction(s, u, target, c);
     let v = 0;
+    // A channelled act lands a turn later: foes that can walk may well be gone by then.
+    const later = (t) => (a.channel && t.team !== u.team && t.move > 0 && !t.root && !t.para && !t.traits.has('immobile') ? 0.4 : 1);
     for (const e of pv.effects) {
       const t = s.byId[e.uid];
       // Wreckage (spoils) is worth nothing to either side until the enemy army falls.
@@ -731,8 +740,8 @@
         if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
         // With the shrine the priority, an enemy standing on it must be driven off.
         else if (ctx.focus && ctx.focus.hold && t.team !== u.team && t.x === ctx.focus.x && t.y === ctx.focus.y && !e.friendly) val += 40 + dealt * 2 + (e.kill ? 100 : 0);
-        if (e.friendly) v -= p * val * 1.4;
-        else v += p * val;
+        if (e.friendly) v -= p * val * 1.4 * (a.channel ? 0.6 : 1);
+        else v += p * val * later(t);
       }
       if (e.friendly) {
         if (e.heal) v += e.heal * hpv;

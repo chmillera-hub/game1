@@ -1034,8 +1034,10 @@
     gilded_gauntlet: { name: 'Gilded Gauntlet', cost: 1, desc: 'Every enemy it slays earns 6 gold.', req: 'damage', mod: { traits: ['midas'] } },
     storm_rod: { name: 'Storm Rod', cost: 2, desc: 'At the start of its turn, lightning strikes the nearest enemy within 3 tiles for 5 magic damage.', mod: { traits: ['stormcaller'] } },
     // Legendary: found from the second half of Act 2 on, more often the deeper you go.
-    meteor_hammer: { name: 'Meteor Hammer', cost: 3, rarity: 'legendary', desc: 'Active, 1 use: call a meteor down on a 3x3 area 2 to 5 tiles away: 26 magic damage to everything there, and it burns.',
-      mod: { active: { name: 'Meteor Hammer', kind: 'blast', range: [2, 5], pattern: 'square', dmg: 'magic', fixed: 26, arc: true, ff: true, fx: { burn: [2, 5] }, uses: 1 } } },
+    // Two casts of a nuke: it costs 7, and each takes a turn to call down (see channel in
+    // the engine), so foes see the marked area and can get out of the way.
+    meteor_hammer: { name: 'Meteor Hammer', cost: 7, rarity: 'legendary', desc: 'Active, 2 uses, cooldown 2: call a meteor down on a 3x3 area 2 to 5 tiles away. It takes this turn to call: the area is marked, and the meteor lands as the unit\'s next turn starts, 26 magic damage to everything still there, and it burns. If the unit falls first, it never comes.',
+      mod: { active: { name: 'Meteor Hammer', kind: 'blast', range: [2, 5], pattern: 'square', dmg: 'magic', fixed: 26, arc: true, ff: true, fx: { burn: [2, 5] }, uses: 2, cd: 2, channel: true } } },
     storm_crown: { name: 'Crown of Storms', cost: 3, rarity: 'legendary', desc: 'Active, 2 uses: lightning lashes 4 tiles out in all four directions, 18 magic damage to every enemy in the lines.',
       mod: { active: { name: 'Crown of Storms', kind: 'cross', len: 4, dmg: 'magic', fixed: 18, uses: 2 } } },
     aegis_dawn: { name: 'Aegis of Dawn', cost: 3, rarity: 'legendary', desc: '+20% armor and +20% magic resistance. Once per battle, it survives a fatal blow with 1 HP.', mod: { stat: { armor: 0.2, res: 0.2 }, traits: ['secondwind'] } },

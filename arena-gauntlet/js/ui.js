@@ -3242,6 +3242,12 @@
         // A status shrugged off, on the line of the unit that tried it: why the poison did nothing.
         const note = `${logName(v)} immune to ${{ poison: 'poison', para: 'paralysis', root: 'roots' }[e.status]}${e.why ? ` (${e.why})` : ''}`;
         if (!line.notes.includes(note)) line.notes.push(note);
+      } else if (e.t === 'channel' && v) {
+        finish();
+        add({ team: v.team, html: `<b>${esc(logName(v))}</b> calls down the <b>${esc(e.name)}</b>: the marked 3x3 is hit as its next turn starts. Get out of the way!` });
+      } else if (e.t === 'fizzle' && v) {
+        finish();
+        add({ team: v.team, html: `<b>${esc(logName(v))}</b> falls: its meteor never comes.` });
       } else if (e.t === 'loot' && v) {
         finish();
         add({ team: v.team, html: `<b>${esc(logName(v))}</b> takes the ${esc(R.LOOT_NAMES[e.kind])}.` });
