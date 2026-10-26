@@ -105,7 +105,10 @@ on a phone turned sideways, but portrait works too.
 - **War Room**: tap a unit card to put that unit in the battle, and tap it again to
   take it out, so you can try armies out quickly. Tap a unit on the board (or hold its
   card) for its full loadout: cost, level, every slot and pick spelled out, stats and
-  attacks, plus Priority (rally on it) and Take off the field. In battle, holding a
+  attacks, plus Priority (rally on it) and Take off the field. The Supply you have left
+  stays pinned at the top of the loadout (and of the setup questions after placing a
+  unit) however far you scroll, and every pick that changes it pops a small bubble
+  where you tapped, "+2 Supply · 25 left", that fades within two seconds. In battle, holding a
   unit shows everything about it, its loadout included. Equipped items and chosen
   abilities are gold with a ✓ Equipped or ✓ Chosen tag: they already work, and a tap
   only swaps them. Sheets opened from another sheet (equip a talent, pick an ability)

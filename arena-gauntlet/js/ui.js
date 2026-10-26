@@ -75,6 +75,34 @@
     $('#toast').hidden = true;
   }
 
+  // The army's Supply in the War Room, pinned to the top of a sheet as you scroll it.
+  function budgetBar(used, cap, label) {
+    const left = cap - used;
+    return `<div class="budget pin ${left < 0 ? 'over' : ''}">${ic('command')} ${left < 0 ? `<b>${-left}</b> over budget` : `Supply left: <b>${left}</b>`}
+      <span class="grow"></span><span class="small muted">${label || 'Army'} ${used}/${cap}</span></div>`;
+  }
+
+  // A bubble over what you just tapped: what it cost and the Supply left, fading in a moment.
+  // `rect` is where the tapped button was (the sheet redraws under it), `was` and `now` the
+  // Supply left before and after.
+  function supplyPop(rect, was, now) {
+    for (const old of $$('.sup-pop')) old.remove();
+    const took = was - now;
+    const el = document.createElement('div');
+    el.className = `sup-pop ${now < 0 ? 'over' : took < 0 ? 'back' : ''}`;
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = `${took > 0 ? `<b>+${took}</b> Supply` : took < 0 ? `<b>−${-took}</b> Supply` : 'Free'} · ${now < 0 ? `<b>${-now}</b> over` : `<b>${now}</b> left`}`;
+    document.body.appendChild(el);
+    const bar = $('#sheet .budget.pin');
+    // Never over the pinned bar itself: its number is the one to read.
+    const floor = bar ? bar.getBoundingClientRect().bottom + 6 : 8;
+    const x = rect.left + rect.width / 2 - el.offsetWidth / 2;
+    el.style.left = Math.max(8, Math.min(innerWidth - el.offsetWidth - 8, x)) + 'px';
+    el.style.top = Math.max(floor, rect.top - el.offsetHeight - 6) + 'px';
+    setTimeout(() => el.remove(), 1800);
+    if (bar) bar.classList.add('bump');
+  }
+
   function drawPortraits(el) {
     for (const cv of $$('canvas[data-p]', el)) {
       const [type, team, gray] = cv.dataset.p.split(':');
@@ -1532,7 +1560,7 @@
       const used = wrUsed();
       const deployed = wr.dep.has(rid);
       const total = deployed ? used : used + cost;
-      budget = `<div class="budget ${total > wr.supply ? 'over' : ''}">${ic('command')} ${deployed ? 'Army' : 'Army with this unit'}: <b>${total}/${wr.supply}</b> Supply${total > wr.supply ? ' · over budget' : ''}</div>`;
+      budget = budgetBar(total, wr.supply, deployed ? 'Army' : 'Army with this unit');
     }
     const lvBtn = (lv) => `<button class="btn ${L.lv === lv ? 'on' : ''}" data-lv="${lv}"><b>Lv ${lv}</b><span>${lv === 1 ? 'base' : '+' + LEVEL_COST[lv]}</span></button>`;
     // The level picks: the free option and the actives. Talents have their own slots.
@@ -1574,25 +1602,32 @@
         ${editable ? loadoutFieldButtons(rid) : ''}
         <button class="btn primary" id="loDone">${ic('check')} Done</button>
       </div>`;
-    const changed = () => {
+    const left = () => wr.supply - wrUsed();
+    // After a change: the sheet redrawn, and a bubble over the button tapped (`b`, with the
+    // Supply left before the change) saying what it cost and what is left.
+    const changed = (b, was) => {
+      const rect = b && b.getBoundingClientRect();
       R.save(run);
       if (UI.wr) renderWarRoom();
       sfx('click');
       loadoutSheet(rid, back);
+      if (rect && wr) supplyPop(rect, was, left());
     };
     refreshSheet(html, (sh) => {
       if (!editable) for (const b of $$('[data-lv], [data-ab], [data-slot], [data-kit]', sh)) b.disabled = true;
       for (const b of $$('[data-lv]', sh))
         b.onclick = () => {
+          const was = left();
           R.setLevel(run, rid, +b.dataset.lv);
-          changed();
+          changed(b, was);
         };
       for (const b of $$('[data-ab]', sh))
         b.onclick = () => {
           const [tier, id] = b.dataset.ab.split(':');
           if (+tier === 2 && L.lv < 2) toast('This pick applies once the unit is Level 2.');
+          const was = left();
           R.setAbility(run, rid, +tier, id);
-          changed();
+          changed(b, was);
         };
       // Back from a picker, the sheet returns to where you were.
       const here = () => {
@@ -1611,6 +1646,7 @@
       for (const b of $$('[data-kit]', sh))
         b.onclick = () => {
           const [op, kind, uid] = b.dataset.kit.split(':');
+          const was = left();
           if (op === 'off') R.unassignItem(run, uid);
           else {
             const n = R.slotsFor(L.lv)[SLOT_KEY[kind]];
@@ -1620,7 +1656,7 @@
             }
             if (!R.assignItem(run, rid, uid)) return toast('That does not fit this unit.');
           }
-          changed();
+          changed(b, was);
         };
       if ($('#loBind', sh))
         $('#loBind', sh).onclick = async () => {
@@ -2696,7 +2732,8 @@
       const room = left();
       const kindIcon = q.kind ? `<span class="itemico ${q.kind}">${ic(ITEM_ICON[q.kind])}</span>` : '';
       openSheet(
-        `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, `Kit it out · Supply left: <b>${room}</b>`, true)}
+        `${sheetHead(`${esc(r.name)} the ${esc(T.name)}`, 'Kit it out', true)}
+        ${budgetBar(wrUsed(), wr.supply)}
         <div class="guide-q">${kindIcon}<b>${esc(q.title)}</b><span class="small muted">Pick one, or Continue to ${esc(q.skip)} and move on.</span></div>
         <div class="picks">${q.opts
           .map((o, i) => {
@@ -2711,6 +2748,8 @@
           for (const b of $$('[data-gopt]', sh))
             b.onclick = () => {
               const o = q.opts[+b.dataset.gopt];
+              const rect = b.getBoundingClientRect();
+              const was = left();
               if (q.key === 'lv') R.setLevel(run, rid, o.val);
               else if (q.key === 'a1' || q.key === 'a2') R.setAbility(run, rid, +q.key[1], o.val);
               else R.assignItem(run, rid, o.val);
@@ -2719,6 +2758,7 @@
               sfx('select');
               renderWarRoom();
               step();
+              supplyPop(rect, was, left());
             };
           $('#gNo', sh).onclick = () => {
             done.add(q.key);

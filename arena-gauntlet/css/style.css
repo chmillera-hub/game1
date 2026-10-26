@@ -2456,6 +2456,88 @@ body:has(#battle:not([hidden])) {
   color: #ffb3aa;
 }
 
+/* In a sheet, the Supply left stays in sight at the top as the sheet scrolls under it. */
+.sheet > .budget.pin {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
+  flex-shrink: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), var(--leather-2);
+  box-shadow: 0 -16px 0 var(--leather-2), 0 6px 12px -6px rgba(0, 0, 0, 0.7);
+}
+
+.budget.pin b {
+  font-size: 1.1rem;
+  color: var(--brass-hi);
+}
+
+.budget.pin.over b {
+  color: #ffb3aa;
+}
+
+.budget.bump {
+  animation: budget-bump 0.7s ease-out;
+}
+
+@keyframes budget-bump {
+  0% {
+    border-color: var(--brass-hi);
+    box-shadow: 0 -16px 0 var(--leather-2), 0 0 0 2px rgba(240, 207, 134, 0.55);
+  }
+}
+
+/* What a pick just cost and the Supply left, over the button tapped; it fades on its own. */
+.sup-pop {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--brass);
+  background: rgba(20, 17, 24, 0.95);
+  color: var(--parchment);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  animation: sup-pop 1.7s ease-out forwards;
+}
+
+.sup-pop b {
+  color: var(--brass-hi);
+}
+
+.sup-pop.back b {
+  color: var(--green);
+}
+
+.sup-pop.over {
+  border-color: var(--danger);
+}
+
+.sup-pop.over b {
+  color: #ffb3aa;
+}
+
+@keyframes sup-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  12% {
+    opacity: 1;
+    transform: none;
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
 .cost-big {
   color: var(--brass-hi);
   font-size: 1.05rem;
@@ -2800,6 +2882,11 @@ body:has(#battle:not([hidden])) {
   [data-choose]::before {
     animation: none;
     opacity: 0.8;
+  }
+
+  /* The Supply bubble still shows for its moment, just without moving. */
+  .sup-pop {
+    animation: none;
   }
 }
 
