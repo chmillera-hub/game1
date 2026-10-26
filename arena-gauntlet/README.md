@@ -171,7 +171,8 @@ on a phone turned sideways, but portrait works too.
   cooldown 2) runs up to 4 tiles straight through a line of enemies, cutting and
   weakening each one it passes, and leaves it standing past them. It is not meant to
   be beaten: in the simulations an army that took elite battles and carries 16 or more
-  relics wins about one try in five, and anything less almost never. Losing to it
+  relics wins a little under one try in three, and a middling one almost never. (In
+  the Fun Lab the Death Knight and the Lich both come at Level 3.) Losing to it
   costs you nothing. Lose, and Try
   again takes you straight back to the War Room with the same plan, as many times as
   you like. Whatever army last fought the Wyrm, won or lost, takes your campaign's

@@ -1270,7 +1270,7 @@
       },
     },
     // The optional final challenge: the Eclipse Wyrm and the best of the Spire.
-    mega: { name: 'The Eclipse Wyrm', units: ['void_wyrm', 'death_knight', 'lich', 'drake', 'drake', 'mageknight', 'knight', 'cleric', 'witch'], lv: [3, 2, 2, 2, 2, 3, 3, 3, 2], stance: 'aggressive', pool: ['knight', 'crossbow', 'drake'] },
+    mega: { name: 'The Eclipse Wyrm', units: ['void_wyrm', 'death_knight', 'lich', 'drake', 'drake', 'mageknight', 'knight', 'cleric', 'witch'], lv: [3, 3, 3, 2, 2, 3, 3, 3, 2], stance: 'aggressive', pool: ['knight', 'crossbow', 'drake'] },
   };
 
   const NAMES = [
