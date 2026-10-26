@@ -780,7 +780,7 @@
         { name: 'Chain Hook', kind: 'strike', range: [2, 4], straight: true, dmg: 'phys', mult: 0.6, fx: { pull: 2 }, uses: 3, cd: 2 },
       ],
       traits: ['big'], tags: ['greenskin', 'big'],
-      desc: 'Warlord of the border tribes. Cleaves everything around him, drags victims in on his chain hook, and his roar whips the horde into a frenzy.',
+      desc: 'Warlord of the border tribes. Cleaves everything around him, drags victims in on his chain hook, and his roar whips the horde into a frenzy (+25% damage).',
       tip: 'Do not surround him with weak units. Strike from behind, where he cannot block.',
     },
     witch_queen: {

@@ -2141,7 +2141,7 @@
             else if (e.status === 'poison') v.poison = true;
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
-            if (st) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
+            if (st) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : '' });
             break;
           }
           case 'resist': {
