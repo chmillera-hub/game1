@@ -1361,10 +1361,28 @@
     sumPoison(u);
   }
 
+  // Why a unit shrugs off a status (see statusImmune), for the board and the battle log.
+  function immuneWhy(s, u, kind) {
+    const tr = u.traits;
+    if (kind === 'para' && u.boss) return 'boss';
+    if (tr.has('undead') && kind === 'poison') return 'undead';
+    if (u.tags.has('construct') && kind === 'poison') return 'construct';
+    if (tr.has('stoneskin')) return 'stone skin';
+    if (kind === 'root' && tr.has('immobile')) return 'rooted in place';
+    if (tr.has('steadfast') || tr.has('paraproof') || tr.has('poisonproof')) return 'its loadout';
+    if (inBarrier(s, u)) return 'Barrier Ward';
+    return '';
+  }
+
+  // A status that does not take: the board says so over the unit's head.
+  function resisted(s, u, kind) {
+    emit(s, { t: 'resist', uid: u.uid, status: kind, why: immuneWhy(s, u, kind) });
+  }
+
   function applyStatus(s, src, u, fx, act) {
     if (!u.alive || u.nonCombat || u.structure) return;
     if (fx.para) {
-      if (statusImmune(s, u, 'para')) emit(s, { t: 'resist', uid: u.uid });
+      if (statusImmune(s, u, 'para')) resisted(s, u, 'para');
       else {
         u.para = Math.max(u.para, fx.para);
         stamp(s, u, 'para');
@@ -1372,7 +1390,7 @@
       }
     }
     if (fx.poison) {
-      if (statusImmune(s, u, 'poison')) emit(s, { t: 'resist', uid: u.uid });
+      if (statusImmune(s, u, 'poison')) resisted(s, u, 'poison');
       else {
         addPoison(u, src, poisonKey(src, act), fx.poison[0], fx.poison[1]);
         emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
@@ -1384,7 +1402,7 @@
       emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
     }
     if (fx.root) {
-      if (statusImmune(s, u, 'root')) emit(s, { t: 'resist', uid: u.uid });
+      if (statusImmune(s, u, 'root')) resisted(s, u, 'root');
       else {
         u.root = Math.max(u.root, fx.root);
         stamp(s, u, 'root');

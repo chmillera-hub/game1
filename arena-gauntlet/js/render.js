@@ -2144,9 +2144,14 @@
             if (st) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25 });
             break;
           }
-          case 'resist':
-            if (v) this.addText(v.x, v.y, e.why === 'steady' ? 'STEADY' : 'IMMUNE', '#e8e2d0', { height: h, dy: -this.tw * 0.25 });
+          case 'resist': {
+            if (!v) break;
+            // A status that did not take, in that status's own colour: IMMUNE TO POISON.
+            const im = { poison: [POISON, 'TO POISON'], para: ['#ffd84a', 'TO PARALYSIS'], root: ['#8fe07a', 'TO ROOTS'] }[e.status];
+            if (e.why === 'steady') this.addText(v.x, v.y, 'STEADY', '#e8e2d0', { height: h });
+            else this.addText(v.x, v.y, 'IMMUNE', im ? im[0] : '#e8e2d0', { height: h, tag: im ? im[1] : '' });
             break;
+          }
           case 'cleanse':
             if (v) {
               v.para = 0;
