@@ -191,16 +191,17 @@ on a phone turned sideways, but portrait works too.
   is banned in Hall matches, on purpose: whichever army you steered would almost always
   win, and the ranking would mean nothing. Tap a unit and the Priority button shows
   crossed out with a red X; tap it and it says why. The very first army to enter finds
-  four **house armies** holding the Hall, a few veterans of one kind each, every one
-  Level 3 with its mastery and both picks: The Scamper Pack (#1, 8 Scouts with
-  Grapnel and Venom Blades, 80 Supply), The Tin Can Brigade (6 Knights with Bodyguard
-  and Riposte, 60), The Thousand Arrows (5 Archers with Snare Shot and Hunter's Mark,
-  45) and The Witching Hour (at the bottom, 5 Witches with Abyssal Bolt and Withering
-  Curse, 60; their Shadow Pact raises the first enemies they slay). They sit between a
-  medium and a hard fight: against 240 winning armies from the Fun Lab's campaign
-  simulations, the challenger won 75% of the time against the Witches, 72% against the
-  Archers, 70% against the Knights and 59% against the Scouts, and about 1 in 3 climbed
-  past all four at the first go. A Hall
+  four **house armies** holding the Hall, a few veterans of one kind each behind a
+  Level 3 Barrier Ward (Wide Field and Shatter Shield) in the middle of their back row,
+  so that no single nuke wipes out half of them in a turn. Every one is Level 3 with its
+  mastery and both picks: The Scamper Pack (#1, 7 Scouts with Grapnel and Venom Blades,
+  81 Supply with the ward), The Tin Can Brigade (5 Knights with Bodyguard and Riposte,
+  61), The Thousand Arrows (4 Archers with Snare Shot and Hunter's Mark, 47) and The
+  Witching Hour (at the bottom, 4 Witches with Abyssal Bolt and Withering Curse, 59;
+  their Shadow Pact raises the first enemies they slay). They sit between a medium and
+  a hard fight: against 240 winning armies from the Fun Lab's campaign simulations, the
+  challenger won 59% of the time against the Witches, 66% against the Archers, 70%
+  against the Knights and 51% against the Scouts. A Hall
   saved with the old house mobs (24 Level 1 Scouts and the like) fields these instead,
   in the same places and with the same records.
   Later armies wait in line ("Waiting

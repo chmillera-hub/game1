@@ -306,21 +306,28 @@ test('the first army ever to enter finds the house armies holding the Hall: a fe
   for (const l of h.legends) {
     assert.ok(l.house && l.climbed);
     const T = D.UNITS[l.type];
-    for (const it of l.units) {
+    // One Level 3 Barrier Ward in the middle of the back row, against a single nuke wiping them out.
+    const wards = l.units.filter((it) => it.spec.type === 'barrier');
+    assert.strictEqual(wards.length, 1, `${l.name}: one Barrier Ward`);
+    assert.deepStrictEqual([wards[0].x, wards[0].y, wards[0].spec.level], [4, 8, D.MAX_LEVEL]);
+    const W = D.UNITS.barrier;
+    assert.ok(W.abilities[1].includes(wards[0].spec.a1) && W.abilities[2].includes(wards[0].spec.a2), 'the ward has both picks');
+    const squad = l.units.filter((it) => it.spec.type !== 'barrier');
+    for (const it of squad) {
       const sp = it.spec;
-      assert.strictEqual(sp.type, l.type, 'all of a kind');
+      assert.strictEqual(sp.type, l.type, 'the rest all of a kind');
       assert.strictEqual(sp.level, D.MAX_LEVEL, 'every one Level 3, mastery and all');
       assert.ok(T.abilities[1].includes(sp.a1) && T.abilities[2].includes(sp.a2), `${l.name}: both picks are its own`);
       assert.ok(it.y >= 6, 'on their own half');
     }
     assert.strictEqual(new Set(l.units.map((it) => it.x + ',' + it.y)).size, l.units.length);
-    // The Hall shows the full price: unit, Level 3 and both picks.
-    const sp = l.units[0].spec;
-    assert.strictEqual(R.armySupply(l), l.units.length * (T.cost + D.LEVEL_COST[3] + D.ABILITIES[sp.a1].cost + D.ABILITIES[sp.a2].cost));
+    // The Hall shows the full price: units, Level 3 and both picks.
+    const price = (it) => D.UNITS[it.spec.type].cost + D.LEVEL_COST[3] + D.ABILITIES[it.spec.a1].cost + D.ABILITIES[it.spec.a2].cost;
+    assert.strictEqual(R.armySupply(l), l.units.reduce((t, it) => t + price(it), 0));
   }
   // It fights as Level 3: masteries in, stats up.
   const s = E.createBattle(R.hallBattleConfig(h.legends[1], h.legends[0], 9));
-  const kn = s.units.find((u) => u.team === 'P');
+  const kn = s.units.find((u) => u.team === 'P' && u.type === 'knight');
   assert.strictEqual(kn.level, 3);
   assert.ok(kn.maxHp > D.UNITS.knight.hp * 1.3, 'Level 3 hit points');
   assert.deepStrictEqual(R.hallPlace(h, run.legendId), { inLine: 1 }, 'it waits to climb past them');

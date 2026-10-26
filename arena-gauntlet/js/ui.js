@@ -4377,8 +4377,9 @@
     const relicNames = (l) => (l.relics || []).filter((id) => RELICS[id]).map((id) => RELICS[id].name).join(', ');
     const many = (name) => name + (/(s|x|ch|sh)$/.test(name) ? 'es' : 's');
     // A house army's picks, the same on every unit: " · Grappling Hook, Venom Blades".
+    const squad = (l) => l.units.filter((it) => it.spec.type === l.type);
     const housepicks = (l) => {
-      const sp = l.units[0] && l.units[0].spec;
+      const sp = squad(l)[0] && squad(l)[0].spec;
       const names = sp ? [sp.a1, sp.level >= 2 && sp.a2].filter((id) => id && ABILITIES[id]).map((id) => ABILITIES[id].name) : [];
       return names.length ? ' · ' + esc(names.join(', ')) : '';
     };
@@ -4396,7 +4397,7 @@
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
         <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
-          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${l.units.length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
+          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
     };
@@ -4951,7 +4952,7 @@
     const hallText = !place
       ? ''
       : place.inLine
-        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. ${hall.legends.every((l) => l.house) ? `The house armies hold the Hall for now: a few Level 3 Scouts, Knights, Archers or Witches each (${R.loadHall().legends.filter((l) => l.house).map((l) => R.armySupply(l)).join(', ')} Supply), veterans with both picks. Can you climb past them all? ` : ''}Start its climb now, or come back any time from the title screen.`
+        ? `Your army is saved in the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, waiting to climb${place.inLine > 1 ? ` (#${place.inLine} in line)` : ''}. ${hall.legends.every((l) => l.house) ? `The house armies hold the Hall for now: a few Level 3 Scouts, Knights, Archers or Witches each, behind a Level 3 Barrier Ward (${R.loadHall().legends.filter((l) => l.house).map((l) => R.armySupply(l)).join(', ')} Supply), veterans with both picks. Can you climb past them all? ` : ''}Start its climb now, or come back any time from the title screen.`
         : `Your army enters the <b>Hall of Fame</b> as <b>${esc(legend.name)}</b>, at #${place.rank} of ${hall.legends.length}. ${R.hallNext(hall, legend.id) ? 'Watch it climb: it fights the army above it, and each win moves it up one place.' : hall.legends.length === 1 ? 'It is the first army in the Hall. Win again, and the next one will have to beat it.' : 'Its climb is over.'}`;
     const hallPanel = legend
       ? `<div class="panel hall-climb"><p>${ic('crown')} ${hallText}${legend.superWon ? ` It wears the <span class="chip slayer">${ic('crossbones')} Wyrm slayer</span> badge there, for good.` : ''}</p>

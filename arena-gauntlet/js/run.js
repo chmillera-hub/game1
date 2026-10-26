@@ -2877,17 +2877,21 @@
   // top. The Fun Lab's winning armies come out stronger, so its Scouts bring an eighth, and
   // its Knights guard with Bodyguard. Ranked toughest first.
   const HOUSE = [
-    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', n: 8, a1: 's_hook', a2: 's_venom', rows: [6, 7] },
-    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', n: 6, a1: 'k_bodyguard', a2: 'k_riposte', rows: [6, 7] },
-    { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', n: 5, a1: 'a_snare', a2: 'a_hunter', rows: [8, 7] },
-    { id: 'H-witches', type: 'witch', name: 'The Witching Hour', n: 5, a1: 'wi_abyss', a2: 'wi_curse', rows: [8, 7] },
+    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', n: 7, a1: 's_hook', a2: 's_venom', rows: [6, 7] },
+    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', n: 5, a1: 'k_bodyguard', a2: 'k_riposte', rows: [6, 7] },
+    { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', n: 4, a1: 'a_snare', a2: 'a_hunter', rows: [8, 7] },
+    { id: 'H-witches', type: 'witch', name: 'The Witching Hour', n: 4, a1: 'wi_abyss', a2: 'wi_curse', rows: [8, 7] },
   ];
+  const HOUSE_WARD = { type: 'barrier', a1: 'bw_reach', a2: 'bw_shatter' };
   function houseArmies() {
     const mid = (BOARD - 1) / 2;
     const cols = [...Array(BOARD).keys()].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
     return HOUSE.map((hz) => {
-      const units = [];
-      for (const y of hz.rows) for (const x of cols) if (units.length < hz.n) units.push({ spec: { type: hz.type, level: D.MAX_LEVEL, a1: hz.a1, a2: hz.a2 }, x, y, facing: 0 });
+      // Every house army keeps a Level 3 Barrier Ward in the middle of its back row, so no
+      // single nuke wipes out half of it in one turn.
+      const units = [{ spec: Object.assign({ level: D.MAX_LEVEL }, HOUSE_WARD), x: cols[0], y: BOARD - 1, facing: 0 }];
+      const taken = (x, y) => units.some((u) => u.x === x && u.y === y);
+      for (const y of hz.rows) for (const x of cols) if (units.length < hz.n + 1 && !taken(x, y)) units.push({ spec: { type: hz.type, level: D.MAX_LEVEL, a1: hz.a1, a2: hz.a2 }, x, y, facing: 0 });
       return { id: hz.id, name: hz.name, house: true, type: hz.type, date: '', wins: 0, losses: 0, climbed: true, level: 0, relics: [], units, superWon: false };
     });
   }
