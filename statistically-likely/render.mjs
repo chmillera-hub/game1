@@ -41,8 +41,8 @@ if (args[0] === '--stills') {
 }
 
 const probe = await openFilm(browser);
-const { frames, events, T } = await probe.evaluate(() => ({ frames: window.FILM.frames, events: window.FILM.events, T: window.FILM.T }));
-writeFileSync(path.join(out, 'events.json'), JSON.stringify({ T, events }));
+const { frames, events, T, cues } = await probe.evaluate(() => ({ frames: window.FILM.frames, events: window.FILM.events, T: window.FILM.T, cues: window.FILM.cues }));
+writeFileSync(path.join(out, 'events.json'), JSON.stringify({ T, events, cues }));
 await probe.close();
 
 // RANGE=start:end (frames) renders just a slice, for checking size and quality

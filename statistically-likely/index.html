@@ -108,22 +108,25 @@ T.cardOut = CARD[2].t1 + 1.6;
 
 const CAPTIONS = [
   { t0: 10.2, t1: 14.2, lines: ['First week. New city. Everyone is a stranger.'] },
-  { t0: 14.8, t1: 21.2, lines: ['Connection happens the way it always has —', 'by proximity, by accident, by courage.'], l2: 1.2 },
+  { t0: 14.8, t1: 21.2, lines: ['Connection happens the way it always has —', 'by proximity, by accident, by courage.'], l2: 2.8 },
   { t0: 35.6, t1: 39.3, lines: ['The fear is real. The harm is real.'] },
   { t0: 39.6, t1: 43.5, lines: ['But a wall can’t tell a threat from a friend.'] },
   { t0: 43.9, t1: 46.8, lines: ['Now multiply it.'] },
   { t0: 47.1, t1: 50.3, lines: ['A campus of safe little circles.'] },
   { t0: 50.6, t1: 54.4, lines: ['…and a generation wondering why it feels so alone.'] },
-  { t0: 87.2, t1: 91.4, lines: ['Somewhere, a man loves his wife, his kids —', 'and someone else.'], l2: 1.4 },
+  { t0: 86.9, t1: 91.8, lines: ['Somewhere, a man loves his wife, his kids —', 'and someone else.'], l2: 3.2 },
   { t0: 101.2, t1: 105.6, lines: ['A flame that lights another flame loses nothing.'] },
   { t0: 106.0, t1: 109.9, lines: ['Love isn’t a pie. It’s a fire.'] },
-  { t0: 111.2, t1: 115.3, lines: ['The hurt is real.', 'So was the love.'], l2: 1.5 },
+  { t0: 111.2, t1: 115.3, lines: ['The hurt is real.', 'So was the love.'], l2: 1.8 },
   { t0: 115.7, t1: 118.8, lines: ['Both can be true.'], size: 46 },
   { t0: 121.2, t1: 124.2, lines: ['Keep the boundaries.'] },
   { t0: 124.5, t1: 128.2, lines: ['Make them doors.'] },
   { t0: 128.6, t1: 132.8, lines: ['A person is not a probability.'] },
-  { t0: 134.0, t1: 141.6, lines: ['Every one of us is statistically likely', 'to need each other.'], l2: 2.2, final: true },
+  { t0: 134.0, t1: 141.6, lines: ['Every one of us is statistically likely', 'to need each other.'], l2: 2.9, final: true },
 ];
+
+// the gold line of the last caption; the score blooms on it
+T.needLine = CAPTIONS[CAPTIONS.length - 1].t0 + CAPTIONS[CAPTIONS.length - 1].l2;
 
 const PAIRS = [
   ['We say we want deep connection', 'and flinch when it’s offered.'],
@@ -508,7 +511,7 @@ function scriptedEvents() {
   add(100.6, 'flame');
   IGN.forEach((t, i) => { add(t - 0.55, 'spark', { i }); add(t, 'ignite', { i, pan: CANDLES[i].x / W }); });
   TINY.forEach(f => add(f.t, 'tiny', { pan: f.x / W }));
-  add(T.doors, 'doors'); add(134.0 + 2.2, 'final'); add(T.titleIn, 'endtitle');
+  add(T.doors, 'doors'); add(T.needLine, 'final'); add(T.titleIn, 'endtitle');
   events.sort((a, b) => a.t - b.t);
 }
 
@@ -1251,6 +1254,15 @@ const ready = (async () => {
 
 window.FILM = {
   ready, W, H, FPS, T, events, threads, people,
+  // everything the narration needs to know, so voice and picture share one clock
+  cues: {
+    captions: CAPTIONS.map(c => ({ t0: c.t0, t1: c.t1, lines: c.lines, l2: c.l2 || 0 })),
+    pairs: PAIRS.map(p => ({ s: p.s, flip: p.flip, dur: p.dur, left: p[0], right: p[1] })),
+    card: CARD.map(c => ({ t0: c.t0, text: c.text })), cps: CPS,
+    mobCaption: { t0: MOB_CAP_T0, text: MOB_CAPTION },
+    shouts: SHOUTS.map(s => ({ t: s.t, text: s.text, x: s.x, k: s.k })),
+    tagline: { t: T.titleIn + 1.4, text: 'love is not a scarce resource' },
+  },
   frames: Math.round(T.END * FPS),
   draw,
   frame(i) { draw(i / FPS); },

@@ -1,9 +1,11 @@
 """Synthesizes the score for Statistically Likely from the film's own cues.
 
-    python3 audio.py build/events.json build/soundtrack.wav
+    python3 audio.py build/events.json build/soundtrack.wav [build/narration.wav build/crowd.wav]
 
 Every thread that forms becomes a chime, every thread that snaps a crack;
-the chords follow the acts. Pure numpy, no samples.
+the chords follow the acts. Pure numpy, no samples. If the voice stems from
+voice.py are given, the crowd joins the mob and the music ducks under the
+narrator.
 """
 import json
 import sys
@@ -13,6 +15,7 @@ import numpy as np
 
 SR = 48000
 events_path, out_path = sys.argv[1], sys.argv[2]
+narration_path, crowd_path = (sys.argv[3], sys.argv[4]) if len(sys.argv) > 4 else (None, None)
 data = json.load(open(events_path))
 T, EV = data['T'], data['events']
 N = int((T['END'] + 0.5) * SR)
@@ -180,8 +183,8 @@ CHORDS = [
     (124.4, 127.7, [38, 45, 54, 57, 64], 0.85),          # doors: D
     (127.5, 130.7, [37, 45, 52, 57, 61], 0.85),          # A/C#
     (130.5, 133.7, [35, 42, 50, 57, 62], 0.85),          # Bm7
-    (133.5, 136.4, [31, 38, 47, 54, 57], 0.85),          # Gmaj9
-    (136.2, 148.0, [38, 45, 54, 57, 64, 66, 69], 0.95),  # to need each other: D, in full
+    (133.5, T['needLine'] + 0.2, [31, 38, 47, 54, 57], 0.85),   # Gmaj9
+    (T['needLine'], 148.0, [38, 45, 54, 57, 64, 66, 69], 0.95),  # to need each other: D, in full
 ]
 for ci, (t0, t1, notes, g) in enumerate(CHORDS):
     dur = t1 - t0 + 2.4
@@ -318,7 +321,7 @@ for e in EV:
         add(shape(g, lo=150, hi=7000), t, 0.05)
     elif kind == 'collapse':
         add(sweep(220, 3200, 0.4) * env_ar(int(0.4 * SR), 0.3, 0.05), t - 0.2, 0.035)
-    elif kind == 'shout':
+    elif kind == 'shout' and not crowd_path:
         vowel = [((700, 90, 1), (1220, 110, 0.7), (2600, 160, 0.35)), ((400, 80, 1), (2000, 120, 0.6), (2550, 150, 0.4)),
                  ((550, 90, 1), (900, 100, 0.8), (2400, 150, 0.3))][int(rng.integers(0, 3))]
         f0 = rng.uniform(140, 290)
@@ -343,8 +346,9 @@ for e in EV:
         add(bell(midi(74), decay=2.5, bright=0.5), t, 0.06, 0.4)
         add(bell(midi(81), decay=2.5, bright=0.5), t + 0.09, 0.05, 0.6)
     elif kind == 'final':
+        # the words land first, then the bells bloom
         for s, m in enumerate((74, 78, 81, 86)):
-            add(bell(midi(m), decay=3.0, bright=0.6), t + s * 0.07, 0.065, 0.3 + s * 0.13)
+            add(bell(midi(m), decay=3.0, bright=0.6), t + 1.15 + s * 0.07, 0.055, 0.3 + s * 0.13)
     elif kind == 'endtitle':
         add(bell(midi(81), decay=3.0, bright=0.4), t, 0.05, 0.55)
 
@@ -358,6 +362,18 @@ for e in tiny:
 
 # after the freeze: one low bell in the silence
 add(bell(midi(50), decay=3.6, bright=0.6), FREEZE + 0.7, 0.035, bus=bus_b)
+
+# ---------- voices ----------
+def load_stem(path):
+    with wave.open(path) as w:
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype='<i2').reshape(-1, 2).T / 32768.0
+    out = np.zeros((2, N))
+    out[:, :min(N, x.shape[1])] = x[:, :N]
+    return out
+
+
+if crowd_path:
+    bus_a += load_stem(crowd_path) * 0.22  # goes through the mob's reverb, and dies with it at the freeze
 
 # ---------- mix ----------
 print('reverb...')
@@ -375,6 +391,26 @@ for ch in range(2):
     mix[ch] = shape(mix[ch], lo=28, order=2)
 mix /= np.max(np.abs(mix)) + 1e-9
 mix = np.tanh(1.4 * mix) / np.tanh(1.4)
+
+if narration_path:
+    voice = load_stem(narration_path)
+    voice = reverb(voice, seconds=1.4, decay=0.28, wet=0.14, seed=5)
+    voice /= np.max(np.abs(voice)) + 1e-9
+    # duck the music while anyone is speaking: quick down, slow back up
+    win_n = int(0.12 * SR)
+    p = np.concatenate([[0], np.cumsum(voice[0] ** 2 + voice[1] ** 2)])
+    rms = np.sqrt(np.maximum(p[win_n:] - p[:-win_n], 0) / (2 * win_n))
+    talk = np.clip(rms / 0.04, 0, 1)
+    talk = np.concatenate([talk[int(0.08 * SR):], np.zeros(N - len(talk) + int(0.08 * SR))])[:N]
+    duck = np.zeros(N)
+    level, attack, release = 0.0, 240 / (0.06 * SR), 240 / (0.45 * SR)
+    for i in range(0, N, 240):  # 5 ms control rate
+        target = talk[i]
+        level = min(target, level + attack) if target > level else max(target, level - release)
+        duck[i:i + 240] = level
+    mix = mix * (1 - 0.7 * duck) * 0.62 + voice * 0.85
+    mix = np.tanh(1.15 * mix) / np.tanh(1.15)
+
 tail = int(1.2 * SR)
 mix[:, -tail:] *= np.linspace(1, 0, tail)
 mix *= 0.89 / (np.max(np.abs(mix)) + 1e-9)
