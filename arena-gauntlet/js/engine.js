@@ -2889,9 +2889,10 @@
 
   // The mission is done: the cage broken, the wagons or the warbanner wrecked, the seal or
   // the shrine held, the commander or the boss slain, the waves outlasted. The win is yours
-  // (see lockWin). The battle goes on: the enemy's reinforcements stop, and both fatigue
-  // timers switch on, each at 1 (a timer already on carries on), so the enemy wears down
-  // while your army goes for whatever else it can get.
+  // (see lockWin). The battle goes on: both fatigue timers switch on, each at 1 (a timer
+  // already on carries on), so the enemy wears down while your army goes for whatever else
+  // it can get. Reinforcements still march in (until turn s.overtime), so an ambush bonus
+  // is still there for the taking.
   function rout(s, why) {
     if (s.routed || s.over) return;
     const was = { E: tiring(s, 'E'), P: tiring(s, 'P') };
@@ -2901,7 +2902,6 @@
     startTiring(s, 'P');
     if (s.surviveTurns) s.surviveTurns = 0;
     if (s.hold) s.hold.done = true;
-    for (const w of s.waves) if (w.team === 'E' && w.state === 'pending') w.state = 'cancelled';
     emit(s, Object.assign({ t: 'routed', turn: s.turn, was }, why));
   }
 
