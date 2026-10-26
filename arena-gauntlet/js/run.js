@@ -2819,11 +2819,12 @@
   // The house armies: a few veterans of one kind, every one Level 3 with its mastery and
   // both picks, that hold the Hall for the first army ever to enter. Tuned against the
   // winning armies of the campaign simulations to sit between a medium and a hard fight:
-  // about 4 winners in 5 get past the Witches at the bottom, 3 in 5 past the Scouts at the
-  // top. Ranked toughest first.
+  // about 3 winners in 4 get past the Witches at the bottom, 3 in 5 past the Scouts at the
+  // top. The Fun Lab's winning armies come out stronger, so its Scouts bring an eighth, and
+  // its Knights guard with Bodyguard. Ranked toughest first.
   const HOUSE = [
-    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', n: 7, a1: 's_hook', a2: 's_venom', rows: [6, 7] },
-    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', n: 6, a1: 'k_guard', a2: 'k_riposte', rows: [6, 7] },
+    { id: 'H-scouts', type: 'scout', name: 'The Scamper Pack', n: 8, a1: 's_hook', a2: 's_venom', rows: [6, 7] },
+    { id: 'H-knights', type: 'knight', name: 'The Tin Can Brigade', n: 6, a1: 'k_bodyguard', a2: 'k_riposte', rows: [6, 7] },
     { id: 'H-archers', type: 'archer', name: 'The Thousand Arrows', n: 5, a1: 'a_snare', a2: 'a_hunter', rows: [8, 7] },
     { id: 'H-witches', type: 'witch', name: 'The Witching Hour', n: 5, a1: 'wi_abyss', a2: 'wi_curse', rows: [8, 7] },
   ];

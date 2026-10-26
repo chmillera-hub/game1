@@ -184,14 +184,15 @@ on a phone turned sideways, but portrait works too.
   win, and the ranking would mean nothing. Tap a unit and the Priority button shows
   crossed out with a red X; tap it and it says why. The very first army to enter finds
   four **house armies** holding the Hall, a few veterans of one kind each, every one
-  Level 3 with its mastery and both picks: The Scamper Pack (#1, 7 Scouts with
-  Grappling Hook and Venom Blades, 70 Supply), The Tin Can Brigade (6 Knights with
-  Guardian and Riposte, 60), The Thousand Arrows (5 Archers with Snare Shot and
-  Hunter's Mark, 45) and The Witching Hour (at the bottom, 5 Witches with Abyssal Bolt
-  and Withering Curse, 60). They sit between a medium and a hard fight: against 245
-  winning armies from the campaign simulations, the challenger won 80% of the time
-  against the Witches, 75% against the Archers, 66% against the Knights and 61%
-  against the Scouts, and about 1 in 3 climbed past all four at the first go. A Hall
+  Level 3 with its mastery and both picks: The Scamper Pack (#1, 8 Scouts with
+  Grapnel and Venom Blades, 80 Supply), The Tin Can Brigade (6 Knights with Bodyguard
+  and Riposte, 60), The Thousand Arrows (5 Archers with Snare Shot and Hunter's Mark,
+  45) and The Witching Hour (at the bottom, 5 Witches with Abyssal Bolt and Withering
+  Curse, 60; their Shadow Pact raises the first enemies they slay). They sit between a
+  medium and a hard fight: against 240 winning armies from the Fun Lab's campaign
+  simulations, the challenger won 75% of the time against the Witches, 72% against the
+  Archers, 70% against the Knights and 59% against the Scouts, and about 1 in 3 climbed
+  past all four at the first go. A Hall
   saved with the old house mobs (24 Level 1 Scouts and the like) fields these instead,
   in the same places and with the same records.
   Later armies wait in line ("Waiting

@@ -302,7 +302,7 @@ test('the first army ever to enter finds the house armies holding the Hall: a fe
   const h = R.loadHall();
   const D = AG.Data;
   assert.deepStrictEqual(h.legends.map((l) => l.type), ['scout', 'knight', 'archer', 'witch']);
-  assert.deepStrictEqual(h.legends.map((l) => l.units.length), [7, 6, 5, 5], 'small squads, not mobs');
+  assert.deepStrictEqual(h.legends.map((l) => l.units.length), [8, 6, 5, 5], 'small squads, not mobs');
   for (const l of h.legends) {
     assert.ok(l.house && l.climbed);
     const T = D.UNITS[l.type];
