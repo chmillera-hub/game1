@@ -4797,12 +4797,30 @@
 
   // The relics you hold, at the top of every event, so a choice that asks for one (the
   // Merchant Caravan's trade) can be weighed: tap one for what it does.
+  // Plain circles in their rarity's colour (common grey, uncommon green, rare blue, boss
+  // orange, legendary gold): tap one for its name and what it does.
   function eventRelics(run) {
     const ids = run.relics.filter((id) => RELICS[id]);
     if (!ids.length) return '';
-    return `<div class="ev-relics"><span class="eyebrow">${ic('gem')} Your relics</span><div class="chips">${ids
-      .map((id) => `<button class="chip relic-chip tier-${RELICS[id].tier}" data-evrelic="${id}">${ic(RELIC_ICON[id] || 'gem')} ${esc(RELICS[id].name)} <span class="muted">· ${RELICS[id].tier}</span></button>`)
+    return `<div class="ev-relics"><span class="eyebrow">${ic('gem')} Your relics</span><div class="dots">${ids
+      .map((id) => `<button class="relic-dot big tier-${RELICS[id].tier}" data-evrelic="${id}" aria-label="${esc(RELICS[id].name)}">${ic(RELIC_ICON[id] || 'gem')}</button>`)
       .join('')}</div></div>`;
+  }
+
+  // The Merchant Caravan's trade: one block, your common relics as circles. Tap the one to
+  // give up (you confirm it, with what each relic does).
+  function swapBlock(run, swaps) {
+    const offer = RELICS[(run.pending.ctx || {}).relic];
+    if (!swaps.length || !offer) return '';
+    const live = swaps.filter((c) => c.enabled && c.id.startsWith('swap:'));
+    return `<div class="choice swap-block" ${live.length ? 'data-choose' : ''}><b>Trade a common relic for the ${esc(offer.name)}</b>
+      <span>${esc(offer.desc)}</span>
+      ${live.length ? `<span class="small">Tap the relic to give up:</span><div class="dots">${live
+        .map((c) => {
+          const id = c.id.slice(5);
+          return `<button class="relic-dot big tier-${RELICS[id].tier}" data-swap="${esc(c.id)}" aria-label="${esc(RELICS[id].name)}">${ic(RELIC_ICON[id] || 'gem')}</button>`;
+        })
+        .join('')}</div>` : `<span class="small">The merchant only takes a common relic, and you have none.</span>`}</div>`;
   }
 
   function eventScreen() {
@@ -4819,8 +4837,9 @@
           <h2>${esc(ev.title)}</h2>
           <p>${esc(ev.text)}</p>
           ${p.result ? `<p class="result">${esc(p.result)}</p>` : choices
+            .filter((c) => !c.id.startsWith('swap'))
             .map((c) => `<button class="choice" data-choice="${esc(c.id)}" ${c.enabled ? 'data-choose' : 'disabled'}><b>${esc(c.label)}</b><span>${esc(c.detail)}</span></button>`)
-            .join('')}
+            .join('') + swapBlock(run, choices.filter((c) => c.id.startsWith('swap')))}
         </div>
         ${p.result ? `<div class="row end"><button class="btn" id="evArmy">${ic('army')} Army</button><button class="btn primary" id="evGo">Continue</button></div>` : ''}
       </div>`
@@ -4852,6 +4871,15 @@
       b.onclick = () => {
         const r = RELICS[b.dataset.evrelic];
         toast(`${r.name} (${r.tier}): ${r.desc}`, 4000);
+      };
+    for (const b of $$('[data-swap]', v))
+      b.onclick = async () => {
+        const give = RELICS[b.dataset.swap.slice(5)];
+        const get = RELICS[p.ctx.relic];
+        if (!(await confirmSheet(`Trade the ${give.name}?`, `You give up <b>${esc(give.name)}</b>: ${esc(give.desc)}<br><br>You get <b>${esc(get.name)}</b>: ${esc(get.desc)}`, 'Trade it', 'Keep it'))) return;
+        if (R.chooseEvent(run, b.dataset.swap, null) == null) return toast('That trade is not available.');
+        sfx('coin');
+        eventScreen();
       };
     if ($('#evArmy', v)) $('#evArmy', v).onclick = () => armySheet(() => eventScreen());
     if ($('#evGo', v))
