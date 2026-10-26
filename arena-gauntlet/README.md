@@ -342,7 +342,20 @@ on a phone turned sideways, but portrait works too.
   Hunter picks targets your other units already stand beside; Ambusher and Flanker
   go round the side or back; Trample takes the long way in. Your army also loves a
   good shove: when it can bump a foe into water, lava, a rock, the edge, another foe
-  or a building, it goes out of its way to.
+  or a building, it goes out of its way to. The battles play themselves, so the AI is
+  built to know every pick that depends on where units stand, and each one ends its
+  description by saying how the AI plays it. With the **Lone Wolf Pelt** your units
+  keep apart (in a test fight, 0 allies beside a unit after its turn, against 0.22
+  without), and an ally next to one that stands alone counts as spoiling its bonus;
+  with the **Phalanx Standard** they close ranks (1.27 allies beside each) and still
+  advance; Hold the Line weighs holding its ground under fire against moving;
+  Thunderstep and Drift end their moves beside enemies; Living Moss and the Knight's
+  Champion keep wounded allies beside them; Discord picks foes standing beside their
+  own allies; Ricochet and Shrapnel aim into a crowd (6 shots in 6 against 0 in 6
+  without); Combustion, Contagion, Wildfire Oil and the Plague Doctor's Mask go for
+  kills in the thick of the enemy; and Shadow Cloak, Momentum Boots and the attack
+  itself under Lone Wolf are scored from every tile the unit could strike from.
+  `tests/positioning.test.js` checks it.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
 - **Damage**: physical hits (marked with a sword) are reduced by armor and block;
@@ -712,6 +725,7 @@ node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmis
 node tests/fun.test.js           # the trigger passives and relics: crits, executions, explosions, bounces, the dead rising
 node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/legendary.test.js     # the legendaries: units, skills and gear, and when they turn up
+node tests/positioning.test.js   # the AI plays to positioning picks: Lone Wolf, Phalanx, Thunderstep...
 node tests/sim.js 200            # AI-vs-AI balance by unit type (WITH_LEGENDS=1 adds the legendaries)
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries

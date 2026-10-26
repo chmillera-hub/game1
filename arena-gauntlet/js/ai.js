@@ -494,6 +494,57 @@
     return a.range ? a.range : null;
   }
 
+  // Picks that pay off only from the right tile, beyond the attack itself (which the
+  // planner already previews from each tile it could move to): spread out for the Lone
+  // Wolf Pelt, close ranks for the Phalanx Standard, hold still to Hold the Line, end a move
+  // beside enemies with Thunderstep or Drift, keep the wounded beside a healer of
+  // neighbours. `hurt`: what the blows it may take here are worth.
+  function formationValue(ctx, u, x, y, hurt) {
+    const s = ctx.s;
+    if (u.nonCombat || u.structure) return 0;
+    const rel = s.relics[u.team];
+    const near = (v) => v !== u && v.alive && Math.abs(v.x - x) + Math.abs(v.y - y) === 1;
+    const next = ctx.allies.filter(near);
+    const foesNext = ctx.foes.filter((f) => near(f) && !f.nonCombat && !f.structure);
+    const home = ctx.from && ctx.from.uid === u.uid ? ctx.from : null;
+    const stays = !home || (home.x === x && home.y === y);
+    const hits = (w) => w.acts.some((a) => a.dmg && a.kind !== 'none');
+    let v = 0;
+    if (rel.has('lone_wolf') && next.length) {
+      if (hits(u)) v -= 0.3 * u.pow * 0.8 + 1;
+      // ...and it spoils it for a neighbour that stood alone.
+      for (const al of next) {
+        const alone = !ctx.allies.some((o) => o !== al && o !== u && o.alive && Math.abs(o.x - al.x) + Math.abs(o.y - al.y) === 1);
+        if (alone && hits(al)) v -= 0.3 * al.pow * 0.5;
+      }
+    }
+    if (rel.has('phalanx_standard')) {
+      // Its own two neighbours, and any ally it gives a second one to.
+      if (next.length >= 2) v += 0.2 * hurt + 3;
+      else if (next.length === 1) v += 1;
+      for (const al of next) {
+        const others = ctx.allies.filter((o) => o !== al && o !== u && o.alive && Math.abs(o.x - al.x) + Math.abs(o.y - al.y) === 1).length;
+        if (others === 1) v += 1.5;
+      }
+    }
+    if (u.traits.has('brace') && stays) v += 0.3 * hurt + 0.5;
+    if (!stays) {
+      for (const f of foesNext) {
+        const fv = f.value / f.maxHp;
+        if (u.traits.has('thunderstep')) v += Math.min(6 * (1 - f.res), f.hp) * fv;
+        if (u.traits.has('sporepuff') && !E.statusImmune(s, f, 'poison')) v += 4 * fv * 0.85;
+      }
+    }
+    for (const al of next) {
+      const av = al.value / al.maxHp;
+      if (u.traits.has('mossy') && al.hp < al.maxHp) v += 2 * av * 1.5;
+      if (al.traits.has('mossy') && u.hp < u.maxHp) v += 2 * (u.value / u.maxHp) * 1.5;
+      if (al.traits.has('rallykill') && u.hp < u.maxHp) v += 1;
+      if (u.traits.has('rallykill') && al.hp < al.maxHp) v += 0.5;
+    }
+    return v;
+  }
+
   function positionValue(ctx, u, x, y) {
     const s = ctx.s;
     const dz = dangerAt(ctx, u, x, y);
@@ -602,6 +653,7 @@
       if (mine) v += (fragile(al) ? 2.5 : 1) * mine;
       if (fragile(u)) v += 1.2 * cover(al);
     }
+    v += formationValue(ctx, u, x, y, expTaken * hpv * ctx.risk);
     // Hazards underfoot, and powder kegs that the enemy could set off.
     if (!flying) {
       for (const f of s.tfx) {
@@ -733,6 +785,7 @@
         if (t.team !== u.team && t.traits.has('cart')) val *= 1 + 4 / (1 + Math.abs(t.x - s.cartExit));
         else if (t.team !== u.team && isSpawning(s, t)) val *= 2;
         if (e.kill && t.traits.has('volatile')) val += boomValue(ctx, u, t);
+        if (e.kill && t.team !== u.team) val += crowdKill(ctx, u, t, e);
         if (ctx.ambush && t.reinforcement && t.team !== u.team) val *= e.kill ? 1.6 : 1.25;
         // A barricade's gold is worth breaking it for when nothing better is in reach.
         if (t.bounty && t.team !== u.team && ctx.idle) val += e.kill ? t.bounty * 0.4 : (dealt / t.maxHp) * t.bounty * 0.15;
@@ -757,7 +810,11 @@
       }
       if (t.nonCombat || t.structure) continue;
       const p = e.block != null ? 1 - e.block : 1;
-      if (e.para && e.para !== 'resist') v += p * e.para * paraValue(ctx.s, t);
+      if (e.para && e.para !== 'resist') {
+        v += p * e.para * paraValue(ctx.s, t);
+        // Discord: it lashes out at one of its own beside it.
+        if (u.traits.has('discord') && ctx.foes.some((o) => o !== t && !o.nonCombat && !o.structure && Math.abs(o.x - t.x) + Math.abs(o.y - t.y) === 1)) v += p * 0.5 * t.pow * 0.6;
+      }
       if (e.poison && e.poison !== 'resist') {
         // Poisons from different sources add up; the same source only tops up its own.
         const own = t.poison && E.poisonStacks(t).find((st) => st.key === e.poison.key);
@@ -774,10 +831,48 @@
       if (e.knock && e.knock !== 'resist' && !e.kill) v += p * shoveValue(ctx, u, t, e.knock, t.hp - (e.dmg || 0) * p);
     }
     if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
+    v += spillValue(ctx, u, a, target, pv);
     // Acting starts recovery; small cost so weak pokes don't lock down slow casters.
     v -= u.rec * u.pow * 0.08;
     if (a.uses) v -= 1.5;
     return v;
+  }
+
+  // Enemies huddled around the one about to fall: Combustion and Wildfire Oil spread its
+  // fire to them, Contagion and the Plague Doctor's Mask its poison.
+  function crowdKill(ctx, u, t, e) {
+    const s = ctx.s;
+    const rel = s.relics[u.team];
+    const burning = t.burn > 0 || !!e.burn;
+    const fire = burning && (u.traits.has('combustion') || rel.has('wildfire_oil'));
+    const plague = t.poison > 0 && (rel.has('plague_mask') || E.poisonStacks(t).some((st) => s.byId[st.src] && s.byId[st.src].traits.has('contagion')));
+    if (!fire && !plague) return 0;
+    let v = 0;
+    for (const o of ctx.foes) {
+      if (o === t || o.nonCombat || o.structure || Math.abs(o.x - t.x) + Math.abs(o.y - t.y) !== 1) continue;
+      const ov = o.value / o.maxHp;
+      if (fire) v += ((u.traits.has('combustion') ? 10 : 0) + 6) * ov;
+      if (plague) v += 6 * ov;
+    }
+    return v;
+  }
+
+  // Ricochet and Shrapnel: a basic attack at a foe with others close by hits them too.
+  function spillValue(ctx, u, a, target, pv) {
+    if (a !== u.act || target.kind !== 'unit' || !(u.props.bounce || u.props.splash)) return 0;
+    const t = ctx.s.byId[target.uid];
+    const main = t && pv.effects.find((e) => e.uid === t.uid && e.dmg != null);
+    if (!main) return 0;
+    let best = 0;
+    let splash = 0;
+    for (const o of ctx.foes) {
+      if (o === t || o.nonCombat) continue;
+      const d = Math.abs(o.x - t.x) + Math.abs(o.y - t.y);
+      const ov = o.value / o.maxHp;
+      if (u.props.bounce && d <= 2) best = Math.max(best, Math.min(main.dmg * u.props.bounce, o.hp) * ov);
+      if (u.props.splash && d === 1) splash += Math.min(main.dmg * u.props.splash, o.hp) * ov;
+    }
+    return (best + splash) * 0.8;
   }
 
   // A shove or pull: a little for knocking the enemy out of place, and what it hurts where
@@ -837,6 +932,7 @@
 
   function planFor(ctx, u) {
     const s = ctx.s;
+    ctx.from = { uid: u.uid, x: u.x, y: u.y };
     ctx.idle = u.team === 'P' && idleHands(ctx, u);
     const reach = E.reachable(s, u);
     const pos = new Map();

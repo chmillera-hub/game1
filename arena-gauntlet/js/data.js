@@ -1077,14 +1077,23 @@
   };
 
   // Picks that only pay off from the right spot say how the AI plays them, so you know your
-  // units will keep in formation when you slot one.
+  // units will keep in formation when you slot one. The battles play themselves, but the
+  // AI knows every one of these and plays to it (see formationValue and friends in ai.js).
+  const has = (m, t) => m.traits && m.traits.includes(t);
   const AI_NOTES = [
-    [(m) => (m.props && (m.props.guard || m.props.magicGuard)) || (m.traits && m.traits.includes('bodyguard')), 'The AI keeps your units beside it, the fragile ones first.'],
+    [(m) => (m.props && (m.props.guard || m.props.magicGuard)) || has(m, 'bodyguard'), 'The AI keeps your units beside it, the fragile ones first.'],
     [(m) => m.props && m.props.packMult, 'The AI picks targets your other units already stand beside.'],
     [(m) => m.props && (m.props.flankMult || m.props.backMult), 'The AI goes round the side or back when it can.'],
     [(m) => m.props && m.props.chargeMult, 'The AI takes the long way in to charge.'],
+    [(m) => m.props && m.props.momentum, 'The AI takes the long way in to build up speed.'],
+    [(m) => has(m, 'brace'), 'The AI weighs holding its ground against moving.'],
+    [(m) => has(m, 'thunderstep') || has(m, 'sporepuff'), 'The AI ends its moves beside enemies when it can.'],
+    [(m) => has(m, 'mossy') || has(m, 'rallykill'), 'The AI keeps your wounded units beside it.'],
+    [(m) => has(m, 'discord'), 'The AI picks enemies standing beside their own allies.'],
+    [(m) => has(m, 'combustion') || has(m, 'contagion'), 'The AI goes for kills in the thick of the enemy.'],
+    [(m) => m.props && (m.props.bounce || m.props.splash), 'The AI picks targets with other enemies close by.'],
   ];
-  for (const table of [A, TALENTS, SKILLS, GEAR, ENCHANTS])
+  for (const table of [A, TALENTS, SKILLS, GEAR, ENCHANTS, MASTERY])
     for (const d of Object.values(table)) {
       const note = AI_NOTES.find(([test]) => d.mod && test(d.mod));
       if (note && !d.desc.includes(note[1])) d.desc += ' ' + note[1];
@@ -1281,6 +1290,16 @@
     'Sorrel', 'Teague', 'Una', 'Varek', 'Wynn', 'Ash', 'Briar', 'Cass', 'Dunstan', 'Ebba',
     'Faro', 'Gilda', 'Hew', 'Ilse', 'Jarek', 'Kit', 'Lorne', 'Maud', 'Nyle', 'Orla',
   ];
+
+  // Relics that depend on where your units stand, and how the AI plays them.
+  const RELIC_AI = {
+    lone_wolf: 'The AI keeps your units apart.',
+    phalanx_standard: 'The AI keeps your units in tight groups.',
+    shadow_cloak: 'The AI goes round the back when it can.',
+    wildfire_oil: 'The AI goes for kills in the thick of the enemy.',
+    plague_mask: 'The AI goes for kills in the thick of the enemy.',
+  };
+  for (const [id, note] of Object.entries(RELIC_AI)) if (RELICS[id] && !RELICS[id].desc.includes(note)) RELICS[id].desc += ' ' + note;
 
   AG.Data = {
     DIRS, MAX_LEVEL, LEVEL_COST, LEVEL_HP, LEVEL_POW, SKILL_SLOTS, GEAR_SLOTS, TALENT_SLOTS, RES_CAP, COMMAND,
