@@ -245,6 +245,48 @@
     tb_frame: { name: 'Reinforced Frame', cost: 0, desc: '+20 max HP and +10% armor.', mod: { stat: { hp: 20, armor: 0.1 } } },
     tb_wreck: { name: 'Wrecking Shot', cost: 1, desc: "Its basic attack ignores half of the target's armor.", mod: { props: { pierce: 0.5 } } },
     tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
+
+  // ---------------------------------------- the legendaries: huge acts, long cooldowns
+
+    // Archmage
+    am_far: { name: 'Far Sight', cost: 0, desc: '+1 range.', mod: { stat: { range: 1 } } },
+    am_mana: { name: 'Mana Barrier', cost: 1, desc: '+20 max HP and +15% magic resistance.', mod: { stat: { hp: 20, res: 0.15 } } },
+    am_core: { name: 'Molten Core', cost: 2, desc: '+25% magic damage.', mod: { props: { magicMult: 0.25 } } },
+    am_precise: { name: 'Precise Impact', cost: 0, desc: 'Its meteor spares allies.', mod: { act: { ff: false } } },
+    am_gravity: { name: 'Gravity Well', cost: 1, desc: 'Its hits root the target for 1 turn: it cannot move.', mod: { onHit: { root: 1 } } },
+    am_time: { name: 'Time Mastery', cost: 3, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
+    am_nova: { name: 'Arcane Nova', cost: 2, desc: 'Active: arcane force bursts out 2 tiles around it, 70% magic damage to every enemy there, blasting them back 1 tile. Shoved into something, they take extra damage.',
+      mod: { active: { name: 'Arcane Nova', kind: 'nova', radius: 2, dmg: 'magic', mult: 0.7, fx: { knock: 1 } } } },
+
+    // Phoenix
+    ph_plume: { name: 'Bright Plumes', cost: 0, desc: '+12 max HP.', mod: { stat: { hp: 12 } } },
+    ph_talons: { name: 'Searing Talons', cost: 1, desc: 'Its hits weaken the target for 2 turns: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
+    ph_sun: { name: 'Sunfire', cost: 2, desc: '+25% magic damage.', mod: { props: { magicMult: 0.25 } } },
+    ph_glide: { name: 'Ember Glide', cost: 0, desc: 'Its dive reaches 1 tile further.', mod: { stat: { range: 1 } } },
+    ph_cinder: { name: 'Cinder Mantle', cost: 1, desc: '+15% armor and +15% magic resistance.', mod: { stat: { armor: 0.15, res: 0.15 } } },
+    ph_quick: { name: 'Quick Rekindle', cost: 3, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
+    ph_tears: { name: 'Phoenix Tears', cost: 1, desc: 'Active: heal itself or an ally up to 2 tiles away for 22, and cure poison and burns.',
+      mod: { active: { name: 'Phoenix Tears', kind: 'heal', range: [0, 2], fixed: 22, cure: true } } },
+
+    // Frost Giant
+    fg_hide: { name: 'Glacial Hide', cost: 0, desc: '+10% armor.', mod: { stat: { armor: 0.1 } } },
+    fg_frost: { name: 'Frostbite', cost: 1, desc: 'Its hits weaken the target for 2 turns: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
+    fg_mass: { name: 'Mountain Born', cost: 1, desc: '+25 max HP.', mod: { stat: { hp: 25 } } },
+    fg_reach: { name: 'Long Reach', cost: 0, desc: 'Its smash reaches 1 tile further.', mod: { stat: { range: 1 } } },
+    fg_guard: { name: 'Ice Bulwark', cost: 1, desc: 'Adjacent allies take 20% less damage.', mod: { props: { guard: 0.2 } } },
+    fg_shatter: { name: 'Shatter', cost: 2, desc: '+40% damage to targets below half HP.', mod: { props: { execMult: 0.4 } } },
+    fg_avalanche: { name: 'Avalanche', cost: 2, desc: 'Active: an avalanche crashes down on a 3x3 area 2 to 4 tiles away: 80% damage to every enemy there, rooted for 1 turn.',
+      mod: { active: { name: 'Avalanche', kind: 'blast', range: [2, 4], pattern: 'square', dmg: 'phys', mult: 0.8, arc: true, fx: { root: 1 } } } },
+
+    // Sun Paladin
+    pa_oath: { name: 'Oath of Steel', cost: 0, desc: '+10% armor.', mod: { stat: { armor: 0.1 } } },
+    pa_aura: { name: 'Aura of Valor', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
+    pa_zeal: { name: 'Zeal', cost: 2, desc: 'Its judgment reaches 1 tile further in every direction.', mod: { stat: { len: 1 } } },
+    pa_sunlit: { name: 'Sunlit Armor', cost: 0, desc: '+15% magic resistance.', mod: { stat: { res: 0.15 } } },
+    pa_vengeance: { name: 'Holy Vengeance', cost: 1, desc: 'When struck in melee and still standing, strikes back for half damage.', mod: { traits: ['retaliate'] } },
+    pa_dawn: { name: 'Dawnbringer', cost: 2, desc: '+25% magic damage.', mod: { props: { magicMult: 0.25 } } },
+    pa_lay: { name: 'Lay on Hands', cost: 1, desc: 'Active: heal itself or an adjacent ally for 30, and cure poison and burns.',
+      mod: { active: { name: 'Lay on Hands', kind: 'heal', range: [0, 1], fixed: 30, cure: true } } },
   };
 
   // Every active ability: [uses a battle, cooldown]. Uses never come back. The cooldown is
@@ -268,6 +310,7 @@
     e_lure: [2, 3],
     sa_volley: [2, 3],
     tb_scatter: [3, 4],
+    am_nova: [1, 0], ph_tears: [2, 2], fg_avalanche: [1, 0], pa_lay: [2, 2],
   };
   const activeTag = (a) => `Active, ${a.uses} use${a.uses > 1 ? 's' : ''}${a.cd ? `, cooldown ${a.cd}` : ''}`;
   for (const id in ACTIVE_LIMITS) {
@@ -297,6 +340,10 @@
     trebuchet: { name: 'Siege Master', desc: '+25% damage, and boulders deal a further +100% to buildings.', mod: { props: { dmgMult: 0.25, vs: { structure: 1 } } } },
     mageknight: { name: 'Runic Mastery', desc: 'Hits also deal 8 bonus magic damage.', mod: { props: { bonusMagic: 8 } } },
     skelarcher: { name: 'Undying', desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
+    archmage: { name: 'Archon', desc: '+25% damage, and its meteor reaches 1 tile further.', mod: { props: { dmgMult: 0.25 }, stat: { range: 1 } } },
+    phoenix: { name: 'Rebirth', desc: 'The first time it falls in a battle, it rises from its ashes with half HP.', mod: { traits: ['phoenix'] } },
+    frostgiant: { name: 'Jotun', desc: '+30 max HP and +20% damage.', mod: { stat: { hp: 30 }, props: { dmgMult: 0.2 } } },
+    paladin: { name: 'Templar', desc: '+20 max HP and +20% damage.', mod: { stat: { hp: 20 }, props: { dmgMult: 0.2 } } },
   };
 
   // ---------------------------------------------------------------- units
@@ -494,6 +541,44 @@
       abilities: { 1: ['tb_counter', 'tb_firepots', 'tb_scatter'], 2: ['tb_frame', 'tb_wreck', 'tb_crew'] },
       desc: 'Siege engine. Lobs boulders 3 to 6 tiles and deals +150% damage to buildings. Cannot hit anything closer than 3 tiles.',
       tip: 'Helpless up close, and its timber burns: rush it, or hit it with magic.',
+    },
+
+    // The legendaries: a huge, showy act, then a long wait (cooldown 3) before the next.
+    archmage: {
+      name: 'Archmage', rarity: 'legendary', cost: 8, role: 'caster',
+      hp: 32, pow: 24, armor: 0, res: 0.4, block: 0.2, rec: 3, move: 3,
+      act: { name: 'Meteor', kind: 'blast', range: [3, 6], dmg: 'magic', pattern: 'square', ff: true, arc: true, fx: { burn: [2, 5] } },
+      traits: [], tags: ['human', 'caster'],
+      abilities: { 1: ['am_far', 'am_mana', 'am_core'], 2: ['am_precise', 'am_gravity', 'am_time', 'am_nova'] },
+      desc: 'Calls a meteor down on a 3x3 area 3 to 6 tiles away: huge magic damage to all 9 tiles, and everyone hit burns. Then it needs 3 turns to gather its power again.',
+      tip: 'Its meteor hits its own side too, and it cannot aim within 2 tiles. Rush it while it gathers its power.',
+    },
+    phoenix: {
+      name: 'Phoenix', rarity: 'legendary', cost: 7, role: 'monster',
+      hp: 62, pow: 21, armor: 0.1, res: 0.35, block: 0.15, rec: 3, move: 5,
+      act: { name: 'Phoenix Dive', kind: 'leap', range: [1, 5], dmg: 'magic', fx: { burn: [2, 6] } },
+      traits: ['flying'], tags: ['beast', 'spirit'],
+      abilities: { 1: ['ph_plume', 'ph_talons', 'ph_sun'], 2: ['ph_glide', 'ph_cinder', 'ph_quick', 'ph_tears'] },
+      desc: 'A firebird. Dives onto an open tile up to 5 away and bursts into flame there: magic damage to every enemy beside where it lands, and they burn. Flies over anything. Needs 3 turns to rekindle.',
+      tip: 'It lands in the thick of you, then sits out 3 turns: gang up on it while its fire is low.',
+    },
+    frostgiant: {
+      name: 'Frost Giant', rarity: 'legendary', cost: 7, role: 'tank',
+      hp: 130, pow: 28, armor: 0.3, res: 0.15, block: 0, rec: 3, move: 3,
+      act: { name: 'Glacier Smash', kind: 'quake', range: [1, 2], dmg: 'phys', fx: { root: 2 } },
+      traits: ['big'], tags: ['big', 'giant'],
+      abilities: { 1: ['fg_hide', 'fg_frost', 'fg_mass'], 2: ['fg_reach', 'fg_guard', 'fg_shatter', 'fg_avalanche'] },
+      desc: 'Brings a glacier down on a foe up to 2 tiles away: it and every enemy beside it take a crushing blow and are frozen in place (rooted) for 2 turns. Needs 3 turns to heave again.',
+      tip: 'A mountain of HP that rarely swings. Strike from range, and keep out of its reach when it is ready.',
+    },
+    paladin: {
+      name: 'Sun Paladin', rarity: 'legendary', cost: 7, role: 'tank',
+      hp: 72, pow: 21, armor: 0.35, res: 0.3, block: 0.55, rec: 3, move: 3,
+      act: { name: 'Divine Judgment', kind: 'cross', len: 3, dmg: 'magic', vs: { undead: 0.5, spirit: 0.5 }, fx: { weak: 2 } },
+      traits: [], tags: ['human'],
+      abilities: { 1: ['pa_oath', 'pa_aura', 'pa_zeal'], 2: ['pa_sunlit', 'pa_vengeance', 'pa_dawn', 'pa_lay'] },
+      desc: 'Calls down judgment: holy light lances 3 tiles out in all four directions, striking every enemy in the lines and dazzling them (they deal 30% less for 2 turns), +50% against the undead and spirits. Rocks stop the light. Needs 3 turns to pray again.',
+      tip: 'Stand off its four lines, on the diagonals, and strike while it prays.',
     },
 
     // ------------------------------------------------ summons and objects
@@ -902,6 +987,14 @@
     bullrush: { name: 'Bull Rush', cost: 0, side: true, desc: 'Its basic attack shoves what it hits 1 tile away: it might break a line, or push a foe out of your reach. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.', req: 'damage', mod: { act: { fx: { knock: 1 } } } },
     reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% armor.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
     demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
+    giant_slayer: { name: 'Giant Slayer', cost: 1, desc: '+30% damage against armored targets (30% armor or more).', req: 'damage', mod: { props: { vsArmored: 0.3 } } },
+    pack_tactics: { name: 'Pack Tactics', cost: 1, desc: '+20% damage against targets your other units stand beside.', req: 'damage', mod: { props: { packMult: 0.2 } } },
+    last_stand: { name: 'Last Stand', cost: 1, desc: '+35% damage while below half HP.', req: 'damage', mod: { props: { rageMult: 0.35 } } },
+    // Legendary: found from the second half of Act 2 on, more often the deeper you go.
+    avatar: { name: 'Avatar of War', cost: 3, rarity: 'legendary', desc: '+20% damage, +20 max HP and +10% armor.', req: 'damage', mod: { props: { dmgMult: 0.2 }, stat: { hp: 20, armor: 0.1 } } },
+    time_warp: { name: 'Time Warp', cost: 4, rarity: 'legendary', desc: 'Cooldown 2 turns shorter (never below 1).', req: 'slow', mod: { stat: { rec: -2 } } },
+    undying: { name: 'Undying', cost: 4, rarity: 'legendary', desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
+    reapers_mark: { name: "Reaper's Mark", cost: 3, rarity: 'legendary', desc: '+40% damage to targets below half HP, and slaying an enemy resets its cooldown: it is ready again next turn.', req: 'damage', mod: { props: { execMult: 0.4 }, traits: ['bloodlust'] } },
   };
 
   const GEAR = {
@@ -936,6 +1029,17 @@
       mod: { active: { name: 'Gale Horn', kind: 'nova', radius: 2, fx: { knock: 2 }, uses: 1 } } },
     blasting_charge: { name: 'Blasting Charge', cost: 1, desc: 'Active, 1 use: blow up an adjacent target for 20 damage, triple against buildings, ignoring half of armor.',
       mod: { active: { name: 'Blasting Charge', kind: 'strike', range: [1, 1], dmg: 'phys', fixed: 20, pierce: 0.5, vs: { structure: 2 }, uses: 1 } } },
+    frost_brand: { name: 'Frostbite Blade', cost: 2, desc: 'Hits also root the target for 1 turn: it cannot move.', req: 'damage', mod: { onHit: { root: 1 } } },
+    hex_charm: { name: 'Hexing Charm', cost: 1, desc: 'Hits also weaken the target for 2 turns: it deals 30% less damage.', req: 'damage', mod: { onHit: { weak: 2 } } },
+    gilded_gauntlet: { name: 'Gilded Gauntlet', cost: 1, desc: 'Every enemy it slays earns 6 gold.', req: 'damage', mod: { traits: ['midas'] } },
+    storm_rod: { name: 'Storm Rod', cost: 2, desc: 'At the start of its turn, lightning strikes the nearest enemy within 3 tiles for 5 magic damage.', mod: { traits: ['stormcaller'] } },
+    // Legendary: found from the second half of Act 2 on, more often the deeper you go.
+    meteor_hammer: { name: 'Meteor Hammer', cost: 3, rarity: 'legendary', desc: 'Active, 1 use: call a meteor down on a 3x3 area 2 to 5 tiles away: 26 magic damage to everything there, and it burns.',
+      mod: { active: { name: 'Meteor Hammer', kind: 'blast', range: [2, 5], pattern: 'square', dmg: 'magic', fixed: 26, arc: true, ff: true, fx: { burn: [2, 5] }, uses: 1 } } },
+    storm_crown: { name: 'Crown of Storms', cost: 3, rarity: 'legendary', desc: 'Active, 2 uses: lightning lashes 4 tiles out in all four directions, 18 magic damage to every enemy in the lines.',
+      mod: { active: { name: 'Crown of Storms', kind: 'cross', len: 4, dmg: 'magic', fixed: 18, uses: 2 } } },
+    aegis_dawn: { name: 'Aegis of Dawn', cost: 3, rarity: 'legendary', desc: '+20% armor and +20% magic resistance. Once per battle, it survives a fatal blow with 1 HP.', mod: { stat: { armor: 0.2, res: 0.2 }, traits: ['secondwind'] } },
+    vorpal_blade: { name: 'Vorpal Blade', cost: 3, rarity: 'legendary', desc: 'Physical attacks ignore all armor, and +20% damage.', req: 'phys', mod: { props: { pierce: 1, dmgMult: 0.2 } } },
   };
 
   // Enchantments are bound to one unit forever and raise its Supply cost.

@@ -505,6 +505,27 @@ on a phone turned sideways, but portrait works too.
   recruit shows the Supply its enchantment adds right by its name (+2 Supply), and
   what it does in a violet box of its own, and every recruit card has a ? button that opens the unit's
   details (HP, numbers, attacks, traits, enchantment) without taking it.
+- **Legendaries**: five legendary units, each a huge, flashy act followed by a long
+  wait (cooldown 3; the Dragon Tyrant's is 2): the **Archmage** (8 Supply) calls a
+  meteor down on a 3x3 area 3 to 6 tiles away, burning everyone hit, its own side
+  included; the **Phoenix** (7) dives onto an open tile up to 5 away and bursts into
+  flame, burning every enemy beside it, and at Level 3 rises once from its ashes; the
+  **Frost Giant** (7, 130 HP) brings a glacier down on a foe up to 2 tiles away,
+  crushing it and everything beside it and freezing them in place for 2 turns; the
+  **Sun Paladin** (7) lances holy light 3 tiles out in all four directions, dazzling
+  every enemy in the lines (+50% against the undead and spirits); and the **Dragon
+  Tyrant** (8). Each has its own picks, talents and mastery, and its own animation (a
+  falling meteor, a fiery dive, an ice burst, beams of light). There are legendary
+  skills and gear too, 3 or 4 Supply each: Avatar of War, Time Warp (cooldown 2
+  shorter), Undying (rises once with half HP), Reaper's Mark, the Meteor Hammer, the
+  Crown of Storms, the Aegis of Dawn and the Vorpal Blade. Nothing legendary turns up
+  before the second half of Act 2: then each recruit, skill or gear roll has a 3%
+  chance, rising to 8% by the Act 2 boss, then 10% at the start of Act 3 rising to 25%
+  by its boss (half as likely again from elites and bosses). So about 1 battle in 10
+  offers one late in Act 2, 1 in 5 early in Act 3 and 1 in 2 by its end. Legendary
+  cards glow molten gold; legendary skills and gear sell for half as much again. New
+  everyday picks came with them: the Giant Slayer, Pack Tactics and Last Stand skills,
+  and Frostbite Blade, Hexing Charm, Gilded Gauntlet and Storm Rod gear.
 - **The merchant**: six things: a recruit, a talent, a skill, gear and a relic, plus
   one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about
   twice as much as anything else. Resupply brings out a whole new stock for 20 gold,
@@ -546,7 +567,8 @@ node tests/fatigue.test.js       # fatigue on hundreds of real battles: each sid
 node tests/beats.test.js         # what the board shows as a unit's turn comes: one step a beat, in order, numbers never on each other
 node tests/hall.test.js          # the Hall of Fame: entering, climbing, skirmishes, mirrored matches
 node tests/talents.test.js       # class talents: slots, the pack, always usable
-node tests/sim.js 200            # AI-vs-AI balance by unit type
+node tests/legendary.test.js     # the legendaries: units, skills and gear, and when they turn up
+node tests/sim.js 200            # AI-vs-AI balance by unit type (WITH_LEGENDS=1 adds the legendaries)
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries
                                  # (pick medium | easy | elite | mix each round)

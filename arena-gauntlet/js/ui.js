@@ -1348,7 +1348,7 @@
     const cls = kind === 'talent' ? TALENTS[id].cls : null;
     const mine = run.items.filter((i) => i.kind === kind && (!cls || TALENTS[i.id].cls === cls));
     const same = mine.filter((i) => i.id === id).length;
-    const what = kindPlural(kind, { type: cls });
+    const what = mine.length === 1 && kind !== 'gear' ? kindPlural(kind, { type: cls }).replace(/s$/, '') : kindPlural(kind, { type: cls });
     return `<div class="owned">${ic(ITEM_ICON[kind])}<span>${mine.length ? `You have ${mine.length} ${what}${same ? ` (${same} of this one)` : ''}` : `You have no ${what} yet`}</span></div>`;
   }
 
@@ -1516,7 +1516,7 @@
     const rowHTML = (it, state, extra) => {
       const d = R.itemDef(it);
       const on = state === 'on';
-      const tag = on ? '<span class="got-tag">✓ Equipped</span>' : extra || '';
+      const tag = (d.rarity === 'legendary' ? `<span class="legend-tag">${ic('crown')} Legendary</span>` : '') + (on ? '<span class="got-tag">✓ Equipped</span>' : extra || '');
       return `<button class="slot kit ${on ? 'full' : ''} ${!on && held.length >= n ? 'capped' : ''}" data-kit="${on ? 'off' : 'on'}:${kind}:${it.uid}">
         <span class="itemico ${kind}">${ic(ITEM_ICON[kind])}</span>
         <span class="sl-body"><span class="sl-name"><b>${esc(d.name)}</b>${tag}</span><span class="small muted">${esc(d.desc)}</span>${on ? '<span class="small sl-hint">Tap to take it off.</span>' : ''}</span>
@@ -4540,7 +4540,8 @@
       return `<button class="card talent ${t.tier === 2 ? 'rare' : ''}" ${attrs || ''}><div class="kind">${ic('star')} ${esc(UNITS[t.cls].name)} talent${t.tier === 2 ? ' · rare' : ''} · ${t.cost} Supply</div><div class="title">${esc(t.name)}</div><div class="desc">${esc(t.desc)}</div>${extra || ''}</button>`;
     }
     const d = kind === 'skill' ? SKILLS[id] : GEAR[id];
-    return `<button class="card" ${attrs || ''}><div class="kind">${ic(kind === 'skill' ? 'scroll' : 'sword')} ${kind === 'skill' ? 'Skill' : 'Gear'} · ${costTag(d)}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
+    const legend = d.rarity === 'legendary';
+    return `<button class="card ${legend ? 'legendary' : ''}" ${attrs || ''}><div class="kind">${ic(legend ? 'crown' : kind === 'skill' ? 'scroll' : 'sword')} ${legend ? 'Legendary ' + kind : kind === 'skill' ? 'Skill' : 'Gear'} · ${costTag(d)}</div><div class="title">${esc(d.name)}</div><div class="desc">${esc(d.desc)}</div>${extra || ''}</button>`;
   }
 
   // A toast line for a unit that just joined, with the talent it came with.
@@ -4554,9 +4555,10 @@
   function recruitCard(unit, enchant, attrs, extra, talent) {
     const T = UNITS[unit];
     const E2 = enchant && ENCHANTS[enchant];
-    return `<button class="card" ${attrs || ''}>
+    const legend = T.rarity === 'legendary';
+    return `<button class="card ${legend ? 'legendary' : ''}" ${attrs || ''}>
       <div class="card-head"><canvas class="portrait" data-p="${unit}:P"></canvas>
-      <div class="grow"><div class="kind">Recruit · ${T.rarity} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
+      <div class="grow"><div class="kind">${legend ? `${ic('crown')} Legendary recruit` : `Recruit · ${T.rarity}`} · ${T.cost} Supply</div><div class="title">${T.name}${E2 ? ` <span class="ench-cost">${ic('gem')} +${E2.surcharge} Supply</span>` : ''}</div></div>
       <span class="card-info" role="button" tabindex="0" data-rinfo="${unit}:${enchant || ''}:${talent || ''}" aria-label="Details">${ic('help')}</span></div>
       <div class="desc">${esc(T.desc)}</div>
       ${E2 ? `<div class="ench-box"><b>${ic('gem')} Enchanted: ${esc(E2.name)}</b><span>${esc(E2.desc)}</span><span class="small">Bound to this unit for good: fielding it costs ${E2.surcharge} more Supply.</span></div>` : ''}
@@ -4961,6 +4963,7 @@
           <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
           <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
           <li><b>Wreckage</b> litters the Act I boss's camp: four wrecked carts with 8 gold in each. Your army leaves them be until the boss and its retinue fall, then breaks what it can before its fatigue tells.</li>
+          <li><b>Legendaries</b> (molten-gold cards): the Archmage's meteor, the Phoenix's fiery dive, the Frost Giant's glacier, the Sun Paladin's judgment and the Dragon Tyrant's breath, each a huge act and then a long cooldown, plus legendary skills and gear. None turn up before the second half of Act 2; from there they come more and more often, most of all late in Act 3 and from elites and bosses.</li>
           <li><b>Every enemy building pays a little.</b> Break a wall, tower, totem, banner, cage or gate and your army picks up 3 gold (5 for the gate and for tents, crypts, dens, portals and guardhouses). Not worth a detour, but never wasted.</li>
         </ul>
         <h4>Reinforcements</h4>
