@@ -439,8 +439,10 @@ on a phone turned sideways, but portrait works too.
   elite battle for a relic. Some cost gold; a few are gambles (stake a soldier at the
   Gambler's Tent: an enchantment, or they leave your army). Your Cleric can be
   blessed, never transformed or lost. Every event shows the relics you hold at the
-  top (tap one for what it does), and the Merchant Caravan lists one trade for each
-  of your common relics, so you choose which one to give up.
+  top as plain circles in their rarity's colour (common grey, uncommon green, rare
+  blue, boss orange, legendary gold; tap one for its name and what it does). The
+  Merchant Caravan's trade shows your common relics as circles: tap the one to give
+  up, and confirm with what each relic does side by side.
 - **Regen**: some talents, gear, relics and units heal whenever the unit's turn
   comes, whether it acts or passes (Living Moss 4,
   Healing Charm 3, the Furgon 3, a Mending Light aura 2). The only army-wide source

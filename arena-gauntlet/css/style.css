@@ -1158,7 +1158,7 @@ button.chip.tap {
 }
 
 .relic-dot.tier-common {
-  --relic: #d8c39a;
+  --relic: #a9abb2;
 }
 
 .relic-dot.tier-uncommon {
@@ -1167,6 +1167,7 @@ button.chip.tap {
 
 .relic-dot.tier-rare {
   --relic: #7fb6ff;
+  box-shadow: 0 0 8px rgba(127, 182, 255, 0.45);
 }
 
 .relic-dot.tier-boss {
@@ -3883,4 +3884,31 @@ body:has(#battle:not([hidden])) {
   color: var(--brass-hi);
   cursor: pointer;
   font: inherit;
+}
+
+/* Relics as plain circles on event screens: bigger, in a wrapping row. */
+.ev-relics .dots,
+.swap-block .dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.relic-dot.big {
+  width: 42px;
+  height: 42px;
+}
+
+.relic-dot.big .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.swap-block {
+  cursor: default;
+}
+
+.parch-card .relic-dot {
+  background: radial-gradient(circle at 35% 30%, #4a4150, #1a1520 72%);
 }
