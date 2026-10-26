@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine Print</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #d8d4cc; font-family: Inter, "Helvetica Neue", Arial, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center;
+    padding: 10px 16px; background: linear-gradient(transparent, rgba(0,0,0,.65)); opacity: 0; transition: opacity .3s; }
+  #stage:hover #controls, #controls.show { opacity: 1; }
+  #controls button { background: none; border: 1px solid rgba(255,255,255,.35); color: #eee; border-radius: 6px;
+    font: 500 13px Inter, Arial, sans-serif; padding: 6px 12px; cursor: pointer; }
+  #controls input { flex: 1; accent-color: #ffcf8a; }
+  #controls span { font: 12px "JetBrains Mono", Menlo, monospace; color: #bbb; min-width: 84px; text-align: right; }
+  body.render #controls { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="film" width="1920" height="1080"></canvas>
+  <div id="controls" class="show"><button id="play">Play</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="clock">0:00</span></div>
+</div>
+<audio id="score" src="soundtrack.m4a" preload="auto"></audio>
+<script>
+(() => {
+'use strict';
+/* =====================================================================
+   FINE PRINT — your body belongs to you.*
+   Every frame is a pure function of time. The timeline is built from the
+   narration: each line's measured length decides when the next begins.
+   ===================================================================== */
+
+const W = 1920, H = 1080, FPS = 30;
+const canvas = document.getElementById('film');
+const ctx = canvas.getContext('2d');
+
+// ---------- utilities ----------
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+const easeIn = k => k * k * k;
+const smooth = k => k * k * (3 - 2 * k);
+const win = (t, a, b, fi = .6, fo = .6) => {
+  if (t <= a || t >= b) return 0;
+  return Math.min(fi > 0 ? smooth(clamp((t - a) / fi)) : 1, fo > 0 ? smooth(clamp((b - t) / fo)) : 1);
+};
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(19);
+const R = (a, b) => a + (b - a) * rand();
+function hash01(a, b = 0, c = 0) {
+  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35) ^ Math.imul(c + 0x27d4eb2f, 0x165667b1);
+  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12; h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+const mix = (c1, c2, k) => [lerp(c1[0], c2[0], k), lerp(c1[1], c2[1], k), lerp(c1[2], c2[2], k)];
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a < 0 ? 0 : a > 1 ? 1 : a.toFixed(3)})`;
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+const lerpAng = (a, b, k) => { let d = ((b - a + 540) % 360) - 180; return a + d * k; };
+
+// ---------- look ----------
+const SERIF = "'Bitstream Charter', Charter, 'Iowan Old Style', Georgia, serif";
+const SANS = "Inter, 'Helvetica Neue', Arial, sans-serif";
+const MONO = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace";
+const WARM = [255, 210, 156], WARM_HI = [255, 240, 214], COLD = [176, 206, 255], RED = [255, 76, 66];
+const CONCRETE = [92, 94, 100], TEXT = [236, 232, 224], DATA = [150, 160, 180], ASTER = [255, 108, 96];
+
+// =====================================================================
+// THE SCRIPT. Durations are the narration's measured lengths
+// (Kokoro af_bella at 0.95); voice.py checks them when it speaks.
+// =====================================================================
+const SEQ = [
+  { mark: 'start', gap: 0 },
+  { id: 'open', text: 'Your body belongs to you.', gap: 1.2, dur: 1.39, sub: false },
+  { id: 'most', text: 'In most circumstances.', gap: 1.1, dur: 1.37, sub: false },
+  { mark: 'titleOut', gap: 2.8 },
+  { mark: 'act1', gap: 1.0 },
+  { id: 'except', text: 'Except that people with legal authority, like police officers,', gap: 2.6, dur: 3.84 },
+  { id: 'allowed', text: 'are allowed to touch you without your consent, if they believe you broke certain rules.', gap: 0.15, dur: 4.67 },
+  { id: 'grab', text: 'They can grab you.', gap: 1.0, dur: 0.96 },
+  { id: 'hold', text: 'Hold you down.', gap: 0.8, dur: 0.98 },
+  { id: 'cuff', text: 'Handcuff you.', gap: 0.8, dur: 0.94 },
+  { id: 'move', text: 'Move your body while you’re saying no.', gap: 1.0, dur: 2.01 },
+  { id: 'nostop', text: 'Saying no won’t stop them.', gap: 1.4, dur: 1.64 },
+  { id: 'resist', text: 'Resisting can get you charged with a crime.', gap: 1.0, dur: 2.62 },
+  { id: 'cell', text: 'And that charge can put you in a concrete cell, for a length of time decided by the state.', gap: 1.4, dur: 5.38 },
+  { id: 'bail', text: 'First, while you wait for your case. Sometimes only because you can’t afford bail.', gap: 1.0, dur: 4.95 },
+  { id: 'years', text: 'Then, if you’re convicted, possibly for months. Or years.', gap: 0.8, dur: 3.54 },
+  { mark: 'act2', gap: 2.6 },
+  { id: 'search', text: 'During a stop or an arrest, they can search your body.', gap: 1.8, dur: 3.05 },
+  { id: 'pat', text: 'A pat-down can include your groin, your chest, and other private areas.', gap: 0.6, dur: 4.35 },
+  { id: 'strip', text: 'In some jails, a strip search.', gap: 1.0, dur: 1.9 },
+  { id: 'cansay', text: 'You can say:', gap: 1.4, dur: 0.81 },
+  { id: 'consent', who: 'you', voice: 'am_liam', text: 'I do not consent.', gap: 0.35, dur: 1.56, sub: false },
+  { id: 'notreq', text: 'In most of these situations, they’re not required to stop.', gap: 1.0, dur: 3.52 },
+  { id: 'solitary', text: 'In jail, refusing a search can mean solitary confinement.', gap: 1.2, dur: 3.86 },
+  { id: 'pinned', text: 'Or the search is done by force, with your arms and legs pinned down.', gap: 1.0, dur: 4.2 },
+  { mark: 'act3', gap: 2.6 },
+  { id: 'further', text: 'Some officers have gone further. Sexual assault. Brutality.', gap: 2.0, dur: 4.01 },
+  { id: 'crimes', text: 'Those are crimes, not legal powers.', gap: 1.0, dur: 2.37 },
+  { id: 'control', text: 'But once someone has physical control of your body, saying no doesn’t make them stop.', gap: 1.4, dur: 4.69 },
+  { id: 'later', text: 'Any accountability comes later.', gap: 1.4, dur: 1.79 },
+  { id: 'atall', text: 'If it comes at all.', gap: 0.8, dur: 1.19 },
+  { mark: 'act4', gap: 2.8 },
+  { id: 'cmd1', who: 'cmd', voice: 'am_onyx', text: 'Hands behind your back!', gap: 1.6, dur: 1.7, sub: false },
+  { id: 'no1', who: 'you', voice: 'af_river', text: 'No.', gap: 0.35, dur: 0.66, sub: false },
+  { id: 'keepno', text: 'If you keep saying no, and especially if you pull away, they’re allowed to increase the force.', gap: 0.7, dur: 5.44 },
+  { id: 'cmd2', who: 'cmd', voice: 'am_fenrir', text: 'Stop resisting!', gap: 0.5, dur: 1.45, sub: false },
+  { id: 'ground', text: 'Thrown to the ground.', gap: 0.6, dur: 1.15 },
+  { id: 'helddown', text: 'Held down.', gap: 0.6, dur: 0.9 },
+  { id: 'baton', text: 'A baton.', gap: 0.6, dur: 0.83 },
+  { id: 'taser', text: 'A Taser.', gap: 0.7, dur: 0.73 },
+  { id: 'spray', text: 'Pepper spray.', gap: 0.8, dur: 0.98 },
+  { id: 'bones', text: 'People have ended up with broken bones. Damaged joints.', gap: 1.4, dur: 3.58 },
+  { id: 'worse', text: 'And worse.', gap: 0.9, dur: 0.7 },
+  { mark: 'act5', gap: 3.0 },
+  { id: 'law', text: 'The law says deadly force is allowed only against an immediate threat of death or serious injury.', gap: 2.0, dur: 6.4 },
+  { id: 'judged', text: 'But that threat is judged from the officer’s perspective, in the moment.', gap: 0.8, dur: 4.1 },
+  { id: 'courts', text: 'And afterward, courts usually give officers a lot of benefit of the doubt.', gap: 0.8, dur: 4.39 },
+  { id: 'pull', text: 'Pulling away.', gap: 1.4, dur: 0.92 },
+  { id: 'pocket', text: 'Reaching for a pocket.', gap: 1.4, dur: 1.26 },
+  { id: 'turn', text: 'Turning suddenly.', gap: 1.4, dur: 1.05 },
+  { id: 'each', text: 'Each has been perceived as a threat.', gap: 1.2, dur: 1.88 },
+  { id: 'killed', text: 'People have been killed in encounters that started with something as small as a refused instruction.', gap: 1.8, dur: 5.5 },
+  { id: 'away', text: 'Or with moving your body away from hands that were about to touch you, without your consent.', gap: 1.6, dur: 4.89 },
+  { mark: 'dark', gap: 0.5 },
+  { mark: 'coda', gap: 4.5 },
+  { id: 'close', text: 'Your body belongs to you.', gap: 1.5, dur: 1.39, sub: false },
+  { mark: 'fine', gap: 1.2 },
+  { mark: 'end', gap: 7.0 },
+];
+// voices laid over the flow rather than in it
+const OVER = [
+  { id: 'no_move', who: 'you', voice: 'af_sky', text: 'No.', after: 'move', off: 0.35, dur: 0.66 },
+  { id: 'no_ctrl', who: 'you', voice: 'am_echo', text: 'No.', after: 'crimes', off: 0.35, dur: 0.66 },
+];
+const T = {}, LINE = {};
+(() => {
+  let t = 0;
+  for (const it of SEQ) {
+    t += it.gap;
+    if (it.mark) { T[it.mark] = t; continue; }
+    it.t0 = t; it.t1 = t + it.dur; it.who = it.who || 'narrator'; LINE[it.id] = it; t = it.t1;
+  }
+  for (const o of OVER) { o.t0 = LINE[o.after].t1 + o.off; o.t1 = o.t0 + o.dur; LINE[o.id] = o; }
+  T.END = T.end;
+})();
+const L = id => LINE[id];
+
+// The fine print, one clause per section. More asterisks every time.
+const FOOT = [
+  { t: L('except').t0 + 0.4, text: '* except where a person with legal authority believes you broke certain rules.' },
+  { t: L('resist').t0 + 1.4, text: '** resisting may be charged as a crime.' },
+  { t: L('bail').t0 + 0.5, text: '*** the length of confinement is decided by the state, including before trial.' },
+  { t: L('notreq').t0 + 0.3, text: '**** searches may include private areas and may continue over your objection.' },
+  { t: L('solitary').t0 + 1.0, text: '***** refusal may lead to solitary confinement, or a search by force.' },
+  { t: L('atall').t0 + 0.2, text: '****** assault is a crime, not a power. accountability, if any, comes later.' },
+  { t: L('worse').t0 + 0.5, text: '******* force may increase if you refuse, or pull away.' },
+];
+const SECTIONS = [
+  { t: T.act1, text: '§1  contact' }, { t: T.act2, text: '§2  search' }, { t: T.act3, text: '§3  misconduct' },
+  { t: T.act4, text: '§4  force' }, { t: T.act5, text: '§5  perception' },
+];
+const FULL_TEXT = [
+  'Your body in current Society seems to belong to you in most circumstances, except that people with legal authority, like police officers, are allowed to touch you non-consensually if they believe you broke certain rules. That means grabbing you, holding you down, handcuffing you, and moving your body while you’re saying no. Saying no won’t stop them. Resisting can get you charged with a crime, and one consequence of that charge can be getting locked in a concrete cell against your will, for a length of time decided by the state: first while you wait for your case, sometimes because you can’t afford bail, and then possibly for months or years if you’re convicted.',
+  'Non-consensual touch during a stop or arrest can include your body being searched. Officers are legally allowed to pat you down, including near your groin, chest and other private areas, and if you’re taken to jail, some places allow strip searches. You can say “I do not consent,” and in most of these situations they’re not required to stop. They can ignore your no, or they can punish it. In jail, refusing a search can get you put in solitary confinement, alone in a cell, or the search can be carried out by force, with officers pinning your arms and legs down while they search your body.',
+  'Non-consensual touch by officers has also included sexual assault and brutality. Those are crimes, not legal powers, but once someone has physical control of your body, saying no doesn’t make them stop. Any accountability comes later, if it comes at all.',
+  'If you keep saying no while an officer is touching you non-consensually, and especially if you pull away or try to move your body out of their grip, they’re allowed to increase the force. That can mean being thrown to the ground, held down, hit with a baton, shocked with a Taser, or pepper-sprayed, and people have ended up with broken bones, damaged joints, and worse.',
+  'The law says an officer can use deadly force only if they believe you pose an immediate threat of death or serious injury. But that belief is judged by what the officer perceived in the moment, and courts usually give officers a lot of benefit of the doubt afterward. Movements like pulling away, reaching for a pocket, or turning suddenly have been perceived as threats, and people have been killed in encounters that started with something as small as a refused instruction, including moving your body away from an officer making grabbing motions, someone about to violate your physical boundaries by placing their hands on you without your consent.',
+];
+
+// =====================================================================
+// THE FIGURE: a body of light, posed by joints
+// =====================================================================
+const J = ['head', 'neck', 'shL', 'shR', 'elL', 'elR', 'haL', 'haR', 'hipL', 'hipR', 'knL', 'knR', 'ftL', 'ftR'];
+const JI = Object.fromEntries(J.map((j, i) => [j, i]));
+function pose(over, base, flags = {}) {
+  const p = base ? Float32Array.from(base) : new Float32Array(J.length * 2);
+  for (const k in over) { p[JI[k] * 2] = over[k][0]; p[JI[k] * 2 + 1] = over[k][1]; }
+  p.behind = flags.behind ?? (base && base.behind) ?? false;
+  p.legsFront = flags.legsFront ?? false;
+  return p;
+}
+const STAND = pose({ head: [0, -322], neck: [0, -292], shL: [-46, -270], shR: [46, -270], elL: [-58, -198], elR: [58, -198],
+  haL: [-64, -128], haR: [64, -128], hipL: [-26, -160], hipR: [26, -160], knL: [-30, -82], knR: [30, -82], ftL: [-34, 0], ftR: [34, 0] });
+const GRABBED = pose({ head: [6, -320], neck: [5, -290], shL: [-42, -268], shR: [50, -270], elR: [96, -232], haR: [140, -226], elL: [-56, -196], haL: [-62, -126] }, STAND);
+const BENT = pose({ head: [4, -176], neck: [2, -160], shL: [-48, -150], shR: [48, -150], elL: [-70, -108], haL: [-80, -58], elR: [86, -178], haR: [122, -196],
+  hipL: [-26, -82], hipR: [26, -82], knL: [-30, -6], knR: [30, -6], ftL: [-40, 4], ftR: [40, 4] }, STAND);
+const CUFF_KNEEL = pose({ head: [0, -246], neck: [0, -216], shL: [-46, -196], shR: [46, -196], elL: [-60, -140], elR: [60, -140], haL: [-9, -102], haR: [9, -102],
+  hipL: [-26, -84], hipR: [26, -84], knL: [-30, -6], knR: [30, -6], ftL: [-40, 4], ftR: [40, 4] }, STAND, { behind: true });
+const CUFF_STAND = pose({ elL: [-60, -205], elR: [60, -205], haL: [-9, -158], haR: [9, -158] }, STAND, { behind: true });
+const CUFF_PULL = pose({ head: [-18, -318], neck: [-15, -289], shL: [-62, -266], shR: [30, -268], elL: [-74, -204], elR: [46, -206], haL: [-22, -158], haR: [-4, -158],
+  hipL: [-34, -160], hipR: [18, -160], knL: [-44, -82], knR: [20, -82], ftL: [-56, 0], ftR: [28, 0] }, STAND, { behind: true });
+const SIT = pose({ head: [0, -184], neck: [0, -160], shL: [-44, -146], shR: [44, -146], elL: [-70, -104], elR: [70, -104], haL: [-14, -92], haR: [14, -92],
+  hipL: [-30, -30], hipR: [30, -30], knL: [-40, -122], knR: [40, -122], ftL: [-36, 0], ftR: [36, 0] }, STAND, { legsFront: true });
+const EXPOSED = pose({ elL: [-76, -200], elR: [76, -200], haL: [-102, -136], haR: [102, -136] }, STAND);
+const SPREAD = pose({ elL: [-108, -300], elR: [108, -300], haL: [-166, -328], haR: [166, -328], knL: [-56, -84], knR: [56, -84], ftL: [-84, 0], ftR: [84, 0] }, STAND);
+const FLINCH = pose({ head: [-10, -316], neck: [-8, -288], shL: [-52, -276], shR: [40, -274], elL: [-72, -230], elR: [58, -228], haL: [-40, -292], haR: [26, -290],
+  knL: [-34, -80], knR: [26, -80] }, STAND);
+const STEP_BACK = pose({ head: [-30, -316], neck: [-26, -287], shL: [-70, -264], shR: [20, -268], elL: [-92, -214], elR: [34, -216], haL: [-62, -252], haR: [36, -262],
+  hipL: [-40, -158], hipR: [10, -160], knL: [-58, -82], knR: [20, -84], ftL: [-92, 0], ftR: [30, 0] }, STAND);
+const REACH = pose({ head: [4, -322], elR: [66, -196], haR: [38, -150] }, STAND);
+const TURN = pose({ head: [-12, -320], neck: [-7, -292], shL: [-22, -270], shR: [30, -272], elL: [-30, -198], elR: [44, -200], haL: [-34, -128], haR: [50, -130],
+  hipL: [-12, -160], hipR: [20, -160], knL: [-16, -82], knR: [24, -82], ftL: [-20, 0], ftR: [30, 0] }, STAND);
+const DOWN = pose({ elL: [-72, -214], haL: [-64, -152], elR: [70, -252], haR: [112, -300], knL: [-44, -92], knR: [22, -72], ftL: [-22, 0], ftR: [40, -6] }, STAND);
+
+// keyframes: each sets a target pose/placement reached over `dur` seconds
+function keys(list) {
+  let last = { pose: STAND, x: 960, y: 845, rot: 0, s: 1 };
+  return list.map(k => (last = Object.assign({}, last, { dur: 0.6 }, k)));
+}
+function figState(ks, t) {
+  let i = 0;
+  while (i + 1 < ks.length && ks[i + 1].t <= t) i++;
+  const cur = ks[i], prev = ks[Math.max(0, i - 1)];
+  const k = i === 0 ? 1 : ease(clamp((t - cur.t) / Math.max(cur.dur, 1e-3)));
+  const P = new Float32Array(J.length * 2);
+  for (let n = 0; n < P.length; n++) P[n] = lerp(prev.pose[n], cur.pose[n], k);
+  // breathing
+  const br = Math.sin(t * 1.7) * 1.6;
+  for (const j of ['head', 'neck', 'shL', 'shR']) P[JI[j] * 2 + 1] += br;
+  return {
+    P, x: lerp(prev.x, cur.x, k), y: lerp(prev.y, cur.y, k), rot: lerp(prev.rot, cur.rot, k), s: lerp(prev.s, cur.s, k),
+    behind: k < 0.5 ? prev.pose.behind : cur.pose.behind, legsFront: k < 0.5 ? prev.pose.legsFront : cur.pose.legsFront,
+  };
+}
+function toWorld(st, lx, ly) {
+  const c = Math.cos(st.rot), s = Math.sin(st.rot);
+  return [st.x + (lx * c - ly * s) * st.s, st.y + (lx * s + ly * c) * st.s];
+}
+const jw = (st, j) => toWorld(st, st.P[JI[j] * 2], st.P[JI[j] * 2 + 1]);
+
+const LIMBS = [['shL', 'elL', 'haL'], ['shR', 'elR', 'haR'], ['hipL', 'knL', 'ftL'], ['hipR', 'knR', 'ftR']];
+const LIMB_W = [[21, 16], [21, 16], [30, 21], [30, 21]];
+function drawFigure(st, sty) {
+  const a = sty.a ?? 1;
+  if (a <= 0.004) return;
+  const s = st.s, col = sty.col || WARM, dim = sty.dim || 0, f = Math.floor((sty.time || 0) * 30);
+  const w = {};
+  for (const j of J) w[j] = jw(st, j);
+  const jag = sty.jag || 0;
+  const pt = (p, n) => jag ? [p[0] + (hash01(f, n, 1) - 0.5) * jag, p[1] + (hash01(f, n, 2) - 0.5) * jag] : p;
+  const items = [];
+  const limb = i => ['limb', LIMBS[i], LIMB_W[i]];
+  if (st.behind) items.push(limb(0), limb(1));
+  if (!st.legsFront) items.push(limb(2), limb(3));
+  items.push(['torso'], ['neck'], ['head']);
+  if (st.legsFront) items.push(limb(2), limb(3));
+  if (!st.behind) items.push(limb(0), limb(1));
+  // each piece as strokes of a given extra width
+  const paint = (c, extra) => items.forEach((it, n) => {
+    if (it[0] === 'limb') {
+      const [p, q, r] = it[1].map((j, i) => pt(w[j], n * 10 + i));
+      c.lineWidth = it[2][0] * s + extra; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
+      c.lineWidth = it[2][1] * s + extra; c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(r[0], r[1]); c.stroke();
+    } else if (it[0] === 'torso') {
+      const ps = ['shL', 'shR', 'hipR', 'hipL'].map((j, i) => pt(w[j], 50 + i));
+      c.lineWidth = 22 * s + extra; c.beginPath(); c.moveTo(ps[0][0], ps[0][1]); ps.slice(1).forEach(p => c.lineTo(p[0], p[1])); c.closePath();
+      c.fill(); c.stroke();
+    } else if (it[0] === 'neck') {
+      const m = [(w.shL[0] + w.shR[0]) / 2, (w.shL[1] + w.shR[1]) / 2];
+      c.lineWidth = 15 * s + extra; c.beginPath(); c.moveTo(w.neck[0], w.neck[1]); c.lineTo(m[0], m[1]); c.stroke();
+    } else {
+      const h = pt(w.head, 60);
+      c.beginPath(); c.arc(h[0], h[1], 26 * s + extra / 2, 0, Math.PI * 2); c.fill();
+    }
+  });
+  // the light around a body: the silhouette, blurred, at half resolution
+  bloom(c => { c.strokeStyle = c.fillStyle = rgba(col, 1); c.lineCap = 'round'; c.lineJoin = 'round'; paint(c, 8 * s); },
+    a * (sty.glow ?? 1) * (1 - dim * 0.6));
+  // the body, lit from above
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.globalCompositeOperation = 'source-over';
+  const body = mix(col, [12, 14, 20], dim);
+  const feet = [(w.ftL[0] + w.ftR[0]) / 2, (w.ftL[1] + w.ftR[1]) / 2];
+  const gr = ctx.createLinearGradient(w.head[0], w.head[1] - 26 * s, feet[0], feet[1]);
+  gr.addColorStop(0, rgba(mix(body, [255, 252, 244], 0.35 * (1 - dim)), a));
+  gr.addColorStop(0.42, rgba(body, a));
+  gr.addColorStop(1, rgba(mix(body, [70, 46, 40], 0.4), a));
+  ctx.strokeStyle = ctx.fillStyle = gr;
+  paint(ctx, 0);
+  // a heart of light, breathing
+  ctx.globalCompositeOperation = 'lighter';
+  const ch = [(w.shL[0] + w.shR[0]) / 2 * 0.7 + (w.hipL[0] + w.hipR[0]) / 2 * 0.3, (w.shL[1] + w.shR[1]) / 2 * 0.7 + (w.hipL[1] + w.hipR[1]) / 2 * 0.3];
+  glow(sty.core || WARM_HI, ch[0], ch[1], 95 * s * (1 + 0.06 * Math.sin((sty.time || 0) * 1.7)), 0.2 * a * (1 - dim));
+  ctx.globalCompositeOperation = 'source-over';
+  (sty.fractures || []).forEach(fr => fracture(w[fr.j], fr.t0, sty.time, a, fr.seed));
+}
+function fracture(p, t0, t, a, seed) {
+  const u = t - t0;
+  if (u < 0) return;
+  const k = easeOut(clamp(u / 0.25));
+  ctx.globalCompositeOperation = 'lighter';
+  for (let n = 0; n < 3; n++) {
+    const ang = hash01(seed, n) * Math.PI * 2, len = (16 + 16 * hash01(seed, n, 3)) * k;
+    let x = p[0], y = p[1];
+    ctx.beginPath(); ctx.moveTo(x, y);
+    for (let s = 1; s <= 4; s++) {
+      const aa = ang + (hash01(seed, n, s) - 0.5) * 1.2;
+      x += Math.cos(aa) * len / 4; y += Math.sin(aa) * len / 4; ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = rgba(RED, 0.9 * a); ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.strokeStyle = rgba(RED, 0.25 * a); ctx.lineWidth = 7; ctx.stroke();
+  }
+  if (u < 0.4) glow(RED, p[0], p[1], 46, (1 - u / 0.4) * a);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------- the boundary around a body ----------
+function auraGeom(st) {
+  const c = toWorld(st, 0, -172);
+  return { cx: c[0], cy: c[1], rx: 205 * st.s, ry: 285 * st.s, rot: st.rot };
+}
+function ringPoints(g, k, dents, N = 180) {
+  const n = lerp(2, 18, k), pts = [];
+  const c = Math.cos(g.rot), s = Math.sin(g.rot);
+  for (let i = 0; i < N; i++) {
+    const th = i / N * Math.PI * 2, ct = Math.cos(th), sn = Math.sin(th);
+    const ex = Math.sign(ct) * Math.pow(Math.abs(ct), 2 / n), ey = Math.sign(sn) * Math.pow(Math.abs(sn), 2 / n);
+    const lx = g.rx * ex, ly = g.ry * ey;
+    pts.push([g.cx + lx * c - ly * s, g.cy + lx * s + ly * c]);
+  }
+  for (const q of dents || []) {
+    const qa = Math.atan2(q[1] - g.cy, q[0] - g.cx), qd = dist(q[0], q[1], g.cx, g.cy);
+    for (const p of pts) {
+      const pa = Math.atan2(p[1] - g.cy, p[0] - g.cx), pd = dist(p[0], p[1], g.cx, g.cy);
+      const da = Math.atan2(Math.sin(pa - qa), Math.cos(pa - qa));
+      const want = qd - 10;
+      if (want < pd) {
+        const wgt = Math.exp(-da * da / (2 * 0.2 * 0.2));
+        const nd = lerp(pd, Math.max(want, pd * 0.55), wgt);
+        p[0] = g.cx + (p[0] - g.cx) / pd * nd; p[1] = g.cy + (p[1] - g.cy) / pd * nd;
+      }
+    }
+  }
+  return pts;
+}
+function tracePts(pts) { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); }
+function drawAura(g, o) {
+  const a = o.a ?? 1;
+  if (a <= 0.004) return;
+  const col = o.col || WARM, pts = ringPoints(g, o.k || 0, o.dents);
+  const f = Math.floor((o.time || 0) * 30);
+  if (o.jag) pts.forEach((p, i) => { p[0] += (hash01(f, i, 7) - 0.5) * o.jag; p[1] += (hash01(f, i, 8) - 0.5) * o.jag; });
+  // a faint inner light: this space is yours
+  const gr = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, Math.max(g.rx, g.ry));
+  gr.addColorStop(0, rgba(col, 0.07 * a)); gr.addColorStop(1, rgba(col, 0));
+  ctx.fillStyle = gr; tracePts(pts); ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  tracePts(pts); ctx.strokeStyle = rgba(col, 0.12 * a); ctx.lineWidth = (o.lw || 2) * 6; ctx.stroke();
+  ctx.strokeStyle = rgba(col, 0.75 * a); ctx.lineWidth = o.lw || 2; ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  return pts;
+}
+function concreteOutside(pts, a) {
+  if (a <= 0.004) return;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, H);
+  pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+  ctx.globalAlpha = a; ctx.fillStyle = concretePattern; ctx.fill('evenodd');
+  ctx.restore();
+}
+
+// ---------- authority: hands, and nothing else of them ----------
+const tracks = [];
+function track(fig, list) {
+  let last = { open: 1, a: 1, ox: 0, oy: 0, ang: 180 };
+  const tr = list.map(k => {
+    const base = Object.assign({}, last, { dur: 0.6 }, k);
+    if (!('joint' in k) && 'x' in k) base.joint = null;
+    return (last = base);
+  });
+  tr.fig = fig;
+  tracks.push(tr);
+  return tr;
+}
+function handPos(tr, k, t) {
+  if (k.joint) { const p = jw(tr.fig(t), k.joint); return [p[0] + k.ox, p[1] + k.oy]; }
+  return [k.x, k.y];
+}
+function handAt(tr, t) {
+  if (t < tr[0].t) return null;
+  let i = 0;
+  while (i + 1 < tr.length && tr[i + 1].t <= t) i++;
+  const cur = tr[i], prev = tr[Math.max(0, i - 1)];
+  const e = i === 0 ? 1 : ease(clamp((t - cur.t) / Math.max(cur.dur, 1e-3)));
+  const p0 = handPos(tr, prev, t), p1 = handPos(tr, cur, t);
+  return { x: lerp(p0[0], p1[0], e), y: lerp(p0[1], p1[1], e), ang: lerpAng(prev.ang, cur.ang, e), open: lerp(prev.open, cur.open, e), a: lerp(prev.a, cur.a, e) };
+}
+function drawHand(h, alphaMul = 1) {
+  if (!h) return;
+  const a = h.a * alphaMul;
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.translate(h.x, h.y); ctx.rotate(h.ang * Math.PI / 180);
+  ctx.globalCompositeOperation = 'lighter';
+  glow(COLD, 0, 0, 90, 0.12 * a);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = rgba([16, 22, 34], 0.95 * a);
+  ctx.beginPath(); ctx.moveTo(-30, -21); ctx.lineTo(-2800, -27); ctx.lineTo(-2800, 27); ctx.lineTo(-30, 21); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(COLD, 0.5 * a); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-30, -21); ctx.lineTo(-2800, -27); ctx.moveTo(-30, 21); ctx.lineTo(-2800, 27); ctx.stroke();
+  ctx.strokeStyle = rgba(COLD, 0.7 * a); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-40, -22); ctx.lineTo(-40, 22); ctx.stroke();
+  const curl = 1 - h.open;
+  ctx.lineCap = 'round';
+  for (let fI = 0; fI < 4; fI++) {
+    const y0 = -15 + fI * 10, len = fI === 1 || fI === 2 ? 30 : 25;
+    const x1 = 4 + len * 0.55, y1 = y0;
+    const x2 = x1 + len * 0.45 * Math.cos(curl * 1.9), y2 = y1 + len * 0.45 * Math.sin(curl * 1.9);
+    for (const [wd, c] of [[10, rgba(COLD, 0.85 * a)], [6.5, rgba([26, 34, 52], a)]]) {
+      ctx.strokeStyle = c; ctx.lineWidth = wd;
+      ctx.beginPath(); ctx.moveTo(-2, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+  }
+  const tx = lerp(14, 0, curl), ty = lerp(-34, -20, curl);
+  for (const [wd, c] of [[11, rgba(COLD, 0.85 * a)], [7, rgba([26, 34, 52], a)]]) {
+    ctx.strokeStyle = c; ctx.lineWidth = wd; ctx.beginPath(); ctx.moveTo(-14, -16); ctx.lineTo(tx, ty); ctx.stroke();
+  }
+  ctx.fillStyle = rgba([26, 34, 52], a); ctx.strokeStyle = rgba(COLD, 0.85 * a); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(-32, -22, 36, 44, 9); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+const fingertip = h => h ? [h.x + Math.cos(h.ang * Math.PI / 180) * 34, h.y + Math.sin(h.ang * Math.PI / 180) * 34] : null;
+
+// =====================================================================
+// CHOREOGRAPHY
+// =====================================================================
+const S = { x: 1180, y: 845 };
+const MAIN = keys([
+  { t: 0, pose: STAND, x: S.x, y: S.y, rot: 0, s: 1, dur: 0 },
+  { t: L('grab').t0 + 0.45, pose: GRABBED, dur: 0.45 },
+  { t: L('hold').t0 + 0.25, pose: BENT, dur: 0.7 },
+  { t: L('cuff').t0 + 0.05, pose: CUFF_KNEEL, dur: 0.7 },
+  { t: L('move').t0 + 0.1, pose: CUFF_STAND, dur: 0.9 },
+  { t: L('move').t0 + 1.0, x: S.x - 130, dur: 1.9 },
+  { t: L('resist').t0 + 0.15, pose: CUFF_PULL, x: S.x - 150, dur: 0.25 },
+  { t: L('resist').t0 + 0.6, pose: CUFF_STAND, x: S.x - 130, dur: 0.35 },
+  { t: L('cell').t0 + 1.0, pose: SIT, x: S.x, dur: 1.8 },
+  { t: T.act2 + 0.4, pose: STAND, dur: 1.4 },
+  { t: L('strip').t0 + 0.3, pose: EXPOSED, dur: 1.0 },
+  { t: L('solitary').t0 + 0.5, pose: SIT, dur: 1.4 },
+  { t: L('pinned').t0 + 0.3, pose: SPREAD, x: 1395, y: 712, rot: -Math.PI / 2, dur: 1.3 },
+  { t: T.act3 + 0.4, pose: STAND, x: S.x, y: S.y, rot: 0, dur: 1.6 },
+  { t: L('further').t0 + 1.55, pose: FLINCH, dur: 0.2 },
+  { t: L('further').t0 + 2.0, pose: STAND, dur: 0.6 },
+  { t: L('further').t0 + 2.85, pose: FLINCH, dur: 0.2 },
+  { t: L('further').t0 + 3.3, pose: STAND, dur: 0.6 },
+  { t: T.act4, x: 1100, dur: 0 },
+  { t: L('keepno').t0 + 3.1, pose: STEP_BACK, x: 1070, dur: 0.45 },
+  { t: L('ground').t0 + 0.1, pose: DOWN, x: 1300, y: 830, rot: -Math.PI / 2, dur: 0.45 },
+]);
+const mainFig = t => figState(MAIN, t);
+
+const sideKeys = (x, extra = []) => keys([
+  { t: 0, pose: STAND, x, y: S.y, rot: 0, s: 1, dur: 0 },
+  { t: L('pull').t0 + 0.05, pose: STEP_BACK, x: x - 40, dur: 0.35 },
+  { t: L('pull').t0 + 1.0, pose: STAND, x, dur: 0.5 },
+  { t: L('pocket').t0 + 0.05, pose: REACH, dur: 0.4 },
+  { t: L('pocket').t0 + 1.2, pose: STAND, dur: 0.5 },
+  { t: L('turn').t0 + 0.05, pose: TURN, dur: 0.3 },
+  { t: L('turn').t0 + 1.0, pose: STAND, dur: 0.5 },
+  ...extra,
+]);
+const LEFT = sideKeys(520, [
+  { t: L('killed').t0 + 0.6, x: 960, dur: 2.4 },
+  { t: L('away').t0 + 1.0, pose: STEP_BACK, x: 900, dur: 0.55 },
+]);
+const RIGHT = sideKeys(1400);
+const leftFig = t => figState(LEFT, Math.min(t, T.dark));
+const rightFig = t => figState(RIGHT, t);
+
+// act 1
+const hA = track(mainFig, [
+  { t: L('grab').t0 - 0.3, x: 2150, y: 620, ang: 180, dur: 0 },
+  { t: L('grab').t0, joint: 'elR', ox: 46, oy: -2, ang: 180, dur: 0.45 },
+  { t: L('grab').t0 + 0.45, joint: 'elR', ox: 30, oy: -2, open: 0, dur: 0.18 },
+  { t: L('cell').t0 + 0.4, joint: null, x: 2150, y: 600, open: 1, dur: 0.9 },
+]);
+const hB = track(mainFig, [
+  { t: L('hold').t0 - 0.3, x: 1650, y: -260, ang: 112, dur: 0 },
+  { t: L('hold').t0, joint: 'shR', ox: 34, oy: -40, dur: 0.45 },
+  { t: L('hold').t0 + 0.45, joint: 'shR', ox: 20, oy: -26, open: 0, dur: 0.2 },
+  { t: L('cell').t0 + 0.5, joint: null, x: 1700, y: -300, open: 1, dur: 0.9 },
+]);
+// act 2: pinned at four points
+const PIN = [['haL', -90, 0.0], ['haR', 90, 0.12], ['ftL', -90, 0.24], ['ftR', 90, 0.36]];
+const pinTracks = PIN.map(([j, ang, d]) => track(mainFig, [
+  { t: L('pinned').t0 + 0.8 + d, joint: j, ox: 0, oy: ang < 0 ? 520 : -520, ang, dur: 0 },
+  { t: L('pinned').t0 + 0.81 + d, joint: j, ox: 0, oy: ang < 0 ? 40 : -40, dur: 0.6 },
+  { t: L('pinned').t0 + 1.45 + d, joint: j, oy: ang < 0 ? 26 : -26, open: 0, dur: 0.15 },
+  { t: T.act3 + 0.1, joint: j, oy: ang < 0 ? 620 : -620, open: 1, dur: 0.9 },
+]));
+// act 3
+const hD = track(mainFig, [
+  { t: L('further').t0 + 0.2, x: 2150, y: 640, ang: 180, dur: 0 },
+  { t: L('further').t0 + 0.25, joint: 'elR', ox: 48, oy: 0, dur: 0.55 },
+  { t: L('further').t0 + 0.85, joint: 'elR', ox: 32, open: 0, dur: 0.2 },
+  { t: L('later').t0 - 0.2, a: 0, dur: 0.8 },
+]);
+const hE = track(mainFig, [
+  { t: L('further').t0 + 0.5, x: 760, y: -200, ang: 58, dur: 0 },
+  { t: L('further').t0 + 0.55, joint: 'shL', ox: -26, oy: -42, dur: 0.55 },
+  { t: L('further').t0 + 1.15, joint: 'shL', ox: -16, oy: -28, open: 0, dur: 0.2 },
+  { t: L('later').t0 - 0.2, a: 0, dur: 0.8 },
+]);
+// act 4
+const hF = track(mainFig, [
+  { t: L('cmd1').t0 - 0.2, x: 2150, y: 640, ang: 180, dur: 0 },
+  { t: L('cmd1').t0, joint: 'elR', ox: 120, oy: 0, dur: 0.7 },
+  { t: L('keepno').t0 + 0.9, joint: 'elR', ox: 32, oy: 0, dur: 0.35 },
+  { t: L('keepno').t0 + 1.25, open: 0, dur: 0.15 },
+  { t: T.act5 - 0.9, a: 0, dur: 0.8 },
+]);
+const hG = track(mainFig, [
+  { t: L('keepno').t0 + 3.3, x: 1500, y: -300, ang: 110, dur: 0 },
+  { t: L('keepno').t0 + 3.35, joint: 'shR', ox: 30, oy: -42, dur: 0.45 },
+  { t: L('keepno').t0 + 3.8, joint: 'shR', ox: 18, oy: -26, open: 0, dur: 0.15 },
+  { t: T.act5 - 0.9, a: 0, dur: 0.8 },
+]);
+// act 5: hands that were about to touch you
+const hX = track(leftFig, [
+  { t: L('away').t0 - 0.4, x: 2150, y: 600, ang: 180, dur: 0 },
+  { t: L('away').t0 - 0.35, joint: 'elR', ox: 170, oy: -10, dur: 0.9 },
+  { t: L('away').t0 + 0.7, joint: 'elR', ox: 120, open: 0.35, dur: 0.35 },
+  { t: L('away').t0 + 1.1, open: 1, dur: 0.3 },
+  { t: L('away').t0 + 1.9, joint: 'elR', ox: 62, open: 0.5, dur: 0.6 },
+  { t: L('away').t0 + 2.6, open: 1, dur: 0.4 },
+  { t: L('away').t0 + 3.6, joint: 'elR', ox: 44, open: 0.3, dur: 0.8 },
+]);
+const hY = track(leftFig, [
+  { t: L('away').t0, x: 1700, y: -300, ang: 140, dur: 0 },
+  { t: L('away').t0 + 0.05, joint: 'shR', ox: 150, oy: -120, dur: 0.9 },
+  { t: L('away').t0 + 1.4, joint: 'shR', ox: 110, oy: -90, open: 0.4, dur: 0.5 },
+  { t: L('away').t0 + 2.2, open: 1, dur: 0.3 },
+  { t: L('away').t0 + 3.4, joint: 'shR', ox: 60, oy: -54, open: 0.35, dur: 0.9 },
+]);
+
+// pat-down markers (no hands drawn for these): [time offset, region, label]
+const PATS = [
+  [0.15, ['shL', 'shR'], ''], [0.4, ['elL', 'elR'], ''], [0.65, ['shL', 'hipL'], ''], [0.9, ['shR', 'hipR'], ''],
+  [1.15, ['knL', 'knR'], ''], [1.55, ['groin'], 'groin'], [2.2, ['chest'], 'chest'], [3.0, ['torso'], 'other private areas'],
+];
+const METER = [
+  [() => L('cmd1').t0 + 0.2, 'commands'], [() => L('keepno').t0 + 1.25, 'grab'], [() => L('keepno').t0 + 3.2, 'control hold'],
+  [() => L('ground').t0 + 0.2, 'takedown'], [() => L('helddown').t0 + 0.1, 'held down'], [() => L('baton').t0 + 0.46, 'baton'],
+  [() => L('taser').t0 + 0.2, 'Taser'], [() => L('spray').t0 + 0.25, 'pepper spray'],
+].map(([f, label]) => ({ t: f(), label }));
+
+// tally marks: slow at first, then faster than anyone could count
+const TALLY_N = 165;
+const tallyCount = t => { const u = t - L('years').t0; return u <= 0 ? 0 : Math.min(TALLY_N, Math.floor(4 * u + 6 * u * u)); };
+const tallyTime = i => L('years').t0 + (-4 + Math.sqrt(16 + 24 * i)) / 12;
+
+// =====================================================================
+// DRAWING
+// =====================================================================
+const spriteCache = new Map();
+function sprite(c) {
+  const key = ((c[0] >> 3) << 10) | ((c[1] >> 3) << 5) | (c[2] >> 3);
+  let s = spriteCache.get(key);
+  if (!s) {
+    s = document.createElement('canvas'); s.width = s.height = 128;
+    const g = s.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, rgba(c, 1)); gr.addColorStop(0.1, rgba(c, 0.6)); gr.addColorStop(0.3, rgba(c, 0.18));
+    gr.addColorStop(0.62, rgba(c, 0.05)); gr.addColorStop(1, rgba(c, 0));
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    spriteCache.set(key, s);
+  }
+  return s;
+}
+function glow(c, x, y, rad, a) {
+  if (a <= 0.004 || rad <= 0.5) return;
+  ctx.globalAlpha = a > 1 ? 1 : a;
+  ctx.drawImage(sprite(c), x - rad, y - rad, rad * 2, rad * 2);
+  ctx.globalAlpha = 1;
+}
+let bloomA, bloomB;
+function bloom(paintFn, a) {
+  if (a <= 0.004) return;
+  if (!bloomA) {
+    bloomA = document.createElement('canvas'); bloomA.width = W / 2; bloomA.height = H / 2;
+    bloomB = document.createElement('canvas'); bloomB.width = W / 2; bloomB.height = H / 2;
+  }
+  const ga = bloomA.getContext('2d'), gb = bloomB.getContext('2d');
+  ga.setTransform(1, 0, 0, 1, 0, 0); ga.clearRect(0, 0, W / 2, H / 2); ga.setTransform(0.5, 0, 0, 0.5, 0, 0);
+  paintFn(ga);
+  ctx.globalCompositeOperation = 'lighter';
+  for (const [blur, al] of [[22, 0.5], [7, 0.32]]) {
+    gb.clearRect(0, 0, W / 2, H / 2); gb.filter = `blur(${blur}px)`; gb.drawImage(bloomA, 0, 0); gb.filter = 'none';
+    ctx.globalAlpha = Math.min(1, al * a); ctx.drawImage(bloomB, 0, 0, W, H);
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
+function glowText(str, x, y, color, a, blur = 16) {
+  ctx.shadowColor = rgba(color, a * 0.45); ctx.shadowBlur = blur;
+  ctx.fillStyle = rgba(color, a); ctx.fillText(str, x, y);
+  ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+}
+function wrap(text, font, maxW) {
+  ctx.font = font;
+  const out = [];
+  let line = '';
+  for (const w of text.split(' ')) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function pool(cx, cy, rx, ry, a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(rx, ry);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  g.addColorStop(0, `rgba(3,4,8,${0.66 * a})`); g.addColorStop(0.6, `rgba(3,4,8,${0.4 * a})`); g.addColorStop(1, 'rgba(3,4,8,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+
+let bgCanvas, vignette, dither, concretePattern;
+function buildPlates() {
+  bgCanvas = document.createElement('canvas'); bgCanvas.width = W; bgCanvas.height = H;
+  let g = bgCanvas.getContext('2d');
+  g.fillStyle = '#04050a'; g.fillRect(0, 0, W, H);
+  let gr = g.createRadialGradient(1060, 560, 0, 1060, 560, 1200);
+  gr.addColorStop(0, 'rgba(20,24,36,1)'); gr.addColorStop(0.6, 'rgba(10,12,20,1)'); gr.addColorStop(1, 'rgba(4,5,10,1)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  vignette = document.createElement('canvas'); vignette.width = W; vignette.height = H;
+  g = vignette.getContext('2d');
+  gr = g.createRadialGradient(960, 540, 420, 960, 540, 1250);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,0.6)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  const r2 = mulberry32(99), d = document.createElement('canvas');
+  d.width = d.height = 256;
+  let x = d.getContext('2d'), img = x.createImageData(256, 256);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = r2() < 0.5 ? 0 : 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.floor(r2() * 255);
+  }
+  x.putImageData(img, 0, 0);
+  dither = ctx.createPattern(d, 'repeat');
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  x = c.getContext('2d'); img = x.createImageData(512, 512);
+  const noise = n => {
+    const g = Array.from({ length: n * n }, () => r2());
+    return (px, py) => {
+      const fx = px / 512 * n, fy = py / 512 * n, x0 = Math.floor(fx), y0 = Math.floor(fy), u = smooth(fx - x0), v = smooth(fy - y0);
+      const at = (i, j) => g[((j % n) * n) + (i % n)];
+      return lerp(lerp(at(x0, y0), at(x0 + 1, y0), u), lerp(at(x0, y0 + 1), at(x0 + 1, y0 + 1), u), v);
+    };
+  };
+  const n1 = noise(6), n2 = noise(24), n3 = noise(96);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const p = i / 4, px = p % 512, py = Math.floor(p / 512);
+    const r = r2();
+    const v = 30 + 26 * n1(px, py) + 14 * n2(px, py) + 8 * n3(px, py) + 8 * r - (r < 0.012 ? 14 : 0);
+    img.data[i] = v; img.data[i + 1] = v + 1; img.data[i + 2] = v + 4; img.data[i + 3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  concretePattern = ctx.createPattern(c, 'repeat');
+}
+
+// ---------- title ----------
+function typed(text, t0, cps, t) { return text.slice(0, Math.floor(clamp((t - t0) * cps, 0, text.length))); }
+function drawTitle(t) {
+  if (t > T.act1) return;
+  const a = win(t, 0.5, T.titleOut + 0.8, 0.4, 0.8);
+  if (a <= 0) return;
+  const line = 'Your body belongs to you.';
+  ctx.font = `italic 76px ${SERIF}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  const full = ctx.measureText(line).width, x0 = 960 - full / 2, y = 520;
+  const s = typed(line, 0.9, 16, t);
+  glowText(s, x0, y, TEXT, a, 18);
+  const ak = smooth(clamp((t - L('most').t0 - 0.2) / 0.5));
+  if (ak > 0) {
+    ctx.font = `italic 60px ${SERIF}`;
+    const pulse = 1 + 0.1 * Math.sin((t - L('most').t0) * 5) * Math.exp(-(t - L('most').t0) * 0.8);
+    ctx.save(); ctx.translate(x0 + full + 10, y - 34); ctx.scale(pulse, pulse);
+    glowText('*', 0, 0, ASTER, a * ak, 22); ctx.restore();
+  }
+  ctx.font = `500 22px ${MONO}`; ctx.textAlign = 'center';
+  const ta = win(t, L('most').t1 + 0.4, T.titleOut + 0.8, 1.0, 0.8);
+  if (ta > 0) {
+    ctx.letterSpacing = '14px';
+    ctx.fillStyle = rgba(DATA, ta * 0.9); ctx.fillText('FINE PRINT', 960 + 7, 640);
+    ctx.letterSpacing = '0px';
+  }
+}
+
+// ---------- shared overlays ----------
+function drawNo(t, o, st) {
+  const u = t - o.t0;
+  if (u < -0.05 || u > 1.8 || !st) return;
+  const h = jw(st, 'head');
+  ctx.globalCompositeOperation = 'lighter';
+  for (let r = 0; r < 2; r++) {
+    const uu = u - r * 0.18;
+    if (uu < 0) continue;
+    const rad = 30 + 560 * easeOut(clamp(uu / 1.6));
+    ctx.strokeStyle = rgba(WARM, 0.55 * (1 - clamp(uu / 1.6)));
+    ctx.lineWidth = 2 - r * 0.8; ctx.beginPath(); ctx.arc(h[0], h[1], rad, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.font = `italic 38px ${SERIF}`; ctx.textAlign = 'left';
+  glowText('no.', h[0] + 46, h[1] - 30 - 10 * easeOut(clamp(u / 1.2)), WARM_HI, win(u, 0, 1.8, 0.1, 0.8), 18);
+}
+function drawFinePrint(t) {
+  const a = win(t, T.act1, T.act5 + 0.8, 1.0, 0.8);
+  if (a <= 0) return;
+  const font = `17px ${MONO}`;
+  ctx.font = `500 14px ${MONO}`; ctx.textAlign = 'left'; ctx.letterSpacing = '4px';
+  ctx.fillStyle = rgba(DATA, 0.7 * a); ctx.fillText('FINE PRINT', 80, 168);
+  ctx.letterSpacing = '0px';
+  ctx.strokeStyle = rgba(DATA, 0.25 * a); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(80, 182); ctx.lineTo(560, 182); ctx.stroke();
+  let y = 214;
+  FOOT.forEach(f => {
+    if (t < f.t) return;
+    if (!f.lines) f.lines = wrap(f.text, font, 490);
+    const shown = Math.floor((t - f.t) * 45);
+    let used = 0;
+    ctx.font = font;
+    f.lines.forEach(line => {
+      const n = clamp(shown - used, 0, line.length);
+      used += line.length + 1;
+      if (n > 0) {
+        const fresh = t - f.t < 3.5 ? 1 : 0.62;
+        ctx.fillStyle = rgba(mix(DATA, TEXT, fresh * 0.5), a * lerp(0.7, 1, fresh));
+        ctx.fillText(line.slice(0, n), 80, y);
+      }
+      y += 25;
+    });
+    y += 14;
+  });
+}
+function drawSection(t) {
+  if (t < T.act1 || t > T.coda) return;
+  let cur = null, next = Infinity;
+  SECTIONS.forEach((s, i) => { if (t >= s.t) { cur = s; next = SECTIONS[i + 1] ? SECTIONS[i + 1].t : T.dark; } });
+  if (!cur) return;
+  const a = win(t, cur.t, next, 0.8, 0.6);
+  ctx.font = `20px ${MONO}`; ctx.textAlign = 'left';
+  ctx.fillStyle = rgba(mix(DATA, WARM, 0.3), 0.85 * a); ctx.fillText(cur.text, 80, 104);
+}
+function drawSubtitles(t) {
+  const font = `italic 32px ${SERIF}`;
+  for (const id in LINE) {
+    const l = LINE[id];
+    if (l.who !== 'narrator' || l.sub === false || t < l.t0 - 0.1 || t > l.t1 + 0.45) continue;
+    const a = win(t, l.t0 - 0.1, l.t1 + 0.45, 0.2, 0.3);
+    if (!l.lines) l.lines = wrap(l.text, font, 1400);
+    const lh = 44, y1 = 1034, y0 = y1 - (l.lines.length - 1) * lh;
+    ctx.font = font;
+    const tw = Math.max(...l.lines.map(s => ctx.measureText(s).width));
+    pool(960, (y0 + y1) / 2 - 10, tw / 2 + 150, l.lines.length * 30 + 40, a);
+    ctx.textAlign = 'center';
+    l.lines.forEach((s, i) => glowText(s, 960, y0 + i * lh, TEXT, a * 0.95, 12));
+  }
+}
+
+// ---------- §1 contact ----------
+function drawAct1(t) {
+  if (t < T.act1 || t > T.act2 + 2.5) return;
+  const st = mainFig(t);
+  const figA = smooth(clamp((t - T.act1 - 0.3) / 1.5));
+  const hands = [handAt(hA, t), handAt(hB, t)];
+  // the boundary, then the cell it becomes
+  const g = auraGeom(st);
+  const mk = ease(clamp((t - (L('cell').t0 + 0.6)) / 2.2));
+  const cellOut = 1 - smooth(clamp((t - T.act2 - 0.2) / 1.2));
+  const cellG = { cx: lerp(g.cx, S.x, mk), cy: lerp(g.cy, 690, mk), rx: lerp(g.rx, 300, mk), ry: lerp(g.ry, 300, mk), rot: 0 };
+  const auraA = smooth(clamp((t - T.act1 - 0.5) / 1.5)) * 0.85 * cellOut;
+  const dents = hands.map(fingertip).filter(Boolean);
+  const pts = ringPoints(cellG, mk, mk > 0.5 ? [] : dents);
+  concreteOutside(pts, 0.9 * mk * cellOut);
+  drawAura(cellG, { a: auraA, col: mix(WARM, CONCRETE, mk), k: mk, dents: mk > 0.5 ? [] : dents, lw: lerp(2, 5, mk) });
+  if (mk > 0) drawCellInside(t, cellOut);
+  if (t >= T.act2) return;
+  drawFigure(st, { a: figA, dim: 0.4 * smooth(clamp((t - L('years').t0) / 6)), time: t });
+  // cuffs
+  const ca = win(t, L('cuff').t0 + 0.55, L('cell').t0 + 0.8, 0.12, 0.5);
+  if (ca > 0) {
+    const l = jw(st, 'haL'), r = jw(st, 'haR');
+    ctx.strokeStyle = rgba(COLD, 0.8 * ca); ctx.lineWidth = 3;
+    for (const p of [l, r]) { ctx.beginPath(); ctx.arc(p[0], p[1], 10, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(l[0] + 9, l[1]); ctx.lineTo(r[0] - 9, r[1]); ctx.stroke();
+  }
+  hands.forEach(h => drawHand(h));
+  drawNo(t, L('no_move'), st);
+  // the charge
+  const sa = win(t, L('resist').t0 + 1.25, L('cell').t0 + 1.2, 0.05, 0.6);
+  if (sa > 0) {
+    const pop = 1 + 0.35 * (1 - easeOut(clamp((t - L('resist').t0 - 1.25) / 0.18)));
+    ctx.save(); ctx.translate(S.x - 40, 300); ctx.rotate(-0.07); ctx.scale(pop, pop);
+    ctx.font = `700 34px ${MONO}`; ctx.textAlign = 'center';
+    const tw = ctx.measureText('CHARGED: RESISTING ARREST').width;
+    ctx.strokeStyle = rgba(RED, 0.9 * sa); ctx.lineWidth = 4; ctx.strokeRect(-tw / 2 - 22, -40, tw + 44, 58);
+    ctx.fillStyle = rgba(RED, 0.92 * sa); ctx.fillText('CHARGED: RESISTING ARREST', 0, 2);
+    ctx.restore();
+  }
+}
+function drawCellInside(t, out) {
+  // tally marks on the wall
+  const n = tallyCount(t);
+  ctx.strokeStyle = rgba([200, 198, 190], 0.55 * out); ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const g = Math.floor(i / 5), k = i % 5, row = Math.floor(g / 11), col = g % 11;
+    const x = 912 + col * 48 + k * 8, y = 420 + row * 46;
+    const j = (hash01(i, 1) - 0.5) * 3;
+    ctx.beginPath();
+    if (k < 4) { ctx.moveTo(x + j, y); ctx.lineTo(x - j, y + 30); }
+    else { ctx.moveTo(x - 36, y + 26); ctx.lineTo(x - 2, y + 4); }
+    ctx.stroke();
+  }
+  // the count
+  const b = L('bail'), yr = L('years');
+  ctx.font = `17px ${MONO}`; ctx.textAlign = 'left';
+  let l1 = '', l2 = '';
+  if (t >= b.t0 && t < yr.t0) { l1 = 'pretrial detention'; l2 = 'day ' + (1 + Math.floor((t - b.t0) * 7)); }
+  if (t >= yr.t0) {
+    const u = t - yr.t0;
+    l1 = 'sentenced';
+    l2 = u < 1.7 ? 'month ' + (1 + Math.floor(u * 6)) : 'year ' + (1 + Math.floor((u - 1.7) * 1.6));
+  }
+  const ia = win(t, b.t0, T.act2 + 1.2, 0.4, 0.8) * out;
+  ctx.fillStyle = rgba(DATA, 0.85 * ia); ctx.fillText(l1, 912, 912);
+  ctx.fillStyle = rgba(TEXT, 0.9 * ia); ctx.fillText(l2, 912, 940);
+  const ba = win(t, b.t0 + 3.4, yr.t0 + 0.2, 0.3, 0.4) * out;
+  ctx.fillStyle = rgba(ASTER, 0.85 * ba); ctx.fillText('bail: unpaid', 912, 968);
+}
+
+// ---------- §2 search ----------
+function regionBox(st, reg) {
+  const w = j => jw(st, j);
+  if (reg[0] === 'groin') { const a = w('hipL'), b = w('hipR'); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 26, 70, 46]; }
+  if (reg[0] === 'chest') { const a = w('shL'), b = w('shR'); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 38, 110, 52]; }
+  if (reg[0] === 'torso') { const a = w('shL'), b = w('hipR'); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 20, 150, 190]; }
+  const p = w(reg[0]), q = w(reg[1]);
+  return [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, Math.abs(p[0] - q[0]) + 50, Math.abs(p[1] - q[1]) + 44];
+}
+function brackets(cx, cy, bw, bh, col, a) {
+  const x0 = cx - bw / 2, y0 = cy - bh / 2, x1 = cx + bw / 2, y1 = cy + bh / 2, c = 12;
+  ctx.strokeStyle = rgba(col, a); ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0 + c); ctx.lineTo(x0, y0); ctx.lineTo(x0 + c, y0);
+  ctx.moveTo(x1 - c, y0); ctx.lineTo(x1, y0); ctx.lineTo(x1, y0 + c);
+  ctx.moveTo(x1, y1 - c); ctx.lineTo(x1, y1); ctx.lineTo(x1 - c, y1);
+  ctx.moveTo(x0 + c, y1); ctx.lineTo(x0, y1); ctx.lineTo(x0, y1 - c);
+  ctx.stroke();
+}
+function drawAct2(t) {
+  if (t < T.act2 || t > T.act3 + 2.0) return;
+  const st = mainFig(t);
+  const strip = L('strip'), sol = L('solitary'), pin = L('pinned');
+  // the boundary, returned, then taken
+  const g = auraGeom(st);
+  const back = smooth(clamp((t - T.act2 - 0.6) / 1.5));
+  const gone = smooth(clamp((t - strip.t0 - 0.2) / 1.0));
+  drawAura(g, { a: 0.85 * back * (1 - gone), time: t });
+  if (t > strip.t0 + 0.2 && t < strip.t0 + 3.5) auraParticles(g, t - strip.t0 - 0.2);
+  // spotlight
+  const spot = win(t, strip.t0 + 0.4, sol.t0 + 0.8, 0.8, 0.8);
+  if (spot > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createLinearGradient(0, 0, 0, 900);
+    gr.addColorStop(0, rgba([220, 232, 255], 0.0)); gr.addColorStop(0.3, rgba([220, 232, 255], 0.09 * spot)); gr.addColorStop(1, rgba([220, 232, 255], 0.16 * spot));
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(S.x - 50, 0); ctx.lineTo(S.x + 50, 0); ctx.lineTo(S.x + 270, 900); ctx.lineTo(S.x - 270, 900); ctx.closePath(); ctx.fill();
+    glow([220, 232, 255], S.x, 870, 240, 0.14 * spot);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // solitary
+  const sk = smooth(clamp((t - sol.t0 - 0.5) / 1.1)) * (1 - smooth(clamp((t - pin.t0) / 0.8)));
+  if (sk > 0) {
+    const cg = { cx: S.x, cy: 745, rx: lerp(320, 175, sk), ry: lerp(320, 175, sk), rot: 0 };
+    const pts = ringPoints(cg, 1);
+    concreteOutside(pts, 0.95 * sk);
+    drawAura(cg, { a: sk, col: CONCRETE, k: 1, lw: 5 });
+  }
+  const exposed = smooth(clamp((t - strip.t0 - 0.3) / 1.0)) * (1 - smooth(clamp((t - T.act3) / 1.5)));
+  if (t < T.act3) drawFigure(st, { time: t, col: mix(WARM, [214, 222, 236], exposed * 0.6), dim: sk * 0.3 });
+  // the scan
+  for (const t0 of [L('search').t0 + 0.6, L('notreq').t0 + 0.4]) {
+    const u = (t - t0) / 2.2;
+    if (u < 0 || u > 1.15) continue;
+    const top = jw(st, 'head')[1] - 40, bot = jw(st, 'ftL')[1] + 10, y = lerp(top, bot, clamp(u));
+    const a = win(u, 0, 1.15, 0.05, 0.2);
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createLinearGradient(S.x - 190, 0, S.x + 190, 0);
+    gr.addColorStop(0, rgba(COLD, 0)); gr.addColorStop(0.5, rgba(COLD, 0.9 * a)); gr.addColorStop(1, rgba(COLD, 0));
+    ctx.fillStyle = gr; ctx.fillRect(S.x - 190, y - 1, 380, 2);
+    const g2 = ctx.createLinearGradient(0, y - 60, 0, y);
+    g2.addColorStop(0, rgba(COLD, 0)); g2.addColorStop(1, rgba(COLD, 0.1 * a));
+    ctx.fillStyle = g2; ctx.fillRect(S.x - 160, y - 60, 320, 60);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // pat-down
+  const pat = L('pat');
+  PATS.forEach(([off, reg, label], i) => {
+    const t0 = pat.t0 + off, a = win(t, t0, strip.t0 + 0.4, 0.08, 0.6);
+    if (a <= 0) return;
+    const [cx, cy, bw, bh] = regionBox(st, reg);
+    const hot = !!label, col = hot ? [255, 140, 130] : COLD;
+    const fresh = 1 - clamp((t - t0) / 0.5);
+    brackets(cx, cy, bw, bh, col, a * (0.55 + 0.45 * fresh));
+    if (fresh > 0) { ctx.globalCompositeOperation = 'lighter'; glow(col, cx, cy, Math.max(bw, bh) * 0.6, 0.25 * fresh); ctx.globalCompositeOperation = 'source-over'; }
+    if (label) {
+      ctx.font = `14px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = rgba(col, 0.85 * a);
+      ctx.fillText(label, cx + bw / 2 + 10, cy + 5);
+    }
+  });
+  // "I do not consent."  [noted]
+  const cons = L('consent'), h = jw(st, 'head');
+  const ta = win(t, cons.t0, sol.t0 + 0.4, 0.3, 0.6);
+  if (ta > 0) {
+    ctx.font = `italic 40px ${SERIF}`; ctx.textAlign = 'left';
+    glowText(typed('I do not consent.', cons.t0, 14, t), h[0] + 70, h[1] - 40, WARM_HI, ta, 18);
+    const na = win(t, L('notreq').t0 + 1.8, sol.t0 + 0.4, 0.05, 0.6);
+    if (na > 0) {
+      ctx.font = `20px ${MONO}`; ctx.fillStyle = rgba(COLD, 0.9 * na);
+      ctx.fillText('[noted]', h[0] + 74, h[1] + 4);
+    }
+  }
+  // pinned down
+  pinTracks.forEach(tr => drawHand(handAt(tr, t)));
+}
+function auraParticles(g, u) {
+  const pts = ringPoints(g, 0, null, 140);
+  ctx.globalCompositeOperation = 'lighter';
+  pts.forEach((p, i) => {
+    const d = hash01(i, 4) * 0.6, uu = u - d;
+    if (uu < 0) return;
+    const x = p[0] + (hash01(i, 5) - 0.5) * 60 * uu, y = p[1] + 40 * uu + 160 * uu * uu * (0.5 + hash01(i, 6));
+    glow(WARM, x, y, 9, 0.7 * (1 - clamp(uu / 2.4)));
+  });
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------- §3 misconduct ----------
+const CRACKS = Array.from({ length: 10 }, (_, i) => ({ th: R(0, Math.PI * 2), segs: Array.from({ length: 6 }, () => [R(-0.6, 0.6), R(10, 24)]), inward: rand() < 0.6, burst: i < 5 ? 0 : 1 }));
+function drawAct3(t) {
+  if (t < T.act3 || t > T.act4 + 0.5) return;
+  const st = mainFig(t);
+  const fur = L('further'), later = L('later');
+  const vis = t < T.act4 ? 1 - smooth(clamp((t - later.t0 + 0.2) / 0.8)) : 0;
+  const hands = [handAt(hD, t), handAt(hE, t)];
+  const g = auraGeom(st);
+  const pts = drawAura(g, { a: 0.75 * vis * smooth(clamp((t - T.act3 - 1.2) / 1.2)), dents: hands.map(fingertip).filter(Boolean), time: t });
+  // cracks
+  if (pts && vis > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    CRACKS.forEach((c, i) => {
+      const t0 = fur.t0 + (c.burst ? 2.9 : 1.6) + i % 5 * 0.04, k = easeOut(clamp((t - t0) / 0.35));
+      if (k <= 0) return;
+      const idx = Math.floor(c.th / (Math.PI * 2) * pts.length) % pts.length, p = pts[idx];
+      const nx = (g.cx - p[0]), ny = (g.cy - p[1]), nl = Math.hypot(nx, ny) || 1;
+      let ang = Math.atan2(ny / nl, nx / nl) + (c.inward ? 0 : Math.PI), x = p[0], y = p[1];
+      ctx.beginPath(); ctx.moveTo(x, y);
+      c.segs.forEach(([da, len], s) => { if (s / c.segs.length > k) return; ang += da; x += Math.cos(ang) * len; y += Math.sin(ang) * len; ctx.lineTo(x, y); });
+      ctx.strokeStyle = rgba(RED, 0.85 * vis); ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = rgba(RED, 0.2 * vis); ctx.lineWidth = 8; ctx.stroke();
+      if (t - t0 < 0.4) glow(RED, p[0], p[1], 60, (1 - (t - t0) / 0.4) * vis);
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  drawFigure(st, { a: vis, time: t });
+  hands.forEach(h => drawHand(h));
+  drawNo(t, L('no_ctrl'), vis > 0.1 ? st : null);
+  // two hands, two names, one grip
+  const cr = L('crimes'), ctl = L('control');
+  [[hands[0], 'LEGAL POWER', COLD, cr.t0 + 0.3], [hands[1], 'CRIME', RED, cr.t0 + 1.0]].forEach(([h, label, col, t0]) => {
+    const a = win(t, t0, ctl.t0 + 2.4, 0.2, 1.2) * vis;
+    if (!h || a <= 0) return;
+    ctx.font = `600 18px ${MONO}`; ctx.textAlign = 'center';
+    const tw = ctx.measureText(label).width, x = h.x + (label === 'CRIME' ? -30 : 50), y = h.y - 70;
+    ctx.fillStyle = rgba([10, 12, 20], 0.85 * a); ctx.fillRect(x - tw / 2 - 12, y - 22, tw + 24, 32);
+    ctx.strokeStyle = rgba(col, 0.9 * a); ctx.lineWidth = 1.5; ctx.strokeRect(x - tw / 2 - 12, y - 22, tw + 24, 32);
+    ctx.fillStyle = rgba(col, a); ctx.fillText(label, x, y);
+    ctx.strokeStyle = rgba(col, 0.5 * a); ctx.beginPath(); ctx.moveTo(x, y + 10); ctx.lineTo(h.x, h.y - 26); ctx.stroke();
+  });
+  // accountability: later, then later still
+  const ta = win(t, later.t0 - 0.2, T.act4 + 0.3, 0.8, 0.8);
+  if (ta > 0) {
+    const y = 600, x0 = 760, nowX = 880;
+    ctx.strokeStyle = rgba(DATA, 0.5 * ta); ctx.lineWidth = 2; ctx.setLineDash([2, 10]);
+    ctx.beginPath(); ctx.moveTo(nowX, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = rgba(DATA, 0.8 * ta); ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(nowX, y); ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter'; glow(RED, nowX, y, 50, 0.8 * ta); ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = rgba(RED, ta); ctx.beginPath(); ctx.arc(nowX, y, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.font = `17px ${MONO}`; ctx.textAlign = 'center';
+    ctx.fillStyle = rgba(RED, 0.9 * ta); ctx.fillText('harm', nowX, y - 26);
+    ctx.fillStyle = rgba(DATA, 0.8 * ta); ctx.fillText('now', nowX, y + 36);
+    const u = t - later.t0 - 0.4;
+    if (u > 0) {
+      const mx = 1260 + 110 * u + 150 * u * u, ma = ta * smooth(clamp(u / 0.4)) * (1 - smooth(clamp((mx - 1700) / 250)));
+      ctx.fillStyle = rgba(WARM_HI, 0.9 * ma);
+      ctx.save(); ctx.translate(mx, y); ctx.rotate(Math.PI / 4); ctx.fillRect(-6, -6, 12, 12); ctx.restore();
+      ctx.fillStyle = rgba(WARM_HI, 0.85 * ma); ctx.fillText('accountability', mx, y - 26);
+      ctx.fillStyle = rgba(DATA, 0.7 * ma); ctx.fillText('later', mx, y + 36);
+      const qa = win(t, L('atall').t0 + 0.5, T.act4 + 0.3, 0.6, 0.8);
+      ctx.font = `italic 46px ${SERIF}`; ctx.textAlign = 'right';
+      ctx.fillStyle = rgba(DATA, 0.85 * qa); ctx.fillText('?', 1860, y + 16);
+    }
+  }
+}
+
+// ---------- §4 force ----------
+function drawAct4(t) {
+  if (t < T.act4 || t > T.act5 + 0.3) return;
+  const st = mainFig(t);
+  const vis = smooth(clamp((t - T.act4 - 0.2) / 1.0)) * (1 - smooth(clamp((t - T.act5 + 0.9) / 0.9)));
+  const hands = [handAt(hF, t), handAt(hG, t)];
+  const tz = L('taser'), jit = t > tz.t0 + 0.15 && t < tz.t0 + 1.3;
+  const f = Math.floor(t * 30);
+  if (jit) { st.x += (hash01(f, 1) - 0.5) * 8; st.y += (hash01(f, 2) - 0.5) * 6; }
+  const worse = smooth(clamp((t - L('worse').t0) / 0.5));
+  drawAura(auraGeom(st), { a: 0.45 * vis * (1 - worse * 0.6), dents: hands.map(fingertip).filter(Boolean), time: t });
+  const bn = L('bones');
+  const fractures = [
+    { j: 'knL', t0: bn.t0 + 0.5, seed: 1 }, { j: 'elR', t0: bn.t0 + 0.65, seed: 2 },
+    { j: 'shR', t0: bn.t0 + 2.0, seed: 3 }, { j: 'knR', t0: bn.t0 + 2.15, seed: 4 },
+  ];
+  drawFigure(st, { a: vis, time: t, fractures, dim: worse * 0.35 });
+  hands.forEach(h => drawHand(h, vis));
+  if (worse > 0) { ctx.fillStyle = `rgba(0,0,0,${0.3 * worse * vis})`; ctx.fillRect(0, 0, W, H); }
+  drawNo(t, L('no1'), vis > 0.1 ? st : null);
+  // commands
+  [['cmd1', 'HANDS BEHIND YOUR BACK'], ['cmd2', 'STOP RESISTING']].forEach(([id, text]) => {
+    const l = L(id), a = win(t, l.t0, l.t1 + 0.6, 0.08, 0.4) * vis;
+    if (a <= 0) return;
+    ctx.font = `600 26px ${MONO}`; ctx.textAlign = 'center';
+    glowText(text, 1240, 330, COLD, a, 14);
+  });
+  // baton
+  const bt = L('baton').t0 + 0.3, bu = t - bt;
+  if (bu > -0.01 && bu < 0.9) {
+    const q = jw(st, 'knL'), p = [q[0] + 130, q[1] - 190], len = 225;
+    const th1 = Math.atan2(q[1] - p[1], q[0] - p[0]), th0 = th1 - 1.7;
+    const k = easeIn(clamp(bu / 0.16)), fa = 1 - smooth(clamp((bu - 0.45) / 0.45));
+    for (let n = 5; n >= 0; n--) {
+      const kk = clamp(k - n * 0.07), th = lerp(th0, th1, kk);
+      ctx.strokeStyle = n ? rgba(COLD, 0.12 * fa) : rgba([210, 220, 240], 0.95 * fa); ctx.lineWidth = n ? 14 : 11; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + Math.cos(th) * len, p[1] + Math.sin(th) * len); ctx.stroke();
+    }
+    if (bu > 0.16 && bu < 0.5) { ctx.globalCompositeOperation = 'lighter'; glow([255, 255, 255], q[0], q[1], 90, (1 - (bu - 0.16) / 0.34)); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  // Taser
+  if (jit) {
+    const a1 = jw(st, 'shR'), a2 = jw(st, 'hipR'), targets = [[lerp(a1[0], a2[0], 0.3), lerp(a1[1], a2[1], 0.3)], [lerp(a1[0], a2[0], 0.8), lerp(a1[1], a2[1], 0.8)]];
+    ctx.globalCompositeOperation = 'lighter';
+    targets.forEach((q, w) => {
+      ctx.beginPath(); ctx.moveTo(1940, 560 + w * 20);
+      for (let s = 1; s <= 16; s++) {
+        const k = s / 16;
+        ctx.lineTo(lerp(1940, q[0], k) + (s < 16 ? (hash01(f, s, w) - 0.5) * 26 : 0), lerp(560 + w * 20, q[1], k) + (s < 16 ? (hash01(f, s, w + 5) - 0.5) * 26 : 0));
+      }
+      ctx.strokeStyle = rgba([200, 225, 255], 0.9); ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.strokeStyle = rgba([150, 190, 255], 0.25); ctx.lineWidth = 7; ctx.stroke();
+      glow([200, 225, 255], q[0], q[1], 70, 0.5 + 0.4 * hash01(f, w));
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // pepper spray
+  const sp = L('spray').t0 + 0.2;
+  if (t > sp && t < sp + 3.4) {
+    const hd = jw(st, 'head'), nz = [hd[0] + 190, hd[1] - 70];
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 150; i++) {
+      const te = sp + (i / 150) * 0.6, u = t - te;
+      if (u < 0) continue;
+      const tx = hd[0] + (hash01(i, 1) - 0.5) * 120, ty = hd[1] + (hash01(i, 2) - 0.5) * 90;
+      const k = easeOut(clamp(u / 0.45));
+      const x = lerp(nz[0], tx, k) + (hash01(i, 3) - 0.5) * 30 * u, y = lerp(nz[1], ty, k) + 10 * u;
+      glow([255, 140, 60], x, y, 8 + 10 * k, 0.5 * (1 - clamp((u - 0.4) / 2.4)) * vis);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // the meter
+  const ma = win(t, T.act4 + 0.4, T.act5 - 0.2, 1.0, 0.8);
+  if (ma > 0) {
+    const bx = 1640, top = 300, bot = 860;
+    ctx.fillStyle = rgba([30, 34, 46], 0.9 * ma); ctx.fillRect(bx - 6, top, 12, bot - top);
+    let lvl = 0;
+    METER.forEach(m => { if (t >= m.t) lvl++; });
+    const flick = t > L('worse').t0 ? 0.5 + 0.5 * hash01(f, 9) : 0;
+    const fillTo = lerp(bot, top + 60, lvl / (METER.length + 1)) - flick * 40;
+    const gr = ctx.createLinearGradient(0, bot, 0, top);
+    gr.addColorStop(0, rgba([255, 190, 120], ma)); gr.addColorStop(1, rgba(RED, ma));
+    ctx.fillStyle = gr; ctx.fillRect(bx - 6, fillTo, 12, bot - fillTo);
+    ctx.font = `17px ${MONO}`; ctx.textAlign = 'left';
+    METER.forEach((m, i) => {
+      if (t < m.t) return;
+      const y = lerp(bot, top + 60, (i + 1) / (METER.length + 1)), fresh = 1 - clamp((t - m.t) / 0.8);
+      ctx.fillStyle = rgba(mix(DATA, [255, 200, 150], fresh), ma * (0.75 + 0.25 * fresh));
+      ctx.fillText(m.label, bx + 24, y + 6);
+      ctx.fillRect(bx + 8, y, 10, 1.5);
+    });
+    const da = ma * (0.35 + 0.65 * worse * (0.4 + 0.6 * hash01(f, 3)));
+    ctx.font = `600 18px ${MONO}`; ctx.fillStyle = rgba(RED, da); ctx.fillText('deadly force', bx + 24, top + 6);
+    ctx.fillStyle = rgba(DATA, 0.6 * ma); ctx.font = `13px ${MONO}`; ctx.fillText('FORCE', bx - 22, bot + 30);
+  }
+}
+
+// ---------- §5 perception ----------
+let dissolvePts = null;
+function drawAct5(t) {
+  if (t < T.act5 || t > T.coda + 0.2) return;
+  const law = L('law'), jd = L('judged'), ct = L('courts'), kl = L('killed'), aw = L('away');
+  const split = win(t, T.act5 + 0.6, kl.t0 + 1.4, 1.0, 1.2);
+  // divider and labels
+  if (split > 0) {
+    ctx.fillStyle = rgba(DATA, 0.35 * split); ctx.fillRect(959, 230, 2, 700);
+    ctx.font = `18px ${MONO}`; ctx.textAlign = 'center';
+    ctx.fillStyle = rgba(WARM, 0.8 * split); ctx.fillText('what you did', 520, 250);
+    ctx.fillStyle = rgba(RED, 0.85 * split); ctx.fillText('what was perceived', 1400, 250);
+  }
+  const la = win(t, law.t0 + 0.4, kl.t0 + 0.8, 0.8, 0.8);
+  if (la > 0) {
+    ctx.font = `13px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = rgba(DATA, 0.7 * la); ctx.fillText('THE STANDARD', 960, 120);
+    ctx.font = `500 22px ${MONO}`; ctx.letterSpacing = '3px';
+    glowText('IMMEDIATE THREAT OF DEATH OR SERIOUS INJURY', 961, 158, TEXT, la * 0.95, 10);
+    ctx.letterSpacing = '0px';
+  }
+  // the officer's perspective, in the moment
+  const fa = win(t, jd.t0 + 0.4, kl.t0 + 1.2, 0.3, 0.8);
+  if (fa > 0) {
+    brackets(1440, 600, 820, 640, RED, 0.75 * fa);
+    const tc = Math.max(0, t - jd.t0 - 0.4);
+    ctx.font = `16px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = rgba(RED, 0.8 * fa);
+    ctx.fillText('in the moment', 1046, 312);
+    ctx.textAlign = 'right';
+    ctx.fillText(`00:00:${String(Math.floor(tc)).padStart(2, '0')}.${String(Math.floor((tc % 1) * 100)).padStart(2, '0')}`, 1834, 312);
+    if (Math.floor(t * 1.5) % 2 === 0) { ctx.beginPath(); ctx.arc(1690, 306, 5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // benefit of the doubt
+  const sa = win(t, ct.t0 + 0.6, kl.t0 + 0.6, 0.6, 0.8);
+  if (sa > 0) {
+    const tilt = ease(clamp((t - ct.t0 - 1.0) / 1.8)) * 0.2, px = 960, py = 560, hw = 250;
+    const lx = px - Math.cos(tilt) * hw, ly = py - Math.sin(tilt) * hw, rx = px + Math.cos(tilt) * hw, ry = py + Math.sin(tilt) * hw;
+    ctx.strokeStyle = rgba(DATA, 0.85 * sa); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(px, py - 50); ctx.lineTo(px, py + 150); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.stroke();
+    [[lx, ly, 'you', WARM], [rx, ry, 'officer', COLD]].forEach(([x, y, label, col]) => {
+      ctx.strokeStyle = rgba(DATA, 0.6 * sa); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 34, y + 60); ctx.moveTo(x, y); ctx.lineTo(x + 34, y + 60); ctx.stroke();
+      ctx.strokeStyle = rgba(col, 0.9 * sa); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 44, y + 60); ctx.lineTo(x + 44, y + 60); ctx.stroke();
+      ctx.font = `16px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = rgba(col, 0.9 * sa); ctx.fillText(label, x, y + 86);
+    });
+  }
+  // two figures, one movement
+  const appear = smooth(clamp((t - T.act5 - 0.3) / 1.2));
+  const red = 0.55 + 0.45 * smooth(clamp((t - L('each').t0) / 1.0));
+  const rA = appear * (1 - smooth(clamp((t - kl.t0 - 0.2) / 1.2)));
+  if (rA > 0) {
+    const rs = rightFig(t);
+    rs.s = 1.08;
+    for (let n = 3; n >= 1; n--) {
+      const ghost = rightFig(t - n * 0.07); ghost.s = 1.08;
+      const moving = dist(...jw(ghost, 'haR'), ...jw(rs, 'haR')) > 2 || dist(...jw(ghost, 'head'), ...jw(rs, 'head')) > 2;
+      if (moving) drawFigure(ghost, { a: rA * 0.18 / n, col: RED, glow: 1.5, time: t, jag: 10 });
+    }
+    drawAura(auraGeom(rs), { a: 0.6 * rA * red, col: RED, jag: 10, time: t });
+    drawFigure(rs, { a: rA, col: mix([255, 120, 100], RED, red), glow: 1.6, core: [255, 190, 170], jag: 6 * red, time: t });
+    ['pull', 'pocket', 'turn'].forEach(id => {
+      const a = win(t, L(id).t0 + 0.2, L(id).t0 + 1.2, 0.04, 0.3) * rA;
+      if (a <= 0) return;
+      ctx.font = `700 26px ${MONO}`; ctx.textAlign = 'center';
+      ctx.fillStyle = rgba(RED, 0.18 * a); ctx.fillRect(1320, 352, 160, 44);
+      ctx.strokeStyle = rgba(RED, a); ctx.lineWidth = 2; ctx.strokeRect(1320, 352, 160, 44);
+      ctx.fillStyle = rgba(RED, a); ctx.fillText('THREAT', 1400, 384);
+    });
+  }
+  // you
+  const dark = T.dark, out = smooth(clamp((t - dark - 0.15) / 0.6));
+  const ls = leftFig(t);
+  const hands = [handAt(hX, Math.min(t, dark)), handAt(hY, Math.min(t, dark))];
+  const handFade = 1 - smooth(clamp((t - dark - 0.2) / 1.4));
+  drawAura(auraGeom(ls), { a: 0.7 * appear * (1 - out), dents: hands.map(fingertip).filter(Boolean), time: Math.min(t, dark) });
+  drawFigure(ls, { a: appear * (1 - out), time: Math.min(t, dark) });
+  hands.forEach(h => drawHand(h, handFade));
+  ['pull', 'pocket', 'turn'].forEach(id => {
+    const a = win(t, L(id).t0 + 0.2, L(id).t0 + 1.2, 0.1, 0.3) * split;
+    if (a <= 0) return;
+    ctx.font = `20px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = rgba(WARM, 0.85 * a);
+    ctx.fillText(L(id).text.replace('.', '').toLowerCase(), 520, 384);
+  });
+  // the light goes out
+  if (t > dark) {
+    if (!dissolvePts) dissolvePts = samplePoints(ls);
+    const u = t - dark;
+    ctx.globalCompositeOperation = 'lighter';
+    dissolvePts.forEach((p, i) => {
+      const d = hash01(i, 1) * 0.8, uu = u - 0.1 - d;
+      if (uu < 0) { glow(WARM, p[0], p[1], 7, 0.5); return; }
+      const x = p[0] + (hash01(i, 2) - 0.5) * 40 * uu, y = p[1] - (25 + 55 * hash01(i, 3)) * uu;
+      glow(mix(WARM, [120, 110, 100], clamp(uu / 3)), x, y, 7, 0.55 * (1 - clamp(uu / 3.2)));
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+function samplePoints(st) {
+  const out = [];
+  const seg = (a, b) => { const n = Math.ceil(dist(...a, ...b) / 7); for (let i = 0; i <= n; i++) for (let k = -1; k <= 1; k++) out.push([lerp(a[0], b[0], i / n) + k * 6, lerp(a[1], b[1], i / n)]); };
+  LIMBS.forEach(([a, b, c]) => { seg(jw(st, a), jw(st, b)); seg(jw(st, b), jw(st, c)); });
+  const sl = jw(st, 'shL'), sr = jw(st, 'shR'), hl = jw(st, 'hipL'), hr = jw(st, 'hipR');
+  for (let i = 0; i <= 8; i++) for (let k = 0; k <= 6; k++) out.push([lerp(lerp(sl[0], sr[0], k / 6), lerp(hl[0], hr[0], k / 6), i / 8), lerp(lerp(sl[1], sr[1], k / 6), lerp(hl[1], hr[1], k / 6), i / 8)]);
+  const h = jw(st, 'head');
+  for (let i = 0; i < 40; i++) { const a = i * 2.4, r = 24 * Math.sqrt(i / 40); out.push([h[0] + Math.cos(a) * r, h[1] + Math.sin(a) * r]); }
+  return out;
+}
+
+// ---------- coda ----------
+function drawCoda(t) {
+  if (t < T.coda) return;
+  const a = smooth(clamp((t - T.coda) / 0.8)) * (1 - smooth(clamp((t - T.END + 1.4) / 1.2)));
+  const cl = L('close');
+  const line = 'Your body belongs to you.';
+  ctx.font = `italic 64px ${SERIF}`; ctx.textAlign = 'left';
+  const full = ctx.measureText(line).width, x0 = 960 - full / 2, y = 300;
+  glowText(typed(line, cl.t0 - 0.1, 17, t), x0, y, TEXT, a, 18);
+  const ak = smooth(clamp((t - cl.t1 - 0.4) / 0.4));
+  if (ak > 0) { ctx.font = `italic 52px ${SERIF}`; glowText('*', x0 + full + 8, y - 28, ASTER, a * ak, 22); }
+  // the fine print is everything you just heard
+  const font = `16px ${MONO}`;
+  if (!drawCoda.lines) {
+    drawCoda.lines = [];
+    FULL_TEXT.forEach((p, i) => { wrap((i ? '' : '* ') + p, font, 1520).forEach(l => drawCoda.lines.push(l)); drawCoda.lines.push(''); });
+  }
+  ctx.font = font; ctx.textAlign = 'left';
+  drawCoda.lines.forEach((l, i) => {
+    const la = smooth(clamp((t - T.fine - i * 0.09) / 0.4)) * a;
+    if (la > 0 && l) { ctx.fillStyle = rgba(DATA, 0.62 * la); ctx.fillText(l, 200, 390 + i * 22); }
+  });
+  ctx.font = `500 18px ${MONO}`; ctx.textAlign = 'center'; ctx.letterSpacing = '12px';
+  ctx.fillStyle = rgba(DATA, 0.8 * win(t, T.fine + 2.0, T.END, 1.2, 1.4)); ctx.fillText('FINE PRINT', 966, 160);
+  ctx.letterSpacing = '0px';
+}
+
+function post(t) {
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(vignette, 0, 0);
+  ctx.save(); ctx.globalAlpha = 0.03; ctx.fillStyle = dither; ctx.fillRect(0, 0, W, H); ctx.restore();
+  const black = Math.max(1 - smooth(clamp(t / 0.6)), smooth(clamp((t - T.END + 1.0) / 1.0)));
+  if (black > 0) { ctx.fillStyle = `rgba(0,0,0,${black})`; ctx.fillRect(0, 0, W, H); }
+}
+
+function draw(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(bgCanvas, 0, 0);
+  if (t < T.dark) dissolvePts = null;
+  drawTitle(t);
+  drawAct1(t);
+  drawAct2(t);
+  drawAct3(t);
+  drawAct4(t);
+  drawAct5(t);
+  drawCoda(t);
+  drawFinePrint(t);
+  drawSection(t);
+  drawSubtitles(t);
+  post(t);
+}
+
+// =====================================================================
+// cues for the score and the voices
+// =====================================================================
+const events = [];
+function buildEvents() {
+  const add = (t, type, extra = {}) => events.push(Object.assign({ t, type }, extra));
+  for (let i = 0; i < 25; i++) add(0.9 + i / 16, 'key');
+  add(L('most').t0 + 0.2, 'asterisk'); add(L('most').t1 + 0.4, 'title');
+  add(T.act1 + 0.5, 'aura');
+  FOOT.forEach(f => { for (let i = 0; i < f.text.length; i += 2) add(f.t + i / 45, 'key', { soft: 1 }); });
+  add(L('grab').t0 - 0.1, 'handin', { pan: 0.9 }); add(L('grab').t0 + 0.45, 'grip');
+  add(L('hold').t0 - 0.1, 'handin', { pan: 0.75 }); add(L('hold').t0 + 0.45, 'grip'); add(L('hold').t0 + 0.6, 'press');
+  add(L('cuff').t0 + 0.6, 'cuff'); add(L('cuff').t0 + 0.85, 'cuff');
+  ['no_move', 'no_ctrl', 'no1'].forEach(id => add(L(id).t0, 'no'));
+  add(L('resist').t0 + 0.15, 'scuffle'); add(L('resist').t0 + 1.25, 'stamp');
+  add(L('cell').t0 + 0.6, 'concrete'); add(L('cell').t0 + 2.8, 'slam');
+  for (let i = 0; i < TALLY_N; i++) add(tallyTime(i), 'tally');
+  add(L('search').t0 + 0.6, 'scan'); add(L('notreq').t0 + 0.4, 'scan');
+  PATS.forEach(([off, , label]) => add(L('pat').t0 + off, 'pat', { hot: label ? 1 : 0 }));
+  add(L('strip').t0 + 0.2, 'strip'); add(L('notreq').t0 + 1.8, 'noted');
+  add(L('solitary').t0 + 0.5, 'concrete'); add(L('solitary').t0 + 1.6, 'slam', { small: 1 });
+  PIN.forEach(([, , d]) => add(L('pinned').t0 + 1.45 + d, 'pin'));
+  add(L('further').t0 + 0.3, 'handin', { pan: 0.85 }); add(L('further').t0 + 0.6, 'handin', { pan: 0.3 });
+  add(L('further').t0 + 1.6, 'crack'); add(L('further').t0 + 2.9, 'crack');
+  add(L('crimes').t0 + 0.3, 'tag'); add(L('crimes').t0 + 1.0, 'tag');
+  add(L('later').t0 + 0.4, 'drift'); add(L('atall').t0 + 0.5, 'question');
+  add(L('cmd1').t0 - 0.1, 'handin', { pan: 0.9 }); add(L('keepno').t0 + 1.25, 'grip'); add(L('keepno').t0 + 3.2, 'scuffle');
+  add(L('keepno').t0 + 3.3, 'handin', { pan: 0.7 });
+  METER.forEach((m, i) => add(m.t, 'meter', { i }));
+  add(L('ground').t0 + 0.5, 'impact'); add(L('helddown').t0 + 0.1, 'press');
+  add(L('baton').t0 + 0.3, 'whoosh'); add(L('baton').t0 + 0.46, 'impact', { sharp: 1 });
+  add(L('taser').t0 + 0.15, 'taser'); add(L('spray').t0 + 0.2, 'spray');
+  add(L('bones').t0 + 0.5, 'fracture'); add(L('bones').t0 + 2.0, 'fracture'); add(L('worse').t0, 'worse');
+  add(L('law').t0 + 0.4, 'law'); add(L('judged').t0 + 0.4, 'frame'); add(L('courts').t0 + 1.0, 'scale');
+  ['pull', 'pocket', 'turn'].forEach(id => add(L(id).t0 + 0.2, 'threat'));
+  add(L('killed').t0 + 0.6, 'merge'); add(L('away').t0 - 0.35, 'handin', { pan: 0.85 });
+  add(T.dark, 'freeze'); add(T.dark + 0.5, 'dissolve');
+  for (let i = 0; i < 25; i++) add(L('close').t0 - 0.1 + i / 17, 'key');
+  add(L('close').t1 + 0.4, 'asterisk'); add(T.fine, 'fine');
+  events.sort((a, b) => a.t - b.t);
+}
+
+const ready = (async () => {
+  try { await Promise.all([`italic 76px ${SERIF}`, `16px ${MONO}`, `200 40px ${SANS}`].map(f => document.fonts.load(f))); } catch (e) {}
+  buildPlates();
+  buildEvents();
+  draw(0);
+  return true;
+})();
+
+window.FILM = {
+  ready, W, H, FPS, T, events,
+  frames: Math.round(T.END * FPS),
+  draw,
+  frameDataURL(i, type = 'image/png', q) { draw(i / FPS); return canvas.toDataURL(type, q); },
+  cues: {
+    voice: Object.values(LINE).map(l => ({ id: l.id, who: l.who, voice: l.voice || null, text: l.text, t0: l.t0, dur: l.dur, sub: l.sub !== false })),
+  },
+};
+
+const params = new URLSearchParams(location.search);
+if (params.has('render')) { document.body.classList.add('render'); return; }
+
+const audio = document.getElementById('score'), playBtn = document.getElementById('play');
+const scrub = document.getElementById('scrub'), clock = document.getElementById('clock');
+let audioOK = false, playing = false, cur = 0, wall0 = 0, t0 = 0;
+audio.addEventListener('canplaythrough', () => { audioOK = true; });
+audio.addEventListener('error', () => { audioOK = false; });
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setPlaying(on) {
+  playing = on; playBtn.textContent = on ? 'Pause' : 'Play';
+  document.getElementById('controls').classList.toggle('show', !on);
+  if (on) {
+    if (cur >= T.END - 0.05) cur = 0;
+    wall0 = performance.now(); t0 = cur;
+    if (audioOK) { audio.currentTime = cur; audio.play().catch(() => { audioOK = false; }); }
+  } else audio.pause();
+}
+playBtn.onclick = () => setPlaying(!playing);
+canvas.onclick = () => setPlaying(!playing);
+scrub.oninput = () => {
+  cur = scrub.value / 1000 * T.END; t0 = cur; wall0 = performance.now();
+  if (audioOK) audio.currentTime = cur;
+  draw(cur);
+};
+function tick() {
+  if (playing) {
+    cur = audioOK && !audio.paused ? audio.currentTime : t0 + (performance.now() - wall0) / 1000;
+    if (cur >= T.END) { cur = T.END; setPlaying(false); }
+    draw(cur);
+    scrub.value = Math.round(cur / T.END * 1000);
+  }
+  clock.textContent = `${fmt(cur)} / ${fmt(T.END)}`;
+  requestAnimationFrame(tick);
+}
+ready.then(() => requestAnimationFrame(tick));
+})();
+</script>
+</body>
+</html>
