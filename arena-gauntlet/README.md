@@ -323,7 +323,9 @@ on a phone turned sideways, but portrait works too.
   Alchemist's sure transmutation or free green vial), +1 Supply, Commander XP, or an
   elite battle for a relic. Some cost gold; a few are gambles (stake a soldier at the
   Gambler's Tent: an enchantment, or they leave your army). Your Cleric can be
-  blessed, never transformed or lost.
+  blessed, never transformed or lost. Every event shows the relics you hold at the
+  top (tap one for what it does), and the Merchant Caravan lists one trade for each
+  of your common relics, so you choose which one to give up.
 - **Regen**: some talents, gear, relics and units heal whenever the unit's turn
   comes, whether it acts or passes (Living Moss 4,
   Healing Charm 3, the Furgon 3, a Mending Light aura 2). The only army-wide source
@@ -336,8 +338,10 @@ on a phone turned sideways, but portrait works too.
   shields, before it moves or acts: never a whole side at once, always one unit at a
   time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its
   units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18
-  and 19, one after another. The two sides count apart (the enemy can be at 9 while
-  you are at 2), and nothing ever resets or doubles a count.
+  and 19, one after another. But a unit that **falls** to fatigue (or to poison or fire
+  as its turn comes) ends its side's turn there: the other side moves next, so a side
+  never loses one unit after another while the other waits. The two sides count apart
+  (the enemy can be at 9 while you are at 2), and nothing ever resets or doubles a count.
   - **Your timer** switches on when you do the mission (see Missions), when the enemy
     army falls with something left to collect (see Cleanup), or on turn 30.
   - **The enemy's timer** switches on when you do the mission, or on turn 30.
@@ -518,7 +522,12 @@ on a phone turned sideways, but portrait works too.
   falling meteor, a fiery dive, an ice burst, beams of light). There are legendary
   skills and gear too, 3 or 4 Supply each: Avatar of War, Time Warp (cooldown 2
   shorter), Undying (rises once with half HP), Reaper's Mark, the Meteor Hammer, the
-  Crown of Storms, the Aegis of Dawn and the Vorpal Blade. Nothing legendary turns up
+  Crown of Storms, the Aegis of Dawn and the Vorpal Blade. And legendary relics, a
+  huge edge with a real price: Worldbreaker (+40% damage, 4 less Supply), Heart of
+  the Mountain (+40% max HP, 4 less Supply), the Storm Banner (every unit zaps the
+  nearest enemy each turn, 3 less Supply) and the Blood Moon (heal for 25% of the
+  damage dealt, but take 15% more), turning up from elites, lucky drops and the
+  merchant on the same schedule. Nothing legendary turns up
   before the second half of Act 2: then each recruit, skill or gear roll has a 3%
   chance, rising to 8% by the Act 2 boss, then 10% at the start of Act 3 rising to 25%
   by its boss (half as likely again from elites and bosses). So about 1 battle in 10

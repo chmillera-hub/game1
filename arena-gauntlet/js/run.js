@@ -19,7 +19,7 @@
   // Shop prices. Relics cost about twice as much as anything else: a passive that lasts the
   // whole campaign can be extraordinarily strong.
   const RECRUIT_PRICE = { common: 60, uncommon: 90, rare: 128, legendary: 210 };
-  const RELIC_PRICE = { common: 160, uncommon: 200, rare: 250, boss: 320, event: 200 };
+  const RELIC_PRICE = { common: 160, uncommon: 200, rare: 250, boss: 320, event: 200, legendary: 360 };
   const ITEM_PRICE = (cost) => 42 + 21 * cost;
   // A legendary skill or piece of gear goes for half as much again.
   const itemPrice = (d) => Math.round(ITEM_PRICE(d.cost) * (d.rarity === 'legendary' ? 1.5 : 1));
@@ -63,6 +63,9 @@
     if (hasRelic(run, 'tyrant_heart')) s += 3;
     if (hasRelic(run, 'crown_command')) s += 2;
     if (hasRelic(run, 'titan_gauntlet')) s -= 1;
+    if (hasRelic(run, 'worldbreaker')) s -= 4;
+    if (hasRelic(run, 'mountain_heart')) s -= 4;
+    if (hasRelic(run, 'storm_banner')) s -= 3;
     return s;
   }
 
@@ -554,7 +557,7 @@
     const out = { gold: rng.range(T.gold[0], T.gold[1]), spoils: T.spoils ? genSpoils(run, rng, kind, node.id).slice(0, T.spoils) : [], relic: null, lucky: false };
     const lucky = !T.relic && T.relicChance && AG.derive(run.seed, 'relicdrop:' + run.act + ':' + node.id).chance(T.relicChance);
     if (T.relic || lucky) {
-      out.relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+      out.relic = rollRelic(run, rng, kind);
       out.lucky = !!(lucky && out.relic);
     }
     if (kind === 'boss' && !node.mega && run.act < 3) {
@@ -1577,6 +1580,15 @@
     return rng.weighted([['common', 55 - act * 5], ['uncommon', 33], ['rare', 12 + act * 5]]);
   }
 
+  // A relic to find or buy: now and then (as legendChance allows) a legendary one.
+  function rollRelic(run, rng, kind) {
+    if (legendRoll(run, rng, kind)) {
+      const legend = pickRelic(run, rng, ['legendary']);
+      if (legend) return legend;
+    }
+    return pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+  }
+
   function pickRelic(run, rng, tiers, exclude) {
     const pool = Object.keys(RELICS).filter((id) => tiers.includes(RELICS[id].tier) && !run.relics.includes(id) && !(exclude || []).includes(id));
     return pool.length ? rng.pick(pool) : null;
@@ -1858,7 +1870,7 @@
     if (skill) items.push({ kind: 'skill', id: skill, price: discount(run, itemPrice(SKILLS[skill])), sold: false });
     const gear = rollGear(run, rng);
     if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, itemPrice(GEAR[gear])), sold: false });
-    const relic = pickRelic(run, rng, [randomRelicTier(rng, run.act)]) || pickRelic(run, rng, ['common', 'uncommon', 'rare']);
+    const relic = rollRelic(run, rng, 'normal');
     if (relic) items.push({ kind: 'relic', relic, price: discount(run, RELIC_PRICE[RELICS[relic].tier]), sold: false });
     const sc = extra === 'scroll' && rollEnchant(run, rng);
     if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
@@ -2328,7 +2340,12 @@
         return [
           c.gear ? { id: 'gear', label: `Buy ${GEAR[c.gear].name} (35 gold)`, detail: GEAR[c.gear].desc, enabled: run.gold >= 35 } : null,
           c.skill ? { id: 'skill', label: `Buy a manual of ${SKILLS[c.skill].name} (35 gold)`, detail: SKILLS[c.skill].desc, enabled: run.gold >= 35 } : null,
-          c.relic ? { id: 'swap', label: `Trade a relic for the ${RELICS[c.relic].name}`, detail: `Give up one of your common relics (at random) for this ${RELICS[c.relic].tier} one: ${RELICS[c.relic].desc}`, enabled: common.length > 0 } : null,
+          // One trade for each common relic you hold: you choose which one goes.
+          ...(c.relic && common.length
+            ? common.map((id) => ({ id: 'swap:' + id, label: `Trade your ${RELICS[id].name} for the ${RELICS[c.relic].name}`, detail: `You give up ${RELICS[id].name} (${RELICS[id].desc.replace(/\.$/, '')}) for this ${RELICS[c.relic].tier} relic: ${RELICS[c.relic].desc}` }))
+            : c.relic
+              ? [{ id: 'swap', label: `Trade a relic for the ${RELICS[c.relic].name}`, detail: `The merchant only takes a common relic, and you have none. ${RELICS[c.relic].name}: ${RELICS[c.relic].desc}`, enabled: false }]
+              : []),
         ].filter(Boolean);
       },
       resolve: (run, c, choice, rid, rng) => {
@@ -2342,7 +2359,8 @@
           addItem(run, 'skill', c.skill);
           return `You learn ${SKILLS[c.skill].name} from a dog-eared manual.`;
         }
-        const old = rng.pick(run.relics.filter((id) => RELICS[id].tier === 'common'));
+        const old = choice.startsWith('swap:') ? choice.slice(5) : rng.pick(run.relics.filter((id) => RELICS[id].tier === 'common'));
+        if (!run.relics.includes(old) || RELICS[old].tier !== 'common') return null;
         run.relics = run.relics.filter((id) => id !== old);
         gainRelic(run, c.relic);
         return `The ${RELICS[old].name} for the ${RELICS[c.relic].name}. The merchant thinks it a fine trade. So do you.`;

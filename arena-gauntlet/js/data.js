@@ -1125,6 +1125,11 @@
     crown_command: { name: 'Crown of Command', tier: 'boss', desc: '+2 Supply in every battle, and 25% more XP.' },
     sacred_chalice: { name: 'Sacred Chalice', tier: 'boss', desc: 'Your units have +2 Regen.' },
     cursed_blade: { name: 'Bloodthirst Blade', tier: 'event', desc: 'Your units deal 20% more damage and take 10% more damage.' },
+    // Legendary: a huge edge with a real price. Found from the second half of Act 2 on.
+    worldbreaker: { name: 'Worldbreaker', tier: 'legendary', desc: 'Your units deal 40% more damage. Price: you have 4 less Supply in every battle.' },
+    mountain_heart: { name: 'Heart of the Mountain', tier: 'legendary', desc: 'Your units have 40% more max HP. Price: you have 4 less Supply in every battle.' },
+    storm_banner: { name: 'Storm Banner', tier: 'legendary', desc: 'At the start of your turn, lightning leaps from each of your units to the nearest enemy within 3 tiles for 5 magic damage. Price: you have 3 less Supply in every battle.' },
+    blood_moon: { name: 'Blood Moon', tier: 'legendary', desc: 'Your units heal for 25% of the damage they deal. Price: they take 15% more damage.' },
   };
 
   const WARBANDS = [

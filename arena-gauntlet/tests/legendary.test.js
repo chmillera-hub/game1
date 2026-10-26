@@ -141,4 +141,30 @@ test('each new legendary uses its big act in battle, and its cooldown is long', 
   }
 });
 
+test('legendary relics: a big edge, a real price, and only from the second half of Act 2', () => {
+  const ids = Object.keys(D.RELICS).filter((id) => D.RELICS[id].tier === 'legendary');
+  assert.ok(ids.length >= 4);
+  for (const id of ids) assert.ok(/Price:/.test(D.RELICS[id].desc), `${id} says what it costs you`);
+  // The Supply ones cost Supply.
+  const run = runAt(3, 0);
+  const base = R.supplyFor(run);
+  run.relics.push('worldbreaker');
+  assert.strictEqual(R.supplyFor(run), base - 4);
+  run.relics.push('storm_banner');
+  assert.strictEqual(R.supplyFor(run), base - 7);
+  // Heart of the Mountain: a tougher army.
+  const knight = (relics) => E.createBattle({ w: 9, h: 9, terrain: new Array(81).fill(0), units: [{ type: 'knight', team: 'P', x: 4, y: 5 }, { type: 'golem', team: 'E', x: 4, y: 4 }], seed: 3, objective: 'all', loot: [], goals: [], waves: [], queue: true, overtime: 30, turnLimit: 40, relics: { P: relics, E: [] } }).units[0];
+  assert.ok(knight(['mountain_heart']).maxHp >= Math.round(knight([]).maxHp * 1.39), 'Heart of the Mountain: +40% HP');
+  // Only turned up as legendChance allows: never in Act 1 or early Act 2.
+  const seen = { early: 0, late: 0 };
+  for (let i = 0; i < 300; i++) {
+    for (const [act, st, k] of [[1, 3, 'early'], [2, 1, 'early'], [3, 6, 'late']]) {
+      const r = runAt(act, st, 500 + i);
+      for (const it of R.genShop(r, { id: 'q' + i })) if (it.kind === 'relic' && D.RELICS[it.relic].tier === 'legendary') seen[k]++;
+    }
+  }
+  assert.strictEqual(seen.early, 0, 'none early');
+  assert.ok(seen.late > 20, `late Act 3 merchants sell them (${seen.late} of 300)`);
+});
+
 console.log(`legendary: ${passed} tests passed`);

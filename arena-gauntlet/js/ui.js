@@ -798,6 +798,7 @@
     alchemist_stone: 'gem', dragon_scale: 'shield', tyrant_heart: 'command', titan_gauntlet: 'swords', eternal_flame: 'fire',
     kings_ransom: 'gold', crown_command: 'crown', sacred_chalice: 'heart', cursed_blade: 'sword',
     iron_ram: 'shield', tide_conch: 'star', anchor_stone: 'block',
+    worldbreaker: 'swords', mountain_heart: 'heart', storm_banner: 'banner', blood_moon: 'heart',
   };
   function relicBar() {
     const bar = $('#relicBar');
@@ -1287,7 +1288,7 @@
 
   function relicCard(id, attrs) {
     const r = RELICS[id];
-    return `<button class="card" ${attrs || ''}><div class="kind">${ic('gem')} Relic · ${r.tier}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
+    return `<button class="card ${r.tier === 'legendary' ? 'legendary' : ''}" ${attrs || ''}><div class="kind">${ic(r.tier === 'legendary' ? 'crown' : 'gem')} ${r.tier === 'legendary' ? 'Legendary relic' : 'Relic · ' + r.tier}</div><div class="title">${esc(r.name)}</div><div class="desc">${esc(r.desc)}</div></button>`;
   }
 
   function relicSheet() {
@@ -1295,7 +1296,7 @@
     openSheet(
       `${sheetHead('Relics', 'Passive bonuses that last the whole campaign.')}
       <div class="army-list">${run.relics
-        .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card ${RELICS[id].tier === 'legendary' ? 'legendary' : ''}"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`
     );
   }
@@ -1405,7 +1406,7 @@
         '<p class="muted">No talents, skills, gear or scrolls yet. Win battles, visit merchants and explore events to find them.</p>';
     } else {
       body = `<div class="army-list">${run.relics
-        .map((id) => `<div class="card"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
+        .map((id) => `<div class="card ${RELICS[id].tier === 'legendary' ? 'legendary' : ''}"><div class="kind">${ic('gem')} ${RELICS[id].tier}</div><div class="title">${esc(RELICS[id].name)}</div><div class="desc">${esc(RELICS[id].desc)}</div></div>`)
         .join('')}</div>`;
     }
     openSheet(
@@ -4749,7 +4750,7 @@
       if (it.kind === 'recruit') return recruitCard(it.unit, it.enchant, dis, ownedNote(run, 'recruit', it.unit) + price, it.talent);
       if (it.kind === 'skill' || it.kind === 'gear' || it.kind === 'talent' || it.kind === 'scroll') return itemCard(it.kind, it.id, dis, ownedNote(run, it.kind, it.id) + price);
       if (it.kind === 'relic')
-        return `<button class="card" ${dis}><div class="kind">${ic('gem')} Relic · ${RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
+        return `<button class="card ${RELICS[it.relic].tier === 'legendary' ? 'legendary' : ''}" ${dis}><div class="kind">${ic(RELICS[it.relic].tier === 'legendary' ? 'crown' : 'gem')} ${RELICS[it.relic].tier === 'legendary' ? 'Legendary relic' : 'Relic · ' + RELICS[it.relic].tier}</div><div class="title">${esc(RELICS[it.relic].name)}</div><div class="desc">${esc(RELICS[it.relic].desc)}</div>${price}</button>`;
       if (it.kind === 'supply')
         return `<button class="card" ${dis}><div class="kind">${ic('command')} Service</div><div class="title">Supply Cache</div><div class="desc">+1 Supply in every battle for the rest of the campaign.</div>${price}</button>`;
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
@@ -4792,6 +4793,16 @@
 
   // ------------------------------------------------------------ rest, treasure, event
 
+  // The relics you hold, at the top of every event, so a choice that asks for one (the
+  // Merchant Caravan's trade) can be weighed: tap one for what it does.
+  function eventRelics(run) {
+    const ids = run.relics.filter((id) => RELICS[id]);
+    if (!ids.length) return '';
+    return `<div class="ev-relics"><span class="eyebrow">${ic('gem')} Your relics</span><div class="chips">${ids
+      .map((id) => `<button class="chip relic-chip tier-${RELICS[id].tier}" data-evrelic="${id}">${ic(RELIC_ICON[id] || 'gem')} ${esc(RELICS[id].name)} <span class="muted">· ${RELICS[id].tier}</span></button>`)
+      .join('')}</div></div>`;
+  }
+
   function eventScreen() {
     const run = UI.run;
     const p = run.pending;
@@ -4800,6 +4811,7 @@
     const v = showView(
       `<div class="wrap">
         <div class="row">${resbar(run)}</div>
+        ${eventRelics(run)}
         <div class="parch-card">
           <p class="eyebrow" style="color:#7a5a2c">On the road</p>
           <h2>${esc(ev.title)}</h2>
@@ -4833,6 +4845,11 @@
           return;
         }
         eventScreen();
+      };
+    for (const b of $$('[data-evrelic]', v))
+      b.onclick = () => {
+        const r = RELICS[b.dataset.evrelic];
+        toast(`${r.name} (${r.tier}): ${r.desc}`, 4000);
       };
     if ($('#evArmy', v)) $('#evArmy', v).onclick = () => armySheet(() => eventScreen());
     if ($('#evGo', v))

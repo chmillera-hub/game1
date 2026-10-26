@@ -1173,6 +1173,16 @@ button.chip.tap {
   --relic: #ff9a5a;
 }
 
+.relic-dot.tier-legendary {
+  --relic: #ffc760;
+  box-shadow: 0 0 10px rgba(255, 176, 60, 0.6);
+}
+
+.relic-chip.tier-legendary {
+  border-color: rgba(255, 176, 60, 0.9);
+  color: #ffc760;
+}
+
 .relic-dot.tier-event {
   --relic: #c39bff;
 }
@@ -3813,4 +3823,31 @@ body:has(#battle:not([hidden])) {
 
 .talent-name {
   color: #7fe8d8;
+}
+
+/* The relics you hold, at the top of an event. */
+.ev-relics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(197, 154, 76, 0.35);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.ev-relics .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.relic-chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.relic-chip.tier-common {
+  border-color: rgba(216, 195, 154, 0.8);
 }
