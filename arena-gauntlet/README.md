@@ -539,6 +539,9 @@ on a phone turned sideways, but portrait works too.
   one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about
   twice as much as anything else. Resupply brings out a whole new stock for 20 gold,
   then 30, 40 and so on; press it as often as you can pay. Units cannot be dismissed.
+  Everything you can still buy (not sold, and within your gold) has the same soft,
+  pulsing aura as any choice waiting for you; sold items and what you cannot afford
+  stay plain.
 - **Performance**: the board draws 30 frames a second while something moves and 10
   when nothing does, at no more than twice the screen's CSS pixels, to keep phones
   cool.
