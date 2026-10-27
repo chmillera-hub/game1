@@ -610,7 +610,7 @@
       case 'para':
         return u.boss || tr.has('stoneskin') || tr.has('steadfast') || tr.has('paraproof');
       case 'poison':
-        return tr.has('undead') || tr.has('poisonproof');
+        return tr.has('undead') || tr.has('poisonproof') || isWard(u);
       case 'root':
         return tr.has('steadfast') || tr.has('immobile');
       case 'knock':
@@ -1882,6 +1882,7 @@
     const tr = u.traits;
     if (kind === 'para' && u.boss) return 'boss';
     if (tr.has('undead') && kind === 'poison') return 'undead';
+    if (kind === 'poison' && isWard(u)) return 'a ward';
     if (tr.has('stoneskin') && kind === 'para') return 'stone skin';
     if (kind === 'root' && tr.has('immobile')) return 'rooted in place';
     if (tr.has('steadfast') || tr.has('paraproof') || tr.has('poisonproof')) return 'its loadout';

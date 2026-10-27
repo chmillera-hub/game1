@@ -485,7 +485,7 @@
       act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 2 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_parasite', 'w_wither'], 2: ['w_ethereal', 'w_contagion', 'w_plague'] },
-      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Only buildings and the undead are immune.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Only buildings, wards and the undead are immune.',
       tip: 'Only 24 HP and no physical resistance. One arrow volley can drop it.',
     },
     barrier: {

@@ -335,7 +335,7 @@ test('paralysis costs a turn on top of the cooldown and removes block', () => {
   assert.ok(E.canActivate(s, kn), 'free again');
 });
 
-test('Miasma poisons for 2 turns, blocks healing; only buildings and the undead are immune', () => {
+test('Miasma poisons for 2 turns, blocks healing; only buildings, wards and the undead are immune', () => {
   const s = board([
     { type: 'wisp', team: 'P', x: 4, y: 6 },
     { type: 'knight', team: 'E', x: 4, y: 4 },
@@ -348,8 +348,8 @@ test('Miasma poisons for 2 turns, blocks healing; only buildings and the undead 
   const [wi, kn, go, sk, cl, lw, cage] = s.units;
   act(s, wi, { kind: 'self' });
   assert.ok(kn.poison && kn.poison.turns === 2);
-  for (const u of [sk, cage]) assert.ok(!u.poison, u.type + ' is immune');
-  for (const u of [go, lw]) assert.ok(u.poison, u.type + ' is poisoned');
+  for (const u of [sk, lw, cage]) assert.ok(!u.poison, u.type + ' is immune');
+  assert.ok(go.poison, 'the golem is poisoned');
   E.endTurn(s);
   assert.strictEqual(s.side, 'E');
   assert.strictEqual(kn.hp, kn.maxHp - 8, 'ticks at the start of its turn');
@@ -510,7 +510,7 @@ test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile 
   assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units beside it'));
 });
 
-test('poison that does not take says so, and why: only the undead resist; golems, wards and the warded take it', () => {
+test('poison that does not take says so, and why: the undead and wards resist; golems and the warded take it', () => {
   const s = board([
     { type: 'wisp', team: 'P', x: 4, y: 6 },
     { type: 'skeleton', team: 'E', x: 3, y: 5 },
@@ -525,10 +525,10 @@ test('poison that does not take says so, and why: only the undead resist; golems
   const res = s.events.filter((e) => e.t === 'resist');
   assert.deepStrictEqual(
     res.map((e) => [s.byId[e.uid].type + (e.uid === warded.uid ? '*' : ''), e.status, e.why]),
-    [['skeleton', 'poison', 'undead']]
+    [['skeleton', 'poison', 'undead'], ['barrier', 'poison', 'a ward']]
   );
   assert.ok(kn.poison && warded.poison && !skel.poison, 'both knights are poisoned, the warded one too');
-  assert.ok(golem.poison && ward.poison, 'the Stone Golem and the Barrier Ward are poisoned');
+  assert.ok(golem.poison && !ward.poison, 'the Stone Golem is poisoned, the Barrier Ward is not');
 });
 
 // ------------------------------------------------------------ cleanup
