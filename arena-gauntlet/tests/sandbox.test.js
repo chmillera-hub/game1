@@ -29,7 +29,11 @@ async function test(name, fn) {
 
   await test('kits are kept legal: class talents, eligible items, one of each, within slots', () => {
     const d = R.fixSandbox({ relics: ['war_horn', 'nope', 'war_horn', 'lucky_coin', 'guild_seal', 'tyrant_heart', 'blood_pact', 'crown_command'], units: [] });
-    assert.deepStrictEqual(d.relics.length, R.SANDBOX_RELICS, 'five relics at most, no repeats, real ones');
+    assert.deepStrictEqual(d.relics, ['war_horn', 'lucky_coin', 'guild_seal', 'tyrant_heart', 'blood_pact'], 'five at most, no repeats, real ones');
+    // One boss relic and one legendary at most: the second of each is dropped.
+    const t = R.fixSandbox({ relics: ['tyrant_heart', 'crown_command', 'worldbreaker', 'mountain_heart', 'lucky_coin', 'war_horn'] });
+    assert.deepStrictEqual(t.relics, ['tyrant_heart', 'worldbreaker', 'lucky_coin', 'war_horn']);
+    assert.ok(!R.sandboxTierOk(t.relics, 'sacred_chalice') && !R.sandboxTierOk(t.relics, 'blood_moon') && R.sandboxTierOk(t.relics, 'bloodstone'));
     R.addSandboxUnit(d, 'knight');
     const sp = d.units[0].spec;
     const pyroTalent = Object.keys(D.TALENTS).find((id) => D.TALENTS[id].cls === 'pyromancer');
@@ -122,7 +126,8 @@ async function test(name, fn) {
         assert.ok(R.relicFit(d, id).ok, `seed ${seed}: ${id} has what it needs`);
       }
       assert.ok(!(d.relics.includes('lone_wolf') && d.relics.includes('phalanx_standard')));
-      assert.ok(d.relics.filter((id) => D.RELICS[id].tier === 'legendary').length <= 2);
+      assert.ok(d.relics.filter((id) => D.RELICS[id].tier === 'legendary').length <= 1, 'one legendary at most');
+      assert.ok(d.relics.filter((id) => D.RELICS[id].tier === 'boss').length <= 1, 'one boss relic at most');
       assert.ok(d.units.some((it) => it.spec.type === 'cleric'));
       assert.deepStrictEqual(JSON.parse(JSON.stringify(R.fixSandbox(JSON.parse(JSON.stringify(d))))), JSON.parse(JSON.stringify(d)), 'already legal');
       notes += d.why.length;

@@ -3069,6 +3069,14 @@
   // touching your campaign.
   const SANDBOX_SUPPLY = 34;
   const SANDBOX_RELICS = 5;
+  // At most one boss relic and one legendary among them; the rest any tier.
+  const SANDBOX_TIER_MAX = { boss: 1, legendary: 1 };
+  // Whether one more of this relic's tier still fits the sandbox's five.
+  function sandboxTierOk(relics, id) {
+    const tier = RELICS[id] && RELICS[id].tier;
+    const max = SANDBOX_TIER_MAX[tier];
+    return max == null || relics.filter((r) => r !== id && RELICS[r].tier === tier).length < max;
+  }
   const SANDBOX_KEY = 'arena-gauntlet-sandbox-v1';
 
   function sandboxSupply(relics) {
@@ -3099,7 +3107,9 @@
     d = d && typeof d === 'object' ? d : {};
     d.name = cleanText(d.name, 40);
     d.why = (Array.isArray(d.why) ? d.why : []).slice(0, 6).map((s) => cleanText(s, 140));
-    d.relics = [...new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))].slice(0, SANDBOX_RELICS);
+    const kept = [];
+    for (const id of new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))) if (kept.length < SANDBOX_RELICS && sandboxTierOk(kept, id)) kept.push(id);
+    d.relics = kept;
     const taken = new Set();
     // One copy of each item in the whole army: the first unit holding it keeps it.
     const held = { talents: new Set(), skills: new Set(), gear: new Set(), enchant: new Set() };
@@ -3311,7 +3321,7 @@
     }
     if (!d.units.some((it) => UNITS[it.spec.type].act.dmg)) add('archer');
     // 2. Relics: the strongest that work in this army, five at most, never a clashing pair,
-    // two legendaries at most. A relic made for what this army already does (a Plague
+    // one boss relic and one legendary at most. A relic made for what this army already does (a Plague
     // Doctor's Mask for its Poison Wisp, Wildfire Oil for its Pyromancer) jumps the queue.
     const tierScore = { legendary: 6, boss: 5, rare: 4, uncommon: 3, common: 2, event: 3 };
     const order = Object.keys(RELICS)
@@ -3329,7 +3339,7 @@
     for (const id of order) {
       if (d.relics.length >= SANDBOX_RELICS) break;
       if (RELIC_CLASH[id] && d.relics.includes(RELIC_CLASH[id])) continue;
-      if (RELICS[id].tier === 'legendary' && d.relics.filter((r) => RELICS[r].tier === 'legendary').length >= 2) continue;
+      if (!sandboxTierOk(d.relics, id)) continue;
       const fit = relicFit(d, id);
       if (!fit.ok) continue;
       // Only if the army still fits the Supply with it (and with whatever it needs).
@@ -3768,6 +3778,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, autoSandbox, relicFit, HALL_INERT, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, sandboxTierOk, autoSandbox, relicFit, HALL_INERT, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

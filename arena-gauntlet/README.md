@@ -189,7 +189,8 @@ on a phone turned sideways, but portrait works too.
   (kits kept legal: its own class's talents, eligible items, one of each, within its
   level's slots) with one copy of each in the whole army (a campaign can find doubles;
   in the kit sheet, an item on another unit says so and a tap moves it over), up to 5
-  relics of your choice, legendary ones too, and a fixed 34 Supply
+  relics of your choice (one boss relic and one legendary at most, the rest any tier), and
+  a fixed 34 Supply
   (relics that add or cost Supply still do). 34 is the median campaign winner's Supply in
   the sims (27 to 43, with about 6 random relics), so a hand-picked sandbox army is strong,
   but a great campaign (a dozen relics, Supply Caches, a veteran commander) goes further,
@@ -201,8 +202,7 @@ on a phone turned sideways, but portrait works too.
   (the Plague Doctor's Mask a poisoner, Wildfire Oil a burner, Iron Ram a shover, Lone
   Wolf a mostly ranged army, Phalanx Standard a front line of three...) only when the army
   has it, or when Auto can give it within the Supply (Venom Edge on a Knight). Relics made
-  for what the army already does get picked first, never Lone Wolf with Phalanx, two
-  legendaries at most; a "Why these relics" list says what each one feeds. The relic picker
+  for what the army already does get picked first, never Lone Wolf with Phalanx; a "Why these relics" list says what each one feeds. The relic picker
   shows the same: "No effect in Hall battles", or what a relic needs and who could carry it.
   A 9x3 grid sets the formation. Test fight
   plays a friendly match against any Hall army; Enter the Hall adds a copy, marked Sandbox,
