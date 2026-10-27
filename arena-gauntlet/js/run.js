@@ -16,10 +16,12 @@
   const ROUND_ROW = [0, 1, 3, 5];
   const BOARD = 9;
   const LEAN_GOLD = 3;
-  // Shop prices. Relics cost about twice as much as anything else: a passive that lasts the
-  // whole campaign can be extraordinarily strong.
+  // Shop prices. Relics cost far more than anything else, never under 200 gold, discounts
+  // included: a passive that lasts the whole campaign can be extraordinarily strong, and two
+  // relics a market should be a stretch, not a habit.
   const RECRUIT_PRICE = { common: 60, uncommon: 90, rare: 128, legendary: 210 };
-  const RELIC_PRICE = { common: 160, uncommon: 200, rare: 250, boss: 320, event: 200, legendary: 360 };
+  const RELIC_PRICE = { common: 200, uncommon: 240, rare: 290, boss: 360, event: 240, legendary: 400 };
+  const RELIC_MIN = 200;
   const ITEM_PRICE = (cost) => 42 + 21 * cost;
   // A legendary skill or piece of gear goes for half as much again.
   const itemPrice = (d) => Math.round(ITEM_PRICE(d.cost) * (d.rarity === 'legendary' ? 1.5 : 1));
@@ -1923,7 +1925,7 @@
     const gear = rollGear(run, rng);
     if (gear) items.push({ kind: 'gear', id: gear, price: discount(run, itemPrice(GEAR[gear])), sold: false });
     const relic = rollRelic(run, rng, 'normal');
-    if (relic) items.push({ kind: 'relic', relic, price: discount(run, RELIC_PRICE[RELICS[relic].tier]), sold: false });
+    if (relic) items.push({ kind: 'relic', relic, price: Math.max(RELIC_MIN, discount(run, RELIC_PRICE[RELICS[relic].tier])), sold: false });
     const sc = extra === 'scroll' && rollEnchant(run, rng);
     if (sc) items.push({ kind: 'scroll', id: sc, price: discount(run, SCROLL_PRICE), sold: false });
     else if (extra === 'manual') items.push({ kind: 'manual', price: discount(run, 68), sold: false });

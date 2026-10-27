@@ -1140,7 +1140,7 @@
     storm_jar: { name: 'Storm in a Jar', tier: 'uncommon', desc: 'Your magic attacks arc on to one more enemy within 2 tiles for half damage.' },
     blood_pact: { name: 'Blood Pact', tier: 'uncommon', cursed: true, desc: '+3 Supply in every battle, but your units start each battle at 75% HP.' },
     phoenix_feather: { name: 'Phoenix Feather', tier: 'uncommon', desc: 'The first of your units to fall in each battle rises again with half HP.' },
-    guild_seal: { name: 'Guild Seal', tier: 'uncommon', desc: 'Shop prices are 25% lower.' },
+    guild_seal: { name: 'Guild Seal', tier: 'uncommon', desc: 'Shop prices are 25% lower (relics never below 200 gold).' },
     legion_banner: { name: 'Banner of the Legion', tier: 'uncommon', desc: '+2 Supply in every battle.' },
     sands_of_haste: { name: 'Sands of Haste', tier: 'uncommon', desc: 'Enemy spellcasters (Cooldown 2 or more) start each battle cooling down and sit out the first enemy turn.' },
     tide_conch: { name: "Tidecaller's Conch", tier: 'uncommon', desc: "Your units' shoves and pulls move enemies 1 tile further." },
