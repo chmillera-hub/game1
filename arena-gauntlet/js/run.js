@@ -2942,6 +2942,124 @@
     return l;
   }
 
+  // Rival armies. A player shares their best Hall armies as one text code (up to five of
+  // their own: never the house armies, never someone else's), and a friend pastes it into
+  // their Hall. Each arrives marked as a rival, at the back of the line waiting to climb,
+  // with a clean record; the same army pasted twice is added once. Whatever a code holds that
+  // the game does not know, or could not do (a unit on the enemy's side of the field, two on
+  // one tile, an army far past any real Supply), is dropped. Rivals can be removed any time.
+  const SHARE_MAX = 5;
+  const RIVAL_MAX_UNITS = 16;
+  const RIVAL_MAX_SUPPLY = 150;
+  const ownArmy = (l) => l && !l.house && !l.foreign;
+  const cleanText = (s, n) => String(s || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n);
+
+  function hashOf(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  }
+
+  // Your own armies, best first: the ranked ones in order, then those waiting in line.
+  function shareable(h) {
+    return h.legends.concat(h.queue).filter(ownArmy).slice(0, SHARE_MAX);
+  }
+
+  async function exportArmies(by) {
+    const armies = shareable(loadHall()).map((l) => ({ name: l.name, date: l.date, level: l.level, relics: l.relics, superWon: !!l.superWon, units: l.units }));
+    if (!armies.length) return null;
+    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, by: cleanText(by, 24), armies }));
+    if (root.CompressionStream) return 'AGAZ1.' + toB64(await pump(bytes, new root.CompressionStream('deflate-raw')));
+    return 'AGA1.' + toB64(bytes);
+  }
+
+  // A rival army from a code, made safe, or null when nothing fightable is left.
+  function rivalArmy(a, by) {
+    if (!a || typeof a !== 'object') return null;
+    const l = tidyLegend({ name: cleanText(a.name, 40) || 'A Rival Company', relics: a.relics, units: Array.isArray(a.units) ? a.units.slice(0, RIVAL_MAX_UNITS).map((it) => it && it.spec && { spec: Object.assign({}, it.spec), x: it.x, y: it.y }) : [] });
+    // Only on your own side of the field, one unit to a tile.
+    const taken = new Set();
+    l.units = l.units.filter((it) => {
+      delete it.spec.rid;
+      it.y = Math.max(BOARD - DEPLOY_ROWS, it.y);
+      const k = it.x + ',' + it.y;
+      if (taken.has(k)) return false;
+      taken.add(k);
+      return true;
+    });
+    if (!l.units.length || armySupply(l) > RIVAL_MAX_SUPPLY) return null;
+    return Object.assign(l, {
+      id: 'R-' + hashOf(cleanText(by, 24) + '|' + l.name + '|' + JSON.stringify(l.units)),
+      foreign: true,
+      owner: cleanText(by, 24) || 'A rival',
+      date: cleanText(a.date, 10),
+      level: Math.max(1, Math.min(99, a.level | 0 || 1)),
+      superWon: !!a.superWon,
+      wins: 0,
+      losses: 0,
+      climbed: false,
+    });
+  }
+
+  // Reads a rival code without touching anything: { by, armies } or { error }.
+  async function readArmies(code) {
+    const c = String(code || '').replace(/\s+/g, '');
+    const m = /^(AGAZ1|AGA1)\.([A-Za-z0-9+/=]+)$/.exec(c);
+    if (!m) return { error: /^AGZ?1\./.test(c) ? 'That is a save backup, not an army code. Restore it from Back up / restore instead.' : 'That is not an army code. It starts with AGAZ1. or AGA1.' };
+    let data;
+    try {
+      let bytes = fromB64(m[2]);
+      if (m[1] === 'AGAZ1') {
+        if (!root.DecompressionStream) return { error: 'This browser cannot read that code. Try another browser.' };
+        bytes = await pump(bytes, new root.DecompressionStream('deflate-raw'));
+      }
+      data = JSON.parse(new TextDecoder().decode(bytes));
+    } catch (e) {
+      return { error: 'That code is damaged or cut short. Copy the whole code and try again.' };
+    }
+    if (!data || data.v !== 1 || !Array.isArray(data.armies)) return { error: 'That code is from an unknown version of the game.' };
+    const by = cleanText(data.by, 24) || 'A rival';
+    const armies = data.armies.slice(0, SHARE_MAX).map((a) => rivalArmy(a, by)).filter(Boolean);
+    if (!armies.length) return { error: 'That code holds no army this game can field.' };
+    return { by, armies };
+  }
+
+  // Adds a rival code's armies to your Hall: { by, added: [names], already: n } or { error }.
+  async function importArmies(code) {
+    const r = await readArmies(code);
+    if (r.error) return r;
+    const h = loadHall();
+    // A Hall nobody has entered yet gets its house armies first, as for your own first army.
+    if (!h.legends.length && !h.queue.length && !h.house) {
+      h.legends = houseArmies();
+      h.house = true;
+    }
+    const have = new Set(h.legends.concat(h.queue).map((l) => l.id));
+    const added = [];
+    let already = 0;
+    for (const l of r.armies) {
+      if (have.has(l.id)) already++;
+      else {
+        h.queue.push(l);
+        have.add(l.id);
+        added.push(l.name);
+      }
+    }
+    saveHall(h);
+    return { by: r.by, added, already };
+  }
+
+  // Removes a rival army from your Hall (your own and the house armies stay).
+  function removeRival(id) {
+    const h = loadHall();
+    const gone = (l) => l.id === id && l.foreign;
+    if (!h.legends.concat(h.queue).some(gone)) return false;
+    h.legends = h.legends.filter((l) => !gone(l));
+    h.queue = h.queue.filter((l) => !gone(l));
+    saveHall(h);
+    return true;
+  }
+
   // Reset Hall of Fame (from the menu): every army goes, the house armies too.
   function resetHall() {
     saveHall({ legends: [], queue: [] });
@@ -3326,6 +3444,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

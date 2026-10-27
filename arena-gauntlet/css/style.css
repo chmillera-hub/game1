@@ -4085,3 +4085,31 @@ body:has(#battle:not([hidden])) {
   stroke-width: 0.7;
   opacity: 0.45;
 }
+
+/* Rival armies in the Hall of Fame: another player's, in a hostile red. */
+.hall-row.rival {
+  border-color: #c8352e;
+  background: linear-gradient(90deg, rgba(200, 53, 46, 0.22), rgba(200, 53, 46, 0.06));
+}
+.hall-row.rival .nm b {
+  color: #ff6a5e;
+}
+.chip.rival-chip {
+  color: #ff8a80;
+  border-color: rgba(255, 106, 94, 0.7);
+  background: rgba(200, 53, 46, 0.18);
+}
+.panel.hall-rival {
+  border-color: #c8352e;
+}
+.save-name {
+  display: block;
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--brass-lo);
+  background: var(--ink);
+  color: var(--text);
+  font: inherit;
+}

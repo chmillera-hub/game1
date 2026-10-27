@@ -1016,7 +1016,7 @@
               <div class="row"><button class="btn grow" id="tHelp">${ic('help')} How to play</button>
               <button class="btn grow" id="tCodex">${ic('book')} Codex</button></div>
               <button class="btn" id="tSave">${ic('scroll')} Back up or restore save</button>
-              ${hall.legends.length + hall.queue.length ? `<button class="btn" id="tHall">${ic('crown')} Hall of Fame · ${hall.legends.length + hall.queue.length}${hall.queue.length ? ` (${hall.queue.length} waiting to climb)` : ''}</button>` : ''}
+              <button class="btn" id="tHall">${ic('crown')} Hall of Fame${hall.legends.length + hall.queue.length ? ` · ${hall.legends.length + hall.queue.length}${hall.queue.length ? ` (${hall.queue.length} waiting to climb)` : ''}` : ''}</button>
             </div>
             <p class="meta-line">${meta.runs ? `Campaigns fought: ${meta.runs} · Victories: ${meta.wins}` : 'Inspired by the classic isometric arena tactics games.'}</p>
           </div>
@@ -1050,6 +1050,89 @@
     if (/Reddit/i.test(ua)) return 'Reddit';
     if (/Android.*; wv\)/.test(ua)) return 'this app';
     return '';
+  }
+
+  // Copy a code from its box: the clipboard where the browser allows it, else the box is
+  // selected so it can be copied by hand.
+  async function copyCode(box, done) {
+    let ok = false;
+    try {
+      await root.navigator.clipboard.writeText(box.value);
+      ok = true;
+    } catch (e) {
+      box.focus();
+      box.select();
+      try {
+        ok = document.execCommand('copy');
+      } catch (e2) {
+        ok = false;
+      }
+    }
+    toast(ok ? done : 'Select the code and copy it by hand.');
+  }
+
+  // Share your best Hall armies (up to five of your own) as one code for a friend to paste.
+  function shareArmiesSheet() {
+    const mine = R.shareable(R.loadHall());
+    openSheet(
+      `${sheetHead('Share my armies', 'A code for a friend: they paste it under Add a rival\'s armies and your armies join their Hall of Fame as rivals.')}
+      ${
+        mine.length
+          ? `<p class="small muted">It holds your ${mine.length === 1 ? 'army' : `${mine.length} best armies`}: ${mine.map((l) => `<b>${esc(l.name)}</b>`).join(', ')}. Never the house armies, never rivals you added.</p>
+        <label class="small muted" for="shName">Your name, shown on your armies in their Hall</label>
+        <input id="shName" class="save-name" maxlength="24" placeholder="A rival" value="${esc(UI.prefs.shareName || '')}">
+        <button class="btn primary" id="shMake">${ic('scroll')} Make army code</button>
+        <div id="shOut" hidden>
+          <textarea id="shCode" class="save-code" readonly rows="4" aria-label="Army code"></textarea>
+          <div class="row"><button class="btn grow" id="shCopy">${ic('check')} Copy code</button></div>
+        </div>`
+          : '<p class="muted">Win a campaign first: your Hall of Fame has no army of your own to share yet.</p>'
+      }`,
+      (sh) => {
+        if (!mine.length) return;
+        $('#shMake', sh).onclick = async () => {
+          const name = $('#shName', sh).value.trim().slice(0, 24);
+          UI.prefs.shareName = name;
+          savePrefs();
+          const code = await R.exportArmies(name || 'A rival');
+          if (!code) return;
+          $('#shCode', sh).value = code;
+          $('#shOut', sh).hidden = false;
+          $('#shCode', sh).select();
+        };
+        $('#shCopy', sh).onclick = () => copyCode($('#shCode', sh), 'Army code copied.');
+      }
+    );
+  }
+
+  // Paste a friend's army code: their armies join your Hall as rivals, waiting to climb.
+  function addRivalSheet(after) {
+    openSheet(
+      `${sheetHead("Add a rival's armies", 'Paste the army code a friend shared. Up to five of their armies join your Hall in red, waiting to climb against yours.')}
+      <textarea id="rvCode" class="save-code" rows="4" placeholder="Paste an army code (AGAZ1.…)" aria-label="Army code"></textarea>
+      <p class="small save-err" id="rvErr" hidden></p>
+      <button class="btn primary" id="rvGo">${ic('swords')} Add their armies</button>`,
+      (sh) => {
+        $('#rvGo', sh).onclick = async () => {
+          const err = $('#rvErr', sh);
+          err.hidden = true;
+          const r = await R.importArmies($('#rvCode', sh).value);
+          if (r.error) {
+            err.textContent = r.error;
+            err.hidden = false;
+            return;
+          }
+          closeSheet();
+          toast(
+            r.added.length
+              ? `${r.added.length} ${r.added.length === 1 ? 'army' : 'armies'} from ${r.by} added, waiting to climb${r.already ? ` (${r.already} already here)` : ''}.`
+              : `Those armies from ${r.by} are already in your Hall.`,
+            3200
+          );
+          if (after) after();
+        };
+      }
+    );
   }
 
   // Back up or restore: the whole save as one text code to copy out of this browser and
@@ -1113,7 +1196,7 @@
             return;
           }
           const d = check.data;
-          const armies = (d.hall ? (d.hall.legends || []).concat(d.hall.queue || []) : []).filter((l) => l && !l.house);
+          const armies = (d.hall ? (d.hall.legends || []).concat(d.hall.queue || []) : []).filter((l) => l && !l.house && !l.foreign);
           const what = [d.run ? 'a campaign in progress' : 'no campaign in progress', `${(d.meta && d.meta.runs) || 0} campaigns fought`].join(', ');
           const hallLine = armies.length ? `<br>Your Hall of Fame armies: <b>${armies.map((l) => esc(l.name)).join('</b>, <b>')}</b>.` : '<br>No Hall of Fame armies of your own.';
           if (!(await confirmSheet('Restore this save?', `The code holds ${esc(what)}.${hallLine}<br>It replaces everything saved in this browser.`, 'Restore', 'Cancel', true))) return;
@@ -4592,10 +4675,10 @@
       const picked = st.pick.indexOf(l.id);
       const tag = (l === climber ? '<span class="chip warn">Climbing</span>' : '') + (picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '');
       const waiting = i < 0;
-      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''}" data-legend="${l.id}">
+      return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''} ${l.foreign ? 'rival' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
-        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${tag}</span>
-          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${esc(l.date || '')} · Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
+        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${l.foreign ? `<span class="chip rival-chip" title="Another player's army, added from their code">${ic('swords')} Rival · ${esc(l.owner || 'a rival')}</span>` : ''} ${tag}</span>
+          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${l.foreign ? `From ${esc(l.owner || 'a rival')} · ` : ''}${esc(l.date || '')}${l.date ? ' · ' : ''}Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
     };
@@ -4634,10 +4717,18 @@
         <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places. Armies stay here through every update of the game, fighting by the rules of the day; only Reset Hall of Fame clears it. They live in this browser only: Back up keeps them as a code you can paste back in anytime, here or on another device.</p>
         ${climbPanel}
         ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
-        <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
+        <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours, or add a friend\'s armies with their code below.</p>'}</div>
         ${Q.length ? `<div class="eyebrow">Waiting to climb</div><div class="hall-list">${Q.map((l) => row(l, -1)).join('')}</div>` : ''}
         ${all.length > 1 && !(pickA && pickB) ? `<p class="small muted">${pickA ? `${esc(pickA.name)} picked. Tap a second army to fight it.` : `Tap two armies for a skirmish: if the lower-ranked one wins, they swap places; if the higher one wins, nothing moves.${Q.length ? ' An army still waiting in line has no place yet, so a match with it is a friendly one.' : ''}`}</p>` : ''}
         ${goPanel}
+        ${[pickA, pickB]
+          .filter((l) => l && l.foreign)
+          .map((l) => `<div class="panel hall-rival"><p><b>${esc(l.name)}</b> came from <b>${esc(l.owner || 'a rival')}</b>'s code. Not what it should be? Remove it from your Hall.</p><button class="btn danger" data-unrival="${l.id}">${ic('close')} Remove ${esc(l.name)}</button></div>`)
+          .join('')}
+        <div class="panel hall-share">
+          <p class="small muted">Rivals: share your best armies as a code, or paste a friend's to add theirs here, in red, waiting to climb against yours.</p>
+          <div class="row"><button class="btn grow" id="hlShare">${ic('scroll')} Share my armies</button><button class="btn grow" id="hlRival">${ic('swords')} Add a rival's armies</button></div>
+        </div>
         <div class="row end">
           ${all.length ? `<button class="btn danger" id="hlReset">Reset Hall of Fame</button>` : ''}
           <button class="btn" id="hlSave">${ic('scroll')} Back up / restore</button>
@@ -4648,6 +4739,16 @@
     const again = () => hallScreen(back, st);
     $('#hlBack', v).onclick = () => back();
     $('#hlSave', v).onclick = () => saveSheet(() => hallScreen(back));
+    $('#hlShare', v).onclick = () => shareArmiesSheet();
+    $('#hlRival', v).onclick = () => addRivalSheet(() => hallScreen(back, { pick: [], log: [] }));
+    for (const b of $$('[data-unrival]', v))
+      b.onclick = async () => {
+        const l = all.find((x) => x.id === b.dataset.unrival);
+        if (!l || !(await confirmSheet(`Remove ${l.name}?`, `This rival army from ${esc(l.owner || 'a rival')} leaves your Hall. You can paste their code again any time.`, 'Remove', 'Keep it', true))) return;
+        R.removeRival(l.id);
+        toast(`${l.name} removed.`);
+        hallScreen(back, { pick: [], log: [] });
+      };
     if ($('#hlReset', v))
       $('#hlReset', v).onclick = async () => {
         if (!(await confirmSheet('Reset the Hall of Fame?', 'Every army in it goes, for good, the ones waiting to climb and the house armies too. Updates to the game never do this: only you can.', 'Reset', 'Keep them', true))) return;
@@ -5217,7 +5318,7 @@
         <h4>The campaign</h4>
         <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
         <h4>Hall of Fame</h4>
-        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen.</p>
+        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to five of your own); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>
