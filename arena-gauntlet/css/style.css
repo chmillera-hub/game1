@@ -3959,3 +3959,41 @@ body:has(#battle:not([hidden])) {
   color: #ffc760;
   vertical-align: -2px;
 }
+
+/* A unit's rarity, as a small tag (event unit pickers). */
+.rar-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  border: 1px solid currentColor;
+}
+
+.rar-common {
+  color: #b9bcc4;
+}
+
+.rar-uncommon {
+  color: #79d97f;
+}
+
+.rar-rare {
+  color: #7fb6ff;
+}
+
+.rar-legendary {
+  color: #ffc760;
+}
+
+.rar-boss {
+  color: #ff9a5a;
+}
+
+.pick-extra {
+  color: var(--brass-hi, #e8c26a);
+  margin-top: 2px;
+}

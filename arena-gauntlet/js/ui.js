@@ -184,8 +184,15 @@
     return `${UNITS[r.type].name} · Lv ${r.load.lv}${r.enchant ? ' · ' + ENCHANTS[r.enchant].name : ''}`;
   }
 
-  // Ask the player to pick one of their units. Resolves to a roster id or null.
-  function pickUnit(title, note, filter) {
+  // A unit's rarity as a small coloured tag (Common, Uncommon, Rare, Legendary).
+  function rarityTag(type) {
+    const r = UNITS[type].rarity;
+    return `<span class="rar-tag rar-${r}">${r[0].toUpperCase() + r.slice(1)}</span>`;
+  }
+
+  // Ask the player to pick one of their units. Resolves to a roster id or null. Each row
+  // shows the unit's rarity; `extra(u)` can add a line (what a pick would turn it into).
+  function pickUnit(title, note, filter, extra) {
     return new Promise((resolve) => {
       let done = false;
       const run = UI.run;
@@ -194,7 +201,7 @@
           const ok = filter(u);
           return `<button class="army-row" data-rid="${u.id}" ${ok ? '' : 'disabled style="opacity:.45"'}>
           <canvas class="portrait" data-p="${u.type}:P"></canvas>
-          <div class="nm"><b>${esc(u.name)}</b><div class="small muted">${esc(unitSub(u))}</div></div>
+          <div class="nm"><b>${esc(u.name)}</b> ${rarityTag(u.type)}<div class="small muted">${esc(unitSub(u))}</div>${ok && extra ? `<div class="small pick-extra">${extra(u)}</div>` : ''}</div>
           <div>${ok ? ic('check') : ''}</div></button>`;
         })
         .join('');
@@ -4943,7 +4950,10 @@
         const c = choices.find((x) => x.id === b.dataset.choice);
         let rid = null;
         if (c.pick) {
-          rid = await pickUnit(c.label, esc(c.detail), (u) => R.eventPickOk(run, c.pick, u));
+          // The Alchemist's sure transmutation: say what each unit would become.
+          const NEXT = { common: 'Uncommon', uncommon: 'Rare' };
+          const extra = c.pick.filter === 'transmute' ? (u) => `→ becomes a random <b>${NEXT[UNITS[u.type].rarity] || 'higher-rarity'}</b> unit` : c.id === 'mutagen' ? (u) => `→ becomes another ${UNITS[u.type].rarity} unit` : null;
+          rid = await pickUnit(c.label, esc(c.detail), (u) => R.eventPickOk(run, c.pick, u), extra);
           if (!rid) return;
         }
         const before = R.commanderLevel(run);
