@@ -1150,7 +1150,7 @@
           if (!e.friendly) {
             if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
             if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1], key: poisonKey(u, a) };
-            if (fx.burn) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
+            if (fx.burn && (!(v.nonCombat || v.structure) || burnable(v))) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
@@ -1900,8 +1900,24 @@
     shrug(s, u, immuneWhy(s, u, kind), kind);
   }
 
+  // Buildings, walls, barrels and towers take no status but burns: fire catches on them,
+  // and they burn once a round (see startEffects). Summons take none at all.
+  function burnable(u) {
+    return u.traits.has('object') || u.structure;
+  }
+
+  function setBurn(s, src, u, fx) {
+    const p = u.burn;
+    u.burn = { turns: Math.max(fx.burn[0], p ? p.turns : 0), dmg: Math.max(fx.burn[1], p ? p.dmg : 0), src: src ? src.uid : 0 };
+    emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
+  }
+
   function applyStatus(s, src, u, fx, act) {
-    if (!u.alive || u.nonCombat || u.structure) return;
+    if (!u.alive) return;
+    if (u.nonCombat || u.structure) {
+      if (fx.burn && burnable(u)) setBurn(s, src, u, fx);
+      return;
+    }
     if (fx.para) {
       if (statusImmune(s, u, 'para')) resisted(s, u, 'para');
       else {
@@ -1918,11 +1934,7 @@
         emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
       }
     }
-    if (fx.burn) {
-      const p = u.burn;
-      u.burn = { turns: Math.max(fx.burn[0], p ? p.turns : 0), dmg: Math.max(fx.burn[1], p ? p.dmg : 0), src: src.uid };
-      emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
-    }
+    if (fx.burn) setBurn(s, src, u, fx);
     if (fx.root) {
       if (statusImmune(s, u, 'root')) resisted(s, u, 'root');
       else {
@@ -2802,6 +2814,8 @@
     // each unit's own turn (see unitTurnStart). In queue battles that is when its turn in the
     // rotation comes up (see pickDue), not at the start of its side's turn.
     if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) unitTurnStart(s, u);
+    // Buildings take no turns: a burning one burns once a round, as the enemy's turn starts.
+    if (team === 'E') for (const u of s.units) if (u.alive && u.burn && u.traits.has('object')) tickDot(s, u, 'burn');
     // War totems whip allies within 2 tiles into a frenzy (25% more damage) while they stand.
     // Enemies barely ever heal: a totem never mends anyone.
     const totems = mine.filter((w) => w.alive && w.props.totemRage);
