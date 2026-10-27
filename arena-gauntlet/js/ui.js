@@ -574,7 +574,6 @@
     midas: 'Every enemy it slays earns 6 gold.',
     thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
     volatile: 'Explodes when destroyed, hurting everything next to it.',
-    trollblood: 'Regenerates unless magic or fire hurt it since its last turn.',
     cart: `Rolls ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} toward the left edge after every enemy turn, and escapes there.`,
     big: 'Huge: cannot be shoved or dragged.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',

@@ -309,7 +309,7 @@ test('a unit\'s turn start comes in one order: fatigue, poison, burn, regen, the
   b.cycles = a.cycles;
   a.poison = { turns: 2, dmg: 5, src: 0 };
   a.burn = { turns: 2, dmg: 4, src: 0 };
-  // Poison stops healing, so b shows regen: burnt, but not poisoned.
+  // Poison stops healing, so b shows regen: burning, but not poisoned.
   b.hp = b.maxHp - 60;
   b.regen = 3;
   b.burn = { turns: 2, dmg: 4, src: 0 };

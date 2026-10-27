@@ -2840,7 +2840,7 @@
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('wreckage')) tips.push('Wreckage holds gold, but your army leaves it be until the boss and its retinue fall. Then its fatigue sets in: the faster you win, the more you salvage.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies stand beside them.');
-    if (has('troll')) tips.push(`Trolls regenerate ${UNITS.troll.props.regen} on each of their turns unless magic or fire hurt them since their last one.`);
+    if (has('troll')) tips.push('Bog Trolls are walls of HP that never mend: every hit stays landed. They are 10% weak to magic.');
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
     if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');
     if (has('cart')) tips.push(`The wagons flee left ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} at the end of every enemy turn. Block their path with units and break them fast.`);

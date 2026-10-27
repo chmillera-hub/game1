@@ -37,6 +37,20 @@ test('regen heals on every turn of a healthy unit', () => assert.ok(regenUnder(n
 for (const st of ['para', 'wait', 'root', 'weak']) {
   test(`regen still heals while ${st}`, () => assert.ok(regenUnder(st) >= 4, `${st}: healed ${regenUnder(st)}`));
 }
+test('regen still heals after magic or fire hurt it', () => {
+  const terrain = new Array(81).fill(E.T_GRASS);
+  const s = E.createBattle({ w: 9, h: 9, terrain, seed: 1, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, queue: true, units: [
+    { type: 'troll', team: 'P', x: 4, y: 7 },
+    { type: 'knight', team: 'E', x: 0, y: 0 },
+  ] });
+  const tr = s.units[0];
+  tr.regen = 3;
+  tr.hp -= 40;
+  tr.burn = { turns: 2, dmg: 4, src: 0 };
+  for (let i = 0; i < 4 && !s.over; i++) E.endTurn(s);
+  const healed = s.events.filter((e) => e.t === 'heal' && e.why === 'regen' && e.uid === tr.uid).length;
+  assert.ok(healed >= 2, `healed on ${healed} turns`);
+});
 test('poison stops regen', () => assert.strictEqual(regenUnder('poison'), 0));
 
 console.log(`regen: ${passed} tests passed`);

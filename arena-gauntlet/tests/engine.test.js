@@ -1097,14 +1097,12 @@ test('the necromancer raises skeletons that crumble when it dies', () => {
   assert.ok(!ne.alive && !sk.alive, 'its skeletons crumble');
 });
 
-test('trollblood regeneration stops after magic damage', () => {
+test('regen still comes after magic damage', () => {
   const s = board([
     { type: 'pyromancer', team: 'P', x: 4, y: 7 },
     { type: 'troll', team: 'E', x: 4, y: 4 },
   ]);
   const [py, tr] = s.units;
-  // Bog Trolls no longer regenerate (enemies barely heal); the mechanic stays for anything that does.
-  tr.traits.add('trollblood');
   tr.regen = 5;
   tr.hp = 40;
   E.endTurn(s);
@@ -1113,9 +1111,7 @@ test('trollblood regeneration stops after magic damage', () => {
   act(s, py, { kind: 'tile', x: 4, y: 4 });
   const after = tr.hp;
   E.endTurn(s);
-  assert.strictEqual(tr.hp, after, 'scorched: no regeneration');
-  until(s, 'E');
-  assert.strictEqual(tr.hp, Math.min(tr.maxHp, after + 5));
+  assert.strictEqual(tr.hp, Math.min(tr.maxHp, after + 5), 'burned by magic, it still regenerates');
 });
 
 test('loot wagons flee for the exit; breaking them all wins', () => {

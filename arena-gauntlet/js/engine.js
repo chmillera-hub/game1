@@ -254,7 +254,6 @@
       // What it costs its side in Supply (for the readout of both armies' strength).
       supply: spec.supply || 0,
       salvage: T.salvage || 0,
-      scorched: false,
       value: unitValue(spec.type, b.level),
     };
     if (spec.thorns) u.props.thorns = (u.props.thorns || 0) + spec.thorns;
@@ -1615,7 +1614,6 @@
       emit(s, { t: 'absorb', uid: tgt.uid, amount: ab, left: tgt.shield });
       if (amount <= 0) return 0;
     }
-    if (info.dmgType === 'magic' || info.dmgType === 'burn') tgt.scorched = true;
     // An Hourglass Pendant or a Guardian Angel may undo a killing blow.
     if (amount >= tgt.hp && !tgt.secondWind && !tgt.nonCombat && !tgt.structure && cheatDeath(s, tgt, amount, info, src)) return 0;
     let dealt;
@@ -2877,7 +2875,8 @@
   }
 
   // A unit's regen at the start of its turn: its own, plus a Mending Light aura it stands
-  // in. A troll hurt by magic or fire since its last turn does not regenerate.
+  // in. It comes acting or passing, whatever the unit's status; only poison (no healing at
+  // all) stops it.
   function regenOf(s, u) {
     let r = u.regen || 0;
     for (const w of s.units) {
@@ -2891,10 +2890,7 @@
 
   function regenerate(s, u) {
     const r = regenOf(s, u);
-    if (r > 0) {
-      if (u.traits.has('trollblood') && u.burnt) emit(s, { t: 'noregen', uid: u.uid });
-      else heal(s, u, r, 'regen');
-    }
+    if (r > 0) heal(s, u, r, 'regen');
     if (u.traits.has('mossy')) for (const v of s.units) if (v !== u && v.alive && v.team === u.team && manhattan(u.x, u.y, v.x, v.y) === 1) heal(s, v, 2, 'regen');
   }
 
@@ -2928,9 +2924,6 @@
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     u.lastTurnHp = u.hp;
     u.watchReady = true;
-    // A troll hurt by magic or fire since its last turn does not regenerate this turn.
-    u.burnt = u.scorched;
-    u.scorched = false;
     fatigue(s, u);
     if (u.traits.has('idol') && u.alive) {
       emit(s, { t: 'curse', uid: u.uid });

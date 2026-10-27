@@ -2329,9 +2329,6 @@
           case 'healblock':
             if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9 });
             break;
-          case 'noregen':
-            if (v) this.addText(v.x, v.y, 'NO REGEN', '#ffb060', { height: h, max: 0.9 });
-            break;
           case 'status': {
             if (!v) break;
             const st = STATUS_TEXT[e.status];
@@ -2893,7 +2890,7 @@
 
   // Events that show something over a unit's head, and the least real time between two
   // beats of them on one unit (see playBeats).
-  const BEAT_EVENTS = new Set(['dmg', 'heal', 'sitout', 'pass', 'noregen', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
+  const BEAT_EVENTS = new Set(['dmg', 'heal', 'sitout', 'pass', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
   const BEAT_MIN = 420;
   // The word after a floating number (-16 FATIGUE), as a share of the number's size.
   const TAG_SIZE = 0.72;

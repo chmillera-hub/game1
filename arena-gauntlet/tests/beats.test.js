@@ -21,8 +21,8 @@ async function test(name, fn) {
 }
 
 // What shows over a unit's head, in the order a turn brings it.
-const RANK = { fatigue: 0, poison: 1, burn: 2, fire: 2.5, regen: 3, noregen: 3, sitout: 4, pass: 4 };
-const SHOWS = new Set(['dmg', 'heal', 'sitout', 'pass', 'noregen', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
+const RANK = { fatigue: 0, poison: 1, burn: 2, fire: 2.5, regen: 3, sitout: 4, pass: 4 };
+const SHOWS = new Set(['dmg', 'heal', 'sitout', 'pass', 'healblock', 'scorch', 'curse', 'absorb', 'resist', 'cleanse', 'shield', 'status']);
 const shows = (e) => !!e.uid && SHOWS.has(e.t) && !(e.t === 'sitout' && e.why === 'passive') && !(e.t === 'pass' && e.auto);
 const kind = (e) => (e.t === 'dmg' ? e.dmgType : e.t === 'heal' && e.why === 'regen' ? 'regen' : e.t);
 
