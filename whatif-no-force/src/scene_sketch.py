@@ -58,7 +58,7 @@ def _rule_table(c, t, t_table, t_every):
             c.save()
             c.translate(x0 + dx, y0 + dy)
             c.rotate(ang)
-            sb.alpha_layer(c, fade)
+            sb.alpha_layer(c, fade, (-150, -150, 150, 150))
             fn(c, 0, 0, sc, prog(t, 1.0 + i * 0.35, 0.9))
             c.restore()
             c.restore()
@@ -145,7 +145,7 @@ def _grab_arm(c, p, alpha, seed=51):
     """A uniformed arm reaching in from the right edge to grab (to be crossed out)."""
     if p <= 0 or alpha <= 0:
         return
-    sb.alpha_layer(c, alpha)
+    sb.alpha_layer(c, alpha, (200, 260, 1080, 1000))
     ext = p
     hx, hy = 1140 - 715 * ext, 340 + 505 * ext
     ang = math.degrees(math.atan2(-505, 715))
@@ -231,7 +231,7 @@ def sketch_toolkit(c, t, dur, cues, params):
     gfade = 1.0 - prog(t, t_reach - 0.7, 0.5)
     _grab_arm(c, eprog(t, t_grab - 0.35, 0.7), gfade)
     if gfade > 0:
-        sb.alpha_layer(c, gfade)
+        sb.alpha_layer(c, gfade, (180, 180, 1080, 1060))
         cross_out(c, 395, 862, 115, prog(t, t_grab + 0.45, 0.45), 13)
         write(c, "no grabbing", CX, 330, 96, "caveat_b", prog(t, t_grab + 0.55, 0.7), CORAL)
         c.restore()
@@ -350,9 +350,11 @@ def _cell_block(c, t, t_open, ox, oy, p=1.0, final=False):
             solid(c, rect, "#d8d0bf", q)
             if op > 0:
                 solid(c, rect, WARM, 0.8 * op)
-            win = sb.wrect(x0 + CELL_W / 2 - 28, y0 + 18, x0 + CELL_W / 2 + 28, y0 + 56, 1430 + k)
+            win = sb.wrect(x0 + 16, y0 + 16, x0 + 60, y0 + 54, 1430 + k)
             solid(c, win, WARM if op > 0.2 else "#bfb7a6", q)
             ink(c, win, q, 3.0)
+            ink(c, wpath([(x0 + 31, y0 + 17), (x0 + 31, y0 + 53)], 1460 + k, 0.3), q, 2.5)
+            ink(c, wpath([(x0 + 45, y0 + 17), (x0 + 45, y0 + 53)], 1480 + k, 0.3), q, 2.5)
             step = op
             happy = op > 0.55
             arms = ((-0.55, -0.7), (0.55, -0.7)) if (happy and k % 3 == 0) else ((-0.35, 0.85), (0.35, 0.85))
@@ -405,7 +407,7 @@ def _sun(c, x, y, r, p, t, seed=1600):
 def _cells_block_page(c, t, t_open, t_11):
     write(c, "sunrise", CX - 40, 262, 100, "caveat_b", prog(t, 0.3, 0.8))
     rise = eprog(t, 0.6, 3.0)
-    _sun(c, CX + 190, 250 - 30 * rise, 40, prog(t, 0.6, 0.8), t)
+    _sun(c, CX + 190, 262 - 24 * rise, 40, prog(t, 0.6, 0.8), t)
     z = 1.0 - 0.8 * eprog(t, t_11 - 0.2, 1.9)
     if z > 0.999:
         _cell_block(c, t, t_open, BLOCK_X0, BLOCK_Y0, prog(t, 0.35, 1.6))
@@ -502,7 +504,7 @@ def sketch_still(c, t, dur, cues, params):
     bp = prog(t, 0.2, 0.8)
     gone = prog(t, t_ch + 0.7, 0.7)
     if bp > 0 and gone < 1:
-        sb.alpha_layer(c, 1 - gone)
+        sb.alpha_layer(c, 1 - gone, (200, 560, 900, 1240))
         for k in range(7):
             bx = fx - 270 + k * 90
             ink(c, wpath([(bx, 600), (bx, 1215)], 1200 + k, 1.2), bp, 7, GREY)
@@ -753,7 +755,7 @@ def _calls_money(c, t, t_money, t_starts):
     write(c, "the money once spent on cages…", CX - 20, 262, _fit("the money once spent on cages…", 900, 72),
           "caveat_b", prog(t, t_money - 0.1, 1.2))
     dis = eprog(t, t_money + 0.5, 1.2)
-    sb.alpha_layer(c, 1.0 - 0.72 * dis)
+    sb.alpha_layer(c, 1.0 - 0.72 * dis, (CX - 140, 340, CX + 100, 600))
     sb.icon_cage(c, CX - 20, 470, 1.6, prog(t, t_money - 0.2, 0.5), seed=1600)
     c.restore()
     src = (CX - 20, 590)
@@ -922,6 +924,7 @@ def sketch_refusal(c, t, dur, cues, params):
 
 # ============================================================ 10. the memory (Kai's own drawing)
 MEM_BOX = (100, 330, 1010, 1180)
+MEM_TINT = "#eef0f3"
 
 
 def _hand(c, x, y, ang, s, p, seed):
@@ -1055,10 +1058,10 @@ def _memory_drawing(c, t, cues, shaky=2.6, full=False):
 def sketch_memory(c, t, dur, cues, params):
     t_cold = cue(cues, "cold", 5.48)
     shiver = prog(t, t_cold, 0.2) * (1.0 - 0.6 * prog(t, t_cold + 0.6, 0.8))
+    _start(c, t, MEM_TINT)
     c.save()
     if shiver > 0:
         c.translate(math.sin(t * 47.0) * 2.4 * shiver, math.cos(t * 39.0) * 1.6 * shiver)
-    _start(c, t, "#eef0f3")
     write(c, "4th st. — 3 yrs ago", 340, 262, 62, "caveat_b", prog(t, 0.15, 0.9), "#7d8696", rot=-3)
     _memory_drawing(c, t, cues)
     write(c, "so cold.", 560, 1300, 84, "caveat_b", prog(t, cue(cues, "metal", 4.74) + 0.35, 0.8), "#5b7fb3",
@@ -1115,7 +1118,7 @@ def sketch_oldworld(c, t, dur, cues, params):
     t_call = cue(cues, "call", 8.74)
     t_listen = cue(cues, "listen", 11.21)
     dim = 1.0 - 0.35 * prog(t, t_call - 0.8, 0.8)
-    sb.alpha_layer(c, dim)
+    sb.alpha_layer(c, dim, (80, 150, 1040, 810))
     write(c, "the old world", CX - 20, 240, 86, "caveat_b", prog(t, 0.2, 0.8), GREY)
     _panel(c, 110, 280, 545, 700, prog(t, 0.4, 0.7), 2300, "#e6e1d6")
     _panel(c, 575, 280, 1010, 700, prog(t, 0.6, 0.7), 2301, "#e6e1d6")
@@ -1177,7 +1180,6 @@ def sketch_oldworld(c, t, dur, cues, params):
 
 # ============================================================ 12. a hundred times, smaller
 _MEM_PIC = []
-MEM_TINT = "#eef0f3"
 
 
 def _memory_picture():
@@ -1241,8 +1243,117 @@ def sketch_smaller(c, t, dur, cues, params):
 
 
 # ============================================================ 13. the final page
+def _booth_sunrise(c, t, t_tried):
+    """Hale and Kai in the booth at sunrise -- steadier lines this time."""
+    wq = prog(t, 0.3, 1.1)
+    x0, y0, x1, y1 = 130, 380, 950, 800
+    win = sb.wrect(x0, y0, x1, y1, 2500, amp=0.7)
+    sun_q = prog(t, 0.9, 1.4)
+    if sun_q > 0:
+        c.save()
+        c.clipPath(win, skia.ClipOp.kIntersect, True)
+        g = skia.Paint(AntiAlias=True)
+        g.setShader(skia.GradientShader.MakeLinear([skia.Point(0, y0), skia.Point(0, y1)],
+                                                   [hexc("#ffe7b3", sun_q), hexc("#f4ad86", sun_q)]))
+        c.drawRect(skia.Rect.MakeLTRB(x0 - 10, y0 - 10, x1 + 10, y1 + 10), g)
+        rise = eprog(t, 0.9, 14.0)
+        sx, sy = (x0 + x1) / 2, y1 - 30 - 170 * rise
+        solid(c, wcircle(sx, sy, 105, 2501, amp=0.6), MUSTARD, sun_q)
+        for k in range(10):
+            a = k * math.pi / 5 + t * 0.12
+            ink(c, wpath([(sx + math.cos(a) * 125, sy + math.sin(a) * 125),
+                          (sx + math.cos(a) * 160, sy + math.sin(a) * 160)], 2503 + k, 0.4), sun_q, 5, "#f6c35a")
+        ink(c, wpath([(x0, y1 - 40), (x0 + 180, y1 - 70), (x0 + 330, y1 - 52), (x0 + 520, y1 - 84),
+                      (x0 + 700, y1 - 60), (x1, y1 - 76)], 2515, 1.0), sun_q, 4, "#c98a6a")
+        c.restore()
+    ink(c, win, wq, 6)
+    ink(c, wpath([((x0 + x1) / 2, y0), ((x0 + x1) / 2, y1)], 2502, 0.4), wq, 5)
+    # booth backs
+    bq = prog(t, 1.4, 1.2)
+    for k, (bx0, bx1) in enumerate(((95, 380), (700, 985))):
+        back = sb.wrect(bx0, 690, bx1, 1010, 2510 + k, amp=0.7)
+        marker(c, back, bq, CORAL, 0.88)
+        ink(c, back, bq, 5.5)
+    # Hale (left) and Kai (right) facing each other
+    sb.hale(c, 330, 1040, 1.12, prog(t, 2.2, 1.5), face="happy", legs="sit", arms=((-0.2, 0.6), (0.78, 0.42)),
+            look=(1.0, 0.0), seed=2520)
+    sb.kai(c, 750, 1040, 1.12, prog(t, 2.9, 1.5), face="happy", legs="sit", flip=True,
+           arms=((-0.2, 0.6), (0.78, 0.42)), look=(1.0, 0.0), seed=2530)
+    tq = prog(t, 3.8, 0.9)
+    table = sb.wrect(215, 905, 865, 948, 2540, amp=0.7)
+    marker(c, table, tq, "#e9e1cf", 1.0, (0, 0), sweep=False)
+    ink(c, table, tq, 5.5)
+    ink(c, wpath([(540, 948), (540, 1080)], 2541, 0.5), tq, 7)
+    st = 1.0 if t > 5.0 else 0.0
+    sb.icon_mug(c, 455, 866, 0.95, prog(t, 4.4, 0.6), seed=2550, steam=st, t=t)
+    sb.icon_mug(c, 640, 866, 0.95, prog(t, 4.7, 0.6), seed=2560, color="#f6f2ea", steam=st, t=t + 0.4)
+
+
+def _final_question(c, t, t_work, t_tried, t_forced, t_earn):
+    write(c, "would it work?", CX - 20, 252, 112, "caveat_b", prog(t, t_work - 0.25, 0.9))
+    write(c, "(no society this big has ever tried)", CX - 20, 332,
+          _fit("(no society this big has ever tried)", 860, 54), "caveat_b", prog(t, t_tried - 0.3, 1.2), GREY)
+    _booth_sunrise(c, t, t_tried)
+    write(c, "if no one can be forced,", CX - 20, 1135, 66, "caveat_b", prog(t, t_forced - 0.4, 1.0))
+    write(c, "the only power left is", CX - 20, 1215, 66, "caveat_b", prog(t, t_forced + 0.9, 1.0))
+    write(c, "the kind you earn.", CX - 20, 1330, 100, "caveat_b", prog(t, t_earn - 0.5, 0.9), CORAL)
+    if t > t_earn + 0.4:
+        underline(c, CX - 330, CX + 290, 1356, prog(t, t_earn + 0.4, 0.4), 6, CORAL)
+
+
+def _final_powers(c, t, t_prot, t_pers, t_care, t_end):
+    write(c, "the power to…", CX - 20, 250, 96, "caveat_b", prog(t, t_prot - 0.5, 0.6))
+    # protect: standing in the way, arms open, someone small behind
+    q = prog(t, t_prot - 0.15, 0.9)
+    if q > 0:
+        sb.figure(c, 400, 640, 0.6, q, seed=2575, outfit=MUSTARD, hair="bun", hair_col="#3b2b22", face="neutral",
+                  skin=SKIN[4], arms=((-0.4, 0.6), (0.3, 0.75)))
+        sb.hale(c, 290, 645, 1.02, q, face="neutral", arms=((-0.95, -0.15), (0.95, -0.15)), hands="open",
+                look=(-1.0, 0.0), seed=2570)
+        for k in range(3):
+            ink(c, wpath([(150 - k * 6, 440 + k * 40), (110 - k * 6, 452 + k * 40)], 2577 + k, 0.4),
+                prog(t, t_prot + 0.4 + k * 0.06, 0.2), 5, CORAL)
+    write(c, "protect", 770, 520, 108, "caveat_b", prog(t, t_prot, 0.6), NAVY)
+    # persuade: an idea passed across
+    q = prog(t, t_pers - 0.15, 0.9)
+    if q > 0:
+        sb.figure(c, 640, 965, 0.82, q, seed=2580, outfit=TEAL, hair="short", face="talk", skin=SKIN[0],
+                  arms=((-0.4, 0.8), (0.75, -0.1)), hands="open", look=(1.0, 0.0))
+        sb.figure(c, 900, 965, 0.82, q, seed=2581, outfit=CORAL, hair="long", hair_col="#5a3a28",
+                  face="happy" if t > t_pers + 0.9 else "neutral", skin=SKIN[5], flip=True,
+                  arms=((-0.3, 0.8), (0.4, 0.8)), look=(1.0, 0.0))
+        _popped(c, 720, 700, pop(t, t_pers + 0.15),
+                lambda: sb.icon_bubble(c, 720, 700, 0.95, 1.0, seed=2582, color=TEAL, text="what if…", size=34))
+        _popped(c, 985, 668, pop(t, t_pers + 0.85),
+                lambda: sb.icon_bubble(c, 985, 668, 0.62, 1.0, seed=2583, color=MUSTARD, text="oh!", size=48,
+                                       tail=-1))
+    write(c, "persuade", 290, 860, 108, "caveat_b", prog(t, t_pers, 0.6), TEAL)
+    # care: the fist bump
+    q = prog(t, t_care - 0.15, 0.7)
+    if q > 0:
+        bump = eprog(t, t_care + 0.05, 0.5)
+        for side, col, sleeve in ((-1, SKIN[3], NAVY), (1, SKIN[1], HOODIE)):
+            fx = 330 + side * (115 - 70 * bump)
+            fy = 1195
+            arm = wpath([(fx + side * 30, fy), (fx + side * 150, fy + 40), (fx + side * 250, fy + 90)], 2595 + side,
+                        0.8)
+            ink(c, arm, q, 46, sleeve)
+            ink(c, arm, q, 5)
+            fist = wellipse(fx, fy, 44, 38, 2590 + side, amp=1.0)
+            solid(c, fist, col, q)
+            ink(c, fist, q, 5)
+            for j in range(3):
+                ink(c, wpath([(fx - side * 30, fy - 18 + j * 15), (fx - side * 12, fy - 18 + j * 15)],
+                             2600 + j + side * 5, 0.4), q, 3.5)
+        if bump > 0.9:
+            spark(c, 330, 1135, 34, prog(t, t_care + 0.5, 0.3))
+    write(c, "care", 770, 1215, 120, "caveat_b", prog(t, t_care, 0.6), CORAL)
+    if t > t_care + 0.6:
+        sb.icon_heart(c, 905, 1150, 0.55, prog(t, t_care + 0.6, 0.5))
+    write(c, "— Kai", 860, 1372, 64, "caveat_b", prog(t, t_end + 0.5, 0.8), GREY, rot=-4)
+
+
 def sketch_final(c, t, dur, cues, params):
-    _start(c, t)
     t_work = cue(cues, "work", 1.04)
     t_tried = cue(cues, "tried", 4.43)
     t_forced = cue(cues, "forced", 7.2)
@@ -1251,78 +1362,14 @@ def sketch_final(c, t, dur, cues, params):
     t_pers = cue(cues, "persuade", 14.56)
     t_care = cue(cues, "care", 16.7)
     t_end = cue(cues, "end", 17.61)
-    write(c, "would it work?", CX, 262, 96, "caveat_b", prog(t, t_work - 0.2, 0.9))
-    write(c, "(never tried at this scale)", CX, 325, 46, "caveat", prog(t, t_tried, 1.0), GREY)
-    # the two of them in the booth at sunrise -- steady lines this time
-    wq = prog(t, 0.3, 1.2)
-    win = sb.wrect(230, 390, 910, 760, 2500, amp=0.7)
-    sun_q = prog(t, 1.2, 1.5)
-    if sun_q > 0:
-        sky = skia.Path(win)
-        c.save()
-        c.clipPath(sky, skia.ClipOp.kIntersect, True)
-        g = skia.Paint(AntiAlias=True)
-        g.setShader(skia.GradientShader.MakeLinear([skia.Point(0, 390), skia.Point(0, 760)],
-                                                   [hexc("#ffe2a8", sun_q), hexc("#f6b48a", sun_q)]))
-        c.drawRect(skia.Rect.MakeLTRB(200, 380, 940, 770), g)
-        rise = eprog(t, 1.2, 12.0)
-        solid(c, wcircle(CX, 760 - 120 * rise, 95, 2501, amp=0.6), MUSTARD, sun_q)
-        c.restore()
-    ink(c, win, wq, 5)
-    ink(c, wpath([(CX, 390), (CX, 760)], 2502, 0.4), wq, 4)
-    # booth backs and table
-    bq = prog(t, 1.6, 1.4)
-    for k, (x0, x1) in enumerate(((160, 420), (720, 980))):
-        back = sb.wrect(x0, 700, x1, 980, 2510 + k, amp=0.7)
-        marker(c, back, bq, CORAL, 0.85)
-        ink(c, back, bq, 5)
-    # Hale (left) and Kai (right), facing each other
-    sb.hale(c, 360, 1000, 0.95, prog(t, 2.6, 1.6), face="happy", legs="sit", arms=((-0.2, 0.6), (0.75, 0.45)),
-            look=(1.0, 0.0), seed=2520)
-    sb.kai(c, 790, 1000, 0.95, prog(t, 3.4, 1.6), face="happy", legs="sit", flip=True,
-           arms=((-0.2, 0.6), (0.75, 0.45)), look=(1.0, 0.0), seed=2530)
-    tq = prog(t, 4.6, 1.0)
-    table = sb.wrect(250, 900, 900, 940, 2540, amp=0.7)
-    marker(c, table, tq, "#e9e1cf", 1.0, (0, 0), sweep=False)
-    ink(c, table, tq, 5)
-    ink(c, wpath([(CX, 940), (CX, 1080)], 2541, 0.5), tq, 6)
-    sb.icon_mug(c, 470, 865, 0.8, prog(t, 5.4, 0.7), seed=2550, steam=1.0 if t > 6 else 0, t=t)
-    sb.icon_mug(c, 680, 865, 0.8, prog(t, 5.7, 0.7), seed=2560, color="#f6f2ea", steam=1.0 if t > 6 else 0, t=t + 0.4)
-    # the only power left
-    write(c, "the only power left:", CX, 1110, 58, "caveat", prog(t, t_forced, 1.2))
-    write(c, "the kind you earn", CX, 1180, 72, "caveat_b", prog(t, t_earn, 1.0), CORAL)
-    # protect / persuade / care
-    vy = 1340
-    q = prog(t, t_prot, 0.8)
-    if q > 0:
-        sb.figure(c, 250, vy, 0.38, q, seed=2570, outfit=NAVY, hair="curls", face="neutral", skin=SKIN[3],
-                  arms=((-0.8, -0.3), (0.8, -0.3)), hands="open")
-        write(c, "protect", 250, 1418, 50, "caveat_b", prog(t, t_prot + 0.2, 0.4), NAVY)
-    q = prog(t, t_pers, 0.8)
-    if q > 0:
-        _popped(c, CX - 40, 1270, pop(t, t_pers), lambda: sb.icon_bubble(c, CX - 40, 1270, 0.45, 1.0, text="…", size=36))
-        _popped(c, CX + 50, 1320, pop(t, t_pers + 0.3),
-                lambda: sb.icon_bubble(c, CX + 50, 1320, 0.42, 1.0, seed=2580, color=MUSTARD, text="…", size=36, tail=1))
-        write(c, "persuade", CX, 1418, 50, "caveat_b", prog(t, t_pers + 0.2, 0.4), TEAL)
-    q = prog(t, t_care, 0.8)
-    if q > 0:
-        bump = eprog(t, t_care + 0.1, 0.5)
-        for side, col in ((-1, SKIN[3]), (1, SKIN[1])):
-            fx = 890 + side * (60 - 36 * bump)
-            fist = wcircle(fx, 1320, 22, 2590 + side)
-            solid(c, fist, col, q)
-            ink(c, fist, q, 4)
-            ink(c, wpath([(fx + side * 22, 1320), (fx + side * 70, 1340)], 2595 + side, 0.5), q, 18,
-                NAVY if side < 0 else HOODIE)
-        if bump > 0.9:
-            spark(c, 890, 1295, 18, prog(t, t_care + 0.6, 0.3))
-        write(c, "care", 890, 1418, 50, "caveat_b", prog(t, t_care + 0.2, 0.4), CORAL)
-    # signed
-    write(c, "— Kai", 900, 1060, 46, "caveat", prog(t, t_end + 0.6, 0.8), GREY, rot=-4)
+    sb.turn_to(c, t, t_prot - 0.7,
+               lambda c_: _final_question(c_, t, t_work, t_tried, t_forced, t_earn),
+               lambda c_: _final_powers(c_, t, t_prot, t_pers, t_care, t_end))
     _turn(c, t)
 
 
 SCENES = {
+
     "sketch_rule": sketch_rule,
     "sketch_toolkit": sketch_toolkit,
     "sketch_cost": sketch_cost,

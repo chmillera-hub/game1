@@ -657,7 +657,7 @@ def upright(m, vel=0.6, dur=1.2):
 def brush_swish(vel=0.5, dur=0.35, seed=0):
     rng = np.random.default_rng(9000 + seed)
     n = ns(dur)
-    y = bp(rng.standard_normal(n), 1800, 9000, 2)
+    y = lp(bp(rng.standard_normal(n), 1500, 7000, 2), 5000, 2)  # soft, dark sweep
     env = env_points(n, [(0, 0), (dur * 0.55, 1), (dur, 0)]) ** 1.5
     return y * env * 0.2 * vel
 
@@ -749,9 +749,9 @@ def m_conversation(S, ctx, rng, inst):
     for i, (ts, te, chn) in enumerate(ch):
         for k, bt in enumerate(beats_in(ts, te, beat)):
             if k % 2 == 1:
-                S.put(brush_swish(0.55, beat * 0.8, i * 4 + k), bt - beat * 0.42, 0.55, 0.3, 0.1, 0.0)
+                S.put(brush_swish(0.55, beat * 0.8, i * 4 + k), bt - beat * 0.42, 0.33, 0.3, 0.1, 0.0)
             elif rng.random() < 0.5:
-                S.put(brush_tap(0.35, i * 4 + k), bt + beat * 0.5, 0.45, 0.35, 0.1, 0.0)
+                S.put(brush_tap(0.35, i * 4 + k), bt + beat * 0.5, 0.36, 0.35, 0.1, 0.0)
     # a short Rhodes fill in the longer breaths of the conversation
     for a, b in ctx.gaps(S.t0 + 1.0, S.t1 - 0.6, 0.95)[:4]:
         chn = None
@@ -1138,7 +1138,8 @@ def render_accents(tl, ctx, voice_mono=None):
     dry = np.zeros((2, N))
     hall = np.zeros((2, N))
     rng = np.random.default_rng(78)
-    for ac in tl["accents"]:
+    acs = tl["accents"]
+    for n_ac, ac in enumerate(acs):
         t = ac["t"] - 0.02
         ch, sc = harmony_at(ctx, ac["t"])
         kind = ac["kind"]
@@ -1179,6 +1180,14 @@ def render_accents(tl, ctx, voice_mono=None):
             notes = voicing(ch, 65, 4) + [root_note(ch, 38, 49)]
             put(strings(notes, 1.7, 0.1, 2.2, 0.5, 0.75, 51, swell=True), -1.7, 1.0, 0, 0.5)
             put(glock(tones(ch, 86, 98)[0], 0.32), 0.0, 0.55, 0.35, 0.6)
+        gap = acs[n_ac + 1]["t"] - ac["t"] if n_ac + 1 < len(acs) else 99.0
+        if gap < 4.5:  # release before the next accent so that one reads as its own gesture
+            f0, f1 = pre + ns(max(0.3, gap - 0.65)), pre + ns(max(0.4, gap - 0.1))
+            ramp = np.ones(L + pre)
+            ramp[f0:f1] = np.cos(np.linspace(0, np.pi / 2, f1 - f0)) ** 2
+            ramp[f1:] = 0.0
+            bd *= ramp
+            bh *= ramp
         pk = np.max(np.abs(bd)) + 1e-9
         vpk = 0.1
         if voice_mono is not None:

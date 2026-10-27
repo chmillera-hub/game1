@@ -11,7 +11,7 @@ import numpy as np
 import skia
 
 import paths
-from gfx import clamp, hexc, smoothstep
+from gfx import clamp, hexc
 
 W, H = 1080, 1920
 
@@ -660,18 +660,6 @@ def icon_gavel(c, x, y, s=1.0, p=1.0, seed=151):
     c.restore()
 
 
-def icon_ear(c, x, y, s=1.0, p=1.0, seed=161):
-    c.save()
-    c.translate(x, y)
-    c.scale(s, s)
-    outer = wpath([(10, 60), (-12, 52), (-26, 20), (-30, -14), (-14, -46), (14, -54), (34, -36), (36, -6),
-                   (22, 14), (12, 34), (10, 58)], seed, 1.0)
-    marker(c, outer, clamp(p * 2 - 0.5), SKIN[0], 0.9, (3, 3))
-    ink(c, outer, clamp(p * 1.4), 5)
-    ink(c, wpath([(-10, -10), (2, -30), (18, -24), (14, -6), (2, 6)], seed + 1, 0.8), clamp(p * 2 - 1), 4)
-    c.restore()
-
-
 def icon_mug(c, x, y, s=1.0, p=1.0, seed=171, color="#f6f2ea", steam=0.0, t=0.0):
     c.save()
     c.translate(x, y)
@@ -733,27 +721,6 @@ def icon_car(c, x, y, s=1.0, p=1.0, seed=191, color=BLUE, lightbar=False, flip=F
     c.restore()
 
 
-def icon_weight(c, x, y, s=1.0, p=1.0, seed=201):
-    """A heavy scribbled lump."""
-    c.save()
-    c.translate(x, y)
-    c.scale(s, s)
-    blob = wcircle(0, 0, 46, seed, amp=4.0)
-    marker(c, blob, clamp(p * 2 - 0.4), GREY, 0.85, (4, 3))
-    sc = skia.Path()
-    rng = np.random.default_rng(seed)
-    pts = []
-    for k in range(26):
-        a = rng.uniform(0, 2 * math.pi)
-        r = rng.uniform(0, 38)
-        pts.append((math.cos(a) * r, math.sin(a) * r))
-    sc.addPath(smooth_path(np.array(pts)))
-    ink(c, sc, clamp(p * 1.4), 2.8, INK, 0.75)
-    ink(c, blob, clamp(p * 1.6), 5)
-    c.restore()
-
-
-# ---------------------------------------------------------------- figures
 def _bez(p0, p1, p2, n=10):
     t = np.linspace(0, 1, n)[:, None]
     p0, p1, p2 = map(np.asarray, (p0, p1, p2))
@@ -1001,9 +968,10 @@ def spark(c, x, y, r=22, p=1.0, color=MUSTARD, seed=900):
             p, 4.0, color)
 
 
-def alpha_layer(c, a):
-    """Begin a translucent layer (pair with c.restore())."""
-    c.saveLayerAlpha(None, int(255 * clamp(a)))
+def alpha_layer(c, a, bounds=None):
+    """Begin a translucent layer (pair with c.restore()); bounds (l, t, r, b) keeps it small."""
+    rect = skia.Rect.MakeLTRB(*bounds) if bounds else None
+    c.saveLayerAlpha(rect, int(255 * clamp(a)))
 
 
 def turn_to(c, t, t0, old_fn, new_fn, dur=0.5, tint_old=PAGE, tint_new=PAGE):

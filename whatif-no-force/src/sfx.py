@@ -379,7 +379,7 @@ def fx_rain_heavy(rng, ctx):
     n = ns(dur)
     t = tarr(n)
     roll = np.zeros((2, n))
-    for c, w, a in ((0.35, 0.18, 0.6), (0.9, 0.35, 1.0), (1.7, 0.5, 0.8), (2.8, 0.7, 0.55), (4.0, 0.9, 0.3)):
+    for c, w, a in ((0.35, 0.18, 0.6), (0.9, 0.35, 1.0), (1.7, 0.5, 0.75), (2.8, 0.7, 0.4), (4.0, 0.9, 0.2)):
         bump = a * np.exp(-0.5 * ((t - c) / w) ** 2)
         roll += np.stack([lp(noise(rng, n), 140, 2), lp(noise(rng, n), 140, 2)]) * bump[None, :]
     body = lp(noise(rng, n), 55, 2) * env_points(n, [(0, 0), (0.6, 1), (3.0, 0.6), (6.0, 0)])
@@ -544,9 +544,9 @@ FX = dict(footsteps=fx_footsteps, coffee_pour=fx_coffee_pour, cup_set=fx_cup_set
 BED = ("rain_on", "room_tone_on", "rain_heavy", "rain_ease")  # kinds the ambience bed reacts to
 
 # level (dB), hall-reverb send and diner-room send per kind
-LEVEL = dict(footsteps=-17, coffee_pour=-17, cup_set=-16, car_door_slam=-12, booth_squeak=-19, sketchbook_open=-17,
+LEVEL = dict(footsteps=-17, coffee_pour=-17, cup_set=-16, car_door_slam=-12, booth_squeak=-21, sketchbook_open=-17,
              pencil_sketch=-24, page_turn=-18, crowd_murmur=-19, cell_doors=-12, door_creak=-17, coins=-18,
-             tank_rumble=-13, rain_heavy=-15, heartbeat=-10, metal_thud=-10, car_drive_away=-15,
+             tank_rumble=-13, rain_heavy=-17, heartbeat=-10, metal_thud=-10, car_drive_away=-15,
              page_flip_many=-16, birds_dawn=-19, fist_bump=-13, door_bell=-16)
 HALL = dict(car_door_slam=0.35, cell_doors=0.4, crowd_murmur=0.3, tank_rumble=0.25, rain_heavy=0.3, metal_thud=0.3,
             car_drive_away=0.25, door_creak=0.12, coins=0.15, birds_dawn=0.25, heartbeat=0.05, page_turn=0.04,
@@ -563,13 +563,13 @@ RAIN_HEAVY = 1.6  # bed intensity at the turn (1 = steady night rain)
 RAIN_DRIPS = 0.04  # after the ease: only drips
 SKETCH_RAIN = dict(sketch_memory=0.85)  # rain gate inside the sketchbook (default 0.6)
 
-A_WASH = 10 ** (-41 / 20)  # rms at intensity 1
-A_ROOF = 10 ** (-47 / 20)
-A_TICK = 10 ** (-40 / 20)
-A_SPLAT = 10 ** (-38 / 20)
-A_DRIP = 10 ** (-36 / 20)
-A_TRAFFIC = 10 ** (-55 / 20)
-A_CAR = 10 ** (-40 / 20)
+A_WASH = 10 ** (-44 / 20)  # rms at intensity 1
+A_ROOF = 10 ** (-50 / 20)
+A_TICK = 10 ** (-43 / 20)
+A_SPLAT = 10 ** (-41 / 20)
+A_DRIP = 10 ** (-37 / 20)
+A_TRAFFIC = 10 ** (-57 / 20)
+A_CAR = 10 ** (-42 / 20)
 A_HUM = 10 ** (-53 / 20)
 A_NEON = 10 ** (-62 / 20)
 A_KITCHEN = 10 ** (-44 / 20)
@@ -740,7 +740,8 @@ def render_ambience(total, events, tl, seed=7):
             amp = np.minimum(rng.lognormal(0, 0.45, len(t)), 2.2) * np.interp(t, tc, g_rain)
             out[c] += A * _scatter(n, t, amp, bank, rng.integers(0, len(bank), len(t)))
 
-    # gutter drips: steady under the rain, faster when it pours, slowing after it stops
+    # gutter drips: steady under the rain, faster when it pours, slowing (and, with the wash
+    # gone, standing out a little more) after it stops
     wet = I.copy()
     if t_ease is not None:
         ie = float(np.interp(t_ease, tc, I))
@@ -750,7 +751,8 @@ def render_ambience(total, events, tl, seed=7):
         while t < total - 0.1:
             gr = float(np.interp(t, tc, g_rain))
             if gr > 0.01:
-                add_at(out, _drip(rng, f * rng.uniform(0.97, 1.03)), t, p, A_DRIP * gr * rng.uniform(0.6, 1.0))
+                lift = 1 + 0.8 * (1 - min(1.0, float(np.interp(t, tc, I))))
+                add_at(out, _drip(rng, f * rng.uniform(0.97, 1.03)), t, p, A_DRIP * gr * lift * rng.uniform(0.6, 1.0))
             t += base * float(np.interp(t, tc, wet)) ** -0.6 * rng.uniform(0.8, 1.2)
 
     # distant wet traffic: a low hiss, and now and then a car going by

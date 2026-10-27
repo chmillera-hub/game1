@@ -392,25 +392,44 @@ def main():
     arc = dict(night=(2.0, 28.0), conversation=(30.0, 60.0), heavy_turn=(211.0, 228.0),
                reckoning=(252.0, 268.0), dawn_drips=(279.0, 292.0), end=(296.0, total - 3.0))
     rep["ambience_arc_lufs"] = {k: seg_lufs(amb, a, b) for k, (a, b) in arc.items()}
-    # dialogue dominance: per line, voice rms over everything else (pre-master, same gain for both)
-    bg = music_d + acc_d + sfx_bus + amb_d
-    dom = []
+    # dialogue dominance: per line, voice energy over everything else while the words are
+    # sounding (20 ms frames within 25 dB of the line's loudest), broadband and in the
+    # 300 Hz-4 kHz speech band (pre-master, same gain for both)
+    vm = voice.mean(axis=0)
+    bm = (music_d + acc_d + sfx_bus + amb_d).mean(axis=0)
+    vb, bb = bp(vm, 300, 4000, 2), bp(bm, 300, 4000, 2)
+    fr = ns(0.02)
+    for key, (v_, b_) in (("dialogue_over_background_db", (vm, bm)), ("dialogue_over_background_speechband_db", (vb, bb))):
+        dom = []
+        for ln in tl["lines"]:
+            a = ns(ln["start"])
+            nf = (ns(ln["end"]) - a) // fr
+            ve = (v_[a:a + nf * fr].reshape(nf, fr) ** 2).mean(axis=1)
+            be = (b_[a:a + nf * fr].reshape(nf, fr) ** 2).mean(axis=1)
+            on = ve > ve.max() * 10 ** -2.5
+            dom.append((round(10 * np.log10(ve[on].sum() / (be[on].sum() + 1e-20)), 1), ln["id"]))
+        dom.sort()
+        rep[key] = dict(min=dom[0][0], median=dom[len(dom) // 2][0], worst=dom[:4])
+    del vm, bm, vb, bb
+    # loudness by speaker (post-master), the TV anchor should sit under the room
+    spk = {}
     for ln in tl["lines"]:
         a, b = ns(ln["start"]), ns(ln["end"])
-        v = np.sqrt(np.mean(voice[:, a:b] ** 2)) + 1e-12
-        o = np.sqrt(np.mean(bg[:, a:b] ** 2)) + 1e-12
-        dom.append((round(20 * np.log10(v / o), 1), ln["id"]))
-    dom.sort()
-    rep["dialogue_over_background_db"] = dict(min=dom[0][0], median=dom[len(dom) // 2][0], worst=dom[:4])
-    del bg
-    # accent onsets relative to their words (ms) and peaks
+        if b - a > SR // 2:
+            spk.setdefault(ln["speaker"], []).append(lufs(meter, voice[:, a:b]) + master_db)
+    rep["voice_lufs_by_speaker"] = {k: round(float(np.median(v)), 1) for k, v in spk.items()}
+    # accent attacks relative to their words (ms): walk back from the peak to where it rises
     ons = []
+    bl = ns(0.01)
     for ac in tl["accents"]:
-        a, b = ns(ac["t"] - 0.15), ns(ac["t"] + 0.6)
-        env = np.abs(acc_bus[:, a:b]).max(axis=0)
-        k = int(np.argmax(env > 0.1 * env.max()))
-        ons.append((ac["line"], ac["word"], round((a + k) / SR - ac["t"], 3) * 1000))
-    rep["accent_onset_ms"] = ons
+        a = ns(ac["t"] - 0.4)
+        env = np.abs(acc_bus[:, a:a + 100 * bl]).max(axis=0).reshape(100, bl).max(axis=1)  # 10 ms blocks
+        pk = int(np.argmax(env[35:])) + 35
+        k = pk
+        while k > 0 and env[k - 1] > 0.25 * env[pk]:
+            k -= 1
+        ons.append((ac["line"], ac["word"], ac["kind"], int(round((a / SR + k * 0.01 - ac["t"]) * 1000))))
+    rep["accent_attack_ms"] = ons
     rep["sfx_events"] = [(round(t, 2), k, round(p, 1)) for t, k, p in sfx_log]
     rep["runtime_s"] = round(time.time() - t_start, 1)
     json.dump(rep, open(os.path.join(paths.AUDIO, "mix_report.json"), "w"), indent=1)
