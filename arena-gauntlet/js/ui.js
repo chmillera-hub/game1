@@ -1881,7 +1881,7 @@
         ${r.enchant
           ? `<div class="pick static on ench"><span class="pk-head"><b>${ic('gem')} ${esc(ENCHANTS[r.enchant].name)}</b><span class="cost">+${ENCHANTS[r.enchant].surcharge}</span></span><span class="pk-desc">${esc(ENCHANTS[r.enchant].desc)} Bound for good.</span></div>`
           : `<p class="small muted">None. ${scrolls.length ? `You have ${scrolls.length} scroll${scrolls.length > 1 ? 's' : ''} that could be bound to this unit.` : 'Enchantment scrolls bind a permanent bonus to one unit.'}</p>
-            ${scrolls.length ? `<button class="btn" id="loBind">${ic('gem')} Bind a scroll…</button>` : ''}`}</div>
+            ${scrolls.length ? `<button class="btn" id="loBind" data-choose>${ic('gem')} Bind a scroll…</button>` : ''}`}</div>
       <div class="lo-sec"><div class="eyebrow">Stats</div>${statsHTML(u)}</div>
       <div class="lo-sec"><div class="eyebrow">In battle</div>${actsHTML(u)}
         ${traitLines(u).length ? `<ul class="tips">${traitLines(u).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
