@@ -3450,6 +3450,16 @@
         }
         if (e.t === 'move') line.moved = true;
         else line.act = e.ai ? e.name : e.dmg ? 'basic attack' : 'basic ability';
+      } else if (e.t === 'healblock' && v) {
+        // The healing prayer passed over a poisoned unit.
+        if (line) line.notes.push(`${logName(v)} is poisoned: no heal`);
+      } else if (e.t === 'status' && e.status === 'poison' && v && v.team === 'P' && !B.poisonHint && !s.units.some((w) => w.alive && w.team === 'P' && w.acts.some((a) => a.cleanse || a.cure))) {
+        // The first of your units poisoned in a battle your army cannot cure: the log says
+        // how to answer poison next time, once.
+        B.poisonHint = true;
+        if (line) line.notes.push(`${logName(v)} is poisoned`);
+        finish();
+        add({ team: 'P', html: `<span class="muted">${esc(logName(v))} is poisoned and cannot be healed until it wears off. Give your Cleric <b>Blessing</b> (1 Supply) and its prayer cures poison first, then heals; a Healing Draught cures one unit.</span>` });
       } else if (e.t === 'heal' && e.why === 'regen' && v) {
         finish();
         add({ team: v.team, html: `<span class="muted">${esc(logName(v))} regenerates ${e.amount} HP.</span>` });

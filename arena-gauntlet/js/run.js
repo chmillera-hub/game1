@@ -2840,6 +2840,8 @@
     if (has('sapper')) tips.push('Goblin Sappers explode when adjacent to your units. Shoot them at range and keep a gap between your units.');
     if (has('wreckage')) tips.push('Wreckage holds gold, but your army leaves it be until the boss and its retinue fall. Then its fatigue sets in: the faster you win, the more you salvage.');
     if (has('barrel')) tips.push('Powder kegs explode for 22 when broken. Shoot them when enemies are adjacent to them.');
+    if (has('wisp', 'spider') || enc.units.some((u) => ['a_poison', 's_venom', 'as_poison'].includes(u.a1) || ['a_poison', 's_venom', 'as_poison'].includes(u.a2)))
+      tips.push('Poison ahead: poisoned units cannot be healed. Blessing on your Cleric (1 Supply) makes its prayer cure poison first; a Healing Draught cures one unit.');
     if (has('troll')) tips.push('Bog Trolls are walls of HP that never mend: every hit stays landed. They are 10% weak to magic.');
     if (has('necromancer', 'lich')) tips.push('Kill the Necromancer and every skeleton it raised crumbles.');
     if (has('tower')) tips.push('Arrow Towers need not fall: stay out of their reach.');

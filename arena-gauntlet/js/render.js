@@ -2327,7 +2327,7 @@
             this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: 'HOLDS GROUND' });
             break;
           case 'healblock':
-            if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9 });
+            if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9, tag: 'POISONED' });
             break;
           case 'status': {
             if (!v) break;
