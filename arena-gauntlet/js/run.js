@@ -3212,11 +3212,12 @@
 
   // ---- Auto for the sandbox: a whole army in one tap, a different one each time.
   // Relics that do nothing in a Hall battle (gold, XP, shop prices, the deployment zone, the
-  // campaign's crown, a Supply discount the sandbox does not use, buildings and wagons): Auto
+  // campaign's crown, a Supply discount the sandbox does not use): Auto
   // never takes them, and the relic picker says so.
-  const HALL_INERT = new Set(['coin_purse', 'drill_manual', 'guild_seal', 'alchemist_stone', 'kings_ransom', 'scout_map', 'gamblers_dice', 'sappers_kit', 'recruiters_bell']);
-  // Kit that only earns gold or only hits buildings and wagons (a Hall field has none).
-  const HALL_INERT_KIT = { talents: new Set(), skills: new Set(['demolisher']), gear: new Set(['siege_hammer', 'gilded_gauntlet']), enchant: new Set(['midas']) };
+  const HALL_INERT = new Set(['coin_purse', 'drill_manual', 'guild_seal', 'alchemist_stone', 'kings_ransom', 'scout_map', 'gamblers_dice', 'recruiters_bell']);
+  // Kit that only earns gold. (Siege kit stays: the Barrier and Lightning Wards count as
+  // buildings, and Hall armies field them.)
+  const HALL_INERT_KIT = { talents: new Set(), skills: new Set(), gear: new Set(['gilded_gauntlet']), enchant: new Set(['midas']) };
   const kitInert = (kind, id) => !!(HALL_INERT_KIT[kind] && HALL_INERT_KIT[kind].has(id));
   // What some relics need from the army to do anything: something its kit must carry
   // (poison, burns, shoves, regen), or a shape the army must have.

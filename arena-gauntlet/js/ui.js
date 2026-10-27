@@ -5642,7 +5642,7 @@
         <h4>Buildings and siege</h4>
         <ul>
           <li>Walls, gates, towers, totems, tents, crypts, dens, portals and barricades are <b>buildings</b>. Stone ones shrug off swords and spells alike; wooden ones burn, taking extra damage from fire and magic; dark portals unravel under magic but barely notice steel.</li>
-          <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic.</li>
+          <li><b>Siege damage</b> breaks them fast: the Trebuchet (+150% to buildings), a Siege Hammer (triple), the Demolisher skill (double), a Blasting Charge, the Golem's Boulder Toss, or the Sapper's Kit relic. The Barrier Ward and Lightning Ward count as buildings for all of these, so siege damage is a way to crack a ward in the Hall of Fame too.</li>
           <li><b>Barricades hold gold.</b> Break one and coins burst out: 12, 16 or 20 gold by act, paid with the battle's gold when you win. Your units break them when no enemy is within reach.</li>
           <li><b>Wreckage</b> litters the Act I boss's camp: four wrecked carts with 8 gold in each. Your army leaves them be until the boss and its retinue fall, then breaks what it can before its fatigue tells.</li>
           <li><b>Legendaries</b> (molten-gold cards): the Archmage's meteor, the Phoenix's fiery dive, the Frost Giant's glacier, the Sun Paladin's judgment and the Dragon Tyrant's breath, each a huge act and then a long cooldown, plus legendary skills and gear. None turn up before the second half of Act 2; from there they come more and more often, most of all late in Act 3 and from elites and bosses.</li>

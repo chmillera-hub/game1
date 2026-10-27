@@ -824,4 +824,21 @@ test('nothing tied to one unit (talents, level picks, masteries) only pays in go
     for (const [id, x] of Object.entries(table)) assert.ok(!/\bgold\b/i.test(x.desc), `${tab} ${id} mentions gold: ${x.desc}`);
 });
 
+test('the Barrier and Lightning Wards count as buildings: siege damage hits them harder', () => {
+  for (const ward of ['barrier', 'lightning']) {
+    const s = board([
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: ward, team: 'E', x: 4, y: 4 },
+      { type: 'knight', team: 'E', x: 0, y: 0 },
+    ]);
+    const [kn, w] = s.units;
+    const plain = E.calcHit(s, kn, w, {}).dmg;
+    kn.props.vs = { structure: 2 }; // a Siege Hammer
+    assert.ok(Math.abs(E.calcHit(s, kn, w, {}).dmg - plain * 3) <= 1, `${ward}: triple`);
+    kn.props.vs = {};
+    s.relics.P = new Set(['sappers_kit']);
+    assert.ok(Math.abs(E.calcHit(s, kn, w, {}).dmg - plain * 1.5) <= 1, `${ward}: +50% with the Sapper's Kit`);
+  }
+});
+
 console.log(`fun: ${passed} tests passed`);
