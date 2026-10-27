@@ -119,6 +119,7 @@
     const m = $('#modal');
     const sh = $('#sheet');
     sh.innerHTML = html;
+    markAreas(sh);
     m.hidden = false;
     sh.scrollTop = 0;
     drawPortraits(sh);
@@ -259,7 +260,7 @@
 
   function rangeText(r) {
     if (r[1] === 0) return 'on itself';
-    if (r[0] === 1 && r[1] === 1) return 'next to it';
+    if (r[0] === 1 && r[1] === 1) return 'adjacent to it';
     if (r[0] <= 1) return 'up to ' + r[1] + ' tiles away';
     return r[0] + '-' + r[1] + ' tiles away';
   }
@@ -345,7 +346,7 @@
         t = `${base} ${dt} damage to every adjacent ${E.hitsAllies(u, a) ? 'unit, friend or foe' : 'enemy'}.`;
         break;
       case 'quake':
-        t = `${base} ${dt} damage to an adjacent enemy and every unit beside it.${ff}`;
+        t = `${base} ${dt} damage to an adjacent enemy and every unit adjacent to it.${ff}`;
         break;
       case 'blast':
         t = `${a.dmg ? base + ' ' + dt + ' damage to' : 'Affects enemies in'} a ${a.pattern === 'square' ? '3x3' : '5-tile'} area ${rangeText(a.range)}.${ff}`;
@@ -389,7 +390,7 @@
         t = `An ally that fell within ${a.range[1]} tiles rises again with ${Math.round((a.pct || 0.4) * 100)}% HP.`;
         break;
       case 'detonate':
-        t = `Explodes: ${base} magic damage to everything next to it, friend or foe. It dies.`;
+        t = `Explodes: ${base} magic damage to everything adjacent to it, friend or foe. It dies.`;
         break;
       case 'leap':
         t = `Leaps ${a.range[0]}-${a.range[1]} tiles over anything and strikes every adjacent enemy for ${base}.`;
@@ -572,8 +573,8 @@
     ridedown: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.',
     stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
-    thunderstep: 'Enemies next to where it stops moving take 6 magic damage.',
-    volatile: 'Explodes when destroyed, hurting everything next to it.',
+    thunderstep: 'Enemies adjacent to where it stops moving take 6 magic damage.',
+    volatile: 'Explodes when destroyed, hurting everything adjacent to it.',
     cart: `Rolls ${UNITS.cart.move} tile${UNITS.cart.move > 1 ? 's' : ''} toward the left edge after every enemy turn, and escapes there.`,
     big: 'Huge: cannot be shoved or dragged.',
     martyr: 'When it falls, heals allies within 2 tiles for 20.',
@@ -752,6 +753,34 @@
 
   // ------------------------------------------------------------ views
 
+  // "Adjacent" always means the 4 tiles touching a unit's sides, never the diagonals; a
+  // "3x3" area is the tile and all 8 around it. Every rendered screen, sheet and panel shows
+  // a tiny grid after those words so nobody has to guess: lit cells are the ones that count.
+  const ADJ_CELLS = [0, 1, 0, 1, 1, 1, 0, 1, 0];
+  const SQ_CELLS = [1, 1, 1, 1, 1, 1, 1, 1, 1];
+  function miniGrid(cells, label) {
+    const r = cells
+      .map((on, i) => `<rect x="${(i % 3) * 4 + 0.5}" y="${Math.floor(i / 3) * 4 + 0.5}" width="3.2" height="3.2" rx="0.6" class="${i === 4 ? 'mid' : on ? 'on' : 'off'}"/>`)
+      .join('');
+    return `<svg class="mini-grid" viewBox="0 0 12.7 12.7" role="img" aria-label="${label}"><title>${label}</title>${r}</svg>`;
+  }
+  const ADJ_HTML = miniGrid(ADJ_CELLS, 'the 4 tiles touching its sides, not the diagonals');
+  const SQ_HTML = miniGrid(SQ_CELLS, 'the tile and all 8 around it');
+  const AREA_WORDS = /\b(adjacent|3x3)\b/gi;
+  function markAreas(el) {
+    if (!el) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => ((AREA_WORDS.lastIndex = 0), AREA_WORDS.test(n.nodeValue) && !n.parentElement.closest('textarea,input,script,style,svg,.mini-grid,.no-grid') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+    });
+    const nodes = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) nodes.push(n);
+    for (const n of nodes) {
+      const span = document.createElement('span');
+      span.innerHTML = esc(n.nodeValue).replace(AREA_WORDS, (w) => `<span class="area-word">${w}${/x/i.test(w) ? SQ_HTML : ADJ_HTML}</span>`);
+      n.replaceWith(...span.childNodes);
+    }
+  }
+
   function showView(html, cls) {
     music('camp');
     stopDiorama();
@@ -774,6 +803,7 @@
       v.scrollTop = top;
       if (winY) root.scrollTo(0, winY);
     } else v.scrollTop = 0;
+    markAreas(v);
     drawPortraits(v);
     bindRelics(v);
     bindResbar(v);
@@ -2565,6 +2595,7 @@
       <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>
       ${helpBlock}`;
     const cmd = $('#cmd');
+    markAreas(cmd);
     drawPortraits(cmd);
     for (const el of $$('.roster, .intel-list', cmd)) el.scrollLeft = wr.stripX[el.className] || 0;
     $('#wrTabA').onclick = () => {
@@ -3796,6 +3827,7 @@
       E: Object.assign({ label: ex ? ex.b.name || ex.b : 'Enemy' }, battleSupply(s, 'E')),
     });
     $('#cmd').innerHTML = goalBarHTML(B) + panel;
+    markAreas($('#cmd'));
     // A new view (a unit or tile tapped, or back to the fight) starts at the top, under the
     // goals, not wherever the last one was scrolled to.
     const view = `${B.mode}:${B.sel || ''}:${B.tile ? B.tile.x + ',' + B.tile.y : ''}`;
@@ -5180,6 +5212,7 @@
         <p>Victories earn XP. Each commander level raises your Supply. There is no limit on units in a battle: field as many as your Supply pays for. Elites, bosses and bonus goals pay extra XP.</p>
         <h4>Taking turns</h4>
         <ul>
+          <li><b>Distances</b>: <b>adjacent</b> always means the 4 tiles touching a unit's sides; diagonals never count. "Within 2 tiles" counts steps up, down, left and right, never diagonally. A <b>3x3</b> area is a tile and all 8 tiles around it. The little grid after these words shows the tiles that count.</li>
           <li><b>Auto battle</b>: you set up the army in the war room (units, levels, talents, skills, gear, where they stand) and tap <b>Begin battle</b>. Your army then fights on its own; you watch. Lost? Change the army and try again, as often as you like.</li>
           <li>The sides take turns, and the enemy goes first. Each turn, one unit acts: it moves, attacks or uses an ability, and faces.</li>
           <li><b>Turn order</b>: each side's units take its turns in a rotation, faster units first (<b>SPD</b> on their cards). A Scout (SPD 8) goes before a Knight (SPD 2). The strip under the board shows who goes next; tap a face in it for that unit's full details.</li>
@@ -5190,7 +5223,7 @@
           <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until turn ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down, before the win or after, is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose no unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
           <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your fatigue switches on that moment, from 1 (or carries on, if it was on already). It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
           <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past physical resistance and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
-          <li><b>The AI knows your positioning picks</b>: the battles play themselves, but your army's AI is built to play to every relic, talent, skill and piece of gear that depends on where units stand. With the Lone Wolf Pelt it keeps your units apart; with the Phalanx Standard it closes ranks; Guardians escort the fragile; flankers go round the side or back; Thunderstep units end their moves beside enemies; a Furgon grows its shrubs across the path of enemy melee units heading for your Cleric (or your most wounded unit); Ricochet and Shrapnel pick targets in a crowd; and so on. Each such pick says how the AI plays it, at the end of its description ("The AI keeps your units apart.").</li>
+          <li><b>The AI knows your positioning picks</b>: the battles play themselves, but your army's AI is built to play to every relic, talent, skill and piece of gear that depends on where units stand. With the Lone Wolf Pelt it keeps your units apart; with the Phalanx Standard it closes ranks; Guardians escort the fragile; flankers go round the side or back; Thunderstep units end their moves adjacent to enemies; a Furgon grows its shrubs across the path of enemy melee units heading for your Cleric (or your most wounded unit); Ricochet and Shrapnel pick targets in a crowd; and so on. Each such pick says how the AI plays it, at the end of its description ("The AI keeps your units apart.").</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Triggers</b>: many talents and relics fire on an event rather than giving a flat bonus, and the board calls them out as they happen. <b>Critical!</b> hits deal double damage (Lucky Coin, the Lucky skill, every third shot of a Level 3 Archer). <b>Executed</b>: a foe left very low falls outright (never a boss). <b>Trophies</b> from kills add 10% damage each, up to five, and the killer grows a little bigger. Some things go out with a bang when they fall (Powder Keg, Powder Belt, Overload, Bramble Burst, Combustion), poison and fire can leap from the dead to their neighbours (Contagion, Plague Doctor's Mask, Wildfire Oil), and slain enemies can rise as skeletons on your side (Necromancer's Bell, Shadow Pact). Cursed relics give a big edge at a real cost.</li>

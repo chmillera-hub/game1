@@ -54,7 +54,7 @@
     // Knight
     k_bash: { name: 'Shield Bash', cost: 0, desc: 'Active: slam an adjacent enemy for half damage and shove it back 1 tile. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.',
       mod: { active: { name: 'Shield Bash', kind: 'strike', range: [1, 1], dmg: 'phys', mult: 0.5, fx: { knock: 1 } } } },
-    k_bodyguard: { name: 'Bodyguard', cost: 1, desc: 'Once between its own turns, it throws itself in front of a single-target blow aimed at an ally beside it and takes the hit instead.', mod: { traits: ['bodyguard'] } },
+    k_bodyguard: { name: 'Bodyguard', cost: 1, desc: 'Once between its own turns, it throws itself in front of a single-target blow aimed at an ally adjacent to it and takes the hit instead.', mod: { traits: ['bodyguard'] } },
     k_wall: { name: 'Shield Wall', cost: 2, desc: 'Attacks from the side face full block instead of half.', mod: { traits: ['shieldwall'] } },
     k_riposte: { name: 'Riposte', cost: 1, desc: 'When struck in melee and still standing, strikes back for half damage.', mod: { traits: ['retaliate'] } },
     k_plate: { name: 'Hold the Line', cost: 0, desc: 'If it did not move on its last turn, it takes 30% less damage until it moves again.', mod: { traits: ['brace'] } },
@@ -116,7 +116,7 @@
     p_firewall: { name: 'Wall of Fire', cost: 1, desc: 'Active, 2 uses: set a 5-tile area 2 to 4 tiles away ablaze for 2 turns. Enemies that enter it or start their turn in it take 6 damage.',
       mod: { active: { name: 'Wall of Fire', kind: 'hazard', hz: 'fire', range: [2, 4], pattern: 'plus', turns: 2, dmgFixed: 6, arc: true, uses: 2 } } },
     p_range: { name: 'Far Cast', cost: 0, desc: '+1 range, and its fireball leaves the centre tile burning for 2 turns.', mod: { stat: { range: 1 }, traits: ['scorch'] } },
-    p_combust: { name: 'Combustion', cost: 1, desc: 'Burning enemies it slays explode: 10 magic damage to every enemy beside them, setting those burning too. Chains welcome.', mod: { traits: ['combustion'] } },
+    p_combust: { name: 'Combustion', cost: 1, desc: 'Burning enemies it slays explode: 10 magic damage to every enemy adjacent to them, setting those burning too. Chains welcome.', mod: { traits: ['combustion'] } },
     p_inferno: { name: 'Inferno', cost: 2, desc: 'Its basic attack scorches a full 3x3 area.', mod: { act: { pattern: 'square' } } },
 
     // Assassin
@@ -132,8 +132,8 @@
     // Golem
     g_toss: { name: 'Boulder Toss', cost: 0, desc: 'Active: hurl a boulder at an enemy 2 to 4 tiles away for 80% damage, double against buildings, knocking it back 1 tile. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.',
       mod: { active: { name: 'Boulder Toss', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, vs: { structure: 1 }, fx: { knock: 1 } } } },
-    g_quake: { name: 'Earthshaker', cost: 1, desc: 'Its basic attack also hits every enemy beside the target.', mod: { act: { kind: 'quake' } } },
-    g_moss: { name: 'Living Moss', cost: 1, desc: '+4 Regen, and the moss spreads: allies beside it heal 2 every time its turn comes, even when it passes.', mod: { props: { regen: 4 }, traits: ['mossy'] } },
+    g_quake: { name: 'Earthshaker', cost: 1, desc: 'Its basic attack also hits every enemy adjacent to the target.', mod: { act: { kind: 'quake' } } },
+    g_moss: { name: 'Living Moss', cost: 1, desc: '+4 Regen, and the moss spreads: allies adjacent to it heal 2 every time its turn comes, even when it passes.', mod: { props: { regen: 4 }, traits: ['mossy'] } },
     g_magnet: { name: 'Magnetic Core', cost: 1, desc: 'At the start of its turn, it yanks the nearest enemy 2 or 3 tiles away one step closer.', mod: { traits: ['magnet'] } },
     g_runes: { name: 'Runic Core', cost: 0, desc: 'Magic damage it takes is stored in its runes, up to 20, and comes out as bonus magic damage with its next hit.', mod: { traits: ['runecore'] } },
     g_slam: { name: 'Ground Slam', cost: 2, desc: 'Active, 2 uses: strike every adjacent enemy for 80% damage and knock them back 1 tile. Shoved into something, they take extra damage.',
@@ -144,7 +144,7 @@
       mod: { active: { name: 'Howl', kind: 'nova', radius: 2, fx: { weak: 2 }, uses: 2 } } },
     br_trample: { name: 'Trample', cost: 1, desc: 'After charging 3 or more tiles, its attack carries on into the enemy behind the target for 60%.', mod: { traits: ['trample'] } },
     br_hamstring: { name: 'Hamstring', cost: 1, desc: 'Its basic attack roots the target for 1 turn.', mod: { onHit: { root: 1 } } },
-    br_pack: { name: 'Pack Hunter', cost: 0, desc: '+25% damage when another ally stands next to the target.', mod: { props: { packMult: 0.25 } } },
+    br_pack: { name: 'Pack Hunter', cost: 0, desc: '+25% damage when another ally is adjacent to the target.', mod: { props: { packMult: 0.25 } } },
     br_wolf: { name: 'Loyal Wolf', cost: 1, desc: 'When it falls, its wolf leaps free and keeps fighting at your side.', mod: { traits: ['loyalwolf'] } },
     br_scent: { name: 'Bloodscent', cost: 1, desc: 'Heals for 30% of the damage it deals.', mod: { props: { lifesteal: 0.3 } } },
 
@@ -153,18 +153,18 @@
     f_roots: { name: 'Entangling Roots', cost: 1, desc: 'Active, 2 uses: roots every enemy in a 5-tile area 2 to 4 tiles away for 2 turns.',
       mod: { active: { name: 'Entangling Roots', kind: 'blast', range: [2, 4], pattern: 'plus', arc: true, fx: { root: 2 }, uses: 2 } } },
     f_thorn: { name: 'Thornwall', cost: 1, desc: 'Its shrubs have double HP and prick melee attackers for 6.', mod: { traits: ['thornwall'] } },
-    f_bramble: { name: 'Bramble Burst', cost: 1, desc: 'Its shrubs burst when destroyed: 8 damage to every enemy beside them, rooting them for 1 turn.', mod: { traits: ['bramble'] } },
+    f_bramble: { name: 'Bramble Burst', cost: 1, desc: 'Its shrubs burst when destroyed: 8 damage to every enemy adjacent to them, rooting them for 1 turn.', mod: { traits: ['bramble'] } },
     f_grove: { name: 'Grove Keeper', cost: 0, desc: 'Grow reaches 1 tile further, and 4 shrubs can stand at once.', mod: { stat: { range: 1 }, props: { shrubs: 1 } } },
     f_rejuv: { name: 'Rejuvenate', cost: 1, desc: 'Active, 2 uses: heal an ally up to 3 tiles away for 16 and cure its poison and burns.',
       mod: { active: { name: 'Rejuvenate', kind: 'heal', range: [0, 3], fixed: 16, cure: true, uses: 2 } } },
     f_ironwood: { name: 'Ironwood', cost: 1, desc: 'Its shrubs have 40% physical and magic resistance.', mod: { traits: ['ironwood'] } },
 
     // Poison Wisp
-    w_drift: { name: 'Drift', cost: 0, desc: '+1 Move, and wherever it stops it puffs spores: enemies beside it are poisoned for 1 turn (4).', mod: { stat: { move: 1 }, traits: ['sporepuff'] } },
+    w_drift: { name: 'Drift', cost: 0, desc: '+1 Move, and wherever it stops it puffs spores: enemies adjacent to it are poisoned for 1 turn (4).', mod: { stat: { move: 1 }, traits: ['sporepuff'] } },
     w_parasite: { name: 'Parasite', cost: 1, desc: 'It drinks what its poison takes: it heals for every point of damage its poisons deal.', mod: { traits: ['parasite'] } },
     w_wither: { name: 'Withering Mist', cost: 1, desc: 'Its basic attack also weakens the enemies in reach for 2 turns: they deal 30% less damage.', mod: { act: { fx: { weak: 2 } } } },
     w_ethereal: { name: 'Ethereal', cost: 0, desc: 'Physical attacks have a 30% chance to pass right through it.', mod: { traits: ['ethereal'] } },
-    w_contagion: { name: 'Contagion', cost: 1, desc: 'When an enemy carrying its poison falls, the poison leaps to every enemy beside it.', mod: { traits: ['contagion'] } },
+    w_contagion: { name: 'Contagion', cost: 1, desc: 'When an enemy carrying its poison falls, the poison leaps to every enemy adjacent to it.', mod: { traits: ['contagion'] } },
     w_plague: { name: 'Plague', cost: 2, desc: 'Its basic attack reaches 3 tiles.', mod: { stat: { radius: 1 } } },
 
     // Barrier Ward
@@ -177,7 +177,7 @@
 
     // Enchantress
     e_far: { name: 'Far Song', cost: 0, desc: '+1 range, and its song hurts paralyzed enemies 50% more.', mod: { stat: { range: 1 }, traits: ['cruelsong'] } },
-    e_discord: { name: 'Discord', cost: 1, desc: 'Enemies it paralyzes lash out at an ally beside them for half their damage.', mod: { traits: ['discord'] } },
+    e_discord: { name: 'Discord', cost: 1, desc: 'Enemies it paralyzes lash out at an ally adjacent to them for half their damage.', mod: { traits: ['discord'] } },
     e_chain: { name: "Siren's Chain", cost: 1, desc: 'Its basic attack also roots its targets for 2 turns.', mod: { act: { fx: { root: 2 } } } },
     e_glamour: { name: 'Glamour', cost: 0, desc: 'Enemies that attack it have a 25% chance to be left spellbound: paralyzed for 1 turn.', mod: { traits: ['glamour'] } },
     e_frailty: { name: 'Hex of Frailty', cost: 1, desc: 'Its basic attack marks its targets for 2 turns: they take 25% more damage.', mod: { act: { fx: { mark: 2 } } } },
@@ -243,7 +243,7 @@
     tb_scatter: { name: 'Scattershot', cost: 2, desc: 'Active, 2 uses: stones rain on a 5-tile area 3 to 5 tiles away, 70% damage to each enemy.',
       mod: { active: { name: 'Scattershot', kind: 'blast', range: [3, 5], pattern: 'plus', dmg: 'phys', arc: true, mult: 0.7, uses: 2 } } },
     tb_frame: { name: 'Reinforced Frame', cost: 0, desc: 'Enemies that strike it in melee are shoved back a tile.', mod: { traits: ['shove'] } },
-    tb_shrapnel: { name: 'Shrapnel', cost: 1, desc: 'Its boulders spray shrapnel: 40% damage to every enemy beside the target.', mod: { props: { splash: 0.4 } } },
+    tb_shrapnel: { name: 'Shrapnel', cost: 1, desc: 'Its boulders spray shrapnel: 40% damage to every enemy adjacent to the target.', mod: { props: { splash: 0.4 } } },
     tb_crew: { name: 'Veteran Crew', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
 
   // ---------------------------------------- the legendaries: huge acts, long cooldowns
@@ -321,14 +321,14 @@
 
   // Level 3 masteries (fixed per class).
   const MASTERY = {
-    knight: { name: 'Champion', desc: '+20% damage and +10% block. When it slays an enemy, every ally beside it heals 10.', mod: { props: { dmgMult: 0.2 }, stat: { block: 0.1 }, traits: ['rallykill'] } },
+    knight: { name: 'Champion', desc: '+20% damage and +10% block. When it slays an enemy, every ally adjacent to it heals 10.', mod: { props: { dmgMult: 0.2 }, stat: { block: 0.1 }, traits: ['rallykill'] } },
     archer: { name: 'Deadeye', desc: '+1 range, and every third shot is a Deadeye: a sure critical hit for double damage.', mod: { stat: { range: 1 }, traits: ['deadeye'] } },
     scout: { name: 'Shadow Dance', desc: '+30% damage from the side or behind.', mod: { props: { flankMult: 0.3 } } },
     cleric: { name: 'Devotion', desc: 'Its basic ability (the healing prayer) heals 50% more, and +10 max HP.', mod: { stat: { hp: 10 }, props: { healMult: 0.5 } } },
     berserker: { name: 'Juggernaut', desc: '+15 max HP. Every kill earns a trophy: +10% damage and a little more size, up to 5, for the rest of the battle.', mod: { stat: { hp: 15 }, traits: ['trophy'] } },
     pyromancer: { name: 'Pyroclasm', desc: '+25% damage, and enemies it slays leave a patch of fire behind for 2 turns.', mod: { props: { dmgMult: 0.25 }, traits: ['pyroclasm'] } },
     assassin: { name: 'Deathmark', desc: 'Attacks from behind deal double damage.', mod: { props: { backMult: 0.5 } } },
-    golem: { name: 'Colossus', desc: '+25 max HP and +1 Move. When it finishes a move, the ground shakes: enemies beside it take 6 magic damage.', mod: { stat: { hp: 25, move: 1 }, traits: ['thunderstep'] } },
+    golem: { name: 'Colossus', desc: '+25 max HP and +1 Move. When it finishes a move, the ground shakes: enemies adjacent to it take 6 magic damage.', mod: { stat: { hp: 25, move: 1 }, traits: ['thunderstep'] } },
     beastrider: { name: 'Ride Down', desc: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.', mod: { traits: ['ridedown'] } },
     furgon: { name: 'Ancient Bark', desc: '+20 max HP and +2 Regen.', mod: { stat: { hp: 20 }, props: { regen: 2 } } },
     wisp: { name: 'Pestilence', desc: 'Its basic attack also deals 8 magic damage (never to buildings).', mod: { act: { dmg: 'magic', fixed: 8 } } },
@@ -559,7 +559,7 @@
       act: { name: 'Phoenix Dive', kind: 'leap', range: [1, 5], dmg: 'magic', fx: { burn: [2, 6] } },
       traits: ['flying'], tags: ['beast', 'spirit'],
       abilities: { 1: ['ph_plume', 'ph_talons', 'ph_sun'], 2: ['ph_glide', 'ph_cinder', 'ph_quick', 'ph_tears'] },
-      desc: 'A firebird. Dives onto an open tile up to 5 away and bursts into flame there: magic damage to every enemy beside where it lands, and they burn. Flies over anything. Needs 3 turns to rekindle.',
+      desc: 'A firebird. Dives onto an open tile up to 5 away and bursts into flame there: magic damage to every enemy adjacent to where it lands, and they burn. Flies over anything. Needs 3 turns to rekindle.',
       tip: 'It lands in the thick of you, then sits out 3 turns: gang up on it while its fire is low.',
     },
     frostgiant: {
@@ -568,7 +568,7 @@
       act: { name: 'Glacier Smash', kind: 'quake', range: [1, 2], dmg: 'phys', fx: { root: 2 } },
       traits: ['big'], tags: ['big', 'giant'],
       abilities: { 1: ['fg_hide', 'fg_frost', 'fg_mass'], 2: ['fg_reach', 'fg_guard', 'fg_shatter', 'fg_avalanche'] },
-      desc: 'Brings a glacier down on a foe up to 2 tiles away: it and every enemy beside it take a crushing blow and are frozen in place (rooted) for 2 turns. Needs 3 turns to heave again.',
+      desc: 'Brings a glacier down on a foe up to 2 tiles away: it and every enemy adjacent to it take a crushing blow and are frozen in place (rooted) for 2 turns. Needs 3 turns to heave again.',
       tip: 'A mountain of HP that rarely swings. Strike from range, and keep out of its reach when it is ready.',
     },
     paladin: {
@@ -636,8 +636,8 @@
       hp: 10, pow: 0, armor: 0, res: 0, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
       traits: ['immobile', 'nofacing', 'object', 'scenery', 'volatile'], tags: ['structure'], material: 'wood', props: { boom: 22 },
-      desc: 'Black powder. Explodes when broken, dealing 22 damage to everything next to it.',
-      tip: 'Shoot it when enemies stand beside it. Explosions set off other kegs too.',
+      desc: 'Black powder. Explodes when broken, dealing 22 damage to everything adjacent to it.',
+      tip: 'Shoot it when enemies stand adjacent to it. Explosions set off other kegs too.',
     },
     barricade: {
       name: 'Barricade', rarity: 'none', cost: 0, role: 'object',
@@ -712,8 +712,8 @@
       hp: 64, pow: 21, armor: 0.3, res: -0.1, block: 0.1, rec: 1, move: 3,
       act: { name: 'Crushing Maul', kind: 'quake', range: [1, 1], dmg: 'phys', fx: { knock: 1 } },
       traits: [], tags: ['greenskin', 'big'],
-      desc: 'A hulking orc whose maul flattens a foe and everyone beside it, and sends them flying 1 tile. Shoved into something, they take extra damage.',
-      tip: 'Weak to magic. Do not bunch up next to the unit it is about to hit, or stand with water, lava or rocks at your back.',
+      desc: 'A hulking orc whose maul flattens a foe and everyone adjacent to it, and sends them flying 1 tile. Shoved into something, they take extra damage.',
+      tip: 'Weak to magic. Do not bunch up adjacent to the unit it is about to hit, or stand with water, lava or rocks at your back.',
     },
     goblin_archer: {
       name: 'Goblin Archer', rarity: 'enemy', cost: 2, role: 'ranged',
@@ -728,7 +728,7 @@
       hp: 20, pow: 24, armor: 0, res: 0, block: 0.2, rec: 0, move: 4,
       act: { name: 'Detonate', kind: 'detonate', radius: 1, dmg: 'magic', ff: true },
       traits: ['volatile'], tags: ['greenskin'], props: { boom: 14 },
-      desc: 'Carries a lit keg. Runs at your lines and blows itself up, hurting everything next to it.',
+      desc: 'Carries a lit keg. Runs at your lines and blows itself up, hurting everything adjacent to it.',
       tip: 'Kill it at range before it arrives, and keep your units spread. If killed it still bursts for 14.',
     },
     shaman: {
@@ -801,7 +801,7 @@
       hp: 92, pow: 22, armor: 0.4, res: -0.2, block: 0, rec: 2, move: 2,
       act: { name: 'Bone Crush', kind: 'quake', range: [1, 1], dmg: 'phys' },
       traits: ['undead', 'big'], tags: ['undead', 'big'],
-      desc: 'A towering heap of fused bones. Crushes a foe and everyone beside it.',
+      desc: 'A towering heap of fused bones. Crushes a foe and everyone adjacent to it.',
       tip: 'Slow and slow to recover, and weak to magic.',
     },
     spider: {
@@ -853,7 +853,7 @@
       act: { name: 'Earthshatter', kind: 'quake', range: [1, 1], dmg: 'phys' },
       extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, uses: 3, cd: 2 }],
       traits: ['stoneskin', 'big'], tags: ['construct', 'big'], props: { guard: 0.2 },
-      desc: 'Ancient king of the quarry. Hurls boulders, and its basic attack strikes a foe and everyone beside it.',
+      desc: 'Ancient king of the quarry. Hurls boulders, and its basic attack strikes a foe and everyone adjacent to it.',
       tip: '50% physical resistance, but weak to magic. Slay the King to win.',
     },
     warlord: {
@@ -998,10 +998,10 @@
     reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% physical resistance.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
     demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
     lucky: { name: 'Lucky', cost: 2, desc: '15% chance to land a Critical hit: double damage.', req: 'damage', mod: { props: { crit: 0.15 } } },
-    powder_belt: { name: 'Powder Belt', cost: 1, desc: 'When it falls, it explodes: 15 damage to every enemy beside it.', mod: { props: { deathBoom: 15 } } },
+    powder_belt: { name: 'Powder Belt', cost: 1, desc: 'When it falls, it explodes: 15 damage to every enemy adjacent to it.', mod: { props: { deathBoom: 15 } } },
     headhunter: { name: 'Headhunter', cost: 2, desc: 'Every kill earns a trophy: +10% damage, up to 5, and heals it 6.', req: 'damage', mod: { traits: ['trophy'], props: { killHeal: 6 } } },
     giant_slayer: { name: 'Giant Slayer', cost: 1, desc: '+30% damage against targets with 30% physical resistance or more.', req: 'damage', mod: { props: { vsArmored: 0.3 } } },
-    pack_tactics: { name: 'Pack Tactics', cost: 1, desc: '+20% damage against targets your other units stand beside.', req: 'damage', mod: { props: { packMult: 0.2 } } },
+    pack_tactics: { name: 'Pack Tactics', cost: 1, desc: '+20% damage against targets your other units are adjacent to.', req: 'damage', mod: { props: { packMult: 0.2 } } },
     // Legendary: found from the second half of Act 2 on, more often the deeper you go.
     avatar: { name: 'Avatar of War', cost: 3, rarity: 'legendary', desc: '+20% damage, +20 max HP and +10% physical resistance.', req: 'damage', mod: { props: { dmgMult: 0.2 }, stat: { hp: 20, armor: 0.1 } } },
     time_warp: { name: 'Time Warp', cost: 4, rarity: 'legendary', desc: 'Cooldown 2 turns shorter (never below 1).', req: 'slow', mod: { stat: { rec: -2 } } },
@@ -1068,12 +1068,12 @@
     phoenix_soul: { name: 'Phoenix Soul', surcharge: 3, desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
     spellblade: { name: 'Spellblade', surcharge: 2, desc: 'Its attacks also deal 6 bonus magic damage.', req: 'damage', mod: { props: { bonusMagic: 6 } } },
     frostbound: { name: 'Frostbound', surcharge: 2, desc: 'Hits root the target for 1 turn. +10% physical resistance.', req: 'damage', mod: { onHit: { root: 1 }, stat: { armor: 0.1 } } },
-    mirror_image: { name: 'Mirror Image', surcharge: 2, desc: 'Every battle, a shadow copy of it stands beside it: 1 HP and half its damage, but a perfect decoy.', mod: { traits: ['mirrorimage'] } },
+    mirror_image: { name: 'Mirror Image', surcharge: 2, desc: 'Every battle, a shadow copy of it stands adjacent to it: 1 HP and half its damage, but a perfect decoy.', mod: { traits: ['mirrorimage'] } },
     windwalker: { name: 'Windwalker', surcharge: 2, desc: '+1 Move, and it flies over units, water and rocks.', req: 'mobile', mod: { stat: { move: 1 }, traits: ['flying'] } },
     holy_aegis: { name: 'Holy Aegis', surcharge: 2, desc: 'Adjacent allies take 15% less damage. Immune to poison.', mod: { props: { guard: 0.15 }, traits: ['poisonproof'] } },
     quicksilver: { name: 'Quicksilver', surcharge: 3, desc: 'Cooldown 1 turn shorter.', req: 'recovers', mod: { stat: { rec: -1 } } },
     midas: { name: 'Midas Touch', surcharge: 1, desc: 'Every enemy it slays earns 6 gold.', req: 'damage', mod: { traits: ['midas'] } },
-    thunderstep: { name: 'Thunderstep', surcharge: 2, desc: 'When it finishes a move, enemies next to it take 6 magic damage.', req: 'mobile', mod: { traits: ['thunderstep'] } },
+    thunderstep: { name: 'Thunderstep', surcharge: 2, desc: 'When it finishes a move, enemies adjacent to it take 6 magic damage.', req: 'mobile', mod: { traits: ['thunderstep'] } },
   };
 
   // Picks that only pay off from the right spot say how the AI plays them, so you know your
@@ -1081,15 +1081,15 @@
   // AI knows every one of these and plays to it (see formationValue and friends in ai.js).
   const has = (m, t) => m.traits && m.traits.includes(t);
   const AI_NOTES = [
-    [(m) => (m.props && (m.props.guard || m.props.magicGuard)) || has(m, 'bodyguard'), 'The AI keeps your units beside it, the fragile ones first.'],
-    [(m) => m.props && m.props.packMult, 'The AI picks targets your other units already stand beside.'],
+    [(m) => (m.props && (m.props.guard || m.props.magicGuard)) || has(m, 'bodyguard'), 'The AI keeps your units adjacent to it, the fragile ones first.'],
+    [(m) => m.props && m.props.packMult, 'The AI picks targets your other units are already adjacent to.'],
     [(m) => m.props && (m.props.flankMult || m.props.backMult), 'The AI goes round the side or back when it can.'],
     [(m) => m.props && m.props.chargeMult, 'The AI takes the long way in to charge.'],
     [(m) => m.props && m.props.momentum, 'The AI takes the long way in to build up speed.'],
     [(m) => has(m, 'brace'), 'The AI weighs holding its ground against moving.'],
-    [(m) => has(m, 'thunderstep') || has(m, 'sporepuff'), 'The AI ends its moves beside enemies when it can.'],
-    [(m) => has(m, 'mossy') || has(m, 'rallykill'), 'The AI keeps your wounded units beside it.'],
-    [(m) => has(m, 'discord'), 'The AI picks enemies standing beside their own allies.'],
+    [(m) => has(m, 'thunderstep') || has(m, 'sporepuff'), 'The AI ends its moves adjacent to enemies when it can.'],
+    [(m) => has(m, 'mossy') || has(m, 'rallykill'), 'The AI keeps your wounded units adjacent to it.'],
+    [(m) => has(m, 'discord'), 'The AI picks enemies standing adjacent to their own allies.'],
     [(m) => has(m, 'combustion') || has(m, 'contagion'), 'The AI goes for kills in the thick of the enemy.'],
     [(m) => m.props && (m.props.bounce || m.props.splash), 'The AI picks targets with other enemies close by.'],
   ];
@@ -1118,9 +1118,9 @@
   const RELICS = {
     war_horn: { name: 'War Horn', tier: 'common', desc: '+1 Supply in every battle.' },
     lucky_coin: { name: 'Lucky Coin', tier: 'common', desc: 'Your attacks have a 12% chance to land a Critical hit: double damage.' },
-    phalanx_standard: { name: 'Phalanx Standard', tier: 'common', desc: 'Your units with two or more allies right beside them take 20% less damage. Stand together.' },
-    lone_wolf: { name: 'Lone Wolf Pelt', tier: 'common', desc: 'Your units with no ally right beside them deal 30% more damage. Spread out.' },
-    powder_keg: { name: 'Powder Keg', tier: 'common', desc: 'When one of your units falls, it explodes: 12 damage to every enemy beside it.' },
+    phalanx_standard: { name: 'Phalanx Standard', tier: 'common', desc: 'Your units with two or more adjacent allies take 20% less damage. Stand together.' },
+    lone_wolf: { name: 'Lone Wolf Pelt', tier: 'common', desc: 'Your units with no adjacent ally deal 30% more damage. Spread out.' },
+    powder_keg: { name: 'Powder Keg', tier: 'common', desc: 'When one of your units falls, it explodes: 12 damage to every enemy adjacent to it.' },
     firecrackers: { name: 'Goblin Firecrackers', tier: 'common', desc: 'Every battle opens with a bang: three random enemies take 8 damage on your first turn.' },
     coin_purse: { name: "Merchant's Purse", tier: 'common', desc: 'Gain 12 extra gold after each victory.' },
     healing_salve: { name: 'Healing Salve', tier: 'common', desc: 'Your units that have Regen of their own (a Furgon, Living Moss, a Healing Charm) regenerate 2 more.' },
@@ -1134,8 +1134,8 @@
     bloodstone: { name: 'Bloodstone', tier: 'uncommon', desc: 'Your units heal for 20% of the damage they deal.' },
     thorned_mail: { name: 'Thorned Mail', tier: 'uncommon', desc: 'Enemies that strike your units in melee take 5 damage.' },
     executioner_hood: { name: "Executioner's Hood", tier: 'uncommon', desc: 'Your hits finish off any enemy left below 15% HP (never a boss).' },
-    plague_mask: { name: "Plague Doctor's Mask", tier: 'uncommon', desc: 'When a poisoned enemy falls, every poison on it leaps to the enemies beside it.' },
-    wildfire_oil: { name: 'Wildfire Oil', tier: 'uncommon', desc: 'An enemy that dies burning sets every enemy beside it burning.' },
+    plague_mask: { name: "Plague Doctor's Mask", tier: 'uncommon', desc: 'When a poisoned enemy falls, every poison on it leaps to the enemies adjacent to it.' },
+    wildfire_oil: { name: 'Wildfire Oil', tier: 'uncommon', desc: 'An enemy that dies burning sets every enemy adjacent to it burning.' },
     trophy_rack: { name: 'Trophy Rack', tier: 'uncommon', desc: 'Every kill earns the killer a trophy: +10% damage and a little more size, up to 5, for the rest of the battle.' },
     storm_jar: { name: 'Storm in a Jar', tier: 'uncommon', desc: 'Your magic attacks arc on to one more enemy within 2 tiles for half damage.' },
     blood_pact: { name: 'Blood Pact', tier: 'uncommon', cursed: true, desc: '+3 Supply in every battle, but your units start each battle at 75% HP.' },

@@ -507,7 +507,7 @@ test('the AI plays Guardian as a bodyguard: the guardian keeps beside a fragile 
     }
   assert.ok(near[guard] >= 9, `with ${guard}: beside the archer ${near[guard]}/10`);
   assert.ok(near.k_bash <= 3, `without: it marches on (${near.k_bash}/10)`);
-  assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units beside it'));
+  assert.ok(AG.Data.ABILITIES[guard].desc.includes('The AI keeps your units adjacent to it'));
 });
 
 test('poison that does not take says so, and why: the undead and wards resist; golems and the warded take it', () => {

@@ -4061,3 +4061,27 @@ body:has(#battle:not([hidden])) {
     animation-timing-function: steps(1, end);
   }
 }
+
+/* The tiny grid after "adjacent" (4 sides lit) and "3x3" (all 9 lit): see markAreas. */
+.area-word {
+  white-space: nowrap;
+}
+.mini-grid {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-left: 0.2em;
+  vertical-align: -0.12em;
+}
+.mini-grid .on {
+  fill: var(--brass-hi);
+}
+.mini-grid .mid {
+  fill: var(--brass-lo);
+}
+.mini-grid .off {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.7;
+  opacity: 0.45;
+}
