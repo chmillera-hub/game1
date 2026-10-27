@@ -4041,3 +4041,23 @@ body:has(#battle:not([hidden])) {
   margin-top: 2px;
   color: var(--amber);
 }
+
+/* The market's fresh stock fades in while it ignores taps (see shopScreen). */
+.cards.arming {
+  animation: shop-arm var(--arm, 1200ms) ease-in both;
+}
+@keyframes shop-arm {
+  from {
+    opacity: 0.35;
+    filter: saturate(0.5);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cards.arming {
+    animation-timing-function: steps(1, end);
+  }
+}

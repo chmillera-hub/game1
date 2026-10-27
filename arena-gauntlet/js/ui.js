@@ -4936,9 +4936,17 @@
 
   // ------------------------------------------------------------ shop
 
-  function shopScreen() {
+  // A fresh stock ignores taps for a moment (fading in as it does): a double tap on the way
+  // in, or on Resupply, never buys what the screen has barely shown. After a purchase the
+  // pause is shorter, so a double tap cannot buy the next card too.
+  const SHOP_ARM = 1200;
+  const SHOP_ARM_BUY = 500;
+  function shopScreen(armMs) {
     const run = UI.run;
     const p = run.pending;
+    const arm = armMs == null ? SHOP_ARM : armMs;
+    const armed = performance.now() + arm;
+    const ready = () => performance.now() >= armed;
     const card = (it, i) => {
       const can = R.canBuy(run, it);
       const price = `<div class="price">${ic('gold')} ${it.sold ? 'Sold' : it.price}</div>`;
@@ -4960,11 +4968,12 @@
       `<div class="wrap">
         <div class="row"><div class="grow"><p class="eyebrow">Merchant</p><h2>The Wandering Market</h2></div></div>
         <div class="row">${resbar(run)}<span class="grow"></span><button class="btn" id="shArmy">${ic('army')} Army</button></div>
-        <div class="cards">${p.stock.map((it, i) => card(it, i)).join('')}</div>
+        <div class="cards${arm ? ' arming' : ''}" style="--arm:${arm}ms">${p.stock.map((it, i) => card(it, i)).join('')}</div>
         <div class="row end"><button class="btn" id="shReroll" ${run.gold >= reroll ? '' : 'disabled'}>${ic('rotate')} Resupply · ${ic('gold')} ${reroll}</button><button class="btn primary" id="shLeave">Leave the market</button></div>
       </div>`
     );
     $('#shReroll', v).onclick = () => {
+      if (!ready()) return;
       if (R.rerollShop(run)) {
         sfx('coin');
         shopScreen();
@@ -4972,6 +4981,7 @@
     };
     for (const b of $$('[data-buy]', v))
       b.onclick = () => {
+        if (!ready()) return;
         const i = +b.dataset.buy;
         const it = p.stock[i];
         const before = R.commanderLevel(run);
@@ -4981,11 +4991,12 @@
           if (it.kind === 'manual' && R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
           else if (it.kind === 'manual' && R.veteranSupply(run) > vetBefore) toast(`Veteran commander: +1 Supply! Supply ${R.supplyFor(run)}.`);
           if (it.kind === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));
-          shopScreen();
+          shopScreen(SHOP_ARM_BUY);
         }
       };
-    $('#shArmy', v).onclick = () => armySheet(() => shopScreen());
+    $('#shArmy', v).onclick = () => armySheet(() => shopScreen(SHOP_ARM_BUY));
     $('#shLeave', v).onclick = () => {
+      if (!ready()) return;
       R.completeNode(run);
       route();
     };
