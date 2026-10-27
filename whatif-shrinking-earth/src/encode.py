@@ -14,6 +14,8 @@ import paths
 N_SEG = int(os.environ.get("WHATIF_SEGS", "4"))
 CAP_BYTES = 14_600_000          # stay safely under 15 MB
 AUDIO_KBPS = 64
+# low-bitrate AAC overshoots transients by ~2-3 dB: trim and limit first so decoded true peak stays < -1 dBTP
+AUDIO_FILTER = "volume=-0.7dB,alimiter=limit=0.66:attack=0.5:release=40:level=disabled"
 OUT_BASENAME = "what_if_earth_shrank"
 
 
@@ -46,7 +48,8 @@ def duration(path):
 
 
 def ssim(dist, ref):
-    out = subprocess.run(["ffmpeg", "-i", dist, "-i", ref, "-lavfi", "[0:v][1:v]ssim", "-f", "null", "-"],
+    lavfi = "[0:v]scale=1080:1920:flags=lanczos,format=yuv420p[a];[1:v]format=yuv420p[b];[a][b]ssim"
+    out = subprocess.run(["ffmpeg", "-i", dist, "-i", ref, "-lavfi", lavfi, "-f", "null", "-"],
                          capture_output=True, text=True).stderr
     for tok in out.split():
         if tok.startswith("All:"):
@@ -65,19 +68,25 @@ def encode_final(codec="h264", cap=CAP_BYTES):
     log = os.path.join(paths.VIDEO, f"pass_{codec}")
     for attempt in range(4):
         if codec == "h264":
-            vopt = ["-c:v", "libx264", "-preset", "veryslow", "-tune", "animation", "-profile:v", "high",
+            # 900x1600 gives x264 ~45% more bits per pixel at this bitrate: visibly cleaner
+            # outlines than 1080x1920 once a phone scales it back up
+            vopt = ["-vf", "scale=900:1600:flags=lanczos", "-c:v", "libx264", "-preset", "veryslow",
+                    "-tune", "animation", "-x264-params", "aq-mode=3", "-profile:v", "high",
                     "-level", "4.1", "-b:v", f"{vk}k", "-maxrate", f"{vk * 3}k", "-bufsize", f"{vk * 6}k",
                     "-g", "240", "-keyint_min", "24", "-pix_fmt", "yuv420p", "-passlogfile", log]
             p1 = vopt + ["-pass", "1"]
             p2 = vopt + ["-pass", "2"]
         else:
             xp = f"log-level=error:stats={log}.log"
-            vopt = ["-c:v", "libx265", "-preset", "slow", "-b:v", f"{vk}k", "-pix_fmt", "yuv420p", "-tag:v", "hvc1"]
+            # 10-bit keeps the night-sky gradients smooth at low bitrate
+            vopt = ["-c:v", "libx265", "-preset", "slow", "-b:v", f"{vk}k", "-pix_fmt", "yuv420p10le",
+                    "-profile:v", "main10", "-tag:v", "hvc1"]
             p1 = vopt + ["-x265-params", xp + ":pass=1"]
             p2 = vopt + ["-x265-params", xp + ":pass=2"]
         run(["ffmpeg", "-v", "error", "-y", "-i", mez] + p1 + ["-an", "-f", "null", "/dev/null"])
         run(["ffmpeg", "-v", "error", "-y", "-i", mez, "-i", mix, "-map", "0:v", "-map", "1:a"] + p2 +
-            ["-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-ar", "48000", "-movflags", "+faststart", "-shortest", out])
+            ["-af", AUDIO_FILTER, "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-ar", "48000", "-movflags", "+faststart",
+             "-shortest", out])
         size = os.path.getsize(out)
         print(f"{codec}: video {vk} kbps -> {size / 1e6:.2f} MB")
         if size <= cap:
@@ -106,3 +115,14 @@ if __name__ == "__main__":
         json.dump({k: dict(path=v[0], bytes=v[1], ssim=v[2], video_kbps=v[3]) for k, v in res.items()},
                   open(os.path.join(paths.BUILD, "encode_report.json"), "w"), indent=1)
         print(json.dumps(res, indent=1))
+
+
+def remux_audio(path):
+    """Replace the audio of an encoded MP4 with a fresh AAC encode of mix.wav (video stream copied)."""
+    mix = os.path.join(paths.AUDIO, "mix.wav")
+    tmp = path + ".tmp.mp4"
+    run(["ffmpeg", "-v", "error", "-y", "-i", path, "-i", mix, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+         "-af", AUDIO_FILTER, "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-ar", "48000", "-movflags", "+faststart",
+         "-shortest", tmp])
+    os.replace(tmp, path)
+    return os.path.getsize(path)
