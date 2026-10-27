@@ -502,8 +502,10 @@ on a phone turned sideways, but portrait works too.
   (completing the mission does not stop them). Big units and regen last
   longest; the last side standing wins. A tough tank can win a long battle on its own.
 - **Cleanup**: when the enemy army falls while the field still holds something worth
-  having (loot, and enemy buildings with gold or a goal in them: totems, the cage, a
-  wagon, barricades, walls, towers, the buildings that send reinforcements), the
+  having (loot; enemy buildings with gold or a goal in them: totems, the cage, a
+  wagon, barricades, walls, towers, the buildings that send reinforcements; and the
+  specters guarding treasure, a coin or two each, even once their tome or relic is
+  taken), the
   battle does not end on the spot. A banner says the army is beaten, the win is
   yours already, and your army goes round collecting: it breaks the buildings, cuts
   down any guards still at their posts (the specters by the Lost Tome) and takes the

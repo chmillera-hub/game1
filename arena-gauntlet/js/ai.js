@@ -324,11 +324,10 @@
     // Objective objects count as targets to march on when breaking them wins the battle.
     // Treasure guardians and towers are left alone unless they get in the way.
     // The enemy army beaten, the player's army cleans up: buildings with gold or a goal in
-    // them, and any guards still standing at loot nobody has taken.
+    // them, and the treasure's guards, whose coins are still worth having.
     const cleanup = team === 'P' && !!s.cleanup;
-    const left = cleanup ? E.cleanupLoot(s) : [];
     const foes = cleanup
-      ? E.cleanupTargets(s).concat(s.units.filter((u) => u.alive && u.team === foe && u.bound && u.post && left.some((l) => l.x === u.post.x && l.y === u.post.y)))
+      ? E.cleanupTargets(s)
       : s.units.filter((u) => u.alive && u.team === foe && !u.bound && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u)));
     // Hostile Lightning Wards (anything rooted to the spot that zaps what comes near), and
     // the living foes worth walking into one for. While any of those remain, nobody marches

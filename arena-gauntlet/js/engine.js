@@ -3215,8 +3215,15 @@
   // nothing is left or until it has nobody left standing: there is no other limit, as its
   // fatigue sets in at once and grows with every turn it takes (see fatigue). It cannot
   // cost you the battle. Finish now (or a retreat) ends it early.
+  // Buildings with gold or a goal in them, and the Specters that guard treasure: they do not
+  // count as the enemy army, but each still drops a coin or two when cut down, loot taken
+  // or not.
   function cleanupTargets(s) {
-    return s.units.filter((u) => u.alive && u.team === 'E' && !u.escaped && (u.nonCombat || u.structure) && !u.traits.has('summon') && (u.goal || u.bounty > 0 || u.salvage > 0));
+    return s.units.filter((u) => {
+      if (!u.alive || u.team !== 'E' || u.escaped || u.traits.has('summon')) return false;
+      if (u.nonCombat || u.structure) return u.goal || u.bounty > 0 || u.salvage > 0;
+      return u.bound;
+    });
   }
   function cleanupLoot(s) {
     return (s.loot || []).filter((l) => !l.taken);

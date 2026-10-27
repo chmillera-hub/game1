@@ -530,6 +530,38 @@ test('poison that does not take says so, and why: undead, constructs; a Barrier 
 
 // ------------------------------------------------------------ cleanup
 
+test('a Specter guarding treasure keeps the battle going after the army falls, loot taken or not, and pays its coins', () => {
+  const s = board(
+    [
+      { type: 'knight', team: 'P', x: 4, y: 5 },
+      { type: 'archer', team: 'P', x: 2, y: 8 },
+      { type: 'scout', team: 'E', x: 4, y: 4, facing: 0 },
+      { type: 'specter', team: 'E', x: 1, y: 3, facing: 0, post: { x: 1, y: 2 } },
+    ],
+    { loot: [{ id: 'loot', kind: 'tome', x: 1, y: 2 }] }
+  );
+  const [kn, ar, sc, sp] = s.units;
+  for (const u of [kn, ar]) u.hp = u.maxHp = 400;
+  // The tome is already taken: only the Specter is left.
+  s.loot[0].taken = true;
+  sc.hp = 1;
+  act(s, kn, { kind: 'unit', uid: sc.uid });
+  assert.ok(!sc.alive);
+  assert.ok(!s.over, 'the Specter still stands: not over yet');
+  assert.ok(s.cleanup, 'cleanup is on');
+  assert.deepStrictEqual(E.cleanupTargets(s).map((u) => u.type), ['specter']);
+  let gold = 0;
+  let guard = 0;
+  while (!s.over && guard++ < 400) {
+    AG.AI.playTurn(s, s.side, { stance: 'balanced', temp: 0 });
+    for (const e of s.events) if (e.t === 'gold' && e.uid === sp.uid) gold += e.amount;
+    s.events.length = 0;
+  }
+  assert.ok(s.over && s.winner === 'P');
+  assert.ok(!sp.alive, 'your army went back for the Specter');
+  assert.ok(gold >= 1 && gold <= 2, `it paid ${gold}`);
+});
+
 test('the enemy army down with gold, goals or loot still on the field: the battle goes on, the win already yours', () => {
   const s = board(
     [
