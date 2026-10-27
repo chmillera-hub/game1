@@ -667,7 +667,7 @@ on a phone turned sideways, but portrait works too.
   then it throws again, as often as it likes. Counted in its own turns, each hold lasts
   longer the bigger the enemy army. No cure, rally or immunity slips the net; bosses are
   too big to hold. A glowing chain runs from the Shackler to its prey. Shacklers are
-  tough (64 HP at Level 1, 30% physical and magic resistance) and a Spell Shield eats the
+  tough (64 HP at Level 1, 30% physical and 50% magic resistance) and a Spell Shield eats the
   first physical or magic hit on one, so even a decked-out Level 3 Dragon (about 33 a
   hit) cannot kill one before it acts: an army needs a second threat that can reach it,
   or anything that paralyzes, shoves or drags it, to break the chain. Your units' AI goes for a
