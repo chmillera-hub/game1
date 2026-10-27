@@ -162,7 +162,8 @@ async function test(name, fn) {
     Object.assign(d.units[0].spec, { level: 3, talents: ['s_cutpurse'], skills: ['demolisher'], gear: ['siege_hammer', 'gilded_gauntlet'], enchant: 'midas' });
     R.fixSandbox(d);
     const sp = d.units[0].spec;
-    assert.ok(!sp.talents.includes('s_cutpurse') && !sp.skills.includes('demolisher') && !sp.gear.length && !sp.enchant);
+    assert.ok(sp.talents.includes('s_cutpurse'), 'Light Fingers fights now, so it stays');
+    assert.ok(!sp.skills.includes('demolisher') && !sp.gear.length && !sp.enchant);
     for (let seed = 1; seed <= 60; seed++) {
       const a = R.autoSandbox(seed);
       for (const it of a.units) {

@@ -21,7 +21,7 @@ Talents (each replaces the flattest talent of its class):
 | --- | --- | --- |
 | Knight | Guardian (allies beside take 15% less) | **Bodyguard**: once between its turns, takes a single-target blow meant for an ally beside it |
 | Archer | Bodkin Arrows (ignore half physical resistance) | **Ricochet**: arrows bounce to a second enemy within 2 tiles for 50%, poison and marks included |
-| Scout | Ambusher (+50% from behind) | **Cutpurse**: every hit steals 2 gold, up to 12 a battle |
+| Scout | Ambusher (+50% from behind) | **Light Fingers**: every hit also steals 3 HP (3 damage past physical resistance, heals 3) |
 | Cleric | Fortitude (+12 HP, +15% res) | **Halo**: healing past full HP becomes a shield (up to 15) |
 | Berserker | Battle Scars (+15% physical resistance, +10 HP) | **Blood Frenzy**: +5% damage every time it is hurt, up to +50% (the ground under it reddens) |
 | Pyromancer | Flame Cloak (8 thorns) | **Combustion**: burning enemies it slays explode, 10 damage to their neighbours, setting them alight |
@@ -34,7 +34,7 @@ Talents (each replaces the flattest talent of its class):
 | Enchantress | Mind Spike (+50% damage) | **Discord**: enemies it paralyzes lash out at an ally beside them |
 | Witch | Warding Sigils (+20% res, +10 HP) | **Soul Harvest**: every enemy that falls within 3 tiles heals it 8 and adds +10% damage (up to +50%) |
 | Lightning Ward | Grounding Field (magic guard) | **Overload**: when destroyed, 20 magic damage to every enemy within 2 tiles |
-| Dragon | Ancient Hide (+30 HP) | **Hoarder**: every kill drops 8 gold, +15 HP |
+| Dragon | Ancient Hide (+30 HP) | **Hoarder**: every kill heals it 12, +15 HP |
 | Mage Knight | Runic Bulwark (+15% physical resistance, +15% block) | **Runic Ward**: starts every battle behind a 20 shield |
 | Trebuchet | Wrecking Shot (ignore half physical resistance) | **Shrapnel**: boulders spray 40% damage on enemies beside the target |
 
@@ -205,7 +205,7 @@ on a phone turned sideways, but portrait works too.
   for what the army already does get picked first, never Lone Wolf with Phalanx; a "Why these relics" list says what each one feeds. The relic picker
   shows what a relic needs and who could carry it. Relics and kit with no use in a Hall
   battle are not offered in the sandbox at all: the gold, XP, shop, deployment-zone, crown
-  and building relics, and the Cutpurse talent, Demolisher skill, Siege Hammer and Gilded
+  and building relics, and the Demolisher skill, Siege Hammer and Gilded
   Gauntlet gear and Midas enchantment (gold or buildings only; a Hall field has neither).
   A 9x3 grid sets the formation. Test fight
   plays a friendly match against any Hall army; Enter the Hall adds a copy, marked Sandbox,

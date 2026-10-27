@@ -784,4 +784,44 @@ test('War Drum of Ages: one great beat every tenth turn, 25 HP and a 3-turn fren
   assert.ok(s.events.filter((e) => e.t === 'status' && e.status === 'frenzy').every((e) => e.quiet && e.turns === 3), 'a quiet 3-turn frenzy');
 });
 
+test('Light Fingers (Scout): every hit also steals 3 HP, past physical resistance', () => {
+  const s = board([
+    { type: 'scout', team: 'P', x: 4, y: 5, talents: ['s_cutpurse'] },
+    { type: 'knight', team: 'E', x: 4, y: 4, facing: 0 },
+  ]);
+  const [sc, kn] = s.units;
+  kn.block = 0;
+  sc.hp -= 10;
+  const plain = E.calcHit(s, sc, kn, {}).dmg;
+  const hp = sc.hp;
+  act(s, sc, { kind: 'unit', uid: kn.uid });
+  assert.strictEqual(kn.maxHp - kn.hp, plain + 3, 'its hit plus 3 that ignores physical resistance');
+  assert.strictEqual(sc.hp, hp + 3, 'and the Scout heals 3');
+  assert.ok(!events(s, 'gold').length, 'no gold');
+});
+
+test('Hoarder (Dragon): every kill heals it 12, and no gold', () => {
+  const s = board([
+    { type: 'dragon', team: 'P', x: 4, y: 6, level: 2, talents: ['d_hoard'] },
+    { type: 'scout', team: 'E', x: 4, y: 4 },
+  ]);
+  const [dr, sc] = s.units;
+  assert.strictEqual(dr.maxHp, E.buildUnit({ type: 'dragon', level: 2 }).maxHp + 15);
+  dr.hp -= 40;
+  sc.hp = 1;
+  const hp = dr.hp;
+  // Fire Breath: a cone straight north, onto the scout.
+  act(s, dr, { kind: 'dir', d: 0 });
+  assert.ok(!sc.alive);
+  assert.ok(dr.hp >= hp + 12, `healed ${dr.hp - hp}`);
+  // (Every kill still drops the usual coin or two; the Hoarder itself pays no gold.)
+  assert.ok(!events(s, 'gold').some((e) => e.uid === dr.uid), 'no gold from the talent');
+});
+
+test('nothing tied to one unit (talents, level picks, masteries) only pays in gold', () => {
+  const D = AG.Data;
+  for (const [tab, table] of [['talent', D.TALENTS], ['pick', D.ABILITIES], ['mastery', D.MASTERY]])
+    for (const [id, x] of Object.entries(table)) assert.ok(!/\bgold\b/i.test(x.desc), `${tab} ${id} mentions gold: ${x.desc}`);
+});
+
 console.log(`fun: ${passed} tests passed`);

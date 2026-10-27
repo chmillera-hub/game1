@@ -76,7 +76,7 @@
     // Scout
     s_caltrops: { name: 'Caltrops', cost: 0, desc: 'Active, 2 uses: scatter caltrops on an empty tile up to 3 away. The first enemy to step there stops, takes 6 damage and is rooted for 1 turn.',
       mod: { active: { name: 'Caltrops', kind: 'hazard', hz: 'caltrops', range: [1, 3], pattern: 'single', turns: 6, arc: true, uses: 2 } } },
-    s_cutpurse: { name: 'Cutpurse', cost: 1, desc: 'Every hit it lands steals 2 gold, up to 12 a battle.', mod: { traits: ['cutpurse'] } },
+    s_cutpurse: { name: 'Light Fingers', cost: 1, desc: 'Every hit it lands also steals 3 HP: 3 more damage, past physical resistance, and it heals 3.', mod: { traits: ['cutpurse'] } },
     s_fleet: { name: 'Fleet-footed', cost: 1, desc: '+1 Move, and it slips through enemy units.', mod: { stat: { move: 1 }, traits: ['shadowstep'] } },
     s_evasion: { name: 'Slippery', cost: 0, desc: '+10% block, and whenever it blocks it slips a tile away from the attacker.', mod: { stat: { block: 0.1 }, traits: ['slippery'] } },
     s_mark: { name: 'Mark Prey', cost: 1, desc: 'Active, 2 uses: mark an enemy up to 5 tiles away. It takes 25% more damage for 2 turns.',
@@ -212,7 +212,7 @@
       mod: { active: { name: 'Wing Buffet', kind: 'nova', radius: 1, dmg: 'phys', mult: 0.5, fx: { knock: 1 } } } },
     d_hellfire: { name: 'Hellfire', cost: 2, desc: 'Its basic attack reaches 4 tiles deep.', mod: { stat: { len: 1 } } },
     d_tamed: { name: 'Tamed Fire', cost: 0, desc: 'Its basic attack spares allies.', mod: { act: { ff: false } } },
-    d_hoard: { name: 'Hoarder', cost: 1, desc: 'Every enemy it slays drops 8 gold. +15 max HP.', mod: { traits: ['hoarder'], stat: { hp: 15 } } },
+    d_hoard: { name: 'Hoarder', cost: 1, desc: 'Every enemy it slays joins its hoard: it heals 12. +15 max HP.', mod: { stat: { hp: 15 }, props: { killHeal: 12 } } },
     d_searing: { name: 'Searing Flames', cost: 2, desc: 'Its hits set enemies burning: 5 damage a turn for 2 turns.', mod: { onHit: { burn: [2, 5] } } },
     d_terror: { name: 'Terror', cost: 2, desc: 'Active, 1 use: enemies within 3 tiles are weakened for 2 turns and marked: they deal 30% less and take 25% more damage.',
       mod: { active: { name: 'Terror', kind: 'nova', radius: 3, fx: { weak: 2, mark: 2 }, uses: 1 } } },

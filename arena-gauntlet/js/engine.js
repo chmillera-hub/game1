@@ -1315,10 +1315,6 @@
     }
     const feed = (src.props.killHeal || 0) + (rel.has('vampire_fang') && !src.nonCombat ? 8 : 0);
     if (feed) heal(s, src, feed, 'drain');
-    if (src.team === 'P' && src.traits.has('hoarder')) {
-      s.stats.gold += 8;
-      emit(s, { t: 'gold', uid: src.uid, amount: 8 });
-    }
     if (src.traits.has('pyroclasm')) placeFire(s, src, [[u.x, u.y]], 2, 6);
     if (src.traits.has('spree') && !src.spree) {
       src.spree = true;
@@ -1788,11 +1784,10 @@
       emit(s, { t: 'execute', uid: tgt.uid, src: atk.uid });
       applyDamage(s, atk, tgt, tgt.hp + tgt.shield, { cat: 'none', dmgType: 'true' });
     }
-    // Cutpurse: every hit lifts 2 gold, up to 12 a battle.
-    if (dealt > 0 && atk.team === 'P' && atk.traits.has('cutpurse') && (atk.stolen || 0) < 12) {
-      atk.stolen = (atk.stolen || 0) + 2;
-      s.stats.gold += 2;
-      emit(s, { t: 'gold', uid: atk.uid, amount: 2 });
+    // Light Fingers: every hit also lifts 3 HP from the target, past physical resistance.
+    if (dealt > 0 && atk.alive && tgt.alive && atk.traits.has('cutpurse') && !tgt.structure && !tgt.nonCombat) {
+      applyDamage(s, atk, tgt, 3, { cat: 'none', dmgType: 'true' });
+      heal(s, atk, 3, 'drain');
     }
     if (atk.alive && !opts.noBonus && atk.props.bonusMagic && tgt.alive) magicDamage(s, atk, tgt, atk.props.bonusMagic, 'bonus');
     if (dealt > 0 && atk.alive && !opts.noDrain) {
