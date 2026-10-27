@@ -50,16 +50,27 @@
     return lv;
   }
 
-  // XP progress toward the next commander level.
+  // Past the top commander level XP still counts: +1 Supply for every VETERAN_XP more.
+  const VETERAN_XP = 30;
+  function veteranSupply(run) {
+    const top = COMMAND[COMMAND.length - 1].xp;
+    return run.xp > top ? Math.floor((run.xp - top) / VETERAN_XP) : 0;
+  }
+
+  // XP progress toward the next commander level; at the top level, toward the next bonus
+  // Supply (vet: bonus Supply so far, from/to: the XP it runs between).
   function levelInfo(run) {
     const lv = commanderLevel(run);
     const cur = COMMAND[lv];
     const next = COMMAND[lv + 1] || null;
-    return { lv, xp: run.xp, from: cur.xp, to: next ? next.xp : null, max: !next };
+    if (next) return { lv, xp: run.xp, from: cur.xp, to: next.xp, max: false, vet: 0 };
+    const vet = veteranSupply(run);
+    const from = cur.xp + vet * VETERAN_XP;
+    return { lv, xp: run.xp, from, to: from + VETERAN_XP, max: true, vet, step: VETERAN_XP };
   }
 
   function supplyFor(run) {
-    let s = COMMAND[commanderLevel(run)].supply + (run.supplyBonus || 0);
+    let s = COMMAND[commanderLevel(run)].supply + veteranSupply(run) + (run.supplyBonus || 0);
     if (hasRelic(run, 'war_horn')) s += 1;
     if (hasRelic(run, 'legion_banner')) s += 2;
     if (hasRelic(run, 'tyrant_heart')) s += 3;
@@ -80,10 +91,11 @@
 
   function gainXp(run, amount) {
     const from = commanderLevel(run);
+    const vet = veteranSupply(run);
     const amt = Math.round(amount * (hasRelic(run, 'drill_manual') ? 1.25 : 1) * (hasRelic(run, 'crown_command') ? 1.25 : 1));
     run.xp += amt;
     run.stats.xp += amt;
-    return { amount: amt, from, to: commanderLevel(run) };
+    return { amount: amt, from, to: commanderLevel(run), vet: veteranSupply(run) - vet };
   }
 
   // ------------------------------------------------------------ roster and items
@@ -889,7 +901,8 @@
     if (group === 'elite') b *= 1.2;
     if (group === 'boss') b = 12 + (run.act - 1) * 7 + 8;
     const lean = group === 'boss' ? 0.03 : 0.08;
-    b = Math.min(b, (supplyFor(run) - ENEMY_SUPPLY_LAG) * (BUDGET_CAP[group] + lean * (run.act - 1)));
+    // Veteran Supply (past the top commander level) is all yours: enemies do not grow with it.
+    b = Math.min(b, (supplyFor(run) - veteranSupply(run) - ENEMY_SUPPLY_LAG) * (BUDGET_CAP[group] + lean * (run.act - 1)));
     return b * diff.mult * BUDGET_SCALE[group];
   }
 
@@ -1821,6 +1834,7 @@
     reward.xp = lv.amount;
     reward.lvFrom = lv.from;
     reward.lvTo = lv.to;
+    reward.vetGain = lv.vet;
     if (p.enc.prisoner) reward.prisoner = addRecruit(run, p.enc.prisoner.type).id;
     if (pre.relic && !run.relics.includes(pre.relic)) {
       gainRelic(run, pre.relic);
@@ -3220,7 +3234,7 @@
     FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
     crownHolder, crownedIn, gainRelic,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
-    commanderLevel, levelInfo, supplyFor, armySize, gainXp,
+    commanderLevel, levelInfo, veteranSupply, VETERAN_XP, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, draftClericTalent, draftBrought, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,

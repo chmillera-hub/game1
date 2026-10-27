@@ -258,6 +258,33 @@ test('the merchant: six things, relics dearer than anything else, and a resupply
   }
 });
 
+test('past the top commander level, every 30 XP more is +1 Supply, and enemies do not grow with it', () => {
+  const D = AG.Data;
+  const run = R.newRun({ seed: 5, warband: 'vanguard' });
+  const top = D.COMMAND[D.COMMAND.length - 1];
+  run.xp = top.xp;
+  const base = R.supplyFor(run);
+  assert.strictEqual(R.veteranSupply(run), 0);
+  for (const [xp, vet] of [[top.xp + 29, 0], [top.xp + 30, 1], [top.xp + 59, 1], [top.xp + 90, 3]]) {
+    run.xp = xp;
+    assert.strictEqual(R.veteranSupply(run), vet, `${xp} XP`);
+    assert.strictEqual(R.supplyFor(run), base + vet);
+  }
+  run.xp = top.xp + 40;
+  const li = R.levelInfo(run);
+  assert.ok(li.max && li.vet === 1 && li.from === top.xp + 30 && li.to === top.xp + 60, 'progress toward the next bonus');
+  // The same battle, before and after the bonus: the same enemy army.
+  R.startAct(run, 3);
+  run.xp = top.xp;
+  const a = R.genEncounter(run, { id: 'v', row: 2, kind: 'battle' });
+  run.xp = top.xp + 150;
+  const b = R.genEncounter(run, { id: 'v', row: 2, kind: 'battle' });
+  assert.deepStrictEqual(b.units, a.units, 'enemies do not grow with veteran Supply');
+  // A win that crosses a 30 XP step says so.
+  const g = R.gainXp(run, 30);
+  assert.strictEqual(g.vet, 1);
+});
+
 test('the Act I boss camp holds four wrecked carts of gold; other battles and later bosses none', () => {
   for (const seed of [3, 11, 29, 47]) {
     const run = R.newRun({ seed, warband: 'ember' });

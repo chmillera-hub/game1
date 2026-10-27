@@ -309,6 +309,10 @@ on a phone turned sideways, but portrait works too.
 - **Commander level**: battles give XP, and elites and bosses give more. XP raises
   your commander level, from 16 Supply at Level 1 to 35 Supply at Level 10 (two more
   than enemy armies are sized for, so there is room for abilities and kit early on).
+  Past Level 10 XP still counts: every 30 XP more is +1 Supply (a veteran commander),
+  and enemy armies do not grow with it. The Commander sheet shows how close the next
+  one is, and the victory screen calls it out when you earn one. It is a small late
+  bonus: in simulated campaigns about 1 winning army in 18 had earned one by the end.
 - **Unit levels**: Level 1 picks an ability: the free one, or an active ability
   that costs extra Supply. Every active ability has 1 to 3 uses a battle, which never
   come back, and most have a cooldown of their own (shown as "Active, 3 uses, cooldown

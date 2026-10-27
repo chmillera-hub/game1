@@ -704,7 +704,7 @@
 
   function resbar(run) {
     const li = R.levelInfo(run);
-    const frac = li.max ? 1 : (li.xp - li.from) / (li.to - li.from);
+    const frac = (li.xp - li.from) / (li.to - li.from);
     return `<div class="resbar">
       <span class="res gold" title="Gold">${ic('gold')}<span class="num">${run.gold}</span></span>
       <button class="res cmdlv" data-cmd title="Commander level">${ic('crown')}<span class="num">Lv ${li.lv}</span>
@@ -723,9 +723,10 @@
       })
       .join('');
     openSheet(
-      `${sheetHead('Commander level', `${li.max ? 'Maximum level reached.' : `${li.xp} XP · ${li.to - li.xp} XP to level ${li.lv + 1}`}`)}
+      `${sheetHead('Commander level', `${li.max ? `Top level reached · ${li.xp} XP · ${li.to - li.xp} XP to the next +1 Supply` : `${li.xp} XP · ${li.to - li.xp} XP to level ${li.lv + 1}`}`)}
       <p class="muted">Victories earn XP. Each commander level raises the Supply you can spend in every battle. Field as many units as your Supply pays for. Elites, bosses and bonus goals pay more XP.</p>
       <table class="lvtable"><thead><tr><th>Level</th><th>XP</th><th>Supply</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="small muted">Past level ${COMMAND.length - 1}, XP still counts: <b>+1 Supply for every ${R.VETERAN_XP} XP more</b>${li.max ? ` (+${li.vet} so far)` : ''}. Enemy armies do not grow with it.</p>
       <p class="small muted">Right now: ${R.supplyFor(run)} Supply, after relics and bonuses.</p>
       <div class="actions"><button class="btn primary" data-close>Got it</button></div>`
     );
@@ -4739,8 +4740,9 @@
       `<div class="wrap">
         <div class="reward-head"><p class="eyebrow">${p.kind === 'boss' ? 'The champion falls' : 'The field is yours'}</p><h2>Victory</h2></div>
         ${levelUpHTML(p.lvFrom, p.lvTo)}
+        ${p.vetGain > 0 ? `<div class="levelup" data-got="✓ Collected">${ic('crown')}<div><b>Veteran commander: +${p.vetGain} Supply!</b><div class="small">Every ${R.VETERAN_XP} XP past the top level adds 1. Supply now ${R.supplyFor(run)}.</div></div></div>` : ''}
         <div class="panel loot" data-got="✓ Collected">
-          <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? 'max level' : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
+          <span class="res xp">${ic('crown')} +${p.xp} XP <span class="small muted">(${li.max ? `${li.xp - li.from}/${li.step} to +1 Supply` : `${li.xp - li.from}/${li.to - li.from} to Lv ${li.lv + 1}`})</span></span>
           <span class="res gold">${ic('gold')} +${p.gold} gold${p.firstTry ? ' <span class="small muted">(first-try bonus included)</span>' : ''}</span>
           ${p.lean ? `<span class="res gold">${ic('command')} +${p.lean} gold for ${p.unspent} unspent Supply</span>` : ''}
           ${p.midas ? `<span class="res gold">${ic('gold')} +${p.midas} gold picked up in battle</span>` : ''}
@@ -4869,9 +4871,11 @@
         const i = +b.dataset.buy;
         const it = p.stock[i];
         const before = R.commanderLevel(run);
+        const vetBefore = R.veteranSupply(run);
         if (R.buy(run, i)) {
           sfx('coin');
           if (it.kind === 'manual' && R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
+          else if (it.kind === 'manual' && R.veteranSupply(run) > vetBefore) toast(`Veteran commander: +1 Supply! Supply ${R.supplyFor(run)}.`);
           if (it.kind === 'recruit') toast(joinedText(run.roster[run.roster.length - 1]));
           shopScreen();
         }
@@ -4943,6 +4947,7 @@
           if (!rid) return;
         }
         const before = R.commanderLevel(run);
+        const vetBefore = R.veteranSupply(run);
         const out = R.chooseEvent(run, c.id, rid);
         if (out == null) {
           toast('That choice is not available.');
@@ -4950,6 +4955,7 @@
         }
         sfx('click');
         if (R.commanderLevel(run) > before) toast(`Commander level ${R.commanderLevel(run)}! Supply ${R.supplyFor(run)}.`);
+        else if (R.veteranSupply(run) > vetBefore) toast(`Veteran commander: +${R.veteranSupply(run) - vetBefore} Supply! Supply ${R.supplyFor(run)}.`);
         if (run.pending && run.pending.type === 'battle') {
           toast(out);
           route();
