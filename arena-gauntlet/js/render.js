@@ -397,7 +397,8 @@
       v.root = u.root || 0;
       v.weak = u.weak || 0;
       v.mark = u.mark || 0;
-      v.sever = u.sever || 0;
+      v.ward = u.ward || 0;
+      v.holding = u.holding || 0;
       v.frenzy = u.frenzy || 0;
       v.shield = u.shield || 0;
       v.level = u.level || 1;
@@ -498,6 +499,7 @@
       this.drawOverlays(g);
       this.drawWaveMarks(g);
       this.drawObjects(g);
+      this.drawChains(g);
       this.drawWaveBadges(g);
       this.drawSmoke(g);
       this.drawEffects(g, dt);
@@ -726,6 +728,66 @@
         g.setLineDash([this.tw * 0.12, this.tw * 0.08]);
         g.stroke();
         g.setLineDash([]);
+      }
+    }
+
+    // Shackles: a glowing chain from each Shackler's hand to the unit it holds, sagging a
+    // little, with a ring of light locked round its prey. Drawn over the units, so it is
+    // always clear who holds whom.
+    drawChains(g) {
+      for (const w of this.vis.values()) {
+        if (!w.holding || w.dying || w.alpha < 0.3) continue;
+        const t = this.vis.get(w.holding);
+        if (!t || t.dying || t.alpha < 0.3) continue;
+        const [ax0, ay0] = this.center(w.x, w.y);
+        const [bx0, by0] = this.center(t.x, t.y);
+        const hw = (S.HEIGHT[w.type] || 40) * this.unit * (w.scale || 1);
+        const ht = (S.HEIGHT[t.type] || 40) * this.unit * (t.scale || 1);
+        const ax = ax0 + w.ox;
+        const ay = ay0 + w.oy - hw * 0.45;
+        const bx = bx0 + t.ox;
+        const by = by0 + t.oy - ht * 0.42;
+        const p = 0.5 + 0.5 * Math.sin(this.time * 4);
+        const mx = (ax + bx) / 2;
+        const my = (ay + by) / 2 + this.tw * 0.18;
+        const at = (k) => [(1 - k) * (1 - k) * ax + 2 * (1 - k) * k * mx + k * k * bx, (1 - k) * (1 - k) * ay + 2 * (1 - k) * k * my + k * k * by];
+        g.save();
+        // The glow under the links.
+        g.strokeStyle = 'rgba(255,200,90,' + (0.25 + 0.2 * p) + ')';
+        g.lineWidth = Math.max(3, this.tw * 0.11);
+        g.lineCap = 'round';
+        g.beginPath();
+        g.moveTo(ax, ay);
+        g.quadraticCurveTo(mx, my, bx, by);
+        g.stroke();
+        // The links, turned alternately flat and edge-on.
+        const len = Math.hypot(bx - ax, by - ay) + this.tw * 0.2;
+        const n = Math.max(4, Math.round(len / (this.tw * 0.085)));
+        for (let i = 0; i <= n; i++) {
+          const k = i / n;
+          const [x, y] = at(k);
+          const [x2, y2] = at(Math.min(1, k + 0.01));
+          const ang = Math.atan2(y2 - y, x2 - x);
+          g.save();
+          g.translate(x, y);
+          g.rotate(ang);
+          g.strokeStyle = '#2a2016';
+          g.lineWidth = Math.max(1.6, this.tw * 0.035);
+          g.beginPath();
+          g.ellipse(0, 0, this.tw * 0.045, i % 2 ? this.tw * 0.012 : this.tw * 0.026, 0, 0, Math.PI * 2);
+          g.stroke();
+          g.strokeStyle = i % 2 ? '#c9a24a' : '#f2d27a';
+          g.lineWidth = Math.max(1, this.tw * 0.02);
+          g.stroke();
+          g.restore();
+        }
+        // The shackle ring on its prey.
+        g.strokeStyle = 'rgba(255,214,110,' + (0.65 + 0.3 * p) + ')';
+        g.lineWidth = Math.max(1.5, this.tw * 0.035);
+        g.beginPath();
+        g.ellipse(bx, by, this.tw * 0.22, this.tw * 0.08, 0, 0, Math.PI * 2);
+        g.stroke();
+        g.restore();
       }
     }
 
@@ -1182,6 +1244,26 @@
           g.fill();
         }
       }
+      // A Spell Shield: a gold-white bubble with sparks running round it.
+      if (v.ward > 0) {
+        const ry = h * 0.62;
+        const rx = this.tw * 0.36;
+        const wy = cy - h * 0.48;
+        g.strokeStyle = 'rgba(255,236,170,' + (0.6 + 0.25 * Math.sin(t * 3.5)) + ')';
+        g.fillStyle = 'rgba(255,226,140,0.13)';
+        g.lineWidth = Math.max(1.3, this.tw * 0.03);
+        g.beginPath();
+        g.ellipse(cx, wy, rx, ry, 0, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(255,248,210,0.95)';
+        for (let i = 0; i < 3; i++) {
+          const a = t * 1.8 + (i * Math.PI * 2) / 3;
+          g.beginPath();
+          g.arc(cx + Math.cos(a) * rx, wy + Math.sin(a) * ry, Math.max(1, this.tw * 0.022), 0, Math.PI * 2);
+          g.fill();
+        }
+      }
       if (v.shield > 0) {
         g.strokeStyle = 'rgba(140,200,255,' + (0.55 + 0.2 * Math.sin(t * 3)) + ')';
         g.fillStyle = 'rgba(140,200,255,0.12)';
@@ -1270,7 +1352,6 @@
       if (v.root > 0) icons.push('#5fbf4a');
       if (v.burn) icons.push('#ff8a2a');
       if (v.weak > 0) icons.push('#b08cff');
-      if (v.sever > 0) icons.push('#e0506e');
       if (v.shield > 0) icons.push('#8cc8ff');
       for (const c of icons) {
         g.fillStyle = c;
@@ -2260,7 +2341,7 @@
       let any = false;
       const STATUS_TEXT = {
         para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', POISON], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
-        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'], sever: ['SEVERED', '#e0506e'], held: ['SHACKLED', '#ffd84a'],
+        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'], held: ['SHACKLED', '#ffd84a'],
       };
       for (const e of group) {
         const v = this.vis.get(e.uid);
@@ -2292,6 +2373,13 @@
             this.sfx('block');
             this.particles(v.x, v.y, 6, ['#ffffff', '#cfe3ff'], { lift: 18, speed: 0.6, max: 0.35 });
             break;
+          case 'ward':
+            if (!v) break;
+            any = true;
+            v.ward = 0;
+            this.addText(v.x, v.y, 'BLOCKED', '#ffe9a8', { height: h, tag: 'SPELL SHIELD' });
+            this.sfx('block');
+            break;
           case 'absorb':
             if (!v) break;
             any = true;
@@ -2319,7 +2407,7 @@
             if (!v || e.why === 'passive') break;
             any = true;
             // Passing ticks its cooldown down one: the badge by its health bar shows the new count.
-            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.why === 'hold' ? 'HOLDING THE NET' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.why === 'held' ? 'SHACKLED' : e.why === 'hold' ? 'HOLDING THE NET' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
             if (e.wait > 0) v.wait = e.wait - 1;
             break;
           case 'pass':
@@ -2329,18 +2417,22 @@
             this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: 'HOLDS GROUND' });
             break;
           case 'healblock':
-            if (v) this.addText(v.x, v.y, 'NO HEAL', e.why === 'poison' ? POISON : '#e0506e', { height: h, max: 0.9, tag: e.why === 'poison' ? 'POISONED' : e.why === 'hunted' ? 'HUNTED' : 'SEVERED' });
+            if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9, tag: 'POISONED' });
             break;
           case 'status': {
             if (!v) break;
             const st = STATUS_TEXT[e.status];
             if (e.status === 'para') v.para = e.turns;
-            else if (e.status === 'held') v.para = 99;
+            else if (e.status === 'held') {
+              v.para = 99;
+              const w = this.vis.get(e.by);
+              if (w) w.holding = e.uid;
+            }
             else if (e.status === 'poison') v.poison = true;
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
             // A status the whole army gets at once (the War Drum) is announced once, not per unit.
-            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : e.status === 'sever' ? 'NO HEALING' : e.status === 'para' && e.chained ? 'CHAINED' : '' });
+            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : '' });
             break;
           }
           case 'wardrum': {
@@ -2363,12 +2455,15 @@
             else this.addText(v.x, v.y, 'IMMUNE', im ? im[0] : '#e8e2d0', { height: h, tag: im ? im[1] : '' });
             break;
           }
-          case 'release':
+          case 'release': {
+            const w = this.vis.get(e.by);
+            if (w) w.holding = 0;
             if (v) {
               v.para = 0;
               this.addText(v.x, v.y, 'FREED', '#fff3b0', { height: h, dy: -this.tw * 0.25, tag: 'THE NET FALLS' });
             }
             break;
+          }
           case 'cleanse':
             if (v) {
               v.para = e.para || 0;

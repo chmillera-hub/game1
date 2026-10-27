@@ -849,8 +849,9 @@
         continue;
       }
       const bossTarget = t.team !== u.team && ((s.objective === 'boss' && t.boss) || (s.objective === 'vip' && t.vip) || (s.objective === 'destroy' && isGoal(t)));
-      // A bounty's hunters go after the unit it is on before anything else.
-      if (t.hunted && t.team !== u.team && !e.friendly && u.traits.has('hunter')) v += 30;
+      // Popping a Spell Shield clears the way for the next blow; more so on a Shackler
+      // holding one of ours.
+      if (e.ward) v += 6 + t.value * 0.06 + (t.holding ? 20 : 0);
       if (e.dmg != null) {
         const p = 1 - e.block;
         const dealt = Math.min(e.dmg, t.hp + t.shield);
@@ -867,6 +868,11 @@
         if (t.bounty && t.team !== u.team && ctx.idle) val += e.kill ? t.bounty * 0.4 : (dealt / t.maxHp) * t.bounty * 0.15;
         // Cleaning up after the enemy army fell: every blow at what is left is progress.
         if (ctx.cleanup && t.team !== u.team && !e.friendly) val += dealt * 0.6 + (e.kill ? 25 : 0);
+        // A Shackler holding one of ours: every blow on it is a step toward the chain breaking.
+        if (t.holding && t.team !== u.team && !e.friendly) {
+          const held = s.byId[t.holding];
+          if (held && held.alive) val += (dealt / Math.max(1, t.hp)) * held.value * 0.5 + (e.kill ? held.value * 0.8 : 0);
+        }
         // A hit on the priority target outweighs anything else this unit could do.
         if (ctx.focus && ctx.focus.unit === t && !e.friendly) val += 80 + dealt * 3 + (e.kill ? 150 : 0);
         // With the shrine the priority, an enemy standing on it must be driven off.
@@ -888,7 +894,7 @@
       const p = e.block != null ? 1 - e.block : 1;
       // Shackles: the target sits out for as long as the Shackler holds on. Worth the most on
       // the enemy's biggest hitter, never on one already held.
-      if (e.hold && e.hold !== 'resist' && !t.heldBy) v += p * e.hold * 2.5 * paraValue(ctx.s, t) * (t.hunted ? 1.5 : 1);
+      if (e.hold && e.hold !== 'resist' && !t.heldBy) v += p * e.hold * 2.5 * paraValue(ctx.s, t);
       if (e.para && e.para !== 'resist') {
         v += p * e.para * paraValue(ctx.s, t);
         // Discord: it lashes out at one of its own beside it.
@@ -909,8 +915,6 @@
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
       if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (delayOf(ctx.s, t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
-      // Severed: no healing for a while, worth more the bigger (and better healed) the unit.
-      if (e.sever && !(t.sever > 0)) v += p * (4 + t.value * 0.06);
       if (e.knock && e.knock !== 'resist' && !e.kill) v += p * shoveValue(ctx, u, t, e.knock, t.hp - (e.dmg || 0) * p);
     }
     if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);

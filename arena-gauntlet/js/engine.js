@@ -227,12 +227,10 @@
       root: 0,
       weak: 0,
       mark: 0,
-      // Severed: no healing of any kind, and no cure lifts it (a Spellbinder's hex).
-      sever: 0,
-      // Of its paralysis, the turns a Spellbinder's chains hold: no cure or rally breaks them.
+      // Of its paralysis, the turns no cure or rally breaks (a Shackler's net).
       chains: 0,
-      // The unit an elite's bounty is on: its hunters go for it.
-      hunted: !!spec.hunted,
+      // A Spell Shield: the first physical or magic hit on it does nothing, and pops it.
+      ward: traits.has('spellshield') ? 1 : 0,
       // Shackles: the unit a Shackler holds (and how many more of its own turns it holds
       // on), and on the held unit, who holds it.
       holding: 0,
@@ -405,11 +403,9 @@
 
   // Poisoned units cannot be healed.
   function healBlocked(s, u) {
-    return !!u.poison || u.sever > 0 || huntedNow(s, u);
+    return !!u.poison;
   }
 
-  // A bounty: while one of its hunters (a Spellbinder) stands, the unit it is on cannot be
-  // healed and takes 25% more damage. No turns needed: the curse holds until they fall.
   // A Shackler lets go: the unit it held is free at once.
   function release(s, w) {
     if (!w || !w.holding) return;
@@ -424,9 +420,6 @@
     }
   }
 
-  function huntedNow(s, u) {
-    return !!u.hunted && s.units.some((v) => v.alive && v.team !== u.team && v.traits.has('curse'));
-  }
 
   // A hostile trap on this tile stops a walking unit there. Flyers pass over traps and fire.
   function trapFor(s, u, x, y) {
@@ -745,7 +738,7 @@
       dmg *= 1 - effRes(s, tgt);
       dmg *= 1 - magicGuard(s, tgt);
     }
-    if (tgt.mark > 0 || huntedNow(s, tgt)) dmg *= 1.25;
+    if (tgt.mark > 0) dmg *= 1.25;
     dmg *= 1 - guardianReduction(s, tgt);
     // Phalanx Standard: shoulder to shoulder with two allies or more.
     if (s.relics[tgt.team].has('phalanx_standard') && !tgt.nonCombat && !tgt.structure && alliesNext(s, tgt) >= 2) dmg *= 0.8;
@@ -1170,7 +1163,12 @@
         } else if (a.kind === 'shield') e.shield = a.amount || 15;
         else if (a.kind === 'rally') e.rally = true;
         else {
-          if (a.dmg) {
+          // A Spell Shield takes the hit whole, and its riders with it.
+          if (a.dmg && v.ward > 0 && !e.friendly) {
+            e.dmg = 0;
+            e.ward = true;
+            e.block = 0;
+          } else if (a.dmg) {
             const r = calcHit(s, u, v, opts);
             e.dmg = r.dmg;
             e.block = r.block;
@@ -1178,14 +1176,13 @@
             const bonus = u.props.bonusMagic ? u.props.bonusMagic : 0;
             e.kill = r.dmg + bonus >= v.hp + v.shield && !v.secondWind && !v.phoenix;
           }
-          if (!e.friendly) {
+          if (!e.friendly && !e.ward) {
             if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
             if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1], key: poisonKey(u, a) };
             if (fx.burn && (!(v.nonCombat || v.structure) || burnable(v))) e.burn = { turns: fx.burn[0], dmg: fx.burn[1], key: poisonKey(u, a) };
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
-            if (fx.sever) e.sever = fx.sever;
             if (fx.hold) e.hold = v.boss ? 'resist' : fx.hold;
             if (fx.knock) e.knock = shoveForecast(s, u, v, fx.knock);
             else if (fx.pull) e.knock = shoveForecast(s, u, v, fx.pull, true);
@@ -1210,7 +1207,7 @@
   function heal(s, u, amount, why) {
     if (!u.alive || u.nonCombat || u.structure) return 0;
     if (healBlocked(s, u)) {
-      if (why === 'prayer') emit(s, { t: 'healblock', uid: u.uid, why: u.poison ? 'poison' : u.sever > 0 ? 'sever' : 'hunted' });
+      if (why === 'prayer') emit(s, { t: 'healblock', uid: u.uid });
       return 0;
     }
     const h = Math.min(Math.round(amount), u.maxHp - u.hp);
@@ -1230,7 +1227,7 @@
       v.burn = null;
       any = true;
     }
-    // A Spellbinder's chains hold whatever the cure.
+    // A Shackler's net holds whatever the cure.
     if (all && ((v.para && !(v.chains > 0)) || v.root)) {
       if (!(v.chains > 0)) v.para = 0;
       v.root = 0;
@@ -1250,7 +1247,6 @@
     u.root = 0;
     u.weak = 0;
     u.mark = 0;
-    u.sever = 0;
     u.chains = 0;
     u.holding = 0;
     u.holdLeft = 0;
@@ -1652,6 +1648,12 @@
 
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
+    // Bonus bolts and blasts that come without a hit pop a Spell Shield too.
+    if (tgt.ward > 0 && (info.dmgType === 'phys' || info.dmgType === 'magic')) {
+      tgt.ward = 0;
+      emit(s, { t: 'ward', uid: tgt.uid, src: src ? src.uid : 0 });
+      return 0;
+    }
     if (tgt.shield > 0 && info.dmgType !== 'poison' && info.dmgType !== 'fatigue') {
       const ab = Math.min(tgt.shield, amount);
       tgt.shield -= ab;
@@ -1756,7 +1758,7 @@
   // Magic damage that is not an attack: bonus magic, zaps, burns, fire and explosions.
   // What magic resistance (and a mark) makes of spell, fire and poison damage.
   function elementalMult(s, tgt) {
-    return (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt)) * (tgt.mark > 0 || huntedNow(s, tgt) ? 1.25 : 1);
+    return (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt)) * (tgt.mark > 0 ? 1.25 : 1);
   }
 
   function magicDamage(s, src, tgt, base, why) {
@@ -1780,6 +1782,12 @@
       if (tgt.traits.has('stunshield') && atk.alive && manhattan(atk.x, atk.y, tgt.x, tgt.y) === 1) applyStatus(s, tgt, atk, { para: 1 }, null);
       reactToMelee(s, atk, tgt, opts);
       if (tgt.traits.has('slippery')) slip(s, atk, tgt);
+      return { blocked: true, dmg: 0 };
+    }
+    // A Spell Shield: the first physical or magic hit does nothing, and pops it.
+    if (tgt.ward > 0 && (dmgType === 'phys' || dmgType === 'magic')) {
+      tgt.ward = 0;
+      emit(s, { t: 'ward', uid: tgt.uid, src: atk.uid });
       return { blocked: true, dmg: 0 };
     }
     // Mirror Aegis: the first hit each of your units takes in a battle bounces back.
@@ -2020,11 +2028,6 @@
         stamp(s, u, 'chains');
         emit(s, { t: 'status', uid: u.uid, status: 'held', by: src.uid, turns: fx.hold });
       }
-    }
-    if (fx.sever) {
-      u.sever = Math.max(u.sever, fx.sever);
-      stamp(s, u, 'sever');
-      emit(s, { t: 'status', uid: u.uid, status: 'sever', turns: u.sever });
     }
     if (fx.weak) {
       u.weak = Math.max(u.weak, fx.weak);
@@ -2844,7 +2847,6 @@
           }
           tick('root');
           tick('weak');
-          tick('sever');
           tick('frenzy');
         }
         u.activated = false;
@@ -3216,12 +3218,11 @@
     }
     tick('root');
     tick('weak');
-    tick('sever');
     tick('frenzy');
   }
 
   function sitOutReason(s, u) {
-    return u.para > 0 ? 'para' : u.holding ? 'hold' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
+    return u.heldBy ? 'held' : u.para > 0 ? 'para' : u.holding ? 'hold' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
   }
 
   // The side's unit for this turn. Units take their turns in rotation order; one that is
@@ -3276,7 +3277,7 @@
         // A Shackler counts down its hold as its turn starts, and sits out while it holds.
         if (x.hold > 0 && x.para === 0) x.hold--;
         const resting = x.para > 0 || x.hold > 0 || x.wait > 0 || x.idle;
-        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.para > 0 ? 'para' : x.hold > 0 ? 'hold' : x.wait > 0 ? 'cooldown' : 'para' });
+        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.v.heldBy && x.para > 0 ? 'held' : x.para > 0 ? 'para' : x.hold > 0 ? 'hold' : x.wait > 0 ? 'cooldown' : 'para' });
         x.cycles++;
         if (x.wait > 0) x.wait--;
         else if (x.para > 0) {
@@ -3430,7 +3431,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, huntedNow, unitTurnStart, sitOutReason, applyDamage, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

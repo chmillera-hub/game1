@@ -657,22 +657,21 @@ on a phone turned sideways, but portrait works too.
   further), Anchor Stone (your units cannot be moved). Previews say where a shove
   lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
   water or lava to shove its enemies into.
-- **Bounties (elites hunt your carry)**: turns alternate one unit per side, so an army
-  of a few strong units gets more turns per unit than a wide one, and one decked-out
-  Level 3 unit with a Cleric could roll through the elites. So the elites read your last
-  battle: when one non-Cleric Level 3 unit cost 45% or more of the Supply fielded, the
-  elite challenges dealt next put a bounty on it. The card names the unit, and the elite
-  brings hunters on top of its army (Act I: a Shackler and a Spellbinder; Act II: a
-  Shackler and two Spellbinders; Act III: two of each). The Shackler is the Dota-style
-  answer to a carry (Bane's grip, Shadow Shaman's shackles): weak, quick, and twice a
-  battle it throws a chain-net that pins one unit for as long as it holds on, up to 3 of
-  its own turns, doing nothing else meanwhile. Its hold is counted in its own turns, so
-  it lasts longer the bigger the enemy army; no cure or immunity slips it, but killing or
-  paralyzing the Shackler frees the unit. While a Spellbinder
-  stands, the hunted unit cannot be healed and takes 25% more damage; the Spellbinder's
-  Severing Hex severs (no healing for 3 turns, no cure lifts it) and its Chains of Binding
-  paralyze, weaken and mark, with chains no cure or rally breaks. AI hunters go for the
-  hunted unit first. Normal Auto armies spread their Supply and are never hunted.
+- **Shacklers (elites answer a carry)**: turns alternate one unit per side, so an army of
+  a few strong units gets more turns per unit than a wide one, and one decked-out Level 3
+  unit with a Cleric could roll through the elites. So every elite army fields a Shackler
+  (two from Act II on, levelled with the act), within its Supply. It is the Dota-style answer to a carry (Shadow
+  Shaman's shackles, Bane's grip): it hits weakly, but twice a battle it throws a
+  chain-net at your biggest hitter and holds the chain, and that unit cannot move or act
+  for as long as the Shackler holds on, up to 3 of the Shackler's own turns (doing nothing
+  else meanwhile). Counted in its own turns, the hold lasts longer the bigger the enemy
+  army. No cure, rally or immunity slips the net; bosses are too big to hold. A glowing
+  chain runs from the Shackler to its prey. Shacklers are tough (52 HP at Level 1, 30%
+  physical and magic resistance) and a Spell Shield eats the first physical or magic hit on one, so a
+  lone carry cannot one-shot it before it acts: an army needs a second threat that can
+  reach it, or anything that paralyzes it, to break the chain. Your units' AI goes for a
+  Shackler holding one of theirs. No penalty is ever put on a unit for being used well:
+  the Shackler is just there on the field, for you to plan around.
 - **Buildings and siege**: anything rooted to the field is a building: walls, gates,
   towers, totems, tents, crypts, dens, portals, barricades, powder kegs, banners, cages,
   wreckage, the Barrier and Lightning Wards and a Furgon's shrubs (wagons count too).

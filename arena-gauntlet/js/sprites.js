@@ -1290,37 +1290,6 @@
     skull(ctx, 12.4, -38.5, 3.2, false, '#9dffad');
   };
 
-  // Spellbinder: a hooded hunter in violet with a golden chain coiled round one arm and a
-  // rune that turns above its open hand.
-  D.spellbinder = (ctx, o) => {
-    const T = o.tc;
-    const pulse = 0.5 + 0.5 * Math.sin(o.t * 2.6);
-    const robe = '#3b2a52';
-    const gold = '#e6c26a';
-    poly(ctx, [-8, -24, 8, -24, 11, 0, -11, 0], robe);
-    rect(ctx, -2, -23, 4, 21, 1, shade(T.main, -0.25), 0);
-    if (o.back) {
-      poly(ctx, [-7, -35, 7, -35, 9, -20, -9, -20], '#2c1f3e');
-      arm(ctx, 6, -22, 10, -15, robe, '#d8cbb4');
-      return;
-    }
-    poly(ctx, [-7, -35, 7, -35, 9, -20, -9, -20], '#2c1f3e');
-    circle(ctx, 1.5, -28, 4, '#150f1d', 0);
-    ctx.fillStyle = 'rgba(255,214,120,' + (0.6 + 0.4 * pulse) + ')';
-    ctx.fillRect(-0.4, -29, 1.4, 1.2);
-    ctx.fillRect(2.6, -29, 1.4, 1.2);
-    arm(ctx, -6, -21, -9, -13, robe, '#d8cbb4');
-    for (let i = 0; i < 4; i++) circle(ctx, -8.5 + i * 0.4, -18 + i * 2.6, 1.6, gold, 0.6);
-    arm(ctx, 6, -21, 11, -24, robe, '#d8cbb4');
-    const ry = -31 - pulse * 2;
-    glow(ctx, 12, ry, 7 + pulse * 2, 'rgba(255,205,110,', 0.4);
-    ctx.save();
-    ctx.translate(12, ry);
-    ctx.rotate(o.t * 1.5);
-    poly(ctx, [0, -4, 4, 0, 0, 4, -4, 0], gold, 0.8);
-    ctx.restore();
-  };
-
   // Shackler: a lean hunter in a leather hood, a weighted chain-net coiled over one shoulder
   // and a hooked chain swinging from the other hand.
   D.shackler = (ctx, o) => {
@@ -2211,7 +2180,7 @@
     beastrider: 44, furgon: 44, wisp: 38, barrier: 40, enchantress: 37, witch: 47, lightning: 44, dragon: 50,
     shrub: 20, golem_king: 62, witch_queen: 60, ashen_tyrant: 82, specter: 42, warbanner: 62, cage: 31,
     mageknight: 43, skelarcher: 37, orc: 41, brute: 52, goblin_archer: 31, sapper: 31, shaman: 43, warg: 26, wolf: 22,
-    spider: 25, troll: 54, spellbinder: 44, shackler: 40, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
+    spider: 25, troll: 54, shackler: 40, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
     barricade: 22, wreckage: 22, void_wyrm: 96,

@@ -302,7 +302,6 @@
     if (fx.root) bits.push(`roots for ${fx.root} turn${fx.root > 1 ? 's' : ''}`);
     if (fx.weak) bits.push(`weakens for ${fx.weak} turns (-30% damage)`);
     if (fx.mark) bits.push(`marks for ${fx.mark} turns (+25% damage taken)`);
-    if (fx.sever) bits.push(`severs for ${fx.sever} turns (no healing of any kind, and no cure lifts it)`);
     if (fx.chains) bits.push('the paralysis is chains: no cure or rally breaks them');
     if (fx.hold) bits.push(`holds the target: it cannot move or act while this unit holds on (up to ${fx.hold} of its own turns, doing nothing else meanwhile), and no cure or immunity slips it`);
     if (fx.knock) bits.push(`shoves the target back ${fx.knock} tile${fx.knock > 1 ? 's' : ''}`);
@@ -635,24 +634,11 @@
     return f > 0.5 ? '' : f > 0.25 ? 'mid' : 'low';
   }
 
-  // An elite that heard of your last army's big hitter: who it hunts and what that means.
-  // In battle (s given): how many hunters still stand, or that the curse has lifted.
-  function bountyHTML(enc, s) {
-    const b = enc && enc.bounty;
-    if (!b) return '';
-    if (s) {
-      const left = s.units.filter((u) => u.alive && u.type === 'spellbinder').length;
-      const held = s.units.some((u) => u.alive && u.holding && s.byId[u.holding] && s.byId[u.holding].hunted);
-      const curse = left ? `${left} Spellbinder${left > 1 ? 's' : ''} still stand${left > 1 ? '' : 's'}. Until ${left > 1 ? 'they fall' : 'it falls'}, ${esc(b.name)} cannot be healed and takes 25% more damage.` : 'the Spellbinders are down, and the curse is lifted.';
-      return `<div class="ch-bounty">${ic('skull')} <span><b>Bounty on ${esc(b.name)}</b>: ${held ? `a Shackler holds ${esc(b.name)} down: kill it or paralyze it to free ${esc(b.name)}. ` : ''}${curse}</span></div>`;
-    }
-    return `<div class="ch-bounty">${ic('skull')} <span><b>Bounty on ${esc(b.name)}</b> the ${esc(UNITS[b.type].name)}: your last army leaned on it, and ${esc(R.bountySquad(b))} came for it. ${b.shacklers ? `A Shackler pins ${esc(b.name)} down for as long as it holds the chain; ` : ''}while a Spellbinder stands, ${esc(b.name)} cannot be healed and takes 25% more damage.</span></div>`;
-  }
-
   function statusChips(u) {
     const chips = [];
     if (u.heldBy) chips.push(`<span class="chip warn" title="Held by a Shackler's net: it cannot move or act until the Shackler lets go, falls or is paralyzed">Shackled (until the Shackler lets go)</span>`);
     else if (u.para > 0) chips.push(`<span class="chip warn">Paralyzed ${u.para}</span>`);
+    if (u.ward > 0) chips.push(`<span class="chip magic" title="The first physical or magic hit on it does nothing, and pops the shield">${ic('shield')} Spell Shield</span>`);
     if (u.holding) chips.push(`<span class="chip warn" title="It does nothing else while it holds the net">Holding the net (${u.holdLeft} more turn${u.holdLeft === 1 ? '' : 's'})</span>`);
     if (u.poison) {
       // Poisons from several sources add up: the total a turn, and how many are running.
@@ -666,9 +652,7 @@
     if (u.root > 0) chips.push(`<span class="chip good">Rooted ${u.root}</span>`);
     if (u.weak > 0) chips.push(`<span class="chip magic">Weakened ${u.weak}</span>`);
     if (u.mark > 0) chips.push(`<span class="chip bad">Marked ${u.mark}</span>`);
-    if (u.sever > 0) chips.push(`<span class="chip bad" title="No healing of any kind, and no cure lifts it">Severed ${u.sever} (no healing)</span>`);
     if (u.chains > 0 && !u.heldBy) chips.push(`<span class="chip bad" title="No cure or rally breaks the chains">Chained ${u.chains}</span>`);
-    if (u.hunted) chips.push(`<span class="chip bad" title="While a Spellbinder stands: no healing, and 25% more damage taken">${ic('target')} Hunted${UI.battle && UI.battle.s && E.huntedNow(UI.battle.s, u) ? ': no healing, +25% damage taken' : ' (the hunters are down)'}</span>`);
     if (u.frenzy > 0) chips.push(`<span class="chip bad" title="Frenzy: +25% damage for ${u.frenzy} more of its turns">Frenzy ${u.frenzy} (+25% damage)</span>`);
     if (u.shield > 0) chips.push(`<span class="chip">${ic('shield')} Shield ${u.shield}</span>`);
     // Grown in this battle.
@@ -1406,7 +1390,6 @@
         <canvas class="ch-thumb" data-thumb="${i}"></canvas>
         <div class="title">${esc(o.enc.name)}</div>
         <div class="ch-goals">${objectivesHTML(o.enc)}</div>
-        ${bountyHTML(o.enc)}
         <div class="ch-sup">${ic('army')} Enemy army <b>${R.encSupply(o.enc).army}</b> Supply${R.encSupply(o.enc).waves ? ` <span class="muted">(+${R.encSupply(o.enc).waves} in reinforcements)</span>` : ''} · yours <b>${R.supplyFor(run)}</b></div>
         <div class="ch-pay">${pays}</div>
       </button>`;
@@ -2701,7 +2684,6 @@
       ${selBlock}
       ${focusLine}
       ${objectivesHTML(enc)}
-      ${bountyHTML(enc)}
       <div class="actions"><button class="btn" id="wrAuto">${ic('star')} ${wr.auto ? 'Suggest another' : 'Auto'}</button><button class="btn" id="wrClear" ${wr.dep.size ? '' : 'disabled'}>Clear</button>${run.pending.fromEvent ? '' : `<button class="btn" id="wrBack">${ic('undo')} Other battles</button>`}</div>
       <div class="actions sticky"><button class="btn primary" id="wrFight" ${wr.dep.size && !over ? '' : 'disabled'}>${ic('swords')} ${UI.prefs.autoBattle ? 'Begin battle' : 'Fight'}</button></div>
       ${helpBlock}`;
@@ -3510,7 +3492,7 @@
     return v.team === 'P' ? UNITS[v.type].name : `Enemy ${UNITS[v.type].name}`;
   }
 
-  const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', idle: 'nothing in reach' };
+  const SIT_OUT = { cooldown: 'cooling down', para: 'paralyzed', held: "held in a Shackler's net", hold: 'holding its net', idle: 'nothing in reach' };
   // "Cass, Osric and Jarek pass (cooling down)." for units that passed in a row.
   function passLine(passes) {
     // "Enemy" once, and repeats counted: "Enemy Orc Warrior ×2 and Orc Shaman pass".
@@ -3665,8 +3647,8 @@
       .map((x) => {
         const v = s.byId[x.uid];
         const name = esc(v.team === 'P' ? v.name : UNITS[v.type].name);
-        const tag = !x.why ? '' : x.why === 'cooldown' ? `<b class="q-cd" title="Cooling down: passes this turn">${x.wait}</b>` : x.why === 'para' ? `<b class="q-cd para" title="Paralyzed: passes this turn">${x.para}</b>` : '';
-        const tip = x.why === 'cooldown' ? ` · cooling down (${x.wait}): passes this turn` : x.why === 'para' ? ' · paralyzed: passes this turn' : x.why ? ' · never acts: passes every turn' : '';
+        const tag = !x.why ? '' : x.why === 'cooldown' ? `<b class="q-cd" title="Cooling down: passes this turn">${x.wait}</b>` : x.why === 'para' ? `<b class="q-cd para" title="Paralyzed: passes this turn">${x.para}</b>` : x.why === 'held' ? `<b class="q-cd para" title="Held in a Shackler's net: passes until it is freed">net</b>` : x.why === 'hold' ? `<b class="q-cd" title="Holding its net: passes this turn">net</b>` : '';
+        const tip = x.why === 'cooldown' ? ` · cooling down (${x.wait}): passes this turn` : x.why === 'para' ? ' · paralyzed: passes this turn' : x.why === 'held' ? " · held in a Shackler's net: passes until it is freed" : x.why === 'hold' ? ' · holding its net: passes this turn' : x.why ? ' · never acts: passes every turn' : '';
         const cls = x.why ? 'pass' : now ? '' : 'now';
         if (!x.why) now = true;
         return `<div class="q-item team-${v.team} ${cls}" data-quid="${v.uid}" role="button" title="${esc(logName(v))} · Speed ${v.spd}${tip}"><canvas class="portrait" data-p="${v.type}:${v.team}"></canvas>${tag}<span>${name}</span></div>`;
@@ -3786,7 +3768,6 @@
       ${B.focus ? `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(B.focus.label)}</b>${B.focus.uid && missionTarget(s.byId[B.focus.uid]) ? ' ' + vipCheck : ''}. Your army ${focusVerb(B.focus)}.</span><button class="btn" id="btUnfocus">Clear</button></div>` : ''}
       <div class="eyebrow">Mission details</div>
       ${objectivesHTML(B.enc, s)}
-      ${bountyHTML(B.enc, s)}
       ${B.paused ? `<div class="actions"><button class="btn primary" id="btPause">${ic('play')} Resume</button></div>` : ''}
       <p class="small muted">${B.exhibition ? `Tap a unit, or a face in the turn order for its full details, to look at it while the battle plays on. <b>Priority is off</b> in Hall of Fame matches: both armies fight on their own.` : 'Tap a unit or a chest to look at it while the battle plays on, and make it your army\'s <b>Priority</b>. Tap a face in the turn order for that unit\'s full details.'} ${ic('pause')} pauses, ${ic('fast')} changes the speed.</p>`;
   }
@@ -3982,7 +3963,7 @@
         else if (act.dmg === 'phys' && !e.self) bits.push(e.cat === 'back' ? 'from behind' : 'no block');
         if (e.kill) bits.push(`<span class="kill">${e.block > 0 ? 'can kill' : 'kills'}</span>`);
       }
-      if (e.heal != null) bits.push(e.heal > 0 ? `<b>+${e.heal}</b> HP` : v.poison ? 'poisoned: no healing' : v.sever > 0 || E.huntedNow(s, v) ? 'cannot be healed' : 'full HP');
+      if (e.heal != null) bits.push(e.heal > 0 ? `<b>+${e.heal}</b> HP` : v.poison ? 'poisoned: no healing' : 'full HP');
       if (e.cleanse) bits.push('cures');
       if (e.shield) bits.push(`shield ${e.shield}`);
       if (e.frenzy) bits.push('frenzy (+25% damage)');
@@ -3993,7 +3974,7 @@
       if (e.root) bits.push(e.root === 'resist' ? 'cannot be rooted' : `rooted ${e.root}`);
       if (e.weak) bits.push(`weakened ${e.weak}`);
       if (e.mark) bits.push(`marked ${e.mark}`);
-      if (e.sever) bits.push(`severed ${e.sever}`);
+      if (e.ward) bits.push('Spell Shield: the hit does nothing, and pops it');
       if (e.hold) bits.push(e.hold === 'resist' ? 'too big to hold' : 'shackled');
       if (e.knock) bits.push(shoveText(e.knock));
       const ff = e.friendly && !healish && !e.self;
@@ -5641,7 +5622,7 @@
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
           <li><b>Triggers</b>: many talents and relics fire on an event rather than giving a flat bonus, and the board calls them out as they happen. <b>Critical!</b> hits deal double damage (Lucky Coin, the Lucky skill, every third shot of a Level 3 Archer). <b>Executed</b>: a foe left very low falls outright (never a boss). <b>Trophies</b> from kills add 10% damage each, up to five, and the killer grows a little bigger. Some things go out with a bang when they fall (Powder Keg, Powder Belt, Overload, Bramble Burst, Combustion), poison and fire can leap from the dead to their neighbours (Contagion, Plague Doctor's Mask, Wildfire Oil), and slain enemies can rise as skeletons on your side (Necromancer's Bell, Shadow Pact). Cursed relics give a big edge at a real cost.</li>
           <li><b>Poison</b> and burns tick at the start of the poisoned unit's own turn, for a set number of its turns. Poisons from different sources stack, and so do burns: each keeps its own damage and its own turns, and the unit takes them all added up (4 and 8 make 12) until each runs out. The same source again only refreshes its own. Poisoned units cannot heal, regen included. Only buildings (wagons, cages, wards and shrubs included) and skeletons (Skeletons, Skeleton Archers, the Bone Colossus, the Lich) are immune to poison; Specters, the Death Knight, golems and every other unit can be poisoned. Burns catch on everything, buildings and skeletons included (a burning building burns once a round) and never stop healing or regen: "IMMUNE TO POISON" floats over a unit the poison did not take on. Poison damage floats up in magenta with a minus sign, like all damage; heals are green with a plus.</li>
-          <li><b>Bounties</b>: lean on one unit and the elites hear of it. When one decked-out Level 3 unit costs ${Math.round(R.BOUNTY_SHARE * 100)}% or more of the Supply your army fielded in a battle (the Cleric included), the elite challenges dealt after it put a bounty on that unit: the card names it, and the elite brings hunters on top of its army (Act I: a Shackler and a Spellbinder; Act II: a Shackler and two Spellbinders; Act III: two of each). A Shackler is weak and quick, and twice a battle it throws a chain-net that pins one unit down for as long as it holds on (up to 3 of its own turns, doing nothing else meanwhile): no cure, rally or immunity slips it, but killing or paralyzing the Shackler frees the unit. While a Spellbinder stands, the hunted unit cannot be healed and takes 25% more damage. A Spellbinder's Severing Hex severs a unit (no healing of any kind for 3 turns, and no cure lifts it), and its Chains of Binding paralyze, weaken and mark, with chains no cure or rally breaks. Kill the Spellbinders first, leave the unit on the bench, or bring a wider army: an army that spreads its Supply is never hunted.</li>
+          <li><b>Shacklers</b>: every elite army fields one (two from Act II on). It hits weakly, but twice a battle it throws a chain-net at your biggest hitter and holds the chain: that unit cannot move or act while the Shackler holds on (up to 3 of the Shackler's own turns, and it does nothing else meanwhile), and no cure, rally or immunity slips the net. A glowing chain shows who holds whom. Shacklers are tough, and a shimmering Spell Shield eats the first physical or magic hit on one (then pops). Kill the Shackler, or paralyze it, and the net falls away: a carry needs an army that can break the chain. Your units go for a Shackler holding one of theirs.</li>
           <li>While watching: ${ic('fast')} at the top switches the speed (1× or 2×), ${ic('pause')} pauses, and tapping a unit pauses and shows its details. Pinch to zoom, drag to move the board.</li>
           <li><b>Priority</b>: tap an enemy unit, a building, a barricade with gold, a chest, the shrine, any empty tile, a boulder, tree or shrub while watching, then ${ic('target')} Priority. Your army goes all out for it, whatever the cost: every unit attacks it, or heads for the chest and takes it. With the shrine, one unit stands on it and stays while the others guard it. With an empty tile, your army moves there and huddles as close as it can (a corner, a choke point), attacking whatever comes in reach, until you clear it. A boulder, tree or shrub works the same way: your army gathers around it without trying to cut it down. With one of your own units, the rest gather around it and follow it. Once it falls or is taken, your army is back to normal orders. Clear it any time from the panel. You can also pick it in the war room before the battle: tap the enemy or chest there, then ${ic('target')} Priority, and your army goes for it from the first turn. Without a priority, your army still heads for chests and takes one when it can spare the turn, unless it could kill an enemy instead; it leaves loot with sleeping guards alone until it can grab it in one move. It also plays for the mission: it goes for the Commander when killing it wins, hits the wagon nearest its way out first, and presses on toward the end of a "win within N turns" goal.</li>
         </ul>
