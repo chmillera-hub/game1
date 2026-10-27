@@ -657,6 +657,16 @@ on a phone turned sideways, but portrait works too.
   further), Anchor Stone (your units cannot be moved). Previews say where a shove
   lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
   water or lava to shove its enemies into.
+- **Bounties (elites hunt your carry)**: turns alternate one unit per side, so an army
+  of a few strong units gets more turns per unit than a wide one, and one decked-out
+  Level 3 unit with a Cleric could roll through the elites. So the elites read your last
+  battle: when one non-Cleric Level 3 unit cost 45% or more of the Supply fielded, the
+  elite challenges dealt next put a bounty on it. The card names the unit, and the elite
+  brings Spellbinders on top of its army (one in Act I, two after). While a Spellbinder
+  stands, the hunted unit cannot be healed and takes 25% more damage; the Spellbinder's
+  Severing Hex severs (no healing for 3 turns, no cure lifts it) and its Chains of Binding
+  paralyze, weaken and mark, with chains no cure or rally breaks. AI hunters go for the
+  hunted unit first. Normal Auto armies spread their Supply and are never hunted.
 - **Buildings and siege**: anything rooted to the field is a building: walls, gates,
   towers, totems, tents, crypts, dens, portals, barricades, powder kegs, banners, cages,
   wreckage, the Barrier and Lightning Wards and a Furgon's shrubs (wagons count too).

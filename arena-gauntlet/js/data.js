@@ -838,6 +838,17 @@
       desc: 'A stone tower full of archers. You do not need to destroy it to win.',
       tip: 'Stay out of its reach, or bring siege damage.',
     },
+    // Elite-only: brought along when the elite has heard of your army's one big hitter
+    // (see the bounty in run.js). Built to shut a single carry down, not to fight a crowd.
+    spellbinder: {
+      name: 'Spellbinder', rarity: 'enemy', cost: 5, role: 'caster',
+      hp: 38, pow: 12, armor: 0.1, res: 0.4, block: 0.1, rec: 1, move: 3,
+      act: { name: 'Severing Hex', kind: 'strike', range: [2, 5], dmg: 'magic', arc: true, fx: { sever: 3 } },
+      extra: [{ name: 'Chains of Binding', kind: 'strike', range: [1, 5], dmg: 'magic', arc: true, mult: 0.5, fx: { para: 2, chains: 1, weak: 2, mark: 2 }, uses: 2, cd: 1 }],
+      traits: ['hunter'], tags: ['human', 'caster'],
+      desc: 'A hunter of champions, sent after the one unit your army leans on. Its Severing Hex severs the target for 3 turns: no healing of any kind, prayers, lifesteal and regen included, and no cure lifts it. Twice a battle it casts Chains of Binding: paralyzed for 2 turns (no cure or rally breaks the chains), weakened (30% less damage) and marked (25% more damage taken). A unit immune to paralysis is still weakened and marked.',
+      tip: 'One unit carrying the army is what it hunts. Spread the threat, or rush it before the chains fall: it has only 38 HP.',
+    },
     castellan: {
       name: 'Castellan', rarity: 'enemy', cost: 4, role: 'tank',
       hp: 58, pow: 18, armor: 0.35, res: 0.15, block: 0.6, rec: 1, move: 3,
@@ -928,7 +939,7 @@
     mageknight: 3, golem: 1, beastrider: 6, furgon: 3, wisp: 6, enchantress: 4, witch: 3, lightning: 3,
     dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 1, warg: 8, wolf: 7,
     cutthroat: 7, crossbow: 3, skeleton: 3, specter: 6, necromancer: 3, colossus: 1, spider: 6, troll: 2,
-    drake: 5, tower: 2, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4, death_knight: 4,
+    drake: 5, tower: 2, spellbinder: 5, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4, death_knight: 4,
   };
   for (const [k, T] of Object.entries(UNITS)) T.spd = SPEED[k] || 0;
 

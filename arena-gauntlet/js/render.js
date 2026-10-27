@@ -397,6 +397,7 @@
       v.root = u.root || 0;
       v.weak = u.weak || 0;
       v.mark = u.mark || 0;
+      v.sever = u.sever || 0;
       v.frenzy = u.frenzy || 0;
       v.shield = u.shield || 0;
       v.level = u.level || 1;
@@ -1269,6 +1270,7 @@
       if (v.root > 0) icons.push('#5fbf4a');
       if (v.burn) icons.push('#ff8a2a');
       if (v.weak > 0) icons.push('#b08cff');
+      if (v.sever > 0) icons.push('#e0506e');
       if (v.shield > 0) icons.push('#8cc8ff');
       for (const c of icons) {
         g.fillStyle = c;
@@ -2258,7 +2260,7 @@
       let any = false;
       const STATUS_TEXT = {
         para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', POISON], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
-        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'],
+        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'], sever: ['SEVERED', '#e0506e'],
       };
       for (const e of group) {
         const v = this.vis.get(e.uid);
@@ -2327,7 +2329,7 @@
             this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: 'HOLDS GROUND' });
             break;
           case 'healblock':
-            if (v) this.addText(v.x, v.y, 'NO HEAL', POISON, { height: h, max: 0.9, tag: 'POISONED' });
+            if (v) this.addText(v.x, v.y, 'NO HEAL', e.why === 'poison' ? POISON : '#e0506e', { height: h, max: 0.9, tag: e.why === 'poison' ? 'POISONED' : e.why === 'hunted' ? 'HUNTED' : 'SEVERED' });
             break;
           case 'status': {
             if (!v) break;
@@ -2337,7 +2339,7 @@
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
             // A status the whole army gets at once (the War Drum) is announced once, not per unit.
-            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : '' });
+            if (st && !e.quiet) this.addText(v.x, v.y, st[0], st[1], { height: h, dy: -this.tw * 0.25, tag: e.status === 'frenzy' ? '+25% DMG' : e.status === 'sever' ? 'NO HEALING' : e.status === 'para' && e.chained ? 'CHAINED' : '' });
             break;
           }
           case 'wardrum': {

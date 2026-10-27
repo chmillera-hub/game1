@@ -227,6 +227,12 @@
       root: 0,
       weak: 0,
       mark: 0,
+      // Severed: no healing of any kind, and no cure lifts it (a Spellbinder's hex).
+      sever: 0,
+      // Of its paralysis, the turns a Spellbinder's chains hold: no cure or rally breaks them.
+      chains: 0,
+      // The unit an elite's bounty is on: its hunters go for it.
+      hunted: !!spec.hunted,
       frenzy: 0,
       shield: 0,
       alive: true,
@@ -394,7 +400,13 @@
 
   // Poisoned units cannot be healed.
   function healBlocked(s, u) {
-    return !!u.poison;
+    return !!u.poison || u.sever > 0 || huntedNow(s, u);
+  }
+
+  // A bounty: while one of its hunters (a Spellbinder) stands, the unit it is on cannot be
+  // healed and takes 25% more damage. No turns needed: the curse holds until they fall.
+  function huntedNow(s, u) {
+    return !!u.hunted && s.units.some((v) => v.alive && v.team !== u.team && v.traits.has('hunter'));
   }
 
   // A hostile trap on this tile stops a walking unit there. Flyers pass over traps and fire.
@@ -714,7 +726,7 @@
       dmg *= 1 - effRes(s, tgt);
       dmg *= 1 - magicGuard(s, tgt);
     }
-    if (tgt.mark > 0) dmg *= 1.25;
+    if (tgt.mark > 0 || huntedNow(s, tgt)) dmg *= 1.25;
     dmg *= 1 - guardianReduction(s, tgt);
     // Phalanx Standard: shoulder to shoulder with two allies or more.
     if (s.relics[tgt.team].has('phalanx_standard') && !tgt.nonCombat && !tgt.structure && alliesNext(s, tgt) >= 2) dmg *= 0.8;
@@ -1154,6 +1166,7 @@
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
+            if (fx.sever) e.sever = fx.sever;
             if (fx.knock) e.knock = shoveForecast(s, u, v, fx.knock);
             else if (fx.pull) e.knock = shoveForecast(s, u, v, fx.pull, true);
           }
@@ -1177,7 +1190,7 @@
   function heal(s, u, amount, why) {
     if (!u.alive || u.nonCombat || u.structure) return 0;
     if (healBlocked(s, u)) {
-      if (why === 'prayer') emit(s, { t: 'healblock', uid: u.uid });
+      if (why === 'prayer') emit(s, { t: 'healblock', uid: u.uid, why: u.poison ? 'poison' : u.sever > 0 ? 'sever' : 'hunted' });
       return 0;
     }
     const h = Math.min(Math.round(amount), u.maxHp - u.hp);
@@ -1197,8 +1210,9 @@
       v.burn = null;
       any = true;
     }
-    if (all && (v.para || v.root)) {
-      v.para = 0;
+    // A Spellbinder's chains hold whatever the cure.
+    if (all && ((v.para && !(v.chains > 0)) || v.root)) {
+      if (!(v.chains > 0)) v.para = 0;
       v.root = 0;
       any = true;
     }
@@ -1216,6 +1230,8 @@
     u.root = 0;
     u.weak = 0;
     u.mark = 0;
+    u.sever = 0;
+    u.chains = 0;
     u.shield = 0;
     s.occ[idx(s, u.x, u.y)] = u.uid;
     emit(s, { t: 'revive', uid: u.uid, hp: u.hp, why });
@@ -1707,7 +1723,7 @@
   // Magic damage that is not an attack: bonus magic, zaps, burns, fire and explosions.
   // What magic resistance (and a mark) makes of spell, fire and poison damage.
   function elementalMult(s, tgt) {
-    return (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt)) * (tgt.mark > 0 ? 1.25 : 1);
+    return (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt)) * (tgt.mark > 0 || huntedNow(s, tgt) ? 1.25 : 1);
   }
 
   function magicDamage(s, src, tgt, base, why) {
@@ -1928,8 +1944,12 @@
       if (statusImmune(s, u, 'para')) resisted(s, u, 'para');
       else {
         u.para = Math.max(u.para, fx.para);
+        if (fx.chains) {
+          u.chains = Math.max(u.chains, fx.para);
+          stamp(s, u, 'chains');
+        }
         stamp(s, u, 'para');
-        emit(s, { t: 'status', uid: u.uid, status: 'para', turns: u.para });
+        emit(s, { t: 'status', uid: u.uid, status: 'para', turns: u.para, chained: u.chains > 0 });
         if (src && src.traits.has('discord') && u.alive) discord(s, u);
       }
     }
@@ -1948,6 +1968,11 @@
         stamp(s, u, 'root');
         emit(s, { t: 'status', uid: u.uid, status: 'root', turns: u.root });
       }
+    }
+    if (fx.sever) {
+      u.sever = Math.max(u.sever, fx.sever);
+      stamp(s, u, 'sever');
+      emit(s, { t: 'status', uid: u.uid, status: 'sever', turns: u.sever });
     }
     if (fx.weak) {
       u.weak = Math.max(u.weak, fx.weak);
@@ -2469,7 +2494,7 @@
       case 'rally':
         for (const v of affectedUnits(s, u, target)) {
           v.wait = Math.max(0, v.wait - 1);
-          v.para = 0;
+          if (!(v.chains > 0)) v.para = 0;
           v.root = 0;
           emit(s, { t: 'rally', uid: v.uid, wait: v.wait });
         }
@@ -2761,9 +2786,13 @@
       if (u.team === side) {
         if (!s.queue) {
           if (u.wait > 0) tick('wait');
-          else tick('para');
+          else {
+            tick('para');
+            tick('chains');
+          }
           tick('root');
           tick('weak');
+          tick('sever');
           tick('frenzy');
         }
         u.activated = false;
@@ -3124,9 +3153,13 @@
       if (u[k] > 0 && fresh[k] !== s.ply) u[k]--;
     };
     if (u.wait > 0) tick('wait');
-    else tick('para');
+    else {
+      tick('para');
+      tick('chains');
+    }
     tick('root');
     tick('weak');
+    tick('sever');
     tick('frenzy');
   }
 
@@ -3187,7 +3220,10 @@
         if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.wait > 0 ? 'cooldown' : 'para' });
         x.cycles++;
         if (x.wait > 0) x.wait--;
-        else if (x.para > 0) x.para--;
+        else if (x.para > 0) {
+          x.para--;
+          if (x.chains > 0) x.chains--;
+        }
         if (!resting) picked = x;
         else continue;
         break;
@@ -3335,7 +3371,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, huntedNow, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

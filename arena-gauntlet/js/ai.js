@@ -849,6 +849,8 @@
         continue;
       }
       const bossTarget = t.team !== u.team && ((s.objective === 'boss' && t.boss) || (s.objective === 'vip' && t.vip) || (s.objective === 'destroy' && isGoal(t)));
+      // A bounty's hunters go after the unit it is on before anything else.
+      if (t.hunted && t.team !== u.team && !e.friendly && u.traits.has('hunter')) v += 30;
       if (e.dmg != null) {
         const p = 1 - e.block;
         const dealt = Math.min(e.dmg, t.hp + t.shield);
@@ -904,6 +906,8 @@
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
       if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (delayOf(ctx.s, t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
+      // Severed: no healing for a while, worth more the bigger (and better healed) the unit.
+      if (e.sever && !(t.sever > 0)) v += p * (4 + t.value * 0.06);
       if (e.knock && e.knock !== 'resist' && !e.kill) v += p * shoveValue(ctx, u, t, e.knock, t.hp - (e.dmg || 0) * p);
     }
     if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
