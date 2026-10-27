@@ -15,7 +15,7 @@ N_SEG = int(os.environ.get("WHATIF_SEGS", "4"))
 CAP_BYTES = 14_600_000          # stay safely under 15 MB
 AUDIO_KBPS = 64
 # low-bitrate AAC overshoots transients by ~2-3 dB: trim and limit first so decoded true peak stays < -1 dBTP
-AUDIO_FILTER = "volume=-0.7dB,alimiter=limit=0.66:attack=0.5:release=40:level=disabled"
+AUDIO_FILTER = "volume=-0.7dB,alimiter=limit=0.62:attack=0.5:release=40:level=disabled"
 OUT_BASENAME = "what_if_no_force"
 
 

@@ -12,8 +12,8 @@ before.
 
 | file | what |
 | --- | --- |
-| `what_if_no_force.mp4` | main video: H.264 High + AAC 64 kbps, 900×1600, burned-in subtitles; plays everywhere |
-| `what_if_no_force_hevc.mp4` | same video in HEVC Main10 at native 1080×1920; needs an HEVC-capable player |
+| `what_if_no_force.mp4` | main video: H.264 High + AAC 64 kbps, 900×1600, 5:15, **14.5 MB**, burned-in subtitles; plays everywhere |
+| `what_if_no_force_hevc.mp4` | same video in HEVC Main10 at native 1080×1920, **14.3 MB**: crisper lines; needs an HEVC-capable player (all recent iPhones/Androids) |
 | `what_if_no_force.srt` | subtitle file with speaker labels |
 | `what_if_no_force_first_frame.png` | frame 0 (the social-media preview frame) |
 
@@ -78,3 +78,6 @@ python encode.py all     # render + encode -> output/
 ```
 
 Intermediate files go to `$WHATIF_BUILD` (see `paths.py`).
+
+Quality check: the H.264 encode scores SSIM 0.980 and the HEVC encode 0.981 against the uncompressed render
+(scaled to 1080×1920). The audio is mastered to -16.8 LUFS integrated, with a decoded true peak of -1.8 dBTP.
