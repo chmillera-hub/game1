@@ -1,5 +1,5 @@
-// Poison and burns split the work. Poison never takes on buildings (wards included) or the
-// undead, and only those: golems take it. It
+// Poison and burns split the work. Poison never takes on buildings (wards included) or
+// skeletons, and only those: golems, Specters and the Death Knight take it. It
 // stops all healing and regen. Burns catch on buildings and the undead alike, and leave
 // healing and regen alone. Both are elemental: magic resistance cuts them.
 // Run: node tests/dots.test.js
@@ -25,19 +25,33 @@ function battle(units) {
 const POISON = { poison: [3, 6] };
 const BURN = { burn: [3, 6] };
 
-test('poison does not take on buildings or the undead', () => {
+test('poison does not take on buildings or skeletons', () => {
   const s = battle([
     { type: 'witch', team: 'P', x: 4, y: 8 },
     { type: 'war_tent', team: 'E', x: 2, y: 2 },
     { type: 'crypt', team: 'E', x: 6, y: 2 },
     { type: 'tower', team: 'E', x: 4, y: 0 },
     { type: 'skeleton', team: 'E', x: 0, y: 4 },
-    { type: 'specter', team: 'E', x: 8, y: 4 },
+    { type: 'skelarcher', team: 'E', x: 8, y: 4 },
+    { type: 'colossus', team: 'E', x: 2, y: 6 },
+    { type: 'lich', team: 'E', x: 6, y: 6 },
   ]);
   const src = s.units[0];
   for (const v of s.units.slice(1)) {
     E.applyStatus(s, src, v, POISON, { name: 'test' });
     assert.ok(!v.poison, `${v.type} is not poisoned`);
+  }
+});
+
+test('the robed undead, Specters and the Death Knight, are poisoned like anyone', () => {
+  const s = battle([
+    { type: 'witch', team: 'P', x: 4, y: 8 },
+    { type: 'specter', team: 'E', x: 2, y: 2 },
+    { type: 'death_knight', team: 'E', x: 6, y: 2 },
+  ]);
+  for (const v of s.units.slice(1)) {
+    E.applyStatus(s, s.units[0], v, POISON, { name: 'test' });
+    assert.ok(v.poison, `${v.type} is poisoned`);
   }
 });
 

@@ -543,10 +543,11 @@ on a phone turned sideways, but portrait works too.
   bigger damage), so one archer cannot pile poison on by itself; its chip in the unit
   card reads like "Poisoned 3 · 12 a turn (2 sources)". The Poison Wisp poisons every enemy within 2 tiles
   for 2 of their turns; poisoned units cannot heal.
-  Only buildings (wagons, cages and wards included) and the undead are immune; golems
+  Only buildings (wagons, cages and wards included) and skeletons (Skeletons, Skeleton
+  Archers, the Bone Colossus, the Lich) are immune; Specters, the Death Knight, golems
   and every other unit can be poisoned (a Barrier Ward's aura does not stop poison or paralysis); a poison that does not take
   shows "IMMUNE TO POISON" over the unit, in poison's colour, and the battle log says
-  why ("Skeleton immune to poison (undead)"). Paralysis and roots do the same in their
+  why ("Skeleton immune to poison (skeleton)"). Paralysis and roots do the same in their
   own colours. Pestilence's extra damage never hits buildings. Poison looks nothing like
   healing: its numbers float up in magenta with a minus sign (every damage number has
   one; heals have a plus), with a magenta puff, and a poisoned unit's HP bar turns
