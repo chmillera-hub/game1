@@ -23,6 +23,41 @@ async function test(name, fn) {
   }
 }
 
+
+// Win the battle at hand without fighting it (as the Hall tests do), and a whole campaign.
+function win(run) {
+  const E = AG.Engine;
+  const dep = R.autoDeploy(run, 0);
+  const s = E.createBattle(R.battleConfig(run, dep));
+  s.over = true;
+  s.winner = 'P';
+  R.finishBattle(run, s, dep);
+  const p = run.pending;
+  if (p.bossRelics && !p.bossRelicTaken) R.takeBossRelic(run, p.bossRelics[0]);
+  if (p.tome && !p.tomeTaken) R.skipTome(run);
+  if (!p.spoilTaken) R.skipSpoils(run);
+  R.completeNode(run);
+}
+function winCampaign(seed) {
+  const run = R.newRun(seed);
+  for (let guard = 0; !run.won && guard < 60; guard++) {
+    const p = run.pending;
+    if (!p) {
+      const i = run.offer.findIndex((o) => o.tier === 'medium');
+      R.chooseChallenge(run, i < 0 ? 0 : i);
+      win(run);
+    } else if (p.type === 'shop') R.completeNode(run);
+    else if (p.type === 'event') {
+      const c = R.eventChoices(run).filter((x) => x.enabled && !x.pick).pop();
+      R.chooseEvent(run, c.id, null);
+      if (run.pending.type === 'battle') win(run);
+      else R.completeNode(run);
+    }
+  }
+  assert.ok(run.won, 'campaign won');
+  return run;
+}
+
 (async () => {
   // A real campaign a few picks in, a Hall entry and a record on device A.
   const run = R.newRun(4242);
@@ -64,6 +99,38 @@ async function test(name, fn) {
       assert.ok(r.error, `refused: ${bad.slice(0, 16)}`);
     }
     assert.deepStrictEqual(new Map(globalThis.localStorage._m), snap);
+  });
+
+  await test('three won campaigns: their Hall of Fame armies, formations and records come back whole', async () => {
+    globalThis.localStorage = storage();
+    const runs = [101, 202, 303].map(winCampaign);
+    R.hallStart(); // one army has started its climb, the other waits in line
+    const hall = R.loadHall();
+    const mine = hall.legends.concat(hall.queue).filter((l) => runs.some((r) => r.legendId === l.id));
+    assert.strictEqual(mine.length, 3, 'three of my armies in the Hall');
+    const saved = globalThis.localStorage.getItem('arena-gauntlet-hall-v1');
+    const backup = await R.exportSave();
+
+    // Weeks later, a wiped browser (or another device): paste the code from Notepad.
+    globalThis.localStorage = storage();
+    assert.strictEqual(R.loadHall().legends.length, 0, 'the wiped browser has no Hall');
+    assert.ok((await R.importSave(backup)).ok);
+    assert.strictEqual(globalThis.localStorage.getItem('arena-gauntlet-hall-v1'), saved, 'the Hall comes back byte for byte');
+    const back = R.loadHall();
+    assert.deepStrictEqual(back.legends.map((l) => l.id), hall.legends.map((l) => l.id), 'same ladder order');
+    assert.deepStrictEqual(back.queue.map((l) => l.id), hall.queue.map((l) => l.id), 'same armies waiting to climb');
+    for (const l of mine) {
+      const b = back.legends.concat(back.queue).find((x) => x.id === l.id);
+      assert.strictEqual(b.name, l.name);
+      assert.deepStrictEqual(b.units, l.units, `${l.name}: every unit, loadout and tile of its formation`);
+      assert.deepStrictEqual(b.relics, l.relics, `${l.name}: its relics`);
+    }
+    // And the restored armies still fight: the climber takes on the army above it.
+    const climber = R.hallClimber(back);
+    const foe = climber && R.hallNext(back, climber.id);
+    assert.ok(climber && foe, 'a climb is under way');
+    const s = AG.Engine.createBattle(R.hallBattleConfig(climber, foe, 7));
+    assert.ok(s.units.some((u) => u.team === 'P') && s.units.some((u) => u.team === 'E'), 'both armies take the field');
   });
 
   console.log(`backup: ${passed} tests passed`);

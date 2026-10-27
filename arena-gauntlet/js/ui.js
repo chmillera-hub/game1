@@ -1020,11 +1020,11 @@
 
   // Back up or restore: the whole save as one text code to copy out of this browser and
   // paste into another (or keep somewhere safe).
-  function saveSheet() {
+  function saveSheet(after) {
     openSheet(
       `${sheetHead('Back up or restore save', 'Your progress lives in this browser only: clearing it, or another browser or device, starts from nothing.')}
       <h4 class="save-sec">Back up</h4>
-      <p class="small muted">Makes a code holding your campaign, Hall of Fame and record. Keep it in your notes or send it to yourself, then paste it into Restore on any browser or device.</p>
+      <p class="small muted">Makes a code holding your Hall of Fame armies (every unit, loadout and formation), your campaign in progress and your record. Paste it into Notepad or send it to yourself, then paste it into Restore anytime, in any browser or on any device.</p>
       <button class="btn primary" id="bkMake">${ic('scroll')} Make backup code</button>
       <div id="bkOut" hidden>
         <textarea id="bkCode" class="save-code" readonly rows="4" aria-label="Backup code"></textarea>
@@ -1079,16 +1079,18 @@
             return;
           }
           const d = check.data;
-          const what = [d.run ? 'a campaign in progress' : 'no campaign in progress', `${((d.hall && d.hall.legends) || []).length + ((d.hall && d.hall.queue) || []).length} Hall of Fame armies`, `${(d.meta && d.meta.runs) || 0} campaigns fought`].join(', ');
-          if (!(await confirmSheet('Restore this save?', `The code holds ${esc(what)}. It replaces everything saved in this browser.`, 'Restore', 'Cancel', true))) return;
+          const armies = (d.hall ? (d.hall.legends || []).concat(d.hall.queue || []) : []).filter((l) => l && !l.house);
+          const what = [d.run ? 'a campaign in progress' : 'no campaign in progress', `${(d.meta && d.meta.runs) || 0} campaigns fought`].join(', ');
+          const hallLine = armies.length ? `<br>Your Hall of Fame armies: <b>${armies.map((l) => esc(l.name)).join('</b>, <b>')}</b>.` : '<br>No Hall of Fame armies of your own.';
+          if (!(await confirmSheet('Restore this save?', `The code holds ${esc(what)}.${hallLine}<br>It replaces everything saved in this browser.`, 'Restore', 'Cancel', true))) return;
           const r = await R.importSave(code);
           if (r.error) {
             toast(r.error);
             return;
           }
           UI.run = R.load();
-          toast('Save restored.');
-          title();
+          toast(armies.length ? `Save restored, with ${armies.length} Hall of Fame ${armies.length === 1 ? 'army' : 'armies'}.` : 'Save restored.');
+          (after || title)();
         };
       }
     );
@@ -4574,7 +4576,7 @@
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Every army that won a campaign</p><h2>Hall of Fame</h2></div>
-        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places. Armies stay here through every update of the game, fighting by the rules of the day; only Reset Hall of Fame clears it.</p>
+        <p class="muted">Each campaign you win saves its final army here, with its gear, talents and relics, the moment you win. New armies wait in line until you start their climb, whenever you like: it enters at the bottom and climbs by beating the army right above it, one match at a time, until it loses or reaches the top. Any two ranked armies can skirmish at any time too: if the lower-ranked one wins, they swap places. Armies stay here through every update of the game, fighting by the rules of the day; only Reset Hall of Fame clears it. They live in this browser only: Back up keeps them as a code you can paste back in anytime, here or on another device.</p>
         ${climbPanel}
         ${st.log.length ? `<div class="panel hall-log">${st.log.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
         <div class="hall-list">${L.length ? L.map(row).join('') : '<p class="muted">No army yet. Win a campaign to enter yours.</p>'}</div>
@@ -4583,12 +4585,14 @@
         ${goPanel}
         <div class="row end">
           ${all.length ? `<button class="btn danger" id="hlReset">Reset Hall of Fame</button>` : ''}
+          <button class="btn" id="hlSave">${ic('scroll')} Back up / restore</button>
           <button class="btn" id="hlBack">Back</button>
         </div>
       </div>`
     );
     const again = () => hallScreen(back, st);
     $('#hlBack', v).onclick = () => back();
+    $('#hlSave', v).onclick = () => saveSheet(() => hallScreen(back));
     if ($('#hlReset', v))
       $('#hlReset', v).onclick = async () => {
         if (!(await confirmSheet('Reset the Hall of Fame?', 'Every army in it goes, for good, the ones waiting to climb and the house armies too. Updates to the game never do this: only you can.', 'Reset', 'Keep them', true))) return;
