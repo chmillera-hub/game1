@@ -2098,10 +2098,12 @@
       id: 'gamble',
       title: "The Gambler's Tent",
       text: 'Dice clatter under a striped awning. A one-eyed bookmaker waves you closer. "No coin on my table, captain. We play for treasures. Or for souls."',
-      prepare: (run, rng) => ({ relic: pickRelic(run, rng, ['common', 'uncommon']) }),
+      // Every roll pays something: a win pays big, a loss still leaves with the bookmaker's
+      // pity prize (named up front), never empty-handed.
+      prepare: (run, rng) => ({ relic: pickRelic(run, rng, ['common', 'uncommon']), pity: rollGear(run, rng) }),
       choices: (run, c) => [
-        c.relic ? { id: 'dice', label: `Dice for the ${RELICS[c.relic].name} (30 gold stake)`, detail: `${RELICS[c.relic].desc} Even odds.`, enabled: run.gold >= 30 } : null,
-        { id: 'wager', label: "Stake a soldier's service", detail: 'Pick a unit. Even odds: it wins big and comes back bound with a random enchantment, or it gambles itself into the bookmaker\'s employ and leaves your army for good.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
+        c.relic ? { id: 'dice', label: `Dice for the ${RELICS[c.relic].name} (30 gold stake)`, detail: `Even odds. Win: the ${RELICS[c.relic].name} (${RELICS[c.relic].desc}) Lose: the bookmaker's pity prize, ${c.pity ? `a ${GEAR[c.pity].name} (${GEAR[c.pity].desc})` : '+15 Commander XP'}.`, enabled: run.gold >= 30 } : null,
+        { id: 'wager', label: "Stake a soldier's service", detail: 'Pick a unit. Even odds. Win: it comes back bound with a random enchantment. Lose: it plays on and learns a trick, bringing back a talent of its class.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
         { id: 'tells', label: "Watch the tables and learn the players' tells", detail: '+12 Commander XP.' },
       ].filter(Boolean),
       resolve: (run, c, choice, rid, rng) => {
@@ -2111,16 +2113,26 @@
             gainRelic(run, c.relic);
             return `Double sixes! The ${RELICS[c.relic].name} is yours.`;
           }
-          return 'Snake eyes. The bookmaker sweeps your stake away.';
+          if (c.pity && GEAR[c.pity]) {
+            addItem(run, 'gear', c.pity);
+            return `Snake eyes. The bookmaker sweeps up your stake, then grins and tosses you a ${GEAR[c.pity].name} for your trouble.`;
+          }
+          gainXp(run, 15);
+          return 'Snake eyes. The bookmaker sweeps up your stake, but you leave knowing every trick at that table. +15 Commander XP.';
         }
         if (choice === 'wager') {
           const u = unitById(run, rid);
           if (rng.chance(0.5)) {
             const id = bindEnchant(run, rng, u);
-            return `${u.name} rolls three sixes and walks out glowing: ${ENCHANTS[id].name}. ${ENCHANTS[id].desc}`;
+            if (id) return `${u.name} rolls three sixes and walks out glowing: ${ENCHANTS[id].name}. ${ENCHANTS[id].desc}`;
           }
-          dismiss(run, u);
-          return `${u.name} loses the roll, shrugs, and starts dealing cards for the bookmaker. They are gone.`;
+          const t = rollTalentFor(run, u.type, rng);
+          if (t) {
+            addItem(run, 'talent', t);
+            return `${u.name} loses the roll but plays on all night, and comes back having learned a trick: the ${TALENTS[t].name} talent. ${TALENTS[t].desc}`;
+          }
+          gainXp(run, 15);
+          return `${u.name} loses the roll but comes back with stories, and your officers learn from them. +15 Commander XP.`;
         }
         gainXp(run, 12);
         return 'A twitch of the eye, a hand to the purse: you learn to read a bluff. +12 Commander XP.';
@@ -2504,7 +2516,7 @@
   }
 
   // Events were rewritten: a save caught mid-event from before gets a fresh deal.
-  const EVENTS_V = 3;
+  const EVENTS_V = 4;
   function eventChoices(run) {
     const p = run.pending;
     const ev = eventDef(p.eventId);

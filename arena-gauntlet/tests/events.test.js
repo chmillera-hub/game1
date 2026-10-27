@@ -126,7 +126,28 @@ test("a save caught mid-event from before the rewrite gets a fresh deal", () => 
   run.pending.ctx = { gear: ['x'] };
   const choices = R.eventChoices(run);
   assert.ok(choices.every((c) => !c.id.includes('forge:x')));
-  assert.strictEqual(run.pending.ctx.v, 3);
+  assert.strictEqual(run.pending.ctx.v, 4);
+});
+
+test("the Gambler's Tent: every roll pays something, win or lose, and no unit is lost", () => {
+  const worth = (run) => run.items.length * 10 + run.relics.length * 100 + run.roster.filter((u) => u.enchant).length * 50 + (run.xp || 0);
+  const seen = { dice: new Set(), wager: new Set() };
+  for (let seed = 1; seed <= 40; seed++) {
+    for (const id of ['dice', 'wager']) {
+      const run = atEvent(seed, 'gamble', 200);
+      const c = R.eventChoices(run).find((x) => x.id === id);
+      if (!c || !c.enabled) continue;
+      const before = worth(run);
+      const units = run.roster.length;
+      const rid = c.pick ? run.roster.find((u) => R.eventPickOk(run, c.pick, u)).id : null;
+      const text = R.chooseEvent(run, id, rid) || (run.pending.result && run.pending.result.text) || '';
+      assert.strictEqual(run.roster.length, units, `${id} (seed ${seed}): nobody leaves`);
+      assert.ok(worth(run) > before, `${id} (seed ${seed}): something gained`);
+      seen[id].add(run.relics.length > 1 || run.roster.some((u) => u.enchant) ? 'win' : 'lose');
+    }
+  }
+  assert.ok(seen.dice.has('win') && seen.dice.has('lose'), 'dice: both outcomes came up');
+  assert.ok(seen.wager.has('win') && seen.wager.has('lose'), 'wager: both outcomes came up');
 });
 
 console.log(`events: ${passed} tests passed`);
