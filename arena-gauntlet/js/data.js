@@ -349,7 +349,8 @@
   // ---------------------------------------------------------------- units
   //
   // res = magic resistance. tags drive gear bonuses (Blessed Blade vs undead, and so on).
-  // Buildings carry the 'structure' tag, which siege damage targets, and a material:
+  // Buildings carry the 'structure' tag, which siege damage targets: anything rooted to
+  // the field (towers, walls, totems, wards, shrubs), plus wagons. Most also have a material:
   // stone resists swords and spells, wood burns, arcane unravels under magic.
 
   const TOTEM = {
@@ -586,8 +587,8 @@
       name: 'Shrub', rarity: 'none', cost: 0, role: 'object',
       hp: 18, pow: 0, armor: 0, res: 0, block: 0, rec: 0, move: 0,
       act: { name: 'None', kind: 'none' },
-      traits: ['immobile', 'nofacing', 'summon'], tags: [],
-      desc: 'A thorny thicket. Blocks movement and lines until cut down.',
+      traits: ['immobile', 'nofacing', 'summon'], tags: ['structure'],
+      desc: 'A thorny thicket. Blocks movement and lines until cut down. Counts as a building: siege damage hits it harder, and it catches fire.',
       tip: 'Cut it down, or fly and shoot over it.',
     },
     warbanner: {
@@ -996,7 +997,7 @@
     chaos_magic: { name: 'Chaos Magic', cost: 2, desc: 'Its magic hits also inflict a random curse: burning, rooted or weakened.', req: 'magic', mod: { traits: ['chaosmagic'] } },
     bullrush: { name: 'Bull Rush', cost: 0, side: true, desc: 'Its basic attack shoves what it hits 1 tile away: it might break a line, or push a foe out of your reach. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.', req: 'damage', mod: { act: { fx: { knock: 1 } } } },
     reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% physical resistance.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
-    demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings, wards and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
+    demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
     lucky: { name: 'Lucky', cost: 2, desc: '15% chance to land a Critical hit: double damage.', req: 'damage', mod: { props: { crit: 0.15 } } },
     powder_belt: { name: 'Powder Belt', cost: 1, desc: 'When it falls, it explodes: 15 damage to every enemy adjacent to it.', mod: { props: { deathBoom: 15 } } },
     headhunter: { name: 'Headhunter', cost: 2, desc: 'Every kill earns a trophy: +10% damage, up to 5, and heals it 6.', req: 'damage', mod: { traits: ['trophy'], props: { killHeal: 6 } } },
@@ -1015,7 +1016,7 @@
     blessed_blade: { name: 'Blessed Blade', cost: 1, desc: '+50% damage against undead and spirits.', req: 'damage', mod: { props: { vs: { undead: 0.5, spirit: 0.5 } } } },
     orcbane: { name: 'Orcbane Axe', cost: 1, desc: '+40% damage against orcs and goblins.', req: 'damage', mod: { props: { vs: { greenskin: 0.4 } } } },
     dragonslayer: { name: 'Dragonslayer Spear', cost: 2, desc: '+50% damage against huge foes: dragons, trolls, brutes and bosses.', req: 'damage', mod: { props: { vs: { big: 0.5 } } } },
-    siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings, wards and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
+    siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
     armor_breaker: { name: 'Armor Breaker', cost: 2, desc: 'Each hit strips 10% physical resistance from the target for the rest of the battle.', req: 'phys', mod: { traits: ['sunder'] } },
     healing_charm: { name: 'Healing Charm', cost: 1, desc: '+3 Regen: heals 3 HP every time its turn comes, even when it passes.', mod: { props: { regen: 3 } } },
     porcupine_ring: { name: 'Porcupine Ring', cost: 1, desc: 'Enemies that strike it in melee take 6 damage and are marked for 2 turns: 25% more damage from everyone.', mod: { props: { thorns: 6 }, traits: ['porcupine'] } },
@@ -1128,7 +1129,7 @@
     drill_manual: { name: 'Drill Manual', tier: 'common', desc: 'Gain 25% more XP from battles.' },
     pathfinder: { name: 'Pathfinder Boots', tier: 'common', desc: 'Units with 3 Move or less gain +1 Move.' },
     vampire_fang: { name: 'Vampire Fang', tier: 'common', desc: 'Your units heal 8 HP whenever they slay an enemy.' },
-    sappers_kit: { name: "Sapper's Kit", tier: 'common', desc: 'Your units deal 50% more damage to buildings, wards and wagons.' },
+    sappers_kit: { name: "Sapper's Kit", tier: 'common', desc: 'Your units deal 50% more damage to buildings and wagons.' },
     iron_ram: { name: 'Iron Ram', tier: 'common', desc: 'Enemies your units shove or drag into something (a rock, the edge, a unit, water or lava) take 6 more damage.' },
     mana_crystal: { name: 'Mana Crystal', tier: 'uncommon', desc: 'Spellcasters (Cooldown 2 or more) cool down 1 turn faster.' },
     bloodstone: { name: 'Bloodstone', tier: 'uncommon', desc: 'Your units heal for 20% of the damage they deal.' },

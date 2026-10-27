@@ -206,8 +206,9 @@ on a phone turned sideways, but portrait works too.
   shows what a relic needs and who could carry it. Relics and kit with no use in a Hall
   battle are not offered in the sandbox at all: the gold, XP, shop, deployment-zone and
   crown relics, and the Gilded Gauntlet gear and Midas enchantment (gold only). Siege kit
-  stays: the Barrier and Lightning Wards count as buildings, so the Siege Hammer,
-  Demolisher, Boulder Toss, the Trebuchet and the Sapper's Kit all bite on them.
+  stays: the Barrier and Lightning Wards and a Furgon's shrubs count as buildings, so
+  the Siege Hammer, Demolisher, Boulder Toss, the Trebuchet and the Sapper's Kit all bite
+  on them.
   A 9x3 grid sets the formation. Test fight
   plays a friendly match against any Hall army; Enter the Hall adds a copy, marked Sandbox,
   waiting to climb, and the draft stays to keep tinkering. The draft is saved on its own
@@ -656,8 +657,10 @@ on a phone turned sideways, but portrait works too.
   further), Anchor Stone (your units cannot be moved). Previews say where a shove
   lands and what it hits, and the AI on both sides goes looking for a rock, a crowd,
   water or lava to shove its enemies into.
-- **Buildings and siege**: walls, gates, towers, totems, tents, crypts, dens,
-  portals and barricades are buildings. A castle gate opens for its own garrison (they
+- **Buildings and siege**: anything rooted to the field is a building: walls, gates,
+  towers, totems, tents, crypts, dens, portals, barricades, powder kegs, banners, cages,
+  wreckage, the Barrier and Lightning Wards and a Furgon's shrubs (wagons count too).
+  Rocks, trees and spires are part of the ground and never break. A castle gate opens for its own garrison (they
   walk through it, never stopping in the gateway); you have to break it. No battle
   walls anyone in: every map is checked so each enemy on foot, and each building's
   doorway, has a way across to your side, and a rock, pool or lava tile that would

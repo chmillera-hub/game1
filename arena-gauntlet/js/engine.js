@@ -1907,9 +1907,9 @@
   }
 
   // Buildings, walls, barrels and towers take no status but burns: fire catches on them,
-  // and they burn once a round (see startEffects). Summons take none at all.
+  // and they burn once a round (see startEffects). Shrubs count as buildings here too.
   function burnable(u) {
-    return u.traits.has('object') || u.structure;
+    return u.traits.has('object') || u.structure || u.tags.has('structure');
   }
 
   // Burns stack by source, like poison (see addDot).
@@ -2826,7 +2826,7 @@
     // rotation comes up (see pickDue), not at the start of its side's turn.
     if (!s.queue) for (const u of mine) if (u.alive && !u.nonCombat) unitTurnStart(s, u);
     // Buildings take no turns: a burning one burns once a round, as the enemy's turn starts.
-    if (team === 'E') for (const u of s.units) if (u.alive && u.burn && u.traits.has('object')) tickDot(s, u, 'burn');
+    if (team === 'E') for (const u of s.units) if (u.alive && u.burn && (u.traits.has('object') || u.traits.has('summon'))) tickDot(s, u, 'burn');
     // War totems whip allies within 2 tiles into a frenzy (25% more damage) while they stand.
     // Enemies barely ever heal: a totem never mends anyone.
     const totems = mine.filter((w) => w.alive && w.props.totemRage);
