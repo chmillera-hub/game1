@@ -4113,3 +4113,12 @@ body:has(#battle:not([hidden])) {
   color: var(--text);
   font: inherit;
 }
+.hall-row.rival .rank,
+.hall-row.rival .rival-skull {
+  color: #ff5a4e;
+}
+.rival-skull {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.9em;
+}

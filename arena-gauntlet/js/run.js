@@ -2942,13 +2942,14 @@
     return l;
   }
 
-  // Rival armies. A player shares their best Hall armies as one text code (up to five of
+  // Rival armies. A player shares their best Hall armies as one text code (up to three of
   // their own: never the house armies, never someone else's), and a friend pastes it into
   // their Hall. Each arrives marked as a rival, at the back of the line waiting to climb,
-  // with a clean record; the same army pasted twice is added once. Whatever a code holds that
+  // with a clean record; the same army pasted twice is added once. A paste only ever adds to
+  // the Hall: your campaign, record and everything else stay as they were. Whatever a code holds that
   // the game does not know, or could not do (a unit on the enemy's side of the field, two on
   // one tile, an army far past any real Supply), is dropped. Rivals can be removed any time.
-  const SHARE_MAX = 5;
+  const SHARE_MAX = 3;
   const RIVAL_MAX_UNITS = 16;
   const RIVAL_MAX_SUPPLY = 150;
   const ownArmy = (l) => l && !l.house && !l.foreign;

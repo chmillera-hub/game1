@@ -185,10 +185,11 @@ on a phone turned sideways, but portrait works too.
   bonus goals (nothing they pay could be spent after it): six powder kegs lie strewn
   between the armies instead, to blow up under whoever stands next to them.
 - **Rival armies**: Share my armies (in the Hall of Fame) makes one text code holding your
-  best armies, up to five of your own (never the house armies or rivals you added), with
+  best armies, up to three of your own (never the house armies or rivals you added), with
   your name on them. A friend pastes it under Add a rival's armies: those armies join their
   Hall in a hostile red, tagged "Rival · <name>", at the back of the line waiting to climb,
-  with a clean record. The same army pasted twice is added once. A code is cleaned on the
+  with a clean record. The same army pasted twice is added once, and a paste only ever adds
+  to the Hall: the campaign, record and everything else stay untouched. A code is cleaned on the
   way in: unknown units, abilities and items are dropped, units go back to their own side of
   the field (one per tile), and no army past 16 units or 150 Supply gets in. Tap a rival to
   remove it. The Hall of Fame button is always on the title screen, so a new player can add

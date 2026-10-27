@@ -1075,7 +1075,7 @@
   function shareArmiesSheet() {
     const mine = R.shareable(R.loadHall());
     openSheet(
-      `${sheetHead('Share my armies', 'A code for a friend: they paste it under Add a rival\'s armies and your armies join their Hall of Fame as rivals.')}
+      `${sheetHead('Share my armies', 'A code for a friend: they paste it under Add a rival\'s armies and your armies join their Hall of Fame as rivals. It only adds to their Hall, never touches their campaign.')}
       ${
         mine.length
           ? `<p class="small muted">It holds your ${mine.length === 1 ? 'army' : `${mine.length} best armies`}: ${mine.map((l) => `<b>${esc(l.name)}</b>`).join(', ')}. Never the house armies, never rivals you added.</p>
@@ -1108,7 +1108,7 @@
   // Paste a friend's army code: their armies join your Hall as rivals, waiting to climb.
   function addRivalSheet(after) {
     openSheet(
-      `${sheetHead("Add a rival's armies", 'Paste the army code a friend shared. Up to five of their armies join your Hall in red, waiting to climb against yours.')}
+      `${sheetHead("Add a rival's armies", 'Paste the army code a friend shared. Up to three of their armies join your Hall in red, waiting to climb against yours. Only your Hall changes: your campaign and everything else stay as they are.')}
       <textarea id="rvCode" class="save-code" rows="4" placeholder="Paste an army code (AGAZ1.…)" aria-label="Army code"></textarea>
       <p class="small save-err" id="rvErr" hidden></p>
       <button class="btn primary" id="rvGo">${ic('swords')} Add their armies</button>`,
@@ -4676,8 +4676,8 @@
       const tag = (l === climber ? '<span class="chip warn">Climbing</span>' : '') + (picked >= 0 ? `<span class="chip ${picked ? 'bad' : 'good'}">${picked ? 'Red' : 'Blue'}</span>` : '');
       const waiting = i < 0;
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''} ${l.foreign ? 'rival' : ''}" data-legend="${l.id}">
-        <span class="rank">${waiting ? ic('hourglass') : '#' + (i + 1)}</span>
-        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${l.foreign ? `<span class="chip rival-chip" title="Another player's army, added from their code">${ic('swords')} Rival · ${esc(l.owner || 'a rival')}</span>` : ''} ${tag}</span>
+        <span class="rank">${waiting ? ic(l.foreign ? 'skull' : 'hourglass') : '#' + (i + 1)}${!waiting && l.foreign ? `<span class="rival-skull">${ic('skull')}</span>` : ''}</span>
+        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${l.foreign ? `<span class="chip rival-chip" title="Another player's army, added from their code">${ic('skull')} Rival · ${esc(l.owner || 'a rival')}</span>` : ''} ${tag}</span>
           <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${l.foreign ? `From ${esc(l.owner || 'a rival')} · ` : ''}${esc(l.date || '')}${l.date ? ' · ' : ''}Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
@@ -5318,7 +5318,7 @@
         <h4>The campaign</h4>
         <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
         <h4>Hall of Fame</h4>
-        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to five of your own); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it.</p>
+        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to three of your own, never rivals or house armies); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>

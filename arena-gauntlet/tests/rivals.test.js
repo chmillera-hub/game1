@@ -64,7 +64,7 @@ function winCampaign(seed) {
   assert.strictEqual(alexOwn.length, 3);
   let code;
 
-  await test('sharing: your own armies only, best first, up to five', async () => {
+  await test('sharing: your own armies only, best first, up to three', async () => {
     code = await R.exportArmies('Alex');
     assert.ok(/^AGAZ1\./.test(code));
     const r = await R.readArmies(code);
@@ -74,8 +74,15 @@ function winCampaign(seed) {
   });
 
   await test("pasting a friend's code adds their armies as rivals waiting to climb, once", async () => {
-    globalThis.localStorage = storage(); // Sam's browser, a fresh Hall
+    globalThis.localStorage = storage(); // Sam's browser, a fresh Hall, a campaign under way
+    const samRun = R.newRun(77);
+    R.save(samRun);
+    globalThis.localStorage.setItem('arena-gauntlet-meta-v2', JSON.stringify({ runs: 4, wins: 1, superWins: 0, bestAct: 3 }));
+    const runBefore = globalThis.localStorage.getItem('arena-gauntlet-run-v2');
+    const metaBefore = globalThis.localStorage.getItem('arena-gauntlet-meta-v2');
     const r = await R.importArmies(code);
+    assert.strictEqual(globalThis.localStorage.getItem('arena-gauntlet-run-v2'), runBefore, 'the campaign is untouched');
+    assert.strictEqual(globalThis.localStorage.getItem('arena-gauntlet-meta-v2'), metaBefore, 'the record is untouched');
     assert.deepStrictEqual([r.by, r.added.length, r.already], ['Alex', 3, 0]);
     const h = R.loadHall();
     assert.ok(h.legends.every((l) => l.house), 'the house armies hold the ladder');
@@ -97,6 +104,15 @@ function winCampaign(seed) {
 
   await test("a rival's code never shares your rivals or the house armies onward", async () => {
     assert.strictEqual(await R.exportArmies('Sam'), null, 'Sam has no armies of their own yet');
+    // Sam wins a campaign; even with Alex's rivals ranked above it, only Sam's army is shared.
+    const h = R.loadHall();
+    h.legends.unshift(...h.queue.splice(0)); // the rivals take the top places
+    R.saveHall(h);
+    winCampaign(44);
+    const shared = await R.readArmies(await R.exportArmies('Sam'));
+    assert.strictEqual(shared.armies.length, 1);
+    const samOwn = R.loadHall().legends.concat(R.loadHall().queue).filter((l) => !l.house && !l.foreign);
+    assert.deepStrictEqual(shared.armies.map((l) => l.name), samOwn.map((l) => l.name), "only Sam's own army");
   });
 
   await test('rivals can be removed; your own and the house armies cannot', async () => {
