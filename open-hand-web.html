@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Open Hand</title>
+    <style>
+        :root {
+            --bg1: #2b5876;
+            --bg2: #4e4376;
+            --card: #ffffff;
+            --ink: #2d2d3a;
+            --muted: #666a7a;
+            --soft: #f3f4f8;
+            --line: #dfe2ec;
+            --nv: #2f9e74;
+            --nv-soft: #e6f6ef;
+            --force: #c8484f;
+            --force-soft: #fbeaeb;
+            --accent: #5b5fc7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 16px;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 32px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 820px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 30px;
+            margin-bottom: 6px;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 16px;
+            margin: 18px 0 8px;
+        }
+
+        p {
+            line-height: 1.6;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 22px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            border: 2px solid var(--accent);
+            background: white;
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .rule-box {
+            background: var(--soft);
+            border-left: 5px solid var(--accent);
+            padding: 16px 18px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .rule-box ol {
+            margin: 8px 0 0 20px;
+            line-height: 1.7;
+        }
+
+        .scenario-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .scenario-card {
+            background: var(--soft);
+            border: 3px solid transparent;
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .scenario-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--line);
+        }
+
+        .scenario-card.done {
+            border-color: var(--nv);
+        }
+
+        .scenario-card .title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .scenario-card .quote {
+            font-size: 13px;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .progress {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .situation {
+            background: var(--soft);
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+        }
+
+        .justification {
+            background: var(--force-soft);
+            color: #7a2a2f;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-style: italic;
+            margin-bottom: 16px;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option {
+            text-align: left;
+            background: white;
+            border: 2px solid var(--line);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--ink);
+        }
+
+        .option:hover:not(:disabled) {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .option.picked-force {
+            border-color: var(--force);
+            background: var(--force-soft);
+            text-decoration: line-through;
+        }
+
+        .option.picked-nv {
+            border-color: var(--nv);
+            background: var(--nv-soft);
+        }
+
+        .option:disabled {
+            cursor: default;
+        }
+
+        .feedback {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .feedback.force {
+            display: block;
+            background: var(--force-soft);
+            border-left: 5px solid var(--force);
+        }
+
+        .feedback.nv {
+            display: block;
+            background: var(--nv-soft);
+            border-left: 5px solid var(--nv);
+        }
+
+        .feedback .label {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .chip {
+            background: white;
+            border: 1px solid var(--nv);
+            color: var(--nv);
+            font-size: 12px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button.action {
+            padding: 12px 26px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+        }
+
+        button.secondary {
+            background: #e9ecef;
+            color: var(--ink);
+        }
+
+        .hard {
+            background: #fff8e6;
+            border-left: 5px solid #d9a21b;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-top: 14px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: var(--soft);
+            border-radius: 10px;
+            padding: 10px 16px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat .num {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat .lbl {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #webSvg {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: var(--soft);
+            border-radius: 12px;
+        }
+
+        #webSvg .edge {
+            stroke: #c3c7d6;
+            stroke-width: 1.2;
+        }
+
+        #webSvg .edge.hot {
+            stroke: var(--accent);
+            stroke-width: 2.5;
+        }
+
+        #webSvg .edge.dim {
+            opacity: 0.12;
+        }
+
+        #webSvg .node {
+            cursor: pointer;
+        }
+
+        #webSvg .node text {
+            font-size: 11px;
+            fill: var(--ink);
+            pointer-events: none;
+        }
+
+        #webSvg .node.dim {
+            opacity: 0.25;
+        }
+
+        .legend {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .detail {
+            margin-top: 14px;
+            background: var(--soft);
+            padding: 14px 16px;
+            border-radius: 10px;
+            min-height: 60px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 16px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Open Hand</h1>
+        <p class="subtitle">A web of non-violent, pro-human responses to the usual reasons given for force and cages</p>
+
+        <div class="tabs">
+            <button class="tab active" data-view="rules">The World</button>
+            <button class="tab" data-view="scenarios">Scenarios</button>
+            <button class="tab" data-view="web">The Web</button>
+        </div>
+
+        <!-- RULES VIEW -->
+        <section id="view-rules">
+            <div class="rule-box">
+                <strong>The rule of this world</strong>
+                <ol>
+                    <li>No one may touch another person without consent. Not police, not military, not citizens.</li>
+                    <li>No one may be caged. Not "criminals", not protesters, not patients.</li>
+                    <li>The rule is symmetric. If an officer breaks it, nobody may cage or grab the officer either. If a citizen breaks it, the same.</li>
+                    <li>So the penalty for breaking the rule can never be the thing the rule forbids. Every response has to be non-violent and consensual.</li>
+                </ol>
+                <p style="margin-top:8px">It's a closed loop: the rule binds the citizen, the officer, and whoever responds to the officer. No layer gets a free pass to do what it claims to be stopping, so a "secondary predator" (someone looking for a righteous excuse to hurt people) has nothing to feed on.</p>
+            </div>
+            <div class="rule-box">
+                <strong>What you <em>can</em> do</strong>
+                <p>Keep your distance from the fists. Name the behavior out loud. Witness. Talk. Ask what's needed and offer it.
+                    Stand between people without touching anyone. Invite people to move away from danger. Offer comfort,
+                    but only touch after asking (a hug, a hand on the shoulder). Process it through art, circles, mentorship and spiritual growth.
+                    Withdraw trust and roles. Wait. Keep coming back.</p>
+            </div>
+            <div class="rule-box">
+                <strong>How to play</strong>
+                <p>Each scenario opens with one of the common justifications for force. Pick a response. Force gets
+                    <span style="color:var(--force);font-weight:bold">called out</span> and taken apart using the world's own logic, and you try again.
+                    Non-violent responses <span style="color:var(--nv);font-weight:bold">hold</span> and move the story forward.
+                    Each one you use lights up a strand in <em>The Web</em>. Every scenario ends with its hardest objection, stated honestly, and how this world answers it.</p>
+            </div>
+            <div class="buttons">
+                <button class="action" onclick="showView('scenarios')">Start</button>
+            </div>
+        </section>
+
+        <!-- SCENARIO LIST / PLAY VIEW -->
+        <section id="view-scenarios" class="hidden">
+            <div class="stats">
+                <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">scenarios held</div></div>
+                <div class="stat"><div class="num" id="statBehaviors">0</div><div class="lbl">behaviors woven</div></div>
+                <div class="stat"><div class="num" id="statCalled">0</div><div class="lbl">force called out</div></div>
+            </div>
+            <div id="scenarioList" class="scenario-list"></div>
+
+            <div id="play" class="hidden">
+                <div class="progress" id="playProgress"></div>
+                <h2 id="playTitle"></h2>
+                <div class="situation" id="playSituation"></div>
+                <div class="justification" id="playJustification"></div>
+                <div class="options" id="playOptions"></div>
+                <div class="feedback" id="playFeedback"></div>
+                <div id="playEnd" class="hidden"></div>
+                <div class="buttons">
+                    <button class="action secondary" onclick="backToList()">All scenarios</button>
+                    <button class="action hidden" id="nextBtn" onclick="nextStage()">Next</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- WEB VIEW -->
+        <section id="view-web" class="hidden">
+            <p class="legend">Inner ring: non-violent behaviors. Outer ring: scenarios. Lines show which behaviors hold which scenarios.
+                Filled nodes are the ones you've used. Tap any node.</p>
+            <svg id="webSvg" viewBox="0 0 700 700" role="img" aria-label="Web of non-violent behaviors connected to scenarios"></svg>
+            <div class="detail" id="webDetail">Tap a node to see what it is and where it shows up.</div>
+        </section>
+    </div>
+
+    <script>
+        // Non-violent behaviors: the inner ring of the web
+        const behaviors = {
+            distance:  { name: 'Keep distance', desc: 'Step back out of reach, and close doors between yourself and the fists. Nobody is entitled to your proximity. You control where your own body is, not where theirs is. You are never required to hug someone who is punching.' },
+            name:      { name: 'Name it', desc: 'Say clearly, out loud, what is happening: "You are hitting him. Stop." Calling it out non-violently makes the behavior visible and costs the actor their cover.' },
+            witness:   { name: 'Witness', desc: 'Watch, record, remember, be present. Many eyes change what people are willing to do, and make sure the truth is shared later.' },
+            talk:      { name: 'Talk', desc: 'Keep a calm voice going. Ask questions. Lower the stakes. Buy time with words instead of hands.' },
+            ask:       { name: 'Ask what they need', desc: 'Most harm grows out of an unmet need: food, safety, dignity, sleep, being heard. Ask before assuming.' },
+            offer:     { name: 'Meet the need', desc: 'Offer food, water, rest, a ride, medical care or money. Only if they accept. Taking away the reason for harm is stronger than punishing it.' },
+            interpose: { name: 'Stand between', desc: 'Put your body (and better, many bodies) between harm and its target without touching anyone. To keep going, the aggressor would have to touch you, in front of everyone.' },
+            evacuate:  { name: 'Invite people away', desc: 'Open a path and invite people who might get hurt to move to safety. Nobody is forced; everyone is shown the door.' },
+            consent:   { name: 'Consensual comfort', desc: 'Ask first: "Do you want a hug?" "Can I put a hand on your shoulder?" A yes makes touch healing. A no is respected completely.' },
+            circle:    { name: 'Restorative circle', desc: 'The person harmed, the person who harmed and the community meet, if everyone agrees. They tell the truth, take responsibility and repair what they can.' },
+            art:       { name: 'Art & expression', desc: 'Process rage, grief and shame through music, painting, writing and movement. Feelings that have somewhere to go are less likely to come out as fists.' },
+            sanctuary: { name: 'Sanctuary', desc: 'Safe places anyone can choose to go: for people who are harmed, and for people who feel they are about to harm someone.' },
+            accompany: { name: 'Accompany', desc: 'Walk with someone, literally and over time. A rotating group of people who stay close, by invitation, for as long as it takes.' },
+            time:      { name: 'Slow down & wait', desc: 'Most crises fade if no one escalates them. Patience is a tool. The world doesn\'t have to be fixed in the next ten seconds.' },
+            withdraw:  { name: 'Withdraw the role', desc: 'Authority is a trust. When someone abuses it, the community stops granting it: no badge, no command, no platform. Nobody touches them, but nobody follows them either.' },
+            growth:    { name: 'Growth & mentorship', desc: 'Long-term emotional and spiritual work, chosen and supported: mentors, practice, therapy, community roles that rebuild who someone is.' }
+        };
+
+        // Scenarios: the outer ring of the web. Each stage offers options; type 'force' gets called out, 'nv' holds.
+        const scenarios = [
+            {
+                id: 'fists',
+                title: 'Fists in the Bar',
+                quote: '"Someone has to tackle him or people get hurt."',
+                stages: [
+                    {
+                        situation: 'A man is swinging at a stranger near the bar. People are frozen. The stranger is backing up against the wall.',
+                        justification: '"Somebody grab him! Pin him down until he calms down!"',
+                        options: [
+                            { text: 'Tackle him and pin him to the floor.', type: 'force',
+                              fb: 'Now there are two people using non-consensual force, and the rule binds you exactly as it binds him. Worse, a tackle usually starts a bigger brawl. You\'ve doubled the violence and given up the moral ground you need for what comes next.' },
+                            { text: 'Shout clearly: "You are hitting him. Stop. Everyone, step back and give him room to leave."', type: 'nv', b: ['name', 'evacuate'],
+                              fb: 'The room wakes up. Naming it breaks the frozen spell, and the clear instruction gives everyone something to do. A path opens and the stranger slips sideways along the wall toward it.' },
+                            { text: 'Ask three friends to stand shoulder to shoulder between him and the stranger, hands at their sides.', type: 'nv', b: ['interpose', 'witness'],
+                              fb: 'A wall of calm people appears without touching anyone. To keep hitting, he would have to go through them, in front of the whole room. He hesitates.' }
+                        ]
+                    },
+                    {
+                        situation: 'The stranger is out. Now the man turns toward you, red-faced, fists up.',
+                        justification: '"Hit him first. It\'s self-defense!"',
+                        options: [
+                            { text: 'Throw the first punch before he does.', type: 'force',
+                              fb: 'Self-defense here starts with your feet. Stepping back was available, and still is. A pre-emptive strike is the same move every escalation starts with. The rule doesn\'t ask you to stand still and take punches; it asks you to move away instead of hitting.' },
+                            { text: 'Step back out of reach, palms open, and keep talking: "I\'m not going to touch you. I\'m right here. What happened tonight?"', type: 'nv', b: ['distance', 'talk'],
+                              fb: 'He swings at the air where you were and nearly falls. Your voice stays level. With nothing to push against, the fight has nowhere to go.' },
+                            { text: 'Back toward the open door with everyone else and let him have the empty room.', type: 'nv', b: ['distance', 'evacuate', 'time'],
+                              fb: 'A room with nobody to fight is just a room. Through the window people watch him pace, then slump onto a stool.' }
+                        ]
+                    },
+                    {
+                        situation: 'Twenty minutes later he\'s sitting on the curb, knuckles bleeding, shaking.',
+                        justification: '"He\'s dangerous. Lock him up for the night so he learns."',
+                        options: [
+                            { text: 'Hold him in the storeroom until morning.', type: 'force',
+                              fb: 'That\'s a cage with a different name. And the lesson a cage teaches is that whoever has power gets to control bodies, which is the same lesson his fists were teaching ten minutes ago.' },
+                            { text: 'Sit a few feet away. Offer water and ask if he wants something for his hands.', type: 'nv', b: ['offer', 'ask', 'distance'],
+                              fb: 'He takes the water. After a long silence he says his brother died last month. Grief, not malice, came out as fists.' },
+                            { text: 'Ask, "Do you want a hand on your shoulder?" and respect whatever he answers. Then invite him to a circle tomorrow with the man he hit, if that man agrees.', type: 'nv', b: ['consent', 'circle'],
+                              fb: 'He nods yes, then cries. The next day the man he hit agrees to come. There is anger, an apology, and an agreement: he\'ll join a grief group and cover the medical costs.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What if the person being hit can\'t get away: they\'re cornered, injured or pinned?',
+                    a: 'This is where the rule costs the most, and this world says so openly. Its answer is many bodies: a crowd standing between the attacker and the target, without touching anyone. The attacker would have to lay hands on several witnesses to keep going. This world trusts numbers, presence and naming over force, and trains everyone in them from childhood, so there are always enough people who know what to do.'
+                }
+            },
+            {
+                id: 'officer',
+                title: 'The Officer Who Grabbed',
+                quote: '"Cops who break the no-touch rule should be caged. It\'s only fair."',
+                stages: [
+                    {
+                        situation: 'At a march, an officer grabs a protester by the arm and drags her toward a van. The crowd is furious.',
+                        justification: '"He broke the rule! Grab HIM and throw him in his own van!"',
+                        options: [
+                            { text: 'Rush him, pull him off, and shove him into the van.', type: 'force',
+                              fb: 'This is the trap the rule was built to avoid. If the answer to an officer\'s force is the crowd\'s force, there\'s no rule anymore, only whoever is stronger right now. The symmetry is the whole point: nobody gets caged or grabbed, including him.' },
+                            { text: 'Everyone raises their phones and chants his badge number: "Let her go. You are breaking the rule."', type: 'nv', b: ['witness', 'name'],
+                              fb: 'Hundreds of lenses, one clear sentence. The officer\'s grip loosens as he realizes the whole city will see this tonight.' },
+                            { text: 'A dozen people quietly sit down in front of the van door, hands in their laps.', type: 'nv', b: ['interpose'],
+                              fb: 'To get her in the van now, he\'d have to step over or move a dozen seated people, which means touching each of them on camera. He stops.' }
+                        ]
+                    },
+                    {
+                        situation: 'She\'s free. The officer is standing alone, jaw tight. The crowd wants consequences.',
+                        justification: '"If we don\'t punish him hard, they\'ll all keep doing it."',
+                        options: [
+                            { text: 'Surround him and refuse to let him leave until he\'s "dealt with".', type: 'force',
+                              fb: 'A ring of bodies he can\'t leave is a cage made of people. Keeping someone in place against their will is exactly what the rule forbids, no matter who does it.' },
+                            { text: 'Publish the footage. The community council votes to withdraw his badge and his authority to command anyone.', type: 'nv', b: ['withdraw', 'witness'],
+                              fb: 'Nobody touches him. But his power over others ended the moment he abused it. A role is a trust, and trust can be taken back without lifting a hand.' },
+                            { text: 'Clear a path so he can walk away. Tell him: "This will be talked about. You\'re invited to be there."', type: 'nv', b: ['distance', 'name', 'time'],
+                              fb: 'He walks off. The crowd lets him go, which surprises even him. The invitation hangs in the air.' }
+                        ]
+                    },
+                    {
+                        situation: 'A week later. The protester has said she\'s willing to meet him, if he takes responsibility.',
+                        justification: '"Talking is soft. He should suffer for it."',
+                        options: [
+                            { text: 'Demand he be locked up for a month as an example.', type: 'force',
+                              fb: 'Suffering imposed by force doesn\'t repair anything. It just makes the next officer more afraid and more defensive. And it breaks the symmetry that protected her in the first place.' },
+                            { text: 'Hold a restorative circle: her, him, a facilitator and members of the community.', type: 'nv', b: ['circle', 'talk'],
+                              fb: 'She tells him how it felt to be dragged. He hears it, unshielded by a uniform, and apologizes. He commits to a year of mentorship and community service before any role is reconsidered.' },
+                            { text: 'Pair him with a mentor and an art practice to work through why he reached for force.', type: 'nv', b: ['growth', 'art'],
+                              fb: 'He paints his first piece about his father\'s temper. For the first time he connects his reflex to grab with the way he was raised.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'Without the threat of cages, what stops officers from just ignoring the rule?',
+                    a: 'The same things that stop everyone: being seen, being named, and losing the trust that gives them a role. In this world authority exists only as long as people choose to follow it. An officer who grabs is instantly an ex-officer, so the role has no power left to abuse. Accountability comes from visibility and withdrawal, not from a bigger cage.'
+                }
+            },
+            {
+                id: 'thief',
+                title: 'The Repeat Thief',
+                quote: '"He\'ll just keep stealing unless he\'s locked away."',
+                stages: [
+                    {
+                        situation: 'For the fourth time this month, the same young man walks out of a grocery store with a bag of food he didn\'t pay for.',
+                        justification: '"Block the door and hold him till someone comes to take him away."',
+                        options: [
+                            { text: 'Grab his arm at the door and don\'t let go.', type: 'force',
+                              fb: 'You\'d be laying hands on a person to protect a bag of rice. In this world, bodies always outrank property. And grabbing is how a theft turns into an injury.' },
+                            { text: 'Call after him by name: "Marcus, that\'s the fourth time. Come back and talk to me."', type: 'nv', b: ['name', 'talk'],
+                              fb: 'He stops at the corner. Nobody has said his name in a long time without anger. He doesn\'t come back, but he turns around and looks.' },
+                            { text: 'Let him go, and write down what he took and when.', type: 'nv', b: ['witness', 'time'],
+                              fb: 'The pattern is clear on paper: always food, always at the end of the month. That\'s not a crime wave. That\'s hunger with a schedule.' }
+                        ]
+                    },
+                    {
+                        situation: 'He comes back in a few days later. The owner recognizes him.',
+                        justification: '"If you don\'t punish him, everyone will think stealing is free."',
+                        options: [
+                            { text: 'Lock the door behind him and call for him to be caged.', type: 'force',
+                              fb: 'A locked room he can\'t leave is a cage. And a cage turns a hungry kid into a kid with a record, no job prospects and more reasons to steal.' },
+                            { text: 'Ask him, "What\'s going on at the end of the month?"', type: 'nv', b: ['ask', 'talk'],
+                              fb: 'His mother\'s benefits run out on the 20th. He has two little sisters. He\'s ashamed of every bag.' },
+                            { text: 'Offer him a deal: he can take what his family needs from the near-expiry shelf, free, every week.', type: 'nv', b: ['offer'],
+                              fb: 'Stealing was the symptom; hunger was the cause. Take away the cause and the symptom goes too, at a fraction of what a cage would cost.' }
+                        ]
+                    },
+                    {
+                        situation: 'Two months later. No more thefts. But he\'s still drifting.',
+                        justification: '"He got away with it. Where\'s the justice?"',
+                        options: [
+                            { text: 'Insist he serve time anyway, "on principle".', type: 'force',
+                              fb: 'Caging someone after the harm has stopped helps nobody. It just satisfies an urge to see someone suffer. The world calls that out for what it is.' },
+                            { text: 'The owner offers him a paid shift stocking shelves and teaches him the business.', type: 'nv', b: ['growth', 'accompany'],
+                              fb: 'Now he\'s the one who notices when another kid is eyeing the bread. He knows what to say, because someone said it to him.' },
+                            { text: 'He chooses to join a circle where he and the owner talk through what happened and what he owes.', type: 'nv', b: ['circle'],
+                              fb: 'They agree on a fair repayment in work hours. Justice turns out to look like repair, not revenge.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What about someone who steals out of greed, not need?',
+                    a: 'Still no cages, still no grabbing. The community names it publicly, people choose not to trade with them or give them responsibility, and owners keep valuables out of reach (distance works for things, too). Greed that gets no applause, no trust and no easy targets has a hard time continuing. And there is always an open door to a circle, if they want to rebuild their name.'
+                }
+            },
+            {
+                id: 'bridge',
+                title: 'The Edge of the Bridge',
+                quote: '"Grab them. It\'s for their own good."',
+                stages: [
+                    {
+                        situation: 'Someone is standing on the outside of a bridge railing, staring at the water.',
+                        justification: '"Rush them and grab them before they can jump!"',
+                        options: [
+                            { text: 'Sprint at them and grab them from behind.', type: 'force',
+                              fb: 'Rushing someone at an edge is how people get startled into falling. "For their own good" is the oldest reason people give for overriding someone\'s body. This world bans it and puts presence in its place.' },
+                            { text: 'Stop at a distance they can see, sit down on the pavement and say, "I\'m not going to come closer unless you want me to. Can I stay here?"', type: 'nv', b: ['distance', 'talk', 'consent'],
+                              fb: 'They glance at you. You\'re not a threat, just a person sitting nearby. They say, "Whatever." That\'s a yes to you staying.' },
+                            { text: 'Wave the gathering crowd and traffic back so it\'s quiet.', type: 'nv', b: ['evacuate', 'time'],
+                              fb: 'The honking and shouting fade. Without the spectacle the moment slows down, and slow is what keeps people alive.' }
+                        ]
+                    },
+                    {
+                        situation: 'It\'s been forty minutes. They\'re still holding the rail, but they\'re talking.',
+                        justification: '"Enough talking. Have them hauled off and locked in a ward."',
+                        options: [
+                            { text: 'Arrange for them to be restrained and committed against their will.', type: 'force',
+                              fb: 'Forced confinement, even in a hospital, is a cage. Many people who survive it say it taught them never to tell anyone how bad things get. This world wants people to reach out, not to hide.' },
+                            { text: 'Ask, "Who would you want here right now?" and call that person.', type: 'nv', b: ['ask', 'accompany'],
+                              fb: 'Their sister. She arrives in twenty minutes and sits beside you. The person on the rail starts crying.' },
+                            { text: 'Keep listening. Don\'t argue with their pain; reflect it back.', type: 'nv', b: ['talk', 'time'],
+                              fb: '"Nobody would notice if I was gone." You say, "I noticed. I\'m still here." Something in their shoulders drops.' }
+                        ]
+                    },
+                    {
+                        situation: 'They climb back over on their own. They\'re exhausted.',
+                        justification: '"They could try again. They need to be watched under lock and key."',
+                        options: [
+                            { text: 'Insist they be held somewhere they can\'t leave.', type: 'force',
+                              fb: 'Locks don\'t heal the reason someone wanted to die. They just add a new reason to feel trapped.' },
+                            { text: 'Offer a ride to a sanctuary house, open around the clock, where they can stay as long as they choose.', type: 'nv', b: ['sanctuary', 'offer'],
+                              fb: 'They accept. The door isn\'t locked. That\'s why they feel safe walking through it.' },
+                            { text: 'Ask, "Do you want a hug?" Then set up a rotation of friends to check in daily, if they say yes.', type: 'nv', b: ['consent', 'accompany', 'growth'],
+                              fb: 'Yes to both. Months later they start a music project about the night on the bridge. It reaches people who are standing where they stood.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'Isn\'t grabbing someone about to fall the one obvious exception?',
+                    a: 'This is the objection most people find strongest, and it\'s a real tension. This world holds the line because "just this once, for their own good" is exactly the door every other kind of control comes through. It answers with massive investment in presence: trained listeners on every bridge, sanctuaries everywhere, and a culture where people say "I\'m not okay" early, long before the railing. It accepts the risk of a rule without exceptions rather than the risk of an exception that swallows the rule.'
+                }
+            },
+            {
+                id: 'keys',
+                title: 'The Drunk Driver',
+                quote: '"Wrestle the keys out of his hand."',
+                stages: [
+                    {
+                        situation: 'At a party, a friend who can barely stand is heading to his car, keys in hand.',
+                        justification: '"Tackle him and take the keys. You\'re saving lives!"',
+                        options: [
+                            { text: 'Wrestle the keys from his fist.', type: 'force',
+                              fb: 'Fights over keys turn into broken wrists and grudges. And the rule doesn\'t have a "good intentions" exception. That exception is what every cop and soldier has claimed throughout history.' },
+                            { text: 'Ask him: "Hey, can I hold your keys tonight? I\'ll drive you home and bring you back for your car tomorrow."', type: 'nv', b: ['ask', 'offer'],
+                              fb: 'Drunk people are often more agreeable than you\'d think when someone offers an easy, face-saving way out. He hands them over with a sloppy grin.' },
+                            { text: 'Gather three friends to name it, kindly and clearly: "You\'re too drunk to drive. We love you. We\'re not letting this go."', type: 'nv', b: ['name', 'talk'],
+                              fb: 'Hearing it from several people at once, with love rather than anger, makes it real. He hesitates with the keys in his hand.' }
+                        ]
+                    },
+                    {
+                        situation: 'He shakes his head, pushes past, and gets into the driver\'s seat.',
+                        justification: '"Now you HAVE to drag him out!"',
+                        options: [
+                            { text: 'Yank the door open and pull him out of the seat.', type: 'force',
+                              fb: 'Pulling someone out of a car is how heads hit pavement. There are options that don\'t involve your hands, and they\'re right in front of you.' },
+                            { text: 'Several of you sit down on the driveway behind the car, and park another car across the exit.', type: 'nv', b: ['interpose'],
+                              fb: 'He can\'t back out without driving into his friends. Nobody touched him, and the car isn\'t going anywhere.' },
+                            { text: 'Call ahead so others on the road can keep their distance, and keep talking to him through the window.', type: 'nv', b: ['witness', 'distance', 'talk'],
+                              fb: 'Through the window he says he has an early shift and nowhere to sleep. Now you know what the real problem is.' }
+                        ]
+                    },
+                    {
+                        situation: 'He gives up and slumps over the steering wheel.',
+                        justification: '"Report him and get him locked up so he learns."',
+                        options: [
+                            { text: 'Have him caged for the night as a lesson.', type: 'force',
+                              fb: 'He didn\'t drive. The harm didn\'t happen. A cage now would only punish him for being talked out of something.' },
+                            { text: 'Offer the couch, a glass of water and an alarm set for his shift.', type: 'nv', b: ['offer', 'sanctuary'],
+                              fb: 'He sleeps it off. In the morning he\'s embarrassed and grateful, and much more likely to hand over his keys next time.' },
+                            { text: 'Later, sober, invite him to talk about how much he\'s been drinking.', type: 'nv', b: ['talk', 'growth', 'accompany'],
+                              fb: 'It\'s been a lot, since the divorce. A friend offers to go to meetings with him. He says yes.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What if he actually drives off?',
+                    a: 'Then distance and warning do the work: people ahead are alerted and get off the road, and others follow at a safe distance to witness and call for help. This world also designs for this: cars that won\'t start for impaired drivers (with the owner\'s prior agreement), free rides everywhere at night, and a culture where handing over your keys is normal. It prevents harm upstream instead of using force at the last second.'
+                }
+            },
+            {
+                id: 'riot',
+                title: 'Windows Breaking',
+                quote: '"Riot police need to kettle them and break out the batons."',
+                stages: [
+                    {
+                        situation: 'After another eviction, an angry crowd starts smashing shop windows downtown.',
+                        justification: '"Surround them, box them in, and arrest everyone!"',
+                        options: [
+                            { text: 'Kettle the crowd: surround them on all sides so nobody can leave.', type: 'force',
+                              fb: 'A kettle is a cage made of shields. Trapping angry people together reliably makes them angrier, and nobody can choose to leave, which is the main thing that ends a riot.' },
+                            { text: 'Open every side street and announce: "Anyone who wants out, this way is clear."', type: 'nv', b: ['evacuate', 'distance'],
+                              fb: 'Half the crowd peels off. Most people in a riot don\'t really want to be there; they just didn\'t see a way out.' },
+                            { text: 'Shop owners step back from their windows. Glass can be replaced; people can\'t.', type: 'nv', b: ['distance', 'time'],
+                              fb: 'Without anyone to fight, the smashing loses its energy fast. Within an hour the street is mostly glass and silence.' }
+                        ]
+                    },
+                    {
+                        situation: 'A core group remains, shouting about rents and evictions.',
+                        justification: '"Bring in the batons and clear the street."',
+                        options: [
+                            { text: 'Clear the street with batons and shields.', type: 'force',
+                              fb: 'Batons answer a grievance with fresh injuries, which become the next grievance. And under the symmetry rule, every officer who swings would face the same non-violent consequences they\'re supposed to be enforcing.' },
+                            { text: 'Set up a table in the middle of the street with council members, and ask: "What do you need us to hear?"', type: 'nv', b: ['ask', 'talk', 'witness'],
+                              fb: 'Someone throws a bottle; it misses. Then someone sits down at the table. Then three more. The list of demands is concrete: an eviction freeze and rent caps.' },
+                            { text: 'Unroll a huge canvas on the plaza wall and hand out paint.', type: 'nv', b: ['art'],
+                              fb: 'Rage turns into a forty-foot mural of the evicted families. By morning it\'s photographed all over the city, and it\'s far more persuasive than broken glass.' }
+                        ]
+                    },
+                    {
+                        situation: 'Morning. Shop owners are sweeping glass. Some know who threw the first rock.',
+                        justification: '"Hunt them down and lock them all up."',
+                        options: [
+                            { text: 'Arrest and jail the ringleaders as a deterrent.', type: 'force',
+                              fb: 'Caging a few people as an example doesn\'t solve evictions. It just makes the next protest angrier and adds a list of martyrs.' },
+                            { text: 'A circle with shop owners and the people who broke windows, by agreement. They repair what they broke together.', type: 'nv', b: ['circle', 'growth'],
+                              fb: 'One shop owner turns out to be a renter facing eviction too. The rebuilt storefront ends up housing the new tenants\' union.' },
+                            { text: 'The council acts on the demands, publicly, so the reason for the anger shrinks.', type: 'nv', b: ['offer', 'name'],
+                              fb: 'The eviction freeze passes. The city names both the harm of the smashed windows and the harm of the evictions. Both are acknowledged; neither is caged.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What if the crowd starts attacking people, not just windows?',
+                    a: 'Then the fists rules apply at scale: a corridor opens around whoever is targeted, many people stand between without touching, everyone names and records the attack, and those at risk are invited away down open streets. This world bets that a crowd surrounded by calm witnesses and open exits de-escalates faster than one hemmed in by shields, and that history\'s worst crowd violence usually came when people were trapped.'
+                }
+            },
+            {
+                id: 'home',
+                title: 'Behind the Front Door',
+                quote: '"Drag the abuser out of the house in cuffs."',
+                stages: [
+                    {
+                        situation: 'Neighbors hear screaming through the wall again. A woman\'s voice: "Stop, you\'re hurting me."',
+                        justification: '"Kick the door in and pin him down!"',
+                        options: [
+                            { text: 'Break down the door and wrestle him to the floor.', type: 'force',
+                              fb: 'A fight in a small room is where people get badly hurt, often the person you came to help. And it makes you one more person in her home using force.' },
+                            { text: 'Knock hard and keep knocking, saying loudly: "We can hear you. We\'re right here. We\'re not leaving."', type: 'nv', b: ['name', 'witness'],
+                              fb: 'The screaming stops. Abuse thrives in secrecy, and the knocking just ended the secrecy.' },
+                            { text: 'Gather neighbors on the landing and stay there, together, where the door can be seen.', type: 'nv', b: ['witness', 'interpose', 'time'],
+                              fb: 'Six people on the landing. When the door opens, the man sees all of them watching. He doesn\'t raise his hand.' }
+                        ]
+                    },
+                    {
+                        situation: 'She opens the door a crack. There\'s a bruise on her cheek.',
+                        justification: '"Now you have proof. Haul him off to a cell."',
+                        options: [
+                            { text: 'Go in and force him out of the apartment.', type: 'force',
+                              fb: 'Force decides for her, again. Survivors have had enough people deciding for them. This world gives her choices, not another person taking over.' },
+                            { text: 'Quietly tell her: "There\'s a sanctuary house five minutes away. We\'ll walk you there right now if you want."', type: 'nv', b: ['sanctuary', 'accompany', 'ask'],
+                              fb: 'She looks back into the room, then nods. Four neighbors walk her there. He watches from the window and doesn\'t follow into a crowd.' },
+                            { text: 'Ask her what she wants to happen, and promise to back her choice.', type: 'nv', b: ['ask', 'talk'],
+                              fb: 'She wants him out, not arrested. She wants her kids safe. She wants her life back. That\'s a plan the community can help with.' }
+                        ]
+                    },
+                    {
+                        situation: 'She\'s safe. He\'s alone in the apartment, and the whole building knows.',
+                        justification: '"Men like that never change. Cage him for life."',
+                        options: [
+                            { text: 'Lock him in until he\'s "taken away".', type: 'force',
+                              fb: 'Many abusers learned control in homes that controlled them. A cage teaches control again, and he comes out with more rage.' },
+                            { text: 'The building names it openly, keeps rotating watch on her, and keeps its distance from him until he chooses to take responsibility.', type: 'nv', b: ['name', 'distance', 'withdraw', 'accompany'],
+                              fb: 'Nobody touches him. But nobody lets it be secret, nobody leaves her alone, and nobody grants him trust until he earns it. Isolation from community, without a cage, is a powerful mirror.' },
+                            { text: 'Offer him an accountability group with men who have done this work themselves.', type: 'nv', b: ['growth', 'circle'],
+                              fb: 'He refuses at first. On the third invitation, he goes. It\'s the first time anyone has asked him why, instead of just telling him what he is.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What if he comes after her at the sanctuary?',
+                    a: 'Sanctuaries are crowded on purpose: many people live and stay there, the doors are watched, and every arrival is witnessed. If he approaches, a line of people forms between him and her, without touching. To reach her, he would have to lay hands on many people in public. Her safety comes from numbers and distance, renewed every day, rather than from a cell that eventually opens anyway.'
+                }
+            },
+            {
+                id: 'armed',
+                title: 'The Man with a Gun',
+                quote: '"Only force can stop someone with a weapon."',
+                stages: [
+                    {
+                        situation: 'A man in a parking lot is waving a pistol and shouting that everyone has betrayed him.',
+                        justification: '"Shoot him before he shoots someone!"',
+                        options: [
+                            { text: 'Take him down with lethal force.', type: 'force',
+                              fb: 'Killing is the ultimate non-consensual touch. And the moment a society allows it "only for emergencies", it creates a class of people licensed to decide who is an emergency.' },
+                            { text: 'Get everyone behind cars and walls, and clear the lot quietly from the back.', type: 'nv', b: ['evacuate', 'distance'],
+                              fb: 'Within two minutes the lot is empty except for him. With nobody to aim at, the gun is just a heavy thing in his hand.' },
+                            { text: 'From behind solid cover, far away, call out calmly: "Nobody here is going to hurt you. What happened?"', type: 'nv', b: ['talk', 'distance'],
+                              fb: 'He stops waving the gun and shouts back: he was fired today, after twenty-two years.' }
+                        ]
+                    },
+                    {
+                        situation: 'He\'s sitting on the curb with the gun in his lap, still yelling, but less.',
+                        justification: '"Rush him while he\'s distracted!"',
+                        options: [
+                            { text: 'Sneak up and tackle him.', type: 'force',
+                              fb: 'Tackling an armed man is how guns go off. Time is on your side as long as nobody makes a sudden move. Don\'t give it away.' },
+                            { text: 'Keep the distance and keep talking. Let the hours pass if that\'s what it takes.', type: 'nv', b: ['time', 'talk', 'distance'],
+                              fb: 'An hour later he\'s talking about his daughter. People rarely stay at peak rage for long when nobody adds fuel.' },
+                            { text: 'Ask who he trusts, and bring that person to talk from a safe spot.', type: 'nv', b: ['ask', 'accompany'],
+                              fb: 'His old foreman comes. The foreman\'s voice cracks: "Frank, put it down. Come have a coffee with me." Frank sets the gun on the ground.' }
+                        ]
+                    },
+                    {
+                        situation: 'The gun is on the ground. He\'s weeping.',
+                        justification: '"Now jump him and throw him in a cell."',
+                        options: [
+                            { text: 'Pin him to the asphalt now that he\'s unarmed.', type: 'force',
+                              fb: 'He just chose to put the weapon down. Punishing that choice with force teaches everyone watching that surrender gets you hurt, so the next person won\'t surrender.' },
+                            { text: 'Ask if he\'ll step away from the gun, and if he wants someone to sit with him.', type: 'nv', b: ['ask', 'consent', 'distance'],
+                              fb: 'He walks away from it on his own. His foreman asks, "Hug?" Frank holds on for a long time.' },
+                            { text: 'Offer him a place at a sanctuary tonight and a circle with his former employer, if he wants one.', type: 'nv', b: ['sanctuary', 'circle', 'growth'],
+                              fb: 'He goes. In the circle, everyone talks about the fear he caused, and he talks about twenty-two years thrown away. The repair takes months.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'What if he starts shooting?',
+                    a: 'This is the hardest case, and this world doesn\'t pretend otherwise. Its answer is distance, cover, evacuation and time, with people trained in all four. It accepts that risk rather than creating people allowed to kill, because it judges that armed enforcers have caused more deaths than they prevented. It also works upstream: far fewer weapons, no humiliation-and-abandonment economy, and support that reaches people like Frank long before the parking lot.'
+                }
+            },
+            {
+                id: 'mob',
+                title: 'The Righteous Crowd',
+                quote: '"He deserves it. Finally we get to hurt someone who has it coming."',
+                stages: [
+                    {
+                        situation: 'Footage of the officer who grabbed the protester is everywhere. Outside his house, a group gathers with bats, saying they\'re "enforcing the rule".',
+                        justification: '"He broke the no-touch rule, so the rule doesn\'t protect him anymore!"',
+                        options: [
+                            { text: 'Join them. He started it.', type: 'force',
+                              fb: 'The rule never switches off. "They broke it first" is the exact excuse every cage and every baton has ever used. Join in and you become the next person who has to be called out, and the loop starts over.' },
+                            { text: 'Stand at the bottom of his steps with others, hands at your sides, facing the crowd: "Nobody touches him. Not him, not you. That\'s the whole rule."', type: 'nv', b: ['interpose', 'name'],
+                              fb: 'It\'s strange to protect the man everyone is angry at. That\'s exactly why it works: the crowd can\'t claim to be enforcing a rule that people are visibly keeping, right in front of them.' },
+                            { text: 'Start recording the crowd and say out loud what they\'re doing: "You came here with bats to hurt someone. Say why, on camera."', type: 'nv', b: ['witness', 'name'],
+                              fb: 'Several people lower their bats. The same lens that exposed the officer works on them too. When the camouflage of righteousness is gone, it\'s just people who wanted to hurt someone.' }
+                        ]
+                    },
+                    {
+                        situation: 'One man won\'t calm down. He keeps shouting that he wants to make the officer bleed.',
+                        justification: '"This guy\'s out of control. Someone tackle HIM."',
+                        options: [
+                            { text: 'Grab him and drag him away from the house.', type: 'force',
+                              fb: 'Now you\'re the third layer of force, aimed at the second, which was aimed at the first. Each layer had a good reason. That\'s how the loop never ends.' },
+                            { text: 'Step back out of his reach and ask him, "Who did this to you?"', type: 'nv', b: ['distance', 'ask', 'talk'],
+                              fb: 'He goes quiet. A cop broke his brother\'s jaw ten years ago, and nobody ever paid for it. His rage isn\'t really about this officer.' },
+                            { text: 'Let him shout. Keep the line on the steps, and wait.', type: 'nv', b: ['time', 'interpose'],
+                              fb: 'Nobody gives him anything to push against. Rage that isn\'t fed burns out, and after fifteen minutes he sits down on the curb.' }
+                        ]
+                    },
+                    {
+                        situation: 'The crowd has broken up. Some of them are still hurting and still angry.',
+                        justification: '"Fine, but then nobody ever gets justice."',
+                        options: [
+                            { text: 'Organize a second, bigger crowd for tomorrow night.', type: 'force',
+                              fb: 'A bigger mob is still a mob. Its plan is still to hurt someone. Changing the size doesn\'t change what it is.' },
+                            { text: 'Invite them to the circle with the officer and the protester, and to tell their own stories of being grabbed.', type: 'nv', b: ['circle', 'talk'],
+                              fb: 'The circle grows from three people to thirty. A lot of old harm finally gets heard out loud. Many of them say this was the justice they actually wanted.' },
+                            { text: 'Start a community mural project: the faces of everyone who was ever grabbed.', type: 'nv', b: ['art', 'growth'],
+                              fb: 'The wall goes up across from the station. Every officer walks past it every day. It says more than a bat ever could.' }
+                        ]
+                    }
+                ],
+                hard: {
+                    q: 'Doesn\'t protecting the rule-breaker feel like letting him off?',
+                    a: 'He isn\'t let off. He has been named, recorded, stripped of his role, and invited to face the person he harmed. What he is protected from is being hurt, because the moment anyone is allowed to hurt "the deserving", the people who most want to hurt someone line up to decide who deserves it. Refusing to make an exception for him is what keeps the system from turning into the thing it replaced.'
+                }
+            }
+        ];
+
+        // Game state
+        const state = {
+            used: new Set(),          // behavior ids woven into the web
+            done: new Set(),          // scenario ids completed
+            calledOut: 0,
+            current: null,
+            stage: 0,
+            resolved: false
+        };
+
+        function showView(view) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+            ['rules', 'scenarios', 'web'].forEach(v => {
+                document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
+            });
+            if (view === 'scenarios') backToList();
+            if (view === 'web') renderWeb();
+        }
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function updateStats() {
+            document.getElementById('statDone').textContent = `${state.done.size}/${scenarios.length}`;
+            document.getElementById('statBehaviors').textContent = `${state.used.size}/${Object.keys(behaviors).length}`;
+            document.getElementById('statCalled').textContent = state.calledOut;
+        }
+
+        function renderList() {
+            const list = document.getElementById('scenarioList');
+            list.innerHTML = '';
+            scenarios.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card' + (state.done.has(s.id) ? ' done' : '');
+                card.innerHTML = `<div class="title">${state.done.has(s.id) ? '✓ ' : ''}${s.title}</div><div class="quote">${s.quote}</div>`;
+                card.onclick = () => startScenario(s);
+                list.appendChild(card);
+            });
+            updateStats();
+        }
+
+        function backToList() {
+            document.getElementById('scenarioList').classList.remove('hidden');
+            document.getElementById('play').classList.add('hidden');
+            renderList();
+        }
+
+        function startScenario(s) {
+            state.current = s;
+            state.stage = 0;
+            document.getElementById('scenarioList').classList.add('hidden');
+            document.getElementById('play').classList.remove('hidden');
+            renderStage();
+        }
+
+        function renderStage() {
+            const s = state.current;
+            const st = s.stages[state.stage];
+            state.resolved = false;
+
+            document.getElementById('playProgress').textContent = `Moment ${state.stage + 1} of ${s.stages.length}`;
+            document.getElementById('playTitle').textContent = s.title;
+            document.getElementById('playSituation').textContent = st.situation;
+            document.getElementById('playJustification').textContent = st.justification;
+            document.getElementById('playEnd').classList.add('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            const fb = document.getElementById('playFeedback');
+            fb.className = 'feedback';
+            fb.innerHTML = '';
+
+            const opts = document.getElementById('playOptions');
+            opts.innerHTML = '';
+            shuffle(st.options).forEach(o => {
+                const btn = document.createElement('button');
+                btn.className = 'option';
+                btn.textContent = o.text;
+                btn.onclick = () => choose(o, btn);
+                opts.appendChild(btn);
+            });
+        }
+
+        function choose(option, btn) {
+            if (state.resolved) return;
+            const fb = document.getElementById('playFeedback');
+
+            if (option.type === 'force') {
+                state.calledOut++;
+                btn.classList.add('picked-force');
+                btn.disabled = true;
+                fb.className = 'feedback force';
+                fb.innerHTML = `<div class="label">Called out</div><p>${option.fb}</p><p style="margin-top:8px;font-size:13px;color:var(--muted)">Try another response.</p>`;
+            } else {
+                state.resolved = true;
+                btn.classList.add('picked-nv');
+                document.querySelectorAll('#playOptions .option').forEach(b => b.disabled = true);
+                option.b.forEach(id => state.used.add(id));
+                const chips = option.b.map(id => `<span class="chip">${behaviors[id].name}</span>`).join('');
+                fb.className = 'feedback nv';
+                fb.innerHTML = `<div class="label">Holds</div><p>${option.fb}</p><div class="chips">${chips}</div>`;
+
+                const next = document.getElementById('nextBtn');
+                next.textContent = state.stage < state.current.stages.length - 1 ? 'Next moment' : 'Finish';
+                next.classList.remove('hidden');
+            }
+            updateStats();
+        }
+
+        function nextStage() {
+            const s = state.current;
+            if (state.stage < s.stages.length - 1) {
+                state.stage++;
+                renderStage();
+                return;
+            }
+            finishScenario();
+        }
+
+        function finishScenario() {
+            const s = state.current;
+            state.done.add(s.id);
+            document.getElementById('playOptions').innerHTML = '';
+            document.getElementById('playFeedback').className = 'feedback';
+            document.getElementById('playSituation').textContent = 'Nobody was caged. Nobody was grabbed. The harm was named, the people at risk were protected by distance and presence, and the person who caused harm was given a way back.';
+            document.getElementById('playJustification').textContent = s.quote + ' (answered)';
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            const end = document.getElementById('playEnd');
+            end.innerHTML = `<div class="hard"><div style="font-weight:bold;margin-bottom:6px">The hard question: ${s.hard.q}</div><p>${s.hard.a}</p></div>`;
+            end.classList.remove('hidden');
+            updateStats();
+        }
+
+        // The Web: behaviors on an inner ring, scenarios on an outer ring
+        function scenarioBehaviors(s) {
+            const ids = new Set();
+            s.stages.forEach(st => st.options.forEach(o => (o.b || []).forEach(id => ids.add(id))));
+            return ids;
+        }
+
+        function renderWeb() {
+            const svg = document.getElementById('webSvg');
+            const NS = 'http://www.w3.org/2000/svg';
+            const cx = 350, cy = 350;
+            const bIds = Object.keys(behaviors);
+            const pos = {};
+
+            bIds.forEach((id, i) => {
+                const a = (i / bIds.length) * Math.PI * 2 - Math.PI / 2;
+                pos['b:' + id] = { x: cx + Math.cos(a) * 150, y: cy + Math.sin(a) * 150 };
+            });
+            scenarios.forEach((s, i) => {
+                const a = (i / scenarios.length) * Math.PI * 2 - Math.PI / 2 + Math.PI / scenarios.length;
+                pos['s:' + s.id] = { x: cx + Math.cos(a) * 290, y: cy + Math.sin(a) * 290 };
+            });
+
+            svg.innerHTML = '';
+            const edges = [];
+            scenarios.forEach(s => {
+                scenarioBehaviors(s).forEach(bid => {
+                    const p1 = pos['s:' + s.id], p2 = pos['b:' + bid];
+                    const line = document.createElementNS(NS, 'line');
+                    line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+                    line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+                    line.setAttribute('class', 'edge');
+                    line.dataset.s = s.id; line.dataset.b = bid;
+                    svg.appendChild(line);
+                    edges.push(line);
+                });
+            });
+
+            const nodes = [];
+            function addNode(key, label, r, fill, stroke, onTap) {
+                const g = document.createElementNS(NS, 'g');
+                g.setAttribute('class', 'node');
+                g.dataset.key = key;
+                const p = pos[key];
+                const c = document.createElementNS(NS, 'circle');
+                c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', r);
+                c.setAttribute('fill', fill); c.setAttribute('stroke', stroke); c.setAttribute('stroke-width', 2.5);
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', p.x);
+                t.setAttribute('y', p.y + r + 13);
+                t.setAttribute('text-anchor', 'middle');
+                t.textContent = label;
+                g.appendChild(c); g.appendChild(t);
+                g.addEventListener('click', onTap);
+                svg.appendChild(g);
+                nodes.push(g);
+            }
+
+            bIds.forEach(id => {
+                const lit = state.used.has(id);
+                addNode('b:' + id, behaviors[id].name, 13, lit ? '#2f9e74' : '#ffffff', '#2f9e74', () => focusNode('b:' + id));
+            });
+            scenarios.forEach(s => {
+                const lit = state.done.has(s.id);
+                addNode('s:' + s.id, s.title, 16, lit ? '#5b5fc7' : '#ffffff', '#5b5fc7', () => focusNode('s:' + s.id));
+            });
+
+            // Center: the rule everything grows from
+            const core = document.createElementNS(NS, 'text');
+            core.setAttribute('x', cx); core.setAttribute('y', cy - 6);
+            core.setAttribute('text-anchor', 'middle');
+            core.setAttribute('style', 'font-size:14px;font-weight:bold;fill:#2d2d3a');
+            core.textContent = 'No cages.';
+            const core2 = core.cloneNode();
+            core2.setAttribute('y', cy + 14);
+            core2.textContent = 'No force. For anyone.';
+            svg.appendChild(core); svg.appendChild(core2);
+
+            function focusNode(key) {
+                const [kind, id] = key.split(':');
+                const related = new Set([key]);
+                edges.forEach(e => {
+                    const hit = kind === 'b' ? e.dataset.b === id : e.dataset.s === id;
+                    e.classList.toggle('hot', hit);
+                    e.classList.toggle('dim', !hit);
+                    if (hit) { related.add('b:' + e.dataset.b); related.add('s:' + e.dataset.s); }
+                });
+                nodes.forEach(n => n.classList.toggle('dim', !related.has(n.dataset.key)));
+
+                const detail = document.getElementById('webDetail');
+                if (kind === 'b') {
+                    const where = scenarios.filter(s => scenarioBehaviors(s).has(id)).map(s => s.title).join(', ');
+                    detail.innerHTML = `<strong>${behaviors[id].name}</strong>${state.used.has(id) ? ' (woven)' : ''}<p>${behaviors[id].desc}</p><p style="margin-top:6px;font-size:13px;color:var(--muted)">Holds: ${where}</p>`;
+                } else {
+                    const s = scenarios.find(x => x.id === id);
+                    const bs = [...scenarioBehaviors(s)].map(b => behaviors[b].name).join(', ');
+                    detail.innerHTML = `<strong>${s.title}</strong> <span style="color:var(--muted)">${s.quote}</span><p style="margin-top:6px">Held by: ${bs}</p><p style="margin-top:6px;font-size:13px;color:var(--muted)">Hard question: ${s.hard.q}</p>`;
+                }
+            }
+        }
+
+        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
+        renderList();
+    </script>
+</body>
+</html>
