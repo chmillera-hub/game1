@@ -4646,6 +4646,227 @@
   // it fights the army right above it, and each win swaps them, until it loses or tops the Hall.
   // Any two ranked armies can also skirmish, whenever you like: if the lower one wins, they
   // swap places.
+  // ------------------------------------------------------------ sandbox
+
+  // Build an army straight for the Hall of Fame: any unit at any level, any kit it can take,
+  // up to five hand-picked relics and a fixed Supply (R.sandboxSupply). The draft keeps
+  // between visits, apart from your campaign. Test it against any Hall army, then Enter the
+  // Hall: a copy joins the line waiting to climb, marked Sandbox.
+  function sandboxScreen(back, sel) {
+    const d = R.loadSandbox();
+    const st = R.sandboxStatus(d);
+    const left = st.cap - st.used;
+    const again = (s) => sandboxScreen(back, s === undefined ? sel : s);
+    const save = () => R.saveSandbox(d);
+    const at = (x, y) => d.units.findIndex((it) => it.x === x && it.y === y);
+    const rows = [];
+    for (let y = 6; y <= 8; y++) rows.push(y);
+    const grid = rows
+      .map((y) =>
+        [...Array(9).keys()]
+          .map((x) => {
+            const i = at(x, y);
+            const it = d.units[i];
+            return `<button class="sb-tile ${i >= 0 && i === sel ? 'sel' : ''} ${i >= 0 ? 'full' : ''}" data-x="${x}" data-y="${y}" aria-label="${it ? esc(UNITS[it.spec.type].name) : 'Empty tile'}">${it ? `<canvas data-p="${it.spec.type}:P"></canvas>` : ''}</button>`;
+          })
+          .join('')
+      )
+      .join('');
+    const kit = (sp) => {
+      const bits = [sp.a1 && ABILITIES[sp.a1] ? ABILITIES[sp.a1].name : '', sp.level >= 2 && sp.a2 && ABILITIES[sp.a2] ? ABILITIES[sp.a2].name : '']
+        .concat(sp.talents.map((id) => TALENTS[id].name), sp.skills.map((id) => SKILLS[id].name), sp.gear.map((id) => GEAR[id].name), sp.enchant ? [ENCHANTS[sp.enchant].name] : [])
+        .filter(Boolean);
+      return bits.length ? esc(bits.join(' · ')) : 'No kit yet';
+    };
+    const units = d.units
+      .map(
+        (it, i) => `<div class="sb-unit ${i === sel ? 'sel' : ''}">
+          <canvas data-p="${it.spec.type}:P"></canvas>
+          <div class="grow"><b>${esc(UNITS[it.spec.type].name)}</b> ${rarityTag(it.spec.type)} <span class="small muted">Level ${it.spec.level} · ${R.specCost(it.spec)} Supply</span><div class="small muted">${kit(it.spec)}</div></div>
+          <button class="btn" data-sbedit="${i}">Kit</button><button class="btn icon-only ghost" data-sbdel="${i}" aria-label="Remove">${ic('close')}</button>
+        </div>`
+      )
+      .join('');
+    const relics = d.relics.map((id) => `<span class="chip">${ic(RELIC_ICON[id] || 'gem')} ${esc(RELICS[id].name)}</span>`).join(' ');
+    const v = showView(
+      `<div class="wrap">
+        <div><p class="eyebrow">Hall of Fame</p><h2>Sandbox army</h2></div>
+        <p class="muted">Skip the campaign and build an army for the Hall of Fame: any unit, any talent, skill, gear piece and enchantment it can take, up to ${R.SANDBOX_RELICS} relics of your choice (legendary ones too) and ${R.SANDBOX_SUPPLY} Supply. Sandbox armies are marked Sandbox. The strongest armies still come from campaigns, which can carry a dozen relics and far more Supply.</p>
+        <div class="budget ${left < 0 ? 'over' : ''}">${ic('command')} ${left < 0 ? `<b>${-left}</b> over budget` : `Supply left: <b>${left}</b>`}<span class="grow"></span><span class="small muted">Army ${st.used}/${st.cap}</span></div>
+        <div class="panel"><div class="row"><b class="grow">Relics ${d.relics.length}/${R.SANDBOX_RELICS}</b><button class="btn" id="sbRelics">${ic('gem')} Choose relics</button></div>${relics ? `<div class="sb-relics">${relics}</div>` : '<p class="small muted">None yet. Relics that add or cost Supply change your budget.</p>'}</div>
+        <div class="panel"><div class="row"><b class="grow">Formation</b><span class="small muted">${sel != null ? 'Tap a tile to move it there.' : 'Tap a unit, then a tile to move it.'} The enemy stands to the north.</span></div><div class="sb-grid">${grid}</div></div>
+        <div class="sb-list">${units || '<p class="muted">No units yet.</p>'}</div>
+        <button class="btn primary" id="sbAdd">${ic('plus')} Add a unit</button>
+        <label class="small muted" for="sbName">Army name</label>
+        <input id="sbName" class="save-name" maxlength="40" placeholder="A Sandbox Company" value="${esc(d.name)}">
+        <div class="row"><button class="btn grow" id="sbTest" ${st.ok ? '' : 'disabled'}>${ic('eye')} Test fight</button><button class="btn primary grow" id="sbEnter" ${st.ok ? '' : 'disabled'}>${ic('crown')} Enter the Hall</button></div>
+        ${st.ok ? '' : `<p class="small muted">${!d.units.length ? 'Add units to begin.' : left < 0 ? 'Over budget: lower a level or drop some kit.' : 'Field at least one unit that can deal damage.'}</p>`}
+        <div class="row end"><button class="btn danger" id="sbClear" ${d.units.length || d.relics.length ? '' : 'disabled'}>Start over</button><button class="btn" id="sbBack">Back</button></div>
+      </div>`
+    );
+    $('#sbName', v).onchange = (e) => {
+      d.name = e.target.value;
+      save();
+    };
+    $('#sbBack', v).onclick = () => back();
+    $('#sbAdd', v).onclick = () => sandboxAddSheet(d, () => again(null));
+    $('#sbRelics', v).onclick = () => sandboxRelicSheet(d, () => again());
+    for (const b of $$('[data-sbedit]', v)) b.onclick = () => sandboxKitSheet(d, +b.dataset.sbedit, () => again());
+    for (const b of $$('[data-sbdel]', v))
+      b.onclick = () => {
+        d.units.splice(+b.dataset.sbdel, 1);
+        save();
+        sfx('click');
+        again(null);
+      };
+    for (const b of $$('.sb-tile', v))
+      b.onclick = () => {
+        const x = +b.dataset.x;
+        const y = +b.dataset.y;
+        const i = at(x, y);
+        if (sel == null || !d.units[sel]) return again(i >= 0 ? i : null);
+        if (i === sel) return again(null);
+        // Move the picked unit here, trading places with whoever stands here.
+        const it = d.units[sel];
+        if (i >= 0) Object.assign(d.units[i], { x: it.x, y: it.y });
+        Object.assign(it, { x, y });
+        save();
+        sfx('step');
+        again(null);
+      };
+    $('#sbClear', v).onclick = async () => {
+      if (!(await confirmSheet('Start over?', 'The sandbox army you are building goes. Armies already in the Hall stay.', 'Start over', 'Keep it', true))) return;
+      R.saveSandbox({});
+      again(null);
+    };
+    $('#sbTest', v).onclick = () => sandboxTestSheet(d, () => again());
+    $('#sbEnter', v).onclick = async () => {
+      d.name = $('#sbName', v).value;
+      save();
+      if (!(await confirmSheet('Enter the Hall?', `<b>${esc(d.name || 'A Sandbox Company')}</b> joins your Hall of Fame, marked Sandbox, waiting to climb. Your draft stays here to keep tinkering.`, 'Enter the Hall', 'Not yet'))) return;
+      const l = R.enterSandbox(d);
+      if (!l) return toast('This army cannot enter yet.');
+      toast(`${l.name} entered the Hall, waiting to climb.`);
+      back();
+    };
+  }
+
+  function sandboxAddSheet(d, after) {
+    UI.onSheetClose = null;
+    openSheet(
+      `${sheetHead('Add a unit', `Any unit you could recruit. Supply left: ${R.sandboxStatus(d).cap - R.sandboxStatus(d).used}.`)}
+      <div class="sb-pick">${D.RECRUITABLE.map((t) => `<button class="sb-opt" data-sbtype="${t}"><canvas data-p="${t}:P"></canvas><span class="grow"><b>${esc(UNITS[t].name)}</b> ${rarityTag(t)}<span class="small muted"> · ${R.specCost(R.sandboxSpec(t))} Supply</span><span class="small muted sb-desc">${esc(UNITS[t].desc)}</span></span></button>`).join('')}</div>`,
+      (sh) => {
+        for (const b of $$('[data-sbtype]', sh))
+          b.onclick = () => {
+            if (!R.addSandboxUnit(d, b.dataset.sbtype)) return toast('No free tile left.');
+            R.saveSandbox(d);
+            sfx('select');
+            closeSheet();
+            after();
+          };
+      }
+    );
+  }
+
+  function sandboxRelicSheet(d, after) {
+    const order = ['legendary', 'boss', 'rare', 'uncommon', 'common', 'event'];
+    const ids = Object.keys(RELICS).sort((a, b) => order.indexOf(RELICS[a].tier) - order.indexOf(RELICS[b].tier) || RELICS[a].name.localeCompare(RELICS[b].name));
+    const html = () =>
+      `${sheetHead(`Relics ${d.relics.length}/${R.SANDBOX_RELICS}`, `Tap to take or drop. Supply: ${R.sandboxSupply(d.relics)}.`, true)}
+      <div class="sb-pick">${ids
+        .map((id) => {
+          const on = d.relics.includes(id);
+          return `<button class="sb-opt ${on ? 'on' : ''}" data-sbrelic="${id}" ${!on && d.relics.length >= R.SANDBOX_RELICS ? 'disabled' : ''}><span class="relic-dot tier-${RELICS[id].tier}">${ic(RELIC_ICON[id] || 'gem')}</span><span class="grow"><b>${esc(RELICS[id].name)}</b> <span class="small muted">${esc(relicTier(RELICS[id]))}</span><span class="small muted sb-desc">${esc(RELICS[id].desc)}</span></span>${on ? ic('check') : ''}</button>`;
+        })
+        .join('')}</div>
+      <div class="actions"><button class="btn primary" data-close>Done</button></div>`;
+    const bind = (sh) => {
+      for (const b of $$('[data-sbrelic]', sh))
+        b.onclick = () => {
+          const id = b.dataset.sbrelic;
+          d.relics = d.relics.includes(id) ? d.relics.filter((x) => x !== id) : d.relics.concat(id).slice(0, R.SANDBOX_RELICS);
+          R.saveSandbox(d);
+          sfx('click');
+          refreshSheet(html(), bind);
+        };
+    };
+    openSheet(html(), bind);
+    UI.onSheetClose = after;
+  }
+
+  // A sandbox unit's whole kit on one sheet: level, picks, talents, skills, gear, enchantment.
+  function sandboxKitSheet(d, i, after) {
+    const it = d.units[i];
+    if (!it) return;
+    const sp = it.spec;
+    const T = UNITS[sp.type];
+    const opt = (kind, id, name, desc, cost, on, off) =>
+      `<button class="sb-opt ${on ? 'on' : ''}" data-sbk="${kind}" data-sbid="${id}" ${off ? 'disabled' : ''}><span class="grow"><b>${esc(name)}</b> <span class="small muted">${cost ? `${cost > 0 ? '+' : ''}${cost} Supply` : 'Free'}</span><span class="small muted sb-desc">${esc(desc || '')}</span></span>${on ? ic('check') : ''}</button>`;
+    const html = () => {
+      const st = R.sandboxStatus(d);
+      const sl = { talents: TALENT_SLOTS[sp.level], skills: SKILL_SLOTS[sp.level], gear: GEAR_SLOTS[sp.level] };
+      const list = (kind, table, chosen, n) =>
+        Object.keys(table)
+          .filter((id) => D.eligible(sp.type, table[id]))
+          .map((id) => opt(kind, id, table[id].name, table[id].desc, table[id].cost, chosen.includes(id), !chosen.includes(id) && chosen.length >= n))
+          .join('');
+      return `${sheetHead(`${esc(T.name)} · Level ${sp.level}`, `${R.specCost(sp)} Supply · Supply left: ${st.cap - st.used}`, true)}
+        <div class="budget pin ${st.used > st.cap ? 'over' : ''}">${ic('command')} ${st.used > st.cap ? `<b>${st.used - st.cap}</b> over budget` : `Supply left: <b>${st.cap - st.used}</b>`}<span class="grow"></span><span class="small muted">Army ${st.used}/${st.cap}</span></div>
+        <h4 class="save-sec">Level</h4>
+        <div class="row">${[1, 2, 3].map((lv) => `<button class="btn grow ${sp.level === lv ? 'primary' : ''}" data-sbk="level" data-sbid="${lv}">Level ${lv}${LEVEL_COST[lv] ? ` · +${LEVEL_COST[lv]}` : ''}</button>`).join('')}</div>
+        ${T.abilities ? `<h4 class="save-sec">Level 1 pick</h4>${T.abilities[1].map((id) => opt('a1', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a1 === id)).join('')}` : ''}
+        ${T.abilities && sp.level >= 2 ? `<h4 class="save-sec">Level 2 pick</h4>${T.abilities[2].map((id) => opt('a2', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a2 === id)).join('')}` : ''}
+        ${sp.level >= 3 && MASTERY[sp.type] ? `<p class="small muted">Mastery at Level 3: <b>${esc(MASTERY[sp.type].name)}</b>. ${esc(MASTERY[sp.type].desc)}</p>` : ''}
+        <h4 class="save-sec">Talents ${sp.talents.length}/${sl.talents}</h4>${list('talents', TALENTS, sp.talents, sl.talents)}
+        <h4 class="save-sec">Skills ${sp.skills.length}/${sl.skills}</h4>${list('skills', SKILLS, sp.skills, sl.skills)}
+        <h4 class="save-sec">Gear ${sp.gear.length}/${sl.gear}</h4>${list('gear', GEAR, sp.gear, sl.gear)}
+        <h4 class="save-sec">Enchantment</h4>${opt('enchant', '', 'None', '', 0, !sp.enchant)}${Object.keys(ENCHANTS)
+          .filter((id) => D.eligible(sp.type, ENCHANTS[id]))
+          .map((id) => opt('enchant', id, ENCHANTS[id].name, ENCHANTS[id].desc, ENCHANTS[id].surcharge, sp.enchant === id))
+          .join('')}
+        <div class="actions"><button class="btn primary" data-close>Done</button></div>`;
+    };
+    const bind = (sh) => {
+      for (const b of $$('[data-sbk]', sh))
+        b.onclick = () => {
+          const k = b.dataset.sbk;
+          const id = b.dataset.sbid;
+          if (k === 'level') sp.level = +id;
+          else if (k === 'a1' || k === 'a2') sp[k] = id;
+          else if (k === 'enchant') {
+            if (id) sp.enchant = id;
+            else delete sp.enchant;
+          } else sp[k] = sp[k].includes(id) ? sp[k].filter((x) => x !== id) : sp[k].concat(id);
+          R.fixSandbox(d);
+          R.saveSandbox(d);
+          sfx('click');
+          refreshSheet(html(), bind);
+        };
+    };
+    openSheet(html(), bind);
+    UI.onSheetClose = after;
+  }
+
+  // Test the sandbox army against any army in your Hall: nothing moves, nothing is saved.
+  function sandboxTestSheet(d, after) {
+    const h = R.loadHall();
+    const all = h.legends.concat(h.queue);
+    UI.onSheetClose = null;
+    openSheet(
+      `${sheetHead('Test fight', 'Pick a Hall army to fight. A friendly match: nothing moves in the Hall.')}
+      ${all.length ? `<div class="sb-pick">${all.map((l) => `<button class="sb-opt ${l.foreign ? 'rival' : ''}" data-sbfoe="${l.id}"><span class="grow"><b>${esc(l.name)}</b> <span class="small muted">${R.armySupply(l)} Supply · ${l.units.length} units${l.foreign ? ` · rival from ${esc(l.owner || 'a rival')}` : l.sandbox ? ' · sandbox' : l.house ? ' · house army' : ''}</span></span></button>`).join('')}</div>` : '<p class="muted">Your Hall is empty: enter an army first, or add a rival\'s.</p>'}`,
+      (sh) => {
+        for (const b of $$('[data-sbfoe]', sh))
+          b.onclick = () => {
+            const foe = all.find((l) => l.id === b.dataset.sbfoe);
+            closeSheet();
+            startExhibition(R.sandboxLegend(d, 'S-test'), foe, () => after(), after);
+          };
+      }
+    );
+  }
+
   function hallScreen(back, state) {
     const st = state || { pick: [], log: [] };
     const h = R.loadHall();
@@ -4677,8 +4898,8 @@
       const waiting = i < 0;
       return `<button class="hall-row ${l === climber ? 'climbing' : ''} ${picked >= 0 ? 'picked' : ''} ${waiting ? 'waiting' : ''} ${l.superWon ? 'slayer' : ''} ${l.foreign ? 'rival' : ''}" data-legend="${l.id}">
         <span class="rank">${waiting ? ic(l.foreign ? 'skull' : 'hourglass') : '#' + (i + 1)}${!waiting && l.foreign ? `<span class="rival-skull">${ic('skull')}</span>` : ''}</span>
-        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${l.foreign ? `<span class="chip rival-chip" title="Another player's army, added from their code">${ic('skull')} Rival · ${esc(l.owner || 'a rival')}</span>` : ''} ${tag}</span>
-          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${l.foreign ? `From ${esc(l.owner || 'a rival')} · ` : ''}${esc(l.date || '')}${l.date ? ' · ' : ''}Commander Lv ${l.level || 1} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
+        <span class="grow"><span class="nm"><b>${esc(l.name)}</b>${l.superWon ? ` <span class="chip slayer" title="Beat the final challenge, the Eclipse Wyrm">${ic('crossbones')} Wyrm slayer</span>` : ''} <span class="hall-rec" title="${l.wins} won, ${l.losses} lost"><span class="w">${l.wins}W</span><span class="l">${l.losses}L</span></span> ${l.sandbox ? `<span class="chip sandbox-chip" title="Built in the sandbox: hand-picked kit and relics, ${R.SANDBOX_SUPPLY} Supply">${ic('army')} Sandbox</span>` : ''} ${l.foreign ? `<span class="chip rival-chip" title="Another player's army, added from their code">${ic('skull')} Rival · ${esc(l.owner || 'a rival')}</span>` : ''} ${tag}</span>
+          <span class="small muted"><b class="hall-sup">${ic('army')} ${R.armySupply(l)} Supply</b> · ${l.house ? `House army: ${squad(l).length} ${esc(many(UNITS[l.type] ? UNITS[l.type].name : 'unit'))}${squad(l).length < l.units.length ? ' and a Barrier Ward' : ''}, Level ${(l.units[0] && l.units[0].spec.level) || 1}${housepicks(l)}` : `${l.foreign ? `From ${esc(l.owner || 'a rival')} · ` : ''}${esc(l.date || '')}${l.date ? ' · ' : ''}${l.sandbox ? 'Sandbox build' : `Commander Lv ${l.level || 1}`} · ${l.units.length} units${relicNames(l) ? ' · ' + esc(relicNames(l)) : ''}`}</span>
           ${army}</span>
       </button>`;
     };
@@ -4729,6 +4950,10 @@
           <p class="small muted">Rivals: share your best armies as a code, or paste a friend's to add theirs here, in red, waiting to climb against yours.</p>
           <div class="row"><button class="btn grow" id="hlShare">${ic('scroll')} Share my armies</button><button class="btn grow" id="hlRival">${ic('swords')} Add a rival's armies</button></div>
         </div>
+        <div class="panel hall-share">
+          <p class="small muted">Sandbox: skip the campaign and build an army straight for the Hall, with any kit, ${R.SANDBOX_RELICS} relics of your choice and ${R.SANDBOX_SUPPLY} Supply.</p>
+          <button class="btn" id="hlSandbox">${ic('army')} Build a sandbox army</button>
+        </div>
         <div class="row end">
           ${all.length ? `<button class="btn danger" id="hlReset">Reset Hall of Fame</button>` : ''}
           <button class="btn" id="hlSave">${ic('scroll')} Back up / restore</button>
@@ -4740,6 +4965,7 @@
     $('#hlBack', v).onclick = () => back();
     $('#hlSave', v).onclick = () => saveSheet(() => hallScreen(back));
     $('#hlShare', v).onclick = () => shareArmiesSheet();
+    $('#hlSandbox', v).onclick = () => sandboxScreen(() => hallScreen(back, { pick: [], log: [] }));
     $('#hlRival', v).onclick = () => addRivalSheet(() => hallScreen(back, { pick: [], log: [] }));
     for (const b of $$('[data-unrival]', v))
       b.onclick = async () => {
@@ -5318,7 +5544,7 @@
         <h4>The campaign</h4>
         <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
         <h4>Hall of Fame</h4>
-        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to three of your own, never rivals or house armies); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it.</p>
+        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to three of your own, never rivals or house armies); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it. <b>Sandbox</b>: skip the campaign and build an army straight for the Hall (any unit, talent, skill, gear piece and enchantment it can take, up to 5 relics of your choice, 34 Supply). Test it against any Hall army, then enter it: it climbs like any army, marked Sandbox. Campaign armies can grow stronger still, with a dozen relics and far more Supply.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>

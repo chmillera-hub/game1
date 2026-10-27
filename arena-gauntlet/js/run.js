@@ -71,17 +71,13 @@
   }
 
   function supplyFor(run) {
-    let s = COMMAND[commanderLevel(run)].supply + veteranSupply(run) + (run.supplyBonus || 0);
-    if (hasRelic(run, 'war_horn')) s += 1;
-    if (hasRelic(run, 'legion_banner')) s += 2;
-    if (hasRelic(run, 'tyrant_heart')) s += 3;
-    if (hasRelic(run, 'blood_pact')) s += 3;
-    if (hasRelic(run, 'crown_command')) s += 2;
-    if (hasRelic(run, 'titan_gauntlet')) s -= 1;
-    if (hasRelic(run, 'worldbreaker')) s -= 4;
-    if (hasRelic(run, 'mountain_heart')) s -= 4;
-    if (hasRelic(run, 'storm_banner')) s -= 3;
-    return s;
+    return COMMAND[commanderLevel(run)].supply + veteranSupply(run) + (run.supplyBonus || 0) + relicSupply(run.relics);
+  }
+
+  // What relics add to (or take from) your Supply.
+  const RELIC_SUPPLY = { war_horn: 1, legion_banner: 2, tyrant_heart: 3, blood_pact: 3, crown_command: 2, titan_gauntlet: -1, worldbreaker: -4, mountain_heart: -4, storm_banner: -3 };
+  function relicSupply(relics) {
+    return (relics || []).reduce((t, id) => t + (RELIC_SUPPLY[id] || 0), 0);
   }
 
   // How many units a commander of this level usually fields. Not a limit (Supply is the
@@ -2967,7 +2963,7 @@
   }
 
   async function exportArmies(by) {
-    const armies = shareable(loadHall()).map((l) => ({ name: l.name, date: l.date, level: l.level, relics: l.relics, superWon: !!l.superWon, units: l.units }));
+    const armies = shareable(loadHall()).map((l) => ({ name: l.name, date: l.date, level: l.level, relics: l.relics, superWon: !!l.superWon, sandbox: !!l.sandbox, units: l.units }));
     if (!armies.length) return null;
     const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, by: cleanText(by, 24), armies }));
     if (root.CompressionStream) return 'AGAZ1.' + toB64(await pump(bytes, new root.CompressionStream('deflate-raw')));
@@ -2995,7 +2991,8 @@
       owner: cleanText(by, 24) || 'A rival',
       date: cleanText(a.date, 10),
       level: Math.max(1, Math.min(99, a.level | 0 || 1)),
-      superWon: !!a.superWon,
+      superWon: !!a.superWon && !a.sandbox,
+      sandbox: !!a.sandbox,
       wins: 0,
       losses: 0,
       climbed: false,
@@ -3059,6 +3056,134 @@
     h.queue = h.queue.filter((l) => !gone(l));
     saveHall(h);
     return true;
+  }
+
+  // Sandbox armies: built straight for the Hall of Fame, no campaign. Any recruitable unit at
+  // any level, any talent, skill, gear piece and enchantment it can take, up to five relics
+  // of your choice (legendary ones too) and a fixed 34 Supply: about what a typical campaign
+  // winner fields, with everything hand-picked. Relics that add or cost Supply still do. Only
+  // a campaign goes past that (a dozen relics, Supply Caches, a veteran commander), so the
+  // strongest armies, and the Wyrm slayer badge, still come from playing one. The draft is
+  // kept on its own, never touching your campaign.
+  const SANDBOX_SUPPLY = 34;
+  const SANDBOX_RELICS = 5;
+  const SANDBOX_KEY = 'arena-gauntlet-sandbox-v1';
+
+  function sandboxSupply(relics) {
+    return SANDBOX_SUPPLY + relicSupply(relics);
+  }
+
+  function sandboxSpec(type) {
+    const T = UNITS[type];
+    return { type, level: 1, a1: T.abilities ? T.abilities[1][0] : undefined, a2: T.abilities ? T.abilities[2][0] : undefined, talents: [], skills: [], gear: [] };
+  }
+
+  // A unit's sandbox kit made legal: real picks of its class, eligible items, one of each,
+  // within its level's slots.
+  function fixSandboxSpec(sp) {
+    const T = UNITS[sp.type];
+    sp.level = Math.max(1, Math.min(D.MAX_LEVEL, sp.level | 0 || 1));
+    if (T.abilities) for (const tier of [1, 2]) if (!T.abilities[tier].includes(sp['a' + tier]) || isTalent(sp['a' + tier])) sp['a' + tier] = T.abilities[tier][0];
+    const sl = slotsFor(sp.level);
+    const pick = (ids, table, n) => [...new Set(ids || [])].filter((id) => table[id] && D.eligible(sp.type, table[id])).slice(0, n);
+    sp.talents = pick(sp.talents, TALENTS, sl.talents);
+    sp.skills = pick(sp.skills, SKILLS, sl.skills);
+    sp.gear = pick(sp.gear, GEAR, sl.gear);
+    if (sp.enchant && !(ENCHANTS[sp.enchant] && D.eligible(sp.type, ENCHANTS[sp.enchant]))) delete sp.enchant;
+    return sp;
+  }
+
+  function fixSandbox(d) {
+    d = d && typeof d === 'object' ? d : {};
+    d.name = cleanText(d.name, 40);
+    d.relics = [...new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))].slice(0, SANDBOX_RELICS);
+    const taken = new Set();
+    d.units = (Array.isArray(d.units) ? d.units : []).filter((it) => {
+      if (!it || !it.spec || !RECRUITABLE.includes(it.spec.type)) return false;
+      fixSandboxSpec(it.spec);
+      it.x = Math.max(0, Math.min(BOARD - 1, it.x | 0));
+      it.y = Math.max(BOARD - DEPLOY_ROWS, Math.min(BOARD - 1, it.y | 0));
+      const k = it.x + ',' + it.y;
+      if (taken.has(k)) return false;
+      taken.add(k);
+      return true;
+    });
+    return d;
+  }
+
+  function loadSandbox() {
+    try {
+      const j = root.localStorage && root.localStorage.getItem(SANDBOX_KEY);
+      return fixSandbox(j ? JSON.parse(j) : null);
+    } catch (e) {
+      return fixSandbox(null);
+    }
+  }
+
+  function saveSandbox(d) {
+    try {
+      root.localStorage && root.localStorage.setItem(SANDBOX_KEY, JSON.stringify(fixSandbox(d)));
+    } catch (e) {
+      /* storage unavailable */
+    }
+  }
+
+  // Where a new unit stands: the first free tile of its row (front for fighters, back for
+  // the ranged and support), spreading out from the middle.
+  function sandboxSpot(d, type) {
+    const role = UNITS[type].role;
+    const front = ['tank', 'melee', 'monster'].includes(role);
+    const rows = front ? [BOARD - DEPLOY_ROWS, BOARD - 2, BOARD - 1] : role === 'support' || role === 'ward' ? [BOARD - 1, BOARD - 2, BOARD - DEPLOY_ROWS] : [BOARD - 2, BOARD - 1, BOARD - DEPLOY_ROWS];
+    const mid = (BOARD - 1) / 2;
+    const xs = [...Array(BOARD).keys()].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
+    for (const y of rows) for (const x of xs) if (!d.units.some((it) => it.x === x && it.y === y)) return { x, y };
+    return null;
+  }
+
+  function addSandboxUnit(d, type) {
+    if (!RECRUITABLE.includes(type)) return false;
+    const at = sandboxSpot(d, type);
+    if (!at) return false;
+    d.units.push({ spec: sandboxSpec(type), x: at.x, y: at.y });
+    return true;
+  }
+
+  // Supply: what the army costs, what it may cost, and whether it can enter the Hall.
+  function sandboxStatus(d) {
+    const used = d.units.reduce((t, it) => t + specCost(it.spec), 0);
+    const cap = sandboxSupply(d.relics);
+    return { used, cap, ok: d.units.length > 0 && used <= cap && d.units.some((it) => UNITS[it.spec.type].act && UNITS[it.spec.type].act.dmg) };
+  }
+
+  // The army as a Hall army, for a test match or to enter the Hall.
+  function sandboxLegend(d, id) {
+    fixSandbox(d);
+    return {
+      id: id || 'S-' + Date.now().toString(36),
+      name: d.name || 'A Sandbox Company',
+      sandbox: true,
+      date: new Date().toISOString().slice(0, 10),
+      level: 0,
+      relics: d.relics.slice(),
+      units: d.units.map((it) => ({ spec: JSON.parse(JSON.stringify(it.spec)), x: it.x, y: it.y, facing: 0 })),
+      wins: 0,
+      losses: 0,
+      climbed: false,
+    };
+  }
+
+  // Enters the sandbox army in your Hall, at the back of the line waiting to climb.
+  function enterSandbox(d) {
+    if (!sandboxStatus(fixSandbox(d)).ok) return null;
+    const h = loadHall();
+    if (!h.legends.length && !h.queue.length && !h.house) {
+      h.legends = houseArmies();
+      h.house = true;
+    }
+    const l = sandboxLegend(d);
+    h.queue.push(l);
+    saveHall(h);
+    return l;
   }
 
   // Reset Hall of Fame (from the menu): every army goes, the house armies too.
@@ -3331,7 +3456,7 @@
   // Save backup: everything this browser keeps (the campaign, the Hall of Fame, the record) as
   // one text code a player copies out and pastes into another browser or device. Squeezed with
   // deflate where the browser can ("AGZ1."), plain otherwise ("AG1.").
-  const BACKUP_KEYS = () => ({ run: SAVE_KEY, meta: META_KEY, hall: HALL_KEY });
+  const BACKUP_KEYS = () => ({ run: SAVE_KEY, meta: META_KEY, hall: HALL_KEY, sandbox: SANDBOX_KEY });
 
   function toB64(bytes) {
     let s = '';
@@ -3379,7 +3504,7 @@
       return { error: 'That code is damaged or cut short. Copy the whole code and try again.' };
     }
     if (!data || data.v !== 1 || typeof data !== 'object') return { error: 'That code is from an unknown version of the game.' };
-    for (const k of ['run', 'meta', 'hall']) if (data[k] != null && typeof data[k] !== 'object') return { error: 'That code is damaged.' };
+    for (const k of ['run', 'meta', 'hall', 'sandbox']) if (data[k] != null && typeof data[k] !== 'object') return { error: 'That code is damaged.' };
     return { data };
   }
 
@@ -3445,6 +3570,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

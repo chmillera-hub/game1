@@ -4122,3 +4122,92 @@ body:has(#battle:not([hidden])) {
   margin-top: 2px;
   font-size: 0.9em;
 }
+
+/* Sandbox army builder. */
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  margin-top: 8px;
+}
+.sb-tile {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(94, 162, 255, 0.35);
+  background: rgba(94, 162, 255, 0.08);
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+.sb-tile canvas {
+  width: 100%;
+  height: 100%;
+}
+.sb-tile.sel {
+  outline: 2px solid var(--brass-hi);
+  background: rgba(240, 207, 134, 0.18);
+}
+.sb-list {
+  display: grid;
+  gap: 6px;
+}
+.sb-unit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--leather-3);
+  background: var(--leather);
+}
+.sb-unit.sel {
+  border-color: var(--brass-hi);
+}
+.sb-unit canvas,
+.sb-opt canvas {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+.sb-relics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.sb-pick {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0;
+}
+.sb-opt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--leather-3);
+  background: var(--leather);
+  color: var(--text);
+  font: inherit;
+}
+.sb-opt.on {
+  border-color: var(--brass-hi);
+  background: rgba(240, 207, 134, 0.12);
+}
+.sb-opt.rival {
+  border-color: #c8352e;
+}
+.sb-opt:disabled {
+  opacity: 0.45;
+}
+.sb-desc {
+  display: block;
+}
+.chip.sandbox-chip {
+  color: #9fc7e8;
+  border-color: rgba(159, 199, 232, 0.6);
+  background: rgba(94, 140, 190, 0.15);
+}

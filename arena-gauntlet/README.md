@@ -184,6 +184,17 @@ on a phone turned sideways, but portrait works too.
   question asked; call it a day whenever you like. The Wyrm's field has no chests and no
   bonus goals (nothing they pay could be spent after it): six powder kegs lie strewn
   between the armies instead, to blow up under whoever stands next to them.
+- **Sandbox armies**: Build a sandbox army (Hall of Fame) skips the campaign: any
+  recruitable unit at any level, any talent, skill, gear piece and enchantment it can take
+  (kits kept legal: its own class's talents, eligible items, one of each, within its
+  level's slots), up to 5 relics of your choice, legendary ones too, and a fixed 34 Supply
+  (relics that add or cost Supply still do). 34 is the median campaign winner's Supply in
+  the sims (27 to 43, with about 6 random relics), so a hand-picked sandbox army is strong,
+  but a great campaign (a dozen relics, Supply Caches, a veteran commander) goes further,
+  and only campaigns earn the Wyrm slayer badge. A 9x3 grid sets the formation. Test fight
+  plays a friendly match against any Hall army; Enter the Hall adds a copy, marked Sandbox,
+  waiting to climb, and the draft stays to keep tinkering. The draft is saved on its own
+  and never touches the campaign. Shared sandbox armies stay marked Sandbox.
 - **Rival armies**: Share my armies (in the Hall of Fame) makes one text code holding your
   best armies, up to three of your own (never the house armies or rivals you added), with
   your name on them. A friend pastes it under Add a rival's armies: those armies join their
