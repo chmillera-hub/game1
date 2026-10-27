@@ -1146,7 +1146,7 @@
     tide_conch: { name: "Tidecaller's Conch", tier: 'uncommon', desc: "Your units' shoves and pulls move enemies 1 tile further." },
     anchor_stone: { name: 'Anchor Stone', tier: 'uncommon', desc: 'Enemies can never shove or drag your units.' },
     recruiters_bell: { name: "Recruiter's Bell", tier: 'uncommon', desc: 'Level 1 units cost 1 less Supply, never below 2.' },
-    gamblers_dice: { name: "Gambler's Dice", tier: 'rare', desc: 'Each battle, one of your units, picked at random, is crowned Champion: +50% damage and +50% max HP.' },
+    gamblers_dice: { name: "Gambler's Dice", tier: 'rare', desc: "One of your units wears the Champion's crown: +50% damage and +50% max HP. After each battle you win, the crown passes to a random unit that fought in it, so field the one you want it on. If the crowned unit sits a battle out, your Cleric wears the crown instead (or another unit on the field): it is never wasted. The War Room shows who has it." },
     shadow_cloak: { name: 'Shadow Cloak', tier: 'rare', desc: 'Your attacks from behind deal 40% more damage.' },
     mirror_aegis: { name: 'Mirror Aegis', tier: 'rare', desc: 'The first hit each of your units takes in a battle bounces back at the attacker instead.' },
     warlord_helm: { name: "Warlord's Helm", tier: 'rare', desc: 'A unit that slays an enemy resets its cooldown: it is ready again next turn.' },

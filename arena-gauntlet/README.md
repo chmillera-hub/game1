@@ -63,8 +63,12 @@ Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
   neighbours alight), **Trophy Rack** (every kill a trophy), **Storm in a Jar** (magic
   attacks arc to one more enemy), **Blood Pact** (cursed: +3 Supply, but start every
   battle at 75% HP).
-- Rare: **Gambler's Dice** (a random Champion each battle: +50% damage and HP, a gold
-  crown), **Mirror Aegis** (each unit's first hit bounces back), **Necromancer's Bell**
+- Rare: **Gambler's Dice** (one of your units wears the Champion's crown: +50% damage
+  and HP, a gold crown. It is crowned the moment you take the relic and keeps it between
+  battles; after each win the crown passes to a random unit that fought, so field the
+  one you want it on. If the holder sits a battle out, your Cleric wears it for that
+  battle, else another unit on the field: never wasted. The War Room marks the holder
+  and says who wears it. Hall matches still roll for it), **Mirror Aegis** (each unit's first hit bounces back), **Necromancer's Bell**
   (a 1 in 3 chance slain enemies rise as your skeletons), **Glass Crown** (cursed: +40%
   damage, -25% max HP).
 - Boss: **War Drum of Ages** (every tenth turn, one great beat: the army heals 25 and frenzies for 3 turns, announced once over the army).
@@ -732,6 +736,7 @@ node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/legendary.test.js     # the legendaries: units, skills and gear, and when they turn up
 node tests/positioning.test.js   # the AI plays to positioning picks: Lone Wolf, Phalanx, Thunderstep...
 node tests/furgon.test.js        # the Furgon's shrubs wall off the Cleric, else the most wounded unit
+node tests/crown.test.js         # Gambler's Dice: the crown stays, falls back to the Cleric, passes after a win
 node tests/sim.js 200            # AI-vs-AI balance by unit type (WITH_LEGENDS=1 adds the legendaries)
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries

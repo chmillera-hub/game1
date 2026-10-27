@@ -120,6 +120,33 @@
     return run.roster.find((u) => u.core) || null;
   }
 
+  // Gambler's Dice: one unit of your roster wears the Champion's crown between battles,
+  // from the moment the relic is yours. After each battle you win it passes to a random unit
+  // that fought in it (so a unit has to take the field to win it).
+  function crownHolder(run) {
+    if (!run.relics.includes('gamblers_dice') || !run.roster.length) return null;
+    let u = run.champion && run.roster.find((r) => r.id === run.champion);
+    if (!u) {
+      const fought = run.roster.filter((r) => (run.lastDeployed || []).includes(r.id));
+      u = AG.derive(run.seed, 'crown:' + run.stats.battles).pick(fought.length ? fought : run.roster);
+      run.champion = u.id;
+    }
+    return u;
+  }
+
+  // Who wears the crown in a battle with this deployment: the holder if it fights; if it sits
+  // out, the Cleric who always fights; else another unit on the field. Never wasted.
+  function crownedIn(run, deployment) {
+    const holder = crownHolder(run);
+    const ids = deployment.map((d) => d.rid).filter((id) => run.roster.some((r) => r.id === id));
+    if (!holder || !ids.length) return null;
+    if (ids.includes(holder.id)) return holder.id;
+    const core = coreUnit(run);
+    if (core && ids.includes(core.id)) return core.id;
+    const cleric = run.roster.find((r) => r.type === 'cleric' && ids.includes(r.id));
+    return cleric ? cleric.id : ids[0];
+  }
+
   function ensureCore(run, clericTalent) {
     const has = coreUnit(run);
     if (has) return has;
@@ -1449,10 +1476,11 @@
   function battleConfig(run, deployment, enc) {
     enc = enc || run.pending.enc;
     const units = [];
+    const crown = crownedIn(run, deployment);
     for (const d of deployment) {
       const r = unitById(run, d.rid);
       if (!r) continue;
-      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, supply: unitCost(run, r) }));
+      units.push(Object.assign(specFor(run, r), { team: 'P', x: d.x, y: d.y, facing: d.facing != null ? d.facing : 0, supply: unitCost(run, r), champion: r.id === crown }));
     }
     for (const e of enc.units)
       units.push({ type: e.type, level: e.level || 1, a1: e.a1, a2: e.a2, skills: e.skills, gear: e.gear, team: 'E', foe: true, x: e.x, y: e.y, facing: e.facing, vip: e.vip, post: e.post, key: e.key, goal: e.goal, baseHp: e.baseHp, bounty: e.bounty, supply: enemyCost(e) });
@@ -1600,6 +1628,7 @@
     if (!id || run.relics.includes(id)) return;
     run.relics.push(id);
     if (id === 'kings_ransom') run.gold += 150;
+    if (id === 'gamblers_dice') crownHolder(run);
   }
 
   function genSpoils(run, rng, kind, salt) {
@@ -1726,6 +1755,11 @@
     }
     run.recentEnc = run.recentEnc.concat(p.enc.name).slice(-3);
     run.lastDeployed = deployment.map((d) => d.rid);
+    // The crown passes to one of the units that fought.
+    if (run.relics.includes('gamblers_dice')) {
+      const fought = run.roster.filter((r) => run.lastDeployed.includes(r.id));
+      if (fought.length) run.champion = AG.derive(run.seed, 'crown:' + run.act + ':' + node.id + ':' + run.stats.battles).pick(fought).id;
+    }
     // The army that beats the Act III boss (or the final challenge) is the one the Hall of
     // Fame remembers: who fought, kitted out how, and where they stood.
     if (kind === 'boss' && run.act >= 3) run.finalArmy = hallArmyOf(run, deployment);
@@ -3170,6 +3204,7 @@
 
   AG.Run = {
     FIGHTS, TIERS, LEAN_GOLD, OVERTIME, EVENTS, LOOT_NAMES,
+    crownHolder, crownedIn, gainRelic,
     newRun, curStep, chooseChallenge, backToChoice, challengeReward, completeNode, faceFinal, endRun, claimVictory, megaArmyDiffers, bossOf, battleXp,
     commanderLevel, levelInfo, supplyFor, armySize, gainXp,
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, draftClericTalent, draftBrought, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,

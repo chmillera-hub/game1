@@ -236,6 +236,7 @@
       firstActionFree: !summon && s.relics[team].has('eternal_flame'),
       boss: !!T.boss,
       vip: !!(spec.vip || T.boss),
+      crowned: !!spec.champion,
       post: spec.post || null,
       bound: !!spec.post,
       // Breaking every goal object wins a 'destroy' battle. Optional buildings set goal: false.
@@ -1408,7 +1409,8 @@
       const rel = s.relics[team];
       const army = s.units.filter((u) => u.team === team && !u.nonCombat && !u.structure);
       if (rel.has('gamblers_dice') && army.length) {
-        const c = army[s.rng.int(army.length)];
+        // A campaign names who wears the crown; anywhere else (a Hall match) it is a dice roll.
+        const c = army.find((u) => u.crowned) || army[s.rng.int(army.length)];
         c.champion = true;
         c.maxHp = Math.round(c.maxHp * 1.5);
         c.hp = c.maxHp;

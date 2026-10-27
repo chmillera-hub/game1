@@ -3942,3 +3942,20 @@ body:has(#battle:not([hidden])) {
 .parch-card .relic-dot {
   background: radial-gradient(circle at 35% 30%, #4a4150, #1a1520 72%);
 }
+
+/* Gambler's Dice: the crowned unit in the War Room. */
+.crown-mark {
+  color: #ffc760;
+  margin-right: 3px;
+}
+
+.crown-mark .icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+}
+
+.crown-line .icon {
+  color: #ffc760;
+  vertical-align: -2px;
+}

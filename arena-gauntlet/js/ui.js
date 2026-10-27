@@ -2340,6 +2340,10 @@
       // The unit a bonus goal asks for comes first, where you cannot miss it.
       const star = R.bonusUnit(run, enc);
       const first = [star, R.coreUnit(run)].filter((u, i, a) => u && a.indexOf(u) === i);
+      // Gambler's Dice: who holds the crown, and who wears it in this battle.
+      const holder = R.crownHolder(run);
+      const wearer = holder && R.crownedIn(run, [...wr.dep.keys()].map((rid) => ({ rid })));
+      const crownTip = holder ? `The Champion's crown (Gambler's Dice): +50% damage and +50% max HP` : '';
       body = `<div class="roster">${[...first, ...run.roster.filter((u) => !first.includes(u))]
         .map((u) => {
           const deployed = wr.dep.has(u.id);
@@ -2352,10 +2356,20 @@
           return `<button class="rcard ${deployed ? 'deployed' : ''} ${wr.sel === u.id ? 'sel' : ''} ${cant ? 'dim' : ''}" data-rid="${u.id}">
             <span class="cost" title="${cost > bare ? `${bare} base + ${cost - bare} from its loadout` : 'Base cost'}">${bare}${cost > bare ? `<i>+${cost - bare}</i>` : ''}</span>${featured ? '<span class="flag feat">Quest</span>' : u.core ? '<span class="flag core" title="Always fights, free of Supply">Always</span>' : u.enchant ? `<span class="flag ench">${ic('gem')}</span>` : ''}
             <canvas data-p="${u.type}:P"></canvas>
-            <span class="nm">${esc(u.name)} ${levelBadge(u.load.lv)}</span>
+            <span class="nm">${u === holder ? `<span class="crown-mark" title="${crownTip}">${ic('crown')}</span>` : ''}${esc(u.name)} ${levelBadge(u.load.lv)}</span>
             <span class="ty">${UNITS[u.type].name}</span></button>`;
         })
-        .join('')}</div>`;
+        .join('')}</div>${
+        holder
+          ? `<p class="small muted crown-line">${ic('crown')} ${
+              wearer === holder.id
+                ? `<b>${esc(holder.name)}</b> wears the Champion's crown into this battle.`
+                : wearer
+                  ? `<b>${esc(holder.name)}</b> holds the Champion's crown but sits out: <b>${esc(run.roster.find((r) => r.id === wearer).name)}</b> wears it this battle.`
+                  : `<b>${esc(holder.name)}</b> holds the Champion's crown: field it to wear it.`
+            } After a win it passes to a random unit that fought.</p>`
+          : ''
+      }`;
     } else {
       const tips = R.scoutTips(enc);
       body = `<div class="intel">
