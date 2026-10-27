@@ -4831,6 +4831,8 @@
       const h = id && holder(kind, id);
       return `<button class="sb-opt ${on ? 'on' : ''} ${h ? 'held' : ''}" data-sbk="${kind}" data-sbid="${id}" ${off ? 'disabled' : ''}><span class="grow"><b>${esc(name)}</b> <span class="small muted">${cost ? `${cost > 0 ? '+' : ''}${cost} Supply` : 'Free'}</span>${h ? `<span class="small sb-held">On your ${esc(UNITS[h.spec.type].name)}: tap to move it here</span>` : ''}<span class="small muted sb-desc">${esc(desc || '')}</span></span>${on ? ic('check') : ''}</button>`;
     };
+    // A level's picks, without the talents listed among them (those go in talent slots).
+    const picks = (tier) => T.abilities[tier].filter((id) => ABILITIES[id] && !TALENTS[id]);
     const html = () => {
       const st = R.sandboxStatus(d);
       const sl = { talents: TALENT_SLOTS[sp.level], skills: SKILL_SLOTS[sp.level], gear: GEAR_SLOTS[sp.level] };
@@ -4843,8 +4845,8 @@
         <div class="budget pin ${st.used > st.cap ? 'over' : ''}">${ic('command')} ${st.used > st.cap ? `<b>${st.used - st.cap}</b> over budget` : `Supply left: <b>${st.cap - st.used}</b>`}<span class="grow"></span><span class="small muted">Army ${st.used}/${st.cap}</span></div>
         <h4 class="save-sec">Level</h4>
         <div class="row">${[1, 2, 3].map((lv) => `<button class="btn grow ${sp.level === lv ? 'primary' : ''}" data-sbk="level" data-sbid="${lv}">Level ${lv}${LEVEL_COST[lv] ? ` · +${LEVEL_COST[lv]}` : ''}</button>`).join('')}</div>
-        ${T.abilities ? `<h4 class="save-sec">Level 1 pick</h4>${T.abilities[1].map((id) => opt('a1', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a1 === id)).join('')}` : ''}
-        ${T.abilities && sp.level >= 2 ? `<h4 class="save-sec">Level 2 pick</h4>${T.abilities[2].map((id) => opt('a2', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a2 === id)).join('')}` : ''}
+        ${T.abilities ? `<h4 class="save-sec">Level 1 pick</h4>${picks(1).map((id) => opt('a1', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a1 === id)).join('')}` : ''}
+        ${T.abilities && sp.level >= 2 ? `<h4 class="save-sec">Level 2 pick</h4>${picks(2).map((id) => opt('a2', id, ABILITIES[id].name, ABILITIES[id].desc, ABILITIES[id].cost, sp.a2 === id)).join('')}` : ''}
         ${sp.level >= 3 && MASTERY[sp.type] ? `<p class="small muted">Mastery at Level 3: <b>${esc(MASTERY[sp.type].name)}</b>. ${esc(MASTERY[sp.type].desc)}</p>` : ''}
         <h4 class="save-sec">Talents ${sp.talents.length}/${sl.talents}</h4>${list('talents', TALENTS, sp.talents, sl.talents)}
         <h4 class="save-sec">Skills ${sp.skills.length}/${sl.skills}</h4>${list('skills', SKILLS, sp.skills, sl.skills)}
