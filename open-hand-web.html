@@ -355,6 +355,70 @@
             min-height: 60px;
         }
 
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .search-row input {
+            flex: 1;
+            min-width: 180px;
+            padding: 10px 14px;
+            border: 2px solid var(--line);
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        .search-row button.action {
+            padding: 10px 16px;
+        }
+
+        .whatif {
+            background: var(--soft);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            padding: 0 14px;
+        }
+
+        .whatif summary {
+            cursor: pointer;
+            font-weight: bold;
+            padding: 14px 0;
+            line-height: 1.4;
+        }
+
+        .whatif[open] {
+            padding-bottom: 14px;
+        }
+
+        .wi-row {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+            line-height: 1.55;
+            font-size: 14px;
+        }
+
+        .wi-force {
+            border-left: 4px solid var(--force);
+        }
+
+        .wi-say {
+            border-left: 4px solid var(--accent);
+            font-size: 15px;
+        }
+
+        .wi-nv {
+            border-left: 4px solid var(--nv);
+        }
+
+        .wi-cost {
+            border-left: 4px solid #d9a21b;
+        }
+
         .hidden {
             display: none;
         }
@@ -377,6 +441,7 @@
 
         <div class="tabs">
             <button class="tab active" data-view="rules">The World</button>
+            <button class="tab" data-view="whatif">What if…?</button>
             <button class="tab" data-view="scenarios">Scenarios</button>
             <button class="tab" data-view="web">The Web</button>
         </div>
@@ -410,6 +475,16 @@
             <div class="buttons">
                 <button class="action" onclick="showView('scenarios')">Start</button>
             </div>
+        </section>
+
+        <!-- WHAT IF VIEW: quick answers to objections -->
+        <section id="view-whatif" class="hidden">
+            <p class="legend">When someone asks "but what if…?", find it here. Each answer replaces force instead of excusing it, and is honest about what it costs.</p>
+            <div class="search-row">
+                <input type="search" id="whatIfSearch" placeholder="Search: child, gun, home, rape, war…" oninput="renderWhatIfs()">
+                <button class="action" onclick="randomWhatIf()">Random what-if</button>
+            </div>
+            <div id="whatIfList"></div>
         </section>
 
         <!-- SCENARIO LIST / PLAY VIEW -->
@@ -893,6 +968,217 @@
             }
         ];
 
+        // Rapid-fire objections: "But what if...?" Each answer replaces force instead of excusing it.
+        const whatIfs = [
+            {
+                q: 'What if someone is hurting a child right in front of me?',
+                instinct: 'Tackle the adult and lock them up.',
+                say: 'Then the child needs a wall of adults between them and the harm, not one more adult using force in front of them.',
+                loop: 'Children who see grown-ups solve problems with force learn that force is how problems get solved. That is how the next abuser is made.',
+                replace: 'Shout and name it. Get as many people as possible to stand between the adult and the child without touching anyone. Invite the child to come to you and take them to a safe place. Afterwards: sanctuary for the child and the protective parent, and accountability work for the adult.',
+                b: ['name', 'interpose', 'evacuate', 'sanctuary', 'growth'],
+                cost: 'If the child can\'t move toward you and nobody else is around, this is where the rule costs the most. This world answers with constant presence: kids are never alone with only one adult, and every grown-up is trained to step in with their body and voice.'
+            },
+            {
+                q: 'What if someone breaks into my home at night?',
+                instinct: 'Grab a gun, or call people with guns.',
+                say: 'My home is walls and doors. I can put more of them between us, and I don\'t need to win a fight to stay safe.',
+                loop: 'Armed homes mean break-ins turn into killings, and guns in homes kill far more family members than intruders.',
+                replace: 'Lock yourself into an inner room, make noise and call neighbors to gather outside and witness. Name it loudly through the door. Let them take the things; things can be replaced. Afterwards, ask why they needed to break in, and work on that.',
+                b: ['distance', 'name', 'witness', 'ask'],
+                cost: 'You may lose property. This world deliberately values bodies over belongings and will replace your stuff together, as a community.'
+            },
+            {
+                q: 'What if someone is sexually assaulting a person right now?',
+                instinct: 'Beat the attacker, then cage them for years.',
+                say: 'The first thing the person needs is for it to stop and for help to arrive. A crowd and a voice can make that happen without another body being hurt.',
+                loop: 'Prisons are some of the most sexually violent places on earth. Caging rapists in them grows more of what we\'re trying to stop.',
+                replace: 'Shout, film, bring everyone near you, and surround them closely so the attacker is exposed and the space is crowded. Offer the survivor a way out and accompany them. Afterwards: the survivor decides what happens next, the community names the attacker, and the attacker gets no trust or access until they take responsibility.',
+                b: ['name', 'witness', 'interpose', 'accompany', 'withdraw'],
+                cost: 'If you are alone and can\'t interrupt it with presence and voice, there is a real gap. This world puts huge effort into prevention: consent taught from childhood, no isolated spaces, and someone always on call.'
+            },
+            {
+                q: 'What if I\'m the one pinned down and being hit?',
+                instinct: 'Fight back with everything you\'ve got.',
+                say: 'Everything I do to protect myself without trying to hurt them is fair game: covering, screaming, rolling away, getting help.',
+                loop: 'Two people hurting each other rarely ends with one stopping. It ends when someone is badly injured.',
+                replace: 'Protect your head, scream for help and name exactly what is happening, then get out of reach as soon as you can. Everyone who hears you comes running and surrounds you both. Afterwards: medical care, sanctuary, a circle if you want one.',
+                b: ['name', 'distance', 'witness', 'sanctuary'],
+                cost: 'This is honestly one of the hardest edges. The rule of this world doesn\'t ask you to be calm or brave, only not to try to injure them. It bets on screaming and witnesses arriving fast, so it needs dense, connected neighborhoods.'
+            },
+            {
+                q: 'What if someone has killed several people and will kill again?',
+                instinct: 'Lock them up forever, or execute them.',
+                say: 'The goal is that nobody else dies. Distance, warning and constant witnessing can do that without us deciding who gets to be caged.',
+                loop: 'Once a society builds cages and execution chambers for "the worst", the definition of the worst keeps expanding, and the people deciding are always the powerful.',
+                replace: 'Warn everyone and name them publicly. Volunteers accompany them everywhere, at a distance and in pairs, so they are never alone with anyone. Nobody is left in a position where they could be harmed. Long-term: growth, therapy and art for as long as it takes, if they will accept it.',
+                b: ['name', 'witness', 'distance', 'accompany', 'growth'],
+                cost: 'Constant witnessing takes huge numbers of people and it never fully ends. This world chooses that over a cage, because watching is something a person can walk away from, and a cage isn\'t.'
+            },
+            {
+                q: 'What if they keep doing it after every circle and every chance?',
+                instinct: 'Fine, then they\'ve earned the cage.',
+                say: 'The rule doesn\'t run out. If what we\'re trying isn\'t working, we try something else, but we don\'t switch to force.',
+                loop: '"They had their chances" is how every system justifies the cage. Then the number of chances gets smaller every year.',
+                replace: 'Widen the distance and the warnings. Name it again. Ask a different question: what need is still going unmet? Bring new mentors and new people they might trust. Keep the door to repair open forever.',
+                b: ['distance', 'name', 'ask', 'growth', 'time'],
+                cost: 'Some people may never change. This world accepts living alongside them, at a distance and with eyes open, rather than creating a group of people allowed to cage others.'
+            },
+            {
+                q: 'What if they won\'t talk, won\'t apologize, won\'t do anything?',
+                instinct: 'Then force is the only language they understand.',
+                say: 'Nobody has to talk to us. But nobody has to trust them, follow them or be near them either.',
+                loop: 'Forcing someone into "accountability" just teaches them to fake it. Real responsibility is only ever chosen.',
+                replace: 'Keep your distance, withdraw roles and trust, name the harm openly, and leave the invitation standing. Change usually comes slowly and later, when someone has had time.',
+                b: ['distance', 'withdraw', 'name', 'time'],
+                cost: 'Some harm will go unacknowledged by the person who did it. The community can still acknowledge it for the person who was harmed, which is often what they need most.'
+            },
+            {
+                q: 'What if someone is about to set off a bomb?',
+                instinct: 'Shoot first; any force is justified.',
+                say: 'A bomb is stopped by getting people away from it and by reaching the person before they get to that point.',
+                loop: 'Nearly every bombing campaign recruits from people who\'ve been bombed, caged or humiliated by someone else\'s force.',
+                replace: 'Evacuate everyone. Talk from a safe distance: ask what they want, and who they want to talk to. Upstream: answer grievances before they become manifestos, and stay connected to the isolated people where radicalization starts.',
+                b: ['evacuate', 'distance', 'talk', 'ask'],
+                cost: 'If the evacuation is too slow, people die. This world bets that prevention and evacuation save more lives over time than armed response, and says so out loud.'
+            },
+            {
+                q: 'What if another country invades us?',
+                instinct: 'We need an army.',
+                say: 'An occupation only works if people cooperate. Millions of people who refuse to obey are harder to rule than any army.',
+                loop: 'Armies build bigger armies, and every war starts with someone sure their violence is defensive.',
+                replace: 'Mass non-cooperation: nobody works for the occupier, staffs their offices or follows their orders. Witness and broadcast everything. Get vulnerable people out of the way. Talk directly to the soldiers, many of whom never wanted to be there.',
+                b: ['withdraw', 'witness', 'evacuate', 'talk', 'name'],
+                cost: 'Occupiers can be brutal, and people will suffer. Research on civil resistance suggests that non-violent campaigns have succeeded more often than violent ones, but not every time.'
+            },
+            {
+                q: 'What if a mob is about to hurt someone?',
+                instinct: 'Send riot police to beat them back.',
+                say: 'A mob is people who think everyone else agrees with them. Show them people who don\'t.',
+                loop: 'Police charging a crowd turns one angry mob into two violent groups.',
+                replace: 'Many people form a calm line around the target, without touching anyone, open a path for the target to leave and record every face. Name individuals by name: mobs depend on being anonymous.',
+                b: ['interpose', 'evacuate', 'witness', 'name'],
+                cost: 'It takes courage and numbers. Historically, ordinary people forming a human shield have saved lives in many lynchings and pogroms, and they don\'t always succeed.'
+            },
+            {
+                q: 'What if someone is stalking a person?',
+                instinct: 'Arrest them; get a restraining order enforced by police.',
+                say: 'A restraining order is distance, and distance is ours to create. We don\'t need cages to keep someone company.',
+                loop: 'Stalkers often come back angrier after being jailed, and the person being stalked is left with nothing but a piece of paper.',
+                replace: 'The person being stalked is never alone: they have a rotating group of companions. The stalker is named to everyone in their life. Ask the stalker what they\'re looking for; obsession is often loneliness gone wrong. Offer them growth work.',
+                b: ['accompany', 'name', 'witness', 'ask', 'growth'],
+                cost: 'It asks a lot of the survivor\'s friends for a long time. This world puts its resources there instead of into prisons.'
+            },
+            {
+                q: 'What if a company is poisoning the water and won\'t stop?',
+                instinct: 'Raid them; arrest the executives.',
+                say: 'A company is just people agreeing to show up. When they stop showing up, the company stops.',
+                loop: 'Raids get a few scapegoats. The system that rewarded poisoning stays in place.',
+                replace: 'Workers walk out. Customers stop buying. Suppliers stop supplying. People sit in front of the pipes and the gates. Publish everything. The executives are named and lose every role of trust.',
+                b: ['withdraw', 'interpose', 'witness', 'name'],
+                cost: 'It\'s slower than a raid, and people may be harmed in the meantime. In exchange, it changes who has power, instead of just who\'s in charge.'
+            },
+            {
+                q: 'What if someone is high or psychotic and violent?',
+                instinct: 'Taser them, restrain them, sedate them.',
+                say: 'Fear and pain make altered states worse. Space, quiet and time make them better.',
+                loop: 'Restraint during an altered state is a major cause of deaths in custody, and of lifelong terror of asking for help.',
+                replace: 'Clear the area, give them a lot of room, lower the lights and noise, and use one calm voice. Wait it out. Offer water and a safe room they can choose to walk into.',
+                b: ['distance', 'evacuate', 'time', 'talk', 'offer', 'sanctuary'],
+                cost: 'It can take hours, and some property may be damaged. Crisis teams that work this way already exist and report very few injuries.'
+            },
+            {
+                q: 'What if someone kidnaps a person?',
+                instinct: 'Storm the building with SWAT.',
+                say: 'Storming the building is when hostages die. Talking is what usually brings them home.',
+                loop: 'Armed rescues put hostages in the crossfire, and kidnappers who expect a raid get more desperate.',
+                replace: 'Surround the place at a distance with as many witnesses as possible, so there is no way to quietly move the person. Talk: ask what they want, offer what can be offered, bring people they trust. Take as long as it takes.',
+                b: ['witness', 'distance', 'talk', 'ask', 'offer', 'time'],
+                cost: 'Negotiation sometimes fails. This world accepts that risk over training people to break down doors and shoot.'
+            },
+            {
+                q: 'What if a gang is extorting a neighborhood?',
+                instinct: 'Police crackdown and mass arrests.',
+                say: 'Gangs grow where people are scared and alone. A neighborhood that\'s connected doesn\'t pay.',
+                loop: 'Crackdowns fill prisons, and prisons are where gangs recruit.',
+                replace: 'Shop owners refuse together, publicly. Neighbors accompany anyone being threatened. Name the extortion openly. Offer the young members actual jobs and mentors; most joined for money, protection or belonging.',
+                b: ['withdraw', 'accompany', 'name', 'offer', 'growth'],
+                cost: 'The first ones to refuse take the biggest risk. This world makes sure they never refuse alone.'
+            },
+            {
+                q: 'What if the violent person is blocking the only way out?',
+                instinct: 'Then you have no choice but to fight through.',
+                say: 'Then the goal is to make more space and buy time, and get people outside to come and open another way.',
+                loop: 'Fighting in a confined space is where the worst injuries happen, on both sides.',
+                replace: 'Move as far away as the room allows, put furniture between you, and call for help loudly. People outside gather, open other doors and windows and call through to the person. Talk to them; ask what they want.',
+                b: ['distance', 'name', 'witness', 'talk', 'time'],
+                cost: 'You might be stuck for a while, and it can be terrifying. This world also builds differently: more exits, fewer places where anyone can be trapped.'
+            },
+            {
+                q: 'What if nobody comes to help?',
+                instinct: 'That\'s why we need police.',
+                say: 'Then we need neighbors, not more police. Police show up after it\'s over; neighbors are already there.',
+                loop: 'Outsourcing safety to armed strangers teaches communities that it\'s not their job to care, which makes them less safe.',
+                replace: 'Everyone is trained in the behaviors from childhood. Every block has people on call. Raising your voice is normal, and answering it is everyone\'s responsibility.',
+                b: ['witness', 'accompany', 'growth'],
+                cost: 'This world is only as strong as how connected its people are. Building that takes decades, and it is the whole project.'
+            },
+            {
+                q: 'Without jail, why would anyone follow the rules?',
+                instinct: 'Fear is what keeps people in line.',
+                say: 'Most people don\'t hurt others because they care, not because they\'re afraid. Let\'s build more of that.',
+                loop: 'Fear-based order makes people hide harm, not stop it, and it hands enormous power to whoever controls the fear.',
+                replace: 'Meet people\'s needs so harm has fewer roots. Make harm visible so it can\'t hide. Make belonging, trust and roles depend on how you treat people. Keep every door to repair open.',
+                b: ['offer', 'name', 'withdraw', 'circle', 'growth'],
+                cost: 'Some people will break the rules anyway, just like today. The question is whether the response creates more harm or less.'
+            },
+            {
+                q: 'Isn\'t shunning someone or keeping distance just punishment?',
+                instinct: 'If distance is OK, why not a cage? It\'s just more distance.',
+                say: 'Distance is me deciding where my body goes. A cage is me deciding where your body goes. That\'s the whole difference.',
+                loop: 'Once "keeping people away" means controlling where they can be, it becomes a cage again.',
+                replace: 'You may step away, close your door and withdraw your trust. You may never trap, exile or block someone from moving freely. They can always go anywhere, and the door back in stays open.',
+                b: ['distance', 'withdraw', 'circle'],
+                cost: 'Being avoided does hurt. That\'s the honest consequence of hurting people. But it is a boundary, not a cage, and it ends whenever they choose to repair it.'
+            }
+        ];
+
+        function renderWhatIfs() {
+            const term = document.getElementById('whatIfSearch').value.trim().toLowerCase();
+            const list = document.getElementById('whatIfList');
+            list.innerHTML = '';
+            const matches = whatIfs.filter(w => !term || (w.q + w.instinct + w.replace).toLowerCase().includes(term));
+            if (!matches.length) {
+                list.innerHTML = '<p style="color:var(--muted);text-align:center">No match. Try a scenario in the Scenarios tab, or ask: which non-violent behaviors could replace force here?</p>';
+                return;
+            }
+            matches.forEach(w => list.appendChild(whatIfCard(w)));
+        }
+
+        function whatIfCard(w) {
+            const card = document.createElement('details');
+            card.className = 'whatif';
+            const chips = w.b.map(id => `<span class="chip">${behaviors[id].name}</span>`).join('');
+            card.innerHTML = `
+                <summary>${w.q}</summary>
+                <div class="wi-row wi-force"><strong>What society reaches for:</strong> ${w.instinct}</div>
+                <div class="wi-row wi-say"><strong>What you can say:</strong> "${w.say}"</div>
+                <div class="wi-row"><strong>Why force keeps the violence going:</strong> ${w.loop}</div>
+                <div class="wi-row wi-nv"><strong>The non-violent replacement:</strong> ${w.replace}<div class="chips">${chips}</div></div>
+                <div class="wi-row wi-cost"><strong>The honest cost:</strong> ${w.cost}</div>`;
+            return card;
+        }
+
+        function randomWhatIf() {
+            document.getElementById('whatIfSearch').value = '';
+            renderWhatIfs();
+            const cards = document.querySelectorAll('#whatIfList .whatif');
+            cards.forEach(c => c.open = false);
+            const pick = cards[Math.floor(Math.random() * cards.length)];
+            pick.open = true;
+            pick.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         // Game state
         const state = {
             used: new Set(),          // behavior ids woven into the web
@@ -905,11 +1191,12 @@
 
         function showView(view) {
             document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
-            ['rules', 'scenarios', 'web'].forEach(v => {
+            ['rules', 'whatif', 'scenarios', 'web'].forEach(v => {
                 document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
             });
             if (view === 'scenarios') backToList();
             if (view === 'web') renderWeb();
+            if (view === 'whatif') renderWhatIfs();
         }
 
         function shuffle(array) {
