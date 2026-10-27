@@ -563,7 +563,7 @@
     paraproof: 'Immune to paralysis.',
     undead: 'Undead: immune to poison.',
     aura_barrier: 'Barrier Aura: allies within reach gain +25% physical resistance and +25% magic resistance.',
-    aegisfield: 'Its aura also softens physical blows by 15%.',
+    aegisfield: "Allies in its aura also take 15% less physical damage. This is a separate cut on top of the aura's +25% physical resistance, not more resistance: a 100-damage blow on an ally with no physical resistance of its own drops to 75, then to 64.",
     steelfield: 'Its aura also grants +10% physical resistance.',
     auramend: 'Allies in its aura have +2 Regen.',
     purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',

@@ -332,7 +332,7 @@
     beastrider: { name: 'Ride Down', desc: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.', mod: { traits: ['ridedown'] } },
     furgon: { name: 'Ancient Bark', desc: '+20 max HP and +2 Regen.', mod: { stat: { hp: 20 }, props: { regen: 2 } } },
     wisp: { name: 'Pestilence', desc: 'Its basic attack also deals 8 magic damage (never to buildings).', mod: { act: { dmg: 'magic', fixed: 8 } } },
-    barrier: { name: 'Aegis Field', desc: 'Its aura also softens physical blows by 15%.', mod: { traits: ['aegisfield'] } },
+    barrier: { name: 'Aegis Field', desc: "Allies in its aura also take 15% less physical damage. This is a separate cut on top of the aura's +25% physical resistance, not more resistance: a 100-damage blow on an ally with no physical resistance of its own drops to 75, then to 64.", mod: { traits: ['aegisfield'] } },
     enchantress: { name: 'Grand Illusion', desc: 'Its basic attack covers a full 3x3 area.', mod: { act: { pattern: 'square' } } },
     witch: { name: 'Shadow Pact', desc: '+25% damage, and the first 2 enemies it slays each battle rise as skeletons on your side.', mod: { props: { dmgMult: 0.25 }, traits: ['pact'] } },
     lightning: { name: 'Thunderhead', desc: '+25% damage, and at the start of your turn lightning strikes the nearest enemy within 3 tiles for 5.', mod: { props: { dmgMult: 0.25 }, traits: ['stormcaller'] } },
