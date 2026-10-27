@@ -1,0 +1,75 @@
+"""Pose presets (limb targets in the character frame: hip origin, y down)."""
+
+PIP_POSES = {
+    "hug": dict(near_foot=(50.0, 2.0), far_foot=(78.0, -2.0), near_hand_pos=(62.0, -58.0),
+                far_hand_pos=(74.0, -60.0), far_hand_front=True, slump=0.4),
+    "mug": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(30.0, -84.0),
+                far_hand_pos=(66.0, -86.0), far_hand_front=True, mug="both", mug_pos=(48.0, -96.0)),
+    "mug_low": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(34.0, -60.0),
+                    far_hand_pos=(70.0, -62.0), far_hand_front=True, mug="both", mug_pos=(52.0, -72.0)),
+    "sip": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(30.0, -150.0),
+                far_hand_pos=(62.0, -152.0), far_hand_front=True, mug="both", mug_pos=(46.0, -165.0),
+                mug_tilt=-0.5),
+    "pinch": dict(near_foot=(50.0, 2.0), far_foot=(78.0, -2.0), near_hand_pos=(70.0, -250.0),
+                  near_hand="pinch", far_hand_pos=(74.0, -60.0), far_hand_front=True),
+    "reach": dict(near_foot=(70.0, 2.0), far_foot=(96.0, -2.0), near_hand_pos=(-150.0, -150.0),
+                  near_hand="open", far_hand_pos=(30.0, -40.0), lean=-0.15),
+    "hands_lap": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(40.0, -50.0),
+                      far_hand_pos=(70.0, -52.0), far_hand_front=True),
+    "look_hands": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(48.0, -96.0),
+                       far_hand_pos=(78.0, -92.0), far_hand_front=True, near_hand="open", far_hand="open"),
+    "pinch_nose": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(6.0, -196.0),
+                       far_hand_pos=(70.0, -62.0), far_hand_front=True, slump=0.3),
+    "wipe_eye": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(-26.0, -236.0),
+                     far_hand_pos=(70.0, -62.0), far_hand_front=True, slump=0.2),
+    "spin_hand": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(30.0, -70.0),
+                      far_hand_pos=(118.0, -268.0), far_hand="point"),
+    "heavy": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(44.0, -44.0),
+                  far_hand_pos=(72.0, -46.0), far_hand_front=True, slump=1.0, head_dy=7.0),
+    "lean_on": dict(near_foot=(78.0, 8.0), far_foot=(104.0, 2.0), near_hand_pos=(30.0, -60.0),
+                    far_hand_pos=(66.0, -62.0), far_hand_front=True, lean=-0.32, head_dx=-24.0),
+}
+
+TESS_POSES = {
+    "mug": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(40.0, -116.0),
+                far_hand_pos=(84.0, -120.0), far_hand_front=True, mug="both", mug_pos=(62.0, -130.0)),
+    "two_mugs": dict(near_foot=(30.0, 160.0), far_foot=(70.0, 160.0), near_hand_pos=(60.0, -100.0),
+                     far_hand_pos=(120.0, -110.0), far_hand_front=True, mug="both", mug_pos=(70.0, -112.0)),
+    "sip": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(40.0, -205.0),
+                far_hand_pos=(80.0, -208.0), far_hand_front=True, mug="both", mug_pos=(58.0, -222.0),
+                mug_tilt=-0.5),
+    "hands_lap": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(60.0, -70.0),
+                      far_hand_pos=(96.0, -74.0), far_hand_front=True),
+    "squeeze": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(52.0, -150.0),
+                    far_hand_pos=(104.0, -150.0), far_hand_front=True, near_hand="open", far_hand="open"),
+    "point": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(60.0, -70.0),
+                  far_hand_pos=(215.0, -400.0), far_hand="point"),
+    "hands_up": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(-112.0, -262.0),
+                     far_hand_pos=(176.0, -272.0), near_hand="open", far_hand="open"),
+    "push": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(78.0, -178.0),
+                 far_hand_pos=(150.0, -182.0), far_hand_front=True, near_hand="open", far_hand="open"),
+    "squeeze_close": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(66.0, -152.0),
+                          far_hand_pos=(94.0, -152.0), far_hand_front=True, near_hand="open", far_hand="open"),
+    "cup_sky": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(-150.0, -318.0),
+                    far_hand_pos=(215.0, -345.0), near_hand="open", far_hand="open", near_elbow=1.0),
+    "window": dict(near_foot=(30.0, 170.0), far_foot=(60.0, 170.0), near_hand_pos=(70.0, -150.0),
+                   far_hand_pos=(132.0, -156.0), far_hand_front=True, mug="near", mug_pos=(90.0, -160.0),
+                   far_mug="#d9534f", lean=0.18),
+    "explain": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(95.0, -150.0),
+                    near_hand="open", far_hand_pos=(96.0, -74.0), far_hand_front=True),
+    "arm_around": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(60.0, -70.0),
+                       far_hand_pos=(165.0, -86.0), far_front=True, lean=0.10),
+    "stand_out": dict(standing=True, near_foot=(-22.0, 236.0), far_foot=(26.0, 236.0),
+                      near_hand_pos=(-235.0, -175.0), far_hand_pos=(240.0, -175.0), near_hand="open", far_hand="open"),
+    "stand_in": dict(standing=True, near_foot=(-12.0, 236.0), far_foot=(16.0, 236.0),
+                     near_hand_pos=(15.0, -130.0), far_hand_pos=(-5.0, -125.0), far_hand_front=True),
+    "nudge": dict(near_foot=(122.0, 8.0), far_foot=(152.0, 0.0), near_hand_pos=(60.0, -70.0),
+                  far_hand_pos=(96.0, -74.0), far_hand_front=True, lean=0.22),
+}
+
+
+def pose_for(char_name, key):
+    from rig import default_pose
+    p = default_pose()
+    p.update((PIP_POSES if char_name == "pip" else TESS_POSES)[key])
+    return p
