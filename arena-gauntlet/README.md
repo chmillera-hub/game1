@@ -203,7 +203,10 @@ on a phone turned sideways, but portrait works too.
   Wolf a mostly ranged army, Phalanx Standard a front line of three...) only when the army
   has it, or when Auto can give it within the Supply (Venom Edge on a Knight). Relics made
   for what the army already does get picked first, never Lone Wolf with Phalanx; a "Why these relics" list says what each one feeds. The relic picker
-  shows the same: "No effect in Hall battles", or what a relic needs and who could carry it.
+  shows what a relic needs and who could carry it. Relics and kit with no use in a Hall
+  battle are not offered in the sandbox at all: the gold, XP, shop, deployment-zone, crown
+  and building relics, and the Cutpurse talent, Demolisher skill, Siege Hammer and Gilded
+  Gauntlet gear and Midas enchantment (gold or buildings only; a Hall field has neither).
   A 9x3 grid sets the formation. Test fight
   plays a friendly match against any Hall army; Enter the Hall adds a copy, marked Sandbox,
   waiting to climb, and the draft stays to keep tinkering. The draft is saved on its own

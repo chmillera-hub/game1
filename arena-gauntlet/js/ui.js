@@ -4780,7 +4780,10 @@
 
   function sandboxRelicSheet(d, after) {
     const order = ['legendary', 'boss', 'rare', 'uncommon', 'common', 'event'];
-    const ids = Object.keys(RELICS).sort((a, b) => R.HALL_INERT.has(a) - R.HALL_INERT.has(b) || order.indexOf(RELICS[a].tier) - order.indexOf(RELICS[b].tier) || RELICS[a].name.localeCompare(RELICS[b].name));
+    // Relics with no use in a Hall battle (gold, XP, shops...) are not offered at all.
+    const ids = Object.keys(RELICS)
+      .filter((id) => !R.HALL_INERT.has(id))
+      .sort((a, b) => order.indexOf(RELICS[a].tier) - order.indexOf(RELICS[b].tier) || RELICS[a].name.localeCompare(RELICS[b].name));
     const html = () =>
       `${sheetHead(`Relics ${d.relics.length}/${R.SANDBOX_RELICS}`, `Tap to take or drop: one boss relic and one legendary at most, the rest any tier. Supply: ${R.sandboxSupply(d.relics)}.`, true)}
       <div class="sb-pick">${ids
@@ -4788,15 +4791,13 @@
           const on = d.relics.includes(id);
           // What it needs to do anything here: a warning when this army does not have it.
           const fit = R.relicFit(d, id);
-          const note = R.HALL_INERT.has(id)
-            ? 'No effect in Hall battles.'
-            : !fit.ok
+          const note = !fit.ok
               ? `Needs ${fit.need}.`
               : fit.fix
                 ? `Needs ${fit.need}: none yet (a ${fit.fix.what.item} on your ${fit.fix.what.unit} would do).`
                 : '';
           const tierFull = !on && !R.sandboxTierOk(d.relics, id);
-          return `<button class="sb-opt ${on ? 'on' : ''} ${R.HALL_INERT.has(id) ? 'inert' : ''}" data-sbrelic="${id}" ${!on && (d.relics.length >= R.SANDBOX_RELICS || tierFull) ? 'disabled' : ''}><span class="relic-dot tier-${RELICS[id].tier}">${ic(RELIC_ICON[id] || 'gem')}</span><span class="grow"><b>${esc(RELICS[id].name)}</b> <span class="small muted">${esc(relicTier(RELICS[id]))}</span>${tierFull ? `<span class="small sb-held">You already have a ${RELICS[id].tier} relic: one is the limit.</span>` : note ? `<span class="small sb-held">${esc(note)}</span>` : ''}<span class="small muted sb-desc">${esc(RELICS[id].desc)}</span></span>${on ? ic('check') : ''}</button>`;
+          return `<button class="sb-opt ${on ? 'on' : ''}" data-sbrelic="${id}" ${!on && (d.relics.length >= R.SANDBOX_RELICS || tierFull) ? 'disabled' : ''}><span class="relic-dot tier-${RELICS[id].tier}">${ic(RELIC_ICON[id] || 'gem')}</span><span class="grow"><b>${esc(RELICS[id].name)}</b> <span class="small muted">${esc(relicTier(RELICS[id]))}</span>${tierFull ? `<span class="small sb-held">You already have a ${RELICS[id].tier} relic: one is the limit.</span>` : note ? `<span class="small sb-held">${esc(note)}</span>` : ''}<span class="small muted sb-desc">${esc(RELICS[id].desc)}</span></span>${on ? ic('check') : ''}</button>`;
         })
         .join('')}</div>
       <div class="actions"><button class="btn primary" data-close>Done</button></div>`;
@@ -4835,7 +4836,7 @@
       const sl = { talents: TALENT_SLOTS[sp.level], skills: SKILL_SLOTS[sp.level], gear: GEAR_SLOTS[sp.level] };
       const list = (kind, table, chosen, n) =>
         Object.keys(table)
-          .filter((id) => D.eligible(sp.type, table[id]))
+          .filter((id) => D.eligible(sp.type, table[id]) && !R.kitInert(kind, id))
           .map((id) => opt(kind, id, table[id].name, table[id].desc, table[id].cost, chosen.includes(id), !chosen.includes(id) && chosen.length >= n))
           .join('');
       return `${sheetHead(`${esc(T.name)} · Level ${sp.level}`, `${R.specCost(sp)} Supply · Supply left: ${st.cap - st.used}`, true)}
@@ -4849,7 +4850,7 @@
         <h4 class="save-sec">Skills ${sp.skills.length}/${sl.skills}</h4>${list('skills', SKILLS, sp.skills, sl.skills)}
         <h4 class="save-sec">Gear ${sp.gear.length}/${sl.gear}</h4>${list('gear', GEAR, sp.gear, sl.gear)}
         <h4 class="save-sec">Enchantment</h4>${opt('enchant', '', 'None', '', 0, !sp.enchant)}${Object.keys(ENCHANTS)
-          .filter((id) => D.eligible(sp.type, ENCHANTS[id]))
+          .filter((id) => D.eligible(sp.type, ENCHANTS[id]) && !R.kitInert('enchant', id))
           .map((id) => opt('enchant', id, ENCHANTS[id].name, ENCHANTS[id].desc, ENCHANTS[id].surcharge, sp.enchant === id))
           .join('')}
         <div class="actions"><button class="btn primary" data-close>Done</button></div>`;

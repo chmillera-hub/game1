@@ -3095,11 +3095,12 @@
     sp.level = Math.max(1, Math.min(D.MAX_LEVEL, sp.level | 0 || 1));
     if (T.abilities) for (const tier of [1, 2]) if (!T.abilities[tier].includes(sp['a' + tier]) || isTalent(sp['a' + tier])) sp['a' + tier] = T.abilities[tier][0];
     const sl = slotsFor(sp.level);
-    const pick = (ids, table, n) => [...new Set(ids || [])].filter((id) => table[id] && D.eligible(sp.type, table[id])).slice(0, n);
-    sp.talents = pick(sp.talents, TALENTS, sl.talents);
-    sp.skills = pick(sp.skills, SKILLS, sl.skills);
-    sp.gear = pick(sp.gear, GEAR, sl.gear);
-    if (sp.enchant && !(ENCHANTS[sp.enchant] && D.eligible(sp.type, ENCHANTS[sp.enchant]))) delete sp.enchant;
+    // Nothing that does no good in a Hall battle (gold, buildings): the sandbox never keeps it.
+    const pick = (ids, table, n, kind) => [...new Set(ids || [])].filter((id) => table[id] && D.eligible(sp.type, table[id]) && !kitInert(kind, id)).slice(0, n);
+    sp.talents = pick(sp.talents, TALENTS, sl.talents, 'talents');
+    sp.skills = pick(sp.skills, SKILLS, sl.skills, 'skills');
+    sp.gear = pick(sp.gear, GEAR, sl.gear, 'gear');
+    if (sp.enchant && !(ENCHANTS[sp.enchant] && D.eligible(sp.type, ENCHANTS[sp.enchant]) && !kitInert('enchant', sp.enchant))) delete sp.enchant;
     return sp;
   }
 
@@ -3108,7 +3109,7 @@
     d.name = cleanText(d.name, 40);
     d.why = (Array.isArray(d.why) ? d.why : []).slice(0, 6).map((s) => cleanText(s, 140));
     const kept = [];
-    for (const id of new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))) if (kept.length < SANDBOX_RELICS && sandboxTierOk(kept, id)) kept.push(id);
+    for (const id of new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id] && !HALL_INERT.has(id)))) if (kept.length < SANDBOX_RELICS && sandboxTierOk(kept, id)) kept.push(id);
     d.relics = kept;
     const taken = new Set();
     // One copy of each item in the whole army: the first unit holding it keeps it.
@@ -3214,6 +3215,9 @@
   // campaign's crown, a Supply discount the sandbox does not use, buildings and wagons): Auto
   // never takes them, and the relic picker says so.
   const HALL_INERT = new Set(['coin_purse', 'drill_manual', 'guild_seal', 'alchemist_stone', 'kings_ransom', 'scout_map', 'gamblers_dice', 'sappers_kit', 'recruiters_bell']);
+  // Kit that only earns gold or only hits buildings and wagons (a Hall field has none).
+  const HALL_INERT_KIT = { talents: new Set(['s_cutpurse']), skills: new Set(['demolisher']), gear: new Set(['siege_hammer', 'gilded_gauntlet']), enchant: new Set(['midas']) };
+  const kitInert = (kind, id) => !!(HALL_INERT_KIT[kind] && HALL_INERT_KIT[kind].has(id));
   // What some relics need from the army to do anything: something its kit must carry
   // (poison, burns, shoves, regen), or a shape the army must have.
   const roleOf = (it) => UNITS[it.spec.type].role;
@@ -3267,7 +3271,7 @@
       for (const [k, table] of [['talents', TALENTS], ['skills', SKILLS], ['gear', GEAR]]) {
         if (sp[k].length >= sl[k]) continue;
         for (const id of Object.keys(table)) {
-          if (!D.eligible(sp.type, table[id]) || sandboxHolder(d, k, id) >= 0 || !JSON.stringify(table[id].mod || {}).match(key === 'knock' ? /"(knock|pull)"/ : new RegExp('"' + key + '"'))) continue;
+          if (!D.eligible(sp.type, table[id]) || kitInert(k, id) || sandboxHolder(d, k, id) >= 0 || !JSON.stringify(table[id].mod || {}).match(key === 'knock' ? /"(knock|pull)"/ : new RegExp('"' + key + '"'))) continue;
           consider(table[id].cost || 0, () => sp[k].push(id), { unit: T.name, item: table[id].name });
         }
       }
@@ -3374,14 +3378,14 @@
         for (const [k, table] of [['talents', TALENTS], ['skills', SKILLS], ['gear', GEAR]]) {
           if (sp[k].length >= sl[k]) continue;
           for (const id of Object.keys(table)) {
-            if (!D.eligible(sp.type, table[id]) || sandboxHolder(d, k, id) >= 0) continue;
+            if (!D.eligible(sp.type, table[id]) || kitInert(k, id) || sandboxHolder(d, k, id) >= 0) continue;
             const feeds = keys.some((key) => JSON.stringify(table[id].mod || {}).includes('"' + key + '"'));
             offer((1.5 + (table[id].cost || 0)) * (feeds ? 2 : 1), table[id].cost || 0, () => sp[k].push(id));
           }
         }
         if (!sp.enchant)
           for (const id of Object.keys(ENCHANTS)) {
-            if (!D.eligible(sp.type, ENCHANTS[id]) || sandboxHolder(d, 'enchant', id) >= 0) continue;
+            if (!D.eligible(sp.type, ENCHANTS[id]) || kitInert('enchant', id) || sandboxHolder(d, 'enchant', id) >= 0) continue;
             offer(1.5 + ENCHANTS[id].surcharge, ENCHANTS[id].surcharge, () => (sp.enchant = id));
           }
       });
@@ -3778,6 +3782,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, sandboxTierOk, autoSandbox, relicFit, HALL_INERT, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, sandboxTierOk, autoSandbox, relicFit, HALL_INERT, kitInert, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -29,7 +29,8 @@ async function test(name, fn) {
 
   await test('kits are kept legal: class talents, eligible items, one of each, within slots', () => {
     const d = R.fixSandbox({ relics: ['war_horn', 'nope', 'war_horn', 'lucky_coin', 'guild_seal', 'tyrant_heart', 'blood_pact', 'crown_command'], units: [] });
-    assert.deepStrictEqual(d.relics, ['war_horn', 'lucky_coin', 'guild_seal', 'tyrant_heart', 'blood_pact'], 'five at most, no repeats, real ones');
+    assert.deepStrictEqual(d.relics, ['war_horn', 'lucky_coin', 'tyrant_heart', 'blood_pact', 'crown_command'].filter((id, i, all) => i < 5 && R.sandboxTierOk(all.slice(0, i), id)), 'real ones, no repeats, nothing useless in the Hall (the Guild Seal goes)');
+    assert.ok(!d.relics.includes('guild_seal'));
     // One boss relic and one legendary at most: the second of each is dropped.
     const t = R.fixSandbox({ relics: ['tyrant_heart', 'crown_command', 'worldbreaker', 'mountain_heart', 'lucky_coin', 'war_horn'] });
     assert.deepStrictEqual(t.relics, ['tyrant_heart', 'worldbreaker', 'lucky_coin', 'war_horn']);
@@ -151,6 +152,24 @@ async function test(name, fn) {
     for (const t of ['knight', 'berserker', 'golem']) R.addSandboxUnit(melee, t);
     assert.ok(!R.relicFit(melee, 'lone_wolf').ok);
     assert.ok(R.relicFit(melee, 'phalanx_standard').ok);
+  });
+
+  await test('relics and kit with no use in a Hall battle are never kept, offered or auto-picked', () => {
+    const d = R.fixSandbox({ relics: ['guild_seal', 'coin_purse', 'lucky_coin', 'drill_manual'] });
+    assert.deepStrictEqual(d.relics, ['lucky_coin']);
+    R.addSandboxUnit(d, 'scout');
+    R.addSandboxUnit(d, 'knight');
+    Object.assign(d.units[0].spec, { level: 3, talents: ['s_cutpurse'], skills: ['demolisher'], gear: ['siege_hammer', 'gilded_gauntlet'], enchant: 'midas' });
+    R.fixSandbox(d);
+    const sp = d.units[0].spec;
+    assert.ok(!sp.talents.includes('s_cutpurse') && !sp.skills.includes('demolisher') && !sp.gear.length && !sp.enchant);
+    for (let seed = 1; seed <= 60; seed++) {
+      const a = R.autoSandbox(seed);
+      for (const it of a.units) {
+        for (const k of ['talents', 'skills', 'gear']) assert.ok(!it.spec[k].some((id) => R.kitInert(k, id)), `seed ${seed}: ${k}`);
+        assert.ok(!(it.spec.enchant && R.kitInert('enchant', it.spec.enchant)));
+      }
+    }
   });
 
   console.log(`sandbox: ${passed} tests passed`);
