@@ -2557,8 +2557,8 @@
           : 'Priority: from the first turn, your army heads for it and takes it.';
       selBlock = tileInfoHTML(tileF) + (loot || shrine || open ? `<div class="actions">${isFocus ? `<button class="btn" id="wrUnfocus">${ic('close')} Clear priority</button>` : `<button class="btn primary" id="wrFocus">${ic('target')} Priority</button>`}</div>${isFocus ? '' : `<p class="small muted">${why}</p>`}` : '');
     } else if (wr.dep.size === 0) {
-      helpBlock = `<div class="hint wr-help">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board and drag it to move it. Tap an empty blue tile, then a unit card, to put that unit there. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority.</div>`;
-    } else helpBlock = `<div class="small muted wr-help">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it and drag it to an open blue tile; or tap an empty blue tile, then a card. Tap an enemy or a chest to make it your army's priority.</div>`;
+      helpBlock = `<div class="hint wr-help">Study the enemy, then tap unit cards to put them in the battle (tap again to take one out). Tap a unit on the board (or hold its card) for its full loadout: level, abilities, talents, skills, gear and stats. Long-press a unit on the board and drag it to move it. Tap an empty blue tile, then a unit card, to put that unit there. Every point of Supply counts. Tap an enemy, a building or a chest to look at it, and to make it your army's priority; hold an enemy's card for its full details.</div>`;
+    } else helpBlock = `<div class="small muted wr-help">Tap a card to put a unit in or take it out; hold a card, or tap the unit on the board, for its full loadout. To move a unit, long-press it and drag it to an open blue tile; or tap an empty blue tile, then a card. Tap an enemy or a chest to make it your army's priority; hold an enemy's card for its full details.</div>`;
 
     // Every deployed unit's cost, when the Supply bar is tapped.
     const costList = wr.costOpen
@@ -2607,13 +2607,22 @@
       renderWarRoom();
     };
     for (const c of $$('.rcard[data-rid]', cmd)) tapHold(c, () => wrCard(c.dataset.rid), () => wrLoadout(c.dataset.rid));
+    // Enemy cards: a tap picks the enemy out (again to let go); holding one opens its full
+    // details at once, as Details does.
     for (const c of $$('.rcard[data-uid]', cmd))
-      c.onclick = () => {
-        wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
-        wr.sel = null;
-        wr.tile = null;
-        renderWarRoom();
-      };
+      tapHold(
+        c,
+        () => {
+          wr.inspect = wr.inspect === +c.dataset.uid ? null : +c.dataset.uid;
+          wr.sel = null;
+          wr.tile = null;
+          renderWarRoom();
+        },
+        () => {
+          const u = s.byId[+c.dataset.uid];
+          if (u) battleUnitSheet(u);
+        }
+      );
     $('#wrMeter').onclick = () => {
       wr.costOpen = !wr.costOpen;
       sfx('click');
