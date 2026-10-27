@@ -661,15 +661,16 @@ on a phone turned sideways, but portrait works too.
   a few strong units gets more turns per unit than a wide one, and one decked-out Level 3
   unit with a Cleric could roll through the elites. So every elite army fields a Shackler
   (two from Act II on, levelled with the act), within its Supply. It is the Dota-style answer to a carry (Shadow
-  Shaman's shackles, Bane's grip): it hits weakly, but twice a battle it throws a
-  chain-net at your biggest hitter and holds the chain, and that unit cannot move or act
-  for as long as the Shackler holds on, up to 3 of the Shackler's own turns (doing nothing
-  else meanwhile). Counted in its own turns, the hold lasts longer the bigger the enemy
-  army. No cure, rally or immunity slips the net; bosses are too big to hold. A glowing
-  chain runs from the Shackler to its prey. Shacklers are tough (52 HP at Level 1, 30%
-  physical and magic resistance) and a Spell Shield eats the first physical or magic hit on one, so a
-  lone carry cannot one-shot it before it acts: an army needs a second threat that can
-  reach it, or anything that paralyzes it, to break the chain. Your units' AI goes for a
+  Shaman's shackles, Bane's grip): it hits weakly, but it throws a chain-net at your
+  biggest hitter and holds the chain, and that unit cannot move or act while the
+  Shackler holds on, for 3 of the Shackler's own turns (doing nothing else meanwhile);
+  then it throws again, as often as it likes. Counted in its own turns, each hold lasts
+  longer the bigger the enemy army. No cure, rally or immunity slips the net; bosses are
+  too big to hold. A glowing chain runs from the Shackler to its prey. Shacklers are
+  tough (64 HP at Level 1, 30% physical and magic resistance) and a Spell Shield eats the
+  first physical or magic hit on one, so even a decked-out Level 3 Dragon (about 33 a
+  hit) cannot kill one before it acts: an army needs a second threat that can reach it,
+  or anything that paralyzes, shoves or drags it, to break the chain. Your units' AI goes for a
   Shackler holding one of theirs. No penalty is ever put on a unit for being used well:
   the Shackler is just there on the field, for you to plan around.
 - **Buildings and siege**: anything rooted to the field is a building: walls, gates,

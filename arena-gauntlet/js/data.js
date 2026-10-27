@@ -843,12 +843,12 @@
     // Shaman's shackles in Dota). Tough, and its Spell Shield eats the first blow.
     shackler: {
       name: 'Shackler', rarity: 'enemy', cost: 4, role: 'support',
-      hp: 52, pow: 7, armor: 0.3, res: 0.3, block: 0.15, rec: 0, move: 3,
+      hp: 64, pow: 7, armor: 0.3, res: 0.3, block: 0.15, rec: 0, move: 3,
       act: { name: 'Hooked Chain', kind: 'strike', range: [1, 2], dmg: 'phys' },
-      extra: [{ name: 'Shackles', kind: 'strike', range: [1, 5], arc: true, fx: { hold: 3 }, uses: 2 }],
+      extra: [{ name: 'Shackles', kind: 'strike', range: [1, 5], arc: true, fx: { hold: 3 } }],
       traits: ['spellshield'], tags: ['human'],
-      desc: 'Hits weakly, but quick and tough, and a Spell Shield shimmers around it: the first physical or magic hit on it does nothing, and pops the shield. Twice a battle it throws Shackles, a weighted chain-net, at one unit up to 5 tiles away and holds the chain: that unit cannot move or act for as long as the Shackler holds on, up to 3 of the Shackler\'s own turns, and the Shackler does nothing else meanwhile. No cure, rally or immunity slips the net (bosses are too big to hold). A glowing chain runs from the Shackler to the unit it holds: kill the Shackler, or paralyze it, and the net falls away.',
-      tip: 'It goes for your biggest hitter, first thing. Pop its shield with any hit, then bring a second threat that can reach it (or anything that paralyzes) to break the chain.',
+      desc: 'Hits weakly, but quick and tough, and a Spell Shield shimmers around it: the first physical or magic hit on it does nothing, and pops the shield. It throws Shackles, a weighted chain-net, at one unit up to 5 tiles away and holds the chain: that unit cannot move or act while the Shackler holds on, for 3 of the Shackler\'s own turns, and the Shackler does nothing else meanwhile. Then it throws again, as often as it likes. No cure, rally or immunity slips the net (bosses are too big to hold). A glowing chain runs from the Shackler to the unit it holds: kill it, paralyze it, or shove or drag it, and the net falls away.',
+      tip: 'It goes for your biggest hitter, first thing, and keeps it netted for as long as it stands. Pop its shield with any hit, then kill it, paralyze it, or shove or drag it to break the chain.',
     },
     castellan: {
       name: 'Castellan', rarity: 'enemy', cost: 4, role: 'tank',

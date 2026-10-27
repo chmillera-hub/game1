@@ -1551,6 +1551,8 @@
       shrug(s, v, 'steady');
       return false;
     }
+    // Dragged off its feet, a Shackler drops its chain.
+    release(s, v);
     const dx = src.x - v.x;
     const dy = src.y - v.y;
     if (Math.abs(dx) + Math.abs(dy) <= 1) return false;
@@ -2021,6 +2023,8 @@
         if (u.heldBy) release(s, s.byId[u.heldBy]);
         src.holding = u.uid;
         src.holdLeft = fx.hold;
+        // Holding the chain, it stays where it stands for the rest of its turn.
+        if (s.act && s.act.uid === src.uid) s.act.moved = true;
         u.heldBy = src.uid;
         u.para = Math.max(u.para, 99);
         u.chains = Math.max(u.chains, 99);
@@ -2118,6 +2122,8 @@
       shrug(s, u, 'steady');
       return;
     }
+    // Shoved or dragged, even into a wall it cannot pass, a Shackler drops its chain.
+    release(s, u);
     const p = forcePath(s, src, u, shoveDist(s, src, u, dist), pull);
     let from = [u.x, u.y];
     for (let i = 0; i < p.steps.length; i++) {

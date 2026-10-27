@@ -916,6 +916,8 @@
       if (e.weak && t.weak === 0 && t.acts.some((x) => x.dmg)) v += p * 0.3 * t.pow * 1.2 * (delayOf(ctx.s, t) === 0 ? 1 : 0.6);
       if (e.mark && t.mark === 0) v += p * 0.25 * 18 * hpv * Math.min(3, alliesNear(ctx, t, 5));
       if (e.knock && e.knock !== 'resist' && !e.kill) v += p * shoveValue(ctx, u, t, e.knock, t.hp - (e.dmg || 0) * p);
+      // Shoving or dragging a Shackler frees the unit it holds.
+      if (e.knock && e.knock !== 'resist' && !e.kill && t.holding && s.byId[t.holding] && s.byId[t.holding].team === u.team) v += p * s.byId[t.holding].value * 0.6;
     }
     if (a.kind === 'grow') v += shrubValue(ctx, u, target.x, target.y);
     v += spillValue(ctx, u, a, target, pv);

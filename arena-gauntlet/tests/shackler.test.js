@@ -168,6 +168,54 @@ test('the Shackler nets the biggest hitter', () => {
   assert.ok(bz.heldBy === sh.uid, `netted the Level 3 Berserker (holding ${sh.holding}, archer ${ar.uid}, berserker ${bz.uid})`);
 });
 
+test('Shackles have no limit: when its hold runs out it throws again at once', () => {
+  const { s, kn, sh } = shackled();
+  const net = sh.acts.find((a) => a.name === 'Shackles');
+  assert.ok(!net.uses && net.left === Infinity, 'no use limit');
+  E.unitTurnStart(s, sh);
+  E.unitTurnStart(s, sh);
+  E.unitTurnStart(s, sh);
+  assert.ok(!sh.holding && !kn.heldBy, 'let go after 3 of its turns');
+  assert.strictEqual(E.sitOutReason(s, sh), null, 'free to act that same turn');
+  s.side = 'E';
+  s.due = sh.uid;
+  const plan = AI.chooseActivation(s, 'E', { stance: 'balanced', temp: 0 });
+  AI.runPlan(s, plan, { stance: 'balanced', temp: 0 });
+  assert.ok(kn.heldBy === sh.uid && sh.holding === kn.uid, 'it threw the net again, and holds it');
+  assert.ok(sh.x === 4 && sh.y === 3, 'and stayed put, holding the chain');
+});
+
+test('shoving or dragging a Shackler breaks its hold, even a shove into a wall', () => {
+  for (const how of ['shove', 'pull', 'wall']) {
+    const s = battle([
+      { type: 'knight', team: 'P', x: 4, y: 7 },
+      { type: 'shackler', team: 'E', x: 4, y: how === 'wall' ? 0 : 3 },
+      { type: 'golem', team: 'P', x: 4, y: how === 'wall' ? 1 : 4 },
+    ]);
+    const [kn, sh, go] = s.units;
+    E.applyStatus(s, sh, kn, { hold: 3 }, null);
+    assert.ok(kn.heldBy === sh.uid);
+    E.applyStatus(s, go, sh, how === 'pull' ? { pull: 1 } : { knock: 1 }, null);
+    assert.ok(!sh.holding && !kn.heldBy && kn.para === 0, `${how}: the net falls away`);
+  }
+});
+
+test('a decked-out Level 3 Dragon cannot kill a Shackler before it acts: the shield, then a hit it survives', () => {
+  const run = R.newRun({ seed: 3, warband: D.WARBANDS[0].id });
+  const r = R.addRecruit(run, 'dragon');
+  r.load.lv = 3;
+  r.load.a2 = 'd_tamed';
+  for (const [kind, key, id] of [['talent', 'talents', 'd_hellfire'], ['talent', 'talents', 'd_hoard'], ['talent', 'talents', 'd_searing'], ['skill', 'skills', 'vampiric'], ['skill', 'skills', 'avatar'], ['gear', 'gear', 'flame_brand'], ['gear', 'gear', 'reactive_plate']]) r.load[key].push(R.addItem(run, kind, id).uid);
+  r.enchant = 'spellblade';
+  const s = battle([Object.assign(R.specFor(run, r), { team: 'P', x: 4, y: 5 }), { type: 'shackler', team: 'E', x: 4, y: 4 }]);
+  const [dr, sh] = s.units;
+  sh.block = 0;
+  E.hit(s, dr, sh, {});
+  assert.ok(sh.hp === sh.maxHp && sh.ward === 0, 'the first breath only pops the shield');
+  E.hit(s, dr, sh, { noCrit: true });
+  assert.ok(sh.alive && sh.hp > 0, `it survives the second (${sh.hp}/${sh.maxHp} left)`);
+});
+
 test("your army goes for the Shackler holding one of its own", () => {
   const s = battle([
     { type: 'archer', team: 'P', x: 4, y: 7 },
