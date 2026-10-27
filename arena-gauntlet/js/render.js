@@ -2584,7 +2584,7 @@
             }
             break;
           case 'sunder':
-            if (v) this.addText(v.x, v.y, 'ARMOR -10%', '#ffcf9a', { height: h, dy: -this.tw * 0.28, max: 0.8 });
+            if (v) this.addText(v.x, v.y, 'P.RES -10%', '#ffcf9a', { height: h, dy: -this.tw * 0.28, max: 0.8 });
             break;
           case 'runes':
             if (v) this.addText(v.x, v.y, 'RUNES +' + e.amount, '#d7b4ff', { height: h, dy: -this.tw * 0.28 });

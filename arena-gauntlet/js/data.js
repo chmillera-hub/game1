@@ -157,7 +157,7 @@
     f_grove: { name: 'Grove Keeper', cost: 0, desc: 'Grow reaches 1 tile further, and 4 shrubs can stand at once.', mod: { stat: { range: 1 }, props: { shrubs: 1 } } },
     f_rejuv: { name: 'Rejuvenate', cost: 1, desc: 'Active, 2 uses: heal an ally up to 3 tiles away for 16 and cure its poison and burns.',
       mod: { active: { name: 'Rejuvenate', kind: 'heal', range: [0, 3], fixed: 16, cure: true, uses: 2 } } },
-    f_ironwood: { name: 'Ironwood', cost: 1, desc: 'Its shrubs have 40% armor and magic resistance.', mod: { traits: ['ironwood'] } },
+    f_ironwood: { name: 'Ironwood', cost: 1, desc: 'Its shrubs have 40% physical and magic resistance.', mod: { traits: ['ironwood'] } },
 
     // Poison Wisp
     w_drift: { name: 'Drift', cost: 0, desc: '+1 Move, and wherever it stops it puffs spores: enemies beside it are poisoned for 1 turn (4).', mod: { stat: { move: 1 }, traits: ['sporepuff'] } },
@@ -202,7 +202,7 @@
     l_cap: { name: 'Capacitor', cost: 0, desc: 'Every hit it takes charges it: +25% damage on its next zap for each charge, up to +75%.', mod: { traits: ['capacitor'] } },
     l_shock: { name: 'Static Snare', cost: 1, desc: 'Its basic attack roots its targets for 1 turn.', mod: { act: { fx: { root: 1 } } } },
     l_over: { name: 'Overcharge', cost: 2, desc: 'Its spray is a row deeper: two rows of three, then the tip. 7 tiles.', mod: { stat: { len: 1 } } },
-    l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against armored targets (30% armor or more).', mod: { props: { vsArmored: 0.3 } } },
+    l_conduct: { name: 'Conductor', cost: 0, desc: '+30% damage against targets with 30% physical resistance or more.', mod: { props: { vsArmored: 0.3 } } },
     l_overload: { name: 'Overload', cost: 1, desc: 'When it is destroyed, it discharges: 20 magic damage to every enemy within 2 tiles.', mod: { traits: ['overload'] } },
     l_rapid: { name: 'Rapid Discharge', cost: 2, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
 
@@ -219,7 +219,7 @@
 
     // Mage Knight
     mk_ward: { name: 'Spellward Aura', cost: 0, desc: 'Adjacent allies take 20% less magic damage.', mod: { props: { magicGuard: 0.2 } } },
-    mk_arcane: { name: 'Arcane Edge', cost: 1, desc: 'Its basic attack deals magic damage: armor and block do not stop it.', mod: { act: { dmg: 'magic' } } },
+    mk_arcane: { name: 'Arcane Edge', cost: 1, desc: 'Its basic attack deals magic damage: physical resistance and block do not stop it.', mod: { act: { dmg: 'magic' } } },
     mk_brand: { name: 'Rune Brand', cost: 1, desc: 'Hits mark the target for 2 turns: it takes 25% more damage.', mod: { onHit: { mark: 2 } } },
     mk_runeward: { name: 'Runic Ward', cost: 1, desc: 'Starts every battle behind a 20-HP shield.', mod: { props: { startShield: 20 } } },
     mk_spellbreak: { name: 'Spellbreaker', cost: 0, desc: '+30% damage against spellcasters.', mod: { props: { vs: { caster: 0.3 } } } },
@@ -263,13 +263,13 @@
     ph_talons: { name: 'Searing Talons', cost: 1, desc: 'Its hits weaken the target for 2 turns: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
     ph_sun: { name: 'Sunfire', cost: 2, desc: '+25% magic damage.', mod: { props: { magicMult: 0.25 } } },
     ph_glide: { name: 'Ember Glide', cost: 0, desc: 'Its dive reaches 1 tile further.', mod: { stat: { range: 1 } } },
-    ph_cinder: { name: 'Cinder Mantle', cost: 1, desc: '+15% armor and +15% magic resistance.', mod: { stat: { armor: 0.15, res: 0.15 } } },
+    ph_cinder: { name: 'Cinder Mantle', cost: 1, desc: '+15% physical resistance and +15% magic resistance.', mod: { stat: { armor: 0.15, res: 0.15 } } },
     ph_quick: { name: 'Quick Rekindle', cost: 3, desc: 'Cooldown 1 turn shorter.', mod: { stat: { rec: -1 } } },
     ph_tears: { name: 'Phoenix Tears', cost: 1, desc: 'Active: heal itself or an ally up to 2 tiles away for 22, and cure poison and burns.',
       mod: { active: { name: 'Phoenix Tears', kind: 'heal', range: [0, 2], fixed: 22, cure: true } } },
 
     // Frost Giant
-    fg_hide: { name: 'Glacial Hide', cost: 0, desc: '+10% armor.', mod: { stat: { armor: 0.1 } } },
+    fg_hide: { name: 'Glacial Hide', cost: 0, desc: '+10% physical resistance.', mod: { stat: { armor: 0.1 } } },
     fg_frost: { name: 'Frostbite', cost: 1, desc: 'Its hits weaken the target for 2 turns: it deals 30% less damage.', mod: { onHit: { weak: 2 } } },
     fg_mass: { name: 'Mountain Born', cost: 1, desc: '+25 max HP.', mod: { stat: { hp: 25 } } },
     fg_reach: { name: 'Long Reach', cost: 0, desc: 'Its smash reaches 1 tile further.', mod: { stat: { range: 1 } } },
@@ -279,7 +279,7 @@
       mod: { active: { name: 'Avalanche', kind: 'blast', range: [2, 4], pattern: 'square', dmg: 'phys', mult: 0.8, arc: true, fx: { root: 1 } } } },
 
     // Sun Paladin
-    pa_oath: { name: 'Oath of Steel', cost: 0, desc: '+10% armor.', mod: { stat: { armor: 0.1 } } },
+    pa_oath: { name: 'Oath of Steel', cost: 0, desc: '+10% physical resistance.', mod: { stat: { armor: 0.1 } } },
     pa_aura: { name: 'Aura of Valor', cost: 1, desc: 'Adjacent allies take 15% less damage.', mod: { props: { guard: 0.15 } } },
     pa_zeal: { name: 'Zeal', cost: 2, desc: 'Its judgment reaches 1 tile further in every direction.', mod: { stat: { len: 1 } } },
     pa_sunlit: { name: 'Sunlit Armor', cost: 0, desc: '+15% magic resistance.', mod: { stat: { res: 0.15 } } },
@@ -396,7 +396,7 @@
       traits: [], tags: ['human'],
       abilities: { 1: ['s_caltrops', 's_cutpurse', 's_fleet', 's_hook'], 2: ['s_evasion', 's_mark', 's_venom'] },
       desc: 'Fast and cheap. No cooldown: it can act every single turn.',
-      tip: 'Its light hits glance off armor. Keep your backs covered against its flanking.',
+      tip: 'Its light hits do little against high physical resistance. Keep your backs covered against its flanking.',
     },
     cleric: {
       name: 'Cleric', rarity: 'common', cost: 3, role: 'support',
@@ -414,7 +414,7 @@
       traits: [], tags: ['human'],
       abilities: { 1: ['b_rage', 'b_warcry', 'b_thirst', 'b_frenzy'], 2: ['b_unstop', 'b_leap', 'b_bloodlust'] },
       desc: 'Its basic attack strikes every adjacent enemy at once.',
-      tip: 'Almost no armor or block. Arrows and spells cut it down before it arrives.',
+      tip: 'Almost no physical resistance or block. Arrows and spells cut it down before it arrives.',
     },
     skelarcher: {
       name: 'Skeleton Archer', rarity: 'common', cost: 2, role: 'ranged',
@@ -431,7 +431,7 @@
       act: { name: 'Fireball', kind: 'blast', range: [2, 4], dmg: 'magic', pattern: 'plus', ff: true, arc: true },
       traits: [], tags: ['human', 'caster'],
       abilities: { 1: ['p_kindling', 'p_ignite', 'p_firewall'], 2: ['p_range', 'p_combust', 'p_inferno'] },
-      desc: 'Its basic attack, a fireball, bursts over 5 tiles. Magic ignores armor and block, but not magic resistance.',
+      desc: 'Its basic attack, a fireball, bursts over 5 tiles. Magic ignores physical resistance and block, but not magic resistance.',
       tip: 'Spread out against fire. High magic resistance halves it.',
     },
     assassin: {
@@ -449,8 +449,8 @@
       act: { name: 'Runeblade', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: [], tags: ['human'],
       abilities: { 1: ['mk_ward', 'mk_arcane', 'mk_brand'], 2: ['mk_spellbreak', 'mk_blink', 'mk_burst', 'mk_runeward'] },
-      desc: 'Rune-etched armor shrugs off half of all magic. Strikes with a physical blade.',
-      tip: 'Light armor for a frontliner: arrows and axes hurt it more than spells do.',
+      desc: 'Rune-etched plate shrugs off half of all magic. Strikes with a physical blade.',
+      tip: 'Low physical resistance for a frontliner: arrows and axes hurt it more than spells do.',
     },
     golem: {
       name: 'Stone Golem', rarity: 'uncommon', cost: 4, role: 'tank',
@@ -458,7 +458,7 @@
       act: { name: 'Stone Fist', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: ['stoneskin'], tags: ['construct'], props: { guard: 0.2 },
       abilities: { 1: ['g_toss', 'g_quake', 'g_moss'], 2: ['g_runes', 'g_magnet', 'g_slam'] },
-      desc: 'Slow living rock: 50% armor, immune to poison and paralysis. Adjacent allies take 20% less damage.',
+      desc: 'Slow living rock: 50% physical resistance, immune to poison and paralysis. Adjacent allies take 20% less damage.',
       tip: 'Magic tears through it: it takes 25% extra magic damage. Kite it, it moves 2.',
     },
     beastrider: {
@@ -486,7 +486,7 @@
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_parasite', 'w_wither'], 2: ['w_ethereal', 'w_contagion', 'w_plague'] },
       desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages, constructs and the undead are immune.',
-      tip: 'Only 24 HP and no armor. One arrow volley can drop it.',
+      tip: 'Only 24 HP and no physical resistance. One arrow volley can drop it.',
     },
     barrier: {
       name: 'Barrier Ward', rarity: 'uncommon', cost: 3, role: 'ward',
@@ -494,7 +494,7 @@
       act: { name: 'Barrier Aura', kind: 'none' },
       traits: ['immobile', 'aura_barrier', 'nofacing'], tags: ['construct'],
       abilities: { 1: ['bw_crystal', 'bw_mend', 'bw_reach'], 2: ['bw_reflect', 'bw_shatter', 'bw_purge'] },
-      desc: 'Rooted crystal. Allies within 4 tiles gain +25% armor and +25% magic resistance.',
+      desc: 'Rooted crystal. Allies within 4 tiles gain +25% physical resistance and +25% magic resistance.',
       tip: 'It cannot move or fight. Bring physical attackers, or draw foes out of its reach.',
     },
     enchantress: {
@@ -768,7 +768,7 @@
       hp: 32, pow: 19, armor: 0.2, res: 0, block: 0.3, rec: 2, move: 3,
       act: { name: 'Heavy Bolt', kind: 'strike', range: [2, 5], dmg: 'phys', arc: true },
       traits: [], tags: ['human'], props: { pierce: 0.5 },
-      desc: 'Heavy bolts ignore half of armor, but reloading takes two turns.',
+      desc: 'Heavy bolts ignore half of physical resistance, but reloading takes two turns.',
       tip: 'Rush it while it reloads.',
     },
     skeleton: {
@@ -784,7 +784,7 @@
       hp: 26, pow: 11, armor: 0.5, res: -0.5, block: 0, rec: 1, move: 3,
       act: { name: 'Soul Drain', kind: 'strike', range: [1, 2], dmg: 'magic', fx: { weak: 1 } },
       traits: ['flying', 'undead'], tags: ['spirit', 'undead'],
-      desc: 'A restless spirit. Blades and arrows mostly pass through it (50% armor), but magic hurts it 50% more. Its touch drains the strength out of you: the unit it hits deals 30% less damage on its next turn.',
+      desc: 'A restless spirit. Blades and arrows mostly pass through it (50% physical resistance), but magic hurts it 50% more. Its touch drains the strength out of you: the unit it hits deals 30% less damage on its next turn.',
       tip: 'Bring magic or Blessed weapons. Steel barely touches it.',
     },
     necromancer: {
@@ -827,7 +827,7 @@
       act: { name: 'Flame Spit', kind: 'cone', len: 2, dmg: 'magic', ff: false },
       traits: ['flying'], tags: ['beast'],
       desc: 'A young dragon that spits fire over a short cone.',
-      tip: 'Arrows hit it well: only 20% armor.',
+      tip: 'Arrows hit it well: only 20% physical resistance.',
     },
     tower: {
       name: 'Arrow Tower', rarity: 'enemy', cost: 0, role: 'ranged',
@@ -854,7 +854,7 @@
       extra: [{ name: 'Boulder Hurl', kind: 'strike', range: [2, 4], dmg: 'phys', arc: true, mult: 0.8, uses: 3, cd: 2 }],
       traits: ['stoneskin', 'big'], tags: ['construct', 'big'], props: { guard: 0.2 },
       desc: 'Ancient king of the quarry. Hurls boulders, and its basic attack strikes a foe and everyone beside it.',
-      tip: 'Half armor but weak to magic. Slay the King to win.',
+      tip: '50% physical resistance, but weak to magic. Slay the King to win.',
     },
     warlord: {
       name: 'Grukk the Warlord', rarity: 'boss', cost: 12, role: 'melee', boss: true,
@@ -995,15 +995,15 @@
     martyr: { name: 'Martyr', cost: 1, desc: 'When it falls, heals allies within 2 tiles for 20.', mod: { traits: ['martyr'] } },
     chaos_magic: { name: 'Chaos Magic', cost: 2, desc: 'Its magic hits also inflict a random curse: burning, rooted or weakened.', req: 'magic', mod: { traits: ['chaosmagic'] } },
     bullrush: { name: 'Bull Rush', cost: 0, side: true, desc: 'Its basic attack shoves what it hits 1 tile away: it might break a line, or push a foe out of your reach. Shoved into a rock, the edge, another unit, water or lava, it takes extra damage.', req: 'damage', mod: { act: { fx: { knock: 1 } } } },
-    reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% armor.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
+    reckless: { name: 'Reckless', cost: 0, side: true, desc: '+15% damage, but -15% physical resistance.', req: 'damage', mod: { stat: { armor: -0.15 }, props: { dmgMult: 0.15 } } },
     demolisher: { name: 'Demolisher', cost: 1, desc: 'Double damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 1 } } } },
     lucky: { name: 'Lucky', cost: 2, desc: '15% chance to land a Critical hit: double damage.', req: 'damage', mod: { props: { crit: 0.15 } } },
     powder_belt: { name: 'Powder Belt', cost: 1, desc: 'When it falls, it explodes: 15 damage to every enemy beside it.', mod: { props: { deathBoom: 15 } } },
     headhunter: { name: 'Headhunter', cost: 2, desc: 'Every kill earns a trophy: +10% damage, up to 5, and heals it 6.', req: 'damage', mod: { traits: ['trophy'], props: { killHeal: 6 } } },
-    giant_slayer: { name: 'Giant Slayer', cost: 1, desc: '+30% damage against armored targets (30% armor or more).', req: 'damage', mod: { props: { vsArmored: 0.3 } } },
+    giant_slayer: { name: 'Giant Slayer', cost: 1, desc: '+30% damage against targets with 30% physical resistance or more.', req: 'damage', mod: { props: { vsArmored: 0.3 } } },
     pack_tactics: { name: 'Pack Tactics', cost: 1, desc: '+20% damage against targets your other units stand beside.', req: 'damage', mod: { props: { packMult: 0.2 } } },
     // Legendary: found from the second half of Act 2 on, more often the deeper you go.
-    avatar: { name: 'Avatar of War', cost: 3, rarity: 'legendary', desc: '+20% damage, +20 max HP and +10% armor.', req: 'damage', mod: { props: { dmgMult: 0.2 }, stat: { hp: 20, armor: 0.1 } } },
+    avatar: { name: 'Avatar of War', cost: 3, rarity: 'legendary', desc: '+20% damage, +20 max HP and +10% physical resistance.', req: 'damage', mod: { props: { dmgMult: 0.2 }, stat: { hp: 20, armor: 0.1 } } },
     time_warp: { name: 'Time Warp', cost: 4, rarity: 'legendary', desc: 'Cooldown 2 turns shorter (never below 1).', req: 'slow', mod: { stat: { rec: -2 } } },
     undying: { name: 'Undying', cost: 4, rarity: 'legendary', desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
     reapers_mark: { name: "Reaper's Mark", cost: 3, rarity: 'legendary', desc: '+40% damage to targets below half HP, and slaying an enemy resets its cooldown: it is ready again next turn.', req: 'damage', mod: { props: { execMult: 0.4 }, traits: ['bloodlust'] } },
@@ -1016,7 +1016,7 @@
     orcbane: { name: 'Orcbane Axe', cost: 1, desc: '+40% damage against orcs and goblins.', req: 'damage', mod: { props: { vs: { greenskin: 0.4 } } } },
     dragonslayer: { name: 'Dragonslayer Spear', cost: 2, desc: '+50% damage against huge foes: dragons, trolls, brutes and bosses.', req: 'damage', mod: { props: { vs: { big: 0.5 } } } },
     siege_hammer: { name: 'Siege Hammer', cost: 1, desc: 'Triple damage against buildings and wagons.', req: 'damage', mod: { props: { vs: { structure: 2 } } } },
-    armor_breaker: { name: 'Armor Breaker', cost: 2, desc: 'Each hit strips 10% armor from the target for the rest of the battle.', req: 'phys', mod: { traits: ['sunder'] } },
+    armor_breaker: { name: 'Armor Breaker', cost: 2, desc: 'Each hit strips 10% physical resistance from the target for the rest of the battle.', req: 'phys', mod: { traits: ['sunder'] } },
     healing_charm: { name: 'Healing Charm', cost: 1, desc: '+3 Regen: heals 3 HP each time it takes a turn.', mod: { props: { regen: 3 } } },
     porcupine_ring: { name: 'Porcupine Ring', cost: 1, desc: 'Enemies that strike it in melee take 6 damage and are marked for 2 turns: 25% more damage from everyone.', mod: { props: { thorns: 6 }, traits: ['porcupine'] } },
     berserker_torc: { name: "Berserker's Torc", cost: 1, desc: 'Immune to paralysis, roots, shoves and pulls, and every attempt sends it into a frenzy (+25% damage) for its next turn.', mod: { traits: ['steadfast', 'torc'] } },
@@ -1038,12 +1038,12 @@
     healing_draught: { name: 'Healing Draught', cost: 1, desc: 'Active, 1 use: heal itself or an adjacent ally for 20 and cure poison and burns.',
       mod: { active: { name: 'Healing Draught', kind: 'heal', range: [0, 1], fixed: 20, cure: true, uses: 1 } } },
     war_paint: { name: 'War Paint', cost: 0, side: true, desc: '+15% damage, but -10 max HP.', req: 'damage', mod: { stat: { hp: -10 }, props: { dmgMult: 0.15 } } },
-    feather_cloak: { name: 'Featherweight Cloak', cost: 0, side: true, desc: '+1 Move, but -10% armor.', req: 'mobile', mod: { stat: { move: 1, armor: -0.1 } } },
+    feather_cloak: { name: 'Featherweight Cloak', cost: 0, side: true, desc: '+1 Move, but -10% physical resistance.', req: 'mobile', mod: { stat: { move: 1, armor: -0.1 } } },
     chain_hook: { name: 'Chain Hook', cost: 1, desc: 'Active, 2 uses: hook an enemy 2 to 4 tiles away in a straight, open line and drag it 2 tiles closer, for 6 damage. Dragged into something, it takes extra damage.',
       mod: { active: { name: 'Chain Hook', kind: 'strike', range: [2, 4], straight: true, dmg: 'phys', fixed: 6, fx: { pull: 2 }, uses: 2 } } },
     gale_horn: { name: 'Gale Horn', cost: 1, desc: 'Active, 1 use: a gale shoves every enemy within 2 tiles 2 tiles away. Shoved into something, they take extra damage.',
       mod: { active: { name: 'Gale Horn', kind: 'nova', radius: 2, fx: { knock: 2 }, uses: 1 } } },
-    blasting_charge: { name: 'Blasting Charge', cost: 1, desc: 'Active, 1 use: blow up an adjacent target for 20 damage, triple against buildings, ignoring half of armor.',
+    blasting_charge: { name: 'Blasting Charge', cost: 1, desc: 'Active, 1 use: blow up an adjacent target for 20 damage, triple against buildings, ignoring half of physical resistance.',
       mod: { active: { name: 'Blasting Charge', kind: 'strike', range: [1, 1], dmg: 'phys', fixed: 20, pierce: 0.5, vs: { structure: 2 }, uses: 1 } } },
     frost_brand: { name: 'Frostbite Blade', cost: 2, desc: 'Hits also root the target for 1 turn: it cannot move.', req: 'damage', mod: { onHit: { root: 1 } } },
     hex_charm: { name: 'Hexing Charm', cost: 1, desc: 'Hits also weaken the target for 2 turns: it deals 30% less damage.', req: 'damage', mod: { onHit: { weak: 2 } } },
@@ -1056,8 +1056,8 @@
       mod: { active: { name: 'Meteor Hammer', kind: 'blast', range: [2, 5], pattern: 'square', dmg: 'magic', fixed: 26, arc: true, ff: true, fx: { burn: [2, 5] }, uses: 2, cd: 2, channel: true } } },
     storm_crown: { name: 'Crown of Storms', cost: 3, rarity: 'legendary', desc: 'Active, 2 uses: lightning lashes 4 tiles out in all four directions, 18 magic damage to every enemy in the lines.',
       mod: { active: { name: 'Crown of Storms', kind: 'cross', len: 4, dmg: 'magic', fixed: 18, uses: 2 } } },
-    aegis_dawn: { name: 'Aegis of Dawn', cost: 3, rarity: 'legendary', desc: '+20% armor and +20% magic resistance. Once per battle, it survives a fatal blow with 1 HP.', mod: { stat: { armor: 0.2, res: 0.2 }, traits: ['secondwind'] } },
-    vorpal_blade: { name: 'Vorpal Blade', cost: 3, rarity: 'legendary', desc: 'Physical attacks ignore all armor, and +20% damage.', req: 'phys', mod: { props: { pierce: 1, dmgMult: 0.2 } } },
+    aegis_dawn: { name: 'Aegis of Dawn', cost: 3, rarity: 'legendary', desc: '+20% physical resistance and +20% magic resistance. Once per battle, it survives a fatal blow with 1 HP.', mod: { stat: { armor: 0.2, res: 0.2 }, traits: ['secondwind'] } },
+    vorpal_blade: { name: 'Vorpal Blade', cost: 3, rarity: 'legendary', desc: 'Physical attacks ignore all physical resistance, and +20% damage.', req: 'phys', mod: { props: { pierce: 1, dmgMult: 0.2 } } },
   };
 
   // Enchantments are bound to one unit forever and raise its Supply cost.
@@ -1067,7 +1067,7 @@
     runeward: { name: 'Runeward', surcharge: 1, desc: '+20% magic resistance. Immune to paralysis.', mod: { stat: { res: 0.2 }, traits: ['paraproof'] } },
     phoenix_soul: { name: 'Phoenix Soul', surcharge: 3, desc: 'The first time it falls in a battle, it rises again with half HP.', mod: { traits: ['phoenix'] } },
     spellblade: { name: 'Spellblade', surcharge: 2, desc: 'Its attacks also deal 6 bonus magic damage.', req: 'damage', mod: { props: { bonusMagic: 6 } } },
-    frostbound: { name: 'Frostbound', surcharge: 2, desc: 'Hits root the target for 1 turn. +10% armor.', req: 'damage', mod: { onHit: { root: 1 }, stat: { armor: 0.1 } } },
+    frostbound: { name: 'Frostbound', surcharge: 2, desc: 'Hits root the target for 1 turn. +10% physical resistance.', req: 'damage', mod: { onHit: { root: 1 }, stat: { armor: 0.1 } } },
     mirror_image: { name: 'Mirror Image', surcharge: 2, desc: 'Every battle, a shadow copy of it stands beside it: 1 HP and half its damage, but a perfect decoy.', mod: { traits: ['mirrorimage'] } },
     windwalker: { name: 'Windwalker', surcharge: 2, desc: '+1 Move, and it flies over units, water and rocks.', req: 'mobile', mod: { stat: { move: 1 }, traits: ['flying'] } },
     holy_aegis: { name: 'Holy Aegis', surcharge: 2, desc: 'Adjacent allies take 15% less damage. Immune to poison.', mod: { props: { guard: 0.15 }, traits: ['poisonproof'] } },
@@ -1177,7 +1177,7 @@
     },
     {
       id: 'ember', name: 'Ember Circle',
-      desc: 'Fire and runes. Magic burns through armor; the Mage Knight holds the line.',
+      desc: 'Fire and runes. Magic ignores physical resistance; the Mage Knight holds the line.',
       units: ['pyromancer', 'mageknight', 'archer', 'scout', 'knight'], relic: 'powder_keg', gold: 50,
       items: [['skill', 'chaos_magic'], ['gear', 'spellsink_mantle']],
     },

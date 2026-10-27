@@ -20,23 +20,23 @@ Talents (each replaces the flattest talent of its class):
 | Class | Was | Now |
 | --- | --- | --- |
 | Knight | Guardian (allies beside take 15% less) | **Bodyguard**: once between its turns, takes a single-target blow meant for an ally beside it |
-| Archer | Bodkin Arrows (ignore half armor) | **Ricochet**: arrows bounce to a second enemy within 2 tiles for 50%, poison and marks included |
+| Archer | Bodkin Arrows (ignore half physical resistance) | **Ricochet**: arrows bounce to a second enemy within 2 tiles for 50%, poison and marks included |
 | Scout | Ambusher (+50% from behind) | **Cutpurse**: every hit steals 2 gold, up to 12 a battle |
 | Cleric | Fortitude (+12 HP, +15% res) | **Halo**: healing past full HP becomes a shield (up to 15) |
-| Berserker | Battle Scars (+15% armor, +10 HP) | **Blood Frenzy**: +5% damage every time it is hurt, up to +50% (the ground under it reddens) |
+| Berserker | Battle Scars (+15% physical resistance, +10 HP) | **Blood Frenzy**: +5% damage every time it is hurt, up to +50% (the ground under it reddens) |
 | Pyromancer | Flame Cloak (8 thorns) | **Combustion**: burning enemies it slays explode, 10 damage to their neighbours, setting them alight |
 | Assassin | Executioner (+40% below half HP) | **Execute**: finishes off enemies left below 20% (never bosses) |
 | Golem | Bulwark (35% guard) | **Magnetic Core**: each turn yanks the nearest enemy 2-3 tiles away a step closer |
 | Beast Rider | Swift Mount (+1 Move) | **Loyal Wolf**: when it falls, its wolf leaps free and fights on |
 | Furgon | Deep Roots (+2 regen, +10 HP) | **Bramble Burst**: its shrubs burst when destroyed, 8 damage and a root to enemies beside |
 | Poison Wisp | Lingering Spores (+1 poison turn) | **Contagion**: when an enemy carrying its poison falls, the poison leaps to its neighbours |
-| Barrier Ward | Steel Field (+10% aura armor) | **Shatter Shield**: when destroyed, every ally in its aura gets a 20 shield |
+| Barrier Ward | Steel Field (+10% aura physical resistance) | **Shatter Shield**: when destroyed, every ally in its aura gets a 20 shield |
 | Enchantress | Mind Spike (+50% damage) | **Discord**: enemies it paralyzes lash out at an ally beside them |
 | Witch | Warding Sigils (+20% res, +10 HP) | **Soul Harvest**: every enemy that falls within 3 tiles heals it 8 and adds +10% damage (up to +50%) |
 | Lightning Ward | Grounding Field (magic guard) | **Overload**: when destroyed, 20 magic damage to every enemy within 2 tiles |
 | Dragon | Ancient Hide (+30 HP) | **Hoarder**: every kill drops 8 gold, +15 HP |
-| Mage Knight | Runic Bulwark (+15% armor, +15% block) | **Runic Ward**: starts every battle behind a 20 shield |
-| Trebuchet | Wrecking Shot (ignore half armor) | **Shrapnel**: boulders spray 40% damage on enemies beside the target |
+| Mage Knight | Runic Bulwark (+15% physical resistance, +15% block) | **Runic Ward**: starts every battle behind a 20 shield |
+| Trebuchet | Wrecking Shot (ignore half physical resistance) | **Shrapnel**: boulders spray 40% damage on enemies beside the target |
 
 Level 3 masteries that were plain "+X% damage" now do something: Knight **Champion**
 (a kill heals allies beside it 10), Archer **Deadeye** (every third shot is a sure
@@ -73,7 +73,7 @@ Crown of the Old King, Aegis of Dawn, Dragon Scale (flat stat bumps). In:
   damage, -25% max HP).
 - Boss: **War Drum of Ages** (every tenth turn, one great beat: the army heals 25 and frenzies for 3 turns, announced once over the army).
 
-Second pass: the remaining plain "+X armor / +X HP / +X% damage" picks, talents, skills,
+Second pass: the remaining plain "+X physical resistance / +X HP / +X% damage" picks, talents, skills,
 gear and enchantments each got a mechanic of their own. Kept as they were, on purpose:
 upgrades that change range, area or cooldown (they change how a unit plays), the
 anti-type weapons (Blessed Blade, Orcbane Axe and the like, which are counters), and
@@ -106,7 +106,7 @@ the economy relics (Supply, gold, XP).
   taken charges +50%), **Ogre Belt** (+10 max HP per kill), **Momentum Boots** (+10%
   per tile moved before attacking), **Stunning Shield** (blocking a melee blow stuns
   the attacker), **Echo Amulet** (spells may strike twice), **Armor Breaker** (each hit
-  strips 10% armor), **Porcupine Ring** (melee attackers are pricked and marked),
+  strips 10% physical resistance), **Porcupine Ring** (melee attackers are pricked and marked),
   **Berserker's Torc** (immune to stuns, roots and knockback, and each attempt
   enrages it), plus new **Grappling Hook** (drags targets closer), **Gambler's
   Gauntlet** (half to double damage), **Hourglass Pendant** (once, a killing blow
@@ -137,7 +137,7 @@ on a phone turned sideways, but portrait works too.
   is a Cleric: every army starts with its own (see Your Cleric). The skills and gear
   offered are ones your units can use. Back
   undoes a pick; Start over deals a fresh draft. Every unit card shows all its numbers:
-  HP, damage, armor, magic resistance, block, cooldown, move, range and speed, and
+  HP, damage, physical resistance, magic resistance, block, cooldown, move, range and speed, and
   names the talent it brings (one its class has not brought from an earlier pick).
   Your Cleric sits in the army strip from the first pick, with the talent it brings:
   tap it for its details before you choose the rest. Every unit you draft joins the
@@ -297,7 +297,7 @@ on a phone turned sideways, but portrait works too.
   (3 + 2) with an extra ability. Loadouts are free to change between battles, for
   units on the field.
 - **Auto**: the War Room's Auto button builds an army for you. It weighs the
-  enemy's armor against its magic resistance: magic attackers against armored
+  enemy's physical resistance against its magic resistance: magic attackers against well-protected
   armies, physical ones against magic-resistant armies, a mix otherwise. The
   scout report shows the same comparison. If a bonus goal asks for a unit, Auto
   always fields it, and the War Room lists that unit first.
@@ -338,8 +338,8 @@ on a phone turned sideways, but portrait works too.
   Immunities that rarely matter (Unshakable) are free, and so are trades
   more than upgrades, marked "Free · side-grade": Bull Rush (your basic attack
   shoves), the Grappling Hook (it drags, for ranged units),
-  War Paint (+15% damage, -10 HP), Reckless (+15% damage, -15% armor) and the
-  Featherweight Cloak (+1 Move, -10% armor). Auto leaves side-grades to you.
+  War Paint (+15% damage, -10 HP), Reckless (+15% damage, -15% physical resistance) and the
+  Featherweight Cloak (+1 Move, -10% physical resistance). Auto leaves side-grades to you.
 - **The AI and positioning**: picks that only pay off from the right spot say how
   the AI plays them. A Guardian (or a Knight's Bodyguard, Holy Aegis, Spellward Aura,
   Grounding Field, a Golem's protection) escorts: it marches with your fragile units instead of ahead
@@ -368,10 +368,10 @@ on a phone turned sideways, but portrait works too.
   `tests/positioning.test.js` checks it.
 - **Enchantments**: binding a scroll to a unit gives it a permanent bonus and a
   Supply surcharge. It cannot be undone or moved to another unit.
-- **Damage**: physical hits (marked with a sword) are reduced by armor and block;
-  magic (a violet sparkle) is reduced by magic resistance. Armor and magic
+- **Damage**: physical hits (marked with a sword) are reduced by physical resistance and block;
+  magic (a violet sparkle) is reduced by magic resistance. Physical and magic
   resistance both cap at 50%, and some units go as low as -50%. Specters are ghosts:
-  steel mostly passes through them (50% armor, the cap) and magic tears them apart
+  steel mostly passes through them (50% physical resistance, the cap) and magic tears them apart
   (-50% magic resistance, the floor). Mage Knights do the reverse. A unit's DMG stat,
   its attacks and every damage preview show the damage-type icon.
 - **Auto battle**: you build and place the army in the war room, tap Begin battle,
@@ -484,7 +484,7 @@ on a phone turned sideways, but portrait works too.
   unit cards and the battle log show it.
 - **Fatigue**: each side has a fatigue timer of its own, off at first. Once a side's
   timer is on, each of its units loses HP whenever its turn comes, acting or passing
-  (cooling down, paralyzed, or a Barrier Ward, which never acts), past armor and
+  (cooling down, paralyzed, or a Barrier Ward, which never acts), past physical resistance and
   shields, before it moves or acts: never a whole side at once, always one unit at a
   time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its
   units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18
@@ -554,7 +554,7 @@ on a phone turned sideways, but portrait works too.
   but far less than when it zapped everything around it. The AI (yours and the
   enemy's) does not step into its reach unless that move lets it hit a living unit the
   same turn; it goes around, and leaves the ward for last. A Barrier Ward gives allies within 4
-  tiles +25% armor and +25% magic resistance (+35% armor with Steelfield), and nothing
+  tiles +25% physical resistance and +25% magic resistance (+35% physical resistance with Steelfield), and nothing
   else: poison and paralysis still take inside it. It has 52 HP (it had 40 when its aura
   also stopped poison and paralysis).
 - **Friendly fire**: every damaging area attack hits your own fighters in its area
@@ -603,7 +603,7 @@ on a phone turned sideways, but portrait works too.
   Orc Brute's maul) and some drag it straight in (the Scout's Grapnel, a Grappling Hook, a Chain
   Hook, the Witch's Void Grasp, the Enchantress's Siren's Lure, a Giant Spider's web,
   Grukk the Warlord's chain). It moves tile by tile, and whatever stops it hurts, past
-  armor and block: a rock or the edge of the field 8; another unit or a building 6,
+  physical resistance and block: a rock or the edge of the field 8; another unit or a building 6,
   and that one takes 6 too, friend or foe (a building can break, coins and all);
   water 6, after which it climbs out onto the nearest dry tile, rooted for a turn and
   with any burn put out; lava 12, and it climbs out burning. Flyers sail over water
@@ -633,7 +633,7 @@ on a phone turned sideways, but portrait works too.
   leaves them be while the fight is on (the AI gives them no value at all until then).
   Once the boss and its retinue fall, the cleanup begins, your army's fatigue sets in
   and it breaks what wreckage it can before that fatigue tells. A cart takes a hit or
-  two (22 HP, light armor, and wood burns). In simulated campaigns a winning army
+  two (22 HP, low physical resistance, and wood burns). In simulated campaigns a winning army
   salvages about half of it, anywhere from none to all four, and loses about three
   units to fatigue doing so (still a win, and nobody is lost for good). Their HP bars
   show from the start, and the boss line in the goals says how much gold waits there.

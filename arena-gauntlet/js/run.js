@@ -2790,9 +2790,9 @@
     const p = damageProfile(enc);
     const a = Math.round(p.armor * 100) + '%';
     const r = Math.round(p.res * 100) + '%';
-    if (p.lean === 'magic') return `Their armor (${a} on average) outweighs their magic resistance (${r}): magic hits harder here. Auto favors magic attackers.`;
-    if (p.lean === 'phys') return `Their magic resistance (${r} on average) outweighs their armor (${a}): steel hits harder here. Auto favors physical attackers.`;
-    return `Their armor (${a}) and magic resistance (${r}) are close: both damage types work. Auto mixes physical and magic attackers.`;
+    if (p.lean === 'magic') return `Their physical resistance (${a} on average) outweighs their magic resistance (${r}): magic hits harder here. Auto favors magic attackers.`;
+    if (p.lean === 'phys') return `Their magic resistance (${r} on average) outweighs their physical resistance (${a}): steel hits harder here. Auto favors physical attackers.`;
+    return `Their physical resistance (${a}) and magic resistance (${r}) are close: both damage types work. Auto mixes physical and magic attackers.`;
   }
 
   // Plain-language counter tips for the scout report.
@@ -2819,7 +2819,7 @@
     if (count((T) => T.act.dmg === 'magic') >= 2) tips.push('Heavy enemy magic: Mage Knights, Silk Mantles and a Barrier Ward blunt it. Spread out.');
     if (has('knight', 'castellan')) tips.push('Knights block 70% of frontal blows. Hit them from the side or behind, or use magic.');
     if (has('skeleton', 'specter', 'colossus', 'lich', 'skelarcher')) tips.push('Undead: magic and Blessed Blades shatter them.');
-    if (has('specter')) tips.push('Specters are ghosts: steel mostly passes through them (50% armor), but magic tears them apart.');
+    if (has('specter')) tips.push('Specters are ghosts: steel mostly passes through them (50% physical resistance), but magic tears them apart.');
     if (has('orc', 'brute', 'goblin_archer', 'sapper', 'shaman', 'warlord')) tips.push('Greenskins: an Orcbane Axe deals 40% more. Kill the Shaman before the drums start.');
     if (has('sapper')) tips.push('Goblin Sappers explode beside you. Shoot them at range and keep a gap between your units.');
     if (has('wreckage')) tips.push('Wreckage holds gold, but your army leaves it be until the boss and its retinue fall. Then its fatigue sets in: the faster you win, the more you salvage.');
@@ -2832,7 +2832,7 @@
     if (has('brute', 'warlord')) tips.push('Brutes shove and Grukk drags: keep water, lava and rocks out from behind your front line.');
     if (has('assassin', 'beastrider', 'scout', 'warg', 'wolf', 'cutthroat')) tips.push('Fast flankers: face your fragile units toward them and screen them with tanks or shrubs.');
     if (has('shaman')) tips.push('Orc Shamans drive the warband into a frenzy (25% more damage): kill the drummer first.');
-    if (has('golem', 'golem_king')) tips.push('Golems have 50% armor but take 25% extra from magic.');
+    if (has('golem', 'golem_king')) tips.push('Golems have 50% physical resistance but take 25% extra from magic.');
     if (has('dragon', 'ashen_tyrant', 'drake', 'brute', 'colossus')) tips.push('Huge foes: Dragonslayer Spears deal 50% more to them.');
     return tips.slice(0, 4);
   }

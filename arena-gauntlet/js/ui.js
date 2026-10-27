@@ -17,7 +17,7 @@
   const pct = (v) => Math.round(v * 100) + '%';
   // Damage types at a glance: a sword for physical, a violet sparkle for magic.
   const DMG_TYPES = {
-    phys: { icon: 'sword', tip: 'Physical damage: armor and block reduce it' },
+    phys: { icon: 'sword', tip: 'Physical damage: physical resistance and block reduce it' },
     magic: { icon: 'magic', tip: 'Magic damage: magic resistance reduces it' },
   };
   const dmgIcon = (type) => (DMG_TYPES[type] ? `<span class="dt dt-${type}" title="${DMG_TYPES[type].tip}">${ic(DMG_TYPES[type].icon)}</span>` : '');
@@ -266,7 +266,7 @@
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
     const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
-    return `<div class="stats">${power}${st(pct(u.armor), 'Armor')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
+    return `<div class="stats">${power}${st(pct(u.armor), 'P.Res', 'Physical resistance: cuts physical damage by this much')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
   }
 
   // A shove or pull in a preview: where it goes and what it hits.
@@ -306,7 +306,7 @@
   function edgeText(a) {
     const bits = [];
     if (a.vs) for (const k in a.vs) bits.push(`+${pct(a.vs[k])} against ${vsName(k)}`);
-    if (a.pierce) bits.push(`ignores ${pct(a.pierce)} of armor`);
+    if (a.pierce) bits.push(`ignores ${pct(a.pierce)} of physical resistance`);
     return bits.length ? ' ' + cap1(bits.join(', ')) + '.' : '';
   }
 
@@ -555,13 +555,13 @@
     poisonproof: 'Immune to poison.',
     paraproof: 'Immune to paralysis.',
     undead: 'Undead: immune to poison.',
-    aura_barrier: 'Barrier Aura: allies within reach gain +25% armor and +25% magic resistance.',
+    aura_barrier: 'Barrier Aura: allies within reach gain +25% physical resistance and +25% magic resistance.',
     aegisfield: 'Its aura also softens physical blows by 15%.',
-    steelfield: 'Its aura also grants +10% armor.',
+    steelfield: 'Its aura also grants +10% physical resistance.',
     auramend: 'Allies in its aura have +2 Regen.',
     purge: 'Allies in its aura are cured of roots and burns at the start of each of its turns.',
     thornwall: 'Its shrubs are tougher and prick melee attackers.',
-    ironwood: 'Its shrubs have 40% armor and magic resistance.',
+    ironwood: 'Its shrubs have 40% physical and magic resistance.',
     ridedown: 'After moving 3 or more tiles, its basic attack shoves the target back 1 tile.',
     stormcaller: 'At the start of each of its turns, lightning strikes the nearest enemy within 3 tiles for 5.',
     midas: 'Every enemy it slays earns 6 gold.',
@@ -610,12 +610,12 @@
     if (P.chargeMult) out.push(`Charge: +${pct(P.chargeMult)} damage after moving 3 or more tiles.`);
     if (P.execMult) out.push(`+${pct(P.execMult)} damage to targets below half HP.`);
     if (P.rageMult) out.push(`+${pct(P.rageMult)} damage while below half HP.`);
-    if (P.pierce) out.push(`Ignores ${pct(P.pierce)} of armor.`);
+    if (P.pierce) out.push(`Ignores ${pct(P.pierce)} of physical resistance.`);
     if (P.packMult) out.push(`+${pct(P.packMult)} damage when an ally flanks the same target.`);
     if (P.bonusMagic) out.push(`Hits deal ${P.bonusMagic} bonus magic damage.`);
     if (P.dmgMult) out.push(`+${pct(P.dmgMult)} damage.`);
     if (P.vs) for (const k in P.vs) out.push(`+${pct(P.vs[k])} damage against ${vsName(k)}.`);
-    if (P.vsArmored) out.push(`+${pct(P.vsArmored)} damage against armored targets.`);
+    if (P.vsArmored) out.push(`+${pct(P.vsArmored)} damage against targets with 30% physical resistance or more.`);
     if (u.boss) out.push('Boss: immune to paralysis, shoves and pulls.');
     return [...new Set(out)];
   }
@@ -2379,7 +2379,7 @@
             (u) => `<button class="rcard ${wr.inspect === u.uid ? 'sel' : ''} ${missionTarget(u) ? 'vip' : ''}" data-uid="${u.uid}">${missionTarget(u) ? `<span class="flag vip">${ic('crown')} ${missionTarget(u) === 'boss' ? 'Boss' : 'Commander'}</span>` : ''}
               <canvas data-p="${u.type}:E"></canvas>
               <span class="nm">${esc(UNITS[u.type].name)} ${u.level > 1 ? levelBadge(u.level) : ''}</span>
-              <span class="ty">${u.bounty ? `${ic('gold')} ${u.bounty} gold inside` : esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' arm · ' + pct(u.res) + ' res')}</span></button>`
+              <span class="ty">${u.bounty ? `${ic('gold')} ${u.bounty} gold inside` : esc(u.a1 ? ABILITIES[u.a1].name : u.acts.length > 1 ? u.acts[1].name : pct(u.armor) + ' P.Res · ' + pct(u.res) + ' M.Res')}</span></button>`
           )
           .join('')}</div>
         ${reinforcementsHTML(s)}
@@ -2402,8 +2402,8 @@
       const canFocus = focusable(u);
       selBlock = `<div class="hint">${
         u.bounty
-          ? `${ic('gold')} ${esc(UNITS[u.type].name)}: ${u.hp} HP, ${pct(u.armor)} armor. It cannot fight back. Break it and your army picks up <b>${u.bounty} gold</b>, paid with the battle's gold when you win.`
-          : `${missionTarget(u) === 'Commander' ? `${ic('crown')} <b>Enemy Commander</b>, ${/^[AEIOU]/.test(UNITS[u.type].name) ? 'an' : 'a'} ` : 'Enemy '}${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} armor, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
+          ? `${ic('gold')} ${esc(UNITS[u.type].name)}: ${u.hp} HP, ${pct(u.armor)} physical resistance. It cannot fight back. Break it and your army picks up <b>${u.bounty} gold</b>, paid with the battle's gold when you win.`
+          : `${missionTarget(u) === 'Commander' ? `${ic('crown')} <b>Enemy Commander</b>, ${/^[AEIOU]/.test(UNITS[u.type].name) ? 'an' : 'a'} ` : 'Enemy '}${esc(UNITS[u.type].name)}${u.level > 1 ? ' (Level ' + u.level + ')' : ''}: ${pct(u.armor)} physical resistance, ${pct(u.res)} magic resistance. Red tiles on the board: everywhere it could hit on its next turn, splash included.`
       }</div>
         ${behindHint(s, u.uid)}
         ${u.bounty ? '' : actsHTML(u)}
@@ -2536,7 +2536,7 @@
       const n = (t) => types.filter((x) => x === t).length;
       const plural = (k, w) => `${k} ${w} attacker${k === 1 ? '' : 's'}`;
       const got = n('magic') && n('phys') ? `${plural(n('magic'), 'magic')} and ${plural(n('phys'), 'physical')}` : n('magic') ? plural(n('magic'), 'magic') : plural(n('phys'), 'physical');
-      const a = `armor ${Math.round(p.armor * 100)}%`;
+      const a = `physical resistance ${Math.round(p.armor * 100)}%`;
       const r = `magic resistance ${Math.round(p.res * 100)}%`;
       const owned = (t) => run.roster.some((x) => UNITS[x.type].act.dmg === t);
       let why;
@@ -5065,7 +5065,7 @@
           <li><b>Regen</b> heals a unit whenever its turn comes, acting or passing. It comes from a few talents, gear and units, and it all adds up; only the rare boss relic Sacred Chalice gives your whole army regen. A unit card shows it as ${ic('heart')} Regen.</li>
           <li><b>A mission done is the win</b>: breaking the cage, the gate, the warbanner, the totems or the wagons, holding the shrine, slaying the commander or the boss, or outlasting the waves wins the battle there and then: nothing after it can take the win away. The battle goes on, though: both sides' fatigue switches on (see Fatigue), so the enemy wears down while your army grabs what else it can, a few more barricades, the loot or a bonus goal, before fatigue wears it down too. Reinforcements keep marching in (until turn ${R.OVERTIME}), so the ambush bonus is still there to chase, or you can leave them be and go for the gold. And every enemy unit your army cuts down, before the win or after, is worth a coin or two: 1 gold, 2 for a big one (3 Supply or more). Tap <b>Finish now</b> whenever you like. "Lose no unit" and "win within N turns" goals are judged at the moment the mission was done. Rushing the mission is a way to beat an army too tough to grind down.</li>
           <li><b>Cleanup</b>: when the enemy army falls with loot or gold-bearing or goal buildings still on the field, the win is yours at once and the battle goes on while your army collects them: buildings, guards still at their posts, loot. Your fatigue switches on that moment, from 1 (or carries on, if it was on already). It cannot cost you the battle, and there is no time limit: it ends when nothing worth having is left, when your army has fallen, or when you tap Finish now. Flawless and fast-win goals count from the moment the army fell.</li>
-          <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past armor and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
+          <li><b>Fatigue</b>: each side has its own fatigue timer, off at first. Once a side's timer is on, each of its units loses HP whenever its turn comes, acting or passing, past physical resistance and shields, before it moves, acts or passes: never a whole side at once, always one unit at a time. A side's first hit is 1, then 2, 3 and so on, one more every time one of its units takes its turn: five of your units passing in a row at 15 lose 15, 16, 17, 18 and 19. The two sides count apart, and nothing resets or doubles a count. Your timer switches on when you do the mission or the enemy army falls; the enemy's when you do the mission. On turn ${R.OVERTIME} every timer still off switches on, and one already on carries on untouched. From turn ${R.OVERTIME} no more reinforcements come. The top bar shows each side's next hit. Big units and regen last longest, so a tough tank can win a long battle on its own. The last side standing wins.</li>
           <li><b>The AI knows your positioning picks</b>: the battles play themselves, but your army's AI is built to play to every relic, talent, skill and piece of gear that depends on where units stand. With the Lone Wolf Pelt it keeps your units apart; with the Phalanx Standard it closes ranks; Guardians escort the fragile; flankers go round the side or back; Thunderstep units end their moves beside enemies; a Furgon grows its shrubs across the path of enemy melee units heading for your Cleric (or your most wounded unit); Ricochet and Shrapnel pick targets in a crowd; and so on. Each such pick says how the AI plays it, at the end of its description ("The AI keeps your units apart.").</li>
           <li><b>Nobody surrenders</b>: a battle ends only when one side has no units left. Units that cannot attack (a Furgon, a Barrier Ward) fight on, and the enemy must still bring them down; if neither side can hurt the other, fatigue settles it. Summoned shrubs do not count: they take no fatigue, and a side with only shrubs left has lost.</li>
           <li>A unit's own attack is its <b>basic attack</b> (its <b>basic ability</b> for healers and helpers); only the abilities it picks go by name.</li>
@@ -5076,10 +5076,10 @@
         </ul>
         <h4>Damage, facing and defense</h4>
         <ul>
-          <li>Physical attacks are reduced by <b>armor</b> and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
+          <li>Physical attacks are reduced by <b>physical resistance</b> (P.Res on a unit's card: 30% cuts every physical hit by 30%) and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, lightning bolts, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
           <li>When a unit finishes its turn it turns to face the nearest enemy.</li>
-          <li>Magic ignores armor and block, but is reduced by <b>magic resistance</b>. No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
+          <li>Magic ignores physical resistance and block, but is reduced by <b>magic resistance</b> (M.Res). No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>
         <h4>Missions</h4>
@@ -5092,7 +5092,7 @@
         <h4>Pushes and pulls</h4>
         <ul>
           <li>Some attacks <b>shove</b> a unit away (Shield Bash, Ground Slam, Boulder Toss, Arcane Burst, Wing Buffet, the Bull Rush skill, a Gale Horn, an Orc Brute's maul) or <b>drag</b> it in (the Scout's Grapnel, a Grappling Hook or Chain Hook, a Magnetic Core, Void Grasp, Siren's Lure, a spider's web, Grukk's chain). It moves in a straight line, tile by tile.</li>
-          <li><b>What stops it hurts</b>, past armor and block: a rock or the edge of the field ${E.IMPACT.rock}; another unit or a building ${E.IMPACT.unit}, and that one takes ${E.IMPACT.unit} too, friend or foe; water ${E.IMPACT.water}, and it climbs out onto the nearest dry tile, rooted for a turn (the water puts out burns); lava ${E.IMPACT.lava}, and it climbs out burning.</li>
+          <li><b>What stops it hurts</b>, past physical resistance and block: a rock or the edge of the field ${E.IMPACT.rock}; another unit or a building ${E.IMPACT.unit}, and that one takes ${E.IMPACT.unit} too, friend or foe; water ${E.IMPACT.water}, and it climbs out onto the nearest dry tile, rooted for a turn (the water puts out burns); lava ${E.IMPACT.lava}, and it climbs out burning.</li>
           <li>Flyers sail over water and lava. Bosses, huge units and the steadfast (Unstoppable, Unshakable, Iron Will) never budge. A hook flies straight: along a row or column, with no rock or unit in between. A blocked blow shoves nobody.</li>
           <li>Relics: the Iron Ram adds 6 to every impact, the Tidecaller's Conch shoves and drags a tile further, and the Anchor Stone keeps your units from being moved at all.</li>
         </ul>
