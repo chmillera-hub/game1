@@ -2930,13 +2930,33 @@
     return !there || there === rid;
   }
 
-  // Dragging: the unit follows the finger tile by tile over open blue tiles.
+  // The open blue tile nearest (x, y) for a dragged unit (ties: the one nearest `near`).
+  function wrNearestOpen(rid, x, y, near) {
+    const wr = UI.wr;
+    let best = null;
+    let bd = Infinity;
+    for (let ty = 0; ty < wr.s.h; ty++)
+      for (let tx = 0; tx < wr.s.w; tx++) {
+        if (!wrDropOK(rid, { x: tx, y: ty })) continue;
+        const d = Math.abs(tx - x) + Math.abs(ty - y) + (near ? (Math.abs(tx - near.x) + Math.abs(ty - near.y)) * 0.01 : 0);
+        if (d < bd) {
+          bd = d;
+          best = { x: tx, y: ty };
+        }
+      }
+    return best;
+  }
+
+  // Dragging: the unit follows the finger tile by tile over open blue tiles. Over another
+  // of your units it drops into the nearest open blue tile instead (units never swap).
   function wrDragMove(hit) {
     const wr = UI.wr;
     if (!wr || !wr.drag) return;
     const b = UI.board;
-    const t = hit && hit.tile;
+    let t = hit && hit.tile;
     const v = [...b.vis.values()].find((x) => x.rid === wr.drag.rid);
+    const other = t && wrRidAt(t.x, t.y);
+    if (other && other !== wr.drag.rid) t = wrNearestOpen(wr.drag.rid, t.x, t.y, wr.drag.to || wr.dep.get(wr.drag.rid));
     if (wrDropOK(wr.drag.rid, t)) {
       b.ov = Object.assign({}, b.ov, { ghost: [t.x, t.y], select: [t.x, t.y] });
       if (v) {
@@ -2961,12 +2981,11 @@
     }
     const tile = hit && hit.tile;
     const onUnit = tile && wrRidAt(tile.x, tile.y) && wrRidAt(tile.x, tile.y) !== d.rid;
-    // On another unit: back where it was (units never swap). Just past the blue tiles: the
-    // last open blue tile it crossed.
-    const t = wrDropOK(d.rid, tile) ? tile : onUnit ? null : d.to;
+    // On another unit: the nearest open blue tile to it (units never swap). Just past the
+    // blue tiles: the last open blue tile it crossed.
+    const t = wrDropOK(d.rid, tile) ? tile : onUnit ? wrNearestOpen(d.rid, tile.x, tile.y, d.to || wr.dep.get(d.rid)) : d.to;
     if (t && wr.dep.has(d.rid)) return wrPlace(t.x, t.y);
     wr.sel = null;
-    if (onUnit) toast('That tile is taken: it goes back. Units never swap places.');
     renderWarRoom();
   }
 
@@ -5097,7 +5116,7 @@
           <li>Each army's <b>Supply</b> shows in a small badge by its back row (the enemy's top right, yours bottom left): in battle what is still standing of what took the field, in the War Room what you field against what the enemy brings. Challenge cards and the Hall of Fame show it too.</li>
           <li>The battle's goals stay pinned at the top of the panel under the board: the mission and how it stands, gold still in the field, bonus goals and their rewards, and the next reinforcements. Their full wording is further down, under Mission details.</li>
           <li>Tap a rock, a chest, the shrine, a hazard or a red landing tile to see what it does.</li>
-          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up (it pops up and wriggles in your hand) and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places. In battle, long-press any unit for everything about it.</li>
+          <li>In the war room, tap a unit (or hold its card) for its full loadout and stats; long-press a unit on the board to pick it up (it pops up and wriggles in your hand) and drag it to an open blue tile to move it (the board holds still while you drag). Tap an empty blue tile, then a unit card, to put that unit there. Units never swap places: drag one over another and it settles into the nearest open blue tile instead. In battle, long-press any unit for everything about it.</li>
           <li>Pinch to zoom and drag to move the board.</li>
           <li>Battles play best with your phone turned sideways.</li>
         </ul>

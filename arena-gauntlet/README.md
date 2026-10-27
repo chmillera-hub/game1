@@ -249,7 +249,8 @@ on a phone turned sideways, but portrait works too.
   it on the board: it pops up off its tile and wriggles in your hand, so you can see it
   past your finger (phones that can buzz give a short buzz). Drag it to an open blue
   tile and let go; it drops down with a little bump. The board holds still while you
-  drag. Units never swap places: dropped on another unit, it goes back. Or
+  drag. Units never swap places: dragged over another unit, it settles into the open blue
+  tile nearest it (and lands there if you let go). Or
   tap an empty blue tile first, then a unit card: that unit goes there (one already on
   the field moves there). A tap just
   off a blue tile still places it on the nearest one, and a tap on the empty space
