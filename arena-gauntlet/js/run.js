@@ -2033,7 +2033,7 @@
       choices: (run, c) => [
         { id: 'hire', label: 'Hire (65 gold)', detail: `An enchanted ${uname(c.unit)} joins, bound with ${ENCHANTS[c.enchant].name}: ${ENCHANTS[c.enchant].desc}`, enabled: run.gold >= 65 },
         { id: 'duel', label: 'Duel for the blade', detail: `Pick a fighter. Even odds: it wins, and the blade's magic binds to it (${ENCHANTS[c.enchant].name} if it can take it, another enchantment if not, replacing any it has). Or it loses, and the surgeon costs you 25 gold.`, enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
-        { id: 'leave', label: 'Move on', detail: 'Leave the mercenary to the whetstone.' },
+        { id: 'stories', label: 'Trade war stories by his fire', detail: '+12 Commander XP.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
         if (choice === 'hire') {
@@ -2051,7 +2051,8 @@
           run.gold -= lost;
           return `The sellsword is faster. ${u.name} limps away with a lesson and a stitched arm (${lost} gold to the surgeon).`;
         }
-        return 'You leave the mercenary to the whetstone.';
+        gainXp(run, 12);
+        return 'He has fought for every banner on the map. Your officers listen, and learn. +12 Commander XP.';
       },
     },
     {
@@ -2062,7 +2063,7 @@
       choices: (run, c) => [
         c.skill ? { id: 'book', label: `Take the book: ${SKILLS[c.skill].name}`, detail: `${SKILLS[c.skill].desc} (Skill, ${SKILLS[c.skill].cost} Supply)` } : null,
         c.talent ? { id: 'relic', label: `Open the reliquary: ${TALENTS[c.talent].name}`, detail: talentLine(c.talent) } : null,
-        { id: 'leave', label: 'Leave both', detail: 'Let the candles burn.' },
+        { id: 'pray', label: 'Kneel and pray for the fallen', detail: '+12 Commander XP.' },
       ].filter(Boolean),
       resolve: (run, c, choice) => {
         if (choice === 'book') {
@@ -2073,7 +2074,8 @@
           addItem(run, 'talent', c.talent);
           return `A warm light settles on your camp. ${TALENTS[c.talent].name} is yours, for any ${uname(TALENTS[c.talent].cls)}.`;
         }
-        return 'You bow your head and walk on.';
+        gainXp(run, 12);
+        return 'You kneel until the candles burn low, and rise with a clearer head. +12 Commander XP.';
       },
     },
     {
@@ -2084,7 +2086,7 @@
       choices: (run, c) => [
         c.relic ? { id: 'dice', label: `Dice for the ${RELICS[c.relic].name} (30 gold stake)`, detail: `${RELICS[c.relic].desc} Even odds.`, enabled: run.gold >= 30 } : null,
         { id: 'wager', label: "Stake a soldier's service", detail: 'Pick a unit. Even odds: it wins big and comes back bound with a random enchantment, or it gambles itself into the bookmaker\'s employ and leaves your army for good.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
-        { id: 'leave', label: 'Walk away', detail: 'Some games are rigged.' },
+        { id: 'tells', label: "Watch the tables and learn the players' tells", detail: '+12 Commander XP.' },
       ].filter(Boolean),
       resolve: (run, c, choice, rid, rng) => {
         if (choice === 'dice') {
@@ -2104,7 +2106,8 @@
           dismiss(run, u);
           return `${u.name} loses the roll, shrugs, and starts dealing cards for the bookmaker. They are gone.`;
         }
-        return 'You leave the dice to braver fools.';
+        gainXp(run, 12);
+        return 'A twitch of the eye, a hand to the purse: you learn to read a bluff. +12 Commander XP.';
       },
     },
     {
@@ -2195,11 +2198,12 @@
       text: 'A herald blocks the road. "The champions of this land challenge any who pass. Win, and claim a relic of the old kings."',
       choices: () => [
         { id: 'accept', label: 'Accept the challenge', detail: 'Fight an elite battle. Victory earns a relic and extra XP.' },
-        { id: 'decline', label: 'Decline', detail: 'The herald sneers as you pass.' },
+        { id: 'watch', label: 'Watch the champions drill instead', detail: '+15 Commander XP.' },
       ],
       resolve: (run, c, choice) => {
         if (choice === 'accept') return { text: 'The champions take the field.', battle: 'elite' };
-        return 'You decline. Some battles are not worth fighting.';
+        gainXp(run, 15);
+        return 'You watch them drill until dusk and steal every trick you can. +15 Commander XP.';
       },
     },
     {
@@ -2209,7 +2213,7 @@
       choices: (run) => [
         { id: 'transmute', label: 'Transmute (50 gold)', detail: 'Pick a common or uncommon unit. It becomes a random unit of a higher rarity, keeping its name.', enabled: run.gold >= 50 && anyPick(run, 'transmute'), pick: { filter: 'transmute' } },
         { id: 'mutagen', label: 'The green vial (free)', detail: 'Pick a unit. It becomes a random unit of the same rarity, keeping its name and enchantment if it fits. A sidestep, not a step up.', enabled: anyPick(run, 'notcore'), pick: { filter: 'notcore' } },
-        { id: 'leave', label: 'Decline', detail: 'Leave the alchemist to the fumes.' },
+        { id: 'recipes', label: 'Trade field remedies with him', detail: '+12 Commander XP.' },
       ],
       resolve: (run, c, choice, rid, rng) => {
         const u = unitById(run, rid);
@@ -2229,18 +2233,22 @@
           reshape(u, t);
           return `${u.name} the ${old} gulps it down, shudders, and stands up a ${uname(t)}.`;
         }
-        return 'The alchemist shrugs and rattles away.';
+        gainXp(run, 12);
+        return 'Poultices for poultices, tricks for tricks: your surgeons will be busier and better. +12 Commander XP.';
       },
     },
     {
       id: 'forge',
       title: 'The Old Forge',
       text: 'A smith with arms like oak branches looks up from the anvil. "Bring me coin and I make you steel. Bring me a soldier and I make their weapon sing."',
-      prepare: (run, rng) => ({ gear: rollMany(rng, 2, () => rollGear(run, rng)), temper: rng.pick(['frostbound', 'spellblade', 'giantblood', 'thunderstep'].filter((id) => ENCHANTS[id])) }),
+      prepare: (run, rng) => {
+        const gear = rollMany(rng, 2, () => rollGear(run, rng));
+        return { gear, temper: rng.pick(['frostbound', 'spellblade', 'giantblood', 'thunderstep'].filter((id) => ENCHANTS[id])), scrap: rollGear(run, rng, gear) };
+      },
       choices: (run, c) => [
         ...c.gear.map((id) => ({ id: 'forge:' + id, label: `Commission (35 gold): ${GEAR[id].name}`, detail: `${GEAR[id].desc} (Gear, ${GEAR[id].cost} Supply)`, enabled: run.gold >= 35 })),
         c.temper ? { id: 'temper', label: `Temper a weapon (45 gold): ${ENCHANTS[c.temper].name}`, detail: `Pick a unit without an enchantment: the smith binds ${ENCHANTS[c.temper].name} to it (another enchantment if it cannot take that one). ${ENCHANTS[c.temper].desc}`, enabled: run.gold >= 45 && anyPick(run, 'bare'), pick: { filter: 'bare' } } : null,
-        { id: 'leave', label: 'Move on', detail: 'The forge fire dims behind you.' },
+        c.scrap ? { id: 'scrap', label: `Work the bellows for the scrap pile: ${GEAR[c.scrap].name}`, detail: `Free, for a night of sweat. ${GEAR[c.scrap].desc} (Gear, ${GEAR[c.scrap].cost} Supply)` } : null,
       ].filter(Boolean),
       resolve: (run, c, choice, rid, rng) => {
         if (choice.startsWith('forge:')) {
@@ -2255,7 +2263,8 @@
           const id = bindEnchant(run, rng, u, c.temper);
           return `Sparks fly. ${u.name}'s weapon rings with ${ENCHANTS[id].name}.`;
         }
-        return 'You leave the smith to the anvil.';
+        addItem(run, 'gear', c.scrap);
+        return `Your soldiers sweat at the bellows till dawn. The smith lets you keep a ${GEAR[c.scrap].name} from the scrap pile.`;
       },
     },
     {
@@ -2314,11 +2323,11 @@
       id: 'tower',
       title: "The Enchanter's Tower",
       text: 'A crooked tower leans over the road, its windows flickering with colored light. An old enchanter peers down. "Binding magic, captain. Permanent. Choose wisely."',
-      prepare: (run, rng) => ({ scrolls: rollMany(rng, 2, () => rollEnchant(run, rng)) }),
+      prepare: (run, rng) => ({ scrolls: rollMany(rng, 2, () => rollEnchant(run, rng)), book: rollSkill(run, rng) }),
       choices: (run, c) => [
         ...c.scrolls.map((id) => ({ id: 'buy:' + id, label: `Buy a scroll (55 gold): ${ENCHANTS[id].name}`, detail: `${ENCHANTS[id].desc} Bind it to a unit from the Army screen. +${ENCHANTS[id].surcharge} Supply to field that unit.`, enabled: run.gold >= 55 })),
         { id: 'steal', label: 'Steal a scroll', detail: 'Even odds: a free scroll, or the enchanter turns one of your pack items to dust.' },
-        { id: 'leave', label: 'Leave', detail: 'Some magic is best left alone.' },
+        c.book ? { id: 'library', label: `Copy a book from the lower library: ${SKILLS[c.book].name}`, detail: `${SKILLS[c.book].desc} (Skill, ${SKILLS[c.book].cost} Supply)` } : null,
       ],
       resolve: (run, c, choice, rid, rng) => {
         if (choice.startsWith('buy:')) {
@@ -2340,7 +2349,8 @@
           run.items = run.items.filter((i) => i !== it);
           return `A glowing hand seizes your collar. Your ${d.name} crumbles to dust.`;
         }
-        return 'The tower lights wink out behind you.';
+        addItem(run, 'skill', c.book);
+        return `The lower shelves hold old drill books. You copy out ${SKILLS[c.book].name} before the candles gutter.`;
       },
     },
     {
@@ -2426,11 +2436,11 @@
       id: 'mirror',
       title: 'The Mirror Pool',
       text: 'A still pool in a ring of standing stones shows not your face but your soldiers, as they could be. One of the reflections is reaching out of the water.',
-      prepare: (run, rng) => ({ scroll: rollEnchant(run, rng) }),
+      prepare: (run, rng) => ({ scroll: rollEnchant(run, rng), talent: rollTalent(run, rng) }),
       choices: (run, c) => [
         { id: 'reflect', label: 'Take the reflection\'s hand', detail: 'Pick a common or uncommon unit: its mirror image steps out and joins your army, enchantment and all.', enabled: anyPick(run, 'mirror'), pick: { filter: 'mirror' } },
         c.scroll ? { id: 'wish', label: 'Drop a coin and wish (20 gold)', detail: `A scroll floats up: ${ENCHANTS[c.scroll].name}. ${ENCHANTS[c.scroll].desc}`, enabled: run.gold >= 20 } : null,
-        { id: 'leave', label: 'Look away', detail: 'Some reflections are better left in the water.' },
+        c.talent ? { id: 'study', label: 'Study what the reflections do differently', detail: `They fight a little better than your soldiers do: ${talentLine(c.talent)}` } : null,
       ].filter(Boolean),
       resolve: (run, c, choice, rid) => {
         if (choice === 'reflect') {
@@ -2443,7 +2453,8 @@
           addItem(run, 'scroll', c.scroll);
           return `The scroll of ${ENCHANTS[c.scroll].name} drifts into your hands, dry as bone.`;
         }
-        return 'You turn away. Behind you, something sighs.';
+        addItem(run, 'talent', c.talent);
+        return `You watch the reflections fight until you see it: ${TALENTS[c.talent].name}. Behind you, something sighs.`;
       },
     },
     {
@@ -2454,7 +2465,7 @@
       choices: (run, c) => [
         c.relic ? { id: 'accept', label: `Open the box: ${RELICS[c.relic].name}`, detail: `${RELICS[c.relic].desc} The price: 1 less Supply in every battle for the rest of the run.`, enabled: supplyFor(run) > 8 } : null,
         c.scroll ? { id: 'charm', label: 'Ask for a small charm', detail: `A scroll of ${ENCHANTS[c.scroll].name}, and she remembers your face. ${ENCHANTS[c.scroll].desc}` } : null,
-        { id: 'refuse', label: 'Refuse', detail: 'Keep yourself whole.' },
+        { id: 'reading', label: 'Ask her to read the road ahead', detail: '+15 Commander XP.' },
       ].filter(Boolean),
       resolve: (run, c, choice) => {
         if (choice === 'accept') {
@@ -2466,7 +2477,8 @@
           addItem(run, 'scroll', c.scroll);
           return `She presses the scroll of ${ENCHANTS[c.scroll].name} into your palm. Her fingers are cold.`;
         }
-        return 'She shrugs, and is not there anymore.';
+        gainXp(run, 15);
+        return 'She reads the ash and tells you where the enemy will be strong. Most of it even comes true. +15 Commander XP.';
       },
     },
   ];
@@ -2476,7 +2488,7 @@
   }
 
   // Events were rewritten: a save caught mid-event from before gets a fresh deal.
-  const EVENTS_V = 2;
+  const EVENTS_V = 3;
   function eventChoices(run) {
     const p = run.pending;
     const ev = eventDef(p.eventId);

@@ -56,6 +56,10 @@ test('every choice of every event resolves, pays in things rather than gold, and
         for (const u of run.roster) if (u.enchant) assert.ok(D.eligible(u.type, D.ENCHANTS[u.enchant]), `${ev.id}/${c.id}: ${u.type} can take ${u.enchant}`);
         for (const it of run.items) assert.ok(D.itemDef(it.kind, it.id) || it.kind === 'scroll', `${ev.id}/${c.id}: ${it.kind} ${it.id} exists`);
         if (run.pending.type === 'battle') assert.strictEqual(ev.id, 'trial');
+        // No choice does nothing: each one changes the army, the pack, the relics, the
+        // Commander's XP or Supply, or starts a battle.
+        const sig = (r) => JSON.stringify([r.roster, r.items, r.relics, r.xp, r.supplyBonus]);
+        assert.ok(run.pending.type === 'battle' || sig(run) !== sig(base) || run.gold !== base.gold, `${ev.id}/${c.id}: does something`);
         // Units only ever leave by the gambler's wager.
         if (run.roster.length < ids.length) assert.strictEqual(c.id, 'wager');
       }
@@ -122,7 +126,7 @@ test("a save caught mid-event from before the rewrite gets a fresh deal", () => 
   run.pending.ctx = { gear: ['x'] };
   const choices = R.eventChoices(run);
   assert.ok(choices.every((c) => !c.id.includes('forge:x')));
-  assert.strictEqual(run.pending.ctx.v, 2);
+  assert.strictEqual(run.pending.ctx.v, 3);
 });
 
 console.log(`events: ${passed} tests passed`);

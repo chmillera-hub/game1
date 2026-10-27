@@ -467,7 +467,10 @@ on a phone turned sideways, but portrait works too.
   a relic, a recruit, a mirror copy of one of your units, a unit transformed (the
   Alchemist's sure transmutation or free green vial), +1 Supply, Commander XP, or an
   elite battle for a relic. Some cost gold; a few are gambles (stake a soldier at the
-  Gambler's Tent: an enchantment, or they leave your army). Your Cleric can be
+  Gambler's Tent: an enchantment, or they leave your army). No choice does nothing:
+  the safe one is never just "walk away" but a free, smaller reward (Commander XP, or a
+  piece of scrap gear, a library skill or a talent studied in the Mirror Pool), and
+  `tests/events.test.js` checks every choice changes something. Your Cleric can be
   blessed, never transformed or lost. Every event shows the relics you hold at the
   top as plain circles in their rarity's colour (common grey, uncommon green, rare
   blue, boss orange, legendary gold; tap one for its name and what it does). The
