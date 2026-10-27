@@ -349,7 +349,12 @@ on a phone turned sideways, but portrait works too.
   without), and an ally next to one that stands alone counts as spoiling its bonus;
   with the **Phalanx Standard** they close ranks (1.27 allies beside each) and still
   advance; Hold the Line weighs holding its ground under fire against moving;
-  Thunderstep and Drift end their moves beside enemies; Living Moss and the Knight's
+  Thunderstep and Drift end their moves beside enemies; a Furgon grows its shrubs
+  between enemy melee units and your fragile units, three times over for your Cleric
+  (or, with no Cleric left, your unit with the least HP), and for that one it measures
+  the enemy's real walk and walls it off when a shrub keeps a walker from reaching it
+  this turn (`tests/furgon.test.js`; in 80 Grove campaigns the Cleric fell before the win
+  in 55.8% of battles, against 58.2% with the old screening, battles won unchanged); Living Moss and the Knight's
   Champion keep wounded allies beside them; Discord picks foes standing beside their
   own allies; Ricochet and Shrapnel aim into a crowd (6 shots in 6 against 0 in 6
   without); Combustion, Contagion, Wildfire Oil and the Plague Doctor's Mask go for
@@ -726,6 +731,7 @@ node tests/fun.test.js           # the trigger passives and relics: crits, execu
 node tests/talents.test.js       # class talents: slots, the pack, always usable
 node tests/legendary.test.js     # the legendaries: units, skills and gear, and when they turn up
 node tests/positioning.test.js   # the AI plays to positioning picks: Lone Wolf, Phalanx, Thunderstep...
+node tests/furgon.test.js        # the Furgon's shrubs wall off the Cleric, else the most wounded unit
 node tests/sim.js 200            # AI-vs-AI balance by unit type (WITH_LEGENDS=1 adds the legendaries)
 node tests/chaos.js 200          # random loadouts, bosses, buildings and waves
 node tests/run.test.js 20 medium # whole campaigns played by the AI, with retries

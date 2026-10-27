@@ -476,7 +476,7 @@
       act: { name: 'Grow Shrub', kind: 'grow', range: [1, 3] },
       traits: [], tags: ['beast'], props: { regen: 3 },
       abilities: { 1: ['f_bark', 'f_roots', 'f_thorn', 'f_bramble'], 2: ['f_grove', 'f_rejuv', 'f_ironwood'] },
-      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regen 3.',
+      desc: 'Forest spirit. Raises a shrub that blocks movement and lines, 3 at a time. Regen 3. The AI grows them across the path of enemy melee units heading for your Cleric (or, with no Cleric left, your most wounded unit).',
       tip: 'Shrubs can be cut down, and flyers and arcing shots ignore them.',
     },
     wisp: {

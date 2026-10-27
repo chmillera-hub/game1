@@ -685,7 +685,82 @@
     return (t.pow * 0.8 + 6) * ready;
   }
 
+  // Who a Furgon's shrubs guard: the Cleric while it lives, else the ally with the least HP.
+  function shrubWard(ctx, u) {
+    const mine = ctx.allies.filter((al) => al.alive && al.type !== 'shrub' && !al.summoner);
+    const clerics = mine.filter((al) => al.type === 'cleric');
+    const pool = clerics.length ? clerics : mine;
+    let best = null;
+    for (const al of pool) if (!best || al.hp < best.hp) best = al;
+    return best;
+  }
+
+  // Steps a walker needs to reach a tile beside `w` (limit + 1 if it cannot within `limit`).
+  function stepsBeside(s, m, w, limit) {
+    if (Math.abs(m.x - w.x) + Math.abs(m.y - w.y) === 1) return 0;
+    const res = E.reachable(s, m, limit);
+    let best = limit + 1;
+    for (const [dx, dy] of DIRS) {
+      if (!E.inB(s, w.x + dx, w.y + dy)) continue;
+      const r = res.get(E.idx(s, w.x + dx, w.y + dy));
+      if (r && r.d < best) best = r.d;
+    }
+    return best;
+  }
+
+  // Where a Furgon's shrub does the most good. Any shrub between an enemy walker that could
+  // strike soon and one of your fragile units screens them, and three times over for the one
+  // it guards (the Cleric, or with no Cleric left whoever has the least HP). On top of that,
+  // for the guarded one, the enemy's real walk is measured (round rocks, water, units and
+  // other shrubs, and the oldest shrub withering if the Furgon already has all of them):
+  // a shrub that keeps a walker from reaching it this turn is worth a lot more, one that
+  // only adds steps a little. In campaign sims this keeps the Cleric alive longer than
+  // the screen alone, at no cost to battles won.
   function shrubValue(ctx, u, tx, ty) {
+    const s = ctx.s;
+    const ward = shrubWard(ctx, u);
+    const base = shrubScreen(ctx, tx, ty, ward);
+    if (!ward) return base;
+    const walkers = ctx.foes.filter((m) => m.alive && !m.nonCombat && m.move > 0 && !m.traits.has('flying') && !m.traits.has('immobile') && m.root === 0 && m.para === 0 && m.act.range && m.act.range[1] <= 1);
+    if (!walkers.length) return base;
+    const before = walkers.map((m) => stepsBeside(s, m, ward, m.move + 4));
+    // Only threats due within about two turns.
+    if (!walkers.some((m, i) => before[i] <= m.move * 2)) return base;
+    const cap = 3 + (u.props.shrubs || 0);
+    const mine = s.units.filter((v) => v.alive && v.type === 'shrub' && v.summoner === u.uid).sort((a, b) => a.born - b.born);
+    const withers = mine.length >= cap ? mine[0] : null;
+    // Grow it for a moment: a stand-in that blocks like a shrub.
+    const ti = E.idx(s, tx, ty);
+    const occT = s.occ[ti];
+    s.byId[-7] = { uid: -7, alive: true, team: u.team, type: 'shrub', nonCombat: true, structure: false, traits: new Set(), tags: new Set() };
+    s.occ[ti] = -7;
+    let oi = -1;
+    let occO = 0;
+    if (withers) {
+      oi = E.idx(s, withers.x, withers.y);
+      occO = s.occ[oi];
+      s.occ[oi] = 0;
+    }
+    let wb = 0;
+    try {
+      walkers.forEach((m, i) => {
+        const b = before[i];
+        if (b > m.move * 2) return;
+        const after = stepsBeside(s, m, ward, m.move + 4);
+        if (after < b) wb -= Math.min(3, b - after) * 2;
+        else if (after > b) wb += b <= m.move && after > m.move ? 6 + m.pow * (ward.value / ward.maxHp) * 0.5 : Math.min(3, after - b) * 1.5;
+      });
+    } finally {
+      s.occ[ti] = occT;
+      delete s.byId[-7];
+      if (oi >= 0) s.occ[oi] = occO;
+    }
+    return Math.max(0, base + Math.max(-6, Math.min(wb, 8)));
+  }
+
+  // A shrub between an enemy walker close enough to strike soon and one of your fragile
+  // units (archers, casters, healers, and the guarded one), on a shortest way between them.
+  function shrubScreen(ctx, tx, ty, ward) {
     let v = 1;
     for (const m of ctx.foes) {
       const T = UNITS[m.type];
@@ -694,9 +769,9 @@
       if (dm > m.move + 1) continue;
       for (const al of ctx.allies) {
         const r = UNITS[al.type].role;
-        if (r !== 'ranged' && r !== 'caster' && r !== 'support') continue;
+        if (r !== 'ranged' && r !== 'caster' && r !== 'support' && al !== ward) continue;
         const da = Math.abs(al.x - tx) + Math.abs(al.y - ty);
-        if (dm + da === Math.abs(m.x - al.x) + Math.abs(m.y - al.y)) v += 2.5 * (T.cost / 3);
+        if (dm + da === Math.abs(m.x - al.x) + Math.abs(m.y - al.y)) v += 2.5 * (T.cost / 3) * (al === ward ? 3 : 1);
       }
     }
     return Math.min(v, 14);
