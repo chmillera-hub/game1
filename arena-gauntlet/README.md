@@ -536,7 +536,7 @@ on a phone turned sideways, but portrait works too.
   shrubs do not count: they take no turns and no fatigue, and once a side's real
   units are all down it has lost, shrubs or not.
 - **Poison**: poison and burns tick at the start of the poisoned unit's own turn,
-  for a set number of its turns. Poisons from different sources stack: each keeps its
+  for a set number of its turns. Poisons from different sources stack, and so do burns: each keeps its
   own damage and its own turns, and the unit takes them all added up. Poisoned for 4
   (1 turn left) and for 8 (3 turns left), it takes 12, then 8, then 8. The same unit's
   same ability poisoning again only refreshes its own poison (the longer turns and the

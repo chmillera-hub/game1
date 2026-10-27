@@ -157,4 +157,36 @@ test("a Cleric's free Mend cannot help a poisoned ally; Blessing (1 Supply) cure
   assert.ok(!blessed.poison && blessed.hp > blessed.maxHp - 30, 'Blessing: cured, then healed');
 });
 
+test('burns from different sources stack like poison; the same source only refreshes its own', () => {
+  const s = battle([
+    { type: 'pyromancer', team: 'P', x: 3, y: 8 },
+    { type: 'pyromancer', team: 'P', x: 5, y: 8 },
+    { type: 'knight', team: 'E', x: 4, y: 4 },
+  ]);
+  const [p1, p2, kn] = s.units;
+  const fire = { name: 'Fireball' };
+  E.applyStatus(s, p1, kn, { burn: [2, 5] }, fire);
+  E.applyStatus(s, p1, kn, { burn: [2, 5] }, fire);
+  assert.strictEqual(kn.burn.dmg, 5, 'the same pyromancer twice: still 5 a turn');
+  E.applyStatus(s, p2, kn, { burn: [3, 6] }, fire);
+  assert.strictEqual(kn.burn.dmg, 11, 'a second pyromancer adds its own: 5 + 6');
+  assert.strictEqual(kn.burn.stacks.length, 2);
+  assert.strictEqual(kn.burn.turns, 3);
+  // Tick: the sum lands at once, then each burn runs down on its own.
+  kn.res = 0;
+  const hp = kn.hp;
+  s.side = 'P';
+  E.endTurn(s);
+  assert.strictEqual(hp - kn.hp, 11, 'burns for 11 on its turn');
+  assert.strictEqual(kn.burn.dmg, 11);
+  const hp2 = kn.hp;
+  for (let i = 0; i < 2 && !s.over; i++) E.endTurn(s);
+  assert.strictEqual(hp2 - kn.hp, 11, 'both still burning');
+  const hp3 = kn.hp;
+  for (let i = 0; i < 2 && !s.over; i++) E.endTurn(s);
+  assert.strictEqual(hp3 - kn.hp, 6, 'the 2-turn burn is out: only the second, 6');
+  for (let i = 0; i < 2 && !s.over; i++) E.endTurn(s);
+  assert.ok(!kn.burn, 'all burnt out');
+});
+
 console.log(`dots: ${passed} tests passed`);

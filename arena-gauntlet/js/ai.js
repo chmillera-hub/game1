@@ -896,7 +896,9 @@
         v += p * (Math.min(fresh * e.poison.dmg * (1 - t.res), t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
       }
       if (e.burn) {
-        const fresh = t.burn ? Math.max(0, e.burn.turns - t.burn.turns) : e.burn.turns;
+        // Burns from different sources add up; the same source only tops up its own.
+        const own = t.burn && E.dotStacks(t, 'burn').find((st) => st.key === e.burn.key);
+        const fresh = own ? Math.max(0, e.burn.turns - own.turns) : e.burn.turns;
         v += p * Math.min(fresh * e.burn.dmg * (1 - t.res), t.hp) * hpv * 0.8;
       }
       if (e.root && e.root !== 'resist' && t.move > 0 && t.root === 0) v += p * (2 + 0.3 * t.pow) * Math.min(2, e.root);
@@ -917,9 +919,9 @@
   function crowdKill(ctx, u, t, e) {
     const s = ctx.s;
     const rel = s.relics[u.team];
-    const burning = t.burn > 0 || !!e.burn;
+    const burning = !!t.burn || !!e.burn;
     const fire = burning && (u.traits.has('combustion') || rel.has('wildfire_oil'));
-    const plague = t.poison > 0 && (rel.has('plague_mask') || E.poisonStacks(t).some((st) => s.byId[st.src] && s.byId[st.src].traits.has('contagion')));
+    const plague = !!t.poison && (rel.has('plague_mask') || E.poisonStacks(t).some((st) => s.byId[st.src] && s.byId[st.src].traits.has('contagion')));
     if (!fire && !plague) return 0;
     let v = 0;
     for (const o of ctx.foes) {

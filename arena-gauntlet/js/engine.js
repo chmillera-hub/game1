@@ -1150,7 +1150,7 @@
           if (!e.friendly) {
             if (fx.para) e.para = statusImmune(s, v, 'para') ? 'resist' : fx.para;
             if (fx.poison) e.poison = statusImmune(s, v, 'poison') ? 'resist' : { turns: fx.poison[0], dmg: fx.poison[1], key: poisonKey(u, a) };
-            if (fx.burn && (!(v.nonCombat || v.structure) || burnable(v))) e.burn = { turns: fx.burn[0], dmg: fx.burn[1] };
+            if (fx.burn && (!(v.nonCombat || v.structure) || burnable(v))) e.burn = { turns: fx.burn[0], dmg: fx.burn[1], key: poisonKey(u, a) };
             if (fx.root) e.root = statusImmune(s, v, 'root') ? 'resist' : fx.root;
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
@@ -1846,36 +1846,44 @@
     return (src ? src.uid : 0) + ':' + (act ? act.name || act.kind : '');
   }
 
-  function poisonStacks(u) {
-    const P = u.poison;
+  // Poisons and burns stack the same way: each source keeps its own damage and turns, and
+  // the unit takes them all added up until each runs out. The same source again only
+  // refreshes its own. `kind` is 'poison' or 'burn'; u[kind] holds the sum, the number of
+  // turns left on the longest one, the last source, and the stacks.
+  function dotStacks(u, kind) {
+    const P = u[kind];
     if (!P) return [];
-    // One poison set by hand (or from before poisons stacked): a single source.
+    // One set by hand (or from before they stacked): a single source.
     if (!P.stacks) P.stacks = [{ key: 'one', src: P.src || 0, dmg: P.dmg, turns: P.turns }];
     return P.stacks;
   }
 
-  function sumPoison(u) {
-    const st = poisonStacks(u).filter((p) => p.turns > 0);
+  function sumDot(u, kind) {
+    const st = dotStacks(u, kind).filter((p) => p.turns > 0);
     if (!st.length) {
-      u.poison = null;
+      u[kind] = null;
       return;
     }
-    u.poison.stacks = st;
-    u.poison.dmg = st.reduce((t, p) => t + p.dmg, 0);
-    u.poison.turns = Math.max(...st.map((p) => p.turns));
-    u.poison.src = st[st.length - 1].src;
+    u[kind].stacks = st;
+    u[kind].dmg = st.reduce((t, p) => t + p.dmg, 0);
+    u[kind].turns = Math.max(...st.map((p) => p.turns));
+    u[kind].src = st[st.length - 1].src;
   }
 
-  function addPoison(u, src, key, turns, dmg) {
-    if (!u.poison) u.poison = { stacks: [], dmg: 0, turns: 0, src: 0 };
-    const st = poisonStacks(u);
+  function addDot(u, kind, src, key, turns, dmg) {
+    if (!u[kind]) u[kind] = { stacks: [], dmg: 0, turns: 0, src: 0 };
+    const st = dotStacks(u, kind);
     const same = st.find((p) => p.key === key);
     if (same) {
       same.turns = Math.max(same.turns, turns);
       same.dmg = Math.max(same.dmg, dmg);
     } else st.push({ key, src: src ? src.uid : 0, dmg, turns });
-    sumPoison(u);
+    sumDot(u, kind);
   }
+
+  const poisonStacks = (u) => dotStacks(u, 'poison');
+  const sumPoison = (u) => sumDot(u, 'poison');
+  const addPoison = (u, src, key, turns, dmg) => addDot(u, 'poison', src, key, turns, dmg);
 
   // Why a unit shrugs off a status (see statusImmune), for the board and the battle log.
   function immuneWhy(s, u, kind) {
@@ -1909,16 +1917,16 @@
     return u.traits.has('object') || u.structure;
   }
 
-  function setBurn(s, src, u, fx) {
-    const p = u.burn;
-    u.burn = { turns: Math.max(fx.burn[0], p ? p.turns : 0), dmg: Math.max(fx.burn[1], p ? p.dmg : 0), src: src ? src.uid : 0 };
-    emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns });
+  // Burns stack by source, like poison (see addDot).
+  function setBurn(s, src, u, fx, act) {
+    addDot(u, 'burn', src, poisonKey(src, act), fx.burn[0], fx.burn[1]);
+    emit(s, { t: 'status', uid: u.uid, status: 'burn', turns: u.burn.turns, dmg: u.burn.dmg, stacks: u.burn.stacks.length });
   }
 
   function applyStatus(s, src, u, fx, act) {
     if (!u.alive) return;
     if (u.nonCombat || u.structure) {
-      if (fx.burn && burnable(u)) setBurn(s, src, u, fx);
+      if (fx.burn && burnable(u)) setBurn(s, src, u, fx, act);
       return;
     }
     if (fx.para) {
@@ -1937,7 +1945,7 @@
         emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
       }
     }
-    if (fx.burn) setBurn(s, src, u, fx);
+    if (fx.burn) setBurn(s, src, u, fx, act);
     if (fx.root) {
       if (statusImmune(s, u, 'root')) resisted(s, u, 'root');
       else {
@@ -2795,14 +2803,16 @@
       else if (u.poison.stacks.length < n) emit(s, { t: 'status', uid: u.uid, status: 'poison', turns: u.poison.turns, dmg: u.poison.dmg, stacks: u.poison.stacks.length });
       return;
     }
-    const src = s.byId[p.src] || null;
-    magicDamage(s, src, u, p.dmg, 'burn');
+    // Burns: every burn on it at once, added up; then each runs down on its own.
+    sumDot(u, kind);
+    if (!u[kind]) return;
+    const n = u[kind].stacks.length;
+    magicDamage(s, s.byId[u[kind].src] || null, u, u[kind].dmg, 'burn');
     if (!u.alive || !u[kind]) return;
-    p.turns--;
-    if (p.turns <= 0) {
-      u[kind] = null;
-      emit(s, { t: 'cure', uid: u.uid, status: kind });
-    }
+    for (const st of u[kind].stacks) st.turns--;
+    sumDot(u, kind);
+    if (!u[kind]) emit(s, { t: 'cure', uid: u.uid, status: kind });
+    else if (u[kind].stacks.length < n) emit(s, { t: 'status', uid: u.uid, status: kind, turns: u[kind].turns, dmg: u[kind].dmg, stacks: u[kind].stacks.length });
   }
 
   // What happens to a team at the start of its turn.
@@ -3331,7 +3341,7 @@
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
     inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, dirCategory, blockChance, calcHit,
-    poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
+    poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
     finishActivation, elementalMult, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
