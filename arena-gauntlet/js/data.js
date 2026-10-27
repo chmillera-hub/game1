@@ -458,7 +458,7 @@
       act: { name: 'Stone Fist', kind: 'strike', range: [1, 1], dmg: 'phys' },
       traits: ['stoneskin'], tags: ['construct'], props: { guard: 0.2 },
       abilities: { 1: ['g_toss', 'g_quake', 'g_moss'], 2: ['g_runes', 'g_magnet', 'g_slam'] },
-      desc: 'Slow living rock: 50% physical resistance, immune to poison and paralysis. Adjacent allies take 20% less damage.',
+      desc: 'Slow living rock: 50% physical resistance, immune to paralysis. Adjacent allies take 20% less damage.',
       tip: 'Magic tears through it: it takes 25% extra magic damage. Kite it, it moves 2.',
     },
     beastrider: {
@@ -485,7 +485,7 @@
       act: { name: 'Miasma', kind: 'nova', radius: 2, fx: { poison: 2 } },
       traits: ['flying'], tags: ['spirit'],
       abilities: { 1: ['w_drift', 'w_parasite', 'w_wither'], 2: ['w_ethereal', 'w_contagion', 'w_plague'] },
-      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Buildings, wagons, cages, constructs and the undead are immune.',
+      desc: 'Floats over anything. Poisons enemies within 2 tiles for 2 of their turns: they lose HP as each turn starts and cannot heal. Only buildings and the undead are immune.',
       tip: 'Only 24 HP and no physical resistance. One arrow volley can drop it.',
     },
     barrier: {

@@ -1,4 +1,5 @@
-// Poison and burns split the work. Poison never takes on buildings or the undead, but it
+// Poison and burns split the work. Poison never takes on buildings or the undead (and only
+// those: golems and wards take it), but it
 // stops all healing and regen. Burns catch on buildings and the undead alike, and leave
 // healing and regen alone. Both are elemental: magic resistance cuts them.
 // Run: node tests/dots.test.js
@@ -37,6 +38,20 @@ test('poison does not take on buildings or the undead', () => {
   for (const v of s.units.slice(1)) {
     E.applyStatus(s, src, v, POISON, { name: 'test' });
     assert.ok(!v.poison, `${v.type} is not poisoned`);
+  }
+});
+
+test('golems, wards and the Golem King can be poisoned', () => {
+  const s = battle([
+    { type: 'witch', team: 'P', x: 4, y: 8 },
+    { type: 'golem', team: 'E', x: 2, y: 2 },
+    { type: 'barrier', team: 'E', x: 6, y: 2 },
+    { type: 'lightning', team: 'E', x: 4, y: 4 },
+    { type: 'golem_king', team: 'E', x: 4, y: 0 },
+  ]);
+  for (const v of s.units.slice(1)) {
+    E.applyStatus(s, s.units[0], v, POISON, { name: 'test' });
+    assert.ok(v.poison, `${v.type} is poisoned`);
   }
 });
 
