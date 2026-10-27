@@ -696,7 +696,8 @@ on a phone turned sideways, but portrait works too.
 - **The merchant**: six things: a recruit, a talent, a skill, gear and a relic, plus
   one of an enchantment scroll, a Supply Cache or a War Manual. Relics cost about
   twice as much as anything else. Resupply brings out a whole new stock for 20 gold,
-  then 30, 40 and so on; press it as often as you can pay. Units cannot be dismissed.
+  then 50, then 100 every time after: one cheap look at a fresh stock, but no endless
+  cycle of buying a relic, resupplying and buying another. Units cannot be dismissed.
   Everything you can still buy (not sold, and within your gold) has the same soft,
   pulsing aura as any choice waiting for you; sold items and what you cannot afford
   stay plain.

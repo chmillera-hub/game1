@@ -24,8 +24,10 @@
   // A legendary skill or piece of gear goes for half as much again.
   const itemPrice = (d) => Math.round(ITEM_PRICE(d.cost) * (d.rarity === 'legendary' ? 1.5 : 1));
   const SCROLL_PRICE = 120;
-  // Resupplying a merchant (a fresh stock): 20 gold, then 10 more each time.
-  const REROLL_PRICE = (n) => 20 + 10 * n;
+  // Resupplying a merchant (a fresh stock): 20 gold, then 50, then 100 each time after. One
+  // cheap look at a new stock; no endless cycle of buy a relic, resupply, buy another.
+  const REROLL_STEPS = [20, 50, 100];
+  const REROLL_PRICE = (n) => REROLL_STEPS[Math.min(n, REROLL_STEPS.length - 1)];
   // Class talents cost a little more than skills of the same Supply cost.
   const TALENT_PRICE = (cost) => 60 + 30 * cost;
 

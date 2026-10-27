@@ -4848,7 +4848,7 @@
       return `<button class="card" ${dis}><div class="kind">${ic('crown')} Service</div><div class="title">War Manual</div><div class="desc">Gain 10 XP toward your next commander level.</div>${price}</button>`;
     };
     // Six things, one of each kind, so one list: each card says what it is. Resupply brings
-    // out a fresh stock, a little dearer each time.
+    // out a fresh stock: 20 gold, then 50, then 100 every time after.
     const reroll = R.rerollPrice(run);
     const v = showView(
       `<div class="wrap">

@@ -243,12 +243,17 @@ test('the merchant: six things, relics dearer than anything else, and a resupply
     const others = p.stock.filter((it) => it.kind !== 'relic').map((it) => it.price);
     if (relic) assert.ok(relic.price >= 1.5 * Math.min(...others) && relic.price > Math.max(...others.filter((x, i) => p.stock.filter((it) => it.kind !== 'relic')[i].kind !== 'recruit')), 'relics cost the most');
     const before = run.gold;
+    // 20, then 50, then 100 for every resupply after.
     assert.strictEqual(R.rerollPrice(run), 20);
     assert.ok(R.rerollShop(run));
-    assert.strictEqual(R.rerollPrice(run), 30);
+    assert.strictEqual(R.rerollPrice(run), 50);
     assert.ok(R.rerollShop(run));
-    assert.strictEqual(R.rerollPrice(run), 40);
-    assert.strictEqual(run.gold, before - 50);
+    assert.strictEqual(R.rerollPrice(run), 100);
+    assert.ok(R.rerollShop(run));
+    assert.strictEqual(R.rerollPrice(run), 100);
+    assert.ok(R.rerollShop(run));
+    assert.strictEqual(R.rerollPrice(run), 100);
+    assert.strictEqual(run.gold, before - 270);
     assert.ok(p.stock.length <= 6 && p.stock.every((it) => !it.sold));
   }
 });
