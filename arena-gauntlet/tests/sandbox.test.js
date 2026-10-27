@@ -110,6 +110,44 @@ async function test(name, fn) {
     assert.ok(r.armies.some((l) => l.sandbox && l.foreign));
   });
 
+  await test('Auto: legal armies within Supply, every relic working in its army, never an inert one', () => {
+    let notes = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const d = R.autoSandbox(seed);
+      const st = R.sandboxStatus(d);
+      assert.ok(st.ok, `seed ${seed}: ${st.used}/${st.cap}`);
+      assert.ok(d.relics.length >= 3 && d.relics.length <= R.SANDBOX_RELICS);
+      for (const id of d.relics) {
+        assert.ok(!R.HALL_INERT.has(id), `${id} does nothing in the Hall`);
+        assert.ok(R.relicFit(d, id).ok, `seed ${seed}: ${id} has what it needs`);
+      }
+      assert.ok(!(d.relics.includes('lone_wolf') && d.relics.includes('phalanx_standard')));
+      assert.ok(d.relics.filter((id) => D.RELICS[id].tier === 'legendary').length <= 2);
+      assert.ok(d.units.some((it) => it.spec.type === 'cleric'));
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(R.fixSandbox(JSON.parse(JSON.stringify(d))))), JSON.parse(JSON.stringify(d)), 'already legal');
+      notes += d.why.length;
+    }
+    assert.ok(notes > 30, 'synergy relics come up and say why');
+  });
+
+  await test("Auto takes the Plague Doctor's Mask only with a poisoner, and gives one the kit when it can", () => {
+    const d = R.fixSandbox({});
+    for (const t of ['cleric', 'knight', 'berserker']) R.addSandboxUnit(d, t);
+    const fit = R.relicFit(d, 'plague_mask');
+    assert.ok(fit.ok && fit.fix, 'nobody poisons yet, but one can be given the kit (Venom Edge)');
+    fit.fix.apply();
+    R.fixSandbox(d);
+    assert.ok(R.relicFit(d, 'plague_mask').ok && !R.relicFit(d, 'plague_mask').fix, 'and now it does');
+    const w = R.fixSandbox({});
+    R.addSandboxUnit(w, 'wisp');
+    assert.strictEqual(R.relicFit(w, 'plague_mask').why, 'your Poison Wisp poisons');
+    // Shapes: Lone Wolf needs a mostly ranged army.
+    const melee = R.fixSandbox({});
+    for (const t of ['knight', 'berserker', 'golem']) R.addSandboxUnit(melee, t);
+    assert.ok(!R.relicFit(melee, 'lone_wolf').ok);
+    assert.ok(R.relicFit(melee, 'phalanx_standard').ok);
+  });
+
   console.log(`sandbox: ${passed} tests passed`);
 })().catch((e) => {
   console.error(e);

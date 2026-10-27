@@ -3098,6 +3098,7 @@
   function fixSandbox(d) {
     d = d && typeof d === 'object' ? d : {};
     d.name = cleanText(d.name, 40);
+    d.why = (Array.isArray(d.why) ? d.why : []).slice(0, 6).map((s) => cleanText(s, 140));
     d.relics = [...new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))].slice(0, SANDBOX_RELICS);
     const taken = new Set();
     // One copy of each item in the whole army: the first unit holding it keeps it.
@@ -3196,6 +3197,191 @@
     h.queue.push(l);
     saveHall(h);
     return l;
+  }
+
+  // ---- Auto for the sandbox: a whole army in one tap, a different one each time.
+  // Relics that do nothing in a Hall battle (gold, XP, shop prices, the deployment zone, the
+  // campaign's crown, a Supply discount the sandbox does not use, buildings and wagons): Auto
+  // never takes them, and the relic picker says so.
+  const HALL_INERT = new Set(['coin_purse', 'drill_manual', 'guild_seal', 'alchemist_stone', 'kings_ransom', 'scout_map', 'gamblers_dice', 'sappers_kit', 'recruiters_bell']);
+  // What some relics need from the army to do anything: something its kit must carry
+  // (poison, burns, shoves, regen), or a shape the army must have.
+  const roleOf = (it) => UNITS[it.spec.type].role;
+  const RELIC_NEEDS = {
+    plague_mask: { key: 'poison', does: 'poisons', what: 'a unit that poisons' },
+    wildfire_oil: { key: 'burn', does: 'sets enemies burning', what: 'a unit that sets enemies burning' },
+    healing_salve: { key: 'regen', does: 'has Regen of its own', what: 'a unit with Regen of its own' },
+    iron_ram: { key: 'knock', does: 'shoves and pulls', what: 'a unit that shoves or pulls' },
+    tide_conch: { key: 'knock', does: 'shoves and pulls', what: 'a unit that shoves or pulls' },
+    storm_jar: { test: (d) => d.units.filter((it) => UNITS[it.spec.type].act.dmg === 'magic').length >= 2, what: 'two magic attackers' },
+    mana_crystal: { test: (d) => d.units.filter((it) => UNITS[it.spec.type].rec >= 2).length >= 2, what: 'two spellcasters' },
+    shadow_cloak: { test: (d) => d.units.some((it) => ['assassin', 'scout', 'beastrider', 'berserker'].includes(it.spec.type)), what: 'a flanker' },
+    lone_wolf: { test: (d) => d.units.filter((it) => ['ranged', 'caster'].includes(roleOf(it))).length >= d.units.length * 0.6, what: 'a mostly ranged army' },
+    phalanx_standard: { test: (d) => d.units.filter((it) => ['tank', 'melee'].includes(roleOf(it))).length >= 3, what: 'a front line of three' },
+    thorned_mail: { test: (d) => d.units.filter((it) => ['tank', 'melee'].includes(roleOf(it))).length >= 2, what: 'units in melee' },
+    pathfinder: { test: (d) => d.units.filter((it) => UNITS[it.spec.type].move <= 3).length >= 3, what: 'slow units' },
+  };
+  const RELIC_CLASH = { lone_wolf: 'phalanx_standard', phalanx_standard: 'lone_wolf' };
+
+  // Does this unit's kit carry `key` (poison, burn, knock, regen)?
+  function kitHas(sp, key) {
+    const T = UNITS[sp.type];
+    const parts = [T.act, T.acts, T.props, sp.a1 && ABILITIES[sp.a1] && ABILITIES[sp.a1].mod, sp.level >= 2 && sp.a2 && ABILITIES[sp.a2] && ABILITIES[sp.a2].mod];
+    for (const k of ['talents', 'skills', 'gear']) for (const id of sp[k] || []) parts.push(({ talents: TALENTS, skills: SKILLS, gear: GEAR })[k][id].mod);
+    if (sp.enchant) parts.push(ENCHANTS[sp.enchant].mod);
+    const s = JSON.stringify(parts);
+    return key === 'knock' ? s.includes('"knock"') || s.includes('"pull"') : s.includes('"' + key + '"');
+  }
+
+  // The cheapest change that gives the army `key`: an ability pick or a free slot's item.
+  function enabler(d, key) {
+    let best = null;
+    const consider = (cost, apply, what) => {
+      if (!best || cost < best.cost) best = { cost, apply, what };
+    };
+    d.units.forEach((it) => {
+      const sp = it.spec;
+      const T = UNITS[sp.type];
+      const before = specCost(sp);
+      if (T.abilities)
+        for (const tier of sp.level >= 2 ? [1, 2] : [1])
+          for (const id of T.abilities[tier]) {
+            if (isTalent(id) || !kitHas({ type: sp.type, level: 1, a1: id }, key)) continue;
+            const was = sp['a' + tier];
+            sp['a' + tier] = id;
+            const cost = specCost(sp) - before;
+            sp['a' + tier] = was;
+            consider(cost, () => (sp['a' + tier] = id), { unit: T.name, item: ABILITIES[id].name });
+          }
+      const sl = slotsFor(sp.level);
+      for (const [k, table] of [['talents', TALENTS], ['skills', SKILLS], ['gear', GEAR]]) {
+        if (sp[k].length >= sl[k]) continue;
+        for (const id of Object.keys(table)) {
+          if (!D.eligible(sp.type, table[id]) || sandboxHolder(d, k, id) >= 0 || !JSON.stringify(table[id].mod || {}).match(key === 'knock' ? /"(knock|pull)"/ : new RegExp('"' + key + '"'))) continue;
+          consider(table[id].cost || 0, () => sp[k].push(id), { unit: T.name, item: table[id].name });
+        }
+      }
+    });
+    return best;
+  }
+
+  // Whether a relic would work in this army (or can be made to): { ok, fix?, need?, why }.
+  function relicFit(d, id) {
+    if (HALL_INERT.has(id)) return { ok: false, why: 'no effect in Hall battles' };
+    const need = RELIC_NEEDS[id];
+    if (!need) return { ok: true };
+    if (need.test) return need.test(d) ? { ok: true, need: need.what, why: `your army has ${need.what}` } : { ok: false, need: need.what, why: `needs ${need.what}` };
+    const who = d.units.find((it) => kitHas(it.spec, need.key));
+    if (who) return { ok: true, need: need.what, why: `your ${UNITS[who.spec.type].name} ${need.does}` };
+    const fix = enabler(d, need.key);
+    return fix
+      ? { ok: true, fix, need: need.what, why: `your ${fix.what.unit} got ${fix.what.item}, so it ${need.does}` }
+      : { ok: false, need: need.what, why: `needs ${need.what}` };
+  }
+
+  function autoSandbox(seed) {
+    const rng = AG.derive(seed >>> 0 || 1, 'sandbox-auto');
+    const d = fixSandbox({});
+    const why = [];
+    const cost = () => d.units.reduce((t, it) => t + specCost(it.spec), 0);
+    const add = (t) => addSandboxUnit(d, t);
+    // 1. The army: a Cleric, a front line, then damage of both kinds, sometimes a ward or a
+    // Furgon. About two thirds of the Supply goes on units, the rest on levels and kit.
+    const budget = Math.round(SANDBOX_SUPPLY * 0.64);
+    const shuffle = (a) => a.map((x) => [rng.next(), x]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+    const fits = (t) => cost() + specCost(sandboxSpec(t)) <= budget;
+    add('cleric');
+    const tanks = shuffle(['knight', 'knight', 'golem', 'mageknight', 'paladin', 'frostgiant']);
+    for (const t of tanks.slice(0, rng.chance(0.5) ? 2 : 1)) if (fits(t)) add(t);
+    if (rng.chance(0.4)) {
+      const sup = rng.pick(['furgon', 'barrier']);
+      if (fits(sup)) add(sup);
+    }
+    const dps = shuffle(['archer', 'archer', 'pyromancer', 'witch', 'berserker', 'assassin', 'enchantress', 'beastrider', 'scout', 'trebuchet', 'skelarcher', 'wisp', 'dragon', 'archmage', 'phoenix']);
+    let magic = 0;
+    for (const t of dps) {
+      if (d.units.length >= 7) break;
+      if (!fits(t)) continue;
+      // Keep both kinds of damage in: no more than three of one.
+      const m = UNITS[t].act.dmg === 'magic';
+      const phys = d.units.filter((it) => UNITS[it.spec.type].act.dmg === 'phys').length;
+      if ((m && magic >= 3) || (!m && phys >= 4)) continue;
+      add(t);
+      if (m) magic++;
+    }
+    if (!d.units.some((it) => UNITS[it.spec.type].act.dmg)) add('archer');
+    // 2. Relics: the strongest that work in this army, five at most, never a clashing pair,
+    // two legendaries at most. A relic made for what this army already does (a Plague
+    // Doctor's Mask for its Poison Wisp, Wildfire Oil for its Pyromancer) jumps the queue.
+    const tierScore = { legendary: 6, boss: 5, rare: 4, uncommon: 3, common: 2, event: 3 };
+    const order = Object.keys(RELICS)
+      .map((id) => {
+        const need = RELIC_NEEDS[id];
+        const fit = need ? relicFit(d, id) : null;
+        // Build-defining relics get a real push when the army already plays that way; the
+        // rest that merely fit get a nudge.
+        const big = ['plague_mask', 'wildfire_oil', 'healing_salve', 'iron_ram', 'tide_conch', 'lone_wolf', 'phalanx_standard', 'shadow_cloak', 'storm_jar'].includes(id);
+        const synergy = fit && fit.ok ? (fit.fix ? 0.5 : big ? 3 : 1) : 0;
+        return [id, (tierScore[RELICS[id].tier] || 2) * (RELICS[id].cursed ? 0.6 : 1) + synergy + rng.next() * 3];
+      })
+      .sort((a, b) => b[1] - a[1])
+      .map((p) => p[0]);
+    for (const id of order) {
+      if (d.relics.length >= SANDBOX_RELICS) break;
+      if (RELIC_CLASH[id] && d.relics.includes(RELIC_CLASH[id])) continue;
+      if (RELICS[id].tier === 'legendary' && d.relics.filter((r) => RELICS[r].tier === 'legendary').length >= 2) continue;
+      const fit = relicFit(d, id);
+      if (!fit.ok) continue;
+      // Only if the army still fits the Supply with it (and with whatever it needs).
+      if (cost() + (fit.fix ? fit.fix.cost : 0) > sandboxSupply(d.relics.concat(id)) - 4) continue;
+      if (fit.fix) fit.fix.apply();
+      d.relics.push(id);
+      if (fit.why) why.push(`${RELICS[id].name}: ${fit.why}.`);
+    }
+    // 3. Kit: levels and items, best value for Supply first, until nothing more fits. Items
+    // that feed the relics' needs count double.
+    const keys = d.relics.map((id) => RELIC_NEEDS[id] && RELIC_NEEDS[id].key).filter(Boolean);
+    const cap = () => sandboxSupply(d.relics);
+    for (let guard = 0; guard < 300; guard++) {
+      const left = cap() - cost();
+      let best = null;
+      const offer = (value, c, apply) => {
+        if (c > left) return;
+        const score = (value / Math.max(1, c)) * (0.75 + rng.next() * 0.5);
+        if (!best || score > best.score) best = { score, apply };
+      };
+      d.units.forEach((it) => {
+        const sp = it.spec;
+        const fighter = UNITS[sp.type].act.dmg || UNITS[sp.type].role === 'tank';
+        if (sp.level < D.MAX_LEVEL) {
+          const before = specCost(sp);
+          sp.level++;
+          const c = specCost(sp) - before;
+          sp.level--;
+          offer((sp.level === 1 ? 8 : 9) * (fighter ? 1.2 : 0.7), c, () => sp.level++);
+        }
+        const sl = slotsFor(sp.level);
+        for (const [k, table] of [['talents', TALENTS], ['skills', SKILLS], ['gear', GEAR]]) {
+          if (sp[k].length >= sl[k]) continue;
+          for (const id of Object.keys(table)) {
+            if (!D.eligible(sp.type, table[id]) || sandboxHolder(d, k, id) >= 0) continue;
+            const feeds = keys.some((key) => JSON.stringify(table[id].mod || {}).includes('"' + key + '"'));
+            offer((1.5 + (table[id].cost || 0)) * (feeds ? 2 : 1), table[id].cost || 0, () => sp[k].push(id));
+          }
+        }
+        if (!sp.enchant)
+          for (const id of Object.keys(ENCHANTS)) {
+            if (!D.eligible(sp.type, ENCHANTS[id]) || sandboxHolder(d, 'enchant', id) >= 0) continue;
+            offer(1.5 + ENCHANTS[id].surcharge, ENCHANTS[id].surcharge, () => (sp.enchant = id));
+          }
+      });
+      if (!best) break;
+      best.apply();
+      fixSandbox(d);
+    }
+    d.name = `The ${rng.pick(LEGEND_A)} ${rng.pick(LEGEND_B)}`;
+    d.why = why;
+    return fixSandbox(d);
   }
 
   // Reset Hall of Fame (from the menu): every army goes, the house armies too.
@@ -3582,6 +3768,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, autoSandbox, relicFit, HALL_INERT, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
