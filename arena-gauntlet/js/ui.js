@@ -975,11 +975,13 @@
             <h1 class="wordmark">Arena<br>Gauntlet</h1>
             <p class="lab-tag">${ic('star')} Experiment: the fun pass</p>
             <p class="tagline">Scout the enemy, spend your Supply on the perfect counter, and fight through three acts of isometric battles. Lose, re-plan, and try again.</p>
+            ${inAppBrowser() ? `<p class="inapp-note">${ic('scroll')} <span>You're in ${inAppBrowser()}'s built-in browser, which can lose your progress. Open the link in your own browser (the ⋮ or share menu → Open in browser), or back up your save.</span></p>` : ''}
             <div class="title-actions">
               ${run ? `<button class="btn primary" id="tCont">${ic('flag')} Continue · ${ACTS[run.act].short}${pendingBattle ? ' · ' + esc(run.pending.enc.name) : ''}</button>` : ''}
               <button class="btn ${run ? '' : 'primary'}" id="tNew">${ic('swords')} New campaign</button>
               <div class="row"><button class="btn grow" id="tHelp">${ic('help')} How to play</button>
               <button class="btn grow" id="tCodex">${ic('book')} Codex</button></div>
+              <button class="btn" id="tSave">${ic('scroll')} Back up or restore save</button>
               ${hall.legends.length + hall.queue.length ? `<button class="btn" id="tHall">${ic('crown')} Hall of Fame · ${hall.legends.length + hall.queue.length}${hall.queue.length ? ` (${hall.queue.length} waiting to climb)` : ''}</button>` : ''}
             </div>
             <p class="meta-line">${meta.runs ? `Campaigns fought: ${meta.runs} · Victories: ${meta.wins}` : 'Inspired by the classic isometric arena tactics games.'}</p>
@@ -997,7 +999,99 @@
     $('#tHelp', v).onclick = () => helpSheet();
     $('#tCodex', v).onclick = () => codexSheet();
     if ($('#tHall', v)) $('#tHall', v).onclick = () => hallScreen(title);
+    $('#tSave', v).onclick = () => saveSheet();
     requestAnimationFrame(() => startDiorama($('#diorama')));
+  }
+
+  // Social apps open links in a browser of their own, whose storage can be wiped: the app's
+  // name when the page is in one (as far as the app says so in its user agent), else ''.
+  function inAppBrowser() {
+    const ua = (root.navigator && root.navigator.userAgent) || '';
+    if (/Twitter|TwitterAndroid|\bX\/\d/i.test(ua)) return 'X';
+    if (/FBAN|FBAV|FB_IAB/.test(ua)) return 'Facebook';
+    if (/Instagram/.test(ua)) return 'Instagram';
+    if (/musical_ly|TikTok|BytedanceWebview/i.test(ua)) return 'TikTok';
+    if (/Snapchat/i.test(ua)) return 'Snapchat';
+    if (/Discord/i.test(ua)) return 'Discord';
+    if (/Reddit/i.test(ua)) return 'Reddit';
+    if (/Android.*; wv\)/.test(ua)) return 'this app';
+    return '';
+  }
+
+  // Back up or restore: the whole save as one text code to copy out of this browser and
+  // paste into another (or keep somewhere safe).
+  function saveSheet() {
+    openSheet(
+      `${sheetHead('Back up or restore save', 'Your progress lives in this browser only: clearing it, or another browser or device, starts from nothing.')}
+      <h4 class="save-sec">Back up</h4>
+      <p class="small muted">Makes a code holding your campaign, Hall of Fame and record. Keep it in your notes or send it to yourself, then paste it into Restore on any browser or device.</p>
+      <button class="btn primary" id="bkMake">${ic('scroll')} Make backup code</button>
+      <div id="bkOut" hidden>
+        <textarea id="bkCode" class="save-code" readonly rows="4" aria-label="Backup code"></textarea>
+        <div class="row"><button class="btn grow" id="bkCopy">${ic('check')} Copy code</button></div>
+        <p class="small muted" id="bkInfo"></p>
+      </div>
+      <h4 class="save-sec">Restore</h4>
+      <p class="small muted">Paste a backup code. It replaces the campaign, Hall of Fame and record in this browser.</p>
+      <textarea id="rsCode" class="save-code" rows="4" placeholder="Paste your backup code (AGZ1.…)" aria-label="Backup code to restore"></textarea>
+      <p class="small save-err" id="rsErr" hidden></p>
+      <button class="btn" id="rsGo">${ic('undo')} Restore save</button>`,
+      (sh) => {
+        const out = $('#bkCode', sh);
+        $('#bkMake', sh).onclick = async () => {
+          let code;
+          try {
+            code = await R.exportSave();
+          } catch (e) {
+            toast('Could not make a backup in this browser.');
+            return;
+          }
+          out.value = code;
+          $('#bkOut', sh).hidden = false;
+          $('#bkInfo', sh).textContent = `${code.length.toLocaleString()} characters. Copy all of it.`;
+          out.focus();
+          out.select();
+        };
+        $('#bkCopy', sh).onclick = async () => {
+          let ok = false;
+          try {
+            await root.navigator.clipboard.writeText(out.value);
+            ok = true;
+          } catch (e) {
+            out.focus();
+            out.select();
+            try {
+              ok = document.execCommand('copy');
+            } catch (e2) {
+              ok = false;
+            }
+          }
+          toast(ok ? 'Backup code copied.' : 'Select the code and copy it by hand.');
+        };
+        $('#rsGo', sh).onclick = async () => {
+          const err = $('#rsErr', sh);
+          err.hidden = true;
+          const code = $('#rsCode', sh).value;
+          const check = await R.readBackup(code);
+          if (check.error) {
+            err.textContent = check.error;
+            err.hidden = false;
+            return;
+          }
+          const d = check.data;
+          const what = [d.run ? 'a campaign in progress' : 'no campaign in progress', `${((d.hall && d.hall.legends) || []).length + ((d.hall && d.hall.queue) || []).length} Hall of Fame armies`, `${(d.meta && d.meta.runs) || 0} campaigns fought`].join(', ');
+          if (!(await confirmSheet('Restore this save?', `The code holds ${esc(what)}. It replaces everything saved in this browser.`, 'Restore', 'Cancel', true))) return;
+          const r = await R.importSave(code);
+          if (r.error) {
+            toast(r.error);
+            return;
+          }
+          UI.run = R.load();
+          toast('Save restored.');
+          title();
+        };
+      }
+    );
   }
 
   // ------------------------------------------------------------ new campaign

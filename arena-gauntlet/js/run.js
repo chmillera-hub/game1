@@ -3194,6 +3194,76 @@
     }
   }
 
+  // Save backup: everything this browser keeps (the campaign, the Hall of Fame, the record) as
+  // one text code a player copies out and pastes into another browser or device. Squeezed with
+  // deflate where the browser can ("AGZ1."), plain otherwise ("AG1.").
+  const BACKUP_KEYS = () => ({ run: SAVE_KEY, meta: META_KEY, hall: HALL_KEY });
+
+  function toB64(bytes) {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return root.btoa(s);
+  }
+
+  function fromB64(str) {
+    const s = root.atob(str);
+    const out = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+    return out;
+  }
+
+  async function pump(bytes, stream) {
+    const buf = await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
+  async function exportSave() {
+    const data = { v: 1 };
+    for (const [k, key] of Object.entries(BACKUP_KEYS())) {
+      const j = root.localStorage && root.localStorage.getItem(key);
+      if (j) data[k] = JSON.parse(j);
+    }
+    const bytes = new TextEncoder().encode(JSON.stringify(data));
+    if (root.CompressionStream) return 'AGZ1.' + toB64(await pump(bytes, new root.CompressionStream('deflate-raw')));
+    return 'AG1.' + toB64(bytes);
+  }
+
+  // Reads a backup code without touching anything: { data } or { error }.
+  async function readBackup(code) {
+    const c = String(code || '').replace(/\s+/g, '');
+    const m = /^(AGZ1|AG1)\.([A-Za-z0-9+/=]+)$/.exec(c);
+    if (!m) return { error: 'That is not a backup code. It starts with AGZ1. or AG1.' };
+    let data;
+    try {
+      let bytes = fromB64(m[2]);
+      if (m[1] === 'AGZ1') {
+        if (!root.DecompressionStream) return { error: 'This browser cannot read that code. Try another browser.' };
+        bytes = await pump(bytes, new root.DecompressionStream('deflate-raw'));
+      }
+      data = JSON.parse(new TextDecoder().decode(bytes));
+    } catch (e) {
+      return { error: 'That code is damaged or cut short. Copy the whole code and try again.' };
+    }
+    if (!data || data.v !== 1 || typeof data !== 'object') return { error: 'That code is from an unknown version of the game.' };
+    for (const k of ['run', 'meta', 'hall']) if (data[k] != null && typeof data[k] !== 'object') return { error: 'That code is damaged.' };
+    return { data };
+  }
+
+  // Replaces this browser's save with a backup's. What the backup lacks is cleared.
+  async function importSave(code) {
+    const r = await readBackup(code);
+    if (r.error) return r;
+    try {
+      for (const [k, key] of Object.entries(BACKUP_KEYS())) {
+        if (r.data[k]) root.localStorage.setItem(key, JSON.stringify(r.data[k]));
+        else root.localStorage.removeItem(key);
+      }
+    } catch (e) {
+      return { error: 'This browser would not store the save.' };
+    }
+    return { ok: true, data: r.data };
+  }
+
   function clearSave() {
     try {
       root.localStorage && root.localStorage.removeItem(SAVE_KEY);
@@ -3239,7 +3309,7 @@
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
-    legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
+    exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
     loadHall, saveHall, resetHall, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
