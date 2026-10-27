@@ -9,8 +9,8 @@ walks her through it and a narrator fills in the physics.
 
 | file | what |
 | --- | --- |
-| `what_if_earth_shrank.mp4` | main video, H.264 + AAC, under 15 MB, burned-in subtitles |
-| `what_if_earth_shrank_hevc.mp4` | same video in HEVC (smaller codec, slightly cleaner picture) |
+| `what_if_earth_shrank.mp4` | main video: H.264 High + AAC 64 kbps, 900×1600, 6:09, **14.4 MB**, burned-in subtitles; plays everywhere |
+| `what_if_earth_shrank_hevc.mp4` | same video in HEVC Main10, native 1080×1920, **14.6 MB**: crisper outlines and smoother night-sky gradients; needs an HEVC-capable player (all recent iPhones/Androids) |
 | `what_if_earth_shrank.srt` | subtitle file with speaker labels |
 | `what_if_earth_shrank_first_frame.png` | frame 0 (the social-media preview frame) |
 
@@ -65,3 +65,6 @@ python encode.py all     # render + encode -> output/
 ```
 
 Intermediate files go to `$WHATIF_BUILD` (see `paths.py`).
+
+Quality check: both encodes score SSIM 0.980 against the uncompressed render (scaled to 1080×1920).
+The audio is mastered to about -16.7 LUFS integrated, with a decoded true peak of -1.4 dBTP.
