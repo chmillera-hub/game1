@@ -273,7 +273,7 @@
     const st = (v, l, title, cls) => `<div class="stat ${cls || ''}"${title ? ` title="${title}"` : ''}><b>${v}</b><span>${l}</span></div>`;
     const dt = !heal && !poisoner && DMG_TYPES[a.dmg] ? a.dmg : null;
     const power = dt ? st(dmgIcon(dt) + powVal, powLabel, DMG_TYPES[dt].tip, 'dmg-' + dt) : st(powVal, powLabel);
-    return `<div class="stats">${power}${st(pct(u.armor), 'P.Res', 'Physical resistance: cuts physical damage by this much')}${st(pct(u.res), 'M.Res')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
+    return `<div class="stats">${power}${st(pct(u.armor), 'P.Res', 'Physical resistance: cuts physical damage by this much')}${st(pct(u.res), 'M.Res', 'Magic resistance: cuts magic, fire and poison damage by this much')}${st(u.facing < 0 ? '-' : pct(u.block), 'Block')}${st(E.cooldown(u), 'CD', 'Cooldown: after acting, it passes this many of its turns. Moving alone is free.')}${st(u.move, 'Move')}${st(rangeLabel(a), 'Range')}${st(u.spd || '-', 'SPD', 'Speed: in each cycle of turns, faster units go first')}</div>`;
   }
 
   // A shove or pull in a preview: where it goes and what it hits.
@@ -5094,7 +5094,7 @@
           <li>Physical attacks are reduced by <b>physical resistance</b> (P.Res on a unit's card: 30% cuts every physical hit by 30%) and can be <b>blocked</b>: full block from the front, half from the side, never from behind.</li>
           <li><b>Friendly fire</b>: area attacks (cleaves, fireballs, volleys, lightning bolts, breaths) hit your own units in the area too, unless an upgrade makes them spare allies, like the <b>Disciplined</b> skill.</li>
           <li>When a unit finishes its turn it turns to face the nearest enemy.</li>
-          <li>Magic ignores physical resistance and block, but is reduced by <b>magic resistance</b> (M.Res). No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
+          <li>Magic ignores physical resistance and block, but is reduced by <b>magic resistance</b> (M.Res). Fire and poison are elemental: magic resistance cuts burns, fire underfoot and poison ticks the same way (and a unit weak to magic takes more from them). No defense goes above 50%. Ghosts shrug off steel but fear magic; Mage Knights shrug off spells.</li>
           <li>Every attack shows its type: ${dmgIcon('phys')} a sword for <b>physical</b>, ${dmgIcon('magic')} a violet sparkle for <b>magic</b>. A unit's DMG stat carries the icon of its main attack, and magic damage numbers float up in violet.</li>
         </ul>
         <h4>Missions</h4>

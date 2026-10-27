@@ -169,7 +169,7 @@
             let e = 0;
             if (a.dmg) e += E.calcHit(s, v, u, { act: a, dmgType: a.dmg }).dmg;
             if (a.fx && a.fx.para && !E.statusImmune(s, u, 'para')) e += 10;
-            if (a.fx && a.fx.poison && !u.poison && !E.statusImmune(s, u, 'poison')) e += E.poisonDamage(v, a) * a.fx.poison * 0.6;
+            if (a.fx && a.fx.poison && !u.poison && !E.statusImmune(s, u, 'poison')) e += E.poisonDamage(v, a) * (1 - u.res) * a.fx.poison * 0.6;
             e *= 0.75;
             for (let f = 0; f < 4; f++) best[f] = Math.max(best[f], e);
             continue;
@@ -893,7 +893,7 @@
         // Poisons from different sources add up; the same source only tops up its own.
         const own = t.poison && E.poisonStacks(t).find((st) => st.key === e.poison.key);
         const fresh = own ? Math.max(0, e.poison.turns - own.turns) : e.poison.turns;
-        v += p * (Math.min(fresh * e.poison.dmg, t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
+        v += p * (Math.min(fresh * e.poison.dmg * (1 - t.res), t.hp) * hpv * 0.85 + (t.poison ? 0 : 3));
       }
       if (e.burn) {
         const fresh = t.burn ? Math.max(0, e.burn.turns - t.burn.turns) : e.burn.turns;

@@ -1,6 +1,6 @@
 // Poison and burns split the work. Poison never takes on buildings or the undead, but it
 // stops all healing and regen. Burns catch on buildings and the undead alike, and leave
-// healing and regen alone.
+// healing and regen alone. Both are elemental: magic resistance cuts them.
 // Run: node tests/dots.test.js
 const assert = require('assert');
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js', 'run.js']);
@@ -79,6 +79,27 @@ test('poison stops healing and regen; burns do not', () => {
   assert.ok(regen(b) >= 1, 'burning: still regenerates');
   assert.ok(E.healBlocked(s, a) || !a.poison, 'poison blocks heals while it lasts');
   assert.ok(!E.healBlocked(s, b), 'a burn never blocks heals');
+});
+
+test('magic resistance cuts poison and burns alike', () => {
+  const tick = (res, fx) => {
+    const s = battle([
+      { type: 'knight', team: 'P', x: 4, y: 7 },
+      { type: 'knight', team: 'E', x: 4, y: 0 },
+    ]);
+    const [u, foe] = s.units;
+    u.res = res;
+    E.applyStatus(s, foe, u, fx, { name: 'test' });
+    const hp = u.hp;
+    E.endTurn(s);
+    return hp - u.hp;
+  };
+  for (const fx of [{ poison: [3, 10] }, { burn: [3, 10] }]) {
+    const k = Object.keys(fx)[0];
+    assert.strictEqual(tick(0, fx), 10, `${k}: full damage with no magic resistance`);
+    assert.strictEqual(tick(0.5, fx), 5, `${k}: halved at 50%`);
+    assert.strictEqual(tick(-0.2, fx), 12, `${k}: worse on a unit weak to magic`);
+  }
 });
 
 console.log(`dots: ${passed} tests passed`);

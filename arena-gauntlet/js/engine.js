@@ -1709,11 +1709,14 @@
   }
 
   // Magic damage that is not an attack: bonus magic, zaps, burns, fire and explosions.
+  // What magic resistance (and a mark) makes of spell, fire and poison damage.
+  function elementalMult(s, tgt) {
+    return (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt)) * (tgt.mark > 0 ? 1.25 : 1);
+  }
+
   function magicDamage(s, src, tgt, base, why) {
     if (!tgt.alive) return 0;
-    let dmg = base * (1 - effRes(s, tgt)) * (1 - magicGuard(s, tgt));
-    if (tgt.mark > 0) dmg *= 1.25;
-    dmg = Math.max(1, Math.round(dmg));
+    const dmg = Math.max(1, Math.round(base * elementalMult(s, tgt)));
     return applyDamage(s, src, tgt, dmg, { cat: 'none', dmgType: why === 'burn' ? 'burn' : 'magic' });
   }
 
@@ -2779,9 +2782,12 @@
       if (!u.poison) return;
       const n = u.poison.stacks.length;
       const feeders = u.poison.stacks.map((p) => [s.byId[p.src], p.dmg]).filter(([w]) => w && w.alive && w.traits.has('parasite'));
-      applyDamage(s, s.byId[u.poison.src] || null, u, u.poison.dmg, { cat: 'none', dmgType: 'poison' });
+      // Poison is elemental, like fire: magic resistance cuts it (and weakness to magic
+      // makes it worse), just as it does a burn.
+      const f = elementalMult(s, u);
+      applyDamage(s, s.byId[u.poison.src] || null, u, Math.max(1, Math.round(u.poison.dmg * f)), { cat: 'none', dmgType: 'poison' });
       // Parasite: the poisoner drinks what its poison takes.
-      for (const [w, d] of feeders) heal(s, w, d, 'drain');
+      for (const [w, d] of feeders) heal(s, w, Math.max(1, Math.round(d * f)), 'drain');
       if (!u.alive || !u.poison) return;
       for (const st of u.poison.stacks) st.turns--;
       sumPoison(u);
@@ -3328,7 +3334,7 @@
     poisonDamage, poisonKey, poisonStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,
-    finishActivation, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
+    finishActivation, elementalMult, cooldown, turnsUntilReady, upcoming, queueDelay, inQueue, regenOf, fatigueHit, tiring, routHit, cleanupHit, pass, endTurn, hasMove, usefulUnit, checkOutcome, forfeit, drainEvents,
     BLOCK_DMG, pendingWaves, waveSummary,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
