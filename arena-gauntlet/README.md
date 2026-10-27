@@ -187,7 +187,9 @@ on a phone turned sideways, but portrait works too.
 - **Sandbox armies**: Build a sandbox army (Hall of Fame) skips the campaign: any
   recruitable unit at any level, any talent, skill, gear piece and enchantment it can take
   (kits kept legal: its own class's talents, eligible items, one of each, within its
-  level's slots), up to 5 relics of your choice, legendary ones too, and a fixed 34 Supply
+  level's slots) with one copy of each in the whole army (a campaign can find doubles;
+  in the kit sheet, an item on another unit says so and a tap moves it over), up to 5
+  relics of your choice, legendary ones too, and a fixed 34 Supply
   (relics that add or cost Supply still do). 34 is the median campaign winner's Supply in
   the sims (27 to 43, with about 6 random relics), so a hand-picked sandbox army is strong,
   but a great campaign (a dozen relics, Supply Caches, a veteran commander) goes further,

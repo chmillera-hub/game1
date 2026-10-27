@@ -45,6 +45,25 @@ async function test(name, fn) {
     assert.strictEqual(sp.talents.length, Math.min(knightTalents.length, D.TALENT_SLOTS[3]));
   });
 
+  await test('one copy of each item in the whole army: the first unit keeps it', () => {
+    const d = R.fixSandbox({});
+    R.addSandboxUnit(d, 'knight');
+    R.addSandboxUnit(d, 'berserker');
+    const gear = Object.keys(D.GEAR).find((id) => D.eligible('knight', D.GEAR[id]) && D.eligible('berserker', D.GEAR[id]));
+    const ench = Object.keys(D.ENCHANTS).find((id) => D.eligible('knight', D.ENCHANTS[id]) && D.eligible('berserker', D.ENCHANTS[id]));
+    for (const it of d.units) Object.assign(it.spec, { gear: [gear], enchant: ench });
+    R.fixSandbox(d);
+    assert.deepStrictEqual(d.units[0].spec.gear, [gear]);
+    assert.strictEqual(d.units[0].spec.enchant, ench);
+    assert.deepStrictEqual(d.units[1].spec.gear, [], 'no second copy');
+    assert.ok(!d.units[1].spec.enchant);
+    assert.strictEqual(R.sandboxHolder(d, 'gear', gear), 0);
+    assert.strictEqual(R.sandboxHolder(d, 'enchant', ench), 0);
+    // Two Knights may still share an ability pick: picks are not items.
+    R.addSandboxUnit(d, 'knight');
+    assert.strictEqual(d.units[2].spec.a1, d.units[0].spec.a1);
+  });
+
   await test('units stand on their own side, one to a tile; fighters up front, support at the back', () => {
     const d = R.fixSandbox({});
     for (const t of ['knight', 'cleric', 'archer', 'berserker']) R.addSandboxUnit(d, t);

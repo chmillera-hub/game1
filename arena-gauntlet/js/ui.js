@@ -4691,7 +4691,7 @@
     const v = showView(
       `<div class="wrap">
         <div><p class="eyebrow">Hall of Fame</p><h2>Sandbox army</h2></div>
-        <p class="muted">Skip the campaign and build an army for the Hall of Fame: any unit, any talent, skill, gear piece and enchantment it can take, up to ${R.SANDBOX_RELICS} relics of your choice (legendary ones too) and ${R.SANDBOX_SUPPLY} Supply. Sandbox armies are marked Sandbox. The strongest armies still come from campaigns, which can carry a dozen relics and far more Supply.</p>
+        <p class="muted">Skip the campaign and build an army for the Hall of Fame: any unit, any talent, skill, gear piece and enchantment it can take, up to ${R.SANDBOX_RELICS} relics of your choice (legendary ones too) and ${R.SANDBOX_SUPPLY} Supply. The sandbox holds one copy of everything: each talent, skill, gear piece and enchantment goes on one unit. Sandbox armies are marked Sandbox. The strongest armies still come from campaigns, which can carry a dozen relics, doubles of the best items and far more Supply.</p>
         <div class="budget ${left < 0 ? 'over' : ''}">${ic('command')} ${left < 0 ? `<b>${-left}</b> over budget` : `Supply left: <b>${left}</b>`}<span class="grow"></span><span class="small muted">Army ${st.used}/${st.cap}</span></div>
         <div class="panel"><div class="row"><b class="grow">Relics ${d.relics.length}/${R.SANDBOX_RELICS}</b><button class="btn" id="sbRelics">${ic('gem')} Choose relics</button></div>${relics ? `<div class="sb-relics">${relics}</div>` : '<p class="small muted">None yet. Relics that add or cost Supply change your budget.</p>'}</div>
         <div class="panel"><div class="row"><b class="grow">Formation</b><span class="small muted">${sel != null ? 'Tap a tile to move it there.' : 'Tap a unit, then a tile to move it.'} The enemy stands to the north.</span></div><div class="sb-grid">${grid}</div></div>
@@ -4801,8 +4801,15 @@
     if (!it) return;
     const sp = it.spec;
     const T = UNITS[sp.type];
-    const opt = (kind, id, name, desc, cost, on, off) =>
-      `<button class="sb-opt ${on ? 'on' : ''}" data-sbk="${kind}" data-sbid="${id}" ${off ? 'disabled' : ''}><span class="grow"><b>${esc(name)}</b> <span class="small muted">${cost ? `${cost > 0 ? '+' : ''}${cost} Supply` : 'Free'}</span><span class="small muted sb-desc">${esc(desc || '')}</span></span>${on ? ic('check') : ''}</button>`;
+    // An item another unit holds: the sandbox has one copy of each, so taking it moves it.
+    const holder = (kind, id) => {
+      const j = kind === 'talents' || kind === 'skills' || kind === 'gear' || kind === 'enchant' ? R.sandboxHolder(d, kind, id) : -1;
+      return j >= 0 && j !== i ? d.units[j] : null;
+    };
+    const opt = (kind, id, name, desc, cost, on, off) => {
+      const h = id && holder(kind, id);
+      return `<button class="sb-opt ${on ? 'on' : ''} ${h ? 'held' : ''}" data-sbk="${kind}" data-sbid="${id}" ${off ? 'disabled' : ''}><span class="grow"><b>${esc(name)}</b> <span class="small muted">${cost ? `${cost > 0 ? '+' : ''}${cost} Supply` : 'Free'}</span>${h ? `<span class="small sb-held">On your ${esc(UNITS[h.spec.type].name)}: tap to move it here</span>` : ''}<span class="small muted sb-desc">${esc(desc || '')}</span></span>${on ? ic('check') : ''}</button>`;
+    };
     const html = () => {
       const st = R.sandboxStatus(d);
       const sl = { talents: TALENT_SLOTS[sp.level], skills: SKILL_SLOTS[sp.level], gear: GEAR_SLOTS[sp.level] };
@@ -4832,6 +4839,12 @@
         b.onclick = () => {
           const k = b.dataset.sbk;
           const id = b.dataset.sbid;
+          // One copy of each item: taking one another unit holds moves it here.
+          const from = id && holder(k, id);
+          if (from) {
+            if (k === 'enchant') delete from.spec.enchant;
+            else from.spec[k] = from.spec[k].filter((x) => x !== id);
+          }
           if (k === 'level') sp.level = +id;
           else if (k === 'a1' || k === 'a2') sp[k] = id;
           else if (k === 'enchant') {
@@ -5544,7 +5557,7 @@
         <h4>The campaign</h4>
         <p>March through three acts. Each act has four rounds: in each you choose one of three battles, easy, medium or elite, from a look at the field, its goals and what it pays (elite battles are hard, pay more and drop a relic). One event and one merchant wait somewhere in the middle, and a boss ends the act. Lose as often as you need: a defeat brings you back to the round's choice. Beat the Act III boss to win; after that, an optional final challenge waits for a super victory.</p>
         <h4>Hall of Fame</h4>
-        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to three of your own, never rivals or house armies); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it. <b>Sandbox</b>: skip the campaign and build an army straight for the Hall (any unit, talent, skill, gear piece and enchantment it can take, up to 5 relics of your choice, 34 Supply). Test it against any Hall army, then enter it: it climbs like any army, marked Sandbox. Campaign armies can grow stronger still, with a dozen relics and far more Supply.</p>
+        <p>Every won campaign enters its final army, kit and relics included, at the bottom of the Hall of Fame. It climbs by fighting the army right above it, both sides on the AI: a win swaps them, a loss or reaching #1 ends the climb. Watch the matches or simulate the climb; tap two armies for a friendly match. Find it on the title screen. <b>Rivals</b>: Share my armies makes a code holding your best armies (up to three of your own, never rivals or house armies); a friend pastes it under Add a rival's armies, and they join that Hall in red, marked with your name, waiting to climb. Rivals fight by the same rules as any army; tap one to remove it. <b>Sandbox</b>: skip the campaign and build an army straight for the Hall (any unit, talent, skill, gear piece and enchantment it can take, one copy of each in the whole army, up to 5 relics of your choice, 34 Supply). Test it against any Hall army, then enter it: it climbs like any army, marked Sandbox. Campaign armies can grow stronger still, with a dozen relics and far more Supply.</p>
         <h4>Supply and the war room</h4>
         <p>Before every battle you see the whole enemy army. Spend <b>Supply</b> to build your answer to it. Everything costs Supply: each unit, its level, its abilities, its skills and gear, and any enchantment on it. Two Level 1 Knights or one Level 2 Knight with better tricks? That choice is the heart of the game. Unspent Supply pays a little gold if you win.</p>
         <h4>Levels, abilities, skills and gear</h4>

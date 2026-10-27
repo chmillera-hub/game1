@@ -3063,8 +3063,10 @@
   // of your choice (legendary ones too) and a fixed 34 Supply: about what a typical campaign
   // winner fields, with everything hand-picked. Relics that add or cost Supply still do. Only
   // a campaign goes past that (a dozen relics, Supply Caches, a veteran commander), so the
-  // strongest armies, and the Wyrm slayer badge, still come from playing one. The draft is
-  // kept on its own, never touching your campaign.
+  // strongest armies, and the Wyrm slayer badge, still come from playing one. The sandbox
+  // also holds one copy of everything: each talent, skill, gear piece and enchantment goes on
+  // one unit at most, where a campaign can find doubles. The draft is kept on its own, never
+  // touching your campaign.
   const SANDBOX_SUPPLY = 34;
   const SANDBOX_RELICS = 5;
   const SANDBOX_KEY = 'arena-gauntlet-sandbox-v1';
@@ -3098,9 +3100,14 @@
     d.name = cleanText(d.name, 40);
     d.relics = [...new Set((Array.isArray(d.relics) ? d.relics : []).filter((id) => RELICS[id]))].slice(0, SANDBOX_RELICS);
     const taken = new Set();
+    // One copy of each item in the whole army: the first unit holding it keeps it.
+    const held = { talents: new Set(), skills: new Set(), gear: new Set(), enchant: new Set() };
+    const once = (kind, id) => (held[kind].has(id) ? false : (held[kind].add(id), true));
     d.units = (Array.isArray(d.units) ? d.units : []).filter((it) => {
       if (!it || !it.spec || !RECRUITABLE.includes(it.spec.type)) return false;
       fixSandboxSpec(it.spec);
+      for (const k of ['talents', 'skills', 'gear']) it.spec[k] = it.spec[k].filter((id) => once(k, id));
+      if (it.spec.enchant && !once('enchant', it.spec.enchant)) delete it.spec.enchant;
       it.x = Math.max(0, Math.min(BOARD - 1, it.x | 0));
       it.y = Math.max(BOARD - DEPLOY_ROWS, Math.min(BOARD - 1, it.y | 0));
       const k = it.x + ',' + it.y;
@@ -3109,6 +3116,11 @@
       return true;
     });
     return d;
+  }
+
+  // The unit (index) that holds this item in the sandbox army, or -1.
+  function sandboxHolder(d, kind, id) {
+    return d.units.findIndex((it) => (kind === 'enchant' ? it.spec.enchant === id : (it.spec[kind] || []).includes(id)));
   }
 
   function loadSandbox() {
@@ -3570,6 +3582,6 @@
     genEncounter, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
-    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
+    loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

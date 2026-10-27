@@ -4211,3 +4211,10 @@ body:has(#battle:not([hidden])) {
   border-color: rgba(159, 199, 232, 0.6);
   background: rgba(94, 140, 190, 0.15);
 }
+.sb-opt.held {
+  border-style: dashed;
+}
+.sb-held {
+  display: block;
+  color: var(--amber);
+}
