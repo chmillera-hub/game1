@@ -117,4 +117,30 @@ test('magic resistance cuts poison and burns alike', () => {
   }
 });
 
+test("a Cleric's free Mend cannot help a poisoned ally; Blessing (1 Supply) cures and heals", () => {
+  const AI = AG.AI;
+  const run = (a1) => {
+    const terrain = new Array(81).fill(E.T_GRASS);
+    const s = E.createBattle({ w: 9, h: 9, terrain, seed: 1, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, units: [
+      { type: 'cleric', team: 'P', x: 4, y: 8, a1 },
+      { type: 'knight', team: 'P', x: 4, y: 6 },
+      { type: 'knight', team: 'E', x: 0, y: 0 },
+    ] });
+    const [cl, kn] = s.units;
+    kn.hp -= 30;
+    kn.poison = { dmg: 5, turns: 3 };
+    kn.wait = 5;
+    s.side = 'P';
+    const plan = AI.chooseActivation(s, 'P', { stance: 'balanced', temp: 0 });
+    if (plan) AI.runPlan(s, plan, { stance: 'balanced', temp: 0 });
+    return kn;
+  };
+  assert.strictEqual(AG.Data.ABILITIES.c_mend.cost, 0);
+  const mended = run('c_mend');
+  assert.ok(mended.poison && mended.hp === mended.maxHp - 30, 'Mend: still poisoned, not healed');
+  assert.ok(AG.Data.ABILITIES.c_bless.cost >= 1);
+  const blessed = run('c_bless');
+  assert.ok(!blessed.poison && blessed.hp > blessed.maxHp - 30, 'Blessing: cured, then healed');
+});
+
 console.log(`dots: ${passed} tests passed`);

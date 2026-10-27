@@ -86,11 +86,11 @@
     s_venom: { name: 'Venom Blades', cost: 2, desc: 'Knife hits poison the target for 2 turns: 5 damage a turn, and no healing.', mod: { onHit: { poison: [2, 5] } } },
 
     // Cleric
-    c_mend: { name: 'Mend', cost: 0, desc: 'Active: heal one ally up to 4 tiles away for 150% and cure its poison and burns.',
-      mod: { active: { name: 'Mend', kind: 'heal', range: [0, 4], mult: 1.5, cure: true } } },
+    c_mend: { name: 'Mend', cost: 0, desc: 'Active: heal one ally up to 4 tiles away for 150%. It cannot heal a poisoned ally: take Blessing for that.',
+      mod: { active: { name: 'Mend', kind: 'heal', range: [0, 4], mult: 1.5 } } },
     c_smite: { name: 'Smite', cost: 1, desc: 'Active: holy light strikes an enemy 1 to 4 tiles away for full magic damage, +50% against undead and spirits.',
       mod: { active: { name: 'Smite', kind: 'strike', range: [1, 4], dmg: 'magic', arc: true, mult: 1, vs: { undead: 0.5, spirit: 0.5 } } } },
-    c_bless: { name: 'Blessing', cost: 1, desc: 'Its basic ability (the healing prayer) also cures poison, burns, paralysis and roots.', mod: { act: { cleanse: true } } },
+    c_bless: { name: 'Blessing', cost: 1, desc: "Its basic ability (the healing prayer) cures poison, burns, paralysis and roots first, then heals: the Cleric's answer to poison.", mod: { act: { cleanse: true } } },
     c_halo: { name: 'Halo', cost: 1, desc: 'Healing that spills past full HP turns into a shield, up to 15.', mod: { traits: ['overshield'] } },
     c_angel: { name: 'Guardian Angel', cost: 1, desc: 'Once per battle, when an ally within 3 tiles would fall, it saves it with 1 HP.', mod: { traits: ['angel'] } },
     c_greater: { name: 'Greater Prayer', cost: 0, desc: 'Its basic ability (the healing prayer) reaches 1 tile further and heals 25% more.', mod: { stat: { radius: 1 }, props: { healMult: 0.25 } } },
@@ -405,7 +405,7 @@
       traits: [], tags: ['human', 'caster'],
       abilities: { 1: ['c_mend', 'c_smite', 'c_bless', 'c_halo'], 2: ['c_greater', 'c_shield', 'c_revive', 'c_angel'] },
       desc: 'Heals every ally within 3 tiles, itself included.',
-      tip: 'Poisoned units cannot be healed. Kill the Cleric first, or poison its huddle.',
+      tip: 'Poisoned units cannot be healed, unless the Cleric took Blessing. Kill the Cleric first, or poison its huddle.',
     },
     berserker: {
       name: 'Berserker', rarity: 'common', cost: 3, role: 'melee',
