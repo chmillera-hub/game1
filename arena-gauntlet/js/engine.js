@@ -233,6 +233,11 @@
       chains: 0,
       // The unit an elite's bounty is on: its hunters go for it.
       hunted: !!spec.hunted,
+      // Shackles: the unit a Shackler holds (and how many more of its own turns it holds
+      // on), and on the held unit, who holds it.
+      holding: 0,
+      holdLeft: 0,
+      heldBy: 0,
       frenzy: 0,
       shield: 0,
       alive: true,
@@ -405,8 +410,22 @@
 
   // A bounty: while one of its hunters (a Spellbinder) stands, the unit it is on cannot be
   // healed and takes 25% more damage. No turns needed: the curse holds until they fall.
+  // A Shackler lets go: the unit it held is free at once.
+  function release(s, w) {
+    if (!w || !w.holding) return;
+    const t = s.byId[w.holding];
+    w.holding = 0;
+    w.holdLeft = 0;
+    if (t && t.heldBy === w.uid) {
+      t.heldBy = 0;
+      t.para = 0;
+      t.chains = 0;
+      if (t.alive) emit(s, { t: 'release', uid: t.uid, by: w.uid });
+    }
+  }
+
   function huntedNow(s, u) {
-    return !!u.hunted && s.units.some((v) => v.alive && v.team !== u.team && v.traits.has('hunter'));
+    return !!u.hunted && s.units.some((v) => v.alive && v.team !== u.team && v.traits.has('curse'));
   }
 
   // A hostile trap on this tile stops a walking unit there. Flyers pass over traps and fire.
@@ -1167,6 +1186,7 @@
             if (fx.weak) e.weak = fx.weak;
             if (fx.mark) e.mark = fx.mark;
             if (fx.sever) e.sever = fx.sever;
+            if (fx.hold) e.hold = v.boss ? 'resist' : fx.hold;
             if (fx.knock) e.knock = shoveForecast(s, u, v, fx.knock);
             else if (fx.pull) e.knock = shoveForecast(s, u, v, fx.pull, true);
           }
@@ -1216,7 +1236,7 @@
       v.root = 0;
       any = true;
     }
-    if (any) emit(s, { t: 'cleanse', uid: v.uid });
+    if (any) emit(s, { t: 'cleanse', uid: v.uid, para: v.para });
     return any;
   }
 
@@ -1232,6 +1252,9 @@
     u.mark = 0;
     u.sever = 0;
     u.chains = 0;
+    u.holding = 0;
+    u.holdLeft = 0;
+    u.heldBy = 0;
     u.shield = 0;
     s.occ[idx(s, u.x, u.y)] = u.uid;
     emit(s, { t: 'revive', uid: u.uid, hp: u.hp, why });
@@ -1240,6 +1263,16 @@
   function kill(s, u, src) {
     u.alive = false;
     u.hp = 0;
+    // A fallen Shackler's net falls away; a held unit that falls frees its Shackler.
+    release(s, u);
+    if (u.heldBy) {
+      const w = s.byId[u.heldBy];
+      if (w) {
+        w.holding = 0;
+        w.holdLeft = 0;
+      }
+      u.heldBy = 0;
+    }
     // A meteor it was calling down never comes.
     if (s.channels && s.channels.some((c) => c.uid === u.uid)) {
       s.channels = s.channels.filter((c) => c.uid !== u.uid);
@@ -1944,6 +1977,8 @@
       if (statusImmune(s, u, 'para')) resisted(s, u, 'para');
       else {
         u.para = Math.max(u.para, fx.para);
+        // Paralyzed, a Shackler drops its chain.
+        release(s, u);
         if (fx.chains) {
           u.chains = Math.max(u.chains, fx.para);
           stamp(s, u, 'chains');
@@ -1967,6 +2002,23 @@
         u.root = Math.max(u.root, fx.root);
         stamp(s, u, 'root');
         emit(s, { t: 'status', uid: u.uid, status: 'root', turns: u.root });
+      }
+    }
+    // Shackles: held while the Shackler holds on, and no cure, rally or immunity breaks it.
+    // Bosses alone are too big to hold.
+    if (fx.hold && src && src.alive && src !== u) {
+      if (u.boss) resisted(s, u, 'para');
+      else {
+        release(s, src);
+        if (u.heldBy) release(s, s.byId[u.heldBy]);
+        src.holding = u.uid;
+        src.holdLeft = fx.hold;
+        u.heldBy = src.uid;
+        u.para = Math.max(u.para, 99);
+        u.chains = Math.max(u.chains, 99);
+        stamp(s, u, 'para');
+        stamp(s, u, 'chains');
+        emit(s, { t: 'status', uid: u.uid, status: 'held', by: src.uid, turns: fx.hold });
       }
     }
     if (fx.sever) {
@@ -2496,7 +2548,7 @@
           v.wait = Math.max(0, v.wait - 1);
           if (!(v.chains > 0)) v.para = 0;
           v.root = 0;
-          emit(s, { t: 'rally', uid: v.uid, wait: v.wait });
+          emit(s, { t: 'rally', uid: v.uid, wait: v.wait, para: v.para });
         }
         break;
       case 'shield': {
@@ -2975,6 +3027,11 @@
   function unitTurnStart(s, u) {
     landChannels(s, u);
     if (s.over || !u.alive) return;
+    // A Shackler spends its turns holding on, until its time is up or its prey is gone.
+    if (u.holding) {
+      const t = s.byId[u.holding];
+      if (!t || !t.alive || --u.holdLeft <= 0) release(s, u);
+    }
     for (const a of u.acts) if (a.cdLeft > 0) a.cdLeft--;
     u.lastTurnHp = u.hp;
     u.watchReady = true;
@@ -3164,7 +3221,7 @@
   }
 
   function sitOutReason(s, u) {
-    return u.para > 0 ? 'para' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
+    return u.para > 0 ? 'para' : u.holding ? 'hold' : u.wait > 0 ? 'cooldown' : !usefulUnit(s, u) ? 'idle' : null;
   }
 
   // The side's unit for this turn. Units take their turns in rotation order; one that is
@@ -3204,7 +3261,7 @@
   // that turn and are passed ({ uid, wait, para, why }), cooling down, paralyzed or never
   // acting (the Barrier Ward).
   function upcoming(s, team, n) {
-    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, spd: v.spd, uid: v.uid, idle: !hasAction(v) }));
+    const vs = s.units.filter((v) => v.team === team && inQueue(v)).map((v) => ({ v, cycles: v.cycles, wait: v.wait, para: v.para, hold: v.holding ? v.holdLeft : 0, spd: v.spd, uid: v.uid, idle: !hasAction(v) }));
     const out = [];
     for (let turn = 0; turn < n && vs.length; turn++) {
       let picked = null;
@@ -3216,8 +3273,10 @@
         const x = vs[0];
         if (seen.has(x)) break;
         seen.add(x);
-        const resting = x.para > 0 || x.wait > 0 || x.idle;
-        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.wait > 0 ? 'cooldown' : 'para' });
+        // A Shackler counts down its hold as its turn starts, and sits out while it holds.
+        if (x.hold > 0 && x.para === 0) x.hold--;
+        const resting = x.para > 0 || x.hold > 0 || x.wait > 0 || x.idle;
+        if (resting) passes.push({ uid: x.uid, wait: x.wait, para: x.para, why: x.idle ? 'passive' : x.para > 0 ? 'para' : x.hold > 0 ? 'hold' : x.wait > 0 ? 'cooldown' : 'para' });
         x.cycles++;
         if (x.wait > 0) x.wait--;
         else if (x.para > 0) {
@@ -3371,7 +3430,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, huntedNow, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, huntedNow, unitTurnStart, sitOutReason, applyDamage, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

@@ -952,7 +952,13 @@
   // BOUNTY_SHARE or more of all the Supply fielded, the Cleric included) makes a name for it,
   // and the elite challenges dealt after that battle come hunting it with Spellbinders.
   const BOUNTY_SHARE = 0.45;
-  const BOUNTY_HUNTERS = [0, 1, 2, 2];
+  // Who comes for the bounty, by act: Shacklers to pin it down, Spellbinders to curse it.
+  const BOUNTY_SQUAD = [null, ['shackler', 'spellbinder'], ['shackler', 'spellbinder', 'spellbinder'], ['shackler', 'shackler', 'spellbinder', 'spellbinder']];
+  // "a Shackler and 2 Spellbinders"
+  function bountySquad(b) {
+    const part = (n, one) => (n === 1 ? 'a ' + one : n + ' ' + one + 's');
+    return [b.shacklers ? part(b.shacklers, 'Shackler') : '', b.hunters ? part(b.hunters, 'Spellbinder') : ''].filter(Boolean).join(' and ');
+  }
   function carryOf(run, deployment) {
     const field = deployment.map((d) => unitById(run, d.rid)).filter(Boolean);
     const total = field.reduce((t, r) => t + unitCost(run, r), 0);
@@ -1010,13 +1016,13 @@
       units.push({ type: rng.pick(addable), level: 1 });
     }
     // A bounty: your last army leaned on one big hitter, and this elite has heard of it. It
-    // brings Spellbinders on top of its army, hunters built to lock that one unit down.
+    // brings hunters on top of its army, built to lock that one unit down.
     const hunted = group === 'elite' && !node.mega ? bountyTarget(run) : null;
-    if (hunted) for (let i = 0; i < BOUNTY_HUNTERS[act]; i++) units.unshift({ type: 'spellbinder', level: Math.min(3, act) });
+    if (hunted) for (const t of BOUNTY_SQUAD[act].slice().reverse()) units.unshift({ type: t, level: Math.min(3, act) });
     outfitEnemies(rng, run, units, budget - structures, group);
     if (primary === 'commander') {
       let lead = null;
-      for (const u of units) if (u.type !== 'spellbinder' && (!lead || enemyCost(u) > enemyCost(lead))) lead = u;
+      for (const u of units) if (u.type !== 'spellbinder' && u.type !== 'shackler' && (!lead || enemyCost(u) > enemyCost(lead))) lead = u;
       lead.vip = true;
       lead.level = Math.min(3, (lead.level || 1) + 1);
       if (UNITS[lead.type].abilities && !lead.a2) lead.a2 = UNITS[lead.type].abilities[2][0];
@@ -1110,7 +1116,7 @@
       // Timings made for one unit a turn (see retime).
       tm: 2,
     };
-    if (hunted) enc.bounty = Object.assign({ hunters: BOUNTY_HUNTERS[act] }, hunted);
+    if (hunted) enc.bounty = Object.assign({ shacklers: BOUNTY_SQUAD[act].filter((t) => t === 'shackler').length, hunters: BOUNTY_SQUAD[act].filter((t) => t === 'spellbinder').length }, hunted);
     const addObject = (type, rows, xs) => {
       const t = pickTile(rows, xs) || pickTile([0, 1, 2], [...Array(BOARD).keys()]);
       if (!t) return false;
@@ -2856,7 +2862,7 @@
     const b = enc.bounty;
     if (b)
       tips.unshift(
-        `Bounty on ${b.name} the ${UNITS[b.type].name}: your last army leaned on it, so this elite brought ${b.hunters} Spellbinder${b.hunters > 1 ? 's' : ''}. While one stands, ${b.name} cannot be healed and takes 25% more damage, and their hexes and chains go for it. Kill the Spellbinders first, leave ${b.name} on the bench, or bring a wider army.`
+        `Bounty on ${b.name} the ${UNITS[b.type].name}: your last army leaned on it, so this elite brought ${bountySquad(b)}. ${b.shacklers ? `A Shackler pins ${b.name} down for as long as it holds the chain: kill it or paralyze it to free ${b.name}. ` : ''}While a Spellbinder stands, ${b.name} cannot be healed and takes 25% more damage. Kill the hunters first, leave ${b.name} on the bench, or bring a wider army.`
       );
     const waves = enc.waves || [];
     if (waves.length) {
@@ -3812,7 +3818,7 @@
     DRAFT_STEPS, DRAFT_GOLD, draftOffer, draftClericTalent, draftBrought, addRecruit, talentNote, stripLoad, addItem, itemDef, itemByUid, itemHolder, slotsFor, normalizeLoad, setLevel, setAbility, assignItem, unassignItem, freeItems,
     costBreakdown, coreUnit, ensureCore, unitCost, bareCost, deployCost, supplyUsed, specFor, unitStats, applyScroll, unitById, hasRelic,
     objectiveInfo, bonusUnit, musterCandidates, deployRows, deployOpen, deploySlots, startingPlan, autoDeploy, counterScore, damageProfile, isFront, battleConfig,
-    genEncounter, carryOf, bountyTarget, BOUNTY_SHARE, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
+    genEncounter, carryOf, bountyTarget, bountySquad, BOUNTY_SHARE, enemyCost, finishBattle, takeSpoil, skipSpoils, takeTome, skipTome, takeBossRelic,
     exportSave, readBackup, importSave, legendChance, startAct, genSpoils, genShop, canBuy, buy, rerollPrice, rerollShop, eventDef, eventChoices, chooseEvent, eventPickOk, scoutTips,
     save, load, clearSave, snapshot, restore, goalResults, loadMeta, recordMeta,
     loadHall, saveHall, resetHall, SANDBOX_SUPPLY, SANDBOX_RELICS, sandboxSupply, sandboxSpec, fixSandbox, sandboxHolder, sandboxTierOk, autoSandbox, relicFit, HALL_INERT, kitInert, loadSandbox, saveSandbox, addSandboxUnit, sandboxSpot, sandboxStatus, sandboxLegend, enterSandbox, exportArmies, readArmies, importArmies, removeRival, shareable, houseArmies, HOUSE, specCost, armySupply, encSupply, recordLegend, hallBattleConfig, playHallMatch, hallResult, applySkirmish, hallSkirmish, hallNext, hallClimber, hallStart, hallPlace, finishClimb,

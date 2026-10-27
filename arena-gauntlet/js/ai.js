@@ -28,7 +28,7 @@
   }
 
   function harmful(a) {
-    return a.kind !== 'none' && a.left > 0 && !!(a.dmg || (a.fx && (a.fx.para || a.fx.poison)));
+    return a.kind !== 'none' && a.left > 0 && !!(a.dmg || (a.fx && (a.fx.para || a.fx.poison || a.fx.hold)));
   }
 
   // How many of its side's turns pass before a unit acts: its cooldown and paralysis, or
@@ -886,6 +886,9 @@
       }
       if (t.nonCombat || t.structure) continue;
       const p = e.block != null ? 1 - e.block : 1;
+      // Shackles: the target sits out for as long as the Shackler holds on. Worth the most on
+      // the enemy's biggest hitter, never on one already held.
+      if (e.hold && e.hold !== 'resist' && !t.heldBy) v += p * e.hold * 2.5 * paraValue(ctx.s, t) * (t.hunted ? 1.5 : 1);
       if (e.para && e.para !== 'resist') {
         v += p * e.para * paraValue(ctx.s, t);
         // Discord: it lashes out at one of its own beside it.

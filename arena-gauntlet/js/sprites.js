@@ -1321,6 +1321,48 @@
     ctx.restore();
   };
 
+  // Shackler: a lean hunter in a leather hood, a weighted chain-net coiled over one shoulder
+  // and a hooked chain swinging from the other hand.
+  D.shackler = (ctx, o) => {
+    const T = o.tc;
+    const leather = '#5a4632';
+    const iron = '#9aa3ad';
+    const sw = Math.sin(o.t * 3) * 1.6;
+    rect(ctx, -6, -13, 5, 13, 1.5, '#3a2e24');
+    rect(ctx, 1, -13, 5, 13, 1.5, shade('#3a2e24', -0.1));
+    poly(ctx, [-8, -27, 8, -27, 7, -12, -7, -12], leather);
+    rect(ctx, -7, -16, 14, 3, 1, T.main, 0.8);
+    if (o.back) {
+      poly(ctx, [-6, -36, 6, -36, 7, -26, -7, -26], '#3f3124');
+      for (let i = 0; i < 4; i++) circle(ctx, -6 + i * 4, -24 + (i % 2), 1.8, iron, 0.6);
+      return;
+    }
+    poly(ctx, [-6, -36, 6, -36, 7, -26, -7, -26], '#3f3124');
+    circle(ctx, 0.5, -30, 3.6, '#1c1611', 0);
+    ctx.fillStyle = '#e8d9b8';
+    ctx.fillRect(-1.2, -31, 1.3, 1.1);
+    ctx.fillRect(1.6, -31, 1.3, 1.1);
+    // The net over its shoulder.
+    ctx.save();
+    ctx.strokeStyle = iron;
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-9 + i * 2.2, -27);
+      ctx.lineTo(-4 + i * 2.2, -17);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-9, -25 + i * 2.4);
+      ctx.lineTo(-2, -24 + i * 2.4);
+      ctx.stroke();
+    }
+    ctx.restore();
+    arm(ctx, -6, -24, -9, -16, leather, '#d8cbb4');
+    arm(ctx, 6, -24, 10, -18, leather, '#d8cbb4');
+    for (let i = 0; i < 5; i++) circle(ctx, 10.5 + sw * (i / 5), -16 + i * 2.6, 1.5, iron, 0.6);
+    poly(ctx, [10 + sw, -3, 13 + sw, -1, 11 + sw, 1, 12.5 + sw, -1.5], iron, 0.8);
+  };
+
   D.colossus = (ctx, o) => {
     const T = o.tc;
     const bone = '#ddd5bd';
@@ -2169,7 +2211,7 @@
     beastrider: 44, furgon: 44, wisp: 38, barrier: 40, enchantress: 37, witch: 47, lightning: 44, dragon: 50,
     shrub: 20, golem_king: 62, witch_queen: 60, ashen_tyrant: 82, specter: 42, warbanner: 62, cage: 31,
     mageknight: 43, skelarcher: 37, orc: 41, brute: 52, goblin_archer: 31, sapper: 31, shaman: 43, warg: 26, wolf: 22,
-    spider: 25, troll: 54, spellbinder: 44, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
+    spider: 25, troll: 54, spellbinder: 44, shackler: 40, cutthroat: 34, crossbow: 38, skeleton: 37, necromancer: 44, colossus: 66, lich: 60,
     drake: 42, tower: 58, castellan: 45, cart: 38, wall: 27, gate: 36, barrel: 22, warlord: 60,
     trebuchet: 44, totem: 41, hexstone: 40, obelisk: 45, war_tent: 37, crypt: 38, den: 32, portal: 44, guardhouse: 40,
     barricade: 22, wreckage: 22, void_wyrm: 96,

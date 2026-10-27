@@ -845,9 +845,20 @@
       hp: 38, pow: 12, armor: 0.1, res: 0.4, block: 0.1, rec: 1, move: 3,
       act: { name: 'Severing Hex', kind: 'strike', range: [2, 5], dmg: 'magic', arc: true, fx: { sever: 3 } },
       extra: [{ name: 'Chains of Binding', kind: 'strike', range: [1, 5], dmg: 'magic', arc: true, mult: 0.5, fx: { para: 2, chains: 1, weak: 2, mark: 2 }, uses: 2, cd: 1 }],
-      traits: ['hunter'], tags: ['human', 'caster'],
+      traits: ['hunter', 'curse'], tags: ['human', 'caster'],
       desc: 'A hunter of champions, sent after the one unit your army leans on. Its Severing Hex severs the target for 3 turns: no healing of any kind, prayers, lifesteal and regen included, and no cure lifts it. Twice a battle it casts Chains of Binding: paralyzed for 2 turns (no cure or rally breaks the chains), weakened (30% less damage) and marked (25% more damage taken). A unit immune to paralysis is still weakened and marked.',
       tip: 'One unit carrying the army is what it hunts. Spread the threat, or rush it before the chains fall: it has only 38 HP.',
+    },
+    // Elite-only too, with a bounty: a weak hunter whose one real skill pins down a single
+    // unit for as long as it holds the chain (a channel, like a Bane's grip in Dota).
+    shackler: {
+      name: 'Shackler', rarity: 'enemy', cost: 4, role: 'support',
+      hp: 32, pow: 7, armor: 0.15, res: 0.1, block: 0.1, rec: 0, move: 3,
+      act: { name: 'Hooked Chain', kind: 'strike', range: [1, 2], dmg: 'phys' },
+      extra: [{ name: 'Shackles', kind: 'strike', range: [1, 5], arc: true, fx: { hold: 3 }, uses: 2 }],
+      traits: ['hunter'], tags: ['human'],
+      desc: 'Weak in a fight, and quick. Twice a battle it throws Shackles, a weighted chain-net, at one unit up to 5 tiles away and holds the chain: that unit cannot move or act for as long as the Shackler holds on, up to 3 of the Shackler\'s own turns, and the Shackler does nothing else meanwhile. No cure, rally or immunity slips the net (bosses are too big to hold). Kill the Shackler, or paralyze it, and the net falls away.',
+      tip: 'It goes for your biggest hitter, first thing. Bring a second threat that can reach the back row, or anything that paralyzes, and the net falls away.',
     },
     castellan: {
       name: 'Castellan', rarity: 'enemy', cost: 4, role: 'tank',
@@ -939,7 +950,7 @@
     mageknight: 3, golem: 1, beastrider: 6, furgon: 3, wisp: 6, enchantress: 4, witch: 3, lightning: 3,
     dragon: 5, trebuchet: 1, orc: 3, brute: 2, goblin_archer: 6, sapper: 7, shaman: 1, warg: 8, wolf: 7,
     cutthroat: 7, crossbow: 3, skeleton: 3, specter: 6, necromancer: 3, colossus: 1, spider: 6, troll: 2,
-    drake: 5, tower: 2, spellbinder: 5, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4, death_knight: 4,
+    drake: 5, tower: 2, spellbinder: 5, shackler: 9, castellan: 2, golem_king: 1, warlord: 3, witch_queen: 4, lich: 3, ashen_tyrant: 4, void_wyrm: 4, death_knight: 4,
   };
   for (const [k, T] of Object.entries(UNITS)) T.spd = SPEED[k] || 0;
 

@@ -1805,7 +1805,7 @@
       };
       // What a ranged single-target act throws.
       const missile = () => {
-        if (!ev.dmg) return type === 'spider' ? 'web' : 'hex';
+        if (!ev.dmg) return type === 'spider' || type === 'shackler' ? 'web' : 'hex';
         if (ev.dmg === 'magic') {
           if (type === 'cleric') return 'holy';
           if (type === 'necromancer') return 'green';
@@ -2260,7 +2260,7 @@
       let any = false;
       const STATUS_TEXT = {
         para: ['PARALYZED', '#ffd84a'], poison: ['POISONED', POISON], burn: ['BURNING', '#ffb060'], root: ['ROOTED', '#8fe07a'],
-        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'], sever: ['SEVERED', '#e0506e'],
+        weak: ['WEAKENED', '#c8a8ff'], mark: ['MARKED', '#ff8a7a'], frenzy: ['FRENZY', '#ff7a5a'], sever: ['SEVERED', '#e0506e'], held: ['SHACKLED', '#ffd84a'],
       };
       for (const e of group) {
         const v = this.vis.get(e.uid);
@@ -2319,7 +2319,7 @@
             if (!v || e.why === 'passive') break;
             any = true;
             // Passing ticks its cooldown down one: the badge by its health bar shows the new count.
-            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
+            this.addText(v.x, v.y, 'PASS', '#d8cfbf', { height: h, max: 1, tag: e.why === 'para' ? 'PARALYZED' : e.why === 'hold' ? 'HOLDING THE NET' : e.wait > 0 ? `COOLDOWN ${e.wait}→${e.wait - 1}` : '' });
             if (e.wait > 0) v.wait = e.wait - 1;
             break;
           case 'pass':
@@ -2335,6 +2335,7 @@
             if (!v) break;
             const st = STATUS_TEXT[e.status];
             if (e.status === 'para') v.para = e.turns;
+            else if (e.status === 'held') v.para = 99;
             else if (e.status === 'poison') v.poison = true;
             else if (e.status === 'burn') v.burn = true;
             else v[e.status] = e.turns;
@@ -2362,9 +2363,15 @@
             else this.addText(v.x, v.y, 'IMMUNE', im ? im[0] : '#e8e2d0', { height: h, tag: im ? im[1] : '' });
             break;
           }
-          case 'cleanse':
+          case 'release':
             if (v) {
               v.para = 0;
+              this.addText(v.x, v.y, 'FREED', '#fff3b0', { height: h, dy: -this.tw * 0.25, tag: 'THE NET FALLS' });
+            }
+            break;
+          case 'cleanse':
+            if (v) {
+              v.para = e.para || 0;
               v.poison = false;
               v.burn = false;
               v.root = 0;
@@ -2380,7 +2387,7 @@
           case 'rally':
             if (v) {
               v.wait = e.wait;
-              v.para = 0;
+              v.para = e.para || 0;
               v.root = 0;
               this.addText(v.x, v.y, 'RALLY', '#ffd86a', { height: h, dy: -this.tw * 0.25 });
             }

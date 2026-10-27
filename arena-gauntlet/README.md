@@ -662,7 +662,13 @@ on a phone turned sideways, but portrait works too.
   Level 3 unit with a Cleric could roll through the elites. So the elites read your last
   battle: when one non-Cleric Level 3 unit cost 45% or more of the Supply fielded, the
   elite challenges dealt next put a bounty on it. The card names the unit, and the elite
-  brings Spellbinders on top of its army (one in Act I, two after). While a Spellbinder
+  brings hunters on top of its army (Act I: a Shackler and a Spellbinder; Act II: a
+  Shackler and two Spellbinders; Act III: two of each). The Shackler is the Dota-style
+  answer to a carry (Bane's grip, Shadow Shaman's shackles): weak, quick, and twice a
+  battle it throws a chain-net that pins one unit for as long as it holds on, up to 3 of
+  its own turns, doing nothing else meanwhile. Its hold is counted in its own turns, so
+  it lasts longer the bigger the enemy army; no cure or immunity slips it, but killing or
+  paralyzing the Shackler frees the unit. While a Spellbinder
   stands, the hunted unit cannot be healed and takes 25% more damage; the Spellbinder's
   Severing Hex severs (no healing for 3 turns, no cure lifts it) and its Chains of Binding
   paralyze, weaken and mark, with chains no cure or rally breaks. AI hunters go for the
