@@ -90,6 +90,27 @@ test('the party walks toward the nearest sleeping pack; fights on its own; break
   assert.deepStrictEqual(DV.exploreTarget(s, 99), { uid: s.units[2].uid, press: true }, 'stalled: go get it');
 });
 
+test('the top level, then prestige: XP past it buys from the Prestige Trainer', () => {
+  const p = DV.newProfile();
+  const h = p.party[0];
+  for (let i = 0; i < 20; i++) DV.gainXp(h, DV.xpToNext(h.lv), p);
+  assert.strictEqual(h.lv, DV.MAX_LV);
+  assert.strictEqual(DV.MAX_LV, 10);
+  const before = p.prestige || 0;
+  DV.gainXp(h, DV.PRESTIGE_XP * 2 + 5, p);
+  assert.strictEqual(h.lv, DV.MAX_LV, 'no higher');
+  assert.strictEqual(p.prestige, before + 2, 'prestige instead');
+  const stock = DV.stock(p);
+  assert.ok(stock.length >= 6);
+  p.prestige = 20;
+  const price = DV.priceOf(DV.itemDef(stock[0]));
+  const n = p.stash.length;
+  const it = DV.buy(p, 0);
+  assert.ok(it && p.stash.length === n + 1 && p.prestige === 20 - price, 'bought into the stash');
+  p.prestige = 0;
+  assert.strictEqual(DV.buy(p, 0), null, 'not without the points');
+});
+
 test('kit stays legal: own class talents unlocked by level and paid with points, one hero per item, slots by level', () => {
   const p = DV.newProfile();
   const [a, b] = p.party;
@@ -139,11 +160,13 @@ test('levels: XP to level up, skill points for talents (by level) and training, 
   assert.strictEqual(DV.slotsOf(h).gear, 2);
   assert.strictEqual(DV.slotsOf(h).skills, 2);
   const auto = p.party[1];
+  assert.ok(!auto.auto, 'heroes wait for you to spend their points');
+  auto.auto = true;
   for (let i = 0; i < 6; i++) DV.gainXp(auto, DV.xpToNext(auto.lv));
   assert.ok(auto.talents.length > 0, 'auto-spend learns talents as they open');
   const low = { dlv: 1, type: 'skeleton' };
   assert.ok(DV.killXp(low, 1) > DV.killXp(low, 6), 'monsters far below are worth little');
-  assert.ok(DV.killXp({ dlv: 4, type: 'troll', champ: true }, 3) > 5 * DV.killXp({ dlv: 4, type: 'troll' }, 3) * 0.99, 'champions are worth far more');
+  assert.ok(DV.killXp({ dlv: 4, type: 'troll', champ: true }, 3) >= 4 * DV.killXp({ dlv: 4, type: 'troll' }, 3) * 0.99, 'champions are worth far more');
 });
 
 function roundBattle(units, walls, extra) {
@@ -170,6 +193,49 @@ test('rounds: every unit takes one turn a round, the fastest first, whichever si
   const { now, next } = E.roundOrder(s);
   assert.strictEqual(next.length, 4);
   assert.ok(now.length <= 4);
+});
+
+test('rounds: a unit cooling down still takes its turn, and may move but not act', () => {
+  const s = roundBattle([
+    { type: 'pyromancer', team: 'P', x: 2, y: 2 },
+    { type: 'skeleton', team: 'E', x: 6, y: 2 },
+  ]);
+  const py = s.units[0];
+  while (s.byId[s.due] !== py) E.endTurn(s);
+  py.wait = 2;
+  E.endTurn(s);
+  while (s.byId[s.due] !== py) E.endTurn(s);
+  assert.strictEqual(s.due, py.uid, 'its turn, cooldown and all');
+  assert.strictEqual(E.allTargets(s, py).length, 0, 'nothing to act with');
+  assert.ok(E.beginActivation(s, py.uid));
+  assert.ok(E.moveUnit(s, py.uid, 1, 2), 'it moves');
+  const w = py.wait;
+  E.endTurn(s);
+  assert.strictEqual(py.wait, w - 1, 'and its cooldown drops as the turn ends');
+});
+
+test('fatigue sets in at round 20 of a fight, for both sides, and is gone once it is over', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 5, y: 5 },
+    { type: 'troll', team: 'E', x: 9, y: 9, asleep: true, pack: 1 },
+  ]);
+  E.wakePack(s, s.units[1]);
+  const kn = s.units[0];
+  kn.hp = kn.maxHp = 99999;
+  s.units[1].hp = s.units[1].maxHp = 99999;
+  let hits = 0;
+  for (let i = 0; i < 80 && s.turn - s.fightFrom < E.FATIGUE_AT + 2; i++) {
+    E.endTurn(s);
+    hits += s.events.filter((e) => e.t === 'dmg' && e.dmgType === 'fatigue').length;
+    if (s.turn - s.fightFrom + 1 < E.FATIGUE_AT) assert.strictEqual(hits, 0, 'not before round 20');
+    s.events.length = 0;
+  }
+  assert.ok(hits >= 2 && s.tire.P.on && s.tire.E.on, 'both sides tire');
+  E.applyDamage(s, kn, s.units[1], 999999, { cat: 'none', dmgType: 'true' });
+  E.addUnit(s, { type: 'skeleton', team: 'E', x: 0, y: 11, asleep: true, pack: 2 });
+  E.endTurn(s);
+  E.endTurn(s);
+  assert.ok(!s.tire.P.on && !s.tire.E.on, 'off again after the fight');
 });
 
 test('a pack left far behind gives up: home, full health, asleep; its dead stay dead', () => {

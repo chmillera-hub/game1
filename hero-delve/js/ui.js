@@ -18,7 +18,7 @@
   const sfx = (n) => AG.Audio && AG.Audio.play(n);
   const PREFS_KEY = 'hero-delve-prefs';
 
-  const UI = (AG.UI = { p: null, board: null, B: null, prefs: { speed: 1 } });
+  const UI = (AG.UI = { p: null, board: null, B: null, prefs: { speed: 1, autoPause: true } });
   try {
     Object.assign(UI.prefs, JSON.parse(root.localStorage.getItem(PREFS_KEY) || '{}'));
   } catch (e) {
@@ -117,6 +117,7 @@
              <button class="btn" id="tAbandon">${ic('flag')} Abandon this delve</button>`
           : `<button class="btn primary" id="tEnter">${ic('swords')} Enter the tower</button>`}
         <button class="btn" id="tParty">${ic('army')} Party &amp; gear</button>
+        <button class="btn" id="tTrainer" ${(p.prestige || 0) > 0 ? 'data-choose' : ''}>${ic('crown')} Prestige Trainer · ${p.prestige || 0} point${p.prestige === 1 ? '' : 's'}</button>
         <button class="btn" id="tHelp">${ic('help')} How it works</button>
       </div>
       <p class="small muted">Stash: ${p.stash.length} items · Delves: ${p.stats.runs} · Countess slain: ${p.stats.clears} · Deepest: ${p.stats.best ? 'Level ' + p.stats.best : '—'}</p>
@@ -137,7 +138,45 @@
       title();
     });
     on('tParty', () => partyScreen());
+    on('tTrainer', () => trainer());
     on('tHelp', () => help());
+  }
+
+  // ---- the Prestige Trainer: prestige points (XP past the top level) buy skills and gear.
+  function trainer() {
+    const p = UI.p;
+    const items = DV.stock(p);
+    const pts = p.prestige || 0;
+    const v = showView(`<div class="wrap">
+      <div class="row"><div class="grow"><p class="eyebrow">Town</p><h2>Prestige Trainer</h2></div>
+        <button class="btn" id="trBack">${ic('undo')} Town</button></div>
+      <p class="muted">Heroes at Level ${DV.MAX_LV} earn a prestige point for the party every ${DV.PRESTIGE_XP} XP instead of a level. Spend them here on skills and gear; new stock comes in after every floor you clear.</p>
+      <div class="row"><b class="pts-big">${pts}</b><span class="grow muted">prestige point${pts === 1 ? '' : 's'}</span>
+        <button class="btn" id="trRestock" ${pts >= 1 ? '' : 'disabled'}>${ic('rotate')} New stock · 1 point</button></div>
+      <div class="picks">${items.length ? items
+        .map((x, i) => {
+          const d = DV.itemDef(x);
+          const price = DV.priceOf(d);
+          const users = DV.heroes(p).filter((h) => D.eligible(h.type, d)).map((h) => h.name);
+          return `<div class="pick ${d.rarity === 'legendary' ? 'legend' : ''}"><span class="pk-head"><b>${esc(d.name)}</b> <span class="chip">${x.kind}</span></span>
+            <span class="pk-desc">${esc(d.desc)}</span>
+            <span class="small muted">${users.length ? 'For ' + esc(users.join(', ')) : 'Nobody in your party can use this'}</span>
+            <button class="btn ${pts >= price ? 'primary' : ''}" data-buy="${i}" ${pts >= price ? '' : 'disabled'}>${ic('crown')} Buy · ${price}</button></div>`;
+        })
+        .join('') : '<p class="muted">Sold out: new stock after the next floor you clear.</p>'}</div>
+    </div>`);
+    $('#trBack', v).onclick = title;
+    $('#trRestock', v).onclick = () => {
+      if (DV.buyRestock(p)) trainer();
+    };
+    for (const b of $$('[data-buy]', v))
+      b.onclick = () => {
+        const it = DV.buy(p, +b.dataset.buy);
+        if (!it) return;
+        sfx('coin');
+        toast(`${DV.itemDef(it).name} is in your stash.`);
+        trainer();
+      };
   }
 
   // Skill points waiting on you (a hero on Auto-spend saves its own for a talent to come).
@@ -145,20 +184,50 @@
     return h.auto ? 0 : DV.pointsLeft(h);
   }
 
+  // Items found on this delve that nobody holds, this hero could use, and you have not yet
+  // looked at on its sheet.
+  function newFor(h) {
+    const p = UI.p;
+    if (!p.run) return [];
+    const seen = new Set(p.run.seen || []);
+    return p.run.loot
+      .map((uid) => DV.itemByUid(p, uid))
+      .filter((it) => it && !seen.has(it.uid) && !DV.holderOf(p, it.uid) && D.eligible(h.type, DV.itemDef(it)));
+  }
+
+  // Everything waiting on you across the party: skill points and new finds.
+  function pending() {
+    const heroes = DV.heroes(UI.p);
+    const points = heroes.reduce((t, h) => t + owed(h), 0);
+    const items = new Set(heroes.flatMap((h) => newFor(h).map((it) => it.uid))).size;
+    return { points, items, total: points + items };
+  }
+
+  function pendingBadges(h) {
+    const pts = owed(h);
+    const n = newFor(h).length;
+    return `${pts ? `<span class="pts">+${pts}</span>` : ''}${n ? `<span class="pts newloot">${n} new</span>` : ''}`;
+  }
+
   function xpMini(h) {
-    const f = h.lv >= DV.MAX_LV ? 1 : h.xp / DV.xpToNext(h.lv);
-    return `<span class="xpmini" title="XP"><i style="width:${Math.round(f * 100)}%"></i></span>`;
+    // At the top level the bar fills toward the next prestige point instead, in gold.
+    const top = h.lv >= DV.MAX_LV;
+    const f = top ? h.xp / DV.PRESTIGE_XP : h.xp / DV.xpToNext(h.lv);
+    return `<span class="xpmini ${top ? 'prestige' : ''}" title="${top ? 'Prestige' : 'XP'}"><i style="width:${Math.round(Math.min(1, f) * 100)}%"></i></span>`;
   }
 
   function help() {
     openSheet(`${sheetHead('How it works')}
       <ul class="tips">
-        <li><b>Your party</b>: four heroes of any class, plus your Cleric, who always comes. They start at Level 1 and grow as they fight: every monster slain gives the whole party XP.</li>
-        <li><b>Levels</b>: each level makes a hero tougher and stronger and gives a <b>skill point</b> for class talents (from Level 2, the stronger ones from Level 5) or training (Vitality, Might). Level 3 opens a second gear slot, Level 4 the class's second ability, Level 5 a second skill slot, Level 8 its mastery. Heroes on Auto spend their own points and put new finds in empty slots; turn Auto off to choose yourself.</li>
-        <li><b>Loot</b>: packs you wipe out drop skills and gear, better the deeper you go. A floor's Champion always drops something good; the Countess a legendary. Equip it any time, even mid-floor: changes take hold once the fight in hand is over.</li>
-        <li><b>The delve</b>: tap Begin and your party walks the floor on its own. Monster packs sleep in their rooms until your heroes come within 5 tiles in sight of them, or hit one. Fights go in rounds: every unit gets one turn a round, the fastest first.</li>
+        <li><b>Your party</b>: four heroes of any class, plus your Cleric, who always comes. They start at Level 1 and grow as they fight: every monster slain gives the whole party XP. The top level is ${DV.MAX_LV}, about where a party stands as it starts down to Level 5.</li>
+        <li><b>Levels</b>: each level makes a hero tougher and stronger and gives a <b>skill point</b> for class talents (from Level 2, the stronger ones from Level 5) or training (Vitality, Might). Level 3 opens a second gear slot, Level 4 the class's second ability, Level 5 a second skill slot, Level 7 its mastery, Level 8 a third gear slot, Level 9 a third skill slot.</li>
+        <li><b>Upgrading</b>: when someone levels up or loot drops, their frame glows with a <b>+1</b> (skill points) or <b>new</b> (items they could use), and a ${ic('star')} appears at the top. After a fight the game pauses for you (you can turn that off in the menu): tap the hero, spend the points, put the loot on, then ${ic('play')} to carry on. Turn a hero's <b>Auto</b> on and it does this itself.</li>
+        <li><b>Prestige</b>: a hero at Level ${DV.MAX_LV} earns a prestige point for the party every ${DV.PRESTIGE_XP} XP instead of a level. Spend them at the <b>Prestige Trainer</b> in town on skills and gear.</li>
+        <li><b>Loot</b>: packs you wipe out drop skills and gear, better the deeper you go. A floor's Champion always drops something good; the Countess a legendary. Changes made mid-floor take hold once the fight in hand is over.</li>
+        <li><b>Rounds</b>: every unit gets one turn a round, the fastest first, whichever side. A unit cooling down still gets its turn and may move, but not act; its cooldown drops by one each round.</li>
+        <li><b>Fatigue</b>: from round ${E.FATIGUE_AT} of any fight, every unit on both sides loses a share of its own health as its turn comes: 3% of its HP, then 6%, 9% and so on. Nothing lasts for ever, and a party of tanks and healers can win by outlasting what it cannot kill.</li>
         <li><b>Levels on health bars</b>: grey is well below your party, white about even, amber a level above, <b>red two or more above</b>. Your party leaves red packs for later while there is anything else to fight, and walks round them where it can. Each floor has a <b>Champion</b>, a crowned monster far tougher than the rest.</li>
-        <li><b>Watching</b>: pause any time, speed it up, or tap something. Tap a monster and Priority to send everyone after it (red or not); tap a floor tile to send the party there; tap a hero to rally round them or change their kit. <b>Retreat</b> runs for the way in.</li>
+        <li><b>Watching</b>: pause any time, speed it up, or tap something. Tap a monster and Priority to send everyone after it (red or not); tap a floor tile to send the party there; tap a hero to rally round them or open their kit. <b>Retreat</b> runs for the way in.</li>
         <li><b>No lost floors</b>: a hero who falls gets up at the way in once the fight is over (win it, or get away). Run far enough from a pack and it gives up the chase, goes home, heals and sleeps; the ones you killed stay dead. If the whole party falls, it gets up at the way in and the monsters it was fighting heal. You never lose XP or items: a strong pack just takes longer.</li>
         <li><b>Floors</b>: clear every monster on a floor and the party takes the stairs down. Level 5 holds the Countess: slay her to beat the tower.</li>
       </ul>
@@ -198,9 +267,9 @@
       ...h.skills.map((uid) => DV.itemDef(DV.itemByUid(p, uid))).filter(Boolean).map((d) => d.name),
       ...h.gear.map((uid) => DV.itemDef(DV.itemByUid(p, uid))).filter(Boolean).map((d) => d.name),
     ];
-    return `<button class="delve-card" data-hero="${h.id}" ${owed(h) ? 'data-choose' : ''}>
+    return `<button class="delve-card" data-hero="${h.id}" ${owed(h) || newFor(h).length ? 'data-choose' : ''}>
       <canvas data-p="${h.type}:P"></canvas>
-      <span class="nm"><b>${esc(h.name)}</b> <span class="muted">Lv ${h.lv} ${esc(UNITS[h.type].name)}${h.type === 'cleric' ? ' · always comes' : ''}</span>${owed(h) ? ` <span class="chip good">+${owed(h)} point${owed(h) > 1 ? 's' : ''}</span>` : ''}${xpMini(h)}</span>
+      <span class="nm"><b>${esc(h.name)}</b> <span class="muted">Lv ${h.lv} ${esc(UNITS[h.type].name)}${h.type === 'cleric' ? ' · always comes' : ''}</span>${owed(h) ? ` <span class="chip good">+${owed(h)} point${owed(h) > 1 ? 's' : ''}</span>` : ''}${newFor(h).length ? ` <span class="chip warn">${newFor(h).length} new item${newFor(h).length > 1 ? 's' : ''}</span>` : ''}${xpMini(h)}</span>
       <span class="small">${kit.length ? esc(kit.join(' · ')) : '<span class="muted">No kit yet</span>'}</span>
     </button>`;
   }
@@ -266,8 +335,8 @@
           const d = DV.itemDef(it);
           const on = h[key].includes(it.uid);
           const other = !on && DV.holderOf(p, it.uid);
-          const fresh = B && B.loot.includes(it);
-          return `<button class="pick ${on ? 'on' : ''} ${d.rarity === 'legendary' ? 'legend' : ''}" data-item="${key}:${it.uid}"><span class="pk-head"><b>${esc(d.name)}</b>${fresh ? ' <span class="chip warn">new</span>' : ''}${on ? ` <span class="chip good">${ic('check')}</span>` : other ? ` <span class="chip">${esc(other.name)}</span>` : ''}</span><span class="pk-desc">${esc(d.desc)}</span></button>`;
+          const isNew = fresh.has(it.uid);
+          return `<button class="pick ${on ? 'on' : ''} ${d.rarity === 'legendary' ? 'legend' : ''}" data-item="${key}:${it.uid}"><span class="pk-head"><b>${esc(d.name)}</b>${isNew ? ' <span class="chip warn">new</span>' : ''}${on ? ` <span class="chip good">${ic('check')}</span>` : other ? ` <span class="chip">${esc(other.name)}</span>` : ''}</span><span class="pk-desc">${esc(d.desc)}</span></button>`;
         })
         .join('');
     };
@@ -279,7 +348,13 @@
       const nx = nextAt(f, h.lv);
       return `<span class="lockline">${n}/${max}${nx ? ` · another at Level ${nx}` : ''}</span>`;
     };
-    const xpLine = h.lv >= DV.MAX_LV ? 'Top level' : `${h.xp}/${DV.xpToNext(h.lv)} XP to Level ${h.lv + 1}`;
+    const xpLine = h.lv >= DV.MAX_LV ? `Top level · ${h.xp}/${DV.PRESTIGE_XP} XP to a prestige point` : `${h.xp}/${DV.xpToNext(h.lv)} XP to Level ${h.lv + 1}`;
+    // The new finds it could use are shown now: no longer new.
+    const fresh = new Set(newFor(h).map((it) => it.uid));
+    if (p.run && fresh.size) {
+      p.run.seen = (p.run.seen || []).concat([...fresh]);
+      DV.save(p);
+    }
     const fight = inDelve && B.s.inCombat;
     refreshSheet(
       `${sheetHead(`${esc(h.name)} · Level ${h.lv} ${esc(T.name)}`, `${u.maxHp} HP · ${u.pow} power · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance · Move ${u.move}`)}
@@ -487,6 +562,7 @@
         AI.runPlan(s, plan, opts);
         afterStep(B);
         const ev = E.drainEvents(s);
+        B.calmed = false;
         B.idle = DV.idleAfter(s, ev, B.idle);
         if (DV.reveal(s, B.fl, B.seen)) b.setSeen(B.seen);
         logEvents(B, ev);
@@ -494,6 +570,19 @@
         if (UI.B !== B) return;
         b.partyLv = DV.partyLevelIn(s);
         b.syncFromState(s);
+        // A fight just ended with level ups or loot waiting: stop for you to see to them.
+        if (B.calmed && UI.prefs.autoPause) {
+          DV.refreshParty(UI.p, s);
+          b.syncFromState(s);
+          const pend = pending();
+          if (pend.total > (B.ack || 0)) {
+            B.ack = pend.total;
+            B.paused = true;
+            banner(pend.points ? 'Level up!' : 'New loot!');
+            sfx('levelup');
+          }
+        }
+        if (!pending().total) B.ack = 0;
         const f = B.focus && AI.focusOf(s, 'P', B.focus);
         b.focus = f ? { x: f.x, y: f.y } : null;
         const c = partyCenter(s);
@@ -569,6 +658,10 @@
       } else if (e.t === 'calm') {
         pushLog(B, 'The fight is over. Abilities ready again; the fallen get up at the way in.', 'P');
         if (B.focus && B.focus.retreat) B.focus = null;
+        B.calmed = true;
+      } else if (e.t === 'fatigue') {
+        pushLog(B, `Round ${E.FATIGUE_AT} of the fight: <b>fatigue</b> sets in. Every unit loses a share of its health each turn, more each time: heal to outlast it.`, 'E');
+        banner('Fatigue!', true);
       } else if (e.t === 'revive' && e.why === 'respawn') {
         const u = s.byId[e.uid];
         if (u) pushLog(B, `${nameOf(u)} gets up at the way in and runs to catch up.`, 'P');
@@ -592,18 +685,23 @@
     const p = UI.p;
     const fighting = s.inCombat;
     const left = s.units.filter((u) => u.alive && u.team === 'E' && !u.nonCombat).length;
-    const state = !B.started ? 'Ready' : B.paused ? 'Paused' : fighting ? `Fighting · round ${s.turn - s.fightFrom + 1}` : 'Exploring';
+    const fat = fighting ? E.fatigueIn(s) : null;
+    const fatText = fat == null ? '' : fat > 0 ? ` · fatigue in ${fat}` : ' · <b class="fat">fatigue!</b>';
+    const state = !B.started ? 'Ready' : B.paused ? 'Paused' : fighting ? `Fighting · round ${s.turn - s.fightFrom + 1}${fatText}` : 'Exploring';
+    const pend = pending();
     const plv = DV.partyLevelIn(s);
     $('#topbar').innerHTML = `<div class="title"><b>${esc(DV.FLOOR_DEFS[p.run.floor].name)} <span class="muted">· party Lv ${Math.round(plv * 10) / 10}</span></b>
       <span>${state} · ${left} monster${left === 1 ? '' : 's'} left on this floor</span></div>
       ${B.started ? `<button class="btn icon-only speedbtn ${UI.prefs.speed > 1 ? 'on' : ''}" id="dFast" aria-label="Speed ${UI.prefs.speed}x">${ic('fast')}<small>${UI.prefs.speed}×</small></button>
       <button class="btn icon-only ${B.paused ? 'on' : ''}" id="dPause" aria-label="${B.paused ? 'Resume' : 'Pause'}">${ic(B.paused ? 'play' : 'pause')}</button>` : ''}
+      ${pend.total ? `<button class="btn icon-only speedbtn upgrade" id="dUpgrade" data-choose aria-label="Upgrade your heroes">${ic('star')}<small>${pend.total}</small></button>` : ''}
       <button class="btn icon-only" id="dMenu" aria-label="Menu">${ic('menu')}</button>`;
     const sel = B.sel && s.byId[B.sel];
     const party = s.units.filter((u) => u.team === 'P' && !u.nonCombat && u.rid);
     $('#cmd').innerHTML = `
       ${!B.started ? `<div class="hint">${ic('swords')} Your party stands at the way in. Monster packs sleep in the rooms ahead until your heroes come near. <b>Begin</b> and they explore and fight on their own; pause or set a priority any time.</div>
         <div class="actions sticky"><button class="btn primary" id="dBegin">${ic('play')} Begin</button></div>` : ''}
+      ${B.started && B.paused && pend.total ? `<div class="hint up-hint">${ic('star')} ${pend.points ? `<b>${pend.points} skill point${pend.points > 1 ? 's' : ''}</b> to spend` : ''}${pend.points && pend.items ? ' and ' : ''}${pend.items ? `<b>${pend.items} new item${pend.items > 1 ? 's' : ''}</b> to equip` : ''}: tap a hero below (or ${ic('star')} at the top), then ${ic('play')} to carry on.</div>` : ''}
       ${fighting && B.started ? roundStrip(s) : ''}
       ${fighting && B.started && !(B.focus && B.focus.retreat) ? `<div class="actions"><button class="btn" id="dRetreat">${ic('undo')} Retreat to the way in</button></div>` : ''}
       ${B.focus ? focusLine(B) : ''}
@@ -630,6 +728,7 @@
       hud();
     });
     on('dMenu', () => menu());
+    on('dUpgrade', () => menu());
     on('dRetreat', () => {
       const st = B.fl.start;
       B.focus = { tile: true, retreat: true, x: st.cx, y: st.cy };
@@ -640,19 +739,7 @@
     on('dKit', () => {
       const u = s.byId[B.sel];
       const h = u && DV.heroes(p).find((x) => x.id === u.rid);
-      if (!h) return;
-      const was = B.paused;
-      B.paused = true;
-      hud();
-      heroSheet(h, () => {
-        DV.refreshParty(p, s);
-        UI.board.syncFromState(s);
-        if (UI.B === B && B.started) {
-          B.paused = was;
-          if (!B.paused) runLoop();
-        }
-        hud();
-      });
+      if (h) openKit(B, h);
     });
     on('dFocus', () => setFocus(B));
     on('dUnfocus', () => {
@@ -668,10 +755,30 @@
     on('dInfo', () => unitInfo(s.byId[B.sel]));
     for (const f of $$('#cmd [data-uid]'))
       f.onclick = () => {
+        const u = s.byId[+f.dataset.uid];
+        const h = u && DV.heroes(p).find((x) => x.id === u.rid);
+        // Something waiting on this hero: straight to its sheet.
+        if (h && (owed(h) || newFor(h).length)) return openKit(B, h);
         B.sel = +f.dataset.uid;
         B.tile = null;
         hud();
       };
+  }
+
+  // A hero's sheet from the delve: the game waits while it is open, as it was before after.
+  function openKit(B, h) {
+    const was = B.paused;
+    B.paused = true;
+    hud();
+    heroSheet(h, () => {
+      DV.refreshParty(UI.p, B.s);
+      UI.board.syncFromState(B.s);
+      if (UI.B === B && B.started) {
+        B.paused = was;
+        if (!B.paused) runLoop();
+      }
+      hud();
+    });
   }
 
   function frame(u) {
@@ -685,11 +792,11 @@
       if (u.burn) st.push('<span class="chip warn">Burning</span>');
     }
     const h = DV.heroes(UI.p).find((x) => x.id === u.rid);
-    const pts = h ? owed(h) : 0;
+    const waiting = h && (owed(h) || newFor(h).length);
     const turn = UI.B.s.due === u.uid;
-    return `<button class="delve-frame ${u.alive ? '' : 'down'} ${UI.B.sel === u.uid ? 'sel' : ''} ${turn ? 'turn' : ''}" data-uid="${u.uid}">
+    return `<button class="delve-frame ${u.alive ? '' : 'down'} ${UI.B.sel === u.uid ? 'sel' : ''} ${turn ? 'turn' : ''}" data-uid="${u.uid}" ${waiting ? 'data-choose' : ''}>
       <canvas data-p="${u.type}:P"></canvas>
-      <span class="fr-body"><b>${esc(u.name || UNITS[u.type].name)} <span class="lvtag">${h ? h.lv : u.dlv}</span>${pts > 0 ? `<span class="pts">+${pts}</span>` : ''}</b>
+      <span class="fr-body"><b>${esc(u.name || UNITS[u.type].name)} <span class="lvtag">${h ? h.lv : u.dlv}</span>${h ? pendingBadges(h) : ''}</b>
         <span class="hpbar ${f < 0.3 ? 'low' : f < 0.6 ? 'mid' : ''}"><i style="width:${Math.round(f * 100)}%"></i></span>
         ${h ? xpMini(h) : ''}
         <span class="small">${u.alive ? `${u.hp}/${u.maxHp}` : 'Back after the fight'} ${st.join(' ')}</span></span>
@@ -783,10 +890,11 @@
     B.paused = true;
     hud();
     openSheet(`${sheetHead('Paused')}
-      <div class="eyebrow">Your party: tap a hero for their kit and skill points</div>
+      <div class="eyebrow">Your party: tap a hero for their skill points, items and kit</div>
       <div class="delve-roster">${DV.heroes(UI.p).map((h) => heroCard(h)).join('')}</div>
       <div class="actions col">
         <button class="btn primary" data-close>${ic('play')} Back to the delve</button>
+        <label class="toggle"><input type="checkbox" id="mAutoPause" ${UI.prefs.autoPause ? 'checked' : ''}> Pause after a fight when there is a level up or loot to see to</label>
         <button class="btn" id="mHelp">${ic('help')} How it works</button>
         <button class="btn" id="mTown">${ic('undo')} Town portal (this floor starts over when you come back; XP and items are kept)</button>
       </div>`, (sh) => {
@@ -798,6 +906,10 @@
         }
       };
       $('#mHelp', sh).onclick = help;
+      $('#mAutoPause', sh).onchange = (e) => {
+        UI.prefs.autoPause = e.target.checked;
+        savePrefs();
+      };
       for (const b of $$('[data-hero]', sh))
         b.onclick = () => {
           const back = UI.onSheetClose;

@@ -941,6 +941,8 @@
   function actUsable(s, u, ai) {
     const a = u.acts[ai];
     if (!a || a.kind === 'none' || a.left <= 0 || !offCooldown(a)) return false;
+    // Round battles: a unit still cooling down has its turn, but only to move.
+    if (s.rounds && u.wait > 0) return false;
     const A = s.act && s.act.uid === u.uid ? s.act : null;
     if (a.asMove) {
       if (A && A.moved) return false;
@@ -1732,8 +1734,6 @@
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
     if (tgt.asleep) wakePack(s, tgt);
-    // A delve: the last round the party hurt a monster (see delveRound, STALE).
-    if (tgt.team === 'E' && !tgt.nonCombat) s.lastBlow = s.turn;
     // Bonus bolts and blasts that come without a hit pop a Spell Shield too.
     if (tgt.ward > 0 && (info.dmgType === 'phys' || info.dmgType === 'magic')) {
       tgt.ward = 0;
@@ -2382,7 +2382,9 @@
 
   function canActivateFor(s, u, team) {
     if (s.queue && !(s.side === team && s.due === u.uid)) return false;
-    return !!(u.alive && u.team === team && !u.activated && u.wait === 0 && u.para === 0 && !u.nonCombat && !u.asleep && hasAction(u));
+    // Round battles: a unit cooling down still takes its turn, to move (see nextInRound).
+    const rested = u.wait === 0 || (s.rounds && s.due === u.uid);
+    return !!(u.alive && u.team === team && !u.activated && rested && u.para === 0 && !u.nonCombat && !u.asleep && hasAction(u));
   }
 
   function beginActivation(s, uid) {
@@ -2709,7 +2711,9 @@
     }
     // Acting starts the cooldown: the unit sits out that many of its side's turns, and the
     // count drops at the end of each one (not the turn it acted in). Moving alone is free.
-    let w = 0;
+    // (A unit that only moved, still cooling down in a round battle, keeps its count: it
+    // drops as the turn ends.)
+    let w = A.acted ? 0 : u.wait;
     if (A.acted) {
       w = cooldown(u);
       if (u.firstActionFree) {
@@ -2717,9 +2721,9 @@
         u.firstActionFree = false;
       }
       if (A.killed && (u.traits.has('bloodlust') || s.relics[u.team].has('warlord_helm'))) w = 0;
+      u.wait = w;
+      stamp(s, u, 'wait');
     }
-    u.wait = w;
-    stamp(s, u, 'wait');
     if (u.traits.has('brace')) u.braced = !A.moved;
     u.activated = true;
     s.spent = true;
@@ -3159,6 +3163,15 @@
   // any timer still off and does nothing to one already on (see startFatigue).
   function fatigue(s, u) {
     if (!u.alive || !counts(u) || !s.tire[u.team].on) return;
+    // A delve: each unit tires on its own, a share of its own health that grows with every
+    // turn it takes (3%, 6%, 9%...): big or small, many or few, everyone wears down at the
+    // same pace, and healing and regen are what outlast it.
+    if (s.delve) {
+      u.tired = (u.tired || 0) + 1;
+      const hit = Math.max(1, Math.round(u.maxHp * FATIGUE_PCT * u.tired));
+      applyDamage(s, null, u, hit, { cat: 'none', dmgType: 'fatigue', fatigueNo: u.tired });
+      return;
+    }
     const n = ++s.tire[u.team].n;
     applyDamage(s, null, u, n, { cat: 'none', dmgType: 'fatigue', fatigueNo: n });
   }
@@ -3387,13 +3400,18 @@
         continue;
       }
       const why = sitOutReason(s, u);
-      if (!why) {
+      // Cooling down, it still has its turn to move in, if it can go anywhere.
+      if (!why || (why === 'cooldown' && canStep(s, u))) {
         s.due = u.uid;
         return;
       }
       emit(s, { t: 'sitout', uid: u.uid, why: hasAction(u) ? why : 'passive', wait: u.wait, para: u.para });
       ownTurnDone(s, u);
     }
+  }
+
+  function canStep(s, u) {
+    return u.move > 0 && !u.traits.has('immobile') && u.root === 0 && reachable(s, u).size > 1;
   }
 
   // Who goes in the rest of this round (the unit up first) and in the next, as things stand.
@@ -3414,7 +3432,20 @@
   const LEASH = 11;
   const REST_REGEN = 0.1;
   const RESPAWN_HP = 0.5;
-  const STALE = 8;
+  const FATIGUE_AT = 20;
+
+  // A fight over: both fatigue timers off and back to the start.
+  function restTimers(s) {
+    s.tire = { P: { on: false, n: 0, since: 0 }, E: { on: false, n: 0, since: 0 } };
+    for (const u of s.units) u.tired = 0;
+  }
+  const FATIGUE_PCT = 0.03;
+
+  // Rounds of this fight before fatigue sets in (0: it has).
+  function fatigueIn(s) {
+    if (!s.inCombat) return FATIGUE_AT;
+    return Math.max(0, FATIGUE_AT - (s.turn - s.fightFrom + 1));
+  }
 
   function heroUnit(u) {
     return u.team === 'P' && counts(u) && !u.summoner;
@@ -3539,6 +3570,7 @@
     if (s.wiped) {
       s.wiped = false;
       for (const [, members] of awakePacks(s)) resetPack(s, members, 'wipe');
+      restTimers(s);
       emit(s, { t: 'wipe' });
       for (const u of s.units) if (heroUnit(u) && !u.alive) respawn(s, u, 1);
       s.order = s.order.filter((id) => s.byId[id] && s.byId[id].alive && !s.byId[id].asleep);
@@ -3551,17 +3583,22 @@
       const lair = lairOf(s, pack, members);
       if (heroes.every((h) => manhattan(h.x, h.y, lair.x, lair.y) > (D2.leash || LEASH))) resetPack(s, members, 'leash');
     }
-    // A fight where the party lands no blow on a monster for a while (both sides waiting, a
-    // hold no one can break, the party boxed in): the monsters lose interest and go home.
-    if (s.inCombat && s.turn - (s.lastBlow || 0) >= STALE) for (const [, members] of awakePacks(s)) resetPack(s, members, 'stale');
     const fighting = awakePacks(s).size > 0;
     if (fighting && !s.inCombat) {
       s.inCombat = true;
       s.fightFrom = s.turn;
-      s.lastBlow = s.turn;
+    }
+    // A fight that drags on: from its round FATIGUE_AT on, fatigue wears both sides down (see
+    // fatigue), one unit at a time as its turn comes, harder with every turn. No fight lasts
+    // for ever, and a party that can soak and heal outlasts what it cannot kill.
+    if (fighting && s.turn - s.fightFrom + 1 >= FATIGUE_AT && !s.tire.P.on) {
+      startTiring(s, 'P');
+      startTiring(s, 'E');
+      emit(s, { t: 'fatigue', turn: s.turn });
     }
     if (!fighting && s.inCombat) {
       s.inCombat = false;
+      restTimers(s);
       emit(s, { t: 'calm' });
 
       for (const u of s.units) if (u.team === 'P' && counts(u)) {
@@ -3824,7 +3861,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, roundOrder, nextInRound, resetPack, rebuildUnit, respawn, levelEdge, LEASH, REST_REGEN, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, roundOrder, nextInRound, resetPack, fatigueIn, FATIGUE_AT, rebuildUnit, respawn, levelEdge, LEASH, REST_REGEN, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

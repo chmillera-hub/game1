@@ -15,7 +15,9 @@ const results = [];
 for (let i = 0; i < N; i++) {
   const p = DV.newProfile();
   if (PARTY) PARTY.forEach((t, k) => DV.setClass(p, k, t));
-  for (const h of DV.heroes(p)) while (h.lv < LV) DV.gainXp(h, DV.xpToNext(h.lv));
+  // The sim's heroes spend their own points and fill their own slots.
+  for (const h of DV.heroes(p)) h.auto = true;
+  for (const h of DV.heroes(p)) while (h.lv < LV) DV.gainXp(h, DV.xpToNext(h.lv), p);
   DV.autoKit(p);
   DV.startRun(p, 1000 + i);
   console.log(`run ${i} ${p.party.map((h) => h.type).join('/')}:`);
@@ -28,6 +30,8 @@ for (let i = 0; i < N; i++) {
     let g = 0;
     let idle = 0;
     const lv0 = DV.partyLevel(p);
+    const total = (h) => { let t = h.xp; for (let l = 1; l < h.lv; l++) t += DV.xpToNext(l); return t; };
+    const xp0 = total(p.party[0]);
     while (!s.over && g++ < 20000) {
       // RUSH=1: the player sends the party straight at the Champion, ready or not.
       const champ = process.env.RUSH && s.units.find((u) => u.champ && u.alive);
@@ -40,6 +44,8 @@ for (let i = 0; i < N; i++) {
       }
       for (const e of s.events) {
         if (e.t === 'wipe') tally.wipe++;
+        if (e.t === 'fatigue') tally.fat = (tally.fat || 0) + 1;
+        if (e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid] && !s.byId[e.uid].alive && s.byId[e.uid].team === 'E') tally.fatKills = (tally.fatKills || 0) + 1;
         if (e.t === 'wake' && e.uids.some((id) => s.byId[id].champ)) tally.woke = (tally.woke ? tally.woke + ',' : '') + `r${s.turn}@L${DV.partyLevelIn(s).toFixed(1)}`;
         if (e.t === 'reset' && e.why === 'leash') tally.leash++;
         if (e.t === 'death' && s.byId[e.uid] && s.byId[e.uid].team === 'P') tally.fell++;
@@ -49,7 +55,7 @@ for (let i = 0; i < N; i++) {
       s.events.length = 0;
     }
     const left = s.units.filter((u) => u.team === 'E' && u.alive && !u.nonCombat);
-    console.log(`  F${p.run.floor} ${s.over ? 'clear' : 'STALL'} ${s.turn} rounds · party Lv ${lv0.toFixed(1)}→${DV.partyLevel(p).toFixed(1)} · fell ${tally.fell} wipes ${tally.wipe} leash ${tally.leash} · champion woke ${tally.woke} down r${tally.champ}${left.length ? ' · left ' + left.map((u) => u.type + u.dlv + (u.asleep ? 'z' : '')).join(',') : ''}`);
+    console.log(`  F${p.run.floor} ${s.over ? 'clear' : 'STALL'} ${s.turn} rounds · party Lv ${lv0.toFixed(1)}→${DV.partyLevel(p).toFixed(1)} · xp +${total(p.party[0]) - xp0} · fell ${tally.fell} wipes ${tally.wipe} leash ${tally.leash} · fatigued fights ${tally.fat || 0} (monsters it killed ${tally.fatKills || 0}) · champion woke ${tally.woke} down r${tally.champ}${left.length ? ' · left ' + left.map((u) => u.type + u.dlv + (u.asleep ? 'z' : '')).join(',') : ''}`);
     if (!s.over) {
       outcome = 'stall F' + p.run.floor;
       DV.endRun(p);
@@ -57,7 +63,7 @@ for (let i = 0; i < N; i++) {
     }
     DV.finishFloor(p, s);
   }
-  console.log('  →', outcome, '· loot', p.stash.length - 12, '· levels', DV.heroes(p).map((h) => h.lv).join('/'));
+  console.log('  →', outcome, '· loot', p.stash.length - 12, '· levels', DV.heroes(p).map((h) => h.lv).join('/'), '· prestige', p.prestige || 0);
   results.push(outcome);
 }
 console.log('cleared', results.filter((r) => r === 'cleared').length + '/' + N, '·', ((Date.now() - t0) / 1000).toFixed(1) + 's');

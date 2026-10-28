@@ -10,7 +10,7 @@
   const { UNITS, TALENTS, SKILLS, GEAR, NAMES } = D;
 
   const SAVE_KEY = 'hero-delve-v1';
-  const VERSION = 2;
+  const VERSION = 3;
   const FLOORS = 5;
   const W = 24;
   const H = 24;
@@ -24,18 +24,23 @@
   // Heroes and monsters share one level scale. Each level makes a unit a little tougher
   // and stronger; heroes also get a skill point a level, and unlock their class's second
   // pick (Level 4), its mastery (Level 8) and more skill and gear slots as they grow.
-  const MAX_LV = 15;
+  // The top level, reached about as the party starts down to the last floor. XP past it
+  // earns prestige points instead, for the Prestige Trainer in town.
+  const MAX_LV = 10;
   const hpMul = (lv) => 1 + 0.08 * (lv - 1);
   const powMul = (lv) => 1 + 0.05 * (lv - 1);
   // Monsters grow a little faster: heroes make up the rest with skill points and gear.
   const foeHpMul = (lv) => 1 + 0.11 * (lv - 1);
   const foePowMul = (lv) => 1 + 0.065 * (lv - 1);
   // The Arena tier a level stands for: its second pick at 2, its mastery at 3.
-  const tierOf = (lv) => (lv >= 8 ? 3 : lv >= 4 ? 2 : 1);
-  const xpToNext = (lv) => 60 * lv + 40 * lv * lv;
+  const tierOf = (lv) => (lv >= 7 ? 3 : lv >= 4 ? 2 : 1);
+  // XP from each level to the next: about two levels a floor, the top one reached as the
+  // party clears Level 4.
+  const XP_TABLE = [0, 150, 250, 500, 600, 800, 900, 1000, 1300, 1600];
+  const xpToNext = (lv) => XP_TABLE[Math.min(lv, XP_TABLE.length - 1)] || XP_TABLE[XP_TABLE.length - 1];
   // Slots by hero level.
-  const skillSlots = (lv) => (lv >= 12 ? 3 : lv >= 5 ? 2 : 1);
-  const gearSlots = (lv) => (lv >= 10 ? 3 : lv >= 3 ? 2 : 1);
+  const skillSlots = (lv) => (lv >= 9 ? 3 : lv >= 5 ? 2 : 1);
+  const gearSlots = (lv) => (lv >= 8 ? 3 : lv >= 3 ? 2 : 1);
   // Talents unlock with level: the first tier at Level 2, the stronger tier at Level 5.
   const talentLevel = (id) => (TALENTS[id].tier >= 2 ? 5 : 2);
   // Training, for skill points past the talents: each point adds this much.
@@ -46,10 +51,10 @@
   const FLOOR_DEFS = [
     null,
     { name: 'Level 1', pool: ['skeleton', 'skeleton', 'spider', 'skelarcher'], pack: [2, 3], lv: [1, 2], empty: 0.2, champ: { type: 'troll', name: 'Gravelmaw' } },
-    { name: 'Level 2', pool: ['skeleton', 'skelarcher', 'specter', 'spider'], pack: [2, 4], lv: [2, 3], empty: 0.15, champ: { type: 'necromancer', name: 'Old Rattlebones' } },
-    { name: 'Level 3', pool: ['skelarcher', 'specter', 'cutthroat', 'spider', 'skeleton'], pack: [3, 4], lv: [4, 5], empty: 0.15, champ: { type: 'spider', name: 'Mother Venom' } },
-    { name: 'Level 4', pool: ['specter', 'cutthroat', 'crossbow', 'necromancer', 'skeleton'], pack: [3, 4], lv: [5, 6], empty: 0.1, shackler: 1, champ: { type: 'colossus', name: 'The Bonepile' } },
-    { name: 'Level 5', pool: ['cutthroat', 'specter', 'skelarcher', 'skeleton'], pack: [3, 4], lv: [7, 8], empty: 0.1, champ: { type: 'shackler', name: 'Chainwarden Vosk' }, boss: 'countess', bossLv: 10, bossPack: ['cutthroat', 'specter', 'skeleton'] },
+    { name: 'Level 2', pool: ['skeleton', 'skelarcher', 'specter', 'spider'], pack: [2, 4], lv: [3, 4], empty: 0.15, champ: { type: 'necromancer', name: 'Old Rattlebones' } },
+    { name: 'Level 3', pool: ['skelarcher', 'specter', 'cutthroat', 'spider', 'skeleton'], pack: [3, 4], lv: [5, 6], empty: 0.15, champ: { type: 'spider', name: 'Mother Venom' } },
+    { name: 'Level 4', pool: ['specter', 'cutthroat', 'crossbow', 'necromancer', 'skeleton'], pack: [3, 4], lv: [7, 8], empty: 0.1, shackler: 1, champ: { type: 'colossus', name: 'The Bonepile' } },
+    { name: 'Level 5', pool: ['cutthroat', 'specter', 'skelarcher', 'skeleton'], pack: [3, 4], lv: [9, 10], empty: 0.1, champ: { type: 'shackler', name: 'Chainwarden Vosk' }, boss: 'countess', bossLv: 11, bossPack: ['cutthroat', 'specter', 'skeleton'] },
   ];
   const CHAMP_LV = 3;
 
@@ -63,7 +68,7 @@
   // ------------------------------------------------------------ profile
 
   function newProfile() {
-    const p = { v: VERSION, nextId: 1, party: [], cleric: null, stash: [], stats: { runs: 0, clears: 0, best: 0 }, run: null };
+    const p = { v: VERSION, nextId: 1, party: [], cleric: null, stash: [], stats: { runs: 0, clears: 0, best: 0 }, run: null, prestige: 0, trainer: null };
     for (const t of STARTER_PARTY) p.party.push(newHero(p, t));
     p.cleric = newHero(p, 'cleric');
     for (const [kind, id] of STARTER) addItem(p, kind, id);
@@ -76,7 +81,7 @@
     const used = new Set(heroes(p).map((h) => h.name));
     const free = NAMES.filter((n) => !used.has(n));
     const name = free[(p.nextId * 7) % free.length] || 'Hero ' + p.nextId;
-    return { id: 'h' + p.nextId++, type, name, lv: from ? from.lv : 1, xp: from ? from.xp : 0, auto: true, a1: firstPick(T, 1), a2: firstPick(T, 2), talents: [], train: { vit: 0, str: 0 }, skills: [], gear: [] };
+    return { id: 'h' + p.nextId++, type, name, lv: from ? from.lv : 1, xp: from ? from.xp : 0, auto: false, a1: firstPick(T, 1), a2: firstPick(T, 2), talents: [], train: { vit: 0, str: 0 }, skills: [], gear: [] };
   }
 
   // The first level pick that is not a talent (talents are bought with skill points).
@@ -169,19 +174,76 @@
     }
   }
 
-  // XP: a hero levels up when it has enough; returns the levels gained.
-  function gainXp(h, n) {
+  // XP: a hero levels up when it has enough; returns the levels gained. At the top level
+  // its XP goes toward prestige instead: a point for the party (`p`) every PRESTIGE_XP.
+  const PRESTIGE_XP = 2000;
+  function gainXp(h, n, p) {
     let ups = 0;
-    if (h.lv >= MAX_LV) return 0;
     h.xp += n;
     while (h.lv < MAX_LV && h.xp >= xpToNext(h.lv)) {
       h.xp -= xpToNext(h.lv);
       h.lv++;
       ups++;
     }
-    if (h.lv >= MAX_LV) h.xp = 0;
+    if (h.lv >= MAX_LV) {
+      if (ups) h.xp = 0;
+      while (h.xp >= PRESTIGE_XP) {
+        h.xp -= PRESTIGE_XP;
+        if (p) p.prestige = (p.prestige || 0) + 1;
+      }
+    }
     if (ups && h.auto) autoSpend(h);
     return ups;
+  }
+
+  // ------------------------------------------------------------ the Prestige Trainer
+  //
+  // In town, prestige points buy skills and gear from the trainer's stock: a new stock after
+  // every floor cleared, or for a point. Prices go by how good a piece is.
+  const STOCK = 8;
+  function priceOf(d) {
+    if (d.rarity === 'legendary') return 8;
+    return Math.min(5, 1 + (d.cost || 0));
+  }
+
+  function stock(p) {
+    if (!p.trainer || !p.trainer.items) restock(p);
+    return p.trainer.items;
+  }
+
+  function restock(p) {
+    p.trainer = p.trainer || { n: 0 };
+    p.trainer.n = (p.trainer.n || 0) + 1;
+    const rng = AG.derive(p.trainer.n * 7919 + (p.stats.runs || 0), 'trainer');
+    const all = [];
+    for (const [kind, table] of [['skill', SKILLS], ['gear', GEAR]]) for (const [id, d] of Object.entries(table)) if (!d.side && !goldOnly(d)) all.push({ kind, id });
+    const items = [];
+    const legend = all.filter((x) => itemDef(x).rarity === 'legendary');
+    if (legend.length) items.push(rng.pick(legend));
+    for (const x of rng.shuffle(all.filter((x) => itemDef(x).rarity !== 'legendary'))) if (items.length < STOCK) items.push(x);
+    p.trainer.items = items;
+    save(p);
+    return items;
+  }
+
+  function buy(p, i) {
+    const items = stock(p);
+    const x = items[i];
+    if (!x) return null;
+    const price = priceOf(itemDef(x));
+    if ((p.prestige || 0) < price) return null;
+    p.prestige -= price;
+    items.splice(i, 1);
+    const it = addItem(p, x.kind, x.id);
+    save(p);
+    return it;
+  }
+
+  function buyRestock(p) {
+    if ((p.prestige || 0) < 1) return false;
+    p.prestige--;
+    restock(p);
+    return true;
   }
 
   // What a monster is worth: more for bigger monsters and higher levels, much more for a
@@ -189,8 +251,8 @@
   function killXp(u, heroLv) {
     const T = UNITS[u.type];
     const size = Math.min(2, Math.max(0.6, T.hp / 32));
-    let xp = (10 + 14 * (u.dlv - 1)) * size;
-    if (u.champ) xp *= 5;
+    let xp = 15 * u.dlv * size;
+    if (u.champ) xp *= 4;
     if (u.boss) xp *= 8;
     if (u.summoner) xp *= 0.25;
     const gap = u.dlv - heroLv;
@@ -286,15 +348,18 @@
       const p = j ? JSON.parse(j) : null;
       if (!p || !p.party || !p.cleric) return null;
       // The first version had every hero at Level 3: they start over at Level 1, with their
-      // items kept, and any delve under way is called off.
+      // items kept. The second went to Level 15: top levels come down to the new top, with
+      // their points back to spend. Either way a delve under way is called off.
       if (p.v !== VERSION) {
         for (const h of heroes(p)) {
-          h.lv = 1;
+          if (p.v === 2) h.lv = Math.min(MAX_LV, h.lv || 1);
+          else h.lv = 1;
           h.xp = 0;
           h.talents = [];
           h.train = { vit: 0, str: 0 };
-          h.auto = true;
+          h.auto = false;
         }
+        p.prestige = p.prestige || 0;
         p.run = null;
         p.v = VERSION;
       }
@@ -425,7 +490,36 @@
     }
     const far = (r) => Math.abs(r.cx - start.cx) + Math.abs(r.cy - start.cy);
     const middle = rooms.filter((r) => r !== start && r !== end && far(r) > 10).sort((a, b) => (degree.get(a) === 1 ? 0 : 1) - (degree.get(b) === 1 ? 0 : 1) || far(b) - far(a));
-    const champRoom = def.champ && middle.length ? middle[rng.int(Math.min(2, middle.length))] : null;
+    // And never in the way: every other room must be reachable from the way in without
+    // coming in sight of it, so a party too weak for it can always leave it for later.
+    const clear = (r) => {
+      const m = E.AGGRO + 1;
+      const near = (x, y) => Math.max(0, r.x - x, x - (r.x + r.w - 1)) + Math.max(0, r.y - y, y - (r.y + r.h - 1)) <= m;
+      const seen = new Uint8Array(W * H);
+      const q = [idx(start.cx, start.cy)];
+      seen[q[0]] = 1;
+      for (let head = 0; head < q.length; head++) {
+        const i = q[head];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const x = (i % W) + dx;
+          const y = Math.floor(i / W) + dy;
+          if (x < 0 || y < 0 || x >= W || y >= H) continue;
+          const j = idx(x, y);
+          if (seen[j] || terrain[j] !== T_FLOOR || near(x, y)) continue;
+          seen[j] = 1;
+          q.push(j);
+        }
+      }
+      return rooms.every((o) => o === r || o === start || spotsOf(o).some(([x, y]) => seen[idx(x, y)]));
+    };
+    const spotsOf = (r) => {
+      const out = [];
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (terrain[idx(x, y)] === T_FLOOR) out.push([x, y]);
+      return out;
+    };
+    const fine = middle.filter(clear);
+    const pool = fine.length ? fine : middle;
+    const champRoom = def.champ && pool.length ? pool[rng.int(Math.min(2, pool.length))] : null;
     for (const r of rooms) {
       if (r === start) continue;
       if (r === end && def.boss) {
@@ -520,6 +614,8 @@
   // After a floor: who is left and how hurt, onward (or the tower is beaten).
   function finishFloor(p, s) {
     const run = p.run;
+    // The trainer has something new in.
+    if (p.trainer) p.trainer.items = null;
     p.stats.best = Math.max(p.stats.best, run.floor);
     if (run.floor >= FLOORS) {
       p.stats.clears++;
@@ -801,7 +897,7 @@
       for (const h of heroes(p)) {
         const xp = killXp(u, h.lv);
         shown = Math.max(shown, xp);
-        if (gainXp(h, xp)) {
+        if (gainXp(h, xp, p)) {
           ups.push(h.id);
           if (h.auto) fillSlots(p, h);
         }
@@ -836,6 +932,7 @@
   AG.Delve = {
     SAVE_KEY, FLOORS, FLOOR_DEFS, CLASSES, HERO_SLOTS, W, H, MAX_LV, TRAIN, DANGER,
     hpMul, powMul, foeHpMul, foePowMul, tierOf, xpToNext, skillSlots, gearSlots, talentLevel, slotsOf, pointsLeft, pointsSpent, canLearn, learn, train, respec, autoSpend, gainXp, killXp, partyLevel,
+    PRESTIGE_XP, priceOf, stock, restock, buy, buyRestock,
     newProfile, newHero, heroes, addItem, itemDef, itemByUid, holderOf, picks, classTalents, normalize, autoKit, fillSlots, specOf, setClass, save, load, monsterSpec,
     genFloor, flood, startRun, floorBattle, finishFloor, endRun, exploreTarget, idleAfter, partyLevelIn, packLevels, danger, reveal, rollLoot, packsDown, creditKills, refreshParty,
   };
