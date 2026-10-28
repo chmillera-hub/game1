@@ -37,7 +37,8 @@
   // in a queue battle its place in the rotation (cached for the turn being planned).
   const delayCache = new WeakMap();
   function delayOf(s, v) {
-    if (!s.queue) return E.turnsUntilReady(v);
+    // Rounds: every foe gets its turn before this unit's next, unless it is resting.
+    if (!s.queue || s.rounds) return E.turnsUntilReady(v);
     let c = delayCache.get(s);
     if (!c || c.ply !== s.ply || c.due !== s.due) {
       c = { ply: s.ply, due: s.due, map: new Map() };
@@ -55,7 +56,7 @@
   // How much a foe's reach counts: whoever acts next fully; in a queue battle the units
   // behind it in the rotation count less the longer they wait.
   function threatWeight(s, delay) {
-    if (s.queue) return delay === 0 ? 1 : delay === 1 ? 0.6 : delay === 2 ? 0.4 : delay < 99 ? 0.25 : 0;
+    if (s.queue && !s.rounds) return delay === 0 ? 1 : delay === 1 ? 0.6 : delay === 2 ? 0.4 : delay < 99 ? 0.25 : 0;
     return delay === 0 ? 1 : delay === 1 ? 0.3 : 0;
   }
 
@@ -305,7 +306,8 @@
     const flat = Math.abs(x - f.x) + Math.abs(y - f.y);
     // On foot: the real walking distance (round walls and through corridors), when there is one.
     const field = ctx.focusField[E.idx(ctx.s, x, y)];
-    const walk = u.traits.has('flying') ? flat : field < 999 ? field : flat + 6;
+    // (In a dungeon flyers keep to the corridors too.)
+    const walk = u.traits.has('flying') && !ctx.s.delve ? flat : field < 999 ? field : flat + 6;
     if (f.loot) return walk * FOCUS_PULL;
     // The shrine: one unit stands on it and stays there; the rest gather around to guard it.
     if (f.hold) return flat === 0 ? -120 : Math.max(0, walk - 1) * FOCUS_PULL;
@@ -393,7 +395,9 @@
     // Press harder as the battle drags on, and when we are the stronger side.
     const strength = (list) => list.reduce((t, u) => t + u.value * (u.hp / u.maxHp), 0);
     const ratio = strength(ctx.allies) / Math.max(1, strength(ctx.foes.filter((u) => !u.nonCombat)));
-    ctx.approach *= (1 + 0.08 * Math.max(0, s.turn - 4)) * Math.min(1.5, Math.max(0.7, ratio));
+    // (A delve counts from when this fight began, not from the start of the floor.)
+    const turn = s.delve ? s.turn - s.fightFrom + 1 : s.turn;
+    ctx.approach *= (1 + 0.08 * Math.max(0, Math.min(20, turn) - 4)) * Math.min(1.5, Math.max(0.7, ratio));
     ctx.risk *= Math.min(1.3, Math.max(0.7, 1 / ratio));
     // The further ahead, the more a detour for loot is worth: up to 3 times the pull.
     ctx.lootPull = LOOT_PULL * Math.min(3, Math.max(1, ratio));
@@ -574,7 +578,7 @@
     const flying = u.traits.has('flying');
     const nf = nearestFoe(ctx, x, y);
     const df = ctx.distField[E.idx(s, x, y)];
-    const walk = flying ? nf.d : df < 999 ? df : nf.d + 6;
+    const walk = flying && !ctx.s.delve ? nf.d : df < 999 ? df : nf.d + 6;
     const a = u.act;
     // Guardians and spellwards (Guardian, Holy Aegis, Spellward Aura, Grounding Field) keep
     // their friends beside them, the fragile ones first, and the fragile ones stay beside a
@@ -1139,6 +1143,19 @@
         if (r < 0) return pool[i];
       }
       return pool[0];
+    }
+    // A stalled fight the player's side means to break (see Delve.exploreTarget): with
+    // nothing better to do, step toward the target anyway.
+    if (opts.focus && opts.focus.press && ctx.focus && ctx.focusField) {
+      for (const h of holds) {
+        let best = null;
+        const here = ctx.focusField[E.idx(s, h.u.x, h.u.y)];
+        for (const r of E.reachable(s, h.u).values()) {
+          const d = ctx.focusField[E.idx(s, r.x, r.y)];
+          if (r.d > 0 && d < here && (!best || d < best.d)) best = { r, d };
+        }
+        if (best) return { uid: h.u.uid, kind: 'move', to: best.r, score: 0, gain: 0, facing: h.u.facing };
+      }
     }
     // Nothing worth moving for: turn to face threats if that helps.
     for (const h of holds) {

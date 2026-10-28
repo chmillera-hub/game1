@@ -110,6 +110,9 @@
   // Ready to be used as far as its own cooldown goes.
   const offCooldown = (a) => !(a.cdLeft > 0);
 
+  const CHAMP_HP = 2.2;
+  const CHAMP_POW = 1.2;
+
   // Compile a unit spec into battle numbers.
   function buildUnit(spec, relics) {
     const T = UNITS[spec.type];
@@ -160,8 +163,12 @@
       if (rel.has('glass_crown')) hpPct -= 0.25;
     }
     const baseHp = spec.baseHp || T.hp;
-    const maxHp = Math.round((Math.round(baseHp * D.LEVEL_HP[lv]) + hpAdd) * (1 + hpPct));
-    const pow = Math.round(T.pow * D.LEVEL_POW[lv]) + powAdd;
+    // A delve sets its own growth per hero or monster level (`hpMul`, `powMul`).
+    // A Champion: twice the HP and a fifth more power than others of its level.
+    const champHp = spec.champ ? CHAMP_HP : 1;
+    const champPow = spec.champ ? CHAMP_POW : 1;
+    const maxHp = Math.round((Math.round(baseHp * (spec.hpMul || D.LEVEL_HP[lv]) * champHp) + hpAdd) * (1 + hpPct));
+    const pow = Math.round(T.pow * (spec.powMul || D.LEVEL_POW[lv]) * champPow) + powAdd;
     if (primary.range && primary.range[1] > 7) primary.range[1] = 7;
     if (primary.len) primary.len = Math.min(primary.len, 8);
     if (primary.radius) primary.radius = Math.min(primary.radius, 4);
@@ -235,6 +242,14 @@
       // strikes one of it; then the whole pack wakes together.
       asleep: !!spec.asleep,
       pack: spec.pack || 0,
+      // Where it slept, to walk back to when its pack gives up the chase (see resetPack).
+      home: { x: spec.x, y: spec.y },
+      // Its level in a delve (heroes and monsters alike), shown on its health bar, and a
+      // floor's Champion.
+      dlv: spec.dlv || 0,
+      dlvHp: spec.hpMul || 0,
+      dlvPow: spec.powMul || 0,
+      champ: !!spec.champ,
       // Shackles: the unit a Shackler holds (and how many more of its own turns it holds
       // on), and on the held unit, who holds it.
       holding: 0,
@@ -293,6 +308,46 @@
     return u;
   }
 
+  // A unit's kit changed (a delve hero levelled up or swapped an item): its battle numbers
+  // again, keeping where it stands and how hurt it is (or full health, after a level up).
+  function rebuildUnit(s, u, spec, full) {
+    const b = buildUnit(spec, s.relics[u.team]);
+    const frac = u.maxHp > 0 ? u.hp / u.maxHp : 1;
+    Object.assign(u, {
+      level: b.level,
+      a1: spec.a1 || null,
+      a2: b.level >= 2 ? spec.a2 || null : null,
+      skills: (spec.skills || []).slice(),
+      gear: (spec.gear || []).slice(),
+      talents: (spec.talents || []).filter((id) => D.TALENTS[id] && D.TALENTS[id].cls === spec.type),
+      traits: b.traits,
+      props: b.props,
+      acts: b.acts,
+      act: b.acts[0],
+      maxHp: b.maxHp,
+      pow: b.pow,
+      armor: b.armor,
+      res: b.res,
+      block: b.block,
+      rec: b.rec,
+      move: b.move,
+      dlv: spec.dlv || 0,
+      dlvHp: spec.hpMul || 0,
+      dlvPow: spec.powMul || 0,
+      value: unitValue(spec.type, b.level),
+    });
+    if (u.alive) u.hp = full ? u.maxHp : Math.max(1, Math.min(u.maxHp, Math.round(u.maxHp * frac)));
+    const own = u.props.regen || 0;
+    u.regen = own + (own && s.relics[u.team].has('healing_salve') ? 2 : 0) + (s.relics[u.team].has('sacred_chalice') ? 2 : 0);
+    u.ward = u.traits.has('spellshield') ? 1 : 0;
+    u.secondWind = u.traits.has('secondwind');
+    u.phoenix = u.traits.has('phoenix');
+    u.braced = u.traits.has('brace');
+    if (u.props.startShield) u.shield = Math.max(u.shield, u.props.startShield);
+    emit(s, { t: 'rebuilt', uid: u.uid, full: !!full, level: u.dlv });
+    return u;
+  }
+
   // cfg: { w, h, terrain, units: [spec], relics: {P: [], E: []}, seed, turnLimit,
   //        objective: 'all' | 'boss' | 'vip' | 'destroy' | 'hold' | 'survive',
   //        hold: {x, y, need}, surviveTurns, loot: [{id, kind, x, y}], cartExit,
@@ -344,6 +399,14 @@
       // Queue battles: each side's units take its turns in a set rotation (see pickDue).
       queue: !!cfg.queue,
       due: 0,
+      // Round battles (a delve): every unit takes one turn a round, fastest first, whichever
+      // side it is on (see nextInRound). `order` is who is still to go this round.
+      rounds: !!cfg.rounds,
+      order: [],
+      // A delve: { respawn: [[x, y]], leash }. Nobody loses a floor: see delveRound.
+      delve: cfg.delve || null,
+      inCombat: false,
+      fightFrom: 0,
       // Fatigue from this turn on (0: never); see startFatigue.
       overtime: cfg.overtime || 0,
       // Fatigue hits taken so far in the battle, by anyone (see fatigue).
@@ -372,6 +435,11 @@
     for (const team of ['P', 'E']) {
       if (!s.relics[team].has('sands_of_haste')) continue;
       for (const u of s.units) if (u.team === other(team) && UNITS[u.type].rec >= 2 && !u.boss) u.wait = 1;
+    }
+    if (s.rounds) {
+      s.turn = 0;
+      nextInRound(s);
+      return s;
     }
     // The enemy opens the battle. With nothing to open with, it passes.
     startTurn(s);
@@ -466,7 +534,8 @@
         const ni = idx(s, nx, ny);
         if (dist.has(ni)) continue;
         const t = s.terrain[ni];
-        if (t !== T_GRASS && !flying) continue;
+        // Flyers cross water, lava and rocks, but not a dungeon's walls.
+        if (t !== T_GRASS && (!flying || (s.delve && t === T_ROCK))) continue;
         const o = at(s, nx, ny);
         if (o && o !== u && !passable(u, o, flying, shadow)) continue;
         dist.set(ni, cd + 1);
@@ -502,7 +571,7 @@
         if (!inB(s, nx, ny)) continue;
         const ni = idx(s, nx, ny);
         if (dist.has(ni)) continue;
-        if (s.terrain[ni] !== T_GRASS && !flying) continue;
+        if (s.terrain[ni] !== T_GRASS && (!flying || (s.delve && s.terrain[ni] === T_ROCK))) continue;
         const o = at(s, nx, ny);
         if (o && o !== u && !passable(u, o, flying, shadow)) continue;
         dist.set(ni, cd + 1);
@@ -684,6 +753,10 @@
 
   // Damage one attacker deals to one target, before the block roll.
   // opts: { fromX, fromY, moved, moveDist, mult, dmgType, act, cat }
+  function levelEdge(gap) {
+    return Math.min(1.6, Math.max(0.6, 1 + 0.1 * gap));
+  }
+
   function calcHit(s, atk, tgt, opts) {
     const act = opts.act || atk.act;
     const dmgType = opts.dmgType || act.dmg;
@@ -702,6 +775,8 @@
     if (atk.fury) mult *= 1 + 0.05 * atk.fury;
     if (atk.harvest) mult *= 1 + 0.1 * atk.harvest;
     if (atk.champion) mult *= 1.5;
+    // A delve: each level above the target hits 10% harder, each level below 10% softer.
+    if (s.delve && atk.dlv && tgt.dlv) mult *= levelEdge(atk.dlv - tgt.dlv);
     if (P.momentum && opts.moved) mult *= 1 + P.momentum * (opts.moveDist || 0);
     if (atk.charge) mult *= 1 + 0.25 * atk.charge;
     if (atk.sink) mult *= 1.5;
@@ -1299,7 +1374,8 @@
     // Every enemy unit (not a building, not a shrub) your army cuts down, at any point in the
     // battle, is worth a coin or two: 2 for a big one (3 Supply or more), 1 for the rest.
     // Ones that fall to their own fatigue pay nothing.
-    if (src && src.team === 'P' && u.team === 'E' && !u.nonCombat && !u.structure && !u.traits.has('summon')) {
+    // (A delve pays in XP instead: see Delve.creditKills.)
+    if (!s.delve && src && src.team === 'P' && u.team === 'E' && !u.nonCombat && !u.structure && !u.traits.has('summon')) {
       const n = (u.supply || 0) >= LAP_BIG ? 2 : 1;
       s.stats.lapGold = (s.stats.lapGold || 0) + n;
       emit(s, { t: 'gold', uid: u.uid, amount: n, x: u.x, y: u.y, lap: true });
@@ -1656,6 +1732,8 @@
   function applyDamage(s, src, tgt, amount, info) {
     if (!tgt.alive || amount <= 0) return 0;
     if (tgt.asleep) wakePack(s, tgt);
+    // A delve: the last round the party hurt a monster (see delveRound, STALE).
+    if (tgt.team === 'E' && !tgt.nonCombat) s.lastBlow = s.turn;
     // Bonus bolts and blasts that come without a hit pop a Spell Shield too.
     if (tgt.ward > 0 && (info.dmgType === 'phys' || info.dmgType === 'magic')) {
       tgt.ward = 0;
@@ -2239,7 +2317,7 @@
   }
 
   function raiseDead(s, u, x, y) {
-    const sk = addUnit(s, { type: 'skeleton', team: u.team, x, y, summoner: u.uid, born: ++s.summonCount, facing: u.team === 'P' ? 0 : 2 });
+    const sk = addUnit(s, { type: 'skeleton', team: u.team, x, y, summoner: u.uid, born: ++s.summonCount, facing: u.team === 'P' ? 0 : 2, pack: u.pack, dlv: u.dlv, hpMul: u.dlvHp, powMul: u.dlvPow });
     sk.activated = true;
     sk.value *= 0.6;
     emit(s, { t: 'summon', uid: sk.uid, x, y, by: u.uid, raise: true });
@@ -2821,6 +2899,7 @@
     if (!s.spent) emit(s, { t: 'pass', side: s.side, auto: !!auto, uid: s.due || 0 });
     if (s.queue && s.due && !s.spent && s.byId[s.due].alive) ownTurnDone(s, s.byId[s.due]);
     s.due = 0;
+    if (s.rounds) return nextInRound(s);
     // Bounded: cooldowns run out, and the turn limit ends the battle well before this.
     for (let guard = 0; guard < 1000 && !s.over; guard++) {
       closeTurn(s, s.side);
@@ -3227,7 +3306,10 @@
     for (const v of pack) {
       v.asleep = false;
       v.cycles = start;
+      // In a round battle the pack jumps into the round under way, in speed order.
+      if (s.rounds && !s.order.includes(v.uid)) s.order.push(v.uid);
     }
+    if (s.rounds) s.order.sort((a, b) => byInit(s.byId[a], s.byId[b]));
     emit(s, { t: 'wake', uids: pack.map((v) => v.uid) });
   }
 
@@ -3242,6 +3324,263 @@
 
   function isWard(u) {
     return u.traits.has('immobile') && counts(u);
+  }
+
+  // ------------------------------------------------------------ rounds
+  //
+  // In a round battle every unit gets one turn a round, fastest first (ties: your side,
+  // then the earlier unit), whichever side it is on. A unit cooling down, paralyzed or
+  // with nothing it could do passes its turn as it comes. Cooldowns, paralysis, roots,
+  // weakness and frenzy count the unit's own turns, as in a queue battle; marks and
+  // hazards count rounds.
+
+  function byInit(a, b) {
+    return b.spd - a.spd || (a.team === b.team ? 0 : a.team === 'P' ? -1 : 1) || a.uid - b.uid;
+  }
+
+  function startRound(s) {
+    s.turn++;
+    s.ply++;
+    emit(s, { t: 'round', turn: s.turn });
+    wakeCheck(s);
+    if (s.delve) delveRound(s);
+    if (s.over) return;
+    for (const team of ['P', 'E']) startEffects(s, team);
+    checkOutcome(s);
+    s.order = s.units.filter((u) => inQueue(u)).sort(byInit).map((u) => u.uid);
+  }
+
+  function closeRound(s) {
+    for (const u of s.units) {
+      if (!u.alive) continue;
+      u.activated = false;
+      const fresh = u.fresh || {};
+      if (u.mark > 0 && fresh.mark !== s.ply) u.mark--;
+    }
+    checkOutcome(s);
+  }
+
+  // The next unit's turn: the next in this round's order that can take it (each passes in
+  // turn if it cannot), or a new round once everyone has gone.
+  function nextInRound(s) {
+    s.due = 0;
+    s.spent = false;
+    s.act = null;
+    if (s.delve) checkOutcome(s);
+    for (let guard = 0; guard < 400 && !s.over; guard++) {
+      if (s.delve && s.wiped) delveRound(s);
+      if (!s.order.length) {
+        if (s.turn > 0) closeRound(s);
+        if (s.over) return;
+        startRound(s);
+        if (s.over) return;
+        if (!s.order.length) continue;
+      }
+      const u = s.byId[s.order.shift()];
+      if (!u || !inQueue(u)) continue;
+      s.side = u.team;
+      s.ply++;
+      emit(s, { t: 'turn', side: u.team, turn: s.turn, uid: u.uid });
+      unitTurnStart(s, u);
+      if (!u.alive) {
+        checkOutcome(s);
+        continue;
+      }
+      const why = sitOutReason(s, u);
+      if (!why) {
+        s.due = u.uid;
+        return;
+      }
+      emit(s, { t: 'sitout', uid: u.uid, why: hasAction(u) ? why : 'passive', wait: u.wait, para: u.para });
+      ownTurnDone(s, u);
+    }
+  }
+
+  // Who goes in the rest of this round (the unit up first) and in the next, as things stand.
+  function roundOrder(s) {
+    const now = (s.due ? [s.due] : []).concat(s.order.filter((id) => id !== s.due)).filter((id) => s.byId[id] && inQueue(s.byId[id]));
+    const next = s.units.filter((u) => inQueue(u)).sort(byInit).map((u) => u.uid);
+    return { now, next };
+  }
+
+  // ------------------------------------------------------------ a delve
+  //
+  // Nobody loses a floor. A pack whose prey gets well away from its lair gives up: it goes
+  // home at full health and settles down to sleep again (its dead stay dead). Once no pack
+  // is awake, the fight is over: whoever fell gets up again at the way in, everyone's
+  // once-a-fight abilities come back, and out of a fight the party heals as it walks. A
+  // party wiped out gets up at the way in with full health, and every pack that was
+  // fighting it goes home and heals.
+  const LEASH = 11;
+  const REST_REGEN = 0.1;
+  const RESPAWN_HP = 0.5;
+  const STALE = 8;
+
+  function heroUnit(u) {
+    return u.team === 'P' && counts(u) && !u.summoner;
+  }
+
+  function awakePacks(s) {
+    const packs = new Map();
+    for (const u of s.units) {
+      if (!u.alive || u.team !== 'E' || u.asleep || !counts(u)) continue;
+      const k = u.pack || -u.uid;
+      if (!packs.has(k)) packs.set(k, []);
+      packs.get(k).push(u);
+    }
+    return packs;
+  }
+
+  // The middle of where a pack slept.
+  function lairOf(s, pack, members) {
+    const all = s.units.filter((v) => v.team === 'E' && (pack > 0 ? v.pack === pack : members.includes(v)) && !v.summoner);
+    const list = all.length ? all : members;
+    let x = 0;
+    let y = 0;
+    for (const v of list) {
+      x += v.home.x;
+      y += v.home.y;
+    }
+    return { x: Math.round(x / list.length), y: Math.round(y / list.length) };
+  }
+
+  function freeTileNear(s, x, y, avoid) {
+    let best = null;
+    for (let r = 0; r < 8 && !best; r++)
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const tx = x + dx;
+          const ty = y + dy;
+          if (!inB(s, tx, ty) || s.terrain[idx(s, tx, ty)] !== T_GRASS || s.occ[idx(s, tx, ty)] || (avoid && avoid.has(idx(s, tx, ty)))) continue;
+          const d = Math.abs(dx) + Math.abs(dy);
+          if (!best || d < best.d) best = { x: tx, y: ty, d };
+        }
+    return best;
+  }
+
+  function clearStatus(s, u) {
+    if (u.holding) release(s, u);
+    if (u.heldBy) release(s, s.byId[u.heldBy]);
+    u.poison = null;
+    u.burn = null;
+    u.para = 0;
+    u.root = 0;
+    u.weak = 0;
+    u.mark = 0;
+    u.chains = 0;
+    u.frenzy = 0;
+    u.wait = 0;
+  }
+
+  // Back to fresh for the next fight: uses and cooldowns, once-a-fight saves.
+  function refresh(u) {
+    for (const a of u.acts) {
+      a.left = a.uses > 0 ? a.uses : Infinity;
+      a.cdLeft = 0;
+    }
+    u.secondWind = u.traits.has('secondwind');
+    u.phoenixUsed = false;
+    u.angelUsed = false;
+    u.ward = u.traits.has('spellshield') ? 1 : 0;
+  }
+
+  function resetPack(s, members, why) {
+    const pack = members[0].pack;
+    const lair = lairOf(s, pack, members);
+    const uids = [];
+    for (const u of s.units) {
+      if (!u.alive || u.team !== 'E' || !(pack > 0 ? u.pack === pack : members.includes(u))) continue;
+      s.order = s.order.filter((id) => id !== u.uid);
+      if (u.summoner) {
+        u.alive = false;
+        s.occ[idx(s, u.x, u.y)] = 0;
+        emit(s, { t: 'vanish', uid: u.uid, x: u.x, y: u.y });
+        continue;
+      }
+      clearStatus(s, u);
+      refresh(u);
+      u.hp = u.maxHp;
+      u.shield = u.props.startShield || 0;
+      u.asleep = true;
+      // How often the party has got away from it (see Delve.exploreTarget).
+      if (why === 'leash') u.fled = (u.fled || 0) + 1;
+      const home = s.occ[idx(s, u.home.x, u.home.y)] && s.occ[idx(s, u.home.x, u.home.y)] !== u.uid ? freeTileNear(s, lair.x, lair.y) : u.home;
+      if (home && (home.x !== u.x || home.y !== u.y)) relocate(s, u, home.x, home.y);
+      uids.push(u.uid);
+    }
+    emit(s, { t: 'reset', uids, why, x: lair.x, y: lair.y });
+  }
+
+  // A fallen hero gets up again at the way in.
+  function respawn(s, u, frac) {
+    const taken = new Set();
+    let spot = null;
+    for (const [x, y] of s.delve.respawn) if (!s.occ[idx(s, x, y)] && s.terrain[idx(s, x, y)] === T_GRASS) {
+      spot = { x, y };
+      break;
+    }
+    if (!spot) {
+      const [x, y] = s.delve.respawn[0];
+      spot = freeTileNear(s, x, y, taken);
+    }
+    if (!spot) return;
+    clearStatus(s, u);
+    refresh(u);
+    u.x = spot.x;
+    u.y = spot.y;
+    u.dying = false;
+    revive(s, u, frac, 'respawn');
+    u.activated = false;
+  }
+
+  function delveRound(s) {
+    const D2 = s.delve;
+    if (s.wiped) {
+      s.wiped = false;
+      for (const [, members] of awakePacks(s)) resetPack(s, members, 'wipe');
+      emit(s, { t: 'wipe' });
+      for (const u of s.units) if (heroUnit(u) && !u.alive) respawn(s, u, 1);
+      s.order = s.order.filter((id) => s.byId[id] && s.byId[id].alive && !s.byId[id].asleep);
+      s.inCombat = false;
+      return;
+    }
+    const heroes = s.units.filter((u) => u.alive && heroUnit(u));
+    // Packs left behind: every living hero is far from their lair.
+    for (const [pack, members] of awakePacks(s)) {
+      const lair = lairOf(s, pack, members);
+      if (heroes.every((h) => manhattan(h.x, h.y, lair.x, lair.y) > (D2.leash || LEASH))) resetPack(s, members, 'leash');
+    }
+    // A fight where the party lands no blow on a monster for a while (both sides waiting, a
+    // hold no one can break, the party boxed in): the monsters lose interest and go home.
+    if (s.inCombat && s.turn - (s.lastBlow || 0) >= STALE) for (const [, members] of awakePacks(s)) resetPack(s, members, 'stale');
+    const fighting = awakePacks(s).size > 0;
+    if (fighting && !s.inCombat) {
+      s.inCombat = true;
+      s.fightFrom = s.turn;
+      s.lastBlow = s.turn;
+    }
+    if (!fighting && s.inCombat) {
+      s.inCombat = false;
+      emit(s, { t: 'calm' });
+
+      for (const u of s.units) if (u.team === 'P' && counts(u)) {
+        if (u.alive) {
+          clearStatus(s, u);
+          refresh(u);
+        } else if (heroUnit(u)) respawn(s, u, RESPAWN_HP);
+      }
+    }
+    if (!fighting) {
+      // What the party summoned or grew for a fight (shrubs, the raised) is gone once it is
+      // over: nothing is left to block the corridors.
+      for (const u of s.units) if (u.alive && u.team === 'P' && (u.nonCombat || u.summoner) && !u.rid) {
+        u.alive = false;
+        s.occ[idx(s, u.x, u.y)] = 0;
+        emit(s, { t: 'vanish', uid: u.uid, x: u.x, y: u.y });
+      }
+      for (const u of s.units) if (u.alive && heroUnit(u) && u.hp < u.maxHp) heal(s, u, Math.max(1, Math.round(u.maxHp * REST_REGEN)), 'rest');
+    }
   }
 
   function byQueue(a, b) {
@@ -3438,8 +3777,13 @@
     // routed rather than beaten on the spot: you still have to finish them.
     if (vipDown) rout(s, { vipSlain: true });
     if (objDown) rout(s, { destroyed: true });
+    // A delve is never lost: a party wiped out gets up again at the way in (see delveRound).
+    if (s.delve && !alive.P) {
+      s.wiped = true;
+      if (alive.E) return;
+    }
     let winner = null;
-    if (!alive.P && !alive.E) winner = s.side;
+    if (!alive.P && !alive.E) winner = s.delve ? 'P' : s.side;
     else if (!alive.P) winner = 'E';
     else if (!alive.E) winner = 'P';
     if (s.won || winner === 'P') {
@@ -3480,7 +3824,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, roundOrder, nextInRound, resetPack, rebuildUnit, respawn, levelEdge, LEASH, REST_REGEN, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

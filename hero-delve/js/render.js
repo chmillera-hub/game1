@@ -476,7 +476,11 @@
       v.trophies = u.trophies || 0;
       v.fury = u.fury || 0;
       v.harvest = u.harvest || 0;
-      v.champion = !!u.champion;
+      // A delve: its level (the badge on its health bar), and a floor's Champion (drawn big,
+      // with a crown, like the Gambler's Dice champion).
+      v.champion = !!(u.champion || u.champ);
+      v.champ = !!u.champ;
+      v.dlv = u.dlv || 0;
       v.illusion = !!u.illusion;
     }
 
@@ -1256,6 +1260,14 @@
       g.beginPath();
       g.ellipse(cx, cy + 1, rx * 1.05, ry * 1.05, 0, 0, Math.PI * 2);
       g.fill();
+      if (v.champ) {
+        const a = 0.35 + 0.2 * Math.sin(this.time * 3 + v.phase);
+        g.strokeStyle = 'rgba(255,196,70,' + a + ')';
+        g.lineWidth = Math.max(2, this.tw * 0.06);
+        g.beginPath();
+        g.ellipse(cx, cy, rx * 1.35, ry * 1.35, 0, 0, Math.PI * 2);
+        g.stroke();
+      }
       const ready =
         this.activeSide === v.team && !v.nonCombat && v.wait === 0 && v.para === 0 && !v.activated && !v.ghost && (!this.readySet || this.readySet.has(v.uid));
       if (!v.nonCombat) {
@@ -1431,7 +1443,7 @@
       const cx = cx0 + v.ox;
       const p = v.pose;
       const top = cy0 + v.oy - v.hop - (p ? p.lift : 0) - (S.HEIGHT[v.type] || 40) * this.unit * (v.scale || 1) * this.growOf(v) * (p ? p.scale : 1);
-      const bw = Math.max(18, this.tw * (v.boss ? 0.8 : v.vip ? 0.62 : 0.52));
+      const bw = Math.max(18, this.tw * (v.boss ? 0.8 : v.vip || v.champ ? 0.66 : 0.52));
       const bh = Math.max(3, this.tw * 0.075);
       const x = cx - bw / 2;
       const y = top - bh - 3;
@@ -1496,7 +1508,8 @@
         g.stroke();
         ix -= icon * 0.95;
       }
-      if (v.level > 1) {
+      if (v.dlv) this.levelBadge(g, v, x + bw + 2, iy, icon);
+      else if (v.level > 1) {
         const s = Math.max(3, this.tw * 0.07);
         for (let i = 0; i < v.level; i++) this.star(g, x + bw + s * 1.4 + i * s * 1.9, iy, s);
       }
@@ -1517,6 +1530,30 @@
         g.stroke();
       }
       g.restore();
+    }
+
+    // A delve unit's level, right of its health bar. Monsters' badges say how they stand
+    // against the party (`partyLv`): grey well below, plain about even, amber a level above,
+    // red two or more above (leave it for later).
+    levelBadge(g, v, x, y, icon) {
+      const gap = v.team === 'E' && this.partyLv ? v.dlv - this.partyLv : null;
+      const col = gap == null ? ['#2c3a5c', '#9fc0ff', '#e8f0ff'] : gap >= 2 ? ['#5a1414', '#ff6a5a', '#ffe1dc'] : gap >= 1 ? ['#5a3a10', '#ffb347', '#fff0d6'] : gap <= -3 ? ['#2a2a2a', '#8a8a8a', '#c8c8c8'] : ['#2b2b33', '#d8d2c4', '#ffffff'];
+      const txt = String(v.dlv);
+      const h = Math.max(9, icon * 1.15);
+      g.font = '800 ' + Math.round(h * 0.78) + 'px "Alegreya Sans", system-ui, sans-serif';
+      const w = Math.max(h, g.measureText(txt).width + h * 0.5);
+      g.fillStyle = col[0];
+      g.strokeStyle = col[1];
+      g.lineWidth = gap != null && gap >= 2 ? 1.6 : 1;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(x, y - h / 2, w, h, h * 0.3);
+      else g.rect(x, y - h / 2, w, h);
+      g.fill();
+      g.stroke();
+      g.fillStyle = col[2];
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(txt, x + w / 2, y + 0.5);
     }
 
     drawThinBar(g, v) {
@@ -2535,6 +2572,24 @@
             this.addText(v.x, v.y, '+' + e.amount, '#8ef08e', { height: h, tag: e.why === 'regen' ? 'REGEN' : '' });
             if (e.why !== 'drain') this.particles(v.x, v.y, 6, ['#b7ffb0', '#6fdc6f', '#fff3b0'], { lift: 10, rise: 0.8, speed: 0.25, max: 0.8 });
             break;
+          case 'rebuilt':
+            if (v && e.full) {
+              this.addText(v.x, v.y, 'LEVEL ' + e.level, '#ffe27a', { height: h, big: true, tag: 'LEVEL UP' });
+              this.particles(v.x, v.y, 18, ['#ffe27a', '#fff6c8', '#ffb347'], { lift: 12, rise: 1.2, max: 1 });
+              any = true;
+            }
+            break;
+          case 'reset':
+            // A pack gives up the chase: it is back home, healed, asleep (see syncFromState).
+            if (e.why !== 'wipe') this.addText(e.x, e.y, 'GAVE UP', '#c8c0b0', { max: 1.1, tag: 'HEALED, BACK TO SLEEP' });
+            any = true;
+            break;
+          case 'vanish':
+            if (v) {
+              v.dying = true;
+              v.alpha = 0.4;
+            }
+            break;
           case 'wake':
             for (const id of e.uids || []) {
               const w = this.vis.get(id);
@@ -2713,7 +2768,7 @@
               rv.alpha = 1;
               rv.oy = 0;
               rv.hp = e.hp;
-              this.addText(rv.x, rv.y, e.why === 'phoenix' ? 'REBORN' : 'RISEN', '#ffcf6a', { height: h, big: true });
+              this.addText(rv.x, rv.y, e.why === 'phoenix' ? 'REBORN' : e.why === 'respawn' ? 'BACK ON THEIR FEET' : 'RISEN', '#ffcf6a', { height: h, big: e.why !== 'respawn' });
               this.particles(rv.x, rv.y, 16, ['#ffcf6a', '#ff8a2a', '#fff'], { lift: 10, rise: 1, max: 0.9 });
               any = true;
             }

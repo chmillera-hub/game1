@@ -144,6 +144,7 @@
       tone('square', 1320, 0, 0.06, 0.06);
       tone('square', 1760, 0, 0.12, 0.06, 0.06);
     },
+    levelup: () => [659, 784, 988, 1319].forEach((f, i) => tone('triangle', f, 0, 0.18, 0.11, i * 0.07)),
     victory: () => [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, 0, 0.3, 0.12, i * 0.12)),
     defeat: () => [392, 330, 262, 196].forEach((f, i) => tone('triangle', f, 0, 0.35, 0.12, i * 0.16)),
   };

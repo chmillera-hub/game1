@@ -1,48 +1,63 @@
 // Plays whole delves headless with the AI on both sides. Run: node tests/delve-sim.js [runs]
+// PARTY=scout,assassin,witch,golem picks the four heroes; LV=5 starts them at that level.
 const m = new Map();
 globalThis.localStorage = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
 const AG = require('./load')(['rng.js', 'data.js', 'engine.js', 'ai.js', 'dungeon.js']);
-const E = AG.Engine, AI = AG.AI, DV = AG.Delve;
+const AI = AG.AI, DV = AG.Delve;
 const N = +process.argv[2] || 6;
 const PARTY = process.env.PARTY ? process.env.PARTY.split(',') : null;
+const LV = +process.env.LV || 1;
+// Seeded, so a run can be replayed (SEED=n).
+let seed = +process.env.SEED || 7;
+Math.random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 const t0 = Date.now();
 const results = [];
 for (let i = 0; i < N; i++) {
   const p = DV.newProfile();
   if (PARTY) PARTY.forEach((t, k) => DV.setClass(p, k, t));
+  for (const h of DV.heroes(p)) while (h.lv < LV) DV.gainXp(h, DV.xpToNext(h.lv));
+  DV.autoKit(p);
   DV.startRun(p, 1000 + i);
-  let line = `run ${i} ${p.party.map((h) => h.type).join('/')}:`;
+  console.log(`run ${i} ${p.party.map((h) => h.type).join('/')}:`);
   let outcome = 'cleared';
   while (p.run) {
-    const { s, fl } = DV.floorBattle(p);
+    const { s } = DV.floorBattle(p);
     const known = new Set();
+    const credited = new Set();
+    const tally = { wipe: 0, leash: 0, fell: 0, champ: 0 };
     let g = 0;
-    let plies = 0;
     let idle = 0;
-    while (!s.over && g++ < 6000) {
-      const focus = s.side === 'P' ? DV.exploreTarget(s, idle) : null;
+    const lv0 = DV.partyLevel(p);
+    while (!s.over && g++ < 20000) {
+      // RUSH=1: the player sends the party straight at the Champion, ready or not.
+      const champ = process.env.RUSH && s.units.find((u) => u.champ && u.alive);
+      const focus = s.side === 'P' ? (champ ? { uid: champ.uid } : DV.exploreTarget(s, idle)) : null;
       AI.playTurn(s, s.side, s.side === 'E' ? { stance: 'aggressive', temp: 0.4 } : { stance: 'balanced', temp: 0.3, focus });
-      for (const d of DV.packsDown(s, known)) DV.rollLoot(p, AG.derive(p.run.seed, 'loot' + d.pack), p.run.floor, d.boss);
-      idle = s.events.some((e) => e.t === 'dmg') ? 0 : idle + 1;
+      DV.creditKills(p, s, credited);
+      for (const d of DV.packsDown(s, known)) {
+        DV.rollLoot(p, AG.derive(p.run.seed, 'loot' + d.pack), p.run.floor, d.kind);
+        if (d.champ) tally.champ = s.turn;
+      }
+      for (const e of s.events) {
+        if (e.t === 'wipe') tally.wipe++;
+        if (e.t === 'wake' && e.uids.some((id) => s.byId[id].champ)) tally.woke = (tally.woke ? tally.woke + ',' : '') + `r${s.turn}@L${DV.partyLevelIn(s).toFixed(1)}`;
+        if (e.t === 'reset' && e.why === 'leash') tally.leash++;
+        if (e.t === 'death' && s.byId[e.uid] && s.byId[e.uid].team === 'P') tally.fell++;
+      }
+      DV.refreshParty(p, s);
+      idle = DV.idleAfter(s, s.events, idle);
       s.events.length = 0;
-      plies++;
     }
+    const left = s.units.filter((u) => u.team === 'E' && u.alive && !u.nonCombat);
+    console.log(`  F${p.run.floor} ${s.over ? 'clear' : 'STALL'} ${s.turn} rounds · party Lv ${lv0.toFixed(1)}→${DV.partyLevel(p).toFixed(1)} · fell ${tally.fell} wipes ${tally.wipe} leash ${tally.leash} · champion woke ${tally.woke} down r${tally.champ}${left.length ? ' · left ' + left.map((u) => u.type + u.dlv + (u.asleep ? 'z' : '')).join(',') : ''}`);
     if (!s.over) {
-      const st = s.units.filter((u) => u.alive);
-      console.log('  STALL left:', st.filter((u) => u.team === 'E').map((u) => `${u.type}@${u.x},${u.y} ${u.asleep ? 'asleep' : 'awake'} wait${u.wait} para${u.para} hold${u.holding} nc${u.nonCombat}`).join(' | '));
-      console.log('  party:', st.filter((u) => u.team === 'P').map((u) => `${u.type}@${u.x},${u.y} para${u.para} held${u.heldBy}`).join(' | '), 'focus', JSON.stringify(DV.exploreTarget(s, 99)));
-    }
-    const alive = s.units.filter((u) => u.team === 'P' && u.alive && !u.nonCombat).length;
-    const left = s.units.filter((u) => u.team === 'E' && u.alive && !u.nonCombat).length;
-    line += ` F${p.run.floor} ${s.over ? (s.winner === 'P' ? 'W' : 'L') : 'STALL'}(${s.turn}t ${alive}up ${left}left)`;
-    if (!s.over || s.winner !== 'P') {
-      outcome = s.over ? 'died F' + p.run.floor : 'stall F' + p.run.floor;
+      outcome = 'stall F' + p.run.floor;
       DV.endRun(p);
       break;
     }
     DV.finishFloor(p, s);
   }
-  console.log(line, '→', outcome, '· loot', p.stash.length - 12);
+  console.log('  →', outcome, '· loot', p.stash.length - 12, '· levels', DV.heroes(p).map((h) => h.lv).join('/'));
   results.push(outcome);
 }
 console.log('cleared', results.filter((r) => r === 'cleared').length + '/' + N, '·', ((Date.now() - t0) / 1000).toFixed(1) + 's');

@@ -109,7 +109,7 @@
         <p class="muted">Five floors down, the Countess waits. Pick your party, kit them out, and send them in: they fight on their own while you watch, pause, or point them at something.</p>
       </div>
       <div class="delve-party-strip">${party
-        .map((h) => `<button class="delve-mini" data-hero="${h.id}"><canvas data-p="${h.type}:P"></canvas><b>${esc(h.name)}</b><small>${esc(UNITS[h.type].name)}</small>${run && run.hp[h.id] != null ? hpMini(run.hp[h.id]) : ''}</button>`)
+        .map((h) => `<button class="delve-mini" data-hero="${h.id}" ${owed(h) ? 'data-choose' : ''}><canvas data-p="${h.type}:P"></canvas><b>${esc(h.name)}</b><small>Lv ${h.lv} ${esc(UNITS[h.type].name)}</small>${xpMini(h)}${owed(h) ? `<span class="pts">+${owed(h)}</span>` : ''}</button>`)
         .join('')}</div>
       <div class="actions delve-main-actions">
         ${run
@@ -140,45 +140,54 @@
     on('tHelp', () => help());
   }
 
-  function hpMini(frac) {
-    if (frac <= 0) return '<span class="chip bad">Fallen</span>';
-    return `<span class="hpmini"><i style="width:${Math.round(frac * 100)}%"></i></span>`;
+  // Skill points waiting on you (a hero on Auto-spend saves its own for a talent to come).
+  function owed(h) {
+    return h.auto ? 0 : DV.pointsLeft(h);
+  }
+
+  function xpMini(h) {
+    const f = h.lv >= DV.MAX_LV ? 1 : h.xp / DV.xpToNext(h.lv);
+    return `<span class="xpmini" title="XP"><i style="width:${Math.round(f * 100)}%"></i></span>`;
   }
 
   function help() {
     openSheet(`${sheetHead('How it works')}
       <ul class="tips">
-        <li><b>Your party</b>: four heroes of any class, plus your Cleric, who always comes. All are Level 3, with their level picks, three class talents, two skills and two pieces of gear.</li>
-        <li><b>The stash</b>: skills and gear you own. An item can be on one hero at a time. Packs you wipe out drop more, better the deeper you go; the Countess always drops a legendary.</li>
-        <li><b>The delve</b>: tap Begin and your party walks the floor on its own. Monster packs sleep in their rooms until your heroes come within 5 tiles in sight of them (or hit one): then the whole pack wakes and the fight is on. Turns alternate, one unit a side.</li>
-        <li><b>Watching</b>: pause any time, speed it up, or tap something. Tap a monster and Priority to send everyone after it; tap a floor tile to send the party there; tap a hero to rally round them.</li>
-        <li><b>Floors</b>: clear every monster on a floor and the party takes the stairs down. Hurt heroes stay hurt; a hero who fell gets back up at the shrine on the stairs with ${Math.round(DV.SHRINE_HP * 100)}% HP. Use the town portal between floors to swap kit, then carry on.</li>
-        <li><b>Level 5</b>: the Countess. She burns, she raises the dead, and she has a guard. Slay her to beat the tower.</li>
+        <li><b>Your party</b>: four heroes of any class, plus your Cleric, who always comes. They start at Level 1 and grow as they fight: every monster slain gives the whole party XP.</li>
+        <li><b>Levels</b>: each level makes a hero tougher and stronger and gives a <b>skill point</b> for class talents (from Level 2, the stronger ones from Level 5) or training (Vitality, Might). Level 3 opens a second gear slot, Level 4 the class's second ability, Level 5 a second skill slot, Level 8 its mastery. Heroes on Auto spend their own points and put new finds in empty slots; turn Auto off to choose yourself.</li>
+        <li><b>Loot</b>: packs you wipe out drop skills and gear, better the deeper you go. A floor's Champion always drops something good; the Countess a legendary. Equip it any time, even mid-floor: changes take hold once the fight in hand is over.</li>
+        <li><b>The delve</b>: tap Begin and your party walks the floor on its own. Monster packs sleep in their rooms until your heroes come within 5 tiles in sight of them, or hit one. Fights go in rounds: every unit gets one turn a round, the fastest first.</li>
+        <li><b>Levels on health bars</b>: grey is well below your party, white about even, amber a level above, <b>red two or more above</b>. Your party leaves red packs for later while there is anything else to fight, and walks round them where it can. Each floor has a <b>Champion</b>, a crowned monster far tougher than the rest.</li>
+        <li><b>Watching</b>: pause any time, speed it up, or tap something. Tap a monster and Priority to send everyone after it (red or not); tap a floor tile to send the party there; tap a hero to rally round them or change their kit. <b>Retreat</b> runs for the way in.</li>
+        <li><b>No lost floors</b>: a hero who falls gets up at the way in once the fight is over (win it, or get away). Run far enough from a pack and it gives up the chase, goes home, heals and sleeps; the ones you killed stay dead. If the whole party falls, it gets up at the way in and the monsters it was fighting heal. You never lose XP or items: a strong pack just takes longer.</li>
+        <li><b>Floors</b>: clear every monster on a floor and the party takes the stairs down. Level 5 holds the Countess: slay her to beat the tower.</li>
       </ul>
       <div class="actions"><button class="btn primary" data-close>${ic('check')} Got it</button></div>`);
   }
 
   // ------------------------------------------------------------ party and kit
 
-  function partyScreen() {
+  function partyScreen(stairs) {
     const p = UI.p;
     const v = showView(`<div class="wrap">
       <div class="row"><div class="grow"><p class="eyebrow">Your party</p><h2>Party &amp; gear</h2></div>
+        ${stairs && p.run ? `<button class="btn primary" id="pDown">${ic('play')} Down to ${esc(DV.FLOOR_DEFS[p.run.floor].name)}</button>` : ''}
         <button class="btn" id="pBack">${ic('undo')} Town</button></div>
-      <p class="muted">Tap a hero to change their class, level picks, talents, skills and gear. The Cleric always comes.</p>
+      <p class="muted">Tap a hero to spend skill points and change their abilities, skills, gear or class. The Cleric always comes.</p>
       <div class="delve-roster">${DV.heroes(p).map((h, i) => heroCard(h, i)).join('')}</div>
       <div class="actions"><button class="btn" id="pAuto">${ic('star')} Fill empty slots</button></div>
       <h3>Stash</h3>
       <div class="delve-stash">${stashList()}</div>
     </div>`);
     $('#pBack', v).onclick = title;
+    if ($('#pDown', v)) $('#pDown', v).onclick = () => delve();
     $('#pAuto', v).onclick = () => {
       DV.autoKit(p);
       DV.save(p);
-      partyScreen();
+      partyScreen(stairs);
       toast('Every empty slot filled with the best free fit.');
     };
-    for (const b of $$('[data-hero]', v)) b.onclick = () => heroSheet(DV.heroes(p).find((h) => h.id === b.dataset.hero), partyScreen);
+    for (const b of $$('[data-hero]', v)) b.onclick = () => heroSheet(DV.heroes(p).find((h) => h.id === b.dataset.hero), () => partyScreen(stairs));
   }
 
   function heroCard(h) {
@@ -189,9 +198,9 @@
       ...h.skills.map((uid) => DV.itemDef(DV.itemByUid(p, uid))).filter(Boolean).map((d) => d.name),
       ...h.gear.map((uid) => DV.itemDef(DV.itemByUid(p, uid))).filter(Boolean).map((d) => d.name),
     ];
-    return `<button class="delve-card" data-hero="${h.id}">
+    return `<button class="delve-card" data-hero="${h.id}" ${owed(h) ? 'data-choose' : ''}>
       <canvas data-p="${h.type}:P"></canvas>
-      <span class="nm"><b>${esc(h.name)}</b> <span class="muted">${esc(UNITS[h.type].name)}${h.type === 'cleric' ? ' · always comes' : ''}</span></span>
+      <span class="nm"><b>${esc(h.name)}</b> <span class="muted">Lv ${h.lv} ${esc(UNITS[h.type].name)}${h.type === 'cleric' ? ' · always comes' : ''}</span>${owed(h) ? ` <span class="chip good">+${owed(h)} point${owed(h) > 1 ? 's' : ''}</span>` : ''}${xpMini(h)}</span>
       <span class="small">${kit.length ? esc(kit.join(' · ')) : '<span class="muted">No kit yet</span>'}</span>
     </button>`;
   }
@@ -221,6 +230,10 @@
     DV.normalize(p, h);
     const u = heroStats(h);
     const T = UNITS[h.type];
+    const B = UI.B;
+    const inDelve = !!B;
+    const pts = DV.pointsLeft(h);
+    const sl = DV.slotsOf(h);
     const pick = (tier) =>
       DV.picks(h.type, tier)
         .map((id) => {
@@ -233,8 +246,17 @@
       .map((id) => {
         const t = TALENTS[id];
         const on = h.talents.includes(id);
-        return `<button class="pick ${on ? 'on' : ''}" data-tal="${id}"><span class="pk-head"><b>${esc(t.name)}</b>${on ? ` <span class="chip good">${ic('check')}</span>` : ''}</span><span class="pk-desc">${esc(t.desc)}</span></button>`;
+        const need = DV.talentLevel(id);
+        const locked = !on && h.lv < need;
+        const can = DV.canLearn(h, id);
+        const tag = on ? `<span class="chip good">${ic('check')} learned</span>` : locked ? `<span class="chip">Level ${need}</span>` : `<span class="chip ${can ? 'good' : ''}">${t.cost} point${t.cost > 1 ? 's' : ''}</span>`;
+        return `<button class="pick ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-tal="${id}" ${can ? 'data-choose' : ''} ${locked ? 'disabled' : ''}><span class="pk-head"><b>${esc(t.name)}</b> ${tag}</span><span class="pk-desc">${esc(t.desc)}</span></button>`;
       })
+      .join('');
+    const training = Object.entries(DV.TRAIN)
+      .map(([k, t]) => `<div class="train-row"><span class="grow"><b>${t.name}</b> <span class="muted">${t.desc} a point</span></span>
+        <button class="btn icon-only" data-untrain="${k}" ${h.train[k] ? '' : 'disabled'} aria-label="One point back">−</button><b class="train-n">${h.train[k]}</b>
+        <button class="btn icon-only" data-train="${k}" ${pts > 0 ? 'data-choose' : 'disabled'} aria-label="Spend a point">+</button></div>`)
       .join('');
     const items = (kind, key) => {
       const list = p.stash.filter((it) => it.kind === kind && D.eligible(h.type, DV.itemDef(it)));
@@ -244,22 +266,40 @@
           const d = DV.itemDef(it);
           const on = h[key].includes(it.uid);
           const other = !on && DV.holderOf(p, it.uid);
-          return `<button class="pick ${on ? 'on' : ''} ${d.rarity === 'legendary' ? 'legend' : ''}" data-item="${key}:${it.uid}"><span class="pk-head"><b>${esc(d.name)}</b>${on ? ` <span class="chip good">${ic('check')}</span>` : other ? ` <span class="chip">${esc(other.name)}</span>` : ''}</span><span class="pk-desc">${esc(d.desc)}</span></button>`;
+          const fresh = B && B.loot.includes(it);
+          return `<button class="pick ${on ? 'on' : ''} ${d.rarity === 'legendary' ? 'legend' : ''}" data-item="${key}:${it.uid}"><span class="pk-head"><b>${esc(d.name)}</b>${fresh ? ' <span class="chip warn">new</span>' : ''}${on ? ` <span class="chip good">${ic('check')}</span>` : other ? ` <span class="chip">${esc(other.name)}</span>` : ''}</span><span class="pk-desc">${esc(d.desc)}</span></button>`;
         })
         .join('');
     };
-    const slots = (n, max) => `<span class="lockline">${n}/${max}</span>`;
+    const nextAt = (f, from) => {
+      for (let l = from + 1; l <= DV.MAX_LV; l++) if (f(l) > f(from)) return l;
+      return 0;
+    };
+    const slots = (n, max, f) => {
+      const nx = nextAt(f, h.lv);
+      return `<span class="lockline">${n}/${max}${nx ? ` · another at Level ${nx}` : ''}</span>`;
+    };
+    const xpLine = h.lv >= DV.MAX_LV ? 'Top level' : `${h.xp}/${DV.xpToNext(h.lv)} XP to Level ${h.lv + 1}`;
+    const fight = inDelve && B.s.inCombat;
     refreshSheet(
-      `${sheetHead(`${esc(h.name)} · ${esc(T.name)}`, `Level 3 · ${u.maxHp} HP · ${u.pow} power · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance · Move ${u.move}`)}
-      <div class="lo-sec"><canvas class="hero-big" data-p="${h.type}:P"></canvas><p class="small">${esc(T.desc)}</p>
-        ${h.type !== 'cleric' ? `<button class="btn" id="hClass">${ic('rotate')} Change class</button>` : ''}</div>
+      `${sheetHead(`${esc(h.name)} · Level ${h.lv} ${esc(T.name)}`, `${u.maxHp} HP · ${u.pow} power · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance · Move ${u.move}`)}
+      ${fight ? `<div class="hint">${ic('swords')} A fight is on: what you change here takes hold once it is over.</div>` : ''}
+      <div class="lo-sec"><canvas class="hero-big" data-p="${h.type}:P"></canvas>
+        <div class="xpline">${xpMini(h)}<span class="small muted">${xpLine}</span></div>
+        <p class="small">${esc(T.desc)}</p>
+        ${h.type !== 'cleric' && !inDelve ? `<button class="btn" id="hClass">${ic('rotate')} Change class</button>` : ''}</div>
+      <div class="lo-sec pts-sec ${pts > 0 ? 'has-points' : ''}"><div class="row"><div class="grow"><div class="eyebrow">Skill points</div>
+        <b class="pts-big">${pts}</b> <span class="small muted">to spend · one a level${h.auto ? ' · on Auto, the hero spends them (saving for a talent to come) and fills empty slots' : ''}</span></div>
+        <label class="toggle small" title="Spends skill points and fills empty slots with new finds"><input type="checkbox" id="hAuto" ${h.auto ? 'checked' : ''}> Auto</label>
+        <button class="btn" id="hRespec" ${DV.pointsSpent(h) ? '' : 'disabled'}>${ic('undo')} Reset</button></div></div>
+      <div class="lo-sec"><div class="eyebrow">Talents</div><div class="picks">${talents || '<p class="small muted">None for this class.</p>'}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Training</div>${training}</div>
       <div class="lo-sec"><div class="eyebrow">Ability</div><div class="picks">${pick(1)}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Level 2 ability</div><div class="picks">${pick(2)}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Mastery</div><div class="pick static on"><span class="pk-head"><b>${esc(MASTERY[h.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[h.type].desc)}</span></div></div>
-      <div class="lo-sec"><div class="eyebrow">Talents ${slots(h.talents.length, DV.SLOTS.talents)}</div><div class="picks">${talents || '<p class="small muted">None for this class.</p>'}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Skills ${slots(h.skills.length, DV.SLOTS.skills)}</div><div class="picks">${items('skill', 'skills')}</div></div>
-      <div class="lo-sec"><div class="eyebrow">Gear ${slots(h.gear.length, DV.SLOTS.gear)}</div><div class="picks">${items('gear', 'gear')}</div></div>
-      <div class="actions"><button class="btn primary" data-close>${ic('check')} Done</button></div>`,
+      <div class="lo-sec"><div class="eyebrow">Level 4 ability ${h.lv < 4 ? '<span class="chip">locked</span>' : ''}</div><div class="picks ${h.lv < 4 ? 'dim' : ''}">${pick(2)}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Mastery ${h.lv < 8 ? '<span class="chip">Level 8</span>' : ''}</div><div class="pick static ${h.lv >= 8 ? 'on' : 'dim'}"><span class="pk-head"><b>${esc(MASTERY[h.type].name)}</b></span><span class="pk-desc">${esc(MASTERY[h.type].desc)}</span></div></div>
+      <div class="lo-sec"><div class="eyebrow">Skills ${slots(h.skills.length, sl.skills, DV.skillSlots)}</div><div class="picks">${items('skill', 'skills')}</div></div>
+      <div class="lo-sec"><div class="eyebrow">Gear ${slots(h.gear.length, sl.gear, DV.gearSlots)}</div><div class="picks">${items('gear', 'gear')}</div></div>
+      <div class="actions sticky"><button class="btn primary" data-close>${ic('check')} Done</button></div>`,
       (sh) => {
         UI.onSheetClose = back;
         const redraw = () => {
@@ -276,16 +316,41 @@
           b.onclick = () => {
             const id = b.dataset.tal;
             if (h.talents.includes(id)) h.talents = h.talents.filter((x) => x !== id);
-            else if (h.talents.length < DV.SLOTS.talents) h.talents.push(id);
-            else return toast('All three talent slots are full: take one off first.');
+            else if (!DV.learn(p, h, id)) return toast(h.lv < DV.talentLevel(id) ? `Opens at Level ${DV.talentLevel(id)}.` : `Needs ${TALENTS[id].cost} skill point${TALENTS[id].cost > 1 ? 's' : ''}.`);
+            sfx('select');
             redraw();
           };
+        for (const b of $$('[data-train]', sh))
+          b.onclick = () => {
+            if (DV.train(p, h, b.dataset.train)) sfx('select');
+            redraw();
+          };
+        for (const b of $$('[data-untrain]', sh))
+          b.onclick = () => {
+            const k = b.dataset.untrain;
+            if (h.train[k] > 0) h.train[k]--;
+            redraw();
+          };
+        $('#hAuto', sh).onchange = (e) => {
+          h.auto = e.target.checked;
+          if (h.auto) {
+            DV.autoSpend(h);
+            DV.fillSlots(p, h);
+          }
+          redraw();
+        };
+        $('#hRespec', sh).onclick = () => {
+          DV.respec(p, h);
+          h.auto = false;
+          toast('Every point back: spend them as you like.');
+          redraw();
+        };
         for (const b of $$('[data-item]', sh))
           b.onclick = () => {
             const [key, uid] = b.dataset.item.split(':');
             if (h[key].includes(uid)) h[key] = h[key].filter((x) => x !== uid);
             else {
-              if (h[key].length >= DV.SLOTS[key]) return toast(`Both ${key === 'gear' ? 'gear' : 'skill'} slots are full: take one off first.`);
+              if (h[key].length >= sl[key]) return toast(`All ${key === 'gear' ? 'gear' : 'skill'} slots are full: take one off first.`);
               const other = DV.holderOf(p, uid);
               if (other) other[key] = other[key].filter((x) => x !== uid);
               h[key].push(uid);
@@ -302,7 +367,7 @@
     const p = UI.p;
     const slot = p.party.indexOf(h);
     refreshSheet(
-      `${sheetHead('Change class', `${esc(h.name)} is replaced by a fresh hero of the class you pick, kitted from what is free.`)}
+      `${sheetHead('Change class', `${esc(h.name)} is replaced by a hero of the class you pick, at the same level (Level ${h.lv}), with every skill point to spend again and kit from what is free.`)}
       <div class="delve-classes">${DV.CLASSES.map(
         (t) => `<button class="delve-card ${t === h.type ? 'on' : ''}" data-cls="${t}"><canvas data-p="${t}:P"></canvas><span class="nm"><b>${esc(UNITS[t].name)}</b> <span class="muted">${esc(UNITS[t].rarity)}</span></span><span class="small">${esc(UNITS[t].desc)}</span></button>`
       ).join('')}</div>`,
@@ -356,7 +421,7 @@
     const p = UI.p;
     if (!p.run) return title();
     const { s, fl } = DV.floorBattle(p);
-    const B = (UI.B = { s, fl, seen: new Uint8Array(fl.w * fl.h), known: new Set(), idle: 0, focus: null, paused: true, started: false, sel: null, log: [], loot: [], token: {} });
+    const B = (UI.B = { s, fl, seen: new Uint8Array(fl.w * fl.h), known: new Set(), credited: new Set(), idle: 0, focus: null, paused: true, started: false, sel: null, log: [], loot: [], token: {} });
     $('#view').hidden = true;
     $('#battle').hidden = false;
     const b = ensureBoard();
@@ -366,6 +431,7 @@
     b.setObjectives([], null);
     DV.reveal(s, fl, B.seen);
     b.setSeen(B.seen);
+    b.partyLv = DV.partyLevelIn(s);
     b.syncFromState(s);
     b.speed = UI.prefs.speed;
     b.start();
@@ -382,10 +448,6 @@
     el.classList.add('show');
   }
 
-  function awakeFoes(s) {
-    return s.units.filter((u) => u.alive && u.team === 'E' && !u.asleep && !u.nonCombat);
-  }
-
   // The orders for a side: the monsters press on; the party follows your priority if you set
   // one, else walks on to the next pack (or breaks a stalled fight).
   function aiOpts(B, team) {
@@ -393,6 +455,14 @@
     const mine = B.focus && AI.focusOf(B.s, 'P', B.focus) ? B.focus : null;
     if (B.focus && !mine) B.focus = null;
     return { stance: 'balanced', temp: 0.3, focus: mine || DV.exploreTarget(B.s, B.idle) };
+  }
+
+  // Events the board need not play out: the party's slow healing while it walks, and its
+  // heroes passing their turns between fights.
+  function quiet(s, e) {
+    if (e.t === 'heal' && e.why === 'rest') return true;
+    if (!s.inCombat && (e.t === 'pass' || e.t === 'sitout')) return true;
+    return false;
   }
 
   async function runLoop() {
@@ -407,30 +477,23 @@
           await sleep(120);
           continue;
         }
-        const fighting = awakeFoes(s).length > 0;
-        // Walking between fights goes twice as fast.
-        b.speed = UI.prefs.speed * (fighting ? 1 : 2.5);
+        // Walking between fights goes two and a half times as fast.
+        b.speed = UI.prefs.speed * (s.inCombat ? 1 : 2.5);
+        b.activeSide = s.side;
+        b.readySet = new Set(s.due ? [s.due] : []);
         const team = s.side;
         const opts = aiOpts(B, team);
         const plan = AI.chooseActivation(s, team, opts);
         AI.runPlan(s, plan, opts);
+        afterStep(B);
         const ev = E.drainEvents(s);
-        B.idle = ev.some((e) => e.t === 'dmg') ? 0 : B.idle + 1;
+        B.idle = DV.idleAfter(s, ev, B.idle);
         if (DV.reveal(s, B.fl, B.seen)) b.setSeen(B.seen);
         logEvents(B, ev);
-        await b.playEvents(ev, s);
+        await b.playEvents(ev.filter((e) => !quiet(s, e)), s);
         if (UI.B !== B) return;
+        b.partyLv = DV.partyLevelIn(s);
         b.syncFromState(s);
-        for (const d of DV.packsDown(s, B.known)) {
-          const got = DV.rollLoot(UI.p, AG.derive(UI.p.run.seed, 'loot:' + UI.p.run.floor + ':' + d.pack), UI.p.run.floor, d.boss);
-          for (const it of got) {
-            B.loot.push(it);
-            const d2 = DV.itemDef(it);
-            pushLog(B, `${ic('chest')} Loot: <b>${esc(d2.name)}</b> (${it.kind})`, 'O');
-            toast(`Loot! ${d2.name}`);
-            sfx('coin');
-          }
-        }
         const f = B.focus && AI.focusOf(s, 'P', B.focus);
         b.focus = f ? { x: f.x, y: f.y } : null;
         const c = partyCenter(s);
@@ -443,13 +506,43 @@
     }
   }
 
+  // After every turn: XP for the slain (and level ups), loot from packs wiped out, and the
+  // heroes brought up to date once a fight is over (new levels, points, kit).
+  function afterStep(B) {
+    const s = B.s;
+    const p = UI.p;
+    for (const k of DV.creditKills(p, s, B.credited)) {
+      if (UI.board) UI.board.addText(k.x, k.y, `+${k.xp} XP`, '#c9a6ff', { dy: -UI.board.tw * 0.3, max: 1.4 });
+      for (const id of k.ups) {
+        const h = DV.heroes(p).find((x) => x.id === id);
+        pushLog(B, `${ic('star')} <b>${esc(h.name)}</b> reaches Level ${h.lv}!${owed(h) ? ' A skill point to spend.' : ''}`, 'P');
+      }
+      if (k.ups.length) {
+        sfx('levelup');
+        toast(k.ups.length > 1 ? 'Level up! Your party grows stronger.' : `Level up! ${DV.heroes(p).find((x) => x.id === k.ups[0]).name} grows stronger.`);
+      }
+    }
+    for (const d of DV.packsDown(s, B.known)) {
+      const got = DV.rollLoot(p, AG.derive(p.run.seed, 'loot:' + p.run.floor + ':' + d.pack), p.run.floor, d.kind);
+      if (d.champ) pushLog(B, `${ic('crown')} The Champion falls!`, 'P');
+      for (const it of got) {
+        B.loot.push(it);
+        const d2 = DV.itemDef(it);
+        pushLog(B, `${ic('chest')} Loot: <b>${esc(d2.name)}</b> (${it.kind})`, 'O');
+        toast(`Loot! ${d2.name}`);
+        sfx('coin');
+      }
+    }
+    DV.refreshParty(p, s);
+  }
+
   function pushLog(B, html, team) {
     B.log.unshift({ html, team: team || 'O' });
     B.log.length = Math.min(B.log.length, 30);
   }
 
   function nameOf(u) {
-    return u.team === 'P' ? `${esc(u.name || UNITS[u.type].name)}` : `${esc(UNITS[u.type].name)}`;
+    return u.team === 'P' || u.champ ? `${esc(u.name || UNITS[u.type].name)}` : `${esc(UNITS[u.type].name)}`;
   }
 
   function logEvents(B, ev) {
@@ -458,9 +551,27 @@
       if (e.t === 'wake') {
         const us = e.uids.map((id) => s.byId[id]).filter(Boolean);
         const boss = us.find((u) => u.boss);
-        pushLog(B, boss ? `<b>${esc(UNITS[boss.type].name)}</b> rises to meet you!` : `A pack wakes: ${us.map((u) => esc(UNITS[u.type].name)).join(', ')}`, 'E');
-        banner(boss ? UNITS[boss.type].name : 'Ambush!', true);
+        const champ = us.find((u) => u.champ);
+        const lv = Math.max(...us.map((u) => u.dlv || 1));
+        const deadly = DV.danger(lv, DV.partyLevelIn(s)) === 'deadly';
+        pushLog(B, boss ? `<b>${esc(UNITS[boss.type].name)}</b> rises to meet you!` : champ ? `${ic('crown')} <b>${esc(champ.name)}</b>, Champion ${esc(UNITS[champ.type].name)}, wakes! (Level ${champ.dlv})` : `A pack wakes (Level ${lv}): ${us.map((u) => esc(UNITS[u.type].name)).join(', ')}`, 'E');
+        banner(boss ? UNITS[boss.type].name : champ ? champ.name : deadly ? 'Too strong! Retreat?' : 'Ambush!', true);
+        if (deadly && !boss) toast('That pack is well above your level: tap Retreat to run for the way in.', 3600);
         sfx('horn');
+      } else if (e.t === 'reset' && e.why === 'leash') {
+        pushLog(B, 'The pack gives up the chase: it goes home, heals and sleeps again.', 'O');
+      } else if (e.t === 'reset' && e.why === 'stale') {
+        pushLog(B, 'The fight goes quiet: the pack loses interest and goes home.', 'O');
+      } else if (e.t === 'wipe') {
+        pushLog(B, 'Your party is wiped out! Everyone gets up at the way in; the monsters heal.', 'E');
+        banner('Back at the way in', true);
+        if (B.focus && B.focus.retreat) B.focus = null;
+      } else if (e.t === 'calm') {
+        pushLog(B, 'The fight is over. Abilities ready again; the fallen get up at the way in.', 'P');
+        if (B.focus && B.focus.retreat) B.focus = null;
+      } else if (e.t === 'revive' && e.why === 'respawn') {
+        const u = s.byId[e.uid];
+        if (u) pushLog(B, `${nameOf(u)} gets up at the way in and runs to catch up.`, 'P');
       } else if (e.t === 'death') {
         const u = s.byId[e.uid];
         if (!u || u.nonCombat) continue;
@@ -479,10 +590,11 @@
     if (!B) return;
     const s = B.s;
     const p = UI.p;
-    const fighting = awakeFoes(s).length > 0;
+    const fighting = s.inCombat;
     const left = s.units.filter((u) => u.alive && u.team === 'E' && !u.nonCombat).length;
-    const state = !B.started ? 'Ready' : B.paused ? 'Paused' : fighting ? 'Fighting' : 'Exploring';
-    $('#topbar').innerHTML = `<div class="title"><b>${esc(DV.FLOOR_DEFS[p.run.floor].name)}</b>
+    const state = !B.started ? 'Ready' : B.paused ? 'Paused' : fighting ? `Fighting · round ${s.turn - s.fightFrom + 1}` : 'Exploring';
+    const plv = DV.partyLevelIn(s);
+    $('#topbar').innerHTML = `<div class="title"><b>${esc(DV.FLOOR_DEFS[p.run.floor].name)} <span class="muted">· party Lv ${Math.round(plv * 10) / 10}</span></b>
       <span>${state} · ${left} monster${left === 1 ? '' : 's'} left on this floor</span></div>
       ${B.started ? `<button class="btn icon-only speedbtn ${UI.prefs.speed > 1 ? 'on' : ''}" id="dFast" aria-label="Speed ${UI.prefs.speed}x">${ic('fast')}<small>${UI.prefs.speed}×</small></button>
       <button class="btn icon-only ${B.paused ? 'on' : ''}" id="dPause" aria-label="${B.paused ? 'Resume' : 'Pause'}">${ic(B.paused ? 'play' : 'pause')}</button>` : ''}
@@ -492,6 +604,8 @@
     $('#cmd').innerHTML = `
       ${!B.started ? `<div class="hint">${ic('swords')} Your party stands at the way in. Monster packs sleep in the rooms ahead until your heroes come near. <b>Begin</b> and they explore and fight on their own; pause or set a priority any time.</div>
         <div class="actions sticky"><button class="btn primary" id="dBegin">${ic('play')} Begin</button></div>` : ''}
+      ${fighting && B.started ? roundStrip(s) : ''}
+      ${fighting && B.started && !(B.focus && B.focus.retreat) ? `<div class="actions"><button class="btn" id="dRetreat">${ic('undo')} Retreat to the way in</button></div>` : ''}
       ${B.focus ? focusLine(B) : ''}
       ${sel ? selPanel(B, sel) : ''}
       <div class="delve-frames">${party.map((u) => frame(u)).join('')}</div>
@@ -516,6 +630,30 @@
       hud();
     });
     on('dMenu', () => menu());
+    on('dRetreat', () => {
+      const st = B.fl.start;
+      B.focus = { tile: true, retreat: true, x: st.cx, y: st.cy };
+      UI.board.focus = { x: st.cx, y: st.cy };
+      toast('Run! Get far enough from their lair and the monsters give up the chase.');
+      hud();
+    });
+    on('dKit', () => {
+      const u = s.byId[B.sel];
+      const h = u && DV.heroes(p).find((x) => x.id === u.rid);
+      if (!h) return;
+      const was = B.paused;
+      B.paused = true;
+      hud();
+      heroSheet(h, () => {
+        DV.refreshParty(p, s);
+        UI.board.syncFromState(s);
+        if (UI.B === B && B.started) {
+          B.paused = was;
+          if (!B.paused) runLoop();
+        }
+        hud();
+      });
+    });
     on('dFocus', () => setFocus(B));
     on('dUnfocus', () => {
       B.focus = null;
@@ -546,18 +684,37 @@
       if (u.poison) st.push('<span class="chip poison">Poison</span>');
       if (u.burn) st.push('<span class="chip warn">Burning</span>');
     }
-    return `<button class="delve-frame ${u.alive ? '' : 'down'} ${UI.B.sel === u.uid ? 'sel' : ''}" data-uid="${u.uid}">
+    const h = DV.heroes(UI.p).find((x) => x.id === u.rid);
+    const pts = h ? owed(h) : 0;
+    const turn = UI.B.s.due === u.uid;
+    return `<button class="delve-frame ${u.alive ? '' : 'down'} ${UI.B.sel === u.uid ? 'sel' : ''} ${turn ? 'turn' : ''}" data-uid="${u.uid}">
       <canvas data-p="${u.type}:P"></canvas>
-      <span class="fr-body"><b>${esc(u.name || UNITS[u.type].name)}</b>
+      <span class="fr-body"><b>${esc(u.name || UNITS[u.type].name)} <span class="lvtag">${h ? h.lv : u.dlv}</span>${pts > 0 ? `<span class="pts">+${pts}</span>` : ''}</b>
         <span class="hpbar ${f < 0.3 ? 'low' : f < 0.6 ? 'mid' : ''}"><i style="width:${Math.round(f * 100)}%"></i></span>
-        <span class="small">${u.alive ? `${u.hp}/${u.maxHp}` : ''} ${st.join(' ')}</span></span>
+        ${h ? xpMini(h) : ''}
+        <span class="small">${u.alive ? `${u.hp}/${u.maxHp}` : 'Back after the fight'} ${st.join(' ')}</span></span>
     </button>`;
+  }
+
+  // Who goes next in this round, then the next: fastest first, both sides mixed.
+  function roundStrip(s) {
+    const { now, next } = E.roundOrder(s);
+    const list = now.concat(['|'], next).slice(0, 12);
+    return `<div class="round-strip"><span class="small muted">Round ${s.turn - s.fightFrom + 1}</span>${list
+      .map((id) => {
+        if (id === '|') return '<span class="rs-sep" title="Next round"></span>';
+        const u = s.byId[id];
+        if (!u) return '';
+        return `<span class="rs-u team-${u.team} ${id === s.due ? 'now' : ''} ${u.wait > 0 || u.para > 0 ? 'rest' : ''}"><canvas data-p="${u.type}:${u.team}"></canvas></span>`;
+      })
+      .join('')}</div>`;
   }
 
   function focusLine(B) {
     const f = AI.focusOf(B.s, 'P', B.focus);
     if (!f) return '';
-    const label = f.unit ? UNITS[f.unit.type].name : f.ally ? `rally on ${f.ally.name || UNITS[f.ally.type].name}` : 'that spot';
+    if (B.focus.retreat) return `<div class="focusline">${ic('undo')}<span><b>Retreating</b> to the way in</span><button class="btn" id="dUnfocus">Stop</button></div>`;
+    const label = f.unit ? nameOf(f.unit) : f.ally ? `rally on ${f.ally.name || UNITS[f.ally.type].name}` : 'that spot';
     return `<div class="focusline">${ic('target')}<span>Priority: <b>${esc(label)}</b></span><button class="btn" id="dUnfocus">Clear</button></div>`;
   }
 
@@ -565,18 +722,20 @@
     if (!u) return '';
     const f = Math.max(0, u.hp / u.maxHp);
     const verb = u.team === 'P' ? 'Rally on' : 'Priority';
+    const dz = u.team === 'E' ? DV.danger(u.dlv || 1, DV.partyLevelIn(B.s)) : null;
+    const dzText = { low: 'an easy fight', even: 'about your level', high: 'a level above you', deadly: 'too strong for now' }[dz];
     return `<div class="delve-sel"><canvas data-p="${u.type}:${u.team}"></canvas>
-      <div class="grow"><b>${nameOf(u)}</b> <span class="muted">${esc(UNITS[u.type].name)} · Lv ${u.level}${u.asleep ? ' · asleep' : ''}</span>
+      <div class="grow"><b>${nameOf(u)}</b> <span class="muted">${u.champ ? 'Champion ' : ''}${esc(UNITS[u.type].name)} · <span class="lv-${dz || 'hero'}">Level ${u.dlv || u.level}</span>${u.asleep ? ' · asleep' : ''}</span>
         <span class="hpbar ${f < 0.3 ? 'low' : f < 0.6 ? 'mid' : ''}"><i style="width:${Math.round(f * 100)}%"></i></span>
-        <span class="small">${u.hp}/${u.maxHp} HP</span></div>
-      <div class="col"><button class="btn" id="dInfo">${ic('eye')}</button>${u.alive ? `<button class="btn primary" id="dFocus">${ic('target')} ${verb}</button>` : ''}<button class="btn ghost" id="dDesel">${ic('close')}</button></div></div>`;
+        <span class="small">${u.alive ? `${u.hp}/${u.maxHp} HP` : 'Fallen: back after the fight'}${dzText ? ` · <span class="lv-${dz}">${dzText}</span>` : ''}</span></div>
+      <div class="col"><button class="btn" id="dInfo">${ic('eye')}</button>${u.team === 'P' && u.rid ? `<button class="btn" id="dKit">${ic('army')} Kit</button>` : ''}${u.alive ? `<button class="btn primary" id="dFocus">${ic('target')} ${verb}</button>` : ''}<button class="btn ghost" id="dDesel">${ic('close')}</button></div></div>`;
   }
 
   function unitInfo(u) {
     if (!u) return;
     const T = UNITS[u.type];
     const acts = u.acts.filter((a) => a.kind !== 'none').map((a) => `<li><b>${esc(a.name)}</b>${a.uses ? ` (${a.left === Infinity ? '' : a.left + ' left'})` : ''}</li>`).join('');
-    openSheet(`${sheetHead(`${nameOf(u)}`, `${esc(T.name)} · Level ${u.level} · ${u.hp}/${u.maxHp} HP · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance`)}
+    openSheet(`${sheetHead(`${nameOf(u)}`, `${u.champ ? 'Champion ' : ''}${esc(T.name)} · Level ${u.dlv || u.level} · ${u.hp}/${u.maxHp} HP · ${u.pow} power · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance`)}
       <p>${esc(T.desc)}</p>${T.tip && u.team === 'E' ? `<p class="hint">${esc(T.tip)}</p>` : ''}
       <div class="eyebrow">Actions</div><ul class="tips">${acts}</ul>
       <div class="actions"><button class="btn primary" data-close>${ic('check')} Back</button></div>`);
@@ -624,10 +783,12 @@
     B.paused = true;
     hud();
     openSheet(`${sheetHead('Paused')}
+      <div class="eyebrow">Your party: tap a hero for their kit and skill points</div>
+      <div class="delve-roster">${DV.heroes(UI.p).map((h) => heroCard(h)).join('')}</div>
       <div class="actions col">
         <button class="btn primary" data-close>${ic('play')} Back to the delve</button>
         <button class="btn" id="mHelp">${ic('help')} How it works</button>
-        <button class="btn" id="mTown">${ic('undo')} Town portal (start this floor over later)</button>
+        <button class="btn" id="mTown">${ic('undo')} Town portal (this floor starts over when you come back; XP and items are kept)</button>
       </div>`, (sh) => {
       UI.onSheetClose = () => {
         if (UI.B === B && B.started) {
@@ -637,6 +798,15 @@
         }
       };
       $('#mHelp', sh).onclick = help;
+      for (const b of $$('[data-hero]', sh))
+        b.onclick = () => {
+          const back = UI.onSheetClose;
+          heroSheet(DV.heroes(UI.p).find((h) => h.id === b.dataset.hero), () => {
+            DV.refreshParty(UI.p, B.s);
+            UI.board.syncFromState(B.s);
+            if (back) back();
+          });
+        };
       $('#mTown', sh).onclick = () => {
         UI.onSheetClose = null;
         closeSheet();
@@ -648,24 +818,16 @@
 
   function floorOver(B) {
     const p = UI.p;
-    const s = B.s;
     const floor = p.run.floor;
+    // Whatever fell last still pays out.
+    afterStep(B);
     const loot = B.loot.map((it) => `<li>${ic('chest')} <b>${esc(DV.itemDef(it).name)}</b> <span class="muted">(${it.kind})</span></li>`).join('');
-    if (s.winner !== 'P') {
-      DV.endRun(p);
-      openSheet(`${sheetHead('Your party has fallen', `${esc(DV.FLOOR_DEFS[floor].name)} of the Forgotten Tower`)}
-        <p>The tower keeps its secrets for now. Everything you found stays in your stash.</p>
-        ${loot ? `<div class="eyebrow">Found on this floor</div><ul class="tips">${loot}</ul>` : ''}
-        <div class="actions"><button class="btn primary" data-close>${ic('undo')} Back to town</button></div>`, () => {
-        UI.onSheetClose = () => title();
-      });
-      return;
-    }
-    const res = DV.finishFloor(p, s);
-    const fallen = s.units.filter((u) => u.team === 'P' && u.rid && !u.alive);
+    const res = DV.finishFloor(p, B.s);
+    const levels = `<p class="small">${DV.heroes(p).map((h) => `${esc(h.name)} <b>Lv ${h.lv}</b>${owed(h) ? ` <span class="chip good">+${owed(h)}</span>` : ''}`).join(' · ')}</p>`;
     if (res.done) {
+      sfx('victory');
       openSheet(`${sheetHead('The Countess is slain!', 'The Forgotten Tower is beaten.')}
-        <p>Her tower falls quiet. Your party walks out into the light with everything it found.</p>
+        <p>Her tower falls quiet. Your party walks out into the light with everything it found.</p>${levels}
         ${loot ? `<div class="eyebrow">Found on this floor</div><ul class="tips">${loot}</ul>` : ''}
         <div class="actions"><button class="btn primary" data-close>${ic('crown')} Back to town</button></div>`, () => {
         UI.onSheetClose = () => title();
@@ -673,11 +835,12 @@
       return;
     }
     openSheet(`${sheetHead(`${esc(DV.FLOOR_DEFS[floor].name)} cleared`, `Stairs down to ${esc(DV.FLOOR_DEFS[res.floor].name)}`)}
-      ${fallen.length ? `<p>${fallen.map((u) => esc(u.name)).join(', ')} ${fallen.length > 1 ? 'get' : 'gets'} back up at the shrine by the stairs, with ${Math.round(DV.SHRINE_HP * 100)}% HP.</p>` : '<p>Everyone made it. Hurt heroes stay hurt: the Cleric patches them up as you walk.</p>'}
+      <p>Everyone rests on the stairs: the next floor starts with the whole party up, at full health.</p>${levels}
       ${loot ? `<div class="eyebrow">Found on this floor</div><ul class="tips">${loot}</ul>` : '<p class="muted">Nothing dropped this time.</p>'}
       <div class="actions col">
         <button class="btn primary" id="fDown">${ic('play')} Take the stairs down</button>
-        <button class="btn" id="fTown">${ic('undo')} Town portal: swap kit, then come back</button>
+        <button class="btn" id="fParty">${ic('army')} Party &amp; kit first</button>
+        <button class="btn" id="fTown">${ic('undo')} Town portal</button>
       </div>`, (sh) => {
       // Closed any other way, it is the town portal: the delve waits on the next floor.
       UI.onSheetClose = () => title();
@@ -685,6 +848,12 @@
         UI.onSheetClose = null;
         closeSheet();
         delve();
+      };
+      $('#fParty', sh).onclick = () => {
+        UI.onSheetClose = null;
+        closeSheet();
+        UI.B = null;
+        partyScreen(true);
       };
       $('#fTown', sh).onclick = () => closeSheet();
     });

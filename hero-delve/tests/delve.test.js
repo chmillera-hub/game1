@@ -87,10 +87,10 @@ test('the party walks toward the nearest sleeping pack; fights on its own; break
   assert.ok(t && t.tile && t.x === 3 && t.y === 11, 'the nearer pack first');
   s.units[2].asleep = false;
   assert.strictEqual(DV.exploreTarget(s, 0), null, 'a fight on: its own judgement');
-  assert.deepStrictEqual(DV.exploreTarget(s, 99), { uid: s.units[2].uid }, 'stalled: go get it');
+  assert.deepStrictEqual(DV.exploreTarget(s, 99), { uid: s.units[2].uid, press: true }, 'stalled: go get it');
 });
 
-test('kit stays legal: own class talents, one hero per item, slots respected; auto-kit fills', () => {
+test('kit stays legal: own class talents unlocked by level and paid with points, one hero per item, slots by level', () => {
   const p = DV.newProfile();
   const [a, b] = p.party;
   const it = p.stash.find((x) => x.kind === 'gear' && AG.Data.eligible(a.type, DV.itemDef(x)) && AG.Data.eligible(b.type, DV.itemDef(x)));
@@ -99,49 +99,225 @@ test('kit stays legal: own class talents, one hero per item, slots respected; au
   DV.normalize(p, a);
   DV.normalize(p, b);
   assert.ok(!(a.gear.includes(it.uid) && b.gear.includes(it.uid)), 'one hero per item');
-  a.talents = ['pa_oath', 'pa_oath'];
+  for (const h of DV.heroes(p)) {
+    assert.strictEqual(h.lv, 1, 'everyone starts at Level 1');
+    assert.strictEqual(h.talents.length, 0, 'no points yet, no talents');
+    assert.ok(h.gear.length <= 1 && h.skills.length <= 1, 'one slot each at Level 1');
+  }
+  a.talents = ['pa_oath', 'pa_oath', DV.classTalents(a.type)[0]];
   DV.normalize(p, a);
-  assert.ok(a.talents.every((id) => AG.Data.TALENTS[id].cls === a.type), 'own class talents only');
+  assert.deepStrictEqual(a.talents, [], 'no talents without the level and the points');
+  DV.gainXp(a, DV.xpToNext(1));
+  assert.strictEqual(a.lv, 2);
+  assert.strictEqual(DV.pointsLeft(a) + DV.pointsSpent(a), 1, 'a point a level');
   const fresh = DV.setClass(p, 0, 'pyromancer');
   assert.strictEqual(fresh.type, 'pyromancer');
-  assert.ok(fresh.talents.length > 0, 'a new hero comes kitted');
-  for (const h of DV.heroes(p)) {
-    assert.ok(h.talents.length <= DV.SLOTS.talents && h.skills.length <= DV.SLOTS.skills && h.gear.length <= DV.SLOTS.gear);
-    const spec = DV.specOf(p, h);
-    assert.strictEqual(spec.level, 3);
-  }
+  assert.strictEqual(fresh.lv, 2, 'a new class keeps the level');
   assert.ok(!DV.CLASSES.includes('barrier') && !DV.CLASSES.includes('cleric'), 'no wards, the Cleric always comes');
 });
 
-test('a whole delve plays out: floors cleared, fallen heroes up at the shrine, loot in the stash', () => {
+test('levels: XP to level up, skill points for talents (by level) and training, respec, growth in the spec', () => {
+  const p = DV.newProfile();
+  const h = p.party[0];
+  h.auto = false;
+  let ups = 0;
+  for (let i = 0; i < 4; i++) ups += DV.gainXp(h, DV.xpToNext(h.lv));
+  assert.strictEqual(h.lv, 5);
+  assert.strictEqual(ups, 4);
+  assert.strictEqual(DV.pointsLeft(h), 4);
+  const [t1] = DV.classTalents(h.type).filter((id) => DV.talentLevel(id) === 2);
+  assert.ok(DV.learn(p, h, t1));
+  assert.ok(!DV.learn(p, h, t1), 'once');
+  assert.ok(DV.train(p, h, 'vit'));
+  const spec = DV.specOf(p, h);
+  assert.strictEqual(spec.dlv, 5);
+  assert.strictEqual(spec.level, 2, 'Level 4+: the second ability');
+  assert.ok(Math.abs(spec.hpMul - (DV.hpMul(5) + DV.TRAIN.vit.hp)) < 1e-9);
+  assert.ok(spec.talents.includes(t1));
+  DV.respec(p, h);
+  assert.strictEqual(DV.pointsLeft(h), 4);
+  assert.strictEqual(DV.slotsOf(h).gear, 2);
+  assert.strictEqual(DV.slotsOf(h).skills, 2);
+  const auto = p.party[1];
+  for (let i = 0; i < 6; i++) DV.gainXp(auto, DV.xpToNext(auto.lv));
+  assert.ok(auto.talents.length > 0, 'auto-spend learns talents as they open');
+  const low = { dlv: 1, type: 'skeleton' };
+  assert.ok(DV.killXp(low, 1) > DV.killXp(low, 6), 'monsters far below are worth little');
+  assert.ok(DV.killXp({ dlv: 4, type: 'troll', champ: true }, 3) > 5 * DV.killXp({ dlv: 4, type: 'troll' }, 3) * 0.99, 'champions are worth far more');
+});
+
+function roundBattle(units, walls, extra) {
+  const terrain = new Array(144).fill(0);
+  for (const [x, y] of walls || []) terrain[y * 12 + x] = E.T_ROCK;
+  return E.createBattle(Object.assign({ w: 12, h: 12, terrain, seed: 3, objective: 'all', loot: [], goals: [], waves: [], relics: { P: [], E: [] }, units, queue: true, rounds: true, turnLimit: 100000, delve: { respawn: [[0, 0], [1, 0], [0, 1], [1, 1]] } }, extra || {}));
+}
+
+test('rounds: every unit takes one turn a round, the fastest first, whichever side', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 0, y: 0 },
+    { type: 'scout', team: 'P', x: 1, y: 0 },
+    { type: 'skeleton', team: 'E', x: 6, y: 5 },
+    { type: 'wolf', team: 'E', x: 7, y: 5 },
+  ]);
+  const order = [];
+  for (let i = 0; i < 8; i++) {
+    order.push(s.byId[s.due].type);
+    E.endTurn(s);
+  }
+  assert.deepStrictEqual(order.slice(0, 4), ['scout', 'wolf', 'skeleton', 'knight'], 'speed order, both sides mixed');
+  assert.deepStrictEqual(order.slice(4), order.slice(0, 4), 'and again next round');
+  assert.strictEqual(s.turn, 3);
+  const { now, next } = E.roundOrder(s);
+  assert.strictEqual(next.length, 4);
+  assert.ok(now.length <= 4);
+});
+
+test('a pack left far behind gives up: home, full health, asleep; its dead stay dead', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 0, y: 0 },
+    { type: 'skeleton', team: 'E', x: 10, y: 10, asleep: true, pack: 1 },
+    { type: 'skeleton', team: 'E', x: 11, y: 11, asleep: true, pack: 1 },
+  ], null, { delve: { respawn: [[0, 0]], leash: 6 } });
+  const [kn, a, b] = s.units;
+  E.wakePack(s, a);
+  a.hp = 5;
+  s.occ[E.idx(s, a.x, a.y)] = 0;
+  a.x = 4;
+  a.y = 4;
+  s.occ[E.idx(s, 4, 4)] = a.uid;
+  b.alive = false;
+  s.occ[E.idx(s, b.x, b.y)] = 0;
+  for (let i = 0; i < 6 && !a.asleep; i++) E.endTurn(s);
+  assert.ok(a.asleep, 'back to sleep');
+  assert.strictEqual(a.hp, a.maxHp, 'healed');
+  assert.deepStrictEqual([a.x, a.y], [10, 10], 'home');
+  assert.ok(!b.alive, 'the slain stay slain');
+  assert.ok(!s.over && kn.alive);
+});
+
+test('nobody loses a floor: a wiped party gets up at the way in; the fallen get up once a fight is over', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 5, y: 5 },
+    { type: 'archer', team: 'P', x: 6, y: 5 },
+    { type: 'troll', team: 'E', x: 5, y: 6, asleep: true, pack: 1 },
+  ]);
+  const [kn, ar, tr] = s.units;
+  E.wakePack(s, tr);
+  E.endTurn(s);
+  E.applyDamage(s, tr, kn, 999, { cat: 'none', dmgType: 'true' });
+  E.applyDamage(s, tr, ar, 999, { cat: 'none', dmgType: 'true' });
+  tr.hp = 10;
+  assert.ok(!s.over, 'not a defeat');
+  E.endTurn(s);
+  assert.ok(kn.alive && ar.alive, 'everyone up');
+  assert.strictEqual(kn.hp, kn.maxHp, 'at full health');
+  assert.ok(kn.x <= 1 && kn.y <= 1, 'at the way in');
+  assert.ok(tr.asleep && tr.hp === tr.maxHp, 'the monsters it fought heal and go home');
+  E.applyDamage(s, kn, tr, 9999, { cat: 'none', dmgType: 'true' });
+  E.checkOutcome(s);
+  assert.ok(s.over && s.winner === 'P', 'the floor is clear');
+});
+
+test('a fallen hero gets up at half health once no pack is awake; abilities come back', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 5, y: 5, a1: 'k_bash' },
+    { type: 'archer', team: 'P', x: 6, y: 5 },
+    { type: 'skeleton', team: 'E', x: 5, y: 7, asleep: true, pack: 1 },
+    { type: 'skeleton', team: 'E', x: 11, y: 11, asleep: true, pack: 2 },
+  ]);
+  const [kn, ar, a] = s.units;
+  E.wakePack(s, a);
+  E.endTurn(s);
+  const bash = kn.acts.find((x) => x.uses > 0);
+  bash.left = 0;
+  E.applyDamage(s, a, ar, 999, { cat: 'none', dmgType: 'true' });
+  E.applyDamage(s, kn, a, 999, { cat: 'none', dmgType: 'true' });
+  for (let i = 0; i < 6 && !ar.alive; i++) E.endTurn(s);
+  assert.ok(ar.alive, 'back up');
+  assert.ok(ar.hp < ar.maxHp && ar.hp >= Math.floor(ar.maxHp * E.REST_REGEN) , 'at about half health, healing as it walks');
+  assert.ok(ar.x <= 1 && ar.y <= 1, 'at the way in');
+  assert.strictEqual(bash.left, bash.uses, 'uses back');
+});
+
+test('levels count in a fight; level ups take hold once the fight is over', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 5, y: 5, dlv: 3 },
+    { type: 'skeleton', team: 'E', x: 5, y: 6, dlv: 1 },
+    { type: 'skeleton', team: 'E', x: 7, y: 7, dlv: 5 },
+  ]);
+  const [kn, lo, hi] = s.units;
+  const vsLo = E.calcHit(s, kn, lo, { cat: 'front' }).dmg;
+  const vsHi = E.calcHit(s, kn, hi, { cat: 'front' }).dmg;
+  assert.ok(vsLo > vsHi, 'a level edge');
+  const p = DV.newProfile();
+  DV.startRun(p, 77);
+  const { s: fs } = DV.floorBattle(p);
+  const hero = fs.units.find((u) => u.team === 'P' && u.rid);
+  const h = DV.heroes(p).find((x) => x.id === hero.rid);
+  const hp0 = hero.maxHp;
+  DV.gainXp(h, DV.xpToNext(1));
+  fs.inCombat = true;
+  assert.deepStrictEqual(DV.refreshParty(p, fs), [], 'not mid-fight');
+  fs.inCombat = false;
+  assert.ok(DV.refreshParty(p, fs).includes(hero.uid));
+  assert.ok(hero.maxHp > hp0 && hero.dlv === 2 && hero.hp === hero.maxHp, 'stronger, and healed up');
+});
+
+test('each floor has a Champion, away from the way in; the party leaves packs far above it for later', () => {
+  for (let seed = 1; seed <= 20; seed++)
+    for (let f = 1; f <= DV.FLOORS; f++) {
+      const fl = DV.genFloor(seed, f);
+      const ch = fl.monsters.filter((m) => m.champ);
+      assert.strictEqual(ch.length, 1, `seed ${seed} floor ${f}: one Champion`);
+      assert.ok(Math.abs(ch[0].x - fl.start.cx) + Math.abs(ch[0].y - fl.start.cy) > 8, 'away from the way in');
+      assert.ok(ch[0].dlv > Math.max(...fl.monsters.filter((m) => !m.champ && m.type !== 'countess').map((m) => m.dlv)), 'above the rest');
+    }
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 0, y: 0, dlv: 2, rid: 'h1' },
+    Object.assign(DV.monsterSpec('troll', 6), { team: 'E', x: 7, y: 0, asleep: true, pack: 1, champ: true }),
+    Object.assign(DV.monsterSpec('skeleton', 2), { team: 'E', x: 0, y: 9, asleep: true, pack: 2 }),
+  ]);
+  assert.ok(s.units[1].asleep && s.units[2].asleep);
+  const t = DV.exploreTarget(s, 0);
+  assert.ok(t && t.tile, 'walking somewhere');
+  assert.ok(Math.abs(t.x - 0) + Math.abs(t.y - 9) < Math.abs(t.x - 7) + Math.abs(t.y - 0), 'toward the pack it can take, not the Champion');
+  assert.strictEqual(DV.danger(6, 2), 'deadly');
+  assert.strictEqual(DV.danger(3, 2), 'high');
+  assert.strictEqual(DV.danger(2, 2), 'even');
+});
+
+test('a whole delve plays out: floors cleared, levels gained, loot in the stash', () => {
   const p = DV.newProfile();
   DV.startRun(p, 1001);
   const start = p.stash.length;
   let floors = 0;
-  while (p.run && floors < DV.FLOORS) {
+  while (p.run && floors < 3) {
     const { s } = DV.floorBattle(p);
     const known = new Set();
+    const credited = new Set();
     let idle = 0;
-    for (let g = 0; g < 6000 && !s.over; g++) {
+    for (let g = 0; g < 12000 && !s.over; g++) {
       const focus = s.side === 'P' ? DV.exploreTarget(s, idle) : null;
       AI.playTurn(s, s.side, s.side === 'E' ? { stance: 'aggressive', temp: 0 } : { stance: 'balanced', temp: 0, focus });
-      for (const d of DV.packsDown(s, known)) DV.rollLoot(p, AG.derive(1, 'l' + d.pack), p.run.floor, d.boss);
-      idle = s.events.some((e) => e.t === 'dmg') ? 0 : idle + 1;
+      DV.creditKills(p, s, credited);
+      for (const d of DV.packsDown(s, known)) DV.rollLoot(p, AG.derive(1, 'l' + d.pack), p.run.floor, d.kind);
+      DV.refreshParty(p, s);
+      idle = DV.idleAfter(s, s.events, idle);
       s.events.length = 0;
     }
-    assert.ok(s.over, `floor ${p.run.floor} finished`);
-    if (s.winner !== 'P') break;
+    assert.ok(s.over && s.winner === 'P', `floor ${p.run.floor} cleared`);
     const before = p.run.floor;
     DV.finishFloor(p, s);
     floors++;
     if (p.run) {
       assert.strictEqual(p.run.floor, before + 1);
       const next = DV.floorBattle(p).s;
-      for (const u of next.units.filter((x) => x.team === 'P')) assert.ok(u.alive && u.hp > 0, 'everyone starts the floor standing');
+      for (const u of next.units.filter((x) => x.team === 'P')) assert.ok(u.alive && u.hp === u.maxHp, 'everyone starts the floor rested');
     }
   }
-  assert.ok(floors >= 1, 'at least one floor cleared');
+  assert.ok(floors >= 2, 'floors cleared');
   assert.ok(p.stash.length > start, 'loot found');
+  assert.ok(DV.heroes(p).every((h) => h.lv >= 3), 'the party levelled up');
 });
 
 console.log(`delve: ${passed} tests passed`);
