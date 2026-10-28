@@ -238,6 +238,48 @@ test('fatigue sets in at round 20 of a fight, for both sides, and is gone once i
   assert.ok(!s.tire.P.on && !s.tire.E.on, 'off again after the fight');
 });
 
+test('a den makes more monsters while the party is near; they are worth nothing; the den pays once and holds the floor open', () => {
+  const s = roundBattle([
+    { type: 'knight', team: 'P', x: 3, y: 5, rid: 'h1', dlv: 3 },
+    Object.assign(DV.monsterSpec('crypt', 3), { team: 'E', x: 7, y: 5, asleep: true, pack: 1 }),
+  ]);
+  const [kn, crypt] = s.units;
+  E.wakePack(s, crypt);
+  for (let i = 0; i < 12; i++) E.endTurn(s);
+  const made = s.units.filter((u) => u.summoner === crypt.uid);
+  assert.ok(made.length >= 1 && made.length <= E.SPAWN_CAP + 2, 'skeletons come out');
+  assert.ok(made.every((u) => u.type === 'skeleton' && u.spawned && u.pack === crypt.pack));
+  assert.strictEqual(DV.killXp(made[0], 3), 0, 'a spawned monster is worth no XP');
+  const p = DV.newProfile();
+  const credited = new Set();
+  for (const u of made) if (u.alive) E.applyDamage(s, kn, u, 99999, { cat: 'none', dmgType: 'true' });
+  E.checkOutcome(s);
+  assert.ok(!s.over, 'the floor is not clear while the crypt stands');
+  const xp0 = p.party[0].xp;
+  DV.creditKills(p, s, credited);
+  assert.strictEqual(p.party[0].xp, xp0, 'no XP from what it sent out');
+  E.applyDamage(s, kn, crypt, 99999, { cat: 'none', dmgType: 'true' });
+  E.checkOutcome(s);
+  DV.creditKills(p, s, credited);
+  assert.ok(p.party[0].xp > xp0, 'breaking it pays');
+  assert.ok(s.over && s.winner === 'P', 'and the floor is clear');
+});
+
+test('buildings sit in some packs from floor 2 on: spawners and totems', () => {
+  let spawners = 0;
+  let totems = 0;
+  for (let seed = 1; seed <= 20; seed++)
+    for (let f = 1; f <= DV.FLOORS; f++)
+      for (const m of DV.genFloor(seed, f).monsters) {
+        if (AG.Data.UNITS[m.type].traits.includes('spawner')) {
+          spawners++;
+          assert.ok(f >= 2, 'no spawners on the first floor');
+        }
+        if (AG.Data.UNITS[m.type].traits.includes('totem')) totems++;
+      }
+  assert.ok(spawners > 20 && totems > 20, `${spawners} spawners, ${totems} totems`);
+});
+
 test('a pack left far behind gives up: home, full health, asleep; its dead stay dead', () => {
   const s = roundBattle([
     { type: 'knight', team: 'P', x: 0, y: 0 },

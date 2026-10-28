@@ -264,6 +264,9 @@
 
   // A building that still has reinforcements to send.
   function isSpawning(s, u) {
+    // A delve: a den, crypt or portal awake in a fight keeps making monsters until it is
+    // broken (out of a fight, a building on its own is no foe: the party walks on).
+    if (s.delve) return !!(s.inCombat && u.traits.has('spawner') && !u.asleep && u.alive);
     return u.traits.has('spawner') && s.waves.some((w) => w.src === u.uid && w.state === 'pending');
   }
 
@@ -335,7 +338,7 @@
     const cleanup = team === 'P' && !!s.cleanup;
     const foes = cleanup
       ? E.cleanupTargets(s)
-      : s.units.filter((u) => u.alive && u.team === foe && !u.bound && !u.asleep && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u)));
+      : s.units.filter((u) => u.alive && u.team === foe && !u.bound && !u.asleep && !u.structure && (!u.nonCombat || (s.objective === 'destroy' && isGoal(u)) || isSpawning(s, u) || (s.delve && s.inCombat && u.traits.has('totem'))));
     // Hostile Lightning Wards (anything rooted to the spot that zaps what comes near), and
     // the living foes worth walking into one for. While any of those remain, nobody marches
     // on a ward: it is fought from outside its reach.

@@ -35,6 +35,14 @@ renderer), as a separate game: Arena Gauntlet is untouched.
   Each floor has a **Champion**: a named, crowned monster three levels above the floor's
   strongest, with twice the HP, in a room of its own away from the way in. Floor 5 holds the
   Countess (Level 11) with a guard, in the far room.
+- **Buildings**: from floor 2 some packs keep a building in the middle of their room. A
+  crypt (skeletons), den (spiders) or portal (specters) sends out one of its kind every 3
+  rounds while a hero is within 9 tiles, up to 2 alive at a time, until it is broken. What it
+  makes is worth no XP and drops nothing, so a spawner cannot be farmed; breaking it pays
+  XP once, and the floor is not clear while one stands. The party's AI goes for an awake
+  spawner as a priority. War totems (any floor) whip monsters within 2 tiles into a frenzy
+  (+25% damage). Buildings are buildings for everything that is good against them: the
+  Trebuchet's mastery, siege gear.
 - **Rounds**: every unit, hero or monster, takes one turn a round, fastest first (the turn
   order strip shows this round and the next). Every unit has its turn even when it cannot
   act: one cooling down may still move (not act), and its cooldown drops by one each round;
@@ -73,6 +81,7 @@ renderer), as a separate game: Arena Gauntlet is untouched.
   Champion a floor, sleeping packs, exploring orders (danger levels, routes round red packs,
   falling back, regrouping), fog of war, XP and loot, the floor-to-floor run.
 - `js/engine.js`:
+  - delve spawners (`spawnFrom`: what each makes, how often, how many);
   - round battles (`rounds`: every unit once a round in speed order, `roundOrder`);
   - delve levels (`dlv`, `hpMul`, `powMul`, the level edge in `calcHit`, Champions);
   - sleeping packs (`asleep`, `pack`, `wakeCheck`, `wakePack`, `sightLine`);

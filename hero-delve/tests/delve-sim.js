@@ -44,6 +44,8 @@ for (let i = 0; i < N; i++) {
       }
       for (const e of s.events) {
         if (e.t === 'wipe') tally.wipe++;
+        if (e.t === 'summon' && e.spawn) tally.spawned = (tally.spawned || 0) + 1;
+        if (e.t === 'death' && s.byId[e.uid] && s.byId[e.uid].traits.has('spawner')) tally.broke = (tally.broke || 0) + 1;
         if (e.t === 'fatigue') tally.fat = (tally.fat || 0) + 1;
         if (e.t === 'dmg' && e.dmgType === 'fatigue' && s.byId[e.uid] && !s.byId[e.uid].alive && s.byId[e.uid].team === 'E') tally.fatKills = (tally.fatKills || 0) + 1;
         if (e.t === 'wake' && e.uids.some((id) => s.byId[id].champ)) tally.woke = (tally.woke ? tally.woke + ',' : '') + `r${s.turn}@L${DV.partyLevelIn(s).toFixed(1)}`;
@@ -55,7 +57,7 @@ for (let i = 0; i < N; i++) {
       s.events.length = 0;
     }
     const left = s.units.filter((u) => u.team === 'E' && u.alive && !u.nonCombat);
-    console.log(`  F${p.run.floor} ${s.over ? 'clear' : 'STALL'} ${s.turn} rounds · party Lv ${lv0.toFixed(1)}→${DV.partyLevel(p).toFixed(1)} · xp +${total(p.party[0]) - xp0} · fell ${tally.fell} wipes ${tally.wipe} leash ${tally.leash} · fatigued fights ${tally.fat || 0} (monsters it killed ${tally.fatKills || 0}) · champion woke ${tally.woke} down r${tally.champ}${left.length ? ' · left ' + left.map((u) => u.type + u.dlv + (u.asleep ? 'z' : '')).join(',') : ''}`);
+    console.log(`  F${p.run.floor} ${s.over ? 'clear' : 'STALL'} ${s.turn} rounds · party Lv ${lv0.toFixed(1)}→${DV.partyLevel(p).toFixed(1)} · xp +${total(p.party[0]) - xp0} · fell ${tally.fell} wipes ${tally.wipe} leash ${tally.leash} · spawned ${tally.spawned || 0}, spawners broken ${tally.broke || 0}/${s.units.filter((u) => u.traits.has('spawner')).length} · fatigued fights ${tally.fat || 0} (monsters it killed ${tally.fatKills || 0}) · champion woke ${tally.woke} down r${tally.champ}${left.length ? ' · left ' + left.map((u) => u.type + u.dlv + (u.asleep ? 'z' : '')).join(',') : ''}`);
     if (!s.over) {
       outcome = 'stall F' + p.run.floor;
       DV.endRun(p);

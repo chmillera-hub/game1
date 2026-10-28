@@ -224,6 +224,7 @@
         <li><b>Upgrading</b>: when someone levels up or loot drops, their frame glows with a <b>+1</b> (skill points) or <b>new</b> (items they could use), and a ${ic('star')} appears at the top. After a fight the game pauses for you (you can turn that off in the menu): tap the hero, spend the points, put the loot on, then ${ic('play')} to carry on. Turn a hero's <b>Auto</b> on and it does this itself.</li>
         <li><b>Prestige</b>: a hero at Level ${DV.MAX_LV} earns a prestige point for the party every ${DV.PRESTIGE_XP} XP instead of a level. Spend them at the <b>Prestige Trainer</b> in town on skills and gear.</li>
         <li><b>Loot</b>: packs you wipe out drop skills and gear, better the deeper you go. A floor's Champion always drops something good; the Countess a legendary. Changes made mid-floor take hold once the fight in hand is over.</li>
+        <li><b>Buildings</b>: some packs keep a building in their room. A <b>crypt, den or portal</b> sends out more monsters every ${E.SPAWN_EVERY} rounds while your party is near, until it is broken; what it makes is worth no XP and drops nothing, so break it (the floor is not clear until you do). A <b>war totem</b> whips the monsters near it into a frenzy. Siege units, the Trebuchet above all, hit buildings hard.</li>
         <li><b>Rounds</b>: every unit gets one turn a round, the fastest first, whichever side. A unit cooling down still gets its turn and may move, but not act; its cooldown drops by one each round.</li>
         <li><b>Fatigue</b>: from round ${E.FATIGUE_AT} of any fight, every unit on both sides loses a share of its own health as its turn comes: 3% of its HP, then 6%, 9% and so on. Nothing lasts for ever, and a party of tanks and healers can win by outlasting what it cannot kill.</li>
         <li><b>Levels on health bars</b>: grey is well below your party, white about even, amber a level above, <b>red two or more above</b>. Your party leaves red packs for later while there is anything else to fight, and walks round them where it can. Each floor has a <b>Champion</b>, a crowned monster far tougher than the rest.</li>
@@ -647,6 +648,14 @@
         banner(boss ? UNITS[boss.type].name : champ ? champ.name : deadly ? 'Too strong! Retreat?' : 'Ambush!', true);
         if (deadly && !boss) toast('That pack is well above your level: tap Retreat to run for the way in.', 3600);
         sfx('horn');
+      } else if (e.t === 'summon' && e.spawn) {
+        const b = s.byId[e.by];
+        const u = s.byId[e.uid];
+        B.spawnSeen = B.spawnSeen || new Set();
+        if (b && u && !B.spawnSeen.has(b.uid)) {
+          B.spawnSeen.add(b.uid);
+          pushLog(B, `The ${esc(UNITS[b.type].name)} sends out a ${esc(UNITS[u.type].name)}, and will keep at it. What it makes is worth no XP: <b>break the ${esc(UNITS[b.type].name)}</b>.`, 'E');
+        }
       } else if (e.t === 'reset' && e.why === 'leash') {
         pushLog(B, 'The pack gives up the chase: it goes home, heals and sleeps again.', 'O');
       } else if (e.t === 'reset' && e.why === 'stale') {
@@ -844,6 +853,8 @@
     const acts = u.acts.filter((a) => a.kind !== 'none').map((a) => `<li><b>${esc(a.name)}</b>${a.uses ? ` (${a.left === Infinity ? '' : a.left + ' left'})` : ''}</li>`).join('');
     openSheet(`${sheetHead(`${nameOf(u)}`, `${u.champ ? 'Champion ' : ''}${esc(T.name)} · Level ${u.dlv || u.level} · ${u.hp}/${u.maxHp} HP · ${u.pow} power · ${Math.round(u.armor * 100)}% physical / ${Math.round(u.res * 100)}% magic resistance`)}
       <p>${esc(T.desc)}</p>${T.tip && u.team === 'E' ? `<p class="hint">${esc(T.tip)}</p>` : ''}
+      ${E.SPAWN_OF[u.type] ? `<p class="hint">In the tower: while your party is near it sends out a ${esc(UNITS[E.SPAWN_OF[u.type]].name)} every ${E.SPAWN_EVERY} rounds, ${E.SPAWN_CAP} at a time at most. What it makes is worth no XP and drops nothing; breaking it pays, and the floor is not clear until it is broken. Siege units (the Trebuchet above all) hit buildings hard.</p>` : ''}
+      ${u.spawned ? '<p class="hint">Sent out by a building: worth no XP, drops nothing.</p>' : ''}
       <div class="eyebrow">Actions</div><ul class="tips">${acts}</ul>
       <div class="actions"><button class="btn primary" data-close>${ic('check')} Back</button></div>`);
   }

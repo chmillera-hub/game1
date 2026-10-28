@@ -3534,6 +3534,7 @@
       u.hp = u.maxHp;
       u.shield = u.props.startShield || 0;
       u.asleep = true;
+      u.spawnTick = 0;
       // How often the party has got away from it (see Delve.exploreTarget).
       if (why === 'leash') u.fled = (u.fled || 0) + 1;
       const home = s.occ[idx(s, u.home.x, u.home.y)] && s.occ[idx(s, u.home.x, u.home.y)] !== u.uid ? freeTileNear(s, lair.x, lair.y) : u.home;
@@ -3565,6 +3566,33 @@
     u.activated = false;
   }
 
+  // Monster buildings in a delve: a den, crypt or portal awake with a hero near sends out a
+  // monster of its kind every SPAWN_EVERY rounds, up to SPAWN_CAP of them alive at a time,
+  // until it is broken. What comes out of one is worth no XP and drops nothing (see
+  // Delve.creditKills): only breaking the building pays.
+  const SPAWN_OF = { crypt: 'skeleton', den: 'spider', portal: 'specter', war_tent: 'cutthroat', guardhouse: 'crossbow' };
+  const SPAWN_EVERY = 3;
+  const SPAWN_CAP = 2;
+  const SPAWN_NEAR = 9;
+
+  function spawnFrom(s, heroes) {
+    for (const b of s.units) {
+      if (!b.alive || b.team !== 'E' || b.asleep || !b.traits.has('spawner') || !SPAWN_OF[b.type]) continue;
+      if (!heroes.some((h) => manhattan(h.x, h.y, b.x, b.y) <= SPAWN_NEAR)) continue;
+      b.spawnTick = (b.spawnTick || 0) + 1;
+      if (b.spawnTick % SPAWN_EVERY !== 1) continue;
+      if (s.units.filter((u) => u.alive && u.summoner === b.uid).length >= SPAWN_CAP) continue;
+      const spot = freeTileNear(s, b.x, b.y);
+      if (!spot) continue;
+      const u = addUnit(s, { type: SPAWN_OF[b.type], team: 'E', x: spot.x, y: spot.y, facing: 2, summoner: b.uid, pack: b.pack, dlv: b.dlv, hpMul: b.dlvHp, powMul: b.dlvPow, level: b.level });
+      u.spawned = true;
+      u.home = { x: b.x, y: b.y };
+      s.order.push(u.uid);
+      s.order.sort((a, c) => byInit(s.byId[a], s.byId[c]));
+      emit(s, { t: 'summon', uid: u.uid, x: u.x, y: u.y, by: b.uid, spawn: true });
+    }
+  }
+
   function delveRound(s) {
     const D2 = s.delve;
     if (s.wiped) {
@@ -3578,6 +3606,7 @@
       return;
     }
     const heroes = s.units.filter((u) => u.alive && heroUnit(u));
+    spawnFrom(s, heroes);
     // Packs left behind: every living hero is far from their lair.
     for (const [pack, members] of awakePacks(s)) {
       const lair = lairOf(s, pack, members);
@@ -3599,6 +3628,11 @@
     if (!fighting && s.inCombat) {
       s.inCombat = false;
       restTimers(s);
+      // A building whose pack is gone settles back: it wakes again when the party comes near.
+      for (const b of s.units) if (b.alive && b.team === 'E' && !b.asleep && b.traits.has('object')) {
+        b.asleep = true;
+        b.spawnTick = 0;
+      }
       emit(s, { t: 'calm' });
 
       for (const u of s.units) if (u.team === 'P' && counts(u)) {
@@ -3802,6 +3836,8 @@
         if (u.escaped) objEscaped = true;
       }
       if (u.alive && counts(u)) alive[u.team] = true;
+      // A delve: a floor is not clear while a monster building that makes more still stands.
+      if (s.delve && u.alive && u.team === 'E' && u.traits.has('spawner')) alive.E = true;
     }
     // Reinforcements still on the way keep a side in the fight.
     for (const team of ['P', 'E']) if (pendingWaves(s, team)) alive[team] = true;
@@ -3861,7 +3897,7 @@
     other, manhattan, idx, inB, at, dirFromDelta, unitValue, buildUnit, specMods,
     canDealDamage, strength, counts, createBattle, addUnit, withUnitAt, reachable, findPath,
     patternTiles, lineTiles, coneTiles, radiusTiles, tileFx, healBlocked, hitsAllies, concealed,
-    inBarrier, auraRadius, effArmor, roundOrder, nextInRound, resetPack, fatigueIn, FATIGUE_AT, rebuildUnit, respawn, levelEdge, LEASH, REST_REGEN, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
+    inBarrier, auraRadius, effArmor, roundOrder, nextInRound, resetPack, SPAWN_OF, SPAWN_EVERY, SPAWN_CAP, fatigueIn, FATIGUE_AT, rebuildUnit, respawn, levelEdge, LEASH, REST_REGEN, effRes, guardianReduction, magicGuard, statusImmune, wakeCheck, wakePack, sightLine, AGGRO, unitTurnStart, sitOutReason, applyDamage, hit, dirCategory, blockChance, calcHit,
     poisonDamage, poisonKey, poisonStacks, dotStacks, applyStatus, healAmount, hitFx, actUsable, targetsFrom, allTargets, sameTarget, actOf, affectedTiles, affectedUnits,
     previewAction, facingToward, lootAt, canLoot, takeLoot, nearBanner,
     canActivate, canActivateFor, readyUnits, beginActivation, cancelActivation, turnUnit, moveUnit, undoMove, canUndo, performAction,

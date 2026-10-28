@@ -50,11 +50,11 @@
   // the floor's Champion, a named monster far tougher than the rest, with a pack of its own.
   const FLOOR_DEFS = [
     null,
-    { name: 'Level 1', pool: ['skeleton', 'skeleton', 'spider', 'skelarcher'], pack: [2, 3], lv: [1, 2], empty: 0.2, champ: { type: 'troll', name: 'Gravelmaw' } },
-    { name: 'Level 2', pool: ['skeleton', 'skelarcher', 'specter', 'spider'], pack: [2, 4], lv: [3, 4], empty: 0.15, champ: { type: 'necromancer', name: 'Old Rattlebones' } },
-    { name: 'Level 3', pool: ['skelarcher', 'specter', 'cutthroat', 'spider', 'skeleton'], pack: [3, 4], lv: [5, 6], empty: 0.15, champ: { type: 'spider', name: 'Mother Venom' } },
-    { name: 'Level 4', pool: ['specter', 'cutthroat', 'crossbow', 'necromancer', 'skeleton'], pack: [3, 4], lv: [7, 8], empty: 0.1, shackler: 1, champ: { type: 'colossus', name: 'The Bonepile' } },
-    { name: 'Level 5', pool: ['cutthroat', 'specter', 'skelarcher', 'skeleton'], pack: [3, 4], lv: [9, 10], empty: 0.1, champ: { type: 'shackler', name: 'Chainwarden Vosk' }, boss: 'countess', bossLv: 11, bossPack: ['cutthroat', 'specter', 'skeleton'] },
+    { name: 'Level 1', pool: ['skeleton', 'skeleton', 'spider', 'skelarcher'], pack: [2, 3], lv: [1, 2], empty: 0.2, build: { totem: 0.2 }, champ: { type: 'troll', name: 'Gravelmaw' } },
+    { name: 'Level 2', pool: ['skeleton', 'skelarcher', 'specter', 'spider'], pack: [2, 4], lv: [3, 4], empty: 0.15, build: { spawn: [['crypt'], 0.25], totem: 0.15 }, champ: { type: 'necromancer', name: 'Old Rattlebones' } },
+    { name: 'Level 3', pool: ['skelarcher', 'specter', 'cutthroat', 'spider', 'skeleton'], pack: [3, 4], lv: [5, 6], empty: 0.15, build: { spawn: [['crypt', 'den'], 0.3], totem: 0.15 }, champ: { type: 'spider', name: 'Mother Venom' } },
+    { name: 'Level 4', pool: ['specter', 'cutthroat', 'crossbow', 'necromancer', 'skeleton'], pack: [3, 4], lv: [7, 8], empty: 0.1, shackler: 1, build: { spawn: [['crypt', 'den', 'portal'], 0.3], totem: 0.15 }, champ: { type: 'colossus', name: 'The Bonepile' } },
+    { name: 'Level 5', pool: ['cutthroat', 'specter', 'skelarcher', 'skeleton'], pack: [3, 4], lv: [9, 10], empty: 0.1, build: { spawn: [['den', 'portal'], 0.3], totem: 0.2 }, champ: { type: 'shackler', name: 'Chainwarden Vosk' }, boss: 'countess', bossLv: 11, bossPack: ['cutthroat', 'specter', 'skeleton'] },
   ];
   const CHAMP_LV = 3;
 
@@ -249,6 +249,7 @@
   // What a monster is worth: more for bigger monsters and higher levels, much more for a
   // Champion or the Countess; less to a hero far above it, more to one below.
   function killXp(u, heroLv) {
+    if (u.spawned) return 0;
     const T = UNITS[u.type];
     const size = Math.min(2, Math.max(0.6, T.hp / 32));
     let xp = 15 * u.dlv * size;
@@ -539,6 +540,14 @@
         types[0] = 'shackler';
         shacklers--;
       }
+      // Some packs keep a building in the middle of their room: a spawner that makes more of
+      // them until it is broken, or a war totem that whips them into a frenzy. Spawner packs
+      // come one monster short.
+      const bld = def.build || {};
+      if (bld.spawn && rng.chance(bld.spawn[1])) {
+        types.pop();
+        types.unshift(rng.pick(bld.spawn[0]));
+      } else if (bld.totem && rng.chance(bld.totem)) types.unshift(rng.pick(['totem', 'hexstone', 'obelisk']));
       place(r, types, rng.range(def.lv[0], def.lv[1]));
     }
     return { floor, name: def.name, w: W, h: H, terrain, rooms, start, end, monsters, boss: def.boss || null };
@@ -912,8 +921,12 @@
   function creditKills(p, s, credited) {
     const out = [];
     for (const u of s.units) {
-      if (u.alive || u.team !== 'E' || u.nonCombat || credited.has(u.uid) || !u.dlv) continue;
+      if (u.alive || u.team !== 'E' || credited.has(u.uid) || !u.dlv) continue;
+      // Buildings pay once, when broken; shrubs and the like nothing.
+      if (u.nonCombat && !u.traits.has('object')) continue;
       credited.add(u.uid);
+      // What a den, crypt or portal sent out is worth nothing: no farming a spawner.
+      if (u.spawned) continue;
       const ups = [];
       let shown = 0;
       for (const h of heroes(p)) {
