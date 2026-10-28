@@ -644,6 +644,8 @@
   const STALL = 12;
   const DANGER = 2;
   const STRAY = 6;
+  const GATHERED = 4;
+  const GATHER_ROUNDS = 6;
   const FLEES = 2;
   function exploreTarget(s, idle) {
     const awake = s.units.filter((u) => u.alive && u.team === 'E' && !u.asleep && !u.nonCombat);
@@ -671,12 +673,32 @@
       const m = nearest(s, (v) => awake.includes(v));
       return m ? { uid: m.uid, press: true } : null;
     }
+    const goal = walkTarget(s);
+    // Strung out (a hero back from the way in, a fast one far ahead): the rest close up on
+    // whoever is furthest on toward where the party is going.
+    // Once it starts closing up it keeps the same hero to close up on, until all are close.
     const party = s.units.filter((u) => u.alive && u.team === 'P' && !u.nonCombat && !u.summoner);
-    if (party.length > 1) {
-      const near = (a) => party.filter((b) => b !== a && Math.abs(a.x - b.x) + Math.abs(a.y - b.y) <= 4).length;
-      const lead = party.slice().sort((a, b) => near(b) - near(a) || a.uid - b.uid)[0];
-      if (party.some((u) => Math.abs(u.x - lead.x) + Math.abs(u.y - lead.y) > STRAY)) return { ally: lead.uid };
+    const apart = (lead, r) => party.some((u) => Math.abs(u.x - lead.x) + Math.abs(u.y - lead.y) > r);
+    // (A few rounds at most: crowded in a corridor, close enough is close enough.)
+    const held = s.byId[s.regroup];
+    if (held && held.alive && held.team === 'P' && s.turn - s.regroupFrom <= GATHER_ROUNDS) {
+      if (apart(held, GATHERED)) return { ally: held.uid };
     }
+    s.regroup = 0;
+    if (party.length > 1 && goal && s.turn - (s.regroupFrom || -99) > GATHER_ROUNDS) {
+      const d = (u) => Math.abs(u.x - goal.x) + Math.abs(u.y - goal.y);
+      const lead = party.slice().sort((a, b) => d(a) - d(b) || a.uid - b.uid)[0];
+      if (apart(lead, STRAY)) {
+        s.regroup = lead.uid;
+        s.regroupFrom = s.turn;
+        return { ally: lead.uid };
+      }
+    }
+    return goal;
+  }
+
+  // Where the party walks between fights (see exploreTarget).
+  function walkTarget(s) {
     const lv = partyLevelIn(s);
     const packLv = packLevels(s);
     const deadly = (v) => v.alive && v.asleep && (packLv.get(v.pack) || v.dlv) >= lv + DANGER;
