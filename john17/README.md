@@ -6,7 +6,7 @@ interiors, blurred backgrounds with bokeh and dust, gold Cinzel titles, and
 centred subtitles (bold sans for speech, Lora italic for narration, gold
 speaker labels).
 
-**Watch:** [`John17_That_They_May_Be_One.mp4`](John17_That_They_May_Be_One.mp4) (about 4 min 53 s)
+**Watch:** [`John17_That_They_May_Be_One.mp4`](John17_That_They_May_Be_One.mp4) (4 min 53 s, 1080×1920, 24 fps) · cover image: [`cover.jpg`](cover.jpg)
 
 ## What's in it
 
@@ -35,7 +35,7 @@ Everything is generated from code: no stock art, footage or music.
 - `tools/tts.py`: speaks every unit with [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (narrator `bm_george`, Jesus `am_michael`), then builds `build/timeline.json` (word-timed subtitles, shot list, section cards, per-frame lip-sync).
 - `tools/music.py`: synthesises the original ambient score (pads, piano-like arpeggios, reverb), following the three sections of the prayer.
 - `src/rig.js`: parametric SVG characters (blinks, gaze, lip-sync, poses, tears, halo); `src/sets*.js`: backgrounds and props; `src/shots.js`: the 20 shots; `src/engine.js`: deterministic frame renderer.
-- `tools/render.mjs`: renders every frame in headless Chromium (Playwright) and encodes with ffmpeg; `tools/mix.py`: ducks the music under the voice, normalises to −14 LUFS and muxes the final MP4.
+- `tools/render.mjs`: renders every frame in headless Chromium (Playwright) and encodes with ffmpeg; `tools/mix.py`: compresses the voice, ducks the music under it, limits peaks, and muxes the final MP4 (about −15 LUFS, true peak below −1 dBTP).
 
 ### Rebuild
 
