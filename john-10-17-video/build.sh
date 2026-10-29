@@ -10,4 +10,5 @@ python3 -I script/plan_shots.py                                    # script/shot
 python3 -I audio/music.py "$SCRATCH/audio/music.wav"                # original score
 python3 -I audio/mix.py "$SCRATCH/audio/narration.wav" "$SCRATCH/audio/music.wav" "$SCRATCH/audio/mix.wav"
 node render/render.js frames all                                   # 3D frames (headless Chromium)
-python3 -I render/compose.py "$SCRATCH/out/frames" "$SCRATCH/assets/fonts" "$SCRATCH/audio/mix.wav" john-10-17.mp4
+python3 -I render/compose.py "$SCRATCH/out/frames" "$SCRATCH/assets/fonts" "$SCRATCH/audio/mix.wav" "$SCRATCH/out/master.mp4"
+render/deliver.sh "$SCRATCH/out/master.mp4" john-10-17.mp4

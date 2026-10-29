@@ -7,6 +7,8 @@ candlelit "High Priestly Prayer" scene of *The Gospel of John*: night, oil lamps
 
 Text: John 10:25–39 and John 17:20–26 (NIV wording as supplied, with "Pharisee opponents").
 
+**Video:** [`john-10-17.mp4`](john-10-17.mp4) — 720×1280, 24 fps, 3:43, H.264/AAC.
+
 ## Shots
 
 | Narration | Scene |

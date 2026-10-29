@@ -65,7 +65,7 @@ SUB_FONT = font(35, 520)
 SUB_COLOR = (251, 247, 238)
 
 
-def subtitle_layer(text):
+def subtitle_layer(text, strength=0.0):
     lines = text.split("|")
     f = SUB_FONT
     while max(f.getlength(l) for l in lines) > 650:
@@ -78,10 +78,12 @@ def subtitle_layer(text):
         for i, l in enumerate(lines):
             w = f.getlength(l)
             d.text(((W - w) / 2, y0 + i * lh), l, font=f, fill=fill)
-    return layer_with_shadow(fn, SUB_COLOR)
+    k = strength
+    glow = [(18, 0.3 + 0.45 * k, (0, 0, 0)), (7, 0.35 + 0.4 * k, (0, 0, 0)), (2.2, 0.85 + 0.1 * k, (0, 0, 0))]
+    return layer_with_shadow(fn, SUB_COLOR, glow=glow)
 
 
-def smallcaps_layer(text, cy=0.56):
+def smallcaps_layer(text, cy=0.56, strength=0.0):
     """Large small-caps line with glow, like the reference's closing 'HE HAS DONE IT!'."""
     lines = text.replace("”", "").split("|")
     big, small = font(58, 600), font(45, 600)
@@ -107,13 +109,14 @@ def smallcaps_layer(text, cy=0.56):
                 asc = fo.getmetrics()[0]
                 d.text((x, base + (big.getmetrics()[0] - asc)), ch, font=fo, fill=fill)
                 x += fo.getlength(ch) + track
-    return layer_with_shadow(fn, (255, 248, 234), glow=[(16, 0.45, (40, 25, 10)), (5, 0.8, (30, 18, 8)), (24, 0.25, (255, 220, 160))])
+    k = strength
+    return layer_with_shadow(fn, (255, 248, 234), glow=[(24, 0.25 + 0.45 * k, (20, 12, 6)), (16, 0.45 + 0.35 * k, (30, 18, 8)), (5, 0.8 + 0.15 * k, (25, 15, 6))])
 
 
 def card_layer(heading, sub=None, ref=None, dark=True, y=0.27, heading_size=66, sub_size=31, italic_sub=True, track_em=0.12):
     hf = font(heading_size, 600)
     sf = font(sub_size, 500, italic=italic_sub)
-    rf = font(24, 500)
+    rf = font(27, 520)
     track = heading_size * track_em
     ink = (28, 19, 11) if dark else (250, 244, 232)
     glow = [(18, 0.75, (255, 248, 232)), (6, 0.6, (255, 250, 240))] if dark else [(18, 0.6, (10, 8, 6)), (5, 0.7, (10, 8, 6))]
@@ -142,6 +145,8 @@ def to_np(layer):
 def load_shot_frame(shot, n):
     n = min(max(n, shot["frame_start"]), shot["frame_end"])
     p = f"{FRAMES}/{shot['id']}/{n:05d}.jpg"
+    if PREVIEW and not os.path.exists(p):  # text checks before a shot is rendered
+        return np.full((H, W, 3), 0.42, np.float32)
     im = Image.open(p).convert("RGB")
     if im.size != (W, H):
         im = im.resize((W, H), Image.LANCZOS)
@@ -183,16 +188,31 @@ dark = mean_luma(chap, int((chap["start"] + chap["end"]) / 2 * FPS), (80, 250, 6
 overlays.append((chap["start"] + 0.15, chap["end"] - 0.15, 0.6, 0.6, *to_np(card_layer(script["chapter"]["heading"], script["chapter"]["sub"], dark=dark))))
 endshot = shots[-1]
 dark = mean_luma(endshot, int((endshot["start"] + 3) * FPS), (80, 280, 640, 560)) > 0.5
-overlays.append((endshot["start"] + 0.9, TOTAL + 1, 1.0, 0.1, *to_np(card_layer(script["end"]["heading"], script["end"]["quote"], script["end"]["ref"], dark=dark, y=0.27, heading_size=46, sub_size=36, track_em=0.1))))
+overlays.append((endshot["start"] + 1.0, TOTAL + 1, 1.0, 0.1, *to_np(card_layer(script["end"]["heading"], script["end"]["quote"], script["end"]["ref"], dark=dark, y=0.27, heading_size=46, sub_size=36, track_em=0.1))))
+LUMA = np.array([0.2126, 0.7152, 0.0722], np.float32)
+
+
+def bg_strength(t0, t1, y0, y1):
+    """0 for dark backgrounds, 1 for very bright ones (behind the text band)."""
+    vals = []
+    for t in (t0 + 0.25 * (t1 - t0), 0.5 * (t0 + t1), t0 + 0.8 * (t1 - t0)):
+        img = frame_at(int(t * FPS))[y0:y1, 90:630]
+        vals.append(float(np.percentile((img * LUMA).sum(-1), 80)))
+    return float(np.clip((max(vals) - 0.32) / 0.33, 0.0, 1.0))
+
+
 for u in tl["units"]:
     for s in u["subs"]:
         if u["style"] == "emph":
-            rgb, al = to_np(smallcaps_layer(s["text"]))
-            hide = s["hide"] + (1.2 if u["id"] == "u40" else 0.6)
+            k = bg_strength(s["show"], s["hide"], int(0.5 * H), int(0.62 * H))
+            rgb, al = to_np(smallcaps_layer(s["text"], strength=k))
+            hide = min(s["hide"] + 1.2, endshot["start"] + 0.2) if u["id"] == "u40" else s["hide"] + 0.6
             overlays.append((s["show"], hide, 0.35, 0.5, rgb, al))
         else:
-            rgb, al = to_np(subtitle_layer(s["text"]))
+            k = bg_strength(s["show"], s["hide"], int(0.66 * H), int(0.75 * H))
+            rgb, al = to_np(subtitle_layer(s["text"], strength=k))
             overlays.append((s["show"], s["hide"], 0.2, 0.22, rgb, al))
+            print(f"  sub {s['show']:7.2f}s halo {k:.2f}  {s['text'][:40]}", flush=True)
 print(f"{len(overlays)} overlays prepared", flush=True)
 
 rng = np.random.default_rng(7)
@@ -224,9 +244,9 @@ if PREVIEW:
     sys.exit(0)
 
 cmd = ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-       "-i", AUDIO, "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-tune", "film",
+       "-i", AUDIO, "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-tune", "film",
        "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
-       "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart",
+       "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart",
        "-metadata", "title=John 10 & 17", OUT]
 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 for n in range(NFRAMES):

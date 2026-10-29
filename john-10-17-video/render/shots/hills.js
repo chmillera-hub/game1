@@ -243,8 +243,8 @@ export async function build({ params }) {
       const s = w.s0 + t * 0.7, p = pathF(s), q = pathF(s + 1);
       w.f.position.set(p.x + w.off, p.y + 0.012 * Math.abs(Math.sin(t * 4.4 + w.s0)), p.z); w.f.lookAt(q.x + w.off, p.y, q.z); w.f.userData.idle(t);
     }));
-    camPath = (p) => { const c = pathF(-1.5 + 2.2 * p); return v3(c.x - 0.4, c.y + 1.3, c.z); };
-    lookPath = () => C(0.5, -34, 3.0);
+    camPath = (p) => { const c = pathF(-1.5 + 2.2 * p); return v3(c.x + 0.7, c.y + 1.3, c.z); };
+    lookPath = () => C(1.3, -34, 2.6);
     focus = { distance: 9, range: 10, bokeh: 0.8 };
     godrays = true;
   } else if (variant === 'dawn_walk') {
@@ -272,16 +272,16 @@ export async function build({ params }) {
     godrays = true;
     exposure = params.exposure ?? 1.05;
   } else if (variant === 'end_flock') {
-    const pathF = (s) => G(-14 + s, -18 + 2 * Math.sin(s * 0.12));
+    const pathF = (s) => G(-6 + s * 0.9, -16 + 1.0 * Math.sin(s * 0.2));
     const j = jesusWithStaff(); scene.add(j);
-    const flockObj = makeFlock(scene, { count: 24, path: pathF, height, start: 4, spacing: 0.55, spread: 2.6, speed: 0.55, seed: 41, lambs: 4 });
+    const flockObj = makeFlock(scene, { count: 22, path: pathF, height, start: 3.0, spacing: 0.42, spread: 2.2, speed: 0.2, seed: 41, lambs: 4 });
     updaters.push((t) => {
-      const s = 9 + t * 0.55, p = pathF(s), q = pathF(s + 0.5);
-      j.position.copy(p); j.position.y += 0.01 * Math.abs(Math.sin(t * 4)); j.lookAt(q.x, p.y, q.z); j.userData.idle(t, 0.4);
+      const s = 4 + t * 0.2, p = pathF(s), q = pathF(s + 0.5);
+      j.position.copy(p); j.position.y += 0.01 * Math.abs(Math.sin(t * 3.2)); j.lookAt(q.x, p.y, q.z); j.userData.idle(t, 0.4);
       flockObj.update(t);
     });
-    camPath = (p) => C(-3.2 + 1.0 * p, -4, 1.9);
-    lookPath = (p) => C(-5.6 + 1.0 * p, -18, 1.3);
+    camPath = (p) => C(-2.6 + 0.9 * p, -3, 2.0);
+    lookPath = (p) => C(-3.1 + 1.2 * p, -16, 1.0);
     focus = null;
     godrays = true;
   } else if (variant === 'title' || variant === 'chapter') {
