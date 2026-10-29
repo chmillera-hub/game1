@@ -1,0 +1,157 @@
+{
+  "title": "That They May Be One — John 17 (NIV)",
+  "voices": { "narrator": "bm_george", "jesus": "am_michael" },
+  "speed": { "narrator": 0.92, "jesus": 0.88 },
+  "leadIn": 2.4,
+  "tail": 7.5,
+  "units": [
+    { "id": "u00", "who": "narrator", "pre": 0.0,
+      "text": "The night before the cross, Jesus prayed. | He prayed for His friends... and for you.",
+      "shots": [["title", 0]] },
+
+    { "id": "u01", "who": "narrator", "ref": "John 13:30", "pre": 1.0,
+      "text": "As soon as Judas had taken the bread, he went out. | And it was night.",
+      "shots": [["judas_night", 0]] },
+
+    { "id": "u02", "who": "narrator", "pre": 0.9,
+      "text": "Then Jesus spoke to the eleven who remained.",
+      "shots": [["room_wide", 0]] },
+
+    { "id": "u03", "who": "jesus", "ref": "John 16:33", "pre": 0.7,
+      "text": "I have told you these things, | so that in me you may have peace.",
+      "shots": [["jesus_talk", 0]] },
+
+    { "id": "u04", "who": "jesus", "ref": "John 16:33", "pre": 0.7,
+      "text": "In this world you will have trouble. | But take heart! I have overcome the world.",
+      "shots": [["peter_cu", 0], ["jesus_talk", 1]] },
+
+    { "id": "u05", "who": "narrator", "ref": "John 17:1", "pre": 1.1,
+      "text": "After Jesus said this, | he looked toward heaven and prayed:",
+      "shots": [["jesus_lookup", 0]] },
+
+    { "id": "u06", "who": "jesus", "ref": "John 17:1", "pre": 1.3,
+      "section": { "ref": "John 17:1–5", "heading": "Jesus Prays to Be Glorified" },
+      "text": "Father, the hour has come. | Glorify your Son, that your Son may glorify you.",
+      "shots": [["jesus_lookup", 0]] },
+
+    { "id": "u07", "who": "jesus", "ref": "John 17:2", "pre": 0.85,
+      "text": "For you granted him authority over all people | that he might give eternal life | to all those you have given him.",
+      "shots": [["jesus_mcu", 0]] },
+
+    { "id": "u08", "who": "jesus", "ref": "John 17:3", "pre": 0.85, "ttsSuffix": " Amen.",
+      "text": "Now this is eternal life: | that they know you, the only true God, | and Jesus Christ, whom you have sent.",
+      "shots": [["jesus_pray", 0]] },
+
+    { "id": "u09", "who": "jesus", "ref": "John 17:4", "pre": 0.85,
+      "text": "I have brought you glory on earth | by finishing the work you gave me to do.",
+      "shots": [["golgotha", 0]] },
+
+    { "id": "u10", "who": "jesus", "ref": "John 17:5", "pre": 0.85,
+      "text": "And now, Father, glorify me in your presence | with the glory I had with you | before the world began.",
+      "shots": [["glory", 0], ["cosmos", 2]] },
+
+    { "id": "u11", "who": "jesus", "ref": "John 17:6", "pre": 1.8,
+      "section": { "ref": "John 17:6–19", "heading": "Jesus Prays for His Disciples" },
+      "text": "I have revealed you to those whom you gave me out of the world. | They were yours; you gave them to me | and they have obeyed your word.",
+      "shots": [["room_wide", 0]] },
+
+    { "id": "u12", "who": "jesus", "ref": "John 17:7", "pre": 0.85,
+      "text": "Now they know that everything you have given me | comes from you.",
+      "shots": [["john_cu", 0]] },
+
+    { "id": "u13", "who": "jesus", "ref": "John 17:8", "pre": 0.85,
+      "text": "For I gave them the words you gave me | and they accepted them. | They knew with certainty that I came from you, | and they believed that you sent me.",
+      "shots": [["peter_cu", 0], ["disciples", 2]] },
+
+    { "id": "u14", "who": "jesus", "ref": "John 17:9", "pre": 0.85,
+      "text": "I pray for them. | I am not praying for the world, | but for those you have given me, for they are yours.",
+      "shots": [["jesus_pray", 0]] },
+
+    { "id": "u15", "who": "jesus", "ref": "John 17:10", "pre": 0.85,
+      "text": "All I have is yours, and all you have is mine. | And glory has come to me through them.",
+      "shots": [["jesus_mcu", 0]] },
+
+    { "id": "u16", "who": "jesus", "ref": "John 17:11", "pre": 0.85,
+      "text": "I will remain in the world no longer, | but they are still in the world, | and I am coming to you.",
+      "shots": [["city_night", 0]] },
+
+    { "id": "u17", "who": "jesus", "ref": "John 17:11", "pre": 0.7,
+      "text": "Holy Father, protect them by the power of your name, | the name you gave me, | so that they may be one as we are one.",
+      "shots": [["jesus_pray", 0], ["room_wide", 2]] },
+
+    { "id": "u18", "who": "jesus", "ref": "John 17:12", "pre": 0.85,
+      "text": "While I was with them, I protected them | and kept them safe by that name you gave me. | None has been lost except the one doomed to destruction | so that Scripture would be fulfilled.",
+      "shots": [["jesus_pray", 0], ["judas_night", 2]] },
+
+    { "id": "u19", "who": "jesus", "ref": "John 17:13", "pre": 1.0,
+      "text": "I am coming to you now, | but I say these things while I am still in the world, | so that they may have the full measure of my joy within them.",
+      "shots": [["jesus_talk", 0]] },
+
+    { "id": "u20", "who": "jesus", "ref": "John 17:14", "pre": 0.85,
+      "text": "I have given them your word | and the world has hated them, | for they are not of the world | any more than I am of the world.",
+      "shots": [["disciples", 0], ["john_cu", 2]] },
+
+    { "id": "u21", "who": "jesus", "ref": "John 17:15", "pre": 0.85,
+      "text": "My prayer is not that you take them out of the world | but that you protect them from the evil one.",
+      "shots": [["city_night", 0]] },
+
+    { "id": "u22", "who": "jesus", "ref": "John 17:16", "pre": 0.85,
+      "text": "They are not of the world, even as I am not of it.",
+      "shots": [["jesus_pray", 0]] },
+
+    { "id": "u23", "who": "jesus", "ref": "John 17:17", "pre": 0.85,
+      "text": "Sanctify them by the truth; | your word is truth.",
+      "shots": [["scroll", 0]] },
+
+    { "id": "u24", "who": "jesus", "ref": "John 17:18", "pre": 0.85,
+      "text": "As you sent me into the world, | I have sent them into the world.",
+      "shots": [["road", 0]] },
+
+    { "id": "u25", "who": "jesus", "ref": "John 17:19", "pre": 0.85,
+      "text": "For them I sanctify myself, | that they too may be truly sanctified.",
+      "shots": [["jesus_lookup", 0]] },
+
+    { "id": "u26", "who": "jesus", "ref": "John 17:20", "pre": 1.8,
+      "section": { "ref": "John 17:20–26", "heading": "Jesus Prays for All Believers" },
+      "text": "My prayer is not for them alone.",
+      "shots": [["candles", 0]] },
+
+    { "id": "u27", "who": "jesus", "ref": "John 17:20–21", "pre": 0.45,
+      "text": "I pray also for those who will believe in me | through their message, | that all of them may be one, Father, | just as you are in me and I am in you.",
+      "shots": [["candles", 0], ["crowd", 2]] },
+
+    { "id": "u28", "who": "jesus", "ref": "John 17:21", "pre": 0.7,
+      "text": "May they also be in us | so that the world may believe that you have sent me.",
+      "shots": [["crowd", 0]] },
+
+    { "id": "u29", "who": "jesus", "ref": "John 17:22–23", "pre": 0.85,
+      "text": "I have given them the glory that you gave me, | that they may be one as we are one— | I in them and you in me— | so that they may be brought to complete unity.",
+      "shots": [["jesus_pray", 0], ["room_wide", 2]] },
+
+    { "id": "u30", "who": "jesus", "ref": "John 17:23", "pre": 0.7,
+      "text": "Then the world will know that you sent me | and have loved them even as you have loved me.",
+      "shots": [["john_cu", 0], ["jesus_mcu", 1]] },
+
+    { "id": "u31", "who": "jesus", "ref": "John 17:24", "pre": 1.0,
+      "text": "Father, I want those you have given me | to be with me where I am, | and to see my glory, | the glory you have given me | because you loved me before the creation of the world.",
+      "shots": [["glory", 0], ["cosmos", 4]] },
+
+    { "id": "u32", "who": "jesus", "ref": "John 17:25", "pre": 1.0,
+      "text": "Righteous Father, though the world does not know you, | I know you, | and they know that you have sent me.",
+      "shots": [["jesus_lookup", 0]] },
+
+    { "id": "u33", "who": "jesus", "ref": "John 17:26", "pre": 0.85,
+      "text": "I have made you known to them, | and will continue to make you known | in order that the love you have for me may be in them | and that I myself may be in them.",
+      "shots": [["jesus_talk", 0], ["room_wide", 2]] },
+
+    { "id": "u34", "who": "narrator", "ref": "John 18:1", "pre": 1.6,
+      "text": "When he had finished praying, | Jesus left with his disciples and crossed the Kidron Valley. | On the other side there was a garden, | and he and his disciples went into it.",
+      "shots": [["kidron", 0]] },
+
+    { "id": "u35", "who": "narrator", "pre": 1.2,
+      "text": "That night... Jesus prayed for you.",
+      "shots": [["glory_end", 0]] }
+  ],
+  "end": { "shot": "end", "title": "That they may be one", "ref": "John 17:22" },
+  "copyright": "Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.™ Used by permission. All rights reserved worldwide."
+}

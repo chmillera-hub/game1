@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>That They May Be One</title>
+<style>
+  @font-face { font-family: 'Lora'; font-style: italic; font-weight: 400; src: url(fonts/lora-latin-400-italic.woff2) format('woff2'); }
+  @font-face { font-family: 'Lora'; font-style: italic; font-weight: 500; src: url(fonts/lora-latin-500-italic.woff2) format('woff2'); }
+  @font-face { font-family: 'Lora'; font-style: italic; font-weight: 600; src: url(fonts/lora-latin-600-italic.woff2) format('woff2'); }
+  @font-face { font-family: 'Cinzel'; font-weight: 500; src: url(fonts/cinzel-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Cinzel'; font-weight: 600; src: url(fonts/cinzel-latin-600-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Cinzel'; font-weight: 700; src: url(fonts/cinzel-latin-700-normal.woff2) format('woff2'); }
+  html, body { margin: 0; background: #000; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #120b07; }
+  .slot { position: absolute; inset: 0; }
+  .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; will-change: transform; }
+  #dust { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+  #vignette { position: absolute; inset: 0; z-index: 6;
+    background: radial-gradient(ellipse 78% 62% at 50% 46%, rgba(0,0,0,0) 55%, rgba(8,4,2,0.55) 88%, rgba(5,2,1,0.8) 100%); }
+  #black { position: absolute; inset: 0; z-index: 20; background: #000; opacity: 0; }
+
+  #subs { position: absolute; left: 70px; right: 70px; top: 1405px; z-index: 10; text-align: center; transform: translateY(-50%); }
+  #subs .speech { font: 600 45px/1.28 'Inter', sans-serif; color: #fff; letter-spacing: -0.005em;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.75), -1px 1px 0 rgba(0,0,0,0.75), 1px -1px 0 rgba(0,0,0,0.75), -1px -1px 0 rgba(0,0,0,0.75),
+      0 0 3px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.95), 0 0 16px rgba(0,0,0,0.7); }
+  #subs .narr { font: italic 500 48px/1.3 'Lora', serif; color: #fff;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.75), -1px 1px 0 rgba(0,0,0,0.75), 1px -1px 0 rgba(0,0,0,0.75), -1px -1px 0 rgba(0,0,0,0.75),
+      0 0 3px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.95), 0 0 16px rgba(0,0,0,0.7); }
+  #subs .label { font: 800 29px 'Inter', sans-serif; color: #f2c65c; letter-spacing: 0.05em; margin-right: 14px; vertical-align: 0.12em; }
+
+  #section { position: absolute; left: 0; right: 0; top: 214px; z-index: 11; text-align: center; opacity: 0; }
+  #section .ref { font: 600 34px 'Cinzel', serif; letter-spacing: 0.16em; color: #f0cf7a;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.85), 0 0 18px rgba(0,0,0,0.6); }
+  #section .rule { width: 340px; height: 2px; margin: 18px auto 16px; background: linear-gradient(90deg, rgba(240,207,122,0), #f0cf7a, rgba(240,207,122,0)); }
+  #section .heading { font: italic 500 56px 'Lora', serif; color: #fff8ea;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 22px rgba(0,0,0,0.6); }
+
+  #title { position: absolute; left: 0; right: 0; top: 178px; z-index: 11; text-align: center; opacity: 0; transform-origin: 50% 30%; }
+  #title .t1, #title .t2 { font: 700 104px/1.04 'Cinzel', serif; letter-spacing: 0.02em;
+    background: linear-gradient(180deg, #fff2c4 0%, #f2cf74 38%, #c9922f 70%, #f0c45e 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.8)) drop-shadow(0 0 18px rgba(0,0,0,0.45)); }
+  #title .t1 { font-size: 92px; }
+  #title .rule { width: 560px; height: 2px; margin: 26px auto 18px; background: linear-gradient(90deg, rgba(240,207,122,0), #e8c06a, rgba(240,207,122,0)); }
+  #title .refs { font: 500 32px 'Cinzel', serif; letter-spacing: 0.12em; color: #f3e6cb; text-shadow: 0 2px 5px rgba(0,0,0,0.9); }
+
+  #endcard { position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 12; text-align: center; opacity: 0; }
+  #endcard .endtitle { position: absolute; left: 60px; right: 60px; top: 640px; font: italic 600 92px/1.15 'Lora', serif; color: #fffaf0;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.85), 0 0 30px rgba(255,214,140,0.45); }
+  #endcard .endref { position: absolute; left: 0; right: 0; top: 790px; font: 600 40px 'Cinzel', serif; letter-spacing: 0.18em; color: #f0cf7a;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
+  #endcard .copyright { position: absolute; left: 110px; right: 110px; bottom: 120px; font: 400 23px/1.45 'Inter', sans-serif; color: rgba(255,248,235,0.78);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="dust" width="1080" height="1920"></canvas>
+  <div id="vignette"></div>
+  <div id="title"><div class="t1">THAT THEY</div><div class="t2">MAY BE ONE</div><div class="rule"></div><div class="refs">THE PRAYER OF JESUS · JOHN 17</div></div>
+  <div id="section"></div>
+  <div id="subs"></div>
+  <div id="endcard"></div>
+  <div id="black"></div>
+</div>
+<script src="src/util.js"></script>
+<script src="src/rig.js"></script>
+<script src="src/sets.js"></script>
+<script src="src/sets2.js"></script>
+<script src="src/shots.js"></script>
+<script src="src/engine.js"></script>
+<script>
+  (async () => {
+    await E.load();
+    const q = new URLSearchParams(location.search);
+    window.renderAt = (t) => E.renderAt(t);
+    if (q.has('shot')) await E.renderShot(q.get('shot'), +(q.get('lt') || 1), +(q.get('take') || 1), +(q.get('dur') || 8));
+    else if (q.has('t')) await E.renderAt(+q.get('t'));
+    window.__ready = true;
+  })();
+</script>
+</body>
+</html>
