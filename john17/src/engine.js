@@ -170,7 +170,8 @@
       subsEl.innerHTML = `<div class="${cls}">${s.label ? `<span class="label">${s.label}</span>` : ''}${U.esc(s.text)}</div>`;
       subsEl.__key = key;
     }
-    subsEl.style.opacity = U.clamp(env(gt, s.start, s.end, 0.12, 0.12) * 1.4);
+    const fin = s.joinPrev ? 1 : (gt - s.start) / 0.09, fout = s.joinNext ? 1 : (s.end - gt) / 0.09;
+    subsEl.style.opacity = U.clamp(Math.min(fin, fout));
   }
 
   function drawSection(gt) {
@@ -202,6 +203,11 @@
   E.load = async function () {
     TL = await (await fetch('build/timeline.json')).json();
     E.TL = TL;
+    TL.subs.forEach((x, i) => {
+      const p = TL.subs[i - 1], n = TL.subs[i + 1];
+      x.joinPrev = !!(p && p.unit === x.unit && Math.abs(p.end - x.start) < 0.05);
+      x.joinNext = !!(n && n.unit === x.unit && Math.abs(n.start - x.end) < 0.05);
+    });
     endEl.innerHTML = `<div class="endtitle">${U.esc(TL.end.title)}</div><div class="endref">${U.esc(TL.end.ref)}</div>` +
       `<div class="copyright">${U.esc(TL.copyright)}</div>`;
     await document.fonts.ready;
@@ -211,6 +217,14 @@
     const f = gt * TL.fps, i = Math.floor(f), k = f - i;
     const m = TL.mouth;
     return (m[i] || 0) * (1 - k) + (m[i + 1] || 0) * k;
+  };
+
+  // Slow speech envelope (0..1): mean mouth opening over the last half second.
+  E.speechEnv = function (gt) {
+    const f = Math.floor(gt * TL.fps), m = TL.mouth;
+    let s = 0;
+    for (let i = f - 11; i <= f; i++) s += m[i] || 0;
+    return U.clamp(s / 12 * 1.6);
   };
 
   // Which unit (and how far into it) is being spoken at time t.

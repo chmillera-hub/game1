@@ -12,6 +12,11 @@
     tilt: 1.3 * amp * U.noise(gt * 0.35, seed),
   });
   const talking = (gt) => (E.TL ? E.mouthAt(gt) : 0);
+  // Jesus' brows lift and his head moves gently while he speaks.
+  const withSpeech = (o, gt) => {
+    const e = E.TL ? E.speechEnv(gt) : 0;
+    return { ...o, browUp: (o.browUp || 0) + 0.22 * e, tilt: (o.tilt || 0) + 1.5 * e * Math.sin(gt * 1.9) };
+  };
   const pick = (arr, take) => arr[(take - 1) % arr.length];
   const D = () => E.sharedDefs;
 
@@ -110,7 +115,7 @@
       ].join('');
       const jesusState = !praying ? { lookX: 0.6 * U.noise(t * 0.4, 9), mouth: 0 }
         : last ? { lookX: -0.3, smile: 0.35, mouth: talking(t) } : { open: 0, browSad: 0.2, mouth: talking(t) };
-      const jo = { who: 'jesus', id: 'wjc', x: 540, y: 880, s: 0.78, pose: 'table', ...idle(t, 3, 0.6), ...jesusState };
+      const jo = withSpeech({ who: 'jesus', id: 'wjc', x: 540, y: 880, s: 0.78, pose: 'table', ...idle(t, 3, 0.6), ...jesusState }, t);
       const jesus = RIG.bust({ ...jo, part: 'body' }), jesusArms = RIG.bust({ ...jo, part: 'arms' });
       const front = RIG.bust({ who: 'peter', id: 'wp', x: 165, y: 1070, s: 0.9, turn: 0.42, ...idle(t, 15), ...look(0.85, 5), ...bow, browSad: 0.4 }) +
         RIG.bust({ who: 'john', id: 'wk', x: 915, y: 1070, s: 0.88, turn: -0.42, ...idle(t, 16), ...look(-0.85, 6), ...bow, browSad: 0.35 });
@@ -141,7 +146,7 @@
     draw(c) {
       const t = c.gt;
       const v = pick([{ turn: -0.22, lookX: -0.55, smile: 0.15 }, { turn: -0.22, lookX: -0.55, smile: 0.2 }, { turn: 0.18, lookX: 0.5, smile: 0.35 }, { turn: -0.12, lookX: -0.35, smile: 0.45 }], c.take);
-      const jesus = RIG.bust({ who: 'jesus', id: 'jk', x: 540, y: 830, s: 1.78, pose: 'rest', ...idle(t, 3), ...v, browSad: 0.15, mouth: talking(t) });
+      const jesus = RIG.bust(withSpeech({ who: 'jesus', id: 'jk', x: 540, y: 830, s: 1.78, pose: 'rest', ...idle(t, 3), ...v, browSad: 0.15, mouth: talking(t) }, t));
       return {
         camera: { x: 0, y: -10 * c.u, z: 1 + 0.05 * easeInOut(c.u) },
         layers: [
@@ -160,10 +165,10 @@
     draw(c) {
       const t = c.gt;
       const up = c.take === 1 ? smooth((c.lt - 1.3) / 1.6) : 1;
-      const jesus = RIG.bust({
+      const jesus = RIG.bust(withSpeech({
         who: 'jesus', id: 'ju', x: 540, y: 860, s: 1.74, pose: 'rest', ...idle(t, 3, 0.5),
         lookY: lerp(0.15, -0.95, up), lookX: lerp(-0.3, 0.22, up), browUp: 0.35 * up, browSad: 0.25, mouth: talking(t), pitch: -0.9 * up, tilt: 2 * up,
-      });
+      }, t));
       const shaft = `<defs>${lg('ju-shaft', [[0, '#dfe8ff', 0.5], [1, '#dfe8ff', 0]], 0, 0, 0, 1)}</defs><path d="M760,-100 L1000,-100 L760,1500 L240,1500Z" fill="url(#ju-shaft)"/>`;
       const rays = once(c, 'rays', () => S.rays('ju-rays', 820, -160, 22, 1700, '#ffe7b0', 0.35, 0, 0.45));
       return {
@@ -186,7 +191,7 @@
     draw(c) {
       const t = c.gt;
       const v = pick([{ x: 540, y: 740, s: 1.45 }, { x: 540, y: 820, s: 1.72 }, { x: 560, y: 760, s: 1.52, turn: 0.12 }, { x: 520, y: 800, s: 1.62, turn: -0.12 }], c.take);
-      const jesus = RIG.bust({ who: 'jesus', id: 'jp', pose: 'pray', ...idle(t, 3, 0.5), ...v, open: 0, browSad: 0.22, mouth: talking(t) });
+      const jesus = RIG.bust(withSpeech({ who: 'jesus', id: 'jp', pose: 'pray', ...idle(t, 3, 0.5), ...v, open: 0, browSad: 0.22, mouth: talking(t) }, t));
       const glow = `<circle cx="${v.x}" cy="${v.y + 430 * v.s}" r="${320 * v.s}" fill="url(#warmGlow)" opacity="${f(0.35 + 0.05 * U.noise(t * 4, 2))}"/>`;
       return {
         camera: { x: 0, y: -10 * c.u, z: 1 + 0.05 * easeInOut(c.u) },
@@ -207,7 +212,7 @@
     draw(c) {
       const t = c.gt;
       const v = pick([{ lookY: -0.65, browUp: 0.3, lookX: 0.1 }, { open: 0, browSad: 0.2 }, { lookX: -0.45, smile: 0.3, turn: -0.12 }], c.take);
-      const jo = { who: 'jesus', id: 'jm', x: 540, y: 790, s: 1.3, pose: 'table', ...idle(t, 3, 0.6), ...v, mouth: talking(t) };
+      const jo = withSpeech({ who: 'jesus', id: 'jm', x: 540, y: 790, s: 1.3, pose: 'table', ...idle(t, 3, 0.6), ...v, mouth: talking(t) }, t);
       const jesus = RIG.bust({ ...jo, part: 'body' }), jesusArms = RIG.bust({ ...jo, part: 'arms' });
       const table = once(c, 'tb', () => S.table({ y: 1545, props: [S.cup(880, 1640, 1.0), S.breadPiece(200, 1630, 1.2, -6), S.oilLamp(990, 1610, 1)] }));
       return {
@@ -345,7 +350,7 @@
       `<ellipse cx="${x + w / 2}" cy="${y}" rx="${w / 2}" ry="${h / 2}" fill="${sunset ? '#f2b48a' : '#fff6e0'}" opacity="0.8"/>`).join(''));
   const glory = (c, sunset) => {
     const t = c.gt;
-    const jesus = RIG.bust({ who: 'jesus', id: 'jg', x: 540, y: 760, s: 1.32, pose: 'open', halo: true, ...idle(t, 3, 0.5), lookY: 0.05, smile: sunset ? 0.5 : 0.35, mouth: sunset ? 0 : talking(t) });
+    const jesus = RIG.bust(withSpeech({ who: 'jesus', id: 'jg', x: 540, y: 760, s: 1.32, pose: 'open', halo: true, ...idle(t, 3, 0.5), lookY: 0.05, smile: sunset ? 0.5 : 0.35, mouth: sunset ? 0 : talking(t) }, t));
     return {
       camera: { x: 0, y: -10 * c.u, z: 1 + 0.05 * easeInOut(c.u) },
       layers: [
