@@ -1,0 +1,855 @@
+{
+ "fps": 24,
+ "width": 720,
+ "height": 1280,
+ "narration_start": 5.2,
+ "units": [
+  {
+   "id": "u01",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 5.2,
+   "end": 6.54,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "Jesus answered,",
+     "speech_start": 5.2,
+     "speech_end": 6.22,
+     "show": 5.05,
+     "hide": 6.88
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u02",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 7.08,
+   "end": 9.82,
+   "pause": 0.75,
+   "subs": [
+    {
+     "text": "“I did tell you,|but you do not believe.",
+     "speech_start": 7.08,
+     "speech_end": 9.46,
+     "show": 6.93,
+     "hide": 10.36
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u03",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 11.17,
+   "end": 15.06,
+   "pause": 0.35,
+   "subs": [
+    {
+     "text": "The works I do in my|Father’s name testify about me,",
+     "speech_start": 11.17,
+     "speech_end": 14.97,
+     "show": 11.02,
+     "hide": 15.49
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u04",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 15.69,
+   "end": 19.0,
+   "pause": 1.0,
+   "subs": [
+    {
+     "text": "but you do not believe because|you are not my sheep.",
+     "speech_start": 15.69,
+     "speech_end": 18.83,
+     "show": 15.54,
+     "hide": 19.73
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u05",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 20.8,
+   "end": 22.78,
+   "pause": 0.45,
+   "subs": [
+    {
+     "text": "My sheep listen to my voice;",
+     "speech_start": 20.8,
+     "speech_end": 22.54,
+     "show": 20.65,
+     "hide": 23.39
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u06",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 23.59,
+   "end": 25.72,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "I know them,|and they follow me.",
+     "speech_start": 23.59,
+     "speech_end": 25.61,
+     "show": 23.44,
+     "hide": 26.51
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u07",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 27.34,
+   "end": 30.91,
+   "pause": 0.4,
+   "subs": [
+    {
+     "text": "I give them eternal life,|and they shall never perish;",
+     "speech_start": 27.34,
+     "speech_end": 30.6,
+     "show": 27.19,
+     "hide": 31.43
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u08",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 31.63,
+   "end": 34.12,
+   "pause": 1.0,
+   "subs": [
+    {
+     "text": "no one will snatch them|out of my hand.",
+     "speech_start": 31.63,
+     "speech_end": 33.95,
+     "show": 31.48,
+     "hide": 34.85
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u09",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 35.92,
+   "end": 39.63,
+   "pause": 0.4,
+   "subs": [
+    {
+     "text": "My Father, who has given them|to me, is greater than all;",
+     "speech_start": 35.92,
+     "speech_end": 39.5,
+     "show": 35.77,
+     "hide": 40.15
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u10",
+   "sec": "j10a",
+   "style": "normal",
+   "start": 40.35,
+   "end": 43.43,
+   "pause": 1.1,
+   "subs": [
+    {
+     "text": "no one can snatch them|out of my Father’s hand.",
+     "speech_start": 40.35,
+     "speech_end": 43.23,
+     "show": 40.2,
+     "hide": 44.13
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u11",
+   "sec": "j10a",
+   "style": "emph",
+   "start": 45.41,
+   "end": 47.15,
+   "pause": 2.2,
+   "subs": [
+    {
+     "text": "I and the Father|are one.”",
+     "speech_start": 45.41,
+     "speech_end": 46.97,
+     "show": 45.26,
+     "hide": 47.87
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u12",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 51.11,
+   "end": 55.13,
+   "pause": 0.35,
+   "subs": [
+    {
+     "text": "Again his Pharisee opponents|picked up stones to stone him,",
+     "speech_start": 51.11,
+     "speech_end": 54.99,
+     "show": 50.96,
+     "hide": 55.56
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u13",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 55.76,
+   "end": 57.36,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "but Jesus said to them,",
+     "speech_start": 55.76,
+     "speech_end": 57.22,
+     "show": 55.61,
+     "hide": 57.7
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u14",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 57.9,
+   "end": 60.62,
+   "pause": 0.45,
+   "subs": [
+    {
+     "text": "“I have shown you many|good works from the Father.",
+     "speech_start": 57.9,
+     "speech_end": 60.44,
+     "show": 57.75,
+     "hide": 61.23
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u15",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 61.43,
+   "end": 63.4,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "For which of these|do you stone me?”",
+     "speech_start": 61.43,
+     "speech_end": 63.29,
+     "show": 61.28,
+     "hide": 64.19
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u16",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 65.02,
+   "end": 68.61,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "“We are not stoning you for|any good work,” they replied,",
+     "speech_start": 65.02,
+     "speech_end": 68.28,
+     "show": 64.87,
+     "hide": 68.95
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u17",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 69.15,
+   "end": 73.77,
+   "pause": 1.0,
+   "subs": [
+    {
+     "text": "“but for blasphemy,",
+     "speech_start": 69.15,
+     "speech_end": 70.05,
+     "show": 69.0,
+     "hide": 70.27
+    },
+    {
+     "text": "because you, a mere man,|claim to be God.”",
+     "speech_start": 70.47,
+     "speech_end": 73.53,
+     "show": 70.32,
+     "hide": 74.43
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u18",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 75.57,
+   "end": 77.13,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "Jesus answered them,",
+     "speech_start": 75.57,
+     "speech_end": 77.01,
+     "show": 75.42,
+     "hide": 77.47
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u19",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 77.67,
+   "end": 81.79,
+   "pause": 0.75,
+   "subs": [
+    {
+     "text": "“Is it not written in your Law,",
+     "speech_start": 77.67,
+     "speech_end": 79.23,
+     "show": 77.52,
+     "hide": 79.91
+    },
+    {
+     "text": "‘I have said you are “gods” ’?",
+     "speech_start": 80.11,
+     "speech_end": 81.45,
+     "show": 79.96,
+     "hide": 82.35
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u20",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 83.14,
+   "end": 86.76,
+   "pause": 0.25,
+   "subs": [
+    {
+     "text": "If he called them ‘gods,’|to whom the word of God came—",
+     "speech_start": 83.14,
+     "speech_end": 86.56,
+     "show": 82.99,
+     "hide": 87.01
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u21",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 87.21,
+   "end": 89.5,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "and Scripture cannot be set aside—",
+     "speech_start": 87.21,
+     "speech_end": 89.27,
+     "show": 87.06,
+     "hide": 89.84
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u22",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 90.04,
+   "end": 96.26,
+   "pause": 0.85,
+   "subs": [
+    {
+     "text": "what about the one whom the|Father set apart as his very own",
+     "speech_start": 90.04,
+     "speech_end": 93.88,
+     "show": 89.89,
+     "hide": 94.1
+    },
+    {
+     "text": "and sent into the world?",
+     "speech_start": 94.3,
+     "speech_end": 96.02,
+     "show": 94.15,
+     "hide": 96.92
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u23",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 97.79,
+   "end": 103.03,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "Why then do you accuse me|of blasphemy because I said,",
+     "speech_start": 97.79,
+     "speech_end": 100.73,
+     "show": 97.64,
+     "hide": 101.49
+    },
+    {
+     "text": "‘I am God’s Son’?",
+     "speech_start": 101.69,
+     "speech_end": 102.87,
+     "show": 101.54,
+     "hide": 103.77
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u24",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 104.65,
+   "end": 108.43,
+   "pause": 0.6,
+   "subs": [
+    {
+     "text": "Do not believe me unless|I do the works of my Father.",
+     "speech_start": 104.65,
+     "speech_end": 108.27,
+     "show": 104.5,
+     "hide": 109.17
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u25",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 109.51,
+   "end": 114.56,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "But if I do them, even though|you do not believe me,",
+     "speech_start": 109.51,
+     "speech_end": 112.87,
+     "show": 109.36,
+     "hide": 113.27
+    },
+    {
+     "text": "believe the works,",
+     "speech_start": 113.47,
+     "speech_end": 114.33,
+     "show": 113.32,
+     "hide": 114.9
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u26",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 115.1,
+   "end": 120.61,
+   "pause": 1.2,
+   "subs": [
+    {
+     "text": "that you may know and understand",
+     "speech_start": 115.1,
+     "speech_end": 116.86,
+     "show": 114.95,
+     "hide": 117.08
+    },
+    {
+     "text": "that the Father is in me,|and I in the Father.”",
+     "speech_start": 117.28,
+     "speech_end": 120.48,
+     "show": 117.13,
+     "hide": 121.38
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u27",
+   "sec": "j10b",
+   "style": "normal",
+   "start": 122.77,
+   "end": 126.92,
+   "pause": 4.8,
+   "subs": [
+    {
+     "text": "Again they tried to seize him,",
+     "speech_start": 122.77,
+     "speech_end": 124.45,
+     "show": 122.62,
+     "hide": 125.03
+    },
+    {
+     "text": "but he escaped their grasp.",
+     "speech_start": 125.23,
+     "speech_end": 126.75,
+     "show": 125.08,
+     "hide": 127.65
+    }
+   ],
+   "asr_match": 0.909
+  },
+  {
+   "id": "u28",
+   "sec": "j17",
+   "style": "normal",
+   "start": 131.72,
+   "end": 133.94,
+   "pause": 0.7,
+   "subs": [
+    {
+     "text": "My prayer is not for them alone.",
+     "speech_start": 131.72,
+     "speech_end": 133.64,
+     "show": 131.57,
+     "hide": 134.54
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u29",
+   "sec": "j17",
+   "style": "normal",
+   "start": 135.2,
+   "end": 139.77,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "I pray also for those|who will believe in me",
+     "speech_start": 135.2,
+     "speech_end": 137.96,
+     "show": 135.05,
+     "hide": 138.18
+    },
+    {
+     "text": "through their message,",
+     "speech_start": 138.38,
+     "speech_end": 139.46,
+     "show": 138.23,
+     "hide": 140.11
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u30",
+   "sec": "j17",
+   "style": "normal",
+   "start": 140.31,
+   "end": 145.94,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "that all of them may be one, Father,",
+     "speech_start": 140.31,
+     "speech_end": 142.39,
+     "show": 140.16,
+     "hide": 142.95
+    },
+    {
+     "text": "just as you are in me|and I am in you.",
+     "speech_start": 143.15,
+     "speech_end": 145.85,
+     "show": 143.0,
+     "hide": 146.75
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u31",
+   "sec": "j17",
+   "style": "normal",
+   "start": 147.56,
+   "end": 153.16,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "May they also be in us",
+     "speech_start": 147.56,
+     "speech_end": 149.3,
+     "show": 147.41,
+     "hide": 149.72
+    },
+    {
+     "text": "so that the world may believe|that you have sent me.",
+     "speech_start": 149.92,
+     "speech_end": 153.08,
+     "show": 149.77,
+     "hide": 153.98
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u32",
+   "sec": "j17",
+   "style": "normal",
+   "start": 154.78,
+   "end": 160.44,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "I have given them the glory|that you gave me,",
+     "speech_start": 154.78,
+     "speech_end": 157.54,
+     "show": 154.63,
+     "hide": 158.1
+    },
+    {
+     "text": "that they may be one|as we are one—",
+     "speech_start": 158.3,
+     "speech_end": 160.34,
+     "show": 158.15,
+     "hide": 160.78
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u33",
+   "sec": "j17",
+   "style": "normal",
+   "start": 160.98,
+   "end": 166.33,
+   "pause": 0.9,
+   "subs": [
+    {
+     "text": "I in them and you in me—",
+     "speech_start": 160.98,
+     "speech_end": 162.88,
+     "show": 160.83,
+     "hide": 163.46
+    },
+    {
+     "text": "so that they may be brought|to complete unity.",
+     "speech_start": 163.66,
+     "speech_end": 166.14,
+     "show": 163.51,
+     "hide": 167.04
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u34",
+   "sec": "j17",
+   "style": "normal",
+   "start": 167.95,
+   "end": 173.48,
+   "pause": 1.5,
+   "subs": [
+    {
+     "text": "Then the world will know|that you sent me",
+     "speech_start": 167.95,
+     "speech_end": 170.33,
+     "show": 167.8,
+     "hide": 170.55
+    },
+    {
+     "text": "and have loved them|as you have loved me.",
+     "speech_start": 170.75,
+     "speech_end": 173.45,
+     "show": 170.6,
+     "hide": 174.35
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u35",
+   "sec": "j17",
+   "style": "normal",
+   "start": 176.18,
+   "end": 180.75,
+   "pause": 0.3,
+   "subs": [
+    {
+     "text": "Father, I want those|you have given me",
+     "speech_start": 176.18,
+     "speech_end": 178.5,
+     "show": 176.03,
+     "hide": 178.72
+    },
+    {
+     "text": "to be with me where I am,",
+     "speech_start": 178.92,
+     "speech_end": 180.62,
+     "show": 178.77,
+     "hide": 181.09
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u36",
+   "sec": "j17",
+   "style": "normal",
+   "start": 181.29,
+   "end": 189.3,
+   "pause": 1.2,
+   "subs": [
+    {
+     "text": "and to see my glory,",
+     "speech_start": 181.29,
+     "speech_end": 182.87,
+     "show": 181.14,
+     "hide": 183.65
+    },
+    {
+     "text": "the glory you have given me",
+     "speech_start": 183.85,
+     "speech_end": 185.47,
+     "show": 183.7,
+     "hide": 185.69
+    },
+    {
+     "text": "because you loved me before|the creation of the world.",
+     "speech_start": 185.89,
+     "speech_end": 189.09,
+     "show": 185.74,
+     "hide": 189.99
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u37",
+   "sec": "j17",
+   "style": "normal",
+   "start": 191.46,
+   "end": 198.22,
+   "pause": 1.0,
+   "subs": [
+    {
+     "text": "Righteous Father, though the|world does not know you,",
+     "speech_start": 191.46,
+     "speech_end": 194.7,
+     "show": 191.31,
+     "hide": 195.14
+    },
+    {
+     "text": "I know you, and they know|that you have sent me.",
+     "speech_start": 195.34,
+     "speech_end": 198.14,
+     "show": 195.19,
+     "hide": 199.04
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u38",
+   "sec": "j17",
+   "style": "normal",
+   "start": 200.02,
+   "end": 204.66,
+   "pause": 0.25,
+   "subs": [
+    {
+     "text": "I have made you known to them,",
+     "speech_start": 200.02,
+     "speech_end": 201.78,
+     "show": 199.87,
+     "hide": 202.0
+    },
+    {
+     "text": "and will continue|to make you known",
+     "speech_start": 202.2,
+     "speech_end": 204.46,
+     "show": 202.05,
+     "hide": 204.91
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u39",
+   "sec": "j17",
+   "style": "normal",
+   "start": 205.11,
+   "end": 208.23,
+   "pause": 0.35,
+   "subs": [
+    {
+     "text": "in order that the love you have|for me may be in them",
+     "speech_start": 205.11,
+     "speech_end": 208.13,
+     "show": 204.96,
+     "hide": 208.66
+    }
+   ],
+   "asr_match": 1.0
+  },
+  {
+   "id": "u40",
+   "sec": "j17",
+   "style": "emph",
+   "start": 208.86,
+   "end": 210.98,
+   "pause": 2.4,
+   "subs": [
+    {
+     "text": "and that I myself|may be in them.",
+     "speech_start": 208.86,
+     "speech_end": 210.88,
+     "show": 208.71,
+     "hide": 212.48
+    }
+   ],
+   "asr_match": 1.0
+  }
+ ],
+ "duration": 222.88
+}
