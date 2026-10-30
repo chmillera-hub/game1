@@ -529,6 +529,12 @@ function drawArm(ctx, ch, arm, L, side) {
     capsule(ctx, E, Wr, w * 0.5 + grow, w * 0.42 + grow);
   };
   sleevePath(0.012); ctx.fillStyle = rgba(shade(c.shadow, -0.1), 0.85); ctx.fill();
+  if (L.rim && L.rimA > 0) { // rim light as an underlay: only the outer silhouette catches it
+    const rg = ctx.createLinearGradient(-1.2, 0, 1.2, 0), A = L.rimA * 0.6;
+    if ((L.rimX ?? 1) > 0) { rg.addColorStop(0, rgba(L.rim, 0)); rg.addColorStop(0.6, rgba(L.rim, 0)); rg.addColorStop(1, rgba(L.rim, A)); }
+    else { rg.addColorStop(0, rgba(L.rim, A)); rg.addColorStop(0.4, rgba(L.rim, 0)); rg.addColorStop(1, rgba(L.rim, 0)); }
+    sleevePath(0.016); ctx.fillStyle = rg; ctx.fill();
+  }
   sleevePath(0); ctx.fillStyle = rgba(shade(sleeve, dark)); ctx.fill();
   ctx.save(); sleevePath(0); ctx.clip();
   if (L.amb && L.ambA) { ctx.fillStyle = rgba(L.amb, L.ambA); ctx.fillRect(-3, -2, 6, 5); }
@@ -539,10 +545,7 @@ function drawArm(ctx, ch, arm, L, side) {
   const eg = ctx.createRadialGradient(E[0], E[1], 0, E[0], E[1], w * 0.7);
   eg.addColorStop(0, rgba(c.shadow, 0.35)); eg.addColorStop(1, rgba(c.shadow, 0));
   ctx.fillStyle = eg; ctx.fillRect(E[0] - w, E[1] - w, w * 2, w * 2);
-  ctx.strokeStyle = rgba(c.shadow, 0.25); ctx.lineWidth = 0.016; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.arc(E[0], E[1], w * 0.32, Math.atan2(ey, ex) + 1.0, Math.atan2(ey, ex) + 1.9); ctx.stroke();
   ctx.restore();
-  sleevePath(0); rimStroke(ctx, L, 0.022, 0.6);
   // hand emerging from the cuff opening
   const fa = Math.atan2(Wr[1] - E[1], Wr[0] - E[0]);
   const handSize = 0.36 * (ch.handScale ?? 1);
