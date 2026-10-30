@@ -1,0 +1,687 @@
+{
+ "title": "The Family Inside",
+ "cast": {
+  "maya": {
+   "name": "Maya",
+   "voice": "af_heart",
+   "speed": 0.97,
+   "pitch": 0,
+   "fx": "warm"
+  },
+  "nar": {
+   "name": "Maya",
+   "voice": "af_heart",
+   "speed": 0.92,
+   "pitch": 0,
+   "fx": "narr"
+  },
+  "eli": {
+   "name": "Eli",
+   "voice": "am_michael",
+   "speed": 0.98,
+   "pitch": 0,
+   "fx": "warm"
+  },
+  "anger": {
+   "name": "Anger",
+   "voice": "am_fenrir",
+   "speed": 1.04,
+   "pitch": -2.2,
+   "fx": "gruff"
+  },
+  "annoy": {
+   "name": "Annoyance",
+   "voice": "bf_emma",
+   "speed": 1.04,
+   "pitch": 0.6,
+   "fx": "crisp"
+  },
+  "fear": {
+   "name": "Fear",
+   "voice": "am_puck",
+   "speed": 1.1,
+   "pitch": 1.4,
+   "fx": "tremble"
+  },
+  "sad": {
+   "name": "Sadness",
+   "voice": "af_nicole:0.55,af_bella:0.45",
+   "speed": 0.86,
+   "pitch": -0.6,
+   "fx": "soft"
+  },
+  "nana": {
+   "name": "Nana",
+   "voice": "af_sarah:0.6,bf_isabella:0.4",
+   "speed": 0.86,
+   "pitch": -2.0,
+   "fx": "elder"
+  }
+ },
+ "lines": [
+  {
+   "id": "E1",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 3.6,
+   "text": "You're still holding that thing? Mae... it's been a month.",
+   "dir": "Eli leans on the counter, glances up from his phone. Not cruel, uncomfortable."
+  },
+  {
+   "id": "M1",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 1.3,
+   "speed": 0.88,
+   "text": "It's her mug.",
+   "dir": "Maya doesn't look up at first; thumb rubs the mug. Then lifts eyes to him."
+  },
+  {
+   "id": "E2",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 0.7,
+   "text": "It's a mug.",
+   "dir": "Eli pockets phone, small shrug, looks away."
+  },
+  {
+   "id": "E3",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 0.35,
+   "text": "Crying over it won't bring her back. You need to move on.",
+   "lo": [
+    "move"
+   ],
+   "dir": "He says it to the window, not to her. Avoidant."
+  },
+  {
+   "id": "N1",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 2.8,
+   "text": "Inside each of us, there's a family.",
+   "hi": [
+    "family"
+   ],
+   "dir": "Push through Maya's eye into the inner hearth room. Wide shot: the four emotions."
+  },
+  {
+   "id": "N2",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.45,
+   "text": "Not the one we're born into... the one we're born with."
+  },
+  {
+   "id": "A1",
+   "sc": "hearth",
+   "sp": "annoy",
+   "pause": 0.9,
+   "text": "Hold on. \"Move on\"?",
+   "say": "Hold on. Move on?",
+   "dir": "Annoyance at the round window, one brow up, pencil tapping the clipboard."
+  },
+  {
+   "id": "A2",
+   "sc": "hearth",
+   "sp": "annoy",
+   "pause": 0.3,
+   "text": "Move on to where? On whose schedule?"
+  },
+  {
+   "id": "N3",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.55,
+   "text": "Annoyance signals when small boundaries are being ignored, or minimized."
+  },
+  {
+   "id": "N4",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.3,
+   "text": "It has a laser focus for anything vague, or quietly dismissive."
+  },
+  {
+   "id": "A3",
+   "sc": "hearth",
+   "sp": "annoy",
+   "pause": 0.5,
+   "text": "Somebody should ask him. Why did you say that?"
+  },
+  {
+   "id": "A4",
+   "sc": "hearth",
+   "sp": "annoy",
+   "pause": 1.5,
+   "text": "Hello? ...Anybody?",
+   "dir": "Nobody answers. Fear pacing, Sadness in the corner."
+  },
+  {
+   "id": "G1",
+   "sc": "hearth",
+   "sp": "anger",
+   "pause": 0.8,
+   "text": "HEY! She's talking! Is anybody in here even listening?!",
+   "say": "Hey! She's talking! Is anybody in here even listening?",
+   "lo": [
+    "HEY"
+   ],
+   "shout": true,
+   "dir": "Anger stands on his chair, head flames burst, hearth flares."
+  },
+  {
+   "id": "N5",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 1.0,
+   "text": "Anger steps in when another emotion is being silenced."
+  },
+  {
+   "id": "N6",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.2,
+   "text": "It amplifies that voice, until it's heard.",
+   "dir": "Anger pumps the hearth bellows; fire roars."
+  },
+  {
+   "id": "N7",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.4,
+   "text": "Name-calling. Labeling without consent. Dismissiveness. Invalidation.",
+   "dir": "Each word forms in the smoke above the hearth."
+  },
+  {
+   "id": "N8",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.25,
+   "text": "Minimizing someone's lived experience, or their humanity.",
+   "lo": [
+    "humanity"
+   ]
+  },
+  {
+   "id": "M2",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 2.4,
+   "text": "Okay. Okay... I'm here. I'm listening.",
+   "hi": [
+    "listening"
+   ],
+   "dir": "Inner Maya (soft glow) steps in and sits at the table."
+  },
+  {
+   "id": "G2",
+   "sc": "hearth",
+   "sp": "anger",
+   "pause": 1.0,
+   "text": "...Took you long enough.",
+   "dir": "Flames shrink; he sits, arms crossed, gruff but softened."
+  },
+  {
+   "id": "M3",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.6,
+   "text": "What did you see?",
+   "dir": "To Annoyance."
+  },
+  {
+   "id": "A5",
+   "sc": "hearth",
+   "sp": "annoy",
+   "pause": 0.5,
+   "text": "He put a deadline on your grief."
+  },
+  {
+   "id": "M4",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.8,
+   "speed": 0.9,
+   "text": "Yeah. He did.",
+   "dir": "Slow nod."
+  },
+  {
+   "id": "N9",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.6,
+   "text": "When the unheard voice is finally heard, Anger doesn't need to shout."
+  },
+  {
+   "id": "M5",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 1.5,
+   "text": "Eli... why did you say that? That I need to move on?"
+  },
+  {
+   "id": "E4",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 0.8,
+   "text": "I don't know. Because... it's been a month."
+  },
+  {
+   "id": "M6",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 0.9,
+   "text": "I know you mean well."
+  },
+  {
+   "id": "M7",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 0.4,
+   "text": "But my grief doesn't have a deadline."
+  },
+  {
+   "id": "M8",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 0.4,
+   "text": "Please don't tell me how long I'm allowed to miss her.",
+   "lo": [
+    "miss"
+   ]
+  },
+  {
+   "id": "E5",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 2.1,
+   "speed": 0.9,
+   "text": "...I can't do the sad thing, Mae.",
+   "dir": "Long pause; jaw works; eyes glisten."
+  },
+  {
+   "id": "E6",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 0.5,
+   "speed": 0.9,
+   "text": "If I start... I don't think I'll stop."
+  },
+  {
+   "id": "M9",
+   "sc": "kitchen",
+   "sp": "maya",
+   "pause": 1.5,
+   "speed": 0.92,
+   "text": "Then we don't do it alone.",
+   "hi": [
+    "alone"
+   ]
+  },
+  {
+   "id": "N10",
+   "sc": "kitchen",
+   "sp": "nar",
+   "pause": 1.3,
+   "text": "A boundary, held with care, can open a door instead of closing one.",
+   "hi": [
+    "open"
+   ]
+  },
+  {
+   "id": "E7",
+   "sc": "kitchen",
+   "sp": "eli",
+   "pause": 2.4,
+   "text": "We still have to clear out Nana's house. Saturday.",
+   "dir": "Phone buzzes on the table."
+  },
+  {
+   "id": "F1",
+   "sc": "hearth",
+   "sp": "fear",
+   "pause": 0.5,
+   "text": "Saturday?! No. No, no, no. We can't go in that house. Not yet!",
+   "say": "Saturday? No. No, no, no. We can't go in that house. Not yet!"
+  },
+  {
+   "id": "N11",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.8,
+   "text": "Fear signals potential danger, or threat."
+  },
+  {
+   "id": "N12",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.2,
+   "text": "A tiger jumping out of a bush.",
+   "dir": "Smoke silhouette in the hearth."
+  },
+  {
+   "id": "N13",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.2,
+   "text": "Or a super tall roller coaster, for the first time."
+  },
+  {
+   "id": "N14",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.5,
+   "text": "But it also watches whether our plans protect our physical and emotional safety."
+  },
+  {
+   "id": "M10",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.8,
+   "text": "Fear... who are you protecting?"
+  },
+  {
+   "id": "F2",
+   "sc": "hearth",
+   "sp": "fear",
+   "pause": 1.3,
+   "speed": 0.95,
+   "text": "Her.",
+   "dir": "Glances toward Sadness in the corner, then back."
+  },
+  {
+   "id": "F3",
+   "sc": "hearth",
+   "sp": "fear",
+   "pause": 1.4,
+   "speed": 1.0,
+   "text": "Nobody's sat with her since the funeral.",
+   "lo": [
+    "funeral"
+   ]
+  },
+  {
+   "id": "F4",
+   "sc": "hearth",
+   "sp": "fear",
+   "pause": 0.6,
+   "speed": 1.04,
+   "text": "If we open that door, everything she's holding is going to pour out like water.",
+   "lo": [
+    "water"
+   ]
+  },
+  {
+   "id": "N15",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.9,
+   "text": "Fear wants our other emotions stronger and healthier, before we go."
+  },
+  {
+   "id": "M11",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.6,
+   "text": "Then before Saturday... I'll sit with her."
+  },
+  {
+   "id": "F5",
+   "sc": "hearth",
+   "sp": "fear",
+   "pause": 0.9,
+   "speed": 0.95,
+   "text": "...That's all I wanted."
+  },
+  {
+   "id": "S1",
+   "sc": "hearth",
+   "sp": "sad",
+   "pause": 3.6,
+   "text": "I'm sorry. I know I make everything heavy.",
+   "dir": "Maya sits on the floor beside her."
+  },
+  {
+   "id": "M12",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.9,
+   "speed": 0.92,
+   "text": "You don't make it heavy. It is heavy."
+  },
+  {
+   "id": "M13",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.3,
+   "speed": 0.92,
+   "text": "You've just been the one carrying it."
+  },
+  {
+   "id": "S2",
+   "sc": "hearth",
+   "sp": "sad",
+   "pause": 1.3,
+   "text": "I saw her hands shaking, at the end. I saw how scared she was.",
+   "lo": [
+    "scared"
+   ]
+  },
+  {
+   "id": "S3",
+   "sc": "hearth",
+   "sp": "sad",
+   "pause": 0.5,
+   "text": "Somebody has to remember that."
+  },
+  {
+   "id": "M14",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 1.0,
+   "speed": 0.9,
+   "text": "I remember."
+  },
+  {
+   "id": "M15",
+   "sc": "hearth",
+   "sp": "maya",
+   "pause": 0.6,
+   "speed": 0.92,
+   "text": "Will you tell me what else you remember?"
+  },
+  {
+   "id": "NA1",
+   "sc": "memory",
+   "sp": "nana",
+   "pause": 2.4,
+   "text": "Slow down, sweet pea. Bread knows when you're rushing.",
+   "hi": [
+    "sweet"
+   ]
+  },
+  {
+   "id": "N16",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 1.2,
+   "text": "Sadness signals when part of us has been neglected. Not fully seen. Not fully heard."
+  },
+  {
+   "id": "N17",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.3,
+   "text": "It asks for deep empathy, acknowledgment, care, and comfort.",
+   "hi": [
+    "comfort"
+   ]
+  },
+  {
+   "id": "N18",
+   "sc": "hearth",
+   "sp": "nar",
+   "pause": 0.3,
+   "text": "And when we give it that, it tells us we really are listening."
+  },
+  {
+   "id": "S4",
+   "sc": "hearth",
+   "sp": "sad",
+   "pause": 1.5,
+   "text": "What does grief mean for you?"
+  },
+  {
+   "id": "R1",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 1.8,
+   "text": "For me, my grief is my sadness,"
+  },
+  {
+   "id": "R2",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.35,
+   "text": "which wants me to reflect on what those who I lost, or those who I loved... what they meant to me in my life,"
+  },
+  {
+   "id": "R3",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.45,
+   "text": "because I have witnessed their suffering,",
+   "lo": [
+    "suffering"
+   ]
+  },
+  {
+   "id": "R4",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.4,
+   "text": "and I want to understand what their suffering meant, and means, and will mean to me in my life,"
+  },
+  {
+   "id": "R5",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.45,
+   "text": "because my sadness is the emotion that helped, and helps, and will help me witness suffering in the world, and in myself,"
+  },
+  {
+   "id": "R6",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.35,
+   "text": "and wants me to reflect on what the suffering means,"
+  },
+  {
+   "id": "R7",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.55,
+   "text": "because if we are not there to witness it, then who bore witness to it,"
+  },
+  {
+   "id": "R8",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.3,
+   "text": "to give that suffering meaning to ourselves, so that it was not meaningless?",
+   "lo": [
+    "meaningless"
+   ]
+  },
+  {
+   "id": "R9",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 1.1,
+   "text": "Because my sadness does not want suffering to be meaningless,"
+  },
+  {
+   "id": "R10",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.35,
+   "text": "it wants me to give that suffering meaning in my life, because those people had meaning,",
+   "hi": [
+    "had"
+   ]
+  },
+  {
+   "id": "R11",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.4,
+   "text": "and I will give them meaning by reflecting on my sadness, and what their suffering meant, and means, and will mean,"
+  },
+  {
+   "id": "R12",
+   "sc": "reflect",
+   "sp": "nar",
+   "pause": 0.35,
+   "text": "to my soul, and my life, and the world.",
+   "hi": [
+    "world"
+   ]
+  },
+  {
+   "id": "E8",
+   "sc": "nanahouse",
+   "sp": "eli",
+   "pause": 9.5,
+   "speed": 0.92,
+   "text": "Mae... it's her bread recipe."
+  },
+  {
+   "id": "E9",
+   "sc": "nanahouse",
+   "sp": "eli",
+   "pause": 0.8,
+   "speed": 0.88,
+   "text": "She wrote, \"for my two.\"",
+   "say": "She wrote, for my two."
+  },
+  {
+   "id": "M16",
+   "sc": "nanahouse",
+   "sp": "maya",
+   "pause": 1.4,
+   "speed": 0.92,
+   "text": "Tell me what you remember."
+  },
+  {
+   "id": "E10",
+   "sc": "nanahouse",
+   "sp": "eli",
+   "pause": 1.1,
+   "speed": 0.95,
+   "text": "She always said bread knows when you're rushing.",
+   "hi": [
+    "rushing"
+   ]
+  },
+  {
+   "id": "N19",
+   "sc": "nanahouse",
+   "sp": "nar",
+   "pause": 1.8,
+   "text": "Our emotions aren't problems to fix. They're family.",
+   "hi": [
+    "family"
+   ]
+  },
+  {
+   "id": "N20",
+   "sc": "nanahouse",
+   "sp": "nar",
+   "pause": 0.4,
+   "text": "And every one of them is trying to tell us what matters."
+  }
+ ],
+ "tail": 6.5
+}
