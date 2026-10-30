@@ -816,7 +816,7 @@ function drawMouth(ctx, ch, st, k, a, fy, e, L) {
   const cornerLift = smile * 0.028;
   const yl = my - cornerLift - (e.asym || 0) * -0.004, yr = my - cornerLift + (e.asym || 0) * -0.004;
   const lipC = ch.lip;
-  const openH = open * 0.075;
+  const openH = open * 0.095;
   const upperTop = my - 0.016 * (ch.lipFull ?? 1) - openH * 0.18;
   const lowerBot = my + 0.022 * (ch.lipFull ?? 1) + openH * 1.0;
   ctx.save();

@@ -234,7 +234,7 @@ class Actor {
     const fr = Math.max(0, Math.min(T.nFrames - 1, Math.round(t * FPS)));
     let mouth = { open: 0, wide: 0, round: 0, teeth: 0 };
     const L = lips[this.name];
-    if (L) mouth = { open: L[fr * 4], wide: L[fr * 4 + 1], round: L[fr * 4 + 2], teeth: L[fr * 4 + 3] };
+    if (L) mouth = { open: Math.min(1, L[fr * 4] * 1.7), wide: L[fr * 4 + 1], round: Math.min(1, L[fr * 4 + 2] * 1.3), teeth: L[fr * 4 + 3] };
     let tear = 0;
     for (const tt of this.tears) { const d = (t - tt) / 3.6; if (d > 0 && d < 1) tear = d; }
     let yawn = 0;
