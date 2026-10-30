@@ -68,10 +68,10 @@ def place(cam, X, Z, kneel=0.0, Y=0.0):
 
 
 def ext(ctx, t, cam, phase, east=False, extras=(), fire=True, building=False, horde=True, stars=0.0, light=None,
-        sun=True, zmax=None, bflag=True):
+        sun=True, zmax=None, bflag=True, moon="auto"):
     lb = light or (LB0 if phase < 1 else LBn)
     lf = LF0 if phase < 1 else LFn
-    world.draw_sky(ctx, cam, t, phase, east=east, stars=stars, sun=sun)
+    world.draw_sky(ctx, cam, t, phase, east=east, stars=stars, sun=sun, moon=moon)
     world.draw_ground(ctx, cam, t, phase, east=east)
     if not east:
         world.draw_fortress(ctx, cam, t, phase, lb, flash=HORDE.flash(t) if fire else 0, aim=HORDE.recent(t) if fire else ())
@@ -111,26 +111,39 @@ def _foot_dx(t, per, parity, seed):
 
 
 def groggy(t, amp=1.0, per=1.7, seed=0.0):
-    """Getting its bearings: sway at the ankles, small alternating foot shuffles, head counter-tilt."""
-    lean = amp * (0.05 * math.sin(2 * math.pi * t / 3.3 + seed) + 0.02 * math.sin(2 * math.pi * t / 1.9 + seed * 2))
+    """Getting its bearings: weight rolling through the hips and knees, small alternating foot shuffles."""
+    w = math.sin(2 * math.pi * t / 3.3 + seed) + 0.4 * math.sin(2 * math.pi * t / 1.9 + seed * 2)
+    lean = amp * 0.012 * math.sin(2 * math.pi * t / 2.7 + seed)
     k = math.floor(t / per)
     u = (t - k * per) / 0.6
     lift = math.sin(clamp(u) * math.pi) * 0.24 * amp if u <= 1 else 0.0
     left = k % 2 == 0
     legs = dict(mode="stand", liftL=lift if left else 0.0, liftR=0.0 if left else lift,
                 dxL=_foot_dx(t, per, 0, seed) * amp, dxR=_foot_dx(t, per, 1, seed) * amp)
-    return dict(lean=lean, lean_pivot=560, iroll=-lean * 0.6, legs=legs)
+    return dict(lean=lean, lean_pivot=560, iroll=amp * 0.03 * w - lean * 0.6, legs=legs, hip_shift=amp * 12 * w,
+                waist_bend=-amp * 0.06 * w, kneeL=amp * 0.6 * max(0.0, -w), kneeR=amp * 0.6 * max(0.0, w))
 
 
 def alive(P, t, kind="stand", amp=1.0, seed=0.0):
     """Energy with nowhere to go: sway, weight shifts, a shoulder lift now and then, restless fingers."""
     if amp <= 0:
         return P
-    lean = amp * (0.032 * math.sin(2 * math.pi * t / 3.7 + seed) + 0.014 * math.sin(2 * math.pi * t / 1.45 + seed * 2.3))
+    w = math.sin(2 * math.pi * t / 3.7 + seed) + 0.35 * math.sin(2 * math.pi * t / 1.6 + seed * 2.3)
+    if kind == "stand":
+        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 9 * w
+        P["waist_bend"] = P.get("waist_bend", 0.0) - amp * 0.045 * w
+        P["kneeL"] = P.get("kneeL", 0.0) + amp * 0.5 * max(0.0, -w)
+        P["kneeR"] = P.get("kneeR", 0.0) + amp * 0.5 * max(0.0, w)
+    elif kind == "kneel":
+        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.05 * w
+        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 3 * w
+    else:
+        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.03 * w
+    lean = amp * 0.008 * math.sin(2 * math.pi * t / 2.9 + seed)
     P["lean"] = P.get("lean", 0.0) + lean
     if "lean_pivot" not in P:
         P["lean_pivot"] = 330 if kind == "kneel" else (560 if kind == "stand" else 200)
-    P["iroll"] = P.get("iroll", 0.0) - lean * 0.5 + amp * 0.012 * math.sin(t * 0.9 + seed)
+    P["iroll"] = P.get("iroll", 0.0) + amp * 0.03 * w + amp * 0.012 * math.sin(t * 0.9 + seed)
     P["iyaw"] = P.get("iyaw", 0.0) + amp * 0.05 * sn(t, 3 + seed, 0.35)
     P["ipitch"] = P.get("ipitch", 0.0) + amp * 0.025 * sn(t, 4 + seed, 0.5)
     P["shrug"] = P.get("shrug", 0.0) + amp * 0.1 * max(0.0, math.sin(2 * math.pi * t / 4.3 + seed)) ** 4
@@ -175,6 +188,39 @@ def runners(cam, t, t0, specs, speed=3.0, seed=500):
             x, y = cam.p(X, 0, Zk)
             out.append((cam.depth(Zk), HORDE._fig(z, x, y, cam.scale(Zk), t, cam, flick(LF0, t), 1.0)))
     return out
+
+
+def bump_runner(cam, t, t_b, side, seed):
+    """A runner clips the hero's shoulder at t_b and glances off toward the fortress."""
+    z = dict(HORDE.L[(seed * 7) % len(HORDE.L)])
+    z.update(i=seed, style=rig.horde_style(seed), reach=False, quad=False)
+    Zr = ZC + 3.3 * (t - t_b)
+    Xr = side * (0.48 + 0.4 * ramp(t, t_b, t_b + 0.5))
+    if not (1.2 < cam.depth(Zr) < 60):
+        return []
+    x, y = cam.p(Xr, 0, Zr)
+    return [(cam.depth(Zr), HORDE._fig(z, x, y, cam.scale(Zr), t, cam, flick(LF0, t), 1.0))]
+
+
+def bump_kick(t, t_b):
+    """The hero's lurch after being clipped: a push that settles, smooth rather than jittery."""
+    u = t - t_b
+    if u < 0 or u > 1.8:
+        return 0.0
+    return math.exp(-u * 3.0) * math.sin(u * 6.5 + 0.5)
+
+
+def add_bump(P, t, t_b, side):
+    k = bump_kick(t, t_b)
+    if k:
+        P["hip_shift"] = P.get("hip_shift", 0.0) - side * 16 * k
+        P["waist_bend"] = P.get("waist_bend", 0.0) - side * 0.09 * k
+        P["iroll"] = P.get("iroll", 0.0) + side * 0.05 * k
+        lg = dict(P.get("legs") or dict(mode="stand"))
+        step = max(0.0, math.sin(clamp((t - t_b) / 0.6) * math.pi)) * 0.35
+        lg["liftR" if side > 0 else "liftL"] = max(lg.get("liftR" if side > 0 else "liftL", 0.0), step)
+        P["legs"] = lg
+    return P
 
 
 def staged_hit(cam, t, th, X, Z0, v=3.0, seed=600, quad=False):
@@ -341,9 +387,8 @@ def defender(ctx, t):
     gL = to_body(probe["grip"], 22, hdir)
     gR = to_body(probe["fore"], 22, hdir - math.pi / 2)
     smirk = 0.18 * ramp(t, fires[1] + 0.3, fires[1] + 0.9)
-    E = rig.expr(bi=-1.0, bo=0.65, lid=max(0.34 + 0.1 * sw + 0.1 * rec, blink(t, 3)), low=0.6, gx=lerp(0.12, 0.45, sw),
-                 gy=lerp(0.55, 0.4, sw), op=0.1 + 0.05 * rec, wd=0.9, sm=-0.45 + smirk * 1.5, press=0.0, sneer=0.6, t=t,
-                 pupil=0.3)
+    E = rig.expr(bi=-1.0, bo=0.95, lid=max(0.26 + 0.08 * sw + 0.08 * rec, blink(t, 3)), low=0.55, gx=lerp(0.12, 0.45, sw),
+                 gy=lerp(0.5, 0.4, sw), op=0.2 + 0.06 * rec, wd=1.0, sm=0.05 + smirk, press=0.0, sneer=1.0, t=t, pupil=0.22)
     P = dict(x=x, y=y, s=s, E=E, yaw=lerp(0.05, 0.25, sw), pitch=lerp(0.28, 0.18, sw) - 0.04 * rec, roll=-0.03 + 0.02 * math.sin(tt * 0.9),
              breath=1.0, breath_T=3.4, shrug=0.1 * sw,
              armL=dict(el=(lerp(-62, -60, sw), lerp(130, 120, sw)), wr=gL, hand_ang=hdir, curl=0.85, thumb=0.8, flip=False),
@@ -506,7 +551,9 @@ def wake_freeze(ctx, t):
     pose = dict(E=E, yaw=0.08, pitch=-0.04, shrug=0.4, breath=0.25,
                 armL=dict(el=(-78, 112), wr=(-62, 196), hand_ang=1.62, curl=0.5, spread=0.1, flip=False),
                 armR=dict(el=(78, 112), wr=(62, 196), hand_ang=1.52, curl=0.5, spread=0.1, flip=True))
-    run = runners(cam, t, t_frz, ((-0.95, 6.0), (1.05, 8.2), (-1.4, 10.5), (0.85, 12.6), (0.7, 9.4, True)), seed=540)
+    t_b = L("w3")[0] + 0.5  # clipped by a runner while frozen: jostled, but the face never changes
+    add_bump(pose, t, t_b, 1)
+    run = runners(cam, t, t_frz, ((-0.95, 6.0), (-1.4, 10.5), (0.85, 12.6), (0.7, 9.4, True)), seed=540) + bump_runner(cam, t, t_b, 1, 571)
     ext(ctx, t, cam, 0.3, east=True, stars=0.3, extras=[zitem(cam, t, pose)] + run)
 
 
@@ -534,8 +581,15 @@ def hands(ctx, t):
                           curl=lerp(0.35, curl, up), spread=0.5, thumb=0.3, flip=up < 0.5, palm=False),
                 armR=dict(el=(lerp(82, 98, up), lerp(130, 165, up)), wr=(lerp(66, 46, up), hy - 6 * fl * up), hand_ang=lerp(1.49, -2.19, up),
                           curl=lerp(0.35, curl * 0.9, up), spread=0.5, thumb=0.3, flip=up > 0.5, palm=False))
-    pose.pop("pitch_dummy", None)
-    ext(ctx, t, cam, 0.35, east=True, stars=0.35, extras=[zitem(cam, t, pose)])
+    t_b = word_t("c3", "witness") - 0.25  # another runner clips it; it glances after them
+    add_bump(pose, t, t_b, -1)
+    k = bump_kick(t, t_b)
+    pose["E"]["gx"] += -0.45 * ramp(t, t_b, t_b + 0.2) * (1 - ramp(t, t_b + 0.8, t_b + 1.3))
+    for side in ("armL", "armR"):
+        a = dict(pose[side])
+        a["wr"] = (a["wr"][0] + 14 * k, a["wr"][1] - 8 * abs(k))
+        pose[side] = a
+    ext(ctx, t, cam, 0.35, east=True, stars=0.35, extras=[zitem(cam, t, pose)] + bump_runner(cam, t, t_b, -1, 572))
 
 
 # ---------------------------------------------------------------- WITNESS
@@ -551,7 +605,7 @@ t_lone = L("v6")[0] - 0.3
 def witness_ots(ctx, t):
     cam = Cam(x=0.5, y=1.7, z=ZC - 2.4, d=1, f=720, hy=470)
     look = kf(t, [(v0, -0.25), (v0 + 1.4, -0.25), (v0 + 2.2, 0.2), (v0 + 3.6, 0.2), (v0 + 4.4, -0.05)])
-    pose = dict(view="back", yaw=look, pitch=0.05, E=rig.expr(), **arms_hang(t), **groggy(t, 1.0, seed=0.7))
+    pose = dict(view="back", yaw=look, pitch=0.05, E=rig.expr(), **arms_hang(t), **groggy(t, 1.0, seed=0.7), alive=0.35)
     ext(ctx, t, cam, 0.35, extras=[zitem(cam, t, pose, light=flick(LB0, t))], building=True)
 
 
@@ -597,7 +651,8 @@ def witness_react(ctx, t):
 
 @shot(t_pain, t_lone)
 def witness_pain(ctx, t):
-    hits = [word_t("v4", "pain", 0), word_t("v4", "pain", 1), word_t("v4", "pain", 2), word_t("v5", "hurts", 0), word_t("v5", "hurts", 1)]
+    hits = [word_t("v4", "sorrow"), word_t("v4", "see"), word_t("v4", "suffering"), word_t("v5", "hurts", 0), word_t("v5", "loneliness"),
+            word_t("v5", "destruction"), word_t("v5", "hurts", 1)]
     j = 0.0
     for h in hits:
         if h <= t < h + 1.2:
@@ -801,7 +856,7 @@ def sky_up(ctx, t):
                        hfs=0.62, flip=False),
              armR=dict(el=(82, 150), wr=(48 + 5 * math.sin(t * 1.1 + 1), 262), hand_ang=1.79, curl=fid[1], spread=0.3, thumb=0.5,
                        hfs=0.62, flip=True))
-    ext(ctx, t, cam, 1.7, east=True, stars=1.0, extras=[zitem(cam, t, P, kneel=1, light=LFn)])
+    ext(ctx, t, cam, 1.7, east=True, stars=1.0, extras=[zitem(cam, t, P, kneel=1, light=LFn)], moon=(W * 0.68, 300, 76))
     if t_sent - 0.2 < t < t_sent + 2.0:  # memory of the soul's descent
         u = (t - (t_sent - 0.2)) / 2.2
         a = math.sin(clamp(u) * math.pi)
@@ -1047,7 +1102,7 @@ def flag_wave(ctx, t):
 
 @shot(t_shout, t_fwide)
 def flag_shout(ctx, t):
-    world.draw_sky(ctx, Cam(hy=1450, d=-1), t, 2.0, east=True, stars=1.0)
+    world.draw_sky(ctx, Cam(hy=1450, d=-1), t, 2.0, east=True, stars=1.0, moon=None)
     soft_dot(ctx, W / 2, 1300, 700, hexc("ff7a40"), 0.25)
     ang, _ = pole_angle(t, t_grab)
     sway = ang * 0.25
@@ -1140,7 +1195,7 @@ def heli_arrive(ctx, t):
 def heli_rope(ctx, t):
     tt = t - t_rope
     cam = Cam(x=0, y=0, z=0, d=-1, f=700, hy=1500)
-    world.draw_sky(ctx, cam, t, 2.0, east=True, stars=1.0)
+    world.draw_sky(ctx, cam, t, 2.0, east=True, stars=1.0, moon=(130, 560, 55))
     hx, hy_ = W / 2 + 40 + math.sin(t * 0.9) * 6, 260 + math.sin(t * 1.3) * 5
     world.draw_heli(ctx, hx, hy_, 1.0, t, LSPOT, spot=0.0, bank=0.0, face=-1)
     door = (hx - 5, hy_ + 40)
@@ -1168,7 +1223,7 @@ def heli_rope(ctx, t):
 @shot(t_grabz, t_up)
 def heli_grab(ctx, t):
     tt = t - t_grabz
-    world.draw_sky(ctx, Cam(hy=1500, d=-1), t, 2.0, east=True, stars=0.8)
+    world.draw_sky(ctx, Cam(hy=1500, d=-1), t, 2.0, east=True, stars=0.8, moon=None)
     soft_dot(ctx, W / 2, -100, 900, hexc("fff4dc"), 0.35)
     grab = ramp(tt, 0.2, 0.7)
     o, w = mouth("Z", t)
@@ -1198,7 +1253,7 @@ def heli_grab(ctx, t):
 def heli_up(ctx, t):
     tt = t - t_up
     cam = Cam(x=0, y=0, z=0, d=-1, f=700, hy=1400)
-    world.draw_sky(ctx, cam, t, 2.0, east=True, stars=1.0)
+    world.draw_sky(ctx, cam, t, 2.0, east=True, stars=1.0, moon=(130, 560, 55))
     hx, hy_ = W / 2 + 60 - tt * 30, 330 - tt * 20
     world.draw_heli(ctx, hx, hy_, 0.85, t, LSPOT, bank=-0.05 * tt, face=-1)
     door = (hx - 4, hy_ + 34)

@@ -237,7 +237,40 @@ def sky_cols(phase):
     return [mix(x, y, ease(u)) for x, y in zip(a, b)]
 
 
-def draw_sky(ctx, cam, t, phase, east=False, stars=0.0, sun=True):
+def draw_moon(ctx, x, y, r, t, phase):
+    """A big blood moon: red halo, dark maria, wisps of dark cloud drifting across it."""
+    k = clamp(0.6 + phase * 0.22, 0.6, 1.0)
+    soft_dot(ctx, x, y, r * 4.5, hexc("8a1a14"), 0.22 * k)
+    soft_dot(ctx, x, y, r * 2.2, hexc("c03020"), 0.3 * k)
+    g = cairo.RadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r)
+    g.add_color_stop_rgb(0, *hexc("ffb08a"))
+    g.add_color_stop_rgb(0.55, *hexc("e0583a"))
+    g.add_color_stop_rgb(1, *hexc("8a1e16"))
+    ctx.new_path(); ctx.arc(x, y, r, 0, 2 * math.pi); ctx.set_source(g); ctx.fill_preserve()
+    ctx.save(); ctx.clip()
+    for (dx, dy, rr) in ((-0.3, -0.1, 0.35), (0.25, 0.2, 0.28), (0.05, -0.4, 0.2), (-0.15, 0.4, 0.22)):
+        soft_dot(ctx, x + dx * r, y + dy * r, rr * r, hexc("5a1410"), 0.45)
+    ctx.restore()
+    for q in range(4):
+        cx = x - 380 + ((t * (7 + q * 3) + q * 230) % 760)
+        cy = y + (-0.55 + q * 0.45) * r
+        rr = r * (0.38 + 0.08 * q)
+        ctx.save(); ctx.translate(cx, cy); ctx.scale(5.2, 1)
+        g = cairo.RadialGradient(0, 0, 0, 0, 0, rr)
+        g.add_color_stop_rgba(0, 0.10, 0.06, 0.10, 0.85)
+        g.add_color_stop_rgba(0.7, 0.12, 0.07, 0.12, 0.55)
+        g.add_color_stop_rgba(1, 0.12, 0.07, 0.12, 0)
+        ctx.set_source(g); ctx.arc(0, 0, rr, 0, 2 * math.pi); ctx.fill()
+        dist = abs(cx - x) / (r * 5)
+        if dist < 1:
+            g = cairo.RadialGradient(0, -rr * 0.3, 0, 0, -rr * 0.3, rr)
+            g.add_color_stop_rgba(0, 0.9, 0.3, 0.2, 0.35 * (1 - dist))
+            g.add_color_stop_rgba(1, 0.9, 0.3, 0.2, 0)
+            ctx.set_source(g); ctx.arc(0, -rr * 0.3, rr, 0, 2 * math.pi); ctx.fill()
+        ctx.restore()
+
+
+def draw_sky(ctx, cam, t, phase, east=False, stars=0.0, sun=True, moon="auto"):
     top, mid, hor, glow = sky_cols(phase)
     if east:
         top, mid, hor = mul(top, 0.8), mix(mid, top, 0.5), mix(hor, mid, 0.65)
@@ -262,6 +295,14 @@ def draw_sky(ctx, cam, t, phase, east=False, stars=0.0, sun=True):
             y = hsh(i, 2) * (hy - 120)
             a = stars * (0.25 + 0.6 * hsh(i, 3)) * (0.75 + 0.25 * math.sin(t * (1 + hsh(i, 4) * 2) + i))
             soft_dot(ctx, x, y, 2.4 + hsh(i, 5) * 2, (1, 0.97, 0.9), a)
+    if east and moon is not None:
+        if moon == "auto":
+            mx = clamp(W / 2 + 0.11 * cam.f * 0.55, 90, W - 90)
+            my = clamp(cam.hy - 0.17 * cam.f * 0.55, 110, min(cam.hy - 60, 560))
+            mr = 62
+        else:
+            mx, my, mr = moon
+        draw_moon(ctx, mx, my, mr, t, phase)
     # clouds: layered soft bands lit from below
     lit = mix(glow, hor, 0.4) if not east else mix(mid, hor, 0.5)
     for i in range(14):
@@ -604,11 +645,11 @@ def draw_sign(ctx, cam, t, phase, light):
     if dp < 3:
         return
     nail = cam.p(0, HILL + 33.5, Zs)
-    m = cam.f / dp * 1.25  # px per sign unit (sign is 25 m wide)
+    m = cam.f / dp * 1.4  # px per sign unit (1 unit = 1.4 m; sign about 36 m wide)
     if m < 0.6:
         return
     k = float(np.interp(phase, [0, 1, 2, 3], [0.95, 0.85, 0.75, 1.0]))
-    lant = cam.p(16.5, HILL + 28.5, Zs - 0.3)
+    lant = cam.p(19.4, HILL + 28.5, Zs - 0.3)
     soft_dot(ctx, lant[0], lant[1], 8 * m, hexc("ffb050"), 0.32)
     swing = -0.13 + 0.035 * math.sin(t * 1.25) + 0.01 * math.sin(t * 3.1)
     ctx.save()
@@ -617,11 +658,11 @@ def draw_sign(ctx, cam, t, phase, light):
     ctx.scale(m, m)
     lw = 1.2 / m
     # string loop from the nail to both top corners
-    for cx_ in (-9.6, 9.6):
+    for cx_ in (-12.2, 12.2):
         ctx.new_path(); ctx.move_to(0, 0); ctx.line_to(cx_ * 0.98, 3.6)
         rgba(ctx, hexc("d8ccaa"), 0.85); ctx.set_line_width(max(lw, 0.14)); ctx.stroke()
     # planks (one shorter, broken corner, gaps)
-    planks = [(-10.0, 3.6, 10.2, 5.3), (-10.3, 5.45, 9.7, 7.1), (-9.6, 7.25, 8.3, 8.9)]
+    planks = [(-12.6, 3.6, 12.8, 5.3), (-12.9, 5.45, 12.3, 7.1), (-12.2, 7.25, 10.9, 8.9)]
     for q, (x0, y0, x1, y1) in enumerate(planks):
         ctx.save(); ctx.translate(0, (y0 + y1) / 2); ctx.rotate((hsh(q, 113) - 0.5) * 0.03); ctx.translate(0, -(y0 + y1) / 2)
         _wood(ctx, x0, y0, x1, y1, q, k)
@@ -631,17 +672,17 @@ def draw_sign(ctx, cam, t, phase, light):
             soft_dot(ctx, nx, (y0 + y1) / 2, 0.22, hexc("2a2622"), 0.95)
         ctx.restore()
     # chunk missing from the bottom-right corner
-    ctx.new_path(); ctx.move_to(8.45, 9.05); ctx.line_to(6.9, 9.05); ctx.line_to(7.6, 8.05); ctx.line_to(8.45, 8.35); ctx.close_path()
+    ctx.new_path(); ctx.move_to(11.05, 9.05); ctx.line_to(9.5, 9.05); ctx.line_to(10.2, 8.05); ctx.line_to(11.05, 8.35); ctx.close_path()
     rgba(ctx, mul(hexc("231c22"), k)); ctx.fill_preserve()
     rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(lw * 1.2); ctx.stroke()
     # crack through the middle plank
     soft_stroke(ctx, [(-2.0, 5.5), (-1.4, 6.2), (-1.9, 6.6), (-1.2, 7.05)], hexc("1a120c"), 0.8, 0.16, smooth=False)
     # hand-painted letters, each a little off
     ctx.select_font_face("DejaVu Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-    ctx.set_font_size(3.6)
+    ctx.set_font_size(3.35)
     word = "HUMANITY"
     widths = [ctx.text_extents(c).x_advance for c in word]
-    total = sum(widths) + 0.25 * (len(word) - 1)
+    total = sum(widths) + 0.3 * (len(word) - 1)
     x = -total / 2 - 0.2
     for q, (c, wd) in enumerate(zip(word, widths)):
         ctx.save()
@@ -655,12 +696,12 @@ def draw_sign(ctx, cam, t, phase, light):
         for z_ in range(3):  # chipped paint
             soft_dot(ctx, (hsh(q * 3 + z_, 116) - 0.5) * wd * 0.8, -1.3 * hsh(q * 3 + z_, 117), 0.18, mul(hexc("7a5a3c"), k), 0.9)
         ctx.restore()
-        x += wd + 0.25
+        x += wd + 0.3
     # lantern glow washing over the right side of the sign
-    g = cairo.RadialGradient(13.0, 4.0, 0, 13.0, 4.0, 16)
+    g = cairo.RadialGradient(13.5, 4.0, 0, 13.5, 4.0, 16)
     g.add_color_stop_rgba(0, 1.0, 0.75, 0.4, 0.2)
     g.add_color_stop_rgba(1, 1.0, 0.75, 0.4, 0.0)
-    ctx.set_source(g); ctx.rectangle(-11, 3, 22, 7); ctx.fill()
+    ctx.set_source(g); ctx.rectangle(-13.5, 3, 27, 7); ctx.fill()
     # the nail
     ctx.new_path(); ctx.arc(0, 0, 0.32, 0, 2 * math.pi); rgba(ctx, hexc("3a3430")); ctx.fill()
     soft_dot(ctx, -0.08, -0.08, 0.16, (1, 1, 1), 0.5)

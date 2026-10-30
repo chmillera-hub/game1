@@ -327,7 +327,7 @@ HOPE = [  # (crest time, rise seconds, strength)
     (word_t("e1", "heaven", 1), 1.8, 0.9),
 ]
 HEAVY = [  # (start, duration, strength)
-    (word_t("h3", "mindless") - 0.5, 3.0, 0.8), (word_t("v3", "suffering") - 0.6, 3.5, 0.9), (word_t("v4", "pain") - 0.3, 5.0, 1.0),
+    (word_t("h3", "mindless") - 0.5, 3.0, 0.8), (word_t("v3", "suffering") - 0.6, 3.5, 0.9), (word_t("v4", "sorrow") - 0.3, 5.0, 1.0),
     (word_t("k1", "alone") - 0.5, 4.0, 0.9), (word_t("k5", "tears") - 0.5, 3.5, 0.8), (L("y1")[1] + 0.2, 2.2, 0.6),
     (word_t("y6", "hell") - 0.4, 4.0, 1.0), (word_t("f3", "unbearable") - 0.4, 4.5, 1.0), (word_t("i1", "killed") - 0.4, 3.0, 0.8),
     (word_t("i9", "weight") - 0.6, 4.0, 1.0), (word_t("e1", "hell") - 0.5, 3.5, 0.9),

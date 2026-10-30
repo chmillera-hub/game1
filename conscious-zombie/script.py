@@ -30,7 +30,7 @@ SCENES = [
     ]),
     ("wake", [
         ("w1", "N", "And that zombie started looking around...", 1.4, 0.8),
-        ("w2", "Z", "I... I can ^see.", 0.3, 0.9),
+        ("w2", "Z", "Wait... I can ^see?", 0.3, 0.9),
         ("w3", "N", "and it froze in place.", 0.3, 1.0),
     ]),
     ("hands", [
@@ -41,25 +41,25 @@ SCENES = [
     ("witness", [
         ("v1", "N", "Its brothers and sisters, who looked just like it, seemed compelled to run to the battlefield.", 0.4, 0.5),
         ("v2", "Z", "Wait... where are you going?", 0.3, 0.8),
-        ("v3", "N", "It saw them being destroyed by the Fortress of Humanity. It saw their _suffering... even though they were not conscious.", 0.4, 0.7),
-        ("v4", "N", "And then the _pain started. Because now it could feel their pain. All of their _pain.", 0.5, 0.6),
-        ("v5", "Z", "It hurts... it all hurts.", 0.3, 0.8),
-        ("v6", "N", "Now that this soul-infused zombie was conscious, it was a ^witness. A witness to the _suffering in the world.", 0.4, 1.0),
+        ("v3", "N", "It saw them being destroyed by the Fortress of Humanity. The conscious zombie saw their _suffering... even though they were not conscious.", 0.4, 0.7),
+        ("v4", "N", "And then the _sorrow started, because now it could see the _suffering.", 0.5, 0.6),
+        ("v5", "Z", "This hurts... this _loneliness... this destruction... it hurts.", 0.3, 0.8),
+        ("v6", "N", "Now that this soul-infused zombie was conscious, it was a ^witness. A witness to the _suffering in its world.", 0.4, 1.0),
     ]),
     ("knees", [
         ("k1", "N", "And the conscious zombie thought it was _alone in its suffering. It fell to its knees, and it covered its face, to try to suppress the pain it had witnessed.", 0.5, 0.8),
         ("k2", "N", "It had no other consciousness to share that suffering with, as far as it knew. So maybe it was the only one giving the suffering around it ^meaning.", 0.4, 0.8),
-        ("k3", "N", "Because before that body of flesh was conscious, the suffering had no meaning. But when a soul descended from ^heaven and created a witness... the suffering had ^meaning now.", 0.4, 0.9),
+        ("k3", "N", "Because before that body of flesh was conscious, the suffering had no meaning. But when a soul descended from ^heaven and created a witness... their suffering gave it ^meaning by showing the conscious zombie their pain.", 0.4, 0.9),
         ("k4", "Z", "Why... why was I picked to witness this? What does it _mean?", 0.4, 1.0),
-        ("k5", "N", "What power is there to give meaning to suffering? To be on your knees, with _tears falling from your eyes, as you witness others who cannot share it with you... but you are giving their suffering meaning, by seeing their pain.", 0.4, 1.0),
+        ("k5", "N", "What power is there to give meaning to suffering? To be on your knees, with _tears falling from your eyes, as you witness others who cannot share it with you... but you are giving their suffering meaning, by seeing their pain and having their pain influence how you navigate the world to maybe ^help them.", 0.4, 1.0),
     ]),
     ("sky", [
         ("y1", "Z", "Is anyone there?", 0.8, 2.0),
         ("y2", "N", "But there is no answer from the heavens. Because the heavens gave their answer when they sent the ^soul, and put it into a body of flesh.", 0.2, 0.6),
-        ("y3", "N", "And now that body of flesh needs to find its own answer, to what the suffering means for it.", 0.3, 0.8),
+        ("y3", "N", "And now that body of flesh is looking to find an answer to its _suffering.", 0.3, 0.8),
         ("y4", "N", "Maybe heaven's answer and heaven's question were the same thing... your ^existence could be the meaning needed to help guide you to create more plans and actions to guide your ^life.", 0.4, 0.9),
-        ("y5", "N", "And maybe, if they knew more, they would have already solved it. But your own ability to witness, on a deep level, might give you the details you need to ^help them.", 0.3, 0.8),
-        ("y6", "N", "What if heaven sent the soul into a kind of _hell... not to take the highway towards hell, but to better know what to avoid?", 0.4, 0.6),
+        ("y5", "N", "And maybe, if the world knew more, maybe the suffering would never have happened, because it would have been solved already. But your own ability to witness, on a deep level, might give you the details you need to ^help them.", 0.3, 0.8),
+        ("y6", "N", "What if heaven sent the soul into a kind of _hell... not to keep going on the highway towards hell, but to better know what to avoid?", 0.4, 0.6),
         ("y7", "N", "Because the staircase to ^heaven is not a simple staircase. It is built by transforming the suffering of hell into ^well-being and ^peace.", 0.3, 1.2),
     ]),
     ("building", [
