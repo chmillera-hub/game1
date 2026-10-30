@@ -30,22 +30,22 @@ DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 build/audio/mix
 X265="aq-mode=3:keyint=600:min-keyint=24:bframes=8:rc-lookahead=60:log-level=error"
 
 # Higher quality: 720x1280, 24 fps, HEVC 10-bit constant quality, Opus 40 kbps mono
-HQ_CRF=${HQ_CRF:-31}
+HQ_CRF=${HQ_CRF:-35}
 ffmpeg -y -loglevel error -i build/master.mkv -i build/audio/mix.wav -c:v libx265 -preset medium -crf ${HQ_CRF} -pix_fmt yuv420p10le \
   -x265-params "$X265" -tag:v hvc1 \
-  -c:a libopus -b:a 40k -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_hq.mp4" &
+  -c:a libopus -b:a 32k -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_hq.mp4" &
 HQ_PID=$!
 # Compact (< 15 MB): 540x960, 15 fps, HEVC 10-bit two-pass, Opus 16 kbps mono
 TARGET_MB=${TARGET_MB:-14.5}
-ABR=16
-VBR=$(python3 -c "print(int(($TARGET_MB*8e6*0.985 - $ABR*1000*$DUR) / $DUR / 1000))")
+ABR=13
+VBR=${VBR:-19}  # with 13 kbps audio and MP4 overhead this lands at ~14.5 MB for 53 minutes
 echo "compact video bitrate: ${VBR} kbps"
 VF="scale=540:960:flags=lanczos,fps=15"
 ffmpeg -y -loglevel error -i build/master.mkv -vf "$VF" -c:v libx265 -preset slow -b:v ${VBR}k -pix_fmt yuv420p10le \
   -x265-params "pass=1:stats=build/x265_compact.log:$X265" -an -f null -
 ffmpeg -y -loglevel error -i build/master.mkv -i build/audio/mix.wav -vf "$VF" -c:v libx265 -preset slow -b:v ${VBR}k -pix_fmt yuv420p10le \
   -x265-params "pass=2:stats=build/x265_compact.log:$X265" -tag:v hvc1 \
-  -c:a libopus -b:a ${ABR}k -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_compact.mp4"
+  -c:a libopus -b:a ${ABR}k -vbr constrained -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_compact.mp4"
 
 wait $HQ_PID
 ls -la "$OUT"
