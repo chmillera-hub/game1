@@ -2,7 +2,8 @@
 import math
 import cairo
 from common import (W, H, SCENES, LINES, L, at, word_t, mouth, speaking, blink, clamp, lerp, ease, ease2, ramp,
-                    kf, sn, hsh, hexc, mix, mul, rgba, soft_dot, soft_stroke, capsule, ellipse, smooth_open)
+                    kf, sn, hsh, hexc, mix, mul, rgba, soft_dot, soft_stroke, capsule, ellipse, smooth_open,
+                    smooth_closed, shade)
 import rig
 import world
 from world import Cam, ZC, WALL, BLD, FIG_H
@@ -71,10 +72,10 @@ def ext(ctx, t, cam, phase, east=False, extras=(), fire=True, building=False, ho
     lb = light or (LB0 if phase < 1 else LBn)
     lf = LF0 if phase < 1 else LFn
     world.draw_sky(ctx, cam, t, phase, east=east, stars=stars, sun=sun)
+    world.draw_ground(ctx, cam, t, phase, east=east)
     if not east:
         world.draw_fortress(ctx, cam, t, phase, lb, flash=HORDE.flash(t) if fire else 0)
         world.draw_smoke(ctx, cam, t, phase)
-    world.draw_ground(ctx, cam, t, phase, east=east)
     items = list(extras)
     if horde:
         items += HORDE.items(cam, t, flick(lf, t), lb, fire=fire, zmax=zmax)
@@ -87,7 +88,7 @@ def ext(ctx, t, cam, phase, east=False, extras=(), fire=True, building=False, ho
 # ---------------------------------------------------------------- the conscious zombie
 def ZE(t, **kw):
     o, w = mouth("Z", t)
-    e = dict(milky=0.0, glow=0.12, t=t, pupil=0.45)
+    e = dict(milky=0.0, glow=0.12, t=t, pupil=0.45, drone=0.0, grime=0.25, life=0.3)
     e.update(kw)
     e["op"] = e.get("op", 0.0) + o * kw.pop("talk", 0.85)
     e["wd"] = e.get("wd", 0.0) + w * 0.3
@@ -98,6 +99,27 @@ def ZE(t, **kw):
 
 def idle(t, k=1.0, seed=1):
     return dict(iyaw=sn(t, seed, 0.5) * 0.03 * k, ipitch=sn(t, seed + 1, 0.4) * 0.025 * k, iroll=sn(t, seed + 2, 0.3) * 0.02 * k)
+
+
+def _foot_dx(t, per, parity, seed):
+    k = math.floor(t / per)
+    kk = k if k % 2 == parity else k - 1
+    tgt = lambda j: 8 * math.sin(j * 1.7 + seed + parity * 2.1)
+    if kk == k:
+        return lerp(tgt(kk - 2), tgt(kk), ease((t - k * per) / 0.6))
+    return tgt(kk)
+
+
+def groggy(t, amp=1.0, per=1.7, seed=0.0):
+    """Getting its bearings: sway at the ankles, small alternating foot shuffles, head counter-tilt."""
+    lean = amp * (0.05 * math.sin(2 * math.pi * t / 3.3 + seed) + 0.02 * math.sin(2 * math.pi * t / 1.9 + seed * 2))
+    k = math.floor(t / per)
+    u = (t - k * per) / 0.6
+    lift = math.sin(clamp(u) * math.pi) * 0.24 * amp if u <= 1 else 0.0
+    left = k % 2 == 0
+    legs = dict(mode="stand", liftL=lift if left else 0.0, liftR=0.0 if left else lift,
+                dxL=_foot_dx(t, per, 0, seed) * amp, dxR=_foot_dx(t, per, 1, seed) * amp)
+    return dict(lean=lean, lean_pivot=560, iroll=-lean * 0.6, legs=legs)
 
 
 def zitem(cam, t, pose, X=0.0, Z=ZC, kneel=0.0, Y=0.0, light=None):
@@ -112,8 +134,8 @@ def zitem(cam, t, pose, X=0.0, Z=ZC, kneel=0.0, Y=0.0, light=None):
 
 
 def arms_hang(t, k=1.0):
-    return dict(armL=dict(a1=-8 - sn(t, 4, 0.6) * 2 * k, a2=-4, curl=0.35, flip=False),
-                armR=dict(a1=8 + sn(t, 5, 0.6) * 2 * k, a2=4, curl=0.35, flip=True))
+    return dict(armL=dict(a1=-8 - sn(t, 4, 0.6) * 2 * k, a2=-4, curl=0.5, spread=0.1, thumb=0.5, flip=False),
+                armR=dict(a1=8 + sn(t, 5, 0.6) * 2 * k, a2=4, curl=0.5, spread=0.1, thumb=0.5, flip=True))
 
 
 def runners(cam, t, t0, specs, speed=3.0, seed=500):
@@ -179,20 +201,19 @@ o0, o1 = S("open")
 @shot(o0, o1)
 def open_ecu(ctx, t):
     g = cairo.LinearGradient(0, 0, 0, H)
-    g.add_color_stop_rgb(0, *hexc("2a1e40"))
-    g.add_color_stop_rgb(0.6, *hexc("5a3858"))
-    g.add_color_stop_rgb(1, *hexc("2a2030"))
+    g.add_color_stop_rgb(0, *hexc("241c38"))
+    g.add_color_stop_rgb(0.6, *hexc("4a3050"))
+    g.add_color_stop_rgb(1, *hexc("241c2a"))
     ctx.set_source(g); ctx.paint()
     for i in range(16):  # bokeh of distant fortress lights
         soft_dot(ctx, hsh(i, 1) * W, 200 + hsh(i, 2) * 900, 30 + hsh(i, 3) * 50, hexc("ffc070"), 0.12 + 0.08 * hsh(i, 4))
-    soft_dot(ctx, W / 2, -80, 700, hexc("ffd890"), 0.35 + 0.1 * math.sin(t * 2))
-    lid = kf(t, [(0, 1.0), (0.55, 1.0), (0.85, 0.5), (1.0, 0.75), (1.35, 0.12), (1.6, 0.0)])
-    E = ZE(t, lid=lid, blinks=t > 2.2, glow=kf(t, [(0.8, 0.0), (1.6, 0.7), (3.0, 0.35)]),
-           pupil=kf(t, [(1.0, 0.3), (2.2, 0.5)]), bi=kf(t, [(0.8, 0.0), (1.8, 0.55)]), bo=0.15,
-           gx=kf(t, [(1.5, 0.0), (2.0, -0.3), (2.8, -0.3), (3.3, 0.05)]), gy=kf(t, [(1.5, 0.0), (2.0, -0.35), (2.8, -0.3), (3.3, 0.0)]),
-           op=kf(t, [(1.4, 0.0), (1.8, 0.12), (2.6, 0.06)]))
-    P = dict(x=W / 2 - 6, y=560 + 92 * 4.3 * 1.0 - 10 + math.sin(t * 1.4) * 3, s=4.3, E=E, breath=0.6, **idle(t, 0.6))
-    rig.draw_character(ctx, rig.ZOMBIE, P, LSOUL, t)
+    soft_dot(ctx, W / 2, -80, 700, hexc("ffd890"), 0.14)
+    lid = kf(t, [(0, 0.55), (1.1, 0.36), (2.4, 0.36), (2.55, 1.0), (2.8, 0.38)])  # heavy, one slow blink
+    E = ZE(t, lid=lid, blinks=False, milky=1.0, drone=1.0, grime=1.0, life=0.0, glow=0.0, pupil=0.3, bi=-0.05, bo=-0.15,
+           gx=0.05 * math.sin(t * 0.6), gy=0.15, op=0.2 + 0.04 * math.sin(t * 1.3), sm=-0.35, talk=0.0)
+    P = dict(x=W / 2 - 6, y=560 + 92 * 4.3 - 10 + math.sin(t * 1.1) * 4, s=4.3, E=E, breath=0.9, breath_T=3.0,
+             roll=0.09 + 0.03 * math.sin(t * 0.9), pitch=0.12 + 0.03 * math.sin(t * 0.7), yaw=-0.06)
+    rig.draw_character(ctx, rig.ZOMBIE, P, LF1, t)
 
 
 # ---------------------------------------------------------------- HORDE
@@ -229,7 +250,7 @@ def horde_toward(ctx, t):
 @shot(t_def, t_scary)
 def horde_dust(ctx, t):
     u = (t - t_def) / (t_scary - t_def)
-    cam = Cam(x=-4 + u * 3, y=3, z=WALL - 110 + u * 10, d=1, f=900, hy=620)
+    cam = Cam(x=-1.2 + u * 1.6, y=3.0, z=WALL - 112 + u * 12, d=1, f=900, hy=640)
     hits = staged_hit(cam, t, word_t("h3", "tearing"), -1.5, WALL - 92, seed=601) + \
         staged_hit(cam, t, word_t("h3", "dust") - 0.1, -4.8, WALL - 86, seed=602) + \
         staged_hit(cam, t, word_t("h3", "dust") + 1.1, 1.2, WALL - 80, seed=603)
@@ -237,39 +258,83 @@ def horde_dust(ctx, t):
     world.draw_motes(ctx, t, 30, hexc("c8b8a8"), 0.15, drift=(30, -8))
 
 
+def draw_rifle(ctx, bx, by, ang, length, light, glow=0.0):
+    """Energy rifle (no real-world design); butt at (bx, by) pointing along ang. Returns key grip points."""
+    k = length / 355.0
+    ctx.save(); ctx.translate(bx, by); ctx.rotate(ang); ctx.scale(k, k)
+    lw = 2.0 / k
+    metal, dark, olive = hexc("3a3e44"), hexc("24272c"), hexc("4a5240")
+    shade(ctx, lambda: smooth_closed(ctx, [(0, -20), (68, -14), (72, 12), (0, 24)], 0.4), olive, light, lw)
+    shade(ctx, lambda: smooth_closed(ctx, [(118, 12), (140, 12), (132, 52), (112, 50)], 0.5), dark, light, lw)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 148, 14, 26, 30, 5)), hexc("2a6a7a"), light, lw, shadow=0.3)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 60, -20, 135, 36, 8)), metal, light, lw)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 96, -42, 70, 18, 6)), dark, light, lw)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 190, -11, 140, 21, 6)), metal, light, lw)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 326, -14, 29, 27, 7)), dark, light, lw)
+    for q in range(5):
+        ctx.new_path(); ctx.rectangle(205 + q * 22, -6, 12, 4); rgba(ctx, hexc("121418")); ctx.fill()
+    soft_stroke(ctx, [(196, 4), (320, 4)], hexc("7ff0ff"), 0.35 + 0.5 * glow, 3)
+    soft_dot(ctx, 161, 29, 16, hexc("7ff0ff"), 0.35 + 0.4 * glow)
+    soft_dot(ctx, 120, -36, 6, (1, 1, 1), 0.5)
+    ctx.restore()
+    c, s_ = math.cos(ang), math.sin(ang)
+    pt = lambda lx, ly: (bx + (lx * c - ly * s_) * k, by + (lx * s_ + ly * c) * k)
+    return dict(grip=pt(126, 34), fore=pt(250, 6), muzzle=pt(355, 0), dir=(c, s_))
+
+
 @shot(t_scary, h1)
 def defender(ctx, t):
+    """A defender on the wall: no fear, no doubt. Rifle at the ready, then shouldered and fired."""
     tt = t - t_scary
-    cam = Cam(x=30, y=40, z=WALL - 160, d=1, f=500, hy=-500)
     world.draw_sky(ctx, Cam(hy=1400), t, 0.2)
-    # parapet wall at the bottom (gritty stone)
-    ctx.new_path(); ctx.rectangle(0, 900, W, 400)
+    ctx.new_path(); ctx.rectangle(0, 880, W, 400)
     ctx.set_source(world.pattern("stone", 1.6)); ctx.fill_preserve()
-    g = cairo.LinearGradient(0, 900, 0, 1280)
-    g.add_color_stop_rgba(0, *hexc("ffa060"), 0.25)
-    g.add_color_stop_rgba(0.15, *hexc("1a1424"), 0.35)
-    g.add_color_stop_rgba(1, *hexc("1a1424"), 0.7)
-    ctx.set_source(g); ctx.fill()
-    fl = HORDE.flash(t)
-    Ld = flick(LDEF, t, 1.5)
-    look = kf(tt, [(0, 0.35), (1.2, 0.35), (1.6, -0.2), (2.6, -0.2), (3.0, 0.3), (4.0, 0.3), (4.4, -0.05)])
-    E = rig.expr(bi=0.95, bo=0.45, lid=max(0.0, blink(t, 3)), low=0.1, gx=look, gy=0.45, op=0.14 + 0.05 * math.sin(tt * 3),
-                 sm=-0.5, wd=0.5, tr=0.5, t=t, pupil=0.3)
-    P = dict(x=330, y=760, s=2.5, E=E, yaw=look * 0.3, pitch=0.25, roll=0.04 * math.sin(tt * 1.1), breath=1.6, breath_T=2.0,
-             armL=dict(el=(-100, 70), wr=(-80, 112), hand_ang=1.35, curl=0.55, thumb=0.6, flip=False),
-             armR=dict(el=(100, 70), wr=(80, 112), hand_ang=1.79, curl=0.55, thumb=0.6, flip=True))
+    rgba(ctx, hexc("1a1424"), 0.45); ctx.fill()
+    fires = (t_scary + 3.25, t_scary + 4.25)
+    rec = 0.0
+    for tf in fires:
+        if tf <= t < tf + 0.45:
+            rec = max(rec, math.exp(-(t - tf) * 9.0))
+    sw = ease2(ramp(t, t_scary + 2.5, t_scary + 2.95))
+    x, y, s = 280, 760, 2.2
+    # rifle: port-arms across the body -> shouldered, aimed down-right over the parapet
+    bx, by = lerp(x - 70 * s, x - 50 * s, sw), lerp(y + 120 * s, y + 30 * s, sw)
+    ang = lerp(-0.25, 0.32, sw)
+    bx -= math.cos(ang) * 16 * rec
+    by -= math.sin(ang) * 16 * rec
+    Ld = dict(flick(LDEF, t, 1.5))
+    if rec > 0:
+        Ld["rim"] = mix(Ld["rim"], hexc("c8f4ff"), 0.7 * rec)
+    probe = draw_rifle(cairo.Context(cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)), bx, by, ang, 560, Ld)
+    hdir = math.atan2(probe["dir"][1], probe["dir"][0])
+    to_body = lambda p, back, a: ((p[0] - math.cos(a) * back * s - x) / s, (p[1] - math.sin(a) * back * s - y) / s)
+    gL = to_body(probe["grip"], 22, hdir)
+    gR = to_body(probe["fore"], 22, hdir - math.pi / 2)
+    smirk = 0.18 * ramp(t, fires[1] + 0.3, fires[1] + 0.9)
+    E = rig.expr(bi=-1.0, bo=0.65, lid=max(0.34 + 0.1 * sw + 0.1 * rec, blink(t, 3)), low=0.6, gx=lerp(0.12, 0.45, sw),
+                 gy=lerp(0.55, 0.4, sw), op=0.1 + 0.05 * rec, wd=0.9, sm=-0.45 + smirk * 1.5, press=0.0, sneer=0.6, t=t,
+                 pupil=0.3)
+    P = dict(x=x, y=y, s=s, E=E, yaw=lerp(0.05, 0.25, sw), pitch=lerp(0.28, 0.18, sw) - 0.04 * rec, roll=-0.03 + 0.02 * math.sin(tt * 0.9),
+             breath=1.0, breath_T=3.4, shrug=0.1 * sw,
+             armL=dict(el=(lerp(-62, -60, sw), lerp(130, 120, sw)), wr=gL, hand_ang=hdir, curl=0.85, thumb=0.8, flip=False),
+             armR=dict(el=(lerp(118, 120, sw), lerp(100, 60, sw)), wr=gR, hand_ang=hdir - math.pi / 2, curl=0.85, thumb=0.8, flip=True))
     rig.draw_character(ctx, rig.DEFENDER, P, Ld, t)
-    # parapet ledge in front of the body, hands rest on it
+    pts = draw_rifle(ctx, bx, by, ang, 560, Ld, glow=rec)
+    rig.draw_hand(ctx, rig.DEFENDER, x + gL[0] * s, y + gL[1] * s, hdir, Ld, 2.0, curl=0.88, thumb=0.85, flip=False, size=s)
+    rig.draw_hand(ctx, rig.DEFENDER, x + gR[0] * s, y + gR[1] * s, hdir - math.pi / 2, Ld, 2.0, curl=0.88, thumb=0.85, flip=True, size=s)
     ctx.new_path(); ctx.rectangle(0, 1060, W, 230)
     ctx.set_source(world.pattern("stone", 1.6, 20, 0)); ctx.fill_preserve()
     rgba(ctx, hexc("1a1424"), 0.45); ctx.fill()
     ctx.new_path(); ctx.rectangle(0, 1060, W, 34); rgba(ctx, hexc("8a7a80"), 0.35); ctx.fill()
     soft_stroke(ctx, [(0, 1061), (W, 1061)], hexc("ffb080"), 0.5, 3, smooth=False)
-    for sgn, wx in ((-1, -80), (1, 80)):
-        rig.draw_hand(ctx, rig.DEFENDER, P["x"] + wx * P["s"], P["y"] + 112 * P["s"], math.pi / 2 - sgn * 0.2, Ld, 2.0,
-                      curl=0.85, spread=0.2, thumb=0.8, flip=sgn > 0, size=P["s"], hfs=0.5)
-    if fl > 0:
-        soft_dot(ctx, 600, 1000, 600, hexc("d0e8ff"), 0.18 * fl)
+    if rec > 0:
+        m = pts["muzzle"]
+        d = pts["dir"]
+        for wdt, al in ((26, 0.12), (10, 0.35), (3.5, 0.95)):
+            ctx.new_path(); ctx.move_to(*m); ctx.line_to(m[0] + d[0] * 1200, m[1] + d[1] * 1200)
+            rgba(ctx, hexc("d4ecff"), al * rec); ctx.set_line_width(wdt); ctx.set_line_cap(cairo.LINE_CAP_ROUND); ctx.stroke()
+        soft_dot(ctx, m[0], m[1], 110, hexc("e0f6ff"), 0.85 * rec)
+        soft_dot(ctx, x + 40, y - 200, 380, hexc("c8f0ff"), 0.18 * rec)
 
 
 # ---------------------------------------------------------------- SOUL
@@ -312,7 +377,8 @@ def soul_enter(ctx, t):
         x, y, s = place(cam, 0, Zz)
         bob = abs(math.sin(ph)) * 10 * (1 - stop)
         lg = dict(mode="run", phase=ph * (1 - stop))
-        E = ZE(t, milky=milky, op=0.25 * (1 - stop) + 0.08 * stop, glow=0.0, bi=0.3 * stop, sm=-0.2, blinks=False)
+        E = ZE(t, milky=milky, op=0.25 * (1 - stop) + 0.12 * stop, glow=0.0, bi=0.15 * stop, sm=-0.25, blinks=False,
+               drone=1.0, grime=1.0, life=0.0, lid=0.32)
         P = dict(x=x, y=y + bob * s, s=s, legs=lg, E=E, roll=math.sin(ph) * 0.05 * (1 - stop) - 0.06 * stop * math.sin((t - t_hit) * 6) * (1 - ramp(t, t_hit + 0.3, t_hit + 1.2)),
                  pitch=0.1 - 0.15 * stop, lean=-0.08 * stop * (1 - ramp(t, t_hit + 0.4, t_hit + 1.2)))
         for side, sgn in (("armL", -1), ("armR", 1)):
@@ -345,31 +411,67 @@ def wake_ecu(ctx, t):
     g = cairo.LinearGradient(0, 0, 0, H)
     g.add_color_stop_rgb(0, *hexc("2a2244")); g.add_color_stop_rgb(1, *hexc("3a2a40"))
     ctx.set_source(g); ctx.paint()
-    lid = kf(tt, [(0, 1.0), (0.5, 1.0), (0.8, 0.45), (0.95, 0.65), (1.3, 0.05)])
-    milky = 1 - ramp(tt, 1.2, 2.2)
     look0 = L("w1")[0] - w0 + 0.2
-    gx = kf(tt, [(look0, 0.0), (look0 + 0.4, -0.75), (look0 + 1.1, -0.75), (look0 + 1.5, 0.7), (look0 + 2.2, 0.7), (look0 + 2.6, 0.0)])
-    E = ZE(t, lid=lid, milky=milky, glow=kf(tt, [(1.1, 0), (1.8, 0.9), (3.2, 0.3)]), pupil=kf(tt, [(1.2, 0.25), (2.4, 0.5)]),
-           gx=gx, bi=kf(tt, [(1.5, 0.0), (2.2, 0.45)]), blinks=tt > 2.4)
+    gx = kf(tt, [(0, 0.0), (look0, 0.0), (look0 + 0.5, -0.7), (look0 + 1.2, -0.7), (look0 + 1.7, 0.65), (look0 + 2.4, 0.65),
+                 (look0 + 2.9, 0.1)])
+    stir = ramp(tt, look0 - 0.4, look0 + 0.6)
+    flick_ = 0.2 * max(0.0, math.sin(tt * 5.0)) * stir  # a faint warmth flickering deep in the milky eyes
+    E = ZE(t, lid=lerp(0.4, 0.24, stir), milky=1.0, drone=lerp(1.0, 0.8, stir), grime=1.0, life=0.0, glow=flick_, pupil=0.3,
+           gx=gx, gy=0.05, bi=0.3 * stir, bo=0.05, op=0.14, sm=-0.25, blinks=False, talk=0.0)
     s = 4.7
-    P = dict(x=W / 2 - gx * 4, y=440 + 90 * s, s=s, E=E, breath=0.3)
+    P = dict(x=W / 2 - gx * 4, y=440 + 90 * s, s=s, E=E, breath=0.6, yaw=gx * 0.15,
+             roll=0.06 * (1 - stir) + 0.02 * math.sin(tt * 0.8))
     rig.draw_character(ctx, rig.ZOMBIE, P, LF1, t)
 
 
-@shot(t_wk, w1_)
-def wake_mcu(ctx, t):
-    tt = t - t_wk
-    t_see = L("w2")[0]
-    t_froze = L("w3")[0]
-    cam = frame_cam(0, ZC, -1, 2.6, 250, 520, cam_y=1.5)
-    yaw = kf(t, [(t_wk, -0.35), (t_wk + 0.6, -0.35), (t_wk + 1.0, 0.0), (t_froze, 0.0), (t_froze + 0.6, 0.12)])
-    E = ZE(t, bi=kf(t, [(t_see - 0.4, 0.2), (t_see, 0.65), (t_froze, 0.5), (t_froze + 0.6, 0.85)]),
-           bo=kf(t, [(t_see, 0.1), (t_froze + 0.6, 0.3)]), glow=0.35, pupil=kf(t, [(t_see, 0.42), (t_froze + 0.5, 0.55)]),
-           gx=kf(t, [(t_wk, -0.5), (t_wk + 0.8, 0.0), (t_froze, 0.0), (t_froze + 0.5, 0.25)]), gy=-0.05,
-           op=kf(t, [(t_see - 0.3, 0.0), (t_see, 0.1), (t_froze, 0.05)]), lid=0.0)
-    pose = dict(E=E, yaw=yaw, pitch=-0.05, roll=0.02 * sn(t, 3, 0.5), shrug=ramp(t, t_froze, t_froze + 0.5) * 0.35,
-                breath=1.0 - 0.7 * ramp(t, t_froze, t_froze + 0.4), **arms_hang(t))
+t_ign = word_t("w2", "see") - 0.35
+t_frz = L("w3")[0] - 0.3
+
+
+@shot(t_wk, t_frz)
+def wake_cu(ctx, t):
+    """The awakening: it rubs its eyes, then holds its face; under its hands the eyes ignite and the grime lifts."""
+    cam = frame_cam(0, ZC, -1, 2.3, 300, 430, cam_y=1.55)
+    a_up, a_rub, a_hold, a_low = t_wk + 0.55, t_ign - 0.5, t_ign - 0.08, t_frz - 0.12
+    rubk = ramp(t, a_up - 0.05, a_up + 0.1) * (1 - ramp(t, a_rub - 0.05, a_rub + 0.08))
+    osc = math.sin(t * 11.0) * 4 * rubk
+
+    def keys(rest, rub, hold, low):
+        return [(t_wk, rest), (a_up, rub), (a_rub, rub), (a_hold, hold), (t_frz - 0.95, hold), (a_low, low)]
+    wrL = kf(t, keys((-62, 200), (-24, -40), (-50, -26), (-62, 198)))
+    elL = kf(t, keys((-74, 112), (-78, 62), (-92, 58), (-78, 112)))
+    wrR = kf(t, keys((62, 200), (24, -40), (50, -26), (62, 196)))
+    elR = kf(t, keys((74, 112), (78, 62), (92, 58), (78, 112)))
+    angL = kf(t, keys(1.6, 2 * math.pi - 1.42, 2 * math.pi - 1.48, 1.62))
+    angR = kf(t, keys(1.54, -1.72, -1.66, 1.52))
+    curl = kf(t, keys(0.5, 0.55, 0.12, 0.5))
+    thumb = kf(t, keys(0.4, 0.6, 0.3, 0.4))
+    tr = ramp(t, t_ign - 0.15, t_ign + 1.0)
+    burst = math.sin(clamp((t - (t_ign - 0.1)) / 1.5) * math.pi)
+    E = ZE(t, lid=max(0.92 * rubk, lerp(0.38, 0.0, tr)), milky=1 - tr, drone=1 - tr, grime=lerp(1.0, 0.25, tr), life=0.4 * tr,
+           glow=0.95 * burst + 0.3 * tr, pupil=lerp(0.25, 0.55, tr), bi=lerp(0.25, 0.8, tr), bo=lerp(0.0, 0.35, tr),
+           gx=0.0, gy=lerp(0.1, -0.05, tr), sm=lerp(-0.25, -0.05, tr), blinks=False)
+    pose = dict(E=E, pitch=lerp(0.15, -0.04, tr) + 0.06 * rubk, roll=0.03 * math.sin(t * 0.9), shrug=0.15 * rubk + 0.2 * tr,
+                breath=1.3,
+                armL=dict(el=elL, wr=(wrL[0] + osc, wrL[1] + osc * 0.5), hand_ang=angL, curl=curl, spread=0.35, thumb=thumb, flip=False),
+                armR=dict(el=elR, wr=(wrR[0] - osc, wrR[1] + osc * 0.5), hand_ang=angR, curl=curl, spread=0.35, thumb=thumb, flip=True))
     ext(ctx, t, cam, 0.3, east=True, stars=0.3, extras=[zitem(cam, t, pose)])
+    if burst > 0:
+        soft_dot(ctx, W / 2, 430, 430, hexc("ffd890"), 0.22 * burst)
+        for q in range(14):  # golden motes rising off the face
+            u = ((t - t_ign) * 0.6 + hsh(q, 131)) % 1.0
+            soft_dot(ctx, W / 2 + (hsh(q, 132) - 0.5) * 260, 520 - u * 300, 5 + 4 * hsh(q, 133), hexc("fff0c0"), 0.6 * burst * (1 - u))
+
+
+@shot(t_frz, w1_)
+def wake_freeze(ctx, t):
+    cam = frame_cam(0, ZC, -1, 3.4, 165, 400, cam_y=1.5)
+    E = ZE(t, bi=0.85, bo=0.35, lid=0.0, low=0.0, glow=0.35, pupil=0.55, gx=0.18, gy=-0.03, life=0.4, sm=-0.1, blinks=False)
+    pose = dict(E=E, yaw=0.08, pitch=-0.04, shrug=0.4, breath=0.25,
+                armL=dict(el=(-78, 112), wr=(-62, 196), hand_ang=1.62, curl=0.5, spread=0.1, flip=False),
+                armR=dict(el=(78, 112), wr=(62, 196), hand_ang=1.52, curl=0.5, spread=0.1, flip=True))
+    run = runners(cam, t, t_frz, ((-0.95, 6.0), (1.05, 8.2), (-1.4, 10.5), (0.85, 12.6)), seed=540)
+    ext(ctx, t, cam, 0.3, east=True, stars=0.3, extras=[zitem(cam, t, pose)] + run)
 
 
 # ---------------------------------------------------------------- HANDS
@@ -391,7 +493,7 @@ def hands(ctx, t):
            bi=kf(t, [(t_ctl, 0.3), (t_my, 0.55), (t_but + 0.6, 0.7), (t_feel, 0.9)]), bo=kf(t, [(t_my, 0.2), (t_feel, -0.1)]),
            glow=0.3, lid=0.15 * lookdown, sm=kf(t, [(t_but, 0.0), (t_feel, -0.4)]), tr=0.3 * ramp(t, t_feel - 0.5, t_feel + 0.5))
     hy = lerp(200, 96, up)
-    pose = dict(E=E, pitch=0.5 * lookdown - 0.05, **idle(t, 0.5), breath=1.2,
+    pose = dict(E=E, pitch=0.5 * lookdown - 0.05, **groggy(t, 0.35, seed=2.0), breath=1.2,
                 armL=dict(el=(lerp(-82, -98, up), lerp(130, 165, up)), wr=(lerp(-66, -46, up), hy), hand_ang=lerp(1.65, -0.95, up),
                           curl=lerp(0.35, curl, up), spread=0.5, thumb=0.3, flip=up < 0.5, palm=False),
                 armR=dict(el=(lerp(82, 98, up), lerp(130, 165, up)), wr=(lerp(66, 46, up), hy - 6 * fl * up), hand_ang=lerp(1.49, -2.19, up),
@@ -411,23 +513,30 @@ t_lone = L("v6")[0] - 0.3
 
 @shot(v0, t_reach)
 def witness_ots(ctx, t):
-    u = (t - v0) / (t_reach - v0)
-    cam = Cam(x=0.42, y=1.65, z=ZC - 1.6, d=1, f=760, hy=470)
-    pose = dict(view="back", yaw=lerp(-0.1, 0.12, u), pitch=0.05, E=rig.expr(), **arms_hang(t))
+    cam = Cam(x=0.5, y=1.7, z=ZC - 2.4, d=1, f=720, hy=470)
+    look = kf(t, [(v0, -0.25), (v0 + 1.4, -0.25), (v0 + 2.2, 0.2), (v0 + 3.6, 0.2), (v0 + 4.4, -0.05)])
+    pose = dict(view="back", yaw=look, pitch=0.05, E=rig.expr(), **arms_hang(t), **groggy(t, 1.0, seed=0.7))
     ext(ctx, t, cam, 0.35, extras=[zitem(cam, t, pose, light=flick(LB0, t))], building=True)
 
 
 @shot(t_reach, t_dust)
 def witness_reach(ctx, t):
     tv = L("v2")[0]
-    cam = frame_cam(0, ZC, -1, 3.0, 175, 400, sx=420, cam_y=1.5)
+    cam = frame_cam(0, ZC, -1, 3.6, 150, 330, sx=430, cam_y=1.45)
     r = ramp(t, tv - 0.3, tv + 0.6)
+    gg = groggy(t, 1.0 - r, seed=1.3)
+    step = ramp(t, tv - 0.35, tv + 0.25)
+    gg["legs"]["liftL"] = max(gg["legs"]["liftL"], math.sin(step * math.pi) * 0.35)
+    gg["legs"]["dxL"] = lerp(gg["legs"]["dxL"], -26, step)
+    gg["lean"] -= 0.07 * r
+    gg["iroll"] += 0.03 * r
     E = ZE(t, bi=0.85, bo=-0.25, gx=-0.55, gy=0.0, glow=0.3, tr=0.5, sm=-0.3)
-    pose = dict(E=E, yaw=-0.3, roll=-0.04, **idle(t, 0.5),
+    pose = dict(E=E, yaw=-0.3, **gg,
                 armL=dict(el=(lerp(-74, -122, r), lerp(110, 78, r)), wr=(lerp(-62, -212, r), lerp(200, 44, r)),
                           hand_ang=lerp(1.6, math.pi - 0.15, r), curl=lerp(0.35, 0.15, r), spread=0.55, thumb=0.35, flip=False),
                 armR=dict(a1=8, a2=4, curl=0.4, flip=True))
-    ext(ctx, t, cam, 0.35, east=True, stars=0.35, extras=[zitem(cam, t, pose)])
+    run = runners(cam, t, t_reach, ((1.3, 5.6),), seed=560)
+    ext(ctx, t, cam, 0.35, east=True, stars=0.35, extras=[zitem(cam, t, pose)] + run)
 
 
 @shot(t_dust, t_react)

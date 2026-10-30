@@ -133,7 +133,7 @@ C = dict(Dm=[50, 53, 57], Bb=[46, 50, 53], Gm=[43, 50, 55], A=[45, 52, 57], F=[4
          Csus=[48, 53, 55])
 SC = {k: v for k, v in SCENES.items()}
 PLAN = [  # (scene, progression, chord seconds, pad amp, brightness, choir)
-    ("open", ["Dm9"], 4.0, 0.10, 0.35, True),
+    ("open", ["Dm"], 4.0, 0.08, 0.22, False),
     ("horde", ["Dm", "Bb", "Gm", "A"], 5.0, 0.13, 0.35, False),
     ("soul", ["Bb", "F", "C", "F"], 1.85, 0.12, 0.55, True),
     ("wake", ["Dm9", "Bbmaj7"], 4.8, 0.08, 0.35, False),
@@ -189,8 +189,8 @@ def melody(t0, t1, notes, step, amp=0.11, inst=piano):
 
 
 # open: chime when the eyes open
-bell(midi(81), 1.0, 0.07)
-bell(midi(86), 1.45, 0.05)
+cello(midi(38), 0.0, 3.8, 0.14, a=0.05)
+cello(midi(39), 0.6, 2.6, 0.05, a=0.8)  # uneasy semitone rub
 # horde: war drums ~70 bpm
 h0, h1 = SC["horde"]
 t = h0 + 0.3
@@ -211,7 +211,14 @@ bell(midi(89), shots.t_hit, 0.09)
 for tb in (shots.w0 + 0.2, shots.w0 + 1.15, shots.w0 + 2.3):
     drum(tb, 0.35, f0=70, f1=38, dec=0.35)
     drum(tb + 0.24, 0.22, f0=65, f1=36, dec=0.3)
-melody(SC["wake"][0] + 3.0, SC["wake"][1], [69, None, 74, 72, None, 69, 65, None], 0.9, 0.08)
+for tb in (shots.t_wk + 0.3, shots.t_wk + 0.85, shots.t_wk + 1.3, shots.t_wk + 1.7):
+    drum(tb, 0.3, f0=70, f1=38, dec=0.32)
+    drum(tb + 0.2, 0.18, f0=65, f1=36, dec=0.28)
+swell(shots.t_ign - 1.0, 1.0, 0.06)
+pad([midi(m) for m in (62, 65, 69, 74, 77)], shots.t_ign, 2.6, 0.14, 0.65, a=0.05, r=2.5, choir=True)
+bell(midi(86), shots.t_ign + 0.02, 0.08)
+bell(midi(81), shots.t_ign + 0.3, 0.05)
+melody(shots.t_frz, SC["wake"][1], [69, None, 74, 72], 0.7, 0.07)
 melody(SC["hands"][0] + 0.5, SC["hands"][1], [74, 72, 69, None, 72, 69, 65, None, 67, 69, None, None], 0.8, 0.08)
 # witness: distant drums under, tension
 v0, v1 = SC["witness"]
@@ -328,6 +335,19 @@ for tb, X, Zd in world.beam_times(shots.HORDE, 0, SC["cabin"][0]):
     sh = noise(int(1.6 * SR), 3000, 9000) * np.exp(-np.arange(int(1.6 * SR)) / SR * 2.2) * 0.25  # dust shimmer
     add(sfx, tb - 0.12, z, p=max(-0.9, min(0.9, X / 40)), g=0.05)
     add(sfx, tb, sh, p=max(-0.9, min(0.9, X / 40)), g=0.05)
+for tf in (shots.t_scary + 3.25, shots.t_scary + 4.25):
+    n = int(0.6 * SR)
+    tt = np.arange(n) / SR
+    z = np.sin(2 * np.pi * np.cumsum(3200 * np.exp(-tt * 10) + 220) / SR) * np.exp(-tt * 6)
+    z += noise(n, 1200, 9000) * np.exp(-tt * 16) * 0.7
+    add(sfx, tf, z, p=0.35, g=0.2)
+    drum(tf, 0.2, f0=95, f1=40, dec=0.35, buf=sfx, p=0.35)
+for tc in (word_t("h3", "Humanity") + 0.4, word_t("h3", "tearing") + 0.9):
+    n = int(0.55 * SR)
+    tt = np.arange(n) / SR
+    f = 150 + 40 * np.sin(2 * np.pi * 3.0 * tt) + 25 * tt
+    cr = np.sign(np.sin(2 * np.pi * np.cumsum(f) / SR)) * (0.5 + 0.5 * np.abs(np.sin(2 * np.pi * 23 * tt)))
+    add(sfx, tc, bp(cr, 300, 2500) * np.sin(np.pi * tt / tt[-1]) ** 2, p=-0.1, g=0.035)
 # staged close-range hits (louder, nearer)
 _td = word_t("v3", "destroyed")
 for tb, X in ((word_t("h3", "tearing"), -0.2), (word_t("h3", "dust") - 0.1, -0.5), (word_t("h3", "dust") + 1.1, 0.3),

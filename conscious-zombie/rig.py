@@ -33,7 +33,7 @@ HUMAN_B = make(skin=hexc("e2b49a"), lip=hexc("b0786a"), hair=hexc("8a4524"), hai
                eye_w=18.5, eye_h=9.8, brow_t=3.8, mouth_w=14.5, jaw=1.08, chin=1.05, nose=1.1,
                collar="flight", torn=False, headset=True, stubble=0.35, blush=0.06, build=1.06)
 DEFENDER = make(skin=hexc("c89a7a"), lip=hexc("9a6a5a"), hair=hexc("3a2a20"), sclera=hexc("f0ece4"),
-                iris=hexc("5a4030"), milky=0.0, bags=0.25, hairstyle="short", helmet=True,
+                iris=hexc("5a4030"), milky=0.0, bags=0.25, hairstyle="short", helmet=True, brow_t=4.6,
                 shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight", torn=False, stubble=0.2)
 
 SHIRTS = ["7a3b3b", "8a7a3a", "5a5a60", "6a5040", "45506e", "8a8478", "5b3f5e", "4b6040", "735a48"]
@@ -55,7 +55,7 @@ def horde_style(i):
 def expr(**kw):
     e = dict(bi=0.0, bo=0.0, biL=None, biR=None, boL=None, boR=None, lid=0.0, lidL=None, lidR=None,
              low=0.0, gx=0.0, gy=0.0, op=0.0, sm=0.0, wd=0.0, tr=0.0, press=0.0, milky=None,
-             glow=0.0, pupil=0.42, tears=(), t=0.0, sneer=0.0)
+             glow=0.0, pupil=0.42, tears=(), t=0.0, sneer=0.0, drone=None, grime=None, life=0.0)
     e.update(kw)
     return e
 
@@ -167,6 +167,27 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
                             (_proj(26, 30, th), 44), (_proj(38, 10, th), 18 + pdy * 0.6), (_proj(14, 40, th), 30 + pdy),
                             (_proj(0, 42, th), 22 + pdy), (_proj(-14, 40, th), 30 + pdy)])
         ctx.fill()
+    grime = ch.get("grime", 0.0) if E["grime"] is None else E["grime"]
+    if grime > 0 and lod > 0:
+        dirt_c, rot_c = hexc("3e3226"), hexc("4a5236")
+        for sgn in (1, -1):  # sunken cheeks, bruised sockets
+            soft_dot(ctx, _proj(sgn * 31, 22, th), 20 + pdy * 0.6, 21, light["shadow"], 0.32 * grime)
+            soft_dot(ctx, _proj(sgn * 17, 36, th), -2 + pdy, 19, hexc("3a2636"), 0.32 * grime)
+        for q, (gx_, gy_, r_) in enumerate(((-24, -38, 9), (18, -44, 7), (30, 6, 8), (-34, 14, 7), (8, 46, 8), (-12, -50, 6),
+                                             (36, -20, 6), (-6, 26, 5))):
+            soft_dot(ctx, _proj(gx_, 30, th), gy_ + pdy * 0.5, r_, rot_c if q % 2 else dirt_c, 0.26 * grime)
+        soft_stroke(ctx, [(_proj(-30, 30, th), -30 + pdy * 0.4), (_proj(-12, 38, th), -36 + pdy * 0.4), (_proj(4, 40, th), -33 + pdy * 0.4)],
+                    dirt_c, 0.32 * grime, lw * 3.2)
+        soft_stroke(ctx, [(_proj(24, 34, th), 4 + pdy * 0.6), (_proj(32, 26, th), 18 + pdy * 0.6), (_proj(30, 24, th), 30)],
+                    dirt_c, 0.28 * grime, lw * 2.6)
+        if lod > 1:  # an old scratch on the cheek (faint, with a lighter edge)
+            pts = [(_proj(-30, 28, th), 2 + pdy * 0.6), (_proj(-22, 34, th), 12 + pdy * 0.6), (_proj(-18, 36, th), 20 + pdy * 0.6)]
+            soft_stroke(ctx, pts, hexc("4a2a2a"), 0.45 * grime, lw * 0.9)
+            soft_stroke(ctx, [(p[0] + 1.2, p[1] + 0.6) for p in pts], hexc("c8c0b0"), 0.18 * grime, lw * 0.6)
+    if E["life"] > 0:
+        for sgn in (1, -1):
+            soft_dot(ctx, _proj(sgn * 24, 30, th), 14 + pdy * 0.8, 16, hexc("e0a888"), 0.14 * E["life"])
+        soft_dot(ctx, _proj(0, 40, th), -20 + pdy * 0.5, 34, hexc("ffe2b0"), 0.08 * E["life"])
     ctx.restore()
 
     # --- near ears (3/4 view)
@@ -185,8 +206,10 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
         bi = E["biR"] if sgn == 1 and E["biR"] is not None else E["biL"] if sgn == -1 and E["biL"] is not None else E["bi"]
         bo = E["boR"] if sgn == 1 and E["boR"] is not None else E["boL"] if sgn == -1 and E["boL"] is not None else E["bo"]
         # brows raised pull upper lid open a touch; worry lowers outer lid
+        drone = ch.get("drone", 0.0) if E["drone"] is None else E["drone"]
         _eye(ctx, ch, ex, ey, ew * fs, eh, sgn, clamp(lid - 0.12 * max(0, bi + bo) / 2), E["low"],
-             E["gx"], E["gy"], milky, E["glow"], E["pupil"], light, lw, lod, pitch)
+             E["gx"] + drone * (0.24 if sgn == 1 else -0.12), E["gy"] + drone * 0.08, milky, E["glow"], E["pupil"], light, lw, lod,
+             pitch, drone)
         _brow(ctx, ch, ex, ey, ew * fs, eh, sgn, bi, bo, light, lw, s)
     # forehead / frown lines (anatomical, faint)
     if lod > 1:
@@ -221,7 +244,7 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
         _helmet(ctx, s, light, lw)
 
 
-def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light, lw, lod, pitch):
+def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light, lw, lod, pitch, drone=0.0):
     inner = cx - sgn * w / 2
     outer = cx + sgn * w / 2
     iy, oy = cy + 0.5, cy - 0.8
@@ -251,12 +274,15 @@ def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light
         ctx.save()
         ctx.new_path(); upper(); lower(); ctx.close_path()
         ctx.clip_preserve()
-        rgba(ctx, tint(ch["sclera"], light))
+        rgba(ctx, tint(mix(ch["sclera"], hexc("cbbd98"), 0.65 * drone), light))
         ctx.fill()
+        if drone > 0:  # bloodshot, sore corners
+            soft_dot(ctx, cx - sgn * w * 0.5, cy + h * 0.1, w * 0.42, hexc("a8403e"), 0.5 * drone)
+            soft_dot(ctx, cx + sgn * w * 0.5, cy, w * 0.32, hexc("a8403e"), 0.35 * drone)
         ir = h * 0.56
         ix = cx + gx * w * 0.27
         iyc = cy + gy * h * 0.22 - h * 0.04
-        icol = mix(ch["iris"], hexc("cfd2cc"), milky)
+        icol = mix(mix(ch["iris"], hexc("cfd2cc"), milky), hexc("b4c0c4"), 0.35 * drone)
         g = cairo.RadialGradient(ix, iyc, ir * 0.1, ix, iyc, ir)
         g.add_color_stop_rgb(0, *mix(icol, (1, 1, 1), 0.25 + 0.3 * glow))
         g.add_color_stop_rgb(0.7, *icol)
@@ -273,9 +299,9 @@ def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light
         ctx.set_source(g)
         ctx.paint()
         # catchlights
-        rgba(ctx, (1, 1, 1), 0.95 - milky * 0.5)
+        rgba(ctx, (1, 1, 1), (0.95 - milky * 0.5) * (1 - 0.9 * drone))
         ctx.new_path(); ctx.arc(ix - ir * 0.32, iyc - ir * 0.38, ir * 0.24, 0, 2 * math.pi); ctx.fill()
-        rgba(ctx, (1, 1, 1), 0.5 - milky * 0.3)
+        rgba(ctx, (1, 1, 1), (0.5 - milky * 0.3) * (1 - 0.9 * drone))
         ctx.new_path(); ctx.arc(ix + ir * 0.3, iyc + ir * 0.28, ir * 0.1, 0, 2 * math.pi); ctx.fill()
         ctx.restore()
         if glow > 0:
@@ -382,6 +408,8 @@ def _mouth(ctx, ch, mx, my, E, light, lw, cth, lod):
     top_y = my - op * 4.5 * (1 - 0.6 * max(0, sm)) - E["sneer"] * 2
     bot_y = my + op * 12 + 0.8 + E["press"] * -0.5
     lipc = ch["lip"]
+    grime = ch.get("grime", 0.0) if E.get("grime") is None else E["grime"]
+    lipc = mix(lipc, hexc("40363c"), 0.4 * grime)
     # lips
     up_out = [(cl[0], cl[1]), (mx - hw * 0.38, my - 4.6 - op * 2), (mx, my - 3.4 - op * 2), (mx + hw * 0.38, my - 4.6 - op * 2), (cr[0], cr[1])]
     ctx.new_path(); smooth_open(ctx, up_out)
@@ -394,8 +422,11 @@ def _mouth(ctx, ch, mx, my, E, light, lw, cth, lod):
     ctx.curve_to(mx + hw * 0.6, lo_bot, mx - hw * 0.6, lo_bot, cl[0], cl[1])
     rgba(ctx, tint(mix(lipc, ch["skin"], 0.25), light), 0.55 - E["press"] * 0.25)
     ctx.fill()
+    if lod > 1 and grime > 0.3:
+        for q in (-0.35, 0.1, 0.45):
+            soft_stroke(ctx, [(mx + hw * q, bot_y + 1.5), (mx + hw * q + 0.6, bot_y + 4.5)], hexc("2a1e22"), 0.5 * grime, lw * 0.7)
     if lod > 1:
-        soft_dot(ctx, mx, bot_y + 3, hw * 0.35, light["rim"], 0.12)
+        soft_dot(ctx, mx, bot_y + 3, hw * 0.35, light["rim"], 0.12 * (1 - 0.7 * grime))
         soft_dot(ctx, mx, lo_bot + 3.5, hw * 0.55, light["shadow"], 0.16)
     if op > 0.04:
         ctx.save()
@@ -406,7 +437,7 @@ def _mouth(ctx, ch, mx, my, E, light, lw, cth, lod):
         rgba(ctx, hexc("3a1418"))
         ctx.fill_preserve()
         ctx.clip()
-        if op > 0.3:
+        if op > 0.3 or E["sneer"] > 0.3:
             rgba(ctx, hexc("e8e2d6"), 0.75)
             ctx.new_path(); ctx.rectangle(mx - hw * 0.62, top_y - 3, hw * 1.24, 2.4 + min(3.5, op * 6)); ctx.fill()
             rgba(ctx, hexc("a04858"), 0.85)
@@ -777,9 +808,10 @@ def draw_character(ctx, ch, P, light, t=0.0):
     ctx.scale(s, s)
     br = math.sin(t * 2 * math.pi / P.get("breath_T", 4.2)) * P.get("breath", 1.0)
     shrug = P.get("shrug", 0.0)
-    ctx.translate(0, 200)
+    pv = P.get("lean_pivot", 200)
+    ctx.translate(0, pv)
     ctx.rotate(P.get("lean", 0.0))
-    ctx.translate(0, -200)
+    ctx.translate(0, -pv)
     legs = P.get("legs")
     if legs and legs.get("mode") != "sit_knees":
         draw_legs(ctx, ch, legs, light, lw, lod, bw, t)
@@ -915,9 +947,10 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
     run = mode == "run"
     for i, sgn in enumerate((-1, 1)):
         hp = hips[i]
-        lift = max(0.0, math.sin(phase + (0 if i == 0 else math.pi))) if run else 0.0
-        kn = (sgn * 27 * bw, 401 - 46 * lift)
-        an = (sgn * 28 * bw, 561 - 120 * lift)
+        lift = max(0.0, math.sin(phase + (0 if i == 0 else math.pi))) if run else legs.get("liftL" if i == 0 else "liftR", 0.0)
+        dxk = legs.get("dxL" if i == 0 else "dxR", 0.0)
+        kn = (sgn * 27 * bw + dxk * 0.6, 401 - 46 * lift)
+        an = (sgn * 28 * bw + dxk, 561 - 120 * lift)
         if lift > 0.05 and legs.get("view") == "back":
             pass
         shade(ctx, lambda: capsule(ctx, kn, an, 15.5, 10.5), pants, light, lw)
