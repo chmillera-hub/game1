@@ -387,133 +387,141 @@ A rope came down,
 and one of the humans dropped down the rope...
 
 98
-00:04:21,764 --> 00:04:23,572
-CREW: Hey bud, come with me.
+00:04:21,863 --> 00:04:24,079
+CREW: A zombie... are you dangerous?
 
 99
-00:04:23,423 --> 00:04:25,048
-ZOMBIE: Wait... what?
+00:04:24,379 --> 00:04:26,009
+ZOMBIE: Ummm... no?
 
 100
-00:04:25,098 --> 00:04:28,012
-The human grabbed the conscious zombie by the shirt,
+00:04:27,209 --> 00:04:29,019
+CREW: Hey bud, come with me.
 
 101
-00:04:28,012 --> 00:04:30,396
-and pulled them up into the helicopter.
+00:04:28,869 --> 00:04:30,494
+ZOMBIE: Wait... what?
 
 102
-00:04:31,696 --> 00:04:34,221
-The conscious zombie thought it was going to be shot...
+00:04:30,543 --> 00:04:33,459
+The human grabbed the conscious zombie by the shirt,
 
 103
-00:04:34,221 --> 00:04:36,295
-killed, like the others.
+00:04:33,459 --> 00:04:35,841
+and pulled them up into the helicopter.
 
 104
-00:04:37,396 --> 00:04:39,011
-But then the conscious zombie saw
+00:04:37,141 --> 00:04:39,666
+The conscious zombie thought it was going to be shot...
 
 105
-00:04:39,011 --> 00:04:41,494
-that the humans were looking at it.
+00:04:39,666 --> 00:04:41,742
+killed, like the others.
 
 106
-00:04:42,394 --> 00:04:43,877
-PILOT: Who are you?
+00:04:42,843 --> 00:04:44,458
+But then the conscious zombie saw
 
 107
-00:04:44,877 --> 00:04:46,759
-ZOMBIE: I don't really know...
+00:04:44,458 --> 00:04:46,939
+that the humans were looking at it.
 
 108
-00:04:47,059 --> 00:04:49,810
-ZOMBIE: but I'm pretty sure I'm a zombie, though.
+00:04:47,839 --> 00:04:49,322
+PILOT: Who are you?
 
 109
-00:04:51,110 --> 00:04:52,454
-CREW: That's great...
+00:04:50,322 --> 00:04:52,204
+ZOMBIE: I don't really know...
 
 110
-00:04:52,754 --> 00:04:55,528
-CREW: but I also think you are conscious, my guy.
+00:04:52,504 --> 00:04:55,257
+ZOMBIE: but I'm pretty sure I'm a zombie, though.
 
 111
-00:04:56,627 --> 00:04:59,108
-ZOMBIE: Oh really? How can you tell?
+00:04:56,557 --> 00:04:57,899
+CREW: That's great...
 
 112
-00:05:01,307 --> 00:05:02,975
-PILOT: We saw that it looks like you are able
+00:04:58,199 --> 00:05:00,975
+CREW: but I also think you are conscious, my guy.
 
 113
-00:05:02,975 --> 00:05:05,583
-PILOT: to feel the pain of your brothers and sisters...
+00:05:02,074 --> 00:05:04,553
+ZOMBIE: Oh really? How can you tell?
 
 114
-00:05:05,583 --> 00:05:08,192
-CREW: which means you are feeling, in some kind of way,
+00:05:06,754 --> 00:05:08,422
+PILOT: We saw that it looks like you are able
 
 115
-00:05:08,192 --> 00:05:11,572
-CREW: the weight of the world that we are currently living in.
+00:05:08,422 --> 00:05:11,028
+PILOT: to feel the pain of your brothers and sisters...
 
 116
-00:05:11,973 --> 00:05:13,197
-PILOT: The pain of the world...
+00:05:11,028 --> 00:05:13,639
+CREW: which means you are feeling, in some kind of way,
 
 117
-00:05:13,197 --> 00:05:16,132
-PILOT: that's kind of like what humans feel a lot of the time.
+00:05:13,639 --> 00:05:17,019
+CREW: the weight of the world that we are currently living in.
 
 118
-00:05:16,132 --> 00:05:17,387
-PILOT: The pain of loss,
+00:05:17,418 --> 00:05:18,644
+PILOT: The pain of the world...
 
 119
-00:05:17,387 --> 00:05:19,642
-PILOT: and the pain of losing those that maybe you care for,
+00:05:18,644 --> 00:05:21,579
+PILOT: that's kind of like what humans feel a lot of the time.
 
 120
-00:05:19,642 --> 00:05:21,439
-PILOT: in some kind of way.
+00:05:21,579 --> 00:05:22,834
+PILOT: The pain of loss,
 
 121
-00:05:22,038 --> 00:05:25,949
-ZOMBIE: You're right. I want to see if I can help save them.
+00:05:22,834 --> 00:05:25,088
+PILOT: and the pain of losing those that maybe you care for,
 
 122
-00:05:28,348 --> 00:05:30,446
-And the conscious zombie nodded.
+00:05:25,088 --> 00:05:26,884
+PILOT: in some kind of way.
 
 123
-00:05:32,146 --> 00:05:35,096
-So it seems like, in order for heaven to be built,
+00:05:27,485 --> 00:05:31,394
+ZOMBIE: You're right. I want to see if I can help save them.
 
 124
-00:05:35,096 --> 00:05:37,255
-it needed the raw material of hell
+00:05:33,795 --> 00:05:35,891
+And the conscious zombie nodded.
 
 125
-00:05:37,255 --> 00:05:40,161
-to be transformed into the material of heaven...
+00:05:37,591 --> 00:05:40,541
+So it seems like, in order for heaven to be built,
 
 126
-00:05:40,161 --> 00:05:43,560
-so that maybe this heaven could be built not only for him,
+00:05:40,541 --> 00:05:42,702
+it needed the raw material of hell
 
 127
-00:05:43,560 --> 00:05:45,646
-but for his brothers and sisters,
+00:05:42,702 --> 00:05:45,607
+to be transformed into the material of heaven...
 
 128
-00:05:45,646 --> 00:05:47,978
-and maybe even the world too.
+00:05:45,607 --> 00:05:49,007
+so that maybe this heaven could be built not only for him,
 
 129
-00:05:48,377 --> 00:05:50,418
-And that is why heaven sent the soul...
+00:05:49,007 --> 00:05:51,091
+but for his brothers and sisters,
 
 130
-00:05:50,418 --> 00:05:52,411
+00:05:51,091 --> 00:05:53,423
+and maybe even the world too.
+
+131
+00:05:53,824 --> 00:05:55,863
+And that is why heaven sent the soul...
+
+132
+00:05:55,863 --> 00:05:57,858
 to turn hell into heaven.

@@ -1149,7 +1149,7 @@ def flag_lone(ctx, t):
 # ---------------------------------------------------------------- HELICOPTER
 r0, r1_ = S("heli")
 t_rope = L("r2")[0] - 0.3
-t_grabz = L("r2b")[0] - 0.35
+t_grabz = L("r2a")[0] - 0.35
 t_up = L("r2c")[1] + 0.12
 
 
@@ -1222,26 +1222,45 @@ def heli_rope(ctx, t):
 
 @shot(t_grabz, t_up)
 def heli_grab(ctx, t):
-    tt = t - t_grabz
+    """He stops mid-reach: "A zombie... are you dangerous?"  "Ummm... no?" (head shake, hand behind its head).
+    A small smile and a nod, then: "Hey bud, come with me."  "Wait... what?" """
     world.draw_sky(ctx, Cam(hy=1500, d=-1), t, 2.0, east=True, stars=0.8, moon=None)
     soft_dot(ctx, W / 2, -100, 900, hexc("fff4dc"), 0.35)
-    grab = ramp(tt, 0.15, 0.55)
+    q0, q1 = L("r2a")
+    n0, n1 = L("r2d")
+    g0 = L("r2b")[0]
+    t_nod = n1 + 0.35
+    hover = ramp(t, t_grabz, t_grabz + 0.5)
+    grab = ramp(t, g0 - 0.3, g0 + 0.15)
     huh = ramp(t, L("r2c")[0] - 0.2, L("r2c")[0] + 0.15)
-    EZ = ZE(t, bi=lerp(0.6, 1.0, huh), bo=lerp(0.3, 0.8, huh), lid=0.0, op=0.08, gx=lerp(0.55, 0.35, huh), gy=-0.1, glow=0.35,
-            pupil=lerp(0.4, 0.26, huh), low=0.0, blinks=False)
-    PZ = dict(x=250, y=640, s=2.0, E=EZ, yaw=0.35, pitch=-0.05, shrug=0.3 * grab, breath=1.8, breath_T=1.6, legs=dict(mode="stand"),
-              armL=dict(el=(-86, 120), wr=(-66, 205), hand_ang=1.7, curl=0.6, spread=0.3, thumb=0.5, flip=False),
+    shake_env = ramp(t, n0 - 0.05, n0 + 0.15) * (1 - ramp(t, n1 + 0.1, n1 + 0.5))
+    shake = 0.2 * math.sin((t - n0) * 2 * math.pi * 1.7) * shake_env
+    sheep = ramp(t, n0 - 0.15, n0 + 0.45) * (1 - ramp(t, g0 - 0.6, g0 - 0.2))  # hand behind its head
+    sad = ramp(t, n0 - 0.3, n0 + 0.1) * (1 - ramp(t, t_nod, t_nod + 0.6))
+    hope = ramp(t, t_nod, t_nod + 0.5) * (1 - huh)
+    EZ = ZE(t, bi=lerp(0.6, 0.95, max(sad, huh)), bo=lerp(0.25, -0.25, sad) + 0.6 * huh, lid=0.1 * sad, op=0.08, sm=-0.3 * sad + 0.08 * hope,
+            gx=lerp(0.55, 0.35, huh), gy=-0.1, glow=0.35, pupil=lerp(0.42, 0.26, huh), low=0.0, tr=0.3 * sad, blinks=False)
+    PZ = dict(x=250, y=640, s=2.0, E=EZ, yaw=0.35 + shake, pitch=-0.05 + 0.06 * sad, roll=0.05 * sheep, shrug=0.3 * grab + 0.15 * sheep,
+              breath=1.8, breath_T=1.6, legs=dict(mode="stand"),
+              armL=dict(el=(lerp(-86, -122, sheep), lerp(120, -46, sheep)), wr=(lerp(-66, -44, sheep), lerp(205, -138, sheep)),
+                        hand_ang=lerp(1.7, -0.5, sheep), curl=lerp(0.6, 0.3, sheep), spread=0.3, thumb=0.5, flip=False),
               armR=dict(el=(110, 110), wr=(lerp(80, 150, grab), lerp(150, 40, grab)), hand_ang=-0.3, curl=lerp(0.4, 0.85, grab),
                         thumb=0.8, flip=True))
+    if sheep > 0.3:
+        PZ["arms_behind"] = ("L",)
     rig.draw_character(ctx, rig.ZOMBIE, PZ, LSPOT, t)
-    # rope from above
-    soft_stroke(ctx, [(650, -20), (646, 400), (642, 1300)], hexc("c8b890"), 1.0, 6)
+    soft_stroke(ctx, [(650, -20), (646, 400), (642, 1300)], hexc("c8b890"), 1.0, 6)  # rope from above
     oB, wB = mouth("HB", t)
-    EB = rig.expr(bi=0.35, bo=0.2, lid=max(0.1, blink(t, 11)), gx=-0.55, t=t, op=oB * 0.8, wd=wB * 0.3, sm=0.4)
-    gx_ = lerp(330, 270, grab)
-    PB = dict(x=560, y=600, s=2.0, E=EB, yaw=-0.45, pitch=0.05, breath=1.4, legs=dict(mode="stand"),
+    wary = ramp(t, q0 - 0.4, q0) * (1 - ramp(t, t_nod - 0.1, t_nod + 0.3))
+    nod = math.sin(clamp((t - t_nod) / 0.8) * math.pi)
+    smile = ramp(t, t_nod - 0.1, t_nod + 0.4) * 0.22 + 0.2 * ramp(t, g0 - 0.2, g0 + 0.3)
+    EB = rig.expr(biL=lerp(0.35, 0.65, wary), biR=lerp(0.35, 0.0, wary), bo=lerp(0.2, 0.1, wary), lid=max(0.1 + 0.15 * wary, blink(t, 11)),
+                  gx=-0.55, t=t, op=oB * 0.8, wd=wB * 0.3, sm=lerp(0.4, -0.05, wary) * (1 - ramp(t, t_nod - 0.1, t_nod + 0.4)) + smile,
+                  low=0.25 * wary)
+    gx_ = lerp(lerp(372, 345, hover), 270, grab)  # the reaching hand hovers while he asks, then closes on the shirt
+    PB = dict(x=560, y=600, s=2.0, E=EB, yaw=-0.45, pitch=0.05 + 0.13 * nod, roll=0.07 * wary, breath=1.4, legs=dict(mode="stand"),
               armR=dict(el=(96, -50), wr=(28, -150), hand_ang=-1.57, curl=0.9, thumb=0.8, flip=True),
-              armL=dict(el=(-120, 90), wr=((gx_ - 560) / 2.0 * 1.0, 30 * grab + 60 * (1 - grab)), hand_ang=math.pi + 0.3,
+              armL=dict(el=(-120, 90), wr=((gx_ - 560) / 2.0, lerp(lerp(150, 60, hover), 30, grab)), hand_ang=math.pi + 0.3,
                         curl=lerp(0.3, 0.92, grab), thumb=lerp(0.3, 0.9, grab), flip=False))
     rig.draw_character(ctx, rig.HUMAN_B, PB, LSPOT, t)
     if grab > 0.6:  # fabric bunching around the fist

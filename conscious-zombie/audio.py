@@ -459,6 +459,10 @@ eg = amp_curve([(0, 0), (SC["end"][0], 0.12), (SC["end"][1], 0.01), (DUR, 0)])
 sfx += pan2(lp(Hn, 500) * eg, -0.3)
 n = int(0.5 * SR)
 add(sfx, shots.t_up, bp(rng.standard_normal(n), 400, 3500) * np.linspace(0, 1, n) ** 0.5 * np.linspace(1, 0, n) ** 2, g=0.16)
+# a light comic sting on the nod ("...no?" / small smile)
+_tn = L("r2d")[1] + 0.35
+piano(midi(74), _tn, 0.07, dur=0.8, p=0.2)
+piano(midi(81), _tn + 0.18, 0.06, dur=1.2, p=0.25)
 # rope drop + grab
 n = int(0.9 * SR)
 add(sfx, shots.t_rope, noise(n, 400, 3000) * np.linspace(1, 0, n) ** 2, g=0.1)

@@ -76,6 +76,8 @@ SCENES = [
     ("heli", [
         ("r1", "N", "And then, a human helicopter came flying over.", 0.5, 0.8),
         ("r2", "N", "A rope came down, and one of the humans dropped down the rope...", 0.3, 0.5),
+        ("r2a", "HB", "A zombie... are you dangerous?", 0.3, 0.6),
+        ("r2d", "Z", "Ummm... no?", 0.2, 1.5),
         ("r2b", "HB", "Hey bud, come with me.", 0.2, 0.25),
         ("r2c", "Z", "Wait... what?", 0.1, 0.35),
         ("r3", "N", "The human grabbed the conscious zombie by the shirt, and pulled them up into the helicopter.", 0.2, 1.0),
