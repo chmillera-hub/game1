@@ -877,7 +877,7 @@ const face_the_shadow = {
     const unit = Math.min(w, h);
     const portrait = h > w * 1.3;
     FX.bg(ctx, w, h, [8, 7, 20], [24, 20, 44]);
-    const groundY = portrait ? h * 0.74 : h * 0.88;
+    const groundY = portrait ? h * 0.66 : h * 0.88;
     const gr = ctx.createLinearGradient(0, groundY, 0, h);
     gr.addColorStop(0, 'rgb(22,18,38)'); gr.addColorStop(1, 'rgb(8,6,16)');
     ctx.fillStyle = gr; ctx.fillRect(0, groundY, w, h - groundY);
@@ -885,8 +885,9 @@ const face_the_shadow = {
     const turn = U.easeInOut((p.u - 0.32) / 0.14);      // turning around
     const soften = smooth((p.u - 0.48) / 0.37);         // shadow softens
     // shadow, looming from the left
-    const shH = unit * lerp(1.05, 0.85, soften) * (portrait ? 1.0 : 1.0);
-    const shX = w * 0.24 - (portrait ? unit * 0.05 : 0);
+    // scaled so the whole shadow (head to feet, reaching arm) stays inside the frame
+    const shH = Math.min(unit * lerp(0.78, 0.68, soften) * (portrait ? 1.15 : 1), groundY * 0.8);
+    const shX = w * (portrait ? 0.3 : 0.27);
     const shCol = mix([52, 18, 60], [104, 86, 150], soften);
     const shA = lerp(0.97, 0.55, soften);
     FX.glow(ctx, shX, groundY - shH * 0.5, shH * 0.8, [20, 6, 24], 0, false);
@@ -896,7 +897,11 @@ const face_the_shadow = {
     const shPose = blendPose(FX.FIG_POSES.reach, FX.FIG_POSES.stand, soften);
     shPose.lean = lerp(0.18, 0, soften);
     shPose.head = lerp(0.15, 0.1, soften);
-    FX.figure(ctx, shX, groundY + unit * 0.01, shH, shPose, { color: mix([16, 13, 32], shCol, shA) });
+    // the shadow faces the small figure of light (reaching toward it); its edge catches that light as it softens
+    litFigure(ctx, shX, groundY + unit * 0.01, shH, shPose, {
+      facing: -1, color: mix([30, 18, 44], shCol, shA), rim: mix([170, 110, 200], GOLD, soften), rimA: 0.45 + 0.4 * soften,
+      fill: GOLD, fillA: 0.08 + 0.18 * soften, light: [1, -0.35], halo: 0.18, rimW: 0.01,
+    });
     // the figure of light
     const fx0 = w * 0.6, fx1 = w * 0.72;
     const fx = lerp(fx0, fx1, 1 - run * run) + run * 0; // decelerates to a stop

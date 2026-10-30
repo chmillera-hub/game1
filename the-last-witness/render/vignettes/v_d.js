@@ -302,9 +302,9 @@ const friction_motion = {
     // braced stride: leaning hard into the wind, front forearm shielding the face, back arm out for balance,
     // front knee bent and the back leg driving; then a heavy, determined walk into the wind
     const sway = Math.sin(p.t * 1.1) * 0.04;
-    const brace = pose({ lean: 0.5 + sway * 0.5, head: -0.2, armL: [0.8 + sway, 1.85], armR: [-0.7 - sway, -0.35], legL: [0.62, -0.55], legR: [-0.5, 0.12] });
+    const brace = pose({ lean: 0.6 + sway * 0.5, head: -0.25, armL: [1.55 + sway, 2.45], armR: [-0.7 - sway, -0.35], legL: [0.62, -0.55], legR: [-0.5, 0.12] });
     const wp = walkPose(p.t * 0.42, 0.42, -0.2);
-    wp.armL = [lerp(0.7, 0.95, 0.5 + 0.5 * Math.sin(p.t * 0.42 * TAU)), 1.75];
+    wp.armL = [lerp(1.45, 1.6, 0.5 + 0.5 * Math.sin(p.t * 0.42 * TAU)), 2.35];
     const P = blendPose(brace, wp, walkK * 0.8);
     // body shudders slightly in the gusts while braced
     const shake = (1 - walkK) * U.noise1(p.t * 1.2, p.seed) * 0.03;
