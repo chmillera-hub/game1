@@ -97,7 +97,7 @@ def make_frame(t):
 
 def render_segment(args):
     idx, f0, f1 = args
-    out = f"{BUILD}/seg_{idx:02d}.mp4"
+    out = f"{BUILD}/{os.environ.get('SEG_PREFIX', 'seg')}_{idx:02d}.mp4"
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", f"{W}x{H}", "-r", str(FPS),
            "-i", "-", "-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p", out]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
@@ -147,11 +147,12 @@ def main():
     jobs = [(k, bounds[k], bounds[k + 1]) for k in range(nseg)]
     with Pool(workers) as pool:
         outs = pool.map(render_segment, jobs, chunksize=1)
-    with open(f"{BUILD}/segs.txt", "w") as f:
+    prefix = os.environ.get("SEG_PREFIX", "seg")
+    with open(f"{BUILD}/{prefix}s.txt", "w") as f:
         for o in outs:
             f.write(f"file '{o}'\n")
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", f"{BUILD}/segs.txt",
-                    "-c", "copy", f"{BUILD}/video.mp4"], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", f"{BUILD}/{prefix}s.txt",
+                    "-c", "copy", f"{BUILD}/video.mp4" if prefix == "seg" else f"{BUILD}/{prefix}.mp4"], check=True)
     print("video ok")
 
 

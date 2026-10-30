@@ -1336,12 +1336,19 @@ def cabin_dontknow(ctx, t):
 @shot(t_look1, t_how)
 def cabin_look1(ctx, t):
     world.draw_cabin(ctx, t, dawn(t), shake=0.6, window_x=380)
-    t6 = L("i6")[0]
-    look = ramp(t, t_look1 + 0.1, t_look1 + 0.6) * (1 - ramp(t, t6 - 1.1, t6 - 0.45))
-    brow = ramp(t, t_look1 + 0.5, t_look1 + 0.9) * (1 - ramp(t, t6 + 0.4, t6 + 1.2) * 0.6)
+    # they trade a look ("That's great...": not thrilled it's a zombie, quietly relieved it isn't trying to eat them),
+    # then he turns back to it for "...but I also think you are conscious, my guy."
+    t6, t6b = L("i6")[0], L("i6b")[0]
+    look = ramp(t, t_look1 + 0.1, t_look1 + 0.6) * (1 - ramp(t, t6b - 0.55, t6b - 0.1))
+    brow = ramp(t, t_look1 + 0.5, t_look1 + 0.9) * (1 - ramp(t, t6b - 0.3, t6b + 0.6) * 0.7)
+    wry = ramp(t, t6 - 0.2, t6 + 0.3) * (1 - ramp(t, t6b - 0.4, t6b))
+    warm = ramp(t, word_t("i6b", "guy") - 0.4, word_t("i6b", "guy") + 0.2)
+    exhale = math.sin(clamp((t - t6 - 0.2) / 0.9) * math.pi)
     humans(ctx, t, gxA=lerp(0.35, 0.8, look), gxB=lerp(0.3, -0.85, look), yawA=lerp(0.18, 0.5, look), yawB=lerp(0.1, -0.45, look),
-           A_kw=dict(E=dict(bi=0.2 + 0.6 * brow, bo=0.2 + 0.5 * brow)),
-           B_kw=dict(E=dict(bi=0.1 + 0.6 * brow, bo=0.1 + 0.5 * brow, sm=0.25 * ramp(t, t6, t6 + 0.4)), pitch=0.04 * math.sin(clamp((t - t6 - 0.6) / 0.6) * math.pi)))
+           A_kw=dict(E=dict(bi=0.2 + 0.55 * brow, bo=0.2 + 0.45 * brow, press=0.45 * wry, sm=-0.1 * wry + 0.15 * warm),
+                     pitch=0.05 * exhale, shrug=-0.15 * exhale),
+           B_kw=dict(E=dict(biL=0.15 + 0.75 * brow, biR=0.1 + 0.25 * brow, bo=0.1 + 0.4 * brow, sm=0.18 * wry + 0.3 * warm),
+                     roll=0.06 * wry, pitch=0.05 * math.sin(clamp((t - word_t("i6b", "guy") + 0.3) / 0.7) * math.pi)))
 
 
 @shot(t_how, t_look2)

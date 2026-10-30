@@ -289,6 +289,69 @@ for lid in TL["order"]:
             cello(midi(root), t - 0.25, 2.4, 0.2, a=0.35)
             drum(t - 0.05, 0.12, f0=55, f1=32, dec=0.9)
 
+# ---------------------------------------------------------------- emotional pass: swells into hope, deep tones under weight
+def strings(notes, t0, up, hold, down, amp, bright=0.55, spread=0.7):
+    """Ensemble strings swelling up to a crest and falling away."""
+    dur = up + hold + down
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    env = np.where(tt < up, (tt / up) ** 2, np.where(tt < up + hold, 1.0, np.exp(-(tt - up - hold) / max(0.1, down) * 3.0)))
+    hs = [(1 / h) * math.exp(-h * (1 - bright) * 0.45) for h in range(1, 14)]
+    for k, m in enumerate(notes):
+        x = tone(midi(m), dur, hs, detune=0.0025, vib=0.005, vib_f=5.0 + 0.3 * k)
+        x = lp(x, 3000 + 3500 * bright) * env
+        add(music, t0, x, p=(k / max(1, len(notes) - 1) - 0.5) * spread, g=amp / len(notes) ** 0.5)
+
+
+def deep(t0, dur, amp):
+    """A low, heavy swell: sub-bass on the chord root plus a dark rumble."""
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    r = chord(t0 + dur * 0.4)[0]
+    while r > 40:
+        r -= 12
+    f = midi(r)
+    env = np.sin(np.pi * np.clip(tt / dur, 0, 1)) ** 1.5
+    x = (np.sin(2 * np.pi * f * tt) + 0.5 * np.sin(2 * np.pi * 2 * f * tt + 0.3) + 0.2 * np.sin(2 * np.pi * 3 * f * tt)) * env
+    x += lp(rng.standard_normal(n), 110) * env * 3.0
+    add(music, t0, x, g=amp)
+    ch_ = chord(t0 + dur * 0.4)
+    strings([ch_[0] - 12, ch_[-1] - 12], t0, dur * 0.4, dur * 0.2, dur * 0.6, amp * 0.35, bright=0.3)
+
+
+HOPE = [  # (crest time, rise seconds, strength)
+    (word_t("s1", "soul"), 1.6, 0.8), (shots.t_hit, 1.0, 0.9), (shots.t_ign, 1.2, 1.0), (word_t("v6", "witness"), 1.0, 0.6),
+    (word_t("k3", "meaning", 1), 1.4, 0.8), (word_t("y4", "existence"), 1.5, 0.8), (word_t("y4", "life"), 1.8, 1.0),
+    (word_t("y7", "peace"), 2.2, 1.0), (word_t("b2", "something"), 1.0, 0.7), (word_t("b4", "flag"), 1.0, 0.7),
+    (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10", "too"), 1.6, 0.9), (word_t("i11", "nodded"), 1.4, 1.0),
+    (word_t("e1", "heaven", 1), 1.8, 0.9),
+]
+HEAVY = [  # (start, duration, strength)
+    (word_t("h3", "mindless") - 0.5, 3.0, 0.8), (word_t("v3", "suffering") - 0.6, 3.5, 0.9), (word_t("v4", "pain") - 0.3, 5.0, 1.0),
+    (word_t("k1", "alone") - 0.5, 4.0, 0.9), (word_t("k5", "tears") - 0.5, 3.5, 0.8), (L("y1")[1] + 0.2, 2.2, 0.6),
+    (word_t("y6", "hell") - 0.4, 4.0, 1.0), (word_t("f3", "unbearable") - 0.4, 4.5, 1.0), (word_t("i1", "killed") - 0.4, 3.0, 0.8),
+    (word_t("i9", "weight") - 0.6, 4.0, 1.0), (word_t("e1", "hell") - 0.5, 3.5, 0.9),
+]
+for tc, rise, k in HOPE:
+    ch_ = chord(tc)
+    strings([m + 12 for m in ch_] + [ch_[0] + 24], tc - rise, rise, 0.6, 2.6, 0.11 * k, bright=0.62)
+    if k >= 1.0:
+        swell(tc - rise, rise, 0.028)
+for t0, dur, k in HEAVY:
+    deep(t0, dur, 0.2 * k)
+# the two peaks of the film
+tp = word_t("f2", "Stop")
+ch_ = chord(tp)
+strings([m + o for m in ch_ for o in (0, 12, 24)], tp - 1.3, 1.3, 2.4, 2.4, 0.2, bright=0.7, spread=0.9)
+swell(tp - 1.3, 1.3, 0.05)
+for q in range(3):
+    drum(tp + q * 0.5, 0.32, f0=80, f1=38, dec=0.8)
+th = word_t("e2", "heaven", 1)
+strings([50, 54, 57, 62, 66, 69, 74], th - 2.5, 2.5, 2.2, 3.5, 0.22, bright=0.72, spread=0.95)
+swell(th - 2.5, 2.5, 0.05)
+drum(th, 0.3, f0=70, f1=34, dec=1.6)
+
+
 # ---------------------------------------------------------------- sound design
 def noise(n, fc_lo=None, fc_hi=None):
     x = rng.standard_normal(n)
