@@ -35,7 +35,7 @@ HUMAN_B = make(skin=hexc("e2b49a"), lip=hexc("b0786a"), hair=hexc("8a4524"), hai
 DEFENDER = make(skin=hexc("b47e5c"), lip=hexc("8a5a4a"), hair=hexc("2a2018"), brow=hexc("2a2018"), sclera=hexc("f0ece4"),
                 iris=hexc("3c3c40"), milky=0.0, bags=0.2, hairstyle="short", helmet=True, brow_t=5.6, eye_w=16.5, eye_h=8.2,
                 mouth_w=15.5, jaw=1.25, chin=1.18, nose=1.3, shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight",
-                torn=False, stubble=0.0, decay=0.0, lip_a=0.45, beard=0.9, facepaint=True, scar=True, build=1.15)
+                torn=False, stubble=0.0, decay=0.0, lip_a=0.45, beard=0.9, facepaint=True, scar=True, build=1.15, vest=True)
 
 SHIRTS = ["7a3b3b", "8a7a3a", "5a5a60", "6a5040", "45506e", "8a8478", "5b3f5e", "4b6040", "735a48"]
 HAIRS = ["2a2220", "4a3426", "1e1a1a", "6a5a4a", "3a2a24", "5a4636"]
@@ -918,19 +918,42 @@ def draw_arm(ctx, ch, sh, arm, light, lw, bw, lod, sgn):
     hand_first = arm.get("hand_behind", False)
     if hand_first:
         hand()
-    path = lambda: (capsule(ctx, sh, el, 16 * bw, 13 * bw), capsule(ctx, el, wr, 13.5 * bw, 10.5 * bw))
+    torn_arm = ch.get("torn") and sgn > 0 and lod > 1
+    if torn_arm:  # sleeve ripped off at the elbow: bare, grimy forearm
+        skin = mix(ch["skin"], hexc("5a5248"), 0.15)
+        shade(ctx, lambda: capsule(ctx, el, wr, 12 * bw, 9.5 * bw), skin, light, lw * 1.25, shadow=0.45, union=True)
+        soft_dot(ctx, (el[0] + wr[0]) / 2, (el[1] + wr[1]) / 2, 10 * bw, hexc("4a3a2a"), 0.3)
+        path = lambda: capsule(ctx, sh, el, 16 * bw, 13.5 * bw)
+    else:
+        path = lambda: (capsule(ctx, sh, el, 16 * bw, 13 * bw), capsule(ctx, el, wr, 13.5 * bw, 10.5 * bw))
     shade(ctx, path, mix(shirt, ch["shirt2"], 0.45), light, lw * 1.25, shadow=0.5, union=True)
+    if torn_arm:
+        ex, ey = el
+        nx, ny = -math.sin(fa) * 14 * bw, math.cos(fa) * 14 * bw
+        tx, ty = math.cos(fa) * 9, math.sin(fa) * 9
+        rag = [(ex - nx, ey - ny), (ex - nx * 0.5 + tx, ey - ny * 0.5 + ty), (ex + tx * 0.3, ey + ty * 0.3),
+               (ex + nx * 0.4 + tx * 1.2, ey + ny * 0.4 + ty * 1.2), (ex + nx, ey + ny)]
+
+        def ragp():
+            ctx.move_to(*rag[0])
+            for p in rag[1:]:
+                ctx.line_to(*p)
+            ctx.line_to(ex + nx - tx * 0.8, ey + ny - ty * 0.8)
+            ctx.line_to(ex - nx - tx * 0.8, ey - ny - ty * 0.8)
+            ctx.close_path()
+        shade(ctx, ragp, mix(shirt, ch["shirt2"], 0.45), light, lw, shadow=0.45)
     if lod > 1:
         # elbow fold
         mx, my = el
         soft_stroke(ctx, [(mx - 6 * math.cos(fa + 1.2), my - 6 * math.sin(fa + 1.2)), (mx, my), (mx + 4 * math.cos(fa), my + 4 * math.sin(fa))],
                     mul(shirt, 0.55), 0.35, lw)
     # cuff (sleeve opening), then the hand comes out of it
-    c0 = (wr[0] - math.cos(fa) * 10, wr[1] - math.sin(fa) * 10)
-    c1 = (wr[0] - math.cos(fa) * 3, wr[1] - math.sin(fa) * 3)
-    shade(ctx, lambda: capsule(ctx, c0, c1, 11.5 * bw, 12 * bw), ch["shirt2"], light, lw, shadow=0.3)
-    ctx.new_path(); ellipse(ctx, c1[0], c1[1], 9 * bw, 9 * bw)
-    rgba(ctx, hexc("140e14"), 0.75); ctx.fill()
+    if not torn_arm:
+        c0 = (wr[0] - math.cos(fa) * 10, wr[1] - math.sin(fa) * 10)
+        c1 = (wr[0] - math.cos(fa) * 3, wr[1] - math.sin(fa) * 3)
+        shade(ctx, lambda: capsule(ctx, c0, c1, 11.5 * bw, 12 * bw), ch["shirt2"], light, lw, shadow=0.3)
+        ctx.new_path(); ellipse(ctx, c1[0], c1[1], 9 * bw, 9 * bw)
+        rgba(ctx, hexc("140e14"), 0.75); ctx.fill()
     if not hand_first:
         hand()
     return el, wr
@@ -1023,6 +1046,7 @@ def draw_character(ctx, ch, P, light, t=0.0):
         for sgn in (1, -1):
             soft_stroke(ctx, [(sgn * 50 * bw, 74), (sgn * 30, 104), (sgn * 18, 118)], fold, 0.35, lw)
             soft_stroke(ctx, [(sgn * 44 * bw, 168), (sgn * 26, 186), (sgn * 10, 192)], fold, 0.28, lw)
+        _clothing_details(ctx, ch, light, lw, bw, view)
         if view == "front":
             _collar(ctx, ch, light, lw, bw)
         else:
@@ -1047,6 +1071,50 @@ def draw_character(ctx, ch, P, light, t=0.0):
     ctx.restore()  # upper body
     ctx.restore()
     return hc
+
+
+def _clothing_details(ctx, ch, light, lw, bw, view):
+    """Zombie rags (stains, holes, rips) or soldier kit (harness, belt, patches, name tape, vest)."""
+    if ch.get("torn"):
+        flip = 1 if view == "front" else -1
+        for (x, y, r, a) in ((-26, 70, 16, 0.35), (30, 150, 20, 0.4), (-10, 205, 14, 0.3), (38, 60, 10, 0.3)):
+            soft_dot(ctx, flip * x, y, r, hexc("3a2c20"), a)  # old grime and stains
+        for (x, y, w_, h_) in ((24, 128, 15, 11), (-32, 176, 11, 9)):  # holes with skin showing through
+            x *= flip
+            pts = [(x - w_, y), (x - w_ * 0.4, y - h_), (x + w_ * 0.2, y - h_ * 0.6), (x + w_, y - h_ * 0.9), (x + w_ * 0.7, y + h_ * 0.4),
+                   (x + w_ * 0.1, y + h_), (x - w_ * 0.6, y + h_ * 0.7)]
+            ctx.new_path(); ctx.move_to(*pts[0])
+            for p in pts[1:]:
+                ctx.line_to(*p)
+            ctx.close_path()
+            rgba(ctx, tint(mix(ch["skin"], hexc("3a3028"), 0.35), light)); ctx.fill_preserve()
+            rgba(ctx, hexc("1a1210"), 0.7); ctx.set_line_width(lw * 0.9); ctx.stroke()
+        soft_stroke(ctx, [(flip * -14, 244), (flip * -10, 222), (flip * -16, 206), (flip * -11, 190)], hexc("1a1210"), 0.55, lw, smooth=False)
+        for q in range(4):  # frayed threads at the hem
+            x = -40 + q * 24
+            soft_stroke(ctx, [(x, 246), (x + 2, 258)], mul(ch["shirt"], 0.6), 0.6, lw * 0.8)
+    elif ch.get("vest"):
+        vc = hexc("3e4434")
+        shade(ctx, lambda: smooth_closed(ctx, [(-52 * bw, 20), (-30, 6), (-24, 30), (24, 30), (30, 6), (52 * bw, 20), (54 * bw, 200),
+                                              (0, 212), (-54 * bw, 200)], 0.6), vc, light, lw, shadow=0.4)
+        for q in range(3):  # magazine pouches
+            x = -40 + q * 28
+            shade(ctx, lambda: (ctx.new_sub_path(), _rrect(ctx, x, 140, 24, 40, 3)), mul(vc, 0.85), light, lw * 0.8, shadow=0.3)
+            soft_stroke(ctx, [(x + 2, 150), (x + 22, 150)], mul(vc, 0.5), 0.6, lw)
+        shade(ctx, lambda: (ctx.new_sub_path(), _rrect(ctx, 24, 64, 20, 34, 3)), mul(vc, 0.8), light, lw * 0.8, shadow=0.3)  # radio
+        ctx.new_path(); ctx.move_to(34, 64); ctx.line_to(36, 30)
+        rgba(ctx, hexc("1a1a1a")); ctx.set_line_width(2.2); ctx.stroke()
+    elif ch.get("collar") == "flight":
+        sc_ = hexc("1e2018")
+        for sgn in (1, -1):  # harness straps down to the belt
+            soft_stroke(ctx, [(sgn * 40 * bw, 4), (sgn * 30, 90), (sgn * 22, 200)], sc_, 0.85, 7, smooth=True)
+        ctx.new_path(); ctx.rectangle(-28, 106, 56, 7); rgba(ctx, tint(sc_, light), 0.9); ctx.fill()
+        ctx.new_path(); ctx.rectangle(-7, 103, 14, 13); rgba(ctx, tint(hexc("8a8a86"), light)); ctx.fill()
+        ctx.new_path(); ctx.rectangle(-48 * bw, 198, 96 * bw, 14); rgba(ctx, tint(hexc("2a2a24"), light)); ctx.fill()  # belt
+        ctx.new_path(); ctx.rectangle(-9, 196, 18, 18); rgba(ctx, tint(hexc("9a968c"), light)); ctx.fill()
+        ctx.new_path(); ctx.rectangle(14, 58, 30, 8); rgba(ctx, tint(mix(ch["shirt"], hexc("e8e2d0"), 0.35), light)); ctx.fill()  # name tape
+        shade(ctx, lambda: (ctx.new_sub_path(), _rrect(ctx, -44, 54, 22, 16, 2)), mix(ch["shirt"], hexc("6a2a2a"), 0.5), light, lw * 0.7,
+              shadow=0.2, rim=0.2)  # plain unit patch
 
 
 def _collar(ctx, ch, light, lw, bw):
@@ -1094,18 +1162,26 @@ def _zfoot(ctx, ch, an, lift, light, lw, view, sgn):
         soft_dot(ctx, ax, ay + 9 - lift * 5, 9, hexc("2a2018"), 0.5)  # filthy heel / sole
     else:
         ly = -lift * 6
-        toes = [(ax + inner * 10, ay + 15 + ly, 3.8), (ax + inner * 4, ay + 16.5 + ly, 3.1), (ax - inner * 1.5, ay + 16.5 + ly, 2.8),
-                (ax - inner * 6.5, ay + 15.5 + ly, 2.6), (ax - inner * 11, ay + 13.5 + ly, 2.3)]
+        o = sgn  # feet turn slightly outward, the way people stand
+        fx_, fy_ = o * 0.78, 0.62  # heel-to-toe direction on screen
+        px_, py_ = -fy_ * o, fx_ * o  # across the foot
+        heel = (ax - fx_ * 4, ay + 4 + ly)
+        tip = (ax + fx_ * 24, ay + 4 + fy_ * 24 * 0.55 + ly)
+        toes = []
+        for k, r in enumerate((3.9, 3.2, 2.9, 2.6, 2.2)):
+            off = (k - 1.6) * 3.4
+            toes.append((tip[0] + px_ * off - fx_ * abs(k - 0.6) * 1.1, tip[1] + py_ * off - fy_ * abs(k - 0.6) * 1.1, r))
 
         def foot():
-            smooth_closed(ctx, [(ax - 8, ay - 12), (ax + 8, ay - 12), (ax + 14, ay + 8 + ly), (ax + 12, ay + 14 + ly),
-                                (ax - 12, ay + 14 + ly), (ax - 14, ay + 8 + ly)], 0.8)
+            capsule(ctx, (ax, ay - 12), (ax, ay + 2 + ly), 8.5, 9)
+            capsule(ctx, heel, (tip[0] - fx_ * 4, tip[1] - fy_ * 4), 9, 8)
             for (tx, ty, r) in toes:
                 ctx.new_sub_path(); ctx.arc(tx, ty, r, 0, 2 * math.pi)
         shade(ctx, foot, skin, light, lw, union=True, shadow=0.35)
         for (tx, ty, r) in toes:  # grime-blackened toes, no outlines
             soft_dot(ctx, tx, ty + r * 0.3, r * 0.75, hexc("3a2a20"), 0.55)
-        soft_dot(ctx, ax, ay + 4 + ly, 10, hexc("4a3a2a"), 0.3)
+        soft_dot(ctx, (heel[0] + tip[0]) / 2, (heel[1] + tip[1]) / 2, 11, hexc("4a3a2a"), 0.3)
+        soft_stroke(ctx, [(ax - o * 4, ay - 2 + ly), (ax + fx_ * 10, ay + 4 + ly)], mix(ch["skin"], hexc("2a2420"), 0.5), 0.35, lw)
     cuff = [(ax - 16, ay - 34), (ax + 16, ay - 34), (ax + 16, ay - 15), (ax + 10, ay - 8), (ax + 6, ay - 16), (ax + 1, ay - 6),
             (ax - 4, ay - 15), (ax - 9, ay - 7), (ax - 16, ay - 14)]
 
@@ -1128,8 +1204,8 @@ def _foot(ctx, ch, an, lift, light, lw, view, sgn):
 
 def _seat(ctx, ch, light, lw, bw, dx=0.0):
     """Seat of the trousers joining both legs (no gap, no flap between them)."""
-    pts = [(x + dx, y) for x, y in ((-51 * bw, 220), (51 * bw, 220), (48 * bw, 268), (20 * bw, 300), (0, 304), (-20 * bw, 300),
-                                    (-48 * bw, 268))]
+    pts = [(x + dx, y) for x, y in ((-55 * bw, 218), (55 * bw, 218), (53 * bw, 272), (24 * bw, 310), (0, 314), (-24 * bw, 310),
+                                    (-53 * bw, 272))]
     shade(ctx, lambda: smooth_closed(ctx, pts, 0.8), ch["pants"], light, lw, shadow=0.45)
 
 
@@ -1152,14 +1228,14 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
             kn = (sgn * lerp(27, 42, k) * bw, lerp(401, 316, k))
             an = (sgn * lerp(28, 46, k) * bw, lerp(561, 300, k))
             if k < 0.97:  # going down / getting up: shins and feet stay on show
-                shade(ctx, lambda: capsule(ctx, kn, an, 15, 10), pants, light, lw)
+                shade(ctx, lambda: capsule(ctx, kn, an, 18, 12), pants, light, lw)
                 _foot(ctx, ch, an, 0.0, light, lw, view, sgn)
             else:
                 # shins + soles tucked behind, just visible beside the hips
                 sole = mix(ch["skin"], hexc("3a3028"), 0.5) if ch.get("decay", 0) > 0.5 else shoes
                 shade(ctx, lambda: ellipse(ctx, sgn * 58 * bw, 322, 13, 7, sgn * 0.3), sole, light, lw)
-            r1 = lerp(16, 22, k)
-            shade(ctx, lambda: capsule(ctx, hp, kn, lerp(22, 25, k), r1), pants, light, lw, shadow=0.45, union=True)
+            r1 = lerp(19, 24, k)
+            shade(ctx, lambda: capsule(ctx, hp, kn, lerp(26, 27, k), r1), pants, light, lw, shadow=0.45, union=True)
             if lod > 1:
                 soft_stroke(ctx, [(kn[0] - 14, kn[1] - 2), (kn[0], kn[1] + 6), (kn[0] + 14, kn[1] - 2)], mul(pants, 0.55), 0.4, lw)
                 soft_stroke(ctx, [(hp[0] - sgn * 4, hp[1] + 18), (kn[0] - sgn * 12, kn[1] - 14)], mul(pants, 0.6), 0.3, lw)
@@ -1167,16 +1243,28 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
     if mode == "sit_knees":
         # sitting on the floor, knees drawn up to the chest, feet planted in front
         soft_dot(ctx, 0, 300, 120, (0, 0, 0), 0.4)
+        shade(ctx, lambda: ellipse(ctx, 0, 250, 60, 30), mul(pants, 0.85), light, lw, shadow=0.5)  # hips on the floor
         for sgn in (-1, 1):
-            hp, kn = (sgn * 26 * bw, 232), (sgn * 40, 118)
-            shade(ctx, lambda: capsule(ctx, hp, kn, 24, 21), mul(pants, 0.9), light, lw, shadow=0.5)
+            hp, kn = (sgn * 28 * bw, 236), (sgn * 40, 118)
+            shade(ctx, lambda: capsule(ctx, hp, kn, 28, 24), mul(pants, 0.9), light, lw, shadow=0.5)
         for sgn in (-1, 1):
             kn, an = (sgn * 40, 118), (sgn * 46, 284)
-            shade(ctx, lambda: capsule(ctx, kn, an, 20, 13), pants, light, lw, shadow=0.35)
+            shade(ctx, lambda: capsule(ctx, kn, an, 22, 14), pants, light, lw, shadow=0.35)
             if lod > 1:
                 soft_dot(ctx, kn[0] - light["dir"][0] * 5, kn[1] - 4, 13, light["rim"], 0.15)
                 soft_stroke(ctx, [(kn[0] - 12, kn[1] + 16), (kn[0], kn[1] + 22), (kn[0] + 12, kn[1] + 16)], mul(pants, 0.55), 0.35, lw)
             _foot(ctx, ch, an, 0.0, light, lw, view, sgn)
+        return
+    if mode == "sit":  # sitting on a bench, thighs coming toward us
+        _seat(ctx, ch, light, lw, bw)
+        for sgn in (-1, 1):
+            hp, kn, an = (sgn * 26 * bw, 240), (sgn * 38 * bw, 306), (sgn * 40 * bw, 478)
+            shade(ctx, lambda: capsule(ctx, kn, an, 19, 12.5), pants, light, lw)
+            _foot(ctx, ch, an, 0.0, light, lw, view, sgn)
+            shade(ctx, lambda: capsule(ctx, hp, kn, 29, 26), pants, light, lw, shadow=0.4)
+            if lod > 1:
+                soft_dot(ctx, kn[0] - light["dir"][0] * 6, kn[1] + 4, 16, light["rim"], 0.12)
+                soft_stroke(ctx, [(kn[0] - 16, kn[1] + 18), (kn[0], kn[1] + 26), (kn[0] + 16, kn[1] + 18)], mul(pants, 0.55), 0.35, lw)
         return
     phase = legs.get("phase", 0.0)
     run = mode == "run"
@@ -1189,11 +1277,20 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
         dxk = legs.get("dxL" if i == 0 else "dxR", 0.0)
         kn = (sgn * 27 * bw + dxk * 0.6 + hsft * 0.55 - sgn * 9 * kb, 401 - 46 * lift + 6 * kb)
         an = (sgn * 28 * bw + dxk, 561 - 120 * lift)
-        shade(ctx, lambda: capsule(ctx, kn, an, 15.5, 10.5), pants, light, lw)
-        shade(ctx, lambda: capsule(ctx, hp, kn, 22, 16), pants, light, lw, shadow=0.45)
+        shade(ctx, lambda: capsule(ctx, kn, an, 18, 12), pants, light, lw)
+        shade(ctx, lambda: capsule(ctx, hp, kn, 26, 19), pants, light, lw, shadow=0.45)
         if lod > 1:
             soft_stroke(ctx, [(kn[0] - 9, kn[1] - 6), (kn[0] + 2, kn[1] + 2), (kn[0] + 9, kn[1] - 4)], mul(pants, 0.55), 0.4, lw)
             soft_stroke(ctx, [(hp[0] - sgn * 8, hp[1] + 24), (kn[0] - sgn * 6, kn[1] - 40)], mul(pants, 0.6), 0.28, lw)
+            if ch.get("torn") and sgn > 0:  # ripped knee
+                kx, ky = kn
+                hole = [(kx - 11, ky - 4), (kx - 4, ky - 11), (kx + 6, ky - 8), (kx + 11, ky + 1), (kx + 3, ky + 9), (kx - 8, ky + 6)]
+                ctx.new_path(); ctx.move_to(*hole[0])
+                for p in hole[1:]:
+                    ctx.line_to(*p)
+                ctx.close_path()
+                rgba(ctx, tint(mix(ch["skin"], hexc("3a3028"), 0.35), light)); ctx.fill_preserve()
+                rgba(ctx, hexc("1a1210"), 0.7); ctx.set_line_width(lw * 0.9); ctx.stroke()
         _foot(ctx, ch, an, lift, light, lw, view, sgn)
 
 

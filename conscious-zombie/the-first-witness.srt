@@ -51,405 +51,469 @@ And that zombie started looking around...
 ZOMBIE: Wait... I can see?
 
 14
-00:00:38,079 --> 00:00:39,902
-and it froze in place.
+00:00:38,079 --> 00:00:40,735
+and the conscious zombie froze in place.
 
 15
-00:00:40,902 --> 00:00:42,942
-It had control of itself.
+00:00:41,735 --> 00:00:44,610
+The conscious zombie had control of itself.
 
 16
-00:00:43,442 --> 00:00:45,698
+00:00:45,110 --> 00:00:47,366
 ZOMBIE: These are... my hands.
 
 17
-00:00:46,398 --> 00:00:49,593
-But it did not have control of what it could witness...
+00:00:48,067 --> 00:00:50,143
+But the conscious zombie did not have
 
 18
-00:00:49,593 --> 00:00:51,024
-or what it could feel.
+00:00:50,143 --> 00:00:52,377
+control of what it could witness...
 
 19
-00:00:51,924 --> 00:00:54,740
-Its brothers and sisters, who looked just like it,
+00:00:52,377 --> 00:00:53,841
+or what it could feel.
 
 20
-00:00:54,740 --> 00:00:57,740
-seemed compelled to run to the battlefield.
+00:00:54,740 --> 00:00:57,371
+The conscious zombie's brothers and sisters,
 
 21
-00:00:58,040 --> 00:01:00,140
-ZOMBIE: Wait... where are you going?
+00:00:57,371 --> 00:00:58,691
+who looked just like it,
 
 22
-00:01:00,841 --> 00:01:04,191
-It saw them being destroyed by the Fortress of Humanity.
+00:00:58,691 --> 00:01:01,712
+seemed compelled to run to the battlefield.
 
 23
-00:01:04,191 --> 00:01:06,846
-The conscious zombie saw their suffering...
+00:01:02,012 --> 00:01:04,111
+ZOMBIE: Wait... where are you going?
 
 24
-00:01:06,846 --> 00:01:09,135
-even though they were not conscious.
+00:01:04,811 --> 00:01:06,888
+The conscious zombie saw them being
 
 25
-00:01:09,835 --> 00:01:11,316
-And then the sorrow started,
+00:01:06,888 --> 00:01:09,221
+destroyed by the Fortress of Humanity.
 
 26
-00:01:11,316 --> 00:01:13,652
-because now it could see the suffering.
+00:01:09,221 --> 00:01:11,917
+The conscious zombie saw their suffering...
 
 27
-00:01:14,052 --> 00:01:17,576
-ZOMBIE: This hurts... this loneliness... this destruction...
+00:01:11,917 --> 00:01:14,331
+even though they were not conscious.
 
 28
-00:01:17,576 --> 00:01:19,076
-ZOMBIE: it hurts.
+00:01:15,031 --> 00:01:16,465
+And then the sorrow started,
 
 29
-00:01:19,777 --> 00:01:22,662
-Now that this soul-infused zombie was conscious,
+00:01:16,465 --> 00:01:19,820
+because now the conscious zombie could see the suffering.
 
 30
-00:01:22,662 --> 00:01:26,646
-it was a witness. A witness to the suffering in its world.
+00:01:20,221 --> 00:01:23,745
+ZOMBIE: This hurts... this loneliness... this destruction...
 
 31
-00:01:27,646 --> 00:01:29,451
-And the conscious zombie thought
+00:01:23,745 --> 00:01:25,246
+ZOMBIE: it hurts.
 
 32
-00:01:29,451 --> 00:01:30,960
-it was alone in its suffering.
+00:01:25,947 --> 00:01:28,831
+Now that this soul-infused zombie was conscious,
 
 33
-00:01:30,960 --> 00:01:34,031
-It fell to its knees, and it covered its face,
+00:01:28,831 --> 00:01:32,814
+it was a witness. A witness to the suffering in its world.
 
 34
-00:01:34,031 --> 00:01:36,783
-to try to suppress the pain it had witnessed.
+00:01:33,814 --> 00:01:35,656
+And the conscious zombie thought
 
 35
-00:01:37,483 --> 00:01:39,121
-It had no other consciousness
+00:01:35,656 --> 00:01:37,280
+it was alone in its suffering.
 
 36
-00:01:39,121 --> 00:01:40,572
-to share that suffering with,
+00:01:37,280 --> 00:01:39,879
+The conscious zombie fell to its knees,
 
 37
-00:01:40,572 --> 00:01:42,087
-as far as it knew.
+00:01:39,879 --> 00:01:41,305
+and it covered its face,
 
 38
-00:01:42,087 --> 00:01:43,757
-So maybe it was the only one giving
+00:01:41,305 --> 00:01:44,100
+to try to suppress the pain it had witnessed.
 
 39
-00:01:43,757 --> 00:01:46,064
-the suffering around it meaning.
+00:01:44,801 --> 00:01:47,561
+The conscious zombie had no other consciousness
 
 40
-00:01:46,765 --> 00:01:49,299
-Because before that body of flesh was conscious,
+00:01:47,561 --> 00:01:48,911
+to share that suffering with,
 
 41
-00:01:49,299 --> 00:01:51,155
-the suffering had no meaning.
+00:01:48,911 --> 00:01:50,465
+as far as it knew.
 
 42
-00:01:51,155 --> 00:01:53,454
-But when a soul descended from heaven
+00:01:50,465 --> 00:01:52,480
+So maybe the conscious zombie was the only
 
 43
-00:01:53,454 --> 00:01:54,989
-and created a witness...
+00:01:52,480 --> 00:01:55,816
+one giving the suffering around it meaning.
 
 44
-00:01:54,989 --> 00:01:56,799
-their suffering gave it meaning by
+00:01:56,516 --> 00:01:59,051
+Because before that body of flesh was conscious,
 
 45
-00:01:56,799 --> 00:01:59,777
-showing the conscious zombie their pain.
+00:01:59,051 --> 00:02:00,906
+the suffering had no meaning.
 
 46
-00:02:00,576 --> 00:02:03,287
-ZOMBIE: Why... why was I picked to witness this?
+00:02:00,906 --> 00:02:03,206
+But when a soul descended from heaven
 
 47
-00:02:03,287 --> 00:02:05,007
-ZOMBIE: What does it mean?
+00:02:03,206 --> 00:02:04,740
+and created a witness...
 
 48
-00:02:05,908 --> 00:02:08,573
-What power is there to give meaning to suffering?
+00:02:04,740 --> 00:02:06,551
+their suffering gave it meaning by
 
 49
-00:02:08,573 --> 00:02:12,062
-To be on your knees, with tears falling from your eyes,
+00:02:06,551 --> 00:02:09,527
+showing the conscious zombie their pain.
 
 50
-00:02:12,062 --> 00:02:14,788
-as you witness others who cannot share it with you...
+00:02:10,328 --> 00:02:13,038
+ZOMBIE: Why... why was I picked to witness this?
 
 51
-00:02:14,788 --> 00:02:17,173
-but you are giving their suffering meaning,
+00:02:13,038 --> 00:02:14,758
+ZOMBIE: What does it mean?
 
 52
-00:02:17,173 --> 00:02:20,052
-by seeing their pain and having their pain influence
+00:02:15,657 --> 00:02:18,323
+What power is there to give meaning to suffering?
 
 53
-00:02:20,052 --> 00:02:23,134
-how you navigate the world to maybe help them.
+00:02:18,323 --> 00:02:21,812
+To be on your knees, with tears falling from your eyes,
 
 54
-00:02:24,435 --> 00:02:26,341
-ZOMBIE: Is anyone there?
+00:02:21,812 --> 00:02:24,538
+as you witness others who cannot share it with you...
 
 55
-00:02:28,040 --> 00:02:30,256
-But there is no answer from the heavens.
+00:02:24,538 --> 00:02:26,923
+but you are giving their suffering meaning,
 
 56
-00:02:30,256 --> 00:02:31,949
-Because the heavens gave their
+00:02:26,923 --> 00:02:29,802
+by seeing their pain and having their pain influence
 
 57
-00:02:31,949 --> 00:02:33,570
-answer when they sent the soul,
+00:02:29,802 --> 00:02:32,884
+how you navigate the world to maybe help them.
 
 58
-00:02:33,570 --> 00:02:35,968
-and put it into a body of flesh.
+00:02:34,185 --> 00:02:36,092
+ZOMBIE: Is anyone there?
 
 59
-00:02:36,368 --> 00:02:38,063
-And now that body of flesh is looking
+00:02:37,792 --> 00:02:40,007
+But there is no answer from the heavens.
 
 60
-00:02:38,063 --> 00:02:40,860
-to find an answer to its suffering.
+00:02:40,007 --> 00:02:41,700
+Because the heavens gave their
 
 61
-00:02:41,560 --> 00:02:44,104
-Maybe heaven's answer and heaven's
+00:02:41,700 --> 00:02:43,322
+answer when they sent the soul,
 
 62
-00:02:44,104 --> 00:02:45,479
-question were the same thing...
+00:02:43,322 --> 00:02:45,718
+and put it into a body of flesh.
 
 63
-00:02:45,479 --> 00:02:49,157
-your existence could be the meaning needed to help guide you
+00:02:46,118 --> 00:02:47,813
+And now that body of flesh is looking
 
 64
-00:02:49,157 --> 00:02:52,818
-to create more plans and actions to guide your life.
+00:02:47,813 --> 00:02:50,610
+to find an answer to its suffering.
 
 65
-00:02:53,518 --> 00:02:55,557
-And maybe, if the world knew more,
+00:02:51,311 --> 00:02:53,855
+Maybe heaven's answer and heaven's
 
 66
-00:02:55,557 --> 00:02:57,978
-maybe the suffering would never have happened,
+00:02:53,855 --> 00:02:55,230
+question were the same thing...
 
 67
-00:02:57,978 --> 00:03:00,157
-because it would have been solved already.
+00:02:55,230 --> 00:02:58,907
+your existence could be the meaning needed to help guide you
 
 68
-00:03:00,157 --> 00:03:03,252
-But your own ability to witness, on a deep level,
+00:02:58,907 --> 00:03:02,568
+to create more plans and actions to guide your life.
 
 69
-00:03:03,252 --> 00:03:06,125
-might give you the details you need to help them.
+00:03:03,268 --> 00:03:05,307
+And maybe, if the world knew more,
 
 70
-00:03:06,824 --> 00:03:09,409
-What if heaven sent the soul into a kind of hell...
+00:03:05,307 --> 00:03:07,728
+maybe the suffering would never have happened,
 
 71
-00:03:09,409 --> 00:03:12,280
-not to keep going on the highway towards hell,
+00:03:07,728 --> 00:03:09,907
+because it would have been solved already.
 
 72
-00:03:12,280 --> 00:03:14,687
-but to better know what to avoid?
+00:03:09,907 --> 00:03:13,002
+But your own ability to witness, on a deep level,
 
 73
-00:03:15,087 --> 00:03:18,668
-Because the staircase to heaven is not a simple staircase.
+00:03:13,002 --> 00:03:15,875
+might give you the details you need to help them.
 
 74
-00:03:18,668 --> 00:03:21,055
-It is built by transforming the suffering
+00:03:16,574 --> 00:03:19,159
+What if heaven sent the soul into a kind of hell...
 
 75
-00:03:21,055 --> 00:03:23,604
-of hell into well-being and peace.
+00:03:19,159 --> 00:03:22,030
+not to keep going on the highway towards hell,
 
 76
-00:03:24,704 --> 00:03:26,510
-And when the conscious zombie had
+00:03:22,030 --> 00:03:24,437
+but to better know what to avoid?
 
 77
-00:03:26,510 --> 00:03:28,304
-cried all of the tears that it could...
+00:03:24,837 --> 00:03:28,418
+Because the staircase to heaven is not a simple staircase.
 
 78
-00:03:28,304 --> 00:03:31,336
-it looked around, and it saw a building.
+00:03:28,418 --> 00:03:30,805
+It is built by transforming the suffering
 
 79
-00:03:31,735 --> 00:03:33,877
-ZOMBIE: I have to do something.
+00:03:30,805 --> 00:03:33,354
+of hell into well-being and peace.
 
 80
-00:03:34,578 --> 00:03:37,240
-It climbed a ladder to the top of the building...
+00:03:34,454 --> 00:03:36,276
+And when the conscious zombie had
 
 81
-00:03:37,840 --> 00:03:39,859
-and there, it saw a flag.
+00:03:36,276 --> 00:03:38,153
+cried all of the tears that it could...
 
 82
-00:03:40,558 --> 00:03:43,338
-It grabbed the flag and started waving it in the air,
+00:03:38,153 --> 00:03:42,134
+the conscious zombie looked around, and it saw a building.
 
 83
-00:03:43,338 --> 00:03:45,330
-because it had to do something.
+00:03:44,235 --> 00:03:46,377
+ZOMBIE: I have to do something.
 
 84
-00:03:45,430 --> 00:03:48,609
-ZOMBIE: Stop! Please... stop hurting them!
+00:03:47,076 --> 00:03:48,317
+The conscious zombie climbed a ladder
 
 85
-00:03:49,109 --> 00:03:51,933
-It couldn't watch all of its brothers and sisters die.
+00:03:48,317 --> 00:03:50,770
+to the top of the building...
 
 86
-00:03:51,933 --> 00:03:53,883
-The pain was unbearable.
+00:03:51,371 --> 00:03:54,149
+and there, the conscious zombie saw a flag.
 
 87
-00:03:53,883 --> 00:03:56,135
-The suffering was unbearable.
+00:03:54,848 --> 00:03:56,826
+The conscious zombie grabbed the flag
 
 88
-00:03:57,135 --> 00:04:00,473
-And then, a human helicopter came flying over.
+00:03:56,826 --> 00:03:58,709
+and started waving it in the air,
 
 89
-00:04:01,074 --> 00:04:02,343
-A rope came down,
+00:03:58,709 --> 00:04:00,747
+because it had to do something.
 
 90
-00:04:02,343 --> 00:04:04,991
-and one of the humans dropped down the rope...
+00:04:00,848 --> 00:04:04,026
+ZOMBIE: Stop! Please... stop hurting them!
 
 91
-00:04:05,191 --> 00:04:07,556
-grabbed the conscious zombie by the shirt,
+00:04:04,526 --> 00:04:06,694
+The conscious zombie couldn't watch
 
 92
-00:04:07,556 --> 00:04:09,902
-and pulled them up into the helicopter.
+00:04:06,694 --> 00:04:08,356
+all of its brothers and sisters die.
 
 93
-00:04:11,203 --> 00:04:13,728
-The conscious zombie thought it was going to be shot...
+00:04:08,356 --> 00:04:10,372
+The pain was unbearable.
 
 94
-00:04:13,728 --> 00:04:15,802
-killed, like the others.
+00:04:10,372 --> 00:04:12,709
+The suffering was unbearable.
 
 95
-00:04:16,903 --> 00:04:19,877
-But then it saw that the humans were looking at it.
+00:04:13,709 --> 00:04:17,047
+And then, a human helicopter came flying over.
 
 96
-00:04:20,778 --> 00:04:22,261
-PILOT: Who are you?
+00:04:17,646 --> 00:04:18,916
+A rope came down,
 
 97
-00:04:23,261 --> 00:04:25,141
-ZOMBIE: I don't really know...
+00:04:18,916 --> 00:04:21,564
+and one of the humans dropped down the rope...
 
 98
-00:04:25,442 --> 00:04:28,194
-ZOMBIE: but I'm pretty sure I'm a zombie, though.
+00:04:21,764 --> 00:04:23,572
+CREW: Hey bud, come with me.
 
 99
-00:04:29,495 --> 00:04:30,836
-CREW: That's great...
+00:04:23,423 --> 00:04:25,048
+ZOMBIE: Wait... what?
 
 100
-00:04:31,137 --> 00:04:33,911
-CREW: but I also think you are conscious, my guy.
+00:04:25,098 --> 00:04:28,012
+The human grabbed the conscious zombie by the shirt,
 
 101
-00:04:35,012 --> 00:04:36,845
-ZOMBIE: How can you tell?
+00:04:28,012 --> 00:04:30,396
+and pulled them up into the helicopter.
 
 102
-00:04:39,045 --> 00:04:40,713
-PILOT: We saw that it looks like you are able
+00:04:31,696 --> 00:04:34,221
+The conscious zombie thought it was going to be shot...
 
 103
-00:04:40,713 --> 00:04:43,319
-PILOT: to feel the pain of your brothers and sisters...
+00:04:34,221 --> 00:04:36,295
+killed, like the others.
 
 104
-00:04:43,319 --> 00:04:45,814
-CREW: which means you are feeling, in some kind of way,
+00:04:37,396 --> 00:04:39,011
+But then the conscious zombie saw
 
 105
-00:04:45,814 --> 00:04:47,586
-CREW: the weight of the world.
+00:04:39,011 --> 00:04:41,494
+that the humans were looking at it.
 
 106
-00:04:47,985 --> 00:04:50,605
-PILOT: That's kind of like what humans feel a lot of the time.
+00:04:42,394 --> 00:04:43,877
+PILOT: Who are you?
 
 107
-00:04:50,605 --> 00:04:52,793
-PILOT: And we think you feel that too.
+00:04:44,877 --> 00:04:46,759
+ZOMBIE: I don't really know...
 
 108
-00:04:54,192 --> 00:04:56,290
-And the conscious zombie nodded.
+00:04:47,059 --> 00:04:49,810
+ZOMBIE: but I'm pretty sure I'm a zombie, though.
 
 109
-00:04:57,990 --> 00:05:01,812
-So it seems like the heaven that is being built needed the raw
+00:04:51,110 --> 00:04:52,454
+CREW: That's great...
 
 110
-00:05:01,812 --> 00:05:03,910
-material of hell to be transformed
+00:04:52,754 --> 00:04:55,528
+CREW: but I also think you are conscious, my guy.
 
 111
-00:05:03,910 --> 00:05:05,584
-into the material of heaven...
+00:04:56,627 --> 00:04:59,108
+ZOMBIE: Oh really? How can you tell?
 
 112
-00:05:05,584 --> 00:05:08,911
-and maybe for his brothers and sisters too.
+00:05:01,307 --> 00:05:02,975
+PILOT: We saw that it looks like you are able
 
 113
-00:05:09,312 --> 00:05:11,351
-And that is why heaven sent the soul...
+00:05:02,975 --> 00:05:05,583
+PILOT: to feel the pain of your brothers and sisters...
 
 114
-00:05:11,351 --> 00:05:13,346
+00:05:05,583 --> 00:05:08,192
+CREW: which means you are feeling, in some kind of way,
+
+115
+00:05:08,192 --> 00:05:11,572
+CREW: the weight of the world that we are currently living in.
+
+116
+00:05:11,973 --> 00:05:13,197
+PILOT: The pain of the world...
+
+117
+00:05:13,197 --> 00:05:16,132
+PILOT: that's kind of like what humans feel a lot of the time.
+
+118
+00:05:16,132 --> 00:05:17,387
+PILOT: The pain of loss,
+
+119
+00:05:17,387 --> 00:05:19,642
+PILOT: and the pain of losing those that maybe you care for,
+
+120
+00:05:19,642 --> 00:05:21,439
+PILOT: in some kind of way.
+
+121
+00:05:22,038 --> 00:05:25,949
+ZOMBIE: You're right. I want to see if I can help save them.
+
+122
+00:05:28,348 --> 00:05:30,446
+And the conscious zombie nodded.
+
+123
+00:05:32,146 --> 00:05:35,096
+So it seems like, in order for heaven to be built,
+
+124
+00:05:35,096 --> 00:05:37,255
+it needed the raw material of hell
+
+125
+00:05:37,255 --> 00:05:40,161
+to be transformed into the material of heaven...
+
+126
+00:05:40,161 --> 00:05:43,560
+so that maybe this heaven could be built not only for him,
+
+127
+00:05:43,560 --> 00:05:45,646
+but for his brothers and sisters,
+
+128
+00:05:45,646 --> 00:05:47,978
+and maybe even the world too.
+
+129
+00:05:48,377 --> 00:05:50,418
+And that is why heaven sent the soul...
+
+130
+00:05:50,418 --> 00:05:52,411
 to turn hell into heaven.

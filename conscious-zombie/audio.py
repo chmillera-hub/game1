@@ -323,7 +323,7 @@ HOPE = [  # (crest time, rise seconds, strength)
     (word_t("s1", "soul"), 1.6, 0.8), (shots.t_hit, 1.0, 0.9), (shots.t_ign, 1.2, 1.0), (word_t("v6", "witness"), 1.0, 0.6),
     (word_t("k3", "meaning", 1), 1.4, 0.8), (word_t("y4", "existence"), 1.5, 0.8), (word_t("y4", "life"), 1.8, 1.0),
     (word_t("y7", "peace"), 2.2, 1.0), (word_t("b2", "something"), 1.0, 0.7), (word_t("b4", "flag"), 1.0, 0.7),
-    (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10", "too"), 1.6, 0.9), (word_t("i11", "nodded"), 1.4, 1.0),
+    (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10b", "save"), 1.6, 0.9), (word_t("i11", "nodded"), 1.4, 1.0),
     (word_t("e1", "heaven", 1), 1.8, 0.9),
 ]
 HEAVY = [  # (start, duration, strength)
@@ -454,8 +454,11 @@ Hc = lp(Hn, 260)
 cg = amp_curve([(0, 0), (SC["cabin"][0] - 0.2, 0), (SC["cabin"][0] + 0.3, 0.3), (SC["cabin"][1] - 1.0, 0.22), (SC["end"][0] + 0.5, 0.0),
                 (DUR, 0)])
 sfx += pan2(Hc * cg * 1.4)
+sfx += pan2(lp(Hn, 900) * cg * 0.55, 0.15)
 eg = amp_curve([(0, 0), (SC["end"][0], 0.12), (SC["end"][1], 0.01), (DUR, 0)])
 sfx += pan2(lp(Hn, 500) * eg, -0.3)
+n = int(0.5 * SR)
+add(sfx, shots.t_up, bp(rng.standard_normal(n), 400, 3500) * np.linspace(0, 1, n) ** 0.5 * np.linspace(1, 0, n) ** 2, g=0.16)
 # rope drop + grab
 n = int(0.9 * SR)
 add(sfx, shots.t_rope, noise(n, 400, 3000) * np.linspace(1, 0, n) ** 2, g=0.1)

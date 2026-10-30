@@ -892,7 +892,7 @@ class Horde:
         self.L = []
         for i in range(n + near):
             if i < n:
-                X = (hsh(i, 41) - 0.5) * 50
+                X = (hsh(i, 41) - 0.42) * 80
             else:
                 X = (hsh(i, 41) - 0.5) * 9
             quad = hsh(i, 49) < 0.13
@@ -935,6 +935,15 @@ class Horde:
                     out.append((dp, self._fig(z, x, y, s, t, cam, light_f if cam.d < 0 else light_b, fadein)))
             # burst fire flying at the next one to fall
             tn = td + z["span"] / z["v"]
+            if z is self.L[0] and fire and dust and cam.d > 0:
+                for ti, Xs, Zs in self.suppress(t):  # rounds kicking up the dirt
+                    dps = cam.depth(Zs)
+                    if not (0.8 < dps < 330):
+                        continue
+                    if -0.36 < t - ti < 0.12:
+                        out.append((dps - 0.2, self._bolts(Xs, Zs, t - ti, cam)))
+                    if 0 <= t - ti < 1.3:
+                        out.append((dps, self._kick(Xs, Zs, t - ti, cam)))
             if dust and fire and 0 < tn - t < 0.34 and cam.d > 0:
                 dpn = cam.depth(z["zd"])
                 if 0.8 < dpn < 330:
@@ -948,9 +957,22 @@ class Horde:
                     out.append((dpd - 0.1, self._dust(z, Xd, Zd, t - td, cam, light_b, fire)))
         return out
 
+    def suppress(self, t):
+        """Scheduled bursts each turret fires into the field: [(impact time, X, Z)] near t."""
+        out = []
+        for k, tx in enumerate(TURRETS):
+            per = 2.8 + 0.37 * k
+            n0 = math.floor((t - k * 0.83) / per)
+            for n in (n0 - 1, n0, n0 + 1):
+                ti = k * 0.83 + n * per + 0.34
+                X = tx[0] * 0.55 + (hsh(n * 7 + k, 151) - 0.5) * 50
+                Z = WALL - 25 - hsh(n * 7 + k, 152) * 60
+                out.append((ti, X, Z))
+        return out
+
     def recent(self, t):
         """Deaths about to happen or just happened: [(time, X, Zd)] for the sentry guns to aim at."""
-        out = []
+        out = [a for a in self.suppress(t) if -0.4 < t - a[0] < 1.2]
         for z in self.L:
             _, _, td = self.state(z, t)
             tn = td + z["span"] / z["v"]
@@ -959,6 +981,20 @@ class Horde:
             if tn - t < 1.2:
                 out.append((tn, z["X"], z["zd"]))
         return out
+
+    def _kick(self, X, Z, age, cam):
+        def fn(ctx):
+            Y0 = hgt(Z)
+            ex = cam.f / max(1, cam.depth(Z))
+            for k in range(9):
+                px = X + (hsh(k, 161) - 0.5) * 1.6 + age * (hsh(k, 162) - 0.5) * 2
+                py = Y0 + age * (1.5 + hsh(k, 163) * 2.5) - age * age * 1.2
+                p = cam.p(px, max(Y0, py), Z)
+                soft_dot(ctx, p[0], p[1], max(1.5, (0.25 + age * 0.4) * ex), hexc("8a7a68"), 0.5 * clamp(1 - age / 1.3))
+            if age < 0.15:
+                p = cam.p(X, Y0 + 0.3, Z)
+                soft_dot(ctx, p[0], p[1], 2.5 * ex, hexc("e0f2ff"), 0.7 * (1 - age / 0.15))
+        return fn
 
     def _bolts(self, X, Z, rel, cam):
         def fn(ctx):
@@ -1112,6 +1148,7 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
     """Ruined 3-storey brick building; front face at Z=BLD[1]; ladder on the front, left side."""
     X0, Z0 = BLD
     w, h, dpt = 8.0, 11.0, 7.0
+    hp = h + 0.6  # parapet wall top (about two feet above the roof)
     dp = cam.depth(Z0)
     if dp < 0.3:
         return
@@ -1122,7 +1159,7 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
     if cam.d > 0:
         side_x = fl if cam.x < fl else fr if cam.x > fr else None
         if side_x is not None:
-            pts = [cam.p(side_x, 0, Z0), cam.p(side_x, h, Z0), cam.p(side_x, h, Z0 + dpt), cam.p(side_x, 0, Z0 + dpt)]
+            pts = [cam.p(side_x, 0, Z0), cam.p(side_x, hp, Z0), cam.p(side_x, hp, Z0 + dpt), cam.p(side_x, 0, Z0 + dpt)]
             ctx.new_path(); ctx.move_to(*pts[0])
             for q in pts[1:]:
                 ctx.line_to(*q)
@@ -1131,7 +1168,7 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
             rgba(ctx, hexc("140e18"), 0.6); ctx.fill()
     if flag and cam.y <= h:
         draw_flag(ctx, cam, X0 - 1.0, h + 0.45, Z0 + 2.55, t, light, phase, held=False)
-    a = cam.p(fl, 0, Z0); b = cam.p(fr, h, Z0)
+    a = cam.p(fl, 0, Z0); b = cam.p(fr, hp, Z0)
     # broken roofline
     ctx.new_path()
     ctx.move_to(a[0], a[1])
@@ -1207,13 +1244,25 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
         mpp = cam.f / max(0.5, cam.depth(Z0 + 6.0))
         shade(ctx, lambda: capsule(ctx, pa, pb, 0.12 * mpp, 0.12 * mpp), hexc("5a5a5e"), light, 1.2)
         _box(ctx, cam, X0 - 1.35, h, Z0 + 2.2, 0.7, 0.45, 0.7, hexc("8a8680"), light)  # concrete footing the pole is set into
-        for (xa, xb, za, zb) in ((fl, fr, Z0, Z0), (fl, fl, Z0, Z0 + dpt), (fr, fr, Z0, Z0 + dpt)):  # parapet cap
-            q0, q1 = cam.p(xa, h + 0.35, za), cam.p(xb, h + 0.35, zb)
+        # brick parapet walls: inner faces of the back and side walls rise above the roof, capped with concrete
+        th_ = 0.3
+        for (xa, xb, za, zb) in ((fl + th_, fr - th_, Z0 + dpt - th_, Z0 + dpt - th_), (fl + th_, fl + th_, Z0 + th_, Z0 + dpt - th_),
+                                 (fr - th_, fr - th_, Z0 + th_, Z0 + dpt - th_)):
+            q0, q1 = cam.p(xa, hp, za), cam.p(xb, hp, zb)
             q2, q3 = cam.p(xb, h, zb), cam.p(xa, h, za)
             ctx.new_path(); ctx.move_to(*q0); ctx.line_to(*q1); ctx.line_to(*q2); ctx.line_to(*q3); ctx.close_path()
-            rgba(ctx, tint(hexc("8a8480"), light)); ctx.fill_preserve()
+            ctx.set_source(pattern("brick", sc * 0.012)); ctx.fill_preserve()
+            rgba(ctx, light["shadow"], 0.45); ctx.fill_preserve()
             rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
-            soft_stroke(ctx, [q0, q1], light["rim"], 0.4, 2, smooth=False)
+            c0, c1 = cam.p(xa, hp + 0.08, za), cam.p(xb, hp + 0.08, zb)
+            soft_stroke(ctx, [c0, c1], tint(hexc("9a948c"), light), 0.95, max(2, sc * 0.06), smooth=False)
+            soft_stroke(ctx, [c0, c1], light["rim"], 0.35, 2, smooth=False)
+        # front parapet seen from inside/above
+        q0, q1 = cam.p(fl, hp, Z0), cam.p(fr, hp, Z0)
+        q2, q3 = cam.p(fr, hp, Z0 + th_), cam.p(fl, hp, Z0 + th_)
+        ctx.new_path(); ctx.move_to(*q0); ctx.line_to(*q1); ctx.line_to(*q2); ctx.line_to(*q3); ctx.close_path()
+        rgba(ctx, tint(hexc("9a948c"), light)); ctx.fill_preserve()
+        rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
     # ladder
     draw_ladder(ctx, cam, fl + 0.9, Z0 - 0.15, h + 1.0, sc, light)
     # flagpole standing on the roof (when we look from above)
