@@ -199,13 +199,13 @@ function handsCloseup(ctx, cast, x, y, s, t, shake, L) {
   softLine(ctx, [[20, -20], [50, -12], [80, -16]], '#7d5a48', 2, 0.4);
   softLine(ctx, [[30, 14], [55, 8], [85, 12]], '#7d5a48', 2, 0.35);
   ctx.restore();
-  // Maya's hand from the right, palm down, wrapping over Nana's fingers
-  ctx.save(); ctx.translate(0 + tremble * 0.25, -14 + tremble * 0.3); ctx.rotate(Math.PI + 0.1);
-  const cuff2 = P2((p) => capsule(p, -280, 0, 50, -40, 0, 42));
-  paint(ctx, cuff2, '#7a8450', L, [-320, -55, 0, 55], { lw: 2 });
-  ctx.fillStyle = shade('#7a8450', -0.5); ctx.beginPath(); ctx.ellipse(-36, 0, 12, 38, 0, 0, TAU); ctx.fill();
-  ctx.translate(-34, 0);
-  drawHand(ctx, maya, { ...HANDS.soft, curl: [0.45, 0.5, 0.55, 0.6], thumbA: 0.3, spread: 0.05 }, -1, 'back', L, 160);
+  // Maya's hand comes from the right and wraps over the back of Nana's hand: palm down, fingers curling around its far side
+  ctx.save(); ctx.translate(40 + tremble * 0.25, -6 + tremble * 0.3); ctx.rotate(Math.PI + 0.18);
+  const cuff2 = P2((p) => capsule(p, -300, 0, 50, -60, 0, 42));
+  paint(ctx, cuff2, '#7a8450', L, [-340, -55, 0, 55], { lw: 2 });
+  ctx.fillStyle = shade('#7a8450', -0.35); ctx.beginPath(); ctx.ellipse(-58, 0, 9, 34, 0, 0, TAU); ctx.fill();
+  ctx.translate(-56, 0);
+  drawHand(ctx, maya, { ...HANDS.soft, curl: [0.62, 0.66, 0.7, 0.74], thumbA: 0.25, thumbC: 0.35, spread: 0.02 }, -1, 'back', L, 170);
   ctx.restore();
   ctx.restore();
 }

@@ -63,7 +63,7 @@ function buildFilm(sched) {
       }
       const door = eo.doorOpen ?? 0;
       if (door > 0.15 && S.x < 620) { L.rimDir = Math.atan2(-420, 200 - S.x); L.rimColor = '#ffd27a'; L.rimAmt = Math.max(L.rimAmt || 0, 0.75 * door); }
-      if (eo.view === 'night' && S.x > 380 && S.x < 920) { L.rimDir = -Math.PI / 2 - 0.2; L.rimColor = '#9fb6ea'; L.rimAmt = 0.55; L.ambient = '#e8ecff'; L.ambientAmt = 0.1; }
+      if (eo.view === 'night' && S.x > 380 && S.x < 920) { L.rimDir = -0.4; L.rimColor = '#a9c2f2'; L.rimAmt = 0.95; L.ambient = '#e8ecff'; L.ambientAmt = 0.1; }
     }
     if (envName === 'kitchen' && id === 'maya') { L.rimDir = Math.atan2(-420, -320); L.rimColor = '#ffc68a'; L.rimAmt = Math.max(L.rimAmt || 0, 0.6); }
     if (envName === 'nanaKitchen' || envName === 'memory') { L.rimAmt = Math.max(L.rimAmt || 0, 0.45); }
@@ -204,7 +204,7 @@ function buildFilm(sched) {
   st.label(h0 + 1.5, 'annoy', { dur: 4.2 });
   st.label(h0 + 1.9, 'anger', { dur: 4.2 });
   st.label(h0 + 2.3, 'fear', { dur: 4.2, dy: -40 });
-  st.label(h0 + 2.7, 'sadness', { dur: 4.2 });
+  st.label(h0 + 4.4, 'sadness', { dur: 3.8 });
 
   // Shot 2b: Annoyance at the window — "Hold on. 'Move on'?"
   const s2b = t('A1') - 0.45;
@@ -237,7 +237,7 @@ function buildFilm(sched) {
 
   // Shot 2d: nobody answers — wide
   const s2d = e('A3') + 0.4;
-  st.shot({ t0: s2d, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'annoy', 'anger', 'fear'], cam: [[s2d, 745, 1110, 0.8], [s2d, 745, 1110, 0.84, 3]] });
+  st.shot({ t0: s2d, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'annoy', 'anger', 'fear'], cam: [[s2d, 705, 1110, 0.8], [s2d, 705, 1110, 0.83, 3]] });
   annoy.set(t('A4') - 0.2, { 'arms.R': { tx: -14, ty: 300, hand: 'pinch', view: 'back', bend: 1, holding: 'pencil' } }, 0.6);
   annoy.expr(t('A4'), 'annoyed', 0.5, 1, { lidU: 0.5 });
   annoy.look(t('A4'), 0.6, 0.1, 0.3).head(t('A4'), 0.4, 0, 3, 0.5);
@@ -274,10 +274,10 @@ function buildFilm(sched) {
   st.sfx(w('G1', 'HEY') - 0.02, 'flame_burst', 1.0);
   st.sfx(w('G1', 'HEY'), 'fire_roar', 0.8);
   anger.look(w('G1', 'talking') - 0.3, -0.6, 0.0, 0.2).head(w('G1', 'talking') - 0.3, -0.45, 0, -4, 0.3);
-  anger.set(w('G1', 'talking') - 0.3, { 'arms.L': { tx: -190, ty: 40, hand: 'point', view: 'back', bend: -1, rotAbs: 175 } }, 0.25);   // points at Annoyance
+  anger.set(w('G1', 'talking') - 0.3, { 'arms.L': { tx: -115, ty: -20, hand: 'point', view: 'back', bend: -1, rotAbs: 200 } }, 0.25);   // points at Annoyance
   anger.look(w('G1', 'anybody') - 0.1, 0.0, 0.05, 0.2).head(w('G1', 'anybody') - 0.15, 0.05, -0.05, 3, 0.4);
   anger.set(w('G1', 'listening') - 0.2, { 'arms.L': { tx: 10, ty: -60, hand: 'fist', view: 'back', bend: -1 }, 'arms.R': { tx: -10, ty: -60, hand: 'fist', view: 'back', bend: 1 }, flame: 1.7 }, 0.25);
-  anger.set(e('G1') + 0.2, { 'arms.L': { tx: 60, ty: 200, hand: 'fist', view: 'back', bend: -1 }, 'arms.R': { tx: -60, ty: 200, hand: 'fist', view: 'back', bend: 1 }, flame: 1.1 }, 0.5);
+  anger.set(e('G1') + 0.2, { 'arms.L': { tx: 60, ty: 120, hand: 'fist', view: 'back', bend: -1 }, 'arms.R': { tx: -60, ty: 120, hand: 'fist', view: 'back', bend: 1 }, flame: 1.1 }, 0.5);
   st.shot({ t0: g0, env: 'hearth', envOpt: hearthOpt(), actors: ['anger'], cam: [[g0, 700, 1060, 2.2], [w('G1', 'HEY') - 0.05, 700, 1030, 2.45, 0.12], [w('G1', 'HEY') + 0.2, 700, 1030, 2.35, 1.5]],
     handheld: 3 });
   // everyone startles (seen in the wide that follows)
@@ -290,7 +290,7 @@ function buildFilm(sched) {
 
   // N5: wide — the room after the eruption
   const s3b = t('N5') - 0.3;
-  st.shot({ t0: s3b, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'annoy', 'anger', 'fear'], cam: [[s3b, 745, 1080, 0.8], [s3b, 745, 1080, 0.85, 3.5]] });
+  st.shot({ t0: s3b, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'annoy', 'anger', 'fear'], cam: [[s3b, 705, 1080, 0.79], [s3b, 705, 1080, 0.82, 3.5]] });
   annoy.expr(t('N5') + 0.6, 'annoyed', 0.8, 0.6, { brow: 0.2 });
   fear.expr(t('N5') + 0.8, 'fear', 0.8, 0.8);
   anger.look(t('N5') + 0.3, 0.6, 0.1, 0.3).head(t('N5') + 0.3, 0.5, 0, 0, 0.6);   // eyes the fire
@@ -369,8 +369,8 @@ function buildFilm(sched) {
 
   // M3 / A5 / M4: Maya and Annoyance
   const s3h = t('M3') - 0.55;
-  inner.set(s3h, { x: 700, y: 1600, s: 0.95, facing: -0.55, 'arms.L': { tx: -14, ty: 300, hand: 'relax' }, 'arms.R': { tx: 14, ty: 300, hand: 'relax' } }, 0.01);
-  inner.head(s3h, -0.55, 0, 0, 0.01).look(s3h, -0.55, 0, 0.01).expr(s3h, 'listening', 0.01);
+  inner.set(s3h, { x: 700, y: 1600, s: 0.95, facing: -0.75, 'arms.L': { tx: -14, ty: 300, hand: 'relax' }, 'arms.R': { tx: 14, ty: 300, hand: 'relax' } }, 0.01);
+  inner.head(s3h, -0.8, -0.1, 0, 0.01).look(s3h, -0.75, -0.15, 0.01).expr(s3h, 'listening', 0.01);
   annoy.set(s3h, { facing: 0.35, 'arms.R': { ...PENCIL_R, tx: -20, ty: 190 } }, 0.01).head(s3h, 0.45, 0, 0, 0.01).look(s3h, 0.5, 0.05, 0.01).expr(s3h, 'annoyed', 0.01, 0.8);
   st.shot({ t0: s3h, env: 'hearth', envOpt: hearthOpt(), actors: ['annoy', 'innerMaya'], cam: [[s3h, 540, 1080, 1.4], [s3h, 545, 1085, 1.48, 6]] });
   annoy.set(t('A5') - 0.1, { 'arms.L': { ...CLIP_L, ty: 110, tx: 80, note: 1 } }, 0.5);    // shows her the note
@@ -389,7 +389,7 @@ function buildFilm(sched) {
   inner.head(s3i, -0.3, 0.1, 0, 0.01).look(s3i, -0.4, 0.1, 0.01).expr(s3i, 'soft', 0.01);
   fear.set(s3i, { x: 1300, y: 1620, facing: -0.4, glow: 1, 'arms.L': { tx: 60, ty: 150, hand: 'fist', view: 'back', bend: -1 }, 'arms.R': { tx: -60, ty: 150, hand: 'fist', view: 'back', bend: 1 } }, 0.01).head(s3i, -0.4, 0.1, 0, 0.01).look(s3i, -0.5, 0.1, 0.01).expr(s3i, 'worried', 0.01, 0.6);
   st.shot({ t0: s3i, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'annoy', 'anger', 'innerMaya', 'fear'], armsFront: ['anger', 'innerMaya'],
-    cam: [[s3i, 745, 1100, 0.8], [s3i, 760, 1130, 0.9, e('N9') - s3i + 1]] });
+    cam: [[s3i, 705, 1100, 0.79], [s3i, 715, 1130, 0.86, e('N9') - s3i + 1]] });
   anger.blink(w('N9', 'shout'));
 
   // ================================================================ SCENE 4 — the boundary (kitchen)
@@ -494,7 +494,7 @@ function buildFilm(sched) {
   const s5b = t('F1') - 0.35;
   fear.set(s5b, { x: 1170, y: 1620, facing: -0.25, lean: 4, glow: 1 }, 0.01).head(s5b, -0.2, 0.1, 0, 0.01).look(s5b, -0.2, 0.05, 0.01);
   fear.set(s5b + 0.1, { y: 1570, glow: 1.9 }, 0.15).set(s5b + 0.3, { y: 1620 }, 0.3);
-  fear.set(s5b + 0.1, { 'arms.L': { tx: 40, ty: -150, hand: 'grip', view: 'back', bend: -1 }, 'arms.R': { tx: -40, ty: -150, hand: 'grip', view: 'back', bend: 1 } }, 0.25); // hands to head
+  fear.set(s5b + 0.1, { 'arms.L': { tx: 30, ty: -150, hand: 'grip', view: 'back', bend: 1, rotAbs: -55 }, 'arms.R': { tx: -30, ty: -150, hand: 'grip', view: 'back', bend: -1, rotAbs: -125 } }, 0.25); // hands to his temples, elbows out
   fear.expr(s5b + 0.05, 'fear', 0.15, 1.3);
   const nos = ['No', 'no', 'no'];
   [[w('F1', 'No', 0), -0.35], [w('F1', 'no', 1), 0.35], [w('F1', 'no', 2), -0.35], [w('F1', 'no', 2) + 0.25, 0.1]].forEach(([tt, yw]) => fear.head(tt - 0.05, yw, 0.05, 0, 0.18));
@@ -582,9 +582,9 @@ function buildFilm(sched) {
   inner.set(s6a + 0.3, { facing: -0.6 }, 0.4).head(s6a + 0.3, -0.6, 0.1, 0, 0.5).look(s6a + 0.3, -0.6, 0.2);
   inner.walk(s6a + 0.6, s6a + 2.7, 440, 1715, 34);
   st.sfx(s6a + 0.7, 'footsteps_wood', 0.4);
-  inner.set(s6a + 2.62, { pose: 'floorCross', y: 1722, x: 430, s: 0.92, facing: -0.4, 'arms.L': { tx: -48, ty: 262, hand: 'flat', view: 'back', bend: -1, rotAbs: 100, foreK: 0.8 }, 'arms.R': { tx: 30, ty: 262, hand: 'flat', view: 'back', bend: 1, rotAbs: 80, foreK: 0.8 } }, 0.01);
+  inner.set(s6a + 2.62, { pose: 'floorCross', y: 1722, x: 430, s: 0.92, facing: -0.4, 'arms.L': { tx: -50, ty: 212, hand: 'flat', view: 'back', bend: -1, rotAbs: 100, foreK: 0.8 }, 'arms.R': { tx: 32, ty: 212, hand: 'flat', view: 'back', bend: 1, rotAbs: 80, foreK: 0.8 } }, 0.01);
   st.sfx(s6a + 2.8, 'cloth_rustle', 0.5);
-  inner.expr(s6a + 2.66, 'tender', 0.8, 0.8).head(s6a + 2.66, -0.55, 0.15, -3, 0.01).look(s6a + 2.66, -0.6, 0.35, 0.01);
+  inner.expr(s6a + 2.66, 'tender', 0.8, 0.8).head(s6a + 2.66, -0.78, 0.2, -4, 0.01).look(s6a + 2.66, -0.8, 0.35, 0.01);
   sad.expr(s6a, 'sadDeep', 0.6, 0.9).look(s6a, 0.0, 0.85, 0.4).head(s6a, 0.15, 0.55, -6, 0.6);
   sad.look(s6a + 2.0, 0.5, 0.5, 0.3);                                                  // notices her, then looks away
   sad.look(s6a + 2.8, 0.05, 0.85, 0.4);
@@ -596,8 +596,8 @@ function buildFilm(sched) {
   // M12–M13
   const s6b = t('M12') - 0.45;
   inner.expr(s6b, 'tender', 0.5, 1.0);
-  inner.head(w('M12', 'is'), -0.6, 0.25, -5, 0.6);
-  inner.look(t('M13'), -0.65, 0.4, 0.3);
+  inner.head(w('M12', 'is'), -0.78, 0.25, -6, 0.6);
+  inner.look(t('M13'), -0.8, 0.4, 0.3);
   st.shot({ t0: s6b, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'innerMaya'], cam: [[s6b, 420, 1400, 2.4], [s6b, 420, 1395, 2.55, e('M13') - s6b]] });
 
   // S2: first eye contact, then the memory of Nana's hands
@@ -615,8 +615,8 @@ function buildFilm(sched) {
   // M14–M15
   const s6e = t('M14') - 0.5;
   inner.expr(s6e, 'tearful', 0.8, 0.9);
-  inner.look(s6e, -0.65, 0.3, 0.3).head(s6e, -0.6, 0.2, -4, 0.6);
-  inner.head(t('M15') - 0.1, -0.6, 0.1, -7, 0.8).expr(t('M15'), 'tender', 0.6, 1.0, { smile: 0.3, glisten: 0.9 });
+  inner.look(s6e, -0.8, 0.3, 0.3).head(s6e, -0.78, 0.2, -5, 0.6);
+  inner.head(t('M15') - 0.1, -0.75, 0.1, -7, 0.8).expr(t('M15'), 'tender', 0.6, 1.0, { smile: 0.3, glisten: 0.9 });
   st.shot({ t0: s6e, env: 'hearth', envOpt: hearthOpt(), actors: ['sadness', 'innerMaya'], cam: [[s6e, 420, 1395, 2.6], [s6e, 420, 1390, 2.8, 3.5]] });
 
   // NA1: the memory — Nana and little Maya baking bread
@@ -648,8 +648,8 @@ function buildFilm(sched) {
   nana.set(offerT, { 'arms.R': { tx: -100, ty: 190, hand: { base: 'soft', curl: [0.2, 0.25, 0.3, 0.35] }, view: 'palm', bend: 1, rotAbs: 195, holding: 'bread', thumb: -1, locked: true } }, 0.8);
   kid.look(offerT + 0.6, 0.4, 0.3, 0.3).expr(offerT + 0.7, 'smile', 0.6, 1.1);
   st.label(m0 + 0.2, 'nana', { dur: 3.4 });
-  st.label(m0 + 0.5, 'youngMaya', { dur: 3.4, text: 'Maya, age 7', emoji: '' });
-  st.shot({ t0: m0, env: 'memory', envOpt: memOpt, actors: ['nana', 'youngMaya'], cam: [[m0, 600, 1150, 1.25], [m0, 610, 1130, 1.45, e('NA1') - m0 + 1]], trans: { type: 'dissolve', dur: 0.7 },
+  st.label(m0 + 0.2, 'youngMaya', { dur: 3.6, text: 'Maya, age 7', emoji: '' });
+  st.shot({ t0: m0, env: 'memory', envOpt: memOpt, actors: ['nana', 'youngMaya'], armsFront: ['nana', 'youngMaya'], cam: [[m0, 600, 1150, 1.25], [m0, 610, 1130, 1.45, e('NA1') - m0 + 1]], trans: { type: 'dissolve', dur: 0.7 },
     grade: { color: '#ffcf8a', alpha: 0.25, mode: 'soft-light' }, vignette: 0.55 });
 
   // N16–N18: back in the corner — Sadness rests her head on Maya's shoulder
@@ -681,10 +681,10 @@ function buildFilm(sched) {
   nana.set(s7c, { 'arms.R': { tx: -110, ty: 175, hand: { base: 'soft', curl: [0.2, 0.25, 0.3, 0.35] }, view: 'palm', bend: 1, rotAbs: 195, holding: 'bread', thumb: -1, locked: true } }, 0.01);
   nana.expr(s7c, 'smile', 0.01, 1).look(s7c, -0.5, 0.35, 0.01);
   kid.expr(s7c, 'smile', 0.01, 1.2).look(s7c, 0.45, 0.2, 0.01).head(s7c, 0.5, 0.0, 6, 0.01);
-  kid.set(s7c + 1.5, { 'arms.R': { ...reach('youngMaya', s7c + 1.5, 1, 560, 1250), hand: 'pinch', view: 'back', bend: 1, rotAbs: -20 } }, 0.8);
+  kid.set(s7c + 1.5, { 'arms.R': { ...reach('youngMaya', s7c + 1.5, 1, 575, 1290), hand: 'pinch', view: 'back', bend: 1, rotAbs: -20 } }, 0.8);
   kid.look(s7c + 2.6, 0.55, -0.5, 0.3).head(s7c + 2.6, 0.6, -0.3, 8, 0.6);
   nana.look(s7c + 2.8, -0.55, 0.25, 0.3).expr(s7c + 2.8, 'smile', 0.5, 1.1);
-  st.shot({ t0: s7c, env: 'memory', envOpt: memOpt, actors: ['nana', 'youngMaya'], cam: [[s7c, 580, 1120, 1.5], [s7c, 600, 1100, 1.7, e('R2') - s7c]], trans: { type: 'dissolve', dur: 0.6 },
+  st.shot({ t0: s7c, env: 'memory', envOpt: memOpt, actors: ['nana', 'youngMaya'], armsFront: ['nana', 'youngMaya'], cam: [[s7c, 580, 1120, 1.5], [s7c, 600, 1100, 1.7, e('R2') - s7c]], trans: { type: 'dissolve', dur: 0.6 },
     grade: { color: '#ffcf8a', alpha: 0.25, mode: 'soft-light' }, vignette: 0.55 });
   // R3 — hospital hands
   const s7d = t('R3') - 0.35;
@@ -708,7 +708,7 @@ function buildFilm(sched) {
     grade: { color: '#7e94bf', alpha: 0.28, mode: 'soft-light' }, vignette: 0.55 });
   // R9 — back to the two of them; Sadness nods
   const s7j = t('R9') - 0.7;
-  inner.set(s7j, { pose: 'floorCross', y: 1722, x: 430, s: 0.92, facing: -0.4, 'arms.R': { tx: 30, ty: 262, hand: 'flat', view: 'back', bend: 1, rotAbs: 80, foreK: 0.8 } }, 0.01);
+  inner.set(s7j, { pose: 'floorCross', y: 1722, x: 430, s: 0.92, facing: -0.4, 'arms.R': { tx: 32, ty: 212, hand: 'flat', view: 'back', bend: 1, rotAbs: 80, foreK: 0.8 } }, 0.01);
   inner.set(s7j, { 'arms.L': { ...reach('innerMaya', s7j, -1, ...SADH(s7j)), hand: 'soft', view: 'back', bend: 1, rotAbs: 170, locked: true, foreK: 0.85 } }, 0.01);
   inner.head(s7j, -0.5, 0.2, -10, 0.01).look(s7j, -0.5, 0.5, 0.01).expr(s7j, 'tender', 0.01, 1);
   sad.head(s7j, 0.5, -0.05, 6, 0.01).look(s7j, 0.65, -0.3, 0.01).expr(s7j, 'tender', 0.01, 1);
@@ -766,10 +766,12 @@ function buildFilm(sched) {
   eli.look(p0 + 2.1, -0.5, 0.0, 0.3).head(p0 + 2.0, -0.4, 0.05, 0, 0.5).expr(p0 + 2.1, 'tender', 0.6, 0.6);
   eli.head(p0 + 2.5, -0.4, 0.3, 0, 0.4).head(p0 + 2.9, -0.4, 0.05, 0, 0.4);       // a small nod: go on
   maya.head(p0 + 2.6, -0.75, 0.0, 0, 0.5).look(p0 + 2.6, -0.55, 0.1, 0.3);
-  maya.set(p0 + 2.6, { 'arms.L': { ...reach('maya', p0 + 2.6, -1, 740, 1125), hand: 'pinch', view: 'back', bend: 1, holding: 'key', rotAbs: 180 } }, 0.7);
+  maya.set(p0 + 2.6, { 'arms.L': { ...reach('maya', p0 + 2.6, -1, 818, 1122), hand: 'pinch', view: 'back', bend: 1, holding: 'key', rotAbs: 180 } }, 0.7);
   st.sfx(p0 + 3.25, 'door_unlock', 0.8);
   st.sfx(porchOpen, 'door_creak', 0.8);
-  maya.set(porchOpen + 0.4, { 'arms.L': { tx: -14, ty: 310, hand: 'relax' } }, 0.8);
+  maya.set(porchOpen - 0.15, { 'arms.L': { ...reach('maya', porchOpen, -1, 772, 1110), hand: 'flat', view: 'palm', bend: 1, rotAbs: 175 } }, 0.25);
+  maya.set(porchOpen + 0.45, { 'arms.L': { ...reach('maya', porchOpen, -1, 712, 1110), hand: 'flat', view: 'palm', bend: 1, rotAbs: 175 } }, 0.5);
+  maya.set(porchOpen + 1.1, { 'arms.L': { tx: -14, ty: 310, hand: 'relax' } }, 0.8);
   maya.look(porchOpen + 0.6, -0.4, 0.05, 0.3).expr(porchOpen + 0.6, 'tender', 1.0, 0.7);
   st.shot({ t0: p0, env: 'porch', envOpt: (T) => ({ doorOpen: smooth((T - porchOpen) / 1.9) * 0.95 }), actors: ['eli', 'maya'], cam: [[p0, 820, 1170, 0.95], [p0, 790, 1150, 1.08, 5.6]], trans: { type: 'dissolve', dur: 0.6 } });
 
@@ -779,8 +781,9 @@ function buildFilm(sched) {
   st.amb('room_tone', n0, D, 0.4);
   st.amb('birds_morning', n0, D, 0.25);
   const tinOpenT = n0 + 1.0;
-  eli.set(n0, { x: 1050, y: 1600, s: 1, facing: 0.35, 'arms.L': { ...reach('eli', n0, -1, 990, 1110), hand: 'grip', view: 'back', bend: -1, rotAbs: -30 }, 'arms.R': { ...reach('eli', n0, 1, 1010, 1110), hand: 'grip', view: 'back', bend: 1, rotAbs: 200 } }, 0.01);
-  eli.head(n0, 0.25, 0.45, 0, 0.01).look(n0, 0.1, 0.8, 0.01).expr(n0, 'sad', 0.01, 0.6);
+  eli.set(n0, { x: 1175, y: 1600, s: 1, facing: -0.55, 'arms.R': { tx: 14, ty: 320, hand: 'relax' } }, 0.01);
+  eli.set(n0, { 'arms.L': { ...reach('eli', n0, -1, 1022, 1090), hand: 'pinch', view: 'back', bend: 1, rotAbs: 200 } }, 0.01);
+  eli.head(n0, -0.6, 0.45, 0, 0.01).look(n0, -0.5, 0.8, 0.01).expr(n0, 'sad', 0.01, 0.6);
   maya.set(n0, { x: 700, y: 1610, s: 1, facing: 0.5, 'arms.L': { tx: -14, ty: 310, hand: 'relax' }, 'arms.R': { tx: 14, ty: 310, hand: 'relax' } }, 0.01);
   maya.head(n0, 0.5, 0.2, 0, 0.01).look(n0, 0.55, 0.4, 0.01).expr(n0, 'sad', 0.01, 0.6);
   st.sfx(tinOpenT, 'tin_open', 0.8);

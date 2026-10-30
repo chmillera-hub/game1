@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('@napi-rs/canvas');
 const { clamp, smooth, easeInOut, fbm1, rgba, lerp } = require('./core');
-const { drawCharacter, headWorld } = require('./rig');
+const { drawCharacter, drawGlowOnly, headWorld } = require('./rig');
 const { makeCast } = require('./chars');
 const { Actor, LipSync, Track } = require('./acting');
 const { buildSubs, drawSubs, drawLabel, drawTitle } = require('./text');
@@ -116,6 +116,13 @@ class Stage {
     const states = {};
     for (const id of ids) states[id] = this.actors[id].sample(T);
     if (shot.fixGaze) shot.fixGaze(states, T);
+    // glows first, so no character's aura washes over another character
+    for (const id of [...ids, ...(shot.foreground || [])]) {
+      const S = states[id] || this.actors[id].sample(T);
+      if (!S.hidden) drawGlowOnly(ctx, this.cast[this.actors[id].rig], S, T);
+      S.glowDone = true;
+      states[id] = S;
+    }
     for (const id of ids) {
       const a = this.actors[id], S = states[id];
       if (S.hidden) continue;
@@ -132,7 +139,7 @@ class Stage {
     if (shot.over) shot.over(ctx, T, this, eo);
     E.drawFront(ctx, T, eo);
     for (const id of shot.foreground || []) {
-      const a = this.actors[id], S = a.sample(T);
+      const a = this.actors[id], S = states[id];
       states[id] = S;
       if (S.hidden) continue;
       const Lt = { ...DEFAULT_LIGHT, ...(E.lightAt ? E.lightAt(S.x, S.y - 300 * (S.s || 1), T, eo) : {}) };

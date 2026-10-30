@@ -187,7 +187,7 @@ function drawEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
     ctx.fillRect(ex - ew, ey - eh, ew * 2, eh * 2);
     // iris
     const ri = eh * 0.43 * (E.iris || 1);
-    const ix = ex + P.gx * ew * 0.36, iy = ey + P.gy * eh * 0.24 + eh * 0.04;
+    const ix = ex + P.gx * ew * 0.42, iy = ey + P.gy * eh * 0.26 + eh * 0.04;
     const gi = ctx.createRadialGradient(ix, iy, ri * 0.15, ix, iy, ri);
     gi.addColorStop(0, shade(E.irisColor, 0.25));
     gi.addColorStop(0.7, E.irisColor);
@@ -960,7 +960,7 @@ function drawLegsFloor(ctx, C, sk, S, L, which) {
   if (which === 'floorCross') {
     const ky = hipY - 6;
     const kL = [-hw * 1.28 + f * 16, ky], kR = [hw * 1.28 + f * 16, ky];
-    const fL = [hw * 0.82 + f * 26, -10], fR = [-hw * 0.82 + f * 26, -12]; // each foot tucks under the opposite knee
+    const fL = [hw * 1.02 + f * 26, -10], fR = [-hw * 1.02 + f * 26, -12]; // each foot tucks under the opposite knee
     // thighs out to the knees
     for (const k of [kL, kR]) {
       const sd = Math.sign(k[0]) || 1;
@@ -982,6 +982,12 @@ function drawLegsFloor(ctx, C, sk, S, L, which) {
     };
     drawShin(kL, fL, -0.1);
     drawShin(kR, fR, 0);
+    // second pass: both feet on top so each reads (tucked under the opposite knee)
+    for (const [k, ft] of [[kL, fL], [kR, fR]]) {
+      const dir = Math.sign(ft[0] - k[0]);
+      const fo = P2((p) => smoothClosed(p, [[ft[0] - dir * b.foot * 0.1, ft[1] - b.foot * 0.26], [ft[0] + dir * b.foot * 0.42, ft[1] - b.foot * 0.12], [ft[0] + dir * b.foot * 0.38, ft[1] + 2], [ft[0] - dir * b.foot * 0.12, ft[1] + 2]], 0.7));
+      paint(ctx, fo, shoe, L, [ft[0] - 80, ft[1] - 40, ft[0] + 80, ft[1] + 6], { lw: 2 });
+    }
     // knee caps + folds
     for (const k of [kL, kR]) {
       ctx.fillStyle = rgba(shade(lc, 0.3), 0.3);
@@ -1111,12 +1117,16 @@ function drawGlow(ctx, C, sk, S, t) {
   const cy = (sk.headC[1] + sk.hip[1]) / 2;
   const h = Math.abs(sk.hip[1] - sk.headC[1]) + C.head.h;
   ctx.save();
-  const g = ctx.createRadialGradient(sk.shC[0], cy, 10, sk.shC[0], cy, h * 0.75);
-  g.addColorStop(0, rgba(G.color, 0.5 * amt));
-  g.addColorStop(0.5, rgba(G.color, 0.24 * amt));
+  // elliptical glow that fades to zero exactly at its edge (no hard rim)
+  ctx.translate(sk.shC[0], cy);
+  ctx.scale(1, 1.5);
+  const r = h * 0.52;
+  const g = ctx.createRadialGradient(0, 0, 10, 0, 0, r);
+  g.addColorStop(0, rgba(G.color, 0.42 * amt));
+  g.addColorStop(0.45, rgba(G.color, 0.2 * amt));
   g.addColorStop(1, rgba(G.color, 0));
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(sk.shC[0], cy, h * 0.5, h * 0.78, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
@@ -1145,7 +1155,7 @@ function drawCharacter(ctx, C, S, L, t) {
     ctx.restore();
     return sk;
   }
-  if (C.glow) drawGlow(ctx, C, sk, S, t);
+  if (C.glow && !S.glowDone) drawGlow(ctx, C, sk, S, t);
   if (C.hairBack) {
     ctx.save(); ctx.translate(sk.headC[0], sk.headC[1]); ctx.rotate(sk.tilt);
     C.hairBack(ctx, C, { yaw: clamp(S.head?.yaw ?? sk.f * 0.7, -1, 1), pitch: S.head?.pitch || 0, H: C.head.h, W: C.head.w, t, L: light, S });
@@ -1184,4 +1194,11 @@ function localToWorld(C, S, x, y) {
   return [S.x + x * sc, S.y + y * sc];
 }
 
-module.exports = { drawCharacter, drawHand, drawHead, skeleton, headWorld, localToWorld, paint, softLine, HANDS, handParams, P2, bboxOf, solveArm };
+function drawGlowOnly(ctx, C, S, t) {
+  if (!C.glow) return;
+  ctx.save(); ctx.translate(S.x, S.y); const sc = (S.s || 1) * (C.scale || 1); ctx.scale(sc, sc);
+  drawGlow(ctx, C, skeleton(C, S), S, t);
+  ctx.restore();
+}
+
+module.exports = { drawGlowOnly, drawCharacter, drawHand, drawHead, skeleton, headWorld, localToWorld, paint, softLine, HANDS, handParams, P2, bboxOf, solveArm };

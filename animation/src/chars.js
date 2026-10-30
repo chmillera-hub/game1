@@ -42,7 +42,7 @@ function hairMass(ctx, pts, color, L, o = {}) {
 function scalpCap(ctx, C, o, color, line = -0.27, side = 0.02) {
   const { H, W, yaw, R } = o;
   const outer = [];
-  for (let i = 0; i <= 12; i++) { const a = Math.PI * (1 + i / 12); outer.push([Math.cos(a) * W * 0.53, -0.07 * H + Math.sin(a) * H * 0.47]); }
+  for (let i = 0; i <= 12; i++) { const a = Math.PI * (1 + i / 12); outer.push([Math.cos(a) * W * 0.585, -0.06 * H + Math.sin(a) * H * 0.5]); }
   const inner = [];
   for (let i = 12; i >= 0; i--) {
     const th = -1.45 + (2.9 * i) / 12;
@@ -224,7 +224,7 @@ const BASE_ADULT = {
   head: { h: 150, w: 114, shape: 'human', jaw: 0.4, chin: 0.11, cheek: 0.49 },
   neck: { len: 54, w: 50 },
   body: { shoulderW: 226, torso: 300, leg: 450, chestW: 196, waistW: 168, hipW: 204, upper: 170, fore: 150, hand: 80, armR: 23, thigh: 44, foot: 120, ankle: 40, hipH: 30 },
-  eyes: { y: 0.03, spacing: 0.5, w: 0.225, h: 0.1, irisColor: '#4a2c1a', lash: '#24140f', lashW: 0.12 },
+  eyes: { y: 0.03, spacing: 0.5, w: 0.225, h: 0.1, irisColor: '#4a2c1a', lash: '#24140f', lashW: 0.12, iris: 1.12 },
   brows: { color: '#2a1a12', thick: 0.045, gap: 0.115, w: 0.26, arch: 0.025 },
   mouth: { y: 0.32, w: 0.33 },
   nose: { y: 0.19 },
@@ -295,7 +295,7 @@ function eli() {
     clothes: {
       top: { color: '#4f565f', hem: 34, extra: 4, detail: hoodieDetail },
       sleeve: { len: 1, color: '#4f565f', cuff: true, folds: true, cuffW: 1.2, puff: 1.08 },
-      bottom: { color: '#3f4535' }, shoes: { color: '#e9e4da' },
+      bottom: { color: '#3f4535' }, shoes: { color: '#b9b3a8' },
     },
     collar: hoodCollar,
     faceExtra: eliBeard, hairFront: eliHair,
