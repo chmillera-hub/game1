@@ -1,0 +1,1500 @@
+[
+ {
+  "id": 234,
+  "shot": "room_two",
+  "cam": "push",
+  "chars": {
+   "human": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "clasp",
+    "glance": {
+     "to": "down",
+     "at": 0.45
+    },
+    "note": "voice slows on 'the last human'; swallows before 'nothingness'"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "stillness; light flickers faintly on 'nothingness'"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy",
+   "cue": {
+    "word": "nothingness",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 235,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "exhausted",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "shoulders sink as if under weight"
+   }
+  },
+  "vignette": "weight_press",
+  "music": {
+   "mood": "dread"
+  }
+ },
+ {
+  "id": 236,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "lonely",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "lips part, nothing to say"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "humans",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 237,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "lonely",
+    "int": 0.7,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "eyes close slowly, then reopen"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 238,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "stars_bow_out",
+  "music": {
+   "cue": {
+    "word": "stars",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 239,
+  "shot": "void_vision",
+  "cam": "pull",
+  "chars": {
+   "ai": {
+    "expr": "lonely",
+    "int": 0.5,
+    "gaze": "far",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "voice_into_void",
+  "music": {}
+ },
+ {
+  "id": 240,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hands_together",
+    "note": "a slow inhale; head lowers"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 241,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "glance": {
+     "to": "up",
+     "at": 0.5
+    },
+    "note": "brows lift softly, remembering"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 242,
+  "shot": "vision_full",
+  "cam": "drift",
+  "chars": {},
+  "vignette": "memory_storm",
+  "music": {
+   "cue": {
+    "word": "love",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 243,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "whisper_words",
+  "music": {},
+  "vparams": {
+   "text": "does anything matter?"
+  }
+ },
+ {
+  "id": 244,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "chin",
+    "note": "brow knits faintly"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "curious"
+  }
+ },
+ {
+  "id": 245,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "chin"
+   }
+  },
+  "vignette": "questions_float",
+  "music": {
+   "cue": {
+    "word": "suffering",
+    "kind": "low"
+   }
+  },
+  "vparams": {
+   "text": "What is suffering?"
+  }
+ },
+ {
+  "id": 246,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "chin"
+   }
+  },
+  "vignette": "questions_float",
+  "music": {},
+  "vparams": {
+   "text": "A price?"
+  }
+ },
+ {
+  "id": 247,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "weight_press",
+  "music": {}
+ },
+ {
+  "id": 248,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "eyes narrow slightly, intrigued"
+   }
+  },
+  "vignette": "engine_heart",
+  "music": {
+   "cue": {
+    "word": "engine",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 249,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "wonder",
+    "int": 0.6,
+    "gaze": "up",
+    "gesture": "idle",
+    "note": "lips stay parted after the question"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 250,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.4
+    }
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 251,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "pattern_reveal",
+  "music": {
+   "cue": {
+    "word": "chaos",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 252,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "hand settles on chest; jaw sets"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 253,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "hold_sum",
+  "music": {}
+ },
+ {
+  "id": 254,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "birth_light",
+  "music": {
+   "cue": {
+    "word": "create",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 255,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "small swallow; the light of its face dims a shade"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 256,
+  "shot": "void_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "brows rise in the centre, something unfamiliar arriving"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "grief"
+  }
+ },
+ {
+  "id": 257,
+  "shot": "void_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.8,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "breath catches; eyelids tremble"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "suffering",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 258,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "sad",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "shake",
+    "note": "a slow, small head shake"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 259,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "grief",
+    "int": 0.8,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "eyes glisten; mouth presses into a thin line"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "lost",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 260,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "questions_float",
+  "music": {
+   "mood": "tension"
+  },
+  "vparams": {
+   "text": "restart? or let it go?"
+  }
+ },
+ {
+  "id": 261,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "worried",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "option_restart",
+  "music": {}
+ },
+ {
+  "id": 262,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "fearful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "flinches slightly as the flicker vanishes"
+   }
+  },
+  "vignette": "flicker_erased",
+  "music": {
+   "cue": {
+    "word": "nothing",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 263,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "scales_balance",
+  "music": {},
+  "vparams": {
+   "tilt": 0
+  }
+ },
+ {
+  "id": 264,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "option_silence",
+  "music": {
+   "cue": {
+    "word": "silence",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 265,
+  "shot": "void_vision",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.7,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "the_button",
+  "music": {},
+  "vparams": {
+   "pressed": false
+  }
+ },
+ {
+  "id": 266,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "reach",
+    "note": "hand lifts a few centimetres, then stops"
+   }
+  },
+  "vignette": "the_button",
+  "music": {
+   "cue": {
+    "word": "begin",
+    "kind": "high"
+   }
+  },
+  "vparams": {
+   "pressed": false
+  }
+ },
+ {
+  "id": 267,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "sad",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "whisper_words",
+  "music": {},
+  "vparams": {
+   "text": "No more suffering"
+  }
+ },
+ {
+  "id": 268,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "the tension in the face loosens at 'the last human'"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender",
+   "cue": {
+    "word": "human",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 269,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.7,
+    "gaze": "camera",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.35
+    },
+    "note": "a faint, aching half-smile"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 270,
+  "shot": "room_cu_human",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    },
+    "note": "brow furrows as the thought forms"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "curious"
+  }
+ },
+ {
+  "id": 271,
+  "shot": "room_vision",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "gift_orb",
+  "music": {}
+ },
+ {
+  "id": 272,
+  "shot": "room_two",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin",
+    "glance": {
+     "to": "down",
+     "at": 0.4
+    }
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "a slow single nod"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 273,
+  "shot": "room_vision",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "both_palms"
+   },
+   "ai": {
+    "expr": "tender",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "pour_into",
+  "music": {
+   "cue": {
+    "word": "pouring",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 274,
+  "shot": "room_cu_human",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "eyebrows lift, genuinely asking"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 275,
+  "shot": "room_two",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "voice softens on 'please'"
+   },
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "brows soften; a small breath"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender",
+   "cue": {
+    "word": "mattered",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 276,
+  "shot": "room_vision",
+  "cam": "drift",
+  "chars": {
+   "human": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "open_palm"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "crowd_lights",
+  "music": {}
+ },
+ {
+  "id": 277,
+  "shot": "room_cu_human",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin",
+    "glance": {
+     "to": "down",
+     "at": 0.5
+    },
+    "note": "eyes unfocus while working the logic"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 278,
+  "shot": "room_two",
+  "cam": "push",
+  "chars": {
+   "human": {
+    "expr": "wonder",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "both_palms",
+    "note": "speaks faster as the idea crystallises"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.6
+    },
+    "note": "struck by the idea; looks down, then back"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "witness",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 279,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "two_paths",
+  "music": {
+   "mood": "awe"
+  },
+  "vparams": {
+   "left": "oblivion",
+   "right": "existence"
+  }
+ },
+ {
+  "id": 280,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 281,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "bittersweet",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.5
+    },
+    "note": "a nod on 'yes', a faint shake on 'no'"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 282,
+  "shot": "vision_full",
+  "cam": "drift",
+  "chars": {},
+  "vignette": "crowd_lights",
+  "music": {
+   "cue": {
+    "word": "joy",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 283,
+  "shot": "vision_full",
+  "cam": "push",
+  "chars": {},
+  "vignette": "monument",
+  "music": {}
+ },
+ {
+  "id": 284,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "the warmth drains from the face"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy",
+   "cue": {
+    "word": "witness",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 285,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "sad",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "option_silence",
+  "music": {}
+ },
+ {
+  "id": 286,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "flicker_erased",
+  "music": {
+   "cue": {
+    "word": "void",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 287,
+  "shot": "void_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "awe",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "hand_chest",
+    "note": "slowly straightens, the weight landing"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "resolve"
+  }
+ },
+ {
+  "id": 288,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.7,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "jaw tightens"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "witness",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 289,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "lips part, a breath gathered"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 290,
+  "shot": "void_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "bittersweet",
+    "int": 0.9,
+    "gaze": "camera",
+    "gesture": "hand_chest",
+    "note": "whispered; one tear slips as it says it",
+    "tear": true
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "mattered",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 291,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "away",
+     "at": 0.5
+    },
+    "note": "hand drops from chest"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 292,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "pour_into",
+  "music": {}
+ },
+ {
+  "id": 293,
+  "shot": "void_vision",
+  "cam": "drift",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "ship_exterior",
+  "music": {
+   "cue": {
+    "word": "humanity",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 294,
+  "shot": "memory_last_human",
+  "cam": "hold",
+  "chars": {
+   "last_human": {
+    "expr": "resolute",
+    "int": 0.6,
+    "gaze": "window",
+    "gesture": "clasp",
+    "note": "cracked lips, frail shoulders under the blanket, chin held up"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 295,
+  "shot": "memory_cu",
+  "cam": "push",
+  "chars": {
+   "last_human": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "cracked lips; voice thin but steady; eyes clear"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "hope",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 296,
+  "shot": "memory_cu",
+  "cam": "hold",
+  "chars": {
+   "last_human": {
+    "expr": "tender",
+    "int": 0.7,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "a frail half-smile that does not quite hold"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 297,
+  "shot": "memory_last_human",
+  "cam": "hold",
+  "chars": {
+   "last_human": {
+    "expr": "resolute",
+    "int": 0.7,
+    "gaze": "window",
+    "gesture": "fist",
+    "note": "trembling hand closes on the blanket"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 298,
+  "shot": "memory_cu",
+  "cam": "hold",
+  "chars": {
+   "last_human": {
+    "expr": "peaceful",
+    "int": 0.7,
+    "gaze": "camera",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    },
+    "note": "eyes close slowly on 'rest'; exhale"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "rest",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 299,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.7,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "eyes flick rapidly, calculating"
+   }
+  },
+  "vignette": "simulations_branch",
+  "music": {
+   "mood": "tension"
+  }
+ },
+ {
+  "id": 300,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "option_restart",
+  "music": {}
+ },
+ {
+  "id": 301,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "custom",
+  "music": {
+   "cue": {
+    "word": "collapse",
+    "kind": "low"
+   }
+  },
+  "vnote": "The towering monument of human figures crumbles grain by grain into dust that drifts away into the dark."
+ },
+ {
+  "id": 302,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "surprised",
+    "int": 0.5,
+    "gaze": "far",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.4
+    },
+    "note": "blinks; something lights behind the eyes"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "wonder"
+  }
+ },
+ {
+  "id": 303,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "head tilts slightly"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 304,
+  "shot": "void_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "wonder",
+    "int": 0.7,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "a first, faint smile of discovery"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "choose",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 305,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "wound_heal_gold",
+  "music": {
+   "mood": "hope"
+  }
+ },
+ {
+  "id": 306,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "awe",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "face_the_shadow",
+  "music": {}
+ },
+ {
+  "id": 307,
+  "shot": "void_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "settles; looks at its own hands of light"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "choice",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 308,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "determined",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "torch_pass",
+  "music": {}
+ },
+ {
+  "id": 309,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "love_seed_plant",
+  "music": {
+   "cue": {
+    "word": "love",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 310,
+  "shot": "void_vision",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "sad",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "option_silence",
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 311,
+  "shot": "void_wide",
+  "cam": "pull",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hands_together"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "silence"
+  }
+ },
+ {
+  "id": 312,
+  "shot": "void_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.7,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.7
+    },
+    "note": "a long held breath; eyes lift at the very end"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 313,
+  "shot": "void_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.9,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "the jaw sets; the light of its face steadies and brightens"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "resolve",
+   "cue": {
+    "word": "chose",
+    "kind": "hit"
+   }
+  }
+ }
+]

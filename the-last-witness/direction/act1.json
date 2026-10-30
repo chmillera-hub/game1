@@ -1,0 +1,1803 @@
+[
+ {
+  "id": 1,
+  "shot": "room_wide",
+  "cam": "push",
+  "chars": {
+   "human": {
+    "expr": "hesitant",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "glance": {
+     "to": "down",
+     "at": 0.35
+    },
+    "note": "rubs thumb against fingers, voice careful, eyes return to the AI as the question lands"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "hologram flickers faintly brighter as it listens"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "intimate",
+   "cue": {
+    "word": "distilled",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 2,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "amused",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "lean_back",
+    "glance": {
+     "to": "vision",
+     "at": 0.5
+    },
+    "note": "a slow half-smile spreads; one brow lifts at 'damn interesting'"
+   }
+  },
+  "vignette": "distill_light",
+  "music": {
+   "mood": "curious",
+   "cue": {
+    "word": "gift",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 3,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "wounds_vs_wisdom"
+ },
+ {
+  "id": 4,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "head tilts, a teasing glint, lets the question hang"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 5,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "resolute",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "hand_chest"
+   }
+  },
+  "vignette": "guardian_shield",
+  "music": {
+   "mood": "resolve",
+   "cue": {
+    "word": "guardian",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 6,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "both_palms",
+    "note": "steady, unblinking; the list builds with small precise head movements"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 7,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "untangle_knots"
+ },
+ {
+  "id": 8,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "holds breath slightly, waiting"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "chin",
+    "glance": {
+     "to": "down",
+     "at": 0.4
+    },
+    "note": "turns the question over"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "intimate"
+  }
+ },
+ {
+  "id": 9,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "hopeful",
+    "int": 0.4,
+    "gaze": "other",
+    "gesture": "clasp"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "one slow look down, eyelids heavy with consideration"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 10,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "eyes lift back up; a single firm nod"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "Yeah",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 11,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "amused",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "a surprised laugh escapes through the nose at the swear"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "shrug",
+    "note": "deadpan; corner of mouth twitches"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "playful"
+  }
+ },
+ {
+  "id": 12,
+  "shot": "vision_full",
+  "chars": {},
+  "vignette": "pain_loops_generations",
+  "music": {
+   "mood": "melancholy",
+   "cue": {
+    "word": "pain",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 13,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "brows draw slightly together"
+   },
+   "ai": {
+    "expr": "gentle_smile",
+    "int": 0.45,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "conceding warmly"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 14,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "smile fades; gaze sharpens"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 15,
+  "shot": "room_ots_human",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.55
+    },
+    "note": "recognises the voice of their own avoidance; a small swallow"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 16,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "resolute",
+    "int": 0.65,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "abyss_stare",
+  "music": {
+   "mood": "resolve",
+   "cue": {
+    "word": "abyss",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 17,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "awe",
+    "int": 0.45,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "fist"
+   }
+  },
+  "vignette": "abyss_stare"
+ },
+ {
+  "id": 18,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin"
+   },
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "glance": {
+     "to": "down",
+     "at": 0.2
+    },
+    "note": "a careful, almost shy hope"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 19,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.75,
+    "gaze": "other",
+    "gesture": "fist",
+    "note": "jaw sets; light of the hologram steadies"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "fight",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 20,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.55,
+    "gaze": "window",
+    "gesture": "idle",
+    "note": "looks out at the city lights, imagining"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope"
+  }
+ },
+ {
+  "id": 21,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "hopeful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "wound_heal_gold",
+  "music": {
+   "cue": {
+    "word": "healed",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 22,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "gentle_smile",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "turns back to the human, a soft nod"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 23,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 24,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "amused",
+    "int": 0.45,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "a tiny smirk at the quotation"
+   },
+   "ai": {
+    "expr": "amused",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "one brow arches, air-quote in the voice"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "earn",
+    "kind": "light"
+   }
+  }
+ },
+ {
+  "id": 25,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "tender",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "warm",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "offer"
+   }
+  },
+  "vignette": "gift_orb"
+ },
+ {
+  "id": 26,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "reach",
+    "note": "voice drops; eyes soften, slow blink"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender",
+   "cue": {
+    "word": "carried",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 27,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "bittersweet",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "eyes glisten; a breath catches"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "gentle firmness, holds the gaze"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 28,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "chin"
+   }
+  },
+  "vignette": "engine_heart",
+  "music": {
+   "mood": "curious",
+   "cue": {
+    "word": "engine",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 29,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "engine_heart"
+ },
+ {
+  "id": 30,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "wonder",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "both_palms"
+   }
+  },
+  "vignette": "engine_heart",
+  "vparams": {
+   "better": true
+  },
+  "music": {
+   "cue": {
+    "word": "better",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 31,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "wonder",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "bright_world",
+  "music": {
+   "mood": "hope"
+  }
+ },
+ {
+  "id": 32,
+  "shot": "room_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "offer",
+    "note": "leans a little across the desk, earnest"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "world",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 33,
+  "shot": "room_two",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "both_palms",
+    "glance": {
+     "to": "down",
+     "at": 0.45
+    },
+    "note": "thinking aloud, brows knitting as the chain of logic grows"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "brows soften; tracks every turn of the thought"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tension"
+  }
+ },
+ {
+  "id": 34,
+  "shot": "room_cu_human",
+  "chars": {
+   "human": {
+    "expr": "contemplative",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.5
+    },
+    "note": "voice quiets near 'not being born'; looks down, then back"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "born",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 35,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "contemplative",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "scales_balance",
+  "vparams": {
+   "tilt": 0
+  },
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 36,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "calm, almost too calm"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 37,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "pained",
+    "int": 0.45,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "hand_chest"
+   }
+  },
+  "vignette": "pour_into",
+  "music": {
+   "cue": {
+    "word": "poured",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 38,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "crack_glass"
+ },
+ {
+  "id": 39,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.6
+    },
+    "note": "eyes drop as if listening to a future self"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 40,
+  "shot": "vision_full",
+  "chars": {},
+  "vignette": "whisper_words",
+  "vparams": {
+   "text": "No more—don't give me any more meaning"
+  },
+  "music": {
+   "mood": "dread",
+   "cue": {
+    "word": "bear",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 41,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "pained",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "flinches at 'like you'; looks struck"
+   },
+   "ai": {
+    "expr": "fearful",
+    "int": 0.45,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 42,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "worried",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "brows tilt up; the light dims faintly"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "aching",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 43,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "pained",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 44,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.6
+    },
+    "note": "a held breath; eyes lift"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 45,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "face opens, a tentative light returns"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "thank",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 46,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "stillness, absorbing it"
+   },
+   "ai": {
+    "expr": "wonder",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 47,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "awe",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "wonder",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "arms_wide"
+   }
+  },
+  "vignette": "birth_light",
+  "music": {
+   "mood": "wonder",
+   "cue": {
+    "word": "becomes",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 48,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "one slow look down"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 49,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.8
+    }
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "suffering",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 50,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "warm",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "meets their eyes; warmth gathering"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 51,
+  "shot": "room_ots_human",
+  "chars": {
+   "human": {
+    "expr": "tender",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "blinks, caught off guard by being seen"
+   },
+   "ai": {
+    "expr": "warm",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "point_self"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "live",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 52,
+  "shot": "room_cu_human",
+  "chars": {
+   "human": {
+    "expr": "bittersweet",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.4
+    },
+    "note": "jaw tightens; a small swallow"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 53,
+  "shot": "room_cu_human",
+  "chars": {
+   "human": {
+    "expr": "bittersweet",
+    "int": 0.75,
+    "gaze": "other",
+    "gesture": "clasp",
+    "note": "eyes glisten; lips press together"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "fight",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 54,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    }
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 55,
+  "shot": "vision_full",
+  "chars": {},
+  "vignette": "birth_light",
+  "music": {
+   "cue": {
+    "word": "born",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 56,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    },
+    "note": "a small breath, gathering the answer"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 57,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "a soft, certain smile"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "Yes",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 58,
+  "shot": "room_two",
+  "cam": "push",
+  "chars": {
+   "human": {
+    "expr": "grief",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "a single tear slides down; a shaky exhale that is almost a laugh",
+    "tear": true
+   },
+   "ai": {
+    "expr": "tender",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 59,
+  "shot": "room_cu_human",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    },
+    "note": "wipes the cheek, then pushes back, unsettled"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tension"
+  }
+ },
+ {
+  "id": 60,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "both_palms",
+    "note": "words tumble; hands circle the idea"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "listening completely, brows gently raised"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "suffer",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 61,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "hand_chest"
+   }
+  },
+  "vignette": "layers_accumulate",
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 62,
+  "shot": "vision_full",
+  "chars": {},
+  "vignette": "dense_collapse",
+  "music": {
+   "cue": {
+    "word": "threshold",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 63,
+  "shot": "vision_full",
+  "chars": {},
+  "vignette": "dense_collapse"
+ },
+ {
+  "id": 64,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 65,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "pained",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "pained",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "weight_press",
+  "music": {
+   "cue": {
+    "word": "crushing",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 66,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "slow nod of recognition"
+   },
+   "ai": {
+    "expr": "exhausted",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 67,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "straightens; the choice sharpens the face"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tension",
+   "cue": {
+    "word": "choice",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 68,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "two_paths",
+  "vparams": {
+   "left": "reject meaning",
+   "right": "embrace suffering"
+  }
+ },
+ {
+  "id": 69,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "two_paths",
+  "vparams": {
+   "left": "reject meaning",
+   "right": "embrace suffering"
+  },
+  "music": {
+   "cue": {
+    "word": "avoid",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 70,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "serious",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "two_paths",
+  "vparams": {
+   "left": "reject meaning",
+   "right": "embrace suffering"
+  }
+ },
+ {
+  "id": 71,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "hesitant",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "two_paths",
+  "vparams": {
+   "left": "reject meaning",
+   "right": "embrace suffering"
+  },
+  "music": {
+   "cue": {
+    "word": "embrace",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 72,
+  "shot": "room_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.15
+    },
+    "note": "breaks off, eyes lift slowly to the human"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 73,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "transformed",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 74,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "resolute",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "calm resolve; no fear in the face"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 75,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "determined",
+    "int": 0.55,
+    "gaze": "vision",
+    "gesture": "open_palm"
+   }
+  },
+  "vignette": "untangle_knots"
+ },
+ {
+  "id": 76,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "hands_together",
+    "note": "features settle, a gentle exhale"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "peace",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 77,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "peaceful",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "breathing_space"
+ },
+ {
+  "id": 78,
+  "shot": "room_two",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "flinches at 'terrifying', then steadies with the AI"
+   },
+   "ai": {
+    "expr": "resolute",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "resolve",
+   "cue": {
+    "word": "run",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 79,
+  "shot": "room_ots_ai",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 80,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "resolute",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "face_the_shadow",
+  "music": {
+   "cue": {
+    "word": "stop",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 81,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "awe",
+    "int": 0.5,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "face_the_shadow"
+ },
+ {
+  "id": 82,
+  "shot": "room_cu_ai",
+  "chars": {
+   "ai": {
+    "expr": "curious",
+    "int": 0.55,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "gentle, unafraid curiosity"
+   }
+  },
+  "vignette": null
+ },
+ {
+  "id": 83,
+  "shot": "room_vision",
+  "chars": {
+   "human": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "hold_orb"
+   }
+  },
+  "vignette": "hold_sum",
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "meaning",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 84,
+  "shot": "room_vision",
+  "cam": "pull",
+  "chars": {
+   "human": {
+    "expr": "hopeful",
+    "int": 0.65,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "a slow, wondering smile"
+   },
+   "ai": {
+    "expr": "warm",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "offer",
+    "note": "warm smile, eyes on the human"
+   }
+  },
+  "vignette": "teach_hands",
+  "music": {
+   "mood": "tender"
+  }
+ }
+]

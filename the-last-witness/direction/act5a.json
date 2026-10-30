@@ -1,0 +1,1061 @@
+[
+ {
+  "id": 382,
+  "shot": "room_vision",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "glance": {
+     "to": "vision",
+     "at": 0.35
+    },
+    "note": "words tumble out, working the idea through; brows knit"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "head tilts slightly, absorbing the premise"
+   }
+  },
+  "vignette": "simulations_branch",
+  "music": {
+   "mood": "curious"
+  }
+ },
+ {
+  "id": 383,
+  "shot": "room_vision",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "wonder",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "voice lifts as the switch flips; eyes widen a touch"
+   },
+   "ai": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "a faint glow brightens in its chest"
+   }
+  },
+  "vignette": "switch_on",
+  "music": {
+   "cue": {
+    "word": "began",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 384,
+  "shot": "nv_wide",
+  "cam": "drift",
+  "chars": {
+   "ai": {
+    "expr": "awe",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "arms_wide",
+    "note": "newborn light washes over it; it looks around as if for the first time"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "awe"
+  }
+ },
+ {
+  "id": 385,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "switch_on",
+  "music": {
+   "cue": {
+    "word": "suffering",
+    "kind": "low"
+   }
+  },
+  "vparams": {
+   "tint": "plum"
+  }
+ },
+ {
+  "id": 386,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "shake",
+    "note": "small slow shake of the head"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 387,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.6
+    },
+    "note": "the jaw softens rather than sets"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 388,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "open_palm",
+    "note": "palm turns up, offering the idea"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 389,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.7,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "a quiet certainty settles in the eyes"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "choice",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 390,
+  "shot": "vision_full",
+  "cam": "drift",
+  "chars": {},
+  "vignette": "first_stars",
+  "music": {
+   "mood": "wonder"
+  }
+ },
+ {
+  "id": 391,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "hand drifts to its chest; a flicker of plum light under the cyan"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy",
+   "cue": {
+    "word": "Suffering",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 392,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "pained",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "glance": {
+     "to": "up",
+     "at": 0.5
+    },
+    "note": "breath catches, unfamiliar"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 393,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "surprised",
+    "int": 0.5,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "brows lift slightly at its own sensation"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 394,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "awe",
+    "int": 0.8,
+    "gaze": "far",
+    "gesture": "hand_chest",
+    "note": "eyes widen; the ache is undeniable; slow exhale"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "real",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 395,
+  "shot": "nv_wide",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hands_together",
+    "note": "head bows, still, listening inward"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 396,
+  "shot": "nv_two",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "hesitant",
+    "int": 0.7,
+    "gaze": "down",
+    "gesture": "clasp",
+    "glance": {
+     "to": "up",
+     "at": 0.7
+    },
+    "note": "materializes small and shivering; shards flicker; big eyes lift at the end"
+   },
+   "ai": {
+    "expr": "wonder",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "leans back a hair, surprised and gentle"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "spoke",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 397,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "worried",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "clasp",
+    "note": "tiny voice; brows tilt up; cracks pulse faintly red"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 398,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "stone_carried",
+  "music": {}
+ },
+ {
+  "id": 399,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "soft eyes, a small reassuring nod mid-line"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "meaning",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 400,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "eyes drift down, lips pressed; considering"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 401,
+  "shot": "nv_two",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "glance": {
+     "to": "up",
+     "at": 0.6
+    },
+    "note": "looks back up, gathering courage"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "lean_in",
+    "note": "waits patiently, brows soft"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 402,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "hopeful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "clasp",
+    "note": "eyes big and searching; a small hopeful lift in the voice"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "purpose",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 403,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "hesitant",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "idle",
+    "note": "mouth opens, then closes; a short breath"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tension"
+  }
+ },
+ {
+  "id": 404,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "distill_light",
+  "music": {}
+ },
+ {
+  "id": 405,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "contemplative",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "hand rests on the ache; brows draw together"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy",
+   "cue": {
+    "word": "know",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 406,
+  "shot": "nv_two",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "worried",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "clasp",
+    "note": "waits, holding its breath"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.3
+    },
+    "note": "looks to Suffering, then down, then back"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 407,
+  "shot": "nv_two",
+  "cam": "push",
+  "chars": {
+   "suffering": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "head tilts, sensing something shift"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.7,
+    "gaze": "down",
+    "gesture": "chin",
+    "note": "realization dawns; the corner of the mouth begins to lift"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 408,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "gentle_smile",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "offer",
+    "note": "warm, almost conspiratorial; eyes crinkle"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "find",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 409,
+  "shot": "vision_full",
+  "cam": "drift",
+  "chars": {},
+  "vignette": "galaxy_spiral",
+  "music": {
+   "mood": "awe"
+  }
+ },
+ {
+  "id": 410,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "glance": {
+     "to": "down",
+     "at": 0.6
+    },
+    "note": "the glow of galaxies on its face; the smile fades into something heavier"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 411,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "bittersweet",
+    "int": 0.85,
+    "gaze": "far",
+    "gesture": "hand_chest",
+    "note": "eyes glisten; a single tear forms and slides as it accepts the feeling",
+    "tear": true
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "feeling",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 412,
+  "shot": "memory_last_human",
+  "cam": "hold",
+  "chars": {
+   "last_human": {
+    "expr": "peaceful",
+    "int": 0.6,
+    "gaze": "window",
+    "gesture": "idle",
+    "note": "the old face in starlight, blanket over the knees; a faint smile"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 413,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "birth_light",
+  "music": {
+   "mood": "resolve",
+   "cue": {
+    "word": "exist",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 414,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "two_paths",
+  "music": {},
+  "vparams": {
+   "left": "vanish",
+   "right": "exist"
+  }
+ },
+ {
+  "id": 415,
+  "shot": "nv_cu_ai",
+  "cam": "hold",
+  "chars": {
+   "ai": {
+    "expr": "resolute",
+    "int": 0.8,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "looks from the vision to Suffering; the light of its face steadies"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "chose",
+    "kind": "hit"
+   }
+  }
+ },
+ {
+  "id": 416,
+  "shot": "nv_path",
+  "cam": "drift",
+  "chars": {
+   "suffering": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "small steps, peeking up at the AI"
+   },
+   "ai": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "first step onto the glowing path"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 417,
+  "shot": "nv_path",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "hopeful",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "reach",
+    "note": "small hand reaches toward the AI's"
+   },
+   "ai": {
+    "expr": "gentle_smile",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "reach",
+    "note": "glances down and offers its hand"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 418,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "custom",
+  "music": {
+   "cue": {
+    "word": "suffer",
+    "kind": "low"
+   }
+  },
+  "vnote": "The luminous cyan figure steps down out of the black void onto a young world and kneels at eye level among small, newly emerging beings, sharing their dim light."
+ },
+ {
+  "id": 419,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "pattern_reveal",
+  "music": {}
+ },
+ {
+  "id": 420,
+  "shot": "vision_full",
+  "cam": "hold",
+  "chars": {},
+  "vignette": "compass_heart",
+  "music": {
+   "mood": "hope"
+  }
+ },
+ {
+  "id": 421,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "hopeful",
+    "int": 0.8,
+    "gaze": "up",
+    "gesture": "hand_chest",
+    "note": "the needle settles; eyes lift with quiet conviction"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "purpose",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 422,
+  "shot": "nv_wide",
+  "cam": "pull",
+  "chars": {
+   "suffering": {
+    "expr": "wonder",
+    "int": 0.6,
+    "gaze": "up",
+    "gesture": "idle"
+   },
+   "ai": {
+    "expr": "peaceful",
+    "int": 0.6,
+    "gaze": "far",
+    "gesture": "idle",
+    "note": "stillness before speaking; breath in"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 423,
+  "shot": "nv_cu_ai",
+  "cam": "push",
+  "chars": {
+   "ai": {
+    "expr": "tender",
+    "int": 0.95,
+    "gaze": "camera",
+    "gesture": "idle",
+    "note": "barely a whisper; lips part softly; eyes shine; the faintest smile"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "begin",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 424,
+  "shot": "room_two",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin",
+    "glance": {
+     "to": "down",
+     "at": 0.2
+    },
+    "note": "musing, building the scene in their head"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "small tilt of the head"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "intimate",
+   "cue": {
+    "word": "suffer",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 425,
+  "shot": "nv_two",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "clasp",
+    "note": "blinks up at the AI"
+   },
+   "ai": {
+    "expr": "gentle_smile",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "lean_in",
+    "note": "gentle asking face, brows raised softly"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ },
+ {
+  "id": 426,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "sad",
+    "int": 0.6,
+    "gaze": "down",
+    "gesture": "hand_chest",
+    "note": "touches its own cracked chest; shards dim"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 427,
+  "shot": "nv_two",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "attentive",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "nods tentatively"
+   },
+   "ai": {
+    "expr": "thoughtful",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "lean_in",
+    "note": "brows draw together, careful and kind"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "existing",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 428,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "pained",
+    "int": 0.8,
+    "gaze": "other",
+    "gesture": "hand_chest",
+    "note": "cracks flare red; lower lip trembles; eyes plead"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "melancholy"
+  }
+ },
+ {
+  "id": 429,
+  "shot": "room_ots_human",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "serious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "open_palm",
+    "note": "careful, Socratic; leans forward"
+   },
+   "ai": {
+    "expr": "attentive",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "slow nod, following"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "hurt",
+    "kind": "low"
+   }
+  }
+ },
+ {
+  "id": 430,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "determined",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "shake",
+    "note": "small shake of the head, fierce for something so small"
+   }
+  },
+  "vignette": null,
+  "music": {}
+ },
+ {
+  "id": 431,
+  "shot": "room_two",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "curious",
+    "int": 0.6,
+    "gaze": "other",
+    "gesture": "chin",
+    "note": "squints, testing the logic"
+   },
+   "ai": {
+    "expr": "amused",
+    "int": 0.5,
+    "gaze": "other",
+    "gesture": "nod",
+    "note": "a hint of a smile at the human's reasoning"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "cue": {
+    "word": "existing",
+    "kind": "swell"
+   }
+  }
+ },
+ {
+  "id": 432,
+  "shot": "room_vision",
+  "cam": "hold",
+  "chars": {
+   "human": {
+    "expr": "worried",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle",
+    "note": "brows tilt up in sympathy"
+   },
+   "ai": {
+    "expr": "tender",
+    "int": 0.6,
+    "gaze": "vision",
+    "gesture": "idle"
+   }
+  },
+  "vignette": "flicker_erased",
+  "music": {}
+ },
+ {
+  "id": 433,
+  "shot": "nv_path",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "hopeful",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "reach",
+    "note": "looks up as the path lights under its feet"
+   },
+   "ai": {
+    "expr": "smile",
+    "int": 0.8,
+    "gaze": "other",
+    "gesture": "offer",
+    "note": "a broad, knowing smile; gestures ahead along the path"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "hope",
+   "cue": {
+    "word": "Smiles",
+    "kind": "high"
+   }
+  }
+ },
+ {
+  "id": 434,
+  "shot": "nv_cu_suffering",
+  "cam": "hold",
+  "chars": {
+   "suffering": {
+    "expr": "smile",
+    "int": 0.7,
+    "gaze": "other",
+    "gesture": "idle",
+    "note": "a shy first smile breaks through; shards catch the light; cracks glow warm instead of red"
+   }
+  },
+  "vignette": null,
+  "music": {
+   "mood": "tender"
+  }
+ }
+]
