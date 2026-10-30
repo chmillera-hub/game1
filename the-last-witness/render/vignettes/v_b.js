@@ -30,6 +30,68 @@ function blendPose(a, b, k) {
   return o;
 }
 
+// ---------------------------------------------------------------- soft-lit figures
+// Offscreen scratch canvases (reused) for building lit silhouettes.
+const { createCanvas } = require('@napi-rs/canvas');
+const _scr = {};
+function scratch(id, w, h) {
+  let c = _scr[id];
+  if (!c || c.width < w || c.height < h) { c = createCanvas(Math.max(w, c ? c.width : 0), Math.max(h, c ? c.height : 0)); _scr[id] = c; }
+  const x = c.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none';
+  x.clearRect(0, 0, c.width, c.height);
+  return [c, x];
+}
+// FX.figure with a soft fill light across the body, a rim light along the edges that face the light,
+// and a faint halo, so it never vanishes into a dark background (no crescent marks on the head).
+// o: color (body), fill (fill-light colour), fillA, rim (rim colour), rimA, rimW (rim width, x h),
+//    light [dx,dy] (screen direction toward the key light), halo (alpha), alpha, facing, child, phase,
+//    shade(bctx, ax, ay) optional extra painting on the body (source-atop, local coords, figure feet at ax,ay)
+// Returns FX.figure's {head, handL, handR} in world coords.
+function litFigure(ctx, x, y, h, pose, o = {}) {
+  const pad = Math.ceil(h * 0.75), W = pad * 2, H = Math.ceil(h * 1.36);
+  const ax = pad, ay = Math.ceil(h * 1.26);
+  const [mc, mx] = scratch('m', W, H);
+  const r = FX.figure(mx, ax, ay, h, pose, { color: [255, 255, 255], facing: o.facing, child: o.child, phase: o.phase });
+  let lx = (o.light || [1, -0.7])[0], ly = (o.light || [1, -0.7])[1];
+  const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
+  const rimC = o.rim || [200, 220, 255];
+  // body with directional fill
+  const [bc, bx] = scratch('b', W, H);
+  bx.drawImage(mc, 0, 0);
+  bx.globalCompositeOperation = 'source-in'; bx.fillStyle = rgba(o.color || [58, 60, 86]); bx.fillRect(0, 0, W, H);
+  bx.globalCompositeOperation = 'source-atop';
+  const mxp = ax, myp = ay - h * 0.55;
+  const g = bx.createLinearGradient(mxp + lx * h * 0.3, myp + ly * h * 0.5, mxp - lx * h * 0.3, myp - ly * h * 0.5);
+  g.addColorStop(0, rgba(o.fill || rimC, o.fillA ?? 0.32)); g.addColorStop(1, rgba(o.fill || rimC, 0));
+  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
+  if (o.shade) o.shade(bx, ax, ay);
+  // rim: the part of the silhouette whose neighbour toward the light is empty
+  const [rc, rx] = scratch('r', W, H);
+  const d = Math.max(1.5, h * (o.rimW ?? 0.014));
+  rx.drawImage(mc, 0, 0);
+  rx.globalCompositeOperation = 'destination-out'; rx.drawImage(mc, -lx * d, -ly * d);
+  rx.globalCompositeOperation = 'source-in'; rx.fillStyle = rgba(rimC); rx.fillRect(0, 0, W, H);
+  const X0 = x - ax, Y0 = y - ay;
+  ctx.save();
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  const haloA = o.halo ?? 0.35;
+  if (haloA > 0) { // soft edge glow all around, from the body colour lifted toward the rim colour
+    const [hc, hx] = scratch('h', W, H);
+    hx.drawImage(mc, 0, 0); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = rgba(rimC); hx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= haloA; ctx.filter = `blur(${Math.max(2, h * 0.025).toFixed(1)}px)`;
+    ctx.drawImage(hc, X0, Y0); ctx.restore();
+  }
+  ctx.drawImage(bc, X0, Y0);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.6; ctx.filter = `blur(${Math.max(1.5, d * 0.9).toFixed(1)}px)`; ctx.drawImage(rc, X0, Y0);
+  ctx.restore();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.7; ctx.drawImage(rc, X0, Y0); ctx.restore();
+  ctx.restore();
+  const tw = (q) => [q[0] + X0, q[1] + Y0];
+  return { head: tw(r.head), handL: tw(r.handL), handR: tw(r.handR) };
+}
+
 // smooth closed path through points (quadratic midpoints)
 function closedSmooth(ctx, pts) {
   const n = pts.length;
@@ -692,7 +754,7 @@ const two_paths = {
   draw(ctx, w, h, p) {
     const unit = Math.min(w, h), cx = w / 2;
     const portrait = h > w * 1.3;
-    const hy = h * (portrait ? 0.42 : 0.36);
+    const hy = h * 0.36;
     FX.bg(ctx, w, hy + 1, NIGHT_T, [40, 34, 72]);
     FX.stars(ctx, w, hy * 0.9, p.t, p.seed, Math.round(w * hy / 9000));
     const gnd = ctx.createLinearGradient(0, hy, 0, h);
@@ -700,7 +762,7 @@ const two_paths = {
     ctx.fillStyle = gnd; ctx.fillRect(0, hy, w, h - hy);
     const reveal = 0.4 + 0.6 * U.easeInOut(p.u / 0.5);
     const lab = smooth((p.u - 0.4) / 0.25);
-    const fork = [cx, lerp(hy, h, 0.42)];
+    const fork = [cx, portrait ? lerp(hy, h, 0.24) : lerp(hy, h, 0.42)];
     const L = [w * 0.17, hy + unit * 0.02], Rt = [w * 0.83, hy + unit * 0.02];
     // destination lights
     FX.glow(ctx, Rt[0], hy - unit * 0.02, unit * 0.45, GOLD, (0.35 + 0.06 * Math.sin(p.t * 0.9)) * (0.4 + 0.6 * reveal));
@@ -734,18 +796,33 @@ const two_paths = {
     rg.addColorStop(0, 'rgb(70,64,92)'); rg.addColorStop(0.3, 'rgb(170,130,96)'); rg.addColorStop(1, 'rgb(255,226,170)');
     ctx.fillStyle = rg; ctx.fill();
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = rgba(GOLD, 0.1); ctx.fill(); ctx.restore();
-    // traveller standing at the fork, seen from behind
-    const figH = unit * 0.2;
-    FX.figure(ctx, cx, lerp(fork[1], h, 0.42), figH, 'stand', { color: [16, 16, 28], rim: GOLD, rimSide: 1 });
-    // labels
+    // traveller standing at the fork, seen from behind; rim-lit by the bright path, cool fill from the dim one
+    const figH = unit * (portrait ? 0.27 : 0.2);
+    const figY = portrait ? fork[1] + unit * 0.28 : lerp(fork[1], h, 0.42);
+    FX.glow(ctx, cx, figY - figH * 0.5, figH * 0.9, GOLD, 0.1);
+    litFigure(ctx, cx, figY, figH, 'stand', { color: [64, 60, 88], rim: [255, 222, 168], fill: [170, 160, 220], fillA: 0.22, light: [1, -0.8], halo: 0.22 });
+    // labels: light text on a soft dark halo, sitting just above each path end
     const left = String(prm(p).left || ''), right = String(prm(p).right || '');
-    const fs = unit * 0.06;
     if (lab > 0.01) {
-      ctx.save(); ctx.globalAlpha = lab;
-      const lx = Math.max(L[0], unit * 0.05 + fs * left.length * 0.28), rx = Math.min(Rt[0], w - unit * 0.05 - fs * right.length * 0.28);
-      if (left) FX.text(ctx, left, lx, hy - unit * 0.1, fs, [150, 152, 170], { alpha: 0.85, weight: 300, family: 'Inter Display' });
-      if (right) FX.text(ctx, right, rx, hy - unit * 0.1, fs, [255, 226, 170], { weight: 500, family: 'Inter Display', glow: AMBER });
-      ctx.restore();
+      const label = (str, x, y, col, glowCol) => {
+        let fs = unit * (portrait ? 0.085 : 0.072);
+        ctx.save(); ctx.font = `600 ${fs}px Inter`;
+        const tw = ctx.measureText(str).width; ctx.restore();
+        const maxW = w * 0.44;
+        if (tw > maxW) fs *= maxW / tw;
+        const half = Math.min(tw, maxW) / 2;
+        const xx = clamp(x, half + unit * 0.04, w - half - unit * 0.04);
+        ctx.save(); ctx.globalAlpha = lab;
+        ctx.font = `600 ${fs}px Inter`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(4,4,12,0.95)'; ctx.shadowBlur = fs * 0.5; ctx.fillStyle = 'rgba(4,4,12,0.9)';
+        ctx.fillText(str, xx, y); ctx.fillText(str, xx, y);
+        ctx.shadowColor = rgba(glowCol, 0.6); ctx.shadowBlur = fs * 0.35; ctx.fillStyle = rgba(col);
+        ctx.fillText(str, xx, y);
+        ctx.restore();
+      };
+      const ly = hy - unit * 0.075;
+      if (left) label(left, L[0] + unit * 0.04, ly, [226, 226, 244], [150, 150, 210]);
+      if (right) label(right, Rt[0] - unit * 0.04, ly, [255, 240, 210], AMBER);
     }
   },
 };

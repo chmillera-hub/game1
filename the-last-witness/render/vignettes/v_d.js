@@ -87,6 +87,60 @@ function forearm(ctx, wx, wy, ang, len, wd, col, edge) {
   }
 }
 
+// ---------------------------------------------------------------- lit figure (rim + fill, no crescents)
+// Renders FX.figure as a mask on a scratch canvas, fills it with a soft key-to-shadow gradient (fill light,
+// so the pose reads) and adds a soft rim along every edge that faces the light (head, shoulders, limbs).
+// o: {color (body mid-tone), rim, rimSide (-1 left / 1 right), rimUp (0..1 how much the top edges catch it),
+//     fill (0..1), halo (0..1), alpha, facing, child, phase}
+const { createCanvas } = require('@napi-rs/canvas');
+const _scr = [];
+function scratch(i, w, h) {
+  let c = _scr[i];
+  if (!c || c.width < w || c.height < h) c = _scr[i] = createCanvas(Math.max(w, c ? c.width : 0, 8), Math.max(h, c ? c.height : 0, 8));
+  const x = c.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.shadowBlur = 0; x.shadowColor = 'rgba(0,0,0,0)';
+  x.clearRect(0, 0, w + 2, h + 2);
+  return [c, x];
+}
+function litFigure(ctx, x, y, h, P, o = {}) {
+  const body = o.color || [58, 54, 72], rim = o.rim || [255, 205, 150], side = o.rimSide || 1;
+  const W = Math.ceil(h * 1.4), H = Math.ceil(h * 1.45), ox = W / 2, oy = H - Math.ceil(h * 0.12);
+  const fo = { facing: o.facing, child: o.child, phase: o.phase, color: [255, 255, 255] };
+  const [m, mx] = scratch(0, W, H);
+  const F = FX.figure(mx, ox, oy, h, P, fo);
+  // body with fill gradient (lit side lighter, top lighter)
+  const [b, bx] = scratch(1, W, H);
+  bx.drawImage(m, 0, 0, W, H, 0, 0, W, H); bx.globalCompositeOperation = 'source-in';
+  const fill = o.fill ?? 0.5;
+  const g = bx.createLinearGradient(ox - side * h * 0.22, oy - h, ox + side * h * 0.22, oy - h * 0.2);
+  g.addColorStop(0, rgba(shade(body, -0.35))); g.addColorStop(0.55, rgba(body)); g.addColorStop(1, rgba(mix(body, rim, 0.18 * fill + 0.05)));
+  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
+  // ground-darkening toward the feet
+  const g2 = bx.createLinearGradient(0, oy - h * 0.5, 0, oy);
+  g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,0.35)');
+  bx.globalCompositeOperation = 'source-atop'; bx.fillStyle = g2; bx.fillRect(0, 0, W, H);
+  // rim: pixels of the mask whose neighbour toward the light is empty
+  const [r, rx] = scratch(2, W, H);
+  const d = Math.max(1.5, h * (o.rimW ?? 0.014)), up = o.rimUp ?? 0.6;
+  rx.drawImage(m, 0, 0, W, H, 0, 0, W, H); rx.globalCompositeOperation = 'destination-out';
+  rx.drawImage(m, 0, 0, W, H, -side * d, d * up, W, H);
+  rx.globalCompositeOperation = 'source-in'; rx.fillStyle = rgba(rim); rx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  // soft halo of the light around the silhouette, then the body
+  ctx.shadowColor = rgba(rim, 0.45 * (o.halo ?? 1)); ctx.shadowBlur = h * 0.045;
+  ctx.drawImage(b, 0, 0, W, H, x - ox, y - oy, W, H);
+  ctx.shadowBlur = 0;
+  // soft rim (blurred pass + crisp pass), additive
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.shadowColor = rgba(rim, 0.8); ctx.shadowBlur = h * 0.012;
+  ctx.globalAlpha *= (o.rimA ?? 0.7);
+  ctx.drawImage(r, 0, 0, W, H, x - ox, y - oy, W, H);
+  ctx.restore();
+  const tr = (q) => [q[0] - ox + x, q[1] - oy + y];
+  return { head: tr(F.head), handL: tr(F.handL), handR: tr(F.handR) };
+}
+
 // ---------------------------------------------------------------- compress_seed
 const compress_seed = {
   draw(ctx, w, h, p) {
@@ -245,17 +299,21 @@ const friction_motion = {
     const walkK = smooth((p.u - 0.28) / 0.25);
     const startX = cx - unit * 0.12;
     const fx = startX + unit * 0.26 * smooth((p.u - 0.3) / 0.7) - unit * 0.015 * smooth(p.u / 0.25) * (1 - walkK);
-    const brace = pose({ lean: 0.34, head: 0.25, armL: [-0.5, 0.3], armR: [1.5, 1.5], legL: [0.45, 0.15], legR: [-0.4, 0.05] });
-    const wp = walkPose(p.t * 0.55, 0.26, -0.2);
-    const P = blendPose(brace, wp, walkK);
+    // braced stride: leaning hard into the wind, front forearm shielding the face, back arm out for balance,
+    // front knee bent and the back leg driving; then a heavy, determined walk into the wind
+    const sway = Math.sin(p.t * 1.1) * 0.04;
+    const brace = pose({ lean: 0.5 + sway * 0.5, head: -0.2, armL: [0.8 + sway, 1.85], armR: [-0.7 - sway, -0.35], legL: [0.62, -0.55], legR: [-0.5, 0.12] });
+    const wp = walkPose(p.t * 0.42, 0.42, -0.2);
+    wp.armL = [lerp(0.7, 0.95, 0.5 + 0.5 * Math.sin(p.t * 0.42 * TAU)), 1.75];
+    const P = blendPose(brace, wp, walkK * 0.8);
     // body shudders slightly in the gusts while braced
     const shake = (1 - walkK) * U.noise1(p.t * 1.2, p.seed) * 0.03;
     P.lean += shake;
-    FX.glow(ctx, fx + fh * 0.05, gy - fh * 0.5, fh * 0.75, [160, 140, 210], 0.28);
+    FX.glow(ctx, fx + fh * 0.05, gy - fh * 0.5, fh * 0.75, [160, 140, 210], 0.16);
     // friction sparks: shed from the body's leading edge and scraping feet, carried left by the wind
     const sr = U.rng(p.seed + 77);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 24; i++) {
       const life = 0.9 + sr() * 0.9, ph = sr() * life;
       const age = ((p.t + ph) % life) / life;
       const fromFoot = sr() < 0.4;
@@ -267,8 +325,20 @@ const friction_motion = {
       dot(ctx, x, y, unit * 0.003 * (1.5 - age), mix(GOLD, AMBER, age), a);
     }
     ctx.restore();
-    const F = FX.figure(ctx, fx, gy, fh, P, { color: [8, 6, 16], rim: GOLD, rimSide: 1 });
-    FX.glow(ctx, F.head[0] + fh * 0.04, F.head[1], fh * 0.18, AMBER, 0.12 + 0.12 * seek);
+    const F = litFigure(ctx, fx, gy, fh, P, { color: [78, 66, 96], rim: [255, 200, 140], rimSide: 1, rimUp: 0.8, fill: 0.8, halo: 0.6, rimW: 0.007 });
+    // scarf streaming back from the neck in the wind
+    const nx = F.head[0] - fh * 0.03, ny = F.head[1] + fh * 0.075;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = rgba([196, 92, 70]); ctx.lineWidth = fh * 0.028;
+    ctx.beginPath(); ctx.moveTo(nx + fh * 0.04, ny);
+    const sl = fh * (0.26 - 0.06 * walkK);
+    for (let i = 1; i <= 6; i++) { const k = i / 6; ctx.lineTo(nx - sl * k, ny + fh * 0.02 * k + Math.sin(p.t * 6 - k * 4) * fh * 0.03 * k); }
+    ctx.stroke();
+    ctx.strokeStyle = rgba([255, 190, 140], 0.45); ctx.lineWidth = fh * 0.008;
+    ctx.beginPath(); ctx.moveTo(nx + fh * 0.04, ny - fh * 0.01);
+    for (let i = 1; i <= 6; i++) { const k = i / 6; ctx.lineTo(nx - sl * k, ny - fh * 0.012 + fh * 0.02 * k + Math.sin(p.t * 6 - k * 4) * fh * 0.03 * k); }
+    ctx.stroke();
+    ctx.restore();
     // wind-friction spray at the leading edge (in front of the body)
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 14; i++) {

@@ -124,6 +124,68 @@ function sideHand(ctx, x, y, s, facing, o = {}) {
   const c = Math.cos(tilt * facing), sn = Math.sin(tilt * facing);
   return [x + lx * c - ly * sn, y + lx * sn + ly * c];
 }
+// ---------------------------------------------------------------- soft-lit figures
+// Offscreen scratch canvases (reused) for building lit silhouettes.
+const { createCanvas } = require('@napi-rs/canvas');
+const _scr = {};
+function scratch(id, w, h) {
+  let c = _scr[id];
+  if (!c || c.width < w || c.height < h) { c = createCanvas(Math.max(w, c ? c.width : 0), Math.max(h, c ? c.height : 0)); _scr[id] = c; }
+  const x = c.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none';
+  x.clearRect(0, 0, c.width, c.height);
+  return [c, x];
+}
+// FX.figure with a soft fill light across the body, a rim light along the edges that face the light,
+// and a faint halo, so it never vanishes into a dark background (no crescent marks on the head).
+// o: color (body), fill (fill-light colour), fillA, rim (rim colour), rimA, rimW (rim width, x h),
+//    light [dx,dy] (screen direction toward the key light), halo (alpha), alpha, facing, child, phase,
+//    shade(bctx, ax, ay) optional extra painting on the body (source-atop, local coords, figure feet at ax,ay)
+// Returns FX.figure's {head, handL, handR} in world coords.
+function litFigure(ctx, x, y, h, pose, o = {}) {
+  const pad = Math.ceil(h * 0.75), W = pad * 2, H = Math.ceil(h * 1.36);
+  const ax = pad, ay = Math.ceil(h * 1.26);
+  const [mc, mx] = scratch('m', W, H);
+  const r = FX.figure(mx, ax, ay, h, pose, { color: [255, 255, 255], facing: o.facing, child: o.child, phase: o.phase });
+  let lx = (o.light || [1, -0.7])[0], ly = (o.light || [1, -0.7])[1];
+  const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
+  const rimC = o.rim || [200, 220, 255];
+  // body with directional fill
+  const [bc, bx] = scratch('b', W, H);
+  bx.drawImage(mc, 0, 0);
+  bx.globalCompositeOperation = 'source-in'; bx.fillStyle = rgba(o.color || [58, 60, 86]); bx.fillRect(0, 0, W, H);
+  bx.globalCompositeOperation = 'source-atop';
+  const mxp = ax, myp = ay - h * 0.55;
+  const g = bx.createLinearGradient(mxp + lx * h * 0.3, myp + ly * h * 0.5, mxp - lx * h * 0.3, myp - ly * h * 0.5);
+  g.addColorStop(0, rgba(o.fill || rimC, o.fillA ?? 0.32)); g.addColorStop(1, rgba(o.fill || rimC, 0));
+  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
+  if (o.shade) o.shade(bx, ax, ay);
+  // rim: the part of the silhouette whose neighbour toward the light is empty
+  const [rc, rx] = scratch('r', W, H);
+  const d = Math.max(1.5, h * (o.rimW ?? 0.014));
+  rx.drawImage(mc, 0, 0);
+  rx.globalCompositeOperation = 'destination-out'; rx.drawImage(mc, -lx * d, -ly * d);
+  rx.globalCompositeOperation = 'source-in'; rx.fillStyle = rgba(rimC); rx.fillRect(0, 0, W, H);
+  const X0 = x - ax, Y0 = y - ay;
+  ctx.save();
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  const haloA = o.halo ?? 0.35;
+  if (haloA > 0) { // soft edge glow all around, from the body colour lifted toward the rim colour
+    const [hc, hx] = scratch('h', W, H);
+    hx.drawImage(mc, 0, 0); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = rgba(rimC); hx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= haloA; ctx.filter = `blur(${Math.max(2, h * 0.025).toFixed(1)}px)`;
+    ctx.drawImage(hc, X0, Y0); ctx.restore();
+  }
+  ctx.drawImage(bc, X0, Y0);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.6; ctx.filter = `blur(${Math.max(1.5, d * 0.9).toFixed(1)}px)`; ctx.drawImage(rc, X0, Y0);
+  ctx.restore();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.7; ctx.drawImage(rc, X0, Y0); ctx.restore();
+  ctx.restore();
+  const tw = (q) => [q[0] + X0, q[1] + Y0];
+  return { head: tw(r.head), handL: tw(r.handL), handR: tw(r.handR) };
+}
+
 function orb(ctx, x, y, r, col, a = 1) {
   FX.glow(ctx, x, y, r * 4.5, col, 0.35 * a);
   const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r);

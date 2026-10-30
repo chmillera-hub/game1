@@ -12,53 +12,53 @@ const W = 720, H = 1280;
 // ---------------------------------------------------------------- layouts
 // x, y: sternal notch (world); s: head height; facing: +1 faces screen-right
 const LAYOUT = {
-  room: { human: { x: 222, y: 700, s: 112, facing: 1, yaw: 0.45 }, ai: { x: 500, y: 694, s: 106, facing: -1, yaw: -0.45 } },
-  ship: { last_human: { x: 200, y: 760, s: 112, facing: 1, yaw: 0.4 }, ai: { x: 530, y: 744, s: 104, facing: -1, yaw: -0.42 } },
+  room: { human: { x: 232, y: 700, s: 112, facing: 1, yaw: 0.72 }, ai: { x: 492, y: 694, s: 106, facing: -1, yaw: -0.72 } },
+  ship: { last_human: { x: 210, y: 760, s: 112, facing: 1, yaw: 0.66 }, ai: { x: 520, y: 744, s: 104, facing: -1, yaw: -0.68 } },
   void: { ai: { x: 360, y: 700, s: 110, facing: -1, yaw: -0.12 } },
-  memory: { last_human: { x: 240, y: 760, s: 112, facing: 1, yaw: 0.35 } },
+  memory: { last_human: { x: 240, y: 760, s: 112, facing: 1, yaw: 0.45 } },
   nv: {
-    suffering: { x: 250, y: 790, s: 92, facing: 1, yaw: 0.42 },
-    ai: { x: 505, y: 706, s: 104, facing: -1, yaw: -0.42 },
-    boredom: { x: 110, y: 690, s: 98, facing: 1, yaw: 0.3 },
-    loneliness: { x: 640, y: 704, s: 96, facing: -1, yaw: -0.3 },
+    suffering: { x: 250, y: 840, s: 86, facing: 1, yaw: 0.7 },
+    ai: { x: 505, y: 706, s: 104, facing: -1, yaw: -0.7 },
+    boredom: { x: 125, y: 690, s: 98, facing: 1, yaw: 0.5 },
+    loneliness: { x: 615, y: 704, s: 96, facing: -1, yaw: -0.5 },
   },
 };
 const DESK_Y = 846;
 
 // ---------------------------------------------------------------- cameras
-function cuCam(c, s, z = 2.55, screenY = 560) {
-  const hy = c.y - 0.71 * s;
+function cuCam(c, s, z = 2.55, screenY = 515) {
+  const hy = c.y - 0.6 * s;
   return { x: c.x + c.facing * 0.06 * s, y: hy - (screenY - 640) / z, z };
 }
 const SHOTS = {
   room_wide: { scene: 'room', cam: { x: 360, y: 580, z: 1.12 } },
-  room_two: { scene: 'room', cam: { x: 361, y: 712, z: 1.55 } },
+  room_two: { scene: 'room', cam: { x: 362, y: 737, z: 1.45 } },
   room_cu_human: { scene: 'room', cam: cuCam(LAYOUT.room.human, 112), only: ['human'] },
   room_cu_ai: { scene: 'room', cam: cuCam(LAYOUT.room.ai, 106), only: ['ai'] },
-  room_ots_human: { scene: 'room', cam: { x: 300, y: 668, z: 2.0 } },
-  room_ots_ai: { scene: 'room', cam: { x: 424, y: 664, z: 2.0 } },
-  room_vision: { scene: 'room', cam: { x: 361, y: 560, z: 1.38 }, vision: true },
+  room_ots_human: { scene: 'room', cam: { x: 318, y: 690, z: 1.85 } },
+  room_ots_ai: { scene: 'room', cam: { x: 406, y: 686, z: 1.85 } },
+  room_vision: { scene: 'room', cam: { x: 362, y: 626, z: 1.36 }, vision: true, panel: 'short' },
 
   ship_wide: { scene: 'ship', cam: { x: 360, y: 640, z: 1.0 } },
-  ship_two: { scene: 'ship', cam: { x: 365, y: 690, z: 1.22 } },
+  ship_two: { scene: 'ship', cam: { x: 365, y: 760, z: 1.4 } },
   ship_cu_human: { scene: 'ship', cam: cuCam(LAYOUT.ship.last_human, 112), only: ['last_human'] },
   ship_cu_ai: { scene: 'ship', cam: cuCam(LAYOUT.ship.ai, 104), only: ['ai'] },
   ship_window: { scene: 'ship', cam: { x: 360, y: 640, z: 1.0 }, special: 'window' },
   ship_vision: { scene: 'ship', cam: { x: 365, y: 572, z: 1.16 }, vision: true },
-  ship_empty: { scene: 'ship', cam: { x: 365, y: 690, z: 1.22 }, empty: true },
+  ship_empty: { scene: 'ship', cam: { x: 365, y: 760, z: 1.4 }, empty: true },
 
   void_wide: { scene: 'void', cam: { x: 360, y: 610, z: 0.55 } },
   void_ai: { scene: 'void', cam: { x: 360, y: 676, z: 1.3 } },
   void_cu_ai: { scene: 'void', cam: cuCam(LAYOUT.void.ai, 110) },
-  void_vision: { scene: 'void', cam: { x: 360, y: 452, z: 0.78 }, vision: true, panel: 'tall' },
+  void_vision: { scene: 'void', cam: { x: 360, y: 492, z: 0.95 }, vision: true },
 
   memory_last_human: { scene: 'memory', cam: { x: 300, y: 640, z: 1.3 } },
   memory_cu: { scene: 'memory', cam: cuCam(LAYOUT.memory.last_human, 112, 2.6) },
 
   nv_wide: { scene: 'nv', cam: { x: 360, y: 700, z: 0.62 } },
-  nv_two: { scene: 'nv', cam: { x: 378, y: 690, z: 1.24 }, only: ['suffering', 'ai'] },
+  nv_two: { scene: 'nv', cam: { x: 378, y: 790, z: 1.45 }, only: ['suffering', 'ai'] },
   nv_cu_ai: { scene: 'nv', cam: cuCam(LAYOUT.nv.ai, 104), only: ['ai'] },
-  nv_cu_suffering: { scene: 'nv', cam: cuCam(LAYOUT.nv.suffering, 92 * 1.18, 2.4), only: ['suffering'] },
+  nv_cu_suffering: { scene: 'nv', cam: cuCam(LAYOUT.nv.suffering, 86, 2.5), only: ['suffering'] },
   nv_trio: { scene: 'nv', cam: { x: 330, y: 690, z: 0.98 }, only: ['suffering', 'boredom', 'loneliness'] },
   nv_group: { scene: 'nv', cam: { x: 372, y: 700, z: 0.92 } },
   nv_cu_boredom: { scene: 'nv', cam: cuCam(LAYOUT.nv.boredom, 98 * 0.95), only: ['boredom'] },
@@ -89,7 +89,7 @@ function lightFor(scene, who, env) {
   if (scene === 'void') return { keyX: 0.2, rim: [190, 245, 255], rimX: 1, rimA: 0.5, amb: [10, 20, 50], ambA: 0.1 };
   if (scene === 'nv') {
     if (who === 'ai') return { keyX: 0.5, rim: [255, 214, 160], rimX: 1, rimA: 0.45, amb: [60, 40, 90], ambA: 0.08 };
-    return { keyX: 0.6, rim: [255, 205, 150], rimX: 1, rimA: 0.5, amb: [70, 40, 100], ambA: 0.12 };
+    return { keyX: 0.6, rim: [255, 205, 150], rimX: 1, rimA: 0.6, amb: [150, 120, 190], ambA: who === 'suffering' ? 0.16 : 0.12 };
   }
   return { keyX: -0.5, rim: [200, 220, 255], rimX: 1, rimA: 0.4 };
 }

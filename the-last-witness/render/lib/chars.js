@@ -195,7 +195,7 @@ LAST_HUMAN.hairFront = shortHair({ volume: 0.045, hairline: -0.26, seed: 5, wave
 const AI = {
   name: 'ai', holo: true,
   skin: [126, 206, 228], skinShadow: [38, 98, 140], blush: [170, 236, 255], blushA: 0.12,
-  lip: [96, 168, 204], iris: [230, 252, 255], pupil: [40, 110, 150], eyeWhite: [214, 246, 255], eyeGlow: [150, 240, 255],
+  lip: [96, 168, 204], iris: [70, 210, 250], pupil: [12, 52, 86], eyeWhite: [206, 240, 250], eyeGlow: [120, 230, 255],
   lash: [24, 74, 108], hair: [92, 176, 214], brow: [60, 130, 170], lashes: true,
   headW: 0.7, jaw: 0.66, chinW: 0.26, eyeSize: 1.08, browThick: 0.85, noseSize: 0.85, mouthW: 0.95, lipFull: 0.9,
   shoulderW: 0.8, neckW: 1.0, armW: 0.21, waistW: 0.68,
@@ -241,11 +241,11 @@ AI.hairFront = shortHair({ volume: 0.05, hairline: -0.33, seed: 9, wave: 0.008, 
 const SUFFERING = {
   name: 'suffering',
   prop: { head: 1.18, neck: 0.62, body: 0.72 },
-  skin: [92, 62, 108], skinShadow: [44, 24, 58], blush: [170, 70, 110], blushA: 0.2,
+  skin: [118, 84, 136], skinShadow: [62, 38, 80], blush: [180, 80, 120], blushA: 0.2,
   lip: [120, 60, 96], iris: [236, 168, 80], lash: [20, 10, 26], hair: [40, 26, 52], brow: [30, 18, 40], lashes: true,
   headW: 0.8, jaw: 0.76, chinW: 0.36, eyeSize: 1.4, irisScale: 1.15, browThick: 0.8, noseSize: 0.7, mouthW: 0.85, lipFull: 0.9,
   shoulderW: 0.62, neckW: 0.85, armW: 0.17, waistW: 0.55, handScale: 0.85,
-  cloth: { base: [58, 40, 70], shadow: [26, 16, 34], collar: [44, 30, 56] }, collar: 'crew',
+  cloth: { base: [78, 56, 94], shadow: [36, 22, 48], collar: [60, 42, 76] }, collar: 'crew',
   mouthIn: [40, 14, 28],
   cracks: 0, // 0 = raw red, 1 = gold (meaning)
   faceDetail(ctx, ch, st, k) {
@@ -295,7 +295,7 @@ SUFFERING.hairFront = shortHair({ volume: 0.07, hairline: -0.36, seed: 21, wave:
 // Boredom: tall, lanky, slouched, ash-sage skin, heavy-lidded, long cardigan, messy fringe.
 const BOREDOM = {
   name: 'boredom',
-  prop: { head: 0.95, neck: 1.1, body: 1.0 },
+  prop: { head: 0.95, neck: 1.0, body: 1.0 },
   skin: [168, 176, 160], skinShadow: [96, 104, 92], blush: [190, 160, 150], blushA: 0.1,
   lip: [140, 126, 120], iris: [110, 130, 96], lash: [50, 54, 46], hair: [92, 86, 96], brow: [80, 76, 84],
   headW: 0.68, jaw: 0.7, chinW: 0.3, eyeSize: 0.95, browThick: 1.0, noseSize: 1.15, mouthW: 1.08, lipFull: 0.8,
@@ -307,7 +307,7 @@ BOREDOM.hairFront = shortHair({ volume: 0.08, hairline: -0.26, seed: 33, wave: 0
 // Loneliness: slender, pale blue, gentle; long dark-blue hair; soft robe.
 const LONELINESS = {
   name: 'loneliness',
-  prop: { head: 0.97, neck: 1.05, body: 0.92 },
+  prop: { head: 0.97, neck: 0.95, body: 0.92 },
   skin: [176, 200, 230], skinShadow: [96, 120, 164], blush: [200, 170, 210], blushA: 0.12,
   lip: [140, 136, 180], iris: [70, 100, 160], lash: [30, 40, 70], hair: [44, 62, 110], brow: [40, 54, 96], lashes: true,
   headW: 0.69, jaw: 0.66, chinW: 0.26, eyeSize: 1.08, browThick: 0.8, noseSize: 0.85, mouthW: 0.92,

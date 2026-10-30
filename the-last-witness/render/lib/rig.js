@@ -141,10 +141,10 @@ function drawHand(ctx, x, y, ang, size, pose, opts) {
   const palm = [[-0.36, -0.05], [-0.42, -0.55], [-0.4, -0.98], [-0.14, -1.06], [0.14, -1.06], [0.38, -0.98], [0.42, -0.55], [0.32, -0.05]];
   // fingers: base x, length, width
   const F = [
-    { bx: -0.29, len: 0.78, w: 0.17 }, // index (thumb side is -x)
-    { bx: -0.095, len: 0.86, w: 0.175 },
-    { bx: 0.1, len: 0.8, w: 0.165 },
-    { bx: 0.28, len: 0.62, w: 0.145 },
+    { bx: -0.28, len: 0.8, w: 0.2 }, // index (thumb side is -x)
+    { bx: -0.09, len: 0.88, w: 0.205 },
+    { bx: 0.1, len: 0.82, w: 0.195 },
+    { bx: 0.28, len: 0.64, w: 0.17 },
   ];
   const fingerPts = F.map((f, i) => {
     const curl = P.curl[i];
@@ -173,21 +173,25 @@ function drawHand(ctx, x, y, ang, size, pose, opts) {
   const t2 = [t1[0] + Math.cos(ta2) * 0.3, t1[1] + Math.sin(ta2) * 0.3];
   const ta3 = ta2 + tc * 0.8;
   const t3 = [t2[0] + Math.cos(ta3) * 0.22, t2[1] + Math.sin(ta3) * 0.22];
-  const thumb = { pts: [tb, t1, t2, t3], w: 0.2 };
+  const thumb = { pts: [tb, t1, t2, t3], w: 0.26 };
 
-  const strokeF = (f, color, extra) => {
-    ctx.strokeStyle = color; ctx.lineWidth = f.w + extra; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); poly(ctx, f.pts); ctx.stroke();
+  // fingers/thumb as chains of tapered capsules (wider at the base, rounded tips)
+  const fingerShape = (f, extra) => {
+    const n = f.pts.length - 1;
+    for (let i = 0; i < n; i++) {
+      const r0 = f.w * (0.5 - 0.07 * i) + extra / 2, r1 = f.w * (0.5 - 0.07 * (i + 1)) + extra / 2;
+      capsule(ctx, f.pts[i], f.pts[i + 1], r0, r1);
+    }
   };
-  const ow = 0.055;
+  const ow = 0.06;
   // 1) silhouette outline pass
-  ctx.fillStyle = ol; ctx.beginPath(); smoothPath(ctx, palm); ctx.lineWidth = ow; ctx.strokeStyle = ol; ctx.stroke();
-  for (const f of fingerPts) strokeF(f, ol, ow);
-  strokeF(thumb, ol, ow);
+  ctx.fillStyle = rgba(ol, 0.9);
+  ctx.beginPath(); smoothPath(ctx, palm.map((p) => [p[0] * 1.06, p[1] * 1.02 + 0.01])); ctx.fill();
+  ctx.beginPath(); for (const f of fingerPts) fingerShape(f, ow); fingerShape(thumb, ow); ctx.fill();
   // 2) fill pass (covers internal outlines so only the silhouette stays)
-  ctx.fillStyle = rgba(sk); ctx.beginPath(); smoothPath(ctx, palm); ctx.fill();
-  for (const f of fingerPts) strokeF(f, rgba(sk), 0);
-  strokeF(thumb, rgba(sk), 0);
+  ctx.fillStyle = rgba(sk);
+  ctx.beginPath(); smoothPath(ctx, palm); ctx.fill();
+  ctx.beginPath(); for (const f of fingerPts) fingerShape(f, 0); fingerShape(thumb, 0); ctx.fill();
   // 3) soft interior shading: blend at edges, no hard lines
   const g = ctx.createLinearGradient(-0.45, 0, 0.45, 0);
   g.addColorStop(0, rgba(sh, 0.0)); g.addColorStop(1, rgba(sh, 0.45));
@@ -228,29 +232,29 @@ function ik(sx, sy, wx, wy, l1, l2, bendSign) {
 // Each: [elbowX, elbowY, wristX, wristY, handAngle, pose, backOfHand]
 // handAngle 0 = fingers up; positive rotates clockwise (toward +x).
 const GESTURES = {
-  idle:        { fore: [0.86, 1.32, 0.55, 1.78, 2.5, 'relaxed', true], back: [-0.86, 1.32, -0.55, 1.78, -2.5, 'relaxed', true] },
-  desk:        { fore: [0.86, 1.28, 0.46, 1.44, -1.75, 'relaxed', true], back: [-0.86, 1.28, -0.48, 1.46, 1.75, 'relaxed', true] },
-  open_palm:   { fore: [0.84, 1.28, 0.66, 0.9, 0.38, 'open', false], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true] },
-  both_palms:  { fore: [0.84, 1.28, 0.66, 0.92, 0.45, 'open', false], back: [-0.84, 1.28, -0.66, 0.92, -0.45, 'open', false] },
-  hand_chest:  { fore: [0.74, 1.24, 0.22, 0.92, -1.15, 'flat', true], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true], drawForeLast: true },
-  chin:        { fore: [0.5, 1.08, 0.12, 0.2, -0.12, 'chin', true], back: [-0.8, 1.28, -0.2, 1.22, -1.75, 'relaxed', true], drawForeLast: true, onFace: true },
-  point_self:  { fore: [0.74, 1.24, 0.24, 0.86, -1.35, 'point', true], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true], drawForeLast: true },
-  reach:       { fore: [1.02, 0.95, 1.38, 0.62, 1.15, 'open', false], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true] },
-  clasp:       { fore: [0.8, 1.28, 0.1, 1.14, -1.35, 'curl', true], back: [-0.8, 1.28, -0.1, 1.2, 1.35, 'curl', true], drawForeLast: true },
-  shrug:       { fore: [0.9, 1.16, 1.0, 0.86, 0.85, 'open', false], back: [-0.9, 1.16, -1.0, 0.86, -0.85, 'open', false], shoulders: 0.06 },
-  fist:        { fore: [0.8, 1.26, 0.52, 0.88, 0.05, 'fist', true], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true] },
-  wipe_tear:   { fore: [0.7, 0.98, 0.36, 0.02, -0.62, 'relaxed', true], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true], drawForeLast: true, onFace: true },
+  idle:        { fore: [0.9, 1.3, 0.74, 2.02, 3.25, 'curl', true], back: [-0.9, 1.3, -0.74, 2.02, -3.25, 'curl', true] },
+  desk:        { fore: [0.84, 1.27, 0.3, 1.43, -1.65, 'relaxed', true], back: [-0.84, 1.27, -0.3, 1.46, 1.65, 'relaxed', true] },
+  open_palm:   { fore: [0.92, 1.05, 0.74, 0.6, 0.32, 'open', false], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true] },
+  both_palms:  { fore: [0.92, 1.05, 0.74, 0.62, 0.42, 'open', false], back: [-0.92, 1.05, -0.74, 0.62, -0.42, 'open', false] },
+  hand_chest:  { fore: [0.78, 1.15, 0.2, 0.66, -1.2, 'flat', true], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true], drawForeLast: true },
+  chin:        { fore: [0.6, 1.14, 0.15, 0.3, -0.12, 'chin', false], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true], drawForeLast: true, onFace: true },
+  point_self:  { fore: [0.78, 1.15, 0.24, 0.66, -1.35, 'point', true], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true], drawForeLast: true },
+  reach:       { fore: [1.04, 0.9, 1.4, 0.5, 1.15, 'open', false], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true] },
+  clasp:       { fore: [0.8, 1.2, 0.1, 1.0, -1.35, 'curl', true], back: [-0.8, 1.2, -0.1, 1.05, 1.35, 'curl', true], drawForeLast: true },
+  shrug:       { fore: [0.95, 1.05, 1.02, 0.7, 0.85, 'open', false], back: [-0.95, 1.05, -1.02, 0.7, -0.85, 'open', false], shoulders: 0.06 },
+  fist:        { fore: [0.84, 1.1, 0.56, 0.62, 0.05, 'fist', true], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true] },
+  wipe_tear:   { fore: [0.72, 0.96, 0.36, 0.02, -0.62, 'relaxed', true], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true], drawForeLast: true, onFace: true },
   head_in_hands: { fore: [0.56, 1.0, 0.22, 0.04, -0.28, 'cup', true], back: [-0.56, 1.0, -0.22, 0.04, 0.28, 'cup', true], drawForeLast: true, onFace: true, pitch: 0.5 },
-  offer:       { fore: [0.78, 1.22, 0.42, 0.9, 1.3, 'cup', false], back: [-0.6, 1.26, 0.06, 0.95, 1.6, 'cup', false], orb: [0.26, 0.7], backInFront: true },
-  hold_orb:    { fore: [0.78, 1.24, 0.17, 0.98, -1.35, 'cup', false], back: [-0.78, 1.24, -0.17, 0.98, 1.35, 'cup', false], orb: [0, 0.74], drawForeLast: true, backInFront: true },
-  press_button:{ fore: [0.98, 1.05, 1.3, 1.22, 2.0, 'point', true], back: [-0.84, 1.3, -0.46, 1.5, -1.95, 'relaxed', true] },
-  lean_in:     { fore: [0.8, 1.26, 0.38, 1.36, 1.8, 'relaxed', true], back: [-0.8, 1.26, -0.4, 1.38, -1.8, 'relaxed', true], lean: 0.25 },
-  lean_back:   { fore: [0.86, 1.32, 0.55, 1.78, 2.5, 'relaxed', true], back: [-0.86, 1.32, -0.55, 1.78, -2.5, 'relaxed', true], lean: -0.2 },
+  offer:       { fore: [0.8, 1.1, 0.44, 0.74, 1.3, 'cup', false], back: [-0.6, 1.14, 0.08, 0.78, 1.6, 'cup', false], orb: [0.26, 0.52], backInFront: true },
+  hold_orb:    { fore: [0.8, 1.12, 0.18, 0.8, -1.35, 'cup', false], back: [-0.8, 1.12, -0.18, 0.8, 1.35, 'cup', false], orb: [0, 0.56], drawForeLast: true, backInFront: true },
+  press_button:{ fore: [0.98, 1.05, 1.3, 1.22, 2.0, 'point', true], back: [-0.82, 1.27, -0.3, 1.44, 1.65, 'relaxed', true] },
+  lean_in:     { fore: [0.8, 1.22, 0.3, 1.36, -1.65, 'relaxed', true], back: [-0.8, 1.22, -0.3, 1.38, 1.65, 'relaxed', true], lean: 0.25 },
+  lean_back:   { fore: [0.9, 1.3, 0.74, 2.02, 3.25, 'curl', true], back: [-0.9, 1.3, -0.74, 2.02, -3.25, 'curl', true], lean: -0.2 },
   arms_wide:   { fore: [1.25, 0.62, 1.62, 0.3, 0.75, 'open', false], back: [-1.25, 0.62, -1.62, 0.3, -0.75, 'open', false] },
   stretch_yawn:{ fore: [0.88, -0.45, 0.42, -1.18, -0.3, 'relaxed', false], back: [-0.88, -0.45, -0.42, -1.18, 0.3, 'relaxed', false], yawn: true, shoulders: 0.08 },
-  hands_together: { fore: [0.64, 1.12, 0.05, 0.66, -0.05, 'flat', false], back: [-0.64, 1.12, -0.05, 0.66, 0.05, 'flat', true], drawForeLast: true },
-  nod:         { fore: [0.86, 1.32, 0.55, 1.78, 2.5, 'relaxed', true], back: [-0.86, 1.32, -0.55, 1.78, -2.5, 'relaxed', true] },
-  shake:       { fore: [0.86, 1.32, 0.55, 1.78, 2.5, 'relaxed', true], back: [-0.86, 1.32, -0.55, 1.78, -2.5, 'relaxed', true] },
+  hands_together: { fore: [0.66, 1.05, 0.05, 0.5, -0.05, 'flat', false], back: [-0.66, 1.05, -0.05, 0.5, 0.05, 'flat', true], drawForeLast: true },
+  nod:         { fore: [0.9, 1.3, 0.74, 2.02, 3.25, 'curl', true], back: [-0.9, 1.3, -0.74, 2.02, -3.25, 'curl', true] },
+  shake:       { fore: [0.9, 1.3, 0.74, 2.02, 3.25, 'curl', true], back: [-0.9, 1.3, -0.74, 2.02, -3.25, 'curl', true] },
 };
 
 // ---------------------------------------------------------------- main draw
@@ -306,15 +310,15 @@ function drawCharacter(ctx, ch, st) {
   const mkArm = (sh, tgt, side) => {
     const sgn = sh[0] >= 0 ? 1 : -1;
     const sx = sh[0] - sgn * 0.1, sy = sh[1] + 0.1;
-    const r = ch.reach ?? 1;
-    return { sx, sy, ex: tgt.ex * r, ey: tgt.ey, wx: tgt.x * r, wy: tgt.y, a: tgt.a, pose: tgt.pose, back: tgt.back, squash: tgt.y > 1.3 ? 0.62 : null };
+    const r = (ch.reach ?? 1) * bodyScale, ry = bodyScale;
+    return { sx, sy, ex: tgt.ex * r, ey: tgt.ey * ry, wx: tgt.x * r, wy: tgt.y * ry, a: tgt.a, pose: tgt.pose, back: tgt.back, squash: tgt.y > 1.3 ? 0.62 : null };
   };
   const foreArm = mkArm(foreSh, arms.fore, 'fore');
   const backArm = mkArm(backSh, arms.back, 'back');
 
   // ----- head transform
   const headCX = lean * 0.18 * facing + k * 0.02;
-  const headCY = -(0.47 + 0.24 * neckLen) * 1 - breath * 0.004 + Math.max(0, lean) * 0.05;
+  const headCY = -(0.47 + 0.13 * neckLen) * 1 - breath * 0.004 + Math.max(0, lean) * 0.05;
   const pitch = clamp((st.pitch || 0) + (e.pitch || 0), -1, 1);
   const roll = (st.roll || 0) + (e.roll || 0) * facing;
   if (ch.hairBack) {
@@ -436,9 +440,9 @@ function drawCollar(ctx, ch, bk, L, st) {
   if (type === 'crew' || type === 'knit') {
     ctx.beginPath();
     ctx.moveTo(-0.3 + bk * 0.06, -0.07);
-    ctx.quadraticCurveTo(0 + bk * 0.08, 0.2, 0.3 + bk * 0.06, -0.07);
+    ctx.quadraticCurveTo(0 + bk * 0.08, 0.13, 0.3 + bk * 0.06, -0.07);
     ctx.quadraticCurveTo(0.34 + bk * 0.06, 0.02, 0.3 + bk * 0.06, 0.05);
-    ctx.quadraticCurveTo(0 + bk * 0.08, 0.3, -0.3 + bk * 0.06, 0.05);
+    ctx.quadraticCurveTo(0 + bk * 0.08, 0.22, -0.3 + bk * 0.06, 0.05);
     ctx.quadraticCurveTo(-0.34 + bk * 0.06, 0.02, -0.3 + bk * 0.06, -0.07);
     ctx.fillStyle = rgba(c.collar || shade(c.base, -0.12)); ctx.fill();
     ctx.strokeStyle = rgba(c.shadow, 0.35); ctx.lineWidth = 0.012; ctx.stroke();
@@ -517,26 +521,28 @@ function drawArm(ctx, ch, arm, L, side) {
   const dark = side === 'back' ? -0.1 : 0;
   const S = [arm.sx, arm.sy], E = [arm.ex, arm.ey], Wr = [arm.wx, arm.wy];
   ctx.save();
-  // sleeve: upper arm + forearm as one soft shape
-  ctx.beginPath();
-  capsule(ctx, S, E, w * 0.62, w * 0.5);
-  capsule(ctx, E, Wr, w * 0.5, w * 0.42);
-  ctx.fillStyle = rgba(shade(sleeve, dark)); ctx.fill();
-  ctx.save(); ctx.clip();
+  // sleeve: upper arm + forearm as one soft shape; the outline is a slightly larger shape underneath,
+  // so no joint circles or capsule edges show inside the sleeve
+  const sleevePath = (grow) => {
+    ctx.beginPath();
+    capsule(ctx, S, E, w * 0.62 + grow, w * 0.5 + grow);
+    capsule(ctx, E, Wr, w * 0.5 + grow, w * 0.42 + grow);
+  };
+  sleevePath(0.012); ctx.fillStyle = rgba(shade(c.shadow, -0.1), 0.85); ctx.fill();
+  sleevePath(0); ctx.fillStyle = rgba(shade(sleeve, dark)); ctx.fill();
+  ctx.save(); sleevePath(0); ctx.clip();
   if (L.amb && L.ambA) { ctx.fillStyle = rgba(L.amb, L.ambA); ctx.fillRect(-3, -2, 6, 5); }
   ctx.fillStyle = lightGrad(ctx, Math.min(S[0], Wr[0]) - 0.3, Math.max(S[0], Wr[0]) + 0.3, L, sleeve, c.shadow, 0.9);
   ctx.fillRect(-3, -2, 6, 5);
-  // inner-arm shade + elbow fold
-  ctx.strokeStyle = rgba(c.shadow, 0.3); ctx.lineWidth = w * 0.35; ctx.lineCap = 'round';
-  const ex = E[0] - S[0], ey = E[1] - S[1], el = Math.hypot(ex, ey) || 1;
-  const inx = (S[0] >= 0 ? -1 : 1) * 0.06;
-  ctx.beginPath(); ctx.moveTo(S[0] + inx, S[1] + 0.1); ctx.lineTo(E[0] + inx, E[1]); ctx.stroke();
-  ctx.strokeStyle = rgba(c.shadow, 0.35); ctx.lineWidth = 0.018;
-  ctx.beginPath(); ctx.arc(E[0], E[1], w * 0.3, Math.atan2(ey, ex) + 0.9, Math.atan2(ey, ex) + 2.0); ctx.stroke();
+  // soft fold shading where the elbow bends
+  const ex = E[0] - S[0], ey = E[1] - S[1];
+  const eg = ctx.createRadialGradient(E[0], E[1], 0, E[0], E[1], w * 0.7);
+  eg.addColorStop(0, rgba(c.shadow, 0.35)); eg.addColorStop(1, rgba(c.shadow, 0));
+  ctx.fillStyle = eg; ctx.fillRect(E[0] - w, E[1] - w, w * 2, w * 2);
+  ctx.strokeStyle = rgba(c.shadow, 0.25); ctx.lineWidth = 0.016; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(E[0], E[1], w * 0.32, Math.atan2(ey, ex) + 1.0, Math.atan2(ey, ex) + 1.9); ctx.stroke();
   ctx.restore();
-  ctx.beginPath(); capsule(ctx, S, E, w * 0.62, w * 0.5); capsule(ctx, E, Wr, w * 0.5, w * 0.42);
-  ctx.strokeStyle = rgba(c.shadow, 0.4); ctx.lineWidth = 0.01; ctx.stroke();
-  rimStroke(ctx, L, 0.025, 0.7);
+  sleevePath(0); rimStroke(ctx, L, 0.022, 0.6);
   // hand emerging from the cuff opening
   const fa = Math.atan2(Wr[1] - E[1], Wr[0] - E[0]);
   const handSize = 0.36 * (ch.handScale ?? 1);
@@ -546,11 +552,10 @@ function drawArm(ctx, ch, arm, L, side) {
       mirror: arm.wx < 0 ? !arm.back : arm.back, back: arm.back, squash: arm.squash,
     });
   }
-  // cuff rim drawn over the wrist so the hand sits inside the sleeve opening
+  // cuff band over the wrist so the hand sits inside the sleeve opening (no outline)
   ctx.save(); ctx.translate(Wr[0] - Math.cos(fa) * 0.01, Wr[1] - Math.sin(fa) * 0.01); ctx.rotate(fa + Math.PI / 2);
-  ctx.fillStyle = rgba(shade(ch.cuff || sleeve, dark - 0.08));
-  ctx.beginPath(); ctx.ellipse(0, 0, w * 0.48, 0.045, 0, 0, U.TAU); ctx.fill();
-  ctx.strokeStyle = rgba(c.shadow, 0.45); ctx.lineWidth = 0.008; ctx.stroke();
+  ctx.fillStyle = rgba(shade(ch.cuff || sleeve, dark - 0.07));
+  ctx.beginPath(); ctx.ellipse(0, 0, w * 0.47, 0.04, 0, 0, U.TAU); ctx.fill();
   ctx.restore();
   ctx.restore();
 }
@@ -718,7 +723,7 @@ function drawEye(ctx, ch, st, eye, e, L, k) {
     // iris & pupil follow gaze; eyes converge slightly toward the side faced
     const gx = clamp((st.gaze?.x || 0), -1, 1), gy = clamp((st.gaze?.y || 0), -1, 1);
     const ir = 0.034 * es * (ch.irisScale ?? 1);
-    const ix = x + gx * w * 0.3 + k * w * 0.08, iy = y + gy * h * 0.42 - upH * 0.08 + (1 - lidUp) * h * 0.1;
+    const ix = x + gx * w * 0.36 + k * w * 0.06, iy = y + gy * h * 0.42 - upH * 0.08 + (1 - lidUp) * h * 0.1;
     ctx.save(); ctx.translate(ix, iy); ctx.scale(lerp(0.75, 1, f), 1);
     const ig = ctx.createRadialGradient(0, 0, ir * 0.2, 0, 0, ir);
     ig.addColorStop(0, rgba(shade(ch.iris, 0.25))); ig.addColorStop(0.75, rgba(ch.iris)); ig.addColorStop(1, rgba(shade(ch.iris, -0.45)));
@@ -922,7 +927,7 @@ function drawTear(ctx, ch, eyes, p, k) {
 
 function headCenter(ch, st) {
   const neckLen = (ch.prop || {}).neck ?? 1;
-  return [st.x, st.y - (0.47 + 0.24 * neckLen) * st.s];
+  return [st.x, st.y - (0.47 + 0.13 * neckLen) * st.s];
 }
 
 module.exports = {

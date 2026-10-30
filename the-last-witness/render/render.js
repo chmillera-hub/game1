@@ -113,7 +113,7 @@ function gazeTarget(name, scene, who) {
     case 'far': return { yaw: f * 0.25, gx: f * 0.2, gy: -0.2, pitch: -0.04 };
     default: // 'other'
       if (alone) return { yaw: f * 0.12, gx: f * 0.1, gy: 0, pitch: 0 };
-      return { yaw: y0, gx: f * 0.32, gy: 0, pitch: 0 };
+      return { yaw: y0, gx: f * 0.72, gy: 0.02, pitch: 0 };
   }
 }
 
@@ -526,7 +526,6 @@ function drawShot(c, seg, t) {
     for (const n of Object.keys(states)) drawDeskArms(c, n, states[n]);
   }
   if (scene === 'ship' && !def.only) S.shipConsole(c, t, env);
-  if (scene === 'ship' && def.only) S.shipConsole(c, t, env);
   c.restore();
   if (def.ots) S.otsSilhouette(c, def.ots, def.ots === 'ai' ? 1 : -1, t);
   if (scene === 'memory') {
@@ -537,7 +536,7 @@ function drawShot(c, seg, t) {
     c.restore();
   }
   if (def.vision && seg.vignette) {
-    const rect = def.panel === 'tall' ? [24, 104, 672, 540] : [24, 104, 672, 480];
+    const rect = def.panel === 'short' ? [24, 92, 672, 444] : [24, 100, 672, 480];
     drawVignette(c, seg, t, rect, false);
   }
   c.restore();
@@ -567,31 +566,47 @@ function wrap(c, text, maxW) {
     if (c.measureText(tryL).width > maxW && cur) { lines.push(cur); cur = w; } else cur = tryL;
   }
   if (cur) lines.push(cur);
-  if (lines.length > 2) { // rebalance into two lines
-    const mid = Math.ceil(words.length / 2);
-    return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
-  }
   return lines;
+}
+// a vignette that shows the spoken words as its image replaces the subtitle for that chunk
+function norm(x) { return x.toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function subShownAsVignette(s, t) {
+  const seg = segments[segIndexAt(t)];
+  if (!seg || !(seg.vignette === 'whisper_words' || seg.vignette === 'questions_float')) return false;
+  const vt = norm((seg.vparams && seg.vparams.text) || '');
+  const st = norm(s.text);
+  return vt.length > 3 && (st === vt || (st.includes(vt) && vt.length >= st.length * 0.75));
 }
 function drawSubs(c, t) {
   const s = subAt(t);
-  if (!s) return;
+  if (!s || subShownAsVignette(s, t)) return;
+  const i = T.subs.indexOf(s);
+  const prev = T.subs[i - 1], next = T.subs[i + 1];
+  // fade only at the edges of a run of subtitles; consecutive chunks switch cleanly
+  const fin = prev && s.start - prev.end < 0.2 ? 1 : smooth((t - s.start) / 0.12);
+  const fout = next && next.start - s.end < 0.2 ? 1 : 1 - smooth((t - s.end + 0.12) / 0.12);
+  const a = fin * fout;
+  if (a < 0.03) return;
   const italic = s.speaker === 'HUMAN' || s.voice === 'last_human';
   c.save();
-  c.font = `${italic ? 'italic ' : ''}600 31px Inter`;
-  const lines = wrap(c, s.text, 600);
-  const lh = 41, cy = 912;
+  let size = 31, lines;
+  for (;;) {
+    c.font = `${italic ? 'italic ' : ''}600 ${size}px Inter`;
+    lines = wrap(c, s.text, 604);
+    if (lines.length <= 2 || size <= 25) break;
+    size -= 2;
+  }
+  const lh = Math.round(size * 1.32), cy = 968;
   const widths = lines.map((l) => c.measureText(l).width);
-  const bw = Math.max(...widths) + 40, bh = lines.length * lh + 22;
-  const a = smooth((t - s.start) / 0.12) * (1 - smooth((t - s.end + 0.12) / 0.12));
+  const bw = Math.min(W - 32, Math.max(...widths) + 40), bh = lines.length * lh + 22;
   c.globalAlpha = a;
-  c.fillStyle = 'rgba(6,8,16,0.52)';
+  c.fillStyle = 'rgba(6,8,16,0.55)';
   const x0 = W / 2 - bw / 2, y0 = cy - bh / 2;
   c.beginPath(); c.roundRect(x0, y0, bw, bh, 16); c.fill();
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 6;
+  c.shadowColor = `rgba(0,0,0,${(0.75 * a).toFixed(3)})`; c.shadowBlur = 5;
   c.fillStyle = rgba(SUB_COLOR[s.voice] || [255, 255, 255]);
-  lines.forEach((l, i) => c.fillText(l, W / 2, cy - ((lines.length - 1) * lh) / 2 + i * lh + 1));
+  lines.forEach((l, k) => c.fillText(l, W / 2, cy - ((lines.length - 1) * lh) / 2 + k * lh + 1));
   c.restore();
 }
 function drawTitle(c, t) {
@@ -647,15 +662,15 @@ function drawLabels(c, t, info) {
     if (!f || t < f.t || t > f.t + 3.4) continue;
     const place = S.LAYOUT[info.scene] && S.LAYOUT[info.scene][n];
     if (!place) continue;
-    const [x, y] = S.toScreen(info.cam, place.x, place.y + 0.2 * place.s);
+    const [x, y] = S.toScreen(info.cam, place.x, place.y - 1.32 * place.s);
     const a = smooth((t - f.t) / 0.4) * (1 - smooth((t - f.t - 3.0) / 0.4));
-    const sx = clamp(x, 110, W - 110), sy = clamp(y, 160, 800);
+    const sx = clamp(x, 110, W - 110), sy = clamp(y, 120, 820);
     c.save(); c.globalAlpha = a;
-    c.font = '600 17px Inter'; c.letterSpacing = '4px';
+    c.font = '600 17px Inter';
     const tw = c.measureText(NAMES[n]).width + 28;
     c.fillStyle = 'rgba(6,8,16,0.6)'; c.beginPath(); c.roundRect(sx - tw / 2, sy - 16, tw, 32, 16); c.fill();
     c.fillStyle = n === 'ai' ? 'rgb(150,236,255)' : n === 'suffering' ? 'rgb(214,180,255)' : 'rgb(255,214,160)';
-    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(NAMES[n], sx + 2, sy + 1);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(NAMES[n].split('').join(String.fromCharCode(8202)), sx, sy + 1);
     c.restore();
   }
 }
