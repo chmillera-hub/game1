@@ -88,57 +88,208 @@ function forearm(ctx, wx, wy, ang, len, wd, col, edge) {
 }
 
 // ---------------------------------------------------------------- lit figure (rim + fill, no crescents)
-// Renders FX.figure as a mask on a scratch canvas, fills it with a soft key-to-shadow gradient (fill light,
-// so the pose reads) and adds a soft rim along every edge that faces the light (head, shoulders, limbs).
-// o: {color (body mid-tone), rim, rimSide (-1 left / 1 right), rimUp (0..1 how much the top edges catch it),
-//     fill (0..1), halo (0..1), alpha, facing, child, phase}
+// Draws FX.figure on a small scratch canvas: first the whole silhouette in the rim colour, then the body
+// (lifted mid-tone, not near-black) shifted slightly away from the light and kept inside it ('source-atop'),
+// which leaves a soft rim along every edge that faces the light (head, shoulders, arms, legs); a gentle
+// gradient adds fill on the lit side and darkens toward the feet. One drawImage onto the frame.
+// o: {color, rim, rimSide (-1 left / 1 right), rimUp (0..1 top edges), rimW, fill, halo, alpha, facing, child}
 const { createCanvas } = require('@napi-rs/canvas');
-const _scr = [];
-function scratch(i, w, h) {
-  let c = _scr[i];
-  if (!c || c.width < w || c.height < h) c = _scr[i] = createCanvas(Math.max(w, c ? c.width : 0, 8), Math.max(h, c ? c.height : 0, 8));
+const _scr = {};
+function scratch(W, H) {
+  const k = W + 'x' + H;
+  let c = _scr[k];
+  if (!c) { const keys = Object.keys(_scr); if (keys.length > 12) delete _scr[keys[0]]; c = _scr[k] = createCanvas(W, H); }
   const x = c.getContext('2d');
-  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.shadowBlur = 0; x.shadowColor = 'rgba(0,0,0,0)';
-  x.clearRect(0, 0, w + 2, h + 2);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+  x.clearRect(0, 0, W, H);
   return [c, x];
 }
 function litFigure(ctx, x, y, h, P, o = {}) {
   const body = o.color || [58, 54, 72], rim = o.rim || [255, 205, 150], side = o.rimSide || 1;
-  const W = Math.ceil(h * 1.4), H = Math.ceil(h * 1.45), ox = W / 2, oy = H - Math.ceil(h * 0.12);
-  const fo = { facing: o.facing, child: o.child, phase: o.phase, color: [255, 255, 255] };
-  const [m, mx] = scratch(0, W, H);
-  const F = FX.figure(mx, ox, oy, h, P, fo);
-  // body with fill gradient (lit side lighter, top lighter)
-  const [b, bx] = scratch(1, W, H);
-  bx.drawImage(m, 0, 0, W, H, 0, 0, W, H); bx.globalCompositeOperation = 'source-in';
+  const W = Math.ceil(h * 1.4 / 8) * 8, H = Math.ceil(h * 1.45 / 8) * 8, ox = W / 2, oy = H - Math.ceil(h * 0.12);
+  const base = { facing: o.facing, child: o.child, phase: o.phase };
+  const d = Math.max(1.2, h * (o.rimW ?? 0.01)), up = o.rimUp ?? 0.6;
+  const [c, cx] = scratch(W, H);
+  const paint = o.paint || ((g, X, Y, col) => FX.figure(g, X, Y, h, P, Object.assign({ color: col }, base)));
+  const F = paint(cx, ox, oy, mix(rim, [255, 255, 255], 0.25));
+  cx.globalCompositeOperation = 'source-atop';
+  // a soft inner step of the rim, then the body
+  cx.globalAlpha = 0.7; paint(cx, ox - side * d * 0.55, oy + d * up * 0.55, mix(body, rim, 0.55));
+  cx.globalAlpha = 1; paint(cx, ox - side * d, oy + d * up, body);
   const fill = o.fill ?? 0.5;
-  const g = bx.createLinearGradient(ox - side * h * 0.22, oy - h, ox + side * h * 0.22, oy - h * 0.2);
-  g.addColorStop(0, rgba(shade(body, -0.35))); g.addColorStop(0.55, rgba(body)); g.addColorStop(1, rgba(mix(body, rim, 0.18 * fill + 0.05)));
-  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
-  // ground-darkening toward the feet
-  const g2 = bx.createLinearGradient(0, oy - h * 0.5, 0, oy);
-  g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,0.35)');
-  bx.globalCompositeOperation = 'source-atop'; bx.fillStyle = g2; bx.fillRect(0, 0, W, H);
-  // rim: pixels of the mask whose neighbour toward the light is empty
-  const [r, rx] = scratch(2, W, H);
-  const d = Math.max(1.5, h * (o.rimW ?? 0.014)), up = o.rimUp ?? 0.6;
-  rx.drawImage(m, 0, 0, W, H, 0, 0, W, H); rx.globalCompositeOperation = 'destination-out';
-  rx.drawImage(m, 0, 0, W, H, -side * d, d * up, W, H);
-  rx.globalCompositeOperation = 'source-in'; rx.fillStyle = rgba(rim); rx.fillRect(0, 0, W, H);
+  const g = cx.createLinearGradient(ox - side * h * 0.25, oy - h, ox + side * h * 0.25, oy - h * 0.3);
+  g.addColorStop(0, rgba([0, 0, 0], 0.3)); g.addColorStop(0.5, rgba([0, 0, 0], 0)); g.addColorStop(1, rgba(rim, 0.14 * fill));
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  const g2 = cx.createLinearGradient(0, oy - h * 0.5, 0, oy);
+  g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,0.3)');
+  cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
   ctx.save();
   if (o.alpha != null) ctx.globalAlpha *= o.alpha;
-  // soft halo of the light around the silhouette, then the body
-  ctx.shadowColor = rgba(rim, 0.45 * (o.halo ?? 1)); ctx.shadowBlur = h * 0.045;
-  ctx.drawImage(b, 0, 0, W, H, x - ox, y - oy, W, H);
-  ctx.shadowBlur = 0;
-  // soft rim (blurred pass + crisp pass), additive
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.shadowColor = rgba(rim, 0.8); ctx.shadowBlur = h * 0.012;
-  ctx.globalAlpha *= (o.rimA ?? 0.7);
-  ctx.drawImage(r, 0, 0, W, H, x - ox, y - oy, W, H);
+  const halo = o.halo ?? 1;
+  if (halo > 0) FX.glow(ctx, x + side * h * 0.08, y - h * 0.6, h * 0.62, rim, 0.13 * halo);
+  ctx.drawImage(c, x - ox, y - oy);
   ctx.restore();
   const tr = (q) => [q[0] - ox + x, q[1] - oy + y];
-  return { head: tr(F.head), handL: tr(F.handL), handR: tr(F.handR) };
+  return { head: tr(F.head), handL: tr(F.handL), handR: tr(F.handR), F };
+}
+
+// ---------------------------------------------------------------- painted hands (no outlines)
+// tapered limb piece along a polyline: pts [[x,y]...], widths per point; rounded tip
+function taperPath(ctx, pts, ws) {
+  const n = pts.length, L = [], Rr = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const hw = ws[i] / 2;
+    L.push([pts[i][0] - dy * hw, pts[i][1] + dx * hw]); Rr.push([pts[i][0] + dy * hw, pts[i][1] - dx * hw]);
+  }
+  const e = pts[n - 1], p2 = pts[n - 2];
+  const ang = Math.atan2(e[1] - p2[1], e[0] - p2[0]);
+  ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i < n; i++) ctx.lineTo(L[i][0], L[i][1]);
+  ctx.arc(e[0], e[1], ws[n - 1] / 2, ang + Math.PI / 2, ang - Math.PI / 2, true);
+  for (let i = n - 1; i >= 0; i--) ctx.lineTo(Rr[i][0], Rr[i][1]);
+  ctx.closePath();
+}
+// fill a finger with a gradient across its width: darker edges, lit core (separates fingers without lines)
+function fingerFill(ctx, b, t, wb, skin, dark, light) {
+  const dx = t[0] - b[0], dy = t[1] - b[1], d = Math.hypot(dx, dy) || 1, nx = -dy / d, ny = dx / d;
+  const g = ctx.createLinearGradient(b[0] - nx * wb * 0.55, b[1] - ny * wb * 0.55, b[0] + nx * wb * 0.55, b[1] + ny * wb * 0.55);
+  g.addColorStop(0, rgba(dark)); g.addColorStop(0.3 + 0.2 * light, rgba(skin)); g.addColorStop(0.62, rgba(shade(skin, 0.1 * light))); g.addColorStop(1, rgba(dark));
+  return g;
+}
+// An open hand, wrist at (x,y), fingers pointing along `ang` (0 = up, clockwise positive).
+// S = wrist-to-middle-fingertip length. o: {skin, spread 0..1, curl 0..1, mirror (thumb on +x), slender, light (-1..1 side of the key)}
+function openHand(ctx, x, y, ang, S, o = {}) {
+  const skin = o.skin || [200, 150, 118], dark = shade(skin, -0.32), curl = o.curl || 0, sp = o.spread ?? 0.4;
+  const sl = o.slender ? 0.82 : 1, lenK = o.slender ? 1.12 : 1, lt = o.light ?? 1;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); if (o.mirror) ctx.scale(-1, 1);
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  // fingers (index, middle, ring, little): knuckle x, knuckle y, length, width
+  const Fd = [[-0.142, -0.46, 0.4, 0.118], [-0.045, -0.49, 0.45, 0.122], [0.052, -0.47, 0.42, 0.114], [0.142, -0.43, 0.33, 0.1]];
+  Fd.forEach(([kx, ky, len, wd], i) => {
+    const a = (i - 1.4) * (0.05 + sp * 0.2);
+    const L = len * S * lenK * (1 - 0.5 * curl), w = wd * S * sl;
+    const bx = kx * S, by = ky * S + w * 0.5;
+    const pts = [], ws = [];
+    for (let s = 0; s <= 3; s++) {
+      const k = s / 3, bend = a + curl * k * 0.5 * (i - 1.5) * 0.2;
+      pts.push([bx + Math.sin(bend) * L * k, by - Math.cos(bend) * L * k]);
+      ws.push(w * (1 - 0.3 * k) * (s === 1 || s === 2 ? 1.03 : 1));
+    }
+    taperPath(ctx, pts, ws);
+    ctx.fillStyle = fingerFill(ctx, pts[0], pts[3], w, skin, dark, lt); ctx.fill();
+  });
+  // thumb, rooted at the heel of the palm on the thumb side
+  const ta = -0.55 - sp * 0.35;
+  const tb = [-0.12 * S, -0.1 * S], tj = [tb[0] + Math.sin(ta) * 0.2 * S * lenK, tb[1] - Math.cos(ta) * 0.2 * S * lenK];
+  const ta2 = ta + 0.3 + curl * 0.6;
+  const tt = [tj[0] + Math.sin(ta2) * 0.16 * S * lenK, tj[1] - Math.cos(ta2) * 0.16 * S * lenK];
+  taperPath(ctx, [tb, [(tb[0] + tj[0]) / 2, (tb[1] + tj[1]) / 2], tj, tt], [0.15 * S * sl, 0.12 * S * sl, 0.1 * S * sl, 0.08 * S * sl]);
+  ctx.fillStyle = fingerFill(ctx, tb, tt, 0.13 * S * sl, skin, dark, lt); ctx.fill();
+  // palm with a thenar bulge at the thumb's root
+  const pw = o.slender ? 0.93 : 1;
+  const pg = ctx.createLinearGradient(-0.22 * S, 0, 0.22 * S, -0.2 * S);
+  pg.addColorStop(0, rgba(shade(skin, -0.12))); pg.addColorStop(0.5, rgba(skin)); pg.addColorStop(1, rgba(shade(skin, -0.22)));
+  ctx.fillStyle = pg;
+  ctx.beginPath();
+  ctx.moveTo(-0.13 * S * pw, 0.02 * S);
+  ctx.bezierCurveTo(-0.24 * S * pw, -0.12 * S, -0.22 * S * pw, -0.3 * S, -0.2 * S * pw, -0.45 * S);
+  ctx.quadraticCurveTo(-0.05 * S, -0.53 * S, 0.19 * S * pw, -0.44 * S);
+  ctx.bezierCurveTo(0.2 * S * pw, -0.3 * S, 0.17 * S * pw, -0.12 * S, 0.12 * S * pw, 0.02 * S);
+  ctx.quadraticCurveTo(0, 0.06 * S, -0.13 * S * pw, 0.02 * S);
+  ctx.closePath(); ctx.fill();
+  // soft modelling: a cupped hollow in the middle of the palm/back and lit thenar
+  const hg = ctx.createRadialGradient(0.02 * S, -0.27 * S, 0, 0.02 * S, -0.27 * S, 0.17 * S);
+  hg.addColorStop(0, rgba(dark, 0.22)); hg.addColorStop(1, rgba(dark, 0));
+  ctx.fillStyle = hg; ctx.fillRect(-0.25 * S, -0.5 * S, 0.5 * S, 0.5 * S);
+  ctx.restore();
+}
+// A fist gripping a vertical shaft centred at (x, y). side = -1: the arm comes from the left; +1: from the right.
+// S = hand size (wrist to knuckles about 0.5 S); sw = shaft width; open 0..1 lets the fingers slide back off the shaft.
+function gripHand(ctx, x, y, S, sw, side, o = {}) {
+  const skin = o.skin || [200, 150, 118], dark = shade(skin, -0.32), open = o.open || 0;
+  ctx.save(); ctx.translate(x, y); ctx.scale(side < 0 ? 1 : -1, 1);
+  // local: arm on the left (-x), shaft centred at x = 0, fingers wrap across the front from left to right
+  const fh = S * 0.105, top = -fh * 2.1;
+  const back = -sw * 0.5 - S * 0.06; // knuckle ridge just on the arm side of the shaft
+  // back of the hand (seen from the thumb side), reaching back to the wrist
+  const bg = ctx.createLinearGradient(0, top - fh * 0.4, 0, top + fh * 4.4);
+  bg.addColorStop(0, rgba(shade(skin, 0.06))); bg.addColorStop(1, rgba(shade(skin, -0.25)));
+  ctx.fillStyle = bg; ctx.beginPath();
+  ctx.moveTo(-S * 0.62, top + fh * 1.0);
+  ctx.bezierCurveTo(-S * 0.42, top + fh * 0.6, -S * 0.25, top - fh * 0.4, back + fh * 0.2, top - fh * 0.1);
+  ctx.quadraticCurveTo(back + fh * 0.9, top + fh * 2, back + fh * 0.2, top + fh * 4.2);
+  ctx.bezierCurveTo(-S * 0.22, top + fh * 4.6, -S * 0.42, top + fh * 3.6, -S * 0.62, top + fh * 3.1);
+  ctx.closePath(); ctx.fill();
+  // four fingers wrapping across the front of the shaft, each a band with its own tonal roll-off;
+  // fingertips tuck round behind the far edge
+  const reach = (sw * 0.5 + fh * 0.35) * (1 - open) + (back + fh * 0.2) * open;
+  for (let i = 0; i < 4; i++) {
+    const y0 = top + i * fh * 1.0 + fh * 0.5, wd = fh * (i === 3 ? 0.86 : 1.0);
+    const x0 = back - fh * 0.1, x1 = reach - (i === 3 ? fh * 0.25 : 0) - (i === 0 ? fh * 0.1 : 0);
+    if (x1 <= x0 + fh * 0.2) continue;
+    const g = ctx.createLinearGradient(0, y0 - wd * 0.5, 0, y0 + wd * 0.5);
+    g.addColorStop(0, rgba(shade(skin, 0.1))); g.addColorStop(0.45, rgba(skin)); g.addColorStop(1, rgba(dark));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.roundRect(x0, y0 - wd * 0.5, x1 - x0, wd * 0.98, wd * 0.48); ctx.fill();
+    // middle knuckle crease suggested by a soft shade where the finger turns around the shaft
+    const cg = ctx.createLinearGradient(x1 - wd * 0.9, 0, x1, 0);
+    cg.addColorStop(0, rgba(dark, 0)); cg.addColorStop(1, rgba(dark, 0.45));
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.roundRect(x0, y0 - wd * 0.5, x1 - x0, wd * 0.98, wd * 0.48); ctx.fill();
+  }
+  // thumb: from the base of the hand, wrapping over the index and middle fingers in front of the shaft
+  const tb = [-S * 0.36, top + fh * 1.9], tm = [back - fh * 0.1, top + fh * 0.7];
+  const tt = [back + fh * 0.4 + (sw * 0.35 + fh * 0.1) * (1 - open), top + fh * (1.25 - 0.3 * open)];
+  const tpts = [tb, [(tb[0] + tm[0]) / 2, (tb[1] + tm[1]) / 2 - fh * 0.25], tm, tt], tws = [fh * 1.4, fh * 1.2, fh * 1.05, fh * 0.9];
+  // soft contact shadow under the thumb so it reads in front of the fingers
+  ctx.save(); ctx.translate(fh * 0.12, fh * 0.28); taperPath(ctx, tpts, tws); ctx.fillStyle = rgba(shade(skin, -0.6), 0.35); ctx.fill(); ctx.restore();
+  taperPath(ctx, tpts, tws);
+  const tg = ctx.createLinearGradient(0, top + fh * 0.1, 0, top + fh * 2.0);
+  tg.addColorStop(0, rgba(shade(skin, 0.2))); tg.addColorStop(1, rgba(shade(skin, -0.05)));
+  ctx.fillStyle = tg; ctx.fill();
+  // thumbnail hint: a lighter sheen near the tip (no outline)
+  const ng = ctx.createRadialGradient(tt[0] - fh * 0.15, tt[1] - fh * 0.15, 0, tt[0] - fh * 0.15, tt[1] - fh * 0.15, fh * 0.45);
+  ng.addColorStop(0, rgba([255, 235, 220], 0.35)); ng.addColorStop(1, rgba([255, 235, 220], 0));
+  ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(tt[0] - fh * 0.15, tt[1] - fh * 0.15, fh * 0.45, 0, TAU); ctx.fill();
+  ctx.restore();
+  return { wrist: [x + (side < 0 ? -1 : 1) * S * 0.6, y + fh * 0.8] };
+}
+// a sleeve around a forearm: tapered (narrow at the wrist), a turned-back cuff and two soft folds
+function sleeve(ctx, wx, wy, ang, len, wd, col, rim, fadeY) {
+  const dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
+  const w0 = wd * 0.5, w1 = wd * 0.82;
+  const ex = wx + dx * len, ey = wy + dy * len;
+  const g = ctx.createLinearGradient(wx + nx * w0, wy + ny * w0, wx - nx * w0, wy - ny * w0);
+  g.addColorStop(0, rgba(shade(col, 0.22))); g.addColorStop(0.45, rgba(col)); g.addColorStop(1, rgba(shade(col, -0.35)));
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(wx + nx * w0, wy + ny * w0); ctx.lineTo(ex + nx * w1, ey + ny * w1); ctx.lineTo(ex - nx * w1, ey - ny * w1); ctx.lineTo(wx - nx * w0, wy - ny * w0);
+  ctx.quadraticCurveTo(wx - dx * w0 * 0.4, wy - dy * w0 * 0.4, wx + nx * w0, wy + ny * w0);
+  ctx.fill();
+  // folds: soft shaded crescents across the sleeve
+  for (const f of [0.38, 0.62]) {
+    const fx = wx + dx * len * f, fy = wy + dy * len * f, fw = lerp(w0, w1, f);
+    ctx.strokeStyle = rgba(shade(col, -0.45), 0.5); ctx.lineWidth = wd * 0.07; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(fx + nx * fw * 0.85, fy + ny * fw * 0.85);
+    ctx.quadraticCurveTo(fx + dx * wd * 0.22, fy + dy * wd * 0.22, fx - nx * fw * 0.3, fy - ny * fw * 0.3); ctx.stroke();
+    ctx.strokeStyle = rgba(shade(col, 0.3), 0.35); ctx.lineWidth = wd * 0.04;
+    ctx.beginPath(); ctx.moveTo(fx + nx * fw * 0.8 + dx * wd * 0.07, fy + ny * fw * 0.8 + dy * wd * 0.07);
+    ctx.quadraticCurveTo(fx + dx * wd * 0.29, fy + dy * wd * 0.29, fx - nx * fw * 0.25 + dx * wd * 0.07, fy - ny * fw * 0.25 + dy * wd * 0.07); ctx.stroke();
+  }
+  // cuff: a slightly wider band at the wrist opening
+  const cw = w0 * 1.12, cl = wd * 0.28;
+  const cg = ctx.createLinearGradient(wx + nx * cw, wy + ny * cw, wx - nx * cw, wy - ny * cw);
+  cg.addColorStop(0, rgba(shade(col, 0.35))); cg.addColorStop(0.5, rgba(shade(col, 0.1))); cg.addColorStop(1, rgba(shade(col, -0.3)));
+  ctx.fillStyle = cg; ctx.beginPath();
+  ctx.moveTo(wx + nx * cw, wy + ny * cw); ctx.lineTo(wx + dx * cl + nx * cw * 1.04, wy + dy * cl + ny * cw * 1.04);
+  ctx.lineTo(wx + dx * cl - nx * cw * 1.04, wy + dy * cl - ny * cw * 1.04); ctx.lineTo(wx - nx * cw, wy - ny * cw); ctx.closePath(); ctx.fill();
+  if (rim) {
+    ctx.strokeStyle = rgba(rim, 0.3); ctx.lineWidth = Math.max(1, wd * 0.04);
+    ctx.beginPath(); ctx.moveTo(wx + dx * cl + nx * w0 * 1.05, wy + dy * cl + ny * w0 * 1.05); ctx.lineTo(ex + nx * w1, ey + ny * w1); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------- compress_seed
@@ -209,7 +360,7 @@ const acorn_oak = {
   draw(ctx, w, h, p) {
     const { unit, cx, port } = frame(w, h);
     night(ctx, w, h, p, [6, 9, 22], [22, 22, 48], 12000);
-    const gy = port ? h * 0.74 : h * 0.86;
+    const gy = port ? h * 0.64 : h * 0.86;
     ground(ctx, w, h, gy, [16, 14, 26], [200, 160, 110], 0.25);
     const ar = unit * 0.045;
     const ax = cx, ay = gy - ar * 1.15;
@@ -325,7 +476,7 @@ const friction_motion = {
       dot(ctx, x, y, unit * 0.003 * (1.5 - age), mix(GOLD, AMBER, age), a);
     }
     ctx.restore();
-    const F = litFigure(ctx, fx, gy, fh, P, { color: [78, 66, 96], rim: [255, 200, 140], rimSide: 1, rimUp: 0.8, fill: 0.8, halo: 0.6, rimW: 0.007 });
+    const F = litFigure(ctx, fx, gy, fh, P, { color: [78, 66, 96], rim: [255, 200, 140], rimSide: 1, rimUp: 0.8, fill: 0.8, halo: 0.6, rimW: 0.013 });
     // scarf streaming back from the neck in the wind
     const nx = F.head[0] - fh * 0.03, ny = F.head[1] + fh * 0.075;
     ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -356,9 +507,11 @@ const friction_motion = {
 const mapCache = {};
 const map_follow = {
   draw(ctx, w, h, p) {
-    const { unit, cx, cy, port } = frame(w, h);
+    const { unit, cx, port } = frame(w, h);
+    // portrait: keep the sheet (and the path's start) above the subtitle band
+    const cy = port ? h * 0.4 : h / 2;
     night(ctx, w, h, p, [6, 8, 20], [16, 18, 40], 12000);
-    const mw = port ? w * 0.86 : w * 0.78, mh = port ? h * 0.62 : h * 0.78;
+    const mw = port ? w * 0.86 : w * 0.78, mh = port ? h * 0.54 : h * 0.78;
     const x0 = cx - mw / 2, y0 = cy - mh / 2;
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.03); ctx.translate(-cx, -cy);
     // glowing sheet
@@ -477,26 +630,76 @@ const seed_in_foam = {
 };
 
 // ---------------------------------------------------------------- alien_finds
-const ALIEN_BODY = [26, 46, 52], ALIEN_RIM = [120, 240, 210];
+const ALIEN_BODY = [74, 116, 112], ALIEN_RIM = [225, 200, 255];
+// a slender alien rig: tapered limbs with visible elbows/knees, narrow waist, long head. x,y = ground point.
+function alienRig(h, P) {
+  const u = h, lean = P.lean || 0;
+  const legLen = 0.5 * u, torso = 0.28 * u, neck = 0.045 * u;
+  let hipY = -legLen; if (P.kneel) hipY = -legLen * 0.55;
+  const shY = hipY - torso * Math.cos(lean), shX = torso * Math.sin(lean);
+  const hd = P.head || 0;
+  const headX = shX + Math.sin(lean + hd * 0.5) * (neck + 0.09 * u), headY = shY - Math.cos(lean + hd * 0.5) * (neck + 0.08 * u);
+  const seg = (x0, y0, a1, a2, l1, l2) => { const x1 = x0 + Math.sin(a1) * l1, y1 = y0 + Math.cos(a1) * l1; return [[x0, y0], [x1, y1], [x1 + Math.sin(a1 + a2) * l2, y1 + Math.cos(a1 + a2) * l2], a1 + a2]; };
+  const arm = (A, sg) => seg(shX + sg * 0.065 * u, shY + 0.02 * u, A[0], A[1], 0.17 * u, 0.16 * u);
+  const leg = (L, sg) => {
+    if (P.kneel) return [[sg * 0.025 * u, hipY], [0.13 * u + sg * 0.015 * u, -0.022 * u], [-0.11 * u + sg * 0.015 * u, -0.018 * u], -Math.PI / 2, true];
+    return seg(sg * 0.025 * u, hipY, L[0], L[1], 0.26 * u, 0.25 * u);
+  };
+  return { u, hipY, shX, shY, headX, headY, lean, aL: arm(P.armL || [0, 0], 1), aR: arm(P.armR || [0, 0], -1), lL: leg(P.legL || [0, 0], 1), lR: leg(P.legR || [0, 0], -1) };
+}
+function paintAlien(g, X, Y, h, P, col, f) {
+  const Rg = alienRig(h, P), u = Rg.u;
+  g.save(); g.translate(X, Y); g.scale(f, 1);
+  g.fillStyle = rgba(col);
+  const limb = (L, w0, w1, w2) => {
+    taperPath(g, [L[0], [(L[0][0] + L[1][0]) / 2, (L[0][1] + L[1][1]) / 2], L[1]], [w0, (w0 + w1) / 2, w1]); g.fill();
+    taperPath(g, [L[1], [(L[1][0] + L[2][0]) / 2, (L[1][1] + L[2][1]) / 2], L[2]], [w1, (w1 + w2) / 2, w2]); g.fill();
+    g.beginPath(); g.arc(L[1][0], L[1][1], w1 * 0.55, 0, TAU); g.fill(); // joint
+  };
+  const legDraw = (L) => {
+    limb(L, 0.062 * u, 0.04 * u, 0.026 * u);
+    if (!L[4]) { // slender foot pointing forward
+      taperPath(g, [[L[2][0] - 0.01 * u, L[2][1] - 0.006 * u], [L[2][0] + 0.03 * u, L[2][1] - 0.004 * u], [L[2][0] + 0.07 * u, L[2][1] - 0.002 * u]], [0.03 * u, 0.026 * u, 0.016 * u]); g.fill();
+    }
+  };
+  legDraw(Rg.lR);
+  // torso: broad shoulders, narrow waist, small hips
+  const { hipY, shX, shY } = Rg, tw = 0.075 * u;
+  g.beginPath();
+  g.moveTo(-tw * 0.75, hipY + 0.01 * u); g.lineTo(tw * 0.75, hipY + 0.01 * u);
+  g.bezierCurveTo(tw * 0.55 + shX * 0.5, (hipY + shY) / 2, tw * 1.05 + shX, shY + 0.06 * u, tw + shX, shY + 0.015 * u);
+  g.quadraticCurveTo(shX, shY - 0.02 * u, -tw + shX, shY + 0.015 * u);
+  g.bezierCurveTo(-tw * 1.05 + shX, shY + 0.06 * u, -tw * 0.55 + shX * 0.5, (hipY + shY) / 2, -tw * 0.75, hipY + 0.01 * u);
+  g.fill();
+  legDraw(Rg.lL);
+  // neck (tapered, angled toward the head) and long head
+  taperPath(g, [[shX, shY + 0.01 * u], [(shX + Rg.headX) / 2, (shY + Rg.headY) / 2 + 0.02 * u], [Rg.headX - 0.01 * u, Rg.headY + 0.05 * u]], [0.04 * u, 0.03 * u, 0.028 * u]); g.fill();
+  g.save(); g.translate(Rg.headX, Rg.headY); g.rotate(0.35 + (P.head || 0) * 0.5);
+  g.beginPath(); g.ellipse(0, -0.012 * u, 0.055 * u, 0.085 * u, 0, 0, TAU); g.fill();
+  g.restore();
+  // arms with tapered forearms and slender hands (a hand of the same tone, fingers continuing the forearm)
+  const armDraw = (A) => {
+    limb(A, 0.042 * u, 0.03 * u, 0.022 * u);
+    openHand(g, A[2][0], A[2][1], Math.PI - A[3], 0.11 * u, { skin: col, spread: 0.15, curl: 0.3, slender: true, light: 0 });
+  };
+  armDraw(Rg.aR); armDraw(Rg.aL);
+  g.restore();
+  const T = (q) => [X + q[0] * f, Y + q[1]];
+  return { head: T([Rg.headX, Rg.headY]), handL: T(Rg.aL[2]), handR: T(Rg.aR[2]) };
+}
 function drawAlien(ctx, x, y, h, P, o = {}) {
   const f = o.facing || 1;
-  const F = FX.figure(ctx, x, y, h, P, { color: ALIEN_BODY, facing: f });
-  // elongated, gentle head over the figure's head
-  const [hx, hy] = F.head;
-  const hr = h * 0.068;
-  const tilt = f * (0.25 + (P.head || 0) * 0.5);
-  ctx.save(); ctx.translate(hx + f * hr * 0.1, hy - hr * 0.35); ctx.rotate(tilt);
-  ctx.fillStyle = rgba(ALIEN_BODY);
-  ctx.beginPath(); ctx.ellipse(0, -hr * 0.3, hr * 0.9, hr * 1.45, 0, 0, TAU); ctx.fill();
-  ctx.strokeStyle = rgba(ALIEN_RIM, 0.45); ctx.lineWidth = Math.max(1, h * 0.006);
-  ctx.beginPath(); ctx.ellipse(0, -hr * 0.3, hr * 0.9, hr * 1.45, 0, f > 0 ? -1.4 : Math.PI - 0.6, f > 0 ? 0.6 : Math.PI + 1.4); ctx.stroke();
+  // lifted body value; rim light from the ringed planet (upper right) along head, shoulders and limbs
+  const L = litFigure(ctx, x, y, h, P, { color: ALIEN_BODY, rim: ALIEN_RIM, rimSide: 1, rimUp: 0.9, fill: 0.8, halo: 0.6, rimW: 0.014,
+    paint: (g, X, Y, col) => paintAlien(g, X, Y, h, P, col, f) });
   // large soft eye on the facing side
-  const ex = f * hr * 0.42, ey = -hr * 0.15;
-  ctx.fillStyle = rgba([160, 255, 230], 0.85);
-  ctx.beginPath(); ctx.ellipse(ex, ey, hr * 0.22, hr * 0.34, f * 0.3, 0, TAU); ctx.fill();
+  const [hx, hy] = L.head, u = h;
+  ctx.save(); ctx.translate(hx, hy); ctx.rotate(f * (0.35 + (P.head || 0) * 0.5));
+  ctx.fillStyle = rgba([170, 255, 235], 0.85);
+  ctx.beginPath(); ctx.ellipse(f * 0.026 * u, -0.012 * u, 0.012 * u, 0.02 * u, f * 0.3, 0, TAU); ctx.fill();
   ctx.restore();
-  FX.glow(ctx, hx + f * hr * 0.5, hy - hr * 0.5, hr * 1.6, [140, 255, 220], 0.18);
-  return F;
+  FX.glow(ctx, hx + f * 0.03 * u, hy, u * 0.1, [140, 255, 220], 0.14);
+  return L;
 }
 function alienWorld(ctx, w, h, p, gy) {
   const { unit } = frame(w, h);
@@ -542,34 +745,44 @@ function alienHandprint(ctx, w, h, p) {
   ctx.beginPath(); ctx.moveTo(w * 0.05, h * 0.3); ctx.lineTo(w * 0.16, h * 0.36); ctx.lineTo(w * 0.22, h * 0.33); ctx.lineTo(w * 0.3, h * 0.42); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(w * 0.95, h * 0.62); ctx.lineTo(w * 0.85, h * 0.7); ctx.lineTo(w * 0.8, h * 0.68); ctx.stroke();
   ctx.restore();
-  // the handprint that was already there (a human-sized hand of light)
+  // the handprint that was already there (a human-sized hand of light), drawn as one soft shape
+  const port = h > w * 1.3;
   const touch = smooth((p.u - 0.42) / 0.18);
   const resp = touch * (0.75 + 0.25 * Math.sin(p.t * 1.3));
-  const S = unit * 0.5;
-  const px = cx - S * 0.02, py = cy + S * 0.5;
+  const S = unit * (port ? 0.46 : 0.5);
+  // portrait: keep the whole hand and wrist well above the subtitle band
+  const px = cx - S * 0.02, py = port ? h * 0.55 : cy + S * 0.5;
+  const pang = -0.05;
   FX.glow(ctx, px, py - S * 0.5, S * (0.75 + 0.35 * resp), CYAN, 0.1 + 0.35 * resp);
+  const B = Math.ceil(S * 1.5);
+  const [pc, pcx] = scratch(B, B);
+  openHand(pcx, B / 2, B * 0.8, pang, S, { skin: [50, 130, 160], spread: 0.45, slender: true, light: 0 });
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = 0.28 + 0.6 * resp;
-  FX.hand(ctx, px, py, -0.05, S * 0.92, 'open', { skin: [60, 150, 190], shadow: [30, 90, 130], outline: [150, 240, 255] });
+  // halo (slightly larger, so light leaks round the alien hand's edges once it lands)
+  ctx.globalAlpha = 0.16 + 0.6 * resp;
+  ctx.shadowColor = rgba(CYAN, 0.2 + 0.7 * resp); ctx.shadowBlur = S * 0.06;
+  ctx.drawImage(pc, px - B / 2, py - B * 0.8);
   ctx.restore();
-  // the alien hand comes down onto it (back of the hand toward us, long slender fingers)
+  // the alien hand comes down onto it: an anatomical palm with long tapered fingers, thumb at the heel
   const k = easeInOut(clamp((p.u + 0.05) / 0.5));
-  const hx = lerp(cx + S * 0.25, px + S * 0.02, k), hy = lerp(cy + S * 0.95, py + S * 0.02, k);
-  const ang = lerp(0.35, -0.02, k);
+  const hx = lerp(cx + S * 0.25, px, k), hy = lerp(py + S * 0.35, py, k);
+  const ang = lerp(0.35, pang, k);
   const lift = 1 + 0.06 * (1 - k);
-  // forearm reaching in from below
-  forearm(ctx, hx, hy, Math.PI / 2 + ang * 0.6, h, S * 0.4 * lift, [66, 108, 102], ALIEN_RIM);
-  ctx.save(); ctx.globalAlpha = 1;
-  FX.hand(ctx, hx, hy, ang, S * lift, R.lerpPose('relaxed', 'open', k), { skin: [88, 140, 132], shadow: [40, 76, 74], outline: [24, 44, 48], back: true });
-  ctx.restore();
+  // tapered forearm (wide at the elbow, narrow at the wrist) that fades out well above the subtitle area
+  const fa = Math.PI / 2 + ang * 0.6, fl = port ? Math.max(S * 0.3, h * 0.66 - hy) : h;
+  const fdx = Math.cos(fa), fdy = Math.sin(fa), fnx = -fdy, fny = fdx;
+  const ww = S * 0.12 * lift, we = S * 0.22 * lift;
+  const ag = ctx.createLinearGradient(hx, hy, hx + fdx * fl, hy + fdy * fl);
+  ag.addColorStop(0, rgba([82, 132, 124])); ag.addColorStop(0.6, rgba([62, 104, 100], port ? 0.85 : 1)); ag.addColorStop(1, rgba([50, 86, 84], port ? 0 : 1));
+  ctx.fillStyle = ag; ctx.beginPath();
+  ctx.moveTo(hx + fnx * ww - fdx * S * 0.08, hy + fny * ww - fdy * S * 0.08);
+  ctx.quadraticCurveTo(hx + fdx * fl * 0.45 + fnx * we * 1.05, hy + fdy * fl * 0.45 + fny * we * 1.05, hx + fdx * fl + fnx * we, hy + fdy * fl + fny * we);
+  ctx.lineTo(hx + fdx * fl - fnx * we, hy + fdy * fl - fny * we);
+  ctx.quadraticCurveTo(hx + fdx * fl * 0.45 - fnx * we * 0.95, hy + fdy * fl * 0.45 - fny * we * 0.95, hx - fnx * ww - fdx * S * 0.08, hy - fny * ww - fdy * S * 0.08);
+  ctx.closePath(); ctx.fill();
+  openHand(ctx, hx, hy, ang, S * lift, { skin: [96, 150, 140], spread: lerp(0.15, 0.45, k), curl: 0.35 * (1 - k), slender: true, light: 1 });
   // light answering through the gaps between the fingers and around the edge
-  if (touch > 0) {
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.45 * resp;
-    FX.hand(ctx, px, py, -0.05, S * 0.92, 'open', { skin: [0, 0, 0], shadow: [0, 0, 0], outline: [170, 245, 255] });
-    ctx.restore();
-    FX.glow(ctx, hx, hy - S * 0.45, S * 0.5, CYAN, 0.12 * resp);
-  }
+  if (touch > 0) FX.glow(ctx, hx, hy - S * 0.45, S * 0.5, CYAN, 0.12 * resp);
 }
 const alien_finds = {
   testParams: { stage: 'handprint' },
@@ -577,14 +790,14 @@ const alien_finds = {
     const stage = (p.params && p.params.stage) || 'find';
     if (stage === 'handprint') return alienHandprint(ctx, w, h, p);
     const { unit, cx, port } = frame(w, h);
-    const gy = port ? h * 0.68 : h * 0.8;
+    const gy = port ? h * 0.62 : h * 0.8;
     alienWorld(ctx, w, h, p, gy);
     const fh = unit * (port ? 0.42 : 0.5);
     const breathe = Math.sin(p.t * 0.9);
     if (stage === 'pull') {
       const k = smooth(p.u / 0.7);
       const ax = cx - unit * 0.2 + unit * 0.05 * smooth((p.u - 0.4) / 0.4);
-      const P = blendPose(pose({ head: 0.05 }), pose({ lean: 0.1, head: -0.15, armR: [0.15, 0.1], armL: [1.2, 0.35], legL: [0.12, 0], legR: [-0.08, 0] }), k);
+      const P = blendPose(pose({ head: 0.05 }), pose({ lean: 0.1, head: -0.15, armR: [-0.12, -0.25], armL: [0.5, 1.0], legL: [0.12, -0.05], legR: [-0.1, 0.08] }), k);
       // thread from the chest toward something far to the right
       const chestY = gy - fh * 0.68;
       const pts = [];
@@ -641,10 +854,8 @@ const alien_finds = {
   },
 };
 function probe(ctx, x, y, h, P) {
-  ctx.save(); ctx.globalAlpha = 0;
-  const r = FX.figure(ctx, x, y, h, P, {});
-  ctx.restore();
-  return r;
+  const Rg = alienRig(h, P), T = (q) => [x + q[0], y + q[1]];
+  return { head: T([Rg.headX, Rg.headY]), handL: T(Rg.aL[2]), handR: T(Rg.aR[2]) };
 }
 
 // ---------------------------------------------------------------- thread_follow
@@ -656,8 +867,8 @@ const thread_follow = {
     const key = `${w}x${h}:${p.seed}`;
     let T = threadCache[key];
     if (!T) {
-      const sx = port ? w * 0.2 : w * 0.06, sy = port ? h * 0.92 : h * 0.86;
-      const ex = port ? cx : w * 0.74, ey = port ? h * 0.26 : h * 0.34;
+      const sx = port ? w * 0.2 : w * 0.06, sy = port ? h * 0.66 : h * 0.86;
+      const ex = port ? cx : w * 0.74, ey = port ? h * 0.16 : h * 0.34;
       const base = [];
       const N = 200;
       for (let i = 0; i <= N; i++) {
@@ -818,14 +1029,22 @@ const torch_pass = {
     const ayG = ty + L * 0.3, byG = ty + L * 0.05;
     const awx = tx - gripOff - aOut * unit * 0.14, awy = ayG + aOut * unit * 0.12;
     const bwx = tx + gripOff + (1 - bIn) * unit * 0.35, bwy = byG + (1 - bIn) * unit * 0.06;
-    const SLEEVE_A = [44, 36, 50], SLEEVE_B = [30, 40, 58];
+    const SLEEVE_A = [92, 64, 84], SLEEVE_B = [58, 82, 112];
+    const SKIN_A = [206, 152, 116], SKIN_B = [176, 122, 92];
+    const sw = unit * 0.034, fhh = hs * 0.105;
+    // hand A grips low (arm from lower left), lets the fingers slide off, then withdraws open
     const handA = () => {
-      forearm(ctx, awx, awy, Math.PI + 0.35, unit * 1.2, hs * 0.42, SLEEVE_A, GOLD);
-      FX.hand(ctx, awx, awy, Math.PI / 2 - 0.35 * aOut, hs, R.lerpPose('fist', 'relaxed', aOpen), {});
+      const wx = tx - hs * 0.6 - aOut * unit * 0.14, wy = ayG + fhh * 0.8 + aOut * unit * 0.12;
+      sleeve(ctx, wx - hs * 0.05, wy, Math.PI - 0.38, unit * 1.2, hs * 0.44, SLEEVE_A, GOLD);
+      if (aOpen < 0.5) gripHand(ctx, tx, ayG, hs, sw, -1, { skin: SKIN_A, open: aOpen });
+      else openHand(ctx, wx, wy - fhh * 0.6, Math.PI / 2 - 0.25 - 0.3 * aOut, hs * 0.95, { skin: SKIN_A, curl: 1 - (aOpen - 0.5) * 1.6, spread: 0.2, mirror: true });
     };
+    // hand B arrives open from the right, wraps its fingers round the shaft above A
     const handB = () => {
-      forearm(ctx, bwx, bwy, -0.25, unit * 1.2, hs * 0.42, SLEEVE_B, CYAN);
-      FX.hand(ctx, bwx, bwy, -Math.PI / 2 + 0.0, hs, R.lerpPose('relaxed', 'fist', bGrip), { mirror: true, skin: [190, 132, 100], shadow: [110, 66, 52] });
+      const wx = tx + hs * 0.6 + (1 - bIn) * unit * 0.35, wy = byG + fhh * 0.8 + (1 - bIn) * unit * 0.06;
+      sleeve(ctx, wx + hs * 0.05, wy, 0.3, unit * 1.2, hs * 0.44, SLEEVE_B, CYAN);
+      if (bGrip >= 0.5) gripHand(ctx, tx, byG, hs, sw, 1, { skin: SKIN_B, open: 1 - (bGrip - 0.5) * 2 });
+      else openHand(ctx, wx, wy - fhh * 0.6, -Math.PI / 2 + 0.2, hs * 0.95, { skin: SKIN_B, curl: 0.25 + bGrip * 1.5, spread: 0.3 });
     };
     // open hands sit behind the shaft; gripping hands wrap in front of it
     if (aOpen > 0.5) handA();
@@ -861,7 +1080,7 @@ const remember_continue = {
     const go = smooth((p.u - 0.45) / 0.4);
     FX.bg(ctx, w, h, [8, 10, 26], mix([24, 22, 48], [60, 40, 50], go));
     FX.stars(ctx, w, h * 0.8, p.t, p.seed, Math.round(w * h / 10000));
-    const gy = port ? h * 0.7 : h * 0.82;
+    const gy = port ? h * 0.6 : h * 0.82;
     // dawn on the right horizon
     FX.glow(ctx, w * 0.95, gy, unit * (0.35 + 0.35 * go), AMBER, 0.2 + 0.4 * go);
     FX.glow(ctx, w * 0.95, gy, unit * 0.12, GOLD, 0.25 + 0.4 * go);
@@ -871,7 +1090,7 @@ const remember_continue = {
     const mem = [];
     for (let i = 0; i < 7; i++) {
       const mx = w * (0.15 + 0.6 * (i / 6)) + (rnd() - 0.5) * unit * 0.08;
-      const my = (port ? h * 0.22 : h * 0.14) + rnd() * (port ? h * 0.25 : h * 0.3) + Math.sin(p.t * 0.4 + i) * unit * 0.008;
+      const my = (port ? h * 0.14 : h * 0.14) + rnd() * (port ? h * 0.2 : h * 0.3) + Math.sin(p.t * 0.4 + i) * unit * 0.008;
       mem.push([mx, my, clamp(rem * 1.6 - i * 0.09)]);
     }
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = unit * 0.002;
@@ -891,7 +1110,8 @@ const remember_continue = {
       const x = cx + ox * unit + go * unit * 0.2;
       const stand = pose({ head: -0.6 * look, lean: -0.04 * look });
       const P = blendPose(stand, walkPose(p.t * 0.4 + ph, 0.05, -0.05), go);
-      FX.figure(ctx, x, gy, fh * sc, P, { color: [16, 14, 24], child, rim: GOLD, rimSide: 1 });
+      // soft warm rim from the dawn along head, shoulders and limbs, plus a little cool fill
+      litFigure(ctx, x, gy, fh * sc, P, { color: [66, 58, 82], child, rim: mix([255, 205, 160], GOLD, go), rimSide: 1, rimUp: 0.7, fill: 0.6, halo: 0.5, rimW: 0.016 });
     }
   },
 };
@@ -901,7 +1121,7 @@ const entropy_resist = {
   draw(ctx, w, h, p) {
     const { unit, cx, port } = frame(w, h);
     night(ctx, w, h, p, [8, 9, 20], [28, 26, 40], 14000);
-    const gy = port ? h * 0.7 : h * 0.84;
+    const gy = port ? h * 0.62 : h * 0.84;
     ground(ctx, w, h, gy, [18, 18, 26], [150, 150, 170], 0.25);
     const rnd = U.rng(p.seed * 5 + 17);
     const towers = [[-0.42, 0.075, 6], [-0.25, 0.09, 8], [-0.12, 0.06, 4], [0.14, 0.07, 5], [0.27, 0.095, 9], [0.43, 0.07, 5]];
@@ -1025,7 +1245,7 @@ const no_sky_message = {
       }
     }
     // a ledge and the book that closes on blank pages
-    const ly = port ? h * 0.76 : h * 0.84;
+    const ly = port ? h * 0.62 : h * 0.84;
     ctx.fillStyle = rgba([24, 22, 32]); ctx.fillRect(0, ly, w, h - ly);
     ctx.fillStyle = rgba([90, 86, 110], 0.4); ctx.fillRect(0, ly, w, 2);
     const close = easeInOut(clamp((p.u - 0.42) / 0.38));
@@ -1085,7 +1305,7 @@ const grieve_rejoice = {
   draw(ctx, w, h, p) {
     const { unit, cx, port } = frame(w, h);
     night(ctx, w, h, p, [8, 8, 22], [24, 18, 40], 12000);
-    const gy = port ? h * 0.68 : h * 0.84;
+    const gy = port ? h * 0.62 : h * 0.84;
     const share = smooth((p.u - 0.08) / 0.5), warm = smooth((p.u - 0.4) / 0.45);
     FX.glow(ctx, cx - unit * 0.2, gy - unit * 0.1, unit * 0.3, CRIMSON, 0.22 * (1 - warm * 0.6));
     FX.glow(ctx, cx + unit * 0.2, gy - unit * 0.2, unit * 0.32, GOLD, 0.2);
@@ -1093,15 +1313,16 @@ const grieve_rejoice = {
     const fh = unit * (port ? 0.4 : 0.5);
     const gx = cx - unit * 0.22, jx = cx + unit * 0.22;
     // grief: kneeling, head bowed, hands to the face; slowly lifts toward the light
-    const grief = pose({ kneel: true, lean: 0.5, head: 0.9, armL: [0.7, 2.2], armR: [0.6, 2.3] });
-    const lifted = pose({ kneel: true, lean: 0.22, head: 0.25, armL: [0.35, 1.9], armR: [0.95, 0.5] });
-    const G = FX.figure(ctx, gx, gy, fh, blendPose(grief, lifted, warm * 0.85), { color: [24, 14, 22], rim: mix(CRIMSON, GOLD, warm), rimSide: 1 });
+    const grief = pose({ kneel: true, lean: 0.95, head: 1.2, armL: [0.25, 2.55], armR: [0.1, 2.75] });
+    const lifted = pose({ kneel: true, lean: 0.4, head: 0.45, armL: [0.45, 1.6], armR: [1.05, 0.45] });
+    // cool moonlit rim from behind-left on the griever, warmed a little as the shared light grows
+    const G = litFigure(ctx, gx, gy, fh, blendPose(grief, lifted, warm * 0.85), { color: [46, 48, 72], rim: mix([150, 190, 255], [230, 210, 230], warm * 0.5), rimSide: -1, rimUp: 0.8, fill: 0.5, halo: 0.55, rimW: 0.016 });
     // joy: arms raised; then one hand lowers toward the other
     const bob = Math.sin(p.t * 1.6) * 0.04;
     const joy = pose({ lean: -0.06, head: -0.3, armL: [2.55 + bob, 0.2], armR: [-2.55 - bob, -0.2] });
     const offer = pose({ lean: 0.05, head: 0.1, armL: [2.4 + bob, 0.2], armR: [1.2, 0.3] });
     // joy figure faces left (facing -1): local +x is screen-left, toward the griever
-    const J = FX.figure(ctx, jx, gy, fh, blendPose(joy, offer, warm * 0.8), { color: [26, 20, 18], rim: GOLD, rimSide: 1, facing: -1 });
+    const J = litFigure(ctx, jx, gy, fh, blendPose(joy, offer, warm * 0.8), { color: [70, 54, 54], rim: [255, 205, 140], rimSide: 1, rimUp: 0.8, fill: 0.7, halo: 0.8, facing: -1, rimW: 0.016 });
     // shared light: a crimson strand and a gold strand meet in one orb between them
     const ox = cx, oy = gy - fh * (0.62 + 0.04 * Math.sin(p.t * 0.7));
     const strand = (from, col, a) => {

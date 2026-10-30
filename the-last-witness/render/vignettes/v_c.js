@@ -77,6 +77,163 @@ function prayerHands(ctx,x,y,s,col){
 }
 function ease(a, b, u) { return smooth((u - a) / (b - a)); }
 
+// (the helpers below mirror the ones in v_d.js; lib/ is shared and stays untouched)
+// ---------------------------------------------------------------- lit figure (rim + fill, no crescents)
+// Draws FX.figure on a small scratch canvas: first the whole silhouette in the rim colour, then the body
+// (lifted mid-tone, not near-black) shifted slightly away from the light and kept inside it ('source-atop'),
+// which leaves a soft rim along every edge that faces the light (head, shoulders, arms, legs); a gentle
+// gradient adds fill on the lit side and darkens toward the feet. One drawImage onto the frame.
+// o: {color, rim, rimSide (-1 left / 1 right), rimUp (0..1 top edges), rimW, fill, halo, alpha, facing, child}
+const { createCanvas } = require('@napi-rs/canvas');
+const _scr = {};
+function scratch(W, H) {
+  const k = W + 'x' + H;
+  let c = _scr[k];
+  if (!c) { const keys = Object.keys(_scr); if (keys.length > 12) delete _scr[keys[0]]; c = _scr[k] = createCanvas(W, H); }
+  const x = c.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+  x.clearRect(0, 0, W, H);
+  return [c, x];
+}
+function litFigure(ctx, x, y, h, P, o = {}) {
+  const body = o.color || [58, 54, 72], rim = o.rim || [255, 205, 150], side = o.rimSide || 1;
+  const W = Math.ceil(h * 1.4 / 8) * 8, H = Math.ceil(h * 1.45 / 8) * 8, ox = W / 2, oy = H - Math.ceil(h * 0.12);
+  const base = { facing: o.facing, child: o.child, phase: o.phase };
+  const d = Math.max(1.2, h * (o.rimW ?? 0.01)), up = o.rimUp ?? 0.6;
+  const [c, cx] = scratch(W, H);
+  const paint = o.paint || ((g, X, Y, col) => FX.figure(g, X, Y, h, P, Object.assign({ color: col }, base)));
+  const F = paint(cx, ox, oy, mix(rim, [255, 255, 255], 0.25));
+  cx.globalCompositeOperation = 'source-atop';
+  // a soft inner step of the rim, then the body
+  cx.globalAlpha = 0.7; paint(cx, ox - side * d * 0.55, oy + d * up * 0.55, mix(body, rim, 0.55));
+  cx.globalAlpha = 1; paint(cx, ox - side * d, oy + d * up, body);
+  const fill = o.fill ?? 0.5;
+  const g = cx.createLinearGradient(ox - side * h * 0.25, oy - h, ox + side * h * 0.25, oy - h * 0.3);
+  g.addColorStop(0, rgba([0, 0, 0], 0.3)); g.addColorStop(0.5, rgba([0, 0, 0], 0)); g.addColorStop(1, rgba(rim, 0.14 * fill));
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  const g2 = cx.createLinearGradient(0, oy - h * 0.5, 0, oy);
+  g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,0.3)');
+  cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  const halo = o.halo ?? 1;
+  if (halo > 0) FX.glow(ctx, x + side * h * 0.08, y - h * 0.6, h * 0.62, rim, 0.13 * halo);
+  ctx.drawImage(c, x - ox, y - oy);
+  ctx.restore();
+  const tr = (q) => [q[0] - ox + x, q[1] - oy + y];
+  return { head: tr(F.head), handL: tr(F.handL), handR: tr(F.handR), F };
+}
+
+// ---------------------------------------------------------------- painted hands (no outlines)
+// tapered limb piece along a polyline: pts [[x,y]...], widths per point; rounded tip
+function taperPath(ctx, pts, ws) {
+  const n = pts.length, L = [], Rr = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const hw = ws[i] / 2;
+    L.push([pts[i][0] - dy * hw, pts[i][1] + dx * hw]); Rr.push([pts[i][0] + dy * hw, pts[i][1] - dx * hw]);
+  }
+  const e = pts[n - 1], p2 = pts[n - 2];
+  const ang = Math.atan2(e[1] - p2[1], e[0] - p2[0]);
+  ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i < n; i++) ctx.lineTo(L[i][0], L[i][1]);
+  ctx.arc(e[0], e[1], ws[n - 1] / 2, ang + Math.PI / 2, ang - Math.PI / 2, true);
+  for (let i = n - 1; i >= 0; i--) ctx.lineTo(Rr[i][0], Rr[i][1]);
+  ctx.closePath();
+}
+// fill a finger with a gradient across its width: darker edges, lit core (separates fingers without lines)
+function fingerFill(ctx, b, t, wb, skin, dark, light) {
+  const dx = t[0] - b[0], dy = t[1] - b[1], d = Math.hypot(dx, dy) || 1, nx = -dy / d, ny = dx / d;
+  const g = ctx.createLinearGradient(b[0] - nx * wb * 0.55, b[1] - ny * wb * 0.55, b[0] + nx * wb * 0.55, b[1] + ny * wb * 0.55);
+  g.addColorStop(0, rgba(dark)); g.addColorStop(0.3 + 0.2 * light, rgba(skin)); g.addColorStop(0.62, rgba(shade(skin, 0.1 * light))); g.addColorStop(1, rgba(dark));
+  return g;
+}
+// An open hand, wrist at (x,y), fingers pointing along `ang` (0 = up, clockwise positive).
+// S = wrist-to-middle-fingertip length. o: {skin, spread 0..1, curl 0..1, mirror (thumb on +x), slender, light (-1..1 side of the key)}
+function openHand(ctx, x, y, ang, S, o = {}) {
+  const skin = o.skin || [200, 150, 118], dark = shade(skin, -0.32), curl = o.curl || 0, sp = o.spread ?? 0.4;
+  const sl = o.slender ? 0.82 : 1, lenK = o.slender ? 1.12 : 1, lt = o.light ?? 1;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); if (o.mirror) ctx.scale(-1, 1);
+  if (o.alpha != null) ctx.globalAlpha *= o.alpha;
+  // fingers (index, middle, ring, little): knuckle x, knuckle y, length, width
+  const Fd = [[-0.142, -0.46, 0.4, 0.118], [-0.045, -0.49, 0.45, 0.122], [0.052, -0.47, 0.42, 0.114], [0.142, -0.43, 0.33, 0.1]];
+  Fd.forEach(([kx, ky, len, wd], i) => {
+    const a = (i - 1.4) * (0.05 + sp * 0.2);
+    const L = len * S * lenK * (1 - 0.5 * curl), w = wd * S * sl;
+    const bx = kx * S, by = ky * S + w * 0.5;
+    const pts = [], ws = [];
+    for (let s = 0; s <= 3; s++) {
+      const k = s / 3, bend = a + curl * k * 0.5 * (i - 1.5) * 0.2;
+      pts.push([bx + Math.sin(bend) * L * k, by - Math.cos(bend) * L * k]);
+      ws.push(w * (1 - 0.3 * k) * (s === 1 || s === 2 ? 1.03 : 1));
+    }
+    taperPath(ctx, pts, ws);
+    ctx.fillStyle = fingerFill(ctx, pts[0], pts[3], w, skin, dark, lt); ctx.fill();
+  });
+  // thumb, rooted at the heel of the palm on the thumb side
+  const ta = -0.55 - sp * 0.35;
+  const tb = [-0.12 * S, -0.1 * S], tj = [tb[0] + Math.sin(ta) * 0.2 * S * lenK, tb[1] - Math.cos(ta) * 0.2 * S * lenK];
+  const ta2 = ta + 0.3 + curl * 0.6;
+  const tt = [tj[0] + Math.sin(ta2) * 0.16 * S * lenK, tj[1] - Math.cos(ta2) * 0.16 * S * lenK];
+  taperPath(ctx, [tb, [(tb[0] + tj[0]) / 2, (tb[1] + tj[1]) / 2], tj, tt], [0.15 * S * sl, 0.12 * S * sl, 0.1 * S * sl, 0.08 * S * sl]);
+  ctx.fillStyle = fingerFill(ctx, tb, tt, 0.13 * S * sl, skin, dark, lt); ctx.fill();
+  // palm with a thenar bulge at the thumb's root
+  const pw = o.slender ? 0.93 : 1;
+  const pg = ctx.createLinearGradient(-0.22 * S, 0, 0.22 * S, -0.2 * S);
+  pg.addColorStop(0, rgba(shade(skin, -0.12))); pg.addColorStop(0.5, rgba(skin)); pg.addColorStop(1, rgba(shade(skin, -0.22)));
+  ctx.fillStyle = pg;
+  ctx.beginPath();
+  ctx.moveTo(-0.13 * S * pw, 0.02 * S);
+  ctx.bezierCurveTo(-0.24 * S * pw, -0.12 * S, -0.22 * S * pw, -0.3 * S, -0.2 * S * pw, -0.45 * S);
+  ctx.quadraticCurveTo(-0.05 * S, -0.53 * S, 0.19 * S * pw, -0.44 * S);
+  ctx.bezierCurveTo(0.2 * S * pw, -0.3 * S, 0.17 * S * pw, -0.12 * S, 0.12 * S * pw, 0.02 * S);
+  ctx.quadraticCurveTo(0, 0.06 * S, -0.13 * S * pw, 0.02 * S);
+  ctx.closePath(); ctx.fill();
+  // soft modelling: a cupped hollow in the middle of the palm/back and lit thenar
+  const hg = ctx.createRadialGradient(0.02 * S, -0.27 * S, 0, 0.02 * S, -0.27 * S, 0.17 * S);
+  hg.addColorStop(0, rgba(dark, 0.22)); hg.addColorStop(1, rgba(dark, 0));
+  ctx.fillStyle = hg; ctx.fillRect(-0.25 * S, -0.5 * S, 0.5 * S, 0.5 * S);
+  ctx.restore();
+}
+// a sleeve around a forearm: tapered (narrow at the wrist), a turned-back cuff and two soft folds
+function sleeve(ctx, wx, wy, ang, len, wd, col, rim, fadeY) {
+  const dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
+  const w0 = wd * 0.5, w1 = wd * 0.82;
+  const ex = wx + dx * len, ey = wy + dy * len;
+  const g = ctx.createLinearGradient(wx + nx * w0, wy + ny * w0, wx - nx * w0, wy - ny * w0);
+  g.addColorStop(0, rgba(shade(col, 0.22))); g.addColorStop(0.45, rgba(col)); g.addColorStop(1, rgba(shade(col, -0.35)));
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(wx + nx * w0, wy + ny * w0); ctx.lineTo(ex + nx * w1, ey + ny * w1); ctx.lineTo(ex - nx * w1, ey - ny * w1); ctx.lineTo(wx - nx * w0, wy - ny * w0);
+  ctx.quadraticCurveTo(wx - dx * w0 * 0.4, wy - dy * w0 * 0.4, wx + nx * w0, wy + ny * w0);
+  ctx.fill();
+  // folds: soft shaded crescents across the sleeve
+  for (const f of [0.38, 0.62]) {
+    const fx = wx + dx * len * f, fy = wy + dy * len * f, fw = lerp(w0, w1, f);
+    ctx.strokeStyle = rgba(shade(col, -0.45), 0.5); ctx.lineWidth = wd * 0.07; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(fx + nx * fw * 0.85, fy + ny * fw * 0.85);
+    ctx.quadraticCurveTo(fx + dx * wd * 0.22, fy + dy * wd * 0.22, fx - nx * fw * 0.3, fy - ny * fw * 0.3); ctx.stroke();
+    ctx.strokeStyle = rgba(shade(col, 0.3), 0.35); ctx.lineWidth = wd * 0.04;
+    ctx.beginPath(); ctx.moveTo(fx + nx * fw * 0.8 + dx * wd * 0.07, fy + ny * fw * 0.8 + dy * wd * 0.07);
+    ctx.quadraticCurveTo(fx + dx * wd * 0.29, fy + dy * wd * 0.29, fx - nx * fw * 0.25 + dx * wd * 0.07, fy - ny * fw * 0.25 + dy * wd * 0.07); ctx.stroke();
+  }
+  // cuff: a slightly wider band at the wrist opening
+  const cw = w0 * 1.12, cl = wd * 0.28;
+  const cg = ctx.createLinearGradient(wx + nx * cw, wy + ny * cw, wx - nx * cw, wy - ny * cw);
+  cg.addColorStop(0, rgba(shade(col, 0.35))); cg.addColorStop(0.5, rgba(shade(col, 0.1))); cg.addColorStop(1, rgba(shade(col, -0.3)));
+  ctx.fillStyle = cg; ctx.beginPath();
+  ctx.moveTo(wx + nx * cw, wy + ny * cw); ctx.lineTo(wx + dx * cl + nx * cw * 1.04, wy + dy * cl + ny * cw * 1.04);
+  ctx.lineTo(wx + dx * cl - nx * cw * 1.04, wy + dy * cl - ny * cw * 1.04); ctx.lineTo(wx - nx * cw, wy - ny * cw); ctx.closePath(); ctx.fill();
+  if (rim) {
+    ctx.strokeStyle = rgba(rim, 0.3); ctx.lineWidth = Math.max(1, wd * 0.04);
+    ctx.beginPath(); ctx.moveTo(wx + dx * cl + nx * w0 * 1.05, wy + dy * cl + ny * w0 * 1.05); ctx.lineTo(ex + nx * w1, ey + ny * w1); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+
 // ---------------------------------------------------------------- vignettes
 module.exports = {
   // dwindling energy bars blink low over a dimming starfield
@@ -126,7 +283,8 @@ module.exports = {
     draw(ctx, w, h, p) {
       const unit = Math.min(w, h), u = p.u, t = p.t;
       night(ctx, w, h, p, Math.round(w * h / 5000), [6, 9, 21], [16, 20, 44]);
-      const cx = w / 2, cy = h / 2;
+      // portrait: chart centred higher so no point falls in the subtitle band
+      const cx = w / 2, cy = w > h ? h / 2 : h * 0.4;
       // chart: concentric rings and spokes
       ctx.save(); ctx.strokeStyle = rgba([120, 150, 220], 0.16); ctx.lineWidth = 1.2;
       for (let i = 1; i <= 4; i++) { ctx.beginPath(); ctx.arc(cx, cy, unit * 0.12 * i, 0, TAU); ctx.stroke(); }
@@ -139,7 +297,7 @@ module.exports = {
       // points
       const rnd = U.rng((p.seed | 0) * 7 + 3);
       const N = 11, pts = [];
-      const sx = w > h ? 0.42 : 0.38, sy = w > h ? 0.38 : 0.3;
+      const sx = w > h ? 0.42 : 0.38, sy = w > h ? 0.38 : 0.24;
       for (let i = 0; i < N; i++) {
         const a = i * TAU / N + rnd() * 0.4, r = 0.35 + rnd() * 0.65;
         pts.push({ x: cx + Math.cos(a) * r * w * sx, y: cy + Math.sin(a) * r * h * sy, I: 0.2 + rnd() * 0.45, ph: rnd() });
@@ -189,8 +347,9 @@ module.exports = {
       FX.bg(ctx, w, h, [10, 14, 26], [18, 24, 40]);
       const land = w > h;
       const cols = land ? 7 : 5, rows = land ? 4 : 8;
-      const cell = Math.min((w * 0.88) / cols, (h * (land ? 0.8 : 0.72)) / rows);
-      const gx = (w - cell * cols) / 2, gy = (h - cell * rows) / 2;
+      // portrait: the grid sits above the subtitle band (y < ~880)
+      const cell = Math.min((w * 0.88) / cols, (h * (land ? 0.8 : 0.6)) / rows);
+      const gx = (w - cell * cols) / 2, gy = land ? (h - cell * rows) / 2 : h * 0.07 + (h * 0.6 - cell * rows) / 2;
       FX.glow(ctx, w / 2, h / 2, unit * 0.7, [110, 150, 200], 0.08, false);
       // cells
       const n = cols * rows, order = [];
@@ -202,18 +361,20 @@ module.exports = {
         const c = i % cols, r = (i / cols) | 0;
         const x = gx + c * cell, y = gy + r * cell;
         const k = ease(tau[i], tau[i] + 0.07, u);
+        // one thing per cell: the figure fades out completely before its number fades in
+        const kf = clamp(k * 2), kn = clamp(k * 2 - 1);
         // cell fill gets colder when converted
         ctx.fillStyle = rgba(mix([30, 34, 50], [26, 38, 60], k), 0.6);
         ctx.fillRect(x + 1, y + 1, cell - 2, cell - 2);
-        if (k < 1) {
+        if (kf < 1) {
           const breath = 1 + 0.015 * Math.sin(p.t * 1.4 + i);
-          const fh = cell * 0.66 * (1 - 0.3 * k) * breath;
-          FX.glow(ctx, x + cell / 2, y + cell * 0.5, cell * 0.45, AMBER, 0.14 * (1 - k));
-          FX.figure(ctx, x + cell / 2, y + cell * 0.86, fh, 'stand', { color: mix([255, 205, 150], [160, 175, 200], k), alpha: 1 - k });
+          const fh = cell * 0.66 * (1 - 0.25 * kf) * breath;
+          FX.glow(ctx, x + cell / 2, y + cell * 0.5, cell * 0.45, AMBER, 0.14 * (1 - kf));
+          FX.figure(ctx, x + cell / 2, y + cell * 0.86, fh, 'stand', { color: mix([255, 205, 150], [160, 175, 200], kf), alpha: 1 - kf });
         }
-        if (k > 0) {
+        if (kn > 0) {
           const num = String(1000 + Math.floor(U.hash2(i, 91) * 8999));
-          FX.text(ctx, num, x + cell / 2, y + cell / 2, cell * 0.24, [175, 195, 225], { weight: 500, alpha: k * 0.9 });
+          FX.text(ctx, num, x + cell / 2, y + cell / 2, cell * 0.28, [200, 216, 240], { weight: 500, alpha: kn * 0.95, glow: [2, 4, 12] });
         }
       }
       // grid lines
@@ -231,7 +392,7 @@ module.exports = {
       const unit = Math.min(w, h), u = p.u, t = p.t;
       night(ctx, w, h, p, Math.round(w * h / 7000), [7, 8, 20], [22, 16, 36]);
       const land = w > h;
-      const flares = land ? [[0.24, 0.36, 1], [0.7, 0.62, 0.85], [0.52, 0.22, 0.6]] : [[0.32, 0.3, 1], [0.66, 0.58, 0.85], [0.4, 0.8, 0.7]];
+      const flares = land ? [[0.24, 0.36, 1], [0.7, 0.62, 0.85], [0.52, 0.22, 0.6]] : [[0.32, 0.22, 1], [0.68, 0.44, 0.85], [0.38, 0.63, 0.7]];
       const loud = 0.85 + 0.25 * ease(0, 0.8, u);
       flares.forEach(([fx, fy, s], i) => {
         const x = fx * w, y = fy * h, R = unit * 0.13 * s * loud * (1 + 0.08 * Math.sin(t * 1.6 + i * 2));
@@ -253,7 +414,7 @@ module.exports = {
       // faint flickers
       const rnd = U.rng((p.seed | 0) + 404);
       for (let i = 0; i < 16; i++) {
-        const x = (0.06 + rnd() * 0.88) * w, y = (0.08 + rnd() * 0.84) * h;
+        const x = (0.06 + rnd() * 0.88) * w, y = (land ? 0.08 + rnd() * 0.84 : 0.06 + rnd() * 0.62) * h;
         const d = 0.15 + rnd() * 0.6, ph = rnd() * TAU, sp = 0.7 + rnd() * 0.6;
         let near = false;
         for (const f of flares) if (Math.hypot(x - f[0] * w, y - f[1] * h) < unit * 0.15) near = true;
@@ -289,7 +450,8 @@ module.exports = {
       ctx.fillStyle = rgba(col);
       const headY = cy - S * 0.47, headR = S * 0.095;
       const shY = cy - S * 0.27;
-      ctx.beginPath();
+      const bodyPath = () => {
+        ctx.beginPath();
       ctx.moveTo(cx - S * 0.045, headY + headR * 0.5);
       ctx.quadraticCurveTo(cx - S * 0.05, shY - S * 0.06, cx - S * 0.08, shY - S * 0.045);
       ctx.bezierCurveTo(cx - S * 0.16, shY - S * 0.02, cx - S * 0.27, shY - S * 0.01, cx - S * 0.31, shY + S * 0.03);
@@ -299,12 +461,26 @@ module.exports = {
       ctx.bezierCurveTo(cx + S * 0.37, shY + S * 0.14, cx + S * 0.36, shY + S * 0.06, cx + S * 0.31, shY + S * 0.03);
       ctx.bezierCurveTo(cx + S * 0.27, shY - S * 0.01, cx + S * 0.16, shY - S * 0.02, cx + S * 0.08, shY - S * 0.045);
       ctx.quadraticCurveTo(cx + S * 0.05, shY - S * 0.06, cx + S * 0.045, headY + headR * 0.5);
-      ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = rgba([130, 120, 200], 0.35); ctx.lineWidth = S * 0.006; ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, headY, headR * 0.86, headR, 0, 0, TAU); ctx.fill();
-      // rim light (violet) on the outline
-      ctx.strokeStyle = rgba([130, 120, 200], 0.35); ctx.lineWidth = S * 0.006; ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, headY, headR * 0.86, headR, 0, -2.6, -0.4); ctx.stroke();
+        ctx.closePath();
+      };
+      const headPath = () => { ctx.beginPath(); ctx.ellipse(cx, headY, headR * 0.86, headR, 0, 0, TAU); };
+      // fill: lifted value, lighter toward the guiding star (upper right), darker toward the bottom
+      const bg2 = ctx.createLinearGradient(cx - S * 0.35, headY, cx + S * 0.35, cy + S * 0.3);
+      bg2.addColorStop(0, rgba([30, 32, 56])); bg2.addColorStop(0.55, rgba([46, 48, 80])); bg2.addColorStop(1, rgba([34, 34, 60]));
+      ctx.fillStyle = bg2; bodyPath(); ctx.fill(); headPath(); ctx.fill();
+      // soft rim along the outer head and shoulder edge, strongest on the star's side (no crescents,
+      // no lines inside the silhouette: each stroke is clipped to its own shape minus the other one)
+      const rg = ctx.createLinearGradient(cx - S * 0.4, 0, cx + S * 0.4, 0);
+      rg.addColorStop(0, rgba([150, 140, 220], 0.12)); rg.addColorStop(0.5, rgba([200, 180, 230], 0.25)); rg.addColorStop(1, rgba([255, 215, 160], 0.55));
+      const rimPass = (own, other) => {
+        ctx.save();
+        own(); ctx.clip();
+        other(); ctx.rect(-10, -10, w + 20, h + 20); ctx.clip('evenodd');
+        own(); ctx.strokeStyle = rg; ctx.lineWidth = S * 0.03; ctx.globalAlpha = 0.5; ctx.stroke();
+        ctx.lineWidth = S * 0.012; ctx.globalAlpha = 1; ctx.stroke();
+        ctx.restore();
+      };
+      rimPass(bodyPath, headPath); rimPass(headPath, bodyPath);
       ctx.restore();
       // compass in the chest
       const R = S * 0.13;
@@ -346,7 +522,7 @@ module.exports = {
       const land = w > h;
       night(ctx, w, h, p, Math.round(w * h / 8000), [6, 9, 21], [14, 18, 38]);
       // map plane
-      const hy = land ? h * 0.5 : h * 0.55;
+      const hy = land ? h * 0.5 : h * 0.45;
       const g = ctx.createLinearGradient(0, hy, 0, h);
       g.addColorStop(0, rgba([20, 26, 50])); g.addColorStop(1, rgba([12, 15, 30]));
       ctx.fillStyle = g; ctx.fillRect(0, hy, w, h - hy);
@@ -360,7 +536,8 @@ module.exports = {
       for (let i = 0; i < N; i++) {
         const f = i / (N - 1);
         const x = w * lerp(land ? 0.3 : 0.36, 0.9, f);
-        const y = hy + (h - hy) * (0.3 + 0.42 * (0.5 + 0.5 * Math.sin(f * 5.2 + 0.6)));
+        // portrait: the route stays above the subtitle band
+        const y = hy + (h - hy) * (land ? 0.3 + 0.42 * (0.5 + 0.5 * Math.sin(f * 5.2 + 0.6)) : 0.1 + 0.26 * (0.5 + 0.5 * Math.sin(f * 5.2 + 0.6)));
         pts.push([x, y]);
       }
       // route lines (faint map roads)
@@ -374,7 +551,7 @@ module.exports = {
         const m0 = sch(i) + hold, m1 = sch(i + 1);
         if (u >= m0) hx = lerp(pts[i][0], pts[i + 1][0], easeInOut((u - m0) / (m1 - m0)));
       }
-      const handY = land ? h * 0.24 : h * 0.33;
+      const handY = land ? h * 0.24 : h * 0.24;
       const hs = unit * 0.16;
       const tilt = 0.5 + 0.03 * Math.sin(t * 0.8);
       const lx0 = hs * 0.78, ly0 = -hs * 0.28;
@@ -468,37 +645,49 @@ module.exports = {
       night(ctx, w, h, p, Math.round(w * h / 9000), [5, 7, 18], [14, 16, 34], () => 1 - 0.5 * u);
       const land = w > h, N = 7;
       const rnd = U.rng((p.seed | 0) + 9);
+      // the order in which they bow and go out (one after another, left-ish to right-ish)
       const order = [3, 0, 5, 1, 6, 2, 4];
       for (let i = 0; i < N; i++) {
         const f = i / (N - 1);
-        const x = land ? w * lerp(0.1, 0.9, f) : w * (0.22 + 0.56 * ((i * 3) % N) / (N - 1));
-        const y = land ? h * (0.4 + 0.12 * Math.sin(f * Math.PI * 1.6 + 0.4)) : h * lerp(0.2, 0.72, f);
-        const r = unit * (0.014 + rnd() * 0.008);
+        const x = land ? w * lerp(0.1, 0.9, f) : w * (0.18 + 0.64 * ((i * 3) % N) / (N - 1));
+        // portrait: kept between y ~ 0.1h and 0.6h, clear of the subtitle band
+        const y = land ? h * (0.36 + 0.12 * Math.sin(f * Math.PI * 1.6 + 0.4)) : h * lerp(0.1, 0.58, f);
+        const r = unit * (0.012 + rnd() * 0.007);
         const o = order.indexOf(i);
-        const d = 0.06 + o * 0.11;
-        const k = ease(d, d + 0.12, u);   // bow progress
-        const out = ease(d + 0.06, d + 0.16, u); // fade
-        if (out >= 1) { FX.glow(ctx, x, y + unit * 0.05, unit * 0.04, [120, 120, 160], 0.05); continue; }
-        // pivot below (like a neck): the star nods forward and down
-        const L = unit * 0.07, b = k * 1.15;
-        const sx = x + Math.sin(b) * L, sy = y + L - Math.cos(b) * L;
-        const a = (1 - out) * (0.9 + 0.1 * Math.sin(t * 0.7 + i));
-        const col = mix([230, 235, 255], [255, 210, 150], 0.3 + 0.4 * k);
-        FX.glow(ctx, sx, sy, r * 7, col, 0.35 * a);
-        // halo ring, tilting forward like a bowed head
-        ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        ctx.translate(sx, sy); ctx.rotate(b);
-        ctx.strokeStyle = rgba(col, 0.3 * a); ctx.lineWidth = unit * 0.005;
-        ctx.beginPath(); ctx.ellipse(0, r * 0.4 * k, r * 2.8, r * lerp(2.8, 1.3, k), 0, 0, TAU); ctx.stroke();
-        ctx.strokeStyle = rgba(col, 0.12 * a); ctx.lineWidth = unit * 0.014;
-        ctx.beginPath(); ctx.ellipse(0, r * 0.4 * k, r * 2.8, r * lerp(2.8, 1.3, k), 0, 0, TAU); ctx.stroke();
+        const d = 0.05 + o * 0.12;
+        // a slow nod: the star dips a little (with a slight forward tilt) while it dims, then winks out
+        const k = ease(d, d + 0.14, u);
+        const out = ease(d + 0.07, d + 0.17, u);
+        if (out >= 1) { FX.glow(ctx, x + unit * 0.012, y + unit * 0.04, unit * 0.03, [120, 120, 160], 0.05); continue; }
+        const dip = Math.sin(k * Math.PI * 0.5) * unit * 0.04, fwd = k * unit * 0.012;
+        const sx = x + fwd, sy = y + dip;
+        const a = (1 - out) * (0.85 + 0.15 * Math.sin(t * 0.7 + i)) * (1 - 0.35 * k);
+        const col = mix([230, 235, 255], [255, 210, 150], 0.25 + 0.45 * k);
+        // a faint trace of the dip
+        if (k > 0.02) {
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+          const tg = ctx.createLinearGradient(x, y, sx, sy);
+          tg.addColorStop(0, rgba(col, 0)); tg.addColorStop(1, rgba(col, 0.25 * a));
+          ctx.strokeStyle = tg; ctx.lineWidth = r * 0.9;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + fwd * 0.2, y + dip * 0.7, sx, sy); ctx.stroke();
+          ctx.restore();
+        }
+        FX.glow(ctx, sx, sy, r * (8 - 3 * k), col, 0.32 * a);
+        // soft four-point sparkle whose vertical spike shortens as it bows (like a lowering head)
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(sx, sy); ctx.rotate(k * 0.35);
+        const sp = (len, wd, al) => {
+          const g = ctx.createLinearGradient(0, -len, 0, len);
+          g.addColorStop(0, rgba(col, 0)); g.addColorStop(0.5, rgba(col, al)); g.addColorStop(1, rgba(col, 0));
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -len); ctx.quadraticCurveTo(wd, 0, 0, len); ctx.quadraticCurveTo(-wd, 0, 0, -len); ctx.fill();
+        };
+        sp(r * (4.2 - 2.2 * k), r * 0.5, 0.55 * a);
+        ctx.rotate(Math.PI / 2); sp(r * (3.4 - 1.2 * k), r * 0.45, 0.45 * a);
         ctx.restore();
-        FX.light(ctx, sx, sy, r * 0.75, col, a);
+        FX.light(ctx, sx, sy, r * (0.8 - 0.3 * k), col, a);
       }
     },
   },
 
-  // a soft monitor heartbeat line slows and flattens
   heartbeat_slow: {
     draw(ctx, w, h, p) {
       const unit = Math.min(w, h), u = p.u, t = p.t, dur = p.dur || 8;
@@ -753,13 +942,17 @@ module.exports = {
       const land = w > h;
       night(ctx, w, h, p, Math.round(w * h / 12000), [4, 5, 14], [12, 12, 28], (i, x, y) => 0.5);
       // small source: a figure on a sliver of ground
-      const fx = land ? w * 0.16 : w * 0.5, gy = land ? h * 0.8 : h * 0.86;
+      // portrait: the figure stands well above the subtitle band
+      const fx = land ? w * 0.16 : w * 0.5, gy = land ? h * 0.8 : h * 0.66;
       const gg = ctx.createRadialGradient(fx, gy, 0, fx, gy, unit * 0.3);
       gg.addColorStop(0, rgba([40, 40, 60], 0.9)); gg.addColorStop(1, rgba([40, 40, 60], 0));
       ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(fx, gy + unit * 0.01, unit * 0.3, unit * 0.04, 0, 0, TAU); ctx.fill();
       const fh = unit * 0.27;
       FX.glow(ctx, fx, gy - fh * 0.5, fh * 0.9, AMBER, 0.12);
-      const fig = FX.figure(ctx, fx, gy, fh, 'stand', { color: [44, 42, 62], facing: 1, rim: [255, 200, 140] });
+      // idle sway; soft warm rim (from the voice's glow) along head, shoulders and arms, plus a little fill
+      const sway = Math.sin(t * 0.7) * 0.025;
+      const stance = { lean: sway, head: -0.2, armL: [0.14 + sway, 0.1], armR: [-0.14 + sway, -0.1], legL: [0.04, 0], legR: [-0.04, 0] };
+      const fig = litFigure(ctx, fx, gy, fh, stance, { color: [70, 66, 92], rim: [255, 205, 150], rimSide: 1, rimUp: 0.9, fill: 0.7, halo: 0.5, rimW: 0.018 });
       const [sx, sy] = [fig.head[0] + (land ? fh * 0.06 : 0), fig.head[1] - (land ? 0 : fh * 0.05)];
       // target
       const tx = land ? w * 0.88 : w * 0.5, ty = land ? h * 0.32 : h * 0.12;
@@ -819,53 +1012,59 @@ module.exports = {
       const unit = Math.min(w, h), u = p.u, t = p.t;
       const land = w > h;
       night(ctx, w, h, p, Math.round(w * h / 14000), [4, 5, 12], [12, 12, 24], () => 0.6);
-      const cx = w / 2, gy = land ? h * 0.7 : h * 0.62;
-      const lift = easeInOut(clamp((u - 0.12) / 0.45)), glowK = ease(0.3, 0.85, u);
+      const cx = w / 2, gy = land ? h * 0.72 : h * 0.6;
+      // reach down (0..0.3), lift the cover straight up off the light (0.3..0.7), the light blooms
+      const reach = easeInOut(clamp(u / 0.3)), lift = easeInOut(clamp((u - 0.3) / 0.4)), glowK = ease(0.32, 0.8, u);
       // dark ground
       const gg = ctx.createLinearGradient(0, gy - unit * 0.05, 0, h);
-      gg.addColorStop(0, rgba([20, 20, 32])); gg.addColorStop(1, rgba([10, 10, 18]));
+      gg.addColorStop(0, rgba([22, 22, 34])); gg.addColorStop(1, rgba([10, 10, 18]));
       ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(cx, gy + unit * 0.5, w * 0.9, unit * 0.55, 0, Math.PI, TAU); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
-      // the light (always there, hidden at first)
-      const br = 0.9 + 0.1 * Math.sin(t * 1.2);
       const lx = cx, ly = gy - unit * 0.012;
-      FX.glow(ctx, lx, ly, unit * (0.12 + 0.38 * glowK), AMBER, (0.2 + 0.5 * glowK) * br);
-      FX.light(ctx, lx, ly, unit * (0.01 + 0.006 * glowK), [255, 225, 160], 0.6 + 0.4 * glowK);
-      // the dark stone that covered it, lifted away by the hand
-      const R = unit * 0.15;
-      const sx = lerp(cx, cx + unit * 0.3, lift), sy = lerp(gy - R * 0.55, gy - unit * 0.3, lift) - Math.sin(lift * Math.PI) * unit * 0.05;
-      const rot = lift * 0.35;
-      ctx.save(); ctx.translate(sx, sy); ctx.rotate(rot);
-      const sg = ctx.createRadialGradient(-R * 0.3, -R * 0.4, R * 0.1, 0, 0, R * 1.1);
-      sg.addColorStop(0, rgba([62, 60, 78])); sg.addColorStop(1, rgba([26, 25, 36]));
-      ctx.fillStyle = sg; ctx.beginPath();
-      const pts = 28;
-      for (let i = 0; i <= pts; i++) {
-        const a = i / pts * TAU, k = 1 + 0.08 * Math.sin(a * 3 + 1) + 0.05 * Math.cos(a * 5);
-        const x = Math.cos(a) * R * k, y = Math.sin(a) * R * 0.72 * k;
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      const R = unit * 0.13;
+      // the cover: a dark rounded shell sitting right over the light, lifted vertically with a slight tilt
+      const ccx = lx + unit * 0.03 * lift, ccy = ly - R * 0.42 - lift * unit * 0.3, rot = -0.18 * lift;
+      // the light (always there): first only leaking under the rim, then blooming once uncovered
+      const br = 0.9 + 0.1 * Math.sin(t * 1.2);
+      FX.glow(ctx, lx, ly, unit * (0.08 + 0.4 * glowK), AMBER, (0.12 + 0.55 * glowK) * br);
+      // shaft of light rising from the point into the lifted cover's underside
+      if (lift > 0.02) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const sg = ctx.createLinearGradient(0, ccy, 0, ly);
+        sg.addColorStop(0, rgba(AMBER, 0.05 * lift)); sg.addColorStop(1, rgba(GOLD, 0.3 * lift));
+        ctx.fillStyle = sg; ctx.beginPath();
+        ctx.moveTo(lx - unit * 0.012, ly); ctx.lineTo(ccx - R * 0.8, ccy + R * 0.3); ctx.lineTo(ccx + R * 0.8, ccy + R * 0.3); ctx.lineTo(lx + unit * 0.012, ly); ctx.closePath(); ctx.fill();
+        ctx.restore();
       }
-      ctx.closePath(); ctx.fill();
-      // warm light catching the underside
-      ctx.strokeStyle = rgba(AMBER, 0.25 + 0.35 * (1 - lift) * 0.6 + 0.2 * glowK); ctx.lineWidth = unit * 0.006;
-      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.98, R * 0.7, 0, 0.25, Math.PI - 0.25); ctx.stroke();
+      FX.light(ctx, lx, ly, unit * (0.008 + 0.008 * glowK), [255, 228, 170], 0.5 + 0.5 * glowK);
+      ctx.save(); ctx.translate(ccx, ccy); ctx.rotate(rot);
+      const cg = ctx.createLinearGradient(0, -R * 0.6, 0, R * 0.45);
+      cg.addColorStop(0, rgba([70, 66, 84])); cg.addColorStop(0.7, rgba([36, 34, 48])); cg.addColorStop(1, rgba(mix([36, 34, 48], AMBER, 0.25 + 0.45 * lift)));
+      ctx.fillStyle = cg; ctx.beginPath();
+      ctx.moveTo(-R, R * 0.42);
+      ctx.bezierCurveTo(-R * 1.02, -R * 0.35, -R * 0.55, -R * 0.62, 0, -R * 0.62);
+      ctx.bezierCurveTo(R * 0.55, -R * 0.62, R * 1.02, -R * 0.35, R, R * 0.42);
+      ctx.quadraticCurveTo(0, R * 0.55, -R, R * 0.42); ctx.closePath(); ctx.fill();
+      // warm light catching the rim from below
+      ctx.strokeStyle = rgba(AMBER, 0.35 + 0.35 * glowK); ctx.lineWidth = unit * 0.005; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-R * 0.97, R * 0.42); ctx.quadraticCurveTo(0, R * 0.55, R * 0.97, R * 0.42); ctx.stroke();
       ctx.restore();
-      // light leaking out from under the stone's edge
+      // light leaking out from under the rim while it is still closed
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, R * 1.6);
-      lg.addColorStop(0, rgba(AMBER, 0.35 * (1 - lift))); lg.addColorStop(1, rgba(AMBER, 0));
-      ctx.fillStyle = lg; ctx.beginPath(); ctx.ellipse(lx, ly + unit * 0.01, R * 1.6, unit * 0.04, 0, 0, TAU); ctx.fill();
+      const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, R * 1.5);
+      lg.addColorStop(0, rgba(AMBER, 0.4 * (1 - lift))); lg.addColorStop(1, rgba(AMBER, 0));
+      ctx.fillStyle = lg; ctx.beginPath(); ctx.ellipse(lx, ly + unit * 0.006, R * 1.5, unit * 0.03, 0, 0, TAU); ctx.fill();
       ctx.restore();
-      // forearm then hand gripping the top of the stone (fingers over it, back of the hand toward us)
-      const hs = R * 1.25;
-      const ang = Math.PI + 0.45 + rot * 0.5;
-      const wx = sx + R * 0.2, wy = sy - R * 1.32;
-      const fdx = Math.sin(ang), fdy = -Math.cos(ang);
-      ctx.save(); ctx.lineCap = 'round';
-      ctx.strokeStyle = rgba([168, 122, 98]); ctx.lineWidth = hs * 0.42;
-      ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx - fdx * unit * 0.9, wy - fdy * unit * 0.9); ctx.stroke();
-      ctx.restore();
-      FX.hand(ctx, wx, wy, ang, hs, 'curl', { back: true, mirror: true, skin: [196, 146, 114], shadow: [120, 75, 60] });
-      FX.glow(ctx, wx, wy + hs * 0.4, hs, AMBER, 0.1 * glowK);
+      // the hand: comes down from above, fingers curl over the top of the cover (back of the hand to us),
+      // thumb round its side, and lifts it straight up
+      const hs = R * 1.55;
+      const armA = -Math.PI / 2 + 0.38; // wrist -> elbow direction (up and to the right)
+      const ang = Math.PI + 0.38 + rot * 0.6; // fingers pointing down-left over the cover
+      const gripX = ccx + R * 0.05, gripY = ccy - R * 0.5;
+      const wx = gripX + Math.cos(armA) * hs * 0.62 + (1 - reach) * unit * 0.25, wy = gripY + Math.sin(armA) * hs * 0.62 - (1 - reach) * unit * 0.35;
+      sleeve(ctx, wx + Math.cos(armA) * hs * 0.05, wy + Math.sin(armA) * hs * 0.05, armA, unit * 1.2, hs * 0.36, [70, 74, 104], [255, 200, 140]);
+      openHand(ctx, wx, wy, ang, hs, { skin: mix([150, 112, 92], [214, 160, 120], 0.35 + 0.65 * glowK), spread: 0.25, curl: 0.15 + 0.35 * reach, light: 1 });
+      // the uncovered light warms the hand from below
+      FX.glow(ctx, wx - hs * 0.2, wy + hs * 0.35, hs * 0.9, AMBER, 0.12 * glowK);
     },
   },
 

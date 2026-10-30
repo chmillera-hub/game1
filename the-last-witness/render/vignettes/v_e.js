@@ -37,6 +37,22 @@ function rrect(ctx, x, y, w, h, r) {
 function pose(o) {
   return Object.assign({ lean: 0, head: 0, armL: [0.12, 0.08], armR: [-0.12, -0.08], legL: [0.04, 0], legR: [-0.04, 0] }, o);
 }
+// A figure with a soft rim of light along the edges that face the light source (head, shoulders, limbs)
+// plus a gentle fill, so it never reads as a near-black hole. Two offset copies in the rim colour sit
+// behind the body; only a thin soft sliver shows on the lit side. No head crescent.
+function litFigure(ctx, x, y, fh, P, o = {}) {
+  const rim = o.rim || GOLD, a = o.alpha ?? 1;
+  const lx = o.lx ?? x, ly = o.ly ?? y - fh * 4;
+  let dx = lx - x, dy = ly - (y - fh * 0.6);
+  const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+  const rw = fh * (o.rimW || 0.016), str = o.rimA ?? 1;
+  const base = { child: o.child, facing: o.facing, phase: o.phase };
+  // faint cool back-edge so the shadow side still separates from the dark
+  if (o.back !== false) FX.figure(ctx, x - dx * rw * 0.6, y - dy * rw * 0.6, fh, P, Object.assign({}, base, { color: o.backCol || [70, 78, 110], alpha: a * 0.35 * str }));
+  if (o.soft !== false) FX.figure(ctx, x + dx * rw * 2.1, y + dy * rw * 2.1, fh, P, Object.assign({}, base, { color: rim, alpha: a * 0.22 * str }));
+  FX.figure(ctx, x + dx * rw, y + dy * rw, fh, P, Object.assign({}, base, { color: mix(rim, [255, 250, 235], 0.25), alpha: a * 0.65 * str }));
+  return FX.figure(ctx, x, y, fh, P, Object.assign({}, base, { color: mix(o.color || [30, 28, 40], rim, o.fill ?? 0.14), alpha: a }));
+}
 function groundBand(ctx, w, h, gy, col, rim, rimA) {
   const g = ctx.createLinearGradient(0, gy, 0, h);
   g.addColorStop(0, rgba(col)); g.addColorStop(1, rgba(shade(col, -0.6)));
@@ -112,8 +128,10 @@ const memory_storm = {
     const prm = p.params || {};
     const tint = prm.cyan ? CYAN : GOLD;
     night(ctx, w, h, p, [7, 8, 20], [22, 18, 44], 14000);
+    // in the portrait frame the storm sits high so no card passes behind the subtitle band (y 900-1040)
+    const cyS = port ? h * 0.36 : cy;
     // the eye of the storm
-    FX.glow(ctx, cx, cy, unit * 0.55, prm.cyan ? CYAN : AMBER, 0.14 + 0.03 * Math.sin(p.t * 0.6));
+    FX.glow(ctx, cx, cyS, unit * 0.55, prm.cyan ? CYAN : AMBER, 0.14 + 0.03 * Math.sin(p.t * 0.6));
     // soft spiral arms (wind)
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     const spin = p.t * 0.25 + p.u * 1.2;
@@ -122,7 +140,7 @@ const memory_storm = {
       ctx.beginPath();
       for (let i = 0; i <= 30; i++) {
         const f = i / 30, an = spin + k * TAU / 3 + f * 3.2, r = unit * (0.06 + f * 0.62);
-        const x = cx + Math.cos(an) * r, y = cy + Math.sin(an) * r * (port ? 1.5 : 0.8);
+        const x = cx + Math.cos(an) * r, y = cyS + Math.sin(an) * r * (port ? 0.95 : 0.8);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
@@ -133,12 +151,12 @@ const memory_storm = {
     const rnd = U.rng(p.seed * 7 + 11);
     const cards = [];
     for (let i = 0; i < N; i++) {
-      const r0 = 0.18 + rnd() * 0.5, a0 = rnd() * TAU, sz = 0.13 + rnd() * 0.07, kind = i % 6, tilt = (rnd() - 0.5) * 0.8;
+      const r0 = 0.18 + rnd() * 0.5, a0 = rnd() * TAU, sz = (0.13 + rnd() * 0.07) * (port ? 1.2 : 1), kind = i % 6, tilt = (rnd() - 0.5) * 0.8;
       const sp = 0.12 / (0.3 + r0);
       const an = a0 + p.t * sp + easeInOut(p.u) * 1.4 * sp * 4;
       const rr = unit * r0 * (1 + 0.05 * Math.sin(p.t * 0.3 + i));
-      const x = cx + Math.cos(an) * rr * (port ? 0.95 : 1.25);
-      const y = cy + Math.sin(an) * rr * (port ? 1.7 : 0.72);
+      const x = cx + Math.cos(an) * rr * (port ? 0.62 : 1.25);
+      const y = cyS + Math.sin(an) * rr * (port ? 0.68 : 0.72);
       const depth = 0.75 + 0.25 * Math.sin(an);
       cards.push({ x, y, s: unit * sz * depth, kind, rot: tilt + Math.sin(p.t * 0.4 + i) * 0.15, a: 0.55 + 0.45 * depth, depth });
     }
@@ -221,17 +239,39 @@ const questions_float = {
       FX.vignette(ctx, w, h, 0.5);
       return;
     }
+    // The spoken question is already on screen as a subtitle, so the vision shows no words: one large
+    // question mark of light assembles from drifting motes and breathes, while a few smaller, fainter
+    // question marks drift around it like echoes (count and placement vary with the line).
     const text = prm.text || '?';
-    let size = unit * (text.length < 8 ? 0.16 : text.length < 18 ? 0.105 : 0.085);
-    const lines = wrapLines(ctx, text, w * (port ? 0.8 : 0.82), size);
-    const lh = size * 1.25;
-    const appear = 0.7 + 0.3 * smooth(p.u / 0.25);
-    const rise = (p.u - 0.5) * unit * -0.04;
-    lines.forEach((ln, i) => {
-      const y = cy + (i - (lines.length - 1) / 2) * lh + rise + Math.sin(p.t * 0.45 + i * 0.9) * unit * 0.01;
-      const x = cx + Math.sin(p.t * 0.3 + i * 1.7) * unit * 0.01;
-      FX.text(ctx, ln, x, y, size, [220, 228, 255], { weight: 300, family: 'Inter Display', alpha: appear * 0.95, glow: [140, 170, 255] });
-    });
+    let th = 0; for (let i = 0; i < text.length; i++) th = (th * 31 + text.charCodeAt(i)) >>> 0;
+    const size = unit * (port ? 0.62 : 0.56);
+    const gx = cx, gy = (port ? h * 0.42 : cy) + Math.sin(p.t * 0.45) * unit * 0.012;
+    const form = easeOut(p.u / 0.4);
+    const breath = 0.9 + 0.1 * Math.sin(p.t * 0.8);
+    FX.glow(ctx, gx, gy, size * 0.85, [150, 170, 255], 0.16 * form * breath);
+    // the solid glyph fades in as the motes settle
+    FX.text(ctx, '?', gx, gy, size, [225, 232, 255], { weight: 300, family: 'Inter Display', alpha: 0.85 * smooth((p.u - 0.15) / 0.35) * breath, glow: [140, 170, 255] });
+    const pts = glyphPoints('?', size, 150);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const q of pts) {
+      const k = clamp(form * 1.15 - q[2] * 0.15);
+      const sa = q[3] * TAU + (th % 7);
+      const far = (1 - k) * unit * (0.35 + q[2] * 0.4);
+      const x = gx + q[0] + Math.cos(sa + p.t * 0.15) * far + Math.sin(p.t * 0.7 + q[2] * 9) * unit * 0.004;
+      const y = gy + q[1] + Math.sin(sa + p.t * 0.15) * far * (port ? 1.3 : 0.8);
+      dot(ctx, x, y, unit * (0.0025 + q[3] * 0.0025), [210, 220, 255], 0.35 + 0.4 * (1 - k));
+    }
+    ctx.restore();
+    // echoes: small question marks orbiting slowly and fading in and out
+    const nE = 3 + (th % 3);
+    for (let i = 0; i < nE; i++) {
+      const hv = U.hash(th + i * 13), hs = U.hash(th + i * 29 + 5);
+      const an = hv * TAU + p.t * (0.05 + hs * 0.04) * (i % 2 ? 1 : -1);
+      const rx = unit * (port ? 0.36 : 0.52), ry = unit * (port ? 0.5 : 0.3);
+      const ex = gx + Math.cos(an) * rx, ey = gy + Math.sin(an) * ry;
+      const ea = (0.25 + 0.2 * Math.sin(p.t * 0.5 + i * 2)) * smooth((p.u - 0.1 - i * 0.05) / 0.3);
+      FX.text(ctx, '?', ex, ey, unit * (0.07 + hs * 0.07), [200, 210, 255], { weight: 300, family: 'Inter Display', alpha: ea, glow: [140, 170, 255] });
+    }
     FX.vignette(ctx, w, h, 0.5);
   },
 };
@@ -391,10 +431,11 @@ const monument = {
     const { unit, cx, port } = frame(w, h);
     const crumble = !!(p.params && p.params.crumble);
     night(ctx, w, h, p, [8, 9, 22], [26, 22, 46], 12000);
-    const gy = port ? h * 0.8 : h * 0.93;
+    // base row stands above the subtitle band in the portrait frame; a lit stepped plinth fills the ground below
+    const gy = port ? h * 0.665 : h * 0.86;
     const L = monumentLayout(port);
     const R = L.rows.length;
-    const availH = (gy - (port ? h * 0.2 : h * 0.12)) * 0.95;
+    const availH = (gy - (port ? h * 0.12 : h * 0.12)) * 0.95;
     const fh = availH / (1 + (R - 1) * 0.74 + 0.05);
     const step = fh * 0.74, spacing = fh * 0.34;
     const topY = gy - fh * 0.06 - (R - 1) * step - fh;
@@ -405,13 +446,25 @@ const monument = {
     // warm sky behind the monument so its figures read in silhouette
     FX.glow(ctx, cx, topY + (gy - topY) * 0.45, (gy - topY) * 0.75, AMBER, 0.16 + 0.1 * reveal, true);
     FX.light(ctx, cx, lightY, unit * 0.01, GOLD, 0.8 * reveal);
-    // plinth
-    groundBand(ctx, w, h, gy, [16, 14, 28], [140, 110, 90], 0.3);
+    // stepped plinth under the base row, its top edges caught by the summit light
     const pwid = L.rows[0] * spacing + fh * 0.4;
-    ctx.fillStyle = '#1b1828';
-    ctx.beginPath(); ctx.moveTo(cx - pwid / 2, gy - fh * 0.06); ctx.lineTo(cx + pwid / 2, gy - fh * 0.06);
-    ctx.lineTo(cx + pwid / 2 + fh * 0.05, gy); ctx.lineTo(cx - pwid / 2 - fh * 0.05, gy); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = rgba([150, 120, 90], 0.35); ctx.fillRect(cx - pwid / 2, gy - fh * 0.06, pwid, 1.5);
+    const floorY = port ? h * 0.9 : h * 0.97;
+    groundBand(ctx, w, h, floorY, [16, 14, 28], [140, 110, 90], 0.25);
+    const steps = port ? 4 : 2;
+    const stepH = (floorY - gy) / steps;
+    for (let s2 = 0; s2 < steps; s2++) {
+      const y0 = gy + s2 * stepH, ww = pwid + s2 * fh * 0.35;
+      const sg = ctx.createLinearGradient(0, y0, 0, y0 + stepH);
+      sg.addColorStop(0, rgba(mix([30, 26, 40], AMBER, 0.12 * reveal))); sg.addColorStop(1, rgba([14, 12, 22]));
+      ctx.fillStyle = sg; ctx.fillRect(cx - ww / 2, y0, ww, stepH + 1);
+      const eg = ctx.createLinearGradient(cx - ww / 2, 0, cx + ww / 2, 0);
+      eg.addColorStop(0, rgba(GOLD, 0)); eg.addColorStop(0.5, rgba(GOLD, 0.35 * reveal)); eg.addColorStop(1, rgba(GOLD, 0));
+      ctx.fillStyle = eg; ctx.fillRect(cx - ww / 2, y0, ww, Math.max(1.5, unit * 0.003));
+    }
+    // warm pool of light spilling down the steps
+    ctx.save(); ctx.translate(cx, gy + (floorY - gy) * 0.4); ctx.scale(1, 0.45);
+    FX.glow(ctx, 0, 0, pwid * 0.7, AMBER, 0.12 * reveal);
+    ctx.restore();
     const stone = [16, 14, 24];
     const nF = L.figs.length;
     const dust = [];
@@ -446,7 +499,7 @@ const monument = {
       if (alpha <= 0.01) return;
       // rim light grows from the top as the light reveals
       const lit = clamp(reveal * 1.4 - (R - 1 - f.r) / R * 0.8);
-      FX.figure(ctx, x, y + dy, fh, P, { color: mix(stone, [110, 84, 66], lit * 0.3), alpha, rim: mix(GOLD, AMBER, 0.3), rimSide: f.off <= 0 ? 1 : -1 });
+      litFigure(ctx, x, y + dy, fh, P, { color: mix(stone, [110, 84, 66], 0.25 + lit * 0.35), alpha, rim: mix(GOLD, AMBER, 0.3), lx: cx, ly: lightY, rimW: 0.02, rimA: 0.55 + 0.45 * lit, fill: 0.12 });
     });
     if (dust.length) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -459,68 +512,164 @@ const monument = {
 };
 
 // ================================================================ flicker_erased
+// A little huddle of people around one shared flame. Their lights go out one by one from the edge inward,
+// each figure dissolving upward as ash; finally the flame gutters, dies and leaves only a smoke wisp -> nothing.
+const FLICK_POSE = pose({ armL: [0.28, -1.95], armR: [-0.28, 1.95], head: 0.25 });
+function smokeWisp(ctx, x, y, len, t, a, wd) {
+  if (a <= 0.01) return;
+  ctx.save(); ctx.lineCap = 'round';
+  for (let k = 0; k < 3; k++) {
+    ctx.strokeStyle = rgba([150, 150, 165], a * (0.22 - k * 0.05)); ctx.lineWidth = wd * (1 + k * 1.4);
+    ctx.beginPath();
+    for (let i = 0; i <= 18; i++) {
+      const f = i / 18;
+      const px = x + Math.sin(f * 5 + t * 0.7 + k) * len * 0.07 * f + Math.sin(f * 2.2 - t * 0.3) * len * 0.05 * f;
+      const py = y - f * len;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 const flicker_erased = {
   testParams: {},
   draw(ctx, w, h, p) {
-    const { unit, cx, cy } = frame(w, h);
-    FX.bg(ctx, w, h, [9, 10, 18], [17, 17, 26]);
-    const fx = cx, fy = cy + unit * 0.02;
-    // the wipe: a soft ash-grey veil sweeping left to right
-    const s = easeInOut((p.u - 0.28) / 0.45);
-    const edge = lerp(-w * 0.3, w * 1.3, s);
-    const passed = clamp((edge - fx) / (unit * 0.12));
-    const life = 1 - smooth(passed);
-    if (life > 0.001) {
-      const fl = 0.85 + 0.1 * Math.sin(p.t * 2.1) + 0.05 * Math.sin(p.t * 3.3 + 1);
-      const shrink = 1 - passed * 0.7;
-      FX.glow(ctx, fx, fy, unit * 0.22 * fl * shrink, AMBER, 0.35 * life);
-      // tiny flame
+    const { unit, cx, cy, port } = frame(w, h);
+    FX.bg(ctx, w, h, [7, 8, 16], [16, 16, 26]);
+    FX.stars(ctx, w, h, p.t, p.seed, Math.round(w * h / 16000), { fade: () => 0.5 * (1 - smooth((p.u - 0.5) / 0.4)) });
+    const gy = port ? h * 0.6 : h * 0.72;
+    const fx = cx, fy = gy - unit * 0.075;
+    // the flame lives until ~0.72, guttering in its last moments
+    const die = smooth((p.u - 0.6) / 0.14);
+    const gutter = p.u > 0.5 ? 0.75 + 0.25 * Math.sin(p.t * 7.3) * Math.sin(p.t * 3.1) : 1;
+    const life = (1 - die) * (0.92 + 0.08 * Math.sin(p.t * 2.1)) * (die > 0 ? gutter : 1);
+    // warm light on the ground around the huddle
+    ctx.save(); ctx.translate(fx, gy); ctx.scale(1, 0.22);
+    FX.glow(ctx, 0, 0, unit * 0.5, AMBER, 0.3 * life);
+    ctx.restore();
+    FX.glow(ctx, fx, fy, unit * 0.42, AMBER, 0.2 * life);
+    ctx.fillStyle = rgba([12, 11, 20], 0.8); ctx.fillRect(0, gy, w, h - gy);
+    const fg = ctx.createLinearGradient(0, gy, 0, gy + unit * 0.12);
+    fg.addColorStop(0, rgba(AMBER, 0.12 * life)); fg.addColorStop(1, rgba(AMBER, 0));
+    ctx.fillStyle = fg; ctx.fillRect(0, gy, w, unit * 0.12);
+    // the people: two shallow arcs, near ones lower and larger
+    const N = 9;
+    const figs = [];
+    for (let i = 0; i < N; i++) {
+      const side = i % 2 ? 1 : -1, k = Math.ceil(i / 2);
+      const far = k % 2 === 0;
+      const sc = port ? 1.3 : 1;
+      const x = fx + side * (k * 0.075 + 0.015) * unit * sc;
+      const y = gy + (far ? -unit * 0.015 : unit * 0.02) * sc;
+      const fh = unit * (far ? 0.22 : 0.26) * sc;
+      // outer people fade first
+      const t0 = 0.12 + (1 - k / 4) * 0.4 + U.hash(i * 7 + 3) * 0.06;
+      figs.push({ x, y, fh, side, t0, far, i });
+    }
+    figs.sort((a, b) => a.y - b.y);
+    const ash = [];
+    for (const f of figs) {
+      if (f.i === 0) continue; // the centre spot is the flame
+      const gone = smooth((p.u - f.t0) / 0.16);
+      const P = pose(Object.assign({}, FLICK_POSE, { head: 0.3 + Math.sin(p.t * 0.4 + f.i) * 0.04 }));
+      if (gone < 1) {
+        const r = litFigure(ctx, f.x, f.y + gone * f.fh * 0.03, f.fh, P, { color: [26, 22, 32], rim: mix(GOLD, AMBER, 0.4), lx: fx, ly: fy, rimA: life * (1 - gone), fill: 0.18 * life, alpha: 1 - gone });
+        // each person's own small light, cupped in both hands at the chest
+        const lx = (r.handL[0] + r.handR[0]) / 2, ly = (r.handL[1] + r.handR[1]) / 2 - f.fh * 0.02;
+        const la = (1 - smooth((p.u - f.t0 + 0.05) / 0.08)) * (0.85 + 0.15 * Math.sin(p.t * 1.3 + f.i));
+        if (la > 0.02) { FX.glow(ctx, lx, ly, f.fh * 0.18, AMBER, 0.45 * la); dot(ctx, lx, ly, unit * 0.005, [255, 236, 200], la); }
+        f.lx = lx; f.ly = ly;
+      }
+      // ash released as the figure goes
+      if (gone > 0) {
+        for (let j = 0; j < 8; j++) {
+          const hv = U.hash(f.i * 31 + j), hs = U.hash(f.i * 17 + j * 5);
+          const age = clamp((p.u - f.t0 - hv * 0.1) / 0.35);
+          if (age <= 0 || age >= 1) continue;
+          ash.push([f.x + (hs - 0.5) * f.fh * 0.25 + Math.sin(p.t * 0.6 + j) * unit * 0.01, f.y - f.fh * (0.3 + hs * 0.6) - age * unit * 0.2, 1 - age]);
+        }
+      }
+      // a thin smoke curl where each little light went out
+      const sm = smooth((p.u - f.t0) / 0.06) * (1 - smooth((p.u - f.t0 - 0.06) / 0.3));
+      smokeWisp(ctx, f.x, f.y - f.fh * 0.6, unit * 0.1, p.t + f.i, sm * 0.5, Math.max(1, unit * 0.003));
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const d of ash) dot(ctx, d[0], d[1], unit * 0.003, [200, 180, 160], d[2] * 0.5);
+    ctx.restore();
+    // the shared flame
+    if (life > 0.01) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const fhh = unit * 0.05 * fl * shrink, fw = unit * 0.016 * shrink;
-      const sw = Math.sin(p.t * 1.3) * fw * 0.3;
+      const fhh = unit * 0.075 * (0.5 + 0.5 * life), fw = unit * 0.022 * (0.6 + 0.4 * life);
+      const sw = Math.sin(p.t * 1.3) * fw * 0.35;
       const g = ctx.createRadialGradient(fx, fy, 0, fx, fy - fhh * 0.3, fhh);
       g.addColorStop(0, rgba([255, 245, 220], life)); g.addColorStop(0.4, rgba(GOLD, 0.85 * life)); g.addColorStop(1, rgba(AMBER, 0));
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.moveTo(fx - fw, fy); ctx.quadraticCurveTo(fx - fw, fy - fhh * 0.5, fx + sw, fy - fhh);
       ctx.quadraticCurveTo(fx + fw, fy - fhh * 0.5, fx + fw, fy); ctx.arc(fx, fy, fw, 0, Math.PI); ctx.fill();
       ctx.restore();
+      FX.glow(ctx, fx, fy - fhh * 0.3, unit * 0.1, GOLD, 0.4 * life);
     }
-    // the veil itself: brighter grey leading edge, flat grey ash behind it, fading to plain dark at the end
-    if (s > 0 && s < 1 || p.u < 0.3) {
-      const vw = unit * 0.5;
-      const vg = ctx.createLinearGradient(edge - vw, 0, edge + unit * 0.05, 0);
-      const va = 0.3 * (1 - smooth((p.u - 0.62) / 0.2));
-      vg.addColorStop(0, rgba(ASH, 0)); vg.addColorStop(0.8, rgba(ASH, va)); vg.addColorStop(1, rgba(ASH, 0));
-      ctx.fillStyle = vg; ctx.fillRect(edge - vw, 0, vw + unit * 0.05, h);
-    }
-    // a faint smear where it was, then nothing
-    const smear = smooth(passed) * (1 - smooth((p.u - 0.6) / 0.25));
-    if (smear > 0) {
-      ctx.save(); ctx.translate(fx + unit * 0.08 * passed, fy); ctx.scale(2.5, 0.6);
-      FX.glow(ctx, 0, 0, unit * 0.06, ASH, 0.18 * smear);
-      ctx.restore();
-    }
+    // the last smoke from the flame, then nothing
+    const smoke = smooth((p.u - 0.66) / 0.08) * (1 - smooth((p.u - 0.8) / 0.18));
+    smokeWisp(ctx, fx, fy - unit * 0.01, unit * 0.32, p.t, smoke, Math.max(1.5, unit * 0.005));
+    // an ember that lingers on the ground a moment
+    dot(ctx, fx, fy + unit * 0.005, unit * 0.004, [255, 140, 80], smooth((p.u - 0.62) / 0.05) * (1 - smooth((p.u - 0.7) / 0.12)) * 0.8);
     FX.vignette(ctx, w, h, 0.5);
   },
 };
 
 // ================================================================ option_silence
+// The universe's lights go out one by one, outer ones first, closing in on a last star whose ring
+// collapses and fades into a calm, empty dark.
+const silCache = new Map();
+function silLayout(w, h, seed) {
+  const k = w + 'x' + h + ':' + seed;
+  if (silCache.has(k)) return silCache.get(k);
+  const rnd = U.rng(seed * 3 + 101);
+  const pts = [];
+  for (let i = 0, n = Math.round(w * h / 9000); i < n; i++) pts.push({ x: rnd() * w, y: rnd() * h, r: 0.6 + rnd() * rnd() * 1.6, c: rnd(), ph: rnd() * TAU });
+  silCache.set(k, pts);
+  return pts;
+}
 const option_silence = {
   testParams: {},
   draw(ctx, w, h, p) {
     const { unit, cx, cy, port } = frame(w, h);
-    const fadeAll = smooth(p.u / 0.6);
-    const top = mix([8, 10, 24], [3, 4, 10], fadeAll), bot = mix([20, 22, 46], [7, 8, 16], fadeAll);
+    const fadeAll = smooth((p.u - 0.15) / 0.7);
+    const top = mix([8, 10, 26], [3, 4, 10], fadeAll), bot = mix([22, 20, 48], [6, 7, 14], fadeAll);
     FX.bg(ctx, w, h, top, bot);
-    const n = Math.round(w * h / 5000);
-    FX.stars(ctx, w, h, p.t, p.seed, n, { fade: (i) => 1 - smooth((p.u - U.hash(i + 3) * 0.45) / 0.18) });
-    // the final star
-    const sx = cx + unit * 0.08, sy = cy - unit * (port ? 0.12 : 0.06);
-    const last = 1 - smooth((p.u - 0.5) / 0.38);
+    const sx = cx, sy = port ? h * 0.4 : cy;
+    const maxD = Math.hypot(w, h) * 0.6;
+    // faint nebulae that drain away first
+    const neb = 1 - smooth(p.u / 0.45);
+    FX.glow(ctx, w * 0.22, h * 0.25, unit * 0.45, VIOLET, 0.12 * neb);
+    FX.glow(ctx, w * 0.8, h * (port ? 0.72 : 0.7), unit * 0.4, [80, 120, 200], 0.1 * neb);
+    FX.stars(ctx, w, h, p.t, p.seed, Math.round(w * h / 7000), { fade: (i, x, y) => 0.7 * (1 - smooth((p.u - 0.08 - Math.pow(1 - clamp(Math.hypot(x - sx, y - sy) / maxD), 1.4) * 0.6 - U.hash(i + 3) * 0.1) / 0.1)) });
+    // the larger lights, each going out with a small soft puff
+    const L = silLayout(w, h, p.seed);
+    L.forEach((s, i) => {
+      const dd = Math.hypot(s.x - sx, s.y - sy) / maxD;
+      if (dd < 0.08) return;
+      const tOut = 0.1 + Math.pow(1 - clamp(dd), 1.4) * 0.62 + U.hash(i * 5 + 1) * 0.08;
+      const a = 1 - smooth((p.u - tOut) / 0.06);
+      const col = mix([200, 215, 255], [255, 225, 190], s.c);
+      const tw = 0.85 + 0.15 * Math.sin(p.t * 0.6 + s.ph);
+      if (a > 0.01) {
+        FX.glow(ctx, s.x, s.y, unit * 0.035 * s.r, col, 0.3 * a * tw);
+        dot(ctx, s.x, s.y, unit * 0.0028 * s.r, col, 0.95 * a * tw);
+      }
+      const puff = (p.u - tOut) / 0.08;
+      if (puff > 0 && puff < 1) FX.glow(ctx, s.x, s.y, unit * (0.02 + 0.03 * puff) * s.r, col, 0.12 * (1 - puff));
+    });
+    // the last star: its ring contracts and fades, then the star itself dims away
+    const last = 1 - smooth((p.u - 0.66) / 0.26);
+    const ringK = smooth((p.u - 0.3) / 0.45);
     const br = 0.92 + 0.08 * Math.sin(p.t * 0.5);
-    FX.glow(ctx, sx, sy, unit * 0.18, [200, 210, 255], 0.22 * last * br);
-    FX.light(ctx, sx, sy, unit * 0.006 * (0.5 + 0.5 * last), [215, 225, 255], (0.04 + 0.9 * last) * br);
-    // calm: an even soft darkness settles from the edges
+    const rr = unit * lerp(0.26, 0.015, ringK);
+    if (ringK < 1) FX.ring(ctx, sx, sy, rr, Math.max(1, unit * 0.004), [200, 215, 255], 0.35 * (1 - ringK * 0.7) * last);
+    if (ringK < 1) FX.ring(ctx, sx, sy, rr * 1.15, Math.max(1, unit * 0.012), [150, 170, 240], 0.08 * (1 - ringK));
+    FX.glow(ctx, sx, sy, unit * (0.12 + 0.12 * (1 - ringK)), [200, 210, 255], 0.3 * last * br);
+    FX.light(ctx, sx, sy, unit * 0.01 * (0.4 + 0.6 * last), [225, 232, 255], (0.03 + 0.95 * last) * br);
     FX.vignette(ctx, w, h, 0.4 + 0.3 * fadeAll);
   },
 };
@@ -622,14 +771,23 @@ const big_bang = {
 // ================================================================ crowd_lights
 const HOLD = pose({ armL: [0.28, -1.95], armR: [-0.28, 1.95], head: 0.15 });
 function crowdLayout(w, h, port, seed) {
-  const hz = port ? h * 0.46 : h * 0.42;
+  const hz = port ? h * 0.36 : h * 0.42;
   const rows = [];
   const rnd = U.rng(seed * 5 + 77);
   const nR = port ? 7 : 6;
   for (let r = 0; r < nR; r++) {
     const depth = r / (nR - 1); // 0 = front, 1 = far
-    const fh = lerp(port ? h * 0.2 : h * 0.33, h * 0.035, Math.pow(depth, 0.7));
-    const gy = lerp(port ? h * 0.97 : h * 1.02, hz + fh * 0.6, Math.pow(depth, 0.6));
+    let fh = lerp(port ? h * 0.2 : h * 0.33, h * 0.035, Math.pow(depth, 0.7));
+    let gy = lerp(port ? h * 0.97 : h * 1.02, hz + fh * 0.6, Math.pow(depth, 0.6));
+    if (port) {
+      // portrait: the near row stands low with its lights below the subtitle band (y > 1060); the rest of
+      // the crowd fills the field above it (feet at y < 880), leaving the band itself as open dark ground
+      if (r === 0) { fh = h * 0.21; gy = h * 1.07; } else {
+        const d2 = (r - 1) / (nR - 2);
+        fh = lerp(h * 0.13, h * 0.03, Math.pow(d2, 0.7));
+        gy = lerp(h * 0.685, hz + fh * 0.6, Math.pow(d2, 0.6));
+      }
+    }
     const sp = fh * (0.5 + depth * 0.2);
     const n = Math.ceil(w / sp) + 1;
     const off = rnd() * sp;
@@ -674,7 +832,10 @@ const crowd_lights = {
         if (pp.x < -fh || pp.x > w + fh) continue;
         let lx, ly;
         if (row.fh > unit * 0.07) {
-          const res = FX.figure(ctx, pp.x, row.gy, fh, HOLD, { color: col, child: pp.ch });
+          // rim light from the warm haze along the horizon + the light each one holds
+          const res = row.fh > unit * 0.17
+            ? litFigure(ctx, pp.x, row.gy, fh, HOLD, { color: col, child: pp.ch, rim: mix(AMBER, GOLD, 0.5), lx: pp.x + (pp.x - w / 2) * 0.3, ly: L.hz, rimA: 0.5 + 0.5 * on, fill: 0.1 + 0.08 * on, rimW: 0.014, back: false, soft: row.fh > unit * 0.3 })
+            : FX.figure(ctx, pp.x, row.gy, fh, HOLD, { color: mix(col, AMBER, 0.12 * on), child: pp.ch });
           lx = (res.handL[0] + res.handR[0]) / 2; ly = (res.handL[1] + res.handR[1]) / 2 - fh * 0.04;
         } else {
           // distant: simple head-and-shoulders silhouette
@@ -710,7 +871,7 @@ const crowd_lights = {
           const a = rowL[i];
           const b = rowL[i + 1];
           if (b && a[2] > 0.1 && b[2] > 0.1) { ctx.moveTo(a[0], a[1]); ctx.lineTo(lerp(a[0], b[0], k), lerp(a[1], b[1], k)); }
-          if (next && next.length && a[2] > 0.1) {
+          if (next && next.length && a[2] > 0.1 && !(port && ri === lights.length - 2)) {
             let best = null, bd = 1e9;
             for (const c of next) { const d = Math.abs(c[0] - a[0]); if (d < bd) { bd = d; best = c; } }
             if (best && best[2] > 0.1) { ctx.moveTo(a[0], a[1]); ctx.lineTo(lerp(a[0], best[0], k), lerp(a[1], best[1], k)); }

@@ -47,142 +47,176 @@ function probeFigure(ctx, x, y, h, pose, opts) {
 }
 // Palm-up hand seen from the side (thumb side toward the viewer). Wrist at (x,y),
 // fingers point toward `facing` (+1 right, -1 left). s = wrist-to-fingertip length.
-// o: {light: bool, alpha, tilt, curl 0..1, arm (forearm length in s), sleeve}
-// Returns the world point where a resting object's bottom touches the palm.
+// Soft shading, no outlines: palm wedge, four separate tapered fingers that curl up, a thumb rooted at the
+// base of the palm on the near side. o: {light, alpha, tilt, curl 0..1, thumb 0..1 (grip), arm (forearm length
+// in s), sleeve, deferFront}. With deferFront the near fingers + thumb are not drawn; call ret.front() after
+// drawing the held object so they wrap in front of it. Returns [x,y] of the resting point on the palm.
 function sideHand(ctx, x, y, s, facing, o = {}) {
   const light = !!o.light;
-  const curl = o.curl ?? 0.4;
+  const curl = o.curl ?? 0.4, grip = o.thumb ?? curl;
   const tilt = o.tilt || 0;
   const a = o.alpha ?? 1;
-  const skin = light ? [170, 236, 252] : (o.skin || SKIN);
+  const skin = light ? [168, 234, 252] : (o.skin || SKIN);
   const sh = light ? [70, 160, 205] : (o.shadow || SKIN_SH);
-  const ol = light ? [210, 250, 255] : shade(sh, -0.45);
   const L = o.arm ?? 2.2;
-  ctx.save();
-  ctx.translate(x, y); ctx.rotate(tilt * facing); ctx.scale(facing * s, s);
-  ctx.globalAlpha *= a;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // part geometry (local; wrist at 0,0; +x = toward fingertips; -y = up)
+  const xf = () => { ctx.translate(x, y); ctx.rotate(tilt * facing); ctx.scale(facing * s, s); ctx.globalAlpha *= a; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; };
+  const col = (k, al = 1) => rgba(k >= 0 ? mix(skin, [255, 255, 255], k) : mix(skin, sh, -k), al);
+  // fingers (far -> near): base y (depth), segment lengths, width, tone
+  const F = [
+    { yb: -0.04, len: [0.15, 0.1, 0.08], w: 0.08, k: -0.38 },   // little
+    { yb: -0.015, len: [0.19, 0.12, 0.095], w: 0.088, k: -0.26 }, // ring
+    { yb: 0.012, len: [0.21, 0.135, 0.1], w: 0.092, k: -0.14 },  // middle
+    { yb: 0.04, len: [0.2, 0.125, 0.095], w: 0.095, k: 0.0 },    // index (nearest)
+  ];
+  const fingerPts = (f, i) => {
+    const c = curl * (0.9 + 0.05 * i);
+    let px = 0.47, py = f.yb, ang = -0.12 - c * 0.35;
+    const pts = [[px, py]];
+    for (let j = 0; j < 3; j++) {
+      px += Math.cos(ang) * f.len[j]; py += Math.sin(ang) * f.len[j];
+      pts.push([px, py]); ang -= c * (j === 0 ? 0.85 : 0.75);
+    }
+    return pts;
+  };
+  const drawFinger = (f, i) => {
+    const pts = fingerPts(f, i);
+    // soft separation from the finger behind (darker skin, not an outline)
+    ctx.strokeStyle = col(f.k - 0.35, 0.55); ctx.lineWidth = f.w + 0.018;
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let j = 1; j < 4; j++) ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke();
+    for (let j = 0; j < 3; j++) { // tapered segments
+      ctx.strokeStyle = col(f.k); ctx.lineWidth = f.w * (1 - j * 0.12);
+      ctx.beginPath(); ctx.moveTo(pts[j][0], pts[j][1]); ctx.lineTo(pts[j + 1][0], pts[j + 1][1]); ctx.stroke();
+    }
+    // light along the upper edge of the finger
+    ctx.strokeStyle = col(Math.min(0.35, f.k + 0.3), 0.45); ctx.lineWidth = f.w * 0.25;
+    ctx.beginPath();
+    for (let j = 0; j < 4; j++) { const q = pts[j]; const yy = q[1] - f.w * 0.28 * (1 - j * 0.1); j ? ctx.lineTo(q[0], yy) : ctx.moveTo(q[0] + 0.02, yy); }
+    ctx.stroke();
+  };
+  const drawThumb = () => {
+    // thenar mound at the base of the palm, then two thumb segments rising to grip
+    ctx.fillStyle = col(0.05);
+    ctx.beginPath(); ctx.ellipse(0.13, -0.005, 0.13, 0.07, -0.22, 0, TAU); ctx.fill();
+    const a1 = -0.35 - grip * 0.45, a2 = a1 - 0.25 - grip * 0.5;
+    const p0 = [0.17, -0.03], p1 = [p0[0] + Math.cos(a1) * 0.15, p0[1] + Math.sin(a1) * 0.15], p2 = [p1[0] + Math.cos(a2) * 0.11, p1[1] + Math.sin(a2) * 0.11];
+    ctx.strokeStyle = col(-0.3, 0.5); ctx.lineWidth = 0.1;
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+    ctx.strokeStyle = col(0.06); ctx.lineWidth = 0.088;
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+    ctx.lineWidth = 0.076; ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+    ctx.strokeStyle = col(0.3, 0.5); ctx.lineWidth = 0.022;
+    ctx.beginPath(); ctx.moveTo(p0[0] - 0.02, p0[1] - 0.035); ctx.lineTo(p1[0], p1[1] - 0.03); ctx.lineTo(p2[0], p2[1] - 0.025); ctx.stroke();
+  };
+  ctx.save(); xf();
+  // forearm (soft top light), optional sleeve
   const forearm = () => {
     ctx.beginPath();
-    ctx.moveTo(0.05, -0.09); ctx.quadraticCurveTo(-0.3, -0.06, -L, -0.15 + L * 0.42); ctx.lineTo(-L, 0.25 + L * 0.42); ctx.quadraticCurveTo(-0.3, 0.2, 0.05, 0.14); ctx.closePath();
+    ctx.moveTo(0.04, -0.085); ctx.quadraticCurveTo(-0.3, -0.07, -L, -0.15 + L * 0.42); ctx.lineTo(-L, 0.29 + L * 0.42); ctx.quadraticCurveTo(-0.3, 0.22, 0.04, 0.135); ctx.closePath();
   };
-  const palm = () => {
-    ctx.beginPath();
-    ctx.moveTo(-0.02, -0.09);
-    ctx.quadraticCurveTo(0.12, -0.12, 0.3, -0.05);
-    ctx.quadraticCurveTo(0.45, -0.03, 0.6, -0.04);
-    ctx.quadraticCurveTo(0.7, 0.05, 0.6, 0.15);
-    ctx.quadraticCurveTo(0.3, 0.2, -0.02, 0.15);
-    ctx.closePath();
-  };
-  const fingers = [ // far (little) to near (index): base y, reach, rise, width, shade
-    { y: 0.1, len: 0.3, rise: 0.2, w: 0.08, k: -0.22 },
-    { y: 0.08, len: 0.39, rise: 0.15, w: 0.088, k: -0.15 },
-    { y: 0.06, len: 0.45, rise: 0.1, w: 0.094, k: -0.08 },
-    { y: 0.05, len: 0.42, rise: 0.04, w: 0.1, k: 0 },
-  ];
-  const fingerPath = (f) => {
-    const bx = 0.5;
-    const tx = bx + f.len * (1 - curl * 0.18), ty = f.y - 0.05 - f.rise - curl * 0.14;
-    ctx.beginPath(); ctx.moveTo(bx - 0.06, f.y);
-    ctx.quadraticCurveTo(bx + f.len * 0.8, f.y + 0.02, tx, ty);
-  };
-  const thumbPath = () => {
-    ctx.beginPath(); ctx.moveTo(0.1, -0.03);
-    ctx.quadraticCurveTo(0.26, -0.01, 0.36, -0.1);
-  };
-  const fa = 1;
-  const ow = light ? 0.03 : 0.04;
-  const olc = rgba(ol, light ? 0.9 : 1);
-  // forearm (with optional sleeve), then palm, each with its own outline
-  forearm(); ctx.fillStyle = olc; ctx.fill(); ctx.strokeStyle = olc; ctx.lineWidth = ow; ctx.stroke();
-  forearm(); ctx.fillStyle = rgba(shade(skin, -0.1), fa); ctx.fill();
-  if (o.sleeve && !light) { ctx.save(); forearm(); ctx.clip(); ctx.fillStyle = rgba(o.sleeve); ctx.fillRect(-L - 0.1, -1, L - 0.55, 3); ctx.restore(); }
-  palm(); ctx.fillStyle = olc; ctx.fill(); ctx.lineWidth = ow; ctx.stroke();
-  palm(); ctx.fillStyle = rgba(mix(skin, sh, 0.2), fa); ctx.fill();
-  // fingers far -> near, each outlined so they read as separate fingers
-  for (const f of fingers) {
-    fingerPath(f); ctx.lineWidth = f.w + ow * 1.6; ctx.strokeStyle = olc; ctx.stroke();
-    fingerPath(f); ctx.lineWidth = f.w; ctx.strokeStyle = rgba(shade(mix(skin, sh, 0.3), f.k), fa); ctx.stroke();
+  const fg = ctx.createLinearGradient(0, -0.1, 0, 0.16);
+  fg.addColorStop(0, col(0.12)); fg.addColorStop(1, col(-0.45));
+  forearm(); ctx.fillStyle = fg; ctx.fill();
+  if (o.sleeve && !light) {
+    ctx.save(); forearm(); ctx.clip();
+    const sg = ctx.createLinearGradient(0, -0.2, 0, 0.4);
+    sg.addColorStop(0, rgba(shade(o.sleeve, 0.35))); sg.addColorStop(1, rgba(shade(o.sleeve, -0.3)));
+    ctx.fillStyle = sg; ctx.fillRect(-L - 0.1, -1, L - 0.42, 3); ctx.restore();
   }
-  // knuckle/back-of-hand shading and palm cup highlight
-  ctx.strokeStyle = rgba(shade(skin, 0.18), 0.8); ctx.lineWidth = 0.025;
-  ctx.beginPath(); ctx.moveTo(0.06, -0.055); ctx.quadraticCurveTo(0.3, -0.0, 0.52, -0.035); ctx.stroke();
-  // thumb on the near side, drawn last
-  thumbPath(); ctx.lineWidth = 0.095 + ow * 1.6; ctx.strokeStyle = olc; ctx.stroke();
-  thumbPath(); ctx.lineWidth = 0.095; ctx.strokeStyle = rgba(shade(skin, 0.06), fa); ctx.stroke();
-  ctx.strokeStyle = rgba(shade(skin, 0.35), 0.6); ctx.lineWidth = 0.02;
-  ctx.beginPath(); ctx.moveTo(0.33, -0.1); ctx.lineTo(0.355, -0.115); ctx.stroke();
+  // far fingers behind the palm edge
+  F.slice(0, 3).forEach(drawFinger);
+  // palm wedge: concave palm on top, rounded back of the hand below
+  ctx.beginPath();
+  ctx.moveTo(0, -0.085);
+  ctx.quadraticCurveTo(0.25, -0.04, 0.5, -0.06);
+  ctx.quadraticCurveTo(0.58, 0.01, 0.5, 0.085);
+  ctx.quadraticCurveTo(0.25, 0.18, 0, 0.13);
+  ctx.quadraticCurveTo(-0.03, 0.02, 0, -0.085);
+  const pg = ctx.createLinearGradient(0, -0.08, 0, 0.14);
+  pg.addColorStop(0, col(0.1)); pg.addColorStop(0.55, col(-0.05)); pg.addColorStop(1, col(-0.45));
+  ctx.fillStyle = pg; ctx.fill();
+  // palm hollow (soft shade) where an object would sit
+  ctx.fillStyle = col(-0.25, 0.35); ctx.beginPath(); ctx.ellipse(0.31, -0.045, 0.16, 0.022, 0, 0, TAU); ctx.fill();
   ctx.restore();
+  const front = () => {
+    ctx.save(); xf();
+    drawFinger(F[3], 3);
+    drawThumb();
+    ctx.restore();
+  };
+  if (!o.deferFront) front();
   if (light) {
     const c = Math.cos(tilt * facing), sn = Math.sin(tilt * facing);
     FX.glow(ctx, x + facing * s * 0.4 * c, y + s * 0.4 * sn * facing, s * 0.9, CYAN, 0.18 * a);
   }
-  // resting point (on the palm, between thumb and fingers)
-  const lx = 0.36 * facing * s, ly = -0.05 * s;
+  // resting point (on the palm hollow)
+  const lx = 0.33 * facing * s, ly = -0.05 * s;
   const c = Math.cos(tilt * facing), sn = Math.sin(tilt * facing);
-  return [x + lx * c - ly * sn, y + lx * sn + ly * c];
+  const ret = [x + lx * c - ly * sn, y + lx * sn + ly * c];
+  ret.front = o.deferFront ? front : () => {};
+  return ret;
 }
+
 // ---------------------------------------------------------------- soft-lit figures
-// Offscreen scratch canvases (reused) for building lit silhouettes.
+// Offscreen buffers for building lit silhouettes. The canvas backend records drawImage(canvas) lazily, so a
+// buffer must never be changed after it has been drawn somewhere: every stage gets a fresh canvas, and recent
+// ones are kept referenced until the frame has certainly been rasterised.
 const { createCanvas } = require('@napi-rs/canvas');
-const _scr = {};
+const _keep = []; let _keepI = 0;
 function scratch(id, w, h) {
-  let c = _scr[id];
-  if (!c || c.width < w || c.height < h) { c = createCanvas(Math.max(w, c ? c.width : 0), Math.max(h, c ? c.height : 0)); _scr[id] = c; }
-  const x = c.getContext('2d');
-  x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none';
-  x.clearRect(0, 0, c.width, c.height);
-  return [c, x];
+  const c = createCanvas(Math.max(2, Math.ceil(w)), Math.max(2, Math.ceil(h)));
+  _keep[_keepI] = c; _keepI = (_keepI + 1) % 160;
+  return [c, c.getContext('2d')];
 }
 // FX.figure with a soft fill light across the body, a rim light along the edges that face the light,
 // and a faint halo, so it never vanishes into a dark background (no crescent marks on the head).
-// o: color (body), fill (fill-light colour), fillA, rim (rim colour), rimA, rimW (rim width, x h),
+// o: color (body), fill (fill-light colour), fillA, rim (rim colour), rimA, rimW (rim offset, x h),
 //    light [dx,dy] (screen direction toward the key light), halo (alpha), alpha, facing, child, phase,
-//    shade(bctx, ax, ay) optional extra painting on the body (source-atop, local coords, figure feet at ax,ay)
+//    shade(bctx, ax, ay, hs) optional extra painting on the body (source-atop, buffer coords: feet at ax,ay, height hs)
 // Returns FX.figure's {head, handL, handR} in world coords.
 function litFigure(ctx, x, y, h, pose, o = {}) {
-  const pad = Math.ceil(h * 0.75), W = pad * 2, H = Math.ceil(h * 1.36);
-  const ax = pad, ay = Math.ceil(h * 1.26);
-  const [mc, mx] = scratch('m', W, H);
-  const r = FX.figure(mx, ax, ay, h, pose, { color: [255, 255, 255], facing: o.facing, child: o.child, phase: o.phase });
+  const fo = { facing: o.facing, child: o.child, phase: o.phase };
   let lx = (o.light || [1, -0.7])[0], ly = (o.light || [1, -0.7])[1];
   const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
   const rimC = o.rim || [200, 220, 255];
-  // body with directional fill
-  const [bc, bx] = scratch('b', W, H);
-  bx.drawImage(mc, 0, 0);
-  bx.globalCompositeOperation = 'source-in'; bx.fillStyle = rgba(o.color || [58, 60, 86]); bx.fillRect(0, 0, W, H);
-  bx.globalCompositeOperation = 'source-atop';
-  const mxp = ax, myp = ay - h * 0.55;
-  const g = bx.createLinearGradient(mxp + lx * h * 0.3, myp + ly * h * 0.5, mxp - lx * h * 0.3, myp - ly * h * 0.5);
-  g.addColorStop(0, rgba(o.fill || rimC, o.fillA ?? 0.32)); g.addColorStop(1, rgba(o.fill || rimC, 0));
-  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
-  if (o.shade) o.shade(bx, ax, ay);
-  // rim: the part of the silhouette whose neighbour toward the light is empty
-  const [rc, rx] = scratch('r', W, H);
-  const d = Math.max(1.5, h * (o.rimW ?? 0.014));
-  rx.drawImage(mc, 0, 0);
-  rx.globalCompositeOperation = 'destination-out'; rx.drawImage(mc, -lx * d, -ly * d);
-  rx.globalCompositeOperation = 'source-in'; rx.fillStyle = rgba(rimC); rx.fillRect(0, 0, W, H);
-  const X0 = x - ax, Y0 = y - ay;
+  const d = Math.max(1.2, h * (o.rimW ?? 0.012));
   ctx.save();
   if (o.alpha != null) ctx.globalAlpha *= o.alpha;
-  const haloA = o.halo ?? 0.35;
-  if (haloA > 0) { // soft edge glow all around, from the body colour lifted toward the rim colour
-    const [hc, hx] = scratch('h', W, H);
-    hx.drawImage(mc, 0, 0); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = rgba(rimC); hx.fillRect(0, 0, W, H);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= haloA; ctx.filter = `blur(${Math.max(2, h * 0.025).toFixed(1)}px)`;
-    ctx.drawImage(hc, X0, Y0); ctx.restore();
+  const base = ctx.globalAlpha;
+  // halo: faint copies all around (soft edge glow so the figure separates from a dark ground)
+  const haloA = o.halo ?? 0.3;
+  if (haloA > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU, r = d * (i % 2 ? 2.2 : 1.3);
+      ctx.globalAlpha = base * haloA * 0.12;
+      FX.figure(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r, h, pose, Object.assign({ color: rimC }, fo));
+    }
+    ctx.globalCompositeOperation = 'source-over';
   }
-  ctx.drawImage(bc, X0, Y0);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.6; ctx.filter = `blur(${Math.max(1.5, d * 0.9).toFixed(1)}px)`; ctx.drawImage(rc, X0, Y0);
+  // rim: copies shifted toward the light peek out from behind the body along the lit edges
+  const rimA = o.rimA ?? 0.85;
+  ctx.globalAlpha = base * rimA * 0.45;
+  FX.figure(ctx, x + lx * d * 1.9, y + ly * d * 1.9, h, pose, Object.assign({ color: rimC }, fo));
+  ctx.globalAlpha = base * rimA;
+  FX.figure(ctx, x + lx * d, y + ly * d, h, pose, Object.assign({ color: mix(rimC, [255, 255, 255], 0.25) }, fo));
+  ctx.globalAlpha = base;
+  // body with a directional fill light, built in a small buffer (capped resolution, drawn up)
+  const q = Math.min(1, 200 / h), hs = h * q;
+  const pad = Math.ceil(hs * 0.66), W = pad * 2, H = Math.ceil(hs * 1.34);
+  const ax = pad, ay = Math.ceil(hs * 1.25);
+  const [bc, bx] = scratch('b', W, H);
+  const r = FX.figure(bx, ax, ay, hs, pose, Object.assign({ color: o.color || [58, 60, 86] }, fo));
+  bx.globalCompositeOperation = 'source-atop';
+  const myp = ay - hs * 0.55;
+  const g = bx.createLinearGradient(ax + lx * hs * 0.3, myp + ly * hs * 0.5, ax - lx * hs * 0.3, myp - ly * hs * 0.5);
+  g.addColorStop(0, rgba(o.fill || rimC, o.fillA ?? 0.3)); g.addColorStop(1, rgba(o.fill || rimC, 0));
+  bx.fillStyle = g; bx.fillRect(0, 0, W, H);
+  if (o.shade) o.shade(bx, ax, ay, hs);
+  const X0 = x - ax / q, Y0 = y - ay / q;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(bc, 0, 0, W, H, X0, Y0, W / q, H / q);
   ctx.restore();
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= (o.rimA ?? 0.85) * 0.7; ctx.drawImage(rc, X0, Y0); ctx.restore();
-  ctx.restore();
-  const tw = (q) => [q[0] + X0, q[1] + Y0];
+  const tw = (pt) => [X0 + pt[0] / q, Y0 + pt[1] / q];
   return { head: tw(r.head), handL: tw(r.handL), handR: tw(r.handR) };
 }
 
@@ -258,7 +292,7 @@ module.exports = {
       FX.glow(ctx, cx, cY + CH * 0.2, CH * 0.9, GOLD, 0.12 + 0.12 * wring);
       ctx.restore();
       // vial
-      const vb = port ? h * 0.78 : h * 0.92, vh = unit * 0.36, vw = unit * 0.15, nw = unit * 0.055;
+      const vb = port ? h * 0.66 : h * 0.92, vh = unit * 0.36, vw = unit * 0.15, nw = unit * 0.055;
       const vtop = vb - vh, bulbR = vw / 2, bulbY = vb - bulbR;
       const vialPath = () => {
         ctx.beginPath();
@@ -321,10 +355,10 @@ module.exports = {
       const lift = Math.sin(Math.PI * k);
       FX.glow(ctx, cx, y - unit * 0.1, unit * 0.6, [80, 70, 140], 0.15);
       const hx = cx - unit * 0.42 + k * unit * 0.05, hy = y - lift * unit * 0.03;
-      const restL = sideHand(ctx, hx, hy, s, 1, { curl: 0.2, tilt: -0.05 - 0.12 * lift, sleeve: [40, 44, 70] });
+      const restL = sideHand(ctx, hx, hy, s, 1, { curl: 0.35, tilt: -0.05 - 0.12 * lift, sleeve: [40, 44, 70] });
       const lx = cx + unit * 0.42 - k * unit * 0.05, ly = y + (k > 0.9 ? 0 : 0) + unit * 0.01 * smooth((p.u - 0.6) / 0.15) * Math.cos((p.u - 0.6) * 20) * (1 - smooth((p.u - 0.75) / 0.1));
       const glowUp = smooth((p.u - 0.62) / 0.25);
-      const restR = sideHand(ctx, lx, ly, s, -1, { light: true, curl: 0.2, alpha: 0.75 + 0.25 * glowUp });
+      const restR = sideHand(ctx, lx, ly, s, -1, { light: true, curl: 0.35, alpha: 0.75 + 0.25 * glowUp });
       const r = unit * 0.06;
       const ox = lerp(restL[0], restR[0], k), oy = lerp(restL[1], restR[1], k) - r - lift * unit * 0.13;
       orb(ctx, ox, oy, r * (1 + 0.03 * Math.sin(p.t * 1.5)), GOLD);
@@ -346,7 +380,9 @@ module.exports = {
       const lx = cx - unit * 0.3, rx = cx + unit * 0.3;
       const k = easeInOut((p.u - 0.15) / 0.6);
       // scarred human (left, reaching right)
-      const L = FX.figure(ctx, lx, gy, fh, 'reach', { color: [66, 54, 76], facing: -1 });
+      const L = litFigure(ctx, lx, gy, fh, 'reach', {
+        color: [84, 68, 96], facing: -1, rim: [170, 225, 255], rimA: 0.7, fill: [150, 190, 240], fillA: 0.2, light: [1, -0.5], halo: 0.22,
+      });
       // scars: glowing crimson seams on the body
       const scar = (pts) => {
         ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -420,7 +456,10 @@ module.exports = {
       const sh = unit * 0.17;
       const kids = [[-0.3, 1, 'stand', false], [-0.2, 0.72, 'stand', true], [0.18, 1, 'kneel', false], [0.3, 0.95, 'stand', false], [0.38, 0.7, 'stand', true]];
       for (const [ox, sc, pose2, child] of kids) {
-        FX.figure(ctx, cx + ox * unit, gy, sh * sc, pose2, { color: [120, 92, 74], child, facing: ox < 0 ? -1 : 1 });
+        litFigure(ctx, cx + ox * unit, gy, sh * sc, pose2, {
+          color: [120, 92, 74], child, facing: ox < 0 ? -1 : 1, rim: [200, 240, 255], rimA: 0.7, fill: [255, 214, 160], fillA: 0.22,
+          light: [-ox, -1.2], halo: 0.2,
+        });
       }
       FX.glow(ctx, cx - unit * 0.25, gy - sh * 0.5, unit * 0.15, GOLD, 0.12); FX.glow(ctx, cx + unit * 0.28, gy - sh * 0.5, unit * 0.15, GOLD, 0.12);
     },
@@ -552,13 +591,17 @@ module.exports = {
         { x: cx + unit * 0.27, h: unit * 0.34, pose: 'stand', child: true },
       ];
       const chest = fig.map((f) => {
-        const r = FX.figure(ctx, f.x, gy, f.h, f.pose, { color: [44, 34, 54], child: f.child });
+        // rim-lit by the dusk glow behind them, soft fill so each pose reads against the sky
+        const r = litFigure(ctx, f.x, gy, f.h, f.pose, {
+          color: [70, 56, 84], child: f.child, rim: [236, 184, 220], rimA: 0.8, fill: [190, 150, 210], fillA: 0.25,
+          light: [0.5, -1], halo: 0.3,
+        });
         f.r = r;
         return [lerp(r.head[0], f.x, 0.45), r.head[1] + f.h * (f.child ? 0.24 : 0.2)];
       });
       // grandparent's cane
       const gp = fig[0];
-      ctx.strokeStyle = rgba([44, 34, 54]); ctx.lineWidth = unit * 0.009; ctx.lineCap = 'round';
+      ctx.strokeStyle = rgba([92, 72, 100]); ctx.lineWidth = unit * 0.009; ctx.lineCap = 'round';
       const ch = gp.r.handR[0] > gp.r.handL[0] ? gp.r.handR : gp.r.handL;
       ctx.beginPath(); ctx.moveTo(ch[0], ch[1] - unit * 0.01); ctx.lineTo(ch[0] + unit * 0.02, gy); ctx.stroke();
       // loop travels
@@ -583,12 +626,23 @@ module.exports = {
       loopRing(chest[0][0], chest[0][1], unit * 0.07, 0.25 + 0.75 * (1 - smooth(k1 * 3)), p.t * 1.2);
       if (k1 >= 1) loopRing(chest[1][0], chest[1][1], unit * 0.075, 0.3 + 0.7 * (1 - smooth(k2 * 3)), p.t * 1.2 + 1);
       loopRing(x, y, unit * lerp(0.075, 0.06, k2), 1, p.t * 1.6);
-      // trail
-      ctx.save(); ctx.strokeStyle = rgba(CRIMSON, 0.2); ctx.lineWidth = unit * 0.004; ctx.setLineDash([unit * 0.01, unit * 0.015]);
-      ctx.beginPath(); ctx.moveTo(chest[0][0], chest[0][1]);
-      ctx.quadraticCurveTo((chest[0][0] + chest[1][0]) / 2, chest[0][1] - unit * 0.2, chest[1][0], chest[1][1]);
-      if (k2 > 0) ctx.quadraticCurveTo((chest[1][0] + chest[2][0]) / 2, chest[1][1] - unit * 0.2, chest[2][0], chest[2][1]);
-      ctx.globalAlpha = smooth(k1 * 2); ctx.stroke(); ctx.restore();
+      // the red thread: one continuous line passed from grandparent to parent to child (large to small)
+      const seg = (A, B, t) => [lerp(A[0], B[0], t), lerp(A[1], B[1], t) - Math.sin(Math.PI * t) * unit * 0.1];
+      const thread = [];
+      const n = 24;
+      for (let i = 0; i <= n; i++) { const t = (i / n) * k1; if (k1 > 0) thread.push(seg(chest[0], chest[1], t)); }
+      if (k2 > 0) for (let i = 1; i <= n; i++) thread.push(seg(chest[1], chest[2], (i / n) * k2));
+      if (thread.length > 1) {
+        ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        const sway = (q, i) => [q[0], q[1] + Math.sin(p.t * 0.8 + i * 0.35) * unit * 0.004];
+        const path = () => { ctx.beginPath(); thread.forEach((q, i) => { const r = sway(q, i); i ? ctx.lineTo(r[0], r[1]) : ctx.moveTo(r[0], r[1]); }); };
+        ctx.globalCompositeOperation = 'lighter';
+        path(); ctx.strokeStyle = rgba(CRIMSON, 0.22); ctx.lineWidth = unit * 0.022; ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+        path(); ctx.strokeStyle = rgba([226, 64, 88], 0.95); ctx.lineWidth = unit * 0.007; ctx.stroke();
+        path(); ctx.strokeStyle = rgba([255, 150, 160], 0.55); ctx.lineWidth = unit * 0.0025; ctx.stroke();
+        ctx.restore();
+      }
     },
   },
 
@@ -656,7 +710,10 @@ module.exports = {
       const fxp = (A.handL[0] + A.handR[0]) / 2, fyp = Math.min(A.handL[1], A.handR[1]) - ah * 0.04;
       const fl = lerp(1, 0.4, k) * (1 + 0.06 * U.noise1(p.t * 2.2, 7));
       FX.glow(ctx, fxp, fyp, unit * 0.5 * fl, AMBER, 0.22 * fl);
-      FX.figure(ctx, ax, gy, ah, HOLD, { color: mix([40, 32, 46], [90, 62, 50], fl), facing: -1 });
+      litFigure(ctx, ax, gy, ah, HOLD, {
+        color: mix([58, 48, 66], [96, 68, 56], fl), facing: -1, rim: mix([170, 150, 220], [255, 200, 130], fl), rimA: 0.75,
+        fill: AMBER, fillA: 0.12 + 0.2 * fl, light: [1, -0.6], halo: 0.25,
+      });
       // tall shadowing figure (right) bringing a hand down over the flame
       const bh = unit * 0.64;
       const pose0 = { lean: 0.02, head: 0.1, armL: [0.12, 0.08], armR: [-0.3, -0.15], legL: [0.06, 0], legR: [-0.06, 0] };
@@ -664,9 +721,13 @@ module.exports = {
       const end = probeFigure(ctx, 0, gy, bh, pose1, {});
       const bx = fxp - end.handR[0] + unit * 0.045;
       // hand shadow over the flame
-      const B = FX.figure(ctx, bx, gy, bh, lerpPose(pose0, pose1, k), { color: [8, 6, 14] });
+      // a dark presence, but never a void: cool rim from the sky glow, warm edge from the flame below
+      const B = litFigure(ctx, bx, gy, bh, lerpPose(pose0, pose1, k), {
+        color: [30, 26, 42], rim: mix([150, 140, 210], [255, 190, 120], 0.5 * fl), rimA: 0.7, fill: [120, 110, 170], fillA: 0.18,
+        light: [-1, -0.5], halo: 0.22,
+      });
       // the shadowing hand, palm down over the flame
-      FX.hand(ctx, B.handR[0], B.handR[1], lerp(-2.9, -2.2, k), bh * 0.13, 'relaxed', { skin: [22, 18, 30], shadow: [10, 8, 16], outline: [60, 48, 80], back: true, mirror: true });
+      FX.hand(ctx, B.handR[0], B.handR[1], lerp(-2.9, -2.2, k), bh * 0.13, 'relaxed', { skin: [52, 44, 64], shadow: [30, 26, 40], outline: [84, 72, 104], back: true, mirror: true });
       // flame (teardrop), shrinking and swaying under the hand
       const fr = unit * 0.045 * fl, sway = U.noise1(p.t * 1.5, 2) * fr * 0.25;
       FX.glow(ctx, fxp, fyp - fr, fr * 3, GOLD, 0.6 * fl);
@@ -689,7 +750,7 @@ module.exports = {
     draw(ctx, w, h, p) {
       const { unit, cx, port } = frame(w, h);
       night(ctx, w, h, p, [8, 6, 18], [24, 14, 30], 16000);
-      const gy = port ? h * 0.7 : h * 0.86;
+      const gy = port ? h * 0.66 : h * 0.86;
       FX.glow(ctx, cx, gy - unit * 0.3, unit * 0.8, [100, 60, 120], 0.2);
       groundPlane(ctx, w, h, gy, [20, 14, 24], [150, 70, 100]);
       const k = easeInOut((p.u - 0.05) / 0.7);
@@ -713,8 +774,10 @@ module.exports = {
       FX.glow(ctx, cx, gy + unit * 0.02, unit * 0.15, CRIMSON, 0.2 * crack);
       // figures reaching toward each other, holding the thread
       const lean = 0.06 * k;
-      const L = FX.figure(ctx, lx - unit * 0.02 * k, gy, fh, lerpPose('reach', { lean: -0.04, head: 0, armL: [0.1, 0.1], armR: [-1.0, -0.2], legL: [0.12, 0], legR: [-0.1, 0] }, k), { color: [52, 40, 60], facing: -1 });
-      const Rr = FX.figure(ctx, rx + unit * 0.02 * k, gy, fh, lerpPose('reach', { lean: -0.04, head: 0, armL: [0.1, 0.1], armR: [-1.0, -0.2], legL: [0.12, 0], legR: [-0.1, 0] }, k), { color: [52, 40, 60], facing: 1 });
+      // both rim-lit from the glow between them (where the thread is seized)
+      const LIT = { color: [72, 58, 84], rim: [236, 170, 200], rimA: 0.75, fill: [190, 140, 190], fillA: 0.22, halo: 0.25 };
+      const L = litFigure(ctx, lx - unit * 0.02 * k, gy, fh, lerpPose('reach', { lean: -0.04, head: 0, armL: [0.1, 0.1], armR: [-1.0, -0.2], legL: [0.12, 0], legR: [-0.1, 0] }, k), Object.assign({ facing: -1, light: [1, -0.7] }, LIT));
+      const Rr = litFigure(ctx, rx + unit * 0.02 * k, gy, fh, lerpPose('reach', { lean: -0.04, head: 0, armL: [0.1, 0.1], armR: [-1.0, -0.2], legL: [0.12, 0], legR: [-0.1, 0] }, k), Object.assign({ facing: 1, light: [-1, -0.7] }, LIT));
       void lean;
       // the thread, seized in the middle by a fist and pulled up into a V
       const fy = lerp(gy - fh * 0.62, port ? h * 0.3 : h * 0.3, k);
@@ -727,12 +790,14 @@ module.exports = {
       // forearm from above
       const hs = unit * 0.085;
       const wy = fy - hs * 1.05;
-      ctx.fillStyle = rgba([34, 26, 40]);
+      const fa = ctx.createLinearGradient(fxp - hs * 0.5, 0, fxp + hs * 0.55, 0);
+      fa.addColorStop(0, rgba([110, 82, 92])); fa.addColorStop(1, rgba([62, 46, 62]));
+      ctx.fillStyle = fa;
       ctx.beginPath(); ctx.moveTo(fxp - hs * 0.42, wy + hs * 0.1); ctx.lineTo(fxp - hs * 0.5, -10); ctx.lineTo(fxp + hs * 0.55, -10); ctx.lineTo(fxp + hs * 0.38, wy + hs * 0.1); ctx.fill();
       const pose = {
         curl: [0, 1, 2, 3].map((i) => lerp(0.55, 1, k)), spread: lerp(0.03, 0, k), thumb: lerp(0.3, 0.15, k), thumbCurl: lerp(0.5, 0.9, k),
       };
-      R.drawHand(ctx, fxp, wy, Math.PI, hs, pose, { skin: [150, 108, 96], shadow: [80, 44, 48], back: true });
+      R.drawHand(ctx, fxp, wy, Math.PI, hs, pose, { skin: [160, 116, 100], shadow: [96, 60, 60], outline: [120, 84, 80], back: true });
       FX.glow(ctx, fxp, fy, unit * 0.12, CRIMSON, 0.15 * k);
     },
   },
@@ -850,11 +915,15 @@ module.exports = {
       night(ctx, w, h, p, [8, 8, 20], [22, 18, 40], 14000);
       const brk = 0.35;
       const free = smooth((p.u - brk) / 0.4);
-      const fy = port ? cy + unit * 0.35 : h * 0.95;
+      const fy = port ? cy + unit * 0.25 : h * 0.95;
       FX.glow(ctx, cx, fy - unit * 0.35, unit * (0.5 + 0.4 * free), GOLD, 0.22 + 0.25 * free);
       // figure behind the chains, head lifting as they fall
       const pose = lerpPose({ lean: 0.05, head: 0.55, armL: [0.15, 0.1], armR: [-0.15, -0.1], legL: [0.04, 0], legR: [-0.04, 0] }, { lean: -0.03, head: -0.2, armL: [0.55, 0.2], armR: [-0.55, -0.2], legL: [0.05, 0], legR: [-0.05, 0] }, free);
-      FX.figure(ctx, cx, fy, unit * 0.62, pose, { color: mix([60, 50, 70], [80, 62, 54], free), glow: GOLD, glowA: 0.1 + 0.2 * free });
+      litFigure(ctx, cx, fy, unit * 0.62, pose, {
+        color: mix([72, 62, 84], [104, 82, 70], free), rim: GOLD, rimA: 0.6 + 0.3 * free, fill: [255, 214, 160], fillA: 0.15 + 0.2 * free,
+        light: [0.3, -1], halo: 0.25,
+      });
+      FX.glow(ctx, cx, fy - unit * 0.5, unit * 0.31, GOLD, 0.1 + 0.2 * free);
       // chains: X across the frame
       const cyc = port ? cy - unit * 0.05 : cy;
       const ext = Math.max(w, h);
@@ -930,14 +999,16 @@ module.exports = {
       const tl = clamp((p.u - 0.48) / 0.4);
       const dip = tl > 0 ? unit * 0.07 * (1 - Math.exp(-tl * 6) * Math.cos(tl * 14)) : 0;
       const lx = cx + unit * 0.3, ly = y + dip;
-      const restR = sideHand(ctx, lx, ly, s, -1, { light: true, curl: 0.2, tilt: -0.12 * clamp(dip / (unit * 0.07)) });
-      // human hand: comes over and lowers the stone in
+      // hand of light: open, then cups around the stone once it lands
+      const land = smooth((p.u - 0.47) / 0.2);
+      const restR = sideHand(ctx, lx, ly, s, -1, { light: true, curl: lerp(0.3, 0.78, land), thumb: lerp(0.2, 0.6, land), tilt: -0.12 * clamp(dip / (unit * 0.07)), deferFront: true });
+      // human hand: palm up, fingers around the stone, comes over and tips it into the light
       const hx = cx - unit * 0.48 + reach * unit * 0.1 - back * unit * 0.08;
       const hy = y - reach * unit * 0.1 + give * unit * 0.02 + back * unit * 0.05;
-      const restL = sideHand(ctx, hx, hy, s, 1, { curl: 0.2, tilt: -0.05 + 0.2 * give - 0.15 * back, sleeve: [40, 44, 70] });
-      // stone
-      const r = unit * 0.085;
-      const sx = lerp(restL[0], restR[0], give), sy = lerp(restL[1], restR[1], give) - r * 0.82 - Math.sin(Math.PI * give) * unit * 0.03;
+      const restL = sideHand(ctx, hx, hy, s, 1, { curl: lerp(0.75, 0.3, give), thumb: lerp(0.6, 0.25, give), tilt: -0.05 + 0.2 * give - 0.15 * back, sleeve: [40, 44, 70], deferFront: true });
+      // stone: rests in the human palm, arcs over, then sits in the cupped palm of light
+      const r = unit * 0.062;
+      const sx = lerp(restL[0], restR[0], give), sy = lerp(restL[1], restR[1], give) - r * 0.8 - Math.sin(Math.PI * give) * unit * 0.05;
       const rot = give * 0.6;
       ctx.save(); ctx.translate(sx, sy); ctx.rotate(rot);
       ctx.beginPath();
@@ -950,8 +1021,14 @@ module.exports = {
       const sg = ctx.createRadialGradient(-r * 0.35, -r * 0.4, 0, 0, 0, r * 1.2);
       sg.addColorStop(0, rgba([92, 86, 104])); sg.addColorStop(0.6, rgba([44, 40, 54])); sg.addColorStop(1, rgba([18, 16, 24]));
       ctx.fillStyle = sg; ctx.fill();
-      ctx.strokeStyle = rgba(mix([120, 110, 140], CYAN, give), 0.35 + 0.3 * give); ctx.lineWidth = unit * 0.004; ctx.stroke();
+      // soft edge light on the upper side (no outline)
+      ctx.save(); ctx.clip();
+      const eg = ctx.createRadialGradient(r * 0.2, r * 0.5, r * 0.6, 0, 0, r * 1.3);
+      eg.addColorStop(0, 'rgba(0,0,0,0)'); eg.addColorStop(1, rgba(mix([150, 140, 170], CYAN, give), 0.45 + 0.2 * give));
+      ctx.fillStyle = eg; ctx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 3); ctx.restore();
       ctx.restore();
+      // near fingers and thumbs wrap in front of the stone
+      restL.front(); restR.front();
       FX.glow(ctx, restR[0], restR[1], unit * 0.2, CYAN, 0.1 + 0.1 * smooth((p.u - 0.5) / 0.3));
     },
   },

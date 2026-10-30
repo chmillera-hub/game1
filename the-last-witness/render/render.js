@@ -293,9 +293,12 @@ function sufferingMods(st, t) {
 
 // ---------------------------------------------------------------- canvases
 const main = createCanvas(W, H), ctx = main.getContext('2d');
-const layer = createCanvas(W, H), lctx = layer.getContext('2d');
+// offscreen buffers: one set for the current shot and one for the outgoing shot of a dissolve
+// (@napi-rs/canvas records drawImage lazily, so a buffer must not be reused within a frame)
+const BUF = [0, 1].map(() => { const l = createCanvas(W, H), p = createCanvas(672, 560); return { layer: l, lctx: l.getContext('2d'), panelCv: p, panctx: p.getContext('2d') }; });
+let layer = BUF[0].layer, lctx = BUF[0].lctx, panelCv = BUF[0].panelCv, panctx = BUF[0].panctx;
+function useBuf(i) { ({ layer, lctx, panelCv, panctx } = BUF[i]); }
 const prevCv = createCanvas(W, H), pctx = prevCv.getContext('2d');
-const panelCv = createCanvas(672, 560), panctx = panelCv.getContext('2d');
 
 // ---------------------------------------------------------------- drawing characters
 function drawActor(c, name, t, scene, cam, shotDef) {
@@ -572,7 +575,7 @@ function wrap(c, text, maxW) {
 function norm(x) { return x.toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function subShownAsVignette(s, t) {
   const seg = segments[segIndexAt(t)];
-  if (!seg || !(seg.vignette === 'whisper_words' || seg.vignette === 'questions_float')) return false;
+  if (!seg || seg.vignette !== 'whisper_words') return false;
   const vt = norm((seg.vparams && seg.vparams.text) || '');
   const st = norm(s.text);
   return vt.length > 3 && (st === vt || (st.includes(vt) && vt.length >= st.length * 0.75));
@@ -682,13 +685,16 @@ function renderFrame(t) {
   const seg = segments[i];
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  useBuf(0);
   const info = drawShot(ctx, seg, t);
   // dissolve between locations
   const prev = segments[i - 1];
   const XF = 0.55;
   if (prev && t - seg.start < XF && LOC(prev.shot) !== LOC(seg.shot)) {
     pctx.setTransform(1, 0, 0, 1, 0, 0);
+    useBuf(1);
     drawShot(pctx, prev, t);
+    useBuf(0);
     ctx.save(); ctx.globalAlpha = 1 - smooth((t - seg.start) / XF); ctx.drawImage(prevCv, 0, 0); ctx.restore();
   }
   drawLabels(ctx, t, info);

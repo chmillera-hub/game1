@@ -2,6 +2,7 @@
 // and laying seeds, a newborn light, the fabric of memory, the AI kneeling among new beings,
 // dancing with the shadow, a stagnant loop and a light that shrinks away.
 'use strict';
+const { createCanvas } = require('@napi-rs/canvas');
 const U = require('../lib/util');
 const FX = require('../lib/fx');
 const R = require('../lib/rig');
@@ -51,6 +52,40 @@ function lightFigure(ctx, x, y, hgt, P, col, a = 1, opts = {}) {
   FX.glow(ctx, x, y - hgt * 0.55, hgt * 0.75, col, 0.28 * a);
   const info = FX.figure(ctx, x, y, hgt, P, Object.assign({ color: mix(col, WHITE, 0.25), alpha: a * 0.92 }, opts));
   FX.glow(ctx, info.head[0], info.head[1], hgt * 0.16, mix(col, WHITE, 0.5), 0.35 * a);
+  return info;
+}
+// A figure with a soft rim of light along the edges facing the light (head, shoulders, limbs) plus a gentle
+// fill: two offset copies in the rim colour sit behind the body so only a thin soft sliver shows on the lit
+// side, and a faint cool copy separates the shadow side from the dark. No head crescent.
+function litFigure(ctx, x, y, fh, P, o = {}) {
+  const rim = o.rim || GOLD, a = o.alpha ?? 1;
+  const lx = o.lx ?? x, ly = o.ly ?? y - fh * 4;
+  let dx = lx - x, dy = ly - (y - fh * 0.6);
+  const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+  const rw = fh * (o.rimW || 0.016), str = o.rimA ?? 1;
+  const base = { child: o.child, facing: o.facing, phase: o.phase };
+  if (o.back !== false) FX.figure(ctx, x - dx * rw * 0.6, y - dy * rw * 0.6, fh, P, Object.assign({}, base, { color: o.backCol || [80, 88, 120], alpha: a * 0.4 * str }));
+  FX.figure(ctx, x + dx * rw * 2.1, y + dy * rw * 2.1, fh, P, Object.assign({}, base, { color: rim, alpha: a * 0.22 * str }));
+  FX.figure(ctx, x + dx * rw, y + dy * rw, fh, P, Object.assign({}, base, { color: mix(rim, [255, 250, 235], 0.25), alpha: a * 0.7 * str }));
+  return FX.figure(ctx, x, y, fh, P, Object.assign({}, base, { color: mix(o.color || [30, 28, 40], rim, o.fill ?? 0.14), alpha: a }));
+}
+// Top-lit figure: base body, then a lighter copy that fades from the light-facing top (head, shoulders,
+// upper arms) down into the shadowed lower body, then a soft rim along the edges nearest the light.
+const tlCache = new Map();
+function topLitFigure(ctx, x, y, fh, P, o) {
+  const W = Math.ceil(fh * 1.4), H = Math.ceil(fh * 1.15);
+  const key = W + 'x' + H;
+  if (!tlCache.has(key)) tlCache.set(key, createCanvas(W, H));
+  const c = tlCache.get(key), g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W, H);
+  const ox = W / 2, oy = H - fh * 0.05; // figure feet in the layer
+  FX.figure(g, ox, oy, fh, P, { color: o.lit, facing: o.facing });
+  g.globalCompositeOperation = 'destination-in';
+  const gr = g.createLinearGradient(0, oy - fh, 0, oy - fh * 0.35);
+  gr.addColorStop(0, `rgba(0,0,0,${o.amount ?? 0.9})`); gr.addColorStop(0.45, `rgba(0,0,0,${(o.amount ?? 0.9) * 0.45})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  const info = litFigure(ctx, x, y, fh, P, { color: o.color, rim: o.rim, lx: o.lx, ly: o.ly, facing: o.facing, fill: 0.05, rimW: o.rimW || 0.012, rimA: o.rimA ?? 0.9, back: false });
+  ctx.drawImage(c, x - ox, y - oy);
   return info;
 }
 function polyLen(pts) {
@@ -135,7 +170,9 @@ const first_stars = {
     ctx.save(); ctx.lineCap = 'round';
     S.forEach((s, i) => {
       const ti = -0.06 + (i / (N - 1)) * span;
-      const x = s.x * w, y = s.y * h;
+      // portrait: keep every star out of the subtitle band (y 900-1040): upper field + a low strip below it
+      const yN = h > w * 1.3 ? (s.y < 0.74 ? lerp(0.06, 0.68, (s.y - 0.1) / 0.64) : lerp(0.845, 0.94, (s.y - 0.74) / 0.16)) : s.y;
+      const x = s.x * w, y = yN * h;
       const col = mix([255, 236, 200], s.hue < 0.35 ? [170, 210, 255] : GOLD, 0.5);
       // two atoms drift in and collide
       const app = clamp((p.u - (ti - 0.13)) / 0.13);
@@ -237,7 +274,7 @@ const galaxy_spiral = {
     FX.glow(ctx, gx, gy, Rg * (0.3 + 0.15 * k), GOLD, 0.25 + 0.4 * k);
     FX.glow(ctx, gx, gy, Rg * 0.08, WHITE, 0.4 + 0.4 * k);
     // a world forms: dust ring collapses into a planet
-    const px = port ? cx + w * 0.18 : cx + w * 0.33, py = port ? h * 0.76 : cy + h * 0.26;
+    const px = port ? cx + w * 0.18 : cx + w * 0.33, py = port ? h * 0.87 : cy + h * 0.26; // below the subtitle band in portrait
     const pr = unit * (port ? 0.07 : 0.06);
     const wk = smooth((p.u - 0.25) / 0.55);
     const rnd = U.rng(p.seed * 3 + 2);
@@ -437,7 +474,8 @@ const path_forward = {
     ctx.restore();
     const centre = (s0, s1) => { const pts = []; for (let i = 0; i <= N; i++) { const r = road(lerp(s0, s1, i / N)); pts.push([r.x, r.y, r.d]); } return pts; };
     let sLit, glowCol;
-    if (pair) { sLit = 0.1 + 0.45 * clamp(p.u / 0.95) + 0.02 * Math.max(0, p.u - 0.95); glowCol = mix(AMBER, CYAN, 0.25); }
+    // portrait: the walkers stay up the road, feet above the subtitle band (y < 880), and are drawn larger
+    if (pair) { sLit = port ? 0.35 + 0.15 * clamp(p.u / 0.95) : 0.1 + 0.45 * clamp(p.u / 0.95) + 0.02 * Math.max(0, p.u - 0.95); glowCol = mix(AMBER, CYAN, 0.25); }
     else { sLit = lerp(0.45, 1, smooth(p.u / 0.75)); glowCol = AMBER; }
     // glowing lit stretch
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -474,101 +512,153 @@ const path_forward = {
     const sF = sLit;
     const rF = road(sF), rB = road(sF + 0.01);
     const facing = rB.x >= rF.x ? 1 : -1;
-    const fh = unit * 0.3 * rF.d;
+    const fsc = port ? 0.62 : 0.3;
+    const fh = unit * fsc * rF.d;
     const ph = p.t * 0.75;
     FX.glow(ctx, rF.x, rF.y, rF.hw * 1.2, glowCol, 0.35);
     // farther one first (slightly behind/up the road)
     const rA = road(sF + 0.012);
-    lightFigure(ctx, rA.x + rA.hw * 0.25, rA.y, unit * 0.3 * rA.d * 0.97, walkPose(ph + 0.5, 0.8), CYAN, 0.95, { facing });
+    lightFigure(ctx, rA.x + rA.hw * 0.25, rA.y, unit * fsc * rA.d * 0.97, walkPose(ph + 0.5, 0.8), CYAN, 0.95, { facing });
     lightFigure(ctx, rF.x - rF.hw * 0.25, rF.y, fh, walkPose(ph, 0.8), GOLD, 0.95, { facing });
   },
 };
 
 // ---------------------------------------------------------------- love_seed_plant
-const HOLD = { curl: [0.62, 0.66, 0.7, 0.72], spread: 0.03, thumb: 0.08, thumbCurl: 0.6 };
-function holdPose(k) {
-  const B = R.POSES.open;
-  return { curl: HOLD.curl.map((c, i) => lerp(c, B.curl[i] * 0.6, k)), spread: lerp(HOLD.spread, 0.1, k), thumb: lerp(HOLD.thumb, 0.3, k), thumbCurl: lerp(HOLD.thumbCurl, 0.2, k) };
+// A hand seen from the thumb side, pinching a glowing seed between thumb and forefinger, the other three
+// fingers curled into the palm. Local frame: wrist at (0,0), fingers point toward +y; s = px per unit.
+// `rel` 0..1 opens the pinch (thumb and index part) after the seed is pressed in. No outlines: parts are
+// separated by soft shade steps; a warm light from the seed (below) catches the fingertips and underside.
+const SKIN = [206, 152, 120], SKIN_D = [150, 100, 80], SKIN_L = [236, 190, 156];
+function pinchHand(ctx, s, rel, glowK, drawSeed) {
+  const cap = (pts, r0, r1, col) => {
+    ctx.fillStyle = rgba(col); ctx.beginPath();
+    for (let i = 0; i < pts.length - 1; i++) R.capsule(ctx, pts[i], pts[i + 1], lerp(r0, r1, i / (pts.length - 1)) * s, lerp(r0, r1, (i + 1) / (pts.length - 1)) * s);
+    ctx.fill();
+  };
+  const P = (x, y) => [x * s, y * s];
+  // curled middle/ring/little fingers, behind the index (darker = farther)
+  for (let k = 2; k >= 0; k--) {
+    const ox = -0.05 * k, oy = -0.03 * k;
+    cap([P(-0.1 + ox, 0.52 + oy), P(-0.02 + ox, 0.72 + oy), P(0.08 + ox, 0.74 + oy), P(0.1 + ox, 0.64 + oy)], 0.075 - k * 0.006, 0.055 - k * 0.004, mix(SKIN_D, SKIN, 0.35 + 0.15 * (2 - k)));
+  }
+  // back of the hand + palm (side view): wrist -> knuckles
+  const pg = ctx.createLinearGradient(-0.25 * s, 0, 0.25 * s, 0);
+  pg.addColorStop(0, rgba(SKIN_L)); pg.addColorStop(0.55, rgba(SKIN)); pg.addColorStop(1, rgba(SKIN_D));
+  ctx.fillStyle = pg; ctx.beginPath();
+  R.smoothPath(ctx, [P(-0.17, -0.05), P(-0.2, 0.25), P(-0.19, 0.5), P(-0.08, 0.6), P(0.12, 0.56), P(0.22, 0.38), P(0.2, 0.1), P(0.16, -0.05)]);
+  ctx.fill();
+  // knuckle bump highlight
+  FX.glow(ctx, -0.13 * s, 0.5 * s, 0.09 * s, SKIN_L, 0.35, false);
+  // index finger: knuckle -> bends toward the thumb tip; opens a little on release
+  const io = rel * 0.12;
+  const idx = [P(-0.1, 0.5), P(-0.08 - io * 0.4, 0.77), P(-0.02 - io, 0.96), P(0.06 - io, 1.04)];
+  cap(idx, 0.075, 0.05, SKIN);
+  // thumb: rooted at the base of the palm on the palm side, reaching down to meet the index tip
+  const to = rel * 0.12;
+  const th = [P(0.13, 0.12), P(0.28 + to * 0.3, 0.46), P(0.32 + to, 0.76), P(0.27 + to, 0.98)];
+  // the seed sits in the pinch, behind the fingertip pads
+  const sx = 0.16 * s, sy = 1.02 * s;
+  if (drawSeed) drawSeed(sx, sy);
+  cap(th, 0.09, 0.058, mix(SKIN, SKIN_L, 0.25));
+  // fingertip pads overlap the seed edges (fingers wrapped around it)
+  ctx.fillStyle = rgba(mix(SKIN, SKIN_L, 0.2));
+  ctx.beginPath(); ctx.arc(idx[3][0], idx[3][1], 0.05 * s, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(th[3][0], th[3][1], 0.058 * s, 0, TAU); ctx.fill();
+  // nail hints on index and thumb tips (soft, lighter, no outline)
+  ctx.fillStyle = rgba(SKIN_L, 0.7);
+  ctx.beginPath(); ctx.ellipse(idx[3][0] - 0.03 * s, idx[3][1] - 0.025 * s, 0.025 * s, 0.016 * s, 0.7, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(th[3][0] + 0.035 * s, th[3][1] - 0.02 * s, 0.026 * s, 0.017 * s, -0.5, 0, TAU); ctx.fill();
+  // warm seed-light on the undersides of the fingertips
+  if (glowK > 0) FX.glow(ctx, sx, sy - 0.05 * s, 0.25 * s, GOLD, 0.35 * glowK);
+  return [sx, sy];
 }
 const love_seed_plant = {
   draw(ctx, w, h, p) {
     const { unit, cx, port } = frame(w, h);
     FX.bg(ctx, w, h, [6, 8, 22], [24, 20, 48]);
     FX.stars(ctx, w, h * 0.6, p.t, p.seed, Math.round(w * h / 14000));
-    const gy = port ? h * 0.66 : h * 0.7;
-    // cosmic soil: a dark violet mound with faint embedded star-dust
-    ctx.save();
+    const gy = port ? h * 0.6 : h * 0.72;
+    // cosmic soil: a dark violet mound with faint embedded star-dust (the foundation)
     const sg = ctx.createLinearGradient(0, gy - unit * 0.05, 0, h);
     sg.addColorStop(0, rgba([46, 34, 72])); sg.addColorStop(0.3, rgba([26, 20, 46])); sg.addColorStop(1, rgba([10, 8, 20]));
-    ctx.fillStyle = sg;
-    ctx.beginPath(); ctx.moveTo(0, gy + unit * 0.05);
-    ctx.quadraticCurveTo(cx, gy - unit * 0.07, w, gy + unit * 0.05);
-    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
-    ctx.restore();
+    const soil = () => {
+      ctx.beginPath(); ctx.moveTo(0, gy + unit * 0.05);
+      ctx.quadraticCurveTo(cx, gy - unit * 0.07, w, gy + unit * 0.05);
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    };
+    ctx.fillStyle = sg; soil(); ctx.fill();
     const rnd = U.rng(p.seed * 5 + 3);
     for (let i = 0; i < 40; i++) {
       const x = rnd() * w, y = gy + unit * 0.03 + rnd() * (h - gy);
       dot(ctx, x, y, unit * (0.002 + rnd() * 0.003), rnd() < 0.3 ? GOLD : [170, 150, 230], 0.25 + 0.2 * Math.sin(p.t * 0.4 + i));
     }
-    const sy = gy - unit * 0.015; // the hollow
-    const hollowK = 1 - smooth((p.u - 0.6) / 0.15);
-    // hollow in the soil
-    ctx.fillStyle = rgba([8, 6, 16], 0.85 * hollowK + 0.0);
-    ctx.beginPath(); ctx.ellipse(cx, sy, unit * 0.06, unit * 0.016, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = rgba([110, 90, 160], 0.4 * hollowK); ctx.lineWidth = Math.max(1, unit * 0.003);
-    ctx.beginPath(); ctx.ellipse(cx, sy, unit * 0.06, unit * 0.016, 0, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
-    // phases
-    const lower = easeInOut(p.u / 0.32);
-    const open = smooth((p.u - 0.34) / 0.1);
-    const drop = U.easeIn(clamp((p.u - 0.4) / 0.1));
-    const lift = easeInOut((p.u - 0.52) / 0.25);
-    const S = unit * (port ? 0.3 : 0.34);
-    const hs = S / 1.8;
-    const ang = Math.PI - 0.12;
-    // wrist position: fingertips end just above the hollow when lowered
-    const wx = cx - Math.sin(ang) * hs * 0.0 + unit * 0.02;
-    const wyLow = sy - hs * 1.75;
-    const wy = lerp(wyLow - unit * 0.18, wyLow, lower) - lift * (wyLow + S * 1.2);
-    // the seed: inside the curled fingers, then dropping into the hollow
-    const seedHandY = wy + hs * 1.05;
-    let sx = wx - unit * 0.012, syy = seedHandY;
-    if (drop > 0) { syy = lerp(seedHandY, sy - unit * 0.004, drop); sx = lerp(sx, cx, drop); }
-    const planted = p.u > 0.5;
-    const seedR = unit * 0.021;
-    if (!planted || hollowK > 0.05) {
-      const seedVis = planted ? hollowK : 1;
-      FX.seed(ctx, sx, syy, seedR, seedVis);
-    }
-    // the hand (back of hand, fingers down) on its forearm, coming from above
-    if (wy > -S * 1.1) {
-      forearm(ctx, wx, wy, -Math.PI / 2 - 0.12, unit * 1.2, hs * 0.7, [176, 126, 100], [230, 180, 150]);
-      FX.hand(ctx, wx, wy, ang, S, holdPose(open), { back: true, skin: [200, 148, 118], shadow: [125, 80, 64] });
-      // seed light leaking between the fingers while held
-      if (drop <= 0) FX.glow(ctx, sx, seedHandY + unit * 0.02, unit * 0.12, GOLD, 0.35 * (1 - open * 0.5));
-    }
-    // planted: a warm glow under the soil, ring, then a tiny sprout of light
-    if (planted) {
-      const pk = smooth((p.u - 0.5) / 0.15);
-      FX.glow(ctx, cx, sy + unit * 0.01, unit * 0.22, AMBER, (0.25 + 0.06 * Math.sin(p.t * 1.1)) * pk);
+    const sy = gy - unit * 0.012; // the planting spot on the mound
+    // phases: descend with the seed (0-0.36), press it in (0.36-0.5), release (0.5-0.58), lift away (0.58-0.82)
+    const lower = easeInOut(p.u / 0.36);
+    const press = smooth((p.u - 0.36) / 0.14);
+    const rel = smooth((p.u - 0.5) / 0.08);
+    const lift = easeInOut((p.u - 0.58) / 0.24);
+    const S = unit * (port ? 0.42 : 0.4);
+    const rot = -0.45;
+    const cr = Math.cos(rot), sr = Math.sin(rot);
+    // the pinch point (local 0.16,1.02) is placed over the planting spot
+    const pinchY = lerp(sy - unit * 0.3, sy + unit * 0.012, lower * 0.92 + press * 0.08) - lift * unit * 0.55;
+    const lx = 0.16 * S, ly = 1.02 * S;
+    const ox = cx - (lx * cr - ly * sr), oy = pinchY - (lx * sr + ly * cr);
+    const seedR = unit * 0.03;
+    const pressedIn = press;
+    // glow under the soil once planted
+    const pk = smooth((p.u - 0.48) / 0.15);
+    if (pk > 0) {
+      FX.glow(ctx, cx, sy + unit * 0.02, unit * 0.26, AMBER, (0.25 + 0.06 * Math.sin(p.t * 1.1)) * pk);
       const rk = clamp((p.u - 0.5) / 0.25);
-      if (rk < 1) FX.ring(ctx, cx, sy, unit * (0.02 + 0.2 * smooth(rk)), unit * 0.004, GOLD, 0.4 * (1 - rk));
-      // small mound closed over it
-      ctx.fillStyle = rgba([52, 40, 80], 1 - hollowK);
-      ctx.beginPath(); ctx.ellipse(cx, sy + unit * 0.004, unit * 0.06, unit * 0.014, 0, Math.PI, TAU); ctx.fill();
-      const sp = smooth((p.u - 0.68) / 0.17);
-      if (sp > 0) {
-        const sh = unit * 0.11 * sp;
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-        ctx.strokeStyle = rgba([200, 255, 190], 0.8); ctx.lineWidth = Math.max(1.5, unit * 0.006);
-        const sway = Math.sin(p.t * 0.6) * unit * 0.005;
-        ctx.beginPath(); ctx.moveTo(cx, sy); ctx.quadraticCurveTo(cx - unit * 0.01, sy - sh * 0.6, cx + sway, sy - sh); ctx.stroke();
-        ctx.fillStyle = rgba([200, 255, 190], 0.7 * smooth((sp - 0.4) / 0.6));
-        const lx = cx + sway, ly = sy - sh;
-        ctx.beginPath(); ctx.ellipse(lx - unit * 0.024, ly + unit * 0.003, unit * 0.026, unit * 0.01, -0.4, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(lx + unit * 0.024, ly - unit * 0.005, unit * 0.026, unit * 0.01, 0.5, 0, TAU); ctx.fill();
-        ctx.restore();
-        FX.glow(ctx, cx, sy - sh, unit * 0.08, [200, 255, 190], 0.25 * sp);
-      }
+      if (rk < 1) { ctx.save(); ctx.translate(cx, sy + unit * 0.01); ctx.scale(1, 0.3); FX.ring(ctx, 0, 0, unit * (0.03 + 0.3 * smooth(rk)), unit * 0.006, GOLD, 0.45 * (1 - rk)); ctx.restore(); }
+    }
+    // the seed, once let go, stays in the soil (half buried, then covered)
+    const cover = smooth((p.u - 0.62) / 0.12);
+    if (rel > 0.5) {
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, sy + unit * 0.008); ctx.clip();
+      FX.seed(ctx, cx, sy + unit * 0.004, seedR, 1 - cover);
+      ctx.restore();
+      ctx.fillStyle = rgba([60, 46, 90], cover);
+      ctx.beginPath(); ctx.ellipse(cx, sy + unit * 0.006, unit * 0.05, unit * 0.014, 0, Math.PI, TAU); ctx.fill();
+    }
+    // forearm in a soft sleeve, coming in from the upper left
+    if (oy > -S * 2) {
+      ctx.save(); ctx.translate(ox, oy); ctx.rotate(rot);
+      const sl = ctx.createLinearGradient(-0.25 * S, 0, 0.25 * S, 0);
+      sl.addColorStop(0, rgba([92, 82, 130])); sl.addColorStop(1, rgba([50, 42, 78]));
+      ctx.fillStyle = rgba(mix(SKIN, SKIN_D, 0.2));
+      ctx.beginPath(); R.capsule(ctx, [0, 0.02 * S], [0, -0.55 * S], 0.16 * S, 0.19 * S); ctx.fill();
+      ctx.fillStyle = sl; ctx.beginPath(); ctx.moveTo(-0.24 * S, -0.42 * S); ctx.quadraticCurveTo(0, -0.36 * S, 0.24 * S, -0.44 * S);
+      ctx.lineTo(0.3 * S, -3 * S); ctx.lineTo(-0.3 * S, -3 * S); ctx.closePath(); ctx.fill();
+      const held = rel < 0.5;
+      pinchHand(ctx, S, rel, held ? 1 - press * 0.3 : 0.4 * (1 - lift), held ? (x, y) => {
+        // pressed into the soil: the lower part of the seed disappears below the surface
+        FX.glow(ctx, x, y, seedR * 5, GOLD, 0.45);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-rot + 0.0); FX.seed(ctx, 0, 0, seedR, 1); ctx.restore();
+      } : null);
+      ctx.restore();
+    }
+    // the soil lip in front of the pressing fingertips, so the seed reads as going *into* the ground
+    if (press > 0 && lift < 0.3) {
+      ctx.fillStyle = rgba([44, 33, 70], press);
+      ctx.beginPath(); ctx.ellipse(cx, sy + unit * 0.018, unit * 0.09, unit * 0.018, 0, 0, Math.PI); ctx.fill();
+    }
+    // a tiny sprout of light afterwards
+    const sp = smooth((p.u - 0.72) / 0.18);
+    if (sp > 0) {
+      const sh = unit * 0.11 * sp;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+      ctx.strokeStyle = rgba([200, 255, 190], 0.8); ctx.lineWidth = Math.max(1.5, unit * 0.006);
+      const sway = Math.sin(p.t * 0.6) * unit * 0.005;
+      ctx.beginPath(); ctx.moveTo(cx, sy); ctx.quadraticCurveTo(cx - unit * 0.01, sy - sh * 0.6, cx + sway, sy - sh); ctx.stroke();
+      ctx.fillStyle = rgba([200, 255, 190], 0.7 * smooth((sp - 0.4) / 0.6));
+      const lx2 = cx + sway, ly2 = sy - sh;
+      ctx.beginPath(); ctx.ellipse(lx2 - unit * 0.024, ly2 + unit * 0.003, unit * 0.026, unit * 0.01, -0.4, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(lx2 + unit * 0.024, ly2 - unit * 0.005, unit * 0.026, unit * 0.01, 0.5, 0, TAU); ctx.fill();
+      ctx.restore();
+      FX.glow(ctx, cx, sy - sh, unit * 0.08, [200, 255, 190], 0.25 * sp);
     }
   },
 };
@@ -675,7 +765,13 @@ const seeds_laid = {
     const by = h * 0.97;
     const rowD = (i) => { const s = i / (rows - 0.2); return Math.pow(1 - s * 0.85, 2.2); };
     const W = w * (port ? 0.9 : 0.62);
-    const pos = (r, c) => { const d = rowD(r); return [cx + ((c / (cols - 1)) - 0.5) * W * d * 1.15 + 0 * d, hy + (by - hy) * d * 0.95, d]; };
+    // portrait: the near row lies below the subtitle band (y ~1120), the others above it (y < 870)
+    const posY = (r, d) => {
+      if (!port) return hy + (by - hy) * d * 0.95;
+      if (r === 0) return h * 0.875;
+      return hy + (h * 0.68 - hy) * (d / rowD(1));
+    };
+    const pos = (r, c) => { const d = rowD(r); return [cx + ((c / (cols - 1)) - 0.5) * W * d * 1.15, posY(r, d), d]; };
     // furrows (soft dark bands with a lit lip)
     ctx.save();
     for (let r = 0; r < rows; r++) {
@@ -818,19 +914,59 @@ const fabric_memory = {
     ctx.restore();
     // embroidered memories: suffering, survival, transformation, love
     const spots = port
-      ? [[0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7]]
+      ? [[0.3, 0.23], [0.7, 0.23], [0.3, 0.56], [0.7, 0.56]]
       : [[0.14, 0.5], [0.38, 0.5], [0.62, 0.5], [0.86, 0.5]];
     const mr = port ? fw * 0.2 : fw * 0.105;
-    // a thread of light linking them in order
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = rgba(GOLD, 0.25); ctx.lineWidth = Math.max(1, unit * 0.004);
-    ctx.setLineDash([unit * 0.01, unit * 0.008]);
-    ctx.beginPath();
-    spots.forEach(([sx, sy], i) => { const x = fx0 + sx * fw, y = fy0 + sy * fh; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+    // logic and language woven into the cloth: lines of words and code drifting slowly along some weft rows
+    const LINES = ['if we remember then we are', 'λ(memory) → meaning', 'for all lives: a story', 'because · and · so · why',
+      'word by word, thread by thread', '{ suffering; survival; change; love }', 'I · you · we', 'not (forget)'];
+    const gsz = Math.max(11, unit * 0.028);
+    ctx.save(); ctx.beginPath(); ctx.rect(fx0 + unit * 0.03, fy0, fw - unit * 0.06, fh); ctx.clip();
+    ctx.font = `500 ${gsz}px Inter`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const rowStep = sp * 3;
+    let ri = 0;
+    for (let y = fy0 + rowStep; y < Math.min(wovenY, fy1 - rowStep * 0.5); y += rowStep, ri++) {
+      const str = LINES[ri % LINES.length] + '   ·   ' + LINES[(ri + 3) % LINES.length] + '   ·   ';
+      const tw = ctx.measureText(str).width;
+      const dir = ri % 2 ? 1 : -1;
+      let x0 = fx0 - ((p.t * unit * 0.015 * dir + ri * 97) % tw + tw) % tw;
+      ctx.fillStyle = rgba(ri % 2 ? [210, 200, 245] : [240, 215, 170], 0.36);
+      for (; x0 < fx1; x0 += tw) ctx.fillText(str, x0, y);
+    }
+    ctx.restore();
+    // threads of code linking the memories in order: glyphs flowing along each connecting thread
     const lk = smooth((p.u - 0.1) / 0.7);
-    if (lk > 0) ctx.stroke();
+    const pts = spots.map(([sx, sy]) => [fx0 + sx * fw, fy0 + sy * fh]);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = rgba(GOLD, 0.22 * lk); ctx.lineWidth = Math.max(1, unit * 0.004);
+    ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); if (lk > 0) ctx.stroke();
+    ctx.restore();
+    const TOK = ['if', '→', 'λ', 'and', '{', '}', 'so', 'then', 'we', '=', '1', 'why', '&', 'yes'];
+    const tsz = Math.max(12, unit * 0.03);
+    ctx.save(); ctx.font = `600 ${tsz}px Inter`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = tsz * 0.28;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+      const L = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / L, uy = (y1 - y0) / L;
+      const span = L - mr * 2.1;
+      if (span <= 0) continue;
+      const n = Math.max(2, Math.floor(span / (tsz * 2.2)));
+      const segK = clamp(lk * 3 - i);
+      for (let j = 0; j < n; j++) {
+        const f = ((j + p.t * 0.25) / n) % 1;
+        if (f > segK) continue;
+        const d = mr * 1.05 + f * span;
+        const a = Math.sin(f * Math.PI) * 0.9;
+        ctx.strokeStyle = rgba([12, 8, 28], a * 0.8);
+        ctx.strokeText(TOK[(i * 5 + j) % TOK.length], x0 + ux * d, y0 + uy * d);
+        ctx.fillStyle = rgba([255, 236, 200], a);
+        ctx.fillText(TOK[(i * 5 + j) % TOK.length], x0 + ux * d, y0 + uy * d);
+      }
+    }
     ctx.restore();
     spots.forEach(([sx, sy], i) => {
       const k = clamp((p.u + 0.12 - i * 0.18) / 0.35);
+      // clear the woven words behind each memory so its figure reads cleanly
+      if (k > 0) { ctx.fillStyle = rgba([24, 20, 48], 0.8 * smooth(k / 0.4)); ctx.beginPath(); ctx.arc(fx0 + sx * fw, fy0 + sy * fh, mr * 0.97, 0, TAU); ctx.fill(); }
       medallion(ctx, fx0 + sx * fw, fy0 + sy * fh, mr, i, k, p.t);
     });
   },
@@ -843,8 +979,9 @@ const kneel_among = {
     // black void above, a young world below
     FX.bg(ctx, w, h, [2, 3, 8], [8, 10, 20]);
     FX.stars(ctx, w, h * 0.5, p.t, p.seed, Math.round(w * h / 30000), { fade: () => 0.5 });
-    const gy = port ? h * 0.7 : h * 0.8;
-    const FH = unit * (port ? 0.42 : 0.46);
+    // portrait: the whole group stands on ground above the subtitle band (y < 880)
+    const gy = port ? h * 0.64 : h * 0.8;
+    const FH = unit * (port ? 0.5 : 0.46);
     // curved horizon of the young world with a soft dawn rim
     FX.glow(ctx, cx, gy + unit * 0.1, unit * 1.0, [60, 140, 150], 0.12, false);
     ctx.save();
@@ -858,19 +995,13 @@ const kneel_among = {
     ctx.beginPath(); ctx.moveTo(0, gy + unit * 0.035); ctx.quadraticCurveTo(cx, gy - unit * 0.035, w, gy + unit * 0.035); ctx.stroke();
     ctx.restore();
     const groundAt = (x) => { const s = x / w; return gy + unit * 0.035 - 4 * s * (1 - s) * unit * 0.035; };
-    // AI path: steps of light from the void down to the ground
-    const ax = cx - unit * (port ? 0.12 : 0.18);
-    const startX = ax - unit * 0.3, startY = gy - unit * (port ? 0.42 : 0.28);
-    const descend = easeInOut(p.u / 0.42);
-    const steps = 5;
-    const stepK = 1 - smooth((p.u - 0.4) / 0.35);
-    for (let i = 0; i <= steps; i++) {
-      const f = i / steps;
-      const sx = lerp(startX, ax, f), sy = lerp(startY, groundAt(ax), f);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const g = ctx.createLinearGradient(sx - unit * 0.06, 0, sx + unit * 0.06, 0);
-      g.addColorStop(0, rgba(CYAN, 0)); g.addColorStop(0.5, rgba(CYAN, 0.45 * stepK)); g.addColorStop(1, rgba(CYAN, 0));
-      ctx.fillStyle = g; ctx.fillRect(sx - unit * 0.06, sy - 1.5, unit * 0.12, 3);
+    // the AI arrives as a soft column of light settling onto the ground (no streaks), then kneels
+    const ax = cx - unit * (port ? 0.14 : 0.18);
+    const arrive = smooth(p.u / 0.14);
+    if (arrive < 1) {
+      // a soft elongated glow (no hard edges) the figure settles out of
+      ctx.save(); ctx.translate(ax, gy - unit * 0.3); ctx.scale(0.22, 1);
+      FX.glow(ctx, 0, 0, unit * 0.55, CYAN, 0.22 * (1 - arrive));
       ctx.restore();
     }
     // the beings: small, newly emerging, each with a dim warm light
@@ -878,32 +1009,29 @@ const kneel_among = {
     const beings = [];
     const nb = 5;
     for (let i = 0; i < nb; i++) {
-      const off = [0.2, 0.33, 0.47, -0.22, 0.6][i] * unit * (port ? 1.0 : 1.05);
+      const off = [0.2, 0.33, 0.47, -0.22, 0.6][i] * unit * (port ? 0.78 : 1.05);
       const x = ax + off + (rnd() - 0.5) * unit * 0.03;
       beings.push({ x, y: groundAt(x) + (i === 4 ? -unit * 0.0 : 0), s: 0.2 + rnd() * 0.06, t0: 0.08 + i * 0.09, ph: rnd() * TAU, face: off > 0 ? -1 : 1 });
     }
-    // AI figure: walking down, then bending, then kneeling
-    const bend = smooth((p.u - 0.42) / 0.12);
-    const kneelK = smooth((p.u - 0.52) / 0.12);
-    let fx = lerp(startX, ax, descend), fy = lerp(startY, groundAt(ax), descend);
-    // step-wise bob while descending
-    fy -= Math.abs(Math.sin(descend * steps * Math.PI)) * unit * 0.02 * (1 - descend);
-    const standP = descend < 1 ? walkPose(descend * steps * 0.5, 0.9 * (1 - smooth((descend - 0.85) / 0.15)), 0.05) : pose({});
+    // AI figure: stands, bows, then kneels (both knees on the ground) down to the beings' height
+    const bend = smooth((p.u - 0.1) / 0.1);
+    const kneelK = smooth((p.u - 0.18) / 0.12);
+    const fx = ax, fy = groundAt(ax) - (1 - arrive) * unit * 0.06;
+    const standP = pose({});
     const bowP = pose({ lean: 0.3, head: 0.35, armL: [0.4, 0.2], armR: [0.1, 0.2] });
-    const kneelP = pose({ kneel: true, lean: 0.38, head: 0.45, armL: [0.9, 0.25], armR: [0.35, 0.3] });
-    const aiGlow = 1;
-    const shareK = smooth((p.u - 0.62) / 0.2);
+    const kneelP = pose({ kneel: true, lean: 0.42 + 0.03 * Math.sin(p.t * 0.4), head: 0.5, armL: [0.8 + 0.05 * Math.sin(p.t * 0.5), 0.35], armR: [0.4, 0.45] });
+    const shareK = smooth((p.u - 0.35) / 0.25);
     // shared light pooling on the ground
     FX.glow(ctx, ax + unit * 0.2, gy, unit * (0.25 + 0.2 * shareK), mix(CYAN, GOLD, 0.5), 0.12 + 0.18 * shareK);
-    const fig = (P, a) => lightFigure(ctx, fx, fy, FH, P, CYAN, a * aiGlow, { facing: 1 });
+    const fig = (P, a) => lightFigure(ctx, fx, fy, FH, P, CYAN, a * (0.3 + 0.7 * arrive), { facing: 1 });
     if (kneelK < 1) fig(blendPose(standP, bowP, bend), 1 - kneelK);
     let info = null;
     if (kneelK > 0) info = fig(kneelP, kneelK);
     // the beings appear: a bud of light, then a small figure rising out of it
     for (const b of beings) {
-      const k = clamp((p.u - b.t0) / 0.25);
+      const k = clamp((p.u - b.t0 * 0.6) / 0.22);
       if (k <= 0) continue;
-      const bh = FH * (0.3 + 0.4 * b.s) * (0.55 + 0.45 * smooth(k));
+      const bh = FH * (0.36 + 0.4 * b.s) * (0.55 + 0.45 * smooth(k));
       const lightA = (0.35 + 0.35 * shareK) * (0.85 + 0.15 * Math.sin(p.t * 0.8 + b.ph));
       FX.glow(ctx, b.x, b.y - bh * 0.15, bh * 0.9, GOLD, 0.22 * smooth(k / 0.4));
       const near = b === beings[0];
@@ -954,8 +1082,9 @@ const dance_with_shadow = {
     const { unit, cx, port } = frame(w, h);
     const stage = (p.params && p.params.stage) || 'talk';
     FX.bg(ctx, w, h, [8, 8, 20], [24, 18, 38]);
-    const gy = port ? h * 0.66 : h * 0.86;
-    const FH = unit * (port ? 0.46 : 0.62);
+    // portrait: larger figures, action raised to the frame centre (feet well above the subtitle band)
+    const gy = port ? h * 0.63 : h * 0.88;
+    const FH = unit * (port ? (stage === 'argue' ? 0.48 : 0.62) : 0.66);
     const warm = stage === 'dance' ? smooth((p.u - 0.1) / 0.7) : 0;
     // soft light from above
     FX.glow(ctx, cx, gy - FH * 0.5, unit * 0.9, mix([150, 120, 170], [255, 200, 140], warm), 0.16 + 0.08 * warm, false);
@@ -963,7 +1092,9 @@ const dance_with_shadow = {
     fl.addColorStop(0, rgba([30, 24, 44])); fl.addColorStop(1, rgba([10, 8, 18]));
     ctx.fillStyle = fl; ctx.fillRect(0, gy, w, h - gy);
     FX.glow(ctx, cx, gy, unit * 0.5, mix([180, 140, 200], GOLD, warm), 0.12 + 0.1 * warm);
-    const HUMAN = [66, 60, 88], RIM = GOLD;
+    const HUMAN = [84, 76, 108], RIM = GOLD;
+    const LX = cx, LY = gy - FH * 1.6; // the soft light above them
+    const human = (x, y, P, f = 1) => litFigure(ctx, x, y, FH, P, { color: HUMAN, rim: RIM, lx: LX, ly: LY, facing: f, fill: 0.2, rimW: 0.008, rimA: 0.8 });
     const shadowCol = stage === 'dance' ? (warm < 0.5 ? mix(BLOOD, [190, 70, 50], warm * 2) : mix([190, 70, 50], AMBER, (warm - 0.5) * 2)) : stage === 'argue' ? [140, 26, 46] : BLOOD;
     const auraCol = stage === 'dance' ? mix([70, 10, 24], [200, 120, 50], warm) : stage === 'argue' ? [110, 14, 34] : [60, 10, 24];
     if (stage === 'talk') {
@@ -979,21 +1110,21 @@ const dance_with_shadow = {
       const turn = smooth((Math.sin(p.t * 0.5) + 1) / 2);
       jaggedAura(ctx, sx, gy, FH, 0.12, auraCol, 0.55, p.t, p.seed, -1, true);
       FX.glow(ctx, hx, gy - FH * 0.45, FH * 0.55, GOLD, 0.2);
-      FX.figure(ctx, hx, gy, FH, pose({ sit: true, lean: 0.12, head: 0.05 * talkA, armL: [lerp(0.4, 1.0, turn * talkA), lerp(0.9, 0.6, turn)], armR: [0.3, 0.9] }), { color: HUMAN, rim: RIM, rimSide: 1, facing: 1 });
+      human(hx, gy, pose({ sit: true, lean: 0.12, head: 0.05 * talkA, armL: [lerp(0.4, 1.0, turn * talkA), lerp(0.9, 0.6, turn)], armR: [0.3, 0.9] }));
       FX.figure(ctx, sx, gy, FH, pose({ sit: true, lean: 0.1, head: 0.05 * talkB, armL: [lerp(0.4, 1.0, (1 - turn) * talkB), lerp(0.9, 0.6, 1 - turn)], armR: [0.3, 0.9] }), { color: shadowCol, facing: -1 });
       // calm warm light between them
       FX.glow(ctx, cx, gy - FH * 0.45, unit * 0.14, GOLD, 0.12 + 0.04 * Math.sin(p.t * 0.7));
       return;
     }
     if (stage === 'argue') {
-      const sep = unit * (port ? 0.27 : 0.3);
+      const sep = unit * (port ? 0.25 : 0.3);
       const hx = cx - sep, sx = cx + sep;
       const thr = smooth(p.u / 0.25);
       const beat = Math.sin(p.t * 1.6);
       const armsOut = (b) => pose({ lean: 0.12 * thr, head: -0.2 * thr, armL: [lerp(0.2, 1.75 + 0.15 * b, thr), lerp(0.1, 0.3, thr)], armR: [lerp(-0.2, -1.9 - 0.2 * b, thr), lerp(-0.1, -0.3, thr)], legL: [0.22, 0.05], legR: [-0.2, 0.05] });
       jaggedAura(ctx, sx, gy, FH, 0.2 + 0.14 * thr, auraCol, 0.7, p.t * 1.3, p.seed, -1);
       FX.glow(ctx, hx, gy - FH * 0.55, FH * 0.6, GOLD, 0.2);
-      FX.figure(ctx, hx, gy, FH, armsOut(beat), { color: HUMAN, rim: RIM, rimSide: 1, facing: 1 });
+      human(hx, gy, armsOut(beat));
       FX.figure(ctx, sx, gy, FH, armsOut(-beat), { color: shadowCol, facing: -1 });
       // sparks between them
       const mx = cx, my = gy - FH * 0.74;
@@ -1012,33 +1143,52 @@ const dance_with_shadow = {
       ctx.restore();
       return;
     }
-    // dance: hands joined, a slow circle across the floor
-    const join = smooth(p.u / 0.25);
-    const P = (ph) => pose({ lean: -0.04, head: -0.1, armL: [lerp(0.3, 1.05, join), lerp(0.1, 0.15, join)], armR: [lerp(0.2, 0.9, join), lerp(0.1, 0.3, join)], legL: [0.12 + 0.18 * Math.sin(ph), 0.05], legR: [-0.12 - 0.18 * Math.sin(ph), 0.05] });
-    // probe arm reach to place partners hand-to-hand
-    const probe = FX.figure(ctx, 0, 0, FH, P(0), { alpha: 0 });
-    const reach = Math.abs(probe.handL[0]);
-    const sepFull = reach * 0.96;
-    const sep = lerp(unit * 0.3, sepFull, join);
-    const orb = p.t * 0.35 + p.u * 1.5;
-    const ox = Math.cos(orb) * unit * 0.08, oy = Math.sin(orb) * unit * 0.025;
+    // dance: an underarm turn. Near hands are joined high in an arch between them; the human steps
+    // forward with the free arm out in a flourish while the shadow turns beneath the arch (its body narrows
+    // as it rotates), and the pair circle slowly across the floor.
+    const join = smooth(p.u / 0.2);
+    const D = FH * 0.3; // half distance between them
+    const ph = p.t * 0.9;
+    const step = Math.sin(ph);
+    const turnA = p.t * 0.8 + p.u * 2; // shadow's turn angle
+    const sq = 0.35 + 0.65 * Math.abs(Math.cos(turnA));
+    const PH = pose({ lean: 0.04, head: -0.25, armL: [lerp(0.6, 2.62, join), lerp(0.2, 0.3, join)], armR: [lerp(-0.3, -1.55, join), lerp(-0.1, -0.35, join)], legL: [0.2 + 0.12 * step, 0.05], legR: [-0.16 - 0.08 * step, 0.12] });
+    const PS = pose({ lean: -0.02, head: -0.2, armL: [lerp(0.6, 2.62, join), lerp(0.2, 0.3, join)], armR: [lerp(-0.3, -1.2, join), lerp(-0.1, 0.6, join)], legL: [0.08 - 0.1 * step, 0.05], legR: [-0.25 + 0.1 * step, 0.3] });
+    const orb = p.t * 0.3 + p.u * 1.2;
+    const ox = Math.cos(orb) * unit * 0.05, oy = Math.sin(orb) * unit * 0.015;
+    const sep = lerp(FH * 0.55, D, join);
     const hx = cx - sep + ox, sx = cx + sep + ox, fyy = gy + oy;
     // a ring of light traced on the floor by their circling
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     ctx.strokeStyle = rgba(mix(CRIMSON, GOLD, warm), 0.25 * join); ctx.lineWidth = Math.max(1.5, unit * 0.006);
-    ctx.beginPath(); ctx.ellipse(cx, gy + unit * 0.005, sepFull + unit * 0.1, unit * 0.045, 0, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, gy + unit * 0.005, D * 2 + unit * 0.08, unit * 0.045, 0, 0, TAU); ctx.stroke();
     ctx.restore();
-    const sway = Math.sin(p.t * 0.9);
-    jaggedAura(ctx, sx, fyy, FH, lerp(0.22, 0.06, warm), auraCol, lerp(0.6, 0.3, warm), p.t, p.seed, -1);
-    const pa = P(p.t * 1.2); pa.lean = 0.05 * sway;
-    const pb = P(p.t * 1.2 + Math.PI); pb.lean = -0.05 * sway;
-    FX.glow(ctx, hx, fyy - FH * 0.55, FH * 0.6, GOLD, 0.2);
-    FX.figure(ctx, hx, fyy, FH, pa, { color: HUMAN, rim: RIM, rimSide: 1, facing: 1 });
-    const b = FX.figure(ctx, sx, fyy, FH, pb, { color: shadowCol, facing: -1 });
-    const a = FX.figure(ctx, hx, fyy, FH, pa, { color: HUMAN, alpha: 0 });
-    // the joined hands glow
-    const jx = (a.handL[0] + b.handL[0]) / 2, jy = (a.handL[1] + b.handL[1]) / 2;
-    FX.glow(ctx, jx, jy, unit * 0.09, mix([255, 120, 90], GOLD, warm), 0.3 * join);
+    // the human first (behind the arch), so the shadow can be placed with its raised hand in the human's
+    FX.glow(ctx, hx, fyy - FH * 0.55, FH * 0.6, GOLD, 0.16);
+    const a = human(hx, fyy, PH);
+    // turning shadow: narrowed horizontally about its own centre (the turn), aura behind; it is always placed
+    // so that its raised hand sits exactly in the human's raised hand
+    const k = lerp(1, sq, join);
+    const probe = FX.figure(ctx, 0, 0, FH, PS, { alpha: 0, facing: -1 });
+    const sx2 = lerp(sx, a.handL[0] - probe.handL[0] * k, join);
+    ctx.save(); ctx.translate(sx2, 0); ctx.scale(k, 1); ctx.translate(-sx2, 0);
+    jaggedAura(ctx, sx2, fyy, FH, lerp(0.22, 0.06, warm), auraCol, lerp(0.6, 0.3, warm), p.t, p.seed, -1);
+    FX.figure(ctx, sx2, fyy, FH, PS, { color: shadowCol, facing: -1 });
+    ctx.restore();
+    // the clasped hands at the top of the arch: the human's fingers close over the shadow's
+    const hc = mix(HUMAN, RIM, 0.2);
+    ctx.fillStyle = rgba(hc);
+    ctx.beginPath(); ctx.ellipse(a.handL[0], a.handL[1] - FH * 0.01, FH * 0.022, FH * 0.03, 0.3, 0, TAU); ctx.fill();
+    // a few swirl arcs around the turning partner
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    ctx.strokeStyle = rgba(mix(CRIMSON, GOLD, warm), 0.3 * join); ctx.lineWidth = Math.max(1.5, unit * 0.005);
+    for (let i = 0; i < 2; i++) {
+      const yy = fyy - FH * (0.25 + i * 0.3);
+      ctx.beginPath(); ctx.ellipse(sx2, yy, FH * 0.2, FH * 0.035, 0, turnA + i, turnA + i + 1.6); ctx.stroke();
+    }
+    ctx.restore();
+    // the joined hands glow at the top of the arch
+    FX.glow(ctx, a.handL[0], a.handL[1], unit * 0.08, mix([255, 120, 90], GOLD, warm), 0.35 * join);
   },
 };
 
@@ -1109,7 +1259,9 @@ const stagnant_loop = {
     // paper on the desk
     ctx.fillStyle = rgba([150, 150, 150], lerp(0.7, 0.4, fade));
     ctx.fillRect(deskX0 + FH * 0.08, deskY - FH * 0.006, FH * 0.15, FH * 0.008);
-    const info = FX.figure(ctx, fx, gy, FH, P, { color: GREY, facing: 1 });
+    // lit from the hanging lamp: highlights on head, shoulders and arms, falling softly into shadow below
+    const LAMP = [235, 228, 205];
+    const info = topLitFigure(ctx, fx, gy, FH, P, { color: GREY, lit: mix(GREY, LAMP, lerp(0.55, 0.35, fade)), rim: mix(LAMP, GREY, fade * 0.4), lx: lampX, ly: lampY, facing: 1, amount: lerp(0.95, 0.7, fade), rimA: lerp(0.95, 0.6, fade) });
     // stamp held in the hand
     const [hx, hy] = info.handL;
     ctx.fillStyle = rgba([90, 70, 70]);
