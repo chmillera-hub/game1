@@ -224,9 +224,9 @@ def draw_ground(ctx, cam, t, phase, east=False):
         fade = clamp(1 - dp / 160)
         col = mix(far, hexc("1e1a18"), 0.5 * fade + 0.2)
         if kind == 0:
-            r = (0.25 + hsh(i, 23) * 0.5) * sz
+            r = (0.12 + hsh(i, 23) * 0.25) * sz
             ctx.new_path(); ellipse(ctx, x, y - r * 0.3, r, r * 0.45)
-            rgba(ctx, col, 0.85)
+            rgba(ctx, col, 0.5)
             ctx.fill()
             rgba(ctx, glow if not east else mid, 0.18 * fade)
             ctx.new_path(); ellipse(ctx, x - r * 0.2, y - r * 0.55, r * 0.6, r * 0.18); ctx.fill()
@@ -256,7 +256,7 @@ def draw_fortress(ctx, cam, t, phase, light, flash=0.0):
     pts = [cam.p(-260, 0, Z + 20), cam.p(-190, hill_y * 0.6, Z), cam.p(-150, hill_y, Z), cam.p(150, hill_y, Z),
            cam.p(190, hill_y * 0.6, Z), cam.p(260, 0, Z + 20)]
     top, mid, hor, glow = sky_cols(phase)
-    hillc = mix(hexc("2a2230"), mid, 0.25)
+    hillc = mix(mix(mix(hor, mid, 0.55), hexc("3a3036"), 0.45), hexc("2a2420"), 0.35)
     ctx.new_path(); ctx.move_to(*pts[0])
     smooth_open(ctx, pts, move=False)
     ctx.line_to(pts[-1][0], cam.hy + 40); ctx.line_to(pts[0][0], cam.hy + 40); ctx.close_path()
@@ -396,12 +396,14 @@ class Horde:
             P = dict(x=x, y=y - (578 - bob) * s, s=s, view=view, lw=1.6, breath=0,
                      legs=dict(mode="run", phase=ph), roll=math.sin(ph) * 0.05,
                      yaw=math.sin(ph * 0.5 + z["i"]) * 0.08, pitch=0.1,
-                     E=rig.expr(op=0.35 + 0.15 * math.sin(ph * 0.5), milky=1.0, t=t, bi=0.1))
+                     E=rig.expr(op=0.22 + 0.1 * math.sin(ph * 0.5), sm=-0.25, milky=1.0, t=t, bi=0.0, lid=0.25))
             for side, sgn in (("armL", -1), ("armR", 1)):
                 sw = math.sin(ph + (0 if sgn < 0 else math.pi))
                 if z["reach"]:
-                    P[side] = dict(el=(sgn * 70, 92 + 6 * sw), wr=(sgn * 48, 40 + 12 * sw), hand_ang=-1.4 + sgn * 0.3,
-                                   curl=0.45, flip=sgn > 0, palm=False)
+                    P[side] = dict(el=(sgn * 72, 110 + 6 * sw), wr=(sgn * 46, 140 + 10 * sw), hand_ang=1.57 - sgn * 0.25,
+                                   curl=0.55, thumb=0.6, flip=sgn > 0, palm=False, hfs=0.55)
+                    if view == "back":
+                        P["arms_behind"] = ("L", "R")
                 else:
                     P[side] = dict(el=(sgn * 74, 112 - 16 * sw), wr=(sgn * (62 - 16 * max(0, sw)), 196 - 110 * max(0, sw)),
                                    curl=0.5, flip=sgn > 0)
@@ -545,11 +547,13 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
     g.add_color_stop_rgba(0, *light["shadow"], 0.35 if lx > 0 else 0.05)
     g.add_color_stop_rgba(1, *light["shadow"], 0.05 if lx > 0 else 0.35)
     ctx.set_source(g); ctx.fill_preserve()
+    rgba(ctx, hexc("141028"), 0.45 * clamp(phase - 1.0)); ctx.fill_preserve()
     g = cairo.LinearGradient(0, b[1], 0, a[1])
     g.add_color_stop_rgba(0, *light["rim"], 0.18)
     g.add_color_stop_rgba(0.4, *light["shadow"], 0.15)
     g.add_color_stop_rgba(1, *light["shadow"], 0.45)
     ctx.set_source(g); ctx.fill()
+    soft_dot(ctx, (a[0] + b[0]) / 2, a[1], (b[0] - a[0]) * 0.7, (0, 0, 0), 0.35)
     # windows (dark, broken) + cracks
     for fy in (2.2, 5.6, 9.0):
         for fx in (1.6, 4.0, 6.4):

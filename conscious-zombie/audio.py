@@ -328,6 +328,18 @@ for tb, X, Zd in world.beam_times(shots.HORDE, 0, SC["cabin"][0]):
     sh = noise(int(1.6 * SR), 3000, 9000) * np.exp(-np.arange(int(1.6 * SR)) / SR * 2.2) * 0.25  # dust shimmer
     add(sfx, tb - 0.12, z, p=max(-0.9, min(0.9, X / 40)), g=0.05)
     add(sfx, tb, sh, p=max(-0.9, min(0.9, X / 40)), g=0.05)
+# staged close-range hits (louder, nearer)
+_td = word_t("v3", "destroyed")
+for tb, X in ((word_t("h3", "tearing"), -0.2), (word_t("h3", "dust") - 0.1, -0.5), (word_t("h3", "dust") + 1.1, 0.3),
+              (_td - 0.2, -0.1), (_td + 0.9, -0.4), (_td + 2.0, 0.3)):
+    n = int(0.5 * SR)
+    tt = np.arange(n) / SR
+    z = np.sin(2 * np.pi * np.cumsum(2600 * np.exp(-tt * 8) + 260) / SR) * np.exp(-tt * 7)
+    z += noise(n, 1500, 8000) * np.exp(-tt * 14) * 0.5
+    add(sfx, tb - 0.12, z, p=X, g=0.12)
+    m = int(2.2 * SR)
+    add(sfx, tb, noise(m, 1200, 7000) * np.exp(-np.arange(m) / SR * 1.6) * 0.5, p=X, g=0.1)
+    drum(tb, 0.12, f0=70, f1=35, dec=0.5, buf=sfx, p=X)
 # soul descent glissando
 s0_, th = SC["soul"][0], shots.t_hit
 n = int((th - s0_) * SR)
