@@ -93,8 +93,8 @@ function clipboard(ctx, C, o) {
   // thumb on the front
   const [tx, ty] = o.hand.thumb;
   ctx.fillStyle = C.skin;
-  ctx.strokeStyle = rgba(shade(C.skin, -0.45), 0.6); ctx.lineWidth = 2;
-  ctx.beginPath(); capsule(ctx, hs * 0.2, ty * 0.6, hs * 0.07, tx + hs * 0.05, ty * 0.6, hs * 0.055); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); capsule(ctx, tx - hs * 0.14, ty * 0.75, hs * 0.062, tx + hs * 0.02, ty * 0.75, hs * 0.05); ctx.fill();
+  softLine(ctx, [[tx - hs * 0.1, ty * 0.75 + hs * 0.05], [tx - hs * 0.04, ty * 0.75 + hs * 0.055], [tx + hs * 0.02, ty * 0.75 + hs * 0.04]], shade(C.skin, -0.4), 1.4, 0.4);
 }
 
 // Bellows held in front by both hands (local coords of the actor); open = 0..1
@@ -105,14 +105,14 @@ function bellows(ctx, x, y, s, open, L) {
   // nozzle
   ctx.fillStyle = '#9a7b3a'; ctx.beginPath(); ctx.moveTo(150, -10); ctx.lineTo(240, -4); ctx.lineTo(240, 4); ctx.lineTo(150, 10); ctx.fill();
   // leather between boards
-  ctx.fillStyle = '#6b3f26';
+  ctx.fillStyle = '#8a5434';
   ctx.beginPath(); ctx.moveTo(150, 0); ctx.lineTo(-40, -110 * a * 2.2); ctx.lineTo(-40, 110 * a * 2.2); ctx.closePath(); ctx.fill();
   for (let k = 1; k < 4; k++) { ctx.strokeStyle = 'rgba(40,20,10,0.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(150, 0); ctx.lineTo(-40 + k * 8, (k % 2 ? -1 : 1) * 100 * a * 2.2); ctx.stroke(); }
   // boards
   for (const sd of [-1, 1]) {
     ctx.save(); ctx.rotate(sd * a);
     const b = P2((p) => smoothClosed(p, [[160, 0], [40, sd * 22], [-60, sd * 34], [-110, sd * 24], [-60, sd * 6], [40, sd * 4]], 0.6));
-    paint(ctx, b, '#8a5a32', L, [-120, -40, 170, 40], { lw: 2 });
+    paint(ctx, b, '#b07a42', L, [-120, -40, 170, 40], { lw: 2 });
     ctx.restore();
   }
   ctx.restore();
@@ -137,29 +137,36 @@ function recipeCard(ctx, cx, cy, w, h, rot, C, thumbs, t, ts = 1) {
   // thumbs on the front edge
   for (const th of thumbs || []) {
     ctx.save(); ctx.translate(th[0], th[1]); ctx.rotate(th[2]); ctx.scale(ts, ts);
-    ctx.fillStyle = C.skin; ctx.strokeStyle = rgba(shade(C.skin, -0.45), 0.6); ctx.lineWidth = 2;
-    ctx.beginPath(); capsule(ctx, 0, 0, C.body.hand * 0.075, C.body.hand * 0.26, 0, C.body.hand * 0.06); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.skin; ctx.strokeStyle = rgba(shade(C.skin, -0.45), 0.35); ctx.lineWidth = 1.5;
+    ctx.beginPath(); capsule(ctx, 0, 0, C.body.hand * 0.075, C.body.hand * 0.19, 0, C.body.hand * 0.062); ctx.fill(); ctx.stroke();
     softLine(ctx, [[C.body.hand * 0.17, -4], [C.body.hand * 0.19, 0], [C.body.hand * 0.17, 4]], shade(C.skin, -0.35), 1.4, 0.4);
     ctx.restore();
   }
 }
 
-// Bread roll resting on an upturned palm, thumb over its edge (hand space).
+// Bread roll cupped in an upturned palm: fingertips curl up over its lower front, thumb rests on its top edge.
 function bread(ctx, C, o) {
   const hs = C.body.hand;
+  const up = -o.ts; // direction of "up" across the hand (thumb side is up)
+  const bx = hs * 0.58, by = up * hs * 0.26;
   ctx.save();
-  const bx = hs * 0.62, by = -hs * 0.18 * o.ts;
   const g = ctx.createRadialGradient(bx - 8, by - 10, 4, bx, by, hs * 0.5);
   g.addColorStop(0, '#f0c27a'); g.addColorStop(0.7, '#c98a3e'); g.addColorStop(1, '#9c6428');
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(bx, by, hs * 0.48, hs * 0.32, 0, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(90,50,20,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(bx, by, hs * 0.46, hs * 0.3, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,50,20,0.45)'; ctx.lineWidth = 2; ctx.stroke();
   ctx.strokeStyle = 'rgba(255,230,180,0.6)'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(bx - hs * 0.2, by - hs * 0.05); ctx.quadraticCurveTo(bx, by - hs * 0.15, bx + hs * 0.22, by - hs * 0.04); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx - hs * 0.2, by + up * hs * 0.05); ctx.quadraticCurveTo(bx, by + up * hs * 0.15, bx + hs * 0.22, by + up * hs * 0.04); ctx.stroke();
   ctx.restore();
-  const [tx, ty] = o.hand.thumb;
-  ctx.fillStyle = C.skin; ctx.strokeStyle = rgba(shade(C.skin, -0.45), 0.6); ctx.lineWidth = 2;
-  ctx.beginPath(); capsule(ctx, hs * 0.18, ty * 0.8, hs * 0.075, tx + hs * 0.08, ty * 0.75, hs * 0.058); ctx.fill(); ctx.stroke();
+  // fingertips curling up around the near side of the loaf
+  ctx.fillStyle = C.skin;
+  for (let i = 0; i < 4; i++) {
+    const fx = hs * (0.5 + i * 0.1), fy = by - up * hs * 0.2;
+    ctx.beginPath(); capsule(ctx, fx, fy - up * hs * 0.02, hs * 0.05, fx + hs * 0.02, fy + up * hs * 0.1, hs * 0.042); ctx.fill();
+  }
+  // thumb along the top edge of the loaf
+  ctx.beginPath(); capsule(ctx, hs * 0.22, by + up * hs * 0.24, hs * 0.07, hs * 0.5, by + up * hs * 0.27, hs * 0.055); ctx.fill();
+  softLine(ctx, [[hs * 0.3, by + up * hs * 0.2], [hs * 0.4, by + up * hs * 0.22], [hs * 0.5, by + up * hs * 0.23]], shade(C.skin, -0.35), 1.4, 0.4);
 }
 
 // Key held in a pinch (hand space)
@@ -203,4 +210,20 @@ function handsCloseup(ctx, cast, x, y, s, t, shake, L) {
   ctx.restore();
 }
 
-module.exports = { mug, phone, clipboard, bellows, recipeCard, bread, key, handsCloseup, roundRectPath };
+// Simple wooden chair under a seated character: seat at seatY, legs to floorY (world coords).
+function chair(ctx, x, seatY, floorY, s = 1, f = 0) {
+  ctx.save();
+  const w = 120 * s, wood = '#7a5132', dark = '#4e321e';
+  ctx.fillStyle = 'rgba(30,18,10,0.25)'; ctx.beginPath(); ctx.ellipse(x, floorY + 6, w * 0.9, 16 * s, 0, 0, TAU); ctx.fill();
+  for (const sd of [-1, 1]) {
+    ctx.fillStyle = sd < 0 ? dark : wood;
+    ctx.fillRect(x + sd * w * 0.78 - 7 * s + f * 10, seatY + 10, 14 * s, floorY - seatY - 10);
+    ctx.fillStyle = dark; ctx.fillRect(x + sd * w * 0.62 - 6 * s - f * 8, seatY + 10, 12 * s, floorY - seatY - 30);
+  }
+  ctx.fillStyle = dark; ctx.fillRect(x - w * 0.78, (seatY + floorY) / 2, w * 1.56, 8 * s);
+  ctx.fillStyle = wood; ctx.fillRect(x - w * 0.9, seatY, w * 1.8, 18 * s);
+  ctx.fillStyle = 'rgba(255,220,170,0.25)'; ctx.fillRect(x - w * 0.9, seatY, w * 1.8, 4 * s);
+  ctx.restore();
+}
+
+module.exports = { chair, mug, phone, clipboard, bellows, recipeCard, bread, key, handsCloseup, roundRectPath };

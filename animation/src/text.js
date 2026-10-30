@@ -173,6 +173,11 @@ function drawTitle(ctx, lines, y, a, opts = {}) {
   ctx.globalAlpha = a;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  const tot = lines.reduce((acc, l) => acc + (l.lh || 80), 0);
+  const gb = ctx.createRadialGradient(540, y + tot / 2 - 40, 10, 540, y + tot / 2 - 40, 560);
+  gb.addColorStop(0, 'rgba(12,8,14,0.5)'); gb.addColorStop(0.55, 'rgba(12,8,14,0.28)'); gb.addColorStop(1, 'rgba(12,8,14,0)');
+  ctx.save(); ctx.translate(540, y + tot / 2 - 40); ctx.scale(1, Math.max(0.3, (tot + 120) / 1000)); ctx.translate(-540, -(y + tot / 2 - 40));
+  ctx.fillStyle = gb; ctx.fillRect(0, y - 700, 1080, 1400); ctx.restore();
   let yy = y;
   for (const ln of lines) {
     ctx.font = ln.font || '64px InterXB';

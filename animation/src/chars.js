@@ -38,6 +38,20 @@ function hairMass(ctx, pts, color, L, o = {}) {
   }
   return path;
 }
+// Hair cap over the cranium down to the hairline, so no scalp shows past partings or tucked locks.
+function scalpCap(ctx, C, o, color, line = -0.27, side = 0.02) {
+  const { H, W, yaw, R } = o;
+  const outer = [];
+  for (let i = 0; i <= 12; i++) { const a = Math.PI * (1 + i / 12); outer.push([Math.cos(a) * W * 0.53, -0.07 * H + Math.sin(a) * H * 0.47]); }
+  const inner = [];
+  for (let i = 12; i >= 0; i--) {
+    const th = -1.45 + (2.9 * i) / 12;
+    const x = projX(th, yaw, W * 0.51);
+    const y = H * (line + (side - line) * Math.pow(Math.abs(th) / 1.45, 2.2));
+    inner.push([x, y]);
+  }
+  hairMass(ctx, [...outer, ...inner], color, o.L, { outlineA: 0.15 });
+}
 // curve sampler: quadratic through 3 points -> n points
 function q3(a, b, c, n = 7) {
   const out = [];
@@ -154,19 +168,23 @@ function labCoat(shirt, tie) {
 
 // ---------------------------------------------------------------- props
 const PROPS = {
-  // pencil held in a pinch: lies along the hand, between thumb and index
+  // pencil pinched between thumb and index finger, crossing the fingers like a writing grip
   pencil: (ctx, C, o) => {
     const hs = C.body.hand;
+    const idx = o.hand.tips[0], [tx, ty] = o.hand.thumb;
+    const mx = (idx.ex + tx) / 2, my = (idx.ey + ty) / 2;
     ctx.save();
-    ctx.rotate(-0.5 * o.ts);
-    ctx.fillStyle = '#e7b53c'; ctx.fillRect(hs * 0.2, -4, hs * 0.9, 8);
-    ctx.fillStyle = '#f2d8b0'; ctx.beginPath(); ctx.moveTo(hs * 1.1, -4); ctx.lineTo(hs * 1.28, 0); ctx.lineTo(hs * 1.1, 4); ctx.fill();
-    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.moveTo(hs * 1.22, -1.4); ctx.lineTo(hs * 1.28, 0); ctx.lineTo(hs * 1.22, 1.4); ctx.fill();
-    ctx.fillStyle = '#e48a9a'; ctx.fillRect(hs * 0.12, -4, hs * 0.1, 8);
+    ctx.translate(mx, my);
+    ctx.rotate(0.95 * o.ts);
+    const L = hs * 1.25;
+    ctx.fillStyle = '#e7b53c'; ctx.fillRect(-L * 0.55, -4, L * 0.85, 8);
+    ctx.fillStyle = '#f2d8b0'; ctx.beginPath(); ctx.moveTo(L * 0.3, -4); ctx.lineTo(L * 0.45, 0); ctx.lineTo(L * 0.3, 4); ctx.fill();
+    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.moveTo(L * 0.4, -1.4); ctx.lineTo(L * 0.45, 0); ctx.lineTo(L * 0.4, 1.4); ctx.fill();
+    ctx.fillStyle = '#e48a9a'; ctx.fillRect(-L * 0.62, -4, L * 0.08, 8);
     ctx.restore();
-    // thumb over the pencil
-    const [tx, ty] = o.hand.thumb;
-    ctx.fillStyle = C.skin; ctx.beginPath(); ctx.ellipse(tx, ty, hs * 0.07, hs * 0.05, 0, 0, TAU); ctx.fill();
+    // thumb tip pressed over the pencil (no hard outline)
+    ctx.fillStyle = C.skin;
+    ctx.beginPath(); ctx.ellipse(tx, ty, hs * 0.062, hs * 0.05, 0, 0, TAU); ctx.fill();
   },
 };
 
@@ -185,6 +203,7 @@ function mayaHairBack(ctx, C, o) {
 }
 function mayaHairFront(ctx, C, o) {
   const { H, W, yaw, R } = o;
+  scalpCap(ctx, C, o, shade(C.hair, -0.05), -0.26, 0.04);
   const part = projX(-0.38, yaw, R);
   const cx = projX(0, yaw, R);
   // fringe swept from a side part across the forehead, down the right side of the face
@@ -203,7 +222,7 @@ function mayaHairFront(ctx, C, o) {
 
 const BASE_ADULT = {
   head: { h: 150, w: 114, shape: 'human', jaw: 0.4, chin: 0.11, cheek: 0.49 },
-  neck: { len: 52, w: 46 },
+  neck: { len: 54, w: 50 },
   body: { shoulderW: 226, torso: 300, leg: 450, chestW: 196, waistW: 168, hipW: 204, upper: 170, fore: 150, hand: 80, armR: 23, thigh: 44, foot: 120, ankle: 40, hipH: 30 },
   eyes: { y: 0.03, spacing: 0.5, w: 0.225, h: 0.1, irisColor: '#4a2c1a', lash: '#24140f', lashW: 0.12 },
   brows: { color: '#2a1a12', thick: 0.045, gap: 0.115, w: 0.26, arch: 0.025 },
@@ -267,12 +286,12 @@ function eli() {
   return {
     ...BASE_ADULT, id: 'eli', label: 'Eli', color: '#8fa3b8',
     head: { h: 158, w: 124, shape: 'human', jaw: 0.44, chin: 0.15, cheek: 0.5 },
-    neck: { len: 50, w: 58 },
+    neck: { len: 66, w: 58 },
     body: { ...BASE_ADULT.body, shoulderW: 266, torso: 318, leg: 470, chestW: 236, waistW: 206, hipW: 216, upper: 182, fore: 160, hand: 90, armR: 28, thigh: 50 },
     skin: '#9a6646', hair: '#1f1612', blush: 0.08,
     eyes: { ...BASE_ADULT.eyes, w: 0.21, h: 0.088, irisColor: '#3a2416', lashW: 0.1 },
     brows: { color: '#1e140f', thick: 0.05, gap: 0.1, w: 0.26, arch: 0.015, taper: 0.6 },
-    mouth: { y: 0.33, w: 0.32, lip: '#7a4636', lowerLip: 0.02 },
+    mouth: { y: 0.33, w: 0.32, lip: '#7a4636', lowerLip: 0.02, rest: -0.12 },
     clothes: {
       top: { color: '#4f565f', hem: 34, extra: 4, detail: hoodieDetail },
       sleeve: { len: 1, color: '#4f565f', cuff: true, folds: true, cuffW: 1.2, puff: 1.08 },
@@ -319,6 +338,7 @@ function nana() {
     },
     hairFront: (ctx, C, o) => {
       const { H, W, yaw, R } = o;
+      scalpCap(ctx, C, o, shade(C.hair, -0.05), -0.27, 0.0);
       const pts = [[projX(-1.25, yaw, W * 0.53), -0.02 * H], [projX(-1.0, yaw, R), -0.42 * H], [projX(0, yaw, R), -0.56 * H], [projX(1.0, yaw, R), -0.42 * H],
         [projX(1.25, yaw, W * 0.53), -0.02 * H], [projX(1.12, yaw, W * 0.5), -0.1 * H], [projX(0.7, yaw, R), -0.27 * H], [projX(0, yaw, R), -0.3 * H], [projX(-0.7, yaw, R), -0.27 * H], [projX(-1.12, yaw, W * 0.5), -0.1 * H]];
       hairMass(ctx, pts, C.hair, o.L, { guides: [q3([projX(-1.2, yaw, R), -0.05 * H], [projX(0, yaw, R), -0.6 * H], [projX(1.2, yaw, R), -0.05 * H]), q3([projX(-1.05, yaw, R), -0.12 * H], [projX(0, yaw, R), -0.34 * H], [projX(1.05, yaw, R), -0.12 * H])], strands: 18, sheen: [[0, -0.5 * H], [0, -0.3 * H]] });
@@ -330,9 +350,9 @@ function nana() {
 function youngMaya() {
   return {
     ...BASE_ADULT, id: 'youngMaya', label: 'Young Maya', color: '#b9a3d6',
-    head: { h: 132, w: 112, shape: 'round' },
-    neck: { len: 24, w: 34 },
-    body: { shoulderW: 150, torso: 176, leg: 268, chestW: 136, waistW: 128, hipW: 136, upper: 108, fore: 94, hand: 52, armR: 15, thigh: 30, foot: 80, ankle: 28, hipH: 20 },
+    head: { h: 140, w: 116, shape: 'round' },
+    neck: { len: 32, w: 36 },
+    body: { shoulderW: 150, torso: 150, leg: 250, chestW: 136, waistW: 128, hipW: 136, upper: 108, fore: 94, hand: 52, armR: 15, thigh: 30, foot: 80, ankle: 28, hipH: 20 },
     skin: '#a8714f', hair: '#2b1d17', blush: 0.35, blushColor: '#d06a5c',
     eyes: { ...BASE_ADULT.eyes, y: 0.06, w: 0.22, h: 0.11, irisColor: '#4b2e1c', iris: 1.05 },
     brows: { color: '#2a1a12', thick: 0.035, gap: 0.12, w: 0.22, arch: 0.03 },
@@ -354,6 +374,7 @@ function youngMaya() {
     },
     hairFront: (ctx, C, o) => {
       const { H, W, yaw, R } = o;
+      scalpCap(ctx, C, o, shade(C.hair, -0.05), -0.3, 0.0);
       const pts = [[projX(-1.2, yaw, W * 0.52), -0.05 * H], [projX(-0.9, yaw, R), -0.42 * H], [projX(0, yaw, R), -0.54 * H], [projX(0.9, yaw, R), -0.42 * H], [projX(1.2, yaw, W * 0.52), -0.05 * H], [projX(1.0, yaw, R), -0.2 * H], [projX(0, yaw, R), -0.33 * H], [projX(-1.0, yaw, R), -0.2 * H]];
       hairMass(ctx, pts, C.hair, o.L, { guides: [q3([projX(-1.1, yaw, R), -0.1 * H], [projX(0, yaw, R), -0.6 * H], [projX(1.1, yaw, R), -0.1 * H]), q3([projX(-0.95, yaw, R), -0.22 * H], [projX(0, yaw, R), -0.36 * H], [projX(0.95, yaw, R), -0.22 * H])], strands: 14 });
     },
@@ -396,7 +417,7 @@ function anger() {
   return {
     id: 'anger', label: 'Anger', emoji: '😡', color: '#e04a35',
     head: { h: 168, w: 158, shape: 'brick' },
-    neck: { len: 30, w: 92 },
+    neck: { len: 52, w: 92 },
     body: { shoulderW: 268, torso: 232, leg: 214, chestW: 258, waistW: 256, hipW: 246, upper: 128, fore: 112, hand: 82, armR: 31, thigh: 56, foot: 104, ankle: 32, hipH: 26 },
     skin: '#d0402f', blush: 0,
     eyes: { y: 0.04, spacing: 0.42, w: 0.17, h: 0.085, irisColor: '#2b1410', sclera: '#f6ede4', lash: '#3b0c08', lashW: 0.1 },
@@ -448,7 +469,9 @@ function shock(frazzled) {
     }
     mass.push([cx - 0.42 * W, base + 0.07 * H]);
     const path = P2((p) => smoothClosed(p, mass, 0.85));
-    paint(ctx, path, col, o.L, bboxOf(mass), { lw: 1.8, outlineA: 0.3 });
+    paint(ctx, path, col, o.L, bboxOf(mass), { outline: false });
+    ctx.save(); ctx.strokeStyle = rgba(shade(col, -0.45), 0.3); ctx.lineWidth = 1.8;
+    ctx.beginPath(); smoothOpen(ctx, mass.slice(1, mass.length - 1), 0.85); ctx.stroke(); ctx.restore();
     ctx.save(); ctx.clip(path);
     ctx.lineCap = 'round';
     const n = frazzled ? 30 : 22;
@@ -469,25 +492,64 @@ function shock(frazzled) {
     ctx.restore();
   };
 }
+function frizz(ctx, C, o) {
+  const { H, W, yaw, t } = o;
+  const col = C.hair;
+  const cx = yaw * W * 0.05;
+  const cy = -0.42 * H;
+  scalpCap(ctx, C, { ...o, R: W * 0.49 }, shade(col, -0.05), -0.3, -0.05);
+  // a wide frizzy cloud: spiky lobes radiating in every direction, trembling slightly
+  const pts = [];
+  const n = 26;
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI * (0.96 + 1.08 * (i / (n - 1)));
+    const spike = i % 2 === 0;
+    const wob = noise1(t * 5 + i * 1.9, 3) * 0.05;
+    const r = (spike ? 0.95 + 0.25 * Math.abs(hash2(i, 5)) : 0.7) + wob;
+    pts.push([cx + Math.cos(a) * W * 0.62 * r, cy + Math.sin(a) * H * 0.42 * r]);
+  }
+  pts.push([cx + W * 0.5, cy + 0.2 * H]); pts.push([cx - W * 0.5, cy + 0.2 * H]);
+  const path = P2((p) => smoothClosed(p, pts, 0.55));
+  paint(ctx, path, col, o.L, bboxOf(pts), { lw: 1.8, outlineA: 0.3 });
+  ctx.save(); ctx.clip(path); ctx.lineCap = 'round';
+  for (let i = 0; i < 36; i++) {
+    const a = Math.PI * (1 + (i / 35)) + hash2(i, 2) * 0.2;
+    const r0 = 0.25 + 0.2 * Math.abs(hash2(i, 8)), r1 = 0.75 + 0.35 * Math.abs(hash2(i, 9));
+    const wob = noise1(t * 4 + i, 6) * 6;
+    const light = (i * 7) % 5 < 2;
+    ctx.strokeStyle = rgba(light ? shade(col, 0.3) : shade(col, -0.3), light ? 0.4 : 0.32);
+    ctx.lineWidth = 2 + 2 * Math.abs(hash2(i, 3));
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * W * 0.62 * r0, cy + Math.sin(a) * H * 0.42 * r0);
+    ctx.quadraticCurveTo(cx + Math.cos(a + 0.25) * W * 0.62 * (r0 + r1) / 2 + wob, cy + Math.sin(a + 0.25) * H * 0.42 * (r0 + r1) / 2,
+      cx + Math.cos(a - 0.1) * W * 0.62 * r1 + wob, cy + Math.sin(a - 0.1) * H * 0.42 * r1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function rootedShock(ctx, C, o) {
+  scalpCap(ctx, C, { ...o, R: o.W * 0.49 }, shade(C.hair, -0.05), -0.31, -0.08);
+  shock(false)(ctx, C, o);
+}
 function lanky(id, label, emoji, glowColor, tieColor, shirt, frazzled) {
   return {
     id, label, emoji, color: glowColor,
     head: { h: 196, w: 118, shape: 'egg' },
-    neck: { len: 46, w: 40 },
+    neck: { len: 62, w: 42 },
     body: { shoulderW: 206, torso: 330, leg: 470, chestW: 172, waistW: 158, hipW: 168, upper: 186, fore: 166, hand: 86, armR: 19, thigh: 34, foot: 116, ankle: 36, hipH: 30 },
     skin: '#efc19c', hair: '#d4552a', blush: 0.15, blushColor: '#e48a72',
     eyes: { y: -0.02, spacing: 0.33, w: 0.4, h: 0.2, style: 'bulge', irisColor: '#5a7a3a', iris: 0.9 },
     brows: { color: '#b0431f', thick: 0.03, gap: 0.16, w: 0.24, arch: 0.04, alpha: 0.8 },
-    mouth: { y: 0.36, w: 0.26, lip: '#b9705c' },
+    mouth: { y: 0.36, w: 0.3, lip: '#b9705c' },
     nose: { y: 0.2, type: 'long', size: 1.05 },
     ears: { size: 0.9 },
     clothes: {
-      top: { color: '#f4f1e8', hem: 250, extra: 14, ...labCoat(shirt, tieColor) },
-      sleeve: { len: 1, color: '#f4f1e8', cuff: true, folds: true, cuffW: 1.45 },
+      top: { color: frazzled ? '#f6e4d6' : '#f5f0da', hem: 250, extra: 14, ...labCoat(shirt, tieColor) },
+      sleeve: { len: 1, color: frazzled ? '#f6e4d6' : '#f5f0da', cuff: true, folds: true, cuffW: 1.45 },
       bottom: { color: '#5a5e6a' }, shoes: { color: '#3b302a' },
     },
-    hairFront: shock(frazzled),
-    glow: { color: glowColor, amt: 1, phase: frazzled ? 1.3 : 0 },
+    hairFront: frazzled ? frizz : rootedShock,
+    glow: { color: glowColor, amt: 1.35, phase: frazzled ? 1.3 : 0 },
     props: PROPS,
   };
 }
@@ -496,7 +558,7 @@ function sadness() {
   return {
     id: 'sadness', label: 'Sadness', emoji: '❤️', color: '#7fb2e5',
     head: { h: 150, w: 146, shape: 'round' },
-    neck: { len: 22, w: 56 },
+    neck: { len: 34, w: 56 },
     body: { shoulderW: 196, torso: 214, leg: 196, chestW: 232, waistW: 244, hipW: 232, upper: 118, fore: 104, hand: 58, armR: 22, thigh: 44, foot: 84, ankle: 28, hipH: 24 },
     skin: '#7fb2e5', hair: '#2e5c9a', blush: 0.18, blushColor: '#5f8fd0',
     eyes: { y: 0.05, spacing: 0.44, w: 0.2, h: 0.1, irisColor: '#1f3f6e', sclera: '#f1f4fa', lash: '#173156', lashW: 0.12 },

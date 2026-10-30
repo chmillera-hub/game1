@@ -9,29 +9,29 @@ const FACE_KEYS = ['lidU', 'lidUL', 'lidUR', 'lidL', 'lidLL', 'lidLR', 'lidTilt'
 const FACE_DEFAULT = { lidU: 0.15, pupil: 1 };
 const EXPR = {
   neutral: {},
-  listening: { lidU: 0.17, browIn: 0.15, smile: 0.06 },
-  soft: { smile: 0.18, lidU: 0.2, browIn: 0.12, lidL: 0.06 },
+  listening: { lidU: 0.12, browIn: 0.22, smile: 0 },
+  soft: { smile: 0.08, lidU: 0.14, browIn: 0.2 },
   smallSmile: { smile: 0.38, lidL: 0.14, brow: 0.05 },
   smile: { smile: 0.72, lidL: 0.3, brow: 0.12, blush: 0.15 },
   warm: { smile: 0.45, lidL: 0.2, browIn: 0.18, lidU: 0.2 },
-  tender: { browIn: 0.42, lidU: 0.27, smile: 0.22, lidL: 0.1, glisten: 0.3 },
+  tender: { browIn: 0.5, lidU: 0.16, smile: 0.06, glisten: 0.35 },
   sad: { browIn: 0.6, lidU: 0.3, lidTilt: 0.35, smile: -0.32, underEye: 0.3 },
   sadDeep: { browIn: 0.85, lidU: 0.4, lidTilt: 0.5, smile: -0.5, glisten: 0.6, underEye: 0.45, press: 0.15 },
   hurt: { browIn: 0.65, browSq: 0.3, lidU: 0.24, lidTilt: 0.3, smile: -0.36, press: 0.35, glisten: 0.3 },
   tearful: { browIn: 0.8, lidU: 0.3, lidTilt: 0.42, smile: -0.25, glisten: 0.95, underEye: 0.3 },
   cry: { browIn: 0.95, browSq: 0.3, lidU: 0.45, lidL: 0.2, lidTilt: 0.5, smile: -0.6, glisten: 1, underEye: 0.5 },
-  annoyed: { lidU: 0.42, browR: 0.25, browL: -0.12, browIn: -0.2, smile: -0.2, asym: -0.25, press: 0.2 },
+  annoyed: { lidU: 0.36, browR: 0.25, browL: -0.12, browIn: -0.2, smile: -0.2, asym: -0.25, press: 0.2 },
   skeptical: { browR: 0.7, browL: -0.2, lidUL: 0.36, lidUR: 0.16, asym: 0.3, smile: -0.1 },
   grumpy: { browIn: -0.5, browSq: 0.5, lidU: 0.3, smile: -0.35, press: 0.35 },
   angry: { browIn: -0.9, browSq: 0.9, brow: -0.2, lidU: 0.18, lidL: 0.25, lidTilt: -0.4, smile: -0.5, press: 0.35 },
-  furious: { browIn: -1.2, browSq: 1, brow: -0.3, lidU: 0.04, lidL: 0.15, lidTilt: -0.5, smile: -0.7, mouthWide: 0.4 },
-  fear: { brow: 0.6, browIn: 0.7, lidU: 0.0, smile: -0.35, mouthWide: 0.2, pupil: 0.8 },
-  worried: { brow: 0.25, browIn: 0.6, lidU: 0.12, smile: -0.25, press: 0.2 },
+  furious: { browIn: -1.2, browSq: 1, brow: -0.3, lidU: 0.04, lidL: 0.15, lidTilt: -0.5, smile: -0.5, mouthWide: 0.45, mouthOpen: 0.22 },
+  fear: { brow: 0.6, browIn: 0.8, lidU: 0.0, smile: -0.4, mouthWide: 0.3, mouthOpen: 0.2, pupil: 0.75 },
+  worried: { brow: 0.3, browIn: 0.7, lidU: 0.06, smile: -0.28, press: 0.15 },
   surprised: { brow: 0.8, lidU: 0.0, smile: 0 },
   relieved: { brow: 0.08, browIn: 0.3, lidU: 0.36, smile: 0.25 },
   determined: { browIn: -0.15, brow: -0.05, lidU: 0.2, lidL: 0.1, press: 0.25 },
   guilty: { browIn: 0.5, lidU: 0.36, smile: -0.25, press: 0.3 },
-  avoid: { lidU: 0.3, smile: -0.1, browIn: -0.05, press: 0.2 },
+  avoid: { lidU: 0.2, smile: -0.18, browIn: 0.1, press: 0.25 },
   tired: { lidU: 0.4, underEye: 0.4, smile: -0.1 },
   laughCry: { smile: 0.6, lidL: 0.35, lidU: 0.3, browIn: 0.5, glisten: 0.9 },
   shout: { browIn: -1, browSq: 1, brow: -0.2, lidU: 0.05, smile: -0.4, mouthWide: 0.3 },
@@ -235,8 +235,18 @@ class Actor {
         S.face.browL += br * 0.12 * tm; S.face.browR += br * 0.12 * tm;
       }
     }
+    // listening: small acknowledging nods on some of the other speaker's stressed syllables
+    if (this.listenStress && !(S.mouth && S.mouth.talking)) {
+      let nod = 0;
+      for (const st of this.listenStress) {
+        const d = T - st - 0.18;
+        if (d > -0.4 && d < 0.6) nod += Math.exp(-(d * d) / 0.03);
+      }
+      S.head.pitch += nod * 0.06 * (S.listenAmt ?? 1);
+    }
     // blinks: natural rhythm + on gaze shifts + manual
-    S.blink = blinkAt(T, sd, this.events.blinks, this.gazeShifts, S.blinkRate ?? 1);
+    if (!this._blinks) this._blinks = blinkTimes(sd, this.events.blinks, this.gazeShifts, this.opts.blinkRate ?? 1);
+    S.blink = blinkAt(T, this._blinks);
     S.tears = this.events.tears;
     return S;
   }
@@ -248,18 +258,25 @@ function blinkCurve(d) { // d = time since blink start
   if (d < 0.11) return 1;
   return 1 - smooth((d - 0.11) / 0.13);
 }
-function blinkAt(T, seed, manual, shifts, rate) {
-  let b = 0;
-  // natural: deterministic blink times with 2.4..5.4 s spacing
+// Precomputed blink starts: natural rhythm + some gaze shifts + manual, at least 1.1 s apart.
+function blinkTimes(seed, manual, shifts, rate, dur = 400) {
   const r = seeded(seed * 7 + 11);
-  let t = r() * 2;
-  const step = () => (2.4 + r() * 3.0) / rate;
-  // jump close to T quickly (blinks are cheap to regenerate)
-  while (t < T - 0.3) t += step();
-  for (let k = 0; k < 2; k++) { b = Math.max(b, blinkCurve(T - t)); t += step(); }
-  // re-evaluate the previous blink too
-  for (const m of manual) b = Math.max(b, blinkCurve(T - m));
-  for (const s of shifts) b = Math.max(b, 0.85 * blinkCurve(T - s + 0.02));
+  const nat = [];
+  for (let t = r() * 2; t < dur; t += (3.2 + r() * 3.4) / rate) nat.push({ t, pri: 1 });
+  const sh = shifts.filter((s) => hash(Math.round(s * 1000) + seed) > 0.2).map((t) => ({ t: t - 0.02, pri: 2 }));
+  const man = manual.map((t) => ({ t, pri: 3 }));
+  const all = [...nat, ...sh, ...man].sort((a, b) => a.t - b.t);
+  const kept = [];
+  for (const b of all) {
+    const last = kept[kept.length - 1];
+    if (last && b.t - last.t < 1.1) { if (b.pri > last.pri) kept[kept.length - 1] = b; continue; }
+    kept.push(b);
+  }
+  return kept.map((b) => b.t);
+}
+function blinkAt(T, list) {
+  let b = 0;
+  for (const t of list) { if (t > T) break; if (T - t < 0.25) b = Math.max(b, blinkCurve(T - t)); }
   return b;
 }
 

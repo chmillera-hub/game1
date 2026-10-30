@@ -170,7 +170,7 @@ function drawEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
   const round = E.style === 'bulge' || E.style === 'round';
   const lidU = clamp(P.lidU + P.blink, 0, 1), lidL = P.lidL;
   // looking down lowers the upper lid; looking up raises it
-  const lidU2 = clamp(lidU + P.gy * 0.22 - (P.gy < 0 ? P.gy * 0.05 : 0), 0, 1);
+  const lidU2 = clamp(lidU + Math.min(0.12, Math.max(0, P.gy) * 0.14) + Math.min(0, P.gy) * 0.08, 0, 0.92) + (P.blink >= 0.99 ? 0.08 : 0);
   if (E.style === 'bulge') return drawBulgeEye(ctx, C, ex, ey, ew, eh, side, { ...P, lidU: lidU2 }, L, skinCol);
   const { top, bot } = eyeShape(ex, ey, ew, eh, side, lidU2, lidL, P.tilt * side * 0 + P.tilt, round);
   const path = P2((p) => {
@@ -187,7 +187,7 @@ function drawEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
     ctx.fillRect(ex - ew, ey - eh, ew * 2, eh * 2);
     // iris
     const ri = eh * 0.43 * (E.iris || 1);
-    const ix = ex + P.gx * ew * 0.27, iy = ey + P.gy * eh * 0.2 + eh * 0.04;
+    const ix = ex + P.gx * ew * 0.36, iy = ey + P.gy * eh * 0.24 + eh * 0.04;
     const gi = ctx.createRadialGradient(ix, iy, ri * 0.15, ix, iy, ri);
     gi.addColorStop(0, shade(E.irisColor, 0.25));
     gi.addColorStop(0.7, E.irisColor);
@@ -247,7 +247,7 @@ function drawEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
   ctx.restore();
 }
 
-// Muppet-like bulging eyeball with heavy lids (Annoyance / Fear)
+// Bulging round eyeball with heavy lids (Annoyance / Fear)
 function drawBulgeEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
   const E = C.eyes;
   const r = ew / 2;
@@ -274,7 +274,7 @@ function drawBulgeEye(ctx, C, ex, ey, ew, eh, side, P, L, skinCol) {
     ctx.beginPath(); ctx.ellipse(ex, ey + eh * 0.36, r * 0.75, eh * 0.08, 0, 0, TAU); ctx.fill();
   }
   // lids: skin caps covering top and bottom
-  const lu = clamp(P.lidU, 0, 1), ll = clamp(P.lidL, 0, 1);
+  const lu = clamp(P.lidU * 0.72 + Math.max(0, P.lidU - 0.92) * 3.5, 0, 1), ll = clamp(P.lidL, 0, 1);
   const lidY = ey - eh / 2 + eh * lu * 1.0;
   const tilt = P.tilt || 0;
   const yo = side * tilt * eh * 0.22; // + raises inner (sad droops outer)
@@ -357,7 +357,7 @@ function drawMouth(ctx, C, mx, my, mw, P, fs, skinCol) {
   const press = clamp(P.press || 0, 0, 1);
   const lx = mx - hw, rx = mx + hw;
   const ly = my - smL * k + open * H * 0.02, ry = my - smR * k + open * H * 0.02;
-  const oh = open * H * 0.15 * (1 + 0.25 * round);
+  const oh = open * H * 0.19 * (1 + 0.25 * round);
   const topY = my - oh * 0.22 - (P.teeth || 0) * H * 0.008;
   const botY = my + oh * 0.78;
   const lipC = M.lip || shade(skinCol, -0.22);
@@ -514,7 +514,6 @@ function drawHead(ctx, C, S, sk, L, t) {
     const th = sd * 1.42;
     return { sd, th: th + yaw * PHI, x: projX(th, yaw, W * 0.5), y: H * 0.05 + fy * 0.4 };
   });
-  for (const e of ears) if (Math.abs(e.th) > 1.62 && !C.noEars) drawEar(ctx, C, e.x, e.y, e.sd, skin, L);
   // head shape
   const outline = headOutline(C, yaw, open, pitch);
   const headPath = P2((p) => smoothClosed(p, outline, 1));
@@ -581,7 +580,7 @@ function drawHead(ctx, C, S, sk, L, t) {
     open,
     round: clamp((S.mouth?.round || 0) + (F.mouthRound || 0), 0, 1),
     wide: (S.mouth?.wide || 0) + (F.mouthWide || 0),
-    smile: (F.smile || 0) * (1 - 0.4 * clamp(open, 0, 1)),
+    smile: ((F.smile || 0) + (C.mouth.rest || 0)) * (1 - 0.4 * clamp(open, 0, 1)),
     asym: F.asym || 0, press: clamp((F.press || 0) + (S.mouth?.press || 0), 0, 1), teeth: S.mouth?.teeth || 0,
   };
   drawMouth(ctx, C, mx, my, W * (C.mouth.w ?? 0.34), M, mfs, skin);
@@ -812,7 +811,7 @@ function drawArm(ctx, C, sk, side, A, L, t, props) {
     capsule(p, s.sh[0], s.sh[1], r0 * 1.04 * puff, s.ex, s.ey, r1 * 1.1 * puff);
     if (sl.len >= 1) capsule(p, s.ex, s.ey, r1 * 1.1 * puff, cuffEnd[0], cuffEnd[1], r2 * (sl.cuffW || 1.25) * puff);
   });
-  paint(ctx, sleevePath, sl.color, L, [Math.min(s.sh[0], s.hx) - 50, Math.min(s.sh[1], s.hy) - 50, Math.max(s.sh[0], s.hx) + 50, Math.max(s.sh[1], s.hy) + 50], { lw: 2.2, under: true });
+  paint(ctx, sleevePath, sl.color, L, sk.litBox || [Math.min(s.sh[0], s.hx) - 50, Math.min(s.sh[1], s.hy) - 50, Math.max(s.sh[0], s.hx) + 50, Math.max(s.sh[1], s.hy) + 50], { lw: 2.2, under: true, rot: sk.lean });
   // elbow fold
   const fa = Math.atan2(s.hy - s.ey, s.hx - s.ex);
   const ua = Math.atan2(s.ey - s.sh[1], s.ex - s.sh[0]);
@@ -836,8 +835,8 @@ function drawArm(ctx, C, sk, side, A, L, t, props) {
     ctx.save();
     ctx.translate(cuffEnd[0], cuffEnd[1]);
     ctx.rotate(fa);
-    ctx.fillStyle = shade(sl.color, -0.55);
-    ctx.beginPath(); ctx.ellipse(0, 0, ow * 0.32, ow * 0.92, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = shade(sl.color, -0.38);
+    ctx.beginPath(); ctx.ellipse(0, 0, ow * 0.22, ow * 0.78, 0, 0, TAU); ctx.fill();
     if (sl.cuff) {
       ctx.strokeStyle = rgba(shade(sl.color, -0.25), 0.8); ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(-ow * 0.5, 0, ow * 0.25, ow * 0.95, 0, -Math.PI / 2, Math.PI / 2); ctx.stroke();
@@ -855,7 +854,11 @@ function drawArm(ctx, C, sk, side, A, L, t, props) {
   const hp = handParams(A.hand);
   const wr = (A.rot || 0) * Math.PI / 180;
   const ha = fa + wr * (side < 0 ? 1 : -1) * (A.rotAbs ? 0 : 1) + (A.rotAbs ? wr : 0) * 0;
-  const handAng = A.rotAbs !== undefined ? A.rotAbs * Math.PI / 180 : ha;
+  let handAng = A.rotAbs !== undefined ? A.rotAbs * Math.PI / 180 : ha;
+  if (A.rotAbs !== undefined && A.follow) { // partly follow the forearm so the wrist stays continuous
+    let d = fa - handAng; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
+    handAng += d * A.follow;
+  }
   const view = A.view || hp.view || 'back';
   // thumb toward body midline for palm view, away for back view
   const perp = [Math.cos(handAng + Math.PI / 2), Math.sin(handAng + Math.PI / 2)];
@@ -864,13 +867,15 @@ function drawArm(ctx, C, sk, side, A, L, t, props) {
   if (Math.abs(perp[0]) < 0.25) ts = Math.sign(perp[1]) * (side < 0 ? -1 : 1) * (view === 'palm' ? -1 : 1) || 1;
   if (view === 'back') ts = -ts;
   if (A.thumb) ts = A.thumb;
-  const wx = lerp(s.ex, s.hx, sl.len >= 1 ? 0.9 : 1), wy = lerp(s.ey, s.hy, sl.len >= 1 ? 0.9 : 1);
+  const wx = lerp(s.ex, s.hx, sl.len >= 1 ? 0.975 : 1), wy = lerp(s.ey, s.hy, sl.len >= 1 ? 0.975 : 1);
+  // wrist emerges from the sleeve opening along the forearm, then the hand turns at the wrist
+  const wb = sl.len >= 1 ? [cuffEnd[0] + Math.cos(fa) * r2 * 0.55, cuffEnd[1] + Math.sin(fa) * r2 * 0.55] : [wx - Math.cos(fa) * r2 * 0.9, wy - Math.sin(fa) * r2 * 0.9];
+  const wristPath = P2((p) => capsule(p, wb[0], wb[1], r2 * 0.6, wx, wy, r2 * 0.64));
+  ctx.fillStyle = L && L.ambientAmt ? tint(skin, L.ambient, L.ambientAmt) : skin;
+  ctx.fill(wristPath);
   ctx.save();
   ctx.translate(wx, wy);
   ctx.rotate(handAng);
-  // wrist stub so the hand reads as coming out of the sleeve
-  const wristPath = P2((p) => capsule(p, -r2 * 0.6, 0, r2 * 0.62, b.hand * 0.12, 0, r2 * 0.66));
-  paint(ctx, wristPath, skin, null, [0, 0, 1, 1], { outline: false });
   const res = drawHand(ctx, C, hp, ts, view, L);
   if (A.holding && props && props[A.holding]) props[A.holding](ctx, C, { side, ts, t, hand: res, A });
   ctx.restore();
@@ -953,19 +958,35 @@ function drawLegsFloor(ctx, C, sk, S, L, which) {
   const f = sk.f;
   const items = [];
   if (which === 'floorCross') {
-    // cross-legged: knees out to the sides, shins crossing in front, feet tucked
-    const kxL = -hw * 1.2 + f * 18, kxR = hw * 1.2 + f * 18, ky = hipY + 6;
-    const back = { kx: kxL, fx: hw * 0.35 + f * 30 }, front = { kx: kxR, fx: -hw * 0.3 + f * 30 };
-    for (const [sd, lg] of [[-1, back], [1, front]]) {
-      const th = P2((p) => capsule(p, sd * hw * 0.35, hipY - 4, b.thigh * 0.95, lg.kx, ky, b.thigh * 0.72));
-      paint(ctx, th, lc, L, [Math.min(0, lg.kx) - 80, hipY - 60, Math.max(0, lg.kx) + 80, 10], { lw: 2 });
+    const ky = hipY - 6;
+    const kL = [-hw * 1.28 + f * 16, ky], kR = [hw * 1.28 + f * 16, ky];
+    const fL = [hw * 0.82 + f * 26, -10], fR = [-hw * 0.82 + f * 26, -12]; // each foot tucks under the opposite knee
+    // thighs out to the knees
+    for (const k of [kL, kR]) {
+      const sd = Math.sign(k[0]) || 1;
+      const th = P2((p) => capsule(p, sd * hw * 0.38, hipY - 2, b.thigh * 0.98, k[0], k[1], b.thigh * 0.74));
+      paint(ctx, th, lc, L, [-hw * 1.6, hipY - 60, hw * 1.6, 10], { lw: 2 });
     }
-    for (const [sd, lg] of [[-1, back], [1, front]]) {
-      const sh = P2((p) => capsule(p, lg.kx, ky + 4, b.thigh * 0.66, lg.fx, -b.foot * 0.12, b.thigh * 0.5));
-      paint(ctx, sh, shade(lc, sd < 0 ? -0.08 : 0), L, [Math.min(lg.kx, lg.fx) - 60, ky - 50, Math.max(lg.kx, lg.fx) + 60, 10], { lw: 2 });
-      softLine(ctx, [[lg.kx - sd * 10, ky - b.thigh * 0.5], [lg.kx + sd * 6, ky], [lg.kx - sd * 10, ky + b.thigh * 0.5]], shade(lc, 0.25), 3, 0.3);
-      const fo = P2((p) => { p.ellipse(lg.fx - sd * b.foot * 0.25, -b.foot * 0.14, b.foot * 0.32, b.foot * 0.17, 0, 0, TAU); });
-      paint(ctx, fo, cl.shoes?.color || '#3a2f2a', L, [lg.fx - 70, -40, lg.fx + 70, 5], { lw: 2 });
+    // lap shadow between the thighs
+    const g = ctx.createRadialGradient(f * 16, hipY + 10, 4, f * 16, hipY + 10, hw * 0.9);
+    g.addColorStop(0, rgba(shade(lc, -0.5), 0.35)); g.addColorStop(1, rgba(lc, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(f * 16, hipY + 10, hw * 0.9, b.thigh * 0.8, 0, 0, TAU); ctx.fill();
+    // back shin (left knee -> right foot), then front shin (right knee -> left foot)
+    const shoe = cl.shoes?.color || '#3a2f2a';
+    const drawShin = (k, ft, dark) => {
+      const sh = P2((p) => capsule(p, k[0], k[1] + 6, b.thigh * 0.68, ft[0], ft[1] - 6, b.thigh * 0.5));
+      paint(ctx, sh, shade(lc, dark), L, [-hw * 1.6, hipY - 40, hw * 1.6, 10], { lw: 2 });
+      const dir = Math.sign(ft[0] - k[0]);
+      const fo = P2((p) => smoothClosed(p, [[ft[0] - dir * b.foot * 0.1, ft[1] - b.foot * 0.26], [ft[0] + dir * b.foot * 0.42, ft[1] - b.foot * 0.12], [ft[0] + dir * b.foot * 0.38, ft[1] + 2], [ft[0] - dir * b.foot * 0.12, ft[1] + 2]], 0.7));
+      paint(ctx, fo, shoe, L, [ft[0] - 80, ft[1] - 40, ft[0] + 80, ft[1] + 6], { lw: 2 });
+    };
+    drawShin(kL, fL, -0.1);
+    drawShin(kR, fR, 0);
+    // knee caps + folds
+    for (const k of [kL, kR]) {
+      ctx.fillStyle = rgba(shade(lc, 0.3), 0.3);
+      ctx.beginPath(); ctx.ellipse(k[0], k[1] - 4, b.thigh * 0.42, b.thigh * 0.32, 0, 0, TAU); ctx.fill();
+      softLine(ctx, [[k[0] * 0.55, hipY - b.thigh * 0.5], [k[0] * 0.7, hipY - b.thigh * 0.2], [k[0] * 0.62, hipY + b.thigh * 0.2]], shade(lc, -0.4), 2, 0.35);
     }
     return items;
   }
@@ -992,8 +1013,10 @@ function drawLegsFloor(ctx, C, sk, S, L, which) {
     const shin = P2((p) => capsule(p, it.kx, it.ky, b.thigh * 0.7, it.fx, it.fy - b.foot * 0.3, b.thigh * 0.48));
     paint(ctx, shin, lc, L, [it.kx - 70, it.ky - 60, it.kx + 70, 0], { lw: 2 });
     softLine(ctx, [[it.kx - b.thigh * 0.4, it.ky + 8], [it.kx, it.ky - 4], [it.kx + b.thigh * 0.4, it.ky + 8]], shade(lc, 0.25), 3, 0.35);
-    const shoe = P2((p) => { p.ellipse(it.fx, it.fy - b.foot * 0.12, b.foot * 0.3, b.foot * 0.2, 0, 0, TAU); });
-    paint(ctx, shoe, cl.shoes?.color || '#3a2f2a', L, [it.fx - 50, it.fy - 40, it.fx + 50, it.fy], { lw: 2 });
+    const fw = b.foot * 0.34, fx2 = it.fx, fy2 = it.fy;
+    const shoe = P2((p) => smoothClosed(p, [[fx2 - fw * 0.8, fy2 - b.foot * 0.36], [fx2 + fw * 0.8, fy2 - b.foot * 0.36], [fx2 + fw * 1.1, fy2 - b.foot * 0.08], [fx2 + fw * 0.8, fy2 + 2], [fx2 - fw * 0.8, fy2 + 2], [fx2 - fw * 1.1, fy2 - b.foot * 0.08]], 0.7));
+    paint(ctx, shoe, cl.shoes?.color || '#3a2f2a', L, [fx2 - 50, fy2 - 40, fx2 + 50, fy2], { lw: 2 });
+    softLine(ctx, [[fx2 - fw * 0.8, fy2 - b.foot * 0.1], [fx2, fy2 - b.foot * 0.04], [fx2 + fw * 0.8, fy2 - b.foot * 0.1]], shade(cl.shoes?.color || '#3a2f2a', 0.4), 2, 0.4);
   }
   return items;
 }
@@ -1049,7 +1072,7 @@ function drawTorso(ctx, C, sk, S, L, t) {
   const hemY = sk.hip[1] + (cl.top.hem ?? 20);
   const pts = torsoPts(C, sk, hemY, cl.top.extra || 0);
   const path = P2((p) => smoothClosed(p, pts, 0.55));
-  paint(ctx, path, cl.top.color, L, bboxOf(pts), { lw: 2.4, rot: sk.lean, rimW: 10 });
+  paint(ctx, path, cl.top.color, L, sk.litBox || bboxOf(pts), { lw: 2.4, rot: sk.lean, rimW: 10 });
   const ctr = sk.shC[0] + sk.f * b.shoulderW * 0.12;
   const info = { pts, path, ctr, hemY, sy: sk.shC[1] };
   if (cl.top.detail) {
@@ -1058,15 +1081,6 @@ function drawTorso(ctx, C, sk, S, L, t) {
     cl.top.detail(ctx, C, sk, info, L, t, S);
     ctx.restore();
   }
-  // shoulder shadow: soft gradient blending into the fabric
-  ctx.save(); ctx.clip(path);
-  for (const sd of [-1, 1]) {
-    const shp = sd < 0 ? sk.shL : sk.shR;
-    const g = ctx.createRadialGradient(shp[0], shp[1] + b.armR * 1.5, 1, shp[0], shp[1] + b.armR * 1.5, b.armR * 3);
-    g.addColorStop(0, rgba(shade(cl.top.color, -0.4), 0.18)); g.addColorStop(1, rgba(cl.top.color, 0));
-    ctx.fillStyle = g; ctx.fillRect(shp[0] - b.armR * 3, shp[1] - b.armR, b.armR * 6, b.armR * 6);
-  }
-  ctx.restore();
   if (cl.top.over) cl.top.over(ctx, C, sk, info, L, t, S);
   return info;
 }
@@ -1081,22 +1095,7 @@ function shoulderCap(ctx, C, sk, sd, L) {
   const pts = [base, [j[0] - sd * r * 0.2, j[1] - r * 1.22], [j[0] + sd * r * 0.72, j[1] - r * 0.95], [j[0] + sd * r * 1.06, j[1] - r * 0.1],
     [j[0] + sd * r * 0.9, j[1] + r * 0.9], [j[0] - sd * r * 1.0, j[1] + r * 1.0], [sk.shC[0] + sd * nw * 1.4, sk.shC[1] + r * 1.4]];
   const path = P2((p) => smoothClosed(p, pts, 0.6));
-  const col = L && L.ambientAmt ? tint(sl.color, L.ambient, L.ambientAmt) : sl.color;
-  ctx.save();
-  const g = ctx.createLinearGradient(0, j[1] - r * 1.2, 0, j[1] + r * 1.0);
-  g.addColorStop(0, rgba(col, 1)); g.addColorStop(0.6, rgba(col, 1)); g.addColorStop(1, rgba(col, 0));
-  ctx.fillStyle = g;
-  ctx.fill(path);
-  if (L) {
-    ctx.clip(path);
-    const kd = L.keyDir;
-    const gg = ctx.createLinearGradient(j[0] + Math.cos(kd) * r * 2, j[1] + Math.sin(kd) * r * 2, j[0] - Math.cos(kd) * r * 2, j[1] - Math.sin(kd) * r * 2);
-    gg.addColorStop(0, rgba(L.keyColor, (L.keyAmt || 0) * 0.15)); gg.addColorStop(0.5, rgba(L.keyColor, 0)); gg.addColorStop(1, rgba(L.shadowColor, (L.shadowAmt || 0) * 0.5));
-    ctx.fillStyle = gg;
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillRect(j[0] - r * 3, j[1] - r * 3, r * 6, r * 6);
-  }
-  ctx.restore();
+  paint(ctx, path, sl.color, L, sk.litBox || bboxOf(pts), { outline: false, rim: true, rot: sk.lean });
   // outline only along the top curve
   ctx.save();
   ctx.strokeStyle = rgba(shade(sl.color, -0.45), 0.55); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
@@ -1113,8 +1112,8 @@ function drawGlow(ctx, C, sk, S, t) {
   const h = Math.abs(sk.hip[1] - sk.headC[1]) + C.head.h;
   ctx.save();
   const g = ctx.createRadialGradient(sk.shC[0], cy, 10, sk.shC[0], cy, h * 0.75);
-  g.addColorStop(0, rgba(G.color, 0.32 * amt));
-  g.addColorStop(0.5, rgba(G.color, 0.14 * amt));
+  g.addColorStop(0, rgba(G.color, 0.5 * amt));
+  g.addColorStop(0.5, rgba(G.color, 0.24 * amt));
   g.addColorStop(1, rgba(G.color, 0));
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.ellipse(sk.shC[0], cy, h * 0.5, h * 0.78, 0, 0, TAU); ctx.fill();
@@ -1128,6 +1127,7 @@ function drawCharacter(ctx, C, S, L, t) {
   const sc = (S.s || 1) * (C.scale || 1);
   ctx.scale(sc * (S.flip ? -1 : 1), sc);
   const sk = skeleton(C, S);
+  { const tb = bboxOf(torsoPts(C, sk, sk.hip[1] + (C.clothes.top.hem ?? 20))); const pad = C.body.armR * 3; sk.litBox = [tb[0] - pad, tb[1] - pad, tb[2] + pad, tb[3]]; }
   const light = L ? { ...L } : null;
   if (light && C.glow) { // glow adds a coloured rim
     light.rimColor = mix(light.rimColor || '#ffffff', C.glow.color, 0.6);

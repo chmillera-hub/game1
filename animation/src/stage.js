@@ -70,6 +70,13 @@ class Stage {
     const lines = this.sched.lines.filter(pred);
     this.actors[actorId].lip = new LipSync(lines, gain);
   }
+  // listeners nod on every third stressed syllable of other speakers' lines
+  listen(actorId, pred) {
+    const times = [];
+    let k = 0;
+    for (const l of this.sched.lines.filter(pred)) for (const p of l.phones) if (p[0] === 'ˈ') { if (k++ % 3 === 1) times.push(p[1]); }
+    this.actors[actorId].listenStress = times;
+  }
   shot(s) { this.shots.push(s); this.shots.sort((a, b) => a.t0 - b.t0); return s; }
   label(t, actorId, o = {}) { this.labels.push({ t, actorId, ...o }); }
   title(t0, t1, lines, y, o = {}) { this.titles.push({ t0, t1, lines, y, ...o }); }
@@ -115,6 +122,7 @@ class Stage {
       const C = this.cast[a.rig];
       const Lt = { ...DEFAULT_LIGHT, ...(E.lightAt ? E.lightAt(S.x, S.y - 300 * (S.s || 1), T, eo) : {}) };
       if (shot.light) Object.assign(Lt, typeof shot.light === 'function' ? shot.light(T, id) : shot.light);
+      if (this.lightMod) this.lightMod(shot.env, T, id, S, Lt, eo);
       if (shot.beforeActor) shot.beforeActor(ctx, T, id, S, this);
       S._light = Lt;
       if (shot.armsFront && shot.armsFront.includes(id)) S.layer = 'noFrontArms';
@@ -129,6 +137,7 @@ class Stage {
       if (S.hidden) continue;
       const Lt = { ...DEFAULT_LIGHT, ...(E.lightAt ? E.lightAt(S.x, S.y - 300 * (S.s || 1), T, eo) : {}) };
       if (shot.light) Object.assign(Lt, typeof shot.light === 'function' ? shot.light(T, id) : shot.light);
+      if (this.lightMod) this.lightMod(shot.env, T, id, S, Lt, eo);
       drawCharacter(ctx, this.cast[a.rig], S, Lt, T);
     }
     if (shot.front) shot.front(ctx, T, this, eo, states);

@@ -30,7 +30,11 @@ def process(raw, out, cast, shout):
     filters = []
     st = cast.get("pitch", 0)
     if abs(st) > 0.05:
-        filters.append(f"rubberband=pitch={2 ** (st / 12):.5f}:pitchq=quality")
+        # pitch-shift in its own pass: chaining rubberband into vibrato can output silence
+        shifted = raw.replace(".wav", "_ps.wav")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af",
+                        f"rubberband=pitch={2 ** (st / 12):.5f}:pitchq=quality", "-ac", "1", shifted], check=True)
+        os.replace(shifted, raw)
     filters.append(FX[cast["fx"]])
     if shout:
         filters.append("volume=2.2,asoftclip=type=tanh,volume=0.6")
