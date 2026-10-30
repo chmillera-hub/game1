@@ -4,8 +4,16 @@ A ~53-minute portrait (9:16) animated film made from the screenplay *The Last Wi
 (a story told in questions and answers between a human and an AI). Voiced, scored,
 subtitled, fully procedural: every frame is drawn in code.
 
-Final files: `output/the-last-witness_compact.mp4` (under 15 MB, 540×960, 15 fps) and
-`output/the-last-witness_hq.mp4` (720×1280, 24 fps).
+Final files (53 min 15 s each, HEVC 10-bit video + Opus mono audio in MP4):
+
+| File | Size | Picture | Audio | SSIM vs. master |
+|---|---|---|---|---|
+| `output/the-last-witness_compact.mp4` | 14.5 MB | 540×960, 15 fps, ~19.5 kbps | 13 kbps | 0.967 (at 540×960) |
+| `output/the-last-witness_hq.mp4` | 48.1 MB | 720×1280, 24 fps, ~91 kbps | 24 kbps | 0.992 |
+
+The first frame of both is the opening scene with the title over it (no fade from black), so
+social previews show a picture. At the compact bitrate, soft dissolves (e.g. the last human fading
+away) show some blocking; use the HQ file where that matters.
 
 ## How it is made
 

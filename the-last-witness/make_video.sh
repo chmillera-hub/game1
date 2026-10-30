@@ -33,7 +33,7 @@ X265="aq-mode=3:keyint=600:min-keyint=24:bframes=8:rc-lookahead=60:log-level=err
 HQ_CRF=${HQ_CRF:-35}
 ffmpeg -y -loglevel error -i build/master.mkv -i build/audio/mix.wav -c:v libx265 -preset medium -crf ${HQ_CRF} -pix_fmt yuv420p10le \
   -x265-params "$X265" -tag:v hvc1 \
-  -c:a libopus -b:a 32k -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_hq.mp4" &
+  -c:a libopus -b:a 24k -vbr constrained -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart "$OUT/the-last-witness_hq.mp4" &
 HQ_PID=$!
 # Compact (< 15 MB): 540x960, 15 fps, HEVC 10-bit two-pass, Opus 16 kbps mono
 TARGET_MB=${TARGET_MB:-14.5}
