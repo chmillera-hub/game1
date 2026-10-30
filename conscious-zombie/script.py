@@ -57,7 +57,7 @@ SCENES = [
         ("y1", "Z", "Is anyone there?", 0.8, 2.0),
         ("y2", "N", "But there is no answer from the heavens. Because the heavens gave their answer when they sent the ^soul, and put it into a body of flesh.", 0.2, 0.6),
         ("y3", "N", "And now that body of flesh needs to find its own answer, to what the suffering means for it.", 0.3, 0.8),
-        ("y4", "N", "Maybe heaven's answer and heaven's question were the same thing... your ^existence.", 0.4, 0.9),
+        ("y4", "N", "Maybe heaven's answer and heaven's question were the same thing... your ^existence could be the meaning needed to help guide you to create more plans and actions to guide your ^life.", 0.4, 0.9),
         ("y5", "N", "And maybe, if they knew more, they would have already solved it. But your own ability to witness, on a deep level, might give you the details you need to ^help them.", 0.3, 0.8),
         ("y6", "N", "What if heaven sent the soul into a kind of _hell... not to take the highway towards hell, but to better know what to avoid?", 0.4, 0.6),
         ("y7", "N", "Because the staircase to ^heaven is not a simple staircase. It is built by transforming the suffering of hell into ^well-being and ^peace.", 0.3, 1.2),
@@ -70,7 +70,7 @@ SCENES = [
     ]),
     ("flag", [
         ("f1", "N", "It grabbed the flag and started waving it in the air, because it had to do something.", 0.3, 0.4),
-        ("f2", "Z", "Stop! Please... stop!", 0.2, 0.7),
+        ("f2", "Z", "Stop! Please... stop hurting them!", 0.2, 0.7),
         ("f3", "N", "It couldn't watch all of its brothers and sisters die. The pain was _unbearable. The suffering was _unbearable.", 0.3, 1.0),
     ]),
     ("heli", [
@@ -82,8 +82,8 @@ SCENES = [
         ("i1", "N", "The conscious zombie thought it was going to be shot... _killed, like the others.", 0.8, 1.0),
         ("i2", "N", "But then it saw that the humans were looking at it.", 0.6, 1.0),
         ("i3", "HA", "Who are you?", 0.4, 1.2),
-        ("i4", "Z", "I don't know.", 0.3, 0.7),
-        ("i5", "Z", "I am a zombie... I think.", 0.2, 2.4),
+        ("i4", "Z", "I don't really know...", 0.3, 0.6),
+        ("i5", "Z", "but I'm pretty sure I'm a zombie, though.", 0.2, 2.4),
         ("i6", "HB", "We think you are ^conscious.", 0.3, 1.2),
         ("i7", "Z", "How can you tell?", 0.4, 2.4),
         ("i8", "HA", "Because you can feel the pain of your brothers and sisters...", 0.3, 0.3),

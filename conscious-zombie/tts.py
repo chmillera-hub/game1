@@ -85,7 +85,24 @@ def chunk_text(text, maxlen=58):
             cur = ""
     if cur:
         chunks.append(cur)
-    return chunks
+    # long unpunctuated stretches: break at a word boundary near the middle (prefer before to/and/but)
+    out = []
+    for c in chunks:
+        while len(c) > maxlen:
+            words = c.split(" ")
+            best, bi = None, None
+            acc = 0
+            for k, wd in enumerate(words[:-1]):
+                acc += len(wd) + 1
+                score = abs(acc - len(c) / 2) - (8 if words[k + 1] in ("to", "and", "but", "or", "with") else 0)
+                if acc >= 12 and len(c) - acc >= 12 and (best is None or score < best):
+                    best, bi = score, k + 1
+            if bi is None:
+                break
+            out.append(" ".join(words[:bi]))
+            c = " ".join(words[bi:])
+        out.append(c)
+    return out
 
 
 timeline = {"fps": FPS, "sr": SR, "scenes": [], "lines": {}}

@@ -1,17 +1,17 @@
 """Character rig. Body space: neck root (sternal notch) at (0,0), y down, ~116 units per head."""
 import math
 import cairo
-from common import (clamp, lerp, mix, mul, tint, hexc, rgba, smooth_closed, smooth_open,
+from common import (clamp, lerp, mix, mul, tint, hexc, rgba, smooth_closed, smooth_open, hsh,
                     capsule, ellipse, soft_dot, shade, soft_stroke, sn)
 
 # ---------------------------------------------------------------- characters
 BASE = dict(
-    skin=hexc("8f9c8a"), lip=hexc("6e6470"), hair=hexc("2a2220"), hair_hi=hexc("5a4a42"),
+    skin=hexc("8f9c8a"), lip=hexc("737d6e"), hair=hexc("2a2220"), hair_hi=hexc("5a4a42"),
     brow=hexc("2a2220"), shirt=hexc("4f7478"), shirt2=hexc("3d5c60"), pants=hexc("3b3a42"),
     shoes=hexc("2b2420"), sclera=hexc("ddd8c4"), iris=hexc("e0a030"), milky=1.0, bags=0.45,
     hairstyle="messy", eye_w=20.0, eye_h=10.5, brow_t=3.0, mouth_w=14.0, jaw=1.0, chin=1.0,
     nose=1.0, collar="crew", torn=True, headset=False, helmet=False, stubble=0.0, blush=0.0,
-    long_hair=False, build=1.0,
+    long_hair=False, build=1.0, decay=1.0, lip_a=0.22, fem=False,
 )
 
 
@@ -22,19 +22,19 @@ def make(**kw):
 
 
 ZOMBIE = make()  # the one who becomes conscious (teal shirt)
-HUMAN_A = make(skin=hexc("6b4632"), lip=hexc("5a3428"), hair=hexc("151112"), hair_hi=hexc("3a2c2a"),
+HUMAN_A = make(skin=hexc("6b4632"), lip=hexc("7a3a3a"), hair=hexc("151112"), hair_hi=hexc("4a3634"),
                brow=hexc("1a1414"), shirt=hexc("5d6b45"), shirt2=hexc("4a5636"), pants=hexc("4a5636"),
-               sclera=hexc("f2eee6"), iris=hexc("3a2214"), milky=0.0, bags=0.08, hairstyle="bun",
-               eye_w=19.5, eye_h=10.8, brow_t=3.1, mouth_w=13.5, jaw=0.92, chin=0.95, nose=0.95,
-               collar="flight", torn=False, headset=True, blush=0.10, build=0.92)
+               sclera=hexc("f2eee6"), iris=hexc("3a2214"), milky=0.0, bags=0.06, hairstyle="curls",
+               eye_w=20.0, eye_h=11.6, brow_t=2.5, mouth_w=13.0, jaw=0.86, chin=0.9, nose=0.9,
+               collar="flight", torn=False, headset=True, blush=0.14, build=0.86, decay=0.0, lip_a=0.72, fem=True)
 HUMAN_B = make(skin=hexc("e2b49a"), lip=hexc("b0786a"), hair=hexc("8a4524"), hair_hi=hexc("c07040"),
                brow=hexc("7a3c20"), shirt=hexc("3e4a5c"), shirt2=hexc("2f3a4a"), pants=hexc("2f3a4a"),
                sclera=hexc("f4f0ea"), iris=hexc("4f7a8c"), milky=0.0, bags=0.12, hairstyle="short",
                eye_w=18.5, eye_h=9.8, brow_t=3.8, mouth_w=14.5, jaw=1.08, chin=1.05, nose=1.1,
-               collar="flight", torn=False, headset=True, stubble=0.35, blush=0.06, build=1.06)
+               collar="flight", torn=False, headset=True, stubble=0.35, blush=0.06, build=1.06, decay=0.0, lip_a=0.5)
 DEFENDER = make(skin=hexc("c89a7a"), lip=hexc("9a6a5a"), hair=hexc("3a2a20"), sclera=hexc("f0ece4"),
                 iris=hexc("5a4030"), milky=0.0, bags=0.25, hairstyle="short", helmet=True, brow_t=4.6,
-                shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight", torn=False, stubble=0.2)
+                shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight", torn=False, stubble=0.2, decay=0.0, lip_a=0.5)
 
 SHIRTS = ["7a3b3b", "8a7a3a", "5a5a60", "6a5040", "45506e", "8a8478", "5b3f5e", "4b6040", "735a48"]
 HAIRS = ["2a2220", "4a3426", "1e1a1a", "6a5a4a", "3a2a24", "5a4636"]
@@ -55,7 +55,7 @@ def horde_style(i):
 def expr(**kw):
     e = dict(bi=0.0, bo=0.0, biL=None, biR=None, boL=None, boR=None, lid=0.0, lidL=None, lidR=None,
              low=0.0, gx=0.0, gy=0.0, op=0.0, sm=0.0, wd=0.0, tr=0.0, press=0.0, milky=None,
-             glow=0.0, pupil=0.42, tears=(), t=0.0, sneer=0.0, drone=None, grime=None, life=0.0)
+             glow=0.0, pupil=0.42, tears=(), t=0.0, sneer=0.0, drone=None, grime=None, life=0.0, decay=None)
     e.update(kw)
     return e
 
@@ -95,16 +95,6 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
         smooth_closed(ctx, pts)
 
     hair = ch["hair"]
-    # --- back hair (long hair / bun) behind everything
-    if ch["hairstyle"] == "long" and not back:
-        ctx.new_path()
-        smooth_closed(ctx, [(-46 + s * 6, -30), (-50, 20), (-52, 70), (-30, 92), (30, 92), (52, 70), (50, 20), (46 + s * 6, -30), (0, -66)])
-        shade(ctx, lambda: smooth_closed(ctx, [(-46 + s * 6, -30), (-50, 20), (-52, 70), (-30, 92), (30, 92), (52, 70), (50, 20), (46 + s * 6, -30), (0, -66)]),
-              mul(hair, 0.85), light, lw)
-    if ch["hairstyle"] == "bun":
-        bx = -s * 30
-        if abs(s) > 0.15 or back:
-            shade(ctx, lambda: ellipse(ctx, bx * 1.4, -46, 20, 18), hair, light, lw)
 
     # --- ears
     ear_x = 44 * math.cos(th) - 2 * s
@@ -131,6 +121,9 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
     # --- head fill
     if back:
         shade(ctx, outline, hair, light, lw, shadow=0.35)
+        if ch["hairstyle"] in ("long", "curls"):
+            hang = [(-46, -30), (-50, 20), (-48, 70), (-28, 88), (28, 88), (48, 70), (50, 20), (46, -30), (0, -66)]
+            shade(ctx, lambda: smooth_closed(ctx, hang), mul(hair, 0.9), light, lw)
         # nape skin
         ctx.save()
         ctx.new_path(); outline(); ctx.clip()
@@ -184,9 +177,25 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
             pts = [(_proj(-30, 28, th), 2 + pdy * 0.6), (_proj(-22, 34, th), 12 + pdy * 0.6), (_proj(-18, 36, th), 20 + pdy * 0.6)]
             soft_stroke(ctx, pts, hexc("4a2a2a"), 0.45 * grime, lw * 0.9)
             soft_stroke(ctx, [(p[0] + 1.2, p[1] + 0.6) for p in pts], hexc("c8c0b0"), 0.18 * grime, lw * 0.6)
+    decay = ch.get("decay", 0.0) if E["decay"] is None else E["decay"]
+    if decay > 0 and lod > 0:
+        for sgn in (1, -1):  # hollow cheeks, sunken sockets
+            soft_dot(ctx, _proj(sgn * 30, 24, th), 24 + pdy * 0.6, 18, light["shadow"], 0.3 * decay)
+            soft_dot(ctx, _proj(sgn * 17, 36, th), -3 + pdy, 17, hexc("3a2a3e"), 0.26 * decay)
+        rot = (hexc("6f7d58"), hexc("8a8452"), hexc("5f6a5a"))
+        for q, (gx_, gy_, r_) in enumerate(((-30, -20, 11), (26, -30, 9), (34, 14, 8), (-36, 30, 9), (12, 40, 7), (-8, -46, 8),
+                                             (20, 30, 6), (-20, 8, 6))):
+            soft_dot(ctx, _proj(gx_, 30, th), gy_ + pdy * 0.5, r_, rot[q % 3], 0.22 * decay)
+        if lod > 1:
+            vc = hexc("4a3a56")
+            for pts in (((-40, -30), (-33, -22), (-36, -12)), ((-33, -22), (-27, -24)), ((36, 26), (30, 34), (32, 44)),
+                        ((30, 34), (24, 36)), ((-10, -54), (-4, -46), (-7, -38))):
+                soft_stroke(ctx, [(_proj(px, 30, th), py + pdy * 0.5) for px, py in pts], vc, 0.32 * decay, lw * 0.75)
+            for (sx_, sy_, r_) in ((16, -42, 3.0), (-20, 46, 2.4)):  # small scabs with a crusty rim
+                cx_ = _proj(sx_, 34, th)
+                soft_dot(ctx, cx_, sy_ + pdy * 0.5, r_ * 1.4, hexc("3e2a22"), 0.6 * decay)
+                soft_dot(ctx, cx_ - 0.8, sy_ - 0.8 + pdy * 0.5, r_ * 0.55, hexc("8a7a62"), 0.35 * decay)
     if E["life"] > 0:
-        for sgn in (1, -1):
-            soft_dot(ctx, _proj(sgn * 24, 30, th), 14 + pdy * 0.8, 16, hexc("e0a888"), 0.14 * E["life"])
         soft_dot(ctx, _proj(0, 40, th), -20 + pdy * 0.5, 34, hexc("ffe2b0"), 0.08 * E["life"])
     ctx.restore()
 
@@ -240,8 +249,44 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
     _hair_front(ctx, ch, s, th, pdy, light, lw, lod)
     if ch["headset"]:
         _headset(ctx, ch, s, ear_x, pdy, light, lw)
+    if ch.get("fem") and lod > 0:
+        for sgn in (1, -1):
+            if (-sgn * s) < -0.35:
+                continue
+            ex = sgn * ear_x
+            ctx.new_path(); ctx.arc(ex, 25, 4.4, 0, 2 * math.pi)
+            rgba(ctx, tint(hexc("e8c060"), light)); ctx.set_line_width(1.7); ctx.stroke()
+            soft_dot(ctx, ex - 1.6, 21.5, 1.7, (1, 1, 1), 0.7)
     if ch["helmet"]:
         _helmet(ctx, s, light, lw)
+
+
+def draw_back_hair(ctx, ch, yaw, light, lw):
+    """Hair that hangs behind the head: drawn before the neck and collar so it never blocks them."""
+    s = math.sin(yaw)
+    hair = ch["hair"]
+    hs = ch["hairstyle"]
+    if hs == "long":
+        pts = [(-46 + s * 6, -30), (-50, 20), (-52, 70), (-30, 92), (30, 92), (52, 70), (50, 20), (46 + s * 6, -30), (0, -66)]
+        shade(ctx, lambda: smooth_closed(ctx, pts), mul(hair, 0.85), light, lw)
+    elif hs == "bun":
+        if abs(s) > 0.15:
+            shade(ctx, lambda: ellipse(ctx, -s * 42, -46, 20, 18), hair, light, lw)
+    elif hs == "curls":
+        pts = []
+        for k in range(24):
+            a = math.pi * (0.95 + 1.1 * k / 23)
+            r = 1 + 0.06 * math.sin(k * 2.7) + 0.04 * math.sin(k * 5.3)
+            pts.append((-s * 10 + math.cos(a) * 64 * r, -14 + math.sin(a) * 66 * r))
+        pts += [(54 - s * 10, 36), (30, 52), (-30, 52), (-54 - s * 10, 36)]
+        shade(ctx, lambda: smooth_closed(ctx, pts), mul(hair, 0.92), light, lw, shadow=0.35)
+        hi = tint(ch["hair_hi"], light)
+        for q in range(18):  # coil texture: short arcs of varied size, no stamped circles
+            a = math.pi * (1.0 + q / 17.0)
+            rr = 46 + 14 * hsh(q, 141)
+            cx_, cy_ = -s * 10 + math.cos(a) * rr, -14 + math.sin(a) * rr * 1.02
+            ctx.new_path(); ctx.arc(cx_, cy_, 3.5 + 3 * hsh(q, 142), a - 0.9, a + 0.9)
+            rgba(ctx, hi, 0.35 + 0.25 * hsh(q, 143)); ctx.set_line_width(lw * 0.9); ctx.stroke()
 
 
 def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light, lw, lod, pitch, drone=0.0):
@@ -312,6 +357,13 @@ def _eye(ctx, ch, cx, cy, w, h, sgn, lid, low, gx, gy, milky, glow, pupil, light
         ctx.set_line_width(lw * (1.9 if lod > 1 else 0.7))
         ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         ctx.stroke()
+        if ch.get("fem") and lod > 1:
+            for v, ln in ((0.55, 2.6), (0.78, 3.4), (1.0, 3.8)):
+                lx_ = pk + (outer - pk) * v
+                ly_ = up_c[1] + (oy - up_c[1]) * v * v
+                ctx.new_path(); ctx.move_to(lx_, ly_)
+                ctx.curve_to(lx_ + sgn * ln * 0.4, ly_ - ln * 0.5, lx_ + sgn * ln * 0.9, ly_ - ln * 0.6, lx_ + sgn * ln, ly_ - ln * 0.4)
+                rgba(ctx, hexc("140c0c"), 0.9); ctx.set_line_width(lw * 1.0); ctx.stroke()
         if lod > 1:
             ctx.new_path(); ctx.move_to(outer, oy); lower()
             rgba(ctx, mul(skin, 0.5), 0.35)
@@ -336,7 +388,7 @@ def _brow(ctx, ch, cx, cy, w, h, sgn, bi, bo, light, lw, s):
     t = ch["brow_t"]
     fur = max(0.0, -bi)
     inner = (cx - sgn * (w * 0.45 - fur * 2.2), cy - h * 1.55 - max(0, bi) * 5.5 + fur * 3.0)
-    mid = (cx + sgn * w * 0.12, cy - h * 1.95 - (max(0, bi) * 2.5 + bo * 3.5) + fur * 1.2)
+    mid = (cx + sgn * w * 0.12, cy - h * 1.95 - (max(0, bi) * 2.5 + bo * 3.5) + fur * 1.2 - (2.5 if ch.get("fem") else 0))
     outer = (cx + sgn * w * 0.66, cy - h * 1.55 - bo * 4.0 + max(0, bi) * 0.8)
     pts = []
     for k in range(9):
@@ -409,18 +461,22 @@ def _mouth(ctx, ch, mx, my, E, light, lw, cth, lod):
     bot_y = my + op * 12 + 0.8 + E["press"] * -0.5
     lipc = ch["lip"]
     grime = ch.get("grime", 0.0) if E.get("grime") is None else E["grime"]
-    lipc = mix(lipc, hexc("40363c"), 0.4 * grime)
+    decay = ch.get("decay", 0.0) if E.get("decay") is None else E["decay"]
+    lipc = mix(lipc, hexc("4a4e48"), 0.25 * grime)
+    la = ch.get("lip_a", 0.55)
     # lips
     up_out = [(cl[0], cl[1]), (mx - hw * 0.38, my - 4.6 - op * 2), (mx, my - 3.4 - op * 2), (mx + hw * 0.38, my - 4.6 - op * 2), (cr[0], cr[1])]
     ctx.new_path(); smooth_open(ctx, up_out)
     ctx.curve_to(mx + hw * 0.5, top_y, mx - hw * 0.5, top_y, cl[0], cl[1])
-    rgba(ctx, tint(lipc, light), 0.55 - E["press"] * 0.25)
+    rgba(ctx, tint(lipc, light), la - E["press"] * 0.25 * la)
     ctx.fill()
     lo_bot = bot_y + 6.5 - E["press"] * 2
     ctx.new_path(); ctx.move_to(*cl)
     ctx.curve_to(mx - hw * 0.55, bot_y, mx + hw * 0.55, bot_y, cr[0], cr[1])
     ctx.curve_to(mx + hw * 0.6, lo_bot, mx - hw * 0.6, lo_bot, cl[0], cl[1])
-    rgba(ctx, tint(mix(lipc, ch["skin"], 0.25), light), 0.55 - E["press"] * 0.25)
+    rgba(ctx, tint(mix(lipc, ch["skin"], 0.25), light), la - E["press"] * 0.25 * la)
+    if ch.get("fem") and lod > 1:
+        soft_dot(ctx, mx + hw * 0.18, bot_y + 2.6, hw * 0.24, (1, 1, 1), 0.28)
     ctx.fill()
     if lod > 1 and grime > 0.3:
         for q in (-0.35, 0.1, 0.45):
@@ -438,8 +494,12 @@ def _mouth(ctx, ch, mx, my, E, light, lw, cth, lod):
         ctx.fill_preserve()
         ctx.clip()
         if op > 0.3 or E["sneer"] > 0.3:
-            rgba(ctx, hexc("e8e2d6"), 0.75)
+            rgba(ctx, mix(hexc("e8e2d6"), hexc("c4b88a"), decay), 0.8)
             ctx.new_path(); ctx.rectangle(mx - hw * 0.62, top_y - 3, hw * 1.24, 2.4 + min(3.5, op * 6)); ctx.fill()
+            if decay > 0.5:  # uneven, gapped teeth
+                for gx_ in (-0.3, 0.12, 0.42):
+                    ctx.new_path(); ctx.rectangle(mx + hw * gx_, top_y - 3, hw * 0.07, 2.4 + min(3.5, op * 6))
+                    rgba(ctx, hexc("3a2420"), 0.7); ctx.fill()
             rgba(ctx, hexc("a04858"), 0.85)
             ctx.new_path(); ellipse(ctx, mx, bot_y - 1, hw * 0.55, max(1, op * 5)); ctx.fill()
         ctx.restore()
@@ -542,7 +602,7 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
         if hs == "long" and lod > 0:
             for sgn in (1, -1):
                 ox = _cap_outer(s, -63)[0 if sgn == 1 else -1][0]
-                side = [(ox - sgn * 4, -20), (ox + sgn * 3, 4), (ox + sgn * 5, 40), (ox, 70), (ox - sgn * 5, 40), (ox - sgn * 4, 2)]
+                side = [(ox - sgn * 4, -20), (ox + sgn * 3, 4), (ox + sgn * 4, 22), (ox, 38), (ox - sgn * 4, 22), (ox - sgn * 4, 2)]
                 shade(ctx, lambda: smooth_closed(ctx, side), hair, light, lw, shadow=0.35)
     elif hs == "short":
         cap = _cap_outer(s, -74, 1.06, side_y=4) + _hairline(th, [(-42, -10), (-36, -30), (-18, -42), (4, -45), (26, -39), (42, -14)], pdy)
@@ -562,6 +622,18 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
             for i in range(6):
                 x = -28 + i * 11
                 soft_stroke(ctx, [(fx(x - 8, 4), -66), (fx(x + 2, 10), -56), (fx(x + 10, 14), -46 + pdy * 0.25)], hi, 0.4, lw * 0.8)
+    elif hs == "curls":
+        cap = _cap_outer(s, -76, 1.12, side_y=6) + _hairline(th, [(-42, -6), (-38, -26), (-24, -42), (-10, -47), (8, -43),
+                                                                  (28, -36), (42, -18)], pdy)
+        shade(ctx, lambda: smooth_closed(ctx, cap), hair, light, lw, shadow=0.32)
+        if lod > 0:
+            for q in range(16):
+                a = math.pi * (1.05 + 0.9 * q / 15)
+                cx_ = fx(math.cos(a) * 50, 6)
+                cy_ = -12 + math.sin(a) * 62
+                ctx.new_path(); ctx.arc(cx_, cy_, 3 + 2.5 * hsh(q, 144), a - 1.0, a + 1.0)
+                rgba(ctx, hi, 0.4 + 0.25 * hsh(q, 145)); ctx.set_line_width(lw * 0.9); ctx.stroke()
+            soft_dot(ctx, fx(-14, 8), -58, 22, hi, 0.3)
     elif hs == "bun":
         cap = _cap_outer(s, -64, 1.03) + _hairline(th, [(-42, -12), (-34, -32), (-14, -44), (12, -44), (34, -32), (42, -12)], pdy)
         shade(ctx, lambda: smooth_closed(ctx, cap), hair, light, lw, shadow=0.3)
@@ -789,8 +861,12 @@ def draw_arm(ctx, ch, sh, arm, light, lw, bw, lod, sgn):
     return el, wr
 
 
-def body_pts(bw):
+def body_pts(bw, fem=False):
     s = bw
+    if fem:
+        return [(-24 * s, -12), (-46 * s, -2), (-60 * s, 10), (-66 * s, 30), (-62 * s, 62), (-58 * s, 96), (-43 * s, 165),
+                (-53 * s, 236), (-24 * s, 244), (0, 246), (24 * s, 244), (53 * s, 236), (43 * s, 165), (58 * s, 96),
+                (62 * s, 62), (66 * s, 30), (60 * s, 10), (46 * s, -2), (24 * s, -12)]
     return [(-24 * s, -12), (-46 * s, -2), (-62 * s, 10), (-69 * s, 30), (-63 * s, 64), (-55 * s, 100), (-47 * s, 165),
             (-50 * s, 236), (-24 * s, 244), (0, 246), (24 * s, 244), (50 * s, 236), (47 * s, 165), (55 * s, 100),
             (63 * s, 64), (69 * s, 30), (62 * s, 10), (46 * s, -2), (24 * s, -12)]
@@ -830,8 +906,13 @@ def draw_character(ctx, ch, P, light, t=0.0):
     piv = (math.sin(roll) * 8 + yaw * 3, -46 - br * 0.6 - shrug * 3)
     hc = (piv[0] + math.sin(roll) * 44 + yaw * 4, piv[1] - math.cos(roll) * 44 + (pitch * 12 if pitch > 0 else -pitch * 5))
     skin = ch["skin"]
-    nk = lambda: smooth_closed(ctx, [(-25 * bw, 2), (-21, -20), (hc[0] - 19, hc[1] + 40), (hc[0] - 6, hc[1] + 28),
-                                     (hc[0] + 6, hc[1] + 28), (hc[0] + 19, hc[1] + 40), (21, -20), (25 * bw, 2)])
+    nf = 0.85 if ch.get("fem") else 1.0
+    nk = lambda: smooth_closed(ctx, [(-25 * bw * nf, 2), (-21 * nf, -20), (hc[0] - 19 * nf, hc[1] + 40), (hc[0] - 6, hc[1] + 28),
+                                     (hc[0] + 6, hc[1] + 28), (hc[0] + 19 * nf, hc[1] + 40), (21 * nf, -20), (25 * bw * nf, 2)])
+    if view == "front" and ch["hairstyle"] in ("long", "curls", "bun"):
+        ctx.save(); ctx.translate(*hc); ctx.rotate(roll); ctx.scale(1.08, 1.08)
+        draw_back_hair(ctx, ch, yaw, light, lw)
+        ctx.restore()
     shade(ctx, nk, skin, light, lw, shadow=0.5)
     if lod > 1 and view == "front":
         ctx.save(); ctx.new_path(); nk(); ctx.clip()
@@ -843,9 +924,12 @@ def draw_character(ctx, ch, P, light, t=0.0):
         for sgn in (1, -1):
             top = (hc[0] + sgn * 26 - yaw * 8, hc[1] + 30)
             soft_stroke(ctx, [top, ((top[0] + sgn * 5) * 0.5, (top[1] - 4) * 0.5), (sgn * 4, -3)], mul(skin, 0.6), 0.32, lw * 1.2)
+        if ch.get("decay", 0) > 0:
+            soft_stroke(ctx, [(hc[0] + 14, hc[1] + 44), (12, -26), (8, -8)], hexc("4a3a56"), 0.3 * ch["decay"], lw * 0.8)
+            soft_stroke(ctx, [(12, -26), (18, -16)], hexc("4a3a56"), 0.25 * ch["decay"], lw * 0.6)
         ctx.restore()
     # torso
-    bp = body_pts(bw)
+    bp = body_pts(bw, ch.get("fem", False))
     bp = [(x * (1 + (0.012 * br if y < 120 else 0)), y + (-shrug * 7 if y < 40 and abs(x) > 30 else 0)) for x, y in bp]
     if ch["torn"]:
         hem = [(-51 * bw, 236), (-40 * bw, 248), (-30 * bw, 238), (-18 * bw, 250), (-6, 241), (8, 252), (22 * bw, 240), (36 * bw, 250), (51 * bw, 236)]
@@ -906,6 +990,18 @@ def _collar(ctx, ch, light, lw, bw):
         soft_stroke(ctx, [(-40, 60), (-40, 60.1)], (0, 0, 0), 0.0, lw)
 
 
+def _shoe(ctx, an, lift, shoes, pants, light, lw):
+    shade(ctx, lambda: smooth_closed(ctx, [(an[0] - 13, an[1] - 4), (an[0] + 13, an[1] - 4), (an[0] + 16, an[1] + 12),
+                                            (an[0], an[1] + 18 - lift * 6), (an[0] - 16, an[1] + 12)]), shoes, light, lw)
+    shade(ctx, lambda: capsule(ctx, (an[0], an[1] - 12), (an[0], an[1] - 2), 12, 12.5), mul(pants, 0.9), light, lw, shadow=0.3)
+
+
+def _seat(ctx, ch, light, lw, bw):
+    """Seat of the trousers joining both legs (no gap, no flap between them)."""
+    pts = [(-51 * bw, 220), (51 * bw, 220), (48 * bw, 268), (20 * bw, 300), (0, 304), (-20 * bw, 300), (-48 * bw, 268)]
+    shade(ctx, lambda: smooth_closed(ctx, pts, 0.8), ch["pants"], light, lw, shadow=0.45)
+
+
 def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
     mode = legs.get("mode", "stand")
     pants, shoes = ch["pants"], ch["shoes"]
@@ -917,12 +1013,15 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
         for sgn in (-1, 1):
             ctx.new_path(); ellipse(ctx, sgn * 42 * bw, gy - 8, 34, 9)
             rgba(ctx, (0, 0, 0), 0.4 * k); ctx.fill()
+        if k < 0.97:
+            _seat(ctx, ch, light, lw, bw)
         for i, sgn in enumerate((-1, 1)):
             hp = hips[i]
             kn = (sgn * lerp(27, 42, k) * bw, lerp(401, 316, k))
             an = (sgn * lerp(28, 46, k) * bw, lerp(561, 300, k))
-            if k < 0.97:
+            if k < 0.97:  # going down / getting up: shins and feet stay on show
                 shade(ctx, lambda: capsule(ctx, kn, an, 15, 10), pants, light, lw)
+                _shoe(ctx, an, 0.0, shoes, pants, light, lw)
             else:
                 # shins + soles tucked behind, just visible beside the hips
                 shade(ctx, lambda: ellipse(ctx, sgn * 58 * bw, 322, 13, 7, sgn * 0.3), shoes, light, lw)
@@ -933,32 +1032,94 @@ def draw_legs(ctx, ch, legs, light, lw, lod, bw, t):
                 soft_stroke(ctx, [(hp[0] - sgn * 4, hp[1] + 18), (kn[0] - sgn * 12, kn[1] - 14)], mul(pants, 0.6), 0.3, lw)
         return
     if mode == "sit_knees":
-        for i, sgn in enumerate((-1, 1)):
-            hp = hips[i]
-            kn = (sgn * 36, 150)
-            an = (sgn * 40, 318)
-            shade(ctx, lambda: ellipse(ctx, an[0], an[1] + 12, 19, 11), shoes, light, lw)
-            shade(ctx, lambda: capsule(ctx, kn, an, 19, 12), pants, light, lw)
-            shade(ctx, lambda: capsule(ctx, (hp[0], 220), kn, 25, 21), pants, light, lw, shadow=0.4)
+        # sitting on the floor, knees drawn up to the chest, feet planted in front
+        soft_dot(ctx, 0, 300, 120, (0, 0, 0), 0.4)
+        for sgn in (-1, 1):
+            hp, kn = (sgn * 26 * bw, 232), (sgn * 40, 118)
+            shade(ctx, lambda: capsule(ctx, hp, kn, 24, 21), mul(pants, 0.9), light, lw, shadow=0.5)
+        for sgn in (-1, 1):
+            kn, an = (sgn * 40, 118), (sgn * 46, 284)
+            shade(ctx, lambda: capsule(ctx, kn, an, 20, 13), pants, light, lw, shadow=0.35)
             if lod > 1:
-                soft_stroke(ctx, [(kn[0] - 14, kn[1] + 4), (kn[0], kn[1] - 4), (kn[0] + 14, kn[1] + 4)], mul(pants, 0.55), 0.4, lw)
+                soft_dot(ctx, kn[0] - light["dir"][0] * 5, kn[1] - 4, 13, light["rim"], 0.15)
+                soft_stroke(ctx, [(kn[0] - 12, kn[1] + 16), (kn[0], kn[1] + 22), (kn[0] + 12, kn[1] + 16)], mul(pants, 0.55), 0.35, lw)
+            _shoe(ctx, an, 0.0, shoes, pants, light, lw)
         return
     phase = legs.get("phase", 0.0)
     run = mode == "run"
+    _seat(ctx, ch, light, lw, bw)
     for i, sgn in enumerate((-1, 1)):
         hp = hips[i]
         lift = max(0.0, math.sin(phase + (0 if i == 0 else math.pi))) if run else legs.get("liftL" if i == 0 else "liftR", 0.0)
         dxk = legs.get("dxL" if i == 0 else "dxR", 0.0)
         kn = (sgn * 27 * bw + dxk * 0.6, 401 - 46 * lift)
         an = (sgn * 28 * bw + dxk, 561 - 120 * lift)
-        if lift > 0.05 and legs.get("view") == "back":
-            pass
         shade(ctx, lambda: capsule(ctx, kn, an, 15.5, 10.5), pants, light, lw)
         shade(ctx, lambda: capsule(ctx, hp, kn, 22, 16), pants, light, lw, shadow=0.45)
         if lod > 1:
             soft_stroke(ctx, [(kn[0] - 9, kn[1] - 6), (kn[0] + 2, kn[1] + 2), (kn[0] + 9, kn[1] - 4)], mul(pants, 0.55), 0.4, lw)
             soft_stroke(ctx, [(hp[0] - sgn * 8, hp[1] + 24), (kn[0] - sgn * 6, kn[1] - 40)], mul(pants, 0.6), 0.28, lw)
-        # shoe (front view: toe toward camera)
-        shade(ctx, lambda: smooth_closed(ctx, [(an[0] - 13, an[1] - 4), (an[0] + 13, an[1] - 4), (an[0] + 16, an[1] + 12),
-                                                (an[0], an[1] + 18 - lift * 6), (an[0] - 16, an[1] + 12)]), shoes, light, lw)
-        shade(ctx, lambda: capsule(ctx, (an[0], an[1] - 12), (an[0], an[1] - 2), 12, 12.5), mul(pants, 0.9), light, lw, shadow=0.3)
+        _shoe(ctx, an, lift, shoes, pants, light, lw)
+
+
+def draw_quad(ctx, ch, x, y, s, phase, view, light, t, E=None):
+    """A zombie bounding on all fours. (x, y) = ground point under the chest. Same units as the standing rig."""
+    lod = 2 if s > 0.45 else 1 if s > 0.12 else 0
+    lw = 1.6 / s
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(s, s)
+    bob = abs(math.sin(phase)) * 14
+    ctx.translate(0, -bob)
+    shirt, pants, skin, shoes = ch["shirt"], ch["pants"], ch["skin"], ch["shoes"]
+    sleeve = mix(shirt, ch["shirt2"], 0.45)
+    if E is None:
+        E = expr(op=0.5, sm=-0.45, sneer=0.5, bi=-0.6, bo=0.3, milky=1.0, drone=1.0, grime=1.0, lid=0.2, t=t)
+    la, ra = max(0.0, math.sin(phase)), max(0.0, math.sin(phase + math.pi))
+    lh, rh = max(0.0, math.sin(phase + 1.6)), max(0.0, math.sin(phase + 1.6 + math.pi))
+    if lod == 0:
+        rgba(ctx, tint(shirt, light)); ctx.new_path(); ellipse(ctx, 0, -280, 80, 60); ctx.fill()
+        rgba(ctx, tint(pants, light)); ctx.new_path(); ctx.rectangle(-60, -240, 120, 230); ctx.fill()
+        rgba(ctx, tint(skin if view == "front" else ch["hair"], light)); ctx.new_path(); ctx.arc(0, -236, 55, 0, 6.3); ctx.fill()
+        ctx.restore()
+        return
+    if view == "front":
+        for sgn, lift in ((-1, lh), (1, rh)):  # hind legs, far behind, splayed wide
+            hip, kn, ft = (sgn * 44, -330), (sgn * 100, -262 + 30 * lift), (sgn * 96, -160 - 40 * lift)
+            shade(ctx, lambda: capsule(ctx, hip, kn, 20, 15), pants, light, lw)
+            shade(ctx, lambda: capsule(ctx, kn, ft, 14, 10), pants, light, lw)
+            shade(ctx, lambda: ellipse(ctx, ft[0], ft[1] + 6, 13, 8), shoes, light, lw)
+        shade(ctx, lambda: smooth_closed(ctx, [(-86, -246), (-80, -312), (-40, -346), (40, -346), (80, -312), (86, -246), (0, -226)], 0.8),
+              shirt, light, lw, shadow=0.55)
+        for sgn, lift in ((-1, la), (1, ra)):  # arms planted like front legs, lifting in turn
+            sh_, el, hd = (sgn * 66, -262), (sgn * 84, -150 + 30 * lift), (sgn * 62, -24 - 70 * lift)
+            shade(ctx, lambda: (capsule(ctx, sh_, el, 16, 13), capsule(ctx, el, hd, 13.5, 10.5)), sleeve, light, lw * 1.25,
+                  shadow=0.5, union=True)
+            if lod > 1:
+                draw_hand(ctx, ch, hd[0], hd[1] - 4, math.pi / 2 - sgn * 0.15, light, lw, curl=0.55, spread=0.5, thumb=0.5,
+                          flip=sgn > 0, size=1.0, hfs=0.45)
+            else:
+                shade(ctx, lambda: ellipse(ctx, hd[0], hd[1] + 6, 13, 9), skin, light, lw)
+        ctx.save()  # head thrust forward and low, snarling
+        ctx.translate(0, -230 + bob * 0.3)
+        ctx.rotate(math.sin(phase) * 0.06)
+        ctx.scale(1.08, 1.08)
+        draw_head(ctx, ch, E, math.sin(phase * 0.5) * 0.08, -0.25, light, lw, lod)
+        ctx.restore()
+    else:
+        for sgn, lift in ((-1, la), (1, ra)):  # front legs reaching ahead (farther, mostly hidden)
+            sh_, hd = (sgn * 62, -262), (sgn * 58, -150 - 70 * lift)
+            shade(ctx, lambda: capsule(ctx, sh_, hd, 15, 11), sleeve, light, lw)
+        shade(ctx, lambda: ellipse(ctx, 0, -300, 40, 30), ch["hair"], light, lw)  # top of the lowered head
+        shade(ctx, lambda: smooth_closed(ctx, [(-72, -232), (-64, -300), (-28, -326), (28, -326), (64, -300), (72, -232), (0, -214)], 0.8),
+              shirt, light, lw, shadow=0.45)
+        if lod > 1:
+            soft_stroke(ctx, [(0, -318), (0, -226)], mul(shirt, 0.6), 0.3, lw)
+        shade(ctx, lambda: smooth_closed(ctx, [(-58, -236), (58, -236), (54, -178), (0, -160), (-54, -178)], 0.8), pants, light, lw,
+              shadow=0.4)
+        for sgn, lift in ((-1, lh), (1, rh)):  # haunches and hind legs driving toward us
+            hip, kn, ft = (sgn * 32, -200), (sgn * 50, -110 + 40 * lift), (sgn * 40, -6 - 110 * lift)
+            shade(ctx, lambda: capsule(ctx, hip, kn, 22, 16), pants, light, lw)
+            shade(ctx, lambda: capsule(ctx, kn, ft, 15, 10.5), pants, light, lw)
+            shade(ctx, lambda: ellipse(ctx, ft[0], ft[1] + 8, 14, 10 + 4 * lift), shoes, light, lw)
+    ctx.restore()

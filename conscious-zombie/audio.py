@@ -333,7 +333,8 @@ for tb, X, Zd in world.beam_times(shots.HORDE, 0, SC["cabin"][0]):
     z = np.sin(2 * np.pi * np.cumsum(fz) / SR) * np.exp(-tt * 9)
     z += noise(n, 2000, 8000) * np.exp(-tt * 20) * 0.4
     sh = noise(int(1.6 * SR), 3000, 9000) * np.exp(-np.arange(int(1.6 * SR)) / SR * 2.2) * 0.25  # dust shimmer
-    add(sfx, tb - 0.12, z, p=max(-0.9, min(0.9, X / 40)), g=0.05)
+    for jb in range(4):
+        add(sfx, tb - 0.32 + jb * 0.07, z, p=max(-0.9, min(0.9, X / 40)), g=0.03)
     add(sfx, tb, sh, p=max(-0.9, min(0.9, X / 40)), g=0.05)
 for tf in (shots.t_scary + 3.25, shots.t_scary + 4.25):
     n = int(0.6 * SR)

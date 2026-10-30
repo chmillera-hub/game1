@@ -312,50 +312,81 @@ def ground_cols(phase, east):
     return k, fog, warm, mid
 
 
+_GRAVEL = None
+
+
+def gravel():
+    global _GRAVEL
+    if _GRAVEL is None:
+        out = []
+        for m in dirt()[0]:
+            lum = m.mean(axis=2, keepdims=True)
+            out.append(((lum * 0.75 + m * 0.25) * np.array([0.86, 0.86, 0.9], np.float32)).astype(np.float32))
+        _GRAVEL = out
+    return _GRAVEL
+
+
+_KEEP_FRAME = []
+
+
+def plane_image(cam, Y0, mips, colmul, fog, fogd, sub=2):
+    """Perspective-map a tiled texture onto the horizontal plane Y=Y0 below the camera. Returns (surface, y0, sub)."""
+    hc = cam.y - Y0
+    y0 = max(0, int(math.floor(cam.hy)) + 1)
+    if hc <= 0.05 or y0 >= H:
+        return None
+    macro = dirt()[1]
+    ys = np.arange(y0, H, sub, dtype=np.float32) + sub * 0.5
+    xs = np.arange(0, W, sub, dtype=np.float32) + sub * 0.5 - W / 2
+    dy = np.maximum(ys - cam.hy, 0.25)
+    dp = np.minimum(cam.f * hc / dy, 900.0)
+    X = cam.x + cam.d * xs[None, :] * (dp[:, None] / cam.f)
+    Z = cam.z + cam.d * dp[:, None] + np.zeros_like(X)
+    fp = np.maximum(dp * dp / (cam.f * hc), dp / cam.f) * sub * (mips[0].shape[0] / TILE_M)
+    lvl = np.clip(np.floor(np.log2(np.maximum(fp, 1e-6))), 0, len(mips) - 1).astype(int)
+    out = np.empty((len(ys), len(xs), 3), np.float32)
+    for Lv in np.unique(lvl):
+        rows = np.where(lvl == Lv)[0]
+        m = mips[Lv]
+        nn = m.shape[0]
+        u = np.floor(X[rows] / TILE_M * nn).astype(np.int64) % nn
+        v = np.floor(Z[rows] / TILE_M * nn).astype(np.int64) % nn
+        out[rows] = m[v, u]
+    mu = np.floor(X / 150.0 * 64).astype(np.int64) % 64
+    mv = np.floor(Z / 150.0 * 64).astype(np.int64) % 64
+    out *= macro[mv, mu][..., None]
+    out = out * np.asarray(colmul, np.float32)
+    fg = (1 - np.exp(-dp / fogd))[:, None, None]
+    out = out * (1 - fg) + np.array(fog, np.float32) * fg
+    img = np.clip(out * 255, 0, 255).astype(np.uint8)
+    hh, ww = img.shape[:2]
+    buf = np.zeros((hh, ww, 4), np.uint8)
+    buf[..., 0], buf[..., 1], buf[..., 2], buf[..., 3] = img[..., 2], img[..., 1], img[..., 0], 255
+    _KEEP_FRAME.append(buf)
+    del _KEEP_FRAME[:-4]
+    return cairo.ImageSurface.create_for_data(memoryview(buf).cast("B"), cairo.FORMAT_RGB24, ww, hh), y0, sub
+
+
+def blit_plane(ctx, res):
+    surf, y0, sub = res
+    ctx.save()
+    ctx.rectangle(0, y0, W, H - y0)
+    ctx.clip()
+    ctx.translate(0, y0)
+    ctx.scale(sub, sub)
+    ctx.set_source_surface(surf, 0, 0)
+    ctx.get_source().set_filter(cairo.FILTER_BILINEAR)
+    ctx.get_source().set_extend(cairo.EXTEND_PAD)
+    ctx.paint()
+    ctx.restore()
+
+
 def draw_ground(ctx, cam, t, phase, east=False):
     hy = cam.hy
-    y0 = max(0, int(math.floor(hy)) + 1)
     k, fog, warm, mid = ground_cols(phase, east)
-    if y0 < H:
-        mips, macro = dirt()
-        sub = 2  # half-res sampling, smooth upscale
-        ys = np.arange(y0, H, sub, dtype=np.float32) + sub * 0.5
-        xs = np.arange(0, W, sub, dtype=np.float32) + sub * 0.5 - W / 2
-        dy = np.maximum(ys - hy, 0.25)
-        dp = np.minimum(cam.f * max(cam.y, 0.2) / dy, 900.0)
-        X = cam.x + cam.d * xs[None, :] * (dp[:, None] / cam.f)
-        Z = cam.z + cam.d * dp[:, None] + np.zeros_like(X)
-        fp = np.maximum(dp * dp / (cam.f * max(cam.y, 0.2)), dp / cam.f) * sub * (mips[0].shape[0] / TILE_M)
-        lvl = np.clip(np.floor(np.log2(np.maximum(fp, 1e-6))), 0, len(mips) - 1).astype(int)
-        out = np.empty((len(ys), len(xs), 3), np.float32)
-        for Lv in np.unique(lvl):
-            rows = np.where(lvl == Lv)[0]
-            m = mips[Lv]
-            nn = m.shape[0]
-            u = np.floor(X[rows] / TILE_M * nn).astype(np.int64) % nn
-            v = np.floor(Z[rows] / TILE_M * nn).astype(np.int64) % nn
-            out[rows] = m[v, u]
-        mu = np.floor(X / 150.0 * 64).astype(np.int64) % 64
-        mv = np.floor(Z / 150.0 * 64).astype(np.int64) % 64
-        out *= macro[mv, mu][..., None]
-        out = out * k * np.array(mix(warm, mid, 0.35), np.float32)
-        fg = (1 - np.exp(-dp / (140.0 if not east else 110.0)))[:, None, None]
-        out = out * (1 - fg) + np.array(fog, np.float32) * fg
-        img = np.clip(out * 255, 0, 255).astype(np.uint8)
-        hh, ww = img.shape[:2]
-        buf = np.zeros((hh, ww, 4), np.uint8)
-        buf[..., 0], buf[..., 1], buf[..., 2], buf[..., 3] = img[..., 2], img[..., 1], img[..., 0], 255
-        surf = cairo.ImageSurface.create_for_data(memoryview(buf).cast("B"), cairo.FORMAT_RGB24, ww, hh)
-        ctx.save()
-        ctx.rectangle(0, y0, W, H - y0)
-        ctx.clip()
-        ctx.translate(0, y0)
-        ctx.scale(sub, sub)
-        ctx.set_source_surface(surf, 0, 0)
-        ctx.get_source().set_filter(cairo.FILTER_BILINEAR)
-        ctx.get_source().set_extend(cairo.EXTEND_PAD)
-        ctx.paint()
-        ctx.restore()
+    res = plane_image(cam, 0.0, dirt()[0], np.array(mix(warm, mid, 0.35)) * k, fog, 140.0 if not east else 110.0)
+    if res:
+        blit_plane(ctx, res)
         if not east:  # warm glare haze at the horizon (into the sun)
             g = cairo.LinearGradient(0, hy, 0, hy + 120)
             g.add_color_stop_rgba(0, *warm, 0.35 * (1 - clamp(phase - 1.6)))
@@ -488,7 +519,7 @@ def draw_features(ctx, cam, t, phase, east, k, fog, warm):
 
 # ---------------------------------------------------------------- fortress
 TOWERS = [(-130, 58, 26), (-70, 50, 22), (0, 78, 40), (70, 50, 22), (130, 58, 26)]
-TURRETS = [(-130, 52), (-70, 44), (-25, 36), (25, 36), (70, 44), (130, 52)]
+TURRETS = [(-130, 74), (-70, 66), (-36, 46), (36, 46), (70, 66), (130, 74)]  # (X, mount height Y)
 
 
 def draw_hill(ctx, cam, t, phase, light):
@@ -644,7 +675,41 @@ def draw_sign(ctx, cam, t, phase, light):
     soft_dot(ctx, lant[0], lant[1], 2.2 * m, hexc("fff0c0"), 0.6)
 
 
-def draw_fortress(ctx, cam, t, phase, light, flash=0.0):
+def turret_pivot(cam, tx):
+    return cam.p(tx[0], tx[1] + 2.4, WALL - 1.5), cam.f / max(1.0, cam.depth(WALL - 1.5))
+
+
+def draw_turret(ctx, cam, tx, t, ang, firing, light):
+    """Automated sentry gun: armoured base, swivel head with a red sensor eye, twin barrels."""
+    dp = cam.depth(WALL - 1.5)
+    if dp < 3:
+        return
+    m = cam.f / dp
+    if m < 0.3:
+        return
+    p = cam.p(tx[0], tx[1], WALL - 1.5)
+    ctx.save()
+    ctx.translate(*p)
+    ctx.scale(m, m)
+    lw = 1.6 / m
+    dark, metal = hexc("24272c"), hexc("4a4f56")
+    shade(ctx, lambda: smooth_closed(ctx, [(-2.7, 0.2), (2.7, 0.2), (2.0, -1.9), (-2.0, -1.9)], 0.3), dark, light, lw)
+    ctx.new_path(); ctx.move_to(-1.5, -3.9); ctx.line_to(-1.9, -6.2)
+    rgba(ctx, dark); ctx.set_line_width(0.18); ctx.stroke()
+    soft_dot(ctx, -1.9, -6.2, 0.45, hexc("ff3030"), 0.9 * (0.5 + 0.5 * (math.sin(t * 6 + tx[0]) > 0)))
+    ctx.translate(0, -2.4)
+    shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, -2.0, -1.25, 4.0, 2.5, 0.8)), metal, light, lw)
+    ctx.rotate(ang)
+    for off in (-0.48, 0.48):
+        shade(ctx, lambda: (ctx.new_sub_path(), rig._rrect(ctx, 0.8, off - 0.24, 4.3, 0.48, 0.22)), dark, light, lw * 0.8)
+    soft_dot(ctx, 1.25, 0, 1.1, hexc("ff2a2a"), 0.65)  # sensor eye looks where it shoots
+    soft_dot(ctx, 1.25, 0, 0.35, hexc("ffd0d0"), 0.95)
+    if firing > 0:
+        soft_dot(ctx, 5.4, 0, 2.2, hexc("e0f6ff"), 0.9 * firing)
+    ctx.restore()
+
+
+def draw_fortress(ctx, cam, t, phase, light, flash=0.0, aim=()):
     if cam.d < 0 or cam.depth(WALL) < 5:
         return
     Z = WALL
@@ -746,6 +811,20 @@ def draw_fortress(ctx, cam, t, phase, light, flash=0.0):
         rgba(ctx, wcol, 0.9 * on)
         ctx.new_path(); ctx.rectangle(p[0] - 0.7 * sc, p[1] - 1.1 * sc, 1.4 * sc, 2.2 * sc); ctx.fill()
     draw_sign(ctx, cam, t, phase, light)
+    # automated sentry guns aim at their next target and fire in bursts
+    for k, tx in enumerate(TURRETS):
+        mine = [a for a in aim if min(TURRETS, key=lambda q: abs(q[0] - a[1])) is tx]
+        piv, m = turret_pivot(cam, tx)
+        ang = math.pi / 2 + 0.55 * math.sin(t * 0.7 + k * 1.3)
+        firing = 0.0
+        if mine:
+            td, X, Zd = min(mine, key=lambda a: abs(a[0] - t))
+            tp = cam.p(X, hgt(Zd) + 1.0, Zd)
+            ang = math.atan2(tp[1] - piv[1], tp[0] - piv[0])
+            for a in mine:
+                if -0.34 <= t - a[0] <= -0.04:
+                    firing = max(firing, 0.6 + 0.4 * math.sin(t * 95))
+        draw_turret(ctx, cam, tx, t, ang, firing, light)
     # searchlights sweeping
     for k, (x, h, w) in enumerate((TOWERS[0], TOWERS[2], TOWERS[4])):
         p = cam.p(x, hill_y + h - 4, Z)
@@ -775,12 +854,14 @@ class Horde:
                 X = (hsh(i, 41) - 0.5) * 50
             else:
                 X = (hsh(i, 41) - 0.5) * 9
-            v = 2.5 + hsh(i, 42) * 1.3
+            quad = hsh(i, 49) < 0.13
+            v = (2.5 + hsh(i, 42) * 1.3) * (1.25 if quad else 1.0)
             zd = WALL - 18 - hsh(i, 43) * 55
             span = zd - self.z0
             ph = hsh(i, 44) * span
             self.L.append(dict(i=i, X=X, v=v, zd=zd, span=span, ph=ph, style=rig.horde_style(i),
-                               run=hsh(i, 45) * 6.28, reach=hsh(i, 46) < 0.45, rate=7.5 + hsh(i, 47) * 2))
+                               run=hsh(i, 45) * 6.28, reach=hsh(i, 46) < 0.45, rate=(7.5 + hsh(i, 47) * 2) * (1.35 if quad else 1.0),
+                               quad=quad))
 
     def state(self, z, t):
         u = z["v"] * t + z["ph"]
@@ -811,6 +892,12 @@ class Horde:
                 if -150 * max(1, s * 3) < x < W + 150 * max(1, s * 3) and y - FIG_H * s < H:
                     fadein = clamp((Z - self.z0) / 3)
                     out.append((dp, self._fig(z, x, y, s, t, cam, light_f if cam.d < 0 else light_b, fadein)))
+            # burst fire flying at the next one to fall
+            tn = td + z["span"] / z["v"]
+            if dust and fire and 0 < tn - t < 0.34 and cam.d > 0:
+                dpn = cam.depth(z["zd"])
+                if 0.8 < dpn < 330:
+                    out.append((dpn - 0.2, self._bolts(z["X"], z["zd"], t - tn, cam)))
             # dust + beam for a recent death
             if dust and t - td < 3.0 and td > -5:
                 Xd = X  # lane at death (no deflection near the wall)
@@ -820,9 +907,53 @@ class Horde:
                     out.append((dpd - 0.1, self._dust(z, Xd, Zd, t - td, cam, light_b, fire)))
         return out
 
+    def recent(self, t):
+        """Deaths about to happen or just happened: [(time, X, Zd)] for the sentry guns to aim at."""
+        out = []
+        for z in self.L:
+            _, _, td = self.state(z, t)
+            tn = td + z["span"] / z["v"]
+            if t - td < 0.4:
+                out.append((td, z["X"], z["zd"]))
+            if tn - t < 1.2:
+                out.append((tn, z["X"], z["zd"]))
+        return out
+
+    def _bolts(self, X, Z, rel, cam):
+        def fn(ctx):
+            Y0 = hgt(Z)
+            tx = min(TURRETS, key=lambda q: abs(q[0] - X))
+            piv, m = turret_pivot(cam, tx)
+            tgt = cam.p(X, Y0 + 1.0, Z)
+            dx, dy = tgt[0] - piv[0], tgt[1] - piv[1]
+            ln = math.hypot(dx, dy) or 1.0
+            mz = (piv[0] + dx / ln * 5.3 * m, piv[1] + dy / ln * 5.3 * m)
+            for jb in range(4):
+                u = (rel - (-0.32 + jb * 0.07)) / 0.1
+                if 0 <= u <= 1.1:
+                    u0, u1 = max(0.0, u - 0.3), min(1.0, u)
+                    a0 = (mz[0] + (tgt[0] - mz[0]) * u0, mz[1] + (tgt[1] - mz[1]) * u0)
+                    a1 = (mz[0] + (tgt[0] - mz[0]) * u1, mz[1] + (tgt[1] - mz[1]) * u1)
+                    for wdt, al in ((12, 0.14), (5, 0.4), (1.8, 0.95)):
+                        ctx.new_path(); ctx.move_to(*a0); ctx.line_to(*a1)
+                        rgba(ctx, hexc("d4ecff"), al); ctx.set_line_width(wdt); ctx.set_line_cap(cairo.LINE_CAP_ROUND); ctx.stroke()
+                    if u >= 1.0:
+                        soft_dot(ctx, tgt[0], tgt[1], 30 + 60 * cam.scale(Z), hexc("e0f2ff"), 0.6)
+        return fn
+
     def _fig(self, z, x, y, s, t, cam, light, alpha):
         def fn(ctx):
             ph = t * z["rate"] + z["run"]
+            if z.get("quad"):
+                view = "back" if cam.d > 0 else "front"
+                E = rig.expr(op=0.5 + 0.1 * math.sin(ph), sm=-0.45, sneer=0.5, bi=-0.6, bo=0.3, milky=1.0, drone=1.0, grime=1.0,
+                             lid=0.2, t=t)
+                if alpha < 0.99:
+                    ctx.push_group()
+                rig.draw_quad(ctx, z["style"], x, y, s, ph, view, light, t, E)
+                if alpha < 0.99:
+                    ctx.pop_group_to_source(); ctx.paint_with_alpha(alpha)
+                return
             bob = abs(math.sin(ph)) * 10
             view = "back" if cam.d > 0 else "front"
             P = dict(x=x, y=y - (578 - bob) * s, s=s, view=view, lw=1.6, breath=0,
@@ -884,20 +1015,10 @@ class Horde:
                 rr = (0.22 + age * 0.45) * ex
                 a = clamp(1 - age / 3.0) * 0.5 * (0.5 + hsh(k, 55))
                 soft_dot(ctx, p[0], p[1], max(1.5, rr), mix(hexc("9a8c7e"), light["rim"], 0.25), a)
-            # beam from the wall
             if fire and age < 0.25 and cam.d > 0:
-                tx = min(TURRETS, key=lambda q: abs(q[0] - X))
-                a0 = cam.p(tx[0], 16 + tx[1], WALL)
-                a1 = cam.p(X, Y0 + 1.0, Z)
                 k = 1 - age / 0.25
-                for wdt, al in ((14, 0.12), (6, 0.35), (2, 0.95)):
-                    ctx.new_path(); ctx.move_to(*a0); ctx.line_to(*a1)
-                    rgba(ctx, hexc("d4ecff"), al * k)
-                    ctx.set_line_width(wdt)
-                    ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-                    ctx.stroke()
+                a1 = cam.p(X, Y0 + 1.0, Z)
                 soft_dot(ctx, a1[0], a1[1], 60 * max(0.3, s * 4), hexc("e0f2ff"), 0.6 * k)
-                soft_dot(ctx, a0[0], a0[1], 30, hexc("e0f2ff"), 0.8 * k)
         return fn
 
     def flash(self, t):
@@ -967,6 +1088,8 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
             ctx.close_path()
             ctx.set_source(pattern("brick", sc * 0.012)); ctx.fill_preserve()
             rgba(ctx, hexc("140e18"), 0.6); ctx.fill()
+    if flag and cam.y <= h:
+        draw_flag(ctx, cam, X0 - 1.0, h + 0.45, Z0 + 2.55, t, light, phase, held=False)
     a = cam.p(fl, 0, Z0); b = cam.p(fr, h, Z0)
     # broken roofline
     ctx.new_path()
@@ -1014,22 +1137,60 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
         soft_stroke(ctx, pts, hexc("1a1214"), 0.5, max(1, 0.03 * sc), smooth=False)
     ctx.restore()
     rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(max(1, sc * 0.03)); ctx.stroke()
-    # roof surface when seen from above
+    # roof surface when seen from above: gravel and tar, a puddle, parapet cap, vent, pipe, the flag's footing
     if cam.y > h:
         pts = [cam.p(fl, h, Z0), cam.p(fr, h, Z0), cam.p(fr, h, Z0 + dpt), cam.p(fl, h, Z0 + dpt)]
+        k_, fog_, warm_, mid_ = ground_cols(phase, False)
+        res = plane_image(cam, h, gravel(), np.array(mix(warm_, mid_, 0.45)) * k_ * 1.9, fog_, 200.0)
+        ctx.save()
         ctx.new_path(); ctx.move_to(*pts[0])
         for q in pts[1:]:
             ctx.line_to(*q)
         ctx.close_path()
-        ctx.set_source(pattern("brick", sc * 0.02)); ctx.fill_preserve()
-        rgba(ctx, mix(hexc("2a2228"), light["shadow"], 0.3), 0.78); ctx.fill_preserve()
-        rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.5); ctx.stroke()
-        soft_stroke(ctx, [pts[0], pts[1]], light["rim"], 0.35, 3, smooth=False)
+        ctx.clip()
+        if res:
+            blit_plane(ctx, res)
+        pud = cam.p(X0 + 1.4, h, Z0 + 3.8)
+        mp = cam.f / max(0.5, cam.depth(Z0 + 3.8))
+        ctx.save(); ctx.translate(*pud); ctx.scale(1, 0.28)
+        soft_dot(ctx, 0, 0, 1.7 * mp, hexc("15151c"), 0.55)
+        soft_dot(ctx, -0.4 * mp, -0.3 * mp, 0.8 * mp, mix(mid, hexc("ffffff"), 0.3), 0.2)
+        ctx.restore()
+        g = cairo.LinearGradient(0, pts[0][1], 0, pts[2][1])
+        g.add_color_stop_rgba(0, 0, 0, 0, 0.0)
+        g.add_color_stop_rgba(1, 0, 0, 0, 0.25)
+        ctx.set_source(g); ctx.paint()
+        ctx.restore()
+        _box(ctx, cam, X0 + 2.4, h, Z0 + 4.4, 1.4, 0.9, 1.1, hexc("6a4e3c"), light)
+        pa, pb = cam.p(X0 + 3.4, h, Z0 + 6.0), cam.p(X0 + 3.4, h + 1.9, Z0 + 6.0)
+        mpp = cam.f / max(0.5, cam.depth(Z0 + 6.0))
+        shade(ctx, lambda: capsule(ctx, pa, pb, 0.12 * mpp, 0.12 * mpp), hexc("5a5a5e"), light, 1.2)
+        _box(ctx, cam, X0 - 1.35, h, Z0 + 2.2, 0.7, 0.45, 0.7, hexc("8a8680"), light)  # concrete footing the pole is set into
+        for (xa, xb, za, zb) in ((fl, fr, Z0, Z0), (fl, fl, Z0, Z0 + dpt), (fr, fr, Z0, Z0 + dpt)):  # parapet cap
+            q0, q1 = cam.p(xa, h + 0.35, za), cam.p(xb, h + 0.35, zb)
+            q2, q3 = cam.p(xb, h, zb), cam.p(xa, h, za)
+            ctx.new_path(); ctx.move_to(*q0); ctx.line_to(*q1); ctx.line_to(*q2); ctx.line_to(*q3); ctx.close_path()
+            rgba(ctx, tint(hexc("8a8480"), light)); ctx.fill_preserve()
+            rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
+            soft_stroke(ctx, [q0, q1], light["rim"], 0.4, 2, smooth=False)
     # ladder
     draw_ladder(ctx, cam, fl + 0.9, Z0 - 0.15, h + 1.0, sc, light)
-    # flagpole
-    if flag:
-        draw_flag(ctx, cam, X0 - 1.0, h, Z0 + 2.5, t, light, phase, held=False)
+    # flagpole standing on the roof (when we look from above)
+    if flag and cam.y > h:
+        draw_flag(ctx, cam, X0 - 1.0, h + 0.45, Z0 + 2.55, t, light, phase, held=False)
+
+
+def _box(ctx, cam, X, Y, Z, wx, hh, dz, col, light):
+    """Small rooftop box (front face + top), seen from the front/above."""
+    f0 = [cam.p(X - wx / 2, Y, Z), cam.p(X + wx / 2, Y, Z), cam.p(X + wx / 2, Y + hh, Z), cam.p(X - wx / 2, Y + hh, Z)]
+    tp = [cam.p(X - wx / 2, Y + hh, Z), cam.p(X + wx / 2, Y + hh, Z), cam.p(X + wx / 2, Y + hh, Z + dz), cam.p(X - wx / 2, Y + hh, Z + dz)]
+    for pts, k in ((tp, 1.15), (f0, 0.8)):
+        ctx.new_path(); ctx.move_to(*pts[0])
+        for q in pts[1:]:
+            ctx.line_to(*q)
+        ctx.close_path()
+        rgba(ctx, tint(mul(col, k), light)); ctx.fill_preserve()
+        rgba(ctx, light.get("line"), 0.85); ctx.set_line_width(1.2); ctx.stroke()
 
 
 def draw_ladder(ctx, cam, X, Z, top, sc, light):
