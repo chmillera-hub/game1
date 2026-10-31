@@ -1068,9 +1068,13 @@ def sky_eyes(ctx, t):
     res = ramp(t, th_, th_ + 0.8)
     a0 = t_eyes2
     # watching the slaughter: quick saccades from one fall to the next, holding on each
-    scan = kf(t, [(a0, 0.2), (a0 + 0.5, 0.2), (a0 + 0.62, -0.3), (a0 + 1.35, -0.3), (a0 + 1.47, 0.34), (a0 + 2.2, 0.34),
-                  (a0 + 2.32, -0.12), (a0 + 3.0, -0.12), (a0 + 3.12, 0.24), (a0 + 3.9, 0.24), (a0 + 4.02, -0.26), (a0 + 4.8, -0.26),
-                  (a0 + 4.92, 0.1)])
+    keys, tk, k = [(a0, 0.2)], a0 + 0.5, 0
+    targets = (0.2, -0.3, 0.34, -0.12, 0.24, -0.26, 0.1, 0.3, -0.2)
+    while tk < th_ - 0.3:  # hold on one fall, flick to the next
+        keys += [(tk, targets[k % len(targets)]), (tk + 0.12, targets[(k + 1) % len(targets)])]
+        tk += 0.12 + 0.62 + 0.14 * hsh(k, 191)
+        k += 1
+    scan = kf(t, keys)
     fl = HORDE.flash(t)
     E = ZE(t, bi=lerp(0.75, 0.15, res), bo=lerp(-0.15, -0.1, res), lid=lerp(0.28, 0.12, res), low=lerp(0.25, 0.1, res),
            glow=lerp(0.3, 0.9, res),

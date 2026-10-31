@@ -10,7 +10,7 @@ Markers inside text drive the score and are stripped for voice/subtitles:
 
 # speaker -> (kokoro voice, lang, speed)
 VOICES = {
-    "N":  ("af_heart",   "en-us", 0.93),   # narrator (the dreamer)
+    "N":  ("af_heart",   "en-us", 0.744),  # narrator (the dreamer), 20% slower so every word lands
     "Z":  ("am_michael", "en-us", 0.86),   # the conscious zombie (pitched down + grit in post)
     "HA": ("bf_emma",    "en-gb", 0.95),   # human A, crew lead
     "HB": ("am_fenrir",  "en-us", 0.93),   # human B, the one who goes down the rope
