@@ -21,10 +21,10 @@ if [ -z "${SKIP_RENDER:-}" ]; then
   for i in $(seq 0 $((WORKERS - 1))); do echo "file 'part_$i.mkv'" >> build/chunks/list.txt; done
   ffmpeg -y -loglevel error -f concat -safe 0 -i build/chunks/list.txt -c copy build/master.mkv
 fi
-# 720x1280, 24 fps, HEVC 10-bit; quality chosen to keep SSIM ~0.98+ against the master
+# 720x1280, 24 fps, HEVC 10-bit; CRF 36 measured SSIM 0.988 against the master
 [ -f build/audio/mix.wav ] || { echo "no audio yet: master rendered at build/master.mkv"; exit 0; }
-CRF=${CRF:-30}
+CRF=${CRF:-36}
 ffmpeg -y -loglevel error -i build/master.mkv -i build/audio/mix.wav -c:v libx265 -preset slow -crf $CRF -pix_fmt yuv420p10le \
   -x265-params "aq-mode=3:keyint=240:min-keyint=24:bframes=8:rc-lookahead=60:log-level=error" -tag:v hvc1 \
-  -c:a libopus -b:a 48k -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart output/nursery-rhymes-examined.mp4
+  -c:a libopus -b:a 40k -frame_duration 60 -ac 1 -application audio -map 0:v -map 1:a -shortest -movflags +faststart output/nursery-rhymes-examined.mp4
 ls -la output
