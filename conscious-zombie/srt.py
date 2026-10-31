@@ -16,7 +16,8 @@ for lid in TL["order"]:
     d = LINES[lid]
     for i, sb in enumerate(d["subs"]):
         end = sb["t1"] + (0.5 if i == len(d["subs"]) - 1 else 0.0)
-        out.append(f"{k}\n{ts(sb['t0'])} --> {ts(end)}\n{NAMES[d['spk']]}{sb['text']}\n")
+        who = "ZOMBIE (thinking): " if d.get("thought") else NAMES[d["spk"]]
+        out.append(f"{k}\n{ts(sb['t0'])} --> {ts(end)}\n{who}{sb['text']}\n")
         k += 1
 open(sys.argv[1], "w").write("\n".join(out))
 print(k - 1, "cues")

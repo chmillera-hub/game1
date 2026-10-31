@@ -1148,7 +1148,7 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
     """Ruined 3-storey brick building; front face at Z=BLD[1]; ladder on the front, left side."""
     X0, Z0 = BLD
     w, h, dpt = 8.0, 11.0, 7.0
-    hp = h + 0.6  # parapet wall top (about two feet above the roof)
+    hp = h + 0.85  # parapet wall top (about three feet above the roof)
     dp = cam.depth(Z0)
     if dp < 0.3:
         return
@@ -1246,28 +1246,95 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
         _box(ctx, cam, X0 - 1.35, h, Z0 + 2.2, 0.7, 0.45, 0.7, hexc("8a8680"), light)  # concrete footing the pole is set into
         # brick parapet walls: inner faces of the back and side walls rise above the roof, capped with concrete
         th_ = 0.3
-        for (xa, xb, za, zb) in ((fl + th_, fr - th_, Z0 + dpt - th_, Z0 + dpt - th_), (fl + th_, fl + th_, Z0 + th_, Z0 + dpt - th_),
-                                 (fr - th_, fr - th_, Z0 + th_, Z0 + dpt - th_)):
-            q0, q1 = cam.p(xa, hp, za), cam.p(xb, hp, zb)
-            q2, q3 = cam.p(xb, h, zb), cam.p(xa, h, za)
-            ctx.new_path(); ctx.move_to(*q0); ctx.line_to(*q1); ctx.line_to(*q2); ctx.line_to(*q3); ctx.close_path()
-            ctx.set_source(pattern("brick", sc * 0.012)); ctx.fill_preserve()
-            rgba(ctx, light["shadow"], 0.45); ctx.fill_preserve()
-            rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
-            c0, c1 = cam.p(xa, hp + 0.08, za), cam.p(xb, hp + 0.08, zb)
-            soft_stroke(ctx, [c0, c1], tint(hexc("9a948c"), light), 0.95, max(2, sc * 0.06), smooth=False)
-            soft_stroke(ctx, [c0, c1], light["rim"], 0.35, 2, smooth=False)
-        # front parapet seen from inside/above
-        q0, q1 = cam.p(fl, hp, Z0), cam.p(fr, hp, Z0)
-        q2, q3 = cam.p(fr, hp, Z0 + th_), cam.p(fl, hp, Z0 + th_)
-        ctx.new_path(); ctx.move_to(*q0); ctx.line_to(*q1); ctx.line_to(*q2); ctx.line_to(*q3); ctx.close_path()
-        rgba(ctx, tint(hexc("9a948c"), light)); ctx.fill_preserve()
-        rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
+        # back and side parapets: the inner face shows its courses, the top shows the brick laid along the wall
+        for (xa, xb, za, zb), top in (((fl + th_, fr - th_, Z0 + dpt - th_, Z0 + dpt - th_), (fl, fr, Z0 + dpt - th_, Z0 + dpt)),
+                                      ((fl + th_, fl + th_, Z0 + th_, Z0 + dpt - th_), (fl, fl + th_, Z0, Z0 + dpt)),
+                                      ((fr - th_, fr - th_, Z0 + th_, Z0 + dpt - th_), (fr - th_, fr, Z0, Z0 + dpt))):
+            brick_face(ctx, cam, (xa, za), (xb, zb), h, hp, light, seed=int(xa * 7 + za * 3))
+            brick_top(ctx, cam, *top, hp, light, seed=int(xa * 5 + za))
+        # front parapet seen from inside/above: its outer face and its brick top
+        brick_face(ctx, cam, (fl, Z0), (fr, Z0), h - 0.15, hp, light, seed=5, shade_k=0.15)
+        brick_top(ctx, cam, fl, fr, Z0, Z0 + th_, hp, light, seed=9, shade_k=0.4)
     # ladder
     draw_ladder(ctx, cam, fl + 0.9, Z0 - 0.15, h + 1.0, sc, light)
     # flagpole standing on the roof (when we look from above)
     if flag and cam.y > h:
         draw_flag(ctx, cam, X0 - 1.0, h + 0.45, Z0 + 2.55, t, light, phase, held=False)
+
+
+def brick_face(ctx, cam, A, B, y0, y1, light, seed=0, course=0.077, blen=0.23, shade_k=0.32):
+    """A wall face from world (xa, za) to (xb, zb), heights y0..y1: running-bond brick courses with mortar, in perspective."""
+    (xa, za), (xb, zb) = A, B
+    ln = math.hypot(xb - xa, zb - za)
+    if ln < 1e-3:
+        return
+    P = lambda f, y: cam.p(lerp(xa, xb, f), y, lerp(za, zb, f))
+    quad = lambda f0, f1, ya, yb: (P(f0, ya), P(f1, ya), P(f1, yb), P(f0, yb))
+
+    def poly(q):
+        ctx.new_path(); ctx.move_to(*q[0])
+        for p in q[1:]:
+            ctx.line_to(*p)
+        ctx.close_path()
+    poly(quad(0, 1, y0, y1))
+    rgba(ctx, tint(hexc("786e64"), light)); ctx.fill()  # mortar
+    nc = max(1, int(round((y1 - y0) / course)))
+    ch_ = (y1 - y0) / nc
+    m = 0.011
+    for j in range(nc):
+        ya, yb = y0 + j * ch_ + m, y0 + (j + 1) * ch_
+        u, k = -(0.5 * blen if j % 2 else 0.0), 0
+        while u < ln:
+            u0, u1 = max(0.0, u + m * 0.5), min(ln, u + blen - m * 0.5)
+            if u1 > u0:
+                q = hsh(seed * 977 + j * 131 + k, 171)
+                col = mul(hexc("844634"), 0.72 + 0.48 * q)
+                if hsh(seed * 31 + j * 17 + k, 173) < 0.12:
+                    col = mix(col, hexc("3a3230"), 0.45)  # sooty brick
+                poly(quad(u0 / ln, u1 / ln, ya, yb))
+                rgba(ctx, tint(col, light)); ctx.fill()
+                tq = quad(u0 / ln, u1 / ln, yb - 0.012, yb)  # a lit top edge on each brick
+                poly(tq); rgba(ctx, light["rim"], 0.12); ctx.fill()
+            u += blen
+            k += 1
+    poly(quad(0, 1, y0, y1))
+    g = cairo.LinearGradient(*P(0.5, y1), *P(0.5, y0))
+    g.add_color_stop_rgba(0, *light["shadow"], shade_k * 0.6)
+    g.add_color_stop_rgba(1, *light["shadow"], shade_k * 1.4)
+    ctx.set_source(g); ctx.fill_preserve()
+    rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
+
+
+def brick_top(ctx, cam, x0, x1, z0, z1, y, light, seed=0, blen=0.23, bw=0.11, shade_k=0.0):
+    """The top of a brick wall seen from above: stretchers laid along its length, two or three to the width."""
+    along_x = (x1 - x0) >= (z1 - z0)
+    ln, wd = (x1 - x0, z1 - z0) if along_x else (z1 - z0, x1 - x0)
+    P = (lambda u, v: cam.p(x0 + u, y, z0 + v)) if along_x else (lambda u, v: cam.p(x0 + v, y, z0 + u))
+
+    def poly(q):
+        ctx.new_path(); ctx.move_to(*q[0])
+        for p in q[1:]:
+            ctx.line_to(*p)
+        ctx.close_path()
+    poly((P(0, 0), P(ln, 0), P(ln, wd), P(0, wd)))
+    rgba(ctx, tint(hexc("8a8076"), light)); ctx.fill()  # mortar
+    rows = max(1, int(round(wd / bw)))
+    rw_, m = wd / rows, 0.011
+    for r in range(rows):
+        u, k = -(0.5 * blen if r % 2 else 0.0), 0
+        while u < ln:
+            u0, u1 = max(0.0, u + m * 0.5), min(ln, u + blen - m * 0.5)
+            if u1 > u0:
+                col = mul(hexc("8e5040"), 0.8 + 0.45 * hsh(seed * 613 + r * 97 + k, 174))
+                poly((P(u0, r * rw_ + m * 0.5), P(u1, r * rw_ + m * 0.5), P(u1, (r + 1) * rw_ - m * 0.5), P(u0, (r + 1) * rw_ - m * 0.5)))
+                rgba(ctx, tint(col, light)); ctx.fill()
+            u += blen
+            k += 1
+    poly((P(0, 0), P(ln, 0), P(ln, wd), P(0, wd)))
+    rgba(ctx, light["rim"], 0.1); ctx.fill_preserve()  # catching the sky light
+    if shade_k:
+        rgba(ctx, light["shadow"], shade_k); ctx.fill_preserve()
+    rgba(ctx, light.get("line"), 0.8); ctx.set_line_width(1.2); ctx.stroke()
 
 
 def _box(ctx, cam, X, Y, Z, wx, hh, dz, col, light):

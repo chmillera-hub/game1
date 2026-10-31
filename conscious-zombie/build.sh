@@ -10,7 +10,7 @@ python3 tts.py "$CZ_BUILD"                 # voices + timeline.json
 WORKERS=${WORKERS:-4} python3 render.py video   # frames -> $CZ_BUILD/video.mp4 (high quality intermediate)
 python3 audio.py                           # score + sound design + mix -> $CZ_BUILD/mix.wav
 python3 srt.py the-first-witness.srt
-BR=${VBR:-260k}
+BR=${VBR:-236k}
 ffmpeg -y -i "$CZ_BUILD/video.mp4" -c:v libx264 -preset veryslow -tune animation -b:v $BR -pass 1 \
   -x264-params keyint=240:min-keyint=24:aq-mode=3 -an -f mp4 /dev/null
 ffmpeg -y -i "$CZ_BUILD/video.mp4" -i "$CZ_BUILD/mix.wav" -c:v libx264 -preset veryslow -tune animation -b:v $BR -pass 2 \

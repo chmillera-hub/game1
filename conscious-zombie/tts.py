@@ -23,9 +23,12 @@ def zombie_fx(y):
     return sosfilt(sos, y)
 
 
-def synth(spk, text):
-    voice, lang, speed = VOICES[spk]
-    s, sr = kok.create(text, voice=voice, speed=speed, lang=lang)
+def synth(spk, text, speed=None, ph=None):
+    voice, lang, sp = VOICES[spk]
+    if ph:  # exact pronunciation (hesitations, stutters)
+        s, sr = kok.create(ph, voice=voice, speed=speed or sp, lang=lang, is_phonemes=True)
+    else:
+        s, sr = kok.create(text, voice=voice, speed=speed or sp, lang=lang)
     y = resample_poly(s.astype(np.float64), SR // sr, 1)
     if spk == "Z":
         y = zombie_fx(y)
@@ -110,12 +113,19 @@ t = 0.0
 order = []
 for scene, lines in SCENES:
     s0 = t
-    for lid, spk, text, pb, pa in lines:
-        y = synth(spk, clean(text))
+    for item in lines:
+        lid, spk, text, pb, pa = item[:5]
+        opt = item[5] if len(item) > 5 else {}
+        if opt.get("silent"):  # an unspoken thought: timed, but no voice
+            y = np.zeros(int(opt["silent"] * SR))
+        else:
+            y = synth(spk, clean(text), opt.get("speed"), opt.get("ph"))
         sf.write(f"{BUILD}/lines/{lid}.wav", y, SR)
         dur = len(y) / SR
         t += pb
         env, wide = envelope(y)
+        if opt.get("silent"):  # nothing is said: keep the mouth closed
+            env, wide = [0.0] * len(env), [0.0] * len(wide)
         txt = clean(text)
         chunks = chunk_text(txt)
         g = gaps(y)
@@ -133,7 +143,7 @@ for scene, lines in SCENES:
         acc_t = [{"t": round(t + f * dur, 3), "kind": k} for f, k in accents(text)]
         timeline["lines"][lid] = {"spk": spk, "scene": scene, "text": txt, "t0": round(t, 3),
                                   "t1": round(t + dur, 3), "env": env, "wide": wide,
-                                  "subs": subs, "accents": acc_t}
+                                  "subs": subs, "accents": acc_t, "thought": bool(opt.get("thought"))}
         order.append(lid)
         print(f"{lid:4s} {spk:2s} {t:7.2f} {dur:5.2f}  {txt[:60]}")
         t += dur + pa

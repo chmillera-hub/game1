@@ -28,7 +28,7 @@ def wrap(ctx, text, maxw):
 def draw_subs(ctx, t):
     for lid in TL["order"]:
         d = LINES[lid]
-        if not (d["t0"] - 0.1 <= t <= d["t1"] + 0.5):
+        if d.get("thought") or not (d["t0"] - 0.1 <= t <= d["t1"] + 0.5):
             continue
         for i, sb in enumerate(d["subs"]):
             last = i == len(d["subs"]) - 1

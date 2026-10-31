@@ -66,6 +66,30 @@ def _proj(x, d, th):
     return x * math.cos(th) + d * math.sin(th)
 
 
+def _stitches(ctx, th, pdy, decay, lw):
+    """Old wounds sewn shut: a long cut down one cheek, a short one at the other jaw."""
+    for path_, nst in ((((-38, -4), (-31, 11), (-22, 27)), 5), (((24, 32), (31, 26), (39, 18)), 3)):
+        pp = [(_proj(px, 33, th), py + pdy * 0.55) for px, py in path_]
+        soft_stroke(ctx, [(p[0] + 1.2, p[1] + 1.4) for p in pp], hexc("c08a80"), 0.28 * decay, lw * 1.6)  # raised, healed edge
+        soft_stroke(ctx, pp, hexc("4e1e22"), 0.75 * decay, lw * 1.1)
+        segs = [(pp[i], pp[i + 1]) for i in range(len(pp) - 1)]
+        lens = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in segs]
+        tot = sum(lens)
+        for k in range(nst):
+            d = tot * (k + 0.5) / nst
+            for (a, b), ln in zip(segs, lens):
+                if d <= ln or ln == lens[-1]:
+                    u = clamp(d / max(ln, 1e-6))
+                    cx, cy = a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u
+                    nx, ny = -(b[1] - a[1]) / max(ln, 1e-6), (b[0] - a[0]) / max(ln, 1e-6)
+                    break
+                d -= ln
+            q0, q1 = (cx - nx * 5.5, cy - ny * 5.5 - 0.8), (cx + nx * 5.5, cy + ny * 5.5 + 0.8)
+            soft_stroke(ctx, [q0, q1], hexc("161012"), 0.85 * decay, lw * 0.85, smooth=False)
+            for q in (q0, q1):  # needle holes
+                soft_dot(ctx, q[0], q[1], 1.6, hexc("3a1a1c"), 0.6 * decay)
+
+
 def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
     """At head centre (already rotated by roll). Head spans y -60..56."""
     th = yaw * 1.0
@@ -185,7 +209,7 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
                     dirt_c, 0.32 * grime, lw * 3.2)
         soft_stroke(ctx, [(_proj(24, 34, th), 4 + pdy * 0.6), (_proj(32, 26, th), 18 + pdy * 0.6), (_proj(30, 24, th), 30)],
                     dirt_c, 0.28 * grime, lw * 2.6)
-        if lod > 1:  # an old scratch on the cheek (faint, with a lighter edge)
+        if lod > 1 and ch.get("decay", 0.0) < 0.5:  # an old scratch on the cheek (faint, with a lighter edge)
             pts = [(_proj(-30, 28, th), 2 + pdy * 0.6), (_proj(-22, 34, th), 12 + pdy * 0.6), (_proj(-18, 36, th), 20 + pdy * 0.6)]
             soft_stroke(ctx, pts, hexc("4a2a2a"), 0.45 * grime, lw * 0.9)
             soft_stroke(ctx, [(p[0] + 1.2, p[1] + 0.6) for p in pts], hexc("c8c0b0"), 0.18 * grime, lw * 0.6)
@@ -203,6 +227,7 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
             for pts in (((-40, -30), (-33, -22), (-36, -12)), ((-33, -22), (-27, -24)), ((36, 26), (30, 34), (32, 44)),
                         ((30, 34), (24, 36)), ((-10, -54), (-4, -46), (-7, -38))):
                 soft_stroke(ctx, [(_proj(px, 30, th), py + pdy * 0.5) for px, py in pts], vc, 0.32 * decay, lw * 0.75)
+            _stitches(ctx, th, pdy, decay, lw)
             for (sx_, sy_, r_) in ((16, -42, 3.0), (-20, 46, 2.4)):  # small scabs with a crusty rim
                 cx_ = _proj(sx_, 34, th)
                 soft_dot(ctx, cx_, sy_ + pdy * 0.5, r_ * 1.4, hexc("3e2a22"), 0.6 * decay)
@@ -970,6 +995,30 @@ def body_pts(bw, fem=False):
             (63 * s, 64), (69 * s, 30), (62 * s, 10), (46 * s, -2), (24 * s, -12)]
 
 
+CHEST_Y = 118  # chest pivot, body units (shoulders ~22, waist 190)
+
+
+def _chest_tf(ctx, cb):
+    ctx.translate(0, CHEST_Y)
+    ctx.rotate(cb)
+    ctx.translate(0, -CHEST_Y)
+
+
+def _paint_bent(ctx, pat, cb, ytop=24.0, n=8):
+    """Paint a torso group bent smoothly above the chest: thin bands rotate progressively about the chest pivot."""
+    ctx.save(); ctx.rectangle(-600, CHEST_Y, 1200, 1200); ctx.clip(); ctx.set_source(pat); ctx.paint(); ctx.restore()
+    for i in range(n + 1):
+        y1 = CHEST_Y - (CHEST_Y - ytop) * i / n
+        y0 = CHEST_Y - (CHEST_Y - ytop) * (i + 1) / n if i < n else -800
+        u = (i + 0.5) / n
+        a = cb * (u * u * (3 - 2 * u)) if i < n else cb
+        ctx.save()
+        _chest_tf(ctx, a)
+        ctx.rectangle(-600, y0, 1200, y1 + 1.5 - y0)  # small overlap hides the seams
+        ctx.clip(); ctx.set_source(pat); ctx.paint()
+        ctx.restore()
+
+
 def draw_character(ctx, ch, P, light, t=0.0):
     """P: x,y,s, view, yaw,pitch,roll, lean, armL, armR, legs, E, shrug, breath, front_arms, lod, crop."""
     s = P.get("s", 1.0)
@@ -1002,6 +1051,10 @@ def draw_character(ctx, ch, P, light, t=0.0):
     armL = P.get("armL", {"a1": 6, "a2": 3})
     armR = P.get("armR", {"a1": -6, "a2": -3})
     behind = P.get("arms_behind", ())
+    cb_ = P.get("chest_bend", 0.0) if lod >= 1 else 0.0
+    bent = abs(cb_) > 1e-4
+    if bent:
+        ctx.save(); _chest_tf(ctx, cb_)
     if "L" in behind:
         draw_arm(ctx, ch, shL, armL, light, lw, bw, lod, -1)
     if "R" in behind:
@@ -1034,6 +1087,9 @@ def draw_character(ctx, ch, P, light, t=0.0):
             soft_stroke(ctx, [(hc[0] + 14, hc[1] + 44), (12, -26), (8, -8)], hexc("4a3a56"), 0.3 * ch["decay"], lw * 0.8)
             soft_stroke(ctx, [(12, -26), (18, -16)], hexc("4a3a56"), 0.25 * ch["decay"], lw * 0.6)
         ctx.restore()
+    if bent:
+        ctx.restore()
+        ctx.push_group()
     # torso
     bp = body_pts(bw, ch.get("fem", False))
     bp = [(x * (1 + (0.012 * br if y < 120 else 0)), y + (-shrug * 7 if y < 40 and abs(x) > 30 else 0)) for x, y in bp]
@@ -1051,6 +1107,9 @@ def draw_character(ctx, ch, P, light, t=0.0):
             _collar(ctx, ch, light, lw, bw)
         else:
             soft_stroke(ctx, [(0, 10), (0, 230)], fold, 0.25, lw)
+    if bent:
+        _paint_bent(ctx, ctx.pop_group(), cb_)
+        ctx.save(); _chest_tf(ctx, cb_)
     # head
     ctx.save()
     ctx.translate(*hc)
@@ -1058,8 +1117,12 @@ def draw_character(ctx, ch, P, light, t=0.0):
     ctx.scale(1.08, 1.08)
     draw_head(ctx, ch, P.get("E", expr()), yaw, pitch, light, lw, lod, back=(view == "back"))
     ctx.restore()
+    if bent:
+        ctx.restore()
     if legs and legs.get("mode") == "sit_knees":  # knees drawn up in front of the body
         draw_legs(ctx, ch, dict(legs, view=view), light, lw, lod, bw, t)
+    if bent:
+        ctx.save(); _chest_tf(ctx, cb_)
     # front arms
     if "L" not in behind:
         draw_arm(ctx, ch, shL, armL, light, lw, bw, lod, -1)
@@ -1068,6 +1131,8 @@ def draw_character(ctx, ch, P, light, t=0.0):
     post = P.get("post")
     if post:
         post(ctx, lw)
+    if bent:
+        ctx.restore()
     ctx.restore()  # upper body
     ctx.restore()
     return hc

@@ -323,7 +323,8 @@ HOPE = [  # (crest time, rise seconds, strength)
     (word_t("s1", "soul"), 1.6, 0.8), (shots.t_hit, 1.0, 0.9), (shots.t_ign, 1.2, 1.0), (word_t("v6", "witness"), 1.0, 0.6),
     (word_t("k3", "meaning", 1), 1.4, 0.8), (word_t("y4", "existence"), 1.5, 0.8), (word_t("y4", "life"), 1.8, 1.0),
     (word_t("y7", "peace"), 2.2, 1.0), (word_t("b2", "something"), 1.0, 0.7), (word_t("b4", "flag"), 1.0, 0.7),
-    (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10b", "save"), 1.6, 0.9), (word_t("i11", "nodded"), 1.4, 1.0),
+    (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10b", "save"), 1.6, 0.9), (shots.t_wink + 0.2, 1.2, 0.9),
+    (word_t("y7", "Heaven"), 1.5, 0.9), (word_t("k5b", "thriving"), 1.6, 0.9),
     (word_t("e1", "heaven", 1), 1.8, 0.9),
 ]
 HEAVY = [  # (start, duration, strength)
@@ -460,9 +461,20 @@ sfx += pan2(lp(Hn, 500) * eg, -0.3)
 n = int(0.5 * SR)
 add(sfx, shots.t_up, bp(rng.standard_normal(n), 400, 3500) * np.linspace(0, 1, n) ** 0.5 * np.linspace(1, 0, n) ** 2, g=0.16)
 # a light comic sting on the nod ("...no?" / small smile)
-_tn = L("r2d")[1] + 0.35
+_tn = shots.t_nodB
 piano(midi(74), _tn, 0.07, dur=0.8, p=0.2)
 piano(midi(81), _tn + 0.18, 0.06, dur=1.2, p=0.25)
+# one tear, wiped away
+piano(midi(84), shots.t_cut + 0.35, 0.05, dur=2.2, p=0.1)
+# the thought bubble: three little puffs, then the cloud
+for q, (dt, f0) in enumerate(((-0.1, 520), (-0.02, 640), (0.06, 780), (0.16, 430))):
+    n = int(0.12 * SR)
+    tt_ = np.arange(n) / SR
+    ph_ = 2 * np.pi * np.cumsum(f0 * (1 + 0.9 * tt_ / 0.12)) / SR
+    add(sfx, L("i11t")[0] + dt, np.sin(ph_) * np.exp(-tt_ * 38), p=-0.2, g=0.11 if q < 3 else 0.14)
+# the wink: ting-ting
+bell(midi(88), shots.t_wink + 0.1, 0.06, p=-0.2)
+bell(midi(93), shots.t_wink + 0.17, 0.05, p=-0.15)
 # rope drop + grab
 n = int(0.9 * SR)
 add(sfx, shots.t_rope, noise(n, 400, 3000) * np.linspace(1, 0, n) ** 2, g=0.1)
@@ -478,6 +490,23 @@ for lid in TL["order"]:
     add(voice, d["t0"], y, p=0.0, g=g)
     add(vsend, d["t0"], y, p=0.0, g=g * REVERB_SEND[d["spk"]])
 
+
+# the conscious zombie's sigh: a breath in, then a long, low "haaah" out
+def breath(dur, lo, hi, att, voiced=0.0, f0=95.0):
+    n = int(dur * SR)
+    tt_ = np.arange(n) / SR
+    env = np.minimum(1, tt_ / att) * np.exp(-np.maximum(0, tt_ - att) * 2.2)
+    x = bp(rng.standard_normal(n), lo, hi) * 3.0
+    x += bp(rng.standard_normal(n), 550, 900) * 2.0 * (hi < 3000)  # an open "ah" formant on the way out
+    if voiced:
+        f = f0 * (1 - 0.15 * tt_ / dur)
+        ph_ = 2 * np.pi * np.cumsum(f) / SR
+        x += voiced * sum(np.sin(h * ph_) / h for h in range(1, 7))
+    return x * env
+
+
+add(voice, shots.t_sigh - 0.75, breath(0.65, 1200, 4500, 0.45), p=0.0, g=0.05)
+add(voice, shots.t_sigh, breath(1.4, 250, 2400, 0.09, voiced=0.25), p=0.0, g=0.09)
 
 # ---------------------------------------------------------------- reverb + mix
 def reverb(x, secs=2.6, lpf=5000):
