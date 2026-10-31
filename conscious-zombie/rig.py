@@ -25,7 +25,7 @@ ZOMBIE = make()  # the one who becomes conscious (teal shirt)
 HUMAN_A = make(skin=hexc("6b4632"), lip=hexc("7a3a3a"), hair=hexc("151112"), hair_hi=hexc("4a3634"),
                brow=hexc("1a1414"), shirt=hexc("5d6b45"), shirt2=hexc("4a5636"), pants=hexc("4a5636"),
                sclera=hexc("f2eee6"), iris=hexc("3a2214"), milky=0.0, bags=0.06, hairstyle="curls",
-               eye_w=20.0, eye_h=11.6, brow_t=2.5, mouth_w=13.0, jaw=0.86, chin=0.9, nose=0.9,
+               eye_w=20.0, eye_h=11.6, brow_t=2.5, mouth_w=13.0, jaw=0.92, chin=0.93, nose=0.9,
                collar="flight", torn=False, headset=True, blush=0.14, build=0.86, decay=0.0, lip_a=0.72, fem=True)
 HUMAN_B = make(skin=hexc("e2b49a"), lip=hexc("b0786a"), hair=hexc("8a4524"), hair_hi=hexc("c07040"),
                brow=hexc("7a3c20"), shirt=hexc("3e4a5c"), shirt2=hexc("2f3a4a"), pants=hexc("2f3a4a"),
@@ -34,7 +34,7 @@ HUMAN_B = make(skin=hexc("e2b49a"), lip=hexc("b0786a"), hair=hexc("8a4524"), hai
                collar="flight", torn=False, headset=True, stubble=0.35, blush=0.06, build=1.06, decay=0.0, lip_a=0.5)
 DEFENDER = make(skin=hexc("b47e5c"), lip=hexc("8a5a4a"), hair=hexc("2a2018"), brow=hexc("2a2018"), sclera=hexc("f0ece4"),
                 iris=hexc("3c3c40"), milky=0.0, bags=0.2, hairstyle="short", helmet=True, brow_t=5.6, eye_w=16.5, eye_h=8.2,
-                mouth_w=15.5, jaw=1.25, chin=1.18, nose=1.3, shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight",
+                mouth_w=15.5, jaw=1.03, chin=1.1, nose=1.3, shirt=hexc("4a5240"), shirt2=hexc("3a4032"), collar="flight",
                 torn=False, stubble=0.0, decay=0.0, lip_a=0.45, beard=0.9, facepaint=True, scar=True, build=1.15, vest=True)
 
 SHIRTS = ["7a3b3b", "8a7a3a", "5a5a60", "6a5040", "45506e", "8a8478", "5b3f5e", "4b6040", "735a48"]
@@ -103,7 +103,7 @@ def draw_head(ctx, ch, E, yaw, pitch, light, lw, lod=2, back=False):
 
     # outline points (x, y, forward weight)
     base = [(0, -60, 0), (28, -56, 0.1), (41, -38, 0.2), (44, -12, 0.35), (43, 10, 0.5), (39 * jw, 27, 0.7),
-            (31 * jw, 41, 0.85), (18 * cn, 51 + 2 * cn, 1.0), (0, 56 * cn, 1.0)]
+            (31 * jw, 41, 0.85), (18 * cn, 56 * cn - 3 - 4 * max(0.0, 1 - cn), 1.0), (0, 56 * cn, 1.0)]
     pts = []
     for sgn in (1, -1):
         seq = base if sgn == 1 else list(reversed(base))
@@ -485,19 +485,29 @@ def _nose(ctx, ch, th, s, pdy, light, lw, lod):
     skin = ch["skin"]
     lx = light["dir"][0]
     sd = -1 if lx > 0 else 1
+    nd = 1.4 if ch.get("decay", 0) > 0.5 else 1.0  # the dead need a firmer nose or it reads as a smudge
     # bridge shadow on the side away from light
-    soft_stroke(ctx, [(bx + sd * 5, -6 + pdy * 0.6), (tx + sd * 6, ty - 6)], light["shadow"], 0.10, lw * 3)
+    soft_stroke(ctx, [(bx + sd * 5, -6 + pdy * 0.6), (tx + sd * 6, ty - 6)], light["shadow"], 0.10 * nd, lw * 3)
+    if nd > 1:  # lit edge of the bridge and a darker side plane
+        soft_stroke(ctx, [(bx - sd * 3, -4 + pdy * 0.6), (tx - sd * 3, ty - 7)], mix(skin, hexc("ffffff"), 0.35), 0.25, lw * 1.2)
+        soft_stroke(ctx, [(tx + sd * 7, ty - 9), (tx + sd * 8.5, ty - 1)], mul(skin, 0.45), 0.4, lw * 1.0)
     # under-nose shadow
-    soft_dot(ctx, tx, ty + 5, 9 * k, light["shadow"], 0.20)
+    soft_dot(ctx, tx, ty + 5, 9 * k, light["shadow"], 0.20 * nd)
+    if lod == 1 and nd > 1:  # mid shots: just the nostrils and the shadow under the tip
+        for sg in (1, -1):
+            soft_dot(ctx, tx + sg * 4.5 * k * math.cos(th), ty + 2.5, 3.0 * k, hexc("2a1a1c"), 0.6)
     if lod > 1:
         # nostrils (soft, no outlines)
         for sg in (1, -1):
             nx = tx + sg * 5.2 * k * math.cos(th) - s * 1.5
-            soft_dot(ctx, nx, ty + 2.2, 3.2 * k, hexc("2a1a1c"), 0.55 * (1 - 0.6 * max(0, sg * s)))
+            soft_dot(ctx, nx, ty + 2.2, 3.2 * k, hexc("2a1a1c"), min(0.9, 0.55 * nd) * (1 - 0.6 * max(0, sg * s)))
         # alar wings
         for sg in (1, -1):
             wx = tx + sg * 8 * k * math.cos(th)
-            soft_stroke(ctx, [(wx, ty - 3), (wx + sg * 1.5, ty + 0.5), (wx - sg * 2, ty + 3)], mul(skin, 0.55), 0.35, lw * 0.9)
+            soft_stroke(ctx, [(wx, ty - 3), (wx + sg * 1.5, ty + 0.5), (wx - sg * 2, ty + 3)], mul(skin, 0.55 if nd == 1 else 0.4),
+                        min(0.8, 0.35 * nd), lw * 0.9 * (1.15 if nd > 1 else 1))
+        if nd > 1:  # tip highlight
+            soft_dot(ctx, tx - sd * 1.5, ty - 4, 3.2 * k, mix(skin, hexc("ffffff"), 0.4), 0.3)
         soft_dot(ctx, tx - lx * 2, ty - 2.5, 4.5, light["rim"], 0.18)
     # profile edge when turned
     if abs(s) > 0.12:
@@ -637,13 +647,15 @@ def _wild_details(ctx, ch, s, th, pdy, light, lw, lod):
         for q in range(6):
             x = -30 + q * 12
             soft_stroke(ctx, [(fx(x, 8), -58 + abs(x) * 0.2), (fx(x + 5, 12), -48), (fx(x + 2, 14), -40)], mul(hair, 0.55), 0.5, lw)
-    for (x0, x1, y1) in ((-15, -19, -6), (6, 11, -10), (-28, -33, -12)):
-        soft_stroke(ctx, [(fx(x0, 14), -36 + pdy * 0.3), (fx((x0 + x1) / 2, 20), -22 + pdy * 0.4), (fx(x1, 24), y1 + pdy * 0.5)],
+    for (x0, x1, y1) in ((-15, -21, -19), (6, 12, -20), (-30, -38, -10)):  # lank strands, kept off the eyes
+        soft_stroke(ctx, [(fx(x0, 14), -36 + pdy * 0.5), (fx((x0 + x1) / 2, 20), (-36 + y1) / 2 + pdy * 0.6), (fx(x1, 24), y1 + pdy * 0.7)],
                     tint(hair, light), 0.9, lw * 1.7)
 
 
 def _cap_outer(s, top=-62, vol=1.05, side_y=-2):
-    base = [(45, side_y, 0.42), (45, -16, 0.35), (42, -38, 0.2), (29, -57, 0.1), (0, top, 0.0)]
+    ry = -16 - top  # an elliptical dome from the temples to the crown
+    base = [(45, side_y, 0.42), (45, -16, 0.35)] + [(45 * math.cos(a), -16 - ry * math.sin(a), fw)
+                                                     for a, fw in ((0.55, 0.24), (0.95, 0.15), (1.3, 0.07))] + [(0, top, 0.0)]
     pts = []
     for sgn in (1, -1):
         seq = base if sgn == 1 else list(reversed(base))
@@ -684,13 +696,14 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
                          (34, -25, 38, -2, 5, 0.4)]
                 locks = [(x0, y0, x1 + 5 * (hsh(hv + i, 201) - 0.5), y1 + 8 * (hsh(hv + i, 202) - 0.5), wd, bend)
                          for i, (x0, y0, x1, y1, wd, bend) in enumerate(locks)]
+                locks = [(x0, y0, x1, min(y1, -16) if abs(x1) < 33 else y1, wd, bend) for (x0, y0, x1, y1, wd, bend) in locks]
             else:
                 locks = [(-31, -28, -37, -13, 7, 0), (-18, -33, -20, -21, 7, 0), (-6, -35, -6, -17, 7, 0), (5, -35, 10, -23, 7, 0),
                          (17, -33, 24, -16, 7, 0), (30, -27, 33, -18, 7, 0)]
             for i, (x0, y0, x1, y1, wd, bend) in enumerate(locks):
                 a0, a1 = fx(x0, 14), fx(x1, 18)
-                b0 = y0 + pdy * 0.3
-                b1 = y1 + pdy * 0.35
+                b0 = y0 + pdy * 0.5
+                b1 = y1 + pdy * 0.7
                 ctx.new_path()
                 ctx.move_to(a0 - wd, b0 - 6)
                 ctx.curve_to(a0 - wd * 0.6 + bend * 6, b0 + 4, a1 - 2 + bend * 5, b1 - 6, a1, b1)
@@ -704,9 +717,9 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
                 if wild and lod > 1 and i % 2 == 0:  # split ends
                     soft_stroke(ctx, [(a1, b1), (a1 + 3 + bend * 3, b1 + 5)], tint(hair, light), 0.8, lw * 0.6)
             if wild and lod > 1:  # stray strands across the forehead
-                for (x0, y0, x1, y1) in ((-30, -30, -14, -12), (6, -34, 20, -6), (-8, -34, -16, -10)):
-                    soft_stroke(ctx, [(fx(x0, 14), y0 + pdy * 0.3), (fx((x0 + x1) / 2 + 4, 18), (y0 + y1) / 2 + pdy * 0.33),
-                                      (fx(x1, 20), y1 + pdy * 0.35)], tint(mul(hair, 0.8), light), 0.85, lw * 0.7)
+                for (x0, y0, x1, y1) in ((-30, -30, -36, -14), (6, -34, 14, -19), (-8, -34, -14, -20)):
+                    soft_stroke(ctx, [(fx(x0, 14), y0 + pdy * 0.5), (fx((x0 + x1) / 2 + 4, 18), (y0 + y1) / 2 + pdy * 0.6),
+                                      (fx(x1, 20), y1 + pdy * 0.7)], tint(mul(hair, 0.8), light), 0.85, lw * 0.7)
             if lod > 1:
                 for i in range(7):
                     x = -30 + i * 10

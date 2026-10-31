@@ -334,7 +334,7 @@ def deep(t0, dur, amp):
 
 HOPE = [  # (crest time, rise seconds, strength)
     (word_t("s1", "soul"), 1.6, 0.8), (shots.t_hit, 1.0, 0.9), (shots.t_ign, 1.2, 1.0), (word_t("v6", "witness"), 1.0, 0.6),
-    (word_t("k3", "meaning", 1), 1.4, 0.8), (word_t("y4", "existence"), 1.5, 0.8), (word_t("y4", "life"), 1.8, 1.0),
+    (word_t("k3", "guidance"), 1.4, 0.8), (word_t("y4", "existence"), 1.5, 0.8), (word_t("y4", "life"), 1.8, 1.0),
     (word_t("y7", "peace"), 2.2, 1.0), (word_t("b2", "something"), 1.0, 0.7), (word_t("b4", "flag"), 1.0, 0.7),
     (word_t("i6b", "conscious"), 1.2, 0.8), (word_t("i10b", "save"), 1.6, 0.9), (shots.t_wink + 0.2, 1.2, 0.9),
     (word_t("y7", "Heaven"), 1.5, 0.9), (word_t("k5b", "thriving"), 1.6, 0.9),
@@ -395,12 +395,15 @@ R_ -= lp(R_, 20)
 gr = amp_curve([(0, 0.1), (SC["horde"][0], 0.25), (SC["knees"][0], 0.25), (SC["sky"][0], 0.12), (SC["building"][0], 0.06),
                 (SC["heli"][0], 0.08), (SC["cabin"][0], 0.0), (DUR, 0.0)])
 sfx += pan2(R_ * gr / (np.std(R_) + 1e-9) * 0.15)
-BATTLE = [SC["horde"], (shots.t_dust, shots.t_react), (shots.t_hell, shots.t_stair)]
+BATTLE = [(shots.t_dust, shots.t_react), (shots.t_hell, shots.t_stair)]
 
 
 def guns(t):
-    """Full volume while the guns are the subject of the shot, 20% down otherwise."""
-    return 1.0 if any(a - 0.5 <= t <= b + 0.5 for a, b in BATTLE) else 0.8
+    """The guns at full strength only when we first meet them; about half when we watch them fire later on;
+    well back otherwise, so the words always come through."""
+    if SC["open"][0] <= t <= SC["horde"][1] + 0.5:
+        return 1.0
+    return 0.55 if any(a - 0.3 <= t <= b + 0.3 for a, b in BATTLE) else 0.3
 
 
 t = 0.0
@@ -473,7 +476,7 @@ hg = amp_curve([(0, 0), (shots.t_fwide + 1.0, 0), (SC["heli"][0], 0.09), (SC["he
                 (SC["cabin"][0] + 0.2, 0.0), (DUR, 0)])
 sfx += pan2(Hn * hg, 0.0)
 Hc = lp(Hn, 260)
-cg = amp_curve([(0, 0), (SC["cabin"][0] - 0.2, 0), (SC["cabin"][0] + 0.3, 0.3), (SC["cabin"][1] - 1.0, 0.22), (SC["end"][0] + 0.5, 0.0),
+cg = amp_curve([(0, 0), (SC["cabin"][0] - 0.2, 0), (SC["cabin"][0] + 0.3, 0.3), (shots.t_field - 0.1, 0.22), (shots.t_field + 0.1, 0.0),
                 (DUR, 0)])
 sfx += pan2(Hc * cg * 1.4)
 sfx += pan2(lp(Hn, 900) * cg * 0.55, 0.15)
@@ -485,6 +488,20 @@ add(sfx, shots.t_up, bp(rng.standard_normal(n), 400, 3500) * np.linspace(0, 1, n
 _tn = shots.t_nodB
 piano(midi(74), _tn, 0.07, dur=0.8, p=0.2)
 piano(midi(81), _tn + 0.18, 0.06, dur=1.2, p=0.25)
+# runners slamming into his shoulder: a dull body thump and a scuff of cloth
+for tb in (shots.t_bump1, shots.t_bump2):
+    n = int(0.35 * SR)
+    tt_ = np.arange(n) / SR
+    thump = np.sin(2 * np.pi * np.cumsum(110 * np.exp(-tt_ * 9) + 55) / SR) * np.exp(-tt_ * 16)
+    add(sfx, tb, thump, p=0.0, g=0.3)
+    add(sfx, tb + 0.01, bp(rng.standard_normal(n), 700, 3500) * np.exp(-tt_ * 22), p=0.1, g=0.12)
+# down on the field: the helicopter goes over, and a faint shimmer at the flicker in the zombie's eyes
+n = int((shots.i1_ - shots.t_field + 0.6) * SR)
+tt_ = np.arange(n) / SR
+pas = np.sin(np.pi * np.clip(tt_ / (n / SR), 0, 1)) ** 1.5
+add(sfx, shots.t_field - 0.2, (lp(rng.standard_normal(n), 700) * (np.abs(np.sin(np.pi * tt_ * 5.2)) ** 8) * 1.5 +
+                               np.sin(2 * np.pi * 72 * tt_) * 0.2) * pas, p=0.0, g=0.22)
+bell(midi(86), shots.t_field + 1.3, 0.025, p=0.0)
 # one tear, wiped away
 piano(midi(84), shots.t_cut + 0.35, 0.05, dur=2.2, p=0.1)
 # the thought bubble: three little puffs, then the cloud
@@ -547,7 +564,7 @@ va = np.abs(voice).max(1)
 va = lp(va, 3)
 va = np.clip(va / (np.percentile(va[va > 0.01], 60) + 1e-9), 0, 1) if np.any(va > 0.01) else va
 duck = 1.0 - 0.45 * va
-mix = voice + music * duck[:, None] * 0.75 + sfx * 0.6
+mix = voice + music * duck[:, None] * 0.75 + sfx * (1.0 - 0.35 * va)[:, None] * 0.6  # effects step back under speech
 # gentle bus compression via soft clip, then peak normalise
 mix = np.tanh(mix * 1.1) / 1.1
 mix /= np.max(np.abs(mix)) / 0.89

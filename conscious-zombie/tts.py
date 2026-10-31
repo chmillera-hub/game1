@@ -120,10 +120,7 @@ for scene, lines in SCENES:
             y = np.zeros(int(opt["silent"] * SR))
         else:
             y = synth(spk, clean(text), opt.get("speed"), opt.get("ph"))
-            if opt.get("muffle"):  # thinking out loud behind closed lips: dull, close, quieter
-                y = sosfilt(butter(2, 620, "low", fs=SR, output="sos"), y)
-                y = sosfilt(butter(2, 620, "low", fs=SR, output="sos"), y) * 1.6
-                y = 0.55 * y / (np.max(np.abs(y)) + 1e-9)
+            y = y * opt.get("gain", 1.0)
         sf.write(f"{BUILD}/lines/{lid}.wav", y, SR)
         dur = len(y) / SR
         t += pb
