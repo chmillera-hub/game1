@@ -1,0 +1,529 @@
+[
+ {
+  "kind": "title",
+  "part": 0,
+  "text": "On “The Wheels on the Bus”",
+  "heading": "Werner Herzog on \"The Wheels on the Bus\":",
+  "sound": "Sound of wind, perhaps a distant, discordant hum",
+  "id": 0
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Observe the bus.",
+  "subs": [
+   "Observe the bus."
+  ],
+  "pause_after": 1.3,
+  "id": 1
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "A hulking metal carcass, commandeered by an unseen, perhaps nonexistent, intelligence.",
+  "subs": [
+   "A hulking metal carcass, commandeered by an unseen,",
+   "perhaps nonexistent, intelligence."
+  ],
+  "pause_after": 0.6,
+  "id": 2
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Its wheels, they turn, 'round and 'round, with a mindless, algorithmic insistence.",
+  "subs": [
+   "Its wheels, they turn, 'round and 'round,",
+   "with a mindless, algorithmic insistence."
+  ],
+  "pause_after": 0.6,
+  "id": 3
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "This, they tell us, is the vehicle of civilization, ferrying its passengers towards an ever-receding horizon of promised destinations.",
+  "subs": [
+   "This, they tell us, is the vehicle of civilization,",
+   "ferrying its passengers towards an ever-receding horizon of",
+   "promised destinations."
+  ],
+  "pause_after": 1.15,
+  "id": 4
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "But who, one must ask, truly grips the wheel?",
+  "subs": [
+   "But who, one must ask, truly grips the wheel?"
+  ],
+  "pause_after": 0.6,
+  "id": 5
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Who navigates by the stars of emotional truth, by the magnetic north of accountability?",
+  "subs": [
+   "Who navigates by the stars of emotional truth,",
+   "by the magnetic north of accountability?"
+  ],
+  "pause_after": 0.6,
+  "id": 6
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The answer, I suspect, is a void, an empty driver's seat.",
+  "subs": [
+   "The answer, I suspect, is a void, an empty driver's seat."
+  ],
+  "pause_after": 1.6,
+  "id": 7
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The passengers, lulled into a state of bovine placidity, sing their 'merry song.'",
+  "subs": [
+   "The passengers, lulled into a state of bovine placidity,",
+   "sing their 'merry song.'"
+  ],
+  "pause_after": 0.6,
+  "id": 8
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "A song of conformity, a childish rhyme to drown out the grinding of gears, the screech of metal against metal as the chassis strains.",
+  "subs": [
+   "A song of conformity, a childish rhyme to drown out the grinding of",
+   "gears, the screech of metal against metal as the chassis strains."
+  ],
+  "pause_after": 0.6,
+  "id": 9
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The music, you see, is so very loud, designed to obscure the silence from the driver's seat, to mask the chilling truth that this colossus, this societal omnibus, might possess no functioning brakes.",
+  "subs": [
+   "The music, you see, is so very loud,",
+   "designed to obscure the silence from the driver's seat,",
+   "to mask the chilling truth that this colossus,",
+   "this societal omnibus, might possess no functioning brakes."
+  ],
+  "pause_after": 1.15,
+  "id": 10
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "And so it hurtles onward, 'round and 'round, or perhaps, in a terrifyingly straight line towards a precipice only a few dare to acknowledge.",
+  "subs": [
+   "And so it hurtles onward, 'round and 'round,",
+   "or perhaps, in a terrifyingly straight line towards a precipice",
+   "only a few dare to acknowledge."
+  ],
+  "pause_after": 0.6,
+  "id": 11
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The landscape outside is a blur of fleeting distractions.",
+  "subs": [
+   "The landscape outside is a blur of fleeting distractions."
+  ],
+  "pause_after": 0.6,
+  "id": 12
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Inside, the song drones on, a mantra of oblivion.",
+  "subs": [
+   "Inside, the song drones on, a mantra of oblivion."
+  ],
+  "pause_after": 0.6,
+  "id": 13
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The wheels, indifferent to the fate of their cargo, simply continue their rotation, a perfect, mechanical metaphor for a journey undertaken without wisdom, careening towards a future shaped not by conscious design, but by the blind, idiot force of unexamined momentum.",
+  "subs": [
+   "The wheels, indifferent to the fate of their cargo,",
+   "simply continue their rotation, a perfect,",
+   "mechanical metaphor for a journey undertaken without wisdom,",
+   "careening towards a future shaped not by conscious design,",
+   "but by the blind, idiot force of unexamined momentum."
+  ],
+  "pause_after": 0.6,
+  "id": 14
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "One day, the singing will abruptly cease.",
+  "subs": [
+   "One day, the singing will abruptly cease."
+  ],
+  "pause_after": 2.8,
+  "id": 15
+ },
+ {
+  "kind": "speech",
+  "part": 0,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "If emotional intelligence is not taught to fix the brakes then I imagine the view from the window wont matter much anymore if the brakes on the bus aren't fixed as soon as possible.",
+  "subs": [
+   "If emotional intelligence is not taught to fix the brakes then I",
+   "imagine the view from the window wont matter much anymore if the",
+   "brakes on the bus aren't fixed as soon as possible."
+  ],
+  "pause_after": 3.2,
+  "id": 16
+ },
+ {
+  "kind": "title",
+  "part": 1,
+  "text": "On “The Itsy-Bitsy Spider”",
+  "heading": "Werner Herzog on \"The Itsy-Bitsy Spider\":",
+  "sound": "Sound of dripping water, a faint, skittering noise",
+  "id": 17
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "And then, we have the arachnid.",
+  "subs": [
+   "And then, we have the arachnid."
+  ],
+  "pause_after": 0.6,
+  "id": 18
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The 'Itsy-Bitsy Spider.'",
+  "subs": [
+   "The 'Itsy-Bitsy Spider.'"
+  ],
+  "pause_after": 1.2,
+  "id": 19
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "A creature of almost ludicrous fragility, attempting its ascent up the 'waterspout' – this, we are told, is the grand edifice of societal norms, the slick, vertical promise of promotions, of accumulating currency.",
+  "subs": [
+   "A creature of almost ludicrous fragility,",
+   "attempting its ascent up the 'waterspout' –",
+   "this, we are told, is the grand edifice of societal norms,",
+   "the slick, vertical promise of promotions,",
+   "of accumulating currency."
+  ],
+  "pause_after": 0.6,
+  "id": 20
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The spider, driven by some primal, unarticulated yearning, perhaps what it dimly perceives as 'up,' begins its climb.",
+  "subs": [
+   "The spider, driven by some primal,",
+   "unarticulated yearning, perhaps what it dimly perceives as 'up,'",
+   "begins its climb."
+  ],
+  "pause_after": 0.6,
+  "id": 21
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 0,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "It is a creature already bearing the weight of an unseen burden – its emotional suffering, a private, internal weeping.",
+  "subs": [
+   "It is a creature already bearing the weight of an unseen burden –",
+   "its emotional suffering, a private,",
+   "internal weeping."
+  ],
+  "pause_after": 1.15,
+  "id": 22
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "But societal structures, much like the indifferent plumbing of the universe, are not designed for such delicate ascents.",
+  "subs": [
+   "But societal structures, much like the indifferent plumbing of the",
+   "universe, are not designed for such delicate ascents."
+  ],
+  "pause_after": 0.6,
+  "id": 23
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The 'rain,' you see, is not mere water.",
+  "subs": [
+   "The 'rain,' you see, is not mere water."
+  ],
+  "pause_after": 1.2,
+  "id": 24
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "It is the rotting accumulation of unprocessed human suffering within a collective that has systematically failed to educate its smallest members in the language of the heart, in emotional intelligence.",
+  "subs": [
+   "It is the rotting accumulation of unprocessed human suffering",
+   "within a collective that has systematically failed to educate its",
+   "smallest members in the language of the heart,",
+   "in emotional intelligence."
+  ],
+  "pause_after": 0.6,
+  "id": 25
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 1,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "It is the downpour of a thousand unmourned griefs, a torrent of unspoken anxieties, and it washes the spider out, a predictable, almost banal tragedy.",
+  "subs": [
+   "It is the downpour of a thousand unmourned griefs,",
+   "a torrent of unspoken anxieties, and it washes the spider out,",
+   "a predictable, almost banal tragedy."
+  ],
+  "pause_after": 1.15,
+  "id": 26
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Then, the 'sun' appears – the so-called 'help.'",
+  "subs": [
+   "Then, the 'sun' appears – the so-called 'help.'"
+  ],
+  "pause_after": 0.6,
+  "id": 27
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "A course of medication, perhaps, designed to numb the fall.",
+  "subs": [
+   "A course of medication, perhaps, designed to numb the fall."
+  ],
+  "pause_after": 0.6,
+  "id": 28
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Or the therapist, offering a different 'tube' to climb.",
+  "subs": [
+   "Or the therapist, offering a different 'tube' to climb."
+  ],
+  "pause_after": 0.6,
+  "id": 29
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Society, with a benign, almost patronizing smile, gestures towards a new structure.",
+  "subs": [
+   "Society, with a benign, almost patronizing smile,",
+   "gestures towards a new structure."
+  ],
+  "pause_after": 0.6,
+  "id": 30
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Perhaps it is no longer the waterspout of raw commerce, but a 'metal pole' of 'wellness,' of 'self-improvement.'",
+  "subs": [
+   "Perhaps it is no longer the waterspout of raw commerce,",
+   "but a 'metal pole' of 'wellness,' of 'self-improvement.'"
+  ],
+  "pause_after": 0.6,
+  "id": 31
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "Yet, this new edifice, for all its gleaming surfaces, shares the same flaws as the old.",
+  "subs": [
+   "Yet, this new edifice, for all its gleaming surfaces,",
+   "shares the same flaws as the old."
+  ],
+  "pause_after": 0.6,
+  "id": 32
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 2,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The spider, still unversed in emotional literacy, still carrying its residual emotional pain, attempts the climb again, with almost the same vulnerabilities as before.",
+  "subs": [
+   "The spider, still unversed in emotional literacy,",
+   "still carrying its residual emotional pain,",
+   "attempts the climb again, with almost the same vulnerabilities as before."
+  ],
+  "pause_after": 1.15,
+  "id": 33
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 3,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The cycle is complete, only to begin anew.",
+  "subs": [
+   "The cycle is complete, only to begin anew."
+  ],
+  "pause_after": 1.3,
+  "id": 34
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 3,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The climb, the rain, the fall, the superficial drying, the redirection to another treacherous ascent.",
+  "subs": [
+   "The climb, the rain, the fall, the superficial drying,",
+   "the redirection to another treacherous ascent."
+  ],
+  "pause_after": 0.6,
+  "id": 35
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 3,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The spider, in its Sisyphean toil, becomes the individual ensnared in systems that offer the illusion of progress, while the core deficit – the profound, societal neglect of emotional understanding – ensures each climb is merely a prelude to the next fall.",
+  "subs": [
+   "The spider, in its Sisyphean toil,",
+   "becomes the individual ensnared in systems that offer the illusion",
+   "of progress, while the core deficit –",
+   "the profound, societal neglect of emotional understanding –",
+   "ensures each climb is merely a prelude to the next fall."
+  ],
+  "pause_after": 0.6,
+  "id": 36
+ },
+ {
+  "kind": "speech",
+  "part": 1,
+  "para": 3,
+  "voice": "narrator",
+  "speaker": "NARRATOR",
+  "text": "The spout changes; the suffering, and the ignorance that perpetuates it, remain.",
+  "subs": [
+   "The spout changes; the suffering, and the ignorance that",
+   "perpetuates it, remain."
+  ],
+  "pause_after": 6.0,
+  "id": 37
+ }
+]
