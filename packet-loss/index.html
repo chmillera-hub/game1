@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Packet Loss</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="An animated trace of one human need, for connection, community and growth, sent through thirteen pieces of standard advice to see who ever receives it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Martian+Mono:wght@300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap">
+<style>
+  :root {
+    /* Layout: one centered column. The player is the hero; the delivery ledger,
+       the notes on the math and the narration follow it as a technical appendix.
+       Palette: blueprint ink and grid for the machine, one warm coral for the
+       human signal, teal for 1 (passes), violet for 0 (fails), gray for dead ends. */
+    --c-bg: #edf1f6;
+    --c-raise: #ffffff;
+    --c-grid: #dfe5ee;
+    --c-rule: #c7d0dd;
+    --c-line: #8492aa;
+    --c-line-hi: #56647d;
+    --c-ink: #13203a;
+    --c-dim: #4b5974;
+    --c-faint: #7d899f;
+    --c-warm: #d4502c;
+    --c-gold: #a8720e;
+    --c-yes: #0b7d73;
+    --c-no: #9c3fb8;
+    --c-power: #2f5bc7;
+    --c-dead: #8a93a8;
+    --c-shadow: rgba(19, 32, 58, 0.16);
+    --f-mono: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --f-sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --f-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --c-bg: #0b1220; --c-raise: #121b2e; --c-grid: #141e33; --c-rule: #25324d; --c-line: #4d6084; --c-line-hi: #8496b9;
+      --c-ink: #e4eaf5; --c-dim: #97a4be; --c-faint: #6b7894; --c-warm: #ff8a6b; --c-gold: #f2c46b; --c-yes: #46c2b4;
+      --c-no: #c58cf0; --c-power: #9fb3ff; --c-dead: #6b7790; --c-shadow: rgba(0, 0, 0, 0.45);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --c-bg: #0b1220; --c-raise: #121b2e; --c-grid: #141e33; --c-rule: #25324d; --c-line: #4d6084; --c-line-hi: #8496b9;
+    --c-ink: #e4eaf5; --c-dim: #97a4be; --c-faint: #6b7894; --c-warm: #ff8a6b; --c-gold: #f2c46b; --c-yes: #46c2b4;
+    --c-no: #c58cf0; --c-power: #9fb3ff; --c-dead: #6b7790; --c-shadow: rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--c-bg); color: var(--c-ink); font: 400 17px/1.55 var(--f-sans); }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--c-warm); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 80px;
+  }
+  .wrap > * { min-width: 0; }
+  .mast { display: grid; gap: 12px; }
+  .kicker { margin: 0; font: 600 12px/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  h1 { margin: 0; font: 800 clamp(38px, 7vw, 76px)/1 var(--f-mono); letter-spacing: .01em; text-wrap: balance; }
+  .dek { margin: 0; max-width: 62ch; font: italic 400 clamp(19px, 2.3vw, 24px)/1.42 var(--f-serif); color: var(--c-dim); text-wrap: pretty; }
+
+  .player { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+  .player > * { min-width: 0; }
+  .stage {
+    position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9;
+    border: 1px solid var(--c-rule); border-radius: 14px; overflow: hidden; background: var(--c-bg);
+  }
+  .stage[style*="height"] { aspect-ratio: auto; }
+  .stage canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+  .bigplay {
+    position: absolute; left: 4.6%; bottom: 7%; display: inline-flex; align-items: center; gap: 12px;
+    padding: 12px 20px 12px 16px; border-radius: 999px; border: 1.5px solid var(--c-warm);
+    background: var(--c-raise); color: var(--c-ink); font: 700 16px/1 var(--f-sans); cursor: pointer;
+    box-shadow: 0 8px 28px var(--c-shadow);
+  }
+  .bigplay .tri { width: 0; height: 0; border-left: 14px solid var(--c-warm); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+  .bigplay small { font: 600 12px/1 var(--f-mono); color: var(--c-dim); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .btn {
+    appearance: none; -webkit-appearance: none; border: 1px solid var(--c-rule); background: var(--c-raise); color: var(--c-ink);
+    border-radius: 10px; height: 40px; min-width: 44px; padding: 0 12px; font: 600 14px/1 var(--f-mono); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--c-line); }
+  #pp { position: relative; width: 44px; padding: 0; }
+  #pp::before { content: ""; position: absolute; left: 16px; top: 12px; border-left: 14px solid var(--c-ink); border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+  #pp[data-state="playing"]::before { left: 15px; top: 12px; width: 4px; height: 16px; border: 0; background: var(--c-ink); box-shadow: 9px 0 0 var(--c-ink); }
+  .time { font: 500 13px/1 var(--f-mono); color: var(--c-dim); font-variant-numeric: tabular-nums; min-width: 10ch; }
+  .scrub { position: relative; flex: 1 1 240px; min-width: 0; height: 40px; display: flex; align-items: center; }
+  .scrub input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 40px; margin: 0; background: transparent; cursor: pointer; position: relative; z-index: 1; }
+  .scrub input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--c-warm) var(--p, 0%), var(--c-rule) var(--p, 0%)); }
+  .scrub input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--c-rule); }
+  .scrub input[type="range"]::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--c-warm); }
+  .scrub input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 50%; background: var(--c-warm); border: 3px solid var(--c-raise); box-shadow: 0 0 0 1px var(--c-warm); }
+  .scrub input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--c-warm); border: 3px solid var(--c-raise); }
+  .ticks { position: absolute; left: 9px; right: 9px; top: 50%; height: 10px; transform: translateY(-50%); pointer-events: none; }
+  .ticks i { position: absolute; top: 0; width: 1px; height: 10px; background: var(--c-line); opacity: .7; }
+  select.btn { max-width: 100%; min-width: 0; padding-right: 10px; font-weight: 500; font-size: 13px; flex: 0 1 260px; }
+  .hint { margin: 0; font: 500 12px/1.4 var(--f-mono); color: var(--c-faint); letter-spacing: .04em; }
+
+  section > h2 { margin: 0 0 8px; font: 800 13px/1.3 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  .lede { margin: 0 0 18px; max-width: 64ch; font: 400 20px/1.45 var(--f-serif); text-wrap: pretty; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--c-rule); border-radius: 12px; background: var(--c-raise); }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--c-rule); vertical-align: middle; }
+  thead th { font: 700 11px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--c-dim); background: var(--c-bg); }
+  thead th.c, td.bit { text-align: center; }
+  th.route { font: 700 15px/1.3 var(--f-sans); white-space: nowrap; color: var(--c-ink); }
+  td.where { color: var(--c-dim); font-size: 15px; min-width: 240px; }
+  td.bit { font: 800 15px/1 var(--f-mono); width: 80px; }
+  td.bit.one { color: var(--c-yes); }
+  td.bit.zero { color: var(--c-no); }
+  td.prod b { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; border: 2px solid currentColor; }
+  .binchip { display: inline-block; font: 700 11px/1 var(--f-mono); letter-spacing: .1em; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--c-rule); color: var(--c-dim); white-space: nowrap; }
+  .binchip.sideways { color: var(--c-warm); border-color: var(--c-warm); }
+  .binchip.delivered { color: var(--c-yes); border-color: var(--c-yes); }
+  tr.group td { background: var(--c-bg); font: 700 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-dim); padding-block: 9px; }
+  tbody tr:last-child > * { border-bottom: 0; }
+
+  .notes { display: grid; gap: 22px; }
+  .prose { max-width: 68ch; display: grid; gap: 14px; }
+  .prose p { margin: 0; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0 28px; margin: 0; }
+  .facts div { border-top: 1px solid var(--c-rule); padding-block: 14px; min-width: 0; }
+  .facts dt { font: 800 19px/1.25 var(--f-mono); color: var(--c-ink); }
+  .facts dd { margin: 6px 0 0; color: var(--c-dim); font-size: 15.5px; }
+
+  details { border-top: 1px solid var(--c-rule); padding-top: 16px; }
+  summary { cursor: pointer; font: 800 13px/1.3 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  .transcript ol { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 22px; max-width: 70ch; }
+  .transcript h3 { margin: 0 0 4px; font: 600 12px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--c-dim); }
+  .transcript .q { font: italic 400 21px/1.3 var(--f-serif); color: var(--c-ink); }
+  .transcript p { margin: 4px 0 0; }
+
+  html.render, html.render body { width: 100%; height: 100%; overflow: hidden; background: var(--c-bg); }
+  html.render .wrap { display: block; padding: 0; max-width: none; }
+  html.render .wrap > :not(.player), html.render .controls, html.render .bigplay, html.render .hint { display: none !important; }
+  html.render .stage { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; border-radius: 0; aspect-ratio: auto; }
+  html.render .stage canvas { cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <p class="kicker">An animated trace · <span id="runtime">7 minutes</span></p>
+    <h1>Packet Loss</h1>
+    <p class="dek">One human need, for deeper connection, community, a village and room to grow, sent through thirteen pieces of standard advice. At every hop the trace reads the delivery report: who received it, and whether anyone who could change the conditions ever did.</p>
+  </header>
+
+  <section class="player" aria-label="Animated trace">
+    <div class="stage" id="stage" tabindex="0" aria-label="Animation stage. Space plays or pauses; the arrow keys skip five seconds.">
+      <canvas id="cv" role="img" aria-label="Animated diagram of an information packet traveling through standard advice and landing in destination bins. The full narration is below the ledger."></canvas>
+      <button class="bigplay" id="bigplay" type="button"><span class="tri" aria-hidden="true"></span><span id="bigplay-label">Play the trace</span><small id="bigplay-time"></small></button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="pp" type="button" aria-label="Play" data-state="paused"></button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <div class="scrub"><div class="ticks" id="ticks" aria-hidden="true"></div><input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Seek"></div>
+      <select class="btn" id="chapters" aria-label="Jump to chapter"></select>
+      <button class="btn" id="speed" type="button" aria-label="Playback speed 1 times">1×</button>
+    </div>
+    <p class="hint">Click the stage to play or pause. Space and the arrow keys work once it has focus.</p>
+  </section>
+
+  <section class="ledger" aria-labelledby="ledger-h">
+    <h2 id="ledger-h">Delivery ledger</h2>
+    <p class="lede">Every route, scored on the four tests. A route can change the conditions only if all four come back 1.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Route</th><th scope="col">Where the information goes</th><th scope="col" class="c">Out</th><th scope="col" class="c">Intact</th><th scope="col" class="c">Sideways</th><th scope="col" class="c">Upward</th><th scope="col" class="c">Product</th><th scope="col">Ends up</th></tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-h">
+    <h2 id="notes-h">How the trace works</h2>
+    <div class="prose">
+      <p>The packet is the information a person’s pain carries: what they need (deeper connection, a village, room to grow) and the conditions that produced the need (isolation, overwork, rent, food, abuse of power from above).</p>
+      <p>Each route is scored on four tests. <strong>Out:</strong> does the information leave the person? <strong>Intact:</strong> does its meaning survive? <strong>Sideways:</strong> does it reach others in the same situation? <strong>Upward:</strong> does it reach whoever controls the conditions? The tests multiply, so a single 0 makes the product 0. They are necessary conditions, not sufficient ones: a 1 means change is possible, not guaranteed.</p>
+      <p>The scores are judgments about where information flows. They are not measurements, and they say nothing about whether a practice helps the person doing it. Several of these routes help people get through hard conditions. The trace only asks whether the information ever reaches anyone who could change those conditions.</p>
+    </div>
+    <dl class="facts">
+      <div><dt>≈ 39 bits/s</dt><dd>The information rate of human speech, averaged across 17 languages (Coupé et al., <i>Science Advances</i>, 2019). A 50-minute session can carry up to about 117,000 bits.</dd></div>
+      <div><dt>1 bit</dt><dd>The most a choice between two options can carry: log₂ 2 = 1.</dd></div>
+      <div><dt>≈ 7.9 × 10⁻⁹ bit/s</dt><dd>One bit every four years, which is 126,230,400 seconds. Even 30 two-way races a year comes to about a millionth of a bit per second.</dd></div>
+      <div><dt>SNR ∝ √N</dt><dd>Averaging N independent stories shrinks the particulars by √N while the shared part stays put, so 16 stories are 4× clearer and 256 are 16× clearer.</dd></div>
+      <div><dt>−12 dB</dt><dd>An alarm turned down to a quarter of its amplitude: 20 · log₁₀ 0.25. The cause stays at 0 dB.</dd></div>
+      <div><dt>127.0.0.1</dt><dd>The loopback address. A packet sent there never leaves the machine that sent it.</dd></div>
+      <div><dt>!X</dt><dd>What traceroute prints when communication is administratively prohibited.</dd></div>
+      <div><dt>Z60.2</dt><dd>The ICD-10-CM code for problems related to living alone. Codes for social conditions exist; they are seldom the ones that get filed.</dd></div>
+    </dl>
+  </section>
+
+  <section class="transcript" aria-labelledby="tr-h">
+    <details>
+      <summary id="tr-h">Read the narration</summary>
+      <ol id="transcript-list"></ol>
+    </details>
+  </section>
+</div>
+<script src="engine.js"></script>
+<script src="scenes.js"></script>
+</body>
+</html>
