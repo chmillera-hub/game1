@@ -123,8 +123,10 @@ def groggy(t, amp=1.0, per=1.7, seed=0.0):
     left = k % 2 == 0
     legs = dict(mode="stand", liftL=lift if left else 0.0, liftR=0.0 if left else lift,
                 dxL=_foot_dx(t, per, 0, seed) * amp, dxR=_foot_dx(t, per, 1, seed) * amp)
-    return dict(lean=lean, lean_pivot=560, iroll=amp * 0.03 * w - lean * 0.6, legs=legs, hip_shift=amp * 12 * w,
-                waist_bend=-amp * 0.045 * w, chest_bend=-amp * 0.05 * wl, kneeL=amp * 0.6 * max(0.0, -w), kneeR=amp * 0.6 * max(0.0, w))
+    wn = math.sin(2 * math.pi * t / 3.3 + seed - 1.6) + 0.3 * math.sin(2 * math.pi * t / 1.9 + seed * 2 - 1.6)  # the neck, later still
+    return dict(lean=lean, lean_pivot=560, iroll=amp * (0.02 * w + 0.015 * wn) - lean * 0.6, legs=legs, hip_shift=amp * 4.5 * w,
+                waist_bend=-amp * 0.015 * w, chest_bend=-amp * 0.075 * wl, neck_dx=amp * 5 * wn,
+                kneeL=amp * 0.35 * max(0.0, -w), kneeR=amp * 0.35 * max(0.0, w))
 
 
 def alive(P, t, kind="stand", amp=1.0, seed=0.0):
@@ -133,19 +135,22 @@ def alive(P, t, kind="stand", amp=1.0, seed=0.0):
         return P
     w = math.sin(2 * math.pi * t / 3.7 + seed) + 0.35 * math.sin(2 * math.pi * t / 1.6 + seed * 2.3)
     if kind == "stand":
-        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 9 * w
-        P["waist_bend"] = P.get("waist_bend", 0.0) - amp * 0.045 * w
-        P["kneeL"] = P.get("kneeL", 0.0) + amp * 0.5 * max(0.0, -w)
-        P["kneeR"] = P.get("kneeR", 0.0) + amp * 0.5 * max(0.0, w)
+        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 3.5 * w
+        P["waist_bend"] = P.get("waist_bend", 0.0) - amp * 0.012 * w
+        P["kneeL"] = P.get("kneeL", 0.0) + amp * 0.3 * max(0.0, -w)
+        P["kneeR"] = P.get("kneeR", 0.0) + amp * 0.3 * max(0.0, w)
     elif kind == "kneel":
-        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.05 * w
-        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 3 * w
+        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.015 * w
+        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 1 * w
     else:
-        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.03 * w
+        P["waist_bend"] = P.get("waist_bend", 0.0) + amp * 0.008 * w
     wl = math.sin(2 * math.pi * t / 3.7 + seed - 0.8) + 0.35 * math.sin(2 * math.pi * t / 1.6 + seed * 2.3 - 0.8)
-    P["chest_bend"] = P.get("chest_bend", 0.0) + amp * {"stand": -0.04, "kneel": 0.045}.get(kind, 0.035) * wl
+    P["chest_bend"] = P.get("chest_bend", 0.0) + amp * {"stand": -0.07, "kneel": 0.07}.get(kind, 0.06) * wl
+    wn = math.sin(2 * math.pi * t / 3.7 + seed - 1.7) + 0.3 * math.sin(2 * math.pi * t / 1.6 + seed * 2.3 - 1.7)
+    P["neck_dx"] = P.get("neck_dx", 0.0) + amp * 4 * wn  # the neck sways a beat behind the chest
+    P["iroll"] = P.get("iroll", 0.0) + amp * 0.015 * wn
     if kind == "bust":
-        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 3 * w  # rocking a little on the seat
+        P["hip_shift"] = P.get("hip_shift", 0.0) + amp * 1.2 * w  # rocking a little on the seat
     for side, ph in (("armL", 0.0), ("armR", 0.5)):  # free arms swing a little with the body
         a = P.get(side)
         if not isinstance(a, dict):
@@ -165,7 +170,7 @@ def alive(P, t, kind="stand", amp=1.0, seed=0.0):
     P["lean"] = P.get("lean", 0.0) + lean
     if "lean_pivot" not in P:
         P["lean_pivot"] = 330 if kind == "kneel" else (560 if kind == "stand" else 200)
-    P["iroll"] = P.get("iroll", 0.0) + amp * 0.03 * w + amp * 0.012 * math.sin(t * 0.9 + seed)
+    P["iroll"] = P.get("iroll", 0.0) + amp * 0.02 * w + amp * 0.012 * math.sin(t * 0.9 + seed)
     P["iyaw"] = P.get("iyaw", 0.0) + amp * 0.05 * sn(t, 3 + seed, 0.35)
     P["ipitch"] = P.get("ipitch", 0.0) + amp * 0.025 * sn(t, 4 + seed, 0.5)
     P["shrug"] = P.get("shrug", 0.0) + amp * 0.1 * max(0.0, math.sin(2 * math.pi * t / 4.3 + seed)) ** 4
@@ -1002,7 +1007,7 @@ def sky_up(ctx, t):
     fid = [0.45 + 0.3 * math.sin(t * 3.1 + q) * (0.6 + 0.4 * math.sin(t * 0.7 + q)) for q in (0, 2.2)]
     rock = 0.05 * math.sin(2 * math.pi * t / 2.6)
     P = dict(E=E, pitch=-0.85 * look + rock, roll=0.02 * sn(t, 1, 0.3) + 0.05 * look, legs=dict(mode="kneel", k=1), breath=1.4,
-             alive=1.8,
+             alive=1.1,
              armL=dict(el=(-82, 150), wr=(-48 + 5 * math.sin(t * 1.3), 262), hand_ang=1.35, curl=fid[0], spread=0.3, thumb=0.5,
                        hfs=0.62, flip=False),
              armR=dict(el=(82, 150), wr=(48 + 5 * math.sin(t * 1.1 + 1), 262), hand_ang=1.79, curl=fid[1], spread=0.3, thumb=0.5,
@@ -1190,7 +1195,7 @@ def bld_climb(ctx, t):
 def bld_flag(ctx, t):
     tf = word_t("b4", "flag") - 0.2
     rise = ramp(t, t_roof, t_roof + 1.0)
-    cam = Cam(x=BLD[0] - 2.4, y=11.6, z=BLD[1] - 2.4, d=1, f=700, hy=520)
+    cam = Cam(x=BLD[0] - 2.2, y=13.6, z=BLD[1] - 3.4, d=1, f=640, hy=330)
     lt = dict(LBn)
     lt["rim"] = mix(LBn["rim"], hexc("ffe0a0"), ramp(t, tf, tf + 0.5))
 
@@ -1298,6 +1303,24 @@ def flag_shout(ctx, t):
         rig.draw_hand(ctx, rig.ZOMBIE, pole_x(yy) - 30 * s, yy, 0.0, LFn, 2.0, curl=0.9, thumb=0.85, flip=fl, size=s)
 
 
+def heli_takeoff(cam, t, t0, t1):
+    """Sky hook: a helicopter rises from behind the fortress wall and swings toward the building, searchlight on."""
+    def fn(ctx2):
+        u = ramp(t, t0, t1)
+        if u <= 0:
+            return
+        up = ease(ramp(u, 0.0, 0.45))
+        go = ease(ramp(u, 0.3, 1.0))
+        X, Y, Z = lerp(-46, -14, go), lerp(world.HILL + 20, world.HILL + 54, up) + 4 * go, lerp(WALL + 6, BLD[1] + 52, go)
+        d = cam.depth(Z)
+        if d < 5:
+            return
+        x, y = cam.p(X, Y, Z)
+        sc = 13.0 * cam.f / d / 560.0
+        world.draw_heli(ctx2, x, y, sc, t, LSPOT, bank=-0.1 * go + 0.03 * math.sin(t * 1.3), face=1, spot=0.6 * go)
+    return fn
+
+
 @shot(t_fwide, f1_)
 def flag_lone(ctx, t):
     u = (t - t_fwide) / (f1_ - t_fwide)
@@ -1315,7 +1338,8 @@ def flag_lone(ctx, t):
                  armL=dict(tgt=h2, bend=-1, hand_ang=ang - math.pi / 2, curl=0.85, flip=False),
                  armR=dict(tgt=h1, bend=1, hand_ang=ang - math.pi / 2, curl=0.85, flip=True))
         rig.draw_character(ctx2, rig.ZOMBIE, P, LBn, t)
-    ext(ctx, t, cam, 2.0, stars=0.8, building=True, extras=[(cam.depth(BLD[1]) + 1.2, fig)], light=LBn, bflag=False)
+    ext(ctx, t, cam, 2.0, stars=0.8, building=True, extras=[(cam.depth(BLD[1]) + 1.2, fig)], light=LBn, bflag=False,
+        sky_fn=heli_takeoff(cam, t, t_fwide + 0.6, f1_ + 2.5))
 
 
 # ---------------------------------------------------------------- HELICOPTER
@@ -1413,9 +1437,11 @@ def heli_grab(ctx, t):
     shake = 0.2 * math.sin((t - t_no + 0.45) * 2 * math.pi * 1.5) * shake_env
     sheep = ramp(t, n0 - 0.15, n0 + 0.45) * (1 - ramp(t, g0 - 0.6, g0 - 0.2))  # hand behind its head
     sad = ramp(t, n0 - 0.3, n0 + 0.1) * (1 - ramp(t, t_nodB, t_nodB + 0.6))
-    hope = ramp(t, t_nodB, t_nodB + 0.5) * (1 - huh)
-    EZ = ZE(t, bi=lerp(0.6, 0.95, max(sad, huh)), bo=lerp(0.25, -0.25, sad) + 0.6 * huh, lid=0.1 * sad, op=0.08, sm=-0.3 * sad + 0.08 * hope,
-            gx=lerp(0.55, 0.35, huh), gy=-0.1, glow=0.35, pupil=lerp(0.42, 0.26, huh), low=0.0, tr=0.3 * sad, blinks=False)
+    worry = ramp(t, n0 - 0.3, n0 + 0.1) * (1 - huh)  # stays: I hope I'm not hurting anyone
+    glance = ramp(t, L("r2b")[0], L("r2b")[0] + 0.3) * (1 - ramp(t, g0 - 0.2, g0 + 0.2))
+    EZ = ZE(t, bi=lerp(0.6, 0.95, max(worry, huh)), bo=lerp(0.25, -0.3, worry) + 0.6 * huh, lid=0.12 * worry, op=0.06,
+            sm=-0.42 * worry, press=0.35 * worry * (1 - sad), gx=lerp(lerp(0.55, 0.3, glance), 0.35, huh), gy=-0.1 + 0.25 * glance,
+            glow=0.35, pupil=lerp(0.42, 0.26, huh), low=0.0, tr=0.25 * worry, blinks=False)
     PZ = dict(x=250, y=640, s=2.0, E=EZ, yaw=0.35 + shake, pitch=-0.05 + 0.06 * sad, roll=0.05 * sheep, shrug=0.3 * grab + 0.15 * sheep,
               breath=1.8, breath_T=1.6, legs=dict(mode="stand"),
               armL=dict(el=(lerp(-86, -122, sheep), lerp(120, -46, sheep)), wr=(lerp(-66, -44, sheep), lerp(205, -138, sheep)),

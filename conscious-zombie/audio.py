@@ -152,10 +152,19 @@ for sc, prog, cd, amp, br, ch in PLAN:
     t0, t1 = SC[sc]
     t = t0
     k = 0
+    tD = word_t("e2", "heaven", 1) - 1.0 if sc == "end" else None
     while t < t1 - 0.2:
         d = min(cd, t1 - t)
-        last = t + d >= t1 - 0.2
         name = prog[k % len(prog)]
+        if tD is not None:  # land the final resolution on the word: A, then D major to the end
+            if t >= tD:
+                name, d = "D", t1 - t
+            elif t + d > tD - 1.6:
+                if t < tD - 1.6:
+                    d = tD - 1.6 - t
+                else:
+                    name, d = "A", tD - t
+        last = t + d >= t1 - 0.2
         CHORD_AT.append((t, t + d, name))
         skip = sc == "sky" and t < L("y2")[0] - 0.3   # silence around "Is anyone there?"
         if not skip:
@@ -265,7 +274,11 @@ melody(L("i3")[0] - 2, L("i8")[0], [None, 69, None, 72, None, 74, None, None], 1
 melody(L("i8")[0], c1, [77, 76, 74, 72, 74, None, 81, 79, 77, None, None, None], 0.8, 0.06)
 # end: rising bells into the light
 e0, e1 = SC["end"]
-melody(e0 + 0.5, e1, [74, 78, 81, 86, None, 81, 78, 74, None, None], 0.6, 0.05, inst=lambda f, t, a, p: bell(f, t, a, p))
+_tD = word_t("e2", "heaven", 1) - 1.0
+melody(e0 + 0.5, _tD - 1.8, [77, 81, 84, None, 81, 79, 77, None, None, None], 0.6, 0.05, inst=lambda f, t, a, p: bell(f, t, a, p))
+# a choir sings a short line over the final D major: A - B - A - F# - D
+for k, (m, dt, dd) in enumerate(((69, 0.0, 1.1), (71, 0.9, 0.9), (69, 1.7, 1.0), (66, 2.6, 1.0), (62, 3.5, 2.6))):
+    pad([midi(m)], _tD + 1.0 + dt, dd, 0.09, 0.5, a=0.25, r=1.4, choir=True)
 pad([midi(m) for m in (50, 54, 57, 62, 66)], word_t("e2", "heaven", 1) - 0.1, 4.5, 0.18, 0.7, a=0.4, r=3.0, choir=True)
 bell(midi(86), word_t("e2", "heaven", 1), 0.12)
 bell(midi(90), word_t("e2", "heaven", 1) + 0.25, 0.08)
@@ -382,9 +395,17 @@ R_ -= lp(R_, 20)
 gr = amp_curve([(0, 0.1), (SC["horde"][0], 0.25), (SC["knees"][0], 0.25), (SC["sky"][0], 0.12), (SC["building"][0], 0.06),
                 (SC["heli"][0], 0.08), (SC["cabin"][0], 0.0), (DUR, 0.0)])
 sfx += pan2(R_ * gr / (np.std(R_) + 1e-9) * 0.15)
+BATTLE = [SC["horde"], (shots.t_dust, shots.t_react), (shots.t_hell, shots.t_stair)]
+
+
+def guns(t):
+    """Full volume while the guns are the subject of the shot, 20% down otherwise."""
+    return 1.0 if any(a - 0.5 <= t <= b + 0.5 for a, b in BATTLE) else 0.8
+
+
 t = 0.0
 while t < SC["cabin"][0]:
-    g = float(np.interp(t, [0, SC["sky"][0], SC["building"][0], SC["cabin"][0]], [0.10, 0.10, 0.03, 0.03]))
+    g = float(np.interp(t, [0, SC["sky"][0], SC["building"][0], SC["cabin"][0]], [0.10, 0.10, 0.03, 0.03])) * guns(t)
     drum(t, g, f0=140, f1=70, dec=0.12, buf=sfx, p=hsh(int(t * 10), 3) * 1.6 - 0.8)
     t += 0.09 + hsh(int(t * 100), 4) * 0.12
 # beams: synced to the on-screen deaths
@@ -398,8 +419,8 @@ for tb, X, Zd in world.beam_times(shots.HORDE, 0, SC["cabin"][0]):
     z += noise(n, 2000, 8000) * np.exp(-tt * 20) * 0.4
     sh = noise(int(1.6 * SR), 3000, 9000) * np.exp(-np.arange(int(1.6 * SR)) / SR * 2.2) * 0.25  # dust shimmer
     for jb in range(4):
-        add(sfx, tb - 0.32 + jb * 0.07, z, p=max(-0.9, min(0.9, X / 40)), g=0.03)
-    add(sfx, tb, sh, p=max(-0.9, min(0.9, X / 40)), g=0.05)
+        add(sfx, tb - 0.32 + jb * 0.07, z, p=max(-0.9, min(0.9, X / 40)), g=0.03 * guns(tb))
+    add(sfx, tb, sh, p=max(-0.9, min(0.9, X / 40)), g=0.05 * guns(tb))
 for tf in (shots.t_scary + 3.25, shots.t_scary + 4.25):
     n = int(0.6 * SR)
     tt = np.arange(n) / SR
@@ -448,7 +469,7 @@ sfx += pan2(F_ * fl_g * 0.6, 0.2)
 tt = np.arange(N) / SR
 rot = (np.abs(np.sin(np.pi * tt * 5.2)) ** 8)
 Hn = lp(rng.standard_normal(N), 700) * rot * 1.5 + np.sin(2 * np.pi * 72 * tt) * 0.25 + np.sin(2 * np.pi * 1840 * tt) * 0.02
-hg = amp_curve([(0, 0), (SC["heli"][0] - 0.5, 0), (SC["heli"][0] + 3.0, 0.22), (shots.t_rope, 0.3), (SC["heli"][1], 0.3),
+hg = amp_curve([(0, 0), (shots.t_fwide + 1.0, 0), (SC["heli"][0], 0.09), (SC["heli"][0] + 3.0, 0.22), (shots.t_rope, 0.3), (SC["heli"][1], 0.3),
                 (SC["cabin"][0] + 0.2, 0.0), (DUR, 0)])
 sfx += pan2(Hn * hg, 0.0)
 Hc = lp(Hn, 260)

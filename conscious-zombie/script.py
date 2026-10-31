@@ -2,7 +2,8 @@
 
 Each line: (id, speaker, text, pause_before_s, pause_after_s[, options])
 options: speed (override), ph (exact phonemes for the voice), silent (seconds, no audio),
-         thought (shown in a thought bubble instead of a burned-in subtitle)
+         thought (shown in a thought bubble instead of a burned-in subtitle; the mouth stays shut),
+         muffle (heard as if through closed lips)
 Markers inside text drive the score and are stripped for voice/subtitles:
   ^word  -> high, hopeful note lands on this word
   _word  -> low, heavy note lands on this word
@@ -10,7 +11,7 @@ Markers inside text drive the score and are stripped for voice/subtitles:
 
 # speaker -> (kokoro voice, lang, speed)
 VOICES = {
-    "N":  ("af_heart",   "en-us", 0.744),  # narrator (the dreamer), 20% slower so every word lands
+    "N":  ("af_heart",   "en-us", 0.818),  # narrator (the dreamer): unhurried, every word lands
     "Z":  ("am_michael", "en-us", 0.86),   # the conscious zombie (pitched down + grit in post)
     "HA": ("bf_emma",    "en-gb", 0.95),   # human A, crew lead
     "HB": ("am_fenrir",  "en-us", 0.93),   # human B, the one who goes down the rope
@@ -41,17 +42,17 @@ SCENES = [
         ("c3", "N", "But the conscious zombie did not have control of what it could _witness... or what it could _feel.", 0.3, 1.0),
     ]),
     ("witness", [
-        ("v1", "N", "The conscious zombie's brothers and sisters, who looked just like it, seemed compelled to run to the battlefield.", 0.4, 0.5),
-        ("v2", "Z", "Wait... where are you going?", 0.3, 0.8),
+        ("v1", "N", "The conscious zombie's brothers and sisters, who looked like him, seemed compelled to run through the battlefield.", 0.4, 0.5),
+        ("v2", "Z", "Wait... where are you going? I want to ^save you.", 0.3, 0.8),
         ("v3", "N", "The conscious zombie saw them being destroyed by the Fortress of Humanity. The conscious zombie saw their _suffering... even though they were not conscious.", 0.4, 0.7),
-        ("v4", "N", "And then the _sorrow started, because now the conscious zombie could see the _suffering.", 0.5, 0.6),
+        ("v4", "N", "And then he felt _sorrow, because now this conscious zombie could see the _suffering.", 0.5, 0.6),
         ("v5", "Z", "This hurts... this _loneliness... this destruction... it hurts.", 0.3, 0.8),
         ("v6", "N", "Now that this soul-infused zombie was conscious, it was a ^witness. A witness to the _suffering in its world.", 0.4, 1.0),
     ]),
     ("knees", [
         ("k1", "N", "And the conscious zombie thought it was _alone in its suffering. The conscious zombie fell to its knees, and it covered its face, to try to suppress the pain it was witnessing.", 0.5, 0.8),
         ("k2", "N", "The conscious zombie thought it had no other conscious beings to share the suffering with. So maybe the conscious zombie was the only one giving the suffering around it ^meaning.", 0.4, 0.8),
-        ("k3", "N", "Because before his body of flesh was conscious, the suffering had no meaning. But when the soul destined for him descended from ^heaven and created a witness... their suffering gave it ^meaning by showing the conscious zombie their pain.", 0.4, 0.9),
+        ("k3", "N", "Because before his body of flesh was conscious, the suffering had no meaning to anyone. But then, when the soul that seemed destined for him descended from ^heaven and created a witness within him... his suffering gave it ^meaning by showing the conscious zombie their pain.", 0.4, 0.9),
         ("k4", "Z", "Why was I picked to witness all these things? What does it _mean?", 0.4, 1.0),
         ("k5", "N", "What is the power behind giving meaning to suffering? To be on your knees, with _tears falling from your eyes, as you witness others who cannot share it with you...", 0.4, 0.3),
         ("k5b", "N", "but you are giving their suffering meaning, through your reflection and contemplation on what maybe you can do to help yourself and others, with more ^flourishing and ^thriving, potentially.", 0.1, 1.0),
@@ -74,7 +75,7 @@ SCENES = [
     ("flag", [
         ("f1", "N", "The conscious zombie grabbed the flag and started waving it in the air, because it had to do something.", 0.3, 0.4),
         ("f2", "Z", "Stop! Please... stop hurting them!", 0.2, 0.7),
-        ("f3", "N", "The conscious zombie couldn't watch all of its brothers and sisters die. The pain was _unbearable. Seeing their pain was _unbearable.", 0.3, 1.0),
+        ("f3", "N", "The conscious zombie couldn't watch all of its brothers and sisters die. Seeing their pain was _unbearable.", 0.3, 1.0),
     ]),
     ("heli", [
         ("r1", "N", "And then, a human helicopter came flying over.", 0.5, 0.8),
@@ -95,16 +96,16 @@ SCENES = [
         ("i6b", "HB", "but I also think you are ^conscious, my guy.", 0.2, 1.2),
         ("i7", "Z", "Oh really? How can you tell?", 0.4, 2.4),
         ("i8", "HA", "We saw that it looks like you are able to feel the _pain of your brothers and sisters... symbolized by you waving that flag out there, and having those waterworks as well.", 0.3, 2.6),
-        ("i9", "HB", "which means you are feeling, in some kind of way, the _weight of the world that we are currently living in.", 0.2, 0.6),
+        ("i9", "HB", "which means we think you are probably feeling, in some kind of way, the _weight of the world that we are currently living in.", 0.2, 0.6),
         ("i10", "HA", "The pain of the world... that's kind of like what humans feel a lot of the time. The pain of _loss, and the pain of losing those that maybe you care for, in some kind of way.", 0.3, 0.8),
         ("i10b", "Z", "You're right. I want to see if I can help ^save them.", 0.3, 2.6),
         ("i11", "N", "And the conscious zombie sighed.", 0.3, 0.9),
-        ("i11t", "Z", "How are the humans going to help me? I hope this works out...", 0.3, 0.3, {"silent": 3.8, "thought": True}),
-        ("i11b", "HB", "Oh yeah, I hope this works out too.", 0.2, 1.6, {"speed": 0.88}),
+        ("i11t", "Z", "How are the humans going to help me? I hope this works out...", 0.3, 0.5, {"thought": True, "muffle": True, "speed": 0.8}),
+        ("i11b", "HB", "Oh yeah... I hope this works out too.", 0.3, 1.6, {"speed": 0.76}),
     ]),
     ("end", [
-        ("e1", "N", "So it seems like, in order for heaven to be built, the raw material of _hell may have been needed... to be transformed into the material of ^heaven... so that maybe this heaven could be built not only for him, but for his brothers and sisters, and maybe even the ^world too.", 0.6, 0.6),
-        ("e2", "N", "And that is why heaven sent the soul... to turn hell into ^heaven.", 0.3, 3.0),
+        ("e1", "N", "So it seems as though, in order for heaven to be built, the raw material of _hell may have been needed... to be transformed into the material of ^heaven... so that maybe this heaven on Earth could be built not only for him, but for his brothers and sisters, and maybe even the ^world too.", 0.6, 0.6),
+        ("e2", "N", "And that's why heaven sent our souls... to turn hell into ^heaven.", 0.3, 3.0),
     ]),
 ]
 

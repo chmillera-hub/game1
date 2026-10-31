@@ -34,6 +34,7 @@ def _noise(h, w, seed, oct=4):
     for o in range(oct):
         n = 2 ** (o + 2)
         g = rng.random((n + 1, n + 1))
+        g[n, :], g[:, n] = g[0, :], g[:, 0]  # wrap the lattice: every texture tiles without a seam
         yy = np.linspace(0, n, h, endpoint=False)
         xx = np.linspace(0, n, w, endpoint=False)
         y0, x0 = yy.astype(int), xx.astype(int)
@@ -104,35 +105,55 @@ def make_stone(seed=3):
 TILE_M = 10.0  # dirt texture tile size in metres
 
 
-def make_dirt(seed=11):
-    """Ground albedo: dusty earth, darker damp patches, pebbles, cracks, dead grass. Returns float mips."""
-    h = w = 512
+def make_dirt(seed=11, n=1024):
+    """Ground albedo (tileable, ~1 cm per texel): dusty earth, damp and scorched patches, anti-aliased pebbles with lit tops
+    and shadowed undersides, a fine crack network, dead grass. Returns float mips."""
+    h = w = n
     rng = np.random.default_rng(seed)
-    n1 = _noise(h, w, seed, 5)
+    n1 = _noise(h, w, seed, 6)
     n2 = _noise(h, w, seed + 1, 3)
     img = np.ones((h, w, 3)) * np.array([104, 88, 72], float)
-    img *= (0.78 + 0.4 * n1[..., None])
-    img = img * (1 - 0.25 * (n2[..., None] > 0.6)) + np.array([128, 112, 92]) * 0.12 * (n2[..., None] < 0.3)
-    yy, xx = np.ogrid[:h, :w]
-    for _ in range(420):  # pebbles: lit top, dark lower edge
-        cx, cy = int(rng.integers(0, w)), int(rng.integers(0, h)); r = rng.integers(2, 6)
-        m = ((yy - cy) ** 2 + (xx - cx) ** 2 * 0.8) < r * r
-        tone = 0.75 + 0.5 * rng.random()
-        img[m] = img[m] * 0.3 + np.array([120, 112, 104]) * tone * 0.7
-        m2 = ((yy - cy - r * 0.6) ** 2 + (xx - cx) ** 2) < (r * 0.8) ** 2
-        img[m2 & ~m] *= 0.7
-    for _ in range(40):  # dry cracks
-        cx, cy = float(rng.integers(0, w)), float(rng.integers(0, h)); ang = rng.random() * 6.28
-        for k in range(int(rng.integers(10, 50))):
-            ang += (rng.random() - 0.5) * 1.1
-            cx = (cx + np.cos(ang)) % w; cy = (cy + np.sin(ang)) % h
-            img[int(cy), int(cx)] *= 0.55
-    for _ in range(160):  # dead grass blades lying flat
-        cx, cy = float(rng.integers(0, w)), float(rng.integers(0, h)); ang = rng.random() * 6.28
+    img *= (0.8 + 0.36 * n1[..., None])
+    img = img * (1 - 0.22 * np.clip((n2[..., None] - 0.58) * 6, 0, 1)) + np.array([128, 112, 92]) * 0.1 * (n2[..., None] < 0.3)
+    for _ in range(9):  # scorch marks from the guns
+        cx, cy, r = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(40, 110)
+        yy, xx = np.ogrid[:h, :w]
+        dx = np.minimum(np.abs(xx - cx), w - np.abs(xx - cx)); dy = np.minimum(np.abs(yy - cy), h - np.abs(yy - cy))
+        m = np.clip(1.15 - np.sqrt(dx * dx + dy * dy) / r - 0.35 * n1, 0, 1)[..., None]
+        img = img * (1 - 0.45 * m) + np.array([40, 34, 30]) * 0.45 * m
+    for _ in range(1100):  # pebbles, anti-aliased, wrapped at the tile edges; mostly small, close to the soil's colour
+        cx, cy = rng.uniform(0, w), rng.uniform(0, h)
+        r = rng.uniform(1.0, 4.2) * (1 if rng.random() < 0.9 else 1.9)
+        sq = rng.uniform(0.6, 1.0)
+        tone = (img[int(cy) % h, int(cx) % w] * 0.6 + np.array([118, 110, 100]) * 0.4) * rng.uniform(0.85, 1.12)
+        R = int(r) + 3
+        ys = (np.arange(int(cy) - R, int(cy) + R + 1)) % h
+        xs = (np.arange(int(cx) - R, int(cx) + R + 1)) % w
+        gy = (np.arange(int(cy) - R, int(cy) + R + 1) - cy)[:, None]
+        gx = (np.arange(int(cx) - R, int(cx) + R + 1) - cx)[None, :]
+        d = np.sqrt(gx * gx + (gy / sq) ** 2)
+        a = np.clip(r - d, 0, 1)[..., None]
+        shade_ = np.clip(1.08 - 0.3 * (gy / r) - 0.06 * (gx / r), 0.7, 1.2)[..., None]  # lit from above
+        sh = np.clip(r + 1.2 - np.sqrt(gx * gx + ((gy - r * 0.5) / sq) ** 2), 0, 1)[..., None] * (1 - a)  # contact shadow below
+        blk = img[np.ix_(ys, xs)]
+        blk = blk * (1 - 0.25 * sh)
+        blk = blk * (1 - a) + tone * shade_ * a
+        img[np.ix_(ys, xs)] = blk
+    for _ in range(70):  # dry cracks: thin, soft, branching
+        x, y, ang = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(0, 6.28)
+        for k in range(int(rng.integers(20, 90))):
+            ang += (rng.random() - 0.5) * 0.9
+            x, y = (x + np.cos(ang)) % w, (y + np.sin(ang)) % h
+            xi, yi = int(x), int(y)
+            img[yi, xi] *= 0.5
+            img[yi, (xi + 1) % w] *= 0.8
+            img[(yi + 1) % h, xi] *= 1.08
+    for _ in range(300):  # dead grass blades lying flat
+        x, y, ang = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(0, 6.28)
         col = np.array([140, 126, 80]) * (0.7 + 0.4 * rng.random())
-        for k in range(int(rng.integers(6, 16))):
-            img[int(cy) % h, int(cx) % w] = img[int(cy) % h, int(cx) % w] * 0.4 + col * 0.6
-            cx += np.cos(ang); cy += np.sin(ang)
+        for k in range(int(rng.integers(8, 26))):
+            img[int(y) % h, int(x) % w] = img[int(y) % h, int(x) % w] * 0.45 + col * 0.55
+            x += np.cos(ang); y += np.sin(ang)
     img = np.clip(img, 0, 255).astype(np.float32) / 255.0
     mips = [img]
     while mips[-1].shape[0] > 8:
@@ -237,19 +258,64 @@ def sky_cols(phase):
     return [mix(x, y, ease(u)) for x, y in zip(a, b)]
 
 
+_MOON = None
+
+
+def moon_surface(n=320):
+    """Eclipsed full moon: flat-lit disc with limb darkening, irregular maria, craters with bright rims, Tycho's rays,
+    copper-red tint brightening toward one edge of the shadow."""
+    global _MOON
+    if _MOON is None:
+        rng = np.random.default_rng(31)
+        yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+        u, v = (xx + 0.5) / n * 2 - 1, (yy + 0.5) / n * 2 - 1
+        r2 = u * u + v * v
+        mu = np.sqrt(np.clip(1 - r2, 0, 1))
+        alb = np.ones((n, n), np.float32)
+        nz = _noise(n, n, 33, 4).astype(np.float32)
+        maria = np.zeros((n, n), np.float32)
+        for (cx, cy, rx, ry) in ((-0.32, -0.36, 0.30, 0.24), (0.14, -0.42, 0.17, 0.15), (0.30, -0.08, 0.22, 0.18),
+                                 (-0.55, 0.05, 0.22, 0.42), (-0.18, 0.40, 0.16, 0.12), (0.55, 0.18, 0.14, 0.12),
+                                 (0.70, -0.30, 0.10, 0.08), (-0.05, 0.05, 0.12, 0.10)):
+            d = ((u - cx) / rx) ** 2 + ((v - cy) / ry) ** 2
+            maria = np.maximum(maria, np.clip(1.35 - d - 0.55 * nz, 0, 1))
+        alb *= 1 - 0.42 * maria
+        alb *= 0.9 + 0.2 * _noise(n, n, 34, 2).astype(np.float32)
+        for _ in range(70):  # craters: dark floor, bright rim
+            cx, cy = rng.uniform(-0.95, 0.95, 2)
+            rr = rng.uniform(0.012, 0.06)
+            d = np.sqrt((u - cx) ** 2 + (v - cy) ** 2) / rr
+            alb *= 1 - 0.18 * np.clip(1 - d, 0, 1) + 0.16 * np.exp(-((d - 1.05) / 0.18) ** 2)
+        d = np.sqrt((u + 0.15) ** 2 + (v - 0.72) ** 2)  # Tycho and its rays
+        ang = np.arctan2(v - 0.72, u + 0.15)
+        rays = np.clip(np.cos(ang * 7 + 0.4) ** 12 + np.cos(ang * 11 - 1.0) ** 16, 0, 1) * np.exp(-d * 2.2) * (d > 0.05)
+        alb *= 1 + 0.35 * rays + 0.6 * np.exp(-(d / 0.03) ** 2)
+        lum = alb * (0.62 + 0.38 * mu ** 0.6) * (0.82 + 0.3 * np.clip(0.6 * u + 0.5 * v + 0.3, 0, 1))  # limb darkening, umbra edge
+        lo, hi = np.array([0.30, 0.07, 0.05], np.float32), np.array([0.98, 0.52, 0.30], np.float32)
+        col = lo + (hi - lo) * np.clip(lum, 0, 1.15)[..., None] ** 1.3
+        a = np.clip((1 - np.sqrt(r2)) * n * 0.5, 0, 1)
+        buf = np.zeros((n, n, 4), np.uint8)
+        for c, ch_ in ((0, 2), (1, 1), (2, 0)):
+            buf[..., ch_] = np.clip(col[..., c] * a * 255, 0, 255).astype(np.uint8)
+        buf[..., 3] = (a * 255).astype(np.uint8)
+        _KEEP.append(buf)
+        _MOON = cairo.ImageSurface.create_for_data(memoryview(buf).cast("B"), cairo.FORMAT_ARGB32, n, n)
+    return _MOON
+
+
 def draw_moon(ctx, x, y, r, t, phase):
-    """A big blood moon: red halo, dark maria, wisps of dark cloud drifting across it."""
+    """A big blood moon: red halo, the eclipsed disc with its maria and craters, wisps of dark cloud drifting across."""
     k = clamp(0.6 + phase * 0.22, 0.6, 1.0)
     soft_dot(ctx, x, y, r * 4.5, hexc("8a1a14"), 0.22 * k)
     soft_dot(ctx, x, y, r * 2.2, hexc("c03020"), 0.3 * k)
-    g = cairo.RadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r)
-    g.add_color_stop_rgb(0, *hexc("ffb08a"))
-    g.add_color_stop_rgb(0.55, *hexc("e0583a"))
-    g.add_color_stop_rgb(1, *hexc("8a1e16"))
-    ctx.new_path(); ctx.arc(x, y, r, 0, 2 * math.pi); ctx.set_source(g); ctx.fill_preserve()
-    ctx.save(); ctx.clip()
-    for (dx, dy, rr) in ((-0.3, -0.1, 0.35), (0.25, 0.2, 0.28), (0.05, -0.4, 0.2), (-0.15, 0.4, 0.22)):
-        soft_dot(ctx, x + dx * r, y + dy * r, rr * r, hexc("5a1410"), 0.45)
+    soft_dot(ctx, x, y, r * 1.25, hexc("ff7040"), 0.18 * k)
+    ms = moon_surface()
+    ctx.save()
+    ctx.translate(x - r, y - r)
+    ctx.scale(2 * r / ms.get_width(), 2 * r / ms.get_height())
+    ctx.set_source_surface(ms, 0, 0)
+    ctx.get_source().set_filter(cairo.FILTER_GOOD)
+    ctx.paint()
     ctx.restore()
     for q in range(4):
         cx = x - 380 + ((t * (7 + q * 3) + q * 230) % 760)
@@ -370,6 +436,35 @@ def gravel():
 _KEEP_FRAME = []
 
 
+def _bilerp(m, uf, vf):
+    """Bilinear lookup in a tiled texture (wraps). m: (n, n[, c]); uf, vf in texels."""
+    nn = m.shape[0]
+    u0 = np.floor(uf).astype(np.int64)
+    v0 = np.floor(vf).astype(np.int64)
+    fu, fv = (uf - u0).astype(np.float32), (vf - v0).astype(np.float32)
+    if m.ndim == 3:
+        fu, fv = fu[..., None], fv[..., None]
+    u0 %= nn; v0 %= nn
+    u1, v1 = (u0 + 1) % nn, (v0 + 1) % nn
+    return (m[v0, u0] * (1 - fu) + m[v0, u1] * fu) * (1 - fv) + (m[v1, u0] * (1 - fu) + m[v1, u1] * fu) * fv
+
+
+_GRIT = None
+
+
+def grit():
+    """Fine-grained dirt detail (sand, crumbs, tiny stones) for the ground right in front of the camera."""
+    global _GRIT
+    if _GRIT is None:
+        rng = np.random.default_rng(23)
+        g = rng.random((256, 256)).astype(np.float32)
+        g = (g + np.roll(g, 1, 0) + np.roll(g, 1, 1) + np.roll(np.roll(g, 1, 0), 1, 1)) / 4
+        crumbs = (rng.random((256, 256)) > 0.985).astype(np.float32)
+        crumbs = np.maximum(crumbs, 0.6 * np.roll(crumbs, 1, 1))
+        _GRIT = (0.84 + 0.32 * g - 0.22 * crumbs + 0.12 * np.roll(crumbs, -1, 0)).astype(np.float32)
+    return _GRIT
+
+
 def plane_image(cam, Y0, mips, colmul, fog, fogd, sub=2):
     """Perspective-map a tiled texture onto the horizontal plane Y=Y0 below the camera. Returns (surface, y0, sub)."""
     hc = cam.y - Y0
@@ -390,12 +485,19 @@ def plane_image(cam, Y0, mips, colmul, fog, fogd, sub=2):
         rows = np.where(lvl == Lv)[0]
         m = mips[Lv]
         nn = m.shape[0]
-        u = np.floor(X[rows] / TILE_M * nn).astype(np.int64) % nn
-        v = np.floor(Z[rows] / TILE_M * nn).astype(np.int64) % nn
-        out[rows] = m[v, u]
-    mu = np.floor(X / 150.0 * 64).astype(np.int64) % 64
-    mv = np.floor(Z / 150.0 * 64).astype(np.int64) % 64
-    out *= macro[mv, mu][..., None]
+        if Lv == 0:  # magnified near the camera: filter, so pebbles and cracks stay soft instead of blocky
+            out[rows] = _bilerp(m, X[rows] / TILE_M * nn - 0.5, Z[rows] / TILE_M * nn - 0.5)
+        else:
+            u = np.floor(X[rows] / TILE_M * nn).astype(np.int64) % nn
+            v = np.floor(Z[rows] / TILE_M * nn).astype(np.int64) % nn
+            out[rows] = m[v, u]
+    out *= _bilerp(macro, X / 150.0 * 64 - 0.5, Z / 150.0 * 64 - 0.5)[..., None]  # smooth large-scale tone: no seams
+    near = np.clip(1.0 - dp / 9.0, 0, 1)[:, None]
+    if near.max() > 0:  # fine grit fading in close to the lens
+        gr = grit()
+        gu = np.floor(X / 0.8 * 256).astype(np.int64) % 256
+        gv = np.floor(Z / 0.8 * 256).astype(np.int64) % 256
+        out *= (1 + (gr[gv, gu] - 1) * near)[..., None]
     out = out * np.asarray(colmul, np.float32)
     fg = (1 - np.exp(-dp / fogd))[:, None, None]
     out = out * (1 - fg) + np.array(fog, np.float32) * fg
@@ -425,7 +527,7 @@ def blit_plane(ctx, res):
 def draw_ground(ctx, cam, t, phase, east=False):
     hy = cam.hy
     k, fog, warm, mid = ground_cols(phase, east)
-    res = plane_image(cam, 0.0, dirt()[0], np.array(mix(warm, mid, 0.35)) * k, fog, 140.0 if not east else 110.0)
+    res = plane_image(cam, 0.0, dirt()[0], np.array(mix(warm, mid, 0.35)) * k, fog, 140.0 if not east else 110.0, sub=1)
     if res:
         blit_plane(ctx, res)
         if not east:  # warm glare haze at the horizon (into the sun)
@@ -581,7 +683,8 @@ def draw_hill(ctx, cam, t, phase, light):
         ctx.close_path()
     ctx.new_path(); outline()
     sc = cam.f / max(1, cam.depth((SLOPE0 + WALL) / 2))
-    ctx.set_source(pattern("dirt", sc * TILE_M / 256.0)); ctx.fill_preserve()
+    oh = cam.p(0, HILL, WALL)
+    ctx.set_source(pattern("dirt", sc * TILE_M / 256.0, oh[0], oh[1])); ctx.fill_preserve()
     ctx.save(); ctx.clip_preserve()
     rgba(ctx, base, 0.62); ctx.fill_preserve()
     ytop, ybot = far_l[1], poly[0][1]
@@ -781,7 +884,8 @@ def draw_fortress(ctx, cam, t, phase, light, flash=0.0, aim=()):
 
     def paint_block(x0, x1, y0, y1, crenel=True):
         block(x0, x1, y0, y1, crenel)
-        ctx.set_source(pattern("stone", sc * 0.09, 0, 0))
+        o_ = cam.p(-150, HILL, Z)
+        ctx.set_source(pattern("stone", sc * 0.09, o_[0], o_[1]))
         ctx.fill_preserve()
         ctx.save(); ctx.clip_preserve()
         a = cam.p(x0, y0, Z); b = cam.p(x1, y1, Z)
@@ -1034,7 +1138,7 @@ class Horde:
             bob = abs(math.sin(ph)) * 10
             view = "back" if cam.d > 0 else "front"
             P = dict(x=x, y=y - (578 - bob) * s, s=s, view=view, lw=1.6, breath=0,
-                     legs=dict(mode="run", phase=ph), roll=math.sin(ph) * 0.05,
+                     legs=dict(mode="run", phase=ph), roll=math.sin(ph) * 0.05, neck_dx=4 * math.sin(ph * 0.5 + z["i"] * 1.7),
                      yaw=math.sin(ph * 0.5 + z["i"]) * 0.08, pitch=0.1,
                      E=rig.expr(op=0.22 + 0.1 * math.sin(ph * 0.5), sm=-0.25, milky=1.0, t=t, bi=0.0, lid=0.32,
                                 drone=1.0, grime=1.0))
@@ -1164,7 +1268,9 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
             for q in pts[1:]:
                 ctx.line_to(*q)
             ctx.close_path()
-            ctx.set_source(pattern("brick", sc * 0.012)); ctx.fill_preserve()
+            sc_s = cam.f / max(0.3, cam.depth(Z0 + dpt / 2))
+            o_ = cam.p(side_x, hp, Z0 + dpt / 2)
+            ctx.set_source(pattern("brick", sc_s * 0.0048, o_[0], o_[1])); ctx.fill_preserve()
             rgba(ctx, hexc("140e18"), 0.6); ctx.fill()
     if flag and cam.y <= h:
         draw_flag(ctx, cam, X0 - 1.0, h + 0.45, Z0 + 2.55, t, light, phase, held=False)
@@ -1179,7 +1285,7 @@ def draw_building(ctx, cam, t, light, phase, flag=True, flag_k=0.0):
         ctx.line_to(lerp(a[0], b[0], u), b[1] + dy * sc)
     ctx.line_to(b[0], a[1])
     ctx.close_path()
-    ctx.set_source(pattern("brick", sc * 0.012, a[0] / (sc * 0.012), 0))
+    ctx.set_source(pattern("brick", sc * 0.0048, a[0], b[1]))  # real-size courses, pinned to the wall
     ctx.fill_preserve()
     ctx.save(); ctx.clip_preserve()
     lx = light["dir"][0]
