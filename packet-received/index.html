@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Packet Received</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A game where you are an information packet carrying a human need, trying to be received by as many of a town's 1,000 people as possible in twelve months.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Martian+Mono:wght@300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap">
+<style>
+  :root {
+    /* Layout: a game board. HUD across the top, the town map beside the month's
+       choices (stacked on phones), the year's trace below. Same blueprint palette
+       as Packet Loss: coral for the packet, teal for 1, violet for 0, gray for dead ends. */
+    --c-bg: #edf1f6;
+    --c-raise: #ffffff;
+    --c-sunk: #e3e9f1;
+    --c-rule: #c7d0dd;
+    --c-line: #8492aa;
+    --c-line-hi: #56647d;
+    --c-ink: #13203a;
+    --c-dim: #4b5974;
+    --c-faint: #7d899f;
+    --c-warm: #d4502c;
+    --c-warm-ink: #ffffff;
+    --c-gold: #a8720e;
+    --c-yes: #0b7d73;
+    --c-no: #9c3fb8;
+    --c-power: #2f5bc7;
+    --c-dead: #8a93a8;
+    --c-shadow: rgba(19, 32, 58, 0.14);
+    --f-mono: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --f-sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --f-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --c-bg: #0b1220; --c-raise: #121b2e; --c-sunk: #0e1626; --c-rule: #25324d; --c-line: #4d6084; --c-line-hi: #8496b9;
+      --c-ink: #e4eaf5; --c-dim: #97a4be; --c-faint: #6b7894; --c-warm: #ff8a6b; --c-warm-ink: #1a0d08; --c-gold: #f2c46b;
+      --c-yes: #46c2b4; --c-no: #c58cf0; --c-power: #9fb3ff; --c-dead: #6b7790; --c-shadow: rgba(0, 0, 0, 0.45);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --c-bg: #0b1220; --c-raise: #121b2e; --c-sunk: #0e1626; --c-rule: #25324d; --c-line: #4d6084; --c-line-hi: #8496b9;
+    --c-ink: #e4eaf5; --c-dim: #97a4be; --c-faint: #6b7894; --c-warm: #ff8a6b; --c-warm-ink: #1a0d08; --c-gold: #f2c46b;
+    --c-yes: #46c2b4; --c-no: #c58cf0; --c-power: #9fb3ff; --c-dead: #6b7790; --c-shadow: rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--c-bg); color: var(--c-ink); font: 400 16px/1.5 var(--f-sans); }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--c-warm); outline-offset: 2px; }
+  button { font: inherit; color: inherit; }
+
+  .wrap {
+    max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 72px;
+  }
+  .wrap > * { min-width: 0; }
+  .mast { display: grid; gap: 10px; }
+  .kicker, .eyebrow { margin: 0; font: 700 12px/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  .kicker a { color: var(--c-warm); text-underline-offset: 3px; }
+  h1 { margin: 0; font: 800 clamp(34px, 6.4vw, 66px)/1 var(--f-mono); letter-spacing: .01em; text-wrap: balance; }
+  .dek { margin: 0; max-width: 64ch; font: italic 400 clamp(18px, 2.2vw, 22px)/1.42 var(--f-serif); color: var(--c-dim); text-wrap: pretty; }
+  .dek a { color: inherit; }
+
+  /* ---------- HUD ---------- */
+  .hud { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--c-rule); border-radius: 14px; background: var(--c-raise); overflow: hidden; }
+  .stat { padding: 12px 16px 14px; display: grid; gap: 2px; align-content: start; border-left: 1px solid var(--c-rule); min-width: 0; }
+  .stat:first-child { border-left: 0; }
+  .stat .lbl { font: 700 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-faint); }
+  .stat .val { font: 800 26px/1.15 var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat .sub { font-size: 13px; color: var(--c-dim); }
+  .stat.reached .val { color: var(--c-warm); }
+  .meter { display: flex; gap: 3px; height: 26px; align-items: center; }
+  .meter i { flex: 1 1 0; max-width: 16px; height: 18px; border-radius: 3px; background: var(--c-sunk); border: 1px solid var(--c-rule); }
+  .meter i.on { background: var(--c-yes); border-color: var(--c-yes); }
+  .meter.low i.on { background: var(--c-no); border-color: var(--c-no); }
+  .fields i { max-width: 14px; height: 20px; }
+  .fields i.on { background: var(--c-warm); border-color: var(--c-warm); }
+  .fields i.on.need { background: var(--c-gold); border-color: var(--c-gold); }
+  .fields i.gone { background: transparent; border-style: dashed; }
+
+  /* ---------- board ---------- */
+  .board { display: grid; grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr); gap: 20px; align-items: start; }
+  .board > * { min-width: 0; }
+  .mapcard { border: 1px solid var(--c-rule); border-radius: 14px; background: var(--c-raise); padding: 14px; display: grid; gap: 10px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .maphead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .maphead h2 { margin: 0; font: 700 12px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-dim); }
+  .maphead span { font: 600 12px/1.3 var(--f-mono); color: var(--c-faint); font-variant-numeric: tabular-nums; }
+  #town { display: block; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--c-dim); }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .legend .c { background: var(--c-warm); }
+  .legend .r { background: var(--c-warm); opacity: .4; }
+  .legend .n { background: var(--c-dead); opacity: .55; }
+  .legend .p { width: 12px; height: 10px; border-radius: 2px; border: 1.5px solid var(--c-power); }
+  .mapnote { margin: 0; font-size: 13px; color: var(--c-faint); }
+
+  .play { display: grid; gap: 16px; min-width: 0; }
+  .event { display: grid; gap: 6px; padding-bottom: 4px; }
+  .event h2 { margin: 0; font: 400 clamp(26px, 3.2vw, 34px)/1.1 var(--f-serif); font-style: italic; }
+  .event p { margin: 0; max-width: 62ch; font-size: 17px; }
+  .event .notes { font: 600 12.5px/1.4 var(--f-mono); color: var(--c-dim); letter-spacing: .02em; }
+  .prompt { margin: 0; font: 700 12px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-dim); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .prompt label { font: 600 12px/1.3 var(--f-mono); letter-spacing: .04em; text-transform: none; color: var(--c-dim); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .prompt input { accent-color: var(--c-warm); width: 16px; height: 16px; }
+
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .card { border: 1px solid var(--c-rule); border-radius: 14px; background: var(--c-raise); padding: 14px 16px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .card.outward { border-top: 3px solid var(--c-warm); }
+  .card.standard { border-top: 3px solid var(--c-dead); }
+  .card.locked { background: var(--c-sunk); }
+  .card .from { margin: 0; font: 600 11.5px/1.35 var(--f-mono); letter-spacing: .06em; color: var(--c-faint); }
+  .card .from b { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--c-dim); margin-right: 6px; }
+  .card h3 { margin: 0; font: 400 24px/1.12 var(--f-serif); font-style: italic; text-wrap: balance; }
+  .card .sum { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .card .big { font: 800 30px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+  .card.outward .big { color: var(--c-warm); }
+  .card .sum span:last-child { color: var(--c-dim); font-size: 14px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font: 600 12.5px/1.3 var(--f-mono); color: var(--c-dim); font-variant-numeric: tabular-nums; }
+  .tests { display: inline-flex; gap: 3px; align-items: center; }
+  .tests b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; font: 800 12px/1 var(--f-mono); border: 1.5px solid currentColor; }
+  .tests b.y { color: var(--c-yes); }
+  .tests b.n { color: var(--c-no); }
+  .tests em { font-style: normal; color: var(--c-faint); padding-inline: 1px; }
+  .tests b.prod { width: 24px; }
+  details.math { border-top: 1px dashed var(--c-rule); padding-top: 8px; }
+  details.math summary { cursor: pointer; font: 700 12px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--c-dim); list-style-position: inside; }
+  .lens { margin: 10px 0 0; display: grid; gap: 8px; font-variant-numeric: tabular-nums; }
+  .lens div { display: grid; gap: 1px; min-width: 0; }
+  .lens dt { font: 600 11px/1.35 var(--f-mono); letter-spacing: .01em; color: var(--c-faint); }
+  .lens dd { margin: 0; font: 500 12.5px/1.45 var(--f-mono); color: var(--c-ink); overflow-wrap: anywhere; }
+  .send { appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid var(--c-ink); background: var(--c-ink); color: var(--c-bg); font: 700 15px/1 var(--f-sans); cursor: pointer; }
+  .card.outward .send { background: var(--c-warm); border-color: var(--c-warm); color: var(--c-warm-ink); }
+  .send:hover { filter: brightness(1.08); }
+  .send kbd { font: 700 11px/1 var(--f-mono); padding: 3px 6px; border-radius: 5px; border: 1px solid currentColor; opacity: .75; }
+  .lock { margin: 0; font: 600 12.5px/1.4 var(--f-mono); color: var(--c-no); }
+
+  .panel { border: 1px solid var(--c-rule); border-radius: 14px; background: var(--c-raise); padding: 18px 20px 20px; display: grid; gap: 14px; }
+  .panel h2, .panel h3 { margin: 0; }
+  .report h3 { font: 400 30px/1.1 var(--f-serif); font-style: italic; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .stamp { display: inline-block; font: 800 14px/1 var(--f-mono); letter-spacing: .12em; padding: 7px 10px; border-radius: 6px; border: 2px solid currentColor; transform: rotate(-3deg); font-style: normal; }
+  .stamp.dead { color: var(--c-dead); }
+  .stamp.sideways { color: var(--c-warm); }
+  .stamp.delivered { color: var(--c-yes); }
+  .why { margin: 0; max-width: 62ch; font-size: 17px; }
+  .rx { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--c-rule); border-radius: 10px; overflow: hidden; }
+  .rx div { padding: 10px 12px; border-left: 1px solid var(--c-rule); border-top: 1px solid var(--c-rule); min-width: 0; }
+  .rx div:nth-child(3n + 1) { border-left: 0; }
+  .rx div:nth-child(-n + 3) { border-top: 0; }
+  .rx dt { font: 700 10.5px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--c-faint); }
+  .rx dd { margin: 4px 0 0; font: 800 16px/1.25 var(--f-mono); font-variant-numeric: tabular-nums; }
+  .rx dd small { display: block; font: 500 12px/1.3 var(--f-sans); color: var(--c-dim); margin-top: 2px; }
+  .risk { margin: 0; font: 700 13px/1.4 var(--f-mono); color: var(--c-no); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn { appearance: none; -webkit-appearance: none; height: 46px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--c-warm); background: var(--c-warm); color: var(--c-warm-ink); font: 700 16px/1 var(--f-sans); cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--c-ink); border-color: var(--c-rule); }
+  .btn:hover { filter: brightness(1.06); }
+
+  .intro h2 { font: 400 clamp(30px, 4vw, 40px)/1.08 var(--f-serif); font-style: italic; }
+  .intro ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 64ch; }
+  .intro p { margin: 0; max-width: 64ch; }
+  .glyph { display: flex; gap: 5px; align-items: stretch; height: 34px; }
+  .glyph i { width: 22px; border-radius: 5px; background: var(--c-warm); }
+  .glyph i.need { background: var(--c-gold); }
+
+  .end .score { margin: 0; font: 400 20px/1.3 var(--f-sans); }
+  .end .score b { display: block; font: 800 clamp(48px, 8vw, 84px)/1 var(--f-mono); color: var(--c-warm); font-variant-numeric: tabular-nums; }
+  .end .rank { margin: 0; font: italic 400 28px/1.1 var(--f-serif); }
+  .verdict { margin: 0; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--c-rule); font-size: 16px; }
+  .verdict.yes { border-color: var(--c-yes); }
+  .verdict b { font-family: var(--f-mono); letter-spacing: .06em; }
+  .compare { margin: 0; color: var(--c-dim); font-size: 15px; max-width: 64ch; }
+
+  .trace { border-top: 1px solid var(--c-rule); padding-top: 14px; display: grid; gap: 8px; }
+  .trace h2 { margin: 0; font: 700 12px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-dim); }
+  .tracelist { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font: 500 13px/1.6 var(--f-mono); font-variant-numeric: tabular-nums; overflow-x: auto; }
+  .tracelist li { display: grid; grid-template-columns: 3ch 4ch minmax(14ch, 1fr) 8ch 14ch; gap: 10px; white-space: nowrap; color: var(--c-dim); min-width: 520px; }
+  .tracelist li b { color: var(--c-ink); font-weight: 700; }
+  .tracelist .plus { color: var(--c-warm); text-align: right; }
+  .tracelist .zero { color: var(--c-faint); text-align: right; }
+  .tracelist .f-dead { color: var(--c-dead); }
+  .tracelist .f-sideways { color: var(--c-warm); }
+  .tracelist .f-delivered { color: var(--c-yes); }
+  .empty { color: var(--c-faint); font: 500 13px/1.5 var(--f-mono); margin: 0; }
+
+  .how { display: grid; gap: 14px; }
+  .how h2 { margin: 0; font: 800 13px/1.3 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  .how .prose { display: grid; gap: 12px; max-width: 70ch; }
+  .how .prose p { margin: 0; }
+  .formula { font: 600 15px/1.6 var(--f-mono); padding: 12px 14px; border-radius: 10px; background: var(--c-sunk); overflow-x: auto; white-space: nowrap; }
+  .formula i { font-family: var(--f-serif); font-size: 17px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .board { grid-template-columns: minmax(0, 1fr); }
+    .mapcard { position: static; }
+    #town { max-width: 420px; margin-inline: auto; }
+  }
+  @media (max-width: 700px) {
+    .hud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat { border-left: 0; border-top: 1px solid var(--c-rule); }
+    .stat:nth-child(even) { border-left: 1px solid var(--c-rule); }
+    .stat:nth-child(-n + 2) { border-top: 0; }
+    .stat.month { grid-column: 1 / -1; border-left: 0; }
+    .stat.month + .stat { border-left: 0; border-top: 1px solid var(--c-rule); }
+    .stat.month ~ .stat:nth-child(odd) { border-left: 1px solid var(--c-rule); }
+    .cards { grid-template-columns: minmax(0, 1fr); }
+    .rx { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rx div { border-left: 1px solid var(--c-rule) !important; border-top: 1px solid var(--c-rule) !important; }
+    .rx div:nth-child(odd) { border-left: 0 !important; }
+    .rx div:nth-child(-n + 2) { border-top: 0 !important; }
+    .stat .val { font-size: 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <p class="kicker">A game in twelve months · companion to <a href="../packet-loss/index.html">Packet Loss</a></p>
+    <h1>Packet Received</h1>
+    <p class="dek">You are the packet: one person’s need for deeper connection, community and room to grow, plus the conditions behind it. Each month society hands you routes. Your goal is to be received by as many of the town’s 1,000 people as you can, and every card shows the exact math of who would receive you.</p>
+  </header>
+
+  <section class="hud" aria-label="Status">
+    <div class="stat month"><span class="lbl">Month</span><span class="val" id="hud-month">January</span><span class="sub" id="hud-month-sub">1 of 12</span></div>
+    <div class="stat reached"><span class="lbl">Received by</span><span class="val" id="hud-reached">0</span><span class="sub">of 1,000 people</span></div>
+    <div class="stat carriers"><span class="lbl">Carriers</span><span class="val" id="hud-carriers">0</span><span class="sub" id="hud-carriers-sub">pass you on</span></div>
+    <div class="stat energy"><span class="lbl">Energy</span><span class="meter" id="hud-energy" aria-hidden="true"></span><span class="sub" id="hud-energy-sub">8 of 10</span></div>
+    <div class="stat fields"><span class="lbl">Payload</span><span class="meter fields" id="hud-fields" aria-hidden="true"></span><span class="sub" id="hud-fields-sub">8 of 8 fields intact</span></div>
+  </section>
+
+  <div class="board">
+    <section class="mapcard" aria-labelledby="map-h">
+      <div class="maphead"><h2 id="map-h">The town · 1,000 people</h2><span id="map-count">0 received</span></div>
+      <canvas id="town" role="img" aria-label="Map of the town's 1,000 people. Lit dots have received the packet."></canvas>
+      <ul class="legend">
+        <li><i class="c"></i>carrying it</li>
+        <li><i class="r"></i>received it</li>
+        <li><i class="n"></i>not yet</li>
+        <li><i class="p"></i>whoever controls the conditions</li>
+      </ul>
+      <p class="mapnote">One dot per person, packed evenly, so the lit area is proportional to how many people you have reached.</p>
+    </section>
+
+    <section class="play" id="play" aria-live="polite"></section>
+  </div>
+
+  <section class="trace" aria-labelledby="trace-h">
+    <h2 id="trace-h">traceroute · your year so far</h2>
+    <ol class="tracelist" id="trace"></ol>
+    <p class="empty" id="trace-empty">No hops yet.</p>
+  </section>
+
+  <section class="how" aria-labelledby="how-h">
+    <h2 id="how-h">How the lens works</h2>
+    <div class="prose">
+      <p>Every route has a number of people who hear you directly, <i>k</i>, and a fidelity, φ: the share of your 8 fields that survives the channel, times the share still intact in your payload. Each person who hears you passes you on to <i>R</i> = <i>R</i>₀ · φ others on average, so a distorted message travels less.</p>
+      <p class="formula">E = k · (1 + R + R²) &nbsp;&nbsp;contacts over two more generations</p>
+      <p>Contacts land on people at random, and some of them already have the packet. If <i>r</i> of the town’s <i>N</i> = 1,000 people have it, the expected number of new people is</p>
+      <p class="formula">new = (N − r) · (1 − e<sup>−E/N</sup>)</p>
+      <p>The outcome is drawn around that expectation (±25%), and risky routes roll their risk. Some of the new people become carriers, who are the base for compare notes, mutual aid and organizing. Every month costs 2 energy (work or perish). Once 20 carriers have your back, it costs 1.</p>
+      <p>The four tests from <i>Packet Loss</i> sit on every card: OUT × INTACT × SIDEWAYS × UPWARD. A route can change the conditions only when all four are 1. Reach is the score. Passing the four tests decides whether the year ends with the conditions in play.</p>
+      <p>The routes reward the same thing the world does. Standard advice restores energy and keeps you alive, which is real, but on average it reaches about 5 people a year. Across 3,000 simulated years, random choices averaged about 210 people and careful play about 750.</p>
+    </div>
+  </section>
+</div>
+
+<script src="core.js"></script>
+<script>
+(function () {
+  'use strict';
+  const C = window.PacketCore;
+  const O = C.OPTIONS;
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString('en-US');
+  const f2 = (x) => (Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 10 ? x.toFixed(1) : x.toFixed(2));
+  const sign = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '±0');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const BIN_TONE = { inward: 'dead', sealed: 'dead', sold: 'dead', bent: 'dead', unsent: 'dead', sideways: 'sideways', delivered: 'delivered' };
+
+  let S = null, seed = 0, receipt = null, phase = 'intro', showMath = false;
+
+  /* ---------------- persistence (per-viewer convenience only) ---------------- */
+  function loadBest() { try { return +(localStorage.getItem('packet-received-best') || 0); } catch (e) { return 0; } }
+  function saveBest(v) { try { localStorage.setItem('packet-received-best', String(v)); } catch (e) { /* storage unavailable */ } }
+  try { showMath = localStorage.getItem('packet-received-math') === '1'; } catch (e) { showMath = false; }
+
+  /* ---------------- HUD ---------------- */
+  function meter(el, n, max, cls) {
+    let h = '';
+    for (let i = 0; i < max; i++) h += '<i class="' + (i < n ? 'on' : '') + (cls ? ' ' + cls(i) : '') + '"></i>';
+    el.innerHTML = h;
+  }
+  function renderHud() {
+    const st = S || C.newState(0);
+    const m = Math.min(st.month, 11);
+    $('hud-month').textContent = phase === 'end' ? 'Year over' : C.MONTH_NAMES[phase === 'report' ? st.month - 1 : m];
+    $('hud-month-sub').textContent = phase === 'end' ? '12 of 12' : (phase === 'report' ? st.month : m + 1) + ' of 12';
+    $('hud-reached').textContent = fmt(st.reached);
+    $('hud-carriers').textContent = fmt(st.carriers);
+    $('hud-carriers-sub').textContent = st.carriers >= C.COVER_AT ? 'they cover for you' : C.COVER_AT - st.carriers + ' more and they cover for you';
+    meter($('hud-energy'), st.energy, C.ENERGY_MAX);
+    $('hud-energy').classList.toggle('low', st.energy <= 2);
+    $('hud-energy-sub').textContent = st.energy + ' of ' + C.ENERGY_MAX;
+    meter($('hud-fields'), st.fields, 8, (i) => (i < 3 ? 'need' : '') + (i >= st.fields ? ' gone' : ''));
+    $('hud-fields-sub').textContent = st.fields + ' of 8 fields intact' + (st.locked ? ' · locked' : '');
+    $('map-count').textContent = fmt(st.reached) + ' received · ' + fmt(st.carriers) + ' carrying';
+  }
+
+  /* ---------------- cards ---------------- */
+  function testsHTML(g) {
+    const p = g.every(Boolean) ? 1 : 0;
+    return '<span class="tests" aria-label="Tests: out ' + g[0] + ', intact ' + g[1] + ', sideways ' + g[2] + ', upward ' + g[3] + ', product ' + p + '">' +
+      g.map((v) => '<b class="' + (v ? 'y' : 'n') + '">' + v + '</b>').join('<em>×</em>') + '<em>=</em><b class="prod ' + (p ? 'y' : 'n') + '">' + p + '</b></span>';
+  }
+  function lensHTML(o, L) {
+    const kLine = !o.kText ? String(L.k) : o.kText === 'carriers' ? 'carriers = ' + L.k : o.kText + ' = ' + o.kText.replace('carriers', fmt(S.carriers)) + ' = ' + L.k;
+    const phiC = typeof o.phi === 'function' ? o.phi(S) : o.phi == null ? 1 : o.phi;
+    const rows = [
+      ['receives it', esc(o.receiver)],
+      ['k · hear you directly', kLine],
+      ['φ · fidelity (channel × payload)', f2(phiC) + ' × ' + S.fields + '/8 = ' + f2(L.phi)],
+      ['R = R₀ · φ · each passes you on to', f2(o.R0 || 0) + ' × ' + f2(L.phi) + ' = ' + f2(L.R)],
+      ['E = k(1 + R + R²) · contacts', L.k + ' × ' + f2(L.series) + ' = ' + f2(L.E)],
+      ['new = (N − r)(1 − e^(−E/N))', '(' + fmt(C.N) + ' − ' + fmt(S.reached) + ')(1 − e^(−' + f2(L.E) + '/1,000)) = ' + f2(L.expNew)],
+    ];
+    if (L.risk) {
+      const rm = L.risk.reachMult != null ? L.risk.reachMult : 1;
+      rows.push(['risk', Math.round(L.risk.p * 100) + '%: ' + esc(L.risk.label) + (rm !== 1 ? ' → reach × ' + rm : '') + (L.risk.energy ? ', ' + sign(L.risk.energy) + ' energy' : '')]);
+      rows.push(['expected', f2(L.expNew) + ' × (' + f2(1 - L.risk.p) + ' + ' + f2(L.risk.p) + ' × ' + rm + ') = ' + f2(L.expNewRisk)]);
+    }
+    rows.push(['new carriers', f2(L.expNewRisk) + ' × ' + f2(L.stick) + ' ≈ ' + Math.round(L.expCarriers)]);
+    rows.push(['energy', sign(o.energy)]);
+    return '<dl class="lens">' + rows.map(([a, b]) => '<div><dt>' + a + '</dt><dd>' + b + '</dd></div>').join('') + '</dl>';
+  }
+  function cardHTML(id, idx) {
+    const o = O[id], L = C.lens(o, S), av = C.available(o, S);
+    const tag = o.kind === 'standard' ? 'Standard advice' : 'Outward';
+    const exp = Math.round(L.expNewRisk);
+    return '<article class="card ' + o.kind + (av.ok ? '' : ' locked') + '">' +
+      '<p class="from"><b>' + tag + '</b>from ' + esc(o.from) + '</p>' +
+      '<h3>' + esc(o.title) + '</h3>' +
+      '<div class="sum"><span class="big">≈ ' + fmt(exp) + '</span><span>new ' + (exp === 1 ? 'person' : 'people') + '</span></div>' +
+      '<div class="meta"><span>energy ' + sign(o.energy) + '</span>' + (L.risk ? '<span>risk ' + Math.round(L.risk.p * 100) + '%</span>' : '') + testsHTML(L.gates) + '</div>' +
+      '<details class="math"' + (showMath ? ' open' : '') + '><summary>Lens: the math</summary>' + lensHTML(o, L) + '</details>' +
+      (av.ok ? '<button class="send" type="button" data-id="' + id + '"><kbd>' + (idx + 1) + '</kbd>Send it this way</button>' : '<p class="lock">Locked: ' + esc(av.why) + '</p>') +
+      '</article>';
+  }
+
+  /* ---------------- screens ---------------- */
+  function introHTML() {
+    return '<div class="panel intro">' +
+      '<p class="eyebrow">How to play</p><h2>You are the packet.</h2>' +
+      '<div class="glyph" aria-hidden="true"><i class="need"></i><i class="need"></i><i class="need"></i><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<p>Eight fields: three needs (connection, a village, growth) and five conditions (isolation, overwork, rent, food, abuse of power).</p>' +
+      '<ul>' +
+      '<li><b>Goal:</b> be received by as many of the town’s 1,000 people as you can before December ends.</li>' +
+      '<li><b>Each month</b> society offers four routes: two pieces of standard advice and two outward channels.</li>' +
+      '<li><b>The lens</b> on every card shows the exact math: who receives you, how faithfully, how often they pass you on, and how many new people that adds.</li>' +
+      '<li><b>Energy</b> drains 2 a month (work or perish). Standard advice restores it but rarely spreads you. Outward routes compound through <b>carriers</b>, the people who keep passing you on. Once 20 of them have your back, they cover a shift and the drain drops to 1.</li>' +
+      '<li><b>Some routes unlock:</b> compare notes needs 5 carriers, mutual aid needs 10, and organizing needs 30 carriers and a named pattern.</li>' +
+      '</ul>' +
+      '<div class="row"><button class="btn" type="button" id="start">Start in January</button>' + (loadBest() ? '<span class="compare">Your best year: ' + fmt(loadBest()) + ' people</span>' : '') + '</div>' +
+      '</div>';
+  }
+  function monthHTML() {
+    const ev = C.EVENTS[S.month];
+    const notes = S.eventNotes || [];
+    return '<div class="event"><p class="eyebrow">' + C.MONTH_NAMES[S.month] + ' · month ' + (S.month + 1) + ' of 12</p>' +
+      '<h2>' + esc(ev.text) + '</h2>' + (notes.length ? '<p class="notes">' + notes.map(esc).join(' · ') + '</p>' : '') + '</div>' +
+      '<p class="prompt"><span>Society suggests</span><label for="mathtoggle"><input type="checkbox" id="mathtoggle"' + (showMath ? ' checked' : '') + '> Show the math on every card</label></p>' +
+      '<div class="cards">' + S.offers.map(cardHTML).join('') + '</div>';
+  }
+  function reportHTML() {
+    const R = receipt, o = O[R.id], L = R.lens, tone = BIN_TONE[R.bin];
+    const last = S.over;
+    return '<div class="panel report">' +
+      '<p class="eyebrow">Delivery report · ' + C.MONTH_NAMES[R.month] + '</p>' +
+      '<h3>' + esc(o.title) + ' <span class="stamp ' + tone + '">' + esc(R.fate) + '</span></h3>' +
+      '<p class="why">' + esc(o.why) + '</p>' +
+      (R.riskHit ? '<p class="risk">Risk came up: ' + esc(R.riskLabel) + '.</p>' : '') +
+      '<dl class="rx">' +
+      '<div><dt>expected</dt><dd>≈ ' + fmt(L.expNewRisk) + '<small>new people, from the lens</small></dd></div>' +
+      '<div><dt>actual</dt><dd>' + fmt(R.fresh) + '<small>new people this month</small></dd></div>' +
+      '<div><dt>received by</dt><dd>' + fmt(R.before.reached) + ' → ' + fmt(R.after.reached) + '<small>of 1,000</small></dd></div>' +
+      '<div><dt>carriers</dt><dd>' + fmt(R.before.carriers) + ' → ' + fmt(R.after.carriers) + '<small>pass you on</small></dd></div>' +
+      '<div><dt>energy</dt><dd>' + R.before.energy + ' → ' + R.after.energy + '<small>of 10</small></dd></div>' +
+      '<div><dt>payload</dt><dd>' + R.after.fields + ' of 8<small>fields intact</small></dd></div>' +
+      '</dl>' +
+      '<div class="meta"><span>four tests</span>' + testsHTML(R.gates) + '</div>' +
+      '<div class="row"><button class="btn" type="button" id="next">' + (last ? 'See your year' : 'Next month: ' + C.MONTH_NAMES[S.month] + ' →') + '</button></div>' +
+      '</div>';
+  }
+  function endHTML() {
+    const best = Math.max(loadBest(), S.reached);
+    saveBest(best);
+    const passed = S.history.filter((h) => h.product === 1);
+    const delivered = S.flags.delivered;
+    const verdict = delivered
+      ? '<p class="verdict yes"><b>CONDITIONS IN PLAY.</b> Your demand reached whoever controls the conditions intact: out, intact, sideways and upward all came back 1. That doesn’t guarantee change. It makes change possible.</p>'
+      : passed.length
+        ? '<p class="verdict yes"><b>PASSED ALL FOUR TESTS.</b> ' + esc(O[passed[0].id].title) + ' delivered you intact to people who could act on it. Organizing would put a collective demand in front of whoever controls the conditions.</p>'
+        : '<p class="verdict"><b>CONDITIONS UNCHANGED.</b> No route passed all four tests this year. The people who control housing, wages and food never received you intact.</p>';
+    return '<div class="panel end">' +
+      '<p class="eyebrow">December is over</p>' +
+      '<p class="score"><b>' + fmt(S.reached) + '</b>of the town’s 1,000 people received the packet.</p>' +
+      '<p class="rank">' + esc(C.rank(S.reached)) + '.</p>' + verdict +
+      '<p class="compare">' + fmt(S.carriers) + ' people are still carrying it. For comparison, a year of nothing but standard advice reaches about 5 people. Your best year so far: ' + fmt(best) + '.</p>' +
+      '<div class="row"><button class="btn" type="button" id="again">Play another year</button><button class="btn ghost" type="button" id="replay">Replay this year’s deal</button></div>' +
+      '</div>';
+  }
+
+  function render() {
+    renderHud();
+    const play = $('play');
+    if (phase === 'intro') play.innerHTML = introHTML();
+    else if (phase === 'month') play.innerHTML = monthHTML();
+    else if (phase === 'report') play.innerHTML = reportHTML();
+    else play.innerHTML = endHTML();
+    renderTrace();
+    drawTown();
+  }
+  function renderTrace() {
+    const list = $('trace'), h = S ? S.history : [];
+    $('trace-empty').hidden = h.length > 0;
+    list.innerHTML = h.map((r, i) => {
+      const tone = BIN_TONE[r.bin] === 'dead' ? 'f-dead' : 'f-' + BIN_TONE[r.bin];
+      return '<li><span>' + String(i + 1).padStart(2, ' ') + '</span><span>' + C.MONTH_NAMES[r.month].slice(0, 3) + '</span><b>' + esc(O[r.id].title) + '</b><span class="' + (r.fresh ? 'plus' : 'zero') + '">' + (r.fresh ? '+' + fmt(r.fresh) : '* * *') + '</span><span class="' + tone + '">' + esc(r.fate) + '</span></li>';
+    }).join('');
+  }
+
+  /* ---------------- actions ---------------- */
+  function start(sameDeal) {
+    if (!sameDeal) seed = 10000 + Math.floor(Math.random() * 90000);
+    S = C.newState(seed);
+    C.beginMonth(S);
+    receipt = null;
+    phase = 'month';
+    anim = null;
+    shown = { reached: 0, carriers: 0 };
+    render();
+    scrollPlay();
+  }
+  function pickOption(id) {
+    if (phase !== 'month' || !S.offers.includes(id) || !C.available(O[id], S).ok) return;
+    const r = C.rng(seed * 131 + S.month * 7919 + 3);
+    const from = { reached: S.reached, carriers: S.carriers };
+    receipt = C.choose(S, id, r);
+    phase = 'report';
+    startAnim(receipt, from);
+    render();
+    scrollPlay();
+    const n = document.getElementById('next');
+    if (n) n.focus({ preventScroll: true });
+  }
+  function next() {
+    if (S.over) { phase = 'end'; render(); scrollPlay(); return; }
+    C.beginMonth(S);
+    receipt = null;
+    phase = 'month';
+    render();
+    scrollPlay();
+  }
+  function scrollPlay() {
+    const el = $('play');
+    const r = el.getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight * 0.6) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.id === 'start') start(false);
+    else if (t.id === 'next') next();
+    else if (t.id === 'again') start(false);
+    else if (t.id === 'replay') start(true);
+    else if (t.classList.contains('send')) pickOption(t.dataset.id);
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'mathtoggle') {
+      showMath = e.target.checked;
+      try { localStorage.setItem('packet-received-math', showMath ? '1' : '0'); } catch (err) { /* storage unavailable */ }
+      document.querySelectorAll('details.math').forEach((d) => { d.open = showMath; });
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+    if (phase === 'month' && /^[1-4]$/.test(e.key)) { const id = S.offers[+e.key - 1]; if (id) pickOption(id); }
+  });
+
+  /* ---------------- the town map ---------------- */
+  const cv = $('town'), g = cv.getContext('2d');
+  const TOWN = (() => {
+    const n = C.N, golden = Math.PI * (3 - Math.sqrt(5)), r = C.rng(99), pts = [];
+    for (let i = 0; i < n; i++) { const rad = Math.sqrt((i + 0.5) / n), th = i * golden; pts.push({ x: rad * Math.cos(th), y: rad * Math.sin(th), key: rad + r() * 0.32 }); }
+    const order = pts.map((p, i) => i).sort((a, b) => pts[a].key - pts[b].key);
+    const rank = new Int32Array(n);
+    order.forEach((idx, k) => { rank[idx] = k; });
+    return { pts, rank };
+  })();
+  const ICON_AT = { inward: [-0.92, 0.92], sealed: [-0.92, -0.92], sold: [0.92, 0.92], bent: [0.92, -0.78], unsent: [0, 1.0] };
+  let shown = { reached: 0, carriers: 0 }, anim = null, raf = 0;
+  const T = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    ['bg', 'raise', 'rule', 'line', 'ink', 'dim', 'faint', 'warm', 'gold', 'yes', 'no', 'power', 'dead'].forEach((k) => { T[k] = cs.getPropertyValue('--c-' + k).trim(); });
+  }
+  function alpha(hex, a) {
+    const h = hex.replace('#', ''), n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function startAnim(rc, from) {
+    anim = { t0: performance.now(), rc, from, to: { reached: rc.after.reached, carriers: rc.after.carriers } };
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function loop(ts) {
+    raf = 0;
+    drawTown(ts);
+    if (anim && ts - anim.t0 < 2600) raf = requestAnimationFrame(loop);
+    else if (anim) { anim = null; drawTown(); }
+  }
+  function sizeCanvas() {
+    const w = Math.max(200, Math.round(cv.getBoundingClientRect().width));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(w * dpr); }
+    return { w, dpr };
+  }
+  function bin(key, x, y, s, col) {
+    g.save(); g.translate(x, y); g.scale(s, s); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
+    if (key === 'inward') { g.moveTo(0, -12); g.lineTo(0, -1); g.moveTo(-11, -1); g.lineTo(11, -1); g.moveTo(-7, 5); g.lineTo(7, 5); g.moveTo(-3, 11); g.lineTo(3, 11); g.stroke(); }
+    else if (key === 'sealed') { g.rect(-9, -2, 18, 14); g.stroke(); g.beginPath(); g.arc(0, -2, 6, Math.PI, 0); g.stroke(); }
+    else if (key === 'sold') { g.arc(0, 0, 11, 0, Math.PI * 2); g.stroke(); g.font = '800 13px ' + 'ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('$', 0, 1); }
+    else if (key === 'bent') { g.moveTo(-10, 10); g.lineTo(-10, -8); g.lineTo(7, -8); g.lineTo(7, 6); g.stroke(); g.beginPath(); g.moveTo(1, 4); g.lineTo(7, 11); g.lineTo(13, 4); g.stroke(); }
+    else if (key === 'unsent') { g.arc(0, 0, 11, 0, Math.PI * 2); g.moveTo(-8, 8); g.lineTo(8, -8); g.stroke(); }
+    g.restore();
+  }
+  function drawTown(ts) {
+    if (!T.bg) readTokens();
+    const { w, dpr } = sizeCanvas();
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, w);
+    const cx = w / 2, cy = w / 2, R = w * 0.4;
+    const now = ts || performance.now();
+    let k = 1;
+    if (anim) k = Math.min(1, Math.max(0, (now - anim.t0 - 700) / 1400));
+    const ease = 1 - Math.pow(1 - k, 3);
+    const st = S || { reached: 0, carriers: 0 };
+    const reached = anim ? anim.from.reached + (anim.to.reached - anim.from.reached) * ease : st.reached;
+    const carriers = anim ? anim.from.carriers + (anim.to.carriers - anim.from.carriers) * ease : st.carriers;
+    shown = { reached, carriers };
+    const dr = Math.max(1.4, (R / Math.sqrt(C.N)) * 0.62);
+    const hot = T.warm, dim = alpha(T.warm, 0.42), none = alpha(T.dead, 0.5);
+    for (let i = 0; i < C.N; i++) {
+      const p = TOWN.pts[i], rk = TOWN.rank[i];
+      g.beginPath();
+      g.arc(cx + p.x * R, cy + p.y * R, dr, 0, Math.PI * 2);
+      g.fillStyle = rk < carriers ? hot : rk < reached ? dim : none;
+      g.fill();
+    }
+    // you
+    g.beginPath(); g.arc(cx, cy, dr * 3.2, 0, Math.PI * 2); g.fillStyle = T.raise; g.fill(); g.lineWidth = 2; g.strokeStyle = T.warm; g.stroke();
+    g.beginPath(); g.arc(cx, cy, dr * 1.4, 0, Math.PI * 2); g.fillStyle = T.warm; g.fill();
+    // whoever controls the conditions
+    const hx = w - 34, hy = 30, hist = S ? S.history : [];
+    const up = hist.some((h) => h.gates[3] && h.product), bent = hist.some((h) => h.gates[3] && !h.product);
+    const pc = up ? T.yes : bent ? T.no : T.power;
+    g.save();
+    g.globalAlpha = up || bent ? 1 : 0.55;
+    g.strokeStyle = pc; g.lineWidth = 2; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(hx - 20, hy - 2); g.lineTo(hx, hy - 16); g.lineTo(hx + 20, hy - 2); g.closePath(); g.stroke();
+    g.strokeRect(hx - 16, hy - 2, 32, 22);
+    if (up) { g.fillStyle = alpha(T.yes, 0.25); g.fillRect(hx - 16, hy - 2, 32, 22); }
+    g.restore();
+    // this month's packet
+    if (anim) {
+      const t = (now - anim.t0) / 1000, rc = anim.rc, tone = BIN_TONE[rc.bin];
+      if (rc.fresh > 0) {
+        for (let j = 0; j < 3; j++) {
+          const age = t - j * 0.35;
+          if (age <= 0 || age > 1.8) continue;
+          const rr = (age / 1.8) * R * Math.max(0.25, Math.sqrt(rc.after.reached / C.N)) * 1.15;
+          g.beginPath(); g.arc(cx, cy, rr, 0, Math.PI * 2); g.strokeStyle = alpha(T.warm, 0.75 * (1 - age / 1.8)); g.lineWidth = 2.5; g.stroke();
+        }
+        if (t < 2.4) {
+          g.font = '800 ' + Math.round(w * 0.06) + 'px "Martian Mono", ui-monospace, monospace';
+          g.textAlign = 'center'; g.fillStyle = alpha(T.warm, Math.min(1, 2.4 - t)); g.fillText('+' + fmt(rc.fresh), cx, cy - dr * 5 - (t * 8));
+        }
+        if (rc.gates[3]) { const q = Math.min(1, t / 1.2); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + (hx - cx) * q, cy + (hy + 8 - cy) * q); g.strokeStyle = alpha(rc.product ? T.yes : T.no, 0.9); g.lineWidth = 3; g.stroke(); }
+      } else {
+        const at = ICON_AT[rc.bin] || [0, 1];
+        const tx = cx + at[0] * (w * 0.46), ty = cy + at[1] * (w * 0.46);
+        const q = Math.min(1, t / 0.9), fade = t > 1.4 ? Math.max(0, 1 - (t - 1.4) / 1.0) : 1;
+        g.save(); g.globalAlpha = fade;
+        g.setLineDash([5, 6]); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + (tx - cx) * q, cy + (ty - cy) * q); g.strokeStyle = T.dead; g.lineWidth = 2; g.stroke(); g.setLineDash([]);
+        g.fillStyle = T.warm; g.fillRect(cx + (tx - cx) * q - 9, cy + (ty - cy) * q - 5, 18, 10);
+        if (tone === 'dead' && rc.bin !== 'bent') bin(rc.bin, tx, ty, Math.min(1.3, w / 360), T.dim);
+        g.restore();
+      }
+    }
+  }
+  window.addEventListener('resize', () => drawTown());
+  const mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  if (mq && mq.addEventListener) mq.addEventListener('change', () => { readTokens(); drawTown(); });
+  new MutationObserver(() => { readTokens(); drawTown(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawTown());
+
+  render();
+})();
+</script>
+</body>
+</html>

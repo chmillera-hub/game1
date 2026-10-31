@@ -65,6 +65,8 @@
   .wrap > * { min-width: 0; }
   .mast { display: grid; gap: 12px; }
   .kicker { margin: 0; font: 600 12px/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c-dim); }
+  .kicker a, .next a { color: var(--c-warm); text-underline-offset: 3px; }
+  .next { margin: 0; font: italic 400 22px/1.4 var(--f-serif); max-width: 62ch; }
   h1 { margin: 0; font: 800 clamp(38px, 7vw, 76px)/1 var(--f-mono); letter-spacing: .01em; text-wrap: balance; }
   .dek { margin: 0; max-width: 62ch; font: italic 400 clamp(19px, 2.3vw, 24px)/1.42 var(--f-serif); color: var(--c-dim); text-wrap: pretty; }
 
@@ -151,7 +153,7 @@
 <body>
 <div class="wrap">
   <header class="mast">
-    <p class="kicker">An animated trace · <span id="runtime">7 minutes</span></p>
+    <p class="kicker">An animated trace · <span id="runtime">7 minutes</span> · <a href="../packet-received/index.html">Play the game</a></p>
     <h1>Packet Loss</h1>
     <p class="dek">One human need, for deeper connection, community, a village and room to grow, sent through thirteen pieces of standard advice. At every hop the trace reads the delivery report: who received it, and whether anyone who could change the conditions ever did.</p>
   </header>
@@ -202,6 +204,8 @@
       <div><dt>Z60.2</dt><dd>The ICD-10-CM code for problems related to living alone. Codes for social conditions exist; they are seldom the ones that get filed.</dd></div>
     </dl>
   </section>
+
+  <p class="next">Now play it from the packet’s side. In <a href="../packet-received/index.html">Packet Received</a> you are the packet, and every piece of advice comes with the exact math of how many people it lets you reach.</p>
 
   <section class="transcript" aria-labelledby="tr-h">
     <details>
