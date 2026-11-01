@@ -17,6 +17,8 @@ for lid in TL["order"]:
     for i, sb in enumerate(d["subs"]):
         end = sb["t1"] + (0.5 if i == len(d["subs"]) - 1 else 0.0)
         who = "ZOMBIE (thinking): " if d.get("thought") else NAMES[d["spk"]]
+        if d.get("thought") and i == len(d["subs"]) - 1:
+            sb = dict(sb, text=sb["text"] + " \U0001F61E")
         out.append(f"{k}\n{ts(sb['t0'])} --> {ts(end)}\n{who}{sb['text']}\n")
         k += 1
 open(sys.argv[1], "w").write("\n".join(out))

@@ -853,7 +853,7 @@ def draw_turret(ctx, cam, tx, t, ang, firing, light):
     ctx.restore()
 
 
-def draw_fortress(ctx, cam, t, phase, light, flash=0.0, aim=()):
+def draw_fortress(ctx, cam, t, phase, light, flash=0.0, aim=(), spot=None):
     if cam.d < 0 or cam.depth(WALL) < 5:
         return
     Z = WALL
@@ -974,6 +974,9 @@ def draw_fortress(ctx, cam, t, phase, light, flash=0.0, aim=()):
     for k, (x, h, w) in enumerate((TOWERS[0], TOWERS[2], TOWERS[4])):
         p = cam.p(x, hill_y + h - 4, Z)
         ang = -math.pi / 2 + math.sin(t * 0.35 + k * 2.1) * 0.7
+        if spot:  # swung round to follow something in the sky (sx, sy, weight)
+            ta = math.atan2(spot[1] - p[1], spot[0] - p[0])
+            ang = lerp(ang, ta, spot[2])
         ln = 900
         ctx.new_path()
         ctx.move_to(*p)

@@ -101,7 +101,7 @@ SCENES = [
         ("i10b", "Z", "You're right. I want to see if I can help ^save them... but I don't know what to do, exactly.", 0.3, 2.6),
         ("i11", "N", "And the conscious zombie sighed.", 0.3, 0.9),
         ("i11t", "Z", "How are the humans going to help me? I hope this works out...", 0.3, 0.5, {"thought": True, "gain": 0.8, "speed": 0.8}),
-        ("i11b", "HB", "Oh yeah... I hope this works out too.", 0.3, 0.5, {"speed": 0.76}),
+        ("i11b", "HB", "You know what? I hope this works out... not only for us, but for you. Fighting all the time is quite exhausting.", 0.3, 0.5, {"speed": 0.8}),
         ("i11c", "HB", "I think you'll be able to wake them up, so they stop running into our laser beams and stuff.", 0.2, 0.5, {"speed": 0.82}),
         ("i11d", "HB", "That's the current plan. My hope is that you'll be able to do it... since you probably know how to speak zombie, or something.", 0.3, 4.4, {"speed": 0.82}),
     ]),

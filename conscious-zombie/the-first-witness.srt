@@ -552,64 +552,68 @@ ZOMBIE (thinking): How are the humans going to help me?
 
 139
 00:06:46,255 --> 00:06:48,913
-ZOMBIE (thinking): I hope this works out...
+ZOMBIE (thinking): I hope this works out... 😞
 
 140
-00:06:49,213 --> 00:06:52,338
-CREW: Oh yeah... I hope this works out too.
+00:06:49,213 --> 00:06:53,353
+CREW: You know what? I hope this works out... not only for us,
 
 141
-00:06:52,538 --> 00:06:54,523
-CREW: I think you'll be able to wake them up,
+00:06:53,353 --> 00:06:57,891
+CREW: but for you. Fighting all the time is quite exhausting.
 
 142
-00:06:54,523 --> 00:06:58,648
-CREW: so they stop running into our laser beams and stuff.
+00:06:58,091 --> 00:07:00,076
+CREW: I think you'll be able to wake them up,
 
 143
-00:06:58,947 --> 00:07:00,485
-CREW: That's the current plan.
+00:07:00,076 --> 00:07:04,201
+CREW: so they stop running into our laser beams and stuff.
 
 144
-00:07:00,485 --> 00:07:03,197
-CREW: My hope is that you'll be able to do it...
+00:07:04,500 --> 00:07:06,038
+CREW: That's the current plan.
 
 145
-00:07:03,197 --> 00:07:07,392
-CREW: since you probably know how to speak zombie, or something.
+00:07:06,038 --> 00:07:08,750
+CREW: My hope is that you'll be able to do it...
 
 146
-00:07:11,892 --> 00:07:15,117
-So it seems as though, in order for heaven to be built,
+00:07:08,750 --> 00:07:12,946
+CREW: since you probably know how to speak zombie, or something.
 
 147
-00:07:15,117 --> 00:07:18,103
-the raw material of hell may have been needed...
+00:07:17,446 --> 00:07:20,670
+So it seems as though, in order for heaven to be built,
 
 148
-00:07:18,103 --> 00:07:21,478
-to be transformed into the material of heaven...
+00:07:20,670 --> 00:07:23,656
+the raw material of hell may have been needed...
 
 149
-00:07:21,478 --> 00:07:23,995
-so that maybe this heaven on Earth
+00:07:23,656 --> 00:07:27,031
+to be transformed into the material of heaven...
 
 150
-00:07:23,995 --> 00:07:25,737
-could be built not only for him,
+00:07:27,031 --> 00:07:29,548
+so that maybe this heaven on Earth
 
 151
-00:07:25,737 --> 00:07:28,072
-but for his brothers and sisters,
+00:07:29,548 --> 00:07:31,290
+could be built not only for him,
 
 152
-00:07:28,072 --> 00:07:30,644
-and maybe even the world too.
+00:07:31,290 --> 00:07:33,625
+but for his brothers and sisters,
 
 153
-00:07:31,043 --> 00:07:33,278
-And that's why heaven sent our souls...
+00:07:33,625 --> 00:07:36,197
+and maybe even the world too.
 
 154
-00:07:33,278 --> 00:07:35,536
+00:07:36,596 --> 00:07:38,831
+And that's why heaven sent our souls...
+
+155
+00:07:38,831 --> 00:07:41,089
 to turn our hells into heaven.

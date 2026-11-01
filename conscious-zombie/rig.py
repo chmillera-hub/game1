@@ -652,10 +652,15 @@ def _wild_details(ctx, ch, s, th, pdy, light, lw, lod):
                     tint(hair, light), 0.9, lw * 1.7)
 
 
-def _cap_outer(s, top=-62, vol=1.05, side_y=-2):
+def _cap_outer(s, top=-62, vol=1.05, side_y=-2, round_=False):
     ry = -16 - top  # an elliptical dome from the temples to the crown
-    base = [(45, side_y, 0.42), (45, -16, 0.35)] + [(45 * math.cos(a), -16 - ry * math.sin(a), fw)
-                                                     for a, fw in ((0.55, 0.24), (0.95, 0.15), (1.3, 0.07))] + [(0, top, 0.0)]
+    if round_:  # a full, round skull (superellipse): no cone
+        sp = lambda a: (math.copysign(abs(math.cos(a)) ** 0.75, math.cos(a)), abs(math.sin(a)) ** 0.75)
+        base = [(45, side_y, 0.42), (45, -16, 0.35)] + [(45 * sp(a)[0], -16 - ry * sp(a)[1], fw)
+                                                         for a, fw in ((0.4, 0.27), (0.75, 0.2), (1.1, 0.12), (1.38, 0.05))] + [(0, top, 0.0)]
+    else:
+        base = [(45, side_y, 0.42), (45, -16, 0.35)] + [(45 * math.cos(a), -16 - ry * math.sin(a), fw)
+                                                         for a, fw in ((0.55, 0.24), (0.95, 0.15), (1.3, 0.07))] + [(0, top, 0.0)]
     pts = []
     for sgn in (1, -1):
         seq = base if sgn == 1 else list(reversed(base))
@@ -733,7 +738,7 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
                 side = [(ox - sgn * 4, -20), (ox + sgn * 3, 4), (ox + sgn * 4, 22), (ox, 38), (ox - sgn * 4, 22), (ox - sgn * 4, 2)]
                 shade(ctx, lambda: smooth_closed(ctx, side), hair, light, lw, shadow=0.35)
     elif hs == "short":
-        cap = _cap_outer(s, -74, 1.06, side_y=4) + _hairline(th, [(-42, -10), (-36, -30), (-18, -42), (4, -45), (26, -39), (42, -14)], pdy)
+        cap = _cap_outer(s, -70, 1.06, side_y=4, round_=True) + _hairline(th, [(-42, -10), (-36, -30), (-18, -42), (4, -45), (26, -39), (42, -14)], pdy)
         shade(ctx, lambda: smooth_closed(ctx, cap), hair, light, lw, shadow=0.35)
         if lod > 0:
             for i, (x0, y0, x1, y1, wd) in enumerate(((-20, -44, -26, -30, 6), (-6, -46, -2, -33, 7), (10, -45, 17, -34, 5), (24, -40, 31, -27, 5))):
@@ -751,7 +756,7 @@ def _hair_front(ctx, ch, s, th, pdy, light, lw, lod):
                 x = -28 + i * 11
                 soft_stroke(ctx, [(fx(x - 8, 4), -66), (fx(x + 2, 10), -56), (fx(x + 10, 14), -46 + pdy * 0.25)], hi, 0.4, lw * 0.8)
     elif hs == "curls":
-        cap = _cap_outer(s, -76, 1.12, side_y=6) + _hairline(th, [(-42, -6), (-38, -26), (-24, -42), (-10, -47), (8, -43),
+        cap = _cap_outer(s, -73, 1.12, side_y=6, round_=True) + _hairline(th, [(-42, -6), (-38, -26), (-24, -42), (-10, -47), (8, -43),
                                                                   (28, -36), (42, -18)], pdy)
         shade(ctx, lambda: smooth_closed(ctx, cap), hair, light, lw, shadow=0.32)
         if lod > 0:

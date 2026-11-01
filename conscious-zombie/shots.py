@@ -68,7 +68,7 @@ def place(cam, X, Z, kneel=0.0, Y=0.0):
 
 
 def ext(ctx, t, cam, phase, east=False, extras=(), fire=True, building=False, horde=True, stars=0.0, light=None,
-        sun=True, zmax=None, bflag=True, moon="auto", sky_fn=None):
+        sun=True, zmax=None, bflag=True, moon="auto", sky_fn=None, spot=None):
     lb = light or (LB0 if phase < 1 else LBn)
     lf = LF0 if phase < 1 else LFn
     world.draw_sky(ctx, cam, t, phase, east=east, stars=stars, sun=sun, moon=moon)
@@ -76,7 +76,7 @@ def ext(ctx, t, cam, phase, east=False, extras=(), fire=True, building=False, ho
         sky_fn(ctx)
     world.draw_ground(ctx, cam, t, phase, east=east)
     if not east:
-        world.draw_fortress(ctx, cam, t, phase, lb, flash=HORDE.flash(t) if fire else 0, aim=HORDE.recent(t) if fire else ())
+        world.draw_fortress(ctx, cam, t, phase, lb, flash=HORDE.flash(t) if fire else 0, aim=HORDE.recent(t) if fire else (), spot=spot)
         world.draw_smoke(ctx, cam, t, phase)
     items = list(extras)
     if horde:
@@ -1904,7 +1904,24 @@ def cabin_react(ctx, t):
     rig.draw_character(ctx, rig.ZOMBIE, P, cab_light(t), t)
 
 
-def thought_bubble(ctx, t, t0, t1, text, head):
+def sad_face(ctx, x, y, r, a=1.0):
+    """A little disappointed-face emoji: gold disc, brows tipped up in the middle, eyes cast down, a frown."""
+    g = cairo.RadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r)
+    g.add_color_stop_rgba(0, *hexc("ffe36e"), a)
+    g.add_color_stop_rgba(1, *hexc("f2a81d"), a)
+    ctx.new_path(); ctx.arc(x, y, r, 0, 2 * math.pi); ctx.set_source(g); ctx.fill_preserve()
+    rgba(ctx, hexc("8a5a10"), 0.8 * a); ctx.set_line_width(max(1.0, r * 0.08)); ctx.stroke()
+    ink = hexc("5a3a10")
+    for sg in (1, -1):
+        ctx.new_path(); ctx.arc(x + sg * r * 0.36, y - r * 0.08, r * 0.17, 0.15 * math.pi, 0.85 * math.pi)  # downcast eyes
+        rgba(ctx, ink, a); ctx.set_line_width(max(1.2, r * 0.12)); ctx.stroke()
+        ctx.new_path(); ctx.move_to(x + sg * r * 0.18, y - r * 0.42); ctx.line_to(x + sg * r * 0.55, y - r * 0.3)  # sad brows
+        ctx.stroke()
+    ctx.new_path(); ctx.arc(x, y + r * 0.62, r * 0.32, 1.15 * math.pi, 1.85 * math.pi)  # frown
+    ctx.stroke()
+
+
+def thought_bubble(ctx, t, t0, t1, text, head, emoji=False):
     """A cartoon thought cloud above-left of the head, trailing puffs back to it; pops in, fades out."""
     pop = ramp(t, t0 - 0.1, t0 + 0.25)
     out = 1 - ramp(t, t1, t1 + 0.35)
@@ -1940,7 +1957,7 @@ def thought_bubble(ctx, t, t0, t1, text, head):
     ta = a * ramp(t, t0 + 0.15, t0 + 0.45)
     ctx.select_font_face("DejaVu Sans", cairo.FONT_SLANT_OBLIQUE, cairo.FONT_WEIGHT_NORMAL)
     ctx.set_font_size(29)
-    words, lines, cur = text.split(" "), [], ""
+    words, lines, cur = (text + (" @@" if emoji else "")).split(" "), [], ""  # @@ keeps room for the face
     for w_ in words:
         test = (cur + " " + w_).strip()
         if ctx.text_extents(test).x_advance > rw * 1.45 and cur:
@@ -1952,7 +1969,16 @@ def thought_bubble(ctx, t, t0, t1, text, head):
     lh = 37
     for i, ln in enumerate(lines):
         e = ctx.text_extents(ln)
-        ctx.move_to(cx - e.x_advance / 2, cy - (len(lines) - 1) * lh / 2 + i * lh + 10)
+        x0 = cx - e.x_advance / 2
+        y0 = cy - (len(lines) - 1) * lh / 2 + i * lh + 10
+        if ln.endswith("@@"):  # draw the emoji where the placeholder sits
+            body = ln[:-2].rstrip()
+            ctx.move_to(x0, y0)
+            rgba(ctx, hexc("3a2a1a"), ta); ctx.show_text(body)
+            bx = x0 + ctx.text_extents(body + " ").x_advance + 17
+            sad_face(ctx, bx, y0 - 10, 18, ta * ramp(t, t0 + 0.6, t0 + 0.9))
+            continue
+        ctx.move_to(x0, y0)
         rgba(ctx, hexc("3a2a1a"), ta); ctx.show_text(ln)
 
 
@@ -1973,7 +1999,7 @@ def cabin_sigh(ctx, t):
     P = zombie_cab(t, 3.2, 380, 830, E=E, yaw=-0.2 + 0.18 * dart * worry, pitch=0.25 * exhale * (1 - worry) - 0.08 * held,
                    shrug=0.4 * held - 0.12 * exhale * (1 - worry), breath=0.6, alive=0.6)
     hc = rig.draw_character(ctx, rig.ZOMBIE, P, cab_light(t), t)
-    thought_bubble(ctx, t, th0, th1, LINES["i11t"]["text"], (380 + hc[0] * 3.2, 830 + hc[1] * 3.2))
+    thought_bubble(ctx, t, th0, th1, LINES["i11t"]["text"], (380 + hc[0] * 3.2, 830 + hc[1] * 3.2), emoji=True)
 
 
 def hb_close(ctx, t, wk=0.0, grin=0.0, shrug=0.0, E_kw=None):
@@ -2044,8 +2070,14 @@ def field_lookup(ctx, t):
     ex = hx / W * 2 - 1
     E = rig.expr(op=0.18 - 0.1 * flick_, sm=-0.25, milky=1.0 - 0.45 * flick_, drone=1.0 - 0.55 * flick_, life=0.3 * flick_, t=t,
                  bi=0.3 * flick_, lid=0.32 - 0.22 * up - 0.1 * flick_, gx=-0.35 * ex * up, gy=-0.85 * up, grime=1.0, pupil=0.4)
-    st = rig.horde_style(13)
-    pose = dict(E=E, pitch=-0.75 * up, yaw=-0.12 * ex * up, legs=dict(mode="stand"), breath=0.4, **arms_hang(t, 0.5))
+    st = rig.make(fem=True, long_hair=True, hairstyle="long", hair=hexc("6a3e24"), hair_hi=hexc("9a6a44"), skin=hexc("9aa08e"),
+                  shirt=hexc("7a3b4a"), shirt2=hexc("5e2c38"), pants=hexc("4a4036"), build=0.88, jaw=0.92, chin=0.94, eye_w=19.5,
+                  mouth_w=13.0, lip_a=0.18)
+    q = ramp(tt, 0.95, 1.5)  # a finger drifts up to her chin: is she starting to wonder?
+    arms = arms_hang(t, 0.5)
+    arms["armR"] = dict(el=(lerp(76, 70, q), lerp(112, 84, q)), wr=(lerp(62, 22, q), lerp(200, -6, q)), hand_ang=lerp(1.54, -1.95, q),
+                        curl=lerp(0.5, 0.2, q), fcurl=[0.0, 0.9, 0.95, 0.95] if q > 0.5 else None, thumb=0.6, flip=True)
+    pose = dict(E=E, pitch=-0.75 * up + 0.05 * q, yaw=-0.12 * ex * up, roll=0.05 * q, legs=dict(mode="stand"), breath=0.4, **arms)
 
     def fig(ctx2):
         x, y, sc_ = place(cam, -2.0, WALL - 70)
@@ -2107,7 +2139,21 @@ def end_dawn(ctx, t):
             ctx2.line_to(sunp[0] + math.cos(a + 0.03) * 1500, sunp[1] + math.sin(a + 0.03) * 1500)
             ctx2.close_path()
             rgba(ctx2, hexc("f0d8b0"), 0.015 + 0.03 * lift); ctx2.fill()
-    ext(ctx, t, cam, ph, horde=False, fire=False, sun=False, sky_fn=sun_behind)
+    kt = cam.p(0, world.HILL + 78, WALL)  # top of the keep
+    wt2 = cam.p(40, world.HILL + 30, WALL)  # the wall top, right of the keep
+    a_ = ease(ramp(u, 0.0, 0.45))
+    b_ = ease(ramp(u, 0.45, 0.8))  # then down, slowly, behind the bricks: landing inside the fortress
+    hx = lerp(W / 2 + 250, wt2[0], a_)
+    hy_ = lerp(lerp(330, kt[1] - 60, a_), wt2[1] + 70, b_)
+    hsc = lerp(0.28, 0.085, a_)
+
+    def sky_and_heli(ctx2):
+        sun_behind(ctx2)
+        if b_ < 0.999:
+            world.draw_heli(ctx2, hx, hy_, hsc, t, LT(dir=(0, -1), rim=hexc("e8c090"), shadow=hexc("2a2030"), amb=hexc("7a6a6a"), amb_k=0.3),
+                            bank=0.03 * math.sin(t * 0.9), face=-1)
+    spot = (hx, hy_, 0.85 * ramp(u, 0.03, 0.15) * (1 - ramp(u, 0.8, 0.92)))  # the searchlights guide it home
+    ext(ctx, t, cam, ph, horde=False, fire=False, sun=False, sky_fn=sky_and_heli, spot=spot)
     g = cairo.LinearGradient(0, 0, 0, cam.hy + 40)  # brown haze over the whole sky
     g.add_color_stop_rgba(0, *smog, 0.28)
     g.add_color_stop_rgba(1, *mix(smog, hexc("c0a080"), 0.4), 0.45)
@@ -2117,15 +2163,7 @@ def end_dawn(ctx, t):
             age = (t * 0.12 + i * 0.27 + k / 5) % 1.0
             p = cam.p(-60 + i * 40 + age * 12, age * 60, WALL - 40 - i * 15)
             soft_dot(ctx, p[0], p[1], 20 + age * 70, hexc("5a5048"), 0.25 * (1 - age))
-    kt = cam.p(0, world.HILL + 78, WALL)  # top of the keep
-    d_ = ease(u)
-    hx = lerp(W / 2 + 250, W / 2 + 70, d_)
-    hy_ = lerp(330, kt[1] - 120, d_)  # stays high: over the fortress and away toward the horizon
-    if d_ < 0.97:
-        ctx.push_group()
-        world.draw_heli(ctx, hx, hy_, lerp(0.28, 0.025, d_), t, LT(dir=(0, -1), rim=hexc("e8c090"), shadow=hexc("2a2030"),
-                        amb=hexc("7a6a6a"), amb_k=0.3), bank=-0.04, face=-1)
-        ctx.pop_group_to_source(); ctx.paint_with_alpha(1 - 0.75 * ramp(d_, 0.6, 0.97))  # fading into the haze
+
     world.draw_motes(ctx, t, 30, hexc("d8c8b0"), 0.15, seed=9, drift=(8, -10))
 
 
