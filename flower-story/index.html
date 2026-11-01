@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Hikers, the Flower, and the Meaning We Create</title>
+<meta name="description" content="An animated short about stopping for a flower instead of chasing the summit.">
+<style>
+/* Layout: one full-bleed black stage; the 16:9 film canvas is centered and letterboxed; controls float over its lower edge. */
+@font-face { font-family: 'Cormorant Garamond'; font-style: italic; font-weight: 300 700; font-display: block; src: url(fonts/CormorantGaramond-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant Garamond'; font-style: normal; font-weight: 300 700; font-display: block; src: url(fonts/CormorantGaramond-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 200 1000; font-display: block; src: url(fonts/Nunito-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Caveat'; font-style: normal; font-weight: 400 700; font-display: block; src: url(fonts/Caveat-normal.woff2) format('woff2'); }
+:root {
+  --ink: #060609;         /* the theatre dark */
+  --paper: #f4ebdd;       /* warm projection white */
+  --paper-dim: rgba(244, 235, 221, 0.66);
+  --rose: #ff6f9c;        /* the flower */
+  --rose-deep: #d4185e;
+  --gold: #ffc23d;        /* the flower's golden heart */
+  --glass: rgba(10, 9, 14, 0.62);
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Nunito", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--ink); color: var(--paper); font-family: var(--font-ui); overflow: hidden; }
+#stage { position: fixed; inset: 0; display: grid; place-items: center; background: var(--ink); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+#film { display: block; background: #000; }
+button { font: inherit; color: inherit; }
+button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* ---------- poster / start ---------- */
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 18px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(9vh + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(6, 6, 9, 0.78) 0%, rgba(6, 6, 9, 0) 46%); text-align: center; }
+.begin { display: inline-flex; align-items: center; gap: 14px; padding: 14px 30px 14px 16px; border: 0; border-radius: 999px; background: var(--paper); color: #1a1218; font-weight: 800; font-size: 1.15rem; letter-spacing: 0.02em; cursor: pointer; box-shadow: 0 12px 40px rgba(212, 24, 94, 0.35); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.begin:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(212, 24, 94, 0.5); }
+.begin .disc { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, var(--gold) 0 26%, var(--rose-deep) 27% 100%); display: grid; place-items: center; }
+.begin .disc::after { content: ""; margin-left: 4px; border-left: 13px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+.meta { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 22px; font-size: 0.92rem; color: var(--paper-dim); letter-spacing: 0.03em; }
+.sound-opt { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.sound-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.switch { width: 38px; height: 22px; border-radius: 999px; background: rgba(244, 235, 221, 0.22); position: relative; transition: background 0.2s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); transition: transform 0.2s; }
+.sound-opt input:checked + .switch { background: var(--rose-deep); }
+.sound-opt input:checked + .switch::after { transform: translateX(16px); }
+.endcard { justify-content: center; background: rgba(6, 6, 9, 0.35); }
+.endcard .begin { padding-right: 26px; }
+
+/* ---------- control bar ---------- */
+#bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0)); display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px 10px; opacity: 0; transition: opacity 0.35s ease; }
+#stage.active #bar, #stage:not(.playing) #bar { opacity: 1; }
+#stage:not(.active).playing { cursor: none; }
+.ctl { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--paper); }
+.ctl:hover { background: rgba(244, 235, 221, 0.12); }
+.ctl svg { width: 22px; height: 22px; fill: currentColor; }
+#play[data-state="play"] .i-pause, #play[data-state="pause"] .i-play { display: none; }
+#sound[data-state="on"] .i-off, #sound[data-state="off"] .i-on { display: none; }
+#scrub { position: relative; min-width: 0; height: 32px; display: flex; align-items: center; }
+#track { position: relative; width: 100%; height: 26px; cursor: pointer; display: flex; align-items: center; touch-action: none; }
+#track::before { content: ""; position: absolute; left: 0; right: 0; height: 4px; border-radius: 4px; background: rgba(244, 235, 221, 0.22); }
+#fill { position: absolute; left: 0; right: 0; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--rose-deep), var(--rose)); transform-origin: left center; transform: scaleX(0); }
+#knob { position: absolute; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(255, 194, 61, 0.22); }
+#ticks .tick { position: absolute; top: 50%; width: 2px; height: 6px; margin: -3px 0 0 -1px; background: rgba(244, 235, 221, 0.45); border-radius: 1px; pointer-events: none; }
+#ticks .tick.major { height: 12px; margin-top: -6px; background: var(--paper); }
+#tip { position: absolute; bottom: 34px; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; border-radius: 8px; background: var(--glass); font-size: 0.82rem; color: var(--paper); pointer-events: none; backdrop-filter: blur(6px); }
+#time { font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--paper-dim); white-space: nowrap; }
+#chap { font-family: var(--font-display); font-style: italic; font-size: 1.12rem; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22ch; }
+@media (max-width: 640px) {
+  #bar { grid-template-columns: auto minmax(0, 1fr) auto auto; padding-top: 18px; }
+  #prev, #next, #chap { display: none; }
+  .begin { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .begin, #bar { transition: none; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="stage" class="active">
+  <canvas id="film" aria-label="Animated film: The Hikers, the Flower, and the Meaning We Create" role="img"></canvas>
+
+  <div id="poster" class="overlay">
+    <button id="begin" class="begin" type="button"><span class="disc" aria-hidden="true"></span>Begin the film</button>
+    <div class="meta">
+      <label class="sound-opt" for="withsound"><input id="withsound" type="checkbox" checked><span class="switch" aria-hidden="true"></span>Sound</label>
+      <span>About 8 minutes</span>
+      <span>Space to pause · ← → to skip</span>
+    </div>
+  </div>
+
+  <div id="endcard" class="overlay endcard" hidden>
+    <button id="again" class="begin" type="button"><span class="disc" aria-hidden="true"></span>Watch again</button>
+  </div>
+
+  <div id="bar">
+    <button id="play" class="ctl" type="button" aria-label="Play" data-state="play">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+    </button>
+    <button id="prev" class="ctl" type="button" aria-label="Previous scene"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM9.5 12 19 5v14z"/></svg></button>
+    <button id="next" class="ctl" type="button" aria-label="Next scene"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM14.5 12 5 19V5z"/></svg></button>
+    <div id="scrub">
+      <div id="track" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+        <div id="fill"></div><div id="ticks"></div><div id="knob"></div>
+      </div>
+      <div id="tip" hidden></div>
+    </div>
+    <span id="time">0:00 / 0:00</span>
+    <span id="chap"></span>
+    <button id="sound" class="ctl" type="button" aria-label="Mute" data-state="on">
+      <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm15.6 3 2.2-2.2-1.4-1.4-2.2 2.2-2.2-2.2-1.4 1.4 2.2 2.2-2.2 2.2 1.4 1.4 2.2-2.2 2.2 2.2 1.4-1.4z"/></svg>
+    </button>
+    <button id="fs" class="ctl" type="button" aria-label="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
+  </div>
+  <p class="sr" aria-live="polite">Press the Begin button to start the film. Space pauses, arrow keys skip.</p>
+</div>
+
+<!-- BUILD:SCRIPTS -->
+<script src="js/util.js"></script>
+<script src="js/art.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/engine.js"></script>
+<script src="scenes/00-title.js"></script>
+<script src="scenes/01-trail.js"></script>
+<script src="scenes/02-flower.js"></script>
+<script src="scenes/03-go-ahead.js"></script>
+<script src="scenes/04-flower-story.js"></script>
+<script src="scenes/05-complexity.js"></script>
+<script src="scenes/06-inner-voice.js"></script>
+<script src="scenes/07-return.js"></script>
+<script src="scenes/08-three-heads.js"></script>
+<script src="scenes/09-interlude.js"></script>
+<script src="scenes/10-word-spreads.js"></script>
+<script src="scenes/11-shop.js"></script>
+<script src="scenes/12-fading-smiles.js"></script>
+<script src="scenes/13-great-story.js"></script>
+<script src="scenes/14-reflection.js"></script>
+<!-- /BUILD:SCRIPTS -->
+<script>
+  (function () {
+    var hot = window.claude && window.claude.hot;
+    var start = function (data) { Film.boot(data || {}); };
+    if (hot && hot.ready) hot.ready(start); else start(hot && hot.data ? hot.data : {});
+  })();
+</script>
+</body>
+</html>
