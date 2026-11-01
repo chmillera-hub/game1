@@ -924,6 +924,60 @@ def draw_hand(ctx, ch, x, y, ang, light, lw, curl=0.2, spread=0.3, thumb=0.4, fl
     g.add_color_stop_rgba(1, *sh, 0.28)
     ctx.set_source(g); ctx.paint()
     ctx.restore()
+    if ch.get("decay", 0) > 0.5 and lod > 1:
+        _dead_hand(ctx, skin, fingers, palm_path, thumb_path, finger_path, palm_view, lw2)
+    ctx.restore()
+
+
+def _dead_hand(ctx, skin, fingers, palm_path, thumb_path, finger_path, palm_view, lw):
+    """Surface of a dead hand, drawn inside its silhouette: creases at every knuckle, cracked dry skin, rot mottling,
+    a scab, veins over the back, and broken nails with dirt packed under them."""
+    ctx.save()
+    ctx.new_path(); palm_path(); thumb_path()
+    for pts, r, c in fingers:
+        finger_path(pts, r)
+    ctx.clip()
+    crease = mul(skin, 0.38)
+    for (mx, my, rr, col, a) in ((14, -8, 7, "6f7d58", 0.3), (27, 7, 6, "5a4a5e", 0.28), (34, -3, 4, "8a7a52", 0.25), (7, 9, 6, "4a3a2a", 0.3),
+                                 (22, -12, 4, "3a2a20", 0.25)):
+        soft_dot(ctx, mx, my, rr, hexc(col), a)
+    for pts, r, c in fingers:
+        for j in (1, 2):
+            (ax_, ay_), (bx_, by_) = pts[j - 1], pts[j + 1]
+            jx, jy = pts[j]
+            d = math.hypot(bx_ - ax_, by_ - ay_) or 1
+            nx, ny = -(by_ - ay_) / d, (bx_ - ax_) / d
+            tx_, ty_ = (bx_ - ax_) / d, (by_ - ay_) / d
+            for o in (-0.9, 0.9):  # two wrinkles across each knuckle
+                c0 = (jx + tx_ * o - nx * r * 0.75, jy + ty_ * o - ny * r * 0.75)
+                c1 = (jx + tx_ * (o + 0.5) + nx * r * 0.75, jy + ty_ * (o + 0.5) + ny * r * 0.75)
+                soft_stroke(ctx, [c0, (jx + tx_ * (o + 0.6), jy + ty_ * (o + 0.6)), c1], crease, 0.55, lw * 0.55)
+        tx0, ty0 = pts[-1]
+        soft_dot(ctx, tx0, ty0, r * 0.9, hexc("3a2a20"), 0.35)  # grimy fingertips
+    if not palm_view:
+        for vein in (((5, -5), (16, -7), (28, -10), (35, -12)), ((5, 4), (18, 3), (26, 6), (35, 9)), ((16, -7), (22, -2), (30, 1))):
+            soft_stroke(ctx, list(vein), hexc("4a3a56"), 0.4, lw * 0.8)
+        soft_stroke(ctx, [(19, 1), (25, 4)], hexc("4e1e22"), 0.65, lw * 1.2)  # scab
+        soft_dot(ctx, 22, 2.5, 2.2, hexc("8a6a5a"), 0.4)
+        for k in range(7):  # dry, cracked skin
+            x = 8 + (k * 5.3) % 28
+            y = -10 + (k * 7.1) % 20
+            soft_stroke(ctx, [(x, y), (x + 2.5, y + 1.2)], crease, 0.35, lw * 0.5)
+        for pts, r, c in fingers:  # broken nails, dirt packed underneath
+            if c > 0.6:
+                continue
+            (ax_, ay_), (bx_, by_) = pts[-2], pts[-1]
+            d = math.hypot(bx_ - ax_, by_ - ay_) or 1
+            ang = math.atan2(by_ - ay_, bx_ - ax_)
+            ctx.save(); ctx.translate(bx_ - (bx_ - ax_) / d * r * 0.55, by_ - (by_ - ay_) / d * r * 0.55); ctx.rotate(ang)
+            ctx.new_path(); ctx.move_to(-r * 0.7, -r * 0.6); ctx.line_to(r * 0.5, -r * 0.55); ctx.line_to(r * 0.35, -r * 0.1)
+            ctx.line_to(r * 0.6, r * 0.25); ctx.line_to(r * 0.4, r * 0.6); ctx.line_to(-r * 0.7, r * 0.55); ctx.close_path()
+            rgba(ctx, hexc("857858"), 0.65); ctx.fill_preserve()
+            rgba(ctx, hexc("2a1e18"), 0.8); ctx.set_line_width(lw * 0.7); ctx.stroke()
+            ctx.restore()
+    else:
+        for pl in (((6, -9), (18, -4), (30, -7)), ((8, 2), (20, 0), (33, 3)), ((10, 9), (22, 11))):  # palm lines, ground with dirt
+            soft_stroke(ctx, list(pl), crease, 0.6, lw * 0.7)
     ctx.restore()
 
 
@@ -1302,6 +1356,8 @@ def _zfoot(ctx, ch, an, lift, light, lw, view, sgn):
     pants = ch["pants"]
     ax, ay = an
     inner = -sgn
+    ctx.save()  # 18% bigger about the ankle, and a longer foot
+    ctx.translate(ax, ay - 8); ctx.scale(1.18, 1.18); ctx.translate(-ax, -(ay - 8))
     if view == "back":
         def foot():
             smooth_closed(ctx, [(ax - 9, ay - 12), (ax + 9, ay - 12), (ax + 11, ay + 8 - lift * 4), (ax, ay + 15 - lift * 6),
@@ -1314,7 +1370,7 @@ def _zfoot(ctx, ch, an, lift, light, lw, view, sgn):
         fx_, fy_ = o * 0.78, 0.62  # heel-to-toe direction on screen
         px_, py_ = -fy_ * o, fx_ * o  # across the foot
         heel = (ax - fx_ * 4, ay + 4 + ly)
-        tip = (ax + fx_ * 24, ay + 4 + fy_ * 24 * 0.55 + ly)
+        tip = (ax + fx_ * 28, ay + 4 + fy_ * 28 * 0.55 + ly)
         toes = []
         for k, r in enumerate((3.9, 3.2, 2.9, 2.6, 2.2)):
             off = (k - 1.6) * 3.4
@@ -1330,6 +1386,10 @@ def _zfoot(ctx, ch, an, lift, light, lw, view, sgn):
             soft_dot(ctx, tx, ty + r * 0.3, r * 0.75, hexc("3a2a20"), 0.55)
         soft_dot(ctx, (heel[0] + tip[0]) / 2, (heel[1] + tip[1]) / 2, 11, hexc("4a3a2a"), 0.3)
         soft_stroke(ctx, [(ax - o * 4, ay - 2 + ly), (ax + fx_ * 10, ay + 4 + ly)], mix(ch["skin"], hexc("2a2420"), 0.5), 0.35, lw)
+        for k in range(3):  # tendons over the top of the foot
+            b0 = (ax + px_ * (k - 1) * 3, ay - 4 + ly)
+            soft_stroke(ctx, [b0, (tip[0] - fx_ * 8 + px_ * (k - 1) * 3.4, tip[1] - fy_ * 8 + py_ * (k - 1) * 3.4)], mul(skin, 0.55), 0.3, lw * 0.7)
+    ctx.restore()
     cuff = [(ax - 16, ay - 34), (ax + 16, ay - 34), (ax + 16, ay - 15), (ax + 10, ay - 8), (ax + 6, ay - 16), (ax + 1, ay - 6),
             (ax - 4, ay - 15), (ax - 9, ay - 7), (ax - 16, ay - 14)]
 

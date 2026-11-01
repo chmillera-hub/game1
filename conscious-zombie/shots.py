@@ -689,21 +689,31 @@ def witness_ots(ctx, t):
 
 @shot(t_reach, t_dust)
 def witness_reach(ctx, t):
+    """"Wait... where are you going?" - he steps toward one of them, hand out; it runs straight past. "I want to save you." -
+    he turns to one on the other side and reaches again; it doesn't see him either. They just keep running."""
     tv = L("v2")[0]
-    cam = frame_cam(0, ZC, -1, 3.6, 150, 330, sx=430, cam_y=1.45)
-    r = ramp(t, tv - 0.3, tv + 0.6)
-    gg = groggy(t, 1.0 - r, seed=1.3)
-    step = ramp(t, tv - 0.35, tv + 0.25)
-    gg["legs"]["liftL"] = max(gg["legs"]["liftL"], math.sin(step * math.pi) * 0.35)
-    gg["legs"]["dxL"] = lerp(gg["legs"]["dxL"], -26, step)
-    gg["lean"] -= 0.07 * r
-    gg["iroll"] += 0.03 * r
-    E = ZE(t, bi=0.85, bo=-0.25, gx=-0.55, gy=0.0, glow=0.3, tr=0.5, sm=-0.3)
-    pose = dict(E=E, yaw=-0.3, **gg,
-                armL=dict(el=(lerp(-74, -122, r), lerp(110, 78, r)), wr=(lerp(-62, -212, r), lerp(200, 44, r)),
-                          hand_ang=lerp(1.6, math.pi - 0.15, r), curl=lerp(0.35, 0.15, r), spread=0.55, thumb=0.35, flip=False),
-                armR=dict(a1=8, a2=4, curl=0.4, flip=True))
-    run = runners(cam, t, t_reach, ((1.3, 5.6),), seed=560)
+    tw_ = word_t("v2", "I want")
+    cam = frame_cam(0, ZC, -1, 4.0, 138, 330, cam_y=1.45)
+    rA = ramp(t, tv - 0.3, tv + 0.45) * (1 - ramp(t, tw_ - 0.55, tw_ - 0.1))   # toward the one on his right (screen left)
+    rB = ramp(t, tw_ - 0.35, tw_ + 0.4) * (1 - ramp(t, t_dust - 0.7, t_dust - 0.1))  # then the one on the other side
+    gg = groggy(t, 1.0 - max(rA, rB), seed=1.3)
+    sA = ramp(t, tv - 0.35, tv + 0.25)
+    sB = ramp(t, tw_ - 0.4, tw_ + 0.2)
+    gg["legs"]["liftL"] = max(gg["legs"]["liftL"], math.sin(sA * math.pi) * 0.35)
+    gg["legs"]["dxL"] = lerp(gg["legs"]["dxL"], -26, sA * (1 - sB))
+    gg["legs"]["liftR"] = max(gg["legs"]["liftR"], math.sin(sB * math.pi) * 0.35)
+    gg["legs"]["dxR"] = lerp(gg["legs"]["dxR"], 26, sB)
+    gg["lean"] += -0.07 * rA + 0.07 * rB
+    gg["chest_bend"] += -0.06 * rA + 0.06 * rB
+    E = ZE(t, bi=0.88, bo=-0.28, gx=-0.6 * rA + 0.6 * rB, gy=0.0, glow=0.3, tr=0.5, sm=-0.32, pupil=0.48)
+    pose = dict(E=E, yaw=-0.3 * rA + 0.3 * rB, **gg,
+                armL=dict(el=(lerp(-74, -122, rA), lerp(110, 78, rA)), wr=(lerp(-62, -212, rA), lerp(200, 44, rA)),
+                          hand_ang=lerp(1.6, math.pi - 0.15, rA), curl=lerp(0.35, 0.15, rA), spread=0.55, thumb=0.35, flip=False),
+                armR=dict(el=(lerp(74, 122, rB), lerp(110, 78, rB)), wr=(lerp(62, 212, rB), lerp(200, 44, rB)),
+                          hand_ang=lerp(1.54, 0.15, rB), curl=lerp(0.35, 0.15, rB), spread=0.55, thumb=0.35, flip=True))
+    dA = 4.0 + 3.0 * (tv + 0.55 - t_reach)   # each passes him just as he reaches for it
+    dB = 4.0 + 3.0 * (tw_ + 0.45 - t_reach)
+    run = runners(cam, t, t_reach, ((0.62, dA),), seed=560) + runners(cam, t, t_reach, ((-0.62, dB),), seed=566)  # just past his fingertips
     ext(ctx, t, cam, 0.35, east=True, stars=0.35, extras=[zitem(cam, t, pose)] + run)
 
 
@@ -711,7 +721,7 @@ def witness_reach(ctx, t):
 def witness_dust(ctx, t):
     u = (t - t_dust) / (t_react - t_dust)
     cam = Cam(x=-2 + u * 2, y=2.2, z=WALL - 95 + u * 8, d=1, f=950, hy=600)
-    td = word_t("v3", "destroyed")
+    td = word_t("v3", "guns")
     hits = staged_hit(cam, t, td - 0.2, -0.8, WALL - 78, seed=611) + staged_hit(cam, t, td + 0.9, -3.6, WALL - 74, seed=612) + \
         staged_hit(cam, t, td + 2.0, 1.6, WALL - 70, seed=613, quad=True)
     ext(ctx, t, cam, 0.4, extras=hits)

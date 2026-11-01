@@ -402,8 +402,8 @@ def guns(t):
     """The guns at full strength only when we first meet them; about half when we watch them fire later on;
     well back otherwise, so the words always come through."""
     if SC["open"][0] <= t <= SC["horde"][1] + 0.5:
-        return 1.0
-    return 0.55 if any(a - 0.3 <= t <= b + 0.3 for a, b in BATTLE) else 0.3
+        return 0.8
+    return 0.44 if any(a - 0.3 <= t <= b + 0.3 for a, b in BATTLE) else 0.24  # (all 20% down again)
 
 
 t = 0.0
@@ -438,7 +438,7 @@ for tc in (word_t("h3", "Humanity") + 0.4, word_t("h3", "tearing") + 0.9):
     cr = np.sign(np.sin(2 * np.pi * np.cumsum(f) / SR)) * (0.5 + 0.5 * np.abs(np.sin(2 * np.pi * 23 * tt)))
     add(sfx, tc, bp(cr, 300, 2500) * np.sin(np.pi * tt / tt[-1]) ** 2, p=-0.1, g=0.035)
 # staged close-range hits (louder, nearer)
-_td = word_t("v3", "destroyed")
+_td = word_t("v3", "guns")
 for tb, X in ((word_t("h3", "tearing"), -0.2), (word_t("h3", "dust") - 0.1, -0.5), (word_t("h3", "dust") + 1.1, 0.3),
               (_td - 0.2, -0.1), (_td + 0.9, -0.4), (_td + 2.0, 0.3)):
     n = int(0.5 * SR)

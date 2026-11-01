@@ -44,8 +44,8 @@ SCENES = [
     ("witness", [
         ("v1", "N", "The conscious zombie's brothers and sisters, who looked like him, seemed compelled to run through the battlefield.", 0.4, 0.5),
         ("v2", "Z", "Wait... where are you going? I want to ^save you.", 0.3, 0.8),
-        ("v3", "N", "The conscious zombie saw them being destroyed by the Fortress of Humanity. The conscious zombie saw their _suffering... even though they were not conscious.", 0.4, 0.7),
-        ("v4", "N", "And then he felt _sorrow, because now this conscious zombie could see the _suffering.", 0.5, 0.6),
+        ("v3", "N", "The conscious zombie saw them running into the guns of the Fortress of Humanity. The conscious zombie saw their _suffering, and the destruction that was being done to them.", 0.4, 0.7),
+        ("v4", "N", "And then he felt _sorrow, because now this conscious zombie could see the _suffering around him.", 0.5, 0.6),
         ("v5", "Z", "This hurts... this _loneliness... this destruction... it hurts.", 0.3, 0.8),
         ("v6", "N", "Now that this soul-infused zombie was conscious, it was a ^witness. A witness to the _suffering in its world.", 0.4, 1.0),
     ]),
