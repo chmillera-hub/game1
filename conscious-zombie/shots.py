@@ -936,6 +936,86 @@ def knees_eyes(ctx, t):
     rig.draw_character(ctx, rig.ZOMBIE, P, LF1, t)
 
 
+def vision_bubble(ctx, t, t0, t1, head, scene):
+    """A thought cloud holding a little imagined scene (clipped inside the cloud), puffs rising from his head."""
+    pop = ramp(t, t0 - 0.1, t0 + 0.3)
+    a = pop * (1 - ramp(t, t1, t1 + 0.35))
+    if a <= 0:
+        return
+    k = 1 + 0.1 * math.sin(clamp((t - t0 + 0.1) / 0.4) * math.pi) * (1 - ramp(t, t0 + 0.3, t0 + 0.45))
+    cx, cy, rw, rh = W * 0.6, 138, 215 * pop * k, 100 * pop * k
+    ink, fill = hexc("2a2430"), hexc("f6f2ea")
+    for q, (u, fr) in enumerate(((0.85, 15), (0.55, 11), (0.25, 7))):  # puffs rising from his head
+        if t < t0 - 0.1 + (2 - q) * 0.08:
+            continue
+        x, y = lerp(head[0], cx - rw * 0.2, u), lerp(head[1], cy + rh * 0.95, u)
+        ctx.new_path(); ctx.arc(x, y, fr, 0, 2 * math.pi)
+        rgba(ctx, fill, 0.96 * a); ctx.fill_preserve(); rgba(ctx, ink, 0.9 * a); ctx.set_line_width(3); ctx.stroke()
+    lobes = 11
+    pts = [(cx + math.cos(i / lobes * 2 * math.pi + 0.1 * math.sin(t * 1.3 + i)) * rw,
+            cy + math.sin(i / lobes * 2 * math.pi + 0.1 * math.sin(t * 1.3 + i)) * rh) for i in range(lobes)]
+
+    def cloud():
+        ctx.new_path()
+        for i in range(lobes):
+            p0, p1 = pts[i], pts[(i + 1) % lobes]
+            mx, my = (p0[0] + p1[0]) / 2 - cx, (p0[1] + p1[1]) / 2 - cy
+            n = math.hypot(mx, my) or 1
+            b = 0.28 * math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+            if i == 0:
+                ctx.move_to(*p0)
+            ctx.curve_to(p0[0] + mx / n * b, p0[1] + my / n * b, p1[0] + mx / n * b, p1[1] + my / n * b, *p1)
+        ctx.close_path()
+    cloud(); rgba(ctx, fill, 0.97 * a); ctx.fill()
+    ctx.save()
+    cloud(); ctx.clip()
+    ctx.push_group()
+    scene(ctx, cx, cy, rw * 1.25, rh * 1.25)  # the imagined place fills the whole cloud
+    ctx.pop_group_to_source(); ctx.paint_with_alpha(a)
+    ctx.restore()
+    cloud(); rgba(ctx, ink, 0.9 * a); ctx.set_line_width(3.5); ctx.stroke()
+
+
+def field_vision(ctx, t, cx, cy, rw, rh, tf, tth):
+    """What he imagines: the battlefield turning green - shoots everywhere, then flowers, under a warm sky."""
+    g = cairo.LinearGradient(0, cy - rh, 0, cy + rh)
+    g.add_color_stop_rgb(0, *hexc("7a6a8a"))
+    g.add_color_stop_rgb(0.5, *mix(hexc("e8a070"), hexc("f4d090"), ramp(t, tf, tth + 1.0)))
+    g.add_color_stop_rgb(1, *hexc("5a4030"))
+    ctx.set_source(g); ctx.rectangle(cx - rw, cy - rh, 2 * rw, 2 * rh); ctx.fill()
+    hy_ = cy + rh * 0.08
+    soft_dot(ctx, cx + rw * 0.3, hy_, rh * 0.9, hexc("ffe0a0"), 0.35 + 0.3 * ramp(t, tth, tth + 1.0))  # a sun coming up
+    ctx.new_path(); ctx.rectangle(cx - rw, hy_, 2 * rw, rh * 2)
+    rgba(ctx, mix(hexc("5a4a3a"), hexc("4a6a3a"), 0.6 * ramp(t, tf + 0.5, tth + 1.2))); ctx.fill()  # dead earth greening
+    tower = [(cx - rw * 0.75, hy_), (cx - rw * 0.75, hy_ - rh * 0.25), (cx - rw * 0.62, hy_ - rh * 0.25), (cx - rw * 0.62, hy_ - rh * 0.18),
+             (cx - rw * 0.3, hy_ - rh * 0.18), (cx - rw * 0.3, hy_)]  # the fortress, small on the horizon
+    ctx.new_path(); ctx.move_to(*tower[0])
+    for p_ in tower[1:]:
+        ctx.line_to(*p_)
+    ctx.close_path(); rgba(ctx, hexc("4a4048"), 0.8); ctx.fill()
+    for i in range(26):  # shoots spring up row by row, nearer ones bigger; some open into flowers
+        u = hsh(i, 231)
+        row = hsh(i, 232)
+        x = cx - rw + u * 2 * rw
+        y = hy_ + rh * (0.08 + 0.85 * row)
+        k = (0.35 + 0.9 * row) * 1.7
+        gr = ease(ramp(t, tf - 0.2 + 1.6 * hsh(i, 233), tf + 0.8 + 1.6 * hsh(i, 233)))
+        if gr <= 0:
+            continue
+        h = 16 * k * gr
+        soft_stroke(ctx, [(x, y), (x + 1.5 * k, y - h * 0.5), (x, y - h)], hexc("3e7a34"), 1.0, max(1.2, 2.2 * k))
+        for sg in (1, -1):
+            ctx.save(); ctx.translate(x, y - h); ctx.rotate(-sg * 0.6); ctx.translate(sg * 4 * k * gr, 0); ctx.scale(5 * k * gr, 2 * k * gr)
+            ctx.new_path(); ctx.arc(0, 0, 1, 0, 2 * math.pi); rgba(ctx, hexc("6cbf52")); ctx.fill(); ctx.restore()
+        bl = ramp(t, tth + 0.1 + 0.8 * hsh(i, 234), tth + 0.7 + 0.8 * hsh(i, 234)) if hsh(i, 235) < 0.5 else 0.0
+        if bl > 0:
+            col = (hexc("fff4d8"), hexc("ffd040"), hexc("f08aa0"))[i % 3]
+            for q in range(5):
+                a_ = q * 2 * math.pi / 5 + i
+                soft_dot(ctx, x + math.cos(a_) * 3 * k * bl, y - h - 2 * k + math.sin(a_) * 3 * k * bl, 2.2 * k * bl, col, 0.95)
+            soft_dot(ctx, x, y - h - 2 * k, 1.6 * k * bl, hexc("f0a020"), 1.0)
+
+
 def sprouts(cam, t, t0, t1, n=11, seed=40):
     """Small green shoots pushing up through the dead ground around him (flourishing, thriving)."""
     out = []
@@ -1002,8 +1082,8 @@ def knees_reflect(ctx, t):
     w1, w2, w3, w4 = wt, wc, ws, wo  # reuse the expression mix below: reflection-like look at the hands, chin, chest, outward
     glow = 0.2 + 0.25 * w2 + 0.3 * w3 + 0.55 * w5 + 0.25 * ramp(t, tth, tth + 0.8)
     smile = 0.3 * w5 + 0.1 * w4
-    gx = -0.35 * w2 - 0.55 * w4 + 0.05 * w5
-    gy = 0.6 * w1 - 0.25 * w2 + 0.25 * w3 + 0.1 * w4 + 0.45 * w5 * (1 - ramp(t, tp - 0.2, tp + 0.4) * 0.6)
+    gx = -0.35 * w2 - 0.55 * w4 + 0.3 * w5
+    gy = 0.6 * w1 - 0.25 * w2 + 0.25 * w3 + 0.1 * w4 - 0.4 * w5
     tilt = math.sin(clamp((t - tp + 0.1) / 0.9) * math.pi)
     E = ZE(t, bi=0.75 - 0.3 * w2 - 0.45 * w5, bo=-0.15 * w2 + 0.1 * w5, lid=0.2 + 0.15 * w1, gx=gx, gy=gy, glow=glow, sm=-0.2 * (1 - w5) + smile,
            tr=0.2 * (1 - w5), pupil=0.46, low=0.1)
@@ -1022,7 +1102,7 @@ def knees_reflect(ctx, t):
                 lerp(a[2], b[2], f), lerp(a[3], b[3], f))
     (elR, wrR, haR, cuR), (elL, wrL, haL, cuL) = blend(poseR), blend(poseL)
     palm_up = 2.5 < st < 3.5
-    P = dict(E=E, pitch=0.25 * w1 - 0.05 * w2 + 0.1 * w3 + 0.18 * w5 + 0.08 * tilt, yaw=0.08 * w2 - 0.25 * w4, roll=0.06 * w2 + 0.07 * tilt,
+    P = dict(E=E, pitch=0.25 * w1 - 0.05 * w2 + 0.1 * w3 - 0.1 * w5 + 0.08 * tilt, yaw=0.08 * w2 - 0.25 * w4, roll=0.06 * w2 + 0.07 * tilt,
              legs=dict(mode="kneel", k=1), breath=1.0,
              armR=dict(el=elR, wr=wrR, hand_ang=haR, curl=cuR, spread=0.35, thumb=0.6 if 3.5 < st < 4.5 else 0.4, hfs=0.6 if palm_up else 1.0,
                        flip=not palm_up, palm=palm_up),
@@ -1031,9 +1111,11 @@ def knees_reflect(ctx, t):
 
     def halo(ctx2):
         x, y, s_ = place(cam, 0, ZC, 1)
-        soft_dot(ctx2, x - 10 * s_, y + 70 * s_, 520 * s_, hexc("ffd890"), 0.12 + 0.3 * w5)
+        soft_dot(ctx2, x - 10 * s_, y + 70 * s_, 520 * s_, hexc("ffd890"), 0.12 + 0.06 * w5)
     ext(ctx, t, cam, 0.85, east=True, stars=0.6,
-        extras=[(cam.depth(ZC) + 0.02, halo), zitem(cam, t, P, kneel=1)] + sprouts(cam, t, tf - 0.4, tth + 0.4))
+        extras=[(cam.depth(ZC) + 0.02, halo), zitem(cam, t, P, kneel=1)])
+    head = (W / 2 + 55, 300)  # just above his hair (the head is framed at y=400)
+    vision_bubble(ctx, t, tf - 0.7, k1_ - 0.2, head, lambda c, cx, cy, rw, rh: field_vision(c, t, cx, cy, rw, rh, tf, tth))
 
 
 # ---------------------------------------------------------------- SKY

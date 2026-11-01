@@ -60,7 +60,7 @@ SCENES = [
     ("sky", [
         ("y1", "Z", "Is anyone there?", 0.8, 2.0),
         ("y2", "N", "But there is no answer from the heavens. Because the heavens gave their answer when they sent the ^soul, and put it into a body of flesh.", 0.2, 0.6),
-        ("y3", "N", "And now that body of flesh is looking to find an answer to its _suffering.", 0.3, 0.8),
+        ("y3", "N", "And now that body of flesh is looking to find an answer to the _suffering it sees around it.", 0.3, 0.8),
         ("y4", "N", "Maybe heaven's answer and heaven's question were answering the same thing... finding ways to ^thrive, using whatever power you have through your ^existence and conscious awareness, could be the meaning needed to help guide you to create more plans and actions for your ^life.", 0.4, 0.9),
         ("y5", "N", "And maybe, if the world knew more, maybe the suffering would never have happened, because it would have been solved already. But your own ability to witness, on a deep level, might give you the details you need to ^help them.", 0.3, 0.8),
         ("y6", "N", "What if heaven sent the soul into a kind of _hell... not to keep going on the highway towards hell, but to better know what to avoid?", 0.4, 0.6),
