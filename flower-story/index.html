@@ -24,6 +24,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; background: var(--ink); color: var(--paper); font-family: var(--font-ui); overflow: hidden; }
 #stage { position: fixed; inset: 0; display: grid; place-items: center; background: var(--ink); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 #film { display: block; background: #000; }
@@ -31,10 +32,12 @@ button { font: inherit; color: inherit; }
 button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { outline: 2px solid var(--gold); outline-offset: 3px; }
 
 /* ---------- poster / start ---------- */
-.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 18px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(9vh + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(6, 6, 9, 0.78) 0%, rgba(6, 6, 9, 0) 46%); text-align: center; }
-.begin { display: inline-flex; align-items: center; gap: 14px; padding: 14px 30px 14px 16px; border: 0; border-radius: 999px; background: var(--paper); color: #1a1218; font-weight: 800; font-size: 1.15rem; letter-spacing: 0.02em; cursor: pointer; box-shadow: 0 12px 40px rgba(212, 24, 94, 0.35); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 max(16px, env(safe-area-inset-right, 0px)) var(--poster-pb, 9vh) max(16px, env(safe-area-inset-left, 0px)); text-align: center; pointer-events: none; }
+.overlay > * { pointer-events: auto; }
+.poster-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 26px; }
+.begin { display: inline-flex; align-items: center; gap: 14px; padding: 9px 26px 9px 10px; border: 0; border-radius: 999px; background: var(--paper); color: #1a1218; font-weight: 800; font-size: 1.15rem; letter-spacing: 0.02em; cursor: pointer; box-shadow: 0 12px 40px rgba(212, 24, 94, 0.35); transition: transform 0.25s ease, box-shadow 0.25s ease; }
 .begin:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(212, 24, 94, 0.5); }
-.begin .disc { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, var(--gold) 0 26%, var(--rose-deep) 27% 100%); display: grid; place-items: center; }
+.begin .disc { width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, var(--gold) 0 26%, var(--rose-deep) 27% 100%); display: grid; place-items: center; }
 .begin .disc::after { content: ""; margin-left: 4px; border-left: 13px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
 .meta { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 22px; font-size: 0.92rem; color: var(--paper-dim); letter-spacing: 0.03em; }
 .sound-opt { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -43,12 +46,13 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
 .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); transition: transform 0.2s; }
 .sound-opt input:checked + .switch { background: var(--rose-deep); }
 .sound-opt input:checked + .switch::after { transform: translateX(16px); }
-.endcard { justify-content: center; background: rgba(6, 6, 9, 0.35); }
+.endcard { justify-content: center; padding-bottom: 0; background: rgba(6, 6, 9, 0.35); pointer-events: auto; }
 .endcard .begin { padding-right: 26px; }
 
 /* ---------- control bar ---------- */
-#bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0)); display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px 10px; opacity: 0; transition: opacity 0.35s ease; }
+#bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0)); display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 6px 10px; opacity: 0; transition: opacity 0.35s ease; }
 #stage.active #bar, #stage:not(.playing) #bar { opacity: 1; }
+#stage:not(.started) #bar { display: none; }
 #stage:not(.active).playing { cursor: none; }
 .ctl { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--paper); }
 .ctl:hover { background: rgba(244, 235, 221, 0.12); }
@@ -66,7 +70,7 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
 #time { font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--paper-dim); white-space: nowrap; }
 #chap { font-family: var(--font-display); font-style: italic; font-size: 1.12rem; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22ch; }
 @media (max-width: 640px) {
-  #bar { grid-template-columns: auto minmax(0, 1fr) auto auto; padding-top: 18px; }
+  #bar { grid-template-columns: auto minmax(0, 1fr) auto auto auto; padding-top: 18px; }
   #prev, #next, #chap { display: none; }
   .begin { font-size: 1rem; }
 }
@@ -79,11 +83,12 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
   <canvas id="film" aria-label="Animated film: The Hikers, the Flower, and the Meaning We Create" role="img"></canvas>
 
   <div id="poster" class="overlay">
-    <button id="begin" class="begin" type="button"><span class="disc" aria-hidden="true"></span>Begin the film</button>
-    <div class="meta">
-      <label class="sound-opt" for="withsound"><input id="withsound" type="checkbox" checked><span class="switch" aria-hidden="true"></span>Sound</label>
-      <span>About 8 minutes</span>
-      <span>Space to pause · ← → to skip</span>
+    <div class="poster-row">
+      <button id="begin" class="begin" type="button"><span class="disc" aria-hidden="true"></span>Begin the film</button>
+      <div class="meta">
+        <label class="sound-opt" for="withsound"><input id="withsound" type="checkbox" checked><span class="switch" aria-hidden="true"></span>Sound</label>
+        <span id="runtime">About 8 minutes</span>
+      </div>
     </div>
   </div>
 

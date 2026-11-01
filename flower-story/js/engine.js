@@ -75,6 +75,14 @@
     k = pw / W;
     Art._base = new DOMMatrix([k, 0, 0, k, 0, 0]);
     Film.dirty = true;
+    // seat the start controls inside the film's bottom letterbox bar (or just below the film)
+    if (stage) {
+      const below = Math.max(0, (vh - cssH) / 2);
+      const bar = (cssH * 139) / 1080, content = 60;
+      let pb = below + (bar - content) / 2;
+      if (bar < content + 6) pb = below >= content + 32 ? below - content - 20 : 12;
+      stage.style.setProperty('--poster-pb', Math.round(pb) + 'px');
+    }
   }
 
   /* ---------------- rendering ---------------- */
@@ -196,6 +204,8 @@
     if (Film.t >= Film.total - 0.05) Film.seek(0);
     Film.playing = true;
     Film.started = true;
+    const st = document.getElementById('stage');
+    if (st) st.classList.add('started');
     requestWake();
     ui.sync();
   };
@@ -276,6 +286,9 @@
     };
     ui.ended = () => { endCard.hidden = false; showBar(); ui.sync(); };
     track.setAttribute('aria-valuemax', String(Math.floor(Film.total)));
+    const rt = $('runtime');
+    const mins = Math.max(1, Math.round(Film.total / 60));
+    if (rt) rt.textContent = 'About ' + mins + (mins === 1 ? ' minute' : ' minutes');
 
     // idle-hide controls
     let idleTimer = 0;
@@ -407,6 +420,7 @@
       Film.seek(T0);
     } else if (restored && typeof restored.t === 'number' && restored.t > 0) {
       Film.started = true;
+      document.getElementById('stage').classList.add('started');
       const poster = document.getElementById('poster');
       if (poster) poster.hidden = true;
       Film.seek(restored.t);
