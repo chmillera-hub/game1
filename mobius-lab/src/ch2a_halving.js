@@ -150,7 +150,7 @@
       ch.scene.add(slit, sprite); cutObjs.push(slit, sprite); lines.push({ slit, sprite, mid });
     }
     st.cut = { t: 0, dur: st.k === 0 ? 2.0 : 2.4, lines };
-    hud.right.textContent = m === 1 ? 'Scissors: down the middle' : `${m} pairs of scissors, one per piece`;
+    hud.right.textContent = m === 1 ? 'Scissors: along the middle line' : `${m} pairs of scissors, one per piece`;
     syncButtons();
     return true;
   }
@@ -179,7 +179,7 @@
     if (!btn.cut) return;
     const busy = !!(st.cut || st.spread);
     btn.cut.disabled = busy || st.k >= MAXK;
-    btn.cut.textContent = st.k >= MAXK ? 'Five cuts: the end of this run' : st.k === 0 ? '✂ Cut it in half' : '✂ Cut every piece in half';
+    btn.cut.textContent = st.k >= MAXK ? 'Five cuts: the end of this run' : st.k === 0 ? '✂ Cut along the middle line' : '✂ Cut every piece along its middle';
     btn.back.disabled = busy || st.k === 0;
     btn.play.textContent = st.play ? '■ Stop' : '▶ Make all five cuts';
     btn.play.disabled = !st.play && st.k >= MAXK;
@@ -232,7 +232,7 @@
   }
   function summary() {
     const k = st.k, m = count(k), pairs = m * (m - 1) / 2;
-    if (k === 0) return 'One Möbius strip: one side, one edge, one half-twist. Press the button to cut it down its middle.';
+    if (k === 0) return 'One Möbius strip: one side, one edge, one half-twist. Press the button to cut it along its middle line.';
     if (k === 1) return 'One long loop, twice as long as the Möbius strip, two-sided, with 2 full twists. The Möbius strip is gone for good: no later cut brings back a one-sided piece.';
     let s = `${m} loops. Each is twice as long as the Möbius strip with 2 full twists, and every pair of them is linked twice: ${pairs} linked pairs in all. The cut doubled the pieces and changed nothing else about them.`;
     if (k === MAXK) s += ' Real paper would be under a millimeter wide by now, which is why the strips here are thickened.';
@@ -273,7 +273,7 @@
 
     const c = section.querySelector('[data-controls]');
     const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
-    btn.cut = Lab.ui.button(row, { label: '✂ Cut it in half', id: 'h-cut', primary: true, onClick: () => { st.play = false; startCut(); syncButtons(); } });
+    btn.cut = Lab.ui.button(row, { label: '✂ Cut along the middle line', id: 'h-cut', primary: true, onClick: () => { st.play = false; startCut(); syncButtons(); } });
     btn.back = Lab.ui.button(row, { label: 'Undo a cut', id: 'h-back', onClick: () => { st.play = false; setLevel(Math.max(0, st.k - 1)); } });
     btn.play = Lab.ui.button(row, { label: '▶ Make all five cuts', id: 'h-play', onClick: () => { st.play = !st.play; st.playT = 0.3; if (st.play && st.k >= MAXK) setLevel(0); syncButtons(); } });
     Lab.ui.button(row, { label: 'Start over', id: 'h-reset', onClick: () => { st.play = false; setLevel(0); } });

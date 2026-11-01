@@ -630,7 +630,7 @@ table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600;
   <div class="ch-head">
     <p class="eyebrow">Experiment 3 · cut, and cut again</p>
     <h2 id="h-halving">Keep Halving</h2>
-    <p class="lede">Cut a Möbius strip in half, then cut every piece in half, again and again: five cuts in all. The strips soon get too thin for real scissors, so here they're drawn thicker, as you suggested.</p>
+    <p class="lede">Cut a Möbius strip along its middle line, then cut every piece along its middle line, again and again: five cuts in all. The strips soon get too thin for real scissors, so here they're drawn thicker, as you suggested.</p>
   </div>
   <div class="ch-body">
     <div class="stage-col">
@@ -647,7 +647,7 @@ table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600;
       </div>
       <div class="note">
         <h3>What you're seeing</h3>
-        <p>Each press cuts every piece down its middle at once. The first cut turns the Möbius strip into one long loop. After that, every cut doubles the number of pieces: 1, 2, 4, 8, 16.</p>
+        <p>Each press cuts every piece along its middle line at once. The first cut turns the Möbius strip into a single long loop. After that, every cut doubles the number of pieces: 2, 4, 8, 16.</p>
         <p><b>Pulled apart</b> lays the long loop out as a ring and spreads its pieces across the ring's width, so each one shows. <b>Inside the original strip</b> shows where each piece really sits: every piece is two stripes of the Möbius strip, one on each side of the first cut, which is why each one is twice as long.</p>
         <p>Show one piece, or two, to follow them. Each is its own loop with 2 full twists, and any two wind around each other twice.</p>
       </div>
@@ -995,7 +995,7 @@ table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600;
             <tr><td>Infinity symbol with ½ cut = two linked infinity symbols</td><td><span class="tag real">REAL</span></td><td>The long loop, cut again, gives two loops just like it, linked twice. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
             <tr><td>Recycling symbol with ½ cut = 1 piece</td><td><span class="tag real">REAL</span></td><td>Reading it as 3 half-twists: one piece, tied in a trefoil knot. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
             <tr><td>That knotted “|X|” loop cut ½ = 1 piece</td><td><span class="tag stretch">FIX</span></td><td>Two pieces, both trefoils, linked 6×. Any two-sided loop cut down its middle falls in two. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
-            <tr><td>Strips that divide again and again</td><td><span class="tag real">REAL</span></td><td>Every cut doubles the pieces: 1, 2, 4, 8, 16. Every piece keeps 2 full twists and every pair stays linked twice. <a href="#halving" data-goto="halving">Exp. 3</a></td></tr>
+            <tr><td>Strips that divide again and again</td><td><span class="tag real">REAL</span></td><td>The first cut along the middle line leaves a single long loop; every cut after that doubles the pieces: 2, 4, 8, 16. Every piece keeps 2 full twists and every pair stays linked twice. <a href="#halving" data-goto="halving">Exp. 3</a></td></tr>
             <tr><td>Möbius + |x| cross, cut the Möbius: infinity + arrow</td><td><span class="tag real">REAL</span></td><td>A long two-sided loop with the cut-open plain loop as a strap. Taped together, the whole thing is still one-sided. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
             <tr><td>Then cut the other loop: a skull in a box</td><td><span class="tag real">REAL</span></td><td>The box part: four strips taped into one closed band, like the classic square. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
             <tr><td>Butterfly + half cut: the Möbius didn't stay together, and the tape holds the sides together</td><td><span class="tag real">REAL</span></td><td>Two two-sided loops, twice as long, not linked, held together only by the tape. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
@@ -1026,7 +1026,7 @@ table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600;
         <ul>
           <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot. Cut it down the middle again: two trefoils, linked.</li>
           <li>1 half-twist, cut at ⅓: a thin Möbius strip linked through a loop twice as long.</li>
-          <li>A Möbius strip cut in half three times (start 2 inches wide or more): four loops, every pair linked twice.</li>
+          <li>A Möbius strip cut along its middle line three times (start 2 inches wide or more): four loops, every pair linked twice.</li>
           <li>2 half-twists, cut at ⅓ and ⅔: three loops, every pair linked once.</li>
           <li>A Möbius loop taped crosswise to a plain loop. Cut only the Möbius, then color one face with a marker without crossing an edge. You'll end up coloring both faces.</li>
           <li>Two Möbius loops twisted the same way, taped crosswise, both cut: two separate closed bands that come apart.</li>
@@ -2917,7 +2917,7 @@ const Lab = (() => {
       ch.scene.add(slit, sprite); cutObjs.push(slit, sprite); lines.push({ slit, sprite, mid });
     }
     st.cut = { t: 0, dur: st.k === 0 ? 2.0 : 2.4, lines };
-    hud.right.textContent = m === 1 ? 'Scissors: down the middle' : `${m} pairs of scissors, one per piece`;
+    hud.right.textContent = m === 1 ? 'Scissors: along the middle line' : `${m} pairs of scissors, one per piece`;
     syncButtons();
     return true;
   }
@@ -2946,7 +2946,7 @@ const Lab = (() => {
     if (!btn.cut) return;
     const busy = !!(st.cut || st.spread);
     btn.cut.disabled = busy || st.k >= MAXK;
-    btn.cut.textContent = st.k >= MAXK ? 'Five cuts: the end of this run' : st.k === 0 ? '✂ Cut it in half' : '✂ Cut every piece in half';
+    btn.cut.textContent = st.k >= MAXK ? 'Five cuts: the end of this run' : st.k === 0 ? '✂ Cut along the middle line' : '✂ Cut every piece along its middle';
     btn.back.disabled = busy || st.k === 0;
     btn.play.textContent = st.play ? '■ Stop' : '▶ Make all five cuts';
     btn.play.disabled = !st.play && st.k >= MAXK;
@@ -2999,7 +2999,7 @@ const Lab = (() => {
   }
   function summary() {
     const k = st.k, m = count(k), pairs = m * (m - 1) / 2;
-    if (k === 0) return 'One Möbius strip: one side, one edge, one half-twist. Press the button to cut it down its middle.';
+    if (k === 0) return 'One Möbius strip: one side, one edge, one half-twist. Press the button to cut it along its middle line.';
     if (k === 1) return 'One long loop, twice as long as the Möbius strip, two-sided, with 2 full twists. The Möbius strip is gone for good: no later cut brings back a one-sided piece.';
     let s = `${m} loops. Each is twice as long as the Möbius strip with 2 full twists, and every pair of them is linked twice: ${pairs} linked pairs in all. The cut doubled the pieces and changed nothing else about them.`;
     if (k === MAXK) s += ' Real paper would be under a millimeter wide by now, which is why the strips here are thickened.';
@@ -3040,7 +3040,7 @@ const Lab = (() => {
 
     const c = section.querySelector('[data-controls]');
     const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
-    btn.cut = Lab.ui.button(row, { label: '✂ Cut it in half', id: 'h-cut', primary: true, onClick: () => { st.play = false; startCut(); syncButtons(); } });
+    btn.cut = Lab.ui.button(row, { label: '✂ Cut along the middle line', id: 'h-cut', primary: true, onClick: () => { st.play = false; startCut(); syncButtons(); } });
     btn.back = Lab.ui.button(row, { label: 'Undo a cut', id: 'h-back', onClick: () => { st.play = false; setLevel(Math.max(0, st.k - 1)); } });
     btn.play = Lab.ui.button(row, { label: '▶ Make all five cuts', id: 'h-play', onClick: () => { st.play = !st.play; st.playT = 0.3; if (st.play && st.k >= MAXK) setLevel(0); syncButtons(); } });
     Lab.ui.button(row, { label: 'Start over', id: 'h-reset', onClick: () => { st.play = false; setLevel(0); } });
