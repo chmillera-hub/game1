@@ -438,6 +438,10 @@ canvas.plot.short { height: 150px; }
 .nb-res { grid-column: 1 / -1; margin: 4px 0 0; font-size: .875rem; }
 .nb-res:empty { display: none; }
 
+/* ---------- Keep halving: the pattern table ---------- */
+table.pieces.halving td:nth-child(-n+2), table.pieces.halving td:nth-child(n+4) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600; }
+
 /* ---------- Verdict ---------- */
 .verdict-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 28px; align-items: start; }
 @media (max-width: 920px) { .verdict-grid { grid-template-columns: minmax(0, 1fr); } }

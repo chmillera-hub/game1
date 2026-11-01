@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 8: Spooky Ribbon.
+   Experiment 9: Spooky Ribbon.
    Part A, corkscrew: the helix tip circles with radius r; it hits the
    ball at phase θ, pushing it sideways by −cos θ (in the table's
    plane). Random timing means uniform θ, so the sideways kick has the

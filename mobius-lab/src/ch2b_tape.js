@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 3: Tape.
+   Experiment 4: Tape.
    Two paper loops taped together, crosswise (|X|) or face to face
    (the butterfly), then cut down their middles. Each loop is a grid
    of square cells. Tape holds the overlapping cells of the two loops

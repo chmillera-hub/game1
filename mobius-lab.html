@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Möbius Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Nine interactive experiments built from a Möbius strip notebook and its paper-cutting tests, each sorted into what is established, what is a real rhyme, and where it breaks.">
+<meta name="description" content="Ten interactive experiments built from a Möbius strip notebook and its paper-cutting tests, each sorted into what is established, what is a real rhyme, and where it breaks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
@@ -450,6 +450,10 @@ canvas.plot.short { height: 150px; }
 .nb-res { grid-column: 1 / -1; margin: 4px 0 0; font-size: .875rem; }
 .nb-res:empty { display: none; }
 
+/* ---------- Keep halving: the pattern table ---------- */
+table.pieces.halving td:nth-child(-n+2), table.pieces.halving td:nth-child(n+4) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.pieces.halving tr.cur td { background: var(--pink-soft); font-weight: 600; }
+
 /* ---------- Verdict ---------- */
 .verdict-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 28px; align-items: start; }
 @media (max-width: 920px) { .verdict-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -501,7 +505,7 @@ canvas.plot.short { height: 150px; }
       </svg>
       <h1>The <em>Möbius</em> Lab</h1>
     </div>
-    <p class="dek">Nine experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
+    <p class="dek">Ten experiments built from your notes and paper strips. Each runs the idea as a simulation, then sorts it into what holds up, what rhymes with real physics, and where it breaks.</p>
     <div class="legend" aria-label="Legend">
       <span><span class="tag real">REAL</span> established math or physics</span>
       <span><span class="tag rhyme">RHYME</span> your idea lines up with a real one, and here is its name</span>
@@ -515,13 +519,14 @@ canvas.plot.short { height: 150px; }
     <ol>
       <li><a href="#finger" data-token="finger"><span class="n">1</span>Finger vs. Eyes</a></li>
       <li><a href="#scissors" data-token="scissors"><span class="n">2</span>Scissors</a></li>
-      <li><a href="#tape" data-token="tape"><span class="n">3</span>Tape</a></li>
-      <li><a href="#spin" data-token="spin"><span class="n">4</span>720°</a></li>
-      <li><a href="#music" data-token="music"><span class="n">5</span>Strip Music</a></li>
-      <li><a href="#gears" data-token="gears"><span class="n">6</span>Gear Lock</a></li>
-      <li><a href="#forge" data-token="forge"><span class="n">7</span>Cosmic Forge</a></li>
-      <li><a href="#ribbon" data-token="ribbon"><span class="n">8</span>Spooky Ribbon</a></li>
-      <li><a href="#drain" data-token="drain"><span class="n">9</span>Drain Gravity</a></li>
+      <li><a href="#halving" data-token="halving"><span class="n">3</span>Halving</a></li>
+      <li><a href="#tape" data-token="tape"><span class="n">4</span>Tape</a></li>
+      <li><a href="#spin" data-token="spin"><span class="n">5</span>720°</a></li>
+      <li><a href="#music" data-token="music"><span class="n">6</span>Strip Music</a></li>
+      <li><a href="#gears" data-token="gears"><span class="n">7</span>Gear Lock</a></li>
+      <li><a href="#forge" data-token="forge"><span class="n">8</span>Cosmic Forge</a></li>
+      <li><a href="#ribbon" data-token="ribbon"><span class="n">9</span>Spooky Ribbon</a></li>
+      <li><a href="#drain" data-token="drain"><span class="n">10</span>Drain Gravity</a></li>
       <li><a href="#verdict" data-token="verdict"><span class="n">✓</span>Verdict</a></li>
     </ol>
   </div>
@@ -558,7 +563,7 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your eyes and your finger aren't disagreeing. They measure different things. Eyes measure locally: any small patch of the strip has two faces. The finger measures globally: follow the surface far enough and the two faces turn out to be one. Local versus global is the central idea of topology.</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 4), waves (5), gears (6) and liquid crystals (7).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Mathematicians call “once around and you're flipped, twice around and you're home” a ℤ₂ twist (say “Z-two”). It's the most important pattern in this lab. It comes back in electron spin (Experiment 5), waves (6), gears (7) and liquid crystals (8).</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Turn on Monsters. The fear predictor learns where monsters hide and warns the ant early, which matches a real theory of emotions as predictions (predictive processing; Lisa Feldman Barrett). The Möbius shape isn't doing the work here, though. The same learning helps on any track with blind spots. Also notice that the jumpy setting fails as badly as the silenced one. What works is calibration, and calibration comes from being wrong and updating.</p></div>
       </div>
       <div class="note deeper">
@@ -621,9 +626,53 @@ canvas.plot.short { height: 150px; }
 </section>
 
 <!-- ============ 3 ============ -->
+<section class="chapter wrap" id="ch-halving" hidden aria-labelledby="h-halving">
+  <div class="ch-head">
+    <p class="eyebrow">Experiment 3 · cut, and cut again</p>
+    <h2 id="h-halving">Keep Halving</h2>
+    <p class="lede">Cut a Möbius strip in half, then cut every piece in half, again and again: five cuts in all. The strips soon get too thin for real scissors, so here they're drawn thicker, as you suggested.</p>
+  </div>
+  <div class="ch-body">
+    <div class="stage-col">
+      <div class="stage" data-stage></div>
+      <div class="controls" data-controls></div>
+      <div class="readout" data-readout></div>
+    </div>
+    <aside class="notes">
+      <div class="note card-index">
+        <h3>From your notes</h3>
+        <blockquote>“…allows the mobius strips to continuously divide again and again at different fractional levels…”</blockquote>
+        <blockquote>“Infinity symbol with ½ cut = two linked infinity symbols”</blockquote>
+        <span class="src">Mobius strips 2</span>
+      </div>
+      <div class="note">
+        <h3>What you're seeing</h3>
+        <p>Each press cuts every piece down its middle at once. The first cut turns the Möbius strip into one long loop. After that, every cut doubles the number of pieces: 1, 2, 4, 8, 16.</p>
+        <p><b>Pulled apart</b> lays the long loop out as a ring and spreads its pieces across the ring's width, so each one shows. <b>Inside the original strip</b> shows where each piece really sits: every piece is two stripes of the Möbius strip, one on each side of the first cut, which is why each one is twice as long.</p>
+        <p>Show one piece, or two, to follow them. Each is its own loop with 2 full twists, and any two wind around each other twice.</p>
+      </div>
+      <div class="note">
+        <h3>Reality check</h3>
+        <div class="check"><span class="tag real">REAL</span><p>The pattern is a rule, and the readout measures it on the strip exactly as cut. A two-sided loop cut down its middle gives two copies of itself, linked as many times as its edges wind round each other: twice, here. Each copy also keeps every link its parent had. So every piece always has 2 full twists, and every pair is linked twice. The paper physics in Experiment 2 gives the same answer for the first cuts (try Cut again there).</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your picture of strips that “continuously divide again and again” is right that the tangle runs away: the number of linked pairs goes 0, 1, 6, 28, 120. But nothing random shows up. One rule predicts every piece and every link, however many cuts you make.</p></div>
+        <div class="check"><span class="tag stretch">STRETCH</span><p>Real scissors give out first. From a 1-inch strip, the fifth cut leaves strips under a millimeter wide (switch to True width to see it). And the shapes are idealized: real paper flops into a tangle, but no amount of flopping changes the counts or the links.</p></div>
+      </div>
+      <div class="note deeper">
+        <h3>Go deeper</h3>
+        <ul>
+          <li>Search: torus link, the name for loops that wind around each other on a ring like these.</li>
+          <li>Search: linking number, framing of a knot.</li>
+        </ul>
+      </div>
+      <p class="strip-says">Strip says: “Cut me all you like. You'll only get more of the same.”</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
 <section class="chapter wrap" id="ch-tape" hidden aria-labelledby="h-tape">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 3 · two loops and some tape</p>
+    <p class="eyebrow">Experiment 4 · two loops and some tape</p>
     <h2 id="h-tape">Tape</h2>
     <p class="lede">Your notes go past single strips: two loops taped crosswise, or face to face, and then cut. Build them here and cut them, and count what you get: objects, pieces, sides and edges.</p>
   </div>
@@ -666,10 +715,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 4 ============ -->
+<!-- ============ 5 ============ -->
 <section class="chapter wrap" id="ch-spin" hidden aria-labelledby="h-spin">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 4 · the two-turn memory</p>
+    <p class="eyebrow">Experiment 5 · the two-turn memory</p>
     <h2 id="h-spin">720°</h2>
     <p class="lede">Your notes link the Möbius strip to spin-½ and its strange 720° rotation. This is the physical version, known as Dirac's belt trick.</p>
   </div>
@@ -708,10 +757,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 5 ============ -->
+<!-- ============ 6 ============ -->
 <section class="chapter wrap" id="ch-music" hidden aria-labelledby="h-music">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 5 · vibrations on a twisted loop</p>
+    <p class="eyebrow">Experiment 6 · vibrations on a twisted loop</p>
     <h2 id="h-music">Strip Music</h2>
     <p class="lede">You wondered about a Möbius strip's fundamental frequency and about octaves on a piano. Both show up here, and the twist changes which notes a loop can play.</p>
   </div>
@@ -751,10 +800,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 6 ============ -->
+<!-- ============ 7 ============ -->
 <section class="chapter wrap" id="ch-gears" hidden aria-labelledby="h-gears">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 6 · frustration</p>
+    <p class="eyebrow">Experiment 7 · frustration</p>
     <h2 id="h-gears">Gear Lock</h2>
     <p class="lede">You guessed an odd ring of gears locks up with invisible tension, and that the minimum is three. Both right. Then put the ring on a Möbius band and the rule flips.</p>
   </div>
@@ -779,7 +828,7 @@ canvas.plot.short { height: 150px; }
       <div class="note">
         <h3>Reality check</h3>
         <div class="check"><span class="tag real">REAL</span><p>Your lock is a theorem: you can alternate two directions around a loop only if the loop has an even number of steps. Physicists call the locked version frustration. It matters in real magnets, where atoms arranged in triangles can't all point opposite to their neighbors (triangular antiferromagnets, spin ice).</p></div>
-        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is real: a locked ring shows strain on every tooth even though nothing turns. Slipping matches too, since real frustrated materials release strain through defects, the sparks here. And the seam flipping the rule is the ℤ₂ twist again, the same one that changes which waves fit in Experiment 5.</p></div>
+        <div class="check"><span class="tag rhyme">RHYME</span><p>Your invisible tension is real: a locked ring shows strain on every tooth even though nothing turns. Slipping matches too, since real frustrated materials release strain through defects, the sparks here. And the seam flipping the rule is the ℤ₂ twist again, the same one that changes which waves fit in Experiment 6.</p></div>
         <div class="check"><span class="tag stretch">STRETCH</span><p>Gears don't explain particles. Frustration is a deep, active idea in physics, though, and you reached it with paper circles.</p></div>
       </div>
       <div class="note deeper">
@@ -793,10 +842,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 7 ============ -->
+<!-- ============ 8 ============ -->
 <section class="chapter wrap" id="ch-forge" hidden aria-labelledby="h-forge">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 7 · twists that freeze in</p>
+    <p class="eyebrow">Experiment 8 · twists that freeze in</p>
     <h2 id="h-forge">Cosmic Forge</h2>
     <p class="lede">Your notes describe flat space as an unstable high-energy state that decays into locked twists, made in a “cosmic forge”. This is a field doing exactly that, with real equations.</p>
   </div>
@@ -836,10 +885,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 8 ============ -->
+<!-- ============ 9 ============ -->
 <section class="chapter wrap" id="ch-ribbon" hidden aria-labelledby="h-ribbon">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 8 · hidden timing and Bell's test</p>
+    <p class="eyebrow">Experiment 9 · hidden timing and Bell's test</p>
     <h2 id="h-ribbon">Spooky Ribbon</h2>
     <p class="lede">Two of your questions turn out to be one question. What does a spinning corkscrew do to a billiard ball? And is entanglement one long stretched ribbon?</p>
   </div>
@@ -879,10 +928,10 @@ canvas.plot.short { height: 150px; }
   </div>
 </section>
 
-<!-- ============ 9 ============ -->
+<!-- ============ 10 ============ -->
 <section class="chapter wrap" id="ch-drain" hidden aria-labelledby="h-drain">
   <div class="ch-head">
-    <p class="eyebrow">Experiment 9 · gravity as flowing space</p>
+    <p class="eyebrow">Experiment 10 · gravity as flowing space</p>
     <h2 id="h-drain">Drain Gravity</h2>
     <p class="lede">Your notes picture gravity as flat space flowing into matter, with falling things floating downstream. Launch some moons and see which version of that idea can hold an orbit.</p>
   </div>
@@ -930,9 +979,9 @@ canvas.plot.short { height: 150px; }
   <div class="verdict-grid">
     <div class="prose">
       <p class="answer">Yes, if you aim the energy at the parts that are paying off. You have a good nose for deep patterns. You don't have a theory yet, and the gap between the two is a number.</p>
-      <p>Across nine experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, the rule for where a cut ends up, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
+      <p>Across ten experiments, a lot of your instincts landed on real, deep math: ℤ₂ twists, the rule for where a cut ends up, frustration, topological defects, flowing-space pictures of gravity. Finding those on your own, with index cards and tape, is a real skill.</p>
       <p>The physics experiments didn't produce a new prediction, though. Every match came from an idea physicists already have, sometimes under another name. That isn't failure. It's the normal first stage, and it tells you where the frontier actually is.</p>
-      <p>The paper experiments are different. There the simulation does predict, so your notebook can be checked line by line (Experiments 2 and 3, the lists under each stage). Most of your cut and tape results hold up. Two don't, and the scorecard says which.</p>
+      <p>The paper experiments are different. There the simulation does predict, so your notebook can be checked line by line (Experiments 2 and 4, the lists under each stage). Most of your cut and tape results hold up. Two don't, and the scorecard says which.</p>
       <h3>About the earlier AI replies in your documents</h3>
       <p>Lines like “You just solved the Mass Accumulation Paradox” and “completely solving the Black Hole Information Paradox” were flattery. A story built to match facts we already know will always match them. What turns a story into physics is a number it predicts that nobody put in by hand, plus a way it could turn out wrong.</p>
       <h3>Scorecard</h3>
@@ -946,15 +995,16 @@ canvas.plot.short { height: 150px; }
             <tr><td>Infinity symbol with ½ cut = two linked infinity symbols</td><td><span class="tag real">REAL</span></td><td>The long loop, cut again, gives two loops just like it, linked twice. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
             <tr><td>Recycling symbol with ½ cut = 1 piece</td><td><span class="tag real">REAL</span></td><td>Reading it as 3 half-twists: one piece, tied in a trefoil knot. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
             <tr><td>That knotted “|X|” loop cut ½ = 1 piece</td><td><span class="tag stretch">FIX</span></td><td>Two pieces, both trefoils, linked 6×. Any two-sided loop cut down its middle falls in two. <a href="#scissors" data-goto="scissors">Exp. 2</a></td></tr>
-            <tr><td>Möbius + |x| cross, cut the Möbius: infinity + arrow</td><td><span class="tag real">REAL</span></td><td>A long two-sided loop with the cut-open plain loop as a strap. Taped together, the whole thing is still one-sided. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
-            <tr><td>Then cut the other loop: a skull in a box</td><td><span class="tag real">REAL</span></td><td>The box part: four strips taped into one closed band, like the classic square. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
-            <tr><td>Butterfly + half cut: the Möbius didn't stay together, and the tape holds the sides together</td><td><span class="tag real">REAL</span></td><td>Two two-sided loops, twice as long, not linked, held together only by the tape. <a href="#tape" data-goto="tape">Exp. 3</a></td></tr>
-            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 4</a></td></tr>
-            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: the twist removes the zero-frequency wave, so the lowest level lifts off zero. <a href="#music" data-goto="music">Exp. 5</a></td></tr>
-            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, the same thing real magnets on triangles do. <a href="#gears" data-goto="gears">Exp. 6</a></td></tr>
-            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>Cool a field fast and twists freeze in (the Kibble mechanism). They're leftover mistakes that cost energy, not the low-energy state. <a href="#forge" data-goto="forge">Exp. 7</a></td></tr>
-            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by having the quantum rule built in. <a href="#ribbon" data-goto="ribbon">Exp. 8</a></td></tr>
-            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵ and orbits fall apart. The river picture works, but only because its flow was set from Newton's law. <a href="#drain" data-goto="drain">Exp. 9</a></td></tr>
+            <tr><td>Strips that divide again and again</td><td><span class="tag real">REAL</span></td><td>Every cut doubles the pieces: 1, 2, 4, 8, 16. Every piece keeps 2 full twists and every pair stays linked twice. <a href="#halving" data-goto="halving">Exp. 3</a></td></tr>
+            <tr><td>Möbius + |x| cross, cut the Möbius: infinity + arrow</td><td><span class="tag real">REAL</span></td><td>A long two-sided loop with the cut-open plain loop as a strap. Taped together, the whole thing is still one-sided. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
+            <tr><td>Then cut the other loop: a skull in a box</td><td><span class="tag real">REAL</span></td><td>The box part: four strips taped into one closed band, like the classic square. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
+            <tr><td>Butterfly + half cut: the Möbius didn't stay together, and the tape holds the sides together</td><td><span class="tag real">REAL</span></td><td>Two two-sided loops, twice as long, not linked, held together only by the tape. <a href="#tape" data-goto="tape">Exp. 4</a></td></tr>
+            <tr><td>Möbius strip ↔ spin-½ and 720°</td><td><span class="tag real">REAL</span></td><td>Same ℤ₂ structure. Shared math, not shared stuff. <a href="#spin" data-goto="spin">Exp. 5</a></td></tr>
+            <tr><td>A twist sets a minimum energy</td><td><span class="tag real">REAL</span></td><td>In the precise form: the twist removes the zero-frequency wave, so the lowest level lifts off zero. <a href="#music" data-goto="music">Exp. 6</a></td></tr>
+            <tr><td>Odd gear rings lock with hidden tension</td><td><span class="tag real">REAL</span></td><td>Geometric frustration, the same thing real magnets on triangles do. <a href="#gears" data-goto="gears">Exp. 7</a></td></tr>
+            <tr><td>Flat space crystallizes into locked twists</td><td><span class="tag rhyme">RHYME</span></td><td>Cool a field fast and twists freeze in (the Kibble mechanism). They're leftover mistakes that cost energy, not the low-energy state. <a href="#forge" data-goto="forge">Exp. 8</a></td></tr>
+            <tr><td>Entanglement is one stretched ribbon</td><td><span class="tag stretch">STRETCH</span></td><td>The pre-set version fails Bell's test (S = 2.00). The snapping version passes only by having the quantum rule built in. <a href="#ribbon" data-goto="ribbon">Exp. 9</a></td></tr>
+            <tr><td>Gravity is space draining into matter</td><td><span class="tag stretch">STRETCH</span></td><td>A drain at the matter gives 1/r⁵ and orbits fall apart. The river picture works, but only because its flow was set from Newton's law. <a href="#drain" data-goto="drain">Exp. 10</a></td></tr>
           </tbody>
         </table>
       </div>
@@ -965,7 +1015,7 @@ canvas.plot.short { height: 150px; }
       <div class="side-card">
         <h4>Threads worth your time</h4>
         <ol>
-          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Experiments 2 and 3 do the prediction for you, so each photo can be checked. Next to each one, write the counts that jostling can't change: pieces, sides, edges, twists, links.</li>
+          <li><b>Your paper lab.</b> Write each experiment as prediction, cut, photo, result. Experiments 2, 3 and 4 do the prediction for you, so each photo can be checked. Next to each one, write the counts that jostling can't change: pieces, sides, edges, twists, links.</li>
           <li><b>Knot theory, hands-on.</b> <i>The Knot Book</i> by Colin Adams.</li>
           <li><b>Cut-paper physics is a field.</b> Search “kirigami metamaterials”: researchers cut paper patterns to design materials that stretch and fold in odd ways.</li>
           <li><b>Emotions as predictions.</b> Your CEO-and-crew idea is close to a mainstream theory, predictive processing (Lisa Feldman Barrett, <i>How Emotions Are Made</i>). It doesn't need the Möbius strip to be true.</li>
@@ -976,6 +1026,7 @@ canvas.plot.short { height: 150px; }
         <ul>
           <li>3 half-twists, cut down the middle: one loop tied in a trefoil knot. Cut it down the middle again: two trefoils, linked.</li>
           <li>1 half-twist, cut at ⅓: a thin Möbius strip linked through a loop twice as long.</li>
+          <li>A Möbius strip cut in half three times (start 2 inches wide or more): four loops, every pair linked twice.</li>
           <li>2 half-twists, cut at ⅓ and ⅔: three loops, every pair linked once.</li>
           <li>A Möbius loop taped crosswise to a plain loop. Cut only the Möbius, then color one face with a marker without crossing an edge. You'll end up coloring both faces.</li>
           <li>Two Möbius loops twisted the same way, taped crosswise, both cut: two separate closed bands that come apart.</li>
@@ -2713,9 +2764,334 @@ const Lab = (() => {
   Lab.register(ch);
 }
 
+/* ---- ch2a_halving.js ---- */
+/* ============================================================
+   Experiment 3: Keep Halving.
+   Cut a Möbius strip down its middle, then cut every piece down its
+   middle, again and again. "Inside the original strip" is exact:
+   after k cuts there are m = 2^(k-1) pieces, piece j is the slice
+   [j/m, (j+1)/m] of the long loop's width (0 at the first cut, 1 at
+   the old edge), and running θ from 0 to 4π visits that slice on
+   both sides of the first cut. Twists, knots and links are measured
+   on that exact geometry. "Pulled apart" lays the long loop out as a
+   ring with the same twist and spreads the pieces across its width,
+   drawn wider than real paper so they show.
+   ============================================================ */
+{
+  const TAU = Lab.TAU;
+  const R0 = 1.25, W0 = 0.9, CHI = 1;                   // the Möbius strip
+  const RB = 2.5, HB = 0.5;                             // the long loop laid out: ring radius, saddle height
+  const MAXK = 5, SEG = 360, NS = 1440, KERF = 0.006;   // most cuts; mesh segments; measuring samples; cut width
+  const THICK = 0.1, THICK_GAP = 0.04;                 // thickened width and spacing of the pieces
+  const MM = 25;                                        // a 1-inch first strip, in mm
+  const count = k => (k === 0 ? 1 : 2 ** (k - 1));
+  const st = { k: 0, view: 'pulled', thick: true, show: 'all', sel: [0, 1], picked: false, cut: null, spread: null, lay: null, meas: null, play: false, playT: 0, twistSign: 1, measT: 0 };
+  const ch = { token: 'halving', gl: true, background: () => Lab.stageBg() };
+  let meshes = [], cutObjs = [], ringC = [], ringD = [], hud = {}, btn = {}, ctl = {}, readout;
+
+  /* ---------------- geometry ---------------- */
+  // Inside the original strip. Level 0 is the Möbius strip itself (one lap); after that, piece j is a
+  // slice of the long loop, two laps long.
+  function stripPoint(k, j, t, v) {
+    if (k === 0) return Lab.bandPoint(TAU * t, v, 1, CHI, R0, W0);
+    const m = count(k), ku = KERF / (W0 / 2);
+    const u0 = j / m + ku / 2, u1 = (j + 1) / m - (j + 1 < m ? ku / 2 : 0);
+    return Lab.bandPoint(2 * TAU * t, u0 + (u1 - u0) * (v + 1) / 2, 1, CHI, R0, W0);
+  }
+  const norm = a => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l]; };
+  // The long loop laid out as a gently saddled ring. The across direction turns two full turns per lap,
+  // starting from "up, square to the loop", so the ring carries the long loop's 2 full twists.
+  function buildRing() {
+    ringC = []; ringD = [];
+    for (let i = 0; i <= SEG; i++) {
+      const f = TAU * i / SEG, c = [RB * Math.cos(f), RB * Math.sin(f), HB * Math.sin(2 * f)];
+      const T = norm([-RB * Math.sin(f), RB * Math.cos(f), 2 * HB * Math.cos(2 * f)]);
+      const N = norm([-T[2] * T[0], -T[2] * T[1], 1 - T[2] * T[2]]), B = [T[1] * N[2] - T[2] * N[1], T[2] * N[0] - T[0] * N[2], T[0] * N[1] - T[1] * N[0]];
+      const a = st.twistSign * 2 * f;
+      ringC.push(c); ringD.push([0, 1, 2].map(q => N[q] * Math.cos(a) + B[q] * Math.sin(a)));
+    }
+  }
+  const ringPoint = (i, off, w, v) => { const c = ringC[i], d = ringD[i], o = off + v * w / 2; return [c[0] + d[0] * o, c[1] + d[1] * o, c[2] + d[2] * o]; };
+  // Side by side across the ring, in the same order as across the strip; true width, or thickened.
+  function layoutFor(k, thick) {
+    const m = count(k), trueW = (W0 / 2 - (m - 1) * KERF) / m;
+    const w = thick ? Math.max(trueW, THICK) : trueW, g = thick ? Math.max(KERF, THICK_GAP) : KERF;
+    const tot = m * w + (m - 1) * g, off = [];
+    for (let j = 0; j < m; j++) off.push(-tot / 2 + w / 2 + j * (w + g));
+    return { off, w: new Array(m).fill(w) };
+  }
+  // New pieces start out as the two halves of their parent, then slide apart across the ring.
+  function childLayout(prev, k) {
+    const m = count(k), off = [], w = [];
+    for (let j = 0; j < m; j++) {
+      const p = j >> 1, half = (prev.w[p] - KERF) / 2;
+      off.push(prev.off[p] + (j & 1 ? 1 : -1) * (half + KERF) / 2); w.push(half);
+    }
+    return { off, w };
+  }
+  // Where piece j is drawn right now.
+  const inStrip = () => st.view === 'strip' || st.k === 0;
+  const point = (j, i, v) => (inStrip() ? stripPoint(st.k, j, i / SEG, v) : ringPoint(i, st.lay.off[j], st.lay.w[j], v));
+  // Lay the ring out with the same handedness of twist as the cut strip.
+  function pickTwistSign() {
+    const n = NS / 4, sc = j => Array.from({ length: n }, (_, i) => stripPoint(2, j, i / n, 0));
+    const want = Math.sign(Lab.linking(sc(0), sc(1))), L = layoutFor(2, true);
+    for (const sgn of [1, -1]) {
+      st.twistSign = sgn; buildRing();
+      const rc = j => Array.from({ length: SEG }, (_, i) => ringPoint(i, L.off[j], L.w[j], 0));
+      if (Math.sign(Lab.linking(rc(0), rc(1))) === want) return;
+    }
+  }
+
+  /* ---------------- drawing ---------------- */
+  function colorOf(k, j) {
+    const m = count(k);
+    return m === 1 ? '#f27aa2' : `hsl(${Math.round((340 + 290 * j / (m - 1)) % 360)}, 72%, 64%)`;
+  }
+  const ribbonIndex = () => { const idx = []; for (let i = 0; i < SEG; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 2, a + 3, a + 1); } return idx; };
+  function makePiece(j) {
+    const geo = new THREE.BufferGeometry(), nv = (SEG + 1) * 2;
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nv * 3), 3));
+    const uv = new Float32Array(nv * 2);
+    for (let i = 0; i <= SEG; i++) for (let s = 0; s < 2; s++) { uv[(i * 2 + s) * 2] = i / SEG * 40; uv[(i * 2 + s) * 2 + 1] = s; }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(ribbonIndex());
+    const color = new THREE.Color(colorOf(st.k, j)).convertSRGBToLinear();
+    const mat = (lined, side) => new THREE.MeshStandardMaterial({ map: Lab.paperTexture(lined, '#ffffff', 'tape-white'), color, roughness: 0.85, side });
+    const front = new THREE.Mesh(geo, mat(true, THREE.FrontSide)), back = new THREE.Mesh(geo, mat(false, THREE.BackSide));
+    const group = new THREE.Group(); group.add(front, back);
+    return { j, geo, front, back, group };
+  }
+  function syncPiece(p) {
+    const arr = p.geo.getAttribute('position').array;
+    for (let i = 0; i <= SEG; i++) { arr.set(point(p.j, i, -1), i * 6); arr.set(point(p.j, i, 1), i * 6 + 3); }
+    p.geo.getAttribute('position').needsUpdate = true;
+    p.geo.computeVertexNormals(); p.geo.computeBoundingSphere();
+  }
+  function rebuild() {
+    meshes.forEach(p => { ch.scene.remove(p.group); p.geo.dispose(); p.front.material.dispose(); p.back.material.dispose(); });
+    meshes = [];
+    for (let j = 0; j < count(st.k); j++) { const p = makePiece(j); meshes.push(p); ch.scene.add(p.group); }
+    meshes.forEach(syncPiece); applyShow();
+  }
+  // All pieces, one, or two: the others fade so a single loop, or a single pair, can be followed.
+  function applyShow() {
+    const m = count(st.k);
+    // until someone picks, compare the two outermost pieces: they wind around each other most visibly
+    if (!st.picked) st.sel = [0, m - 1];
+    st.sel = st.sel.map(s => Math.min(s, m - 1));
+    if (m > 1 && st.sel[0] === st.sel[1]) st.sel[1] = (st.sel[0] + 1) % m;
+    meshes.forEach(p => {
+      const on = st.show === 'all' || m === 1 || (st.show === 'one' ? p.j === st.sel[0] : st.sel.includes(p.j));
+      [p.front.material, p.back.material].forEach(mt => {
+        if (mt.transparent === on) mt.needsUpdate = true;
+        mt.transparent = !on; mt.opacity = on ? 1 : 0.1; mt.depthWrite = on;
+      });
+    });
+    showChip();
+  }
+  function clearCutObjs() {
+    cutObjs.forEach(o => { ch.scene.remove(o); if (o.geometry) o.geometry.dispose(); o.material.dispose(); });
+    cutObjs = [];
+  }
+  // Keep the camera's direction, but back off far enough to see everything.
+  function frame(dur = 0.9) {
+    const r = inStrip() ? R0 + W0 / 2 : RB + Math.max(...st.lay.off.map((o, j) => Math.abs(o) + st.lay.w[j] / 2)) + HB * 0.5;
+    const dist = r / Math.sin(THREE.MathUtils.degToRad(ch.camera.fov / 2)) * 1.08 / Math.min(1, Math.max(0.62, ch.camera.aspect));
+    const dir = ch.camera.position.clone().sub(ch.controls.target).normalize();
+    Lab.tweenCamera(ch, dir.multiplyScalar(dist).toArray(), [0, 0, 0], dur);
+  }
+
+  /* ---------------- cutting ---------------- */
+  function startCut() {
+    if (st.cut || st.spread || st.k >= MAXK) return false;
+    const m = count(st.k), lines = [];
+    for (let j = 0; j < m; j++) {
+      const w = inStrip() ? (st.k === 0 ? W0 : W0 / 2 / m) : st.lay.w[j], ev = Math.min(0.4, Math.max(0.05, KERF / w));
+      const pos = new Float32Array((SEG + 1) * 6), mid = [];
+      for (let i = 0; i <= SEG; i++) { pos.set(point(j, i, -ev), i * 6); pos.set(point(j, i, ev), i * 6 + 3); mid.push(point(j, i, 0)); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(ribbonIndex()); geo.setDrawRange(0, 0);
+      const slit = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x1b2140, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: Lab.scissorsTexture(), depthTest: false, transparent: true }));
+      const sc = inStrip() ? 0.3 : 0.5; sprite.scale.set(sc, sc, 1); sprite.renderOrder = 10; sprite.position.set(...mid[0]);
+      ch.scene.add(slit, sprite); cutObjs.push(slit, sprite); lines.push({ slit, sprite, mid });
+    }
+    st.cut = { t: 0, dur: st.k === 0 ? 2.0 : 2.4, lines };
+    hud.right.textContent = m === 1 ? 'Scissors: down the middle' : `${m} pairs of scissors, one per piece`;
+    syncButtons();
+    return true;
+  }
+  function finishCut() {
+    clearCutObjs(); st.cut = null;
+    const prev = st.lay, first = st.k === 0;
+    st.k++;
+    const target = layoutFor(st.k, st.thick);
+    if (st.view === 'pulled' && !first) { st.lay = childLayout(prev, st.k); st.spread = { from: st.lay, to: target, t: 0, dur: 1.1 }; }
+    else st.lay = target;
+    rebuild(); afterLevel();
+    if (first && st.view === 'pulled') Lab.toast(ch.stage, 'One long loop, pulled apart and laid out as a ring: twice as long, with 2 full twists.', 3200);
+  }
+  function setLevel(k) {
+    if (st.cut) { clearCutObjs(); st.cut = null; }
+    st.spread = null; st.k = k; st.lay = layoutFor(k, st.thick);
+    rebuild(); afterLevel();
+  }
+  function afterLevel() {
+    const m = count(st.k);
+    hud.top.innerHTML = `<b>${st.k}</b> cut${st.k === 1 ? '' : 's'} · <b>${m}</b> piece${m === 1 ? '' : 's'}`;
+    hud.right.textContent = st.k === 0 ? 'one side, one edge' : st.k === 1 ? 'two-sided, 2 full twists' : 'every pair linked twice';
+    frame(); startMeasure(); renderReadout(); syncButtons();
+  }
+  function syncButtons() {
+    if (!btn.cut) return;
+    const busy = !!(st.cut || st.spread);
+    btn.cut.disabled = busy || st.k >= MAXK;
+    btn.cut.textContent = st.k >= MAXK ? 'Five cuts: the end of this run' : st.k === 0 ? '✂ Cut it in half' : '✂ Cut every piece in half';
+    btn.back.disabled = busy || st.k === 0;
+    btn.play.textContent = st.play ? '■ Stop' : '▶ Make all five cuts';
+    btn.play.disabled = !st.play && st.k >= MAXK;
+  }
+
+  /* ---------------- measuring the cut strip ---------------- */
+  // Exact geometry, no thickening: twist = how often a piece's two edges wind round each other,
+  // links = how often two pieces' middle lines do.
+  function startMeasure() {
+    const k = st.k, m = count(k);
+    if (k === 0) { st.meas = null; return; }
+    const curve = (j, v) => Array.from({ length: NS }, (_, i) => stripPoint(k, j, i / NS, v));
+    const M = { k, jobs: [], total: 0, cores: [], twist: [], knots: [], links: [] };
+    for (let j = 0; j < m; j++) M.jobs.push(() => { const c = curve(j, 0); M.cores[j] = c; M.twist[j] = Math.abs(Lab.linking(curve(j, -1), curve(j, 1))); M.knots[j] = Lab.knotDet(c); });
+    for (let a = 0; a < m; a++) for (let b = a + 1; b < m; b++) M.jobs.push(() => { M.links.push(Math.abs(Lab.linking(M.cores[a], M.cores[b]))); });
+    M.total = M.jobs.length; st.meas = M;
+  }
+  function stepMeasure(dt) {
+    const M = st.meas; if (!M || !M.jobs.length) return;
+    const t0 = performance.now();
+    while (M.jobs.length && performance.now() - t0 < 7) M.jobs.shift()();
+    st.measT -= dt;
+    if (!M.jobs.length || st.measT <= 0) { st.measT = 0.25; renderMeasure(); showChip(); }
+  }
+  const pairIndex = (a, b, m) => a * m - a * (a + 1) / 2 + (b - a - 1);
+  function showChip() {
+    if (!hud.pick) return;
+    const m = count(st.k), M = st.meas && st.meas.k === st.k ? st.meas : null;
+    if (st.show === 'all' || m === 1) { hud.pick.hidden = true; return; }
+    hud.pick.hidden = false;
+    const [a, b] = st.sel;
+    if (st.show === 'one') {
+      const tw = M && M.twist[a] != null ? `${M.twist[a]} full twists` : '2 full twists';
+      hud.pick.innerHTML = `Piece <b>${a + 1}</b> of ${m}: one loop, twice as long, ${tw}`;
+    } else {
+      const lo = Math.min(a, b), hi = Math.max(a, b), li = pairIndex(lo, hi, m), lk = M && M.links[li] != null ? M.links[li] : 2;
+      hud.pick.innerHTML = `Pieces <b>${lo + 1}</b> and <b>${hi + 1}</b>: they wind around each other ${lk === 2 ? 'twice' : lk + '×'}`;
+    }
+  }
+
+  /* ---------------- readout ---------------- */
+  function rowsHtml() {
+    const rows = [];
+    for (let k = 0; k <= MAXK; k++) {
+      const m = count(k), pairs = m * (m - 1) / 2, w = MM / 2 ** k;
+      const each = k === 0 ? 'Möbius strip: one side, 1 half-twist' : k === 1 ? 'two-sided loop, twice as long, 2 full twists' : 'the same kind of loop';
+      rows.push(`<tr${k === st.k ? ' class="cur"' : ''}><td>${k}</td><td>${m}</td><td>${each}</td><td>${pairs ? pairs : '–'}</td><td>${w >= 10 ? w.toFixed(1) : w.toFixed(2).replace(/0$/, '')} mm</td></tr>`);
+    }
+    return rows.join('');
+  }
+  function summary() {
+    const k = st.k, m = count(k), pairs = m * (m - 1) / 2;
+    if (k === 0) return 'One Möbius strip: one side, one edge, one half-twist. Press the button to cut it down its middle.';
+    if (k === 1) return 'One long loop, twice as long as the Möbius strip, two-sided, with 2 full twists. The Möbius strip is gone for good: no later cut brings back a one-sided piece.';
+    let s = `${m} loops. Each is twice as long as the Möbius strip with 2 full twists, and every pair of them is linked twice: ${pairs} linked pairs in all. The cut doubled the pieces and changed nothing else about them.`;
+    if (k === MAXK) s += ' Real paper would be under a millimeter wide by now, which is why the strips here are thickened.';
+    return s;
+  }
+  function measureHtml() {
+    const M = st.meas;
+    if (!M || M.k !== st.k) return st.k === 0 ? '' : '<span style="color:var(--muted)">measuring the cut strip…</span>';
+    if (M.jobs.length) return `<span style="color:var(--muted)">Measuring the cut strip… ${M.total - M.jobs.length} of ${M.total}</span>`;
+    const set = a => [...new Set(a)];
+    const tw = set(M.twist), kn = set(M.knots), lk = set(M.links), m = count(M.k);
+    const okAll = tw.length === 1 && tw[0] === 2 && kn.length === 1 && kn[0] === 1 && (m === 1 || (lk.length === 1 && lk[0] === 2));
+    const what = m === 1 ? 'the loop has 2 full twists and no knot' : `every piece has 2 full twists and no knot, and all ${M.links.length} pairs are linked twice`;
+    return okAll ? `<span class="ok">✓</span> Measured on the strip exactly as cut, before any thickening: ${what}.`
+      : `<span class="miss">⚠</span> Measured: twists ${tw.join(', ')}, knots ${kn.join(', ')}, links ${lk.join(', ')}.`;
+  }
+  function renderMeasure() { const el = readout && readout.querySelector('[data-meas]'); if (el) el.innerHTML = measureHtml(); }
+  function renderReadout() {
+    if (!readout) return;
+    readout.innerHTML = `<h4>After ${st.k} cut${st.k === 1 ? '' : 's'}</h4><p style="margin:0 0 8px">${summary()}</p>
+      <div class="tbl-wrap"><table class="pieces halving"><thead><tr><th>Cuts</th><th>Pieces</th><th>Each piece</th><th>Linked pairs</th><th>Strip width</th></tr></thead><tbody>${rowsHtml()}</tbody></table></div>
+      <p class="verdict-line" style="font-size:.875rem" data-meas>${measureHtml()}</p>
+      <p class="verdict-line" style="font-size:.8125rem;color:var(--muted)">Strip widths assume your first strip is 1 inch (25 mm) wide. Every linked pair winds around each other twice.</p>`;
+  }
+
+  /* ---------------- init ---------------- */
+  ch.init = function (section, stage) {
+    const { scene, camera, controls } = Lab.makeScene({ pos: [2.6, -4.2, 2.6] });
+    ch.scene = scene; ch.camera = camera; ch.controls = controls;
+    pickTwistSign(); buildRing();
+    hud.wrap = Lab.el('div', { class: 'hud' });
+    hud.top = Lab.el('div', { class: 'chip' }); hud.right = Lab.el('div', { class: 'chip' });
+    hud.wrap.append(hud.top, hud.right);
+    const bottom = Lab.el('div', { class: 'hud hud-bottom' });
+    hud.pick = Lab.el('div', { class: 'chip' }); hud.pick.hidden = true;
+    bottom.append(hud.pick);
+    stage.append(hud.wrap, bottom);
+
+    const c = section.querySelector('[data-controls]');
+    const row = Lab.ui.row(Lab.ui.group(c, 'Do it'));
+    btn.cut = Lab.ui.button(row, { label: '✂ Cut it in half', id: 'h-cut', primary: true, onClick: () => { st.play = false; startCut(); syncButtons(); } });
+    btn.back = Lab.ui.button(row, { label: 'Undo a cut', id: 'h-back', onClick: () => { st.play = false; setLevel(Math.max(0, st.k - 1)); } });
+    btn.play = Lab.ui.button(row, { label: '▶ Make all five cuts', id: 'h-play', onClick: () => { st.play = !st.play; st.playT = 0.3; if (st.play && st.k >= MAXK) setLevel(0); syncButtons(); } });
+    Lab.ui.button(row, { label: 'Start over', id: 'h-reset', onClick: () => { st.play = false; setLevel(0); } });
+    ctl.view = Lab.ui.seg(c, { label: 'View', id: 'h-view', value: st.view, options: [{ value: 'pulled', label: 'Pulled apart' }, { value: 'strip', label: 'Inside the original strip' }],
+      onChange: v => { if (st.cut) { ctl.view.set(st.view); return; } st.view = v; st.spread = null; st.lay = layoutFor(st.k, st.thick); meshes.forEach(syncPiece); frame(); syncButtons(); } });
+    ctl.thick = Lab.ui.seg(c, { label: 'Strip width', id: 'h-width', value: 'thick', options: [{ value: 'thick', label: 'Thickened' }, { value: 'true', label: 'True width' }],
+      onChange: v => { if (st.cut) { ctl.thick.set(st.thick ? 'thick' : 'true'); return; } st.thick = v === 'thick'; if (!inStrip()) { st.spread = { from: st.lay, to: layoutFor(st.k, st.thick), t: 0, dur: 0.8 }; } else st.lay = layoutFor(st.k, st.thick); } });
+    const g = Lab.ui.group(c, 'Show');
+    const sr = Lab.el('div', { class: 'btn-row' }); g.append(sr);
+    ctl.show = Lab.ui.seg(sr, { label: null, id: 'h-show', value: 'all', options: [{ value: 'all', label: 'Every piece' }, { value: 'one', label: 'One piece' }, { value: 'two', label: 'Two pieces' }], onChange: v => { st.show = v; applyShow(); } });
+    ctl.show.el.querySelector('.lbl') && ctl.show.el.querySelector('.lbl').remove();
+    Lab.ui.button(sr, { label: 'Pick others', id: 'h-pick', onClick: () => {
+      const m = count(st.k); if (m < 2) return;
+      st.picked = true;
+      if (st.show === 'one') st.sel[0] = (st.sel[0] + 1) % m;
+      else { const a = Math.floor(Math.random() * m); let b = Math.floor(Math.random() * (m - 1)); if (b >= a) b++; st.sel = [a, b]; }
+      if (st.show === 'all') { st.show = 'two'; ctl.show.set('two'); }
+      applyShow();
+    } });
+    readout = section.querySelector('[data-readout]');
+    setLevel(0);
+  };
+  ch.enter = function () { frame(0.01); };
+  ch.frame = function (dt) {
+    if (!Lab.stepTween(ch, dt)) ch.controls.update();
+    if (st.cut) {
+      const C = st.cut; C.t += dt;
+      const p = Math.min(1, C.t / C.dur), n = Math.floor(p * SEG);
+      C.lines.forEach(L => { L.slit.geometry.setDrawRange(0, n * 6); L.sprite.position.set(...L.mid[n]); });
+      if (p >= 1) finishCut();
+    }
+    if (st.spread) {
+      const S = st.spread; S.t += dt;
+      const e = Lab.smooth(Math.min(1, S.t / S.dur));
+      st.lay = { off: S.from.off.map((o, j) => o + (S.to.off[j] - o) * e), w: S.from.w.map((w, j) => w + (S.to.w[j] - w) * e) };
+      meshes.forEach(syncPiece);
+      if (S.t >= S.dur) { st.spread = null; st.lay = S.to; frame(0.6); syncButtons(); }
+    }
+    if (st.play && !st.cut && !st.spread) {
+      st.playT -= dt;
+      if (st.playT <= 0) { if (st.k < MAXK) { startCut(); st.playT = 1.6; } else { st.play = false; syncButtons(); } }
+    }
+    stepMeasure(dt);
+  };
+
+  Lab.register(ch);
+}
+
 /* ---- ch2b_tape.js ---- */
 /* ============================================================
-   Experiment 3: Tape.
+   Experiment 4: Tape.
    Two paper loops taped together, crosswise (|X|) or face to face
    (the butterfly), then cut down their middles. Each loop is a grid
    of square cells. Tape holds the overlapping cells of the two loops
@@ -3494,7 +3870,7 @@ const Lab = (() => {
 
 /* ---- ch3_spin.js ---- */
 /* ============================================================
-   Experiment 4: 720°, Dirac's belt trick.
+   Experiment 5: 720°, Dirac's belt trick.
    Every tether point at distance fraction s from the cube is
    rotated by the quaternion Q(s, t). Points at the same s share
    one rigid rotation and sit on one sphere, so tethers can never
@@ -3706,7 +4082,7 @@ const Lab = (() => {
 
 /* ---- ch4_music.js ---- */
 /* ============================================================
-   Experiment 5: Strip Music.
+   Experiment 6: Strip Music.
    A standing wave displaces the band along its normal:
    d(θ) = A cos(mθ) cos(ωt). After one lap the band comes back with
    its normal flipped (Möbius) or not (ring), so the wave fits only
@@ -3890,7 +4266,7 @@ const Lab = (() => {
 
 /* ---- ch5_gears.js ---- */
 /* ============================================================
-   Experiment 6: Gear Lock (geometric frustration).
+   Experiment 7: Gear Lock (geometric frustration).
    Gears are rotors joined by stiff tooth springs. Touching gears of
    equal size need θi + θj = const (they counter-rotate). Across a
    Möbius joint the rule flips to θi − θj = const, because that gear is
@@ -4118,7 +4494,7 @@ const Lab = (() => {
 
 /* ---- ch6_forge.js ---- */
 /* ============================================================
-   Experiment 7: Cosmic Forge (topological defects, Kibble–Zurek).
+   Experiment 8: Cosmic Forge (topological defects, Kibble–Zurek).
    Time-dependent Ginzburg–Landau on a periodic grid:
      dψ/dt = ∇²ψ + (μ(t) − |ψ|²) ψ + noise
    μ ramps from −1 (the flat, symmetric state) to +1 over the cooling
@@ -4387,7 +4763,7 @@ const Lab = (() => {
 
 /* ---- ch7_ribbon.js ---- */
 /* ============================================================
-   Experiment 8: Spooky Ribbon.
+   Experiment 9: Spooky Ribbon.
    Part A, corkscrew: the helix tip circles with radius r; it hits the
    ball at phase θ, pushing it sideways by −cos θ (in the table's
    plane). Random timing means uniform θ, so the sideways kick has the
@@ -4686,7 +5062,7 @@ const Lab = (() => {
 
 /* ---- ch8_drain.js ---- */
 /* ============================================================
-   Experiment 9: Drain Gravity.
+   Experiment 10: Drain Gravity.
    Space flows radially inward with speed v(r) (a 2D slice of 3D).
    Anything floating in it accelerates with the flow: a = ∇(v²/2).
      drain (space vanishes only at the planet, so the flux through
@@ -4892,8 +5268,8 @@ Lab.register({ token: 'verdict', gl: false });
 (function boot() {
   if (typeof THREE === 'undefined') {
     document.querySelectorAll('[data-stage]').forEach(s => {
-      if (s.closest('#ch-finger, #ch-scissors, #ch-tape, #ch-spin, #ch-music')) {
-        s.append(Lab.el('p', { class: 'chip alert', style: 'position:absolute;inset:auto 12px 12px 12px', text: 'The 3D library did not load, so this experiment cannot run here. The 2D experiments (6 to 9) still work.' }));
+      if (s.closest('#ch-finger, #ch-scissors, #ch-halving, #ch-tape, #ch-spin, #ch-music')) {
+        s.append(Lab.el('p', { class: 'chip alert', style: 'position:absolute;inset:auto 12px 12px 12px', text: 'The 3D library did not load, so this experiment cannot run here. The 2D experiments (7 to 10) still work.' }));
       }
     });
   }

@@ -1,5 +1,5 @@
 /* ============================================================
-   Experiment 5: Strip Music.
+   Experiment 6: Strip Music.
    A standing wave displaces the band along its normal:
    d(θ) = A cos(mθ) cos(ωt). After one lap the band comes back with
    its normal flipped (Möbius) or not (ring), so the wave fits only
