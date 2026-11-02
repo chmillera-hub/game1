@@ -14,7 +14,7 @@ const files = fs.readdirSync(path.join(root, 'scenes')).filter((f) => f.endsWith
 const byId = {};
 for (const f of files) {
   const src = fs.readFileSync(path.join(root, 'scenes', f), 'utf8');
-  const m = src.match(/id:\s*'([^']+)'/);
+  const m = src.match(/Film\.scene\(\{[\s\S]*?\bid:\s*'([^']+)'/);
   if (m) byId[m[1]] = { file: f, src: src.replace(/\\'/g, "'").replace(/\\u2019/g, '’').replace(/\\u2014/g, '—').replace(/\\u2026/g, '…') };
 }
 
@@ -46,7 +46,7 @@ for (const sec of sections) {
   for (const r of required) {
     checked++;
     // tolerate the text being split across bubbles/lines on sentence boundaries
-    const pieces = r.split(/(?<=[.!?…—])\s+/).filter(Boolean);
+    const pieces = r.split(/(?<=[.!?…—,])\s+/).filter(Boolean);
     const ok = scene.src.includes(r) || pieces.every((p) => scene.src.includes(p.replace(/^…/, '').replace(/…$/, '').trim()));
     if (!ok) lost.push(r);
   }
