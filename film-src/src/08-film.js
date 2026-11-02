@@ -1205,6 +1205,21 @@ const Film = (() => {
   }
   const events = score();
 
+  // ------------------------------------------------------------------ the narrator's voice
+  // VOICE (01b-voice.js) holds one recorded take per line. Each line is spoken a beat after its
+  // caption appears; the caption stays up until the voice has finished, and its words surface as
+  // they are spoken.
+  if (typeof VOICE !== 'undefined' && VOICE.clips && VOICE.clips.length === narration.length) {
+    narration.forEach((n, i) => {
+      const c = VOICE.clips[i], start = n.t + VOICE.lead;
+      events.push({ t: start, i: 'voice', a: [i], len: c.d });
+      const next = narration[i + 1];
+      const want = VOICE.lead + c.d + 0.9;
+      n.d = Math.max(n.d, next ? Math.min(want, next.t - n.t - 0.3) : want);
+      if (c.w && c.w.length === n.text.replace(/ \/ /g, ' ').trim().split(/\s+/).length) n.w = c.w.map(x => VOICE.lead + x);
+    });
+  }
+
   return {
     duration: total, chapters, narration, events, beds, render,
     resize() { }, seek() { },

@@ -85,7 +85,7 @@ async function renderAudio() {
     try { const err = require('child_process').spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-ss', String(from), '-t', String(len), '-i', wav, '-af', 'highpass=f=30:poles=2,equalizer=f=38:t=q:w=0.8:g=-5,acompressor=threshold=-26dB:ratio=2.5:attack=15:release=250:knee=6:makeup=1,ebur128', '-f', 'null', '-'], { encoding: 'utf8' }).stderr; const m = [...err.matchAll(/I:\s+(-?[\d.]+) LUFS/g)]; if (m.length) I = parseFloat(m[m.length - 1][1]); } catch (e) { }
     const gain = I == null ? 10 : Math.max(-6, Math.min(14, -15 - I));
     console.log(`[master] measured ${I} LUFS -> gain ${gain.toFixed(2)} dB`);
-    const af = `highpass=f=30:poles=2,equalizer=f=38:t=q:w=0.8:g=-5,acompressor=threshold=-26dB:ratio=2.5:attack=15:release=250:knee=6:makeup=1,volume=${gain.toFixed(2)}dB,alimiter=limit=0.79:attack=4:release=80:level=false:asc=1,afade=t=out:st=${(len - 2.6).toFixed(2)}:d=2.5`;
+    const af = `highpass=f=30:poles=2,equalizer=f=38:t=q:w=0.8:g=-5,acompressor=threshold=-26dB:ratio=2.5:attack=15:release=250:knee=6:makeup=1,volume=${gain.toFixed(2)}dB,alimiter=limit=0.75:attack=4:release=80:level=false:asc=1,afade=t=out:st=${(len - 2.6).toFixed(2)}:d=2.5`;
     a.push('-ss', String(from), '-t', String(len), '-i', wav, '-map', '0:v', '-map', '1:a', '-af', af, '-c:a', 'aac', '-b:a', '320k', '-ar', '48000');
   }
   a.push('-c:v', 'copy', '-t', String(len), '-movflags', '+faststart', final);

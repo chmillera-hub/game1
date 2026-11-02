@@ -64,7 +64,7 @@
         const rowW = widths.reduce((a, b) => a + b, 0) + sp * (r.length - 1);
         let x = W / 2 - rowW / 2;
         r.forEach((w, i) => {
-          const k = smooth((lt - wi * stagger) / 0.7) * out;
+          const k = (L.w ? smooth((lt - L.w[wi] + 0.12) / 0.45) : smooth((lt - wi * stagger) / 0.7)) * out;
           wi++;
           if (k > 0.002) {
             ctx.save();
@@ -135,6 +135,7 @@
     const oac = new OfflineAudioContext(2, Math.ceil(sampleRate * dur), sampleRate);
     Sound.init(oac);
     Sound.setMaster(0.95);
+    const hasVoice = await Sound.voiceReady;
     for (const ev of Film.events) Sound.play(ev, Math.max(0.0001, ev.t));
     for (let t = 0; t < Film.duration; t += 0.1) {
       const b = Film.beds(t);
@@ -158,7 +159,7 @@
       v.setInt16(o, clamp(Rr[i] * norm, -1, 1) * 32767, true); o += 2;
     }
     wav = new Uint8Array(bytes);
-    return { bytes: wav.length, peak, chunks: Math.ceil(wav.length / (4 << 20)) };
+    return { bytes: wav.length, peak, chunks: Math.ceil(wav.length / (4 << 20)), voice: hasVoice };
   }
   function audioChunk(i) {
     const sz = 4 << 20, part = wav.subarray(i * sz, Math.min(wav.length, (i + 1) * sz));

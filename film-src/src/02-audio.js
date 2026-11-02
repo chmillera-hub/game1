@@ -4,6 +4,12 @@
 // ============================================================================
 const Sound = (() => {
   let ac = null, master, comp, verb, epochBus, musicBus, sfxBus, verbSend, noiseBuf, duck, heartBus;
+  // narration: its own bus past the gates, and a duck that lowers the score under every line
+  let vduck, voiceBus, voiceOut, voiceEpoch, vbuf = null, voiceReady = Promise.resolve(false);
+  // with narration the score sits 2 dB lower and dips a further 7.5 dB under each line,
+  // so the voice sits about 10 dB over the music
+  const SCORE_TRIM = (typeof VOICE !== 'undefined' && VOICE.mp3) ? 0.8 : 1;
+  const VOICE_DUCK = 0.42 * SCORE_TRIM;
   let drone = null, warmth = null, wind = null, cold = null;
   let muted = false, ok = false;
 
@@ -37,8 +43,18 @@ const Sound = (() => {
     master = ac.createGain(); master.gain.value = 0.0;
     // duck: a gate for the film's true silences (the freeze, 'When they die, I die'); the heartbeat bypasses it
     duck = ac.createGain(); duck.gain.value = 1;
-    master.connect(duck); duck.connect(comp); comp.connect(ac.destination);
-    heartBus = ac.createGain(); heartBus.gain.value = 1; heartBus.connect(comp);
+    vduck = ac.createGain(); vduck.gain.value = SCORE_TRIM;
+    // a brick-wall safety on the sum of score and voice
+    const lim = ac.createDynamicsCompressor();
+    lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
+    master.connect(duck); duck.connect(vduck); vduck.connect(comp); comp.connect(lim); lim.connect(ac.destination);
+    heartBus = ac.createGain(); heartBus.gain.value = 1; heartBus.connect(vduck);
+    // the narrator: close and warm, with a little of a small room around him
+    voiceOut = ac.createGain(); voiceOut.gain.value = 0; voiceOut.connect(lim);
+    voiceBus = ac.createGain(); voiceBus.gain.value = (typeof VOICE !== 'undefined' && VOICE.gain) || 1; voiceBus.connect(voiceOut);
+    const vverb = ac.createConvolver(); vverb.buffer = makeIR(1.6, 3.4);
+    const vsend = ac.createGain(); vsend.gain.value = 0.16; voiceBus.connect(vsend); vsend.connect(vverb); vverb.connect(voiceOut);
+    voiceReady = loadVoice();
     verb = ac.createConvolver(); verb.buffer = makeIR(5.5, 2.6);
     const verbRet = ac.createGain(); verbRet.gain.value = 0.85;
     verb.connect(verbRet); verbRet.connect(master);
@@ -72,6 +88,44 @@ const Sound = (() => {
     sfxBus.connect(epochBus); sfxBus.connect(sv); sv.connect(verbSend);
     epochBus.connect(master);
     if (duck) { duck.gain.cancelScheduledValues(now); duck.gain.setValueAtTime(1, now); }
+    if (voiceEpoch) {
+      const oldV = voiceEpoch;
+      oldV.gain.cancelScheduledValues(now); oldV.gain.setValueAtTime(oldV.gain.value, now); oldV.gain.linearRampToValueAtTime(0, now + 0.12);
+      setTimeout(() => { try { oldV.disconnect(); } catch (e) { } }, 400);
+    }
+    voiceEpoch = ac.createGain(); voiceEpoch.gain.value = 1; voiceEpoch.connect(voiceBus);
+    if (vduck) { vduck.gain.cancelScheduledValues(now); vduck.gain.setValueAtTime(vduck.gain.value, now); vduck.gain.setTargetAtTime(SCORE_TRIM, now, 0.1); }
+  }
+
+  // ---------- narration
+  // VOICE.mp3 is one recording of every line, laid end to end; VOICE.clips[i] = { o: offset, d: duration }
+  let voiceBytes = null;
+  function loadVoice() {
+    if (typeof VOICE === 'undefined' || !VOICE.mp3) return Promise.resolve(false);
+    if (!voiceBytes) {
+      const bin = atob(VOICE.mp3); voiceBytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) voiceBytes[i] = bin.charCodeAt(i);
+    }
+    const ctx = ac, copy = voiceBytes.slice(0).buffer;
+    return new Promise(res => {
+      try {
+        const p = ctx.decodeAudioData(copy, b => { if (ac === ctx) vbuf = b; res(true); }, () => res(false));
+        if (p && p.catch) p.catch(() => res(false));
+      } catch (e) { res(false); }
+    });
+  }
+  // speak line idx at context time `when`, starting `off` seconds into it (after a seek)
+  function voice(when, idx, off = 0) {
+    const c = VOICE.clips[idx];
+    if (!vbuf || !c || off >= c.d - 0.08) return;
+    const s = ac.createBufferSource(); s.buffer = vbuf;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(1, when + (off > 0 ? 0.08 : 0.004));
+    s.connect(g); g.connect(voiceEpoch);
+    s.start(when, VOICE.pre + c.o + off, c.d - off);
+    const end = when + c.d - off;
+    vduck.gain.setTargetAtTime(VOICE_DUCK, Math.max(ac.currentTime, when - 0.3), 0.09);
+    vduck.gain.setTargetAtTime(SCORE_TRIM, end + 0.15, 0.4);
   }
 
   // Continuous beds whose levels follow the picture every frame
@@ -374,7 +428,7 @@ const Sound = (() => {
     n.connect(lp); lp.connect(g); g.connect(sfxBus); n.start(when, Math.random() * 2); n.stop(when + dur + 0.1);
   }
 
-  const INSTR = { piano, pad, bowed, choir, bell, heart, breath, tick, whoosh, boom, rub, wave, rain, gate };
+  const INSTR = { piano, pad, bowed, choir, bell, heart, breath, tick, whoosh, boom, rub, wave, rain, gate, voice };
 
   function play(ev, when, offset = 0) {
     if (!ok) return;
@@ -383,6 +437,7 @@ const Sound = (() => {
     const a = ev.a || [];
     if (offset > 0) {
       // joining a sustained event mid-way: shorten its duration (arg index 2 is dur for pad/choir, 1 for bowed)
+      if (ev.i === 'voice') { voice(when, a[0], offset); return; }
       const b = a.slice();
       if (ev.i === 'pad') { b[1] = Math.max(0.5, b[1] - offset); b[2] = Object.assign({}, b[2], { att: 0.8 }); }
       else if (ev.i === 'choir') { b[1] = Math.max(0.5, b[1] - offset); }
@@ -400,9 +455,10 @@ const Sound = (() => {
     get time() { return ac ? ac.currentTime : 0; },
     resume() { if (ac && ac.state !== 'running') return ac.resume(); return Promise.resolve(); },
     suspend() { if (ac && ac.state === 'running') return ac.suspend(); return Promise.resolve(); },
-    setMuted(m) { muted = m; if (ok) master.gain.setTargetAtTime(m ? 0 : 0.95, ac.currentTime, 0.08); },
-    fadeIn() { if (ok && !muted) master.gain.setTargetAtTime(0.95, ac.currentTime, 0.3); },
-    setMaster(v) { if (ok) master.gain.value = v; },
+    setMuted(m) { muted = m; if (ok) { master.gain.setTargetAtTime(m ? 0 : 0.95, ac.currentTime, 0.08); voiceOut.gain.setTargetAtTime(m ? 0 : 1, ac.currentTime, 0.08); } },
+    fadeIn() { if (ok && !muted) { master.gain.setTargetAtTime(0.95, ac.currentTime, 0.3); voiceOut.gain.setTargetAtTime(1, ac.currentTime, 0.3); } },
+    setMaster(v) { if (ok) { master.gain.value = v; voiceOut.gain.value = v / 0.95; } },
+    get voiceReady() { return voiceReady; },
     get muted() { return muted; },
   };
 })();

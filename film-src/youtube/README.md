@@ -37,7 +37,7 @@ Mender: repair and rest
 Keel: spine and balance
 Kindle: senses and wonder
 
-Every frame and every note of music in this film was generated in code: canvas animation and a synthesized score, with no stock footage, images or audio.
+Every frame and every note of music in this film was generated in code: canvas animation and a synthesized score, with no stock footage, images or audio. The narration (the author's own words) is voiced by an AI text-to-speech narrator made with the open-source models Chatterbox-Turbo and Kokoro.
 
 ## Tags
 
@@ -47,4 +47,5 @@ animated short film, short film, animation, death and dying, mortality, emotiona
 
 - **Category:** Film & Animation
 - **Audience:** Not made for kids (the narration contains mild language: "drag my ass out of there").
+- **Altered or synthetic content:** the narrator's voice is AI-generated, but it is not a copy of any real person and the film is plainly animated. YouTube asks for disclosure when realistic content could be mistaken for a real person or event, so this is your call. The description above already says the voice is AI, and answering "Yes" only adds a small label.
 - **Captions:** already burned into the picture. Optionally upload `captions.srt` as well, for accessibility and search.

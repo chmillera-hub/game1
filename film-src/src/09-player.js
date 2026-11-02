@@ -122,7 +122,8 @@
       const out = clamp((L.d - lt) / 0.9);
       const stagger = Math.min(0.11, 1.4 / L.spans.length);
       for (let i = 0; i < L.spans.length; i++) {
-        const k = smooth((lt - i * stagger) / 0.7) * out;
+        // with narration, each word surfaces just ahead of the voice speaking it
+        const k = (L.w ? smooth((lt - L.w[i] + 0.12) / 0.45) : smooth((lt - i * stagger) / 0.7)) * out;
         const s = L.spans[i];
         s.style.opacity = k.toFixed(3);
         s.style.transform = `translateY(${((1 - k) * 0.28).toFixed(3)}em)`;
@@ -160,6 +161,12 @@
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { }
     Sound.init();
     Sound.fadeIn();
+    // the narration decodes in the background; if a line is already under way when it lands, join it
+    Sound.voiceReady.then(ok => {
+      if (!ok || !P.playing) return;
+      const t = clockT();
+      for (const ev of EV) if (ev.i === 'voice' && ev.t <= t && ev.t + ev.len > t + 0.3) Sound.play(ev, Sound.time + 0.03, t - ev.t);
+    });
     intro.classList.add('gone');
     setTimeout(() => { intro.hidden = true; }, 1600);
     seek(0, false);
