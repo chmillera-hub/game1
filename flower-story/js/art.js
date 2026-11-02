@@ -1221,6 +1221,21 @@
     ctx.scale(S * facing, S);
     if (o.glow) Art.glow(ctx, shX, shY + 20, 260, '#ffd38a', o.glow * 0.6);
     const sleeveB = U.shade(look.shirt, -0.2), pantsB = U.shade(look.pants, -0.22);
+    const walkPoles = look.poles && pose === 'walk' && o.poles !== false;
+    const pole = (arm, dark) => {
+      const hx = arm.x2, hy = arm.y2 - 4, tx2 = arm.x2 + 26, ty2 = -1;
+      const dx = tx2 - hx, dy = ty2 - hy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = U.shade(look.pole || '#6f7680', dark); ctx.lineWidth = 4.4;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx2, ty2); ctx.stroke();
+      ctx.strokeStyle = U.shade(look.poleHi || '#d3d7dd', dark); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(hx + ux * 12 - uy * 0.8, hy + uy * 12 + ux * 0.8); ctx.lineTo(tx2 - ux * 6, ty2 - uy * 6); ctx.stroke();
+      ctx.strokeStyle = '#272b35'; ctx.lineWidth = 5.4;
+      ctx.beginPath(); ctx.moveTo(hx - ux * 7, hy - uy * 7); ctx.lineTo(hx + ux * 9, hy + uy * 9); ctx.stroke();
+      ctx.strokeStyle = '#3a3f4b'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(tx2 - ux * 9 - uy * 5, ty2 - uy * 9 + ux * 5); ctx.lineTo(tx2 - ux * 9 + uy * 5, ty2 - uy * 9 - ux * 5); ctx.stroke();
+    };
+    if (walkPoles) pole(armB, -0.18);
     // back arm
     strokeLimb(ctx, armB, 13, 12, sleeveB);
     ctx.fillStyle = U.shade(look.skin, -0.15);
@@ -1314,11 +1329,8 @@
     ctx.rotate(hTilt + lean * 0.3);
     drawHeadLocal(ctx, look, o.face || {}, head.turn || 0, t, seed);
     ctx.restore();
-    // trekking poles
-    if (look.poles && pose === 'walk' && o.poles !== false) {
-      ctx.strokeStyle = look.pole || '#c8ccd2'; ctx.lineWidth = 3.2;
-      ctx.beginPath(); ctx.moveTo(armF.x2, armF.y2 - 10); ctx.lineTo(armF.x2 + 26, 0); ctx.stroke();
-    }
+    // trekking poles (front)
+    if (walkPoles) pole(armF, 0);
     // front arm
     strokeLimb(ctx, armF, 13.5, 12.5, look.shirt);
     ctx.fillStyle = look.skin;
@@ -1784,7 +1796,7 @@
         rows = i + U.smooth(Math.min(1, k / 3));
         rem -= ln.length;
       }
-      fw = Math.min(bw, Math.max(cw + padX * 2, padX * 2 + 110));
+      fw = tx <= L + bw * 0.55 ? Math.min(bw, Math.max(cw + padX * 2, padX * 2 + 110)) : bw;
       fh = Math.min(bh, Math.max(1, rows) * lh + padY * 2);
     }
     // pop springs out of the tail tip
