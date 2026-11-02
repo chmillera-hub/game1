@@ -1,0 +1,834 @@
+[
+ {
+  "T0": 1.7,
+  "T1": 11.6,
+  "text": "The Hikers,",
+  "kind": "title",
+  "who": null,
+  "scene": "title"
+ },
+ {
+  "T0": 3.3,
+  "T1": 11.6,
+  "text": "the Flower,",
+  "kind": "title",
+  "who": null,
+  "scene": "title"
+ },
+ {
+  "T0": 5.1,
+  "T1": 11.6,
+  "text": "and the Meaning We Create",
+  "kind": "title",
+  "who": null,
+  "scene": "title"
+ },
+ {
+  "T0": 7.5,
+  "T1": 11.6,
+  "text": "a short film about stopping",
+  "kind": "narration",
+  "who": null,
+  "scene": "title"
+ },
+ {
+  "T0": 14.4,
+  "T1": 18.7,
+  "text": "I imagine that I’m on a hike with a group of people.",
+  "kind": "narration",
+  "who": null,
+  "scene": "trail"
+ },
+ {
+  "T0": 19.6,
+  "T1": 21.5,
+  "text": "Summit or bust!",
+  "kind": "dialogue",
+  "who": "h1",
+  "scene": "trail"
+ },
+ {
+  "T0": 22.3,
+  "T1": 25.7,
+  "text": "The view up there is supposed to be unreal.",
+  "kind": "dialogue",
+  "who": "h3",
+  "scene": "trail"
+ },
+ {
+  "T0": 26.4,
+  "T1": 28.6,
+  "text": "That’s where it finally means something.",
+  "kind": "dialogue",
+  "who": "h2",
+  "scene": "trail"
+ },
+ {
+  "T0": 29.2,
+  "T1": 35.5,
+  "text": "Everyone’s talking about how the trail is supposed to lead to this incredible view at the summit—",
+  "kind": "narration",
+  "who": null,
+  "scene": "trail"
+ },
+ {
+  "T0": 36.2,
+  "T1": 38.9,
+  "text": "a place where they’ll finally feel something meaningful.",
+  "kind": "narration",
+  "who": null,
+  "scene": "trail"
+ },
+ {
+  "T0": 39.7,
+  "T1": 41.6,
+  "text": "Keep the pace, people!",
+  "kind": "dialogue",
+  "who": "h1",
+  "scene": "trail"
+ },
+ {
+  "T0": 42.4,
+  "T1": 45,
+  "text": "I’m walking with them, but halfway through…",
+  "kind": "narration",
+  "who": null,
+  "scene": "trail"
+ },
+ {
+  "T0": 46.6,
+  "T1": 49.8,
+  "text": "…a single flower catches my attention.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower"
+ },
+ {
+  "T0": 56.7,
+  "T1": 61.5,
+  "text": "It’s small, unassuming, standing alone in the middle of the forest.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower"
+ },
+ {
+  "T0": 65.3,
+  "T1": 69.7,
+  "text": "I stop.",
+  "kind": "title",
+  "who": null,
+  "scene": "flower"
+ },
+ {
+  "T0": 73.6,
+  "T1": 76.2,
+  "text": "Hey, you guys go ahead.",
+  "kind": "dialogue",
+  "who": "me",
+  "scene": "go-ahead"
+ },
+ {
+  "T0": 76.2,
+  "T1": 78.3,
+  "text": "I tell the group.",
+  "kind": "narration",
+  "who": null,
+  "scene": "go-ahead"
+ },
+ {
+  "T0": 78.2,
+  "T1": 80.7,
+  "text": "I’m good right here.",
+  "kind": "dialogue",
+  "who": "me",
+  "scene": "go-ahead"
+ },
+ {
+  "T0": 81.5,
+  "T1": 84.1,
+  "text": "They look at me like I’m nuts,",
+  "kind": "narration",
+  "who": null,
+  "scene": "go-ahead"
+ },
+ {
+  "T0": 84.8,
+  "T1": 87.4,
+  "text": "but they shrug and keep walking.",
+  "kind": "narration",
+  "who": null,
+  "scene": "go-ahead"
+ },
+ {
+  "T0": 99.2,
+  "T1": 103,
+  "text": "I take a moment observing the flower, imagining a story.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 106.4,
+  "T1": 111,
+  "text": "Maybe it grew here, all alone, thinking no one would ever notice.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 111.8,
+  "T1": 115.1,
+  "text": "Maybe it felt invisible, like it didn’t matter.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 116.3,
+  "T1": 118.7,
+  "text": "But then I came along.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 119.5,
+  "T1": 121.6,
+  "text": "I saw it.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 122.4,
+  "T1": 125,
+  "text": "I made it matter.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 126.4,
+  "T1": 129.7,
+  "text": "I gave it more meaning within my lived experience",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 130.5,
+  "T1": 134.9,
+  "text": "by doing more thinking about how this flower—or maybe flowers in general—",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 135.7,
+  "T1": 138.6,
+  "text": "might relate to the universe we live in.",
+  "kind": "narration",
+  "who": null,
+  "scene": "flower-story"
+ },
+ {
+  "T0": 140.9,
+  "T1": 145.1,
+  "text": "137.5°",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 141.3,
+  "T1": 145.1,
+  "text": "1 · 1 · 2 · 3 · 5 · 8 · 13 · 21 · 34 · 55",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 141.5,
+  "T1": 145.1,
+  "text": "the golden angle",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 142.8,
+  "T1": 145.1,
+  "text": "5",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 143.1,
+  "T1": 145.1,
+  "text": "8",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 143.4,
+  "T1": 145.1,
+  "text": "13",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 143.7,
+  "T1": 145.1,
+  "text": "21",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 144,
+  "T1": 145.1,
+  "text": "34",
+  "kind": "hand",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 145.5,
+  "T1": 149.9,
+  "text": "Maybe the beauty of a flower represents a kind of acknowledgement",
+  "kind": "narration",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 150.7,
+  "T1": 153.4,
+  "text": "of potentially meaningful complexity",
+  "kind": "narration",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 158.7,
+  "T1": 162.5,
+  "text": "that stands out among an otherwise crowded, benign landscape",
+  "kind": "narration",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 163.3,
+  "T1": 167.1,
+  "text": "that we might normally observe within our conscious awareness.",
+  "kind": "narration",
+  "who": null,
+  "scene": "complexity"
+ },
+ {
+  "T0": 178.1,
+  "T1": 181.8,
+  "text": "So maybe the flower caught my eye when I was hiking",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 182.6,
+  "T1": 185.4,
+  "text": "because something within my mind said to me:",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 185.9,
+  "T1": 191.5,
+  "text": "Let’s stop the current activity",
+  "kind": "hand",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 187.5,
+  "T1": 191.5,
+  "text": "and ask ourselves—\nwhat does this flower mean to me?",
+  "kind": "hand",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 192.5,
+  "T1": 197.1,
+  "text": "Because it might have, unironically, more meaning than hiking to a summit",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 197.9,
+  "T1": 200.9,
+  "text": "that may not have been justified as meaningful",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 201.7,
+  "T1": 206.3,
+  "text": "beyond potentially algorithmic societal norms of performative busyness or normalcy—",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 207.1,
+  "T1": 211.7,
+  "text": "instead of pausing and reflecting on the vibrant, colorful expression of life",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 212.5,
+  "T1": 215.8,
+  "text": "from a complex living structure called a flower.",
+  "kind": "narration",
+  "who": null,
+  "scene": "inner-voice"
+ },
+ {
+  "T0": 222.1,
+  "T1": 225.2,
+  "text": "Later, when the hikers come back down,",
+  "kind": "narration",
+  "who": null,
+  "scene": "return"
+ },
+ {
+  "T0": 228,
+  "T1": 232.4,
+  "text": "they’re sweaty and tired, with a distant look in their eyes.",
+  "kind": "narration",
+  "who": null,
+  "scene": "return"
+ },
+ {
+  "T0": 272.1,
+  "T1": 276.3,
+  "text": "The hikers stare at me like I’ve grown three heads.",
+  "kind": "narration",
+  "who": null,
+  "scene": "three-heads"
+ },
+ {
+  "T0": 287.7,
+  "T1": 290.3,
+  "text": "My emotions collectively facepalm, muttering,",
+  "kind": "narration",
+  "who": null,
+  "scene": "three-heads"
+ },
+ {
+  "T0": 290.8,
+  "T1": 294.8,
+  "text": "They’ll never get it.",
+  "kind": "hand",
+  "who": null,
+  "scene": "three-heads"
+ },
+ {
+  "T0": 296.9,
+  "T1": 301.9,
+  "text": "But the story doesn’t end there.",
+  "kind": "title",
+  "who": null,
+  "scene": "interlude"
+ },
+ {
+  "T0": 304.6,
+  "T1": 307,
+  "text": "Word gets around about the flower",
+  "kind": "narration",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 305.4,
+  "T1": 307.3,
+  "text": "…a FLOWER?",
+  "kind": "dialogue",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 307.8,
+  "T1": 312.5,
+  "text": "and how I smiled like a lunatic when I talked about it.",
+  "kind": "narration",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 308.2,
+  "T1": 310.1,
+  "text": "smiling like a lunatic",
+  "kind": "dialogue",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 311,
+  "T1": 312.9,
+  "text": "must be some flower",
+  "kind": "dialogue",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 314.1,
+  "T1": 315.9,
+  "text": "where do we get one?",
+  "kind": "dialogue",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 317.3,
+  "T1": 320.3,
+  "text": "A few days later…",
+  "kind": "narration",
+  "who": null,
+  "scene": "word-spreads"
+ },
+ {
+  "T0": 322.9,
+  "T1": 326.9,
+  "text": "…some of the hikers show up at Embarrassment’s flower shop,",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 327.7,
+  "T1": 330.3,
+  "text": "tracking mud all over the floor.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 330.8,
+  "T1": 333.5,
+  "text": "Hey, we’re here for the best flower.",
+  "kind": "dialogue",
+  "who": "h1",
+  "scene": "shop"
+ },
+ {
+  "T0": 334.3,
+  "T1": 338.5,
+  "text": "We heard you were talking about how meaningful his flower was.",
+  "kind": "dialogue",
+  "who": "h2",
+  "scene": "shop"
+ },
+ {
+  "T0": 339.1,
+  "T1": 341,
+  "text": "We want that.",
+  "kind": "dialogue",
+  "who": "h2",
+  "scene": "shop"
+ },
+ {
+  "T0": 341.7,
+  "T1": 344.5,
+  "text": "Embarrassment, the shop owner, rolls his eyes.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 345.2,
+  "T1": 348.1,
+  "text": "Sure, here’s a flower. That’ll be $10.",
+  "kind": "dialogue",
+  "who": "emb",
+  "scene": "shop"
+ },
+ {
+  "T0": 348.8,
+  "T1": 351.1,
+  "text": "$10? That’s not meaningful enough.",
+  "kind": "dialogue",
+  "who": "h1",
+  "scene": "shop"
+ },
+ {
+  "T0": 351.7,
+  "T1": 354.2,
+  "text": "We want something rare, something special!",
+  "kind": "dialogue",
+  "who": "h4",
+  "scene": "shop"
+ },
+ {
+  "T0": 354.9,
+  "T1": 358.5,
+  "text": "Embarrassment sighs, trudges to the back of the shop,",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 359.4,
+  "T1": 363.2,
+  "text": "and grabs some random flower he’s been ignoring for weeks.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 366.1,
+  "T1": 368,
+  "text": "Here.",
+  "kind": "dialogue",
+  "who": "emb",
+  "scene": "shop"
+ },
+ {
+  "T0": 368.6,
+  "T1": 371.1,
+  "text": "This one’s very rare. $200.",
+  "kind": "dialogue",
+  "who": "emb",
+  "scene": "shop"
+ },
+ {
+  "T0": 371.8,
+  "T1": 374.4,
+  "text": "The hikers don’t even flinch.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 375.4,
+  "T1": 380.4,
+  "text": "They hand over the money, grinning like they’ve just bought the secret to happiness.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 381.3,
+  "T1": 384.7,
+  "text": "They gather around the flower, beaming and congratulating themselves.",
+  "kind": "narration",
+  "who": null,
+  "scene": "shop"
+ },
+ {
+  "T0": 385.1,
+  "T1": 389.6,
+  "text": "This is it! This is the meaning we’ve been looking for!",
+  "kind": "dialogue",
+  "who": "all",
+  "scene": "shop"
+ },
+ {
+  "T0": 393,
+  "T1": 396,
+  "text": "Embarrassment watches them leave, shaking his head.",
+  "kind": "narration",
+  "who": null,
+  "scene": "fading-smiles"
+ },
+ {
+  "T0": 399.9,
+  "T1": 402.7,
+  "text": "Before they even make it to their car,",
+  "kind": "narration",
+  "who": null,
+  "scene": "fading-smiles"
+ },
+ {
+  "T0": 403.5,
+  "T1": 406.5,
+  "text": "their smiles have already started to fade.",
+  "kind": "narration",
+  "who": null,
+  "scene": "fading-smiles"
+ },
+ {
+  "T0": 416.7,
+  "T1": 420.7,
+  "text": "Meanwhile, I’m sitting nearby, watching the whole thing unfold.",
+  "kind": "narration",
+  "who": null,
+  "scene": "great-story"
+ },
+ {
+  "T0": 421.4,
+  "T1": 425.5,
+  "text": "That’s going to make a great story, don’t you think?",
+  "kind": "dialogue",
+  "who": "me",
+  "scene": "great-story"
+ },
+ {
+  "T0": 426.3,
+  "T1": 428.5,
+  "text": "Embarrassment smirks.",
+  "kind": "narration",
+  "who": null,
+  "scene": "great-story"
+ },
+ {
+  "T0": 429.2,
+  "T1": 433.5,
+  "text": "Yeah, and maybe they would’ve been happier if I charged $300?",
+  "kind": "dialogue",
+  "who": "emb",
+  "scene": "great-story"
+ },
+ {
+  "T0": 434.3,
+  "T1": 436.7,
+  "text": "…and I laugh.",
+  "kind": "narration",
+  "who": null,
+  "scene": "great-story"
+ },
+ {
+  "T0": 447.5,
+  "T1": 450.1,
+  "text": "And the story might be saying",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 451.1,
+  "T1": 457.1,
+  "text": "that an emotional need might not be something that society says is important or noteworthy.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 458.4,
+  "T1": 461.7,
+  "text": "Because when your emotion taps you on the shoulder",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 462.7,
+  "T1": 465.3,
+  "text": "and says, “Can we stop here?”",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 462.9,
+  "T1": 466,
+  "text": "Can we stop here?",
+  "kind": "hand",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 466.9,
+  "T1": 470.7,
+  "text": "then you might have the courage to pause and reflect—",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 471.8,
+  "T1": 476.2,
+  "text": "because soul-level introspection is what brings you more well-being and peace.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 477.5,
+  "T1": 482.5,
+  "text": "And then you might tell society, “Go on ahead. I’ll be okay.”",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 484.3,
+  "T1": 489.9,
+  "text": "Because I’m focusing on the parts of myself that make me a human being.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 491.1,
+  "T1": 494.3,
+  "text": "And those are what are important to me.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 496,
+  "T1": 498.8,
+  "text": "Not so much the summit.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 500.5,
+  "T1": 505.7,
+  "text": "But what my emotion is telling me my humanity needs.",
+  "kind": "narration",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 507.8,
+  "T1": 522.2,
+  "text": "The Hikers, ",
+  "kind": "title",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 508.5,
+  "T1": 522.2,
+  "text": "the Flower,",
+  "kind": "title",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 509.3,
+  "T1": 522.2,
+  "text": " and the Meaning We Create",
+  "kind": "title",
+  "who": null,
+  "scene": "reflection"
+ },
+ {
+  "T0": 510.4,
+  "T1": 522.2,
+  "text": "The End",
+  "kind": "title",
+  "who": null,
+  "scene": "reflection"
+ }
+]

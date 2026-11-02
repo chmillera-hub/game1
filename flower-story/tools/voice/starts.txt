@@ -1,0 +1,15 @@
+title 0.0
+trail 13.0
+flower 45.5
+go-ahead 71.5
+flower-story 97.5
+complexity 139.5
+inner-voice 176.7
+return 220.7
+three-heads 257.9
+interlude 294.9
+word-spreads 302.9
+shop 321.7
+fading-smiles 391.3
+great-story 415.3
+reflection 445.3
