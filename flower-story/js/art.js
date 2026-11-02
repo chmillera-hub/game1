@@ -84,7 +84,7 @@
     ctx.translate(-x, -y);
   };
   /** handheld camera drift / shake offset {x,y} */
-  Art.shake = (t, amt = 1, seed = 0) => ({
+  Art.shake = (t, amt = 1, seed = 0) => Art.reducedMotion ? { x: 0, y: 0 } : ({
     x: (U.noise1(t * 0.6, seed) * 6 + U.noise1(t * 7, seed + 3) * 1.2 * amt) * amt,
     y: (U.noise1(t * 0.5, seed + 9) * 4 + U.noise1(t * 7.5, seed + 5) * 1.2 * amt) * amt,
   });
@@ -1717,9 +1717,21 @@
       const maxW = o.maxW || 1560;
       const lines = Art.wrap(c, text, maxW);
       const lh = size * 1.18;
-      const cy = o.y === undefined ? 1011 : o.y;
+      const cy = o.y === undefined ? 1011 - (Art.captionLift || 0) : o.y;
       const y0 = cy - ((lines.length - 1) * lh) / 2;
       const reveal = o.reveal === undefined ? 1 : o.reveal;
+      const lifted = o.y === undefined ? clamp((Art.captionLift || 0) / 40) : 0;
+      if (lifted > 0.01) {
+        // a soft backing keeps a caption legible while it is lifted over the picture
+        let mw = 0;
+        for (const l of lines) mw = Math.max(mw, c.measureText(l).width);
+        c.save();
+        c.globalAlpha = base * alpha * 0.5 * lifted;
+        c.fillStyle = '#000';
+        roundRect(c, (o.x === undefined ? W / 2 : o.x) - (o.align === 'left' ? 24 : mw / 2 + 28), y0 - lh * 0.62, mw + 56, lh * (lines.length + 0.24), 18);
+        c.fill();
+        c.restore();
+      }
       const totalWords = lines.reduce((n, l) => n + l.split(' ').length, 0);
       let wi = 0;
       c.shadowColor = 'rgba(0,0,0,0.55)';

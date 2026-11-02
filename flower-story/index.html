@@ -51,7 +51,8 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
 
 /* ---------- control bar ---------- */
 #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0)); display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 6px 10px; opacity: 0; transition: opacity 0.35s ease; }
-#stage.active #bar, #stage:not(.playing) #bar { opacity: 1; }
+#stage.active #bar, #stage:not(.playing) #bar, #stage:focus-within #bar { opacity: 1; }
+#stage.playing:not(.active):not(:focus-within) #bar { pointer-events: none; }
 #stage:not(.started) #bar { display: none; }
 #stage:not(.active).playing { cursor: none; }
 .ctl { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--paper); }
@@ -68,18 +69,22 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
 #ticks .tick.major { height: 12px; margin-top: -6px; background: var(--paper); }
 #tip { position: absolute; bottom: 34px; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; border-radius: 8px; background: var(--glass); font-size: 0.82rem; color: var(--paper); pointer-events: none; backdrop-filter: blur(6px); }
 #time { font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--paper-dim); white-space: nowrap; }
-#chap { font-family: var(--font-display); font-style: italic; font-size: 1.12rem; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22ch; }
+#chap { font-family: var(--font-display); font-style: italic; font-size: 1.12rem; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 22ch; }
 @media (max-width: 640px) {
   #bar { grid-template-columns: auto minmax(0, 1fr) auto auto auto; padding-top: 18px; }
   #prev, #next, #chap { display: none; }
   .begin { font-size: 1rem; }
+}
+@media (pointer: coarse) {
+  .ctl { width: 46px; height: 46px; }
+  .sound-opt { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .begin, #bar { transition: none; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
 <body>
-<div id="stage" class="active">
+<div id="stage" class="active" lang="en">
   <canvas id="film" aria-label="Animated film: The Hikers, the Flower, and the Meaning We Create" role="img"></canvas>
 
   <div id="poster" class="overlay">
@@ -117,7 +122,8 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible + .switch { 
     </button>
     <button id="fs" class="ctl" type="button" aria-label="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
   </div>
-  <p class="sr" aria-live="polite">Press the Begin button to start the film. Space pauses, arrow keys skip.</p>
+  <p class="sr">An animated film with narration shown as captions. Press Begin the film to start; Space pauses, the arrow keys skip, N and P change scene.</p>
+  <p id="live" class="sr" aria-live="polite"></p>
 </div>
 
 <!-- BUILD:SCRIPTS -->
