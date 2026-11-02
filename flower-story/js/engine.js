@@ -57,6 +57,9 @@
   /* ---------------- canvas ---------------- */
   let canvas, ctx, buf, bctx, k = 1;
   let forcedSize = null;
+  // adaptive resolution: if frames run slow while playing, render fewer pixels
+  const QUALITY = [1, 0.84, 0.7, 0.58];
+  let qi = 0, slowFor = 0, fastFor = 0, frameEMA = 16.7;
   function resize() {
     const stage = document.getElementById('stage');
     const vw = stage ? stage.clientWidth : g.innerWidth, vh = stage ? stage.clientHeight : g.innerHeight;
@@ -67,7 +70,7 @@
     }
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
-    const dpr = forcedSize ? 1 : Math.min(g.devicePixelRatio || 1, 2);
+    const dpr = forcedSize ? 1 : Math.min(g.devicePixelRatio || 1, 2) * QUALITY[qi];
     let pw = Math.round(cssW * dpr), ph = Math.round(cssH * dpr);
     const maxW = 2560;
     if (pw > maxW) { ph = Math.round((ph * maxW) / pw); pw = maxW; }
@@ -227,6 +230,13 @@
   function tick(now) {
     const dt = Math.min(0.1, (now - last) / 1000 || 0);
     last = now;
+    if (Film.playing && !forcedSize && dt > 0 && dt < 0.1) {
+      frameEMA = frameEMA * 0.92 + dt * 1000 * 0.08;
+      if (frameEMA > 25) { slowFor += dt; fastFor = 0; } else if (frameEMA < 17.8) { fastFor += dt; slowFor = 0; } else { slowFor = Math.max(0, slowFor - dt); }
+      if (slowFor > 1.5 && qi < QUALITY.length - 1) { qi++; slowFor = 0; frameEMA = 20; resize(); }
+      else if (fastFor > 8 && qi > 0) { qi--; fastFor = 0; resize(); }
+      Film.quality = QUALITY[qi];
+    }
     if (Film.playing) {
       Film.t += dt * Film.speed;
       if (Film.t >= Film.total) { Film.t = Film.total; Film.playing = false; releaseWake(); ui.ended(); }

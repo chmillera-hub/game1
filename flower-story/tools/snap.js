@@ -83,10 +83,13 @@ const page_ = opt.page ? path.resolve(opt.page) : path.join(root, 'index.html');
     const shots = [], ms = [];
     for (let i = 0; i < times.length; i++) {
       const T = base + times[i];
+      // getImageData forces the deferred raster to happen now, so timings are honest
+      const flush = () => cv.getContext('2d').getImageData(0, 0, 1, 1);
       const t0 = performance.now();
       FILM.renderAt(T);
+      if (timing) flush();
       ms.push(performance.now() - t0);
-      if (timing) { for (let r = 0; r < 2; r++) { const a = performance.now(); FILM.renderAt(T + 0.016 * (r + 1)); ms.push(performance.now() - a); } FILM.renderAt(T); }
+      if (timing) { for (let r = 0; r < 2; r++) { const a = performance.now(); FILM.renderAt(T + 0.016 * (r + 1)); flush(); ms.push(performance.now() - a); } FILM.renderAt(T); }
       if (sheet) {
         const x = (i % cols) * cell, y = Math.floor(i / cols) * (ch + 26);
         sx.drawImage(cv, x, y, cell, ch);
@@ -112,7 +115,7 @@ const page_ = opt.page ? path.resolve(opt.page) : path.join(root, 'index.html');
   }
   const avg = results.ms.reduce((a, b) => a + b, 0) / results.ms.length;
   const max = Math.max(...results.ms);
-  console.log(`render ms: avg ${avg.toFixed(1)}  max ${max.toFixed(1)}  (headless software raster; real GPUs are much faster)`);
+  console.log(`render ms: avg ${avg.toFixed(1)}  max ${max.toFixed(1)}  ${opt.timing ? '(flushed: true software-raster cost; GPUs are faster)' : '(command recording only; add --timing for flushed cost)'}`);
   if (logs.length) console.log('console:\n' + logs.join('\n'));
   if (results.errors.length) {
     console.log('SCENE ERRORS:');
