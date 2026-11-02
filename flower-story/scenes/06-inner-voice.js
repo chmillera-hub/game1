@@ -29,7 +29,7 @@
   const FERN = { x: 956, y: 936, s: 1.08 };
   const ROCK_GREY = '#8a8f86', MOSS = U.mix(P.grass, P.trees[2], 0.25);
   const FERN_C1 = U.mix(P.grass, P.trees[2], 0.45), FERN_C2 = U.mix(P.grass, P.trees[2], 0.2);
-  const TW = 40;                                     // 05's duration: wind, sway, blinks carry on from its clock
+  const TW = 37.2;                                   // 05's duration: wind, sway, blinks carry on from its clock
   const WONDER = Art.EMO.wonder, INK = '#ffe9b4', INK_GLOW = 'rgba(92,40,0,0.9)';
 
   /* ---------------- beats (local seconds) ---------------- */
@@ -916,7 +916,7 @@
   const CW = { x: 1060, y: 780, z: 4.3 }, CW2 = { x: 1058, y: 778, z: 4.5 };
   const CE = { x: 934, y: 752, z: 1.62 };
   const CAM05_0 = { x: 912, y: 752, z: 1.62 }, CAM05_1 = { x: 922, y: 748, z: 1.7 };
-  const cam05 = (t) => camLerp(CAM05_0, CAM05_1, ez(t + TW, 36.8, 42, 'inSine'));   // 05's camera, continued
+  const cam05 = (t) => camLerp(CAM05_0, CAM05_1, ez(t + TW, 34.0, 39.2, 'inSine'));   // 05's camera, continued (its camFinal: real1 − 0.4 → D + 2)
   function camAt(t) {
     let c;
     if (t < 7.9) c = camLerp(cam05(t), C1, ez(t, 1.2, 7.9, 'inOutSine'));

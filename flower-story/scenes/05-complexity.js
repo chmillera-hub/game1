@@ -12,7 +12,7 @@
 (function () {
   'use strict';
   const { W, H, TAU, clamp, lerp } = U;
-  const D = 40;
+  const D = 37.2;                                   // (06's TW and its 05-camera constants follow this)
   const D04 = 42;                                   // 04's duration: the heart's clock continues
   const P = Art.TOD.golden;
   const GA = Art.GOLDEN_ANGLE;
@@ -20,18 +20,20 @@
   const CX = W / 2, CY = H / 2;
 
   /* ---------------- timeline ---------------- */
+  // The notebook is brisk: 04's last line ("…the universe we live in.") ends just before the cut,
+  // so the annotations are all drawn by ~4.6 s and the seeds start turning into stars at 5.4 s.
   const TL = {
-    angle0: 1.2, fib0: 3.1, fibStep: 0.4, notesOut: 7.6,
-    star0: 8.2, star1: 14.2,
-    knot0: 18.2, knotAt: 20.35, dis0: 19.95, dis1: 21.3,
-    pull0: 22.2, pull1: 31.0,
-    warm0: 30.4, din0: 31.6, din1: 35.15, forest0: 32.2, real0: 35.1, real1: 37.2,
+    angle0: 0.4, fib0: 1.6, fibStep: 0.28, notesOut: 5.0,
+    star0: 5.4, star1: 11.4,
+    knot0: 15.4, knotAt: 17.55, dis0: 17.15, dis1: 18.5,
+    pull0: 19.4, pull1: 28.2,
+    warm0: 27.6, din0: 28.8, din1: 32.35, forest0: 29.4, real0: 32.3, real1: 34.4,
   };
   const CAPS = [
-    [8.6, 13.4, 'Maybe the beauty of a flower represents a kind of acknowledgement'],
-    [13.8, 16.9, 'of potentially meaningful complexity'],
-    [21.8, 26.0, 'that stands out among an otherwise crowded, benign landscape'],
-    [26.4, 30.6, 'that we might normally observe within our conscious awareness.'],
+    [5.8, 10.6, 'Maybe the beauty of a flower represents a kind of acknowledgement'],
+    [11.0, 14.1, 'of potentially meaningful complexity'],
+    [19.0, 23.2, 'that stands out among an otherwise crowded, benign landscape'],
+    [23.6, 27.8, 'that we might normally observe within our conscious awareness.'],
   ];
 
   /* ---------------- shared helpers (local copies; scenes may not share code) ---------------- */
@@ -732,7 +734,7 @@
     ctx.restore();
   }
   function meFinal(t) {
-    const look = U.keys(t, [[0, 0.75], [38.2, 0.75], [39.2, 0.5]]);
+    const look = U.keys(t, [[0, 0.75], [35.4, 0.75], [36.4, 0.5]]);
     return { x: MX, y: MY, look: 'me', pose: 'sit', s: 1, t, facing: 1, lean: 0.05, head: { tilt: 0.11 + 0.02 * Math.sin(t * 0.6) }, face: { smile: 0.5, lookX: 1, lookY: look } };
   }
   /**
@@ -800,21 +802,21 @@
     title: 'Meaningful Complexity',
     duration: D,
     mood: 'cosmic',
-    moods: [[0, 'cosmic'], [31.5, 'tender']],
+    moods: [[0, 'cosmic'], [28.7, 'tender']],
     sfx: [
-      [1.2, 'scratch', { gain: 0.3 }],
-      [2.2, 'chime', { gain: 0.35 }],
-      [3.1, 'scratch', { gain: 0.25 }],
-      [4.4, 'scratch', { gain: 0.25 }],
-      [5.6, 'shimmer', { gain: 0.3 }],
-      [8.2, 'swell', { gain: 0.55 }],
-      [13.6, 'shimmer', { gain: 0.45 }],
-      [18.4, 'whoosh', { gain: 0.35 }],
-      [20.2, 'chime', { gain: 0.4 }],
-      [21.6, 'wind', { gain: 0.3 }],
-      [30.8, 'bloom', { gain: 0.5 }],
-      [33.8, 'bird', { gain: 0.35 }],
-      [37.4, 'bird', { gain: 0.4 }],
+      [0.4, 'scratch', { gain: 0.3 }],          // the golden angle is drawn
+      [1.4, 'chime', { gain: 0.35 }],           // "137.5°"
+      [1.6, 'scratch', { gain: 0.25 }],         // the Fibonacci numbers
+      [2.5, 'scratch', { gain: 0.25 }],
+      [3.35, 'shimmer', { gain: 0.3 }],         // the spirals light up
+      [5.4, 'swell', { gain: 0.55 }],           // seeds become stars
+      [10.8, 'shimmer', { gain: 0.45 }],
+      [15.6, 'whoosh', { gain: 0.35 }],
+      [17.4, 'chime', { gain: 0.4 }],
+      [18.8, 'wind', { gain: 0.3 }],
+      [28.0, 'bloom', { gain: 0.5 }],
+      [31.0, 'bird', { gain: 0.35 }],
+      [34.6, 'bird', { gain: 0.4 }],
     ],
     crossIn: 0,        // 04 ends on exactly this frame (same heart, same rotation clock): a seamless cut
     fadeIn: 0,
@@ -847,6 +849,8 @@
         // the heart's warm centre becomes the galaxy's core
         Art.glow(ctx, v.x, v.y, v.R * 0.55, '#ffd98a', 0.22 * (1 - ez(t, TL.star0, TL.star0 + 2)));
         Art.glow(ctx, v.x, v.y, v.R * 0.55, '#ffe6b8', 0.35 * ez(t, TL.star0 + 2, TL.star1));
+        // the notebook finishes fading over the morph's first moments (the view is still the heart's until star0 + 0.6)
+        if (t < TL.star0 + 0.3) notebook(ctx, t, R0, rot, 1 - ez(t, TL.notesOut, TL.star0 + 0.3, 'inOutSine'));
         // the magenta knot we fly into
         const kn = galaxyPoint(v, KNOT.r / GRAD, KNOT.a);
         const kg = ez(t, TL.star1 - 1, TL.knot0 + 1, 'inOutSine');

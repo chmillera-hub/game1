@@ -556,6 +556,19 @@
         }
         c2.restore();
         Art.grass(c2, { seed: 5, y: (x) => Art.groundY(x, go) + 1, offset: off, spacing: 8, h: 22, width: 2.9, color: P.grass, color2: U.shade(P.grass, 0.14), t: wa, wind: 0.7 });
+        // the flower's little mossy island at the trail's edge: soft-edged, and part of the ground, so in the
+        // close-up it melts with the ground around it (only the flower, its rock and ferns stay sharp)
+        const fx = FX - off;
+        if (fx > -260 && fx < W + 260) {
+          const col = U.shade(P.ground, -0.08);
+          c2.save();
+          c2.translate(fx + 6, FY + 4); c2.scale(1, 13 / 96);
+          const gr = c2.createRadialGradient(0, 0, 0, 0, 0, 96);
+          gr.addColorStop(0, U.rgba(col, 1)); gr.addColorStop(0.6, U.rgba(col, 1)); gr.addColorStop(1, U.rgba(col, 0));
+          c2.fillStyle = gr;
+          c2.beginPath(); c2.arc(0, 0, 96, 0, TAU); c2.fill();
+          c2.restore();
+        }
       });
 
       // the others: screen-space bounds so their soft pass only touches where they are
@@ -633,8 +646,6 @@
       const drawSpot = (c) => layer(c, cam, 1, (c2, off) => {
         const fx = FX - off, P = Pd;
         if (fx < -260 || fx > W + 260) return;
-        c2.fillStyle = U.shade(P.ground, -0.08);              // a little mossy island at the trail's edge
-        c2.beginPath(); c2.ellipse(fx + 6, FY + 4, 96, 13, 0, 0, TAU); c2.fill();
         mossyRock(c2, fx + ROCK.dx, ROCK.y, ROCK.w, ROCK.h, U.mix(P.grass, P.trees[2], 0.25), 7, dP);
         Art.fern(c2, fx + FERN.dx, FERN.y, FERN.s, U.mix(P.grass, P.trees[2], 0.45), U.wind(wa, fx, 2) * 0.6);
         Art.fern(c2, fx + FERN.dx + 22, FERN.y + 2, FERN.s * 0.6, U.mix(P.grass, P.trees[2], 0.2), U.wind(wa, fx + 30, 3) * 0.6);

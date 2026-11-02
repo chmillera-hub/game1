@@ -31,25 +31,25 @@ The hikers aren't villains; they're people on autopilot. The film argues gently 
 - **In the shop the narrator is present the whole time**, sitting on a bench by the window
   in the corner (half-hidden by plants, sipping tea) — revealed properly in scene 13.
 
-## Running order & target durations (seconds; ±15% is fine — report your final value)
+## Running order & final durations (seconds; total 8 min 42 s)
 
 | # | id | title | dur | chapter label |
 |---|----|-------|-----|---------------|
 | 00 | title | Title | 13 | — |
-| 01 | trail | The Trail | 30 | Part One · The Hike |
+| 01 | trail | The Trail | 32.5 | Part One · The Hike |
 | 02 | flower | The Flower | 26 | |
 | 03 | go-ahead | Go On Ahead | 26 | |
-| 04 | flower-story | The Flower’s Story | 40 | |
-| 05 | complexity | Meaningful Complexity | 40 | |
+| 04 | flower-story | The Flower’s Story | 42 | |
+| 05 | complexity | Meaningful Complexity | 37.2 | |
 | 06 | inner-voice | The Inner Voice | 44 | |
-| 07 | return | The Return | 36 | |
-| 08 | three-heads | Three Heads | 36 | |
+| 07 | return | The Return | 37.2 | |
+| 08 | three-heads | Three Heads | 37 | |
 | 09 | interlude | Interlude | 8 | — |
-| 10 | word-spreads | Word Gets Around | 18 | Part Two · The Shop |
-| 11 | shop | Embarrassment’s Flowers | 62 | |
+| 10 | word-spreads | Word Gets Around | 18.8 | Part Two · The Shop |
+| 11 | shop | Embarrassment’s Flowers | 69.6 | |
 | 12 | fading-smiles | The Parking Lot | 24 | |
 | 13 | great-story | A Great Story | 30 | |
-| 14 | reflection | What My Humanity Needs | 75 | Part Three · The Meaning |
+| 14 | reflection | What My Humanity Needs | 77 | Part Three · The Meaning |
 
 ---
 

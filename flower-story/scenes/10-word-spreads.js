@@ -460,6 +460,25 @@
     g.fillStyle = 'rgba(255,255,255,0.07)'; poly(g, [x0 + 112, y1, x0 + 132, y1, x0 + 276, y0, x0 + 256, y0]); g.fill();
     g.restore();
   }
+  /** the shop name hand-painted across the display window, read from the
+   *  street: the lettering scenes 11/13 show mirrored from inside (same
+   *  Caveat 700, same pink over a rose shade), fitted to width w centred at
+   *  (cx, cy). Inside, the 0.85 pink sits on the bright street; here it sits
+   *  on the dark display, so it is a touch more opaque to read as the same
+   *  pink, and a soft dark halo under the shade keeps it legible over the plants. */
+  function windowLettering(g, cx, cy, w) {
+    const text = 'Embarrassment’s Flowers', a0 = g.globalAlpha;
+    g.save();
+    g.font = Art.font(40, 'hand', 700);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const k = w / g.measureText(text).width;
+    g.translate(cx, cy); g.scale(k, k);
+    g.shadowColor = 'rgba(24,15,12,0.9)'; g.shadowBlur = 6 * TK.pxScale(g);
+    g.globalAlpha = a0 * 0.5; g.fillStyle = '#c96b62'; g.fillText(text, 0, 2);
+    g.shadowColor = 'transparent'; g.shadowBlur = 0;
+    g.globalAlpha = a0 * 0.95; g.fillStyle = TK.C.sign; g.fillText(text, 0, 0);
+    g.restore();
+  }
   function upperWindow(g, cx, yTop, yBot) {
     const C = TK.C, w = 148, h = yBot - yTop;
     for (const sx of [-1, 1]) {
@@ -687,7 +706,8 @@
    * façade on the pavement, s = scale (people at the same s fit the door).
    * o = { doorOpen 0..1, bell (swing amplitude, decays), bellT (time of the
    *       last ring), wind, lit (lantern), between(ctx) — drawn after the
-   *       door and before the awning (people in the doorway) }
+   *       door and before the awning and the window lettering (people in
+   *       the doorway) }
    * returns anchors in the caller's coordinates.
    */
   TK.shopfront = (ctx, x, y, s, t, o = {}) => {
@@ -704,6 +724,9 @@
     ctx.translate(x, y);
     ctx.scale(s, s);
     shopAwning(ctx, t, o.wind === undefined ? 1 : o.wind);
+    // on the glass just below the valance; drawn after the awning so its shade
+    // band doesn't cut across the letters (scenes 11/13 show it from inside)
+    windowLettering(ctx, -114, -324, 262);
     const bt = t - (o.bellT === undefined ? -99 : o.bellT);
     const swing = (o.bell || 0) * (bt >= 0 ? Math.sin(bt * 16) * Math.exp(-bt * 2.2) : 0) + Math.sin(t * 1.3) * 0.03;
     shopBell(ctx, t, swing);

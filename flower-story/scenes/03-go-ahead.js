@@ -130,18 +130,31 @@
     if (after) after(ctx, a, facing);
     ctx.restore();
   }
-  // h1's trekking poles when he isn't walking (the kit only draws them in the walk pose): held in
-  // the front hand, rigid, tips toward the ground ahead — the same geometry the kit uses mid-stride
+  // h1's trekking poles when he isn't walking (the kit only draws them in the walk pose): both held in
+  // the front hand, rigid, tips toward the ground ahead — the same geometry the kit uses mid-stride, and
+  // the kit's styled poles (steel shaft with a highlight, dark grip in the fist, basket above the tip),
+  // the far one a shade darker as the kit draws the back pole
   function heldPoles(ctx, a, facing, look) {
     const S = a.scale, L = 132 * S;
-    const gx = a.handF.x, gy0 = a.handF.y - 10 * S;
+    const gx = a.handF.x, gy0 = a.handF.y - 10 * S;          // pivot of the rigid poles
     const dx = 26 * S * facing, dy = a.feet.y - gy0;
     const n = Math.hypot(dx, dy) || 1;
-    ctx.strokeStyle = '#c8ccd2'; ctx.lineWidth = 3.2 * S; ctx.lineCap = 'round';
-    for (const sp of [-0.035, 0.035]) {
+    const hx = a.handF.x, hy = a.handF.y - 4 * S;            // the kit's grip point, inside the fist
+    ctx.lineCap = 'round';
+    for (const [sp, dark] of [[0.035, -0.18], [-0.035, 0]]) {
       const c = Math.cos(sp), si = Math.sin(sp);
-      const ux = (dx * c - dy * si) / n, uy = (dx * si + dy * c) / n;
-      ctx.beginPath(); ctx.moveTo(gx, gy0); ctx.lineTo(gx + ux * L, gy0 + uy * L); ctx.stroke();
+      const tx = gx + ((dx * c - dy * si) / n) * L, ty = gy0 + ((dx * si + dy * c) / n) * L;
+      const len = Math.hypot(tx - hx, ty - hy) || 1, ux = (tx - hx) / len, uy = (ty - hy) / len;
+      const nx = -uy * facing, ny = ux * facing;             // the kit's body-local normal, mirrored with him
+      ctx.strokeStyle = U.shade(look.pole || '#6f7680', dark); ctx.lineWidth = 4.4 * S;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.strokeStyle = U.shade(look.poleHi || '#d3d7dd', dark); ctx.lineWidth = 2 * S;
+      ctx.beginPath(); ctx.moveTo(hx + (ux * 12 + nx * 0.8) * S, hy + (uy * 12 + ny * 0.8) * S); ctx.lineTo(tx - ux * 6 * S, ty - uy * 6 * S); ctx.stroke();
+      ctx.strokeStyle = '#272b35'; ctx.lineWidth = 5.4 * S;
+      ctx.beginPath(); ctx.moveTo(hx - ux * 7 * S, hy - uy * 7 * S); ctx.lineTo(hx + ux * 9 * S, hy + uy * 9 * S); ctx.stroke();
+      const bx = tx - ux * 9 * S, by = ty - uy * 9 * S;
+      ctx.strokeStyle = '#3a3f4b'; ctx.lineWidth = 2.2 * S;
+      ctx.beginPath(); ctx.moveTo(bx + nx * 5 * S, by + ny * 5 * S); ctx.lineTo(bx - nx * 5 * S, by - ny * 5 * S); ctx.stroke();
     }
     ctx.fillStyle = look.skin;                               // the hand closes over the grips
     ctx.beginPath(); ctx.arc(a.handF.x, a.handF.y, 7.5 * S, 0, TAU); ctx.fill();
@@ -338,6 +351,67 @@
   // a smooth 0→1 that overshoots a touch (for the shrug's snap)
   const snap = (t, t0, t1) => U.E.outBack(U.prog(t, t0, t1));
 
+  /* ---------------- snap back to reality ---------------- */
+  // 02 ends in the grey, melted, slowed-down close-up where only the flower has colour. This shot opens in
+  // that same dream, the lens still pressed in toward the flower; on the pop the world springs back: colour
+  // floods in, focus snaps, the lens bounces out to the wide with a little overshoot.
+  const DREAM1 = 0.5;                                      // the dream is gone by here (most of it in the first 0.2 s)
+  const dreamAt = (t) => 1 - U.ease(t, 0.04, DREAM1, 'outCubic');
+  const LENS_Z = 0.05, LENS_P = { x: FL.x, y: FL.y - 150 * FL.s };   // the zoom springs out about the flower head
+  const lensAt = (t) => (t < 1.2 ? 1 + LENS_Z * (1 - U.spring(t, 2.1, 9)) : 1);
+  // 02's look laid over the frame so far: the frame is halved three times (no shimmer), softened with a 4-tap
+  // box, greyed and dimmed at 1/8 res (cheap), then stretched back over the picture at opacity m
+  function dreamFrame(ctx, m, dsat, dim) {
+    if (m <= 0.004) return;
+    const src = ctx.canvas, k = (Art._base || new DOMMatrix()).a;
+    const y0 = Math.floor(138 * k), h0 = Math.ceil(804 * k), w0 = src.width;     // the picture only: no bars bleeding in
+    let cur = src, sy = y0, sw = w0, sh = h0;
+    for (let i = 0; i < 3; i++) {
+      const nw = Math.max(1, Math.round(sw / 2)), nh = Math.max(1, Math.round(sh / 2));
+      const c = Art.canvas('a3:melt' + i, nw, nh), x = c.getContext('2d');
+      x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'copy';
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'low';
+      x.drawImage(cur, 0, sy, sw, sh, 0, 0, nw, nh);
+      cur = c; sy = 0; sw = nw; sh = nh;
+    }
+    const cb = Art.canvas('a3:melt3', sw, sh), xb = cb.getContext('2d');
+    xb.setTransform(1, 0, 0, 1, 0, 0); xb.globalAlpha = 1; xb.globalCompositeOperation = 'copy';
+    xb.drawImage(cur, 0, 0);
+    xb.globalCompositeOperation = 'source-over'; xb.globalAlpha = 0.5;
+    xb.drawImage(cur, -0.8, -0.8); xb.drawImage(cur, 0.8, 0.8);
+    xb.globalAlpha = 0.34; xb.drawImage(cur, 0.8, -0.8); xb.drawImage(cur, -0.8, 0.8);
+    xb.globalCompositeOperation = 'saturation'; xb.globalAlpha = U.clamp(dsat); xb.fillStyle = '#808080'; xb.fillRect(0, 0, sw, sh);
+    xb.globalCompositeOperation = 'source-over'; xb.globalAlpha = U.clamp(dim); xb.fillStyle = '#0e1014'; xb.fillRect(0, 0, sw, sh);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = U.clamp(m); ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(cb, 0, 0, sw, sh, 0, y0, w0, h0);
+    ctx.restore();
+  }
+  // the flower kept vivid and sharp through the dream (drawn whole off-screen, then faded as one layer)
+  const VIVID = { x: 430, y: 640, w: 280, h: 310 };
+  function vividFlower(ctx, t, a, place) {
+    if (a <= 0.004) return;
+    const k = (Art._base || new DOMMatrix()).a;
+    const c = Art.canvas('a3:vivid', Math.ceil(VIVID.w * k), Math.ceil(VIVID.h * k)), x = c.getContext('2d');
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    x.clearRect(0, 0, c.width, c.height);
+    x.setTransform(k, 0, 0, k, -Math.round(VIVID.x * k), -Math.round(VIVID.y * k));
+    place(x);
+    Art.flower(x, { x: FL.x, y: FL.y, s: FL.s, t, seed: 3, face: 0.72, sway: 0.8 });   // (its glow is additive: drawn below)
+    ctx.save();
+    place(ctx);
+    Art.glow(ctx, LENS_P.x, LENS_P.y, 300, '#ff8db0', 0.3 * a);              // 02's halo, fading with the dream
+    Art.glow(ctx, LENS_P.x, LENS_P.y, 52 * FL.s * 4.2, Art.FLOWER.tip, 0.18 * 0.45 * a);   // its own glow, in colour
+    ctx.restore();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = U.clamp(a);
+    ctx.drawImage(c, Math.round(VIVID.x * k), Math.round(VIVID.y * k));
+    ctx.restore();
+  }
+
   /* ---------------- scene ---------------- */
   Film.scene({
     id: 'go-ahead',
@@ -346,6 +420,8 @@
     duration: D,
     mood: 'forest',
     sfx: [
+      [0, 'pop', { gain: 0.55 }],                // the slow-motion bubble bursts…
+      [0, 'whoosh', { gain: 0.22 }],             // …and the world rushes back in
       [1.0, 'bird', { gain: 0.25 }],
       [9.5, 'pop', { gain: 0.45 }],
       [13.3, 'boing', { gain: 0.5 }],
@@ -359,7 +435,7 @@
     fadeIn: 0,
     crossIn: 0,
     fadeOut: 1.2,
-    post: { vignette: 0.32, grain: 0.045, letterbox: 1 },
+    post: (t) => ({ vignette: 0.32 + 0.22 * dreamAt(t), grain: 0.045, letterbox: 1 }),   // 02 ends at 0.54
 
     render(ctx, t) {
       // the letterbox bars (y < 138.33, y > 941.67) hide the rest of the frame: don't rasterize it
@@ -369,8 +445,11 @@
       const zoom = 1 + 0.08 * push;
       const sh = Art.shake(t * 0.6, 0.35, 31);
       const fx = CX - 80 * push + sh.x, fy = CY + 30 * push + sh.y;
-      const camBg = (c) => Art.cam(c, { x: CX + (fx - CX) * 0.3, y: CY + (fy - CY) * 0.3, zoom: 1 + (zoom - 1) * 0.35 });
-      const cam = (c) => Art.cam(c, { x: fx, y: fy, zoom });
+      // the snap back: the lens springs out of the dream's close-in about the flower head (screen space, all layers)
+      const lz = lensAt(t);
+      const lens = (c) => { if (lz !== 1) { c.translate(LENS_P.x, LENS_P.y); c.scale(lz, lz); c.translate(-LENS_P.x, -LENS_P.y); } };
+      const camBg = (c) => { lens(c); Art.cam(c, { x: CX + (fx - CX) * 0.3, y: CY + (fy - CY) * 0.3, zoom: 1 + (zoom - 1) * 0.35 }); };
+      const cam = (c) => { lens(c); Art.cam(c, { x: fx, y: fy, zoom }); };
 
       /* ---------- far world (cached, soft) ---------- */
       ctx.save();
@@ -598,6 +677,13 @@
       }
       Art.motes(ctx, { seed: 23, count: 26, x0: 120, x1: 1500, y0: 420, y1: 900, t, color: '#fff3d0', size: 1.6, drift: 7, glow: 0.5, alpha: 0.45 });
       ctx.restore();
+
+      /* ---------- the dream we cut in on (02's look), snapping away ---------- */
+      const dream = dreamAt(t);
+      if (dream > 0.004) {
+        dreamFrame(ctx, Math.min(1, dream * 1.25), 0.85, 0.16);   // 02's close-up: soft, grey, a little dimmer
+        vividFlower(ctx, t, dream, cam);
+      }
 
       /* ---------- words ---------- */
       // bubble tails find his mouth
