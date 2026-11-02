@@ -10,7 +10,7 @@ made; math from the notes that the visuals can't demonstrate is left out. Open
 |---|------------|-------------------|
 | 1 | Finger vs. Eyes | An ant paints the face it walks on; its flag flips after one lap (a ℤ₂ twist). Monsters and a learning "fear" predictor. |
 | 2 | Scissors | Cutting a strip with 0–5 half-twists at any fractions, then cutting any piece again down its middle. Position-based paper physics (bends, doesn't stretch, can't pass through itself); links and knots are measured from the simulated paper. A list re-runs the cut results recorded in the notes and checks each one. |
-| 3 | Keep Halving | A Möbius strip cut down its middle, then every piece cut down its middle, five times (1, 1, 2, 4, 8, 16 pieces). "Inside the original strip" draws each piece exactly where it sits in the uncut strip; "Pulled apart" lays the long loop out as a ring and spreads the pieces across it, optionally thickened. Twists, knots and links are measured on the exact cut geometry. |
+| 3 | Keep Halving | A Möbius strip cut down its middle, then every piece cut down its middle, five times (1, 1, 2, 4, 8, 16 pieces). "Inside the original strip" draws each piece exactly where it sits in the uncut strip; "Pulled apart" lays the long loop out as a ring and spreads the pieces across it, optionally thickened. Twists, knots and links are measured on the exact cut geometry. Shake and Pull apart let the pieces as cut go loose under the paper physics (up to three cuts), and Trace runs a marker along one piece until it is back at its start. |
 | 4 | Tape | Two loops (plain, Möbius left or right, full twist) taped crosswise or face to face, then cut down their middles; where the scissors cross the tape they cut both layers. Pieces, objects, sides and edges are counted exactly from the cells, edges are marked, and the faces can be painted by side. A list re-runs the taped constructions from the notes. |
 | 5 | 720° | Dirac's belt trick: a cube with tethers that never tangle, period 720°. |
 | 6 | Strip Music | Standing waves on a plain vs. Möbius ring, odd harmonics (audio and spectrum), Hückel 4n+2 vs. Möbius 4n. |
@@ -27,7 +27,7 @@ node mobius-lab/build.mjs --artifact   # also writes dist/mobius-lab.artifact.ht
 ```
 
 Sources are in `src/`: `shell.html` (markup and all the notes text), `styles.css`, `core.js`
-(router, renderer, UI helpers, band geometry, linking numbers and knot determinants), one file
+(router, renderer, UI helpers, band geometry, the paper simulation, linking numbers and knot determinants), one file
 per experiment (`ch2a_halving.js` is experiment 3, `ch2b_tape.js` experiment 4), and `main.js`.
 three.js r128 loads from a CDN; experiments 7–10 work without it.
 
@@ -41,6 +41,7 @@ Plain Node scripts, no dependencies:
 - `tests/apart.mjs`: the same check with the pull-apart force on.
 - `tests/recut.mjs`: cuts, relaxes, cuts a piece again from its relaxed shape, and checks the topology holds.
 - `tests/halving.mjs`: for one to five halvings, measures twists, knots and links on the exact cut strip, and checks that the pulled-apart drawing (thickened or not) has the same ones and that no two strips touch.
+- `tests/loose.mjs`: lets the halved pieces loose (0 to 3 cuts), shakes and pulls them hard, and checks every twist and link survives.
 - `tests/tape.mjs`: builds and cuts eight taped constructions; prints pieces, objects, sides, edges, twists and links, and checks they hold while the paper moves.
 - `tests/separate.mjs`: checks that two taped objects reported as unlinked really pull apart.
 - `tests/gears.mjs`: which gear rings spin or lock, and slipping.
