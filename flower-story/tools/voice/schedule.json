@@ -1,0 +1,884 @@
+[
+ {
+  "start": 2.0,
+  "cue": 2.0,
+  "late": 0.0,
+  "dur": 3.2,
+  "speed": 0.86,
+  "role": "narrator",
+  "text": "The Hikers, the Flower, and the Meaning We Create."
+ },
+ {
+  "start": 14.4,
+  "cue": 14.4,
+  "late": 0.0,
+  "dur": 3.34,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I imagine that I’m on a hike with a group of people."
+ },
+ {
+  "start": 19.7,
+  "cue": 19.7,
+  "late": 0.0,
+  "dur": 0.87,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "Summit or bust!"
+ },
+ {
+  "start": 22.4,
+  "cue": 22.4,
+  "late": 0.0,
+  "dur": 3.37,
+  "speed": 1.02,
+  "role": "h3",
+  "text": "The view up there is supposed to be unreal."
+ },
+ {
+  "start": 26.5,
+  "cue": 26.5,
+  "late": 0.0,
+  "dur": 1.71,
+  "speed": 1.04,
+  "role": "h2",
+  "text": "That’s where it finally means something."
+ },
+ {
+  "start": 29.2,
+  "cue": 29.2,
+  "late": 0.0,
+  "dur": 5.54,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Everyone’s talking about how the trail is supposed to lead to this incredible view at the summit—"
+ },
+ {
+  "start": 36.2,
+  "cue": 36.2,
+  "late": 0.0,
+  "dur": 3.1,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "a place where they’ll finally feel something meaningful."
+ },
+ {
+  "start": 39.8,
+  "cue": 39.8,
+  "late": 0.0,
+  "dur": 1.06,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "Keep the pace, people!"
+ },
+ {
+  "start": 42.4,
+  "cue": 42.4,
+  "late": 0.0,
+  "dur": 2.2,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I’m walking with them, but halfway through…"
+ },
+ {
+  "start": 46.6,
+  "cue": 46.6,
+  "late": 0.0,
+  "dur": 2.27,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "…a single flower catches my attention."
+ },
+ {
+  "start": 56.7,
+  "cue": 56.7,
+  "late": 0.0,
+  "dur": 4.22,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "It’s small, unassuming, standing alone in the middle of the forest."
+ },
+ {
+  "start": 65.7,
+  "cue": 65.7,
+  "late": 0.0,
+  "dur": 0.83,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I stop."
+ },
+ {
+  "start": 73.7,
+  "cue": 73.7,
+  "late": 0.0,
+  "dur": 1.51,
+  "speed": 1.0,
+  "role": "me",
+  "text": "Hey, you guys go ahead."
+ },
+ {
+  "start": 76.2,
+  "cue": 76.2,
+  "late": 0.0,
+  "dur": 1.11,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I tell the group."
+ },
+ {
+  "start": 78.3,
+  "cue": 78.3,
+  "late": 0.0,
+  "dur": 1.13,
+  "speed": 1.0,
+  "role": "me",
+  "text": "I’m good right here."
+ },
+ {
+  "start": 81.5,
+  "cue": 81.5,
+  "late": 0.0,
+  "dur": 1.68,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "They look at me like I’m nuts,"
+ },
+ {
+  "start": 84.8,
+  "cue": 84.8,
+  "late": 0.0,
+  "dur": 1.74,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "but they shrug and keep walking."
+ },
+ {
+  "start": 99.2,
+  "cue": 99.2,
+  "late": 0.0,
+  "dur": 3.78,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I take a moment observing the flower, imagining a story."
+ },
+ {
+  "start": 106.4,
+  "cue": 106.4,
+  "late": 0.0,
+  "dur": 4.17,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Maybe it grew here, all alone, thinking no one would ever notice."
+ },
+ {
+  "start": 111.8,
+  "cue": 111.8,
+  "late": 0.0,
+  "dur": 2.89,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Maybe it felt invisible, like it didn’t matter."
+ },
+ {
+  "start": 116.3,
+  "cue": 116.3,
+  "late": 0.0,
+  "dur": 1.38,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "But then I came along."
+ },
+ {
+  "start": 119.5,
+  "cue": 119.5,
+  "late": 0.0,
+  "dur": 0.76,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I saw it."
+ },
+ {
+  "start": 122.4,
+  "cue": 122.4,
+  "late": 0.0,
+  "dur": 1.09,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I made it matter."
+ },
+ {
+  "start": 126.4,
+  "cue": 126.4,
+  "late": 0.0,
+  "dur": 2.92,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "I gave it more meaning within my lived experience"
+ },
+ {
+  "start": 130.5,
+  "cue": 130.5,
+  "late": 0.0,
+  "dur": 4.79,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "by doing more thinking about how this flower—or maybe flowers in general—"
+ },
+ {
+  "start": 135.7,
+  "cue": 135.7,
+  "late": 0.0,
+  "dur": 2.2,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "might relate to the universe we live in."
+ },
+ {
+  "start": 145.5,
+  "cue": 145.5,
+  "late": 0.0,
+  "dur": 4.01,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Maybe the beauty of a flower represents a kind of acknowledgement"
+ },
+ {
+  "start": 150.7,
+  "cue": 150.7,
+  "late": 0.0,
+  "dur": 2.27,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "of potentially meaningful complexity"
+ },
+ {
+  "start": 158.7,
+  "cue": 158.7,
+  "late": 0.0,
+  "dur": 3.84,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "that stands out among an otherwise crowded, benign landscape"
+ },
+ {
+  "start": 163.3,
+  "cue": 163.3,
+  "late": 0.0,
+  "dur": 3.53,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "that we might normally observe within our conscious awareness."
+ },
+ {
+  "start": 178.1,
+  "cue": 178.1,
+  "late": 0.0,
+  "dur": 2.77,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "So maybe the flower caught my eye when I was hiking"
+ },
+ {
+  "start": 182.6,
+  "cue": 182.6,
+  "late": 0.0,
+  "dur": 2.42,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "because something within my mind said to me:"
+ },
+ {
+  "start": 186.05,
+  "cue": 186.05,
+  "late": 0.0,
+  "dur": 1.67,
+  "speed": 0.98,
+  "role": "wonder",
+  "text": "Let’s stop the current activity"
+ },
+ {
+  "start": 187.84,
+  "cue": 187.65,
+  "late": 0.19,
+  "dur": 2.62,
+  "speed": 0.98,
+  "role": "wonder",
+  "text": "and ask ourselves—\nwhat does this flower mean to me?"
+ },
+ {
+  "start": 192.5,
+  "cue": 192.5,
+  "late": 0.0,
+  "dur": 4.22,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Because it might have, unironically, more meaning than hiking to a summit"
+ },
+ {
+  "start": 197.9,
+  "cue": 197.9,
+  "late": 0.0,
+  "dur": 2.65,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "that may not have been justified as meaningful"
+ },
+ {
+  "start": 201.7,
+  "cue": 201.7,
+  "late": 0.0,
+  "dur": 5.49,
+  "speed": 1.068,
+  "role": "narrator",
+  "text": "beyond potentially algorithmic societal norms of performative busyness or normalcy—"
+ },
+ {
+  "start": 207.31,
+  "cue": 207.1,
+  "late": 0.21,
+  "dur": 4.89,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "instead of pausing and reflecting on the vibrant, colorful expression of life"
+ },
+ {
+  "start": 212.5,
+  "cue": 212.5,
+  "late": 0.0,
+  "dur": 2.75,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "from a complex living structure called a flower."
+ },
+ {
+  "start": 222.1,
+  "cue": 222.1,
+  "late": 0.0,
+  "dur": 2.21,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Later, when the hikers come back down,"
+ },
+ {
+  "start": 228,
+  "cue": 228,
+  "late": 0,
+  "dur": 3.68,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "they’re sweaty and tired, with a distant look in their eyes."
+ },
+ {
+  "start": 237.1,
+  "cue": 237.1,
+  "late": 0.0,
+  "dur": 2.81,
+  "speed": 1.0,
+  "role": "me",
+  "text": "Did you find the meaning you were looking for at the summit?"
+ },
+ {
+  "start": 244.55,
+  "cue": 244.55,
+  "late": 0.0,
+  "dur": 1.04,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "It was fine, I guess."
+ },
+ {
+  "start": 247.15,
+  "cue": 247.15,
+  "late": 0.0,
+  "dur": 0.76,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "What about you?"
+ },
+ {
+  "start": 250.05,
+  "cue": 250.05,
+  "late": 0.0,
+  "dur": 1.08,
+  "speed": 1.0,
+  "role": "me",
+  "text": "I found a flower."
+ },
+ {
+  "start": 252.75,
+  "cue": 252.75,
+  "late": 0.0,
+  "dur": 3.45,
+  "speed": 1.0,
+  "role": "me",
+  "text": "And not just any flower—a flower I gave meaning to."
+ },
+ {
+  "start": 258.6,
+  "cue": 258.6,
+  "late": 0.0,
+  "dur": 3.21,
+  "speed": 1.0,
+  "role": "me",
+  "text": "It wasn’t important until I saw it and made it matter."
+ },
+ {
+  "start": 264.1,
+  "cue": 264.1,
+  "late": 0.0,
+  "dur": 5.1,
+  "speed": 1.0,
+  "role": "me",
+  "text": "It was something small, but when I gave it a part of my soul, it felt meaningful to me."
+ },
+ {
+  "start": 272.1,
+  "cue": 272.1,
+  "late": 0.0,
+  "dur": 2.73,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "The hikers stare at me like I’ve grown three heads."
+ },
+ {
+  "start": 280.3,
+  "cue": 280.3,
+  "late": 0.0,
+  "dur": 1.0,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "Bro, are you okay?"
+ },
+ {
+  "start": 283.0,
+  "cue": 283.0,
+  "late": 0.0,
+  "dur": 1.24,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "That sounds… intense."
+ },
+ {
+  "start": 287.7,
+  "cue": 287.7,
+  "late": 0.0,
+  "dur": 2.96,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "My emotions collectively facepalm, muttering,"
+ },
+ {
+  "start": 290.9,
+  "cue": 290.9,
+  "late": 0.0,
+  "dur": 1.18,
+  "speed": 0.86,
+  "role": "emotions",
+  "text": "They’ll never get it."
+ },
+ {
+  "start": 297.3,
+  "cue": 297.3,
+  "late": 0.0,
+  "dur": 1.74,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "But the story doesn’t end there."
+ },
+ {
+  "start": 304.6,
+  "cue": 304.6,
+  "late": 0.0,
+  "dur": 1.87,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Word gets around about the flower"
+ },
+ {
+  "start": 305.5,
+  "cue": 305.5,
+  "late": 0.0,
+  "dur": 0.67,
+  "speed": 1.05,
+  "role": "gossip3",
+  "text": "…a FLOWER?"
+ },
+ {
+  "start": 307.8,
+  "cue": 307.8,
+  "late": 0.0,
+  "dur": 3.19,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "and how I smiled like a lunatic when I talked about it."
+ },
+ {
+  "start": 308.3,
+  "cue": 308.3,
+  "late": 0.0,
+  "dur": 1.75,
+  "speed": 0.92,
+  "role": "granny",
+  "text": "smiling like a lunatic"
+ },
+ {
+  "start": 311.1,
+  "cue": 311.1,
+  "late": 0.0,
+  "dur": 1.45,
+  "speed": 1.08,
+  "role": "teen",
+  "text": "must be some flower"
+ },
+ {
+  "start": 314.2,
+  "cue": 314.2,
+  "late": 0.0,
+  "dur": 0.89,
+  "speed": 1.05,
+  "role": "gossip4",
+  "text": "where do we get one?"
+ },
+ {
+  "start": 317.3,
+  "cue": 317.3,
+  "late": 0.0,
+  "dur": 1.21,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "A few days later…"
+ },
+ {
+  "start": 322.9,
+  "cue": 322.9,
+  "late": 0.0,
+  "dur": 3.43,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "…some of the hikers show up at Embarrassment’s flower shop,"
+ },
+ {
+  "start": 327.7,
+  "cue": 327.7,
+  "late": 0.0,
+  "dur": 1.96,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "tracking mud all over the floor."
+ },
+ {
+  "start": 330.9,
+  "cue": 330.9,
+  "late": 0.0,
+  "dur": 1.49,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "Hey, we’re here for the best flower."
+ },
+ {
+  "start": 334.4,
+  "cue": 334.4,
+  "late": 0.0,
+  "dur": 2.81,
+  "speed": 1.04,
+  "role": "h2",
+  "text": "We heard you were talking about how meaningful his flower was."
+ },
+ {
+  "start": 339.2,
+  "cue": 339.2,
+  "late": 0.0,
+  "dur": 0.72,
+  "speed": 1.04,
+  "role": "h2",
+  "text": "We want that."
+ },
+ {
+  "start": 341.7,
+  "cue": 341.7,
+  "late": 0.0,
+  "dur": 2.92,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Embarrassment, the shop owner, rolls his eyes."
+ },
+ {
+  "start": 345.3,
+  "cue": 345.3,
+  "late": 0.0,
+  "dur": 3.29,
+  "speed": 0.88,
+  "role": "emb",
+  "text": "Sure, here’s a flower. That’ll be $10."
+ },
+ {
+  "start": 348.9,
+  "cue": 348.9,
+  "late": 0.0,
+  "dur": 2.02,
+  "speed": 1.04,
+  "role": "h1",
+  "text": "$10? That’s not meaningful enough."
+ },
+ {
+  "start": 351.8,
+  "cue": 351.8,
+  "late": 0.0,
+  "dur": 1.68,
+  "speed": 1.06,
+  "role": "h4",
+  "text": "We want something rare, something special!"
+ },
+ {
+  "start": 354.9,
+  "cue": 354.9,
+  "late": 0.0,
+  "dur": 3.26,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Embarrassment sighs, trudges to the back of the shop,"
+ },
+ {
+  "start": 359.4,
+  "cue": 359.4,
+  "late": 0.0,
+  "dur": 3.88,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "and grabs some random flower he’s been ignoring for weeks."
+ },
+ {
+  "start": 366.2,
+  "cue": 366.2,
+  "late": 0.0,
+  "dur": 0.69,
+  "speed": 0.88,
+  "role": "emb",
+  "text": "Here."
+ },
+ {
+  "start": 368.7,
+  "cue": 368.7,
+  "late": 0.0,
+  "dur": 3.07,
+  "speed": 0.889,
+  "role": "emb",
+  "text": "This one’s very rare. $200."
+ },
+ {
+  "start": 371.89,
+  "cue": 371.8,
+  "late": 0.09,
+  "dur": 1.83,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "The hikers don’t even flinch."
+ },
+ {
+  "start": 375.4,
+  "cue": 375.4,
+  "late": 0.0,
+  "dur": 4.9,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "They hand over the money, grinning like they’ve just bought the secret to happiness."
+ },
+ {
+  "start": 381.3,
+  "cue": 381.3,
+  "late": 0.0,
+  "dur": 4.12,
+  "speed": 1.004,
+  "role": "narrator",
+  "text": "They gather around the flower, beaming and congratulating themselves."
+ },
+ {
+  "start": 385.54,
+  "cue": 385.2,
+  "late": 0.34,
+  "dur": 2.52,
+  "speed": 1.06,
+  "role": "hikers",
+  "text": "This is it! This is the meaning we’ve been looking for!"
+ },
+ {
+  "start": 393,
+  "cue": 393,
+  "late": 0,
+  "dur": 3.07,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Embarrassment watches them leave, shaking his head."
+ },
+ {
+  "start": 399.9,
+  "cue": 399.9,
+  "late": 0.0,
+  "dur": 2.03,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Before they even make it to their car,"
+ },
+ {
+  "start": 403.5,
+  "cue": 403.5,
+  "late": 0.0,
+  "dur": 2.54,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "their smiles have already started to fade."
+ },
+ {
+  "start": 416.7,
+  "cue": 416.7,
+  "late": 0.0,
+  "dur": 4.21,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Meanwhile, I’m sitting nearby, watching the whole thing unfold."
+ },
+ {
+  "start": 421.5,
+  "cue": 421.5,
+  "late": 0.0,
+  "dur": 2.7,
+  "speed": 1.0,
+  "role": "me",
+  "text": "That’s going to make a great story, don’t you think?"
+ },
+ {
+  "start": 426.3,
+  "cue": 426.3,
+  "late": 0.0,
+  "dur": 1.24,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Embarrassment smirks."
+ },
+ {
+  "start": 429.3,
+  "cue": 429.3,
+  "late": 0.0,
+  "dur": 4.91,
+  "speed": 0.886,
+  "role": "emb",
+  "text": "Yeah, and maybe they would’ve been happier if I charged $300?"
+ },
+ {
+  "start": 434.33,
+  "cue": 434.3,
+  "late": 0.03,
+  "dur": 0.94,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "…and I laugh."
+ },
+ {
+  "start": 447.5,
+  "cue": 447.5,
+  "late": 0.0,
+  "dur": 1.54,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "And the story might be saying"
+ },
+ {
+  "start": 451.1,
+  "cue": 451.1,
+  "late": 0.0,
+  "dur": 6.22,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "that an emotional need might not be something that society says is important or noteworthy."
+ },
+ {
+  "start": 458.4,
+  "cue": 458.4,
+  "late": 0.0,
+  "dur": 2.46,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Because when your emotion taps you on the shoulder"
+ },
+ {
+  "start": 462.7,
+  "cue": 462.7,
+  "late": 0.0,
+  "dur": 0.77,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "and says,"
+ },
+ {
+  "start": 463.59,
+  "cue": 463.05,
+  "late": 0.54,
+  "dur": 1.02,
+  "speed": 0.98,
+  "role": "wonder",
+  "text": "Can we stop here?"
+ },
+ {
+  "start": 466.9,
+  "cue": 466.9,
+  "late": 0.0,
+  "dur": 2.81,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "then you might have the courage to pause and reflect—"
+ },
+ {
+  "start": 471.8,
+  "cue": 471.8,
+  "late": 0.0,
+  "dur": 5.06,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "because soul-level introspection is what brings you more well-being and peace."
+ },
+ {
+  "start": 477.5,
+  "cue": 477.5,
+  "late": 0.0,
+  "dur": 3.82,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "And then you might tell society, “Go on ahead. I’ll be okay.”"
+ },
+ {
+  "start": 484.3,
+  "cue": 484.3,
+  "late": 0.0,
+  "dur": 4.48,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Because I’m focusing on the parts of myself that make me a human being."
+ },
+ {
+  "start": 491.1,
+  "cue": 491.1,
+  "late": 0.0,
+  "dur": 2.22,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "And those are what are important to me."
+ },
+ {
+  "start": 496,
+  "cue": 496,
+  "late": 0,
+  "dur": 1.43,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "Not so much the summit."
+ },
+ {
+  "start": 500.5,
+  "cue": 500.5,
+  "late": 0.0,
+  "dur": 3.28,
+  "speed": 0.94,
+  "role": "narrator",
+  "text": "But what my emotion is telling me my humanity needs."
+ }
+]
