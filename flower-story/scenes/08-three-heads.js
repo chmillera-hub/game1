@@ -16,7 +16,7 @@
   /* ---------------------------------------------- world (same as 07) */
   const GO = { y: 870, amp: 16, offset: 2100 };
   const gy = (x) => Art.groundY(x, GO);
-  const TR = 20, S = 0.8, FX = 820, FY = gy(FX) + 60;
+  const TR = 20, S = 0.8, FX = 820, FY = gy(FX) + 60, FS = 0.66;
   const MEX = 702, MEY = gy(MEX) + TR, ME_SX = MEX + 34 * S;
   const SEED = { me: 763, h1: 11, h2: 23, h3: 37, h4: 41 };
   const WARM = '#ffb48a';
@@ -53,10 +53,25 @@
   const ik = (sh, p) => Art.ik2(sh.x, sh.y, p.x, p.y, 50, 47, -1);
   const mixA = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
   const STAND = [0.1, 0.18, -0.08, 0.14];
-  const LOOK_KEYS = ['skin', 'hair', 'hatColor', 'shirt', 'shirt2', 'pants', 'shoes', 'pack', 'beard'];
+  // light the cast (as 07): the dusk ambient, the same for every look, then the flower's warm
+  // spill multiplied in (each channel scaled by its own value), so every garment keeps its value
+  // relative to the others: his dark-teal trousers stay dark (mixing toward the light peach washed
+  // them to mid-grey; see also unveil). h1's poles: dark steel with a dim sheen, not pale sticks.
+  const LOOK_KEYS = ['skin', 'hair', 'hatColor', 'shirt', 'shirt2', 'pants', 'shoes', 'pack', 'beard', 'pole', 'poleHi'];
+  const AMB = 0.22;                                       // 07's dusk ambient (deepens with the night)
+  const WARM_K = U.rgb(WARM).map((v) => v / 255);
+  const spill = (x) => Math.max(0, 0.08 - Math.abs(x - FX) / 6000);   // its warm spill on the hikers
+  const ME_WARM = 0.15 + 0.07;                            // ...and on him (07's, once he beams)
+  const STEEL = (b) => ({ pole: U.mix(b.pole || '#6f7680', '#272b35', 0.4), poleHi: U.mix(b.poleHi || '#d3d7dd', '#272b35', 0.45) });
   const lit = (key, tint, amt, warm) => {
-    const b = Art.CAST[key], o = Object.assign({}, b);
-    for (const k of LOOK_KEYS) if (b[k]) o[k] = U.mix(U.mix(b[k], tint, amt), WARM, warm);
+    const b = Object.assign({}, Art.CAST[key]);
+    if (b.poles) Object.assign(b, STEEL(b));
+    const o = Object.assign({}, b), T0 = U.rgb(tint);
+    for (const k of LOOK_KEYS) {
+      if (!b[k]) continue;
+      const c = U.rgb(b[k]);
+      o[k] = U.hex(...c.map((v, i) => lerp(v, T0[i], amt) * (1 + warm * WARM_K[i])));
+    }
     return o;
   };
 
@@ -373,8 +388,9 @@
     Art.fern(c, FX - 52, FY + 4, 1.05, fern, U.wind(t, FX, 3) * 0.9);
   }
   function drawFlower(c, P, t, glow) {
+    // (its glows, halo + Art.flower's own, are mirrored by bloom(): keep the two in step)
     Art.glow(c, FX + 4, FY - 108, 150, Art.FLOWER.tip, 0.12 * glow);
-    Art.flower(c, { x: FX, y: FY, s: 0.66, stemH: 160, t, glow: 0.42 * glow, face: 0.84, sway: 0.55, seed: 2 });
+    Art.flower(c, { x: FX, y: FY, s: FS, stemH: 160, t, glow: 0.42 * glow, face: 0.84, sway: 0.55, seed: 2 });
     Art.grass(c, { seed: 12, y: FY + 4, x0: FX - 40, x1: FX + 36, spacing: 6, h: 22, color: U.shade(P.grass, -0.1), color2: U.shade(P.grass, 0.08), t, wind: 0.7 });
   }
 
@@ -424,7 +440,7 @@
     return drawn;
   }
   function drawMe(c, P, t) {
-    const look = lit('me', tintOf(P), 0.12 + 0.05 * nightK(t), 0.18);
+    const look = lit('me', tintOf(P), AMB + 0.08 * nightK(t), ME_WARM);
     const face = meFace(t);
     const sh = shoulders(t, SEED.me, 0, 0, -117, 0);
     const heart = ik(sh.F, { x: 16 + sh.F.x - 3, y: -184 });
@@ -447,6 +463,77 @@
     const a = Art.person(c, o);
     a.extra = extra;
     return a;
+  }
+
+  // The flower's bloom (drawn last, over everything near it) greyed his dark trousers: on its own
+  // it lifted them ~20-28 levels. So it is taken back off his legs ahead of time (as 07): his
+  // figure, drawn again off-screen at half resolution, takes the bloom's colour (never more than
+  // his own), is kept on his legs only and subtracted before the bloom goes on (his face and
+  // hands keep it). Only that box is touched. a: his anchors; glow: drawFlower's argument.
+  const flowerHead = (t) => ({ x: FX + 0.55 * U.wind(t, FX, 2) * 9 * FS, y: FY - 160 * FS });   // Art.flower's own placement
+  const UNVEIL = 0.85, URES = 0.5;
+  function unveil(ctx, draw, a, t, glow) {
+    if (glow <= 0) return;
+    // his legs (standing): feathered up into the jacket, and at the front, so a hand held out low
+    // (presenting the flower) keeps its glow
+    const S_ = a.scale, fy0 = a.hip.y - 26 * S_, fy1 = a.hip.y + 4 * S_, fx0 = a.hip.x + 22 * S_;
+    const bx0 = a.hip.x - 46 * S_, bx1 = a.hip.x + 36 * S_, by0 = fy0, by1 = a.feet.y + 6;
+    const m = ctx.getTransform(), cv = ctx.canvas;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [px, py] of [[bx0, by0], [bx1, by0], [bx0, by1], [bx1, by1]]) {
+      const p = m.transformPoint({ x: px, y: py });
+      x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+    }
+    const base = Art._base || new DOMMatrix();         // within the picture: the letterbox covers the rest
+    const pt = base.transformPoint({ x: 0, y: Art.PIC.top }).y, pb = base.transformPoint({ x: 0, y: Art.PIC.bottom }).y;
+    x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(pt), Math.floor(y0));
+    x1 = Math.min(cv.width, Math.ceil(x1)); y1 = Math.min(cv.height, Math.ceil(pb), Math.ceil(y1));
+    if (x1 - x0 < 2 || y1 - y0 < 2) return;
+    const w = Math.ceil((x1 - x0) * URES), h = Math.ceil((y1 - y0) * URES);
+    const off = new DOMMatrix().scale(URES, URES).translate(-x0, -y0).multiply(m);
+    const begin = (c) => {           // a fresh state, clipped to the box (destination-in is unbounded)
+      c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+      c.save(); c.beginPath(); c.rect(0, 0, w, h); c.clip();
+    };
+    const cw = Math.ceil(cv.width * URES) + 2, ch = Math.ceil(cv.height * URES) + 2;
+    const F = Art.canvas('a5h:uvF', cw, ch), f = F.getContext('2d');
+    begin(f);
+    f.clearRect(0, 0, w, h);
+    f.setTransform(off);
+    draw(f);
+    f.restore();
+    const L = Art.canvas('a5h:uvL', cw, ch), l = L.getContext('2d');
+    begin(l);
+    l.fillStyle = '#000'; l.fillRect(0, 0, w, h);
+    l.setTransform(off);
+    bloom(l, t, glow);
+    l.setTransform(1, 0, 0, 1, 0, 0);
+    l.globalCompositeOperation = 'darken';                  // never more than his own colour
+    l.drawImage(F, 0, 0, w, h, 0, 0, w, h);
+    l.globalCompositeOperation = 'destination-in';          // only where he is...
+    l.drawImage(F, 0, 0, w, h, 0, 0, w, h);
+    l.setTransform(off);                                    // ...on his legs
+    for (const g of [l.createLinearGradient(0, fy0, 0, fy1), l.createLinearGradient(bx1, 0, fx0, 0)]) {
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, '#000');
+      l.fillStyle = g;
+      l.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
+    }
+    l.restore();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'difference';
+    ctx.globalAlpha *= UNVEIL;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(L, 0, 0, w, h, x0, y0, w / URES, h / URES);
+    ctx.restore();
+  }
+  // the flower's bloom: drawFlower's halo + Art.flower's own two glows
+  function bloom(c, t, glow) {
+    const hd = flowerHead(t), hr = 52 * FS;
+    Art.glow(c, FX + 4, FY - 108, 150, Art.FLOWER.tip, 0.12 * glow);
+    Art.glow(c, hd.x, hd.y, hr * 4.2, Art.FLOWER.tip, 0.42 * glow * 0.45);
+    Art.glow(c, hd.x, hd.y, hr * 1.8, '#fff2d6', 0.42 * glow * 0.35);
   }
 
   /* ------------------------------------------------------------- hikers */
@@ -477,7 +564,7 @@
     if (i === 0) A = mixA(A, [0.55, 1.2, -0.25, 0.9], U.fade(t, 22.3, 24.4, 0.3, 0.5) * 0.7);      // palms out: "whoa"
     if (i === 0) A = mixA(A, [0.95, 0.4, A[2], A[3]], recoil * 0.6);
     const o = {
-      x: h.x, y: h.y, s: S, look: lit(h.k, tintOf(P), 0.22 + 0.08 * nightK(t), i === 0 ? 0.06 : 0.02), facing: -1, pose: 'walk', walk: PH, stride: ST,
+      x: h.x, y: h.y, s: S, look: lit(h.k, tintOf(P), AMB + 0.08 * nightK(t), spill(h.x)), facing: -1, pose: 'walk', walk: PH, stride: ST,
       tired: 0.75, t, seed: SEED[h.k], face, head, lean, armF: [A[0], A[1]], armB: [A[2], A[3]], shadow: false,
     };
     if (h.k === 'h4') { // the dead phone, still in hand
@@ -863,9 +950,11 @@
       const A = {};
       for (let i = HIKERS.length - 1; i >= 0; i--) A[HIKERS[i].k] = drawHiker(ctx, P, HIKERS[i], t);
       A.me = drawMe(ctx, P, t);
+      const fglow = 1.2 + 0.12 * Math.sin(t * 1.3);
+      unveil(ctx, (c) => drawMe(c, P, t), A.me, t, fglow);
       clump(ctx, P, t);
       mossRock(ctx, FX + 64, gy(FX + 64) + 48, 104, 64, tintOf(P));
-      drawFlower(ctx, P, t, 1.2 + 0.12 * Math.sin(t * 1.3));
+      drawFlower(ctx, P, t, fglow);
       ctx.restore();
       verge(ctx, P, cam, t);
 
