@@ -565,11 +565,13 @@
       this.R = rng(seg.mood, 'noise', Math.round(seg.t0 * 10));
       this.L = {}; this.dead = false; this.out = 0;
       const M = eng.mix;
-      this.ins = {}; this.fIn = []; this.fOut = [];
+      // three faders per output: fade-in curve, fade-out curve, and 'hurry' (cuts short a fade already under
+      // way — automation can't be added inside a running curve, and cancelling one jumps)
+      this.ins = {}; this.fIn = []; this.fOut = []; this.fK = [];
       for (const k of ['dry', 'hall', 'room', 'delay']) {
-        const a = Gain(this.ac, 0), b = Gain(this.ac, 1);
-        a.connect(b); b.connect(k === 'dry' ? M.dry : M[k + 'Send']);
-        this.ins[k] = a; this.fIn.push(a); this.fOut.push(b);
+        const a = Gain(this.ac, 0), b = Gain(this.ac, 1), z = Gain(this.ac, 1);
+        a.connect(b); b.connect(z); z.connect(k === 'dry' ? M.dry : M[k + 'Send']);
+        this.ins[k] = a; this.fIn.push(a); this.fOut.push(b); this.fK.push(z);
       }
       try { if (this.def.setup) this.def.setup(this, p0); } catch (e) { eng.err(e); }
     }
@@ -579,7 +581,14 @@
       for (const a of this.fIn) a.gain.setValueCurveAtTime(c, t0, Math.max(0.02, t1 - t0));
     }
     fadeOut(t0, t1) {
-      if (this.out) return;
+      if (this.out) { // already on its way out (mid-crossfade, or waiting for a snap): only ever hurry it
+        if (t1 < this.out - 0.03) {
+          const tau = Math.max(0.004, (t1 - t0) / 5);
+          for (const z of this.fK) z.gain.setTargetAtTime(0, t0, tau);
+          this.out = t1;
+        }
+        return;
+      }
       this.out = t1;
       const c = fadeCurve(false);
       for (const b of this.fOut) b.gain.setValueCurveAtTime(c, t0, Math.max(0.02, t1 - t0));
@@ -618,7 +627,7 @@
       if (this.dead) return;
       this.dead = true;
       stopAll(this, t);
-      const nodes = this.fIn.concat(this.fOut);
+      const nodes = this.fIn.concat(this.fOut, this.fK);
       const done = () => { for (const n of nodes) { try { n.disconnect(); } catch (e) { /* gone */ } } };
       if (this.eng.offline) return;
       setTimeout(done, Math.max(0, (t - this.ac.currentTime) * 1000) + 400);
@@ -1984,9 +1993,10 @@
     this.note({ type: 'bed', mood: seg.mood, T: +T.toFixed(3), p0: +(T - seg.t0).toFixed(3) });
     return bed;
   };
+  // every live bed ends by t0 + fade (one already fading out more slowly is hurried along)
   EP.releaseBeds = function (now, fade, at) {
     const t0 = at == null ? now : at;
-    for (const b of this.beds) if (!b.out) b.fadeOut(t0, t0 + Math.max(0.02, fade));
+    for (const b of this.beds) if (!b.dead) b.fadeOut(t0, t0 + Math.max(0.02, fade));
     this.cur = null;
   };
   EP.rebuild = function (T, now, fade) {

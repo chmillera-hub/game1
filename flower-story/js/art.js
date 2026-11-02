@@ -11,7 +11,7 @@
   Art.W = W;
   Art.H = H;
   /** visible picture area when the cinemascope letterbox is fully on */
-  Art.PIC = { top: 139, bottom: 941, h: 802, mid: 540 };
+  Art.PIC = { top: 138, bottom: 942, h: 804, mid: 540 };
 
   /* ======================================================================
      FONTS
@@ -241,7 +241,7 @@
    * motif: tall, snow-capped, with a faint promise-glow at its tip.
    * (x, y) = base center; h = height; P = palette.
    */
-  Art.summit = (ctx, { x = 1450, y = 640, h = 420, w = 760, P = Art.TOD.morning, glow = 0.5, t = 0, seed = 5, flag = true, snow = 0.34 } = {}) => {
+  Art.summit = (ctx, { x = 1450, y = 640, h = 420, w = 760, P = Art.TOD.morning, glow = 0.5, t = 0, seed = 5, flag = true, snow = 0.34, glowMode = 'lighter', flagColor = '#e8574a' } = {}) => {
     const tip = { x: x + w * 0.03, y: y - h };
     const L = { x: x - w / 2, y }, Rb = { x: x + w / 2, y };
     const N = 14;
@@ -299,13 +299,13 @@
     ctx.fill();
     ctx.restore();
     // promise-glow at the tip
-    if (glow > 0) Art.glow(ctx, tip.x, tip.y + 6, 120, P.light, glow * (0.55 + 0.15 * Math.sin(t * 1.4)));
+    if (glow > 0) Art.glow(ctx, tip.x, tip.y + 6, 120, P.light, glow * (0.55 + 0.15 * Math.sin(t * 1.4)), glowMode);
     if (flag) {
       ctx.strokeStyle = U.shade(P.summit, -0.45);
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(tip.x, tip.y + 2); ctx.lineTo(tip.x, tip.y - 26); ctx.stroke();
       const fl = Math.sin(t * 3) * 3;
-      ctx.fillStyle = '#e8574a';
+      ctx.fillStyle = flagColor;
       ctx.beginPath(); ctx.moveTo(tip.x, tip.y - 26); ctx.lineTo(tip.x + 16, tip.y - 21 + fl); ctx.lineTo(tip.x, tip.y - 16); ctx.closePath(); ctx.fill();
     }
     return { x: tip.x, y: tip.y };
@@ -528,10 +528,10 @@
     ctx.restore();
   };
   /** god rays fanning from (x,y) toward angle (radians; PI/2 = straight down) */
-  Art.rays = (ctx, { x = 1500, y = -100, angle = 2.1, spread = 0.7, count = 7, len = 1500, color = '#fff3cf', alpha = 0.18, t = 0, seed = 1, width = 0.05 } = {}) => {
+  Art.rays = (ctx, { x = 1500, y = -100, angle = 2.1, spread = 0.7, count = 7, len = 1500, color = '#fff3cf', alpha = 0.18, t = 0, seed = 1, width = 0.05, mode = 'lighter' } = {}) => {
     if (alpha <= 0) return;
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = mode;
     for (let i = 0; i < count; i++) {
       const a = angle + (U.hash(i, seed) - 0.5) * spread;
       const wdt = width * (0.5 + U.hash(i, seed + 1));
@@ -1316,7 +1316,7 @@
     ctx.restore();
     // trekking poles
     if (look.poles && pose === 'walk' && o.poles !== false) {
-      ctx.strokeStyle = '#c8ccd2'; ctx.lineWidth = 3.2;
+      ctx.strokeStyle = look.pole || '#c8ccd2'; ctx.lineWidth = 3.2;
       ctx.beginPath(); ctx.moveTo(armF.x2, armF.y2 - 10); ctx.lineTo(armF.x2 + 26, 0); ctx.stroke();
     }
     // front arm

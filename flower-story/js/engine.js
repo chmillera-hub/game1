@@ -205,6 +205,8 @@
   function releaseWake() { try { if (wakeLock) wakeLock.release(); } catch (e) { /* optional */ } wakeLock = null; }
   Film.play = () => {
     if (Film.t >= Film.total - 0.05) Film.seek(0);
+    // films started without the Begin button (restored or deep-linked) still get sound
+    if (g.FilmAudio && !Film.muted) { try { g.FilmAudio.init().then(() => g.FilmAudio.setMuted(Film.muted)).catch(() => {}); } catch (e) { /* audio optional */ } }
     Film.playing = true;
     Film.started = true;
     const st = document.getElementById('stage');
@@ -228,7 +230,7 @@
     Film.seek(Film.scenes[j].start + 0.01);
   };
   function tick(now) {
-    const dt = Math.min(0.1, (now - last) / 1000 || 0);
+    const dt = Math.max(0, Math.min(0.1, (now - last) / 1000 || 0));
     last = now;
     if (Film.playing && !forcedSize && dt > 0 && dt < 0.1) {
       frameEMA = frameEMA * 0.92 + dt * 1000 * 0.08;
