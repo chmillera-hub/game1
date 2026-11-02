@@ -1264,15 +1264,15 @@
   /**
    * Art.person with a quick cut-out style turn: around each time in `flips`
    * (when the caller switches `facing`) the figure squashes horizontally
-   * through ~0 and back over 2×w seconds, so a facing change never pops.
-   * Anchors are corrected for the squash.
+   * to ~40% and back over 2×w seconds, so a facing change never pops (and
+   * never collapses into a one-pixel sliver). Anchors are corrected.
    */
-  K.turnK = (t, flips, w = 0.11) => {
+  K.turnK = (t, flips, w = 0.09) => {
     let k = 1;
-    if (flips) for (const tf of flips) { const d = Math.abs(t - tf); if (d < w) k = Math.min(k, 0.08 + 0.92 * U.smooth(d / w)); }
+    if (flips) for (const tf of flips) { const d = Math.abs(t - tf); if (d < w) k = Math.min(k, 0.4 + 0.6 * U.smooth(d / w)); }
     return k;
   };
-  K.person = (ctx, o, flips, w = 0.11) => {
+  K.person = (ctx, o, flips, w = 0.09) => {
     const k = K.turnK(o.t || 0, flips, w);
     o.facing = o.facing === undefined ? 1 : o.facing;
     if (k > 0.995) { const A = Art.person(ctx, o); A.facing = o.facing; return A; }
@@ -1342,6 +1342,37 @@
   const kicks = (list) => list; // readability
   const BELL = kicks([[DOOR_T + 0.05, 0.55], [DOOR_T + 3.07, 0.22]]);
   const GRIN = (t, d0) => E(t, 53.35 + d0, 53.95 + d0, 'outBack');
+  /** an index finger drawn at a hand (holdF, person-local units), along direction (dx, dy) */
+  const finger = (dx, dy, skin, len = 15) => (c) => {
+    const n = Math.hypot(dx, dy) || 1;
+    c.strokeStyle = skin; c.lineWidth = 4.6; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(dx / n * 3, dy / n * 3); c.lineTo(dx / n * len, dy / n * len); c.stroke();
+  };
+  /** a camera flash: instant attack on the click, fast exponential decay */
+  const pulse = (t, t0, tau) => { if (t < t0) return 0; const v = Math.exp(-(t - t0) / tau); return v < 0.01 ? 0 : v; };
+  const SNAPS = [24.45, 45.0, 61.7]; // h4's phone clicks (tulip, dusty flower, the selfie)
+  /** the end of the scene: everyone looks into h4's phone, then straight into the shout */
+  const SELFIE = (t) => win(t, 60.9, 63.4, 0.3, 0.32);
+  const CHEER = (t) => E(t, 63.05, 63.5, 'outBack');
+  /** the high-five: h4's free (back) hand meets h2's front hand at HF.m on the slap */
+  const HF = { t: 56.2, m: { x: 772, y: 607 } }; // up between their heads (as high as their reach allows)
+  function highFive(t, o, side, hand) {
+    const up = win(t, 55.62, 56.85, 0.36, 0.42);
+    const gap = t < HF.t ? 42 * (1 - E(t, 55.88, HF.t, 'inQuad')) : 10 * E(t, HF.t, HF.t + 0.16, 'outQuad');
+    const wind = t < HF.t ? 18 * (1 - E(t, 55.88, HF.t, 'inQuad')) : 0;
+    const look = typeof o.look === 'string' ? Art.CAST[o.look] : o.look;
+    const f = o.facing || 1, S = o.s * (look.height || 1);
+    // rest = where that hand hangs in the stand pose (so the IK takes over without a pop)
+    const rest = hand === 'F' ? { x: o.x + f * 21 * S, y: o.y - 103 * S } : { x: o.x - f * 7 * S, y: o.y - 100 * S };
+    const tgt = { x: HF.m.x + side * gap, y: HF.m.y - wind };
+    // the hand swings up on an outward arc (toward the partner), never across the face
+    const ctl = { x: lerp(rest.x, tgt.x, 0.5) + f * 70, y: lerp(rest.y, tgt.y, 0.55) };
+    const u = up, v = 1 - u;
+    const p = { x: v * v * rest.x + 2 * u * v * ctl.x + u * u * tgt.x, y: v * v * rest.y + 2 * u * v * ctl.y + u * u * tgt.y };
+    if (hand === 'F') o.reachF = p; else o.reachB = p;
+    o.lean = (o.lean || 0) + 0.21 * up;
+    return up;
+  }
 
   /* ======================================================================
      CHARACTERS — each returns Art.person options for time t
@@ -1382,8 +1413,17 @@
     // ---- 19.9 – 22.3: the eye-roll ----
     if (t >= 19.9 && t < 22.4) {
       const r = ROLL(t);
-      o.face = { eyes: r > 0.5 ? 'roll' : 'flat', smile: -0.15 - 0.15 * r, blink: 0, lookX: 0.2 };
-      o.head.tilt = -0.14 * r;
+      // a real roll: the pupils sweep up and over in an arc (side → top → other
+      // side) while the head lolls back with them; a blink-frame on either side
+      // of the roll hides the switch between the lidded and the rolled eyes.
+      const R0 = 20.36, R1 = 21.8, e = U.E.inOutSine(clamp((t - R0) / (R1 - R0)));
+      const rolled = t > R0 && t < R1;
+      const blinkFrame = Math.abs(t - R0) < 0.045 || Math.abs(t - R1) < 0.045;
+      o.face = {
+        eyes: blinkFrame ? 'closed' : rolled ? 'roll' : 'flat', smile: -0.15 - 0.15 * r, blink: 0,
+        lookX: rolled ? -0.95 * Math.cos(Math.PI * e) : 0.2, lookY: rolled ? 0.35 * (1 - Math.sin(Math.PI * e)) : 0,
+      };
+      o.head.tilt = -0.14 * r - (rolled ? 0.06 * Math.sin(Math.PI * e) : 0);
       o.head.turn = 0.28 + 0.22 * r;
       o.shrug = 0.25 * win(t, 20.0, 20.7, 0.3, 0.3);
       o.lean = -0.05 * r;
@@ -1447,7 +1487,12 @@
     if (t >= 44.6 && t < 53.4) {
       o.face = { eyes: 'flat', smile: -0.05, lookX: 0.3 };
       // a finger on the tag as he names the price
-      if (t > 47.9 && t < 49.7) { const k = win(t, 47.9, 49.7, 0.3, 0.35); o.reachF = { x: lerp(1290 - 70, DUSTY_AT + 36, k), y: lerp(662, 642, k) }; o.lean = 0.22 * k; }
+      if (t > 47.9 && t < 49.7) {
+        const k = win(t, 47.9, 49.7, 0.3, 0.35);
+        o.reachF = { x: lerp(1290 - 70, DUSTY_AT + 36, k), y: lerp(662, 642, k) }; o.lean = 0.22 * k;
+        // …a deadpan index finger aimed at the sad flower's head ("this one")
+        if (k > 0.6) o.holdF = finger((DUSTY_AT + 6 - o.reachF.x) * o.facing, 604 - o.reachF.y, Art.CAST.emb.skin, 14);
+      }
     }
     // ---- 53.4 – 55.5: pockets the bills, ka-ching, back ----
     if (t >= 53.4 && t < 55.6) {
@@ -1563,33 +1608,26 @@
         const up = E(t, 57.5, 58.1);
         const S1 = o.s * 1.08, f1 = t >= 58.2 ? -1 : 1, ox = t >= 58.2 ? SPOT.h1[0] - 6 : o.x;
         const holdF = { x: ox + f1 * 46 * S1, y: o.y - 128 * S1 }, holdB = { x: ox + f1 * 38 * S1, y: o.y - 124 * S1 };
+        const restB = { x: ox - f1 * 7 * S1, y: o.y - 100 * S1 }; // where the free hand hangs
         o.reachF = { x: lerp(DUSTY_AT - 22, holdF.x, up), y: lerp(650, holdF.y, up) };
-        o.reachB = up > 0.5 ? holdB : undefined;
+        o.reachB = { x: lerp(restB.x, holdB.x, up), y: lerp(restB.y, holdB.y, up) };
         o.lean = 0.32 * (1 - up);
       }
       if (t >= 58.2) {
         o.facing = -1; o.x = SPOT.h1[0] - 6;
-        o.head = { turn: 0.35, tilt: 0.06 };
-        o.face = { smile: 1, eyes: 'happy', open: 0.35, browUp: 0.4 };
-        o.lean = 0.1;
-      }
-      if (t >= 60.9 && t < 63.1) { // selfie: everyone looks into h4's phone
-        const k = win(t, 60.9, 63.1, 0.3, 0.3);
-        o.head = { turn: lerp(0.35, 1, k), tilt: -0.04 * k };
-        o.lean = 0.1 + 0.12 * k;
-        o.face = { smile: 1, eyes: 'happy', open: 0.5, browUp: 0.5 };
-      }
-      if (t >= 63.1) { // trophy: holds it high over his head for the shout
-        const k = E(t, 63.1, 63.55, 'outBack');
-        const S1 = o.s * 1.08, f1 = o.facing;
-        o.gesture = 'hold'; o.gw = 1;
-        o.reachF = { x: o.x + f1 * lerp(46, 12, k) * S1, y: o.y - lerp(128, 322, k) * S1 };
-        o.reachB = { x: o.x + f1 * lerp(38, -6, k) * S1, y: o.y - lerp(124, 316, k) * S1 };
-        ex.trophy = k;
-        o.head = { turn: 0.55, tilt: -0.1 * k };
-        o.face = { smile: 1, eyes: 'happy', open: 0.6, browUp: 0.6, talk: talking(t, 'h1') };
-        o.lean = -0.05 * k;
-        ex.dustFall = clamp((t - 63.4) / 1.4);
+        // the selfie (everyone looks into h4's phone), then straight into the shout
+        const sk = SELFIE(t), ch = CHEER(t), c1 = clamp(ch);
+        o.head = { turn: lerp(lerp(0.35, 1, sk), 0.55, c1), tilt: lerp(0.06 - 0.1 * sk, -0.16, c1) };
+        o.face = { smile: 1, eyes: 'happy', open: lerp(0.35 + 0.15 * sk, 0.6, c1), browUp: 0.4 + 0.2 * Math.max(sk, c1) };
+        o.lean = 0.1 + 0.12 * sk * (1 - c1) - 0.2 * c1;
+        if (t >= 63.0) { // the trophy: raised up and out over the group (clear of his face)
+          const S1 = o.s * 1.08, f1 = o.facing;
+          o.reachF = { x: o.x + f1 * lerp(46, 66, ch) * S1, y: o.y - lerp(128, 286, ch) * S1 };
+          o.reachB = { x: o.x + f1 * lerp(38, 54, ch) * S1, y: o.y - lerp(124, 292, ch) * S1 };
+          o.face.talk = talking(t, 'h1');
+          ex.trophy = c1;
+          ex.dustFall = clamp((t - 63.4) / 1.4);
+        }
       }
     }
     return r;
@@ -1604,41 +1642,38 @@
       o.face = { smile: 0.45, eyes: 'open', browUp: 0.7 * k, talk: talking(t, 'h2') };
       o.head.turn = 0.3;
     }
-    if (t >= 17.15 && t < 19.8) { // "We want that." — points at him, determined
-      const k = win(t, 17.15, 19.8, 0.18, 0.4);
-      o.gesture = 'point'; o.gw = k;
-      o.face = { smile: 0.15, eyes: 'open', brow: -0.45 * k, talk: talking(t, 'h2') };
-      o.lean = 0.06 * k;
+    if (t >= 17.15 && t < 19.8) { // "We want that." — a firm jab of the finger past h1, at the shopkeeper
+      const k = win(t, 17.15, 19.8, 0.22, 0.45);
+      const jab = U.E.outBack(clamp((t - 17.22) / 0.34));
+      o.armF = [lerp(0.1, 2.12, k), lerp(0.18, lerp(0.7, 0.04, jab), k)];
+      o.face = { smile: 0.12, eyes: 'open', brow: -0.5 * k, talk: talking(t, 'h2') };
+      o.lean = 0.08 * k;
+      o.head.tilt = 0.05 * k; // chin down: she means it
+      const a2 = o.armF[0] + o.armF[1];
+      if (k > 0.55) o.holdF = finger(Math.sin(a2), Math.cos(a2), Art.CAST.h2.skin);
     }
     if (t >= 26.9 && t < 33.0) o.face = Object.assign({}, BASE_FACE, { smile: 0.05, brow: -0.25 * win(t, 27, 30.5, 0.3, 0.5) });
     if (t >= 34.0 && t < 44.0) { // looking around the shop while he's gone
       o.head.turn = 0.18 + 0.4 * win(t, 34.5, 37.2, 0.5, 0.5);
       o.face = Object.assign({}, BASE_FACE, { smile: 0.25, lookY: -0.4 * win(t, 34.5, 37.2) });
     }
-    // high-five with h4: turns to face him
+    // high-five with h4: turns to face him; her front hand meets his at HF.m
     if (t >= 55.6 && t < 56.9) {
       o.facing = -1;
-      const up = win(t, 55.65, 56.75, 0.3, 0.4);
-      o.armF = [lerp(0.1, 2.75, up), lerp(0.18, 0.15, up)];
+      const up = highFive(t, o, 1, 'F');
       o.head = { turn: 0.3, tilt: -0.08 * up };
       o.face.talk = 0;
     }
     if (t >= 58.2) {
-      o.lean = 0.14 * E(t, 58.2, 58.8);
-      o.face = { smile: 1, eyes: 'happy', open: 0.35, browUp: 0.45 };
-    }
-    if (t >= 60.9 && t < 63.1) {
-      const k = win(t, 60.9, 63.1, 0.3, 0.3);
-      o.head = { turn: lerp(0.18, 1, k), tilt: 0.1 * k };
-      o.face = { smile: 1, eyes: 'happy', open: 0.5, browUp: 0.5 };
-      o.lean = 0.14 - 0.26 * k; // leans back toward h4's phone
-    }
-    if (t >= 63.1) {
-      const k = E(t, 63.15, 63.55, 'outBack');
-      o.gesture = 'cheer'; o.gw = k;
-      o.head = { turn: 0.6, tilt: -0.08 * k };
-      o.face = { smile: 1, eyes: 'happy', open: 0.6, browUp: 0.6, talk: talking(t, 'h2') };
-      o.bob = -Math.abs(Math.sin(t * 7)) * 4 * k;
+      const sk = SELFIE(t), ch = CHEER(t), c1 = clamp(ch);
+      o.lean = 0.14 * E(t, 58.2, 58.8) - 0.26 * sk * (1 - c1); // leans back toward h4's phone
+      o.head = { turn: lerp(lerp(0.18, 1, sk), 0.6, c1), tilt: lerp(0.1 * sk, -0.08, c1) };
+      o.face = { smile: 1, eyes: 'happy', open: lerp(0.35 + 0.15 * sk, 0.6, c1), browUp: 0.45 + 0.15 * Math.max(sk, c1) };
+      if (t >= 63.0) {
+        o.gesture = 'cheer'; o.gw = ch;
+        o.face.talk = talking(t, 'h2');
+        o.bob = -Math.abs(Math.sin(t * 7)) * 4 * c1;
+      }
     }
     return r;
   }
@@ -1656,34 +1691,30 @@
       o.face = { smile: 0.55, eyes: 'wide', browUp: 1 * k, talk: talking(t, 'h4') };
       o.head.turn = 0.32;
     }
-    if (t >= 46.0 && t < 53.4) o.gw = 0.3; // phone lowered, deadpan
-    if (t >= 53.4 && t < 55.4) o.gw = E(t, 53.6, 54.2) * 0.9 + 0.1;
-    if (t >= 55.4 && t < 57.0) { // high-five (phone moved to the other hand)
-      const up = win(t, 55.65, 56.75, 0.3, 0.4);
-      o.gesture = undefined;
-      o.armF = [lerp(0.1, 2.7, up), lerp(0.18, 0.2, up)];
-      ex.phone = 'B';
+    // the phone comes down for the deadpan "don't flinch" hold, then back up
+    if (t >= 45.3 && t < 53.4) o.gw = 1 - 0.7 * E(t, 45.3, 46.0);
+    if (t >= 53.4 && t < 57.4) o.gw = lerp(0.3, 1, E(t, 53.6, 54.2));
+    if (t >= 55.5 && t < 56.95) { // high-five with his free (back) hand; the phone stays up in the other
+      const up = highFive(t, o, -1, 'B');
+      o.gw = 1 - 0.7 * up; // the phone hand drops to his chest (clear of h2's head) for the slap
       o.head.tilt = -0.06 * up;
     }
-    if (t >= 57.0 && t < 60.9) o.gw = 0.9;
-    if (t >= 60.9 && t < 63.1) { // the selfie
-      const k = win(t, 60.9, 63.1, 0.35, 0.3);
-      o.gesture = undefined;
-      o.armF = [lerp(2.0, 2.9, k), lerp(0.6, 0.12, k)];
-      ex.selfie = k; ex.rec = false;
-      o.head = { turn: lerp(0.2, 1, k), tilt: -0.05 * k };
-      o.lean = 0.12 * k;
-      o.face = { smile: 1, eyes: 'happy', open: 0.45, browUp: 0.5 };
+    if (t >= 57.4 && t < 60.9) o.gw = 1 - 0.1 * E(t, 57.4, 57.9);
+    if (t >= 60.9) { // the selfie: phone out at arm's length… then straight into the cheer
+      const sk = SELFIE(t), ch = CHEER(t), c1 = clamp(ch);
+      const sIn = E(t, 60.9, 61.3);
+      const phone = [lerp(0.1, 2.15, 0.9), lerp(0.18, 0.75, 0.9)], selfie = [2.78, 0.14], cheer = [2.45, 0.38];
+      const a = [lerp(phone[0], selfie[0], sIn), lerp(phone[1], selfie[1], sIn)];
+      o.armF = [lerp(a[0], cheer[0], ch), lerp(a[1], cheer[1], ch)];
+      o.gesture = 'cheer'; o.gw = ch; // the back arm joins the cheer
+      ex.selfie = sk * (1 - c1); ex.rec = false;
+      o.head = { turn: lerp(lerp(0.2, 1, sk), 0.55, c1), tilt: lerp(-0.05 * sk, -0.08, c1) };
+      o.lean = 0.12 * sk * (1 - c1);
+      o.face = { smile: 1, eyes: 'happy', open: lerp(0.45, 0.6, c1), browUp: 0.5 + 0.1 * c1, talk: t >= 63.0 ? talking(t, 'h4') : 0 };
+      o.bob = -Math.abs(Math.sin(t * 7 + 1)) * 4 * c1;
     }
-    if (t >= 63.1) {
-      const k = E(t, 63.2, 63.6, 'outBack');
-      o.gesture = 'cheer'; o.gw = k; ex.rec = false;
-      o.head = { turn: 0.55, tilt: -0.08 * k };
-      o.face = { smile: 1, eyes: 'happy', open: 0.6, browUp: 0.6, talk: talking(t, 'h4') };
-      o.bob = -Math.abs(Math.sin(t * 7 + 1)) * 4 * k;
-    }
-    // photo flashes (tulip, dusty flower) + the selfie flash
-    ex.flash = Math.max(U.bump(t, 24.45, 0.12), U.bump(t, 45.0, 0.12), U.bump(t, 61.7, 0.16));
+    // photo flashes (tulip, dusty flower) + the selfie flash: instant on the click, quick decay
+    ex.flash = Math.max(...SNAPS.map((s) => pulse(t, s, 0.07)));
     return r;
   }
 
@@ -1725,10 +1756,10 @@
     if (t < 41.9) return { x: 985, y: 575, zoom: 1.1 + 0.05 * E(t, 37.4, 41.9), back: true };
     if (t < 49.9) { const k = E(t, 42.4, 45.0); return { x: lerp(1150, 1062, k), y: 598, zoom: lerp(1.3, 1.34, k) }; }
     if (t < 53.0) { const k = E(t, 49.9, 53.0); return { x: 800, y: 620, zoom: 2.28 + 0.05 * k, dof: 4 }; }
-    if (t < 59.4) { const k = E(t, 53.0, 59.4); return { x: 1040 - 20 * k, y: 600, zoom: 1.32 - 0.04 * k }; }
-    if (t < 66.4) { const k = E(t, 59.4, 66.4); return { x: 960 - 20 * k, y: 590, zoom: 1.24 + 0.02 * k }; }
+    // one slow drift out from the money to the celebration (room above for the shout)
+    if (t < 66.4) { const k = E(t, 53.0, 63.3); return { x: lerp(1040, 950, k), y: lerp(600, 574, k), zoom: lerp(1.32, 1.2, k) }; }
     const k = E(t, 66.4, 69.6, 'inOutSine');
-    return { x: lerp(940, 1150, k), y: lerp(590, 560, k), zoom: lerp(1.26, 1.62, k) };
+    return { x: lerp(950, 1150, k), y: lerp(574, 560, k), zoom: lerp(1.2, 1.62, k) };
   }
   const toScreen = (cam, p) => ({ x: (p.x - cam.x) * cam.zoom + W / 2, y: (p.y - cam.y) * cam.zoom + H / 2 });
 
@@ -1787,6 +1818,61 @@
     if (!best) best = { x: clamp(spk.x, w / 2 + 30, W - w / 2 - 30), y: Math.max(Art.PIC.top + h / 2 + 8, spk.top - 22 - h / 2) };
     best.tip = tip;
     return best;
+  }
+
+  /** screen-space heads (+ the raised trophy as an obstacle) for balloon placement */
+  function speakersOf(A, cam, t) {
+    const heads = [], sp = {};
+    for (const k of ['h1', 'h2', 'h4', 'emb', 'me']) {
+      if (!A[k]) continue;
+      const h = toScreen(cam, A[k].head), m = toScreen(cam, A[k].mouth), tp = toScreen(cam, A[k].top);
+      const r = A[k].head.r * cam.zoom;
+      // how far the head reaches forward (h1's cap brim sticks out)
+      const front = r * (k === 'h1' ? 1.62 : 1.06);
+      sp[k] = { x: h.x, y: h.y, r, top: Math.min(tp.y, h.y - r * 1.2), mouth: m, facing: A[k].facing || 1, front };
+      heads.push(sp[k]);
+    }
+    if (A.h1 && t > 63.0) { // keep the raised trophy flower (pot + droopy head) clear of the shout
+      const S1 = A.h1.scale, c = toScreen(cam, { x: A.h1.handF.x, y: A.h1.handF.y - 52 * S1 }), r = 50 * S1 * cam.zoom;
+      heads.push({ x: c.x, y: c.y, r, top: c.y - r, facing: 1, front: 0, obstacle: true });
+    }
+    return { heads, sp };
+  }
+  function speakerFor(bo, sp) {
+    if (bo.who !== 'all') return sp[bo.who] || null;
+    const g = ['h1', 'h2', 'h4'].map((k) => sp[k]).filter(Boolean);
+    if (!g.length) return null;
+    return { x: g.reduce((a, b) => a + b.x, 0) / g.length, y: g[0].y, r: 0, front: 0, facing: 1, top: Math.min(...g.map((b) => b.top)), mouth: g[0].mouth };
+  }
+  /** the cast's anchors at time t, laid out on a scratch canvas (nothing visible is drawn) */
+  function anchorsAt(t) {
+    const c = Art.canvas('shop11:layout', 4, 4).getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    const A = { me: Art.person(c, meState(t)), emb: K.person(c, embState(t).o, FLIPS.emb) };
+    for (const [who, fn] of [['h4', h4State], ['h2', h2State], ['h1', h1State]]) { const st = fn(t); if (st) A[who] = K.person(c, st.o, FLIPS[who]); }
+    return A;
+  }
+  /**
+   * Each balloon is placed once — clear of every face — at a reference moment
+   * of its line, then pinned in WORLD space: it rides the camera smoothly and
+   * never hops between candidate spots as heads drift. (The tail tip still
+   * follows the speaker's mouth every frame.) A cache of a pure computation.
+   */
+  const PINS = new Map();
+  function pinFor(ctx, i) {
+    const [t0, t1, text, bo] = BUB[i];
+    // keyed by the measured balloon width, so a late-loading web font re-places it
+    const key = i + ':' + Math.round(bubbleBox(ctx, text, bo).w);
+    if (PINS.has(key)) return PINS.get(key);
+    const tr = Math.min(t1 - 0.2, t0 + (bo.ref || 0.5));
+    const cam = camAt(tr);
+    const { heads, sp } = speakersOf(anchorsAt(tr), cam, tr);
+    const spk = speakerFor(bo, sp);
+    if (!spk) return null;
+    const pos = placeBubble(ctx, text, bo, spk, heads.filter((h) => h !== spk));
+    const pin = { x: (pos.x - W / 2) / cam.zoom + cam.x, y: (pos.y - H / 2) / cam.zoom + cam.y };
+    PINS.set(key, pin);
+    return pin;
   }
 
   /* ======================================================================
@@ -2036,7 +2122,7 @@
           o.holdF = (c) => { c.save(); c.scale(f, 1); K.dusty(c, f * 4, lerp(10, -4, lift), 0.86, t, { droop: 0.58 }); c.restore(); };
         }
         A[who] = K.person(ctx, o, FLIPS[who]);
-        if (who === 'h4' && ex.flash > 0) Art.glow(ctx, A.h4.handF.x, A.h4.handF.y - 22, 120, '#ffffff', ex.flash);
+        if (who === 'h4' && ex.flash > 0) Art.glow(ctx, A.h4.handF.x, A.h4.handF.y - 22, 110, '#ffffff', 0.85 * ex.flash);
         if (who === 'h1' && ex.dustFall > 0 && ex.dustFall < 1) {
           // dust sifts down out of the trophy onto his cap
           ctx.save(); ctx.fillStyle = '#d8ccb0';
@@ -2049,10 +2135,10 @@
           ctx.restore();
         }
       }
-      // high-five impact
-      const hf = win(t, 56.15, 56.5, 0.02, 0.3);
+      // high-five impact (where the two palms meet)
+      const hf = win(t, HF.t - 0.02, HF.t + 0.33, 0.02, 0.3);
       if (hf > 0 && A.h2 && A.h4) {
-        const mx = (A.h2.handF.x + A.h4.handF.x) / 2, my = (A.h2.handF.y + A.h4.handF.y) / 2 - 8;
+        const mx = (A.h2.handF.x + A.h4.handB.x) / 2, my = (A.h2.handF.y + A.h4.handB.y) / 2 - 6;
         ctx.save(); ctx.strokeStyle = '#fff6d0'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.globalAlpha = hf;
         for (let i = 0; i < 7; i++) { const a = i / 7 * TAU, r0 = 16 + (1 - hf) * 14; ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * r0, my + Math.sin(a) * r0); ctx.lineTo(mx + Math.cos(a) * (r0 + 14), my + Math.sin(a) * (r0 + 14)); ctx.stroke(); }
         ctx.restore();
@@ -2069,39 +2155,21 @@
 
       ctx.restore();
 
-      // ---------- selfie flash (whole frame) ----------
-      const fl = U.bump(t, 61.72, 0.2);
-      if (fl > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,252,240,${0.55 * fl})`; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+      // ---------- selfie flash (whole picture): instant on the click, gone in a blink ----------
+      const fl = pulse(t, SNAPS[2], 0.06);
+      if (fl > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,252,240,${0.45 * fl})`; ctx.fillRect(0, Art.PIC.top, W, Art.PIC.h); ctx.restore(); }
 
-      // ---------- speech bubbles (screen space) ----------
-      const heads = [];
-      const sp = {};
-      for (const k of ['h1', 'h2', 'h4', 'emb', 'me']) {
-        if (!A[k]) continue;
-        const h = toScreen(cam, A[k].head), m = toScreen(cam, A[k].mouth), tp = toScreen(cam, A[k].top);
-        const r = A[k].head.r * cam.zoom;
-        // how far the head reaches forward (h1's cap brim sticks out)
-        const front = r * (k === 'h1' ? 1.62 : 1.06);
-        sp[k] = { x: h.x, y: h.y, r, top: Math.min(tp.y, h.y - r * 1.2), mouth: m, facing: A[k].facing || 1, front };
-        heads.push(sp[k]);
-      }
-      if (A.h1 && t > 63.0) { // keep the raised trophy flower clear of the shout balloon
-        const fh = toScreen(cam, { x: A.h1.handF.x, y: A.h1.handF.y - 60 });
-        heads.push({ x: fh.x, y: fh.y, r: 46 * cam.zoom, top: fh.y - 50 * cam.zoom, facing: 1, front: 0, obstacle: true });
-      }
+      // ---------- speech bubbles (screen space; each pinned in world space) ----------
+      const { sp } = speakersOf(A, cam, t);
       const cues = [];
-      for (const [t0, t1, text, bo] of BUB) {
-        if (t < t0 - 0.01 || t > t1 + 0.01) continue;
-        let spk = sp[bo.who];
-        if (bo.who === 'all') {
-          const g = ['h1', 'h2', 'h4'].map((k) => sp[k]).filter(Boolean);
-          if (!g.length) continue;
-          spk = { x: g.reduce((a, b) => a + b.x, 0) / g.length, y: g[0].y, r: 0, front: 0, facing: 1, top: Math.min(...g.map((b) => b.top)), mouth: g[0].mouth };
-        }
-        if (!spk) continue;
-        const pos = placeBubble(ctx, text, bo, spk, heads.filter((h) => h !== spk));
-        cues.push([t0, t1, text, Object.assign({}, bo, { x: pos.x, y: pos.y, tx: pos.tip.x, ty: pos.tip.y })]);
-      }
+      BUB.forEach(([t0, t1, text, bo], i) => {
+        if (t < t0 - 0.01 || t > t1 + 0.01) return;
+        const spk = speakerFor(bo, sp);
+        const pin = spk && pinFor(ctx, i);
+        if (!pin) return;
+        const c = toScreen(cam, pin), f = spk.facing || 1;
+        cues.push([t0, t1, text, Object.assign({}, bo, { x: c.x, y: c.y, tx: spk.x + f * (spk.front + 8), ty: spk.mouth.y + 4 })]);
+      });
       Art.bubbles(ctx, t, cues);
     },
   });

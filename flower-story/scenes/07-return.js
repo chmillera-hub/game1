@@ -112,7 +112,7 @@
   ];
   const shotAt = (t) => { let s = SHOTS[0]; for (const x of SHOTS) if (t >= x.t0) s = x; return s; };
   const groupCenter = (t) => { let a = 0; for (const w of HIKERS) a += walkAt(w, t).x; return a / HIKERS.length; };
-  function camAt(t) {
+  function camAt(t, still) {
     const s = shotAt(t);
     let c;
     if (s.id === 'A') {
@@ -131,11 +131,19 @@
     } else {
       c = { x: lerp(772, 780, U.ease(t, 28.6, D, 'inOutSine')), y: 694, z: lerp(2.12, 2.3, U.ease(t, 28.6, D + 1, 'inOutSine')) };
     }
-    const sh = Art.shake(t, s.id === 'A' ? 0.25 : 0.35, 7);
-    c.x += sh.x / c.z; c.y += sh.y / c.z;
+    if (!still) {
+      const sh = Art.shake(t, s.id === 'A' ? 0.25 : 0.35, 7);
+      c.x += sh.x / c.z; c.y += sh.y / c.z;
+    }
     c.id = s.id;
     return c;
   }
+  // each static shot's rest camera (mid-shot, no handheld drift): its backdrop plate is built from it
+  const refCam = (id) => {
+    const i = SHOTS.findIndex((s) => s.id === id);
+    const t1 = i + 1 < SHOTS.length ? SHOTS[i + 1].t0 : D + 1;
+    return camAt((SHOTS[i].t0 + t1) / 2, true);
+  };
 
   /* ----------------------------------------------------------- dialogue */
   const TALK = [
@@ -167,9 +175,22 @@
       else Art.pine(c, x, yy, h, col, { sway: sw, light: o.light, w: 0.4 * (0.85 + r2 * 0.3) });
     }
   };
+  // Art.clouds' layout (seed 6, offset 120), minus the cloud that doubled up
+  // with its neighbour right behind the summit's tip: the peak and its
+  // promise-glow now stand against one soft cloud instead of two tangled outlines
+  // (07 and 08 share this sky — keep them identical)
+  function skyClouds(c, P) {
+    const seed = 6, span = W + 900, color = U.mix(P.sky[1], P.sky[0], 0.35), shade = U.mix(P.sky[2], P.haze, 0.35);
+    for (let i = 0; i < 5; i++) {
+      if (i === 3) continue;
+      const x = ((((U.hash(i, seed) * span - 120) % span) + span) % span) - 450;
+      const s = 1.15 * (0.6 + U.hash(i, seed + 2) * 0.8);
+      Art.cloud(c, x, lerp(190, 360, U.hash(i, seed + 1)), s, color, 0.5 * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13, shade);
+    }
+  }
   const LAYERS = [
     { id: 'clouds', d: 0.05, r: [-560, 40, 2560, 540], draw(c, x0, x1, t) {
-      Art.clouds(c, { seed: 6, count: 5, y0: 190, y1: 360, offset: 120, color: U.mix(P.sky[1], P.sky[0], 0.35), shade: U.mix(P.sky[2], P.haze, 0.35), alpha: 0.5, scale: 1.15 });
+      skyClouds(c, P);
     } },
     { id: 'far', d: 0.09, r: [-60, 140, 2040, 1110], draw(c, x0, x1, t) {
       Art.ridge(c, { seed: 21, y: 660, amp: 180, color: U.mix(P.far, P.sky[1], 0.4), x0: x0 - 40, x1: x1 + 40, bottom: 1300 });
@@ -207,14 +228,23 @@
     }
     return cv;
   }
-  function drawLayers(ctx, cam, t, soft) {
+  // Cost control (software raster pays per destination pixel, ~3x more for
+  // 'high' smoothing): the sky is one padded full-res plate blitted at whole
+  // pixels; the tracking shot (B) draws the soft layers with bilinear
+  // filtering; the static shots (C*) flatten the four depth layers once per
+  // shot into a half-res plate, re-projected each frame with one scale+offset
+  // at a mid depth (their slow push-ins move the layers by < 2% relative to
+  // one another — invisible on a soft backdrop).
+  const baseK = () => (Art._base && Art._base.a) || 1;
+  function drawLayers(ctx, cam, t, soft, only) {
     for (const L of LAYERS) {
+      if (only && L.id !== only) continue;
       ctx.save();
       const k = applyCam(ctx, cam, L.d);
       if (soft) {
         const [x0, y0, x1, y1] = L.r;
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = 'low';
         ctx.drawImage(layerCanvas(L), x0 - (L.id === 'clouds' ? t * 4 : 0), y0, x1 - x0, y1 - y0);
       } else {
         if (L.id === 'clouds') ctx.translate(-t * 4, 0);
@@ -223,18 +253,79 @@
       ctx.restore();
     }
   }
+  const PLATE_R = 0.5, PM = 48, DREF = 0.35;
+  function layerPlate(id) {
+    const r = PLATE_R * baseK();
+    const w = Math.ceil((W + 2 * PM) * r), h = Math.ceil((H + 2 * PM) * r);
+    const cv = Art.canvas('a5r:plate', w, h);
+    const key = id + ':' + w + 'x' + h;
+    if (built.plate !== key) {
+      const c0 = refCam(id);
+      const c = cv.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'low';
+      for (const L of LAYERS) {
+        if (L.id === 'clouds') continue;           // clouds drift: drawn live
+        c.setTransform(r, 0, 0, r, PM * r, PM * r);
+        applyCam(c, c0, L.d);
+        const [x0, y0, x1, y1] = L.r;
+        c.drawImage(layerCanvas(L), x0, y0, x1 - x0, y1 - y0);
+      }
+      built.plate = key;
+      built.plateCam = c0;
+    }
+    return cv;
+  }
+  function drawPlate(ctx, cam) {
+    const cv = layerPlate(cam.id);
+    const k = camD(cam, DREF), k0 = camD(built.plateCam, DREF);
+    const A = k.z / k0.z;
+    const bx = 960 * (1 - A) + (k0.x - k.x) * k.z, by = 540 * (1 - A) + (k0.y - k.y) * k.z;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(cv, bx - PM * A, by - PM * A, (W + 2 * PM) * A, (H + 2 * PM) * A);
+    ctx.restore();
+  }
+  const SKY_PAD = 64, SKY_H = 860;               // below ~700 px the far ridge's fill always covers the sky
+  function skyPlate() {
+    const k = baseK();
+    const w = Math.ceil((W + 2 * SKY_PAD) * k), h = Math.ceil((SKY_H + SKY_PAD) * k);
+    const cv = Art.canvas('a5r:sky', w, h);
+    const key = w + 'x' + h;
+    if (built.sky !== key) {
+      const c = cv.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.setTransform(k, 0, 0, k, SKY_PAD * k, SKY_PAD * k);
+      Art.sky(c, P, { horizon: 790 });
+      Art.glow(c, 250, 780, 900, P.sun, 0.22);
+      built.sky = key;
+    }
+    return cv;
+  }
   function drawSky(ctx, cam, t) {
+    // the depth-0.03 view barely zooms (≤ 4%): blit the plate anchored at the low sun / horizon
+    const k = baseK(), kd = camD(cam, 0.03);
+    const ox = 960 + (250 - kd.x) * kd.z - 250, oy = 540 + (790 - kd.y) * kd.z - 790;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(skyPlate(), Math.round((ox - SKY_PAD) * k), Math.round((oy - SKY_PAD) * k));
+    ctx.restore();
     ctx.save();
     applyCam(ctx, cam, 0.03);
-    Art.sky(ctx, P, { horizon: 790 });
-    Art.glow(ctx, 250, 780, 900, P.sun, 0.22);
     Art.stars(ctx, { seed: 17, count: 70, t, alpha: 0.2 + 0.25 * U.ease(t, 0, D), y0: -60, y1: 380, x0: -100, x1: W + 100 });
     ctx.restore();
   }
-  // out-of-focus foreground framing (wide + tracking shots only): cached once, very soft
-  const FG = { d: 1.45, r: [-120, 280, 2340, 1330] };
+  // out-of-focus foreground framing (wide + tracking shots only): cached once, very soft;
+  // drawn as sub-rects around its four shapes so the filter never touches empty pixels
+  const FG = { d: 1.45, r: [-120, 280, 2340, 1330], R: 0.2,
+    parts: [[-40, 290, 450, 1330], [1100, 935, 1400, 1160], [1425, 905, 1775, 1165], [1995, 895, 2305, 1130]] };
   function fgCanvas() {
-    const R = 0.2, [x0, y0, x1, y1] = FG.r;
+    const R = FG.R, [x0, y0, x1, y1] = FG.r;
     const cv = Art.canvas('a5r:fg', (x1 - x0) * R, (y1 - y0) * R);
     if (built.fg !== cv) {
       const c = cv.getContext('2d');
@@ -249,6 +340,22 @@
       built.fg = cv;
     }
     return cv;
+  }
+  // these small caches don't depend on the output resolution: build them at
+  // load so the scene's first frames don't hitch (lazily, if this ever fails)
+  try { for (const L of LAYERS) layerCanvas(L); fgCanvas(); } catch (e) { /* built on first use */ }
+  function drawFG(ctx, cam) {
+    const cv = fgCanvas(), R = FG.R, [x0, y0] = FG.r;
+    ctx.save();
+    const k = applyCam(ctx, cam, FG.d);
+    const vx0 = k.x - 960 / k.z, vx1 = k.x + 960 / k.z, vy0 = k.y - 540 / k.z, vy1 = k.y + 540 / k.z;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    for (const [px0, py0, px1, py1] of FG.parts) {
+      if (px1 < vx0 || px0 > vx1 || py1 < vy0 || py0 > vy1) continue;
+      ctx.drawImage(cv, (px0 - x0) * R, (py0 - y0) * R, (px1 - px0) * R, (py1 - py0) * R, px0, py0, px1 - px0, py1 - py0);
+    }
+    ctx.restore();
   }
 
   /* ------------------------------------------------------ ground plane */
@@ -520,6 +627,71 @@
   };
 
   /* ------------------------------------------------------------ bubbles */
+  // Dialogue balloons. Art.bubble keeps its full-size box while the text types
+  // on (long lines sit in a big, mostly empty balloon) and pops by scaling that
+  // empty box about its centre (a faint ghost far from the speaker). These are
+  // laid out exactly like Art.bubble — same font, wrap, padding, colours, tail,
+  // shadow, timing — but the box hugs the text typed so far, opening right and
+  // down from its final top-left corner (the words never move), and it springs
+  // out of the tail tip at the speaker's mouth.
+  const BAL = { size: 34, padX: 28, padY: 20 };
+  function balloon(ctx, t, t0, t1, text, o) {
+    const alpha = U.fade(t, t0, t1, 0.12, 0.35);
+    if (alpha <= 0.003) return;
+    const { size, padX, padY } = BAL, lh = size * 1.22;
+    ctx.save();
+    ctx.font = Art.font(size, 'sans', 800);
+    const lines = Art.wrap(ctx, text, o.maxW);
+    const widths = lines.map((l) => ctx.measureText(l).width);
+    const tw = Math.max(...widths);
+    const bw = tw + padX * 2, bh = lines.length * lh + padY * 2;
+    const L = o.x - bw / 2, T = o.y - bh / 2;
+    const total = lines.reduce((n, l) => n + l.length, 0);
+    const typeDur = Math.min(2.4, 0.15 + text.length * 0.032);
+    const n = U.prog(t, t0 + 0.08, t0 + 0.08 + typeDur) * total;
+    // the extent of what's been typed (fractional: the box edge leads the letters)
+    let cw = 0, rows = 1, s = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0 && n <= s) break;
+      const typed = clamp(n - s, 0, lines[i].length), k = Math.floor(typed);
+      const w0 = ctx.measureText(lines[i].slice(0, k)).width;
+      const w1 = k < lines[i].length ? ctx.measureText(lines[i].slice(0, k + 1)).width : w0;
+      cw = Math.max(cw, (tw - widths[i]) / 2 + lerp(w0, w1, typed - k));
+      if (i > 0) rows = i + U.smooth(clamp((n - s) / 1.5));   // a new row opens over ~1.5 letters
+      s += lines[i].length;
+    }
+    const w = Math.max(cw + padX * 2, padX * 2 + 16), h = rows * lh + padY * 2;
+    const tx = o.tx, ty = o.ty;
+    const pop = U.prog(t, t0, t0 + 0.32);
+    const sc = lerp(0.5, 1, U.E.outBack(pop));
+    ctx.globalAlpha *= alpha * clamp(pop * 4);
+    ctx.translate(tx, ty); ctx.scale(sc, sc); ctx.translate(-tx, -ty);
+    ctx.shadowColor = 'rgba(0,0,0,0.28)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#fffaf1';
+    Art.roundRect(ctx, L, T, w, h, Math.min(30, h / 2));
+    ctx.fill();
+    const m = Math.min(40, w / 2), ax = clamp(tx, L + m, L + w - m);
+    const below = ty > T + h / 2, by = below ? T + h - 2 : T + 2;
+    ctx.beginPath();
+    ctx.moveTo(ax - 18, by);
+    ctx.quadraticCurveTo(lerp(ax, tx, 0.5) - 4, lerp(by, ty, 0.55), tx, ty);
+    ctx.quadraticCurveTo(lerp(ax, tx, 0.5) + 8, lerp(by, ty, 0.4), ax + 16, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#2b2530';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    let shown = Math.floor(n + 0.0001);
+    lines.forEach((line, i) => {
+      if (shown <= 0) return;
+      ctx.fillText(line.slice(0, shown), L + padX + (tw - widths[i]) / 2, T + padY + lh * (i + 0.5) + 1);
+      shown -= line.length;
+    });
+    ctx.restore();
+  }
   function bubbleSize(ctx, text, maxW) {
     ctx.save();
     ctx.font = Art.font(34, 'sans', 800);
@@ -536,7 +708,9 @@
     const f = sp.f, hr = sp.r;
     const tip = { x: sp.head.x + f * hr * 1.62, y: sp.mouth.y + 2 };
     const base = sp.head.x + f * hr * 2.65;
-    let x = f > 0 ? base - 40 + b.w / 2 : base + 40 - b.w / 2;
+    // every balloon opens away from its tail (it grows as the words type on), so a
+    // left-facing speaker's balloon starts just above the tail and runs over his head
+    let x = f > 0 ? base - 40 + b.w / 2 : tip.x - 52 + b.w / 2;
     x = clamp(x, b.w / 2 + 36, W - b.w / 2 - 36);
     let bottom = sp.top.y - 26;
     for (const o of heads) if (Math.abs(o.x - x) < b.w / 2 + o.r) bottom = Math.min(bottom, o.y - o.r - 22);
@@ -572,11 +746,12 @@
 
     render(ctx, t) {
       const cam = camAt(t);
-      const soft = cam.id !== 'A';
 
       // ---- sky and the layered backdrop (soft focus in the closer shots)
       drawSky(ctx, cam, t);
-      drawLayers(ctx, cam, t, soft);
+      if (cam.id === 'A') drawLayers(ctx, cam, t, false);
+      else if (cam.id === 'B') drawLayers(ctx, cam, t, true);
+      else { drawLayers(ctx, cam, t, true, 'clouds'); drawPlate(ctx, cam); }
       ctx.save(); applyCam(ctx, cam, 0.09); // the summit's promise-glow breathes
       Art.glow(ctx, 1569, 222, 110, P.light, 0.12 + 0.06 * Math.sin(t * 1.4));
       ctx.restore();
@@ -625,14 +800,7 @@
       ctx.restore();
 
       // ---- out-of-focus foreground framing (wide + tracking only)
-      if (cam.id === 'A' || cam.id === 'B') {
-      ctx.save();
-      applyCam(ctx, cam, FG.d);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(fgCanvas(), FG.r[0], FG.r[1], FG.r[2] - FG.r[0], FG.r[3] - FG.r[1]);
-      ctx.restore();
-      }
+      if (cam.id === 'A' || cam.id === 'B') drawFG(ctx, cam);
 
       // ---- dialogue (screen space)
       const sp = (k) => {
@@ -647,7 +815,7 @@
         const who = q[3].who;
         cues.push([q[0], q[1], q[2], Object.assign({ who }, place(ctx, q[2], sp(who), heads, who === 'me' ? 600 : 520))]);
       }
-      Art.bubbles(ctx, t, cues);
+      for (const q of cues) balloon(ctx, t, q[0], q[1], q[2], q[3]);
       Art.captions(ctx, t, NARR);
     },
   });

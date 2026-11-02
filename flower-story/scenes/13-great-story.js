@@ -15,6 +15,33 @@
   const E = (t, a, b, e) => U.ease(t, a, b, e || 'inOutSine');
   const win = (t, a, b, fi = 0.25, fo = 0.25) => U.fade(t, a, b, fi, fo);
 
+  /**
+   * Depth of field, cheaper than Art.blurred (same transform contract: drawFn
+   * draws in the caller's space). The layer is rendered at 1/f of film
+   * resolution into a fixed-size buffer per blur step and stretched back with
+   * bilinear filtering — the result is soft anyway, and the bicubic upscale
+   * Art.blurred uses costs ~2× in software raster. dof ≈ Art.blurred amount.
+   */
+  function soft(ctx, dof, key, drawFn) {
+    const f = Math.round((1 + dof * 0.4) * 4) / 4;
+    if (f < 1.3) { drawFn(ctx); return; }
+    const base = Art._base || new DOMMatrix();
+    const rel = base.inverse().multiply(ctx.getTransform());
+    const cw = Math.ceil(W / f), ch = Math.ceil(H / f);
+    const c = Art.canvas('s13:' + key + ':' + f, cw, ch);
+    const c2 = c.getContext('2d');
+    c2.setTransform(1, 0, 0, 1, 0, 0);
+    c2.clearRect(0, 0, cw, ch);
+    c2.globalAlpha = 1; c2.globalCompositeOperation = 'source-over';
+    c2.setTransform(new DOMMatrix().scale(cw / W, ch / H).multiply(rel));
+    drawFn(c2);
+    ctx.save();
+    ctx.setTransform(base);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(c, 0, 0, W, H);
+    ctx.restore();
+  }
+
   /* ---------------- words ---------------- */
   const CAP = [
     [1.2, 5.6, 'Meanwhile, I’m sitting nearby, watching the whole thing unfold.'],
@@ -97,13 +124,12 @@
 
   /* ---------------- the camera ---------------- */
   function camAt(t) {
-    if (t < 5.8) { // pull back from the mug, tilting up to his smile
-      const k = U.ease(t, 0.2, 5.6, 'inOutCubic');
-      return { x: lerp(478, 610, k), y: lerp(690, 628, k), zoom: lerp(3.0, 1.55, k), dof: lerp(5, 0, U.ease(t, 1.5, 5.0)) };
+    if (t < 10.65) { // one unbroken pull-back from his face and mug to the two-shot (no jump cut)
+      const k = U.ease(t, 0.2, 6.6, 'inOutCubic'), d = E(t, 6.6, 10.65);
+      return { x: lerp(478, 700, k) + 16 * d, y: lerp(690, 616, k), zoom: lerp(3.0, 1.36, k) + 0.03 * d, dof: lerp(5, 0, U.ease(t, 1.5, 5.0)) };
     }
-    if (t < 10.65) { const k = E(t, 5.8, 10.65); return { x: lerp(700, 716, k), y: 616, zoom: lerp(1.36, 1.39, k) }; }
     if (t < 18.55) { const k = E(t, 10.65, 18.55); return { x: lerp(1088, 1082, k), y: lerp(580, 576, k), zoom: lerp(2.0, 2.18, k), dof: 3, blurCorner: true }; }
-    if (t < 21.8) { const k = E(t, 18.55, 21.8); return { x: 430, y: 640, zoom: 2.05 + 0.1 * k, dof: 3 }; }
+    if (t < 21.8) { const k = E(t, 18.55, 21.8); return { x: lerp(476, 484, k), y: lerp(652, 646, k), zoom: lerp(2.25, 2.42, k), dof: 3 }; } // the laugh: close, pushing in
     if (t < 26.6) { const k = E(t, 21.8, 26.6); return { x: lerp(1094, 1100, k), y: 594, zoom: lerp(1.8, 1.9, k), dof: 2, blurCorner: true }; }
     const k = E(t, 26.6, D + 1);
     return { x: lerp(720, 706, k), y: lerp(612, 606, k), zoom: lerp(1.3, 1.25, k) };
@@ -132,7 +158,8 @@
       lean: -0.06 * laugh,
       face: {
         smile: lerp(0.5, 1, Math.max(laugh, 0.3 * gest)) + 0.2 * talk,
-        eyes: laugh > 0.3 ? 'squeeze' : sip > 0.85 ? 'closed' : 'happy',
+        // eyes open while he watches (the reveal); a blink, then the warm ^ ^ for his line
+        eyes: laugh > 0.3 ? 'squeeze' : sip > 0.85 ? 'closed' : t < 5.9 ? 'open' : t < 5.98 ? 'closed' : 'happy',
         open: laugh * (0.75 + 0.25 * Math.sin(t * 18)),
         browUp: 0.35 * gest,
         talk,
@@ -157,7 +184,8 @@
       const top = { x: o.x - 14 * S, y: o.y - 236 * S };
       ex.broomHead = bh; ex.broomTop = top;
       const at = (k) => ({ x: lerp(top.x, bh.x, k), y: lerp(top.y, bh.y, k) });
-      o.reachB = at(0.2); o.reachF = at(0.5);
+      // hands low enough on the handle that the elbows drop naturally (no "wing")
+      o.reachB = at(0.38); o.reachF = at(0.54);
       o.lean = 0.12 + 0.04 * Math.sin(t * 5.4) * win(t, -1, 6.0, 0.1, 0.5);
       ex.sweeping = t < 6.0;
       // he glances over as the narrator starts talking
@@ -323,12 +351,12 @@
         K.pampas(c, 690, 833, 0.9, t);
       };
       const blurCorner = cam.dof > 0.6 && cam.blurCorner;
-      if (cam.dof > 0.6) Art.blurred(ctx, cam.dof, (c) => { back(c); if (blurCorner) { A.me = Art.person(c, meState(t, K)); plants(c); } }, 'shop13bg');
+      if (cam.dof > 0.6) soft(ctx, cam.dof, 'bg', (c) => { back(c); if (blurCorner) { A.me = Art.person(c, meState(t, K)); plants(c); } });
       else back(ctx);
       if (!blurCorner) {
         A.me = Art.person(ctx, meState(t, K));
         const fgBlur = t < 5.8 ? 7 * (1 - U.ease(t, 0.5, 4.8)) : 0; // closer than him: soft while we're tight on his face
-        if (fgBlur > 0.6) Art.blurred(ctx, fgBlur, plants, 'shop13fg'); else plants(ctx);
+        if (fgBlur > 0.6) soft(ctx, fgBlur, 'fg', plants); else plants(ctx);
       }
 
       // ---------- Embarrassment (+ his broom); behind the counter once he's round it ----------
@@ -375,13 +403,17 @@
       ctx.restore();
 
       // ---------- warm afternoon grade; a golden swell at the end ----------
-      Art.colorize(ctx, '#ff9a48', 0.1, 'soft-light');
+      // (only over the picture area: the letterbox bars cover the rest anyway)
+      ctx.save();
+      ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.1; ctx.fillStyle = '#ff9a48';
+      ctx.fillRect(0, Art.PIC.top, W, Art.PIC.h);
+      ctx.restore();
       const swell = U.ease(t, 26.0, D, 'inOutSine');
       if (swell > 0) {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         const g = ctx.createRadialGradient(560, 520, 50, 560, 520, 1300);
         g.addColorStop(0, `rgba(255,200,120,${0.22 * swell})`); g.addColorStop(1, 'rgba(255,170,90,0)');
-        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = g; ctx.fillRect(0, Art.PIC.top, W, Art.PIC.h);
         ctx.restore();
       }
 

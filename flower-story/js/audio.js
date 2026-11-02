@@ -9,11 +9,20 @@
      sfx one-shots (own kill gains) ──┼ room ─┤   (generated impulse responses), soft echo
                                       └ echo ─┘
        → sum → DC block → glue compressor → trim → soft-knee ceiling (peak < −1 dBFS)
-       → pause gain → mute gain → speakers
+       → end-of-film fade → pause gain → mute gain → speakers
 
    The score is film-locked: a mood bed's bar grid starts where its mood segment
    starts on the film timeline, so the same note always lands on the same frame,
    and seeking lands mid-phrase deterministically. All randomness is seeded.
+
+   Sync: the audio clock is anchored to the film clock; hitches (> 0.12 s) re-anchor,
+   smaller drift is eased out (≤ 3 % tempo). Output latency beyond the picture's own
+   (Bluetooth ≈ 0.2 s) is compensated: beds and cues are scheduled that much early, so
+   they are heard on their frame. Mood changes crossfade over 2.5 s centred on the cut,
+   except a hard picture cut into a snapIn mood (02→03), which cuts with the picture.
+   The film's final fade to black takes the score down 10 dB, then it rings out.
+   Pitched one-shots read the sounding chord (and the next one, if it is about to
+   change) and keep to notes that cannot rub a semitone against it.
 
    The flower theme (3/4, D major) opens on scale degrees 1-2-3-5-8, the
    Fibonacci numbers: D E F# A | D' . C# B | A . F# | E . . (antecedent) and
@@ -47,7 +56,14 @@
   };
   const XFADE = 2.5;      // mood crossfade (seconds, centred on the cut)
   const PREROLL = 1.2;    // the next bed starts this long before its segment
+  const SNAP_PRE = 0.4;   // …except at a 'snap' (a hard picture cut into a snapIn mood): built just ahead, cut on the frame
   const LOOKAHEAD = 0.3;  // note scheduling horizon (seconds of audio clock)
+  const SYNC_HARD = 0.12; // film and audio clocks disagree by more than this (a hitch): re-anchor at once
+  const SYNC_SLEW = 0.03; // smaller disagreements (clock drift, the device clock spinning up) are eased out at
+                          // most 3 % faster/slower — an inaudible tempo drift — down to a 20 ms deadband
+  const VIDEO_LAT = 0.03; // rAF → photons; audio output latency beyond this is compensated (Bluetooth: ~0.2 s)
+  const MAX_LAT = 0.3;
+  const END_DB = -10;     // the film's final fade to black takes the score down this far; it then rings out
 
   /* ---------------- deterministic randomness ---------------- */
   function hash() {
@@ -269,8 +285,8 @@
     comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 2.4; comp.attack.value = 0.015; comp.release.value = 0.3;
     const trim = Gain(ac, LEVEL.trim), pre = Gain(ac, 0.5);
     const shaper = ac.createWaveShaper(); shaper.curve = ceilingCurve(); shaper.oversample = 'none';
-    M.pause = Gain(ac, 0); M.mute = Gain(ac, 1);
-    chain(sum, hp, comp, trim, pre, shaper, M.pause, M.mute, dest);
+    M.end = Gain(ac, 1); M.pause = Gain(ac, 0); M.mute = Gain(ac, 1);
+    chain(sum, hp, comp, trim, pre, shaper, M.end, M.pause, M.mute, dest);
     M.comp = comp;
     return M;
   }
@@ -410,7 +426,7 @@
   I.bassoon = (ch, t, m, v, dur, o) => {
     o = o || {};
     const { ac, kit } = ch, f = mtof(m), body = reedBody(ch);
-    const a = o.a || 0.03, r = o.r || 0.07, end = t + dur + r + 0.05;
+    const a = o.a || 0.03, r = o.r || 0.07, end = t + Math.max(dur, a + 0.001) + r + 0.05;
     const osc = Osc(ac, kit.wave.reed, f, t, end), pre = Filt(ac, 'lowpass', Math.min(4200, f * 9), 0.5), gg = Gain(ac);
     osc.detune.setValueAtTime(-28, t); osc.detune.linearRampToValueAtTime(0, t + 0.045);
     if (o.bend) { const b0 = t + Math.max(0.06, dur * 0.45); osc.detune.setValueAtTime(0, b0); osc.detune.linearRampToValueAtTime(o.bend, t + dur + r); }
@@ -440,11 +456,12 @@
   };
   // warm bass: sine + octave (so it reads on laptop speakers), gently filtered
   I.bass = (ch, t, m, v, dur, o) => {
-    const { ac } = ch, f = mtof(m), r = (o && o.r) || 0.5, end = t + dur + r + 0.05;
+    // (a bed joining mid-chord can ask for a note shorter than its attack: the oscillators outlive the envelope)
+    const { ac } = ch, f = mtof(m), r = (o && o.r) || 0.5, a = (o && o.a) || 0.05, end = t + Math.max(dur, a + 0.001) + r + 0.05;
     const o1 = Osc(ac, 'sine', f, t, end), o2 = Osc(ac, 'sine', f * 2, t, end);
     const g2 = Gain(ac, 0.5), lp = Filt(ac, 'lowpass', 800, 0.5), gg = Gain(ac);
     o1.connect(lp); chain(o2, g2, lp); chain(lp, gg, ch.input);
-    sus(gg.gain, t, 0.12 * v, (o && o.a) || 0.05, dur, r);
+    sus(gg.gain, t, 0.12 * v, a, dur, r);
     own(ch.owner, o1, [lp, gg, g2]); own(ch.owner, o2);
   };
   // french horn: the filter opens as the note speaks (brassy bloom), slow vibrato
@@ -515,7 +532,7 @@
       if (this.o.vib) { const vo = Osc(ac, 'sine', 4.7, T0, T1); this.vib = Gain(ac, this.o.vib); chain(vo, this.vib); own(ch.owner, vo, [this.vib]); }
     }
     note(m, t0, t1, v, attack) {
-      const { ac, kit } = this.ch, o = this.o, f = mtof(m), end = t1 + o.r + 0.05;
+      const { ac, kit } = this.ch, o = this.o, f = mtof(m), end = t0 + Math.max(t1 - t0, 0.06) + o.r + 0.05;
       const wave = kit.wave[o.wave] || kit.wave.string;
       const o1 = Osc(ac, wave, f, t0, end), o2 = Osc(ac, wave, f, t0, end);
       o1.detune.value = o.det; o2.detune.value = -o.det;
@@ -557,7 +574,7 @@
       try { if (this.def.setup) this.def.setup(this, p0); } catch (e) { eng.err(e); }
     }
     fadeIn(t0, t1) {
-      const k = (MOOD_GAIN[this.mood] == null ? 1 : MOOD_GAIN[this.mood]) * (this.eng.moodGain[this.mood] || 1);
+      const k = (MOOD_GAIN[this.mood] == null ? 1 : MOOD_GAIN[this.mood]) * (this.eng.moodGain[this.mood] || 1) * ((this.def.repriseGain && isReprise(this)) ? this.def.repriseGain : 1);
       const c = fadeCurve(true).map((x) => x * k);
       for (const a of this.fIn) a.gain.setValueCurveAtTime(c, t0, Math.max(0.02, t1 - t0));
     }
@@ -578,7 +595,8 @@
     hum(b, k, amt) { return rng(this.mood, 'hum', b, k).gauss() * (amt == null ? 0.012 : amt); }
     advance(untilCtx, now) {
       if (this.dead) return;
-      const eng = this.eng, untilPos = eng.ctxToFilm(untilCtx) - this.seg.t0;
+      // everything scheduled up to untilCtx will be heard (eng.lat later) at film time ctxToFilm(untilCtx + lat)
+      const eng = this.eng, untilPos = eng.ctxToFilm(untilCtx + eng.lat) - this.seg.t0;
       let grew = false;
       while (!this.done && this.pos(this.bar, 0) <= untilPos + 0.15) {
         if (this.pos(this.bar, 0) > this.len + 2.5) { this.done = true; break; }
@@ -590,7 +608,8 @@
         const ev = this.q.shift();
         if (ev.p < this.p0 - 1e-6) continue; // before this bed started (mid-segment start)
         let when = eng.filmToCtx(this.seg.t0 + ev.p);
-        if (when < now) { if (now - when > 0.08) continue; when = now; }
+        // (just after a rebuild the first eng.lat seconds are already 'late': play them now rather than drop them)
+        if (when < now) { if (now - when > 0.08 + eng.lat) continue; when = now; }
         if (this.out && when > this.out) continue;
         try { ev.fn(when); } catch (e) { eng.err(e); }
       }
@@ -623,12 +642,20 @@
       }
       return memo[b];
     }
-    // what is sounding at bed position p (used to keep one-shots in key)
+    // what is sounding at bed position p (used to keep one-shots in key), and the next change of chord
+    // (next.dt audio seconds ahead) so a bell struck just before a change can ring in the new chord
     harmony(p) {
       const def = this.def, b = Math.max(0, Math.floor(p / this.barDur));
-      let chord = null;
-      if (def.chords) { const S = this.segs(b); for (const s of S) if (p >= s.p0 - 1e-6) chord = s; }
-      return { key: this.key, penta: def.penta || [0, 2, 4, 7, 9], chord: chord ? chord.offs : [0, 4, 7] };
+      let chord = null, next = null;
+      if (def.chords) {
+        for (const s of this.segs(b).concat(this.segs(b + 1))) {
+          if (s.p0 <= p + 1e-6) chord = s;
+          else if (!chord || s.offs.join() !== chord.offs.join()) { next = s; break; }
+        }
+      }
+      const offs = chord ? chord.offs : [0, 4, 7];
+      return { key: this.key, penta: def.penta || [0, 2, 4, 7, 9], chord: offs,
+        next: next && next.offs.join() !== offs.join() ? { chord: next.offs, dt: (next.p0 - p) / this.eng.speed } : null };
     }
   }
 
@@ -860,6 +887,11 @@
      Moods, part one: title, forest, wonder, tender, cosmic.
      ========================================================================== */
   const segAt = (S, p) => { let s = S[0]; for (const x of S) if (p >= x.p0 - 1e-6) s = x; return s; };
+  // a later return of a mood (an earlier segment of the same mood is on the film's timeline): beds may vary their form
+  const isReprise = (bed) => {
+    if (bed._rep == null) { const tl = (bed.eng && bed.eng.tl) || []; bed._rep = tl.some((s) => s.mood === bed.mood && s.t0 < bed.seg.t0 - 1e-6); }
+    return bed._rep;
+  };
   // six arpeggio tones for a chord segment: bass, the voicing, the voicing's 2nd note an octave up
   function arpTones(bed, s, lo) {
     let bass = bed.key + s.bass;
@@ -912,9 +944,11 @@
     },
   };
 
-  /* ---- forest: wind in the trees, birdsong, a light nylon-guitar arpeggio ---- */
+  /* ---- forest: wind in the trees, birdsong, a light nylon-guitar arpeggio ----
+     snapIn: when the forest returns at a hard picture cut (02→03: from the time-stopped close-up straight
+     back to the group, the film's comic snap) the sound cuts with the picture instead of crossfading. */
   MOODS.forest = {
-    key: 62, bpm: 88, meter: 4, voicing: { lo: 50, hi: 72, n: 4 }, penta: [0, 2, 4, 7, 9],
+    key: 62, bpm: 88, meter: 4, voicing: { lo: 50, hi: 72, n: 4 }, penta: [0, 2, 4, 7, 9], snapIn: true,
     chords(bed, b) {
       const i = b % 8;
       const P = [[0, 4, 7], [5, 9, 0], [9, 0, 4, 7], null, [0, 4, 7], [5, 9, 0, 4], [2, 5, 9, 0], [7, 11, 2]];
@@ -938,7 +972,7 @@
       padBar(bed, L.pad, b, 1);
       const pat = R.pick([[0, 2, 3, 4, 5, 4, 3, 2], [0, 3, 2, 4, 3, 5, 4, 3], [0, 2, 4, 3, 5, 3, 4, 2]]);
       const hint = i === 4 && b > 0; // the flower's opening notes, half-heard in the top voice
-      const fade = b === 0 ? 0.7 : 1;
+      const fade = b === 0 && !bed.seg.snap ? 0.7 : 1; // a soft first bar, unless the forest snaps back in on a cut
       for (let e = 0; e < 8; e++) {
         if (hint && (e === 2 || e === 3 || e === 4 || e === 6)) continue;
         if (e > 0 && R() < 0.1) continue;
@@ -993,8 +1027,15 @@
     },
   };
 
-  /* ---- tender: intimate felt piano. First lonely (minor colours), then warm ---- */
-  const TENDER_FORM = (b) => {
+  /* ---- tender: intimate felt piano. First lonely (minor colours), then warm ----
+     The lonely half belongs to scene 04's "all alone… invisible" story. A later return of the bed (05's
+     ending, where the field resolves back into the real forest and its flower) is a reprise: warm at once. */
+  const TENDER_FORM = (b, reprise) => {
+    if (reprise) {
+      if (b === 0) return { s: 'introW', i: 0 };
+      const j = (b - 1) % 8;
+      return { s: ['Aw', 'Bw'][Math.floor(j / 4)], i: j % 4 };
+    }
     if (b === 0) return { s: 'intro', i: 0 };
     if (b <= 16) { const j = b - 1; return { s: ['Al', 'Bl', 'Aw', 'Bw'][Math.floor(j / 4)], i: j % 4 }; }
     const j = (b - 17) % 12;
@@ -1002,9 +1043,10 @@
   };
   MOODS.tender = {
     key: 62, bpm: 66, meter: 3, voicing: { lo: 50, hi: 69, n: 3 }, penta: [0, 2, 4, 7, 9],
+    repriseGain: 0.78, // the warm reprise is fuller than the lonely opening it replaces: keep it level with its neighbours
     chords(bed, b) {
-      const f = TENDER_FORM(b), i = f.i;
-      if (f.s === 'intro') return [[0, [5, 9, 0, 4]]];
+      const f = TENDER_FORM(b, isReprise(bed)), i = f.i;
+      if (f.s === 'intro' || f.s === 'introW') return [[0, [5, 9, 0, 4]]];
       if (f.s === 'Al') return [[[0, [9, 0, 4]]], [[0, [2, 5, 9, 0]]], [[0, [4, 7, 11, 2]]], [[0, Vs_], [1.5, V_]]][i];
       if (f.s === 'Bl') return [[[0, [9, 0, 4]]], [[0, IV_]], [[0, [2, 5, 9, 0]], [2, V7_]], [[0, I_]]][i];
       if (f.s === 'int') return [[[0, [9, 0, 4, 7]]], [[0, [5, 9, 0, 4]]], [[0, I_, 4]], [[0, Vs_], [1.5, V_]]][i];
@@ -1019,7 +1061,7 @@
       L.perch = birdPerches(bed, 0.3);
     },
     bar(bed, b) {
-      const L = bed.L, k = bed.key, S = bed.segs(b), f = TENDER_FORM(b);
+      const L = bed.L, k = bed.key, S = bed.segs(b), f = TENDER_FORM(b, isReprise(bed));
       const lonely = f.s === 'Al' || f.s === 'Bl' || f.s === 'intro', warm = !lonely;
       gusts(bed, L.air, b);
       birdBar(bed, L.perch, b, 0.05, ['warble', 'feebee'], 0.35);
@@ -1032,7 +1074,7 @@
         const v = [0.42, 0.28, 0.33, 0.3, 0.3, 0.26][e] * dyn;
         bed.at(p + bed.hum(b, e, 0.014), (w) => I.keys(L.pno, w, tones[idx], v, bed.dur(e === 0 ? 2.5 : 0.9)));
       }
-      if (f.s === 'intro' || f.s === 'int') {
+      if (f.s === 'intro' || f.s === 'introW' || f.s === 'int') {
         if (f.s === 'int') { const s = S[0]; [1, 2].forEach((bt, j) => bed.at(bed.pos(b, bt) + bed.hum(b, 60 + j), (w) => I.keys(L.pno, w, s.notes[2] + 12, 0.24, bed.dur(1)))); }
         return;
       }
@@ -1128,7 +1170,7 @@
         else at(p, (w) => I.tick(L.tick, w, 5200, 0.14, 0.008));
         at(p, (w) => I.pulse(L.chug, w, bass, on ? 0.5 : 0.36, 0.13, { bright: 2.4 }));
         if (!on) { const m = v[pat[(e >> 1) % 4]]; at(p, (w) => I.pulse(L.arp, w, m, 0.36, 0.09, { bright: 4 })); }
-        at(p, (w) => { const P = L.conv.gain; P.setValueAtTime(0.02, w); P.linearRampToValueAtTime(0.005, w + 0.2); });
+        at(p, (w) => { const P = L.conv.gain; P.setValueAtTime(0.005, w); P.linearRampToValueAtTime(0.02, w + 0.004); P.linearRampToValueAtTime(0.005, w + 0.2); }); // a 4 ms rise, not a step
       }
       const c = b % 4;
       const frag = c === 1 ? [[0, 0], [0.5, 2], [1, 3], [1.5, 7]] : c === 3 ? [[0, 0], [0.5, 2], [1, 3], [2, 0], [2.5, 2], [3, 3]] : [];
@@ -1257,7 +1299,15 @@
     },
   };
 
-  /* ---- shop: cosy. A clock at 1 Hz, tiptoeing pizzicato, Embarrassment's deadpan bassoon ---- */
+  /* ---- shop: cosy. A clock at 1 Hz, tiptoeing pizzicato, Embarrassment's deadpan bassoon ----
+     An 8-bar (16 s) cycle that develops rather than loops (scene 11 hears it 3⅓ times, scene 13 twice more):
+       cycle 0  the bassoon's sliding sigh (S1) and its sly rising answer (S2); a glockenspiel ting
+       cycle 1  the answer goes to a perky clarinet an octave up (the hikers' eager demands); a brighter ting
+       cycle 2  trudging: pizzicato doubles the sigh note for note and the bass plods on every beat;
+                the ting becomes a slow, dusty celesta fall (the flower he has ignored for weeks)
+     The last ~3 s before the bed hands over drop the tunes: just the clock and the bass (a deadpan beat
+     under "The hikers don't even flinch." before the cash slap; scene 13's warm fade). Same pitch material
+     throughout, so the harmony is unchanged. */
   const SHOP_S1 = [[0, 1.4, -8], [2, 0.8, -9], [3, 0.8, -10], [4, 2.6, -12, -45]];
   const SHOP_S2 = [[0, 0.4, -5], [0.5, 0.4, -3], [1, 0.4, -2], [1.5, 0.4, -1], [2, 1.2, 0], [4, 0.5, 2], [5, 0.5, -1], [6, 1.6, -5, -30]];
   MOODS.shop = {
@@ -1270,23 +1320,34 @@
       L.clock = bed.strip({ pan: 0.55, room: 0.35 });
       L.pz = bed.strip({ room: 0.25, hall: 0.08 });
       L.bsn = bed.strip({ room: 0.2, hall: 0.12, pan: -0.2 });
+      L.cla = bed.strip({ room: 0.22, hall: 0.12, pan: 0.25 });
       L.gl = bed.strip({ hall: 0.4, delay: 0.15, pan: 0.3 });
+      L.cel = bed.strip({ hall: 0.45, delay: 0.12, pan: 0.32 });
     },
     bar(bed, b) {
       const L = bed.L, k = bed.key, S = bed.segs(b), s = S[0], R = rng('shop', 'pz', b), tones = arpTones(bed, s, 41);
+      const c = b % 8, cyc = Math.floor(b / 8) % 3, tail = bed.pos(b, 0) > bed.len - 3.2;
       murmurBar(bed, L.mm, b);
       bed.at(bed.pos(b, 0), (w) => I.tick(L.clock, w, 2700, 0.34, 0.03));
       bed.at(bed.pos(b, 2), (w) => I.tick(L.clock, w, 2150, 0.3, 0.03));
       bed.at(bed.pos(b, 0) + bed.hum(b, 0, 0.008), (w) => I.pizz(L.pz, w, tones[0], 0.6));
       bed.at(bed.pos(b, 2) + bed.hum(b, 1, 0.008), (w) => I.pizz(L.pz, w, tones[0] + 7, 0.5));
-      if (R.chance(0.6)) s.notes.forEach((m, j) => bed.at(bed.pos(b, 3) + j * 0.01, (w) => I.pizz(L.pz, w, m, 0.2, { decay: 0.3 })));
-      const c = b % 8, ph = c === 1 || c === 2 ? SHOP_S1 : c === 5 || c === 6 ? SHOP_S2 : null, base = c === 2 || c === 6 ? 4 : 0;
+      if (cyc === 2 && c >= 1 && c <= 3) [1, 3].forEach((bt) => bed.at(bed.pos(b, bt) + bed.hum(b, 2 + bt, 0.008), (w) => I.pizz(L.pz, w, tones[0], 0.36)));
+      if (R.chance(cyc === 1 ? 0.85 : 0.6)) s.notes.forEach((m, j) => bed.at(bed.pos(b, 3) + j * 0.01, (w) => I.pizz(L.pz, w, m, 0.2, { decay: 0.3 })));
+      if (tail) return;
+      const ph = c === 1 || c === 2 ? SHOP_S1 : c === 5 || c === 6 ? SHOP_S2 : null, base = c === 2 || c === 6 ? 4 : 0;
       if (ph) for (const [bt, d, st, bend] of ph) {
         const rel = bt - base;
         if (rel < 0 || rel >= 4) continue;
-        bed.at(bed.pos(b, rel) + bed.hum(b, 10 + bt * 2, 0.01), (w) => I.bassoon(L.bsn, w, 53 + st + (k - 65), 0.48, bed.dur(d), { bend: bend || 0 }));
+        const p = bed.pos(b, rel) + bed.hum(b, 10 + bt * 2, 0.01), m = 53 + st + (k - 65);
+        if (ph === SHOP_S2 && cyc === 1) bed.at(p, (w) => I.clarinet(L.cla, w, m + 12, 0.52, bed.dur(d) * 0.9, { bend: bend ? bend * 0.6 : 0 }));
+        else bed.at(p, (w) => I.bassoon(L.bsn, w, m, 0.48, bed.dur(d), { bend: bend || 0 }));
+        if (ph === SHOP_S1 && cyc === 2) bed.at(p + 0.004, (w) => I.pizz(L.pz, w, m + 12, 0.3, { decay: 0.35 }));
       }
-      if (c === 4) [0, 0.5, 1.25].forEach((bt, j) => bed.at(bed.pos(b, 1 + bt), (w) => I.glock(L.gl, w, k + 24 + [7, 4, 9][j], 0.3)));
+      if (c === 4) {
+        if (cyc === 2) [0, 1, 2.5].forEach((bt, j) => bed.at(bed.pos(b, 1 + bt), (w) => I.celesta(L.cel, w, k + 24 + [9, 7, 4][j], 0.34 - j * 0.05)));
+        else [0, 0.5, 1.25].forEach((bt, j) => bed.at(bed.pos(b, 1 + bt), (w) => I.glock(L.gl, w, k + 24 + (cyc === 1 ? [4, 7, 12] : [7, 4, 9])[j], 0.3)));
+      }
     },
   };
 
@@ -1445,8 +1506,28 @@
     whoosh: 5, swell: 3, petal: 3, chuckle: 2, ding: 2, cash: 0, wind: 2, shimmer: -2, engine: -4, register: -2, heartbeat: 2, thud: 2, 'car-door': 4 };
   const FX_TRIM = {};
   for (const k in FX_TRIM_DB) FX_TRIM[k] = dB(FX_TRIM_DB[k]);
-  const inKey = (H, lo, hi) => { const out = []; for (let m = lo; m <= hi; m++) if (H.penta.includes(pc(m - H.key))) out.push(m); return out; };
-  const third = (H) => (H.penta.includes(4) ? 4 : 3);
+  // notes in [lo, hi] on the given scale degrees (offsets from the key; default: the mood's pentatonic)
+  const inKey = (H, lo, hi, deg) => { const d = deg || H.penta, out = []; for (let m = lo; m <= hi; m++) if (d.includes(pc(m - H.key))) out.push(m); return out; };
+  // The score's pentatonic is only clash-free over the tonic: over IV it holds the major 7th under the root,
+  // over V the 4th over the leading tone, in Lydian wonder G# against the A of D major… Magic one-shots ring for
+  // seconds, so they keep to the degrees that are chord tones or sit at least a whole tone from every chord tone.
+  // (When the chord changes within the next second the degrees must suit both chords.)
+  const safeIn = (pen, chord) => { const ch = chord.map(pc); return pen.filter((x) => ch.includes(pc(x)) || !ch.some((c) => { const d = pc(x - c); return d === 1 || d === 11; })); };
+  const safeDeg = (H) => {
+    const ok = safeIn(H.penta, H.chord);
+    if (H.next && H.next.dt < 1.0) { const both = safeIn(ok, H.next.chord); if (both.length >= 3) return both; }
+    return ok.length >= 3 ? ok : H.chord.map(pc);
+  };
+  // the chord a struck bell will ring in: the sounding one, or the next if it arrives within 0.4 s
+  const ringChord = (H) => (H.next && H.next.dt < 0.4 ? H.next.chord : H.chord);
+  // …as root + third + fifth (offsets from the key); the root folded to within a tritone of the tonic so
+  // chord-relative figures stay in the register they were written for
+  const triad = (H) => {
+    const ch = ringChord(H).map(pc), r = ch[0], has = (iv) => ch.includes(pc(r + iv));
+    if (!ch.length) return { root: 0, third: 4, fifth: 7 };
+    const r0 = r > 6 ? r - 12 : r;
+    return { root: r0, third: has(4) ? 4 : has(3) ? 3 : has(5) ? 5 : has(2) ? 2 : 4, fifth: has(7) ? 7 : has(6) ? 6 : has(8) ? 8 : 7 };
+  };
 
   function burst(ch, t, o) {
     const { ac, kit } = ch, src = Noise(ac, o.buf || kit.white, t, t + o.a + o.d + 0.06, ch.R);
@@ -1483,11 +1564,12 @@
     return env.gain;
   }
 
-  // magic: 5 → 8 (the theme's leap) and a quiet third, on a bell
+  // magic: 5 → 8 (the theme's leap) and a quiet third, on a bell — of the chord that is sounding: over the
+  // tonic exactly the theme's degrees, over IV or wonder's Lydian II the same figure moves with the harmony
   FX.chime = (S, t, g, H) => {
-    const ch = S.strip({ hall: 0.6, delay: 0.22, pan: 0.12 }), k = H.key;
-    [[19, 1, 0], [24, 0.85, 0.13], [24 + third(H), 0.38, 0.29]].forEach(([s, v, dt]) =>
-      I.partials(ch, t + dt, mtof(k + s), g * v, [[1, 1, 3.2], [2, 0.3, 1.4], [3, 0.09, 0.6], [4.2, 0.04, 0.3]], 0.17));
+    const ch = S.strip({ hall: 0.6, delay: 0.22, pan: 0.12 }), k = H.key, c = triad(H);
+    [[12 + c.fifth, 1, 0], [24, 0.85, 0.13], [24 + c.third, 0.38, 0.29]].forEach(([s, v, dt]) =>
+      I.partials(ch, t + dt, mtof(k + c.root + s), g * v, [[1, 1, 3.2], [2, 0.3, 1.4], [3, 0.09, 0.6], [4.2, 0.04, 0.3]], 0.17));
     return 4;
   };
   // a string chord breathing in, with air rising underneath
@@ -1522,7 +1604,7 @@
     return 1.1;
   };
   FX.sparkle = (S, t, g, H) => {
-    const chs = [-0.6, 0, 0.6].map((pan) => S.strip({ hall: 0.5, delay: 0.3, pan })), notes = inKey(H, 86, 103), R = S.R;
+    const chs = [-0.6, 0, 0.6].map((pan) => S.strip({ hall: 0.5, delay: 0.3, pan })), notes = inKey(H, 86, 103, safeDeg(H)), R = S.R;
     let tt = t, idx = notes.length - 1;
     for (let i = 0; i < 9; i++) {
       I.glock(R.pick(chs), tt, notes[clamp(idx, 0, notes.length - 1)], g * (1 - i * 0.07) * R.range(0.8, 1));
@@ -1575,11 +1657,19 @@
     burst(ch, t, { buf: ch.kit.pink, f: 260, q: 1.3, a: 0.002, d: 0.09, peak: 1.6 * g });
     return 0.6;
   };
-  // the shop's door bell: a small brass bell on a spring, struck a few times
-  FX.bell = (S, t, g) => {
-    const ch = S.strip({ room: 0.3, hall: 0.15, pan: 0.2 }), R = S.R;
+  // the shop's door bell: a small brass bell on a spring, struck a few times. A fixed 1650 Hz (G#6) rubbed
+  // against the A of F major and the G of C7 on nearly every ring, so it is tuned to the nearest chord tone
+  // within a minor third of that (in practice G6 or A6)
+  const nearChordTone = (H, target, span) => {
+    const ch = ringChord(H).map(pc);
+    let best = null;
+    for (let m = Math.round(target - span); m <= Math.round(target + span); m++) if (ch.includes(pc(m - H.key)) && (best == null || Math.abs(m - target) < Math.abs(best - target))) best = m;
+    return best == null ? target : best;
+  };
+  FX.bell = (S, t, g, H) => {
+    const ch = S.strip({ room: 0.3, hall: 0.15, pan: 0.2 }), R = S.R, f0 = mtof(nearChordTone(H, 91.9, 3));
     [[0, 1], [0.085, 0.72], [0.19, 0.55], [0.31, 0.4], [0.47, 0.28], [0.64, 0.17]].forEach(([dt, v]) => {
-      I.partials(ch, t + dt, 1650 * R.range(0.997, 1.003), g * v, [[1, 1, 1.6], [2.32, 0.5, 0.8], [3.94, 0.25, 0.45], [5.4, 0.12, 0.22]], 0.13);
+      I.partials(ch, t + dt, f0 * R.range(0.997, 1.003), g * v, [[1, 1, 1.6], [2.32, 0.5, 0.8], [3.94, 0.25, 0.45], [5.4, 0.12, 0.22]], 0.13);
       burst(ch, t + dt, { f: 5200, q: 1.2, a: 0.0005, d: 0.006, peak: 0.08 * g * v });
     });
     return 2.4;
@@ -1618,7 +1708,7 @@
   };
   // a giggle: a clarinet tumbling down the scale, each note a breathy "ha"
   FX.laugh = (S, t, g, H) => {
-    const ch = S.strip({ room: 0.22, hall: 0.1, pan: 0.05 }), k = H.key, sc = inKey(H, k + 7, k + 21).reverse();
+    const ch = S.strip({ room: 0.22, hall: 0.1, pan: 0.05 }), k = H.key, sc = inKey(H, k + 2, k + 21, safeDeg(H)).reverse();
     let tt = t;
     for (let i = 0; i < 6; i++) {
       const m = sc[Math.min(sc.length - 1, i)];
@@ -1631,7 +1721,7 @@
   };
   // Embarrassment's dry "heh-heh-heh": his bassoon, low
   FX.chuckle = (S, t, g, H) => {
-    const ch = S.strip({ room: 0.22, hall: 0.08, pan: -0.1 }), k = H.key, lo = inKey(H, k - 12, k).reverse();
+    const ch = S.strip({ room: 0.22, hall: 0.08, pan: -0.1 }), k = H.key, lo = inKey(H, k - 17, k, safeDeg(H)).reverse();
     [0, 0.17, 0.33].forEach((dt, i) => {
       const m = lo[Math.min(lo.length - 1, 1 + i)] - 12, f0 = mtof(m + 12);
       I.bassoon(ch, t + dt, m, g * (0.8 - i * 0.12), 0.09, { a: 0.012, r: 0.05 });
@@ -1664,7 +1754,7 @@
   };
   // a phone notification: two bell notes from the score's scale (a fan of dings makes a tune)
   FX.ding = (S, t, g, H) => {
-    const R = S.R, ch = S.strip({ room: 0.15, hall: 0.12, pan: R.range(-0.3, 0.3) }), notes = inKey(H, H.key + 19, H.key + 31);
+    const R = S.R, ch = S.strip({ room: 0.15, hall: 0.12, pan: R.range(-0.3, 0.3) }), notes = inKey(H, H.key + 19, H.key + 31, safeDeg(H));
     const i = R.int(0, notes.length - 2);
     I.partials(ch, t, mtof(notes[i]), g, [[1, 1, 0.5], [2, 0.25, 0.2], [3, 0.08, 0.08]], 0.16);
     I.partials(ch, t + 0.1, mtof(notes[i + 1]), g * 0.9, [[1, 1, 0.65], [2, 0.25, 0.25], [3, 0.08, 0.08]], 0.16);
@@ -1715,7 +1805,7 @@
   };
   // a falling petal: air, and three soft notes drifting down
   FX.petal = (S, t, g, H) => {
-    const ch = S.strip({ hall: 0.5, delay: 0.2, pan: 0.2 }), notes = inKey(H, H.key + 24, H.key + 36).reverse();
+    const ch = S.strip({ hall: 0.5, delay: 0.2, pan: 0.2 }), notes = inKey(H, H.key + 24, H.key + 36, safeDeg(H)).reverse();
     burst(ch, t, { buf: S.kit.pink, f: 3000, q: 0.8, a: 0.25, d: 0.5, peak: 0.12 * g });
     [0, 0.22, 0.46].forEach((dt, i) => I.celesta(ch, t + 0.08 + dt, notes[Math.min(notes.length - 1, i * 2)], g * (0.42 - i * 0.1)));
     return 2.4;
@@ -1779,7 +1869,7 @@
   };
   // high partials from the scale, each trembling at its own rate
   FX.shimmer = (S, t, g, H) => {
-    const { ac } = S, notes = inKey(H, H.key + 24, H.key + 38), R = S.R;
+    const { ac } = S, notes = inKey(H, H.key + 24, H.key + 38, safeDeg(H)), R = S.R;
     for (let i = 0; i < 7; i++) {
       const m = notes[(i * 2) % notes.length], ch = S.strip({ hall: 0.6, delay: 0.2, pan: (i / 6 - 0.5) * 1.4 }), st = t + i * 0.07;
       const o = Osc(ac, 'sine', mtof(m), st, st + 3.3), tr = Gain(ac, 1), lfo = Osc(ac, 'sine', R.range(4.5, 7), st, st + 3.3), lg = Gain(ac, 0.4), gg = Gain(ac);
@@ -1791,10 +1881,10 @@
   };
   // the flower opens: a harp sweeping up the scale into a bell chord, strings breathing in
   FX.bloom = (S, t, g, H) => {
-    const ch = S.strip({ hall: 0.55, delay: 0.1, pan: -0.15 }), k = H.key, run = inKey(H, k - 12, k + 24);
+    const ch = S.strip({ hall: 0.55, delay: 0.1, pan: -0.15 }), k = H.key, run = inKey(H, k - 12, k + 24, safeDeg(H));
     run.forEach((m, i) => I.pluck(ch, t + i * 0.045, m, g * (0.35 + (0.35 * i) / run.length), { decay: 2.8 }));
-    const top = t + run.length * 0.045, bell = S.strip({ hall: 0.6, delay: 0.25, pan: 0.15 });
-    [24, 24 + third(H), 31].forEach((s, i) => I.celesta(bell, top + i * 0.03, k + s, g * 0.6));
+    const top = t + run.length * 0.045, bell = S.strip({ hall: 0.6, delay: 0.25, pan: 0.15 }), c = triad(H);
+    [24, 24 + c.third, 24 + c.fifth].forEach((s, i) => I.celesta(bell, top + i * 0.03, k + c.root + s, g * 0.6));
     FX.swell(S, t + 0.1, g * 0.7, H);
     return 4.2;
   };
@@ -1802,28 +1892,31 @@
   /* ==========================================================================
      The engine: film clock ↔ audio clock, the mood timeline, crossfades, cues.
      ========================================================================== */
-  // contiguous mood segments [{mood, t0, t1, i, key}] from the scene list
+  // contiguous mood segments [{mood, t0, t1, i, key, hard, snap}] from the scene list. hard: the segment begins
+  // exactly on a hard picture cut (no crossIn, no fade on either side); snap: …into a mood marked snapIn
   function moodTimeline(scenes) {
     const list = (scenes || []).filter((s) => s && typeof s.start === 'number' && isFinite(s.start)).slice().sort((a, b) => a.start - b.start);
     const raw = [];
     let total = 0;
-    for (const sc of list) {
-      const d = +sc.duration || 0;
+    list.forEach((sc, si) => {
+      const d = +sc.duration || 0, prev = list[si - 1];
       total = Math.max(total, sc.start + d);
+      const hardIn = si > 0 && !(+sc.crossIn > 0) && !(+sc.fadeIn > 0) && !(prev && +prev.fadeOut > 0);
       let ms = null;
       if (Array.isArray(sc.moods) && sc.moods.length) ms = sc.moods.filter((m) => Array.isArray(m) && typeof m[1] === 'string').map((m) => [sc.start + clamp(+m[0] || 0, 0, d), m[1]]).sort((a, b) => a[0] - b[0]);
       else if (typeof sc.mood === 'string') ms = [[sc.start, sc.mood]];
-      if (ms) for (const p of ms) if (MOODS[p[1]]) raw.push(p); // unknown moods: ignored (the previous mood continues)
-    }
+      if (ms) for (const p of ms) if (MOODS[p[1]]) raw.push([p[0], p[1], hardIn && Math.abs(p[0] - sc.start) < 1e-6]); // unknown moods: ignored (the previous mood continues)
+    });
     const pts = [];
     for (const p of raw) {
       if (pts.length && Math.abs(pts[pts.length - 1][0] - p[0]) < 1e-6) pts.pop();
       if (pts.length && pts[pts.length - 1][1] === p[1]) continue;
-      pts.push([p[0], p[1]]);
+      pts.push([p[0], p[1], p[2]]);
     }
-    if (!pts.length) pts.push([0, 'silence']);
+    if (!pts.length) pts.push([0, 'silence', false]);
     pts[0][0] = Math.min(0, pts[0][0]);
-    return pts.map(([t, m], i) => ({ mood: m, t0: t, t1: i + 1 < pts.length ? pts[i + 1][0] : Math.max(total, t + 1), i, key: m + '@' + t.toFixed(3) }));
+    return pts.map(([t, m, hard], i) => ({ mood: m, t0: t, t1: i + 1 < pts.length ? pts[i + 1][0] : Math.max(total, t + 1), i, key: m + '@' + t.toFixed(3),
+      hard: !!hard && i > 0, snap: !!hard && i > 0 && !!MOODS[m].snapIn }));
   }
 
   function Engine(ac, offline) {
@@ -1836,6 +1929,10 @@
     this.lastT = 0; this.seekAt = -1e9; this.prevSeekAt = -1e9; this.scrub = false; this.needSync = false; this.lastSync = -1e9;
     this.teardownAt = 0; this.sig = null; this.tl = moodTimeline([]);
     this.log = []; this.errors = []; this.moodGain = {};
+    // lat: seconds from scheduling a sound to hearing it, beyond the picture's own delay (0 offline);
+    // errF: smoothed film-minus-audio clock error; cueT: film time up to which cues have been considered
+    this.lat = 0; this.errF = 0; this.lastNow = 0; this.cueT = 0;
+    this.endT = 0; this.endDur = 0; this.endG = 1;
   }
   const EP = Engine.prototype;
   EP.err = function (e) {
@@ -1843,46 +1940,94 @@
     if (!this.offline && this.errors.length === 1) console.warn('[audio]', e);
   };
   EP.note = function (ev) { this.log.push(ev); if (this.log.length > 3000) this.log.splice(0, 1000); };
-  EP.filmToCtx = function (T) { return this.anchor.c + (T - this.anchor.f) / this.speed; };
+  // The anchor maps the audio clock to the film time on screen. filmToCtx gives the moment to *schedule* a
+  // sound so that it is *heard* when the film shows T (output latency compensated); ctxToFilm is the plain map.
+  EP.filmToCtx = function (T) { return this.anchor.c + (T - this.anchor.f) / this.speed - this.lat; };
   EP.ctxToFilm = function (c) { return this.anchor.f + (c - this.anchor.c) * this.speed; };
-  EP.reanchor = function (T, now) { this.anchor = { c: now, f: T }; };
+  EP.reanchor = function (T, now) { this.anchor = { c: now, f: T }; this.errF = 0; };
+  // keep the audio clock locked to the film clock: hitches re-anchor at once, small drift is eased out
+  EP.sync = function (T, now) {
+    const err = (T - this.ctxToFilm(now)) / this.speed; // (in seconds of audio clock, whatever the play speed)
+    if (Math.abs(err) > SYNC_HARD) { this.reanchor(T, now); this.note({ type: 'resync', T: +T.toFixed(3), err: +err.toFixed(3) }); return; }
+    const dtc = clamp(now - this.lastNow, 0, 0.1);
+    this.errF += (err - this.errF) * Math.min(1, dtc / 0.4);
+    if (Math.abs(this.errF) > 0.02) {
+      const step = clamp(this.errF, -SYNC_SLEW * dtc, SYNC_SLEW * dtc);
+      this.anchor = { c: this.anchor.c, f: this.anchor.f + step * this.speed };
+      this.errF -= step;
+    }
+  };
+  // audio output latency (live contexts only), less the picture's own; jump: take it at once (on a rebuild)
+  EP.measureLatency = function (jump) {
+    if (this.offline) return;
+    const target = clamp((+this.ac.baseLatency || 0) + (+this.ac.outputLatency || 0) - VIDEO_LAT, 0, MAX_LAT);
+    if (!(target >= 0)) return;
+    if (jump) { this.lat = target; return; }
+    const d = target - this.lat; // during playback follow slowly (≤ 3 %): a change shifts the clock like a tempo nudge
+    if (Math.abs(d) > 0.006) this.lat += clamp(d, -0.0005, 0.0005);
+  };
   EP.timeline = function (scenes) {
     const last = scenes && scenes.length ? scenes[scenes.length - 1] : null;
-    const sig = scenes ? scenes.length + ':' + (last ? last.start + '+' + last.duration : '') : '';
-    if (sig !== this.sig) { this.sig = sig; this.tl = moodTimeline(scenes); }
+    const sig = scenes ? scenes.length + ':' + (last ? last.start + '+' + last.duration + '+' + last.fadeOut : '') : '';
+    if (sig !== this.sig || scenes !== this.scArr) {
+      this.sig = sig; this.scArr = scenes; this.tl = moodTimeline(scenes);
+      this.endT = last ? last.start + (+last.duration || 0) : 0; this.endDur = last ? clamp(+last.fadeOut || 0, 0, 8) : 0;
+    }
     return this.tl;
   };
   EP.segAt = function (T) { let s = this.tl[0]; for (const x of this.tl) if (T >= x.t0 - 1e-9) s = x; return s; };
-  EP.startBed = function (seg, T, now, fade) {
-    const bed = new Bed(this, seg, T - seg.t0);
-    bed.fadeIn(now, now + Math.max(0.05, fade));
+  // at: when the fade starts (audio clock; default now) — a snap schedules it on the cut itself
+  EP.startBed = function (seg, T, now, fade, at) {
+    const bed = new Bed(this, seg, T - seg.t0), t0 = at == null ? now : at;
+    bed.fadeIn(t0, t0 + Math.max(0.02, fade));
     this.beds.push(bed); this.cur = bed;
     this.note({ type: 'bed', mood: seg.mood, T: +T.toFixed(3), p0: +(T - seg.t0).toFixed(3) });
     return bed;
   };
-  EP.releaseBeds = function (now, fade) { for (const b of this.beds) if (!b.out) b.fadeOut(now, now + Math.max(0.02, fade)); this.cur = null; };
+  EP.releaseBeds = function (now, fade, at) {
+    const t0 = at == null ? now : at;
+    for (const b of this.beds) if (!b.out) b.fadeOut(t0, t0 + Math.max(0.02, fade));
+    this.cur = null;
+  };
   EP.rebuild = function (T, now, fade) {
     this.releaseBeds(now, Math.min(0.3, fade));
     const seg = this.segAt(T);
     if (seg) this.startBed(seg, T, now, fade);
     this.lastSync = now;
   };
-  // keep the right bed playing; plan the crossfade so it is centred on the cut
+  // keep the right bed playing; plan the crossfade so it is centred on the cut — or, at a snap, cut with it
   EP.follow = function (T, now) {
     const seg = this.segAt(T);
     if (!seg) return;
-    const nx = this.tl[seg.i + 1], pre = !!nx && T >= nx.t0 - PREROLL, want = pre ? nx : seg;
+    const nx = this.tl[seg.i + 1], snap = !!nx && nx.snap;
+    const pre = !!nx && T >= nx.t0 - (snap ? SNAP_PRE : PREROLL), want = pre ? nx : seg;
     if (this.cur && this.cur.seg.key === want.key) return;
     const live = this.beds.find((b) => !b.out && b.seg.key === want.key);
     if (live) { this.cur = live; return; }
     if (pre && this.cur && this.cur.seg.key === seg.key) {
-      const d = Math.max(0.3, this.filmToCtx(nx.t0 + (XFADE - PREROLL)) - now);
-      this.releaseBeds(now, d);
-      this.startBed(nx, T, now, d);
+      if (snap) { // the old bed's own reverb tail still rings on in the shared hall
+        const at = Math.max(now, this.filmToCtx(nx.t0) - 0.004);
+        this.releaseBeds(now, 0.22, at);
+        this.startBed(nx, T, now, 0.03, at);
+        this.note({ type: 'snap', mood: nx.mood, T: +nx.t0.toFixed(3) });
+      } else {
+        const d = Math.max(0.3, this.filmToCtx(nx.t0 + (XFADE - PREROLL)) - now);
+        this.releaseBeds(now, d);
+        this.startBed(nx, T, now, d);
+      }
     } else {
       this.releaseBeds(now, 1.2);
       this.startBed(want, T, now, 1.0);
     }
+  };
+  // the film's last fade to black takes the score down with it (Th: film time being heard); then it rings out
+  EP.endFade = function (Th, now, jump) {
+    const f = this.endDur;
+    if (!(f > 0)) return;
+    const x = clamp((Th - (this.endT - f)) / f, 0, 1), g = dB(END_DB * x * x * (3 - 2 * x));
+    if (!jump && Math.abs(g - this.endG) < 0.003) return;
+    this.endG = g;
+    this.mix.end.gain.setTargetAtTime(g, now, jump ? 0.03 : 0.1);
   };
   EP.reap = function (now) {
     if (this.beds.some((b) => b.out && now > b.out + 0.05)) {
@@ -1890,10 +2035,14 @@
     }
     if (this.fx.length) this.fx = this.fx.filter((f) => { if (now > f.end && !f.owner.srcs.size) { f.done(); return false; } return true; });
   };
+  // what the score plays at the moment a one-shot fired now will be heard: the bed whose segment that is (in
+  // the first half of a crossfade the outgoing bed still leads), else the current one
   EP.harmony = function () {
-    const b = this.cur;
-    if (!b) return { key: 62, penta: [0, 2, 4, 7, 9], chord: [0, 4, 7] };
-    return b.harmony(this.ctxToFilm(this.ac.currentTime) - b.seg.t0);
+    const Th = this.ctxToFilm(this.ac.currentTime + this.lat);
+    let b = this.beds.find((x) => !x.dead && Th >= x.seg.t0 - 1e-6 && Th < x.seg.t1 && (!x.out || x.out > this.ac.currentTime));
+    if (!b) b = this.cur;
+    if (!b) return { key: 62, penta: [0, 2, 4, 7, 9], chord: [0, 4, 7], next: null };
+    return b.harmony(Th - b.seg.t0);
   };
   EP.playFx = function (id, when, gain, seed) {
     const fn = FX[id];
@@ -1920,9 +2069,10 @@
       f.end = Math.min(f.end, now + 0.12);
     }
   };
-  // fire every cue whose film time lies in (T0, T1]
+  // fire every cue whose film time lies in (T0, T1]; T1 runs ahead of the picture by the output latency, so a
+  // cue is fired that much early and heard on its frame (right after a seek T0 is the seek point: late, not lost)
   EP.cues = function (T0, T1, now, scenes) {
-    if (!(T1 > T0) || T1 - T0 > Math.max(0.5, 0.25 * this.speed)) return;
+    if (!(T1 > T0) || T1 - T0 > Math.max(0.5, 0.25 * this.speed) + this.lat * this.speed) return;
     for (const sc of scenes) {
       if (!sc || !Array.isArray(sc.sfx) || typeof sc.start !== 'number') continue;
       if (sc.start > T1 || sc.start + (+sc.duration || 0) + 5 < T0) continue;
@@ -1931,7 +2081,7 @@
         const ct = sc.start + +c[0];
         if (!(ct > T0 && ct <= T1) || !FX[c[1]]) continue;
         const gain = c[2] && typeof c[2].gain === 'number' ? c[2].gain : 1;
-        const when = now + 0.01 + Math.max(-0.01, (ct - T1) / this.speed);
+        const when = now + 0.012 + Math.max(-0.012, (ct - T1) / this.speed);
         this.playFx(c[1], when, gain, hash(c[1], ct.toFixed(3)));
         this.note({ type: 'cue', id: c[1], ct: +ct.toFixed(3), T: +T1.toFixed(4), gain });
       }
@@ -1946,14 +2096,18 @@
     const scenes = Array.isArray(a.scenes) ? a.scenes : a.scene ? [a.scene] : [];
     this.timeline(scenes);
     if (speed !== this.speed) { const f = this.ctxToFilm(now); this.speed = speed; this.reanchor(f, now); }
+    const rebuilding = (playing && !this.playing) || (a.seeked && this.playing) || (this.stalled && this.ac.state === 'running');
+    this.measureLatency(rebuilding);
+    const Lf = this.lat * this.speed; // film seconds between scheduling a sound and hearing it
     let fresh = false;
     if (playing && !this.playing) { // play / resume: rebuild at the current position
       this.playing = true; this.teardownAt = 0;
       this.mix.pause.gain.setTargetAtTime(1, now, 0.08);
       this.reanchor(T, now);
       this.killFx(now);
+      this.endFade(T + Lf, now, true);
       this.rebuild(T, now, 0.35);
-      this.lastT = T; fresh = true;
+      this.lastT = T; this.cueT = T; fresh = true;
       this.note({ type: 'play', T });
     } else if (!playing && this.playing) { // pause (or the end of the film: let it ring)
       this.playing = false;
@@ -1966,32 +2120,46 @@
       this.prevSeekAt = this.seekAt; this.seekAt = now;
       this.scrub = now - this.prevSeekAt < 0.3;
       this.killFx(now);
-      this.lastT = T;
+      this.lastT = T; this.cueT = T;
       this.note({ type: 'seek', T, scrub: this.scrub });
       if (this.playing && !fresh) {
         this.reanchor(T, now);
+        this.endFade(T + Lf, now, true);
         if (!this.scrub && now - this.lastSync > 0.25) { this.needSync = false; this.rebuild(T, now, 0.5); }
         else { this.releaseBeds(now, 0.15); this.needSync = true; }
       }
       this.reap(now);
+      this.lastNow = now;
       return;
     }
     if (!this.playing) {
       if (this.teardownAt && now >= this.teardownAt) { this.releaseBeds(now, 0.02); this.killFx(now); this.teardownAt = 0; }
-      this.lastT = T;
+      this.lastT = T; this.cueT = T; this.lastNow = now;
       this.reap(now);
       return;
     }
-    // a live context the browser has suspended has a frozen clock: schedule nothing, rebuild once it runs again
-    if (!this.offline && this.ac.state !== 'running') { this.stalled = true; this.lastT = T; return; }
+    // a live context the browser has suspended has a frozen clock: schedule nothing, rebuild once it runs again.
+    // Silence the output on the frozen clock first, so that when it thaws the old beds don't pop back in.
+    if (!this.offline && this.ac.state !== 'running') {
+      if (!this.stalled) {
+        this.stalled = true;
+        try { const P = this.mix.pause.gain; P.cancelScheduledValues(now); P.setValueAtTime(0, now); } catch (e) { /* ignore */ }
+        this.note({ type: 'stall', T });
+      }
+      this.lastT = T; this.cueT = T; this.lastNow = now;
+      return;
+    }
     if (this.stalled) { this.stalled = false; this.mix.pause.gain.setTargetAtTime(1, now, 0.08); this.reanchor(T, now); this.killFx(now); this.rebuild(T, now, 0.35); }
-    if (Math.abs(T - this.ctxToFilm(now)) > 0.15) this.reanchor(T, now); // the film clock lost time (a hitch)
+    this.sync(T, now);
     if (this.needSync) { if (now - this.seekAt > 0.12) { this.needSync = false; this.rebuild(T, now, 0.4); } }
     else this.follow(T, now);
     const horizon = now + LOOKAHEAD;
     for (const b of this.beds) b.advance(horizon, now);
-    if (!(this.scrub && now - this.seekAt < 0.3)) this.cues(this.lastT, T, now, scenes);
-    this.lastT = T;
+    const T1 = T + Lf;
+    if (!(this.scrub && now - this.seekAt < 0.3)) this.cues(this.cueT, T1, now, scenes);
+    this.cueT = Math.max(this.cueT, T1);
+    this.endFade(T1, now, false);
+    this.lastT = T; this.lastNow = now;
     this.reap(now);
   };
 
@@ -1999,19 +2167,32 @@
      Public API
      ========================================================================== */
   let ctx = null, eng = null, wantMuted = false, hidden = false, lastResume = 0;
+  const quiet = (p) => { if (p && typeof p.catch === 'function') p.catch(() => {}); };
   // a re-evaluated script (hot reload) must not leave the previous context playing
-  try { if (g.FilmAudio && g.FilmAudio._ctx) g.FilmAudio._ctx.close(); } catch (e) { /* already closed */ }
-  // browsers may suspend or interrupt the context (tab switch, phone call): any gesture revives it
-  function kick() { try { if (ctx && !hidden && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {}); } catch (e) { /* ignore */ } }
+  try { if (g.FilmAudio && g.FilmAudio._ctx) quiet(g.FilmAudio._ctx.close()); } catch (e) { /* already closed */ }
+  // browsers may suspend or interrupt the context (tab switch, phone call, iOS 'interrupted'): a gesture revives
+  // it. Only some events carry user activation — keydown, mousedown, and for touch pointerup/touchend (not
+  // pointerdown) — so listen to all of them.
+  const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
+  function kick() { try { if (ctx && !hidden && ctx.state !== 'running' && ctx.state !== 'closed') quiet(ctx.resume()); } catch (e) { /* ignore */ } }
   function newContext() {
     try { return new AC({ latencyHint: 'interactive' }); } catch (e) { return new AC(); }
+  }
+  // iOS: Web Audio obeys the ringer switch unless the page's audio session is 'playback' (Safari 17+)
+  function setSession(on) {
+    try { const s = g.navigator && g.navigator.audioSession; if (s && 'type' in s) { const want = on ? 'playback' : 'auto'; if (s.type !== want) s.type = want; } } catch (e) { /* unsupported */ }
+  }
+  // A film started without the Begin button (restored after a hot reload, or opened at ?t=…) never asked
+  // for sound: create the context inside the first gesture, honouring the sound switch.
+  function lazyInit() {
+    try { const F = g.Film; if (!ctx && AC && g.FilmAudio === FilmAudio && F && F.started && !F.muted) FilmAudio.init(); } catch (e) { /* ignore */ }
   }
   function onVisibility() {
     if (!ctx || !eng) return;
     hidden = document.hidden;
     try {
-      if (hidden) { eng.mix.pause.gain.setTargetAtTime(0, ctx.currentTime, 0.04); setTimeout(() => { if (hidden && ctx.state === 'running') ctx.suspend().catch(() => {}); }, 400); }
-      else if (ctx.state !== 'running') ctx.resume().catch(() => {});
+      if (hidden) { eng.mix.pause.gain.setTargetAtTime(0, ctx.currentTime, 0.04); setTimeout(() => { if (hidden && ctx.state === 'running') quiet(ctx.suspend()); }, 400); }
+      else if (ctx.state !== 'running' && ctx.state !== 'closed') quiet(ctx.resume());
     } catch (e) { /* ignore */ }
   }
   const FilmAudio = {
@@ -2022,31 +2203,32 @@
           ctx = newContext();
           eng = new Engine(ctx, false);
           eng.setMuted(wantMuted);
+          setSession(!wantMuted);
           try { const b = ctx.createBuffer(1, 1, ctx.sampleRate), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); } catch (e) { /* iOS unlock only */ }
           if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', onVisibility);
-            document.addEventListener('pointerdown', kick, true);
-            document.addEventListener('keydown', kick, true);
+            for (const ev of GESTURES) document.addEventListener(ev, kick, { capture: true, passive: true });
           }
         }
-        if (ctx.state !== 'running' && ctx.resume) {
+        if (ctx.state !== 'running' && ctx.resume) { // (inside the gesture that called init: iOS needs exactly this)
           const r = ctx.resume();
           return Promise.race([Promise.resolve(r).catch(() => {}), new Promise((res) => setTimeout(res, 1500))]).then(() => {});
         }
       } catch (e) { try { console.warn('[audio] unavailable', e); } catch (e2) { /* ignore */ } }
       return Promise.resolve();
     },
-    setMuted(m) { wantMuted = !!m; try { if (eng) eng.setMuted(wantMuted); } catch (e) { /* ignore */ } },
+    setMuted(m) { wantMuted = !!m; try { if (eng) { eng.setMuted(wantMuted); setSession(!wantMuted); } } catch (e) { /* ignore */ } },
     get _ctx() { return ctx; },
     update(a) {
       if (!eng || !a) return;
       try {
-        const wall = Date.now();
-        if (ctx.state === 'suspended' && a.playing && !hidden && wall - lastResume > 2000) { lastResume = wall; ctx.resume().catch(() => {}); }
+        const wall = Date.now(), st = ctx.state;
+        if ((st === 'suspended' || st === 'interrupted') && a.playing && !hidden && wall - lastResume > 2000) { lastResume = wall; quiet(ctx.resume()); }
         eng.update(a);
       } catch (e) { eng.err(e); }
     },
   };
+  if (typeof document !== 'undefined') for (const ev of GESTURES) document.addEventListener(ev, lazyInit, { capture: true, passive: true });
 
   /* ---------------- headless measurement hooks ---------------- */
   function offline(seconds, sr) {
@@ -2101,6 +2283,7 @@
         const L = locate(scenes, T);
         frames.push({ wall, T, playing, seeked });
         e.update({ T, playing, i: L.i, lt: L.lt, scene: scenes[L.i], scenes, seeked, speed, dt: 1 / fps });
+        if (opts.onFrame) opts.onFrame(e, { k, wall, T, playing });
         seeked = false;
       };
       step(0);

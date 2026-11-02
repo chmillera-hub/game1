@@ -80,12 +80,13 @@
   const toScreen = (cam, p, q) => { const o = layerT(cam, p); return { x: F.x + o.z * (q.x + o.x - F.x), y: F.y + o.z * (q.y + o.y - F.y) }; };
   const toLayer = (cam, p, q) => { const o = layerT(cam, p); return { x: (q.x - F.x) / o.z + F.x - o.x, y: (q.y - F.y) / o.z + F.y - o.y }; };
   // morning, drifting toward 02's late-morning mix (0.2) by the cut
-  const palAt = (t) => U.mixDeep(Art.TOD.morning, Art.TOD.golden, t <= D ? 0.2 * U.ease(t, 3, D, 'inOutSine') : 0.2 + 0.1 * U.clamp((t - D) / 26));
+  const palMix = (t) => (t <= D ? 0.2 * U.ease(t, 3, D, 'inOutSine') : 0.2 + 0.1 * U.clamp((t - D) / 26));
+  const palAt = (t) => U.mixDeep(Art.TOD.morning, Art.TOD.golden, palMix(t));
 
   /* ---------------- beats (local seconds) ---------------- */
   const CAPS = [
     [1.2, 5.9, 'I imagine that I’m on a hike with a group of people.'],
-    [16.3, 22.7, 'Everyone’s talking about how the trail is supposed to lead to this incredible view at the summit—'],
+    [16.0, 22.7, 'Everyone’s talking about how the trail is supposed to lead to this incredible view at the summit—'],
     [23.0, 26.1, 'a place where they’ll finally feel something meaningful.'],
     [29.2, 32.2, 'I’m walking with them, but halfway through…'],
   ];
@@ -130,6 +131,41 @@
     ctx.restore();
   }
 
+  // Warm light over a bright blue sky must be SCREENED, not added: with 'lighter' the blue channel clips
+  // first and the glow turns cyan-green (a false rainbow down the right of frame). 02 uses the same calls.
+  function sunScreen(c, x, y, r, color, a) {
+    if (a <= 0.003) return;
+    Art.glow(c, x, y, r * 9, color, 0.35 * a, 'screen');
+    Art.glow(c, x, y, r * 3, color, 0.55 * a, 'screen');
+    c.save(); c.globalAlpha *= a; c.fillStyle = U.shade(color, 0.35); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.restore();
+  }
+  // The sky and the sun's big glow, cached: a full-frame gradient plus a 940-px radial glow cost ~4 ms a frame in
+  // software; blitted 1:1 at a whole-pixel offset they cost ~0.5. Re-rendered only when the palette (quantized to
+  // steps far below one colour level) changes. Covers film y SKY_Y0 .. SKY_Y0 + SKY_H (the crane shifts the sky
+  // by −30 … +60). 02 builds the identical plate.
+  const SKY_Y0 = 60, SKY_H = 940;
+  function skyPlate(P, k) {
+    const c = Art.canvas('a1:sky', Math.ceil(W * k), Math.ceil(SKY_H * k));
+    const key = P.sky.join() + P.sun + k;
+    if (c.__key !== key) {
+      const x = c.getContext('2d');
+      x.setTransform(k, 0, 0, k, 0, -SKY_Y0 * k);
+      x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+      Art.sky(x, P, { horizon: 720 });
+      Art.glow(x, 1760, 90, 470, P.sun, 0.45, 'screen');
+      c.__key = key;
+    }
+    return c;
+  }
+  // Art.clouds(seed 2, count 4) minus its first cloud, which sat inside the big one: two translucent clouds
+  // overlapping read as a pale ghost disc. Same maths as the kit, so the rest of the sky is unchanged.
+  function skyClouds(c, off) {
+    const span = W + 900, seed = 2;
+    for (let i = 1; i < 4; i++) {
+      const x = ((((U.hash(i, seed) * span - off) % span) + span) % span) - 450;
+      Art.cloud(c, x, U.lerp(190, 330, U.hash(i, seed + 1)), 0.6 + U.hash(i, seed + 2) * 0.8, '#ffffff', 0.55 * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13);
+    }
+  }
   const mixA = (a, b, k) => [U.lerp(a[0], b[0], k), U.lerp(a[1], b[1], k)];
   const lerpP = (a, b, k) => ({ x: U.lerp(a.x, b.x, k), y: U.lerp(a.y, b.y, k) });
   // the kit's walking arm swing, so gestures can blend out of it
@@ -332,14 +368,38 @@
     ctx.save();
     ctx.translate(L.x, L.y);
     ctx.rotate(L.rot);
-    ctx.scale(1.5, 1.5 * L.flip);
+    ctx.scale(1.9, 1.9 * L.flip);       // big enough to follow: it's the first thing he notices that no one else does
     ctx.fillStyle = L.landed ? U.mix(col, P.trail, 0.25) : U.mix(col, '#fff3c4', 0.35 * (1 - L.flip));
     ctx.beginPath(); ctx.moveTo(-9, 0); ctx.quadraticCurveTo(0, -6.5, 9, 0); ctx.quadraticCurveTo(0, 6.5, -9, 0); ctx.fill();
     ctx.strokeStyle = U.shade(col, -0.3); ctx.lineWidth = 0.9;
     ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(12, 0.5); ctx.stroke();
     ctx.restore();
     // it flashes as it turns its face to the sun
-    if (!L.landed && L.flip > 0.85) Art.glow(ctx, L.x, L.y, 26, P.light, (L.flip - 0.85) * 3.2);
+    if (!L.landed && L.flip > 0.85) Art.glow(ctx, L.x, L.y, 32, P.light, (L.flip - 0.85) * 3.2);
+  }
+  // pollen drifting in the light (02 continues exactly this, on its slowing ambient clock). tm = clock,
+  // toScr(p, x, y) = layer p → screen, zOf(p) = layer magnification, k = overall strength.
+  function pollen(ctx, tm, camX, toScr, zOf, P, k) {
+    if (k <= 0.003) return;
+    const span = W + 300;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = '#fff6d8';
+    for (let i = 0; i < 42; i++) {
+      const p = 0.8 + U.hash(i, 91) * 0.5;
+      const lx = ((((U.hash(i, 92) * span - camX * p * 0.96 + U.noise1(tm * 0.21 + i, 93) * 40) % span) + span) % span) - 150;
+      const rise = (tm * (6 + U.hash(i, 95) * 8)) / 120, cyc = rise - Math.floor(rise);   // a slow 120 px climb that wraps…
+      const ly = 260 + U.hash(i, 94) * 640 - cyc * 120 + U.noise1(tm * 0.3 + i * 1.7, 96) * 30;
+      const life = U.smooth(Math.min(cyc, 1 - cyc) * 6);                                  // …so it fades out and in across the wrap
+      const a = 0.35 * k * life * (0.5 + 0.5 * Math.sin(tm * (1 + U.hash(i, 97) * 2) + i * 3.1));
+      if (a < 0.004) continue;
+      const q = toScr(p, lx, ly), r = (1.1 + U.hash(i, 98) * 1.6) * zOf(p);
+      ctx.globalAlpha = 1;
+      Art.glow(ctx, q.x, q.y, r * 5, P.light, a * 0.1);
+      ctx.globalAlpha = a;
+      ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
   }
   // soft god-ray shafts falling through the canopy from the sun (upper right), drawn into the blur pass
   function drawShafts(c, cam, t, P, a) {
@@ -365,7 +425,7 @@
   const placeAt = (tc, p) => W / 2 + (V0 * (tc - D) - TRUCK) * p;
   // foreground undergrowth banks (p > 1, out of focus): [crossing time, parallax, scale, seed]
   // — the last one is gone before the cut
-  const FERNS = [[2.6, 1.42, 1.9, 1], [8.0, 1.38, 1.7, 2], [12.6, 1.5, 2.0, 3], [17.4, 1.4, 1.8, 4], [22.4, 1.46, 1.9, 5], [26.6, 1.4, 1.75, 6]]
+  const FERNS = [[2.6, 1.42, 1.9, 1], [8.0, 1.38, 1.7, 2], [12.6, 1.5, 2.0, 3], [17.4, 1.4, 1.8, 4], [22.4, 1.46, 1.9, 5], [25.3, 1.4, 1.75, 6]]
     .map(([tc, p, s, seed]) => ({ p, s, seed, wx: placeAt(tc, p) }));
   // one big backlit pine sweeps past the lens during the crane (gone before the group is revealed)
   const TRUNKS = [[2.3, 2.0, 128, 21]].map(([tc, p, w, seed]) => ({ p, w, seed, wx: placeAt(tc, p) }));
@@ -400,6 +460,8 @@
 
     render(ctx, t) {
       const P = palAt(t);
+      // the letterbox bars (y < 138.33, y > 941.67) hide the rest of the frame: don't rasterize it
+      ctx.beginPath(); ctx.rect(0, 138, W, 804); ctx.clip();
       const cam = camAt(t);
       const tc = t - D;                       // shared clock with 02 (wind, blinks, breathing)
       const wa = tc;
@@ -407,14 +469,20 @@
       const tilted = U.clamp(cam.B / OPEN_B);           // 1 while the camera looks up at the sun
 
       /* ---------- sky & far world (02's layer stack) ---------- */
-      layer(ctx, cam, 0, (c) => {
-        Art.sky(c, P, { horizon: 720 });
-        if (tilted > 0.01) Art.sun(c, 1760, 90, 30, P.sun, 0.8 * tilted);
-        Art.glow(c, 1760, 90, 470, P.sun, 0.32);
-      });
-      layer(ctx, cam, 0.02, (c, off) => Art.clouds(c, { seed: 2, count: 4, y0: 190, y1: 330, offset: off + wa * 5, color: '#ffffff', alpha: 0.55 }));
+      {
+        // layer 0 is only shifted vertically by B: blit the cached sky plate at a whole device pixel
+        const k = (Art._base || new DOMMatrix()).a, Pq = U.mixDeep(Art.TOD.morning, Art.TOD.golden, Math.round(palMix(t) * 100) / 100);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(skyPlate(Pq, k), 0, Math.round((SKY_Y0 + layerT(cam, 0).y) * k));
+        ctx.restore();
+        if (tilted > 0.01) layer(ctx, cam, 0, (c) => sunScreen(c, 1760, 90, 30, P.sun, 0.8 * tilted));
+      }
+      layer(ctx, cam, 0.02, (c, off) => skyClouds(c, off + wa * 5));
       layer(ctx, cam, 0.04, (c, off) => Art.ridge(c, { seed: 21, y: 615, amp: 150, color: U.mix(P.far, P.sky[1], 0.4), offset: off }));
-      layer(ctx, cam, 0.03, (c, off) => Art.summit(c, { x: 1610 - off, y: 655, h: 440, w: 700, P, glow: 0.55, t: wa }));
+      layer(ctx, cam, 0.03, (c, off) => {
+        const tp = Art.summit(c, { x: 1610 - off, y: 655, h: 440, w: 700, P, glow: 0, t: wa });
+        Art.glow(c, tp.x, tp.y + 6, 130, P.light, 0.9 * (0.55 + 0.15 * Math.sin(wa * 1.4)), 'screen');   // its promise-glow
+      });
       const sumTip = toScreen(cam, 0.03, { x: 1610 - cam.camX * 0.03 + 700 * 0.03, y: 655 - 440 });
       layer(ctx, cam, 0.05, (c) => Art.fog(c, { y: 650, h: 170, color: P.fog, alpha: 0.5 }));
       layer(ctx, cam, 0.08, (c) => drawFlocks(c, t, U.shade(P.mid, -0.42)));
@@ -669,30 +737,12 @@
 
       /* ---------- light: sun rays and shafts through the canopy, pollen drifting in them ---------- */
       const dawn = U.ease(t, 1.3, 3.2);                       // the light arrives with the morning (after the dissolve)
-      const shaftA = 0.11 * dawn * (1 - 0.35 * U.ease(t, 29, D));
+      const shaftA = 0.16 * dawn * (1 - 0.35 * U.ease(t, 29, D));
       if (dawn > 0) soft(ctx, 9, (c) => {
-        layer(c, cam, 0, (c2) => Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: (0.12 + 0.05 * tilted) * dawn, t: wa, seed: 4, width: 0.06 }));
+        layer(c, cam, 0, (c2) => Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: (0.21 + 0.08 * tilted) * dawn, t: wa, seed: 4, width: 0.06 }));
         drawShafts(c, cam, t, P, shaftA);
-      }, 'shafts', { x: 0, y: PIC.top, w: W, h: PIC.h }, 'lighter');
-      {
-        const span = W + 300;
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < (dawn > 0 ? 42 : 0); i++) {
-          const p = 0.8 + U.hash(i, 91) * 0.5;
-          const bx = U.hash(i, 92) * span;
-          const lx = ((((bx - cam.camX * p * 0.96 + U.noise1(t * 0.21 + i, 93) * 40) % span) + span) % span) - 150;
-          const ly = 260 + U.hash(i, 94) * 640 - ((t * (6 + U.hash(i, 95) * 8)) % 120) + U.noise1(t * 0.3 + i * 1.7, 96) * 30;
-          const q = toScreen(cam, p, { x: lx, y: ly });
-          const a = 0.35 * dawn * (0.5 + 0.5 * Math.sin(t * (1 + U.hash(i, 97) * 2) + i * 3.1));
-          const r = (1.1 + U.hash(i, 98) * 1.6) * layerT(cam, p).z;
-          Art.glow(ctx, q.x, q.y, r * 5, P.light, a * 0.5);
-          ctx.globalAlpha = a;
-          ctx.fillStyle = '#fff6d8';
-          ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, TAU); ctx.fill();
-        }
-        ctx.restore();
-      }
+      }, 'shafts', { x: 0, y: PIC.top, w: W, h: PIC.h }, 'screen');
+      pollen(ctx, t, cam.camX, (p, x, y) => toScreen(cam, p, { x, y }), (p) => layerT(cam, p).z, P, dawn);
 
       /* ---------- foreground: out-of-focus undergrowth and passing pines ---------- */
       const fgVisible = (wx, p, half) => { const x = toScreen(cam, p, { x: wx - cam.camX * p, y: 0 }).x; return x > -half && x < W + half; };

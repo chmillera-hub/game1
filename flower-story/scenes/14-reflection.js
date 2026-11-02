@@ -4,7 +4,8 @@
    stream of faceless, light-streaked silhouettes; Wonder taps him on the
    shoulder (“Can we stop here?”); the stream freezes; he sits; a warm glow
    breathes around him; he waves society on and it rushes off as light; a
-   constellation lights up inside him while his emotions gather; the
+   night sky opens inside his silhouette from the heart outward (stars, a
+   constellation, his face drawn in starlight) while his emotions gather; the
    summit's promise-glow goes out; night. End card on the night sky.
 
    Shots (local seconds) — two cuts, then one continuous camera
@@ -12,11 +13,15 @@
      B  12.4–21.0  medium on him — Wonder appears and taps; “Can we stop here?”
      C  21.0–37.4  medium-wide — the stream freezes into pale ghosts, he sits,
                    the warm glow; he waves them on and they rush off as light
-     D  37.4–48.6  push in, close — a constellation within him; emotions gather
-     E  48.6–54.6  reframe toward the summit — its promise-glow goes out
+     D  37.4–48.0  push in, close — a constellation within him; emotions gather
+     E  48.0–54.6  reframe toward the summit (rack focus to it) — its promise-glow goes out
      F  54.6–77.0  pull back to the final wide; night; end card; fade
    Kit notes: his sit-down and wave use a local copy of Art.person (rigMe) for
-   the in-between frames; end-card text is faded by hand (see render()).
+   the in-between frames. Rendering is budgeted for software raster: the
+   frame is clipped to the picture area, blurred layers are rendered only in
+   the band they occupy, vertical gradients are stretched 1-px strips, big
+   glows are discs, and the night-sky silhouette lives in a figure-sized
+   offscreen mask. The sun is drawn locally (Art.sun's disc reads as a ring).
    ========================================================================== */
 (function () {
   'use strict';
@@ -72,10 +77,10 @@
 
   /* ---------------- camera (dolly parallax: layer depth d, 1 = subject plane) ---------------- */
   const KC = { // from C on, one continuous camera: slow push · push in to him (C→D) · reframe to the summit (E) · pull back (F)
-    x: [[CUT_C, 860], [PUSH0, 848], [PUSH1, 831, 'inOutCubic'], [48.6, 832], [51.6, 1108], [54.6, 1116], [61.8, 962], [D, 960]],
-    y: [[CUT_C, 686], [PUSH0, 699], [PUSH1, 742, 'inOutCubic'], [48.6, 776], [51.6, 712], [54.6, 708], [61.8, 548], [D, 532]],
-    z: [[CUT_C, 1.38], [PUSH0, 1.5], [PUSH1, 2.24, 'inOutCubic'], [48.6, 2.42], [51.6, 1.8], [54.6, 1.76], [61.8, 1.0], [D, 0.985]],
-    bg: [[CUT_C, 5], [PUSH0, 5], [PUSH1, 9], [48.6, 9], [51.6, 1.2], [54.6, 1.0], [58.5, 0]],
+    x: [[CUT_C, 860], [PUSH0, 848], [PUSH1, 831, 'inOutCubic'], [48.0, 832], [51.6, 1108], [54.6, 1116], [61.8, 962], [D, 960]],
+    y: [[CUT_C, 686], [PUSH0, 699], [PUSH1, 742, 'inOutCubic'], [48.0, 776], [51.6, 712], [54.6, 708], [61.8, 548], [D, 532]],
+    z: [[CUT_C, 1.38], [PUSH0, 1.5], [PUSH1, 2.24, 'inOutCubic'], [48.0, 2.42], [51.6, 1.8], [54.6, 1.76], [61.8, 1.0], [D, 0.985]],
+    bg: [[CUT_C, 5], [PUSH0, 5], [PUSH1, 9], [48.0, 9], [51.3, 0.3], [D, 0]],   // rack focus to the summit as we turn to it
   };
   const shotAt = (t) => (t < CUT_B ? 'A' : t < CUT_C ? 'B' : 'C');
   function cam(t, shot) {
@@ -93,55 +98,126 @@
   }
   const toScreen = (C, x, y) => ({ x: W / 2 + (x - C.x) * C.z, y: H / 2 + (y - C.y) * C.z });
 
-  /* ---------------- offscreen helpers ---------------- */
+  /* ---------------- offscreen helpers ----------------
+     Software rasterisers pay per pixel for every blended or scaled pixel, so
+     everything here works on the smallest rectangle that can hold the
+     content: the picture area (the letterbox covers the rest), and for the
+     society / foreground layers just the band they occupy. */
+  const PIC_T = 136, PIC_B = 944;                  // film rows we draw (bars cover y < 138.3 and y > 941.7)
+  const PIC = { x0: 0, y0: PIC_T, x1: W, y1: PIC_B };
   const baseM = () => Art._base || new DOMMatrix();
-  /** draw fn into a reduced-resolution full-frame layer in ctx's coordinate space */
-  function lowLayer(ctx, key, f, fn) {
+  /** film-space screen rect → layer-pixel rect {c0,r0,c1,r1} for a canvas of size cw×ch (padded by pad px) */
+  function pxRect(R, cw, ch, pad) {
+    const sx = cw / W, sy = ch / H;
+    const c0 = Math.max(0, Math.floor(R.x0 * sx) - pad), c1 = Math.min(cw, Math.ceil(R.x1 * sx) + pad);
+    const r0 = Math.max(0, Math.floor(R.y0 * sy) - pad), r1 = Math.min(ch, Math.ceil(R.y1 * sy) + pad);
+    return { c0, r0, c1, r1, w: c1 - c0, h: r1 - r0 };
+  }
+  /** draw fn into a reduced-resolution layer (only the film-space screen rect R) in ctx's coordinate space */
+  function lowLayer(ctx, key, f, fn, R = PIC) {
     const rel = baseM().inverse().multiply(ctx.getTransform());
     const c = Art.canvas(key, W / f, H / f), c2 = c.getContext('2d');
+    const q = pxRect(R, c.width, c.height, 2);
     c2.setTransform(1, 0, 0, 1, 0, 0);
     c2.globalAlpha = 1; c2.globalCompositeOperation = 'source-over';
-    c2.clearRect(0, 0, c.width, c.height);
+    c2.clearRect(0, 0, c.width, c.height);         // whole canvas: cheap, and no stale pixels for filters to bleed in
+    c2.save();
+    c2.beginPath(); c2.rect(q.c0, q.r0, q.w, q.h); c2.clip();
     c2.setTransform(new DOMMatrix().scale(c.width / W, c.height / H).multiply(rel));
     const res = fn(c2);
+    c2.restore();
     c2.setTransform(1, 0, 0, 1, 0, 0);
     c2.globalAlpha = 1; c2.globalCompositeOperation = 'source-over';
-    return { c, res };
+    return { c, res, q };
   }
-  /** keep a layer's alpha, replace its color (→ silhouette) */
-  function recolor(c, color) {
+  /** keep a layer's alpha inside rect q, replace its color (→ silhouette) */
+  function recolor(c, color, q) {
     const c2 = c.getContext('2d');
     c2.save(); c2.setTransform(1, 0, 0, 1, 0, 0); c2.globalAlpha = 1;
-    c2.globalCompositeOperation = 'source-in'; c2.fillStyle = color; c2.fillRect(0, 0, c.width, c.height);
+    c2.globalCompositeOperation = 'source-in'; c2.fillStyle = color;
+    c2.beginPath(); c2.rect(q.c0, q.r0, q.w, q.h); c2.clip();      // source-in is unbounded: clip it to the band
+    c2.fillRect(q.c0, q.r0, q.w, q.h);
     c2.restore();
   }
-  /** composite a full-frame layer, offset (dx,dy) in film units */
-  function blit(ctx, c, dx, dy, a, op) {
-    if (a <= 0.002) return;
+  /** composite layer pixels q (of a canvas spanning the whole frame) onto the frame */
+  function blitRect(ctx, c, q, a = 1, op) {
+    if (a <= 0.002 || q.w <= 0 || q.h <= 0) return;
+    const sx = W / c.width, sy = H / c.height;
     ctx.save();
     ctx.setTransform(baseM());
     ctx.globalAlpha *= clamp(a);
     if (op) ctx.globalCompositeOperation = op;
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(c, dx, dy, W, H);
+    ctx.drawImage(c, q.c0, q.r0, q.w, q.h, q.c0 * sx, q.r0 * sy, q.w * sx, q.h * sy);
     ctx.restore();
   }
-  /** upsample a low-res layer in two bilinear steps (one big step shows blocky edges) */
-  function upsample(c, key) {
+  /** upsample rect q of a low-res layer ×2 with a high-quality filter (one big bilinear step shows blocky edges) */
+  function upsample(c, key, q) {
     const m = Art.canvas(key, c.width * 2, c.height * 2), m2 = m.getContext('2d');
-    m2.setTransform(1, 0, 0, 1, 0, 0); m2.globalAlpha = 1; m2.globalCompositeOperation = 'copy';
+    const q2 = { c0: q.c0 * 2, r0: q.r0 * 2, c1: q.c1 * 2, r1: q.r1 * 2, w: q.w * 2, h: q.h * 2 };
+    m2.setTransform(1, 0, 0, 1, 0, 0); m2.globalAlpha = 1; m2.globalCompositeOperation = 'source-over';
+    m2.clearRect(0, 0, m.width, m.height);
     m2.imageSmoothingEnabled = true; m2.imageSmoothingQuality = 'high';
-    m2.drawImage(c, 0, 0, m.width, m.height);
-    m2.globalCompositeOperation = 'source-over';
-    return m;
+    m2.drawImage(c, q.c0, q.r0, q.w, q.h, q2.c0, q2.r0, q2.w, q2.h);
+    return { m, q: q2 };
   }
-  /** depth of field: amt ≈ blur radius in film px; crossfades sharp→soft for small amounts */
-  function dof(ctx, amt, key, fn) {
+  /** composite a low-res layer (two-step upsample when it is very small) */
+  function present(ctx, c, q, f, key, a = 1) {
+    if (f >= 3.5) { const u = upsample(c, key, q); blitRect(ctx, u.m, u.q, a); } else blitRect(ctx, c, q, a);
+  }
+  /** depth of field: amt ≈ blur radius in film px; crossfades sharp→soft for small amounts. R limits the work. */
+  function dof(ctx, amt, key, fn, R = PIC) {
     if (amt < 0.35) { fn(ctx); return; }
     const f = Math.max(1.5, Math.round(amt * 0.55 * 2) / 2);
-    const soft = () => { const lo = lowLayer(ctx, key + f, f, fn).c; blit(ctx, f >= 3.5 ? upsample(lo, key + 'm' + f) : lo, 0, 0, 1); };
-    if (amt < 1.6) { fn(ctx); Art.withAlpha(ctx, (amt - 0.35) / 1.25, soft); return; }
-    soft();
+    const soft = (a) => { const L = lowLayer(ctx, key + f, f, fn, R); present(ctx, L.c, L.q, f, key + 'm' + f, a); };
+    if (amt < 1.6) { fn(ctx); soft((amt - 0.35) / 1.25); return; }
+    soft(1);
+  }
+  /* Vertical gradients as 1-px-wide strips stretched with drawImage. Software Skia shades a
+     CanvasGradient per pixel; stretching a one-pixel-wide image is a fast path (~10× cheaper here).
+     Same geometry and colours as the kit's Art.sky / Art.fog / Art.ground. */
+  function strip(key, stops) {
+    const c = Art.canvas('a8-strip-' + key, 1, 256), x = c.getContext('2d');
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    x.clearRect(0, 0, 1, 256);
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    for (const [o, col] of stops) g.addColorStop(o, col);
+    x.fillStyle = g; x.fillRect(0, 0, 1, 256);
+    return c;
+  }
+  function skyFill(ctx, P, horizon) {
+    ctx.fillStyle = P.sky[0]; ctx.fillRect(-W, -H, W * 3, H + 1);
+    ctx.drawImage(strip('sky', [[0, P.sky[0]], [0.55, P.sky[1]], [1, P.sky[2]]]), -W, 0, W * 3, horizon);
+    ctx.fillStyle = P.sky[2]; ctx.fillRect(-W, horizon - 1, W * 3, H * 2);
+  }
+  function fogBand(ctx, key, y, h, color, alpha) {
+    if (alpha <= 0) return;
+    ctx.drawImage(strip(key, [[0, U.rgba(color, 0)], [0.5, U.rgba(color, alpha)], [1, U.rgba(color, 0)]]), -W, y - h / 2, W * 3, h);
+  }
+  function groundFill(ctx, o, color, color2) {
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(-40, H + 400);
+    for (let x = -40; x <= W + 40; x += 12) ctx.lineTo(x, Art.groundY(x, o));
+    ctx.lineTo(W + 40, H + 400); ctx.closePath();
+    ctx.clip();
+    const y0 = o.y - o.amp;
+    ctx.drawImage(strip('ground', [[0, color], [1, color2]]), -40, y0, W + 80, H - y0);
+    ctx.fillStyle = color2; ctx.fillRect(-40, H - 1, W + 80, 402);
+    ctx.restore();
+  }
+  /** additive radial glow filling a disc (not a square: a fifth fewer blended pixels than Art.glow) */
+  function glowC(ctx, x, y, r, color, a, mode = 'lighter') {
+    if (a <= 0.003 || r <= 0) return;
+    ctx.save();
+    ctx.globalCompositeOperation = mode;
+    ctx.globalAlpha *= clamp(a);
+    const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, U.rgba(color, 1));
+    gr.addColorStop(0.35, U.rgba(color, 0.45));
+    gr.addColorStop(1, U.rgba(color, 0));
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.restore();
   }
 
   /* ======================================================================
@@ -325,6 +401,7 @@
     return s;
   }
   const TAU_STOP = tauAt(GO_ON);            // nobody new joins once he waves them on
+  const WALK_K = 72.32 * Math.sin(0.42 * 1.1);   // rig's mean stance-foot travel per radian of walk phase, stride 1.1 (SCENE_GUIDE)
   const GREY = { skin: '#777777', hair: '#777777', shirt: '#777777', shirt2: '#777777', pants: '#777777', shoes: '#777777', pack: '#777777', hatColor: '#777777' };
   const SIL = [
     { hairStyle: 'short', hat: 'cap', packSize: 0.9, poles: true, height: 1.07 },
@@ -347,7 +424,7 @@
       const s = 0.63 + h(1) * 0.07;
       const v = 232 + h(2) * 46;                          // world px per society-second
       SOC.push({
-        look, s, v, kw: v / (40 * s * look.height),       // walk-cycle rate that keeps feet planted (mid-stance foot speed ≈ 40 u/rad)
+        look, s, v, kw: v / (WALK_K * s * look.height),   // walk-cycle rate that keeps the stance foot planted
         ph: h(5) * TAU, lane: 3 + h(6) * 9, seed: 300 + i * 17, gest: base.gesture || null, tau0: acc, id: i,
       });
       acc += h(3) < 0.22 ? 0.42 : 0.95 + h(4) * 0.55;    // a stream, with the odd pair
@@ -358,20 +435,29 @@
   function drawSociety(ctx, t, C, T) {
     const P = T.P;
     const A = socAlpha(t);
+    if (A <= 0.01) return;
     const tau = tauAt(t), r = U.keys(t, RATE);
-    const streakA = clamp(r) * (1 + 0.9 * U.bump(t, GO_ON + 1.6, 1.6)) * (1 - ease(t, GO_ON + 2.4, GO_ON + 4.4));
-    if (A <= 0.01 && streakA <= 0.01) return;
+    const lit = ease(t, GO_ON + 0.2, GO_ON + 1.5);            // waved on, they rush off as light
+    const streakA = clamp(r) * (1 - lit) * (A / 0.74);         // speed lines only while they hurry, never without a body
     const vis = [];
+    let top = Infinity, bot = -Infinity;
     for (const w of SOC) {
       if (w.tau0 > TAU_STOP) break;
       const x = -260 + (tau - w.tau0) * w.v;
-      if (x > -320 && x < W + 320) vis.push({ w, x });
+      if (x > -320 && x < W + 320) {
+        const fy = gy(x) + w.lane;
+        vis.push({ w, x, fy });
+        top = Math.min(top, fy - 335 * w.s * w.look.height); bot = Math.max(bot, fy + 10);
+      }
     }
     if (!vis.length) return;
-    const { c, res } = lowLayer(ctx, 'a8-soc' + C.sf, C.sf, (c2) => vis.map(({ w, x }) => Art.person(c2, {
-      x, y: gy(x) + w.lane, s: w.s, look: w.look, t: tau, walk: tau * w.kw + w.ph, stride: 1.1, lean: 0.1,
+    // only the band of screen rows they occupy is rendered and composited
+    const R = { x0: 0, x1: W, y0: Math.max(PIC_T, H / 2 + (top - C.y) * C.z), y1: Math.min(PIC_B, H / 2 + (bot - C.y) * C.z) };
+    if (R.y1 <= R.y0) return;
+    const { c, res, q } = lowLayer(ctx, 'a8-soc' + C.sf, C.sf, (c2) => vis.map(({ w, x, fy }) => Art.person(c2, {
+      x, y: fy, s: w.s, look: w.look, t: tau, walk: tau * w.kw + w.ph, stride: 1.1, lean: 0.1,
       shadow: false, seed: w.seed, gesture: w.gest || undefined, gw: 1, holdF: w.gest ? PHONE : undefined,
-    })));
+    })), R);
     const sp = clamp(r, 0, 1.5);
     // composite at low res: warm rim (sun side) + motion smear (trailing left) + body, then the light
     // streaks and phone glows (so they share the silhouettes' depth of field) → one smooth upsample
@@ -379,15 +465,20 @@
     const px = c.width / W;
     k2.setTransform(1, 0, 0, 1, 0, 0); k2.globalCompositeOperation = 'source-over'; k2.globalAlpha = 1;
     k2.clearRect(0, 0, comp.width, comp.height);
-    if (A > 0.01) {
-      const frozen = 1 - clamp(r);              // as time stops they pale into ghosts of light
-      const rimA = A * 0.85 * (1 - T.dusk * 0.6) * (1 - frozen);
-      if (rimA > 0.01) { recolor(c, U.mix(P.light, '#ffffff', 0.3)); k2.globalAlpha = rimA; k2.drawImage(c, 1.8 * C.z * px, 0); }
-      recolor(c, U.mix(U.mix(P.mid, '#15142a', 0.5), U.mix(P.fog, P.light, 0.35), frozen * 0.85));
-      const smear = sp * 9 * C.z * px;
-      for (let k = 3; k >= 1; k--) { k2.globalAlpha = A * sp * [0, 0.36, 0.2, 0.1][k]; if (k2.globalAlpha > 0.004) k2.drawImage(c, -smear * k * 1.25, 0); }
-      k2.globalAlpha = A; k2.drawImage(c, 0, 0);
+    const src = (dx) => k2.drawImage(c, q.c0, q.r0, q.w, q.h, q.c0 + dx, q.r0, q.w, q.h);
+    const frozen = 1 - clamp(r);                // as time stops they pale into ghosts of light
+    const rimA = A * 0.85 * (1 - T.dusk * 0.6) * (1 - frozen) * (1 - lit);
+    if (rimA > 0.01) { recolor(c, U.mix(P.light, '#ffffff', 0.3), q); k2.globalAlpha = rimA; src(1.8 * C.z * px); }
+    const ghost = U.mix(U.mix(P.mid, '#15142a', 0.5), U.mix(P.fog, P.light, 0.35), frozen * 0.85);
+    recolor(c, U.mix(ghost, U.mix(P.light, '#fff3e4', 0.6), lit), q);
+    // motion smear trailing behind (left): copies close enough together to read as one continuous blur
+    const smear = sp * 34 * C.z * px * (1 + 2.4 * lit);
+    const NS = lit > 0.05 ? 8 : 5;
+    for (let k = NS; k >= 1; k--) {
+      k2.globalAlpha = clamp(A * sp * (0.3 + 0.12 * lit) * (1 - k / (NS + 1)));
+      if (k2.globalAlpha > 0.004) src(-smear * k / NS);
     }
+    k2.globalAlpha = A * (1 - 0.3 * lit); src(0);
     k2.globalAlpha = 1;
     k2.setTransform(new DOMMatrix().scale(px, comp.height / H).multiply(baseM().inverse().multiply(ctx.getTransform())));
     k2.globalCompositeOperation = 'lighter';
@@ -406,13 +497,13 @@
           k2.beginPath(); k2.moveTo(x0, py); k2.lineTo(x1, py); k2.stroke();
         }
       }
-      if (w.gest && A > 0.01) {
+      if (w.gest) {
         const flash = w.gest === 'phone' ? U.bump(U.fract(tau * 0.23 + w.id * 0.37), 0.5, 0.025) * clamp(r) : 0;
-        Art.glow(k2, an.handF.x + 2, an.handF.y - 9, 13 + flash * 40, '#cfe6ff', A * (0.6 + flash));
+        Art.glow(k2, an.handF.x + 2, an.handF.y - 9, 13 + flash * 40, '#cfe6ff', A * (0.6 + flash) * (1 - lit));
       }
     });
     k2.setTransform(1, 0, 0, 1, 0, 0); k2.globalCompositeOperation = 'source-over';
-    blit(ctx, C.sf >= 3.5 ? upsample(comp, 'a8-socm' + C.sf) : comp, 0, 0, 1);
+    present(ctx, comp, q, C.sf, 'a8-socm' + C.sf);
   }
 
   /* ======================================================================
@@ -428,10 +519,23 @@
   }
   const T_dusk = (t) => ease(t, 12, 41, 'inOutSine');
 
+  /** sun / moon: halo, then a disc brighter than its halo. (Art.sun paints its disc source-over after
+      additive halos, so against a bright sky the disc comes out duller than the glow around it — a ring.) */
+  function drawSun(ctx, x, y, r, color, a, core) {
+    if (a <= 0.003) return;
+    glowC(ctx, x, y, r * 8, color, 0.3 * a);
+    glowC(ctx, x, y, r * 2.6, color, 0.5 * a);
+    ctx.save();
+    ctx.globalAlpha *= clamp(a);
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.restore();
+    glowC(ctx, x, y, r * 1.7, core, 0.55 * a);           // bloom over the rim: the disc is the brightest thing
+  }
   function drawSky(ctx, t, C, T) {
     const P = T.P;
     ctx.save(); layer(ctx, C, 0);
-    Art.sky(ctx, P, { horizon: 700 });
+    skyFill(ctx, P, 700);
     ctx.restore();
     // stars & a faint milky way
     const starA = ease(t, 40, 58);
@@ -439,7 +543,7 @@
       ctx.save(); layer(ctx, C, 0.02);
       ctx.save();
       ctx.translate(1080, 330); ctx.rotate(-0.42); ctx.scale(1, 0.16);
-      Art.glow(ctx, 0, 0, 1050, '#9fb2ff', 0.07 * starA);
+      glowC(ctx, 0, 0, 1050, '#9fb2ff', 0.07 * starA);
       ctx.restore();
       Art.stars(ctx, { seed: 14, count: 320, t, alpha: starA, y0: 60, y1: 690, x0: -40, x1: W + 40 });
       Art.stars(ctx, { seed: 15, count: 90, t, alpha: starA * 0.6, y0: 140, y1: 520, x0: 520, x1: 1640, color: '#dfe6ff' });
@@ -450,16 +554,16 @@
     ctx.save(); layer(ctx, C, 0.03);
     if (moonA > 0) {
       const [mx, my] = U.keys(t, MOON);
-      Art.sun(ctx, mx, my, 27, '#dfe7ff', moonA * 0.9);
+      drawSun(ctx, mx, my, 27, '#c9d6ff', moonA * 0.9, '#f3f6ff');
       ctx.save(); ctx.globalAlpha *= moonA * 0.16; ctx.fillStyle = '#8f9cc4';
       ctx.beginPath(); ctx.ellipse(mx - 7, my - 5, 9, 7, 0.4, 0, TAU); ctx.ellipse(mx + 8, my + 6, 7, 5, -0.3, 0, TAU); ctx.ellipse(mx + 2, my - 12, 4, 3, 0, 0, TAU); ctx.fill();
       ctx.restore();
     }
     // the low sun, sinking behind the summit's shoulder
     const sun = sunPos(t), sunA = 1 - ease(t, 30, 37);
-    if (sunA > 0) Art.sun(ctx, sun.x, sun.y, 34, P.sun, sunA);
+    if (sunA > 0) drawSun(ctx, sun.x, sun.y, 34, P.sun, sunA, '#fffaf0');
     const after = U.bump(t, 36, 12) * (1 - T.night * 0.6);
-    if (after > 0) Art.glow(ctx, 1760, 690, 520, P.light, 0.24 * after);
+    if (after > 0) glowC(ctx, 1760, 690, 520, P.light, 0.24 * after);
     ctx.restore();
     // clouds catching the light
     ctx.save(); layer(ctx, C, 0.05);
@@ -468,6 +572,16 @@
     ctx.restore();
   }
 
+  /** god rays from the low sun, in the air behind the ridges (clipped to where sky can show) */
+  function drawRays(ctx, t, C, T) {
+    const rayA = 0.1 * (1 - ease(t, 18, 32));
+    if (rayA <= 0) return;
+    const s = sunPos(t);
+    ctx.save(); layer(ctx, C, 0.05);
+    ctx.beginPath(); ctx.rect(-W, -H, 3 * W, H + 690); ctx.clip();
+    Art.rays(ctx, { x: s.x, y: s.y, angle: 2.75, spread: 0.55, count: 6, len: 1200, color: T.P.light, alpha: rayA, t, seed: 3 });
+    ctx.restore();
+  }
   function drawFar(ctx, t, C, T) {
     const P = T.P;
     ctx.save(); layer(ctx, C, 0.1);
@@ -478,27 +592,27 @@
     const dimK = ease(t, DIM0, DIM1 + 1.4);
     const Ps = Object.assign({}, P, { summit: U.mix(P.summit, P.sky[1], 0.32 * dimK), snow: U.mix(P.snow, P.sky[1], 0.52 * dimK) });
     const tip = Art.summit(ctx, { x: SUMMIT.x, y: SUMMIT.y, h: SUMMIT.h, w: SUMMIT.w, P: Ps, glow: pr, t, flag: true });
-    Art.glow(ctx, tip.x, tip.y + 10, 340, P.light, 0.26 * pr);
+    glowC(ctx, tip.x, tip.y + 10, 340, P.light, 0.26 * pr);
     Art.glow(ctx, tip.x, tip.y + 4, 64, '#fff2d6', 0.42 * pr);
     if (pr > 0.02) Art.rays(ctx, { x: tip.x, y: tip.y + 4, angle: 0, spread: TAU, count: 9, len: 150 + 120 * pr, color: P.light, alpha: 0.16 * pr * T.dusk, t, seed: 9, width: 0.025 });
-    Art.fog(ctx, { y: 664, h: 180, color: P.fog, alpha: 0.5 });
+    fogBand(ctx, 'fog1', 664, 180, P.fog, 0.5);
     ctx.restore();
     ctx.save(); layer(ctx, C, 0.22);
     Art.ridge(ctx, { seed: 8, y: 730, amp: 110, color: P.mid });
     ctx.restore();
     ctx.save(); layer(ctx, C, 0.4);
     Art.forest(ctx, { seed: 31, y: 784, spacing: 62, hMin: 120, hMax: 205, color: P.trees[0], light: U.shade(P.trees[0], 0.1 * (1 - T.night)) });
-    Art.fog(ctx, { y: 778, h: 140, color: P.fog, alpha: 0.32 });
+    fogBand(ctx, 'fog2', 778, 140, P.fog, 0.32);
     ctx.restore();
     ctx.save(); layer(ctx, C, 0.6);
     Art.forest(ctx, { seed: 32, y: 846, spacing: 86, hMin: 200, hMax: 320, color: P.trees[1], kind: 'mix', sway: 4, t, light: U.shade(P.trees[1], 0.12 * (1 - T.night)) });
-    Art.fog(ctx, { y: 818, h: 250, color: P.fog, alpha: 0.42 - 0.16 * T.night });
+    fogBand(ctx, 'fog3', 818, 250, P.fog, 0.42 - 0.16 * T.night);
     ctx.restore();
   }
 
   function drawGround(ctx, t, T) {
     const P = T.P;
-    Art.ground(ctx, Object.assign({ color: P.ground, color2: P.ground2 }, GO));
+    groundFill(ctx, GO, P.ground, P.ground2);
     Art.trail(ctx, Object.assign({ color: P.trail }, GO));
     Art.grass(ctx, { seed: 41, y: (x) => gy(x) + 1, color: P.grass, color2: U.shade(P.grass, 0.12), spacing: 7, h: 20, t, wind: 0.8 });
   }
@@ -538,7 +652,7 @@
     Art.fern(ctx, FERN.x, FERN.y, FERN.s, U.mix(P.grass, P.trees[2], 0.3), U.wind(t, FERN.x, 2));
     const night = T.night;
     const fg = 0.22 + 0.25 * T.dusk + 0.55 * night + 0.06 * Math.sin(t * 1.3);
-    if (night > 0) Art.glow(ctx, FL.x + 4, FL.y - 80, 280, '#ff8db0', 0.17 * night);
+    if (night > 0) glowC(ctx, FL.x + 4, FL.y - 80, 250, '#ff8db0', 0.18 * night);
     const fl = Art.flower(ctx, { x: FL.x, y: FL.y, s: FL.s, t, glow: fg, face: 0.82, sway: 0.8 });
     Art.grass(ctx, { seed: 47, y: (x) => gy(x) + 60, color: U.shade(P.grass, -0.2), spacing: 9, h: 22, t, wind: 1, x0: 0, x1: W });
     // pollen in the golden light; fireflies at night
@@ -547,17 +661,33 @@
     if (ff > 0) Art.motes(ctx, { seed: 33, count: 20, x0: 380, x1: 1540, y0: 640, y1: 915, t, color: '#fff2a6', size: 1.9, drift: 5, glow: 1.3, blink: 1, wander: 44, alpha: 0.9 * ff });
     return fl;
   }
-  /** big out-of-focus foreground framing (layer d = 1.3) */
+  /** big out-of-focus foreground framing (layer d = 1.3); only the part that is on screen is rendered */
+  const FG_D = 1.3;
   function drawForeground(ctx, t, C, T) {
     const P = T.P;
     const col = U.mix(P.trees[2], '#05070d', 0.38);
-    const amt = C.z > 1.2 ? 14 : 0;
-    ctx.save(); layer(ctx, C, 1.3);
+    const zl = 1 + (C.z - 1) * FG_D, ox = W / 2 + (C.x - W / 2) * FG_D, oy = H / 2 + (C.y - H / 2) * FG_D;
+    const sx = (x) => W / 2 + (x - ox) * zl, sy = (y) => H / 2 + (y - oy) * zl;
+    const ferns = C.z > 1.2 && t < PUSH1;
+    const items = [[70, 1180, 900, 0], [1870, 1200, 960, 0]];
+    if (ferns) items.push([250, 1012, 2.1, 1], [1620, 1018, 2.4, 1]);
+    const amt = 14 * ease(C.z, 1.1, 1.3);          // out of focus once the camera is in close
+    const pad = amt * 1.2 + 4;
+    let R = null;
+    for (const [x, y, h, fern] of items) {
+      const hw = fern ? h * 80 : h * 0.22 + 8, top = fern ? h * 80 : h * 0.98 + 8;
+      const b = { x0: sx(x - hw) - pad, x1: sx(x + hw) + pad, y0: sy(y - top) - pad, y1: sy(y + 8) + pad };
+      if (b.x1 < 0 || b.x0 > W || b.y1 < PIC_T || b.y0 > PIC_B) continue;
+      R = R ? { x0: Math.min(R.x0, b.x0), x1: Math.max(R.x1, b.x1), y0: Math.min(R.y0, b.y0), y1: Math.max(R.y1, b.y1) } : b;
+    }
+    if (!R) return;
+    R = { x0: Math.max(0, R.x0), x1: Math.min(W, R.x1), y0: Math.max(PIC_T, R.y0), y1: Math.min(PIC_B, R.y1) };
+    ctx.save(); layer(ctx, C, FG_D);
     dof(ctx, amt, 'a8-fg', (c) => {
       Art.pine(c, 70, 1180, 900, col, { sway: U.wind(t, 0, 3) * 5 });
       Art.pine(c, 1870, 1200, 960, col, { sway: U.wind(t, 900, 4) * 5 });
-      if (C.z > 1.2 && t < PUSH1) { Art.fern(c, 250, 1012, 2.1, col, U.wind(t, 250, 5)); Art.fern(c, 1620, 1018, 2.4, col, U.wind(t, 1620, 6)); }
-    });
+      if (ferns) { Art.fern(c, 250, 1012, 2.1, col, U.wind(t, 250, 5)); Art.fern(c, 1620, 1018, 2.4, col, U.wind(t, 1620, 6)); }
+    }, R);
     ctx.restore();
   }
 
@@ -618,12 +748,12 @@
 
   /** how he is lit: dusk ambience, the constellation's night-sky silhouette, night, the inner glow */
   function lightState(t, T) {
-    const sil = ease(t, CONST0, CONST0 + 1.6);
+    const sil = ease(t, CONST0, CONST0 + 2.2, 'inOutSine');     // the night sky within him spreads out from his heart
     return {
-      amb: Math.max(0.18 * T.dusk, 0.88 * sil, 0.8 * T.night), sil,
-      ambCol: U.mix(U.mix('#3a2850', '#16204a', sil), '#0c1330', T.night * (1 - sil * 0.5)),
+      amb: Math.max(0.18 * T.dusk, 0.8 * T.night), sil,
+      ambCol: U.mix('#3a2850', '#0c1330', T.night),
       warm: 0.3 * U.fade(t, GLOW0, CONST0 + 1, 1.6, 1.4),
-      stars: ease(t, CONST0 + 0.6, CONST0 + 2.8) * (1 - 0.4 * ease(t, 48, 56)),
+      stars: ease(t, CONST0 + 0.5, CONST0 + 2.6) * (1 - 0.15 * ease(t, 48, 56)),
     };
   }
   // his colours, tinted by the light (Art.person takes a look object; no offscreen needed)
@@ -643,7 +773,7 @@
   function landmarks(an) {
     const S = an.scale, L = (p) => ({ x: an.feet.x + p.x * S, y: an.feet.y + p.y * S });
     return {
-      head: { x: an.head.x - 3 * S, y: an.head.y + 2 * S }, crown: { x: an.head.x - 8 * S, y: an.head.y - 24 * S },
+      head: { x: an.head.x - 15 * S, y: an.head.y - 6 * S }, crown: { x: an.head.x - 6 * S, y: an.head.y - 30 * S },
       neck: { x: lerp(an.shoulder.x, an.head.x, 0.3) - 6 * S, y: lerp(an.shoulder.y, an.head.y, 0.3) },
       heart: { x: an.chest.x - 2 * S, y: an.chest.y - 4 * S },
       elbowF: { x: lerp(an.shoulder.x, an.handF.x, 0.5) - 4 * S, y: lerp(an.shoulder.y, an.handF.y, 0.5) + 6 * S },
@@ -680,33 +810,148 @@
     const L = lightState(t, T);
     const look = tintLook(L);
     const common = { s: ME_S, t, head: act.head, face: act.face, shrug: act.shrug, look };
-    let r;
-    if (t < SIT0) r = Art.person(ctx, Object.assign({ x: X0, y: Y0, pose: 'stand' }, common));
-    else if (t < SIT1) {
-      const k = (t - SIT0) / (SIT1 - SIT0);
-      r = rigMe(ctx, Object.assign({ x: X0, y: lerp(Y0, Y1, k) }, common, sitPose(k)));
-    } else {
+    const draw = (c, extra) => {
+      if (t < SIT0) return Art.person(c, Object.assign({ x: X0, y: Y0, pose: 'stand' }, common, extra));
+      if (t < SIT1) {
+        const k = (t - SIT0) / (SIT1 - SIT0);
+        return rigMe(c, Object.assign({ x: X0, y: lerp(Y0, Y1, k) }, common, sitPose(k), extra));
+      }
       const wa = waveArm(t);
-      if (wa.w > 0.001) r = rigMe(ctx, Object.assign({ x: X1, y: Y1, hip: SIT.hip, fF: SIT.fF, fB: SIT.fB, rootB: SIT.rootB, sitArms: 1, armF: wa.a, armFw: wa.w, shadowW: 1.5 }, common));
-      else r = Art.person(ctx, Object.assign({ x: X1, y: Y1, pose: 'sit' }, common));
-    }
+      if (wa.w > 0.001) return rigMe(c, Object.assign({ x: X1, y: Y1, hip: SIT.hip, fF: SIT.fF, fB: SIT.fB, rootB: SIT.rootB, sitArms: 1, armF: wa.a, armFw: wa.w, shadowW: 1.5 }, common, extra));
+      return Art.person(c, Object.assign({ x: X1, y: Y1, pose: 'sit' }, common, extra));
+    };
+    const r = draw(ctx);
     if (!r.pack) r.pack = { x: r.hip.x + PACK_TOP.x * r.scale, y: r.hip.y + PACK_TOP.y * r.scale };
-    if (L.sil > 0.01) Art.glow(ctx, r.chest.x - 4, r.chest.y + 6, 70, '#8a6ad0', 0.3 * L.sil);   // a faint nebula within
+    if (L.sil > 0.002) {
+      cosmos(ctx, r, L, t, draw);
+      lightFace(ctx, r, act, ease(L.sil, 0.55, 1) * 0.95);
+    }
     drawConstellation(ctx, r, L, t);
     r.light = L;
     r.wonderAt = { x: r.pack.x - 3, y: r.pack.y + 3 };
     r.act = act;
     return r;
   }
+
+  /* “a soft constellation of light within his silhouette”: his figure becomes a window onto a night
+     sky (indigo, a pink nebula at the heart, small twinkling stars), spreading out from his heart,
+     with a thin warm rim on the side the flower and the sunset light. Drawn in a small offscreen
+     mask the size of his figure — never a full-frame pass. */
+  const COS = (() => { const rr = U.rng(1414), a = []; for (let i = 0; i < 70; i++) a.push([-66 + rr() * 196, -224 + rr() * 236, rr(), rr() * TAU]); return a; })();
+  function cosmos(ctx, an, L, t, draw) {
+    const m = ctx.getTransform();                       // world → device pixels
+    const S = an.scale, z = Math.hypot(m.a, m.b);       // device px per world unit
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [lx, ly] of [[-84, -238], [140, -238], [-84, 20], [140, 20]]) {
+      const wx = an.feet.x + lx * S, wy = an.feet.y + ly * S;
+      const dx = m.a * wx + m.c * wy + m.e, dy = m.b * wx + m.d * wy + m.f;
+      x0 = Math.min(x0, dx); x1 = Math.max(x1, dx); y0 = Math.min(y0, dy); y1 = Math.max(y1, dy);
+    }
+    x0 = Math.floor(x0) - 4; y0 = Math.floor(y0) - 4;
+    const cw = Math.ceil(x1) + 4 - x0, ch = Math.ceil(y1) + 4 - y0;
+    const sz = (v) => 128 * Math.ceil(Math.max(v, 384) / 128);
+    const M = Art.canvas('a8-cos', sz(cw), sz(ch)), mx = M.getContext('2d');
+    mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalCompositeOperation = 'source-over'; mx.globalAlpha = 1;
+    mx.clearRect(0, 0, M.width, M.height);
+    mx.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+    draw(mx, { shadow: false });                         // his silhouette (alpha) in the mask
+    // heart position in mask pixels
+    const hw = { x: an.chest.x - 2 * S, y: an.chest.y - 4 * S };
+    const hx = m.a * hw.x + m.c * hw.y + m.e - x0, hy = m.b * hw.x + m.d * hw.y + m.f - y0;
+    mx.setTransform(1, 0, 0, 1, 0, 0);
+    mx.globalCompositeOperation = 'source-in';
+    const g = mx.createRadialGradient(hx + 4 * z, hy - 8 * z, 0, hx, hy, 150 * z);
+    g.addColorStop(0, '#5a43a0'); g.addColorStop(0.28, '#33307a'); g.addColorStop(0.7, '#1a1d4e'); g.addColorStop(1, '#0f1236');
+    mx.fillStyle = g; mx.fillRect(0, 0, cw, ch);
+    mx.globalCompositeOperation = 'source-atop';
+    const neb = (x, y, r, col, a) => {
+      const n = mx.createRadialGradient(x, y, 0, x, y, r);
+      n.addColorStop(0, U.rgba(col, a)); n.addColorStop(0.45, U.rgba(col, a * 0.4)); n.addColorStop(1, U.rgba(col, 0));
+      mx.fillStyle = n; mx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    };
+    const pulse = 1 + 0.12 * Math.sin(t * 1.9);
+    neb(hx, hy, 46 * z * pulse, '#ff7aa8', 0.42);                      // the heart
+    neb(hx - 14 * z, hy - 48 * z, 52 * z, '#9c86ff', 0.22);             // a lilac haze up toward his mind
+    // stars, fixed to his body
+    mx.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+    mx.fillStyle = '#f4f2ff';
+    for (const [lx, ly, k, ph] of COS) {
+      mx.globalAlpha = (0.35 + 0.65 * k) * (0.6 + 0.4 * Math.sin(t * (0.9 + 2.2 * k) + ph));
+      mx.beginPath(); mx.arc(an.feet.x + lx * S, an.feet.y + ly * S, (0.45 + k * k * 1.1) * S, 0, TAU); mx.fill();
+    }
+    mx.globalAlpha = 1;
+    // the reveal, spreading from the heart behind a soft luminous wavefront
+    mx.setTransform(1, 0, 0, 1, 0, 0);
+    if (L.sil < 0.999) {
+      const rr = (8 + 150 * L.sil) * z;
+      const ringA = 0.9 * (1 - ease(L.sil, 0.7, 1));
+      if (ringA > 0.01) {
+        const w = mx.createRadialGradient(hx, hy, 0, hx, hy, rr);
+        w.addColorStop(0, 'rgba(255,236,246,0)'); w.addColorStop(0.5, 'rgba(255,236,246,0)');
+        w.addColorStop(0.66, U.rgba('#e9dcff', 0.75 * ringA)); w.addColorStop(0.74, U.rgba('#fff4fa', ringA)); w.addColorStop(0.9, 'rgba(255,236,246,0)');
+        mx.fillStyle = w; mx.fillRect(0, 0, cw, ch);
+      }
+      mx.globalCompositeOperation = 'destination-in';
+      const v = mx.createRadialGradient(hx, hy, 0, hx, hy, rr);
+      v.addColorStop(0, '#000'); v.addColorStop(0.7, '#000'); v.addColorStop(1, 'rgba(0,0,0,0)');
+      mx.fillStyle = v; mx.fillRect(0, 0, cw, ch);
+    }
+    mx.globalCompositeOperation = 'source-over';
+    // rim: a flat warm copy of him, offset toward the flower / the afterglow, under the cosmic silhouette
+    // (only once the reveal is complete — under a half-revealed silhouette it would tint him)
+    const rimA = 0.8 * ease(L.sil, 0.96, 1);
+    if (rimA > 0.01) {
+      const ow = Math.max(1.2, 1.15 * z) / z;
+      ctx.save();
+      ctx.globalAlpha *= rimA;
+      ctx.translate(ow, -0.75 * ow);
+      draw(ctx, { shadow: false, look: RIM_LOOK });
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(M, 0, 0, cw, ch, x0, y0, cw, ch);
+    ctx.restore();
+  }
+  const RIM_LOOK = Object.assign({}, Art.CAST.me);
+  for (const k of ['skin', 'hair', 'hatColor', 'shirt', 'shirt2', 'pants', 'shoes', 'pack', 'beard']) RIM_LOOK[k] = '#ffc6b8';
+  /** his face, drawn in starlight on the silhouette (same geometry as the kit's face) */
+  function lightFace(ctx, an, act, a) {
+    if (a <= 0.01) return;
+    const f = act.face, hd = act.head, turn = hd.turn || 0, S = an.scale;
+    ctx.save();
+    ctx.translate(an.head.x, an.head.y);
+    ctx.rotate((hd.tilt || 0) + (hd.nod || 0));
+    ctx.scale(S, S);
+    const fx = 8 * (1 - turn);
+    const nearX = fx + 12.5 * (1 - turn) + 12 * turn, farX = fx - 9.5 * (1 - turn) - 12 * turn;
+    const eyeY = -3 + (f.lookY || 0) * 0.6;
+    const sm = clamp(f.smile, -1, 1), mx = lerp(fx + 5, 0, turn), my = 17, mw = 8.5 + 3.5 * Math.abs(sm);
+    ctx.lineCap = 'round';
+    for (const [lw, al] of [[6, 0.16], [2.6, 0.92]]) {
+      ctx.strokeStyle = U.rgba('#fff3dc', al * a); ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = lw;
+      for (const [ex, sc] of [[nearX, 1], [farX, 0.86 + 0.14 * turn]]) {
+        ctx.beginPath();
+        if (f.eyes === 'happy') ctx.arc(ex, eyeY + 3 * sc, 5.4 * sc, Math.PI + 0.35, TAU - 0.35);
+        else if (f.eyes === 'closed') ctx.arc(ex, eyeY - 2.5 * sc, 5.2 * sc, 0.35, Math.PI - 0.35);
+        else if ((f.blink || 0) > 0.5) { ctx.moveTo(ex - 4 * sc, eyeY); ctx.lineTo(ex + 4 * sc, eyeY); }
+        else { ctx.arc(ex + (f.lookX || 0) * 1.3, eyeY + (f.lookY || 0) * 1.3, (lw > 3 ? 4.6 : 2.6) * sc, 0, TAU); ctx.fill(); continue; }
+        ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(mx - mw, my - sm * 2.4); ctx.quadraticCurveTo(mx, my + sm * 9, mx + mw, my - sm * 2.4); ctx.stroke();
+    }
+    ctx.restore();
+  }
   /** warm breathing glow around him (behind = before drawMe, front = after) */
   function meGlow(ctx, t, an, front) {
     const k = U.fade(t, GLOW0, CONST0 + 3, 2.2, 3) * 0.85 + 0.15 * ease(t, GLOW0, GLOW0 + 2);
     if (k <= 0.005) return;
     const br = 1 + 0.07 * Math.sin((t - GLOW0) * TAU / 4.2 - 1.2);
-    const R = (80 + 250 * ease(t, GLOW0, GLOW0 + 3.2, 'outCubic')) * br;
+    // once it has settled to a faint residual halo, its invisible outer reaches are not drawn
+    const R = (80 + 250 * ease(t, GLOW0, GLOW0 + 3.2, 'outCubic')) * br * (0.6 + 0.4 * clamp((k - 0.15) / 0.5));
     const cx = an ? an.chest.x : X1 + 3, cy = an ? an.chest.y : Y1 - 66;
-    if (!front) { Art.glow(ctx, cx, cy, R, '#ffcf86', 0.42 * k); Art.glow(ctx, cx, cy, R * 0.45, '#fff0cc', 0.18 * k); }
-    else Art.glow(ctx, cx, cy, R * 0.7, '#ffd9a0', 0.1 * k);
+    if (!front) { glowC(ctx, cx, cy, R, '#ffcf86', 0.42 * k); glowC(ctx, cx, cy, R * 0.45, '#fff0cc', 0.18 * k); }
+    else if (k > 0.2) glowC(ctx, cx, cy, R * 0.7, '#ffd9a0', 0.1 * k);
   }
 
   /* ======================================================================
@@ -720,9 +965,10 @@
     let s = 0.44 * U.ease(t, POP, POP + 0.55, 'outBack');
     let arms = 'idle', te = t, rot = 0, squash = 0;
     const face = { smile: 0.45, eyes: 'open', lookX: 0.6, lookY: 0.4 };
-    if (t < TAP2 + Math.PI / 14) { arms = 'tap'; te = Math.max(t, TAP_HOLD) + TAP_PH; face.browUp = 0.4; face.lookX = 1; face.lookY = 0; }
+    const lean = 0.46 * ease(t, POP + 0.3, TAP1 - 0.15);       // she leans in so the tap lands on his shoulder
+    if (t < TAP2 + Math.PI / 14) { arms = 'tap'; te = Math.max(t, TAP_HOLD) + TAP_PH; rot = lean; face.browUp = 0.4; face.lookX = 1; face.lookY = 0.3; }
     else if (t < CUT_C) {
-      arms = 'point'; rot = 0.36 * ease(t, TAP2 + 0.22, TAP2 + 0.7, 'outBack');
+      arms = 'point'; rot = lerp(lean, 0.36, ease(t, TAP2 + 0.22, TAP2 + 0.7, 'outBack'));
       face.eyes = t > SAY0 && t < SAY0 + 1.6 ? 'sparkle' : 'open';
       face.talk = t > SAY0 && t < SAY0 + 1.3 ? 1 : 0;
       face.smile = 0.6; face.browUp = 0.5; face.lookX = 1; face.lookY = 0.6;
@@ -744,7 +990,7 @@
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(rot);
-    const pop = U.bump(t, POP + 0.12, 0.35);
+    const pop = U.bump(t, POP + 0.2, 0.2);                      // flash of arrival, rising from her first frame
     if (pop > 0) Art.glow(ctx, 0, -20, 90, '#fff0b0', 0.6 * pop);
     const r = Art.emotion(ctx, { x: 0, y: 0, s, color: Art.EMO.wonder, face, arms, t: te, seed: 5, squash, glow: 0.7 + 0.4 * an.light.sil });
     ctx.restore();
@@ -789,10 +1035,7 @@
   function renderWorld(ctx, t, C) {
     const T = tod(t);
     drawSky(ctx, t, C, T);
-    // god rays from the low sun (in the air behind the ridges)
-    const rayA = 0.1 * (1 - ease(t, 18, 32));
-    if (rayA > 0) { const s = sunPos(t); ctx.save(); layer(ctx, C, 0.05); Art.rays(ctx, { x: s.x, y: s.y, angle: 2.75, spread: 0.55, count: 7, len: 1700, color: T.P.light, alpha: rayA, t, seed: 3 }); ctx.restore(); }
-    dof(ctx, C.bg, 'a8-bg', (c) => drawFar(c, t, C, T));
+    dof(ctx, C.bg, 'a8-bg', (c) => { drawRays(c, t, C, T); drawFar(c, t, C, T); });
     ctx.save();
     layer(ctx, C, 1);
     drawGround(ctx, t, T);
@@ -801,7 +1044,7 @@
     meGlow(ctx, t, null, false);
     const an = drawMe(ctx, t, T);
     meGlow(ctx, t, an, true);
-    if (T.night > 0.01) Art.glow(ctx, FL.x - 30, FL.y - 70, 170, '#ffb0c4', 0.22 * T.night);   // the flower lights his front
+    if (T.night > 0.01) glowC(ctx, FL.x - 30, FL.y - 70, 170, '#ffb0c4', 0.22 * T.night);   // the flower lights his front
     const wo = drawWonder(ctx, t, an);
     drawGather(ctx, t);
     drawFront(ctx, t, T);
@@ -813,6 +1056,8 @@
   function render(ctx, t) {
     const shot = shotAt(t);
     const C = cam(t, shot);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, PIC_T, W, PIC_B - PIC_T); ctx.clip();   // the letterbox bars cover the rest
     const out = renderWorld(ctx, t, C);
     // Wonder's words, in her handwriting
     const say = U.fade(t, SAY0, SAY1, 0.25, 0.6);
@@ -820,6 +1065,7 @@
       const p = toScreen(C, out.wo.x, out.wo.y);
       Art.hand(ctx, 'Can we stop here?', { x: p.x - 250, y: p.y - 150, size: 62, reveal: ease(t, SAY0, SAY0 + 1.3, 'linear'), alpha: say, color: '#ffe2a0', glow: 'rgba(120,64,10,0.55)' });
     }
+    ctx.restore();
     Art.captions(ctx, t, CAPS);
     // end card on the night sky
     const card = 1; // the engine's 2.5 s fadeOut now fades deferred text too

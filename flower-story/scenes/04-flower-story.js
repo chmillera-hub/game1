@@ -378,6 +378,24 @@
       ctx.restore();
     }
   }
+  /**
+   * Kit workaround: the beanie's pom-pom is drawn 1.3 units clear of the crown (it floats; the gap
+   * grows with zoom). Seat it with a short gathered neck in the beanie colour, pom-pom on top.
+   * an = Art.person anchors, o = the options it was drawn with (sitting pose: no pose lean).
+   */
+  const BEANIE = Art.CAST.me.hatColor, POM = U.shade(Art.CAST.me.hatColor, 0.12);
+  function seatPom(ctx, an, o) {
+    const S = an.scale, R = an.head.r / S;
+    const rot = ((o.head && o.head.tilt) || 0) + (o.lean || 0) * 0.3;
+    ctx.save();
+    ctx.translate(an.head.x, an.head.y); ctx.rotate(rot); ctx.scale(S, S);
+    ctx.fillStyle = BEANIE;
+    // from the crown (−R−5.2 here) up into the pom-pom (bottom −R−6.5), gathered toward it
+    ctx.beginPath(); ctx.moveTo(-11, -R - 2); ctx.quadraticCurveTo(-8, -R - 5, -8.5, -R - 10); ctx.lineTo(-3.5, -R - 10); ctx.quadraticCurveTo(-4, -R - 5, -1, -R - 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = POM;
+    ctx.beginPath(); ctx.arc(-6, -R - 14, 7.5, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
   function drawMe(ctx, t, o, cam) {
     if (!o) return;
     const a = toScreen(cam, o.x - 90, o.y - 250), b = toScreen(cam, o.x + 190, o.y + 20);
@@ -385,7 +403,8 @@
     ctx.fillStyle = 'rgba(30,22,10,0.24)';
     ctx.beginPath(); ctx.ellipse(o.x + 22, o.y + 2, 74, 9, 0, 0, TAU); ctx.fill();
     // warm low sun from the right: a thin lit edge on his sun side
-    rimLit(ctx, Object.assign({}, o, { shadow: false, glow: 0 }), 'me', '#ffd79c', 2.3, -0.7, 0.55);
+    const an = rimLit(ctx, Object.assign({}, o, { shadow: false, glow: 0 }), 'me', '#ffd79c', 2.3, -0.7, 0.55);
+    seatPom(ctx, an, o);
   }
   function drawReal(ctx, t, cam, o) {
     const z = cam.z;
@@ -427,8 +446,10 @@
     };
     const groundTop = toScreen(cam, 0, GY - 40).y;
     if (z < 9 && groundTop < 941) {
-      // sharp while we're at his distance; soft once we're inside the flower's world (two fixed levels, cross-faded)
-      if (midSoft < 1) { ctx.save(); ctx.globalAlpha = 1 - midSoft; mid(ctx); ctx.restore(); }
+      // sharp while we're at his distance; soft once we're inside the flower's world (two fixed levels).
+      // The sharp layer stays opaque under the soft one for most of the handover, so the bright
+      // backdrop doesn't bleed through the ground mid-fade.
+      if (midSoft < 1) { ctx.save(); ctx.globalAlpha = 1 - ez(midSoft, 0.55, 1, 'linear'); mid(ctx); ctx.restore(); }
       if (midSoft > 0) { ctx.save(); ctx.globalAlpha = midSoft; soft(ctx, 'mid', 9, mid); ctx.restore(); }
     }
     // the narrator
@@ -724,6 +745,19 @@
     }
     c.restore();
   }
+  const POLE_SEP = sep('#c8ccd2', -0.1);            // the kit's steel-grey pole, re-inked for the page
+  /** one giant passer-by (only the legs show); trekking poles drawn in sepia instead of the kit's grey */
+  function legsFigure(c, key, x, y, s, j, t, alpha) {
+    const an = Art.person(c, { x, y, s, look: sepLook(key, -0.1), walk: x / (KF(1) * s) + j, facing: 1, t, alpha, shadow: false, poles: false });
+    if (Art.CAST[key].poles) {
+      c.save();
+      c.globalAlpha *= alpha;
+      c.strokeStyle = POLE_SEP; c.lineWidth = 3.2 * an.scale; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(an.handF.x, an.handF.y - 10 * an.scale); c.lineTo(an.handF.x + 26 * an.scale, y); c.stroke();
+      c.restore();
+    }
+  }
+  const SMEAR_RECT = { x: FR.x0, y: FR.y0, w: FR.x1 - FR.x0, h: FR.y1 - FR.y0 };
   function hikerLegs(c, t) {
     const keys = ['h1', 'h2', 'h4'];
     for (let j = 0; j < 3; j++) {
@@ -734,10 +768,13 @@
       const y = 958 + j * 5;
       c.fillStyle = 'rgba(42,27,16,0.28)';
       c.beginPath(); c.ellipse(x + 20, y, 46 * s, 13, 0, 0, TAU); c.fill();
-      for (let k = 4; k >= 0; k--) {
-        const xx = x - k * 46;
-        Art.person(c, { x: xx, y, s, look: sepLook(keys[j], -0.1), walk: xx / (KF(1) * s) + j, facing: 1, t, alpha: k ? 0.13 : 0.97, shadow: false });
-      }
+      // motion smear: the trailing copies merged in one soft layer (so overlapping joints don't
+      // double up into dark discs), laid down thinly behind the stride
+      c.save();
+      c.globalAlpha *= 0.3;
+      soft(c, 'smear', 5, (x2) => { for (let k = 4; k >= 1; k--) legsFigure(x2, keys[j], x - k * 46, y, s, j, t, 1); }, SMEAR_RECT);
+      c.restore();
+      legsFigure(c, keys[j], x, y, s, j, t, 1);          // opaque: translucent limbs double up at the joints
     }
   }
   /** days and seasons turning: tone, sun/moon, leaves then snow */
@@ -831,10 +868,11 @@
     return { x, walk: arrPhase(t), stride: arrStride(t), crouch, settle, look, lean, a: ez(t, TL.came0 - 0.1, TL.came0 + 0.4) };
   }
   const SIL = '#2b1c11';
-  function drawArrival(ctx, t) {
+  /** inkA: the silhouette's own opacity (the colour flood dissolves the ink; his warm light stays) */
+  function drawArrival(ctx, t, inkA = 1) {
     const ap = arrivalPose(t);
     if (ap.a <= 0) return null;
-    const base = { x: ap.x, y: MY, s: 1, facing: 1, t, shadow: false, alpha: ap.a, face: { eyes: 'closed', smile: 0, blink: 1 } };
+    const base = { x: ap.x, y: MY, s: 1, facing: 1, t, shadow: false, alpha: ap.a * inkA, face: { eyes: 'closed', smile: 0, blink: 1 } };
     const pose = !ap.crouch ? { walk: ap.walk, stride: ap.stride }
       : { pose: 'crouch', head: { tilt: 0.04 + 0.24 * ap.look - ap.settle * 0.5 }, lean: -0.06 + ap.settle + 0.06 * ap.look + 0.05 * ap.lean };
     // warm light behind him, spreading toward the flower
@@ -845,9 +883,17 @@
     const head = rimLit(ctx, Object.assign({}, base, pose), 'me', '#ffd08a', -3.8, -1.0, 0.95, flatLook('me', SIL)).head;
     // the kit draws some face strokes in fixed colours: fill the head so the silhouette stays pure
     ctx.save();
-    ctx.globalAlpha *= ap.a;
+    ctx.globalAlpha *= ap.a * inkA;
     ctx.fillStyle = SIL;
     ctx.beginPath(); ctx.arc(head.x, head.y, head.r - 0.6, 0, TAU); ctx.fill();
+    // ...and join the beanie's pom-pom to the crown (the two only touch, so the rim light
+    // showed through between them and the pom-pom seemed to float above his head)
+    const hr = head.r;                                                  // headR at s = 1
+    const rot = ap.crouch ? pose.head.tilt + (pose.lean + 0.38) * 0.3 : 0.06 * ap.stride * 0.3;   // the kit's head rotation
+    ctx.translate(head.x, head.y); ctx.rotate(rot);
+    ctx.beginPath(); ctx.arc(-6, -hr - 14, 7.5, 0, TAU); ctx.fill();
+    ctx.strokeStyle = SIL; ctx.lineWidth = 14; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-6, -hr - 1); ctx.lineTo(-6, -hr - 11); ctx.stroke();
     ctx.restore();
     return head;
   }
@@ -910,7 +956,8 @@
       }
     }
     // him, arriving in warm light
-    const head = t > TL.came0 - 0.2 && !(o.covers && o.covers(MX - 150, MY - 270, MX + 200, MY + 20)) ? drawArrival(ctx, t) : null;
+    const inkA = o.inkA ? o.inkA(MX - 35, MY - 210, MX + 115, MY + 5) : 1;      // the crouched silhouette's extent
+    const head = t > TL.came0 - 0.2 && !(o.covers && o.covers(MX - 150, MY - 270, MX + 200, MY + 20)) ? drawArrival(ctx, t, inkA) : null;
     // ...and his gaze, a dotted line of light to the flower
     if (head && fh && t > TL.saw0) {
       const ga = ez(t, TL.saw0 + 0.1, TL.saw0 + 0.5) * (1 - ez(t, TL.ring + 0.3, TL.ring + 1.3));
@@ -1062,8 +1109,9 @@
 
     render(ctx, t) {
       const cam = camAt(t);
-      // the final frames are inside the golden heart: draw only that (05 continues it exactly)
-      if (RH * cam.z >= 1105) {
+      // the final frames are inside the golden heart: draw only that (05 continues it exactly).
+      // Its opaque disc (radius 1.04·R, centred) covers the whole picture once R ≥ ~1001.
+      if (RH * cam.z >= 1010) {
         heart(ctx, W / 2, H / 2, RH * cam.z, heartRot(t));
         Art.captions(ctx, t, CAPS);
         return;
@@ -1079,13 +1127,17 @@
         const hk = ez(cam.z, 2.6, 6, 'linear');
         if (hk > 0) { c.save(); c.globalAlpha = hk; heart(c, HX0, HY0, RH, heartRot(t)); c.restore(); }
         c.restore();
-        // warm side light from the right
-        c.save();
-        const wl = c.createLinearGradient(W * 0.5, 0, W, 0);
-        wl.addColorStop(0, 'rgba(255,170,80,0)'); wl.addColorStop(1, 'rgba(255,170,80,0.12)');
-        c.globalCompositeOperation = 'lighter';
-        c.fillStyle = wl; c.fillRect(W * 0.5, 0, W * 0.5, H);
-        c.restore();
+        // warm side light from the right (it eases away as the golden heart fills the frame,
+        // so the heart-only frames that hand over to 05 follow on without a step)
+        const wk = 1 - ez(RH * cam.z, 600, 1000, 'inOutSine');
+        if (wk > 0.003) {
+          c.save();
+          const wl = c.createLinearGradient(W * 0.5, 0, W, 0);
+          wl.addColorStop(0, 'rgba(255,170,80,0)'); wl.addColorStop(1, U.rgba('#ffaa50', 0.12 * wk));
+          c.globalCompositeOperation = 'lighter';
+          c.fillStyle = wl; c.fillRect(W * 0.5, 138, W * 0.5, 804);     // picture area only (letterbox hides the rest)
+          c.restore();
+        }
       };
       if (!inBook || book < 1) {
         drawRealAll(ctx);
@@ -1118,7 +1170,16 @@
             const far = Math.max(Math.hypot(a.x - hs.x, a.y - hs.y), Math.hypot(b.x - hs.x, a.y - hs.y), Math.hypot(a.x - hs.x, b.y - hs.y), Math.hypot(b.x - hs.x, b.y - hs.y));
             return R * 0.9 > far;
           };
-          drawStorybook(ctx, t, camBase(t), { hole: (c, cont) => path(c, R, cont), covers });
+          // the inked figure dissolves as the wave reaches him (his real self is painted in behind it),
+          // so the crouching silhouette and the sitting man never show side by side at the wavefront
+          const inkA = (x0, y0, x1, y1) => {
+            const a = toScreen(cam, x0, y0), b = toScreen(cam, x1, y1);
+            const nx = clamp(hs.x, a.x, b.x), ny = clamp(hs.y, a.y, b.y);
+            const near = Math.hypot(nx - hs.x, ny - hs.y);
+            const far = Math.max(Math.hypot(a.x - hs.x, a.y - hs.y), Math.hypot(a.x - hs.x, b.y - hs.y));
+            return 1 - ez(R, near * 0.92, lerp(near, far, 0.45), 'inOutSine');
+          };
+          drawStorybook(ctx, t, camBase(t), { hole: (c, cont) => path(c, R, cont), covers, inkA });
           // colour racing ahead of the repaint
           const fa = 1 - ez(k, 0.8, 1);
           if (fa > 0.03 && R < 1350) {

@@ -46,7 +46,9 @@
   const T_ANT = 12.95, T_SHRUG = 13.25, T_HOLD = 13.55, T_SETTLE = 14.25, T_DOWN = 14.6;
   const T_TURN = 14.72, T_TURN1 = 14.98;              // synchronised about-face
   const T_GO = 15.05;                                  // ...and off they march
-  const T_SIT0 = 18.75, T_SIT1 = 19.15, T_SIT2 = 19.55; // stand → crouch → sit
+  // sitting down beside the flower, one continuous move: knees dip, hips sink back and down, seat lands,
+  // feet slide forward into a knees-up sit, hands come to rest on the knees
+  const SIT_A = 18.45, SIT_D0 = 18.7, SIT_LAND = 19.45, SIT_F0 = 19.1, SIT_F1 = 19.8;
 
   /* ---------------- helpers ---------------- */
   // cached soft background: the shot is locked off, so far layers are painted once at low res
@@ -58,7 +60,7 @@
     const x = c.getContext('2d');
     x.setTransform(1 / BG_F, 0, 0, 1 / BG_F, OX / BG_F, OY / BG_F);
     Art.sky(x, P, { horizon: 700 });
-    Art.glow(x, 1880, 40, 620, P.sun, 0.28);
+    Art.glow(x, 1880, 40, 620, P.sun, 0.38, 'screen');
     // hand-placed clouds, kept clear of the summit
     Art.cloud(x, 250, 222, 1.0, '#ffffff', 0.62, 3);
     Art.cloud(x, 760, 186, 0.78, '#ffffff', 0.58, 8);
@@ -207,6 +209,132 @@
     for (let i = 0; i < n; i++) { const u = T_GO + ((i + 0.5) / n) * d; const r = rampAt(u); dist += KFk(r) * r * (d / n); }
     return { ph: RAMP * (x * x * x - (x * x * x * x) / 2), dist, stride: rampAt(t) };
   }
+  // Art.rays, but SCREENED: added warm light clips to cyan on a bright blue sky
+  function raysScreen(ctx, { x, y, angle, spread, count, len, color, alpha, t, seed, width = 0.05 }) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let i = 0; i < count; i++) {
+      const a = angle + (U.hash(i, seed) - 0.5) * spread;
+      const wdt = width * (0.5 + U.hash(i, seed + 1));
+      const flick = 0.55 + 0.45 * Math.sin(t * (0.3 + U.hash(i, seed + 2) * 0.5) + i * 2.1);
+      const gr = ctx.createLinearGradient(x, y, x + Math.cos(a) * len, y + Math.sin(a) * len);
+      gr.addColorStop(0, U.rgba(color, alpha * flick));
+      gr.addColorStop(0.6, U.rgba(color, alpha * flick * 0.35));
+      gr.addColorStop(1, U.rgba(color, 0));
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(a - wdt) * len, y + Math.sin(a - wdt) * len);
+      ctx.lineTo(x + Math.cos(a + wdt) * len, y + Math.sin(a + wdt) * len);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // shoulder (front) in body-local units for the kit's walk pose (replicates Art.person's torso maths)
+  function shoulderF(ph, stride, seed, t) {
+    const hipY = -(58 + 56 + 4) + Math.abs(Math.sin(ph)) * 5 * stride - 3 * stride, lean = 0.06 * stride;
+    const top = 88 + Math.sin(t * 1.7 + seed) * 1.3 * 0.3;
+    return { x: Math.sin(lean) * top + 3, y: hipY - Math.cos(lean) * top + 7 };
+  }
+  const handAt = (sh, a) => ({ x: sh.x + 50 * Math.sin(a[0]) + 47 * Math.sin(a[0] + a[1]), y: sh.y + 50 * Math.cos(a[0]) + 47 * Math.cos(a[0] + a[1]) });
+  // me's body for the sit-down: Art.person's rig and drawing order, but the legs are placed by IK from a
+  // hip to two feet (all body-local units, facing right), so the pose moves continuously instead of popping
+  // between the kit's discrete 'stand' / 'crouch' / 'sit' poses. o: x, y, s, t, legs {hx, hy, fF, fB},
+  // lean, head, face, armF/armB (angles) or handF/handB (local IK targets), shadowX, shadowW.
+  const SK = { thigh: 58, shin: 56, torso: 88, neck: 12, headR: 36, upper: 50, fore: 47, hipW: 22, shW: 27 };
+  const ME_SEED = 'm'.charCodeAt(0) * 7;   // the kit's default seed for 'me'
+  const limbL = (ox, oy, a1, l1, rel, l2) => {
+    const x1 = ox + Math.sin(a1) * l1, y1 = oy + Math.cos(a1) * l1, a2 = a1 + rel;
+    return { x0: ox, y0: oy, x1, y1, x2: x1 + Math.sin(a2) * l2, y2: y1 + Math.cos(a2) * l2, a1, a2 };
+  };
+  function strokeL(ctx, L, w1, w2, col) {
+    ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = w1; ctx.beginPath(); ctx.moveTo(L.x0, L.y0); ctx.lineTo(L.x1, L.y1); ctx.stroke();
+    ctx.lineWidth = w2; ctx.beginPath(); ctx.moveTo(L.x1, L.y1); ctx.lineTo(L.x2, L.y2); ctx.stroke();
+  }
+  function shoeL(ctx, L, col) {
+    ctx.save(); ctx.translate(L.x2, L.y2); ctx.rotate(U.clamp(L.a2 * -0.25, -0.5, 0.5));
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(7, -2, 15, 7.5, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = U.shade(col, -0.3); ctx.fillRect(-7, 2.5, 28, 3);
+    ctx.restore();
+  }
+  function meRig(ctx, o) {
+    const look = Art.CAST.me, S = o.s, t = o.t, seed = ME_SEED;
+    const head = Object.assign({ tilt: 0, turn: 0 }, o.head || {});
+    const lean = o.lean || 0, L = o.legs;
+    const leg = (ox, f) => { const a = Art.ik2(ox, L.hy, f.x, f.y, SK.thigh, SK.shin, 1); return limbL(ox, L.hy, a[0], SK.thigh, a[1], SK.shin); };
+    const legF = leg(L.hx + 4, L.fF), legB = leg(L.hx - 4, L.fB);
+    const hipX = L.hx, hipY = L.hy;
+    const top = SK.torso + Math.sin(t * 1.7 + seed) * 1.3 * 0.3;
+    const shX = hipX + Math.sin(lean) * top, shY = hipY - Math.cos(lean) * top;
+    const hTilt = head.tilt || 0, neck = SK.neck + SK.headR;
+    const hdx = shX + Math.sin(lean + hTilt * 0.6) * neck + 4, hdy = shY - Math.cos(lean + hTilt * 0.6) * neck;
+    const shF = { x: shX + 3, y: shY + 7 }, shB = { x: shX - 6, y: shY + 8 };
+    let aF = o.armF || [0.1, 0.18], aB = o.armB || [-0.08, 0.14];
+    if (o.handF) aF = Art.ik2(shF.x, shF.y, o.handF.x, o.handF.y, SK.upper, SK.fore, -1);
+    if (o.handB) aB = Art.ik2(shB.x, shB.y, o.handB.x, o.handB.y, SK.upper, SK.fore, -1);
+    const armF = limbL(shF.x, shF.y, aF[0], SK.upper, aF[1], SK.fore), armB = limbL(shB.x, shB.y, aB[0], SK.upper, aB[1], SK.fore);
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.fillStyle = 'rgba(10,12,20,0.22)';
+    ctx.beginPath(); ctx.ellipse((o.shadowX || 0) * S, 2, 46 * S * (o.shadowW || 1), 8 * S, 0, 0, TAU); ctx.fill();
+    ctx.scale(S, S);
+    strokeL(ctx, armB, 13, 12, U.shade(look.shirt, -0.2));
+    ctx.fillStyle = U.shade(look.skin, -0.15); ctx.beginPath(); ctx.arc(armB.x2, armB.y2, 7, 0, TAU); ctx.fill();
+    strokeL(ctx, legB, 19, 17, U.shade(look.pants, -0.22)); shoeL(ctx, legB, U.shade(look.shoes, -0.15));
+    const ps = look.packSize || 1, pw = 30 * ps, ph = 70 * ps;          // backpack
+    ctx.save(); ctx.translate(hipX, hipY); ctx.rotate(lean);
+    ctx.fillStyle = look.pack; Art.roundRect(ctx, -SK.shW - pw + 10, -SK.torso + 6 - (ps - 1) * 30, pw, ph, 10); ctx.fill();
+    ctx.fillStyle = U.shade(look.pack, -0.18); Art.roundRect(ctx, -SK.shW - pw + 8, -SK.torso + 38 - (ps - 1) * 10, pw * 0.7, ph * 0.38, 7); ctx.fill();
+    ctx.restore();
+    strokeL(ctx, legF, 19, 17, look.pants); shoeL(ctx, legF, look.shoes);
+    ctx.save(); ctx.translate(hipX, hipY); ctx.rotate(lean);              // jacket
+    const hw = SK.hipW, sw = SK.shW, th = top;
+    ctx.beginPath();
+    ctx.moveTo(-hw, 6); ctx.lineTo(hw + 1, 6);
+    ctx.quadraticCurveTo(sw + 3, -th * 0.45, sw, -th + 9);
+    ctx.quadraticCurveTo(sw - 1, -th - 2, sw - 13, -th - 2);
+    ctx.lineTo(-sw + 11, -th - 2);
+    ctx.quadraticCurveTo(-sw - 1, -th - 1, -sw, -th + 10);
+    ctx.quadraticCurveTo(-sw - 3, -th * 0.45, -hw, 6);
+    ctx.closePath();
+    ctx.fillStyle = look.shirt; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(-sw - 6, -th - 10, sw * 0.75, th + 20);
+    ctx.strokeStyle = U.rgba(look.shirt2, 0.55); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sw * 0.5, -th + 2); ctx.lineTo(sw * 0.42, 4); ctx.stroke();
+    ctx.fillStyle = U.rgba(look.shirt2, 0.85); ctx.fillRect(-sw, -th * 0.62, sw * 2.2, 5);
+    ctx.restore();
+    ctx.fillStyle = U.shade(look.shirt, -0.1);
+    ctx.beginPath(); ctx.moveTo(-10, -th - 2); ctx.lineTo(10, -th - 2); ctx.lineTo(4, -th + 10); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = U.shade(look.pack, -0.25); ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-6, -th + 2); ctx.quadraticCurveTo(10, -th * 0.6, 4, -th * 0.18); ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = U.shade(look.skin, -0.12); ctx.lineWidth = 15; ctx.lineCap = 'round';   // neck
+    ctx.beginPath(); ctx.moveTo(shX + 1, shY + 2); ctx.lineTo(U.lerp(shX, hdx, 0.55), U.lerp(shY, hdy, 0.55)); ctx.stroke();
+    ctx.save(); ctx.translate(hdx, hdy); ctx.rotate(hTilt + lean * 0.3);
+    Art.drawHeadLocal(ctx, look, o.face || {}, head.turn || 0, t, seed);
+    ctx.restore();
+    strokeL(ctx, armF, 13.5, 12.5, look.shirt);
+    ctx.fillStyle = look.skin; ctx.beginPath(); ctx.arc(armF.x2, armF.y2, 7.5, 0, TAU); ctx.fill();
+    ctx.restore();
+    return { knF: { x: legF.x1, y: legF.y1 }, knB: { x: legB.x1, y: legB.y1 } };
+  }
+  // the sit-down, as a pure function of time: hip, feet, lean, arm blend (body-local units)
+  const STAND_F = { x: 4 + 58 * Math.sin(0.05) + 56 * Math.sin(0.03), y: -117 + 58 * Math.cos(0.05) + 56 * Math.cos(0.03) };
+  const STAND_B = { x: -4 + 58 * Math.sin(-0.04) + 56 * Math.sin(-0.06), y: -117 + 58 * Math.cos(-0.04) + 56 * Math.cos(-0.06) };
+  function sitPose(t) {
+    const ant = U.ease(t, SIT_A, SIT_D0, 'inOutSine') * (1 - U.ease(t, SIT_D0, SIT_D0 + 0.25));
+    const kD = U.ease(t, SIT_D0, SIT_LAND, 'inOutSine');           // hips down
+    const kF = U.ease(t, SIT_F0, SIT_F1, 'inOutSine');              // feet forward
+    const land = t > SIT_LAND ? Math.exp(-7 * (t - SIT_LAND)) * Math.sin(TAU * 2.2 * (t - SIT_LAND)) : 0;
+    const hy = U.lerp(-117, -11, kD) + 7 * ant + 3 * land;
+    const hx = -15 * Math.sin(kD * Math.PI * 0.62) / Math.sin(Math.PI * 0.62) * (1 - 0.35 * kF);   // back as he sinks
+    const fF = { x: U.lerp(STAND_F.x, 80, kF), y: U.lerp(STAND_F.y, -3, kF) };
+    const fB = { x: U.lerp(STAND_B.x, 67, kF), y: U.lerp(STAND_B.y, -2, kF) };
+    const lean = 0.3 * Math.sin(Math.PI * Math.min(1, kD * 1.15)) * (1 - 0.5 * kF) + 0.1 * ant + 0.03 * kF;
+    return { legs: { hx, hy, fF, fB }, lean, kD, kF, kArm: U.ease(t, SIT_D0 + 0.05, SIT_LAND - 0.1, 'inOutSine') };
+  }
   // a smooth 0→1 that overshoots a touch (for the shrug's snap)
   const snap = (t, t0, t1) => U.E.outBack(U.prog(t, t0, t1));
 
@@ -234,6 +362,8 @@
     post: { vignette: 0.32, grain: 0.045, letterbox: 1 },
 
     render(ctx, t) {
+      // the letterbox bars (y < 138.33, y > 941.67) hide the rest of the frame: don't rasterize it
+      ctx.beginPath(); ctx.rect(0, 138, W, 804); ctx.clip();
       // locked-off camera with a breath of handheld drift, then a gentle push toward the two of them
       const push = U.ease(t, 20.2, D + 1.5, 'inOutSine');
       const zoom = 1 + 0.08 * push;
@@ -249,8 +379,8 @@
       ctx.imageSmoothingQuality = 'low';   // bilinear is plenty for a soft plate (and 3x cheaper than 'high')
       ctx.drawImage(background(), -OX, -OY, W + 2 * OX, H + 2 * OY);
       const tip = { x: 1530 + 660 * 0.03, y: 640 - 410 };
-      Art.glow(ctx, tip.x, tip.y + 6, 110, P.light, 0.42 * (0.55 + 0.15 * Math.sin(t * 1.4)));
-      Art.rays(ctx, { x: 1900, y: 10, angle: 2.2, spread: 0.7, count: 6, len: 1500, color: P.light, alpha: 0.08, t, seed: 9 });
+      Art.glow(ctx, tip.x, tip.y + 6, 120, P.light, 0.8 * (0.55 + 0.15 * Math.sin(t * 1.4)), 'screen');
+      raysScreen(ctx, { x: 1900, y: 10, angle: 2.2, spread: 0.7, count: 6, len: 1500, color: P.light, alpha: 0.14, t, seed: 9 });
       // distant birds come back as the group leaves
       for (let i = 0; i < 3; i++) {
         const k = U.prog(t, 20.0 + i * 0.5, 25.5 + i * 0.4);
@@ -301,7 +431,7 @@
         const head = { tilt: 0.02 };
         // waiting, while he talks
         if (m.k === 'h1') {                                    // one hand on the hip, poles in the other
-          o.gesture = 'hips'; o.gw = 1 - U.ease(t, T_ANT - 0.2, T_ANT + 0.1);
+          o.gesture = 'hips'; o.gw = 1 - U.ease(t, T_ANT - 0.45, T_ANT - 0.05);
           o.armF = [U.lerp(0.1, 0.34, o.gw), U.lerp(0.18, 0.14, o.gw)];
           face.brow = -0.25; face.smile = -0.05; o.lean = -0.04;
         }
@@ -355,6 +485,21 @@
             o.walk = rate * go.ph + (m.k === 'h1' ? 0 : m.k === 'h2' ? 1.9 : m.k === 'h3' ? 3.4 : 5);
             o.stride = go.stride;
             if (m.k !== 'h4') { o.gesture = undefined; }
+            else {
+              const up = U.ease(t, 16.1, 16.9, 'linear');
+              if (up > 0 && up < 1) {
+                const sh = shoulderF(o.walk, o.stride, o.seed, t);
+                const sw = Math.sin(o.walk) * 0.5 * o.stride;
+                const p0 = handAt(sh, [-sw * 0.9 + 0.04, 0.25 + Math.max(0, -sw) * 0.6]);   // the walk swing
+                const p1 = { x: sh.x + 30, y: sh.y + 16 };                                   // phone at the face
+                const p2 = handAt(sh, [2.15, 0.75]);                                         // held high ('phone')
+                const q = up < 0.5 ? U.smooth(up * 2) : U.smooth(up * 2 - 1);
+                const a = up < 0.5 ? p0 : p1, b = up < 0.5 ? p1 : p2;
+                const Si = S * m.ds * look.height;
+                o.gesture = undefined;
+                o.reachF = { x: x + U.lerp(a.x, b.x, q) * Si, y: y + U.lerp(a.y, b.y, q) * Si };
+              }
+            }
             o.face = { smile: 0.12, lookX: 0.6, lookY: m.k === 'h3' ? -0.6 : 0 };
             o.head = { tilt: m.k === 'h3' ? -0.12 : -0.03 };
           }
@@ -372,7 +517,8 @@
       const talk = Art.talkingAt(t, BUB, 'me');
       // where he looks: the flower, then them, then (watching them go) the trail, then the flower again
       const flowerHead = { x: FL.x, y: FL.y - 150 * FL.s };
-      const headY = t < T_SIT1 ? meY - 253 * S : meY - 158 * S;
+      const sp = sitPose(t);
+      const headY = meY + (sp.legs.hy - 136) * S;
       const angF = Math.atan2(flowerHead.y - headY, flowerHead.x - (ME.x + 5));
       const groupX = crewDraw.length ? crewDraw.reduce((a, c) => a + c.o.x, 0) / crewDraw.length : W + 200;
       const angG = Math.atan2(-20, Math.max(200, groupX - ME.x));
@@ -386,8 +532,8 @@
       if (t > 8.6 && t < 9.8) mf.eyes = 'happy';             // "I'm good right here."
       if (t > 13.3 && t < 14.7) { mf.smirk = 0.5; mf.smile = 0.5; } // amused by the shrug
       mf.blink = U.bump(t, 1.12, 0.09) + U.bump(t, 1.75, 0.08) + U.bump(t, 5.6, 0.08) + U.bump(t, 11.6, 0.08) + U.bump(t, 17.2, 0.08) + U.bump(t, 21.6, 0.2) + U.bump(t, 24.4, 0.16);
-      if (t > T_SIT2 + 0.3 && t < T_SIT2 + 1.2) mf.eyes = 'closed'; // a contented settle
-      const seated = U.ease(t, T_SIT1, T_SIT2 + 0.6);
+      if (t > SIT_LAND + 0.45 && t < SIT_LAND + 1.35) mf.eyes = 'closed'; // a contented settle
+      const seated = U.ease(t, SIT_LAND - 0.3, SIT_F1 + 0.3);
       const mo = { x: ME.x, y: meY, s: S, look: 'me', t, face: mf, head: { tilt: ang * U.lerp(U.lerp(0.62, 0.42, atThem), 0.8, seated) + 0.05 * atThem, turn: 0.3 * (1 - atThem) } };
       // gestures: "go on" (a friendly shooing flick), "right here" (open hand), a wave goodbye
       const goOn = U.ease(t, 2.05, 2.45) * (1 - U.ease(t, 4.35, 4.85));
@@ -399,19 +545,26 @@
       if (here > 0) { aF = [U.lerp(aF[0], 0.6, here), U.lerp(aF[1], 0.12, here)]; aB = [U.lerp(aB[0], -0.4, here), U.lerp(aB[1], 0.28, here)]; mo.head.tilt += 0.06 * Math.sin((t - 6.7) * 6) * here; }
       if (bye > 0) { aF = [U.lerp(aF[0], 2.25, bye), U.lerp(aF[1], 0.6 + Math.sin(t * 9) * 0.35, bye)]; }
       aF[0] += Math.sin(t * 1.7) * 0.015;                     // the kit's idle breath, kept under the overrides
-      if (t < T_SIT0) { mo.armF = aF; mo.armB = aB; }
-      // sitting down beside the flower: anticipation dip → crouch → sit, with a little settle
-      if (t >= T_SIT0 - 0.3 && t < T_SIT0) {                 // he bends at the waist as he starts down
-        const k = U.ease(t, T_SIT0 - 0.3, T_SIT0);
-        mo.bob = 6 * k; mo.lean = 0.24 * k; mo.head.tilt += 0.12 * k;
+      mo.armF = aF; mo.armB = aB;
+      if (t < SIT_A) Art.person(ctx, mo);
+      else {
+        // sitting down beside the flower (one continuous move, see sitPose); hands slide to the knees
+        mo.legs = sp.legs; mo.lean = sp.lean;
+        mo.head.tilt += 0.1 * U.bump(t, (SIT_D0 + SIT_LAND) / 2, 0.45) + 0.04 * Math.sin(t * 0.6) * seated;
+        if (sp.kArm > 0) {
+          // knees (local) from a dry IK pass, then hands on them, blended from the hanging arms
+          const L = sp.legs, kneeOf = (ox, f) => { const a = Art.ik2(ox, L.hy, f.x, f.y, 58, 56, 1); return { x: ox + 58 * Math.sin(a[0]), y: L.hy + 58 * Math.cos(a[0]) }; };
+          const kF = kneeOf(L.hx + 4, L.fF), kB = kneeOf(L.hx - 4, L.fB);
+          const top = 88 + Math.sin(t * 1.7 + ME_SEED) * 0.39;
+          const shX = L.hx + Math.sin(sp.lean) * top, shY = L.hy - Math.cos(sp.lean) * top;
+          const hF0 = handAt({ x: shX + 3, y: shY + 7 }, aF), hB0 = handAt({ x: shX - 6, y: shY + 8 }, aB);
+          const k = sp.kArm;
+          mo.handF = { x: U.lerp(hF0.x, kF.x + 4, k), y: U.lerp(hF0.y, kF.y - 8, k) };
+          mo.handB = { x: U.lerp(hB0.x, kB.x - 4, k), y: U.lerp(hB0.y, kB.y - 6, k) };
+        }
+        mo.shadowX = 30 * sp.kF; mo.shadowW = 1 + 0.5 * sp.kF;
+        meRig(ctx, mo);
       }
-      if (t >= T_SIT0 && t < T_SIT1) { mo.pose = 'crouch'; mo.bob = -3 * U.ease(t, T_SIT0, T_SIT1); }
-      if (t >= T_SIT1) {
-        mo.pose = 'sit';
-        mo.bob = 7 * (1 - U.spring(t - T_SIT1, 2.6, 6));
-        mo.head.tilt += 0.04 * Math.sin(t * 0.6);
-      }
-      Art.person(ctx, mo);
 
       /* ---------- the flower spot, in front of the trail ---------- */
       ctx.fillStyle = U.shade(P.ground, -0.08);

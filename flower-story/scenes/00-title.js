@@ -34,7 +34,9 @@
       Art.sky(ctx, P, { horizon: 700 });
       Art.stars(ctx, { seed: 4, count: 260, t, alpha: 1 - dawnK * 0.8, y1: 640 });
       Art.ridge(ctx, { seed: 21, y: 640, amp: 170, color: U.mix(P.far, P.sky[1], 0.35) });
-      const tip = Art.summit(ctx, { x: 1290, y: 650, h: 400, w: 640, P, glow: 0.35 + dawnK * 0.4, t, flag: false });
+      // the peak stands right of the title block so no line of type touches its slopes (and sits nearer
+      // to where 01's summit appears through the dissolve)
+      const tip = Art.summit(ctx, { x: 1590, y: 650, h: 410, w: 600, P, glow: 0.35 + dawnK * 0.4, t, flag: false });
       Art.fog(ctx, { y: 650, h: 180, color: P.fog, alpha: 0.55 });
       Art.ridge(ctx, { seed: 8, y: 720, amp: 110, color: P.mid });
 

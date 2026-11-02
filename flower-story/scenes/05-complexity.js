@@ -359,7 +359,8 @@
         const d = Math.abs(wrapPI(mid * GA + ref - want[F]));
         if (d < bestD) { bestD = d; best = chain; }
       }
-      if (best) out.push({ F, chain: best, t0: TL.fib0 + FIB.lastIndexOf(F) * TL.fibStep });
+      // the 13-spiral's innermost seed sits on "the golden angle" label: start that one a step further out
+      if (best) out.push({ F, chain: F === 13 ? best.slice(1) : best, t0: TL.fib0 + FIB.lastIndexOf(F) * TL.fibStep });
     }
     void c;
     return out;
@@ -598,7 +599,8 @@
     sky.addColorStop(0, skyTop); sky.addColorStop(1, skyLow);
     ctx.fillStyle = sky; ctx.fillRect(0, 0, W, HZ);
     const gr = ctx.createLinearGradient(0, HZ, 0, 941);
-    gr.addColorStop(0, g0); gr.addColorStop(0.3, g1); gr.addColorStop(1, g2);
+    // the ground starts in the sky's own colour at the horizon (no hard seam once the light warms)
+    gr.addColorStop(0, skyLow); gr.addColorStop(0.12, g0); gr.addColorStop(0.3, g1); gr.addColorStop(1, g2);
     ctx.fillStyle = gr; ctx.fillRect(0, HZ, W, H - HZ);
     if (warm > 0) {
       Art.glow(ctx, 1640, HZ - 40, 900, '#ffcf7a', 0.55 * warm);
@@ -620,7 +622,8 @@
       if (y > 1000) continue;
       const mh = (FOC * MH) / Z, mw = Math.max(0.9, (FOC * MW) / Z);
       const fog = clamp(Math.pow(Z / (zFar * 1.05), 1.4));
-      const a = markA * (1 - 0.15 * fog);
+      const edge = 1 - U.smooth((Z - zFar * 0.8) / (zFar * 0.2));      // the farthest rows melt away (no light band where the marks start)
+      const a = markA * (1 - 0.15 * fog) * edge;
       if (a <= 0.01) continue;
       ctx.fillStyle = U.rgba(U.mix(mark, haze, fog * 0.85), a);
       const span = ((W / 2 + 40) * Z) / FOC;
@@ -732,10 +735,28 @@
     const look = U.keys(t, [[0, 0.75], [38.2, 0.75], [39.2, 0.5]]);
     return { x: MX, y: MY, look: 'me', pose: 'sit', s: 1, t, facing: 1, lean: 0.05, head: { tilt: 0.11 + 0.02 * Math.sin(t * 0.6) }, face: { smile: 0.5, lookX: 1, lookY: look } };
   }
+  /**
+   * Kit workaround: the beanie's pom-pom is drawn 1.3 units clear of the crown (it floats; the gap
+   * grows with zoom). Seat it with a short gathered neck in the beanie colour, pom-pom on top.
+   * an = Art.person anchors, o = the options it was drawn with (sitting pose: no pose lean).
+   */
+  const BEANIE = Art.CAST.me.hatColor, POM = U.shade(Art.CAST.me.hatColor, 0.12);
+  function seatPom(ctx, an, o) {
+    const S = an.scale, R = an.head.r / S;
+    const rot = ((o.head && o.head.tilt) || 0) + (o.lean || 0) * 0.3;
+    ctx.save();
+    ctx.translate(an.head.x, an.head.y); ctx.rotate(rot); ctx.scale(S, S);
+    ctx.fillStyle = BEANIE;
+    // from the crown (−R−5.2 here) up into the pom-pom (bottom −R−6.5), gathered toward it
+    ctx.beginPath(); ctx.moveTo(-11, -R - 2); ctx.quadraticCurveTo(-8, -R - 5, -8.5, -R - 10); ctx.lineTo(-3.5, -R - 10); ctx.quadraticCurveTo(-4, -R - 5, -1, -R - 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = POM;
+    ctx.beginPath(); ctx.arc(-6, -R - 14, 7.5, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
   function drawMe(ctx, t, o, cam) {
     ctx.fillStyle = 'rgba(30,22,10,0.24)';
     ctx.beginPath(); ctx.ellipse(o.x + 22, o.y + 2, 74, 9, 0, 0, TAU); ctx.fill();
-    const L = boxLayer(ctx, 'me5', o.x - 80, o.y - 245, 260, 262, (x) => Art.person(x, Object.assign({}, o, { shadow: false, glow: 0 })));
+    const L = boxLayer(ctx, 'me5', o.x - 80, o.y - 245, 260, 262, (x) => seatPom(x, Art.person(x, Object.assign({}, o, { shadow: false, glow: 0 })), o));
     blitBox(ctx, L);
     const kk = ctx.canvas.width / W;
     const d = 3.4 * cam.z * kk;

@@ -83,12 +83,13 @@
 
   /* ---------------- cast & set ---------------- */
   const ME_X = 540;
-  const CREW = [
-    { k: 'h1', x: 1250, ph: 0.4 },
-    { k: 'h2', x: 1080, ph: 2.3 },
-    { k: 'h3', x: 910, ph: 4.1 },
-    { k: 'h4', x: 740, ph: 5.6 },
+  const CREW = [                            // x, walk phase and seed (breathing/blinks) exactly as 01 ends
+    { k: 'h1', x: 1250, ph: 0.4, seed: 17 },
+    { k: 'h2', x: 1080, ph: 2.3, seed: 53 },
+    { k: 'h3', x: 910, ph: 4.1, seed: 89 },
+    { k: 'h4', x: 740, ph: 5.6, seed: 131 },
   ];
+  const D01 = 32.5;                         // 01's duration: its light shafts and pollen run on in 02 on clock D01 + wa
   const GAP = 222;                          // the flower ends up this far right of me
   const FX = ME_X + CAM_END + GAP;          // flower world x — it enters at the right edge at t≈0
   const FY = 912, FS = 0.55;                // flower base y, scale in the wide shot
@@ -171,8 +172,8 @@
     ctx.lineTo(x + w / 2, y);
     ctx.closePath();
   }
-  function mossyRock(ctx, x, y, w, h, moss, seed) {
-    Art.rock(ctx, x, y, w, h, ROCK_GREY, seed);
+  function mossyRock(ctx, x, y, w, h, moss, seed, dsatAmt) {
+    Art.rock(ctx, x, y, w, h, dsatAmt ? U.desat(ROCK_GREY, dsatAmt) : ROCK_GREY, seed);
     ctx.save();
     rockPath(ctx, x, y, w, h, seed);
     ctx.clip();
@@ -235,8 +236,9 @@
     const nx = -(y1 - y0), ny = x1 - x0, nl = Math.hypot(nx, ny) || 1;
     const ux = nx / nl, uy = ny / nl;
     const m = Math.max(w0, w1) + blur * 2;
-    const bx0 = Math.max(0, Math.min(x0, x1) - m), by0 = Math.max(0, Math.min(y0, y1) - m);
-    const bx1 = Math.min(W, Math.max(x0, x1) + m), by1 = Math.min(H, Math.max(y0, y1) + m);
+    const bx0 = Math.max(0, Math.min(x0, x1) - m), by0 = Math.max(PIC.top, Math.min(y0, y1) - m);
+    const bx1 = Math.min(W, Math.max(x0, x1) + m), by1 = Math.min(PIC.bottom, Math.max(y0, y1) + m);
+    if (bx1 <= bx0 || by1 <= by0) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     soft(ctx, blur, (c) => {
@@ -253,6 +255,144 @@
         c.closePath(); c.fill();
       }
     }, 'beam', { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 });
+    ctx.restore();
+  }
+
+  /* ---------------- carried over from 01 (keep identical: 01's last frame is this scene's first) ---------------- */
+  // h1's trekking poles: each tip is planted for one step, then swings forward (body-local units)
+  const R0 = 58 * Math.sin(0.42) + 56 * Math.sin(0.3);
+  const stanceDisp = (u) => { const a = 0.42 * Math.cos(u); return R0 - (58 * Math.sin(a) + 56 * Math.sin(a - 0.12)); };
+  const SWEEP = stanceDisp(Math.PI);
+  const POLE = { TX0: 40, HX0: 25, HY: -118, CARRY: 0.6, LIFT: 8 };
+  const POLE_L = Math.hypot(POLE.TX0 - POLE.HX0, POLE.HY);
+  function poleState(ph) {
+    let u = (ph + Math.PI / 2) % TAU; if (u < 0) u += TAU;
+    if (u <= Math.PI) {
+      const d = stanceDisp(u);
+      return { hand: { x: POLE.HX0 - POLE.CARRY * d, y: POLE.HY }, tip: { x: POLE.TX0 - d, y: 0 } };
+    }
+    const q = (u - Math.PI) / Math.PI, k = U.smooth(q);
+    const hand = { x: POLE.HX0 - POLE.CARRY * SWEEP * (1 - k), y: POLE.HY - POLE.LIFT * Math.sin(q * Math.PI) };
+    const th0 = Math.atan2(POLE.TX0 - SWEEP - (POLE.HX0 - POLE.CARRY * SWEEP), -POLE.HY);
+    const th1 = Math.atan2(POLE.TX0 - POLE.HX0, -POLE.HY);
+    const th = U.lerp(th0, th1, k);
+    return { hand, tip: { x: hand.x + Math.sin(th) * POLE_L, y: hand.y + Math.cos(th) * POLE_L } };
+  }
+  function poleDrawer(bodyInv, ps, handCol, handR) {
+    return (c) => {
+      const r = bodyInv.multiply(c.getTransform());
+      const tx = ps.tip.x - r.e, ty = ps.tip.y - r.f;
+      const L = Math.hypot(tx, ty) || 1, ux = tx / L, uy = ty / L;
+      c.lineCap = 'round';
+      c.strokeStyle = '#6f7680'; c.lineWidth = 4.4;
+      c.beginPath(); c.moveTo(-ux * 15, -uy * 15); c.lineTo(tx, ty); c.stroke();
+      c.strokeStyle = '#d3d7dd'; c.lineWidth = 2.4;
+      c.beginPath(); c.moveTo(-ux * 15, -uy * 15); c.lineTo(tx - ux * 1.5, ty - uy * 1.5); c.stroke();
+      c.strokeStyle = '#272b35'; c.lineWidth = 5.4;
+      c.beginPath(); c.moveTo(-ux * 16, -uy * 16); c.lineTo(ux * 5, uy * 5); c.stroke();
+      c.strokeStyle = '#3a3f4b'; c.lineWidth = 2.2;
+      const bx = tx - ux * 13, by = ty - uy * 13;
+      c.beginPath(); c.moveTo(bx - uy * 6, by + ux * 6); c.lineTo(bx + uy * 6, by - ux * 6); c.stroke();
+      c.fillStyle = handCol;
+      c.beginPath(); c.arc(0, 0, handR, 0, TAU); c.fill();
+    };
+  }
+  // 01's cheap soft pass: 1/f-res canvas over a screen region, 4-tap box, bilinear upscale, optional blend mode
+  function softF(ctx, f, drawFn, key, r, mode) {
+    const cw = Math.ceil(r.w / f) + 2, ch = Math.ceil(r.h / f) + 2;
+    const c = Art.canvas('a2:' + key, cw, ch), x = c.getContext('2d');
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+    x.clearRect(0, 0, cw, ch);
+    const base = Art._base || new DOMMatrix();
+    x.setTransform(new DOMMatrix().scale(1 / f, 1 / f).translate(f - r.x, f - r.y).multiply(base.inverse().multiply(ctx.getTransform())));
+    drawFn(x);
+    const c2 = Art.canvas('a2:' + key + ':b', cw, ch), x2 = c2.getContext('2d');
+    x2.setTransform(1, 0, 0, 1, 0, 0);
+    x2.globalAlpha = 1; x2.globalCompositeOperation = 'source-over';
+    x2.clearRect(0, 0, cw, ch);
+    x2.globalCompositeOperation = 'lighter'; x2.globalAlpha = 0.25;
+    x2.drawImage(c, -0.6, -0.6); x2.drawImage(c, 0.6, -0.6); x2.drawImage(c, -0.6, 0.6); x2.drawImage(c, 0.6, 0.6);
+    x2.globalCompositeOperation = 'source-over'; x2.globalAlpha = 1;
+    ctx.save();
+    ctx.setTransform(base);
+    if (mode) ctx.globalCompositeOperation = mode;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(c2, r.x - f, r.y - f, cw * f, ch * f);
+    ctx.restore();
+  }
+  // soft god-ray shafts through the canopy (01's), on 01's clock
+  function drawShafts(c, cam, t, P, a) {
+    layer(c, cam, 0.62, (c2, off) => {
+      const sp = 330, i0 = Math.floor((off - 900) / sp), i1 = Math.ceil((off + W + 500) / sp);
+      for (let i = i0; i <= i1; i++) {
+        if (U.hash(i, 151) < 0.4) continue;
+        const xt = i * sp + U.hash(i, 152) * 200 - off + 260;
+        const yt = 60, yb = 990, xb = xt - (yb - yt) * 0.46;
+        const w0 = 16 + U.hash(i, 153) * 34, w1 = w0 * 2.3;
+        const fl = a * (0.55 + 0.45 * Math.sin(t * (0.35 + U.hash(i, 154) * 0.5) + i * 1.9)) * (0.55 + 0.45 * U.hash(i, 155));
+        const gr = c2.createLinearGradient(0, yt, 0, yb);
+        gr.addColorStop(0, U.rgba(P.light, 0));
+        gr.addColorStop(0.35, U.rgba(P.light, fl));
+        gr.addColorStop(0.8, U.rgba(P.light, fl * 0.75));
+        gr.addColorStop(1, U.rgba(P.light, 0));
+        c2.fillStyle = gr;
+        c2.beginPath(); c2.moveTo(xt - w0, yt); c2.lineTo(xt + w0, yt); c2.lineTo(xb + w1, yb); c2.lineTo(xb - w1, yb); c2.closePath(); c2.fill();
+      }
+    });
+  }
+  // The sky and the sun's big glow (01's layer 0), cached: a full-frame gradient plus a 940-px radial glow cost
+  // ~4 ms a frame in software; blitted 1:1 they cost ~0.5. Re-rendered only when the palette (quantized to steps
+  // far below one colour level) changes. Covers film y SKY_Y0 .. SKY_Y0 + SKY_H.
+  const SKY_Y0 = 60, SKY_H = 940;
+  function skyPlate(P, k) {
+    const c = Art.canvas('a2:sky', Math.ceil(W * k), Math.ceil(SKY_H * k));
+    const key = P.sky.join() + P.sun + k;
+    if (c.__key !== key) {
+      const x = c.getContext('2d');
+      x.setTransform(k, 0, 0, k, 0, -SKY_Y0 * k);
+      x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+      Art.sky(x, P, { horizon: 720 });
+      Art.glow(x, 1760, 90, 470, P.sun, 0.45, 'screen');
+      c.__key = key;
+    }
+    return c;
+  }
+  // the summit's flag, drawn here (not by the kit) so it greys with the world when colour is pre-desaturated
+  function summitFlag(c, tip, P, t, dsatAmt) {
+    c.strokeStyle = U.shade(P.summit, -0.45); c.lineWidth = 2;
+    c.beginPath(); c.moveTo(tip.x, tip.y + 2); c.lineTo(tip.x, tip.y - 26); c.stroke();
+    const fl = Math.sin(t * 3) * 3;
+    c.fillStyle = U.desat('#e8574a', dsatAmt);
+    c.beginPath(); c.moveTo(tip.x, tip.y - 26); c.lineTo(tip.x + 16, tip.y - 21 + fl); c.lineTo(tip.x, tip.y - 16); c.closePath(); c.fill();
+  }
+  function skyClouds(c, off) {           // Art.clouds(seed 2, count 4) minus the cloud that sat inside the big one
+    const span = W + 900, seed = 2;
+    for (let i = 1; i < 4; i++) {
+      const x = ((((U.hash(i, seed) * span - off) % span) + span) % span) - 450;
+      Art.cloud(c, x, U.lerp(190, 330, U.hash(i, seed + 1)), 0.6 + U.hash(i, seed + 2) * 0.8, '#ffffff', 0.55 * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13);
+    }
+  }
+  function pollen(ctx, tm, camX, toScr, zOf, P, k) {
+    if (k <= 0.003) return;
+    const span = W + 300;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = '#fff6d8';
+    for (let i = 0; i < 42; i++) {
+      const p = 0.8 + U.hash(i, 91) * 0.5;
+      const lx = ((((U.hash(i, 92) * span - camX * p * 0.96 + U.noise1(tm * 0.21 + i, 93) * 40) % span) + span) % span) - 150;
+      const rise = (tm * (6 + U.hash(i, 95) * 8)) / 120, cyc = rise - Math.floor(rise);
+      const ly = 260 + U.hash(i, 94) * 640 - cyc * 120 + U.noise1(tm * 0.3 + i * 1.7, 96) * 30;
+      const life = U.smooth(Math.min(cyc, 1 - cyc) * 6);
+      const a = 0.35 * k * life * (0.5 + 0.5 * Math.sin(tm * (1 + U.hash(i, 97) * 2) + i * 3.1));
+      if (a < 0.004) continue;
+      const q = toScr(p, lx, ly), r = (1.1 + U.hash(i, 98) * 1.6) * zOf(p);
+      ctx.globalAlpha = 1;
+      Art.glow(ctx, q.x, q.y, r * 5, P.light, a * 0.1);
+      ctx.globalAlpha = a;
+      ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, TAU); ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -310,7 +450,19 @@
 
     render(ctx, t) {
       const P = U.mixDeep(Art.TOD.morning, Art.TOD.golden, 0.2 + 0.1 * U.clamp(t / D));
+      // the letterbox bars (y < 138.33, y > 941.67) hide the rest of the frame: don't rasterize it
+      ctx.beginPath(); ctx.rect(0, 138, W, 804); ctx.clip();
       const cam = cameraAt(t);
+      // During the 0.8 s dissolve in from 01 the engine paints 01's frame underneath this one (Art._alpha < 1),
+      // and 01's last frames are built to equal ours everywhere except where the flower spot enters at the
+      // right edge. So only that patch is rasterized; elsewhere this layer stays transparent and 01's identical
+      // pixels show through. Same picture, half the cost of the dissolve's double render.
+      if (t < 0.8 && Art._alpha < 0.999) {
+        // (edges on whole device pixels: a partly covered edge pixel would composite differently and show a seam)
+        const k = (Art._base || new DOMMatrix()).a;
+        const x0 = Math.floor(toScreen(cam, FX - cam.camX - 170, 0).x * k) / k, y0 = Math.floor(740 * k) / k;
+        ctx.beginPath(); ctx.rect(x0, y0, W - x0, 942 - y0); ctx.clip();
+      }
       const wa = rateInt(t, TAU_A);          // ambient (world) time
       const wo = rateInt(t, TAU_O);          // the others' time
       const slowK = U.ease(t, 5.9, 11);      // how far time has stopped
@@ -330,17 +482,40 @@
       const groundLow = toScreen(cam, 0, GY + GAMP + 8).y;  // below the lowest dip of the ground line
       const groundTop = toScreen(cam, 0, GY - GAMP - 44).y; // above the tallest shrubs on the back edge
 
+      // Colour drains out as time stops. Early on (characters and light in frame) that's one full-frame
+      // 'saturation' pass; in the close-up, where everything but the flower is drawn into soft passes, the
+      // same desaturation is applied to the colours themselves (desaturation is linear, so the two agree)
+      // and the ~5 ms full-frame pass is skipped.
+      // (only once nobody is in frame: the kit's faces have a few fixed colours a look can't desaturate)
+      const crewLeft = Math.min(...CREW.map((m) => m.x)) + V0 * wo - cam.camX;
+      // (me's last pixel leaves the frame at t ≈ 19.4, when his x + 30 maps left of −20; he isn't drawn after that)
+      const preD = t > T_PUSH0 + 2.6 && toScreen(cam, crewLeft - 70, 0).x > W + 40 && toScreen(cam, ME_X + 30, 0).x < -20;
+      const dP = preD ? dsat : 0;
+      const Pd = preD ? Art.desatPalette(P, dsat) : P;
+
       /* ---------- far world (goes soft as time stops) ---------- */
+      const PbgD = preD ? Art.desatPalette(Pbg, dsat) : Pbg;
       soft(ctx, bgBlur, (c) => {
-        const P = Pbg;
+        const P = PbgD;
         layer(c, cam, 0, (c2) => {
-          Art.sky(c2, P, { horizon: 720 });
-          Art.glow(c2, 1760, 90, 470, P.sun, 0.32);
-          Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: 0.12 * (1 - 0.5 * slowK) * U.ease(t, 0.7, 1.7), t: wa, seed: 4, width: 0.06 });
+          if (c2.canvas === ctx.canvas && t < 5.9) {         // sharp and not yet greying: blit the cached plate
+            const q = Math.round((0.2 + 0.1 * U.clamp(t / D)) * 100) / 100;
+            const k = (Art._base || new DOMMatrix()).a;
+            c2.save(); c2.setTransform(1, 0, 0, 1, 0, 0);
+            c2.drawImage(skyPlate(U.mixDeep(Art.TOD.morning, Art.TOD.golden, q), k), 0, Math.round(SKY_Y0 * k));
+            c2.restore();
+          } else {
+            Art.sky(c2, P, { horizon: 720 });
+            Art.glow(c2, 1760, 90, 470, P.sun, 0.45, 'screen');
+          }
         });
-        layer(c, cam, 0.02, (c2, off) => Art.clouds(c2, { seed: 2, count: 4, y0: 190, y1: 330, offset: off + wa * 5, color: '#ffffff', alpha: 0.55 }));
+        layer(c, cam, 0.02, (c2, off) => skyClouds(c2, off + wa * 5));
         layer(c, cam, 0.04, (c2, off) => Art.ridge(c2, { seed: 21, y: 615, amp: 150, color: U.mix(P.far, P.sky[1], 0.4), offset: off }));
-        layer(c, cam, 0.03, (c2, off) => Art.summit(c2, { x: 1610 - off, y: 655, h: 440, w: 700, P, glow: 0.55, t: wa }));
+        layer(c, cam, 0.03, (c2, off) => {
+          const tp = Art.summit(c2, { x: 1610 - off, y: 655, h: 440, w: 700, P, glow: 0, t: wa, flag: false });
+          summitFlag(c2, tp, P, wa, dP);
+          Art.glow(c2, tp.x, tp.y + 6, 130, P.light, 0.9 * (0.55 + 0.15 * Math.sin(wa * 1.4)), 'screen');
+        });
         layer(c, cam, 0.05, (c2) => Art.fog(c2, { y: 650, h: 170, color: P.fog, alpha: 0.5 }));
         layer(c, cam, 0.09, (c2, off) => Art.ridge(c2, { seed: 8, y: 718, amp: 100, color: P.mid, offset: off }));
         layer(c, cam, 0.18, (c2, off) => {
@@ -354,11 +529,11 @@
         layer(c, cam, 0.55, (c2, off) => {
           Art.forest(c2, { seed: 33, y: 874, offset: off, spacing: 230, hMin: 400, hMax: 520, color: U.mix(P.trees[2], P.trees[1], 0.3), light: U.shade(P.trees[1], 0.04), kind: 'pine', sway: 3, t: wa, jitterY: 8 });
         });
-      }, 'bg', { x: 0, y: 0, w: W, h: Math.min(H, groundLow + 10) });
+      }, 'bg', { x: 0, y: PIC.top, w: W, h: Math.min(PIC.bottom, groundLow + 10) - PIC.top });
 
       /* ---------- trail plane ---------- */
       const drawGround = (c) => layer(c, cam, 1, (c2, off) => {
-        const go = gOpt(off);
+        const go = gOpt(off), P = Pd;
         // shrubs along the back edge
         const i0 = Math.floor((off - 200) / 150), i1 = Math.ceil((off + W + 200) / 150);
         for (let i = i0; i <= i1; i++) {
@@ -392,11 +567,21 @@
       const leftmost = toScreen(cam, Math.min(...crew.map((c) => c.x)) - 70, 0).x;
       const drawOthers = (c) => layer(c, cam, 1, (c2, off) => {
         const go = gOpt(off);
+        const bodyBase = c2.getTransform();
         for (let i = crew.length - 1; i >= 0; i--) {
           const { m, x, walk } = crew[i];
           if (x < -200 || x > W / Math.max(1, cam.Zt) + 600) continue;
-          const o = { x, y: Art.groundY(x, go) + FOOT, s: S, look: m.k, t: wo, walk };
-          if (m.k === 'h1') { o.head = { tilt: -0.06 }; o.face = { smile: 0.12, brow: -0.15 }; }
+          const o = { x, y: Art.groundY(x, go) + FOOT, s: S, look: m.k, t: wo, walk, seed: m.seed };
+          if (m.k === 'h1') {                     // 01's planted poles, hands on the grips
+            const lk = Art.CAST.h1, Sh = S * lk.height, y = o.y;
+            const pF = poleState(walk), pB = poleState(walk + Math.PI);
+            const toW = (q) => ({ x: x + q.x * Sh, y: y + q.y * Sh });
+            const bodyInv = bodyBase.translate(x, y).scale(Sh, Sh).inverse();
+            o.poles = false; o.reachF = toW(pF.hand); o.reachB = toW(pB.hand);
+            o.holdF = poleDrawer(bodyInv, pF, lk.skin, 7.5);
+            o.holdB = poleDrawer(bodyInv, pB, U.shade(lk.skin, -0.15), 7);
+            o.head = { tilt: -0.06 }; o.face = { smile: 0.12, brow: -0.15 };
+          }
           if (m.k === 'h2') {
             const talk = t < 5.5 && U.noise1(t * 1.3, 4) > 0.05 ? 1 : 0;
             o.head = { tilt: -0.02 }; o.face = { smile: 0.35, talk, lookX: 1 };
@@ -438,16 +623,19 @@
         else if (t >= 13) face.blink = U.bump(t, 13.15, 0.16);
         const settle = U.ease(t, T_STOP - 0.4, T_STOP + 1.6);   // he leans in, just a little
         const o = { x, y, s: S, look: 'me', t, face, lean: 0.07 * settle, head: { tilt: tilt + 0.05 * settle, turn: 0.28 * near } };
-        if (t < T_STOP + 0.02) { o.walk = ME_PH0 + RATE * rateInt(t, G_KEYS); o.stride = strideOf(g); } else o.pose = 'stand';
+        // the walk pose throughout: once he stops, the phase is frozen on double support and the stride relaxes
+        // to nothing, so he settles into a stand without a pose pop
+        o.walk = ME_PH0 + RATE * rateInt(t, G_KEYS);
+        o.stride = strideOf(g) * (1 - U.ease(t, T_STOP - 0.1, T_STOP + 0.7));
         Art.person(c2, o);
       });
 
       const drawSpot = (c) => layer(c, cam, 1, (c2, off) => {
-        const fx = FX - off;
+        const fx = FX - off, P = Pd;
         if (fx < -260 || fx > W + 260) return;
         c2.fillStyle = U.shade(P.ground, -0.08);              // a little mossy island at the trail's edge
         c2.beginPath(); c2.ellipse(fx + 6, FY + 4, 96, 13, 0, 0, TAU); c2.fill();
-        mossyRock(c2, fx + ROCK.dx, ROCK.y, ROCK.w, ROCK.h, U.mix(P.grass, P.trees[2], 0.25), 7);
+        mossyRock(c2, fx + ROCK.dx, ROCK.y, ROCK.w, ROCK.h, U.mix(P.grass, P.trees[2], 0.25), 7, dP);
         Art.fern(c2, fx + FERN.dx, FERN.y, FERN.s, U.mix(P.grass, P.trees[2], 0.45), U.wind(wa, fx, 2) * 0.6);
         Art.fern(c2, fx + FERN.dx + 22, FERN.y + 2, FERN.s * 0.6, U.mix(P.grass, P.trees[2], 0.2), U.wind(wa, fx + 30, 3) * 0.6);
       });
@@ -458,18 +646,39 @@
           color: U.desat(U.shade(P.grass, -0.12), dsatAmt), color2: U.desat(U.shade(P.grass, 0.02), dsatAmt), t: wa, wind: 0.6, x0, x1,
         });
       };
-      const drawFront = (c) => layer(c, cam, 1, (c2, off) => frontGrass(c2, off, -20, W + 20, 0));
+      const drawFront = (c) => layer(c, cam, 1, (c2, off) => frontGrass(c2, off, -20, W + 20, dP));
 
-      const nearTop = Math.max(0, groundTop);
-      const nearRegion = { x: 0, y: nearTop, w: W, h: H - nearTop };
-      soft(ctx, groundBlur, drawGround, 'near', nearRegion);
+      // soft-pass regions: only what can be seen (the letterbox covers the rest)
+      const clipPic = (r) => { const y0 = Math.max(PIC.top, r.y), y1 = Math.min(PIC.bottom, r.y + r.h), x0 = Math.max(0, r.x), x1 = Math.min(W, r.x + r.w); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
+      const nearTop = Math.max(PIC.top, groundTop);
+      const nearRegion = { x: 0, y: nearTop, w: W, h: PIC.bottom - nearTop };
+      if (nearRegion.h > 0) soft(ctx, groundBlur, drawGround, 'near', nearRegion);
       if (othersVisible) soft(ctx, oBlur, drawOthers, 'others', { x: Math.max(0, leftmost - 20), y: PIC.top - 20, w: W - Math.max(0, leftmost - 20), h: PIC.h + 40 });
-      if (meVisible) soft(ctx, meBlur, drawMe, 'me', { x: 0, y: PIC.top - 20, w: Math.min(W, meScr + 80), h: PIC.h + 40 });
-      soft(ctx, spotBlur, drawSpot, 'spot', nearRegion);
-      soft(ctx, frontBlur, drawFront, 'front', nearRegion);
+      if (meVisible && !preD) soft(ctx, meBlur, drawMe, 'me', { x: 0, y: PIC.top - 20, w: Math.min(W, meScr + 80), h: PIC.h + 40 });
+      {
+        // the flower spot (island, rock, ferns) spans x FX-110..FX+102, y 852..929 on the trail plane
+        const a = toScreen(cam, FX - cam.camX - 115, 846), b = toScreen(cam, FX - cam.camX + 108, 934);
+        const r = clipPic({ x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y });
+        if (r.w > 0 && r.h > 0) soft(ctx, spotBlur, drawSpot, 'spot', r);
+        // the verge grass row in front of the trail: y = ground + 46, up to ~25 tall
+        const g0 = toScreen(cam, 0, GY - GAMP + 46 - 26).y, g1 = toScreen(cam, 0, GY + GAMP + 50).y;
+        const rf = clipPic({ x: 0, y: g0, w: W, h: g1 - g0 });
+        if (rf.w > 0 && rf.h > 0) soft(ctx, frontBlur, drawFront, 'front', rf);
+      }
+
+      /* ---------- 01's sunlight runs on: its rays and shafts melt away as the flower takes his attention (one
+                   warm shaft will find the flower instead); its pollen stills and hangs in the air as time stops ---------- */
+      const lightK = 1 - U.ease(t, 1.0, 6.2, 'inOutSine');
+      const t01 = D01 + wa;                                  // 01's clock, slowed with the world
+      if (lightK > 0.004) softF(ctx, 9, (c) => {
+        layer(c, cam, 0, (c2) => Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: 0.21 * lightK, t: wa, seed: 4, width: 0.06 }));
+        drawShafts(c, cam, t01, P, 0.104 * lightK);
+      }, 'shafts', { x: 0, y: PIC.top, w: W, h: PIC.h }, 'screen');
+      const toScrP = (p, x, y) => { const z = zoomOf(cam, p); return { x: CX + z * (x - CX - cam.dx * p), y: CY + z * (y - CY - cam.dy * p) }; };
+      pollen(ctx, t01, cam.camX, toScrP, (p) => zoomOf(cam, p), P, 1 - U.ease(t, T_PUSH0 - 1, T_PUSH0 + 1));
 
       /* ---------- the world loses its colour… ---------- */
-      Art.desaturate(ctx, dsat);
+      if (!preD) Art.desaturate(ctx, dsat);
       // bokeh: out-of-focus sunlight through the canopy, blooming as the background melts
       const bok = U.ease(t, T_PUSH0 + 1.2, T_PUSH1);
       if (bok > 0.01) {

@@ -67,7 +67,7 @@
   ];
   const shotAt = (t) => { let s = SHOTS[0]; for (const x of SHOTS) if (t >= x.t0) s = x; return s; };
   const HEAD = { x: ME_SX + 8, y: MEY - 200 };              // his head, for the rush-in
-  function camAt(t) {
+  function camAt(t, still) {
     const s = shotAt(t);
     let c;
     if (s.id === 'S1') c = { x: 905, y: 712, z: lerp(1.66, 1.71, U.ease(t, 0, 5.9)) };
@@ -80,11 +80,19 @@
       const z = lerp(1.66, 1.71, U.ease(t, 22, 27.75));
       c = { x: lerp(905, HEAD.x, U.ease(t, 27.75, MIND - 0.15, 'inOutCubic')), y: lerp(712, HEAD.y, U.ease(t, 27.75, MIND - 0.15, 'inOutCubic')), z: z * Math.pow(7, k) };
     }
-    const sh = Art.shake(t, 0.35, 8);
-    c.x += sh.x / c.z; c.y += sh.y / c.z;
+    if (!still) {
+      const sh = Art.shake(t, 0.35, 8);
+      c.x += sh.x / c.z; c.y += sh.y / c.z;
+    }
     c.id = s.id;
     return c;
   }
+  // each shot's rest camera (mid-shot, no drift; S5's is the two-shot before the rush)
+  const refCam = (id) => {
+    const i = SHOTS.findIndex((s) => s.id === id);
+    const t1 = id === 'S5' ? 27.75 : SHOTS[i + 1].t0;
+    return camAt((SHOTS[i].t0 + t1) / 2, true);
+  };
 
   /* ----------------------------------------------------------- dialogue */
   const TALK = [
@@ -111,9 +119,22 @@
       else Art.pine(c, x, yy, h, col, { light: o.light, w: 0.4 * (0.85 + r2 * 0.3) });
     }
   };
+  // Art.clouds' layout (seed 6, offset 120), minus the cloud that doubled up
+  // with its neighbour right behind the summit's tip: the peak and its
+  // promise-glow now stand against one soft cloud instead of two tangled outlines
+  // (07 and 08 share this sky — keep them identical)
+  function skyClouds(c, P) {
+    const seed = 6, span = W + 900, color = U.mix(P.sky[1], P.sky[0], 0.35), shade = U.mix(P.sky[2], P.haze, 0.35);
+    for (let i = 0; i < 5; i++) {
+      if (i === 3) continue;
+      const x = ((((U.hash(i, seed) * span - 120) % span) + span) % span) - 450;
+      const s = 1.15 * (0.6 + U.hash(i, seed + 2) * 0.8);
+      Art.cloud(c, x, lerp(190, 360, U.hash(i, seed + 1)), s, color, 0.5 * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13, shade);
+    }
+  }
   const LAYERS = [
     { id: 'clouds', d: 0.05, r: [-560, 40, 2560, 540], draw(c, P, x0, x1) {
-      Art.clouds(c, { seed: 6, count: 5, y0: 190, y1: 360, offset: 120, color: U.mix(P.sky[1], P.sky[0], 0.35), shade: U.mix(P.sky[2], P.haze, 0.35), alpha: 0.5, scale: 1.15 });
+      skyClouds(c, P);
     } },
     { id: 'far', d: 0.09, r: [-60, 140, 2040, 1110], draw(c, P, x0, x1) {
       Art.ridge(c, { seed: 21, y: 660, amp: 180, color: U.mix(P.far, P.sky[1], 0.4), x0: x0 - 40, x1: x1 + 40, bottom: 1300 });
@@ -151,23 +172,127 @@
     }
     return cv;
   }
+  // these small caches don't depend on the output resolution: build them at
+  // load so the scene's first frames don't hitch (lazily, if this ever fails)
+  try { for (const L of LAYERS) { layerCanvas(L, 0); layerCanvas(L, 1); } } catch (e) { /* built on first use */ }
+  // Cost control (software raster pays per destination pixel, ~3x more for
+  // 'high' smoothing). Dusk → blue hour is a linear blend of two palettes, so
+  // every cached plate exists twice (P0, P1) and is mixed by m = nightK(t):
+  //  · sky (gradient + low sun): padded full-res plates blitted at whole pixels;
+  //  · clouds: the two small caches are mixed off-screen, drawn once (bilinear);
+  //  · far/mid/trees: flattened once per shot into half-res plates, mixed
+  //    off-screen each frame and re-projected with one scale+offset at a mid
+  //    depth (the slow push-ins move the layers < 2% relative to one another).
+  const baseK = () => (Art._base && Art._base.a) || 1;
+  const SKY_PAD = 64, SKY_H = 860;               // below ~700 px the far ridge's fill always covers the sky
+  function skyPlate(set) {
+    const k = baseK();
+    const w = Math.ceil((W + 2 * SKY_PAD) * k), h = Math.ceil((SKY_H + SKY_PAD) * k);
+    const cv = Art.canvas('a5h:sky' + set, w, h);
+    const key = w + 'x' + h;
+    if (built['sky' + set] !== key) {
+      const c = cv.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.setTransform(k, 0, 0, k, SKY_PAD * k, SKY_PAD * k);
+      const P = set ? P1 : P0;
+      Art.sky(c, P, { horizon: 790 });
+      Art.glow(c, 250, 780, 900, P.sun, 0.22 * (set ? 0.4 : 1));   // blends to 0.22·(1 − 0.6m)
+      built['sky' + set] = key;
+    }
+    return cv;
+  }
+  const PLATE_R = 0.5, PM = 48, DREF = 0.35;
+  function layerPlate(id, set) {
+    const r = PLATE_R * baseK();
+    const w = Math.ceil((W + 2 * PM) * r), h = Math.ceil((H + 2 * PM) * r);
+    const cv = Art.canvas('a5h:plate' + set, w, h);
+    const key = id + ':' + w + 'x' + h;
+    if (built['plate' + set] !== key) {
+      const c0 = refCam(id);
+      const c = cv.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'low';
+      for (const L of LAYERS) {
+        if (L.id === 'clouds') continue;           // clouds drift: drawn live
+        c.setTransform(r, 0, 0, r, PM * r, PM * r);
+        applyCam(c, c0, L.d);
+        const [x0, y0, x1, y1] = L.r;
+        c.drawImage(layerCanvas(L, set), x0, y0, x1 - x0, y1 - y0);
+      }
+      built['plate' + set] = key;
+      built['plateCam' + set] = c0;
+    }
+    return cv;
+  }
+  // off-screen mix of a P0/P1 pair: P1 laid over P0 at m (as drawing both would)
+  function mixed(key, a, b, m) {
+    if (m <= 0.004) return a;
+    if (m >= 0.996) return b;
+    const cv = Art.canvas(key, a.width, a.height);
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = 'copy';
+    c.drawImage(a, 0, 0);
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = m;
+    c.drawImage(b, 0, 0);
+    c.globalAlpha = 1;
+    return cv;
+  }
   function drawBackdrop(ctx, P, cam, t) {
+    const m = nightK(t);
+    const k = baseK();
+    // sky: the depth-0.03 view barely zooms (≤ 4%); blit anchored at the low sun / horizon
+    const kd = camD(cam, 0.03);
+    const ox = 960 + (250 - kd.x) * kd.z - 250, oy = 540 + (790 - kd.y) * kd.z - 790;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    const sx = Math.round((ox - SKY_PAD) * k), sy = Math.round((oy - SKY_PAD) * k);
+    if (m < 0.996) ctx.drawImage(skyPlate(0), sx, sy);
+    if (m > 0.004) { ctx.globalAlpha = m < 0.996 ? m : 1; ctx.drawImage(skyPlate(1), sx, sy); }
+    ctx.restore();
     ctx.save();
     applyCam(ctx, cam, 0.03);
-    Art.sky(ctx, P, { horizon: 790 });
-    Art.glow(ctx, 250, 780, 900, P.sun, 0.22 * (1 - 0.6 * nightK(t)));
-    Art.stars(ctx, { seed: 17, count: 90, t, alpha: 0.42 + 0.5 * nightK(t), y0: -60, y1: 420, x0: -100, x1: W + 100 });
+    Art.stars(ctx, { seed: 17, count: 90, t, alpha: 0.42 + 0.5 * m, y0: -60, y1: 420, x0: -100, x1: W + 100 });
     ctx.restore();
-    const m = nightK(t);
-    for (const L of LAYERS) {
+    // clouds keep drifting from 07
+    const CL = LAYERS[0];
+    const cl = m > 0.004 ? mixed('a5h:cloudmix', layerCanvas(CL, 0), layerCanvas(CL, 1), m) : layerCanvas(CL, 0);
+    ctx.save();
+    applyCam(ctx, cam, CL.d);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(cl, CL.r[0] - (37.2 + t) * 4, CL.r[1], CL.r[2] - CL.r[0], CL.r[3] - CL.r[1]);
+    ctx.restore();
+    if (t > 27.75) {
+      // the rush into his head zooms ×7: one flat plate would lose the depth, so the
+      // layers go individually (at the rush's first frame the plate is exact: no seam)
+      for (const L of LAYERS) {
+        if (L.id === 'clouds') continue;
+        const lc = mixed('a5h:mix:' + L.id, layerCanvas(L, 0), layerCanvas(L, 1), m);
+        ctx.save();
+        applyCam(ctx, cam, L.d);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'low';
+        ctx.drawImage(lc, L.r[0], L.r[1], L.r[2] - L.r[0], L.r[3] - L.r[1]);
+        ctx.restore();
+      }
+    } else {
+      // far ridge + summit, mid ridge, two tree bands: this shot's plate
+      const p0 = m < 0.996 ? layerPlate(cam.id, 0) : null;
+      const pl = m <= 0.004 ? p0 : m >= 0.996 ? layerPlate(cam.id, 1) : mixed('a5h:platemix', p0, layerPlate(cam.id, 1), m);
+      const kr = camD(cam, DREF), k0 = camD(built[m >= 0.996 ? 'plateCam1' : 'plateCam0'], DREF);
+      const A = kr.z / k0.z;
+      const bx = 960 * (1 - A) + (k0.x - kr.x) * kr.z, by = 540 * (1 - A) + (k0.y - kr.y) * kr.z;
       ctx.save();
-      applyCam(ctx, cam, L.d);
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      const [x0, y0, x1, y1] = L.r;
-      const dx = L.id === 'clouds' ? -(37.2 + t) * 4 : 0;   // clouds keep drifting from 07
-      ctx.drawImage(layerCanvas(L, 0), x0 + dx, y0, x1 - x0, y1 - y0);
-      if (m > 0.01) { ctx.globalAlpha = m; ctx.drawImage(layerCanvas(L, 1), x0 + dx, y0, x1 - x0, y1 - y0); }
+      ctx.imageSmoothingQuality = 'low';
+      ctx.drawImage(pl, bx - PM * A, by - PM * A, (W + 2 * PM) * A, (H + 2 * PM) * A);
       ctx.restore();
     }
     ctx.save(); applyCam(ctx, cam, 0.09);
@@ -275,6 +400,7 @@
       { side: -1, t0: HEADS0, t1: HEADS1 + 0.15, turn: 0.55, facing: -1 },
       { side: 1, t0: HEADS0 + 0.25, t1: HEADS1, turn: 0.2, facing: 1 },
     ];
+    const drawn = [];
     for (const s of specs) {
       if (t < s.t0 || t > s.t1 + 0.3) continue;
       const kin = U.ease(t, s.t0, s.t0 + 0.42, 'outBack');
@@ -283,7 +409,9 @@
       if (k <= 0.01) continue;
       const wob = Math.exp(-4 * Math.max(0, t - s.t0)) * Math.sin((t - s.t0) * 18) * 0.25;
       const tilt = s.side * (0.38 + wob) + Math.sin(t * 2.3 + s.side) * 0.04 + (U.bump(t, 19.35, 0.35) * 0.18 * s.side);
-      const hx = hd.x + s.side * r * 1.58 * k, hy = hd.y + r * (0.5 + (1 - k) * 0.9);
+      // far enough out that all three beaming faces read whole (the centre head
+      // overlaps them only at the beanie brims), each on its own neck
+      const hx = hd.x + s.side * r * 2.0 * k, hy = hd.y + r * (0.34 + (1 - k) * 1.0);
       // neck, from the collar to the new head
       const nx = sh.x + s.side * r * 0.45 - (s.side < 0 ? r * 0.25 : 0), ny = sh.y + r * 0.1;
       c.strokeStyle = U.shade(look.skin, -0.12);
@@ -291,7 +419,9 @@
       c.lineWidth = 15 * a.scale * Math.min(1, k * 1.3);
       c.beginPath(); c.moveTo(nx, ny); c.quadraticCurveTo(lerp(nx, hx, 0.5) + s.side * r * 0.2, lerp(ny, hy, 0.6), hx - s.side * r * 0.1, hy + r * 0.55); c.stroke();
       Art.head(c, hx, hy, r * clamp(k, 0, 1.2), look, { eyes: 'sparkle', smile: 1, open: 0.45 + 0.1 * Math.sin(t * 6 + s.side), blush: 0.5, browUp: 0.4, blink: U.bump(t, 19.9, 0.09) }, { facing: s.facing, turn: s.turn, t, tilt: tilt * s.facing, seed: 5 + s.side });
+      drawn.push({ x: hx, y: hy, r: r * clamp(k, 0, 1.2) });
     }
+    return drawn;
   }
   function drawMe(c, P, t) {
     const look = lit('me', tintOf(P), 0.12 + 0.05 * nightK(t), 0.18);
@@ -309,11 +439,14 @@
       face, armF: [A[0], A[1]], armB: [A[2], A[3]], shadow: false,
     };
     // during the gag: anchors first (the extra heads sit behind him), then him
+    let extra = [];
     if (t > HEADS0 - 0.05 && t < HEADS1 + 0.7) {
       const probe = Art.person(c, Object.assign({}, o, { alpha: 0, shadow: false }));
-      extraHeads(c, probe, look, t);
+      extra = extraHeads(c, probe, look, t);
     }
-    return Art.person(c, o);
+    const a = Art.person(c, o);
+    a.extra = extra;
+    return a;
   }
 
   /* ------------------------------------------------------------- hikers */
@@ -375,15 +508,18 @@
     ctx.fill();
     ctx.restore();
   }
-  function sparkles(ctx, hd, t, n, a, seed) {
+  // avoid: heads {x,y,r} a sparkle must not sit on (they dim out over a face)
+  function sparkles(ctx, hd, t, n, a, seed, avoid) {
     for (let i = 0; i < n; i++) {
       const per = 1.6 + U.hash(i, seed + 5) * 1.2;
       const ph = U.fract(t / per + U.hash(i, seed + 6));
-      const life = Math.sin(ph * Math.PI);
+      let life = Math.sin(ph * Math.PI);
       let ang = -2.8 + U.hash(i, seed + 7) * 3.1;
       if (Math.abs(ang + 1.62) < 0.34) ang += ang < -1.62 ? -0.34 : 0.34;   // keep clear of the pompom
       const rr = hd.r * (1.6 + U.hash(i, seed + 8) * 0.9) + ph * 10;
-      sparkle(ctx, hd.x + Math.cos(ang) * rr, hd.y + Math.sin(ang) * rr * 0.9, (4 + U.hash(i, seed + 9) * 6) * life, life * a, t * 0.6 + i, '#ffe7a8');
+      const x = hd.x + Math.cos(ang) * rr, y = hd.y + Math.sin(ang) * rr * 0.9;
+      if (avoid) for (const o of avoid) life *= U.smooth((Math.hypot(x - o.x, y - o.y) - o.r * 1.05) / (o.r * 0.5));
+      sparkle(ctx, x, y, (4 + U.hash(i, seed + 9) * 6) * life, life * a, t * 0.6 + i, '#ffe7a8');
     }
   }
   function shadow(ctx, x, y, w, a = 0.3) {
@@ -403,6 +539,71 @@
   }
 
   /* ------------------------------------------------------------ bubbles */
+  // Dialogue balloons. Art.bubble keeps its full-size box while the text types
+  // on (long lines sit in a big, mostly empty balloon) and pops by scaling that
+  // empty box about its centre (a faint ghost far from the speaker). These are
+  // laid out exactly like Art.bubble — same font, wrap, padding, colours, tail,
+  // shadow, timing — but the box hugs the text typed so far, opening right and
+  // down from its final top-left corner (the words never move), and it springs
+  // out of the tail tip at the speaker's mouth.
+  const BAL = { size: 34, padX: 28, padY: 20 };
+  function balloon(ctx, t, t0, t1, text, o) {
+    const alpha = U.fade(t, t0, t1, 0.12, 0.35);
+    if (alpha <= 0.003) return;
+    const { size, padX, padY } = BAL, lh = size * 1.22;
+    ctx.save();
+    ctx.font = Art.font(size, 'sans', 800);
+    const lines = Art.wrap(ctx, text, o.maxW);
+    const widths = lines.map((l) => ctx.measureText(l).width);
+    const tw = Math.max(...widths);
+    const bw = tw + padX * 2, bh = lines.length * lh + padY * 2;
+    const L = o.x - bw / 2, T = o.y - bh / 2;
+    const total = lines.reduce((n, l) => n + l.length, 0);
+    const typeDur = Math.min(2.4, 0.15 + text.length * 0.032);
+    const n = U.prog(t, t0 + 0.08, t0 + 0.08 + typeDur) * total;
+    // the extent of what's been typed (fractional: the box edge leads the letters)
+    let cw = 0, rows = 1, s = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0 && n <= s) break;
+      const typed = clamp(n - s, 0, lines[i].length), k = Math.floor(typed);
+      const w0 = ctx.measureText(lines[i].slice(0, k)).width;
+      const w1 = k < lines[i].length ? ctx.measureText(lines[i].slice(0, k + 1)).width : w0;
+      cw = Math.max(cw, (tw - widths[i]) / 2 + lerp(w0, w1, typed - k));
+      if (i > 0) rows = i + U.smooth(clamp((n - s) / 1.5));   // a new row opens over ~1.5 letters
+      s += lines[i].length;
+    }
+    const w = Math.max(cw + padX * 2, padX * 2 + 16), h = rows * lh + padY * 2;
+    const tx = o.tx, ty = o.ty;
+    const pop = U.prog(t, t0, t0 + 0.32);
+    const sc = lerp(0.5, 1, U.E.outBack(pop));
+    ctx.globalAlpha *= alpha * clamp(pop * 4);
+    ctx.translate(tx, ty); ctx.scale(sc, sc); ctx.translate(-tx, -ty);
+    ctx.shadowColor = 'rgba(0,0,0,0.28)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#fffaf1';
+    Art.roundRect(ctx, L, T, w, h, Math.min(30, h / 2));
+    ctx.fill();
+    const m = Math.min(40, w / 2), ax = clamp(tx, L + m, L + w - m);
+    const below = ty > T + h / 2, by = below ? T + h - 2 : T + 2;
+    ctx.beginPath();
+    ctx.moveTo(ax - 18, by);
+    ctx.quadraticCurveTo(lerp(ax, tx, 0.5) - 4, lerp(by, ty, 0.55), tx, ty);
+    ctx.quadraticCurveTo(lerp(ax, tx, 0.5) + 8, lerp(by, ty, 0.4), ax + 16, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#2b2530';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    let shown = Math.floor(n + 0.0001);
+    lines.forEach((line, i) => {
+      if (shown <= 0) return;
+      ctx.fillText(line.slice(0, shown), L + padX + (tw - widths[i]) / 2, T + padY + lh * (i + 0.5) + 1);
+      shown -= line.length;
+    });
+    ctx.restore();
+  }
   function bubbleSize(ctx, text, maxW) {
     ctx.save();
     ctx.font = Art.font(34, 'sans', 800);
@@ -417,7 +618,9 @@
     const f = sp.f, hr = sp.r;
     const tip = { x: sp.head.x + f * hr * 1.62, y: sp.mouth.y + 2 };
     const base = sp.head.x + f * hr * 2.65;
-    let x = f > 0 ? base - 40 + b.w / 2 : base + 40 - b.w / 2;
+    // every balloon opens away from its tail (it grows as the words type on), so a
+    // left-facing speaker's balloon starts just above the tail and runs over his head
+    let x = f > 0 ? base - 40 + b.w / 2 : tip.x - 52 + b.w / 2;
     x = clamp(x, b.w / 2 + 36, W - b.w / 2 - 36);
     let bottom = sp.top.y - 26;
     for (const o of heads) if (Math.abs(o.x - x) < b.w / 2 + o.r) bottom = Math.min(bottom, o.y - o.r - 22);
@@ -551,7 +754,7 @@
     const sq = hit ? 0.55 * Math.exp(-6 * (t - smack)) * Math.cos((t - smack) * 16) : -0.35 * antic;
     const sync = U.ease(t, 29.2, 29.7);
     const shake = t > 30.7 ? Math.sin((t - 30.7) * 5.2) * 0.055 * U.fade(t, 30.7, 33.4, 0.3, 0.9) : 0;
-    const mutter = U.fade(t, 32.7, 35.5, 0.3, 0.5);
+    const mutter = U.fade(t, 32.7, 36.2, 0.3, 0.6);
     for (const [name, i] of EMOS) {
       const seed = 3 + (i + 2) * 7;
       const x = EX(i);
@@ -602,12 +805,13 @@
     ctx.restore();
 
     // "They’ll never get it." — small, weary, handwritten
-    const rv = U.ease(t, 33.0, 34.4, 'linear');
+    // written on just as the narration ends, then held: the scene's own fade-out takes it
+    const rv = U.ease(t, 32.85, 34.1, 'linear');
     if (rv > 0) {
       ctx.save();
-      ctx.translate(960, 468 + U.ease(t, 33.0, 36.5) * 8);
+      ctx.translate(960, 468 + U.ease(t, 32.85, 37) * 8);
       ctx.rotate(-0.025);
-      Art.hand(ctx, 'They’ll never get it.', { x: 0, y: 0, size: 54, reveal: rv, color: '#f6dcc0', alpha: 0.9 * (1 - U.ease(t, 35.7, 36.7)), glow: 'rgba(255,170,120,0.35)' });
+      Art.hand(ctx, 'They’ll never get it.', { x: 0, y: 0, size: 54, reveal: rv, color: '#f6dcc0', alpha: 0.92, glow: 'rgba(255,170,120,0.35)' });
       ctx.restore();
     }
   }
@@ -667,12 +871,13 @@
 
       // sparkles: around him (and his extra heads)
       ctx.save(); applyCam(ctx, cam, 1);
-      sparkles(ctx, A.me.head, t, 8, 0.9, 0);
+      const faces = [A.me.head].concat(A.me.extra);
+      sparkles(ctx, A.me.head, t, 8, 0.9, 0, A.me.extra);
       if (t > HEADS0 && t < HEADS1 + 0.3) {
         const r = A.me.head.r;
         const k = U.fade(t, HEADS0 + 0.2, HEADS1 + 0.2, 0.3, 0.2);
-        sparkles(ctx, { x: A.me.head.x - r * 1.3, y: A.me.head.y + r * 0.4, r }, t, 5, k, 30);
-        sparkles(ctx, { x: A.me.head.x + r * 1.3, y: A.me.head.y + r * 0.4, r }, t, 5, k, 60);
+        sparkles(ctx, { x: A.me.head.x - r * 2.0, y: A.me.head.y + r * 0.34, r }, t, 5, k, 30, faces);
+        sparkles(ctx, { x: A.me.head.x + r * 2.0, y: A.me.head.y + r * 0.34, r }, t, 5, k, 60, faces);
       }
       Art.motes(ctx, { seed: 52, count: 14, x0: 300, x1: 2300, y0: 600, y1: 900, t: t + 37.2, color: '#fff0a8', size: 2.0, drift: 3, wander: 46, glow: 1, blink: 1, alpha: 0.9 });
       Art.motes(ctx, { seed: 53, count: 9, x0: 560, x1: 1100, y0: 640, y1: 900, t: t + 37.2, color: '#fff3b8', size: 2.2, drift: 2, wander: 38, glow: 1, blink: 1, alpha: 0.95 });
@@ -699,7 +904,7 @@
         const who = q[3].who;
         cues.push([q[0], q[1], q[2], Object.assign({ who }, place(ctx, q[2], sp(who), heads, who === 'me' ? 640 : 520))]);
       }
-      Art.bubbles(ctx, t, cues);
+      for (const q of cues) balloon(ctx, t, q[0], q[1], q[2], q[3]);
       Art.captions(ctx, t, NARR);
     },
   });

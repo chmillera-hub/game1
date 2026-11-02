@@ -37,7 +37,7 @@
       canvases.set(key, c);
     }
     w = Math.max(1, Math.ceil(w)); h = Math.max(1, Math.ceil(h));
-    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; c._gen = (c._gen || 0) + 1; }
     return c;
   };
   /** base transform (film space → backing pixels); set by the engine each frame */
@@ -64,7 +64,7 @@
     ctx.save();
     ctx.setTransform(base);
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = 'low';
     ctx.drawImage(c, 0, 0, W, H);
     ctx.restore();
   };
@@ -149,13 +149,15 @@
   };
   /** sun / moon disc with soft halo */
   Art.sun = (ctx, x, y, r, color, a = 1) => {
-    Art.glow(ctx, x, y, r * 9, color, 0.35 * a);
-    Art.glow(ctx, x, y, r * 3, color, 0.55 * a);
+    Art.glow(ctx, x, y, r * 9, color, 0.45 * a, 'screen');
+    Art.glow(ctx, x, y, r * 3, color, 0.75 * a, 'screen');
+    const core = U.mix(color, '#ffffff', 0.8);
     ctx.save();
     ctx.globalAlpha *= a;
-    ctx.fillStyle = U.shade(color, 0.35);
+    ctx.fillStyle = core;
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
     ctx.restore();
+    Art.glow(ctx, x, y, r * 1.7, core, 0.55 * a, 'screen');
   };
   /** twinkling star field */
   Art.stars = (ctx, { seed = 1, count = 220, t = 0, alpha = 1, y0 = 0, y1 = 700, x0 = 0, x1 = W, color = '#ffffff' } = {}) => {
@@ -179,21 +181,21 @@
     ctx.restore();
   };
   /** soft drifting clouds. offset scrolls them (use small parallax). */
-  Art.clouds = (ctx, { seed = 1, count = 6, y0 = 120, y1 = 360, offset = 0, color = '#ffffff', alpha = 0.6, scale = 1, shade = null } = {}) => {
+  Art.clouds = (ctx, { seed = 1, count = 6, y0 = 120, y1 = 360, offset = 0, color = '#ffffff', alpha = 0.6, scale = 1, shade = null, bg = null } = {}) => {
     const span = W + 900;
     for (let i = 0; i < count; i++) {
       const bx = U.hash(i, seed) * span;
       const x = ((((bx - offset) % span) + span) % span) - 450;
       const y = lerp(y0, y1, U.hash(i, seed + 1));
       const s = scale * (0.6 + U.hash(i, seed + 2) * 0.8);
-      Art.cloud(ctx, x, y, s, color, alpha * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13, shade);
+      Art.cloud(ctx, x, y, s, color, alpha * (0.6 + 0.4 * U.hash(i, seed + 3)), i + seed * 13, shade, bg);
     }
   };
-  Art.cloud = (ctx, x, y, s, color, a, seed = 0, shade = null) => {
+  Art.cloud = (ctx, x, y, s, color, a, seed = 0, shade = null, bg = null) => {
     ctx.save();
-    ctx.globalAlpha *= a;
+    let under = shade || U.shade(color, -0.12);
+    if (bg) { color = U.mix(bg, color, a); under = U.mix(bg, under, a); } else ctx.globalAlpha *= a;
     const n = 6;
-    const under = shade || U.shade(color, -0.12);
     // base (shadowed) lobes then lit lobes
     for (let pass = 0; pass < 2; pass++) {
       ctx.fillStyle = pass === 0 ? under : color;
@@ -522,7 +524,7 @@
     gr.addColorStop(0.35, U.rgba(color, 0.45));
     gr.addColorStop(1, U.rgba(color, 0));
     ctx.fillStyle = gr;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
     ctx.restore();
   };
   /** god rays fanning from (x,y) toward angle (radians; PI/2 = straight down) */
@@ -584,33 +586,45 @@
     ctx.fillRect(-W, y - h / 2, W * 3, h);
   };
   /** full-frame desaturation (uses the 'saturation' blend mode) */
-  Art.desaturate = (ctx, amt) => {
+  Art.desaturate = (ctx, amt, rect = null) => {
     if (amt <= 0.003) return;
     ctx.save();
     ctx.globalCompositeOperation = 'saturation';
     ctx.globalAlpha = clamp(amt);
     ctx.fillStyle = '#808080';
-    ctx.fillRect(-W, -H, W * 3, H * 3);
+    if (rect) ctx.fillRect(rect[0], rect[1], rect[2], rect[3]); else ctx.fillRect(-W, -H, W * 3, H * 3);
     ctx.restore();
   };
   /** full-frame color grade: 'color' blend toward a hue (sepia storybook, cold, etc.) */
-  Art.colorize = (ctx, color, amt, mode = 'color') => {
+  Art.colorize = (ctx, color, amt, mode = 'color', rect = null) => {
     if (amt <= 0.003) return;
     ctx.save();
     ctx.globalCompositeOperation = mode;
     ctx.globalAlpha = clamp(amt);
     ctx.fillStyle = color;
-    ctx.fillRect(-W, -H, W * 3, H * 3);
+    if (rect) ctx.fillRect(rect[0], rect[1], rect[2], rect[3]); else ctx.fillRect(-W, -H, W * 3, H * 3);
     ctx.restore();
   };
   /** radial vignette */
   Art.vignette = (ctx, amt = 0.4, color = '#000000') => {
     if (amt <= 0) return;
-    const gr = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 1.05);
-    gr.addColorStop(0, U.rgba(color, 0));
-    gr.addColorStop(1, U.rgba(color, clamp(amt)));
-    ctx.fillStyle = gr;
-    ctx.fillRect(0, 0, W, H);
+    const c = Art.canvas('vignette:' + color, 640, 360);
+    if (c._vg !== c._gen) {
+      const x = c.getContext('2d');
+      x.setTransform(640 / W, 0, 0, 360 / H, 0, 0);
+      x.clearRect(0, 0, W, H);
+      const gr = x.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 1.05);
+      gr.addColorStop(0, U.rgba(color, 0));
+      gr.addColorStop(1, U.rgba(color, 1));
+      x.fillStyle = gr;
+      x.fillRect(0, 0, W, H);
+      c._vg = c._gen;
+    }
+    ctx.save();
+    ctx.globalAlpha *= clamp(amt);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(c, 0, 0, W, H);
+    ctx.restore();
   };
   /** cinemascope bars; amt 0..1 */
   Art.letterbox = (ctx, amt = 1) => {
@@ -1309,6 +1323,14 @@
     strokeLimb(ctx, armF, 13.5, 12.5, look.shirt);
     ctx.fillStyle = look.skin;
     ctx.beginPath(); ctx.arc(armF.x2, armF.y2, 7.5, 0, TAU); ctx.fill();
+    if (o.gesture === 'point' || o.finger) {
+      const fa = armF.a2;
+      ctx.strokeStyle = look.skin; ctx.lineWidth = 4.6; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(armF.x2 + Math.sin(fa) * 3, armF.y2 + Math.cos(fa) * 3);
+      ctx.lineTo(armF.x2 + Math.sin(fa) * 15, armF.y2 + Math.cos(fa) * 15);
+      ctx.stroke();
+    }
     if (o.holdF) { ctx.save(); ctx.translate(armF.x2, armF.y2); o.holdF(ctx); ctx.restore(); }
     ctx.restore();
 
@@ -1324,6 +1346,9 @@
       hip: W_(hipX, hipY),
       feet: { x, y },
       scale: S,
+      facing,
+      seed,
+      headTilt: hTilt + lean * 0.3,
     };
   };
   function drawShoe(ctx, L, col) {
@@ -1745,15 +1770,32 @@
     const pop = o.pop === undefined ? 1 : clamp(o.pop);
     const sc = lerp(0.55, 1, U.E.outBack(pop));
     const bg = o.bg || '#fffaf1', fg = o.fg || '#2b2530';
-    ctx.globalAlpha *= alpha * clamp(pop * 3);
-    ctx.translate(x, y);
+    const L = x - bw / 2, T = y - bh / 2;
+    const reveal = o.reveal === undefined ? 1 : o.reveal;
+    // speech balloons hug the text as it types (growing from the final top-left so words never move)
+    let fw = bw, fh = bh;
+    if ((style === 'speech' || style === 'whisper') && o.fit !== false && reveal < 1) {
+      let rem = reveal * lines.reduce((n, l) => n + l.length, 0), cw = 0, rows = 0;
+      for (let i = 0; i < lines.length && rem > 0; i++) {
+        const ln = lines[i], k = Math.min(ln.length, rem), kk = Math.floor(k);
+        const lw = ctx.measureText(ln).width;
+        const part = ctx.measureText(ln.slice(0, kk)).width + (kk < ln.length ? (k - kk) * ctx.measureText(ln[kk]).width : 0);
+        cw = Math.max(cw, (tw - lw) / 2 + part);
+        rows = i + U.smooth(Math.min(1, k / 3));
+        rem -= ln.length;
+      }
+      fw = Math.min(bw, Math.max(cw + padX * 2, padX * 2 + 110));
+      fh = Math.min(bh, Math.max(1, rows) * lh + padY * 2);
+    }
+    // pop springs out of the tail tip
+    ctx.globalAlpha *= alpha * clamp(pop * 4);
+    ctx.translate(tx, ty);
     ctx.scale(sc, sc);
-    ctx.translate(-x, -y);
+    ctx.translate(-tx, -ty);
     ctx.shadowColor = 'rgba(0,0,0,0.28)';
     ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 6;
     ctx.fillStyle = bg;
-    const L = x - bw / 2, T = y - bh / 2;
     if (style === 'thought') {
       ctx.beginPath();
       const n = Math.max(8, Math.round((bw + bh) / 46));
@@ -1783,12 +1825,13 @@
       ctx.closePath();
       ctx.fill();
     } else {
-      roundRect(ctx, L, T, bw, bh, Math.min(30, bh / 2));
+      roundRect(ctx, L, T, fw, fh, Math.min(30, fh / 2));
       ctx.fill();
       // tail
-      const ax = clamp(tx, L + 40, L + bw - 40);
-      const below = ty > y;
-      const by = below ? T + bh - 2 : T + 2;
+      const inset = Math.min(40, fw / 2);
+      const ax = clamp(tx, L + inset, L + fw - inset);
+      const below = ty > T + fh / 2;
+      const by = below ? T + fh - 2 : T + 2;
       ctx.beginPath();
       ctx.moveTo(ax - 18, by);
       ctx.quadraticCurveTo(lerp(ax, tx, 0.5) - 4, lerp(by, ty, 0.55), tx, ty);
@@ -1800,14 +1843,13 @@
         ctx.setLineDash([8, 7]);
         ctx.strokeStyle = U.rgba(fg, 0.5);
         ctx.lineWidth = 2;
-        roundRect(ctx, L + 6, T + 6, bw - 12, bh - 12, Math.min(24, bh / 2));
+        roundRect(ctx, L + 6, T + 6, fw - 12, fh - 12, Math.min(24, fh / 2));
         ctx.stroke();
         ctx.setLineDash([]);
       }
     }
     ctx.shadowColor = 'transparent';
     // text with typewriter reveal
-    const reveal = o.reveal === undefined ? 1 : o.reveal;
     const total = lines.reduce((n, l) => n + l.length, 0);
     let shown = Math.floor(reveal * total + 0.0001);
     ctx.fillStyle = fg;
@@ -1821,7 +1863,7 @@
       ctx.fillText(part, x - lw / 2, T + padY + lh * (i + 0.5) + (fam === 'hand' ? 2 : 1));
     });
     ctx.restore();
-    return { x: L, y: T, w: bw, h: bh };
+    return { x: L, y: T, w: bw, h: bh, cur: { w: fw, h: fh } };
   };
   /**
    * schedule bubbles: cues = [[t0, t1, text, {x,y,tx,ty,who,...}], ...]

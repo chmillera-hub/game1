@@ -185,6 +185,42 @@
     if (hy > y0) g.fillRect(0, y0, W, hy - y0);
     if (hy < H) rect(g, P.sky[2], 0, hy, W, H - hy);
   };
+  /** colour of TK.sky's gradient at screen y */
+  TK.skyColor = (P, hy, y) => {
+    const k = clamp((y - (hy - 840)) / 840);
+    return k < 0.55 ? U.mix(P.sky[0], P.sky[1], k / 0.55) : U.mix(P.sky[1], P.sky[2], (k - 0.55) / 0.45);
+  };
+  /** sun / moon that stays clean on a pale sky. Art.sun's additive halos clip the blue
+      channel first and leave a cyan ring; these 'screen' halos can't clip. The disc is drawn
+      at `disc` alpha (default a) — draw Art.rays BEFORE this so no ray wedge shows on the disc. */
+  TK.sun = (g, x, y, r, color, a = 1, disc = a) => {
+    Art.glow(g, x, y, r * 9, color, 0.5 * a, 'screen');
+    Art.glow(g, x, y, r * 3, color, 0.8 * a, 'screen');
+    if (disc <= 0.003) return;
+    g.save();
+    g.globalAlpha *= clamp(disc);
+    g.fillStyle = U.shade(color, 0.35);
+    g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    g.restore();
+  };
+  /** Art.clouds' layout and look, but every cloud is opaque with its colours pre-mixed into
+      the sky behind it (skyAt(y) → colour), so overlapping clouds never show each other's
+      outlines through them. Same options as Art.clouds. */
+  TK.clouds = (g, o, skyAt) => {
+    const span = W + 900, seed = o.seed || 1, count = o.count || 6, scale = o.scale || 1;
+    const alpha = o.alpha === undefined ? 0.6 : o.alpha, off = o.offset || 0;
+    const under = o.shade || U.shade(o.color, -0.12);
+    for (let i = 0; i < count; i++) {
+      const x = ((((U.hash(i, seed) * span - off) % span) + span) % span) - 450;
+      const y = lerp(o.y0, o.y1, U.hash(i, seed + 1));
+      const s = scale * (0.6 + U.hash(i, seed + 2) * 0.8);
+      if (y + 120 * s < 0 || y - 120 * s > H) continue;
+      const a = clamp(alpha * (0.6 + 0.4 * U.hash(i, seed + 3)));
+      const bg = skyAt(y);
+      // a translucent cloud = rim (under lobes at a) + body (under then lit lobes, each at a)
+      Art.cloud(g, x, y, s, U.mix(bg, U.mix(under, o.color, 1 / (2 - a)), a * (2 - a)), 1, i + seed * 13, U.mix(bg, under, a));
+    }
+  };
   /** far mountains + THE summit, in layer coordinates designed for the rest frame */
   TK.backdrop = (g, P, o = {}) => {
     const t = o.t || 0, y = o.y === undefined ? 520 : o.y;
@@ -497,7 +533,7 @@
     g.font = Art.font(64, 'hand', 700);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     const text = 'Embarrassment’s Flowers';
-    const k = Math.min(1, 452 / g.measureText(text).width);
+    const k = Math.min(1, 424 / g.measureText(text).width);   // leaves air before the flower icons
     g.translate(4, -521); g.scale(k, k);
     g.fillStyle = '#170f0d'; g.fillText(text, 2.5, 3.5);
     g.fillStyle = C.sign; g.fillText(text, 0, 0);
@@ -714,7 +750,8 @@
   // town camera: x, zoom, and the screen y of the street line
   const CX = [[0, 1090], [1.0, 1030], [2.3, 410], [4.4, 460], [5.8, 800], [7.2, 850], [8.5, 1235], [9.8, 1280], [10.5, 1420], [11.8, 1800], [13.1, 1830]];
   const CZ = [[0, 0.74], [1.0, 0.77], [2.3, 1.2], [4.4, 1.2], [5.8, 1.22], [7.2, 1.2], [8.5, 1.2], [9.8, 1.12], [10.5, 0.94], [11.8, 1.2], [13.1, 1.21]];
-  const CG = [[0, 905], [7.2, 905], [8.5, 972], [9.8, 958], [10.5, 905], [13.1, 905]];
+  // screen y of the street line: kept low enough that people on the square keep their feet
+  const CG = [[0, 905], [7.2, 905], [8.5, 909], [9.8, 908], [10.5, 905], [13.1, 905]];
   const townCam = (t) => {
     const z = TK.path(t, CZ), x = TK.path(t, CX), gy = TK.path(t, CG);
     return { x, y: GY - (gy - 540) / z, z };
@@ -1040,7 +1077,12 @@
     for (let x = 0; x <= w; x += 68) g.fillRect(x - 4, -300, 8, 266);
     g.fillRect(0, -304, w, 9); g.fillRect(0, -168, w, 9); g.fillRect(0, -40, w, 8);
     g.strokeStyle = beam; g.lineWidth = 7;
-    for (let x = 0; x < w; x += 136) { g.beginPath(); g.moveTo(x + 4, -176); g.lineTo(x + 64, -296); g.moveTo(x + 132, -176); g.lineTo(x + 72, -296); g.stroke(); }
+    // braces: an inverted V across each pair of bays, a single diagonal in the odd last bay
+    for (let x = 0; x < w; x += 136) {
+      g.beginPath(); g.moveTo(x + 4, -176); g.lineTo(x + 64, -296);
+      if (x + 132 <= w) { g.moveTo(x + 132, -176); g.lineTo(x + 72, -296); }
+      g.stroke();
+    }
     for (let i = 0; i < 5; i++) {
       const wx = 34 + i * 68;
       if (i === 2) { rrect(g, '#6b4a36', wx - 30, -152, 60, 112, 26); rect(g, U.shade('#6b4a36', 0.15), wx - 2, -148, 4, 104); continue; }
@@ -1232,19 +1274,26 @@
   function drawSky(ctx, t, P, tilt) {
     // the sky sits at "infinity": during the crane it slides at 0.45× so the warm lower
     // bands of the gradient stay in frame while we look up through the time-lapse
-    const st = tilt * 0.45;
-    TK.sky(ctx, P, 760 + st);
+    const st = tilt * 0.45, hy = 760 + st;
+    TK.sky(ctx, P, hy);
+    const skyAt = (y) => TK.skyColor(P, hy, y);
     const lapse = U.prog(t, T.lapse[0], T.lapse[1]);
     const night = U.bump(lapse, 0.5, 0.2);
     if (night > 0) Art.stars(ctx, { seed: 10, count: 240, t, alpha: night, y0: 0, y1: H });
+    // sun and moon live in sky coordinates (screen y = sky y + st) on one continuous path: the
+    // morning sun arcs over and sets right, the moon crosses, dawn brings the sun back up to
+    // exactly where it started — no jumps when the time-lapse starts or ends
+    const daySun = (x, ys, raysA) => {
+      if (raysA > 0.003) Art.rays(ctx, { x, y: ys + st, angle: 0.62, spread: 0.55, count: 6, len: 1700, color: P.light, alpha: 0.05 * raysA, t, seed: 4 });
+      TK.sun(ctx, x, ys + st, 36, P.sun, 0.75, 1);
+    };
     if (lapse > 0 && lapse < 1) {
-      const s1 = U.prog(lapse, 0, 0.34), mo = U.prog(lapse, 0.34, 0.68), s2 = U.prog(lapse, 0.66, 1);
-      if (s1 < 1) Art.sun(ctx, lerp(820, 2060, s1), lerp(300, 900, s1 * s1), 42, P.sun, 1 - s1 * 0.5);
-      if (mo > 0 && mo < 1) Art.sun(ctx, lerp(-100, 2020, mo), 820 - Math.sin(mo * Math.PI) * 560, 30, '#eef2ff', Math.sin(mo * Math.PI));
-      if (s2 > 0) Art.sun(ctx, lerp(-100, 640, s2), lerp(960, 300, U.E.outSine(s2)), 42, P.sun, s2);
-    } else if (t < T.lapse[0]) {
-      Art.sun(ctx, 250, 250 + st, 36, P.sun, 0.75);
-      Art.rays(ctx, { x: 250, y: 250 + st, angle: 0.62, spread: 0.55, count: 6, len: 1700, color: P.light, alpha: 0.05, t, seed: 4 });
+      const s1 = U.prog(lapse, 0, 0.34), mo = U.prog(lapse, 0.34, 0.68), s2 = U.E.outSine(U.prog(lapse, 0.66, 1));
+      if (s1 < 1) daySun(lerp(250, 2080, s1), lerp(250, 720, s1) - Math.sin(s1 * Math.PI) * 620, 1 - U.prog(s1, 0, 0.3));
+      if (mo > 0 && mo < 1) TK.sun(ctx, lerp(-120, 2040, mo), 720 - Math.sin(mo * Math.PI) * 1060 + st, 30, '#eef2ff', Math.sin(mo * Math.PI));
+      if (s2 > 0) daySun(lerp(-120, 250, s2), lerp(720, 250, s2), U.prog(s2, 0.75, 1));
+    } else {
+      daySun(250, 250, 1);
     }
     // a few birds crossing over the town
     for (let i = 0; i < 4; i++) {
@@ -1258,11 +1307,11 @@
     const nightK = U.bump(lapse, 0.5, 0.26);
     const cc = U.mix(U.mix('#ffffff', P.sky[2], 0.3), '#4a5378', nightK * 0.9);
     const off = t * 10 + U.ease(t, T.lapse[0] - 0.3, T.lapse[1] + 0.3, 'inOutSine') * 3600;
-    Art.clouds(ctx, { seed: 6, count: 5, y0: 150 + st, y1: 230 + st, offset: off, color: cc, alpha: 0.72, scale: 0.62 });
-    // high clouds, only seen while the camera looks up into the sky
-    if (tilt > 300) {
-      Art.clouds(ctx, { seed: 12, count: 6, y0: -470 + st, y1: -250 + st, offset: off * 1.25, color: cc, alpha: 0.8, scale: 1.0 });
-      Art.clouds(ctx, { seed: 15, count: 5, y0: -170 + st, y1: 40 + st, offset: off * 0.9, color: U.mix(cc, P.sky[1], 0.3), alpha: 0.72, scale: 0.8 });
+    TK.clouds(ctx, { seed: 6, count: 5, y0: 150 + st, y1: 230 + st, offset: off, color: cc, alpha: 0.72, scale: 0.62 }, skyAt);
+    // high clouds, seen while the camera looks up into the sky (TK.clouds culls off-frame ones)
+    if (tilt > 1) {
+      TK.clouds(ctx, { seed: 12, count: 6, y0: -470 + st, y1: -250 + st, offset: off * 1.25, color: cc, alpha: 0.8, scale: 1.0 }, skyAt);
+      TK.clouds(ctx, { seed: 15, count: 5, y0: -170 + st, y1: 40 + st, offset: off * 0.9, color: U.mix(cc, P.sky[1], 0.3), alpha: 0.72, scale: 0.8 }, skyAt);
     }
   }
 

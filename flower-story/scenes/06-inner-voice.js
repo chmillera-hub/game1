@@ -52,6 +52,7 @@
   const GLINT = 2.3;                                 // "…caught my eye…": the flower twinkles at him
   const SAY1 = 'Let’s stop the current activity';
   const SAY2 = 'and ask ourselves—what does this flower mean to me?';
+  const SAY2_SHOWN = SAY2.replace('—', '—\n');      // keep the question whole on its own line
 
   /* ---------------- offscreen helpers (local; scenes may not share code) ---------------- */
   const POOL = new Map();
@@ -104,6 +105,7 @@
   }
   const camLerp = (a, b, k) => ({ x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), z: Math.exp(lerp(Math.log(a.z), Math.log(b.z), k)) });
   const toScreen = (c, x, y) => ({ x: W / 2 + (x - c.x) * c.z, y: H / 2 + (y - c.y) * c.z });
+  const PIC0 = 138, PIC1 = 942;                       // the picture between the letterbox bars (big fills stop here)
 
   /* ======================================================================
      THE GOLDEN WORLD
@@ -187,6 +189,24 @@
   const PACK_TOP = { x: MX - 30, y: MY - 99 };
   const HEAD_C = { x: MX + 12, y: MY - 158 };
 
+  /**
+   * Kit workaround: the beanie's pom-pom is drawn 1.3 units clear of the crown (it floats; the gap
+   * grows with zoom). Seat it with a short gathered neck in the beanie colour, pom-pom on top.
+   * an = Art.person anchors, o = the options it was drawn with (sitting pose: no pose lean).
+   */
+  const BEANIE = Art.CAST.me.hatColor, POM = U.shade(Art.CAST.me.hatColor, 0.12);
+  function seatPom(ctx, an, o) {
+    const S = an.scale, R = an.head.r / S;
+    const rot = ((o.head && o.head.tilt) || 0) + (o.lean || 0) * 0.3;
+    ctx.save();
+    ctx.translate(an.head.x, an.head.y); ctx.rotate(rot); ctx.scale(S, S);
+    ctx.fillStyle = BEANIE;
+    // from the crown (−R−5.2 here) up into the pom-pom (bottom −R−6.5), gathered toward it
+    ctx.beginPath(); ctx.moveTo(-11, -R - 2); ctx.quadraticCurveTo(-8, -R - 5, -8.5, -R - 10); ctx.lineTo(-3.5, -R - 10); ctx.quadraticCurveTo(-4, -R - 5, -1, -R - 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = POM;
+    ctx.beginPath(); ctx.arc(-6, -R - 14, 7.5, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
   /** draw him with a warm rim light from the low sun behind the flower */
   function drawMe(ctx, t, z) {
     ctx.fillStyle = 'rgba(30,22,10,0.24)';
@@ -207,23 +227,29 @@
     const x = c.getContext('2d');
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
-    x.clearRect(0, 0, w + 2, h + 2);
+    x.clearRect(0, 0, w + 10, h + 10);                  // (+10: the rim pass samples a few px past w)
     x.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
     const an = Art.person(x, o);
+    seatPom(x, an, o);
     x.setTransform(1, 0, 0, 1, 0, 0);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(c, 0, 0, w, h, x0, y0, w, h);
     ctx.restore();
     // rim: the silhouette shifted toward the light, minus itself
+    // (every pass is limited to the used w×h window: the pooled canvases can be much larger)
     const rc = pooled('me6rim', c.width, c.height), rx = rc.getContext('2d');
     rx.setTransform(1, 0, 0, 1, 0, 0);
     rx.globalAlpha = 1; rx.globalCompositeOperation = 'source-over';
-    rx.clearRect(0, 0, w + 2, h + 2);
-    rx.drawImage(c, 0, 0);
+    rx.save();
+    rx.beginPath(); rx.rect(0, 0, w, h); rx.clip();        // bounds the unbounded composite ops too
+    rx.clearRect(0, 0, w, h);
+    rx.drawImage(c, 0, 0, w, h, 0, 0, w, h);
     rx.globalCompositeOperation = 'source-in';
-    rx.fillStyle = '#ffd79c'; rx.fillRect(0, 0, rc.width, rc.height);
+    rx.fillStyle = '#ffd79c'; rx.fillRect(0, 0, w, h);
     rx.globalCompositeOperation = 'destination-out';
-    rx.drawImage(c, -d, d * 0.35);
+    const sw = Math.min(c.width, w + Math.ceil(d) + 1);
+    rx.drawImage(c, 0, 0, sw, h, -d, d * 0.35, sw, h);
+    rx.restore();
     rx.globalCompositeOperation = 'source-over';
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha *= 0.8; ctx.globalCompositeOperation = 'lighter';
@@ -372,7 +398,7 @@
     const wl = ctx.createLinearGradient(W * 0.5, 0, W, 0);
     wl.addColorStop(0, 'rgba(255,170,80,0)'); wl.addColorStop(1, 'rgba(255,170,80,0.12)');
     ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = wl; ctx.fillRect(W * 0.5, 0, W * 0.5, H);
+    ctx.fillStyle = wl; ctx.fillRect(W * 0.5, PIC0, W * 0.5, PIC1 - PIC0);      // (the letterbox hides the rest)
     ctx.restore();
     return { an, wo, fl };
   }
@@ -933,7 +959,12 @@
     }
   }
   const DIVE0 = TL.sayOut + 0.02, APEX = TL.sayOut + 0.42, DIVE1 = TL.seam1, APEX_Y = 268;
-  const SCAN0 = TL.seam1 - 0.05, SCAN1 = TL.seam1 + 0.75;       // the left half powers on into the machine
+  /* The left half turns into the machine like a run of mechanical shutter slats flipping over,
+     cascading down in Wonder's wake as she draws the seam (no full-frame flash). */
+  const SLATS = 14, SLAT_Y0 = 139, SLAT_H = 802 / SLATS, SLAT_DUR = 0.32;
+  const slatT0 = (i) => APEX + 0.06 + (DIVE1 - APEX) * Math.sqrt(clamp((SLAT_Y0 + (i + 0.5) * SLAT_H - 200) / 760));
+  const SLAT_START = slatT0(0), SLAT_END = slatT0(SLATS - 1) + SLAT_DUR;
+  const slatK = (i, t) => ez(t, slatT0(i), slatT0(i) + SLAT_DUR, 'outCubic');
   /** warm pollen drifting up through the flower's light (screen space) */
   function pollenFront(ctx, t, a, x0) {
     if (a <= 0.01) return;
@@ -988,7 +1019,7 @@
     ctx.fillStyle = sg; ctx.fillRect(-600, -600, 1200, 1200);
     ctx.restore();
     Art.hand(ctx, SAY1, { x: HAND.x, y: HAND.y1 + drift, size: HAND.size, reveal: r1, alpha: a, color: INK, glow: INK_GLOW });
-    if (t >= TL.say2) Art.hand(ctx, SAY2, { x: HAND.x, y: HAND.y2 + drift, size: HAND.size, reveal: r2, alpha: a, color: INK, glow: INK_GLOW, maxW: HAND.maxW });
+    if (t >= TL.say2) Art.hand(ctx, SAY2_SHOWN, { x: HAND.x, y: HAND.y2 + drift, size: HAND.size, reveal: r2, alpha: a, color: INK, glow: INK_GLOW, maxW: HAND.maxW });
     // the pen of light: a spark from Wonder to where the words are being written
     const writing = (t < TL.say1 + 1.2) ? { r: r1, line: 0 } : (t > TL.say2 && t < TL.say2 + 1.9) ? { r: r2, line: 1 } : null;
     if (writing && wo) {
@@ -999,7 +1030,7 @@
         const w = ctx.measureText(SAY1).width;
         px = HAND.x - w / 2 + w * writing.r; py = HAND.y1;
       } else {
-        const lines = Art.wrap(ctx, SAY2, HAND.maxW);
+        const lines = Art.wrap(ctx, SAY2_SHOWN, HAND.maxW);
         const tot = lines.reduce((n, l) => n + l.length, 0);
         let k = writing.r * tot, li = 0;
         while (li < lines.length - 1 && k > lines[li].length) { k -= lines[li].length; li++; }
@@ -1033,6 +1064,7 @@
       [8.45, 'tap', { gain: 0.75 }],
       [9.1, 'chime', { gain: 0.3 }],
       [14.62, 'whoosh', { gain: 0.5 }],
+      [15.1, 'paper', { gain: 0.4 }],      // the slats riffle over like a split-flap board
       [15.35, 'whoosh', { gain: 0.35 }],
       // a shutter click for every summit selfie (they fall where riders reach the photo spot)
       [16.5, 'tap', { gain: 0.22 }], [18.76, 'tap', { gain: 0.22 }], [21.02, 'tap', { gain: 0.22 }],
@@ -1056,7 +1088,6 @@
     render(ctx, t) {
       const c = camAt(t);
       const div = divAt(t);
-      const inSplit = t >= TL.split0 && div > 0.5;
       const covered = t > TL.split1 && t < TL.back0;               // hidden behind the machine, then out of the macro's frame
       // the flower comes alive as the argument is made
       const flowerGlow = 0.3 * U.fade(t, 17.0, 30.5, 1.2, 2.0) + 0.55 * ez(t, 31.6, 35.2) * (1 - 0.5 * ez(t, 38.5, 42));
@@ -1070,7 +1101,7 @@
         const fh = toScreen(c, g.fl.head.x, g.fl.head.y);
         const vg = ctx.createRadialGradient(fh.x, fh.y + 40, 240, fh.x, fh.y + 40, 1150);
         vg.addColorStop(0, 'rgba(46,22,8,0)'); vg.addColorStop(1, U.rgba('#2e1608', 0.45 * macro));
-        ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = vg; ctx.fillRect(0, PIC0, W, PIC1 - PIC0);
         // pollen lifting off the flower's golden heart
         for (let i = 0; i < 12; i++) {
           const ph = U.fract(U.hash(i, 71) + t * (0.09 + 0.05 * U.hash(i, 72)));
@@ -1084,41 +1115,48 @@
         }
       }
       // ---- the machine, on the left of the seam ----
-      if (inSplit) {
+      if (t >= SLAT_START && div > 0.5) {
         const widen = ez(t, TL.widen0, TL.widen1, 'inOutCubic');
         const dx = (div - 960) * 0.55;
-        const flash = U.keys(t, [[SCAN0, 0], [SCAN0 + 0.1, 0.94, 'inQuad'], [SCAN0 + 0.18, 0.94], [SCAN1, 0, 'outCubic']]) + 0.12 * U.bump(t, SCAN0 + 0.5, 0.05);
-        if (t > SCAN0 + 0.1) {
-          ctx.save();
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(-10, 100);
+        for (let y = 100; y <= 980; y += 20) ctx.lineTo(seamX(div, y, t), y);
+        ctx.lineTo(-10, 980);
+        ctx.closePath();
+        ctx.clip();
+        const opening = t < SLAT_END;
+        ctx.save();
+        if (opening) {
+          // only the slats that have flipped over show the machine (each opens from its centre line)
           ctx.beginPath();
-          ctx.moveTo(-10, 100);
-          for (let y = 100; y <= 980; y += 20) ctx.lineTo(seamX(div, y, t), y);
-          ctx.lineTo(-10, 980);
-          ctx.closePath();
-          ctx.clip();
-          const jolt = 5 * U.bump(t, TL.stall1 - 0.04, 0.12) * Math.sin(t * 90);
-          const warm = ez(t, TL.stall1 - 0.1, TL.look0 + 1.3, 'inOutSine');
-          drawMachine(ctx, t, { div, dx, jolt, warm });
-          if (widen > 0) { ctx.fillStyle = U.rgba('#0a0e14', 0.5 * widen); ctx.fillRect(0, 0, W, H); }
-          ctx.restore();
-        }
-        if (flash > 0.003) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(-10, 100);
-          for (let y = 100; y <= 980; y += 20) ctx.lineTo(seamX(div, y, t), y);
-          ctx.lineTo(-10, 980);
-          ctx.closePath();
-          ctx.clip();
-          ctx.fillStyle = U.rgba('#e3f1ff', clamp(flash));
-          ctx.fillRect(0, 100, 980, 880);
-          // a few scan lines while it settles
-          if (flash < 0.8) {
-            ctx.fillStyle = U.rgba('#ffffff', 0.25 * flash);
-            for (let y = 139 + ((t * 600) % 24); y < 941; y += 24) ctx.fillRect(0, y, 980, 2);
+          for (let i = 0; i < SLATS; i++) {
+            const k = slatK(i, t);
+            if (k <= 0) continue;
+            const hh = SLAT_H * k + 1;                     // +1: no hairline gaps between open slats
+            ctx.rect(-10, SLAT_Y0 + (i + 0.5) * SLAT_H - hh / 2, 1000, hh);
           }
-          ctx.restore();
+          ctx.clip();
         }
+        const jolt = 5 * U.bump(t, TL.stall1 - 0.04, 0.12) * Math.sin(t * 90);
+        const warm = ez(t, TL.stall1 - 0.1, TL.look0 + 1.3, 'inOutSine');
+        drawMachine(ctx, t, { div, dx, jolt, warm });
+        if (widen > 0) { ctx.fillStyle = U.rgba('#0a0e14', 0.5 * widen); ctx.fillRect(0, 0, W, H); }
+        ctx.restore();
+        if (opening) {
+          // the slats' steel edges catch a cold light as they turn, then settle flush
+          for (let i = 0; i < SLATS; i++) {
+            const k = slatK(i, t);
+            if (k <= 0 || k >= 1) continue;
+            const yc = SLAT_Y0 + (i + 0.5) * SLAT_H, hh = SLAT_H * k;
+            const a = Math.pow(1 - k, 0.8);
+            ctx.fillStyle = U.rgba('#0e1620', 0.55 * a);
+            ctx.fillRect(-10, yc - hh / 2 - 5, 1000, 5); ctx.fillRect(-10, yc + hh / 2, 1000, 5);
+            ctx.fillStyle = U.rgba('#bfe9ff', 0.9 * a);
+            ctx.fillRect(-10, yc - hh / 2 - 1.5, 1000, 2.2); ctx.fillRect(-10, yc + hh / 2 - 0.7, 1000, 2.2);
+          }
+        }
+        ctx.restore();
       }
       // ---- the seam of light (Wonder draws it) ----
       if (t >= APEX && div > 0.5) {
