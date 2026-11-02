@@ -1086,7 +1086,7 @@
    */
   Art.person = (ctx, o = {}) => {
     const look = lookOf(o.look);
-    const t = o.t || 0, seed = o.seed !== undefined ? o.seed : (look.name || 'x').charCodeAt(0) * 7;
+    const t = o.t || 0, seed = o.seed !== undefined ? o.seed : (look.name || 'x').charCodeAt(0) * 7 + (parseInt(String(look.name || '').replace(/\D/g, ''), 10) || 0) * 101;
     const facing = o.facing === undefined ? 1 : o.facing;
     const S = (o.s || 1) * (look.height || 1);
     const x = o.x || 0, y = o.y || 0;
@@ -1644,7 +1644,7 @@
       lines.push(line);
     }
     // balance two-line captions: avoid a lonely last word
-    if (lines.length === 2) {
+    if (lines.length === 2 && String(text).indexOf('\n') < 0) {
       const all = lines.join(' ').split(' ');
       let best = lines, bestD = Infinity;
       for (let i = 1; i < all.length; i++) {
@@ -1673,6 +1673,7 @@
     const draw = (c) => {
       const size = o.size || 46;
       c.save();
+      const base = c.globalAlpha;
       c.font = Art.font(size, o.family || 'serif', o.weight || 500, o.style || 'italic');
       c.textBaseline = 'middle';
       c.textAlign = 'left';
@@ -1696,7 +1697,7 @@
         for (const w of words) {
           const k = clamp(reveal * (totalWords + 2.5) - wi);
           if (k > 0) {
-            c.globalAlpha = alpha * U.smooth(k);
+            c.globalAlpha = base * alpha * U.smooth(k);
             c.fillText(w, x, y + (1 - U.smooth(k)) * 6);
           }
           x += c.measureText(w).width + space;
@@ -1861,6 +1862,7 @@
     const draw = (c) => {
       const size = o.size || 96;
       c.save();
+      const base = c.globalAlpha;
       c.font = Art.font(size, o.family || 'serif', o.weight || 500, o.style || 'italic');
       c.textBaseline = 'middle';
       c.textAlign = 'left';
@@ -1879,7 +1881,7 @@
         const k = clamp(reveal * (n + 6) - i * 1.0, 0, 6) / 6;
         const px = (o.align === 'left' ? 0 : 0) + x + (spacing ? 0 : 0);
         if (k > 0) {
-          c.globalAlpha = alpha * U.smooth(k);
+          c.globalAlpha = base * alpha * U.smooth(k);
           const cx = spacing ? px : (o.x === undefined ? W / 2 : o.x) - (o.align === 'left' ? 0 : o.align === 'right' ? total : total / 2) + c.measureText(prefix).width;
           c.fillText(chars[i], cx, y + (1 - U.smooth(k)) * size * 0.12);
         }
@@ -1894,6 +1896,7 @@
   Art.hand = (ctx, text, o = {}) => {
     const alpha = o.alpha === undefined ? 1 : o.alpha;
     if (alpha <= 0.003) return;
+    if (o.now === false) { const o2 = Object.assign({}, o, { now: true }); Art.later((c) => Art.hand(c, text, o2)); return; }
     const size = o.size || 56;
     ctx.save();
     ctx.font = Art.font(size, 'hand', o.weight || 700);

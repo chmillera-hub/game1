@@ -822,7 +822,7 @@
     }
     Art.captions(ctx, t, CAPS);
     // end card on the night sky
-    const card = t > D - 2.5 ? U.smooth((D - t) / 2.5) : 1;
+    const card = 1; // the engine's 2.5 s fadeOut now fades deferred text too
     // the film's title, small — “the Flower,” in rose, as on the opening title card
     if (t > CARD0 - 0.1) {
       const segs = [['The Hikers, ', '#f4eadb', 'rgba(255,190,160,0.3)'], ['the Flower,', '#ffd2df', 'rgba(255,111,156,0.55)'], [' and the Meaning We Create', '#f4eadb', 'rgba(255,190,160,0.3)']];

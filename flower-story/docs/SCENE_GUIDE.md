@@ -111,8 +111,11 @@ Faces (`face`): `smile` −1..1, `open` 0..1, `talk` 0..1 (animated mouth while 
 Standalone head: `Art.head(ctx, x, y, r, look, face, {facing, turn, t, tilt})`.
 
 Walking: feet stay planted only if the ground scrolls at the walk speed. For a walk phase
-`walk: t * k`, a character at scale `s` covers roughly `k * 24 * s` px/s; tune scroll to match
-so feet don't skate. Check with a contact sheet.
+`walk: t * k`, the rig's mean stance-foot travel is `72.32 · sin(0.42 · stride) · k · s · height`
+px/s (≈ `29.5 · k · s · height` at stride 1), e.g. ≈ 141.6 px/s at k = 6, s = 0.8, height 1.
+Give each character the rate `k / height` so a mixed-height group shares one ground speed.
+The stance sweep is sinusoidal, so a constant scroll still slips a few px per step; scenes
+01/02 tie each walker's position to its phase integral for zero average slip.
 
 ## Emotions — `Art.emotion(ctx, opts)`
 

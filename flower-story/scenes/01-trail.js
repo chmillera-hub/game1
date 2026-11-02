@@ -51,8 +51,8 @@
   // move lowers it back (the horizon sinks) and trucks right onto 02's exact opening framing.
   const T_LAND0 = 0.2, T_LAND1 = 6.8;     // crane down out of the sky
   const T_END0 = 27.4;                    // final move: ease lower/right onto 02's opening frame
-  const TRUCK = 36;                       // the camera trails the group by this much until the final move
-  const LIFT = 26;                        // crane height held through the middle of the scene
+  const TRUCK = 44;                       // the camera trails the group by this much until the final move
+  const LIFT = 30;                        // crane height held through the middle of the scene
   const OPEN_A = 420, OPEN_B = 60;        // opening: high above the trail, tilted up toward the sun
   const F = { x: ME_X + TRUCK + 20, y: 700 };   // the push-in drifts toward the narrator
   function camAt(t) {
@@ -383,9 +383,11 @@
     mood: 'forest',
     sfx: [
       [0.5, 'bird', { gain: 0.35 }],
+      [2.1, 'whoosh', { gain: 0.12 }],
       [2.6, 'footsteps', { gain: 0.3 }],
       [3.6, 'bird', { gain: 0.22 }],
       [10.8, 'bird', { gain: 0.3 }],
+      [11.45, 'thud', { gain: 0.12 }],
       [16.9, 'petal', { gain: 0.2 }],
       [23.2, 'breath', { gain: 0.45 }],
       [27.35, 'footsteps', { gain: 0.4 }],
@@ -443,8 +445,9 @@
       const z1 = layerT(cam, 1).z;
       const leaf = t >= LEAF.t0 - 0.01 && t < LEAF.tl + 6 ? leafAt(t, cam) : null;
       const anchors = {};
-      let meEye = null;
-      layer(ctx, cam, 1, (c) => {
+      // while the crane is still high, everything on the trail plane is below frame: skip it
+      const trailVisible = toScreen(cam, 1, { x: 0, y: 560 }).y < PIC.bottom + 10;
+      if (trailVisible) layer(ctx, cam, 1, (c) => {
         const bodyBase = c.getTransform();
         {
           const i0 = Math.floor((off - 200) / 150), i1 = Math.ceil((off + W + 200) / 150);
@@ -594,7 +597,6 @@
           const ph = ME_PH0 + RATE * tc - lag / (KF * S);
           const x = ME_X + lagging - lag + S * plantR(ph) * kCorr, y = gy(x) + FOOT;
           const eye = toScreen(cam, 1, { x: x + 14 * S, y: y - 252 * S });
-          meEye = eye;
           const w1 = U.noise1(tc * 0.5, 12), w2 = U.noise1(tc * 0.37, 19);
           // base: curious, looking up into the trees, gaze wandering
           const L = {
@@ -666,22 +668,23 @@
       });
 
       /* ---------- light: sun rays and shafts through the canopy, pollen drifting in them ---------- */
-      const shaftA = 0.11 * (1 - 0.35 * U.ease(t, 29, D));
-      soft(ctx, 9, (c) => {
-        layer(c, cam, 0, (c2) => Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: 0.12 + 0.05 * tilted, t: wa, seed: 4, width: 0.06 }));
+      const dawn = U.ease(t, 1.3, 3.2);                       // the light arrives with the morning (after the dissolve)
+      const shaftA = 0.11 * dawn * (1 - 0.35 * U.ease(t, 29, D));
+      if (dawn > 0) soft(ctx, 9, (c) => {
+        layer(c, cam, 0, (c2) => Art.rays(c2, { x: 1720, y: 40, angle: 2.2, spread: 0.8, count: 5, len: 1250, color: P.light, alpha: (0.12 + 0.05 * tilted) * dawn, t: wa, seed: 4, width: 0.06 }));
         drawShafts(c, cam, t, P, shaftA);
       }, 'shafts', { x: 0, y: PIC.top, w: W, h: PIC.h }, 'lighter');
       {
         const span = W + 300;
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < 42; i++) {
+        for (let i = 0; i < (dawn > 0 ? 42 : 0); i++) {
           const p = 0.8 + U.hash(i, 91) * 0.5;
           const bx = U.hash(i, 92) * span;
           const lx = ((((bx - cam.camX * p * 0.96 + U.noise1(t * 0.21 + i, 93) * 40) % span) + span) % span) - 150;
           const ly = 260 + U.hash(i, 94) * 640 - ((t * (6 + U.hash(i, 95) * 8)) % 120) + U.noise1(t * 0.3 + i * 1.7, 96) * 30;
           const q = toScreen(cam, p, { x: lx, y: ly });
-          const a = 0.35 * (0.5 + 0.5 * Math.sin(t * (1 + U.hash(i, 97) * 2) + i * 3.1));
+          const a = 0.35 * dawn * (0.5 + 0.5 * Math.sin(t * (1 + U.hash(i, 97) * 2) + i * 3.1));
           const r = (1.1 + U.hash(i, 98) * 1.6) * layerT(cam, p).z;
           Art.glow(ctx, q.x, q.y, r * 5, P.light, a * 0.5);
           ctx.globalAlpha = a;
@@ -693,7 +696,7 @@
 
       /* ---------- foreground: out-of-focus undergrowth and passing pines ---------- */
       const fgVisible = (wx, p, half) => { const x = toScreen(cam, p, { x: wx - cam.camX * p, y: 0 }).x; return x > -half && x < W + half; };
-      const ferns = FERNS.filter((f) => fgVisible(f.wx, f.p, 360 * f.s));
+      const ferns = FERNS.filter((f) => fgVisible(f.wx, f.p, 360 * f.s) && toScreen(cam, f.p, { x: 0, y: 972 - 140 * f.s }).y < PIC.bottom);
       const trunks = TRUNKS.filter((tr) => fgVisible(tr.wx, tr.p, tr.w + 800));
       if (ferns.length) {
         soft(ctx, 4, (c) => {
@@ -710,13 +713,18 @@
           }
         }, 'fgf', { x: 0, y: 760, w: W, h: PIC.bottom - 760 });
       }
-      if (trunks.length) soft(ctx, 7, (c) => { for (const tr of trunks) layer(c, cam, tr.p, (c2, offp) => fgPine(c2, tr.wx - offp, tr.w, P, tr.seed)); }, 'fgt', { x: 0, y: PIC.top, w: W, h: PIC.h });
+      for (const tr of trunks) {
+        const sx = toScreen(cam, tr.p, { x: tr.wx - cam.camX * tr.p, y: 0 }).x, half = tr.w * 2.2;
+        const x0 = Math.max(0, sx - half), x1 = Math.min(W, sx + half);
+        if (x1 > x0) soft(ctx, 7, (c) => layer(c, cam, tr.p, (c2, offp) => fgPine(c2, tr.wx - offp, tr.w, P, tr.seed)), 'fgt', { x: x0, y: PIC.top, w: x1 - x0, h: PIC.h });
+      }
 
       /* ---------- words ---------- */
       const bubs = [];
       for (const [a, b, txt, bo] of BUBS) {
         if (t < a || t > b) continue;
         const an = anchors[bo.who];
+        if (!an) continue;
         const hd = toScreen(cam, 1, an.head), hr = an.head.r * z1;
         const bx = hd.x + bo.dx, by = bo.y;
         // tail: aimed at the speaker's mouth, stopping just above the head
