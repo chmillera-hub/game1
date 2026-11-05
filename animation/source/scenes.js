@@ -27,8 +27,8 @@ function hills(g, y, c, amp, seed, freq = 0.006) {
 }
 function stars(g, n, seed, a = 1, t = 0) { for (let i = 0; i < n; i++) { const x = hash(i + seed) * W, y = hash(i * 3 + seed) * H * 0.5; fillC(g, `rgba(255,255,240,${a * (0.4 + 0.6 * hash(i * 7)) * (0.8 + 0.2 * Math.sin(t * 2 + i))})`, x, y, 1 + hash(i * 5) * 1.8); } }
 function sheep(g, x, y, s, t) { const b = Math.sin(t * 2 + x) * s * 0.03; for (let i = 0; i < 6; i++) fillC(g, '#f3efe6', x + Math.cos(i) * s * 0.35, y - s * 0.3 + Math.sin(i * 2) * s * 0.12 + b, s * 0.28); fillE(g, '#3a3330', x + s * 0.55, y - s * 0.35 + b, s * 0.18, s * 0.14); line(g, '#3a3330', s * 0.08, x - s * 0.25, y - s * 0.1, x - s * 0.25, y + s * 0.15); line(g, '#3a3330', s * 0.08, x + s * 0.25, y - s * 0.1, x + s * 0.25, y + s * 0.15); }
-function petals(g, t, n, seed, cols) { for (let i = 0; i < n; i++) { const x = (hash(i + seed) * W + t * 20 * (hash(i) - 0.5)) % W; const y = ((hash(i * 9 + seed) * H + t * (50 + 40 * hash(i * 2))) % (H * 0.8)); fillE(g, cols[i % cols.length], x, y, 6, 3.5, t * 2 + i); } }
-function smoke(g, t, x, y, n, seed, c = 'rgba(40,30,30,0.25)') { for (let i = 0; i < n; i++) { const k = (t * 0.15 + hash(i + seed)) % 1; fillC(g, c, x + noise1(k * 4 + i, seed) * 60 + k * 40, y - k * 500, 30 + k * 90); } }
+function petals(g, t, n, seed, cols) { for (let i = 0; i < n; i++) { const x = ((hash(i + seed) * W + t * 20 * (hash(i) - 0.5)) % W + W) % W; const k = ((hash(i * 9 + seed) * H + t * (50 + 40 * hash(i * 2))) % (H * 0.8)) / (H * 0.8); g.save(); g.globalAlpha *= Math.min(1, k * 8, (1 - k) * 8); fillE(g, cols[i % cols.length], x, k * H * 0.8, 6, 3.5, t * 2 + i); g.restore(); } }
+function smoke(g, t, x, y, n, seed, c = 'rgba(40,30,30,0.25)') { for (let i = 0; i < n; i++) { const k = (t * 0.15 + hash(i + seed)) % 1; g.save(); g.globalAlpha *= Math.min(1, k * 6, (1 - k) * 3); fillC(g, c, x + noise1(k * 4 + i, seed) * 60 + k * 40, y - k * 500, 30 + k * 90); g.restore(); } }
 function house(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y - h, w, h); g.fillRect(x - 4, y - h - 8, w + 8, 10); }
 function txt(g, s, x, y, size, col, font = 'SerifB', align = 'center', a = 1) { g.save(); g.globalAlpha *= a; g.font = `${size}px ${font}`; g.textAlign = align; g.fillStyle = col; g.fillText(s, x, y); g.restore(); }
 function braid(g, x0, y0, x1, y1, t, prog, cols = ['#e6c35c', '#7fc4ff', '#ff8f7a'], wAmp = 16, lw = 10) {
@@ -101,7 +101,7 @@ function kitchenTable(g, T, o = {}) {
 // generic kitchen scene builder: cfg = {shots:[[t,'two'|'noa'|'teo']], noa:{ex,arms,turnK}, teo:{...}, extra}
 function kitchenScene(cfg) {
   return (g, T, S) => {
-    let shot = cfg.shots[0][1]; for (const [t, s] of cfg.shots) if (T >= t) shot = s;
+    let shot = cfg.shots[0][1]; for (const [t, s] of cfg.shots) if (T >= t) shot = s; globalThis.__shot = shot;
     const z = shot === 'noa' ? [215, 545, 2.1] : shot === 'teo' ? [515, 540, 2.1] : shot === 'wide' ? [370, 600, 1.0] : [360, 590, 1.22 + T * 0.004];
     g.save(); cam(g, z[0], z[1], z[2]);
     kitchenSet(g, T, cfg.set ? cfg.set(T) : {});
@@ -119,6 +119,7 @@ function kitchenScene(cfg) {
 
 // ================= HOOK =================
 S_.hook = (g, T, S) => {
+  globalThis.__shot = 'hill';
   const z = 1.25 + T * 0.03;
   g.save(); cam(g, 380, 640, z);
   sky(g, '#f7c873', '#f3a25a', 0, 700);
@@ -147,7 +148,7 @@ S_.kitchen1 = (g, T, S) => {
   const L = S.L;
   const showWords = T > L[0].s + 1.6 && T < L[1].s + 0.5;
   return kitchenScene({
-    shots: [[0, 'two'], [L[1].s - 0.1, 'noa'], [L[2].s - 0.1, 'teo'], [L[4].s - 0.1, 'noa'], [L[5].s - 0.1, 'two'], [L[7].s - 0.1, 'noa'], [L[7].e + 0.5, 'two']],
+    shots: [[0, 'two'], [L[1].s - 0.1, 'noa'], [L[2].s - 0.1, 'teo'], [L[4].s - 0.1, 'noa'], [L[5].s - 0.1, 'two'], [L[7].s - 0.1, 'noa']],
     noa: {
       ex: [[0, 'excited'], [L[0].s + 2.2, 'excited|{"gx":0.3,"gy":-0.4}'], [L[0].e - 0.6, 'joy'], [L[1].s, 'happy'], [L[1].s + 2.6, 'peace|{"lu":0.5,"sm":0.5}'], [L[1].s + 3.6, 'determined'],
            [L[2].s, 'happy|{"gx":0.6}'], [L[3].s + 0.8, 'neutral|{"gx":0.6,"bi":0.2}'], [L[4].s, 'skeptical'], [L[5].s + 1.6, 'worried|{"gx":0.6}'], [L[6].s + 0.5, 'thoughtful|{"gx":0.5,"gy":0}'], [L[7].s - 0.3, 'determined|{"sm":0.3}'], [L[7].e + 0.3, 'determined|{"gx":0.7,"gy":0.4}']],

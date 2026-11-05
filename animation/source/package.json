@@ -1,15 +1,6 @@
 {
-  "name": "anim",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@napi-rs/canvas": "^1.1.0"
-  }
+  "name": "table-instead-of-palace",
+  "private": true,
+  "description": "Renderer for the animated short 'A Table Instead of a Palace'",
+  "dependencies": { "@napi-rs/canvas": "1.1.0" }
 }

@@ -44,6 +44,7 @@ function allChunks() {
   const out = [];
   for (const sc of TL.scenes) for (const l of sc.lines) l.chunks.forEach((c, k) => out.push({ ...c, spk: l.spk, lastInLine: k === l.chunks.length - 1 }));
   for (let i = 0; i < out.length; i++) { const n = out[i + 1]; out[i].hide = out[i].lastInLine ? Math.min(out[i].end + 0.7, n ? n.start - 0.05 : 1e9) : (n ? n.start : out[i].end + 0.7); }
+  for (let i = 0; i < out.length; i++) { const p = out[i - 1], n = out[i + 1]; out[i].fadeIn = !p || p.hide < out[i].start - 0.1; out[i].fadeOut = !n || n.start > out[i].hide + 0.05; if (!out[i].fadeIn) out[i].showFrom = p.hide; }
   return out;
 }
 const CHUNKS = allChunks();
@@ -53,9 +54,9 @@ function wrap(g, text, maxW) {
   if (cur) lines.push(cur); return lines;
 }
 function drawSubs(g, t) {
-  const c = CHUNKS.find(c => t >= c.start - 0.04 && t < c.hide);
+  const c = CHUNKS.find(c => t >= (c.fadeIn ? c.start - 0.04 : c.showFrom) && t < c.hide);
   if (!c) return;
-  const a = clamp((t - c.start + 0.04) / 0.08) * clamp((c.hide - t) / 0.08);
+  const a = (c.fadeIn ? clamp((t - c.start + 0.04) / 0.08) : 1) * (c.fadeOut ? clamp((c.hide - t) / 0.08) : 1);
   const vo = c.spk === 'TEO_VO';
   g.save(); g.globalAlpha = a;
   g.font = `${vo ? '' : ''}38px ${vo ? 'InterSBI' : 'InterSB'}`;

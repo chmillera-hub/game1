@@ -134,21 +134,22 @@ SCENES = [
 ]
 
 # voice casting: model, speaker id, length_scale, pitch factor, fx
+# All voices are redistributable (see production/AUDIO.md):
+#   joe-medium CC0 | john-medium public domain (LibriVox) | libritts_r CC BY 4.0 | northern_english_male CC BY-SA 4.0
 VOICES = {
- 'TEO':        ('en_US-ryan-high', None, 1.04, 1.0, 'room'),
- 'TEO_VO':     ('en_US-ryan-high', None, 1.06, 1.0, 'vo'),
- 'NOA':        ('en_US-lessac-high', None, 1.04, 1.0, 'room'),
+ 'TEO':        ('en_US-john-medium', None, 1.02, 1.0, 'room'),
+ 'TEO_VO':     ('en_US-john-medium', None, 1.04, 1.0, 'vo'),
+ 'NOA':        ('en_US-libritts_r-medium', 20, 1.04, 1.0, 'room'),
  'DAVID':      ('en_US-joe-medium', None, 1.02, 1.0, 'hall'),
- 'DAVID_OLD':  ('en_US-john-medium', None, 1.18, 0.94, 'hall'),
+ 'DAVID_OLD':  ('en_US-libritts_r-medium', 50, 1.25, 0.95, 'hall'),
  'DAVID_CRY':  ('en_US-joe-medium', None, 1.12, 1.0, 'cave'),
- 'ABIGAIL':    ('en_US-hfc_female-medium', None, 1.05, 1.0, 'open'),
+ 'ABIGAIL':    ('en_US-libritts_r-medium', 40, 1.15, 1.0, 'open'),
  'WOMEN':      ('CHORUS', None, 1.15, 1.0, 'open'),
- 'SOLOMON':    ('en_GB-alan-medium', None, 1.12, 0.97, 'hall'),
- 'SOLOMON_CHILD': ('en_US-hfc_female-medium', None, 1.05, 1.16, 'whisper'),
- 'JESUS':      ('en_GB-northern_english_male-medium', None, 1.1, 1.0, 'open'),
- 'PETER':      ('en_US-libritts_r-medium', 31, 0.95, 1.0, 'open'),
+ 'SOLOMON':    ('en_US-libritts_r-medium', 43, 1.32, 0.97, 'hall'),
+ 'SOLOMON_CHILD': ('en_US-libritts_r-medium', 57, 1.15, 1.12, 'whisper'),
+ 'JESUS':      ('en_GB-northern_english_male-medium', None, 1.25, 1.0, 'open'),
+ 'PETER':      ('en_US-libritts_r-medium', 31, 1.15, 1.0, 'open'),
  'AMI':        ('en_US-libritts_r-medium', 22, 1.02, 1.0, 'room'),
 }
-CHORUS = [('en_US-lessac-high', None), ('en_US-hfc_female-medium', None),
-          ('en_US-libritts_r-medium', 4), ('en_US-libritts_r-medium', 9),
-          ('en_US-libritts_r-medium', 29), ('en_US-libritts_r-medium', 54)]
+CHORUS = [('en_US-libritts_r-medium', 4), ('en_US-libritts_r-medium', 9), ('en_US-libritts_r-medium', 12),
+          ('en_US-libritts_r-medium', 18), ('en_US-libritts_r-medium', 29), ('en_US-libritts_r-medium', 54)]

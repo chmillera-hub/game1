@@ -227,14 +227,17 @@ for a in tl['accents']:
         add(cello(midi(38), 2.8, 0.12), t - 0.05)
 
 # ---------- scene-specific SFX ----------
+tl['sfx'] = []  # rebuilt every run (idempotent)
 sc = {s['id']: s for s in tl['scenes']}
 def line(sid, i): return sc[sid]['lines'][i]
 # crowd cheer
 c = sc['cheer']
 add(noise_bed(c['end'] - c['start'], 0.15, 0.12, mod=0.5, modf=0.5), c['start'], pan=0.1)
-# sword clink & drop in garden
-add(drum(0.4, 900, 0.2) + bell(midi(96), 0.4)[:int(0.4 * SR)] * 0.6, line('sword', 2)['end'] + 0.35, pan=0.2)
-add(drum(0.4, 300, 0.25), line('sword', 4)['start'] + 0.8)
+# sword draw (Peter raises it as he speaks), sword hitting the grass (visual drop lands at line4.start+1.4s)
+add(drum(0.4, 900, 0.2) + bell(midi(96), 0.4)[:int(0.4 * SR)] * 0.6, line('sword', 1)['start'] - 0.15, pan=0.2)
+tl['sfx'].append({'kind': 'sword draw', 't': round(line('sword', 1)['start'] - 0.15, 3)})
+add(drum(0.4, 300, 0.25), line('sword', 4)['start'] + 1.4)
+tl['sfx'].append({'kind': 'sword lands in grass', 't': round(line('sword', 4)['start'] + 1.4, 3)})
 # knock on the door (ending)
 e = sc['ending']
 knock_t = line('ending', 1)['end'] + 0.55
@@ -245,9 +248,10 @@ fs, _ = chord('F', 48)
 add(pad(fs + [fs[0] * 2], 6.0, att=2.0, rel=3.0, gain=0.09, bright=0.08), e['end'] - 5.5)
 add(bell(midi(89), 4.0), e['end'] - 3.0, pan=0.2, gain=0.4)
 add(bell(midi(84), 4.0), e['end'] - 2.6, pan=-0.2, gain=0.3)
-# helmet clatter (uriah)
-u = sc['uriah']
-add(drum(0.6, 220, 0.3), line('uriah', 2)['end'] + 0.3, pan=0.3)
+# helmet clatter (uriah): visual landing = start of 2nd chunk of line 2 + 2.4 s
+lc = line('uriah', 2)['chunks']; land = (lc[1]['start'] if len(lc) > 1 else line('uriah', 2)['start'] + 1.8) + 2.4
+add(drum(0.6, 220, 0.3), land, pan=0.3)
+tl['sfx'].append({'kind': 'helmet lands in dust', 't': round(land, 3)})
 
 json.dump(tl, open(os.path.join(D, 'timeline.json'), 'w'))
 

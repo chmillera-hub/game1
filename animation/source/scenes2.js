@@ -14,7 +14,7 @@ const solTeen = V('sol', { hat: null, beard: 'stubble' });
 const SCALE = 1;
 
 // helpers
-function shotSel(T, list) { let v = list[0][1]; for (const [t, s] of list) if (T >= t) v = s; return v; }
+function shotSel(T, list) { let v = list[0][1]; for (const [t, s] of list) if (T >= t) v = s; globalThis.__shot = v; return v; }
 function panel(g, x, y, w, h, a, fn) { // dreamy vision panel
   if (a <= 0) return;
   g.save(); g.globalAlpha = a;
@@ -129,7 +129,7 @@ S_.cheer = (g, T, S) => {
 // ================= RAID =================
 S_.raid = (g, T, S) => {
   const L = S.L;
-  const shot = shotSel(T, [[0, 'wide'], [L[0].e - 1.8, 'cu'], [L[1].s - 0.1, 'ash'], [L[1].e + 0.1, 'cu2']]);
+  const shot = shotSel(T, [[0, 'wide'], [L[0].e - 1.8, 'cu'], [L[1].s - 0.1, 'ash']]);
   if (shot === 'wide') {
     g.save(); cam(g, 360, 600, 1.1 + T * 0.02);
     sky(g, '#1a0a0e', '#5a1a10', 0, 700);
@@ -237,8 +237,7 @@ S_.abigail = (g, T, S) => {
     const swordDown = melt ? ramp(lt, 0.2, 1.6) : 0;
     actor(g, CH.davidK, T, S, { x: 230, y: 400, s: 62, seed: 3, spk: 'DAVID', turn: 0.4,
       ex: melt ? [[0, 'angry|{"gx":0.6,"gy":0.5}'], [0.6, 'hurt|{"gx":0.6,"gy":0.5,"tears":0.2}', 1.0], [2.4, 'tender|{"gx":0.6,"gy":0.5}', 0.8]] : [[0, 'angry|{"gx":0.6,"gy":0.5}'], [2.0, 'cold|{"gx":0.6,"gy":0.5,"bi":0}', 1.0]],
-      arms: [[0, A(0.3, -0.2, lerp(1.4, 0.2, swordDown), lerp(-0.7, 0, swordDown))], [melt ? 2.6 : 99, A(0.3, -0.2, 1.1, -0.1)]], holdR: melt && lt > 2.6 ? null : PROP.sword(0, lerp(-0.5, 2.6, swordDown)) });
-    if (melt && lt > 2.6) PROP.sword(0, 1.7)(g, 150, 720, 0, 50);
+      arms: [[0, A(0.3, -0.2, lerp(1.4, 0.15, swordDown), lerp(-0.7, 0, swordDown))], [melt ? 2.6 : 99, A(-0.2, -0.9, 0.15, 0)]], holdR: PROP.sword(0, lerp(-0.5, PI - 0.15, swordDown)) });
     actor(g, CH.abigail, T, S, { x: 470, y: 560, s: 58, kneel: true, seed: 17, spk: 'ABIGAIL', turn: -0.4,
       ex: melt ? [[0, 'pleading|{"gx":-0.6,"gy":-0.6}'], [1.2, 'teary|{"gx":-0.6,"gy":-0.6,"tears":0.3}']] : 'pleading|{"gx":-0.6,"gy":-0.6}',
       arms: [[0, A(0.6, -1.5, 0.6, -1.5)], [melt ? 2.8 : 99, A(0.6, -1.5, 1.6, 0.0)]] });
@@ -257,7 +256,7 @@ S_.abigail = (g, T, S) => {
 // ================= TEMPLE =================
 S_.temple = (g, T, S) => {
   const L = S.L;
-  const hands = T > L[1].s + 1.5;
+  const hands = T > L[1].s + 1.5; globalThis.__shot = hands ? 'hands' : 'plans';
   g.save(); cam(g, 360, hands ? 520 : 560, hands ? 1.7 : 1.3);
   sky(g, '#1c1418', '#2c2024', 0, 900); flame(g, 600, 420, 14, T);
   actor(g, CH.davidO, T, S, { x: 300, y: 470, s: 64, seed: 3, spk: 'DAVID_OLD', turn: 0.25, h: 4.6,
@@ -354,7 +353,7 @@ S_.childhood = (g, T, S) => {
       fig(g, { x: 220, y: 640, s: 160, c: '#100a08', arms: [0.4, 1.3] }); fig(g, { x: 560, y: 640, s: 170, c: '#100a08', arms: [1.6, 0.2], lean: tip * 0.4 });
     } else {
       sky(g, '#5a1a10', '#c05a2a', 0, 700); floor(g, 700, '#3a1a10', '#1a0a06');
-      for (let i = 0; i < 9; i++) { fig(g, { x: 60 + i * 75, y: 760, s: 140, c: '#1a0a06', arms: [0.2, 2.8] }); }
+      for (let i = 0; i < 9; i++) { const st = Math.abs(Math.sin(T * 4 + i)) * 8; fig(g, { x: 60 + i * 75 + (T % 100) * 18 - 120, y: 760 - st, s: 140, c: '#1a0a06', arms: [0.2, 2.6 + Math.sin(T * 4 + i) * 0.25] }); line(g, '#1a0a06', 4, 60 + i * 75 + (T % 100) * 18 - 92, 600, 60 + i * 75 + (T % 100) * 18 - 92, 520 - st); if (i % 3 === 0) { g.fillStyle = '#8a1a10'; g.beginPath(); g.moveTo(60 + i * 75 + (T % 100) * 18 - 92, 520 - st); for (let k = 0; k <= 6; k++) g.lineTo(60 + i * 75 + (T % 100) * 18 - 92 + k * 9, 520 - st + Math.sin(T * 6 + k * 0.9 + i) * 5); g.lineTo(60 + i * 75 + (T % 100) * 18 - 38, 555 - st); g.lineTo(60 + i * 75 + (T % 100) * 18 - 92, 555 - st); g.fill(); } }
       // great oak, banner falling
       g.fillStyle = '#1a0e08'; g.fillRect(480, 360, 40, 340); fillC(g, '#1a1a0e', 500, 330, 140); fillC(g, '#1e1e10', 420, 380, 90); fillC(g, '#1e1e10', 590, 370, 100);
       const fall = ramp(lt - second, 0.5, 2.0);
@@ -527,7 +526,7 @@ S_.hevel = (g, T, S) => {
 // ================= PASSAGE =================
 S_.passage = (g, T, S) => {
   const L = S.L;
-  const idx = S.cur(T);
+  const idx = S.cur(T); globalThis.__shot = 'vision' + Math.max(0, idx);
   // desk scene at bottom
   g.save(); cam(g, 360, 640, 1.0);
   sky(g, '#120e18', '#1e1820', 0, H);
@@ -543,7 +542,7 @@ S_.passage = (g, T, S) => {
     if (idx <= 0) {
       // endless toil: pushing stone up slope; coins pile
       v.fillStyle = '#2a2430'; poly(v, [[40, 590], [680, 590], [680, 260]]); v.fill();
-      const k = (lt * 0.1) % 1; const x = lerp(200, 560, k), y = lerp(560, 360, k);
+      const k = clamp(lt * 0.08); const x = lerp(200, 560, k), y = lerp(560, 360, k);
       fillC(v, '#5a5060', x + 50, y - 50, 50); fig(v, { x, y: y + 10, s: 110, c: G, lean: 0.7, arms: [1.6, 1.6] });
       const cs = L[0].c; const riches = cs.length ? cs[cs.length - 1].s - L[0].s : 6;
       if (lt > riches - 0.3) { goldPile(v, 180, 560, 50 + (lt - riches) * 15, T); fig(v, { x: 300, y: 580, s: 130, c: G, arms: [0.9, 0.9] }); }
@@ -596,7 +595,10 @@ S_.kitchen3 = (g, T, S) => {
     for (let i = 0; i < 3; i++) { const a = 1 - ramp(lt, 0.8 + i * 0.6, 1.4 + i * 0.6); g.save(); g.globalAlpha = a; g.fillStyle = '#3a2e26'; g.fillRect(80 + i * 210, 330, 130, 430); fillC(g, '#8a7a5a', 190 + i * 210, 560, 6); g.restore(); }
     // person on the floor hugging knees
     g.save(); g.translate(360, 860);
-    fillE(g, '#2a2a3a', 0, -40, 90, 70); fillC(g, '#3a3248', 0, -120, 44); fillE(g, '#2a2a3a', -30, 0, 80, 26);
+    globalThis.__shot = 'floor';
+    g.fillStyle = '#3a3450'; g.beginPath(); g.moveTo(-70, 0); g.quadraticCurveTo(-90, -150, -20, -170); g.lineTo(40, -150); g.quadraticCurveTo(70, -80, 60, 0); g.closePath(); g.fill();
+    fillE(g, '#4a4262', 40, -95, 55, 70, -0.2); fillC(g, '#2a2236', 10, -175, 42); fillE(g, '#5a5070', 55, -120, 30, 16, 0.6);
+    fillE(g, 'rgba(0,0,0,0.35)', 0, 6, 120, 14);
     g.restore();
     txt(g, '0 doors', 360, 240, 54, 'rgba(255,255,255,0.75)', 'InterB', 'center', ramp(lt, 2.6, 3.0));
     vignette(g, 0.7);
@@ -705,16 +707,17 @@ S_.table = (g, T, S) => {
   const night = (z, cx, cy) => { g.save(); cam(g, cx, cy, z); sky(g, '#0e1430', '#2a2440', 0, 640); stars(g, 70, 21, 1, T); hills(g, 600, '#1a1a30', 18, 6); floor(g, 640, '#2a2220', '#100c0a'); };
   const ring = (n, cx, cy, rx, ry, cols, fn) => { for (let i = 0; i < n; i++) { const a = PI + (i / (n - 1)) * PI; fn(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry * -1, i); } };
   if (shot === 'fire' || shot === 'eat') {
-    night(1.15, 360, 580);
+    night(shot === 'fire' ? 1.1 + T * 0.03 : 1.15, 360, 640);
     const cols = ['#8a6d4a', '#5a7a6a', '#7a5a3a', '#6a5a7a', '#9a7a5a', '#5a6a8a'];
-    for (let i = 0; i < 12; i++) { const a = PI * 1.05 + (i / 11) * PI * 0.9; fig(g, { x: 360 + Math.cos(a) * 280, y: 760 + Math.sin(a) * 90, s: 150, c: cols[i % 6], kneel: true, arms: shot === 'eat' ? [1.2 + Math.sin(T * 3 + i) * 0.3, 0.5] : [0.4, 0.4] }); }
+    for (let i = 0; i < 12; i++) { const a = PI * 1.05 + (i / 11) * PI * 0.9; fig(g, { x: 360 + Math.cos(a) * 280, y: 760 + Math.sin(a) * 90, s: 150, c: cols[i % 6], kneel: true, lean: Math.sin(T * 1.3 + i * 1.7) * 0.06, arms: shot === 'eat' ? [1.2 + Math.sin(T * 3 + i) * 0.3, 0.5] : [0.4 + Math.max(0, Math.sin(T * 1.1 + i * 2.3)) * 0.9, 0.4] }); }
+    actor(g, CH.jesus, T, S, { x: 360, y: 600, s: 46, kneel: true, seed: 51, ex: shot === 'eat' ? 'joy|{"mo":0}' : 'warm', arms: [[0, A(0.6, -1.4, 0.6, -1.4)]] });
     flame(g, 360, 800, 40, T); glow(g, 360, 760, 400, '#ff9a3a', 0.35);
     if (shot === 'eat') { PROP.bread()(g, 300, 860, 0, 60); PROP.bread()(g, 420, 860, 0, 60); }
-    actor(g, CH.jesus, T, S, { x: 360, y: 900, s: 50, kneel: true, seed: 51, ex: 'joy|{"mo":0}', arms: [[0, A(0.6, -1.4, 0.6, -1.4)]] });
+    
     g.restore();
   } else if (shot === 'walk') {
     g.save(); cam(g, 360, 560, 1.0); sky(g, '#f0905a', '#f6d0a0', 0, 700); fillC(g, '#fff0c0', 360, 560, 70); hills(g, 640, '#7a4a3a', 20, 2); floor(g, 700, '#9a6a4a', '#5a3a2a');
-    for (let i = 0; i < 13; i++) { const x = 60 + i * 50 + (T * 20) % 50, b = Math.abs(Math.sin(T * 4 + i)) * 6; fig(g, { x, y: 760 - b, s: i === 6 ? 150 : 140, c: i === 6 ? '#efe7d6' : '#3a2416', arms: [0.3 + Math.sin(T * 4 + i) * 0.3, 0.3 - Math.sin(T * 4 + i) * 0.3] }); }
+    const lw = T - at(c0, 1, 3); for (let i = 0; i < 13; i++) { const x = 40 + i * 50 + lw * 22, b = Math.abs(Math.sin(T * 4 + i)) * 6; fig(g, { x, y: 760 - b, s: i === 6 ? 150 : 140, c: i === 6 ? '#efe7d6' : '#3a2416', arms: [0.3 + Math.sin(T * 4 + i) * 0.3, 0.3 - Math.sin(T * 4 + i) * 0.3] }); }
     g.restore();
   } else if (shot === 'sleep') {
     night(1.1, 360, 600);

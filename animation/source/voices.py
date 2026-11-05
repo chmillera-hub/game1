@@ -6,7 +6,7 @@ from screenplay import SCENES, VOICES, CHORUS
 
 SR = 48000
 FPS = 24
-VDIR = os.path.join(os.path.dirname(__file__), '..', 'voices')
+VDIR = os.environ.get('PIPER_VOICES', os.path.join(os.path.dirname(__file__), '..', 'voices'))
 CACHE = os.path.join(os.path.dirname(__file__), 'cache')
 os.makedirs(CACHE, exist_ok=True)
 _models = {}

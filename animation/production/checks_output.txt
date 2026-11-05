@@ -1,0 +1,21 @@
+== metadata
+stream|codec_name=h264|profile=High|width=720|height=1280|pix_fmt=yuv420p|r_frame_rate=24/1|duration=399.208333|bit_rate=216126|nb_frames=9581
+stream|codec_name=aac|profile=LC|sample_rate=48000|channels=2|r_frame_rate=0/0|duration=399.201000|bit_rate=73887|nb_frames=18714
+format|duration=399.208333|size=14730872|bit_rate=295201
+== decoded video frames
+9581
+== loudness (EBU R128)
+    I:         -14.3 LUFS
+    LRA:         3.5 LU
+    Peak:       -1.0 dBFS
+== black segments (>=0.5s)
+none
+== frozen segments (>=2s)
+== decode errors
+(end)
+== silence in audio (>=3s below -50dB)
+none
+== SSIM vs master
+All:0.994785
+== first frame mean luma
+139.98869140625
