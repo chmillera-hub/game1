@@ -1,0 +1,9 @@
+node_modules/
+models/
+out/
+audio/wav/
+audio/vocals/
+audio/sfx/
+audio/stems/
+*.pyc
+__pycache__/

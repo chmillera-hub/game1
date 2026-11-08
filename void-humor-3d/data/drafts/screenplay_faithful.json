@@ -1,0 +1,2423 @@
+{
+  "title": "The Void Has a Sense of Humor",
+  "logline": "So let's say Jesus appears, now, in a glowing dreamscape where a crying Twitter user is running from the Void, and finds out the Void laughs at his jokes, wants a word, and gets blocked with him; plus a bonus scene in which the Void quietly drop-kicks a Depression Magician so it can have a moment with my fear.",
+  "voice_notes": {
+    "NARRATOR": "The same storyteller as the earlier film (the gender-neutral 50/50 blend), but this time telling a funny daydream to a friend and delighted with themselves. Present tense, conversational 'so let's say...' rhythm, a grin in the voice. They play the comic timing like a stand-up who loves the material: they hit cue words ('now.'), leave real air before punchlines, and let little laughs leak through on 'like, on their ass', 'too intensely' and 'fat leg'. When the story turns gentle (the gentle smile, the sad smile, the walk into the horizon, and 'a moment with my fear') the grin drops away and the voice goes soft and close, almost private.",
+    "JESUS": "Warm, mid-low, unhurried, smiling; a gentle tease who is never sarcastic and never preachy. Completely unafraid: he talks to the terrified user the way you would talk to a friend's kid who just fell off a bike. 'Teehee' is genuine and mischievous, a little higher than his speaking voice. 'Do you have a moment?' is earnestly polite, like a neighbor with a clipboard. In the emotions speech he means every word and leans in a little too much; 'meaningful to me' is the most open he gets. The dumb jokes at the end are told with total commitment, quieter and quieter with distance.",
+    "USER": "Young, quick, breathy, pitched up by panic; sarcasm is their armor and they talk fast to get it over with. 'What the actual f***' cracks upward, more disbelief than anger (the last word is the comedic bleep). 'Hell no' is instant and flat, and the rest tumbles out fast. They are silent through Jesus's speech, and that silence is acting: hear the breath catch once.",
+    "VOID": "Never words. Its sounds are huge but soft, with a faint shimmering reverb tail, like a cathedral that giggles. The snort is wet and surprised; the giggle bubbly; the maniacal laugh a high wheezing cackle over a deep belly rumble that keeps tipping into star-coughs; whispers are soft unintelligible wind with little consonant clicks; the huffs are big nasal puffs; the contented sigh is a slow deflating breath; the final giggles are small and far away.",
+    "FEAR": "Small, breathy, high, quick to crack, exactly as in the earlier film. 'What's that noise?' is a tiny, worried, rising question. 'Why are you showing me this?' is the same awed whisper as in the first film, thin with tears.",
+    "MAGICIAN": "Slithery, theatrical, low-to-mid, a stage magician's flourish on every phrase; savors consonants ('juicy' wet and drawn out, a little hiss on 'Fear'). Creepy-funny, a pantomime villain, never truly menacing. His last word, 'ow', is small, muffled and sincere, from under a bucket."
+  },
+  "scenes": [
+    {
+      "id": "s01",
+      "slug": "lets_say",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "Hook in one bright image: a crying young person fleeing a huge, starry, oddly shy Void across a glowing pastel dreamscape. Then the narrator's stage cue conjures Jesus ('now.') and he takes in the scene with zero fear. Viewers should be smiling by the time the user hits the ground, and should already suspect the Void is not the villain.",
+      "music": {
+        "mood": "tense-comic chase that stops dead for the cue, then a twinkly arrival and a warm 'old friends' chord",
+        "instrumentation": "scurrying pizzicato strings and light tom pulses, a bassoon line for the Void's waddle; on 'now.' a harp glissando and celesta sparkle; a warm French-horn chord on the waves",
+        "intensity": 0.5
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s01b01",
+          "kind": "silent",
+          "duration": 2.2,
+          "pause_after": 0.0,
+          "shot": "OPENING STILL / THUMBNAIL. Frame one is the finished, fully lit image: no fade from black, nothing fading up. Low camera at hip height, 35mm feel, looking up the pale winding path to a huge low peach sun on the far horizon (sun disc centered near y=400). Sky: apricot and peach at the horizon rising through lilac to deep indigo with a sparse scatter of stars in the upper left, where the Void's presence darkens it. Title 'The Void Has a Sense of Humor' in soft cream hand-lettering across the upper sky (y=130-290), fully opaque on frame one; it holds through this beat and fades out over the first 1.5 s of the next beat. Right of center: the USER mid-stride toward camera, face at y=470-600. Upper left, on the crest of the path behind them: THE VOID, rim-lit violet-to-teal against the sunset, filling the left half from y=150 to y=780, its starlight eyes at y=330. Bottom third: pale path and mint grass only (subtitle band clear). Imperceptible 2 percent push-in; a few glowing thought seeds drift slowly through the light.",
+          "action": "The user runs toward camera, crying, phone clutched to the chest. Behind them the Void follows at a lumbering waddle, its short fat legs peeking from under the hem, one big four-fingered hand raised palm-out in a 'wait' gesture. Two tears flick off the user's cheeks and catch the sun.",
+          "acting": {
+            "USER": "Already in the run pose on frame one (eyes open, never mid-blink): eyes huge and wet, brows high and pinched together at the inner corners, mouth open in a crumpled cry, freckled cheeks streaked and glinting. Hoodie strings flying, shoulders hunched to the ears, left hand crushing the glowing phone to the sternum. At 1.6 s a panicked glance back over the right shoulder at the Void; eyes snap forward again.",
+            "VOID": "Not menacing at all, and that is the joke: big round starlight eyes earnest and a little worried, nebula-wisp brows lifted in the middle, a small open crescent mouth as if about to call 'wait'. One hand raised palm-out; the other lifts the hem a little like a long skirt so the fat legs can waddle. A few star motes lift off its rim with each step."
+          },
+          "sfx": [
+            "footsteps_run",
+            "wind_soft"
+          ]
+        },
+        {
+          "id": "s01b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "So let's say there's a Twitter user, crying,",
+          "delivery": "conversational and delighted, like starting a story at a sleepover; a grin in the voice; a tiny lift on 'Twitter'; 'crying' sympathetic but light",
+          "pause_after": 0.2,
+          "shot": "Cut on the run to a tracking medium close-up, the camera dollying backward ahead of the USER at their speed; face at y=330-520, the path streaming behind, the Void a soft dark shape far back over their shoulder. The title finishes fading out in the first second.",
+          "action": "The user is visibly crying as they run: tears streaming, a sob hitching the shoulders mid-stride, the phone's cool light bouncing on their chin.",
+          "acting": {
+            "USER": "Brows knotted and inner-up; eyes squeeze half shut on each sob, then flare wide; lower lip pulled down and trembling; a hiccup-sob jolts the chest on 'crying'; a quick wet sniff; the phone stays clamped to the chest like a shield.",
+            "VOID": "Far back, soft focus, still waddling after them with its hand raised."
+          },
+          "sfx": [
+            "footsteps_run"
+          ]
+        },
+        {
+          "id": "s01b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and running from the ~void.",
+          "delivery": "slower, mock-ominous on 'the void', a smile breaking through by the end",
+          "pause_after": 0.4,
+          "shot": "Cut to a wide side view, the path crossing frame on a gentle rise, horizon at y=640. The USER small at right, running toward frame right; THE VOID enters from the left, so tall its hood nearly brushes the top of frame, the indigo starry patch of sky traveling with it. Both heads well above y=800.",
+          "action": "We see the chase: the user sprinting flat-out; the Void behind taking one waddling step for every five of theirs, which still keeps it close, because it is so big.",
+          "acting": {
+            "USER": "Arms pumping, phone hand high, head turned back toward the Void with the whites showing all round the irises; mouth a stretched rectangle of panic.",
+            "VOID": "Waddles with a side-to-side rock; eyes follow the user with a pleading, puzzled look; brows lift higher; it opens and closes its raised hand twice, a tiny 'hey... hey'."
+          },
+          "sfx": [
+            "footsteps_run",
+            "footsteps_stomp"
+          ]
+        },
+        {
+          "id": "s01b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And let's say Jesus appears...",
+          "delivery": "setting up a magic trick: bright, a little grand; the voice hangs in the air on 'appears' and waits",
+          "pause_after": 1.3,
+          "shot": "Cut to a locked-off medium of an EMPTY stretch of path ahead of the user: golden backlight, mint grass, one thought seed drifting through. Hold on the emptiness through the whole pause.",
+          "action": "Nothing appears. That is the joke. The empty path just waits in the golden light; one thought seed floats down, bobs, and drifts off. The user's running feet and panicky breathing get closer off-screen.",
+          "acting": {
+            "USER": "Off-screen, heard only: running feet and wet, gasping breath approaching."
+          },
+          "sfx": [
+            "wind_soft"
+          ]
+        },
+        {
+          "id": "s01b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "^Now.",
+          "delivery": "a crisp little stage cue, a snap of the fingers in the voice, landing exactly on the sparkle",
+          "pause_after": 0.3,
+          "shot": "Same locked-off frame.",
+          "action": "On the word, JESUS pops into existence in the middle of the path in a soft golden shimmer and a small puff of warm sparkles (no flash, no halo): already standing there mid-evening-stroll, hands clasped loosely behind his back, as if he has been out walking for an hour. Face at y=300-430.",
+          "acting": {
+            "JESUS": "Appears already relaxed: weight on one hip, easy shoulders, a pleasant closed-mouth smile, eyes half-lidded and content, enjoying the sunset. One slow, satisfied blink. He has not noticed anything yet."
+          },
+          "sfx": [
+            "sparkle_appear",
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s01b06",
+          "kind": "vocal",
+          "speaker": "USER",
+          "vocal": "scream_short",
+          "duration": 0.8,
+          "pause_after": 0.0,
+          "shot": "Cut to a slightly low medium two-shot from the side: JESUS standing calmly at left (face y=300-430), the USER bursting into frame from the right, still looking back over their shoulder.",
+          "action": "The user whips their head forward, finds a whole person suddenly standing right there, and screams.",
+          "acting": {
+            "USER": "Head snaps forward; eyes fly wide, pupils pinpoints; brows shoot up; mouth a tall open oval; the body jolts upright mid-stride, arms flung up; the phone pops out of the hand and is caught again.",
+            "JESUS": "A small surprised blink at the scream; brows lift; he does not step back. A tiny polite tilt of the head: 'oh. hello.'"
+          },
+          "sfx": [
+            "footsteps_run"
+          ]
+        },
+        {
+          "id": "s01b07",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Hold the two-shot; the camera dips a little to follow the user down (their face settles at y=560-680, still well above the subtitle band).",
+          "action": "The user skids, their legs shoot out in front, and they land hard on their backside, sliding to a stop right at Jesus's sandals in a puff of pale dust. One hand flies up, palm out, and stays up like a tiny shield.",
+          "acting": {
+            "USER": "Lands with an 'oof' face: eyes squeezed shut, cheeks puffed. Then the eyes pop open and stare up at Jesus; one hand up and out, fingers splayed; the other props them up from behind, still holding the phone; legs splayed, sneakers toes-up; breathing in fast little gasps; the cry face crumples back in.",
+            "JESUS": "Looks down: brows lift in sympathy, inner corners up; a soft 'oh' shape of the mouth; he bends slightly at the waist, hands coming out from behind his back, open."
+          },
+          "sfx": [
+            "thud_sit"
+          ]
+        },
+        {
+          "id": "s01b08",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And sees this.",
+          "delivery": "warm and amused, a shrug in the voice, as if gesturing at the whole mess",
+          "pause_after": 0.3,
+          "shot": "Over JESUS's shoulder (his head and shoulder at frame left, y=250-420), looking up the path: the USER on the ground just below him, and beyond, THE VOID arriving at the crest and slowing to a stop, towering, filling the upper frame (its eyes at y=260).",
+          "action": "Jesus sees the whole picture: the crying user on the ground at his feet, and the huge Void that has just stopped a few steps behind them, one hand still half-raised.",
+          "acting": {
+            "JESUS": "Eyes travel: down to the user, up to the Void, back down to the user; a small knowing exhale through the nose; the beginning of a smile at one corner of the mouth.",
+            "USER": "Twists to look back at the Void, then up at Jesus, back and forth, caught between them; tears still running.",
+            "VOID": "Stops; rocks back on its round heels; the raised hand sheepishly sinks halfway; two slow blinks; its eyes go from the user to Jesus."
+          },
+          "sfx": [
+            "footsteps_stomp"
+          ]
+        },
+        {
+          "id": "s01b09",
+          "kind": "silent",
+          "duration": 2.6,
+          "pause_after": 0.2,
+          "shot": "Cut to a low-angle medium on THE VOID from Jesus's eye line (its eyes at y=280), then a reverse medium close-up on JESUS (face y=300-480), the USER's head and raised hand in the low foreground.",
+          "action": "Recognition. The Void gives Jesus a tiny, shy four-finger wave. Jesus gives it a little wave back. They know each other. The user, on the ground between them, sees both waves.",
+          "acting": {
+            "VOID": "Eyes brighten and the lower lids lift into happy crescents; the mouth opens into a small shy smile; wiggles four fingers at hip height, a little embarrassed to be caught chasing someone.",
+            "JESUS": "The smile opens all the way, laugh lines crinkling; raises a hand to shoulder height and waggles the fingers back, an old-friend wave; one soft chuckle in the shoulders.",
+            "USER": "Head whips from one wave to the other; mouth falls open; the crying stalls in pure confusion; one brow up, one down."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s02",
+      "slug": "the_whisper",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "Jesus treats the scariest thing in the user's world like an old friend: walks right up, puts his arm around it, and whispers something we never get to hear. We should be dying to know what he said.",
+      "music": {
+        "mood": "sly, conspiratorial, light on its feet",
+        "instrumentation": "plucked harp, muted pizzicato, soft clarinet, a brushed snare tick",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s02b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And Jesus walks up to the void,",
+          "delivery": "matter-of-fact; the comedy is in how casual it sounds",
+          "pause_after": 0.2,
+          "shot": "Wide side view: the USER on the ground in the right foreground (head y=600-690), JESUS walking past them up the gentle rise toward THE VOID at left (Void eyes y=250). The camera drifts slowly left with him.",
+          "action": "Jesus strolls up to the Void. As he passes the user he gives a small palm-down 'one sec' gesture without breaking stride.",
+          "acting": {
+            "JESUS": "Easy, unhurried walk, sandals scuffing; a glance and small reassuring smile down at the user as he passes, left palm lowered twice: 'hang on'. Then his eyes go up to the Void, full of warm delight.",
+            "USER": "Swivels on their backside to watch him go; mouth open; one hand still raised; the other drags the phone in closer.",
+            "VOID": "Watches him come; fidgets its big fingers together in front of its round belly; eyes bright."
+          },
+          "sfx": [
+            "footsteps_soft"
+          ]
+        },
+        {
+          "id": "s02b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "puts his arm around the void,",
+          "delivery": "cheerful, a rhythm starting to build",
+          "pause_after": 0.2,
+          "shot": "Medium two-shot on JESUS and THE VOID; the Void sinks down into frame so both heads end at y=300-460.",
+          "action": "The Void, knowing the drill, sinks down: its round body squashes and settles like a huge beanbag until its hood is level with Jesus's head. Jesus slings his arm around its broad back.",
+          "acting": {
+            "VOID": "Squashes down with a soft settling wobble; eyes half close, content, at the arm; leans into him a little.",
+            "JESUS": "Right arm goes up and around the Void's back, hand resting on its far shoulder; pulls it in with a friendly squeeze; his cheek nearly touches the hood."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s02b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and starts whispering in the void's ear.",
+          "delivery": "drops into a stage whisper on 'whispering', conspiratorial and pleased",
+          "pause_after": 0.1,
+          "shot": "Slow push in to a tight two-shot: JESUS's mouth at the side of the Void's hood (y=320-440).",
+          "action": "Jesus leans in, cups his free hand beside his mouth, and starts whispering into the side of the Void's hood.",
+          "acting": {
+            "JESUS": "Leans in, hand cupped; eyes slide sideways toward the user with a mischievous glint, then back; brows lifted in a 'get this' look; lips moving fast and small.",
+            "VOID": "Tilts its hood toward him to listen; eyes drift up and to the side, attentive, the way you listen to good gossip."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s02b04",
+          "kind": "vocal",
+          "speaker": "JESUS",
+          "vocal": "whisper",
+          "duration": 3.4,
+          "caption": "(whispering)",
+          "pause_after": 0.0,
+          "shot": "Hold the tight two-shot; at 1.4 s cut to a low reaction shot of the USER on the ground (face y=360-520) watching; at 2.6 s cut back to the two-shot.",
+          "action": "Jesus keeps whispering; we hear only soft sibilants, never the words. The Void listens. Alone on the path, the user watches it happen.",
+          "acting": {
+            "JESUS": "Whispering with little gestures of the cupped hand; a suppressed smile keeps twitching at his mouth; his eyebrows waggle once on what is clearly the setup.",
+            "VOID": "Eyes slowly widen; the nebula brows lift by degrees; the corners of the mouth tighten, a smile being held back.",
+            "USER": "In the cutaway: lowers the raised hand an inch; squints; leans forward to try to hear; wipes their nose on the hoodie sleeve; eyes dart between the two."
+          },
+          "sfx": [
+            "wind_soft"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "slug": "cosmic_laughter",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "The joke lands, in threes: a snort with one star, a giggle with two, then a full maniacal cosmic laugh that coughs stars and little galaxies across the sky, capped by one galaxy the size of a beach ball. Say it, show it.",
+      "music": {
+        "mood": "a held breath, then a sparkling comic romp that peaks with the big galaxy",
+        "instrumentation": "a single held harp note for the pause; celesta and glockenspiel bursts on each star, bouncing bassoon, timpani roll into a cymbal-swell on the big cough",
+        "intensity": 0.6
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s03b01",
+          "kind": "silent",
+          "duration": 1.3,
+          "pause_after": 0.0,
+          "shot": "Medium close two-shot, JESUS and THE VOID, heads at y=280-460. Locked off.",
+          "action": "The punchline has been delivered. Jesus pulls back and waits with an expectant little smile. The Void is perfectly still.",
+          "acting": {
+            "JESUS": "Pulls his head back from the hood; eyebrows up; lips pressed together, holding in his own laugh; eyes fixed on the Void's eyes, waiting.",
+            "VOID": "Absolutely still; eyes blank and round; one slow blink; then the lower lids begin to twitch upward."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s03b02",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "snort",
+          "duration": 0.7,
+          "caption": "(snort)",
+          "pause_after": 0.2,
+          "shot": "Same frame.",
+          "action": "A snort bursts out and ONE tiny star pops out of the Void's hood, arcs up and twinkles away.",
+          "acting": {
+            "VOID": "A hand flies up to cover the mouth of its hood; eyes squeeze into crescents; shoulders jolt once.",
+            "JESUS": "Grins; nods encouragingly, eyebrows high: 'right?'"
+          },
+          "sfx": [
+            "star_pop"
+          ]
+        },
+        {
+          "id": "s03b03",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "giggle",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Slight push-in.",
+          "action": "The giggle leaks out through its fingers and TWO more stars squeeze out between them and float up.",
+          "acting": {
+            "VOID": "Body bobs with each giggle; eyes watering starlight; brow wisps fluttering up; it tries and fails to hold it in, fingers spread over its mouth.",
+            "JESUS": "Starts giggling silently too, shoulders shaking, a hand on his chest."
+          },
+          "sfx": [
+            "star_pop",
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s03b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And then the void starts laughing ^maniacally,",
+          "delivery": "gleeful, picking up speed, half laughing along",
+          "pause_after": 0.0,
+          "shot": "Cut wider and lower so the whole Void fills the upper frame (eyes y=250), JESUS at its side, the USER small in the lower right foreground (head y=680).",
+          "action": "The dam breaks: the Void throws its head back and laughs, a huge crescent mouth opening into deep cosmos, its whole round body bouncing.",
+          "acting": {
+            "VOID": "Head thrown back; mouth wide open with stars visible inside; eyes squeezed into tight happy arcs streaming starlight tears; both hands clutching its belly; the hem bounces and the little fat feet lift off the ground.",
+            "JESUS": "Laughing too, open mouth, eyes crinkled, a hand on the Void's back.",
+            "USER": "Scoots backward on their backside, eyes huge, hand up."
+          },
+          "sfx": [
+            "rumble_low"
+          ]
+        },
+        {
+          "id": "s03b05",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "laugh_maniacal",
+          "duration": 3.0,
+          "overlap": true,
+          "pause_after": 0.0,
+          "shot": "Same frame (under the narration).",
+          "action": "The laugh is audible under the narration: high wheezing cackles over a deep belly rumble.",
+          "acting": {
+            "VOID": "Continuous bouncing laugh as above.",
+            "JESUS": "Laughing with it.",
+            "USER": "Frozen, staring."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s03b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "while coughing up some stars and galaxies,",
+          "delivery": "delighted, tumbling forward",
+          "pause_after": 0.0,
+          "shot": "Low-angle medium on the Void's hood, the sunset sky behind it; the coughed-up lights fly up and across frame toward the user.",
+          "action": "Mid-laugh the Void coughs, and with every cough a burst of stars pops out of its mouth, then a little spiral galaxy, spinning and tumbling through the air like a dropped pinwheel.",
+          "acting": {
+            "VOID": "The laugh breaks into coughs: the body jerks forward on each one, a hand at its chest; the eyes pop open in surprise at each spray of stars, then crinkle shut laughing again.",
+            "JESUS": "Pats its back, still laughing.",
+            "USER": "Ducks as a little galaxy whirls over their head; follows it with their eyes, mouth hanging open."
+          },
+          "sfx": [
+            "star_pop",
+            "galaxy_whirl"
+          ]
+        },
+        {
+          "id": "s03b07",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "cough",
+          "duration": 3.0,
+          "overlap": true,
+          "pause_after": 0.0,
+          "shot": "Same frame (under the narration).",
+          "action": "Laugh-coughs audible under the narration, each with a soft pop of stars.",
+          "acting": {
+            "VOID": "Cough, laugh, cough, as above.",
+            "JESUS": "Patting.",
+            "USER": "Ducking."
+          },
+          "sfx": [
+            "star_pop"
+          ]
+        },
+        {
+          "id": "s03b08",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "from laughing so hard.",
+          "delivery": "tickled, almost losing it on 'so hard'",
+          "pause_after": 0.2,
+          "shot": "Cut to a frontal medium on THE VOID and JESUS together (heads y=260-460).",
+          "action": "The Void is bent forward, wheezing with laughter, and Jesus thumps its back like you would for someone who swallowed wrong.",
+          "acting": {
+            "VOID": "Doubled over, one hand slapping its own knee through the cloak; laughing silently now, out of air; shoulders heaving.",
+            "JESUS": "Two hearty back thumps; tears of laughter in his own eyes; he wipes one with a knuckle."
+          },
+          "sfx": [
+            "pat_pat"
+          ]
+        },
+        {
+          "id": "s03b09",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "laugh_maniacal",
+          "duration": 3.4,
+          "caption": "(maniacal cosmic laughter)",
+          "pause_after": 0.3,
+          "shot": "Wide: the Void and Jesus upper frame, the USER in the lower foreground (head y=660); the air above them full of drifting stars and slowly spinning little galaxies glowing against the dusk.",
+          "action": "The peak: the Void rears back for one last huge howl of laughter and coughs up the biggest one yet, a spiral galaxy the size of a beach ball, which sails slowly over the user's head and hangs in the sky, turning.",
+          "acting": {
+            "VOID": "Rears up to full height, arms flung wide, mouth enormous, eyes clenched; on the big cough the whole body jolts and the big galaxy launches out.",
+            "JESUS": "Leans away laughing, one hand still on the Void's back, watching the big galaxy go with delighted 'ooh' brows.",
+            "USER": "Flattens back on the elbows as it passes over; eyes track it all the way up; jaw drops."
+          },
+          "sfx": [
+            "galaxy_whirl",
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "slug": "sense_of_humor",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "First big punchline: the calmest person in the dreamscape explains the cosmic horror as a great audience. 'Teehee.' A long deadpan hold on the user, then their bleeped disbelief, timed to the last wheeze of the Void's laugh and its final hiccup-star.",
+      "music": {
+        "mood": "the romp drains to one held note; then dry, light comic plucks",
+        "instrumentation": "a sustained celesta note, harp harmonics; a two-note glockenspiel 'tee-hee'; a single muted-trumpet 'doink' after the bleep",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s04b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Then Jesus looks at the Twitter user,",
+          "delivery": "lighter, setting up, a small smile",
+          "pause_after": 0.1,
+          "shot": "Medium close on JESUS (face y=300-470); the still-giggling Void soft behind him at left; stars drifting in the air.",
+          "action": "Jesus, his arm still resting on the Void's back, turns his head and looks down at the user.",
+          "acting": {
+            "JESUS": "Laughter settling into a warm smile; turns his head; his eyes find the user; brows lift with friendly concern.",
+            "VOID": "Soft in the background, still shaking with silent giggles, wiping its eyes with a knuckle."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "who's, like, on their ass, with their hand up,",
+          "delivery": "the narrator's own laugh breaking in on 'like'; brisk, affectionate, vivid; a tiny breath before 'with their hand up'",
+          "pause_after": 0.1,
+          "shot": "Cut to Jesus's POV down onto the USER: a high-angle medium, the user sitting splayed on the pale path, face at y=380-520.",
+          "action": "There they are: sitting on their backside in the dust, one hand raised flat toward Jesus and the Void, the phone clutched in the other.",
+          "acting": {
+            "USER": "Legs splayed, sneakers toes-up; leaning back on the phone hand; the raised hand trembles, fingers splayed as if it could stop a planet; hood half fallen back, cowlick sticking straight up; shoulders up at the ears."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and ~terror in their eyes.",
+          "delivery": "mock-dramatic, low and slow on 'terror', grinning underneath",
+          "pause_after": 0.5,
+          "shot": "Slow push to an extreme close-up of the USER's eyes (y=360-520). Reflected in them: drifting stars and the big spiral galaxy turning in the sky.",
+          "action": "Terror in the eyes, literally: huge irises, pinprick pupils, wet lids, a reflected galaxy turning slowly across each eye.",
+          "acting": {
+            "USER": "Eyes wide open, whites showing all around the irises; lower lids quivering; pupils shrunk to pinpoints; brows high and bunched; one tear sliding out; no blink."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s04b04",
+          "kind": "silent",
+          "duration": 0.9,
+          "pause_after": 0.0,
+          "shot": "Cut to a medium on JESUS, warm and close (face y=300-470).",
+          "action": "Jesus gives the user a warm, slightly sheepish smile, like a parent whose big dog just jumped on a guest.",
+          "acting": {
+            "JESUS": "Soft eyes, laugh lines; lips pressed in a small apologetic smile; a little nod; his free hand opens toward the user, palm up.",
+            "VOID": "Behind him, one last suppressed giggle bobs its shoulders."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b05",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "The void's got a pretty good sense of humor.",
+          "delivery": "warm, reassuring, conspiratorial, like explaining a friend's odd habit; a smile in every word; a little lean on 'pretty good'",
+          "pause_after": 0.7,
+          "shot": "Medium two-shot from the user's low eye line: JESUS at right, THE VOID behind him at left, both heads in y=220-470.",
+          "action": "Jesus explains the Void with a fond thumb jerked back over his shoulder at it. Behind him the Void, catching its breath, nods along and hiccups out one small star.",
+          "acting": {
+            "JESUS": "Lip-synced. Head tilts toward the Void; thumb points back at it on 'void's'; eyebrows bob on 'pretty good'; the smile widens on 'humor'.",
+            "VOID": "Wipes a starlight tear; nods eagerly; a hiccup pops a little star from its mouth, which it watches float up."
+          },
+          "sfx": [
+            "star_pop"
+          ]
+        },
+        {
+          "id": "s04b06",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "^Teehee.",
+          "delivery": "a light, genuine, mischievous little giggle-word, higher than his speaking voice, shoulders up",
+          "pause_after": 0.3,
+          "shot": "Close-up on JESUS (face y=300-480).",
+          "action": "Jesus says 'teehee' and means it: a little scrunch of pure joy.",
+          "acting": {
+            "JESUS": "Lip-synced. Shoulders scrunch up to his ears; eyes close into crescents; nose wrinkles; the fingertips of one hand touch his lips for a beat; then his eyes open again, twinkling, checking the user's reaction."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s04b07",
+          "kind": "silent",
+          "duration": 1.8,
+          "pause_after": 0.0,
+          "shot": "Cut to a medium close on the USER (face y=330-520), locked off. Hold.",
+          "action": "Nothing moves for a long second. A little stray star drifts down past the user's face.",
+          "acting": {
+            "USER": "Total stillness: the face goes slack; the eyes stay wide but the upper lids drop to a flat half-mast of disbelief; the raised hand stays frozen in the air; the mouth slowly falls open. One slow blink. The tiny star floats down in front of their nose; their eyes cross slightly to follow it, then uncross, back to Jesus."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b08",
+          "kind": "line",
+          "speaker": "USER",
+          "text": "What the actual f***?!",
+          "delivery": "cracking upward, more disbelief than anger, a squeak on 'actual'; the last word is the comedic bleep",
+          "pause_after": 0.2,
+          "shot": "Hold the close on the USER; on the bleep, cut to the wide two-shot of Jesus and the Void (heads y=230-470).",
+          "action": "The user says it to the sky. Behind Jesus, the Void is just finishing laughing: the last wheezes, slowing down.",
+          "acting": {
+            "USER": "Lip-synced. Head juts forward; both arms fly out sideways, palms up, phone in one; brows shoot up and together; on the bleep the mouth is wide open.",
+            "JESUS": "Eyebrows hop up at the language, a small 'ooh' mouth, then a forgiving little smile.",
+            "VOID": "Last wheezing laughs, slowing; a hand on its chest; shoulders bobbing less and less."
+          },
+          "sfx": [
+            "bleep"
+          ]
+        },
+        {
+          "id": "s04b09",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "laugh_soft",
+          "duration": 1.6,
+          "overlap": true,
+          "pause_after": 0.0,
+          "shot": "Same (under the user's line).",
+          "action": "The tail of the Void's laughter, winding down under the user's outburst.",
+          "acting": {
+            "VOID": "Laughter running out of steam.",
+            "USER": "As above.",
+            "JESUS": "As above."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b10",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "sigh",
+          "duration": 1.8,
+          "caption": "(contented sigh)",
+          "pause_after": 0.2,
+          "shot": "Medium on THE VOID and JESUS; at the end, a quick cut to the USER (face y=340-520).",
+          "action": "The Void is done laughing. One big contented sigh, a hand on its chest; then one last hiccup: a single star pops out and drifts lazily up. Cut to the user, whose flat eyes follow it up.",
+          "acting": {
+            "VOID": "Exhales and deflates happily, eyes half closed and dreamy; then a hiccup: eyes pop open; it watches the hiccup-star float away; a small bashful smile.",
+            "JESUS": "Pats its back twice, gently: 'there you go'.",
+            "USER": "Deadpan: eyes alone track the little star up and out of frame; nothing else on the face moves."
+          },
+          "sfx": [
+            "star_pop",
+            "pat_pat"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s05",
+      "slug": "side_eye",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "The tables turn: now the Void has something to say, and Jesus is its interpreter. The Void side-eyes the user the whole time it whispers, the user shrinks, and Jesus nods along like a very supportive friend. Then crossed arms, a scowl, and the politest invitation in the world.",
+      "music": {
+        "mood": "sneaky, suspicious comic",
+        "instrumentation": "low clarinet, walking pizzicato bass, a wood-block tick on each side-eye; a tiny fanfare-in-miniature for Jesus's announcement",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s05b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And then the void starts whispering into Jesus's ear,",
+          "delivery": "conspiratorial, enjoying the reversal",
+          "pause_after": 0.0,
+          "shot": "Tight two-shot: the Void's hood bowed to JESUS's ear, both heads at y=290-460.",
+          "action": "The Void leans down to Jesus's ear and cups one huge four-fingered hand beside its hood, whispering.",
+          "acting": {
+            "VOID": "Leans in, hand cupped; eyes serious and earnest; brow wisps drawn together in a 'listen to me' shape.",
+            "JESUS": "Tilts his head to give it his ear; eyes go up and to the side, listening; lips pursed attentively."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s05b02",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "whisper",
+          "duration": 3.2,
+          "overlap": true,
+          "pause_after": 0.0,
+          "shot": "Same (under the narration).",
+          "action": "The Void's whisper, soft unintelligible wind, under the narration.",
+          "acting": {
+            "VOID": "Whispering as above.",
+            "JESUS": "Listening."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "as the Twitter user is watching,",
+          "delivery": "same conspiratorial lilt",
+          "pause_after": 0.0,
+          "shot": "Cut to the USER on the ground, medium close (face y=340-520), watching.",
+          "action": "The user watches the two of them whisper, the phone up at chin level like a shield.",
+          "acting": {
+            "USER": "Eyes narrowed in suspicion, flicking from the Void to Jesus and back; still sniffling; slowly pulls the hood strings tight with the free hand."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and the void is side-eyeing them.",
+          "delivery": "slow, relishing the side-eye; dry",
+          "pause_after": 0.4,
+          "shot": "Cut back to the two-shot, then push to an extreme close-up of the Void's eyes (y=300-420).",
+          "action": "Still whispering, the Void's eyes slide sideways, all the way over, and lock onto the user. The head does not move at all.",
+          "acting": {
+            "VOID": "Upper lids of darkness lower to a flat half; the irises slide to the far corners toward the user and stop dead; one brow wisp lowers; the whisper never stops.",
+            "JESUS": "Keeps listening, oblivious, head tilted."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b05",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "whisper",
+          "duration": 3.4,
+          "pause_after": 0.0,
+          "shot": "Cut to the USER, who freezes under the stare (face y=340-520); then back to the two-shot.",
+          "action": "The whisper goes on. Under the side-eye the user scoots back one inch along the dirt. The Void's eyes follow them exactly one inch.",
+          "acting": {
+            "USER": "Freezes; then a tiny scoot back on the backside; gulps; looks away; sneaks a look back: still being watched; looks away again.",
+            "VOID": "Side-eye locked on; when the user scoots, the irises track one inch; the lids lower a hair more.",
+            "JESUS": "Nodding slowly, eyes on the sunset, very absorbed."
+          },
+          "sfx": [
+            "gulp"
+          ]
+        },
+        {
+          "id": "s05b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And Jesus is nodding.",
+          "delivery": "brief and deadpan",
+          "pause_after": 0.0,
+          "shot": "Medium close on JESUS (face y=300-470), the Void's cupped hand at his ear.",
+          "action": "Jesus nods along to the whisper: small, steady, supportive nods.",
+          "acting": {
+            "JESUS": "Nod, nod, nod; lips pressed; brows knitting thoughtfully; a supportive 'mm' face.",
+            "VOID": "Its cupped hand and the edge of its hood in frame, whispering on."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b07",
+          "kind": "vocal",
+          "speaker": "JESUS",
+          "vocal": "mmhm",
+          "duration": 0.8,
+          "pause_after": 0.3,
+          "shot": "Same.",
+          "action": "Nod number one, with a sound.",
+          "acting": {
+            "JESUS": "A deeper nod: 'mm-hm.' Eyes on the middle distance.",
+            "VOID": "Whispering on."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b08",
+          "kind": "vocal",
+          "speaker": "JESUS",
+          "vocal": "mmhm",
+          "duration": 0.8,
+          "pause_after": 0.4,
+          "shot": "Same, a touch closer.",
+          "action": "Nod number two, more emphatic.",
+          "acting": {
+            "JESUS": "A firmer nod, brows up: 'mm-HM', the face of a friend agreeing that your coworker is out of line.",
+            "VOID": "Whispering on, more animated; the cupped hand wiggles."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b09",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "Oh. Really?",
+          "delivery": "genuinely interested, a little surprised, glancing at the subject of the gossip",
+          "pause_after": 0.5,
+          "shot": "Close on JESUS; then cut to the USER for their reaction (face y=340-520).",
+          "action": "The third nod breaks the pattern: Jesus's eyebrows jump and his eyes slide down to the user, mildly fascinated, then back to the Void.",
+          "acting": {
+            "JESUS": "Lip-synced. Brows shoot up on 'Oh'; eyes slide to the user on 'Really', a polite fascinated look; then back to the Void.",
+            "USER": "Feels the look land: shrinks into the hoodie, eyes darting, mouth a tight wobbly line: 'what did it say?'",
+            "VOID": "Nods once, solemnly, still side-eyeing."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b10",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Then the void crosses its arms,",
+          "delivery": "dry, a small drumroll in the voice",
+          "pause_after": 0.0,
+          "shot": "Medium on THE VOID as it rises back to full height, Jesus beside it (Void's eyes y=250, Jesus's face y=380-500).",
+          "action": "Done whispering, the Void straightens up to its full towering height and crosses its big arms over its round belly.",
+          "acting": {
+            "VOID": "Rises with a slow inflating wobble; folds its arms high and firm, chin of the hood lifted.",
+            "JESUS": "Steps half a pace aside to give it room; smooths the front of his robe."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s05b11",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and ~scowls at the Twitter user.",
+          "delivery": "gravelly, mock-stern on 'scowls'",
+          "pause_after": 0.3,
+          "shot": "Low angle from the USER's position up at THE VOID (its eyes y=260), the user's head and shoulders in the low foreground (y=640-780).",
+          "action": "The scowl: the Void glares down at the user.",
+          "acting": {
+            "VOID": "Upper lids of darkness slam down to a flat line; brow wisps draw into a deep V; the mouth turns into a small downturned crescent; a single slow nostril-less exhale ripples its hood.",
+            "USER": "Seen from behind: the shoulders creep up, the head sinks into the hood."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b12",
+          "kind": "silent",
+          "duration": 1.3,
+          "pause_after": 0.0,
+          "shot": "Medium on JESUS (face y=300-470), the scowling Void soft beside him.",
+          "action": "Jesus prepares to deliver the message: he clears his throat, straightens his sash, clasps his hands. The official interpreter.",
+          "acting": {
+            "JESUS": "A tiny throat-clear; adjusts the terracotta sash on his shoulder; clasps his hands in front; puts on a bright, polite, slightly formal smile; eyebrows up.",
+            "VOID": "Holds the crossed-arms scowl."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s05b13",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "The void says it wants to talk to you about something important.",
+          "delivery": "bright, earnest, a messenger doing a good job; tiny emphasis on 'important'",
+          "pause_after": 0.6,
+          "shot": "Two-shot from the user's low eye line: JESUS at right with his hands clasped, THE VOID at left with its arms crossed (heads y=220-470).",
+          "action": "Jesus passes on the message with a little open-palm gesture toward the Void. The Void, arms crossed, confirms with one slow, solemn nod.",
+          "acting": {
+            "JESUS": "Lip-synced. Warm, formal smile; on 'The void says' an open palm toward the Void; on 'important' his eyebrows go up and his head tips a little forward.",
+            "VOID": "One slow, deep, solemn nod on 'important'; the scowl never moves."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b14",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "Do you have a moment?",
+          "delivery": "the politest question in the world, like a neighbor on your doorstep with a pamphlet; rising, hopeful",
+          "pause_after": 0.3,
+          "shot": "Close on JESUS (face y=300-480).",
+          "action": "Jesus asks, all hope and good manners, while behind him the Void keeps scowling.",
+          "acting": {
+            "JESUS": "Lip-synced. Head tilts a few degrees; eyebrows high; a big hopeful smile; hands clasped at his chest; leans in a little on 'moment'.",
+            "VOID": "Soft behind him, arms crossed, scowling."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s06",
+      "slug": "hell_no",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "Instant refusal; an enormous cosmic sulk in three moves (eye roll, huff-and-puff, turn and plop); and Jesus stuck in the middle with the most awkward face in the dreamscape.",
+      "music": {
+        "mood": "a record-scratch stop, then sulky comic; then dead air for the awkward face",
+        "instrumentation": "a pizzicato 'nope' cluster; a descending tuba-and-contrabassoon slide for the turn; then nothing but wind; a single low pizzicato on 'awkward'",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s06b01",
+          "kind": "line",
+          "speaker": "USER",
+          "text": "Hell no.",
+          "delivery": "instant, flat, no pause for thought at all",
+          "pause_after": 0.2,
+          "shot": "Cut hard to a medium close on the USER (face y=330-520).",
+          "action": "The answer comes before the question has finished landing.",
+          "acting": {
+            "USER": "Lip-synced. Flat eyes, chin tucked, a tiny fast head shake; the phone pulled tight to the chest."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b02",
+          "kind": "line",
+          "speaker": "USER",
+          "text": "I'm not talking to that ~scary thing.",
+          "delivery": "fast, voice climbing, a little shrill on 'scary'",
+          "pause_after": 0.5,
+          "shot": "Widen to include THE VOID at upper left (eyes y=260) and JESUS between them.",
+          "action": "The user points their phone at the Void like someone warding off a monster with a flashlight, arm trembling.",
+          "acting": {
+            "USER": "Lip-synced. Jabs the phone toward the Void on 'that'; arm trembling; eyes squeezed half shut; head turned partly away as if the Void might bite.",
+            "VOID": "On 'thing' the scowl drops in shock: the lids fly open, the mouth falls into a little round 'o'. Offended.",
+            "JESUS": "Eyes go from the user to the Void and back; lips press."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b03",
+          "kind": "silent",
+          "duration": 0.8,
+          "pause_after": 0.0,
+          "shot": "Close-up on THE VOID's eyes (y=280-420).",
+          "action": "The Void processes being called a scary thing.",
+          "acting": {
+            "VOID": "One slow, deeply offended blink; the lids reopen only to a flat, unimpressed half; one brow wisp lifts."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the void rolls its eyes,",
+          "delivery": "deadpan, enjoying it",
+          "pause_after": 0.0,
+          "shot": "Hold the close-up on the Void's eyes.",
+          "action": "A huge, slow, full eye roll: both starlight eyes travel up into the top of the hood, all the way around, and back down.",
+          "acting": {
+            "VOID": "Irises roll up and around in a full circle, the lids following, the whole hood tilting back with the roll; ends on a flat half-lidded stare off to the side."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and huffs, and puffs,",
+          "delivery": "each word puffed out, cartoonish; a beat between them",
+          "pause_after": 0.0,
+          "shot": "Medium on THE VOID (eyes y=260), Jesus's shoulder at the edge of frame.",
+          "action": "Two big huffs, and each one blows a little cloud of violet nebula out of the hood; the second one blows a passing thought seed clean away.",
+          "acting": {
+            "VOID": "Chest swells, then HUFF: a violet puff; swells again, bigger, then PUFF: a teal puff; the brow wisps bunch; the crossed arms clench tighter.",
+            "JESUS": "Squints and leans back as the second puff blows past his face."
+          },
+          "sfx": [
+            "whoosh"
+          ]
+        },
+        {
+          "id": "s06b06",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "huff",
+          "duration": 2.2,
+          "overlap": true,
+          "caption": "(huff... puff)",
+          "pause_after": 0.0,
+          "shot": "Same (under the narration).",
+          "action": "The two huffs, audible under the narration.",
+          "acting": {
+            "VOID": "Huff, then puff, as above.",
+            "JESUS": "As above."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b07",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and turns its back to the Twitter user.",
+          "delivery": "slow and grand, like narrating a soap-opera exit",
+          "pause_after": 0.0,
+          "shot": "Wide: the USER low right (head y=640), JESUS center (face y=380-480), THE VOID upper left.",
+          "action": "The Void shuffles around in a slow, sulky half circle on its fat little legs, step, step, step, until its huge round back faces the user.",
+          "acting": {
+            "VOID": "Small stompy steps; chin up; arms still crossed; the hem swings; it does not look back.",
+            "USER": "Watches it turn, mouth open, half relieved and half insulted.",
+            "JESUS": "Turns his head to follow it round."
+          },
+          "sfx": [
+            "footsteps_stomp"
+          ]
+        },
+        {
+          "id": "s06b08",
+          "kind": "silent",
+          "duration": 1.4,
+          "pause_after": 0.0,
+          "shot": "Same wide.",
+          "action": "Then it plops down to sit, right there, with its back to everyone, like a big sulking kid. The ground gives a soft thump; a few star motes lift off its back.",
+          "acting": {
+            "VOID": "Sits down heavily on its backside; the round body settles and squashes; arms stay crossed; the hood droops a little forward. Faint stars drift inside the fabric of its back.",
+            "JESUS": "Left standing between the Void's turned back and the user on the ground.",
+            "USER": "Blinks at the giant sulking back."
+          },
+          "sfx": [
+            "thud_sit"
+          ]
+        },
+        {
+          "id": "s06b09",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And Jesus has that look, like...",
+          "delivery": "slowing down, the grin audible; leaves the 'like' hanging",
+          "pause_after": 0.0,
+          "shot": "Slow push in to a close-up on JESUS (face y=300-490).",
+          "action": "Jesus's face starts to do the thing.",
+          "acting": {
+            "JESUS": "The polite smile freezes in place; the lips press together; the eyes go wide and still."
+          },
+          "sfx": [
+            "wind_soft"
+          ]
+        },
+        {
+          "id": "s06b10",
+          "kind": "silent",
+          "duration": 2.8,
+          "pause_after": 0.0,
+          "shot": "Hold the close-up, locked off. Total silence except the wind.",
+          "action": "THE AWKWARD FACE: a clenched-teeth smile, eyebrows up, eyes darting. No words.",
+          "acting": {
+            "JESUS": "Lips pull back from clenched teeth in a wide, stiff grimace-smile; brows go way up, inner corners highest; the eyes dart LEFT to the user, RIGHT to the Void's sulking back, LEFT to the user again, then (third dart) straight into the lens for half a second, then away. A slow breath sucked in through the clenched teeth. A small rock up onto his toes and back down. Hands clasped behind his back."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s06b11",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Oh boy. This is kind of ~awkward.",
+          "delivery": "the narrator voicing the vibe, half-whispered through a grin; a pause after 'Oh boy'",
+          "pause_after": 0.8,
+          "shot": "Hold the close-up.",
+          "action": "Jesus holds the awkward face through the line; on 'awkward' his eyebrows bob up once more and the grimace widens a notch.",
+          "acting": {
+            "JESUS": "Grimace-smile held; one more glance toward the Void's back; a tiny wince; finally he lets the breath out through his teeth with a little puff of the cheeks."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "slug": "a_gentle_smile",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "The first real tenderness. A hand on a sulking shoulder melts the sulk; the Void's gentle smile shows it was never really angry, just hurt. Jesus's small nod says: I know. Let me try.",
+      "music": {
+        "mood": "warm, tender, simple",
+        "instrumentation": "felt piano, a solo cello line, soft string pad",
+        "intensity": 0.25
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s07b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "So Jesus puts his hand on the void's shoulder.",
+          "delivery": "the grin drops out of the voice; gentle, slower",
+          "pause_after": 0.3,
+          "shot": "Medium from behind and to the side: the seated Void's big round back and shoulder (shoulder at y=380), JESUS stepping up beside it (face y=330-470).",
+          "action": "Jesus steps over to the sulking Void and rests his hand on its round shoulder.",
+          "acting": {
+            "JESUS": "The awkward face softens into tenderness: brows settle, inner corners lifted; he places his palm on the Void's shoulder lightly and leaves it there, thumb moving once.",
+            "VOID": "A tiny flinch of surprise at the touch, then stillness."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s07b02",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Slow drift around to the Void's front three-quarter: its face (eyes y=330) in the foreground, Jesus's hand on its shoulder.",
+          "action": "Under the hand, the sulk melts.",
+          "acting": {
+            "VOID": "The crossed arms loosen and slide down; the scowling lids rise from flat to soft; the brow wisps un-knot; one long slow breath out; the eyes look down, a little ashamed of the fuss.",
+            "JESUS": "Hand still; waiting, patient."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the void looks over its shoulder,",
+          "delivery": "soft, unhurried",
+          "pause_after": 0.0,
+          "shot": "Over-the-shoulder two-shot past the Void's hood onto JESUS (Jesus's face y=320-470; the Void's eye entering at frame left, y=330).",
+          "action": "The Void's hood turns slowly and its eyes come over its shoulder to find Jesus.",
+          "acting": {
+            "VOID": "The head turns first, then the eyes arrive a beat later; they lift up to Jesus's face.",
+            "JESUS": "Meets its eyes; a soft, open look."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and gives him a gentle ^smile.",
+          "delivery": "warm, almost tender enough to break, a breath before 'smile'",
+          "pause_after": 0.4,
+          "shot": "Reverse: close on THE VOID's face over its shoulder (eyes y=320-400, mouth y=450), warm sunset rim light on the hood's edge.",
+          "action": "The Void smiles at Jesus: small and gentle, the crescent mouth showing a sliver of soft stars.",
+          "acting": {
+            "VOID": "Lower lids rise into soft crescents; the mouth curves into a small closed smile; the brow wisps lift in the middle; a single star mote lifts off the rim of its hood.",
+            "JESUS": "Soft in the foreground edge: his hand gives the shoulder one small squeeze."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s07b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And Jesus nods, just slightly.",
+          "delivery": "quiet, simple",
+          "pause_after": 0.6,
+          "shot": "Close on JESUS (face y=310-480), the Void's hood soft at frame edge.",
+          "action": "Jesus gives the Void a small nod: I know. I've got this.",
+          "acting": {
+            "JESUS": "One small slow nod; his eyes glisten a little; a closed-mouth smile; then his gaze shifts past the Void's shoulder toward the user, and the smile turns hopeful.",
+            "VOID": "Soft at the edge; it nods back, tiny."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s08",
+      "slug": "talk_to_me",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "The heart of Part One, played straight AND funny. Jesus kneels to the user's level and offers what he actually came to give. He means every word, and he leans in a little more with each one; the user leans back a little more each time 'emotions' comes up. For one breath the user is seen, and almost lets it in. Then the walls go back up.",
+      "music": {
+        "mood": "sincere, hopeful, with a growing comic tension underneath each 'emotions'",
+        "instrumentation": "felt piano and warm strings; a soft harp figure on 'meaningful'; a single low cello note under each user flinch",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s08b01",
+          "kind": "silent",
+          "duration": 2.4,
+          "pause_after": 0.0,
+          "shot": "Side wide: JESUS walking back to the USER and kneeling at a respectful arm's length; then cut to an over-the-shoulder from behind the user onto Jesus's face (y=300-470), the seated Void's back far behind him (upper left).",
+          "action": "Jesus walks back down the path, kneels in the dust at the user's eye level, and rests his forearms on his knee. He leaves space between them.",
+          "acting": {
+            "JESUS": "Walks slowly; kneels on one knee with a small grunt of effort; robe pooling; forearms on the raised knee, hands loose and open; head slightly lower than the user's: he is making himself small.",
+            "USER": "Flinches back on their hands as he approaches; the phone comes up to the chin; eyes locked on him, wary.",
+            "VOID": "Far in the background, its back to them."
+          },
+          "sfx": [
+            "footsteps_soft",
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s08b02",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "It's okay.",
+          "delivery": "very soft, low, the first truly gentle thing anyone has said to them",
+          "pause_after": 0.5,
+          "shot": "Over the user's shoulder onto JESUS, close (face y=300-470).",
+          "action": "Jesus says it simply, his open hands still on his knee.",
+          "acting": {
+            "JESUS": "Lip-synced. Warm, steady eye contact; brows soft, inner corners lifted; a small reassuring nod on 'okay'.",
+            "USER": "Back of the head and shoulder in the foreground; the shoulder drops a millimeter."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b03",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "You don't have to talk to the void.",
+          "delivery": "gentle, a little smile on 'the void', permission not persuasion",
+          "pause_after": 0.6,
+          "shot": "Reverse: over Jesus's shoulder onto the USER (face y=330-520).",
+          "action": "The user hears they are off the hook.",
+          "acting": {
+            "JESUS": "Lip-synced (seen from behind: jaw and beard move); a small tilt of the head back toward the Void.",
+            "USER": "A shaky exhale; the shoulders come down from the ears; the eyes flick past Jesus to the Void's back and back again; the raised hand lowers for the first time."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b04",
+          "kind": "silent",
+          "duration": 1.0,
+          "pause_after": 0.0,
+          "shot": "Cut to a medium on the seated Void's back (upper frame), Jesus and the user small below.",
+          "action": "Meanwhile the Void, back turned, is obviously eavesdropping.",
+          "acting": {
+            "VOID": "The hood tilts an inch toward the conversation; one starlight eye peeks around the edge of the hood, then whips back when it might be seen.",
+            "JESUS": "Kneeling, unaware.",
+            "USER": "Unaware."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b05",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "But what about... you talk to me?",
+          "delivery": "hopeful, a small brave lean on 'me'; a beat of air after 'about'",
+          "pause_after": 0.6,
+          "shot": "Over the user's shoulder onto JESUS, slightly closer than before.",
+          "action": "Jesus leans in a few inches and touches his own chest on 'me'.",
+          "acting": {
+            "JESUS": "Lip-synced. Leans in (lean number one); a palm to his own chest on 'me'; brows up; a hopeful, slightly shy smile.",
+            "USER": "Foreground shoulder: leans back the same few inches."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b06",
+          "kind": "silent",
+          "duration": 0.9,
+          "pause_after": 0.0,
+          "shot": "Close on the USER (face y=330-520).",
+          "action": "Suspicion.",
+          "acting": {
+            "USER": "Eyes narrow; one brow lowers; the lips purse to one side; the phone creeps higher, half covering the mouth."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b07",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "And it doesn't have to be about the void.",
+          "delivery": "quick and reassuring, waving the idea away",
+          "pause_after": 0.3,
+          "shot": "Over the user's shoulder onto JESUS.",
+          "action": "Jesus waves the Void off with a little brushing hand gesture and a head shake.",
+          "acting": {
+            "JESUS": "Lip-synced. A small head shake; the hand brushes sideways: not that; eyebrows earnest.",
+            "USER": "Foreground: the narrowed eyes relax a hair."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b08",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "It can be about you.",
+          "delivery": "slower, warmer, landing on 'you'",
+          "pause_after": 0.3,
+          "shot": "Slow push on JESUS.",
+          "action": "Jesus opens his hand toward the user's chest, not touching.",
+          "acting": {
+            "JESUS": "Lip-synced. Leans in again (lean number two); an open palm offered toward the user on 'you'; eyes steady and kind.",
+            "USER": "Foreground: leans back again, the same distance."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b09",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "And your ~emotions, that you are feeling.",
+          "delivery": "tender and careful, but he cannot hide how much he loves this topic; a breath before 'emotions'",
+          "pause_after": 0.2,
+          "shot": "Reverse: close on the USER (face y=330-520), Jesus's shoulder soft in the foreground.",
+          "action": "At the word 'emotions', the user flinches (flinch number one).",
+          "acting": {
+            "JESUS": "Foreground, lip-synced (jaw visible): a gentle nod on 'feeling'.",
+            "USER": "On 'emotions' a small full-body flinch, as if he had said a swear word; the eyes squeeze, then reopen."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b10",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Hold close on the USER; a slow push in.",
+          "action": "THE FLICKER. For one breath, the user is seen. They look down at the cold glow of the phone, then back up at the warm face in front of them.",
+          "acting": {
+            "USER": "The eyes drop to the phone; the thumb, which has been scrolling nervously this whole time, stops. The inner brows lift; the lower lip trembles; the eyes glisten and well; a tiny catch of breath. They look back up at Jesus. The lips part, as if something true is about to come out."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b11",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "Because I want to talk to you more about emotions,",
+          "delivery": "encouraged by the flicker, he goes for it: eager, a little faster, a touch too intense",
+          "pause_after": 0.1,
+          "shot": "Over the user's shoulder onto JESUS, closest yet (face y=290-480).",
+          "action": "Jesus leans in a third time, much too close, and on 'emotions' the user flinches again (flinch number two) and the flicker vanishes.",
+          "acting": {
+            "JESUS": "Lip-synced. Leans in (lean number three, now genuinely close); hands lift and open, framing an invisible something precious; eyes shining.",
+            "USER": "Foreground: leans so far back they are nearly lying down; a second flinch on 'emotions'."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b12",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "because that's ^meaningful to me!",
+          "delivery": "the most open he gets: bright, earnest, his whole heart in it; a little laugh of joy on 'me'",
+          "pause_after": 0.6,
+          "shot": "Close on JESUS; the golden rim glow around him warms a touch.",
+          "action": "Jesus glows with sincerity: the subtle golden rim light brightens slightly as he says it.",
+          "acting": {
+            "JESUS": "Lip-synced. Both palms to his chest; eyes crinkle and shine; a big unguarded smile; the brows lift high on 'meaningful'.",
+            "USER": "Out of frame."
+          },
+          "sfx": [
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s08b13",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "How does that sound?",
+          "delivery": "soft and hopeful, a gentle rising question; then he waits",
+          "pause_after": 0.4,
+          "shot": "Two-shot in profile, the two of them face to face (Jesus's face y=330-470, the user's y=400-540), the seated Void's back in the background between them.",
+          "action": "Jesus asks, and opens his hands, and waits.",
+          "acting": {
+            "JESUS": "Lip-synced. Head tilts; eyebrows up; open palms resting on his knee; a hopeful smile; then stillness: he gives them all the time they need.",
+            "USER": "Frozen, staring at him.",
+            "VOID": "Background: the hood has turned another inch toward them; it is listening hard."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b14",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Close on the USER (face y=330-520), very still, the warm light on one side of the face and the cool phone light on the other.",
+          "action": "The long hold. The answer almost comes, and then the walls go back up.",
+          "acting": {
+            "USER": "Eyes wet and soft; the mouth opens, a breath in, a word forming... Then the lips press shut. The jaw sets. The brows come down. The eyes harden and slide away to the side. The chin lifts. The phone comes up between them like a door closing."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s09",
+      "slug": "blocked",
+      "location": "THE_EDGE",
+      "time_of_day": "golden dusk",
+      "purpose": "The punchline of Part One: the user gets up, storms off, and blocks Jesus on Twitter. The thumb hovers, the tap, the thunk, and a little ding from inside Jesus's sash. Jesus takes it with dignity.",
+      "music": {
+        "mood": "comic, staccato, brisk exit; then silence for the ding",
+        "instrumentation": "stomping pizzicato and bassoon for the exit; a dead stop; a single glockenspiel ding; a soft wry clarinet trill on 'intensely'",
+        "intensity": 0.45
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s09b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And then the Twitter user gets up,",
+          "delivery": "the grin back in the voice, brisk",
+          "pause_after": 0.0,
+          "shot": "Medium on the USER as they rise into frame (face ends at y=300-460), Jesus kneeling at frame edge.",
+          "action": "The user scrambles up off the ground and brushes the dust off their joggers with angry swipes.",
+          "acting": {
+            "USER": "Pushes up fast; two angry swipes at the seat of the joggers; yanks the hood back up; does not look at Jesus.",
+            "JESUS": "Still kneeling; his hopeful face falls by degrees as they rise."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s09b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and storms off,",
+          "delivery": "punchy, stomping rhythm",
+          "pause_after": 0.0,
+          "shot": "Wide: the USER stomping away down the path toward camera right, JESUS kneeling behind them.",
+          "action": "The user storms off, arms stiff, hoodie strings bouncing, thumbs already stabbing at the phone as they go.",
+          "acting": {
+            "USER": "Stiff-legged stomp; elbows locked; head down over the phone; thumbs jabbing at the screen; lips moving in an angry mutter.",
+            "JESUS": "Watches them go; one hand half lifted, then lowered."
+          },
+          "sfx": [
+            "footsteps_stomp"
+          ]
+        },
+        {
+          "id": "s09b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and blocks Jesus on Twitter.",
+          "delivery": "a little slower, savoring it; hit 'blocks' crisply",
+          "pause_after": 0.5,
+          "shot": "Insert: the user's phone screen fills frame (content y=150-850). A plain, generic social app: white and slate-blue, a simple speech-bubble icon in the corner, no real-world logo or layout. Jesus's profile card: a round avatar of a smiling bearded face, the name 'Jesus', the handle '@jesus', and a one-line bio: 'Would love to hear about your feelings.' Below, a big red 'Block' button.",
+          "action": "The user's thumb hovers over Block... one beat... and taps on 'blocks'. The button flips to 'Blocked' with a heavy thunk.",
+          "acting": {
+            "USER": "Only the thumb: it hovers, trembles, hesitates for exactly one beat, then stabs down decisively."
+          },
+          "sfx": [
+            "phone_tap",
+            "block_thunk"
+          ]
+        },
+        {
+          "id": "s09b04",
+          "kind": "silent",
+          "duration": 1.6,
+          "pause_after": 0.0,
+          "shot": "Cut to a medium on JESUS, still kneeling alone on the path (face y=330-480), the empty path running off behind him.",
+          "action": "A cheerful little ding from inside Jesus's sash. He blinks, pulls out a small plain phone (no logo), and looks at it. Insert of his screen: a generic notification card with a speech-bubble icon: '@definitely_fine_lol blocked you.'",
+          "acting": {
+            "JESUS": "At the ding his eyebrows lift; he pats the sash, finds the phone, holds it up at arm's length the way people do; reads; the brows climb higher; the mouth makes a small round 'oh'. A slow, philosophical nod."
+          },
+          "sfx": [
+            "notification_ding"
+          ]
+        },
+        {
+          "id": "s09b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "For talking about the void too ^intensely.",
+          "delivery": "the narrator laughing through it, barely holding it together by 'intensely'",
+          "pause_after": 0.2,
+          "shot": "Hold on JESUS.",
+          "action": "Jesus accepts his fate: he tucks the phone back into his sash with great dignity.",
+          "acting": {
+            "JESUS": "A tiny wince-smile at the screen; lips pressed; one eyebrow up; tucks the phone away; smooths the sash flat; a little sniff."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s09b06",
+          "kind": "vocal",
+          "speaker": "NARRATOR",
+          "vocal": "laugh_soft",
+          "duration": 1.2,
+          "caption": "(laughs)",
+          "pause_after": 0.3,
+          "shot": "Hold on JESUS.",
+          "action": "The narrator can't help laughing. Jesus rises slowly from his knee and dusts it off.",
+          "acting": {
+            "JESUS": "Stands with a small effortful push on his knee; dusts the robe; looks down the empty path where the user went; a fond, rueful half-smile."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s10",
+      "slug": "shrug_and_pat",
+      "location": "THE_EDGE",
+      "time_of_day": "late dusk",
+      "purpose": "Two friends who both got rejected. A shrug, a pat, a sad smile: no words needed, and it is funny and a little bit heartbreaking at the same time.",
+      "music": {
+        "mood": "wry, then tender",
+        "instrumentation": "a single comic pizzicato 'shrug' figure, then solo cello and felt piano",
+        "intensity": 0.22
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s10b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "So Jesus looks back at the void,",
+          "delivery": "settling, the laugh fading out of the voice",
+          "pause_after": 0.0,
+          "shot": "Medium two-shot: JESUS walking back to the seated Void, which has turned around to face him (Void's eyes y=300, Jesus's face y=340-480). The sky has deepened a shade; more stars.",
+          "action": "Jesus walks back to the Void and looks at it. The Void, still sitting, has turned around to watch the user go.",
+          "acting": {
+            "JESUS": "Walks back slowly; meets the Void's eyes.",
+            "VOID": "Seated, now facing him; its eyes come from the far path to Jesus: 'well?'"
+          },
+          "sfx": [
+            "footsteps_soft"
+          ]
+        },
+        {
+          "id": "s10b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and shrugs.",
+          "delivery": "dry, a shrug in the voice itself",
+          "pause_after": 0.6,
+          "shot": "Close on JESUS (face y=310-480).",
+          "action": "The shrug: shoulders up, palms up, eyebrows up.",
+          "acting": {
+            "JESUS": "Shoulders rise to his ears; palms turn up at his sides; brows up; the lips press into a sheepish, crooked smile; holds it; drops it."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s10b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the void pats him on the shoulder,",
+          "delivery": "gentle, a small smile",
+          "pause_after": 0.0,
+          "shot": "Medium two-shot from the side: the seated Void's big hand coming to Jesus's shoulder.",
+          "action": "The Void reaches out its huge four-fingered hand and pats Jesus on the shoulder, twice. Jesus bobs a little under each pat.",
+          "acting": {
+            "VOID": "Pat, pat: slow, heavy, kind.",
+            "JESUS": "Dips slightly under each pat; a small laugh through the nose."
+          },
+          "sfx": [
+            "pat_pat"
+          ]
+        },
+        {
+          "id": "s10b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and gives a ~sad little smile.",
+          "delivery": "soft, the voice dipping on 'sad'",
+          "pause_after": 0.5,
+          "shot": "Close on THE VOID's face (eyes y=320-400).",
+          "action": "The Void smiles at him, small and sad.",
+          "acting": {
+            "VOID": "The eyes droop at the outer corners; the brow wisps lift in the middle; the crescent mouth curves up only a little, closed; a slow blink; the big hand stays resting on his shoulder.",
+            "JESUS": "His shoulder and the Void's hand on it in the foreground edge."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s10b05",
+          "kind": "silent",
+          "duration": 2.2,
+          "pause_after": 0.0,
+          "shot": "Two-shot, both faces (Jesus y=340-480, the Void's eyes y=300). The first evening stars twinkle above them.",
+          "action": "A shared look. Jesus lays his own hand over the Void's big hand on his shoulder.",
+          "acting": {
+            "JESUS": "Puts his hand over the Void's; his eyes glisten; a soft, sad-funny smile back; a small nod: 'yeah. I know.'",
+            "VOID": "Looks at the two hands; its small sad smile warms a little."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s11",
+      "slug": "into_the_horizon",
+      "location": "THE_EDGE",
+      "time_of_day": "sunset",
+      "purpose": "The ending of Part One: two friends walking into the sunset, arm in arm. Jesus tells another truly dumb joke, the Void giggles, and they get smaller and smaller until only the giggles and a star or two are left. Warm, silly, a little moving.",
+      "music": {
+        "mood": "warm, gently swinging walking theme, fading with distance",
+        "instrumentation": "celesta melody over soft strings and a lazy upright bass; a glockenspiel 'ting' on each giggle-star",
+        "intensity": 0.4
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s11b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And Jesus puts his arm around the void,",
+          "delivery": "warm and tender, slower",
+          "pause_after": 0.0,
+          "shot": "Medium wide from the side: the Void standing up beside Jesus (Void's eyes y=220, Jesus's face y=380-500).",
+          "action": "The Void rises to its feet; Jesus puts his arm around its broad side, and the Void lays its big hand across Jesus's far shoulder.",
+          "acting": {
+            "JESUS": "Slips his arm around the Void's side and gives it a squeeze; looks up at it with a crooked grin.",
+            "VOID": "Stands with a wobble; drapes its hand over his shoulder; looks down at him fondly."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s11b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and they both walk off into the horizon,",
+          "delivery": "opening up, sunset in the voice",
+          "pause_after": 0.0,
+          "shot": "Wide from behind, low: the pale path winding up over the hills to the huge low sun (sun at y=420); the two walking away from camera (heads at y=430-520 and shrinking).",
+          "action": "They walk off up the path toward the sunset, the big round shape and the small robed one side by side; the indigo starry patch of sky travels with them.",
+          "acting": {
+            "JESUS": "Easy stroll; free hand gesturing as he talks.",
+            "VOID": "Waddles in step with him, short fat legs peeking from the hem."
+          },
+          "sfx": [
+            "footsteps_soft",
+            "wind_soft"
+          ]
+        },
+        {
+          "id": "s11b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Jesus smiling a bit, telling the void more dumb jokes...",
+          "delivery": "fond, amused, a small laugh on 'dumb'",
+          "pause_after": 0.0,
+          "shot": "Cut to a medium tracking shot from the side and slightly ahead (faces y=300-480), the sunset behind them.",
+          "action": "Jesus, smiling, is telling the Void a joke, gesturing with his free hand.",
+          "acting": {
+            "JESUS": "Telling it with total commitment: eyebrows dancing, hand sketching the setup in the air; a little smile he can't suppress.",
+            "VOID": "Leaning down to listen, eyes bright, lips already twitching."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s11b04",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "So the neutron asks, 'How much for a drink?'",
+          "delivery": "storyteller voice, building the setup, slightly quieter as if heard from a little way off",
+          "pause_after": 0.2,
+          "shot": "Hold the side tracking medium.",
+          "action": "Jesus does the neutron's voice, hand held out like it is ordering at a bar.",
+          "acting": {
+            "JESUS": "Lip-synced. Raises his eyebrows and does a tiny polite 'neutron' face; holds out a hand, palm up.",
+            "VOID": "Leans in; eyes widening with anticipation."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s11b05",
+          "kind": "line",
+          "speaker": "JESUS",
+          "text": "And the bartender says, 'For you? No ^charge.'",
+          "delivery": "a perfect deadpan on the punchline, then a beat of pride",
+          "pause_after": 0.1,
+          "shot": "Hold, then the camera starts to fall behind them.",
+          "action": "The punchline. Jesus looks at the Void, very pleased with himself.",
+          "acting": {
+            "JESUS": "Lip-synced. Deadpan delivery; then a proud little eyebrow lift and a sideways look up at the Void, waiting.",
+            "VOID": "A beat; then the eyes crinkle."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s11b06",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "giggle",
+          "duration": 1.6,
+          "pause_after": 0.3,
+          "shot": "The camera stops and lets them walk away: medium wide from behind, getting smaller.",
+          "action": "The Void giggles, and one small star pops up out of its hood and twinkles above them.",
+          "acting": {
+            "VOID": "Shoulders bobbing; a hand to its mouth; leans its hood against Jesus's head for a second.",
+            "JESUS": "Laughs at his own joke, head tipped back."
+          },
+          "sfx": [
+            "star_pop",
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s11b07",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "as the void is slightly ^giggling, in the distance...",
+          "delivery": "soft, smiling, trailing off with them",
+          "pause_after": 0.0,
+          "shot": "Very wide from behind: the two tiny shapes on the path against the huge low sun (figures at y=520-580), the evening sky above full of the stars and little galaxies the Void laughed up earlier, slowly turning.",
+          "action": "Far away now, the Void is still giggling: a tiny star pops up above the pair, then another.",
+          "acting": {
+            "VOID": "Tiny in the distance, shoulders bouncing.",
+            "JESUS": "Tiny in the distance, hand gesturing: already on the next joke."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s11b08",
+          "kind": "vocal",
+          "speaker": "VOID",
+          "vocal": "giggle",
+          "duration": 1.4,
+          "overlap": true,
+          "pause_after": 0.0,
+          "shot": "Same (under the narration), heard from far away.",
+          "action": "Small, far-off giggles under the narration.",
+          "acting": {
+            "VOID": "Giggling in the distance.",
+            "JESUS": "Walking on."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s11b09",
+          "kind": "silent",
+          "duration": 3.6,
+          "pause_after": 0.0,
+          "shot": "Hold the very wide sunset. Nothing moves but the two tiny walkers, the drifting thought seeds and the slow turning of the galaxies in the sky.",
+          "action": "They walk into the glow of the horizon. Right at the end, one last tiny star pops up from the pair and twinkles.",
+          "acting": {
+            "JESUS": "A tiny silhouette with the Void's hand across his shoulders.",
+            "VOID": "A round silhouette rimmed in violet; one last giggle-star rises."
+          },
+          "sfx": [
+            "wind_soft",
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s12",
+      "slug": "bonus_the_lurker",
+      "location": "MIND_BACKROOM",
+      "time_of_day": "backroom",
+      "purpose": "Bonus scene: a secret new angle on the tender moment from the earlier film when the Void opened Fear's cage, and what was going on behind its back. Introduce the Depression Magician as a creepy-funny pantomime villain hiding behind the Void's big body.",
+      "music": {
+        "mood": "first a hushed, tender celesta reprise of the cage moment; then a creeping comic-villain line sneaks in underneath",
+        "instrumentation": "celesta and soft pad; then tiptoeing pizzicato double bass, low bassoon and contrabassoon, a bowed-saw glide on 'lurking', a harp 'shing' on the dagger",
+        "intensity": 0.3
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s12b01",
+          "kind": "vocal",
+          "speaker": "NARRATOR",
+          "vocal": "laugh_soft",
+          "duration": 1.3,
+          "caption": "(laughs)",
+          "pause_after": 0.0,
+          "shot": "The dissolve from the sunset into the back room of the mind: the sun's glow becomes the far, cool glow of the screen of consciousness at the end of a dim, cavernous, cozy space.",
+          "action": "The narrator is still laughing as the sunset melts into the backroom.",
+          "acting": {
+            "VOID": "Not yet visible; only its starlight glow begins to show at the edge of frame."
+          },
+          "sfx": [
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s12b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Okay. ^Bonus scene.",
+          "delivery": "giggly, conspiratorial, like admitting there's one more thing",
+          "pause_after": 0.6,
+          "shot": "Wide establishing of the MIND_BACKROOM: high and dim, cool distant glow; in the middle ground the little birdcage time-out cage with its hanging 'TIME-OUT' tag (cage at y=520-760); behind it THE VOID towering (eyes y=230); far back left, in shadow, the janitor's corner: metal buckets, a mop in a wringer bucket, brooms, spray bottles, rags, a yellow wet-floor sign. Small cream hand-lettered words 'Bonus Scene' fade up in the dark upper area (y=130-220) and fade out again.",
+          "action": "We are in the back of the mind, at the cage from the earlier film.",
+          "acting": {
+            "VOID": "Standing behind the cage, very still, looking down at it.",
+            "FEAR": "Inside the cage, small, its back to the Void, hands on the bars, shaking."
+          },
+          "sfx": [
+            "rumble_low"
+          ]
+        },
+        {
+          "id": "s12b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "Now I'm imagining, when the void opened up the cage to my fear,",
+          "delivery": "softening; real tenderness under the giggle; 'my fear' said with love",
+          "pause_after": 0.2,
+          "shot": "Tight vertical frame on the cage and the space above it (cage y=480-760); the Void's huge hand enters from the top of frame.",
+          "action": "The Void's big four-fingered hand comes down slowly and, with one fingertip, turns the tiny lock. Click. The little gate swings open with a creak.",
+          "acting": {
+            "VOID": "Only the hand moves: slow, careful, almost tender, like someone trying not to wake a sleeper.",
+            "FEAR": "Crying at the far bars, eyes squeezed shut, antenna-tuft drooping, scarf bunched; at the click the sob stops dead."
+          },
+          "sfx": [
+            "lock_click",
+            "cage_creak"
+          ]
+        },
+        {
+          "id": "s12b04",
+          "kind": "silent",
+          "duration": 2.4,
+          "pause_after": 0.0,
+          "shot": "Close on FEAR (face y=420-600), then a slow tilt up following its gaze, ending on a low angle with Fear's head at the bottom of the frame and the Void's face above (eyes y=260).",
+          "action": "Fear turns, sees the open gate, and looks up, up, up at the Void. Inside the Void's hood the first few stars begin to twinkle: it is starting to show Fear something.",
+          "acting": {
+            "FEAR": "Turns its head; freezes; a tear hangs on its lower lid; the huge eyes travel up the hand, up the cloak, to the hood; the tuft lifts slowly; the mouth falls a little open.",
+            "VOID": "Looks down at Fear with soft, kind eyes; a very small, very gentle smile; three or four stars twinkle on inside its hood."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s12b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "that the depression magician was ~lurking,",
+          "delivery": "dropping into a spooky campfire voice, delighted with it",
+          "pause_after": 0.0,
+          "shot": "The camera drifts slowly around the Void's enormous flank toward its back, into the deep shadow behind it.",
+          "action": "Behind the Void's back, in its shadow, a dented top hat rises slowly into view, then a pair of heavy-lidded sunken eyes.",
+          "acting": {
+            "MAGICIAN": "Rises from a crouch, inch by inch: the hat first, then the gaunt grey face, eyes sliding left and right; a faint grey dust trail wisping off his tailcoat.",
+            "VOID": "Its back is to us; it does not react."
+          },
+          "sfx": [
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s12b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "right behind the big body of the void,",
+          "delivery": "spooky voice, with a giggle on 'big body'",
+          "pause_after": 0.2,
+          "shot": "Medium-wide from behind and to the side: the MAGICIAN (face y=330-470) pressed flat against the Void's huge back like a burglar against a wall, peeking round its side toward the cage; the Void's bulk fills the right of frame.",
+          "action": "The Depression Magician is hiding right behind the Void's big round body, peeking around it at Fear.",
+          "acting": {
+            "MAGICIAN": "Back pressed to the Void, knees bent, tiptoe pose; he leans an eye out past the Void's side, then pulls it back, then leans out again; the too-wide thin grin spreads.",
+            "VOID": "Still facing Fear, unaware (as far as we know)."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s12b07",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "with its dagger,",
+          "delivery": "spooky, a little hiss on 'dagger'",
+          "pause_after": 0.0,
+          "shot": "Insert: the Magician's grey-gloved hand raising a wavy little dagger into a sliver of light (y=300-500).",
+          "action": "The wavy dagger rises and glints.",
+          "acting": {
+            "MAGICIAN": "Twirls the dagger once between gloved fingers, theatrically, and catches it."
+          },
+          "sfx": [
+            "dagger_shing"
+          ]
+        },
+        {
+          "id": "s12b08",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and numbing dust, ready.",
+          "delivery": "low and slow on 'ready'",
+          "pause_after": 0.3,
+          "shot": "Insert: his other hand opening a little velvet pouch (y=350-550); a pinch of grey glitter spills to the floor.",
+          "action": "The numbing dust: grey glitter trickles from the pouch, and where it lands the floor's soft color drains to grey.",
+          "acting": {
+            "MAGICIAN": "Loosens the pouch strings with two fingers; a pinch of dust sifts out; he blows on it gently, like a kiss."
+          },
+          "sfx": [
+            "dust_sparkle"
+          ]
+        },
+        {
+          "id": "s12b09",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the magician is, like, licking its lips, going,",
+          "delivery": "grossed out and loving it; a small 'ew' laugh on 'licking'",
+          "pause_after": 0.1,
+          "shot": "Close on the MAGICIAN's face peeking around the Void's side (face y=320-480).",
+          "action": "He licks his lips: a slow grey tongue slides along the thin moustache-topped grin.",
+          "acting": {
+            "MAGICIAN": "Heavy lids drop to slits; the tongue slides slowly across the top lip, then the bottom; the eyes stay fixed on Fear; the fingers of the dagger hand wiggle."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s12b10",
+          "kind": "line",
+          "speaker": "MAGICIAN",
+          "text": "Fear looks very ^juicy...",
+          "delivery": "a slithery stage whisper, savoring 'juicy' wetly and too long",
+          "pause_after": 0.4,
+          "shot": "Hold close on the MAGICIAN.",
+          "action": "The Magician whispers to himself, eyes on Fear.",
+          "acting": {
+            "MAGICIAN": "Lip-synced. A shiver of delight runs up his shoulders; the grin goes wider than his face should allow; the eyebrows rise and fall."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s12b11",
+          "kind": "line",
+          "speaker": "MAGICIAN",
+          "text": "Can't wait to knock Fear ~out.",
+          "delivery": "theatrical, a little sing-song, a hiss on 'Fear', a nasty little chuckle after",
+          "pause_after": 0.5,
+          "shot": "Pull back to the medium-wide from behind: the MAGICIAN at left, the Void's back in the middle, and through the gap at its side, tiny FEAR at the open cage looking up at the Void's face.",
+          "action": "He tests the weight of the pouch in his palm and raises the dagger, ready to slip round the Void toward Fear.",
+          "acting": {
+            "MAGICIAN": "Lip-synced. Bounces the pouch in his palm; raises the dagger to shoulder height; a silent chuckle shakes his hat.",
+            "VOID": "Its back to us, motionless.",
+            "FEAR": "Tiny in the gap, looking up at the Void's face, unaware."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s13",
+      "slug": "the_kick",
+      "location": "MIND_BACKROOM",
+      "time_of_day": "backroom",
+      "purpose": "The Void sees him, out of the corner of its eye, and handles it like a pro: its face never stops smiling at Fear while its fat little leg does the work. Then pure slapstick: the flight, the crash, the bucket, the mop, and one sign too many.",
+      "music": {
+        "mood": "tiptoe suspense, a held breath, a single comic slam, then a rattling slapstick tumble",
+        "instrumentation": "tiptoe pizzicato and clarinet; a dead stop; a bass-drum 'thump' and slide-whistle for the flight; xylophone tumble and cymbal crash for the buckets; a tiny triangle for the sign",
+        "intensity": 0.5
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s13b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And then the void can see the magician,",
+          "delivery": "quieter, intrigued",
+          "pause_after": 0.0,
+          "shot": "Close frontal on THE VOID's face (eyes y=300-420), looking down at Fear (off-screen below). Soft starlight inside its hood.",
+          "action": "The Void's eyes are on Fear; then the eyes, and only the eyes, begin to slide sideways.",
+          "acting": {
+            "VOID": "Gentle smile held for Fear; the irises start to slide toward the far corner of the eyes; the head does not move."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "in the corner of its peripheral vision.",
+          "delivery": "slow and precise, as if pointing at the exact spot",
+          "pause_after": 0.3,
+          "shot": "Extreme close-up on one starlight eye (y=320-440); in soft focus at the very edge of frame, the brim of the Magician's dented top hat peeking past the Void's side.",
+          "action": "The iris slides all the way into the corner of the eye and stops. The hood does not turn. There he is.",
+          "acting": {
+            "VOID": "Iris jammed into the corner; the upper lid lowers a hair; the mouth keeps smiling.",
+            "MAGICIAN": "A soft-focus top hat at the edge of frame, bobbing."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b03",
+          "kind": "silent",
+          "duration": 2.4,
+          "pause_after": 0.0,
+          "shot": "Pull back to a close on the Void's face, with tiny FEAR's upturned face in the low foreground (Fear's face y=600-720).",
+          "action": "Rule of two: the eyes slide back to Fear (smile), slide over to the corner again (narrow), and slide back to Fear (smile). Fear notices nothing.",
+          "acting": {
+            "VOID": "Eyes back to Fear with a soft, calm blink and a warmer smile. Then a second quick slide to the corner: the lids narrow to slits. Then back to Fear: the lids open soft again, as if nothing happened. The head never moves an inch.",
+            "FEAR": "Gazing up at the stars in the Void's hood, sniffling, mouth slightly open, a tear drying on its cheek."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And instead of shouting,",
+          "delivery": "warm, admiring",
+          "pause_after": 0.0,
+          "shot": "Hold the close on the Void with Fear in the foreground.",
+          "action": "The Void does not shout. Its mouth stays closed in that calm smile.",
+          "acting": {
+            "VOID": "Lips pressed in a serene closed smile; brow wisps calm; a slow breath.",
+            "FEAR": "Still gazing up."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b05",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "or making it obvious to my fear,",
+          "delivery": "warm, picking up a little conspiratorial speed",
+          "pause_after": 0.0,
+          "shot": "Same, slightly wider.",
+          "action": "To keep Fear's eyes up, the Void lifts one big finger in front of Fear; a single star lights up on its fingertip like a firefly.",
+          "acting": {
+            "VOID": "Raises a fingertip slowly; a star glows on it; it moves the finger a little to the side, away from the Magician's corner.",
+            "FEAR": "Eyes follow the fingertip star, enchanted; the tuft perks up a little."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s13b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "that there's a creepy depression magician trying to ~stab it,",
+          "delivery": "spooky campfire voice again, speeding up, then a little gasp-laugh on 'stab it'",
+          "pause_after": 0.0,
+          "shot": "Wide side view (profile), the staging for the gag: FEAR small at the open cage at right (face y=620-720), THE VOID center facing right toward Fear (eyes y=260), the MAGICIAN creeping out from behind the Void at left (face y=330-460). The Void's bulk blocks Fear's line of sight to him.",
+          "action": "Behind the Void, the Magician tiptoes out with exaggerated sneaking steps, knees high, dagger raised high over his head.",
+          "acting": {
+            "MAGICIAN": "Huge cartoon tiptoe steps; the dagger held high; the grin enormous; tongue poking out of the corner of his mouth in concentration.",
+            "VOID": "Facing Fear; fingertip star raised; serene.",
+            "FEAR": "Following the fingertip star, oblivious."
+          },
+          "sfx": [
+            "footsteps_soft"
+          ]
+        },
+        {
+          "id": "s13b07",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "the void just...",
+          "delivery": "a held breath; leave it hanging",
+          "pause_after": 0.9,
+          "shot": "Hold the wide profile, locked off.",
+          "action": "The beat before the punchline: the Magician rises onto his tiptoes at the top of his wind-up, dagger high, right behind the Void. The Void gives Fear one slow, serene blink.",
+          "acting": {
+            "MAGICIAN": "Tiptoe at full height; the dagger quivering high; eyes bulging with glee.",
+            "VOID": "A slow, calm blink at Fear; the smile does not change.",
+            "FEAR": "Blissfully watching the star."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b08",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "kicks the magician in the chest with its fat ^leg.",
+          "delivery": "fast and crisp on 'kicks' (landing with the thump), then slower, savoring 'fat leg' with a laugh",
+          "pause_after": 0.2,
+          "shot": "Same wide profile.",
+          "action": "On 'kicks': a short, fat, round leg shoots straight back from under the Void's hem like a piston and its rounded foot lands square in the Magician's chest. Hold the pose through 'with its fat leg': the leg fully extended, the Magician folded around the foot like a bent umbrella, hat popping up off his head.",
+          "acting": {
+            "VOID": "The fat leg back-kicks; the upper body and face do not change AT ALL: still smiling at Fear, fingertip star still raised.",
+            "MAGICIAN": "Folds at the middle around the foot; eyes bulge; cheeks puff; the moustache flies up; the hat leaps a foot off his head.",
+            "FEAR": "Still watching the star."
+          },
+          "sfx": [
+            "kick_thump"
+          ]
+        },
+        {
+          "id": "s13b09",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the depression magician goes flying,",
+          "delivery": "gleeful",
+          "pause_after": 0.0,
+          "shot": "Quick pan following the MAGICIAN across the room toward the janitor's corner (he stays at y=300-600 through the flight).",
+          "action": "He rockets backward through the air, tailcoat flapping, hat spinning after him, dagger and pouch flying out of his hands.",
+          "acting": {
+            "MAGICIAN": "Flies backward, limbs trailing forward, a long silent 'O' of a mouth; the pouch spills a ribbon of grey dust in the air behind him."
+          },
+          "sfx": [
+            "whoosh_fly"
+          ]
+        },
+        {
+          "id": "s13b10",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and knocks over some buckets and cleaning supplies,",
+          "delivery": "rattling along with the crash",
+          "pause_after": 0.0,
+          "shot": "Wide on the janitor's corner (y=300-800).",
+          "action": "He smashes into the janitor's corner: buckets scatter and roll, brooms topple like dominoes, spray bottles bounce, the stack of rags flops over.",
+          "acting": {
+            "MAGICIAN": "Crashes back-first into the pile; legs fly up; arms windmill."
+          },
+          "sfx": [
+            "crash_buckets",
+            "mop_clatter"
+          ]
+        },
+        {
+          "id": "s13b11",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "like an old-timey ^cartoon.",
+          "delivery": "laughing, delighted",
+          "pause_after": 0.2,
+          "shot": "Medium on the wreckage (Magician y=380-620).",
+          "action": "Cartoon physics: a bucket lands upside down on his head, BONK; the mop flops down over the bucket like a wig; little stars and birdies circle above it.",
+          "acting": {
+            "MAGICIAN": "Sitting splayed in the wreckage with a bucket on his head, legs out, mop strands hanging over the bucket; he sways slowly in a circle, dazed."
+          },
+          "sfx": [
+            "bucket_bonk",
+            "cartoon_birdies"
+          ]
+        },
+        {
+          "id": "s13b12",
+          "kind": "silent",
+          "duration": 2.6,
+          "pause_after": 0.0,
+          "shot": "Hold the medium on the wreckage, locked off.",
+          "action": "Everything settles: a bucket stops rolling; the dagger lands point-down in the floorboards and wobbles; the pouch flops onto his lap and puffs his own grey dust up onto him. Silence. Then the yellow wet-floor sign, which has been teetering all this time, slowly tips over and lands flat on top of him.",
+          "acting": {
+            "MAGICIAN": "Swaying, dazed; the dust puff turns him even greyer; when the sign lands on him he goes rigid, then sags."
+          },
+          "sfx": [
+            "dagger_shing",
+            "dust_sparkle",
+            "mop_clatter"
+          ]
+        },
+        {
+          "id": "s13b13",
+          "kind": "line",
+          "speaker": "MAGICIAN",
+          "text": "...ow.",
+          "delivery": "muffled from under the bucket, very small and very sincere",
+          "pause_after": 0.6,
+          "shot": "Hold.",
+          "action": "One tiny muffled 'ow' from under the bucket. The birdies keep circling.",
+          "acting": {
+            "MAGICIAN": "Lip-sync hidden under the bucket; one gloved finger lifts weakly and drops."
+          },
+          "sfx": [
+            "cartoon_birdies"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s14",
+      "slug": "whats_that_noise",
+      "location": "MIND_BACKROOM",
+      "time_of_day": "backroom",
+      "purpose": "Fear heard something. The Void's perfect innocent shrug, and the oldest trick there is: hey, look at this instead.",
+      "music": {
+        "mood": "a tiny suspicious pause, then a playful innocent shrug, then wonder begins",
+        "instrumentation": "a solo flute question; a two-note bassoon 'who, me?'; then a celesta shimmer as the galaxy appears",
+        "intensity": 0.25
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s14b01",
+          "kind": "silent",
+          "duration": 0.8,
+          "pause_after": 0.0,
+          "shot": "Close on FEAR (face y=420-620), the Void's dark cloak behind.",
+          "action": "Fear heard that.",
+          "acting": {
+            "FEAR": "The tuft shoots upright; the big eyes go wide and flick toward the noise; the trembling starts again, tiny and fast; it hugs its scarf."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s14b02",
+          "kind": "line",
+          "speaker": "FEAR",
+          "text": "What's that noise?",
+          "delivery": "tiny, worried, rising, a crack on 'noise'",
+          "pause_after": 0.4,
+          "shot": "Low wide from Fear's side: FEAR at the open cage gate (face y=600-720) leaning to peek around the Void (eyes y=260).",
+          "action": "Fear leans sideways to try to see past the Void's big body.",
+          "acting": {
+            "FEAR": "Lip-synced. Leans to one side, up on its knobbly tiptoes, neck stretched; worried brows pinched up.",
+            "VOID": "Looking down at Fear, smile frozen, eyes very wide."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s14b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And the void just ^shrugs.",
+          "delivery": "dry and delighted, a shrug in the voice",
+          "pause_after": 0.3,
+          "shot": "Medium low angle on THE VOID (eyes y=280) with Fear's head at the bottom of frame.",
+          "action": "The innocent shrug. The shrug lifts its wide sleeves, and its bulk sways a little to the side, which happens to block Fear's view of the corner completely.",
+          "acting": {
+            "VOID": "Shoulders up to the hood; palms up; eyes rolled innocently up and to the side; mouth pressed into a tight little 'who, me?' smile; brow wisps up.",
+            "FEAR": "Peeking, blocked by a wall of starry velvet."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s14b04",
+          "kind": "silent",
+          "duration": 2.4,
+          "pause_after": 0.0,
+          "shot": "Two-shot: FEAR looking up suspiciously (face y=600-720), the Void looking down innocently (eyes y=280). Then a slow push toward the Void's hand.",
+          "action": "Fear studies the Void's face. The Void holds its innocence... then opens one big palm in front of Fear: a tiny spiral galaxy is turning in it, glowing pink and teal.",
+          "acting": {
+            "FEAR": "Narrows its eyes up at the Void (heavy upper lids down, a suspicious little pout); then the galaxy appears and the eyes go from the Void's face to the palm; the suspicion melts; the lips part; the tuft lifts.",
+            "VOID": "Holds the innocent look; one slow blink; lowers its open palm with the little galaxy to Fear's eye level, like offering a firefly."
+          },
+          "sfx": [
+            "galaxy_whirl"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s15",
+      "slug": "a_moment_with_my_fear",
+      "location": "MIND_BACKROOM",
+      "time_of_day": "backroom",
+      "purpose": "The whole point. The Void fills the room with galaxies and nebulae for Fear, partly to distract it, mostly because it wanted this moment. Fear's tears are tears of awe, and its question from the first film gets a two-layered answer: a guilty glance at the corner, and a gentle smile. Then one last tiny gag.",
+      "music": {
+        "mood": "awe, a warm swell, then hush; a tiny comic pluck for the final button; warm last chord",
+        "instrumentation": "celesta and harp, shimmering string pad, a soft wordless choir; the celesta motif from the earlier film's cosmos scene; a single pizzicato for the bucket; warm strings to end",
+        "intensity": 0.55
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s15b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "And goes right on showing my fear the ^galaxies,",
+          "delivery": "the laugh softening into wonder; slower",
+          "pause_after": 0.0,
+          "shot": "Two-shot, FEAR and THE VOID (Fear's face y=600-720, the Void's eyes y=280); the camera begins a slow, gentle orbit.",
+          "action": "The little galaxy lifts out of the Void's palm and swells, then splits into more: spiral galaxies drift up and out around the two of them, turning slowly.",
+          "acting": {
+            "VOID": "Lifts the palm; watches Fear's face, not the galaxies; soft eyes, gentle smile.",
+            "FEAR": "Head tilting back to follow the galaxies up; mouth falling open."
+          },
+          "sfx": [
+            "galaxy_whirl",
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s15b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "and the nebulae.",
+          "delivery": "hushed, opening up",
+          "pause_after": 0.4,
+          "shot": "Continue the orbit and pull back to a wide: the dim backroom dissolves away into cosmos (figures at y=380-760).",
+          "action": "Nebulae bloom open all around them in pink, violet and teal, filling the whole space; the walls and the cage fade into stars.",
+          "acting": {
+            "VOID": "Spreads both arms slowly, as if opening curtains.",
+            "FEAR": "Turns slowly in place, looking all around; the tuft fully up."
+          },
+          "sfx": [
+            "nebula_swell"
+          ]
+        },
+        {
+          "id": "s15b03",
+          "kind": "silent",
+          "duration": 3.4,
+          "pause_after": 0.0,
+          "shot": "Close-up on FEAR's face lit by soft starlight (face y=300-560, the camera low enough to hold it high in frame); tiny galaxies reflected in its huge irises.",
+          "action": "Wonder happens on Fear's face. Tears of awe, not fear.",
+          "acting": {
+            "FEAR": "Brows lift and un-knot; the heavy upper lids rise softly; the mouth falls gently open; tears gather along the lower lids, glistening with reflected starlight; one spills and runs down, then a second; it does not wipe them. The trembling stops completely. A breathless little almost-laugh."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s15b04",
+          "kind": "line",
+          "speaker": "FEAR",
+          "text": "Why are you showing me this?",
+          "delivery": "a whisper, awe not accusation, thin with tears: the same line, the same moment, as in the first film",
+          "pause_after": 0.5,
+          "shot": "Hold close on FEAR, then cut to the Void's face (eyes y=300-420).",
+          "action": "Fear asks the Void, very softly.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes searching the Void's face; head tilted; brows gently raised; a tear on each cheek.",
+            "VOID": "Listens; its eyes shine."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b05",
+          "kind": "silent",
+          "duration": 2.6,
+          "pause_after": 0.0,
+          "shot": "Close on THE VOID's face (eyes y=300-420), then widen to the two-shot.",
+          "action": "The two-layered answer: the Void's eyes slide, just a hair, toward the corner where the Magician is (guilty), then come back to Fear and soften into a gentle smile. It rests its big hand on Fear's small shoulder.",
+          "acting": {
+            "VOID": "Eyes flick sideways a few degrees toward the corner and back, quick as a hiccup; then the lower lids rise into soft crescents; a gentle, closed smile; the hand comes down slowly and rests, weightless, on Fear's shoulder.",
+            "FEAR": "Leans its cheek against the big hand; its eyes close for a moment."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s15b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "To distract my fear,",
+          "delivery": "warm and wry, the smile back in the voice",
+          "pause_after": 0.0,
+          "shot": "Wide two-shot in the cosmos (figures y=380-760).",
+          "action": "The Void and Fear among the galaxies; Fear gazing up, completely distracted.",
+          "acting": {
+            "FEAR": "Gazing up at a galaxy turning overhead, hand on the Void's fingers.",
+            "VOID": "Watching Fear, smiling."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b07",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "from the fact that the void had to kick the depression magician in the chest,",
+          "delivery": "brisk and amused, as if listing an inconvenient detail",
+          "pause_after": 0.0,
+          "shot": "Quick cut to the corner, at the very edge of the cosmos: the MAGICIAN still under the bucket and the wet-floor sign (y=420-700), birdies circling. Then back to the wide.",
+          "action": "Meanwhile, in the corner: the evidence. The Magician lies motionless under the bucket, mop and sign, little birdies and stars circling; one grey shoe twitches.",
+          "acting": {
+            "MAGICIAN": "Motionless; one foot twitches; a tiny puff of grey dust escapes from under the bucket.",
+            "VOID": "(back in the wide) Still smiling at Fear.",
+            "FEAR": "Still gazing up."
+          },
+          "sfx": [
+            "cartoon_birdies"
+          ]
+        },
+        {
+          "id": "s15b08",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "to get it to go away,",
+          "delivery": "the amusement gentling",
+          "pause_after": 0.3,
+          "shot": "Slow push in toward FEAR and THE VOID.",
+          "action": "The two of them in the cosmos, calm.",
+          "acting": {
+            "VOID": "Slow blink at Fear.",
+            "FEAR": "Wipes one tear with the end of its mustard scarf, smiling."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b09",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "so that the void could have a ^moment...",
+          "delivery": "very soft and tender; the grin is gone; a breath after 'moment'",
+          "pause_after": 0.4,
+          "shot": "Close two-shot: Fear's upturned face (y=500-660) and the Void's face bowed toward it (eyes y=280-360), starlight between them.",
+          "action": "The moment itself: Fear looks up at the Void; the Void looks down at Fear.",
+          "acting": {
+            "FEAR": "Looks up into the Void's eyes; a small, shy, wet smile.",
+            "VOID": "Looks down; the eyes soft; its smile opens a little to show stars inside."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b10",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "text": "with my fear.",
+          "delivery": "almost a whisper, private, full of love",
+          "pause_after": 1.0,
+          "shot": "Hold the close two-shot.",
+          "action": "Fear leans its whole little body against the Void's hand. The Void lets it.",
+          "acting": {
+            "FEAR": "Leans in; eyes closing; a long, settled breath out; the tuft relaxes.",
+            "VOID": "The hand curls very gently around Fear's shoulder; a few star motes lift off its rim."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s15b11",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Slow pull back to a wide: the two small in a sea of slowly turning galaxies and nebulae (figures at y=440-760).",
+          "action": "A quiet, warm hold: the Void and Fear together in the cosmos.",
+          "acting": {
+            "VOID": "Still; gentle.",
+            "FEAR": "Still; leaning."
+          },
+          "sfx": [
+            "nebula_swell"
+          ]
+        },
+        {
+          "id": "s15b12",
+          "kind": "silent",
+          "duration": 3.8,
+          "pause_after": 0.0,
+          "shot": "BUTTON. Cut to the corner: the bucket on the MAGICIAN's head (y=420-600). Then cut to an extreme close-up of one of the Void's eyes (y=320-440). Then back to the bucket.",
+          "action": "The bucket lifts an inch: a sliver of a sunken eye peeks out at the cosmos. Cut to the Void: without moving its head, one starlight eye slides toward the corner, and the lid lowers into a flat, unimpressed look. Cut back: the bucket lowers, very slowly, back down. Clunk. Cut back to the Void: its eye slides back to Fear and softens with a slow blink.",
+          "acting": {
+            "MAGICIAN": "Lifts the bucket rim with one finger; the sunken eye peeks; meets the Void's look; the eye widens; the bucket sinks back down, slowly, sheepishly.",
+            "VOID": "A side-eye of flat, total authority; then back to Fear, all softness."
+          },
+          "sfx": [
+            "bucket_bonk"
+          ]
+        },
+        {
+          "id": "s15b13",
+          "kind": "vocal",
+          "speaker": "NARRATOR",
+          "vocal": "laugh_soft",
+          "duration": 1.4,
+          "caption": "(laughs)",
+          "pause_after": 0.0,
+          "shot": "Final wide: the Void and Fear in the cosmos (figures y=440-760), the galaxies turning.",
+          "action": "The narrator laughs softly to themselves.",
+          "acting": {
+            "VOID": "Gently swaying with Fear against its hand.",
+            "FEAR": "Pointing up at a galaxy, showing the Void, delighted."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b14",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Hold the final wide to the end; the cosmos glows on.",
+          "action": "Fear points at a galaxy; the Void looks where Fear points, and nods, as if hearing about it for the very first time.",
+          "acting": {
+            "FEAR": "Pointing, chattering silently, tuft bouncing.",
+            "VOID": "Looks where Fear points; nods; one last small star pops up from its smile and twinkles."
+          },
+          "sfx": [
+            "star_pop",
+            "twinkle"
+          ]
+        }
+      ]
+    }
+  ]
+}
