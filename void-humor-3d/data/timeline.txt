@@ -1,0 +1,168 @@
+
+=== s01 lets_say [0.0 - 20.1] THE_EDGE (cut)
+     0.60-   2.80 s01b01   --silent--             
+     2.80-   6.10 s01b02   NARRATOR               So let's say there's a Twitter user, crying,
+     6.30-   8.47 s01b03   NARRATOR               and running from the void.
+     8.88-  11.05 s01b04   NARRATOR               And let's say Jesus appears...
+    12.35-  13.03 s01b05   NARRATOR               Now.
+    13.32-  14.12 s01b06   USER[scream_short]     
+    14.12-  15.62 s01b07   --silent--             
+    15.62-  17.05 s01b08   NARRATOR               And sees this.
+    17.35-  19.95 s01b09   --silent--             
+
+=== s02 the_whisper [20.1 - 32.8] THE_EDGE (cut)
+    20.50-  23.43 s02b01   NARRATOR               And Jesus walks up to the void,
+    23.62-  26.18 s02b02   NARRATOR               puts his arm around the void,
+    26.38-  29.30 s02b03   NARRATOR               and starts whispering in the void's ear.
+    29.40-  32.80 s02b04   JESUS[whisper]         (whispering)
+
+=== s03 cosmic_laughter [32.8 - 48.5] THE_EDGE (cut)
+    33.15-  34.45 s03b01   --silent--             
+    34.45-  35.15 s03b02   VOID[snort]            (snort)
+    35.35-  36.85 s03b03   VOID[giggle]           
+    36.85-  39.77 s03b04   NARRATOR               And then the void starts laughing maniacally,
+    36.85-  39.85 s03b05   VOID[laugh_maniacal]   
+    39.85-  42.77 s03b06   NARRATOR               while coughing up some stars and galaxies,
+    39.85-  42.85 s03b07   VOID[cough]            
+    42.85-  44.65 s03b08   NARRATOR               from laughing so hard.
+    44.85-  48.25 s03b09   VOID[laugh_maniacal]   (maniacal cosmic laughter)
+
+=== s04 sense_of_humor [48.5 - 70.3] THE_EDGE (cut)
+    48.90-  51.83 s04b01   NARRATOR               Then Jesus looks at the Twitter user,
+    51.92-  55.60 s04b02   NARRATOR               who's, like, on their ass, with their hand up,
+    55.70-  57.88 s04b03   NARRATOR               and terror in their eyes.
+    58.38-  59.27 s04b04   --silent--             
+    59.27-  63.17 s04b05   JESUS                  The void's got a pretty good sense of humor.
+    63.88-  64.58 s04b06   JESUS                  Teehee.
+    64.88-  66.67 s04b07   --silent--             
+    66.67-  68.35 s04b08   USER                   What the actual f***?!
+    66.67-  68.28 s04b09   VOID[laugh_soft]       
+    68.35-  70.15 s04b10   VOID[sigh]             (contented sigh)
+
+=== s05 side_eye [70.3 - 104.3] THE_EDGE (cut)
+    70.70-  74.37 s05b01   NARRATOR               And then the void starts whispering into Jesus's ear,
+    70.70-  73.90 s05b02   VOID[whisper]          
+    74.37-  76.92 s05b03   NARRATOR               as the Twitter user is watching,
+    76.92-  79.85 s05b04   NARRATOR               and the void is side-eyeing them.
+    80.25-  83.65 s05b05   VOID[whisper]          
+    83.65-  85.45 s05b06   NARRATOR               And Jesus is nodding.
+    85.45-  86.25 s05b07   JESUS[mmhm]            
+    86.55-  87.35 s05b08   JESUS[mmhm]            
+    87.75-  88.85 s05b09   JESUS                  Oh. Really?
+    89.35-  91.90 s05b10   NARRATOR               Then the void crosses its arms,
+    91.90-  94.45 s05b11   NARRATOR               and scowls at the Twitter user.
+    94.75-  96.05 s05b12   --silent--             
+    96.05- 101.15 s05b13   JESUS                  The void says it wants to talk to you about something important.
+   101.75- 104.05 s05b14   JESUS                  Do you have a moment?
+
+=== s06 hell_no [104.3 - 128.4] THE_EDGE (cut)
+   104.70- 105.68 s06b01   USER                   Hell no.
+   105.88- 108.58 s06b02   USER                   I'm not talking to that scary thing.
+   109.08- 109.88 s06b03   --silent--             
+   109.88- 112.43 s06b04   NARRATOR               And the void rolls its eyes,
+   112.43- 114.23 s06b05   NARRATOR               and huffs, and puffs,
+   112.43- 114.63 s06b06   VOID[huff]             (huff... puff)
+   114.63- 117.93 s06b07   NARRATOR               and turns its back to the Twitter user.
+   117.93- 119.33 s06b08   --silent--             
+   119.33- 121.88 s06b09   NARRATOR               And Jesus has that look, like...
+   121.88- 124.68 s06b10   --silent--             
+   124.68- 127.61 s06b11   NARRATOR               Oh boy. This is kind of awkward.
+
+=== s07 a_gentle_smile [128.4 - 142.9] THE_EDGE (cut)
+   128.76- 132.43 s07b01   NARRATOR               So Jesus puts his hand on the void's shoulder.
+   132.73- 134.23 s07b02   --silent--             
+   134.23- 137.16 s07b03   NARRATOR               And the void looks over its shoulder,
+   137.16- 139.71 s07b04   NARRATOR               and gives him a gentle smile.
+   140.11- 142.28 s07b05   NARRATOR               And Jesus nods, just slightly.
+
+=== s08 talk_to_me [142.9 - 181.6] THE_EDGE (cut)
+   143.23- 145.63 s08b01   --silent--             
+   145.63- 146.73 s08b02   JESUS                  It's okay.
+   147.23- 150.73 s08b03   JESUS                  You don't have to talk to the void.
+   151.33- 152.33 s08b04   --silent--             
+   152.33- 155.43 s08b05   JESUS                  But what about... you talk to me?
+   156.03- 156.93 s08b06   --silent--             
+   156.93- 160.83 s08b07   JESUS                  And it doesn't have to be about the void.
+   161.13- 163.43 s08b08   JESUS                  It can be about you.
+   163.73- 166.83 s08b09   JESUS                  And your emotions, that you are feeling.
+   167.03- 169.03 s08b10   --silent--             
+   169.03- 173.33 s08b11   JESUS                  Because I want to talk to you more about emotions,
+   173.43- 175.73 s08b12   JESUS                  because that's meaningful to me!
+   176.33- 178.23 s08b13   JESUS                  How does that sound?
+   178.63- 181.63 s08b14   --silent--             
+
+=== s09 blocked [181.6 - 195.2] THE_EDGE (cut)
+   181.98- 184.91 s09b01   NARRATOR               And then the Twitter user gets up,
+   184.91- 186.33 s09b02   NARRATOR               and storms off,
+   186.33- 188.51 s09b03   NARRATOR               and blocks Jesus on Twitter.
+   189.01- 190.61 s09b04   --silent--             
+   190.61- 193.53 s09b05   NARRATOR               For talking about the void too intensely.
+   193.73- 194.93 s09b06   NARRATOR[laugh_soft]   (laughs)
+
+=== s10 shrug_and_pat [195.2 - 208.7] THE_EDGE (cut)
+   195.58- 198.51 s10b01   NARRATOR               So Jesus looks back at the void,
+   198.51- 199.56 s10b02   NARRATOR               and shrugs.
+   200.16- 203.46 s10b03   NARRATOR               And the void pats him on the shoulder,
+   203.46- 206.01 s10b04   NARRATOR               and gives a sad little smile.
+   206.51- 208.71 s10b05   --silent--             
+
+=== s11 into_the_horizon [208.7 - 237.4] THE_EDGE (cut)
+   209.06- 212.36 s11b01   NARRATOR               And Jesus puts his arm around the void,
+   212.36- 215.66 s11b02   NARRATOR               and they both walk off into the horizon,
+   215.66- 219.71 s11b03   NARRATOR               Jesus smiling a bit, telling the void more dumb jokes...
+   219.71- 224.01 s11b04   JESUS                  So the neutron asks, 'How much for a drink?'
+   224.21- 228.11 s11b05   JESUS                  And the bartender says, 'For you? No charge.'
+   228.21- 229.81 s11b06   VOID[giggle]           
+   230.11- 233.78 s11b07   NARRATOR               as the void is slightly giggling, in the distance...
+   230.11- 231.51 s11b08   VOID[giggle]           
+   233.78- 237.38 s11b09   --silent--             
+
+=== s12 bonus_the_lurker [237.4 - 268.3] MIND_BACKROOM (dissolve)
+   238.08- 239.38 s12b01   NARRATOR[laugh_soft]   (laughs)
+   239.38- 240.81 s12b02   NARRATOR               Okay. Bonus scene.
+   241.41- 246.58 s12b03   NARRATOR               Now I'm imagining, when the void opened up the cage to my fear,
+   246.78- 249.18 s12b04   --silent--             
+   249.18- 251.73 s12b05   NARRATOR               that the depression magician was lurking,
+   251.73- 255.03 s12b06   NARRATOR               right behind the big body of the void,
+   255.23- 256.66 s12b07   NARRATOR               with its dagger,
+   256.66- 258.46 s12b08   NARRATOR               and numbing dust, ready.
+   258.76- 262.43 s12b09   NARRATOR               And the magician is, like, licking its lips, going,
+   262.53- 264.55 s12b10   MAGICIAN               Fear looks very juicy...
+   264.95- 267.82 s12b11   MAGICIAN               Can't wait to knock Fear out.
+
+=== s13 the_kick [268.3 - 305.1] MIND_BACKROOM (cut)
+   268.67- 271.97 s13b01   NARRATOR               And then the void can see the magician,
+   271.97- 274.89 s13b02   NARRATOR               in the corner of its peripheral vision.
+   275.19- 277.59 s13b03   --silent--             
+   277.59- 279.39 s13b04   NARRATOR               And instead of shouting,
+   279.39- 282.32 s13b05   NARRATOR               or making it obvious to my fear,
+   282.32- 286.37 s13b06   NARRATOR               that there's a creepy depression magician trying to stab it,
+   286.37- 287.79 s13b07   NARRATOR               the void just...
+   288.69- 292.74 s13b08   NARRATOR               kicks the magician in the chest with its fat leg.
+   292.94- 295.49 s13b09   NARRATOR               And the depression magician goes flying,
+   295.49- 298.79 s13b10   NARRATOR               and knocks over some buckets and cleaning supplies,
+   298.79- 300.97 s13b11   NARRATOR               like an old-timey cartoon.
+   301.17- 303.77 s13b12   --silent--             
+   303.77- 304.50 s13b13   MAGICIAN               ...ow.
+
+=== s14 whats_that_noise [305.1 - 313.0] MIND_BACKROOM (cut)
+   305.45- 306.25 s14b01   --silent--             
+   306.25- 307.75 s14b02   FEAR                   What's that noise?
+   308.15- 310.32 s14b03   NARRATOR               And the void just shrugs.
+   310.62- 313.02 s14b04   --silent--             
+
+=== s15 a_moment_with_my_fear [313.0 - 358.5] MIND_BACKROOM (cut)
+   313.37- 317.05 s15b01   NARRATOR               And goes right on showing my fear the galaxies,
+   317.05- 318.47 s15b02   NARRATOR               and the nebulae.
+   318.87- 322.27 s15b03   --silent--             
+   322.27- 324.97 s15b04   FEAR                   Why are you showing me this?
+   325.47- 328.07 s15b05   --silent--             
+   328.07- 329.87 s15b06   NARRATOR               To distract my fear,
+   329.87- 335.80 s15b07   NARRATOR               from the fact that the void had to kick the depression magician in the chest,
+   335.80- 338.35 s15b08   NARRATOR               to get it to go away,
+   338.65- 341.95 s15b09   NARRATOR               so that the void could have a moment...
+   342.35- 343.77 s15b10   NARRATOR               with my fear.
+   344.77- 347.77 s15b11   --silent--             
+   347.77- 351.57 s15b12   --silent--             
+   351.57- 352.97 s15b13   NARRATOR[laugh_soft]   (laughs)
+   352.97- 355.97 s15b14   --silent--             

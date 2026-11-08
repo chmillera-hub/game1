@@ -1,0 +1,37 @@
+{
+ "s01b06": {
+  "speaker": "USER",
+  "vocal": "scream_short",
+  "file": "audio/vocals/s01b06.wav",
+  "dur": 0.8,
+  "caption": null
+ },
+ "s03b05": {
+  "speaker": "VOID",
+  "vocal": "laugh_maniacal",
+  "file": "audio/vocals/s03b05.wav",
+  "dur": 3.0,
+  "caption": null
+ },
+ "s05b02": {
+  "speaker": "VOID",
+  "vocal": "whisper",
+  "file": "audio/vocals/s05b02.wav",
+  "dur": 3.2,
+  "caption": null
+ },
+ "s05b07": {
+  "speaker": "JESUS",
+  "vocal": "mmhm",
+  "file": "audio/vocals/s05b07.wav",
+  "dur": 0.8,
+  "caption": null
+ },
+ "s06b06": {
+  "speaker": "VOID",
+  "vocal": "huff",
+  "file": "audio/vocals/s06b06.wav",
+  "dur": 2.2,
+  "caption": "(huff... puff)"
+ }
+}
