@@ -12,7 +12,7 @@ OUT = os.path.join(ROOT, "out/review")
 TMP = os.path.join(OUT, "frames")
 
 def stills(times, prefix):
-    ts = ",".join(f"{t:.3f}" for t in times)
+    ts = ",".join(f"{t:.2f}" for t in times)
     subprocess.run(["node", "tools/render.js", "stills", "--t", ts, "--out", os.path.relpath(TMP, ROOT), "--prefix", prefix],
                    cwd=ROOT, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return [os.path.join(TMP, f"{prefix}_{t:.2f}.jpg") for t in times]
@@ -27,12 +27,12 @@ def main():
         end = sc[i + 1]["start"] if i + 1 < len(sc) else tl["duration"]
         dur = end - s["start"]
         n = max(8, min(20, int(math.ceil(dur / 1.6))))
-        ts = [s["start"] + 0.08 + (dur - 0.2) * k / (n - 1) for k in range(n)]
+        ts = [round(s["start"] + 0.08 + (dur - 0.2) * k / (n - 1), 2) for k in range(n)]
         jobs.append((s["id"], ts))
     cut_ts = []
     for i in range(1, len(sc)):
         c = sc[i]["start"]
-        cut_ts += [c - 0.05, c + 0.05] if sc[i]["transition_in"] != "dissolve" else [c - 0.6, c + 0.6]
+        cut_ts += [round(c - 0.05, 2), round(c + 0.05, 2)] if sc[i]["transition_in"] != "dissolve" else [round(c - 0.6, 2), round(c + 0.6, 2)]
     jobs.append(("cuts", cut_ts))
     # split the work into `workers` lists of jobs (one browser each)
     buckets = [[] for _ in range(workers)]
