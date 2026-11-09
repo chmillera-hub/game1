@@ -3,15 +3,16 @@
 //   const set = await app.set('EDGE');      // { scene, update(t, opts), anchors, props, look, groundAt, pathAt, shots }
 //   set.update(t, { tod: 0..1, voidSky: 0..1, voidPos: [x,y,z], seeds: 1 });
 //
-// Layout (metres, Y up, camera usually at +Z looking toward -Z):
-//   - a flat soft-grass clearing (y = 0 exactly for r < 7.5 m) where the characters act,
-//   - a pale winding PATH that sweeps in from behind the camera on the left (-X,+Z), passes ~2.5 m BEHIND the
-//     acting line (closest to the origin at ≈ (-0.6, 0, -2.6) = anchors.pathStart) and winds away over rolling hills, climbs a gentle crest (~46 m out: anchors.pathFar) and then
-//     reappears on the far hills, converging into a gap in the far ridge right under the low sun,
+// Layout (metres, Y up; the low sun is ~8° left of world -Z). Compatible with scenes/marks.js (EDGE.*_WORLD):
+//   - a flat soft-grass stage (y = 0 exactly for r < 5.2 m) where the characters act,
+//   - a pale winding PATH that comes from the far north-east hills (where the Void came from), runs over the peach
+//     crest (≈ (7.4, 1.26, 10.3)), THROUGH the stage (anchors.pathStart ≈ origin), over the gentle rise
+//     (≈ (-0.8, 0.49, -11)) beside the lilac hillock (top ≈ (-3.6, 2.6, -10)), climbs the long crest (~41 m:
+//     anchors.pathFar) and converges into the gap in the far ridge right under the sun,
 //   - a sky dome (gold -> peach -> lilac -> indigo zenith, belt-of-Venus pink on the anti-sun side), a huge soft
-//     sun glow ~8° left of -Z, backlit billboard clouds, a few early stars, and an optional Void "cosmic bleed",
-//   - glowing puff-trees and round luminous bushes to the sides (the column behind faces is kept calm),
-//   - tiny glowing flowers in the grass, drifting dandelion-like thought seeds, faint golden motes.
+//     sun glow, backlit billboard clouds, a few early stars, and an optional Void "cosmic bleed",
+//   - glowing puff-trees, a few glassy "soft crystal" trees (the rose-gold one beside the bend at (2, 0, -5.2)),
+//     round luminous bushes, tiny glowing flowers, drifting dandelion-like thought seeds, faint golden motes.
 // Everything is a pure function of (t, opts). No Math.random / Date.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -45,13 +46,16 @@ function fbm2(x, y, seed, oct = 3) {
 const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
 
 // ------------------------------------------------------------------------------------------- the path
-// control points (x, z): from behind the camera, through the clearing, over the crest, into the sun gap
-const PATH_CTRL = [[-15, 30], [-9.5, 15], [-5.6, 4.6], [-2.6, -1.0], [-0.2, -3.0], [1.1, -6.4], [0.5, -11], [-1.1, -16], [-0.9, -22],
-  [0.9, -29], [0.6, -37], [-1.0, -46], [-3.0, -56], [-3.8, -68], [-5.6, -86], [-9.0, -110], [-13.5, -140],
-  [-19.5, -175], [-27.0, -215], [-35.0, -255], [-42.0, -298], [-46.0, -322]];
+// control points (x, z), upstream -> downstream. Upstream it comes from the far north-east hills (where the Void came
+// from) over the peach crest, runs THROUGH the stage (matches scenes/marks.js EDGE.PATH_WORLD from (14,18) to (0,-50)),
+// crests the gentle rise, climbs the long crest (~46 m: anchors.pathFar) and converges into the gap under the sun.
+const PATH_CTRL = [[168, 248], [118, 176], [80, 118], [52, 76], [36, 51], [25.5, 34.5], [19.2, 25.5],
+  [14, 18], [8.8, 11.6], [4.2, 6.1], [1.6, 2.8], [0.3, 1.5], [-0.3, -1.9], [-0.6, -3.3], [-0.5, -6.6], [-0.6, -11.7],
+  [-1.5, -18], [-2.5, -26], [-1.0, -36], [0.0, -50], [-1.4, -64], [-3.6, -82], [-7.5, -106], [-12.5, -136],
+  [-19.0, -172], [-27.0, -215], [-35.0, -255], [-42.0, -298], [-46.0, -322]];
 const PATH = (() => {
   const curve = new THREE.CatmullRomCurve3(PATH_CTRL.map(([x, z]) => V3(x, 0, z)), false, 'centripetal');
-  const N = 1100;
+  const N = 1700;
   const pts = curve.getSpacedPoints(N);
   const len = curve.getLength();
   const X = new Float32Array(N + 1), Z = new Float32Array(N + 1);
@@ -69,11 +73,27 @@ function pathDist(x, z) {
 }
 
 // ------------------------------------------------------------------------------------------- terrain height
-// Exactly 0 in the clearing (r < 7.5 m). Rolling pastel hills beyond, a crest the path climbs (~46 m), far ridges
-// with a gap under the sun. Large wavelengths only (no high-frequency bumps).
+// Exactly 0 on the stage (r < 5.2 m). Hand-placed staging hills (FEATURES), rolling pastel hills beyond, a long
+// crest the path climbs (~46 m), far ridges with a gap under the sun. Large wavelengths only (no high-frequency bumps).
+// FEATURES: [x, z, radius, height, hue] — smooth domes; these match scenes/marks.js (EDGE.*_WORLD).
+export const FEATURES = [
+  [10.5, 14.5, 11.5, 1.75, 'peach'],   // peach crest the path runs over (s01: the Void plods over it) ≈ CREST_WORLD
+  [-4.8, -10.6, 4.4, 2.75, 'lilac'],   // lilac hillock right beside the path (s16b07: the user sits on top) ≈ HILL_WORLD
+  [-0.8, -13.0, 6.5, 0.6, 'mint'],     // gentle rise the path crests (s14: the user vanishes over it) ≈ RISE_WORLD
+];
+function featureH(x, z) {
+  let h = 0;
+  for (const [cx, cz, R, H] of FEATURES) {
+    const d2 = ((x - cx) * (x - cx) + (z - cz) * (z - cz)) / (R * R);
+    if (d2 < 1) h = Math.max(h, H * smooth(1 - d2));
+  }
+  return h;
+}
 function heightRaw(x, z, dp) {
   const r = Math.hypot(x, z);
-  if (r < 7.5) return 0;
+  if (r < 5.2) return 0;
+  const fh = featureH(x, z) * smoothstep(5.2, 6.6, r);
+  if (r < 7.5) return fh;
   const m = smoothstep(7.5, 26, r);
   const az = Math.atan2(x, -z);
   const sunSec = Math.exp(-Math.pow(angDiff(az, SUN_AZ) / 0.55, 2));        // the sector the path runs through
@@ -89,9 +109,9 @@ function heightRaw(x, z, dp) {
   // a gentle valley along the path (keeps it walkable and visible)
   const vw = 3.2 + r * 0.07;
   h *= 1 - 0.55 * Math.exp(-(dp * dp) / (vw * vw)) * smoothstep(8, 30, r);
-  return m * h;
+  return m * h + fh;
 }
-export function groundAt(x, z) { const r = Math.hypot(x, z); if (r < 7.5) return 0; return heightRaw(x, z, pathDist(x, z)[0]); }
+export function groundAt(x, z) { const r = Math.hypot(x, z); if (r < 5.2) return 0; return heightRaw(x, z, r < 7.5 ? 99 : pathDist(x, z)[0]); }
 
 // path query: s = metres along the path measured from anchors.pathStart (negative = back toward the camera side)
 let S0 = 0; // set below (index-space offset of pathStart)
@@ -116,7 +136,7 @@ const U = {
   uEBelt: { value: new THREE.Color() }, uEShadow: { value: new THREE.Color() },
   uEGlow: { value: 1 },
   uEHazeDen: { value: 0.0042 }, uEHazeMax: { value: 0.96 },
-  uEVoid: { value: 0 }, uEVoidCos: { value: Math.cos(36 * DEG) }, uEVoidUp: { value: 0.32 },
+  uEVoid: { value: 0 }, uEVoidCos: { value: Math.cos(30 * DEG) }, uEVoidUp: { value: 0.32 },
   uEVoidPos: { value: V3(0, 3.2, 0) },
   uEKeyDir: { value: V3(0, 1, 0) },
 };
@@ -203,7 +223,7 @@ function edgify(mat, { grass = false, sway = false, scatter = 0, sheen = 0, haze
           ${grass ? `{ // hill form: slopes turned toward the (back) sun key brighten, slopes facing away darken (beyond the clearing)
             vec3 enW = normalize((vec4(normal, 0.0) * viewMatrix).xyz);
             float ef = clamp(1.0 + 0.9 * (dot(enW, uEKeyDir) - uEKeyDir.y), 0.7, 1.18);
-            gl_FragColor.rgb *= mix(1.0, ef, uEForm * smoothstep(8.0, 22.0, length(vEW.xz)));
+            gl_FragColor.rgb *= mix(1.0, ef, uEForm);       // neutral (1.0) on flat ground, so it can apply everywhere
           }` : ''}
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vEHz.rgb, vEHz.a);
         }`);
@@ -241,11 +261,12 @@ const PAL = [
 // ------------------------------------------------------------------------------------------- terrain
 function buildTerrain() {
   const radii = [0];
-  { let r = 0; while (r < TERRAIN_R) { r += Math.max(0.6, r * 0.048); radii.push(Math.min(r, TERRAIN_R)); } }
+  // dense rings where the staging hills are (path climbs them), coarser outward
+  { let r = 0; while (r < TERRAIN_R) { r += (r > 4.5 && r < 22) ? 0.3 : Math.max(0.6, r * 0.048); radii.push(Math.min(r, TERRAIN_R)); } }
   const NA = 208;
   const nV = 1 + (radii.length - 1) * NA;
   const pos = new Float32Array(nV * 3), colA = new Float32Array(nV * 3);
-  const C = { mint: col(0x84d8b0), peach: col(0xf6b896), lilac: col(0xb6a0ee), rose: col(0xf0a0c0), cream: col(0xf0d4b6),
+  const C = { mint: col(0x84d8b0), peach: col(0xf6b896), lilac: col(0xac90ec), rose: col(0xf0a0c0), cream: col(0xf0d4b6),
     sage: col(0x88dcaa), far: col(0xc4a2d8) };
   const tmp = new THREE.Color();
   const setV = (i, x, z) => {
@@ -262,13 +283,20 @@ function buildTerrain() {
     const calm = 1 - smoothstep(7, 18, r);
     const cn = vn2(x / 7, z / 7, 5), cn2 = vn2(x / 5.5 + 3, z / 5.5 - 1, 6);
     tmp.lerp(C.sage.clone().lerp(C.lilac, 0.22 * smoothstep(0.1, 0.7, cn)).lerp(C.peach, 0.18 * smoothstep(0.1, 0.7, cn2)), calm * 0.85);
+    // the staging hills keep their own clear hue
+    for (const [cx, cz, R, , hue] of FEATURES) {
+      const d2 = ((x - cx) * (x - cx) + (z - cz) * (z - cz)) / (R * R);
+      if (d2 < 1) { tmp.lerp(C[hue], 0.8 * smooth((1 - d2) * 1.6)); tmp.multiplyScalar(1 + 0.08 * (1 - d2)); }
+    }
     // far hills drift toward a lilac-rose
     tmp.lerp(C.far, smoothstep(90, 260, r) * 0.45);
     // worn, paler grass along the path edges
     tmp.lerp(C.cream, Math.exp(-Math.pow(dp / 1.2, 2)) * 0.2 * (1 - smoothstep(150, 300, r)));
     // gentle tonal variation (2-4 m), crests a touch lighter
     const k = 1 + 0.035 * fbm2(x / 3.2, z / 3.2, 77) + 0.012 * clamp(y, -3, 6);
-    colA[i * 3] = tmp.r * k; colA[i * 3 + 1] = tmp.g * k; colA[i * 3 + 2] = tmp.b * k;
+    // blends of complementary pastels go grey: push saturation back up a little
+    const lum = 0.2126 * tmp.r + 0.7152 * tmp.g + 0.0722 * tmp.b, sat = 1.2;
+    colA[i * 3] = (lum + (tmp.r - lum) * sat) * k; colA[i * 3 + 1] = (lum + (tmp.g - lum) * sat) * k; colA[i * 3 + 2] = (lum + (tmp.b - lum) * sat) * k;
   };
   setV(0, 0, 0);
   for (let j = 1; j < radii.length; j++) {
@@ -337,7 +365,7 @@ function buildPath() {
     const r = Math.hypot(x, z);
     const w = (0.7 + 0.06 * noise1(i * 0.021, 3) + 0.05 * Math.sin(i * 0.013)) * lerp(1.0, 2.0, smoothstep(40, 220, r));
     const endFade = 1 - smoothstep(N - 70, N, i);
-    const lift = 0.012 + r * 0.0007;
+    const lift = 0.012 + 0.03 * smoothstep(5.3, 7.5, r) + r * 0.0006;   // 1.2 cm on the flat stage (feet), more on hills
     for (let k = 0; k < ACROSS.length; k++) {
       const px = x + nx * w * ACROSS[k], pz = z + nz * w * ACROSS[k];
       pos.push(px, groundAt(px, pz) + lift, pz);
@@ -581,15 +609,16 @@ function buildClouds() {
 
 // ------------------------------------------------------------------------------------------- trees + bushes
 const HUES = {
-  rose: [0xf7b6c8, 0xff8fb0], peach: [0xffcfa4, 0xffa070], mint: [0xb4f0d0, 0x60e0b0], lilac: [0xd2c0ff, 0xa688ff], gold: [0xffe2a0, 0xffc060],
+  roseGold: [0xffc6ae, 0xff9868], rose: [0xf7b6c8, 0xff8fb0], peach: [0xffcfa4, 0xffa070], mint: [0xb4f0d0, 0x60e0b0], lilac: [0xd2c0ff, 0xa688ff], gold: [0xffe2a0, 0xffc060],
 };
-function glowMat(hue, { glow = 0.3, rim = 1.0, wrap = 0.45 } = {}) {
+function glowMat(hue, { glow = 0.3, rim = 1.0, wrap = 0.45, crystal = false } = {}) {
   const [base, rimC] = HUES[hue];
-  const m = new THREE.MeshStandardMaterial({ color: col(base), roughness: 0.75, metalness: 0, vertexColors: true });
-  enhance(m, { rim, rimColor: rimC, rimPower: 2.4, glow, glowColor: base, wrap, wrapColor: rimC });
+  // crystal: a glassy candy-like finish (soft specular sheen + iridescent lilac rim) instead of matte velvet
+  const m = new THREE.MeshStandardMaterial({ color: col(base), roughness: crystal ? 0.2 : 0.75, metalness: crystal ? 0.15 : 0, vertexColors: true });
+  enhance(m, { rim, rimColor: crystal ? 0xc8a8ff : rimC, rimPower: crystal ? 1.8 : 2.4, glow, glowColor: base, wrap, wrapColor: rimC });
   return edgify(m);
 }
-function blobCluster(R, n, spread, rMin, rMax, flatY = 0.85) {
+function blobCluster(R, n, spread, rMin, rMax, flatY = 0.85, crystal = false) {
   const geos = [];
   for (let i = 0; i < n; i++) {
     const a = R() * TAU, d = Math.sqrt(R()) * spread;
@@ -618,7 +647,7 @@ function buildBush(x, z, s, hue, seed) {
   m.name = 'edge.bush';
   return m;
 }
-function buildTree(x, z, H, hue, seed) {
+function buildTree(x, z, H, hue, seed, crystal = false) {
   const R = rng(seed);
   const k = H / 5;
   const grp = new THREE.Group();
@@ -639,8 +668,8 @@ function buildTree(x, z, H, hue, seed) {
   const trunk = new THREE.Mesh(tg, trunkMat); trunk.castShadow = true; grp.add(trunk);
   const top = V3(bend * Math.sin(2.4 + ph), th, 0);
   // canopy: a full, soft cluster of glowing puffs (wider than tall), with a faint light halo
-  const cg = blobCluster(R, 9, 0.78 * k, 0.6 * k, 0.98 * k, 0.86);
-  const canopy = new THREE.Mesh(cg, glowMat(hue, { glow: 0.34, rim: 1.1 }));
+  const cg = blobCluster(R, crystal ? 8 : 9, 0.78 * k, 0.6 * k, 0.98 * k, crystal ? 0.95 : 0.86, crystal);
+  const canopy = new THREE.Mesh(cg, glowMat(hue, { glow: crystal ? 0.5 : 0.34, rim: crystal ? 1.5 : 1.1, wrap: crystal ? 0.6 : 0.45, crystal }));
   canopy.position.copy(top).add(V3(0, -0.6 * k, 0)); canopy.castShadow = true;
   const sway = new THREE.Group(); sway.add(canopy); grp.add(sway);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: col(HUES[hue][1]), transparent: true, opacity: 0.22,
@@ -813,15 +842,16 @@ class EdgeSet {
     this.trees = [
       [-8.8, -13.5, 4.6, 'rose'], [10.8, -19.5, 5.4, 'peach'], [-15.5, -31, 6.0, 'mint'], [18.5, -37, 5.2, 'lilac'],
       [15.5, -62, 6.4, 'rose'], [-24, -63, 7.2, 'peach'], [12.5, -31, 5.4, 'mint'], [-17, -41, 6.2, 'rose'], [-31, -21, 6.2, 'lilac'], [27, -8, 5.8, 'mint'],
-      [-10.5, 12.5, 4.8, 'lilac'], [12.5, 15.5, 5.2, 'gold'], [-22, 26, 6.0, 'rose'], [4, 30, 5.4, 'mint'],
-    ].map(([x, z, H, hue], i) => buildTree(x, z, H, hue, 300 + i * 11));
+      [-10.5, 12.5, 4.8, 'lilac', 1], [18.5, 9.5, 5.2, 'gold', 1], [-22, 26, 6.0, 'rose'], [4, 30, 5.4, 'mint'],
+      [2.0, -5.2, 4.4, 'roseGold', 1],     // the rose-gold crystal tree beside the bend (scenes/marks.js EDGE.TREE_WORLD)
+    ].map(([x, z, H, hue, cr], i) => buildTree(x, z, H, hue, 300 + i * 11, !!cr));
     this.trees.forEach((t) => scene.add(t));
     this.bushes = [
       [-6.9, -5.5, 1.0, 'mint'], [7.4, -8.2, 1.2, 'lilac'], [-9.8, 4.2, 0.9, 'peach'], [8.8, 3.6, 1.0, 'rose'],
       [-5.6, -17, 0.8, 'lilac'], [10.5, -24, 0.9, 'mint'], [-12.5, -9.5, 1.1, 'rose'], [13.4, -11.5, 1.0, 'peach'],
       [3.6, 10.5, 0.8, 'mint'], [-4.6, 11.4, 0.9, 'lilac'], [-8.0, -14.8, 0.7, 'peach'], [11.6, -21.0, 0.8, 'rose'],
       [-16.5, -33.5, 1.2, 'peach'], [20, -35, 1.0, 'mint'], [3.4, -11.5, 0.7, 'mint'], [-3.9, -15.5, 0.75, 'lilac'],
-      [11.4, -33.5, 0.9, 'peach'], [-2.6, -24, 0.6, 'rose'],
+      [11.4, -33.5, 0.9, 'peach'], [-4.8, -23.5, 0.6, 'rose'],
     ].map(([x, z, s, hue], i) => buildBush(x, z, s, hue, 500 + i * 7));
     this.bushes.forEach((b) => scene.add(b));
     this.flowers = buildFlowers(); scene.add(this.flowers);
@@ -840,8 +870,8 @@ class EdgeSet {
     // gentle depth haze for characters / props that are not "edgified" (very low density)
     scene.fog = new THREE.FogExp2(0xf0c8b8, 0.0055);
 
-    // path anchors: pathStart = closest path point to (0, 0, -2.5); pathFar = the crest (highest point 25..60 m out)
-    { let best = 1e9, bi = 0; for (let i = 0; i <= PATH.N; i++) { const d = Math.hypot(PATH.X[i], PATH.Z[i] + 2.5); if (d < best) { best = d; bi = i; } } S0 = bi; }
+    // path anchors: pathStart = closest path point to the origin; pathFar = the crest (highest point 25..60 m out)
+    { let best = 1e9, bi = 0; for (let i = 0; i <= PATH.N; i++) { const d = Math.hypot(PATH.X[i], PATH.Z[i]); if (d < best) { best = d; bi = i; } } S0 = bi; }
     let crestS = 45, crestY = -1e9;
     for (let s = 25; s <= 62; s += 0.5) { const y = pathAt(s).pos[1]; if (y > crestY) { crestY = y; crestS = s; } }
     this.crestS = crestS;
@@ -887,7 +917,7 @@ class EdgeSet {
    *   voidSky 0..1    the Void's presence: the sky region around/above voidPos (as seen from the camera) darkens to
    *                   indigo with stars and a faint violet fringe; lights cool very slightly.
    *   voidPos [x,y,z] where the Void stands (feet). Default [0,0,0].
-   *   voidRadius      angular radius of the bleed in degrees (default 36). voidLift: m above voidPos (default 3.2)
+   *   voidRadius      angular radius of the bleed in degrees (default 30). voidLift: m above voidPos (default 3.2)
    *   seeds           thought-seed density multiplier (default 1 = ~70 seeds in the volume; 0 = none). motes follow it.
    *   seedGlow        seed brightness mult (default 1)
    *   keyYaw          key azimuth offset from the sun (rad, default -0.62: back-left rim key). keyElev (deg) overrides.
@@ -923,7 +953,7 @@ class EdgeSet {
     const vp = o.voidPos || [0, 0, 0];
     U.uEVoid.value = vs;
     U.uEVoidPos.value.set(vp[0], (vp[1] ?? 0) + (o.voidLift ?? 3.2), vp[2]);
-    U.uEVoidCos.value = Math.cos((o.voidRadius ?? 36) * DEG);
+    U.uEVoidCos.value = Math.cos((o.voidRadius ?? 30) * DEG);
     // --- clouds (drift very slowly around the sky)
     this.clouds.rotation.y = -t * 0.0006;
     C('cShade', this.clouds.userData.L.uCShade.value); C('cLit', this.clouds.userData.L.uCLit.value);

@@ -243,14 +243,17 @@ const fmt = (a) => '[' + a.map((v) => v.toFixed(2)).join(', ') + ']';
 // ---------------------------------------------------------------- setup
 export async function setup(app) {
   const scene = new THREE.Scene();
-  const edge = edgeStandIn(); scene.add(edge.scene);
-  const room = roomStandIn(); scene.add(room.scene);
+  const edge = edgeStandIn(); const room = null;               // EDGE stand-in kept only for its galaxy sprite; real sets below
+  const edgeSet = await app.set('EDGE'), roomSet = await app.set('BACKROOM');
+  ROOM.fit(roomSet);
+  edge.heightAt = (x, z) => edgeSet.groundAt(x, z);
+  edgeSet.scene.add(edge.galaxy.mesh);
   const vd = await app.char('VOID'), js = await app.char('JESUS'), fear = await app.char('FEAR'), mag = await app.char('MAGICIAN');
   scene.add(vd.root, js.root, fear.root, mag.root);
   const user = userDummy(); scene.add(user.g);
   scene.add(app.camera);
   const H = hud(); app.camera.add(H.m); app.camera.add(H.lm);
-  return { scene, edge, room, vd, js, fear, mag, user, H, look: {} };
+  return { scene, edge, room, edgeSet, roomSet, vd, js, fear, mag, user, H, look: {} };
 }
 
 const LOG = (S, name, pts) => {
@@ -264,7 +267,8 @@ const LOG = (S, name, pts) => {
 export async function update(t, app, S) {
   const id = Math.floor(t + 1e-6);
   const isRoom = id >= 11;
-  S.edge.scene.visible = !isRoom; S.room.scene.visible = isRoom;
+  S.scene = isRoom ? S.roomSet.scene : S.edgeSet.scene;
+  S.scene.add(S.vd.root, S.js.root, S.fear.root, S.mag.root, S.user.g, app.camera);
   S.fear.root.visible = isRoom; S.mag.root.visible = isRoom; S.user.g.visible = !isRoom;
   S.vd.root.visible = true; S.js.root.visible = !isRoom;
   const E = EDGE, M = E.M, R = ROOM, RM = R.M;
@@ -366,7 +370,7 @@ export async function update(t, app, S) {
     const sh = S.vd.anchor('shoulderR');
     jpose = { pos: E.W(M.JS.p), yaw: vYaw(M.JS), face: 'tender', armR: { preset: 'shoulder', target: sh.clone().add(V3(0, 0.03, 0)), palm: [0, -1, 0] }, gaze: S.vd.anchor('head') };
     logs.shoulderR = sh;
-    shot = E.shot([1.45, 1.3, -0.85], { dist: 3.4, yaw: 42, pitch: 5, fov: LENS[50], screenY: 0.44, drift: 0 }); console.log('   BEHINDJ', fmt(E.L(shot.pos)), fmt(E.L(shot.look)));
+    shot = E.cam('BEHINDJ', { drift: 0 });
     tod = 0.45;
   } else if (id === 10) { // s16b07 walk-off extreme wide, user on the lilac hill upper-left
     label = 's16b07 walk-off extreme wide';
@@ -384,52 +388,58 @@ export async function update(t, app, S) {
     label = 'ROOM master wide (s17b02)';
     S.fear.update(t, { pos: R.W(RM.FIN.p), yaw: R.Y(RM.FIN.yaw), face: 'cry', body: { cower: 0.4 }, extra: { cry: 0.7 } });
     vpose = { pos: R.W(RM.V.p), yaw: R.Y(RM.V.yaw), face: VX('tender'), gaze: S.fear, body: { lean: 0.12 }, head: { pitch: 0.25 } };
-    S.mag.update(t, { pos: R.W(RM.LURK.p), yaw: R.Y(RM.LURK.yaw), body: { crouch: 0.6, peek: -0.6 }, face: 'lurk' });
+    S.mag.update(t, { pos: R.W(RM.LURK.p), yaw: R.Y(RM.LURK.yaw), body: { crouch: 0.75 }, face: 'lurk' });
     S.vd.update(t, vpose);
-    shot = R.cam('MASTER', { drift: 0 });
-    logs.cage = R.V(0, 0.55, 0); logs.mag = S.mag.anchor('head'); logs.fear = S.fear.anchor('eyes'); logs.corner = R.V(...RM.CORNER.p);
-  } else if (id === 12) { // s20b03 wide at the kick wind-up: Fear lower-left, Void face top, magician bent at right
+    const r = fitCam([[S.fear.anchor('eyes'), 200, 700], [S.vd.anchor('eyes'), 390, 330], [V3(...S.roomSet.anchors.cornerCenter.toArray()), 610, 560, 0.3]], LENS[35], [-0.6, 1.8, 7.5], [0.3, 0.9, -1.5], 0.01, [1, 1, 1], 1.0, 2.6);
+    console.log(`   FIT err ${r.err.toFixed(1)}px  ROOM local pos ${fmt(R.L(r.pos))} look ${fmt(R.L(r.look))}`);
+    shot = { pos: r.pos, look: r.look, fov: LENS[35], drift: 0 };
+    logs.mag = S.mag.anchor('head'); logs.fear = S.fear.anchor('eyes'); logs.corner = S.roomSet.anchors.cornerCenter.clone();
+  } else if (id === 12) { // s20b03 wide at the kick wind-up: Fear lower-left, Void face top, magician leaning out at right
     label = 'ROOM kick wide (s20b03)';
     S.fear.update(t, { pos: R.W(RM.FOUT.p), yaw: R.Y(RM.FOUT.yaw), face: 'wonder', head: { pitch: -0.5 } });
-    S.mag.update(t, { pos: R.W(RM.FLANK.p), yaw: R.Y(RM.FLANK.yaw), body: { lean: 0.95, hunch: 0.3 }, face: 'gloat', armR: { preset: 'dagger_ready' }, gaze: S.fear });
+    S.mag.update(t, { pos: R.W(RM.PEEK.p), yaw: R.Y(RM.PEEK.yaw), body: { lean: 0.55, hunch: 0.2, peek: 1.0, crouch: 0.15 }, face: 'gloat', armR: { preset: 'dagger_ready' }, gaze: S.fear });
     const chest = S.mag.anchor('chest');
-    vpose = { pos: R.W(RM.V.p), yaw: R.Y(RM.V.yaw), face: VX('peripheral'), gaze: S.fear, extra: { kick: 1.0, kickSide: 'L', kickTarget: chest },
-      armR: { preset: 'tip', target: R.W(1.0, 1.3, 0.1), reach: 1, tip: true } };
+    vpose = { pos: R.W(RM.V.p), yaw: R.Y(RM.V.yaw), head: { yaw: 0.35 }, face: VX('peripheral'), gaze: S.fear, extra: { kick: 1.0, kickSide: 'L', kickTarget: chest },
+      armR: { preset: 'tip', target: R.W(1.0, 1.3, 0.55), reach: 1, tip: true } };
     S.vd.update(t, vpose);
     logs.magChest = chest; logs.kickFoot = S.vd.anchor('kickFoot'); logs.fearEyes = S.fear.anchor('eyes');
     console.log(`   kick err ${chest.distanceTo(S.vd.anchor('kickFoot')).toFixed(2)}m`);
     shot = R.cam('KICK', { drift: 0 });
+
   } else if (id === 13) { // s18b06 layered from behind: magician foreground right, Void flank middle, Fear far left
     label = 'ROOM layered from behind (s18b06)';
-    S.fear.update(t, { pos: R.W(RM.FOUT.p), yaw: R.Y(RM.FOUT.yaw), face: 'sniffle', head: { pitch: -0.45 } });
+    S.fear.update(t, { pos: R.W(RM.FDOOR.p), yaw: R.Y(RM.FDOOR.yaw), face: 'sniffle', head: { pitch: -0.45 } });
     vpose = { pos: R.W(RM.V.p), yaw: R.Y(RM.V.yaw), face: VX('tender'), gaze: S.fear, body: { lean: 0.12 }, head: { pitch: 0.25 } };
-    S.mag.update(t, { pos: R.W(RM.LURK.p), yaw: R.Y(RM.LURK.yaw), body: { crouch: 0.35 }, face: 'gloat', armR: { preset: 'dagger_ready' }, armL: { preset: 'pouch' }, gaze: S.fear });
+    S.mag.update(t, { pos: R.W(RM.PEEK.p), yaw: R.Y(RM.PEEK.yaw), body: { crouch: 0.3, peek: 0.5 }, face: 'gloat', armR: { preset: 'dagger_ready' }, armL: { preset: 'pouch' }, gaze: S.fear });
     S.vd.update(t, vpose);
-    const r = fitCam([[S.mag.anchor('head'), 540, 370], [S.fear.anchor('eyes'), 180, 600], [S.vd.anchor('eyes'), 330, 200, 0.2]], LENS[35], R.W(4.6, 1.6, 2.6), R.W(1.5, 1.0, 0.6), 0.03, [1, 1, 1], 1.1, 2.2);
-    console.log(`   FIT err ${r.err.toFixed(1)}px  pos(local) ${fmt(R.L(r.pos))}  look(local) ${fmt(R.L(r.look))}`);
+    const r = fitCam([[S.mag.anchor('head'), 540, 370], [S.fear.anchor('eyes'), 190, 600], [S.vd.anchor('eyes'), 330, 220, 0.2]], LENS[35], [4.9, 1.6, 1.6], [1.5, 1.0, 0.3], 0.03, [1, 1, 1], 1.1, 2.2);
+    console.log(`   FIT err ${r.err.toFixed(1)}px  ROOM local pos ${fmt(R.L(r.pos))} look ${fmt(R.L(r.look))}`);
     shot = { pos: r.pos, look: r.look, fov: LENS[35], drift: 0 };
     logs.magHead = S.mag.anchor('head'); logs.fear = S.fear.anchor('eyes');
-  } else if (id === 14) { // s17b01 opening drift: far glow behind cage + Void
+  } else if (id === 14) { // s17b01 opening drift from the screen side: cage + Void small and far ahead
     label = 'ROOM opening (s17b01)';
     S.fear.update(t, { pos: R.W(RM.FIN.p), yaw: R.Y(RM.FIN.yaw), face: 'cry', body: { cower: 0.4 }, extra: { cry: 0.7, glow: 1.5 } });
     vpose = { pos: R.W(RM.V.p), yaw: R.Y(RM.V.yaw), face: VX('tender'), gaze: S.fear, body: { lean: 0.12 }, head: { pitch: 0.25 }, extra: { rim: 1.6 } };
     S.mag.root.visible = false;
-    shot = R.cam('OPEN', { drift: 0 });
-    logs.glow = V3(0, 4, -32); logs.fear = R.V(...RM.FIN.p);
+    S.vd.update(t, vpose);
+    const r = fitCam([[S.fear.anchor('eyes'), 330, 640], [S.vd.anchor('eyes'), 420, 500]], LENS[35], [-6.0, 1.7, 10.0], [1.0, 1.0, -0.5], 0.02, [1, 1, 1], 1.2, 2.2);
+    console.log(`   FIT err ${r.err.toFixed(1)}px  ROOM local pos ${fmt(R.L(r.pos))} look ${fmt(R.L(r.look))}`);
+    shot = { pos: r.pos, look: r.look, fov: LENS[35], drift: 0 };
+    logs.fear = S.fear.anchor('eyes');
   }
 
   applyShot(app.camera, shot, t);
   // EDGE sky / sun
   if (!isRoom) {
-    const vp = vpose && vpose.pos ? V3(vpose.pos[0], 2.9, vpose.pos[2]).sub(app.camera.position) : null;
-    S.edge.update(tod, vp, vpose ? 0.6 : 0);
+    S.edgeSet.update(t, { tod, voidSky: vpose ? 0.55 : 0, voidPos: vpose && vpose.pos ? vpose.pos : [0, 0, 0], clear: [[...[E.W(M.U.p)].map((w) => [w[0], w[2], 0.9])[0]]] });
+    S.look = { ...S.edgeSet.look };
     S.edge.galaxy.begin();
     if (id >= 4) { const g = id === 10 ? E.GALAXY.to : E.GALAXY.from; S.edge.galaxy.add(g, E.GALAXY.size, 0xd8c0ff, 0.9, t * 0.2, CELL.galaxy); }
     S.edge.galaxy.end();
   } else {
-    EYE_LIGHT.uKeyDir.value.set(0, 0.3, -1).normalize();
-    S.look = { bloom: 0.7, bloomRadius: 0.6, bloomThreshold: 0.7, vignette: 0.32, warm: -0.18, exposure: 1.05, sat: 1.02 };
-    const v = R.W(RM.V.p); S.room.vlight.position.set(v[0], 2.4, v[2]);
+    const v = R.W(RM.V.p);
+    S.roomSet.update(t, { latch: id === 11 ? 0 : 1, cageDoor: id === 11 ? 0 : 1, voidLight: { pos: [v[0], 2.4, v[2]] } });
+    S.look = { ...S.roomSet.look };
   }
   if (S.js.root.visible && jpose) S.js.update(t, jpose);
   else S.js.root.visible = false;

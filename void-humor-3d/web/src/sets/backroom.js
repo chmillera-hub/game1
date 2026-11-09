@@ -224,11 +224,12 @@ function signTexture() {           // generic yellow wet-floor sign: CAUTION ban
   return ctex(c);
 }
 
-function softRectTexture() {        // the far screen-of-consciousness glow (soft rounded rectangle)
+function softRectTexture() {        // the far screen-of-consciousness glow: soft rounded rectangle + wide falloff (alpha 0 at the edges)
   const W = 256, H = 160, c = cv(W, H), g = c.getContext('2d');
-  g.filter = 'blur(14px)'; g.fillStyle = '#fff';
-  g.beginPath(); g.roundRect(46, 40, W - 92, H - 80, 18); g.fill();
-  g.filter = 'blur(34px)'; g.globalAlpha = 0.6; g.fillRect(24, 22, W - 48, H - 44);
+  g.filter = 'blur(22px)'; g.globalAlpha = 0.45; g.fillStyle = '#fff';
+  g.beginPath(); g.roundRect(56, 46, W - 112, H - 92, 20); g.fill();
+  g.filter = 'blur(10px)'; g.globalAlpha = 1;
+  g.beginPath(); g.roundRect(78, 60, W - 156, H - 120, 12); g.fill();
   return ctex(c);
 }
 
@@ -257,15 +258,15 @@ function makeMaterials(env) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const lam = (o) => new THREE.MeshLambertMaterial(o);
   const M = {
-    floor: std({ color: 0xffffff, map: floorTexture(), roughness: 0.4, metalness: 0.0 }),
+    floor: std({ color: 0xffffff, map: floorTexture(), roughness: 0.56, metalness: 0.0 }),
     // big matte surfaces use Lambert (much cheaper per pixel on SwiftShader with several lights)
-    wall: lam({ color: 0x8e95ad, map: plasterTexture(), vertexColors: true, transparent: true }),
-    wains: lam({ color: 0x4e3a2e, vertexColors: true, transparent: true }),
-    pipe: std({ color: 0x6a5f62, roughness: 0.42, metalness: 0.75, vertexColors: true, transparent: true, envMap: env, envMapIntensity: 0.7 }),
-    cardboard: lam({ color: 0x7e6349, transparent: true }),
-    tape: lam({ color: 0xb49c76, transparent: true }),
-    sheet: lam({ color: 0xa8a3b8, transparent: true }),
-    doorway: new THREE.MeshBasicMaterial({ color: 0x030307, transparent: true }),
+    wall: lam({ color: 0x8e95ad, map: plasterTexture(), vertexColors: true }),
+    wains: lam({ color: 0x4e3a2e, vertexColors: true }),
+    pipe: std({ color: 0x6a5f62, roughness: 0.42, metalness: 0.75, vertexColors: true, envMap: env, envMapIntensity: 0.7 }),
+    cardboard: lam({ color: 0x7e6349 }),
+    tape: lam({ color: 0xb49c76 }),
+    sheet: lam({ color: 0xa8a3b8 }),
+    doorway: new THREE.MeshBasicMaterial({ color: 0x030307 }),
     brass: std({ color: 0xfff2d8, map: rust.map, roughnessMap: rust.rough, roughness: 0.62, metalness: 0.85, envMap: env, envMapIntensity: 1.0 }),
     brassBright: std({ color: 0xf2c878, roughness: 0.25, metalness: 0.95, envMap: env, envMapIntensity: 1.6, emissive: 0x2a1604 }),
     iron: std({ color: 0x3e3940, roughness: 0.55, metalness: 0.65, envMap: env, envMapIntensity: 0.7 }),
@@ -290,7 +291,9 @@ function makeMaterials(env) {
     mopCotton: std({ color: 0xc8bfa8, roughness: 0.95 }),
   };
   M.rag = [0x6e9896, 0xd8ccae, 0xb88680, 0x7a88a2, 0x9b8b6f].map((c) => std({ color: c, roughness: 0.96 }));
+  // room materials are OPAQUE (cheap, early-z); a transparent twin is swapped in only while opts.cosmos fades the room
   M.fadeable = [M.wall, M.wains, M.pipe, M.cardboard, M.tape, M.sheet, M.doorway];
+  for (const m of M.fadeable) { const t = m.clone(); t.transparent = true; t.depthWrite = true; m.userData.twin = t; }
   return M;
 }
 
@@ -387,7 +390,7 @@ function buildRoom(M) {
   const mkWall = (w, cx, cz, rotY) => {
     const geo = new THREE.PlaneGeometry(w, H, 1, 14); geo.translate(0, H / 2, 0);
     planarUV(geo, 0, 1, 3); vcolFade(geo, wallFade);
-    const m = new THREE.Mesh(geo, M.wall); m.rotation.y = rotY; m.position.set(cx, 0, cz); m.receiveShadow = true; g.add(m); return m;
+    const m = new THREE.Mesh(geo, M.wall); m.rotation.y = rotY; m.position.set(cx, 0, cz); g.add(m); return m;
   };
   mkWall(RIGHT_X - LEFT_X, (RIGHT_X + LEFT_X) / 2, BACK_Z, 0);
   mkWall(FRONT_Z - BACK_Z, RIGHT_X, (FRONT_Z + BACK_Z) / 2, -Math.PI / 2);
@@ -408,7 +411,7 @@ function buildRoom(M) {
     }
   }
   const wgeo = vcolFade(merge(wg), (x, y) => 0.9 + 0.1 * (y > 0.98 ? 1 : 0));
-  const wains = new THREE.Mesh(wgeo, M.wains); wains.receiveShadow = true; g.add(wains);
+  const wains = new THREE.Mesh(wgeo, M.wains); g.add(wains);
   // pipes along the back wall + up the corner (industrial, cozy-creepy)
   const pg = [];
   const p1 = new THREE.CylinderGeometry(0.055, 0.055, RIGHT_X - LEFT_X, 14); p1.rotateZ(Math.PI / 2); p1.translate((RIGHT_X + LEFT_X) / 2 - 0.12, 2.62, BACK_Z + 0.16); pg.push(p1);
@@ -438,7 +441,7 @@ function buildRoom(M) {
     const b2 = new THREE.CylinderGeometry(0.44, 0.48, 0.1, 28); b2.translate(x, 0.37, z); colG.push(b2);
   }
   for (const z of [1.8, 8.4, 15.0]) { const p = new THREE.BoxGeometry(0.34, H, 0.8, 1, 8, 1); p.translate(RIGHT_X - 0.17, H / 2, z); colG.push(dropFaces(p, V(1, 0, 0))); }
-  const cols = new THREE.Mesh(vcolFade(merge(colG.map((q) => ni(q))), wallFade), M.wall); cols.receiveShadow = true; g.add(cols);
+  const cols = new THREE.Mesh(vcolFade(merge(colG.map((q) => ni(q))), wallFade), M.wall); g.add(cols);
   // storage: stacked cardboard boxes + a dust-sheet-draped armchair (pale ghostly lump) back-left
   const boxG = [], tapeG = [], r = rng(23);
   const boxes = [[-2.75, 0, -4.55, 0.62, 0.46, 0.5, 0.05], [-2.72, 0.46, -4.58, 0.52, 0.4, 0.44, -0.12], [-2.1, 0, -4.62, 0.46, 0.36, 0.4, 0.18], [-2.12, 0.36, -4.6, 0.34, 0.26, 0.3, 0.42], [-3.35, 0, -4.66, 0.4, 0.3, 0.36, -0.2]];
@@ -447,7 +450,7 @@ function buildRoom(M) {
     const tp = new THREE.BoxGeometry(w + 0.004, 0.004, 0.06); tp.rotateY(ry); tp.translate(x, y + h + 0.001, z); tapeG.push(tp);
     const tp2 = new THREE.BoxGeometry(0.06, h * 0.35, d + 0.004); tp2.translate(-w / 2 + 0.0, 0, 0); tp2.rotateY(ry); tp2.translate(x + Math.cos(ry) * 0, y + h * 0.82, z); tapeG.push(tp2);
   }
-  const bxm = new THREE.Mesh(merge(boxG), M.cardboard); bxm.castShadow = true; bxm.receiveShadow = true; g.add(bxm);
+  const bxm = new THREE.Mesh(merge(boxG), M.cardboard); bxm.castShadow = true; g.add(bxm);
   g.add(new THREE.Mesh(merge(tapeG), M.tape));
   // draped chair: lathe lump + folds + back corners
   const prof = [[0.001, 1.04], [0.22, 1.02], [0.36, 0.95], [0.44, 0.8], [0.47, 0.6], [0.5, 0.38], [0.54, 0.16], [0.59, 0.03], [0.6, 0.0]].map(([x, y]) => new THREE.Vector2(x, y));
@@ -521,17 +524,17 @@ function buildCage(M, tagTex) {
   const doorMesh = new THREE.Mesh(dgeo, M.brass); doorMesh.castShadow = true; door.add(doorMesh);
   // latch on the free stile: plate + turning lever with a knob
   const latchTh = D0, lp = cagePt(latchTh, CAGE.latchY, CAGE.R + 0.014).sub(V(H.x, 0, H.z));
-  const nrm = V(Math.sin(latchTh), 0, Math.cos(latchTh)), tan = V(-Math.cos(latchTh), 0, Math.sin(latchTh));   // tan -> toward the jamb
+  const nrm = V(Math.sin(latchTh), 0, Math.cos(latchTh)), tan = V(Math.cos(latchTh), 0, -Math.sin(latchTh));   // +X = away from the jamb (right-handed); the lever points -X
   const latch = new THREE.Group(); latch.position.copy(lp);
   latch.quaternion.setFromRotationMatrix(_m4.makeBasis(tan, UP, nrm)); door.add(latch);
-  const plate = new THREE.Mesh(new RoundedBoxGeometry(0.036, 0.07, 0.006, 1, 0.003), M.brassBright); plate.position.set(-0.004, 0, -0.004); latch.add(plate);
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(0.036, 0.07, 0.006, 1, 0.003), M.brassBright); plate.position.set(0.004, 0, -0.004); latch.add(plate);
   const lever = new THREE.Group(); latch.add(lever);
   const lg = [];
-  const bar = new RoundedBoxGeometry(0.1, 0.02, 0.008, 1, 0.003); bar.translate(0.042, 0, 0.004); lg.push(bar);
-  const knob = new THREE.SphereGeometry(0.014, 12, 8); knob.translate(0.09, 0, 0.009); lg.push(knob);
+  const bar = new RoundedBoxGeometry(0.1, 0.02, 0.008, 1, 0.003); bar.translate(-0.042, 0, 0.004); lg.push(bar);
+  const knob = new THREE.SphereGeometry(0.014, 12, 8); knob.translate(-0.09, 0, 0.009); lg.push(knob);
   const riv = new THREE.CylinderGeometry(0.008, 0.008, 0.012, 10); riv.rotateX(Math.PI / 2); riv.translate(0, 0, 0.006); lg.push(riv);
   lever.add(new THREE.Mesh(merge(lg), M.brassBright));
-  const knobAnchor = new THREE.Object3D(); knobAnchor.position.set(0.09, 0, 0.014); lever.add(knobAnchor);
+  const knobAnchor = new THREE.Object3D(); knobAnchor.position.set(-0.09, 0, 0.014); lever.add(knobAnchor);
   // catch (hook) on the latch-side jamb
   const cp = cagePt(-CAGE.doorHalf - 1.5 * DEG, CAGE.latchY, CAGE.R + 0.013);
   const hook = new THREE.Mesh(new RoundedBoxGeometry(0.016, 0.034, 0.02, 1, 0.004), M.brassBright); hook.position.copy(cp); hook.rotation.y = -CAGE.doorHalf; g.add(hook);
@@ -795,26 +798,30 @@ export async function create() {
     uniforms: domeU, side: THREE.BackSide, depthWrite: false, fog: false,
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
     fragmentShader: `varying vec3 vD; uniform float uCos;
-      void main(){ float h = vD.y; vec3 c = mix(vec3(0.045,0.04,0.085), vec3(0.012,0.01,0.03), smoothstep(-0.05, 0.6, h));
-        float lobe = pow(max(dot(vD, normalize(vec3(-0.1, 0.12, 1.0))), 0.0), 5.0);
-        c += vec3(0.10, 0.14, 0.26) * lobe * (1.0 - uCos);
-        c = mix(c, vec3(0.03, 0.02, 0.07) + vec3(0.06,0.03,0.1)*smoothstep(0.3,-0.2,h), uCos);
+      void main(){ float h = vD.y; vec3 c = mix(vec3(0.0085,0.0075,0.017), vec3(0.002,0.002,0.005), smoothstep(-0.05, 0.6, h));
+        float lobe = pow(max(dot(vD, normalize(vec3(-0.05, 0.1, 1.0))), 0.0), 6.0);
+        c += vec3(0.012, 0.018, 0.04) * lobe * (1.0 - uCos);          // the far screen's glow in the haze (linear!)
+        c = mix(c, vec3(0.012, 0.007, 0.03) + vec3(0.03, 0.014, 0.05) * smoothstep(0.3, -0.2, h), uCos);
         gl_FragColor = vec4(c, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
   }));
-  dome.renderOrder = -10; dome.position.set(0, 0, 4); scene.add(dome);
+  dome.renderOrder = 1; dome.position.set(0, 0, 4); scene.add(dome);   // drawn after the opaque room: early-z skips hidden sky
 
   // --- room
   const room = buildRoom(M); scene.add(room.group);
 
   // --- far screen-of-consciousness glow (only seen in reverse angles)
   const scrTex = softRectTexture();
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(13, 8), new THREE.MeshBasicMaterial({ map: scrTex, color: new THREE.Color(0.55, 0.68, 1.05), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  screen.position.set((LEFT_X + RIGHT_X) / 2, 3.8, FRONT_Z - 0.3); screen.rotation.y = Math.PI; scene.add(screen);
-  const screenHalo = new THREE.Mesh(new THREE.PlaneGeometry(30, 16), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.07, 0.1, 0.19), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  screenHalo.position.set((LEFT_X + RIGHT_X) / 2, 3.5, FRONT_Z - 1.0); screenHalo.rotation.y = Math.PI; scene.add(screenHalo);
+  const SCR_X = (LEFT_X + RIGHT_X) / 2 + 0.8;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.5), new THREE.MeshBasicMaterial({ map: scrTex, color: new THREE.Color(0.3, 0.4, 0.66), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  screen.position.set(SCR_X, 3.0, FRONT_Z - 0.3); screen.rotation.y = Math.PI; scene.add(screen);
+  const screenHalo = new THREE.Mesh(new THREE.PlaneGeometry(20, 11), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.02, 0.028, 0.055), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  screenHalo.position.set(SCR_X, 3.0, FRONT_Z - 1.0); screenHalo.rotation.y = Math.PI; scene.add(screenHalo);
+  // a long soft streak on the polished floor "reflecting" the far glow (seen in reverse angles)
+  const streak = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glowTexture(), color: new THREE.Color(0.1, 0.13, 0.22), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  streak.rotation.x = -Math.PI / 2; streak.position.set(SCR_X, 0.008, FRONT_Z - 8); streak.scale.set(5, 18, 1); scene.add(streak);
 
   // --- lights
   const hemi = new THREE.HemisphereLight(0x3a4270, 0x1e1418, 0.85); scene.add(hemi);
@@ -846,7 +853,7 @@ export async function create() {
   const shafts = [];
   const shaftMat = (col) => new THREE.ShaderMaterial({
     uniforms: { uColor: { value: new THREE.Color(col) }, uI: { value: 1 }, uTime: GLOBAL.uTime, uSeed: { value: 0 } },
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, fog: false,
     vertexShader: `varying vec3 vN; varying vec3 vV; varying vec2 vUv; varying float vWy;
       void main(){ vUv = uv; vec4 wp = modelMatrix * vec4(position, 1.0); vWy = wp.y; vec4 mv = viewMatrix * wp; vV = -mv.xyz;
         vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * mv; }`,
@@ -863,9 +870,9 @@ export async function create() {
       }`,
   });
   const SHAFTS = [   // floor point, top offset (direction the light comes from), bottom radius, colour, intensity
-    { at: V(-1.62, 0, 0.0), from: V(-0.32, 1, -0.22), rb: 0.78, rt: 0.3, col: 0xbfc8ff, k: 0.13 },
-    { at: V(-3.9, 0, -3.7), from: V(-0.25, 1, -0.12), rb: 0.9, rt: 0.36, col: 0x9fb0ff, k: 0.12 },
-    { at: V(2.45, 0, -3.95), from: V(-0.18, 1, -0.2), rb: 0.62, rt: 0.24, col: 0xc6cdfa, k: 0.1 },
+    { at: V(-1.62, 0, 0.0), from: V(-0.32, 1, -0.22), rb: 0.78, rt: 0.3, col: 0xbfc8ff, k: 0.22 },
+    { at: V(-3.9, 0, -3.7), from: V(-0.25, 1, -0.12), rb: 0.9, rt: 0.36, col: 0x9fb0ff, k: 0.2 },
+    { at: V(2.45, 0, -3.95), from: V(-0.18, 1, -0.2), rb: 0.62, rt: 0.24, col: 0xc6cdfa, k: 0.17 },
   ];
   const SH_LEN = 8.5;
   SHAFTS.forEach((s, i) => {
@@ -971,6 +978,7 @@ export async function create() {
 
   // ---------------------------------------------------------------------------------------- UPDATE
   const tmpQ = new THREE.Quaternion();
+  let roomFading = false;   // which twin set is assigned (a pure function of opts.cosmos > 0 each frame)
   const BAR_ROT = new THREE.Quaternion();
   function update(t, o = {}) {
     const cosmos = clamp(o.cosmos ?? 0);
@@ -998,6 +1006,7 @@ export async function create() {
     bulb.glass.material.color.set(0xffb468).multiplyScalar(5 * (L.bulb ?? 1) * dimRoom); bulb.halo.material.opacity = (L.bulb ?? 1) * dimRoom;
     bulb2.glass.material.color.set(0xffa95e).multiplyScalar(5 * (L.bulb2 ?? 1) * dimRoom); bulb2.halo.material.opacity = (L.bulb2 ?? 1) * dimRoom;
     bulb.glass.getWorldPosition(anchors.bulb); bulb2.glass.getWorldPosition(anchors.bulb2);
+    for (const b of [bulb, bulb2]) b.pivot.visible = cosmos < 0.98;
     // the Void's starlight (scene-movable)
     const vl = o.voidLight;
     voidLight.position.copy(VOID_LIGHT_POS); voidLight.intensity = 3.2; voidLight.color.set(0x9a7cff); voidLight.distance = 7;
@@ -1010,11 +1019,15 @@ export async function create() {
     scene.fog.color.copy(FOG_COL).lerp(new THREE.Color(0x0a0618), cosmos); scene.background.copy(scene.fog.color);
     scene.fog.far = lerp(40, 90, cosmos); scene.fog.near = lerp(11, 30, cosmos);
     domeU.uCos.value = cosmos;
-    for (const m of M.fadeable) m.opacity = 1 - cosmos;
+    for (const m of M.fadeable) m.userData.twin.opacity = 1 - cosmos;
+    if ((cosmos > 0) !== roomFading) {
+      roomFading = cosmos > 0;
+      room.group.traverse((ob) => { if (ob.material) { const base = ob.userData.baseMat || (ob.userData.baseMat = ob.material); ob.material = roomFading && base.userData.twin ? base.userData.twin : base; } });
+    }
     room.group.visible = cosmos < 0.999;
     room.floor.visible = true;
-    M.floor.color.setRGB(1, 1, 1).lerp(new THREE.Color(0.28, 0.24, 0.42), cosmos);
-    screen.material.opacity = 1 - cosmos; screenHalo.material.opacity = 1 - cosmos;
+    M.floor.color.setRGB(1, 1, 1).lerp(new THREE.Color(0.2, 0.16, 0.34), cosmos);
+    screen.material.opacity = 1 - cosmos; screenHalo.material.opacity = 1 - cosmos; streak.material.opacity = 1 - cosmos;
     for (const m of [furn, furn2]) m.material.opacity = 0.5 * (1 - cosmos);
     // shafts
     const shK = (o.shafts ?? 1) * (1 - cosmos);
@@ -1026,7 +1039,7 @@ export async function create() {
     // ---- cage door / latch / tag
     const lat = clamp(o.latch ?? 0), door = clamp(o.cageDoor ?? 0);
     const latA = (Math.PI / 2) * ease.inOut(lat) + 0.14 * Math.sin(Math.PI * sm(0.78, 1, lat)) * (lat < 1 ? 1 : 0);
-    cage.lever.rotation.z = latA;
+    cage.lever.rotation.z = -latA;            // lever swings up from across the gap (locked) to vertical (open)
     const v = clamp(door - 0.55 * Math.sin(TAU * 3 * door) / (TAU * 3));     // creaky hitches (monotonic)
     const doorA = CAGE.doorMax * (1 - (1 - v) * (1 - v)) + 0.05 * Math.sin(Math.PI * sm(0.82, 1, door)) * (door < 1 ? 1 : 0);
     cage.door.rotation.y = doorA;
@@ -1149,7 +1162,7 @@ export async function create() {
       if (wig > 0 && (o.bucketHat || o.mopWig?.pos)) {
         // the mop flops onto the hat like a wig: clamp just above the bucket's (upturned) bottom, handle sticking out
         // sideways-up, strands draped all round by a capsule collider along the hat bucket.
-        const hat = o.bucketHat ? hatTransform(o.bucketHat, tc) : null;
+        const hat = o.bucketHat ? hatTransform(o.bucketHat, on ? tc : 1e6) : null;
         let hup = hat ? V(0, -1, 0).applyQuaternion(hat.q) : V(0, 1, 0);       // bucket's bottom side (top of the hat)
         let top = hat ? hat.p.clone() : toV(o.mopWig.pos);
         if (o.mopWig?.pos) top = toV(o.mopWig.pos);
@@ -1174,10 +1187,9 @@ export async function create() {
     // ---- bucket A: flies up, spins, lands upside down (or onto the magician's head: opts.bucketHat)
     {
       let p, q;
-      if (o.bucketHat) {
-        const h = hatTransform(o.bucketHat, tc);
+      if (o.bucketHat) {                       // without a crash the hat is simply on the head (or follows .blend)
+        const h = hatTransform(o.bucketHat, on ? tc : 1e6);
         p = h.p; q = h.q;
-        if (!on) { p = I.A.p.clone().lerp(p, 1); }
       } else if (on) {
         const end = V(3.42, 0, -3.58);
         p = flyArc(I.A.p, end, tc, P_A.land, 1.45);
@@ -1299,9 +1311,10 @@ export async function create() {
     let pos = i0.p.clone(), yaw = i0.yaw, tilt = i0.roll, lean = 0, spread = SIGN_SPREAD;
     if (on) {
       const k = clamp((tc + 0.05) / 0.55), ke = ease.out(k);
-      const dirK = CRASH.clone().sub(SIGN_TEETER_P).setY(0).normalize();
+      const TP = o.signAt ? V(o.signAt[0], 0, o.signAt[1]) : SIGN_TEETER_P;
+      const dirK = (o.signToward ? toV(o.signToward) : CRASH.clone()).sub(TP).setY(0).normalize();
       const yawT = Math.atan2(dirK.x, dirK.z) + Math.PI;         // local +Z points away from the magician; leans fall toward him
-      pos = i0.p.clone().lerp(SIGN_TEETER_P, ke); pos.y += 0.14 * Math.sin(Math.PI * k);
+      pos = i0.p.clone().lerp(TP, ke); pos.y += 0.14 * Math.sin(Math.PI * k);
       yaw = lerp(i0.yaw, yawT - TAU, ke);
       const tt = Math.max(0, tc - 0.45);
       tilt = lerp(i0.roll, 0.36, sm(0.2, 0.55, tc)) + (tc > 0.45 ? 0.09 * Math.exp(-tt * 0.45) * Math.sin(tt * 6.2) + 0.03 * Math.sin(tc * 2.1) : 0);
@@ -1332,6 +1345,8 @@ export async function create() {
       size: [0.012, 0.022], color: [0xd8d0c0, 0xbfb6a6], alpha: 0.7 * w, fade: [0.05, 0.4], cell: CELL.dust });
   }
 
+  const timing = { hatLand: P_A.land, signFall: SIGN_FALL_T, signFallDur: 0.62, broomSlide: BROOM_SLIDE_T, broomSlideDur: 0.75,
+    puddle: [0.38, 2.4], splash: 0.38, rollDuringCrash: [0.33, 2.33], autoSpan: 6.0 };
   update(0, {});
-  return { scene, update, anchors, props, look, yaws, layout: LAYOUT, cageBar, flightPos, name: 'BACKROOM' };
+  return { scene, update, anchors, props, look, yaws, layout: LAYOUT, timing, cageBar, flightPos, name: 'BACKROOM' };
 }

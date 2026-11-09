@@ -1,29 +1,31 @@
-// SET 'COSMOS' (SETS.COSMOS) — the universe the Void shows Fear (bonus-scene climax). See docs/sets/cosmos.md.
+// SET 'COSMOS' (SETS.COSMOS) — the universe the Void shows Fear (bonus-scene climax). Full doc: docs/sets/cosmos.md.
 //
-//   const cos = await app.set('COSMOS');   // { scene, group, update(t, opts), anchors, props, look, attach(scene) }
-//   standalone:   st.scene = cos.scene;                       cos.update(t, { reveal: 1 });
-//   inside BACKROOM: backroom.scene.add(cos.group) (every frame, like characters: a group has ONE parent)
-//                 cos.update(t, { reveal, center: [x,0,z], source: voidChest, radius: 7 });
+//   const cos = await app.set('COSMOS');  // { scene, group, update(t, opts), attach(scene), blendLook(), anchors, props, look }
+//   standalone:       st.scene = cos.scene; cos.attach(cos.scene); cos.update(t, { reveal: 1 });
+//   inside BACKROOM:  cos.attach(br.scene)   (every frame BEFORE update — a group has ONE parent, like characters)
+//                     br.update(t, { cosmos: smooth(reveal / 0.8) });   // the room fades its own walls/props
+//                     cos.update(t, { reveal, center, source: voidChest, radius: 9 });
 //
-// Contents (all a pure function of t + opts; deterministic seeded layout):
-//   - SKY SHELL: an inside-out ellipsoid around the characters. Its colour is looked up by CAMERA ray direction (so
-//     the sky sits at infinity: no parallax, no swimming) in a nebula map baked once on the GPU (equirect, half
-//     float, smooth domain-warped fbm: violet / teal / rose / gold clouds + a soft galactic band). It is depth-tested
-//     against the host scene, so whatever is farther than the shell (BACKROOM walls) is covered: walls "dissolve"
-//     as reveal opens the sky outward from the source (the Void) with a soft glowing fringe.
-//   - FLOOR VEIL: in a host room, the floor beyond r0 fades into the same sky (seamless with the shell); in
-//     standalone mode a soft light pool marks where the characters stand on "glass over the universe".
-//   - STARS: 3 parallax layers of point sprites — far (2600, on the shell at infinity), mid (520, world shell between
-//     the characters and the sky: parallax), near (70, metres around the source: the first ones KINDLE one by one).
-//     Soft gaussian cores (no sub-pixel shimmer), few bright stars with small 4-point glints, gentle per-star twinkle.
-//   - NEBULA PUFFS: a few huge soft world-space billboards (parallax depth), swelling open as the reveal reaches them.
-//   - 5 SPIRAL GALAXIES: procedural (baked, mipmapped) with gold bulges, blue-violet arms, rose knots, dust lanes;
-//     inclined discs at infinity, each slowly spinning; they drift in during the last third of the reveal.
-//   - BITS OF MEANING: tiny glowing glyphs (heart, sun, music note, house, handprint, pencil) drifting near the source.
-//   - LIGHTS: a cool-violet hemisphere + a warm starlight key from the hero galaxy (intensity × reveal).
+// Contents (all a pure function of t + opts; deterministic seeded layout; no per-frame allocation of geometry):
+//   - SKY SHELL: an inside-out ellipsoid around the characters. Its colour is looked up by CAMERA ray direction (the
+//     sky sits at infinity: no parallax, no swimming) in a nebula cube map baked once on the GPU (half float, smooth
+//     domain-warped fbm cloud complexes — violet/magenta, teal/blue, rose, a gold-cored warm cloud — separated by deep
+//     dark space, dust lanes, faint galactic band). It is depth-tested against the host scene, so anything farther
+//     than the shell is covered: walls dissolve as the reveal opens the sky outward from the source (the Void),
+//     first into deep starry space, then nebulae bloom open behind that front with a soft unfurling light.
+//   - FLOOR VEIL: in a host room the floor beyond r0 fades into the same sky + a procedural star field (seamless with
+//     the shell); standalone, a soft light pool marks where the characters stand on "glass over the universe".
+//   - STARS: 3 parallax layers of point sprites — far (~2600, on the shell at infinity, denser along the band), mid
+//     (520, world shell between characters and sky), near (72, metres around the source: 26 KINDLE one by one).
+//     Gaussian cores >= 3.5 px (no sub-pixel shimmer), few bright stars with 4-point glints, gentle per-star twinkle.
+//   - NEBULA PUFFS: 5 big soft world-space billboards (parallax depth), swelling open as the bloom front reaches them.
+//   - 5 SPIRAL GALAXIES (4 baked, mipmapped variants): gold bulges, blue/violet/teal arms, rose knots, dust lanes;
+//     inclined discs at infinity, each slowly spinning; they drift in during the last half of the reveal.
+//   - BITS OF MEANING: 9 tiny glowing glyphs (heart, sun, music note, house, handprint, pencil) orbiting the source.
+//   - LIGHTS: a violet/teal hemisphere + a warm starlight key from the hero galaxy (intensity x reveal).
 import * as THREE from 'three';
 import { CTX, EYE_LIGHT } from '../core/context.js';
-import { rng, clamp, lerp, smooth, noise1 } from '../core/util.js';
+import { rng, clamp, lerp, smooth } from '../core/util.js';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -321,7 +323,7 @@ void main(){
   if (aMisc.w >= 0.0) {             // kindled star: ignites when the reveal passes its threshold
     float k = uKindle - aMisc.w;
     vis = smoothstep(0.0, 0.035, k);
-    flare = k > 0.0 ? exp(-k / 0.05) : 0.0;
+    flare = k > 0.0 ? exp(-k / 0.08) : 0.0;
   } else vis = cosmosMask(rd, hd, jit);
   float tw = 1.0 - aMisc.z * (0.5 + 0.5 * sin(uTime * (0.7 + 1.6 * fract(aMisc.y * 3.7)) + aMisc.y * 6.2831));
   float px = uMode < 0.5 ? aMisc.x : aMisc.x * projectionMatrix[1][1] * uPxH / max(-mv.z, 0.05);
@@ -513,7 +515,7 @@ class CosmosSet {
     const renderer = CTX.renderer;
     if (!renderer) throw new Error('COSMOS: CTX.renderer is not set (create the set after main.js init)');
     this.skyTex = bakeCube(renderer, SKY_BAKE_VS, SKY_BAKE_FS, 640);
-    this.puffTex = bake(renderer, PUFF_BAKE_FS, 256, 256, {}, { mip: true });
+    this.puffTex = bake(renderer, PUFF_BAKE_FS, 256, 256, {}, { mip: false });   // always magnified: no mips
     const GV = [   // galaxy bake variants
       { uArms: 2, uPitch: 0.36, uSeed: 1.3, uBar: 0.0, uTwist: 0.0, uCore: 0xffd9a0, uArm: 0xb4c6ff, uArm2: 0x8a7cff, uKnot: 0xff7fb4 },
       { uArms: 2, uPitch: 0.30, uSeed: 4.7, uBar: 0.65, uTwist: 1.0, uCore: 0xffe2b0, uArm: 0x9ff0f0, uArm2: 0x5aa8ff, uKnot: 0xffa0c8 },
@@ -615,10 +617,8 @@ class CosmosSet {
     // lights (intensity follows reveal)
     this.hemi = new THREE.HemisphereLight(0x9a8cff, 0x1d5c6c, 0); this.group.add(this.hemi);
     this.key = new THREE.DirectionalLight(0xfff0dc, 0); this.group.add(this.key); this.group.add(this.key.target);
-    // standalone-only lights (cool rim from behind + soft front fill so faces read)
-    this.rim = new THREE.DirectionalLight(0x6fe0ff, 1.2); this.rim.position.set(-3, 4, -6); this.scene.add(this.rim);
-    this.fill = new THREE.DirectionalLight(0xc8b8ff, 0.55); this.fill.position.set(2, 2.5, 6); this.scene.add(this.fill);
-    this.sceneHemi = new THREE.HemisphereLight(0x7a70d0, 0x203048, 0.35); this.scene.add(this.sceneHemi);
+    // standalone-only: a soft lilac front fill so faces read (inner beings bring their own fresnel rims)
+    this.fill = new THREE.DirectionalLight(0xc8b8ff, 0.6); this.fill.position.set(2, 2.5, 6); this.scene.add(this.fill);
 
     this.look = { bloom: 0.7, bloomRadius: 0.62, bloomThreshold: 0.72, vignette: 0.3, sat: 1.08, warm: 0.0,
       lift: [0.004, 0.003, 0.012], exposure: 1.05 };
@@ -626,6 +626,7 @@ class CosmosSet {
     this.props = { dome: this.dome, floor: this.floor, far: this.far.pts, mid: this.mid.pts, near: this.near.pts, puffs: this.puffs.mesh,
       galaxies: this.gals.map((g) => g.m), glyphs: this.glyphs.mesh, hemi: this.hemi, key: this.key, skyTex: this.skyTex };
     this._q = new THREE.Quaternion(); this._m4 = new THREE.Matrix4();
+    this.update = this.update.bind(this); this.attach = this.attach.bind(this); this.blendLook = this.blendLook.bind(this);
     this.update(0, { eyeLight: 0 });
   }
 
@@ -687,13 +688,23 @@ class CosmosSet {
       this._starColor(r, c); if (kind && r() < 0.5) c.setRGB(1.0, 0.95, 0.85);
       const L = kind ? 0.5 + 0.5 * r() : Math.pow(r(), 2);
       cl.set([c.r, c.g, c.b, 0.9 + 2.2 * L], i * 4);
-      misc.set([0.022 + 0.026 * L, r(), 0.14 + 0.12 * r(), kind ? 0.02 + 0.27 * (i / NK) + 0.02 * r() : -1], i * 4);
+      misc.set([0.022 + 0.026 * L, r(), 0.14 + 0.12 * r(), kind ? 0.05 + 0.85 * (i / NK) + 0.04 * r() : -1], i * 4);
     }
     return { pos, col: cl, misc };
   }
 
-  /** Attach the cosmos group to a host scene (call every frame in a scene's update; idempotent). */
+  /** Attach the cosmos group to a host scene (call every frame BEFORE update(); idempotent). */
   attach(scene) { if (this.group.parent !== scene) scene.add(this.group); return this; }
+
+  /** Post look blended from a host look (e.g. BACKROOM's) toward the cosmos look by w (0..1). */
+  blendLook(base = {}, w = 1) {
+    const out = { ...base };
+    for (const k of Object.keys(this.look)) {
+      const b = this.look[k], a = base[k] ?? b;
+      out[k] = Array.isArray(b) ? b.map((x, i) => lerp(Array.isArray(a) ? a[i] : x, x, w)) : lerp(a, b, w);
+    }
+    return out;
+  }
 
   /**
    * update(t, opts) — pure function of (t, opts).
@@ -714,9 +725,11 @@ class CosmosSet {
    *  floor { cover, inner, r0, r1, glow }    cover: sky over the host floor beyond r0..r1 (default 1 in a host, 0 standalone);
    *                     inner: sky tint inside r0; glow: light pool under the characters (default .35 host / 1 standalone).
    *  eyeLight 0..1      blend EYE_LIGHT toward the cosmos key (default 1 standalone, 0 in a host).
+   *  bloom              strength of the soft light that unfurls from behind the source mid-reveal (default 1).
+   *  standalone         force standalone/host defaults (default: group.parent === this.scene).
    */
   update(t, opts = {}) {
-    const standalone = this.group.parent === this.scene;
+    const standalone = opts.standalone ?? (this.group.parent === this.scene);
     const reveal = clamp(opts.reveal ?? 1);
     const c = opts.center || [0, 0, 0];
     const radius = opts.radius ?? 7.5, height = opts.height ?? radius * 0.87, lift = opts.lift ?? 1.5;
@@ -755,6 +768,14 @@ class CosmosSet {
     D.uIntensity.value = I; D.uNebula.value = opts.nebula ?? 1; D.uFringe.value = (opts.fringe ?? 1) * (front > 500 ? 0 : 1);
     D.uAlpha.value = smooth(ub * 6);
     this.dome.visible = reveal > 0.11;
+    // fully revealed: the shell is drawn as an OPAQUE pass after the host's opaque objects (depth-tested, no
+    // blending: ~0.03 s cheaper on SwiftShader). While revealing it is a blended pass, first among transparents.
+    const solid = front > 500 && !opts.blendShell;
+    const dm = this.dome.material;
+    if (dm.transparent === solid) {
+      dm.transparent = !solid; dm.blending = solid ? THREE.NoBlending : THREE.CustomBlending;
+      this.dome.renderOrder = solid ? 1e6 : -40;
+    }
     const F = this.floorU, fo = opts.floor || {};
     F.uIntensity.value = I; F.uNebula.value = opts.nebula ?? 1; F.uStars.value = opts.stars ?? 1;
     F.uCenter.value.set(c[0], c[1], c[2]);
@@ -832,11 +853,12 @@ class CosmosSet {
     // lights
     const L = (opts.light ?? 1) * smooth(reveal * 1.3);
     const kd = KEY_DIR.clone().applyMatrix3(U.uSkyRot.value);
-    this.hemi.intensity = 0.55 * L;
-    this.key.intensity = 1.25 * L;
+    // host: only the warm key is added (hosts tint their own ambient, e.g. BACKROOM `cosmos`) unless opts.hemi
+    this.hemi.visible = standalone || !!opts.hemi;
+    this.hemi.intensity = standalone ? 0.3 + 0.35 * L : 0.4 * (opts.hemi === true ? 1 : opts.hemi || 0) * L;
+    this.key.intensity = (standalone ? 1.25 : 0.65) * L;
     this.key.position.set(c[0] + kd.x * 10, c[1] + kd.y * 10, c[2] + kd.z * 10);
     this.key.target.position.set(c[0], c[1] + 1, c[2]);
-    this.rim.visible = this.fill.visible = this.sceneHemi.visible = true;
     const ew = opts.eyeLight ?? (standalone ? 1 : 0);
     if (ew > 0) {
       EYE_LIGHT.uKeyDir.value.lerp(kd.clone().add(V3(0, 0, 0.8)).normalize(), ew).normalize();

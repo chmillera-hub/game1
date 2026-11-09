@@ -1,15 +1,22 @@
 // Lab: SET 'COSMOS' — the reveal from inside a placeholder back room, the "looking up" hero angle past two
-// placeholder capsules (Fear 0.85 m beside a 3 m Void), and the standalone background scene.
-//   node tools/render.js sheet --lab cosmos --from 0 --to 11 --n 12 --cols 4 --out out/sheets/cosmos_revealA.jpg
-//   node tools/render.js sheet --lab cosmos --from 12 --to 21 --n 8 --cols 4 --out out/sheets/cosmos_revealB.jpg
-//   node tools/render.js sheet --lab cosmos --from 22 --to 40 --n 12 --cols 4 --out out/sheets/cosmos_hold.jpg
+// placeholder capsules (Fear 0.85 m beside a 3 m Void), the standalone background scene, and an integration check
+// inside the real BACKROOM set.
+//   node tools/render.js sheet --lab cosmos --from 0.5 --to 11 --n 12 --cols 6 --out out/sheets/cosmos_revealA.jpg
+//   node tools/render.js sheet --lab cosmos --from 12 --to 27 --n 8 --cols 4 --out out/sheets/cosmos_lookup.jpg
+//   node tools/render.js sheet --lab cosmos --from 28 --to 39.5 --n 8 --cols 4 --out out/sheets/cosmos_standalone.jpg
+//   node tools/render.js sheet --lab cosmos --from 40 --to 56 --n 8 --cols 4 --out out/sheets/cosmos_backroom.jpg
+//   node tools/render.js sheet --lab cosmos --from 100 --to 109 --n 10 --cols 5 --out out/sheets/cosmos_survey.jpg
 //   node tools/render.js bench --lab cosmos --t 24
-// Segments (exported `segments`): [start, end, name].
+// Segments (exported `segments`): [start, end, name]. Debug time ranges:
+//   100–109 sky survey (8 horizontal directions, zenith, nadir; designed sky orientation, standalone),
+//   200–209 same, shell only; 300–309 survey inside the placeholder room (floor veil); 400–404 aimed views;
+//   9000+ empty-scene perf baseline (same camera); k*1000 + t = lab time t with debug variant k
+//   (1 no puffs, 2 no fringe, 3 shell+floor only, 4 no capsules, 5 room without cosmos, 6 no floor veil,
+//    7 no shell, 8 neither, 10 no stars, 11 no galaxies/glyphs, 12 no cosmos lights).
 import * as THREE from 'three';
 import { applyShot } from '../core/camera.js';
-import { EYE_LIGHT } from '../core/context.js';
 import { being, contactShadow } from '../core/materials.js';
-import { clamp, lerp, smooth, ease } from '../core/util.js';
+import { clamp, lerp, smooth } from '../core/util.js';
 import { create as createCosmos } from '../sets/cosmos.js';
 
 export const segments = [
@@ -18,6 +25,10 @@ export const segments = [
   [22, 28, 'C: hold, looking up (calm)'],
   [28, 36, 'D: standalone, slow orbit'],
   [36, 40, 'E: standalone, zenith / wide'],
+  [40, 52, 'F: inside the real BACKROOM set (its cosmos fade + this group), reveal 0->1'],
+  [52, 58, 'G: BACKROOM, looking up, full reveal'],
+  [58, 64, 'H: real VOID + FEAR rigs in the standalone cosmos (front 3/4)'],
+  [64, 70, 'I: real rigs, low camera looking up past them'],
 ];
 const VOID_POS = [0.95, 0, -0.25], FEAR_POS = [-0.7, 0, 0.35];
 const SRC = [0.95, 2.05, 0.55];   // the Void's chest (front)
@@ -68,7 +79,9 @@ function capsules() {
     e.position.set(FEAR_POS[0] + sx * 0.08, 0.7, FEAR_POS[2] + 0.17); g.add(e);
     const p = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshBasicMaterial({ color: 0x221a30 }));
     p.position.set(FEAR_POS[0] + sx * 0.08, 0.735, FEAR_POS[2] + 0.215); g.add(p);
+    (g.userData.pupils ||= []).push({ p, x: FEAR_POS[0] + sx * 0.08 });
   }
+  g.userData.lookUp = (u) => { for (const q of g.userData.pupils) q.p.position.set(q.x + 0.012 * u, 0.735 + 0.03 * u, FEAR_POS[2] + 0.215 - 0.012 * u); };
   const s1 = contactShadow(2.6, 2.2, 0.5); s1.position.set(VOID_POS[0], 0.006, VOID_POS[2]); g.add(s1);
   const s2 = contactShadow(0.7, 0.6, 0.5); s2.position.set(FEAR_POS[0], 0.006, FEAR_POS[2]); g.add(s2);
   return g;
@@ -79,7 +92,13 @@ export async function setup(app) {
   const roomScene = new THREE.Scene(); roomScene.background = new THREE.Color(0x141018);
   const rm = room(); roomScene.add(rm.g);
   const caps = capsules();
-  return { scene: roomScene, roomScene, rm, cos, caps, look: { ...cos.look } };
+  let br = null, rigs = null;
+  try { br = await app.set('BACKROOM'); } catch (e) { console.log('cosmos lab: BACKROOM unavailable: ' + e.message); }
+  try {
+    const [vd, fr, vm, fm] = await Promise.all([app.char('VOID'), app.char('FEAR'), import('../chars/void.js'), import('../chars/fear.js')]);
+    rigs = { vd, fr, VX: vm.VX, FX: fm.FX, mixFace: fm.mixFace };
+  } catch (e) { console.log('cosmos lab: rigs unavailable: ' + e.message); }
+  return { br, rigs, scene: roomScene, roomScene, rm, cos, caps, look: { ...cos.look } };
 }
 
 const sm = (a, b, x) => smooth((x - a) / (b - a));
@@ -95,10 +114,46 @@ function survey(t, app, s) {
   const y = yaw * Math.PI / 180, p = pitch * Math.PI / 180;
   const pos = base === 300 ? [0.2, 1.4, 4.2] : [0.1, 1.5, 0.05];
   applyShot(app.camera, { pos, look: [pos[0] - Math.sin(y) * Math.cos(p), pos[1] + Math.sin(p), pos[2] - Math.cos(y) * Math.cos(p)], fov: 60, drift: 0 }, t);
+  s.caps.position.set(0, 0, 0); s.caps.userData.lookUp(0.5);
   if (base === 300) { cos.attach(s.roomScene); s.scene = s.roomScene; s.roomScene.add(s.caps); s.rm.lampC.visible = false; }
   else { cos.attach(cos.scene); s.scene = cos.scene; s.scene.remove(s.caps); }
   const only = base === 200;
   cos.update(t, { reveal: 1, clock: 0, center: [0.1, 0, 0.05], source: SRC, radius: 7.5, puffs: only ? 0 : 1, galaxies: only ? 0 : 1, glyphs: only ? 0 : 1, stars: only ? 0 : 1 });
+  s.look = { ...cos.look };
+}
+
+// F/G: integration check with the real BACKROOM set (capsules at its layout spots)
+function inBackroom(t, app, s) {
+  const { cos, caps, br } = s;
+  const L = br.layout, vs = L.voidSpot, fo = L.fearOutside;
+  const reveal = t < 52 ? sm(41, 50, t) : 1;
+  const shot = t < 52 ? { pos: [-0.3, 1.4, 6.6], look: [-0.15, 1.85, -0.3], fov: 48, drift: 0.3 }
+    : { pos: [fo.x - 1.2, 0.4, fo.z + 2.4], look: [vs.x + 1.2, 4.4, vs.z - 4.5], fov: 56, drift: 0.3 };
+  applyShot(app.camera, shot, t);
+  caps.position.set(vs.x - VOID_POS[0], 0, vs.z - VOID_POS[2]);   // Void capsule on the void spot (Fear near fearOutside)
+  caps.userData.lookUp(t < 52 ? 0.4 * reveal : 1);
+  br.scene.add(caps); cos.attach(br.scene); s.scene = br.scene;
+  br.update(t, { cosmos: smooth(clamp(reveal / 0.8)) });
+  const src = [vs.x, 2.05, vs.z + 0.8];
+  cos.update(t, { reveal, center: [(vs.x + fo.x) / 2, 0, (vs.z + fo.z) / 2], source: src, radius: 9 });
+  s.look = cos.blendLook(br.look, smooth(reveal));
+}
+
+// H/I: the real characters in the standalone cosmos (readability of faces against the sky)
+function withRigs(t, app, s) {
+  const { cos, rigs } = s;
+  const { vd, fr, VX, FX, mixFace } = rigs;
+  const shot = t < 64 ? { pos: [0.9, 1.45, 6.9], look: [0.1, 1.55, 0], fov: 40, drift: 0.3 }
+    : { pos: [-1.6, 0.3, 2.9], look: [0.5, 4.2, -4.0], fov: 56, drift: 0.3 };
+  applyShot(app.camera, shot, t);           // camera first (rigs read CTX.camera during update)
+  cos.attach(cos.scene); s.scene = cos.scene; s.caps.removeFromParent();
+  cos.scene.add(vd.root); cos.scene.add(fr.root);
+  cos.update(t, { reveal: 1, center: [0.1, 0, 0.05], source: [0.7, 2.0, 0.3], radius: 7.5 });
+  const up = t < 64 ? 0.55 : 1;
+  const fface = mixFace(FX('wonder'), FX('awe'), 0.6); fface.gazePitch = 0.2 * up;
+  fr.update(t, { pos: [-0.55, 0, 0.45], yaw: 0.35, face: fface, gaze: null, head: { pitch: -0.6 * up, roll: 0.04 }, body: { lean: -0.05 },
+    extra: { cry: 0.3, glow: 1.3, tuftPerk: 0.3 }, armL: { preset: 'clasp' }, armR: { preset: 'clasp' } });
+  vd.update(t, { pos: [0.75, 0, -0.45], yaw: -0.35, face: VX('tender'), gaze: fr, head: { pitch: 0.12 }, extra: { cosmos: 1 } });
   s.look = { ...cos.look };
 }
 
@@ -110,6 +165,9 @@ export async function update(t, app, s) {
   }
   if (t >= 1000) { s.dbg = Math.floor(t / 1000); t = t % 1000; } else s.dbg = 0;
   if (t >= 100) return survey(t, app, s);
+  if (s.rigs) { s.rigs.vd.root.removeFromParent(); s.rigs.fr.root.removeFromParent(); }
+  if (t >= 58 && s.rigs) return withRigs(t, app, s);
+  if (t >= 40 && s.br) return inBackroom(t, app, s);
   const { cos, caps } = s;
   const roomLook = { bloom: 0.45, bloomRadius: 0.55, bloomThreshold: 0.85, vignette: 0.3, sat: 1.04, exposure: 1.0 };
   let reveal = 1, shot, host = 'room';
@@ -131,6 +189,8 @@ export async function update(t, app, s) {
     shot = t < 38 ? { pos: [0.3, 1.2, 1.6], look: [0.2, 9, -0.6], fov: 60, drift: 0.2 } : { pos: [0.5, 2.2, 6.8], look: [0.1, 2.6, -3], fov: 54, drift: 0.2 };
   }
   applyShot(app.camera, shot, t);
+  caps.position.set(0, 0, 0);
+  caps.userData.lookUp(t >= 12 && t < 28 ? 1 : 0.3 * smooth(reveal));   // Fear's placeholder eyes look up at the sky
   if (s.dbg === 4) { caps.removeFromParent(); }
   if (s.dbg === 5) { cos.group.removeFromParent(); s.roomScene.add(caps); s.scene = s.roomScene; }
   else if (host === 'room') { cos.attach(s.roomScene); if (s.dbg !== 4) s.roomScene.add(caps); s.scene = s.roomScene; }
@@ -140,14 +200,10 @@ export async function update(t, app, s) {
   if (s.dbg === 6) cos.props.floor.visible = false;
   if (s.dbg === 7) cos.props.dome.visible = false;
   if (s.dbg === 8) { cos.props.dome.visible = false; cos.props.floor.visible = false; }
-  if (s.dbg === 12) { cos.props.hemi.intensity = 0; cos.props.key.intensity = 0; cos.props.hemi.visible = cos.props.key.visible = false; }
+  cos.props.key.visible = s.dbg !== 12;   // (reset every frame: frames stay pure)
+  if (s.dbg === 12) cos.props.hemi.visible = false;
   // what the BACKROOM would do itself: its lamp (inside the sky shell) dims out as the cosmos arrives
   s.rm.lamp.intensity = 14 * (1 - 0.85 * smooth(reveal * 1.4)); s.rm.lampC.visible = reveal < 0.6;
   // post look: room look -> cosmos look as the reveal completes
-  const L = {}, w = host === 'room' ? smooth(reveal) : 1;
-  for (const k of Object.keys(cos.look)) {
-    const a = roomLook[k] ?? cos.look[k], b = cos.look[k];
-    L[k] = Array.isArray(b) ? b.map((x, i) => lerp((Array.isArray(a) ? a[i] : x), x, w)) : lerp(a, b, w);
-  }
-  s.look = L;
+  s.look = cos.blendLook(roomLook, host === 'room' ? smooth(reveal) : 1);
 }

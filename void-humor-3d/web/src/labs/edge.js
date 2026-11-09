@@ -8,6 +8,9 @@ import { clamp, lerp, smooth } from '../core/util.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const SEG = 2;
+// the staging frame of scenes/marks.js (EDGE): local -> world (most Part One shots look north-east, away from the sun)
+const SYAW = -Math.PI + Math.atan2(4, 3), SC = Math.cos(SYAW), SS = Math.sin(SYAW);
+const SW = (x, y, z) => [x * SC + z * SS, y, -x * SS + z * SC];
 
 // ------------------------------------------------------------------ placeholder figures
 function eyes(g, y, z, sep, r, color = 0x1a1210) {
@@ -85,6 +88,10 @@ const SEGMENTS = [
   ['14 sky up (stars)  tod 1', () => ({ pos: [0, 1.5, 4], look: [-1, 9, -6], fov: 45 }), () => ({ tod: 1 }), 'jv'],
   ['15 seeds x2  tod .2', (u) => framed([0.0, 1.5, 0], { dist: 5.5, yaw: 12, pitch: 2, fov: 34, screenY: 0.38 }), () => ({ tod: 0.2, seeds: 2 }), 'jv'],
   ['16 OTS user->jesus  tod .3', () => ({ pos: [-1.9, 1.15, 2.6], look: [-0.3, 1.4, 0], fov: 30 }), () => ({ tod: 0.3 }), 'all'],
+  ['17 staging MASTER (looks NE)  tod .2 void .6', () => ({ pos: SW(-1.70, 2.45, 7.89), look: SW(-0.25, 0.20, -0.83), fov: 44 }), () => ({ tod: 0.2, voidSky: 0.6, voidPos: SW(1.0, 0, -1.1) }), 'stage'],
+  ['18 staging FRAME0 (peach crest)  tod 0 void .5', () => ({ pos: SW(2.46, 0.69, -3.26), look: SW(2.66, 1.40, -7.70), fov: 44 }), () => ({ tod: 0, voidSky: 0.5, voidPos: [7.9, 1.1, 10.1] }), 'crest'],
+  ['19 staging BEND (sunward)  tod .48', () => ({ pos: SW(0.01, 1.08, -3.14), look: SW(-2.24, 0.88, 2.42), fov: 33 }), () => ({ tod: 0.48 }), 'none'],
+  ['20 staging WHISPER  tod .3 void .6', () => ({ pos: SW(-1.09, 1.40, 3.30), look: SW(0.23, 1.22, -0.95), fov: 33 }), () => ({ tod: 0.3, voidSky: 0.6, voidPos: SW(1.0, 0, -1.1) }), 'stage'],
 ];
 export const segments = SEGMENTS.map((s, i) => [i * SEG, (i + 1) * SEG, s[0]]);
 export const DURATION = SEGMENTS.length * SEG;
@@ -112,6 +119,7 @@ export async function update(t, app, s) {
   const [name, shotFn, optsFn, cast] = SEGMENTS[i];
   const opts = optsFn(u);
   if (cast === 'all') opts.clear = [[-1.6, 1.6, 0.9]];
+  if (cast === 'stage') opts.clear = [[SW(-1.3, 0, 1.4)[0], SW(-1.3, 0, 1.4)[2], 0.9]];
   if (cast === 'walk') opts.shadowAt = s.set.pathAt(name.includes('finale') ? 33 : 9).pos;
   s.set.update(t, opts);
   // cast placement
@@ -122,6 +130,15 @@ export async function update(t, app, s) {
     vd.visible = true; vd.position.set(1.25, 0, -0.5); vd.rotation.y = -0.3;
   }
   if (cast === 'all') { usrSit.visible = true; usrSit.position.set(-1.6, 0, 1.4); usrSit.rotation.y = 2.4; }
+  if (cast === 'stage') {   // placeholders at the marks of scenes/marks.js
+    usrSit.visible = true; usrSit.position.set(...SW(-1.3, 0, 1.4)); usrSit.rotation.y = 2.45 + SYAW;
+    jes.visible = true; jes.position.set(...SW(0.0, 0, -0.65)); jes.rotation.y = -0.5 + SYAW;
+    vd.visible = true; vd.position.set(...SW(1.0, 0, -1.1)); vd.rotation.y = -0.52 + SYAW;
+  }
+  if (cast === 'crest') {
+    usr.visible = true; { const p = SW(2.35, 0, -6.4); usr.position.set(p[0], s.set.groundAt(p[0], p[2]), p[2]); usr.rotation.y = 0.2 + SYAW; }
+    vd.visible = true; { const p = SW(3.3, 0, -12.4); vd.position.set(p[0], s.set.groundAt(p[0], p[2]), p[2]); vd.rotation.y = -0.05 + SYAW; }
+  }
   if (cast === 'walk') {
     // two figures walking away along the path toward the glow
     const S = s.set;

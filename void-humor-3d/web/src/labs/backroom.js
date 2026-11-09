@@ -12,7 +12,7 @@ import { SETS } from '../sets/index.js';
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const sm = (a, b, x) => smooth((x - a) / (b - a));
 
-const ANGLES = ['wide', 'reverse', 'corner', 'cage', 'fearPOV', 'lurk', 'sideKick', 'farCorner', 'high'];
+const ANGLES = ['wide', 'reverse', 'corner', 'cage', 'fearPOV', 'lurk', 'sideKick', 'farCorner', 'high', 'latch'];
 const SEGS = [...ANGLES.map((n) => [n, 1.2]), ['door', 4], ['crash', 10], ['hat', 4.5], ['roll', 3], ['cosmos', 3]];
 export const segments = [];
 { let t0 = 0; for (const [n, d] of SEGS) { segments.push([t0, t0 + d, n]); t0 += d; } }
@@ -78,7 +78,7 @@ export async function update(t, app, S) {
   const c = A.cageCenter;
   const F = A.fearOutside, Vs = A.voidSpot;
   if (seg.name === 'wide') shot = framed([-0.5, 1.25, -0.9], { dist: 11, yaw: 6, pitch: 4, fov: 35, screenY: 0.47, drift: 0 });
-  else if (seg.name === 'reverse') shot = { pos: [-2.6, 1.7, -4.3], look: [-1.4, 2.1, 10], fov: 40, drift: 0 };
+  else if (seg.name === 'reverse') shot = { pos: [-0.9, 1.5, -4.4], look: [-1.6, 1.9, 10], fov: 46, drift: 0 };
   else if (seg.name === 'corner') { shot = CORNER_SHOT; P.mg.visible = false; }
   else if (seg.name === 'cage') { shot = framed([c.x, 0.6, c.z], { dist: 2.4, yaw: 14, pitch: 6, fov: 32, screenY: 0.5, drift: 0 }); P.fg.position.copy(A.cageInside); P.fg.rotation.y = Y.fearInCage - 0.7; }
   else if (seg.name === 'fearPOV') { shot = { pos: [F.x - 0.75, 0.55, F.z + 0.55], look: [Vs.x - 0.45, 2.05, Vs.z + 0.45], fov: 50, drift: 0 }; }
@@ -86,6 +86,7 @@ export async function update(t, app, S) {
   else if (seg.name === 'sideKick') shot = { pos: [6.6, 1.0, 5.8], look: [0.3, 1.45, -0.5], fov: 35, drift: 0 };
   else if (seg.name === 'farCorner') { shot = { pos: [-3.6, 1.3, 2.6], look: [1.2, 0.9, -2.2], fov: 38, drift: 0 }; }
   else if (seg.name === 'high') shot = { pos: [-3.5, 7.5, 6.5], look: [1.0, 0.0, -2.0], fov: 45, drift: 0 };
+  else if (seg.name === 'latch') { o.latch = sm(0.2, 1.0, u); const L = A.cageLatch; shot = framed([L.x, L.y + 0.05, L.z], { dist: 0.85, yaw: 38, pitch: 8, fov: 30, screenY: 0.5, drift: 0 }); P.vg.visible = false; P.fg.position.copy(A.cageInside); P.fg.rotation.y = Y.fearInCage; }
   else if (seg.name === 'door') {
     o.latch = sm(0.3, 1.2, u); o.cageDoor = sm(1.5, 3.6, u);
     P.fg.position.copy(A.cageInside); P.fg.rotation.y = Y.fearInCage;
